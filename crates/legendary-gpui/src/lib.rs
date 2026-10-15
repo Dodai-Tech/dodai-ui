@@ -1,0 +1,177 @@
+//! # legendary-gpui
+//!
+//! Turns a [`legendary_core::Theme`] into GPUI values: colours, a [`Global`]
+//! theme store (`cx.legendary()`), and a [`LegendaryStyled`] extension for
+//! any [`Styled`] element (`div().lg_panel(&theme)`, `.lg_button(...)`).
+//!
+//! ```no_run
+//! use gpui::{div, prelude::*, App};
+//! use legendary_core::{ButtonVariant, ControlState, Theme};
+//! use legendary_gpui::{install, LegendaryStyled, ActiveLegendary};
+//!
+//! fn setup(cx: &mut App) {
+//!     install(cx, Theme::default());
+//!     let t = cx.legendary().theme().clone();
+//!     let _btn = div().lg_button(&t, ButtonVariant::Primary, ControlState::Idle);
+//! }
+//! ```
+
+use gpui::{px, App, BoxShadow, Global, Hsla, Rgba, Styled};
+use legendary_core::{ButtonVariant, Color, ControlState, Theme, ThemeSwitcher, Tone};
+
+/// Token colour → GPUI [`Rgba`].
+pub fn rgba(c: Color) -> Rgba {
+    let [r, g, b, a] = c.to_f32();
+    Rgba { r, g, b, a }
+}
+
+/// Token colour → GPUI [`Hsla`] (what `Styled` methods take).
+pub fn hsla(c: Color) -> Hsla {
+    rgba(c).into()
+}
+
+/// Global theme state: the [`ThemeSwitcher`] plus the active theme.
+pub struct LegendaryTheme {
+    switcher: ThemeSwitcher,
+}
+
+impl Global for LegendaryTheme {}
+
+impl LegendaryTheme {
+    pub fn theme(&self) -> &Theme {
+        self.switcher.current()
+    }
+
+    pub fn switcher(&self) -> &ThemeSwitcher {
+        &self.switcher
+    }
+
+    /// Hsla for a status tone.
+    pub fn tone(&self, tone: Tone) -> Hsla {
+        hsla(self.theme().palette.tone(tone))
+    }
+}
+
+/// Install the global theme (first theme = `initial`, or the default list head).
+pub fn install(cx: &mut App, initial: Theme) {
+    let mut switcher = ThemeSwitcher::new();
+    if !switcher.select(initial.id()) {
+        let mut all = switcher.themes().to_vec();
+        all.insert(0, initial);
+        switcher = ThemeSwitcher::with_themes(all);
+    }
+    cx.set_global(LegendaryTheme { switcher });
+}
+
+/// Switch to the next theme; call `cx.refresh_windows()` afterwards to repaint.
+pub fn cycle_next(cx: &mut App) {
+    cx.global_mut::<LegendaryTheme>().switcher.cycle_next();
+    cx.refresh_windows();
+}
+
+/// Switch to the previous theme and repaint.
+pub fn cycle_prev(cx: &mut App) {
+    cx.global_mut::<LegendaryTheme>().switcher.cycle_prev();
+    cx.refresh_windows();
+}
+
+/// `cx.legendary()` accessor.
+pub trait ActiveLegendary {
+    fn legendary(&self) -> &LegendaryTheme;
+}
+
+impl ActiveLegendary for App {
+    fn legendary(&self) -> &LegendaryTheme {
+        self.global::<LegendaryTheme>()
+    }
+}
+
+/// Theme-aware styling for any GPUI [`Styled`] element.
+pub trait LegendaryStyled: Styled + Sized {
+    /// App background + default text colour.
+    fn lg_background(self, t: &Theme) -> Self {
+        self.bg(hsla(t.palette.background))
+            .text_color(hsla(t.palette.text))
+    }
+
+    /// Bordered panel; glow shadow when `focused`.
+    fn lg_panel(self, t: &Theme, focused: bool) -> Self {
+        let p = t.panel(focused);
+        let s = self
+            .bg(hsla(p.background))
+            .border_1()
+            .border_color(hsla(p.border))
+            .text_color(hsla(t.palette.text))
+            .rounded(px(t.shape.radius));
+        if focused && t.effects.glow_blur > 0.0 {
+            s.shadow(vec![BoxShadow {
+                color: hsla(t.effects.glow),
+                offset: gpui::point(px(0.0), px(0.0)),
+                blur_radius: px(t.effects.glow_blur),
+                spread_radius: px(0.0),
+            }])
+        } else {
+            s
+        }
+    }
+
+    /// Button colours + control height for a variant/state.
+    fn lg_button(self, t: &Theme, v: ButtonVariant, state: ControlState) -> Self {
+        let b = t.button(v, state);
+        let s = self
+            .h(px(t.shape.control_height))
+            .px(px(t.spacing.md))
+            .text_color(hsla(b.foreground))
+            .rounded(px(t.shape.radius));
+        let s = match b.background {
+            Some(bg) => s.bg(hsla(bg)),
+            None => s.bg(gpui::transparent_black()),
+        };
+        match b.border {
+            Some(c) => s.border_2().border_color(hsla(c)),
+            None => s,
+        }
+    }
+
+    /// Text-input box.
+    fn lg_input(self, t: &Theme, focused: bool) -> Self {
+        let i = t.input(focused);
+        self.bg(hsla(i.background))
+            .border_2()
+            .border_color(hsla(i.border))
+            .text_color(hsla(i.text))
+            .px(px(t.spacing.sm))
+            .rounded(px(t.shape.radius))
+    }
+}
+
+impl<T: Styled + Sized> LegendaryStyled for T {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rgba_converts() {
+        let c = rgba(Color::hex(0xfcee0a));
+        assert!((c.r - 0xfc as f32 / 255.0).abs() < 1e-6);
+        assert_eq!(c.a, 1.0);
+    }
+
+    #[test]
+    fn hsla_roundtrip_is_opaque_yellow() {
+        let h = hsla(Color::hex(0xfcee0a));
+        assert_eq!(h.a, 1.0);
+        assert!(h.s > 0.9);
+    }
+
+    #[test]
+    fn styled_ext_applies() {
+        let t = Theme::default();
+        let _ = gpui::div().lg_panel(&t, true).lg_button(
+            &t,
+            ButtonVariant::Outline,
+            ControlState::Hovered,
+        );
+    }
+}

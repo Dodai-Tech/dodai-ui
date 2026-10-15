@@ -1,0 +1,44 @@
+[workspace]
+members = [
+    "crates/legendary-core",
+    "crates/legendary-ratatui",
+    "crates/legendary-iced",
+    "crates/legendary-gpui",
+    "crates/legendary-topcoat",
+]
+resolver = "2"
+
+[workspace.package]
+version      = "0.1.0"
+edition      = "2021"
+authors      = ["Sorin Irimies <sorinirimies@gmail.com>"]
+license      = "MIT"
+repository   = "https://github.com/sorinirimies/legendary-themes"
+rust-version = "1.85"
+
+# ── Shared dependency versions ─────────────────────────────────────────────────
+# Pin once here; each crate references them with `{ workspace = true }`.
+
+[workspace.dependencies]
+# TUI
+ratatui   = "0.30"
+crossterm = "0.29"
+# GUI
+iced      = { version = "0.14", features = ["advanced", "canvas"] }
+gpui      = "0.2.2"
+
+# Internal crates
+legendary-core    = { path = "crates/legendary-core",    version = "0.1.0" }
+legendary-ratatui = { path = "crates/legendary-ratatui", version = "0.1.0" }
+legendary-iced    = { path = "crates/legendary-iced",    version = "0.1.0" }
+legendary-gpui    = { path = "crates/legendary-gpui",    version = "0.1.0" }
+legendary-topcoat = { path = "crates/legendary-topcoat", version = "0.1.0" }
+
+[profile.dev]
+opt-level = 0
+
+[profile.release]
+opt-level     = 3
+lto           = "thin"
+codegen-units = 1
+strip         = "symbols"

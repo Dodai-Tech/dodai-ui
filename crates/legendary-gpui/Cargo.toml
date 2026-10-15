@@ -1,0 +1,16 @@
+[package]
+name         = "legendary-gpui"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description  = "GPUI adapter for the Legendary Themes design system"
+readme       = "README.md"
+keywords     = ["theme", "design-system", "gpui", "cyberpunk"]
+categories   = ["gui"]
+
+[dependencies]
+legendary-core = { workspace = true }
+gpui = { workspace = true }
