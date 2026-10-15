@@ -27,6 +27,8 @@ component styles) feeds four native adapters:
 | Shape | 0 radius, 2 px borders, 48 px controls, 16 px chamfer (cut top-left + bottom-right) |
 | Effects | yellow glow on hover/focus, optional CRT scanlines |
 
+Glow is configurable: `theme.with_glow_intensity(1.5)` (0 = off, 1 = as designed) scales glow alpha and radius in every adapter.
+
 Variants: `cyberpunk` (Night City), `cyberpunk-netrunner` (cyan-led), `cyberpunk-samurai` (red-led).
 Every theme is contrast-tested (text ≥ 7:1, primary label ≥ 4.5:1).
 

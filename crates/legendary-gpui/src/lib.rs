@@ -103,11 +103,11 @@ pub trait LegendaryStyled: Styled + Sized {
             .border_color(hsla(p.border))
             .text_color(hsla(t.palette.text))
             .rounded(px(t.shape.radius));
-        if focused && t.effects.glow_blur > 0.0 {
+        if focused && t.effects.glow_enabled() {
             s.shadow(vec![BoxShadow {
-                color: hsla(t.effects.glow),
+                color: hsla(t.effects.glow_color()),
                 offset: gpui::point(px(0.0), px(0.0)),
-                blur_radius: px(t.effects.glow_blur),
+                blur_radius: px(t.effects.glow_radius()),
                 spread_radius: px(0.0),
             }])
         } else {

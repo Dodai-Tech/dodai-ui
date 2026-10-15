@@ -59,7 +59,7 @@ pub fn theme_vars(t: &Theme) -> String {
         ("selection", p.selection),
         ("focus-ring", p.focus_ring),
         ("link", p.link),
-        ("glow", t.effects.glow),
+        ("glow", t.effects.glow_color()),
     ] {
         v(k, c.to_css());
     }
@@ -85,7 +85,7 @@ pub fn theme_vars(t: &Theme) -> String {
         ("chamfer", t.shape.chamfer),
         ("border-width", t.shape.border_width),
         ("control-height", t.shape.control_height),
-        ("glow-blur", t.effects.glow_blur),
+        ("glow-blur", t.effects.glow_radius()),
     ] {
         v(k, format!("{px}px"));
     }

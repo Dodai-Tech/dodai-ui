@@ -35,6 +35,8 @@ pub struct ChamferButton<Message> {
     pub hover: ShapedColors,
     pub press: ShapedColors,
     pub disabled: ShapedColors,
+    /// Glow radius in px (already scaled by the theme's glow intensity).
+    pub glow_radius: f32,
     pub on_press: Option<Message>,
     /// Backdrop under outline buttons (cyberpunk.net uses black @ 60%).
     pub backdrop: Color,
@@ -44,6 +46,23 @@ pub struct ChamferButton<Message> {
 pub struct ButtonState {
     pressed: bool,
     hovered: bool,
+}
+
+impl<Message> ChamferButton<Message> {
+    fn margin(&self) -> f32 {
+        self.glow_radius.max(0.0).ceil()
+    }
+
+    /// The clickable shape inside the glow margin, in the same space as `bounds`.
+    fn shape_rect(&self, bounds: Rectangle) -> Rectangle {
+        let m = self.margin();
+        Rectangle {
+            x: bounds.x + m,
+            y: bounds.y + m,
+            width: (bounds.width - 2.0 * m).max(0.0),
+            height: (bounds.height - 2.0 * m).max(0.0),
+        }
+    }
 }
 
 impl<Message: Clone> canvas::Program<Message> for ChamferButton<Message> {
@@ -56,7 +75,7 @@ impl<Message: Clone> canvas::Program<Message> for ChamferButton<Message> {
         bounds: Rectangle,
         cursor: mouse::Cursor,
     ) -> Option<Action<Message>> {
-        let over = cursor.is_over(bounds);
+        let over = cursor.is_over(self.shape_rect(bounds));
         let enabled = self.on_press.is_some();
         let hover_changed = over != state.hovered;
         state.hovered = over;
@@ -88,7 +107,8 @@ impl<Message: Clone> canvas::Program<Message> for ChamferButton<Message> {
         bounds: Rectangle,
         cursor: mouse::Cursor,
     ) -> Vec<Geometry> {
-        let over = cursor.is_over(bounds);
+        let rect = self.shape_rect(bounds);
+        let over = cursor.is_over(rect);
         let c = if self.on_press.is_none() {
             self.disabled
         } else if state.pressed && over {
@@ -101,23 +121,31 @@ impl<Message: Clone> canvas::Program<Message> for ChamferButton<Message> {
 
         let mut frame = canvas::Frame::new(renderer, bounds.size());
         let w = self.border_width;
-        let pts = chamfer_points(bounds.width - w, bounds.height - w, self.cut);
-        let i = w / 2.0;
+        let m = self.margin();
+        let pts = chamfer_points(rect.width - w, rect.height - w, self.cut);
+        let o = w / 2.0 + m;
         let path = Path::new(|b| {
-            b.move_to(Point::new(pts[0].x + i, pts[0].y + i));
+            b.move_to(Point::new(pts[0].x + o, pts[0].y + o));
             for p in &pts[1..] {
-                b.line_to(Point::new(p.x + i, p.y + i));
+                b.line_to(Point::new(p.x + o, p.y + o));
             }
             b.close();
         });
         if let Some(g) = c.glow {
-            // Cheap neon glow: widening translucent strokes under the shape.
-            for (k, a) in [(6.0, 0.10), (4.0, 0.16), (2.0, 0.24)] {
+            // Soft neon glow: concentric translucent strokes fading outward.
+            const STEPS: u32 = 10;
+            for k in (1..=STEPS).rev() {
+                let t = k as f32 / STEPS as f32; // 1 = outermost
+                let fade = (1.0 - t).powi(2) * 0.35 + 0.02;
                 frame.stroke(
                     &path,
                     Stroke::default()
-                        .with_color(Color { a: g.a * a, ..g })
-                        .with_width(w + k),
+                        .with_color(Color {
+                            a: (g.a * fade).min(1.0),
+                            ..g
+                        })
+                        .with_width(w + 2.0 * self.glow_radius * t)
+                        .with_line_join(canvas::LineJoin::Round),
                 );
             }
         }
@@ -127,7 +155,10 @@ impl<Message: Clone> canvas::Program<Message> for ChamferButton<Message> {
         }
         frame.fill_text(Text {
             content: self.label.clone(),
-            position: Point::new((bounds.width - self.cut / 2.0) / 2.0, bounds.height / 2.0),
+            position: Point::new(
+                m + (rect.width - self.cut / 2.0) / 2.0,
+                m + rect.height / 2.0,
+            ),
             color: c.text,
             size: Pixels(self.size),
             font: self.font,
@@ -144,7 +175,7 @@ impl<Message: Clone> canvas::Program<Message> for ChamferButton<Message> {
         bounds: Rectangle,
         cursor: mouse::Cursor,
     ) -> mouse::Interaction {
-        if self.on_press.is_some() && cursor.is_over(bounds) {
+        if self.on_press.is_some() && cursor.is_over(self.shape_rect(bounds)) {
             mouse::Interaction::Pointer
         } else {
             mouse::Interaction::default()
@@ -155,11 +186,12 @@ impl<Message: Clone> canvas::Program<Message> for ChamferButton<Message> {
 impl<'a, Message: Clone + 'a> From<ChamferButton<Message>> for Element<'a, Message> {
     fn from(b: ChamferButton<Message>) -> Self {
         // Rough text measure (no font metrics available outside layout): ~0.62em/char + padding.
-        let w = b.label.chars().count() as f32 * b.size * 0.62 + b.size * 3.0 + b.cut;
+        let m = b.margin();
+        let w = (b.label.chars().count() as f32 * b.size * 0.62 + b.size * 3.0 + b.cut).max(120.0);
         let h = b.size * 3.0;
         Canvas::new(b)
-            .width(Length::Fixed(w.max(120.0)))
-            .height(Length::Fixed(h))
+            .width(Length::Fixed(w + 2.0 * m))
+            .height(Length::Fixed(h + 2.0 * m))
             .into()
     }
 }

@@ -93,11 +93,11 @@ impl IcedTheme {
 
     fn glow(&self, on: bool) -> Shadow {
         let e = &self.theme.effects;
-        if on && e.glow_blur > 0.0 {
+        if on && e.glow_enabled() {
             Shadow {
-                color: color(e.glow),
+                color: color(e.glow_color()),
                 offset: Vector::ZERO,
-                blur_radius: e.glow_blur,
+                blur_radius: e.glow_radius(),
             }
         } else {
             Shadow::default()
@@ -155,7 +155,7 @@ impl IcedTheme {
                 fill: t.background.map(color),
                 stroke: t.border.or(t.background).map(color),
                 text: color(t.foreground),
-                glow: lit.then(|| color(e.glow)),
+                glow: (lit && e.glow_enabled()).then(|| color(e.glow_color())),
             }
         };
         ChamferButton {
@@ -172,6 +172,7 @@ impl IcedTheme {
             hover: colors(ControlState::Hovered),
             press: colors(ControlState::Pressed),
             disabled: colors(ControlState::Disabled),
+            glow_radius: e.glow_radius(),
             on_press,
             backdrop: Color::from_rgba(0.0, 0.0, 0.0, 0.6),
         }

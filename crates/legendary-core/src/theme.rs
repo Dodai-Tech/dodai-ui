@@ -27,6 +27,12 @@ pub struct Theme {
 }
 
 impl Theme {
+    /// Builder: set glow strength (0 = off, 1 = as designed, >1 = stronger).
+    pub fn with_glow_intensity(mut self, intensity: f32) -> Self {
+        self.effects.glow_intensity = intensity.max(0.0);
+        self
+    }
+
     pub fn id(&self) -> &'static str {
         self.meta.id
     }

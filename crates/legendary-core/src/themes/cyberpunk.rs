@@ -107,6 +107,7 @@ fn build(
         effects: Effects {
             glow: primary_c.with_alpha(0.55),
             glow_blur: 14.0,
+            glow_intensity: 1.0,
             scanlines: scan,
             hard_shadow: 4.0,
         },

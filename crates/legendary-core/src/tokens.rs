@@ -48,10 +48,60 @@ pub struct Shape {
 pub struct Effects {
     /// Glow colour for focus and primary elements.
     pub glow: Color,
-    /// Glow blur radius in px (0 disables).
+    /// Glow blur radius in px at intensity 1.0 (0 disables).
     pub glow_blur: f32,
+    /// Glow strength multiplier: scales both alpha and radius. `0.0` = off,
+    /// `1.0` = as designed, `>1.0` = stronger (alpha is clamped to opaque).
+    pub glow_intensity: f32,
     /// Draw CRT scanlines where the framework supports it.
     pub scanlines: bool,
     /// Hard offset shadow (px) typical of cyberpunk UI, 0 = none.
     pub hard_shadow: f32,
+}
+
+impl Effects {
+    /// Glow colour with alpha scaled by [`Effects::glow_intensity`].
+    pub fn glow_color(&self) -> Color {
+        let k = self.glow_intensity.max(0.0);
+        self.glow.with_alpha(self.glow.a as f32 / 255.0 * k)
+    }
+
+    /// Glow radius in px, scaled by [`Effects::glow_intensity`].
+    pub fn glow_radius(&self) -> f32 {
+        self.glow_blur * self.glow_intensity.max(0.0)
+    }
+
+    /// True when a glow should be drawn at all.
+    pub fn glow_enabled(&self) -> bool {
+        self.glow_radius() > 0.0 && self.glow_color().a > 0
+    }
+}
+
+#[cfg(test)]
+mod glow_tests {
+    use super::*;
+
+    fn fx(i: f32) -> Effects {
+        Effects {
+            glow: Color::hex(0xfcee0a).with_alpha(0.5),
+            glow_blur: 10.0,
+            glow_intensity: i,
+            scanlines: false,
+            hard_shadow: 0.0,
+        }
+    }
+
+    #[test]
+    fn intensity_scales_alpha_and_radius() {
+        assert_eq!(fx(1.0).glow_radius(), 10.0);
+        assert_eq!(fx(2.0).glow_radius(), 20.0);
+        assert!(fx(2.0).glow_color().a > fx(1.0).glow_color().a);
+        assert!(fx(0.5).glow_color().a < fx(1.0).glow_color().a);
+    }
+
+    #[test]
+    fn zero_disables() {
+        assert!(!fx(0.0).glow_enabled());
+        assert!(fx(1.0).glow_enabled());
+    }
 }
