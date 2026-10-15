@@ -20,8 +20,10 @@
 //! ```
 
 mod chamfer;
+mod shaped_button;
 
 pub use chamfer::{chamfer_frame, chamfer_points, ChamferFrame};
+pub use shaped_button::{ButtonState, ChamferButton, ShapedColors};
 
 use iced::{
     border::Border,
@@ -135,6 +137,43 @@ impl IcedTheme {
                 shadow: this.glow(lit),
                 snap: true,
             }
+        }
+    }
+
+    /// Chamfered (cyberpunk.net-shaped) button. Pass `None` to render it disabled.
+    pub fn chamfer_button<Message: Clone>(
+        &self,
+        label: &str,
+        variant: ButtonVariant,
+        on_press: Option<Message>,
+    ) -> ChamferButton<Message> {
+        let e = &self.theme.effects;
+        let colors = |st| {
+            let t = self.theme.button(variant, st);
+            let lit = matches!(st, ControlState::Hovered | ControlState::Pressed);
+            ShapedColors {
+                fill: t.background.map(color),
+                stroke: t.border.or(t.background).map(color),
+                text: color(t.foreground),
+                glow: lit.then(|| color(e.glow)),
+            }
+        };
+        ChamferButton {
+            label: self.label(label),
+            font: self.font(),
+            size: 15.0,
+            cut: self
+                .theme
+                .shape
+                .chamfer
+                .min(self.theme.shape.control_height * 0.4),
+            border_width: self.theme.shape.border_width,
+            idle: colors(ControlState::Idle),
+            hover: colors(ControlState::Hovered),
+            press: colors(ControlState::Pressed),
+            disabled: colors(ControlState::Disabled),
+            on_press,
+            backdrop: Color::from_rgba(0.0, 0.0, 0.0, 0.6),
         }
     }
 

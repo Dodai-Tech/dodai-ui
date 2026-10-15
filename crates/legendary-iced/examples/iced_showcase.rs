@@ -1,6 +1,6 @@
 //! `cargo run -p legendary-iced --example iced_showcase`
 
-use iced::widget::{button, column, container, row, stack, text, text_input, Space};
+use iced::widget::{column, container, row, stack, text, text_input, Space};
 use iced::{Element, Length, Theme as IcedBase};
 use legendary_core::{ButtonVariant, ThemeSwitcher, Tone};
 use legendary_iced::{chamfer_frame, IcedTheme};
@@ -41,11 +41,7 @@ fn update(app: &mut App, msg: Msg) {
 fn view(app: &App) -> Element<'_, Msg> {
     let lt = &app.lt;
     let btn = |label: &str, v: ButtonVariant, m: Msg| -> Element<'_, Msg> {
-        button(text(lt.label(label)).size(15))
-            .padding([12, 28])
-            .style(lt.button(v))
-            .on_press(m)
-            .into()
+        lt.chamfer_button(label, v, Some(m)).into()
     };
 
     let card = stack![
