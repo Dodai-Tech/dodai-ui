@@ -259,7 +259,7 @@ impl TuiTheme {
 
     /// Three-row chamfered slab button (closest a terminal gets to cyberpunk.net).
     ///
-    /// Solid variants are a filled slab (`▄` / `▀` caps) with the bottom-right corner
+    /// Solid variants are a filled 3-row slab with the bottom-right corner
     /// cut via `◤`; outline variants are a box whose bottom-right corner is `╱`.
     /// Width = label + 6 cells; render into a 3-row area.
     pub fn button_block<'a>(
@@ -275,27 +275,28 @@ impl TuiTheme {
         let body = self.button_style(variant, state);
         match t.background {
             Some(bg) => {
-                let cap = Style::new().fg(self.color(bg));
+                let fill = Style::new().bg(self.color(bg));
+                let cut = Style::new().fg(self.color(bg));
                 Text::from(vec![
-                    Line::styled("▄".repeat(w), cap),
+                    Line::from(Span::styled(" ".repeat(w), fill)),
+                    Line::from(Span::styled(format!("{label:^w$}"), body)),
                     Line::from(vec![
-                        Span::styled(format!("{label:^width$}", width = w - 1), body),
-                        Span::styled("◤", cap),
+                        Span::styled(" ".repeat(w - 1), fill),
+                        Span::styled("◤", cut),
                     ]),
-                    Line::styled(format!("{}  ", "▀".repeat(w - 2)), cap),
                 ])
             }
             None => {
                 let edge_c = t.border.unwrap_or(t.foreground);
                 let edge = Style::new().fg(self.color(edge_c));
                 Text::from(vec![
-                    Line::styled(format!("┌{}┐", "─".repeat(inner)), edge),
+                    Line::from(Span::styled(format!("┌{}┐", "─".repeat(inner)), edge)),
                     Line::from(vec![
                         Span::styled("│", edge),
                         Span::styled(format!("{label:^inner$}"), body),
                         Span::styled("│", edge),
                     ]),
-                    Line::styled(format!("└{}╱", "─".repeat(inner)), edge),
+                    Line::from(Span::styled(format!("└{}╱", "─".repeat(inner)), edge)),
                 ])
             }
         }

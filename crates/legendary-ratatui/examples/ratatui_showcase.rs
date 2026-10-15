@@ -28,6 +28,9 @@ fn main() -> io::Result<()> {
         tab: 0,
         list: ListState::default().with_selected(Some(0)),
     };
+    if let Ok(path) = std::env::var("LG_DUMP") {
+        return dump_html(&mut app, &path);
+    }
     let mut term = ratatui::init();
     let res = run(&mut term, &mut app);
     ratatui::restore();
@@ -157,4 +160,35 @@ fn draw(f: &mut Frame, app: &mut App) {
         foot,
     );
     f.render_widget(Scanlines::new(t), area);
+}
+
+/// Headless render of one frame to HTML (for screenshots / docs): `LG_DUMP=out.html`.
+fn dump_html(app: &mut App, path: &str) -> io::Result<()> {
+    use ratatui::{backend::TestBackend, style::Color, Terminal};
+    let (w, h) = (110u16, 34u16);
+    let mut term = Terminal::new(TestBackend::new(w, h)).unwrap();
+    term.draw(|f| draw(f, app)).unwrap();
+    let buf = term.backend().buffer().clone();
+    let css = |c: Color, d: &str| match c {
+        Color::Rgb(r, g, b) => format!("rgb({r},{g},{b})"),
+        _ => d.to_string(),
+    };
+    let mut out = String::from(
+        "<body style='margin:0;background:#000'><pre style=\"margin:0;padding:8px;font:16px/1.15 Menlo,monospace;color:#fff\">",
+    );
+    for y in 0..h {
+        for x in 0..w {
+            let c = &buf[(x, y)];
+            let st = format!(
+                "color:{};background:{}",
+                css(c.fg, "#fff"),
+                css(c.bg, "#000")
+            );
+            let sym = c.symbol().replace('&', "&amp;").replace('<', "&lt;");
+            out.push_str(&format!("<span style=\"{st}\">{sym}</span>"));
+        }
+        out.push('\n');
+    }
+    out.push_str("</pre></body>");
+    std::fs::write(path, out)
 }
