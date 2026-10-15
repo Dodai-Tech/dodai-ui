@@ -103,7 +103,16 @@ fn draw(f: &mut Frame, app: &mut App) {
     let inner = t.block("Status", false);
     let inner_area = inner.inner(right);
     f.render_widget(inner, right);
-    let rows = Layout::vertical([Constraint::Length(1); 8]).split(inner_area);
+    let rows = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(3),
+        Constraint::Length(1),
+        Constraint::Length(1),
+    ])
+    .split(inner_area);
     f.render_widget(
         ratatui::text::Line::from(vec![
             t.badge("online", Tone::Success),
@@ -120,19 +129,28 @@ fn draw(f: &mut Frame, app: &mut App) {
         Paragraph::new("Wake up, samurai. We have a city to burn.").style(t.muted()),
         rows[2],
     );
+    let btns = Layout::horizontal([
+        Constraint::Length(15),
+        Constraint::Length(1),
+        Constraint::Length(14),
+        Constraint::Length(1),
+        Constraint::Length(14),
+        Constraint::Min(0),
+    ])
+    .split(rows[4]);
     f.render_widget(
-        t.button("Jack in", ButtonVariant::Primary, ControlState::Idle),
-        rows[4],
+        t.button_block("Jack in", ButtonVariant::Primary, ControlState::Idle),
+        btns[0],
     );
     f.render_widget(
-        t.button("Hack", ButtonVariant::OutlineSecondary, ControlState::Idle),
-        rows[5],
+        t.button_block("Hack", ButtonVariant::OutlineSecondary, ControlState::Idle),
+        btns[2],
     );
     f.render_widget(
-        t.button("Abort", ButtonVariant::Danger, ControlState::Idle),
-        rows[6],
+        t.button_block("Abort", ButtonVariant::Danger, ControlState::Idle),
+        btns[4],
     );
-    f.render_widget(t.input("", "search the net…", true), rows[7]);
+    f.render_widget(t.input("", "search the net…", true), rows[6]);
 
     f.render_widget(
         t.status_bar(t.theme().name(), "q quit · t theme", foot.width),

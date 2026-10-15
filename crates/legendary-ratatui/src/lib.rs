@@ -20,7 +20,7 @@ use legendary_core::{ButtonVariant, Color as LColor, ControlState, Theme, Tone};
 use ratatui::{
     style::{Color, Modifier, Style},
     symbols::border,
-    text::{Line, Span},
+    text::{Line, Span, Text},
     widgets::{Block, BorderType, Borders},
 };
 
@@ -257,6 +257,50 @@ impl TuiTheme {
         ])
     }
 
+    /// Three-row chamfered slab button (closest a terminal gets to cyberpunk.net).
+    ///
+    /// Solid variants are a filled slab (`▄` / `▀` caps) with the bottom-right corner
+    /// cut via `◤`; outline variants are a box whose bottom-right corner is `╱`.
+    /// Width = label + 6 cells; render into a 3-row area.
+    pub fn button_block<'a>(
+        &self,
+        label: &str,
+        variant: ButtonVariant,
+        state: ControlState,
+    ) -> Text<'a> {
+        let t = self.theme.button(variant, state);
+        let label = self.label(label);
+        let w = label.chars().count() + 6;
+        let inner = w - 2;
+        let body = self.button_style(variant, state);
+        match t.background {
+            Some(bg) => {
+                let cap = Style::new().fg(self.color(bg));
+                Text::from(vec![
+                    Line::styled("▄".repeat(w), cap),
+                    Line::from(vec![
+                        Span::styled(format!("{label:^width$}", width = w - 1), body),
+                        Span::styled("◤", cap),
+                    ]),
+                    Line::styled(format!("{}  ", "▀".repeat(w - 2)), cap),
+                ])
+            }
+            None => {
+                let edge_c = t.border.unwrap_or(t.foreground);
+                let edge = Style::new().fg(self.color(edge_c));
+                Text::from(vec![
+                    Line::styled(format!("┌{}┐", "─".repeat(inner)), edge),
+                    Line::from(vec![
+                        Span::styled("│", edge),
+                        Span::styled(format!("{label:^inner$}"), body),
+                        Span::styled("│", edge),
+                    ]),
+                    Line::styled(format!("└{}╱", "─".repeat(inner)), edge),
+                ])
+            }
+        }
+    }
+
     /// Tab strip. Active tab is a solid chamfered ` LABEL ◤`; inactive tabs are
     /// muted, same width, so nothing shifts when you switch.
     pub fn tabs<'a>(&self, labels: &[&str], active: usize) -> Line<'a> {
@@ -360,6 +404,19 @@ mod tests {
         let hot = t.button_style(ButtonVariant::Outline, ControlState::Hovered);
         assert_eq!(idle.bg, None);
         assert!(hot.bg.is_some());
+    }
+
+    #[test]
+    fn button_block_is_three_equal_rows() {
+        let tui = TuiTheme::new(legendary_core::themes::cyberpunk::night_city());
+        for v in [ButtonVariant::Primary, ButtonVariant::Outline] {
+            let b = tui.button_block("Go", v, ControlState::Idle);
+            assert_eq!(b.lines.len(), 3);
+            let w: Vec<usize> = b.lines.iter().map(Line::width).collect();
+            assert_eq!(w[0], w[1], "{v:?}");
+            assert_eq!(w[0], w[2], "{v:?}");
+            assert!(b.lines[1].to_string().contains("GO"));
+        }
     }
 
     #[test]
