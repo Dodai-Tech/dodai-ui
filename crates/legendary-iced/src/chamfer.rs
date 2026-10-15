@@ -1,4 +1,4 @@
-//! Cut-corner frame (top-left + bottom-right chamfer, as on cyberpunk.net buttons).
+//! Cut-corner frame (bottom-right chamfer only, as on cyberpunk.net buttons).
 
 use iced::{
     mouse,
@@ -6,16 +6,15 @@ use iced::{
     Color, Length, Point, Rectangle, Renderer, Theme,
 };
 
-/// Polygon points of a chamfered rectangle: top-left and bottom-right corners cut.
-pub fn chamfer_points(w: f32, h: f32, cut: f32) -> [Point; 6] {
+/// Polygon points of a chamfered rectangle: only the bottom-right corner cut.
+pub fn chamfer_points(w: f32, h: f32, cut: f32) -> [Point; 5] {
     let c = cut.min(w / 2.0).min(h / 2.0).max(0.0);
     [
-        Point::new(c, 0.0),
+        Point::new(0.0, 0.0),
         Point::new(w, 0.0),
         Point::new(w, h - c),
         Point::new(w - c, h),
         Point::new(0.0, h),
-        Point::new(0.0, c),
     ]
 }
 
@@ -76,16 +75,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn points_cut_two_corners() {
+    fn points_cut_bottom_right_only() {
         let p = chamfer_points(100.0, 50.0, 10.0);
-        assert_eq!(p[0], Point::new(10.0, 0.0));
+        assert_eq!(p[0], Point::new(0.0, 0.0));
+        assert_eq!(p[2], Point::new(100.0, 40.0));
         assert_eq!(p[3], Point::new(90.0, 50.0));
-        assert_eq!(p[5], Point::new(0.0, 10.0));
     }
 
     #[test]
     fn cut_is_clamped() {
         let p = chamfer_points(10.0, 10.0, 99.0);
-        assert_eq!(p[0], Point::new(5.0, 0.0));
+        assert_eq!(p[3], Point::new(5.0, 10.0));
     }
 }

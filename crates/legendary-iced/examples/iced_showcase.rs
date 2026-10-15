@@ -1,4 +1,4 @@
-//! `cargo run -p legendary-iced --example showcase`
+//! `cargo run -p legendary-iced --example iced_showcase`
 
 use iced::widget::{button, column, container, row, stack, text, text_input, Space};
 use iced::{Element, Length, Theme as IcedBase};

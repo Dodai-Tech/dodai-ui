@@ -51,15 +51,15 @@ build-release:
 
 # Ratatui showcase (t = next theme)
 run-ratatui:
-    cargo run -p legendary-ratatui --example showcase
+    cargo run -p legendary-ratatui --example ratatui_showcase
 
 # Iced showcase
 run-iced:
-    cargo run -p legendary-iced --example showcase
+    cargo run -p legendary-iced --example iced_showcase
 
 # GPUI showcase
 run-gpui:
-    cargo run -p legendary-gpui --example showcase
+    cargo run -p legendary-gpui --example gpui_showcase
 
 # Write the web showcase to showcase.html and open it (macOS `open`, Linux `xdg-open`)
 run-topcoat:

@@ -1,4 +1,4 @@
-//! `cargo run -p legendary-ratatui --example showcase`
+//! `cargo run -p legendary-ratatui --example ratatui_showcase`
 //! Keys: `t` next theme · `T` prev · `←/→` tabs · `q` quit.
 
 use std::io;

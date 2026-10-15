@@ -1,4 +1,4 @@
-//! `cargo run -p legendary-gpui --example showcase`
+//! `cargo run -p legendary-gpui --example gpui_showcase`
 //! Click "NEXT THEME" to cycle the Cyberpunk variants.
 
 use gpui::{

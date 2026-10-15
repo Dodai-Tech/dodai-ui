@@ -44,11 +44,11 @@ impl ColorDepth {
     }
 }
 
-/// Cut-corner border: `╱ ╲` diagonals give the cyberpunk chamfer.
+/// Cut-corner border: only the bottom-right corner is cut (`╱`), like cyberpunk.net buttons.
 pub const CHAMFER_BORDER: border::Set<'static> = border::Set {
-    top_left: "╱",
-    top_right: "╲",
-    bottom_left: "╲",
+    top_left: "┌",
+    top_right: "┐",
+    bottom_left: "└",
     bottom_right: "╱",
     vertical_left: "│",
     vertical_right: "│",
@@ -231,30 +231,47 @@ impl TuiTheme {
         s
     }
 
-    /// Single-line chamfered button: `◢ LABEL ◣`, solid when lit, outlined when idle.
+    /// Single-line chamfered button `▌ LABEL ◤` (square left edge, bottom-right corner cut).
+    ///
+    /// Solid variants fill the whole cell run; outline variants sit on a raised
+    /// surface with a border-coloured label and edges so they still read as buttons.
     pub fn button<'a>(&self, label: &str, variant: ButtonVariant, state: ControlState) -> Line<'a> {
         let t = self.theme.button(variant, state);
         let label = self.label(label);
         let edge_color = t.background.or(t.border).unwrap_or(t.foreground);
-        let edge = Style::new().fg(self.color(edge_color));
-        let body = self.button_style(variant, state);
+        let mut edge = Style::new().fg(self.color(edge_color));
+        let mut body = self.button_style(variant, state);
+        if t.background.is_none() {
+            let raised = self.color(self.theme.palette.surface_raised);
+            body = body.bg(raised);
+            edge = edge.bg(raised);
+        }
         Line::from(vec![
-            Span::styled("◢", edge),
+            if t.background.is_some() {
+                Span::styled(" ", body)
+            } else {
+                Span::styled("▌", edge)
+            },
             Span::styled(format!(" {label} "), body),
-            Span::styled("◣", edge),
+            Span::styled("◤", edge),
         ])
     }
 
-    /// Tab strip; the active tab uses [`TuiTheme::highlight`].
+    /// Tab strip. Active tab is a solid chamfered ` LABEL ◤`; inactive tabs are
+    /// muted, same width, so nothing shifts when you switch.
     pub fn tabs<'a>(&self, labels: &[&str], active: usize) -> Line<'a> {
         let mut spans = Vec::new();
         for (i, l) in labels.iter().enumerate() {
             let text = format!(" {} ", self.label(l));
-            spans.push(if i == active {
-                Span::styled(text, self.highlight())
+            if i == active {
+                let hl = self.highlight();
+                let edge = Style::new().fg(hl.bg.unwrap_or_default());
+                spans.push(Span::styled(" ", hl));
+                spans.push(Span::styled(text, hl));
+                spans.push(Span::styled("◤", edge));
             } else {
-                Span::styled(text, self.muted())
-            });
+                spans.push(Span::styled(format!(" {text} "), self.muted()));
+            }
             spans.push(Span::raw(" "));
         }
         Line::from(spans)
@@ -349,7 +366,7 @@ mod tests {
     fn button_line_has_chamfer_edges_and_uppercase() {
         let l = tui().button("ok", ButtonVariant::Primary, ControlState::Idle);
         let s: String = l.spans.iter().map(|s| s.content.as_ref()).collect();
-        assert_eq!(s, "◢ OK ◣");
+        assert_eq!(s, "  OK ◤");
     }
 
     #[test]

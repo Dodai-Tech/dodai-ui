@@ -7,7 +7,7 @@ component styles) feeds four native adapters:
 | Crate | Framework | What you get |
 |---|---|---|
 | [`legendary-core`](crates/legendary-core) | — | `Theme`, `Palette`, tokens, `ThemeSwitcher`, WCAG contrast, ANSI-256 fallback |
-| [`legendary-ratatui`](crates/legendary-ratatui) | Ratatui 0.30 | `TuiTheme`: chamfered `╱ ╲` blocks, `◢ BUTTON ◣`, tabs, badges, inputs, status bar, `Scanlines`, `ThemeBadge` |
+| [`legendary-ratatui`](crates/legendary-ratatui) | Ratatui 0.30 | `TuiTheme`: chamfered `╱ ╲` blocks, `◢ BUTTON ◤`, tabs, badges, inputs, status bar, `Scanlines`, `ThemeBadge` |
 | [`legendary-iced`](crates/legendary-iced) | Iced 0.14 | `IcedTheme`: native `iced::Theme`, button/container/text-input/text styles with neon glow, canvas `ChamferFrame` |
 | [`legendary-gpui`](crates/legendary-gpui) | GPUI 0.2 | `Global` theme store, `cx.legendary()`, `LegendaryStyled` (`.lg_panel()`, `.lg_button()`, `.lg_input()`) |
 | [`legendary-topcoat`](crates/legendary-topcoat) | Topcoat / any SSR web | CSS custom properties, `.lg-btn/.lg-panel/.lg-input/.lg-tag/.lg-tabs/.lg-table`, `clip-path` chamfers, JS theme switcher |

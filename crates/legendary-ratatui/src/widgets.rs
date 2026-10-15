@@ -56,7 +56,7 @@ impl Widget for Scanlines<'_> {
     }
 }
 
-/// `◢ NIGHT CITY ◣  t: next theme` badge for headers/footers.
+/// `◢ NIGHT CITY ◤  t: next theme` badge for headers/footers.
 pub struct ThemeBadge<'a> {
     theme: &'a TuiTheme,
     hint: Option<&'a str>,
@@ -84,7 +84,7 @@ impl<'a> ThemeBadge<'a> {
         let mut spans = vec![
             Span::styled("◢", edge),
             Span::styled(format!(" {name} "), t.highlight()),
-            Span::styled("◣", edge),
+            Span::styled("◤", edge),
         ];
         if let Some(h) = self.hint {
             spans.push(Span::styled(format!("  {h}"), t.muted()));
