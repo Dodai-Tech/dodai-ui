@@ -26,6 +26,7 @@ pub fn input_style(theme: &Theme, focused: bool) -> ShapeStyle {
 pub struct Panel {
     title: Option<SharedString>,
     focused: bool,
+    subheader: Option<AnyElement>,
     children: Vec<AnyElement>,
     refine: Option<Box<dyn FnOnce(gpui::Div) -> gpui::Div>>,
 }
@@ -35,11 +36,17 @@ impl Panel {
         Self {
             title: None,
             focused: false,
+            subheader: None,
             children: Vec::new(),
             refine: None,
         }
     }
     /// Title shown above the content (uppercased per theme).
+    /// Element shown directly below the title (e.g. a toolbar or chips).
+    pub fn subheader(mut self, el: impl IntoElement) -> Self {
+        self.subheader = Some(el.into_any_element());
+        self
+    }
     pub fn title(mut self, t: impl Into<SharedString>) -> Self {
         self.title = Some(t.into());
         self
@@ -88,6 +95,9 @@ impl Panel {
                     .text_color(hsla(p.title))
                     .child(format_label(&t.typography, &title)),
             );
+        }
+        if let Some(sh) = self.subheader {
+            d = d.child(sh);
         }
         d = d.children(self.children);
         match self.refine {

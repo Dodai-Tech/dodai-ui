@@ -66,6 +66,145 @@ struct Showcase {
     clicks: u32,
 }
 
+impl Showcase {
+    /// Per-section animation chips (hover a chip for its duration popover).
+    fn chips(
+        &self,
+        title: &'static str,
+        t: &Theme,
+        me: &gpui::Entity<Showcase>,
+        cx: &mut Context<Self>,
+    ) -> gpui::AnyElement {
+        let tid = title
+            .bytes()
+            .fold(0u32, |a, b| a.wrapping_mul(31).wrapping_add(b as u32));
+        let kind = self.sec_kind.get(title).copied();
+        let chip = |id: (&'static str, u32), label: SharedString, on: bool| {
+            div()
+                .id(id)
+                .px(px(6.0))
+                .py(px(1.0))
+                .rounded(px(4.0))
+                .text_size(px(10.0))
+                .cursor_pointer()
+                .border_1()
+                .border_color(hsla(t.palette.border))
+                .text_color(hsla(if on {
+                    t.palette.on_primary
+                } else {
+                    t.palette.text_muted
+                }))
+                .when(on, |d| d.bg(hsla(t.palette.primary)))
+                .child(label)
+        };
+        let mut chips = div()
+            .flex()
+            .flex_none()
+            .flex_wrap()
+            .items_center()
+            .justify_end()
+            .gap(px(4.0))
+            .child(
+                div()
+                    .text_size(px(10.0))
+                    .text_color(hsla(t.palette.text_muted))
+                    .child("Animations"),
+            );
+        let me_g = me.clone();
+        chips = chips.child(
+            chip(("sec-g", tid), "Global".into(), kind.is_none()).on_click(move |_, _, cx| {
+                me_g.update(cx, |s, cx| {
+                    s.sec_kind.remove(title);
+                    s.replay += 1;
+                    cx.notify();
+                })
+            }),
+        );
+        for (ki, k) in EntryKind::ALL.iter().copied().enumerate().skip(1) {
+            let on = kind.is_some_and(|s| s.contains(k));
+            let ms = kind.map_or(0, |s| s.ms_of(k));
+            let open =
+                on && (self.pill_hover == Some((title, k)) || self.pop_hover == Some((title, k)));
+            let me_c = me.clone();
+            let me_p = me.clone();
+            let uid = tid.wrapping_mul(8).wrapping_add(ki as u32);
+            let text: SharedString = if on && ms > 0 {
+                format!("{} · {ms}ms", k.label()).into()
+            } else {
+                k.label().into()
+            };
+            let mut wrap = div()
+                .id(("pw", uid))
+                .relative()
+                .on_hover(cx.listener(move |s, h: &bool, _, cx| {
+                    if *h {
+                        s.pill_hover = Some((title, k));
+                    } else if s.pill_hover == Some((title, k)) {
+                        s.pill_hover = None;
+                    }
+                    cx.notify();
+                }))
+                .child(chip(("sec-k", uid), text, on).on_click(move |_, _, cx| {
+                    me_c.update(cx, |s, cx| {
+                        let cur = s.sec_kind.get(title).copied().unwrap_or(EntrySet::NONE);
+                        s.sec_kind.insert(title, cur.toggled(k));
+                        s.replay += 1;
+                        cx.notify();
+                    })
+                }));
+            if open {
+                let popup = div()
+                    .id(("pp", uid))
+                    .absolute()
+                    .top(px(17.0))
+                    .right_0()
+                    .w(px(230.0))
+                    .p(px(t.spacing.md))
+                    .rounded(px(6.0))
+                    .border_1()
+                    .border_color(hsla(t.palette.border_strong))
+                    .bg(hsla(t.palette.surface_raised))
+                    .flex()
+                    .flex_col()
+                    .gap(px(t.spacing.xs))
+                    .on_hover(cx.listener(move |s, h: &bool, _, cx| {
+                        if *h {
+                            s.pop_hover = Some((title, k));
+                        } else if s.pop_hover == Some((title, k)) {
+                            s.pop_hover = None;
+                        }
+                        cx.notify();
+                    }))
+                    .child(Muted::new(format!("{} duration", k.label())))
+                    .child(
+                        Slider::new(("pd", uid), ms as f32)
+                            .range(0.0, 2000.0)
+                            .step(50.0)
+                            .show_value(true)
+                            .format(|v| {
+                                if v < 1.0 {
+                                    "default".to_string()
+                                } else {
+                                    format!("{v:.0} ms")
+                                }
+                            })
+                            .on_change(move |v, _, cx| {
+                                me_p.update(cx, |s, cx| {
+                                    let cur =
+                                        s.sec_kind.get(title).copied().unwrap_or(EntrySet::NONE);
+                                    s.sec_kind.insert(title, cur.with_ms(k, v as u16));
+                                    cx.notify();
+                                })
+                            }),
+                    );
+                wrap = wrap.child(gpui::deferred(popup).with_priority(60));
+            }
+            chips = chips.child(wrap);
+        }
+        chips.into_any_element()
+    }
+}
+
 fn cat_icon(name: &str) -> dodai_gpui::IconName {
     use dodai_gpui::IconName as I;
     match name {
@@ -106,7 +245,13 @@ impl Render for Showcase {
         let me_ck = me.clone();
         let me_sl = me.clone();
 
-        let section = |title: &'static str| Panel::new().title(title);
+        macro_rules! section {
+            ($t:expr) => {
+                Panel::new()
+                    .title($t)
+                    .subheader(self.chips($t, &t, &me, cx))
+            };
+        }
 
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let col = || div().flex().flex_col().gap(gap);
@@ -387,7 +532,7 @@ impl Render for Showcase {
         }
 
         let family = family_title(cx.dodai().switcher().current_family());
-        let ds_panel = section("Design system")
+        let ds_panel = section!("Design system")
             .focused(true)
             .child(DesignSystemSelector::new("ds-select"));
         let theme_panel = Panel::new()
@@ -875,7 +1020,7 @@ impl Render for Showcase {
             .entry(EntryKind::ALL[s.anim_kind])
             .set_global(cx);
         };
-        let anim_settings = section("Animation settings")
+        let anim_settings = section!("Animation settings")
             .child(Muted::new(
                 "Applies to every component: entry style, easing and duration. Charts, sliders, progress, knobs and gauges also animate their values in.",
             ))
@@ -978,12 +1123,12 @@ impl Render for Showcase {
                     ),
             );
         }
-        let anim_curves = section("Easing curves")
+        let anim_curves = section!("Easing curves")
             .child(Muted::new(
                 "Each dot loops with its curve (1.6 s). Custom curves: Easing::CubicBezier.",
             ))
             .child(curves);
-        let anim_loading = section("Loading · looping")
+        let anim_loading = section!("Loading · looping")
             .child(Muted::new("Spinner 900 ms · IndeterminateBar 1.4 s · Skeleton 1.6 s (linear). Override with .motion(Motion)."))
             .child(
                 row()
@@ -992,7 +1137,7 @@ impl Render for Showcase {
                     .child(div().w(px(200.0)).child(IndeterminateBar::new("an-ib")))
                     .child(div().w(px(200.0)).child(Skeleton::new("an-sk"))),
             );
-        let anim_docs = section("What animates")
+        let anim_docs = section!("What animates")
             .child(Label::new("Entry — every component"))
             .child(Muted::new("Fade, Rise, Drop, Slide from left/right or None; set globally above or per section with the dropdown on each section header, where you can add and remove effects to compose them (Fade + Rise + Slide ...). The set overrides every component in that section; Global removes the override and no chips selected means no animation."))
             .child(Label::new("Value-in — progress, slider, range slider, knob, gauge, bar, line, pie (sweep), radial bar, histogram"))
@@ -1001,11 +1146,11 @@ impl Render for Showcase {
             .child(Muted::new("Slices ease out 6 px on hover (Tween), selected slice keeps a half pop and an accent outline (selected_color)."))
             .child(Label::new("Composable — Curve"))
             .child(Muted::new("Curve::from(easing).window(a, b) / reverse / ping_pong / then / pipe / stagger(i, n, overlap)."));
-        let sections: Vec<(&'static str, &'static str, gpui::AnyElement)> = vec![
+        let sections: Vec<(&'static str, &'static str, gpui::AnyElement, &'static str)> = vec![
             (
                 "Foundations",
                 "Text · Heading · Label · Mono",
-                section("Text")
+                section!("Text")
                     .child(Heading::new("Heading 1").level(1))
                     .child(Heading::new("Heading 2"))
                     .child(Heading::new("Heading 3").level(3))
@@ -1013,44 +1158,50 @@ impl Render for Showcase {
                     .child(Muted::new("Muted text"))
                     .child(Mono::new("mono_text() // 0xDEADBEEF"))
                     .into_any_element(),
+                "Text",
             ),
             (
                 "Actions",
                 "Buttons · IconButton · FAB",
-                section("Buttons").child(buttons).into_any_element(),
+                section!("Buttons").child(buttons).into_any_element(),
+                "Buttons",
             ),
             (
                 "Actions",
                 "Toolbar · Snackbar",
-                section("Toolbar · Snackbar")
+                section!("Toolbar · Snackbar")
                     .child(w_toolbar)
                     .child(w_snack)
                     .into_any_element(),
+                "Toolbar · Snackbar",
             ),
             (
                 "Data display",
                 "Tags · Chips · Badges",
-                section("Tags").child(tags).into_any_element(),
+                section!("Tags").child(tags).into_any_element(),
+                "Tags",
             ),
             (
                 "Data display",
                 "Badges · Rating · Tooltips",
-                section("Rating · Stepper · Badges · Tooltips")
+                section!("Rating · Stepper · Badges · Tooltips")
                     .child(w_misc)
                     .into_any_element(),
+                "Rating · Stepper · Badges · Tooltips",
             ),
             (
                 "Data display",
                 "List · Divider",
-                section("List · Divider")
+                section!("List · Divider")
                     .child(list)
                     .child(Divider::new())
                     .into_any_element(),
+                "List · Divider",
             ),
             (
                 "Data display",
                 "Tree · Timeline · Empty state",
-                section("Tree · timeline · empty state")
+                section!("Tree · timeline · empty state")
                     .child(
                         row()
                             .child(div().w(px(240.0)).child(tree))
@@ -1061,11 +1212,12 @@ impl Render for Showcase {
                             ),
                     )
                     .into_any_element(),
+                "Tree · timeline · empty state",
             ),
             (
                 "Data display",
                 "Tooltip · Rich tooltip",
-                section("Tooltip")
+                section!("Tooltip")
                     .child(
                         div()
                             .id("tip")
@@ -1075,48 +1227,54 @@ impl Render for Showcase {
                             .child("Hover me"),
                     )
                     .into_any_element(),
+                "Tooltip",
             ),
             (
                 "Inputs",
                 "Toggle · Checkbox · Radio",
-                section("Toggle · Checkbox · Radio")
+                section!("Toggle · Checkbox · Radio")
                     .child(controls)
                     .child(radios)
                     .into_any_element(),
+                "Toggle · Checkbox · Radio",
             ),
             (
                 "Inputs",
                 "Slider · Progress",
-                section("Slider · Progress")
+                section!("Slider · Progress")
                     .child(sliders)
                     .into_any_element(),
+                "Slider · Progress",
             ),
             (
                 "Inputs",
                 "Stepped slider · ticks · formatted value",
-                section("Slider (stepped, ticks, value readout)")
+                section!("Slider (stepped, ticks, value readout)")
                     .child(stepped)
                     .into_any_element(),
+                "Slider (stepped, ticks, value readout)",
             ),
             (
                 "Inputs",
                 "Range slider",
-                section("Range slider")
+                section!("Range slider")
                     .child(w_range)
                     .child(w_range_txt)
                     .into_any_element(),
+                "Range slider",
             ),
             (
                 "Inputs",
                 "Knob · Vertical slider · Vertical range slider",
-                section("Knob · Vertical sliders")
+                section!("Knob · Vertical sliders")
                     .child(dials)
                     .into_any_element(),
+                "Knob · Vertical sliders",
             ),
             (
                 "Inputs",
                 "Input field",
-                section("Input")
+                section!("Input")
                     .child(InputBox::new().placeholder("search the net…"))
                     .child(InputBox::new().focused(true).child("focused input"))
                     .child(
@@ -1128,90 +1286,122 @@ impl Render for Showcase {
                             .child("legacy dodai_input container"),
                     )
                     .into_any_element(),
+                "Input",
             ),
             (
                 "Inputs",
                 "Search view · SearchBar",
-                section("Search view").child(w_search).into_any_element(),
+                section!("Search view").child(w_search).into_any_element(),
+                "Search view",
             ),
             (
                 "Inputs",
                 "Tag field · chips",
-                section("Tag field").child(w_tags).into_any_element(),
+                section!("Tag field").child(w_tags).into_any_element(),
+                "Tag field",
             ),
             (
                 "Inputs",
                 "Date picker · Time picker",
-                section("Date / time pickers")
+                section!("Date / time pickers")
                     .child(pickers)
                     .into_any_element(),
+                "Date / time pickers",
             ),
             (
                 "Navigation",
                 "Tabs",
-                section("Tabs")
+                section!("Tabs")
                     .child(tabs)
                     .child(Muted::new(format!("active tab: {}", self.tab)))
                     .into_any_element(),
+                "Tabs",
             ),
             (
                 "Navigation",
                 "App bar · Cards · FAB · Navigation",
-                section("App bar · Cards · FAB · Navigation")
+                section!("App bar · Cards · FAB · Navigation")
                     .child(structure)
                     .into_any_element(),
+                "App bar · Cards · FAB · Navigation",
             ),
             (
                 "Charts",
                 "Line · Bar · Area · Stacked charts",
-                section("Line & bar charts")
+                section!("Line & bar charts")
                     .child(charts_xy)
                     .into_any_element(),
+                "Line & bar charts",
             ),
             (
                 "Charts",
                 "Pie · Donut · Gauge · Sparkline",
-                section("Pie · donut · gauge · sparkline")
+                section!("Pie · donut · gauge · sparkline")
                     .child(charts_round)
                     .into_any_element(),
+                "Pie · donut · gauge · sparkline",
             ),
             (
                 "Charts",
                 "Stacked area · Histogram · Waterfall",
-                section("Area · histogram · waterfall")
+                section!("Area · histogram · waterfall")
                     .child(charts_more1)
                     .into_any_element(),
+                "Area · histogram · waterfall",
             ),
             (
                 "Charts",
                 "Funnel · Treemap · Radial bar",
-                section("Funnel · treemap · radial bar")
+                section!("Funnel · treemap · radial bar")
                     .child(charts_more2)
                     .into_any_element(),
+                "Funnel · treemap · radial bar",
             ),
             (
                 "Charts",
                 "Candlestick · Box plot · Bubble",
-                section("Candlestick · box plot · bubble")
+                section!("Candlestick · box plot · bubble")
                     .child(charts_more3)
                     .into_any_element(),
+                "Candlestick · box plot · bubble",
             ),
             (
                 "Charts",
                 "Radar · Scatter · Heatmap",
-                section("Radar · scatter · heatmap")
+                section!("Radar · scatter · heatmap")
                     .child(charts_misc)
                     .into_any_element(),
+                "Radar · scatter · heatmap",
             ),
-            ("Animation", "Settings", anim_settings.into_any_element()),
-            ("Animation", "Easing curves", anim_curves.into_any_element()),
-            ("Animation", "Loading", anim_loading.into_any_element()),
-            ("Animation", "What animates", anim_docs.into_any_element()),
+            (
+                "Animation",
+                "Settings",
+                anim_settings.into_any_element(),
+                "Animation settings",
+            ),
+            (
+                "Animation",
+                "Easing curves",
+                anim_curves.into_any_element(),
+                "Easing curves",
+            ),
+            (
+                "Animation",
+                "Loading",
+                anim_loading.into_any_element(),
+                "Loading · looping",
+            ),
+            (
+                "Animation",
+                "What animates",
+                anim_docs.into_any_element(),
+                "What animates",
+            ),
         ];
 
         let cats: Vec<&'static str> = {
             let mut v: Vec<&'static str> = Vec::new();
-            for (c, _, _) in &sections {
+            for (c, _, _, _) in &sections {
                 if !v.contains(c) {
                     v.push(c);
                 }
@@ -1226,7 +1416,7 @@ impl Render for Showcase {
         let count_in = |c: Option<&'static str>| {
             sections
                 .iter()
-                .filter(|(sc, title, _)| {
+                .filter(|(sc, title, _, _)| {
                     c.is_none_or(|c| c == *sc)
                         && (query.is_empty()
                             || !fuzzy_filter(&query, &[format!("{sc} {title}")]).is_empty())
@@ -1292,7 +1482,7 @@ impl Render for Showcase {
             .child(theme_panel);
         let mut shown = 0;
         let mut last_cat = "";
-        for (c, title, el) in sections {
+        for (c, title, el, key) in sections {
             let in_cat = selected_cat.is_none_or(|sc| sc == c);
             let hit =
                 query.is_empty() || !fuzzy_filter(&query, &[format!("{c} {title}")]).is_empty();
@@ -1305,156 +1495,12 @@ impl Render for Showcase {
                 last_cat = c;
             }
             shown += 1;
-            let kind = self.sec_kind.get(title).copied();
-            let chip = |id: (&'static str, u32), label: SharedString, on: bool| {
-                div()
-                    .id(id)
-                    .px(px(6.0))
-                    .py(px(1.0))
-                    .rounded(px(4.0))
-                    .text_size(px(10.0))
-                    .cursor_pointer()
-                    .border_1()
-                    .border_color(hsla(t.palette.border))
-                    .text_color(hsla(if on {
-                        t.palette.on_primary
-                    } else {
-                        t.palette.text_muted
-                    }))
-                    .when(on, |d| d.bg(hsla(t.palette.primary)))
-                    .child(label)
-            };
-            let mut chips = div()
-                .flex()
-                .flex_none()
-                .flex_wrap()
-                .items_center()
-                .justify_end()
-                .gap(px(4.0))
-                .child(
-                    div()
-                        .text_size(px(10.0))
-                        .text_color(hsla(t.palette.text_muted))
-                        .child("Animations"),
-                );
-            let me_g = me.clone();
-            chips = chips.child(
-                chip(("sec-g", shown as u32), "Global".into(), kind.is_none()).on_click(
-                    move |_, _, cx| {
-                        me_g.update(cx, |s, cx| {
-                            s.sec_kind.remove(title);
-                            s.replay += 1;
-                            cx.notify();
-                        })
-                    },
-                ),
-            );
-            for (ki, k) in EntryKind::ALL.iter().copied().enumerate().skip(1) {
-                let on = kind.is_some_and(|s| s.contains(k));
-                let ms = kind.map_or(0, |s| s.ms_of(k));
-                let open = on
-                    && (self.pill_hover == Some((title, k)) || self.pop_hover == Some((title, k)));
-                let me_c = me.clone();
-                let me_p = me.clone();
-                let uid = (shown * 8 + ki as i32) as u32;
-                let text: SharedString = if on && ms > 0 {
-                    format!("{} · {ms}ms", k.label()).into()
-                } else {
-                    k.label().into()
-                };
-                let mut wrap = div()
-                    .id(("pw", uid))
-                    .relative()
-                    .on_hover(cx.listener(move |s, h: &bool, _, cx| {
-                        if *h {
-                            s.pill_hover = Some((title, k));
-                        } else if s.pill_hover == Some((title, k)) {
-                            s.pill_hover = None;
-                        }
-                        cx.notify();
-                    }))
-                    .child(chip(("sec-k", uid), text, on).on_click(move |_, _, cx| {
-                        me_c.update(cx, |s, cx| {
-                            let cur = s.sec_kind.get(title).copied().unwrap_or(EntrySet::NONE);
-                            s.sec_kind.insert(title, cur.toggled(k));
-                            s.replay += 1;
-                            cx.notify();
-                        })
-                    }));
-                if open {
-                    let popup = div()
-                        .id(("pp", uid))
-                        .absolute()
-                        .top(px(17.0))
-                        .right_0()
-                        .w(px(230.0))
-                        .p(px(t.spacing.md))
-                        .rounded(px(6.0))
-                        .border_1()
-                        .border_color(hsla(t.palette.border_strong))
-                        .bg(hsla(t.palette.surface_raised))
-                        .flex()
-                        .flex_col()
-                        .gap(px(t.spacing.xs))
-                        .on_hover(cx.listener(move |s, h: &bool, _, cx| {
-                            if *h {
-                                s.pop_hover = Some((title, k));
-                            } else if s.pop_hover == Some((title, k)) {
-                                s.pop_hover = None;
-                            }
-                            cx.notify();
-                        }))
-                        .child(Muted::new(format!("{} duration", k.label())))
-                        .child(
-                            Slider::new(("pd", uid), ms as f32)
-                                .range(0.0, 2000.0)
-                                .step(50.0)
-                                .show_value(true)
-                                .format(|v| {
-                                    if v < 1.0 {
-                                        "default".to_string()
-                                    } else {
-                                        format!("{v:.0} ms")
-                                    }
-                                })
-                                .on_change(move |v, _, cx| {
-                                    me_p.update(cx, |s, cx| {
-                                        let cur = s
-                                            .sec_kind
-                                            .get(title)
-                                            .copied()
-                                            .unwrap_or(EntrySet::NONE);
-                                        s.sec_kind.insert(title, cur.with_ms(k, v as u16));
-                                        cx.notify();
-                                    })
-                                }),
-                        );
-                    wrap = wrap.child(gpui::deferred(popup).with_priority(60));
-                }
-                chips = chips.child(wrap);
-            }
+            let kind = self.sec_kind.get(key).copied();
             let content = match kind {
                 None => el,
                 Some(set) => dodai_gpui::EntryScope::new(set, el).into_any_element(),
             };
-            body = body.child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap(px(4.0))
-                    .w_full()
-                    .min_w_0()
-                    .child(chips)
-                    .child(
-                        div()
-                            .flex()
-                            .flex_col()
-                            .flex_none()
-                            .w_full()
-                            .min_w_0()
-                            .child(content),
-                    ),
-            );
+            body = body.child(div().flex().flex_col().w_full().min_w_0().child(content));
         }
         if shown == 0 {
             body = body.child(
