@@ -1,6 +1,6 @@
 //! Resolved, framework-agnostic component styles derived from a [`Theme`].
 
-use crate::{Color, Theme};
+use crate::{Color, Theme, Tone};
 
 /// Button emphasis.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -58,7 +58,159 @@ pub struct InputTokens {
     pub selection: Color,
 }
 
+/// Tag / badge tokens.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TagTokens {
+    pub background: Option<Color>,
+    pub foreground: Color,
+    pub border: Option<Color>,
+}
+
+/// Tab tokens.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TabTokens {
+    pub background: Option<Color>,
+    pub foreground: Color,
+    /// Underline / indicator colour (active tab).
+    pub indicator: Option<Color>,
+}
+
+/// Toggle / checkbox / radio tokens.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ToggleTokens {
+    pub track: Color,
+    pub thumb: Color,
+    pub border: Color,
+}
+
+/// Progress bar tokens.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ProgressTokens {
+    pub track: Color,
+    pub fill: Color,
+    pub border: Color,
+}
+
+/// List / menu row tokens.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ListItemTokens {
+    pub background: Option<Color>,
+    pub foreground: Color,
+    /// Accent bar at the row's left edge when selected.
+    pub marker: Option<Color>,
+}
+
 impl Theme {
+    /// Tag / badge: `solid` fills with the tone, otherwise outlined.
+    pub fn tag(&self, tone: Tone, solid: bool) -> TagTokens {
+        let c = self.palette.tone(tone);
+        if solid {
+            TagTokens {
+                background: Some(c),
+                foreground: self.on(c),
+                border: None,
+            }
+        } else {
+            TagTokens {
+                background: Some(c.with_alpha(0.12)),
+                foreground: c,
+                border: Some(c),
+            }
+        }
+    }
+
+    /// Tab: the active tab is highlighted with an indicator.
+    pub fn tab(&self, active: bool, hovered: bool) -> TabTokens {
+        let p = &self.palette;
+        if active {
+            TabTokens {
+                background: Some(p.primary),
+                foreground: p.on_primary,
+                indicator: Some(p.primary),
+            }
+        } else if hovered {
+            TabTokens {
+                background: Some(p.surface_raised),
+                foreground: p.text,
+                indicator: None,
+            }
+        } else {
+            TabTokens {
+                background: None,
+                foreground: p.text_muted,
+                indicator: None,
+            }
+        }
+    }
+
+    /// Toggle / checkbox / radio.
+    pub fn toggle(&self, on: bool, state: ControlState) -> ToggleTokens {
+        let p = &self.palette;
+        if state == ControlState::Disabled {
+            return ToggleTokens {
+                track: p.surface_raised,
+                thumb: p.text_disabled,
+                border: p.border,
+            };
+        }
+        let lit = matches!(
+            state,
+            ControlState::Hovered | ControlState::Pressed | ControlState::Focused
+        );
+        if on {
+            ToggleTokens {
+                track: if lit { p.primary_hover } else { p.primary },
+                thumb: p.on_primary,
+                border: p.primary,
+            }
+        } else {
+            ToggleTokens {
+                track: p.surface_raised,
+                thumb: if lit { p.text } else { p.text_muted },
+                border: if lit { p.border_strong } else { p.border },
+            }
+        }
+    }
+
+    /// Progress bar in a status tone (`None` = brand colour).
+    pub fn progress(&self, tone: Option<Tone>) -> ProgressTokens {
+        let p = &self.palette;
+        ProgressTokens {
+            track: p.surface_raised,
+            fill: tone.map_or(p.primary, |t| p.tone(t)),
+            border: p.border,
+        }
+    }
+
+    /// List / menu row.
+    pub fn list_item(&self, selected: bool, hovered: bool) -> ListItemTokens {
+        let p = &self.palette;
+        if selected {
+            ListItemTokens {
+                background: Some(p.selection),
+                foreground: p.text,
+                marker: Some(p.primary),
+            }
+        } else if hovered {
+            ListItemTokens {
+                background: Some(p.surface_raised),
+                foreground: p.text,
+                marker: None,
+            }
+        } else {
+            ListItemTokens {
+                background: None,
+                foreground: p.text_muted,
+                marker: None,
+            }
+        }
+    }
+
+    /// Divider / separator colour.
+    pub fn divider(&self) -> Color {
+        self.palette.border
+    }
+
     /// Resolve a button style.
     pub fn button(&self, variant: ButtonVariant, state: ControlState) -> ButtonTokens {
         let p = &self.palette;

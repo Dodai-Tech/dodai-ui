@@ -6,7 +6,7 @@
 //! type, uppercase labels, hard 0-radius edges, 48 px controls and
 //! chamfered (cut-corner) buttons/panels.
 
-use crate::{Color, Effects, Mode, Palette, Shape, Spacing, Theme, ThemeMeta, Typography};
+use crate::{Color, Corners, Effects, Mode, Palette, Shape, Spacing, Theme, ThemeMeta, Typography};
 
 const YELLOW: u32 = 0xfcee0a;
 const YELLOW_HOVER: u32 = 0xf2e900;
@@ -43,6 +43,7 @@ fn spacing() -> Spacing {
 
 fn shape() -> Shape {
     Shape {
+        corners: Corners::BOTTOM_RIGHT,
         radius: 0.0,
         chamfer: 16.0,
         border_width: 2.0,
