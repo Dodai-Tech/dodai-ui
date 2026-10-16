@@ -145,6 +145,7 @@ pub fn entry(
     let default = motion.duration;
     div()
         .flex()
+        .flex_col()
         .child(el)
         .relative()
         .id(SharedString::from(format!("entry-{name}")))
