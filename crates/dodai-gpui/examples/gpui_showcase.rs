@@ -1565,7 +1565,7 @@ impl Render for Showcase {
             .child(ds_panel);
         let mut shown = 0;
         let mut last_cat = "";
-        for (c, title, el, key) in sections {
+        for (c, title, el, _key) in sections {
             let in_cat = selected_cat.is_none_or(|sc| sc == c);
             let hit =
                 query.is_empty() || !fuzzy_filter(&query, &[format!("{c} {title}")]).is_empty();
