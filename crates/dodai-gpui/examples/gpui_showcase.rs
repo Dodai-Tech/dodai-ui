@@ -28,6 +28,8 @@ struct Showcase {
     filter: Entity<TextInput>,
     search: Entity<TextInput>,
     cat: usize,
+    cat_count: usize,
+    side_focus: FocusHandle,
     rating: u32,
     stepper: i32,
     range: (f32, f32),
@@ -865,6 +867,7 @@ impl Render for Showcase {
             }
             v
         };
+        self.cat_count = cats.len() + 1;
         let query = self.filter.read(cx).text().to_string();
         let selected_cat = self.cat.checked_sub(1).and_then(|i| cats.get(i).copied());
 
@@ -880,6 +883,19 @@ impl Render for Showcase {
                 .count()
         };
         let mut side = div()
+            .id("side-nav")
+            .track_focus(&self.side_focus)
+            .on_key_down(cx.listener(|s, e: &KeyDownEvent, _, cx| {
+                let last = s.cat_count.saturating_sub(1);
+                match e.keystroke.key.as_str() {
+                    "down" => s.cat = (s.cat + 1).min(last),
+                    "up" => s.cat = s.cat.saturating_sub(1),
+                    "home" => s.cat = 0,
+                    "end" => s.cat = last,
+                    _ => return,
+                }
+                cx.notify();
+            }))
             .flex()
             .flex_col()
             .gap(px(t.spacing.xs))
@@ -898,8 +914,9 @@ impl Render for Showcase {
             side = side.child(
                 ListItem::new(("cat", idx), format!("{name}  ·  {n}"))
                     .selected(self.cat == idx)
-                    .on_click(move |_, _, cx| {
+                    .on_click(move |_, w, cx| {
                         m.update(cx, |s, cx| {
+                            w.focus(&s.side_focus);
                             s.cat = idx;
                             cx.notify()
                         })
@@ -995,6 +1012,8 @@ fn main() {
                         filter,
                         search,
                         cat: 0,
+                        cat_count: 1,
+                        side_focus: cx.focus_handle(),
                         rating: 3,
                         stepper: 5,
                         range: (0.2, 0.7),

@@ -15,6 +15,7 @@ use gpui::{
     ParentElement, PathBuilder, Pixels, RenderOnce, SharedString, StatefulInteractiveElement,
     Styled, Window,
 };
+use std::rc::Rc;
 
 // ───────────────────────────── pure helpers ─────────────────────────────
 
@@ -64,7 +65,7 @@ pub fn fmt_num(v: f32) -> String {
     }
 }
 
-fn trim(v: f32) -> String {
+pub(crate) fn trim(v: f32) -> String {
     let s = format!("{v:.1}");
     s.strip_suffix(".0").map(str::to_string).unwrap_or(s)
 }
@@ -117,6 +118,18 @@ pub fn polar(cx: f32, cy: f32, r: f32, frac: f32) -> (f32, f32) {
     (cx + r * th.cos(), cy + r * th.sin())
 }
 
+/// Staircase version of a polyline: horizontal then vertical. Pure.
+pub fn step_points(p: &[(f32, f32)]) -> Vec<(f32, f32)> {
+    let mut out = Vec::with_capacity(p.len() * 2);
+    for (i, &(x, y)) in p.iter().enumerate() {
+        if let Some(&(_, py)) = i.checked_sub(1).and_then(|j| p.get(j)) {
+            out.push((x, py));
+        }
+        out.push((x, y));
+    }
+    out
+}
+
 /// Arc points between two turn fractions. Pure.
 pub fn turn_arc(cx: f32, cy: f32, r: f32, a: f32, b: f32) -> Vec<(f32, f32)> {
     let n = (((b - a).abs() * 360.0 / 4.0).ceil() as usize).max(2);
@@ -134,13 +147,13 @@ pub fn norm(v: f32, lo: f32, hi: f32) -> f32 {
     }
 }
 
-fn pts(o: gpui::Point<Pixels>, p: &[(f32, f32)]) -> Vec<gpui::Point<Pixels>> {
+pub(crate) fn pts(o: gpui::Point<Pixels>, p: &[(f32, f32)]) -> Vec<gpui::Point<Pixels>> {
     p.iter()
         .map(|&(x, y)| point(o.x + px(x), o.y + px(y)))
         .collect()
 }
 
-fn stroke(
+pub(crate) fn stroke(
     w: &mut Window,
     o: gpui::Point<Pixels>,
     p: &[(f32, f32)],
@@ -155,7 +168,7 @@ fn stroke(
     }
 }
 
-fn fill(w: &mut Window, o: gpui::Point<Pixels>, p: &[(f32, f32)], c: Hsla) {
+pub(crate) fn fill(w: &mut Window, o: gpui::Point<Pixels>, p: &[(f32, f32)], c: Hsla) {
     let mut pb = PathBuilder::fill();
     pb.add_polygon(&pts(o, p), true);
     if let Ok(path) = pb.build() {
@@ -164,12 +177,12 @@ fn fill(w: &mut Window, o: gpui::Point<Pixels>, p: &[(f32, f32)], c: Hsla) {
 }
 
 /// Glow `(radius)` when the theme glows. Pure.
-fn glow_of(t: &Theme) -> Option<f32> {
+pub(crate) fn glow_of(t: &Theme) -> Option<f32> {
     t.effects.glow_enabled().then(|| t.effects.glow_radius())
 }
 
 /// Stroke with glow layers underneath.
-fn glow_stroke(
+pub(crate) fn glow_stroke(
     w: &mut Window,
     o: gpui::Point<Pixels>,
     p: &[(f32, f32)],
@@ -209,11 +222,23 @@ impl Series {
     }
 }
 
-fn series_color(t: &Theme, s: &Series, i: usize) -> Color {
+pub(crate) fn series_color(t: &Theme, s: &Series, i: usize) -> Color {
     s.color.unwrap_or_else(|| t.palette.series_at(i))
 }
 
-fn y_range(series: &[Series], zero: bool) -> (f32, f32, Vec<f32>) {
+pub(crate) fn y_range(
+    series: &[Series],
+    zero: bool,
+    fixed: Option<(f32, f32)>,
+) -> (f32, f32, Vec<f32>) {
+    if let Some((lo, hi)) = fixed {
+        let ticks = nice_ticks(lo, hi, 4);
+        return (
+            lo,
+            hi,
+            ticks.into_iter().filter(|v| *v >= lo && *v <= hi).collect(),
+        );
+    }
     let vals = series.iter().flat_map(|s| s.values.iter().copied());
     let (mut lo, mut hi) = vals.fold((f32::MAX, f32::MIN), |(l, h), v| (l.min(v), h.max(v)));
     if lo > hi {
@@ -278,14 +303,14 @@ impl RenderOnce for Legend {
 
 // ─────────────────────────── axes frame (shared) ───────────────────────────
 
-fn label_style(t: &Theme, d: gpui::Div) -> gpui::Div {
+pub(crate) fn label_style(t: &Theme, d: gpui::Div) -> gpui::Div {
     d.font_family(first_family(t.typography.mono))
         .text_size(px(t.typography.size_xs))
         .text_color(hsla(t.palette.text_muted))
 }
 
 /// Y-axis labels (top = max) + plot + optional X labels underneath.
-fn framed(
+pub(crate) fn framed(
     t: &Theme,
     y_labels: Vec<String>,
     x_labels: Vec<SharedString>,
@@ -317,6 +342,33 @@ fn framed(
     div().flex().w_full().child(ycol).child(right)
 }
 
+/// Number formatter shared by chart configuration.
+pub type NumFmt = Rc<dyn Fn(f32) -> String>;
+
+pub(crate) fn fmt_with(f: &Option<NumFmt>, v: f32) -> String {
+    f.as_ref().map_or_else(|| fmt_num(v), |f| f(v))
+}
+
+/// Optional chart title above `body`.
+pub(crate) fn titled(t: &Theme, title: Option<SharedString>, body: gpui::Div) -> gpui::Div {
+    match title {
+        None => body,
+        Some(s) => div()
+            .flex()
+            .flex_col()
+            .gap(px(t.spacing.sm))
+            .w_full()
+            .child(
+                div()
+                    .font_family(first_family(t.typography.display))
+                    .text_size(px(t.typography.size_md))
+                    .text_color(hsla(t.palette.text))
+                    .child(s),
+            )
+            .child(body),
+    }
+}
+
 // ─────────────────────────────── LineChart ───────────────────────────────
 
 /// Line / area chart with gridlines, axes, optional smoothing, point markers
@@ -331,6 +383,13 @@ pub struct LineChart {
     smooth: bool,
     points: bool,
     legend: bool,
+    y_bounds: Option<(f32, f32)>,
+    fmt: Option<NumFmt>,
+    grid: bool,
+    stroke_w: f32,
+    stepped: bool,
+    zero: bool,
+    title: Option<SharedString>,
 }
 
 impl LineChart {
@@ -344,7 +403,49 @@ impl LineChart {
             smooth: false,
             points: true,
             legend: true,
+            y_bounds: None,
+            fmt: None,
+            grid: true,
+            stroke_w: 2.0,
+            stepped: false,
+            zero: true,
+            title: None,
         }
+    }
+    /// Fix the Y axis to `lo..=hi` (default: fit data, including zero).
+    pub fn y_range(mut self, lo: f32, hi: f32) -> Self {
+        self.y_bounds = Some((lo, hi));
+        self
+    }
+    /// Custom number formatter for axis labels and tooltips.
+    pub fn format(mut self, f: impl Fn(f32) -> String + 'static) -> Self {
+        self.fmt = Some(Rc::new(f));
+        self
+    }
+    /// Show horizontal gridlines (default on).
+    pub fn grid(mut self, g: bool) -> Self {
+        self.grid = g;
+        self
+    }
+    /// Line thickness in px (default 2).
+    pub fn stroke_width(mut self, w: f32) -> Self {
+        self.stroke_w = w;
+        self
+    }
+    /// Step (staircase) interpolation instead of straight segments.
+    pub fn stepped(mut self, s: bool) -> Self {
+        self.stepped = s;
+        self
+    }
+    /// Force the Y axis to include zero (default on).
+    pub fn include_zero(mut self, z: bool) -> Self {
+        self.zero = z;
+        self
+    }
+    /// Title above the chart.
+    pub fn title(mut self, t: impl Into<SharedString>) -> Self {
+        self.title = Some(t.into());
+        self
     }
     /// X-axis category labels.
     pub fn labels<S: Into<SharedString>>(mut self, l: impl IntoIterator<Item = S>) -> Self {
@@ -378,7 +479,7 @@ impl LineChart {
 impl RenderOnce for LineChart {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        let (lo, hi, ticks) = y_range(&self.series, true);
+        let (lo, hi, ticks) = y_range(&self.series, self.zero, self.y_bounds);
         let n = self
             .series
             .iter()
@@ -387,7 +488,13 @@ impl RenderOnce for LineChart {
             .unwrap_or(0);
         let grid = hsla(t.palette.border);
         let glow = glow_of(&t);
-        let (area, smooth) = (self.area, self.smooth);
+        let (area, smooth, stepped, sw, show_grid) = (
+            self.area,
+            self.smooth,
+            self.stepped,
+            self.stroke_w,
+            self.grid,
+        );
         let lines: Vec<(Hsla, Vec<f32>)> = self
             .series
             .iter()
@@ -400,7 +507,7 @@ impl RenderOnce for LineChart {
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
                 let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                for f in &tick_fracs {
+                for f in tick_fracs.iter().filter(|_| show_grid) {
                     let y = bh - f * bh;
                     stroke(w, b.origin, &[(0.0, y), (bw, y)], 1.0, grid, false);
                 }
@@ -410,15 +517,17 @@ impl RenderOnce for LineChart {
                         .iter()
                         .enumerate()
                         .map(|(i, v)| {
-                            let x = if m > 1 {
-                                i as f32 / (m - 1) as f32 * bw
-                            } else {
-                                bw / 2.0
-                            };
+                            // Centre of category slot `i`, matching the x labels.
+                            let x = (i as f32 + 0.5) / m as f32 * bw;
                             (x, bh - norm(*v, lo, hi) * bh)
                         })
                         .collect();
-                    let p = if smooth { smooth_points(&raw, 8) } else { raw };
+                    let raw = if stepped { step_points(&raw) } else { raw };
+                    let p = if smooth && !stepped {
+                        smooth_points(&raw, 8)
+                    } else {
+                        raw
+                    };
                     if p.len() < 2 {
                         continue;
                     }
@@ -428,7 +537,7 @@ impl RenderOnce for LineChart {
                         poly.push((p[0].0, bh));
                         fill(w, b.origin, &poly, scale_alpha(*c, 0.18));
                     }
-                    glow_stroke(w, b.origin, &p, 2.0, *c, glow);
+                    glow_stroke(w, b.origin, &p, sw, *c, glow);
                 }
             },
         )
@@ -441,11 +550,7 @@ impl RenderOnce for LineChart {
                 let c = hsla(series_color(&t, s, si));
                 let m = s.values.len();
                 for (i, v) in s.values.iter().enumerate() {
-                    let fx = if m > 1 {
-                        i as f32 / (m - 1) as f32
-                    } else {
-                        0.5
-                    };
+                    let fx = (i as f32 + 0.5) / m as f32;
                     let fy = 1.0 - norm(*v, lo, hi);
                     let label = self.labels.get(i).cloned().unwrap_or_default();
                     plot = plot.child(
@@ -463,7 +568,7 @@ impl RenderOnce for LineChart {
                             .tooltip(DodaiTooltip::text(format!(
                                 "{} {label}: {}",
                                 s.name,
-                                fmt_num(*v)
+                                fmt_with(&self.fmt, *v)
                             ))),
                     );
                 }
@@ -477,14 +582,14 @@ impl RenderOnce for LineChart {
         let mut root = div().flex().flex_col().gap(px(t.spacing.sm)).w_full();
         root = root.child(framed(
             &t,
-            ticks.iter().map(|v| fmt_num(*v)).collect(),
+            ticks.iter().map(|v| fmt_with(&self.fmt, *v)).collect(),
             x_labels,
             plot,
         ));
         if self.legend && self.series.len() > 1 {
             root = root.child(Legend::of_series(&t, &self.series));
         }
-        root
+        titled(&t, self.title.clone(), root)
     }
 }
 
@@ -500,6 +605,11 @@ pub struct BarChart {
     horizontal: bool,
     stacked: bool,
     legend: bool,
+    y_max: Option<f32>,
+    fmt: Option<NumFmt>,
+    value_labels: bool,
+    bar_width: f32,
+    title: Option<SharedString>,
 }
 
 impl BarChart {
@@ -512,7 +622,37 @@ impl BarChart {
             horizontal: false,
             stacked: false,
             legend: true,
+            y_max: None,
+            fmt: None,
+            value_labels: false,
+            bar_width: 32.0,
+            title: None,
         }
+    }
+    /// Fix the value-axis maximum (default: fit data).
+    pub fn max(mut self, m: f32) -> Self {
+        self.y_max = Some(m);
+        self
+    }
+    /// Custom number formatter for axis labels, tooltips and value labels.
+    pub fn format(mut self, f: impl Fn(f32) -> String + 'static) -> Self {
+        self.fmt = Some(Rc::new(f));
+        self
+    }
+    /// Print the value above each bar (vertical, grouped only).
+    pub fn value_labels(mut self, v: bool) -> Self {
+        self.value_labels = v;
+        self
+    }
+    /// Maximum bar thickness in px (default 32).
+    pub fn bar_width(mut self, w: f32) -> Self {
+        self.bar_width = w;
+        self
+    }
+    /// Title above the chart.
+    pub fn title(mut self, t: impl Into<SharedString>) -> Self {
+        self.title = Some(t.into());
+        self
     }
     pub fn labels<S: Into<SharedString>>(mut self, l: impl IntoIterator<Item = S>) -> Self {
         self.labels = l.into_iter().map(Into::into).collect();
@@ -556,7 +696,12 @@ pub fn bar_max(series: &[Series], stacked: bool) -> f32 {
 impl RenderOnce for BarChart {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        let ticks = nice_ticks(0.0, bar_max(&self.series, self.stacked), 4);
+        let ticks = nice_ticks(
+            0.0,
+            self.y_max
+                .unwrap_or_else(|| bar_max(&self.series, self.stacked)),
+            4,
+        );
         let top = *ticks.last().unwrap_or(&1.0);
         let n = self
             .series
@@ -577,7 +722,7 @@ impl RenderOnce for BarChart {
                 .tooltip(DodaiTooltip::text(format!(
                     "{} {label}: {}",
                     s.name,
-                    fmt_num(v)
+                    fmt_with(&self.fmt, v)
                 )))
                 .child(shaped(&t.shape, style).size_full());
             if h {
@@ -637,7 +782,7 @@ impl RenderOnce for BarChart {
                     let mut stack = div()
                         .h(relative(norm(total, 0.0, top)))
                         .w_full()
-                        .max_w(px(48.0))
+                        .max_w(px(self.bar_width * 1.5))
                         .flex()
                         .flex_col_reverse();
                     for (si, s) in self.series.iter().enumerate() {
@@ -655,10 +800,22 @@ impl RenderOnce for BarChart {
                             div()
                                 .h_full()
                                 .flex_1()
-                                .max_w(px(32.0))
+                                .max_w(px(self.bar_width))
                                 .flex()
-                                .items_end()
-                                .child(bar(si, i, v, norm(v, 0.0, top))),
+                                .flex_col()
+                                .justify_end()
+                                .children(self.value_labels.then(|| {
+                                    label_style(&t, div())
+                                        .flex()
+                                        .justify_center()
+                                        .child(fmt_with(&self.fmt, v))
+                                }))
+                                .child(
+                                    div()
+                                        .w_full()
+                                        .h(relative(norm(v, 0.0, top)))
+                                        .child(bar(si, i, v, 1.0)),
+                                ),
                         );
                     }
                 }
@@ -701,7 +858,7 @@ impl RenderOnce for BarChart {
                 .ml(px(56.0))
                 .flex()
                 .justify_between()
-                .children(ticks.iter().map(|v| div().child(fmt_num(*v))));
+                .children(ticks.iter().map(|v| div().child(fmt_with(&self.fmt, *v))));
             div()
                 .flex()
                 .flex_col()
@@ -711,7 +868,7 @@ impl RenderOnce for BarChart {
         } else {
             framed(
                 &t,
-                ticks.iter().map(|v| fmt_num(*v)).collect(),
+                ticks.iter().map(|v| fmt_with(&self.fmt, *v)).collect(),
                 labels,
                 plot,
             )
@@ -725,7 +882,7 @@ impl RenderOnce for BarChart {
         if self.legend && self.series.len() > 1 {
             root = root.child(Legend::of_series(&t, &self.series));
         }
-        root
+        titled(&t, self.title.clone(), root)
     }
 }
 
@@ -1090,7 +1247,7 @@ impl RenderOnce for RadarChart {
         let t = theme_of(cx);
         let n = self.axes.len().max(3);
         let max = self.max.unwrap_or_else(|| {
-            *nice_ticks(0.0, y_range(&self.series, true).1, 4)
+            *nice_ticks(0.0, y_range(&self.series, true, None).1, 4)
                 .last()
                 .unwrap_or(&1.0)
         });
