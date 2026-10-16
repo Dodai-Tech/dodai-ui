@@ -532,14 +532,17 @@ impl Render for Showcase {
         }
 
         let family = family_title(cx.dodai().switcher().current_family());
-        let ds_panel = section!("Design system")
+        let ds_panel = Panel::new()
+            .title("Design system")
             .focused(true)
-            .child(DesignSystemSelector::new("ds-select"));
-        let theme_panel = Panel::new()
-            .title(family)
             .child(
                 row()
-                    .child(Label::new("Theme"))
+                    .child(Label::new("Design system"))
+                    .child(DesignSystemSelector::new("ds-select")),
+            )
+            .child(
+                row()
+                    .child(Label::new(format!("Theme · {family}")))
                     .child(ThemeSelector::new("theme-select")),
             )
             .child(
@@ -1478,8 +1481,7 @@ impl Render for Showcase {
             .w_full()
             .min_w_0()
             .p(px(if narrow { t.spacing.md } else { t.spacing.xl }))
-            .child(ds_panel)
-            .child(theme_panel);
+            .child(ds_panel);
         let mut shown = 0;
         let mut last_cat = "";
         for (c, title, el, key) in sections {
