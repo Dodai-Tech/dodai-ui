@@ -10,10 +10,10 @@ use gpui::{
 };
 use legendary_core::{ButtonVariant, Theme, Tone};
 use legendary_gpui::{
-    cycle_next, cycle_prev, glow_intensity, hsla, install, set_glow_intensity, theme_of,
-    ActiveLegendary, Button, Checkbox, Direction, Divider, Heading, InputBox, Knob, Label, LegendaryStyled,
-    LegendaryTooltip, ListItem, Mono, Muted, Panel, ProgressBar, Radio, Scanlines, Slider, Tabs,
-    Tag, ThemeSwitcherBar, Toggle,
+    cycle_next, cycle_prev, glow_intensity, hsla, install, scanlines_enabled, set_glow_intensity,
+    set_scanlines, theme_of, ActiveLegendary, Button, Checkbox, Direction, Divider, Heading,
+    InputBox, Knob, Label, LegendaryStyled, LegendaryTooltip, ListItem, Mono, Muted, Panel,
+    ProgressBar, Radio, Scanlines, Slider, Tabs, Tag, ThemeSwitcherBar, Toggle,
 };
 
 struct Showcase {
@@ -35,6 +35,7 @@ impl Render for Showcase {
         let me = cx.entity();
         let gap = px(t.spacing.md);
         let glow = glow_intensity(cx);
+        let scan = scanlines_enabled(cx);
         let theme_name = cx.legendary().theme().name();
 
         let me_tab = me.clone();
@@ -219,7 +220,22 @@ impl Render for Showcase {
                                 set_glow_intensity(cx, g + 0.25);
                             }),
                     )
-                    .child(Muted::new("keys: t / T switch theme")),
+                    .child(
+                        Button::new(
+                            "scan",
+                            if scan {
+                                "Scanlines: on"
+                            } else {
+                                "Scanlines: off"
+                            },
+                        )
+                        .variant(ButtonVariant::Outline)
+                        .on_click(move |_, _, cx| {
+                            let on = scanlines_enabled(cx);
+                            set_scanlines(cx, !on);
+                        }),
+                    )
+                    .child(Muted::new("keys: t / T theme · l scanlines")),
             );
 
         let body = div()
@@ -282,6 +298,10 @@ impl Render for Showcase {
             .id("root")
             .track_focus(&self.focus)
             .on_key_down(cx.listener(|_, e: &KeyDownEvent, _, cx| {
+                if e.keystroke.key == "l" {
+                    let on = scanlines_enabled(cx);
+                    set_scanlines(cx, !on);
+                }
                 if e.keystroke.key == "t" {
                     if e.keystroke.modifiers.shift {
                         cycle_prev(cx)

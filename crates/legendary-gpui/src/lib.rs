@@ -149,6 +149,27 @@ pub fn set_glow_intensity(cx: &mut App, intensity: f32) {
     cx.refresh_windows();
 }
 
+/// Whether the fine scanline texture is on for the active theme.
+pub fn scanlines_enabled(cx: &App) -> bool {
+    cx.legendary().theme().effects.scanlines
+}
+
+/// Turn the scanline texture (component bodies + [`Scanlines`] overlay) on/off
+/// on **every** theme (so it survives switching) and repaint.
+pub fn set_scanlines(cx: &mut App, on: bool) {
+    let g = cx.global_mut::<LegendaryTheme>();
+    let idx = g.switcher.index();
+    let themes = g
+        .switcher
+        .themes()
+        .iter()
+        .map(|t| t.clone().with_scanlines(on))
+        .collect();
+    g.switcher = ThemeSwitcher::with_themes(themes);
+    g.switcher.select_index(idx);
+    cx.refresh_windows();
+}
+
 /// Switch to the next theme; call `cx.refresh_windows()` afterwards to repaint.
 pub fn cycle_next(cx: &mut App) {
     cx.global_mut::<LegendaryTheme>().switcher.cycle_next();

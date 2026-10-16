@@ -33,6 +33,12 @@ impl Theme {
         self
     }
 
+    /// Builder: turn the fine horizontal scanline texture on or off.
+    pub fn with_scanlines(mut self, on: bool) -> Self {
+        self.effects.scanlines = on;
+        self
+    }
+
     pub fn id(&self) -> &'static str {
         self.meta.id
     }

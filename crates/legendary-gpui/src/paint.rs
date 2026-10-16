@@ -27,6 +27,8 @@ pub struct ShapeStyle {
     pub glow: Option<(Hsla, f32)>,
     /// Hard offset shadow colour + offset in px.
     pub shadow: Option<(Hsla, f32)>,
+    /// Fine horizontal scanline texture over the fill (from `effects.scanlines`).
+    pub scanlines: bool,
 }
 
 impl ShapeStyle {
@@ -51,7 +53,87 @@ impl ShapeStyle {
             glow: (glow && fx.glow_enabled()).then(|| (hsla(fx.glow_color()), fx.glow_radius())),
             shadow: (shadow && fx.hard_shadow > 0.0)
                 .then(|| (hsla(theme.palette.primary_active), fx.hard_shadow)),
+            scanlines: fx.scanlines && fill.is_some(),
         }
+    }
+}
+
+/// Scanline pitch in px (one dark 1px line per pitch).
+pub const SCANLINE_PITCH: f32 = 3.0;
+/// Scanline alpha (black).
+pub const SCANLINE_ALPHA: f32 = 0.18;
+
+/// Horizontal extent `(x0, x1)` of `shape` at row `y` in a `w`×`h` box, or
+/// `None` when the row is outside. Follows chamfers and rounded corners.
+pub fn row_span(shape: &Shape, w: f32, h: f32, y: f32) -> Option<(f32, f32)> {
+    if y < 0.0 || y > h || w <= 0.0 {
+        return None;
+    }
+    match shape.kind() {
+        ShapeKind::Chamfered => {
+            let pts = shape.outline(w, h);
+            let (mut lo, mut hi) = (f32::MAX, f32::MIN);
+            for i in 0..pts.len() {
+                let (a, b) = (pts[i], pts[(i + 1) % pts.len()]);
+                let (y0, y1) = (a.1.min(b.1), a.1.max(b.1));
+                if y < y0 || y > y1 {
+                    continue;
+                }
+                let x = if (b.1 - a.1).abs() < 1e-6 {
+                    // horizontal edge: both ends count
+                    lo = lo.min(a.0.min(b.0));
+                    hi = hi.max(a.0.max(b.0));
+                    continue;
+                } else {
+                    a.0 + (b.0 - a.0) * (y - a.1) / (b.1 - a.1)
+                };
+                lo = lo.min(x);
+                hi = hi.max(x);
+            }
+            (lo <= hi).then_some((lo, hi))
+        }
+        ShapeKind::Rounded => {
+            let r = shape.radius.min(w / 2.0).min(h / 2.0);
+            let dy = if y < r {
+                r - y
+            } else if y > h - r {
+                y - (h - r)
+            } else {
+                0.0
+            };
+            let inset = if dy > 0.0 && r > 0.0 {
+                r - (r * r - dy * dy).max(0.0).sqrt()
+            } else {
+                0.0
+            };
+            Some((inset, w - inset))
+        }
+        ShapeKind::Square => Some((0.0, w)),
+    }
+}
+
+/// Paint scanline rows inside `bounds`, clipped to `shape`.
+pub fn paint_scanlines(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape) {
+    let w: f32 = bounds.size.width.into();
+    let h: f32 = bounds.size.height.into();
+    let bw = shape.border_width;
+    let mut y = SCANLINE_PITCH - 1.0;
+    while y < h {
+        if y > bw && y < h - bw {
+            if let Some((x0, x1)) = row_span(shape, w, h, y) {
+                let (x0, x1) = (x0.max(bw), x1.min(w - bw));
+                if x1 > x0 {
+                    window.paint_quad(gpui::fill(
+                        Bounds::new(
+                            point(bounds.origin.x + px(x0), bounds.origin.y + px(y)),
+                            gpui::size(px(x1 - x0), px(1.0)),
+                        ),
+                        gpui::hsla(0.0, 0.0, 0.0, SCANLINE_ALPHA),
+                    ));
+                }
+            }
+        }
+        y += SCANLINE_PITCH;
     }
 }
 
@@ -131,6 +213,9 @@ pub fn paint_polygon(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape,
     if let Some(c) = s.fill {
         fill_path(window, poly(bounds.origin, &full, 0.0), c);
     }
+    if s.scanlines {
+        paint_scanlines(window, bounds, shape);
+    }
     if let (Some(c), bw) = (s.stroke, s.stroke_width) {
         if bw > 0.0 {
             let pts = inset_outline(shape, w, h, bw / 2.0);
@@ -165,6 +250,19 @@ pub fn shaped(shape: &Shape, style: ShapeStyle) -> Div {
         }
         kind => {
             let mut d = base;
+            if style.scanlines {
+                let sh = shape.clone();
+                d = d.child(
+                    canvas(
+                        |_, _, _| (),
+                        move |b, _, window, _| paint_scanlines(window, b, &sh),
+                    )
+                    .absolute()
+                    .top_0()
+                    .left_0()
+                    .size_full(),
+                );
+            }
             if kind == ShapeKind::Rounded {
                 d = d.rounded(px(shape.radius));
             }
@@ -236,6 +334,25 @@ pub fn scaled_shape(shape: &Shape, side: f32) -> Shape {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn row_span_follows_shape() {
+        let mut sh = legendary_core::themes::cyberpunk::night_city().shape;
+        sh.chamfer = 10.0;
+        sh.radius = 0.0;
+        sh.corners = legendary_core::Corners::BOTTOM_RIGHT;
+        assert_eq!(sh.kind(), ShapeKind::Chamfered);
+        assert_eq!(row_span(&sh, 100.0, 40.0, 5.0), Some((0.0, 100.0)));
+        let (_, x1) = row_span(&sh, 100.0, 40.0, 39.0).unwrap();
+        assert!(x1 < 95.0, "cut corner narrows the last row, got {x1}");
+        assert_eq!(row_span(&sh, 100.0, 40.0, 41.0), None);
+        let mut r = crate::testing::light_rounded().shape;
+        r.radius = 8.0;
+        r.chamfer = 0.0;
+        let (x0, _) = row_span(&r, 100.0, 40.0, 1.0).unwrap();
+        assert!(x0 > 1.0);
+        assert_eq!(row_span(&r, 100.0, 40.0, 20.0), Some((0.0, 100.0)));
+    }
     use crate::testing::{light_rounded, square};
     use legendary_core::themes;
 

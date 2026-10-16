@@ -206,6 +206,7 @@ impl RenderOnce for Spinner {
                             stroke_width: 0.0,
                             glow: None,
                             shadow: None,
+                            scanlines: false,
                         };
                         let _ = glow;
                         el = el.child(
