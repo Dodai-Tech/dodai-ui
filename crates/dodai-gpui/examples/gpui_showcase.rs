@@ -89,11 +89,14 @@ fn section_id(title: &str) -> u32 {
 
 impl Showcase {
     /// Entry set applied to a section's components (`None` = app default).
-    fn scope_of(&self, title: &'static str) -> Option<EntrySet> {
+    fn scope_of(&self, title: &'static str, cx: &gpui::App) -> EntrySet {
         if self.sec_mode.get(title) == Some(&Player::Stopped) {
-            return Some(EntrySet::NONE);
+            return EntrySet::NONE;
         }
-        self.sec_kind.get(title).copied()
+        self.sec_kind
+            .get(title)
+            .copied()
+            .unwrap_or(Motion::of(cx).entry)
     }
 
     /// Replay one section only (re-keys just its subtree).
@@ -344,7 +347,8 @@ impl Render for Showcase {
                 Panel::new()
                     .title($t)
                     .subheader(self.chips($t, &t, &me, cx))
-                    .scope(self.scope_of($t))
+                    .scope(Some(self.scope_of($t, cx)))
+                    .scope_key(self.sec_replay.get($t).copied().unwrap_or(0))
             };
         }
 
@@ -1574,18 +1578,7 @@ impl Render for Showcase {
                 last_cat = c;
             }
             shown += 1;
-            let sid = section_id(key)
-                .wrapping_mul(1000)
-                .wrapping_add(self.sec_replay.get(key).copied().unwrap_or(0));
-            body = body.child(
-                div()
-                    .id(("sec", sid))
-                    .flex()
-                    .flex_col()
-                    .w_full()
-                    .min_w_0()
-                    .child(el),
-            );
+            body = body.child(div().flex().flex_col().w_full().min_w_0().child(el));
         }
         if shown == 0 {
             body = body.child(

@@ -5,8 +5,8 @@ use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use dodai_core::Theme;
 use gpui::{
-    div, px, AnyElement, AnyView, App, AppContext as _, Context, IntoElement, ParentElement,
-    Render, RenderOnce, SharedString, Styled, Window,
+    div, px, AnyElement, AnyView, App, AppContext as _, Context, InteractiveElement as _,
+    IntoElement, ParentElement, Render, RenderOnce, SharedString, Styled, Window,
 };
 
 /// Paint style of a panel (pure).
@@ -28,6 +28,7 @@ pub struct Panel {
     focused: bool,
     subheader: Option<AnyElement>,
     scope: Option<crate::motion::EntrySet>,
+    scope_key: u32,
     children: Vec<AnyElement>,
     refine: Option<Box<dyn FnOnce(gpui::Div) -> gpui::Div>>,
 }
@@ -39,6 +40,7 @@ impl Panel {
             focused: false,
             subheader: None,
             scope: None,
+            scope_key: 0,
             children: Vec::new(),
             refine: None,
         }
@@ -48,6 +50,12 @@ impl Panel {
     /// keeps the app-wide motion).
     pub fn scope(mut self, set: Option<crate::motion::EntrySet>) -> Self {
         self.scope = set;
+        self
+    }
+    /// Changing this restarts the inner components' entry animations (the
+    /// panel itself is untouched, so it does not flicker).
+    pub fn scope_key(mut self, k: u32) -> Self {
+        self.scope_key = k;
         self
     }
     /// Element shown directly below the title (e.g. a toolbar or chips).
@@ -109,11 +117,14 @@ impl Panel {
         }
         match self.scope {
             Some(set) => {
-                d = d.children(
-                    self.children
-                        .into_iter()
-                        .map(|c| crate::motion::EntryScope::new(set, c).into_any_element()),
-                );
+                let key = self.scope_key.wrapping_mul(256);
+                d = d.children(self.children.into_iter().enumerate().map(|(i, c)| {
+                    div()
+                        .id(("pscope", key.wrapping_add(i as u32)))
+                        .flex()
+                        .flex_col()
+                        .child(crate::motion::EntryScope::new(set, c))
+                }));
             }
             None => d = d.children(self.children),
         }
