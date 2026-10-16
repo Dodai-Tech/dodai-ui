@@ -287,16 +287,25 @@ impl TuiTheme {
                 ])
             }
             None => {
-                let edge_c = t.border.unwrap_or(t.foreground);
-                let edge = Style::new().fg(self.color(edge_c));
-                Text::from(vec![
-                    Line::from(Span::styled(format!("┌{}┐", "─".repeat(inner)), edge)),
+                let edge_c = self.color(t.border.unwrap_or(t.foreground));
+                let raised = self.color(self.theme.palette.surface_raised);
+                let edge = Style::new().fg(edge_c).bg(raised);
+                let cut = Style::new().fg(edge_c);
+                let line = |l: &str, mid: &str, r: &str, rs: Style| {
                     Line::from(vec![
-                        Span::styled("│", edge),
-                        Span::styled(format!("{label:^inner$}"), body),
-                        Span::styled("│", edge),
+                        Span::styled(l.to_string(), edge),
+                        Span::styled(mid.to_string(), edge),
+                        Span::styled(r.to_string(), rs),
+                    ])
+                };
+                Text::from(vec![
+                    line("▛", &"▀".repeat(inner), "▜", edge),
+                    Line::from(vec![
+                        Span::styled("▌", edge),
+                        Span::styled(format!("{label:^inner$}"), body.bg(raised)),
+                        Span::styled("▐", edge),
                     ]),
-                    Line::from(Span::styled(format!("└{}╱", "─".repeat(inner)), edge)),
+                    line("▙", &"▄".repeat(inner), "◤", cut),
                 ])
             }
         }

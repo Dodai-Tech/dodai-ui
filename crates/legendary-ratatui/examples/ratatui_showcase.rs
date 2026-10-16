@@ -174,7 +174,7 @@ fn dump_html(app: &mut App, path: &str) -> io::Result<()> {
         _ => d.to_string(),
     };
     let mut out = String::from(
-        "<body style='margin:0;background:#000'><pre style=\"margin:0;padding:8px;font:16px/1.15 Menlo,monospace;color:#fff\">",
+        "<body style='margin:0;background:#000'><pre style=\"margin:0;padding:8px;font:16px/1.0 Menlo,monospace;color:#fff\">",
     );
     for y in 0..h {
         for x in 0..w {
