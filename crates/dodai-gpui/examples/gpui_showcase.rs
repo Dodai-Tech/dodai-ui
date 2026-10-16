@@ -20,7 +20,9 @@ use dodai_gpui::{
     Sparkline, StackedAreaChart, TagField, TextInput, TimePicker, Timeline, TimelineEvent, Toolbar,
     TreeItem, TreeView, Treemap, Waterfall,
 };
-use dodai_gpui::{Easing, EntryKind, IndeterminateBar, Motion, Select, Skeleton, Spinner};
+use dodai_gpui::{
+    Easing, EntryKind, EntrySet, IndeterminateBar, Motion, Select, Skeleton, Spinner,
+};
 use gpui::{
     div, prelude::*, px, size, App, Application, Bounds, Context, Entity, FocusHandle,
     KeyDownEvent, Window, WindowBounds, WindowOptions,
@@ -33,7 +35,7 @@ struct Showcase {
     anim_ease: usize,
     anim_ms: f32,
     replay: usize,
-    sec_kind: std::collections::HashMap<&'static str, usize>,
+    sec_kind: std::collections::HashMap<&'static str, EntrySet>,
     filter: Entity<TextInput>,
     search: Entity<TextInput>,
     cat: usize,
@@ -974,7 +976,7 @@ impl Render for Showcase {
             );
         let anim_docs = section("What animates")
             .child(Label::new("Entry — every component"))
-            .child(Muted::new("Fade, Rise, Drop, Slide from left/right or None; set globally above or per section with the dropdown on each section header, which overrides the style of every component in that section."))
+            .child(Muted::new("Fade, Rise, Drop, Slide from left/right or None; set globally above or per section with the dropdown on each section header, where you can add and remove effects to compose them (Fade + Rise + Slide ...). The set overrides every component in that section; Global removes the override and no chips selected means no animation."))
             .child(Label::new("Value-in — progress, slider, range slider, knob, gauge, bar, line, pie (sweep), radial bar, histogram"))
             .child(Muted::new("Values grow from zero to their target using the same duration and easing."))
             .child(Label::new("Pie / donut — hover pop and selection"))
@@ -1282,30 +1284,48 @@ impl Render for Showcase {
                 last_cat = c;
             }
             shown += 1;
-            let kind = self.sec_kind.get(title).copied().unwrap_or(0);
-            let me_s = me.clone();
-            let mut opts = vec!["Components: global"];
-            opts.extend(EntryKind::ALL.iter().map(|k| k.label()));
-            body = body.child(
-                row().justify_end().child(Muted::new(title)).child(
-                    div().w(px(190.0)).child(
-                        Select::new(("sec-anim", shown as u32))
-                            .options(opts)
-                            .selected(Some(kind))
-                            .on_change(move |i, _, cx| {
-                                me_s.update(cx, |s, cx| {
-                                    s.sec_kind.insert(title, i);
-                                    s.replay += 1;
-                                    cx.notify();
-                                })
-                            }),
-                    ),
-                ),
+            let kind = self.sec_kind.get(title).copied();
+            let mut chips = row().justify_end().child(Muted::new(title));
+            let me_g = me.clone();
+            chips = chips.child(
+                Button::new(("sec-g", shown as u32), "Global")
+                    .variant(if kind.is_none() {
+                        ButtonVariant::Primary
+                    } else {
+                        ButtonVariant::Outline
+                    })
+                    .on_click(move |_, _, cx| {
+                        me_g.update(cx, |s, cx| {
+                            s.sec_kind.remove(title);
+                            s.replay += 1;
+                            cx.notify();
+                        })
+                    }),
             );
-            body = body.child(if kind == 0 {
-                el
-            } else {
-                dodai_gpui::EntryScope::new(EntryKind::ALL[kind - 1], el).into_any_element()
+            for (ki, k) in EntryKind::ALL.iter().copied().enumerate().skip(1) {
+                let on = kind.is_some_and(|s| s.contains(k));
+                let me_c = me.clone();
+                chips = chips.child(
+                    Button::new(("sec-k", (shown * 8 + ki as i32) as u32), k.label())
+                        .variant(if on {
+                            ButtonVariant::Primary
+                        } else {
+                            ButtonVariant::Outline
+                        })
+                        .on_click(move |_, _, cx| {
+                            me_c.update(cx, |s, cx| {
+                                let cur = s.sec_kind.get(title).copied().unwrap_or(EntrySet::NONE);
+                                s.sec_kind.insert(title, cur.toggled(k));
+                                s.replay += 1;
+                                cx.notify();
+                            })
+                        }),
+                );
+            }
+            body = body.child(chips);
+            body = body.child(match kind {
+                None => el,
+                Some(set) => dodai_gpui::EntryScope::new(set, el).into_any_element(),
             });
         }
         if shown == 0 {

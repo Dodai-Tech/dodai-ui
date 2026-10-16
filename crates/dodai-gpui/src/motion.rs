@@ -135,7 +135,7 @@ pub fn entry(
     motion: Motion,
 ) -> AnimationElement<Stateful<Div>> {
     let kind = motion.entry;
-    let anim = if kind == EntryKind::None {
+    let anim = if kind.is_empty() {
         Animation::new(Duration::from_millis(1))
     } else {
         motion.animation()
@@ -160,7 +160,7 @@ pub fn entry(
 /// Replays whenever the surrounding keyed subtree is rebuilt.
 pub fn grow(window: &mut gpui::Window, cx: &mut App, name: &'static str) -> f32 {
     let m = Motion::of(cx);
-    if m.entry == EntryKind::None {
+    if m.entry.is_empty() {
         return 1.0;
     }
     let st = window.use_keyed_state(SharedString::from(format!("grow-{name}")), cx, |_, _| {
@@ -223,7 +223,7 @@ pub struct Motion {
     pub duration: Duration,
     pub easing: Easing,
     /// How components enter (see [`EntryKind`]).
-    pub entry: EntryKind,
+    pub entry: EntrySet,
 }
 
 /// How a component animates in when it first appears.
@@ -241,7 +241,59 @@ pub enum EntryKind {
     SlideRight,
 }
 
+/// A composition of entry effects (opacity multiplies, offsets add).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub struct EntrySet(u8);
+
+impl EntrySet {
+    pub const NONE: EntrySet = EntrySet(0);
+    pub fn of(k: EntryKind) -> Self {
+        EntrySet(k.bit())
+    }
+    pub fn with(self, k: EntryKind) -> Self {
+        EntrySet(self.0 | k.bit())
+    }
+    pub fn without(self, k: EntryKind) -> Self {
+        EntrySet(self.0 & !k.bit())
+    }
+    pub fn toggled(self, k: EntryKind) -> Self {
+        EntrySet(self.0 ^ k.bit())
+    }
+    pub fn contains(self, k: EntryKind) -> bool {
+        self.0 & k.bit() != 0
+    }
+    pub fn is_empty(self) -> bool {
+        self.0 == 0
+    }
+    /// Combined `(opacity, dx, dy)` at progress `p`. Pure.
+    pub fn frame(self, p: f32) -> (f32, f32, f32) {
+        EntryKind::ALL.iter().filter(|k| self.contains(**k)).fold(
+            (1.0, 0.0, 0.0),
+            |(o, x, y), k| {
+                let (ko, kx, ky) = k.frame(p);
+                (o * ko, x + kx, y + ky)
+            },
+        )
+    }
+}
+
+impl From<EntryKind> for EntrySet {
+    fn from(k: EntryKind) -> Self {
+        EntrySet::of(k)
+    }
+}
+
 impl EntryKind {
+    fn bit(self) -> u8 {
+        match self {
+            EntryKind::None => 0,
+            EntryKind::Fade => 1,
+            EntryKind::Rise => 2,
+            EntryKind::Drop => 4,
+            EntryKind::SlideLeft => 8,
+            EntryKind::SlideRight => 16,
+        }
+    }
     pub const ALL: [EntryKind; 6] = [
         EntryKind::None,
         EntryKind::Fade,
@@ -279,7 +331,7 @@ impl Default for Motion {
         Self {
             duration: Duration::from_millis(220),
             easing: Easing::EaseOut,
-            entry: EntryKind::Fade,
+            entry: EntrySet::of(EntryKind::Fade),
         }
     }
 }
@@ -291,7 +343,7 @@ impl Motion {
         Self {
             duration,
             easing,
-            entry: EntryKind::Fade,
+            entry: EntrySet::of(EntryKind::Fade),
         }
     }
     pub fn duration(mut self, d: Duration) -> Self {
@@ -301,8 +353,8 @@ impl Motion {
     pub fn millis(self, ms: u64) -> Self {
         self.duration(Duration::from_millis(ms))
     }
-    pub fn entry(mut self, k: EntryKind) -> Self {
-        self.entry = k;
+    pub fn entry(mut self, k: impl Into<EntrySet>) -> Self {
+        self.entry = k.into();
         self
     }
     pub fn easing(mut self, e: Easing) -> Self {
@@ -346,14 +398,14 @@ impl Motion {
 /// render while their parent lays out, so the override is installed around the
 /// child's `request_layout` and restored afterwards.
 pub struct EntryScope {
-    kind: EntryKind,
+    kind: EntrySet,
     child: gpui::AnyElement,
 }
 
 impl EntryScope {
-    pub fn new(kind: EntryKind, child: impl IntoElement) -> Self {
+    pub fn new(kind: impl Into<EntrySet>, child: impl IntoElement) -> Self {
         Self {
-            kind,
+            kind: kind.into(),
             child: child.into_any_element(),
         }
     }
@@ -415,6 +467,18 @@ impl gpui::Element for EntryScope {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn entry_set_composes() {
+        use super::*;
+        let s = EntrySet::NONE.with(EntryKind::Fade).with(EntryKind::Rise);
+        let (o, x, y) = s.frame(0.5);
+        assert!((o - 0.25).abs() < 1e-6 && x == 0.0 && (y - 7.0).abs() < 1e-6);
+        assert!(s
+            .toggled(EntryKind::Fade)
+            .toggled(EntryKind::Rise)
+            .is_empty());
+    }
+
     use super::*;
 
     #[test]
