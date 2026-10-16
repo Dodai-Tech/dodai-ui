@@ -38,6 +38,7 @@ struct Showcase {
     sec_replay: std::collections::HashMap<&'static str, u32>,
     sec_mode: std::collections::HashMap<&'static str, Player>,
     loop_gen: u32,
+    scroll: gpui::ScrollHandle,
     sec_kind: std::collections::HashMap<&'static str, EntrySet>,
     pill_hover: Option<(&'static str, EntryKind)>,
     pop_hover: Option<(&'static str, EntryKind)>,
@@ -1566,7 +1567,9 @@ impl Render for Showcase {
         let mut shown = 0;
         let mut last_cat = "";
         for (c, title, el, _key) in sections {
-            let in_cat = selected_cat.is_none_or(|sc| sc == c);
+            // Looping demos (Animation) only render on their own page: they keep
+            // the window repainting every frame.
+            let in_cat = selected_cat.map_or(c != "Animation", |sc| sc == c);
             let hit =
                 query.is_empty() || !fuzzy_filter(&query, &[format!("{c} {title}")]).is_empty();
             let only = std::env::var("DODAI_ONLY").is_ok_and(|o| !title.contains(&o));
@@ -1587,6 +1590,32 @@ impl Render for Showcase {
             );
         }
 
+        if std::env::var_os("DODAI_AUTOSCROLL").is_some() {
+            // Perf probe: sweep the scroll position every frame.
+            let t = (std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_or(0.0, |d| d.as_secs_f32())
+                * 0.5)
+                % 2.0;
+            let tri = if t < 1.0 { t } else { 2.0 - t };
+            self.scroll
+                .set_offset(gpui::point(px(0.0), px(-4000.0 * tri)));
+            window.request_animation_frame();
+            thread_local! {
+                static FPS: std::cell::Cell<(Option<std::time::Instant>, u32)> =
+                    const { std::cell::Cell::new((None, 0)) };
+            }
+            FPS.with(|c| {
+                let (t0, n) = c.get();
+                let t0 = t0.unwrap_or_else(std::time::Instant::now);
+                if t0.elapsed().as_secs_f32() >= 1.0 {
+                    eprintln!("fps {n}");
+                    c.set((Some(std::time::Instant::now()), 0));
+                } else {
+                    c.set((Some(t0), n + 1));
+                }
+            });
+        }
         div()
             .id("root")
             .track_focus(&self.focus)
@@ -1622,6 +1651,7 @@ impl Render for Showcase {
             .child(
                 div()
                     .id("scroll")
+                    .track_scroll(&self.scroll)
                     .flex_1()
                     .min_w_0()
                     .h_full()
@@ -1659,6 +1689,7 @@ fn main() {
                         sec_replay: Default::default(),
                         sec_mode: Default::default(),
                         loop_gen: 0,
+                        scroll: gpui::ScrollHandle::new(),
                         sec_kind: Default::default(),
                         pill_hover: None,
                         pop_hover: None,

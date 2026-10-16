@@ -51,7 +51,12 @@ dodai-bevy    = { path = "crates/dodai-bevy", version = "0.1.0" }
 dodai-freya   = { path = "crates/dodai-freya", version = "0.1.0" }
 
 [profile.dev]
-opt-level = 0
+opt-level = 1
+
+# Dependencies (gpui, taffy, lyon, ...) dominate frame time; keep them optimised
+# even in debug builds so UI stays interactive.
+[profile.dev.package."*"]
+opt-level = 3
 
 [profile.release]
 opt-level     = 3

@@ -4,7 +4,7 @@
 
 use gpui::{
     div, px, Animation, AnimationElement, AnimationExt, App, Div, ElementId, Global,
-    InteractiveElement, IntoElement, ParentElement, SharedString, Stateful, Styled,
+    InteractiveElement, IntoElement, ParentElement, Stateful, Styled,
 };
 use std::rc::Rc;
 use std::time::Duration;
@@ -148,15 +148,11 @@ pub fn entry(
         .flex_col()
         .child(el)
         .relative()
-        .id(SharedString::from(format!("entry-{name}")))
-        .with_animation(
-            ElementId::from(SharedString::from(format!("entry-anim-{name}"))),
-            anim,
-            move |el, p| {
-                let (o, dx, dy) = kind.frame(p, default);
-                el.opacity(o).left(px(dx)).top(px(dy))
-            },
-        )
+        .id((name, 0u32))
+        .with_animation(ElementId::from((name, 1u32)), anim, move |el, p| {
+            let (o, dx, dy) = kind.frame(p, default);
+            el.opacity(o).left(px(dx)).top(px(dy))
+        })
 }
 
 /// Eased `0..1` progress since this component first appeared; components
@@ -168,9 +164,7 @@ pub fn grow(window: &mut gpui::Window, cx: &mut App, name: &'static str) -> f32 
     if m.entry.is_empty() {
         return 1.0;
     }
-    let st = window.use_keyed_state(SharedString::from(format!("grow-{name}")), cx, |_, _| {
-        std::time::Instant::now()
-    });
+    let st = window.use_keyed_state((name, 2u32), cx, |_, _| std::time::Instant::now());
     let start = *st.read(cx);
     let t = start.elapsed().as_secs_f32() / m.duration.as_secs_f32().max(1e-3);
     if t < 1.0 {
