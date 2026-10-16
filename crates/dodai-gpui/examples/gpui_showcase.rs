@@ -546,40 +546,23 @@ impl Render for Showcase {
                     .child(ThemeSelector::new("theme-select")),
             )
             .child(
+                row().child(Label::new("Glow intensity")).child(
+                    div().w(px(220.0)).child(
+                        Slider::new("glow-slider", glow)
+                            .range(0.0, 2.0)
+                            .step(0.05)
+                            .show_value(true)
+                            .format(|v| format!("{v:.2}"))
+                            .on_change(move |v, _, cx| set_glow_intensity(cx, v)),
+                    ),
+                ),
+            )
+            .child(
                 row()
-                    .child(Label::new("Glow intensity"))
-                    .child(
-                        Button::new("glow-", "−")
-                            .variant(ButtonVariant::Outline)
-                            .on_click(move |_, _, cx| {
-                                let g = glow_intensity(cx);
-                                set_glow_intensity(cx, (g - 0.25).max(0.0));
-                            }),
-                    )
-                    .child(Mono::new(format!("{glow:.2}")))
-                    .child(
-                        Button::new("glow+", "+")
-                            .variant(ButtonVariant::Outline)
-                            .on_click(move |_, _, cx| {
-                                let g = glow_intensity(cx);
-                                set_glow_intensity(cx, g + 0.25);
-                            }),
-                    )
-                    .child(
-                        Button::new(
-                            "scan",
-                            if scan {
-                                "Scanlines: on"
-                            } else {
-                                "Scanlines: off"
-                            },
-                        )
-                        .variant(ButtonVariant::Outline)
-                        .on_click(move |_, _, cx| {
-                            let on = scanlines_enabled(cx);
-                            set_scanlines(cx, !on);
-                        }),
-                    )
+                    .child(Label::new("Scanlines"))
+                    .child(Toggle::new("scan", scan).on_change(move |on, _, cx| {
+                        set_scanlines(cx, on);
+                    }))
                     .child(Muted::new("keys: t / T theme · l scanlines")),
             );
 
