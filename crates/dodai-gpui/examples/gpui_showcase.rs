@@ -1566,10 +1566,11 @@ impl Render for Showcase {
             .child(ds_panel);
         let mut shown = 0;
         let mut last_cat = "";
-        for (c, title, el, _key) in sections {
-            // Looping demos (Animation) only render on their own page: they keep
-            // the window repainting every frame.
-            let in_cat = selected_cat.map_or(c != "Animation", |sc| sc == c);
+        for (c, title, el, key) in sections {
+            // Looping demos keep the window repainting every frame, so on the
+            // "All" page only the non-looping Animation sections are shown.
+            let looping = matches!(key, "Easing curves" | "Loading · looping");
+            let in_cat = selected_cat.map_or(!looping, |sc| sc == c);
             let hit =
                 query.is_empty() || !fuzzy_filter(&query, &[format!("{c} {title}")]).is_empty();
             let only = std::env::var("DODAI_ONLY").is_ok_and(|o| !title.contains(&o));
