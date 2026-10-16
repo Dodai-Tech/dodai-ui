@@ -13,4 +13,5 @@ categories   = ["gui"]
 
 [dependencies]
 dodai-core = { workspace = true }
+dodai-icons = { workspace = true }
 gpui = { workspace = true }

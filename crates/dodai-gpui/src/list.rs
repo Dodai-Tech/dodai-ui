@@ -30,7 +30,7 @@ pub struct ListItem {
     id: ElementId,
     label: SharedString,
     selected: bool,
-    icon: Option<SharedString>,
+    icon: Option<crate::icons::IconName>,
     on_click: Option<crate::interact::ClickHandler>,
 }
 
@@ -48,9 +48,9 @@ impl ListItem {
         self.selected = s;
         self
     }
-    /// Glyph shown in a fixed-width slot at the row start.
-    pub fn icon(mut self, g: impl Into<SharedString>) -> Self {
-        self.icon = Some(g.into());
+    /// Vector icon shown at the row start, in the row's text colour.
+    pub fn icon(mut self, g: crate::icons::IconName) -> Self {
+        self.icon = Some(g);
         self
     }
     pub fn on_click(mut self, f: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static) -> Self {
@@ -76,7 +76,11 @@ impl ListItem {
             .text_color(fg)
             .gap(px(t.spacing.sm));
         if let Some(g) = self.icon {
-            el = el.child(div().w(px(t.typography.size_md * 1.4)).flex_none().child(g));
+            el = el.child(
+                crate::icons::Icon::new(g)
+                    .size(t.typography.size_md * 1.2)
+                    .color(fg),
+            );
         }
         el = el.child(format_label(&t.typography, &self.label));
         if let Some(c) = marker {

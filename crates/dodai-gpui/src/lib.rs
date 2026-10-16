@@ -38,6 +38,7 @@ pub mod controls;
 pub mod data;
 pub mod extras;
 pub mod feedback;
+pub mod icons;
 pub mod interact;
 pub mod knob;
 pub mod layout;
@@ -86,6 +87,7 @@ pub use extras::{
     TagField, Timeline, TimelineEvent, Toolbar,
 };
 pub use feedback::{Alert, IndeterminateBar, Skeleton, Spinner, Toast};
+pub use icons::{Icon, IconName};
 pub use knob::Knob;
 pub use layout::{clamp_ratio, visible_rows, SplitPane, TreeItem, TreeRow, TreeView};
 pub use list::{Divider, ListItem};

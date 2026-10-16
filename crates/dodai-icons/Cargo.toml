@@ -1,0 +1,14 @@
+[package]
+name         = "dodai-icons"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description  = "Framework-agnostic vector icon geometry (24x24 polylines) for the Dodai UI design system"
+readme       = "README.md"
+keywords     = ["icons", "design-system", "vector", "ui"]
+categories   = ["gui", "graphics"]
+
+[dependencies]

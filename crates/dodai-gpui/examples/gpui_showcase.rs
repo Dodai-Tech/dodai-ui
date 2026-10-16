@@ -64,17 +64,18 @@ struct Showcase {
     clicks: u32,
 }
 
-fn cat_icon(name: &str) -> &'static str {
+fn cat_icon(name: &str) -> dodai_gpui::IconName {
+    use dodai_gpui::IconName as I;
     match name {
-        "All" => "◈",
-        "Foundations" => "◧",
-        "Inputs" => "⌨",
-        "Actions" => "▶",
-        "Navigation" => "☰",
-        "Data display" => "▤",
-        "Charts" => "◔",
-        "Animation" => "✦",
-        _ => "•",
+        "All" => I::Grid,
+        "Foundations" => I::Layers,
+        "Inputs" => I::Sliders,
+        "Actions" => I::Play,
+        "Navigation" => I::Menu,
+        "Data display" => I::Table,
+        "Charts" => I::BarChart,
+        "Animation" => I::Sparkle,
+        _ => I::Dot,
     }
 }
 

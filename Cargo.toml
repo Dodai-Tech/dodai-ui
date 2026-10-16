@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "crates/dodai-core",
+    "crates/dodai-icons",
     "crates/dodai-ratatui",
     "crates/dodai-iced",
     "crates/dodai-gpui",
@@ -36,6 +37,7 @@ gpui      = "0.2.2"
 
 # Internal crates
 dodai-core    = { path = "crates/dodai-core",    version = "0.1.0" }
+dodai-icons   = { path = "crates/dodai-icons",   version = "0.1.0" }
 dodai-ratatui = { path = "crates/dodai-ratatui", version = "0.1.0" }
 dodai-iced    = { path = "crates/dodai-iced",    version = "0.1.0" }
 dodai-gpui    = { path = "crates/dodai-gpui",    version = "0.1.0" }
