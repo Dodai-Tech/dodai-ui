@@ -35,6 +35,9 @@ struct Showcase {
     anim_ease: usize,
     anim_ms: f32,
     replay: usize,
+    sec_replay: std::collections::HashMap<&'static str, u32>,
+    sec_mode: std::collections::HashMap<&'static str, Player>,
+    loop_gen: u32,
     sec_kind: std::collections::HashMap<&'static str, EntrySet>,
     pill_hover: Option<(&'static str, EntryKind)>,
     pop_hover: Option<(&'static str, EntryKind)>,
@@ -66,7 +69,65 @@ struct Showcase {
     clicks: u32,
 }
 
+/// Per-section animation player state.
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
+enum Player {
+    /// Animate when the section appears or is replayed.
+    #[default]
+    Idle,
+    /// Replay repeatedly.
+    Looping,
+    /// Show the final state, no entry animation.
+    Stopped,
+}
+
+fn section_id(title: &str) -> u32 {
+    title
+        .bytes()
+        .fold(0u32, |a, b| a.wrapping_mul(31).wrapping_add(b as u32))
+}
+
 impl Showcase {
+    /// Replay one section only (re-keys just its subtree).
+    fn bump(&mut self, title: &'static str) {
+        *self.sec_replay.entry(title).or_insert(0) += 1;
+    }
+
+    fn set_mode(&mut self, title: &'static str, mode: Player, cx: &mut Context<Self>) {
+        self.sec_mode.insert(title, mode);
+        self.loop_gen += 1;
+        self.bump(title);
+        if mode == Player::Looping {
+            let gen = self.loop_gen;
+            cx.spawn(async move |this, cx| loop {
+                let wait = this
+                    .update(cx, |s, _| {
+                        let set = s.sec_kind.get(title).copied().unwrap_or_default();
+                        set.duration(Duration::from_millis(s.anim_ms as u64))
+                            + Duration::from_millis(700)
+                    })
+                    .unwrap_or_default();
+                cx.background_executor().timer(wait).await;
+                let alive = this
+                    .update(cx, |s, cx| {
+                        let ok =
+                            s.sec_mode.get(title) == Some(&Player::Looping) && s.loop_gen == gen;
+                        if ok {
+                            s.bump(title);
+                            cx.notify();
+                        }
+                        ok
+                    })
+                    .unwrap_or(false);
+                if !alive {
+                    break;
+                }
+            })
+            .detach();
+        }
+        cx.notify();
+    }
+
     /// Per-section animation chips (hover a chip for its duration popover).
     fn chips(
         &self,
@@ -75,9 +136,7 @@ impl Showcase {
         me: &gpui::Entity<Showcase>,
         cx: &mut Context<Self>,
     ) -> gpui::AnyElement {
-        let tid = title
-            .bytes()
-            .fold(0u32, |a, b| a.wrapping_mul(31).wrapping_add(b as u32));
+        let tid = section_id(title);
         let kind = self.sec_kind.get(title).copied();
         let chip = |id: (&'static str, u32), label: SharedString, on: bool| {
             div()
@@ -115,7 +174,7 @@ impl Showcase {
             chip(("sec-g", tid), "Global".into(), kind.is_none()).on_click(move |_, _, cx| {
                 me_g.update(cx, |s, cx| {
                     s.sec_kind.remove(title);
-                    s.replay += 1;
+                    s.bump(title);
                     cx.notify();
                 })
             }),
@@ -148,7 +207,7 @@ impl Showcase {
                     me_c.update(cx, |s, cx| {
                         let cur = s.sec_kind.get(title).copied().unwrap_or(EntrySet::NONE);
                         s.sec_kind.insert(title, cur.toggled(k));
-                        s.replay += 1;
+                        s.bump(title);
                         cx.notify();
                     })
                 }));
@@ -201,6 +260,43 @@ impl Showcase {
             }
             chips = chips.child(wrap);
         }
+        // Player: play once / loop / stop.
+        let mode = self.sec_mode.get(title).copied().unwrap_or_default();
+        let btn = |id: u32, icon: dodai_gpui::IconName, on: bool| {
+            let fg = hsla(if on {
+                t.palette.on_primary
+            } else {
+                t.palette.text_muted
+            });
+            div()
+                .id(("pl", tid.wrapping_mul(4).wrapping_add(id)))
+                .px(px(5.0))
+                .py(px(2.0))
+                .rounded(px(4.0))
+                .cursor_pointer()
+                .border_1()
+                .border_color(hsla(t.palette.border))
+                .when(on, |d| d.bg(hsla(t.palette.primary)))
+                .child(dodai_gpui::Icon::new(icon).size(11.0).color(fg))
+        };
+        let (m1, m2, m3) = (me.clone(), me.clone(), me.clone());
+        chips = chips
+            .child(div().w(px(8.0)))
+            .child(
+                btn(1, dodai_gpui::IconName::Play, false).on_click(move |_, _, cx| {
+                    m1.update(cx, |s, cx| s.set_mode(title, Player::Idle, cx))
+                }),
+            )
+            .child(
+                btn(2, dodai_gpui::IconName::Repeat, mode == Player::Looping).on_click(
+                    move |_, _, cx| m2.update(cx, |s, cx| s.set_mode(title, Player::Looping, cx)),
+                ),
+            )
+            .child(
+                btn(3, dodai_gpui::IconName::Stop, mode == Player::Stopped).on_click(
+                    move |_, _, cx| m3.update(cx, |s, cx| s.set_mode(title, Player::Stopped, cx)),
+                ),
+            );
         chips.into_any_element()
     }
 }
@@ -1480,11 +1576,24 @@ impl Render for Showcase {
             }
             shown += 1;
             let kind = self.sec_kind.get(key).copied();
-            let content = match kind {
-                None => el,
-                Some(set) => dodai_gpui::EntryScope::new(set, el).into_any_element(),
+            let stopped = self.sec_mode.get(key) == Some(&Player::Stopped);
+            let content = match (stopped, kind) {
+                (true, _) => dodai_gpui::EntryScope::new(EntrySet::NONE, el).into_any_element(),
+                (false, None) => el,
+                (false, Some(set)) => dodai_gpui::EntryScope::new(set, el).into_any_element(),
             };
-            body = body.child(div().flex().flex_col().w_full().min_w_0().child(content));
+            let sid = section_id(key)
+                .wrapping_mul(1000)
+                .wrapping_add(self.sec_replay.get(key).copied().unwrap_or(0));
+            body = body.child(
+                div()
+                    .id(("sec", sid))
+                    .flex()
+                    .flex_col()
+                    .w_full()
+                    .min_w_0()
+                    .child(content),
+            );
         }
         if shown == 0 {
             body = body.child(
@@ -1562,6 +1671,9 @@ fn main() {
                         anim_ease: 2,
                         anim_ms: 220.0,
                         replay: 0,
+                        sec_replay: Default::default(),
+                        sec_mode: Default::default(),
+                        loop_gen: 0,
                         sec_kind: Default::default(),
                         pill_hover: None,
                         pop_hover: None,

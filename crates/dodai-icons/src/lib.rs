@@ -17,6 +17,8 @@ pub enum IconName {
     ChevronRight,
     ChevronDown,
     Plus,
+    Repeat,
+    Stop,
     Dot,
 }
 
@@ -95,13 +97,20 @@ impl IconName {
                 l(&[(12.0, 4.0), (12.0, 20.0)]),
                 l(&[(4.0, 12.0), (20.0, 12.0)]),
             ],
+            IconName::Repeat => vec![
+                l(&[(17.0, 3.0), (20.0, 6.0), (17.0, 9.0)]),
+                l(&[(4.0, 12.0), (4.0, 9.0), (7.0, 6.0), (20.0, 6.0)]),
+                l(&[(7.0, 21.0), (4.0, 18.0), (7.0, 15.0)]),
+                l(&[(20.0, 12.0), (20.0, 15.0), (17.0, 18.0), (4.0, 18.0)]),
+            ],
+            IconName::Stop => vec![c(rect(6.0, 6.0, 18.0, 18.0))],
             IconName::Dot => vec![c(rect(10.0, 10.0, 14.0, 14.0))],
         }
     }
 }
 
 /// Every icon, for galleries and tests.
-pub const ALL: [IconName; 15] = [
+pub const ALL: [IconName; 17] = [
     IconName::Grid,
     IconName::Layers,
     IconName::Sliders,
@@ -116,6 +125,8 @@ pub const ALL: [IconName; 15] = [
     IconName::ChevronRight,
     IconName::ChevronDown,
     IconName::Plus,
+    IconName::Repeat,
+    IconName::Stop,
     IconName::Dot,
 ];
 
