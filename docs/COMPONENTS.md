@@ -44,7 +44,7 @@ Beyond M3 (gpui): `TreeView`, `Table` (sort + select), `Combobox`, `NumberSteppe
 Charts (gpui, `charts.rs`, palette `series` colours, glow on lines, themed bar shape):
 `LineChart` (area/smooth), `BarChart` (grouped/stacked/horizontal), `PieChart`
 (+ donut), `Sparkline`, `Gauge`, `RadarChart`, `ScatterPlot`, `Heatmap`, `Legend`.
-Showcase: `cargo run -p dodai-gpui --example gpui_showcase_more`.
+Showcase: `cargo run -p dodai-gpui --example gpui_showcase`.
 
 Dodai extras: `Knob` (rotary), `Kbd`, `Avatar`, `Table`, `Accordion`,
 `Alert`, `Skeleton`, `ThemeSelector`, `Scanlines`.
