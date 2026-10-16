@@ -533,7 +533,6 @@ impl Render for Showcase {
 
         let family = family_title(cx.dodai().switcher().current_family());
         let ds_panel = Panel::new()
-            .title("Design system")
             .focused(true)
             .child(
                 row()
