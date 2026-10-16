@@ -1,10 +1,13 @@
-//! Built-in themes. Add new families as sibling modules and list them in [`all`].
+//! Built-in themes.
+//!
+//! **Adding a theme:** create `themes/<name>.rs` returning a [`crate::Theme`] — the
+//! easiest way is [`Spec`], which derives hover/active/selection roles from a
+//! handful of colours and lets you set typography, spacing, shape (`Square`,
+//! `Rounded`, `Chamfered` + which corners) and effects (glow, scanlines).
+//! Then `pub mod <name>;` and push it in [`all`]. Every adapter and every shared
+//! test picks it up automatically; adapters never branch on theme ids.
 
-pub mod arctic;
 pub mod cyberpunk;
-pub mod daylight;
-pub mod phosphor;
-pub mod synthwave;
 
 use crate::Theme;
 
@@ -108,10 +111,6 @@ impl Spec {
 pub fn all() -> Vec<Theme> {
     let mut v = Vec::new();
     v.extend(cyberpunk::variants());
-    v.push(synthwave::synthwave());
-    v.push(arctic::arctic());
-    v.push(phosphor::phosphor());
-    v.push(daylight::daylight());
     v
 }
 
@@ -159,20 +158,83 @@ mod tests {
         }
     }
 
+    /// A throw-away rounded light theme proves `Spec` can express a theme that
+    /// differs from Cyberpunk in shape, type and effects, not just colour.
+    fn sample_light() -> Theme {
+        use crate::{Corners, Mode, Shape, Spacing, ThemeMeta, Typography};
+        Spec {
+            meta: ThemeMeta {
+                id: "test-light",
+                name: "Test Light",
+                family: "test",
+                description: "",
+                mode: Mode::Light,
+            },
+            mode: Mode::Light,
+            background: 0xf6f7f9,
+            surface: 0xffffff,
+            raised: 0xeceef2,
+            border: 0xd5d9e0,
+            border_strong: 0xaab1bd,
+            text: 0x14171c,
+            muted: 0x4a5260,
+            disabled: 0x8a92a0,
+            primary: 0x1f5fd6,
+            primary_hover: 0x1a50b5,
+            on_primary: 0xffffff,
+            secondary: 0x0a7d6e,
+            on_secondary: 0xffffff,
+            accent: 0xb45309,
+            info: 0x1f6fd6,
+            success: 0x15803d,
+            warning: 0xb45309,
+            danger: 0xc81e3a,
+            series: [
+                0x1f5fd6, 0x0a7d6e, 0xb45309, 0xc81e3a, 0x7c3aed, 0x0e7490, 0xbe185d, 0x4a5260,
+            ],
+            typography: Typography {
+                display: "Inter",
+                body: "Inter",
+                mono: "Menlo",
+                size_xs: 11.0,
+                size_sm: 13.0,
+                size_md: 15.0,
+                size_lg: 18.0,
+                size_xl: 24.0,
+                size_xxl: 36.0,
+                uppercase_labels: false,
+                label_tracking: 0.0,
+            },
+            spacing: Spacing {
+                xs: 4.0,
+                sm: 8.0,
+                md: 12.0,
+                lg: 20.0,
+                xl: 32.0,
+            },
+            shape: Shape {
+                corners: Corners::NONE,
+                radius: 8.0,
+                chamfer: 0.0,
+                border_width: 1.0,
+                control_height: 40.0,
+            },
+            glow: 0.0,
+            glow_blur: 0.0,
+            scanlines: false,
+            hard_shadow: 2.0,
+        }
+        .build()
+    }
+
     #[test]
-    fn themes_differ_in_more_than_colour() {
-        use std::collections::HashSet;
-        let kinds: HashSet<_> = all()
-            .iter()
-            .map(|t| format!("{:?}", t.shape.kind()))
-            .collect();
-        assert!(
-            kinds.len() >= 3,
-            "expected square/rounded/chamfered, got {kinds:?}"
-        );
-        assert!(all().iter().any(|t| !t.is_dark()), "need a light theme");
-        assert!(all().iter().any(|t| t.effects.scanlines));
-        assert!(all().iter().any(|t| !t.effects.glow_enabled()));
+    fn spec_builds_a_non_cyberpunk_theme() {
+        let t = sample_light();
+        assert!(!t.is_dark());
+        assert_eq!(t.shape.kind(), crate::ShapeKind::Rounded);
+        assert!(!t.effects.glow_enabled());
+        assert!(t.palette.text.contrast(t.palette.background) >= 7.0);
+        assert_ne!(t.shape.kind(), cyberpunk::night_city().shape.kind());
     }
 
     #[test]
@@ -195,7 +257,7 @@ mod tests {
 
     #[test]
     fn outline_follows_shape() {
-        for t in all() {
+        for t in all().into_iter().chain([sample_light()]) {
             let o = t.shape.outline(100.0, 50.0);
             match t.shape.kind() {
                 crate::ShapeKind::Chamfered => assert!(o.len() > 4, "{}", t.id()),
