@@ -11,9 +11,10 @@ use gpui::{
 use legendary_core::{ButtonVariant, Theme, Tone};
 use legendary_gpui::{
     cycle_next, cycle_prev, glow_intensity, hsla, install, scanlines_enabled, set_glow_intensity,
-    set_scanlines, theme_of, ActiveLegendary, Button, Checkbox, Direction, Divider, Heading,
-    InputBox, Knob, Label, LegendaryStyled, LegendaryTooltip, ListItem, Mono, Muted, Panel,
-    ProgressBar, Radio, Scanlines, Slider, Tabs, Tag, ThemeSwitcherBar, Toggle,
+    set_scanlines, theme_of, ActiveLegendary, Button, Card, CardVariant, Checkbox, Direction,
+    Divider, Fab, FabSize, Heading, IconButton, InputBox, Knob, Label, LegendaryStyled,
+    LegendaryTooltip, ListItem, Mono, Muted, NavItem, NavLayout, Navigation, Panel, ProgressBar,
+    Radio, Scanlines, SearchBar, Slider, Tabs, Tag, ThemeSwitcherBar, Toggle, TopAppBar,
 };
 
 struct Showcase {
@@ -23,6 +24,7 @@ struct Showcase {
     check: bool,
     radio: usize,
     slider: f32,
+    nav: usize,
     knob: [f32; 3],
     vslider: [f32; 3],
     list: usize,
@@ -179,6 +181,103 @@ impl Render for Showcase {
             );
         }
 
+        let m3 = me.clone();
+        let nav_items = || {
+            [
+                NavItem::new("⌂", "Home"),
+                NavItem::new("✉", "Mail").badge(3),
+                NavItem::new("★", "Saved"),
+                NavItem::new("⚙", "Settings"),
+            ]
+        };
+        let structure = div()
+            .flex()
+            .flex_col()
+            .gap(gap)
+            .child(
+                TopAppBar::new("Night City")
+                    .leading("☰")
+                    .child(IconButton::new("ab-search", "⌕"))
+                    .child(IconButton::new("ab-more", "⋮")),
+            )
+            .child(SearchBar::new("search-bar").placeholder("Search the net…"))
+            .child(
+                row()
+                    .child(IconButton::new("ib1", "♥").toggled(true))
+                    .child(IconButton::new("ib2", "♥").toggled(false))
+                    .child(IconButton::new("ib3", "✎"))
+                    .child(IconButton::new("ib4", "✎").disabled(true))
+                    .child(Fab::new("fab-s", "+").size(FabSize::Small))
+                    .child(Fab::new("fab", "+"))
+                    .child(Fab::new("fab-l", "+").size(FabSize::Large))
+                    .child(Fab::new("fab-x", "✎").extended("Compose")),
+            )
+            .child(
+                row()
+                    .items_start()
+                    .child(
+                        Card::new(CardVariant::Elevated)
+                            .headline("Elevated")
+                            .supporting("Raised surface with hard shadow.")
+                            .width(220.0),
+                    )
+                    .child(
+                        Card::new(CardVariant::Filled)
+                            .headline("Filled")
+                            .supporting("Flat raised surface.")
+                            .width(220.0),
+                    )
+                    .child(
+                        Card::new(CardVariant::Outlined)
+                            .headline("Outlined")
+                            .supporting("Border only.")
+                            .width(220.0),
+                    ),
+            )
+            .child(
+                Navigation::new("nav-bar", NavLayout::Bar)
+                    .items(nav_items())
+                    .active(self.nav)
+                    .on_select({
+                        let m = m3.clone();
+                        move |i, _, cx| {
+                            m.update(cx, |s, cx| {
+                                s.nav = i;
+                                cx.notify();
+                            })
+                        }
+                    }),
+            )
+            .child(
+                row()
+                    .items_start()
+                    .child(
+                        Navigation::new("nav-rail", NavLayout::Rail)
+                            .items(nav_items())
+                            .active(self.nav)
+                            .on_select({
+                                let m = m3.clone();
+                                move |i, _, cx| {
+                                    m.update(cx, |s, cx| {
+                                        s.nav = i;
+                                        cx.notify();
+                                    })
+                                }
+                            }),
+                    )
+                    .child(
+                        Navigation::new("nav-drawer", NavLayout::Drawer)
+                            .items(nav_items())
+                            .active(self.nav)
+                            .on_select(move |i, _, cx| {
+                                m3.update(cx, |s, cx| {
+                                    s.nav = i;
+                                    cx.notify();
+                                })
+                            }),
+                    ),
+            );
+
         let mut list = div().flex().flex_col().gap(px(t.spacing.xs));
         for (i, name) in ["Inbox", "Contracts", "Fixers", "Black market"]
             .into_iter()
@@ -260,6 +359,7 @@ impl Render for Showcase {
             )
             .child(section("Slider · Progress").child(sliders))
             .child(section("Knob · Vertical slider").child(dials))
+            .child(section("App bar · Cards · FAB · Navigation").child(structure))
             .child(
                 section("Input")
                     .child(InputBox::new().placeholder("search the net…"))
@@ -342,6 +442,7 @@ fn main() {
                         check: true,
                         radio: 0,
                         slider: 0.4,
+                        nav: 0,
                         knob: [0.35, 0.7, 0.5],
                         vslider: [0.3, 0.6, 0.9],
                         list: 0,

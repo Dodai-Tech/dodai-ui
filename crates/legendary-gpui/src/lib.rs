@@ -41,6 +41,7 @@ pub mod paint;
 pub mod panel;
 pub mod scanlines;
 pub mod select;
+pub mod surfaces;
 pub mod switcher;
 pub mod tabs;
 pub mod tag;
@@ -63,6 +64,10 @@ pub use paint::{shaped, ShapeStyle};
 pub use panel::{InputBox, LegendaryTooltip, Panel};
 pub use scanlines::Scanlines;
 pub use select::{Select, SelectOption, ThemeSelector};
+pub use surfaces::{
+    card_style, AppBarSize, Card, CardVariant, Fab, FabSize, IconButton, NavItem, NavLayout,
+    Navigation, SearchBar, TopAppBar,
+};
 pub use switcher::ThemeSwitcherBar;
 pub use tabs::Tabs;
 pub use tag::Tag;
