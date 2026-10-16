@@ -13,3 +13,7 @@ categories   = ["gui"]
 
 [dependencies]
 legendary-core = { workspace = true }
+egui = "0.32"
+
+[dev-dependencies]
+eframe = "0.32"
