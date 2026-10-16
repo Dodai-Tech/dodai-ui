@@ -27,6 +27,7 @@
 //! ```
 
 pub mod button;
+pub mod carousel;
 pub mod controls;
 pub mod data;
 pub mod feedback;
@@ -39,8 +40,10 @@ pub mod nav;
 pub mod overlay;
 pub mod paint;
 pub mod panel;
+pub mod range;
 pub mod scanlines;
 pub mod select;
+pub mod sheets;
 pub mod surfaces;
 pub mod switcher;
 pub mod tabs;
@@ -52,6 +55,7 @@ pub mod text_input;
 mod testing;
 
 pub use button::Button;
+pub use carousel::{window_start, Carousel};
 pub use controls::{Checkbox, Direction, ProgressBar, Radio, Slider, Toggle};
 pub use data::{Avatar, Badge, Chip, Kbd, Table};
 pub use feedback::{Alert, IndeterminateBar, Skeleton, Spinner, Toast};
@@ -62,8 +66,10 @@ pub use nav::{Accordion, Breadcrumb, Pagination, Segmented, Stepper};
 pub use overlay::{Dialog, DialogCard};
 pub use paint::{shaped, ShapeStyle};
 pub use panel::{DodaiTooltip, InputBox, Panel};
+pub use range::{nearest_thumb, range_update, RangeSlider};
 pub use scanlines::Scanlines;
 pub use select::{family_title, DesignSystemSelector, Select, SelectOption, ThemeSelector};
+pub use sheets::{sheet_style, BottomSheet, FullScreenDialog, SheetEdge, SideSheet, Snackbar};
 pub use surfaces::{
     card_style, AppBarSize, Card, CardVariant, Fab, FabSize, IconButton, NavItem, NavLayout,
     Navigation, SearchBar, TopAppBar,
