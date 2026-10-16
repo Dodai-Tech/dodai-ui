@@ -1,111 +1,285 @@
 //! `cargo run -p legendary-gpui --example gpui_showcase`
-//! Click "NEXT THEME" to cycle the Cyberpunk variants.
+//!
+//! Every legendary-gpui component in one scrollable window.
+//! Keys: `t` / `T` next / previous theme. Glow +/- buttons change
+//! `Theme::with_glow_intensity` live.
 
 use gpui::{
-    div, prelude::*, px, size, App, Application, Bounds, ClickEvent, Context, SharedString, Window,
-    WindowBounds, WindowOptions,
+    div, prelude::*, px, size, App, Application, Bounds, Context, FocusHandle, KeyDownEvent,
+    Window, WindowBounds, WindowOptions,
 };
-use legendary_core::{ButtonVariant, ControlState, Tone};
-use legendary_gpui::{cycle_next, cycle_prev, hsla, install, ActiveLegendary, LegendaryStyled};
+use legendary_core::{ButtonVariant, Theme, Tone};
+use legendary_gpui::{
+    cycle_next, cycle_prev, glow_intensity, hsla, install, set_glow_intensity, theme_of,
+    ActiveLegendary, Button, Checkbox, Divider, Heading, InputBox, Label, LegendaryStyled,
+    LegendaryTooltip, ListItem, Mono, Muted, Panel, ProgressBar, Radio, Scanlines, Slider, Tabs,
+    Tag, ThemeSwitcherBar, Toggle,
+};
 
-struct Showcase;
+struct Showcase {
+    focus: FocusHandle,
+    tab: usize,
+    switch: bool,
+    check: bool,
+    radio: usize,
+    slider: f32,
+    list: usize,
+    clicks: u32,
+}
 
 impl Render for Showcase {
-    fn render(&mut self, _w: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let lt = cx.legendary();
-        let t = lt.theme().clone();
-        let label = |s: &str| -> SharedString {
-            if t.typography.uppercase_labels {
-                s.to_uppercase().into()
-            } else {
-                s.to_string().into()
-            }
-        };
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let glow = glow_intensity(cx);
+        let theme_name = cx.legendary().theme().name();
 
-        let button = |id: &'static str, text: &str, v: ButtonVariant| {
-            div()
-                .id(id)
-                .flex()
-                .items_center()
-                .justify_center()
-                .lg_button(&t, v, ControlState::Idle)
-                .hover(|s| s.opacity(0.85))
-                .child(label(text))
-        };
+        let me_tab = me.clone();
+        let me_sw = me.clone();
+        let me_ck = me.clone();
+        let me_sl = me.clone();
 
-        div()
-            .size_full()
-            .lg_background(&t)
-            .p(px(t.spacing.xl))
+        let section = |title: &'static str| Panel::new().title(title);
+
+        let row = || div().flex().flex_wrap().items_center().gap(gap);
+
+        let buttons = row()
+            .child(
+                Button::new("b-primary", "Primary").on_click(cx.listener(|s, _, _, cx| {
+                    s.clicks += 1;
+                    cx.notify();
+                })),
+            )
+            .child(Button::new("b-secondary", "Secondary").variant(ButtonVariant::Secondary))
+            .child(Button::new("b-outline", "Outline").variant(ButtonVariant::Outline))
+            .child(Button::new("b-outline2", "Outline 2").variant(ButtonVariant::OutlineSecondary))
+            .child(Button::new("b-danger", "Danger").variant(ButtonVariant::Danger))
+            .child(Button::new("b-ghost", "Ghost").variant(ButtonVariant::Ghost))
+            .child(Button::new("b-dis", "Disabled").disabled(true))
+            .child(Muted::new(format!("primary clicked {}×", self.clicks)));
+
+        let tags = row()
+            .child(Tag::new("online", Tone::Success).solid(true))
+            .child(Tag::new("warn", Tone::Warning).solid(true))
+            .child(Tag::new("breach", Tone::Danger).solid(true))
+            .child(Tag::new("info", Tone::Info).solid(true))
+            .child(Tag::new("online", Tone::Success))
+            .child(Tag::new("warn", Tone::Warning))
+            .child(Tag::new("breach", Tone::Danger))
+            .child(Tag::new("info", Tone::Info));
+
+        let tabs = Tabs::new("tabs")
+            .labels(["Overview", "Netrunning", "Gear", "Settings"])
+            .active(self.tab)
+            .on_select(move |i, _, cx| {
+                me_tab.update(cx, |s, cx| {
+                    s.tab = i;
+                    cx.notify();
+                })
+            });
+
+        let controls = row()
+            .child(Toggle::new("sw", self.switch).on_change(move |v, _, cx| {
+                me_sw.update(cx, |s, cx| {
+                    s.switch = v;
+                    cx.notify();
+                })
+            }))
+            .child(Label::new("Switch"))
+            .child(Toggle::new("sw-dis", true).disabled(true))
+            .child(Checkbox::new("ck", self.check).on_change(move |v, _, cx| {
+                me_ck.update(cx, |s, cx| {
+                    s.check = v;
+                    cx.notify();
+                })
+            }))
+            .child(Label::new("Checkbox"))
+            .child(Checkbox::new("ck-dis", false).disabled(true));
+
+        let mut radios = row();
+        for (i, name) in ["Netwatch", "Arasaka", "Militech"].into_iter().enumerate() {
+            let m = me.clone();
+            radios = radios
+                .child(
+                    Radio::new(("radio", i), self.radio == i).on_change(move |_, _, cx| {
+                        m.update(cx, |s, cx| {
+                            s.radio = i;
+                            cx.notify();
+                        })
+                    }),
+                )
+                .child(Label::new(name));
+        }
+
+        let sliders = div()
             .flex()
             .flex_col()
-            .gap(px(t.spacing.md))
+            .gap(gap)
             .child(
-                div()
-                    .text_size(px(t.typography.size_xl))
-                    .text_color(hsla(t.palette.primary))
-                    .child(label(t.name())),
+                Slider::new("slider", self.slider).on_change(move |v, _, cx| {
+                    me_sl.update(cx, |s, cx| {
+                        s.slider = v;
+                        cx.notify();
+                    })
+                }),
+            )
+            .child(Mono::new(format!("value {:.2}", self.slider)))
+            .child(ProgressBar::new(self.slider))
+            .child(ProgressBar::new(0.7).tone(Tone::Success))
+            .child(ProgressBar::new(0.4).tone(Tone::Warning))
+            .child(ProgressBar::new(0.15).tone(Tone::Danger));
+
+        let mut list = div().flex().flex_col().gap(px(t.spacing.xs));
+        for (i, name) in ["Inbox", "Contracts", "Fixers", "Black market"]
+            .into_iter()
+            .enumerate()
+        {
+            let m = me.clone();
+            list = list.child(
+                ListItem::new(("li", i), name)
+                    .selected(self.list == i)
+                    .on_click(move |_, _, cx| {
+                        m.update(cx, |s, cx| {
+                            s.list = i;
+                            cx.notify();
+                        })
+                    }),
+            );
+        }
+
+        let theme_panel = section("Theme")
+            .focused(true)
+            .child(ThemeSwitcherBar::new("themes"))
+            .child(
+                row()
+                    .child(Label::new("Glow intensity"))
+                    .child(
+                        Button::new("glow-", "−")
+                            .variant(ButtonVariant::Outline)
+                            .on_click(move |_, _, cx| {
+                                let g = glow_intensity(cx);
+                                set_glow_intensity(cx, (g - 0.25).max(0.0));
+                            }),
+                    )
+                    .child(Mono::new(format!("{glow:.2}")))
+                    .child(
+                        Button::new("glow+", "+")
+                            .variant(ButtonVariant::Outline)
+                            .on_click(move |_, _, cx| {
+                                let g = glow_intensity(cx);
+                                set_glow_intensity(cx, g + 0.25);
+                            }),
+                    )
+                    .child(Muted::new("keys: t / T switch theme")),
+            );
+
+        let body = div()
+            .flex()
+            .flex_col()
+            .gap(gap)
+            .p(px(t.spacing.xl))
+            .child(Heading::new(theme_name).level(1))
+            .child(Muted::new("Wake up, samurai. We have a city to burn."))
+            .child(theme_panel)
+            .child(section("Buttons").child(buttons))
+            .child(section("Tags").child(tags))
+            .child(
+                section("Tabs")
+                    .child(tabs)
+                    .child(Muted::new(format!("active tab: {}", self.tab))),
             )
             .child(
-                div()
-                    .lg_panel(&t, true)
-                    .p(px(t.spacing.lg))
-                    .flex()
-                    .flex_col()
-                    .gap(px(t.spacing.sm))
+                section("Toggle · Checkbox · Radio")
+                    .child(controls)
+                    .child(radios),
+            )
+            .child(section("Slider · Progress").child(sliders))
+            .child(
+                section("Input")
+                    .child(InputBox::new().placeholder("search the net…"))
+                    .child(InputBox::new().focused(true).child("focused input"))
                     .child(
                         div()
-                            .text_color(hsla(t.palette.text_muted))
-                            .child("Wake up, samurai. We have a city to burn."),
-                    )
-                    .child(
-                        div()
-                            .flex()
-                            .gap(px(t.spacing.md))
-                            .child(div().text_color(lt.tone(Tone::Success)).child("ONLINE"))
-                            .child(div().text_color(lt.tone(Tone::Warning)).child("WARN"))
-                            .child(div().text_color(lt.tone(Tone::Danger)).child("BREACH"))
-                            .child(div().text_color(lt.tone(Tone::Info)).child("INFO")),
-                    )
-                    .child(
-                        div()
-                            .lg_input(&t, true)
+                            .lg_input(&t, false)
                             .h(px(t.shape.control_height))
                             .flex()
                             .items_center()
-                            .child("search the net…"),
+                            .child("legacy lg_input container"),
                     ),
             )
+            .child(section("List · Divider").child(list).child(Divider::new()))
+            .child(
+                section("Text")
+                    .child(Heading::new("Heading 1").level(1))
+                    .child(Heading::new("Heading 2"))
+                    .child(Heading::new("Heading 3").level(3))
+                    .child(Label::new("Label text"))
+                    .child(Muted::new("Muted text"))
+                    .child(Mono::new("mono_text() // 0xDEADBEEF")),
+            )
+            .child(
+                section("Tooltip").child(
+                    div()
+                        .id("tip")
+                        .w(px(220.0))
+                        .text_color(hsla(t.palette.link))
+                        .tooltip(LegendaryTooltip::text("Themed tooltip"))
+                        .child("Hover me"),
+                ),
+            );
+
+        div()
+            .id("root")
+            .track_focus(&self.focus)
+            .on_key_down(cx.listener(|_, e: &KeyDownEvent, _, cx| {
+                if e.keystroke.key == "t" {
+                    if e.keystroke.modifiers.shift {
+                        cycle_prev(cx)
+                    } else {
+                        cycle_next(cx)
+                    }
+                }
+            }))
+            .relative()
+            .size_full()
+            .lg_background(&t)
             .child(
                 div()
-                    .flex()
-                    .gap(px(t.spacing.md))
-                    .child(
-                        button("prev", "◀ Prev", ButtonVariant::Outline)
-                            .on_click(cx.listener(|_, _: &ClickEvent, _w, cx| cycle_prev(cx))),
-                    )
-                    .child(
-                        button("next", "Next theme ▶", ButtonVariant::Primary)
-                            .on_click(cx.listener(|_, _: &ClickEvent, _w, cx| cycle_next(cx))),
-                    )
-                    .child(button("hack", "Hack", ButtonVariant::OutlineSecondary))
-                    .child(button("abort", "Abort", ButtonVariant::Danger)),
+                    .id("scroll")
+                    .size_full()
+                    .overflow_y_scroll()
+                    .child(body),
             )
+            .child(Scanlines::new())
     }
 }
 
 fn main() {
     Application::new().run(|cx: &mut App| {
-        install(cx, legendary_core::Theme::default());
-        let bounds = Bounds::centered(None, size(px(900.0), px(520.0)), cx);
-        cx.open_window(
-            WindowOptions {
-                window_bounds: Some(WindowBounds::Windowed(bounds)),
-                ..Default::default()
-            },
-            |_, cx| cx.new(|_| Showcase),
-        )
-        .expect("open window");
+        install(cx, Theme::default());
+        let bounds = Bounds::centered(None, size(px(980.0), px(760.0)), cx);
+        let win = cx
+            .open_window(
+                WindowOptions {
+                    window_bounds: Some(WindowBounds::Windowed(bounds)),
+                    ..Default::default()
+                },
+                |_, cx| {
+                    cx.new(|cx| Showcase {
+                        focus: cx.focus_handle(),
+                        tab: 0,
+                        switch: true,
+                        check: true,
+                        radio: 0,
+                        slider: 0.4,
+                        list: 0,
+                        clicks: 0,
+                    })
+                },
+            )
+            .expect("open window");
+        win.update(cx, |s, w, _| w.focus(&s.focus)).ok();
         cx.activate(true);
     });
 }

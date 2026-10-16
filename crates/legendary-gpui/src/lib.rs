@@ -4,6 +4,16 @@
 //! theme store (`cx.legendary()`), and a [`LegendaryStyled`] extension for
 //! any [`Styled`] element (`div().lg_panel(&theme)`, `.lg_button(...)`).
 //!
+//! ## Components
+//!
+//! Every component is a `RenderOnce` builder reading the active theme from the
+//! global ([`install`] first): [`Button`], [`Panel`], [`Tag`], [`Tabs`],
+//! [`Toggle`], [`Checkbox`], [`Radio`], [`ProgressBar`], [`Slider`], [`InputBox`],
+//! [`ListItem`], [`Divider`], [`LegendaryTooltip`], [`Heading`]/[`Label`]/[`Muted`]/[`Mono`],
+//! [`Scanlines`], [`ThemeSwitcherBar`]. Shapes (square / rounded / chamfered),
+//! glow, hard shadow and uppercase labels all come from tokens; no component
+//! looks at a theme id. See [`paint`] for the shaped-box primitive.
+//!
 //! ```no_run
 //! use gpui::{div, prelude::*, App};
 //! use legendary_core::{ButtonVariant, ControlState, Theme};
@@ -15,6 +25,32 @@
 //!     let _btn = div().lg_button(&t, ButtonVariant::Primary, ControlState::Idle);
 //! }
 //! ```
+
+pub mod button;
+pub mod controls;
+pub mod interact;
+pub mod list;
+pub mod paint;
+pub mod panel;
+pub mod scanlines;
+pub mod switcher;
+pub mod tabs;
+pub mod tag;
+pub mod text;
+
+#[cfg(test)]
+mod testing;
+
+pub use button::Button;
+pub use controls::{Checkbox, ProgressBar, Radio, Slider, Toggle};
+pub use list::{Divider, ListItem};
+pub use paint::{shaped, ShapeStyle};
+pub use panel::{InputBox, LegendaryTooltip, Panel};
+pub use scanlines::Scanlines;
+pub use switcher::ThemeSwitcherBar;
+pub use tabs::Tabs;
+pub use tag::Tag;
+pub use text::{Heading, Label, Mono, Muted};
 
 use gpui::{px, App, BoxShadow, Global, Hsla, Rgba, Styled};
 use legendary_core::{ButtonVariant, Color, ControlState, Theme, ThemeSwitcher, Tone};
@@ -61,6 +97,39 @@ pub fn install(cx: &mut App, initial: Theme) {
         switcher = ThemeSwitcher::with_themes(all);
     }
     cx.set_global(LegendaryTheme { switcher });
+}
+
+/// Clone of the active theme (components call this on render).
+pub fn theme_of(cx: &App) -> Theme {
+    cx.legendary().theme().clone()
+}
+
+/// Select theme by index (clamped) and repaint.
+pub fn select_theme(cx: &mut App, index: usize) {
+    cx.global_mut::<LegendaryTheme>()
+        .switcher
+        .select_index(index);
+    cx.refresh_windows();
+}
+
+/// Current glow intensity of the active theme.
+pub fn glow_intensity(cx: &App) -> f32 {
+    cx.legendary().theme().effects.glow_intensity
+}
+
+/// Set glow intensity on **every** theme (so it survives switching) and repaint.
+pub fn set_glow_intensity(cx: &mut App, intensity: f32) {
+    let g = cx.global_mut::<LegendaryTheme>();
+    let idx = g.switcher.index();
+    let themes = g
+        .switcher
+        .themes()
+        .iter()
+        .map(|t| t.clone().with_glow_intensity(intensity))
+        .collect();
+    g.switcher = ThemeSwitcher::with_themes(themes);
+    g.switcher.select_index(idx);
+    cx.refresh_windows();
 }
 
 /// Switch to the next theme; call `cx.refresh_windows()` afterwards to repaint.
@@ -163,6 +232,18 @@ mod tests {
         let h = hsla(Color::hex(0xfcee0a));
         assert_eq!(h.a, 1.0);
         assert!(h.s > 0.9);
+    }
+
+    #[test]
+    fn glow_intensity_applies_to_all_themes() {
+        let mut sw = ThemeSwitcher::new();
+        let themes: Vec<Theme> = sw
+            .themes()
+            .iter()
+            .map(|t| t.clone().with_glow_intensity(2.0))
+            .collect();
+        sw = ThemeSwitcher::with_themes(themes);
+        assert!(sw.themes().iter().all(|t| t.effects.glow_intensity == 2.0));
     }
 
     #[test]
