@@ -1459,7 +1459,7 @@ impl Render for Showcase {
         let mut body = div()
             .flex()
             .flex_col()
-            .gap(gap)
+            .gap(px(t.spacing.lg + 8.0))
             .w_full()
             .min_w_0()
             .p(px(if narrow { t.spacing.md } else { t.spacing.xl }))
