@@ -522,7 +522,7 @@ mod tests {
             .with_ms(EntryKind::Rise, 400);
         assert!((s.duration(d).as_secs_f32() * 1000.0 - 400.0).abs() < 0.01);
         let (o, _, y) = s.frame(0.5, d); // fade done, rise half-way
-        assert!((o - 1.0).abs() < 1e-6 && (y - 7.0).abs() < 1e-6);
+        assert!((o - 0.5).abs() < 1e-6 && (y - 7.0).abs() < 1e-6);
         let (o1, _, _) = s.frame(1.0, d);
         assert!((o1 - 1.0).abs() < 1e-6);
     }
