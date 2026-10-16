@@ -68,8 +68,9 @@ mod testing;
 pub use button::Button;
 pub use carousel::{window_start, Carousel};
 pub use charts::{
-    bar_max, fmt_num, heat_color, nice_ticks, norm, pie_fractions, polar, smooth_points, BarChart,
-    Gauge, Heatmap, Legend, LineChart, PieChart, RadarChart, ScatterPlot, Series, Sparkline,
+    bar_max, fmt_num, heat_color, marker_points, nice_ticks, norm, pie_fractions, pie_hit, polar,
+    smooth_points, BarChart, Gauge, Heatmap, Legend, LineChart, Marker, PieChart, RadarChart,
+    ScatterPlot, Series, Sparkline,
 };
 pub use charts_distribution::{histogram_bins, quartiles, BoxPlot, BubbleChart, Histogram};
 pub use charts_flow::{waterfall_steps, Funnel, Waterfall};
