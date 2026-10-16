@@ -1091,7 +1091,7 @@ impl RenderOnce for PieChart {
             .map(|i| hsla(t.palette.series_at(i)))
             .collect();
         let (size, hole) = (self.size, self.hole);
-        let gap = if vals.len() > 1 { 0.003 } else { 0.0 };
+        let gap = if vals.len() > 1 { 2.0_f32 } else { 0.0 }; // px
         let cvs = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, cx| {
@@ -1106,20 +1106,34 @@ impl RenderOnce for PieChart {
                         (0.0, 0.0)
                     };
                     let origin = point(b.origin.x + px(dx), b.origin.y + px(dy));
-                    let (a, z) = (a + gap, z - gap);
-                    if z <= a {
+                    // Constant-width straight gap: each edge is offset by
+                    // `gap / 2` from the true radial line, so the gap has
+                    // parallel sides instead of widening towards the rim.
+                    let half = gap / 2.0;
+                    let (a, z) = (*a, *z);
+                    let delta =
+                        |rad: f32| (half / rad).clamp(0.0, 1.0).asin() / std::f32::consts::TAU;
+                    let (ao, zo) = (a + delta(r), z - delta(r));
+                    if zo <= ao {
                         continue;
                     }
                     if hole <= 0.0 {
+                        let theta = (z - a) * std::f32::consts::TAU;
+                        let d = if half > 0.0 {
+                            half / (theta / 2.0).sin().max(0.05)
+                        } else {
+                            0.0
+                        };
+                        let (ax, ay) = polar(c, c, d, (a + z) / 2.0);
                         // Convex wedges (<= 1/8 turn) tessellate without
                         // seams or holes, even for slices past 180 degrees.
-                        let n = (((z - a) * 8.0).ceil() as usize).max(1);
+                        let n = (((zo - ao) * 8.0).ceil() as usize).max(1);
                         for k in 0..n {
-                            let w0 = a + (z - a) * k as f32 / n as f32;
-                            let w1 = a + (z - a) * (k + 1) as f32 / n as f32;
+                            let w0 = ao + (zo - ao) * k as f32 / n as f32;
+                            let w1 = ao + (zo - ao) * (k + 1) as f32 / n as f32;
                             let mut p =
                                 turn_arc(c, c, r, w0, if k + 1 == n { w1 } else { w1 + 0.0015 });
-                            p.push((c, c));
+                            p.push((ax, ay));
                             fill(w, origin, &p, *col);
                         }
                         continue;
@@ -1127,13 +1141,15 @@ impl RenderOnce for PieChart {
                     // Annular sectors as small filled quads: thick strokes
                     // leave mitre artefacts and seams, fills do not.
                     let r_in = r * hole;
-                    let n = (((z - a) * 24.0).ceil() as usize).max(1);
+                    let (ai, zi) = (a + delta(r_in), z - delta(r_in));
+                    let n = (((zo - ao) * 24.0).ceil() as usize).max(1);
                     for k in 0..n {
-                        let w0 = a + (z - a) * k as f32 / n as f32;
-                        let w1 = a + (z - a) * (k + 1) as f32 / n as f32;
-                        let w1 = if k + 1 == n { w1 } else { w1 + 0.001 };
-                        let mut p = turn_arc(c, c, r, w0, w1);
-                        let mut inner = turn_arc(c, c, r_in, w0, w1);
+                        let f0 = k as f32 / n as f32;
+                        let f1 = (k + 1) as f32 / n as f32;
+                        let e = if k + 1 == n { 0.0 } else { 0.001 };
+                        let mut p = turn_arc(c, c, r, ao + (zo - ao) * f0, ao + (zo - ao) * f1 + e);
+                        let mut inner =
+                            turn_arc(c, c, r_in, ai + (zi - ai) * f0, ai + (zi - ai) * f1 + e);
                         inner.reverse();
                         p.extend(inner);
                         fill(w, origin, &p, *col);
