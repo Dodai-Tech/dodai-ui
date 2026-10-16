@@ -138,8 +138,11 @@ pub fn entry(
     let anim = if kind.is_empty() {
         Animation::new(Duration::from_millis(1))
     } else {
-        motion.animation()
+        let e = motion.easing;
+        Animation::new(kind.duration(motion.duration))
+            .with_easing(move |t| e.apply(t).clamp(0.0, 1.0))
     };
+    let default = motion.duration;
     div()
         .flex()
         .child(el)
@@ -149,7 +152,7 @@ pub fn entry(
             ElementId::from(SharedString::from(format!("entry-anim-{name}"))),
             anim,
             move |el, p| {
-                let (o, dx, dy) = kind.frame(p);
+                let (o, dx, dy) = kind.frame(p, default);
                 el.opacity(o).left(px(dx)).top(px(dy))
             },
         )
@@ -242,36 +245,75 @@ pub enum EntryKind {
     SlideRight,
 }
 
-/// A composition of entry effects (opacity multiplies, offsets add).
+/// A composition of entry effects (opacity multiplies, offsets add), each
+/// with an optional own duration in ms (`0` = the motion's default).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
-pub struct EntrySet(u8);
+pub struct EntrySet {
+    mask: u8,
+    ms: [u16; 5],
+}
 
 impl EntrySet {
-    pub const NONE: EntrySet = EntrySet(0);
+    pub const NONE: EntrySet = EntrySet {
+        mask: 0,
+        ms: [0; 5],
+    };
     pub fn of(k: EntryKind) -> Self {
-        EntrySet(k.bit())
+        Self::NONE.with(k)
     }
-    pub fn with(self, k: EntryKind) -> Self {
-        EntrySet(self.0 | k.bit())
+    pub fn with(mut self, k: EntryKind) -> Self {
+        self.mask |= k.bit();
+        self
     }
-    pub fn without(self, k: EntryKind) -> Self {
-        EntrySet(self.0 & !k.bit())
+    pub fn without(mut self, k: EntryKind) -> Self {
+        self.mask &= !k.bit();
+        self
     }
-    pub fn toggled(self, k: EntryKind) -> Self {
-        EntrySet(self.0 ^ k.bit())
+    pub fn toggled(mut self, k: EntryKind) -> Self {
+        self.mask ^= k.bit();
+        self
     }
     pub fn contains(self, k: EntryKind) -> bool {
-        self.0 & k.bit() != 0
+        self.mask & k.bit() != 0
     }
     pub fn is_empty(self) -> bool {
-        self.0 == 0
+        self.mask == 0
     }
-    /// Combined `(opacity, dx, dy)` at progress `p`. Pure.
-    pub fn frame(self, p: f32) -> (f32, f32, f32) {
+    /// Own duration for `k` in ms (`0` = default).
+    pub fn ms_of(self, k: EntryKind) -> u16 {
+        k.slot().map_or(0, |i| self.ms[i])
+    }
+    /// Set `k`'s own duration (ms; `0` = default) and enable it.
+    pub fn with_ms(mut self, k: EntryKind, ms: u16) -> Self {
+        if let Some(i) = k.slot() {
+            self.ms[i] = ms;
+        }
+        self.with(k)
+    }
+    fn dur_ms(self, k: EntryKind, default: Duration) -> f32 {
+        match self.ms_of(k) {
+            0 => default.as_secs_f32() * 1000.0,
+            n => n as f32,
+        }
+    }
+    /// Total animation length: the longest active effect.
+    pub fn duration(self, default: Duration) -> Duration {
+        let ms = EntryKind::ALL
+            .iter()
+            .filter(|k| self.contains(**k))
+            .map(|k| self.dur_ms(*k, default))
+            .fold(1.0, f32::max);
+        Duration::from_secs_f32(ms / 1000.0)
+    }
+    /// Combined `(opacity, dx, dy)` at overall progress `p` (each effect
+    /// finishes at its own duration). Pure.
+    pub fn frame(self, p: f32, default: Duration) -> (f32, f32, f32) {
+        let total = self.duration(default).as_secs_f32() * 1000.0;
         EntryKind::ALL.iter().filter(|k| self.contains(**k)).fold(
             (1.0, 0.0, 0.0),
             |(o, x, y), k| {
-                let (ko, kx, ky) = k.frame(p);
+                let pk = (p * total / self.dur_ms(*k, default)).clamp(0.0, 1.0);
+                let (ko, kx, ky) = k.frame(pk);
                 (o * ko, x + kx, y + ky)
             },
         )
@@ -285,6 +327,9 @@ impl From<EntryKind> for EntrySet {
 }
 
 impl EntryKind {
+    fn slot(self) -> Option<usize> {
+        (self.bit() != 0).then(|| self.bit().trailing_zeros() as usize)
+    }
     fn bit(self) -> u8 {
         match self {
             EntryKind::None => 0,
@@ -469,10 +514,24 @@ impl gpui::Element for EntryScope {
 #[cfg(test)]
 mod tests {
     #[test]
+    fn entry_set_per_effect_duration() {
+        use super::*;
+        let d = Duration::from_millis(200);
+        let s = EntrySet::NONE
+            .with(EntryKind::Fade)
+            .with_ms(EntryKind::Rise, 400);
+        assert_eq!(s.duration(d), Duration::from_millis(400));
+        let (o, _, y) = s.frame(0.5, d); // fade done, rise half-way
+        assert!((o - 1.0).abs() < 1e-6 && (y - 7.0).abs() < 1e-6);
+        let (o1, _, _) = s.frame(1.0, d);
+        assert!((o1 - 1.0).abs() < 1e-6);
+    }
+
+    #[test]
     fn entry_set_composes() {
         use super::*;
         let s = EntrySet::NONE.with(EntryKind::Fade).with(EntryKind::Rise);
-        let (o, x, y) = s.frame(0.5);
+        let (o, x, y) = s.frame(0.5, Duration::from_millis(200));
         assert!((o - 0.25).abs() < 1e-6 && x == 0.0 && (y - 7.0).abs() < 1e-6);
         assert!(s
             .toggled(EntryKind::Fade)

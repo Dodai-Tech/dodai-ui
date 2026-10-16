@@ -27,7 +27,7 @@ use gpui::{
     div, prelude::*, px, size, App, Application, Bounds, Context, Entity, FocusHandle,
     KeyDownEvent, Window, WindowBounds, WindowOptions,
 };
-use gpui::{Animation, AnimationExt};
+use gpui::{Animation, AnimationExt, SharedString};
 use std::time::Duration;
 
 struct Showcase {
@@ -36,6 +36,8 @@ struct Showcase {
     anim_ms: f32,
     replay: usize,
     sec_kind: std::collections::HashMap<&'static str, EntrySet>,
+    pill_hover: Option<(&'static str, EntryKind)>,
+    pop_hover: Option<(&'static str, EntryKind)>,
     filter: Entity<TextInput>,
     search: Entity<TextInput>,
     cat: usize,
@@ -1304,7 +1306,7 @@ impl Render for Showcase {
             }
             shown += 1;
             let kind = self.sec_kind.get(title).copied();
-            let chip = |id: (&'static str, u32), label: &'static str, on: bool| {
+            let chip = |id: (&'static str, u32), label: SharedString, on: bool| {
                 div()
                     .id(id)
                     .px(px(6.0))
@@ -1324,6 +1326,7 @@ impl Render for Showcase {
             };
             let mut chips = div()
                 .flex()
+                .flex_none()
                 .flex_wrap()
                 .items_center()
                 .justify_end()
@@ -1336,7 +1339,7 @@ impl Render for Showcase {
                 );
             let me_g = me.clone();
             chips = chips.child(
-                chip(("sec-g", shown as u32), "Global", kind.is_none()).on_click(
+                chip(("sec-g", shown as u32), "Global".into(), kind.is_none()).on_click(
                     move |_, _, cx| {
                         me_g.update(cx, |s, cx| {
                             s.sec_kind.remove(title);
@@ -1348,19 +1351,87 @@ impl Render for Showcase {
             );
             for (ki, k) in EntryKind::ALL.iter().copied().enumerate().skip(1) {
                 let on = kind.is_some_and(|s| s.contains(k));
+                let ms = kind.map_or(0, |s| s.ms_of(k));
+                let open = on
+                    && (self.pill_hover == Some((title, k)) || self.pop_hover == Some((title, k)));
                 let me_c = me.clone();
-                chips = chips.child(
-                    chip(("sec-k", (shown * 8 + ki as i32) as u32), k.label(), on).on_click(
-                        move |_, _, cx| {
-                            me_c.update(cx, |s, cx| {
-                                let cur = s.sec_kind.get(title).copied().unwrap_or(EntrySet::NONE);
-                                s.sec_kind.insert(title, cur.toggled(k));
-                                s.replay += 1;
-                                cx.notify();
-                            })
-                        },
-                    ),
-                );
+                let me_p = me.clone();
+                let uid = (shown * 8 + ki as i32) as u32;
+                let text: SharedString = if on && ms > 0 {
+                    format!("{} · {ms}ms", k.label()).into()
+                } else {
+                    k.label().into()
+                };
+                let mut wrap = div()
+                    .id(("pw", uid))
+                    .relative()
+                    .on_hover(cx.listener(move |s, h: &bool, _, cx| {
+                        if *h {
+                            s.pill_hover = Some((title, k));
+                        } else if s.pill_hover == Some((title, k)) {
+                            s.pill_hover = None;
+                        }
+                        cx.notify();
+                    }))
+                    .child(chip(("sec-k", uid), text, on).on_click(move |_, _, cx| {
+                        me_c.update(cx, |s, cx| {
+                            let cur = s.sec_kind.get(title).copied().unwrap_or(EntrySet::NONE);
+                            s.sec_kind.insert(title, cur.toggled(k));
+                            s.replay += 1;
+                            cx.notify();
+                        })
+                    }));
+                if open {
+                    let popup = div()
+                        .id(("pp", uid))
+                        .absolute()
+                        .top(px(17.0))
+                        .right_0()
+                        .w(px(230.0))
+                        .p(px(t.spacing.md))
+                        .rounded(px(6.0))
+                        .border_1()
+                        .border_color(hsla(t.palette.border_strong))
+                        .bg(hsla(t.palette.surface_raised))
+                        .flex()
+                        .flex_col()
+                        .gap(px(t.spacing.xs))
+                        .on_hover(cx.listener(move |s, h: &bool, _, cx| {
+                            if *h {
+                                s.pop_hover = Some((title, k));
+                            } else if s.pop_hover == Some((title, k)) {
+                                s.pop_hover = None;
+                            }
+                            cx.notify();
+                        }))
+                        .child(Muted::new(format!("{} duration", k.label())))
+                        .child(
+                            Slider::new(("pd", uid), ms as f32)
+                                .range(0.0, 2000.0)
+                                .step(50.0)
+                                .show_value(true)
+                                .format(|v| {
+                                    if v < 1.0 {
+                                        "default".to_string()
+                                    } else {
+                                        format!("{v:.0} ms")
+                                    }
+                                })
+                                .on_change(move |v, _, cx| {
+                                    me_p.update(cx, |s, cx| {
+                                        let cur = s
+                                            .sec_kind
+                                            .get(title)
+                                            .copied()
+                                            .unwrap_or(EntrySet::NONE);
+                                        s.sec_kind.insert(title, cur.with_ms(k, v as u16));
+                                        cx.notify();
+                                    })
+                                }),
+                        );
+                    wrap = wrap.child(gpui::deferred(popup).with_priority(60));
+                }
+                chips = chips.child(wrap);
             }
             let content = match kind {
                 None => el,
@@ -1374,7 +1445,15 @@ impl Render for Showcase {
                     .w_full()
                     .min_w_0()
                     .child(chips)
-                    .child(content),
+                    .child(
+                        div()
+                            .flex()
+                            .flex_col()
+                            .flex_none()
+                            .w_full()
+                            .min_w_0()
+                            .child(content),
+                    ),
             );
         }
         if shown == 0 {
@@ -1454,6 +1533,8 @@ fn main() {
                         anim_ms: 220.0,
                         replay: 0,
                         sec_kind: Default::default(),
+                        pill_hover: None,
+                        pop_hover: None,
                         cat_count: 1,
                         side_focus: cx.focus_handle(),
                         rating: 3,
