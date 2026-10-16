@@ -40,6 +40,21 @@ pub fn slider_fraction(value: f32, min: f32, max: f32) -> f32 {
     }
 }
 
+/// Tick positions (`0..=1`) for `min..=max` at multiples of `step`;
+/// empty when there would be more than 64 (too dense to draw). Pure.
+pub fn tick_fractions(min: f32, max: f32, step: Option<f32>) -> Vec<f32> {
+    let Some(step) = step.filter(|s| *s > 0.0 && max > min) else {
+        return Vec::new();
+    };
+    let n = ((max - min) / step).round() as usize;
+    if n == 0 || n > 64 {
+        return Vec::new();
+    }
+    (0..=n)
+        .map(|i| ((i as f32 * step) / (max - min)).clamp(0.0, 1.0))
+        .collect()
+}
+
 /// Map a pointer x to a slider value. `left`/`width` are the control's bounds,
 /// `thumb` the thumb diameter (the thumb centre travels `width - thumb`).
 pub fn slider_value(
@@ -279,6 +294,9 @@ pub struct Slider {
     min: f32,
     max: f32,
     step: Option<f32>,
+    ticks: bool,
+    show_value: bool,
+    format: Option<Rc<dyn Fn(f32) -> String>>,
     on_change: Option<FloatHandler>,
 }
 
@@ -294,8 +312,26 @@ impl Slider {
             min: 0.0,
             max: 1.0,
             step: None,
+            ticks: false,
+            show_value: false,
+            format: None,
             on_change: None,
         }
+    }
+    /// Draw a tick mark at every `step` (needs [`Slider::step`]).
+    pub fn ticks(mut self, on: bool) -> Self {
+        self.ticks = on;
+        self
+    }
+    /// Show the current value next to the slider.
+    pub fn show_value(mut self, on: bool) -> Self {
+        self.show_value = on;
+        self
+    }
+    /// Custom value formatter for the readout (e.g. `|v| format!("{v:.0} dB")`).
+    pub fn format(mut self, f: impl Fn(f32) -> String + 'static) -> Self {
+        self.format = Some(Rc::new(f));
+        self
     }
     /// Horizontal (default, full width) or vertical (fixed [`Slider::length`]).
     pub fn direction(mut self, d: Direction) -> Self {
@@ -378,43 +414,102 @@ impl RenderOnce for Slider {
             .w(px(THUMB))
             .h(px(THUMB));
         let rail = div().absolute().top_0().bottom_0().left_0().right_0();
+        let tick_c = hsla(t.palette.border_strong);
+        let ticks = if self.ticks {
+            tick_fractions(min, max, step)
+        } else {
+            Vec::new()
+        };
         let rail = if vertical {
-            rail.top(px(THUMB / 2.0)).bottom(px(THUMB / 2.0)).child(
+            let mut r = rail.top(px(THUMB / 2.0)).bottom(px(THUMB / 2.0));
+            for f in &ticks {
+                r = r.child(
+                    div()
+                        .absolute()
+                        .left(px(5.0))
+                        .w(px(10.0))
+                        .h(px(2.0))
+                        .top(relative(1.0 - f))
+                        .bg(tick_c),
+                );
+            }
+            r.child(
                 thumb
                     .left(px(2.0))
                     .top(relative(1.0 - frac))
                     .mt(px(-THUMB / 2.0)),
             )
         } else {
-            rail.left(px(THUMB / 2.0))
-                .right(px(THUMB / 2.0))
-                .child(thumb.top(px(2.0)).left(relative(frac)).ml(px(-THUMB / 2.0)))
-        };
-        base.child(
-            canvas(
-                |_, _, _| (),
-                move |b, _, _, cx| rec.update(cx, |s, _| s.bounds = b),
-            )
-            .absolute()
-            .size_full(),
-        )
-        .child(track)
-        .child(rail)
-        .on_mouse_down(MouseButton::Left, move |e, w, cx| {
-            down.update(cx, |s, _| s.dragging = true);
-            apply_down(e.position, w, cx);
-        })
-        .on_mouse_move(move |e, w, cx| {
-            if mv.read(cx).dragging {
-                apply_move(e.position, w, cx);
+            let mut r = rail.left(px(THUMB / 2.0)).right(px(THUMB / 2.0));
+            for f in &ticks {
+                r = r.child(
+                    div()
+                        .absolute()
+                        .top(px(5.0))
+                        .h(px(10.0))
+                        .w(px(2.0))
+                        .left(relative(*f))
+                        .ml(px(-1.0))
+                        .bg(tick_c),
+                );
             }
-        })
-        .on_mouse_up(MouseButton::Left, move |_, _, cx| {
-            up.update(cx, |s, _| s.dragging = false)
-        })
-        .on_mouse_up_out(MouseButton::Left, move |_, _, cx| {
-            up2.update(cx, |s, _| s.dragging = false)
-        })
+            r.child(thumb.top(px(2.0)).left(relative(frac)).ml(px(-THUMB / 2.0)))
+        };
+        let readout = self.show_value.then(|| {
+            let txt = match &self.format {
+                Some(f) => f(self.value),
+                None => crate::charts::fmt_num((self.value * 100.0).round() / 100.0),
+            };
+            div()
+                .font_family(crate::text::first_family(t.typography.mono))
+                .text_size(px(t.typography.size_xs))
+                .text_color(hsla(t.palette.text_muted))
+                .child(txt)
+        });
+        let slider = base
+            .child(
+                canvas(
+                    |_, _, _| (),
+                    move |b, _, _, cx| rec.update(cx, |s, _| s.bounds = b),
+                )
+                .absolute()
+                .size_full(),
+            )
+            .child(track)
+            .child(rail)
+            .on_mouse_down(MouseButton::Left, move |e, w, cx| {
+                down.update(cx, |s, _| s.dragging = true);
+                apply_down(e.position, w, cx);
+            })
+            .on_mouse_move(move |e, w, cx| {
+                if mv.read(cx).dragging {
+                    apply_move(e.position, w, cx);
+                }
+            })
+            .on_mouse_up(MouseButton::Left, move |_, _, cx| {
+                up.update(cx, |s, _| s.dragging = false)
+            })
+            .on_mouse_up_out(MouseButton::Left, move |_, _, cx| {
+                up2.update(cx, |s, _| s.dragging = false)
+            });
+        match (readout, vertical) {
+            (None, _) => slider.into_any_element(),
+            (Some(r), true) => div()
+                .flex()
+                .flex_col()
+                .items_center()
+                .gap(px(t.spacing.xs))
+                .child(r)
+                .child(slider)
+                .into_any_element(),
+            (Some(r), false) => div()
+                .flex()
+                .items_center()
+                .gap(px(t.spacing.sm))
+                .child(slider.flex_1())
+                .child(r)
+                .into_any_element(),
+        }
     }
 }
 
@@ -430,6 +525,13 @@ mod tests {
         assert_eq!(clamp01(f32::NAN), 0.0);
         assert_eq!(slider_fraction(5.0, 0.0, 10.0), 0.5);
         assert_eq!(slider_fraction(5.0, 3.0, 3.0), 0.0);
+    }
+
+    #[test]
+    fn ticks_follow_step() {
+        assert_eq!(tick_fractions(0.0, 10.0, Some(5.0)), vec![0.0, 0.5, 1.0]);
+        assert!(tick_fractions(0.0, 10.0, None).is_empty());
+        assert!(tick_fractions(0.0, 1000.0, Some(1.0)).is_empty());
     }
 
     #[test]

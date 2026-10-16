@@ -6,12 +6,12 @@
 
 use dodai_core::{ButtonVariant, Theme, Tone};
 use dodai_gpui::{
-    cycle_next, cycle_prev, family_title, glow_intensity, hsla, install, scanlines_enabled,
-    set_glow_intensity, set_scanlines, theme_of, ActiveDodai, Button, Card, CardVariant, Checkbox,
-    DesignSystemSelector, Direction, Divider, DodaiStyled, DodaiTooltip, Fab, FabSize, Heading,
-    IconButton, InputBox, Knob, Label, ListItem, Mono, Muted, NavItem, NavLayout, Navigation,
-    Panel, ProgressBar, Radio, Scanlines, SearchBar, Slider, Tabs, Tag, ThemeSelector, Toggle,
-    TopAppBar,
+    cycle_next, cycle_prev, family_title, fuzzy_filter, glow_intensity, hsla, install,
+    scanlines_enabled, set_glow_intensity, set_scanlines, theme_of, ActiveDodai, Button, Card,
+    CardVariant, Checkbox, DesignSystemSelector, Direction, Divider, DodaiStyled, DodaiTooltip,
+    Fab, FabSize, Heading, IconButton, InputBox, Knob, Label, ListItem, Mono, Muted, NavItem,
+    NavLayout, Navigation, Panel, ProgressBar, Radio, Scanlines, SearchBar, Slider, Tabs, Tag,
+    ThemeSelector, Toggle, TopAppBar,
 };
 use dodai_gpui::{
     BarChart, Date, DatePicker, EmptyState, Gauge, Heatmap, IconBadge, LineChart, NumberStepper,
@@ -25,7 +25,18 @@ use gpui::{
 };
 
 struct Showcase {
-    more: Entity<More>,
+    filter: Entity<TextInput>,
+    search: Entity<TextInput>,
+    cat: usize,
+    rating: u32,
+    stepper: i32,
+    range: (f32, f32),
+    vrange: (f32, f32),
+    stepped: f32,
+    db: f32,
+    date: (i32, u32, Option<Date>),
+    time: (u32, u32),
+    tags: Vec<&'static str>,
     focus: FocusHandle,
     tab: usize,
     switch: bool,
@@ -55,6 +66,7 @@ impl Render for Showcase {
         let section = |title: &'static str| Panel::new().title(title);
 
         let row = || div().flex().flex_wrap().items_center().gap(gap);
+        let col = || div().flex().flex_col().gap(gap);
 
         let buttons = row()
             .child(
@@ -185,6 +197,34 @@ impl Render for Showcase {
                             }),
                     )
                     .child(Mono::new(format!("{:.2}", self.vslider[i]))),
+            );
+        }
+
+        {
+            let m = me.clone();
+            dials = dials.child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .items_center()
+                    .gap(gap)
+                    .child(
+                        RangeSlider::new("vrange", self.vrange.0, self.vrange.1)
+                            .direction(Direction::Vertical)
+                            .length(120.0)
+                            .step(0.1)
+                            .ticks(true)
+                            .on_change(move |a, b, _, cx| {
+                                m.update(cx, |s, cx| {
+                                    s.vrange = (a, b);
+                                    cx.notify()
+                                })
+                            }),
+                    )
+                    .child(Mono::new(format!(
+                        "{:.1}–{:.1}",
+                        self.vrange.0, self.vrange.1
+                    ))),
             );
         }
 
@@ -352,115 +392,6 @@ impl Render for Showcase {
                     .child(Muted::new("keys: t / T theme · l scanlines")),
             );
 
-        let body = div()
-            .flex()
-            .flex_col()
-            .gap(gap)
-            .p(px(t.spacing.xl))
-            .child(Heading::new("Dodai UI").level(1))
-            .child(ds_panel)
-            .child(theme_panel)
-            .child(section("Buttons").child(buttons))
-            .child(section("Tags").child(tags))
-            .child(
-                section("Tabs")
-                    .child(tabs)
-                    .child(Muted::new(format!("active tab: {}", self.tab))),
-            )
-            .child(
-                section("Toggle · Checkbox · Radio")
-                    .child(controls)
-                    .child(radios),
-            )
-            .child(section("Slider · Progress").child(sliders))
-            .child(section("Knob · Vertical slider").child(dials))
-            .child(section("App bar · Cards · FAB · Navigation").child(structure))
-            .child(
-                section("Input")
-                    .child(InputBox::new().placeholder("search the net…"))
-                    .child(InputBox::new().focused(true).child("focused input"))
-                    .child(
-                        div()
-                            .dodai_input(&t, false)
-                            .h(px(t.shape.control_height))
-                            .flex()
-                            .items_center()
-                            .child("legacy dodai_input container"),
-                    ),
-            )
-            .child(section("List · Divider").child(list).child(Divider::new()))
-            .child(
-                section("Text")
-                    .child(Heading::new("Heading 1").level(1))
-                    .child(Heading::new("Heading 2"))
-                    .child(Heading::new("Heading 3").level(3))
-                    .child(Label::new("Label text"))
-                    .child(Muted::new("Muted text"))
-                    .child(Mono::new("mono_text() // 0xDEADBEEF")),
-            )
-            .child(
-                section("Tooltip").child(
-                    div()
-                        .id("tip")
-                        .w(px(220.0))
-                        .text_color(hsla(t.palette.link))
-                        .tooltip(DodaiTooltip::text("Themed tooltip"))
-                        .child("Hover me"),
-                ),
-            )
-            .child(self.more.clone());
-
-        div()
-            .id("root")
-            .track_focus(&self.focus)
-            .on_key_down(cx.listener(|_, e: &KeyDownEvent, _, cx| {
-                if e.keystroke.key == "l" {
-                    let on = scanlines_enabled(cx);
-                    set_scanlines(cx, !on);
-                }
-                if e.keystroke.key == "t" {
-                    if e.keystroke.modifiers.shift {
-                        cycle_prev(cx)
-                    } else {
-                        cycle_next(cx)
-                    }
-                }
-            }))
-            .relative()
-            .size_full()
-            .dodai_background(&t)
-            .child(
-                div()
-                    .id("scroll")
-                    .size_full()
-                    .overflow_y_scroll()
-                    .child(body),
-            )
-            .child(Scanlines::new())
-    }
-}
-
-/// New M3 gaps, beyond-M3 components and charts.
-struct More {
-    focus: FocusHandle,
-    search: Entity<TextInput>,
-    rating: u32,
-    stepper: i32,
-    range: (f32, f32),
-    date: (i32, u32, Option<Date>),
-    time: (u32, u32),
-    tags: Vec<&'static str>,
-}
-
-impl Render for More {
-    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let t = theme_of(cx);
-        let me = cx.entity();
-        let gap = px(t.spacing.md);
-        let section = |title: &'static str| Panel::new().title(title);
-        let row = || div().flex().flex_wrap().items_center().gap(gap);
-        let col = || div().flex().flex_col().gap(gap);
-
         let open = !self.search.read(cx).text().is_empty();
         let m = me.clone();
         let search = SearchView::new("search", self.search.clone())
@@ -489,70 +420,57 @@ impl Render for More {
             me.clone(),
             me.clone(),
         );
-        let widgets = col()
-            .child(search)
+        let w_search = search;
+        let w_misc = row()
             .child(
-                row()
-                    .child(
-                        Rating::new("rating", self.rating).on_change(move |v, _, cx| {
-                            m1.update(cx, |s, cx| {
-                                s.rating = v;
-                                cx.notify()
-                            })
-                        }),
-                    )
-                    .child(
-                        NumberStepper::new("step", self.stepper)
-                            .range(0, 20)
-                            .on_change(move |v, _, cx| {
-                                m2.update(cx, |s, cx| {
-                                    s.stepper = v;
-                                    cx.notify()
-                                })
-                            }),
-                    )
-                    .child(
-                        div()
-                            .id("rich")
-                            .text_color(hsla(t.palette.link))
-                            .tooltip(RichTooltip::build(
-                                "Rich tooltip",
-                                "Title, body and an action.",
-                                Some("Learn more"),
-                            ))
-                            .child("Hover (rich)"),
-                    )
-                    .child(IconBadge::new(IconButton::new("bell", "🔔")).count(12, Tone::Danger))
-                    .child(IconBadge::new(IconButton::new("mail", "✉")).dot(Tone::Success)),
-            )
-            .child(
-                RangeSlider::new("range", self.range.0, self.range.1).on_change(
-                    move |a, b, _, cx| {
-                        m3.update(cx, |s, cx| {
-                            s.range = (a, b);
-                            cx.notify()
-                        })
-                    },
-                ),
-            )
-            .child(Muted::new(format!(
-                "range {:.2} – {:.2}",
-                self.range.0, self.range.1
-            )))
-            .child(
-                TagField::new("tags", self.tags.clone()).on_remove(move |i, _, cx| {
-                    m4.update(cx, |s, cx| {
-                        s.tags.remove(i);
+                Rating::new("rating", self.rating).on_change(move |v, _, cx| {
+                    m1.update(cx, |s, cx| {
+                        s.rating = v;
                         cx.notify()
                     })
                 }),
             )
-            .child(Snackbar::new("snack", "Message archived").action("Undo", |_, _| {}))
             .child(
-                Toolbar::new()
-                    .child(IconButton::new("tb1", "✎"))
-                    .child(IconButton::new("tb2", "⎘")),
-            );
+                NumberStepper::new("step", self.stepper)
+                    .range(0, 20)
+                    .on_change(move |v, _, cx| {
+                        m2.update(cx, |s, cx| {
+                            s.stepper = v;
+                            cx.notify()
+                        })
+                    }),
+            )
+            .child(
+                div()
+                    .id("rich")
+                    .text_color(hsla(t.palette.link))
+                    .tooltip(RichTooltip::build(
+                        "Rich tooltip",
+                        "Title, body and an action.",
+                        Some("Learn more"),
+                    ))
+                    .child("Hover (rich)"),
+            )
+            .child(IconBadge::new(IconButton::new("bell", "🔔")).count(12, Tone::Danger))
+            .child(IconBadge::new(IconButton::new("mail", "✉")).dot(Tone::Success));
+        let w_range =
+            RangeSlider::new("range", self.range.0, self.range.1).on_change(move |a, b, _, cx| {
+                m3.update(cx, |s, cx| {
+                    s.range = (a, b);
+                    cx.notify()
+                })
+            });
+        let w_range_txt = Muted::new(format!("range {:.2} – {:.2}", self.range.0, self.range.1));
+        let w_tags = TagField::new("tags", self.tags.clone()).on_remove(move |i, _, cx| {
+            m4.update(cx, |s, cx| {
+                s.tags.remove(i);
+                cx.notify()
+            })
+        });
+        let w_snack = Snackbar::new("snack", "Message archived").action("Undo", |_, _| {});
+        let w_toolbar = Toolbar::new()
+            .child(IconButton::new("tb1", "✎"))
+            .child(IconButton::new("tb2", "⎘"));
 
         let (y, mo, sel) = self.date;
         let pickers = row()
@@ -610,7 +528,7 @@ impl Render for More {
         let months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
         let a = Series::new("Revenue", [12.0, 18.0, 14.0, 26.0, 22.0, 31.0]);
         let b = Series::new("Cost", [8.0, 11.0, 13.0, 15.0, 17.0, 16.0]);
-        let charts = col()
+        let charts_xy = col()
             .child(
                 row()
                     .child(
@@ -643,80 +561,392 @@ impl Render for More {
                                 .horizontal(true),
                         ),
                     ),
-            )
+            );
+        let charts_round = row()
+            .child(PieChart::new([
+                ("Rust", 52.0),
+                ("Kotlin", 28.0),
+                ("Other", 20.0),
+            ]))
             .child(
-                row()
-                    .child(PieChart::new([
-                        ("Rust", 52.0),
-                        ("Kotlin", 28.0),
-                        ("Other", 20.0),
-                    ]))
-                    .child(
-                        PieChart::new([("A", 3.0), ("B", 2.0), ("C", 1.0)])
-                            .donut(0.62)
-                            .center("6"),
-                    )
-                    .child(Gauge::new(72.0).label("72%").tone(Tone::Success))
-                    .child(Gauge::new(31.0).tone(Tone::Warning))
-                    .child(Sparkline::new([3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0])),
+                PieChart::new([("A", 3.0), ("B", 2.0), ("C", 1.0)])
+                    .donut(0.62)
+                    .center("6"),
             )
+            .child(Gauge::new(72.0).label("72%").tone(Tone::Success))
+            .child(Gauge::new(31.0).tone(Tone::Warning))
+            .child(Sparkline::new([3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0]));
+        let charts_misc = row()
+            .child(RadarChart::new(
+                ["Speed", "Power", "Range", "Armor", "Stealth"],
+                [
+                    Series::new("Unit A", [8.0, 6.0, 7.0, 4.0, 9.0]),
+                    Series::new("Unit B", [5.0, 9.0, 4.0, 8.0, 3.0]),
+                ],
+            ))
             .child(
-                row()
-                    .child(RadarChart::new(
-                        ["Speed", "Power", "Range", "Armor", "Stealth"],
-                        [
-                            Series::new("Unit A", [8.0, 6.0, 7.0, 4.0, 9.0]),
-                            Series::new("Unit B", [5.0, 9.0, 4.0, 8.0, 3.0]),
-                        ],
-                    ))
-                    .child(
-                        div().w(px(380.0)).child(ScatterPlot::new(
-                            "sc",
-                            [
-                                (
-                                    "Group 1",
-                                    (0..12)
-                                        .map(|i| (i as f32, (i * i % 7) as f32 + 1.0))
-                                        .collect(),
-                                ),
-                                (
-                                    "Group 2",
-                                    (0..12)
-                                        .map(|i| (i as f32 + 0.5, (i * 3 % 8) as f32))
-                                        .collect(),
-                                ),
-                            ],
-                        )),
-                    )
-                    .child(
-                        Heatmap::new(
-                            "heat",
-                            (0..5)
-                                .map(|r| (0..8).map(|c| ((r * 3 + c * 5) % 11) as f32).collect())
+                div().w(px(380.0)).child(ScatterPlot::new(
+                    "sc",
+                    [
+                        (
+                            "Group 1",
+                            (0..12)
+                                .map(|i| (i as f32, (i * i % 7) as f32 + 1.0))
                                 .collect(),
-                        )
-                        .row_labels(["Mon", "Tue", "Wed", "Thu", "Fri"])
-                        .col_labels(["0", "3", "6", "9", "12", "15", "18", "21"]),
-                    ),
+                        ),
+                        (
+                            "Group 2",
+                            (0..12)
+                                .map(|i| (i as f32 + 0.5, (i * 3 % 8) as f32))
+                                .collect(),
+                        ),
+                    ],
+                )),
+            )
+            .child(
+                Heatmap::new(
+                    "heat",
+                    (0..5)
+                        .map(|r| (0..8).map(|c| ((r * 3 + c * 5) % 11) as f32).collect())
+                        .collect(),
+                )
+                .row_labels(["Mon", "Tue", "Wed", "Thu", "Fri"])
+                .col_labels(["0", "3", "6", "9", "12", "15", "18", "21"]),
             );
 
-        let body = col()
-            .child(section("Search · rating · stepper · badges · tags · snackbar").child(widgets))
-            .child(section("Date / time pickers").child(pickers))
+        // Stepped / configurable sliders.
+        let (ms1, ms2) = (me.clone(), me.clone());
+        let stepped = col()
             .child(
-                section("Tree · timeline · empty state").child(
-                    row()
-                        .child(div().w(px(240.0)).child(tree))
-                        .child(div().w(px(280.0)).child(timeline))
-                        .child(
-                            EmptyState::new("∅", "Nothing here")
-                                .message("Add something to get started."),
-                        ),
-                ),
+                Slider::new("stepped", self.stepped)
+                    .range(0.0, 10.0)
+                    .step(1.0)
+                    .ticks(true)
+                    .show_value(true)
+                    .on_change(move |v, _, cx| {
+                        ms1.update(cx, |s, cx| {
+                            s.stepped = v;
+                            cx.notify()
+                        })
+                    }),
             )
-            .child(section("Charts").child(charts));
+            .child(
+                Slider::new("db", self.db)
+                    .range(-24.0, 6.0)
+                    .step(3.0)
+                    .ticks(true)
+                    .show_value(true)
+                    .format(|v| format!("{v:+.0} dB"))
+                    .on_change(move |v, _, cx| {
+                        ms2.update(cx, |s, cx| {
+                            s.db = v;
+                            cx.notify()
+                        })
+                    }),
+            );
 
-        body
+        let sections: Vec<(&'static str, &'static str, gpui::AnyElement)> = vec![
+            (
+                "Foundations",
+                "Text · Heading · Label · Mono",
+                section("Text")
+                    .child(Heading::new("Heading 1").level(1))
+                    .child(Heading::new("Heading 2"))
+                    .child(Heading::new("Heading 3").level(3))
+                    .child(Label::new("Label text"))
+                    .child(Muted::new("Muted text"))
+                    .child(Mono::new("mono_text() // 0xDEADBEEF"))
+                    .into_any_element(),
+            ),
+            (
+                "Actions",
+                "Buttons · IconButton · FAB",
+                section("Buttons").child(buttons).into_any_element(),
+            ),
+            (
+                "Actions",
+                "Toolbar · Snackbar",
+                section("Toolbar · Snackbar")
+                    .child(w_toolbar)
+                    .child(w_snack)
+                    .into_any_element(),
+            ),
+            (
+                "Data display",
+                "Tags · Chips · Badges",
+                section("Tags").child(tags).into_any_element(),
+            ),
+            (
+                "Data display",
+                "Badges · Rating · Tooltips",
+                section("Rating · Stepper · Badges · Tooltips")
+                    .child(w_misc)
+                    .into_any_element(),
+            ),
+            (
+                "Data display",
+                "List · Divider",
+                section("List · Divider")
+                    .child(list)
+                    .child(Divider::new())
+                    .into_any_element(),
+            ),
+            (
+                "Data display",
+                "Tree · Timeline · Empty state",
+                section("Tree · timeline · empty state")
+                    .child(
+                        row()
+                            .child(div().w(px(240.0)).child(tree))
+                            .child(div().w(px(280.0)).child(timeline))
+                            .child(
+                                EmptyState::new("∅", "Nothing here")
+                                    .message("Add something to get started."),
+                            ),
+                    )
+                    .into_any_element(),
+            ),
+            (
+                "Data display",
+                "Tooltip · Rich tooltip",
+                section("Tooltip")
+                    .child(
+                        div()
+                            .id("tip")
+                            .w(px(220.0))
+                            .text_color(hsla(t.palette.link))
+                            .tooltip(DodaiTooltip::text("Themed tooltip"))
+                            .child("Hover me"),
+                    )
+                    .into_any_element(),
+            ),
+            (
+                "Inputs",
+                "Toggle · Checkbox · Radio",
+                section("Toggle · Checkbox · Radio")
+                    .child(controls)
+                    .child(radios)
+                    .into_any_element(),
+            ),
+            (
+                "Inputs",
+                "Slider · Progress",
+                section("Slider · Progress")
+                    .child(sliders)
+                    .into_any_element(),
+            ),
+            (
+                "Inputs",
+                "Stepped slider · ticks · formatted value",
+                section("Slider (stepped, ticks, value readout)")
+                    .child(stepped)
+                    .into_any_element(),
+            ),
+            (
+                "Inputs",
+                "Range slider",
+                section("Range slider")
+                    .child(w_range)
+                    .child(w_range_txt)
+                    .into_any_element(),
+            ),
+            (
+                "Inputs",
+                "Knob · Vertical slider · Vertical range slider",
+                section("Knob · Vertical sliders")
+                    .child(dials)
+                    .into_any_element(),
+            ),
+            (
+                "Inputs",
+                "Input field",
+                section("Input")
+                    .child(InputBox::new().placeholder("search the net…"))
+                    .child(InputBox::new().focused(true).child("focused input"))
+                    .child(
+                        div()
+                            .dodai_input(&t, false)
+                            .h(px(t.shape.control_height))
+                            .flex()
+                            .items_center()
+                            .child("legacy dodai_input container"),
+                    )
+                    .into_any_element(),
+            ),
+            (
+                "Inputs",
+                "Search view · SearchBar",
+                section("Search view").child(w_search).into_any_element(),
+            ),
+            (
+                "Inputs",
+                "Tag field · chips",
+                section("Tag field").child(w_tags).into_any_element(),
+            ),
+            (
+                "Inputs",
+                "Date picker · Time picker",
+                section("Date / time pickers")
+                    .child(pickers)
+                    .into_any_element(),
+            ),
+            (
+                "Navigation",
+                "Tabs",
+                section("Tabs")
+                    .child(tabs)
+                    .child(Muted::new(format!("active tab: {}", self.tab)))
+                    .into_any_element(),
+            ),
+            (
+                "Navigation",
+                "App bar · Cards · FAB · Navigation",
+                section("App bar · Cards · FAB · Navigation")
+                    .child(structure)
+                    .into_any_element(),
+            ),
+            (
+                "Charts",
+                "Line · Bar · Area · Stacked charts",
+                section("Line & bar charts")
+                    .child(charts_xy)
+                    .into_any_element(),
+            ),
+            (
+                "Charts",
+                "Pie · Donut · Gauge · Sparkline",
+                section("Pie · donut · gauge · sparkline")
+                    .child(charts_round)
+                    .into_any_element(),
+            ),
+            (
+                "Charts",
+                "Radar · Scatter · Heatmap",
+                section("Radar · scatter · heatmap")
+                    .child(charts_misc)
+                    .into_any_element(),
+            ),
+        ];
+
+        let cats: Vec<&'static str> = {
+            let mut v: Vec<&'static str> = Vec::new();
+            for (c, _, _) in &sections {
+                if !v.contains(c) {
+                    v.push(c);
+                }
+            }
+            v
+        };
+        let query = self.filter.read(cx).text().to_string();
+        let selected_cat = self.cat.checked_sub(1).and_then(|i| cats.get(i).copied());
+
+        // Sidebar: filter + category list with counts.
+        let count_in = |c: Option<&'static str>| {
+            sections
+                .iter()
+                .filter(|(sc, title, _)| {
+                    c.is_none_or(|c| c == *sc)
+                        && (query.is_empty()
+                            || !fuzzy_filter(&query, &[format!("{sc} {title}")]).is_empty())
+                })
+                .count()
+        };
+        let mut side = div()
+            .flex()
+            .flex_col()
+            .gap(px(t.spacing.xs))
+            .w(px(240.0))
+            .flex_shrink_0()
+            .h_full()
+            .p(px(t.spacing.md))
+            .child(Heading::new("Dodai UI").level(2))
+            .child(div().pb(px(t.spacing.sm)).child(self.filter.clone()));
+        for (idx, name) in std::iter::once("All")
+            .chain(cats.iter().copied())
+            .enumerate()
+        {
+            let m = me.clone();
+            let n = count_in(if idx == 0 { None } else { Some(cats[idx - 1]) });
+            side = side.child(
+                ListItem::new(("cat", idx), format!("{name}  ·  {n}"))
+                    .selected(self.cat == idx)
+                    .on_click(move |_, _, cx| {
+                        m.update(cx, |s, cx| {
+                            s.cat = idx;
+                            cx.notify()
+                        })
+                    }),
+            );
+        }
+        side = side.child(
+            div()
+                .pt(px(t.spacing.md))
+                .child(Muted::new("t / T theme · l scanlines")),
+        );
+
+        let mut body = div()
+            .flex()
+            .flex_col()
+            .gap(gap)
+            .p(px(t.spacing.xl))
+            .child(ds_panel)
+            .child(theme_panel);
+        let mut shown = 0;
+        let mut last_cat = "";
+        for (c, title, el) in sections {
+            let in_cat = selected_cat.is_none_or(|sc| sc == c);
+            let hit =
+                query.is_empty() || !fuzzy_filter(&query, &[format!("{c} {title}")]).is_empty();
+            if !(in_cat && hit) {
+                continue;
+            }
+            if c != last_cat {
+                body = body.child(Heading::new(c).level(2));
+                last_cat = c;
+            }
+            shown += 1;
+            body = body.child(el);
+        }
+        if shown == 0 {
+            body = body.child(
+                EmptyState::new("⌕", "No components match")
+                    .message("Clear the filter or pick another category."),
+            );
+        }
+
+        div()
+            .id("root")
+            .track_focus(&self.focus)
+            .on_key_down(cx.listener(|s, e: &KeyDownEvent, w, cx| {
+                if !s.focus.is_focused(w) {
+                    return;
+                }
+                if e.keystroke.key == "l" {
+                    let on = scanlines_enabled(cx);
+                    set_scanlines(cx, !on);
+                }
+                if e.keystroke.key == "t" {
+                    if e.keystroke.modifiers.shift {
+                        cycle_prev(cx)
+                    } else {
+                        cycle_next(cx)
+                    }
+                }
+            }))
+            .relative()
+            .size_full()
+            .dodai_background(&t)
+            .flex()
+            .child(div().id("side").h_full().overflow_y_scroll().child(side))
+            .child(
+                div()
+                    .id("scroll")
+                    .flex_1()
+                    .h_full()
+                    .overflow_y_scroll()
+                    .child(body),
+            )
+            .child(Scanlines::new())
     }
 }
 
@@ -732,18 +962,20 @@ fn main() {
                 },
                 |_, cx| {
                     let search = cx.new(|cx| TextInput::new(cx).placeholder("Search…"));
-                    let more = cx.new(|cx| More {
-                        focus: cx.focus_handle(),
+                    let filter = cx.new(|cx| TextInput::new(cx).placeholder("Filter components…"));
+                    cx.new(|cx| Showcase {
+                        filter,
                         search,
+                        cat: 0,
                         rating: 3,
                         stepper: 5,
                         range: (0.2, 0.7),
+                        vrange: (0.2, 0.8),
+                        stepped: 4.0,
+                        db: -6.0,
                         date: (2025, 6, None),
                         time: (9, 30),
                         tags: vec!["rust", "gpui", "charts"],
-                    });
-                    cx.new(|cx| Showcase {
-                        more,
                         focus: cx.focus_handle(),
                         tab: 0,
                         switch: true,

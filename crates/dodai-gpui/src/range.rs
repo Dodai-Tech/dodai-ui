@@ -1,6 +1,7 @@
 //! [`RangeSlider`]: two-thumb slider selecting `lo..=hi`.
 
-use crate::controls::{clamp01, slider_fraction, slider_value};
+use crate::controls::{clamp01, slider_fraction, slider_value, tick_fractions, Direction};
+use crate::hsla;
 use crate::paint::{round_shape, scaled_shape, shaped, ShapeStyle};
 use crate::theme_of;
 use dodai_core::ControlState;
@@ -40,15 +41,19 @@ struct RangeState {
 
 type RangeHandler = Rc<dyn Fn(f32, f32, &mut Window, &mut App)>;
 
-/// Horizontal two-thumb slider (controlled).
+/// Two-thumb slider (controlled), horizontal or vertical.
 #[derive(IntoElement)]
 pub struct RangeSlider {
     id: ElementId,
+    direction: Direction,
+    length: f32,
     lo: f32,
     hi: f32,
     min: f32,
     max: f32,
     step: Option<f32>,
+    ticks: bool,
+    show_value: bool,
     on_change: Option<RangeHandler>,
 }
 
@@ -56,13 +61,27 @@ impl RangeSlider {
     pub fn new(id: impl Into<ElementId>, lo: f32, hi: f32) -> Self {
         Self {
             id: id.into(),
+            direction: Direction::Horizontal,
+            length: 160.0,
             lo,
             hi,
             min: 0.0,
             max: 1.0,
             step: None,
+            ticks: false,
+            show_value: false,
             on_change: None,
         }
+    }
+    /// Horizontal (default) or vertical (fixed [`RangeSlider::length`]).
+    pub fn direction(mut self, d: Direction) -> Self {
+        self.direction = d;
+        self
+    }
+    /// Height in px of a vertical slider (default 160).
+    pub fn length(mut self, px: f32) -> Self {
+        self.length = px;
+        self
     }
     pub fn range(mut self, min: f32, max: f32) -> Self {
         self.min = min;
@@ -71,6 +90,16 @@ impl RangeSlider {
     }
     pub fn step(mut self, s: f32) -> Self {
         self.step = Some(s);
+        self
+    }
+    /// Tick mark at every `step`.
+    pub fn ticks(mut self, on: bool) -> Self {
+        self.ticks = on;
+        self
+    }
+    /// Show `lo – hi` readout.
+    pub fn show_value(mut self, on: bool) -> Self {
+        self.show_value = on;
         self
     }
     pub fn on_change(mut self, f: impl Fn(f32, f32, &mut Window, &mut App) + 'static) -> Self {
@@ -82,23 +111,24 @@ impl RangeSlider {
 impl RenderOnce for RangeSlider {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let vertical = self.direction == Direction::Vertical;
         let st = window.use_keyed_state(self.id.clone(), cx, |_, _| RangeState::default());
         let (min, max, step, lo, hi) = (self.min, self.max, self.step, self.lo, self.hi);
         let (fl, fh) = (slider_fraction(lo, min, max), slider_fraction(hi, min, max));
         let apply = {
             let st = st.clone();
             let f = self.on_change.clone();
-            move |x: Pixels, pick: bool, w: &mut Window, cx: &mut App| {
+            move |p: gpui::Point<Pixels>, pick: bool, w: &mut Window, cx: &mut App| {
                 let b = st.read(cx).bounds;
-                let v = slider_value(
-                    (x - b.origin.x).into(),
-                    0.0,
-                    b.size.width.into(),
-                    THUMB,
-                    min,
-                    max,
-                    step,
-                );
+                let (pos, len): (f32, f32) = if vertical {
+                    (
+                        (b.origin.y + b.size.height - p.y).into(),
+                        b.size.height.into(),
+                    )
+                } else {
+                    ((p.x - b.origin.x).into(), b.size.width.into())
+                };
+                let v = slider_value(pos, 0.0, len, THUMB, min, max, step);
                 if pick {
                     st.update(cx, |s, _| s.active = Some(nearest_thumb(lo, hi, v)));
                 }
@@ -116,40 +146,77 @@ impl RenderOnce for RangeSlider {
         let thumb_shape = round_shape(&t.shape, THUMB);
         let pk = t.progress(None);
         let track_shape = scaled_shape(&t.shape, 6.0);
+        let fill_style = ShapeStyle::from_tokens(&t, Some(pk.fill), None, true, false);
+        let fill = shaped(&track_shape, fill_style).absolute();
+        let fill = if vertical {
+            fill.left_0()
+                .w_full()
+                .bottom(relative(clamp01(fl)))
+                .h(relative(clamp01(fh - fl)))
+        } else {
+            fill.top_0()
+                .h_full()
+                .left(relative(clamp01(fl)))
+                .w(relative(clamp01(fh - fl)))
+        };
         let track = shaped(
             &track_shape,
             ShapeStyle::from_tokens(&t, Some(pk.track), Some(pk.border), false, false),
-        )
-        .w_full()
-        .h(px(6.0))
-        .child(
-            shaped(
-                &track_shape,
-                ShapeStyle::from_tokens(&t, Some(pk.fill), None, true, false),
-            )
-            .absolute()
-            .top_0()
-            .h_full()
-            .left(relative(clamp01(fl)))
-            .w(relative(clamp01(fh - fl))),
         );
+        let track = if vertical {
+            track.h_full().w(px(6.0))
+        } else {
+            track.w_full().h(px(6.0))
+        }
+        .child(fill);
         let thumb = |f: f32| {
-            shaped(&thumb_shape, thumb_style)
+            let th = shaped(&thumb_shape, thumb_style)
                 .absolute()
                 .w(px(THUMB))
-                .h(px(THUMB))
-                .top(px(2.0))
-                .left(relative(f))
-                .ml(px(-THUMB / 2.0))
+                .h(px(THUMB));
+            if vertical {
+                th.left(px(2.0)).top(relative(1.0 - f)).mt(px(-THUMB / 2.0))
+            } else {
+                th.top(px(2.0)).left(relative(f)).ml(px(-THUMB / 2.0))
+            }
         };
-        div()
+        let tick_c = hsla(t.palette.border_strong);
+        let mut rail = div().absolute().top_0().bottom_0().left_0().right_0();
+        rail = if vertical {
+            rail.top(px(THUMB / 2.0)).bottom(px(THUMB / 2.0))
+        } else {
+            rail.left(px(THUMB / 2.0)).right(px(THUMB / 2.0))
+        };
+        if self.ticks {
+            for f in tick_fractions(min, max, step) {
+                let tk = div().absolute().bg(tick_c);
+                rail = rail.child(if vertical {
+                    tk.left(px(5.0))
+                        .w(px(10.0))
+                        .h(px(2.0))
+                        .top(relative(1.0 - f))
+                } else {
+                    tk.top(px(5.0))
+                        .h(px(10.0))
+                        .w(px(2.0))
+                        .left(relative(f))
+                        .ml(px(-1.0))
+                });
+            }
+        }
+        rail = rail.child(thumb(fl)).child(thumb(fh));
+        let base = div()
             .id(self.id)
             .relative()
             .flex()
             .items_center()
-            .w_full()
-            .h(px(THUMB + 4.0))
-            .cursor_pointer()
+            .cursor_pointer();
+        let base = if vertical {
+            base.w(px(THUMB + 4.0)).h(px(self.length)).justify_center()
+        } else {
+            base.w_full().h(px(THUMB + 4.0))
+        };
+        let slider = base
             .child(
                 canvas(
                     |_, _, _| (),
@@ -159,22 +226,13 @@ impl RenderOnce for RangeSlider {
                 .size_full(),
             )
             .child(track)
-            .child(
-                div()
-                    .absolute()
-                    .top_0()
-                    .bottom_0()
-                    .left(px(THUMB / 2.0))
-                    .right(px(THUMB / 2.0))
-                    .child(thumb(fl))
-                    .child(thumb(fh)),
-            )
+            .child(rail)
             .on_mouse_down(MouseButton::Left, move |e, w, cx| {
-                a1(e.position.x, true, w, cx)
+                a1(e.position, true, w, cx)
             })
             .on_mouse_move(move |e, w, cx| {
                 if mv.read(cx).active.is_some() {
-                    a2(e.position.x, false, w, cx);
+                    a2(e.position, false, w, cx);
                 }
             })
             .on_mouse_up(MouseButton::Left, move |_, _, cx| {
@@ -182,7 +240,37 @@ impl RenderOnce for RangeSlider {
             })
             .on_mouse_up_out(MouseButton::Left, move |_, _, cx| {
                 up2.update(cx, |s, _| s.active = None)
-            })
+            });
+        if !self.show_value {
+            return slider.into_any_element();
+        }
+        let r = div()
+            .font_family(crate::text::first_family(t.typography.mono))
+            .text_size(px(t.typography.size_xs))
+            .text_color(hsla(t.palette.text_muted))
+            .child(format!(
+                "{} – {}",
+                crate::charts::fmt_num((lo * 100.0).round() / 100.0),
+                crate::charts::fmt_num((hi * 100.0).round() / 100.0)
+            ));
+        if vertical {
+            div()
+                .flex()
+                .flex_col()
+                .items_center()
+                .gap(px(t.spacing.xs))
+                .child(r)
+                .child(slider)
+                .into_any_element()
+        } else {
+            div()
+                .flex()
+                .items_center()
+                .gap(px(t.spacing.sm))
+                .child(slider.flex_1())
+                .child(r)
+                .into_any_element()
+        }
     }
 }
 

@@ -27,7 +27,7 @@ Legend: ✅ done · 🟡 partial · ⬜ todo
 | Radio button | ✅ | |
 | Search | 🟡 `SearchBar` | shell only; wire `TextInput` |
 | Side sheets | ✅ `SideSheet` | |
-| Sliders | ✅ `Slider`, `RangeSlider` | |
+| Sliders | ✅ `Slider` (step, ticks, value readout, formatter), `RangeSlider` (horizontal + vertical) | |
 | Snackbar | ✅ `Toast`, `Snackbar` (with action) | |
 | Switch | ✅ `Toggle` | |
 | Tabs | ✅ | |
