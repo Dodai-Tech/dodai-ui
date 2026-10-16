@@ -1066,6 +1066,8 @@ impl RenderOnce for Sparkline {
 
 // ───────────────────────────── PieChart / donut ─────────────────────────────
 
+type SelectFn = Rc<dyn Fn(Option<usize>, &mut Window, &mut App)>;
+
 /// How far (px) a hovered pie slice pops out.
 const PIE_POP: f32 = 6.0;
 
@@ -1073,6 +1075,7 @@ const PIE_POP: f32 = 6.0;
 struct PieState {
     bounds: Bounds<Pixels>,
     hover: Option<usize>,
+    sel: Option<usize>,
 }
 
 /// Slice index under a pointer `(dx, dy)` from the pie centre (y down), or
@@ -1095,6 +1098,8 @@ pub struct PieChart {
     hole: f32,
     center: Option<SharedString>,
     legend: bool,
+    selected: Option<Option<usize>>,
+    on_select: Option<SelectFn>,
 }
 
 impl PieChart {
@@ -1105,7 +1110,20 @@ impl PieChart {
             hole: 0.0,
             center: None,
             legend: true,
+            selected: None,
+            on_select: None,
         }
+    }
+    /// Controlled selection (`None` = nothing selected). Without this the
+    /// chart keeps its own selection, toggled by clicking a slice.
+    pub fn selected(mut self, i: Option<usize>) -> Self {
+        self.selected = Some(i);
+        self
+    }
+    /// Called with the new selection (`None` when deselected) on click.
+    pub fn on_select(mut self, f: impl Fn(Option<usize>, &mut Window, &mut App) + 'static) -> Self {
+        self.on_select = Some(Rc::new(f));
+        self
     }
     pub fn size(mut self, s: f32) -> Self {
         self.size = s;
@@ -1142,7 +1160,12 @@ impl RenderOnce for PieChart {
         .into();
         let st = window.use_keyed_state(key.clone(), cx, |_, _| PieState::default());
         let hover = st.read(cx).hover;
-        let (st_paint, st_move, st_leave) = (st.clone(), st.clone(), st.clone());
+        let sel = self.selected.unwrap_or(st.read(cx).sel);
+        let ring = hsla(t.palette.text);
+        let (st_paint, st_move, st_leave, st_click) =
+            (st.clone(), st.clone(), st.clone(), st.clone());
+        let (controlled, on_select) = (self.selected.is_some(), self.on_select.clone());
+        let fr_click = fr.clone();
         let fr_hit = fr.clone();
         let cols: Vec<Hsla> = (0..vals.len())
             .map(|i| hsla(t.palette.series_at(i)))
@@ -1157,11 +1180,14 @@ impl RenderOnce for PieChart {
                 let c = size / 2.0;
                 for (i, ((a, z), col)) in fr.iter().zip(&cols).enumerate() {
                     // Hovered slice pops out along its bisector.
-                    let (dx, dy) = if hover == Some(i) {
-                        polar(0.0, 0.0, PIE_POP, (a + z) / 2.0)
+                    let pop = if hover == Some(i) {
+                        PIE_POP
+                    } else if sel == Some(i) {
+                        PIE_POP * 0.5
                     } else {
-                        (0.0, 0.0)
+                        0.0
                     };
+                    let (dx, dy) = polar(0.0, 0.0, pop, (a + z) / 2.0);
                     let origin = point(b.origin.x + px(dx), b.origin.y + px(dy));
                     // Constant-width straight gap: each edge is offset by
                     // `gap / 2` from the true radial line, so the gap has
@@ -1193,6 +1219,11 @@ impl RenderOnce for PieChart {
                             p.push((ax, ay));
                             fill(w, origin, &p, *col);
                         }
+                        if sel == Some(i) {
+                            let mut o = turn_arc(c, c, r, ao, zo);
+                            o.push((ax, ay));
+                            stroke(w, origin, &o, 1.5, ring, true);
+                        }
                         continue;
                     }
                     // Annular sectors as small filled quads: thick strokes
@@ -1210,6 +1241,13 @@ impl RenderOnce for PieChart {
                         inner.reverse();
                         p.extend(inner);
                         fill(w, origin, &p, *col);
+                    }
+                    if sel == Some(i) {
+                        let mut o = turn_arc(c, c, r, ao, zo);
+                        let mut inner = turn_arc(c, c, r_in, ai, zi);
+                        inner.reverse();
+                        o.extend(inner);
+                        stroke(w, origin, &o, 1.5, ring, true);
                     }
                 }
             },
@@ -1236,6 +1274,36 @@ impl RenderOnce for PieChart {
                 if st_move.read(cx).hover != h {
                     st_move.update(cx, |s, _| s.hover = h);
                     w.refresh();
+                }
+            })
+            .on_mouse_down(gpui::MouseButton::Left, move |e, w, cx| {
+                let b = st_click.read(cx).bounds;
+                let (ox, oy): (f32, f32) = (b.origin.x.into(), b.origin.y.into());
+                let (mx, my): (f32, f32) = (e.position.x.into(), e.position.y.into());
+                let r = size / 2.0 - 1.0 - PIE_POP;
+                let h = pie_hit(
+                    mx - ox - size / 2.0,
+                    my - oy - size / 2.0,
+                    r,
+                    hole,
+                    &fr_click,
+                );
+                let cur = if controlled {
+                    sel
+                } else {
+                    st_click.read(cx).sel
+                };
+                let next = match h {
+                    Some(i) if cur == Some(i) => None,
+                    Some(i) => Some(i),
+                    None => None,
+                };
+                if !controlled {
+                    st_click.update(cx, |s, _| s.sel = next);
+                    w.refresh();
+                }
+                if let Some(f) = &on_select {
+                    f(next, w, cx);
                 }
             })
             .on_hover(move |over, w, cx| {
