@@ -1087,7 +1087,8 @@ impl Render for Showcase {
             let in_cat = selected_cat.is_none_or(|sc| sc == c);
             let hit =
                 query.is_empty() || !fuzzy_filter(&query, &[format!("{c} {title}")]).is_empty();
-            if !(in_cat && hit) {
+            let only = std::env::var("DODAI_ONLY").is_ok_and(|o| !title.contains(&o));
+            if !(in_cat && hit) || only {
                 continue;
             }
             if c != last_cat {
@@ -1156,7 +1157,10 @@ fn main() {
                     cx.new(|cx| Showcase {
                         filter,
                         search,
-                        cat: 0,
+                        cat: std::env::var("DODAI_CAT")
+                            .ok()
+                            .and_then(|v| v.parse().ok())
+                            .unwrap_or(0),
                         cat_count: 1,
                         side_focus: cx.focus_handle(),
                         rating: 3,

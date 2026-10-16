@@ -1009,6 +1009,27 @@ impl RenderOnce for Sparkline {
 
 // ───────────────────────────── PieChart / donut ─────────────────────────────
 
+/// How far (px) a hovered pie slice pops out.
+const PIE_POP: f32 = 6.0;
+
+#[derive(Default)]
+struct PieState {
+    bounds: Bounds<Pixels>,
+    hover: Option<usize>,
+}
+
+/// Slice index under a pointer `(dx, dy)` from the pie centre (y down), or
+/// `None` outside the ring / disc. `fr` are `(start, end)` turn fractions,
+/// 0 at the top, clockwise. Pure.
+pub fn pie_hit(dx: f32, dy: f32, r: f32, hole: f32, fr: &[(f32, f32)]) -> Option<usize> {
+    let d = (dx * dx + dy * dy).sqrt();
+    if d > r + PIE_POP || d < r * hole {
+        return None;
+    }
+    let turn = (dx.atan2(-dy) / std::f32::consts::TAU).rem_euclid(1.0);
+    fr.iter().position(|(a, z)| turn >= *a && turn < *z)
+}
+
 /// Pie or donut chart; `center` is shown in the donut hole.
 #[derive(IntoElement)]
 pub struct PieChart {
@@ -1049,21 +1070,46 @@ impl PieChart {
 }
 
 impl RenderOnce for PieChart {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let vals: Vec<f32> = self.slices.iter().map(|s| s.1).collect();
         let fr = pie_fractions(&vals);
+        let key: SharedString = format!(
+            "pie-{}",
+            self.slices
+                .iter()
+                .map(|s| s.0.as_ref())
+                .collect::<Vec<_>>()
+                .join("|")
+        )
+        .into();
+        let st = window.use_keyed_state(key.clone(), cx, |_, _| PieState::default());
+        let hover = st.read(cx).hover;
+        let (st_paint, st_move, st_leave) = (st.clone(), st.clone(), st.clone());
+        let fr_hit = fr.clone();
         let cols: Vec<Hsla> = (0..vals.len())
             .map(|i| hsla(t.palette.series_at(i)))
             .collect();
         let (size, hole) = (self.size, self.hole);
-        let gap = if vals.len() > 1 { 0.004 } else { 0.0 };
+        let gap = if vals.len() > 1 { 0.003 } else { 0.0 };
         let cvs = canvas(
             |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                let r = size / 2.0 - 1.0;
+            move |b: Bounds<Pixels>, _, w, cx| {
+                st_paint.update(cx, |s, _| s.bounds = b);
+                let r = size / 2.0 - 1.0 - PIE_POP;
                 let c = size / 2.0;
-                for ((a, z), col) in fr.iter().zip(&cols) {
+                for (i, ((a, z), col)) in fr.iter().zip(&cols).enumerate() {
+                    // Hovered slice pops out along its bisector.
+                    let (dx, dy) = if hover == Some(i) {
+                        polar(0.0, 0.0, PIE_POP, (a + z) / 2.0)
+                    } else {
+                        (0.0, 0.0)
+                    };
+                    let origin = point(b.origin.x + px(dx), b.origin.y + px(dy));
+                    let (a, z) = (a + gap, z - gap);
+                    if z <= a {
+                        continue;
+                    }
                     if hole <= 0.0 {
                         // Convex wedges (<= 1/8 turn) tessellate without
                         // seams or holes, even for slices past 180 degrees.
@@ -1071,24 +1117,11 @@ impl RenderOnce for PieChart {
                         for k in 0..n {
                             let w0 = a + (z - a) * k as f32 / n as f32;
                             let w1 = a + (z - a) * (k + 1) as f32 / n as f32;
-                            let mut p = turn_arc(
-                                c,
-                                c,
-                                r,
-                                w0,
-                                if *z >= 0.999 && k + 1 == n {
-                                    w1
-                                } else {
-                                    w1 + 0.0015
-                                },
-                            );
+                            let mut p =
+                                turn_arc(c, c, r, w0, if k + 1 == n { w1 } else { w1 + 0.0015 });
                             p.push((c, c));
-                            fill(w, b.origin, &p, *col);
+                            fill(w, origin, &p, *col);
                         }
-                        continue;
-                    }
-                    let (a, z) = (a + gap, z - gap);
-                    if z <= a {
                         continue;
                     }
                     // Annular sectors as small filled quads: thick strokes
@@ -1103,14 +1136,41 @@ impl RenderOnce for PieChart {
                         let mut inner = turn_arc(c, c, r_in, w0, w1);
                         inner.reverse();
                         p.extend(inner);
-                        fill(w, b.origin, &p, *col);
+                        fill(w, origin, &p, *col);
                     }
                 }
             },
         )
         .absolute()
         .size_full();
-        let mut disc = div().relative().w(px(size)).h(px(size)).child(cvs);
+        let mut disc = div()
+            .id(key)
+            .relative()
+            .w(px(size))
+            .h(px(size))
+            .child(cvs)
+            .on_mouse_move(move |e, w, cx| {
+                let b = st_move.read(cx).bounds;
+                let (ox, oy): (f32, f32) = (b.origin.x.into(), b.origin.y.into());
+                let (mx, my): (f32, f32) = (e.position.x.into(), e.position.y.into());
+                let h = pie_hit(
+                    mx - ox - size / 2.0,
+                    my - oy - size / 2.0,
+                    size / 2.0 - 1.0 - PIE_POP,
+                    hole,
+                    &fr_hit,
+                );
+                if st_move.read(cx).hover != h {
+                    st_move.update(cx, |s, _| s.hover = h);
+                    w.refresh();
+                }
+            })
+            .on_hover(move |over, w, cx| {
+                if !*over && st_leave.read(cx).hover.is_some() {
+                    st_leave.update(cx, |s, _| s.hover = None);
+                    w.refresh();
+                }
+            });
         if let (Some(txt), true) = (self.center.clone(), self.hole > 0.0) {
             disc = disc.child(
                 div()
@@ -1595,6 +1655,15 @@ impl RenderOnce for Heatmap {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn pie_hit_finds_slice() {
+        let fr = [(0.0, 0.5), (0.5, 1.0)];
+        assert_eq!(pie_hit(10.0, 0.0, 50.0, 0.0, &fr), Some(0)); // right = 25%
+        assert_eq!(pie_hit(-10.0, 0.0, 50.0, 0.0, &fr), Some(1));
+        assert_eq!(pie_hit(0.0, 0.0, 50.0, 0.4, &fr), None); // donut hole
+        assert_eq!(pie_hit(200.0, 0.0, 50.0, 0.0, &fr), None);
+    }
+
     #[test]
     fn step_points_stairs() {
         assert_eq!(
