@@ -14,10 +14,11 @@ use dodai_gpui::{
     Tag, ThemeSelector, Toggle, TopAppBar,
 };
 use dodai_gpui::{
-    BarChart, Date, DatePicker, EmptyState, Gauge, Heatmap, IconBadge, LineChart, NumberStepper,
-    PieChart, RadarChart, RangeSlider, Rating, RichTooltip, ScatterPlot, SearchView, Series,
-    Snackbar, Sparkline, TagField, TextInput, TimePicker, Timeline, TimelineEvent, Toolbar,
-    TreeItem, TreeView,
+    BarChart, BoxPlot, BubbleChart, Candle, Candlestick, Date, DatePicker, EmptyState, Funnel,
+    Gauge, Heatmap, Histogram, IconBadge, LineChart, NumberStepper, PieChart, RadarChart,
+    RadialBar, RangeSlider, Rating, RichTooltip, ScatterPlot, SearchView, Series, Snackbar,
+    Sparkline, StackedAreaChart, TagField, TextInput, TimePicker, Timeline, TimelineEvent, Toolbar,
+    TreeItem, TreeView, Treemap, Waterfall,
 };
 use gpui::{
     div, prelude::*, px, size, App, Application, Bounds, Context, Entity, FocusHandle,
@@ -675,6 +676,129 @@ impl Render for Showcase {
                     }),
             );
 
+        let w = |e: gpui::AnyElement, px_w: f32| div().w(px(px_w)).child(e).into_any_element();
+        let charts_more1 = row()
+            .child(w(
+                StackedAreaChart::new([
+                    Series::new("Web", [12.0, 18.0, 14.0, 26.0, 22.0, 31.0]),
+                    Series::new("App", [8.0, 11.0, 13.0, 15.0, 17.0, 16.0]),
+                    Series::new("API", [4.0, 6.0, 9.0, 8.0, 12.0, 15.0]),
+                ])
+                .labels(months)
+                .title("Traffic by source")
+                .into_any_element(),
+                420.0,
+            ))
+            .child(w(
+                Histogram::new(
+                    "hist",
+                    (0..120).map(|i| ((i * 37 % 100) as f32 / 10.0 + (i % 7) as f32).min(18.0)),
+                )
+                .bins(9)
+                .title("Latency distribution")
+                .format(|v| format!("{v:.0}ms"))
+                .into_any_element(),
+                420.0,
+            ))
+            .child(w(
+                Waterfall::new(
+                    "wf",
+                    [
+                        ("Start", 40.0),
+                        ("Sales", 25.0),
+                        ("Refunds", -12.0),
+                        ("Ads", -8.0),
+                        ("Upsell", 15.0),
+                    ],
+                )
+                .title("Revenue bridge")
+                .format(|v| format!("${v:.0}k"))
+                .into_any_element(),
+                420.0,
+            ));
+        let charts_more2 = row()
+            .child(w(
+                Funnel::new([
+                    ("Visits", 1000.0),
+                    ("Signups", 620.0),
+                    ("Trials", 340.0),
+                    ("Paid", 120.0),
+                ])
+                .title("Conversion funnel")
+                .into_any_element(),
+                380.0,
+            ))
+            .child(w(
+                Treemap::new(
+                    "tm",
+                    [
+                        ("Rust", 52.0),
+                        ("Kotlin", 28.0),
+                        ("TS", 18.0),
+                        ("Go", 12.0),
+                        ("C", 9.0),
+                        ("Other", 5.0),
+                    ],
+                )
+                .title("Code by language")
+                .into_any_element(),
+                380.0,
+            ))
+            .child(
+                RadialBar::new([
+                    ("CPU", 72.0, 100.0),
+                    ("RAM", 48.0, 100.0),
+                    ("Disk", 31.0, 100.0),
+                ])
+                .into_any_element(),
+            );
+        let charts_more3 = row()
+            .child(w(
+                Candlestick::new(
+                    "ohlc",
+                    [
+                        Candle::new(10.0, 14.0, 9.0, 13.0),
+                        Candle::new(13.0, 15.0, 11.0, 12.0),
+                        Candle::new(12.0, 16.0, 11.5, 15.5),
+                        Candle::new(15.5, 17.0, 13.0, 14.0),
+                        Candle::new(14.0, 18.0, 13.5, 17.5),
+                        Candle::new(17.5, 19.0, 15.0, 16.0),
+                    ],
+                )
+                .labels(months)
+                .title("OHLC")
+                .into_any_element(),
+                380.0,
+            ))
+            .child(w(
+                BoxPlot::new([
+                    ("A", vec![2.0, 3.0, 3.5, 4.0, 5.0, 6.0, 9.0]),
+                    ("B", vec![4.0, 5.0, 6.0, 6.5, 7.0, 8.0, 12.0]),
+                    ("C", vec![1.0, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5]),
+                ])
+                .title("Box plot")
+                .into_any_element(),
+                380.0,
+            ))
+            .child(w(
+                BubbleChart::new(
+                    "bub",
+                    [
+                        (
+                            "EU",
+                            vec![(1.0, 2.0, 30.0), (3.0, 5.0, 80.0), (5.0, 3.0, 50.0)],
+                        ),
+                        (
+                            "US",
+                            vec![(2.0, 6.0, 100.0), (4.0, 2.0, 20.0), (6.0, 7.0, 60.0)],
+                        ),
+                    ],
+                )
+                .title("Bubble chart")
+                .into_any_element(),
+                380.0,
+            ));
+
         let sections: Vec<(&'static str, &'static str, gpui::AnyElement)> = vec![
             (
                 "Foundations",
@@ -847,6 +971,27 @@ impl Render for Showcase {
                 "Pie · Donut · Gauge · Sparkline",
                 section("Pie · donut · gauge · sparkline")
                     .child(charts_round)
+                    .into_any_element(),
+            ),
+            (
+                "Charts",
+                "Stacked area · Histogram · Waterfall",
+                section("Area · histogram · waterfall")
+                    .child(charts_more1)
+                    .into_any_element(),
+            ),
+            (
+                "Charts",
+                "Funnel · Treemap · Radial bar",
+                section("Funnel · treemap · radial bar")
+                    .child(charts_more2)
+                    .into_any_element(),
+            ),
+            (
+                "Charts",
+                "Candlestick · Box plot · Bubble",
+                section("Candlestick · box plot · bubble")
+                    .child(charts_more3)
                     .into_any_element(),
             ),
             (

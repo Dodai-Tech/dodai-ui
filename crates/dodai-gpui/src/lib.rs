@@ -29,6 +29,7 @@
 pub mod button;
 pub mod carousel;
 pub mod charts;
+pub mod charts_extra;
 pub mod command;
 pub mod controls;
 pub mod data;
@@ -65,6 +66,11 @@ pub use carousel::{window_start, Carousel};
 pub use charts::{
     bar_max, fmt_num, heat_color, nice_ticks, norm, pie_fractions, polar, smooth_points, BarChart,
     Gauge, Heatmap, Legend, LineChart, PieChart, RadarChart, ScatterPlot, Series, Sparkline,
+};
+pub use charts_extra::{
+    histogram_bins, quartiles, stack_cumulative, treemap_layout, waterfall_steps, BoxPlot,
+    BubbleChart, Candle, Candlestick, Funnel, Histogram, RadialBar, StackedAreaChart, Treemap,
+    Waterfall,
 };
 pub use command::{fuzzy_filter, Combobox, Command, CommandPalette};
 pub use controls::{
