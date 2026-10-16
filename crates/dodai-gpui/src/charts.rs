@@ -878,7 +878,7 @@ impl RenderOnce for PieChart {
                                 c,
                                 r,
                                 w0,
-                                if z >= 0.999 && k + 1 == n {
+                                if *z >= 0.999 && k + 1 == n {
                                     w1
                                 } else {
                                     w1 + 0.0015
