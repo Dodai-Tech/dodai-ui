@@ -34,6 +34,7 @@ pub mod extras;
 pub mod feedback;
 pub mod interact;
 pub mod knob;
+pub mod layout;
 pub mod list;
 pub mod logic;
 pub mod menu;
@@ -66,6 +67,7 @@ pub use extras::{
 };
 pub use feedback::{Alert, IndeterminateBar, Skeleton, Spinner, Toast};
 pub use knob::Knob;
+pub use layout::{clamp_ratio, visible_rows, SplitPane, TreeItem, TreeRow, TreeView};
 pub use list::{Divider, ListItem};
 pub use menu::{Menu, MenuItem};
 pub use nav::{Accordion, Breadcrumb, Pagination, Segmented, Stepper};
