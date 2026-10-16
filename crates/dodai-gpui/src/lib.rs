@@ -46,6 +46,7 @@ pub mod panel;
 pub mod picker;
 pub mod range;
 pub mod scanlines;
+pub mod search;
 pub mod select;
 pub mod sheets;
 pub mod surfaces;
@@ -82,6 +83,7 @@ pub use picker::{
 };
 pub use range::{nearest_thumb, range_update, RangeSlider};
 pub use scanlines::Scanlines;
+pub use search::{count_label, highlight_runs, IconBadge, RichTooltip, SearchView};
 pub use select::{family_title, DesignSystemSelector, Select, SelectOption, ThemeSelector};
 pub use sheets::{sheet_style, BottomSheet, FullScreenDialog, SheetEdge, SideSheet, Snackbar};
 pub use surfaces::{
