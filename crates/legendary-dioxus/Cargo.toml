@@ -1,0 +1,15 @@
+[package]
+name         = "legendary-dioxus"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description  = "dioxus adapter for the Legendary UI design system"
+readme       = "README.md"
+keywords     = ["theme", "design-system", "dioxus", "cyberpunk"]
+categories   = ["gui"]
+
+[dependencies]
+legendary-core = { workspace = true }

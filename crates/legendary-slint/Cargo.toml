@@ -1,0 +1,15 @@
+[package]
+name         = "legendary-slint"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description  = "slint adapter for the Legendary UI design system"
+readme       = "README.md"
+keywords     = ["theme", "design-system", "slint", "cyberpunk"]
+categories   = ["gui"]
+
+[dependencies]
+legendary-core = { workspace = true }

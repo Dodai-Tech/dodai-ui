@@ -3744,8 +3744,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a79a3332a6609480d7d0c9eab957bca6b455b91bb84e66d19f5ff66294b85b8"
 
 [[package]]
+name = "legendary-bevy"
+version = "0.1.0"
+dependencies = [
+ "legendary-core",
+]
+
+[[package]]
 name = "legendary-core"
 version = "0.1.0"
+
+[[package]]
+name = "legendary-dioxus"
+version = "0.1.0"
+dependencies = [
+ "legendary-core",
+]
+
+[[package]]
+name = "legendary-egui"
+version = "0.1.0"
+dependencies = [
+ "legendary-core",
+]
 
 [[package]]
 name = "legendary-gpui"
@@ -3765,6 +3786,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "legendary-leptos"
+version = "0.1.0"
+dependencies = [
+ "legendary-core",
+]
+
+[[package]]
 name = "legendary-ratatui"
 version = "0.1.0"
 dependencies = [
@@ -3774,7 +3802,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "legendary-slint"
+version = "0.1.0"
+dependencies = [
+ "legendary-core",
+]
+
+[[package]]
 name = "legendary-topcoat"
+version = "0.1.0"
+dependencies = [
+ "legendary-core",
+]
+
+[[package]]
+name = "legendary-yew"
 version = "0.1.0"
 dependencies = [
  "legendary-core",
