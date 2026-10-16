@@ -1346,18 +1346,24 @@ impl Render for Showcase {
                 Some(set) => dodai_gpui::EntryScope::new(set, el).into_any_element(),
             };
             body = body.child(
-                div().relative().w_full().child(content).child(
-                    div()
-                        .absolute()
-                        .top(px(6.0))
-                        .right(px(8.0))
-                        .flex()
-                        .flex_col()
-                        .items_end()
-                        .gap(px(2.0))
-                        .child(label)
-                        .child(chips),
-                ),
+                div()
+                    .relative()
+                    .flex()
+                    .flex_col()
+                    .w_full()
+                    .child(content)
+                    .child(
+                        div()
+                            .absolute()
+                            .top(px(6.0))
+                            .right(px(8.0))
+                            .flex()
+                            .flex_col()
+                            .items_end()
+                            .gap(px(2.0))
+                            .child(label)
+                            .child(chips),
+                    ),
             );
         }
         if shown == 0 {
