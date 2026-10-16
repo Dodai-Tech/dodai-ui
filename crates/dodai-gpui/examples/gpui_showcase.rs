@@ -974,7 +974,7 @@ impl Render for Showcase {
             );
         let anim_docs = section("What animates")
             .child(Label::new("Entry — every component"))
-            .child(Muted::new("Fade, Rise, Drop, Slide from left/right or None; set globally above or per section with the dropdown on each section header."))
+            .child(Muted::new("Fade, Rise, Drop, Slide from left/right or None; set globally above or per section with the dropdown on each section header, which overrides the style of every component in that section."))
             .child(Label::new("Value-in — progress, slider, range slider, knob, gauge, bar, line, pie (sweep), radial bar, histogram"))
             .child(Muted::new("Values grow from zero to their target using the same duration and easing."))
             .child(Label::new("Pie / donut — hover pop and selection"))
@@ -1284,7 +1284,7 @@ impl Render for Showcase {
             shown += 1;
             let kind = self.sec_kind.get(title).copied().unwrap_or(0);
             let me_s = me.clone();
-            let mut opts = vec!["Section: inherit"];
+            let mut opts = vec!["Components: global"];
             opts.extend(EntryKind::ALL.iter().map(|k| k.label()));
             body = body.child(
                 row().justify_end().child(Muted::new(title)).child(
@@ -1305,8 +1305,7 @@ impl Render for Showcase {
             body = body.child(if kind == 0 {
                 el
             } else {
-                dodai_gpui::motion::entry(el, title, Motion::of(cx).entry(EntryKind::ALL[kind - 1]))
-                    .into_any_element()
+                dodai_gpui::EntryScope::new(EntryKind::ALL[kind - 1], el).into_any_element()
             });
         }
         if shown == 0 {

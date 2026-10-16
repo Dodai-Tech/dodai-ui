@@ -341,6 +341,78 @@ impl Motion {
     }
 }
 
+/// Wraps a subtree so every component inside uses `kind` for its entry and
+/// value-in animation instead of the global [`Motion::entry`]. Components
+/// render while their parent lays out, so the override is installed around the
+/// child's `request_layout` and restored afterwards.
+pub struct EntryScope {
+    kind: EntryKind,
+    child: gpui::AnyElement,
+}
+
+impl EntryScope {
+    pub fn new(kind: EntryKind, child: impl IntoElement) -> Self {
+        Self {
+            kind,
+            child: child.into_any_element(),
+        }
+    }
+}
+
+impl IntoElement for EntryScope {
+    type Element = Self;
+    fn into_element(self) -> Self {
+        self
+    }
+}
+
+impl gpui::Element for EntryScope {
+    type RequestLayoutState = ();
+    type PrepaintState = ();
+    fn id(&self) -> Option<ElementId> {
+        None
+    }
+    fn source_location(&self) -> Option<&'static std::panic::Location<'static>> {
+        None
+    }
+    fn request_layout(
+        &mut self,
+        _: Option<&gpui::GlobalElementId>,
+        _: Option<&gpui::InspectorElementId>,
+        window: &mut gpui::Window,
+        cx: &mut App,
+    ) -> (gpui::LayoutId, ()) {
+        let prev = Motion::of(cx);
+        prev.entry(self.kind).set_global(cx);
+        let id = self.child.request_layout(window, cx);
+        prev.set_global(cx);
+        (id, ())
+    }
+    fn prepaint(
+        &mut self,
+        _: Option<&gpui::GlobalElementId>,
+        _: Option<&gpui::InspectorElementId>,
+        _: gpui::Bounds<gpui::Pixels>,
+        _: &mut (),
+        window: &mut gpui::Window,
+        cx: &mut App,
+    ) {
+        self.child.prepaint(window, cx);
+    }
+    fn paint(
+        &mut self,
+        _: Option<&gpui::GlobalElementId>,
+        _: Option<&gpui::InspectorElementId>,
+        _: gpui::Bounds<gpui::Pixels>,
+        _: &mut (),
+        _: &mut (),
+        window: &mut gpui::Window,
+        cx: &mut App,
+    ) {
+        self.child.paint(window, cx);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
