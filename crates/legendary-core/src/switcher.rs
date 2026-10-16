@@ -57,6 +57,40 @@ impl ThemeSwitcher {
         }
     }
 
+    /// Distinct design-system families, in registration order.
+    pub fn families(&self) -> Vec<&'static str> {
+        let mut out: Vec<&'static str> = Vec::new();
+        for t in &self.themes {
+            if !out.contains(&t.meta.family) {
+                out.push(t.meta.family);
+            }
+        }
+        out
+    }
+
+    /// Family of the active theme.
+    pub fn current_family(&self) -> &'static str {
+        self.current().meta.family
+    }
+
+    /// Indices (into [`themes`](Self::themes)) of the variants in `family`.
+    pub fn family_indices(&self, family: &str) -> Vec<usize> {
+        (0..self.themes.len())
+            .filter(|&i| self.themes[i].meta.family == family)
+            .collect()
+    }
+
+    /// Switch to the first variant of `family`; `false` if unknown.
+    pub fn select_family(&mut self, family: &str) -> bool {
+        match self.family_indices(family).first() {
+            Some(&i) => {
+                self.index = i;
+                true
+            }
+            None => false,
+        }
+    }
+
     /// Select by index, clamped.
     pub fn select_index(&mut self, i: usize) {
         self.index = i.min(self.themes.len() - 1);
@@ -72,6 +106,15 @@ impl Default for ThemeSwitcher {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn families_group_variants() {
+        let mut s = ThemeSwitcher::new();
+        assert_eq!(s.families(), vec!["cyberpunk"]);
+        assert_eq!(s.family_indices("cyberpunk").len(), s.themes().len());
+        assert!(s.select_family("cyberpunk"));
+        assert!(!s.select_family("nope"));
+    }
 
     #[test]
     fn cycles_and_wraps() {

@@ -376,8 +376,16 @@ pub fn theme_options(themes: &[Theme]) -> Vec<SelectOption> {
         .collect()
 }
 
-/// Dropdown listing every theme in the global switcher (name + swatches);
-/// choosing one applies it live. Newly registered themes appear automatically.
+/// Display title of a family id (`"cyberpunk"` → `"Cyberpunk"`).
+pub fn family_title(id: &str) -> String {
+    let mut c = id.chars();
+    c.next()
+        .map(|f| f.to_uppercase().collect::<String>() + c.as_str())
+        .unwrap_or_default()
+}
+
+/// Dropdown of the variants (sub-themes) of the active design system;
+/// choosing one applies it live. New variants appear automatically.
 #[derive(IntoElement)]
 pub struct ThemeSelector {
     id: ElementId,
@@ -392,12 +400,56 @@ impl ThemeSelector {
 impl RenderOnce for ThemeSelector {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let lt = cx.legendary();
-        let opts = theme_options(lt.switcher().themes());
-        let active = lt.switcher().index();
+        let sw = lt.switcher();
+        let idx = sw.family_indices(sw.current_family());
+        let list: Vec<Theme> = idx.iter().map(|&i| sw.themes()[i].clone()).collect();
+        let pos = idx.iter().position(|&i| i == sw.index());
+        Select::new(self.id)
+            .options(theme_options(&list))
+            .selected(pos)
+            .on_change(move |i, _, cx| select_theme(cx, idx[i]))
+    }
+}
+
+/// Dropdown of registered design systems (families). Choosing one switches
+/// to its first variant.
+#[derive(IntoElement)]
+pub struct DesignSystemSelector {
+    id: ElementId,
+}
+
+impl DesignSystemSelector {
+    pub fn new(id: impl Into<ElementId>) -> Self {
+        Self { id: id.into() }
+    }
+}
+
+impl RenderOnce for DesignSystemSelector {
+    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let lt = cx.legendary();
+        let sw = lt.switcher();
+        let fams = sw.families();
+        let opts: Vec<SelectOption> = fams
+            .iter()
+            .map(|f| {
+                let i = sw.family_indices(f)[0];
+                let p = &sw.themes()[i].palette;
+                SelectOption::new(family_title(f)).swatches([
+                    p.background,
+                    p.primary,
+                    p.secondary,
+                    p.accent,
+                ])
+            })
+            .collect();
+        let cur = fams.iter().position(|f| *f == sw.current_family());
         Select::new(self.id)
             .options(opts)
-            .selected(Some(active))
-            .on_change(|i, _, cx| select_theme(cx, i))
+            .selected(cur)
+            .on_change(move |i, _, cx| {
+                let idx = cx.legendary().switcher().family_indices(fams[i])[0];
+                select_theme(cx, idx)
+            })
     }
 }
 

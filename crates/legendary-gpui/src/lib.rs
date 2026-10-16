@@ -63,7 +63,7 @@ pub use overlay::{Dialog, DialogCard};
 pub use paint::{shaped, ShapeStyle};
 pub use panel::{InputBox, LegendaryTooltip, Panel};
 pub use scanlines::Scanlines;
-pub use select::{Select, SelectOption, ThemeSelector};
+pub use select::{family_title, DesignSystemSelector, Select, SelectOption, ThemeSelector};
 pub use surfaces::{
     card_style, AppBarSize, Card, CardVariant, Fab, FabSize, IconButton, NavItem, NavLayout,
     Navigation, SearchBar, TopAppBar,
