@@ -1,8 +1,8 @@
 //! Text helpers honouring `uppercase_labels`, sizes and colours from tokens.
 
 use crate::{active_theme, paint::color32};
-use egui::{RichText, Ui};
 use dodai_core::Theme;
+use egui::{RichText, Ui};
 
 /// Label text as the theme wants it (UPPERCASE when `uppercase_labels`).
 pub fn display_text(t: &Theme, s: &str) -> String {
@@ -46,29 +46,29 @@ pub fn mono_text(t: &Theme, s: &str) -> RichText {
 /// Themed text on [`Ui`].
 pub trait DodaiUi {
     /// Heading.
-    fn lg_heading(&mut self, s: &str) -> egui::Response;
+    fn dodai_heading(&mut self, s: &str) -> egui::Response;
     /// Body label.
-    fn lg_label(&mut self, s: &str) -> egui::Response;
+    fn dodai_label(&mut self, s: &str) -> egui::Response;
     /// Muted text.
-    fn lg_muted(&mut self, s: &str) -> egui::Response;
+    fn dodai_muted(&mut self, s: &str) -> egui::Response;
     /// Monospace text.
-    fn lg_mono(&mut self, s: &str) -> egui::Response;
+    fn dodai_mono(&mut self, s: &str) -> egui::Response;
 }
 
 impl DodaiUi for Ui {
-    fn lg_heading(&mut self, s: &str) -> egui::Response {
+    fn dodai_heading(&mut self, s: &str) -> egui::Response {
         let t = active_theme(self.ctx());
         self.label(heading_text(&t, s))
     }
-    fn lg_label(&mut self, s: &str) -> egui::Response {
+    fn dodai_label(&mut self, s: &str) -> egui::Response {
         let t = active_theme(self.ctx());
         self.label(label_text(&t, s))
     }
-    fn lg_muted(&mut self, s: &str) -> egui::Response {
+    fn dodai_muted(&mut self, s: &str) -> egui::Response {
         let t = active_theme(self.ctx());
         self.label(muted_text(&t, s))
     }
-    fn lg_mono(&mut self, s: &str) -> egui::Response {
+    fn dodai_mono(&mut self, s: &str) -> egui::Response {
         let t = active_theme(self.ctx());
         self.label(mono_text(&t, s))
     }

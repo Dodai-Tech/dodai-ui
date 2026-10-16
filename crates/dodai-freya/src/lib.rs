@@ -43,6 +43,4 @@ pub use components::*;
 #[cfg(feature = "ui")]
 pub use dodai_core::{ButtonVariant, ControlState, Tone};
 #[cfg(feature = "ui")]
-pub use theme::{
-    use_init_dodai, use_dodai, use_dodai_theme, Dodai, DodaiState,
-};
+pub use theme::{use_dodai, use_dodai_theme, use_init_dodai, Dodai, DodaiState};

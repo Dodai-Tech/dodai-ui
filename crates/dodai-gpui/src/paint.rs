@@ -8,11 +8,11 @@
 //! No function here looks at a theme id; everything derives from tokens.
 
 use crate::hsla;
+use dodai_core::{Color, Shape, ShapeKind, Theme};
 use gpui::{
     canvas, point, px, Bounds, BoxShadow, Div, Hsla, InteractiveElement, ParentElement,
     PathBuilder, Pixels, Styled, Window,
 };
-use dodai_core::{Color, Shape, ShapeKind, Theme};
 
 /// Everything needed to paint one shaped box.
 #[derive(Debug, Clone, Copy, PartialEq)]

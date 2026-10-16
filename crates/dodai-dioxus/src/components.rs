@@ -1,4 +1,4 @@
-//! Typed components emitting the `.lg-*` classes styled by `dodai-topcoat` CSS.
+//! Typed components emitting the `.dodai-*` classes styled by `dodai-topcoat` CSS.
 
 use dioxus::prelude::*;
 use dodai_core::{ButtonVariant, Tone};
@@ -6,12 +6,12 @@ use dodai_core::{ButtonVariant, Tone};
 /// CSS modifier class for a [`ButtonVariant`].
 pub fn button_class(v: ButtonVariant) -> &'static str {
     match v {
-        ButtonVariant::Primary => "lg-btn lg-btn--primary",
-        ButtonVariant::Secondary => "lg-btn lg-btn--secondary",
-        ButtonVariant::Outline => "lg-btn lg-btn--outline",
-        ButtonVariant::OutlineSecondary => "lg-btn lg-btn--outline-secondary",
-        ButtonVariant::Danger => "lg-btn lg-btn--danger",
-        ButtonVariant::Ghost => "lg-btn lg-btn--ghost",
+        ButtonVariant::Primary => "dodai-btn dodai-btn--primary",
+        ButtonVariant::Secondary => "dodai-btn dodai-btn--secondary",
+        ButtonVariant::Outline => "dodai-btn dodai-btn--outline",
+        ButtonVariant::OutlineSecondary => "dodai-btn dodai-btn--outline-secondary",
+        ButtonVariant::Danger => "dodai-btn dodai-btn--danger",
+        ButtonVariant::Ghost => "dodai-btn dodai-btn--ghost",
     }
 }
 
@@ -41,12 +41,12 @@ impl From<Tone> for TagKind {
 impl TagKind {
     fn class(self) -> &'static str {
         match self {
-            Self::Primary => "lg-tag--primary",
-            Self::Secondary => "lg-tag--secondary",
+            Self::Primary => "dodai-tag--primary",
+            Self::Secondary => "dodai-tag--secondary",
             Self::Info => "",
-            Self::Success => "lg-tag--success",
-            Self::Warning => "lg-tag--warning",
-            Self::Danger => "lg-tag--danger",
+            Self::Success => "dodai-tag--success",
+            Self::Warning => "dodai-tag--warning",
+            Self::Danger => "dodai-tag--danger",
         }
     }
 }
@@ -88,16 +88,16 @@ pub struct PanelProps {
 /// Card / panel with optional title; chamfered per theme shape.
 #[component]
 pub fn Panel(props: PanelProps) -> Element {
-    let mut class = String::from("lg-panel");
+    let mut class = String::from("dodai-panel");
     if props.focus {
-        class.push_str(" lg-panel--focus");
+        class.push_str(" dodai-panel--focus");
     }
     if props.raised {
-        class.push_str(" lg-panel--raised");
+        class.push_str(" dodai-panel--raised");
     }
     rsx! {
         div { class,
-            if let Some(t) = props.title { div { class: "lg-panel__title", "{t}" } }
+            if let Some(t) = props.title { div { class: "dodai-panel__title", "{t}" } }
             {props.children}
         }
     }
@@ -116,15 +116,15 @@ pub struct TagProps {
 /// Status tag.
 #[component]
 pub fn Tag(props: TagProps) -> Element {
-    let soft = if props.soft { "lg-tag--soft" } else { "" };
-    let class = format!("lg-tag {} {soft}", props.kind.class());
+    let soft = if props.soft { "dodai-tag--soft" } else { "" };
+    let class = format!("dodai-tag {} {soft}", props.kind.class());
     rsx! { span { class, {props.children} } }
 }
 
 /// Count badge.
 #[component]
 pub fn Badge(children: Element) -> Element {
-    rsx! { span { class: "lg-badge", {children} } }
+    rsx! { span { class: "dodai-badge", {children} } }
 }
 
 /// Tabs properties.
@@ -140,11 +140,11 @@ pub struct TabsProps {
 #[component]
 pub fn Tabs(props: TabsProps) -> Element {
     rsx! {
-        div { class: "lg-tabs", role: "tablist",
+        div { class: "dodai-tabs", role: "tablist",
             for (i, t) in props.tabs.iter().enumerate() {
                 a {
                     key: "{i}",
-                    class: if i == props.active { "lg-tab lg-tab--active" } else { "lg-tab" },
+                    class: if i == props.active { "dodai-tab dodai-tab--active" } else { "dodai-tab" },
                     role: "tab",
                     "aria-selected": "{i == props.active}",
                     href: "#",
@@ -172,10 +172,10 @@ pub struct CheckProps {
 #[component]
 pub fn Toggle(props: CheckProps) -> Element {
     rsx! {
-        label { class: "lg-switch",
+        label { class: "dodai-switch",
             input { r#type: "checkbox", role: "switch", checked: props.checked, disabled: props.disabled,
                 onchange: move |e| props.onchange.call(e.checked()) }
-            span { class: "lg-switch__box" }
+            span { class: "dodai-switch__box" }
             "{props.label}"
         }
     }
@@ -185,10 +185,10 @@ pub fn Toggle(props: CheckProps) -> Element {
 #[component]
 pub fn Checkbox(props: CheckProps) -> Element {
     rsx! {
-        label { class: "lg-check",
+        label { class: "dodai-check",
             input { r#type: "checkbox", checked: props.checked, disabled: props.disabled,
                 onchange: move |e| props.onchange.call(e.checked()) }
-            span { class: "lg-check__box" }
+            span { class: "dodai-check__box" }
             "{props.label}"
         }
     }
@@ -212,10 +212,10 @@ pub struct RadioProps {
 #[component]
 pub fn Radio(props: RadioProps) -> Element {
     rsx! {
-        label { class: "lg-radio",
+        label { class: "dodai-radio",
             input { r#type: "radio", name: props.name, checked: props.checked, disabled: props.disabled,
                 onchange: move |_| props.onselect.call(()) }
-            span { class: "lg-radio__box" }
+            span { class: "dodai-radio__box" }
             "{props.label}"
         }
     }
@@ -235,13 +235,13 @@ pub struct ProgressProps {
 pub fn Progress(props: ProgressProps) -> Element {
     let pct = props.value.clamp(0.0, 1.0) * 100.0;
     let tone = match props.tone {
-        Some(Tone::Success) => "lg-progress--success",
-        Some(Tone::Warning) => "lg-progress--warning",
-        Some(Tone::Danger) => "lg-progress--danger",
+        Some(Tone::Success) => "dodai-progress--success",
+        Some(Tone::Warning) => "dodai-progress--warning",
+        Some(Tone::Danger) => "dodai-progress--danger",
         _ => "",
     };
     rsx! {
-        div { class: "lg-progress {tone}", role: "progressbar", "aria-valuenow": "{pct:.0}",
+        div { class: "dodai-progress {tone}", role: "progressbar", "aria-valuenow": "{pct:.0}",
             span { style: "--v:{pct}%" }
         }
     }
@@ -269,7 +269,7 @@ pub fn Slider(props: SliderProps) -> Element {
     let span = (props.max - props.min).max(f32::EPSILON);
     let pct = ((props.value - props.min) / span).clamp(0.0, 1.0) * 100.0;
     rsx! {
-        input { class: "lg-slider", r#type: "range", min: "{props.min}", max: "{props.max}", step: "{props.step}",
+        input { class: "dodai-slider", r#type: "range", min: "{props.min}", max: "{props.max}", step: "{props.step}",
             value: "{props.value}", disabled: props.disabled, style: "--v:{pct}%",
             oninput: move |e| if let Ok(v) = e.value().parse::<f32>() { props.onchange.call(v) } }
     }
@@ -291,15 +291,15 @@ pub struct TextInputProps {
 #[component]
 pub fn TextInput(props: TextInputProps) -> Element {
     rsx! {
-        input { class: "lg-input", r#type: "text", value: props.value, placeholder: props.placeholder,
+        input { class: "dodai-input", r#type: "text", value: props.value, placeholder: props.placeholder,
             disabled: props.disabled, oninput: move |e| props.oninput.call(e.value()) }
     }
 }
 
-/// Wrapper `<ul class="lg-list">` for [`ListItem`]s.
+/// Wrapper `<ul class="dodai-list">` for [`ListItem`]s.
 #[component]
 pub fn List(children: Element) -> Element {
-    rsx! { ul { class: "lg-list", role: "listbox", {children} } }
+    rsx! { ul { class: "dodai-list", role: "listbox", {children} } }
 }
 
 /// List item properties.
@@ -316,7 +316,7 @@ pub struct ListItemProps {
 #[component]
 pub fn ListItem(props: ListItemProps) -> Element {
     rsx! {
-        li { class: "lg-list__item", role: "option", "aria-selected": "{props.selected}",
+        li { class: "dodai-list__item", role: "option", "aria-selected": "{props.selected}",
             onclick: move |e| props.onclick.call(e), {props.children} }
     }
 }
@@ -324,7 +324,7 @@ pub fn ListItem(props: ListItemProps) -> Element {
 /// Horizontal rule.
 #[component]
 pub fn Divider() -> Element {
-    rsx! { hr { class: "lg-divider" } }
+    rsx! { hr { class: "dodai-divider" } }
 }
 
 /// Tooltip properties.
@@ -337,7 +337,7 @@ pub struct TooltipProps {
 /// Hover tooltip around its children.
 #[component]
 pub fn Tooltip(props: TooltipProps) -> Element {
-    rsx! { span { class: "lg-tip", "data-tip": props.tip, tabindex: "0", {props.children} } }
+    rsx! { span { class: "dodai-tip", "data-tip": props.tip, tabindex: "0", {props.children} } }
 }
 
 /// Heading (`h1`..`h4`, honours `uppercase_labels` via CSS).
@@ -354,17 +354,17 @@ pub fn Heading(#[props(default = 2)] level: u8, children: Element) -> Element {
 /// Small label text (case follows the theme).
 #[component]
 pub fn Label(children: Element) -> Element {
-    rsx! { span { class: "lg-label", {children} } }
+    rsx! { span { class: "dodai-label", {children} } }
 }
 
 /// Muted body text.
 #[component]
 pub fn Muted(children: Element) -> Element {
-    rsx! { span { class: "lg-muted", {children} } }
+    rsx! { span { class: "dodai-muted", {children} } }
 }
 
 /// Monospace text.
 #[component]
 pub fn Mono(children: Element) -> Element {
-    rsx! { code { class: "lg-mono", {children} } }
+    rsx! { code { class: "dodai-mono", {children} } }
 }

@@ -32,9 +32,9 @@ fn main() -> io::Result<()> {
         tab: 0,
         list: ListState::default().with_selected(Some(0)),
     };
-    if let Ok(path) = std::env::var("LG_DUMP") {
-        // LG_THEME=n cycles n themes forward before dumping.
-        for _ in 0..std::env::var("LG_THEME")
+    if let Ok(path) = std::env::var("DODAI_DUMP") {
+        // DODAI_THEME=n cycles n themes forward before dumping.
+        for _ in 0..std::env::var("DODAI_THEME")
             .ok()
             .and_then(|v| v.parse().ok())
             .unwrap_or(0)
@@ -221,7 +221,7 @@ fn draw(f: &mut Frame, app: &mut App) {
     f.render_widget(Scanlines::new(t), area);
 }
 
-/// Headless render of one frame to HTML (for screenshots / docs): `LG_DUMP=out.html`.
+/// Headless render of one frame to HTML (for screenshots / docs): `DODAI_DUMP=out.html`.
 fn dump_html(app: &mut App, path: &str) -> io::Result<()> {
     use ratatui::{backend::TestBackend, style::Color, Terminal};
     let (w, h) = (110u16, 36u16);

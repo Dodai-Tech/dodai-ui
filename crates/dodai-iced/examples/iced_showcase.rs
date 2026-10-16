@@ -3,13 +3,13 @@
 //! `cargo run -p dodai-iced --example iced_showcase`
 //! Keys: `t` / `T` = next / previous theme. Buttons: theme switcher, glow +/-.
 
+use dodai_core::{ButtonVariant, ThemeSwitcher, Tone};
+use dodai_iced::IcedTheme;
 use iced::widget::{
     checkbox, column, container, pick_list, progress_bar, radio, row, scrollable, slider, stack,
     text_input, toggler, tooltip, Space,
 };
 use iced::{event, keyboard, Element, Length, Subscription, Theme as IcedBase};
-use dodai_core::{ButtonVariant, ThemeSwitcher, Tone};
-use dodai_iced::IcedTheme;
 
 struct App {
     sw: ThemeSwitcher,

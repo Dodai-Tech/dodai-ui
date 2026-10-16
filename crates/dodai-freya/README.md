@@ -7,7 +7,7 @@
 | Layer | Needs Freya | What |
 |---|---|---|
 | `style` | no | token → Freya attribute strings (`css`, `ShapeStyle::{background,border,corner_radius,shadow}`, `chamfer_svg`, `text_style`, per-component `*_style`). Unit-tested without a window. |
-| `theme`, `components` (feature `ui`, default) | yes | `use_init_dodai`, `Dodai` handle (switcher + glow override), `Lg*` components. |
+| `theme`, `components` (feature `ui`, default) | yes | `use_init_dodai`, `Dodai` handle (switcher + glow override), `Dodai*` components. |
 
 Build only the pure layer: `cargo test -p dodai-freya --no-default-features`.
 
@@ -19,11 +19,11 @@ Build only the pure layer: `cargo test -p dodai-freya --no-default-features`.
 ## API
 
 ```rust
-let lg = use_init_dodai(Theme::default()); // root
-lg.next(); lg.prev(); lg.select("cyberpunk-netrunner"); lg.select_index(i);
-lg.set_glow_intensity(1.5); lg.theme();
+let dodai = use_init_dodai(Theme::default()); // root
+dodai.next(); dodai.prev(); dodai.select("cyberpunk-netrunner"); dodai.select_index(i);
+dodai.set_glow_intensity(1.5); dodai.theme();
 ```
-Components: `LgButton` (all `ButtonVariant`s, `disabled`), `LgPanel`, `LgTag`, `LgTabs`, `LgToggle`, `LgCheckbox`, `LgRadio`, `LgProgress`, `LgSlider`, `LgTextInput`, `LgListItem`, `LgDivider`, `LgTooltip`, `LgTooltipHost`, `LgHeading`/`LgLabel`/`LgMuted`/`LgMono`, `LgThemeSwitcher`. `shaped()` is the box primitive.
+Components: `DodaiButton` (all `ButtonVariant`s, `disabled`), `DodaiPanel`, `DodaiTag`, `DodaiTabs`, `DodaiToggle`, `DodaiCheckbox`, `DodaiRadio`, `DodaiProgress`, `DodaiSlider`, `DodaiTextInput`, `DodaiListItem`, `DodaiDivider`, `DodaiTooltip`, `DodaiTooltipHost`, `DodaiHeading`/`DodaiLabel`/`DodaiMuted`/`DodaiMono`, `DodaiThemeSwitcher`. `shaped()` is the box primitive.
 
 ## Showcase
 
@@ -31,6 +31,6 @@ Components: `LgButton` (all `ButtonVariant`s, `disabled`), `LgPanel`, `LgTag`, `
 
 ## Limitations
 
-* `LgTextInput` / `LgSlider` wrap Freya's `Input`/`Slider`; chamfered themes render the input square.
+* `DodaiTextInput` / `DodaiSlider` wrap Freya's `Input`/`Slider`; chamfered themes render the input square.
 * Chamfer glow is a blurred SVG polygon (relies on Skia SVG filters).
 * No scanline overlay component yet.

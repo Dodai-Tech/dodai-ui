@@ -67,11 +67,11 @@ pub use geometry::ShapeGeom;
 pub use shaped_button::ChamferButton;
 pub use shaped_button::{ButtonState, ShapedButton, ShapedColors};
 
+use dodai_core::{Color as LColor, Theme};
 use iced::{
     border::Border, theme::Palette, widget::container, Background, Color, Font, Shadow,
     Theme as IcedBaseTheme, Vector,
 };
-use dodai_core::{Color as LColor, Theme};
 
 /// Token colour → Iced colour.
 pub fn color(c: LColor) -> Color {

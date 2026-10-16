@@ -2,8 +2,8 @@
 
 use crate::paint::{add_all, box_shapes, color32, control_state, layout, sense};
 use crate::{active_theme, display_text};
-use egui::{pos2, vec2, Rect, Response, Sense, Stroke, Ui, Widget};
 use dodai_core::{ControlState, ShapeKind, Theme, Tone};
+use egui::{pos2, vec2, Rect, Response, Sense, Stroke, Ui, Widget};
 use std::ops::RangeInclusive;
 
 /// Side of checkbox/radio marks.

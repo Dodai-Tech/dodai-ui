@@ -1,11 +1,11 @@
 //! Toggler, checkbox, radio, progress bar and slider styles.
 
+use dodai_core::{ControlState, ShapeKind, Tone};
 use iced::{
     border::Radius,
     widget::{checkbox, progress_bar, radio, slider, toggler},
     Background, Border, Theme as IcedBaseTheme,
 };
-use dodai_core::{ControlState, ShapeKind, Tone};
 
 use crate::{color, IcedTheme};
 

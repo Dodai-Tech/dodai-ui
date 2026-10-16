@@ -40,7 +40,7 @@ fn Showcase() -> Element {
             Panel { title: "Theme",
                 div { style: "display:flex;gap:8px;flex-wrap:wrap;align-items:center",
                     for (id, n) in theme.list() {
-                        button { key: "{id}", class: "lg-btn lg-btn--outline", "data-theme-btn": id,
+                        button { key: "{id}", class: "dodai-btn dodai-btn--outline", "data-theme-btn": id,
                             onclick: move |_| { theme.select(id); }, "{n}" }
                     }
                     Button { variant: ButtonVariant::Ghost, onclick: move |_| theme.prev(), "◀ prev (T)" }
@@ -133,7 +133,7 @@ fn main() {
         .map(|t| format!("\"{}\"", t.id()))
         .collect();
     let script = format!(
-        "var ids=[{}],r=document.querySelector('.lg-root'),i=Math.max(0,ids.indexOf(r.dataset.theme));\
+        "var ids=[{}],r=document.querySelector('.dodai-root'),i=Math.max(0,ids.indexOf(r.dataset.theme));\
 function s(n){{i=(n+ids.length)%ids.length;r.dataset.theme=ids[i]}}\
 document.querySelectorAll('[data-theme-btn]').forEach(function(b){{b.onclick=function(){{s(ids.indexOf(b.dataset.themeBtn))}}}});\
 addEventListener('keydown',function(e){{if(e.key=='t')s(i+1);if(e.key=='T')s(i-1)}});",

@@ -14,17 +14,17 @@ pub fn Heading(#[prop(default = 2)] level: u8, children: Children) -> impl IntoV
 /// Small caption label.
 #[component]
 pub fn Label(children: Children) -> impl IntoView {
-    view! { <span class="lg-label">{children()}</span> }
+    view! { <span class="dodai-label">{children()}</span> }
 }
 
 /// Muted paragraph text.
 #[component]
 pub fn Muted(children: Children) -> impl IntoView {
-    view! { <p class="lg-muted">{children()}</p> }
+    view! { <p class="dodai-muted">{children()}</p> }
 }
 
 /// Monospace inline text.
 #[component]
 pub fn Mono(children: Children) -> impl IntoView {
-    view! { <code class="lg-mono">{children()}</code> }
+    view! { <code class="dodai-mono">{children()}</code> }
 }

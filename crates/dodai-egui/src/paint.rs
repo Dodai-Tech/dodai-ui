@@ -1,8 +1,8 @@
 //! Token-driven geometry: outlines, glow layers and hard shadows as egui shapes.
 
+use dodai_core::{Color, ControlState, Shape as ShapeTokens, ShapeKind, Theme};
 use egui::{epaint::PathShape, pos2, vec2, Color32, CornerRadius, Rect, Response, Sense, Stroke};
 use egui::{epaint::RectShape, Pos2, Shape, StrokeKind};
-use dodai_core::{Color, ControlState, Shape as ShapeTokens, ShapeKind, Theme};
 
 /// Token colour → egui colour (unmultiplied alpha input).
 pub fn color32(c: Color) -> Color32 {

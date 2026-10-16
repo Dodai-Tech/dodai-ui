@@ -3,7 +3,7 @@
 //! Generates the Dodai UI **stylesheet** for server-rendered web UIs
 //! (built for [Topcoat](https://crates.io/crates/topcoat), works with any
 //! framework): CSS custom properties for every token, a themed component layer
-//! (`.lg-btn`, `.lg-panel`, `.lg-input`, `.lg-tag`, `.lg-tabs`, `.lg-table`, …
+//! (`.dodai-btn`, `.dodai-panel`, `.dodai-input`, `.dodai-tag`, `.dodai-tabs`, `.dodai-table`, …
 //! with chamfered cut-corners via `clip-path`) and a tiny client-side switcher.
 //!
 //! ```
@@ -18,7 +18,7 @@
 use dodai_core::{Shape, ShapeKind, Theme};
 use std::fmt::Write;
 
-/// Component layer; only references `var(--lg-*)`.
+/// Component layer; only references `var(--dodai-*)`.
 pub const COMPONENTS_CSS: &str = include_str!("components.css");
 
 /// Google Fonts stylesheet URL for the fallback display face (Rajdhani) and mono.
@@ -114,13 +114,13 @@ pub fn css(t: &Theme) -> String {
     stylesheet(t)
 }
 
-/// `--lg-*` custom property declarations (no selector) for one theme.
+/// `--dodai-*` custom property declarations (no selector) for one theme.
 pub fn theme_vars(t: &Theme) -> String {
     let p = &t.palette;
     let ty = &t.typography;
     let mut s = String::new();
     let mut v = |k: &str, val: String| {
-        let _ = write!(s, "--lg-{k}:{val};");
+        let _ = write!(s, "--dodai-{k}:{val};");
     };
     for (k, c) in [
         ("background", p.background),
@@ -272,7 +272,7 @@ pub fn multi_theme_stylesheet(themes: &[Theme]) -> String {
 
 /// Inline script: exposes `dodaiTheme.next()/prev()/set(id)`, persists the
 /// choice in `localStorage` and applies `data-theme` on `<html>` before paint.
-/// Wire buttons with `data-lg-theme-next` / `data-lg-theme-prev`.
+/// Wire buttons with `data-dodai-theme-next` / `data-dodai-theme-prev`.
 pub fn switcher_script(themes: &[Theme]) -> String {
     let ids = themes
         .iter()
@@ -287,8 +287,8 @@ try{{localStorage.setItem(k,ids[i])}}catch(e){{}}}}\
 window.dodaiTheme={{next:function(){{set(i+1)}},prev:function(){{set(i-1)}},\
 set:function(id){{var n=ids.indexOf(id);if(n>=0)set(n)}},current:function(){{return ids[i]}}}};\
 set(i);\
-document.addEventListener('click',function(e){{var t=e.target.closest&&e.target.closest('[data-lg-theme-next],[data-lg-theme-prev]');\
-if(!t)return;t.hasAttribute('data-lg-theme-next')?set(i+1):set(i-1)}});}})();"
+document.addEventListener('click',function(e){{var t=e.target.closest&&e.target.closest('[data-dodai-theme-next],[data-dodai-theme-prev]');\
+if(!t)return;t.hasAttribute('data-dodai-theme-next')?set(i+1):set(i-1)}});}})();"
     )
 }
 
@@ -300,10 +300,10 @@ mod tests {
     #[test]
     fn vars_contain_brand_yellow() {
         let v = theme_vars(&Theme::default());
-        assert!(v.contains("--lg-primary:#fcee0a;"));
-        assert!(v.contains("--lg-secondary:#00f0ff;"));
-        assert!(v.contains("--lg-chamfer:16px;"));
-        assert!(v.contains("--lg-label-case:uppercase;"));
+        assert!(v.contains("--dodai-primary:#fcee0a;"));
+        assert!(v.contains("--dodai-secondary:#00f0ff;"));
+        assert!(v.contains("--dodai-chamfer:16px;"));
+        assert!(v.contains("--dodai-label-case:uppercase;"));
     }
 
     #[test]
@@ -332,12 +332,12 @@ mod tests {
     fn components_only_use_defined_vars() {
         let defined = theme_vars(&Theme::default());
         let mut missing = vec![];
-        for part in COMPONENTS_CSS.split("var(--lg-").skip(1) {
+        for part in COMPONENTS_CSS.split("var(--dodai-").skip(1) {
             let name: String = part
                 .chars()
                 .take_while(|c| c.is_ascii_alphanumeric() || *c == '-')
                 .collect();
-            if !defined.contains(&format!("--lg-{name}:")) {
+            if !defined.contains(&format!("--dodai-{name}:")) {
                 missing.push(name);
             }
         }
@@ -481,10 +481,10 @@ mod tests {
             let want = t.shape.outline(240.0, 120.0);
             if t.shape.kind() == dodai_core::ShapeKind::Chamfered {
                 let clip = clip_path(&t.shape);
-                assert!(c.contains(&format!("--lg-clip:{clip};")));
+                assert!(c.contains(&format!("--dodai-clip:{clip};")));
                 assert_eq!(eval_clip(&clip, 240.0, 120.0), want, "{}", t.id());
             } else {
-                assert!(c.contains("--lg-clip:none;"));
+                assert!(c.contains("--dodai-clip:none;"));
             }
         }
     }
@@ -502,11 +502,11 @@ mod tests {
     fn rounded_and_square_have_no_clip() {
         for (t, r) in [(light(8.0), "8px"), (light(0.0), "0px")] {
             let v = theme_vars(&t);
-            assert!(v.contains("--lg-clip:none;") && v.contains("--lg-clip-inner:none;"));
-            assert!(v.contains(&format!("--lg-radius:{r};")));
-            assert!(v.contains("--lg-glow-filter:none;"));
-            assert!(v.contains("--lg-scheme:light;"));
-            assert!(v.contains("--lg-clip-ring:polygon(0 0,0 0,0 0);"));
+            assert!(v.contains("--dodai-clip:none;") && v.contains("--dodai-clip-inner:none;"));
+            assert!(v.contains(&format!("--dodai-radius:{r};")));
+            assert!(v.contains("--dodai-glow-filter:none;"));
+            assert!(v.contains("--dodai-scheme:light;"));
+            assert!(v.contains("--dodai-clip-ring:polygon(0 0,0 0,0 0);"));
         }
     }
 
@@ -516,19 +516,19 @@ mod tests {
         themes.extend([light(8.0), light(0.0)]);
         for t in &themes {
             let defined = theme_vars(t);
-            for part in COMPONENTS_CSS.split("var(--lg-").skip(1) {
+            for part in COMPONENTS_CSS.split("var(--dodai-").skip(1) {
                 let name: String = part
                     .chars()
                     .take_while(|c| c.is_ascii_alphanumeric() || *c == '-')
                     .collect();
                 assert!(
-                    defined.contains(&format!("--lg-{name}:")),
+                    defined.contains(&format!("--dodai-{name}:")),
                     "{}: {name}",
                     t.id()
                 );
             }
         }
-        if let Ok(p) = std::env::var("LG_DUMP") {
+        if let Ok(p) = std::env::var("DODAI_DUMP") {
             std::fs::write(p, multi_theme_stylesheet(&themes)).unwrap();
         }
     }
@@ -536,10 +536,10 @@ mod tests {
     #[test]
     fn glow_uses_filter_when_chamfered_shadow_otherwise() {
         let cp = theme_vars(&Theme::default());
-        assert!(cp.contains("--lg-glow-filter:drop-shadow("));
-        assert!(cp.contains("--lg-glow-shadow:0 0 0 0 transparent;"));
+        assert!(cp.contains("--dodai-glow-filter:drop-shadow("));
+        assert!(cp.contains("--dodai-glow-shadow:0 0 0 0 transparent;"));
         let off = theme_vars(&Theme::default().with_glow_intensity(0.0));
-        assert!(off.contains("--lg-glow-filter:none;"));
+        assert!(off.contains("--dodai-glow-filter:none;"));
     }
 
     #[test]

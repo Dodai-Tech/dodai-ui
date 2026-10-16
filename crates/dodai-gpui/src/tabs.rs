@@ -4,11 +4,11 @@ use crate::interact::{track, use_interact};
 use crate::paint::{bottom_band_canvas, shaped_id, ShapeStyle};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
+use dodai_core::Theme;
 use gpui::{
     div, px, App, ElementId, Hsla, IntoElement, ParentElement, RenderOnce, SharedString,
     StatefulInteractiveElement, Styled, Window,
 };
-use dodai_core::Theme;
 use std::rc::Rc;
 
 /// Resolved tab paint: shape style, text colour, optional indicator colour.

@@ -3,8 +3,8 @@
 use crate::paint::{shaped, ShapeStyle};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
-use gpui::{px, App, IntoElement, ParentElement, RenderOnce, SharedString, Styled, Window};
 use dodai_core::{Theme, Tone};
+use gpui::{px, App, IntoElement, ParentElement, RenderOnce, SharedString, Styled, Window};
 
 /// Paint style + text colour of a tag (pure).
 pub fn tag_style(theme: &Theme, tone: Tone, solid: bool) -> (ShapeStyle, gpui::Hsla) {

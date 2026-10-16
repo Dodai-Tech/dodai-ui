@@ -8,12 +8,12 @@ use crate::paint::{shaped, shaped_id, ShapeStyle};
 use crate::panel::input_style;
 use crate::text::first_family;
 use crate::{hsla, select_theme, theme_of, ActiveDodai};
+use dodai_core::{Color, Theme};
 use gpui::{
     canvas, deferred, div, px, App, Bounds, ElementId, FocusHandle, InteractiveElement,
     IntoElement, MouseButton, ParentElement, Pixels, RenderOnce, SharedString,
     StatefulInteractiveElement, Styled, Window,
 };
-use dodai_core::{Color, Theme};
 use std::rc::Rc;
 
 /// One entry of a [`Select`].

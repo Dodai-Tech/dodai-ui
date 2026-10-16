@@ -1,7 +1,7 @@
 //! Text helpers honouring `typography` sizes and `uppercase_labels`.
 
-use iced::{widget::text, Theme as IcedBaseTheme};
 use dodai_core::Tone;
+use iced::{widget::text, Theme as IcedBaseTheme};
 
 use crate::{color, IcedTheme};
 

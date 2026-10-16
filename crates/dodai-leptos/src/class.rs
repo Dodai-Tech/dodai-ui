@@ -15,12 +15,12 @@ pub fn join(parts: &[&str]) -> String {
 /// Class for a button variant.
 pub fn button(v: ButtonVariant) -> &'static str {
     match v {
-        ButtonVariant::Primary => "lg-btn lg-btn--primary",
-        ButtonVariant::Secondary => "lg-btn lg-btn--secondary",
-        ButtonVariant::Outline => "lg-btn lg-btn--outline",
-        ButtonVariant::OutlineSecondary => "lg-btn lg-btn--outline-secondary",
-        ButtonVariant::Danger => "lg-btn lg-btn--danger",
-        ButtonVariant::Ghost => "lg-btn lg-btn--ghost",
+        ButtonVariant::Primary => "dodai-btn dodai-btn--primary",
+        ButtonVariant::Secondary => "dodai-btn dodai-btn--secondary",
+        ButtonVariant::Outline => "dodai-btn dodai-btn--outline",
+        ButtonVariant::OutlineSecondary => "dodai-btn dodai-btn--outline-secondary",
+        ButtonVariant::Danger => "dodai-btn dodai-btn--danger",
+        ButtonVariant::Ghost => "dodai-btn dodai-btn--ghost",
     }
 }
 
@@ -55,43 +55,43 @@ impl From<Tone> for TagTone {
 
 /// Class for a tag/badge.
 pub fn tag(tone: TagTone, soft: bool, badge: bool) -> String {
-    let base = if badge { "lg-badge" } else { "lg-tag" };
+    let base = if badge { "dodai-badge" } else { "dodai-tag" };
     let t = match tone {
         TagTone::Info => "",
-        TagTone::Success => "lg-tag--success",
-        TagTone::Warning => "lg-tag--warning",
-        TagTone::Danger => "lg-tag--danger",
-        TagTone::Primary => "lg-tag--primary",
-        TagTone::Secondary => "lg-tag--secondary",
+        TagTone::Success => "dodai-tag--success",
+        TagTone::Warning => "dodai-tag--warning",
+        TagTone::Danger => "dodai-tag--danger",
+        TagTone::Primary => "dodai-tag--primary",
+        TagTone::Secondary => "dodai-tag--secondary",
     };
-    join(&[base, t, if soft { "lg-tag--soft" } else { "" }])
+    join(&[base, t, if soft { "dodai-tag--soft" } else { "" }])
 }
 
 /// Class for a progress bar of the given tone (`None` = brand primary).
 pub fn progress(tone: Option<Tone>) -> &'static str {
     match tone {
-        None | Some(Tone::Info) => "lg-progress",
-        Some(Tone::Success) => "lg-progress lg-progress--success",
-        Some(Tone::Warning) => "lg-progress lg-progress--warning",
-        Some(Tone::Danger) => "lg-progress lg-progress--danger",
+        None | Some(Tone::Info) => "dodai-progress",
+        Some(Tone::Success) => "dodai-progress dodai-progress--success",
+        Some(Tone::Warning) => "dodai-progress dodai-progress--warning",
+        Some(Tone::Danger) => "dodai-progress dodai-progress--danger",
     }
 }
 
 /// Class for a tab.
 pub fn tab(active: bool) -> &'static str {
     if active {
-        "lg-tab lg-tab--active"
+        "dodai-tab dodai-tab--active"
     } else {
-        "lg-tab"
+        "dodai-tab"
     }
 }
 
 /// Class for a panel.
 pub fn panel(focused: bool, raised: bool) -> String {
     join(&[
-        "lg-panel",
-        if focused { "lg-panel--focus" } else { "" },
-        if raised { "lg-panel--raised" } else { "" },
+        "dodai-panel",
+        if focused { "dodai-panel--focus" } else { "" },
+        if raised { "dodai-panel--raised" } else { "" },
     ])
 }
 
@@ -115,23 +115,23 @@ mod tests {
         let all = [Primary, Secondary, Outline, OutlineSecondary, Danger, Ghost];
         let set: std::collections::HashSet<_> = all.iter().map(|v| button(*v)).collect();
         assert_eq!(set.len(), all.len());
-        assert!(all.iter().all(|v| button(*v).starts_with("lg-btn ")));
+        assert!(all.iter().all(|v| button(*v).starts_with("dodai-btn ")));
     }
 
     #[test]
     fn tag_panel_progress_tab() {
-        assert_eq!(tag(TagTone::Info, false, false), "lg-tag");
+        assert_eq!(tag(TagTone::Info, false, false), "dodai-tag");
         assert_eq!(
             tag(TagTone::Danger, true, true),
-            "lg-badge lg-tag--danger lg-tag--soft"
+            "dodai-badge dodai-tag--danger dodai-tag--soft"
         );
         assert_eq!(TagTone::from(Tone::Success), TagTone::Success);
-        assert_eq!(panel(true, false), "lg-panel lg-panel--focus");
+        assert_eq!(panel(true, false), "dodai-panel dodai-panel--focus");
         assert_eq!(
             progress(Some(Tone::Danger)),
-            "lg-progress lg-progress--danger"
+            "dodai-progress dodai-progress--danger"
         );
-        assert_eq!(tab(true), "lg-tab lg-tab--active");
+        assert_eq!(tab(true), "dodai-tab dodai-tab--active");
         assert_eq!(percent(150.0), "100%");
         assert_eq!(percent(f32::NAN), "0%");
     }
@@ -240,7 +240,7 @@ mod tests {
     fn ssr_renders_components() {
         use leptos::prelude::*;
         let html = view! { <crate::Button variant=ButtonVariant::Danger disabled=true>"x"</crate::Button> }.to_html();
-        assert!(html.contains("lg-btn--danger") && html.contains("disabled"));
+        assert!(html.contains("dodai-btn--danger") && html.contains("disabled"));
         let html = view! { <crate::Progress value=250.0/> }.to_html();
         assert!(html.contains("--v:100%"));
     }

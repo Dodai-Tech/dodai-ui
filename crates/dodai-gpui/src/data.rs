@@ -5,11 +5,11 @@ use crate::list::list_style;
 use crate::paint::{round_shape, scaled_shape, shaped, shaped_id, ShapeStyle};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
+use dodai_core::{Theme, Tone};
 use gpui::{
     div, px, App, ClickEvent, ElementId, InteractiveElement, IntoElement, ParentElement,
     RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window,
 };
-use dodai_core::{Theme, Tone};
 use std::rc::Rc;
 
 /// Data table: header + rows, optional selected row. Cells are text.

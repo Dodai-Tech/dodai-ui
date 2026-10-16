@@ -61,7 +61,7 @@ pub fn ThemeProvider(
         .find(|t| t.id() == theme)
         .is_some_and(|t| t.effects.scanlines);
     view! {
-        <div class="lg-root" data-theme=theme data-scanlines=if scan { "1" } else { "0" }>
+        <div class="dodai-root" data-theme=theme data-scanlines=if scan { "1" } else { "0" }>
             <style>{css}</style>
             {children()}
         </div>

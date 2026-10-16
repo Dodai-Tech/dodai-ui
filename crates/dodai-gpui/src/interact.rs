@@ -1,10 +1,10 @@
 //! Hover / pressed tracking shared by interactive components.
 
+use dodai_core::ControlState;
 use gpui::{
     App, ClickEvent, ElementId, Entity, InteractiveElement, MouseButton, Stateful,
     StatefulInteractiveElement, Window,
 };
-use dodai_core::ControlState;
 
 /// Pointer state of one control (kept in gpui keyed element state).
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]

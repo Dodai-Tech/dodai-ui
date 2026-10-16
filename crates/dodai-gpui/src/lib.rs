@@ -2,7 +2,7 @@
 //!
 //! Turns a [`dodai_core::Theme`] into GPUI values: colours, a [`Global`]
 //! theme store (`cx.dodai()`), and a [`DodaiStyled`] extension for
-//! any [`Styled`] element (`div().lg_panel(&theme)`, `.lg_button(...)`).
+//! any [`Styled`] element (`div().dodai_panel(&theme)`, `.dodai_button(...)`).
 //!
 //! ## Components
 //!
@@ -22,7 +22,7 @@
 //! fn setup(cx: &mut App) {
 //!     install(cx, Theme::default());
 //!     let t = cx.dodai().theme().clone();
-//!     let _btn = div().lg_button(&t, ButtonVariant::Primary, ControlState::Idle);
+//!     let _btn = div().dodai_button(&t, ButtonVariant::Primary, ControlState::Idle);
 //! }
 //! ```
 
@@ -61,7 +61,7 @@ pub use menu::{Menu, MenuItem};
 pub use nav::{Accordion, Breadcrumb, Pagination, Segmented, Stepper};
 pub use overlay::{Dialog, DialogCard};
 pub use paint::{shaped, ShapeStyle};
-pub use panel::{InputBox, DodaiTooltip, Panel};
+pub use panel::{DodaiTooltip, InputBox, Panel};
 pub use scanlines::Scanlines;
 pub use select::{family_title, DesignSystemSelector, Select, SelectOption, ThemeSelector};
 pub use surfaces::{
@@ -74,8 +74,8 @@ pub use tag::Tag;
 pub use text::{Heading, Label, Mono, Muted};
 pub use text_input::TextInput;
 
-use gpui::{px, App, BoxShadow, Global, Hsla, Rgba, Styled};
 use dodai_core::{ButtonVariant, Color, ControlState, Theme, ThemeSwitcher, Tone};
+use gpui::{px, App, BoxShadow, Global, Hsla, Rgba, Styled};
 
 /// Token colour → GPUI [`Rgba`].
 pub fn rgba(c: Color) -> Rgba {
@@ -128,9 +128,7 @@ pub fn theme_of(cx: &App) -> Theme {
 
 /// Select theme by index (clamped) and repaint.
 pub fn select_theme(cx: &mut App, index: usize) {
-    cx.global_mut::<DodaiTheme>()
-        .switcher
-        .select_index(index);
+    cx.global_mut::<DodaiTheme>().switcher.select_index(index);
     cx.refresh_windows();
 }
 
@@ -201,13 +199,13 @@ impl ActiveDodai for App {
 /// Theme-aware styling for any GPUI [`Styled`] element.
 pub trait DodaiStyled: Styled + Sized {
     /// App background + default text colour.
-    fn lg_background(self, t: &Theme) -> Self {
+    fn dodai_background(self, t: &Theme) -> Self {
         self.bg(hsla(t.palette.background))
             .text_color(hsla(t.palette.text))
     }
 
     /// Bordered panel; glow shadow when `focused`.
-    fn lg_panel(self, t: &Theme, focused: bool) -> Self {
+    fn dodai_panel(self, t: &Theme, focused: bool) -> Self {
         let p = t.panel(focused);
         let s = self
             .bg(hsla(p.background))
@@ -228,7 +226,7 @@ pub trait DodaiStyled: Styled + Sized {
     }
 
     /// Button colours + control height for a variant/state.
-    fn lg_button(self, t: &Theme, v: ButtonVariant, state: ControlState) -> Self {
+    fn dodai_button(self, t: &Theme, v: ButtonVariant, state: ControlState) -> Self {
         let b = t.button(v, state);
         let s = self
             .h(px(t.shape.control_height))
@@ -246,7 +244,7 @@ pub trait DodaiStyled: Styled + Sized {
     }
 
     /// Text-input box.
-    fn lg_input(self, t: &Theme, focused: bool) -> Self {
+    fn dodai_input(self, t: &Theme, focused: bool) -> Self {
         let i = t.input(focused);
         self.bg(hsla(i.background))
             .border_2()
@@ -292,7 +290,7 @@ mod tests {
     #[test]
     fn styled_ext_applies() {
         let t = Theme::default();
-        let _ = gpui::div().lg_panel(&t, true).lg_button(
+        let _ = gpui::div().dodai_panel(&t, true).dodai_button(
             &t,
             ButtonVariant::Outline,
             ControlState::Hovered,

@@ -5,11 +5,11 @@ use crate::logic::{page_window, step_status, PageItem, StepStatus};
 use crate::paint::{round_shape, scaled_shape, shaped, shaped_id, ShapeStyle};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
+use dodai_core::{ButtonVariant, ControlState, Theme};
 use gpui::{
     div, px, App, ElementId, InteractiveElement, IntoElement, ParentElement, RenderOnce,
     SharedString, StatefulInteractiveElement, Styled, Window,
 };
-use dodai_core::{ButtonVariant, ControlState, Theme};
 use std::rc::Rc;
 
 /// Path trail; the last crumb is the current page. Earlier crumbs are clickable.

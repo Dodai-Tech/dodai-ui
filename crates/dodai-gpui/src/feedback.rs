@@ -4,11 +4,11 @@
 use crate::paint::{scaled_shape, shaped, ShapeStyle};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
+use dodai_core::{Theme, Tone};
 use gpui::{
     div, px, relative, Animation, AnimationExt, App, ElementId, IntoElement, ParentElement,
     RenderOnce, SharedString, Styled, Window,
 };
-use dodai_core::{Theme, Tone};
 use std::time::Duration;
 
 /// Glyph for a tone.

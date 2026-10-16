@@ -22,7 +22,7 @@ pub fn Panel(
 ) -> impl IntoView {
     view! {
         <div class=class::panel(focused, raised)>
-            {title.map(|t| view! { <div class="lg-panel__title">{t}</div> })}
+            {title.map(|t| view! { <div class="dodai-panel__title">{t}</div> })}
             {children()}
         </div>
     }
@@ -43,7 +43,7 @@ pub fn Tag(
 #[component]
 pub fn Tabs(tabs: Vec<String>, #[prop(optional)] active: usize) -> impl IntoView {
     view! {
-        <nav class="lg-tabs">
+        <nav class="dodai-tabs">
             {tabs
                 .into_iter()
                 .enumerate()
@@ -63,23 +63,23 @@ pub fn Progress(value: f32, #[prop(optional)] tone: Option<Tone>) -> impl IntoVi
 /// Selectable list row.
 #[component]
 pub fn ListItem(#[prop(optional)] selected: bool, children: Children) -> impl IntoView {
-    view! { <li class="lg-list__item" aria-selected=selected.to_string()>{children()}</li> }
+    view! { <li class="dodai-list__item" aria-selected=selected.to_string()>{children()}</li> }
 }
 
 /// List container for [`ListItem`]s.
 #[component]
 pub fn List(children: Children) -> impl IntoView {
-    view! { <ul class="lg-list">{children()}</ul> }
+    view! { <ul class="dodai-list">{children()}</ul> }
 }
 
 /// Horizontal divider.
 #[component]
 pub fn Divider() -> impl IntoView {
-    view! { <hr class="lg-divider"/> }
+    view! { <hr class="dodai-divider"/> }
 }
 
 /// CSS-only tooltip: shows `text` on hover/focus of the children.
 #[component]
 pub fn Tooltip(#[prop(into)] text: String, children: Children) -> impl IntoView {
-    view! { <span class="lg-tip" data-tip=text>{children()}</span> }
+    view! { <span class="dodai-tip" data-tip=text>{children()}</span> }
 }

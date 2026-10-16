@@ -4,8 +4,8 @@
 //! size scale. gpui 0.2.2 has no letter-spacing, so `label_tracking` is not applied.
 
 use crate::{hsla, theme_of};
-use gpui::{div, px, App, IntoElement, ParentElement, RenderOnce, SharedString, Styled, Window};
 use dodai_core::Typography;
+use gpui::{div, px, App, IntoElement, ParentElement, RenderOnce, SharedString, Styled, Window};
 
 /// Apply `uppercase_labels` to `s`.
 pub fn format_label(t: &Typography, s: &str) -> SharedString {

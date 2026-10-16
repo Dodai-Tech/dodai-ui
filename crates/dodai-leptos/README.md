@@ -1,6 +1,6 @@
 # dodai-leptos
 
-Leptos 0.8 (SSR) adapter for Dodai UI. Components emit `lg-*` classes; theme,
+Leptos 0.8 (SSR) adapter for Dodai UI. Components emit `dodai-*` classes; theme,
 shape (square/rounded/chamfered) and glow come from CSS variables generated from
 theme tokens by `dodai-topcoat` — no theme-id branching.
 

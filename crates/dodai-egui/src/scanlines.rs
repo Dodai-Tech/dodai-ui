@@ -22,7 +22,7 @@ pub fn paint_scanlines(ctx: &Context) {
     let screen = ctx.screen_rect();
     let p = ctx.layer_painter(LayerId::new(
         Order::Foreground,
-        egui::Id::new("lg-scanlines"),
+        egui::Id::new("dodai-scanlines"),
     ));
     let s = Stroke::new(1.0_f32, Color32::from_black_alpha(36));
     for y in scanline_ys(screen, 3.0) {

@@ -8,7 +8,7 @@ optional scanlines and uppercase labels. No theme-id branching.
 
 Widgets: `Button` (all variants, disabled), `Panel`, `Tag`, `Tabs`, `Toggle`,
 `Checkbox`, `Radio`, `ProgressBar`, `Slider`, `TextInput`, `ListItem`, `Divider`,
-`tooltip`, text helpers (`DodaiUi::lg_heading/lg_label/lg_muted/lg_mono`),
+`tooltip`, text helpers (`DodaiUi::dodai_heading/dodai_label/dodai_muted/dodai_mono`),
 `paint_scanlines`, `ThemeController` (theme switcher + glow, `t`/`Shift+T`, `+`/`-`).
 
 ```rust

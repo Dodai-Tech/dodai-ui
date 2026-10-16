@@ -4,11 +4,11 @@
 //! theme-id branching. [`ShapeKind::Chamfered`] uses `Shape::outline`,
 //! [`ShapeKind::Rounded`] a rounded rectangle, [`ShapeKind::Square`] a rectangle.
 
+use dodai_core::{Shape, ShapeKind};
 use iced::{
     widget::canvas::{self, Path, Stroke},
     Color, Point, Rectangle, Size,
 };
-use dodai_core::{Shape, ShapeKind};
 
 /// Resolved outline for a box of a given size.
 #[derive(Debug, Clone, PartialEq)]

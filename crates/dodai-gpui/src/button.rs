@@ -4,11 +4,11 @@ use crate::interact::{track, use_interact, ClickHandler};
 use crate::paint::{shaped_id, ShapeStyle};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
+use dodai_core::{ButtonVariant, ControlState, Theme};
 use gpui::{
     div, px, App, ClickEvent, ElementId, Hsla, IntoElement, ParentElement, RenderOnce,
     SharedString, Stateful, StatefulInteractiveElement, Styled, Window,
 };
-use dodai_core::{ButtonVariant, ControlState, Theme};
 
 /// Resolve a button's paint style + text colour from tokens (pure, no gpui context).
 pub fn button_style(

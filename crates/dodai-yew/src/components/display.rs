@@ -20,13 +20,21 @@ pub struct PanelProps {
 #[function_component]
 pub fn Panel(props: &PanelProps) -> Html {
     let class = join(&[
-        "lg-panel",
-        if props.focused { "lg-panel--focus" } else { "" },
-        if props.raised { "lg-panel--raised" } else { "" },
+        "dodai-panel",
+        if props.focused {
+            "dodai-panel--focus"
+        } else {
+            ""
+        },
+        if props.raised {
+            "dodai-panel--raised"
+        } else {
+            ""
+        },
     ]);
     html! {
         <div {class}>
-            if let Some(t) = &props.title { <div class="lg-panel__title">{ t.clone() }</div> }
+            if let Some(t) = &props.title { <div class="dodai-panel__title">{ t.clone() }</div> }
             { props.children.clone() }
         </div>
     }
@@ -55,12 +63,16 @@ pub struct TagProps {
 #[function_component]
 pub fn Tag(props: &TagProps) -> Html {
     let class = join(&[
-        if props.badge { "lg-badge" } else { "lg-tag" },
-        if props.soft { "lg-tag--soft" } else { "" },
+        if props.badge {
+            "dodai-badge"
+        } else {
+            "dodai-tag"
+        },
+        if props.soft { "dodai-tag--soft" } else { "" },
         if props.primary {
-            "lg-tag--primary"
+            "dodai-tag--primary"
         } else if props.secondary {
-            "lg-tag--secondary"
+            "dodai-tag--secondary"
         } else {
             tone(props.tone)
         },
@@ -80,13 +92,13 @@ pub struct TabsProps {
 #[function_component]
 pub fn Tabs(props: &TabsProps) -> Html {
     html! {
-        <nav class="lg-tabs" role="tablist">
+        <nav class="dodai-tabs" role="tablist">
         { for props.tabs.iter().enumerate().map(|(i, t)| {
             let on = i == props.active;
             let cb = props.onselect.clone();
             html! {
                 <a key={i} role="tab" aria-selected={on.to_string()}
-                   class={join(&["lg-tab", if on { "lg-tab--active" } else { "" }])}
+                   class={join(&["dodai-tab", if on { "dodai-tab--active" } else { "" }])}
                    href="#" onclick={move |e: MouseEvent| { e.prevent_default(); cb.emit(i) }}>
                     { t.clone() }
                 </a>
@@ -109,7 +121,7 @@ pub struct ProgressProps {
 pub fn Progress(props: &ProgressProps) -> Html {
     let v = clamp_pct(props.value);
     html! {
-        <div class={join(&["lg-progress", progress_tone(props.tone)])} role="progressbar"
+        <div class={join(&["dodai-progress", progress_tone(props.tone)])} role="progressbar"
              aria-valuemin="0" aria-valuemax="100" aria-valuenow={v.to_string()}>
             <span style={format!("--v:{v}%")}></span>
         </div>
@@ -125,7 +137,7 @@ pub struct ListProps {
 /// List container for [`ListItem`]s.
 #[function_component]
 pub fn List(props: &ListProps) -> Html {
-    html! { <ul class="lg-list">{ props.children.clone() }</ul> }
+    html! { <ul class="dodai-list">{ props.children.clone() }</ul> }
 }
 
 #[derive(Properties, PartialEq)]
@@ -142,7 +154,7 @@ pub struct ListItemProps {
 #[function_component]
 pub fn ListItem(props: &ListItemProps) -> Html {
     html! {
-        <li class="lg-list__item" aria-selected={props.selected.to_string()}
+        <li class="dodai-list__item" aria-selected={props.selected.to_string()}
             onclick={props.onclick.clone()}>{ props.children.clone() }</li>
     }
 }
@@ -150,7 +162,7 @@ pub fn ListItem(props: &ListItemProps) -> Html {
 /// Horizontal rule.
 #[function_component]
 pub fn Divider() -> Html {
-    html! { <hr class="lg-divider" /> }
+    html! { <hr class="dodai-divider" /> }
 }
 
 #[derive(Properties, PartialEq)]
@@ -164,11 +176,11 @@ pub struct TooltipProps {
 /// Wraps children with a hover tooltip.
 #[function_component]
 pub fn Tooltip(props: &TooltipProps) -> Html {
-    html! { <span class="lg-tip" data-tip={props.text.clone()}>{ props.children.clone() }</span> }
+    html! { <span class="dodai-tip" data-tip={props.text.clone()}>{ props.children.clone() }</span> }
 }
 
 /// Static tooltip bubble.
 #[function_component]
 pub fn TooltipBubble(props: &ListProps) -> Html {
-    html! { <span class="lg-tooltip">{ props.children.clone() }</span> }
+    html! { <span class="dodai-tooltip">{ props.children.clone() }</span> }
 }

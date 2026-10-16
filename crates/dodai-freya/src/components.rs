@@ -8,8 +8,8 @@
 
 use crate::style::*;
 use crate::theme::{use_dodai, use_dodai_theme};
-use freya::prelude::*;
 use dodai_core::{ButtonVariant, Color, ControlState, ShapeKind, Theme, Tone};
+use freya::prelude::*;
 
 fn c(col: Color) -> String {
     css(col)
@@ -104,7 +104,7 @@ pub struct TextProps {
 
 /// Display heading (uppercased when the theme says so).
 #[component]
-pub fn LgHeading(props: TextProps) -> Element {
+pub fn DodaiHeading(props: TextProps) -> Element {
     let t = use_dodai_theme();
     text(
         &text_style(&t, TextRole::Heading, props.size),
@@ -114,7 +114,7 @@ pub fn LgHeading(props: TextProps) -> Element {
 }
 /// Body label (uppercased when the theme says so).
 #[component]
-pub fn LgLabel(props: TextProps) -> Element {
+pub fn DodaiLabel(props: TextProps) -> Element {
     let t = use_dodai_theme();
     text(
         &text_style(&t, TextRole::Label, props.size),
@@ -124,7 +124,7 @@ pub fn LgLabel(props: TextProps) -> Element {
 }
 /// Muted secondary text.
 #[component]
-pub fn LgMuted(props: TextProps) -> Element {
+pub fn DodaiMuted(props: TextProps) -> Element {
     let t = use_dodai_theme();
     text(
         &text_style(&t, TextRole::Muted, props.size),
@@ -134,7 +134,7 @@ pub fn LgMuted(props: TextProps) -> Element {
 }
 /// Monospace text (never uppercased).
 #[component]
-pub fn LgMono(props: TextProps) -> Element {
+pub fn DodaiMono(props: TextProps) -> Element {
     let t = use_dodai_theme();
     text(
         &text_style(&t, TextRole::Mono, props.size),
@@ -176,7 +176,7 @@ pub struct ButtonProps {
 
 /// Themed button, every [`ButtonVariant`] plus disabled.
 #[component]
-pub fn LgButton(props: ButtonProps) -> Element {
+pub fn DodaiButton(props: ButtonProps) -> Element {
     let t = use_dodai_theme();
     let mut hover = use_signal(|| false);
     let mut down = use_signal(|| false);
@@ -228,7 +228,7 @@ pub struct PanelProps {
 
 /// Bordered container with optional title.
 #[component]
-pub fn LgPanel(props: PanelProps) -> Element {
+pub fn DodaiPanel(props: PanelProps) -> Element {
     let t = use_dodai_theme();
     let style = panel_style(&t, props.focused);
     let title = props.title.as_ref().map(|s| {
@@ -258,7 +258,7 @@ pub struct TagProps {
 
 /// Status tag.
 #[component]
-pub fn LgTag(props: TagProps) -> Element {
+pub fn DodaiTag(props: TagProps) -> Element {
     let t = use_dodai_theme();
     let (style, fg) = tag_style(&t, props.tone, props.solid);
     let ts = text_style(&t, TextRole::Label, Some(t.typography.size_xs));
@@ -287,7 +287,7 @@ pub struct TabProps {
 }
 
 #[component]
-fn LgTab(props: TabProps) -> Element {
+fn DodaiTab(props: TabProps) -> Element {
     let t = use_dodai_theme();
     let mut hover = use_signal(|| false);
     let (style, fg, ind) = tab_style(&t, props.active, *hover.read());
@@ -322,7 +322,7 @@ pub struct TabsProps {
 
 /// Tab strip.
 #[component]
-pub fn LgTabs(props: TabsProps) -> Element {
+pub fn DodaiTabs(props: TabsProps) -> Element {
     let t = use_dodai_theme();
     let gap = t.spacing.xs;
     rsx! {
@@ -330,7 +330,7 @@ pub fn LgTabs(props: TabsProps) -> Element {
             direction: "horizontal",
             spacing: "{gap}",
             for (i, l) in props.labels.iter().enumerate() {
-                LgTab {
+                DodaiTab {
                     key: "{i}",
                     label: l.clone(),
                     active: i == props.selected,
@@ -364,7 +364,7 @@ pub struct ToggleProps {
 
 /// On/off switch.
 #[component]
-pub fn LgToggle(props: ToggleProps) -> Element {
+pub fn DodaiToggle(props: ToggleProps) -> Element {
     let t = use_dodai_theme();
     let mut hover = use_signal(|| false);
     let state = state_of(*hover.read(), false, props.disabled);
@@ -413,7 +413,7 @@ fn mark_box(t: &Theme, on: bool, state: ControlState, round: bool) -> Element {
 
 /// Checkbox with optional label.
 #[component]
-pub fn LgCheckbox(props: CheckProps) -> Element {
+pub fn DodaiCheckbox(props: CheckProps) -> Element {
     let t = use_dodai_theme();
     let mut hover = use_signal(|| false);
     let state = state_of(*hover.read(), false, props.disabled);
@@ -450,7 +450,7 @@ pub struct RadioProps {
 
 /// Radio button (round only when the theme's shape is `Rounded`).
 #[component]
-pub fn LgRadio(props: RadioProps) -> Element {
+pub fn DodaiRadio(props: RadioProps) -> Element {
     let t = use_dodai_theme();
     let mut hover = use_signal(|| false);
     let state = state_of(*hover.read(), false, props.disabled);
@@ -490,7 +490,7 @@ pub struct ProgressProps {
 
 /// Progress bar.
 #[component]
-pub fn LgProgress(props: ProgressProps) -> Element {
+pub fn DodaiProgress(props: ProgressProps) -> Element {
     let t = use_dodai_theme();
     let (style, fill) = progress_style(&t, props.tone);
     let bw = t.shape.border_width;
@@ -514,7 +514,7 @@ pub struct SliderProps {
 
 /// Slider (wraps Freya's `Slider`, themed from tokens).
 #[component]
-pub fn LgSlider(props: SliderProps) -> Element {
+pub fn DodaiSlider(props: SliderProps) -> Element {
     let t = use_dodai_theme();
     let p = &t.palette;
     let theme = theme_with!(SliderTheme {
@@ -546,7 +546,7 @@ pub struct InputProps {
 /// Text input (wraps Freya's `Input`; chamfered themes render it square since
 /// Freya's `Input` cannot be clipped to a polygon).
 #[component]
-pub fn LgTextInput(props: InputProps) -> Element {
+pub fn DodaiTextInput(props: InputProps) -> Element {
     let t = use_dodai_theme();
     let idle = input_style(&t, false);
     let tok = t.input(false);
@@ -593,7 +593,7 @@ pub struct ListItemProps {
 
 /// Selectable list row with marker.
 #[component]
-pub fn LgListItem(props: ListItemProps) -> Element {
+pub fn DodaiListItem(props: ListItemProps) -> Element {
     let t = use_dodai_theme();
     let mut hover = use_signal(|| false);
     let (bg, fg, marker) = list_item_style(&t, props.selected, *hover.read());
@@ -615,15 +615,15 @@ pub fn LgListItem(props: ListItemProps) -> Element {
 
 /// Horizontal rule.
 #[component]
-pub fn LgDivider() -> Element {
+pub fn DodaiDivider() -> Element {
     let t = use_dodai_theme();
     let col = c(t.divider());
     rsx! { rect { width: "100%", height: "{t.shape.border_width}", background: "{col}" } }
 }
 
-/// Tooltip bubble (static). Use [`LgTooltipHost`] for hover behaviour.
+/// Tooltip bubble (static). Use [`DodaiTooltipHost`] for hover behaviour.
 #[component]
-pub fn LgTooltip(#[props(into)] text: String) -> Element {
+pub fn DodaiTooltip(#[props(into)] text: String) -> Element {
     let t = use_dodai_theme();
     let style = ShapeStyle::from_tokens(
         &t,
@@ -649,9 +649,9 @@ pub struct TooltipHostProps {
     pub children: Element,
 }
 
-/// Shows [`LgTooltip`] under its children while hovered.
+/// Shows [`DodaiTooltip`] under its children while hovered.
 #[component]
-pub fn LgTooltipHost(props: TooltipHostProps) -> Element {
+pub fn DodaiTooltipHost(props: TooltipHostProps) -> Element {
     let mut hover = use_signal(|| false);
     rsx! {
         rect {
@@ -660,7 +660,7 @@ pub fn LgTooltipHost(props: TooltipHostProps) -> Element {
             {props.children}
             if *hover.read() {
                 rect { position: "absolute", position_top: "{props.offset}", position_left: "0", layer: "-50",
-                    LgTooltip { text: props.tip.clone() } }
+                    DodaiTooltip { text: props.tip.clone() } }
             }
         }
     }
@@ -670,19 +670,19 @@ pub fn LgTooltipHost(props: TooltipHostProps) -> Element {
 
 /// One button per registered theme; the active one is `Primary`, others `Outline`.
 #[component]
-pub fn LgThemeSwitcher() -> Element {
-    let lg = use_dodai();
-    let t = lg.theme();
-    let cur = lg.current_index();
+pub fn DodaiThemeSwitcher() -> Element {
+    let dodai = use_dodai();
+    let t = dodai.theme();
+    let cur = dodai.current_index();
     let gap = t.spacing.sm;
     rsx! {
         rect { direction: "horizontal", spacing: "{gap}",
-            for (i, (id, name)) in lg.list().into_iter().enumerate() {
-                LgButton {
+            for (i, (id, name)) in dodai.list().into_iter().enumerate() {
+                DodaiButton {
                     key: "{id}",
                     label: name,
                     variant: if i == cur { ButtonVariant::Primary } else { ButtonVariant::Outline },
-                    onclick: move |_| lg.select_index(i),
+                    onclick: move |_| dodai.select_index(i),
                 }
             }
         }

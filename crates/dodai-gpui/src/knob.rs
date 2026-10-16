@@ -5,11 +5,11 @@
 //! it follows every theme without knowing which one is active.
 
 use crate::{controls::slider_fraction, hsla, theme_of};
+use dodai_core::ControlState;
 use gpui::{
     canvas, div, point, px, App, Bounds, ElementId, InteractiveElement, IntoElement, MouseButton,
     ParentElement, PathBuilder, Pixels, RenderOnce, ScrollDelta, Styled, Window,
 };
-use dodai_core::ControlState;
 use std::rc::Rc;
 
 /// Start of the sweep, degrees clockwise from +x (screen space): bottom-left.

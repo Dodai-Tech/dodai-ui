@@ -3,17 +3,17 @@
 use dioxus::prelude::*;
 use dodai_core::{themes, Theme, ThemeSwitcher};
 
-/// Scope the topcoat multi-theme stylesheet to a `.lg-root` element instead of `:root`,
+/// Scope the topcoat multi-theme stylesheet to a `.dodai-root` element instead of `:root`,
 /// so it works in any renderer (no access to `<html>` needed).
 pub fn scoped_stylesheet(themes: &[Theme]) -> String {
     let css = dodai_topcoat::multi_theme_stylesheet(themes)
-        .replace(":root[data-theme=", ".lg-root[data-theme=")
-        .replacen(":root{", ".lg-root{", 1);
+        .replace(":root[data-theme=", ".dodai-root[data-theme=")
+        .replacen(":root{", ".dodai-root{", 1);
     format!(
-        "{css}\n.lg-root{{position:relative;min-height:100vh;background:var(--lg-background);\
-color:var(--lg-text);font-family:var(--lg-font-body);font-size:var(--lg-size-md);line-height:1.5}}\n\
-.lg-root::after{{content:\"\";position:fixed;inset:0;pointer-events:none;z-index:9999;\
-opacity:var(--lg-scanlines);background:repeating-linear-gradient(to bottom,transparent 0,transparent 2px,rgba(0,0,0,.28) 3px)}}\n"
+        "{css}\n.dodai-root{{position:relative;min-height:100vh;background:var(--dodai-background);\
+color:var(--dodai-text);font-family:var(--dodai-font-body);font-size:var(--dodai-size-md);line-height:1.5}}\n\
+.dodai-root::after{{content:\"\";position:fixed;inset:0;pointer-events:none;z-index:9999;\
+opacity:var(--dodai-scanlines);background:repeating-linear-gradient(to bottom,transparent 0,transparent 2px,rgba(0,0,0,.28) 3px)}}\n"
     )
 }
 
@@ -119,7 +119,7 @@ pub fn ThemeProvider(props: ThemeProviderProps) -> Element {
     let css = scoped_stylesheet(&themes_with_glow(&list, Some(handle.glow())));
     rsx! {
         style { "{css}" }
-        div { class: "lg-root {props.class}", "data-theme": handle.id(), {props.children} }
+        div { class: "dodai-root {props.class}", "data-theme": handle.id(), {props.children} }
     }
 }
 
@@ -288,7 +288,7 @@ mod tests {
             "--danger",
             "--ghost",
         ] {
-            assert!(h.contains(&format!("lg-btn{c}")) || h.contains(c), "{c}");
+            assert!(h.contains(&format!("dodai-btn{c}")) || h.contains(c), "{c}");
         }
         assert!(h.contains("disabled"));
     }
@@ -307,8 +307,8 @@ mod tests {
     fn scoped_css_has_no_root_theme_selectors() {
         let list = [light(), square()];
         let css = scoped_stylesheet(&list);
-        assert!(css.contains(".lg-root[data-theme=\"test-light\"]"));
-        assert!(css.contains(".lg-root[data-theme=\"test-square\"]"));
+        assert!(css.contains(".dodai-root[data-theme=\"test-light\"]"));
+        assert!(css.contains(".dodai-root[data-theme=\"test-square\"]"));
         assert!(!css.contains(":root"));
     }
 
@@ -319,10 +319,10 @@ mod tests {
         assert_eq!(s.shape.kind(), ShapeKind::Square);
         let cl = scoped_stylesheet(&[l]);
         let cs = scoped_stylesheet(&[s]);
-        assert!(cl.contains("--lg-radius:8px"));
-        assert!(cs.contains("--lg-radius:0px"));
+        assert!(cl.contains("--dodai-radius:8px"));
+        assert!(cs.contains("--dodai-radius:0px"));
         let cp = scoped_stylesheet(&[dodai_core::themes::all()[0].clone()]);
-        assert!(cp.contains("--lg-chamfer:16px"));
+        assert!(cp.contains("--dodai-chamfer:16px"));
     }
 
     #[test]
@@ -335,7 +335,7 @@ mod tests {
 
     #[test]
     fn uppercase_follows_token() {
-        assert!(scoped_stylesheet(&[light()]).contains("--lg-label-case:none"));
+        assert!(scoped_stylesheet(&[light()]).contains("--dodai-label-case:none"));
     }
 
     #[test]

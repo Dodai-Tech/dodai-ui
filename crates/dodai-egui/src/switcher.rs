@@ -1,8 +1,8 @@
 //! Theme switching and glow controls.
 
 use crate::{install, Button};
-use egui::{Context, Key, Ui};
 use dodai_core::{ButtonVariant, Theme, ThemeSwitcher};
+use egui::{Context, Key, Ui};
 
 /// Glow intensity step for [`glow_controls`].
 pub const GLOW_STEP: f32 = 0.25;

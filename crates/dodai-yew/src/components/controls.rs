@@ -56,13 +56,13 @@ fn check_like(
 /// On/off switch.
 #[function_component]
 pub fn Toggle(props: &CheckProps) -> Html {
-    check_like("lg-switch", "lg-switch__box", "checkbox", props, None)
+    check_like("dodai-switch", "dodai-switch__box", "checkbox", props, None)
 }
 
 /// Checkbox.
 #[function_component]
 pub fn Checkbox(props: &CheckProps) -> Html {
-    check_like("lg-check", "lg-check__box", "checkbox", props, None)
+    check_like("dodai-check", "dodai-check__box", "checkbox", props, None)
 }
 
 #[derive(Properties, PartialEq)]
@@ -88,8 +88,8 @@ pub fn Radio(props: &RadioProps) -> Html {
         children: props.children.clone(),
     };
     check_like(
-        "lg-radio",
-        "lg-radio__box",
+        "dodai-radio",
+        "dodai-radio__box",
         "radio",
         &p,
         Some(props.name.clone()),
@@ -117,7 +117,7 @@ pub fn Slider(props: &SliderProps) -> Html {
         }
     });
     html! {
-        <input class="lg-slider" type="range" min="0" max="100" value={v.to_string()}
+        <input class="dodai-slider" type="range" min="0" max="100" value={v.to_string()}
                style={format!("--v:{v}%")} disabled={props.disabled} {oninput} />
     }
 }
@@ -139,7 +139,7 @@ pub fn TextInput(props: &TextInputProps) -> Html {
     let cb = props.oninput.clone();
     let oninput = Callback::from(move |e: InputEvent| cb.emit(input_value(&e)));
     html! {
-        <input class="lg-input" value={props.value.clone()} placeholder={props.placeholder.clone()}
+        <input class="dodai-input" value={props.value.clone()} placeholder={props.placeholder.clone()}
                disabled={props.disabled} {oninput} />
     }
 }

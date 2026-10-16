@@ -1,10 +1,10 @@
 //! Applying a [`Theme`] to an egui [`Context`].
 
 use crate::paint::color32;
+use dodai_core::{Mode, ShapeKind, Theme};
 use egui::{
     epaint::Shadow, Context, CornerRadius, FontId, Id, Stroke, Style, TextStyle, Vec2, Visuals,
 };
-use dodai_core::{Mode, ShapeKind, Theme};
 use std::sync::Arc;
 
 fn store_id() -> Id {

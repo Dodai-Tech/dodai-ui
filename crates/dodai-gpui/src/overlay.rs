@@ -3,11 +3,11 @@
 use crate::paint::{shaped, ShapeStyle};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
+use dodai_core::Theme;
 use gpui::{
     deferred, div, px, AnyElement, App, ElementId, InteractiveElement, IntoElement, MouseButton,
     ParentElement, RenderOnce, SharedString, Styled, Window,
 };
-use dodai_core::Theme;
 use std::rc::Rc;
 
 /// Paint style of the dialog box (pure): raised surface, strong border, glow, hard shadow.

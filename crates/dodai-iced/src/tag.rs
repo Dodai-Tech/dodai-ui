@@ -1,7 +1,7 @@
 //! Tag / badge.
 
-use iced::{widget::text, Element, Padding};
 use dodai_core::Tone;
+use iced::{widget::text, Element, Padding};
 
 use crate::{color, BoxStyle, IcedTheme};
 

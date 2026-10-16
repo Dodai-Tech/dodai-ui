@@ -5,6 +5,7 @@
 //! Prefer `IcedTheme::button_view`, which picks the native button when the
 //! shape allows and this widget only for chamfered themes.
 
+use dodai_core::Shape;
 use iced::{
     alignment, mouse,
     widget::{
@@ -13,7 +14,6 @@ use iced::{
     },
     Color, Element, Event, Font, Length, Pixels, Point, Rectangle, Renderer, Theme,
 };
-use dodai_core::Shape;
 
 use crate::geometry::{margin, paint_shape, Paint};
 

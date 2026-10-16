@@ -16,12 +16,12 @@ pub fn join(parts: &[&str]) -> String {
 /// Class for a [`ButtonVariant`].
 pub fn button(v: ButtonVariant) -> &'static str {
     match v {
-        ButtonVariant::Primary => "lg-btn lg-btn--primary",
-        ButtonVariant::Secondary => "lg-btn lg-btn--secondary",
-        ButtonVariant::Outline => "lg-btn lg-btn--outline",
-        ButtonVariant::OutlineSecondary => "lg-btn lg-btn--outline-secondary",
-        ButtonVariant::Danger => "lg-btn lg-btn--danger",
-        ButtonVariant::Ghost => "lg-btn lg-btn--ghost",
+        ButtonVariant::Primary => "dodai-btn dodai-btn--primary",
+        ButtonVariant::Secondary => "dodai-btn dodai-btn--secondary",
+        ButtonVariant::Outline => "dodai-btn dodai-btn--outline",
+        ButtonVariant::OutlineSecondary => "dodai-btn dodai-btn--outline-secondary",
+        ButtonVariant::Danger => "dodai-btn dodai-btn--danger",
+        ButtonVariant::Ghost => "dodai-btn dodai-btn--ghost",
     }
 }
 
@@ -29,9 +29,9 @@ pub fn button(v: ButtonVariant) -> &'static str {
 pub fn tone(t: Tone) -> &'static str {
     match t {
         Tone::Info => "",
-        Tone::Success => "lg-tag--success",
-        Tone::Warning => "lg-tag--warning",
-        Tone::Danger => "lg-tag--danger",
+        Tone::Success => "dodai-tag--success",
+        Tone::Warning => "dodai-tag--warning",
+        Tone::Danger => "dodai-tag--danger",
     }
 }
 
@@ -39,9 +39,9 @@ pub fn tone(t: Tone) -> &'static str {
 pub fn progress_tone(t: Tone) -> &'static str {
     match t {
         Tone::Info => "",
-        Tone::Success => "lg-progress--success",
-        Tone::Warning => "lg-progress--warning",
-        Tone::Danger => "lg-progress--danger",
+        Tone::Success => "dodai-progress--success",
+        Tone::Warning => "dodai-progress--warning",
+        Tone::Danger => "dodai-progress--danger",
     }
 }
 
@@ -70,8 +70,8 @@ mod tests {
     #[test]
     fn tones_map() {
         assert_eq!(tone(Tone::Info), "");
-        assert_eq!(tone(Tone::Danger), "lg-tag--danger");
-        assert_eq!(progress_tone(Tone::Success), "lg-progress--success");
+        assert_eq!(tone(Tone::Danger), "dodai-tag--danger");
+        assert_eq!(progress_tone(Tone::Success), "dodai-progress--success");
         assert_eq!(join(&["a", "", "b"]), "a b");
         assert_eq!(clamp_pct(150.0), 100.0);
         assert_eq!(clamp_pct(f32::NAN), 0.0);
@@ -151,8 +151,8 @@ mod tests {
     fn css_follows_shape_and_effects() {
         let l = light();
         let css = theme_css_for(&l);
-        assert!(css.contains("--lg-label-case:none;"));
-        assert!(css.contains("--lg-glow-filter:none;"));
+        assert!(css.contains("--dodai-label-case:none;"));
+        assert!(css.contains("--dodai-glow-filter:none;"));
         for t in themes::all() {
             let c = dodai_topcoat::clip_path(&t.shape);
             assert_eq!(
@@ -188,9 +188,9 @@ mod tests {
             .build()
             .unwrap();
         let out = rt.block_on(yew::ServerRenderer::<App>::new().render());
-        assert!(out.contains("lg-btn lg-btn--danger"));
+        assert!(out.contains("dodai-btn dodai-btn--danger"));
         assert!(out.contains("--v:100%"));
         assert!(out.contains("data-theme="));
-        assert!(out.contains("--lg-clip") || out.contains("lg-root"));
+        assert!(out.contains("--dodai-clip") || out.contains("dodai-root"));
     }
 }

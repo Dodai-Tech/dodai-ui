@@ -2,8 +2,8 @@
 
 use crate::paint::{add_all, box_shapes, color32, control_state, layout, sense};
 use crate::{active_theme, display_text};
-use egui::{vec2, Align2, Response, Ui, Widget};
 use dodai_core::{ButtonVariant, ControlState};
+use egui::{vec2, Align2, Response, Ui, Widget};
 
 /// Themed button: every [`ButtonVariant`], optionally disabled.
 pub struct Button {

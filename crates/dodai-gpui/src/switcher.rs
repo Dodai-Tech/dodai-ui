@@ -2,8 +2,8 @@
 
 use crate::button::Button;
 use crate::{select_theme, ActiveDodai};
-use gpui::{px, App, ElementId, IntoElement, ParentElement, RenderOnce, Styled, Window};
 use dodai_core::ButtonVariant;
+use gpui::{px, App, ElementId, IntoElement, ParentElement, RenderOnce, Styled, Window};
 
 /// Row of buttons, one per theme in the global switcher; the active one is filled.
 #[derive(IntoElement)]

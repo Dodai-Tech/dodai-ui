@@ -3,12 +3,12 @@
 //!
 //! `cargo run -p dodai-egui --example egui_showcase`
 
-use eframe::egui;
 use dodai_core::{ButtonVariant, Tone};
 use dodai_egui::{
     paint_scanlines, tooltip, Button, Checkbox, Divider, DodaiUi, ListItem, Panel, ProgressBar,
     Radio, Slider, Tabs, Tag, TextInput, ThemeController, Toggle,
 };
+use eframe::egui;
 
 struct App {
     theme: ThemeController,
@@ -43,13 +43,13 @@ impl eframe::App for App {
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 let name = self.theme.switcher.current().name();
-                ui.lg_heading(&format!("Dodai UI · egui · {name}"));
-                ui.lg_muted("t / Shift+T: theme · + / -: glow");
+                ui.dodai_heading(&format!("Dodai UI · egui · {name}"));
+                ui.dodai_muted("t / Shift+T: theme · + / -: glow");
                 self.theme.show(ui);
                 ui.add(Divider);
                 ui.add_space(8.0);
 
-                ui.lg_label("Buttons");
+                ui.dodai_label("Buttons");
                 ui.horizontal_wrapped(|ui| {
                     for (n, v) in [
                         ("Primary", ButtonVariant::Primary),
@@ -66,7 +66,7 @@ impl eframe::App for App {
                 });
 
                 ui.add_space(8.0);
-                ui.lg_label("Tags");
+                ui.dodai_label("Tags");
                 ui.horizontal_wrapped(|ui| {
                     for (n, tone) in [
                         ("Info", Tone::Info),
@@ -101,9 +101,9 @@ impl eframe::App for App {
                 ui.add_space(8.0);
                 ui.columns(2, |cols| {
                     Panel::new().title("Panel").show(&mut cols[0], |ui| {
-                        ui.lg_label("Card body");
-                        ui.lg_muted("Muted text");
-                        ui.lg_mono("mono_text()");
+                        ui.dodai_label("Card body");
+                        ui.dodai_muted("Muted text");
+                        ui.dodai_mono("mono_text()");
                     });
                     Panel::new()
                         .title("Focused")

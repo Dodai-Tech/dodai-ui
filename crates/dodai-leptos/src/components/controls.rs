@@ -9,9 +9,9 @@ pub fn Toggle(
     children: Children,
 ) -> impl IntoView {
     view! {
-        <label class="lg-switch">
+        <label class="dodai-switch">
             <input type="checkbox" checked=checked disabled=disabled/>
-            <span class="lg-switch__box"></span>{children()}
+            <span class="dodai-switch__box"></span>{children()}
         </label>
     }
 }
@@ -24,9 +24,9 @@ pub fn Checkbox(
     children: Children,
 ) -> impl IntoView {
     view! {
-        <label class="lg-check">
+        <label class="dodai-check">
             <input type="checkbox" checked=checked disabled=disabled/>
-            <span class="lg-check__box"></span>{children()}
+            <span class="dodai-check__box"></span>{children()}
         </label>
     }
 }
@@ -40,9 +40,9 @@ pub fn Radio(
     children: Children,
 ) -> impl IntoView {
     view! {
-        <label class="lg-radio">
+        <label class="dodai-radio">
             <input type="radio" name=name checked=checked disabled=disabled/>
-            <span class="lg-radio__box"></span>{children()}
+            <span class="dodai-radio__box"></span>{children()}
         </label>
     }
 }
@@ -51,7 +51,7 @@ pub fn Radio(
 #[component]
 pub fn Slider(value: f32, #[prop(optional)] disabled: bool) -> impl IntoView {
     let style = format!("--v:{}", class::percent(value));
-    view! { <input class="lg-slider" type="range" min="0" max="100" value=value.to_string() style=style disabled=disabled/> }
+    view! { <input class="dodai-slider" type="range" min="0" max="100" value=value.to_string() style=style disabled=disabled/> }
 }
 
 /// Single-line text input.
@@ -61,5 +61,5 @@ pub fn TextInput(
     #[prop(optional, into)] value: String,
     #[prop(optional)] disabled: bool,
 ) -> impl IntoView {
-    view! { <input class="lg-input" placeholder=placeholder value=value disabled=disabled/> }
+    view! { <input class="dodai-input" placeholder=placeholder value=value disabled=disabled/> }
 }

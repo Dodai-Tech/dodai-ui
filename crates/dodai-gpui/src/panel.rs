@@ -3,11 +3,11 @@
 use crate::paint::{shaped, ShapeStyle};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
+use dodai_core::Theme;
 use gpui::{
     div, px, AnyElement, AnyView, App, AppContext as _, Context, IntoElement, ParentElement,
     Render, RenderOnce, SharedString, Styled, Window,
 };
-use dodai_core::Theme;
 
 /// Paint style of a panel (pure).
 pub fn panel_style(theme: &Theme, focused: bool) -> ShapeStyle {

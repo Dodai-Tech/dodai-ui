@@ -4,18 +4,18 @@
 //! Keys: `t` / `T` next / previous theme. Glow +/- buttons change
 //! `Theme::with_glow_intensity` live.
 
-use gpui::{
-    div, prelude::*, px, size, App, Application, Bounds, Context, FocusHandle, KeyDownEvent,
-    Window, WindowBounds, WindowOptions,
-};
 use dodai_core::{ButtonVariant, Theme, Tone};
 use dodai_gpui::{
     cycle_next, cycle_prev, family_title, glow_intensity, hsla, install, scanlines_enabled,
-    set_glow_intensity, set_scanlines, theme_of, ActiveDodai, Button, Card, CardVariant,
-    Checkbox, DesignSystemSelector, Direction, Divider, Fab, FabSize, Heading, IconButton,
-    InputBox, Knob, Label, DodaiStyled, DodaiTooltip, ListItem, Mono, Muted, NavItem,
-    NavLayout, Navigation, Panel, ProgressBar, Radio, Scanlines, SearchBar, Slider, Tabs, Tag,
-    ThemeSelector, Toggle, TopAppBar,
+    set_glow_intensity, set_scanlines, theme_of, ActiveDodai, Button, Card, CardVariant, Checkbox,
+    DesignSystemSelector, Direction, Divider, DodaiStyled, DodaiTooltip, Fab, FabSize, Heading,
+    IconButton, InputBox, Knob, Label, ListItem, Mono, Muted, NavItem, NavLayout, Navigation,
+    Panel, ProgressBar, Radio, Scanlines, SearchBar, Slider, Tabs, Tag, ThemeSelector, Toggle,
+    TopAppBar,
+};
+use gpui::{
+    div, prelude::*, px, size, App, Application, Bounds, Context, FocusHandle, KeyDownEvent,
+    Window, WindowBounds, WindowOptions,
 };
 
 struct Showcase {
@@ -300,7 +300,8 @@ impl Render for Showcase {
         let ds_panel = section("Design system")
             .focused(true)
             .child(DesignSystemSelector::new("ds-select"));
-        let theme_panel = Panel::new().title(family)
+        let theme_panel = Panel::new()
+            .title(family)
             .child(
                 row()
                     .child(Label::new("Theme"))
@@ -373,11 +374,11 @@ impl Render for Showcase {
                     .child(InputBox::new().focused(true).child("focused input"))
                     .child(
                         div()
-                            .lg_input(&t, false)
+                            .dodai_input(&t, false)
                             .h(px(t.shape.control_height))
                             .flex()
                             .items_center()
-                            .child("legacy lg_input container"),
+                            .child("legacy dodai_input container"),
                     ),
             )
             .child(section("List · Divider").child(list).child(Divider::new()))
@@ -419,7 +420,7 @@ impl Render for Showcase {
             }))
             .relative()
             .size_full()
-            .lg_background(&t)
+            .dodai_background(&t)
             .child(
                 div()
                     .id("scroll")

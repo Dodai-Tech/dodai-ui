@@ -88,7 +88,7 @@ pub fn ThemeProvider(props: &ThemeProviderProps) -> Html {
     html! {
         <ContextProvider<ThemeContext> context={ctx}>
             if props.inject_css { <style>{ theme_css(&theme) }</style> }
-            <div class="lg-root" data-theme={theme.id()}>{ props.children.clone() }</div>
+            <div class="dodai-root" data-theme={theme.id()}>{ props.children.clone() }</div>
         </ContextProvider<ThemeContext>>
     }
 }
@@ -118,9 +118,9 @@ pub fn ThemeSwitcherBar(props: &ThemeSwitcherBarProps) -> Html {
         let id = AttrValue::from(t.id());
         let onclick = Callback::from(move |_| cb.emit(id.clone()));
         let class = if active {
-            "lg-btn lg-btn--primary"
+            "dodai-btn dodai-btn--primary"
         } else {
-            "lg-btn lg-btn--ghost"
+            "dodai-btn dodai-btn--ghost"
         };
         html! { <button key={t.id()} {class} {onclick}>{ t.name() }</button> }
     });
@@ -132,12 +132,12 @@ pub fn ThemeSwitcherBar(props: &ThemeSwitcherBarProps) -> Html {
     });
     let inc = Callback::from(move |_| sg.emit(g + 0.5));
     html! {
-        <div class="lg-row">
+        <div class="dodai-row">
             { for buttons }
             if props.glow_controls {
-                <button class="lg-btn lg-btn--outline" onclick={dec}>{ "Glow −" }</button>
-                <span class="lg-label">{ format!("{g:.1}") }</span>
-                <button class="lg-btn lg-btn--outline" onclick={inc}>{ "Glow +" }</button>
+                <button class="dodai-btn dodai-btn--outline" onclick={dec}>{ "Glow −" }</button>
+                <span class="dodai-label">{ format!("{g:.1}") }</span>
+                <button class="dodai-btn dodai-btn--outline" onclick={inc}>{ "Glow +" }</button>
             }
         </div>
     }

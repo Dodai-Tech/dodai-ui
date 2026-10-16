@@ -7,7 +7,7 @@
 //! let notes = cx.new(|cx| TextInput::new(cx).multiline(4));
 //! div().child(name.clone())
 //! ```
-//! Key bindings are registered by [`crate::install`] (context `LgTextInput`).
+//! Key bindings are registered by [`crate::install`] (context `DodaiTextInput`).
 
 use crate::paint::shaped;
 use crate::panel::input_style;
@@ -51,7 +51,7 @@ pub fn bind_keys(cx: &mut App) {
     } else {
         "ctrl"
     };
-    let ctx = Some("LgTextInput");
+    let ctx = Some("DodaiTextInput");
     cx.bind_keys([
         KeyBinding::new("backspace", Backspace, ctx),
         KeyBinding::new("delete", Delete, ctx),
@@ -726,7 +726,7 @@ impl Render for TextInput {
         }
         let mut d = shaped(&t.shape, style)
             .w_full()
-            .key_context("LgTextInput")
+            .key_context("DodaiTextInput")
             .font_family(first_family(t.typography.body))
             .text_size(px(t.typography.size_md))
             .line_height(px(lh))

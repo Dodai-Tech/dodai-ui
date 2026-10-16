@@ -8,11 +8,11 @@ use crate::paint::{shaped, shaped_id, ShapeStyle};
 use crate::tabs::tab_style;
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
+use dodai_core::{ButtonVariant, ControlState, Theme};
 use gpui::{
     div, px, AnyElement, App, ClickEvent, ElementId, IntoElement, ParentElement, RenderOnce,
     SharedString, StatefulInteractiveElement, Styled, Window,
 };
-use dodai_core::{ButtonVariant, ControlState, Theme};
 use std::rc::Rc;
 
 // ───────────────────────────── Card ─────────────────────────────

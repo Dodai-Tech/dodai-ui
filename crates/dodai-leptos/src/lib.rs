@@ -1,6 +1,6 @@
 //! Leptos adapter for the Dodai UI design system.
 //!
-//! Components render semantic HTML with `lg-*` classes; all look & feel comes
+//! Components render semantic HTML with `dodai-*` classes; all look & feel comes
 //! from the CSS custom properties generated from a theme's tokens
 //! (see [`dodai_topcoat`]). Shape (square / rounded / chamfered) and glow
 //! therefore follow the active theme without any theme-id branching.

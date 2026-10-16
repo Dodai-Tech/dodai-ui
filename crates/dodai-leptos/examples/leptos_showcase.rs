@@ -15,14 +15,14 @@ fn Showcase(names: Vec<(String, String)>) -> impl IntoView {
             <div class="row">
                 <h1 style="flex:1">"Dodai UI · Leptos"</h1>
                 <Label>"Glow"</Label>
-                <button class="lg-btn lg-btn--outline" data-glow-dec="">"−"</button>
-                <span class="lg-label" id="gval"></span>
-                <button class="lg-btn lg-btn--outline" data-glow-inc="">"+"</button>
+                <button class="dodai-btn dodai-btn--outline" data-glow-dec="">"−"</button>
+                <span class="dodai-label" id="gval"></span>
+                <button class="dodai-btn dodai-btn--outline" data-glow-inc="">"+"</button>
             </div>
             <div class="row">
                 {names
                     .into_iter()
-                    .map(|(id, n)| view! { <button class="lg-btn lg-btn--ghost" data-set-theme=id>{n}</button> })
+                    .map(|(id, n)| view! { <button class="dodai-btn dodai-btn--ghost" data-set-theme=id>{n}</button> })
                     .collect_view()}
                 <Label>"(t / T cycle)"</Label>
             </div>
@@ -136,9 +136,9 @@ fn main() {
     let html = format!(
         r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Dodai UI · Leptos</title>
 <link rel="stylesheet" href="{GOOGLE_FONTS_URL}"><style>{css}
-main{{max-width:960px;margin:0 auto;padding:var(--lg-space-xl) var(--lg-space-md);display:grid;gap:var(--lg-space-lg)}}
-.row{{display:flex;gap:var(--lg-space-md);flex-wrap:wrap;align-items:center}}
-.grid2{{display:grid;align-items:start;grid-template-columns:1fr 1fr;gap:var(--lg-space-md)}}</style></head>
+main{{max-width:960px;margin:0 auto;padding:var(--dodai-space-xl) var(--dodai-space-md);display:grid;gap:var(--dodai-space-lg)}}
+.row{{display:flex;gap:var(--dodai-space-md);flex-wrap:wrap;align-items:center}}
+.grid2{{display:grid;align-items:start;grid-template-columns:1fr 1fr;gap:var(--dodai-space-md)}}</style></head>
 <body>{body}<script>{js}{init}{GLOW_JS}</script></body></html>"#,
         js = switcher_script(&all)
     );

@@ -3,6 +3,7 @@
 //! Rounded / square themes use a native `container` style; chamfered themes
 //! stack a [`ShapedFrame`] canvas behind the content.
 
+use dodai_core::{Color as LColor, Shape, ShapeKind};
 use iced::{
     mouse,
     widget::{
@@ -11,7 +12,6 @@ use iced::{
     },
     Background, Color, Element, Length, Padding, Rectangle, Renderer, Theme as IcedBase,
 };
-use dodai_core::{Color as LColor, Shape, ShapeKind};
 
 use crate::{
     color,

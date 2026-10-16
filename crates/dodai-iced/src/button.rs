@@ -1,11 +1,11 @@
 //! Buttons.
 
+use dodai_core::{ButtonTokens, ButtonVariant, ControlState, ShapeKind};
 use iced::{
     alignment,
     widget::{button, text},
     Background, Border, Element, Length, Theme as IcedBaseTheme,
 };
-use dodai_core::{ButtonTokens, ButtonVariant, ControlState, ShapeKind};
 
 use crate::{color, IcedTheme, ShapedButton, ShapedColors};
 
@@ -123,8 +123,8 @@ impl IcedTheme {
 mod tests {
     use super::*;
     use crate::testutil::*;
-    use iced::Shadow;
     use dodai_core::{Color as LColor, Theme};
+    use iced::Shadow;
 
     fn st(t: Theme, v: ButtonVariant, s: button::Status) -> button::Style {
         let lt = IcedTheme::new(t);
