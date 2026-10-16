@@ -73,6 +73,9 @@ where
     })
 }
 
+/// Shared index-selection callback type (tabs, select, pagination…).
+pub type IndexHandler = std::rc::Rc<dyn Fn(usize, &mut Window, &mut App)>;
+
 /// Shared click callback type.
 pub type ClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 

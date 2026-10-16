@@ -28,29 +28,44 @@
 
 pub mod button;
 pub mod controls;
+pub mod data;
+pub mod feedback;
 pub mod interact;
 pub mod list;
+pub mod logic;
+pub mod menu;
+pub mod nav;
+pub mod overlay;
 pub mod paint;
 pub mod panel;
 pub mod scanlines;
+pub mod select;
 pub mod switcher;
 pub mod tabs;
 pub mod tag;
 pub mod text;
+pub mod text_input;
 
 #[cfg(test)]
 mod testing;
 
 pub use button::Button;
 pub use controls::{Checkbox, ProgressBar, Radio, Slider, Toggle};
+pub use data::{Avatar, Badge, Chip, Kbd, Table};
+pub use feedback::{Alert, IndeterminateBar, Skeleton, Spinner, Toast};
 pub use list::{Divider, ListItem};
+pub use menu::{Menu, MenuItem};
+pub use nav::{Accordion, Breadcrumb, Pagination, Segmented, Stepper};
+pub use overlay::{Dialog, DialogCard};
 pub use paint::{shaped, ShapeStyle};
 pub use panel::{InputBox, LegendaryTooltip, Panel};
 pub use scanlines::Scanlines;
+pub use select::{Select, SelectOption, ThemeSelector};
 pub use switcher::ThemeSwitcherBar;
 pub use tabs::Tabs;
 pub use tag::Tag;
 pub use text::{Heading, Label, Mono, Muted};
+pub use text_input::TextInput;
 
 use gpui::{px, App, BoxShadow, Global, Hsla, Rgba, Styled};
 use legendary_core::{ButtonVariant, Color, ControlState, Theme, ThemeSwitcher, Tone};

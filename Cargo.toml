@@ -11,6 +11,7 @@ members = [
     "crates/legendary-leptos",
     "crates/legendary-yew",
     "crates/legendary-bevy",
+    "crates/legendary-freya",
 ]
 resolver = "2"
 
@@ -45,6 +46,7 @@ legendary-dioxus  = { path = "crates/legendary-dioxus", version = "0.1.0" }
 legendary-leptos  = { path = "crates/legendary-leptos", version = "0.1.0" }
 legendary-yew     = { path = "crates/legendary-yew", version = "0.1.0" }
 legendary-bevy    = { path = "crates/legendary-bevy", version = "0.1.0" }
+legendary-freya   = { path = "crates/legendary-freya", version = "0.1.0" }
 
 [profile.dev]
 opt-level = 0
