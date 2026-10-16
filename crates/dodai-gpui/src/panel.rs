@@ -68,8 +68,8 @@ impl ParentElement for Panel {
     }
 }
 
-impl RenderOnce for Panel {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Panel {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let p = t.panel(self.focused);
         let mut d = shaped(&t.shape, panel_style(&t, self.focused))
@@ -94,6 +94,13 @@ impl RenderOnce for Panel {
             Some(f) => f(d),
             None => d,
         }
+    }
+}
+
+impl RenderOnce for Panel {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Panel", motion)
     }
 }
 
@@ -138,8 +145,8 @@ impl ParentElement for InputBox {
     }
 }
 
-impl RenderOnce for InputBox {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl InputBox {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let i = t.input(self.focused);
         let d = shaped(&t.shape, input_style(&t, self.focused))
@@ -159,6 +166,13 @@ impl RenderOnce for InputBox {
         } else {
             d.children(self.children)
         }
+    }
+}
+
+impl RenderOnce for InputBox {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "InputBox", motion)
     }
 }
 

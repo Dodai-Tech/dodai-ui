@@ -113,8 +113,8 @@ fn pts(origin: gpui::Point<Pixels>, p: &[(f32, f32)]) -> Vec<gpui::Point<Pixels>
         .collect()
 }
 
-impl RenderOnce for Knob {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Knob {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let st = window.use_keyed_state(self.id.clone(), cx, |_, _| KnobState::default());
         let frac = slider_fraction(self.value, self.min, self.max);
@@ -246,6 +246,13 @@ impl RenderOnce for Knob {
                     f(knob_value(value, 0.0, -dy, min, max, step), w, cx);
                 }
             })
+    }
+}
+
+impl RenderOnce for Knob {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Knob", motion)
     }
 }
 

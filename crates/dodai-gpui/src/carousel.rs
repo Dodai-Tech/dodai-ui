@@ -63,8 +63,8 @@ impl Carousel {
     }
 }
 
-impl RenderOnce for Carousel {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Carousel {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let n = self.items.len();
         let start = window_start(self.active, n, self.visible);
@@ -118,6 +118,13 @@ impl RenderOnce for Carousel {
                     .gap(px(t.spacing.xs))
                     .children(dots),
             )
+    }
+}
+
+impl RenderOnce for Carousel {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Carousel", motion)
     }
 }
 

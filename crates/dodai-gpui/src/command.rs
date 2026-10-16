@@ -246,8 +246,8 @@ impl Combobox {
     }
 }
 
-impl RenderOnce for Combobox {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Combobox {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let mut root = div().relative().w_full().child(self.input.clone());
         if self.open {
@@ -293,6 +293,13 @@ impl RenderOnce for Combobox {
             root = root.child(deferred(menu).with_priority(50));
         }
         root
+    }
+}
+
+impl RenderOnce for Combobox {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Combobox", motion)
     }
 }
 

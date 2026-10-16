@@ -123,8 +123,8 @@ impl Select {
     }
 }
 
-impl RenderOnce for Select {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Select {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let sel0 = self.selected;
         let st = window.use_keyed_state(self.id.clone(), cx, |_, cx| SelectState {
@@ -362,6 +362,13 @@ impl RenderOnce for Select {
             root = root.child(deferred(popup).with_priority(10));
         }
         root
+    }
+}
+
+impl RenderOnce for Select {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Select", motion)
     }
 }
 

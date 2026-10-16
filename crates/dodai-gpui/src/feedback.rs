@@ -67,8 +67,8 @@ impl Alert {
     }
 }
 
-impl RenderOnce for Alert {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Alert {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let (style, fg) = alert_style(&t, self.tone, self.banner);
         let accent = if self.banner {
@@ -107,6 +107,13 @@ impl RenderOnce for Alert {
                     .child(tone_glyph(self.tone)),
             )
             .child(body)
+    }
+}
+
+impl RenderOnce for Alert {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Alert", motion)
     }
 }
 

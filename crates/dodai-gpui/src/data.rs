@@ -77,8 +77,8 @@ impl Table {
     }
 }
 
-impl RenderOnce for Table {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Table {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let p = &t.palette;
         let w = |i: usize| self.weights.get(i).copied().unwrap_or(1.0);
@@ -175,6 +175,13 @@ impl RenderOnce for Table {
     }
 }
 
+impl RenderOnce for Table {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Table", motion)
+    }
+}
+
 /// Small helper trait: apply a flex weight to a cell.
 trait Weight: Styled + Sized {
     fn map_weight(mut self, w: f32) -> Self {
@@ -214,8 +221,8 @@ impl Badge {
     }
 }
 
-impl RenderOnce for Badge {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Badge {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let (style, fg) = badge_style(&t, self.tone);
         let h = if self.text.is_some() { 18.0 } else { 10.0 };
@@ -232,6 +239,13 @@ impl RenderOnce for Badge {
             Some(s) => d.min_w(px(18.0)).px(px(5.0)).child(s),
             None => d.w(px(h)),
         }
+    }
+}
+
+impl RenderOnce for Badge {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Badge", motion)
     }
 }
 
@@ -269,8 +283,8 @@ impl Avatar {
     }
 }
 
-impl RenderOnce for Avatar {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Avatar {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let c = self.tone.map_or(t.palette.primary, |x| t.palette.tone(x));
         let shape = round_shape(&t.shape, self.size);
@@ -307,6 +321,13 @@ impl RenderOnce for Avatar {
             );
         }
         d
+    }
+}
+
+impl RenderOnce for Avatar {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Avatar", motion)
     }
 }
 
@@ -378,8 +399,8 @@ impl Chip {
     }
 }
 
-impl RenderOnce for Chip {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Chip {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let st = use_interact(&self.id, window, cx);
         let hovered = st.read(cx).hovered && !self.disabled;
@@ -422,6 +443,13 @@ impl RenderOnce for Chip {
     }
 }
 
+impl RenderOnce for Chip {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Chip", motion)
+    }
+}
+
 /// Keyboard key hint, e.g. `Kbd::new("⌘K")`.
 #[derive(IntoElement)]
 pub struct Kbd(SharedString);
@@ -432,8 +460,8 @@ impl Kbd {
     }
 }
 
-impl RenderOnce for Kbd {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Kbd {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let p = &t.palette;
         let style = ShapeStyle::from_tokens(
@@ -454,6 +482,13 @@ impl RenderOnce for Kbd {
             .text_size(px(t.typography.size_xs))
             .text_color(hsla(p.text_muted))
             .child(self.0)
+    }
+}
+
+impl RenderOnce for Kbd {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Kbd", motion)
     }
 }
 

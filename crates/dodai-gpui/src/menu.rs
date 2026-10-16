@@ -94,8 +94,8 @@ impl Menu {
     }
 }
 
-impl RenderOnce for Menu {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Menu {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let mut col = shaped(&t.shape, popup_style(&t))
             .w(px(self.width))
@@ -169,5 +169,12 @@ impl RenderOnce for Menu {
             col = col.child(row);
         }
         col
+    }
+}
+
+impl RenderOnce for Menu {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Menu", motion)
     }
 }

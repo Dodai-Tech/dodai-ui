@@ -58,8 +58,8 @@ impl Tabs {
     }
 }
 
-impl RenderOnce for Tabs {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Tabs {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let mut row = div().flex().gap(px(t.spacing.xs));
         for (i, label) in self.labels.iter().enumerate() {
@@ -87,6 +87,13 @@ impl RenderOnce for Tabs {
             row = row.child(tab);
         }
         row
+    }
+}
+
+impl RenderOnce for Tabs {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Tabs", motion)
     }
 }
 

@@ -87,8 +87,8 @@ impl Button {
     }
 }
 
-impl RenderOnce for Button {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Button {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let st = use_interact(&self.id, window, cx);
         let state = st.read(cx).control_state(self.disabled);
@@ -113,6 +113,13 @@ impl RenderOnce for Button {
             Some(f) => f(el),
             None => el,
         }
+    }
+}
+
+impl RenderOnce for Button {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Button", motion)
     }
 }
 

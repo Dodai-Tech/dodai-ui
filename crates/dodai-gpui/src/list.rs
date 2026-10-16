@@ -52,8 +52,8 @@ impl ListItem {
     }
 }
 
-impl RenderOnce for ListItem {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl ListItem {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let st = use_interact(&self.id, window, cx);
         let hovered = st.read(cx).hovered;
@@ -83,6 +83,13 @@ impl RenderOnce for ListItem {
             el = el.on_click(move |e, w, cx| h(e, w, cx));
         }
         el
+    }
+}
+
+impl RenderOnce for ListItem {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "ListItem", motion)
     }
 }
 

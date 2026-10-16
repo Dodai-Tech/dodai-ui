@@ -83,8 +83,8 @@ impl ParentElement for Card {
     }
 }
 
-impl RenderOnce for Card {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Card {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let p = t.panel(false);
         let mut el = shaped(&t.shape, card_style(&t, self.variant))
@@ -115,6 +115,13 @@ impl RenderOnce for Card {
             );
         }
         el.children(self.children)
+    }
+}
+
+impl RenderOnce for Card {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Card", motion)
     }
 }
 
@@ -161,8 +168,8 @@ impl IconButton {
     }
 }
 
-impl RenderOnce for IconButton {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl IconButton {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let st = use_interact(&self.id, window, cx);
         let state = st.read(cx).control_state(self.disabled);
@@ -189,6 +196,13 @@ impl RenderOnce for IconButton {
             }
         }
         el
+    }
+}
+
+impl RenderOnce for IconButton {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "IconButton", motion)
     }
 }
 
@@ -255,8 +269,8 @@ impl Fab {
     }
 }
 
-impl RenderOnce for Fab {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Fab {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let st = use_interact(&self.id, window, cx);
         let state = st.read(cx).control_state(false);
@@ -292,6 +306,13 @@ impl RenderOnce for Fab {
             el = el.on_click(move |e, w, cx| h(e, w, cx));
         }
         el
+    }
+}
+
+impl RenderOnce for Fab {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Fab", motion)
     }
 }
 
@@ -368,8 +389,8 @@ impl Navigation {
     }
 }
 
-impl RenderOnce for Navigation {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Navigation {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let layout = self.layout;
         let p = t.panel(false);
@@ -443,6 +464,13 @@ impl RenderOnce for Navigation {
     }
 }
 
+impl RenderOnce for Navigation {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Navigation", motion)
+    }
+}
+
 // ──────────────────────────── TopAppBar ────────────────────────────
 
 /// App bar height class.
@@ -487,8 +515,8 @@ impl ParentElement for TopAppBar {
     }
 }
 
-impl RenderOnce for TopAppBar {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl TopAppBar {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let p = t.panel(false);
         let style = ShapeStyle::from_tokens(&t, Some(p.background), Some(p.border), false, false);
@@ -531,6 +559,13 @@ impl RenderOnce for TopAppBar {
     }
 }
 
+impl RenderOnce for TopAppBar {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "TopAppBar", motion)
+    }
+}
+
 // ───────────────────────────── SearchBar ─────────────────────────────
 
 /// Search field shell: leading glyph + placeholder/value text; click to focus
@@ -570,8 +605,8 @@ impl SearchBar {
     }
 }
 
-impl RenderOnce for SearchBar {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl SearchBar {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let st = use_interact(&self.id, window, cx);
         let hovered = st.read(cx).control_state(false) != ControlState::Idle;
@@ -597,6 +632,13 @@ impl RenderOnce for SearchBar {
             el = el.on_click(move |e, w, cx| h(e, w, cx));
         }
         el
+    }
+}
+
+impl RenderOnce for SearchBar {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "SearchBar", motion)
     }
 }
 

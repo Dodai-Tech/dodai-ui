@@ -110,8 +110,8 @@ impl TreeView {
     }
 }
 
-impl RenderOnce for TreeView {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl TreeView {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let mut col = div()
             .flex()
@@ -184,6 +184,13 @@ impl RenderOnce for TreeView {
     }
 }
 
+impl RenderOnce for TreeView {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "TreeView", motion)
+    }
+}
+
 // ─────────────────────────────── SplitPane ───────────────────────────────
 
 /// Clamp a split ratio so both panes keep at least `min` of the space.
@@ -239,8 +246,8 @@ impl SplitPane {
     }
 }
 
-impl RenderOnce for SplitPane {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl SplitPane {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let st = window.use_keyed_state(self.id.clone(), cx, |_, _| SplitState::default());
         let ratio = clamp_ratio(self.ratio, 0.1);
@@ -309,6 +316,13 @@ impl RenderOnce for SplitPane {
             .on_mouse_up_out(MouseButton::Left, move |_, _, cx| {
                 up2.update(cx, |s, _| s.dragging = false)
             })
+    }
+}
+
+impl RenderOnce for SplitPane {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "SplitPane", motion)
     }
 }
 

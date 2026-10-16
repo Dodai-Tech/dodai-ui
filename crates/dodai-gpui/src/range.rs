@@ -108,8 +108,8 @@ impl RangeSlider {
     }
 }
 
-impl RenderOnce for RangeSlider {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl RangeSlider {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let vertical = self.direction == Direction::Vertical;
         let st = window.use_keyed_state(self.id.clone(), cx, |_, _| RangeState::default());
@@ -271,6 +271,13 @@ impl RenderOnce for RangeSlider {
                 .child(r)
                 .into_any_element()
         }
+    }
+}
+
+impl RenderOnce for RangeSlider {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "RangeSlider", motion)
     }
 }
 

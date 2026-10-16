@@ -137,8 +137,8 @@ impl DatePicker {
     }
 }
 
-impl RenderOnce for DatePicker {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl DatePicker {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let p = t.panel(false);
         let (y, m) = (self.year, self.month);
@@ -229,6 +229,13 @@ impl RenderOnce for DatePicker {
     }
 }
 
+impl RenderOnce for DatePicker {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "DatePicker", motion)
+    }
+}
+
 // ───────────────────────────── time picker ─────────────────────────────
 
 /// Step `hour` by `delta`, wrapping within 24 h.
@@ -289,8 +296,8 @@ impl TimePicker {
     }
 }
 
-impl RenderOnce for TimePicker {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl TimePicker {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let p = t.panel(false);
         let (h, mn) = (self.hour, self.minute);
@@ -361,6 +368,13 @@ impl RenderOnce for TimePicker {
             .p(px(t.spacing.md))
             .font_family(first_family(t.typography.body))
             .child(row)
+    }
+}
+
+impl RenderOnce for TimePicker {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "TimePicker", motion)
     }
 }
 

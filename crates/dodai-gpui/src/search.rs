@@ -286,13 +286,20 @@ pub fn count_label(n: u32) -> String {
     }
 }
 
-impl RenderOnce for IconBadge {
-    fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
+impl IconBadge {
+    fn build(self, _: &mut Window, _: &mut App) -> impl IntoElement {
         let mut el = div().relative().child(self.child);
         if let Some(b) = self.badge {
             el = el.child(div().absolute().top(px(-6.0)).right(px(-6.0)).child(b));
         }
         el
+    }
+}
+
+impl RenderOnce for IconBadge {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "IconBadge", motion)
     }
 }
 

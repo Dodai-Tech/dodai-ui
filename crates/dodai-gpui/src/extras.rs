@@ -55,8 +55,8 @@ impl ParentElement for Toolbar {
     }
 }
 
-impl RenderOnce for Toolbar {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Toolbar {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let mut bar = shaped(&t.shape, bar_style(&t))
             .flex()
@@ -70,6 +70,13 @@ impl RenderOnce for Toolbar {
             bar = bar.child(div().flex_1()).child(e);
         }
         bar
+    }
+}
+
+impl RenderOnce for Toolbar {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Toolbar", motion)
     }
 }
 
@@ -115,8 +122,8 @@ impl ParentElement for EmptyState {
     }
 }
 
-impl RenderOnce for EmptyState {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl EmptyState {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let tint = self
             .tone
@@ -158,6 +165,13 @@ impl RenderOnce for EmptyState {
     }
 }
 
+impl RenderOnce for EmptyState {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "EmptyState", motion)
+    }
+}
+
 // ─────────────────────────────── Rating ───────────────────────────────
 
 type ClickFn = Rc<dyn Fn(&ClickEvent, &mut Window, &mut App)>;
@@ -191,8 +205,8 @@ impl Rating {
     }
 }
 
-impl RenderOnce for Rating {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Rating {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let stars = (1..=self.max).map(|i| {
             let on = i <= self.value;
@@ -213,6 +227,13 @@ impl RenderOnce for Rating {
             s
         });
         div().flex().gap(px(2.0)).children(stars)
+    }
+}
+
+impl RenderOnce for Rating {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Rating", motion)
     }
 }
 
@@ -262,8 +283,8 @@ impl NumberStepper {
     }
 }
 
-impl RenderOnce for NumberStepper {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl NumberStepper {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let p = t.panel(false);
         let (v, lo, hi) = (self.value, self.min, self.max);
@@ -296,6 +317,13 @@ impl RenderOnce for NumberStepper {
             .child(mk("dec", "−", -self.step))
             .child(display)
             .child(mk("inc", "+", self.step))
+    }
+}
+
+impl RenderOnce for NumberStepper {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "NumberStepper", motion)
     }
 }
 
@@ -346,8 +374,8 @@ impl Timeline {
     }
 }
 
-impl RenderOnce for Timeline {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Timeline {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let n = self.events.len();
         let dot_shape = round_shape(&t.shape, 12.0);
@@ -407,6 +435,13 @@ impl RenderOnce for Timeline {
     }
 }
 
+impl RenderOnce for Timeline {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Timeline", motion)
+    }
+}
+
 // ───────────────────────────── ColorPicker ─────────────────────────────
 
 type ColorFn = Rc<dyn Fn(usize, &mut Window, &mut App)>;
@@ -445,8 +480,8 @@ impl ColorPicker {
     }
 }
 
-impl RenderOnce for ColorPicker {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl ColorPicker {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let side = t.shape.control_height * 0.8;
         let mut grid = div().flex().flex_col().gap(px(t.spacing.xs));
@@ -497,6 +532,13 @@ impl RenderOnce for ColorPicker {
     }
 }
 
+impl RenderOnce for ColorPicker {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "ColorPicker", motion)
+    }
+}
+
 // ───────────────────────────── FileDropZone ─────────────────────────────
 
 /// Drop target look (click to browse). Wire `on_click` to your file dialog.
@@ -531,8 +573,8 @@ impl FileDropZone {
     }
 }
 
-impl RenderOnce for FileDropZone {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl FileDropZone {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let st = use_interact(&self.id, window, cx);
         let hov = st.read(cx).hovered;
@@ -575,6 +617,13 @@ impl RenderOnce for FileDropZone {
     }
 }
 
+impl RenderOnce for FileDropZone {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "FileDropZone", motion)
+    }
+}
+
 // ───────────────────────────── TagField ─────────────────────────────
 
 type TagFn = Rc<dyn Fn(usize, &mut Window, &mut App)>;
@@ -611,8 +660,8 @@ impl TagField {
     }
 }
 
-impl RenderOnce for TagField {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl TagField {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let i = t.input(false);
         let style = ShapeStyle::from_tokens(&t, Some(i.background), Some(i.border), false, false);
@@ -635,6 +684,13 @@ impl RenderOnce for TagField {
             el = el.child(e);
         }
         el
+    }
+}
+
+impl RenderOnce for TagField {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "TagField", motion)
     }
 }
 

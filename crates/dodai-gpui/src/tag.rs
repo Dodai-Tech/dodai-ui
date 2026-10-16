@@ -38,8 +38,8 @@ impl Tag {
     }
 }
 
-impl RenderOnce for Tag {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Tag {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let (style, fg) = tag_style(&t, self.tone, self.solid);
         shaped(&t.shape, style)
@@ -49,6 +49,13 @@ impl RenderOnce for Tag {
             .text_size(px(t.typography.size_xs))
             .text_color(fg)
             .child(format_label(&t.typography, &self.text))
+    }
+}
+
+impl RenderOnce for Tag {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Tag", motion)
     }
 }
 

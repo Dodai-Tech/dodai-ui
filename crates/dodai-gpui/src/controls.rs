@@ -270,10 +270,17 @@ impl ProgressBar {
     }
 }
 
-impl RenderOnce for ProgressBar {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl ProgressBar {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         bar(&t, self.value, self.tone, t.spacing.sm + 2.0)
+    }
+}
+
+impl RenderOnce for ProgressBar {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "ProgressBar", motion)
     }
 }
 
@@ -375,8 +382,8 @@ impl Slider {
     }
 }
 
-impl RenderOnce for Slider {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Slider {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let vertical = self.direction == Direction::Vertical;
         let st = window.use_keyed_state(self.id.clone(), cx, |_, _| SliderState::default());
@@ -570,6 +577,13 @@ impl RenderOnce for Slider {
                 .child(r)
                 .into_any_element(),
         }
+    }
+}
+
+impl RenderOnce for Slider {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Slider", motion)
     }
 }
 

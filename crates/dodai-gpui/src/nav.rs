@@ -37,8 +37,8 @@ impl Breadcrumb {
     }
 }
 
-impl RenderOnce for Breadcrumb {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Breadcrumb {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let mut row = div()
             .flex()
@@ -75,6 +75,13 @@ impl RenderOnce for Breadcrumb {
             row = row.child(crate::interact::track(c, &st));
         }
         row
+    }
+}
+
+impl RenderOnce for Breadcrumb {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Breadcrumb", motion)
     }
 }
 
@@ -134,8 +141,8 @@ impl Pagination {
     }
 }
 
-impl RenderOnce for Pagination {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Pagination {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let mut row = div().flex().items_center().gap(px(t.spacing.xs));
         let (page, total) = (self.page.clamp(1, self.total.max(1)), self.total);
@@ -209,6 +216,13 @@ impl RenderOnce for Pagination {
     }
 }
 
+impl RenderOnce for Pagination {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Pagination", motion)
+    }
+}
+
 /// Multi-step progress: numbered nodes joined by lines. Done steps show ✓.
 #[derive(IntoElement)]
 pub struct Stepper {
@@ -225,8 +239,8 @@ impl Stepper {
     }
 }
 
-impl RenderOnce for Stepper {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Stepper {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let p = &t.palette;
         let side = 26.0;
@@ -297,6 +311,13 @@ impl RenderOnce for Stepper {
     }
 }
 
+impl RenderOnce for Stepper {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Stepper", motion)
+    }
+}
+
 /// Exclusive option group in one bordered strip. Controlled.
 #[derive(IntoElement)]
 pub struct Segmented {
@@ -334,8 +355,8 @@ impl Segmented {
     }
 }
 
-impl RenderOnce for Segmented {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Segmented {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let p = &t.palette;
         let strip =
@@ -381,6 +402,13 @@ impl RenderOnce for Segmented {
     }
 }
 
+impl RenderOnce for Segmented {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Segmented", motion)
+    }
+}
+
 struct AccState {
     open: Vec<bool>,
 }
@@ -413,8 +441,8 @@ impl Accordion {
     }
 }
 
-impl RenderOnce for Accordion {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Accordion {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let n = self.items.len();
         let initial = self.open.clone();
@@ -478,6 +506,13 @@ impl RenderOnce for Accordion {
             }
         }
         col
+    }
+}
+
+impl RenderOnce for Accordion {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Accordion", motion)
     }
 }
 
