@@ -40,6 +40,13 @@ pub fn slider_fraction(value: f32, min: f32, max: f32) -> f32 {
     }
 }
 
+/// Where a slider's value bubble sits relative to the thumb.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum BubblePlacement {
+    Above,
+    Below,
+}
+
 /// Tick positions (`0..=1`) for `min..=max` at multiples of `step`;
 /// empty when there would be more than 64 (too dense to draw). Pure.
 pub fn tick_fractions(min: f32, max: f32, step: Option<f32>) -> Vec<f32> {
@@ -296,6 +303,7 @@ pub struct Slider {
     step: Option<f32>,
     ticks: bool,
     show_value: bool,
+    bubble: Option<BubblePlacement>,
     format: Option<Rc<dyn Fn(f32) -> String>>,
     on_change: Option<FloatHandler>,
 }
@@ -314,6 +322,7 @@ impl Slider {
             step: None,
             ticks: false,
             show_value: false,
+            bubble: None,
             format: None,
             on_change: None,
         }
@@ -326,6 +335,11 @@ impl Slider {
     /// Show the current value next to the slider.
     pub fn show_value(mut self, on: bool) -> Self {
         self.show_value = on;
+        self
+    }
+    /// Value bubble that follows the thumb, above or below it (horizontal only).
+    pub fn bubble(mut self, p: BubblePlacement) -> Self {
+        self.bubble = Some(p);
         self
     }
     /// Custom value formatter for the readout (e.g. `|v| format!("{v:.0} dB")`).
@@ -453,6 +467,43 @@ impl RenderOnce for Slider {
                         .bg(tick_c),
                 );
             }
+            if let Some(bp) = self.bubble {
+                let txt = match &self.format {
+                    Some(f) => f(self.value),
+                    None => crate::charts::fmt_num((self.value * 100.0).round() / 100.0),
+                };
+                let y = match bp {
+                    BubblePlacement::Above => -26.0,
+                    BubblePlacement::Below => THUMB + 8.0,
+                };
+                let pill = ShapeStyle::from_tokens(
+                    &t,
+                    Some(t.palette.surface_raised),
+                    Some(t.palette.border),
+                    false,
+                    false,
+                );
+                r = r.child(
+                    div()
+                        .absolute()
+                        .top(px(y))
+                        .left(relative(frac))
+                        .w_0()
+                        .flex()
+                        .justify_center()
+                        .child(
+                            shaped(&scaled_shape(&t.shape, 20.0), pill)
+                                .px(px(t.spacing.sm))
+                                .h(px(20.0))
+                                .flex()
+                                .items_center()
+                                .whitespace_nowrap()
+                                .text_size(px(t.typography.size_xs))
+                                .text_color(hsla(t.palette.text))
+                                .child(txt),
+                        ),
+                );
+            }
             r.child(thumb.top(px(2.0)).left(relative(frac)).ml(px(-THUMB / 2.0)))
         };
         let readout = self.show_value.then(|| {
@@ -492,8 +543,17 @@ impl RenderOnce for Slider {
             .on_mouse_up_out(MouseButton::Left, move |_, _, cx| {
                 up2.update(cx, |s, _| s.dragging = false)
             });
+        let slider = match (self.bubble, vertical) {
+            (Some(BubblePlacement::Above), false) => {
+                div().pt(px(28.0)).child(slider).into_any_element()
+            }
+            (Some(BubblePlacement::Below), false) => {
+                div().pb(px(28.0)).child(slider).into_any_element()
+            }
+            _ => slider.into_any_element(),
+        };
         match (readout, vertical) {
-            (None, _) => slider.into_any_element(),
+            (None, _) => slider,
             (Some(r), true) => div()
                 .flex()
                 .flex_col()
@@ -506,7 +566,7 @@ impl RenderOnce for Slider {
                 .flex()
                 .items_center()
                 .gap(px(t.spacing.sm))
-                .child(slider.flex_1())
+                .child(div().flex_1().child(slider))
                 .child(r)
                 .into_any_element(),
         }

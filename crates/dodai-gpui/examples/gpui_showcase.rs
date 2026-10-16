@@ -7,11 +7,11 @@
 use dodai_core::{ButtonVariant, Theme, Tone};
 use dodai_gpui::{
     cycle_next, cycle_prev, family_title, fuzzy_filter, glow_intensity, hsla, install,
-    scanlines_enabled, set_glow_intensity, set_scanlines, theme_of, ActiveDodai, Button, Card,
-    CardVariant, Checkbox, DesignSystemSelector, Direction, Divider, DodaiStyled, DodaiTooltip,
-    Fab, FabSize, Heading, IconButton, InputBox, Knob, Label, ListItem, Mono, Muted, NavItem,
-    NavLayout, Navigation, Panel, ProgressBar, Radio, Scanlines, SearchBar, Slider, Tabs, Tag,
-    ThemeSelector, Toggle, TopAppBar,
+    scanlines_enabled, set_glow_intensity, set_scanlines, theme_of, ActiveDodai, BubblePlacement,
+    Button, Card, CardVariant, Checkbox, DesignSystemSelector, Direction, Divider, DodaiStyled,
+    DodaiTooltip, Fab, FabSize, Heading, IconButton, InputBox, Knob, Label, ListItem, Mono, Muted,
+    NavItem, NavLayout, Navigation, Panel, ProgressBar, Radio, Scanlines, SearchBar, Slider, Tabs,
+    Tag, ThemeSelector, Toggle, TopAppBar,
 };
 use dodai_gpui::{
     BarChart, Date, DatePicker, EmptyState, Gauge, Heatmap, IconBadge, LineChart, NumberStepper,
@@ -34,6 +34,7 @@ struct Showcase {
     vrange: (f32, f32),
     stepped: f32,
     db: f32,
+    bub: (f32, f32),
     date: (i32, u32, Option<Date>),
     time: (u32, u32),
     tags: Vec<&'static str>,
@@ -616,7 +617,34 @@ impl Render for Showcase {
 
         // Stepped / configurable sliders.
         let (ms1, ms2) = (me.clone(), me.clone());
+        let (mb1, mb2) = (me.clone(), me.clone());
         let stepped = col()
+            .child(
+                Slider::new("bub-up", self.bub.0)
+                    .range(0.0, 100.0)
+                    .bubble(BubblePlacement::Above)
+                    .format(|v| format!("{v:.0}%"))
+                    .on_change(move |v, _, cx| {
+                        mb1.update(cx, |s, cx| {
+                            s.bub.0 = v;
+                            cx.notify()
+                        })
+                    }),
+            )
+            .child(
+                Slider::new("bub-down", self.bub.1)
+                    .range(0.0, 100.0)
+                    .step(10.0)
+                    .ticks(true)
+                    .bubble(BubblePlacement::Below)
+                    .format(|v| format!("{v:.0}%"))
+                    .on_change(move |v, _, cx| {
+                        mb2.update(cx, |s, cx| {
+                            s.bub.1 = v;
+                            cx.notify()
+                        })
+                    }),
+            )
             .child(
                 Slider::new("stepped", self.stepped)
                     .range(0.0, 10.0)
@@ -973,6 +1001,7 @@ fn main() {
                         vrange: (0.2, 0.8),
                         stepped: 4.0,
                         db: -6.0,
+                        bub: (35.0, 60.0),
                         date: (2025, 6, None),
                         time: (9, 30),
                         tags: vec!["rust", "gpui", "charts"],

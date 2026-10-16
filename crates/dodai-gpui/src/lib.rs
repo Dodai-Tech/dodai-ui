@@ -67,7 +67,9 @@ pub use charts::{
     Gauge, Heatmap, Legend, LineChart, PieChart, RadarChart, ScatterPlot, Series, Sparkline,
 };
 pub use command::{fuzzy_filter, Combobox, Command, CommandPalette};
-pub use controls::{tick_fractions, Checkbox, Direction, ProgressBar, Radio, Slider, Toggle};
+pub use controls::{
+    tick_fractions, BubblePlacement, Checkbox, Direction, ProgressBar, Radio, Slider, Toggle,
+};
 pub use data::{Avatar, Badge, Chip, Kbd, Table};
 pub use extras::{
     step_value, BottomAppBar, ColorPicker, EmptyState, FileDropZone, NumberStepper, Rating,
