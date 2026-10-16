@@ -1,4 +1,4 @@
-# legendary-themes workspace — task runner
+# legendary-ui workspace — task runner
 # Install just:      cargo install just
 # Install git-cliff: cargo install git-cliff
 # Usage: just <task>

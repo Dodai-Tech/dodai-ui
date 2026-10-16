@@ -1,6 +1,6 @@
 //! # legendary-core
 //!
-//! Framework-agnostic **design tokens** for the Legendary Themes design system:
+//! Framework-agnostic **design tokens** for the Legendary UI design system:
 //! colours (semantic roles), typography, spacing, shape, effects, resolved
 //! component styles and a [`ThemeSwitcher`]. Adapter crates
 //! (`legendary-ratatui`, `legendary-iced`, `legendary-gpui`, `legendary-topcoat`)

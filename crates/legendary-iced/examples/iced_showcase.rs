@@ -144,7 +144,7 @@ fn view(app: &App) -> Element<'_, Msg> {
         })
         .collect();
     let header = column![
-        lt.heading_text("Legendary Themes · Iced"),
+        lt.heading_text("Legendary UI · Iced"),
         lt.muted_text(&format!(
             "theme: {} · shape: {:?} · keys: t / T cycle themes",
             lt.theme().name(),
@@ -368,7 +368,7 @@ fn view(app: &App) -> Element<'_, Msg> {
 
 fn main() -> iced::Result {
     iced::application(boot, update, view)
-        .title("Legendary Themes · Iced")
+        .title("Legendary UI · Iced")
         .theme(|app: &App| -> IcedBase { app.lt.iced_theme() })
         .subscription(subscription)
         .run()

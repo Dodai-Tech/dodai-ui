@@ -5,7 +5,7 @@ use legendary_topcoat::{multi_theme_stylesheet, switcher_script, GOOGLE_FONTS_UR
 fn main() {
     let all = themes::all();
     println!(
-        r##"<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Legendary Themes · Cyberpunk</title>
+        r##"<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Legendary UI · Cyberpunk</title>
 <link rel="stylesheet" href="{GOOGLE_FONTS_URL}">
 <script>{js}</script>
 <style>{css}

@@ -13,7 +13,7 @@ version      = "0.1.0"
 edition      = "2021"
 authors      = ["Sorin Irimies <sorinirimies@gmail.com>"]
 license      = "MIT"
-repository   = "https://github.com/sorinirimies/legendary-themes"
+repository   = "https://github.com/sorinirimies/legendary-ui"
 rust-version = "1.85"
 
 # ── Shared dependency versions ─────────────────────────────────────────────────

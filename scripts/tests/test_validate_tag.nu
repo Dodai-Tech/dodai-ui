@@ -1,5 +1,5 @@
 #!/usr/bin/env nu
-# ── Legendary Themes · test_validate_tag.nu ─────────────────────────────────────────
+# ── Legendary UI · test_validate_tag.nu ─────────────────────────────────────────
 # Tests for scripts/ci/validate_tag.nu — tag validation and version extraction.
 
 use std/assert

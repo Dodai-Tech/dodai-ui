@@ -1,6 +1,6 @@
 #!/usr/bin/env nu
 # ──────────────────────────────────────────────────────────────────────────────
-# Legendary Themes — Bump workspace version
+# Legendary UI — Bump workspace version
 # ──────────────────────────────────────────────────────────────────────────────
 # Usage: nu scripts/bump_version.nu <new_version>
 #

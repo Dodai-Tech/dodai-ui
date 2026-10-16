@@ -17,7 +17,7 @@ def run [label: string, cmd: closure] {
 }
 
 def main [] {
-    print "── Legendary Themes · pre-publish checks ──"
+    print "── Legendary UI · pre-publish checks ──"
     for c in (publish-order) {
         run $"doc ($c)" { cargo doc -p $c --no-deps }
     }

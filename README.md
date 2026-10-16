@@ -1,4 +1,4 @@
-# Legendary Themes
+# Legendary UI
 
 A **design system** — not just a colour switcher — shipped as one crate per UI framework.
 One token set (colour roles, typography, spacing, shape, glow/scanline effects, resolved

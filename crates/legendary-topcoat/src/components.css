@@ -1,4 +1,4 @@
-/* Legendary Themes — component layer. Uses only theme custom properties; theme-agnostic. */
+/* Legendary UI — component layer. Uses only theme custom properties; theme-agnostic. */
 *,*::before,*::after{box-sizing:border-box}
 html{color-scheme:dark}
 body{margin:0;background:var(--lg-background);color:var(--lg-text);font-family:var(--lg-font-body);font-size:var(--lg-size-md);line-height:1.5}

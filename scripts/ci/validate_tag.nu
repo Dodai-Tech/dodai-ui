@@ -1,6 +1,6 @@
 #!/usr/bin/env nu
 # ──────────────────────────────────────────────────────────────────────────────
-# Legendary Themes — Validate release tag
+# Legendary UI — Validate release tag
 # ──────────────────────────────────────────────────────────────────────────────
 # Validates that a tag matches the vX.Y.Z pattern and outputs the tag and the
 # bare version string.  Used by CI release workflows so validation logic lives

@@ -1,6 +1,6 @@
 //! # legendary-topcoat
 //!
-//! Generates the Legendary Themes **stylesheet** for server-rendered web UIs
+//! Generates the Legendary UI **stylesheet** for server-rendered web UIs
 //! (built for [Topcoat](https://crates.io/crates/topcoat), works with any
 //! framework): CSS custom properties for every token, a themed component layer
 //! (`.lg-btn`, `.lg-panel`, `.lg-input`, `.lg-tag`, `.lg-tabs`, `.lg-table`, …
