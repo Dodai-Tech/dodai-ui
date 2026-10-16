@@ -18,7 +18,7 @@ body = """
 {% endfor -%}
 {% endfor -%}
 {% if version and previous.version -%}
-**Full Changelog**: https://github.com/sorinirimies/legendary-ui/compare/{{ previous.version }}...{{ version }}
+**Full Changelog**: https://github.com/sorinirimies/dodai-ui/compare/{{ previous.version }}...{{ version }}
 {% endif -%}
 """
 trim = true
@@ -61,4 +61,4 @@ sort_tags = "semver"
 
 [github]
 owner = "sorinirimies"
-repo  = "legendary-ui"
+repo  = "dodai-ui"

@@ -65,7 +65,7 @@ dependencies = [
  "atspi-common 0.9.0",
  "serde",
  "thiserror 1.0.69",
- "zvariant 5.15.0",
+ "zvariant 5.15.1",
 ]
 
 [[package]]
@@ -914,8 +914,8 @@ dependencies = [
  "zbus 5.19.0",
  "zbus-lockstep 0.5.2",
  "zbus-lockstep-macros 0.5.2",
- "zbus_names 4.3.4",
- "zvariant 5.15.0",
+ "zbus_names 4.3.5",
+ "zvariant 5.15.1",
 ]
 
 [[package]]
@@ -4189,6 +4189,106 @@ dependencies = [
 ]
 
 [[package]]
+name = "dodai-bevy"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "dodai-core",
+]
+
+[[package]]
+name = "dodai-core"
+version = "0.1.0"
+
+[[package]]
+name = "dodai-dioxus"
+version = "0.1.0"
+dependencies = [
+ "dioxus 0.7.10",
+ "dioxus-ssr",
+ "dodai-core",
+ "dodai-topcoat",
+]
+
+[[package]]
+name = "dodai-egui"
+version = "0.1.0"
+dependencies = [
+ "dodai-core",
+ "eframe",
+ "egui",
+]
+
+[[package]]
+name = "dodai-freya"
+version = "0.1.0"
+dependencies = [
+ "dodai-core",
+ "freya",
+]
+
+[[package]]
+name = "dodai-gpui"
+version = "0.1.0"
+dependencies = [
+ "dodai-core",
+ "gpui",
+]
+
+[[package]]
+name = "dodai-iced"
+version = "0.1.0"
+dependencies = [
+ "dodai-core",
+ "iced",
+ "naga 27.0.3",
+]
+
+[[package]]
+name = "dodai-leptos"
+version = "0.1.0"
+dependencies = [
+ "dodai-core",
+ "dodai-topcoat",
+ "leptos",
+]
+
+[[package]]
+name = "dodai-ratatui"
+version = "0.1.0"
+dependencies = [
+ "crossterm",
+ "dodai-core",
+ "ratatui",
+]
+
+[[package]]
+name = "dodai-slint"
+version = "0.1.0"
+dependencies = [
+ "dodai-core",
+ "slint",
+]
+
+[[package]]
+name = "dodai-topcoat"
+version = "0.1.0"
+dependencies = [
+ "dodai-core",
+]
+
+[[package]]
+name = "dodai-yew"
+version = "0.1.0"
+dependencies = [
+ "dodai-core",
+ "dodai-topcoat",
+ "tokio",
+ "web-sys",
+ "yew",
+]
+
+[[package]]
 name = "downcast-rs"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6861,7 +6961,7 @@ dependencies = [
  "tokio",
  "tower-service",
  "tracing",
- "windows-registry 0.5.3",
+ "windows-registry 0.6.1",
 ]
 
 [[package]]
@@ -7901,106 +8001,6 @@ name = "lebe"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a79a3332a6609480d7d0c9eab957bca6b455b91bb84e66d19f5ff66294b85b8"
-
-[[package]]
-name = "legendary-bevy"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "legendary-core",
-]
-
-[[package]]
-name = "legendary-core"
-version = "0.1.0"
-
-[[package]]
-name = "legendary-dioxus"
-version = "0.1.0"
-dependencies = [
- "dioxus 0.7.10",
- "dioxus-ssr",
- "legendary-core",
- "legendary-topcoat",
-]
-
-[[package]]
-name = "legendary-egui"
-version = "0.1.0"
-dependencies = [
- "eframe",
- "egui",
- "legendary-core",
-]
-
-[[package]]
-name = "legendary-freya"
-version = "0.1.0"
-dependencies = [
- "freya",
- "legendary-core",
-]
-
-[[package]]
-name = "legendary-gpui"
-version = "0.1.0"
-dependencies = [
- "gpui",
- "legendary-core",
-]
-
-[[package]]
-name = "legendary-iced"
-version = "0.1.0"
-dependencies = [
- "iced",
- "legendary-core",
- "naga 27.0.3",
-]
-
-[[package]]
-name = "legendary-leptos"
-version = "0.1.0"
-dependencies = [
- "legendary-core",
- "legendary-topcoat",
- "leptos",
-]
-
-[[package]]
-name = "legendary-ratatui"
-version = "0.1.0"
-dependencies = [
- "crossterm",
- "legendary-core",
- "ratatui",
-]
-
-[[package]]
-name = "legendary-slint"
-version = "0.1.0"
-dependencies = [
- "legendary-core",
- "slint",
-]
-
-[[package]]
-name = "legendary-topcoat"
-version = "0.1.0"
-dependencies = [
- "legendary-core",
-]
-
-[[package]]
-name = "legendary-yew"
-version = "0.1.0"
-dependencies = [
- "legendary-core",
- "legendary-topcoat",
- "tokio",
- "web-sys",
- "yew",
-]
 
 [[package]]
 name = "leptos"
@@ -9549,7 +9549,7 @@ dependencies = [
  "zbus 5.19.0",
  "zbus_macros 5.19.0",
  "zeroize",
- "zvariant 5.15.0",
+ "zvariant 5.15.1",
 ]
 
 [[package]]
@@ -11319,9 +11319,9 @@ dependencies = [
 
 [[package]]
 name = "schannel"
-version = "0.1.29"
+version = "0.1.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91c1b7e4904c873ef0710c1f407dde2e6287de2bebc1bbbf7d430bb7cbffd939"
+checksum = "9cb23c424d8ee841bb4d813677ca237e2a610067d594fec130f87d6093495ab5"
 dependencies = [
  "windows-sys 0.61.2",
 ]
@@ -14754,6 +14754,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "windows-registry"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "02752bf7fbdcce7f2a27a742f798510f3e5ad88dbe84871e5168e2120c3d5720"
+dependencies = [
+ "windows-link 0.2.1",
+ "windows-result 0.4.1",
+ "windows-strings 0.5.1",
+]
+
+[[package]]
 name = "windows-result"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -15507,8 +15518,8 @@ dependencies = [
  "windows-sys 0.61.2",
  "winnow 1.0.4",
  "zbus_macros 5.19.0",
- "zbus_names 4.3.4",
- "zvariant 5.15.0",
+ "zbus_names 4.3.5",
+ "zvariant 5.15.1",
 ]
 
 [[package]]
@@ -15528,7 +15539,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6998de05217a084b7578728a9443d04ea4cd80f2a0839b8d78770b76ccd45863"
 dependencies = [
  "zbus_xml 5.2.1",
- "zvariant 5.15.0",
+ "zvariant 5.15.1",
 ]
 
 [[package]]
@@ -15556,7 +15567,7 @@ dependencies = [
  "syn 2.0.119",
  "zbus-lockstep 0.5.2",
  "zbus_xml 5.2.1",
- "zvariant 5.15.0",
+ "zvariant 5.15.1",
 ]
 
 [[package]]
@@ -15582,8 +15593,8 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 3.0.9",
- "zbus_names 4.3.4",
- "zvariant 5.15.0",
+ "zbus_names 4.3.5",
+ "zvariant 5.15.1",
  "zvariant_utils 4.2.0",
 ]
 
@@ -15600,13 +15611,13 @@ dependencies = [
 
 [[package]]
 name = "zbus_names"
-version = "4.3.4"
+version = "4.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8bf88b4a3ff53e883001e0e0115b297a9d53c31b9c1edd2bfdd853e3428624e"
+checksum = "812a12be4ead7a59e18ea8f047d08add0066b73bc62fc1467066a2472ae088dd"
 dependencies = [
  "serde",
  "winnow 1.0.4",
- "zvariant 5.15.0",
+ "zvariant 5.15.1",
 ]
 
 [[package]]
@@ -15630,8 +15641,8 @@ checksum = "d1586c021a01ca0a9216dcd874e546382e156a5cbab5fab6cb5f10087e22682a"
 dependencies = [
  "serde",
  "winnow 1.0.4",
- "zbus_names 4.3.4",
- "zvariant 5.15.0",
+ "zbus_names 4.3.5",
+ "zvariant 5.15.1",
 ]
 
 [[package]]
@@ -15919,9 +15930,9 @@ dependencies = [
 
 [[package]]
 name = "zvariant"
-version = "5.15.0"
+version = "5.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1d34c27cc6cdd1f458427519dd6b8612f7b7e3f7b9a0b2355d041dda9869147"
+checksum = "80bf6d6cd6a4b601acb64cfb8284cdc643fcfa75ef26ae3c46ec8aa4e8a1fbb7"
 dependencies = [
  "endi",
  "enumflags2",
@@ -15929,7 +15940,7 @@ dependencies = [
  "url",
  "winnow 1.0.4",
  "zcheapstr",
- "zvariant_derive 5.15.0",
+ "zvariant_derive 5.15.1",
  "zvariant_utils 4.2.0",
 ]
 
@@ -15948,9 +15959,9 @@ dependencies = [
 
 [[package]]
 name = "zvariant_derive"
-version = "5.15.0"
+version = "5.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "864155e69b4352db0c7f374917bf45d1e0c8d17659c8b3dbf9795f3673f8c497"
+checksum = "ef2672456ba1cb54b5eaec136e63135b3c7495fb938e53b28a62e633496d486d"
 dependencies = [
  "proc-macro-crate 3.5.0",
  "proc-macro2",

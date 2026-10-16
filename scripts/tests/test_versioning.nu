@@ -7,7 +7,7 @@ use ../lib/versioning.nu *
 
 def sample [v: string]: nothing -> string {
     $'[workspace]
-members = ["crates/legendary-core"]
+members = ["crates/dodai-core"]
 
 [workspace.package]
 version      = "($v)"
@@ -15,8 +15,8 @@ edition      = "2021"
 
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }
-legendary-core    = { path = "crates/legendary-core",    version = "($v)" }
-legendary-ratatui = { path = "crates/legendary-ratatui", version = "($v)" }
+dodai-core    = { path = "crates/dodai-core",    version = "($v)" }
+dodai-ratatui = { path = "crates/dodai-ratatui", version = "($v)" }
 '
 }
 
@@ -40,8 +40,8 @@ def "test read-version: reads workspace.package" [] {
 def "test bump: updates workspace + internal deps" [] {
     let out = (bump-workspace-text (sample "0.1.0") "0.2.0")
     assert equal (read-version $out) "0.2.0"
-    assert ($out | str contains 'legendary-core    = { path = "crates/legendary-core",    version = "0.2.0" }')
-    assert ($out | str contains 'legendary-ratatui = { path = "crates/legendary-ratatui", version = "0.2.0" }')
+    assert ($out | str contains 'dodai-core    = { path = "crates/dodai-core",    version = "0.2.0" }')
+    assert ($out | str contains 'dodai-ratatui = { path = "crates/dodai-ratatui", version = "0.2.0" }')
 }
 
 def "test bump: leaves third-party deps alone" [] {
@@ -56,7 +56,7 @@ def "test bump: is idempotent" [] {
 
 def "test publish-order: core first, five crates" [] {
     let o = (publish-order)
-    assert equal ($o | first) "legendary-core"
+    assert equal ($o | first) "dodai-core"
     assert equal ($o | length) 5
 }
 

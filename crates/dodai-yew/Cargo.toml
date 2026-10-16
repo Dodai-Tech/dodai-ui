@@ -1,0 +1,21 @@
+[package]
+name         = "dodai-yew"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description  = "yew adapter for the Dodai UI design system"
+readme       = "README.md"
+keywords     = ["theme", "design-system", "yew", "cyberpunk"]
+categories   = ["gui"]
+
+[dependencies]
+dodai-core = { workspace = true }
+dodai-topcoat.workspace = true
+web-sys = { version = "0.3.106", features = ["HtmlInputElement"] }
+yew = { version = "0.21", features = ["ssr"] }
+
+[dev-dependencies]
+tokio = { version = "1.53.3", features = ["rt", "macros"] }

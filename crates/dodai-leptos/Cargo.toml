@@ -1,0 +1,21 @@
+[package]
+name         = "dodai-leptos"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description  = "leptos adapter for the Dodai UI design system"
+readme       = "README.md"
+keywords     = ["theme", "design-system", "leptos", "cyberpunk"]
+categories   = ["gui"]
+
+[dependencies]
+dodai-core = { workspace = true }
+dodai-topcoat = { path = "../dodai-topcoat" }
+leptos = { version = "0.8", features = ["ssr"] }
+
+[[example]]
+name = "leptos_showcase"
+path = "examples/leptos_showcase.rs"

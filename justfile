@@ -1,4 +1,4 @@
-# legendary-ui workspace — task runner
+# dodai-ui workspace — task runner
 # Install just:      cargo install just
 # Install git-cliff: cargo install git-cliff
 # Usage: just <task>
@@ -25,45 +25,45 @@ install-tools:
 # ── Build ─────────────────────────────────────────────────────────────────────
 
 # Build the whole workspace (dev). Per-crate: `cargo build --workspace` cannot unify
-# iced's naga 27 with gpui's naga 25 (see legendary-iced dev-dependencies).
+# iced's naga 27 with gpui's naga 25 (see dodai-iced dev-dependencies).
 build:
-    for c in legendary-core legendary-ratatui legendary-iced legendary-gpui legendary-topcoat; do cargo build -p $c || exit 1; done
+    for c in dodai-core dodai-ratatui dodai-iced dodai-gpui dodai-topcoat; do cargo build -p $c || exit 1; done
 
 build-core:
-    cargo build -p legendary-core
+    cargo build -p dodai-core
 
 build-ratatui:
-    cargo build -p legendary-ratatui
+    cargo build -p dodai-ratatui
 
 build-iced:
-    cargo build -p legendary-iced
+    cargo build -p dodai-iced
 
 build-gpui:
-    cargo build -p legendary-gpui
+    cargo build -p dodai-gpui
 
 build-topcoat:
-    cargo build -p legendary-topcoat
+    cargo build -p dodai-topcoat
 
 build-release:
-    for c in legendary-core legendary-ratatui legendary-iced legendary-gpui legendary-topcoat; do cargo build --release -p $c || exit 1; done
+    for c in dodai-core dodai-ratatui dodai-iced dodai-gpui dodai-topcoat; do cargo build --release -p $c || exit 1; done
 
 # ── Run the showcases ─────────────────────────────────────────────────────────
 
 # Ratatui showcase (t = next theme)
 run-ratatui:
-    cargo run -p legendary-ratatui --example ratatui_showcase
+    cargo run -p dodai-ratatui --example ratatui_showcase
 
 # Iced showcase
 run-iced:
-    cargo run -p legendary-iced --example iced_showcase
+    cargo run -p dodai-iced --example iced_showcase
 
 # GPUI showcase
 run-gpui:
-    cargo run -p legendary-gpui --example gpui_showcase
+    cargo run -p dodai-gpui --example gpui_showcase
 
 # Write the web showcase to showcase.html and open it (macOS `open`, Linux `xdg-open`)
 run-topcoat:
-    cargo run -q -p legendary-topcoat --example html > showcase.html
+    cargo run -q -p dodai-topcoat --example html > showcase.html
     @(command -v open >/dev/null && open showcase.html) || (command -v xdg-open >/dev/null && xdg-open showcase.html) || echo "Wrote showcase.html"
 
 # ── Test ──────────────────────────────────────────────────────────────────────
@@ -73,19 +73,19 @@ test:
     cargo test --workspace --locked --doc
 
 test-core:
-    cargo test -p legendary-core
+    cargo test -p dodai-core
 
 test-ratatui:
-    cargo test -p legendary-ratatui
+    cargo test -p dodai-ratatui
 
 test-iced:
-    cargo test -p legendary-iced
+    cargo test -p dodai-iced
 
 test-gpui:
-    cargo test -p legendary-gpui
+    cargo test -p dodai-gpui
 
 test-topcoat:
-    cargo test -p legendary-topcoat
+    cargo test -p dodai-topcoat
 
 # Run Nu script tests
 test-nu: _check-nu
@@ -150,12 +150,12 @@ check-publish: _check-nu
 
 # Publish all crates in dependency order (core first)
 publish: check-all
-    cargo publish -p legendary-core
+    cargo publish -p dodai-core
     @echo "⏳ waiting for crates.io index…" && sleep 30
-    cargo publish -p legendary-ratatui
-    cargo publish -p legendary-iced
-    cargo publish -p legendary-gpui
-    cargo publish -p legendary-topcoat
+    cargo publish -p dodai-ratatui
+    cargo publish -p dodai-iced
+    cargo publish -p dodai-gpui
+    cargo publish -p dodai-topcoat
 
 # Bump, then push commit + tag (CI publishes and creates the GitHub release)
 release version: (bump version)

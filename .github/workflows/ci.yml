@@ -33,8 +33,8 @@ jobs:
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy -p legendary-core -p legendary-ratatui -p legendary-topcoat --all-targets -- -D warnings
-      - run: cargo test -p legendary-core -p legendary-ratatui -p legendary-topcoat
+      - run: cargo clippy -p dodai-core -p dodai-ratatui -p dodai-topcoat --all-targets -- -D warnings
+      - run: cargo test -p dodai-core -p dodai-ratatui -p dodai-topcoat
 
   # GUI crates (iced + gpui) need native libs on Linux.
   gui:
@@ -56,8 +56,8 @@ jobs:
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy -p legendary-iced -p legendary-gpui --all-targets -- -D warnings
-      - run: cargo test -p legendary-iced -p legendary-gpui
+      - run: cargo clippy -p dodai-iced -p dodai-gpui --all-targets -- -D warnings
+      - run: cargo test -p dodai-iced -p dodai-gpui
 
   nu-tests:
     name: nushell tests

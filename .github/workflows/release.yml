@@ -83,7 +83,7 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
-          for c in legendary-core legendary-ratatui legendary-iced legendary-gpui legendary-topcoat; do
+          for c in dodai-core dodai-ratatui dodai-iced dodai-gpui dodai-topcoat; do
             nu scripts/ci/publish_crate.nu "$c"
             sleep 20   # let the crates.io index catch up before dependants publish
           done

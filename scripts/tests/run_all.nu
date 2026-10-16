@@ -1,5 +1,5 @@
 #!/usr/bin/env nu
-# ── Legendary UI · Run All Nushell Tests ────────────────────────────────────────
+# ── Dodai UI · Run All Nushell Tests ────────────────────────────────────────
 #
 # Usage:
 #   nu scripts/tests/run_all.nu          # run every test_*.nu file
@@ -12,7 +12,7 @@ def main [--filter: string = ""] {
     let cyan   = (ansi cyan)
     let reset  = (ansi reset)
 
-    print $"($bold)($cyan)── Legendary UI · Nushell Test Suite ──($reset)"
+    print $"($bold)($cyan)── Dodai UI · Nushell Test Suite ──($reset)"
     print ""
 
     let test_dir = ($env.CURRENT_FILE | path dirname)

@@ -1,0 +1,19 @@
+[package]
+name         = "dodai-egui"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description  = "egui adapter for the Dodai UI design system"
+readme       = "README.md"
+keywords     = ["theme", "design-system", "egui", "cyberpunk"]
+categories   = ["gui"]
+
+[dependencies]
+dodai-core = { workspace = true }
+egui = "0.32"
+
+[dev-dependencies]
+eframe = "0.32"

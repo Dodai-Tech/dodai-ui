@@ -1,0 +1,19 @@
+[package]
+name         = "dodai-ratatui"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description  = "Ratatui adapter for the Dodai UI design system"
+readme       = "README.md"
+keywords     = ["theme", "design-system", "ratatui", "cyberpunk"]
+categories   = ["gui"]
+
+[dependencies]
+dodai-core = { workspace = true }
+ratatui = { workspace = true }
+
+[dev-dependencies]
+crossterm = { workspace = true }

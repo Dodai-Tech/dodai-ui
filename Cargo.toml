@@ -1,17 +1,17 @@
 [workspace]
 members = [
-    "crates/legendary-core",
-    "crates/legendary-ratatui",
-    "crates/legendary-iced",
-    "crates/legendary-gpui",
-    "crates/legendary-topcoat",
-    "crates/legendary-egui",
-    "crates/legendary-slint",
-    "crates/legendary-dioxus",
-    "crates/legendary-leptos",
-    "crates/legendary-yew",
-    "crates/legendary-bevy",
-    "crates/legendary-freya",
+    "crates/dodai-core",
+    "crates/dodai-ratatui",
+    "crates/dodai-iced",
+    "crates/dodai-gpui",
+    "crates/dodai-topcoat",
+    "crates/dodai-egui",
+    "crates/dodai-slint",
+    "crates/dodai-dioxus",
+    "crates/dodai-leptos",
+    "crates/dodai-yew",
+    "crates/dodai-bevy",
+    "crates/dodai-freya",
 ]
 resolver = "2"
 
@@ -20,7 +20,7 @@ version      = "0.1.0"
 edition      = "2021"
 authors      = ["Sorin Irimies <sorinirimies@gmail.com>"]
 license      = "MIT"
-repository   = "https://github.com/sorinirimies/legendary-ui"
+repository   = "https://github.com/sorinirimies/dodai-ui"
 rust-version = "1.85"
 
 # ── Shared dependency versions ─────────────────────────────────────────────────
@@ -35,18 +35,18 @@ iced      = { version = "0.14", features = ["advanced", "canvas"] }
 gpui      = "0.2.2"
 
 # Internal crates
-legendary-core    = { path = "crates/legendary-core",    version = "0.1.0" }
-legendary-ratatui = { path = "crates/legendary-ratatui", version = "0.1.0" }
-legendary-iced    = { path = "crates/legendary-iced",    version = "0.1.0" }
-legendary-gpui    = { path = "crates/legendary-gpui",    version = "0.1.0" }
-legendary-topcoat = { path = "crates/legendary-topcoat", version = "0.1.0" }
-legendary-egui    = { path = "crates/legendary-egui", version = "0.1.0" }
-legendary-slint   = { path = "crates/legendary-slint", version = "0.1.0" }
-legendary-dioxus  = { path = "crates/legendary-dioxus", version = "0.1.0" }
-legendary-leptos  = { path = "crates/legendary-leptos", version = "0.1.0" }
-legendary-yew     = { path = "crates/legendary-yew", version = "0.1.0" }
-legendary-bevy    = { path = "crates/legendary-bevy", version = "0.1.0" }
-legendary-freya   = { path = "crates/legendary-freya", version = "0.1.0" }
+dodai-core    = { path = "crates/dodai-core",    version = "0.1.0" }
+dodai-ratatui = { path = "crates/dodai-ratatui", version = "0.1.0" }
+dodai-iced    = { path = "crates/dodai-iced",    version = "0.1.0" }
+dodai-gpui    = { path = "crates/dodai-gpui",    version = "0.1.0" }
+dodai-topcoat = { path = "crates/dodai-topcoat", version = "0.1.0" }
+dodai-egui    = { path = "crates/dodai-egui", version = "0.1.0" }
+dodai-slint   = { path = "crates/dodai-slint", version = "0.1.0" }
+dodai-dioxus  = { path = "crates/dodai-dioxus", version = "0.1.0" }
+dodai-leptos  = { path = "crates/dodai-leptos", version = "0.1.0" }
+dodai-yew     = { path = "crates/dodai-yew", version = "0.1.0" }
+dodai-bevy    = { path = "crates/dodai-bevy", version = "0.1.0" }
+dodai-freya   = { path = "crates/dodai-freya", version = "0.1.0" }
 
 [profile.dev]
 opt-level = 0

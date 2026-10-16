@@ -17,11 +17,11 @@ def run [label: string, cmd: closure] {
 }
 
 def main [] {
-    print "── Legendary UI · pre-publish checks ──"
+    print "── Dodai UI · pre-publish checks ──"
     for c in (publish-order) {
         run $"doc ($c)" { cargo doc -p $c --no-deps }
     }
-    run "publish dry-run legendary-core" { cargo publish --dry-run --allow-dirty -p legendary-core }
+    run "publish dry-run dodai-core" { cargo publish --dry-run --allow-dirty -p dodai-core }
     for c in (publish-order) {
         run $"check ($c)" { cargo check -p $c }
     }

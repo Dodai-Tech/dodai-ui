@@ -1,0 +1,15 @@
+[package]
+name         = "dodai-topcoat"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description  = "Topcoat (web/CSS) adapter for the Dodai UI design system"
+readme       = "README.md"
+keywords     = ["theme", "design-system", "topcoat", "cyberpunk"]
+categories   = ["gui"]
+
+[dependencies]
+dodai-core = { workspace = true }

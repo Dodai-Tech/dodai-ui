@@ -1,4 +1,4 @@
-# Legendary UI
+# Dodai UI
 
 A **design system** — not just a colour switcher — shipped as one crate per UI framework.
 One token set (colour roles, typography, spacing, shape, glow/scanline effects, resolved
@@ -6,11 +6,11 @@ component styles) feeds four native adapters:
 
 | Crate | Framework | What you get |
 |---|---|---|
-| [`legendary-core`](crates/legendary-core) | — | `Theme`, `Palette`, tokens, `ThemeSwitcher`, WCAG contrast, ANSI-256 fallback |
-| [`legendary-ratatui`](crates/legendary-ratatui) | Ratatui 0.30 | `TuiTheme`: chamfered `╱ ╲` blocks, `◢ BUTTON ◤`, tabs, badges, inputs, status bar, `Scanlines`, `ThemeBadge` |
-| [`legendary-iced`](crates/legendary-iced) | Iced 0.14 | `IcedTheme`: native `iced::Theme`, button/container/text-input/text styles with neon glow, canvas `ChamferFrame` |
-| [`legendary-gpui`](crates/legendary-gpui) | GPUI 0.2 | `Global` theme store, `cx.legendary()`, `LegendaryStyled` (`.lg_panel()`, `.lg_button()`, `.lg_input()`) |
-| [`legendary-topcoat`](crates/legendary-topcoat) | Topcoat / any SSR web | CSS custom properties, `.lg-btn/.lg-panel/.lg-input/.lg-tag/.lg-tabs/.lg-table`, `clip-path` chamfers, JS theme switcher |
+| [`dodai-core`](crates/dodai-core) | — | `Theme`, `Palette`, tokens, `ThemeSwitcher`, WCAG contrast, ANSI-256 fallback |
+| [`dodai-ratatui`](crates/dodai-ratatui) | Ratatui 0.30 | `TuiTheme`: chamfered `╱ ╲` blocks, `◢ BUTTON ◤`, tabs, badges, inputs, status bar, `Scanlines`, `ThemeBadge` |
+| [`dodai-iced`](crates/dodai-iced) | Iced 0.14 | `IcedTheme`: native `iced::Theme`, button/container/text-input/text styles with neon glow, canvas `ChamferFrame` |
+| [`dodai-gpui`](crates/dodai-gpui) | GPUI 0.2 | `Global` theme store, `cx.dodai()`, `DodaiStyled` (`.lg_panel()`, `.lg_button()`, `.lg_input()`) |
+| [`dodai-topcoat`](crates/dodai-topcoat) | Topcoat / any SSR web | CSS custom properties, `.lg-btn/.lg-panel/.lg-input/.lg-tag/.lg-tabs/.lg-table`, `clip-path` chamfers, JS theme switcher |
 
 ## Themes
 
@@ -36,13 +36,13 @@ Every theme is contrast-tested (text ≥ 7:1, primary label ≥ 4.5:1).
 
 ```toml
 [dependencies]
-legendary-core    = "0.1"
-legendary-ratatui = "0.1"   # or -iced / -gpui / -topcoat
+dodai-core    = "0.1"
+dodai-ratatui = "0.1"   # or -iced / -gpui / -topcoat
 ```
 
 ```rust
-use legendary_core::{ThemeSwitcher, ButtonVariant, ControlState};
-use legendary_ratatui::TuiTheme;
+use dodai_core::{ThemeSwitcher, ButtonVariant, ControlState};
+use dodai_ratatui::TuiTheme;
 
 let mut sw = ThemeSwitcher::new();           // all built-in themes
 let mut tui = TuiTheme::new(sw.current().clone());
@@ -63,7 +63,7 @@ just run-topcoat   # writes showcase.html and opens it
 
 ## Adding a theme
 
-1. Add `crates/legendary-core/src/themes/<name>.rs` returning `Theme`s (copy `cyberpunk.rs`).
+1. Add `crates/dodai-core/src/themes/<name>.rs` returning `Theme`s (copy `cyberpunk.rs`).
 2. Register it in `themes::all()` — every adapter picks it up automatically.
 3. `just test` — the shared contrast/uniqueness tests run on it.
 

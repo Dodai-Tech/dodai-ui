@@ -1,8 +1,8 @@
 # Component coverage
 
 Goal: every Material Design 3 component (https://m3.material.io/components) plus
-Legendary extras, token-driven so any theme (Cyberpunk first, Material 3 planned)
-can restyle them. Reference implementation: `legendary-gpui`.
+Dodai extras, token-driven so any theme (Cyberpunk first, Material 3 planned)
+can restyle them. Reference implementation: `dodai-gpui`.
 
 Legend: ✅ done · 🟡 partial · ⬜ todo
 
@@ -35,8 +35,8 @@ Legend: ✅ done · 🟡 partial · ⬜ todo
 | Tooltips | ✅ | |
 | Top app bar / Toolbars | 🟡 `TopAppBar` | toolbar ⬜ |
 
-Legendary extras: `Knob` (rotary), `Kbd`, `Avatar`, `Table`, `Accordion`,
+Dodai extras: `Knob` (rotary), `Kbd`, `Avatar`, `Table`, `Accordion`,
 `Alert`, `Skeleton`, `ThemeSelector`, `Scanlines`.
 
 Planned theme: **Material 3** (tonal palette, rounded shapes, no glow) — built with
-`legendary_core::themes::Spec`; needs elevation/state-layer tokens in core.
+`dodai_core::themes::Spec`; needs elevation/state-layer tokens in core.

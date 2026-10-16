@@ -1,11 +1,11 @@
 #!/usr/bin/env nu
 # ──────────────────────────────────────────────────────────────────────────────
-# Legendary UI — Bump workspace version
+# Dodai UI — Bump workspace version
 # ──────────────────────────────────────────────────────────────────────────────
 # Usage: nu scripts/bump_version.nu <new_version>
 #
 #   1. Validates semver.
-#   2. Updates workspace.package.version + internal legendary-* dep versions.
+#   2. Updates workspace.package.version + internal dodai-* dep versions.
 #   3. fmt, clippy, test.
 #   4. Refreshes Cargo.lock and regenerates CHANGELOG.md via git-cliff.
 #   5. Commits and tags vX.Y.Z.
