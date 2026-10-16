@@ -44,7 +44,7 @@ Beyond M3 (gpui): `TreeView`, `Table` (sort + select), `Combobox`, `NumberSteppe
 Charts (gpui, `charts.rs`, palette `series` colours, glow on lines, themed bar shape):
 `LineChart` (area/smooth), `BarChart` (grouped/stacked/horizontal), `PieChart`
 (+ donut), `Sparkline`, `Gauge`, `RadarChart`, `ScatterPlot`, `Heatmap`, `Legend`.
-More (`charts_extra.rs`): `StackedAreaChart`, `Histogram`, `Waterfall`, `Funnel`,
+More (`charts_trend.rs`, `charts_flow.rs`, `charts_distribution.rs`, `charts_part_whole.rs`): `StackedAreaChart`, `Histogram`, `Waterfall`, `Funnel`,
 `Candlestick`, `BoxPlot`, `RadialBar`, `BubbleChart`, `Treemap`.
 Config: `.title()`, `.format()`, `.height()`; Line: `.y_range()`, `.stepped()`,
 `.stroke_width()`, `.grid()`; Bar: `.max()`, `.value_labels()`, `.bar_width()`.

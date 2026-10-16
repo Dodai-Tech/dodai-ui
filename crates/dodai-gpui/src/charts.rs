@@ -9,7 +9,7 @@ use crate::paint::{glow_layers, scale_alpha, shaped, ShapeStyle};
 use crate::panel::DodaiTooltip;
 use crate::text::first_family;
 use crate::{hsla, theme_of};
-use dodai_core::{Color, Theme};
+use dodai_core::{Color, Theme, Tone};
 use gpui::{
     canvas, div, point, px, relative, App, Bounds, Hsla, InteractiveElement, IntoElement,
     ParentElement, PathBuilder, Pixels, RenderOnce, SharedString, StatefulInteractiveElement,
@@ -368,6 +368,47 @@ pub(crate) fn titled(t: &Theme, title: Option<SharedString>, body: gpui::Div) ->
             .child(body),
     }
 }
+
+pub(crate) fn rect(x: f32, y: f32, w: f32, h: f32) -> [(f32, f32); 4] {
+    [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
+}
+
+pub(crate) fn up_color(t: &Theme) -> Hsla {
+    hsla(t.palette.tone(Tone::Success))
+}
+pub(crate) fn down_color(t: &Theme) -> Hsla {
+    hsla(t.palette.tone(Tone::Danger))
+}
+
+macro_rules! chart_cfg {
+    ($ty:ident) => {
+        impl $ty {
+            /// Chart height in px.
+            pub fn height(mut self, h: f32) -> Self {
+                self.height = h;
+                self
+            }
+            /// Title above the chart.
+            pub fn title(mut self, t: impl Into<SharedString>) -> Self {
+                self.title = Some(t.into());
+                self
+            }
+            /// Custom number formatter for labels and tooltips.
+            pub fn format(mut self, f: impl Fn(f32) -> String + 'static) -> Self {
+                self.fmt = Some(Rc::new(f));
+                self
+            }
+        }
+    };
+}
+
+pub(crate) fn labels_of<S: Into<SharedString>>(
+    l: impl IntoIterator<Item = S>,
+) -> Vec<SharedString> {
+    l.into_iter().map(Into::into).collect()
+}
+
+pub(crate) use chart_cfg;
 
 // ─────────────────────────────── LineChart ───────────────────────────────
 
@@ -1545,6 +1586,14 @@ impl RenderOnce for Heatmap {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn step_points_stairs() {
+        assert_eq!(
+            step_points(&[(0.0, 1.0), (2.0, 3.0)]),
+            vec![(0.0, 1.0), (2.0, 1.0), (2.0, 3.0)]
+        );
+    }
+
     use super::*;
 
     #[test]
