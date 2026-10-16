@@ -12,16 +12,23 @@
 //! let _style = tui.selected();
 //! ```
 
+mod controls;
+mod input;
+mod list;
+mod shape;
 mod widgets;
 
-pub use widgets::{Scanlines, ThemeBadge};
+pub use controls::{Divider, Progress, Tag, Toggle, ToggleKind};
+pub use input::InputField;
+pub use list::SelectList;
+pub use shape::{border_set, cuts_bottom_right, CHAMFER_BORDER, ROUNDED_BORDER, SQUARE_BORDER};
+pub use widgets::{dim_color, Scanlines, ThemeBadge};
 
-use legendary_core::{ButtonVariant, Color as LColor, ControlState, Theme, Tone};
+use legendary_core::{ButtonVariant, Color as LColor, ControlState, ShapeKind, Theme, Tone};
 use ratatui::{
     style::{Color, Modifier, Style},
-    symbols::border,
     text::{Line, Span, Text},
-    widgets::{Block, BorderType, Borders},
+    widgets::{Block, Borders},
 };
 
 /// How many colours the terminal can show.
@@ -43,18 +50,6 @@ impl ColorDepth {
         }
     }
 }
-
-/// Cut-corner border: only the bottom-right corner is cut (`╱`), like cyberpunk.net buttons.
-pub const CHAMFER_BORDER: border::Set<'static> = border::Set {
-    top_left: "┌",
-    top_right: "┐",
-    bottom_left: "└",
-    bottom_right: "╱",
-    vertical_left: "│",
-    vertical_right: "│",
-    horizontal_top: "─",
-    horizontal_bottom: "─",
-};
 
 /// Ratatui view of a [`Theme`].
 #[derive(Debug, Clone)]
@@ -184,7 +179,8 @@ impl TuiTheme {
 
     // ── Components ────────────────────────────────────────────────────────
 
-    fn label(&self, s: &str) -> String {
+    /// Apply the theme's `uppercase_labels` token.
+    pub fn label(&self, s: &str) -> String {
         if self.theme.typography.uppercase_labels {
             s.to_uppercase()
         } else {
@@ -192,11 +188,11 @@ impl TuiTheme {
         }
     }
 
-    /// Themed panel. Chamfered corners when the theme's `shape.chamfer > 0`.
+    /// Themed panel; border glyphs follow `Shape::kind()` (square / rounded / chamfered corners).
     pub fn block<'a>(&self, title: impl Into<String>, focused: bool) -> Block<'a> {
         let t = self.theme.panel(focused);
         let title = self.label(&title.into());
-        let b = Block::new()
+        Block::new()
             .borders(Borders::ALL)
             .style(Style::new().bg(self.color(t.background)))
             .border_style(Style::new().fg(self.color(t.border)))
@@ -209,12 +205,13 @@ impl TuiTheme {
                         .add_modifier(Modifier::BOLD),
                 ),
                 Span::styled(" ", Style::new()),
-            ]));
-        if self.theme.shape.chamfer > 0.0 {
-            b.border_set(CHAMFER_BORDER)
-        } else {
-            b.border_type(BorderType::Plain)
-        }
+            ]))
+            .border_set(border_set(&self.theme.shape))
+    }
+
+    /// True when the theme asks for CRT scanlines (`effects.scanlines`).
+    pub fn scanlines_enabled(&self) -> bool {
+        self.theme.effects.scanlines
     }
 
     /// Resolved button style (fg/bg/border-as-bg) for a state.
@@ -253,7 +250,11 @@ impl TuiTheme {
                 Span::styled("▌", edge)
             },
             Span::styled(format!(" {label} "), body),
-            Span::styled("◤", edge),
+            if cuts_bottom_right(&self.theme.shape) {
+                Span::styled("◤", edge)
+            } else {
+                Span::styled(" ", body)
+            },
         ])
     }
 
@@ -273,16 +274,22 @@ impl TuiTheme {
         let w = label.chars().count() + 6;
         let inner = w - 2;
         let body = self.button_style(variant, state);
+        let cut = cuts_bottom_right(&self.theme.shape);
+        let kind = self.theme.shape.kind();
         match t.background {
             Some(bg) => {
                 let fill = Style::new().bg(self.color(bg));
-                let cut = Style::new().fg(self.color(bg));
+                let cut_style = Style::new().fg(self.color(bg));
                 Text::from(vec![
                     Line::from(Span::styled(" ".repeat(w), fill)),
                     Line::from(Span::styled(format!("{label:^w$}"), body)),
                     Line::from(vec![
                         Span::styled(" ".repeat(w - 1), fill),
-                        Span::styled("◤", cut),
+                        if cut {
+                            Span::styled("◤", cut_style)
+                        } else {
+                            Span::styled(" ", fill)
+                        },
                     ]),
                 ])
             }
@@ -290,7 +297,7 @@ impl TuiTheme {
                 let edge_c = self.color(t.border.unwrap_or(t.foreground));
                 let raised = self.color(self.theme.palette.surface_raised);
                 let edge = Style::new().fg(edge_c).bg(raised);
-                let cut = Style::new().fg(edge_c);
+                let cut_style = Style::new().fg(edge_c);
                 let line = |l: &str, mid: &str, r: &str, rs: Style| {
                     Line::from(vec![
                         Span::styled(l.to_string(), edge),
@@ -298,14 +305,21 @@ impl TuiTheme {
                         Span::styled(r.to_string(), rs),
                     ])
                 };
+                // Rounded themes use box-drawing arcs; others quadrant blocks.
+                let (tl, th, tr, bl, bh, br, ml, mr) = if kind == ShapeKind::Rounded {
+                    ("╭", "─", "╮", "╰", "─", "╯", "│", "│")
+                } else {
+                    ("▛", "▀", "▜", "▙", "▄", "▟", "▌", "▐")
+                };
+                let (br, brs) = if cut { ("◤", cut_style) } else { (br, edge) };
                 Text::from(vec![
-                    line("▛", &"▀".repeat(inner), "▜", edge),
+                    line(tl, &th.repeat(inner), tr, edge),
                     Line::from(vec![
-                        Span::styled("▌", edge),
+                        Span::styled(ml, edge),
                         Span::styled(format!("{label:^inner$}"), body.bg(raised)),
-                        Span::styled("▐", edge),
+                        Span::styled(mr, edge),
                     ]),
-                    line("▙", &"▄".repeat(inner), "◤", cut),
+                    line(bl, &bh.repeat(inner), br, brs),
                 ])
             }
         }
@@ -322,7 +336,11 @@ impl TuiTheme {
                 let edge = Style::new().fg(hl.bg.unwrap_or_default());
                 spans.push(Span::styled(" ", hl));
                 spans.push(Span::styled(text, hl));
-                spans.push(Span::styled("◤", edge));
+                if cuts_bottom_right(&self.theme.shape) {
+                    spans.push(Span::styled("◤", edge));
+                } else {
+                    spans.push(Span::styled(" ", hl));
+                }
             } else {
                 spans.push(Span::styled(format!(" {text} "), self.muted()));
             }
@@ -360,26 +378,15 @@ impl TuiTheme {
 
     /// Text-input line with placeholder and block cursor when focused.
     pub fn input<'a>(&self, value: &str, placeholder: &str, focused: bool) -> Line<'a> {
-        let t = self.theme.input(focused);
-        let mut spans = vec![Span::styled("▸ ", Style::new().fg(self.color(t.border)))];
-        if value.is_empty() {
-            spans.push(Span::styled(
-                placeholder.to_string(),
-                Style::new().fg(self.color(t.placeholder)),
-            ));
-        } else {
-            spans.push(Span::styled(
-                value.to_string(),
-                Style::new().fg(self.color(t.text)),
-            ));
-        }
-        if focused {
-            spans.push(Span::styled(" ", self.cursor()));
-        }
-        Line::from(spans)
+        InputField::new(self, value)
+            .placeholder(placeholder)
+            .focused(focused)
+            .line()
     }
 }
 
+#[cfg(test)]
+mod component_tests;
 #[cfg(test)]
 mod tests {
     use super::*;

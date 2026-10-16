@@ -31,7 +31,8 @@ impl<'a> Scanlines<'a> {
     }
 }
 
-fn dim(c: Color, k: f32) -> Color {
+/// Darken an RGB colour by `k` (`0.0..=1.0`); non-RGB colours pass through.
+pub fn dim_color(c: Color, k: f32) -> Color {
     match c {
         Color::Rgb(r, g, b) => {
             let f = |v: u8| (v as f32 * (1.0 - k)).round() as u8;
@@ -49,7 +50,7 @@ impl Widget for Scanlines<'_> {
         for y in (area.top()..area.bottom()).filter(|y| y % 2 == 1) {
             for x in area.left()..area.right() {
                 if let Some(cell) = buf.cell_mut((x, y)) {
-                    cell.set_fg(dim(cell.fg, self.strength));
+                    cell.set_fg(dim_color(cell.fg, self.strength));
                 }
             }
         }
