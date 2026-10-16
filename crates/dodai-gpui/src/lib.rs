@@ -28,6 +28,7 @@
 
 pub mod button;
 pub mod carousel;
+pub mod charts;
 pub mod command;
 pub mod controls;
 pub mod data;
@@ -61,6 +62,10 @@ mod testing;
 
 pub use button::Button;
 pub use carousel::{window_start, Carousel};
+pub use charts::{
+    bar_max, fmt_num, heat_color, nice_ticks, norm, pie_fractions, polar, smooth_points, BarChart,
+    Gauge, Heatmap, Legend, LineChart, PieChart, RadarChart, ScatterPlot, Series, Sparkline,
+};
 pub use command::{fuzzy_filter, Combobox, Command, CommandPalette};
 pub use controls::{Checkbox, Direction, ProgressBar, Radio, Slider, Toggle};
 pub use data::{Avatar, Badge, Chip, Kbd, Table};

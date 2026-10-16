@@ -8,17 +8,17 @@ Legend: ✅ done · 🟡 partial · ⬜ todo
 
 | M3 component | gpui | Notes |
 |---|---|---|
-| Badges | ✅ `Badge` | |
-| Bottom app bar | ⬜ | `Navigation` bar exists |
-| Bottom sheets | ⬜ | |
+| Badges | ✅ `Badge`, `IconBadge` | |
+| Bottom app bar | ✅ `BottomAppBar` | |
+| Bottom sheets | ✅ `BottomSheet` | |
 | Buttons (common, icon, segmented) | ✅ `Button`, `IconButton`, `Segmented` | |
 | FAB / Extended FAB | ✅ `Fab` | |
 | Cards | ✅ `Card` | elevated/filled/outlined |
-| Carousel | ⬜ | |
+| Carousel | ✅ `Carousel` | |
 | Checkbox | ✅ | |
 | Chips (assist/filter/input/suggestion) | 🟡 `Chip` | |
-| Date / Time pickers | ⬜ | |
-| Dialogs | ✅ `Dialog` | full-screen ⬜ |
+| Date / Time pickers | ✅ `DatePicker`, `TimePicker` | |
+| Dialogs | ✅ `Dialog`, `FullScreenDialog` | |
 | Divider | ✅ | |
 | Lists | ✅ `ListItem` | |
 | Menus | ✅ `Menu`, `Select` | |
@@ -26,14 +26,25 @@ Legend: ✅ done · 🟡 partial · ⬜ todo
 | Progress indicators | ✅ `ProgressBar`, `IndeterminateBar`, `Spinner` | |
 | Radio button | ✅ | |
 | Search | 🟡 `SearchBar` | shell only; wire `TextInput` |
-| Side sheets | ⬜ | |
-| Sliders | ✅ `Slider` (horizontal/vertical) | range slider ⬜ |
-| Snackbar | ✅ `Toast` | |
+| Side sheets | ✅ `SideSheet` | |
+| Sliders | ✅ `Slider`, `RangeSlider` | |
+| Snackbar | ✅ `Toast`, `Snackbar` (with action) | |
 | Switch | ✅ `Toggle` | |
 | Tabs | ✅ | |
 | Text fields | ✅ `InputBox`, `TextInput` | |
-| Tooltips | ✅ | |
-| Top app bar / Toolbars | 🟡 `TopAppBar` | toolbar ⬜ |
+| Tooltips | ✅ `DodaiTooltip`, `RichTooltip` | |
+| Top app bar / Toolbars | ✅ `TopAppBar`, `Toolbar` | |
+
+| Search view | ✅ `SearchView` (+ `SearchBar` shell) | |
+
+Beyond M3 (gpui): `TreeView`, `Table` (sort + select), `Combobox`, `NumberStepper`,
+`ColorPicker`, `FileDropZone`, `Timeline`, `Rating`, `TagField`, `SplitPane`,
+`CommandPalette`, `EmptyState`.
+
+Charts (gpui, `charts.rs`, palette `series` colours, glow on lines, themed bar shape):
+`LineChart` (area/smooth), `BarChart` (grouped/stacked/horizontal), `PieChart`
+(+ donut), `Sparkline`, `Gauge`, `RadarChart`, `ScatterPlot`, `Heatmap`, `Legend`.
+Showcase: `cargo run -p dodai-gpui --example gpui_showcase_more`.
 
 Dodai extras: `Knob` (rotary), `Kbd`, `Avatar`, `Table`, `Accordion`,
 `Alert`, `Skeleton`, `ThemeSelector`, `Scanlines`.
