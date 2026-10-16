@@ -10,12 +10,12 @@ use gpui::{
 };
 use legendary_core::{ButtonVariant, Theme, Tone};
 use legendary_gpui::{
-    cycle_next, cycle_prev, glow_intensity, hsla, install, scanlines_enabled, set_glow_intensity,
-    set_scanlines, theme_of, ActiveLegendary, Button, Card, CardVariant, Checkbox,
-    DesignSystemSelector, Direction, Divider, Fab, FabSize, Heading, IconButton, InputBox, Knob,
-    Label, LegendaryStyled, LegendaryTooltip, ListItem, Mono, Muted, NavItem, NavLayout,
-    Navigation, Panel, ProgressBar, Radio, Scanlines, SearchBar, Slider, Tabs, Tag, ThemeSelector,
-    Toggle, TopAppBar,
+    cycle_next, cycle_prev, family_title, glow_intensity, hsla, install, scanlines_enabled,
+    set_glow_intensity, set_scanlines, theme_of, ActiveLegendary, Button, Card, CardVariant,
+    Checkbox, DesignSystemSelector, Direction, Divider, Fab, FabSize, Heading, IconButton,
+    InputBox, Knob, Label, LegendaryStyled, LegendaryTooltip, ListItem, Mono, Muted, NavItem,
+    NavLayout, Navigation, Panel, ProgressBar, Radio, Scanlines, SearchBar, Slider, Tabs, Tag,
+    ThemeSelector, Toggle, TopAppBar,
 };
 
 struct Showcase {
@@ -297,12 +297,13 @@ impl Render for Showcase {
             );
         }
 
-        let theme_panel = section("Theme")
+        let family = family_title(cx.legendary().switcher().current_family());
+        let ds_panel = section("Design system")
             .focused(true)
+            .child(DesignSystemSelector::new("ds-select"));
+        let theme_panel = Panel::new().title(family)
             .child(
                 row()
-                    .child(Label::new("Design system"))
-                    .child(DesignSystemSelector::new("ds-select"))
                     .child(Label::new("Theme"))
                     .child(ThemeSelector::new("theme-select")),
             )
@@ -350,7 +351,7 @@ impl Render for Showcase {
             .gap(gap)
             .p(px(t.spacing.xl))
             .child(Heading::new(theme_name).level(1))
-            .child(Muted::new("Wake up, samurai. We have a city to burn."))
+            .child(ds_panel)
             .child(theme_panel)
             .child(section("Buttons").child(buttons))
             .child(section("Tags").child(tags))
