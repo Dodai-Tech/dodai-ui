@@ -1148,7 +1148,7 @@ impl Render for Showcase {
                     .flex_1()
                     .h_full()
                     .overflow_y_scroll()
-                    .child(body),
+                    .child(body.id(("body", self.cat))),
             )
             .child(Scanlines::new())
     }
