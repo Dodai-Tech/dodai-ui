@@ -1305,16 +1305,14 @@ impl Render for Showcase {
             };
             let mut chips = div()
                 .flex()
-                .flex_col()
+                .flex_wrap()
+                .justify_end()
                 .gap(px(4.0))
-                .w(px(120.0))
-                .flex_none()
-                .child(
-                    div()
-                        .text_size(px(10.0))
-                        .text_color(hsla(t.palette.text_muted))
-                        .child("Animations"),
-                );
+                .max_w(px(360.0));
+            let label = div()
+                .text_size(px(10.0))
+                .text_color(hsla(t.palette.text_muted))
+                .child("Animations");
             let me_g = me.clone();
             chips = chips.child(
                 chip(("sec-g", shown as u32), "Global", kind.is_none()).on_click(
@@ -1348,12 +1346,18 @@ impl Render for Showcase {
                 Some(set) => dodai_gpui::EntryScope::new(set, el).into_any_element(),
             };
             body = body.child(
-                div()
-                    .flex()
-                    .items_start()
-                    .gap(px(12.0))
-                    .child(div().flex_1().min_w_0().child(content))
-                    .child(chips),
+                div().relative().w_full().child(content).child(
+                    div()
+                        .absolute()
+                        .top(px(6.0))
+                        .right(px(8.0))
+                        .flex()
+                        .flex_col()
+                        .items_end()
+                        .gap(px(2.0))
+                        .child(label)
+                        .child(chips),
+                ),
             );
         }
         if shown == 0 {
