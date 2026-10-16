@@ -14,7 +14,8 @@ use legendary_gpui::{
     set_scanlines, theme_of, ActiveLegendary, Button, Card, CardVariant, Checkbox, Direction,
     Divider, Fab, FabSize, Heading, IconButton, InputBox, Knob, Label, LegendaryStyled,
     LegendaryTooltip, ListItem, Mono, Muted, NavItem, NavLayout, Navigation, Panel, ProgressBar,
-    Radio, Scanlines, SearchBar, Slider, Tabs, Tag, ThemeSwitcherBar, Toggle, TopAppBar,
+    Radio, Scanlines, SearchBar, Slider, Tabs, Tag, ThemeSelector, ThemeSwitcherBar, Toggle,
+    TopAppBar,
 };
 
 struct Showcase {
@@ -195,7 +196,7 @@ impl Render for Showcase {
             .flex_col()
             .gap(gap)
             .child(
-                TopAppBar::new("Night City")
+                TopAppBar::new("Cyberpunk")
                     .leading("☰")
                     .child(IconButton::new("ab-search", "⌕"))
                     .child(IconButton::new("ab-more", "⋮")),
@@ -299,6 +300,11 @@ impl Render for Showcase {
         let theme_panel = section("Theme")
             .focused(true)
             .child(ThemeSwitcherBar::new("themes"))
+            .child(
+                row()
+                    .child(Label::new("Theme"))
+                    .child(ThemeSelector::new("theme-select")),
+            )
             .child(
                 row()
                     .child(Label::new("Glow intensity"))
