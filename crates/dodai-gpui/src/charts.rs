@@ -1091,10 +1091,19 @@ impl RenderOnce for PieChart {
                     if z <= a {
                         continue;
                     }
-                    {
-                        let ring = r * (1.0 - hole);
-                        let p = turn_arc(c, c, r - ring / 2.0, a, z);
-                        stroke(w, b.origin, &p, ring, *col, false);
+                    // Annular sectors as small filled quads: thick strokes
+                    // leave mitre artefacts and seams, fills do not.
+                    let r_in = r * hole;
+                    let n = (((z - a) * 24.0).ceil() as usize).max(1);
+                    for k in 0..n {
+                        let w0 = a + (z - a) * k as f32 / n as f32;
+                        let w1 = a + (z - a) * (k + 1) as f32 / n as f32;
+                        let w1 = if k + 1 == n { w1 } else { w1 + 0.001 };
+                        let mut p = turn_arc(c, c, r, w0, w1);
+                        let mut inner = turn_arc(c, c, r_in, w0, w1);
+                        inner.reverse();
+                        p.extend(inner);
+                        fill(w, b.origin, &p, *col);
                     }
                 }
             },
