@@ -1,9 +1,28 @@
 //! # legendary-iced
 //!
-//! Turns a [`legendary_core::Theme`] into Iced styling: a native
-//! [`iced::Theme`], style closures for buttons / containers / text inputs /
-//! text, a glowing hard-edged look, and a canvas [`ChamferFrame`] for
-//! cut-corner panels that plain `border.radius` cannot express.
+//! A complete, stylable component library for [iced] 0.14 driven **only** by
+//! [`legendary_core::Theme`] tokens. There is no branching on theme id/name:
+//! shape ([`ShapeKind`](legendary_core::ShapeKind)), glow, hard shadow,
+//! typography and spacing all come from tokens, so any theme added to
+//! `legendary-core` (rounded, square, light, no-glow…) just works.
+//!
+//! Chamfered shapes cannot be expressed by iced's `border.radius`, so those
+//! use small canvas widgets ([`ShapedButton`], [`ShapedFrame`]); rounded and
+//! square shapes use native widgets with style functions.
+//!
+//! | Area | API on [`IcedTheme`] |
+//! |------|----------------------|
+//! | buttons | [`button_view`](IcedTheme::button_view), [`shaped_button`](IcedTheme::shaped_button), [`button`](IcedTheme::button) |
+//! | panel / card | [`panel_view`](IcedTheme::panel_view), [`panel`](IcedTheme::panel), [`shaped_box`](IcedTheme::shaped_box) |
+//! | tag / badge | [`tag`](IcedTheme::tag) |
+//! | tabs | [`tabs`](IcedTheme::tabs), [`tab_style`](IcedTheme::tab_style) |
+//! | toggler / checkbox / radio | [`toggler`](IcedTheme::toggler), [`checkbox`](IcedTheme::checkbox), [`radio`](IcedTheme::radio) |
+//! | progress / slider | [`progress`](IcedTheme::progress), [`slider`](IcedTheme::slider) |
+//! | inputs | [`text_input`](IcedTheme::text_input), [`pick_list`](IcedTheme::pick_list), [`menu`](IcedTheme::menu) |
+//! | lists | [`list_item`](IcedTheme::list_item), [`list_item_style`](IcedTheme::list_item_style) |
+//! | misc | [`divider`](IcedTheme::divider), [`scrollable`](IcedTheme::scrollable), [`tooltip_style`](IcedTheme::tooltip_style), [`tooltip`](IcedTheme::tooltip) |
+//! | text | [`heading_text`](IcedTheme::heading_text), [`label_text`](IcedTheme::label_text), [`body_text`](IcedTheme::body_text), [`muted_text`](IcedTheme::muted_text), [`mono_text`](IcedTheme::mono_text) |
+//! | effects | [`scanlines`](IcedTheme::scanlines) |
 //!
 //! ```no_run
 //! use iced::widget::{button, text};
@@ -12,26 +31,47 @@
 //!
 //! let lt = IcedTheme::new(Theme::default());
 //! # #[derive(Clone)] enum Msg { Go }
-//! let _btn: iced::Element<Msg> = button(text("JACK IN"))
-//!     .style(lt.button(ButtonVariant::Primary))
+//! let _btn: iced::Element<Msg> = lt.button_view("Jack in", ButtonVariant::Primary, Some(Msg::Go));
+//! let _native: iced::Element<Msg> = button(text("Native"))
+//!     .style(lt.button(ButtonVariant::Outline))
 //!     .on_press(Msg::Go)
 //!     .into();
 //! // app.theme() => lt.iced_theme()
 //! ```
+//!
+//! Note: iced has no letter-spacing support, so `typography.label_tracking`
+//! is not applied; fonts stay on iced defaults (family names in tokens are not
+//! loaded).
+//!
+//! [iced]: https://iced.rs
 
-mod chamfer;
+mod button;
+mod controls;
+mod frame;
+mod geometry;
+mod inputs;
+mod list;
+mod panel;
+mod scanlines;
 mod shaped_button;
+mod tabs;
+mod tag;
+mod text;
 
-pub use chamfer::{chamfer_frame, chamfer_points, ChamferFrame};
-pub use shaped_button::{ButtonState, ChamferButton, ShapedColors};
+#[cfg(test)]
+mod testutil;
+
+pub use frame::{shaped_frame, BoxStyle, ShapedFrame};
+pub use geometry::ShapeGeom;
+#[allow(deprecated)]
+pub use shaped_button::ChamferButton;
+pub use shaped_button::{ButtonState, ShapedButton, ShapedColors};
 
 use iced::{
-    border::Border,
-    theme::Palette,
-    widget::{button, container, text, text_input},
-    Background, Color, Font, Shadow, Theme as IcedBaseTheme, Vector,
+    border::Border, theme::Palette, widget::container, Background, Color, Font, Shadow,
+    Theme as IcedBaseTheme, Vector,
 };
-use legendary_core::{ButtonTokens, ButtonVariant, Color as LColor, ControlState, Theme, Tone};
+use legendary_core::{Color as LColor, Theme};
 
 /// Token colour → Iced colour.
 pub fn color(c: LColor) -> Color {
@@ -41,7 +81,7 @@ pub fn color(c: LColor) -> Color {
 /// Iced view of a [`Theme`].
 #[derive(Debug, Clone)]
 pub struct IcedTheme {
-    theme: Theme,
+    pub(crate) theme: Theme,
 }
 
 impl IcedTheme {
@@ -73,7 +113,7 @@ impl IcedTheme {
         )
     }
 
-    /// Body font (first family in the token list; falls back to the default font).
+    /// Body font (iced default; token family names are not loaded).
     pub fn font(&self) -> Font {
         Font::DEFAULT
     }
@@ -83,98 +123,33 @@ impl IcedTheme {
         Font::MONOSPACE
     }
 
-    fn border(&self, c: LColor) -> Border {
+    /// Border of `c` with the theme's width and (native) radius.
+    pub(crate) fn border(&self, c: LColor) -> Border {
         Border {
             color: color(c),
             width: self.theme.shape.border_width,
-            radius: self.theme.shape.radius.into(),
+            radius: self.radius().into(),
         }
     }
 
-    fn glow(&self, on: bool) -> Shadow {
+    /// Native shadow: glow if `glow` and enabled, else hard shadow if `hard`
+    /// and `effects.hard_shadow > 0`, else none.
+    pub(crate) fn shadow(&self, glow: bool, hard: bool) -> Shadow {
         let e = &self.theme.effects;
-        if on && e.glow_enabled() {
+        if glow && e.glow_enabled() {
             Shadow {
                 color: color(e.glow_color()),
                 offset: Vector::ZERO,
                 blur_radius: e.glow_radius(),
             }
+        } else if hard && e.hard_shadow > 0.0 {
+            Shadow {
+                color: Color::from_rgba(0.0, 0.0, 0.0, 0.5),
+                offset: Vector::new(e.hard_shadow, e.hard_shadow),
+                blur_radius: 0.0,
+            }
         } else {
             Shadow::default()
-        }
-    }
-
-    /// Button style closure for `.style(...)`.
-    pub fn button(
-        &self,
-        variant: ButtonVariant,
-    ) -> impl Fn(&IcedBaseTheme, button::Status) -> button::Style + 'static {
-        let tok = |s| self.theme.button(variant, s);
-        let (idle, hover, press, off) = (
-            tok(ControlState::Idle),
-            tok(ControlState::Hovered),
-            tok(ControlState::Pressed),
-            tok(ControlState::Disabled),
-        );
-        let this = self.clone();
-        move |_t, status| {
-            let (t, lit): (ButtonTokens, bool) = match status {
-                button::Status::Active => (idle, false),
-                button::Status::Hovered => (hover, true),
-                button::Status::Pressed => (press, true),
-                button::Status::Disabled => (off, false),
-            };
-            button::Style {
-                background: t.background.map(|c| Background::Color(color(c))),
-                text_color: color(t.foreground),
-                border: match t.border {
-                    Some(c) => this.border(c),
-                    None => Border {
-                        radius: this.theme.shape.radius.into(),
-                        ..Border::default()
-                    },
-                },
-                shadow: this.glow(lit),
-                snap: true,
-            }
-        }
-    }
-
-    /// Chamfered (cyberpunk.net-shaped) button. Pass `None` to render it disabled.
-    pub fn chamfer_button<Message: Clone>(
-        &self,
-        label: &str,
-        variant: ButtonVariant,
-        on_press: Option<Message>,
-    ) -> ChamferButton<Message> {
-        let e = &self.theme.effects;
-        let colors = |st| {
-            let t = self.theme.button(variant, st);
-            let lit = matches!(st, ControlState::Hovered | ControlState::Pressed);
-            ShapedColors {
-                fill: t.background.map(color),
-                stroke: t.border.or(t.background).map(color),
-                text: color(t.foreground),
-                glow: (lit && e.glow_enabled()).then(|| color(e.glow_color())),
-            }
-        };
-        ChamferButton {
-            label: self.label(label),
-            font: self.font(),
-            size: 15.0,
-            cut: self
-                .theme
-                .shape
-                .chamfer
-                .min(self.theme.shape.control_height * 0.4),
-            border_width: self.theme.shape.border_width,
-            idle: colors(ControlState::Idle),
-            hover: colors(ControlState::Hovered),
-            press: colors(ControlState::Pressed),
-            disabled: colors(ControlState::Disabled),
-            glow_radius: e.glow_radius(),
-            on_press,
-            backdrop: Color::from_rgba(0.0, 0.0, 0.0, 0.6),
         }
     }
 
@@ -188,120 +163,17 @@ impl IcedTheme {
             ..container::Style::default()
         }
     }
-
-    /// Bordered panel / card.
-    pub fn panel(&self, focused: bool) -> impl Fn(&IcedBaseTheme) -> container::Style + 'static {
-        let t = self.theme.panel(focused);
-        let fg = color(self.theme.palette.text);
-        let border = self.border(t.border);
-        let shadow = self.glow(focused);
-        move |_| container::Style {
-            background: Some(Background::Color(color(t.background))),
-            text_color: Some(fg),
-            border,
-            shadow,
-            snap: true,
-        }
-    }
-
-    /// Text input style.
-    pub fn text_input(
-        &self,
-    ) -> impl Fn(&IcedBaseTheme, text_input::Status) -> text_input::Style + 'static {
-        let idle = self.theme.input(false);
-        let focus = self.theme.input(true);
-        let off = self.theme.palette.text_disabled;
-        let this = self.clone();
-        move |_t, status| {
-            let (t, disabled) = match status {
-                text_input::Status::Focused { .. } => (focus, false),
-                text_input::Status::Disabled => (idle, true),
-                _ => (idle, false),
-            };
-            text_input::Style {
-                background: Background::Color(color(t.background)),
-                border: this.border(t.border),
-                icon: color(t.placeholder),
-                placeholder: color(t.placeholder),
-                value: color(if disabled { off } else { t.text }),
-                selection: color(t.selection),
-            }
-        }
-    }
-
-    /// Coloured status text.
-    pub fn tone(&self, tone: Tone) -> impl Fn(&IcedBaseTheme) -> text::Style + 'static {
-        let c = color(self.theme.palette.tone(tone));
-        move |_| text::Style { color: Some(c) }
-    }
-
-    /// Muted secondary text.
-    pub fn muted(&self) -> impl Fn(&IcedBaseTheme) -> text::Style + 'static {
-        let c = color(self.theme.palette.text_muted);
-        move |_| text::Style { color: Some(c) }
-    }
-
-    /// Brand-coloured heading text.
-    pub fn heading(&self) -> impl Fn(&IcedBaseTheme) -> text::Style + 'static {
-        let c = color(self.theme.palette.primary);
-        move |_| text::Style { color: Some(c) }
-    }
-
-    /// Apply the theme's label casing (UPPERCASE for cyberpunk).
-    pub fn label(&self, s: &str) -> String {
-        if self.theme.typography.uppercase_labels {
-            s.to_uppercase()
-        } else {
-            s.to_string()
-        }
-    }
-
-    /// A [`ChamferFrame`] filled/stroked from this theme's panel tokens.
-    pub fn chamfer(&self, focused: bool) -> ChamferFrame {
-        let t = self.theme.panel(focused);
-        ChamferFrame {
-            fill: color(t.background),
-            stroke: color(t.border),
-            width: self.theme.shape.border_width,
-            cut: self.theme.shape.chamfer,
-        }
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testutil::*;
 
     #[test]
     fn color_converts() {
         let c = color(LColor::hex(0xfcee0a));
         assert_eq!(c, Color::from_rgb8(0xfc, 0xee, 0x0a));
-    }
-
-    #[test]
-    fn primary_button_is_solid_yellow() {
-        let lt = IcedTheme::new(Theme::default());
-        let f = lt.button(ButtonVariant::Primary);
-        let s = f(&lt.iced_theme(), button::Status::Active);
-        assert_eq!(
-            s.background,
-            Some(Background::Color(color(LColor::hex(0xfcee0a))))
-        );
-        assert_eq!(s.shadow, Shadow::default());
-        let h = f(&lt.iced_theme(), button::Status::Hovered);
-        assert!(h.shadow.blur_radius > 0.0);
-    }
-
-    #[test]
-    fn outline_fills_on_hover() {
-        let lt = IcedTheme::new(Theme::default());
-        let f = lt.button(ButtonVariant::Outline);
-        assert!(f(&lt.iced_theme(), button::Status::Active)
-            .background
-            .is_none());
-        assert!(f(&lt.iced_theme(), button::Status::Hovered)
-            .background
-            .is_some());
     }
 
     #[test]
@@ -311,10 +183,31 @@ mod tests {
             lt.iced_theme().palette().primary,
             color(LColor::hex(0xfcee0a))
         );
+        let light = IcedTheme::new(rounded_light());
+        assert_eq!(
+            light.iced_theme().palette().primary,
+            color(LColor::hex(0x1f5fd6))
+        );
     }
 
     #[test]
-    fn label_uppercases() {
-        assert_eq!(IcedTheme::new(Theme::default()).label("ok"), "OK");
+    fn radius_per_shape_kind() {
+        assert_eq!(IcedTheme::new(cyberpunk()).radius(), 0.0);
+        assert_eq!(IcedTheme::new(rounded_light()).radius(), 8.0);
+        assert_eq!(IcedTheme::new(hard_square()).radius(), 0.0);
+    }
+
+    #[test]
+    fn no_theme_id_branching() {
+        for f in [
+            "button", "controls", "frame", "inputs", "list", "panel", "tabs", "tag", "text",
+        ] {
+            let src = std::fs::read_to_string(format!("{}/src/{f}.rs", env!("CARGO_MANIFEST_DIR")))
+                .unwrap();
+            // Strip the test module so asserting on ids there is allowed.
+            let body = src.split("#[cfg(test)]").next().unwrap();
+            assert!(!body.contains(".id()") && !body.contains("meta.id"), "{f}");
+            assert!(!body.contains(".name()"), "{f}");
+        }
     }
 }

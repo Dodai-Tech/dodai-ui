@@ -1,21 +1,24 @@
-//! Chamfered button: the real cyberpunk.net shape (square, bottom-right corner cut).
+//! Shaped button: draws chamfered / rounded / square per [`Shape`] tokens.
 //!
 //! `iced::widget::button` can only draw rounded rectangles, so this is a small
-//! canvas widget that paints the polygon, label and hover/press states itself.
+//! canvas widget that paints the outline, label and hover/press states itself.
+//! Prefer `IcedTheme::button_view`, which picks the native button when the
+//! shape allows and this widget only for chamfered themes.
 
 use iced::{
     alignment, mouse,
     widget::{
-        canvas::{self, Action, Canvas, Geometry, Path, Stroke, Text},
+        canvas::{self, Action, Canvas, Geometry, Text},
         text::Alignment,
     },
     Color, Element, Event, Font, Length, Pixels, Point, Rectangle, Renderer, Theme,
 };
+use legendary_core::Shape;
 
-use crate::chamfer::chamfer_points;
+use crate::geometry::{margin, paint_shape, Paint};
 
 /// Colours for one interaction state.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ShapedColors {
     pub fill: Option<Color>,
     pub stroke: Option<Color>,
@@ -23,13 +26,13 @@ pub struct ShapedColors {
     pub glow: Option<Color>,
 }
 
-/// Canvas program for a chamfered button. Build via `IcedTheme::chamfer_button`.
+/// Canvas program for a shaped button. Build via `IcedTheme::shaped_button`.
 #[derive(Debug, Clone)]
-pub struct ChamferButton<Message> {
+pub struct ShapedButton<Message> {
     pub label: String,
     pub font: Font,
     pub size: f32,
-    pub cut: f32,
+    pub shape: Shape,
     pub border_width: f32,
     pub idle: ShapedColors,
     pub hover: ShapedColors,
@@ -40,7 +43,15 @@ pub struct ChamferButton<Message> {
     pub on_press: Option<Message>,
     /// Backdrop under outline buttons (cyberpunk.net uses black @ 60%).
     pub backdrop: Color,
+    /// Control height in px (excluding glow margin).
+    pub height: f32,
+    /// Horizontal padding in px each side of the label.
+    pub padding_x: f32,
 }
+
+/// Old name of [`ShapedButton`].
+#[deprecated(note = "use `ShapedButton`")]
+pub type ChamferButton<Message> = ShapedButton<Message>;
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct ButtonState {
@@ -48,9 +59,18 @@ pub struct ButtonState {
     hovered: bool,
 }
 
-impl<Message> ChamferButton<Message> {
-    fn margin(&self) -> f32 {
-        self.glow_radius.max(0.0).ceil()
+impl<Message> ShapedButton<Message> {
+    /// Space reserved around the shape so the glow isn't clipped.
+    pub fn margin(&self) -> f32 {
+        margin(self.glow_radius, 0.0)
+    }
+
+    /// Size of the widget including glow margin: (width, height).
+    pub fn outer_size(&self) -> (f32, f32) {
+        let m = self.margin();
+        // Rough text measure (no font metrics outside layout): ~0.62em/char.
+        let w = self.label.chars().count() as f32 * self.size * 0.62 + 2.0 * self.padding_x;
+        (w.max(self.height * 2.5) + 2.0 * m, self.height + 2.0 * m)
     }
 
     /// The clickable shape inside the glow margin, in the same space as `bounds`.
@@ -65,7 +85,7 @@ impl<Message> ChamferButton<Message> {
     }
 }
 
-impl<Message: Clone> canvas::Program<Message> for ChamferButton<Message> {
+impl<Message: Clone> canvas::Program<Message> for ShapedButton<Message> {
     type State = ButtonState;
 
     fn update(
@@ -120,45 +140,29 @@ impl<Message: Clone> canvas::Program<Message> for ChamferButton<Message> {
         };
 
         let mut frame = canvas::Frame::new(renderer, bounds.size());
-        let w = self.border_width;
         let m = self.margin();
-        let pts = chamfer_points(rect.width - w, rect.height - w, self.cut);
-        let o = w / 2.0 + m;
-        let path = Path::new(|b| {
-            b.move_to(Point::new(pts[0].x + o, pts[0].y + o));
-            for p in &pts[1..] {
-                b.line_to(Point::new(p.x + o, p.y + o));
-            }
-            b.close();
-        });
-        if let Some(g) = c.glow {
-            // Soft neon glow: concentric translucent strokes fading outward.
-            const STEPS: u32 = 10;
-            for k in (1..=STEPS).rev() {
-                let t = k as f32 / STEPS as f32; // 1 = outermost
-                let fade = (1.0 - t).powi(2) * 0.35 + 0.02;
-                frame.stroke(
-                    &path,
-                    Stroke::default()
-                        .with_color(Color {
-                            a: (g.a * fade).min(1.0),
-                            ..g
-                        })
-                        .with_width(w + 2.0 * self.glow_radius * t)
-                        .with_line_join(canvas::LineJoin::Round),
-                );
-            }
-        }
-        frame.fill(&path, c.fill.unwrap_or(self.backdrop));
-        if let Some(s) = c.stroke {
-            frame.stroke(&path, Stroke::default().with_color(s).with_width(w));
-        }
+        let local = Rectangle {
+            x: m,
+            y: m,
+            width: rect.width,
+            height: rect.height,
+        };
+        paint_shape(
+            &mut frame,
+            &self.shape,
+            local,
+            &Paint {
+                fill: Some(c.fill.unwrap_or(self.backdrop)),
+                stroke: c.stroke,
+                width: self.border_width,
+                glow: c.glow,
+                glow_radius: self.glow_radius,
+                shadow: 0.0,
+            },
+        );
         frame.fill_text(Text {
             content: self.label.clone(),
-            position: Point::new(
-                m + (rect.width - self.cut / 2.0) / 2.0,
-                m + rect.height / 2.0,
-            ),
+            position: Point::new(m + rect.width / 2.0, m + rect.height / 2.0),
             color: c.text,
             size: Pixels(self.size),
             font: self.font,
@@ -183,15 +187,12 @@ impl<Message: Clone> canvas::Program<Message> for ChamferButton<Message> {
     }
 }
 
-impl<'a, Message: Clone + 'a> From<ChamferButton<Message>> for Element<'a, Message> {
-    fn from(b: ChamferButton<Message>) -> Self {
-        // Rough text measure (no font metrics available outside layout): ~0.62em/char + padding.
-        let m = b.margin();
-        let w = (b.label.chars().count() as f32 * b.size * 0.62 + b.size * 3.0 + b.cut).max(120.0);
-        let h = b.size * 3.0;
+impl<'a, Message: Clone + 'a> From<ShapedButton<Message>> for Element<'a, Message> {
+    fn from(b: ShapedButton<Message>) -> Self {
+        let (w, h) = b.outer_size();
         Canvas::new(b)
-            .width(Length::Fixed(w + 2.0 * m))
-            .height(Length::Fixed(h + 2.0 * m))
+            .width(Length::Fixed(w))
+            .height(Length::Fixed(h))
             .into()
     }
 }
