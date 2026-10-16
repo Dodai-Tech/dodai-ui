@@ -13,3 +13,9 @@ categories   = ["gui"]
 
 [dependencies]
 legendary-core = { workspace = true }
+legendary-topcoat = { path = "../legendary-topcoat" }
+leptos = { version = "0.8", features = ["ssr"] }
+
+[[example]]
+name = "leptos_showcase"
+path = "../../examples/leptos_showcase.rs"
