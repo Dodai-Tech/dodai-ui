@@ -30,6 +30,7 @@ pub mod button;
 pub mod carousel;
 pub mod controls;
 pub mod data;
+pub mod extras;
 pub mod feedback;
 pub mod interact;
 pub mod knob;
@@ -59,6 +60,10 @@ pub use button::Button;
 pub use carousel::{window_start, Carousel};
 pub use controls::{Checkbox, Direction, ProgressBar, Radio, Slider, Toggle};
 pub use data::{Avatar, Badge, Chip, Kbd, Table};
+pub use extras::{
+    step_value, BottomAppBar, ColorPicker, EmptyState, FileDropZone, NumberStepper, Rating,
+    TagField, Timeline, TimelineEvent, Toolbar,
+};
 pub use feedback::{Alert, IndeterminateBar, Skeleton, Spinner, Toast};
 pub use knob::Knob;
 pub use list::{Divider, ListItem};

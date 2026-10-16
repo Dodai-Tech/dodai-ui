@@ -22,6 +22,8 @@ pub struct Table {
     rows: Vec<Vec<SharedString>>,
     selected: Option<usize>,
     on_select: Option<IndexHandler>,
+    sort: Option<(usize, bool)>,
+    on_sort: Option<IndexHandler>,
 }
 
 impl Table {
@@ -33,6 +35,8 @@ impl Table {
             rows: Vec::new(),
             selected: None,
             on_select: None,
+            sort: None,
+            on_sort: None,
         }
     }
     pub fn columns<S: Into<SharedString>>(mut self, c: impl IntoIterator<Item = S>) -> Self {
@@ -59,6 +63,16 @@ impl Table {
     }
     pub fn on_select(mut self, f: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
         self.on_select = Some(Rc::new(f));
+        self
+    }
+    /// Show a sort arrow on `column` (`ascending` → ▲).
+    pub fn sorted(mut self, column: usize, ascending: bool) -> Self {
+        self.sort = Some((column, ascending));
+        self
+    }
+    /// Make headers clickable; called with the column index.
+    pub fn on_sort(mut self, f: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
+        self.on_sort = Some(Rc::new(f));
         self
     }
 }
@@ -96,7 +110,17 @@ impl RenderOnce for Table {
             .text_size(px(t.typography.size_sm))
             .text_color(hsla(p.text_muted));
         for (i, c) in self.columns.iter().enumerate() {
-            head = head.child(cell(i, format_label(&t.typography, c)));
+            let mut label = format_label(&t.typography, c).to_string();
+            if let Some((sc, asc)) = self.sort {
+                if sc == i {
+                    label.push_str(if asc { " ▲" } else { " ▼" });
+                }
+            }
+            let mut h = cell(i, label.into()).id((self.id.clone(), format!("h{i}")));
+            if let Some(f) = self.on_sort.clone() {
+                h = h.cursor_pointer().on_click(move |_, w, cx| f(i, w, cx));
+            }
+            head = head.child(h);
         }
         col = col.child(head);
         for (ri, row) in self.rows.iter().enumerate() {
