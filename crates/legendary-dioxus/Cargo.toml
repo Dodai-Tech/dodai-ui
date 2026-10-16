@@ -21,4 +21,4 @@ dioxus-ssr = "0.7"
 
 [[example]]
 name = "dioxus_showcase"
-path = "../../examples/dioxus_showcase.rs"
+path = "examples/dioxus_showcase.rs"
