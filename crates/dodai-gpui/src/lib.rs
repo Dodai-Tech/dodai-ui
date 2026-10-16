@@ -28,6 +28,7 @@
 
 pub mod button;
 pub mod carousel;
+pub mod command;
 pub mod controls;
 pub mod data;
 pub mod extras;
@@ -59,6 +60,7 @@ mod testing;
 
 pub use button::Button;
 pub use carousel::{window_start, Carousel};
+pub use command::{fuzzy_filter, Combobox, Command, CommandPalette};
 pub use controls::{Checkbox, Direction, ProgressBar, Radio, Slider, Toggle};
 pub use data::{Avatar, Badge, Chip, Kbd, Table};
 pub use extras::{
