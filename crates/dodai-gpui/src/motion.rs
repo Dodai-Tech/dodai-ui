@@ -141,6 +141,7 @@ pub fn entry(
         motion.animation()
     };
     div()
+        .flex()
         .child(el)
         .relative()
         .id(SharedString::from(format!("entry-{name}")))
