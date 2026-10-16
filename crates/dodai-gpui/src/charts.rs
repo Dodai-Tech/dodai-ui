@@ -517,8 +517,8 @@ impl LineChart {
     }
 }
 
-impl RenderOnce for LineChart {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl LineChart {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let (lo, hi, ticks) = y_range(&self.series, self.zero, self.y_bounds);
         let n = self
@@ -634,6 +634,13 @@ impl RenderOnce for LineChart {
     }
 }
 
+impl RenderOnce for LineChart {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "LineChart", motion)
+    }
+}
+
 // ─────────────────────────────── BarChart ───────────────────────────────
 
 /// Bar chart: vertical or horizontal, grouped or stacked.
@@ -734,8 +741,8 @@ pub fn bar_max(series: &[Series], stacked: bool) -> f32 {
         .fold(0.0, f32::max)
 }
 
-impl RenderOnce for BarChart {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl BarChart {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let ticks = nice_ticks(
             0.0,
@@ -927,6 +934,13 @@ impl RenderOnce for BarChart {
     }
 }
 
+impl RenderOnce for BarChart {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "BarChart", motion)
+    }
+}
+
 // ─────────────────────────────── Sparkline ───────────────────────────────
 
 /// Shape drawn at sparkline points.
@@ -1076,6 +1090,7 @@ struct PieState {
     bounds: Bounds<Pixels>,
     hover: Option<usize>,
     sel: Option<usize>,
+    pops: Vec<crate::motion::Tween>,
 }
 
 /// Slice index under a pointer `(dx, dy)` from the pie centre (y down), or
@@ -1099,6 +1114,7 @@ pub struct PieChart {
     center: Option<SharedString>,
     legend: bool,
     selected: Option<Option<usize>>,
+    select_color: Option<Color>,
     on_select: Option<SelectFn>,
 }
 
@@ -1111,6 +1127,7 @@ impl PieChart {
             center: None,
             legend: true,
             selected: None,
+            select_color: None,
             on_select: None,
         }
     }
@@ -1118,6 +1135,11 @@ impl PieChart {
     /// chart keeps its own selection, toggled by clicking a slice.
     pub fn selected(mut self, i: Option<usize>) -> Self {
         self.selected = Some(i);
+        self
+    }
+    /// Outline colour of the selected slice (default: the theme accent).
+    pub fn selected_color(mut self, c: Color) -> Self {
+        self.select_color = Some(c);
         self
     }
     /// Called with the new selection (`None` when deselected) on click.
@@ -1144,8 +1166,8 @@ impl PieChart {
     }
 }
 
-impl RenderOnce for PieChart {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+impl PieChart {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let vals: Vec<f32> = self.slices.iter().map(|s| s.1).collect();
         let fr = pie_fractions(&vals);
@@ -1161,7 +1183,8 @@ impl RenderOnce for PieChart {
         let st = window.use_keyed_state(key.clone(), cx, |_, _| PieState::default());
         let hover = st.read(cx).hover;
         let sel = self.selected.unwrap_or(st.read(cx).sel);
-        let ring = hsla(t.palette.text);
+        let ring = hsla(self.select_color.unwrap_or(t.palette.primary));
+        let motion = crate::motion::Motion::of(cx);
         let (st_paint, st_move, st_leave, st_click) =
             (st.clone(), st.clone(), st.clone(), st.clone());
         let (controlled, on_select) = (self.selected.is_some(), self.on_select.clone());
@@ -1180,13 +1203,23 @@ impl RenderOnce for PieChart {
                 let c = size / 2.0;
                 for (i, ((a, z), col)) in fr.iter().zip(&cols).enumerate() {
                     // Hovered slice pops out along its bisector.
-                    let pop = if hover == Some(i) {
+                    let target = if hover == Some(i) {
                         PIE_POP
                     } else if sel == Some(i) {
                         PIE_POP * 0.5
                     } else {
                         0.0
                     };
+                    let (pop, busy) = st_paint.update(cx, |s, _| {
+                        if s.pops.len() <= i {
+                            s.pops.resize(i + 1, crate::motion::Tween::new(0.0, motion));
+                        }
+                        s.pops[i].to(target, motion);
+                        (s.pops[i].value(), !s.pops[i].is_done())
+                    });
+                    if busy {
+                        w.request_animation_frame();
+                    }
                     let (dx, dy) = polar(0.0, 0.0, pop, (a + z) / 2.0);
                     let origin = point(b.origin.x + px(dx), b.origin.y + px(dy));
                     // Constant-width straight gap: each edge is offset by
@@ -1354,6 +1387,13 @@ impl RenderOnce for PieChart {
     }
 }
 
+impl RenderOnce for PieChart {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "PieChart", motion)
+    }
+}
+
 // ─────────────────────────────────── Gauge ───────────────────────────────────
 
 /// Radial gauge (270° sweep) with a centre label.
@@ -1398,8 +1438,8 @@ impl Gauge {
     }
 }
 
-impl RenderOnce for Gauge {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Gauge {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let frac = norm(self.value, self.min, self.max);
         let col = hsla(self.tone.map_or(t.palette.primary, |k| t.palette.tone(k)));
@@ -1454,6 +1494,13 @@ impl RenderOnce for Gauge {
     }
 }
 
+impl RenderOnce for Gauge {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Gauge", motion)
+    }
+}
+
 // ─────────────────────────────── RadarChart ───────────────────────────────
 
 /// Radar (spider) chart: one polygon per series over shared axes.
@@ -1493,8 +1540,8 @@ impl RadarChart {
     }
 }
 
-impl RenderOnce for RadarChart {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl RadarChart {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let n = self.axes.len().max(3);
         let max = self.max.unwrap_or_else(|| {
@@ -1579,6 +1626,13 @@ impl RenderOnce for RadarChart {
     }
 }
 
+impl RenderOnce for RadarChart {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "RadarChart", motion)
+    }
+}
+
 // ─────────────────────────────── ScatterPlot ───────────────────────────────
 
 /// Scatter plot of `(x, y)` points per series, with hover tooltips.
@@ -1612,8 +1666,8 @@ impl ScatterPlot {
     }
 }
 
-impl RenderOnce for ScatterPlot {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl ScatterPlot {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let all = || self.series.iter().flat_map(|s| s.1.iter());
         let fold = |f: fn(&(f32, f32)) -> f32| {
@@ -1703,6 +1757,13 @@ impl RenderOnce for ScatterPlot {
     }
 }
 
+impl RenderOnce for ScatterPlot {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "ScatterPlot", motion)
+    }
+}
+
 // ─────────────────────────────── Heatmap ───────────────────────────────
 
 /// Colour of heat `v` (`0..=1`): surface → primary. Pure.
@@ -1746,8 +1807,8 @@ impl Heatmap {
     }
 }
 
-impl RenderOnce for Heatmap {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Heatmap {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let (lo, hi) = self
             .rows
@@ -1791,6 +1852,13 @@ impl RenderOnce for Heatmap {
             root = root.child(line);
         }
         root
+    }
+}
+
+impl RenderOnce for Heatmap {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Heatmap", motion)
     }
 }
 

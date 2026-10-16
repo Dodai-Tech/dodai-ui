@@ -64,8 +64,8 @@ impl StackedAreaChart {
     }
 }
 
-impl RenderOnce for StackedAreaChart {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl StackedAreaChart {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let cum = stack_cumulative(&self.series);
         let n = cum.first().map_or(0, Vec::len);
@@ -141,6 +141,13 @@ impl RenderOnce for StackedAreaChart {
     }
 }
 
+impl RenderOnce for StackedAreaChart {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "StackedAreaChart", motion)
+    }
+}
+
 // ─────────────────────────────── Candlestick ───────────────────────────────
 
 /// One OHLC candle.
@@ -192,8 +199,8 @@ impl Candlestick {
     }
 }
 
-impl RenderOnce for Candlestick {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Candlestick {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let lo = self.candles.iter().map(|c| c.low).fold(f32::MAX, f32::min);
         let hi = self.candles.iter().map(|c| c.high).fold(f32::MIN, f32::max);
@@ -265,6 +272,13 @@ impl RenderOnce for Candlestick {
             plot,
         ));
         titled(&t, self.title, root)
+    }
+}
+
+impl RenderOnce for Candlestick {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Candlestick", motion)
     }
 }
 

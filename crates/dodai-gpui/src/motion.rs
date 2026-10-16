@@ -2,7 +2,10 @@
 //! (duration + easing) that components accept via `.motion(..)`. A
 //! global default can be installed with [`Motion::set_global`].
 
-use gpui::{Animation, App, Global};
+use gpui::{
+    div, Animation, AnimationElement, AnimationExt, App, Div, ElementId, Global, IntoElement,
+    ParentElement, SharedString, Styled,
+};
 use std::rc::Rc;
 use std::time::Duration;
 
@@ -121,6 +124,55 @@ pub fn stagger_window(i: usize, n: usize, overlap: f32) -> (f32, f32) {
     let len = 1.0 / (1.0 + (n - 1) as f32 * (1.0 - o));
     let start = i as f32 * len * (1.0 - o);
     (start, start + len)
+}
+
+/// Fade `el` in the first time it appears (one-shot; replays after the
+/// element leaves and re-enters the tree). Shared by every chart so all
+/// components enter the same way; honours [`Motion::of`] unless overridden.
+pub fn entry(el: impl IntoElement, name: &'static str, motion: Motion) -> AnimationElement<Div> {
+    div().child(el).with_animation(
+        ElementId::from(SharedString::from(format!("entry-{name}"))),
+        motion.animation(),
+        |el, p| el.opacity(p),
+    )
+}
+
+/// Animated scalar that eases from its current value to a new target.
+/// Retarget with [`Tween::to`] on every frame; read with [`Tween::value`].
+#[derive(Clone, Copy, Debug)]
+pub struct Tween {
+    from: f32,
+    to: f32,
+    start: std::time::Instant,
+    motion: Motion,
+}
+
+impl Tween {
+    pub fn new(v: f32, motion: Motion) -> Self {
+        Self {
+            from: v,
+            to: v,
+            start: std::time::Instant::now(),
+            motion,
+        }
+    }
+    /// Current eased value.
+    pub fn value(&self) -> f32 {
+        let t = self.start.elapsed().as_secs_f32() / self.motion.duration.as_secs_f32().max(1e-3);
+        lerp(self.from, self.to, self.motion.eased(t))
+    }
+    pub fn is_done(&self) -> bool {
+        self.start.elapsed() >= self.motion.duration
+    }
+    /// Move towards `to` from wherever the value is now (no-op if unchanged).
+    pub fn to(&mut self, to: f32, motion: Motion) {
+        if (to - self.to).abs() > f32::EPSILON {
+            self.from = self.value();
+            self.to = to;
+            self.start = std::time::Instant::now();
+            self.motion = motion;
+        }
+    }
 }
 
 /// Linear interpolation. Pure.

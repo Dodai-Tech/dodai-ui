@@ -90,7 +90,7 @@ pub use knob::Knob;
 pub use layout::{clamp_ratio, visible_rows, SplitPane, TreeItem, TreeRow, TreeView};
 pub use list::{Divider, ListItem};
 pub use menu::{Menu, MenuItem};
-pub use motion::{lerp, stagger_window, Curve, Easing, Motion};
+pub use motion::{lerp, stagger_window, Curve, Easing, Motion, Tween};
 pub use nav::{Accordion, Breadcrumb, Pagination, Segmented, Stepper};
 pub use overlay::{Dialog, DialogCard};
 pub use paint::{shaped, ShapeStyle};

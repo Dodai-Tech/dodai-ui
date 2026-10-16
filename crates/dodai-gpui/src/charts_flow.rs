@@ -48,8 +48,8 @@ impl Funnel {
     }
 }
 
-impl RenderOnce for Funnel {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Funnel {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let n = self.stages.len().max(1);
         let maxv = self
@@ -115,6 +115,13 @@ impl RenderOnce for Funnel {
     }
 }
 
+impl RenderOnce for Funnel {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Funnel", motion)
+    }
+}
+
 // ─────────────────────────────── Waterfall ───────────────────────────────
 
 /// Waterfall of deltas; increases green, decreases red, optional total bar.
@@ -150,8 +157,8 @@ impl Waterfall {
     }
 }
 
-impl RenderOnce for Waterfall {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Waterfall {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let deltas: Vec<f32> = self.steps.iter().map(|s| s.1).collect();
         let st = waterfall_steps(&deltas);
@@ -230,6 +237,13 @@ impl RenderOnce for Waterfall {
             plot,
         ));
         titled(&t, self.title, root)
+    }
+}
+
+impl RenderOnce for Waterfall {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Waterfall", motion)
     }
 }
 

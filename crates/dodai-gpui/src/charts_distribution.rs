@@ -90,8 +90,8 @@ impl Histogram {
     }
 }
 
-impl RenderOnce for Histogram {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Histogram {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let bins = histogram_bins(&self.values, self.bins);
         let maxc = bins.iter().map(|b| b.2).max().unwrap_or(1) as f32;
@@ -150,6 +150,13 @@ impl RenderOnce for Histogram {
     }
 }
 
+impl RenderOnce for Histogram {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Histogram", motion)
+    }
+}
+
 // ─────────────────────────────── BoxPlot ───────────────────────────────
 
 /// Box-and-whisker plot from raw samples per category.
@@ -173,8 +180,8 @@ impl BoxPlot {
     }
 }
 
-impl RenderOnce for BoxPlot {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl BoxPlot {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let stats: Vec<Option<Stats>> = self.groups.iter().map(|g| quartiles(&g.1)).collect();
         let lo = stats.iter().flatten().map(|s| s.0).fold(f32::MAX, f32::min);
@@ -276,6 +283,13 @@ impl RenderOnce for BoxPlot {
     }
 }
 
+impl RenderOnce for BoxPlot {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "BoxPlot", motion)
+    }
+}
+
 // ─────────────────────────────── BubbleChart ───────────────────────────────
 
 /// Scatter plot where the third value controls the bubble area.
@@ -311,8 +325,8 @@ impl BubbleChart {
     }
 }
 
-impl RenderOnce for BubbleChart {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl BubbleChart {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let all = || self.groups.iter().flat_map(|g| g.1.iter());
         let rng = |f: fn(&(f32, f32, f32)) -> f32| {
@@ -404,6 +418,13 @@ impl RenderOnce for BubbleChart {
                 .child(framed_plot)
                 .child(legend),
         )
+    }
+}
+
+impl RenderOnce for BubbleChart {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "BubbleChart", motion)
     }
 }
 

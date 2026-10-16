@@ -87,8 +87,8 @@ impl Treemap {
     }
 }
 
-impl RenderOnce for Treemap {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl Treemap {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let vals: Vec<f32> = self.items.iter().map(|i| i.1).collect();
         // Layout in unit space, rendered with relative sizes.
@@ -126,6 +126,13 @@ impl RenderOnce for Treemap {
     }
 }
 
+impl RenderOnce for Treemap {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "Treemap", motion)
+    }
+}
+
 // ─────────────────────────────── RadialBar ───────────────────────────────
 
 /// Concentric progress rings, one per `(name, value, max)`.
@@ -157,8 +164,8 @@ impl RadialBar {
     }
 }
 
-impl RenderOnce for RadialBar {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+impl RadialBar {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let n = self.rings.len().max(1);
         let size = self.size;
@@ -217,6 +224,13 @@ impl RenderOnce for RadialBar {
             ));
         }
         root
+    }
+}
+
+impl RenderOnce for RadialBar {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(window, cx), "RadialBar", motion)
     }
 }
 
