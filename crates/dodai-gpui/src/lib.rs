@@ -40,6 +40,7 @@ pub mod nav;
 pub mod overlay;
 pub mod paint;
 pub mod panel;
+pub mod picker;
 pub mod range;
 pub mod scanlines;
 pub mod select;
@@ -66,6 +67,10 @@ pub use nav::{Accordion, Breadcrumb, Pagination, Segmented, Stepper};
 pub use overlay::{Dialog, DialogCard};
 pub use paint::{shaped, ShapeStyle};
 pub use panel::{DodaiTooltip, InputBox, Panel};
+pub use picker::{
+    days_in_month, month_grid, shift_month, step_hour, step_minute, to_12h, weekday, Date,
+    DatePicker, TimePicker,
+};
 pub use range::{nearest_thumb, range_update, RangeSlider};
 pub use scanlines::Scanlines;
 pub use select::{family_title, DesignSystemSelector, Select, SelectOption, ThemeSelector};
