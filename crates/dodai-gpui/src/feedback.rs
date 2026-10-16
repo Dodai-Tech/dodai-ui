@@ -1,6 +1,7 @@
 //! Feedback: [`Alert`] (also banner style), [`Toast`], [`Spinner`],
 //! [`IndeterminateBar`], [`Skeleton`].
 
+use crate::motion::{Easing, Motion};
 use crate::paint::{scaled_shape, shaped, ShapeStyle};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
@@ -160,6 +161,12 @@ impl RenderOnce for Toast {
     }
 }
 
+/// Looping animation: the override, or a linear cycle of `default_ms`.
+fn cycle(m: Option<Motion>, default_ms: u64) -> Animation {
+    m.unwrap_or_else(|| Motion::new(Duration::from_millis(default_ms), Easing::Linear))
+        .looping()
+}
+
 /// Number of bars in a [`Spinner`].
 pub const SPINNER_BARS: usize = 8;
 
@@ -174,11 +181,20 @@ pub fn spinner_alpha(i: usize, delta: f32) -> f32 {
 #[derive(IntoElement)]
 pub struct Spinner {
     id: ElementId,
+    motion: Option<Motion>,
 }
 
 impl Spinner {
     pub fn new(id: impl Into<ElementId>) -> Self {
-        Self { id: id.into() }
+        Self {
+            id: id.into(),
+            motion: None,
+        }
+    }
+    /// Override cycle duration and easing (default 900 ms, linear).
+    pub fn motion(mut self, m: Motion) -> Self {
+        self.motion = Some(m);
+        self
     }
 }
 
@@ -193,31 +209,27 @@ impl RenderOnce for Spinner {
             .items_end()
             .gap(px(3.0))
             .h(px(20.0))
-            .with_animation(
-                self.id,
-                Animation::new(Duration::from_millis(900)).repeat(),
-                move |el, delta| {
-                    let mut el = el;
-                    for i in 0..SPINNER_BARS {
-                        let a = spinner_alpha(i, delta);
-                        let style = ShapeStyle {
-                            fill: Some(gpui::Hsla { a, ..c }),
-                            stroke: None,
-                            stroke_width: 0.0,
-                            glow: None,
-                            shadow: None,
-                            scanlines: false,
-                        };
-                        let _ = glow;
-                        el = el.child(
-                            shaped(&scaled_shape(&shape, 4.0), style)
-                                .w(px(4.0))
-                                .h(px(8.0 + 12.0 * a)),
-                        );
-                    }
-                    el
-                },
-            )
+            .with_animation(self.id, cycle(self.motion, 900), move |el, delta| {
+                let mut el = el;
+                for i in 0..SPINNER_BARS {
+                    let a = spinner_alpha(i, delta);
+                    let style = ShapeStyle {
+                        fill: Some(gpui::Hsla { a, ..c }),
+                        stroke: None,
+                        stroke_width: 0.0,
+                        glow: None,
+                        shadow: None,
+                        scanlines: false,
+                    };
+                    let _ = glow;
+                    el = el.child(
+                        shaped(&scaled_shape(&shape, 4.0), style)
+                            .w(px(4.0))
+                            .h(px(8.0 + 12.0 * a)),
+                    );
+                }
+                el
+            })
     }
 }
 
@@ -234,11 +246,20 @@ pub fn indeterminate_segment(delta: f32) -> (f32, f32) {
 #[derive(IntoElement)]
 pub struct IndeterminateBar {
     id: ElementId,
+    motion: Option<Motion>,
 }
 
 impl IndeterminateBar {
     pub fn new(id: impl Into<ElementId>) -> Self {
-        Self { id: id.into() }
+        Self {
+            id: id.into(),
+            motion: None,
+        }
+    }
+    /// Override cycle duration and easing (default 1400 ms, linear).
+    pub fn motion(mut self, m: Motion) -> Self {
+        self.motion = Some(m);
+        self
     }
 }
 
@@ -252,7 +273,7 @@ impl RenderOnce for IndeterminateBar {
         let fill = ShapeStyle::from_tokens(&t, Some(k.fill), None, true, false);
         shaped(&shape, track).w_full().h(px(h)).with_animation(
             self.id,
-            Animation::new(Duration::from_millis(1400)).repeat(),
+            cycle(self.motion, 1400),
             move |el, delta| {
                 let (l, w) = indeterminate_segment(delta);
                 el.child(
@@ -275,6 +296,7 @@ pub struct Skeleton {
     w: Option<f32>,
     h: f32,
     circle: bool,
+    motion: Option<Motion>,
 }
 
 impl Skeleton {
@@ -284,7 +306,13 @@ impl Skeleton {
             w: None,
             h: 14.0,
             circle: false,
+            motion: None,
         }
+    }
+    /// Override cycle duration and easing (default 1600 ms, linear).
+    pub fn motion(mut self, m: Motion) -> Self {
+        self.motion = Some(m);
+        self
     }
     /// Fixed width in px (default: fill the parent).
     pub fn width(mut self, w: f32) -> Self {
@@ -316,11 +344,9 @@ impl RenderOnce for Skeleton {
             Some(w) => d.w(px(w)).flex_none(),
             None => d.w_full(),
         };
-        d.with_animation(
-            self.id,
-            Animation::new(Duration::from_millis(1600)).repeat(),
-            |el, delta| el.opacity(0.45 + 0.55 * (delta * std::f32::consts::TAU).sin().abs()),
-        )
+        d.with_animation(self.id, cycle(self.motion, 1600), |el, delta| {
+            el.opacity(0.45 + 0.55 * (delta * std::f32::consts::TAU).sin().abs())
+        })
     }
 }
 

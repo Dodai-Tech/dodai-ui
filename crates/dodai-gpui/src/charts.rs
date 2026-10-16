@@ -929,6 +929,43 @@ impl RenderOnce for BarChart {
 
 // ─────────────────────────────── Sparkline ───────────────────────────────
 
+/// Shape drawn at sparkline points.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum Marker {
+    None,
+    #[default]
+    Dot,
+    Square,
+    Diamond,
+    Triangle,
+}
+
+/// Outline of a marker centred at `(x, y)` with radius `r`. Pure.
+pub fn marker_points(m: Marker, x: f32, y: f32, r: f32) -> Vec<(f32, f32)> {
+    match m {
+        Marker::None => vec![],
+        Marker::Dot => (0..16)
+            .map(|i| {
+                let a = i as f32 / 16.0 * std::f32::consts::TAU;
+                (x + r * a.cos(), y + r * a.sin())
+            })
+            .collect(),
+        Marker::Square => vec![
+            (x - r, y - r),
+            (x + r, y - r),
+            (x + r, y + r),
+            (x - r, y + r),
+        ],
+        Marker::Diamond => vec![
+            (x, y - r * 1.3),
+            (x + r * 1.3, y),
+            (x, y + r * 1.3),
+            (x - r * 1.3, y),
+        ],
+        Marker::Triangle => vec![(x, y - r * 1.3), (x + r * 1.2, y + r), (x - r * 1.2, y + r)],
+    }
+}
+
 /// Tiny inline line, no axes.
 #[derive(IntoElement)]
 pub struct Sparkline {
@@ -937,6 +974,8 @@ pub struct Sparkline {
     h: f32,
     color: Option<Color>,
     area: bool,
+    marker: Marker,
+    all_points: bool,
 }
 
 impl Sparkline {
@@ -947,7 +986,19 @@ impl Sparkline {
             h: 28.0,
             color: None,
             area: true,
+            marker: Marker::Dot,
+            all_points: false,
         }
+    }
+    /// Shape at the line's tip (default `Dot`; `Marker::None` to hide).
+    pub fn marker(mut self, m: Marker) -> Self {
+        self.marker = m;
+        self
+    }
+    /// Draw the marker on every point instead of only the last.
+    pub fn all_points(mut self, a: bool) -> Self {
+        self.all_points = a;
+        self
     }
     pub fn size(mut self, w: f32, h: f32) -> Self {
         self.w = w;
@@ -969,7 +1020,8 @@ impl RenderOnce for Sparkline {
         let t = theme_of(cx);
         let c = hsla(self.color.unwrap_or(t.palette.primary));
         let glow = glow_of(&t).map(|r| r.min(4.0));
-        let (vals, area) = (self.values, self.area);
+        let (vals, area, marker, all_points) =
+            (self.values, self.area, self.marker, self.all_points);
         let (lo, hi) = vals
             .iter()
             .fold((f32::MAX, f32::MIN), |(l, h), v| (l.min(*v), h.max(*v)));
@@ -1000,6 +1052,11 @@ impl RenderOnce for Sparkline {
                         fill(w, b.origin, &poly, scale_alpha(c, 0.16));
                     }
                     glow_stroke(w, b.origin, &p, 1.5, c, glow);
+                    let tips = if all_points { &p[..] } else { &p[m - 1..] };
+                    for &(x, y) in tips {
+                        let x = x.clamp(3.0, bw - 3.0);
+                        fill(w, b.origin, &marker_points(marker, x, y, 2.6), c);
+                    }
                 },
             )
             .size_full(),
@@ -1671,6 +1728,15 @@ impl RenderOnce for Heatmap {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn marker_shapes() {
+        assert!(marker_points(Marker::None, 0.0, 0.0, 2.0).is_empty());
+        assert_eq!(marker_points(Marker::Square, 0.0, 0.0, 2.0).len(), 4);
+        assert_eq!(marker_points(Marker::Triangle, 0.0, 0.0, 2.0).len(), 3);
+        assert_eq!(marker_points(Marker::Diamond, 0.0, 0.0, 2.0).len(), 4);
+        assert!(marker_points(Marker::Dot, 0.0, 0.0, 2.0).len() >= 12);
+    }
+
     #[test]
     fn pie_hit_finds_slice() {
         let fr = [(0.0, 0.5), (0.5, 1.0)];

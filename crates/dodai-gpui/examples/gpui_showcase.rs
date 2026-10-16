@@ -15,7 +15,7 @@ use dodai_gpui::{
 };
 use dodai_gpui::{
     BarChart, BoxPlot, BubbleChart, Candle, Candlestick, Date, DatePicker, EmptyState, Funnel,
-    Gauge, Heatmap, Histogram, IconBadge, LineChart, NumberStepper, PieChart, RadarChart,
+    Gauge, Heatmap, Histogram, IconBadge, LineChart, Marker, NumberStepper, PieChart, RadarChart,
     RadialBar, RangeSlider, Rating, RichTooltip, ScatterPlot, SearchView, Series, Snackbar,
     Sparkline, StackedAreaChart, TagField, TextInput, TimePicker, Timeline, TimelineEvent, Toolbar,
     TreeItem, TreeView, Treemap, Waterfall,
@@ -579,7 +579,20 @@ impl Render for Showcase {
             )
             .child(Gauge::new(72.0).label("72%").tone(Tone::Success))
             .child(Gauge::new(31.0).tone(Tone::Warning))
-            .child(Sparkline::new([3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0]));
+            .child(Sparkline::new([3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0]))
+            .child(
+                Sparkline::new([3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0]).marker(Marker::Diamond),
+            )
+            .child(
+                Sparkline::new([3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0])
+                    .marker(Marker::Square)
+                    .area(false),
+            )
+            .child(
+                Sparkline::new([3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0])
+                    .marker(Marker::Triangle)
+                    .all_points(true),
+            );
         let charts_misc = row()
             .child(RadarChart::new(
                 ["Speed", "Power", "Range", "Armor", "Stealth"],
