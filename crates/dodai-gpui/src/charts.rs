@@ -866,15 +866,34 @@ impl RenderOnce for PieChart {
                 let r = size / 2.0 - 1.0;
                 let c = size / 2.0;
                 for ((a, z), col) in fr.iter().zip(&cols) {
+                    if hole <= 0.0 {
+                        // Convex wedges (<= 1/8 turn) tessellate without
+                        // seams or holes, even for slices past 180 degrees.
+                        let n = (((z - a) * 8.0).ceil() as usize).max(1);
+                        for k in 0..n {
+                            let w0 = a + (z - a) * k as f32 / n as f32;
+                            let w1 = a + (z - a) * (k + 1) as f32 / n as f32;
+                            let mut p = turn_arc(
+                                c,
+                                c,
+                                r,
+                                w0,
+                                if z >= 0.999 && k + 1 == n {
+                                    w1
+                                } else {
+                                    w1 + 0.0015
+                                },
+                            );
+                            p.push((c, c));
+                            fill(w, b.origin, &p, *col);
+                        }
+                        continue;
+                    }
                     let (a, z) = (a + gap, z - gap);
                     if z <= a {
                         continue;
                     }
-                    if hole <= 0.0 {
-                        let mut p = turn_arc(c, c, r, a, z);
-                        p.push((c, c));
-                        fill(w, b.origin, &p, *col);
-                    } else {
+                    {
                         let ring = r * (1.0 - hole);
                         let p = turn_arc(c, c, r - ring / 2.0, a, z);
                         stroke(w, b.origin, &p, ring, *col, false);
