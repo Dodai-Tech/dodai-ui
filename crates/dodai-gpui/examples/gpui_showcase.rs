@@ -1285,41 +1285,56 @@ impl Render for Showcase {
             }
             shown += 1;
             let kind = self.sec_kind.get(title).copied();
-            let mut chips = row().justify_end().child(Muted::new(title));
+            let chip = |id: (&'static str, u32), label: &'static str, on: bool| {
+                div()
+                    .id(id)
+                    .px(px(6.0))
+                    .py(px(1.0))
+                    .rounded(px(4.0))
+                    .text_size(px(10.0))
+                    .cursor_pointer()
+                    .border_1()
+                    .border_color(hsla(t.palette.border))
+                    .text_color(hsla(if on {
+                        t.palette.on_primary
+                    } else {
+                        t.palette.text_muted
+                    }))
+                    .when(on, |d| d.bg(hsla(t.palette.primary)))
+                    .child(label)
+            };
+            let mut chips = div().flex().flex_wrap().items_center().gap(px(4.0)).child(
+                div()
+                    .text_size(px(10.0))
+                    .text_color(hsla(t.palette.text_muted))
+                    .child("Animate:"),
+            );
             let me_g = me.clone();
             chips = chips.child(
-                Button::new(("sec-g", shown as u32), "Global")
-                    .variant(if kind.is_none() {
-                        ButtonVariant::Primary
-                    } else {
-                        ButtonVariant::Outline
-                    })
-                    .on_click(move |_, _, cx| {
+                chip(("sec-g", shown as u32), "Global", kind.is_none()).on_click(
+                    move |_, _, cx| {
                         me_g.update(cx, |s, cx| {
                             s.sec_kind.remove(title);
                             s.replay += 1;
                             cx.notify();
                         })
-                    }),
+                    },
+                ),
             );
             for (ki, k) in EntryKind::ALL.iter().copied().enumerate().skip(1) {
                 let on = kind.is_some_and(|s| s.contains(k));
                 let me_c = me.clone();
                 chips = chips.child(
-                    Button::new(("sec-k", (shown * 8 + ki as i32) as u32), k.label())
-                        .variant(if on {
-                            ButtonVariant::Primary
-                        } else {
-                            ButtonVariant::Outline
-                        })
-                        .on_click(move |_, _, cx| {
+                    chip(("sec-k", (shown * 8 + ki as i32) as u32), k.label(), on).on_click(
+                        move |_, _, cx| {
                             me_c.update(cx, |s, cx| {
                                 let cur = s.sec_kind.get(title).copied().unwrap_or(EntrySet::NONE);
                                 s.sec_kind.insert(title, cur.toggled(k));
                                 s.replay += 1;
                                 cx.notify();
                             })
-                        }),
+                        },
+                    ),
                 );
             }
             body = body.child(chips);
