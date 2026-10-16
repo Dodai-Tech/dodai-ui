@@ -39,7 +39,6 @@ impl Render for Showcase {
         let gap = px(t.spacing.md);
         let glow = glow_intensity(cx);
         let scan = scanlines_enabled(cx);
-        let theme_name = cx.legendary().theme().name();
 
         let me_tab = me.clone();
         let me_sw = me.clone();
@@ -350,7 +349,7 @@ impl Render for Showcase {
             .flex_col()
             .gap(gap)
             .p(px(t.spacing.xl))
-            .child(Heading::new(theme_name).level(1))
+            .child(Heading::new("UI Kit").level(1))
             .child(ds_panel)
             .child(theme_panel)
             .child(section("Buttons").child(buttons))
