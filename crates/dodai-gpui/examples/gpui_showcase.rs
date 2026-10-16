@@ -88,6 +88,14 @@ fn section_id(title: &str) -> u32 {
 }
 
 impl Showcase {
+    /// Entry set applied to a section's components (`None` = app default).
+    fn scope_of(&self, title: &'static str) -> Option<EntrySet> {
+        if self.sec_mode.get(title) == Some(&Player::Stopped) {
+            return Some(EntrySet::NONE);
+        }
+        self.sec_kind.get(title).copied()
+    }
+
     /// Replay one section only (re-keys just its subtree).
     fn bump(&mut self, title: &'static str) {
         *self.sec_replay.entry(title).or_insert(0) += 1;
@@ -137,7 +145,8 @@ impl Showcase {
         cx: &mut Context<Self>,
     ) -> gpui::AnyElement {
         let tid = section_id(title);
-        let kind = self.sec_kind.get(title).copied();
+        let base = Motion::of(cx).entry;
+        let kind = Some(self.sec_kind.get(title).copied().unwrap_or(base));
         let chip = |id: (&'static str, u32), label: SharedString, on: bool| {
             div()
                 .id(id)
@@ -169,16 +178,6 @@ impl Showcase {
                     .text_color(hsla(t.palette.text_muted))
                     .child("Animations"),
             );
-        let me_g = me.clone();
-        chips = chips.child(
-            chip(("sec-g", tid), "Global".into(), kind.is_none()).on_click(move |_, _, cx| {
-                me_g.update(cx, |s, cx| {
-                    s.sec_kind.remove(title);
-                    s.bump(title);
-                    cx.notify();
-                })
-            }),
-        );
         for (ki, k) in EntryKind::ALL.iter().copied().enumerate().skip(1) {
             let on = kind.is_some_and(|s| s.contains(k));
             let ms = kind.map_or(0, |s| s.ms_of(k));
@@ -205,7 +204,7 @@ impl Showcase {
                 }))
                 .child(chip(("sec-k", uid), text, on).on_click(move |_, _, cx| {
                     me_c.update(cx, |s, cx| {
-                        let cur = s.sec_kind.get(title).copied().unwrap_or(EntrySet::NONE);
+                        let cur = s.sec_kind.get(title).copied().unwrap_or(base);
                         s.sec_kind.insert(title, cur.toggled(k));
                         s.bump(title);
                         cx.notify();
@@ -249,8 +248,7 @@ impl Showcase {
                             })
                             .on_change(move |v, _, cx| {
                                 me_p.update(cx, |s, cx| {
-                                    let cur =
-                                        s.sec_kind.get(title).copied().unwrap_or(EntrySet::NONE);
+                                    let cur = s.sec_kind.get(title).copied().unwrap_or(base);
                                     s.sec_kind.insert(title, cur.with_ms(k, v as u16));
                                     cx.notify();
                                 })
@@ -346,6 +344,7 @@ impl Render for Showcase {
                 Panel::new()
                     .title($t)
                     .subheader(self.chips($t, &t, &me, cx))
+                    .scope(self.scope_of($t))
             };
         }
 
@@ -1575,13 +1574,6 @@ impl Render for Showcase {
                 last_cat = c;
             }
             shown += 1;
-            let kind = self.sec_kind.get(key).copied();
-            let stopped = self.sec_mode.get(key) == Some(&Player::Stopped);
-            let content = match (stopped, kind) {
-                (true, _) => dodai_gpui::EntryScope::new(EntrySet::NONE, el).into_any_element(),
-                (false, None) => el,
-                (false, Some(set)) => dodai_gpui::EntryScope::new(set, el).into_any_element(),
-            };
             let sid = section_id(key)
                 .wrapping_mul(1000)
                 .wrapping_add(self.sec_replay.get(key).copied().unwrap_or(0));
@@ -1592,7 +1584,7 @@ impl Render for Showcase {
                     .flex_col()
                     .w_full()
                     .min_w_0()
-                    .child(content),
+                    .child(el),
             );
         }
         if shown == 0 {

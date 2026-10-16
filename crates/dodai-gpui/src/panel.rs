@@ -27,6 +27,7 @@ pub struct Panel {
     title: Option<SharedString>,
     focused: bool,
     subheader: Option<AnyElement>,
+    scope: Option<crate::motion::EntrySet>,
     children: Vec<AnyElement>,
     refine: Option<Box<dyn FnOnce(gpui::Div) -> gpui::Div>>,
 }
@@ -37,11 +38,18 @@ impl Panel {
             title: None,
             focused: false,
             subheader: None,
+            scope: None,
             children: Vec::new(),
             refine: None,
         }
     }
     /// Title shown above the content (uppercased per theme).
+    /// Entry effects for the components *inside* the panel (the panel itself
+    /// keeps the app-wide motion).
+    pub fn scope(mut self, set: Option<crate::motion::EntrySet>) -> Self {
+        self.scope = set;
+        self
+    }
     /// Element shown directly below the title (e.g. a toolbar or chips).
     pub fn subheader(mut self, el: impl IntoElement) -> Self {
         self.subheader = Some(el.into_any_element());
@@ -99,7 +107,16 @@ impl Panel {
         if let Some(sh) = self.subheader {
             d = d.child(sh);
         }
-        d = d.children(self.children);
+        match self.scope {
+            Some(set) => {
+                d = d.children(
+                    self.children
+                        .into_iter()
+                        .map(|c| crate::motion::EntryScope::new(set, c).into_any_element()),
+                );
+            }
+            None => d = d.children(self.children),
+        }
         match self.refine {
             Some(f) => f(d),
             None => d,
