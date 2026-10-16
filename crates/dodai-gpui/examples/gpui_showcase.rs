@@ -20,12 +20,20 @@ use dodai_gpui::{
     Sparkline, StackedAreaChart, TagField, TextInput, TimePicker, Timeline, TimelineEvent, Toolbar,
     TreeItem, TreeView, Treemap, Waterfall,
 };
+use dodai_gpui::{Easing, EntryKind, IndeterminateBar, Motion, Select, Skeleton, Spinner};
 use gpui::{
     div, prelude::*, px, size, App, Application, Bounds, Context, Entity, FocusHandle,
     KeyDownEvent, Window, WindowBounds, WindowOptions,
 };
+use gpui::{Animation, AnimationExt};
+use std::time::Duration;
 
 struct Showcase {
+    anim_kind: usize,
+    anim_ease: usize,
+    anim_ms: f32,
+    replay: usize,
+    sec_kind: std::collections::HashMap<&'static str, usize>,
     filter: Entity<TextInput>,
     search: Entity<TextInput>,
     cat: usize,
@@ -52,6 +60,17 @@ struct Showcase {
     vslider: [f32; 3],
     list: usize,
     clicks: u32,
+}
+
+fn easings_of(i: usize) -> Easing {
+    [
+        Easing::Linear,
+        Easing::EaseIn,
+        Easing::EaseOut,
+        Easing::EaseInOut,
+        Easing::CubicBezier(0.2, 0.8, 0.2, 1.0),
+        Easing::CubicBezier(0.5, -0.4, 0.3, 1.4),
+    ][i.min(5)]
 }
 
 impl Render for Showcase {
@@ -812,6 +831,156 @@ impl Render for Showcase {
                 380.0,
             ));
 
+        let easings: [(&str, Easing); 6] = [
+            ("Linear", Easing::Linear),
+            ("Ease in", Easing::EaseIn),
+            ("Ease out", Easing::EaseOut),
+            ("Ease in-out", Easing::EaseInOut),
+            (
+                "Snappy · cubic-bezier(.2,.8,.2,1)",
+                Easing::CubicBezier(0.2, 0.8, 0.2, 1.0),
+            ),
+            (
+                "Overshoot · cubic-bezier(.5,-.4,.3,1.4)",
+                Easing::CubicBezier(0.5, -0.4, 0.3, 1.4),
+            ),
+        ];
+        let kind_labels: Vec<&'static str> = EntryKind::ALL.iter().map(|k| k.label()).collect();
+        let (me_k, me_e, me_d, me_r) = (me.clone(), me.clone(), me.clone(), me.clone());
+        let apply = |s: &Showcase, cx: &mut gpui::App| {
+            Motion::new(
+                Duration::from_millis(s.anim_ms as u64),
+                easings_of(s.anim_ease),
+            )
+            .entry(EntryKind::ALL[s.anim_kind])
+            .set_global(cx);
+        };
+        let anim_settings = section("Animation settings")
+            .child(Muted::new(
+                "Applies to every component: entry style, easing and duration. Charts, sliders, progress, knobs and gauges also animate their values in.",
+            ))
+            .child(
+                row()
+                    .child(Label::new("Entry"))
+                    .child(
+                        div().w(px(200.0)).child(
+                            Select::new("anim-kind")
+                                .options(kind_labels.clone())
+                                .selected(Some(self.anim_kind))
+                                .on_change(move |i, _, cx| {
+                                    me_k.update(cx, |s, cx| {
+                                        s.anim_kind = i;
+                                        apply(s, cx);
+                                        s.replay += 1;
+                                        cx.notify();
+                                    })
+                                }),
+                        ),
+                    )
+                    .child(Label::new("Easing"))
+                    .child(
+                        div().w(px(260.0)).child(
+                            Select::new("anim-ease")
+                                .options(easings.iter().map(|e| e.0).collect::<Vec<_>>())
+                                .selected(Some(self.anim_ease))
+                                .on_change(move |i, _, cx| {
+                                    me_e.update(cx, |s, cx| {
+                                        s.anim_ease = i;
+                                        apply(s, cx);
+                                        s.replay += 1;
+                                        cx.notify();
+                                    })
+                                }),
+                        ),
+                    ),
+            )
+            .child(
+                row()
+                    .child(Label::new("Duration"))
+                    .child(
+                        div().w(px(260.0)).child(
+                            Slider::new("anim-ms", self.anim_ms)
+                                .range(100.0, 1500.0)
+                                .step(50.0)
+                                .show_value(true)
+                                .format(|v| format!("{v:.0} ms"))
+                                .on_change(move |v, _, cx| {
+                                    me_d.update(cx, |s, cx| {
+                                        s.anim_ms = v;
+                                        apply(s, cx);
+                                        cx.notify();
+                                    })
+                                }),
+                        ),
+                    )
+                    .child(Button::new("anim-replay", "Replay").on_click(cx.listener(
+                        |s, _, _, cx| {
+                            s.replay += 1;
+                            cx.notify();
+                        },
+                    ))),
+            );
+        let _ = me_r;
+        let mut curves = col();
+        for (i, (name, e)) in easings.iter().enumerate() {
+            let e = *e;
+            curves = curves.child(
+                row()
+                    .child(div().w(px(300.0)).child(Mono::new(*name)))
+                    .child(
+                        div()
+                            .relative()
+                            .w(px(260.0))
+                            .h(px(14.0))
+                            .child(
+                                div()
+                                    .absolute()
+                                    .top(px(6.0))
+                                    .w_full()
+                                    .h(px(2.0))
+                                    .bg(hsla(t.palette.border)),
+                            )
+                            .child(
+                                div()
+                                    .absolute()
+                                    .top_0()
+                                    .size(px(14.0))
+                                    .rounded_full()
+                                    .bg(hsla(t.palette.primary))
+                                    .with_animation(
+                                        ("ease-dot", i),
+                                        Animation::new(Duration::from_millis(1600))
+                                            .repeat()
+                                            .with_easing(move |p| e.apply(p).clamp(0.0, 1.0)),
+                                        |d, p| d.left(px(p * 246.0)),
+                                    ),
+                            ),
+                    ),
+            );
+        }
+        let anim_curves = section("Easing curves")
+            .child(Muted::new(
+                "Each dot loops with its curve (1.6 s). Custom curves: Easing::CubicBezier.",
+            ))
+            .child(curves);
+        let anim_loading = section("Loading · looping")
+            .child(Muted::new("Spinner 900 ms · IndeterminateBar 1.4 s · Skeleton 1.6 s (linear). Override with .motion(Motion)."))
+            .child(
+                row()
+                    .child(Spinner::new("an-sp"))
+                    .child(Spinner::new("an-sp2").motion(Motion::new(Duration::from_millis(500), Easing::EaseInOut)))
+                    .child(div().w(px(200.0)).child(IndeterminateBar::new("an-ib")))
+                    .child(div().w(px(200.0)).child(Skeleton::new("an-sk"))),
+            );
+        let anim_docs = section("What animates")
+            .child(Label::new("Entry — every component"))
+            .child(Muted::new("Fade, Rise, Drop, Slide from left/right or None; set globally above or per section with the dropdown on each section header."))
+            .child(Label::new("Value-in — progress, slider, range slider, knob, gauge, bar, line, pie (sweep), radial bar, histogram"))
+            .child(Muted::new("Values grow from zero to their target using the same duration and easing."))
+            .child(Label::new("Pie / donut — hover pop and selection"))
+            .child(Muted::new("Slices ease out 6 px on hover (Tween), selected slice keeps a half pop and an accent outline (selected_color)."))
+            .child(Label::new("Composable — Curve"))
+            .child(Muted::new("Curve::from(easing).window(a, b) / reverse / ping_pong / then / pipe / stagger(i, n, overlap)."));
         let sections: Vec<(&'static str, &'static str, gpui::AnyElement)> = vec![
             (
                 "Foundations",
@@ -1014,6 +1183,10 @@ impl Render for Showcase {
                     .child(charts_misc)
                     .into_any_element(),
             ),
+            ("Animation", "Settings", anim_settings.into_any_element()),
+            ("Animation", "Easing curves", anim_curves.into_any_element()),
+            ("Animation", "Loading", anim_loading.into_any_element()),
+            ("Animation", "What animates", anim_docs.into_any_element()),
         ];
 
         let cats: Vec<&'static str> = {
@@ -1109,7 +1282,32 @@ impl Render for Showcase {
                 last_cat = c;
             }
             shown += 1;
-            body = body.child(el);
+            let kind = self.sec_kind.get(title).copied().unwrap_or(0);
+            let me_s = me.clone();
+            let mut opts = vec!["Section: inherit"];
+            opts.extend(EntryKind::ALL.iter().map(|k| k.label()));
+            body = body.child(
+                row().justify_end().child(Muted::new(title)).child(
+                    div().w(px(190.0)).child(
+                        Select::new(("sec-anim", shown as u32))
+                            .options(opts)
+                            .selected(Some(kind))
+                            .on_change(move |i, _, cx| {
+                                me_s.update(cx, |s, cx| {
+                                    s.sec_kind.insert(title, i);
+                                    s.replay += 1;
+                                    cx.notify();
+                                })
+                            }),
+                    ),
+                ),
+            );
+            body = body.child(if kind == 0 {
+                el
+            } else {
+                dodai_gpui::motion::entry(el, title, Motion::of(cx).entry(EntryKind::ALL[kind - 1]))
+                    .into_any_element()
+            });
         }
         if shown == 0 {
             body = body.child(
@@ -1148,7 +1346,7 @@ impl Render for Showcase {
                     .flex_1()
                     .h_full()
                     .overflow_y_scroll()
-                    .child(body.id(("body", self.cat))),
+                    .child(body.id(("body", self.cat * 1000 + self.replay))),
             )
             .child(Scanlines::new())
     }
@@ -1174,6 +1372,11 @@ fn main() {
                             .ok()
                             .and_then(|v| v.parse().ok())
                             .unwrap_or(0),
+                        anim_kind: 1,
+                        anim_ease: 2,
+                        anim_ms: 220.0,
+                        replay: 0,
+                        sec_kind: Default::default(),
                         cat_count: 1,
                         side_focus: cx.focus_handle(),
                         rating: 3,

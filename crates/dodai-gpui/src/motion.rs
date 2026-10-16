@@ -321,12 +321,12 @@ impl Motion {
     /// One-shot gpui animation with this duration and easing.
     pub fn animation(&self) -> Animation {
         let e = self.easing;
-        Animation::new(self.duration).with_easing(move |t| e.apply(t))
+        Animation::new(self.duration).with_easing(move |t| e.apply(t).clamp(0.0, 1.0))
     }
     /// One-shot gpui animation driven by a composed [`Curve`] (the motion's
     /// own easing is ignored; put it in the curve).
     pub fn animation_with(&self, curve: Curve) -> Animation {
-        Animation::new(self.duration).with_easing(move |t| curve.apply(t))
+        Animation::new(self.duration).with_easing(move |t| curve.apply(t).clamp(0.0, 1.0))
     }
     /// Looping gpui animation with this duration and easing per cycle.
     pub fn looping(&self) -> Animation {
