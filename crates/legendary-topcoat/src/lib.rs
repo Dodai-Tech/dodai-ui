@@ -15,7 +15,7 @@
 //! In a Topcoat page, inline it (it never contains `</style`):
 //! `<style>(css)</style>` and call `<script>(legendary_topcoat::switcher_script(..))</script>`.
 
-use legendary_core::Theme;
+use legendary_core::{Shape, ShapeKind, Theme};
 use std::fmt::Write;
 
 /// Component layer; only references `var(--lg-*)`.
@@ -24,6 +24,95 @@ pub const COMPONENTS_CSS: &str = include_str!("components.css");
 /// Google Fonts stylesheet URL for the fallback display face (Rajdhani) and mono.
 pub const GOOGLE_FONTS_URL: &str =
     "https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap";
+
+const PROBE: f32 = 4096.0;
+
+/// Symbolic CSS coordinate for a value measured on a `PROBE`-sized box.
+fn coord(v: f32, c: f32) -> String {
+    let near = |a: f32, b: f32| (a - b).abs() < 1e-3;
+    if near(v, 0.0) {
+        "0".into()
+    } else if near(v, PROBE) {
+        "100%".into()
+    } else if near(v, c) {
+        format!("{c}px")
+    } else {
+        format!("calc(100% - {c}px)")
+    }
+}
+
+/// Points of `shape`'s outline as CSS `x y` pairs (percent + px).
+fn clip_points(shape: &Shape) -> Vec<String> {
+    let c = if shape.kind() == ShapeKind::Chamfered {
+        shape.chamfer
+    } else {
+        0.0
+    };
+    shape
+        .outline(PROBE, PROBE)
+        .into_iter()
+        .map(|(x, y)| format!("{} {}", coord(x, c), coord(y, c)))
+        .collect()
+}
+
+/// `clip-path` value for `shape`: `polygon(...)` generated from
+/// [`Shape::outline`] when chamfered, `none` for rounded/square shapes.
+pub fn clip_path(shape: &Shape) -> String {
+    if shape.kind() == ShapeKind::Chamfered {
+        format!("polygon({})", clip_points(shape).join(","))
+    } else {
+        "none".into()
+    }
+}
+
+fn with_chamfer(shape: &Shape, chamfer: f32) -> Shape {
+    Shape {
+        chamfer: chamfer.max(0.0),
+        ..shape.clone()
+    }
+}
+
+/// Clip for the inner (fill) layer inset by the border width.
+fn clip_inner(shape: &Shape) -> String {
+    let k = 2.0 - std::f32::consts::SQRT_2;
+    clip_path(&with_chamfer(shape, shape.chamfer - k * shape.border_width))
+}
+
+/// Hollow border ring: the outer outline plus the inset outline (`evenodd`).
+/// Only chamfered themes need it (others draw the ring with an inset shadow);
+/// otherwise a degenerate polygon that paints nothing.
+fn clip_ring(shape: &Shape) -> String {
+    if shape.kind() != ShapeKind::Chamfered {
+        return "polygon(0 0,0 0,0 0)".into();
+    }
+    let bw = shape.border_width;
+    let k = 2.0 - std::f32::consts::SQRT_2;
+    let inner = with_chamfer(shape, shape.chamfer - k * bw);
+    let c = inner.chamfer;
+    let pts = inner.outline(PROBE, PROBE).into_iter().map(|(x, y)| {
+        let f = |v: f32| {
+            let near = |a: f32, b: f32| (a - b).abs() < 1e-3;
+            if near(v, 0.0) {
+                format!("{bw}px")
+            } else if near(v, PROBE) {
+                format!("calc(100% - {bw}px)")
+            } else if near(v, c) {
+                format!("{}px", c + bw)
+            } else {
+                format!("calc(100% - {}px)", c + bw)
+            }
+        };
+        format!("{} {}", f(x), f(y))
+    });
+    let mut all = clip_points(shape);
+    all.extend(pts);
+    format!("polygon(evenodd,{})", all.join(","))
+}
+
+/// Stylesheet for one theme (alias of [`stylesheet`]).
+pub fn css(t: &Theme) -> String {
+    stylesheet(t)
+}
 
 /// `--lg-*` custom property declarations (no selector) for one theme.
 pub fn theme_vars(t: &Theme) -> String {
@@ -103,6 +192,61 @@ pub fn theme_vars(t: &Theme) -> String {
         "scanlines",
         if t.effects.scanlines { "1" } else { "0" }.to_string(),
     );
+    let chamfered = t.shape.kind() == ShapeKind::Chamfered;
+    let glow_on = t.effects.glow_enabled();
+    let (gc, gr) = (t.effects.glow_color().to_css(), t.effects.glow_radius());
+    v(
+        "glow-shadow",
+        if glow_on && !chamfered {
+            format!("0 0 {gr}px {gc}")
+        } else {
+            "0 0 0 0 transparent".into()
+        },
+    );
+    v(
+        "glow-filter",
+        if glow_on && chamfered {
+            format!("drop-shadow(0 0 {gr}px {gc})")
+        } else {
+            "none".into()
+        },
+    );
+    v(
+        "ring-inset",
+        if chamfered {
+            "0px".into()
+        } else {
+            format!("{}px", t.shape.border_width)
+        },
+    );
+    v("clip", clip_path(&t.shape));
+    v(
+        "clip-sm",
+        clip_path(&with_chamfer(&t.shape, t.shape.chamfer.min(6.0))),
+    );
+    v("clip-inner", clip_inner(&t.shape));
+    v("clip-ring", clip_ring(&t.shape));
+    v(
+        "inner-radius",
+        format!("{}px", (t.shape.radius - t.shape.border_width).max(0.0)),
+    );
+    v("hard-shadow", format!("{}px", t.effects.hard_shadow));
+    v("scheme", if t.is_dark() { "dark" } else { "light" }.into());
+    v("on-secondary-hover", t.on(p.secondary_hover).to_css());
+    v("danger-hover", p.danger.lighten(0.15).to_css());
+    v("danger-active", p.danger.darken(0.2).to_css());
+    v("secondary-active", p.secondary.darken(0.2).to_css());
+    for (k, c) in [
+        ("primary", p.primary),
+        ("secondary", p.secondary),
+        ("info", p.info),
+        ("success", p.success),
+        ("warning", p.warning),
+        ("danger", p.danger),
+    ] {
+        v(&format!("on-{k}-solid"), t.on(c).to_css());
+        v(&format!("{k}-soft"), c.with_alpha(0.12).to_css());
+    }
     s
 }
 
@@ -151,7 +295,7 @@ if(!t)return;t.hasAttribute('data-lg-theme-next')?set(i+1):set(i-1)}});}})();"
 #[cfg(test)]
 mod tests {
     use super::*;
-    use legendary_core::themes;
+    use legendary_core::themes::{self, Spec};
 
     #[test]
     fn vars_contain_brand_yellow() {
@@ -198,6 +342,204 @@ mod tests {
             }
         }
         assert!(missing.is_empty(), "undefined vars: {missing:?}");
+    }
+
+    fn light(radius: f32) -> Theme {
+        let mut t = sample_light();
+        t.shape.radius = radius;
+        t.meta.id = if radius > 0.0 {
+            "test-light"
+        } else {
+            "test-square"
+        };
+        t
+    }
+
+    fn sample_light() -> Theme {
+        use legendary_core::{Corners, Mode, Shape, Spacing, ThemeMeta, Typography};
+        Spec {
+            meta: ThemeMeta {
+                id: "test-light",
+                name: "Test Light",
+                family: "test",
+                description: "",
+                mode: Mode::Light,
+            },
+            mode: Mode::Light,
+            background: 0xf6f7f9,
+            surface: 0xffffff,
+            raised: 0xeceef2,
+            border: 0xd5d9e0,
+            border_strong: 0xaab1bd,
+            text: 0x14171c,
+            muted: 0x4a5260,
+            disabled: 0x8a92a0,
+            primary: 0x1f5fd6,
+            primary_hover: 0x1a50b5,
+            on_primary: 0xffffff,
+            secondary: 0x0a7d6e,
+            on_secondary: 0xffffff,
+            accent: 0xb45309,
+            info: 0x1f6fd6,
+            success: 0x15803d,
+            warning: 0xb45309,
+            danger: 0xc81e3a,
+            series: [
+                0x1f5fd6, 0x0a7d6e, 0xb45309, 0xc81e3a, 0x7c3aed, 0x0e7490, 0xbe185d, 0x4a5260,
+            ],
+            typography: Typography {
+                display: "Inter",
+                body: "Inter",
+                mono: "Menlo",
+                size_xs: 11.0,
+                size_sm: 13.0,
+                size_md: 15.0,
+                size_lg: 18.0,
+                size_xl: 24.0,
+                size_xxl: 36.0,
+                uppercase_labels: false,
+                label_tracking: 0.0,
+            },
+            spacing: Spacing {
+                xs: 4.0,
+                sm: 8.0,
+                md: 12.0,
+                lg: 20.0,
+                xl: 32.0,
+            },
+            shape: Shape {
+                corners: Corners::NONE,
+                radius: 8.0,
+                chamfer: 0.0,
+                border_width: 1.0,
+                control_height: 40.0,
+            },
+            glow: 0.0,
+            glow_blur: 0.0,
+            scanlines: false,
+            hard_shadow: 2.0,
+        }
+        .build()
+    }
+
+    /// Evaluate a symbolic clip polygon at `w`x`h`.
+    fn eval_clip(poly: &str, w: f32, h: f32) -> Vec<(f32, f32)> {
+        fn tok(t: &str, full: f32) -> f32 {
+            let t = t.trim();
+            if t == "0" {
+                0.0
+            } else if t == "100%" {
+                full
+            } else if let Some(r) = t.strip_prefix("calc(100% - ") {
+                full - r
+                    .trim_end_matches(")")
+                    .trim_end_matches("px")
+                    .parse::<f32>()
+                    .unwrap()
+            } else {
+                t.trim_end_matches("px").parse().unwrap()
+            }
+        }
+        let inner = poly
+            .strip_prefix("polygon(")
+            .unwrap()
+            .strip_suffix(')')
+            .unwrap();
+        let (mut pts, mut depth, mut cur) = (vec![], 0, String::new());
+        for ch in inner.chars() {
+            match ch {
+                '(' => depth += 1,
+                ')' => depth -= 1,
+                _ => {}
+            }
+            if ch == ',' && depth == 0 {
+                pts.push(std::mem::take(&mut cur));
+            } else {
+                cur.push(ch);
+            }
+        }
+        pts.push(cur);
+        pts.iter()
+            .map(|p| {
+                let p = p.trim();
+                let split = if p.contains("calc(") && !p.starts_with("calc(") {
+                    p.find(' ').unwrap()
+                } else if p.starts_with("calc(") {
+                    p.find(')').unwrap() + 1
+                } else {
+                    p.find(' ').unwrap()
+                };
+                (tok(&p[..split], w), tok(&p[split..], h))
+            })
+            .collect()
+    }
+
+    #[test]
+    fn chamfered_clip_matches_outline() {
+        for t in themes::all() {
+            let c = theme_vars(&t);
+            let want = t.shape.outline(240.0, 120.0);
+            if t.shape.kind() == legendary_core::ShapeKind::Chamfered {
+                let clip = clip_path(&t.shape);
+                assert!(c.contains(&format!("--lg-clip:{clip};")));
+                assert_eq!(eval_clip(&clip, 240.0, 120.0), want, "{}", t.id());
+            } else {
+                assert!(c.contains("--lg-clip:none;"));
+            }
+        }
+    }
+
+    #[test]
+    fn cyberpunk_clip_is_bottom_right_only() {
+        let t = Theme::default();
+        assert_eq!(
+            clip_path(&t.shape),
+            "polygon(0 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%)"
+        );
+    }
+
+    #[test]
+    fn rounded_and_square_have_no_clip() {
+        for (t, r) in [(light(8.0), "8px"), (light(0.0), "0px")] {
+            let v = theme_vars(&t);
+            assert!(v.contains("--lg-clip:none;") && v.contains("--lg-clip-inner:none;"));
+            assert!(v.contains(&format!("--lg-radius:{r};")));
+            assert!(v.contains("--lg-glow-filter:none;"));
+            assert!(v.contains("--lg-scheme:light;"));
+            assert!(v.contains("--lg-clip-ring:polygon(0 0,0 0,0 0);"));
+        }
+    }
+
+    #[test]
+    fn components_defined_for_every_shape() {
+        let mut themes = themes::all();
+        themes.extend([light(8.0), light(0.0)]);
+        for t in &themes {
+            let defined = theme_vars(t);
+            for part in COMPONENTS_CSS.split("var(--lg-").skip(1) {
+                let name: String = part
+                    .chars()
+                    .take_while(|c| c.is_ascii_alphanumeric() || *c == '-')
+                    .collect();
+                assert!(
+                    defined.contains(&format!("--lg-{name}:")),
+                    "{}: {name}",
+                    t.id()
+                );
+            }
+        }
+        if let Ok(p) = std::env::var("LG_DUMP") {
+            std::fs::write(p, multi_theme_stylesheet(&themes)).unwrap();
+        }
+    }
+
+    #[test]
+    fn glow_uses_filter_when_chamfered_shadow_otherwise() {
+        let cp = theme_vars(&Theme::default());
+        assert!(cp.contains("--lg-glow-filter:drop-shadow("));
+        assert!(cp.contains("--lg-glow-shadow:0 0 0 0 transparent;"));
+        let off = theme_vars(&Theme::default().with_glow_intensity(0.0));
+        assert!(off.contains("--lg-glow-filter:none;"));
     }
 
     #[test]
