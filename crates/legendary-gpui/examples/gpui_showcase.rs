@@ -11,7 +11,7 @@ use gpui::{
 use legendary_core::{ButtonVariant, Theme, Tone};
 use legendary_gpui::{
     cycle_next, cycle_prev, glow_intensity, hsla, install, set_glow_intensity, theme_of,
-    ActiveLegendary, Button, Checkbox, Divider, Heading, InputBox, Label, LegendaryStyled,
+    ActiveLegendary, Button, Checkbox, Direction, Divider, Heading, InputBox, Knob, Label, LegendaryStyled,
     LegendaryTooltip, ListItem, Mono, Muted, Panel, ProgressBar, Radio, Scanlines, Slider, Tabs,
     Tag, ThemeSwitcherBar, Toggle,
 };
@@ -23,6 +23,8 @@ struct Showcase {
     check: bool,
     radio: usize,
     slider: f32,
+    knob: [f32; 3],
+    vslider: [f32; 3],
     list: usize,
     clicks: u32,
 }
@@ -130,6 +132,52 @@ impl Render for Showcase {
             .child(ProgressBar::new(0.4).tone(Tone::Warning))
             .child(ProgressBar::new(0.15).tone(Tone::Danger));
 
+        let mut dials = row().gap(px(24.0));
+        for i in 0..3 {
+            let m = me.clone();
+            dials = dials.child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .items_center()
+                    .gap(gap)
+                    .child(
+                        Knob::new(("knob", i), self.knob[i])
+                            .size(if i == 1 { 96.0 } else { 72.0 })
+                            .disabled(i == 2)
+                            .on_change(move |v, _, cx| {
+                                m.update(cx, |s, cx| {
+                                    s.knob[i] = v;
+                                    cx.notify();
+                                })
+                            }),
+                    )
+                    .child(Mono::new(format!("{:.2}", self.knob[i]))),
+            );
+        }
+        for i in 0..3 {
+            let m = me.clone();
+            dials = dials.child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .items_center()
+                    .gap(gap)
+                    .child(
+                        Slider::new(("vslider", i), self.vslider[i])
+                            .direction(Direction::Vertical)
+                            .length(120.0)
+                            .on_change(move |v, _, cx| {
+                                m.update(cx, |s, cx| {
+                                    s.vslider[i] = v;
+                                    cx.notify();
+                                })
+                            }),
+                    )
+                    .child(Mono::new(format!("{:.2}", self.vslider[i]))),
+            );
+        }
+
         let mut list = div().flex().flex_col().gap(px(t.spacing.xs));
         for (i, name) in ["Inbox", "Contracts", "Fixers", "Black market"]
             .into_iter()
@@ -195,6 +243,7 @@ impl Render for Showcase {
                     .child(radios),
             )
             .child(section("Slider · Progress").child(sliders))
+            .child(section("Knob · Vertical slider").child(dials))
             .child(
                 section("Input")
                     .child(InputBox::new().placeholder("search the net…"))
@@ -273,6 +322,8 @@ fn main() {
                         check: true,
                         radio: 0,
                         slider: 0.4,
+                        knob: [0.35, 0.7, 0.5],
+                        vslider: [0.3, 0.6, 0.9],
                         list: 0,
                         clicks: 0,
                     })

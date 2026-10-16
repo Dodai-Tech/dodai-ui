@@ -91,7 +91,7 @@ pub fn inset_outline(shape: &Shape, w: f32, h: f32, inset: f32) -> Vec<(f32, f32
         .collect()
 }
 
-fn scale_alpha(c: Hsla, k: f32) -> Hsla {
+pub(crate) fn scale_alpha(c: Hsla, k: f32) -> Hsla {
     Hsla {
         a: (c.a * k).clamp(0.0, 1.0),
         ..c

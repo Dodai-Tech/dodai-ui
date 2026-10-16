@@ -210,6 +210,26 @@ fn bar(t: &Theme, frac: f32, tone: Option<Tone>, height: f32) -> gpui::Div {
     d
 }
 
+fn vbar(t: &Theme, frac: f32, width: f32) -> gpui::Div {
+    let k = t.progress(None);
+    let track_style = ShapeStyle::from_tokens(t, Some(k.track), Some(k.border), false, false);
+    let shape = scaled_shape(&t.shape, width);
+    let mut d = shaped(&shape, track_style).h_full().w(px(width));
+    let f = clamp01(frac);
+    if f > 0.0 {
+        let fill = ShapeStyle::from_tokens(t, Some(k.fill), None, true, false);
+        d = d.child(
+            shaped(&shape, fill)
+                .absolute()
+                .bottom_0()
+                .left_0()
+                .w_full()
+                .h(relative(f)),
+        );
+    }
+    d
+}
+
 /// Horizontal progress bar (`0.0..=1.0`).
 #[derive(IntoElement)]
 pub struct ProgressBar {
@@ -241,10 +261,20 @@ struct SliderState {
     dragging: bool,
 }
 
+/// Axis of a [`Slider`]. Vertical sliders grow upwards (min at the bottom).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum Direction {
+    #[default]
+    Horizontal,
+    Vertical,
+}
+
 /// Draggable slider over `min..=max` (default `0..=1`). Controlled.
 #[derive(IntoElement)]
 pub struct Slider {
     id: ElementId,
+    direction: Direction,
+    length: f32,
     value: f32,
     min: f32,
     max: f32,
@@ -258,12 +288,24 @@ impl Slider {
     pub fn new(id: impl Into<ElementId>, value: f32) -> Self {
         Self {
             id: id.into(),
+            direction: Direction::Horizontal,
+            length: 160.0,
             value,
             min: 0.0,
             max: 1.0,
             step: None,
             on_change: None,
         }
+    }
+    /// Horizontal (default, full width) or vertical (fixed [`Slider::length`]).
+    pub fn direction(mut self, d: Direction) -> Self {
+        self.direction = d;
+        self
+    }
+    /// Height in px of a vertical slider (default 160).
+    pub fn length(mut self, px: f32) -> Self {
+        self.length = px;
+        self
     }
     /// Value range.
     pub fn range(mut self, min: f32, max: f32) -> Self {
@@ -286,25 +328,26 @@ impl Slider {
 impl RenderOnce for Slider {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let vertical = self.direction == Direction::Vertical;
         let st = window.use_keyed_state(self.id.clone(), cx, |_, _| SliderState::default());
         let frac = slider_fraction(self.value, self.min, self.max);
         let (min, max, step) = (self.min, self.max, self.step);
         let apply = {
             let st = st.clone();
             let f = self.on_change.clone();
-            move |x: Pixels, w: &mut Window, cx: &mut App| {
+            move |p: gpui::Point<Pixels>, w: &mut Window, cx: &mut App| {
                 let b = st.read(cx).bounds;
                 if let Some(f) = &f {
-                    let v = slider_value(
-                        x.into(),
-                        b.origin.x.into(),
-                        b.size.width.into(),
-                        THUMB,
-                        min,
-                        max,
-                        step,
-                    );
-                    f(v, w, cx);
+                    // Position along the axis, measured from the min end.
+                    let (pos, len): (f32, f32) = if vertical {
+                        (
+                            (b.origin.y + b.size.height - p.y).into(),
+                            b.size.height.into(),
+                        )
+                    } else {
+                        ((p.x - b.origin.x).into(), b.size.width.into())
+                    };
+                    f(slider_value(pos, 0.0, len, THUMB, min, max, step), w, cx);
                 }
             }
         };
@@ -314,55 +357,64 @@ impl RenderOnce for Slider {
         let k = t.toggle(true, ControlState::Idle);
         let thumb_style = ShapeStyle::from_tokens(&t, Some(k.track), Some(k.border), true, false);
         let thumb_shape = round_shape(&t.shape, THUMB);
-        div()
+        let base = div()
             .id(self.id)
             .relative()
-            .w_full()
-            .h(px(THUMB + 4.0))
             .flex()
             .items_center()
-            .cursor_pointer()
-            .child(
-                canvas(
-                    |_, _, _| (),
-                    move |b, _, _, cx| rec.update(cx, |s, _| s.bounds = b),
-                )
-                .absolute()
-                .size_full(),
+            .cursor_pointer();
+        let base = if vertical {
+            base.w(px(THUMB + 4.0)).h(px(self.length)).justify_center()
+        } else {
+            base.w_full().h(px(THUMB + 4.0))
+        };
+        let track = if vertical {
+            div().h_full().w(px(6.0)).child(vbar(&t, frac, 6.0))
+        } else {
+            div().w_full().child(bar(&t, frac, None, 6.0))
+        };
+        let thumb = shaped(&thumb_shape, thumb_style)
+            .absolute()
+            .w(px(THUMB))
+            .h(px(THUMB));
+        let rail = div().absolute().top_0().bottom_0().left_0().right_0();
+        let rail = if vertical {
+            rail.top(px(THUMB / 2.0)).bottom(px(THUMB / 2.0)).child(
+                thumb
+                    .left(px(2.0))
+                    .top(relative(1.0 - frac))
+                    .mt(px(-THUMB / 2.0)),
             )
-            .child(div().w_full().child(bar(&t, frac, None, 6.0)))
-            .child(
-                div()
-                    .absolute()
-                    .left(px(THUMB / 2.0))
-                    .right(px(THUMB / 2.0))
-                    .top_0()
-                    .bottom_0()
-                    .child(
-                        shaped(&thumb_shape, thumb_style)
-                            .absolute()
-                            .top(px(2.0))
-                            .left(relative(frac))
-                            .ml(px(-THUMB / 2.0))
-                            .w(px(THUMB))
-                            .h(px(THUMB)),
-                    ),
+        } else {
+            rail.left(px(THUMB / 2.0))
+                .right(px(THUMB / 2.0))
+                .child(thumb.top(px(2.0)).left(relative(frac)).ml(px(-THUMB / 2.0)))
+        };
+        base.child(
+            canvas(
+                |_, _, _| (),
+                move |b, _, _, cx| rec.update(cx, |s, _| s.bounds = b),
             )
-            .on_mouse_down(MouseButton::Left, move |e, w, cx| {
-                down.update(cx, |s, _| s.dragging = true);
-                apply_down(e.position.x, w, cx);
-            })
-            .on_mouse_move(move |e, w, cx| {
-                if mv.read(cx).dragging {
-                    apply_move(e.position.x, w, cx);
-                }
-            })
-            .on_mouse_up(MouseButton::Left, move |_, _, cx| {
-                up.update(cx, |s, _| s.dragging = false)
-            })
-            .on_mouse_up_out(MouseButton::Left, move |_, _, cx| {
-                up2.update(cx, |s, _| s.dragging = false)
-            })
+            .absolute()
+            .size_full(),
+        )
+        .child(track)
+        .child(rail)
+        .on_mouse_down(MouseButton::Left, move |e, w, cx| {
+            down.update(cx, |s, _| s.dragging = true);
+            apply_down(e.position, w, cx);
+        })
+        .on_mouse_move(move |e, w, cx| {
+            if mv.read(cx).dragging {
+                apply_move(e.position, w, cx);
+            }
+        })
+        .on_mouse_up(MouseButton::Left, move |_, _, cx| {
+            up.update(cx, |s, _| s.dragging = false)
+        })
+        .on_mouse_up_out(MouseButton::Left, move |_, _, cx| {
+            up2.update(cx, |s, _| s.dragging = false)
+        })
     }
 }
 
