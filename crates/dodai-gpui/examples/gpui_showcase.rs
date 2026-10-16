@@ -76,7 +76,8 @@ fn easings_of(i: usize) -> Easing {
 }
 
 impl Render for Showcase {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let narrow = window.viewport_size().width < px(760.0);
         let t = theme_of(cx);
         let me = cx.entity();
         let gap = px(t.spacing.md);
@@ -1266,7 +1267,11 @@ impl Render for Showcase {
             .flex()
             .flex_col()
             .gap(gap)
-            .p(px(t.spacing.xl))
+            .w_full()
+            .min_w_0()
+            .max_w(px(1100.0))
+            .mx_auto()
+            .p(px(if narrow { t.spacing.md } else { t.spacing.xl }))
             .child(ds_panel)
             .child(theme_panel);
         let mut shown = 0;
@@ -1306,13 +1311,15 @@ impl Render for Showcase {
             let mut chips = div()
                 .flex()
                 .flex_wrap()
+                .items_center()
                 .justify_end()
                 .gap(px(4.0))
-                .max_w(px(360.0));
-            let label = div()
-                .text_size(px(10.0))
-                .text_color(hsla(t.palette.text_muted))
-                .child("Animations");
+                .child(
+                    div()
+                        .text_size(px(10.0))
+                        .text_color(hsla(t.palette.text_muted))
+                        .child("Animations"),
+                );
             let me_g = me.clone();
             chips = chips.child(
                 chip(("sec-g", shown as u32), "Global", kind.is_none()).on_click(
@@ -1347,23 +1354,13 @@ impl Render for Showcase {
             };
             body = body.child(
                 div()
-                    .relative()
                     .flex()
                     .flex_col()
+                    .gap(px(4.0))
                     .w_full()
-                    .child(content)
-                    .child(
-                        div()
-                            .absolute()
-                            .top(px(6.0))
-                            .right(px(8.0))
-                            .flex()
-                            .flex_col()
-                            .items_end()
-                            .gap(px(2.0))
-                            .child(label)
-                            .child(chips),
-                    ),
+                    .min_w_0()
+                    .child(chips)
+                    .child(content),
             );
         }
         if shown == 0 {
@@ -1396,11 +1393,20 @@ impl Render for Showcase {
             .size_full()
             .dodai_background(&t)
             .flex()
-            .child(div().id("side").h_full().overflow_y_scroll().child(side))
+            .child(
+                div()
+                    .id("side")
+                    .flex_none()
+                    .h_full()
+                    .overflow_y_scroll()
+                    .when(narrow, |d| d.max_w(px(170.0)))
+                    .child(side),
+            )
             .child(
                 div()
                     .id("scroll")
                     .flex_1()
+                    .min_w_0()
                     .h_full()
                     .overflow_y_scroll()
                     .child(body.id(("body", self.cat * 1000 + self.replay))),
