@@ -64,6 +64,20 @@ struct Showcase {
     clicks: u32,
 }
 
+fn cat_icon(name: &str) -> &'static str {
+    match name {
+        "All" => "◈",
+        "Foundations" => "◧",
+        "Inputs" => "⌨",
+        "Actions" => "▶",
+        "Navigation" => "☰",
+        "Data display" => "▤",
+        "Charts" => "◔",
+        "Animation" => "✦",
+        _ => "•",
+    }
+}
+
 fn easings_of(i: usize) -> Easing {
     [
         Easing::Linear,
@@ -1247,6 +1261,7 @@ impl Render for Showcase {
             let n = count_in(if idx == 0 { None } else { Some(cats[idx - 1]) });
             side = side.child(
                 ListItem::new(("cat", idx), format!("{name}  ·  {n}"))
+                    .icon(cat_icon(name))
                     .selected(self.cat == idx)
                     .on_click(move |_, w, cx| {
                         m.update(cx, |s, cx| {
@@ -1269,8 +1284,6 @@ impl Render for Showcase {
             .gap(gap)
             .w_full()
             .min_w_0()
-            .max_w(px(1100.0))
-            .mx_auto()
             .p(px(if narrow { t.spacing.md } else { t.spacing.xl }))
             .child(ds_panel)
             .child(theme_panel);
