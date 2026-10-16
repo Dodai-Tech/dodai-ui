@@ -1,0 +1,196 @@
+//! Pure token → CSS-class mapping (no Yew, trivially unit-testable).
+//! Class names target the stylesheet shipped by `legendary-topcoat`.
+
+use legendary_core::{ButtonVariant, Tone};
+
+/// Join non-empty class fragments with spaces.
+pub fn join(parts: &[&str]) -> String {
+    parts
+        .iter()
+        .filter(|p| !p.is_empty())
+        .copied()
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// Class for a [`ButtonVariant`].
+pub fn button(v: ButtonVariant) -> &'static str {
+    match v {
+        ButtonVariant::Primary => "lg-btn lg-btn--primary",
+        ButtonVariant::Secondary => "lg-btn lg-btn--secondary",
+        ButtonVariant::Outline => "lg-btn lg-btn--outline",
+        ButtonVariant::OutlineSecondary => "lg-btn lg-btn--outline-secondary",
+        ButtonVariant::Danger => "lg-btn lg-btn--danger",
+        ButtonVariant::Ghost => "lg-btn lg-btn--ghost",
+    }
+}
+
+/// Modifier class for a status [`Tone`].
+pub fn tone(t: Tone) -> &'static str {
+    match t {
+        Tone::Info => "",
+        Tone::Success => "lg-tag--success",
+        Tone::Warning => "lg-tag--warning",
+        Tone::Danger => "lg-tag--danger",
+    }
+}
+
+/// Progress-bar tone modifier.
+pub fn progress_tone(t: Tone) -> &'static str {
+    match t {
+        Tone::Info => "",
+        Tone::Success => "lg-progress--success",
+        Tone::Warning => "lg-progress--warning",
+        Tone::Danger => "lg-progress--danger",
+    }
+}
+
+/// Clamp a percentage to `0..=100`.
+pub fn clamp_pct(v: f32) -> f32 {
+    if v.is_nan() {
+        0.0
+    } else {
+        v.clamp(0.0, 100.0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use legendary_core::{themes, ShapeKind};
+
+    #[test]
+    fn every_variant_has_distinct_class() {
+        use ButtonVariant::*;
+        let v = [Primary, Secondary, Outline, OutlineSecondary, Danger, Ghost];
+        let set: std::collections::HashSet<_> = v.iter().map(|b| button(*b)).collect();
+        assert_eq!(set.len(), v.len());
+    }
+
+    #[test]
+    fn tones_map() {
+        assert_eq!(tone(Tone::Info), "");
+        assert_eq!(tone(Tone::Danger), "lg-tag--danger");
+        assert_eq!(progress_tone(Tone::Success), "lg-progress--success");
+        assert_eq!(join(&["a", "", "b"]), "a b");
+        assert_eq!(clamp_pct(150.0), 100.0);
+        assert_eq!(clamp_pct(f32::NAN), 0.0);
+    }
+
+    fn light() -> legendary_core::Theme {
+        use legendary_core::themes::Spec;
+        use legendary_core::{Corners, Mode, Shape, Spacing, ThemeMeta, Typography};
+        let s = Spec {
+            meta: ThemeMeta {
+                id: "test-light",
+                name: "Test Light",
+                family: "test",
+                description: "",
+                mode: Mode::Light,
+            },
+            mode: Mode::Light,
+            background: 0xf6f7f9,
+            surface: 0xffffff,
+            raised: 0xeceef2,
+            border: 0xd5d9e0,
+            border_strong: 0xaab1bd,
+            text: 0x14171c,
+            muted: 0x4a5260,
+            disabled: 0x8a92a0,
+            primary: 0x1f5fd6,
+            primary_hover: 0x1a50b5,
+            on_primary: 0xffffff,
+            secondary: 0x0a7d6e,
+            on_secondary: 0xffffff,
+            accent: 0xb45309,
+            info: 0x1f6fd6,
+            success: 0x15803d,
+            warning: 0xb45309,
+            danger: 0xc81e3a,
+            series: [
+                0x1f5fd6, 0x0a7d6e, 0xb45309, 0xc81e3a, 0x7c3aed, 0x0e7490, 0xbe185d, 0x4a5260,
+            ],
+            typography: Typography {
+                display: "Inter",
+                body: "Inter",
+                mono: "Menlo",
+                size_xs: 11.0,
+                size_sm: 13.0,
+                size_md: 15.0,
+                size_lg: 18.0,
+                size_xl: 24.0,
+                size_xxl: 36.0,
+                uppercase_labels: false,
+                label_tracking: 0.0,
+            },
+            spacing: Spacing {
+                xs: 4.0,
+                sm: 8.0,
+                md: 12.0,
+                lg: 20.0,
+                xl: 32.0,
+            },
+            shape: Shape {
+                corners: Corners::NONE,
+                radius: 8.0,
+                chamfer: 0.0,
+                border_width: 1.0,
+                control_height: 40.0,
+            },
+            glow: 0.0,
+            glow_blur: 0.0,
+            scanlines: false,
+            hard_shadow: 2.0,
+        };
+        let rounded = s.build();
+        assert_eq!(rounded.shape.kind(), ShapeKind::Rounded);
+        rounded
+    }
+
+    #[test]
+    fn css_follows_shape_and_effects() {
+        let l = light();
+        let css = theme_css_for(&l);
+        assert!(css.contains("--lg-label-case:none;"));
+        assert!(css.contains("--lg-glow-filter:none;"));
+        for t in themes::all() {
+            let c = legendary_topcoat::clip_path(&t.shape);
+            assert_eq!(
+                c != "none",
+                t.shape.kind() == ShapeKind::Chamfered,
+                "{}",
+                t.id()
+            );
+        }
+        assert_eq!(legendary_topcoat::clip_path(&l.shape), "none");
+    }
+
+    fn theme_css_for(t: &legendary_core::Theme) -> String {
+        crate::theme::theme_css(t)
+    }
+
+    #[test]
+    fn square_theme_has_square_kind() {
+        let mut t = light();
+        t.shape.radius = 0.0;
+        assert_eq!(t.shape.kind(), ShapeKind::Square);
+    }
+
+    #[test]
+    fn components_render_themed_html() {
+        use yew::prelude::*;
+        #[function_component]
+        fn App() -> Html {
+            html! { <crate::ThemeProvider theme_id="nope"><crate::Button variant={ButtonVariant::Danger}>{"x"}</crate::Button>
+            <crate::Progress value={150.0} /></crate::ThemeProvider> }
+        }
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap();
+        let out = rt.block_on(yew::ServerRenderer::<App>::new().render());
+        assert!(out.contains("lg-btn lg-btn--danger"));
+        assert!(out.contains("--v:100%"));
+        assert!(out.contains("data-theme="));
+        assert!(out.contains("--lg-clip") || out.contains("lg-root"));
+    }
+}
