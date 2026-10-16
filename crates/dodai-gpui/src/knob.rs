@@ -117,7 +117,8 @@ impl Knob {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let st = window.use_keyed_state(self.id.clone(), cx, |_, _| KnobState::default());
-        let frac = slider_fraction(self.value, self.min, self.max);
+        let frac = slider_fraction(self.value, self.min, self.max)
+            * crate::motion::grow(window, cx, "Knob");
         let state = if self.disabled {
             ControlState::Disabled
         } else {

@@ -165,11 +165,12 @@ impl RadialBar {
 }
 
 impl RadialBar {
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let g = crate::motion::grow(window, cx, "RadialBar");
         let n = self.rings.len().max(1);
         let size = self.size;
-        let fr: Vec<f32> = self.rings.iter().map(|r| norm(r.1, 0.0, r.2)).collect();
+        let fr: Vec<f32> = self.rings.iter().map(|r| norm(r.1, 0.0, r.2) * g).collect();
         let cols: Vec<Hsla> = (0..n).map(|i| hsla(t.palette.series_at(i))).collect();
         let track = hsla(t.palette.border);
         let glow = glow_of(&t);

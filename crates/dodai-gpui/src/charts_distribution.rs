@@ -91,8 +91,9 @@ impl Histogram {
 }
 
 impl Histogram {
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let g = crate::motion::grow(window, cx, "Histogram");
         let bins = histogram_bins(&self.values, self.bins);
         let maxc = bins.iter().map(|b| b.2).max().unwrap_or(1) as f32;
         let ticks = nice_ticks(0.0, maxc, 4);
@@ -130,7 +131,7 @@ impl Histogram {
                     .child(
                         div()
                             .w_full()
-                            .h(relative(norm(*c as f32, 0.0, top)))
+                            .h(relative(norm(*c as f32, 0.0, top) * g))
                             .child(shaped(&t.shape, style).size_full()),
                     ),
             );

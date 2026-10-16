@@ -114,7 +114,11 @@ impl RangeSlider {
         let vertical = self.direction == Direction::Vertical;
         let st = window.use_keyed_state(self.id.clone(), cx, |_, _| RangeState::default());
         let (min, max, step, lo, hi) = (self.min, self.max, self.step, self.lo, self.hi);
-        let (fl, fh) = (slider_fraction(lo, min, max), slider_fraction(hi, min, max));
+        let grow = crate::motion::grow(window, cx, "RangeSlider");
+        let (fl, fh) = (
+            slider_fraction(lo, min, max) * grow,
+            slider_fraction(hi, min, max) * grow,
+        );
         let apply = {
             let st = st.clone();
             let f = self.on_change.clone();

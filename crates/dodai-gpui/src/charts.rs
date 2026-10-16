@@ -518,8 +518,9 @@ impl LineChart {
 }
 
 impl LineChart {
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let g = crate::motion::grow(window, cx, "LineChart");
         let (lo, hi, ticks) = y_range(&self.series, self.zero, self.y_bounds);
         let n = self
             .series
@@ -560,7 +561,7 @@ impl LineChart {
                         .map(|(i, v)| {
                             // Centre of category slot `i`, matching the x labels.
                             let x = (i as f32 + 0.5) / m as f32 * bw;
-                            (x, bh - norm(*v, lo, hi) * bh)
+                            (x, bh - norm(*v, lo, hi) * bh * g)
                         })
                         .collect();
                     let raw = if stepped { step_points(&raw) } else { raw };
@@ -742,8 +743,9 @@ pub fn bar_max(series: &[Series], stacked: bool) -> f32 {
 }
 
 impl BarChart {
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let g = crate::motion::grow(window, cx, "BarChart");
         let ticks = nice_ticks(
             0.0,
             self.y_max
@@ -780,6 +782,7 @@ impl BarChart {
             }
         };
 
+        let bar_top = top / g.max(1e-3);
         let mut cats = div().flex().size_full();
         cats = if h { cats.flex_col() } else { cats };
         for i in 0..n {
@@ -796,7 +799,7 @@ impl BarChart {
                     let mut stack = div().h(px(18.0)).flex();
                     for (si, s) in self.series.iter().enumerate() {
                         let v = s.values.get(i).copied().unwrap_or(0.0).max(0.0);
-                        stack = stack.child(bar(si, i, v, v / top.max(f32::EPSILON)));
+                        stack = stack.child(bar(si, i, v, v / bar_top.max(f32::EPSILON)));
                     }
                     cell = cell.child(
                         div()
@@ -815,7 +818,7 @@ impl BarChart {
                             si,
                             i,
                             v,
-                            norm(v, 0.0, top),
+                            norm(v, 0.0, bar_top),
                         )));
                     }
                 }
@@ -828,7 +831,7 @@ impl BarChart {
                         .map(|s| s.values.get(i).copied().unwrap_or(0.0).max(0.0))
                         .sum();
                     let mut stack = div()
-                        .h(relative(norm(total, 0.0, top)))
+                        .h(relative(norm(total, 0.0, bar_top)))
                         .w_full()
                         .max_w(px(self.bar_width * 1.5))
                         .flex()
@@ -861,7 +864,7 @@ impl BarChart {
                                 .child(
                                     div()
                                         .w_full()
-                                        .h(relative(norm(v, 0.0, top)))
+                                        .h(relative(norm(v, 0.0, bar_top)))
                                         .child(bar(si, i, v, 1.0)),
                                 ),
                         );
@@ -1190,6 +1193,8 @@ impl PieChart {
         let (controlled, on_select) = (self.selected.is_some(), self.on_select.clone());
         let fr_click = fr.clone();
         let fr_hit = fr.clone();
+        let g = crate::motion::grow(window, cx, "PieChart");
+        let fr: Vec<(f32, f32)> = fr.iter().map(|(a, z)| (a * g, z * g)).collect();
         let cols: Vec<Hsla> = (0..vals.len())
             .map(|i| hsla(t.palette.series_at(i)))
             .collect();
@@ -1439,9 +1444,9 @@ impl Gauge {
 }
 
 impl Gauge {
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        let frac = norm(self.value, self.min, self.max);
+        let frac = norm(self.value, self.min, self.max) * crate::motion::grow(window, cx, "Gauge");
         let col = hsla(self.tone.map_or(t.palette.primary, |k| t.palette.tone(k)));
         let track = hsla(t.palette.border);
         let glow = glow_of(&t);

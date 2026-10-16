@@ -3,8 +3,8 @@
 //! global default can be installed with [`Motion::set_global`].
 
 use gpui::{
-    div, Animation, AnimationElement, AnimationExt, App, Div, ElementId, Global, IntoElement,
-    ParentElement, SharedString, Styled,
+    div, px, Animation, AnimationElement, AnimationExt, App, Div, ElementId, Global,
+    InteractiveElement, IntoElement, ParentElement, SharedString, Stateful, Styled,
 };
 use std::rc::Rc;
 use std::time::Duration;
@@ -129,12 +129,49 @@ pub fn stagger_window(i: usize, n: usize, overlap: f32) -> (f32, f32) {
 /// Fade `el` in the first time it appears (one-shot; replays after the
 /// element leaves and re-enters the tree). Shared by every chart so all
 /// components enter the same way; honours [`Motion::of`] unless overridden.
-pub fn entry(el: impl IntoElement, name: &'static str, motion: Motion) -> AnimationElement<Div> {
-    div().child(el).with_animation(
-        ElementId::from(SharedString::from(format!("entry-{name}"))),
-        motion.animation(),
-        |el, p| el.opacity(p),
-    )
+pub fn entry(
+    el: impl IntoElement,
+    name: &'static str,
+    motion: Motion,
+) -> AnimationElement<Stateful<Div>> {
+    let kind = motion.entry;
+    let anim = if kind == EntryKind::None {
+        Animation::new(Duration::from_millis(1))
+    } else {
+        motion.animation()
+    };
+    div()
+        .child(el)
+        .relative()
+        .id(SharedString::from(format!("entry-{name}")))
+        .with_animation(
+            ElementId::from(SharedString::from(format!("entry-anim-{name}"))),
+            anim,
+            move |el, p| {
+                let (o, dx, dy) = kind.frame(p);
+                el.opacity(o).left(px(dx)).top(px(dy))
+            },
+        )
+}
+
+/// Eased `0..1` progress since this component first appeared; components
+/// multiply their displayed value by it so progress, sliders, gauges and
+/// charts animate in. `1.0` when entry animation is [`EntryKind::None`].
+/// Replays whenever the surrounding keyed subtree is rebuilt.
+pub fn grow(window: &mut gpui::Window, cx: &mut App, name: &'static str) -> f32 {
+    let m = Motion::of(cx);
+    if m.entry == EntryKind::None {
+        return 1.0;
+    }
+    let st = window.use_keyed_state(SharedString::from(format!("grow-{name}")), cx, |_, _| {
+        std::time::Instant::now()
+    });
+    let start = *st.read(cx);
+    let t = start.elapsed().as_secs_f32() / m.duration.as_secs_f32().max(1e-3);
+    if t < 1.0 {
+        window.request_animation_frame();
+    }
+    m.eased(t)
 }
 
 /// Animated scalar that eases from its current value to a new target.
@@ -185,6 +222,56 @@ pub fn lerp(a: f32, b: f32, t: f32) -> f32 {
 pub struct Motion {
     pub duration: Duration,
     pub easing: Easing,
+    /// How components enter (see [`EntryKind`]).
+    pub entry: EntryKind,
+}
+
+/// How a component animates in when it first appears.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum EntryKind {
+    /// No entry animation (values also jump straight to their target).
+    None,
+    #[default]
+    Fade,
+    /// Fade while rising 14 px.
+    Rise,
+    /// Fade while dropping in 14 px.
+    Drop,
+    SlideLeft,
+    SlideRight,
+}
+
+impl EntryKind {
+    pub const ALL: [EntryKind; 6] = [
+        EntryKind::None,
+        EntryKind::Fade,
+        EntryKind::Rise,
+        EntryKind::Drop,
+        EntryKind::SlideLeft,
+        EntryKind::SlideRight,
+    ];
+    pub fn label(self) -> &'static str {
+        match self {
+            EntryKind::None => "None",
+            EntryKind::Fade => "Fade",
+            EntryKind::Rise => "Rise",
+            EntryKind::Drop => "Drop",
+            EntryKind::SlideLeft => "Slide from left",
+            EntryKind::SlideRight => "Slide from right",
+        }
+    }
+    /// `(opacity, dx, dy)` at eased progress `p` (px offsets). Pure.
+    pub fn frame(self, p: f32) -> (f32, f32, f32) {
+        let q = 1.0 - p;
+        match self {
+            EntryKind::None => (1.0, 0.0, 0.0),
+            EntryKind::Fade => (p, 0.0, 0.0),
+            EntryKind::Rise => (p, 0.0, 14.0 * q),
+            EntryKind::Drop => (p, 0.0, -14.0 * q),
+            EntryKind::SlideLeft => (p, -28.0 * q, 0.0),
+            EntryKind::SlideRight => (p, 28.0 * q, 0.0),
+        }
+    }
 }
 
 impl Default for Motion {
@@ -192,6 +279,7 @@ impl Default for Motion {
         Self {
             duration: Duration::from_millis(220),
             easing: Easing::EaseOut,
+            entry: EntryKind::Fade,
         }
     }
 }
@@ -200,7 +288,11 @@ impl Global for Motion {}
 
 impl Motion {
     pub fn new(duration: Duration, easing: Easing) -> Self {
-        Self { duration, easing }
+        Self {
+            duration,
+            easing,
+            entry: EntryKind::Fade,
+        }
     }
     pub fn duration(mut self, d: Duration) -> Self {
         self.duration = d;
@@ -208,6 +300,10 @@ impl Motion {
     }
     pub fn millis(self, ms: u64) -> Self {
         self.duration(Duration::from_millis(ms))
+    }
+    pub fn entry(mut self, k: EntryKind) -> Self {
+        self.entry = k;
+        self
     }
     pub fn easing(mut self, e: Easing) -> Self {
         self.easing = e;

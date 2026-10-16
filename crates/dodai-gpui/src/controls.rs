@@ -271,9 +271,10 @@ impl ProgressBar {
 }
 
 impl ProgressBar {
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        bar(&t, self.value, self.tone, t.spacing.sm + 2.0)
+        let g = crate::motion::grow(window, cx, "ProgressBar");
+        bar(&t, self.value * g, self.tone, t.spacing.sm + 2.0)
     }
 }
 
@@ -387,7 +388,8 @@ impl Slider {
         let t = theme_of(cx);
         let vertical = self.direction == Direction::Vertical;
         let st = window.use_keyed_state(self.id.clone(), cx, |_, _| SliderState::default());
-        let frac = slider_fraction(self.value, self.min, self.max);
+        let frac = slider_fraction(self.value, self.min, self.max)
+            * crate::motion::grow(window, cx, "Slider");
         let (min, max, step) = (self.min, self.max, self.step);
         let apply = {
             let st = st.clone();
