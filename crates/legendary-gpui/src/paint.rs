@@ -112,6 +112,36 @@ pub fn row_span(shape: &Shape, w: f32, h: f32, y: f32) -> Option<(f32, f32)> {
     }
 }
 
+/// Polygon of the bottom `band` px of `shape` in a `w`×`h` box (follows cut corners).
+pub fn bottom_band(shape: &Shape, w: f32, h: f32, band: f32) -> Vec<(f32, f32)> {
+    let top = (h - band).max(0.0);
+    let (a0, a1) = row_span(shape, w, h, top).unwrap_or((0.0, w));
+    let (b0, b1) = row_span(shape, w, h, h).unwrap_or((0.0, w));
+    vec![(a0, top), (a1, top), (b1, h), (b0, h)]
+}
+
+/// Fill the bottom `band` px of `shape` with `color` (absolute canvas child).
+pub fn bottom_band_canvas(shape: &Shape, band: f32, color: Hsla) -> impl gpui::IntoElement {
+    let shape = shape.clone();
+    canvas(
+        |_, _, _| (),
+        move |b, _, window, _| {
+            let w: f32 = b.size.width.into();
+            let h: f32 = b.size.height.into();
+            let pts = poly(b.origin, &bottom_band(&shape, w, h, band), 0.0);
+            let mut pb = PathBuilder::fill();
+            pb.add_polygon(&pts, true);
+            if let Ok(p) = pb.build() {
+                window.paint_path(p, color);
+            }
+        },
+    )
+    .absolute()
+    .top_0()
+    .left_0()
+    .size_full()
+}
+
 /// Paint scanline rows inside `bounds`, clipped to `shape`.
 pub fn paint_scanlines(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape) {
     let w: f32 = bounds.size.width.into();
@@ -334,6 +364,17 @@ pub fn scaled_shape(shape: &Shape, side: f32) -> Shape {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bottom_band_stops_at_cut_corner() {
+        let mut sh = legendary_core::themes::cyberpunk::night_city().shape;
+        sh.chamfer = 10.0;
+        sh.corners = legendary_core::Corners::BOTTOM_RIGHT;
+        let b = bottom_band(&sh, 100.0, 40.0, 2.0);
+        assert_eq!(b[0], (0.0, 38.0));
+        assert!(b[2].0 < 91.0, "bottom-right edge must be cut: {:?}", b[2]);
+        assert_eq!(b[3], (0.0, 40.0));
+    }
 
     #[test]
     fn row_span_follows_shape() {

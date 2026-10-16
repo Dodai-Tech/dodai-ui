@@ -1,7 +1,7 @@
 //! [`Tabs`]: a row of selectable tabs driven by `theme.tab` tokens.
 
 use crate::interact::{track, use_interact};
-use crate::paint::{shaped_id, ShapeStyle};
+use crate::paint::{bottom_band_canvas, shaped_id, ShapeStyle};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use gpui::{
@@ -79,15 +79,7 @@ impl RenderOnce for Tabs {
                 .text_color(fg)
                 .child(format_label(&t.typography, label));
             if let Some(c) = indicator {
-                tab = tab.child(
-                    div()
-                        .absolute()
-                        .bottom_0()
-                        .left_0()
-                        .right_0()
-                        .h(px(t.shape.border_width))
-                        .bg(c),
-                );
+                tab = tab.child(bottom_band_canvas(&t.shape, t.shape.border_width, c));
             }
             if let Some(f) = self.on_select.clone() {
                 tab = tab.on_click(move |_, w, cx| f(i, w, cx));
