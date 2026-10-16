@@ -1125,9 +1125,9 @@ impl RenderOnce for PieChart {
                             0.0
                         };
                         let (ax, ay) = polar(c, c, d, (a + z) / 2.0);
-                        // Convex wedges (<= 1/8 turn) tessellate without
-                        // seams or holes, even for slices past 180 degrees.
-                        let n = (((zo - ao) * 8.0).ceil() as usize).max(1);
+                        // Convex wedges (<= half a turn) tessellate without
+                        // holes; fewer pieces means fewer AA seams.
+                        let n = (((zo - ao) * 2.0).ceil() as usize).max(1);
                         for k in 0..n {
                             let w0 = ao + (zo - ao) * k as f32 / n as f32;
                             let w1 = ao + (zo - ao) * (k + 1) as f32 / n as f32;
