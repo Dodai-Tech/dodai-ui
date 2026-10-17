@@ -882,14 +882,28 @@ impl Render for Showcase {
         let ds_panel = Panel::new()
             .focused(true)
             .child(
-                row()
-                    .child(Label::new("Design system"))
-                    .child(DesignSystemSelector::new("ds-select")),
-            )
-            .child(
-                row()
-                    .child(Label::new(format!("Theme · {family}")))
-                    .child(ThemeSelector::new("theme-select")),
+                // Design system with its themes nested underneath as a child.
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(t.spacing.xs))
+                    .child(
+                        row()
+                            .child(Label::new("Design system"))
+                            .child(DesignSystemSelector::new("ds-select")),
+                    )
+                    .child(
+                        div()
+                            .ml(px(t.spacing.sm))
+                            .pl(px(t.spacing.md))
+                            .border_l_1()
+                            .border_color(hsla(t.palette.border_strong))
+                            .child(
+                                row()
+                                    .child(Label::new(format!("Theme · {family}")))
+                                    .child(ThemeSelector::new("theme-select")),
+                            ),
+                    ),
             )
             .child(
                 row().child(Label::new("Glow intensity")).child(
