@@ -74,8 +74,11 @@ impl DesignSystemTree {
 }
 
 impl RenderOnce for DesignSystemTree {
-    fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = crate::theme_of(cx);
+        // Expanded state of the active family's children (collapsible).
+        let expanded = window.use_keyed_state((self.id.clone(), "exp"), cx, |_, _| true);
+        let is_expanded = *expanded.read(cx);
         let lt = cx.dodai();
         let sw = lt.switcher();
         let (cur_idx, cur_fam) = (sw.index(), sw.current_family());
@@ -89,16 +92,30 @@ impl RenderOnce for DesignSystemTree {
             let open = fam == cur_fam;
             if !as_dropdown {
                 let first = sw.family_indices(fam)[0];
+                let exp = expanded.clone();
                 tree = tree.child(
                     ListItem::new(
                         (self.id.clone(), format!("fam{fi}")),
-                        format!("{} {}", if open { "▾" } else { "▸" }, family_title(fam)),
+                        format!(
+                            "{} {}",
+                            if open && is_expanded { "▾" } else { "▸" },
+                            family_title(fam)
+                        ),
                     )
                     .selected(open)
-                    .on_click(move |_, _, cx| select_theme(cx, first)),
+                    .on_click(move |_, _, cx| {
+                        // Active family: toggle its children. Other: switch + expand.
+                        exp.update(cx, |e, cx| {
+                            *e = if open { !*e } else { true };
+                            cx.notify();
+                        });
+                        if !open {
+                            select_theme(cx, first);
+                        }
+                    }),
                 );
             }
-            if open {
+            if open && (is_expanded || as_dropdown) {
                 let mut kids = gpui::div()
                     .ml(px(if as_dropdown { 0.0 } else { t.spacing.md }))
                     .pl(px(t.spacing.md))
