@@ -1613,6 +1613,7 @@ impl Render for Showcase {
 fn main() {
     Application::new().run(|cx: &mut App| {
         install(cx, Theme::default());
+        set_glow_intensity(cx, 0.5);
         let bounds = Bounds::centered(None, size(px(980.0), px(760.0)), cx);
         let win = cx
             .open_window(
