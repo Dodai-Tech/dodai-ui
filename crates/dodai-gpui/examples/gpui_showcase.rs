@@ -236,8 +236,8 @@ impl Showcase {
                     .child(Muted::new(format!("{} duration", k.label())))
                     .child(
                         Slider::new(("pd", uid), ms as f32)
-                            .range(0.0, 2000.0)
-                            .step(50.0)
+                            .range(0.0, 10000.0)
+                            .step(100.0)
                             .show_value(true)
                             .format(|v| {
                                 if v < 1.0 {
@@ -308,8 +308,8 @@ impl Showcase {
                     .child(Muted::new("Fill duration (charts, progress, sliders)"))
                     .child(
                         Slider::new(("pd", uid), gms as f32)
-                            .range(0.0, 3000.0)
-                            .step(50.0)
+                            .range(0.0, 10000.0)
+                            .step(100.0)
                             .show_value(true)
                             .format(|v| {
                                 if v < 1.0 {
