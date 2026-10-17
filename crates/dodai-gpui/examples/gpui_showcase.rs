@@ -34,6 +34,8 @@ struct Showcase {
     anim_ms: f32,
     replay: usize,
     sec_replay: std::collections::HashMap<&'static str, u32>,
+    /// Sections whose one-shot Play run is still in progress.
+    sec_playing: std::collections::HashMap<&'static str, u32>,
     sec_mode: std::collections::HashMap<&'static str, Player>,
     loop_gen: u32,
     ld_pb: dodai_gpui::Playback,
@@ -105,10 +107,33 @@ impl Showcase {
         *self.sec_replay.entry(title).or_insert(0) += 1;
     }
 
+    /// Replay and mark the section as playing until the run should be over.
+    fn replay(&mut self, title: &'static str, cx: &mut Context<Self>) {
+        self.bump(title);
+        let tok = self.sec_replay.get(title).copied().unwrap_or(0);
+        self.sec_playing.insert(title, tok);
+        let set = self.sec_kind.get(title).copied().unwrap_or_default();
+        let base = Duration::from_millis(self.anim_ms as u64);
+        let run = set
+            .duration(base)
+            .max(Duration::from_millis(set.grow_ms() as u64).max(base))
+            + Duration::from_millis(set.stagger_ms() as u64 * 8 + 100);
+        cx.spawn(async move |this, cx| {
+            cx.background_executor().timer(run).await;
+            let _ = this.update(cx, |s, cx| {
+                if s.sec_playing.get(title) == Some(&tok) {
+                    s.sec_playing.remove(title);
+                    cx.notify();
+                }
+            });
+        })
+        .detach();
+    }
+
     fn set_mode(&mut self, title: &'static str, mode: Player, cx: &mut Context<Self>) {
         self.sec_mode.insert(title, mode);
         self.loop_gen += 1;
-        self.bump(title);
+        self.replay(title, cx);
         if mode == Player::Looping {
             let gen = self.loop_gen;
             cx.spawn(async move |this, cx| loop {
@@ -211,7 +236,7 @@ impl Showcase {
                     me_c.update(cx, |s, cx| {
                         let cur = s.sec_kind.get(title).copied().unwrap_or(base);
                         s.sec_kind.insert(title, cur.toggled(k));
-                        s.bump(title);
+                        s.replay(title, cx);
                         cx.notify();
                     })
                 }));
@@ -255,7 +280,7 @@ impl Showcase {
                                 me_p.update(cx, |s, cx| {
                                     let cur = s.sec_kind.get(title).copied().unwrap_or(base);
                                     s.sec_kind.insert(title, cur.with_ms(k, v as u16));
-                                    s.bump(title);
+                                    s.replay(title, cx);
                                     cx.notify();
                                 })
                             }),
@@ -356,7 +381,7 @@ impl Showcase {
                                         cur.with_stagger_ms(v as u16)
                                     };
                                     s.sec_kind.insert(title, nw);
-                                    s.bump(title);
+                                    s.replay(title, cx);
                                     cx.notify();
                                 })
                             }),
@@ -388,9 +413,14 @@ impl Showcase {
         chips = chips
             .child(div().w(px(8.0)))
             .child(
-                btn(1, dodai_gpui::IconName::Play, mode == Player::Idle).on_click(
-                    move |_, _, cx| m1.update(cx, |s, cx| s.set_mode(title, Player::Idle, cx)),
-                ),
+                btn(
+                    1,
+                    dodai_gpui::IconName::Play,
+                    mode == Player::Idle && self.sec_playing.contains_key(title),
+                )
+                .on_click(move |_, _, cx| {
+                    m1.update(cx, |s, cx| s.set_mode(title, Player::Idle, cx))
+                }),
             )
             .child(
                 btn(2, dodai_gpui::IconName::Repeat, mode == Player::Looping).on_click(
@@ -1978,6 +2008,7 @@ fn main() {
                         anim_ms: 220.0,
                         replay: 0,
                         sec_replay: Default::default(),
+                        sec_playing: Default::default(),
                         sec_mode: Default::default(),
                         loop_gen: 0,
                         ld_pb: dodai_gpui::Playback::Loop,
