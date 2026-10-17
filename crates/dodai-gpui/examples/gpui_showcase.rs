@@ -21,11 +21,11 @@ use dodai_gpui::{
     TreeItem, TreeView, Treemap, Waterfall,
 };
 use dodai_gpui::{Easing, EntryKind, EntrySet, Motion};
-use gpui::SharedString;
 use gpui::{
     div, prelude::*, px, size, App, Application, Bounds, Context, Entity, FocusHandle,
     KeyDownEvent, Window, WindowBounds, WindowOptions,
 };
+use gpui::{AnimationExt, SharedString};
 use std::time::Duration;
 
 struct Showcase {
@@ -1105,62 +1105,78 @@ impl Render for Showcase {
                 hsla(t.palette.primary),
                 hsla(t.palette.text_muted),
             );
-            let plot = gpui::canvas(
-                |_, _, _| (),
-                move |b: Bounds<gpui::Pixels>, _, w, _| {
-                    let pad = 10.0;
-                    let side = f32::from(b.size.width.min(b.size.height)) - 2.0 * pad;
-                    let at = |x: f32, y: f32| {
-                        gpui::point(
-                            b.origin.x + px(pad + x * side),
-                            b.origin.y + px(pad + (1.0 - y) * side),
-                        )
-                    };
-                    let line = |pts: &[(f32, f32)], width: f32, c: gpui::Hsla, w: &mut Window| {
-                        let mut p = gpui::PathBuilder::stroke(px(width));
-                        for (k, &(x, y)) in pts.iter().enumerate() {
-                            if k == 0 {
-                                p.move_to(at(x, y));
-                            } else {
-                                p.line_to(at(x, y));
-                            }
-                        }
-                        if let Ok(path) = p.build() {
-                            w.paint_path(path, c);
-                        }
-                    };
-                    line(
-                        &[(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0), (0.0, 0.0)],
-                        1.0,
-                        border,
-                        w,
-                    );
-                    line(&[(0.0, 0.0), (1.0, 1.0)], 1.0, border.opacity(0.5), w);
-                    line(&[(0.0, 0.0), (x1, y1)], 1.0, muted, w);
-                    line(&[(1.0, 1.0), (x2, y2)], 1.0, muted, w);
-                    let curve: Vec<(f32, f32)> = (0..=48)
-                        .map(|k| {
-                            let x = k as f32 / 48.0;
-                            (
-                                x,
-                                Easing::CubicBezier(x1, y1, x2, y2).apply(x).clamp(0.0, 1.0),
+            let make_plot = move |p: f32| {
+                gpui::canvas(
+                    |_, _, _| (),
+                    move |b: Bounds<gpui::Pixels>, _, w, _| {
+                        let pad = 10.0;
+                        let side = f32::from(b.size.width.min(b.size.height)) - 2.0 * pad;
+                        let at = |x: f32, y: f32| {
+                            gpui::point(
+                                b.origin.x + px(pad + x * side),
+                                b.origin.y + px(pad + (1.0 - y) * side),
                             )
-                        })
-                        .collect();
-                    line(&curve, 2.5, accent, w);
-                    for (hx, hy) in [(x1, y1), (x2, y2)] {
-                        let c = at(hx.clamp(0.0, 1.0), hy.clamp(0.0, 1.0));
+                        };
+                        let line =
+                            |pts: &[(f32, f32)], width: f32, c: gpui::Hsla, w: &mut Window| {
+                                let mut p = gpui::PathBuilder::stroke(px(width));
+                                for (k, &(x, y)) in pts.iter().enumerate() {
+                                    if k == 0 {
+                                        p.move_to(at(x, y));
+                                    } else {
+                                        p.line_to(at(x, y));
+                                    }
+                                }
+                                if let Ok(path) = p.build() {
+                                    w.paint_path(path, c);
+                                }
+                            };
+                        line(
+                            &[(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0), (0.0, 0.0)],
+                            1.0,
+                            border,
+                            w,
+                        );
+                        line(&[(0.0, 0.0), (1.0, 1.0)], 1.0, border.opacity(0.5), w);
+                        line(&[(0.0, 0.0), (x1, y1)], 1.0, muted, w);
+                        line(&[(1.0, 1.0), (x2, y2)], 1.0, muted, w);
+                        let ease = Easing::CubicBezier(x1, y1, x2, y2);
+                        let pts = |upto: f32| -> Vec<(f32, f32)> {
+                            let n = ((48.0 * upto).ceil() as usize).max(1);
+                            (0..=n)
+                                .map(|k| {
+                                    let x = (k as f32 / n as f32) * upto;
+                                    (x, ease.apply(x).clamp(0.0, 1.0))
+                                })
+                                .collect()
+                        };
+                        line(&pts(1.0), 2.0, accent.opacity(0.25), w);
+                        line(&pts(p), 3.0, accent, w);
+                        // Playhead: x = time, y = eased progress.
+                        let y = ease.apply(p).clamp(0.0, 1.0);
+                        line(&[(p, 0.0), (p, y)], 1.0, accent.opacity(0.5), w);
+                        line(&[(0.0, y), (p, y)], 1.0, accent.opacity(0.5), w);
                         w.paint_quad(gpui::fill(
                             Bounds::new(
-                                c - gpui::point(px(3.0), px(3.0)),
-                                gpui::size(px(6.0), px(6.0)),
+                                at(p, y) - gpui::point(px(4.5), px(4.5)),
+                                gpui::size(px(9.0), px(9.0)),
                             ),
-                            accent,
+                            gpui::white(),
                         ));
-                    }
-                },
-            )
-            .size_full();
+                        for (hx, hy) in [(x1, y1), (x2, y2)] {
+                            let c = at(hx.clamp(0.0, 1.0), hy.clamp(0.0, 1.0));
+                            w.paint_quad(gpui::fill(
+                                Bounds::new(
+                                    c - gpui::point(px(3.0), px(3.0)),
+                                    gpui::size(px(6.0), px(6.0)),
+                                ),
+                                accent,
+                            ));
+                        }
+                    },
+                )
+                .size_full()
+            };
             let motion = Motion::new(Duration::from_millis(700), ease).entry(kind);
             let demo = div()
                 .id(("an-demo", (i as u32) * 1000 + n))
@@ -1182,7 +1198,21 @@ impl Render for Showcase {
                         row()
                             .items_start()
                             .gap(px(24.0))
-                            .child(div().w(px(150.0)).h(px(150.0)).flex_none().child(plot))
+                            .child(
+                                div()
+                                    .id(("an-plot", (i as u32) * 1000 + n))
+                                    .w(px(200.0))
+                                    .h(px(200.0))
+                                    .flex_none()
+                                    .with_animation(
+                                        ("an-plot-a", 0u32),
+                                        gpui::Animation::new(Duration::from_millis(1400)),
+                                        move |el, p| {
+                                            // hold at the end for the last 50%
+                                            el.child(make_plot((p * 2.0).min(1.0)))
+                                        },
+                                    ),
+                            )
                             .child(col().child(demo).child(
                                 Button::new(("an-replay", i as u32), "Replay").on_click(
                                     move |_, _, cx| {
