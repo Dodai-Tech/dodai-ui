@@ -502,6 +502,12 @@ impl Render for Showcase {
             .child(Button::new("b-danger", "Danger").variant(ButtonVariant::Danger))
             .child(Button::new("b-ghost", "Ghost").variant(ButtonVariant::Ghost))
             .child(Button::new("b-dis", "Disabled").disabled(true))
+            .child(Button::new("b-shim", "Loading…").shimmer(true))
+            .child(
+                Button::new("b-shim2", "Outline…")
+                    .variant(ButtonVariant::Outline)
+                    .shimmer(true),
+            )
             .child(Muted::new(format!("primary clicked {}×", self.clicks)));
 
         let tags = row()

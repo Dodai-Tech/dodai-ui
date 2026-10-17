@@ -49,6 +49,7 @@ pub struct Button {
     disabled: bool,
     on_click: Option<ClickHandler>,
     refine: Option<Refine>,
+    shimmer: bool,
 }
 
 impl Button {
@@ -58,6 +59,7 @@ impl Button {
             label: label.into(),
             variant: ButtonVariant::Primary,
             disabled: false,
+            shimmer: false,
             on_click: None,
             refine: None,
         }
@@ -88,6 +90,14 @@ impl Button {
 }
 
 impl Button {
+    /// Sweep a shimmer highlight over the button (e.g. while busy), clipped to its shape.
+    pub fn shimmer(mut self, on: bool) -> Self {
+        self.shimmer = on;
+        self
+    }
+}
+
+impl Button {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let st = use_interact(&self.id, window, cx);
@@ -108,6 +118,13 @@ impl Button {
             style.fill = crate::motion::mix_opt(idle.fill, style.fill, lvl);
             style.stroke = crate::motion::mix_opt(idle.stroke, style.stroke, lvl);
             fg = crate::motion::mix(idle_fg, fg, lvl);
+        }
+        if self.shimmer {
+            style = style.with_shimmer(crate::paint::Shimmer {
+                color: fg.opacity(0.3),
+                ms: 1400,
+                playback: crate::feedback::Playback::Loop,
+            });
         }
         let pressed = state == ControlState::Pressed;
         let mut el = track(shaped_id(self.id, &t.shape, style), &st)

@@ -261,6 +261,7 @@ impl RenderOnce for Spinner {
                             glow: None,
                             shadow: None,
                             scanlines: false,
+                            shimmer: None,
                         };
                         let _ = glow;
                         el = el.child(
@@ -395,34 +396,17 @@ impl RenderOnce for Skeleton {
             scaled_shape(&t.shape, self.h)
         };
         let style = ShapeStyle::from_tokens(&t, Some(t.palette.surface_raised), None, false, false);
-        let hi = hsla(t.palette.text).opacity(0.14);
-        let mut d = shaped(&shape, style).h(px(self.h));
-        d = match self.w {
+        let ms = self.motion.map_or(1600, |m| m.duration.as_millis() as u32);
+        let style = style.with_shimmer(crate::paint::Shimmer {
+            color: hsla(t.palette.text).opacity(0.14),
+            ms,
+            playback: self.playback,
+        });
+        let d = crate::paint::shaped_id(self.id, &shape, style).h(px(self.h));
+        match self.w {
             Some(w) => d.w(px(w)).flex_none(),
             None => d.w_full(),
-        };
-        d.with_animation(
-            self.id,
-            cycle(self.motion, 1600, self.playback),
-            move |el, delta| {
-                // Highlight band sweeping left to right over the muted base.
-                let w = 0.4;
-                let x = -w + delta * (1.0 + w);
-                el.overflow_hidden().child(
-                    div()
-                        .absolute()
-                        .top_0()
-                        .h_full()
-                        .left(gpui::relative(x))
-                        .w(gpui::relative(w))
-                        .bg(gpui::linear_gradient(
-                            90.0,
-                            gpui::linear_color_stop(gpui::hsla(0.0, 0.0, 1.0, 0.0), 0.0),
-                            gpui::linear_color_stop(hi, 1.0),
-                        )),
-                )
-            },
-        )
+        }
     }
 }
 

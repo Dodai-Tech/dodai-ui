@@ -29,9 +29,26 @@ pub struct ShapeStyle {
     pub shadow: Option<(Hsla, f32)>,
     /// Fine horizontal scanline texture over the fill (from `effects.scanlines`).
     pub scanlines: bool,
+    /// Animated highlight sweep, clipped to the shape (see [`Shimmer`]).
+    pub shimmer: Option<Shimmer>,
+}
+
+/// Shimmer sweep painted by [`shaped`] over any shape.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Shimmer {
+    /// Peak highlight colour (include the alpha).
+    pub color: Hsla,
+    /// Duration of one sweep in ms.
+    pub ms: u32,
+    pub playback: crate::feedback::Playback,
 }
 
 impl ShapeStyle {
+    /// Add a shimmer sweep that follows whatever shape this style is drawn in.
+    pub fn with_shimmer(mut self, s: Shimmer) -> Self {
+        self.shimmer = Some(s);
+        self
+    }
     /// Build from token colours. `glow` adds the theme glow when enabled;
     /// the hard shadow is added whenever `effects.hard_shadow > 0` and `shadow` is set.
     pub fn from_tokens(
@@ -54,6 +71,7 @@ impl ShapeStyle {
             shadow: (shadow && fx.hard_shadow > 0.0)
                 .then(|| (hsla(theme.palette.primary_active), fx.hard_shadow)),
             scanlines: fx.scanlines && fill.is_some(),
+            shimmer: None,
         }
     }
 }
@@ -263,6 +281,14 @@ pub fn paint_polygon(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape,
 /// For chamfered shapes the polygon is painted by a background canvas, so do
 /// not set `.bg()`/`.border_*()` on the returned div yourself.
 pub fn shaped(shape: &Shape, style: ShapeStyle) -> Div {
+    let d = shaped_base(shape, style);
+    match style.shimmer {
+        Some(sh) => d.child(shimmer_overlay(shape, sh)),
+        None => d,
+    }
+}
+
+fn shaped_base(shape: &Shape, style: ShapeStyle) -> Div {
     let base = gpui::div().relative();
     match shape.kind() {
         ShapeKind::Chamfered => {
@@ -359,6 +385,82 @@ pub fn scaled_shape(shape: &Shape, side: f32) -> Shape {
     let mut s = shape.clone();
     s.radius = s.radius.min(side / 4.0);
     s
+}
+
+/// Highlight band at `x..x+w` (fractions of the width) painted row by row so
+/// it stays inside `shape` (rounded / chamfered corners, circles).
+fn shimmer_band(shape: Shape, x: f32, w: f32, color: Hsla) -> impl gpui::IntoElement {
+    canvas(
+        |_, _, _| (),
+        move |b, _, window, _| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            let (x0, x1) = (x * bw, (x + w) * bw);
+            let at = |p: f32| {
+                let f = ((p - x0) / (x1 - x0).max(1e-3)).clamp(0.0, 1.0);
+                hsla_a(color, color.a * f)
+            };
+            let mut y = 0.0;
+            while y < bh {
+                let step = (bh - y).min(1.0);
+                if let Some((a, c)) = row_span(&shape, bw, bh, y + step / 2.0) {
+                    let (l, r) = (x0.max(a), x1.min(c));
+                    if r > l {
+                        let bounds = gpui::Bounds {
+                            origin: point(b.origin.x + px(l), b.origin.y + px(y)),
+                            size: gpui::size(px(r - l), px(step)),
+                        };
+                        window.paint_quad(gpui::fill(
+                            bounds,
+                            gpui::linear_gradient(
+                                90.0,
+                                gpui::linear_color_stop(at(l), 0.0),
+                                gpui::linear_color_stop(at(r), 1.0),
+                            ),
+                        ));
+                    }
+                }
+                y += step;
+            }
+        },
+    )
+    .absolute()
+    .top_0()
+    .left_0()
+    .size_full()
+}
+
+fn hsla_a(c: Hsla, a: f32) -> Hsla {
+    Hsla { a, ..c }
+}
+
+/// Sweep overlay clipped to `shape`; the animation is keyed by the parent
+/// element's id, so give the shaped element an id (e.g. [`shaped_id`]).
+fn shimmer_overlay(shape: &Shape, sh: Shimmer) -> impl gpui::IntoElement {
+    use crate::feedback::Playback;
+    use gpui::AnimationExt;
+    let dur = std::time::Duration::from_millis(sh.ms.max(1) as u64);
+    let anim = match sh.playback {
+        Playback::Loop => gpui::Animation::new(dur).repeat(),
+        Playback::Once => gpui::Animation::new(dur),
+        Playback::Stopped => {
+            gpui::Animation::new(std::time::Duration::from_millis(1)).with_easing(|_| 0.35)
+        }
+    };
+    let shape = shape.clone();
+    gpui::div()
+        .absolute()
+        .top_0()
+        .left_0()
+        .size_full()
+        .with_animation("shimmer", anim, move |el, delta| {
+            let w = 0.4;
+            el.child(shimmer_band(
+                shape.clone(),
+                -w + delta * (1.0 + w),
+                w,
+                sh.color,
+            ))
+        })
 }
 
 #[cfg(test)]
