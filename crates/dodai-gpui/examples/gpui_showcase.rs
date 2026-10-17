@@ -36,8 +36,8 @@ struct Showcase {
     loop_gen: u32,
     scroll: gpui::ScrollHandle,
     sec_kind: std::collections::HashMap<&'static str, EntrySet>,
-    pill_hover: Option<(&'static str, EntryKind)>,
-    pop_hover: Option<(&'static str, EntryKind)>,
+    pill_hover: Option<(&'static str, u8)>,
+    pop_hover: Option<(&'static str, u8)>,
     filter: Entity<TextInput>,
     search: Entity<TextInput>,
     cat: usize,
@@ -181,8 +181,9 @@ impl Showcase {
         for (ki, k) in EntryKind::ALL.iter().copied().enumerate().skip(1) {
             let on = kind.is_some_and(|s| s.contains(k));
             let ms = kind.map_or(0, |s| s.ms_of(k));
-            let open =
-                on && (self.pill_hover == Some((title, k)) || self.pop_hover == Some((title, k)));
+            let open = on
+                && (self.pill_hover == Some((title, k as u8))
+                    || self.pop_hover == Some((title, k as u8)));
             let me_c = me.clone();
             let me_p = me.clone();
             let uid = tid.wrapping_mul(8).wrapping_add(ki as u32);
@@ -196,8 +197,8 @@ impl Showcase {
                 .relative()
                 .on_hover(cx.listener(move |s, h: &bool, _, cx| {
                     if *h {
-                        s.pill_hover = Some((title, k));
-                    } else if s.pill_hover == Some((title, k)) {
+                        s.pill_hover = Some((title, k as u8));
+                    } else if s.pill_hover == Some((title, k as u8)) {
                         s.pill_hover = None;
                     }
                     cx.notify();
@@ -227,8 +228,8 @@ impl Showcase {
                     .gap(px(t.spacing.xs))
                     .on_hover(cx.listener(move |s, h: &bool, _, cx| {
                         if *h {
-                            s.pop_hover = Some((title, k));
-                        } else if s.pop_hover == Some((title, k)) {
+                            s.pop_hover = Some((title, k as u8));
+                        } else if s.pop_hover == Some((title, k as u8)) {
                             s.pop_hover = None;
                         }
                         cx.notify();
@@ -258,17 +259,40 @@ impl Showcase {
             }
             chips = chips.child(wrap);
         }
-        // Fill: duration of value-in animations (charts, progress, sliders ...).
-        {
-            let gms = kind.map_or(0, |s| s.grow_ms());
-            let key = (title, EntryKind::None);
+        // Fill (value-in duration) and Stagger (delay between components).
+        for (tag, name, help, slot, vmax, vstep) in [
+            (
+                100u8,
+                "Fill",
+                "Fill duration (charts, progress, sliders)",
+                0u32,
+                10000.0,
+                100.0,
+            ),
+            (
+                101u8,
+                "Stagger",
+                "Delay between components in this section",
+                6u32,
+                1000.0,
+                25.0,
+            ),
+        ] {
+            let gms = kind.map_or(0, |s| {
+                if slot == 0 {
+                    s.grow_ms()
+                } else {
+                    s.stagger_ms()
+                }
+            });
+            let key = (title, tag);
             let open = self.pill_hover == Some(key) || self.pop_hover == Some(key);
-            let uid = tid.wrapping_mul(8);
+            let uid = tid.wrapping_mul(8).wrapping_add(slot);
             let me_p = me.clone();
             let text: SharedString = if gms > 0 {
-                format!("Fill · {gms}ms").into()
+                format!("{name} · {gms}ms").into()
             } else {
-                "Fill".into()
+                name.into()
             };
             let mut wrap = div()
                 .id(("pw", uid))
@@ -305,11 +329,11 @@ impl Showcase {
                         }
                         cx.notify();
                     }))
-                    .child(Muted::new("Fill duration (charts, progress, sliders)"))
+                    .child(Muted::new(help))
                     .child(
                         Slider::new(("pd", uid), gms as f32)
-                            .range(0.0, 10000.0)
-                            .step(100.0)
+                            .range(0.0, vmax)
+                            .step(vstep)
                             .show_value(true)
                             .format(|v| {
                                 if v < 1.0 {
@@ -321,7 +345,12 @@ impl Showcase {
                             .on_change(move |v, _, cx| {
                                 me_p.update(cx, |s, cx| {
                                     let cur = s.sec_kind.get(title).copied().unwrap_or(base);
-                                    s.sec_kind.insert(title, cur.with_grow_ms(v as u16));
+                                    let nw = if slot == 0 {
+                                        cur.with_grow_ms(v as u16)
+                                    } else {
+                                        cur.with_stagger_ms(v as u16)
+                                    };
+                                    s.sec_kind.insert(title, nw);
                                     cx.notify();
                                 })
                             }),
@@ -1182,39 +1211,52 @@ impl Render for Showcase {
             ));
 
         // Animation page: one Panel per entry type (curve · live example · text).
-        let anim_defs: [(EntryKind, Easing, &'static str); 5] = [
+        let anim_defs: [(&'static str, EntryKind, Easing, &'static str); 6] = [
             (
+                EntryKind::Fade.label(),
                 EntryKind::Fade,
                 Easing::EaseOut,
                 "Opacity 0 → 1. The default entry style: quiet, never shifts layout. Ease-out starts fast and settles.",
             ),
             (
+                EntryKind::Rise.label(),
                 EntryKind::Rise,
                 Easing::CubicBezier(0.2, 0.8, 0.2, 1.0),
                 "Fades in while moving up 14 px. A snappy cubic-bezier(.2,.8,.2,1) gives a quick start and a soft landing.",
             ),
             (
+                EntryKind::Drop.label(),
                 EntryKind::Drop,
                 Easing::EaseInOut,
                 "Fades in while dropping down 14 px. Ease-in-out accelerates, then decelerates; good for menus and toasts.",
             ),
             (
+                EntryKind::SlideLeft.label(),
                 EntryKind::SlideLeft,
                 Easing::CubicBezier(0.7, 0.0, 0.3, 1.0),
                 "Fades in sliding from the left. A strong ease-in-out (.7,0,.3,1) feels deliberate; fits sidebars and drawers.",
             ),
             (
+                EntryKind::SlideRight.label(),
                 EntryKind::SlideRight,
                 Easing::EaseIn,
                 "Fades in sliding from the right. Ease-in starts slowly and finishes fast; use for trailing panels.",
             ),
+            (
+                "Spring",
+                EntryKind::Rise,
+                Easing::SPRING,
+                "Physics-based easing: a damped spring (stiffness 170, damping 12). Overshoots its target and settles; entry effects clamp at 1.0, value animations (charts, sliders) show the overshoot.",
+            ),
         ];
+        let anim_titles: Vec<&'static str> = anim_defs.iter().map(|d| d.0).collect();
         let mut anim_sections = Vec::new();
-        for (i, (kind, ease, text)) in anim_defs.into_iter().enumerate() {
-            let title = kind.label();
+        for (i, (title, kind, ease, text)) in anim_defs.into_iter().enumerate() {
             let n = self.sec_replay.get(title).copied().unwrap_or(0);
             let me_r = me.clone();
-            let (x1, y1, x2, y2) = ease_ctrl(ease);
+            let ctrl = ease_ctrl(ease);
+            let (x1, y1, x2, y2) = ctrl.unwrap_or((0.0, 0.0, 1.0, 1.0));
+            let ymax = if ctrl.is_none() { 1.4 } else { 1.0 };
             let (border, accent, muted) = (
                 hsla(t.palette.border),
                 hsla(t.palette.primary),
@@ -1229,7 +1271,7 @@ impl Render for Showcase {
                         let at = |x: f32, y: f32| {
                             gpui::point(
                                 b.origin.x + px(pad + x * side),
-                                b.origin.y + px(pad + (1.0 - y) * side),
+                                b.origin.y + px(pad + (1.0 - y / ymax) * side),
                             )
                         };
                         let line =
@@ -1247,28 +1289,31 @@ impl Render for Showcase {
                                 }
                             };
                         line(
-                            &[(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0), (0.0, 0.0)],
+                            &[(0.0, 0.0), (1.0, 0.0), (1.0, ymax), (0.0, ymax), (0.0, 0.0)],
                             1.0,
                             border,
                             w,
                         );
                         line(&[(0.0, 0.0), (1.0, 1.0)], 1.0, border.opacity(0.5), w);
-                        line(&[(0.0, 0.0), (x1, y1)], 1.0, muted, w);
-                        line(&[(1.0, 1.0), (x2, y2)], 1.0, muted, w);
-                        let ease = Easing::CubicBezier(x1, y1, x2, y2);
+                        if ctrl.is_some() {
+                            line(&[(0.0, 0.0), (x1, y1)], 1.0, muted, w);
+                            line(&[(1.0, 1.0), (x2, y2)], 1.0, muted, w);
+                        } else {
+                            line(&[(0.0, 1.0), (1.0, 1.0)], 1.0, muted.opacity(0.5), w);
+                        }
                         let pts = |upto: f32| -> Vec<(f32, f32)> {
                             let n = ((48.0 * upto).ceil() as usize).max(1);
                             (0..=n)
                                 .map(|k| {
                                     let x = (k as f32 / n as f32) * upto;
-                                    (x, ease.apply(x).clamp(0.0, 1.0))
+                                    (x, ease.apply(x).clamp(0.0, ymax))
                                 })
                                 .collect()
                         };
                         line(&pts(1.0), 2.0, accent.opacity(0.25), w);
                         line(&pts(p), 3.0, accent, w);
                         // Playhead: x = time, y = eased progress.
-                        let y = ease.apply(p).clamp(0.0, 1.0);
+                        let y = ease.apply(p).clamp(0.0, ymax);
                         line(&[(p, 0.0), (p, y)], 1.0, accent.opacity(0.5), w);
                         line(&[(0.0, y), (p, y)], 1.0, accent.opacity(0.5), w);
                         w.paint_quad(gpui::fill(
@@ -1278,7 +1323,8 @@ impl Render for Showcase {
                             ),
                             gpui::white(),
                         ));
-                        for (hx, hy) in [(x1, y1), (x2, y2)] {
+                        for (hx, hy) in [(x1, y1), (x2, y2)].into_iter().filter(|_| ctrl.is_some())
+                        {
                             let c = at(hx.clamp(0.0, 1.0), hy.clamp(0.0, 1.0));
                             w.paint_quad(gpui::fill(
                                 Bounds::new(
@@ -1342,7 +1388,12 @@ impl Render for Showcase {
                                 ),
                             ))
                             .child(div().flex_1().min_w(px(220.0)).child(Muted::new(format!(
-                                "{text}  cubic-bezier({x1}, {y1}, {x2}, {y2})"
+                                "{text}  {}",
+                                if ctrl.is_some() {
+                                    format!("cubic-bezier({x1}, {y1}, {x2}, {y2})")
+                                } else {
+                                    String::new()
+                                }
                             )))),
                     )
                     .into_any_element(),
@@ -1584,7 +1635,7 @@ impl Render for Showcase {
             "Loading",
         ));
         for (i, el) in anim_sections.into_iter().enumerate() {
-            let k = EntryKind::ALL[i + 1].label();
+            let k = anim_titles[i];
             sections.push(("Animation", k, el, k));
         }
 
@@ -1828,12 +1879,13 @@ fn main() {
 }
 
 /// CSS cubic-bezier control points for an easing.
-fn ease_ctrl(e: Easing) -> (f32, f32, f32, f32) {
-    match e {
+fn ease_ctrl(e: Easing) -> Option<(f32, f32, f32, f32)> {
+    Some(match e {
         Easing::Linear => (0.0, 0.0, 1.0, 1.0),
         Easing::EaseIn => (0.42, 0.0, 1.0, 1.0),
         Easing::EaseOut => (0.0, 0.0, 0.58, 1.0),
         Easing::EaseInOut => (0.42, 0.0, 0.58, 1.0),
         Easing::CubicBezier(a, b, c, d) => (a, b, c, d),
-    }
+        Easing::Spring { .. } => return None,
+    })
 }

@@ -21,9 +21,22 @@ pub enum Easing {
     EaseInOut,
     /// CSS-style `cubic-bezier(x1, y1, x2, y2)`.
     CubicBezier(f32, f32, f32, f32),
+    /// Damped spring (mass 1): `stiffness` and `damping` as in physics
+    /// engines. Under-damped springs overshoot `1.0`; entry effects clamp the
+    /// overshoot, value-in animations (charts, sliders) show it.
+    Spring {
+        stiffness: f32,
+        damping: f32,
+    },
 }
 
 impl Easing {
+    /// Bouncy spring preset (overshoots about 15%).
+    pub const SPRING: Easing = Easing::Spring {
+        stiffness: 170.0,
+        damping: 12.0,
+    };
+
     /// Eased progress for linear `t` (clamped to `0..=1`). Pure.
     pub fn apply(self, t: f32) -> f32 {
         let t = t.clamp(0.0, 1.0);
@@ -33,8 +46,28 @@ impl Easing {
             Easing::EaseOut => bezier(0.0, 0.0, 0.58, 1.0, t),
             Easing::EaseInOut => bezier(0.42, 0.0, 0.58, 1.0, t),
             Easing::CubicBezier(a, b, c, d) => bezier(a, b, c, d, t),
+            Easing::Spring { stiffness, damping } => spring(stiffness, damping, t),
         }
     }
+}
+
+/// Closed-form damped spring step response at time `t` (seconds), snapped to
+/// exactly `1.0` at `t == 1`.
+fn spring(k: f32, c: f32, t: f32) -> f32 {
+    let k = k.max(1.0);
+    let w0 = k.sqrt();
+    let z = c.max(0.0) / (2.0 * w0);
+    let x = if z < 1.0 {
+        let wd = w0 * (1.0 - z * z).sqrt();
+        let e = (-z * w0 * t).exp();
+        1.0 - e * ((wd * t).cos() + (z * w0 / wd) * (wd * t).sin())
+    } else {
+        let e = (-w0 * t).exp();
+        1.0 - e * (1.0 + w0 * t)
+    };
+    // Blend the last 5% to the target so the curve ends exactly at 1.
+    let snap = ((t - 0.95) / 0.05).clamp(0.0, 1.0);
+    x + (1.0 - x) * snap
 }
 
 /// Solve a CSS cubic-bezier for `y` at time `x` by bisection.
@@ -135,14 +168,15 @@ pub fn entry(
     motion: Motion,
 ) -> AnimationElement<Stateful<Div>> {
     let kind = motion.entry;
+    let default = motion.duration;
+    let delay = motion.delay.as_secs_f32();
+    let run = kind.duration(default).as_secs_f32();
     let anim = if kind.is_empty() {
         Animation::new(Duration::from_millis(1))
     } else {
-        let e = motion.easing;
-        Animation::new(kind.duration(motion.duration))
-            .with_easing(move |t| e.apply(t).clamp(0.0, 1.0))
+        Animation::new(Duration::from_secs_f32(run + delay))
     };
-    let default = motion.duration;
+    let e = motion.easing;
     div()
         .flex()
         .flex_col()
@@ -150,7 +184,9 @@ pub fn entry(
         .relative()
         .id((name, 0u32))
         .with_animation(ElementId::from((name, 1u32)), anim, move |el, p| {
-            let (o, dx, dy) = kind.frame(p, default);
+            // Linear time -> local progress after the stagger delay -> eased.
+            let local = ((p * (run + delay) - delay) / run.max(1e-3)).clamp(0.0, 1.0);
+            let (o, dx, dy) = kind.frame(e.apply(local).clamp(0.0, 1.0), default);
             el.opacity(o).left(px(dx)).top(px(dy))
         })
 }
@@ -170,11 +206,11 @@ pub fn grow(window: &mut gpui::Window, cx: &mut App, name: &'static str) -> f32 
         0 => m.duration.as_secs_f32(),
         ms => ms as f32 / 1000.0,
     };
-    let t = start.elapsed().as_secs_f32() / dur.max(1e-3);
+    let t = (start.elapsed().as_secs_f32() - m.delay.as_secs_f32()) / dur.max(1e-3);
     if t < 1.0 {
         window.request_animation_frame();
     }
-    m.eased(t)
+    m.eased(t.max(0.0))
 }
 
 /// Animated scalar that eases from its current value to a new target.
@@ -225,6 +261,8 @@ pub fn lerp(a: f32, b: f32, t: f32) -> f32 {
 pub struct Motion {
     pub duration: Duration,
     pub easing: Easing,
+    /// Wait before the entry / value-in animation starts (stagger).
+    pub delay: Duration,
     /// How components enter (see [`EntryKind`]).
     pub entry: EntrySet,
 }
@@ -251,6 +289,7 @@ pub struct EntrySet {
     mask: u8,
     ms: [u16; 5],
     grow: u16,
+    stagger: u16,
 }
 
 impl EntrySet {
@@ -258,6 +297,7 @@ impl EntrySet {
         mask: 0,
         ms: [0; 5],
         grow: 0,
+        stagger: 0,
     };
     pub fn of(k: EntryKind) -> Self {
         Self::NONE.with(k)
@@ -286,6 +326,14 @@ impl EntrySet {
     }
     pub fn with_grow_ms(mut self, ms: u16) -> Self {
         self.grow = ms;
+        self
+    }
+    /// Delay between consecutive children of a scoped panel in ms.
+    pub fn stagger_ms(self) -> u16 {
+        self.stagger
+    }
+    pub fn with_stagger_ms(mut self, ms: u16) -> Self {
+        self.stagger = ms;
         self
     }
     /// Own duration for `k` in ms (`0` = default).
@@ -386,6 +434,7 @@ impl Default for Motion {
         Self {
             duration: Duration::from_millis(220),
             easing: Easing::EaseOut,
+            delay: Duration::ZERO,
             entry: EntrySet::of(EntryKind::Fade),
         }
     }
@@ -398,6 +447,7 @@ impl Motion {
         Self {
             duration,
             easing,
+            delay: Duration::ZERO,
             entry: EntrySet::of(EntryKind::Fade),
         }
     }
@@ -410,6 +460,11 @@ impl Motion {
     }
     pub fn entry(mut self, k: impl Into<EntrySet>) -> Self {
         self.entry = k.into();
+        self
+    }
+    /// Start the entry / value-in animation after `d`.
+    pub fn delay(mut self, d: Duration) -> Self {
+        self.delay = d;
         self
     }
     pub fn easing(mut self, e: Easing) -> Self {
@@ -454,6 +509,7 @@ impl Motion {
 /// child's `request_layout` and restored afterwards.
 pub struct EntryScope {
     kind: EntrySet,
+    delay: Duration,
     child: gpui::AnyElement,
 }
 
@@ -461,8 +517,17 @@ impl EntryScope {
     pub fn new(kind: impl Into<EntrySet>, child: impl IntoElement) -> Self {
         Self {
             kind: kind.into(),
+            delay: Duration::ZERO,
             child: child.into_any_element(),
         }
+    }
+}
+
+impl EntryScope {
+    /// Start the scoped components' animations after `d` (stagger).
+    pub fn delay(mut self, d: Duration) -> Self {
+        self.delay = d;
+        self
     }
 }
 
@@ -490,7 +555,7 @@ impl gpui::Element for EntryScope {
         cx: &mut App,
     ) -> (gpui::LayoutId, ()) {
         let prev = Motion::of(cx);
-        prev.entry(self.kind).set_default(cx);
+        prev.entry(self.kind).delay(self.delay).set_default(cx);
         let id = self.child.request_layout(window, cx);
         prev.set_default(cx);
         (id, ())
@@ -565,6 +630,14 @@ mod tests {
         assert!(Easing::EaseIn.apply(0.3) < 0.3);
         assert!(Easing::EaseOut.apply(0.3) > 0.3);
         assert!((Easing::EaseInOut.apply(0.5) - 0.5).abs() < 1e-2);
+    }
+
+    #[test]
+    fn spring_overshoots_and_settles() {
+        let e = Easing::SPRING;
+        assert!(e.apply(0.0).abs() < 1e-4);
+        assert!((e.apply(1.0) - 1.0).abs() < 1e-4);
+        assert!((0..100).any(|i| e.apply(i as f32 / 100.0) > 1.02));
     }
 
     #[test]

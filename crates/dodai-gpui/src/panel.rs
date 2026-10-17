@@ -123,7 +123,9 @@ impl Panel {
                         .id(("pscope", key.wrapping_add(i as u32)))
                         .flex()
                         .flex_col()
-                        .child(crate::motion::EntryScope::new(set, c))
+                        .child(crate::motion::EntryScope::new(set, c).delay(
+                            std::time::Duration::from_millis(set.stagger_ms() as u64 * i as u64),
+                        ))
                 }));
             }
             None => d = d.children(self.children),
