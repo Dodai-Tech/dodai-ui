@@ -2374,7 +2374,7 @@ impl Render for Showcase {
                 }
             }
             shown += 1;
-            body = body.child(div().flex().flex_col().w_full().min_w_0().child(el));
+            body = body.child(el);
         }
         if shown == 0 {
             body = body.child(

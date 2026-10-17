@@ -233,18 +233,57 @@ pub fn entry(
         Animation::new(Duration::from_secs_f32(run + delay))
     };
     let e = motion.easing;
-    div()
-        .flex()
-        .flex_col()
-        .child(el)
-        .relative()
-        .id((name, 0u32))
-        .with_animation(ElementId::from((name, 1u32)), anim, move |el, p| {
+    animate(
+        div().flex().flex_col().child(el),
+        name,
+        anim,
+        kind,
+        delay,
+        run,
+        e,
+        default,
+    )
+}
+
+/// Like [`entry`] but animates `d` itself: no wrapper node.
+pub fn entry_div(
+    d: gpui::Div,
+    name: &'static str,
+    motion: Motion,
+) -> AnimationElement<Stateful<Div>> {
+    let kind = motion.entry;
+    let default = motion.duration;
+    let delay = motion.delay.as_secs_f32();
+    let run = kind.duration(default).as_secs_f32();
+    let anim = if kind.is_empty() {
+        Animation::new(Duration::from_millis(1))
+    } else {
+        Animation::new(Duration::from_secs_f32(run + delay))
+    };
+    animate(d, name, anim, kind, delay, run, motion.easing, default)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn animate(
+    d: gpui::Div,
+    name: &'static str,
+    anim: Animation,
+    kind: EntrySet,
+    delay: f32,
+    run: f32,
+    e: Easing,
+    default: Duration,
+) -> AnimationElement<Stateful<Div>> {
+    d.relative().id((name, 0u32)).with_animation(
+        ElementId::from((name, 1u32)),
+        anim,
+        move |el, p| {
             // Linear time -> local progress after the stagger delay -> eased.
             let local = ((p * (run + delay) - delay) / run.max(1e-3)).clamp(0.0, 1.0);
             let (o, dx, dy) = kind.frame(e.apply(local).clamp(0.0, 1.0), default);
             el.opacity(o).left(px(dx)).top(px(dy))
-        })
+        },
+    )
 }
 
 /// Eased `0..1` progress since this component first appeared; components
@@ -632,14 +671,22 @@ pub struct EntryScope {
     kind: EntrySet,
     delay: Duration,
     child: gpui::AnyElement,
+    key: Option<ElementId>,
 }
 
 impl EntryScope {
+    /// Give the scope an element id so replaying (new id) resets the subtree.
+    pub fn key(mut self, id: impl Into<ElementId>) -> Self {
+        self.key = Some(id.into());
+        self
+    }
+
     pub fn new(kind: impl Into<EntrySet>, child: impl IntoElement) -> Self {
         Self {
             kind: kind.into(),
             delay: Duration::ZERO,
             child: child.into_any_element(),
+            key: None,
         }
     }
 }
@@ -663,7 +710,7 @@ impl gpui::Element for EntryScope {
     type RequestLayoutState = ();
     type PrepaintState = ();
     fn id(&self) -> Option<ElementId> {
-        None
+        self.key.clone()
     }
     fn source_location(&self) -> Option<&'static std::panic::Location<'static>> {
         None

@@ -5,8 +5,8 @@ use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use dodai_core::Theme;
 use gpui::{
-    div, px, AnyElement, AnyView, App, AppContext as _, Context, InteractiveElement as _,
-    IntoElement, ParentElement, Render, RenderOnce, SharedString, Styled, Window,
+    div, px, AnyElement, AnyView, App, AppContext as _, Context, IntoElement, ParentElement,
+    Render, RenderOnce, SharedString, Styled, Window,
 };
 
 /// Paint style of a panel (pure).
@@ -99,7 +99,7 @@ impl ParentElement for Panel {
 }
 
 impl Panel {
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(self, _: &mut Window, cx: &mut App) -> gpui::Div {
         let t = theme_of(cx);
         let p = t.panel(self.focused);
         let mut shape = t.shape.clone();
@@ -132,15 +132,11 @@ impl Panel {
             Some(set) => {
                 let key = self.scope_key.wrapping_mul(256);
                 d = d.children(self.children.into_iter().enumerate().map(|(i, c)| {
-                    div()
-                        .id(("pscope", key.wrapping_add(i as u32)))
-                        .flex()
-                        .flex_col()
-                        .w_full()
-                        .min_w_0()
-                        .child(crate::motion::EntryScope::new(set, c).delay(
-                            std::time::Duration::from_millis(set.stagger_ms() as u64 * i as u64),
+                    crate::motion::EntryScope::new(set, c)
+                        .delay(std::time::Duration::from_millis(
+                            set.stagger_ms() as u64 * i as u64,
                         ))
+                        .key(("pscope", key.wrapping_add(i as u32)))
                 }));
             }
             None => d = d.children(self.children),
@@ -155,7 +151,7 @@ impl Panel {
 impl RenderOnce for Panel {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Panel", motion)
+        crate::motion::entry_div(self.build(window, cx), "Panel", motion)
     }
 }
 
