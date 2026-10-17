@@ -92,10 +92,29 @@ impl Button {
         let t = theme_of(cx);
         let st = use_interact(&self.id, window, cx);
         let state = st.read(cx).control_state(self.disabled);
-        let (style, fg) = button_style(&t, self.variant, state);
+        let (mut style, mut fg) = button_style(&t, self.variant, state);
+        if state != ControlState::Disabled {
+            let lvl = crate::motion::smooth(
+                window,
+                cx,
+                (self.id.clone(), "fx").into(),
+                if state == ControlState::Idle {
+                    0.0
+                } else {
+                    1.0
+                },
+            );
+            let (idle, idle_fg) = button_style(&t, self.variant, ControlState::Idle);
+            style.fill = crate::motion::mix_opt(idle.fill, style.fill, lvl);
+            style.stroke = crate::motion::mix_opt(idle.stroke, style.stroke, lvl);
+            fg = crate::motion::mix(idle_fg, fg, lvl);
+        }
+        let pressed = state == ControlState::Pressed;
         let mut el = track(shaped_id(self.id, &t.shape, style), &st)
             .h(px(t.shape.control_height))
             .px(px(t.spacing.md))
+            .mt(px(if pressed { 1.0 } else { 0.0 }))
+            .mb(px(if pressed { -1.0 } else { 0.0 }))
             .flex()
             .items_center()
             .justify_center()

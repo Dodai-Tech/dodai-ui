@@ -395,6 +395,7 @@ impl RenderOnce for Skeleton {
             scaled_shape(&t.shape, self.h)
         };
         let style = ShapeStyle::from_tokens(&t, Some(t.palette.surface_raised), None, false, false);
+        let hi = hsla(t.palette.text).opacity(0.14);
         let mut d = shaped(&shape, style).h(px(self.h));
         d = match self.w {
             Some(w) => d.w(px(w)).flex_none(),
@@ -403,7 +404,24 @@ impl RenderOnce for Skeleton {
         d.with_animation(
             self.id,
             cycle(self.motion, 1600, self.playback),
-            |el, delta| el.opacity(0.45 + 0.55 * (delta * std::f32::consts::TAU).sin().abs()),
+            move |el, delta| {
+                // Highlight band sweeping left to right over the muted base.
+                let w = 0.4;
+                let x = -w + delta * (1.0 + w);
+                el.overflow_hidden().child(
+                    div()
+                        .absolute()
+                        .top_0()
+                        .h_full()
+                        .left(gpui::relative(x))
+                        .w(gpui::relative(w))
+                        .bg(gpui::linear_gradient(
+                            90.0,
+                            gpui::linear_color_stop(gpui::hsla(0.0, 0.0, 1.0, 0.0), 0.0),
+                            gpui::linear_color_stop(hi, 1.0),
+                        )),
+                )
+            },
         )
     }
 }
