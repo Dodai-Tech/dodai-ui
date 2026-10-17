@@ -57,6 +57,7 @@ pub mod scanlines;
 pub mod search;
 pub mod select;
 pub mod sheets;
+pub mod shell;
 pub mod surfaces;
 pub mod switcher;
 pub mod tabs;
@@ -111,11 +112,12 @@ pub use scanlines::Scanlines;
 pub use search::{count_label, highlight_runs, IconBadge, RichTooltip, SearchView};
 pub use select::{family_title, DesignSystemSelector, Select, SelectOption, ThemeSelector};
 pub use sheets::{sheet_style, BottomSheet, FullScreenDialog, SheetEdge, SideSheet, Snackbar};
+pub use shell::{is_wide, ResponsiveShell};
 pub use surfaces::{
     card_style, AppBarSize, Card, CardVariant, Fab, FabSize, IconButton, NavItem, NavLayout,
     Navigation, SearchBar, TopAppBar,
 };
-pub use switcher::ThemeSwitcherBar;
+pub use switcher::{DesignSystemTree, ThemeSwitcherBar};
 pub use tabs::Tabs;
 pub use tag::Tag;
 pub use text::{Heading, Label, Mono, Muted};

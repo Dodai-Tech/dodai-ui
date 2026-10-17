@@ -6,11 +6,11 @@
 
 use dodai_core::{ButtonVariant, Theme, Tone};
 use dodai_gpui::{
-    cycle_next, cycle_prev, family_title, fuzzy_filter, glow_intensity, hsla, install,
-    scanlines_enabled, select_theme, set_glow_intensity, set_scanlines, theme_of, ActiveDodai,
-    BubblePlacement, Button, Card, CardVariant, Checkbox, Direction, Divider, DodaiStyled,
-    DodaiTooltip, Fab, FabSize, Heading, IconButton, InputBox, Knob, Label, ListItem, Mono, Muted,
-    NavItem, NavLayout, Navigation, Panel, ProgressBar, Radio, Scanlines, SearchBar, Slider, Tabs,
+    cycle_next, cycle_prev, fuzzy_filter, glow_intensity, hsla, install, scanlines_enabled,
+    set_glow_intensity, set_scanlines, theme_of, BubblePlacement, Button, Card, CardVariant,
+    Checkbox, DesignSystemTree, Direction, Divider, DodaiStyled, DodaiTooltip, Fab, FabSize,
+    Heading, IconButton, InputBox, Knob, Label, ListItem, Mono, Muted, NavItem, NavLayout,
+    Navigation, Panel, ProgressBar, Radio, ResponsiveShell, Scanlines, SearchBar, Slider, Tabs,
     Tag, Toggle, TopAppBar,
 };
 use dodai_gpui::{
@@ -880,62 +880,36 @@ impl Render for Showcase {
 
         let ds_panel = Panel::new()
             .focused(true)
-            .child({
-                // Design-system tree: pick a system, its themes appear as children.
-                let sw = cx.dodai().switcher();
-                let (cur_idx, cur_fam) = (sw.index(), sw.current_family());
-                let mut tree = div().flex().flex_col().gap(px(2.0));
-                for (fi, fam) in sw.families().into_iter().enumerate() {
-                    let first = sw.family_indices(fam)[0];
-                    let open = fam == cur_fam;
-                    tree = tree.child(
-                        ListItem::new(
-                            ("ds-fam", fi),
-                            format!("{} {}", if open { "▾" } else { "▸" }, family_title(fam)),
-                        )
-                        .selected(open)
-                        .on_click(move |_, _, cx| select_theme(cx, first)),
-                    );
-                    if open {
-                        let mut kids = div()
-                            .ml(px(t.spacing.md))
-                            .pl(px(t.spacing.md))
-                            .border_l_1()
-                            .border_color(hsla(t.palette.border_strong))
-                            .flex()
-                            .flex_col()
-                            .gap(px(2.0));
-                        for &ti in &sw.family_indices(fam) {
-                            let th = &sw.themes()[ti];
-                            kids = kids.child(
-                                ListItem::new(("ds-theme", ti), th.name().to_string())
-                                    .selected(ti == cur_idx)
-                                    .on_click(move |_, _, cx| select_theme(cx, ti)),
-                            );
-                        }
-                        tree = tree.child(kids);
-                    }
-                }
-                row().child(Label::new("Design system")).child(tree)
-            })
-            .child(
-                row().child(Label::new("Glow intensity")).child(
-                    div().w(px(220.0)).child(
-                        Slider::new("glow-slider", glow)
-                            .range(0.0, 2.0)
-                            .step(0.05)
-                            .show_value(true)
-                            .format(|v| format!("{v:.2}"))
-                            .on_change(move |v, _, cx| set_glow_intensity(cx, v)),
-                    ),
-                ),
-            )
             .child(
                 row()
-                    .child(Label::new("Scanlines"))
-                    .child(Toggle::new("scan", scan).on_change(move |on, _, cx| {
-                        set_scanlines(cx, on);
-                    }))
+                    .child(Label::new("Design system"))
+                    .child(DesignSystemTree::new("ds-tree")),
+            )
+            .child(
+                // Glow + scanlines side by side; wraps when narrow.
+                div()
+                    .flex()
+                    .flex_wrap()
+                    .items_center()
+                    .gap_x(px(t.spacing.xl))
+                    .gap_y(px(t.spacing.sm))
+                    .child(
+                        row().child(Label::new("Glow")).child(
+                            div().w(px(200.0)).child(
+                                Slider::new("glow-slider", glow)
+                                    .range(0.0, 2.0)
+                                    .step(0.05)
+                                    .show_value(true)
+                                    .format(|v| format!("{v:.2}"))
+                                    .on_change(move |v, _, cx| set_glow_intensity(cx, v)),
+                            ),
+                        ),
+                    )
+                    .child(row().child(Label::new("Scanlines")).child(
+                        Toggle::new("scan", scan).on_change(move |on, _, cx| {
+                            set_scanlines(cx, on);
+                        }),
+                    ))
                     .child(Muted::new("keys: t / T theme · l scanlines")),
             );
 
@@ -2191,23 +2165,19 @@ impl Render for Showcase {
             .dodai_background(&t)
             .flex()
             .child(
-                div()
-                    .id("side")
-                    .flex_none()
-                    .h_full()
-                    .overflow_y_scroll()
-                    .when(narrow, |d| d.max_w(px(170.0)))
-                    .child(side),
-            )
-            .child(
-                div()
-                    .id("scroll")
-                    .track_scroll(&self.scroll)
-                    .flex_1()
-                    .min_w_0()
-                    .h_full()
-                    .overflow_y_scroll()
-                    .child(body.id(("body", self.cat * 1000 + self.replay))),
+                ResponsiveShell::new("shell")
+                    .breakpoint(640.0)
+                    .sidebar_width(if narrow { 170.0 } else { 220.0 })
+                    .sidebar(side)
+                    .content(
+                        div()
+                            .id("scroll")
+                            .track_scroll(&self.scroll)
+                            .flex_1()
+                            .min_w_0()
+                            .overflow_y_scroll()
+                            .child(body.id(("body", self.cat * 1000 + self.replay))),
+                    ),
             )
             .child(Scanlines::new())
     }
