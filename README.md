@@ -61,6 +61,12 @@ just run-gpui
 just run-topcoat   # writes showcase.html and opens it
 ```
 
+## Motion (gpui)
+
+Entry effects, value-in (grow) for charts/sliders/gauges, `CountUp`, eased toggle/tab/accordion
+transitions, hover/press blend and a shape-adaptive `Shimmer`, all driven by `Motion`/`EntrySet`.
+Try them per section in `just run-gpui`.
+
 ## Adding a theme
 
 1. Add `crates/dodai-core/src/themes/<name>.rs` returning `Theme`s (copy `cyberpunk.rs`).
@@ -73,6 +79,7 @@ just run-topcoat   # writes showcase.html and opens it
 just check-all     # fmt + clippy -D warnings + cargo tests + nushell tests
 just bump 0.2.0    # gate → bump versions → git-cliff changelog → commit + tag
 just release 0.2.0 # bump + push; CI publishes to crates.io in dependency order
+just push-all      # push to GitHub + Gitea remotes (`just setup-remotes` adds them)
 ```
 
 Layout mirrors [gitkraft](../gitkraft) / [tokenburn](../tokenburn): `justfile`, `cliff.toml`
