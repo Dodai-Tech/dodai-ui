@@ -881,8 +881,11 @@ impl Render for Showcase {
         let ds_panel = Panel::new()
             .focused(true)
             .child(
-                row()
-                    .child(Label::new("Design system"))
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(t.spacing.sm))
+                    .child(Label::new("Design System Selection"))
                     .child(DesignSystemTree::new("ds-tree")),
             )
             .child(
