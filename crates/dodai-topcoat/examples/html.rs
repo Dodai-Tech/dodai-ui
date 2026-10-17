@@ -24,7 +24,7 @@ const BODY: &str = r##"<main>
 
 <section><h2>Form controls</h2><div class="grid2">
 <div class="dodai-field"><span class="dodai-label">Input</span><input class="dodai-input" placeholder="search the net…"></div>
-<div class="dodai-field"><span class="dodai-label">Select</span><select class="dodai-select"><option>Night City</option><option>Pacifica</option></select></div>
+<div class="dodai-field"><span class="dodai-label">Select</span><select class="dodai-select"><option>Yellow</option><option>Pacifica</option></select></div>
 <div class="dodai-field"><span class="dodai-label">Textarea</span><textarea class="dodai-textarea" placeholder="notes…"></textarea></div>
 <div class="dodai-field"><span class="dodai-label">Disabled</span><input class="dodai-input" disabled value="locked"></div></div>
 <div class="row" style="margin-top:var(--dodai-space-md)">

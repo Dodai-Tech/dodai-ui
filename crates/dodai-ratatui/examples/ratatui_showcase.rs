@@ -130,7 +130,7 @@ fn draw(f: &mut Frame, app: &mut App) {
         rows[1],
     );
     f.render_widget(
-        Toggle::new(t, ToggleKind::Radio, true, "Netrunner").state(ControlState::Focused),
+        Toggle::new(t, ToggleKind::Radio, true, "Cyan").state(ControlState::Focused),
         rows[2],
     );
     f.render_widget(Toggle::new(t, ToggleKind::Radio, false, "Solo"), rows[3]);

@@ -130,6 +130,6 @@ mod tests {
             .iter()
             .map(|s| s.content.as_ref())
             .collect();
-        assert!(s.contains("NIGHT CITY"));
+        assert!(s.contains("YELLOW"));
     }
 }

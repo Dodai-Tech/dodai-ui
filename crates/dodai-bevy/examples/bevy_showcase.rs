@@ -158,7 +158,7 @@ fn setup(mut commands: Commands, theme: Res<DodaiTheme>) {
                     p.spawn(divider());
                     p.spawn(tabs(&["Overview", "Specs", "Log"], 0));
                     p.spawn(divider());
-                    for (i, l) in ["Night City", "Watson", "Pacifica"].iter().enumerate() {
+                    for (i, l) in ["Yellow", "Watson", "Pacifica"].iter().enumerate() {
                         p.spawn(list_item(*l, i == 0));
                     }
                 });
