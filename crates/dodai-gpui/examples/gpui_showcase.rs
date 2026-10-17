@@ -23,11 +23,11 @@ use dodai_gpui::{
 use dodai_gpui::{
     CountUp, Easing, EntryKind, EntrySet, IndeterminateBar, Motion, Skeleton, Spinner,
 };
+use gpui::{actions, AnimationExt, KeyBinding, Menu, MenuItem, SharedString};
 use gpui::{
     div, prelude::*, px, size, App, Application, Bounds, Context, Entity, FocusHandle,
     KeyDownEvent, Window, WindowBounds, WindowOptions,
 };
-use gpui::{AnimationExt, SharedString};
 use std::time::Duration;
 
 struct Showcase {
@@ -2213,15 +2213,96 @@ impl Render for Showcase {
     }
 }
 
+actions!(
+    showcase,
+    [
+        Quit,
+        CloseWindow,
+        Minimize,
+        ZoomWindow,
+        ToggleFullscreen,
+        WindowLarger,
+        WindowSmaller,
+        WindowReset
+    ]
+);
+
+const DEFAULT_W: f32 = 980.0;
+const DEFAULT_H: f32 = 760.0;
+
+/// Run `f` on the active window (menu/shortcut actions are app-global).
+fn on_active(cx: &mut App, f: impl FnOnce(&mut Window) + 'static) {
+    if let Some(w) = cx.active_window() {
+        let _ = w.update(cx, |_, window, _| f(window));
+    }
+}
+
+/// Window management: macOS-style menu + keyboard shortcuts.
+fn window_shortcuts(cx: &mut App) {
+    cx.bind_keys([
+        KeyBinding::new("cmd-q", Quit, None),
+        KeyBinding::new("cmd-w", CloseWindow, None),
+        KeyBinding::new("cmd-m", Minimize, None),
+        KeyBinding::new("cmd-ctrl-f", ToggleFullscreen, None),
+        KeyBinding::new("cmd-ctrl-z", ZoomWindow, None),
+        KeyBinding::new("cmd-=", WindowLarger, None),
+        KeyBinding::new("cmd-shift-=", WindowLarger, None),
+        KeyBinding::new("cmd--", WindowSmaller, None),
+        KeyBinding::new("cmd-0", WindowReset, None),
+    ]);
+    cx.on_action(|_: &Quit, cx| cx.quit());
+    cx.on_action(|_: &CloseWindow, cx| on_active(cx, |w| w.remove_window()));
+    cx.on_action(|_: &Minimize, cx| on_active(cx, |w| w.minimize_window()));
+    cx.on_action(|_: &ZoomWindow, cx| on_active(cx, |w| w.zoom_window()));
+    cx.on_action(|_: &ToggleFullscreen, cx| on_active(cx, |w| w.toggle_fullscreen()));
+    cx.on_action(|_: &WindowLarger, cx| {
+        on_active(cx, |w| {
+            let b = w.bounds().size;
+            w.resize(size(b.width * 1.1, b.height * 1.1));
+        })
+    });
+    cx.on_action(|_: &WindowSmaller, cx| {
+        on_active(cx, |w| {
+            let b = w.bounds().size;
+            w.resize(size(b.width / 1.1, b.height / 1.1));
+        })
+    });
+    cx.on_action(|_: &WindowReset, cx| {
+        on_active(cx, |w| w.resize(size(px(DEFAULT_W), px(DEFAULT_H))))
+    });
+    cx.set_menus(vec![
+        Menu {
+            name: "Dodai".into(),
+            items: vec![MenuItem::action("Quit", Quit)],
+        },
+        Menu {
+            name: "Window".into(),
+            items: vec![
+                MenuItem::action("Minimize", Minimize),
+                MenuItem::action("Zoom", ZoomWindow),
+                MenuItem::action("Enter Full Screen", ToggleFullscreen),
+                MenuItem::separator(),
+                MenuItem::action("Larger", WindowLarger),
+                MenuItem::action("Smaller", WindowSmaller),
+                MenuItem::action("Actual Size", WindowReset),
+                MenuItem::separator(),
+                MenuItem::action("Close", CloseWindow),
+            ],
+        },
+    ]);
+}
+
 fn main() {
     Application::new().run(|cx: &mut App| {
         install(cx, Theme::default());
+        window_shortcuts(cx);
         set_glow_intensity(cx, 0.5);
-        let bounds = Bounds::centered(None, size(px(980.0), px(760.0)), cx);
+        let bounds = Bounds::centered(None, size(px(DEFAULT_W), px(DEFAULT_H)), cx);
         let win = cx
             .open_window(
                 WindowOptions {
                     window_bounds: Some(WindowBounds::Windowed(bounds)),
+                    window_min_size: Some(size(px(420.0), px(360.0))),
                     ..Default::default()
                 },
                 |_, cx| {
