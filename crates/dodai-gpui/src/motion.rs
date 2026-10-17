@@ -197,7 +197,8 @@ pub fn entry(
 /// Replays whenever the surrounding keyed subtree is rebuilt.
 pub fn grow(window: &mut gpui::Window, cx: &mut App, name: &'static str) -> f32 {
     let m = Motion::of(cx);
-    if m.entry.is_empty() {
+    // A set fill duration enables value-in even with no entry effect on.
+    if m.entry.is_empty() && m.entry.grow_ms() == 0 {
         return 1.0;
     }
     let st = window.use_keyed_state((name, 2u32), cx, |_, _| std::time::Instant::now());

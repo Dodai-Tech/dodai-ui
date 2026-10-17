@@ -255,6 +255,7 @@ impl Showcase {
                                 me_p.update(cx, |s, cx| {
                                     let cur = s.sec_kind.get(title).copied().unwrap_or(base);
                                     s.sec_kind.insert(title, cur.with_ms(k, v as u16));
+                                    s.bump(title);
                                     cx.notify();
                                 })
                             }),
@@ -355,6 +356,7 @@ impl Showcase {
                                         cur.with_stagger_ms(v as u16)
                                     };
                                     s.sec_kind.insert(title, nw);
+                                    s.bump(title);
                                     cx.notify();
                                 })
                             }),
@@ -386,9 +388,9 @@ impl Showcase {
         chips = chips
             .child(div().w(px(8.0)))
             .child(
-                btn(1, dodai_gpui::IconName::Play, false).on_click(move |_, _, cx| {
-                    m1.update(cx, |s, cx| s.set_mode(title, Player::Idle, cx))
-                }),
+                btn(1, dodai_gpui::IconName::Play, mode == Player::Idle).on_click(
+                    move |_, _, cx| m1.update(cx, |s, cx| s.set_mode(title, Player::Idle, cx)),
+                ),
             )
             .child(
                 btn(2, dodai_gpui::IconName::Repeat, mode == Player::Looping).on_click(
