@@ -1053,7 +1053,7 @@ impl Render for Showcase {
             .child(
                 row()
                     .child(
-                        div().w(px(420.0)).child(
+                        div().flex_1().min_w(px(300.0)).child(
                             LineChart::new("line", [a.clone(), b.clone()])
                                 .labels(months)
                                 .area(true)
@@ -1062,21 +1062,22 @@ impl Render for Showcase {
                     )
                     .child(
                         div()
-                            .w(px(420.0))
+                            .flex_1()
+                            .min_w(px(300.0))
                             .child(BarChart::new("bars", [a.clone(), b.clone()]).labels(months)),
                     ),
             )
             .child(
                 row()
                     .child(
-                        div().w(px(420.0)).child(
+                        div().flex_1().min_w(px(300.0)).child(
                             BarChart::new("stack", [a.clone(), b.clone()])
                                 .labels(months)
                                 .stacked(true),
                         ),
                     )
                     .child(
-                        div().w(px(420.0)).child(
+                        div().flex_1().min_w(px(300.0)).child(
                             BarChart::new("hbars", [a, b])
                                 .labels(months)
                                 .horizontal(true),
@@ -1126,7 +1127,7 @@ impl Render for Showcase {
                 ],
             ))
             .child(
-                div().w(px(380.0)).child(ScatterPlot::new(
+                div().flex_1().min_w(px(300.0)).child(ScatterPlot::new(
                     "sc",
                     [
                         (
@@ -1236,7 +1237,13 @@ impl Render for Showcase {
                     }),
             );
 
-        let w = |e: gpui::AnyElement, px_w: f32| div().w(px(px_w)).child(e).into_any_element();
+        let w = |e: gpui::AnyElement, px_w: f32| {
+            div()
+                .flex_1()
+                .min_w(px(px_w * 0.7))
+                .child(e)
+                .into_any_element()
+        };
         let charts_more1 = row()
             .child(w(
                 StackedAreaChart::new([
@@ -1786,8 +1793,8 @@ impl Render for Showcase {
                 section!("Tree · timeline · empty state")
                     .child(
                         row()
-                            .child(div().w(px(240.0)).child(tree))
-                            .child(div().w(px(280.0)).child(timeline))
+                            .child(div().flex_1().min_w(px(200.0)).child(tree))
+                            .child(div().flex_1().min_w(px(220.0)).child(timeline))
                             .child(
                                 EmptyState::new("∅", "Nothing here")
                                     .message("Add something to get started."),
@@ -1857,8 +1864,8 @@ impl Render for Showcase {
                 "Inputs",
                 "Input field",
                 section!("Input")
-                    .child(div().w(px(320.0)).child(self.in_name.clone()))
-                    .child(div().w(px(320.0)).child(self.in_notes.clone()))
+                    .child(div().flex_1().min_w(px(260.0)).child(self.in_name.clone()))
+                    .child(div().flex_1().min_w(px(260.0)).child(self.in_notes.clone()))
                     .child(InputBox::new().placeholder("static placeholder box"))
                     .into_any_element(),
                 "Input",
@@ -1891,6 +1898,45 @@ impl Render for Showcase {
                     .child(Muted::new(format!("active tab: {}", self.tab)))
                     .into_any_element(),
                 "Tabs",
+            ),
+            (
+                "Navigation",
+                "Design system tree",
+                section!("Design system tree")
+                    .child(Muted::new(
+                        "Click the active system to hide / show its themes. Selecting a theme applies it live.",
+                    ))
+                    .child(
+                        row()
+                            .items_start()
+                            .gap(px(24.0))
+                            .child(
+                                col()
+                                    .flex_1()
+                                    .min_w(px(220.0))
+                                    .child(Label::new("Tree (default)"))
+                                    .child(DesignSystemTree::new("dst-default")),
+                            )
+                            .child(
+                                col()
+                                    .flex_1()
+                                    .min_w(px(220.0))
+                                    .child(Label::new("With properties"))
+                                    .child(DesignSystemTree::new("dst-props").properties(
+                                        "cyberpunk",
+                                        Muted::new("Family-specific controls go here."),
+                                    )),
+                            )
+                            .child(
+                                col()
+                                    .flex_1()
+                                    .min_w(px(220.0))
+                                    .child(Label::new("Dropdown (dropdown_over 0)"))
+                                    .child(DesignSystemTree::new("dst-dd").dropdown_over(0)),
+                            ),
+                    )
+                    .into_any_element(),
+                "Design system tree",
             ),
             (
                 "Navigation",
