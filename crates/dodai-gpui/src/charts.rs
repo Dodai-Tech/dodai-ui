@@ -275,6 +275,7 @@ pub(crate) use chart_cfg;
 pub struct LineChart {
     id: SharedString,
     series: Vec<Series>,
+    secondary: Vec<Series>,
     labels: Vec<SharedString>,
     height: f32,
     area: bool,
@@ -294,6 +295,7 @@ impl LineChart {
     pub fn new(id: impl Into<SharedString>, series: impl IntoIterator<Item = Series>) -> Self {
         Self {
             id: id.into(),
+            secondary: Vec::new(),
             series: series.into_iter().collect(),
             labels: Vec::new(),
             height: 200.0,
@@ -340,6 +342,12 @@ impl LineChart {
         self.zero = z;
         self
     }
+    /// Series drawn against a second y axis on the right; its gridlines align
+    /// with the primary axis.
+    pub fn secondary(mut self, s: impl IntoIterator<Item = Series>) -> Self {
+        self.secondary = s.into_iter().collect();
+        self
+    }
     /// Title above the chart.
     pub fn title(mut self, t: impl Into<SharedString>) -> Self {
         self.title = Some(t.into());
@@ -379,12 +387,22 @@ impl LineChart {
         let t = theme_of(cx);
         let g = crate::motion::grow(window, cx, "LineChart");
         let (lo, hi, ticks) = y_range(&self.series, self.zero, self.y_bounds);
-        let n = self
+        let np = self.series.len();
+        let (lo2, hi2, ticks2) = if self.secondary.is_empty() {
+            (lo, hi, Vec::new())
+        } else {
+            let (a, b, _) = y_range(&self.secondary, self.zero, None);
+            let (_, t2) = dodai_charts_core::axis::aligned_ticks((lo, hi), (a, b), 4);
+            (*t2.first().unwrap_or(&a), *t2.last().unwrap_or(&b), t2)
+        };
+        let all: Vec<Series> = self
             .series
             .iter()
-            .map(|s| s.values.len())
-            .max()
-            .unwrap_or(0);
+            .chain(self.secondary.iter())
+            .cloned()
+            .collect();
+        let range_of = move |i: usize| if i < np { (lo, hi) } else { (lo2, hi2) };
+        let n = all.iter().map(|s| s.values.len()).max().unwrap_or(0);
         let grid = hsla(t.palette.border);
         let glow = glow_of(&t);
         let (area, smooth, stepped, sw, show_grid) = (
@@ -394,11 +412,10 @@ impl LineChart {
             self.stroke_w,
             self.grid,
         );
-        let lines: Vec<(Hsla, Vec<f32>)> = self
-            .series
+        let lines: Vec<(Hsla, Vec<f32>, (f32, f32))> = all
             .iter()
             .enumerate()
-            .map(|(i, s)| (hsla(series_color(&t, s, i)), s.values.clone()))
+            .map(|(i, s)| (hsla(series_color(&t, s, i)), s.values.clone(), range_of(i)))
             .collect();
         let tick_fracs: Vec<f32> = ticks.iter().map(|v| norm(*v, lo, hi)).collect();
 
@@ -410,7 +427,8 @@ impl LineChart {
                     let y = bh - f * bh;
                     stroke(w, b.origin, &[(0.0, y), (bw, y)], 1.0, grid, false);
                 }
-                for (c, vals) in &lines {
+                for (c, vals, (lo, hi)) in &lines {
+                    let (lo, hi) = (*lo, *hi);
                     let m = vals.len();
                     let raw: Vec<(f32, f32)> = vals
                         .iter()
@@ -445,7 +463,8 @@ impl LineChart {
 
         let mut plot = div().relative().w_full().h(px(self.height)).child(cv);
         if self.points {
-            for (si, s) in self.series.iter().enumerate() {
+            for (si, s) in all.iter().enumerate() {
+                let (lo, hi) = range_of(si);
                 let c = hsla(series_color(&t, s, si));
                 let m = s.values.len();
                 for (i, v) in s.values.iter().enumerate() {
@@ -479,14 +498,27 @@ impl LineChart {
             Vec::new()
         };
         let mut root = div().flex().flex_col().gap(px(t.spacing.sm)).w_full();
-        root = root.child(framed(
+        let left = framed(
             &t,
             ticks.iter().map(|v| fmt_with(&self.fmt, *v)).collect(),
             x_labels,
             plot,
-        ));
-        if self.legend && self.series.len() > 1 {
-            root = root.child(Legend::of_series(&t, &self.series));
+        );
+        if ticks2.is_empty() {
+            root = root.child(left);
+        } else {
+            let right = label_style(&t, div())
+                .w(px(36.0))
+                .h(px(self.height))
+                .flex()
+                .flex_col()
+                .justify_between()
+                .pl(px(t.spacing.xs))
+                .children(ticks2.iter().rev().map(|v| div().child(fmt_num(*v))));
+            root = root.child(div().flex().w_full().child(left.flex_1()).child(right));
+        }
+        if self.legend && all.len() > 1 {
+            root = root.child(Legend::of_series(&t, &all));
         }
         titled(&t, self.title.clone(), root)
     }

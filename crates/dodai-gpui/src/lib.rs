@@ -37,6 +37,8 @@ pub mod charts_distribution;
 #[cfg(feature = "charts")]
 pub mod charts_flow;
 #[cfg(feature = "charts")]
+pub mod charts_market;
+#[cfg(feature = "charts")]
 pub mod charts_part_whole;
 #[cfg(feature = "charts")]
 pub mod charts_trend;
@@ -113,6 +115,8 @@ pub use charts_distribution::{histogram_bins, quartiles, BoxPlot, BubbleChart, H
 #[cfg(feature = "charts")]
 pub use charts_flow::{waterfall_steps, Funnel, Waterfall};
 #[cfg(feature = "charts")]
+pub use charts_market::{ChartStack, DepthChart, Gantt, RenkoChart};
+#[cfg(feature = "charts")]
 pub use charts_part_whole::{treemap_layout, RadialBar, Treemap};
 #[cfg(feature = "charts")]
 pub use charts_trend::{stack_cumulative, Candle, Candlestick, StackedAreaChart};
@@ -126,6 +130,8 @@ pub use controls::{
 pub use count::CountUp;
 #[cfg(feature = "components")]
 pub use data::{Avatar, Badge, Chip, Kbd, Table};
+#[cfg(feature = "charts")]
+pub use dodai_charts_core::gantt::Task as GanttTask;
 #[cfg(feature = "components")]
 pub use extras::{
     step_value, BottomAppBar, ColorPicker, EmptyState, FileDropZone, NumberStepper, Rating,

@@ -20,6 +20,7 @@ use dodai_gpui::{
     Sparkline, StackedAreaChart, TagField, TextInput, TimePicker, Timeline, TimelineEvent, Toolbar,
     TreeItem, TreeView, Treemap, Waterfall,
 };
+use dodai_gpui::{ChartStack, DepthChart, Gantt, GanttTask, RenkoChart};
 use dodai_gpui::{
     CountUp, Easing, EntryKind, EntrySet, IndeterminateBar, Motion, Skeleton, Spinner,
 };
@@ -1384,6 +1385,83 @@ impl Render for Showcase {
                         .fluid(true),
                 ),
             );
+        let w = |e: gpui::AnyElement, px_w: f32| {
+            div()
+                .flex_1()
+                .min_w(px(px_w * 0.7))
+                .child(e)
+                .into_any_element()
+        };
+        let walk: Vec<f32> = (0..70)
+            .scan(100.0f32, |p, i| {
+                *p += ((i * 53 % 17) as f32 - 7.5) * 0.45;
+                Some(*p)
+            })
+            .collect();
+        let charts_market = row()
+            .child(w(
+                RenkoChart::new("renko", walk.clone(), 2.0)
+                    .title("Renko · 2.0 bricks")
+                    .into_any_element(),
+                420.0,
+            ))
+            .child(w(
+                DepthChart::new(
+                    "depth",
+                    (1..12).map(|i| (100.0 - i as f32 * 0.5, 4.0 + (i * 7 % 5) as f32)),
+                    (1..12).map(|i| (100.5 + i as f32 * 0.5, 3.0 + (i * 5 % 6) as f32)),
+                )
+                .title("Order book depth")
+                .into_any_element(),
+                420.0,
+            ))
+            .child(w(
+                Gantt::new(
+                    "gantt",
+                    [
+                        GanttTask::new("Design", 0.0, 10.0).progress(1.0),
+                        GanttTask::new("Build", 8.0, 24.0).progress(0.6).after(0),
+                        GanttTask::new("Test", 20.0, 30.0).progress(0.25).after(1),
+                        GanttTask::new("Ship", 30.0, 34.0).after(2),
+                    ],
+                )
+                .title("Release plan")
+                .format(|v| format!("d{v:.0}"))
+                .into_any_element(),
+                420.0,
+            ))
+            .child(w(
+                LineChart::new(
+                    "dual",
+                    [Series::new("Revenue", [12.0, 18.0, 15.0, 26.0, 22.0, 31.0])],
+                )
+                .secondary([Series::new("Margin %", [0.21, 0.24, 0.2, 0.3, 0.28, 0.33])])
+                .labels(months)
+                .title("Secondary y axis")
+                .into_any_element(),
+                420.0,
+            ))
+            .child(w(
+                ChartStack::new()
+                    .height(300.0)
+                    .pane(3.0, |h| {
+                        LineChart::new(
+                            "st1",
+                            [Series::new("Price", [3.0, 4.0, 3.5, 5.0, 6.0, 5.5])],
+                        )
+                        .height(h - 24.0)
+                        .legend(false)
+                        .into_any_element()
+                    })
+                    .pane(1.0, |h| {
+                        BarChart::new("st2", [Series::new("Vol", [2.0, 3.0, 1.0, 4.0, 5.0, 3.0])])
+                            .height(h - 24.0)
+                            .legend(false)
+                            .into_any_element()
+                    })
+                    .into_any_element(),
+                420.0,
+            ));
         let charts_misc = row()
             .justify_around()
             .child(RadarChart::new(
@@ -1472,13 +1550,6 @@ impl Render for Showcase {
                     }),
             );
 
-        let w = |e: gpui::AnyElement, px_w: f32| {
-            div()
-                .flex_1()
-                .min_w(px(px_w * 0.7))
-                .child(e)
-                .into_any_element()
-        };
         let charts_more1 = row()
             .child(w(
                 StackedAreaChart::new([
@@ -2244,6 +2315,14 @@ impl Render for Showcase {
                     .child(charts_more3)
                     .into_any_element(),
                 "Candlestick · box plot · bubble",
+            ),
+            (
+                "Charts",
+                "Market · Planning",
+                section!("Market · planning charts")
+                    .child(charts_market)
+                    .into_any_element(),
+                "Market · planning charts",
             ),
             (
                 "Charts",
