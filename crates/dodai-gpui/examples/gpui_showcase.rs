@@ -1323,7 +1323,7 @@ impl Render for Showcase {
                                     .h(px(200.0))
                                     .flex_none()
                                     .with_animation(
-                                        ("an-plot-a", 0u32),
+                                        ("an-plot-a", (i as u32) * 1000 + n),
                                         gpui::Animation::new(Duration::from_millis(1400)),
                                         move |el, p| {
                                             // hold at the end for the last 50%
