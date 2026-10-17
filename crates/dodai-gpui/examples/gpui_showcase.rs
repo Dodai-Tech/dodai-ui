@@ -878,43 +878,40 @@ impl Render for Showcase {
             );
         }
 
-        let ds_panel = Panel::new()
-            .focused(true)
+        // Cyberpunk-specific properties, shown under that design system in the tree.
+        let cyber_props = div()
+            .flex()
+            .flex_col()
+            .gap(px(t.spacing.sm))
             .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap(px(t.spacing.sm))
-                    .child(Label::new("Design System Selection"))
-                    .child(DesignSystemTree::new("ds-tree")),
+                row().child(Label::new("Glow")).child(
+                    div().w(px(200.0)).child(
+                        Slider::new("glow-slider", glow)
+                            .range(0.0, 2.0)
+                            .step(0.05)
+                            .show_value(true)
+                            .format(|v| format!("{v:.2}"))
+                            .on_change(move |v, _, cx| set_glow_intensity(cx, v)),
+                    ),
+                ),
             )
             .child(
-                // Glow + scanlines side by side; wraps when narrow.
-                div()
-                    .flex()
-                    .flex_wrap()
-                    .items_center()
-                    .gap_x(px(t.spacing.xl))
-                    .gap_y(px(t.spacing.sm))
-                    .child(
-                        row().child(Label::new("Glow")).child(
-                            div().w(px(200.0)).child(
-                                Slider::new("glow-slider", glow)
-                                    .range(0.0, 2.0)
-                                    .step(0.05)
-                                    .show_value(true)
-                                    .format(|v| format!("{v:.2}"))
-                                    .on_change(move |v, _, cx| set_glow_intensity(cx, v)),
-                            ),
-                        ),
-                    )
-                    .child(row().child(Label::new("Scanlines")).child(
-                        Toggle::new("scan", scan).on_change(move |on, _, cx| {
-                            set_scanlines(cx, on);
-                        }),
-                    ))
-                    .child(Muted::new("keys: t / T theme · l scanlines")),
+                row()
+                    .child(Label::new("Scanlines"))
+                    .child(Toggle::new("scan", scan).on_change(move |on, _, cx| {
+                        set_scanlines(cx, on);
+                    }))
+                    .child(Muted::new("key: l")),
             );
+
+        let ds_panel = Panel::new().focused(true).child(
+            div()
+                .flex()
+                .flex_col()
+                .gap(px(t.spacing.sm))
+                .child(Label::new("Design System Selection"))
+                .child(DesignSystemTree::new("ds-tree").properties("cyberpunk", cyber_props)),
+        );
 
         let open = !self.search.read(cx).text().is_empty();
         let m = me.clone();

@@ -49,6 +49,7 @@ impl RenderOnce for ThemeSwitcherBar {
 pub struct DesignSystemTree {
     id: ElementId,
     dropdown_over: usize,
+    props: Vec<(&'static str, gpui::AnyElement)>,
 }
 
 impl DesignSystemTree {
@@ -56,7 +57,14 @@ impl DesignSystemTree {
         Self {
             id: id.into(),
             dropdown_over: 4,
+            props: Vec::new(),
         }
+    }
+    /// Family-specific settings (e.g. glow, scanlines), shown under that family's
+    /// themes while it is the active design system.
+    pub fn properties(mut self, family: &'static str, el: impl IntoElement) -> Self {
+        self.props.push((family, el.into_any_element()));
+        self
     }
     /// Switch to a dropdown when there are more than `n` design systems.
     pub fn dropdown_over(mut self, n: usize) -> Self {
@@ -66,7 +74,7 @@ impl DesignSystemTree {
 }
 
 impl RenderOnce for DesignSystemTree {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = crate::theme_of(cx);
         let lt = cx.dodai();
         let sw = lt.switcher();
@@ -107,6 +115,23 @@ impl RenderOnce for DesignSystemTree {
                         )
                         .selected(ti == cur_idx)
                         .on_click(move |_, _, cx| select_theme(cx, ti)),
+                    );
+                }
+                if let Some(i) = self.props.iter().position(|(f, _)| *f == fam) {
+                    let (_, el) = self.props.remove(i);
+                    kids = kids.child(
+                        gpui::div()
+                            .pt(px(t.spacing.sm))
+                            .flex()
+                            .flex_col()
+                            .gap(px(t.spacing.xs))
+                            .child(
+                                gpui::div()
+                                    .text_size(px(10.0))
+                                    .text_color(hsla(t.palette.text_muted))
+                                    .child("PROPERTIES"),
+                            )
+                            .child(el),
                     );
                 }
                 tree = tree.child(kids);
