@@ -127,6 +127,10 @@ doc:
 changelog: _check-git-cliff
     git-cliff --output CHANGELOG.md
 
+# Prepend only unreleased commits to CHANGELOG.md
+changelog-unreleased: _check-git-cliff
+    git-cliff --unreleased --prepend CHANGELOG.md
+
 changelog-preview: _check-git-cliff
     git-cliff --unreleased
 
@@ -157,9 +161,127 @@ publish: check-all
     cargo publish -p dodai-gpui
     cargo publish -p dodai-topcoat
 
-# Bump, then push commit + tag (CI publishes and creates the GitHub release)
+# Bump, then push commit + tag to GitHub (CI publishes and creates the GitHub release)
 release version: (bump version)
-    git push origin HEAD --follow-tags
+    git push --follow-tags origin "$(git branch --show-current)"
+    @echo "✅ Release v{{version}} pushed to GitHub."
+
+# Bump, commit, tag, then push to every remote.
+release-all version: (bump version)
+    #!/usr/bin/env sh
+    failed=""; skipped=""
+    for r in {{REMOTES}}; do
+        git remote get-url "$r" >/dev/null 2>&1 || { echo "↷ skipping $r (not configured)"; skipped="$skipped $r"; continue; }
+        git push --follow-tags "$r" "$(git branch --show-current)" || failed="$failed $r"
+    done
+    [ -n "$skipped" ] && echo "ℹ️  Skipped:$skipped"
+    [ -n "$failed" ] && { echo "⚠️  Failed:$failed"; exit 1; }
+    echo "✅ Release v{{version}} pushed to: {{REMOTES}}"
+
+# Bump, commit, tag, then push to Gitea Starscream only.
+release-gitea-starscream version: (bump version)
+    git push --follow-tags gitea-starscream "$(git branch --show-current)"
+
+# Push the latest commit and tags to GitHub (no bump; full gate first).
+push-release: check-all
+    git push --follow-tags origin "$(git branch --show-current)"
+
+# Push the latest commit and tags to every remote (no bump; continues on failure).
+push-release-all: check-all push-all push-tags-all
+
+# Manually re-trigger the GitHub Release workflow for an existing tag.
+release-retrigger version:
+    gh workflow run release.yml --field tag=v{{version}}
+
+# ── Git remotes & pushing ─────────────────────────────────────────────────────
+# Every *-all recipe loops over REMOTES and keeps going when one fails.
+
+REMOTES := "origin gitea-starscream gitea-microlab"
+
+# Show all configured remotes
+remotes:
+    @git remote -v
+
+# Add any missing remotes
+setup-remotes:
+    #!/usr/bin/env sh
+    git remote get-url origin >/dev/null 2>&1 || git remote add origin git@github.com:sorinirimies/dodai-ui.git
+    git remote get-url gitea-starscream >/dev/null 2>&1 || git remote add gitea-starscream gitea@192.168.1.44:sorin/dodai-ui.git
+    git remote get-url gitea-microlab >/dev/null 2>&1 || git remote add gitea-microlab ssh://git@192.168.1.204:30009/sorin/dodai-ui.git
+    git remote -v
+
+# Push the current branch to GitHub (origin)
+push:
+    git push origin "$(git branch --show-current)"
+
+# Push the current branch to Gitea Starscream
+push-gitea-starscream:
+    git push gitea-starscream "$(git branch --show-current)"
+
+# Push the current branch to Gitea Microlab
+push-gitea-microlab:
+    git push gitea-microlab "$(git branch --show-current)"
+
+# Push the current branch to every remote (continues on failure)
+push-all:
+    #!/usr/bin/env sh
+    failed=""; skipped=""
+    for r in {{REMOTES}}; do
+        git remote get-url "$r" >/dev/null 2>&1 || { echo "↷ skipping $r (not configured; see: just setup-remotes)"; skipped="$skipped $r"; continue; }
+        git push "$r" "$(git branch --show-current)" || failed="$failed $r"
+    done
+    [ -n "$skipped" ] && echo "ℹ️  Skipped:$skipped"
+    [ -n "$failed" ] && { echo "⚠️  Failed to push to:$failed"; exit 1; }
+    echo "✅ Pushed to: {{REMOTES}}"
+
+# Force-push the current branch to every remote (no lease — be sure!)
+push-all-force:
+    #!/usr/bin/env sh
+    failed=""
+    for r in {{REMOTES}}; do
+        git remote get-url "$r" >/dev/null 2>&1 || continue
+        git push --force "$r" "$(git branch --show-current)" || failed="$failed $r"
+    done
+    [ -n "$failed" ] && { echo "⚠️  Failed:$failed"; exit 1; }
+    echo "✅ Force-pushed"
+
+# Pull the current branch from GitHub (origin)
+pull:
+    git pull origin "$(git branch --show-current)"
+
+# Pull the current branch from Gitea Starscream
+pull-gitea-starscream:
+    git pull gitea-starscream "$(git branch --show-current)"
+
+# Push all tags to GitHub
+push-tags:
+    git push origin --tags
+
+# Push all tags to every remote (continues on failure)
+push-tags-all:
+    #!/usr/bin/env sh
+    failed=""
+    for r in {{REMOTES}}; do
+        git remote get-url "$r" >/dev/null 2>&1 || continue
+        git push "$r" --tags || failed="$failed $r"
+    done
+    [ -n "$failed" ] && { echo "⚠️  Failed:$failed"; exit 1; }
+    echo "✅ Tags pushed to: {{REMOTES}}"
+
+# Force-sync Gitea Starscream with the local branch + tags
+sync-gitea-starscream:
+    git push gitea-starscream "$(git branch --show-current)" --force
+    git push gitea-starscream --tags --force
+
+# Update deps, run the gate, then commit + push Cargo.lock if green
+update-deps:
+    cargo update
+    cargo fmt --all -- --check
+    cargo clippy --workspace --all-targets -- -D warnings
+    cargo test --workspace --locked --all-targets
+    git add Cargo.lock
+    git diff --cached --quiet || git commit -m "chore: update dependencies"
+    git push origin "$(git branch --show-current)"
 
 # ── Misc ──────────────────────────────────────────────────────────────────────
 
