@@ -117,6 +117,21 @@ fn choice(
         style.fill = crate::motion::mix_opt(a.fill, b.fill, p);
         style.stroke = crate::motion::mix_opt(a.stroke, b.stroke, p);
     }
+    // Physical feel: the thumb is a damped spring, so it overshoots slightly.
+    let thumb = if kind == Kind::Switch {
+        crate::motion::smooth_with(
+            window,
+            cx,
+            (id.clone(), "thumb").into(),
+            if on { 1.0 } else { 0.0 },
+            crate::motion::Motion::new(
+                std::time::Duration::from_millis(450),
+                crate::motion::Easing::SPRING_STIFF,
+            ),
+        )
+    } else {
+        p
+    };
     let (w, h) = match kind {
         Kind::Switch => (42.0, 22.0),
         _ => (20.0, 20.0),
@@ -140,7 +155,7 @@ fn choice(
                 shaped(&tshape, mark)
                     .absolute()
                     .top(px(3.0))
-                    .left(px(crate::motion::lerp(3.0, w - 14.0 - 3.0 - 1.0, p)))
+                    .left(px(crate::motion::lerp(3.0, w - 14.0 - 3.0 - 1.0, thumb)))
                     .w(px(14.0))
                     .h(px(14.0)),
             )

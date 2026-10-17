@@ -49,6 +49,8 @@ struct Showcase {
     in_notes: Entity<TextInput>,
     cat: usize,
     cat_count: usize,
+    /// Selected subsection inside the current category (`None` = all).
+    sub: Option<&'static str>,
     side_focus: FocusHandle,
     rating: u32,
     stepper: i32,
@@ -125,6 +127,31 @@ fn caps(title: &str) -> Caps {
             c(true, true, true)
         }
         _ => c(true, false, true),
+    }
+}
+
+/// Subsections of a category (shown in the sidebar under the selected category).
+fn subs(cat: &str) -> &'static [&'static str] {
+    match cat {
+        "Animation" => &["Entry", "Physics"],
+        _ => &[],
+    }
+}
+
+/// Subsection a section belongs to.
+fn sub_of(cat: &str, label: &str) -> Option<&'static str> {
+    match cat {
+        "Animation" => Some(
+            if ["Spring", "Bounce", "Elastic", "Back"]
+                .iter()
+                .any(|p| label.starts_with(p))
+            {
+                "Physics"
+            } else {
+                "Entry"
+            },
+        ),
+        _ => None,
     }
 }
 
@@ -1453,7 +1480,7 @@ impl Render for Showcase {
             ));
 
         // Animation page: one Panel per entry type (curve · live example · text).
-        let anim_defs: [(&'static str, EntryKind, Easing, &'static str); 6] = [
+        let anim_defs: [(&'static str, EntryKind, Easing, &'static str); 12] = [
             (
                 EntryKind::Fade.label(),
                 EntryKind::Fade,
@@ -1489,6 +1516,42 @@ impl Render for Showcase {
                 EntryKind::Rise,
                 Easing::SPRING,
                 "Physics-based easing: a damped spring (stiffness 170, damping 12). Overshoots its target and settles; entry effects clamp at 1.0, value animations (charts, sliders) show the overshoot.",
+            ),
+            (
+                "Spring · stiff",
+                EntryKind::Rise,
+                Easing::SPRING_STIFF,
+                "Stiffness 400, damping 26: snaps into place with a tiny overshoot. Used by the Toggle thumb.",
+            ),
+            (
+                "Spring · wobbly",
+                EntryKind::Rise,
+                Easing::SPRING_WOBBLY,
+                "Stiffness 120, damping 6: loose, lingering wobble. Playful; use sparingly.",
+            ),
+            (
+                "Spring · gentle",
+                EntryKind::Drop,
+                Easing::SPRING_GENTLE,
+                "Stiffness 100, damping 20: heavily damped, no overshoot, soft landing.",
+            ),
+            (
+                "Bounce",
+                EntryKind::Drop,
+                Easing::Bounce,
+                "Ball drop: falls to the target and bounces to rest. Fits dropped-in toasts and badges.",
+            ),
+            (
+                "Elastic",
+                EntryKind::SlideLeft,
+                Easing::Elastic,
+                "Rubber band: shoots past the target and wobbles with a decaying sine.",
+            ),
+            (
+                "Back · anticipate",
+                EntryKind::SlideRight,
+                Easing::Back(1.7),
+                "Back overshoots the target about 10% and eases back; Anticipate (the mirror) winds up first by pulling away before moving.",
             ),
         ];
         let anim_titles: Vec<&'static str> = anim_defs.iter().map(|d| d.0).collect();
@@ -1898,6 +1961,8 @@ impl Render for Showcase {
                 })
                 .count()
         };
+        let sections_meta: Vec<(&'static str, &'static str)> =
+            sections.iter().map(|(c, l, _, _)| (*c, *l)).collect();
         let mut side = div()
             .id("side-nav")
             .track_focus(&self.side_focus)
@@ -1910,6 +1975,7 @@ impl Render for Showcase {
                     "end" => s.cat = last,
                     _ => return,
                 }
+                s.sub = None;
                 cx.notify();
             }))
             .flex()
@@ -1935,10 +2001,44 @@ impl Render for Showcase {
                         m.update(cx, |s, cx| {
                             w.focus(&s.side_focus);
                             s.cat = idx;
+                            s.sub = None;
                             cx.notify()
                         })
                     }),
             );
+            if self.cat == idx && idx > 0 {
+                for sub in std::iter::once(None).chain(subs(name).iter().copied().map(Some)) {
+                    if sub.is_none() && subs(name).is_empty() {
+                        break;
+                    }
+                    let m = me.clone();
+                    let cnt = sections_meta
+                        .iter()
+                        .filter(|(c, l)| *c == name && sub.is_none_or(|x| sub_of(c, l) == Some(x)))
+                        .count();
+                    side = side.child(
+                        div().pl(px(t.spacing.lg)).child(
+                            ListItem::new(
+                                (
+                                    "sub",
+                                    idx * 100
+                                        + sub.map_or(0, |x| {
+                                            1 + subs(name).iter().position(|y| *y == x).unwrap_or(0)
+                                        }),
+                                ),
+                                format!("{}  ·  {cnt}", sub.unwrap_or("All")),
+                            )
+                            .selected(self.sub == sub)
+                            .on_click(move |_, _, cx| {
+                                m.update(cx, |s, cx| {
+                                    s.sub = sub;
+                                    cx.notify()
+                                })
+                            }),
+                        ),
+                    );
+                }
+            }
         }
         side = side.child(
             div()
@@ -1962,7 +2062,8 @@ impl Render for Showcase {
             let hit =
                 query.is_empty() || !fuzzy_filter(&query, &[format!("{c} {title}")]).is_empty();
             let only = std::env::var("DODAI_ONLY").is_ok_and(|o| !title.contains(&o));
-            if !(in_cat && hit) || only {
+            let sub_ok = self.sub.is_none_or(|x| sub_of(c, title) == Some(x));
+            if !(in_cat && hit && sub_ok) || only {
                 continue;
             }
             if c != last_cat {
@@ -2092,6 +2193,7 @@ fn main() {
                         pill_hover: None,
                         pop_hover: None,
                         cat_count: 1,
+                        sub: None,
                         side_focus: cx.focus_handle(),
                         rating: 3,
                         stepper: 5,
@@ -2131,6 +2233,10 @@ fn ease_ctrl(e: Easing) -> Option<(f32, f32, f32, f32)> {
         Easing::EaseOut => (0.0, 0.0, 0.58, 1.0),
         Easing::EaseInOut => (0.42, 0.0, 0.58, 1.0),
         Easing::CubicBezier(a, b, c, d) => (a, b, c, d),
-        Easing::Spring { .. } => return None,
+        Easing::Spring { .. }
+        | Easing::Bounce
+        | Easing::Elastic
+        | Easing::Back(_)
+        | Easing::Anticipate(_) => return None,
     })
 }

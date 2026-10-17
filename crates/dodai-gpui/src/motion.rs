@@ -28,6 +28,14 @@ pub enum Easing {
         stiffness: f32,
         damping: f32,
     },
+    /// Ball drop: falls to the target and bounces to rest.
+    Bounce,
+    /// Decaying wobble around the target (rubber band).
+    Elastic,
+    /// Overshoots the target by roughly `overshoot * 10%` and eases back (`1.7` ≈ 10%).
+    Back(f32),
+    /// Pulls back first, then accelerates past the start (windup).
+    Anticipate(f32),
 }
 
 impl Easing {
@@ -35,6 +43,21 @@ impl Easing {
     pub const SPRING: Easing = Easing::Spring {
         stiffness: 170.0,
         damping: 12.0,
+    };
+    /// Fast and tight: settles quickly with a small overshoot.
+    pub const SPRING_STIFF: Easing = Easing::Spring {
+        stiffness: 400.0,
+        damping: 26.0,
+    };
+    /// Slow and loose: large, lingering wobble.
+    pub const SPRING_WOBBLY: Easing = Easing::Spring {
+        stiffness: 120.0,
+        damping: 6.0,
+    };
+    /// Heavily damped: no overshoot, soft landing.
+    pub const SPRING_GENTLE: Easing = Easing::Spring {
+        stiffness: 100.0,
+        damping: 20.0,
     };
 
     /// Eased progress for linear `t` (clamped to `0..=1`). Pure.
@@ -47,6 +70,13 @@ impl Easing {
             Easing::EaseInOut => bezier(0.42, 0.0, 0.58, 1.0, t),
             Easing::CubicBezier(a, b, c, d) => bezier(a, b, c, d, t),
             Easing::Spring { stiffness, damping } => spring(stiffness, damping, t),
+            Easing::Bounce => bounce(t),
+            Easing::Elastic => elastic(t),
+            Easing::Back(o) => {
+                let u = t - 1.0;
+                1.0 + u * u * ((o + 1.0) * u + o)
+            }
+            Easing::Anticipate(o) => t * t * ((o + 1.0) * t - o),
         }
     }
 }
@@ -68,6 +98,32 @@ fn spring(k: f32, c: f32, t: f32) -> f32 {
     // Blend the last 5% to the target so the curve ends exactly at 1.
     let snap = ((t - 0.95) / 0.05).clamp(0.0, 1.0);
     x + (1.0 - x) * snap
+}
+
+/// Ball-drop bounce (easeOutBounce). Pure.
+fn bounce(t: f32) -> f32 {
+    let (n, d) = (7.5625, 2.75);
+    if t < 1.0 / d {
+        n * t * t
+    } else if t < 2.0 / d {
+        let t = t - 1.5 / d;
+        n * t * t + 0.75
+    } else if t < 2.5 / d {
+        let t = t - 2.25 / d;
+        n * t * t + 0.9375
+    } else {
+        let t = t - 2.625 / d;
+        n * t * t + 0.984375
+    }
+}
+
+/// Elastic ease-out: decaying sine around the target. Pure.
+fn elastic(t: f32) -> f32 {
+    if t <= 0.0 || t >= 1.0 {
+        return t;
+    }
+    let c = std::f32::consts::TAU / 3.0;
+    2f32.powf(-10.0 * t) * ((t * 10.0 - 0.75) * c).sin() + 1.0
 }
 
 /// Solve a CSS cubic-bezier for `y` at time `x` by bisection.
@@ -231,6 +287,17 @@ pub fn transition(window: &mut gpui::Window, cx: &mut App, id: gpui::ElementId, 
 /// Eased follower of an arbitrary `target`, keyed under `id`.
 pub fn smooth(window: &mut gpui::Window, cx: &mut App, id: gpui::ElementId, target: f32) -> f32 {
     let m = Motion::of(cx);
+    smooth_with(window, cx, id, target, m)
+}
+
+/// Like [`smooth`] with an explicit [`Motion`] (e.g. a spring for physical feel).
+pub fn smooth_with(
+    window: &mut gpui::Window,
+    cx: &mut App,
+    id: gpui::ElementId,
+    target: f32,
+    m: Motion,
+) -> f32 {
     let st = window.with_id(id, |w| {
         w.use_keyed_state(("smooth", 0u32), cx, move |_, _| Tween::new(target, m))
     });
@@ -684,6 +751,28 @@ mod tests {
         assert!(Easing::EaseIn.apply(0.3) < 0.3);
         assert!(Easing::EaseOut.apply(0.3) > 0.3);
         assert!((Easing::EaseInOut.apply(0.5) - 0.5).abs() < 1e-2);
+    }
+
+    #[test]
+    fn physics_easings_hit_endpoints() {
+        for e in [
+            Easing::Bounce,
+            Easing::Elastic,
+            Easing::Back(1.7),
+            Easing::Anticipate(1.7),
+            Easing::SPRING_STIFF,
+            Easing::SPRING_WOBBLY,
+            Easing::SPRING_GENTLE,
+        ] {
+            assert!(e.apply(0.0).abs() < 1e-3, "{e:?} start");
+            assert!((e.apply(1.0) - 1.0).abs() < 1e-3, "{e:?} end");
+        }
+        assert!(Easing::Back(1.7).apply(0.7) > 1.0, "back overshoots");
+        assert!(
+            Easing::Anticipate(1.7).apply(0.2) < 0.0,
+            "anticipate pulls back"
+        );
+        assert!(Easing::Bounce.apply(0.9) <= 1.0);
     }
 
     #[test]
