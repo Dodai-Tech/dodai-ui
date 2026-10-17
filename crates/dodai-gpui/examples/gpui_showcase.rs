@@ -596,14 +596,10 @@ impl Render for Showcase {
             };
         }
 
-        let row = || div().flex().flex_wrap().items_center().gap(gap);
-        let col = || div().flex().flex_col().gap(gap);
+        let row = || div().flex().flex_wrap().items_center().gap(gap).w_full();
+        let col = || div().flex().flex_col().gap(gap).w_full();
 
-        let bc = self.btn_corners;
-        let cut = move |b: Button| match bc {
-            Some(c) => b.corners(c),
-            None => b,
-        };
+        let cut = |b: Button| b;
         let buttons = row()
             .child(cut(Button::new("b-primary", "Primary").on_click(
                 cx.listener(|s, _, _, cx| {
@@ -708,6 +704,60 @@ impl Render for Showcase {
                 ))
                 .child(chip("cc-theme", "Theme", cur.is_none(), preset(None)))
         };
+
+        let ov = self.btn_corners;
+        let sc = move |b: Button| match ov {
+            Some(c) => b.corners(c),
+            None => b,
+        };
+        let sc_tag = move |t: Tag| match ov {
+            Some(c) => t.corners(c),
+            None => t,
+        };
+        let sc_card = move |c: Card| match ov {
+            Some(k) => c.corners(k),
+            None => c,
+        };
+        let sc_panel = move |p: Panel| match ov {
+            Some(k) => p.corners(k),
+            None => p,
+        };
+        let shape_gallery = col()
+            .child(
+                row()
+                    .child(sc(Button::new("sg-p", "Primary")))
+                    .child(sc(
+                        Button::new("sg-s", "Secondary").variant(ButtonVariant::Secondary)
+                    ))
+                    .child(sc(
+                        Button::new("sg-o", "Outline").variant(ButtonVariant::Outline)
+                    ))
+                    .child(sc(
+                        Button::new("sg-d", "Danger").variant(ButtonVariant::Danger)
+                    )),
+            )
+            .child(
+                row()
+                    .child(sc_tag(Tag::new("online", Tone::Success).solid(true)))
+                    .child(sc_tag(Tag::new("warn", Tone::Warning)))
+                    .child(sc_tag(Tag::new("breach", Tone::Danger).solid(true))),
+            )
+            .child(
+                row()
+                    .items_start()
+                    .child(
+                        div()
+                            .flex_1()
+                            .min_w(px(220.0))
+                            .child(sc_card(Card::new(CardVariant::Outlined).headline("Card"))),
+                    )
+                    .child(div().flex_1().min_w(px(220.0)).child(sc_card(
+                        Card::new(CardVariant::Elevated).headline("Elevated card"),
+                    )))
+                    .child(div().flex_1().min_w(px(220.0)).child(sc_panel(
+                        Panel::new().title("Panel").child(Muted::new("Panel body")),
+                    ))),
+            );
 
         let tags = row()
             .child(Tag::new("online", Tone::Success).solid(true))
@@ -1895,19 +1945,21 @@ impl Render for Showcase {
                 "Actions",
                 "Buttons · IconButton · FAB",
                 section!("Buttons")
-                    .child(corner_picker)
                     .child(buttons)
-                    .child(row().items_start().child(match self.btn_corners {
-                        Some(c) => Card::new(CardVariant::Outlined)
-                            .corners(c)
-                            .headline("Card follows the same cut")
-                            .into_any_element(),
-                        None => Card::new(CardVariant::Outlined)
-                            .headline("Card follows the same cut")
-                            .into_any_element(),
-                    }))
                     .into_any_element(),
                 "Buttons",
+            ),
+            (
+                "Shape",
+                "Corner shape",
+                section!("Corner shape")
+                    .child(Muted::new(
+                        "Override the corner cut on any component. \"Theme\" follows the design system's own shape.",
+                    ))
+                    .child(corner_picker)
+                    .child(shape_gallery)
+                    .into_any_element(),
+                "Corner shape",
             ),
             (
                 "Actions",
@@ -2065,16 +2117,22 @@ impl Render for Showcase {
                             .items_start()
                             .gap(px(24.0))
                             .child(
-                                col()
-                                    .flex_1()
-                                    .min_w(px(220.0))
+                                div()
+.flex()
+.flex_col()
+.gap(gap)
+.flex_1()
+.min_w(px(220.0))
                                     .child(Label::new("Tree (default)"))
                                     .child(DesignSystemTree::new("dst-default")),
                             )
                             .child(
-                                col()
-                                    .flex_1()
-                                    .min_w(px(220.0))
+                                div()
+.flex()
+.flex_col()
+.gap(gap)
+.flex_1()
+.min_w(px(220.0))
                                     .child(Label::new("With properties"))
                                     .child(DesignSystemTree::new("dst-props").properties(
                                         "cyberpunk",
@@ -2082,9 +2140,12 @@ impl Render for Showcase {
                                     )),
                             )
                             .child(
-                                col()
-                                    .flex_1()
-                                    .min_w(px(220.0))
+                                div()
+.flex()
+.flex_col()
+.gap(gap)
+.flex_1()
+.min_w(px(220.0))
                                     .child(Label::new("Dropdown (dropdown_over 0)"))
                                     .child(DesignSystemTree::new("dst-dd").dropdown_over(0)),
                             ),

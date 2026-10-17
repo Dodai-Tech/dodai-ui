@@ -109,6 +109,8 @@ impl Panel {
         let mut d = shaped(&shape, panel_style(&t, self.focused))
             .flex()
             .flex_col()
+            .w_full()
+            .min_w_0()
             .gap(px(t.spacing.sm))
             .p(px(t.spacing.lg))
             .text_color(hsla(t.palette.text))
@@ -134,6 +136,8 @@ impl Panel {
                         .id(("pscope", key.wrapping_add(i as u32)))
                         .flex()
                         .flex_col()
+                        .w_full()
+                        .min_w_0()
                         .child(crate::motion::EntryScope::new(set, c).delay(
                             std::time::Duration::from_millis(set.stagger_ms() as u64 * i as u64),
                         ))
