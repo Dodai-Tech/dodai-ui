@@ -1892,32 +1892,34 @@ impl Heatmap {
         let canvas = gpui::canvas(
             |_, _, _| (),
             move |b: gpui::Bounds<gpui::Pixels>, _, w, _| {
+                let cw = f32::from(b.size.width) / nc.max(1) as f32;
                 let mut i = 0;
                 for r in 0..nr {
                     for c in 0..lens[r] {
-                        let o = b.origin + gpui::point(px(c as f32 * cell), px(r as f32 * cell));
+                        let o = b.origin + gpui::point(px(c as f32 * cw), px(r as f32 * cell));
                         w.paint_quad(gpui::fill(
-                            gpui::Bounds::new(o, gpui::size(px(cell), px(cell))),
+                            gpui::Bounds::new(o, gpui::size(px(cw), px(cell))),
                             colors[i].opacity(crate::motion::reveal(g, c, nc)),
                         ));
                         i += 1;
                     }
                 }
                 if let Some((r, c)) = cur {
-                    let o = b.origin + gpui::point(px(c as f32 * cell), px(r as f32 * cell));
+                    let o = b.origin + gpui::point(px(c as f32 * cw), px(r as f32 * cell));
                     w.paint_quad(gpui::outline(
-                        gpui::Bounds::new(o, gpui::size(px(cell), px(cell))),
+                        gpui::Bounds::new(o, gpui::size(px(cw), px(cell))),
                         outline,
                         gpui::BorderStyle::Solid,
                     ));
                 }
                 let st = hov_w.clone();
                 w.on_mouse_event(move |e: &gpui::MouseMoveEvent, _, w, cx| {
+                    let cw = f32::from(b.size.width) / nc.max(1) as f32;
                     let next = b.contains(&e.position).then(|| {
                         let d = e.position - b.origin;
                         (
                             ((f32::from(d.y) / cell) as usize).min(nr.saturating_sub(1)),
-                            ((f32::from(d.x) / cell) as usize).min(nc.saturating_sub(1)),
+                            ((f32::from(d.x) / cw) as usize).min(nc.saturating_sub(1)),
                         )
                     });
                     if *st.read(cx) != next {
@@ -1927,7 +1929,8 @@ impl Heatmap {
                 });
             },
         )
-        .w(px(nc as f32 * cell))
+        .flex_1()
+        .min_w_0()
         .h(px(nr as f32 * cell));
         let readout = match cur {
             Some((r, c)) => format!(
@@ -1952,8 +1955,9 @@ impl Heatmap {
             }
             cols = cols.child(hdr.children(self.col_labels.iter().map(|l| {
                 div()
-                    .w(px(cell))
-                    .flex_none()
+                    .flex_1()
+                    .min_w_0()
+                    .overflow_hidden()
                     .whitespace_nowrap()
                     .child(l.clone())
             })));
@@ -1995,13 +1999,15 @@ impl Heatmap {
             if !self.row_labels.is_empty() {
                 hdr = hdr.child(div().w(px(48.0)));
             }
-            root = root.child(
-                hdr.children(
-                    self.col_labels
-                        .iter()
-                        .map(|l| div().w(px(cell)).flex().justify_center().child(l.clone())),
-                ),
-            );
+            root = root.child(hdr.children(self.col_labels.iter().map(|l| {
+                div()
+                    .flex_1()
+                    .min_w_0()
+                    .max_w(px(cell * 4.0))
+                    .flex()
+                    .justify_center()
+                    .child(l.clone())
+            })));
         }
         for (r, row) in self.rows.iter().enumerate() {
             let mut line = div().flex().gap(px(2.0)).items_center();
@@ -2016,7 +2022,9 @@ impl Heatmap {
                 line = line.child(
                     div()
                         .id((SharedString::from(format!("{}-{r}", self.id)), c))
-                        .w(px(cell))
+                        .flex_1()
+                        .min_w_0()
+                        .max_w(px(cell * 4.0))
                         .h(px(cell))
                         .tooltip(DodaiTooltip::text(fmt_num(*v)))
                         .child(shaped(&t.shape, style).size_full()),

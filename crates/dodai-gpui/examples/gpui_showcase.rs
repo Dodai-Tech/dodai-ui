@@ -75,6 +75,7 @@ struct Showcase {
     clicks: u32,
     /// Corner cut override for the Buttons demo (`None` = theme default).
     btn_corners: Option<dodai_core::Corners>,
+    heat_res: usize,
 }
 
 /// Per-section animation player state.
@@ -759,6 +760,77 @@ impl Render for Showcase {
                     ))),
             );
 
+        let hres = self.heat_res.clamp(1, 8);
+        let (hr, hc) = (12 * hres, 32 * hres);
+        let heat_cell = (264.0 / hr as f32).clamp(3.0, 22.0);
+        let hm = me.clone();
+        let heat_block = col()
+            .flex_1()
+            .min_w(px(480.0))
+            .child(
+                row()
+                    .child(Label::new(format!("Resolution {hc}×{hr}")))
+                    .child(
+                        Button::new("heat-minus", "−")
+                            .variant(ButtonVariant::Secondary)
+                            .on_click({
+                                let m = hm.clone();
+                                move |_, _, cx| {
+                                    m.update(cx, |s, cx| {
+                                        s.heat_res = s.heat_res.saturating_sub(1).max(1);
+                                        cx.notify();
+                                    })
+                                }
+                            }),
+                    )
+                    .child(
+                        Button::new("heat-plus", "+")
+                            .variant(ButtonVariant::Secondary)
+                            .on_click({
+                                let m = hm.clone();
+                                move |_, _, cx| {
+                                    m.update(cx, |s, cx| {
+                                        s.heat_res = (s.heat_res + 1).min(8);
+                                        cx.notify();
+                                    })
+                                }
+                            }),
+                    ),
+            )
+            .child(
+                Heatmap::new(
+                    format!("heat-{hres}"),
+                    (0..hr)
+                        .map(|r| {
+                            (0..hc)
+                                .map(|c| {
+                                    let (x, y) = (c as f32 / hres as f32, r as f32 / hres as f32);
+                                    ((x * 0.21 * 2.0).sin()
+                                        + (y * 0.45).cos()
+                                        + ((x * 2.0 + y) * 0.13).sin() * 1.5)
+                                        + ((x - 16.0).hypot((y - 6.0) * 2.0) * -0.16).exp() * 3.0
+                                })
+                                .collect()
+                        })
+                        .collect(),
+                )
+                .cell(heat_cell)
+                .row_labels((0..hr).map(|r| {
+                    if r % (4 * hres) == 0 {
+                        format!("{:02}h", r / hres * 2)
+                    } else {
+                        String::new()
+                    }
+                }))
+                .col_labels((0..hc).map(|c| {
+                    if c % (8 * hres) == 0 {
+                        format!("{}", c / hres)
+                    } else {
+                        String::new()
+                    }
+                })),
+            );
+
         let tags = row()
             .child(Tag::new("online", Tone::Success).solid(true))
             .child(Tag::new("warn", Tone::Warning).solid(true))
@@ -1340,39 +1412,7 @@ impl Render for Showcase {
                     ],
                 )),
             )
-            .child(
-                Heatmap::new(
-                    "heat",
-                    (0..24)
-                        .map(|r| {
-                            (0..64)
-                                .map(|c| {
-                                    let (x, y) = (c as f32, r as f32);
-                                    ((x * 0.21).sin()
-                                        + (y * 0.45).cos()
-                                        + ((x + y) * 0.13).sin() * 1.5)
-                                        + ((x - 30.0).hypot((y - 12.0) * 2.0) * -0.08).exp() * 3.0
-                                })
-                                .collect()
-                        })
-                        .collect(),
-                )
-                .cell(11.0)
-                .row_labels((0..24).map(|r| {
-                    if r % 4 == 0 {
-                        format!("{r:02}h")
-                    } else {
-                        String::new()
-                    }
-                }))
-                .col_labels((0..64).map(|c| {
-                    if c % 8 == 0 {
-                        format!("{c}")
-                    } else {
-                        String::new()
-                    }
-                })),
-            );
+            .child(heat_block);
 
         // Stepped / configurable sliders.
         let (ms1, ms2) = (me.clone(), me.clone());
@@ -2598,6 +2638,7 @@ fn main() {
                         list: 0,
                         clicks: 0,
                         btn_corners: None,
+                        heat_res: 3,
                     })
                 },
             )
