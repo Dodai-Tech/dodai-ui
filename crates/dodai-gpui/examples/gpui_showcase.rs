@@ -1976,6 +1976,7 @@ impl Render for Showcase {
                     _ => return,
                 }
                 s.sub = None;
+                s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
                 cx.notify();
             }))
             .flex()
@@ -2002,6 +2003,7 @@ impl Render for Showcase {
                             w.focus(&s.side_focus);
                             s.cat = idx;
                             s.sub = None;
+                            s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
                             cx.notify()
                         })
                     }),
@@ -2032,6 +2034,7 @@ impl Render for Showcase {
                             .on_click(move |_, _, cx| {
                                 m.update(cx, |s, cx| {
                                     s.sub = sub;
+                                    s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
                                     cx.notify()
                                 })
                             }),
@@ -2056,6 +2059,7 @@ impl Render for Showcase {
             .child(ds_panel);
         let mut shown = 0;
         let mut last_cat = "";
+        let mut last_sub: Option<&str> = None;
         for (c, title, el, _key) in sections {
             // Loading demos repaint every frame forever: own page only.
             let in_cat = selected_cat.map_or(c != "Loading", |sc| sc == c);
@@ -2069,6 +2073,13 @@ impl Render for Showcase {
             if c != last_cat {
                 body = body.child(Heading::new(c).level(2));
                 last_cat = c;
+                last_sub = None;
+            }
+            if let Some(sb) = sub_of(c, title) {
+                if last_sub != Some(sb) {
+                    body = body.child(Heading::new(sb).level(3));
+                    last_sub = Some(sb);
+                }
             }
             shown += 1;
             body = body.child(div().flex().flex_col().w_full().min_w_0().child(el));
