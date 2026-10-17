@@ -8,6 +8,7 @@ component styles) feeds four native adapters:
 |---|---|---|
 | [`dodai-core`](crates/dodai-core) | — | `Theme`, `Palette`, tokens, `ThemeSwitcher`, WCAG contrast, ANSI-256 fallback |
 | [`dodai-charts-core`](crates/dodai-charts-core) | — | Renderer-agnostic chart maths: ticks, Heikin-Ashi, indicators, Renko, depth, Gantt, binning, gradients |
+| [`dodai-shaders`](crates/dodai-shaders) | — (CPU) | 56 pure-Rust pixel shaders: cyberpunk, Material 3, Matrix, CRT/VHS, pixel-art platformer/metroidvania, cosmic; follows the theme palette |
 | [`dodai-ratatui`](crates/dodai-ratatui) | Ratatui 0.30 | `TuiTheme`: chamfered `╱ ╲` blocks, `◢ BUTTON ◤`, tabs, badges, inputs, status bar, `Scanlines`, `ThemeBadge` |
 | [`dodai-iced`](crates/dodai-iced) | Iced 0.14 | `IcedTheme`: native `iced::Theme`, button/container/text-input/text styles with neon glow, canvas `ChamferFrame` |
 | [`dodai-gpui`](crates/dodai-gpui) | GPUI 0.2 | `Global` theme store, `cx.dodai()`, `DodaiStyled` (`.dodai_panel()`, `.dodai_button()`, `.dodai_input()`) |
@@ -72,6 +73,13 @@ Try them per section in `just run-gpui`.
 
 `dodai-gpui` has two default features, `components` and `charts`. For charts without buttons, tables
 or dialogs: `dodai-gpui = { version = "0.1", default-features = false, features = ["charts"] }`.
+
+## Shaders
+
+`dodai-shaders` is a dependency-free set of per-pixel shaders written as plain Rust functions
+(generators like `neon_grid`, `digital_rain`, `platformer`, post effects like `crt`, `vhs`,
+`gameboy`), drawn from the active theme's palette. In gpui: `ShaderView::new("id", "neon_grid").fx("crt")`
+(feature `shaders`). Demo of everything: `just run-shaders`; also the *Shaders* category of the showcase.
 
 ## Adding a theme
 

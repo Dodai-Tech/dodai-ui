@@ -32,6 +32,13 @@ build:
 build-core:
     cargo build -p dodai-core
 
+build-shaders:
+    cargo build -p dodai-shaders
+
+# Standalone demo of every shader (release: the shaders run on the CPU)
+run-shaders:
+    cargo run --release -p dodai-shaders --example gallery
+
 build-charts-core:
     cargo build -p dodai-charts-core
 
@@ -85,6 +92,7 @@ test-charts-core:
 check-gpui-features:
     cargo check -p dodai-gpui --no-default-features --features charts
     cargo check -p dodai-gpui --no-default-features --features components
+    cargo check -p dodai-gpui --no-default-features --features shaders
     cargo check -p dodai-gpui --no-default-features
 
 test-ratatui:
@@ -169,6 +177,7 @@ publish: check-all
     cargo publish -p dodai-core
     cargo publish -p dodai-icons
     cargo publish -p dodai-charts-core
+    cargo publish -p dodai-shaders
     @echo "⏳ waiting for crates.io index…" && sleep 30
     cargo publish -p dodai-ratatui
     cargo publish -p dodai-iced

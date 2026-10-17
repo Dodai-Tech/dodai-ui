@@ -4238,7 +4238,9 @@ dependencies = [
  "dodai-charts-core",
  "dodai-core",
  "dodai-icons",
+ "dodai-shaders",
  "gpui",
+ "image",
 ]
 
 [[package]]
@@ -4270,6 +4272,15 @@ dependencies = [
  "crossterm",
  "dodai-core",
  "ratatui",
+]
+
+[[package]]
+name = "dodai-shaders"
+version = "0.1.0"
+dependencies = [
+ "dodai-core",
+ "gpui",
+ "image",
 ]
 
 [[package]]

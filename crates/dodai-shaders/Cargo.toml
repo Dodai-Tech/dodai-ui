@@ -1,0 +1,22 @@
+[package]
+name         = "dodai-shaders"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description  = "Pure-Rust pixel shaders for the Dodai UI design system: cyberpunk, Material 3, Matrix, retro terminals, pixel-art platformers and more"
+readme       = "README.md"
+keywords     = ["shaders", "procedural", "crt", "retro", "design-system"]
+categories   = ["graphics", "gui"]
+
+[dependencies]
+dodai-core = { workspace = true }
+
+[dev-dependencies]
+gpui  = { workspace = true }
+image = { version = "0.25", default-features = false }
+
+[[example]]
+name = "gallery"

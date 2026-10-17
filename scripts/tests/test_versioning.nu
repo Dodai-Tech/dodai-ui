@@ -54,10 +54,10 @@ def "test bump: is idempotent" [] {
     assert equal (bump-workspace-text $once "0.2.0") $once
 }
 
-def "test publish-order: core first, seven crates" [] {
+def "test publish-order: core first, eight crates" [] {
     let o = (publish-order)
     assert equal ($o | first) "dodai-core"
-    assert equal ($o | length) 7
+    assert equal ($o | length) 8
 }
 
 def "test real Cargo.toml: version is semver and bump round-trips" [] {

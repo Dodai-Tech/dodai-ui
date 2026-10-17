@@ -81,6 +81,8 @@ pub mod scanlines;
 pub mod search;
 #[cfg(feature = "components")]
 pub mod select;
+#[cfg(feature = "shaders")]
+pub mod shader_view;
 #[cfg(feature = "components")]
 pub mod sheets;
 #[cfg(feature = "components")]
@@ -137,6 +139,8 @@ pub use data::{Avatar, Badge, Chip, Kbd, Table};
 pub use dodai_charts_core::gantt::Task as GanttTask;
 #[cfg(feature = "charts")]
 pub use dodai_charts_core::Gradient;
+#[cfg(feature = "shaders")]
+pub use dodai_shaders;
 #[cfg(feature = "components")]
 pub use extras::{
     step_value, BottomAppBar, ColorPicker, EmptyState, FileDropZone, NumberStepper, Rating,
@@ -176,6 +180,8 @@ pub use scanlines::Scanlines;
 pub use search::{count_label, highlight_runs, IconBadge, RichTooltip, SearchView};
 #[cfg(feature = "components")]
 pub use select::{family_title, DesignSystemSelector, Select, SelectOption, ThemeSelector};
+#[cfg(feature = "shaders")]
+pub use shader_view::{PaletteSource, ShaderView};
 #[cfg(feature = "components")]
 pub use sheets::{sheet_style, BottomSheet, FullScreenDialog, SheetEdge, SideSheet, Snackbar};
 #[cfg(feature = "components")]

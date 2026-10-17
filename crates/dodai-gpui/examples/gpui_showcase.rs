@@ -80,6 +80,11 @@ struct Showcase {
     btn_corners: Option<dodai_core::Corners>,
     heat_res: usize,
     heat_grad: usize,
+    sh_gen: &'static str,
+    sh_fx: Vec<&'static str>,
+    sh_int: f32,
+    sh_theme: bool,
+    sh_px: f32,
 }
 
 /// Per-section animation player state.
@@ -141,6 +146,15 @@ fn caps(title: &str) -> Caps {
 fn subs(cat: &str) -> &'static [&'static str] {
     match cat {
         "Animation" => &["Entry", "Physics"],
+        "Shaders" => &[
+            "Playground",
+            "Cyberpunk",
+            "Material 3",
+            "Matrix",
+            "Retro terminals",
+            "Pixel art",
+            "Cosmic & nature",
+        ],
         _ => &[],
     }
 }
@@ -157,6 +171,12 @@ fn sub_of(cat: &str, label: &str) -> Option<&'static str> {
             } else {
                 "Entry"
             },
+        ),
+        "Shaders" => Some(
+            dodai_gpui::dodai_shaders::Family::ALL
+                .iter()
+                .find(|f| label.starts_with(f.name()))
+                .map_or("Playground", |f| f.name()),
         ),
         _ => None,
     }
@@ -572,6 +592,7 @@ fn cat_icon(name: &str) -> dodai_gpui::IconName {
         "Data display" => I::Table,
         "Charts" => I::BarChart,
         "Animation" => I::Sparkle,
+        "Shaders" => I::Sparkle,
         "Loading" => I::Repeat,
         _ => I::Dot,
     }
@@ -2393,6 +2414,204 @@ impl Render for Showcase {
             loading.into_any_element(),
             "Loading",
         ));
+
+        // ── Shaders ────────────────────────────────────────────────────────
+        {
+            use dodai_gpui::dodai_shaders::{catalog, Family, Kind};
+            use dodai_gpui::{PaletteSource, ShaderView};
+            let pal_src = if self.sh_theme {
+                PaletteSource::Theme
+            } else {
+                PaletteSource::Family
+            };
+            let card =
+                |id: String, shader: &'static dodai_gpui::dodai_shaders::ShaderInfo, fx: bool| {
+                    let view = if fx {
+                        ShaderView::fx_over_default(id.clone(), shader.id)
+                    } else {
+                        ShaderView::new(id.clone(), shader.id)
+                    };
+                    col()
+                        .flex_1()
+                        .min_w(px(220.0))
+                        .child(view.palette(pal_src).pixel(3.0).rounded(t.shape.radius))
+                        .child(Mono::new(shader.name))
+                        .child(Muted::new(shader.desc))
+                        .into_any_element()
+                };
+            // Playground: pick a generator, stack effects, tune.
+            let me_p = me.clone();
+            let gens: Vec<_> = catalog()
+                .iter()
+                .filter(|s| matches!(s.kind, Kind::Generator(_)))
+                .collect();
+            let fxs: Vec<_> = catalog()
+                .iter()
+                .filter(|s| matches!(s.kind, Kind::PostFx(_)))
+                .collect();
+            let mut gen_row = row();
+            for (gi, g) in gens.into_iter().enumerate() {
+                let (id, m) = (g.id, me_p.clone());
+                gen_row = gen_row.child(
+                    Button::new(("shg", gi), g.name)
+                        .variant(if self.sh_gen == id {
+                            ButtonVariant::Primary
+                        } else {
+                            ButtonVariant::Secondary
+                        })
+                        .on_click(move |_, _, cx| {
+                            m.update(cx, |s, cx| {
+                                s.sh_gen = id;
+                                cx.notify();
+                            })
+                        }),
+                );
+            }
+            let mut fx_row = row();
+            for (fi_, f) in fxs.into_iter().enumerate() {
+                let (id, m) = (f.id, me_p.clone());
+                fx_row = fx_row.child(
+                    Button::new(("shf", fi_), f.name)
+                        .variant(if self.sh_fx.contains(&id) {
+                            ButtonVariant::Primary
+                        } else {
+                            ButtonVariant::Outline
+                        })
+                        .on_click(move |_, _, cx| {
+                            m.update(cx, |s, cx| {
+                                if let Some(i) = s.sh_fx.iter().position(|x| *x == id) {
+                                    s.sh_fx.remove(i);
+                                } else {
+                                    s.sh_fx.push(id);
+                                }
+                                cx.notify();
+                            })
+                        }),
+                );
+            }
+            let mut big = ShaderView::new("sh-play", self.sh_gen)
+                .palette(pal_src)
+                .pixel(self.sh_px)
+                .intensity(self.sh_int)
+                .rounded(t.shape.radius);
+            for f in &self.sh_fx {
+                big = big.fx(f);
+            }
+            let (m1, m2, m3, m4, m5) = (me.clone(), me.clone(), me.clone(), me.clone(), me.clone());
+            let tune = row()
+                .child(Label::new(format!("Intensity {:.0}%", self.sh_int * 100.0)))
+                .child(
+                    Button::new("shi-", "−")
+                        .variant(ButtonVariant::Secondary)
+                        .on_click(move |_, _, cx| {
+                            m1.update(cx, |s, cx| {
+                                s.sh_int = (s.sh_int - 0.1).max(0.0);
+                                cx.notify();
+                            })
+                        }),
+                )
+                .child(
+                    Button::new("shi+", "+")
+                        .variant(ButtonVariant::Secondary)
+                        .on_click(move |_, _, cx| {
+                            m2.update(cx, |s, cx| {
+                                s.sh_int = (s.sh_int + 0.1).min(1.0);
+                                cx.notify();
+                            })
+                        }),
+                )
+                .child(Label::new(format!("Pixel {:.0}px", self.sh_px)))
+                .child(
+                    Button::new("shp-", "−")
+                        .variant(ButtonVariant::Secondary)
+                        .on_click(move |_, _, cx| {
+                            m3.update(cx, |s, cx| {
+                                s.sh_px = (s.sh_px - 1.0).max(1.0);
+                                cx.notify();
+                            })
+                        }),
+                )
+                .child(
+                    Button::new("shp+", "+")
+                        .variant(ButtonVariant::Secondary)
+                        .on_click(move |_, _, cx| {
+                            m4.update(cx, |s, cx| {
+                                s.sh_px = (s.sh_px + 1.0).min(10.0);
+                                cx.notify();
+                            })
+                        }),
+                )
+                .child(
+                    Button::new(
+                        "sh-theme",
+                        if self.sh_theme {
+                            "Colours: design system"
+                        } else {
+                            "Colours: shader family"
+                        },
+                    )
+                    .variant(ButtonVariant::Outline)
+                    .on_click(move |_, _, cx| {
+                        m5.update(cx, |s, cx| {
+                            s.sh_theme = !s.sh_theme;
+                            cx.notify();
+                        })
+                    }),
+                );
+            sections.push((
+                "Shaders",
+                "Playground",
+                section!("Shader playground")
+                    .child(Muted::new("Pure-Rust shaders from `dodai-shaders`, rendered on the CPU. Pick a source, stack effects."))
+                    .child(gen_row)
+                    .child(fx_row)
+                    .child(tune)
+                    .child(div().w_full().max_w(px(960.0)).child(big))
+                    .into_any_element(),
+                "Shader playground",
+            ));
+            const TITLES: [(&str, &str); 6] = [
+                ("Cyberpunk shaders", "Cyberpunk effects"),
+                ("Material 3 shaders", "Material 3 effects"),
+                ("Matrix shaders", "Matrix effects"),
+                ("Retro terminals shaders", "Retro terminals effects"),
+                ("Pixel art shaders", "Pixel art effects"),
+                ("Cosmic & nature shaders", "Cosmic & nature effects"),
+            ];
+            for (fi, fam) in Family::ALL.iter().enumerate() {
+                let gens: Vec<_> = catalog()
+                    .iter()
+                    .filter(|s| s.family == *fam && s.is_generator())
+                    .collect();
+                let effs: Vec<_> = catalog()
+                    .iter()
+                    .filter(|s| s.family == *fam && !s.is_generator())
+                    .collect();
+                let (gt, et) = TITLES[fi];
+                let mut g_row = row();
+                for g in gens {
+                    g_row = g_row.child(card(format!("shc-{}", g.id), g, false));
+                }
+                sections.push((
+                    "Shaders",
+                    gt,
+                    section!(gt).child(g_row).into_any_element(),
+                    gt,
+                ));
+                if !effs.is_empty() {
+                    let mut e_row = row();
+                    for e in effs {
+                        e_row = e_row.child(card(format!("shc-{}", e.id), e, true));
+                    }
+                    sections.push((
+                        "Shaders",
+                        et,
+                        section!(et).child(e_row).into_any_element(),
+                        et,
+                    ));
+                }
+            }
+        }
         for (i, el) in anim_sections.into_iter().enumerate() {
             let k = anim_titles[i];
             sections.push(("Animation", k, el, k));
@@ -2772,6 +2991,11 @@ fn main() {
                         btn_corners: None,
                         heat_res: 3,
                         heat_grad: 0,
+                        sh_gen: "neon_grid",
+                        sh_fx: vec!["crt"],
+                        sh_int: 1.0,
+                        sh_theme: false,
+                        sh_px: 3.0,
                     })
                 },
             )

@@ -60,6 +60,7 @@ jobs:
           - { crate: dodai-gpui, os: ubuntu-latest, gui: true }
           - { crate: dodai-gpui, os: macos-latest, gui: true }
           - { crate: dodai-bevy, os: ubuntu-latest, gui: true }
+          - { crate: dodai-shaders, os: ubuntu-latest, gui: true }
     steps:
       - uses: actions/checkout@v4
       - name: Install Linux GUI system libraries
@@ -82,6 +83,7 @@ jobs:
         run: |
           cargo check -p dodai-gpui --no-default-features --features charts
           cargo check -p dodai-gpui --no-default-features --features components
+          cargo check -p dodai-gpui --no-default-features --features shaders
           cargo check -p dodai-gpui --no-default-features
 
   nu-tests:
