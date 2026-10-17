@@ -45,6 +45,8 @@ struct Showcase {
     pop_hover: Option<(&'static str, u8)>,
     filter: Entity<TextInput>,
     search: Entity<TextInput>,
+    in_name: Entity<TextInput>,
+    in_notes: Entity<TextInput>,
     cat: usize,
     cat_count: usize,
     side_focus: FocusHandle,
@@ -1768,16 +1770,9 @@ impl Render for Showcase {
                 "Inputs",
                 "Input field",
                 section!("Input")
-                    .child(InputBox::new().placeholder("search the net…"))
-                    .child(InputBox::new().focused(true).child("focused input"))
-                    .child(
-                        div()
-                            .dodai_input(&t, false)
-                            .h(px(t.shape.control_height))
-                            .flex()
-                            .items_center()
-                            .child("legacy dodai_input container"),
-                    )
+                    .child(div().w(px(320.0)).child(self.in_name.clone()))
+                    .child(div().w(px(320.0)).child(self.in_notes.clone()))
+                    .child(InputBox::new().placeholder("static placeholder box"))
                     .into_any_element(),
                 "Input",
             ),
@@ -2070,9 +2065,17 @@ fn main() {
                 |_, cx| {
                     let search = cx.new(|cx| TextInput::new(cx).placeholder("Search…"));
                     let filter = cx.new(|cx| TextInput::new(cx).placeholder("Filter components…"));
+                    let in_name = cx.new(|cx| TextInput::new(cx).placeholder("handle…"));
+                    let in_notes = cx.new(|cx| {
+                        TextInput::new(cx)
+                            .multiline(4)
+                            .placeholder("notes (multi-line)…")
+                    });
                     cx.new(|cx| Showcase {
                         filter,
                         search,
+                        in_name,
+                        in_notes,
                         cat: std::env::var("DODAI_CAT")
                             .ok()
                             .and_then(|v| v.parse().ok())
