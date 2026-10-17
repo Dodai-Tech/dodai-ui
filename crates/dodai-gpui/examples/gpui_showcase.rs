@@ -7,11 +7,11 @@
 use dodai_core::{ButtonVariant, Theme, Tone};
 use dodai_gpui::{
     cycle_next, cycle_prev, family_title, fuzzy_filter, glow_intensity, hsla, install,
-    scanlines_enabled, set_glow_intensity, set_scanlines, theme_of, ActiveDodai, BubblePlacement,
-    Button, Card, CardVariant, Checkbox, DesignSystemSelector, Direction, Divider, DodaiStyled,
+    scanlines_enabled, select_theme, set_glow_intensity, set_scanlines, theme_of, ActiveDodai,
+    BubblePlacement, Button, Card, CardVariant, Checkbox, Direction, Divider, DodaiStyled,
     DodaiTooltip, Fab, FabSize, Heading, IconButton, InputBox, Knob, Label, ListItem, Mono, Muted,
     NavItem, NavLayout, Navigation, Panel, ProgressBar, Radio, Scanlines, SearchBar, Slider, Tabs,
-    Tag, ThemeSelector, Toggle, TopAppBar,
+    Tag, Toggle, TopAppBar,
 };
 use dodai_gpui::{
     BarChart, BoxPlot, BubbleChart, Candle, Candlestick, Date, DatePicker, EmptyState, Funnel,
@@ -878,33 +878,46 @@ impl Render for Showcase {
             );
         }
 
-        let family = family_title(cx.dodai().switcher().current_family());
         let ds_panel = Panel::new()
             .focused(true)
-            .child(
-                // Design system with its themes nested underneath as a child.
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap(px(t.spacing.xs))
-                    .child(
-                        row()
-                            .child(Label::new("Design system"))
-                            .child(DesignSystemSelector::new("ds-select")),
-                    )
-                    .child(
-                        div()
-                            .ml(px(t.spacing.sm))
+            .child({
+                // Design-system tree: pick a system, its themes appear as children.
+                let sw = cx.dodai().switcher();
+                let (cur_idx, cur_fam) = (sw.index(), sw.current_family());
+                let mut tree = div().flex().flex_col().gap(px(2.0));
+                for (fi, fam) in sw.families().into_iter().enumerate() {
+                    let first = sw.family_indices(fam)[0];
+                    let open = fam == cur_fam;
+                    tree = tree.child(
+                        ListItem::new(
+                            ("ds-fam", fi),
+                            format!("{} {}", if open { "▾" } else { "▸" }, family_title(fam)),
+                        )
+                        .selected(open)
+                        .on_click(move |_, _, cx| select_theme(cx, first)),
+                    );
+                    if open {
+                        let mut kids = div()
+                            .ml(px(t.spacing.md))
                             .pl(px(t.spacing.md))
                             .border_l_1()
                             .border_color(hsla(t.palette.border_strong))
-                            .child(
-                                row()
-                                    .child(Label::new(format!("Theme · {family}")))
-                                    .child(ThemeSelector::new("theme-select")),
-                            ),
-                    ),
-            )
+                            .flex()
+                            .flex_col()
+                            .gap(px(2.0));
+                        for &ti in &sw.family_indices(fam) {
+                            let th = &sw.themes()[ti];
+                            kids = kids.child(
+                                ListItem::new(("ds-theme", ti), th.name().to_string())
+                                    .selected(ti == cur_idx)
+                                    .on_click(move |_, _, cx| select_theme(cx, ti)),
+                            );
+                        }
+                        tree = tree.child(kids);
+                    }
+                }
+                row().child(Label::new("Design system")).child(tree)
+            })
             .child(
                 row().child(Label::new("Glow intensity")).child(
                     div().w(px(220.0)).child(
