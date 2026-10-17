@@ -29,7 +29,7 @@ component styles) feeds four native adapters:
 
 Glow is configurable: `theme.with_glow_intensity(1.5)` (0 = off, 1 = as designed) scales glow alpha and radius in every adapter.
 
-Variants: `cyberpunk` (Night City), `cyberpunk-netrunner` (cyan-led), `cyberpunk-samurai` (red-led).
+Variants: `cyberpunk` (yellow), `cyberpunk-netrunner` (cyan), `cyberpunk-samurai` (red).
 Every theme is contrast-tested (text ≥ 7:1, primary label ≥ 4.5:1).
 
 ## Use it

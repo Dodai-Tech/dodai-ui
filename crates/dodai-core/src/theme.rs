@@ -7,7 +7,7 @@ use crate::{Effects, Mode, Palette, Shape, Spacing, Typography};
 pub struct ThemeMeta {
     /// Machine id, e.g. `"cyberpunk"`; use for persistence / CSS `data-theme`.
     pub id: &'static str,
-    /// Display name, e.g. `"Cyberpunk · Night City"`.
+    /// Display name, e.g. `"Cyberpunk · Yellow"`.
     pub name: &'static str,
     /// Theme family, e.g. `"cyberpunk"`.
     pub family: &'static str,

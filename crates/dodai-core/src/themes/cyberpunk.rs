@@ -120,7 +120,7 @@ pub fn night_city() -> Theme {
     build(
         ThemeMeta {
             id: "cyberpunk",
-            name: "Cyberpunk · Night City",
+            name: "Cyberpunk · Yellow",
             family: "cyberpunk",
             description: "Signature yellow on black with cyan secondary",
             mode: Mode::Dark,
@@ -138,7 +138,7 @@ pub fn netrunner() -> Theme {
     build(
         ThemeMeta {
             id: "cyberpunk-netrunner",
-            name: "Cyberpunk · Netrunner",
+            name: "Cyberpunk · Cyan",
             family: "cyberpunk",
             description: "Cyan primary with yellow secondary",
             mode: Mode::Dark,
@@ -156,7 +156,7 @@ pub fn samurai() -> Theme {
     build(
         ThemeMeta {
             id: "cyberpunk-samurai",
-            name: "Cyberpunk · Samurai",
+            name: "Cyberpunk · Red",
             family: "cyberpunk",
             description: "Hot red primary with cyan secondary",
             mode: Mode::Dark,
