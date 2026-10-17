@@ -91,6 +91,7 @@ impl Spec {
             series: self.series.map(h),
         };
         crate::Theme {
+            shape_system: None,
             meta: self.meta,
             palette,
             typography: self.typography,

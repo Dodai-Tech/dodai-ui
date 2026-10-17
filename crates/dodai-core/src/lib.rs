@@ -31,8 +31,8 @@ pub use component::{
 };
 pub use palette::{Mode, Palette, Tone};
 pub use shape_system::{
-    Corner, CornerSpec, CornerStyle, RoleShape, ShapePreset, ShapeRole, ShapeScale, ShapeSize,
-    ShapeSystem, FULL,
+    Corner, CornerSpec, CornerStyle, DefaultShape, RoleShape, ShapePreset, ShapeRole, ShapeScale,
+    ShapeSize, ShapeSystem, FULL,
 };
 pub use switcher::ThemeSwitcher;
 pub use theme::{Theme, ThemeMeta};

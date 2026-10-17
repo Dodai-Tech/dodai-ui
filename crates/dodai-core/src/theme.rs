@@ -24,6 +24,8 @@ pub struct Theme {
     pub spacing: Spacing,
     pub shape: Shape,
     pub effects: Effects,
+    /// Explicit shape language; `None` derives one from [`Theme::shape`].
+    pub shape_system: Option<crate::ShapeSystem>,
 }
 
 impl Theme {
@@ -37,6 +39,25 @@ impl Theme {
     pub fn with_scanlines(mut self, on: bool) -> Self {
         self.effects.scanlines = on;
         self
+    }
+
+    /// Builder: use this shape system (per-role corners, mix and match with
+    /// any palette).
+    pub fn with_shape_system(mut self, sys: crate::ShapeSystem) -> Self {
+        self.shape_system = Some(sys);
+        self
+    }
+
+    /// The shape system in effect (explicit, or derived from the legacy tokens).
+    pub fn shape_system(&self) -> crate::ShapeSystem {
+        self.shape_system
+            .clone()
+            .unwrap_or_else(|| crate::ShapeSystem::from_shape(&self.shape))
+    }
+
+    /// Resolved corners for a component role.
+    pub fn shape_for(&self, role: crate::ShapeRole) -> crate::CornerSpec {
+        self.shape_system().spec(role)
     }
 
     /// Builder: cut these corners on chamfered controls (see [`crate::Corners`]).

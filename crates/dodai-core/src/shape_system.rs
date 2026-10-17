@@ -239,9 +239,11 @@ fn corner_points(
 }
 
 /// Named size step on a design system's scale.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ShapeSize {
     None,
+    /// Explicit pixel value, outside the named scale.
+    Px(f32),
     ExtraSmall,
     Small,
     Medium,
@@ -282,6 +284,7 @@ impl ShapeScale {
     pub fn px(&self, s: ShapeSize) -> f32 {
         match s {
             ShapeSize::None => 0.0,
+            ShapeSize::Px(v) => v.max(0.0),
             ShapeSize::ExtraSmall => self.xs,
             ShapeSize::Small => self.sm,
             ShapeSize::Medium => self.md,
@@ -317,19 +320,45 @@ pub enum CornerStyle {
     Scoop,
 }
 
-/// One role's mapping: size step + which corners get it.
-pub type RoleShape = (ShapeRole, ShapeSize, Corners);
-
-/// A design system's shape language.
+/// One role's mapping: corner kind, size step, and which corners get it.
 #[derive(Debug, Clone, Copy, PartialEq)]
+pub struct RoleShape {
+    pub role: ShapeRole,
+    pub style: CornerStyle,
+    pub size: ShapeSize,
+    pub sides: Corners,
+}
+
+impl RoleShape {
+    pub const fn new(role: ShapeRole, style: CornerStyle, size: ShapeSize, sides: Corners) -> Self {
+        Self {
+            role,
+            style,
+            size,
+            sides,
+        }
+    }
+}
+
+/// Mapping used for roles a system doesn't list.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct DefaultShape {
+    pub style: CornerStyle,
+    pub size: ShapeSize,
+    pub sides: Corners,
+}
+
+/// A design system's shape language. Owned and composable: start from a
+/// preset and adjust with [`with_role`](Self::with_role),
+/// [`with_scale`](Self::with_scale) or [`with_default`](Self::with_default).
+#[derive(Debug, Clone, PartialEq)]
 pub struct ShapeSystem {
     pub name: &'static str,
-    pub style: CornerStyle,
     pub scale: ShapeScale,
-    /// Per-role overrides of `default`.
-    pub roles: &'static [RoleShape],
+    /// Per-role entries; later entries for the same role win.
+    pub roles: std::borrow::Cow<'static, [RoleShape]>,
     /// Used for roles not listed.
-    pub default: (ShapeSize, Corners),
+    pub default: DefaultShape,
 }
 
 const ALL: Corners = Corners {
@@ -339,19 +368,23 @@ const ALL: Corners = Corners {
     bottom_left: true,
 };
 
+const fn r(role: ShapeRole, size: ShapeSize, sides: Corners) -> RoleShape {
+    RoleShape::new(role, CornerStyle::Round, size, sides)
+}
+
 const M3_ROLES: &[RoleShape] = &[
-    (ShapeRole::Button, ShapeSize::Full, ALL),
-    (ShapeRole::Fab, ShapeSize::Large, ALL),
-    (ShapeRole::Chip, ShapeSize::Small, ALL),
-    (ShapeRole::Tag, ShapeSize::Small, ALL),
-    (ShapeRole::Badge, ShapeSize::Full, ALL),
-    (ShapeRole::Input, ShapeSize::ExtraSmall, Corners::TOP),
-    (ShapeRole::Card, ShapeSize::Medium, ALL),
-    (ShapeRole::Panel, ShapeSize::Medium, ALL),
-    (ShapeRole::Menu, ShapeSize::ExtraSmall, ALL),
-    (ShapeRole::Dialog, ShapeSize::ExtraLarge, ALL),
-    (ShapeRole::Sheet, ShapeSize::ExtraLarge, Corners::TOP),
-    (ShapeRole::Tooltip, ShapeSize::ExtraSmall, ALL),
+    r(ShapeRole::Button, ShapeSize::Full, ALL),
+    r(ShapeRole::Fab, ShapeSize::Large, ALL),
+    r(ShapeRole::Chip, ShapeSize::Small, ALL),
+    r(ShapeRole::Tag, ShapeSize::Small, ALL),
+    r(ShapeRole::Badge, ShapeSize::Full, ALL),
+    r(ShapeRole::Input, ShapeSize::ExtraSmall, Corners::TOP),
+    r(ShapeRole::Card, ShapeSize::Medium, ALL),
+    r(ShapeRole::Panel, ShapeSize::Medium, ALL),
+    r(ShapeRole::Menu, ShapeSize::ExtraSmall, ALL),
+    r(ShapeRole::Dialog, ShapeSize::ExtraLarge, ALL),
+    r(ShapeRole::Sheet, ShapeSize::ExtraLarge, Corners::TOP),
+    r(ShapeRole::Tooltip, ShapeSize::ExtraSmall, ALL),
 ];
 
 impl ShapeSystem {
@@ -359,10 +392,13 @@ impl ShapeSystem {
     pub const fn material3() -> Self {
         Self {
             name: "Material 3",
-            style: CornerStyle::Round,
             scale: ShapeScale::MATERIAL3,
-            roles: M3_ROLES,
-            default: (ShapeSize::Medium, ALL),
+            roles: std::borrow::Cow::Borrowed(M3_ROLES),
+            default: DefaultShape {
+                style: CornerStyle::Round,
+                size: ShapeSize::Medium,
+                sides: ALL,
+            },
         }
     }
 
@@ -386,10 +422,13 @@ impl ShapeSystem {
     const fn cyberpunk(name: &'static str, corners: Corners) -> Self {
         Self {
             name,
-            style: CornerStyle::Cut,
             scale: ShapeScale::CHAMFER,
-            roles: &[],
-            default: (ShapeSize::Medium, corners),
+            roles: std::borrow::Cow::Borrowed(&[]),
+            default: DefaultShape {
+                style: CornerStyle::Cut,
+                size: ShapeSize::Medium,
+                sides: corners,
+            },
         }
     }
 
@@ -397,26 +436,101 @@ impl ShapeSystem {
     pub const fn sharp() -> Self {
         Self {
             name: "Sharp",
-            style: CornerStyle::Round,
             scale: ShapeScale::MATERIAL3,
-            roles: &[],
-            default: (ShapeSize::None, Corners::NONE),
+            roles: std::borrow::Cow::Borrowed(&[]),
+            default: DefaultShape {
+                style: CornerStyle::Round,
+                size: ShapeSize::None,
+                sides: Corners::NONE,
+            },
         }
+    }
+
+    /// Shape language equivalent to the legacy [`crate::Shape`] tokens (what a
+    /// theme without an explicit system uses).
+    pub fn from_shape(shape: &crate::Shape) -> Self {
+        let (style, v) = if shape.chamfer > 0.0 && shape.corners.any() {
+            (CornerStyle::Cut, shape.chamfer)
+        } else {
+            (CornerStyle::Round, shape.radius)
+        };
+        let sides = if style == CornerStyle::Cut {
+            shape.corners
+        } else {
+            ALL
+        };
+        Self {
+            name: "Theme",
+            scale: ShapeScale {
+                xs: v,
+                sm: v,
+                md: v,
+                lg: v,
+                xl: v,
+            },
+            roles: std::borrow::Cow::Borrowed(&[]),
+            default: DefaultShape {
+                style,
+                size: if v > 0.0 {
+                    ShapeSize::Medium
+                } else {
+                    ShapeSize::None
+                },
+                sides,
+            },
+        }
+    }
+
+    /// Replace the size scale.
+    pub fn with_scale(mut self, scale: ShapeScale) -> Self {
+        self.scale = scale;
+        self
+    }
+
+    /// Replace the fallback used for unlisted roles.
+    pub fn with_default(mut self, style: CornerStyle, size: ShapeSize, sides: Corners) -> Self {
+        self.default = DefaultShape { style, size, sides };
+        self
+    }
+
+    /// Override one role (kind, size and corners).
+    pub fn with_role(
+        mut self,
+        role: ShapeRole,
+        style: CornerStyle,
+        size: ShapeSize,
+        sides: Corners,
+    ) -> Self {
+        let list = self.roles.to_mut();
+        list.retain(|e| e.role != role);
+        list.push(RoleShape::new(role, style, size, sides));
+        self
+    }
+
+    /// Switch every role (and the default) to a corner style, keeping sizes
+    /// and corners; e.g. Material 3 with cut instead of round corners.
+    pub fn with_style(mut self, style: CornerStyle) -> Self {
+        for e in self.roles.to_mut() {
+            e.style = style;
+        }
+        self.default.style = style;
+        self
     }
 
     /// Resolved corners for `role`.
     pub fn spec(&self, role: ShapeRole) -> CornerSpec {
-        let (size, sides) = self
+        let (style, size, sides) = self
             .roles
             .iter()
-            .find(|(r, _, _)| *r == role)
-            .map(|(_, s, c)| (*s, *c))
-            .unwrap_or(self.default);
+            .rev()
+            .find(|e| e.role == role)
+            .map(|e| (e.style, e.size, e.sides))
+            .unwrap_or((self.default.style, self.default.size, self.default.sides));
         let px = self.scale.px(size);
         let corner = if px <= 0.0 {
             Corner::Square
         } else {
-            match self.style {
+            match style {
                 CornerStyle::Round => Corner::Round(px),
                 CornerStyle::Cut => Corner::Cut(px),
                 CornerStyle::Scoop => Corner::Scoop(px),
@@ -427,7 +541,7 @@ impl ShapeSystem {
 }
 
 /// A named, user-selectable shape of a design family.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ShapePreset {
     pub id: &'static str,
     pub name: &'static str,
@@ -435,47 +549,33 @@ pub struct ShapePreset {
 }
 
 impl ShapePreset {
+    fn of(id: &'static str, name: &'static str, system: ShapeSystem) -> Self {
+        Self { id, name, system }
+    }
+
     /// Presets offered by Cyberpunk.
-    pub const CYBERPUNK: &'static [ShapePreset] = &[
-        ShapePreset {
-            id: "slab",
-            name: "Slab",
-            system: ShapeSystem::cyberpunk_slab(),
-        },
-        ShapePreset {
-            id: "diagonal",
-            name: "Diagonal",
-            system: ShapeSystem::cyberpunk_diagonal(),
-        },
-        ShapePreset {
-            id: "tab",
-            name: "Tab",
-            system: ShapeSystem::cyberpunk_tab(),
-        },
-        ShapePreset {
-            id: "bracket",
-            name: "Bracket",
-            system: ShapeSystem::cyberpunk_bracket(),
-        },
-        ShapePreset {
-            id: "sharp",
-            name: "Sharp",
-            system: ShapeSystem::sharp(),
-        },
-    ];
+    pub fn cyberpunk() -> Vec<ShapePreset> {
+        vec![
+            Self::of("slab", "Slab", ShapeSystem::cyberpunk_slab()),
+            Self::of("diagonal", "Diagonal", ShapeSystem::cyberpunk_diagonal()),
+            Self::of("tab", "Tab", ShapeSystem::cyberpunk_tab()),
+            Self::of("bracket", "Bracket", ShapeSystem::cyberpunk_bracket()),
+            Self::of("sharp", "Sharp", ShapeSystem::sharp()),
+        ]
+    }
+
     /// Presets offered by Material 3.
-    pub const MATERIAL3: &'static [ShapePreset] = &[
-        ShapePreset {
-            id: "m3",
-            name: "Material",
-            system: ShapeSystem::material3(),
-        },
-        ShapePreset {
-            id: "sharp",
-            name: "Sharp",
-            system: ShapeSystem::sharp(),
-        },
-    ];
+    pub fn material3() -> Vec<ShapePreset> {
+        vec![
+            Self::of("m3", "Material", ShapeSystem::material3()),
+            Self::of(
+                "m3-cut",
+                "Cut",
+                ShapeSystem::material3().with_style(CornerStyle::Cut),
+            ),
+            Self::of("sharp", "Sharp", ShapeSystem::sharp()),
+        ]
+    }
 }
 
 #[cfg(test)]
@@ -544,5 +644,56 @@ mod tests {
             Corner::Round(16.0)
         );
         assert_eq!(Corner::lerp(a.top_left, c.top_left, 1.0), Corner::Cut(10.0));
+    }
+}
+
+#[cfg(test)]
+mod compose_tests {
+    use super::*;
+
+    #[test]
+    fn mixes_kinds_per_role() {
+        let sys = ShapeSystem::material3().with_role(
+            ShapeRole::Button,
+            CornerStyle::Cut,
+            ShapeSize::Medium,
+            Corners::BOTTOM_RIGHT,
+        );
+        assert_eq!(sys.spec(ShapeRole::Button).bottom_right, Corner::Cut(12.0));
+        // other roles untouched, still rounded
+        assert_eq!(sys.spec(ShapeRole::Card).uniform_radius(), Some(12.0));
+        // overriding twice replaces
+        let sys = sys.with_role(
+            ShapeRole::Button,
+            CornerStyle::Scoop,
+            ShapeSize::Px(7.0),
+            Corners::TOP_LEFT,
+        );
+        assert_eq!(sys.spec(ShapeRole::Button).top_left, Corner::Scoop(7.0));
+    }
+
+    #[test]
+    fn style_and_scale_swap() {
+        let cut = ShapeSystem::material3().with_style(CornerStyle::Cut);
+        assert_eq!(cut.spec(ShapeRole::Card).top_left, Corner::Cut(12.0));
+        let big = ShapeSystem::material3().with_scale(ShapeScale {
+            md: 20.0,
+            ..ShapeScale::MATERIAL3
+        });
+        assert_eq!(big.spec(ShapeRole::Card).uniform_radius(), Some(20.0));
+    }
+
+    #[test]
+    fn from_legacy_shape() {
+        let shape = crate::Shape {
+            corners: Corners::BOTTOM_RIGHT,
+            radius: 0.0,
+            chamfer: 8.0,
+            border_width: 1.0,
+            control_height: 32.0,
+        };
+        let sys = ShapeSystem::from_shape(&shape);
+        assert_eq!(sys.spec(ShapeRole::Button).sides(), Corners::BOTTOM_RIGHT);
+        assert_eq!(sys.spec(ShapeRole::Button).bottom_right, Corner::Cut(8.0));
     }
 }

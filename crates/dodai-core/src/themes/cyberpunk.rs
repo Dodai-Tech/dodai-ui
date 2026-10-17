@@ -101,6 +101,7 @@ fn build(
     };
     Theme {
         meta,
+        shape_system: None,
         palette,
         typography: typography(),
         spacing: spacing(),
