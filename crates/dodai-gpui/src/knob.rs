@@ -64,11 +64,21 @@ pub struct Knob {
     size: f32,
     disabled: bool,
     on_change: Option<FloatHandler>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Knob {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl Knob {
     pub fn new(id: impl Into<ElementId>, value: f32) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             value,
             min: 0.0,
@@ -116,6 +126,7 @@ fn pts(origin: gpui::Point<Pixels>, p: &[(f32, f32)]) -> Vec<gpui::Point<Pixels>
 impl Knob {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let st = window.use_keyed_state(self.id.clone(), cx, |_, _| KnobState::default());
         let frac = slider_fraction(self.value, self.min, self.max)
             * crate::motion::grow(window, cx, "Knob");

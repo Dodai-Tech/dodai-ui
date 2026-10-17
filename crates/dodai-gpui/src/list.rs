@@ -32,11 +32,21 @@ pub struct ListItem {
     selected: bool,
     icon: Option<crate::icons::IconName>,
     on_click: Option<crate::interact::ClickHandler>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl ListItem {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl ListItem {
     pub fn new(id: impl Into<ElementId>, label: impl Into<SharedString>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             label: label.into(),
             selected: false,
@@ -62,6 +72,7 @@ impl ListItem {
 impl ListItem {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let st = use_interact(&self.id, window, cx);
         let hovered = st.read(cx).hovered;
         let (style, fg, marker) = list_style(&t, self.selected, hovered);

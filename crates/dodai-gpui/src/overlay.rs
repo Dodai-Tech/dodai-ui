@@ -33,11 +33,21 @@ pub struct DialogCard {
     body: Vec<AnyElement>,
     actions: Vec<AnyElement>,
     width: f32,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl DialogCard {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl DialogCard {
     pub fn new(title: impl Into<SharedString>) -> Self {
         Self {
+            corners: None,
             title: title.into(),
             body: Vec::new(),
             actions: Vec::new(),
@@ -71,6 +81,7 @@ impl RenderOnce for DialogCard {
 impl DialogCard {
     fn build(self, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let mut d = shaped(&t.shape, dialog_style(&t))
             .w(px(self.width))
             .p(px(t.spacing.lg))

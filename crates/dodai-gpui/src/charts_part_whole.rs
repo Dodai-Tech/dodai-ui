@@ -69,6 +69,15 @@ pub struct Treemap {
     height: f32,
     fmt: Option<NumFmt>,
     title: Option<SharedString>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Treemap {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 chart_cfg!(Treemap);
 
@@ -78,6 +87,7 @@ impl Treemap {
         items: impl IntoIterator<Item = (S, f32)>,
     ) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             items: items.into_iter().map(|(a, b)| (a.into(), b)).collect(),
             height: 220.0,
@@ -91,6 +101,7 @@ impl Treemap {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let g = crate::motion::grow(window, cx, "Treemap");
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let vals: Vec<f32> = self.items.iter().map(|i| i.1).collect();
         // Layout in unit space, rendered with relative sizes.
         let rects = treemap_layout(&vals, 1.0, 1.0);

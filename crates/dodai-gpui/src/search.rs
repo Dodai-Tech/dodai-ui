@@ -57,11 +57,21 @@ pub struct SearchView {
     max_rows: usize,
     on_pick: Option<IndexFn>,
     on_clear: Option<VoidFn>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl SearchView {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl SearchView {
     pub fn new(id: impl Into<ElementId>, input: Entity<TextInput>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             input,
             items: Vec::new(),

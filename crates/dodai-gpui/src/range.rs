@@ -55,11 +55,21 @@ pub struct RangeSlider {
     ticks: bool,
     show_value: bool,
     on_change: Option<RangeHandler>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl RangeSlider {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl RangeSlider {
     pub fn new(id: impl Into<ElementId>, lo: f32, hi: f32) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             direction: Direction::Horizontal,
             length: 160.0,
@@ -111,6 +121,7 @@ impl RangeSlider {
 impl RangeSlider {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let vertical = self.direction == Direction::Vertical;
         let st = window.use_keyed_state(self.id.clone(), cx, |_, _| RangeState::default());
         let (min, max, step, lo, hi) = (self.min, self.max, self.step, self.lo, self.hi);

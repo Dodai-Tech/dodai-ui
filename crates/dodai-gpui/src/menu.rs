@@ -69,11 +69,21 @@ pub struct Menu {
     items: Vec<MenuItem>,
     width: f32,
     on_select: Option<IndexHandler>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Menu {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl Menu {
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             items: Vec::new(),
             width: 220.0,
@@ -97,6 +107,7 @@ impl Menu {
 impl Menu {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let mut col = shaped(&t.shape, popup_style(&t))
             .w(px(self.width))
             .p(px(t.spacing.xs + 2.0))

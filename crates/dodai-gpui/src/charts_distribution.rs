@@ -65,12 +65,22 @@ pub struct Histogram {
     color: Option<Color>,
     fmt: Option<NumFmt>,
     title: Option<SharedString>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Histogram {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 chart_cfg!(Histogram);
 
 impl Histogram {
     pub fn new(id: impl Into<SharedString>, values: impl IntoIterator<Item = f32>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             values: values.into_iter().collect(),
             bins: 10,
@@ -93,6 +103,7 @@ impl Histogram {
 impl Histogram {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let g = crate::motion::grow(window, cx, "Histogram");
         let bins = histogram_bins(&self.values, self.bins);
         let maxc = bins.iter().map(|b| b.2).max().unwrap_or(1) as f32;

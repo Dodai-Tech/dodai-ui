@@ -27,11 +27,21 @@ fn bar_style(t: &Theme) -> ShapeStyle {
 pub struct Toolbar {
     items: Vec<AnyElement>,
     trailing: Option<AnyElement>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Toolbar {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl Toolbar {
     pub fn new() -> Self {
         Self {
+            corners: None,
             items: Vec::new(),
             trailing: None,
         }
@@ -58,6 +68,7 @@ impl ParentElement for Toolbar {
 impl Toolbar {
     fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let mut bar = shaped(&t.shape, bar_style(&t))
             .flex()
             .items_center()
@@ -255,11 +266,21 @@ pub struct NumberStepper {
     max: i32,
     step: i32,
     on_change: Option<IntFn>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl NumberStepper {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl NumberStepper {
     pub fn new(id: impl Into<ElementId>, value: i32) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             value,
             min: i32::MIN,
@@ -286,6 +307,7 @@ impl NumberStepper {
 impl NumberStepper {
     fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let p = t.panel(false);
         let (v, lo, hi) = (self.value, self.min, self.max);
         let mk = |suffix: &'static str, glyph: &'static str, d: i32| {
@@ -364,11 +386,21 @@ impl TimelineEvent {
 #[derive(IntoElement)]
 pub struct Timeline {
     events: Vec<TimelineEvent>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Timeline {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl Timeline {
     pub fn new(events: impl IntoIterator<Item = TimelineEvent>) -> Self {
         Self {
+            corners: None,
             events: events.into_iter().collect(),
         }
     }
@@ -377,6 +409,7 @@ impl Timeline {
 impl Timeline {
     fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let n = self.events.len();
         let dot_shape = round_shape(&t.shape, 12.0);
         let rows = self.events.into_iter().enumerate().map(|(i, e)| {
@@ -454,11 +487,21 @@ pub struct ColorPicker {
     selected: Option<usize>,
     columns: usize,
     on_select: Option<ColorFn>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl ColorPicker {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl ColorPicker {
     pub fn new(id: impl Into<ElementId>, colors: impl IntoIterator<Item = Color>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             colors: colors.into_iter().collect(),
             selected: None,
@@ -483,6 +526,7 @@ impl ColorPicker {
 impl ColorPicker {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let side = t.shape.control_height * 0.8;
         let mut grid = div().flex().flex_col().gap(px(t.spacing.xs));
         for (ri, chunk) in self.colors.chunks(self.columns).enumerate() {
@@ -548,11 +592,21 @@ pub struct FileDropZone {
     title: SharedString,
     hint: SharedString,
     on_click: Option<ClickFn>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl FileDropZone {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl FileDropZone {
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             title: "Drop files here".into(),
             hint: "or click to browse".into(),
@@ -576,6 +630,7 @@ impl FileDropZone {
 impl FileDropZone {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let st = use_interact(&self.id, window, cx);
         let hov = st.read(cx).hovered;
         let stroke = if hov {
@@ -635,6 +690,15 @@ pub struct TagField {
     tags: Vec<SharedString>,
     on_remove: Option<TagFn>,
     trailing: Option<AnyElement>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl TagField {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl TagField {
@@ -643,6 +707,7 @@ impl TagField {
         tags: impl IntoIterator<Item = S>,
     ) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             tags: tags.into_iter().map(Into::into).collect(),
             on_remove: None,
@@ -663,6 +728,7 @@ impl TagField {
 impl TagField {
     fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let i = t.input(false);
         let style = ShapeStyle::from_tokens(&t, Some(i.background), Some(i.border), false, false);
         let chips = self.tags.into_iter().enumerate().map(|(n, label)| {

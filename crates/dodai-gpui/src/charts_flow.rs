@@ -135,6 +135,15 @@ pub struct Waterfall {
     height: f32,
     fmt: Option<NumFmt>,
     title: Option<SharedString>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Waterfall {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 chart_cfg!(Waterfall);
 
@@ -144,6 +153,7 @@ impl Waterfall {
         steps: impl IntoIterator<Item = (S, f32)>,
     ) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             steps: steps.into_iter().map(|(a, b)| (a.into(), b)).collect(),
             total: true,
@@ -163,6 +173,7 @@ impl Waterfall {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let g = crate::motion::grow(window, cx, "Waterfall");
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let deltas: Vec<f32> = self.steps.iter().map(|s| s.1).collect();
         let st = waterfall_steps(&deltas);
         let end = st.last().map_or(0.0, |s| s.1);

@@ -87,11 +87,21 @@ pub struct Select {
     placeholder: SharedString,
     disabled: bool,
     on_change: Option<IndexHandler>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Select {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl Select {
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             options: Vec::new(),
             selected: None,
@@ -126,6 +136,7 @@ impl Select {
 impl Select {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let sel0 = self.selected;
         let st = window.use_keyed_state(self.id.clone(), cx, |_, cx| SelectState {
             open: false,

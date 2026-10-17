@@ -201,6 +201,14 @@ pub fn set_glow_intensity(cx: &mut App, intensity: f32) {
     cx.refresh_windows();
 }
 
+/// Apply a per-component corner override to a theme clone (internal helper).
+pub(crate) fn apply_corners(mut t: Theme, c: Option<dodai_core::Corners>) -> Theme {
+    if let Some(c) = c {
+        t.shape.corners = c;
+    }
+    t
+}
+
 /// Corners currently cut by the active theme's chamfered controls.
 pub fn corners(cx: &App) -> dodai_core::Corners {
     cx.dodai().theme().shape.corners

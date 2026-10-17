@@ -162,11 +162,21 @@ pub struct InputBox {
     focused: bool,
     placeholder: Option<SharedString>,
     children: Vec<AnyElement>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl InputBox {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl InputBox {
     pub fn new() -> Self {
         Self {
+            corners: None,
             focused: false,
             placeholder: None,
             children: Vec::new(),
@@ -199,6 +209,7 @@ impl ParentElement for InputBox {
 impl InputBox {
     fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let i = t.input(self.focused);
         let d = shaped(&t.shape, input_style(&t, self.focused))
             .h(px(t.shape.control_height))

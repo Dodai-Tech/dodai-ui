@@ -83,11 +83,21 @@ pub struct TreeView {
     selected: Option<Vec<usize>>,
     on_toggle: Option<PathFn>,
     on_select: Option<PathFn>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl TreeView {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl TreeView {
     pub fn new(id: impl Into<ElementId>, items: Vec<TreeItem>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             items,
             selected: None,
@@ -113,6 +123,7 @@ impl TreeView {
 impl TreeView {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let mut col = div()
             .flex()
             .flex_col()
@@ -215,11 +226,21 @@ pub struct SplitPane {
     first: Option<AnyElement>,
     second: Option<AnyElement>,
     on_change: Option<RatioFn>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl SplitPane {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl SplitPane {
     pub fn new(id: impl Into<ElementId>, ratio: f32) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             ratio,
             height: 200.0,
@@ -249,6 +270,7 @@ impl SplitPane {
 impl SplitPane {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let st = window.use_keyed_state(self.id.clone(), cx, |_, _| SplitState::default());
         let ratio = clamp_ratio(self.ratio, 0.1);
         let rec = st.clone();

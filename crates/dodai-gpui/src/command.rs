@@ -86,11 +86,21 @@ pub struct CommandPalette {
     max_rows: usize,
     on_run: Option<IndexFn>,
     on_dismiss: Option<DismissFn>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl CommandPalette {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl CommandPalette {
     pub fn new(id: impl Into<ElementId>, input: Entity<TextInput>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             input,
             commands: Vec::new(),
@@ -218,11 +228,21 @@ pub struct Combobox {
     open: bool,
     max_rows: usize,
     on_pick: Option<IndexFn>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Combobox {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl Combobox {
     pub fn new(id: impl Into<ElementId>, input: Entity<TextInput>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             input,
             options: Vec::new(),
@@ -249,6 +269,7 @@ impl Combobox {
 impl Combobox {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let mut root = div().relative().w_full().child(self.input.clone());
         if self.open {
             let query = self.input.read(cx).text().to_string();

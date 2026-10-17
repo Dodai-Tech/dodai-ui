@@ -147,11 +147,21 @@ pub struct IconButton {
     toggled: Option<bool>,
     disabled: bool,
     on_click: Option<ClickHandler>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl IconButton {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl IconButton {
     pub fn new(id: impl Into<ElementId>, glyph: impl Into<SharedString>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             glyph: glyph.into(),
             variant: ButtonVariant::Ghost,
@@ -182,6 +192,7 @@ impl IconButton {
 impl IconButton {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let st = use_interact(&self.id, window, cx);
         let state = st.read(cx).control_state(self.disabled);
         let variant = match self.toggled {
@@ -249,11 +260,21 @@ pub struct Fab {
     size: FabSize,
     variant: ButtonVariant,
     on_click: Option<ClickHandler>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Fab {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl Fab {
     pub fn new(id: impl Into<ElementId>, glyph: impl Into<SharedString>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             glyph: glyph.into(),
             label: None,
@@ -283,6 +304,7 @@ impl Fab {
 impl Fab {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let st = use_interact(&self.id, window, cx);
         let state = st.read(cx).control_state(false);
         let (mut style, fg) = button_style(&t, self.variant, state);
@@ -374,11 +396,21 @@ pub struct Navigation {
     items: Vec<NavItem>,
     active: usize,
     on_select: Option<IndexHandler>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Navigation {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl Navigation {
     pub fn new(id: impl Into<ElementId>, layout: NavLayout) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             layout,
             items: Vec::new(),
@@ -403,6 +435,7 @@ impl Navigation {
 impl Navigation {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let layout = self.layout;
         let p = t.panel(false);
         let strip = ShapeStyle::from_tokens(&t, Some(p.background), Some(p.border), false, false);
@@ -499,11 +532,21 @@ pub struct TopAppBar {
     leading: Option<SharedString>,
     size: AppBarSize,
     actions: Vec<AnyElement>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl TopAppBar {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl TopAppBar {
     pub fn new(title: impl Into<SharedString>) -> Self {
         Self {
+            corners: None,
             title: title.into(),
             leading: None,
             size: AppBarSize::Small,
@@ -529,6 +572,7 @@ impl ParentElement for TopAppBar {
 impl TopAppBar {
     fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let p = t.panel(false);
         let style = ShapeStyle::from_tokens(&t, Some(p.background), Some(p.border), false, false);
         let h = t.shape.control_height
@@ -588,11 +632,21 @@ pub struct SearchBar {
     text: SharedString,
     placeholder: bool,
     on_click: Option<ClickHandler>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl SearchBar {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl SearchBar {
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             glyph: "⌕".into(),
             text: "Search".into(),
@@ -619,6 +673,7 @@ impl SearchBar {
 impl SearchBar {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let st = use_interact(&self.id, window, cx);
         let hovered = st.read(cx).control_state(false) != ControlState::Idle;
         let i = t.input(hovered);

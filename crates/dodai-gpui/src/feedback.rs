@@ -45,11 +45,21 @@ pub struct Alert {
     title: SharedString,
     message: Option<SharedString>,
     banner: bool,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Alert {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl Alert {
     pub fn new(tone: Tone, title: impl Into<SharedString>) -> Self {
         Self {
+            corners: None,
             tone,
             title: title.into(),
             message: None,
@@ -70,6 +80,7 @@ impl Alert {
 impl Alert {
     fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let (style, fg) = alert_style(&t, self.tone, self.banner);
         let accent = if self.banner {
             fg
@@ -122,11 +133,21 @@ impl RenderOnce for Alert {
 pub struct Toast {
     tone: Tone,
     message: SharedString,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Toast {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl Toast {
     pub fn new(tone: Tone, message: impl Into<SharedString>) -> Self {
         Self {
+            corners: None,
             tone,
             message: message.into(),
         }
@@ -143,6 +164,7 @@ impl RenderOnce for Toast {
 impl Toast {
     fn build(self, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let c = t.palette.tone(self.tone);
         let style = ShapeStyle::from_tokens(
             &t,
@@ -214,11 +236,21 @@ pub struct Spinner {
     id: ElementId,
     motion: Option<Motion>,
     playback: Playback,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Spinner {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl Spinner {
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             motion: None,
             playback: Playback::Loop,
@@ -291,11 +323,21 @@ pub struct IndeterminateBar {
     id: ElementId,
     motion: Option<Motion>,
     playback: Playback,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl IndeterminateBar {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl IndeterminateBar {
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             motion: None,
             playback: Playback::Loop,
@@ -348,11 +390,21 @@ pub struct Skeleton {
     circle: bool,
     motion: Option<Motion>,
     playback: Playback,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Skeleton {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl Skeleton {
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             w: None,
             h: 14.0,

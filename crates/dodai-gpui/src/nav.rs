@@ -228,11 +228,21 @@ impl RenderOnce for Pagination {
 pub struct Stepper {
     steps: Vec<SharedString>,
     current: usize,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Stepper {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl Stepper {
     pub fn new<S: Into<SharedString>>(steps: impl IntoIterator<Item = S>, current: usize) -> Self {
         Self {
+            corners: None,
             steps: steps.into_iter().map(Into::into).collect(),
             current,
         }
@@ -242,6 +252,7 @@ impl Stepper {
 impl Stepper {
     fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let p = &t.palette;
         let side = 26.0;
         let node_shape = round_shape(&t.shape, side);
@@ -326,6 +337,15 @@ pub struct Segmented {
     selected: usize,
     disabled: bool,
     on_change: Option<IndexHandler>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Segmented {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl Segmented {
@@ -334,6 +354,7 @@ impl Segmented {
         options: impl IntoIterator<Item = S>,
     ) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             options: options.into_iter().map(Into::into).collect(),
             selected: 0,
@@ -358,6 +379,7 @@ impl Segmented {
 impl Segmented {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let p = &t.palette;
         let strip =
             ShapeStyle::from_tokens(&t, Some(p.background), Some(p.border_strong), false, false);
@@ -420,11 +442,21 @@ pub struct Accordion {
     id: ElementId,
     items: Vec<(SharedString, SharedString)>,
     open: Vec<usize>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Accordion {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl Accordion {
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             items: Vec::new(),
             open: Vec::new(),
@@ -444,6 +476,7 @@ impl Accordion {
 impl Accordion {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let n = self.items.len();
         let initial = self.open.clone();
         let st = window.use_keyed_state(self.id.clone(), cx, move |_, _| AccState {

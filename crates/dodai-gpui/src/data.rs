@@ -24,11 +24,21 @@ pub struct Table {
     on_select: Option<IndexHandler>,
     sort: Option<(usize, bool)>,
     on_sort: Option<IndexHandler>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Table {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl Table {
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             columns: Vec::new(),
             weights: Vec::new(),
@@ -80,6 +90,7 @@ impl Table {
 impl Table {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let p = &t.palette;
         let w = |i: usize| self.weights.get(i).copied().unwrap_or(1.0);
         let cell = |i: usize, text: SharedString| {
@@ -205,25 +216,40 @@ pub fn badge_style(theme: &Theme, tone: Tone) -> (ShapeStyle, gpui::Hsla) {
 pub struct Badge {
     text: Option<SharedString>,
     tone: Tone,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Badge {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl Badge {
     /// Badge with a short label (e.g. a count).
     pub fn new(text: impl Into<SharedString>, tone: Tone) -> Self {
         Self {
+            corners: None,
             text: Some(text.into()),
             tone,
         }
     }
     /// Label-less status dot.
     pub fn dot(tone: Tone) -> Self {
-        Self { text: None, tone }
+        Self {
+            text: None,
+            tone,
+            corners: None,
+        }
     }
 }
 
 impl Badge {
     fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let (style, fg) = badge_style(&t, self.tone);
         let h = if self.text.is_some() { 18.0 } else { 10.0 };
         let shape = round_shape(&t.shape, h);
@@ -256,11 +282,21 @@ pub struct Avatar {
     size: f32,
     status: Option<Tone>,
     tone: Option<Tone>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Avatar {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl Avatar {
     pub fn new(initials: impl Into<SharedString>) -> Self {
         Self {
+            corners: None,
             initials: initials.into(),
             size: 36.0,
             status: None,
@@ -286,6 +322,7 @@ impl Avatar {
 impl Avatar {
     fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let c = self.tone.map_or(t.palette.primary, |x| t.palette.tone(x));
         let shape = round_shape(&t.shape, self.size);
         let style = ShapeStyle::from_tokens(&t, Some(c.with_alpha(0.2)), Some(c), false, false);
@@ -365,11 +402,21 @@ pub struct Chip {
     disabled: bool,
     on_click: Option<ClickFn>,
     on_remove: Option<ClickFn>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Chip {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl Chip {
     pub fn new(id: impl Into<ElementId>, label: impl Into<SharedString>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             label: label.into(),
             selected: false,
@@ -402,6 +449,7 @@ impl Chip {
 impl Chip {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let st = use_interact(&self.id, window, cx);
         let hovered = st.read(cx).hovered && !self.disabled;
         let (mut style, mut fg) = chip_style(&t, self.selected, hovered);

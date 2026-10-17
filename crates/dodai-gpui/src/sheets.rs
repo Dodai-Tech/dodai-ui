@@ -81,11 +81,21 @@ pub struct BottomSheet {
     height: f32,
     body: Vec<AnyElement>,
     on_dismiss: Option<DismissFn>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl BottomSheet {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl BottomSheet {
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             title: None,
             height: 280.0,
@@ -164,11 +174,21 @@ pub struct SideSheet {
     modal: bool,
     body: Vec<AnyElement>,
     on_dismiss: Option<DismissFn>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl SideSheet {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl SideSheet {
     pub fn new(id: impl Into<ElementId>, title: impl Into<SharedString>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             title: title.into(),
             edge: SheetEdge::Right,
@@ -256,11 +276,21 @@ pub struct FullScreenDialog {
     body: Vec<AnyElement>,
     on_dismiss: Option<DismissFn>,
     on_action: Option<DismissFn>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl FullScreenDialog {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl FullScreenDialog {
     pub fn new(id: impl Into<ElementId>, title: impl Into<SharedString>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             title: title.into(),
             action: None,
@@ -352,11 +382,21 @@ pub struct Snackbar {
     message: SharedString,
     action: Option<SharedString>,
     on_action: Option<DismissFn>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Snackbar {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl Snackbar {
     pub fn new(id: impl Into<ElementId>, message: impl Into<SharedString>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             message: message.into(),
             action: None,
@@ -384,6 +424,7 @@ impl RenderOnce for Snackbar {
 impl Snackbar {
     fn build(self, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let (style, fg) =
             button_style(&t, ButtonVariant::Secondary, dodai_core::ControlState::Idle);
         let style = ShapeStyle {

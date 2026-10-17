@@ -21,11 +21,21 @@ pub struct Tag {
     text: SharedString,
     tone: Tone,
     solid: bool,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Tag {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl Tag {
     pub fn new(text: impl Into<SharedString>, tone: Tone) -> Self {
         Self {
+            corners: None,
             text: text.into(),
             tone,
             solid: false,
@@ -41,6 +51,7 @@ impl Tag {
 impl Tag {
     fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let (style, fg) = tag_style(&t, self.tone, self.solid);
         shaped(&t.shape, style)
             .px(px(t.spacing.sm))

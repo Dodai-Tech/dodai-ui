@@ -666,11 +666,21 @@ pub struct BarChart {
     value_labels: bool,
     bar_width: f32,
     title: Option<SharedString>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl BarChart {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl BarChart {
     pub fn new(id: impl Into<SharedString>, series: impl IntoIterator<Item = Series>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             series: series.into_iter().collect(),
             labels: Vec::new(),
@@ -752,6 +762,7 @@ pub fn bar_max(series: &[Series], stacked: bool) -> f32 {
 impl BarChart {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let g = crate::motion::grow(window, cx, "BarChart");
         let ticks = nice_ticks(
             0.0,

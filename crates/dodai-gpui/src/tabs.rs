@@ -30,11 +30,21 @@ pub struct Tabs {
     labels: Vec<SharedString>,
     active: usize,
     on_select: Option<SelectHandler>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Tabs {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl Tabs {
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             labels: Vec::new(),
             active: 0,
@@ -61,6 +71,7 @@ impl Tabs {
 impl Tabs {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let mut row = div().flex().gap(px(t.spacing.xs));
         for (i, label) in self.labels.iter().enumerate() {
             let id: ElementId = (self.id.clone(), i.to_string()).into();

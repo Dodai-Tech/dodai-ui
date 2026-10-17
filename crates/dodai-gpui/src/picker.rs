@@ -108,12 +108,22 @@ pub struct DatePicker {
     selected: Option<Date>,
     on_select: Option<DateFn>,
     on_month: Option<MonthFn>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl DatePicker {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl DatePicker {
     /// `year`/`month` (1-12) is the visible month.
     pub fn new(id: impl Into<ElementId>, year: i32, month: u32) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             year,
             month: month.clamp(1, 12),
@@ -140,6 +150,7 @@ impl DatePicker {
 impl DatePicker {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let p = t.panel(false);
         let (y, m) = (self.year, self.month);
         let nav = |suffix: &'static str, glyph: &'static str, delta: i32| {
@@ -268,11 +279,21 @@ pub struct TimePicker {
     twelve: bool,
     minute_step: i32,
     on_change: Option<TimeFn>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl TimePicker {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 impl TimePicker {
     pub fn new(id: impl Into<ElementId>, hour: u32, minute: u32) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             hour: hour % 24,
             minute: minute % 60,
@@ -299,6 +320,7 @@ impl TimePicker {
 impl TimePicker {
     fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let p = t.panel(false);
         let (h, mn) = (self.hour, self.minute);
         let btn = |suffix: &'static str, glyph: &'static str, dh: i32, dm: i32| {

@@ -338,6 +338,15 @@ pub struct Slider {
     bubble: Option<BubblePlacement>,
     format: Option<Rc<dyn Fn(f32) -> String>>,
     on_change: Option<FloatHandler>,
+    corners: Option<dodai_core::Corners>,
+}
+
+impl Slider {
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
 }
 
 const THUMB: f32 = 16.0;
@@ -345,6 +354,7 @@ const THUMB: f32 = 16.0;
 impl Slider {
     pub fn new(id: impl Into<ElementId>, value: f32) -> Self {
         Self {
+            corners: None,
             id: id.into(),
             direction: Direction::Horizontal,
             length: 160.0,
@@ -410,6 +420,7 @@ impl Slider {
 impl Slider {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
         let vertical = self.direction == Direction::Vertical;
         let st = window.use_keyed_state(self.id.clone(), cx, |_, _| SliderState::default());
         let raw = slider_fraction(self.value, self.min, self.max);
