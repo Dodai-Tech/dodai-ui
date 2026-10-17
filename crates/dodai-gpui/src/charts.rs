@@ -282,6 +282,13 @@ impl Legend {
 
 impl RenderOnce for Legend {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(cx), "Legend", motion)
+    }
+}
+
+impl Legend {
+    fn build(self, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         div()
             .flex()
@@ -1034,6 +1041,13 @@ impl Sparkline {
 
 impl RenderOnce for Sparkline {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(cx), "Sparkline", motion)
+    }
+}
+
+impl Sparkline {
+    fn build(self, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let c = hsla(self.color.unwrap_or(t.palette.primary));
         let glow = glow_of(&t).map(|r| r.min(4.0));

@@ -63,6 +63,13 @@ impl ParentElement for DialogCard {
 
 impl RenderOnce for DialogCard {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(cx), "DialogCard", motion)
+    }
+}
+
+impl DialogCard {
+    fn build(self, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let mut d = shaped(&t.shape, dialog_style(&t))
             .w(px(self.width))
