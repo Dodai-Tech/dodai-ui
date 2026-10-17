@@ -2345,7 +2345,6 @@ impl Render for Showcase {
             .flex()
             .flex_col()
             .gap(px(t.spacing.lg + 8.0))
-            .w_full()
             .min_w_0()
             .p(px(if narrow { t.spacing.md } else { t.spacing.xl }))
             .child(ds_panel);
@@ -2441,6 +2440,8 @@ impl Render for Showcase {
                         div()
                             .id("scroll")
                             .track_scroll(&self.scroll)
+                            .flex()
+                            .flex_col()
                             .flex_1()
                             .min_w_0()
                             .overflow_y_scroll()

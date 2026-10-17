@@ -109,7 +109,6 @@ impl Panel {
         let mut d = shaped(&shape, panel_style(&t, self.focused))
             .flex()
             .flex_col()
-            .w_full()
             .min_w_0()
             .gap(px(t.spacing.sm))
             .p(px(t.spacing.lg))
