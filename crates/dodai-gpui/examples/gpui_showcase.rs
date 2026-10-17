@@ -73,6 +73,8 @@ struct Showcase {
     vslider: [f32; 3],
     list: usize,
     clicks: u32,
+    /// Corner cut override for the Buttons demo (`None` = theme default).
+    btn_corners: Option<dodai_core::Corners>,
 }
 
 /// Per-section animation player state.
@@ -597,26 +599,115 @@ impl Render for Showcase {
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let col = || div().flex().flex_col().gap(gap);
 
+        let bc = self.btn_corners;
+        let cut = move |b: Button| match bc {
+            Some(c) => b.corners(c),
+            None => b,
+        };
         let buttons = row()
-            .child(
-                Button::new("b-primary", "Primary").on_click(cx.listener(|s, _, _, cx| {
+            .child(cut(Button::new("b-primary", "Primary").on_click(
+                cx.listener(|s, _, _, cx| {
                     s.clicks += 1;
                     cx.notify();
-                })),
-            )
-            .child(Button::new("b-secondary", "Secondary").variant(ButtonVariant::Secondary))
-            .child(Button::new("b-outline", "Outline").variant(ButtonVariant::Outline))
-            .child(Button::new("b-outline2", "Outline 2").variant(ButtonVariant::OutlineSecondary))
-            .child(Button::new("b-danger", "Danger").variant(ButtonVariant::Danger))
-            .child(Button::new("b-ghost", "Ghost").variant(ButtonVariant::Ghost))
-            .child(Button::new("b-dis", "Disabled").disabled(true))
-            .child(Button::new("b-shim", "Loading…").shimmer(true))
-            .child(
-                Button::new("b-shim2", "Outline…")
-                    .variant(ButtonVariant::Outline)
-                    .shimmer(true),
-            )
+                }),
+            )))
+            .child(cut(
+                Button::new("b-secondary", "Secondary").variant(ButtonVariant::Secondary)
+            ))
+            .child(cut(
+                Button::new("b-outline", "Outline").variant(ButtonVariant::Outline)
+            ))
+            .child(cut(
+                Button::new("b-outline2", "Outline 2").variant(ButtonVariant::OutlineSecondary)
+            ))
+            .child(cut(
+                Button::new("b-danger", "Danger").variant(ButtonVariant::Danger)
+            ))
+            .child(cut(
+                Button::new("b-ghost", "Ghost").variant(ButtonVariant::Ghost)
+            ))
+            .child(cut(Button::new("b-dis", "Disabled").disabled(true)))
+            .child(cut(Button::new("b-shim", "Loading…").shimmer(true)))
+            .child(cut(Button::new("b-shim2", "Outline…")
+                .variant(ButtonVariant::Outline)
+                .shimmer(true)))
             .child(Muted::new(format!("primary clicked {}×", self.clicks)));
+
+        let corner_picker = {
+            use dodai_core::Corners as C;
+            let me2 = me.clone();
+            let cur = self.btn_corners;
+            let chip = |id: &'static str,
+                        label: &'static str,
+                        on: bool,
+                        f: Box<dyn Fn(Option<C>) -> Option<C>>| {
+                let m = me2.clone();
+                Button::new(id, label)
+                    .variant(if on {
+                        ButtonVariant::Primary
+                    } else {
+                        ButtonVariant::Outline
+                    })
+                    .on_click(move |_, _, cx| {
+                        m.update(cx, |s, cx| {
+                            s.btn_corners = f(s.btn_corners);
+                            cx.notify()
+                        })
+                    })
+            };
+            let base = cur.unwrap_or(C::BOTTOM_RIGHT);
+            let tog = |i: usize| -> Box<dyn Fn(Option<C>) -> Option<C>> {
+                Box::new(move |c| {
+                    let b = c.unwrap_or(C::BOTTOM_RIGHT);
+                    Some(b.set(i, !b.get(i)))
+                })
+            };
+            let preset =
+                |c: Option<C>| -> Box<dyn Fn(Option<C>) -> Option<C>> { Box::new(move |_| c) };
+            row()
+                .child(Label::new("Cut corner"))
+                .child(chip("cc-ul", "UL", cur.is_some() && base.get(0), tog(0)))
+                .child(chip("cc-ur", "UR", cur.is_some() && base.get(1), tog(1)))
+                .child(chip("cc-lr", "LR", cur.is_some() && base.get(2), tog(2)))
+                .child(chip("cc-ll", "LL", cur.is_some() && base.get(3), tog(3)))
+                .child(chip(
+                    "cc-diag",
+                    "Diagonal",
+                    cur == Some(C::DIAGONAL),
+                    preset(Some(C::DIAGONAL)),
+                ))
+                .child(chip(
+                    "cc-anti",
+                    "Anti-diagonal",
+                    cur == Some(C::ANTI_DIAGONAL),
+                    preset(Some(C::ANTI_DIAGONAL)),
+                ))
+                .child(chip(
+                    "cc-left",
+                    "Left",
+                    cur == Some(C::LEFT),
+                    preset(Some(C::LEFT)),
+                ))
+                .child(chip(
+                    "cc-right",
+                    "Right",
+                    cur == Some(C::RIGHT),
+                    preset(Some(C::RIGHT)),
+                ))
+                .child(chip(
+                    "cc-all",
+                    "All",
+                    cur == Some(C::ALL),
+                    preset(Some(C::ALL)),
+                ))
+                .child(chip(
+                    "cc-none",
+                    "None",
+                    cur == Some(C::NONE),
+                    preset(Some(C::NONE)),
+                ))
+                .child(chip("cc-theme", "Theme", cur.is_none(), preset(None)))
+        };
 
         let tags = row()
             .child(Tag::new("online", Tone::Success).solid(true))
@@ -1769,7 +1860,10 @@ impl Render for Showcase {
             (
                 "Actions",
                 "Buttons · IconButton · FAB",
-                section!("Buttons").child(buttons).into_any_element(),
+                section!("Buttons")
+                    .child(corner_picker)
+                    .child(buttons)
+                    .into_any_element(),
                 "Buttons",
             ),
             (
@@ -2394,6 +2488,7 @@ fn main() {
                         vslider: [0.3, 0.6, 0.9],
                         list: 0,
                         clicks: 0,
+                        btn_corners: None,
                     })
                 },
             )

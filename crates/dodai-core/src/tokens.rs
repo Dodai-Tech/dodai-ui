@@ -48,7 +48,52 @@ impl Corners {
         bottom_right: false,
         bottom_left: false,
     };
-    /// Only bottom-right (cyberpunk-style buttons).
+    /// Only top-left (UL).
+    pub const TOP_LEFT: Self = Self {
+        top_left: true,
+        ..Self::NONE
+    };
+    /// Only top-right (UR).
+    pub const TOP_RIGHT: Self = Self {
+        top_right: true,
+        ..Self::NONE
+    };
+    /// Only bottom-left (LL).
+    pub const BOTTOM_LEFT: Self = Self {
+        bottom_left: true,
+        ..Self::NONE
+    };
+    /// Both top corners.
+    pub const TOP: Self = Self {
+        top_left: true,
+        top_right: true,
+        ..Self::NONE
+    };
+    /// Both bottom corners.
+    pub const BOTTOM: Self = Self {
+        bottom_left: true,
+        bottom_right: true,
+        ..Self::NONE
+    };
+    /// Both left corners.
+    pub const LEFT: Self = Self {
+        top_left: true,
+        bottom_left: true,
+        ..Self::NONE
+    };
+    /// Both right corners.
+    pub const RIGHT: Self = Self {
+        top_right: true,
+        bottom_right: true,
+        ..Self::NONE
+    };
+    /// Top-right and bottom-left (the other diagonal).
+    pub const ANTI_DIAGONAL: Self = Self {
+        top_right: true,
+        bottom_left: true,
+        ..Self::NONE
+    };
+    /// Only bottom-right (LR; cyberpunk-style buttons).
     pub const BOTTOM_RIGHT: Self = Self {
         bottom_right: true,
         ..Self::NONE
@@ -65,6 +110,27 @@ impl Corners {
         bottom_right: true,
         bottom_left: true,
     };
+
+    /// Copy with the corner `top_left` / `top_right` / `bottom_right` /
+    /// `bottom_left` (index 0..4, clockwise from top-left) set to `on`.
+    pub fn set(mut self, corner: usize, on: bool) -> Self {
+        match corner {
+            0 => self.top_left = on,
+            1 => self.top_right = on,
+            2 => self.bottom_right = on,
+            _ => self.bottom_left = on,
+        }
+        self
+    }
+    /// Whether corner `i` (clockwise from top-left) is cut.
+    pub fn get(self, corner: usize) -> bool {
+        [
+            self.top_left,
+            self.top_right,
+            self.bottom_right,
+            self.bottom_left,
+        ][corner.min(3)]
+    }
 
     pub fn any(self) -> bool {
         self.top_left || self.top_right || self.bottom_right || self.bottom_left
@@ -207,5 +273,17 @@ mod glow_tests {
     fn zero_disables() {
         assert!(!fx(0.0).glow_enabled());
         assert!(fx(1.0).glow_enabled());
+    }
+}
+
+#[cfg(test)]
+mod corner_tests {
+    use super::Corners;
+
+    #[test]
+    fn corners_set_get() {
+        let c = Corners::NONE.set(1, true).set(3, true);
+        assert_eq!(c, Corners::ANTI_DIAGONAL);
+        assert!(c.get(1) && !c.get(0));
     }
 }

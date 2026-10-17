@@ -50,6 +50,7 @@ pub struct Button {
     on_click: Option<ClickHandler>,
     refine: Option<Refine>,
     shimmer: bool,
+    corners: Option<dodai_core::Corners>,
 }
 
 impl Button {
@@ -60,6 +61,7 @@ impl Button {
             variant: ButtonVariant::Primary,
             disabled: false,
             shimmer: false,
+            corners: None,
             on_click: None,
             refine: None,
         }
@@ -90,6 +92,13 @@ impl Button {
 }
 
 impl Button {
+    /// Cut these corners instead of the theme's (e.g. `Corners::TOP_LEFT`,
+    /// `Corners::DIAGONAL`, or any combination). Has an effect on themes with
+    /// a chamfer size.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
     /// Sweep a shimmer highlight over the button (e.g. while busy), clipped to its shape.
     pub fn shimmer(mut self, on: bool) -> Self {
         self.shimmer = on;
@@ -127,7 +136,11 @@ impl Button {
             });
         }
         let pressed = state == ControlState::Pressed;
-        let mut el = track(shaped_id(self.id, &t.shape, style), &st)
+        let mut shape = t.shape.clone();
+        if let Some(c) = self.corners {
+            shape.corners = c;
+        }
+        let mut el = track(shaped_id(self.id, &shape, style), &st)
             .h(px(t.shape.control_height))
             .px(px(t.spacing.md))
             .mt(px(if pressed { 1.0 } else { 0.0 }))
