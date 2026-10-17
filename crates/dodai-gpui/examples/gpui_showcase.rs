@@ -258,6 +258,78 @@ impl Showcase {
             }
             chips = chips.child(wrap);
         }
+        // Fill: duration of value-in animations (charts, progress, sliders ...).
+        {
+            let gms = kind.map_or(0, |s| s.grow_ms());
+            let key = (title, EntryKind::None);
+            let open = self.pill_hover == Some(key) || self.pop_hover == Some(key);
+            let uid = tid.wrapping_mul(8);
+            let me_p = me.clone();
+            let text: SharedString = if gms > 0 {
+                format!("Fill · {gms}ms").into()
+            } else {
+                "Fill".into()
+            };
+            let mut wrap = div()
+                .id(("pw", uid))
+                .relative()
+                .on_hover(cx.listener(move |s, h: &bool, _, cx| {
+                    if *h {
+                        s.pill_hover = Some(key);
+                    } else if s.pill_hover == Some(key) {
+                        s.pill_hover = None;
+                    }
+                    cx.notify();
+                }))
+                .child(chip(("sec-f", uid), text, gms > 0));
+            if open {
+                let popup = div()
+                    .id(("pp", uid))
+                    .absolute()
+                    .top(px(17.0))
+                    .right_0()
+                    .w(px(230.0))
+                    .p(px(t.spacing.md))
+                    .rounded(px(6.0))
+                    .border_1()
+                    .border_color(hsla(t.palette.border_strong))
+                    .bg(hsla(t.palette.surface_raised))
+                    .flex()
+                    .flex_col()
+                    .gap(px(t.spacing.xs))
+                    .on_hover(cx.listener(move |s, h: &bool, _, cx| {
+                        if *h {
+                            s.pop_hover = Some(key);
+                        } else if s.pop_hover == Some(key) {
+                            s.pop_hover = None;
+                        }
+                        cx.notify();
+                    }))
+                    .child(Muted::new("Fill duration (charts, progress, sliders)"))
+                    .child(
+                        Slider::new(("pd", uid), gms as f32)
+                            .range(0.0, 3000.0)
+                            .step(50.0)
+                            .show_value(true)
+                            .format(|v| {
+                                if v < 1.0 {
+                                    "default".to_string()
+                                } else {
+                                    format!("{v:.0} ms")
+                                }
+                            })
+                            .on_change(move |v, _, cx| {
+                                me_p.update(cx, |s, cx| {
+                                    let cur = s.sec_kind.get(title).copied().unwrap_or(base);
+                                    s.sec_kind.insert(title, cur.with_grow_ms(v as u16));
+                                    cx.notify();
+                                })
+                            }),
+                    );
+                wrap = wrap.child(gpui::deferred(popup).with_priority(60));
+            }
+            chips = chips.child(wrap);
+        }
         // Player: play once / loop / stop.
         let mode = self.sec_mode.get(title).copied().unwrap_or_default();
         let btn = |id: u32, icon: dodai_gpui::IconName, on: bool| {

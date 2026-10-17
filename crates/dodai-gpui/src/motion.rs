@@ -166,7 +166,11 @@ pub fn grow(window: &mut gpui::Window, cx: &mut App, name: &'static str) -> f32 
     }
     let st = window.use_keyed_state((name, 2u32), cx, |_, _| std::time::Instant::now());
     let start = *st.read(cx);
-    let t = start.elapsed().as_secs_f32() / m.duration.as_secs_f32().max(1e-3);
+    let dur = match m.entry.grow_ms() {
+        0 => m.duration.as_secs_f32(),
+        ms => ms as f32 / 1000.0,
+    };
+    let t = start.elapsed().as_secs_f32() / dur.max(1e-3);
     if t < 1.0 {
         window.request_animation_frame();
     }
@@ -246,12 +250,14 @@ pub enum EntryKind {
 pub struct EntrySet {
     mask: u8,
     ms: [u16; 5],
+    grow: u16,
 }
 
 impl EntrySet {
     pub const NONE: EntrySet = EntrySet {
         mask: 0,
         ms: [0; 5],
+        grow: 0,
     };
     pub fn of(k: EntryKind) -> Self {
         Self::NONE.with(k)
@@ -273,6 +279,14 @@ impl EntrySet {
     }
     pub fn is_empty(self) -> bool {
         self.mask == 0
+    }
+    /// Duration of value-in (fill/sweep/grow) animations in ms (`0` = default).
+    pub fn grow_ms(self) -> u16 {
+        self.grow
+    }
+    pub fn with_grow_ms(mut self, ms: u16) -> Self {
+        self.grow = ms;
+        self
     }
     /// Own duration for `k` in ms (`0` = default).
     pub fn ms_of(self, k: EntryKind) -> u16 {
