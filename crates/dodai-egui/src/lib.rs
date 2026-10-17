@@ -1,7 +1,7 @@
 //! # dodai-egui
 //!
 //! Turns a [`dodai_core::Theme`] into [egui](https://docs.rs/egui) styling
-//! plus painter-drawn widgets. Call [`install`] once per theme change, then use
+//! plus painter-drawn widgets. Call [`install()`] once per theme change, then use
 //! the widgets. Nothing here looks at a theme id: shape (square / rounded /
 //! chamfered), glow, hard shadow, scanlines and uppercase labels all come from
 //! tokens, so new themes work automatically.

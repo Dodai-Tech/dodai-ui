@@ -1,5 +1,5 @@
 //! Themed Freya components. All read the active theme via
-//! [`use_dodai_theme`](crate::use_dodai_theme); shape, glow, hard shadow
+//! [`use_dodai_theme`]; shape, glow, hard shadow
 //! and label casing come from tokens only.
 //!
 //! Boxes with a chamfered theme need explicit pixel `width`/`height` (the SVG
