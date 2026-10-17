@@ -31,7 +31,6 @@ use gpui::{AnimationExt, SharedString};
 use std::time::Duration;
 
 struct Showcase {
-    anim_ms: f32,
     replay: usize,
     sec_replay: std::collections::HashMap<&'static str, u32>,
     /// Sections whose one-shot Play run is still in progress.
@@ -107,17 +106,30 @@ impl Showcase {
         *self.sec_replay.entry(title).or_insert(0) += 1;
     }
 
+    /// Total time of one run of the section: longest of the entry effects and
+    /// the value-in (fill) animation, plus the stagger across its items.
+    fn run_len(&self, title: &'static str, cx: &gpui::App) -> Duration {
+        let m = Motion::of(cx);
+        let set = self.sec_kind.get(title).copied().unwrap_or(m.entry);
+        let entry = if set.is_empty() {
+            Duration::ZERO
+        } else {
+            set.duration(m.duration)
+        };
+        let fill = match set.grow_ms() {
+            0 if set.is_empty() => Duration::ZERO,
+            0 => m.duration,
+            ms => Duration::from_millis(ms as u64),
+        };
+        entry.max(fill) + Duration::from_millis(set.stagger_ms() as u64 * 8)
+    }
+
     /// Replay and mark the section as playing until the run should be over.
     fn replay(&mut self, title: &'static str, cx: &mut Context<Self>) {
         self.bump(title);
         let tok = self.sec_replay.get(title).copied().unwrap_or(0);
         self.sec_playing.insert(title, tok);
-        let set = self.sec_kind.get(title).copied().unwrap_or_default();
-        let base = Duration::from_millis(self.anim_ms as u64);
-        let run = set
-            .duration(base)
-            .max(Duration::from_millis(set.grow_ms() as u64).max(base))
-            + Duration::from_millis(set.stagger_ms() as u64 * 8 + 100);
+        let run = self.run_len(title, cx);
         cx.spawn(async move |this, cx| {
             cx.background_executor().timer(run).await;
             let _ = this.update(cx, |s, cx| {
@@ -138,10 +150,8 @@ impl Showcase {
             let gen = self.loop_gen;
             cx.spawn(async move |this, cx| loop {
                 let wait = this
-                    .update(cx, |s, _| {
-                        let set = s.sec_kind.get(title).copied().unwrap_or_default();
-                        set.duration(Duration::from_millis(s.anim_ms as u64))
-                            + Duration::from_millis(700)
+                    .update(cx, |s, cx| {
+                        s.run_len(title, cx) + Duration::from_millis(600)
                     })
                     .unwrap_or_default();
                 cx.background_executor().timer(wait).await;
@@ -2005,7 +2015,6 @@ fn main() {
                             .ok()
                             .and_then(|v| v.parse().ok())
                             .unwrap_or(0),
-                        anim_ms: 220.0,
                         replay: 0,
                         sec_replay: Default::default(),
                         sec_playing: Default::default(),
