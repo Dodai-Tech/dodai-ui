@@ -1,4 +1,4 @@
-//! **Cyberpunk** — inspired by cyberpunk.net.
+//! **Cyberpunk** — a cyberpunk-inspired theme.
 //!
 //! Source values (from the site's stylesheet): signature yellow `#fcee0a`
 //! (hover `#f2e900`), cyan `#00f0ff`, red `#fe1038`, orange `#ff6000`, pure
@@ -115,7 +115,7 @@ fn build(
     }
 }
 
-/// Signature yellow-on-black (the cyberpunk.net look). Default theme.
+/// Signature yellow-on-black (the signature cyberpunk look). Default theme.
 pub fn night_city() -> Theme {
     build(
         ThemeMeta {

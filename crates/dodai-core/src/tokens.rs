@@ -48,7 +48,7 @@ impl Corners {
         bottom_right: false,
         bottom_left: false,
     };
-    /// Only bottom-right (cyberpunk.net buttons).
+    /// Only bottom-right (cyberpunk-style buttons).
     pub const BOTTOM_RIGHT: Self = Self {
         bottom_right: true,
         ..Self::NONE

@@ -258,7 +258,7 @@ impl TuiTheme {
         ])
     }
 
-    /// Three-row chamfered slab button (closest a terminal gets to cyberpunk.net).
+    /// Three-row chamfered slab button (chamfered, cyberpunk style).
     ///
     /// Solid variants are a filled 3-row slab with the bottom-right corner
     /// cut via `◤`; outline variants are a box whose bottom-right corner is `╱`.

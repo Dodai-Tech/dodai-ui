@@ -14,7 +14,7 @@ component styles) feeds four native adapters:
 
 ## Themes
 
-**Cyberpunk** (inspired by [cyberpunk.net](https://www.cyberpunk.net/us/en/); values taken from its stylesheet):
+**Cyberpunk** (a cyberpunk-inspired theme):
 
 | Token | Value |
 |---|---|

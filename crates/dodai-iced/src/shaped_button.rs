@@ -41,7 +41,7 @@ pub struct ShapedButton<Message> {
     /// Glow radius in px (already scaled by the theme's glow intensity).
     pub glow_radius: f32,
     pub on_press: Option<Message>,
-    /// Backdrop under outline buttons (cyberpunk.net uses black @ 60%).
+    /// Backdrop under outline buttons (black @ 60%).
     pub backdrop: Color,
     /// Control height in px (excluding glow margin).
     pub height: f32,
