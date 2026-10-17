@@ -191,12 +191,16 @@ push-release-all: check-all push-all push-tags-all
 
 # Manually re-trigger the GitHub Release workflow for an existing tag.
 release-retrigger version:
+    @command -v gh >/dev/null 2>&1 || { echo "❌ GitHub CLI (gh) not found. Install from https://cli.github.com"; exit 1; }
     gh workflow run release.yml --field tag=v{{version}}
 
 # ── Git remotes & pushing ─────────────────────────────────────────────────────
 # Every *-all recipe loops over REMOTES and keeps going when one fails.
 
 REMOTES := "origin gitea-starscream gitea-microlab"
+
+# Fail fast (5 s) instead of hanging when a remote host is unreachable.
+export GIT_SSH_COMMAND := "ssh -o ConnectTimeout=5 -o BatchMode=yes"
 
 # Show all configured remotes
 remotes:
@@ -272,6 +276,73 @@ push-tags-all:
 sync-gitea-starscream:
     git push gitea-starscream "$(git branch --show-current)" --force
     git push gitea-starscream --tags --force
+
+# ── Force / per-remote variants (no lease: be sure!) ──────────────────────────
+
+# Force-push the current branch to GitHub (origin)
+push-force:
+    git push --force origin "$(git branch --show-current)"
+
+# Force-push the current branch to Gitea Starscream
+push-gitea-starscream-force:
+    git push --force gitea-starscream "$(git branch --show-current)"
+
+# Force-push the current branch to Gitea Microlab
+push-gitea-microlab-force:
+    git push --force gitea-microlab "$(git branch --show-current)"
+
+# Pull the current branch from Gitea Microlab
+pull-gitea-microlab:
+    git pull gitea-microlab "$(git branch --show-current)"
+
+# Pull the current branch from every remote (continues on failure)
+pull-all:
+    #!/usr/bin/env sh
+    failed=""
+    for r in {{REMOTES}}; do
+        git remote get-url "$r" >/dev/null 2>&1 || { echo "↷ skipping $r (not configured)"; continue; }
+        git pull "$r" "$(git branch --show-current)" || failed="$failed $r"
+    done
+    if [ -n "$failed" ]; then echo "⚠️  Failed to pull from:$failed"; exit 1; fi
+    echo "✅ Pulled from every configured remote"
+
+# Force-push all tags to GitHub (moves existing tags)
+push-tags-force:
+    git push --force origin --tags
+
+# Force-push all tags to every remote (continues on failure; moves existing tags)
+push-tags-all-force:
+    #!/usr/bin/env sh
+    failed=""
+    for r in {{REMOTES}}; do
+        git remote get-url "$r" >/dev/null 2>&1 || { echo "↷ skipping $r (not configured)"; continue; }
+        git push --force "$r" --tags || failed="$failed $r"
+    done
+    if [ -n "$failed" ]; then echo "⚠️  Failed to force-push tags to:$failed"; exit 1; fi
+    echo "✅ Tags force-pushed to every configured remote"
+
+# Force-push the latest commit and tags to every remote, no bump
+push-release-all-force: check-all
+    #!/usr/bin/env sh
+    failed=""
+    for r in {{REMOTES}}; do
+        git remote get-url "$r" >/dev/null 2>&1 || { echo "↷ skipping $r (not configured)"; continue; }
+        git push --force --follow-tags "$r" "$(git branch --show-current)" || failed="$failed $r"
+    done
+    if [ -n "$failed" ]; then echo "⚠️  Failed to force-push to:$failed"; exit 1; fi
+    echo "✅ Latest commit and tags force-pushed to every configured remote"
+
+# Short name for push-release-all
+alias release-push := push-release-all
+
+# Bump, commit, tag, then push to Gitea Microlab only
+release-gitea-microlab version: (bump version)
+    git push --follow-tags gitea-microlab "$(git branch --show-current)"
+
+# Force-sync Gitea Microlab with the local branch + tags
+sync-gitea-microlab:
+    git push gitea-microlab "$(git branch --show-current)" --force
+    git push gitea-microlab --tags --force
 
 # Update deps, run the gate, then commit + push Cargo.lock if green
 update-deps:
