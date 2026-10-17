@@ -49,6 +49,7 @@ pub struct Card {
     headline: Option<SharedString>,
     supporting: Option<SharedString>,
     width: Option<f32>,
+    corners: Option<dodai_core::Corners>,
     children: Vec<AnyElement>,
 }
 
@@ -59,6 +60,7 @@ impl Card {
             headline: None,
             supporting: None,
             width: None,
+            corners: None,
             children: Vec::new(),
         }
     }
@@ -69,6 +71,11 @@ impl Card {
     /// Fixed width in px (default: fill the parent).
     pub fn width(mut self, w: f32) -> Self {
         self.width = Some(w);
+        self
+    }
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
         self
     }
     pub fn supporting(mut self, t: impl Into<SharedString>) -> Self {
@@ -87,7 +94,11 @@ impl Card {
     fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let p = t.panel(false);
-        let mut el = shaped(&t.shape, card_style(&t, self.variant))
+        let mut shape = t.shape.clone();
+        if let Some(c) = self.corners {
+            shape.corners = c;
+        }
+        let mut el = shaped(&shape, card_style(&t, self.variant))
             .flex()
             .flex_col()
             .gap(px(t.spacing.sm))

@@ -39,6 +39,12 @@ impl Theme {
         self
     }
 
+    /// Builder: cut these corners on chamfered controls (see [`crate::Corners`]).
+    pub fn with_corners(mut self, c: crate::Corners) -> Self {
+        self.shape.corners = c;
+        self
+    }
+
     pub fn id(&self) -> &'static str {
         self.meta.id
     }

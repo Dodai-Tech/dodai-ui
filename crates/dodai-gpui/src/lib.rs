@@ -201,6 +201,27 @@ pub fn set_glow_intensity(cx: &mut App, intensity: f32) {
     cx.refresh_windows();
 }
 
+/// Corners currently cut by the active theme's chamfered controls.
+pub fn corners(cx: &App) -> dodai_core::Corners {
+    cx.dodai().theme().shape.corners
+}
+
+/// Cut `corners` on **every** theme (so it survives switching) and repaint.
+/// Per-component `.corners()` overrides still win.
+pub fn set_corners(cx: &mut App, corners: dodai_core::Corners) {
+    let g = cx.global_mut::<DodaiTheme>();
+    let idx = g.switcher.index();
+    let themes = g
+        .switcher
+        .themes()
+        .iter()
+        .map(|t| t.clone().with_corners(corners))
+        .collect();
+    g.switcher = ThemeSwitcher::with_themes(themes);
+    g.switcher.select_index(idx);
+    cx.refresh_windows();
+}
+
 /// Whether the fine scanline texture is on for the active theme.
 pub fn scanlines_enabled(cx: &App) -> bool {
     cx.dodai().theme().effects.scanlines

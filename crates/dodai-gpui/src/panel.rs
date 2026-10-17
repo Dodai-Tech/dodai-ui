@@ -31,12 +31,14 @@ pub struct Panel {
     scope_key: u32,
     children: Vec<AnyElement>,
     refine: Option<Box<dyn FnOnce(gpui::Div) -> gpui::Div>>,
+    corners: Option<dodai_core::Corners>,
 }
 
 impl Panel {
     pub fn new() -> Self {
         Self {
             title: None,
+            corners: None,
             focused: false,
             subheader: None,
             scope: None,
@@ -67,6 +69,11 @@ impl Panel {
         self.title = Some(t.into());
         self
     }
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
     /// Highlight border (and glow when enabled).
     pub fn focused(mut self, f: bool) -> Self {
         self.focused = f;
@@ -95,7 +102,11 @@ impl Panel {
     fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let p = t.panel(self.focused);
-        let mut d = shaped(&t.shape, panel_style(&t, self.focused))
+        let mut shape = t.shape.clone();
+        if let Some(c) = self.corners {
+            shape.corners = c;
+        }
+        let mut d = shaped(&shape, panel_style(&t, self.focused))
             .flex()
             .flex_col()
             .gap(px(t.spacing.sm))

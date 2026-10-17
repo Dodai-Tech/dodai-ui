@@ -993,7 +993,41 @@ impl Render for Showcase {
                         set_scanlines(cx, on);
                     }))
                     .child(Muted::new("key: l")),
-            );
+            )
+            .child({
+                use dodai_core::Corners as C;
+                let cur = dodai_gpui::corners(cx);
+                let chip = |id: &'static str, label: &'static str, c: C| {
+                    Button::new(id, label)
+                        .variant(if cur == c {
+                            ButtonVariant::Primary
+                        } else {
+                            ButtonVariant::Outline
+                        })
+                        .on_click(move |_, _, cx| dodai_gpui::set_corners(cx, c))
+                };
+                let tog = |id: &'static str, label: &'static str, i: usize| {
+                    Button::new(id, label)
+                        .variant(if cur.get(i) {
+                            ButtonVariant::Primary
+                        } else {
+                            ButtonVariant::Outline
+                        })
+                        .on_click(move |_, _, cx| {
+                            let c = dodai_gpui::corners(cx);
+                            dodai_gpui::set_corners(cx, c.set(i, !c.get(i)));
+                        })
+                };
+                row()
+                    .child(Label::new("Cut corners"))
+                    .child(tog("tc-ul", "UL", 0))
+                    .child(tog("tc-ur", "UR", 1))
+                    .child(tog("tc-lr", "LR", 2))
+                    .child(tog("tc-ll", "LL", 3))
+                    .child(chip("tc-diag", "Diagonal", C::DIAGONAL))
+                    .child(chip("tc-all", "All", C::ALL))
+                    .child(chip("tc-none", "None", C::NONE))
+            });
 
         let ds_panel = Panel::new().focused(true).child(
             div()
@@ -1863,6 +1897,15 @@ impl Render for Showcase {
                 section!("Buttons")
                     .child(corner_picker)
                     .child(buttons)
+                    .child(row().items_start().child(match self.btn_corners {
+                        Some(c) => Card::new(CardVariant::Outlined)
+                            .corners(c)
+                            .headline("Card follows the same cut")
+                            .into_any_element(),
+                        None => Card::new(CardVariant::Outlined)
+                            .headline("Card follows the same cut")
+                            .into_any_element(),
+                    }))
                     .into_any_element(),
                 "Buttons",
             ),
