@@ -414,6 +414,7 @@ impl Showcase {
             let open = self.pill_hover == Some(key) || self.pop_hover == Some(key);
             let uid = tid.wrapping_mul(8).wrapping_add(slot);
             let me_p = me.clone();
+            let me_c = me.clone();
             let text: SharedString = if gms > 0 {
                 format!("{name} · {gms}ms").into()
             } else {
@@ -430,7 +431,29 @@ impl Showcase {
                     }
                     cx.notify();
                 }))
-                .child(chip(("sec-f", uid), text, gms > 0));
+                .child(
+                    chip(("sec-f", uid), text, gms > 0).on_click(move |_, _, cx| {
+                        // Toggle: active → off (default), off → sensible default.
+                        me_c.update(cx, |s, cx| {
+                            let cur = s.sec_kind.get(title).copied().unwrap_or(base);
+                            let v = if gms > 0 {
+                                0
+                            } else if slot == 0 {
+                                800
+                            } else {
+                                100
+                            };
+                            let nw = if slot == 0 {
+                                cur.with_grow_ms(v)
+                            } else {
+                                cur.with_stagger_ms(v)
+                            };
+                            s.sec_kind.insert(title, nw);
+                            s.replay(title, cx);
+                            cx.notify();
+                        })
+                    }),
+                );
             if open {
                 let popup = div()
                     .id(("pp", uid))
