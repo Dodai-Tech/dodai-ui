@@ -86,7 +86,7 @@ pub use extras::{
     step_value, BottomAppBar, ColorPicker, EmptyState, FileDropZone, NumberStepper, Rating,
     TagField, Timeline, TimelineEvent, Toolbar,
 };
-pub use feedback::{Alert, IndeterminateBar, Skeleton, Spinner, Toast};
+pub use feedback::{Alert, IndeterminateBar, Playback, Skeleton, Spinner, Toast};
 pub use icons::{Icon, IconName};
 pub use knob::Knob;
 pub use layout::{clamp_ratio, visible_rows, SplitPane, TreeItem, TreeRow, TreeView};

@@ -34,6 +34,8 @@ struct Showcase {
     sec_replay: std::collections::HashMap<&'static str, u32>,
     sec_mode: std::collections::HashMap<&'static str, Player>,
     loop_gen: u32,
+    ld_pb: dodai_gpui::Playback,
+    ld_ms: u16,
     scroll: gpui::ScrollHandle,
     sec_kind: std::collections::HashMap<&'static str, EntrySet>,
     pill_hover: Option<(&'static str, u8)>,
@@ -1191,28 +1193,122 @@ impl Render for Showcase {
                 380.0,
             ));
 
+        let (pb, lms) = (self.ld_pb, self.ld_ms);
+        let run = self.sec_replay.get("Loading").copied().unwrap_or(0);
+        // Duration override (0 = each indicator's own default).
+        let mo = move |ms: u64, ease: Easing| {
+            Motion::new(
+                Duration::from_millis(if lms > 0 { lms as u64 } else { ms }),
+                if lms > 0 { Easing::Linear } else { ease },
+            )
+        };
+        let lbtn = |id: u32, icon: dodai_gpui::IconName, on: bool| {
+            let fg = hsla(if on {
+                t.palette.on_primary
+            } else {
+                t.palette.text_muted
+            });
+            div()
+                .id(("ldb", id))
+                .px(px(5.0))
+                .py(px(2.0))
+                .rounded(px(4.0))
+                .cursor_pointer()
+                .border_1()
+                .border_color(hsla(t.palette.border))
+                .when(on, |d| d.bg(hsla(t.palette.primary)))
+                .child(dodai_gpui::Icon::new(icon).size(11.0).color(fg))
+        };
+        let (l1, l2, l3, l4) = (me.clone(), me.clone(), me.clone(), me.clone());
+        let ld_controls = div()
+            .flex()
+            .items_center()
+            .gap(px(6.0))
+            .child(
+                lbtn(
+                    1,
+                    dodai_gpui::IconName::Play,
+                    pb == dodai_gpui::Playback::Once,
+                )
+                .on_click(move |_, _, cx| {
+                    l1.update(cx, |s, cx| {
+                        s.ld_pb = dodai_gpui::Playback::Once;
+                        s.bump("Loading");
+                        cx.notify()
+                    })
+                }),
+            )
+            .child(
+                lbtn(
+                    2,
+                    dodai_gpui::IconName::Repeat,
+                    pb == dodai_gpui::Playback::Loop,
+                )
+                .on_click(move |_, _, cx| {
+                    l2.update(cx, |s, cx| {
+                        s.ld_pb = dodai_gpui::Playback::Loop;
+                        s.bump("Loading");
+                        cx.notify()
+                    })
+                }),
+            )
+            .child(
+                lbtn(
+                    3,
+                    dodai_gpui::IconName::Stop,
+                    pb == dodai_gpui::Playback::Stopped,
+                )
+                .on_click(move |_, _, cx| {
+                    l3.update(cx, |s, cx| {
+                        s.ld_pb = dodai_gpui::Playback::Stopped;
+                        s.bump("Loading");
+                        cx.notify()
+                    })
+                }),
+            )
+            .child(div().w(px(10.0)))
+            .child(Muted::new("Duration per run"))
+            .child(
+                div().w(px(220.0)).child(
+                    Slider::new("ld-dur", lms as f32)
+                        .range(0.0, 10000.0)
+                        .step(100.0)
+                        .show_value(true)
+                        .format(|v| {
+                            if v < 1.0 {
+                                "default".to_string()
+                            } else {
+                                format!("{v:.0} ms")
+                            }
+                        })
+                        .on_change(move |v, _, cx| {
+                            l4.update(cx, |s, cx| {
+                                s.ld_ms = v as u16;
+                                s.bump("Loading");
+                                cx.notify()
+                            })
+                        }),
+                ),
+            );
+        let pbk = pb;
         let loading = Panel::new()
             .title("Loading")
+            .subheader(ld_controls)
             .child(Label::new("Spinner"))
             .child(
                 row()
-                    .child(Spinner::new("ld-sp1"))
-                    .child(Spinner::new("ld-sp2").motion(Motion::new(
-                        Duration::from_millis(450),
-                        Easing::Linear,
-                    )))
-                    .child(Spinner::new("ld-sp3").motion(Motion::new(
-                        Duration::from_millis(1800),
-                        Easing::EaseInOut,
-                    )))
-                    .child(Muted::new("900 ms default · 450 ms · 1.8 s ease-in-out")),
+                    .child(Spinner::new(("ld-sp1", run)).motion(mo(900, Easing::Linear)).playback(pbk))
+                    .child(Spinner::new(("ld-sp2", run)).motion(mo(450, Easing::Linear)).playback(pbk))
+                    .child(
+                        Spinner::new(("ld-sp3", run))
+                            .motion(mo(1800, Easing::EaseInOut))
+                            .playback(pbk),
+                    )
+                    .child(Muted::new("900 ms · 450 ms · 1.8 s ease-in-out (unless a duration is set)")),
             )
             .child(Label::new("Indeterminate bar"))
-            .child(IndeterminateBar::new("ld-ib1"))
-            .child(IndeterminateBar::new("ld-ib2").motion(Motion::new(
-                Duration::from_millis(700),
-                Easing::EaseInOut,
-            )))
+            .child(IndeterminateBar::new(("ld-ib1", run)).motion(mo(1400, Easing::Linear)).playback(pbk))
+            .child(IndeterminateBar::new(("ld-ib2", run)).motion(mo(700, Easing::EaseInOut)).playback(pbk))
             .child(Label::new("Determinate progress"))
             .child(ProgressBar::new(0.35))
             .child(ProgressBar::new(0.7).tone(Tone::Success))
@@ -1221,17 +1317,24 @@ impl Render for Showcase {
                 row()
                     .items_start()
                     .gap(px(16.0))
-                    .child(Skeleton::new("ld-av").width(48.0).height(48.0).circle(true))
+                    .child(
+                        Skeleton::new(("ld-av", run))
+                            .width(48.0)
+                            .height(48.0)
+                            .circle(true)
+                            .motion(mo(1600, Easing::Linear))
+                            .playback(pbk),
+                    )
                     .child(
                         col()
                             .flex_1()
-                            .child(Skeleton::new("ld-l1").height(14.0))
-                            .child(Skeleton::new("ld-l2").height(14.0).width(260.0))
-                            .child(Skeleton::new("ld-l3").height(14.0).width(180.0)),
+                            .child(Skeleton::new(("ld-l1", run)).height(14.0).motion(mo(1600, Easing::Linear)).playback(pbk))
+                            .child(Skeleton::new(("ld-l2", run)).height(14.0).width(260.0).motion(mo(1600, Easing::Linear)).playback(pbk))
+                            .child(Skeleton::new(("ld-l3", run)).height(14.0).width(180.0).motion(mo(1600, Easing::Linear)).playback(pbk)),
                     ),
             )
             .child(Muted::new(
-                "Loading demos loop forever, so they live on this page only (not on All) to keep the idle CPU at zero.",
+                "Play runs one cycle, Loop repeats, Stop holds a still frame. Loading demos live on this page only (not on All) to keep idle CPU at zero.",
             ));
 
         // Animation page: one Panel per entry type (curve · live example · text).
@@ -1866,6 +1969,8 @@ fn main() {
                         sec_replay: Default::default(),
                         sec_mode: Default::default(),
                         loop_gen: 0,
+                        ld_pb: dodai_gpui::Playback::Loop,
+                        ld_ms: 0,
                         scroll: gpui::ScrollHandle::new(),
                         sec_kind: Default::default(),
                         pill_hover: None,
