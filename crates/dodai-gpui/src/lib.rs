@@ -26,101 +26,162 @@
 //! }
 //! ```
 
+#[cfg(feature = "components")]
 pub mod button;
+#[cfg(feature = "components")]
 pub mod carousel;
+#[cfg(feature = "charts")]
 pub mod charts;
+#[cfg(feature = "charts")]
 pub mod charts_distribution;
+#[cfg(feature = "charts")]
 pub mod charts_flow;
+#[cfg(feature = "charts")]
 pub mod charts_part_whole;
+#[cfg(feature = "charts")]
 pub mod charts_trend;
+#[cfg(feature = "components")]
 pub mod command;
+#[cfg(feature = "components")]
 pub mod controls;
+#[cfg(feature = "components")]
 pub mod count;
+#[cfg(feature = "components")]
 pub mod data;
+#[cfg(feature = "components")]
 pub mod extras;
+#[cfg(feature = "components")]
 pub mod feedback;
 pub mod icons;
 pub mod interact;
+#[cfg(feature = "components")]
 pub mod knob;
+#[cfg(feature = "components")]
 pub mod layout;
+#[cfg(feature = "components")]
 pub mod list;
 pub mod logic;
+#[cfg(feature = "components")]
 pub mod menu;
 pub mod motion;
+#[cfg(feature = "components")]
 pub mod nav;
+#[cfg(feature = "components")]
 pub mod overlay;
 pub mod paint;
 pub mod panel;
+#[cfg(feature = "components")]
 pub mod picker;
+#[cfg(feature = "components")]
 pub mod range;
 pub mod scanlines;
+#[cfg(feature = "components")]
 pub mod search;
+#[cfg(feature = "components")]
 pub mod select;
+#[cfg(feature = "components")]
 pub mod sheets;
+#[cfg(feature = "components")]
 pub mod shell;
+#[cfg(feature = "components")]
 pub mod surfaces;
+#[cfg(feature = "components")]
 pub mod switcher;
+#[cfg(feature = "components")]
 pub mod tabs;
+#[cfg(feature = "components")]
 pub mod tag;
 pub mod text;
+#[cfg(feature = "components")]
 pub mod text_input;
 
 #[cfg(test)]
 mod testing;
 
+#[cfg(feature = "components")]
 pub use button::Button;
+#[cfg(feature = "components")]
 pub use carousel::{window_start, Carousel};
+#[cfg(feature = "charts")]
 pub use charts::{
     bar_max, fmt_num, heat_color, marker_points, nice_ticks, norm, pie_fractions, pie_hit, polar,
     smooth_points, BarChart, Gauge, Heatmap, Legend, LineChart, Marker, PieChart, RadarChart,
     ScatterPlot, Series, Sparkline,
 };
+#[cfg(feature = "charts")]
 pub use charts_distribution::{histogram_bins, quartiles, BoxPlot, BubbleChart, Histogram};
+#[cfg(feature = "charts")]
 pub use charts_flow::{waterfall_steps, Funnel, Waterfall};
+#[cfg(feature = "charts")]
 pub use charts_part_whole::{treemap_layout, RadialBar, Treemap};
+#[cfg(feature = "charts")]
 pub use charts_trend::{stack_cumulative, Candle, Candlestick, StackedAreaChart};
+#[cfg(feature = "components")]
 pub use command::{fuzzy_filter, Combobox, Command, CommandPalette};
+#[cfg(feature = "components")]
 pub use controls::{
     tick_fractions, BubblePlacement, Checkbox, Direction, ProgressBar, Radio, Slider, Toggle,
 };
+#[cfg(feature = "components")]
 pub use count::CountUp;
+#[cfg(feature = "components")]
 pub use data::{Avatar, Badge, Chip, Kbd, Table};
+#[cfg(feature = "components")]
 pub use extras::{
     step_value, BottomAppBar, ColorPicker, EmptyState, FileDropZone, NumberStepper, Rating,
     TagField, Timeline, TimelineEvent, Toolbar,
 };
-pub use feedback::{Alert, IndeterminateBar, Playback, Skeleton, Spinner, Toast};
+#[cfg(feature = "components")]
+pub use feedback::{Alert, IndeterminateBar, Skeleton, Spinner, Toast};
 pub use icons::{Icon, IconName};
+#[cfg(feature = "components")]
 pub use knob::Knob;
+#[cfg(feature = "components")]
 pub use layout::{clamp_ratio, visible_rows, SplitPane, TreeItem, TreeRow, TreeView};
+#[cfg(feature = "components")]
 pub use list::{Divider, ListItem};
+#[cfg(feature = "components")]
 pub use menu::{Menu, MenuItem};
 pub use motion::{
     entry as entry_animation, grow, lerp, stagger_window, Curve, Easing, EntryKind, EntryScope,
     EntrySet, Motion, Tween,
 };
+#[cfg(feature = "components")]
 pub use nav::{Accordion, Breadcrumb, Pagination, Segmented, Stepper};
+#[cfg(feature = "components")]
 pub use overlay::{Dialog, DialogCard};
+pub use paint::Playback;
 pub use paint::{shaped, ShapeStyle};
 pub use panel::{DodaiTooltip, InputBox, Panel};
+#[cfg(feature = "components")]
 pub use picker::{
     days_in_month, month_grid, shift_month, step_hour, step_minute, to_12h, weekday, Date,
     DatePicker, TimePicker,
 };
+#[cfg(feature = "components")]
 pub use range::{nearest_thumb, range_update, RangeSlider};
 pub use scanlines::Scanlines;
+#[cfg(feature = "components")]
 pub use search::{count_label, highlight_runs, IconBadge, RichTooltip, SearchView};
+#[cfg(feature = "components")]
 pub use select::{family_title, DesignSystemSelector, Select, SelectOption, ThemeSelector};
+#[cfg(feature = "components")]
 pub use sheets::{sheet_style, BottomSheet, FullScreenDialog, SheetEdge, SideSheet, Snackbar};
+#[cfg(feature = "components")]
 pub use shell::{is_wide, ResponsiveShell};
+#[cfg(feature = "components")]
 pub use surfaces::{
     card_style, AppBarSize, Card, CardVariant, Fab, FabSize, IconButton, NavItem, NavLayout,
     Navigation, SearchBar, TopAppBar,
 };
+#[cfg(feature = "components")]
 pub use switcher::{set_tree_expanded, tree_expanded, DesignSystemTree, ThemeSwitcherBar};
+#[cfg(feature = "components")]
 pub use tabs::Tabs;
+#[cfg(feature = "components")]
 pub use tag::Tag;
 pub use text::{Heading, Label, Mono, Muted};
+#[cfg(feature = "components")]
 pub use text_input::TextInput;
 
 use dodai_core::{ButtonVariant, Color, ControlState, Theme, ThemeSwitcher, Tone};

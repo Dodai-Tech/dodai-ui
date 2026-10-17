@@ -27,10 +27,13 @@ install-tools:
 # Build the whole workspace (dev). Per-crate: `cargo build --workspace` cannot unify
 # iced's naga 27 with gpui's naga 25 (see dodai-iced dev-dependencies).
 build:
-    for c in dodai-core dodai-ratatui dodai-iced dodai-gpui dodai-topcoat; do cargo build -p $c || exit 1; done
+    for c in dodai-core dodai-charts-core dodai-ratatui dodai-iced dodai-gpui dodai-topcoat; do cargo build -p $c || exit 1; done
 
 build-core:
     cargo build -p dodai-core
+
+build-charts-core:
+    cargo build -p dodai-charts-core
 
 build-ratatui:
     cargo build -p dodai-ratatui
@@ -45,7 +48,7 @@ build-topcoat:
     cargo build -p dodai-topcoat
 
 build-release:
-    for c in dodai-core dodai-ratatui dodai-iced dodai-gpui dodai-topcoat; do cargo build --release -p $c || exit 1; done
+    for c in dodai-core dodai-charts-core dodai-ratatui dodai-iced dodai-gpui dodai-topcoat; do cargo build --release -p $c || exit 1; done
 
 # ── Run the showcases ─────────────────────────────────────────────────────────
 
@@ -74,6 +77,15 @@ test:
 
 test-core:
     cargo test -p dodai-core
+
+test-charts-core:
+    cargo test -p dodai-charts-core
+
+# gpui feature slices must each compile on their own
+check-gpui-features:
+    cargo check -p dodai-gpui --no-default-features --features charts
+    cargo check -p dodai-gpui --no-default-features --features components
+    cargo check -p dodai-gpui --no-default-features
 
 test-ratatui:
     cargo test -p dodai-ratatui
@@ -155,6 +167,8 @@ check-publish: _check-nu
 # Publish all crates in dependency order (core first)
 publish: check-all
     cargo publish -p dodai-core
+    cargo publish -p dodai-icons
+    cargo publish -p dodai-charts-core
     @echo "⏳ waiting for crates.io index…" && sleep 30
     cargo publish -p dodai-ratatui
     cargo publish -p dodai-iced

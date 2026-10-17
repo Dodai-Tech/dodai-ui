@@ -11,7 +11,19 @@ readme       = "README.md"
 keywords     = ["theme", "design-system", "gpui", "cyberpunk"]
 categories   = ["gui"]
 
+[features]
+default    = ["components", "charts"]
+# Buttons, tables, dialogs, pickers, navigation, ...
+components = []
+# Charts only (always includes the theme, painting and motion core).
+charts     = []
+
 [dependencies]
 dodai-core = { workspace = true }
+dodai-charts-core = { workspace = true }
 dodai-icons = { workspace = true }
 gpui = { workspace = true }
+
+[[example]]
+name = "gpui_showcase"
+required-features = ["components", "charts"]

@@ -23,14 +23,15 @@ jobs:
           components: rustfmt
       - run: cargo fmt --all -- --check
 
-  # Base crates everything else depends on (dodai-gpui also uses dodai-icons).
+  # Base crates everything else depends on (dodai-gpui also uses dodai-icons
+  # and dodai-charts-core).
   base:
     name: ${{ matrix.crate }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        crate: [dodai-core, dodai-icons]
+        crate: [dodai-core, dodai-icons, dodai-charts-core]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -52,12 +53,13 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        crate: [dodai-ratatui, dodai-topcoat]
+        crate: [dodai-ratatui, dodai-topcoat, dodai-dioxus]
         include:
           - { crate: dodai-iced, os: ubuntu-latest, gui: true }
           - { crate: dodai-iced, os: macos-latest, gui: true }
           - { crate: dodai-gpui, os: ubuntu-latest, gui: true }
           - { crate: dodai-gpui, os: macos-latest, gui: true }
+          - { crate: dodai-bevy, os: ubuntu-latest, gui: true }
     steps:
       - uses: actions/checkout@v4
       - name: Install Linux GUI system libraries
@@ -65,7 +67,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
-            pkg-config libxkbcommon-dev libxkbcommon-x11-dev libx11-dev libxcb1-dev libxcb-xkb-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libwayland-dev libgl1-mesa-dev libvulkan-dev libfontconfig1-dev libasound2-dev libssl-dev
+            pkg-config libxkbcommon-dev libxkbcommon-x11-dev libx11-dev libxcb1-dev libxcb-xkb-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libwayland-dev libgl1-mesa-dev libvulkan-dev libfontconfig1-dev libasound2-dev libudev-dev libssl-dev
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
@@ -74,6 +76,13 @@ jobs:
           key: ${{ matrix.crate }}
       - run: cargo clippy -p ${{ matrix.crate }} --all-targets -- -D warnings
       - run: cargo test -p ${{ matrix.crate }}
+      # Slices must compile alone: charts-only users get no components.
+      - name: gpui feature slices
+        if: matrix.crate == 'dodai-gpui'
+        run: |
+          cargo check -p dodai-gpui --no-default-features --features charts
+          cargo check -p dodai-gpui --no-default-features --features components
+          cargo check -p dodai-gpui --no-default-features
 
   nu-tests:
     name: nushell tests
@@ -96,7 +105,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
-            pkg-config libxkbcommon-dev libxkbcommon-x11-dev libx11-dev libxcb1-dev libxcb-xkb-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libwayland-dev libgl1-mesa-dev libvulkan-dev libfontconfig1-dev libasound2-dev libssl-dev
+            pkg-config libxkbcommon-dev libxkbcommon-x11-dev libx11-dev libxcb1-dev libxcb-xkb-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libwayland-dev libgl1-mesa-dev libvulkan-dev libfontconfig1-dev libasound2-dev libudev-dev libssl-dev
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo doc --workspace --no-deps

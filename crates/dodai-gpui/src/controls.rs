@@ -515,7 +515,7 @@ impl Slider {
             if let Some(bp) = self.bubble {
                 let txt = match &self.format {
                     Some(f) => f(self.value),
-                    None => crate::charts::fmt_num((self.value * 100.0).round() / 100.0),
+                    None => dodai_charts_core::fmt_num((self.value * 100.0).round() / 100.0),
                 };
                 let y = match bp {
                     BubblePlacement::Above => -26.0,
@@ -554,7 +554,7 @@ impl Slider {
         let readout = self.show_value.then(|| {
             let txt = match &self.format {
                 Some(f) => f(self.value),
-                None => crate::charts::fmt_num((self.value * 100.0).round() / 100.0),
+                None => dodai_charts_core::fmt_num((self.value * 100.0).round() / 100.0),
             };
             div()
                 .font_family(crate::text::first_family(t.typography.mono))

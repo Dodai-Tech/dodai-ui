@@ -40,7 +40,7 @@ pub struct Shimmer {
     pub color: Hsla,
     /// Duration of one sweep in ms.
     pub ms: u32,
-    pub playback: crate::feedback::Playback,
+    pub playback: Playback,
 }
 
 impl ShapeStyle {
@@ -436,7 +436,6 @@ fn hsla_a(c: Hsla, a: f32) -> Hsla {
 /// Sweep overlay clipped to `shape`; the animation is keyed by the parent
 /// element's id, so give the shaped element an id (e.g. [`shaped_id`]).
 fn shimmer_overlay(shape: &Shape, sh: Shimmer) -> impl gpui::IntoElement {
-    use crate::feedback::Playback;
     use gpui::AnimationExt;
     let dur = std::time::Duration::from_millis(sh.ms.max(1) as u64);
     let anim = match sh.playback {
@@ -461,6 +460,48 @@ fn shimmer_overlay(shape: &Shape, sh: Shimmer) -> impl gpui::IntoElement {
                 sh.color,
             ))
         })
+}
+
+pub(crate) fn pts(o: gpui::Point<Pixels>, p: &[(f32, f32)]) -> Vec<gpui::Point<Pixels>> {
+    p.iter()
+        .map(|&(x, y)| point(o.x + px(x), o.y + px(y)))
+        .collect()
+}
+
+pub(crate) fn stroke(
+    w: &mut Window,
+    o: gpui::Point<Pixels>,
+    p: &[(f32, f32)],
+    width: f32,
+    c: Hsla,
+    closed: bool,
+) {
+    let mut pb = PathBuilder::stroke(px(width));
+    pb.add_polygon(&pts(o, p), closed);
+    if let Ok(path) = pb.build() {
+        w.paint_path(path, c);
+    }
+}
+
+#[cfg(feature = "charts")]
+pub(crate) fn fill(w: &mut Window, o: gpui::Point<Pixels>, p: &[(f32, f32)], c: Hsla) {
+    let mut pb = PathBuilder::fill();
+    pb.add_polygon(&pts(o, p), true);
+    if let Ok(path) = pb.build() {
+        w.paint_path(path, c);
+    }
+}
+
+/// How a loading indicator plays.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Playback {
+    /// Repeat forever (default).
+    #[default]
+    Loop,
+    /// Run one cycle, then rest at its end.
+    Once,
+    /// Static, mid-cycle frame; no animation.
+    Stopped,
 }
 
 #[cfg(test)]

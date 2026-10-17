@@ -1,6 +1,6 @@
 //! Vector [`Icon`]s drawn with gpui paths (no asset files, any colour/size).
 
-use crate::charts::stroke;
+use crate::paint::stroke;
 pub use dodai_icons::IconName;
 use gpui::{canvas, div, px, Bounds, Hsla, IntoElement, ParentElement, Pixels, RenderOnce, Styled};
 

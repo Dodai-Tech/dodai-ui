@@ -20,7 +20,7 @@ export def bump-workspace-text [cargo: string, version: string]: nothing -> stri
         if ($t | str starts-with '[') { $in_pkg = ($t == '[workspace.package]') }
         let new = if $in_pkg and ($line =~ '^version\s*=') {
             $line | str replace --regex '"[^"]+"' $'"($version)"'
-        } else if ($line =~ '^dodai-[a-z]+\s*=\s*\{') {
+        } else if ($line =~ '^dodai-[a-z-]+\s*=\s*\{') {
             $line | str replace --regex 'version\s*=\s*"[^"]+"' $'version = "($version)"'
         } else { $line }
         $out = ($out | append $new)
@@ -30,5 +30,5 @@ export def bump-workspace-text [cargo: string, version: string]: nothing -> stri
 
 # Crates in dependency order: core must be published before adapters.
 export def publish-order []: nothing -> list<string> {
-    ["dodai-core" "dodai-ratatui" "dodai-iced" "dodai-gpui" "dodai-topcoat"]
+    ["dodai-core" "dodai-icons" "dodai-charts-core" "dodai-ratatui" "dodai-iced" "dodai-gpui" "dodai-topcoat"]
 }

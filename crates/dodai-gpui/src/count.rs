@@ -2,10 +2,10 @@
 //! app-wide / section [`Motion`](crate::Motion) (same duration, easing and
 //! stagger as the charts' value-in animation).
 
-use crate::charts::fmt_num;
 use crate::motion::grow;
 use crate::text::first_family;
 use crate::{hsla, theme_of};
+use dodai_charts_core::fmt_num;
 use gpui::{
     div, px, App, ElementId, IntoElement, ParentElement, RenderOnce, SharedString, Styled, Window,
 };

@@ -132,7 +132,7 @@ impl Button {
             style = style.with_shimmer(crate::paint::Shimmer {
                 color: fg.opacity(0.3),
                 ms: 1400,
-                playback: crate::feedback::Playback::Loop,
+                playback: crate::paint::Playback::Loop,
             });
         }
         let pressed = state == ControlState::Pressed;

@@ -197,17 +197,7 @@ impl Toast {
     }
 }
 
-/// How a loading indicator plays.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum Playback {
-    /// Repeat forever (default).
-    #[default]
-    Loop,
-    /// Run one cycle, then rest at its end.
-    Once,
-    /// Static, mid-cycle frame; no animation.
-    Stopped,
-}
+pub use crate::paint::Playback;
 
 /// Animation for a loading indicator: the override, or a linear cycle of
 /// `default_ms`, played per [`Playback`].
