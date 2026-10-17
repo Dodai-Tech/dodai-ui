@@ -1295,14 +1295,17 @@ impl Render for Showcase {
             let motion = Motion::new(Duration::from_millis(700), ease).entry(kind);
             let demo = div()
                 .id(("an-demo", (i as u32) * 1000 + n))
-                .w(px(200.0))
-                .h(px(90.0))
+                .w(px(280.0))
+                .h(px(110.0))
                 .overflow_hidden()
                 .flex()
                 .items_center()
                 .justify_center()
                 .child(dodai_gpui::entry_animation(
-                    Card::new(CardVariant::Elevated).child(Label::new(format!("{title} entry"))),
+                    div().w(px(170.0)).child(
+                        Card::new(CardVariant::Elevated)
+                            .child(Label::new(format!("{title} entry"))),
+                    ),
                     "an-card",
                     motion,
                 ));
