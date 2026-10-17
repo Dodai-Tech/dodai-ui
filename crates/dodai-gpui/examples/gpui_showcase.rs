@@ -83,6 +83,49 @@ enum Player {
     Stopped,
 }
 
+/// Which animation controls apply to a section (derived from the components it shows).
+#[derive(Clone, Copy)]
+struct Caps {
+    /// Entry effects (fade / rise / drop / slide): any component wrapped by `motion::entry`.
+    entry: bool,
+    /// Value-in "Fill": charts, gauges, progress, sliders, knobs.
+    fill: bool,
+    /// Stagger: needs several animated components.
+    stagger: bool,
+}
+
+fn caps(title: &str) -> Caps {
+    let c = |entry, fill, stagger| Caps {
+        entry,
+        fill,
+        stagger,
+    };
+    match title {
+        // Raw / non-animated components only.
+        "Tooltip" | "Input" => c(false, false, false),
+        // Single animated component.
+        "Search view" | "Tag field" => c(true, false, false),
+        // Value-in components.
+        "Slider · Progress" | "Slider (stepped, ticks, value readout)" | "Range slider" => {
+            c(true, true, true)
+        }
+        "Knob · Vertical sliders" => c(true, true, true),
+        t if t.contains("chart")
+            || [
+                "Pie · donut · gauge · sparkline",
+                "Area · histogram · waterfall",
+                "Funnel · treemap · radial bar",
+                "Candlestick · box plot · bubble",
+                "Radar · scatter · heatmap",
+            ]
+            .contains(&t) =>
+        {
+            c(true, true, true)
+        }
+        _ => c(true, false, true),
+    }
+}
+
 fn section_id(title: &str) -> u32 {
     title
         .bytes()
@@ -217,7 +260,17 @@ impl Showcase {
                     .text_color(hsla(t.palette.text_muted))
                     .child("Animations"),
             );
-        for (ki, k) in EntryKind::ALL.iter().copied().enumerate().skip(1) {
+        let cp = caps(title);
+        if !(cp.entry || cp.fill || cp.stagger) {
+            return div().into_any_element();
+        }
+        for (ki, k) in EntryKind::ALL
+            .iter()
+            .copied()
+            .enumerate()
+            .skip(1)
+            .filter(|_| cp.entry)
+        {
             let on = kind.is_some_and(|s| s.contains(k));
             let ms = kind.map_or(0, |s| s.ms_of(k));
             let open = on
@@ -317,7 +370,10 @@ impl Showcase {
                 1000.0,
                 25.0,
             ),
-        ] {
+        ]
+        .into_iter()
+        .filter(|(tag, ..)| if *tag == 100 { cp.fill } else { cp.stagger })
+        {
             let gms = kind.map_or(0, |s| {
                 if slot == 0 {
                     s.grow_ms()
