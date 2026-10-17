@@ -2063,6 +2063,7 @@ impl Render for Showcase {
                     _ => return,
                 }
                 s.sub = None;
+                dodai_gpui::set_tree_expanded(cx, true);
                 s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
                 cx.notify();
             }))
@@ -2090,6 +2091,7 @@ impl Render for Showcase {
                             w.focus(&s.side_focus);
                             s.cat = idx;
                             s.sub = None;
+                            dodai_gpui::set_tree_expanded(cx, true);
                             s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
                             cx.notify()
                         })
@@ -2121,6 +2123,7 @@ impl Render for Showcase {
                             .on_click(move |_, _, cx| {
                                 m.update(cx, |s, cx| {
                                     s.sub = sub;
+                                    dodai_gpui::set_tree_expanded(cx, true);
                                     s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
                                     cx.notify()
                                 })

@@ -45,6 +45,22 @@ impl RenderOnce for ThemeSwitcherBar {
 /// Design systems with their themes as children. Few systems render as an
 /// expandable tree; more than `dropdown_over` collapse into a dropdown with the
 /// active system's themes listed below. New systems appear automatically.
+struct TreeExpanded(bool);
+impl gpui::Global for TreeExpanded {}
+
+/// Whether the active design system's children are shown (default `true`).
+pub fn tree_expanded(cx: &App) -> bool {
+    cx.try_global::<TreeExpanded>().is_none_or(|g| g.0)
+}
+
+/// Show / hide the active design system's children in every
+/// [`DesignSystemTree`]. Call with `true` to re-open it from elsewhere
+/// (e.g. when a section is picked); the caller must notify its view.
+pub fn set_tree_expanded(cx: &mut App, open: bool) {
+    cx.set_global(TreeExpanded(open));
+    cx.refresh_windows();
+}
+
 #[derive(IntoElement)]
 pub struct DesignSystemTree {
     id: ElementId,
@@ -74,11 +90,10 @@ impl DesignSystemTree {
 }
 
 impl RenderOnce for DesignSystemTree {
-    fn render(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = crate::theme_of(cx);
         // Expanded state of the active family's children (collapsible).
-        let expanded = window.use_keyed_state((self.id.clone(), "exp"), cx, |_, _| true);
-        let is_expanded = *expanded.read(cx);
+        let is_expanded = tree_expanded(cx);
         let lt = cx.dodai();
         let sw = lt.switcher();
         let (cur_idx, cur_fam) = (sw.index(), sw.current_family());
@@ -92,7 +107,6 @@ impl RenderOnce for DesignSystemTree {
             let open = fam == cur_fam;
             if !as_dropdown {
                 let first = sw.family_indices(fam)[0];
-                let exp = expanded.clone();
                 tree = tree.child(
                     ListItem::new(
                         (self.id.clone(), format!("fam{fi}")),
@@ -105,10 +119,7 @@ impl RenderOnce for DesignSystemTree {
                     .selected(open)
                     .on_click(move |_, _, cx| {
                         // Active family: toggle its children. Other: switch + expand.
-                        exp.update(cx, |e, cx| {
-                            *e = if open { !*e } else { true };
-                            cx.notify();
-                        });
+                        set_tree_expanded(cx, if open { !tree_expanded(cx) } else { true });
                         if !open {
                             select_theme(cx, first);
                         }

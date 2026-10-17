@@ -117,7 +117,7 @@ pub use surfaces::{
     card_style, AppBarSize, Card, CardVariant, Fab, FabSize, IconButton, NavItem, NavLayout,
     Navigation, SearchBar, TopAppBar,
 };
-pub use switcher::{DesignSystemTree, ThemeSwitcherBar};
+pub use switcher::{set_tree_expanded, tree_expanded, DesignSystemTree, ThemeSwitcherBar};
 pub use tabs::Tabs;
 pub use tag::Tag;
 pub use text::{Heading, Label, Mono, Muted};
