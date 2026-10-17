@@ -596,8 +596,8 @@ impl Render for Showcase {
             };
         }
 
-        let row = || div().flex().flex_wrap().items_center().gap(gap).w_full();
-        let col = || div().flex().flex_col().gap(gap).w_full();
+        let row = || div().flex().flex_wrap().items_center().gap(gap);
+        let col = || div().flex().flex_col().gap(gap);
 
         let cut = |b: Button| b;
         let buttons = row()
@@ -939,22 +939,25 @@ impl Render for Showcase {
                 row()
                     .items_start()
                     .child(
-                        Card::new(CardVariant::Elevated)
-                            .headline("Elevated")
-                            .supporting("Raised surface with hard shadow.")
-                            .width(220.0),
+                        div().flex_1().min_w(px(220.0)).child(
+                            Card::new(CardVariant::Elevated)
+                                .headline("Elevated")
+                                .supporting("Raised surface with hard shadow."),
+                        ),
                     )
                     .child(
-                        Card::new(CardVariant::Filled)
-                            .headline("Filled")
-                            .supporting("Flat raised surface.")
-                            .width(220.0),
+                        div().flex_1().min_w(px(220.0)).child(
+                            Card::new(CardVariant::Filled)
+                                .headline("Filled")
+                                .supporting("Flat raised surface."),
+                        ),
                     )
                     .child(
-                        Card::new(CardVariant::Outlined)
-                            .headline("Outlined")
-                            .supporting("Border only.")
-                            .width(220.0),
+                        div().flex_1().min_w(px(220.0)).child(
+                            Card::new(CardVariant::Outlined)
+                                .headline("Outlined")
+                                .supporting("Border only."),
+                        ),
                     ),
             )
             .child(
@@ -1869,7 +1872,8 @@ impl Render for Showcase {
             let motion = Motion::new(Duration::from_millis(700), ease).entry(kind);
             let demo = div()
                 .id(("an-demo", (i as u32) * 1000 + n))
-                .w(px(280.0))
+                .w_full()
+                .min_w(px(220.0))
                 .h(px(110.0))
                 .overflow_hidden()
                 .flex()
@@ -1905,7 +1909,7 @@ impl Render for Showcase {
                                         },
                                     ),
                             )
-                            .child(col().child(demo).child(
+                            .child(col().flex_1().min_w(px(240.0)).child(demo).child(
                                 Button::new(("an-replay", i as u32), "Replay").on_click(
                                     move |_, _, cx| {
                                         me_r.update(cx, |s, cx| {
