@@ -67,7 +67,19 @@ impl Tabs {
             let st = use_interact(&id, window, cx);
             let hovered = st.read(cx).hovered;
             let active = i == self.active;
-            let (style, fg, indicator) = tab_style(&t, active, hovered);
+            let p = crate::motion::transition(window, cx, id.clone(), active);
+            let (mut style, fg, indicator) = tab_style(&t, active, hovered);
+            let (on_s, on_fg, _) = tab_style(&t, true, hovered);
+            let (off_s, off_fg, _) = tab_style(&t, false, hovered);
+            style.fill = crate::motion::mix_opt(off_s.fill, on_s.fill, p);
+            let fg = if p > 0.0 && p < 1.0 {
+                crate::motion::mix(off_fg, on_fg, p)
+            } else {
+                fg
+            };
+            let indicator = indicator
+                .or_else(|| tab_style(&t, true, hovered).2.filter(|_| p > 0.01))
+                .map(|c| c.opacity(p));
             let mut tab = track(shaped_id(id, &t.shape, style), &st)
                 .h(px(t.shape.control_height))
                 .px(px(t.spacing.md))

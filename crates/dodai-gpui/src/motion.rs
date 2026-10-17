@@ -220,6 +220,52 @@ pub fn reveal(g: f32, i: usize, n: usize) -> f32 {
     ((g - start) / 0.4).clamp(0.0, 1.0)
 }
 
+/// Eased `0..1` value following `on` (retargets from the current value, so
+/// quick toggles reverse smoothly). Keyed under `id`; keeps requesting frames
+/// until settled.
+pub fn transition(window: &mut gpui::Window, cx: &mut App, id: gpui::ElementId, on: bool) -> f32 {
+    smooth(window, cx, id, if on { 1.0 } else { 0.0 })
+}
+
+/// Eased follower of an arbitrary `target`, keyed under `id`.
+pub fn smooth(window: &mut gpui::Window, cx: &mut App, id: gpui::ElementId, target: f32) -> f32 {
+    let m = Motion::of(cx);
+    let st = window.with_id(id, |w| {
+        w.use_keyed_state(("smooth", 0u32), cx, move |_, _| Tween::new(target, m))
+    });
+    st.update(cx, |t, _| t.to(target, m));
+    let (v, done) = {
+        let t = st.read(cx);
+        (t.value(), t.is_done())
+    };
+    if !done {
+        window.request_animation_frame();
+    }
+    v
+}
+
+/// Component-wise mix of two colours (`t` in `0..=1`). Pure.
+pub fn mix(a: gpui::Hsla, b: gpui::Hsla, t: f32) -> gpui::Hsla {
+    let (a, b) = (gpui::Rgba::from(a), gpui::Rgba::from(b));
+    gpui::Rgba {
+        r: lerp(a.r, b.r, t),
+        g: lerp(a.g, b.g, t),
+        b: lerp(a.b, b.b, t),
+        a: lerp(a.a, b.a, t),
+    }
+    .into()
+}
+
+/// Mix two optional colours; `None` counts as the other colour, fully transparent.
+pub fn mix_opt(a: Option<gpui::Hsla>, b: Option<gpui::Hsla>, t: f32) -> Option<gpui::Hsla> {
+    match (a, b) {
+        (Some(a), Some(b)) => Some(mix(a, b, t)),
+        (Some(a), None) => Some(a.opacity(1.0 - t)),
+        (None, Some(b)) => Some(b.opacity(t)),
+        (None, None) => None,
+    }
+}
+
 /// Animated scalar that eases from its current value to a new target.
 /// Retarget with [`Tween::to`] on every frame; read with [`Tween::value`].
 #[derive(Clone, Copy, Debug)]

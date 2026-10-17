@@ -494,15 +494,25 @@ impl Accordion {
                 col = col.child(div().h(px(1.0)).w_full().bg(hsla(t.palette.border)));
             }
             col = col.child(head);
-            if is_open {
-                col = col.child(
-                    div()
-                        .px(px(t.spacing.lg + 4.0))
-                        .pb(px(t.spacing.md))
-                        .text_size(px(t.typography.size_sm))
-                        .text_color(hsla(t.palette.text_muted))
-                        .child(body.clone()),
-                );
+            let p = crate::motion::transition(
+                window,
+                cx,
+                (self.id.clone(), format!("b{i}")).into(),
+                is_open,
+            );
+            if p > 0.001 {
+                let lines = (body.len() as f32 / 60.0).ceil().max(1.0);
+                let full = lines * (t.typography.size_sm * 1.5) + t.spacing.md;
+                let mut b = div()
+                    .px(px(t.spacing.lg + 4.0))
+                    .pb(px(t.spacing.md))
+                    .text_size(px(t.typography.size_sm))
+                    .text_color(hsla(t.palette.text_muted))
+                    .child(body.clone());
+                if p < 0.999 {
+                    b = b.overflow_hidden().h(px(full * p)).opacity(p);
+                }
+                col = col.child(b);
             }
         }
         col

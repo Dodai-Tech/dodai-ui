@@ -107,7 +107,16 @@ fn choice(
     let st = use_interact(&id, window, cx);
     let state = st.read(cx).control_state(disabled);
     let k = t.toggle(on, state);
-    let style = toggle_style(&t, on, state);
+    let p = crate::motion::transition(window, cx, id.clone(), on);
+    let mut style = toggle_style(&t, on, state);
+    {
+        let (a, b) = (
+            toggle_style(&t, false, state),
+            toggle_style(&t, true, state),
+        );
+        style.fill = crate::motion::mix_opt(a.fill, b.fill, p);
+        style.stroke = crate::motion::mix_opt(a.stroke, b.stroke, p);
+    }
     let (w, h) = match kind {
         Kind::Switch => (42.0, 22.0),
         _ => (20.0, 20.0),
@@ -131,14 +140,14 @@ fn choice(
                 shaped(&tshape, mark)
                     .absolute()
                     .top(px(3.0))
-                    .left(px(if on { w - 14.0 - 3.0 - 1.0 } else { 3.0 }))
+                    .left(px(crate::motion::lerp(3.0, w - 14.0 - 3.0 - 1.0, p)))
                     .w(px(14.0))
                     .h(px(14.0)),
             )
         }
         Kind::Checkbox => {
-            if on {
-                el.text_color(hsla(k.thumb))
+            if p > 0.01 {
+                el.text_color(hsla(k.thumb).opacity(p))
                     .text_size(px(h - 6.0))
                     .child("✓")
             } else {
@@ -146,9 +155,9 @@ fn choice(
             }
         }
         Kind::Radio => {
-            if on {
+            if p > 0.01 {
                 let tshape = round_shape(&t.shape, 8.0);
-                el.child(shaped(&tshape, mark).w(px(8.0)).h(px(8.0)))
+                el.child(shaped(&tshape, mark).w(px(8.0 * p)).h(px(8.0 * p)))
             } else {
                 el
             }
@@ -388,7 +397,8 @@ impl Slider {
         let t = theme_of(cx);
         let vertical = self.direction == Direction::Vertical;
         let st = window.use_keyed_state(self.id.clone(), cx, |_, _| SliderState::default());
-        let frac = slider_fraction(self.value, self.min, self.max)
+        let raw = slider_fraction(self.value, self.min, self.max);
+        let frac = crate::motion::smooth(window, cx, self.id.clone(), raw)
             * crate::motion::grow(window, cx, "Slider");
         let (min, max, step) = (self.min, self.max, self.step);
         let apply = {
