@@ -61,6 +61,13 @@ impl Heading {
 
 impl RenderOnce for Heading {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(cx), "Heading", motion)
+    }
+}
+
+impl Heading {
+    fn build(self, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         div()
             .font_family(first_family(t.typography.display))
@@ -82,6 +89,13 @@ impl Label {
 
 impl RenderOnce for Label {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(cx), "Label", motion)
+    }
+}
+
+impl Label {
+    fn build(self, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         div()
             .font_family(first_family(t.typography.body))
@@ -103,6 +117,13 @@ impl Muted {
 
 impl RenderOnce for Muted {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(cx), "Muted", motion)
+    }
+}
+
+impl Muted {
+    fn build(self, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         div()
             .font_family(first_family(t.typography.body))
@@ -124,6 +145,13 @@ impl Mono {
 
 impl RenderOnce for Mono {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::Motion::of(cx);
+        crate::motion::entry(self.build(cx), "Mono", motion)
+    }
+}
+
+impl Mono {
+    fn build(self, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         div()
             .font_family(first_family(t.typography.mono))

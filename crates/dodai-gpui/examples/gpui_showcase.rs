@@ -20,7 +20,7 @@ use dodai_gpui::{
     Sparkline, StackedAreaChart, TagField, TextInput, TimePicker, Timeline, TimelineEvent, Toolbar,
     TreeItem, TreeView, Treemap, Waterfall,
 };
-use dodai_gpui::{Easing, EntryKind, EntrySet, Motion};
+use dodai_gpui::{Easing, EntryKind, EntrySet, IndeterminateBar, Motion, Skeleton, Spinner};
 use gpui::{
     div, prelude::*, px, size, App, Application, Bounds, Context, Entity, FocusHandle,
     KeyDownEvent, Window, WindowBounds, WindowOptions,
@@ -382,6 +382,7 @@ fn cat_icon(name: &str) -> dodai_gpui::IconName {
         "Data display" => I::Table,
         "Charts" => I::BarChart,
         "Animation" => I::Sparkle,
+        "Loading" => I::Repeat,
         _ => I::Dot,
     }
 }
@@ -1138,6 +1139,48 @@ impl Render for Showcase {
                 380.0,
             ));
 
+        let loading = section!("Loading")
+            .child(Label::new("Spinner"))
+            .child(
+                row()
+                    .child(Spinner::new("ld-sp1"))
+                    .child(Spinner::new("ld-sp2").motion(Motion::new(
+                        Duration::from_millis(450),
+                        Easing::Linear,
+                    )))
+                    .child(Spinner::new("ld-sp3").motion(Motion::new(
+                        Duration::from_millis(1800),
+                        Easing::EaseInOut,
+                    )))
+                    .child(Muted::new("900 ms default · 450 ms · 1.8 s ease-in-out")),
+            )
+            .child(Label::new("Indeterminate bar"))
+            .child(IndeterminateBar::new("ld-ib1"))
+            .child(IndeterminateBar::new("ld-ib2").motion(Motion::new(
+                Duration::from_millis(700),
+                Easing::EaseInOut,
+            )))
+            .child(Label::new("Determinate progress"))
+            .child(ProgressBar::new(0.35))
+            .child(ProgressBar::new(0.7).tone(Tone::Success))
+            .child(Label::new("Skeleton placeholders"))
+            .child(
+                row()
+                    .items_start()
+                    .gap(px(16.0))
+                    .child(Skeleton::new("ld-av").width(48.0).height(48.0).circle(true))
+                    .child(
+                        col()
+                            .flex_1()
+                            .child(Skeleton::new("ld-l1").height(14.0))
+                            .child(Skeleton::new("ld-l2").height(14.0).width(260.0))
+                            .child(Skeleton::new("ld-l3").height(14.0).width(180.0)),
+                    ),
+            )
+            .child(Muted::new(
+                "Loading demos loop forever, so they live on this page only (not on All) to keep the idle CPU at zero.",
+            ));
+
         // Animation page: one Panel per entry type (curve · live example · text).
         let anim_defs: [(EntryKind, Easing, &'static str); 5] = [
             (
@@ -1531,6 +1574,12 @@ impl Render for Showcase {
             ),
         ];
         let mut sections = sections;
+        sections.push((
+            "Loading",
+            "Spinner · Indeterminate · Skeleton",
+            loading.into_any_element(),
+            "Loading",
+        ));
         for (i, el) in anim_sections.into_iter().enumerate() {
             let k = EntryKind::ALL[i + 1].label();
             sections.push(("Animation", k, el, k));
@@ -1619,7 +1668,8 @@ impl Render for Showcase {
         let mut shown = 0;
         let mut last_cat = "";
         for (c, title, el, _key) in sections {
-            let in_cat = selected_cat.is_none_or(|sc| sc == c);
+            // Loading demos repaint every frame forever: own page only.
+            let in_cat = selected_cat.map_or(c != "Loading", |sc| sc == c);
             let hit =
                 query.is_empty() || !fuzzy_filter(&query, &[format!("{c} {title}")]).is_empty();
             let only = std::env::var("DODAI_ONLY").is_ok_and(|o| !title.contains(&o));
