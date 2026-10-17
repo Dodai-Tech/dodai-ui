@@ -1669,6 +1669,14 @@ pub fn heat_color(t: &Theme, v: f32) -> Color {
         .mix(t.palette.primary, v.clamp(0.0, 1.0))
 }
 
+/// Like [`heat_color`] but with a selectable gradient. Pure.
+pub fn heat_color_with(t: &Theme, g: dodai_charts_core::Gradient, v: f32) -> Color {
+    match g.sample(v) {
+        Some([r, gr, b]) => Color::rgba(r, gr, b, 255),
+        None => heat_color(t, v),
+    }
+}
+
 /// Grid of cells coloured by value, with hover tooltips.
 #[derive(IntoElement)]
 pub struct Heatmap {
@@ -1677,6 +1685,7 @@ pub struct Heatmap {
     row_labels: Vec<SharedString>,
     col_labels: Vec<SharedString>,
     cell: f32,
+    gradient: dodai_charts_core::Gradient,
 }
 
 impl Heatmap {
@@ -1687,6 +1696,7 @@ impl Heatmap {
             row_labels: Vec::new(),
             col_labels: Vec::new(),
             cell: 28.0,
+            gradient: dodai_charts_core::Gradient::Theme,
         }
     }
     pub fn row_labels<S: Into<SharedString>>(mut self, l: impl IntoIterator<Item = S>) -> Self {
@@ -1699,6 +1709,11 @@ impl Heatmap {
     }
     pub fn cell(mut self, s: f32) -> Self {
         self.cell = s;
+        self
+    }
+    /// Colour scale; `Gradient::Theme` (default) mixes surface → primary.
+    pub fn gradient(mut self, g: dodai_charts_core::Gradient) -> Self {
+        self.gradient = g;
         self
     }
 }
@@ -1728,7 +1743,10 @@ impl Heatmap {
         let colors: Rc<Vec<gpui::Hsla>> = Rc::new(
             self.rows
                 .iter()
-                .flat_map(|r| r.iter().map(|v| hsla(heat_color(&t, norm(*v, lo, hi)))))
+                .flat_map(|r| {
+                    r.iter()
+                        .map(|v| hsla(heat_color_with(&t, self.gradient, norm(*v, lo, hi))))
+                })
                 .collect(),
         );
         let lens: Rc<Vec<usize>> = Rc::new(self.rows.iter().map(Vec::len).collect());
@@ -1862,7 +1880,7 @@ impl Heatmap {
                 line = line.child(div().w(px(48.0)));
             }
             for (c, v) in row.iter().enumerate() {
-                let color = heat_color(&t, norm(*v, lo, hi));
+                let color = heat_color_with(&t, self.gradient, norm(*v, lo, hi));
                 let style = ShapeStyle::from_tokens(&t, Some(color), None, false, false);
                 line = line.child(
                     div()

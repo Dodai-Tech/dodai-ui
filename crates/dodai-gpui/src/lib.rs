@@ -106,9 +106,9 @@ pub use button::Button;
 pub use carousel::{window_start, Carousel};
 #[cfg(feature = "charts")]
 pub use charts::{
-    bar_max, fmt_num, heat_color, marker_points, nice_ticks, norm, pie_fractions, pie_hit, polar,
-    smooth_points, BarChart, Gauge, Heatmap, Legend, LineChart, Marker, PieChart, RadarChart,
-    ScatterPlot, Series, Sparkline,
+    bar_max, fmt_num, heat_color, heat_color_with, marker_points, nice_ticks, norm, pie_fractions,
+    pie_hit, polar, smooth_points, BarChart, Gauge, Heatmap, Legend, LineChart, Marker, PieChart,
+    RadarChart, ScatterPlot, Series, Sparkline,
 };
 #[cfg(feature = "charts")]
 pub use charts_distribution::{histogram_bins, quartiles, BoxPlot, BubbleChart, Histogram};
@@ -119,7 +119,10 @@ pub use charts_market::{ChartStack, DepthChart, Gantt, RenkoChart};
 #[cfg(feature = "charts")]
 pub use charts_part_whole::{treemap_layout, RadialBar, Treemap};
 #[cfg(feature = "charts")]
-pub use charts_trend::{stack_cumulative, Candle, Candlestick, StackedAreaChart};
+pub use charts_trend::{
+    overlay_lines, stack_cumulative, Candle, CandleStyle, Candlestick, Overlay, Pane,
+    StackedAreaChart, TradeMarker,
+};
 #[cfg(feature = "components")]
 pub use command::{fuzzy_filter, Combobox, Command, CommandPalette};
 #[cfg(feature = "components")]
@@ -132,6 +135,8 @@ pub use count::CountUp;
 pub use data::{Avatar, Badge, Chip, Kbd, Table};
 #[cfg(feature = "charts")]
 pub use dodai_charts_core::gantt::Task as GanttTask;
+#[cfg(feature = "charts")]
+pub use dodai_charts_core::Gradient;
 #[cfg(feature = "components")]
 pub use extras::{
     step_value, BottomAppBar, ColorPicker, EmptyState, FileDropZone, NumberStepper, Rating,

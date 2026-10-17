@@ -20,7 +20,9 @@ use dodai_gpui::{
     Sparkline, StackedAreaChart, TagField, TextInput, TimePicker, Timeline, TimelineEvent, Toolbar,
     TreeItem, TreeView, Treemap, Waterfall,
 };
-use dodai_gpui::{ChartStack, DepthChart, Gantt, GanttTask, RenkoChart};
+use dodai_gpui::{
+    CandleStyle, ChartStack, DepthChart, Gantt, GanttTask, Overlay, Pane, RenkoChart, TradeMarker,
+};
 use dodai_gpui::{
     CountUp, Easing, EntryKind, EntrySet, IndeterminateBar, Motion, Skeleton, Spinner,
 };
@@ -77,6 +79,7 @@ struct Showcase {
     /// Corner cut override for the Buttons demo (`None` = theme default).
     btn_corners: Option<dodai_core::Corners>,
     heat_res: usize,
+    heat_grad: usize,
 }
 
 /// Per-section animation player state.
@@ -772,6 +775,27 @@ impl Render for Showcase {
                 row()
                     .child(Label::new(format!("Resolution {hc}×{hr}")))
                     .child(
+                        Button::new(
+                            "heat-grad",
+                            format!(
+                                "Gradient: {}",
+                                dodai_gpui::Gradient::ALL
+                                    [self.heat_grad % dodai_gpui::Gradient::ALL.len()]
+                                .name()
+                            ),
+                        )
+                        .variant(ButtonVariant::Secondary)
+                        .on_click({
+                            let m = hm.clone();
+                            move |_, _, cx| {
+                                m.update(cx, |s, cx| {
+                                    s.heat_grad += 1;
+                                    cx.notify();
+                                })
+                            }
+                        }),
+                    )
+                    .child(
                         Button::new("heat-minus", "−")
                             .variant(ButtonVariant::Secondary)
                             .on_click({
@@ -816,6 +840,9 @@ impl Render for Showcase {
                         .collect(),
                 )
                 .cell(heat_cell)
+                .gradient(
+                    dodai_gpui::Gradient::ALL[self.heat_grad % dodai_gpui::Gradient::ALL.len()],
+                )
                 .row_labels((0..hr).map(|r| {
                     if r % (4 * hres) == 0 {
                         format!("{:02}h", r / hres * 2)
@@ -1398,7 +1425,33 @@ impl Render for Showcase {
                 Some(*p)
             })
             .collect();
+        let ohlc: Vec<Candle> = walk
+            .windows(2)
+            .enumerate()
+            .map(|(i, p)| {
+                let (o, c) = (p[0], p[1]);
+                Candle::new(o, o.max(c) + 0.8, o.min(c) - 0.8, c)
+                    .volume(50.0 + (i * 37 % 60) as f32)
+            })
+            .collect();
         let charts_market = row()
+            .child(w(
+                Candlestick::new("ext", ohlc.clone())
+                    .style(CandleStyle::HeikinAshi)
+                    .volume(true)
+                    .overlay(Overlay::Sma(10))
+                    .overlay(Overlay::Bollinger(20, 2.0))
+                    .pane(Pane::Rsi(14))
+                    .pane(Pane::Macd(12, 26, 9))
+                    .markers([
+                        TradeMarker::buy(20, ohlc[20].low),
+                        TradeMarker::sell(45, ohlc[45].high),
+                    ])
+                    .height(240.0)
+                    .title("Heikin-Ashi · volume · SMA · Bollinger · RSI · MACD")
+                    .into_any_element(),
+                520.0,
+            ))
             .child(w(
                 RenkoChart::new("renko", walk.clone(), 2.0)
                     .title("Renko · 2.0 bricks")
@@ -2718,6 +2771,7 @@ fn main() {
                         clicks: 0,
                         btn_corners: None,
                         heat_res: 3,
+                        heat_grad: 0,
                     })
                 },
             )

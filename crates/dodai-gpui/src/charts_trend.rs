@@ -1,8 +1,8 @@
 //! Trend charts over categories/time: stacked area and candlestick.
 
 use crate::charts::{
-    chart_cfg, down_color, fill, fmt_with, framed, glow_of, glow_stroke, labels_of, nice_ticks,
-    norm, rect, series_color, stroke, titled, up_color, Legend, NumFmt, Series,
+    chart_cfg, down_color, fill, fmt_num, fmt_with, framed, glow_of, glow_stroke, labels_of,
+    nice_ticks, norm, rect, series_color, stroke, titled, up_color, Legend, NumFmt, Series,
 };
 use crate::paint::scale_alpha;
 use crate::panel::DodaiTooltip;
@@ -151,27 +151,99 @@ impl RenderOnce for StackedAreaChart {
 
 // ─────────────────────────────── Candlestick ───────────────────────────────
 
-/// One OHLC candle.
-#[derive(Clone, Copy, Debug)]
-pub struct Candle {
-    pub open: f32,
-    pub high: f32,
-    pub low: f32,
-    pub close: f32,
+pub use dodai_charts_core::Candle;
+
+/// How candles are drawn.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum CandleStyle {
+    #[default]
+    Candles,
+    /// Smoothed Heikin-Ashi candles.
+    HeikinAshi,
+    /// OHLC bars: open tick left, close tick right.
+    Ohlc,
 }
 
-impl Candle {
-    pub fn new(open: f32, high: f32, low: f32, close: f32) -> Self {
+/// Price overlay drawn on the main pane.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Overlay {
+    Sma(usize),
+    Ema(usize),
+    /// `(period, deviations)`
+    Bollinger(usize, f32),
+}
+
+/// Indicator pane drawn under the candles.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Pane {
+    Rsi(usize),
+    /// `(fast, slow, signal)`
+    Macd(usize, usize, usize),
+}
+
+/// A buy or sell marker on candle `index`.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct TradeMarker {
+    pub index: usize,
+    pub price: f32,
+    pub buy: bool,
+}
+
+impl TradeMarker {
+    pub fn buy(index: usize, price: f32) -> Self {
         Self {
-            open,
-            high,
-            low,
-            close,
+            index,
+            price,
+            buy: true,
+        }
+    }
+    pub fn sell(index: usize, price: f32) -> Self {
+        Self {
+            index,
+            price,
+            buy: false,
         }
     }
 }
 
-/// Candlestick (OHLC) chart; up candles green, down red.
+type Line = Vec<Option<f32>>;
+
+/// Overlay lines `(values, alpha)` for `o` over `closes`. Pure.
+pub fn overlay_lines(o: Overlay, closes: &[f32]) -> Vec<(Line, f32)> {
+    use dodai_charts_core::indicators::{bollinger, ema, sma};
+    match o {
+        Overlay::Sma(p) => vec![(sma(closes, p), 1.0)],
+        Overlay::Ema(p) => vec![(ema(closes, p), 1.0)],
+        Overlay::Bollinger(p, k) => {
+            let (m, u, l) = bollinger(closes, p, k);
+            vec![(m, 1.0), (u, 0.55), (l, 0.55)]
+        }
+    }
+}
+
+/// Runs of consecutive `Some` values as pixel polylines.
+fn runs(v: &[Option<f32>], pt: impl Fn(usize, f32) -> (f32, f32)) -> Vec<Vec<(f32, f32)>> {
+    let mut out: Vec<Vec<(f32, f32)>> = Vec::new();
+    let mut cur: Vec<(f32, f32)> = Vec::new();
+    for (i, x) in v.iter().enumerate() {
+        match x {
+            Some(x) => cur.push(pt(i, *x)),
+            None => {
+                if cur.len() > 1 {
+                    out.push(std::mem::take(&mut cur));
+                }
+                cur.clear();
+            }
+        }
+    }
+    if cur.len() > 1 {
+        out.push(cur);
+    }
+    out
+}
+
+/// Candlestick chart: candles, Heikin-Ashi or OHLC bars, optional volume,
+/// SMA/EMA/Bollinger overlays, RSI/MACD panes and trade markers.
 #[derive(IntoElement)]
 pub struct Candlestick {
     id: SharedString,
@@ -180,6 +252,11 @@ pub struct Candlestick {
     height: f32,
     fmt: Option<NumFmt>,
     title: Option<SharedString>,
+    style: CandleStyle,
+    volume: bool,
+    overlays: Vec<Overlay>,
+    panes: Vec<Pane>,
+    markers: Vec<TradeMarker>,
 }
 chart_cfg!(Candlestick);
 
@@ -192,26 +269,178 @@ impl Candlestick {
             height: 220.0,
             fmt: None,
             title: None,
+            style: CandleStyle::Candles,
+            volume: false,
+            overlays: Vec::new(),
+            panes: Vec::new(),
+            markers: Vec::new(),
         }
     }
     pub fn labels<S: Into<SharedString>>(mut self, l: impl IntoIterator<Item = S>) -> Self {
         self.labels = labels_of(l);
         self
     }
+    /// Candles (default), Heikin-Ashi or OHLC bars.
+    pub fn style(mut self, s: CandleStyle) -> Self {
+        self.style = s;
+        self
+    }
+    /// Volume bars along the bottom of the price pane.
+    pub fn volume(mut self, on: bool) -> Self {
+        self.volume = on;
+        self
+    }
+    /// Add a price overlay (call repeatedly).
+    pub fn overlay(mut self, o: Overlay) -> Self {
+        self.overlays.push(o);
+        self
+    }
+    /// Add an indicator pane under the chart (call repeatedly).
+    pub fn pane(mut self, p: Pane) -> Self {
+        self.panes.push(p);
+        self
+    }
+    /// Buy/sell markers.
+    pub fn markers(mut self, m: impl IntoIterator<Item = TradeMarker>) -> Self {
+        self.markers = m.into_iter().collect();
+        self
+    }
 }
 
+const PANE_H: f32 = 72.0;
+
 impl Candlestick {
+    fn indicator_pane(
+        &self,
+        t: &dodai_core::Theme,
+        pane: Pane,
+        closes: &[f32],
+        g: f32,
+    ) -> gpui::Div {
+        use dodai_charts_core::indicators::{macd, rsi};
+        let (up, down, grid) = (up_color(t), down_color(t), hsla(t.palette.border));
+        let c1 = hsla(t.palette.series[0]);
+        let c2 = hsla(t.palette.series[1]);
+        let glow = glow_of(t);
+        let n = closes.len();
+        let (labels, cv) = match pane {
+            Pane::Rsi(p) => {
+                let r = rsi(closes, p);
+                let cv = canvas(
+                    |_, _, _| (),
+                    move |b: Bounds<Pixels>, _, w, _| {
+                        let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+                        for lvl in [30.0f32, 70.0] {
+                            let y = bh - lvl / 100.0 * bh;
+                            stroke(w, b.origin, &[(0.0, y), (bw, y)], 1.0, grid, false);
+                        }
+                        let slot = bw / n.max(1) as f32;
+                        for run in runs(&r, |i, v| {
+                            ((i as f32 + 0.5) * slot, bh - v / 100.0 * bh * g)
+                        }) {
+                            glow_stroke(w, b.origin, &run, 1.5, c1, glow);
+                        }
+                    },
+                );
+                (vec!["0".to_string(), "50".into(), "100".into()], cv)
+            }
+            Pane::Macd(f, s, sg) => {
+                let (m, sig, h) = macd(closes, f, s, sg);
+                let top = h
+                    .iter()
+                    .chain(&m)
+                    .chain(&sig)
+                    .flatten()
+                    .fold(0.0f32, |a, v| a.max(v.abs()))
+                    .max(1e-6);
+                let cv = canvas(
+                    |_, _, _| (),
+                    move |b: Bounds<Pixels>, _, w, _| {
+                        let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+                        let slot = bw / n.max(1) as f32;
+                        let ymid = bh / 2.0;
+                        stroke(w, b.origin, &[(0.0, ymid), (bw, ymid)], 1.0, grid, false);
+                        let y = |v: f32| ymid - v / top * ymid * g;
+                        for (i, v) in h.iter().enumerate() {
+                            if let Some(v) = v {
+                                let (y0, y1) = (ymid, y(*v));
+                                let col = if *v >= 0.0 { up } else { down };
+                                let bwid = slot * 0.6;
+                                fill(
+                                    w,
+                                    b.origin,
+                                    &rect(
+                                        (i as f32 + 0.5) * slot - bwid / 2.0,
+                                        y0.min(y1),
+                                        bwid,
+                                        (y0 - y1).abs().max(0.5),
+                                    ),
+                                    scale_alpha(col, 0.6),
+                                );
+                            }
+                        }
+                        for (line, col) in [(&m, c1), (&sig, c2)] {
+                            for run in runs(line, |i, v| ((i as f32 + 0.5) * slot, y(v))) {
+                                glow_stroke(w, b.origin, &run, 1.5, col, glow);
+                            }
+                        }
+                    },
+                );
+                (
+                    vec![
+                        fmt_with(&self.fmt, -top),
+                        "0".into(),
+                        fmt_with(&self.fmt, top),
+                    ],
+                    cv,
+                )
+            }
+        };
+        let plot = div()
+            .relative()
+            .w_full()
+            .h(px(PANE_H))
+            .child(cv.absolute().size_full());
+        framed(t, labels, Vec::new(), plot)
+    }
+
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let g = crate::motion::grow(window, cx, "Candlestick");
         let t = theme_of(cx);
-        let lo = self.candles.iter().map(|c| c.low).fold(f32::MAX, f32::min);
-        let hi = self.candles.iter().map(|c| c.high).fold(f32::MIN, f32::max);
+        let shown: Vec<Candle> = match self.style {
+            CandleStyle::HeikinAshi => dodai_charts_core::heikin_ashi(&self.candles),
+            _ => self.candles.clone(),
+        };
+        let closes: Vec<f32> = shown.iter().map(|c| c.close).collect();
+        let lines: Vec<(Line, f32, usize)> = self
+            .overlays
+            .iter()
+            .enumerate()
+            .flat_map(|(k, o)| {
+                overlay_lines(*o, &closes)
+                    .into_iter()
+                    .map(move |(l, a)| (l, a, k))
+            })
+            .collect();
+        let mut lo = shown.iter().map(|c| c.low).fold(f32::MAX, f32::min);
+        let mut hi = shown.iter().map(|c| c.high).fold(f32::MIN, f32::max);
+        for v in lines.iter().flat_map(|l| l.0.iter().flatten()) {
+            lo = lo.min(*v);
+            hi = hi.max(*v);
+        }
         let (lo, hi) = if lo <= hi { (lo, hi) } else { (0.0, 1.0) };
         let ticks = nice_ticks(lo, hi, 4);
         let (lo, hi) = (*ticks.first().unwrap_or(&lo), *ticks.last().unwrap_or(&hi));
         let (up, down, grid) = (up_color(&t), down_color(&t), hsla(t.palette.border));
-        let n = self.candles.len();
-        let cs = self.candles.clone();
+        let n = shown.len();
+        let cs = shown.clone();
+        let style = self.style;
+        let show_vol = self.volume;
+        let vmax = shown.iter().map(|c| c.volume).fold(0.0f32, f32::max);
+        let line_cols: Vec<Hsla> = (0..self.overlays.len())
+            .map(|k| hsla(t.palette.series[(k + 2) % t.palette.series.len()]))
+            .collect();
+        let markers = self.markers.clone();
         let tf: Vec<f32> = ticks.iter().map(|v| norm(*v, lo, hi)).collect();
         let cv = canvas(
             |_, _, _| (),
@@ -223,11 +452,24 @@ impl Candlestick {
                 }
                 let slot = bw / n.max(1) as f32;
                 let yr = |v: f32| bh - norm(v, lo, hi) * bh;
+                if show_vol && vmax > 0.0 {
+                    for (i, c) in cs.iter().enumerate() {
+                        let h = c.volume / vmax * bh * 0.18 * crate::motion::reveal(g, i, n);
+                        let col = if c.bullish() { up } else { down };
+                        let bwid = (slot * 0.6).min(24.0);
+                        fill(
+                            w,
+                            b.origin,
+                            &rect((i as f32 + 0.5) * slot - bwid / 2.0, bh - h, bwid, h),
+                            scale_alpha(col, 0.3),
+                        );
+                    }
+                }
                 for (i, c) in cs.iter().enumerate() {
                     let ym = yr((c.high + c.low) / 2.0);
                     let gi = crate::motion::reveal(g, i, n);
                     let y = |v: f32| ym + (yr(v) - ym) * gi;
-                    let col = if c.close >= c.open { up } else { down };
+                    let col = if c.bullish() { up } else { down };
                     let x = (i as f32 + 0.5) * slot;
                     stroke(
                         w,
@@ -237,14 +479,62 @@ impl Candlestick {
                         col,
                         false,
                     );
-                    let (top, bot) = (y(c.open.max(c.close)), y(c.open.min(c.close)));
-                    let bwid = (slot * 0.6).min(24.0);
-                    fill(
-                        w,
-                        b.origin,
-                        &rect(x - bwid / 2.0, top, bwid, (bot - top).max(1.5)),
-                        col,
-                    );
+                    if style == CandleStyle::Ohlc {
+                        let half = (slot * 0.3).min(8.0);
+                        stroke(
+                            w,
+                            b.origin,
+                            &[(x - half, y(c.open)), (x, y(c.open))],
+                            1.5,
+                            col,
+                            false,
+                        );
+                        stroke(
+                            w,
+                            b.origin,
+                            &[(x, y(c.close)), (x + half, y(c.close))],
+                            1.5,
+                            col,
+                            false,
+                        );
+                    } else {
+                        let (top, bot) = (y(c.open.max(c.close)), y(c.open.min(c.close)));
+                        let bwid = (slot * 0.6).min(24.0);
+                        fill(
+                            w,
+                            b.origin,
+                            &rect(x - bwid / 2.0, top, bwid, (bot - top).max(1.5)),
+                            col,
+                        );
+                    }
+                }
+                for (l, a, k) in &lines {
+                    for run in runs(l, |i, v| ((i as f32 + 0.5) * slot, yr(v))) {
+                        stroke(
+                            w,
+                            b.origin,
+                            &run,
+                            1.5,
+                            scale_alpha(line_cols[*k], *a),
+                            false,
+                        );
+                    }
+                }
+                for m in &markers {
+                    let x = (m.index as f32 + 0.5) * slot;
+                    let y0 = yr(m.price);
+                    let (tri, col) = if m.buy {
+                        (
+                            [(x, y0 + 2.0), (x - 5.0, y0 + 11.0), (x + 5.0, y0 + 11.0)],
+                            up,
+                        )
+                    } else {
+                        (
+                            [(x, y0 - 2.0), (x - 5.0, y0 - 11.0), (x + 5.0, y0 - 11.0)],
+                            down,
+                        )
+                    };
+                    fill(w, b.origin, &tri, col);
                 }
             },
         )
@@ -252,11 +542,16 @@ impl Candlestick {
         .size_full();
         let mut plot = div().relative().w_full().h(px(self.height)).child(cv);
         let mut hit = div().absolute().size_full().flex();
-        for (i, c) in self.candles.iter().enumerate() {
+        for (i, c) in shown.iter().enumerate() {
             let label = self.labels.get(i).cloned().unwrap_or_default();
+            let vol = if c.volume > 0.0 {
+                format!(" V {}", fmt_num(c.volume))
+            } else {
+                String::new()
+            };
             hit = hit.child(div().id((self.id.clone(), i)).flex_1().h_full().tooltip(
                 DodaiTooltip::text(format!(
-                    "{label} O {} H {} L {} C {}",
+                    "{label} O {} H {} L {} C {}{vol}",
                     fmt_with(&self.fmt, c.open),
                     fmt_with(&self.fmt, c.high),
                     fmt_with(&self.fmt, c.low),
@@ -265,17 +560,20 @@ impl Candlestick {
             ));
         }
         plot = plot.child(hit);
-        let x_labels = if self.labels.len() == n {
+        let x_labels = if self.labels.len() == n && self.panes.is_empty() {
             self.labels.clone()
         } else {
             Vec::new()
         };
-        let root = div().flex().flex_col().w_full().child(framed(
+        let mut root = div().flex().flex_col().gap(px(4.0)).w_full().child(framed(
             &t,
             ticks.iter().map(|v| fmt_with(&self.fmt, *v)).collect(),
             x_labels,
             plot,
         ));
+        for p in self.panes.iter() {
+            root = root.child(self.indicator_pane(&t, *p, &closes, g));
+        }
         titled(&t, self.title, root)
     }
 }
@@ -295,5 +593,31 @@ mod tests {
     fn stack_is_cumulative() {
         let s = [Series::new("a", [1.0, 2.0]), Series::new("b", [3.0, -1.0])];
         assert_eq!(stack_cumulative(&s), vec![vec![1.0, 2.0], vec![4.0, 2.0]]);
+    }
+}
+
+#[cfg(test)]
+mod candle_tests {
+    use super::*;
+
+    #[test]
+    fn overlays_have_expected_lines() {
+        let c: Vec<f32> = (0..10).map(|i| i as f32).collect();
+        assert_eq!(overlay_lines(Overlay::Sma(3), &c).len(), 1);
+        assert_eq!(overlay_lines(Overlay::Bollinger(3, 2.0), &c).len(), 3);
+    }
+
+    #[test]
+    fn runs_split_on_gaps() {
+        let v = [Some(1.0), Some(2.0), None, Some(3.0), Some(4.0), Some(5.0)];
+        let r = runs(&v, |i, y| (i as f32, y));
+        assert_eq!(r.len(), 2);
+        assert_eq!(r[1].len(), 3);
+    }
+
+    #[test]
+    fn markers_build() {
+        assert!(TradeMarker::buy(1, 2.0).buy);
+        assert!(!TradeMarker::sell(1, 2.0).buy);
     }
 }
