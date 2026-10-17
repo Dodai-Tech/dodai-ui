@@ -59,4 +59,4 @@ Planned theme: **Material 3** (tonal palette, rounded shapes, no glow) — built
 
 ## Motion
 
-`Easing` (Linear/EaseIn/EaseOut/EaseInOut/CubicBezier), `Motion { duration, easing }` (`.millis`, `.speed`, `Motion::set_global`), composable `Curve` (`window`, `reverse`, `ping_pong`, `then`, `pipe`, `stagger`). `Spinner`/`IndeterminateBar`/`Skeleton` take `.motion(..)`. `Sparkline` has `.marker(Marker)` / `.all_points(bool)`.
+`Easing` (Linear/EaseIn/EaseOut/EaseInOut/CubicBezier), `Motion { duration, easing }` (`.millis`, `.speed`, `Motion::set_default`), composable `Curve` (`window`, `reverse`, `ping_pong`, `then`, `pipe`, `stagger`). `Spinner`/`IndeterminateBar`/`Skeleton` take `.motion(..)`. `Sparkline` has `.marker(Marker)` / `.all_points(bool)`.

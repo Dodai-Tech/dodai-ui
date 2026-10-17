@@ -1,6 +1,6 @@
 //! Shared animation primitives: [`Easing`] curves and a [`Motion`] setting
 //! (duration + easing) that components accept via `.motion(..)`. A
-//! global default can be installed with [`Motion::set_global`].
+//! app-wide default can be installed with [`Motion::set_default`].
 
 use gpui::{
     div, px, Animation, AnimationElement, AnimationExt, App, Div, ElementId, Global,
@@ -439,17 +439,17 @@ impl Motion {
     pub fn looping(&self) -> Animation {
         self.animation().repeat()
     }
-    /// The app-wide default (set via [`Motion::set_global`]).
+    /// The app-wide default (set via [`Motion::set_default`]).
     pub fn of(cx: &App) -> Motion {
         cx.try_global::<Motion>().copied().unwrap_or_default()
     }
-    pub fn set_global(self, cx: &mut App) {
+    pub fn set_default(self, cx: &mut App) {
         cx.set_global(self);
     }
 }
 
 /// Wraps a subtree so every component inside uses `kind` for its entry and
-/// value-in animation instead of the global [`Motion::entry`]. Components
+/// value-in animation instead of the default [`Motion::entry`]. Components
 /// render while their parent lays out, so the override is installed around the
 /// child's `request_layout` and restored afterwards.
 pub struct EntryScope {
@@ -490,9 +490,9 @@ impl gpui::Element for EntryScope {
         cx: &mut App,
     ) -> (gpui::LayoutId, ()) {
         let prev = Motion::of(cx);
-        prev.entry(self.kind).set_global(cx);
+        prev.entry(self.kind).set_default(cx);
         let id = self.child.request_layout(window, cx);
-        prev.set_global(cx);
+        prev.set_default(cx);
         (id, ())
     }
     fn prepaint(
