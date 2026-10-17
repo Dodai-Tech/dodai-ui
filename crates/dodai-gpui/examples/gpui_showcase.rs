@@ -1085,6 +1085,7 @@ impl Render for Showcase {
                     ),
             );
         let charts_round = row()
+            .justify_around()
             .child(PieChart::new([
                 ("Rust", 52.0),
                 ("Kotlin", 28.0),
@@ -1104,21 +1105,37 @@ impl Render for Showcase {
                     .suffix(" %")
                     .size(28.0),
             )
-            .child(Sparkline::new([3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0]))
             .child(
-                Sparkline::new([3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0]).marker(Marker::Diamond),
+                div()
+                    .flex_1()
+                    .min_w(px(120.0))
+                    .child(Sparkline::new([3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0]).fluid(true)),
             )
             .child(
-                Sparkline::new([3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0])
-                    .marker(Marker::Square)
-                    .area(false),
+                div().flex_1().min_w(px(120.0)).child(
+                    Sparkline::new([3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0])
+                        .marker(Marker::Diamond)
+                        .fluid(true),
+                ),
             )
             .child(
-                Sparkline::new([3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0])
-                    .marker(Marker::Triangle)
-                    .all_points(true),
+                div().flex_1().min_w(px(120.0)).child(
+                    Sparkline::new([3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0])
+                        .marker(Marker::Square)
+                        .area(false)
+                        .fluid(true),
+                ),
+            )
+            .child(
+                div().flex_1().min_w(px(120.0)).child(
+                    Sparkline::new([3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0])
+                        .marker(Marker::Triangle)
+                        .all_points(true)
+                        .fluid(true),
+                ),
             );
         let charts_misc = row()
+            .justify_around()
             .child(RadarChart::new(
                 ["Speed", "Power", "Range", "Armor", "Stealth"],
                 [

@@ -995,6 +995,7 @@ pub fn marker_points(m: Marker, x: f32, y: f32, r: f32) -> Vec<(f32, f32)> {
 pub struct Sparkline {
     values: Vec<f32>,
     w: f32,
+    fluid: bool,
     h: f32,
     color: Option<Color>,
     area: bool,
@@ -1003,10 +1004,19 @@ pub struct Sparkline {
 }
 
 impl Sparkline {
+    /// Stretch to the available width instead of the fixed `w`.
+    pub fn fluid(mut self, f: bool) -> Self {
+        self.fluid = f;
+        self
+    }
+}
+
+impl Sparkline {
     pub fn new(values: impl IntoIterator<Item = f32>) -> Self {
         Self {
             values: values.into_iter().collect(),
             w: 96.0,
+            fluid: false,
             h: 28.0,
             color: None,
             area: true,
@@ -1056,7 +1066,14 @@ impl Sparkline {
         let (lo, hi) = vals
             .iter()
             .fold((f32::MAX, f32::MIN), |(l, h), v| (l.min(*v), h.max(*v)));
-        div().w(px(self.w)).h(px(self.h)).child(
+        let fluid = self.fluid;
+        let base = div();
+        let base = if fluid {
+            base.w_full()
+        } else {
+            base.w(px(self.w))
+        };
+        base.h(px(self.h)).child(
             canvas(
                 |_, _, _| (),
                 move |b: Bounds<Pixels>, _, w, _| {
