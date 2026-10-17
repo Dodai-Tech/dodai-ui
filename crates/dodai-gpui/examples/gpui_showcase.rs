@@ -20,19 +20,15 @@ use dodai_gpui::{
     Sparkline, StackedAreaChart, TagField, TextInput, TimePicker, Timeline, TimelineEvent, Toolbar,
     TreeItem, TreeView, Treemap, Waterfall,
 };
-use dodai_gpui::{
-    Easing, EntryKind, EntrySet, IndeterminateBar, Motion, Select, Skeleton, Spinner,
-};
+use dodai_gpui::{Easing, EntryKind, EntrySet, Motion};
+use gpui::SharedString;
 use gpui::{
     div, prelude::*, px, size, App, Application, Bounds, Context, Entity, FocusHandle,
     KeyDownEvent, Window, WindowBounds, WindowOptions,
 };
-use gpui::{Animation, AnimationExt, SharedString};
 use std::time::Duration;
 
 struct Showcase {
-    anim_kind: usize,
-    anim_ease: usize,
     anim_ms: f32,
     replay: usize,
     sec_replay: std::collections::HashMap<&'static str, u32>,
@@ -316,17 +312,6 @@ fn cat_icon(name: &str) -> dodai_gpui::IconName {
         "Animation" => I::Sparkle,
         _ => I::Dot,
     }
-}
-
-fn easings_of(i: usize) -> Easing {
-    [
-        Easing::Linear,
-        Easing::EaseIn,
-        Easing::EaseOut,
-        Easing::EaseInOut,
-        Easing::CubicBezier(0.2, 0.8, 0.2, 1.0),
-        Easing::CubicBezier(0.5, -0.4, 0.3, 1.4),
-    ][i.min(5)]
 }
 
 impl Render for Showcase {
@@ -1081,156 +1066,140 @@ impl Render for Showcase {
                 380.0,
             ));
 
-        let easings: [(&str, Easing); 6] = [
-            ("Linear", Easing::Linear),
-            ("Ease in", Easing::EaseIn),
-            ("Ease out", Easing::EaseOut),
-            ("Ease in-out", Easing::EaseInOut),
+        // Animation page: one Panel per entry type (curve · live example · text).
+        let anim_defs: [(EntryKind, Easing, &'static str); 5] = [
             (
-                "Snappy · cubic-bezier(.2,.8,.2,1)",
-                Easing::CubicBezier(0.2, 0.8, 0.2, 1.0),
+                EntryKind::Fade,
+                Easing::EaseOut,
+                "Opacity 0 → 1. The default entry style: quiet, never shifts layout. Ease-out starts fast and settles.",
             ),
             (
-                "Overshoot · cubic-bezier(.5,-.4,.3,1.4)",
-                Easing::CubicBezier(0.5, -0.4, 0.3, 1.4),
+                EntryKind::Rise,
+                Easing::CubicBezier(0.2, 0.8, 0.2, 1.0),
+                "Fades in while moving up 14 px. A snappy cubic-bezier(.2,.8,.2,1) gives a quick start and a soft landing.",
+            ),
+            (
+                EntryKind::Drop,
+                Easing::EaseInOut,
+                "Fades in while dropping down 14 px. Ease-in-out accelerates, then decelerates; good for menus and toasts.",
+            ),
+            (
+                EntryKind::SlideLeft,
+                Easing::CubicBezier(0.7, 0.0, 0.3, 1.0),
+                "Fades in sliding from the left. A strong ease-in-out (.7,0,.3,1) feels deliberate; fits sidebars and drawers.",
+            ),
+            (
+                EntryKind::SlideRight,
+                Easing::EaseIn,
+                "Fades in sliding from the right. Ease-in starts slowly and finishes fast; use for trailing panels.",
             ),
         ];
-        let kind_labels: Vec<&'static str> = EntryKind::ALL.iter().map(|k| k.label()).collect();
-        let (me_k, me_e, me_d, me_r) = (me.clone(), me.clone(), me.clone(), me.clone());
-        let apply = |s: &Showcase, cx: &mut gpui::App| {
-            Motion::new(
-                Duration::from_millis(s.anim_ms as u64),
-                easings_of(s.anim_ease),
-            )
-            .entry(EntryKind::ALL[s.anim_kind])
-            .set_global(cx);
-        };
-        let anim_settings = section!("Animation settings")
-            .child(Muted::new(
-                "Applies to every component: entry style, easing and duration. Charts, sliders, progress, knobs and gauges also animate their values in.",
-            ))
-            .child(
-                row()
-                    .child(Label::new("Entry"))
-                    .child(
-                        div().w(px(200.0)).child(
-                            Select::new("anim-kind")
-                                .options(kind_labels.clone())
-                                .selected(Some(self.anim_kind))
-                                .on_change(move |i, _, cx| {
-                                    me_k.update(cx, |s, cx| {
-                                        s.anim_kind = i;
-                                        apply(s, cx);
-                                        s.replay += 1;
-                                        cx.notify();
-                                    })
-                                }),
-                        ),
-                    )
-                    .child(Label::new("Easing"))
-                    .child(
-                        div().w(px(260.0)).child(
-                            Select::new("anim-ease")
-                                .options(easings.iter().map(|e| e.0).collect::<Vec<_>>())
-                                .selected(Some(self.anim_ease))
-                                .on_change(move |i, _, cx| {
-                                    me_e.update(cx, |s, cx| {
-                                        s.anim_ease = i;
-                                        apply(s, cx);
-                                        s.replay += 1;
-                                        cx.notify();
-                                    })
-                                }),
-                        ),
-                    ),
-            )
-            .child(
-                row()
-                    .child(Label::new("Duration"))
-                    .child(
-                        div().w(px(260.0)).child(
-                            Slider::new("anim-ms", self.anim_ms)
-                                .range(100.0, 1500.0)
-                                .step(50.0)
-                                .show_value(true)
-                                .format(|v| format!("{v:.0} ms"))
-                                .on_change(move |v, _, cx| {
-                                    me_d.update(cx, |s, cx| {
-                                        s.anim_ms = v;
-                                        apply(s, cx);
-                                        cx.notify();
-                                    })
-                                }),
-                        ),
-                    )
-                    .child(Button::new("anim-replay", "Replay").on_click(cx.listener(
-                        |s, _, _, cx| {
-                            s.replay += 1;
-                            cx.notify();
-                        },
-                    ))),
+        let mut anim_sections = Vec::new();
+        for (i, (kind, ease, text)) in anim_defs.into_iter().enumerate() {
+            let title = kind.label();
+            let n = self.sec_replay.get(title).copied().unwrap_or(0);
+            let me_r = me.clone();
+            let (x1, y1, x2, y2) = ease_ctrl(ease);
+            let (border, accent, muted) = (
+                hsla(t.palette.border),
+                hsla(t.palette.primary),
+                hsla(t.palette.text_muted),
             );
-        let _ = me_r;
-        let mut curves = col();
-        for (i, (name, e)) in easings.iter().enumerate() {
-            let e = *e;
-            curves = curves.child(
-                row()
-                    .child(div().w(px(300.0)).child(Mono::new(*name)))
-                    .child(
-                        div()
-                            .relative()
-                            .w(px(260.0))
-                            .h(px(14.0))
-                            .child(
-                                div()
-                                    .absolute()
-                                    .top(px(6.0))
-                                    .w_full()
-                                    .h(px(2.0))
-                                    .bg(hsla(t.palette.border)),
+            let plot = gpui::canvas(
+                |_, _, _| (),
+                move |b: Bounds<gpui::Pixels>, _, w, _| {
+                    let pad = 10.0;
+                    let side = f32::from(b.size.width.min(b.size.height)) - 2.0 * pad;
+                    let at = |x: f32, y: f32| {
+                        gpui::point(
+                            b.origin.x + px(pad + x * side),
+                            b.origin.y + px(pad + (1.0 - y) * side),
+                        )
+                    };
+                    let line = |pts: &[(f32, f32)], width: f32, c: gpui::Hsla, w: &mut Window| {
+                        let mut p = gpui::PathBuilder::stroke(px(width));
+                        for (k, &(x, y)) in pts.iter().enumerate() {
+                            if k == 0 {
+                                p.move_to(at(x, y));
+                            } else {
+                                p.line_to(at(x, y));
+                            }
+                        }
+                        if let Ok(path) = p.build() {
+                            w.paint_path(path, c);
+                        }
+                    };
+                    line(
+                        &[(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0), (0.0, 0.0)],
+                        1.0,
+                        border,
+                        w,
+                    );
+                    line(&[(0.0, 0.0), (1.0, 1.0)], 1.0, border.opacity(0.5), w);
+                    line(&[(0.0, 0.0), (x1, y1)], 1.0, muted, w);
+                    line(&[(1.0, 1.0), (x2, y2)], 1.0, muted, w);
+                    let curve: Vec<(f32, f32)> = (0..=48)
+                        .map(|k| {
+                            let x = k as f32 / 48.0;
+                            (
+                                x,
+                                Easing::CubicBezier(x1, y1, x2, y2).apply(x).clamp(0.0, 1.0),
                             )
-                            .child(
-                                div()
-                                    .absolute()
-                                    .top_0()
-                                    .size(px(14.0))
-                                    .rounded_full()
-                                    .bg(hsla(t.palette.primary))
-                                    .with_animation(
-                                        ("ease-dot", i),
-                                        Animation::new(Duration::from_millis(1600))
-                                            .repeat()
-                                            .with_easing(move |p| e.apply(p).clamp(0.0, 1.0)),
-                                        |d, p| d.left(px(p * 246.0)),
-                                    ),
+                        })
+                        .collect();
+                    line(&curve, 2.5, accent, w);
+                    for (hx, hy) in [(x1, y1), (x2, y2)] {
+                        let c = at(hx.clamp(0.0, 1.0), hy.clamp(0.0, 1.0));
+                        w.paint_quad(gpui::fill(
+                            Bounds::new(
+                                c - gpui::point(px(3.0), px(3.0)),
+                                gpui::size(px(6.0), px(6.0)),
                             ),
-                    ),
+                            accent,
+                        ));
+                    }
+                },
+            )
+            .size_full();
+            let motion = Motion::new(Duration::from_millis(700), ease).entry(kind);
+            let demo = div()
+                .id(("an-demo", (i as u32) * 1000 + n))
+                .w(px(200.0))
+                .h(px(90.0))
+                .overflow_hidden()
+                .flex()
+                .items_center()
+                .justify_center()
+                .child(dodai_gpui::entry_animation(
+                    Card::new(CardVariant::Elevated).child(Label::new(format!("{title} entry"))),
+                    "an-card",
+                    motion,
+                ));
+            anim_sections.push(
+                Panel::new()
+                    .title(title)
+                    .child(
+                        row()
+                            .items_start()
+                            .gap(px(24.0))
+                            .child(div().w(px(150.0)).h(px(150.0)).flex_none().child(plot))
+                            .child(col().child(demo).child(
+                                Button::new(("an-replay", i as u32), "Replay").on_click(
+                                    move |_, _, cx| {
+                                        me_r.update(cx, |s, cx| {
+                                            s.bump(title);
+                                            cx.notify();
+                                        })
+                                    },
+                                ),
+                            ))
+                            .child(div().flex_1().min_w(px(220.0)).child(Muted::new(format!(
+                                "{text}  cubic-bezier({x1}, {y1}, {x2}, {y2})"
+                            )))),
+                    )
+                    .into_any_element(),
             );
         }
-        let anim_curves = section!("Easing curves")
-            .child(Muted::new(
-                "Each dot loops with its curve (1.6 s). Custom curves: Easing::CubicBezier.",
-            ))
-            .child(curves);
-        let anim_loading = section!("Loading · looping")
-            .child(Muted::new("Spinner 900 ms · IndeterminateBar 1.4 s · Skeleton 1.6 s (linear). Override with .motion(Motion)."))
-            .child(
-                row()
-                    .child(Spinner::new("an-sp"))
-                    .child(Spinner::new("an-sp2").motion(Motion::new(Duration::from_millis(500), Easing::EaseInOut)))
-                    .child(div().w(px(200.0)).child(IndeterminateBar::new("an-ib")))
-                    .child(div().w(px(200.0)).child(Skeleton::new("an-sk"))),
-            );
-        let anim_docs = section!("What animates")
-            .child(Label::new("Entry — every component"))
-            .child(Muted::new("Fade, Rise, Drop, Slide from left/right or None; set globally above or per section with the dropdown on each section header, where you can add and remove effects to compose them (Fade + Rise + Slide ...). The set overrides every component in that section; Global removes the override and no chips selected means no animation."))
-            .child(Label::new("Value-in — progress, slider, range slider, knob, gauge, bar, line, pie (sweep), radial bar, histogram"))
-            .child(Muted::new("Values grow from zero to their target using the same duration and easing."))
-            .child(Label::new("Pie / donut — hover pop and selection"))
-            .child(Muted::new("Slices ease out 6 px on hover (Tween), selected slice keeps a half pop and an accent outline (selected_color)."))
-            .child(Label::new("Composable — Curve"))
-            .child(Muted::new("Curve::from(easing).window(a, b) / reverse / ping_pong / then / pipe / stagger(i, n, overlap)."));
         let sections: Vec<(&'static str, &'static str, gpui::AnyElement, &'static str)> = vec![
             (
                 "Foundations",
@@ -1458,31 +1427,12 @@ impl Render for Showcase {
                     .into_any_element(),
                 "Radar · scatter · heatmap",
             ),
-            (
-                "Animation",
-                "Settings",
-                anim_settings.into_any_element(),
-                "Animation settings",
-            ),
-            (
-                "Animation",
-                "Easing curves",
-                anim_curves.into_any_element(),
-                "Easing curves",
-            ),
-            (
-                "Animation",
-                "Loading",
-                anim_loading.into_any_element(),
-                "Loading · looping",
-            ),
-            (
-                "Animation",
-                "What animates",
-                anim_docs.into_any_element(),
-                "What animates",
-            ),
         ];
+        let mut sections = sections;
+        for (i, el) in anim_sections.into_iter().enumerate() {
+            let k = EntryKind::ALL[i + 1].label();
+            sections.push(("Animation", k, el, k));
+        }
 
         let cats: Vec<&'static str> = {
             let mut v: Vec<&'static str> = Vec::new();
@@ -1566,11 +1516,8 @@ impl Render for Showcase {
             .child(ds_panel);
         let mut shown = 0;
         let mut last_cat = "";
-        for (c, title, el, key) in sections {
-            // Looping demos keep the window repainting every frame, so on the
-            // "All" page only the non-looping Animation sections are shown.
-            let looping = matches!(key, "Easing curves" | "Loading · looping");
-            let in_cat = selected_cat.map_or(!looping, |sc| sc == c);
+        for (c, title, el, _key) in sections {
+            let in_cat = selected_cat.is_none_or(|sc| sc == c);
             let hit =
                 query.is_empty() || !fuzzy_filter(&query, &[format!("{c} {title}")]).is_empty();
             let only = std::env::var("DODAI_ONLY").is_ok_and(|o| !title.contains(&o));
@@ -1683,8 +1630,6 @@ fn main() {
                             .ok()
                             .and_then(|v| v.parse().ok())
                             .unwrap_or(0),
-                        anim_kind: 1,
-                        anim_ease: 2,
                         anim_ms: 220.0,
                         replay: 0,
                         sec_replay: Default::default(),
@@ -1724,4 +1669,15 @@ fn main() {
         win.update(cx, |s, w, _| w.focus(&s.focus)).ok();
         cx.activate(true);
     });
+}
+
+/// CSS cubic-bezier control points for an easing.
+fn ease_ctrl(e: Easing) -> (f32, f32, f32, f32) {
+    match e {
+        Easing::Linear => (0.0, 0.0, 1.0, 1.0),
+        Easing::EaseIn => (0.42, 0.0, 1.0, 1.0),
+        Easing::EaseOut => (0.0, 0.0, 0.58, 1.0),
+        Easing::EaseInOut => (0.42, 0.0, 0.58, 1.0),
+        Easing::CubicBezier(a, b, c, d) => (a, b, c, d),
+    }
 }

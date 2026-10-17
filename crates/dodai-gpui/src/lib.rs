@@ -93,7 +93,8 @@ pub use layout::{clamp_ratio, visible_rows, SplitPane, TreeItem, TreeRow, TreeVi
 pub use list::{Divider, ListItem};
 pub use menu::{Menu, MenuItem};
 pub use motion::{
-    grow, lerp, stagger_window, Curve, Easing, EntryKind, EntryScope, EntrySet, Motion, Tween,
+    entry as entry_animation, grow, lerp, stagger_window, Curve, Easing, EntryKind, EntryScope,
+    EntrySet, Motion, Tween,
 };
 pub use nav::{Accordion, Breadcrumb, Pagination, Segmented, Stepper};
 pub use overlay::{Dialog, DialogCard};
