@@ -17,6 +17,7 @@
 mod color;
 mod component;
 mod palette;
+mod shape_system;
 mod switcher;
 mod theme;
 mod tokens;
@@ -29,6 +30,10 @@ pub use component::{
     ProgressTokens, TabTokens, TagTokens, ToggleTokens,
 };
 pub use palette::{Mode, Palette, Tone};
+pub use shape_system::{
+    Corner, CornerSpec, CornerStyle, RoleShape, ShapePreset, ShapeRole, ShapeScale, ShapeSize,
+    ShapeSystem, FULL,
+};
 pub use switcher::ThemeSwitcher;
 pub use theme::{Theme, ThemeMeta};
 pub use tokens::{Corners, Effects, Shape, ShapeKind, Spacing, Typography};
