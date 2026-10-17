@@ -20,7 +20,9 @@ use dodai_gpui::{
     Sparkline, StackedAreaChart, TagField, TextInput, TimePicker, Timeline, TimelineEvent, Toolbar,
     TreeItem, TreeView, Treemap, Waterfall,
 };
-use dodai_gpui::{Easing, EntryKind, EntrySet, IndeterminateBar, Motion, Skeleton, Spinner};
+use dodai_gpui::{
+    CountUp, Easing, EntryKind, EntrySet, IndeterminateBar, Motion, Skeleton, Spinner,
+};
 use gpui::{
     div, prelude::*, px, size, App, Application, Bounds, Context, Entity, FocusHandle,
     KeyDownEvent, Window, WindowBounds, WindowOptions,
@@ -937,6 +939,13 @@ impl Render for Showcase {
             )
             .child(Gauge::new(72.0).label("72%").tone(Tone::Success))
             .child(Gauge::new(31.0).tone(Tone::Warning))
+            .child(CountUp::new("cu1", 12840.0).prefix("$ ").size(28.0))
+            .child(
+                CountUp::new("cu2", 98.6)
+                    .decimals(1)
+                    .suffix(" %")
+                    .size(28.0),
+            )
             .child(Sparkline::new([3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0]))
             .child(
                 Sparkline::new([3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0]).marker(Marker::Diamond),

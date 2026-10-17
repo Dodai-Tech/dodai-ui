@@ -88,7 +88,8 @@ impl Treemap {
 }
 
 impl Treemap {
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let g = crate::motion::grow(window, cx, "Treemap");
         let t = theme_of(cx);
         let vals: Vec<f32> = self.items.iter().map(|i| i.1).collect();
         // Layout in unit space, rendered with relative sizes.
@@ -97,14 +98,15 @@ impl Treemap {
         for (i, ((x, y, w, h), (name, v))) in rects.iter().zip(&self.items).enumerate() {
             let style =
                 ShapeStyle::from_tokens(&t, Some(t.palette.series_at(i)), None, false, false);
+            let gi = crate::motion::reveal(g, i, self.items.len());
             plot = plot.child(
                 div()
                     .id((self.id.clone(), i))
                     .absolute()
-                    .left(relative(*x))
-                    .top(relative(*y))
-                    .w(relative(*w))
-                    .h(relative(*h))
+                    .left(relative(*x + *w * (1.0 - gi) / 2.0))
+                    .top(relative(*y + *h * (1.0 - gi) / 2.0))
+                    .w(relative(*w * gi))
+                    .h(relative(*h * gi))
                     .p(px(1.5))
                     .tooltip(DodaiTooltip::text(format!(
                         "{name}: {}",

@@ -213,6 +213,13 @@ pub fn grow(window: &mut gpui::Window, cx: &mut App, name: &'static str) -> f32 
     m.eased(t.max(0.0))
 }
 
+/// Staggered reveal: progress `0..=1` of item `i` of `n` while the whole chart
+/// is at `g` (items overlap; later items start later). Pure.
+pub fn reveal(g: f32, i: usize, n: usize) -> f32 {
+    let start = 0.6 * i as f32 / n.max(1) as f32;
+    ((g - start) / 0.4).clamp(0.0, 1.0)
+}
+
 /// Animated scalar that eases from its current value to a new target.
 /// Retarget with [`Tween::to`] on every frame; read with [`Tween::value`].
 #[derive(Clone, Copy, Debug)]

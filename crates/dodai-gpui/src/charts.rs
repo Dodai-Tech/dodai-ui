@@ -1460,7 +1460,8 @@ impl Gauge {
 impl Gauge {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        let frac = norm(self.value, self.min, self.max) * crate::motion::grow(window, cx, "Gauge");
+        let g = crate::motion::grow(window, cx, "Gauge");
+        let frac = norm(self.value, self.min, self.max) * g;
         let col = hsla(self.tone.map_or(t.palette.primary, |k| t.palette.tone(k)));
         let track = hsla(t.palette.border);
         let glow = glow_of(&t);
@@ -1468,7 +1469,7 @@ impl Gauge {
         let ring = (size * 0.1).clamp(4.0, 12.0);
         let label = self
             .label
-            .unwrap_or_else(|| fmt_num(self.value.round()).into());
+            .unwrap_or_else(|| fmt_num((self.value * g).round()).into());
         div()
             .relative()
             .w(px(size))
@@ -1560,7 +1561,8 @@ impl RadarChart {
 }
 
 impl RadarChart {
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let g = crate::motion::grow(window, cx, "RadarChart");
         let t = theme_of(cx);
         let n = self.axes.len().max(3);
         let max = self.max.unwrap_or_else(|| {
@@ -1605,7 +1607,7 @@ impl RadarChart {
                             polar(
                                 c,
                                 c,
-                                r * norm(vals.get(i).copied().unwrap_or(0.0), 0.0, max),
+                                r * norm(vals.get(i).copied().unwrap_or(0.0), 0.0, max) * g,
                                 i as f32 / n as f32,
                             )
                         })
@@ -1686,7 +1688,8 @@ impl ScatterPlot {
 }
 
 impl ScatterPlot {
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let g = crate::motion::grow(window, cx, "ScatterPlot");
         let t = theme_of(cx);
         let all = || self.series.iter().flat_map(|s| s.1.iter());
         let fold = |f: fn(&(f32, f32)) -> f32| {
@@ -1735,16 +1738,17 @@ impl ScatterPlot {
         for (si, (name, pts)) in self.series.iter().enumerate() {
             let c = hsla(t.palette.series_at(si));
             for (i, (x, y)) in pts.iter().enumerate() {
+                let gi = crate::motion::reveal(g, i, pts.len());
                 plot = plot.child(
                     div()
                         .id((SharedString::from(format!("{}-{si}-{i}", self.id)), i))
                         .absolute()
                         .left(relative(norm(*x, x0, x1)))
                         .top(relative(1.0 - norm(*y, y0, y1)))
-                        .ml(px(-4.0))
-                        .mt(px(-4.0))
-                        .w(px(8.0))
-                        .h(px(8.0))
+                        .ml(px(-4.0 * gi))
+                        .mt(px(-4.0 * gi))
+                        .w(px(8.0 * gi))
+                        .h(px(8.0 * gi))
                         .rounded_full()
                         .bg(scale_alpha(c, 0.85))
                         .hover(move |d| d.bg(c))
@@ -1830,6 +1834,7 @@ impl Heatmap {
     /// Dense grid (many cells): painted on one canvas with a hover readout
     /// instead of one element per cell.
     fn build_dense(self, window: &mut Window, cx: &mut App) -> gpui::AnyElement {
+        let g = crate::motion::grow(window, cx, "Heatmap");
         let t = theme_of(cx);
         let (lo, hi) = self
             .rows
@@ -1865,7 +1870,7 @@ impl Heatmap {
                         let o = b.origin + gpui::point(px(c as f32 * cell), px(r as f32 * cell));
                         w.paint_quad(gpui::fill(
                             gpui::Bounds::new(o, gpui::size(px(cell), px(cell))),
-                            colors[i],
+                            colors[i].opacity(crate::motion::reveal(g, c, nc)),
                         ));
                         i += 1;
                     }

@@ -65,7 +65,8 @@ impl StackedAreaChart {
 }
 
 impl StackedAreaChart {
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let g = crate::motion::grow(window, cx, "StackedAreaChart");
         let t = theme_of(cx);
         let cum = stack_cumulative(&self.series);
         let n = cum.first().map_or(0, Vec::len);
@@ -94,13 +95,13 @@ impl StackedAreaChart {
                 let x = |i: usize| (i as f32 + 0.5) / n.max(1) as f32 * bw;
                 for (k, layer) in cum.iter().enumerate() {
                     let upper: Vec<(f32, f32)> = (0..n)
-                        .map(|i| (x(i), bh - norm(layer[i], 0.0, top) * bh))
+                        .map(|i| (x(i), bh - norm(layer[i], 0.0, top) * bh * g))
                         .collect();
                     let lower: Vec<(f32, f32)> = (0..n)
                         .rev()
                         .map(|i| {
                             let v = if k == 0 { 0.0 } else { cum[k - 1][i] };
-                            (x(i), bh - norm(v, 0.0, top) * bh)
+                            (x(i), bh - norm(v, 0.0, top) * bh * g)
                         })
                         .collect();
                     if upper.len() < 2 {
@@ -200,7 +201,8 @@ impl Candlestick {
 }
 
 impl Candlestick {
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let g = crate::motion::grow(window, cx, "Candlestick");
         let t = theme_of(cx);
         let lo = self.candles.iter().map(|c| c.low).fold(f32::MAX, f32::min);
         let hi = self.candles.iter().map(|c| c.high).fold(f32::MIN, f32::max);
@@ -220,8 +222,11 @@ impl Candlestick {
                     stroke(w, b.origin, &[(0.0, y), (bw, y)], 1.0, grid, false);
                 }
                 let slot = bw / n.max(1) as f32;
-                let y = |v: f32| bh - norm(v, lo, hi) * bh;
+                let yr = |v: f32| bh - norm(v, lo, hi) * bh;
                 for (i, c) in cs.iter().enumerate() {
+                    let ym = yr((c.high + c.low) / 2.0);
+                    let gi = crate::motion::reveal(g, i, n);
+                    let y = |v: f32| ym + (yr(v) - ym) * gi;
                     let col = if c.close >= c.open { up } else { down };
                     let x = (i as f32 + 0.5) * slot;
                     stroke(

@@ -49,7 +49,8 @@ impl Funnel {
 }
 
 impl Funnel {
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let g = crate::motion::grow(window, cx, "Funnel");
         let t = theme_of(cx);
         let n = self.stages.len().max(1);
         let maxv = self
@@ -71,7 +72,8 @@ impl Funnel {
                 let sh = bh / n as f32;
                 for i in 0..n {
                     let next = fr2.get(i + 1).copied().unwrap_or(fr2[i] * 0.8);
-                    let (w0, w1) = (fr2[i] * bw, next * bw);
+                    let gi = crate::motion::reveal(g, i, n);
+                    let (w0, w1) = (fr2[i] * bw * gi, next * bw * gi);
                     let (y0, y1) = (i as f32 * sh + 1.0, (i + 1) as f32 * sh - 1.0);
                     let c = bw / 2.0;
                     fill(
@@ -158,7 +160,8 @@ impl Waterfall {
 }
 
 impl Waterfall {
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let g = crate::motion::grow(window, cx, "Waterfall");
         let t = theme_of(cx);
         let deltas: Vec<f32> = self.steps.iter().map(|s| s.1).collect();
         let st = waterfall_steps(&deltas);
@@ -206,7 +209,9 @@ impl Waterfall {
         let names: Vec<SharedString> = bars.iter().map(|b| b.0.clone()).collect();
         for (i, (n, a, b, c, d)) in bars.into_iter().enumerate() {
             let style = ShapeStyle::from_tokens(&t, Some(c), None, false, false);
+            let nb = names.len();
             let (fa, fb) = (norm(a, lo, hi), norm(b, lo, hi));
+            let fb = fa + (fb - fa) * crate::motion::reveal(g, i, nb);
             row = row.child(
                 div().relative().flex_1().h_full().child(
                     div()

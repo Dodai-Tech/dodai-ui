@@ -182,7 +182,8 @@ impl BoxPlot {
 }
 
 impl BoxPlot {
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let g = crate::motion::grow(window, cx, "BoxPlot");
         let t = theme_of(cx);
         let stats: Vec<Option<Stats>> = self.groups.iter().map(|g| quartiles(&g.1)).collect();
         let lo = stats.iter().flatten().map(|s| s.0).fold(f32::MAX, f32::min);
@@ -206,12 +207,15 @@ impl BoxPlot {
                     stroke(w, b.origin, &[(0.0, y), (bw, y)], 1.0, grid, false);
                 }
                 let slot = bw / n.max(1) as f32;
-                let y = |v: f32| bh - norm(v, lo, hi) * bh;
+                let yr = |v: f32| bh - norm(v, lo, hi) * bh;
                 for (i, s) in stats.iter().enumerate() {
                     let Some((mn, q1, md, q3, mx)) = s else {
                         continue;
                     };
                     let x = (i as f32 + 0.5) * slot;
+                    let ym = yr(*md);
+                    let gi = crate::motion::reveal(g, i, n);
+                    let y = |v: f32| ym + (yr(v) - ym) * gi;
                     let half = (slot * 0.5).min(40.0) / 2.0;
                     stroke(
                         w,
@@ -327,7 +331,8 @@ impl BubbleChart {
 }
 
 impl BubbleChart {
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let g = crate::motion::grow(window, cx, "BubbleChart");
         let t = theme_of(cx);
         let all = || self.groups.iter().flat_map(|g| g.1.iter());
         let rng = |f: fn(&(f32, f32, f32)) -> f32| {
@@ -370,7 +375,8 @@ impl BubbleChart {
         for (gi, (name, pts)) in self.groups.iter().enumerate() {
             let c = hsla(t.palette.series_at(gi));
             for (i, (x, y, s)) in pts.iter().enumerate() {
-                let r = (s / smax).sqrt() * self.max_radius;
+                let r =
+                    (s / smax).sqrt() * self.max_radius * crate::motion::reveal(g, i, pts.len());
                 plot = plot.child(
                     div()
                         .id((SharedString::from(format!("{}-{gi}", self.id)), i))

@@ -35,6 +35,7 @@ pub mod charts_part_whole;
 pub mod charts_trend;
 pub mod command;
 pub mod controls;
+pub mod count;
 pub mod data;
 pub mod extras;
 pub mod feedback;
@@ -81,6 +82,7 @@ pub use command::{fuzzy_filter, Combobox, Command, CommandPalette};
 pub use controls::{
     tick_fractions, BubblePlacement, Checkbox, Direction, ProgressBar, Radio, Slider, Toggle,
 };
+pub use count::CountUp;
 pub use data::{Avatar, Badge, Chip, Kbd, Table};
 pub use extras::{
     step_value, BottomAppBar, ColorPicker, EmptyState, FileDropZone, NumberStepper, Rating,
