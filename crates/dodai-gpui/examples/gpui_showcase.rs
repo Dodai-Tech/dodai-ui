@@ -979,12 +979,35 @@ impl Render for Showcase {
             .child(
                 Heatmap::new(
                     "heat",
-                    (0..5)
-                        .map(|r| (0..8).map(|c| ((r * 3 + c * 5) % 11) as f32).collect())
+                    (0..24)
+                        .map(|r| {
+                            (0..64)
+                                .map(|c| {
+                                    let (x, y) = (c as f32, r as f32);
+                                    ((x * 0.21).sin()
+                                        + (y * 0.45).cos()
+                                        + ((x + y) * 0.13).sin() * 1.5)
+                                        + ((x - 30.0).hypot((y - 12.0) * 2.0) * -0.08).exp() * 3.0
+                                })
+                                .collect()
+                        })
                         .collect(),
                 )
-                .row_labels(["Mon", "Tue", "Wed", "Thu", "Fri"])
-                .col_labels(["0", "3", "6", "9", "12", "15", "18", "21"]),
+                .cell(11.0)
+                .row_labels((0..24).map(|r| {
+                    if r % 4 == 0 {
+                        format!("{r:02}h")
+                    } else {
+                        String::new()
+                    }
+                }))
+                .col_labels((0..64).map(|c| {
+                    if c % 8 == 0 {
+                        format!("{c}")
+                    } else {
+                        String::new()
+                    }
+                })),
             );
 
         // Stepped / configurable sliders.
@@ -1168,7 +1191,8 @@ impl Render for Showcase {
                 380.0,
             ));
 
-        let loading = section!("Loading")
+        let loading = Panel::new()
+            .title("Loading")
             .child(Label::new("Spinner"))
             .child(
                 row()

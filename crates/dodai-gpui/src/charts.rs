@@ -1827,7 +1827,128 @@ impl Heatmap {
 }
 
 impl Heatmap {
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    /// Dense grid (many cells): painted on one canvas with a hover readout
+    /// instead of one element per cell.
+    fn build_dense(self, window: &mut Window, cx: &mut App) -> gpui::AnyElement {
+        let t = theme_of(cx);
+        let (lo, hi) = self
+            .rows
+            .iter()
+            .flatten()
+            .fold((f32::MAX, f32::MIN), |(l, h), v| (l.min(*v), h.max(*v)));
+        let cell = self.cell;
+        let (nr, nc) = (
+            self.rows.len(),
+            self.rows.iter().map(Vec::len).max().unwrap_or(0),
+        );
+        let hov = window.use_keyed_state(
+            SharedString::from(format!("{}-hov", self.id)),
+            cx,
+            |_, _| None::<(usize, usize)>,
+        );
+        let cur = *hov.read(cx);
+        let colors: Rc<Vec<gpui::Hsla>> = Rc::new(
+            self.rows
+                .iter()
+                .flat_map(|r| r.iter().map(|v| hsla(heat_color(&t, norm(*v, lo, hi)))))
+                .collect(),
+        );
+        let lens: Rc<Vec<usize>> = Rc::new(self.rows.iter().map(Vec::len).collect());
+        let outline = hsla(t.palette.text);
+        let hov_w = hov.clone();
+        let canvas = gpui::canvas(
+            |_, _, _| (),
+            move |b: gpui::Bounds<gpui::Pixels>, _, w, _| {
+                let mut i = 0;
+                for r in 0..nr {
+                    for c in 0..lens[r] {
+                        let o = b.origin + gpui::point(px(c as f32 * cell), px(r as f32 * cell));
+                        w.paint_quad(gpui::fill(
+                            gpui::Bounds::new(o, gpui::size(px(cell), px(cell))),
+                            colors[i],
+                        ));
+                        i += 1;
+                    }
+                }
+                if let Some((r, c)) = cur {
+                    let o = b.origin + gpui::point(px(c as f32 * cell), px(r as f32 * cell));
+                    w.paint_quad(gpui::outline(
+                        gpui::Bounds::new(o, gpui::size(px(cell), px(cell))),
+                        outline,
+                        gpui::BorderStyle::Solid,
+                    ));
+                }
+                let st = hov_w.clone();
+                w.on_mouse_event(move |e: &gpui::MouseMoveEvent, _, w, cx| {
+                    let next = b.contains(&e.position).then(|| {
+                        let d = e.position - b.origin;
+                        (
+                            ((f32::from(d.y) / cell) as usize).min(nr.saturating_sub(1)),
+                            ((f32::from(d.x) / cell) as usize).min(nc.saturating_sub(1)),
+                        )
+                    });
+                    if *st.read(cx) != next {
+                        st.update(cx, |v, _| *v = next);
+                        w.refresh();
+                    }
+                });
+            },
+        )
+        .w(px(nc as f32 * cell))
+        .h(px(nr as f32 * cell));
+        let readout = match cur {
+            Some((r, c)) => format!(
+                "{} · {} = {}",
+                self.row_labels
+                    .get(r)
+                    .filter(|l| !l.is_empty())
+                    .map_or(format!("row {r}"), |l| l.to_string()),
+                self.col_labels
+                    .get(c)
+                    .filter(|l| !l.is_empty())
+                    .map_or(format!("col {c}"), |l| l.to_string()),
+                fmt_num(self.rows[r][c])
+            ),
+            None => "hover a cell".to_string(),
+        };
+        let mut cols = div().flex().flex_col();
+        if !self.col_labels.is_empty() {
+            let mut hdr = label_style(&t, div()).flex().h(px(14.0));
+            if !self.row_labels.is_empty() {
+                hdr = hdr.child(div().w(px(48.0)).flex_none());
+            }
+            cols = cols.child(hdr.children(self.col_labels.iter().map(|l| {
+                div()
+                    .w(px(cell))
+                    .flex_none()
+                    .whitespace_nowrap()
+                    .child(l.clone())
+            })));
+        }
+        let mut body = div().flex();
+        if !self.row_labels.is_empty() {
+            body = body.child(
+                label_style(&t, div()).w(px(48.0)).flex_none().children(
+                    self.row_labels
+                        .iter()
+                        .map(|l| div().h(px(cell)).whitespace_nowrap().child(l.clone())),
+                ),
+            );
+        }
+        cols.child(body.child(canvas))
+            .child(label_style(&t, div()).pt(px(6.0)).child(readout))
+            .into_any_element()
+    }
+
+    fn build(self, window: &mut Window, cx: &mut App) -> gpui::AnyElement {
+        let cells: usize = self.rows.iter().map(Vec::len).sum();
+        if cells > 200 {
+            return self.build_dense(window, cx);
+        }
+        self.build_grid(cx).into_any_element()
+    }
+
+    fn build_grid(self, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let (lo, hi) = self
             .rows
