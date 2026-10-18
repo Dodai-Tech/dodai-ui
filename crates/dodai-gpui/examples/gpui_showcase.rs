@@ -167,6 +167,8 @@ fn subs(cat: &str) -> &'static [&'static str] {
             "Pixel art",
             "Cosmic & nature",
             "Ghostty",
+            "Ghibli",
+            "DMT Hyperspace",
         ],
         _ => &[],
     }
@@ -2765,22 +2767,25 @@ impl Render for Showcase {
                     .filter(|s| s.family == *fam && !s.is_generator())
                     .collect();
                 let (gt, et) = TITLES[fi];
-                let cat = match *fam {
-                    Family::Ghibli => "Ghibli",
-                    Family::Dmt => "DMT Hyperspace",
-                    _ => "Shaders",
+                // Ghibli and DMT have their own category and also live under Shaders.
+                let cats: &[&'static str] = match *fam {
+                    Family::Ghibli => &["Ghibli", "Shaders"],
+                    Family::Dmt => &["DMT Hyperspace", "Shaders"],
+                    _ => &["Shaders"],
                 };
-                let mut g_row = row();
-                for g in gens {
-                    g_row = g_row.child(card(format!("shc-{}", g.id), g, false));
-                }
-                sections.push((cat, gt, section!(gt).child(g_row).into_any_element(), gt));
-                if !effs.is_empty() {
-                    let mut e_row = row();
-                    for e in effs {
-                        e_row = e_row.child(card(format!("shc-{}", e.id), e, true));
+                for cat in cats {
+                    let mut g_row = row();
+                    for g in &gens {
+                        g_row = g_row.child(card(format!("shc-{cat}-{}", g.id), g, false));
                     }
-                    sections.push((cat, et, section!(et).child(e_row).into_any_element(), et));
+                    sections.push((*cat, gt, section!(gt).child(g_row).into_any_element(), gt));
+                    if !effs.is_empty() {
+                        let mut e_row = row();
+                        for e in &effs {
+                            e_row = e_row.child(card(format!("shc-{cat}-{}", e.id), e, true));
+                        }
+                        sections.push((*cat, et, section!(et).child(e_row).into_any_element(), et));
+                    }
                 }
             }
             // Ready-made chains.
@@ -2807,31 +2812,34 @@ impl Render for Showcase {
                     dodai_gpui::dodai_shaders::presets::PIXEL,
                 ),
             ] {
-                let mut r = row();
-                for p in list {
-                    r = r.child(
-                        col()
-                            .flex_1()
-                            .min_w(px(220.0))
-                            .child(
-                                ShaderView::preset(format!("shp-{}", p.id), p)
-                                    .pixel(2.0)
-                                    .rounded(t.shape.radius),
-                            )
-                            .child(Mono::new(p.name))
-                            .child(Muted::new(p.desc)),
-                    );
+                let cats: &[&'static str] = match title {
+                    "Ghibli presets" => &["Ghibli", "Shaders"],
+                    "DMT Hyperspace presets" => &["DMT Hyperspace", "Shaders"],
+                    _ => &["Shaders"],
+                };
+                for cat in cats {
+                    let mut r = row();
+                    for p in list {
+                        r = r.child(
+                            col()
+                                .flex_1()
+                                .min_w(px(220.0))
+                                .child(
+                                    ShaderView::preset(format!("shp-{cat}-{}", p.id), p)
+                                        .pixel(2.0)
+                                        .rounded(t.shape.radius),
+                                )
+                                .child(Mono::new(p.name))
+                                .child(Muted::new(p.desc)),
+                        );
+                    }
+                    sections.push((
+                        *cat,
+                        title,
+                        section!(title).child(r).into_any_element(),
+                        title,
+                    ));
                 }
-                sections.push((
-                    match title {
-                        "Ghibli presets" => "Ghibli",
-                        "DMT Hyperspace presets" => "DMT Hyperspace",
-                        _ => "Shaders",
-                    },
-                    title,
-                    section!(title).child(r).into_any_element(),
-                    title,
-                ));
             }
         }
         for (i, el) in anim_sections.into_iter().enumerate() {
