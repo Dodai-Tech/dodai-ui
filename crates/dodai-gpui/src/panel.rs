@@ -40,6 +40,19 @@ pub enum Edge {
 }
 
 impl Edge {
+    /// The opposite side/corner (where the grey line goes).
+    pub fn opposite(self) -> Edge {
+        match self {
+            Edge::Top => Edge::Bottom,
+            Edge::Bottom => Edge::Top,
+            Edge::Left => Edge::Right,
+            Edge::Right => Edge::Left,
+            Edge::TopLeft => Edge::BottomRight,
+            Edge::BottomRight => Edge::TopLeft,
+            Edge::TopRight => Edge::BottomLeft,
+            Edge::BottomLeft => Edge::TopRight,
+        }
+    }
     pub const ALL: [Edge; 8] = [
         Edge::Top,
         Edge::Right,
@@ -260,6 +273,39 @@ impl ParentElement for Panel {
     }
 }
 
+/// One line (edge) or L-bracket (corner) of `w` px painted at `edge`.
+fn accent_mark(edge: Edge, c: gpui::Hsla, w: f32, inset: f32) -> gpui::Div {
+    const ARM: f32 = 28.0;
+    let bar = || div().absolute().bg(c);
+    let wrap = div().absolute().size_full();
+    let bracket = |top: bool, left: bool| {
+        let h = bar().w(px(ARM)).h(px(w));
+        let v = bar().h(px(ARM)).w(px(w));
+        let (h, v) = if top {
+            (h.top_0(), v.top_0())
+        } else {
+            (h.bottom_0(), v.bottom_0())
+        };
+        let (h, v) = if left {
+            (h.left_0(), v.left_0())
+        } else {
+            (h.right_0(), v.right_0())
+        };
+        wrap.child(h).child(v)
+    };
+    let wrap = div().absolute().size_full();
+    match edge {
+        Edge::TopLeft => bracket(true, true),
+        Edge::TopRight => bracket(true, false),
+        Edge::BottomLeft => bracket(false, true),
+        Edge::BottomRight => bracket(false, false),
+        Edge::Top => wrap.child(bar().top_0().left(px(inset)).right(px(inset)).h(px(w))),
+        Edge::Bottom => wrap.child(bar().bottom_0().left(px(inset)).right(px(inset)).h(px(w))),
+        Edge::Left => wrap.child(bar().left_0().top(px(inset)).bottom(px(inset)).w(px(w))),
+        Edge::Right => wrap.child(bar().right_0().top(px(inset)).bottom(px(inset)).w(px(w))),
+    }
+}
+
 impl Panel {
     fn build(self, _: &mut Window, cx: &mut App) -> gpui::Div {
         let t = theme_of(cx);
@@ -269,52 +315,28 @@ impl Panel {
             shape.corners = c;
         }
         let border = self.border.unwrap_or_else(|| section_border(cx));
-        let mut d = shaped(&shape, border.apply(panel_style(&t, self.focused)));
-        if let (Some(edge), true) = (border.accent, border.width > 0.0) {
-            // the accent edge replaces the grey one
-            let bw = &mut d.style().border_widths;
-            match edge {
-                Edge::Top => bw.top = Some(px(0.0).into()),
-                Edge::Right => bw.right = Some(px(0.0).into()),
-                Edge::Bottom => bw.bottom = Some(px(0.0).into()),
-                Edge::Left => bw.left = Some(px(0.0).into()),
-                _ => {}
-            }
+        let mut style = border.apply(panel_style(&t, self.focused));
+        let grey = style.stroke;
+        if border.accent.is_some() {
+            // Accent mode replaces the full frame: yellow here, grey opposite.
+            style.stroke = None;
         }
+        let mut d = shaped(&shape, style);
         if let Some(edge) = border.accent {
-            let inset = if shape.kind() == dodai_core::ShapeKind::Rounded
-                || shape.kind() == dodai_core::ShapeKind::Chamfered
-            {
+            let inset = if matches!(
+                shape.kind(),
+                dodai_core::ShapeKind::Rounded | dodai_core::ShapeKind::Chamfered
+            ) {
                 shape.radius
             } else {
                 0.0
             };
-            let aw = border.clamped().accent_width;
-            let c = hsla(t.panel(true).border);
-            let bracket = |top: bool, left: bool| {
-                const ARM: f32 = 28.0;
-                let h = div().absolute().bg(c).w(px(ARM)).h(px(aw));
-                let v = div().absolute().bg(c).h(px(ARM)).w(px(aw));
-                let h = if top { h.top_0() } else { h.bottom_0() };
-                let v = if top { v.top_0() } else { v.bottom_0() };
-                let (h, v) = if left {
-                    (h.left_0(), v.left_0())
-                } else {
-                    (h.right_0(), v.right_0())
-                };
-                div().absolute().size_full().child(h).child(v)
-            };
-            let line = div().absolute().bg(c);
-            d = match edge {
-                Edge::TopLeft => d.child(bracket(true, true)),
-                Edge::TopRight => d.child(bracket(true, false)),
-                Edge::BottomLeft => d.child(bracket(false, true)),
-                Edge::BottomRight => d.child(bracket(false, false)),
-                Edge::Top => d.child(line.top_0().left(px(inset)).right(px(inset)).h(px(aw))),
-                Edge::Bottom => d.child(line.bottom_0().left(px(inset)).right(px(inset)).h(px(aw))),
-                Edge::Left => d.child(line.left_0().top(px(inset)).bottom(px(inset)).w(px(aw))),
-                Edge::Right => d.child(line.right_0().top(px(inset)).bottom(px(inset)).w(px(aw))),
-            };
+            let b = border.clamped();
+            let accent = hsla(t.panel(true).border);
+            if let Some(g) = grey {
+                d = d.child(accent_mark(edge.opposite(), g, b.width, inset));
+            }
+            d = d.child(accent_mark(edge, accent, b.accent_width, inset));
         }
         let mut d = d
             .flex()
