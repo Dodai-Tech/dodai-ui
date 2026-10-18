@@ -20,6 +20,7 @@
 use bytemuck::{Pod, Zeroable};
 use dodai_shaders::{by_id, ShaderPalette};
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 const WGSL: &str = include_str!("../kernels.wgsl");
 
@@ -41,11 +42,12 @@ struct Targets {
     w: u32,
     h: u32,
     params: wgpu::Buffer,
-    ping: wgpu::Buffer,
-    pong: wgpu::Buffer,
     out: wgpu::Buffer,
     read: wgpu::Buffer,
     bytes: Vec<u8>,
+    /// Bind groups for the ping-pong pair, built once per size:
+    /// `[0]` reads pong and writes ping, `[1]` the reverse.
+    groups: [wgpu::BindGroup; 2],
 }
 
 /// Why a render did not happen.
@@ -70,6 +72,46 @@ impl std::fmt::Display for GpuError {
 }
 impl std::error::Error for GpuError {}
 
+type Pipes = Arc<Mutex<HashMap<String, wgpu::ComputePipeline>>>;
+
+/// Everything needed to compile pipelines, detached from the `Gpu` so a
+/// background thread can warm them while frames keep rendering.
+#[derive(Clone)]
+struct Compiler {
+    device: wgpu::Device,
+    module: wgpu::ShaderModule,
+    layout: wgpu::PipelineLayout,
+    entries: Arc<HashMap<String, String>>,
+    pipes: Pipes,
+}
+
+impl Compiler {
+    /// The pipeline for `entry`, compiled on first use. The cache lock is
+    /// never held while compiling, so lookups of ready pipelines never wait.
+    fn get(&self, entry: &str) -> wgpu::ComputePipeline {
+        if let Some(p) = self.pipes.lock().expect("pipes").get(entry) {
+            return p.clone();
+        }
+        let real = self.entries.get(entry).map_or(entry, String::as_str);
+        let p = self
+            .device
+            .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                label: Some(entry),
+                layout: Some(&self.layout),
+                module: &self.module,
+                entry_point: Some(real),
+                compilation_options: Default::default(),
+                cache: None,
+            });
+        self.pipes
+            .lock()
+            .expect("pipes")
+            .entry(entry.to_string())
+            .or_insert(p)
+            .clone()
+    }
+}
+
 /// A wgpu device with the shader module and its pipelines.
 pub struct Gpu {
     device: wgpu::Device,
@@ -77,8 +119,8 @@ pub struct Gpu {
     module: wgpu::ShaderModule,
     bgl: wgpu::BindGroupLayout,
     layout: wgpu::PipelineLayout,
-    pipes: HashMap<String, wgpu::ComputePipeline>,
-    entries: HashMap<String, String>,
+    pipes: Pipes,
+    entries: Arc<HashMap<String, String>>,
     targets: Option<Targets>,
     /// Name of the adapter in use.
     pub adapter: String,
@@ -148,28 +190,41 @@ impl Gpu {
             module,
             bgl,
             layout,
-            pipes: HashMap::new(),
-            entries: entry_names(),
+            pipes: Arc::default(),
+            entries: Arc::new(entry_names()),
             targets: None,
         })
     }
 
-    fn pipeline(&mut self, entry: &str) -> &wgpu::ComputePipeline {
-        if !self.pipes.contains_key(entry) {
-            let real = self.entries.get(entry).map_or(entry, String::as_str);
-            let p = self
-                .device
-                .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-                    label: Some(entry),
-                    layout: Some(&self.layout),
-                    module: &self.module,
-                    entry_point: Some(real),
-                    compilation_options: Default::default(),
-                    cache: None,
-                });
-            self.pipes.insert(entry.to_string(), p);
+    fn compiler(&self) -> Compiler {
+        Compiler {
+            device: self.device.clone(),
+            module: self.module.clone(),
+            layout: self.layout.clone(),
+            entries: self.entries.clone(),
+            pipes: self.pipes.clone(),
         }
-        &self.pipes[entry]
+    }
+
+    /// Compiles the pipelines for `ids` on a background thread, so the first
+    /// frame that uses them does not stall (a pipeline takes 40-180 ms).
+    /// Rendering carries on meanwhile; ids are compiled in the order given.
+    pub fn prewarm<I: IntoIterator<Item = String>>(&self, ids: I) {
+        let c = self.compiler();
+        let ids: Vec<String> = ids.into_iter().collect();
+        let _ = std::thread::Builder::new()
+            .name("dodai-gpu-warm".into())
+            .spawn(move || {
+                c.get("pack");
+                for id in ids {
+                    c.get(&id);
+                }
+            });
+    }
+
+    /// [`Gpu::prewarm`] for the whole catalogue.
+    pub fn prewarm_all(&self) {
+        self.prewarm(dodai_shaders::catalog().iter().map(|s| s.id.to_string()));
     }
 
     fn ensure_targets(&mut self, w: u32, h: u32) {
@@ -186,21 +241,49 @@ impl Gpu {
         };
         let px = (w as u64) * (h as u64);
         let st = wgpu::BufferUsages::STORAGE;
+        let params = buf(
+            std::mem::size_of::<Params>() as u64,
+            st | wgpu::BufferUsages::COPY_DST,
+        );
+        let ping = buf(px * 16, st);
+        let pong = buf(px * 16, st);
+        let out = buf(px * 4, st | wgpu::BufferUsages::COPY_SRC);
+        let bind = |src: &wgpu::Buffer, dst: &wgpu::Buffer| {
+            self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: None,
+                layout: &self.bgl,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: params.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: src.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: dst.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 3,
+                        resource: out.as_entire_binding(),
+                    },
+                ],
+            })
+        };
+        let groups = [bind(&pong, &ping), bind(&ping, &pong)];
         self.targets = Some(Targets {
             w,
             h,
-            params: buf(
-                std::mem::size_of::<Params>() as u64,
-                st | wgpu::BufferUsages::COPY_DST,
-            ),
-            ping: buf(px * 16, st),
-            pong: buf(px * 16, st),
-            out: buf(px * 4, st | wgpu::BufferUsages::COPY_SRC),
+            params,
+            out,
             read: buf(
                 px * 4,
                 wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
             ),
             bytes: vec![0; (px * 4) as usize],
+            groups,
         });
     }
 
@@ -233,10 +316,9 @@ impl Gpu {
             return Err(GpuError::BadChain("empty".into()));
         }
         self.ensure_targets(w, h);
-        for id in chain {
-            self.pipeline(id);
-        }
-        self.pipeline("pack");
+        let comp = self.compiler();
+        let pipes: Vec<wgpu::ComputePipeline> = chain.iter().map(|id| comp.get(id)).collect();
+        let pack = comp.get("pack");
 
         let col = |v: dodai_shaders::math::Vec3| [v.x, v.y, v.z, 1.0];
         let params = Params {
@@ -253,46 +335,20 @@ impl Gpu {
         self.queue
             .write_buffer(&t.params, 0, bytemuck::bytes_of(&params));
 
-        let bind = |src: &wgpu::Buffer, dst: &wgpu::Buffer| {
-            self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: None,
-                layout: &self.bgl,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: t.params.as_entire_binding(),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: src.as_entire_binding(),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 2,
-                        resource: dst.as_entire_binding(),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 3,
-                        resource: t.out.as_entire_binding(),
-                    },
-                ],
-            })
-        };
         let groups = (w.div_ceil(8), h.div_ceil(8));
         let mut enc = self.device.create_command_encoder(&Default::default());
         {
             let mut pass = enc.begin_compute_pass(&Default::default());
             // Ping-pong: the generator writes `ping`; each effect reads the
             // last result and writes the other buffer.
-            let (mut cur, mut other) = (&t.ping, &t.pong);
-            for id in chain.iter() {
-                pass.set_pipeline(&self.pipes[*id]);
-                pass.set_bind_group(0, &bind(other, cur), &[]);
+            for (i, pipe) in pipes.iter().enumerate() {
+                pass.set_pipeline(pipe);
+                pass.set_bind_group(0, &t.groups[i % 2], &[]);
                 pass.dispatch_workgroups(groups.0, groups.1, 1);
-                std::mem::swap(&mut cur, &mut other);
             }
-            // `other` now holds the final image.
-            pass.set_pipeline(&self.pipes["pack"]);
-            pass.set_bind_group(0, &bind(other, cur), &[]);
+            // The last result is in the buffer the next group reads.
+            pass.set_pipeline(&pack);
+            pass.set_bind_group(0, &t.groups[pipes.len() % 2], &[]);
             pass.dispatch_workgroups(groups.0, groups.1, 1);
         }
         enc.copy_buffer_to_buffer(&t.out, 0, &t.read, 0, (w as u64) * (h as u64) * 4);

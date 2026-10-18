@@ -130,18 +130,33 @@ impl ShaderView {
     }
 }
 
+/// The shared GPU, once ready. Opening the device and compiling the shader
+/// module takes 100-200 ms, so it happens on a background thread: until it
+/// finishes, views render on the CPU instead of stalling the first frame.
 #[cfg(feature = "gpu")]
 fn gpu() -> Option<&'static std::sync::Mutex<dodai_shaders_gpu::Gpu>> {
     static GPU: std::sync::OnceLock<Option<std::sync::Mutex<dodai_shaders_gpu::Gpu>>> =
         std::sync::OnceLock::new();
-    GPU.get_or_init(|| {
+    static START: std::sync::Once = std::sync::Once::new();
+    START.call_once(|| {
         // `DODAI_GPU=0` forces the CPU renderer.
         if std::env::var("DODAI_GPU").is_ok_and(|v| v == "0") {
-            return None;
+            let _ = GPU.set(None);
+            return;
         }
-        dodai_shaders_gpu::Gpu::new().map(std::sync::Mutex::new)
-    })
-    .as_ref()
+        let _ = std::thread::Builder::new()
+            .name("dodai-gpu-init".into())
+            .spawn(|| {
+                let g = dodai_shaders_gpu::Gpu::new();
+                if let Some(g) = &g {
+                    // Compile every pipeline in the background so switching
+                    // shaders never stalls a frame.
+                    g.prewarm_all();
+                }
+                let _ = GPU.set(g.map(std::sync::Mutex::new));
+            });
+    });
+    GPU.get().and_then(Option::as_ref)
 }
 
 /// Renders on the GPU when possible: `Some(frame)` if a new picture was made.
