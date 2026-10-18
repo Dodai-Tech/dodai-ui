@@ -5,7 +5,7 @@
 
 use crate::charts::{fmt_num, glow_of, glow_stroke, norm, polar, turn_arc};
 use crate::gauges::{chamfer_rect, disc, zone, SWEEP};
-use crate::paint::{fill, scale_alpha, shaped, stroke};
+use crate::paint::{fill, fill_batch, scale_alpha, shaped, stroke, stroke_batch};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use dodai_core::{Color, Theme};
@@ -177,16 +177,27 @@ impl RenderOnce for Oscilloscope {
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
                 let o = b.origin;
+                let (mut minor, mut major) = (Vec::new(), Vec::new());
                 for i in 0..=10 {
                     let x = gw * i as f32 / 10.0;
-                    let c = if i == 5 { bright } else { grid };
-                    stroke(w, o, &[(x, 0.0), (x, gh)], 1.0, c, false);
+                    let l = vec![(x, 0.0), (x, gh)];
+                    if i == 5 {
+                        major.push(l)
+                    } else {
+                        minor.push(l)
+                    }
                 }
                 for i in 0..=8 {
                     let y = gh * i as f32 / 8.0;
-                    let c = if i == 4 { bright } else { grid };
-                    stroke(w, o, &[(0.0, y), (gw, y)], 1.0, c, false);
+                    let l = vec![(0.0, y), (gw, y)];
+                    if i == 4 {
+                        major.push(l)
+                    } else {
+                        minor.push(l)
+                    }
                 }
+                stroke_batch(w, o, &minor, 1.0, grid, false);
+                stroke_batch(w, o, &major, 1.0, bright, false);
                 let n = samples.len();
                 if n < 2 {
                     return;
@@ -308,7 +319,12 @@ impl RenderOnce for Spectrum {
                 let bw = ((gw - gap * (n as f32 - 1.0)) / n as f32).max(2.0);
                 let cg = 2.0;
                 let ch = (gh - cg * (cells as f32 - 1.0)) / cells as f32;
+                let cut = (ch * 0.5).min(bw * 0.4);
                 let now = clock();
+                // one bucket per colour: [zone 0..3] lit, [zone 0..3] peak caps, dim
+                let mut lit: [Vec<Vec<(f32, f32)>>; 3] = Default::default();
+                let mut caps: [Vec<Vec<(f32, f32)>>; 3] = Default::default();
+                let mut off: Vec<Vec<(f32, f32)>> = Vec::new();
                 for (i, &v0) in values.iter().enumerate() {
                     let (v, peak) = if live {
                         let v = jitter(v0, i, now);
@@ -324,31 +340,37 @@ impl RenderOnce for Spectrum {
                     let peak_cell = ((peak * cells as f32).ceil() as usize).clamp(1, cells) - 1;
                     for c in 0..cells {
                         let y = gh - (c as f32 + 1.0) * ch - c as f32 * cg;
-                        let f = (c as f32 + 0.5) / cells as f32;
-                        let col = zc.map_or(primary, |z| z[zone(f)]);
-                        let cov = crate::gauges::cell_lit(c, cells, v);
-                        let poly = chamfer_rect(x, y, bw, ch, (ch * 0.5).min(bw * 0.4));
-                        if cov > 0.0 {
-                            if let Some(r) = glow {
-                                for l in crate::paint::glow_layers(r * 0.4, 0.0) {
-                                    let g = l.width;
-                                    let big = chamfer_rect(
-                                        x - g / 2.0,
-                                        y - g / 2.0,
-                                        bw + g,
-                                        ch + g,
-                                        ch * 0.5,
-                                    );
-                                    fill(w, b.origin, &big, scale_alpha(col, l.alpha * 0.35));
-                                }
-                            }
-                            fill(w, b.origin, &poly, scale_alpha(col, 0.5 + 0.5 * cov));
-                        } else if c == peak_cell && peak > 0.0 {
-                            fill(w, b.origin, &poly, scale_alpha(col, 0.95));
+                        let z = if zc.is_some() {
+                            zone((c as f32 + 0.5) / cells as f32)
                         } else {
-                            fill(w, b.origin, &poly, scale_alpha(dim, 0.5));
+                            0
+                        };
+                        let poly = chamfer_rect(x, y, bw, ch, cut).to_vec();
+                        if crate::gauges::cell_lit(c, cells, v) >= 0.5 {
+                            lit[z].push(poly);
+                        } else if c == peak_cell && peak > 0.0 {
+                            caps[z].push(poly);
+                        } else {
+                            off.push(poly);
                         }
                     }
+                }
+                fill_batch(w, b.origin, &off, scale_alpha(dim, 0.5));
+                for z in 0..3 {
+                    let col = zc.map_or(primary, |c| c[z]);
+                    if glow.is_some() && !lit[z].is_empty() {
+                        // one soft halo pass for the whole colour, not per cell
+                        let halo: Vec<_> = lit[z]
+                            .iter()
+                            .map(|p| {
+                                chamfer_rect(p[0].0 - 2.0, p[0].1 - 2.0, bw + 4.0, ch + 4.0, cut)
+                                    .to_vec()
+                            })
+                            .collect();
+                        fill_batch(w, b.origin, &halo, scale_alpha(col, 0.16));
+                    }
+                    fill_batch(w, b.origin, &lit[z], scale_alpha(col, 0.95));
+                    fill_batch(w, b.origin, &caps[z], col);
                 }
                 if live {
                     w.request_animation_frame();
@@ -411,31 +433,29 @@ impl RenderOnce for DotMatrix {
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
                 let r = pitch * 0.3;
+                let (mut lit, mut soft, mut off, mut halo) =
+                    (Vec::new(), Vec::new(), Vec::new(), Vec::new());
                 for (i, v) in values.iter().enumerate() {
-                    let lit = crate::charts::norm(*v * g, 0.0, 1.0);
+                    let f = crate::charts::norm(*v * g, 0.0, 1.0);
                     for row in 0..rows {
-                        let cov = crate::gauges::cell_lit(row, rows, lit);
+                        let cov = crate::gauges::cell_lit(row, rows, f);
                         let (x, y) = (pitch * (i as f32 + 0.5), h - pitch * (row as f32 + 0.5));
-                        if cov > 0.0 {
+                        if cov >= 0.99 {
                             if let Some(gr) = glow {
-                                fill(
-                                    w,
-                                    b.origin,
-                                    &disc(x, y, r + gr * 0.25, 10),
-                                    scale_alpha(on, 0.18),
-                                );
+                                halo.push(disc(x, y, r + gr * 0.25, 10));
                             }
-                            fill(
-                                w,
-                                b.origin,
-                                &disc(x, y, r, 10),
-                                scale_alpha(on, 0.55 + 0.45 * cov),
-                            );
+                            lit.push(disc(x, y, r, 10));
+                        } else if cov > 0.0 {
+                            soft.push(disc(x, y, r, 10));
                         } else {
-                            fill(w, b.origin, &disc(x, y, r * 0.7, 8), dim);
+                            off.push(disc(x, y, r * 0.7, 8));
                         }
                     }
                 }
+                fill_batch(w, b.origin, &off, dim);
+                fill_batch(w, b.origin, &halo, scale_alpha(on, 0.18));
+                fill_batch(w, b.origin, &soft, scale_alpha(on, 0.6));
+                fill_batch(w, b.origin, &lit, on);
             },
         )
         .absolute()
@@ -578,52 +598,48 @@ impl RenderOnce for RadarScope {
                 let o = b.origin;
                 let c = size / 2.0;
                 let r = c - 3.0;
-                for i in 1..=4 {
-                    stroke(
-                        w,
-                        o,
-                        &turn_arc(c, c, r * i as f32 / 4.0, 0.0, 1.0),
-                        1.0,
-                        ring,
-                        true,
-                    );
-                }
-                for q in 0..4 {
-                    let a = q as f32 / 4.0;
-                    stroke(
-                        w,
-                        o,
-                        &[polar(c, c, 0.0, a), polar(c, c, r, a)],
-                        1.0,
-                        ring,
-                        false,
-                    );
-                }
+                let rings: Vec<_> = (1..=4)
+                    .map(|i| turn_arc(c, c, r * i as f32 / 4.0, 0.0, 1.0))
+                    .collect();
+                stroke_batch(w, o, &rings, 1.0, ring, true);
+                let cross: Vec<_> = (0..4)
+                    .map(|q| vec![(c, c), polar(c, c, r, q as f32 / 4.0)])
+                    .collect();
+                stroke_batch(w, o, &cross, 1.0, ring, false);
+                let (mut long, mut short) = (Vec::new(), Vec::new());
                 for i in 0..36 {
                     let a = i as f32 / 36.0;
-                    let len = if i % 3 == 0 { 7.0 } else { 3.5 };
-                    stroke(
-                        w,
-                        o,
-                        &[polar(c, c, r, a), polar(c, c, r - len, a)],
-                        1.0,
-                        scale_alpha(col, 0.55),
-                        false,
-                    );
+                    let major = i % 3 == 0;
+                    let tick = vec![
+                        polar(c, c, r, a),
+                        polar(c, c, r - if major { 7.0 } else { 3.5 }, a),
+                    ];
+                    if major {
+                        long.push(tick)
+                    } else {
+                        short.push(tick)
+                    }
                 }
+                stroke_batch(w, o, &long, 1.0, scale_alpha(col, 0.55), false);
+                stroke_batch(w, o, &short, 1.0, scale_alpha(col, 0.55), false);
                 let sweep = if live {
                     (clock() / period).fract()
                 } else {
                     0.12
                 };
-                // fading fan behind the beam
-                let fan = 28;
-                for i in 0..fan {
-                    let a0 = sweep - 0.22 * (i + 1) as f32 / fan as f32;
-                    let a1 = sweep - 0.22 * i as f32 / fan as f32;
-                    let tri = [(c, c), polar(c, c, r, a0), polar(c, c, r, a1)];
-                    let k = 1.0 - i as f32 / fan as f32;
-                    fill(w, o, &tri, scale_alpha(col, 0.28 * k * k));
+                // fading fan behind the beam: 7 alpha bands of 4 wedges each
+                let (bands, per) = (7, 4);
+                for band in 0..bands {
+                    let tris: Vec<Vec<(f32, f32)>> = (0..per)
+                        .map(|j| {
+                            let i = band * per + j;
+                            let a0 = sweep - 0.22 * (i + 1) as f32 / (bands * per) as f32;
+                            let a1 = sweep - 0.22 * i as f32 / (bands * per) as f32;
+                            vec![(c, c), polar(c, c, r, a0), polar(c, c, r, a1)]
+                        })
+                        .collect();
+                    let k = 1.0 - (band as f32 + 0.5) / bands as f32;
+                    fill_batch(w, o, &tris, scale_alpha(col, 0.28 * k * k));
                 }
                 glow_stroke(w, o, &[(c, c), polar(c, c, r, sweep)], 2.0, col, glow);
                 for bl in &blips {
@@ -713,6 +729,10 @@ impl RenderOnce for HexMap {
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
                 let now = clock();
+                const LEVELS: usize = 8;
+                let mut fills: [Vec<Vec<(f32, f32)>>; LEVELS] = Default::default();
+                let mut halos: Vec<Vec<(f32, f32)>> = Vec::new();
+                let mut edges: Vec<Vec<(f32, f32)>> = Vec::new();
                 for (i, &v0) in values.iter().enumerate() {
                     let (row, col) = (i / cols, i % cols);
                     let v = if live {
@@ -721,21 +741,26 @@ impl RenderOnce for HexMap {
                         v0.clamp(0.0, 1.0)
                     };
                     let (cx_, cy_) = hex_center(row, col, s);
-                    let fill_c = hsla(base.mix(if v > 0.8 { hi } else { hot }, v));
-                    let inner = hex_points(cx_, cy_, s * 0.9);
+                    let inner = hex_points(cx_, cy_, s * 0.9).to_vec();
                     if v > 0.05 {
-                        if v > 0.7 {
-                            if let Some(r) = glow {
-                                for l in crate::paint::glow_layers(r * 0.5, 0.0) {
-                                    let big = hex_points(cx_, cy_, s * 0.9 + l.width / 2.0);
-                                    fill(w, b.origin, &big, scale_alpha(fill_c, l.alpha * 0.4));
-                                }
-                            }
+                        if v > 0.7 && glow.is_some() {
+                            halos.push(hex_points(cx_, cy_, s * 1.05).to_vec());
                         }
-                        fill(w, b.origin, &inner, fill_c);
+                        fills[((v * LEVELS as f32) as usize).min(LEVELS - 1)].push(inner.clone());
                     }
-                    stroke(w, b.origin, &inner, 1.0, edge, true);
+                    edges.push(inner);
                 }
+                fill_batch(w, b.origin, &halos, scale_alpha(hsla(hi), 0.22));
+                for (l, polys) in fills.iter().enumerate() {
+                    let v = (l as f32 + 0.5) / LEVELS as f32;
+                    fill_batch(
+                        w,
+                        b.origin,
+                        polys,
+                        hsla(base.mix(if v > 0.8 { hi } else { hot }, v)),
+                    );
+                }
+                stroke_batch(w, b.origin, &edges, 1.0, edge, true);
                 if live {
                     w.request_animation_frame();
                 }

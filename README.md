@@ -77,6 +77,9 @@ Try them per section in `just run-gpui`.
 `dodai-gpui` has two default features, `components` and `charts`. For charts without buttons, tables
 or dialogs: `dodai-gpui = { version = "0.1", default-features = false, features = ["charts"] }`.
 
+Instrument-style pieces: `Gauge` with `GaugeStyle` (arc, segmented, dial, meter, reticle, bar, chevron, level)
+and `Oscilloscope`, `Spectrum`, `RadarScope`, `HexMap`, `RingStack`, `DotMatrix`, `SignalBars`.
+
 ## Shaders
 
 `dodai-shaders` is a dependency-free set of per-pixel shaders written as plain Rust functions

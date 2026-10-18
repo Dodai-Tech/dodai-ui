@@ -492,6 +492,49 @@ pub(crate) fn fill(w: &mut Window, o: gpui::Point<Pixels>, p: &[(f32, f32)], c: 
     }
 }
 
+/// Fill many polygons with one colour in a single path (one tessellation and
+/// one draw call instead of one per polygon).
+#[cfg(feature = "charts")]
+pub(crate) fn fill_batch(
+    w: &mut Window,
+    o: gpui::Point<Pixels>,
+    polys: &[Vec<(f32, f32)>],
+    c: Hsla,
+) {
+    if polys.is_empty() {
+        return;
+    }
+    let mut pb = PathBuilder::fill();
+    for p in polys {
+        pb.add_polygon(&pts(o, p), true);
+    }
+    if let Ok(path) = pb.build() {
+        w.paint_path(path, c);
+    }
+}
+
+/// Stroke many polylines with one colour and width in a single path.
+#[cfg(feature = "charts")]
+pub(crate) fn stroke_batch(
+    w: &mut Window,
+    o: gpui::Point<Pixels>,
+    polys: &[Vec<(f32, f32)>],
+    width: f32,
+    c: Hsla,
+    closed: bool,
+) {
+    if polys.is_empty() {
+        return;
+    }
+    let mut pb = PathBuilder::stroke(px(width));
+    for p in polys {
+        pb.add_polygon(&pts(o, p), closed);
+    }
+    if let Ok(path) = pb.build() {
+        w.paint_path(path, c);
+    }
+}
+
 /// How a loading indicator plays.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Playback {
