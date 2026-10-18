@@ -43,6 +43,8 @@ struct Showcase {
     ld_pb: dodai_gpui::Playback,
     ld_ms: u16,
     scroll: gpui::ScrollHandle,
+    /// Section title to scroll to (plus frames to wait for a new category to lay out).
+    jump: Option<(&'static str, u8)>,
     sec_kind: std::collections::HashMap<&'static str, EntrySet>,
     pill_hover: Option<(&'static str, u8)>,
     pop_hover: Option<(&'static str, u8)>,
@@ -616,6 +618,22 @@ impl Showcase {
                 ),
             );
         chips.into_any_element()
+    }
+}
+
+fn cat_blurb(name: &str) -> &'static str {
+    match name {
+        "Foundations" => "Design tokens: colour, type, spacing.",
+        "Shape" => "Glow, scanlines, corner cuts and borders.",
+        "Actions" => "Buttons and triggers.",
+        "Inputs" => "Text, choice, date and form controls.",
+        "Navigation" => "Menus, tabs, overlays and sidebars.",
+        "Data display" => "Tables, progress, media, time and content.",
+        "Charts" => "Statistical, market and radial charts.",
+        "Animation" => "Entry effects and physics.",
+        "Shaders" => "Pixel-shader backgrounds and effects.",
+        "Loading" => "Spinners and skeletons.",
+        _ => "",
     }
 }
 
@@ -3338,6 +3356,7 @@ impl Render for Showcase {
             .min_w_0()
             .flex_shrink_0()
             .h_full()
+            .overflow_y_scroll()
             .p(px(if rail { t.spacing.xs } else { t.spacing.md }))
             .child({
                 let m = me.clone();
@@ -3429,6 +3448,37 @@ impl Render for Showcase {
                         ),
                     );
                 }
+                // Jump list: every visible section of this category.
+                let mut k = 0usize;
+                for (c, title) in &sections_meta {
+                    if *c != name
+                        || self.sub.is_some_and(|x| sub_of(c, title) != Some(x))
+                        || !(query.is_empty()
+                            || !fuzzy_filter(&query, &[format!("{c} {title}")]).is_empty())
+                    {
+                        continue;
+                    }
+                    let (m, title) = (me.clone(), *title);
+                    let hover = hsla(t.palette.primary);
+                    side = side.child(
+                        div()
+                            .id(("jump", idx * 1000 + k))
+                            .pl(px(t.spacing.xl + t.spacing.sm))
+                            .py(px(2.0))
+                            .text_size(px(t.typography.size_sm))
+                            .text_color(hsla(t.palette.text_muted))
+                            .cursor_pointer()
+                            .hover(move |s| s.text_color(hover))
+                            .child(title)
+                            .on_click(move |_, _, cx| {
+                                m.update(cx, |s, cx| {
+                                    s.jump = Some((title, 0));
+                                    cx.notify()
+                                })
+                            }),
+                    );
+                    k += 1;
+                }
             }
         }
         if !rail {
@@ -3439,19 +3489,98 @@ impl Render for Showcase {
             );
         }
 
+        let overview = self.cat == 0
+            && self.sub.is_none()
+            && query.is_empty()
+            && std::env::var_os("DODAI_ONLY").is_none();
         let mut body = div()
+            .id(("body", self.cat * 1000 + self.replay))
+            .track_scroll(&self.scroll)
             .flex()
             .flex_col()
+            .flex_1()
             .gap(px(t.spacing.lg + 8.0))
             .min_w_0()
+            .overflow_y_scroll()
             .p(px(if narrow { t.spacing.md } else { t.spacing.xl }))
             .child(ds_panel);
+        let mut n_children = 1usize; // ds_panel
+        let mut jump_ix: Option<usize> = None;
+        let jump_title = self.jump.map(|(j, _)| j);
+        if overview {
+            let total = sections_meta.len();
+            body = body
+                .child(Heading::new("Overview").level(2))
+                .child(Muted::new(format!(
+                    "{total} components in {} categories. Click a name to jump straight to it.",
+                    cats.len()
+                )));
+            let mut grid = div().flex().flex_wrap().gap(px(t.spacing.md)).w_full();
+            for (ci, cname) in cats.iter().enumerate() {
+                let names: Vec<&'static str> = sections_meta
+                    .iter()
+                    .filter(|(c, _)| c == cname)
+                    .map(|(_, l)| *l)
+                    .collect();
+                let m0 = me.clone();
+                let mut card = Panel::new().refine(move |d| d.flex_1().min_w(px(250.0)));
+                let head = div()
+                    .id(("ov-cat", ci))
+                    .flex()
+                    .items_center()
+                    .gap(px(t.spacing.sm))
+                    .cursor_pointer()
+                    .child(
+                        dodai_gpui::Icon::new(cat_icon(cname))
+                            .size(16.0)
+                            .color(hsla(t.palette.primary)),
+                    )
+                    .child(Heading::new(*cname).level(3))
+                    .child(Muted::new(format!("· {}", names.len())))
+                    .on_click(move |_, _, cx| {
+                        m0.update(cx, |s, cx| {
+                            s.cat = ci + 1;
+                            s.sub = None;
+                            s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
+                            cx.notify()
+                        })
+                    });
+                card = card.child(head).child(Muted::new(cat_blurb(cname)));
+                let hover = hsla(t.palette.primary);
+                for (k, title) in names.iter().take(8).enumerate() {
+                    let (m, title) = (me.clone(), *title);
+                    card = card.child(
+                        div()
+                            .id(("ov", ci * 1000 + k))
+                            .text_size(px(t.typography.size_sm))
+                            .text_color(hsla(t.palette.text))
+                            .cursor_pointer()
+                            .hover(move |s| s.text_color(hover))
+                            .child(title)
+                            .on_click(move |_, _, cx| {
+                                m.update(cx, |s, cx| {
+                                    s.cat = ci + 1;
+                                    s.sub = None;
+                                    s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
+                                    s.jump = Some((title, 3));
+                                    cx.notify()
+                                })
+                            }),
+                    );
+                }
+                if names.len() > 8 {
+                    card = card.child(Muted::new(format!("+ {} more", names.len() - 8)));
+                }
+                grid = grid.child(card);
+            }
+            body = body.child(grid);
+        }
         let mut shown = 0;
         let mut last_cat = "";
         let mut last_sub: Option<&str> = None;
         for (c, title, el, _key) in sections {
             // Loading demos repaint every frame forever: own page only.
-            let in_cat = selected_cat.map_or(c != "Loading", |sc| sc == c);
+            let in_cat = !overview && selected_cat.map_or(c != "Loading", |sc| sc == c);
             let hit =
                 query.is_empty() || !fuzzy_filter(&query, &[format!("{c} {title}")]).is_empty();
             let only = std::env::var("DODAI_ONLY").is_ok_and(|o| !title.contains(&o));
@@ -3461,19 +3590,36 @@ impl Render for Showcase {
             }
             if c != last_cat {
                 body = body.child(Heading::new(c).level(2));
+                n_children += 1;
                 last_cat = c;
                 last_sub = None;
             }
             if let Some(sb) = sub_of(c, title) {
                 if last_sub != Some(sb) {
                     body = body.child(Heading::new(sb).level(3));
+                    n_children += 1;
                     last_sub = Some(sb);
                 }
             }
+            if jump_title == Some(title) {
+                jump_ix = Some(n_children);
+            }
             shown += 1;
+            n_children += 1;
             body = body.child(el);
         }
-        if shown == 0 {
+        if let Some((j, wait)) = self.jump {
+            if wait > 0 {
+                self.jump = Some((j, wait - 1));
+            } else {
+                self.jump = None;
+                if let Some(ix) = jump_ix {
+                    self.scroll.scroll_to_top_of_item(ix);
+                }
+            }
+            window.request_animation_frame();
+        }
+        if shown == 0 && !overview {
             body = body.child(
                 EmptyState::new("⌕", "No components match")
                     .message("Clear the filter or pick another category."),
@@ -3544,17 +3690,7 @@ impl Render for Showcase {
                             })
                         }
                     })
-                    .content(
-                        div()
-                            .id("scroll")
-                            .track_scroll(&self.scroll)
-                            .flex()
-                            .flex_col()
-                            .flex_1()
-                            .min_w_0()
-                            .overflow_y_scroll()
-                            .child(body.id(("body", self.cat * 1000 + self.replay))),
-                    ),
+                    .content(body),
             )
             .child(Scanlines::new())
     }
@@ -3692,6 +3828,7 @@ fn main() {
                         ld_pb: dodai_gpui::Playback::Loop,
                         ld_ms: 0,
                         scroll: gpui::ScrollHandle::new(),
+                        jump: None,
                         sec_kind: Default::default(),
                         pill_hover: None,
                         pop_hover: None,
