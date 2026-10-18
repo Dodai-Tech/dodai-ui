@@ -17,13 +17,6 @@ pub const SHADERS: &[ShaderInfo] = &[
         neon_grid,
     ),
     ShaderInfo::generator(
-        "neon_city",
-        "Rain city",
-        F,
-        "Lit skyline, neon signs, rain and a wet street",
-        neon_city,
-    ),
-    ShaderInfo::generator(
         "hex_pulse",
         "Hex pulse",
         F,
@@ -95,85 +88,6 @@ pub fn neon_grid(uv: Vec2, c: &Ctx) -> Vec3 {
     }
     // horizon glow
     col + p.c * glow((uv.y - horizon) * 6.0, 14.0) * 0.45
-}
-
-fn building(x: f32, layer: f32, seed: f32) -> (f32, f32) {
-    let cell = (x * (6.0 + layer * 3.0)).floor();
-    let h = 0.28 + hash2(cell as i32, (seed * 10.0) as i32) * (0.42 - layer * 0.07);
-    (cell, h)
-}
-
-/// Rainy night skyline with lit windows, neon signs and wet-street reflection.
-pub fn neon_city(uv: Vec2, c: &Ctx) -> Vec3 {
-    let p = &c.pal;
-    let street = 0.82;
-    let mirrored = uv.y > street;
-    let y = if mirrored {
-        street - (uv.y - street) * 1.4
-    } else {
-        uv.y
-    };
-    let ground = 1.0 - y; // 0 at top → 1 at bottom of the scene
-    let mut col = p.bg.mix(p.c * 0.28, smoothstep(0.1, 0.8, y));
-    for layer in 0..3 {
-        let l = layer as f32;
-        let scroll = c.time * (0.004 + 0.003 * l);
-        let x = uv.x * c.aspect() * 0.7 + scroll + l * 3.1;
-        let (cell, h) = building(x, l, l + 1.0);
-        let top = street - h * (1.0 - l * 0.15);
-        if y > top {
-            let tone = 0.10 + 0.06 * l;
-            let mut b = p.bg.mix(p.b * 0.5, tone) * (0.6 + 0.4 * l * 0.4);
-            // windows
-            let wx = fract(x * (6.0 + l * 3.0)) * 6.0;
-            let wy = (y - top) * 70.0;
-            let (gx, gy) = (wx.floor(), wy.floor());
-            let lit = hash3(cell as i32, gx as i32, gy as i32 + layer);
-            let in_win = step(0.25, fract(wx))
-                * step(fract(wx), 0.75)
-                * step(0.3, fract(wy))
-                * step(fract(wy), 0.8);
-            let on = step(0.62, lit) * in_win;
-            let flick = 0.8 + 0.2 * (c.time * 3.0 + lit * 30.0).sin();
-            let win_col = if lit > 0.88 {
-                p.c
-            } else if lit > 0.75 {
-                p.b
-            } else {
-                p.a
-            };
-            b = b + win_col * on * flick * (0.9 - l * 0.2);
-            // neon sign band on some towers
-            if hash2(cell as i32, 99) > 0.7 && (y - top) < 0.03 {
-                let sign = if hash2(cell as i32, 7) > 0.5 {
-                    p.c
-                } else {
-                    p.b
-                };
-                b = b + sign * 1.3;
-            }
-            col = b;
-        }
-        // edge glow on rooflines
-        if layer == 0 {
-            col = col + p.b * glow((y - top) * 60.0, 3.0) * 0.12;
-        }
-    }
-    // rain
-    let rx = uv.x * 140.0 * c.aspect();
-    let col_id = rx.floor();
-    let speed = 1.2 + hash1(col_id) * 1.6;
-    let ry = fract(uv.y * 2.0 - c.time * speed + hash1(col_id + 3.0));
-    let streak = step(hash1(col_id + 9.0), 0.5)
-        * smoothstep(0.0, 0.5, ry)
-        * step(ry, 0.52)
-        * step(0.35, fract(rx));
-    col = col + p.fg * streak * 0.18;
-    if mirrored {
-        let wet = noise(vec2(uv.x * 30.0, uv.y * 120.0 + c.time)) * 0.4 + 0.3;
-        col = col * (0.55 * wet) + p.c * 0.04 * (uv.y - street) * 3.0;
-    }
-    col * (1.0 - 0.35 * ground * ground * 0.0) * (1.0 - 0.45 * (uv - 0.5).len().powi(2))
 }
 
 /// Hex lattice with energy rings travelling outward from the centre.

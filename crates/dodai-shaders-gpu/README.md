@@ -1,6 +1,6 @@
 # dodai-shaders-gpu
 
-Run the [`dodai-shaders`](../dodai-shaders) catalogue (126 shaders) on the GPU, with wgpu compute.
+Run the [`dodai-shaders`](../dodai-shaders) catalogue (137 shaders) on the GPU, with wgpu compute.
 
 The shaders are **the same Rust source files** as the CPU catalogue. They are compiled to WGSL by
 [rust-gpu](https://github.com/Rust-GPU/rust-gpu) (`crates/dodai-shaders-kernels`), and the result is
@@ -12,7 +12,7 @@ let mut gpu = dodai_shaders_gpu::Gpu::new().expect("no GPU");
 let bgra = gpu.render(&["terminal_scene", "crt"], 1920, 1080, t, 1.0, &ShaderPalette::matrix())?;
 ```
 
-Measured on an M4 Pro at 1080p, all 126 shaders: **0.7 s on the GPU vs 3.4 s on 14 CPU cores**
+Measured on an M4 Pro at 1080p, all 137 shaders: **0.7 s on the GPU vs 3.4 s on 14 CPU cores**
 (`just parity 1920 1080`). It also checks every shader against the CPU result: the mean difference
 is under 3/255. Small frames gain little, because each render waits for the read-back.
 

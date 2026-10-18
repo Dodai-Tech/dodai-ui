@@ -19,6 +19,59 @@ impl Preset {
     }
 }
 
+/// Rainy megacity presets (use with `ShaderPalette::bladerunner`).
+pub const BLADE: &[Preset] = &[
+    Preset {
+        id: "br-rain-city",
+        name: "Rain city",
+        desc: "Orange smog, neon and a spinner, graded teal and orange",
+        chain: &["br_city", "br_grade", "film_grain"],
+        palette: ShaderPalette::bladerunner,
+    },
+    Preset {
+        id: "br-spinner",
+        name: "Flying car",
+        desc: "Anamorphic streaks off every light",
+        chain: &["br_city", "br_anamorphic", "br_grade"],
+        palette: ShaderPalette::bladerunner,
+    },
+    Preset {
+        id: "br-alley",
+        name: "Neon alley",
+        desc: "Street level in smog, wet road, umbrellas",
+        chain: &["br_street", "br_smog", "br_grade"],
+        palette: ShaderPalette::bladerunner,
+    },
+    Preset {
+        id: "br-pyramid",
+        name: "Pyramid searchlights",
+        desc: "The ziggurat under sweeping beams",
+        chain: &["br_tyrell", "br_searchlights", "br_grade"],
+        palette: ShaderPalette::bladerunner,
+    },
+    Preset {
+        id: "br-fires",
+        name: "Refinery fires",
+        desc: "Smokestacks venting flame through smog",
+        chain: &["br_off_world", "br_smog", "br_grade", "vignette"],
+        palette: ShaderPalette::bladerunner,
+    },
+    Preset {
+        id: "br-eye",
+        name: "Empathy test",
+        desc: "The scanning iris, graded and grainy",
+        chain: &["br_eye", "br_grade", "film_grain"],
+        palette: ShaderPalette::bladerunner,
+    },
+    Preset {
+        id: "br-downpour",
+        name: "Downpour",
+        desc: "Cyberpunk city in a storm with wet pavement",
+        chain: &["neon_city", "br_rain", "br_wet"],
+        palette: ShaderPalette::cyberpunk,
+    },
+];
+
 /// Retro terminal and monitor presets.
 pub const RETRO: &[Preset] = &[
     Preset {
@@ -171,7 +224,7 @@ pub const GHOSTTY: &[Preset] = &[
 
 /// Every preset.
 pub fn all() -> impl Iterator<Item = &'static Preset> {
-    RETRO.iter().chain(GHOSTTY.iter())
+    RETRO.iter().chain(GHOSTTY.iter()).chain(BLADE.iter())
 }
 
 #[cfg(test)]

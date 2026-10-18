@@ -30,6 +30,7 @@
     clippy::manual_memcpy
 )]
 
+pub mod blade;
 pub mod ctx;
 pub mod cyberpunk;
 pub mod extra;
@@ -171,6 +172,7 @@ pub fn catalog() -> &'static [ShaderInfo] {
     ALL.get_or_init(|| {
         [
             cyberpunk::SHADERS,
+            blade::SHADERS,
             material::SHADERS,
             matrix::SHADERS,
             retro::SHADERS,

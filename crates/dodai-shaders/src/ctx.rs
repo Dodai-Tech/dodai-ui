@@ -29,6 +29,16 @@ impl ShaderPalette {
             c: rgb8(255, 40, 110),
         }
     }
+    /// Teal night, orange smog and magenta neon: a rainy-megacity look.
+    pub fn bladerunner() -> Self {
+        Self {
+            bg: rgb8(4, 9, 13),
+            fg: rgb8(240, 226, 200),
+            a: rgb8(255, 138, 40),
+            b: rgb8(46, 200, 214),
+            c: rgb8(255, 52, 120),
+        }
+    }
     /// Material 3 baseline (purple) scheme, dark.
     pub fn material3() -> Self {
         Self {

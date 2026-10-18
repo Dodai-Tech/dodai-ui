@@ -2690,6 +2690,10 @@ impl Render for Showcase {
                     "Ghostty presets",
                     dodai_gpui::dodai_shaders::presets::GHOSTTY,
                 ),
+                (
+                    "Blade Runner presets",
+                    dodai_gpui::dodai_shaders::presets::BLADE,
+                ),
             ] {
                 let mut r = row();
                 for p in list {

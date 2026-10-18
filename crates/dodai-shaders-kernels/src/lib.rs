@@ -50,6 +50,8 @@ impl ShaderInfo {
     }
 }
 
+#[path = "../../dodai-shaders/src/blade.rs"]
+pub mod blade;
 #[path = "../../dodai-shaders/src/cyberpunk.rs"]
 pub mod cyberpunk;
 #[path = "../../dodai-shaders/src/extra.rs"]
