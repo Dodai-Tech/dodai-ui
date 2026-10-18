@@ -167,7 +167,9 @@ pub use nav::{Accordion, Breadcrumb, Pagination, Segmented, Stepper};
 pub use overlay::{Dialog, DialogCard};
 pub use paint::Playback;
 pub use paint::{shaped, ShapeStyle};
-pub use panel::{section_border, set_section_border, BorderStyle, DodaiTooltip, InputBox, Panel};
+pub use panel::{
+    section_border, set_section_border, BorderStyle, DodaiTooltip, Edge, InputBox, Panel,
+};
 #[cfg(feature = "components")]
 pub use picker::{
     days_in_month, month_grid, shift_month, step_hour, step_minute, to_12h, weekday, Date,

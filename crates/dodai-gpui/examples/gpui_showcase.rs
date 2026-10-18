@@ -2240,6 +2240,45 @@ impl Render for Showcase {
                         r
                     })
                     .child({
+                        use dodai_gpui::{BorderStyle as B, Edge};
+                        let mut r = row();
+                        for e in Edge::ALL {
+                            r = r.child(
+                                div().flex_1().min_w(px(110.0)).child(
+                                    Panel::new()
+                                        .border(B::THIN.accent(Some(e)))
+                                        .child(Label::new(e.name())),
+                                ),
+                            );
+                        }
+                        r
+                    })
+                    .child({
+                        use dodai_gpui::{BorderStyle as B, Edge};
+                        let cur = dodai_gpui::section_border(cx);
+                        let mut r = row().child(Label::new("Accent line (all sections)"));
+                        let mut opts: Vec<Option<Edge>> = vec![None];
+                        opts.extend(Edge::ALL.map(Some));
+                        for (i, o) in opts.into_iter().enumerate() {
+                            r = r.child(
+                                Button::new(
+                                    ("bd-acc", i),
+                                    o.map_or("None", |e| e.name()),
+                                )
+                                .variant(if cur.accent == o {
+                                    ButtonVariant::Primary
+                                } else {
+                                    ButtonVariant::Outline
+                                })
+                                .on_click(move |_, _, cx| {
+                                    let b: B = dodai_gpui::section_border(cx);
+                                    dodai_gpui::set_section_border(cx, b.accent(o));
+                                }),
+                            );
+                        }
+                        r
+                    })
+                    .child({
                         let b = dodai_gpui::section_border(cx);
                         row()
                             .child(Label::new("All sections"))

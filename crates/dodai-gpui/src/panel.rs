@@ -18,6 +18,50 @@ pub struct BorderStyle {
     pub width: f32,
     /// Colour strength `0..=1` (multiplies the theme border's alpha).
     pub opacity: f32,
+    /// Edge drawn as the accent (theme primary, e.g. the yellow line); the
+    /// other three edges keep the grey border. `None` = plain border all round.
+    pub accent: Option<Edge>,
+    /// Thickness of the accent line in px.
+    pub accent_width: f32,
+}
+
+/// A side of a box.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Edge {
+    Top,
+    Right,
+    Bottom,
+    Left,
+    /// Corner brackets: an L-shaped accent in the corner.
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+}
+
+impl Edge {
+    pub const ALL: [Edge; 8] = [
+        Edge::Top,
+        Edge::Right,
+        Edge::Bottom,
+        Edge::Left,
+        Edge::TopLeft,
+        Edge::TopRight,
+        Edge::BottomLeft,
+        Edge::BottomRight,
+    ];
+    pub fn name(self) -> &'static str {
+        match self {
+            Edge::Top => "Top",
+            Edge::Right => "Right",
+            Edge::Bottom => "Bottom",
+            Edge::Left => "Left",
+            Edge::TopLeft => "Top left",
+            Edge::TopRight => "Top right",
+            Edge::BottomLeft => "Bottom left",
+            Edge::BottomRight => "Bottom right",
+        }
+    }
 }
 
 impl BorderStyle {
@@ -25,34 +69,62 @@ impl BorderStyle {
     pub const SUBTLE: BorderStyle = BorderStyle {
         width: 0.75,
         opacity: 0.45,
+        accent: None,
+        accent_width: 2.0,
     };
     /// Default for sections: thin and soft.
     pub const THIN: BorderStyle = BorderStyle {
         width: 1.0,
         opacity: 0.6,
+        accent: None,
+        accent_width: 2.0,
     };
     /// The theme's own border, unchanged strength.
     pub const NORMAL: BorderStyle = BorderStyle {
         width: 1.5,
         opacity: 1.0,
+        accent: None,
+        accent_width: 2.0,
     };
     /// Heavy frame.
     pub const BOLD: BorderStyle = BorderStyle {
         width: 3.0,
         opacity: 1.0,
+        accent: None,
+        accent_width: 2.0,
     };
     pub const NONE: BorderStyle = BorderStyle {
         width: 0.0,
         opacity: 0.0,
+        accent: None,
+        accent_width: 2.0,
     };
 
     pub fn new(width: f32, opacity: f32) -> Self {
-        Self { width, opacity }.clamped()
+        Self {
+            width,
+            opacity,
+            accent: None,
+            accent_width: 2.0,
+        }
+        .clamped()
+    }
+    /// Same border with the accent line on `edge` (or none).
+    pub fn accent(mut self, edge: Option<Edge>) -> Self {
+        self.accent = edge;
+        self
+    }
+    /// Same border with an accent line of `width` px.
+    pub fn accent_width(mut self, width: f32) -> Self {
+        self.accent_width = width;
+        self.clamped()
     }
     fn clamped(self) -> Self {
         Self {
             width: self.width.clamp(0.0, 8.0),
             opacity: self.opacity.clamp(0.0, 1.0),
+            accent: self.accent,
+            accent_width: self.accent_width.clamp(0.5, 8.0),
         }
     }
     /// Apply to a paint style (pure).
@@ -197,7 +269,54 @@ impl Panel {
             shape.corners = c;
         }
         let border = self.border.unwrap_or_else(|| section_border(cx));
-        let mut d = shaped(&shape, border.apply(panel_style(&t, self.focused)))
+        let mut d = shaped(&shape, border.apply(panel_style(&t, self.focused)));
+        if let (Some(edge), true) = (border.accent, border.width > 0.0) {
+            // the accent edge replaces the grey one
+            let bw = &mut d.style().border_widths;
+            match edge {
+                Edge::Top => bw.top = Some(px(0.0).into()),
+                Edge::Right => bw.right = Some(px(0.0).into()),
+                Edge::Bottom => bw.bottom = Some(px(0.0).into()),
+                Edge::Left => bw.left = Some(px(0.0).into()),
+                _ => {}
+            }
+        }
+        if let Some(edge) = border.accent {
+            let inset = if shape.kind() == dodai_core::ShapeKind::Rounded
+                || shape.kind() == dodai_core::ShapeKind::Chamfered
+            {
+                shape.radius
+            } else {
+                0.0
+            };
+            let aw = border.clamped().accent_width;
+            let c = hsla(t.panel(true).border);
+            let bracket = |top: bool, left: bool| {
+                const ARM: f32 = 28.0;
+                let h = div().absolute().bg(c).w(px(ARM)).h(px(aw));
+                let v = div().absolute().bg(c).h(px(ARM)).w(px(aw));
+                let h = if top { h.top_0() } else { h.bottom_0() };
+                let v = if top { v.top_0() } else { v.bottom_0() };
+                let (h, v) = if left {
+                    (h.left_0(), v.left_0())
+                } else {
+                    (h.right_0(), v.right_0())
+                };
+                div().absolute().size_full().child(h).child(v)
+            };
+            let line = div().absolute().bg(c);
+            d = match edge {
+                Edge::TopLeft => d.child(bracket(true, true)),
+                Edge::TopRight => d.child(bracket(true, false)),
+                Edge::BottomLeft => d.child(bracket(false, true)),
+                Edge::BottomRight => d.child(bracket(false, false)),
+                Edge::Top => d.child(line.top_0().left(px(inset)).right(px(inset)).h(px(aw))),
+                Edge::Bottom => d.child(line.bottom_0().left(px(inset)).right(px(inset)).h(px(aw))),
+                Edge::Left => d.child(line.left_0().top(px(inset)).bottom(px(inset)).w(px(aw))),
+                Edge::Right => d.child(line.right_0().top(px(inset)).bottom(px(inset)).w(px(aw))),
+            };
+        }
+        let mut d = d
             .flex()
             .flex_col()
             .min_w_0()
@@ -377,13 +496,10 @@ mod tests {
         assert_eq!(s.stroke_width, 0.5);
         assert!((s.stroke.unwrap().a - base.stroke.unwrap().a * 0.5).abs() < 1e-5);
         assert!(BorderStyle::NONE.apply(base).stroke.is_none());
-        assert_eq!(
-            BorderStyle::new(99.0, 5.0),
-            BorderStyle {
-                width: 8.0,
-                opacity: 1.0
-            }
-        );
+        let c = BorderStyle::new(99.0, 5.0);
+        assert_eq!((c.width, c.opacity), (8.0, 1.0));
+        let a = BorderStyle::THIN.accent(Some(Edge::Top)).accent_width(99.0);
+        assert_eq!((a.accent, a.accent_width), (Some(Edge::Top), 8.0));
     }
 
     use crate::testing::light_rounded;
