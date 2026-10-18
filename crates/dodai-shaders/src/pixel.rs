@@ -678,18 +678,29 @@ const P16: [[u8; 3]; 16] = [
 ];
 
 pub fn pico16(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
+    // Palette in linear light, computed once.
+    static LIN: std::sync::OnceLock<[(Vec3, Vec3); 16]> = std::sync::OnceLock::new();
+    let lin = LIN.get_or_init(|| {
+        let mut o = [(Vec3::BLACK, Vec3::BLACK); 16];
+        for (i, pc) in P16.iter().enumerate() {
+            let v = Vec3::from_u8(*pc);
+            o[i] = (v, v.powf(2.2));
+        }
+        o
+    });
     let (w, h) = (src.w as f32, src.h as f32);
     let (x, y) = ((uv.x * w) as i32, (uv.y * h) as i32);
-    let s = src.sample(uv);
+    let s = src.get(x, y);
     let d = (bayer4(x, y) - 0.5) * 0.18 * c.intensity;
-    let t = s + Vec3::splat(d);
-    let mut best = (f32::MAX, P16[0]);
-    for pc in P16 {
-        let v = Vec3::from_u8(pc);
-        let dist = (v.powf(2.2) - t.clamp01().powf(2.2)).len();
+    let t = (s + Vec3::splat(d)).clamp01();
+    let t = vec3(t.x * t.x, t.y * t.y, t.z * t.z); // ≈ gamma 2.2
+    let mut best = (f32::MAX, lin[0].0);
+    for (v, vl) in lin.iter() {
+        let dv = *vl - t;
+        let dist = dv.dot(dv);
         if dist < best.0 {
-            best = (dist, pc);
+            best = (dist, *v);
         }
     }
-    Vec3::from_u8(best.1)
+    best.1
 }

@@ -199,6 +199,29 @@ impl Frame {
         o
     }
     /// Binary PPM (P6), handy for dumping frames without an image crate.
+    /// Terminal rendering: each cell shows two vertically stacked pixels as
+    /// `▀` with fg = top and bg = bottom. Returns `cols × rows` cells,
+    /// row-major, resampling the frame to `cols × rows*2`.
+    pub fn to_half_blocks(&self, cols: u32, rows: u32) -> Vec<([u8; 3], [u8; 3])> {
+        let q = |c: Vec3| [c.x, c.y, c.z].map(|v| (v.clamp(0.0, 1.0) * 255.0 + 0.5) as u8);
+        let mut out = Vec::with_capacity((cols * rows) as usize);
+        for r in 0..rows {
+            for c in 0..cols {
+                let u = (c as f32 + 0.5) / cols as f32;
+                let top = self.nearest(vec2(
+                    u,
+                    (r * 2) as f32 / (rows * 2) as f32 + 0.25 / rows as f32,
+                ));
+                let bot = self.nearest(vec2(
+                    u,
+                    (r * 2 + 1) as f32 / (rows * 2) as f32 + 0.25 / rows as f32,
+                ));
+                out.push((q(top), q(bot)));
+            }
+        }
+        out
+    }
+
     pub fn to_ppm(&self) -> Vec<u8> {
         let mut o = format!("P6\n{} {}\n255\n", self.w, self.h).into_bytes();
         for p in &self.px {
@@ -222,21 +245,31 @@ fn par_rows(w: u32, h: u32, f: impl Fn(u32, u32) -> Vec3 + Sync) -> Frame {
     if w == 0 || h == 0 {
         return fr;
     }
-    let n = std::thread::available_parallelism()
+    let threads = std::thread::available_parallelism()
         .map_or(1, |n| n.get())
-        .min(8);
-    let rows = (h as usize).div_ceil(n).max(1);
-    std::thread::scope(|s| {
-        for (ci, chunk) in fr.px.chunks_mut(rows * w as usize).enumerate() {
-            let f = &f;
-            s.spawn(move || {
-                for (i, p) in chunk.iter_mut().enumerate() {
-                    let idx = (ci * rows * w as usize + i) as u32;
-                    *p = f(idx % w, idx / w);
-                }
-            });
+        .min(16);
+    let band = 4 * w as usize;
+    // Pixel work is very uneven (fireworks, bloom): threads pull small row
+    // bands from a shared queue instead of owning a fixed slab.
+    let queue = std::sync::Mutex::new(fr.px.chunks_mut(band).enumerate());
+    let run = || loop {
+        let next = queue.lock().ok().and_then(|mut q| q.next());
+        let Some((bi, chunk)) = next else { break };
+        for (i, p) in chunk.iter_mut().enumerate() {
+            let idx = (bi * band + i) as u32;
+            *p = f(idx % w, idx / w);
         }
-    });
+    };
+    if (w as usize * h as usize) < 2048 || threads == 1 {
+        run();
+    } else {
+        std::thread::scope(|s| {
+            for _ in 0..threads {
+                s.spawn(run);
+            }
+        });
+    }
+    drop(queue);
     fr
 }
 

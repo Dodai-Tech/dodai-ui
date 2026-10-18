@@ -67,3 +67,7 @@ opt-level     = 3
 lto           = "thin"
 codegen-units = 1
 strip         = "symbols"
+
+# Shaders are per-pixel maths: always optimise them.
+[profile.dev.package.dodai-shaders]
+opt-level = 3

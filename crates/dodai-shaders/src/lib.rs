@@ -21,6 +21,7 @@
 //! metroidvanias) and [`Family::Nature`] (cosmic, water, fire, abstract).
 
 pub mod cyberpunk;
+pub mod extra;
 pub mod frame;
 pub mod fx;
 pub mod material;
@@ -28,10 +29,12 @@ pub mod math;
 pub mod matrix;
 pub mod nature;
 pub mod pixel;
+pub mod player;
 pub mod retro;
 
 pub use frame::{apply_fx, render_gen, Ctx, Frame, FxFn, GenFn, ShaderPalette};
 pub use math::{vec2, vec3, Vec2, Vec3};
+pub use player::Player;
 
 use std::sync::OnceLock;
 
@@ -153,6 +156,7 @@ pub fn catalog() -> &'static [ShaderInfo] {
             pixel::SHADERS,
             nature::SHADERS,
             fx::SHADERS,
+            extra::SHADERS,
         ]
         .concat()
     })

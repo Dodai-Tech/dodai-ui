@@ -7,7 +7,7 @@
 //! * `Space` pause · `←/→` previous/next shader · `↑/↓` intensity · `G` grid
 //!   of all generators · `P` cycle palette · `[` `]` pixel size.
 
-use dodai_shaders::{catalog, render, Ctx, Family, ShaderInfo, ShaderPalette};
+use dodai_shaders::{catalog, Family, Player, ShaderInfo, ShaderPalette};
 use gpui::{
     canvas, div, prelude::*, px, rgb, size, App, Application, Bounds, Context, Corners,
     FocusHandle, KeyDownEvent, MouseButton, RenderImage, SharedString, Window, WindowBounds,
@@ -17,8 +17,6 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::time::Instant;
-
-type Prev = Rc<RefCell<Option<Arc<RenderImage>>>>;
 
 struct Gallery {
     sel: usize,
@@ -80,6 +78,18 @@ impl Gallery {
         }
     }
 
+    /// Everything but time that changes the picture.
+    fn key(&self) -> u64 {
+        let mut h = (self.palette as u64) << 8 ^ self.intensity.to_bits() as u64;
+        h = h.wrapping_mul(31).wrapping_add(self.sel as u64);
+        for f in &self.fx {
+            for b in f.bytes() {
+                h = h.wrapping_mul(31).wrapping_add(b as u64);
+            }
+        }
+        h
+    }
+
     fn time(&self) -> f32 {
         self.base
             + if self.running {
@@ -134,29 +144,57 @@ impl Gallery {
     }
 }
 
+/// Per-view state: the toolkit-neutral player plus the last uploaded texture.
+#[derive(Default)]
+struct View {
+    player: Option<Player>,
+    image: Option<Arc<RenderImage>>,
+}
+type Prev = Rc<RefCell<View>>;
+
+#[allow(clippy::too_many_arguments)]
 fn shader_canvas(
     chain: Vec<&'static ShaderInfo>,
     pal: ShaderPalette,
     pixel: f32,
     t: f32,
     intensity: f32,
-    prev: Prev,
+    fps: f32,
+    key: u64,
+    view: Prev,
 ) -> impl IntoElement {
     canvas(
         |_, _, _| (),
         move |b: Bounds<gpui::Pixels>, _, w, _| {
             let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-            let rw = ((bw / pixel).round() as u32).clamp(24, 640);
-            let rh = ((bh / pixel).round() as u32).clamp(14, 400);
-            let ctx = Ctx::new(rw, rh, t, pal).intensity(intensity);
-            let frame = render(&chain, &ctx);
-            let buf = image::RgbaImage::from_raw(rw, rh, frame.to_bgra8()).expect("size");
-            let img = Arc::new(RenderImage::new(vec![image::Frame::new(buf)]));
-            let _ = w.paint_image(b, Corners::default(), img.clone(), 0, false);
-            if let Some(old) = prev.borrow_mut().replace(img) {
-                let _ = w.drop_image(old);
+            let visible = w.content_mask().bounds.intersects(&b);
+            let mut v = view.borrow_mut();
+            let pl = v
+                .player
+                .get_or_insert_with(|| Player::new(chain.clone(), pal));
+            pl.chain.clone_from(&chain);
+            pl.palette = pal;
+            pl.intensity = intensity;
+            pl.pixel = pixel;
+            pl.max_fps = fps;
+            if visible || v.image.is_none() {
+                let pl = v.player.as_mut().expect("set");
+                let (frame, fresh) = pl.tick(t, bw, bh, key);
+                if fresh {
+                    let buf = image::RgbaImage::from_raw(frame.w, frame.h, frame.to_bgra8())
+                        .expect("size");
+                    let img = Arc::new(RenderImage::new(vec![image::Frame::new(buf)]));
+                    if let Some(old) = v.image.replace(img) {
+                        let _ = w.drop_image(old);
+                    }
+                }
             }
-            w.request_animation_frame();
+            if let Some(img) = &v.image {
+                let _ = w.paint_image(b, Corners::default(), img.clone(), 0, false);
+            }
+            if fps > 0.0 && visible {
+                w.request_animation_frame();
+            }
         },
     )
     .absolute()
@@ -344,6 +382,8 @@ impl Render for Gallery {
                             4.0,
                             t,
                             self.intensity,
+                            15.0,
+                            self.key(),
                             self.prev_grid[i].clone(),
                         )))
                         .child(
@@ -395,6 +435,8 @@ impl Render for Gallery {
                             self.pixel,
                             t,
                             self.intensity,
+                            30.0,
+                            self.key(),
                             self.prev_main.clone(),
                         )),
                 )

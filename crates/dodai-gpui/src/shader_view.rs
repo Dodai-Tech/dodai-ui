@@ -1,7 +1,7 @@
 //! `ShaderView`: shows a `dodai-shaders` chain as a live, fluid-width image.
 
 use crate::theme_of;
-use dodai_shaders::{by_id, render, Ctx, Family, ShaderInfo, ShaderPalette};
+use dodai_shaders::{by_id, Family, Player, ShaderInfo, ShaderPalette};
 use gpui::{
     canvas, div, px, App, Bounds, Corners, InteractiveElement, IntoElement, ParentElement, Pixels,
     RenderImage, RenderOnce, SharedString, Styled, Window,
@@ -22,9 +22,9 @@ pub enum PaletteSource {
 
 #[derive(Default)]
 struct Slot {
+    player: Option<Player>,
     start: Option<Instant>,
-    prev: Option<Arc<RenderImage>>,
-    cache: Option<(u64, Arc<RenderImage>)>,
+    image: Option<Arc<RenderImage>>,
 }
 
 /// Live shader. Fluid width, `aspect` high; each image pixel covers `pixel`
@@ -40,6 +40,7 @@ pub struct ShaderView {
     speed: f32,
     animated: bool,
     rounded: f32,
+    fps: f32,
 }
 
 impl ShaderView {
@@ -56,6 +57,7 @@ impl ShaderView {
             speed: 1.0,
             animated: true,
             rounded: 0.0,
+            fps: 30.0,
         }
     }
     /// Append a post effect by id.
@@ -99,6 +101,11 @@ impl ShaderView {
         self.animated = a;
         self
     }
+    /// Max renders per second while animated (default 30).
+    pub fn fps(mut self, f: f32) -> Self {
+        self.fps = f.max(1.0);
+        self
+    }
     pub fn rounded(mut self, r: f32) -> Self {
         self.rounded = r;
         self
@@ -125,71 +132,64 @@ impl RenderOnce for ShaderView {
             PaletteSource::Fixed(p) => p,
         };
         let chain = self.chain.clone();
-        let (aspect, pixel, intensity, speed, animated, rounded) = (
+        let (aspect, pixel, intensity, speed, animated, rounded, fps) = (
             self.aspect,
             self.pixel,
             self.intensity,
             self.speed,
             self.animated,
             self.rounded,
+            self.fps,
         );
-        let cfg = hash_cfg(&[
-            pal.a.x.to_bits() as u64,
-            pal.b.y.to_bits() as u64,
-            pal.bg.z.to_bits() as u64,
-            pal.c.x.to_bits() as u64,
-            intensity.to_bits() as u64,
-            chain.iter().fold(0u64, |h, s| {
-                hash_cfg(&[
-                    h,
-                    s.id.len() as u64,
-                    s.id.as_bytes()[0] as u64,
-                    *s.id.as_bytes().last().unwrap_or(&0) as u64,
-                ])
-            }),
-        ]);
+        let mut parts: Vec<u64> = [pal.bg, pal.fg, pal.a, pal.b, pal.c]
+            .iter()
+            .flat_map(|v| [v.x, v.y, v.z])
+            .map(|f| f.to_bits() as u64)
+            .collect();
+        parts.push(intensity.to_bits() as u64);
+        for s in &chain {
+            parts.extend(s.id.bytes().map(u64::from));
+            parts.push(0);
+        }
+        let cfg = hash_cfg(&parts);
         let canvas_el = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, cx| {
                 let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                let rw = ((bw / pixel).round() as u32).clamp(24, 480);
-                let rh = ((bh / pixel).round() as u32).clamp(14, 320);
-                let key = hash_cfg(&[cfg, rw as u64, rh as u64]);
+                let visible = w.content_mask().bounds.intersects(&b);
                 let now = Instant::now();
-                let (t, cached) = slot.update(cx, |s, _| {
+                let (image, old) = slot.update(cx, |s, _| {
                     let start = *s.start.get_or_insert(now);
-                    let t = if animated {
-                        (now - start).as_secs_f32() * speed
-                    } else {
-                        1.5
-                    };
-                    let hit = match (&s.cache, animated) {
-                        (Some((k, img)), false) if *k == key => Some(img.clone()),
-                        _ => None,
-                    };
-                    (t, hit)
-                });
-                let image = cached.unwrap_or_else(|| {
-                    let ctx = Ctx::new(rw, rh, t, pal).intensity(intensity);
-                    let frame = render(&chain, &ctx);
-                    let buf = image::RgbaImage::from_raw(rw, rh, frame.to_bgra8()).expect("size");
-                    Arc::new(RenderImage::new(vec![image::Frame::new(buf)]))
-                });
-                let _ = w.paint_image(b, Corners::all(px(rounded)), image.clone(), 0, false);
-                // Free the previous GPU texture so animation does not leak.
-                let old = slot.update(cx, |s, _| {
-                    if animated {
-                        s.prev.replace(image.clone())
-                    } else {
-                        s.cache.replace((key, image.clone())).map(|(_, o)| o)
+                    let secs = (now - start).as_secs_f32();
+                    let pl = s
+                        .player
+                        .get_or_insert_with(|| Player::new(chain.clone(), pal));
+                    pl.chain.clone_from(&chain);
+                    pl.palette = pal;
+                    pl.intensity = intensity;
+                    pl.speed = speed;
+                    pl.pixel = pixel;
+                    pl.max_fps = if animated { fps } else { 0.0 };
+                    // Off-screen views keep their last picture and cost nothing.
+                    if !visible && s.image.is_some() {
+                        return (s.image.clone().expect("checked"), None);
                     }
+                    let (frame, fresh) = pl.tick(secs, bw, bh, cfg);
+                    if !fresh && s.image.is_some() {
+                        return (s.image.clone().expect("checked"), None);
+                    }
+                    let (fw, fh) = (frame.w, frame.h);
+                    let buf = image::RgbaImage::from_raw(fw, fh, frame.to_bgra8()).expect("size");
+                    let img = Arc::new(RenderImage::new(vec![image::Frame::new(buf)]));
+                    let old = s.image.replace(img.clone());
+                    (img, old)
                 });
+                let _ = w.paint_image(b, Corners::all(px(rounded)), image, 0, false);
+                // Free the replaced GPU texture so animation does not leak.
                 if let Some(old) = old {
-                    if !Arc::ptr_eq(&old, &image) {
-                        let _ = w.drop_image(old);
-                    }
+                    let _ = w.drop_image(old);
                 }
-                if animated {
+                if animated && visible {
                     w.request_animation_frame();
                 }
             },

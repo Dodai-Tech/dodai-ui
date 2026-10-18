@@ -159,6 +159,11 @@ pub fn fireworks(uv: Vec2, c: &Ctx) -> Vec3 {
             col = col + c.pal.fg * glow((q - vec2(ctr.x, y)).len() * 90.0, 1.0) * 0.8;
         } else {
             let bt = t - 0.7;
+            // Sparks stay within this radius: skip far pixels entirely.
+            let reach = 0.9 * 0.7 * bt.sqrt() + 0.18 * bt * bt + 0.12;
+            if (q - ctr).len() > reach + 0.1 {
+                continue;
+            }
             let sparks = 36;
             for i in 0..sparks {
                 let a = hash1(seed + i as f32 * 1.37) * std::f32::consts::TAU;

@@ -78,21 +78,29 @@ pub const SHADERS: &[ShaderInfo] = &[
 ];
 
 pub fn bloom(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
+    // 12 nearest taps on two rings; the loss against a bilinear 24-tap
+    // version is invisible once glowing areas overlap.
+    const TAPS: [(f32, f32); 12] = [
+        (3.0, 0.0),
+        (0.0, 3.0),
+        (-3.0, 0.0),
+        (0.0, -3.0),
+        (6.4, 6.4),
+        (-6.4, 6.4),
+        (-6.4, -6.4),
+        (6.4, -6.4),
+        (9.0, 0.0),
+        (0.0, 9.0),
+        (-9.0, 0.0),
+        (0.0, -9.0),
+    ];
     let s = src.sample(uv);
     let mut acc = Vec3::BLACK;
-    let mut n = 0.0;
-    for ring in 1..=3 {
-        let r = ring as f32 * 3.0;
-        for k in 0..8 {
-            let a = k as f32 / 8.0 * std::f32::consts::TAU;
-            let o = vec2(a.cos() * r / src.w as f32, a.sin() * r / src.h as f32);
-            let t = src.sample(uv + o);
-            let b = (t.luma() - 0.35).max(0.0);
-            acc = acc + t * b;
-            n += 1.0;
-        }
+    for (dx, dy) in TAPS {
+        let t = src.nearest(uv + vec2(dx / src.w as f32, dy / src.h as f32));
+        acc = acc + t * (t.luma() - 0.35).max(0.0);
     }
-    s + acc / n * 6.0 * c.intensity
+    s + acc / 12.0 * 6.0 * c.intensity
 }
 
 pub fn glitch(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
@@ -125,18 +133,16 @@ pub fn chromatic(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
 }
 
 pub fn neon_edges(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
-    let (tx, ty) = (1.0 / src.w as f32, 1.0 / src.h as f32);
-    let l = |dx: f32, dy: f32| src.sample(uv + vec2(dx * tx, dy * ty)).luma();
-    let gx = -l(-1.0, -1.0) - 2.0 * l(-1.0, 0.0) - l(-1.0, 1.0)
-        + l(1.0, -1.0)
-        + 2.0 * l(1.0, 0.0)
-        + l(1.0, 1.0);
-    let gy = -l(-1.0, -1.0) - 2.0 * l(0.0, -1.0) - l(1.0, -1.0)
-        + l(-1.0, 1.0)
-        + 2.0 * l(0.0, 1.0)
-        + l(1.0, 1.0);
+    // Sobel on the 8 integer neighbours: one luma read each, shared by gx/gy.
+    let (x, y) = ((uv.x * src.w as f32) as i32, (uv.y * src.h as f32) as i32);
+    let l = |dx: i32, dy: i32| src.get(x + dx, y + dy).luma();
+    let (tl, t, tr) = (l(-1, -1), l(0, -1), l(1, -1));
+    let (ml, mr) = (l(-1, 0), l(1, 0));
+    let (bl, b, br) = (l(-1, 1), l(0, 1), l(1, 1));
+    let gx = -tl - 2.0 * ml - bl + tr + 2.0 * mr + br;
+    let gy = -tl - 2.0 * t - tr + bl + 2.0 * b + br;
     let e = (gx * gx + gy * gy).sqrt().min(1.0);
-    let base = src.sample(uv) * 0.25;
+    let base = src.get(x, y) * 0.25;
     base + c.pal.b.mix(c.pal.a, e) * e * 2.2 * c.intensity
 }
 
