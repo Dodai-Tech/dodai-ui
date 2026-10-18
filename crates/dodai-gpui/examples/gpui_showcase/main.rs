@@ -14,12 +14,12 @@ use dodai_gpui::{
     Tag, Toggle, TopAppBar,
 };
 use dodai_gpui::{
-    BarChart, Blip, BoxPlot, BubbleChart, Candle, Candlestick, Date, DatePicker, EmptyState,
-    Funnel, Gauge, GaugeStyle, Heatmap, HexMap, Histogram, IconBadge, LineChart, Marker,
-    NumberStepper, Oscilloscope, PieChart, RadarChart, RadarScope, RadialBar, RangeSlider, Rating,
-    RichTooltip, RingStack, ScatterPlot, SearchView, Series, Snackbar, Sparkline, Spectrum,
-    StackedAreaChart, TagField, TextInput, TimePicker, Timeline, TimelineEvent, Toolbar, TreeItem,
-    TreeView, Treemap, Waterfall,
+    BarChart, Blip, BoxPlot, BubbleChart, Candle, Candlestick, Date, DatePicker, DotMatrix,
+    EmptyState, Funnel, Gauge, GaugeStyle, Heatmap, HexMap, Histogram, IconBadge, LineChart,
+    Marker, NumberStepper, Oscilloscope, PieChart, RadarChart, RadarScope, RadialBar, RangeSlider,
+    Rating, RichTooltip, RingStack, ScatterPlot, SearchView, Series, SignalBars, Snackbar,
+    Sparkline, Spectrum, StackedAreaChart, TagField, TextInput, TimePicker, Timeline,
+    TimelineEvent, Toolbar, TreeItem, TreeView, Treemap, Waterfall,
 };
 use dodai_gpui::{
     CandleStyle, ChartStack, DepthChart, Gantt, GanttTask, Overlay, Pane, RenkoChart, TradeMarker,
@@ -1517,6 +1517,28 @@ impl Render for Showcase {
                     row()
                         .justify_around()
                         .flex_wrap()
+                        .child(
+                            Oscilloscope::ecg(2, 240)
+                                .live(true)
+                                .size(320.0, 120.0)
+                                .caption("Pulse · 72 bpm"),
+                        )
+                        .child(
+                            DotMatrix::new([
+                                0.3, 0.55, 0.8, 0.45, 0.95, 0.6, 0.35, 0.7, 0.5, 0.85, 0.4, 0.65,
+                            ])
+                            .width(300.0)
+                            .caption("Dot matrix"),
+                        )
+                        .child(
+                            div()
+                                .flex()
+                                .items_end()
+                                .gap_4()
+                                .child(SignalBars::new(2))
+                                .child(SignalBars::new(4).height(40.0))
+                                .child(SignalBars::new(5).height(52.0).bars(6)),
+                        )
                         .child(
                             Oscilloscope::wave(&[(3.0, 1.0), (7.0, 0.4)], 160)
                                 .live(true)

@@ -154,7 +154,9 @@ pub use controls::{
 #[cfg(feature = "components")]
 pub use count::CountUp;
 #[cfg(feature = "charts")]
-pub use cyber_charts::{Blip, HexMap, Oscilloscope, RadarScope, RingStack, Spectrum};
+pub use cyber_charts::{
+    Blip, DotMatrix, HexMap, Oscilloscope, RadarScope, RingStack, SignalBars, Spectrum,
+};
 #[cfg(feature = "components")]
 pub use data::{Avatar, Badge, Chip, Kbd, Table};
 #[cfg(feature = "components")]

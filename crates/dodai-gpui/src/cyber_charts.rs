@@ -24,6 +24,16 @@ pub(crate) fn clock() -> f32 {
     START.get_or_init(Instant::now).elapsed().as_secs_f32()
 }
 
+/// One heartbeat-shaped period (`-1..=1`): P wave, QRS spike, T wave. Pure.
+pub fn ecg_beat(x: f32) -> f32 {
+    let g = |c: f32, w: f32, a: f32| a * (-((x - c) / w).powi(2)).exp();
+    g(0.18, 0.04, 0.18)
+        + g(0.36, 0.012, -0.22)
+        + g(0.39, 0.012, 1.0)
+        + g(0.42, 0.012, -0.35)
+        + g(0.62, 0.06, 0.28)
+}
+
 /// Brightness `0..=1` of a radar blip at turn-fraction `blip` when the sweep is
 /// at `sweep`: full as the beam passes, fading over one revolution.
 pub fn blip_alpha(sweep: f32, blip: f32) -> f32 {
@@ -115,6 +125,11 @@ impl Oscilloscope {
             color: None,
             caption: None,
         }
+    }
+    /// Heartbeat trace: `beats` periods over `n` samples.
+    pub fn ecg(beats: usize, n: usize) -> Self {
+        let beats = beats.max(1) as f32;
+        Self::new((0..n.max(2)).map(|i| ecg_beat((i as f32 / n.max(2) as f32 * beats).fract())))
     }
     /// A sum of sines (`(cycles, amplitude)` partials) sampled `n` times.
     pub fn wave(partials: &[(f32, f32)], n: usize) -> Self {
@@ -343,6 +358,152 @@ impl RenderOnce for Spectrum {
         .absolute()
         .size_full();
         frame(&t, gw, gh, self.caption, cv)
+    }
+}
+
+// ────────────────────────────── DotMatrix ──────────────────────────────
+
+/// Bar chart drawn as columns of LED dots (`0..=1` values).
+#[derive(IntoElement)]
+pub struct DotMatrix {
+    values: Vec<f32>,
+    rows: usize,
+    w: f32,
+    caption: Option<SharedString>,
+}
+
+impl DotMatrix {
+    pub fn new(values: impl IntoIterator<Item = f32>) -> Self {
+        Self {
+            values: values.into_iter().collect(),
+            rows: 8,
+            w: 320.0,
+            caption: None,
+        }
+    }
+    /// Dots per column (default 8).
+    pub fn rows(mut self, r: usize) -> Self {
+        self.rows = r.max(2);
+        self
+    }
+    pub fn width(mut self, w: f32) -> Self {
+        self.w = w;
+        self
+    }
+    pub fn caption(mut self, c: impl Into<SharedString>) -> Self {
+        self.caption = Some(c.into());
+        self
+    }
+}
+
+impl RenderOnce for DotMatrix {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let g = crate::motion::grow(window, cx, "DotMatrix");
+        let n = self.values.len().max(1);
+        let pitch = self.w / n as f32;
+        let h = pitch * self.rows as f32;
+        let (rows, values) = (self.rows, self.values);
+        let on = hsla(t.palette.primary);
+        let dim = scale_alpha(hsla(t.palette.border), 0.7);
+        let glow = glow_of(&t);
+        let cv = canvas(
+            |_, _, _| (),
+            move |b: Bounds<Pixels>, _, w, _| {
+                let r = pitch * 0.3;
+                for (i, v) in values.iter().enumerate() {
+                    let lit = crate::charts::norm(*v * g, 0.0, 1.0);
+                    for row in 0..rows {
+                        let cov = crate::gauges::cell_lit(row, rows, lit);
+                        let (x, y) = (pitch * (i as f32 + 0.5), h - pitch * (row as f32 + 0.5));
+                        if cov > 0.0 {
+                            if let Some(gr) = glow {
+                                fill(
+                                    w,
+                                    b.origin,
+                                    &disc(x, y, r + gr * 0.25, 10),
+                                    scale_alpha(on, 0.18),
+                                );
+                            }
+                            fill(
+                                w,
+                                b.origin,
+                                &disc(x, y, r, 10),
+                                scale_alpha(on, 0.55 + 0.45 * cov),
+                            );
+                        } else {
+                            fill(w, b.origin, &disc(x, y, r * 0.7, 8), dim);
+                        }
+                    }
+                }
+            },
+        )
+        .absolute()
+        .size_full();
+        frame(&t, self.w, h, self.caption, cv)
+    }
+}
+
+// ─────────────────────────────── SignalBars ───────────────────────────────
+
+/// Ascending signal-strength bars; `level` of `bars` are lit.
+#[derive(IntoElement)]
+pub struct SignalBars {
+    level: usize,
+    bars: usize,
+    height: f32,
+}
+
+impl SignalBars {
+    pub fn new(level: usize) -> Self {
+        Self {
+            level,
+            bars: 5,
+            height: 28.0,
+        }
+    }
+    pub fn bars(mut self, n: usize) -> Self {
+        self.bars = n.max(1);
+        self
+    }
+    pub fn height(mut self, h: f32) -> Self {
+        self.height = h;
+        self
+    }
+}
+
+impl RenderOnce for SignalBars {
+    fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let (n, level, h) = (self.bars, self.level, self.height);
+        let bw = h * 0.22;
+        let gap = bw * 0.5;
+        let w_total = n as f32 * bw + (n as f32 - 1.0) * gap;
+        let on = hsla(t.palette.primary);
+        let dim = scale_alpha(hsla(t.palette.border), 0.8);
+        let glow = glow_of(&t);
+        canvas(
+            |_, _, _| (),
+            move |b: Bounds<Pixels>, _, w, _| {
+                for i in 0..n {
+                    let bh = h * (i as f32 + 1.0) / n as f32;
+                    let x = i as f32 * (bw + gap);
+                    let poly = chamfer_rect(x, h - bh, bw, bh, bw * 0.45);
+                    if i < level {
+                        if let Some(r) = glow {
+                            let big =
+                                chamfer_rect(x - 2.0, h - bh - 2.0, bw + 4.0, bh + 4.0, bw * 0.45);
+                            fill(w, b.origin, &big, scale_alpha(on, 0.12 + r * 0.004));
+                        }
+                        fill(w, b.origin, &poly, on);
+                    } else {
+                        fill(w, b.origin, &poly, dim);
+                    }
+                }
+            },
+        )
+        .w(px(w_total))
+        .h(px(h))
     }
 }
 
@@ -740,6 +901,16 @@ mod tests {
                 assert!((0.0..=0.8 + 1e-6).contains(&v));
             }
         }
+    }
+
+    #[test]
+    fn ecg_beat_has_one_dominant_spike_per_period() {
+        let peak = (0..200)
+            .map(|i| ecg_beat(i as f32 / 200.0))
+            .fold(f32::MIN, f32::max);
+        assert!(peak > 0.9 && peak <= 1.1);
+        assert!(ecg_beat(0.0).abs() < 0.05 && ecg_beat(0.95).abs() < 0.05);
+        assert_eq!(Oscilloscope::ecg(2, 100).samples.len(), 100);
     }
 
     #[test]
