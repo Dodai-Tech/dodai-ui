@@ -1,0 +1,24 @@
+name: kernels
+
+# Full rust-gpu rebuild; slow (installs a pinned nightly), so manual + weekly.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * 1"
+
+jobs:
+  wgsl-in-sync:
+    name: kernels.wgsl in sync with the shader sources
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-gpu --locked
+      - run: |
+          python3 scripts/gen-kernels.py
+          cd crates/dodai-shaders-kernels
+          cargo gpu build --shader-crate . --output-dir ../../target/kernels --auto-install-rust-toolchain --target spirv-unknown-naga-wgsl
+          cp ../../target/kernels/dodai_shaders_kernels.wgsl ../dodai-shaders-gpu/kernels.wgsl
+      - name: Fail if kernels.wgsl changed
+        run: git diff --exit-code -- crates/dodai-shaders-gpu/kernels.wgsl crates/dodai-shaders-kernels/src/entries.rs

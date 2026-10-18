@@ -23,6 +23,15 @@ jobs:
           components: rustfmt
       - run: cargo fmt --all -- --check
 
+  # The GPU entry points are generated from the ShaderInfo tables.
+  kernels-entries:
+    name: kernels entries in sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/gen-kernels.py
+      - run: git diff --exit-code -- crates/dodai-shaders-kernels/src/entries.rs
+
   # Base crates everything else depends on (dodai-gpui also uses dodai-icons
   # and dodai-charts-core).
   base:
