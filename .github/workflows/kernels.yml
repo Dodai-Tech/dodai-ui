@@ -13,6 +13,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        id: rt1
+        continue-on-error: true
+      - name: Retry toolchain install (runner network is flaky)
+        if: steps.rt1.outcome == 'failure'
+        run: sleep 20
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.rt1.outcome == 'failure'
       - uses: Swatinem/rust-cache@v2
       - run: cargo install cargo-gpu --locked
       - run: |
