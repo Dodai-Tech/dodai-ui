@@ -102,6 +102,7 @@ mod tests {
     fn caps_frame_rate() {
         let mut p = player();
         p.max_fps = 10.0;
+        p.budget_ms = f32::INFINITY; // slow CI must not trigger auto-coarsening
         assert!(p.tick(0.0, 320.0, 180.0, 1).1);
         assert!(!p.tick(0.05, 320.0, 180.0, 1).1);
         assert!(p.tick(0.11, 320.0, 180.0, 1).1);
@@ -111,6 +112,7 @@ mod tests {
     fn static_renders_once_until_key_changes() {
         let mut p = player();
         p.max_fps = 0.0;
+        p.budget_ms = f32::INFINITY; // slow CI must not trigger auto-coarsening
         assert!(p.tick(0.0, 320.0, 180.0, 1).1);
         assert!(!p.tick(9.0, 320.0, 180.0, 1).1);
         assert!(p.tick(9.0, 320.0, 180.0, 2).1);
