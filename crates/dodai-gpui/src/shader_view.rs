@@ -52,7 +52,7 @@ impl ShaderView {
             chain,
             palette: PaletteSource::Family,
             aspect: 16.0 / 9.0,
-            pixel: 3.0,
+            pixel: 2.0,
             intensity: 1.0,
             speed: 1.0,
             animated: true,
@@ -89,7 +89,7 @@ impl ShaderView {
         self.aspect = a.max(0.1);
         self
     }
-    /// Device pixels per shader pixel (default 3).
+    /// Device pixels per shader pixel (default 2).
     pub fn pixel(mut self, p: f32) -> Self {
         self.pixel = p.max(1.0);
         self

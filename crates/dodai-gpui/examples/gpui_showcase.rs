@@ -2447,7 +2447,7 @@ impl Render for Showcase {
                     col()
                         .flex_1()
                         .min_w(px(220.0))
-                        .child(view.palette(pal_src).pixel(3.0).rounded(t.shape.radius))
+                        .child(view.palette(pal_src).pixel(2.0).rounded(t.shape.radius))
                         .child(row().child(Mono::new(shader.name)).child(if fx {
                             Tag::new("effect", Tone::Warning)
                         } else {
@@ -2696,7 +2696,7 @@ impl Render for Showcase {
                             .min_w(px(220.0))
                             .child(
                                 ShaderView::preset(format!("shp-{}", p.id), p)
-                                    .pixel(3.0)
+                                    .pixel(2.0)
                                     .rounded(t.shape.radius),
                             )
                             .child(Mono::new(p.name))
@@ -3094,7 +3094,7 @@ fn main() {
                         sh_fx: vec!["crt"],
                         sh_int: 1.0,
                         sh_theme: false,
-                        sh_px: 3.0,
+                        sh_px: 2.0,
                     })
                 },
             )

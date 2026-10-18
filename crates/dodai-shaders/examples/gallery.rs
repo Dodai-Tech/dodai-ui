@@ -70,7 +70,7 @@ impl Gallery {
             pal_override: None,
             palettes,
             intensity: 1.0,
-            pixel: 3.0,
+            pixel: 2.0,
             speed: 1.0,
             running: true,
             base: 0.0,

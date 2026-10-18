@@ -36,8 +36,8 @@ impl Player {
             intensity: 1.0,
             speed: 1.0,
             max_fps: 30.0,
-            pixel: 3.0,
-            budget_ms: 8.0,
+            pixel: 2.0,
+            budget_ms: 10.0,
             frame: None,
             last_render: f32::NEG_INFINITY,
             last_key: 0,
@@ -59,8 +59,8 @@ impl Player {
     pub fn tick(&mut self, now: f32, w: f32, h: f32, key: u64) -> (&Frame, bool) {
         let p = (self.pixel * self.auto).max(1.0);
         let size = (
-            ((w / p).round() as u32).clamp(16, 640),
-            ((h / p).round() as u32).clamp(9, 400),
+            ((w / p).round() as u32).clamp(16, 960),
+            ((h / p).round() as u32).clamp(9, 540),
         );
         let animated = self.max_fps > 0.0;
         let due = match &self.frame {
