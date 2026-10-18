@@ -325,13 +325,35 @@ pub fn platformer(uv: Vec2, c: &Ctx) -> Vec3 {
 
     // hero
     let hero_x = (vw * 0.28).floor();
+    // The hero climbs whatever it meets: the pipe (34 px) and the brick row
+    // (62 px). Height is the highest surface within a 48 px window around it,
+    // eased so it rises before the obstacle and settles down after it.
+    let hw = scroll + hero_x + 8.0;
+    let mut climb: f32 = 0.0;
+    for k in -8..=8 {
+        let wxk = hw + k as f32 * 6.0;
+        let pipe: f32 = if (130.0..162.0).contains(&fmod(wxk + 20.0, 330.0)) {
+            34.0
+        } else {
+            0.0
+        };
+        let bricks: f32 = if (96.0..176.0).contains(&fmod(wxk, 256.0)) {
+            62.0
+        } else {
+            0.0
+        };
+        let ease = 1.0 - (k as f32).abs() / 9.0;
+        climb = climb.max(pipe.max(bricks) * ease.powf(0.7));
+    }
+    // a hop on open ground
     let t_jump = c.time % 2.6;
-    let jump = if t_jump < 0.7 {
+    let hop = if t_jump < 0.7 && climb < 1.0 {
         (t_jump / 0.7 * std::f32::consts::PI).sin() * 34.0
     } else {
         0.0
     };
-    let frame = if jump > 0.5 {
+    let jump = climb + hop;
+    let frame = if jump > 0.5 && (climb < 33.0 || hop > 0.5) {
         2
     } else {
         ((c.time * 8.0) as usize) % 2
