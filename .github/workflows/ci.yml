@@ -7,6 +7,10 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  # The self-hosted runner's network is flaky: retry downloads instead of failing the job.
+  CARGO_NET_RETRY: 10
+  CARGO_HTTP_TIMEOUT: 120
+  CARGO_HTTP_MULTIPLEXING: "false"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
