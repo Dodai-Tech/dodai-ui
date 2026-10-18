@@ -5,7 +5,7 @@ import re, pathlib
 
 root = pathlib.Path(__file__).resolve().parent.parent
 src = root / "crates/dodai-shaders/src"
-mods = "cyberpunk blade material matrix retro retro2 pixel nature fx extra ghostty".split()
+mods = "cyberpunk blade ghibli material matrix retro retro2 pixel nature fx extra ghostty".split()
 pat = re.compile(
     r'ShaderInfo::(generator|post)\(\s*"(\w+)",\s*"[^"]*",\s*[\w:]+,\s*"[^"]*",\s*(\w+),?\s*\)'
 )

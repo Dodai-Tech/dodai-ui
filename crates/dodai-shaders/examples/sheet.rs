@@ -10,10 +10,7 @@ fn main() {
     let mut f = Vec::new();
     for spec in &a[4..] {
         let chain: Vec<_> = spec.split(',').filter_map(by_id).collect();
-        f.push(render(
-            &chain,
-            &Ctx::new(w, h, t, ShaderPalette::bladerunner()),
-        ));
+        f.push(render(&chain, &Ctx::new(w, h, t, ShaderPalette::ghibli())));
     }
     let cols = 2usize;
     let rows = f.len().div_ceil(cols);

@@ -2638,7 +2638,7 @@ impl Render for Showcase {
                     .into_any_element(),
                 "Shader playground",
             ));
-            const TITLES: [(&str, &str); 7] = [
+            const TITLES: [(&str, &str); 8] = [
                 ("Cyberpunk shaders", "Cyberpunk effects"),
                 ("Material 3 shaders", "Material 3 effects"),
                 ("Matrix shaders", "Matrix effects"),
@@ -2646,6 +2646,7 @@ impl Render for Showcase {
                 ("Pixel art shaders", "Pixel art effects"),
                 ("Cosmic & nature shaders", "Cosmic & nature effects"),
                 ("Ghostty shaders", "Ghostty effects"),
+                ("Ghibli shaders", "Ghibli effects"),
             ];
             for (fi, fam) in Family::ALL.iter().enumerate() {
                 let gens: Vec<_> = catalog()
@@ -2694,6 +2695,7 @@ impl Render for Showcase {
                     "Blade Runner presets",
                     dodai_gpui::dodai_shaders::presets::BLADE,
                 ),
+                ("Ghibli presets", dodai_gpui::dodai_shaders::presets::GHIBLI),
             ] {
                 let mut r = row();
                 for p in list {

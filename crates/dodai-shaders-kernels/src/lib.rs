@@ -39,6 +39,7 @@ pub enum Family {
     Pixel,
     Nature,
     Ghostty,
+    Ghibli,
 }
 pub struct ShaderInfo;
 impl ShaderInfo {
@@ -58,6 +59,8 @@ pub mod cyberpunk;
 pub mod extra;
 #[path = "../../dodai-shaders/src/fx.rs"]
 pub mod fx;
+#[path = "../../dodai-shaders/src/ghibli.rs"]
+pub mod ghibli;
 #[path = "../../dodai-shaders/src/ghostty.rs"]
 pub mod ghostty;
 #[path = "../../dodai-shaders/src/material.rs"]

@@ -72,6 +72,45 @@ pub const BLADE: &[Preset] = &[
     },
 ];
 
+/// Hand-painted anime presets (use with `ShaderPalette::ghibli`).
+pub const GHIBLI: &[Preset] = &[
+    Preset {
+        id: "gh-painted-meadow",
+        name: "Painted meadow",
+        desc: "Wind in the grass, gouache colour and paper grain",
+        chain: &["gh_meadow", "gh_painted"],
+        palette: ShaderPalette::ghibli,
+    },
+    Preset {
+        id: "gh-dream-sea",
+        name: "Dream sea",
+        desc: "Cel waves with a soft warm glow",
+        chain: &["gh_sea", "gh_dream"],
+        palette: ShaderPalette::ghibli,
+    },
+    Preset {
+        id: "gh-sky-island",
+        name: "Sky island",
+        desc: "Cel-shaded floating island, inked on paper",
+        chain: &["gh_laputa", "gh_painted"],
+        palette: ShaderPalette::ghibli,
+    },
+    Preset {
+        id: "gh-green-island",
+        name: "Pod on the island",
+        desc: "Round capsule ship landed by the sea",
+        chain: &["gh_pod", "gh_dream"],
+        palette: ShaderPalette::ghibli,
+    },
+    Preset {
+        id: "gh-spirit-forest",
+        name: "Spirit forest",
+        desc: "Mist, god rays and drifting motes",
+        chain: &["gh_forest", "gh_dream"],
+        palette: ShaderPalette::ghibli,
+    },
+];
+
 /// Retro terminal and monitor presets.
 pub const RETRO: &[Preset] = &[
     Preset {
@@ -224,7 +263,11 @@ pub const GHOSTTY: &[Preset] = &[
 
 /// Every preset.
 pub fn all() -> impl Iterator<Item = &'static Preset> {
-    RETRO.iter().chain(GHOSTTY.iter()).chain(BLADE.iter())
+    RETRO
+        .iter()
+        .chain(GHOSTTY.iter())
+        .chain(BLADE.iter())
+        .chain(GHIBLI.iter())
 }
 
 #[cfg(test)]

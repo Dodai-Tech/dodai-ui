@@ -29,6 +29,16 @@ impl ShaderPalette {
             c: rgb8(255, 40, 110),
         }
     }
+    /// Soft meadow greens and sky blues.
+    pub fn ghibli() -> Self {
+        Self {
+            bg: rgb8(24, 52, 70),
+            fg: rgb8(252, 248, 236),
+            a: rgb8(126, 190, 80),
+            b: rgb8(100, 176, 226),
+            c: rgb8(255, 170, 120),
+        }
+    }
     /// Teal night, orange smog and magenta neon: a rainy-megacity look.
     pub fn bladerunner() -> Self {
         Self {
