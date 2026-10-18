@@ -10,18 +10,66 @@ use std::rc::Rc;
 
 type CollapseFn = Rc<dyn Fn(bool, &mut Window, &mut App)>;
 
-/// Horizontal drag distance (px) that collapses or expands the sidebar.
-const DRAG_THRESHOLD: f32 = 36.0;
+/// Spring stiffness / damping for the sidebar width (slightly under-damped).
+const STIFFNESS: f32 = 380.0;
+const DAMPING: f32 = 24.0;
+/// How far ahead (s) a release velocity is projected when choosing a side.
+const FLING: f32 = 0.12;
 
-/// What a horizontal drag of `dx` px should do to a sidebar that is currently
-/// `collapsed`: `Some(new_state)` once past the threshold (pure).
-pub fn drag_collapse(collapsed: bool, dx: f32) -> Option<bool> {
-    if !collapsed && dx <= -DRAG_THRESHOLD {
-        Some(true)
-    } else if collapsed && dx >= DRAG_THRESHOLD {
-        Some(false)
-    } else {
-        None
+/// Which side a released sidebar of width `w` and velocity `v` (px/s) snaps to:
+/// `true` = collapsed. Flicking carries it past the midpoint (pure).
+pub fn snap_collapsed(w: f32, v: f32, rail: f32, full: f32) -> bool {
+    w + v * FLING < (rail + full) * 0.5
+}
+
+/// One physics step of the width spring towards `target` (pure).
+pub fn spring_step(w: f32, v: f32, target: f32, dt: f32) -> (f32, f32) {
+    let mut w = w;
+    let mut v = v;
+    let n = ((dt / (1.0 / 240.0)).ceil() as u32).clamp(1, 24);
+    let h = dt / n as f32;
+    for _ in 0..n {
+        let a = STIFFNESS * (target - w) - DAMPING * v;
+        v += a * h;
+        w += v * h;
+    }
+    (w, v)
+}
+
+#[derive(Clone, Copy)]
+struct Drag {
+    start_x: f32,
+    start_w: f32,
+    last_x: f32,
+    last_at: std::time::Instant,
+    moved: bool,
+}
+
+struct SideState {
+    w: f32,
+    v: f32,
+    last: std::time::Instant,
+    drag: Option<Drag>,
+}
+
+impl SideState {
+    /// Advance the spring (unless held by the mouse); returns (width, animating).
+    fn advance(&mut self, target: f32) -> (f32, bool) {
+        let now = std::time::Instant::now();
+        let dt = now.duration_since(self.last).as_secs_f32().min(0.05);
+        self.last = now;
+        if self.drag.is_some() {
+            return (self.w, true);
+        }
+        let (w, v) = spring_step(self.w, self.v, target, dt);
+        if (w - target).abs() < 0.3 && v.abs() < 5.0 {
+            self.w = target;
+            self.v = 0.0;
+            return (target, false);
+        }
+        self.w = w;
+        self.v = v;
+        (w, true)
     }
 }
 
@@ -110,11 +158,20 @@ impl RenderOnce for ResponsiveShell {
         let wide = is_wide(window.viewport_size().width.into(), self.breakpoint);
         let open = window.use_keyed_state(self.id.clone(), cx, |_, _| false);
         let rail_mode = wide && self.collapsed && self.rail.is_some();
-        let w = px(if rail_mode {
-            self.rail_width
-        } else {
-            self.sidebar_width
-        });
+        let (rail_w, full_w) = (self.rail_width, self.sidebar_width);
+        let target = if self.collapsed { rail_w } else { full_w };
+        let side_state =
+            window.use_keyed_state((self.id.clone(), "sw"), cx, move |_, _| SideState {
+                w: target,
+                v: 0.0,
+                last: std::time::Instant::now(),
+                drag: None,
+            });
+        let (cur_w, animating) = side_state.update(cx, |s, _| s.advance(target));
+        if animating {
+            window.request_animation_frame();
+        }
+        let w = px(cur_w.clamp(rail_w.min(full_w) * 0.5, full_w.max(rail_w) * 1.1));
         let id = self.id.clone();
         let (wide_body, drawer_body) = if wide {
             (if rail_mode { self.rail } else { self.sidebar }, None)
@@ -130,12 +187,9 @@ impl RenderOnce for ResponsiveShell {
                 .overflow_y_scroll()
                 .child(s)
         });
-        // (press x, moved) while the edge handle is held.
-        let drag = window.use_keyed_state((id.clone(), "drag"), cx, |_, _| None::<(f32, bool)>);
         let collapsed = self.collapsed;
-        let grip = self.on_collapse.clone().map(|f| {
-            let (down, up) = (drag.clone(), drag.clone());
-            let up_f = f.clone();
+        let grip = self.on_collapse.clone().map(|_| {
+            let down = side_state.clone();
             div()
                 .id((id.clone(), "grip"))
                 .absolute()
@@ -148,13 +202,16 @@ impl RenderOnce for ResponsiveShell {
                 .hover(|s| s.bg(hsla(t.palette.primary)))
                 .on_mouse_down(MouseButton::Left, move |e, _, cx| {
                     let x = f32::from(e.position.x);
-                    down.update(cx, |d, _| *d = Some((x, false)));
-                })
-                .on_mouse_up(MouseButton::Left, move |_, w, cx| {
-                    let pressed = up.update(cx, |d, _| d.take());
-                    if matches!(pressed, Some((_, false))) {
-                        up_f(!collapsed, w, cx);
-                    }
+                    down.update(cx, |s, _| {
+                        s.v = 0.0;
+                        s.drag = Some(Drag {
+                            start_x: x,
+                            start_w: s.w,
+                            last_x: x,
+                            last_at: std::time::Instant::now(),
+                            moved: false,
+                        });
+                    });
                 })
         });
         let wide_side = wide_body.map(|b| {
@@ -169,6 +226,7 @@ impl RenderOnce for ResponsiveShell {
                         .id((id.clone(), "side"))
                         .size_full()
                         .overflow_y_scroll()
+                        .overflow_x_hidden()
                         .child(b),
                 )
                 .children(grip)
@@ -184,20 +242,53 @@ impl RenderOnce for ResponsiveShell {
         let mut root = div().relative().size_full().flex();
         if wide {
             if let Some(f) = self.on_collapse.clone() {
-                let (mv, up) = (drag.clone(), drag.clone());
+                let (mv, up, f2) = (side_state.clone(), side_state.clone(), f.clone());
                 root = root
                     .on_mouse_move(move |e, w, cx| {
-                        let Some((sx, _)) = *mv.read(cx) else { return };
-                        let dx = f32::from(e.position.x) - sx;
-                        if let Some(next) = drag_collapse(collapsed, dx) {
-                            mv.update(cx, |d, _| *d = None);
-                            f(next, w, cx);
-                        } else if dx.abs() > 3.0 {
-                            mv.update(cx, |d, _| *d = Some((sx, true)));
+                        let x = f32::from(e.position.x);
+                        let mut live = None;
+                        mv.update(cx, |s, cx| {
+                            let Some(mut d) = s.drag else { return };
+                            let dx = x - d.start_x;
+                            d.moved |= dx.abs() > 3.0;
+                            let dt = d.last_at.elapsed().as_secs_f32();
+                            if dt > 0.004 {
+                                s.v = 0.6 * s.v + 0.4 * (x - d.last_x) / dt;
+                                d.last_x = x;
+                                d.last_at = std::time::Instant::now();
+                            }
+                            if d.moved {
+                                s.w = (d.start_w + dx).clamp(rail_w, full_w);
+                                live = Some(s.w < (rail_w + full_w) * 0.5);
+                            }
+                            s.drag = Some(d);
+                            cx.notify();
+                        });
+                        if let Some(c) = live {
+                            if c != collapsed {
+                                f(c, w, cx);
+                            }
                         }
                     })
-                    .on_mouse_up(MouseButton::Left, move |_, _, cx| {
-                        up.update(cx, |d, _| *d = None);
+                    .on_mouse_up(MouseButton::Left, move |_, w, cx| {
+                        let mut next = None;
+                        up.update(cx, |s, cx| {
+                            let Some(d) = s.drag.take() else { return };
+                            if d.last_at.elapsed().as_secs_f32() > 0.08 {
+                                s.v = 0.0;
+                            }
+                            next = Some(if d.moved {
+                                snap_collapsed(s.w, s.v, rail_w, full_w)
+                            } else {
+                                !collapsed
+                            });
+                            cx.notify();
+                        });
+                        if let Some(c) = next {
+                            if c != collapsed {
+                                f2(c, w, cx);
+                            }
+                        }
                     });
             }
             return root.children(wide_side).child(content);
@@ -271,12 +362,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn drag_collapses_and_expands_past_threshold() {
-        assert_eq!(drag_collapse(false, -10.0), None);
-        assert_eq!(drag_collapse(false, -40.0), Some(true));
-        assert_eq!(drag_collapse(false, 80.0), None);
-        assert_eq!(drag_collapse(true, 20.0), None);
-        assert_eq!(drag_collapse(true, 40.0), Some(false));
+    fn release_snaps_by_position_and_fling() {
+        assert!(snap_collapsed(80.0, 0.0, 64.0, 240.0));
+        assert!(!snap_collapsed(200.0, 0.0, 64.0, 240.0));
+        // flicked left from past the middle: collapses
+        assert!(snap_collapsed(170.0, -900.0, 64.0, 240.0));
+        // flicked right from near the rail: expands
+        assert!(!snap_collapsed(100.0, 900.0, 64.0, 240.0));
+    }
+
+    #[test]
+    fn spring_settles_on_target() {
+        let (mut w, mut v) = (240.0, 0.0);
+        for _ in 0..240 {
+            (w, v) = spring_step(w, v, 64.0, 1.0 / 60.0);
+        }
+        assert!((w - 64.0).abs() < 0.5 && v.abs() < 5.0);
     }
 
     #[test]

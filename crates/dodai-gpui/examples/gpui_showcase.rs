@@ -2987,13 +2987,7 @@ impl Render for Showcase {
             .child(
                 ResponsiveShell::new("shell")
                     .breakpoint(640.0)
-                    .sidebar_width(if self.rail {
-                        64.0
-                    } else if narrow {
-                        170.0
-                    } else {
-                        240.0
-                    })
+                    .sidebar_width(if narrow { 170.0 } else { 240.0 })
                     .sidebar(side)
                     .collapsed(self.rail)
                     .on_collapse({
