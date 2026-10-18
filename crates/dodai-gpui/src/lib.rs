@@ -10,7 +10,9 @@
 //! global ([`install`] first): [`Button`], [`Panel`], [`Tag`], [`Tabs`],
 //! [`Toggle`], [`Checkbox`], [`Radio`], [`ProgressBar`], [`Slider`], [`InputBox`],
 //! [`ListItem`], [`Divider`], [`DodaiTooltip`], [`Heading`]/[`Label`]/[`Muted`]/[`Mono`],
-//! [`Scanlines`], [`ThemeSwitcherBar`]. Shapes (square / rounded / chamfered),
+//! [`Scanlines`], [`ThemeSwitcherBar`], plus overlays ([`popover`]), forms
+//! ([`forms`]), data display ([`display`], [`datatable`], [`content`]), time
+//! ([`time`]: clock, timer, stopwatch, tap tempo) and charts. Shapes (square / rounded / chamfered),
 //! glow, hard shadow and uppercase labels all come from tokens; no component
 //! looks at a theme id. See [`paint`] for the shaped-box primitive.
 //!

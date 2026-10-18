@@ -433,7 +433,11 @@ fn sd_tri(p: Vec2, r: f32) -> f32 {
     }
     p = vec2(p.x - p.x.clamp(-2.0 * r, 0.0), p.y);
     let l = p.len();
-    if p.y > 0.0 { -l } else { l }
+    if p.y > 0.0 {
+        -l
+    } else {
+        l
+    }
 }
 
 /// (half-side, y shift) of the upward triangles.

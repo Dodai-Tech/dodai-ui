@@ -226,6 +226,17 @@ pub enum ClockFace {
     Digital,
 }
 
+impl ClockFace {
+    /// Whether this face resolves to the digital readout for a theme shape.
+    pub fn is_digital(self, kind: dodai_core::ShapeKind) -> bool {
+        match self {
+            ClockFace::Digital => true,
+            ClockFace::Analog => false,
+            ClockFace::Auto => kind == dodai_core::ShapeKind::Chamfered,
+        }
+    }
+}
+
 /// Live clock: analog dial, or a futuristic seven-segment face (see [`ClockFace`]).
 ///
 /// ```ignore
@@ -284,11 +295,7 @@ impl Clock {
 impl RenderOnce for Clock {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        let digital = match self.face {
-            ClockFace::Digital => true,
-            ClockFace::Analog => false,
-            ClockFace::Auto => t.shape.kind() == dodai_core::ShapeKind::Chamfered,
-        };
+        let digital = self.face.is_digital(t.shape.kind());
         if digital {
             return digital_face(&self, &t).into_any_element();
         }
@@ -1175,6 +1182,16 @@ mod tests {
         let (i, f) = beat_phase(1.25, 120.0);
         assert_eq!(i, 2);
         assert!((f - 0.5).abs() < 1e-5);
+    }
+
+    #[test]
+    fn auto_face_follows_shape_not_theme_id() {
+        use dodai_core::ShapeKind::*;
+        assert!(ClockFace::Auto.is_digital(Chamfered));
+        assert!(!ClockFace::Auto.is_digital(Rounded));
+        assert!(!ClockFace::Auto.is_digital(Square));
+        assert!(ClockFace::Digital.is_digital(Rounded));
+        assert!(!ClockFace::Analog.is_digital(Chamfered));
     }
 
     #[test]

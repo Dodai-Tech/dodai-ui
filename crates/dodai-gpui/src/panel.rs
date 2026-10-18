@@ -516,6 +516,17 @@ mod tests {
     use super::*;
 
     #[test]
+    fn corner_opposite_is_an_involution_on_the_diagonal() {
+        for c in Corner::ALL {
+            assert_ne!(c, c.opposite());
+            assert_eq!(c, c.opposite().opposite());
+        }
+        assert_eq!(Corner::TopRight.opposite(), Corner::BottomLeft);
+        let names: std::collections::HashSet<_> = Corner::ALL.iter().map(|c| c.name()).collect();
+        assert_eq!(names.len(), 4);
+    }
+
+    #[test]
     fn border_style_sets_width_and_softens_colour() {
         let t = themes::cyberpunk::night_city();
         let base = panel_style(&t, false);
