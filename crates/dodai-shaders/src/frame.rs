@@ -152,7 +152,6 @@ fn par_rows(w: u32, h: u32, f: impl Fn(u32, u32) -> Vec3 + Sync) -> Frame {
             }
         });
     }
-    drop(queue);
     fr
 }
 

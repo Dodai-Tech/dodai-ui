@@ -49,6 +49,8 @@ jobs:
     needs: base
     name: ${{ matrix.crate }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    # macOS runners exist only on GitHub; on self-hosted Gitea they would queue forever.
+    if: matrix.os != 'macos-latest' || github.server_url == 'https://github.com'
     strategy:
       fail-fast: false
       matrix:
