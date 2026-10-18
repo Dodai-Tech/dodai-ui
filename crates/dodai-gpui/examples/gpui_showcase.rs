@@ -2989,6 +2989,16 @@ impl Render for Showcase {
                         240.0
                     })
                     .sidebar(side)
+                    .collapsed(self.rail)
+                    .on_collapse({
+                        let m = me.clone();
+                        move |c, _, cx| {
+                            m.update(cx, |s, cx| {
+                                s.rail = c;
+                                cx.notify()
+                            })
+                        }
+                    })
                     .content(
                         div()
                             .id("scroll")

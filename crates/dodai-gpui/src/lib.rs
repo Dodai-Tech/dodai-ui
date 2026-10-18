@@ -185,7 +185,7 @@ pub use shader_view::{shader_backend, PaletteSource, ShaderView};
 #[cfg(feature = "components")]
 pub use sheets::{sheet_style, BottomSheet, FullScreenDialog, SheetEdge, SideSheet, Snackbar};
 #[cfg(feature = "components")]
-pub use shell::{is_wide, ResponsiveShell};
+pub use shell::{drag_collapse, is_wide, ResponsiveShell};
 #[cfg(feature = "components")]
 pub use surfaces::{
     card_style, AppBarSize, Card, CardVariant, Fab, FabSize, IconButton, NavItem, NavLayout,
