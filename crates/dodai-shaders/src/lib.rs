@@ -288,4 +288,35 @@ mod tests {
             assert_ne!(render(&[s], &a), render(&[s], &b), "{id} is static");
         }
     }
+
+    /// Vertical flow between two close frames: positive = content moves down.
+    fn flow(id: &str) -> i32 {
+        let (w, h) = (192i32, 144i32);
+        let pal = ShaderPalette::cyberpunk();
+        let s = by_id(id).unwrap();
+        let a = render(&[s], &Ctx::new(w as u32, h as u32, 3.0, pal));
+        let b = render(&[s], &Ctx::new(w as u32, h as u32, 3.12, pal));
+        let mut best = (f32::MAX, 0);
+        for dy in -3..=3 {
+            let mut e = 0.0;
+            for y in 4..h - 4 {
+                for x in 0..w {
+                    let d = b.get(x, y).luma() - a.get(x, y - dy).luma();
+                    e += d * d;
+                }
+            }
+            if e < best.0 {
+                best = (e, dy);
+            }
+        }
+        best.1
+    }
+
+    #[test]
+    fn falling_things_fall() {
+        for id in ["snow", "matrix_depth"] {
+            assert!(flow(id) > 0, "{id} moves up");
+        }
+        assert!(flow("embers") < 0, "embers should rise");
+    }
 }

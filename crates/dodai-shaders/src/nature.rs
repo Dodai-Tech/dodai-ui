@@ -290,7 +290,7 @@ pub fn snow(uv: Vec2, c: &Ctx) -> Vec3 {
         let scale = 14.0 + l * 12.0;
         let q = vec2(
             uv.x * scale * c.aspect() + (c.time * 0.6 + l).sin() * 0.7,
-            uv.y * scale + c.time * (0.8 + l * 0.5),
+            uv.y * scale - c.time * (0.8 + l * 0.5),
         );
         let cell = q.floor();
         let f = q.fract() - 0.5;

@@ -338,7 +338,9 @@ fn rain_layer(uv: Vec2, aspect: f32, t: f32, n: f32, speed: f32, len: f32, seed:
     let fx = sx - id;
     let hs = hash1(id + seed);
     let ph = fract(uv.y * 1.4 - t * speed * (0.8 + 0.5 * hs) + hs * 9.0);
-    let head = smoothstep(len, 0.0, ph) * smoothstep(0.0, 0.03, ph);
+    // bright head at the lower (leading) end, trail above it
+    let q = 1.0 - ph;
+    let head = smoothstep(len, 0.0, q) * smoothstep(0.0, 0.03, q);
     let w = smoothstep(0.5, 0.0, (fx - 0.5).abs() * 2.0 - 0.7 + 0.4 * hs);
     head * w * step(0.35, hash1(id + seed + 5.0))
 }

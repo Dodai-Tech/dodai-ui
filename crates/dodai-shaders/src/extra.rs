@@ -490,15 +490,18 @@ pub fn matrix_depth(uv: Vec2, c: &Ctx) -> Vec3 {
         let cx = (uv.x * cols).floor();
         let hx = hash1(cx + lf * 97.0);
         let speed = (0.25 + hx * 0.5) * (1.0 + lf * 0.7);
-        let y = uv.y * rows + c.time * speed * rows * 0.35 + hx * 100.0;
+        // content falls: scroll position grows with time, so the pattern moves down
+        let s = uv.y - c.time * speed * 0.35;
+        let y = s * rows + hx * 100.0;
         let row = y.floor();
-        let head = fract(-(y / rows) * 2.0 + hx * 5.0);
-        let trail = (1.0 - head).powf(2.0 + (2.0 - lf));
+        // 0 at the top of a streak, 1 at its leading (lower) head
+        let v = fract(s * 2.0 + hx * 5.0);
+        let trail = v.powf(2.0 + (2.0 - lf));
         let gid = (hash2(cx as i32, row as i32) * 400.0
             + (c.time * 6.0 * hash2(row as i32, 3)).floor()) as i32;
         let g = crate::matrix::glyph(gid, vec2((uv.x * cols).fract(), y.fract()));
         let bright = [0.35, 0.65, 1.0][layer as usize];
-        let hot = smoothstep(0.93, 1.0, 1.0 - head);
+        let hot = smoothstep(0.93, 1.0, v);
         col = col + (p.a * trail + p.fg * hot) * g * bright;
     }
     col

@@ -417,7 +417,7 @@ pub fn px_city(uv: Vec2, c: &Ctx) -> Vec3 {
             col = rgb(40, 50, 90);
         }
     }
-    let rn = hash2(x as i32, ((y + t * 80.0 + x * 7.0) / 5.0).floor() as i32);
+    let rn = hash2(x as i32, ((y - t * 80.0 - x * 7.0) / 5.0).floor() as i32);
     if rn > 0.985 {
         col = col.mix(rgb(150, 170, 230), 0.55);
     }
@@ -883,7 +883,7 @@ pub fn px_snow(uv: Vec2, c: &Ctx) -> Vec3 {
         let sp = 14.0 + fl * 12.0;
         let cell = 4.0 + (2.0 - fl);
         let sxp = ((x + (t * 1.5 + y * 0.12).sin() * 2.0) / cell).floor();
-        let syp = ((y + t * sp) / cell).floor();
+        let syp = ((y - t * sp) / cell).floor();
         if hash2(sxp as i32 + l * 137, syp as i32) > 0.965 - fl * 0.005
             && (x % cell) < 1.0 + (2.0 - fl) * 0.0
             && (y % cell) < 1.0
