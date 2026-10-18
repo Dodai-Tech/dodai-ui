@@ -130,7 +130,9 @@ fn caps(title: &str) -> Caps {
             c(false, false, false)
         }
         // Raw / non-animated components only.
-        "Tooltip" | "Input" | "Collapsible sidebar" | "Border" => c(false, false, false),
+        "Tooltip" | "Input" | "Collapsible sidebar" | "Border" | "Glow · Scanlines" => {
+            c(false, false, false)
+        }
         // Single animated component.
         "Search view" | "Tag field" => c(true, false, false),
         // Value-in components.
@@ -748,6 +750,16 @@ impl Render for Showcase {
                     preset(Some(C::NONE)),
                 ))
                 .child(chip("cc-theme", "Theme", cur.is_none(), preset(None)))
+                .child(
+                    Button::new("cc-apply", "Set as theme")
+                        .variant(ButtonVariant::Outline)
+                        .on_click(move |_, _, cx| {
+                            let c = me2.read(cx).btn_corners;
+                            if let Some(c) = c {
+                                dodai_gpui::set_corners(cx, c);
+                            }
+                        }),
+                )
         };
 
         let ov = self.btn_corners;
@@ -1162,8 +1174,8 @@ impl Render for Showcase {
             );
         }
 
-        // Cyberpunk-specific properties, shown under that design system in the tree.
-        let cyber_props = div()
+        // Global shape properties (glow, scanlines, cut corners): Shape category.
+        let shape_props = div()
             .flex()
             .flex_col()
             .gap(px(t.spacing.sm))
@@ -1186,78 +1198,7 @@ impl Render for Showcase {
                         set_scanlines(cx, on);
                     }))
                     .child(Muted::new("key: l")),
-            )
-            .child({
-                let b = dodai_gpui::section_border(cx);
-                row()
-                    .child(Label::new("Section border"))
-                    .child(
-                        div().w(px(160.0)).child(
-                            Slider::new("sb-width", b.width)
-                                .range(0.0, 4.0)
-                                .step(0.25)
-                                .show_value(true)
-                                .format(|v| format!("{v:.2}px"))
-                                .on_change(move |v, _, cx| {
-                                    let b = dodai_gpui::section_border(cx);
-                                    dodai_gpui::set_section_border(
-                                        cx,
-                                        dodai_gpui::BorderStyle::new(v, b.opacity),
-                                    );
-                                }),
-                        ),
-                    )
-                    .child(
-                        div().w(px(160.0)).child(
-                            Slider::new("sb-opacity", b.opacity)
-                                .range(0.0, 1.0)
-                                .step(0.05)
-                                .show_value(true)
-                                .format(|v| format!("{v:.2}"))
-                                .on_change(move |v, _, cx| {
-                                    let b = dodai_gpui::section_border(cx);
-                                    dodai_gpui::set_section_border(
-                                        cx,
-                                        dodai_gpui::BorderStyle::new(b.width, v),
-                                    );
-                                }),
-                        ),
-                    )
-            })
-            .child({
-                use dodai_core::Corners as C;
-                let cur = dodai_gpui::corners(cx);
-                let chip = |id: &'static str, label: &'static str, c: C| {
-                    Button::new(id, label)
-                        .variant(if cur == c {
-                            ButtonVariant::Primary
-                        } else {
-                            ButtonVariant::Outline
-                        })
-                        .on_click(move |_, _, cx| dodai_gpui::set_corners(cx, c))
-                };
-                let tog = |id: &'static str, label: &'static str, i: usize| {
-                    Button::new(id, label)
-                        .variant(if cur.get(i) {
-                            ButtonVariant::Primary
-                        } else {
-                            ButtonVariant::Outline
-                        })
-                        .on_click(move |_, _, cx| {
-                            let c = dodai_gpui::corners(cx);
-                            dodai_gpui::set_corners(cx, c.set(i, !c.get(i)));
-                        })
-                };
-                row()
-                    .child(Label::new("Cut corners"))
-                    .child(tog("tc-ul", "UL", 0))
-                    .child(tog("tc-ur", "UR", 1))
-                    .child(tog("tc-lr", "LR", 2))
-                    .child(tog("tc-ll", "LL", 3))
-                    .child(chip("tc-diag", "Diagonal", C::DIAGONAL))
-                    .child(chip("tc-all", "All", C::ALL))
-                    .child(chip("tc-none", "None", C::NONE))
-            });
+            );
 
         let ds_panel = Panel::new().focused(true).child(
             div()
@@ -1265,7 +1206,7 @@ impl Render for Showcase {
                 .flex_col()
                 .gap(px(t.spacing.sm))
                 .child(Label::new("Design System Selection"))
-                .child(DesignSystemTree::new("ds-tree").properties("cyberpunk", cyber_props)),
+                .child(DesignSystemTree::new("ds-tree")),
         );
 
         let open = !self.search.read(cx).text().is_empty();
@@ -2187,12 +2128,15 @@ impl Render for Showcase {
                 "Text",
             ),
             (
-                "Actions",
-                "Buttons · IconButton · FAB",
-                section!("Buttons")
-                    .child(buttons)
+                "Shape",
+                "Glow · Scanlines",
+                section!("Glow · Scanlines")
+                    .child(Muted::new(
+                        "Theme-wide effects. They apply to every component. Cut corners: pick below, then \"Set as theme\".",
+                    ))
+                    .child(shape_props)
                     .into_any_element(),
-                "Buttons",
+                "Glow · Scanlines",
             ),
             (
                 "Shape",
@@ -2317,6 +2261,14 @@ impl Render for Showcase {
                     })
                     .into_any_element(),
                 "Border",
+            ),
+            (
+                "Actions",
+                "Buttons · IconButton · FAB",
+                section!("Buttons")
+                    .child(buttons)
+                    .into_any_element(),
+                "Buttons",
             ),
             (
                 "Actions",
