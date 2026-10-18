@@ -121,6 +121,48 @@ pub const PIXEL: &[Preset] = &[
 /// Hand-painted anime presets (use with `ShaderPalette::ghibli`).
 pub const GHIBLI: &[Preset] = &[
     Preset {
+        id: "gh-golden-cinema",
+        name: "Golden hour film",
+        desc: "Sunset lake with widescreen bars and warm halation",
+        chain: &["gh_sunset", "gh_cinema"],
+        palette: ShaderPalette::ghibli,
+    },
+    Preset {
+        id: "gh-rainy-watercolour",
+        name: "Rainy watercolour",
+        desc: "The lamp-lit stop as a damp watercolour wash",
+        chain: &["gh_rain_stop", "gh_watercolor"],
+        palette: ShaderPalette::ghibli,
+    },
+    Preset {
+        id: "gh-blossom-rays",
+        name: "Blossom breeze",
+        desc: "Cherry branch with sunbeams and drifting petals",
+        chain: &["gh_sakura", "gh_godrays", "gh_petals"],
+        palette: ShaderPalette::ghibli,
+    },
+    Preset {
+        id: "gh-wheat-film",
+        name: "Wheat field film",
+        desc: "Golden gusts, graded like a feature film",
+        chain: &["gh_wheat", "gh_godrays", "gh_cinema"],
+        palette: ShaderPalette::ghibli,
+    },
+    Preset {
+        id: "gh-lantern-dream",
+        name: "Lantern dream",
+        desc: "Sky lanterns with a soft warm bloom",
+        chain: &["gh_lanterns", "gh_dream"],
+        palette: ShaderPalette::ghibli,
+    },
+    Preset {
+        id: "gh-winter-cabin",
+        name: "Winter cabin",
+        desc: "Snowy cabin painted onto paper",
+        chain: &["gh_snow_cabin", "gh_painted"],
+        palette: ShaderPalette::ghibli,
+    },
+    Preset {
         id: "gh-painted-meadow",
         name: "Painted meadow",
         desc: "Wind in the grass, gouache colour and paper grain",

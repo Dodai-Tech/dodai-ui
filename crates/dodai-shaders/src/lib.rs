@@ -37,6 +37,7 @@ pub mod extra;
 pub mod frame;
 pub mod fx;
 pub mod ghibli;
+pub mod ghibli2;
 pub mod ghostty;
 pub mod material;
 pub mod math;
@@ -182,6 +183,7 @@ pub fn catalog() -> &'static [ShaderInfo] {
             cyberpunk::SHADERS,
             blade::SHADERS,
             ghibli::SHADERS,
+            ghibli2::SHADERS,
             pixel2::SHADERS,
             material::SHADERS,
             matrix::SHADERS,

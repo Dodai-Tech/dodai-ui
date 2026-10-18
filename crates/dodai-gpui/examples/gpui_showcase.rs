@@ -605,7 +605,7 @@ fn cat_icon(name: &str) -> dodai_gpui::IconName {
         "Data display" => I::Table,
         "Charts" => I::BarChart,
         "Animation" => I::Sparkle,
-        "Shaders" => I::Sparkle,
+        "Shaders" | "Ghibli" => I::Sparkle,
         "Loading" => I::Repeat,
         _ => I::Dot,
     }
@@ -2658,27 +2658,22 @@ impl Render for Showcase {
                     .filter(|s| s.family == *fam && !s.is_generator())
                     .collect();
                 let (gt, et) = TITLES[fi];
+                let cat = if *fam == Family::Ghibli {
+                    "Ghibli"
+                } else {
+                    "Shaders"
+                };
                 let mut g_row = row();
                 for g in gens {
                     g_row = g_row.child(card(format!("shc-{}", g.id), g, false));
                 }
-                sections.push((
-                    "Shaders",
-                    gt,
-                    section!(gt).child(g_row).into_any_element(),
-                    gt,
-                ));
+                sections.push((cat, gt, section!(gt).child(g_row).into_any_element(), gt));
                 if !effs.is_empty() {
                     let mut e_row = row();
                     for e in effs {
                         e_row = e_row.child(card(format!("shc-{}", e.id), e, true));
                     }
-                    sections.push((
-                        "Shaders",
-                        et,
-                        section!(et).child(e_row).into_any_element(),
-                        et,
-                    ));
+                    sections.push((cat, et, section!(et).child(e_row).into_any_element(), et));
                 }
             }
             // Ready-made chains.
@@ -2717,7 +2712,11 @@ impl Render for Showcase {
                     );
                 }
                 sections.push((
-                    "Shaders",
+                    if title == "Ghibli presets" {
+                        "Ghibli"
+                    } else {
+                        "Shaders"
+                    },
                     title,
                     section!(title).child(r).into_any_element(),
                     title,
@@ -2730,7 +2729,11 @@ impl Render for Showcase {
         }
 
         // Shaders are the biggest category and design-independent: always last.
-        sections.sort_by_key(|(c, _, _, _)| *c == "Shaders");
+        sections.sort_by_key(|(c, _, _, _)| match *c {
+            "Ghibli" => 1,
+            "Shaders" => 2,
+            _ => 0,
+        });
         let cats: Vec<&'static str> = {
             let mut v: Vec<&'static str> = Vec::new();
             for (c, _, _, _) in &sections {

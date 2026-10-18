@@ -61,6 +61,8 @@ pub mod extra;
 pub mod fx;
 #[path = "../../dodai-shaders/src/ghibli.rs"]
 pub mod ghibli;
+#[path = "../../dodai-shaders/src/ghibli2.rs"]
+pub mod ghibli2;
 #[path = "../../dodai-shaders/src/ghostty.rs"]
 pub mod ghostty;
 #[path = "../../dodai-shaders/src/material.rs"]

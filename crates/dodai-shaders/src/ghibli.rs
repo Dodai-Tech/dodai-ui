@@ -22,32 +22,11 @@ const F: Family = Family::Ghibli;
 
 pub const SHADERS: &[ShaderInfo] = &[
     ShaderInfo::generator(
-        "gh_meadow",
-        "Windy meadow",
-        F,
-        "Rolling hills, wind in the grass, flowers and painted cumulus",
-        gh_meadow,
-    ),
-    ShaderInfo::generator(
-        "gh_clouds",
-        "Cumulus sky",
-        F,
-        "Towering painted clouds with a warm sun and drifting birds",
-        gh_clouds,
-    ),
-    ShaderInfo::generator(
         "gh_sea",
         "Painted sea",
         F,
         "Rolling cel-shaded waves with foam, glints and a little sailboat",
         gh_sea,
-    ),
-    ShaderInfo::generator(
-        "gh_forest",
-        "Spirit forest",
-        F,
-        "Layered ancient trees, god rays, mist and drifting motes",
-        gh_forest,
     ),
     ShaderInfo::generator(
         "gh_soot",
@@ -131,120 +110,7 @@ fn cloud_col(cover: f32, light: f32, sky: Vec3, shade: Vec3) -> Vec3 {
     sky.mix(c, cover)
 }
 
-fn sun_glow(q: Vec2, at: Vec2, warm: Vec3) -> Vec3 {
-    let d = (q - at).len();
-    warm * (0.6 * (-d * 3.0).exp() + 0.5 * smoothstep(0.09, 0.07, d))
-}
-
 // -------------------------------------------------------------- 2D scenes --
-
-pub fn gh_meadow(uv: Vec2, c: &Ctx) -> Vec3 {
-    let q = c.centered(uv);
-    let t = c.time;
-    let sun = vec2(0.9, 0.62);
-    let mut col = sky2d(q.y * 0.55 + 0.3) + sun_glow(q, sun, rgb8(255, 226, 160)) * 0.35;
-    let (cv, lt) = cumulus(q, t, 1.0, 0.25, 0.8);
-    col = cloud_col(cv, lt, col, CLOUD_SHADE);
-    let (cv2, lt2) = cumulus(vec2(q.x * 0.7, q.y * 0.8 + 0.2), t * 0.6, 4.0, 0.25, 0.9);
-    col = cloud_col(cv2 * 0.8, lt2, col, CLOUD_SHADE);
-
-    // hills, far to near
-    for i in 0..4 {
-        let fi = i as f32;
-        let base = 0.02 - fi * 0.2;
-        let freq = 0.7 + fi * 0.35;
-        let ridge = base
-            + 0.14 * (q.x * freq + fi * 2.3).sin()
-            + 0.06 * (q.x * freq * 2.3 + fi * 5.1 + t * 0.0).sin();
-        let e = 0.03;
-        let ridge2 = base
-            + 0.14 * ((q.x + e) * freq + fi * 2.3).sin()
-            + 0.06 * ((q.x + e) * freq * 2.3 + fi * 5.1).sin();
-        let slope = (ridge2 - ridge) / e;
-        let far = 1.0 - fi / 3.0;
-        let g_lo = rgb8(40, 134, 70).mix(rgb8(96, 164, 130), far);
-        let g_hi = rgb8(132, 196, 70).mix(rgb8(150, 200, 160), far);
-        let inside = smoothstep(0.004, -0.004, q.y - ridge);
-        let depth = sat((ridge - q.y) * 2.0);
-        let mut hill = g_hi.mix(g_lo, depth * 0.9);
-        // sun-side slope is lit, other side shaded
-        hill = hill * (0.86 + 0.2 * sat(-slope * 2.0 + 0.4));
-        // wind in the grass: moving streaks
-        let wind = noise(vec2(
-            q.x * (14.0 + fi * 6.0) - t * (0.8 + fi * 0.2) + (q.y * 6.0).sin() * 0.6,
-            q.y * (30.0 + fi * 10.0) + fi * 7.0,
-        ));
-        hill = hill.mix(
-            g_hi * 1.15,
-            smoothstep(0.62, 0.7, wind) * 0.5 * (1.0 - far * 0.6),
-        );
-        // rim light along the ridge
-        hill = hill + rgb8(255, 240, 170) * smoothstep(0.03, 0.0, ridge - q.y) * 0.18;
-        // flowers on the near hills
-        if i >= 2 {
-            let cell = vec2(q.x * (8.0 + fi * 3.0), (q.y - ridge) * (14.0 + fi * 4.0));
-            let id = cell.floor();
-            let f = cell.fract() - 0.5;
-            let h = hash2(id.x as i32 + i * 31, id.y as i32);
-            let sway = (t * 1.6 + h * 9.0).sin() * 0.06;
-            let r = (f - vec2(sway, 0.0)).len();
-            let flower = step(0.84, h) * smoothstep(0.11, 0.09, r) * step(q.y, ridge - 0.02);
-            let fc = if h > 0.95 {
-                rgb8(255, 250, 240)
-            } else if h > 0.9 {
-                rgb8(255, 214, 90)
-            } else {
-                rgb8(255, 160, 190)
-            };
-            hill = hill.mix(fc, flower);
-        }
-        col = col.mix(hill, inside);
-    }
-    // soft haze at the horizon and warm light from the sun side
-    col = col + rgb8(255, 236, 190) * 0.05 * smoothstep(0.7, 0.0, (q - sun).len());
-    col
-}
-
-pub fn gh_clouds(uv: Vec2, c: &Ctx) -> Vec3 {
-    let q = c.centered(uv);
-    let t = c.time;
-    let sun = vec2(0.7, 0.45);
-    let mut col = sky2d(q.y * 0.5 + 0.5);
-    col = col + sun_glow(q, sun, rgb8(255, 230, 170)) * 0.5;
-    // three parallax layers of big billows
-    for i in 0..3 {
-        let fi = i as f32;
-        let scale = 0.55 + fi * 0.45;
-        let base = -0.25 + fi * 0.18 - 0.0;
-        let (cv, lt) = cumulus(
-            vec2(q.x, q.y + 0.35 - fi * 0.1),
-            t * (1.0 + fi * 0.8),
-            fi * 2.7 + 1.0,
-            base,
-            scale,
-        );
-        let shade = CLOUD_SHADE.mix(rgb8(210, 190, 214), 0.25 * fi / 2.0);
-        col = cloud_col(cv, lt, col, shade);
-    }
-    let floor_n = fbm(vec2(q.x * 1.4 + t * 0.05, q.y * 3.0), 5);
-    let floor_m = smoothstep(-0.35 + 0.15 * floor_n, -0.45 + 0.15 * floor_n, q.y - 0.0);
-    let fl_lit = smoothstep(0.45, 0.62, floor_n);
-    col = col.mix(CLOUD_SHADE.mix(CLOUD_LIT, fl_lit), floor_m);
-    // birds
-    for i in 0..5 {
-        let fi = i as f32;
-        let bx =
-            ((t * (0.05 + 0.01 * fi) + fi * 0.37) % 1.0) * (c.aspect() * 2.4) - c.aspect() * 1.2;
-        let by = 0.45 + 0.1 * (fi * 1.7).sin() + 0.02 * (t * 2.0 + fi).sin();
-        let p = (q - vec2(bx, by)) * 22.0;
-        let flap = (t * 7.0 + fi * 2.0).sin() * 0.35;
-        let wing = (p.y - (p.x.abs() * (0.9 + flap)) * -1.0 - 0.0).abs() - 0.07;
-        let b =
-            smoothstep(0.1, 0.0, wing) * step(p.x.abs(), 1.4) * step(p.y, 0.5) * step(-0.6, p.y);
-        col = col.mix(INK, b * 0.8);
-    }
-    col
-}
 
 pub fn gh_sea(uv: Vec2, c: &Ctx) -> Vec3 {
     let q = c.centered(uv);
@@ -298,75 +164,6 @@ pub fn gh_sea(uv: Vec2, c: &Ctx) -> Vec3 {
     col = col.mix(rgb8(250, 244, 230), fill_aa(sail, 0.004));
     col = col.mix(rgb8(220, 90, 70), fill_aa(hull, 0.004));
     col = col.mix(INK, fill_aa(sail1, 0.003));
-    col
-}
-
-pub fn gh_forest(uv: Vec2, c: &Ctx) -> Vec3 {
-    let q = c.centered(uv);
-    let t = c.time;
-    let a = c.aspect();
-    // misty green-gold backdrop
-    let mut col = rgb8(206, 226, 168).mix(rgb8(88, 150, 120), smoothstep(0.7, -0.9, q.y));
-    // god rays slanting from the upper left
-    let ray = noise(vec2((q.x + q.y * 0.6) * 5.0 + t * 0.05, t * 0.1));
-    let ray2 = (((q.x + q.y * 0.6) * 9.0 + t * 0.08).sin() * 0.5 + 0.5) * ray;
-    col =
-        col + rgb8(255, 240, 170) * smoothstep(0.35, 0.9, ray2) * 0.22 * smoothstep(-0.8, 0.8, q.y);
-    // four layers of trunks, far to near
-    for l in 0..4 {
-        let fl = l as f32;
-        let sc = 1.4 + fl * 1.1;
-        let x = q.x * sc + fl * 5.3 + (t * 0.0);
-        let cell = x.floor();
-        let ci = cell as i32;
-        let f = x - cell;
-        let h1 = hash2(ci, l * 9 + 1);
-        let h2 = hash2(ci, l * 9 + 2);
-        let present = step(0.25, h1);
-        let cx = 0.2 + 0.6 * h2;
-        let sway = (t * 0.4 + h1 * 6.0).sin() * 0.01 * (q.y + 1.0);
-        let w = (0.035 + 0.05 * h2) * (1.0 + 0.5 * smoothstep(0.0, -1.0, q.y));
-        let dx = (f - cx - sway - q.y * 0.02 * (h1 - 0.5)).abs();
-        let trunk = smoothstep(w, w - 0.01, dx) * present;
-        let depth = fl / 3.0;
-        let fog = rgb8(150, 200, 170).mix(rgb8(206, 226, 168), 0.5);
-        let bark = rgb8(56, 74, 70).mix(rgb8(30, 52, 52), depth);
-        // lit left edge
-        let rim =
-            smoothstep(w, w - 0.03, dx) * smoothstep(0.0, 0.02, (f - cx) * -1.0 + w * 0.0) * 0.0;
-        let mut tc = bark.mix(fog, 0.75 - 0.65 * depth);
-        tc = tc.mix(
-            rgb8(255, 240, 170),
-            rim + smoothstep(w * 0.6, w, -(f - cx)) * trunk * 0.18,
-        );
-        // leaf canopy cloud on top
-        let cy = 0.4 + 0.3 * h2 - fl * 0.05;
-        let leaf = fbm(vec2(x * 1.6 + fl * 3.0, q.y * 2.0 - fl) * 1.2, 4);
-        let canopy = smoothstep(0.52, 0.58, leaf + (q.y - cy) * 0.5)
-            * smoothstep(cy - 0.25, cy + 0.2, q.y)
-            * present;
-        let lc = rgb8(36, 112, 84)
-            .mix(rgb8(140, 196, 96), (leaf - 0.4) * 2.0)
-            .mix(fog, 0.55 - 0.5 * depth);
-        col = col.mix(lc, canopy * 0.85);
-        col = col.mix(tc, trunk);
-        // mist between layers
-        col = col.mix(rgb8(206, 232, 214), 0.12 + 0.05 * (t * 0.2 + fl).sin());
-    }
-    // ground moss glow
-    col = col.mix(rgb8(62, 120, 88), smoothstep(-0.6, -1.0, q.y) * 0.7);
-    // floating motes
-    for i in 0..14 {
-        let fi = i as f32;
-        let mx = (hash1(fi * 3.1) * 2.0 - 1.0) * a + (t * 0.3 + fi).sin() * 0.1;
-        let my = ((t * (0.04 + 0.03 * hash1(fi)) + hash1(fi * 7.7)) % 1.0) * 2.0 - 1.0;
-        let d = (q - vec2(mx, my)).len();
-        col = col
-            + rgb8(255, 244, 190)
-                * smoothstep(0.02, 0.0, d)
-                * (0.6 + 0.4 * (t * 2.0 + fi * 3.0).sin())
-            + rgb8(255, 244, 190) * (-d * 40.0).exp() * 0.1;
-    }
     col
 }
 
