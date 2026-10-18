@@ -1029,8 +1029,9 @@ pub fn px_outline(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
 pub fn px_posterize(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
     let (_, dim, gx, gy) = snap(src, uv);
     let s = src.sample(vec2((gx + 0.5) / dim.x, (gy + 0.5) / dim.y));
-    let lv = 9.0 - 5.0 * c.intensity;
-    let d = (bayer4(gx as i32, gy as i32) - 0.5) * 0.5;
+    let lv = 11.0 - 5.0 * c.intensity;
+    // Dither well under one level so flat areas stay clean instead of speckled.
+    let d = (bayer4(gx as i32, gy as i32) - 0.5) * 0.3;
     let q = |v: f32| ((v * (lv - 1.0) + d + 0.5).floor() / (lv - 1.0)).clamp(0.0, 1.0);
     vec3(q(s.x), q(s.y), q(s.z))
 }

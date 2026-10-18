@@ -156,8 +156,8 @@ fn beam(x: f32, y: f32, ox: f32, oy: f32, ang: f32) -> f32 {
     let a = dx.atan2(dy.max(0.001));
     let d = a - ang;
     let r = (dx * dx + dy * dy).sqrt();
-    let w = 0.025 + r * 0.02;
-    up * (-(d * d) / (w * w)).exp() * (1.0 - smoothstep(0.2, 1.4, r)) * 0.55
+    let w = 0.04 + r * 0.05;
+    up * (-(d * d) / (w * w)).exp() * (1.0 - smoothstep(0.3, 1.6, r)) * 0.9
 }
 
 fn sky(x: f32, y: f32, t: f32, k: &Look) -> Vec3 {
@@ -606,9 +606,23 @@ pub fn br_tyrell(uv: Vec2, c: &Ctx) -> Vec3 {
             0.46 * (1.0 - (rty * 7.0).floor() / 7.0) * a * 0.45 + 0.01,
         ) * step(0.0, rty)
             * step(rty, 1.0);
-        let refl = (k.fog * 0.8 + k.warm * 0.25 * fract(rty * 7.0)) * rh
+        // lit windows mirrored in the wet street
+        let rtf = fract(rty * 7.0);
+        let rgx = (x + wob - cx) * 60.0;
+        let rrows =
+            smoothstep(0.2, 0.3, fract(rtf * 5.0)) * smoothstep(0.85, 0.75, fract(rtf * 5.0));
+        let rcols = smoothstep(0.1, 0.25, fract(rgx)) * smoothstep(0.9, 0.75, fract(rgx));
+        let rlit = step(
+            hash3(
+                rgx.floor() as i32,
+                (rty * 7.0).floor() as i32,
+                (rtf * 5.0) as i32,
+            ),
+            0.8,
+        );
+        let refl = (k.fog * 0.8 + k.warm * 0.25 * rtf + k.warm * rrows * rcols * rlit * 0.9) * rh
             + sky(x + wob, ry, t, &k) * (1.0 - rh);
-        col = k.sky * 0.7 + refl * (0.5 - 0.25 * depth);
+        col = k.sky * 0.7 + refl * (0.85 - 0.45 * depth);
     }
     finish(col + rain(uv, a, t, k.fog * 2.0) * 0.45, uv, t)
 }
@@ -858,7 +872,7 @@ pub fn br_searchlights(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
         + beam(x, hz, 0.8 * a, hz, 0.35 - 0.5 * s)
         + beam(x, hz, 0.62 * a, hz, 0.05 + 0.35 * (t * 0.23).sin());
     let base = src.sample(uv);
-    base + (p.a * 0.45 + p.fg * 0.3)
+    base + (p.a * 0.6 + p.fg * 0.45)
         * b
         * (0.6 + 0.4 * noise(vec2(x * 8.0, y * 8.0 + t)))
         * c.intensity
