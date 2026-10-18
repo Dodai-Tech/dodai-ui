@@ -2436,7 +2436,11 @@ impl Render for Showcase {
                         .flex_1()
                         .min_w(px(220.0))
                         .child(view.palette(pal_src).pixel(3.0).rounded(t.shape.radius))
-                        .child(Mono::new(shader.name))
+                        .child(row().child(Mono::new(shader.name)).child(if fx {
+                            Tag::new("effect", Tone::Warning)
+                        } else {
+                            Tag::new("source", Tone::Info)
+                        }))
                         .child(Muted::new(shader.desc))
                         .into_any_element()
                 };
@@ -2450,46 +2454,93 @@ impl Render for Showcase {
                 .iter()
                 .filter(|s| matches!(s.kind, Kind::PostFx(_)))
                 .collect();
-            let mut gen_row = row();
-            for (gi, g) in gens.into_iter().enumerate() {
-                let (id, m) = (g.id, me_p.clone());
-                gen_row = gen_row.child(
-                    Button::new(("shg", gi), g.name)
-                        .variant(if self.sh_gen == id {
-                            ButtonVariant::Primary
-                        } else {
-                            ButtonVariant::Secondary
-                        })
+            let opt_label = |s: &dodai_gpui::dodai_shaders::ShaderInfo| {
+                format!("{} · {}", s.family.name(), s.name)
+            };
+            let gen_ids: Vec<&'static str> = gens.iter().map(|g| g.id).collect();
+            let gen_sel = gen_ids.iter().position(|i| *i == self.sh_gen);
+            let m_g = me_p.clone();
+            let gen_row = row()
+                .child(Tag::new("SOURCE", Tone::Info).solid(true))
+                .child(
+                    div().flex_1().min_w(px(200.0)).max_w(px(380.0)).child(
+                        dodai_gpui::Select::new("sh-gen")
+                            .options(gens.iter().map(|g| opt_label(g)))
+                            .selected(gen_sel)
+                            .on_change(move |i, _, cx| {
+                                let id = gen_ids[i];
+                                m_g.update(cx, |s, cx| {
+                                    s.sh_gen = id;
+                                    cx.notify();
+                                })
+                            }),
+                    ),
+                )
+                .child(Muted::new(format!(
+                    "{} sources: draw the picture",
+                    gens.len()
+                )));
+            let fx_ids: Vec<&'static str> = fxs.iter().map(|f| f.id).collect();
+            let m_f = me_p.clone();
+            let mut fx_row = row()
+                .child(Tag::new("EFFECT", Tone::Warning).solid(true))
+                .child(
+                    div().flex_1().min_w(px(200.0)).max_w(px(380.0)).child(
+                        dodai_gpui::Select::new("sh-fx")
+                            .placeholder("Add an effect…")
+                            .options(fxs.iter().map(|f| opt_label(f)))
+                            .selected(None)
+                            .on_change(move |i, _, cx| {
+                                let id = fx_ids[i];
+                                m_f.update(cx, |s, cx| {
+                                    if !s.sh_fx.contains(&id) {
+                                        s.sh_fx.push(id);
+                                    }
+                                    cx.notify();
+                                })
+                            }),
+                    ),
+                )
+                .child(Muted::new(format!(
+                    "{} effects: filter the picture, stacked in order",
+                    fxs.len()
+                )));
+            // The active chain: click a chip to remove that effect.
+            let mut chain_row = row().child(Muted::new("Chain"));
+            chain_row = chain_row.child(Tag::new(
+                gens.iter()
+                    .find(|g| g.id == self.sh_gen)
+                    .map_or("?", |g| g.name),
+                Tone::Info,
+            ));
+            for (ci, id) in self.sh_fx.iter().enumerate() {
+                let (id, m) = (*id, me_p.clone());
+                let name = dodai_gpui::dodai_shaders::by_id(id).map_or(id, |s| s.name);
+                chain_row = chain_row.child(Muted::new("→")).child(
+                    Button::new(("shx", ci), format!("{name} ✕"))
+                        .variant(ButtonVariant::Outline)
                         .on_click(move |_, _, cx| {
                             m.update(cx, |s, cx| {
-                                s.sh_gen = id;
+                                s.sh_fx.retain(|x| *x != id);
                                 cx.notify();
                             })
                         }),
                 );
             }
-            let mut fx_row = row();
-            for (fi_, f) in fxs.into_iter().enumerate() {
-                let (id, m) = (f.id, me_p.clone());
-                fx_row = fx_row.child(
-                    Button::new(("shf", fi_), f.name)
-                        .variant(if self.sh_fx.contains(&id) {
-                            ButtonVariant::Primary
-                        } else {
-                            ButtonVariant::Outline
-                        })
+            if !self.sh_fx.is_empty() {
+                let m = me_p.clone();
+                chain_row = chain_row.child(
+                    Button::new("shx-clear", "Clear effects")
+                        .variant(ButtonVariant::Secondary)
                         .on_click(move |_, _, cx| {
                             m.update(cx, |s, cx| {
-                                if let Some(i) = s.sh_fx.iter().position(|x| *x == id) {
-                                    s.sh_fx.remove(i);
-                                } else {
-                                    s.sh_fx.push(id);
-                                }
+                                s.sh_fx.clear();
                                 cx.notify();
                             })
                         }),
                 );
             }
+            let _ = &mut fx_row;
             let mut big = ShaderView::new("sh-play", self.sh_gen)
                 .palette(pal_src)
                 .pixel(self.sh_px)
@@ -2566,6 +2617,7 @@ impl Render for Showcase {
                     .child(Muted::new("Pure-Rust shaders from `dodai-shaders`, rendered on the CPU. Pick a source, stack effects."))
                     .child(gen_row)
                     .child(fx_row)
+                    .child(chain_row)
                     .child(tune)
                     .child(div().w_full().max_w(px(960.0)).child(big))
                     .into_any_element(),

@@ -274,6 +274,13 @@ impl Render for Gallery {
                     .child(format!("★ {}", p.name)),
             );
         }
+        side = side.child(
+            div()
+                .mt(px(8.0))
+                .text_size(px(11.0))
+                .text_color(rgb(TEXT))
+                .child("▣ source (pick one)   ◇ effect (stack)"),
+        );
         for fam in Family::ALL {
             side = side.child(
                 div()
@@ -290,13 +297,14 @@ impl Render for Gallery {
                     self.fx.contains(&s.id)
                 };
                 let tag = if s.is_generator() { "▣" } else { "◇" };
+                let idle = if s.is_generator() { TEXT } else { 0xe0a050 };
                 side = side.child(
                     div()
                         .id(("sh", i))
                         .px(px(8.0))
                         .py(px(4.0))
                         .text_size(px(13.0))
-                        .text_color(rgb(if active { BG } else { TEXT }))
+                        .text_color(rgb(if active { BG } else { idle }))
                         .bg(rgb(if active { ACCENT } else { PANEL }))
                         .hover(|d| d.bg(rgb(LINE)))
                         .cursor_pointer()
