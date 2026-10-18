@@ -472,6 +472,15 @@ mod tests {
     }
 
     #[test]
+    fn per_component_corners_override_only_when_given() {
+        let t = Theme::default();
+        let base = t.shape.corners;
+        assert_eq!(apply_corners(t.clone(), None).shape.corners, base);
+        let all = dodai_core::Corners::ALL;
+        assert_eq!(apply_corners(t, Some(all)).shape.corners, all);
+    }
+
+    #[test]
     fn glow_intensity_applies_to_all_themes() {
         let mut sw = ThemeSwitcher::new();
         let themes: Vec<Theme> = sw

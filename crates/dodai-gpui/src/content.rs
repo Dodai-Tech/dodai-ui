@@ -461,11 +461,85 @@ pub fn parse_inline(src: &str) -> (String, Vec<(Range<usize>, Inline)>) {
 pub enum Block {
     Heading(u8, String),
     Paragraph(String),
-    Bullets(Vec<String>),
-    Numbered(Vec<String>),
+    /// Bulleted / numbered items, possibly nested (see [`ListItem`]).
+    List(Vec<ListItem>),
+    Table {
+        head: Vec<String>,
+        aligns: Vec<Align>,
+        rows: Vec<Vec<String>>,
+    },
     Quote(String),
-    Code { lang: String, text: String },
+    Code {
+        lang: String,
+        text: String,
+    },
     Rule,
+}
+
+/// One list entry; `depth` counts two-space (or one-tab) indents.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ListItem {
+    pub depth: u8,
+    pub ordered: bool,
+    pub text: String,
+}
+
+/// Column alignment from a table's `:---:` row.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum Align {
+    #[default]
+    Left,
+    Center,
+    Right,
+}
+
+fn split_row(line: &str) -> Vec<String> {
+    let t = line.trim();
+    let t = t.strip_prefix('|').unwrap_or(t);
+    let t = t.strip_suffix('|').unwrap_or(t);
+    t.split('|').map(|c| c.trim().to_string()).collect()
+}
+
+/// `|---|:-:|--:|` -> alignments (None if the line is not a separator row).
+fn table_aligns(line: &str) -> Option<Vec<Align>> {
+    let t = line.trim();
+    if !t.contains('-') || !t.contains('|') && !t.starts_with(':') && !t.starts_with('-') {
+        return None;
+    }
+    let cells = split_row(t);
+    let mut out = Vec::new();
+    for c in &cells {
+        let (l, r) = (c.starts_with(':'), c.ends_with(':'));
+        let core = c.trim_matches(':');
+        if core.is_empty() || !core.chars().all(|ch| ch == '-') {
+            return None;
+        }
+        out.push(match (l, r) {
+            (true, true) => Align::Center,
+            (false, true) => Align::Right,
+            _ => Align::Left,
+        });
+    }
+    Some(out)
+}
+
+fn list_marker(t: &str) -> Option<(bool, &str)> {
+    if let Some(item) = ["- ", "* ", "+ "].iter().find_map(|m| t.strip_prefix(m)) {
+        return Some((false, item));
+    }
+    numbered(t).map(|item| (true, item))
+}
+
+fn indent_depth(raw: &str) -> u8 {
+    let mut w = 0usize;
+    for c in raw.chars() {
+        match c {
+            ' ' => w += 1,
+            '\t' => w += 2,
+            _ => break,
+        }
+    }
+    (w / 2).min(6) as u8
 }
 
 fn numbered(line: &str) -> Option<&str> {
@@ -475,8 +549,8 @@ fn numbered(line: &str) -> Option<&str> {
         .flatten()
 }
 
-/// Parse the Markdown subset: headings, paragraphs, `-`/`*` and `1.` lists, `>` quotes,
-/// fenced code, `---` rules.
+/// Parse the Markdown subset: headings, paragraphs, `-`/`*` and `1.` lists (nested by
+/// indentation), pipe tables, `>` quotes, fenced code, `---` rules.
 pub fn parse_blocks(src: &str) -> Vec<Block> {
     let mut out: Vec<Block> = Vec::new();
     let mut para: Vec<&str> = Vec::new();
@@ -486,10 +560,12 @@ pub fn parse_blocks(src: &str) -> Vec<Block> {
             para.clear();
         }
     };
-    let mut lines = src.lines();
+    let mut lines = src.lines().peekable();
+    let mut gap = false; // a blank line ends the current list
     while let Some(raw) = lines.next() {
         let line = raw.trim_end();
         let t = line.trim_start();
+        let was_gap = std::mem::replace(&mut gap, t.is_empty());
         if let Some(lang) = t.strip_prefix("```") {
             flush(&mut para, &mut out);
             let mut text = Vec::new();
@@ -525,17 +601,32 @@ pub fn parse_blocks(src: &str) -> Vec<Block> {
                 }
                 _ => out.push(Block::Quote(q)),
             }
-        } else if let Some(item) = ["- ", "* ", "+ "].iter().find_map(|m| t.strip_prefix(m)) {
+        } else if t.contains('|') && lines.peek().is_some_and(|n| table_aligns(n).is_some()) {
             flush(&mut para, &mut out);
-            match out.last_mut() {
-                Some(Block::Bullets(v)) => v.push(item.to_string()),
-                _ => out.push(Block::Bullets(vec![item.to_string()])),
+            let head = split_row(t);
+            let mut aligns = table_aligns(lines.next().unwrap_or("")).unwrap_or_default();
+            aligns.resize(head.len(), Align::Left);
+            let mut rows = Vec::new();
+            while let Some(r) = lines.peek() {
+                if r.trim().is_empty() || !r.contains('|') {
+                    break;
+                }
+                let mut cells = split_row(r);
+                cells.resize(head.len(), String::new());
+                rows.push(cells);
+                lines.next();
             }
-        } else if let Some(item) = numbered(t) {
+            out.push(Block::Table { head, aligns, rows });
+        } else if let Some((ordered, item)) = list_marker(t) {
             flush(&mut para, &mut out);
+            let it = ListItem {
+                depth: indent_depth(line),
+                ordered,
+                text: item.to_string(),
+            };
             match out.last_mut() {
-                Some(Block::Numbered(v)) => v.push(item.to_string()),
-                _ => out.push(Block::Numbered(vec![item.to_string()])),
+                Some(Block::List(v)) if !was_gap => v.push(it),
+                _ => out.push(Block::List(vec![it])),
             }
         } else {
             para.push(t);
@@ -626,11 +717,8 @@ impl RenderOnce for Markdown {
                         .into_any_element()
                 }
                 Block::Paragraph(s) => div().child(inline_text(&t, &s)).into_any_element(),
-                Block::Bullets(items) | Block::Numbered(items) if items.is_empty() => {
-                    div().into_any_element()
-                }
-                Block::Bullets(items) => list(&t, items, false),
-                Block::Numbered(items) => list(&t, items, true),
+                Block::List(items) => list(&t, &items),
+                Block::Table { head, aligns, rows } => table(&t, &head, &aligns, &rows),
                 Block::Quote(s) => div()
                     .pl(px(t.spacing.md))
                     .border_l_2()
@@ -651,26 +739,91 @@ impl RenderOnce for Markdown {
     }
 }
 
-fn list(t: &Theme, items: Vec<String>, ordered: bool) -> gpui::AnyElement {
+/// Marker text for each item: bullets alternate `•`/`◦` with depth, numbers
+/// restart whenever the list drops back to a shallower level.
+pub fn list_markers(items: &[ListItem]) -> Vec<String> {
+    let mut counters = [0usize; 8];
+    items
+        .iter()
+        .enumerate()
+        .map(|(i, it)| {
+            let d = (it.depth as usize).min(7);
+            // Entering a deeper level starts a fresh count there.
+            if i == 0 || items[i - 1].depth < it.depth {
+                counters[d] = 0;
+            }
+            for c in counters.iter_mut().skip(d + 1) {
+                *c = 0;
+            }
+            counters[d] += 1;
+            if it.ordered {
+                format!("{}.", counters[d])
+            } else if d % 2 == 0 {
+                "•".into()
+            } else {
+                "◦".into()
+            }
+        })
+        .collect()
+}
+
+fn list(t: &Theme, items: &[ListItem]) -> gpui::AnyElement {
+    let marks = list_markers(items);
     let mut col = div().flex().flex_col().gap(px(t.spacing.xs));
-    for (i, it) in items.iter().enumerate() {
+    for (it, mark) in items.iter().zip(marks) {
         col = col.child(
             div()
                 .flex()
                 .gap(px(t.spacing.sm))
+                .pl(px(it.depth as f32 * 18.0))
                 .child(
                     div()
                         .w(px(22.0))
                         .flex_none()
                         .text_color(hsla(t.palette.primary))
-                        .child(if ordered {
-                            format!("{}.", i + 1)
-                        } else {
-                            "•".to_string()
-                        }),
+                        .child(mark),
                 )
-                .child(div().flex_1().child(inline_text(t, it))),
+                .child(div().flex_1().child(inline_text(t, &it.text))),
         );
+    }
+    col.into_any_element()
+}
+
+fn table(t: &Theme, head: &[String], aligns: &[Align], rows: &[Vec<String>]) -> gpui::AnyElement {
+    let p = &t.palette;
+    let cell = |text: &str, a: Align, bold: bool| {
+        let d = div().flex_1().min_w_0().px(px(t.spacing.sm)).py(px(6.0));
+        let d = match a {
+            Align::Left => d,
+            Align::Center => d.text_center(),
+            Align::Right => d.text_right(),
+        };
+        if bold {
+            d.font_weight(FontWeight::BOLD).child(inline_text(t, text))
+        } else {
+            d.child(inline_text(t, text))
+        }
+    };
+    let mut head_row = div()
+        .flex()
+        .bg(hsla(p.surface_raised))
+        .text_color(hsla(p.text_muted));
+    for (i, h) in head.iter().enumerate() {
+        head_row = head_row.child(cell(h, aligns.get(i).copied().unwrap_or_default(), true));
+    }
+    let mut col = div()
+        .flex()
+        .flex_col()
+        .w_full()
+        .border_1()
+        .border_color(hsla(p.border))
+        .child(head_row);
+    for r in rows {
+        let mut row = div().flex().border_t_1().border_color(hsla(p.border));
+        for (i, c) in r.iter().enumerate() {
+            row = row.child(cell(c, aligns.get(i).copied().unwrap_or_default(), false));
+        }
+        col = col.child(row);
     }
     col.into_any_element()
 }
@@ -738,8 +891,19 @@ mod tests {
         let b = parse_blocks("# T\n\npara one\ncontinues\n\n- a\n- b\n\n1. x\n2. y\n> q\n> r\n---\n```rust\nfn f() {}\n```");
         assert_eq!(b[0], Block::Heading(1, "T".into()));
         assert_eq!(b[1], Block::Paragraph("para one continues".into()));
-        assert_eq!(b[2], Block::Bullets(vec!["a".into(), "b".into()]));
-        assert_eq!(b[3], Block::Numbered(vec!["x".into(), "y".into()]));
+        let item = |d: u8, o: bool, t: &str| ListItem {
+            depth: d,
+            ordered: o,
+            text: t.into(),
+        };
+        assert_eq!(
+            b[2],
+            Block::List(vec![item(0, false, "a"), item(0, false, "b")])
+        );
+        assert_eq!(
+            b[3],
+            Block::List(vec![item(0, true, "x"), item(0, true, "y")])
+        );
         assert_eq!(b[4], Block::Quote("q r".into()));
         assert_eq!(b[5], Block::Rule);
         assert_eq!(
@@ -749,5 +913,38 @@ mod tests {
                 text: "fn f() {}".into()
             }
         );
+    }
+
+    #[test]
+    fn nested_lists_and_markers() {
+        let b = parse_blocks("- a\n  - b\n  - c\n    1. d\n    2. e\n- f");
+        let Block::List(items) = &b[0] else {
+            panic!("{b:?}")
+        };
+        let depths: Vec<u8> = items.iter().map(|i| i.depth).collect();
+        assert_eq!(depths, vec![0, 1, 1, 2, 2, 0]);
+        assert_eq!(list_markers(items), vec!["•", "◦", "◦", "1.", "2.", "•"]);
+        // numbering restarts after dropping back out of a nested level
+        let b = parse_blocks("1. x\n   1. y\n2. z\n   1. w");
+        let Block::List(items) = &b[0] else { panic!() };
+        assert_eq!(list_markers(items), vec!["1.", "1.", "2.", "1."]);
+    }
+
+    #[test]
+    fn tables() {
+        let b = parse_blocks(
+            "intro\n\n| Name | Qty | Note |\n|:--|--:|:-:|\n| a | 1 | x |\n| b | 22 |\n\nafter",
+        );
+        assert_eq!(b[0], Block::Paragraph("intro".into()));
+        let Block::Table { head, aligns, rows } = &b[1] else {
+            panic!("{b:?}")
+        };
+        assert_eq!(head, &["Name", "Qty", "Note"]);
+        assert_eq!(aligns, &[Align::Left, Align::Right, Align::Center]);
+        assert_eq!(rows.len(), 2);
+        assert_eq!(rows[1], vec!["b", "22", ""]); // short rows are padded
+        assert_eq!(b[2], Block::Paragraph("after".into()));
+        // a lone pipe line without a separator row stays a paragraph
+        assert!(matches!(parse_blocks("a | b")[0], Block::Paragraph(_)));
     }
 }

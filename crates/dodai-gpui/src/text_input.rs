@@ -173,6 +173,7 @@ pub struct TextInput {
     rows: Option<usize>,
     masked: bool,
     disabled: bool,
+    corners: Option<dodai_core::Corners>,
     on_change: Option<ChangeHandler>,
     on_submit: Option<SubmitHandler>,
 }
@@ -191,6 +192,7 @@ impl TextInput {
             rows: None,
             masked: false,
             disabled: false,
+            corners: None,
             on_change: None,
             on_submit: None,
         }
@@ -215,6 +217,11 @@ impl TextInput {
     /// Password field: shows `•` per character and blocks copy/cut.
     pub fn password(mut self, on: bool) -> Self {
         self.masked = on;
+        self
+    }
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
         self
     }
     pub fn disabled(mut self, d: bool) -> Self {
@@ -763,7 +770,7 @@ impl Element for TextElement {
 
 impl Render for TextInput {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let t = theme_of(cx);
+        let t = crate::apply_corners(theme_of(cx), self.corners);
         let focused = self.focus.is_focused(window) && !self.disabled;
         let lh = (t.typography.size_md * 1.45).round();
         let mut style = input_style(&t, focused);

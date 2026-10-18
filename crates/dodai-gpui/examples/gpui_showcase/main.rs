@@ -1287,10 +1287,8 @@ impl Render for Showcase {
                     .filter(dt_filter_text)
                     .height(260.0),
             );
-        let md_src = "# Markdown\n\nSupports **bold**, *italic*, `inline code` and [links](https://example.com).\n\n- headings and paragraphs\n- bullet and numbered lists\n- fenced code\n\n1. first\n2. second\n\n> quotes read muted\n\n```rust\nfn main() {\n    let n: u32 = 42; // answer\n    println!(\"{n}\");\n}\n```";
+        let md_src = "# Markdown\n\nSupports **bold**, *italic*, `inline code` and [links](https://example.com).\n\n- headings and paragraphs\n- nested lists\n  - indent two spaces\n    1. numbered inside\n    2. restarts per level\n- fenced code and tables\n\n| Token | Value | Note |\n|:--|--:|:-:|\n| radius | 12 | rounded |\n| chamfer | 0 | none |\n\n> quotes read muted\n\n```rust\nfn main() {\n    let n: u32 = 42; // answer\n    println!(\"{n}\");\n}\n```";
         let sample = format!("{}/examples/assets/sample.png", env!("CARGO_MANIFEST_DIR"));
-        let m_ctx = me.clone();
-        let _ = m_ctx;
         let popovers = row()
             .child(
                 dodai_gpui::Popover::new("pop")

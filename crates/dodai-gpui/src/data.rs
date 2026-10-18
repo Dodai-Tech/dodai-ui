@@ -500,17 +500,22 @@ impl RenderOnce for Chip {
 
 /// Keyboard key hint, e.g. `Kbd::new("⌘K")`.
 #[derive(IntoElement)]
-pub struct Kbd(SharedString);
+pub struct Kbd(SharedString, Option<dodai_core::Corners>);
 
 impl Kbd {
     pub fn new(key: impl Into<SharedString>) -> Self {
-        Self(key.into())
+        Self(key.into(), None)
+    }
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.1 = Some(c);
+        self
     }
 }
 
 impl Kbd {
     fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let t = theme_of(cx);
+        let t = crate::apply_corners(theme_of(cx), self.1);
         let p = &t.palette;
         let style = ShapeStyle::from_tokens(
             &t,

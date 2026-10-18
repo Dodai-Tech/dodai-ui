@@ -504,11 +504,14 @@ impl RenderOnce for CheckboxGroup {
                 }
             }
         };
-        let control = |id: ElementId, on: bool, f: BoolFn| {
+        let control = |id: ElementId, on: bool, mixed: bool, f: BoolFn| {
             if self.switches {
                 Toggle::new(id, on).on_change(f).into_any_element()
             } else {
-                Checkbox::new(id, on).on_change(f).into_any_element()
+                Checkbox::new(id, on)
+                    .indeterminate(mixed)
+                    .on_change(f)
+                    .into_any_element()
             }
         };
         let row = |ctl: AnyElement, text: SharedString, muted: Option<String>| {
@@ -536,6 +539,7 @@ impl RenderOnce for CheckboxGroup {
             let ctl = control(
                 (self.id.clone(), "all").into(),
                 all,
+                any && !all,
                 Box::new(move |on, w, cx| set(if on { (0..n).collect() } else { vec![] }, w, cx)),
             );
             let hint = (any && !all).then(|| format!("{} of {}", sel.len(), n));
@@ -551,6 +555,7 @@ impl RenderOnce for CheckboxGroup {
             let ctl = control(
                 (self.id.clone(), format!("o{i}")).into(),
                 flags[i],
+                false,
                 Box::new(move |on, w, cx| {
                     let mut v = cur.clone();
                     v.retain(|&x| x != i);

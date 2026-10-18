@@ -146,6 +146,7 @@ pub struct DataTable {
     filter: SharedString,
     selectable: bool,
     height: f32,
+    corners: Option<dodai_core::Corners>,
     on_selection: Option<SelectionFn>,
 }
 
@@ -158,6 +159,7 @@ impl DataTable {
             filter: "".into(),
             selectable: true,
             height: 280.0,
+            corners: None,
             on_selection: None,
         }
     }
@@ -197,6 +199,11 @@ impl DataTable {
         self
     }
     /// Called with the selected source-row indices.
+    /// Cut these corners instead of the theme's.
+    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+        self.corners = Some(c);
+        self
+    }
     pub fn on_selection(mut self, f: impl Fn(&[usize], &mut Window, &mut App) + 'static) -> Self {
         self.on_selection = Some(Rc::new(f));
         self
@@ -205,7 +212,7 @@ impl DataTable {
 
 impl RenderOnce for DataTable {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let t = theme_of(cx);
+        let t = crate::apply_corners(theme_of(cx), self.corners);
         let p = &t.palette;
         let init: Vec<f32> = self.columns.iter().map(|c| c.width).collect();
         let st = window.use_keyed_state(self.id.clone(), cx, move |_, _| DtState {
@@ -241,7 +248,8 @@ impl RenderOnce for DataTable {
         };
 
         // header
-        let all_on = n > 0 && view.iter().all(|i| selected.contains(i));
+        let flags: Vec<bool> = view.iter().map(|i| selected.contains(i)).collect();
+        let (all_on, any_on) = crate::forms::select_all_state(&flags);
         let mut head = div()
             .flex()
             .items_center()
@@ -252,23 +260,27 @@ impl RenderOnce for DataTable {
             .text_color(hsla(p.text_muted));
         if self.selectable {
             let (st2, view2, notify) = (st.clone(), view.clone(), notify_selection.clone());
-            head = head.child(div().w(px(check_w)).flex_none().child(
-                Checkbox::new((self.id.clone(), "all"), all_on).on_change(move |on, w, cx| {
-                    let mut sel = st2.read(cx).selected.clone();
-                    for i in &view2 {
-                        if on {
-                            sel.insert(*i);
-                        } else {
-                            sel.remove(i);
-                        }
-                    }
-                    st2.update(cx, |s, cx| {
-                        s.selected = sel.clone();
-                        cx.notify();
-                    });
-                    notify(&sel, w, cx);
-                }),
-            ));
+            head = head.child(
+                div().w(px(check_w)).flex_none().child(
+                    Checkbox::new((self.id.clone(), "all"), all_on)
+                        .indeterminate(any_on && !all_on)
+                        .on_change(move |on, w, cx| {
+                            let mut sel = st2.read(cx).selected.clone();
+                            for i in &view2 {
+                                if on {
+                                    sel.insert(*i);
+                                } else {
+                                    sel.remove(i);
+                                }
+                            }
+                            st2.update(cx, |s, cx| {
+                                s.selected = sel.clone();
+                                cx.notify();
+                            });
+                            notify(&sel, w, cx);
+                        }),
+                ),
+            );
         }
         for (i, c) in self.columns.iter().enumerate() {
             let mut label = format_label(&t.typography, &c.title).to_string();

@@ -100,10 +100,13 @@ fn choice(
     disabled: bool,
     handler: Option<BoolHandler>,
     radio: bool,
+    mixed: bool,
     window: &mut Window,
     cx: &mut App,
 ) -> impl IntoElement {
     let t = theme_of(cx);
+    // A half-checked box is drawn "on" with a dash; clicking it selects all.
+    let (on_value, on) = (on, on || mixed);
     let st = use_interact(&id, window, cx);
     let state = st.read(cx).control_state(disabled);
     let k = t.toggle(on, state);
@@ -164,7 +167,7 @@ fn choice(
             if p > 0.01 {
                 el.text_color(hsla(k.thumb).opacity(p))
                     .text_size(px(h - 6.0))
-                    .child("✓")
+                    .child(if mixed { "−" } else { "✓" })
             } else {
                 el
             }
@@ -181,7 +184,8 @@ fn choice(
     if !disabled {
         el = el.cursor_pointer();
         if let Some(f) = handler {
-            el = el.on_click(move |_, w, cx| f(if radio { true } else { !on }, w, cx));
+            el = el
+                .on_click(move |_, w, cx| f(if radio || mixed { true } else { !on_value }, w, cx));
         }
     }
     el
@@ -195,17 +199,24 @@ macro_rules! choice_component {
             id: ElementId,
             on: bool,
             disabled: bool,
+            mixed: bool,
             on_change: Option<BoolHandler>,
         }
 
         impl $name {
             /// `on` is the current (controlled) value.
             pub fn new(id: impl Into<ElementId>, on: bool) -> Self {
-                Self { id: id.into(), on, disabled: false, on_change: None }
+                Self { id: id.into(), on, disabled: false, mixed: false, on_change: None }
             }
             /// Disable interaction.
             pub fn disabled(mut self, d: bool) -> Self {
                 self.disabled = d;
+                self
+            }
+            /// Half-checked ("some children selected"): drawn as a dash;
+            /// clicking requests `true`. Meaningful for [`Checkbox`] only.
+            pub fn indeterminate(mut self, m: bool) -> Self {
+                self.mixed = m;
                 self
             }
             /// Called with the requested new value on click.
@@ -217,7 +228,7 @@ macro_rules! choice_component {
 
         impl RenderOnce for $name {
             fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-                choice($kind, self.id, self.on, self.disabled, self.on_change, $radio, window, cx)
+                choice($kind, self.id, self.on, self.disabled, self.on_change, $radio, self.mixed, window, cx)
             }
         }
     };
