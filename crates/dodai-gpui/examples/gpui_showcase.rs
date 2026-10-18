@@ -613,7 +613,7 @@ fn cat_icon(name: &str) -> dodai_gpui::IconName {
         "Data display" => I::Table,
         "Charts" => I::BarChart,
         "Animation" => I::Sparkle,
-        "Shaders" | "Ghibli" | "DMT Hyperspace" => I::Sparkle,
+        "Shaders" => I::Sparkle,
         "Loading" => I::Repeat,
         _ => I::Dot,
     }
@@ -2847,12 +2847,7 @@ impl Render for Showcase {
                     .filter(|s| s.family == *fam && !s.is_generator())
                     .collect();
                 let (gt, et) = TITLES[fi];
-                // Ghibli and DMT have their own category and also live under Shaders.
-                let cats: &[&'static str] = match *fam {
-                    Family::Ghibli => &["Ghibli", "Shaders"],
-                    Family::Dmt => &["DMT Hyperspace", "Shaders"],
-                    _ => &["Shaders"],
-                };
+                let cats: &[&'static str] = &["Shaders"];
                 for cat in cats {
                     let mut g_row = row();
                     for g in &gens {
@@ -2892,11 +2887,7 @@ impl Render for Showcase {
                     dodai_gpui::dodai_shaders::presets::PIXEL,
                 ),
             ] {
-                let cats: &[&'static str] = match title {
-                    "Ghibli presets" => &["Ghibli", "Shaders"],
-                    "DMT Hyperspace presets" => &["DMT Hyperspace", "Shaders"],
-                    _ => &["Shaders"],
-                };
+                let cats: &[&'static str] = &["Shaders"];
                 for cat in cats {
                     let mut r = row();
                     for p in list {
@@ -2929,9 +2920,7 @@ impl Render for Showcase {
 
         // Shaders are the biggest category and design-independent: always last.
         sections.sort_by_key(|(c, _, _, _)| match *c {
-            "Ghibli" => 1,
-            "DMT Hyperspace" => 2,
-            "Shaders" => 3,
+            "Shaders" => 1,
             _ => 0,
         });
         let cats: Vec<&'static str> = {
