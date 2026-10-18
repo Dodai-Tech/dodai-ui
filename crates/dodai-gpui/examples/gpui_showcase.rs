@@ -3842,7 +3842,7 @@ impl Render for Showcase {
                             .child(title)
                             .on_click(move |_, _, cx| {
                                 m.update(cx, |s, cx| {
-                                    s.jump = Some((title, 0));
+                                    s.jump = Some((title, 1));
                                     cx.notify()
                                 })
                             }),
