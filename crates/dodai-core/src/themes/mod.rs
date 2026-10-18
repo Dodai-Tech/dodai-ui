@@ -8,6 +8,7 @@
 //! test picks it up automatically; adapters never branch on theme ids.
 
 pub mod cyberpunk;
+pub mod material;
 
 use crate::Theme;
 
@@ -112,6 +113,7 @@ impl Spec {
 pub fn all() -> Vec<Theme> {
     let mut v = Vec::new();
     v.extend(cyberpunk::variants());
+    v.extend(material::variants());
     v
 }
 
