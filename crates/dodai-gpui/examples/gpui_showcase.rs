@@ -55,6 +55,8 @@ struct Showcase {
     /// Selected subsection inside the current category (`None` = all).
     sub: Option<&'static str>,
     side_focus: FocusHandle,
+    /// Sidebar collapsed to an icon rail.
+    rail: bool,
     rating: u32,
     stepper: i32,
     range: (f32, f32),
@@ -2760,6 +2762,7 @@ impl Render for Showcase {
         };
         let sections_meta: Vec<(&'static str, &'static str)> =
             sections.iter().map(|(c, l, _, _)| (*c, *l)).collect();
+        let rail = self.rail;
         let mut side = div()
             .id("side-nav")
             .track_focus(&self.side_focus)
@@ -2780,12 +2783,39 @@ impl Render for Showcase {
             .flex()
             .flex_col()
             .gap(px(t.spacing.xs))
-            .w(px(240.0))
+            .w_full()
+            .min_w_0()
             .flex_shrink_0()
             .h_full()
-            .p(px(t.spacing.md))
-            .child(Heading::new("Dodai UI").level(2))
-            .child(div().pb(px(t.spacing.sm)).child(self.filter.clone()));
+            .p(px(if rail { t.spacing.xs } else { t.spacing.md }))
+            .child({
+                let m = me.clone();
+                let toggle = IconButton::new("rail-toggle", if rail { "»" } else { "«" }).on_click(
+                    move |_, _, cx| {
+                        m.update(cx, |s, cx| {
+                            s.rail = !s.rail;
+                            cx.notify()
+                        })
+                    },
+                );
+                if rail {
+                    div()
+                        .flex()
+                        .justify_center()
+                        .pb(px(t.spacing.sm))
+                        .child(toggle)
+                } else {
+                    div()
+                        .flex()
+                        .items_center()
+                        .justify_between()
+                        .child(Heading::new("Dodai UI").level(2))
+                        .child(toggle)
+                }
+            });
+        if !rail {
+            side = side.child(div().pb(px(t.spacing.sm)).child(self.filter.clone()));
+        }
         for (idx, name) in std::iter::once("All")
             .chain(cats.iter().copied())
             .enumerate()
@@ -2793,21 +2823,28 @@ impl Render for Showcase {
             let m = me.clone();
             let n = count_in(if idx == 0 { None } else { Some(cats[idx - 1]) });
             side = side.child(
-                ListItem::new(("cat", idx), format!("{name}  ·  {n}"))
-                    .icon(cat_icon(name))
-                    .selected(self.cat == idx)
-                    .on_click(move |_, w, cx| {
-                        m.update(cx, |s, cx| {
-                            w.focus(&s.side_focus);
-                            s.cat = idx;
-                            s.sub = None;
-                            dodai_gpui::set_tree_expanded(cx, true);
-                            s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
-                            cx.notify()
-                        })
-                    }),
+                ListItem::new(
+                    ("cat", idx),
+                    if rail {
+                        String::new()
+                    } else {
+                        format!("{name}  ·  {n}")
+                    },
+                )
+                .icon(cat_icon(name))
+                .selected(self.cat == idx)
+                .on_click(move |_, w, cx| {
+                    m.update(cx, |s, cx| {
+                        w.focus(&s.side_focus);
+                        s.cat = idx;
+                        s.sub = None;
+                        dodai_gpui::set_tree_expanded(cx, true);
+                        s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
+                        cx.notify()
+                    })
+                }),
             );
-            if self.cat == idx && idx > 0 {
+            if self.cat == idx && idx > 0 && !rail {
                 for sub in std::iter::once(None).chain(subs(name).iter().copied().map(Some)) {
                     if sub.is_none() && subs(name).is_empty() {
                         break;
@@ -2843,11 +2880,13 @@ impl Render for Showcase {
                 }
             }
         }
-        side = side.child(
-            div()
-                .pt(px(t.spacing.md))
-                .child(Muted::new("t / T theme · l scanlines")),
-        );
+        if !rail {
+            side = side.child(
+                div()
+                    .pt(px(t.spacing.md))
+                    .child(Muted::new("t / T theme · l scanlines")),
+            );
+        }
 
         let mut body = div()
             .flex()
@@ -2942,7 +2981,13 @@ impl Render for Showcase {
             .child(
                 ResponsiveShell::new("shell")
                     .breakpoint(640.0)
-                    .sidebar_width(if narrow { 170.0 } else { 220.0 })
+                    .sidebar_width(if self.rail {
+                        64.0
+                    } else if narrow {
+                        170.0
+                    } else {
+                        240.0
+                    })
                     .sidebar(side)
                     .content(
                         div()
@@ -3084,6 +3129,7 @@ fn main() {
                         cat_count: 1,
                         sub: None,
                         side_focus: cx.focus_handle(),
+                        rail: false,
                         rating: 3,
                         stepper: 5,
                         range: (0.2, 0.7),
