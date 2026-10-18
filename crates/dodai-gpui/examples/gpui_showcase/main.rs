@@ -14,11 +14,12 @@ use dodai_gpui::{
     Tag, Toggle, TopAppBar,
 };
 use dodai_gpui::{
-    BarChart, BoxPlot, BubbleChart, Candle, Candlestick, Date, DatePicker, EmptyState, Funnel,
-    Gauge, Heatmap, Histogram, IconBadge, LineChart, Marker, NumberStepper, PieChart, RadarChart,
-    RadialBar, RangeSlider, Rating, RichTooltip, ScatterPlot, SearchView, Series, Snackbar,
-    Sparkline, StackedAreaChart, TagField, TextInput, TimePicker, Timeline, TimelineEvent, Toolbar,
-    TreeItem, TreeView, Treemap, Waterfall,
+    BarChart, Blip, BoxPlot, BubbleChart, Candle, Candlestick, Date, DatePicker, EmptyState,
+    Funnel, Gauge, GaugeStyle, Heatmap, HexMap, Histogram, IconBadge, LineChart, Marker,
+    NumberStepper, Oscilloscope, PieChart, RadarChart, RadarScope, RadialBar, RangeSlider, Rating,
+    RichTooltip, RingStack, ScatterPlot, SearchView, Series, Snackbar, Sparkline, Spectrum,
+    StackedAreaChart, TagField, TextInput, TimePicker, Timeline, TimelineEvent, Toolbar, TreeItem,
+    TreeView, Treemap, Waterfall,
 };
 use dodai_gpui::{
     CandleStyle, ChartStack, DepthChart, Gantt, GanttTask, Overlay, Pane, RenkoChart, TradeMarker,
@@ -1403,6 +1404,153 @@ impl Render for Showcase {
                         ),
                     ),
             );
+        let gauge_styles = {
+            use GaugeStyle::*;
+            let dials = row()
+                .justify_around()
+                .flex_wrap()
+                .child(
+                    Gauge::new(68.0)
+                        .style(Segmented)
+                        .size(130.0)
+                        .caption("Core temp")
+                        .label("68°"),
+                )
+                .child(
+                    Gauge::new(72.0)
+                        .style(Dial)
+                        .zones(true)
+                        .size(150.0)
+                        .caption("Load")
+                        .label("72"),
+                )
+                .child(
+                    Gauge::new(88.0)
+                        .style(Meter)
+                        .zones(true)
+                        .size(150.0)
+                        .caption("Shield")
+                        .label("88%"),
+                )
+                .child(
+                    Gauge::new(45.0)
+                        .style(Reticle)
+                        .size(130.0)
+                        .tone(Tone::Info)
+                        .caption("Sync")
+                        .label("45%"),
+                );
+            let bars = div()
+                .flex()
+                .flex_col()
+                .gap_3()
+                .child(
+                    Gauge::new(82.0)
+                        .style(Bar)
+                        .size(150.0)
+                        .zones(true)
+                        .caption("Power")
+                        .label("82%"),
+                )
+                .child(
+                    Gauge::new(35.0)
+                        .style(Bar)
+                        .size(150.0)
+                        .tone(Tone::Info)
+                        .caption("Link")
+                        .label("35%"),
+                )
+                .child(
+                    Gauge::new(14.0)
+                        .style(Bar)
+                        .size(150.0)
+                        .tone(Tone::Danger)
+                        .caption("Hull")
+                        .label("14%"),
+                );
+            let more = div()
+                .flex()
+                .flex_col()
+                .gap_3()
+                .child(
+                    Gauge::new(64.0)
+                        .style(Chevron)
+                        .size(150.0)
+                        .zones(true)
+                        .caption("Thrust")
+                        .label("64%"),
+                )
+                .child(
+                    Gauge::new(58.0)
+                        .style(Level)
+                        .size(110.0)
+                        .zones(true)
+                        .caption("Fuel")
+                        .label("58%"),
+                );
+            let bars = row().justify_around().flex_wrap().child(bars).child(more);
+            div().flex().flex_col().gap_6().child(dials).child(bars)
+        };
+        let instruments = {
+            let spec: Vec<f32> = (0..18)
+                .map(|i| 0.35 + 0.6 * ((i as f32 * 0.9).sin().abs()))
+                .collect();
+            let hexes: Vec<f32> = (0..7 * 12)
+                .map(|i| {
+                    let (r, c) = ((i / 12) as f32, (i % 12) as f32);
+                    (((c * 0.55 + r * 0.8).sin() * (r * 0.9 - c * 0.3).cos()) * 0.5 + 0.5).powf(1.4)
+                })
+                .collect();
+            let blips = [
+                (0.08, 0.7),
+                (0.31, 0.45),
+                (0.52, 0.85),
+                (0.77, 0.3),
+                (0.9, 0.6),
+            ]
+            .map(|(a, r)| Blip::new(a, r));
+            div()
+                .flex()
+                .flex_col()
+                .gap_6()
+                .child(
+                    row()
+                        .justify_around()
+                        .flex_wrap()
+                        .child(
+                            Oscilloscope::wave(&[(3.0, 1.0), (7.0, 0.4)], 160)
+                                .live(true)
+                                .caption("CH1 · 2 ms/div"),
+                        )
+                        .child(
+                            Spectrum::new(spec)
+                                .live(true)
+                                .size(300.0, 160.0)
+                                .caption("Audio · 18 band"),
+                        ),
+                )
+                .child(
+                    row()
+                        .justify_around()
+                        .flex_wrap()
+                        .child(RadarScope::new(blips).size(220.0).caption("Proximity"))
+                        .child(
+                            HexMap::new(12, hexes)
+                                .width(340.0)
+                                .live(true)
+                                .caption("Grid load"),
+                        )
+                        .child(
+                            RingStack::new([
+                                ("CPU", 78.0),
+                                ("MEM", 54.0),
+                                ("NET", 31.0),
+                                ("GPU", 90.0),
+                            ])
+                            .size(160.0),
+                        ),
+                )
+        };
         let charts_round = row()
             .justify_around()
             .child(PieChart::new([
@@ -2847,6 +2995,22 @@ impl Render for Showcase {
                     .child(charts_round)
                     .into_any_element(),
                 "Pie · donut · gauge · sparkline",
+            ),
+            (
+                "Charts",
+                "Gauge styles",
+                section!("Gauge styles")
+                    .child(gauge_styles)
+                    .into_any_element(),
+                "Gauge styles",
+            ),
+            (
+                "Charts",
+                "Instruments",
+                section!("Instruments")
+                    .child(instruments)
+                    .into_any_element(),
+                "Instruments",
             ),
             (
                 "Charts",

@@ -1288,7 +1288,8 @@ impl RenderOnce for PieChart {
 
 // ─────────────────────────────────── Gauge ───────────────────────────────────
 
-/// Radial gauge (270° sweep) with a centre label.
+/// Radial gauge with a centre label. [`GaugeStyle`] picks the look: the
+/// default 270° arc, segmented ring, dial, meter, reticle or slanted-cell bar.
 #[derive(IntoElement)]
 pub struct Gauge {
     value: f32,
@@ -1296,7 +1297,10 @@ pub struct Gauge {
     max: f32,
     size: f32,
     label: Option<SharedString>,
+    caption: Option<SharedString>,
     tone: Option<dodai_core::Tone>,
+    style: crate::gauges::GaugeStyle,
+    zones: bool,
 }
 
 impl Gauge {
@@ -1307,7 +1311,10 @@ impl Gauge {
             max: 100.0,
             size: 120.0,
             label: None,
+            caption: None,
             tone: None,
+            style: crate::gauges::GaugeStyle::Arc,
+            zones: false,
         }
     }
     pub fn range(mut self, min: f32, max: f32) -> Self {
@@ -1324,14 +1331,29 @@ impl Gauge {
         self.label = Some(l.into());
         self
     }
+    /// Small caption under the label (uppercased when the theme does).
+    pub fn caption(mut self, c: impl Into<SharedString>) -> Self {
+        self.caption = Some(c.into());
+        self
+    }
     pub fn tone(mut self, t: dodai_core::Tone) -> Self {
         self.tone = Some(t);
+        self
+    }
+    pub fn style(mut self, s: crate::gauges::GaugeStyle) -> Self {
+        self.style = s;
+        self
+    }
+    /// Colour the value green → amber → red as it climbs (overrides `tone`).
+    pub fn zones(mut self, on: bool) -> Self {
+        self.zones = on;
         self
     }
 }
 
 impl Gauge {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        use crate::gauges::{GaugeStyle, Look};
         let t = theme_of(cx);
         let g = crate::motion::grow(window, cx, "Gauge");
         let frac = norm(self.value, self.min, self.max) * g;
@@ -1339,51 +1361,123 @@ impl Gauge {
         let track = hsla(t.palette.border);
         let glow = glow_of(&t);
         let size = self.size;
+        let style = self.style;
+        let (bw, bh) = style.dims(size);
         let ring = (size * 0.1).clamp(4.0, 12.0);
         let label = self
             .label
             .unwrap_or_else(|| fmt_num((self.value * g).round()).into());
-        div()
-            .relative()
-            .w(px(size))
-            .h(px(size))
-            .child(
-                canvas(
-                    |_, _, _| (),
-                    move |b: Bounds<Pixels>, _, w, _| {
-                        let c = size / 2.0;
-                        let r = c - ring / 2.0 - 2.0;
-                        // 270° sweep from bottom-left (135° → 405°) in turn fractions.
-                        let (s0, span) = (0.375, 0.75);
-                        stroke(
-                            w,
-                            b.origin,
-                            &turn_arc(c, c, r, s0, s0 + span),
-                            ring,
-                            track,
-                            false,
-                        );
-                        if frac > 0.0 {
-                            let p = turn_arc(c, c, r, s0, s0 + span * frac);
-                            glow_stroke(w, b.origin, &p, ring, col, glow);
-                        }
-                    },
-                )
-                .absolute()
-                .size_full(),
-            )
-            .child(
+        let look = Look {
+            style,
+            frac,
+            size,
+            ring,
+            tone: col,
+            track,
+            text: hsla(t.palette.text),
+            zones: self.zones.then(|| {
+                [
+                    hsla(t.palette.success),
+                    hsla(t.palette.warning),
+                    hsla(t.palette.danger),
+                ]
+            }),
+            glow,
+        };
+        let canvas_el = canvas(
+            |_, _, _| (),
+            move |b: Bounds<Pixels>, _, w, _| {
+                if style != GaugeStyle::Arc {
+                    crate::gauges::paint(w, b, look);
+                    return;
+                }
+                let c = size / 2.0;
+                let r = c - ring / 2.0 - 2.0;
+                let (s0, span) = crate::gauges::SWEEP;
+                stroke(
+                    w,
+                    b.origin,
+                    &turn_arc(c, c, r, s0, s0 + span),
+                    ring,
+                    track,
+                    false,
+                );
+                if frac > 0.0 {
+                    let p = turn_arc(c, c, r, s0, s0 + span * frac);
+                    glow_stroke(w, b.origin, &p, ring, col, glow);
+                }
+            },
+        )
+        .absolute()
+        .size_full();
+        let caption = self
+            .caption
+            .map(|c| crate::text::format_label(&t.typography, &c));
+        let value_size = match style {
+            GaugeStyle::Bar | GaugeStyle::Chevron => bh * 0.9,
+            GaugeStyle::Dial => size * 0.17,
+            GaugeStyle::Meter => size * 0.15,
+            GaugeStyle::Level => size * 0.13,
+            _ => size * 0.22,
+        };
+        let readout = div()
+            .flex()
+            .flex_col()
+            .items_center()
+            .font_family(first_family(t.typography.display))
+            .text_size(px(value_size))
+            .text_color(hsla(t.palette.text))
+            .child(label)
+            .children(caption.map(|c| {
                 div()
-                    .absolute()
-                    .size_full()
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .font_family(first_family(t.typography.display))
-                    .text_size(px(size * 0.22))
-                    .text_color(hsla(t.palette.text))
-                    .child(label),
-            )
+                    .text_size(px((size * 0.085).max(9.0)))
+                    .text_color(hsla(t.palette.text_muted))
+                    .font_family(first_family(t.typography.mono))
+                    .child(c)
+            }));
+        let frame = div().relative().w(px(bw)).h(px(bh)).child(canvas_el);
+        match style {
+            GaugeStyle::Bar | GaugeStyle::Chevron | GaugeStyle::Level => div()
+                .flex()
+                .items_center()
+                .gap(px(12.0))
+                .child(frame)
+                .child(readout)
+                .into_any_element(),
+            GaugeStyle::Dial => frame
+                .child(
+                    div()
+                        .absolute()
+                        .w_full()
+                        .top(px(size * 0.62))
+                        .flex()
+                        .justify_center()
+                        .child(readout),
+                )
+                .into_any_element(),
+            GaugeStyle::Meter => frame
+                .child(
+                    div()
+                        .absolute()
+                        .w_full()
+                        .bottom_0()
+                        .flex()
+                        .justify_center()
+                        .child(readout),
+                )
+                .into_any_element(),
+            _ => frame
+                .child(
+                    div()
+                        .absolute()
+                        .size_full()
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .child(readout),
+                )
+                .into_any_element(),
+        }
     }
 }
 

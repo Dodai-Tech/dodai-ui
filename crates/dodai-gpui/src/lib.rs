@@ -52,6 +52,8 @@ pub mod content;
 pub mod controls;
 #[cfg(feature = "components")]
 pub mod count;
+#[cfg(feature = "charts")]
+pub mod cyber_charts;
 #[cfg(feature = "components")]
 pub mod data;
 #[cfg(feature = "components")]
@@ -64,6 +66,8 @@ pub mod extras;
 pub mod feedback;
 #[cfg(feature = "components")]
 pub mod forms;
+#[cfg(feature = "charts")]
+pub mod gauges;
 pub mod icons;
 pub mod interact;
 #[cfg(feature = "components")]
@@ -149,6 +153,8 @@ pub use controls::{
 };
 #[cfg(feature = "components")]
 pub use count::CountUp;
+#[cfg(feature = "charts")]
+pub use cyber_charts::{Blip, HexMap, Oscilloscope, RadarScope, RingStack, Spectrum};
 #[cfg(feature = "components")]
 pub use data::{Avatar, Badge, Chip, Kbd, Table};
 #[cfg(feature = "components")]
@@ -178,6 +184,8 @@ pub use forms::{
     otp_push, select_all_state, toggle_select, CheckboxGroup, FieldState, FormField, OtpInput,
     ToggleGroup,
 };
+#[cfg(feature = "charts")]
+pub use gauges::GaugeStyle;
 pub use icons::{Icon, IconName};
 #[cfg(feature = "components")]
 pub use knob::Knob;

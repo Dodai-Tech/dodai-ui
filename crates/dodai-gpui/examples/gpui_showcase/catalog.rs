@@ -59,6 +59,8 @@ pub(crate) fn caps(title: &str) -> Caps {
         t if t.contains("chart")
             || [
                 "Pie · donut · gauge · sparkline",
+                "Gauge styles",
+                "Instruments",
                 "Area · histogram · waterfall",
                 "Funnel · treemap · radial bar",
                 "Candlestick · box plot · bubble",
