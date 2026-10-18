@@ -2719,6 +2719,8 @@ impl Render for Showcase {
             sections.push(("Animation", k, el, k));
         }
 
+        // Shaders are the biggest category and design-independent: always last.
+        sections.sort_by_key(|(c, _, _, _)| *c == "Shaders");
         let cats: Vec<&'static str> = {
             let mut v: Vec<&'static str> = Vec::new();
             for (c, _, _, _) in &sections {
