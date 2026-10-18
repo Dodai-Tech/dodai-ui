@@ -34,3 +34,6 @@ image = { version = "0.25", default-features = false, optional = true }
 [[example]]
 name = "gpui_showcase"
 required-features = ["components", "charts"]
+
+[dev-dependencies]
+gpui = { workspace = true, features = ["test-support"] }
