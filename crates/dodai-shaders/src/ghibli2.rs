@@ -228,7 +228,7 @@ pub fn gh_clouds(uv: Vec2, c: &Ctx) -> Vec3 {
         let h = hash1(fi * 7.3 + 1.0);
         let s = 0.34 + depth * 0.26 + h * 0.12;
         let x = drift(c, h, 0.006 + depth * 0.006, t, 1.4);
-        let y = -0.55 + depth * 0.5 + hash1(fi * 3.1) * 0.4 - 0.1;
+        let y = -0.3 + depth * 0.45 + hash1(fi * 3.1) * 0.4;
         let shade = rgb8(176, 198, 232).mix(rgb8(204, 186, 218), depth * 0.3);
         col = cloud(
             col,
@@ -242,14 +242,14 @@ pub fn gh_clouds(uv: Vec2, c: &Ctx) -> Vec3 {
         );
     }
     // a soft sea of cloud along the bottom
-    let top = -0.72 + 0.07 * (q.x * 2.2 + t * 0.12).sin() + 0.04 * (q.x * 5.1 - t * 0.2).sin();
+    let top = -0.62 + 0.07 * (q.x * 2.2 + t * 0.12).sin() + 0.04 * (q.x * 5.1 - t * 0.2).sin();
     let sea = fill_aa(q.y - top, w);
-    let sea_col = Vec3::WHITE.mix(rgb8(180, 200, 232), smoothstep(-0.75, -1.0, q.y));
+    let sea_col = Vec3::WHITE.mix(rgb8(180, 200, 232), smoothstep(-0.65, -1.0, q.y));
     col = col.mix(sea_col, sea);
     for i in 0..5 {
         let fi = i as f32;
         let bx = drift(c, fi * 0.21, 0.03 + 0.004 * fi, t, 0.4);
-        let by = 0.45 + 0.12 * (fi * 1.7).sin() + 0.02 * (t * 2.0 + fi).sin();
+        let by = 0.6 + 0.1 * (fi * 1.7).sin() + 0.02 * (t * 2.0 + fi).sin();
         col = bird(
             col,
             q,
