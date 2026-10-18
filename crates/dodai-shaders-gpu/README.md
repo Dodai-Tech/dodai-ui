@@ -1,6 +1,6 @@
 # dodai-shaders-gpu
 
-Run the [`dodai-shaders`](../dodai-shaders) catalogue (187 shaders) on the GPU, with wgpu compute.
+Run the [`dodai-shaders`](../dodai-shaders) catalogue (195 shaders) on the GPU, with wgpu compute.
 
 The shaders are **the same Rust source files** as the CPU catalogue. They are compiled to WGSL by
 [rust-gpu](https://github.com/Rust-GPU/rust-gpu) (`crates/dodai-shaders-kernels`), and the result is

@@ -57,6 +57,8 @@ struct Showcase {
     side_focus: FocusHandle,
     /// Sidebar collapsed to an icon rail.
     rail: bool,
+    /// Collapsed state of the Navigation-section demo shell.
+    demo_rail: bool,
     rating: u32,
     stepper: i32,
     range: (f32, f32),
@@ -128,7 +130,7 @@ fn caps(title: &str) -> Caps {
             c(false, false, false)
         }
         // Raw / non-animated components only.
-        "Tooltip" | "Input" => c(false, false, false),
+        "Tooltip" | "Input" | "Collapsible sidebar" => c(false, false, false),
         // Single animated component.
         "Search view" | "Tag field" => c(true, false, false),
         // Value-in components.
@@ -2396,6 +2398,71 @@ impl Render for Showcase {
             ),
             (
                 "Navigation",
+                "Collapsible sidebar",
+                section!("Collapsible sidebar")
+                    .child(Muted::new(
+                        "ResponsiveShell: drag the edge handle (spring + fling snap), click it, or use the button. Below the breakpoint it becomes a drawer.",
+                    ))
+                    .child({
+                        let demo = self.demo_rail;
+                        let m = me.clone();
+                        let m2 = me.clone();
+                        let items = ["Inbox", "Contracts", "Fixers", "Market"];
+                        let mut side = div()
+                            .flex()
+                            .flex_col()
+                            .gap(px(t.spacing.xs))
+                            .p(px(t.spacing.sm))
+                            .child(
+                                Button::new("demo-rail-btn", if demo { "»" } else { "« Collapse" })
+                                    .variant(ButtonVariant::Outline)
+                                    .on_click(move |_, _, cx| {
+                                        m2.update(cx, |s, cx| {
+                                            s.demo_rail = !s.demo_rail;
+                                            cx.notify()
+                                        })
+                                    }),
+                            );
+                        for (i, name) in items.into_iter().enumerate() {
+                            let label = if demo {
+                                name.chars().take(1).collect::<String>()
+                            } else {
+                                name.to_string()
+                            };
+                            side = side.child(ListItem::new(("demo-li", i), label));
+                        }
+                        div()
+                            .relative()
+                            .h(px(220.0))
+                            .w_full()
+                            .overflow_hidden()
+                            .border_1()
+                            .border_color(dodai_gpui::hsla(t.palette.border))
+                            .child(
+                                ResponsiveShell::new("demo-shell")
+                                    .breakpoint(0.0)
+                                    .sidebar_width(200.0)
+                                    .rail_width(64.0)
+                                    .sidebar(side)
+                                    .collapsed(demo)
+                                    .on_collapse(move |c, _, cx| {
+                                        m.update(cx, |s, cx| {
+                                            s.demo_rail = c;
+                                            cx.notify()
+                                        })
+                                    })
+                                    .content(
+                                        div()
+                                            .p(px(t.spacing.md))
+                                            .child(Muted::new("Content area follows the sidebar width.")),
+                                    ),
+                            )
+                    })
+                    .into_any_element(),
+                "Collapsible sidebar",
+            ),
+            (
+                "Navigation",
                 "App bar · Cards · FAB · Navigation",
                 section!("App bar · Cards · FAB · Navigation")
                     .child(structure)
@@ -3177,6 +3244,7 @@ fn main() {
                         sub: None,
                         side_focus: cx.focus_handle(),
                         rail: false,
+                        demo_rail: false,
                         rating: 3,
                         stepper: 5,
                         range: (0.2, 0.7),

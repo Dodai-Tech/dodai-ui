@@ -130,6 +130,34 @@ pub const DMT: &[Preset] = &[
         chain: &["dmt_sri_yantra", "dmt_kaleidoscope"],
         palette: ShaderPalette::hyperspace,
     },
+    Preset {
+        id: "dmt-sacred-mirror-aura",
+        name: "Sacred mirror, aura",
+        desc: "The standing figure outlined in drifting rainbow light",
+        chain: &["dmt_sacred_mirror", "dmt_aura"],
+        palette: ShaderPalette::hyperspace,
+    },
+    Preset {
+        id: "dmt-julia-kaleido",
+        name: "Julia kaleidoscope",
+        desc: "The fractal mandala mirrored again and breathing",
+        chain: &["dmt_julia_mandala", "dmt_kaleidoscope", "dmt_breath"],
+        palette: ShaderPalette::hyperspace,
+    },
+    Preset {
+        id: "dmt-indra-liquid",
+        name: "Indra's net, liquid",
+        desc: "The jewel web drifting like water, leaving tracers",
+        chain: &["dmt_indras_net", "dmt_liquid", "dmt_tracers"],
+        palette: ShaderPalette::hyperspace,
+    },
+    Preset {
+        id: "dmt-chakra-hue",
+        name: "Chakra flow",
+        desc: "The seven wheels with sliding colours",
+        chain: &["dmt_chakra_wheels", "dmt_hue_flow"],
+        palette: ShaderPalette::hyperspace,
+    },
 ];
 
 pub const PIXEL: &[Preset] = &[

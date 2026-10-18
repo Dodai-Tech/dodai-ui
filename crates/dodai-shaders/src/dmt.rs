@@ -95,6 +95,62 @@ pub const SHADERS: &[ShaderInfo] = &[
         "A radiant eye: fractal iris, halo contours and rays",
         dmt_third_eye,
     ),
+    ShaderInfo::generator(
+        "dmt_julia_mandala",
+        "Julia mandala",
+        F,
+        "Six-fold mirrored Julia set, orbit-trapped in neon",
+        dmt_julia_mandala,
+    ),
+    ShaderInfo::generator(
+        "dmt_apollonian",
+        "Apollonian",
+        F,
+        "Circle-inversion fractal: tangent circles within circles",
+        dmt_apollonian,
+    ),
+    ShaderInfo::generator(
+        "dmt_sierpinski",
+        "Sierpinski",
+        F,
+        "Nested triangle holes, folded to infinity and slowly turning",
+        dmt_sierpinski,
+    ),
+    ShaderInfo::generator(
+        "dmt_phyllotaxis",
+        "Phyllotaxis",
+        F,
+        "Golden-angle seed spiral, as in a sunflower",
+        dmt_phyllotaxis,
+    ),
+    ShaderInfo::generator(
+        "dmt_tree_of_life",
+        "Tree of life",
+        F,
+        "Ten spheres joined by twenty-two paths",
+        dmt_tree_of_life,
+    ),
+    ShaderInfo::generator(
+        "dmt_chakra_wheels",
+        "Chakra wheels",
+        F,
+        "Seven petalled wheels on a braided central channel",
+        dmt_chakra_wheels,
+    ),
+    ShaderInfo::generator(
+        "dmt_sacred_mirror",
+        "Sacred mirror",
+        F,
+        "A standing figure seen through skin: skeleton, organs, nerves and aura",
+        dmt_sacred_mirror,
+    ),
+    ShaderInfo::generator(
+        "dmt_indras_net",
+        "Indra's net",
+        F,
+        "A web of jewel-eyes, each reflecting all the others",
+        dmt_indras_net,
+    ),
     ShaderInfo::post(
         "dmt_kaleidoscope",
         "Kaleidoscope",
@@ -708,6 +764,429 @@ pub fn dmt_third_eye(uv: Vec2, c: &Ctx) -> Vec3 {
     col = col + Vec3::WHITE * (fill_aa(lens.abs() - w * 1.2, w) * 0.8);
     col =
         col + c.pal.b * (line((lens + 0.035).abs(), w, 40.0) * 0.45 * smoothstep(0.0, -0.02, lens));
+    col * vignette(q)
+}
+
+// ------------------------------------------------- fractals & more art --
+
+pub fn dmt_julia_mandala(uv: Vec2, c: &Ctx) -> Vec3 {
+    let q = c.centered(uv);
+    let t = c.time;
+    let a = q.y.atan2(q.x) + t * 0.05;
+    let seg = TAU / 6.0;
+    let f = (fmod(a + TAU * 4.0, seg) - seg * 0.5).abs();
+    let r = q.len();
+    let mut z = vec2(f.cos(), f.sin()) * r * 1.4;
+    let cc = vec2(
+        -0.74 + 0.08 * (t * 0.3).cos(),
+        0.17 + 0.08 * (t * 0.37).sin(),
+    );
+    let mut trap: f32 = 10.0;
+    let mut n: f32 = 0.0;
+    let mut i: i32 = 0;
+    while i < 44 && z.dot(z) < 64.0 {
+        z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + cc;
+        trap = trap.min(
+            (z.len() - 0.9)
+                .abs()
+                .min(z.x.abs() * 0.6)
+                .min(z.y.abs() * 0.6),
+        );
+        n += 1.0;
+        i += 1;
+    }
+    let g = (-trap * 9.0).exp() * 0.55;
+    let hue = n * 0.035 + t * 0.04 + r * 0.2;
+    let mut col = deep_void(q, t, c) + spectrum(hue) * g;
+    col = col + spectrum(hue + 0.4) * (fill_aa(trap - 0.01, 0.012) * 0.3);
+    col * vignette(q)
+}
+
+pub fn dmt_apollonian(uv: Vec2, c: &Ctx) -> Vec3 {
+    let q = c.centered(uv);
+    let t = c.time;
+    let zoom = 1.25 + 0.2 * (t * 0.2).sin();
+    let mut p = q.rot(t * 0.04) * zoom;
+    let w = pw(c) * zoom;
+    let mut s: f32 = 1.0;
+    let mut trap: f32 = 10.0;
+    // Stop refining once detail drops below a pixel (no shimmer, no aliasing).
+    for _ in 0..9 {
+        if s * w < 0.12 {
+            p = vec2(
+                -1.0 + 2.0 * fract(0.5 * p.x + 0.5),
+                -1.0 + 2.0 * fract(0.5 * p.y + 0.5),
+            );
+            let r2 = p.dot(p).max(1e-4);
+            trap = trap.min(r2);
+            let k = 1.25 / r2;
+            p = p * k;
+            s *= k;
+        }
+    }
+    let d = 0.5 * (p.len() - 0.55).abs() / s;
+    let hue = s.ln() * 0.09 + t * 0.04 + trap * 0.5;
+    let mut col = deep_void(q, t, c);
+    col = col + spectrum(hue) * (fill_aa(d - w * 1.6, w * 1.6) * 0.9 + (-trap * 2.2).exp() * 0.3);
+    col = col + spectrum(hue + 0.3) * (smoothstep(0.35, 0.0, trap) * 0.25);
+    col * vignette(q)
+}
+
+fn tri_v(i: u32) -> Vec2 {
+    match i {
+        0 => vec2(0.0, 1.0),
+        1 => vec2(-0.866_025_4, -0.5),
+        _ => vec2(0.866_025_4, -0.5),
+    }
+}
+
+pub fn dmt_sierpinski(uv: Vec2, c: &Ctx) -> Vec3 {
+    let q = c.centered(uv);
+    let t = c.time;
+    let sc = 1.0 + 0.06 * (t * 0.3).sin();
+    let mut p = q.rot(t * 0.07) * (1.05 * sc);
+    let w = pw(c) * 1.05;
+    let mut col = deep_void(q, t, c);
+    let mut scale: f32 = 1.0;
+    let h = 0.866_025_4; // half-side of the whole triangle
+    for i in 0..7 {
+        // The hole of this level: an inverted triangle at the centre.
+        let hole = sd_tri(vec2(p.x, -p.y), h * 0.5);
+        let hue = i as f32 * 0.11 + t * 0.04;
+        let wl = w * scale;
+        if wl < 0.1 {
+            col = col + spectrum(hue) * (fill_aa(hole, wl) * (0.7 - 0.07 * i as f32));
+            col = col + spectrum(hue + 0.25) * (fill_aa(hole.abs() - wl * 1.2, wl) * 0.8);
+        }
+        // fold into the nearest corner sub-triangle
+        let mut best: f32 = -10.0;
+        let mut v = vec2(0.0, 0.0);
+        for k in 0..3u32 {
+            let vk = tri_v(k);
+            let dk = p.dot(vk);
+            if dk > best {
+                best = dk;
+                v = vk;
+            }
+        }
+        p = p * 2.0 - v;
+        scale *= 2.0;
+    }
+    col * vignette(q)
+}
+
+pub fn dmt_phyllotaxis(uv: Vec2, c: &Ctx) -> Vec3 {
+    let q = c.centered(uv);
+    let t = c.time;
+    let k = 0.042 * (1.0 + 0.05 * (t * 0.5).sin());
+    let r = q.len();
+    let n0 = (r / k) * (r / k);
+    let base = n0.round();
+    let mut best: f32 = 10.0;
+    let mut hue: f32 = 0.0;
+    for j in 0..55 {
+        let n = base + j as f32 - 27.0;
+        if n >= 0.0 {
+            let pr = k * n.sqrt();
+            let ang = n * 2.399_963 + t * 0.12;
+            let ctr = vec2(pr * ang.cos(), pr * ang.sin());
+            let dr = k * (0.32 + 0.22 * (n * 0.01 - t * 0.8).sin());
+            let d = (q - ctr).len() - dr;
+            if d < best {
+                best = d;
+                hue = n / 520.0;
+            }
+        }
+    }
+    let w = pw(c);
+    let mut col = deep_void(q, t, c);
+    col = col
+        + spectrum(hue * 1.3 + t * 0.05)
+            * (fill_aa(best, w) * 0.9 + (-best.max(0.0) * 50.0).exp() * 0.25);
+    col = col + Vec3::WHITE * (fill_aa(best + k * 0.38, w) * 0.0);
+    col * vignette(q)
+}
+
+fn sephira(i: u32) -> Vec2 {
+    match i {
+        0 => vec2(0.0, 0.86),
+        1 => vec2(0.4, 0.62),
+        2 => vec2(-0.4, 0.62),
+        3 => vec2(0.4, 0.2),
+        4 => vec2(-0.4, 0.2),
+        5 => vec2(0.0, 0.3),
+        6 => vec2(0.4, -0.25),
+        7 => vec2(-0.4, -0.25),
+        8 => vec2(0.0, -0.52),
+        _ => vec2(0.0, -0.86),
+    }
+}
+
+/// The 22 paths as (from, to) sphere indices.
+fn path_of(k: u32) -> Vec2 {
+    match k {
+        0 => vec2(0.0, 1.0),
+        1 => vec2(0.0, 2.0),
+        2 => vec2(0.0, 5.0),
+        3 => vec2(1.0, 2.0),
+        4 => vec2(1.0, 5.0),
+        5 => vec2(1.0, 3.0),
+        6 => vec2(2.0, 5.0),
+        7 => vec2(2.0, 4.0),
+        8 => vec2(3.0, 4.0),
+        9 => vec2(3.0, 5.0),
+        10 => vec2(3.0, 6.0),
+        11 => vec2(4.0, 5.0),
+        12 => vec2(4.0, 7.0),
+        13 => vec2(5.0, 6.0),
+        14 => vec2(5.0, 7.0),
+        15 => vec2(5.0, 8.0),
+        16 => vec2(6.0, 7.0),
+        17 => vec2(6.0, 8.0),
+        18 => vec2(7.0, 8.0),
+        19 => vec2(8.0, 9.0),
+        20 => vec2(3.0, 2.0),
+        _ => vec2(4.0, 1.0),
+    }
+}
+
+pub fn dmt_tree_of_life(uv: Vec2, c: &Ctx) -> Vec3 {
+    let q = c.centered(uv);
+    let t = c.time;
+    let w = pw(c);
+    let mut col = deep_void(q, t, c);
+    // two pillars of light
+    col = col + c.pal.b * ((-(q.x.abs() - 0.4).abs() * 14.0).exp() * 0.05);
+    let mut dl: f32 = 10.0;
+    let mut hue: f32 = 0.0;
+    let mut along: f32 = 0.0;
+    for k in 0..22u32 {
+        let pk = path_of(k);
+        let a = sephira(pk.x as u32);
+        let b = sephira(pk.y as u32);
+        let d = sd_segment(q, a, b);
+        if d < dl {
+            dl = d;
+            hue = k as f32 / 22.0;
+            let ba = b - a;
+            along = ((q - a).dot(ba) / ba.dot(ba)).clamp(0.0, 1.0);
+        }
+    }
+    let pulse = 0.55 + 0.45 * (along * 9.0 - t * 2.0 + hue * 20.0).sin();
+    col = col + spectrum(hue + t * 0.03) * (line(dl, w, 38.0) * pulse * 0.8);
+    for i in 0..10u32 {
+        let pc = sephira(i);
+        let d = (q - pc).len();
+        let hh = i as f32 / 10.0 * 0.85;
+        let beat = 0.8 + 0.2 * (t * 1.5 + i as f32).sin();
+        col = col + hsv(hh, 0.7, 1.0) * ((-d * 11.0).exp() * 0.4 * beat);
+        col = col.mix(hsv(hh, 0.55, 0.95) * 0.5, fill_aa(d - 0.07, w) * 0.85);
+        col = col + Vec3::WHITE * (fill_aa((d - 0.07).abs() - w, w) * 0.85);
+        col = col + Vec3::WHITE * (fill_aa(d - 0.012, w) * 0.7);
+    }
+    col * vignette(q)
+}
+
+fn chakra_petals(i: u32) -> f32 {
+    match i {
+        0 => 4.0,
+        1 => 6.0,
+        2 => 10.0,
+        3 => 12.0,
+        4 => 16.0,
+        5 => 2.0,
+        _ => 24.0,
+    }
+}
+
+pub fn dmt_chakra_wheels(uv: Vec2, c: &Ctx) -> Vec3 {
+    let q = c.centered(uv);
+    let t = c.time;
+    let w = pw(c);
+    let mut col = deep_void(q, t, c);
+    // egg-shaped aura contours
+    let e = (vec2(q.x * 1.35, q.y * 0.8)).len();
+    let band = (e * 7.0 - t * 0.4).fract();
+    col = col
+        + spectrum(e * 1.3 - t * 0.05)
+            * (smoothstep(0.0, 0.1, band) * smoothstep(0.22, 0.1, band) * (-e * 1.8).exp() * 0.5);
+    // braided ida / pingala around the central channel
+    let sx = 0.06 * (q.y * 13.0 - t * 1.6).sin();
+    let braid = ((q.x - sx).abs()).min((q.x + sx).abs());
+    let chan = smoothstep(0.95, 0.7, q.y.abs());
+    col = col + c.pal.c * (line(braid, w, 70.0) * 0.6 * chan);
+    col = col + Vec3::WHITE * (fill_aa(q.x.abs() - w * 0.7, w) * 0.5 * chan);
+    // nearest wheel
+    let idx = ((q.y + 0.75) / 0.25).round().clamp(0.0, 6.0);
+    let i = idx as u32;
+    let ctr = vec2(0.0, -0.75 + idx * 0.25);
+    let p = q - ctr;
+    let r = p.len();
+    let a = p.y.atan2(p.x);
+    let n = chakra_petals(i);
+    let dir = if i % 2 == 0 { 1.0 } else { -1.0 };
+    let base = hsv(idx / 7.0 * 0.78, 0.85, 1.0);
+    let big = 0.12;
+    let pet = big * (0.55 + 0.45 * (0.5 * n * a + dir * t * 0.3).cos().abs());
+    let d = r - pet;
+    let pulse = 0.8 + 0.2 * (t * 1.4 + idx).sin();
+    col = col + base * ((-r * 9.0).exp() * 0.5 * pulse);
+    col = col.mix(base * 0.5, fill_aa(d, w) * 0.8);
+    col = col + base * (fill_aa(d.abs() - w, w) * 1.1);
+    col = col + base * (fill_aa((r - big * 1.25).abs() - w * 0.8, w) * 0.5);
+    col = col + Vec3::WHITE * (fill_aa(r - 0.02, w) * 0.8 + (-r * 40.0).exp() * 0.4);
+    col * vignette(q)
+}
+
+/// Standing-figure silhouette (units: roughly -0.75..0.72 tall).
+fn stand_sd(p: Vec2) -> f32 {
+    let head = (p - vec2(0.0, 0.62)).len() - 0.078;
+    let neck = sd_segment(p, vec2(0.0, 0.56), vec2(0.0, 0.5)) - 0.03;
+    let torso = sd_round_box(p - vec2(0.0, 0.34), vec2(0.11, 0.17), 0.06);
+    let pelvis = sd_round_box(p - vec2(0.0, 0.1), vec2(0.1, 0.06), 0.04);
+    let sh = sd_segment(p, vec2(-0.13, 0.5), vec2(0.13, 0.5)) - 0.04;
+    let q = vec2(p.x.abs(), p.y);
+    let up = sd_segment(q, vec2(0.14, 0.5), vec2(0.34, 0.3)) - 0.03;
+    let fo = sd_segment(q, vec2(0.34, 0.3), vec2(0.5, 0.07)) - 0.026;
+    let th = sd_segment(q, vec2(0.06, 0.06), vec2(0.09, -0.3)) - 0.05;
+    let sn = sd_segment(q, vec2(0.09, -0.3), vec2(0.09, -0.68)) - 0.038;
+    let ft = sd_segment(q, vec2(0.09, -0.7), vec2(0.17, -0.72)) - 0.03;
+    head.min(neck)
+        .min(torso)
+        .min(pelvis)
+        .min(sh)
+        .min(up)
+        .min(fo)
+        .min(th)
+        .min(sn)
+        .min(ft)
+}
+
+pub fn dmt_sacred_mirror(uv: Vec2, c: &Ctx) -> Vec3 {
+    let q = c.centered(uv);
+    let t = c.time;
+    let k = 1.02;
+    let p = q * k;
+    let w = pw(c) * k;
+    let d = stand_sd(p);
+    let r = q.len();
+    let a = q.y.atan2(q.x);
+    let mut col = deep_void(q, t, c);
+    // mandala behind: rings and twelve rays
+    col = col + c.pal.b * (fill_aa((r - 0.88).abs() - pw(c), pw(c)) * 0.3);
+    col = col + c.pal.a * (fill_aa((r - 0.95).abs() - pw(c), pw(c)) * 0.2);
+    let rays = (a * 12.0 + t * 0.05).cos().abs().powf(30.0);
+    col = col + c.pal.c * (rays * smoothstep(0.4, 0.9, r) * smoothstep(1.4, 0.95, r) * 0.35);
+    // aura echoes
+    let out = d.max(0.0);
+    let band = (out * 14.0 - t * 0.5).fract();
+    let ring = smoothstep(0.0, 0.1, band) * smoothstep(0.24, 0.1, band);
+    col = col + spectrum(out * 2.4 - t * 0.05) * (ring * (-out * 3.0).exp() * 0.9);
+    col = col + spectrum(out * 2.4 - t * 0.05 + 0.2) * ((-out * 9.0).exp() * 0.3);
+    // the body
+    let inside = fill_aa(d, w);
+    let depth = (-d).max(0.0);
+    let mut body = c.pal.bg * 2.0 + c.pal.a * 0.1 + c.pal.b * (0.08 + 0.2 * (depth * 7.0).min(1.0));
+    let web = (noise(p * 30.0 + vec2(t * 0.1, 0.0)) - 0.5).abs();
+    body = body + c.pal.b * (smoothstep(0.03, 0.0, web) * 0.35);
+    // skeleton
+    let qa = vec2(p.x.abs(), p.y);
+    let mut bone = sd_segment(p, vec2(0.0, 0.52), vec2(0.0, 0.08));
+    bone = bone.min(sd_segment(qa, vec2(0.14, 0.5), vec2(0.34, 0.3)));
+    bone = bone.min(sd_segment(qa, vec2(0.34, 0.3), vec2(0.5, 0.07)));
+    bone = bone.min(sd_segment(qa, vec2(0.06, 0.06), vec2(0.09, -0.3)));
+    bone = bone.min(sd_segment(qa, vec2(0.09, -0.3), vec2(0.09, -0.68)));
+    bone = bone.min(sd_segment(p, vec2(-0.13, 0.5), vec2(0.13, 0.5)));
+    bone = bone.min(sd_segment(p, vec2(-0.09, 0.08), vec2(0.09, 0.08)));
+    let rib = (p.y * 44.0 + qa.x * qa.x * 100.0).sin().abs();
+    let rib_zone = smoothstep(0.2, 0.24, p.y)
+        * smoothstep(0.5, 0.44, p.y)
+        * smoothstep(0.012, 0.03, p.x.abs())
+        * smoothstep(0.11, 0.06, p.x.abs());
+    body = body + Vec3::WHITE * (fill_aa(bone - 0.006, w) * 0.75);
+    body = body + Vec3::WHITE * (smoothstep(0.9, 1.0, 1.0 - rib) * rib_zone * 0.45);
+    let skull = ((p - vec2(0.0, 0.62)).len() - 0.06).abs();
+    body = body + Vec3::WHITE * (fill_aa(skull - w * 0.8, w) * 0.7);
+    // organs
+    let heart = (p - vec2(0.02, 0.4)).len();
+    let beat = 0.8 + 0.2 * (t * 3.0).sin().max(0.0);
+    body = body + rgb8(255, 60, 90) * ((-heart * 40.0).exp() * 1.3 * beat);
+    let lung = ((qa - vec2(0.065, 0.4)).len() - 0.045).max(0.0);
+    body = body + c.pal.b * ((-lung * 30.0).exp() * 0.25);
+    // chakras
+    for i in 0..7u32 {
+        let fi = i as f32;
+        let y = match i {
+            0 => 0.08,
+            1 => 0.17,
+            2 => 0.27,
+            3 => 0.4,
+            4 => 0.5,
+            5 => 0.62,
+            _ => 0.72,
+        };
+        let cc = hsv(fi / 7.0 * 0.78, 0.9, 1.0);
+        let dd = (p - vec2(0.0, y)).len();
+        let pulse = 0.75 + 0.25 * (t * 1.6 + fi).sin();
+        body = body + cc * ((-dd * 40.0).exp() * 0.9 * pulse);
+        col = col + cc * ((-dd * 18.0).exp() * 0.25 * pulse);
+    }
+    col = col.mix(body, inside * 0.92)
+        + spectrum(0.55 + t * 0.03) * ((-depth * 50.0).exp() * inside * 0.4);
+    col = col + Vec3::WHITE * (fill_aa(d.abs() - w * 0.8, w) * 0.5);
+    col * vignette(q)
+}
+
+fn net_node(i: f32, j: f32, t: f32) -> Vec2 {
+    let h = hash2(i as i32, j as i32);
+    let base = vec2(i + 0.5 * j, 0.866_025_4 * j);
+    base + vec2((t * 0.4 + h * TAU).sin(), (t * 0.33 + h * 9.0).cos()) * 0.12
+}
+
+pub fn dmt_indras_net(uv: Vec2, c: &Ctx) -> Vec3 {
+    let q = c.centered(uv);
+    let t = c.time;
+    let sc = 0.3;
+    let p = q.rot(0.2 * (t * 0.1).sin()) / sc + vec2(t * 0.1, 0.0);
+    let w = pw(c) / sc;
+    let by = p.y / 0.866_025_4;
+    let i0 = (p.x - 0.5 * by).floor();
+    let j0 = by.floor();
+    let mut col = deep_void(q, t, c);
+    let mut line_acc = Vec3::BLACK;
+    let mut node_acc = Vec3::BLACK;
+    for dj in 0..4 {
+        for di in 0..4 {
+            let i = i0 + di as f32 - 1.0;
+            let j = j0 + dj as f32 - 1.0;
+            let a = net_node(i, j, t);
+            let h = hash2(i as i32, j as i32);
+            for e in 0..3u32 {
+                let (ni, nj) = match e {
+                    0 => (i + 1.0, j),
+                    1 => (i, j + 1.0),
+                    _ => (i - 1.0, j + 1.0),
+                };
+                let b = net_node(ni, nj, t);
+                let ba = b - a;
+                let hh = ((p - a).dot(ba) / ba.dot(ba)).clamp(0.0, 1.0);
+                let d = (p - a - ba * hh).len();
+                let pulse = 0.5 + 0.5 * (hh * 7.0 - t * 2.0 + h * TAU).sin();
+                line_acc = line_acc
+                    + spectrum(h + hh * 0.2 + t * 0.03)
+                        * (line(d, w * 0.8, 40.0 * sc) * pulse * 0.45);
+            }
+            let d = (p - a).len();
+            let hue = h + t * 0.03;
+            // jewel: ring, iris and pupil
+            node_acc = node_acc
+                + spectrum(hue)
+                    * (fill_aa((d - 0.17).abs() - w, w) * 0.9 + (-d * 6.0).exp() * 0.25);
+            node_acc = node_acc + spectrum(hue + 0.3) * (fill_aa((d - 0.09).abs() - w, w) * 0.7);
+            node_acc = node_acc + Vec3::WHITE * (fill_aa(d - 0.03, w) * 0.9);
+        }
+    }
+    col = col + line_acc + node_acc;
     col * vignette(q)
 }
 
