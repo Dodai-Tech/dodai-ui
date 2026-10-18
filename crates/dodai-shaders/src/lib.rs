@@ -33,6 +33,7 @@
 pub mod blade;
 pub mod ctx;
 pub mod cyberpunk;
+pub mod dmt;
 pub mod extra;
 pub mod frame;
 pub mod fx;
@@ -71,10 +72,12 @@ pub enum Family {
     Ghostty,
     /// Hand-painted anime looks and cel-shaded 3D.
     Ghibli,
+    /// Sacred geometry, hyperspace tunnels and visionary-art effects.
+    Dmt,
 }
 
 impl Family {
-    pub const ALL: [Family; 8] = [
+    pub const ALL: [Family; 9] = [
         Family::Cyberpunk,
         Family::Material3,
         Family::Matrix,
@@ -83,6 +86,7 @@ impl Family {
         Family::Nature,
         Family::Ghostty,
         Family::Ghibli,
+        Family::Dmt,
     ];
     pub fn name(self) -> &'static str {
         match self {
@@ -94,6 +98,7 @@ impl Family {
             Family::Nature => "Cosmic & nature",
             Family::Ghostty => "Ghostty",
             Family::Ghibli => "Ghibli",
+            Family::Dmt => "DMT Hyperspace",
         }
     }
     /// Generator id that makes a good input for this family's post effects.
@@ -103,6 +108,7 @@ impl Family {
             Family::Material3 => "m3_blobs",
             Family::Matrix | Family::Retro | Family::Ghostty => "terminal_scene",
             Family::Ghibli => "gh_meadow",
+            Family::Dmt => "dmt_flower_of_life",
             Family::Pixel => "platformer",
             Family::Nature => "plasma",
         }
@@ -118,6 +124,7 @@ impl Family {
             Family::Nature => ShaderPalette::cyberpunk(),
             Family::Ghostty => ShaderPalette::matrix(),
             Family::Ghibli => ShaderPalette::ghibli(),
+            Family::Dmt => ShaderPalette::hyperspace(),
         }
     }
 }
@@ -184,6 +191,7 @@ pub fn catalog() -> &'static [ShaderInfo] {
             blade::SHADERS,
             ghibli::SHADERS,
             ghibli2::SHADERS,
+            dmt::SHADERS,
             pixel2::SHADERS,
             material::SHADERS,
             matrix::SHADERS,

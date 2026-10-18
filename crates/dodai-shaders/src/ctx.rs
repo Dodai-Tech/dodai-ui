@@ -39,6 +39,16 @@ impl ShaderPalette {
             c: rgb8(255, 170, 120),
         }
     }
+    /// Deep indigo void with magenta, cyan and gold light.
+    pub fn hyperspace() -> Self {
+        Self {
+            bg: rgb8(7, 3, 20),
+            fg: rgb8(250, 242, 255),
+            a: rgb8(255, 70, 210),
+            b: rgb8(60, 226, 255),
+            c: rgb8(255, 204, 80),
+        }
+    }
     /// Teal night, orange smog and magenta neon: a rainy-megacity look.
     pub fn bladerunner() -> Self {
         Self {

@@ -73,6 +73,65 @@ pub const BLADE: &[Preset] = &[
 ];
 
 /// Pixel-art scenes with palette-limiting effects.
+pub const DMT: &[Preset] = &[
+    Preset {
+        id: "dmt-breakthrough-flow",
+        name: "Breakthrough",
+        desc: "The tunnel with its colours sliding round the wheel",
+        chain: &["dmt_breakthrough", "dmt_hue_flow"],
+        palette: ShaderPalette::hyperspace,
+    },
+    Preset {
+        id: "dmt-elves-tracers",
+        name: "Machine elves, tracers",
+        desc: "Neon lattices trailing spectral echoes",
+        chain: &["dmt_machine_elves", "dmt_tracers"],
+        palette: ShaderPalette::hyperspace,
+    },
+    Preset {
+        id: "dmt-aura-body",
+        name: "Aura vision",
+        desc: "The energy body outlined in rainbow light",
+        chain: &["dmt_energy_body", "dmt_aura"],
+        palette: ShaderPalette::hyperspace,
+    },
+    Preset {
+        id: "dmt-mandala-kaleido",
+        name: "Mandala kaleidoscope",
+        desc: "Lotus layers folded into six-fold symmetry, breathing",
+        chain: &["dmt_lotus_mandala", "dmt_kaleidoscope", "dmt_breath"],
+        palette: ShaderPalette::hyperspace,
+    },
+    Preset {
+        id: "dmt-metatron-drift",
+        name: "Metatron drift",
+        desc: "The cube melting slowly, with echoes",
+        chain: &["dmt_metatron", "dmt_liquid", "dmt_tracers"],
+        palette: ShaderPalette::hyperspace,
+    },
+    Preset {
+        id: "dmt-eye-liquid",
+        name: "Liquid eye",
+        desc: "The third eye underwater, in shifting hues",
+        chain: &["dmt_third_eye", "dmt_liquid", "dmt_hue_flow"],
+        palette: ShaderPalette::hyperspace,
+    },
+    Preset {
+        id: "dmt-merkaba-grid",
+        name: "Merkaba in the lattice",
+        desc: "Star tetrahedron over a glowing flower of life",
+        chain: &["dmt_merkaba", "dmt_sacred_overlay"],
+        palette: ShaderPalette::hyperspace,
+    },
+    Preset {
+        id: "dmt-yantra-kaleido",
+        name: "Yantra mirror",
+        desc: "The yantra mirrored through six-fold glass",
+        chain: &["dmt_sri_yantra", "dmt_kaleidoscope"],
+        palette: ShaderPalette::hyperspace,
+    },
+];
+
 pub const PIXEL: &[Preset] = &[
     Preset {
         id: "px-gameboy-city",
@@ -356,6 +415,7 @@ pub fn all() -> impl Iterator<Item = &'static Preset> {
         .chain(GHOSTTY.iter())
         .chain(BLADE.iter())
         .chain(GHIBLI.iter())
+        .chain(DMT.iter())
         .chain(PIXEL.iter())
 }
 

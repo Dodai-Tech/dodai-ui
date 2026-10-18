@@ -607,7 +607,7 @@ fn cat_icon(name: &str) -> dodai_gpui::IconName {
         "Data display" => I::Table,
         "Charts" => I::BarChart,
         "Animation" => I::Sparkle,
-        "Shaders" | "Ghibli" => I::Sparkle,
+        "Shaders" | "Ghibli" | "DMT Hyperspace" => I::Sparkle,
         "Loading" => I::Repeat,
         _ => I::Dot,
     }
@@ -2640,7 +2640,7 @@ impl Render for Showcase {
                     .into_any_element(),
                 "Shader playground",
             ));
-            const TITLES: [(&str, &str); 8] = [
+            const TITLES: [(&str, &str); 9] = [
                 ("Cyberpunk shaders", "Cyberpunk effects"),
                 ("Material 3 shaders", "Material 3 effects"),
                 ("Matrix shaders", "Matrix effects"),
@@ -2649,6 +2649,7 @@ impl Render for Showcase {
                 ("Cosmic & nature shaders", "Cosmic & nature effects"),
                 ("Ghostty shaders", "Ghostty effects"),
                 ("Ghibli shaders", "Ghibli effects"),
+                ("DMT Hyperspace shaders", "DMT Hyperspace effects"),
             ];
             for (fi, fam) in Family::ALL.iter().enumerate() {
                 let gens: Vec<_> = catalog()
@@ -2660,10 +2661,10 @@ impl Render for Showcase {
                     .filter(|s| s.family == *fam && !s.is_generator())
                     .collect();
                 let (gt, et) = TITLES[fi];
-                let cat = if *fam == Family::Ghibli {
-                    "Ghibli"
-                } else {
-                    "Shaders"
+                let cat = match *fam {
+                    Family::Ghibli => "Ghibli",
+                    Family::Dmt => "DMT Hyperspace",
+                    _ => "Shaders",
                 };
                 let mut g_row = row();
                 for g in gens {
@@ -2694,6 +2695,10 @@ impl Render for Showcase {
                 ),
                 ("Ghibli presets", dodai_gpui::dodai_shaders::presets::GHIBLI),
                 (
+                    "DMT Hyperspace presets",
+                    dodai_gpui::dodai_shaders::presets::DMT,
+                ),
+                (
                     "Pixel art presets",
                     dodai_gpui::dodai_shaders::presets::PIXEL,
                 ),
@@ -2714,10 +2719,10 @@ impl Render for Showcase {
                     );
                 }
                 sections.push((
-                    if title == "Ghibli presets" {
-                        "Ghibli"
-                    } else {
-                        "Shaders"
+                    match title {
+                        "Ghibli presets" => "Ghibli",
+                        "DMT Hyperspace presets" => "DMT Hyperspace",
+                        _ => "Shaders",
                     },
                     title,
                     section!(title).child(r).into_any_element(),
@@ -2733,7 +2738,8 @@ impl Render for Showcase {
         // Shaders are the biggest category and design-independent: always last.
         sections.sort_by_key(|(c, _, _, _)| match *c {
             "Ghibli" => 1,
-            "Shaders" => 2,
+            "DMT Hyperspace" => 2,
+            "Shaders" => 3,
             _ => 0,
         });
         let cats: Vec<&'static str> = {
