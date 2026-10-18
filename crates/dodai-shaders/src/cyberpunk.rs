@@ -2,6 +2,8 @@
 
 use crate::frame::Ctx;
 use crate::math::*;
+#[allow(unused_imports)]
+use crate::prelude::*;
 use crate::{Family, ShaderInfo};
 
 const F: Family = Family::Cyberpunk;
@@ -269,7 +271,7 @@ pub fn hud_radar(uv: Vec2, c: &Ctx) -> Vec3 {
     // corner brackets
     let a = c.aspect();
     let m = vec2(q.x.abs() - (a - 0.08), q.y.abs() - 0.92);
-    let br = (m.x.abs().min(m.y.abs()) < 0.008) as u8 as f32
+    let br = (m.x.abs().min(m.y.abs()) < 0.008) as u32 as f32
         * step(m.x.max(m.y), 0.0)
         * step(-0.18, m.x.min(m.y));
     col + p.a * br * 0.9

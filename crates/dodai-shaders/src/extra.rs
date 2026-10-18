@@ -3,6 +3,8 @@
 
 use crate::frame::{Ctx, Frame};
 use crate::math::*;
+#[allow(unused_imports)]
+use crate::prelude::*;
 use crate::{Family, ShaderInfo};
 use std::f32::consts::TAU;
 
@@ -329,7 +331,8 @@ pub fn neon_signs(uv: Vec2, c: &Ctx) -> Vec3 {
         (vec2(0.55, -0.05), vec2(0.6, 0.3), p.b, 1.7),
         (vec2(-0.2, -0.5), vec2(0.45, 0.14), p.c, 3.1),
     ];
-    for (ctr, half, tone, seed) in signs {
+    for i in 0..3 {
+        let (ctr, half, tone, seed) = signs[i];
         let d = sd_round_box(q - ctr, half, 0.12).abs();
         let phase = c.time * 3.0 + seed;
         let flick = if (phase.sin() * (phase * 2.7).sin()) > 0.93 {
@@ -396,7 +399,8 @@ pub fn m3_mesh(uv: Vec2, c: &Ctx) -> Vec3 {
     ];
     let mut acc = Vec3::BLACK;
     let mut wsum = 0.0;
-    for (pos, col) in pts {
+    for i in 0..pts.len() {
+        let (pos, col) = pts[i];
         let w = 1.0 / ((q - pos).dot(q - pos) + 0.04).powi(3);
         acc = acc + col * w;
         wsum += w;
@@ -753,7 +757,8 @@ pub fn pixel_sea(uv: Vec2, c: &Ctx) -> Vec3 {
     let horizon = 0.45;
     if uv.y < horizon {
         let k = uv.y / horizon;
-        let sky = p.c.mix(p.a, (1.0 - k).powf(1.5)).mix(p.bg, k * 0.55);
+        let t = 1.0 - k;
+        let sky = p.c.mix(p.a, t * t.sqrt()).mix(p.bg, k * 0.55);
         let sun = fill_aa(
             ((uv - vec2(0.5, 0.36)) * vec2(c.aspect(), 1.0)).len() - 0.14,
             0.01,
@@ -767,7 +772,7 @@ pub fn pixel_sea(uv: Vec2, c: &Ctx) -> Vec3 {
         let wave = (row * 1.7 + uv.x * (6.0 + row) * 0.5 + c.time * (0.8 + row * 0.05)).sin();
         let base = p.b.mix(p.bg, d * 0.8);
         let sun_col = (uv.x - 0.5).abs() < 0.14 * (1.0 - d * 0.5) && wave > 0.2 - (1.0 - d) * 0.5;
-        let c0 = base * (0.7 + 0.15 * wave.signum());
+        let c0 = base * (0.7 + 0.15 * if wave < 0.0 { -1.0 } else { 1.0 });
         if sun_col && d < 0.8 {
             p.a.mix(p.fg, 0.35)
         } else {
@@ -834,7 +839,7 @@ pub fn mario_sky(uv: Vec2, c: &Ctx) -> Vec3 {
     col
 }
 
-const INV: [[u8; 8]; 2] = [
+const INV: [[u32; 8]; 2] = [
     [0x18, 0x3C, 0x7E, 0xDB, 0xFF, 0x24, 0x5A, 0xA5],
     [0x18, 0x3C, 0x7E, 0xDB, 0xFF, 0x5A, 0x81, 0x42],
 ];

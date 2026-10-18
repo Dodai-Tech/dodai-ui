@@ -40,6 +40,11 @@ Ideas from the Shadertoy retro-terminal CRT, Timothy Lottes' CRTS (public domain
 moni-dz, kalgynirae, Jan Mróz, FabriceNeyret2 and otaviogood, rymdlego, unkn0wncode,
 Alex Sherwin and pkazmier. Oklab maths by Björn Ottosson.
 
+## GPU
+
+`dodai-shaders-gpu` runs the same shader sources on the GPU through rust-gpu and wgpu: about 5×
+faster than all CPU cores at 1080p, with matching output. `dodai-gpui` uses it by default.
+
 ## Performance
 
 * Rows are pulled from a shared queue by all cores, so uneven shaders balance.

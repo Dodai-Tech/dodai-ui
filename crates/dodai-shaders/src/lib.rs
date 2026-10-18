@@ -3,7 +3,10 @@
 //! Pure-Rust pixel shaders for the Dodai design system and beyond. A shader
 //! is a plain function evaluated per pixel (`fn(uv, &Ctx) -> Vec3`), rendered
 //! on the CPU across threads into a [`Frame`] that any toolkit can show as an
-//! image: no GPU API, no shader language, no build step.
+//! image: no GPU API, no shader language, no build step. The same sources also
+//! run on the GPU through `dodai-shaders-gpu` (rust-gpu), which is why the shader
+//! files avoid iterators over arrays, slices of constants, strings and
+//! `u8`/`u64` values.
 //!
 //! * **Generators** make a picture from nothing (`neon_grid`, `digital_rain`).
 //! * **Post effects** transform a [`Frame`] (`crt`, `vhs`, `gameboy`).
@@ -19,7 +22,15 @@
 //! Families: [`Family::Cyberpunk`], [`Family::Material3`], [`Family::Matrix`],
 //! [`Family::Retro`] (CRT/VHS/terminals), [`Family::Pixel`] (platformers and
 //! metroidvanias) and [`Family::Nature`] (cosmic, water, fire, abstract).
+// Index loops, `match` ladders and range comparisons are deliberate: the GPU
+// build (rust-gpu) cannot lower the iterator / `contains` forms.
+#![allow(
+    clippy::needless_range_loop,
+    clippy::manual_range_contains,
+    clippy::manual_memcpy
+)]
 
+pub mod ctx;
 pub mod cyberpunk;
 pub mod extra;
 pub mod frame;
@@ -31,6 +42,7 @@ pub mod matrix;
 pub mod nature;
 pub mod pixel;
 pub mod player;
+pub mod prelude;
 pub mod presets;
 pub mod retro;
 pub mod retro2;

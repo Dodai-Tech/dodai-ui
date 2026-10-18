@@ -15,6 +15,8 @@
 
 use crate::frame::{Ctx, Frame};
 use crate::math::*;
+#[allow(unused_imports)]
+use crate::prelude::*;
 use crate::retro2::{barrel, halo, inside, scan};
 use crate::{Family, ShaderInfo};
 use std::f32::consts::{PI, TAU};
@@ -159,12 +161,13 @@ fn warp_scan(src: &Frame, uv: Vec2, c: &Ctx, tint: Option<Vec3>) -> Vec3 {
         (uv.y - 0.5) * (1.0 + dx * 0.4 * warp) + 0.5,
     );
     if !inside(u) {
-        return Vec3::BLACK;
-    }
-    let s = src.sample(u) * scan(u.y * src.h as f32, 3.0, 0.5 * c.intensity);
-    match tint {
-        Some(t) => vec3(s.x * t.x, s.y * t.y, s.z * t.z) * 1.35 + t * s.luma() * 0.15,
-        None => s,
+        Vec3::BLACK
+    } else {
+        let s = src.sample(u) * scan(u.y * src.h as f32, 3.0, 0.5 * c.intensity);
+        match tint {
+            Some(t) => vec3(s.x * t.x, s.y * t.y, s.z * t.z) * 1.35 + t * s.luma() * 0.15,
+            None => s,
+        }
     }
 }
 
@@ -179,52 +182,54 @@ pub fn gt_better_crt(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
 pub fn gt_crt_lottes(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
     let u = barrel(uv, 0.12);
     if !inside(u) {
-        return Vec3::BLACK;
+        Vec3::BLACK
+    } else {
+        let (px, py) = (u.x * src.w as f32, u.y * src.h as f32);
+        let s = src.sample(u);
+        // Beam: a gaussian across the scanline, wider where the pixel is bright.
+        let y = (py.fract() - 0.5).abs() * 2.0;
+        let sigma = 0.45 + 0.7 * s.luma();
+        let beam = (-(y * y) / (2.0 * sigma * sigma * 0.35)).exp();
+        // Shadow mask: RGB triads, 3 px wide.
+        let t = (px as i32).rem_euclid(3);
+        let mask = [
+            vec3(1.0, 0.7, 0.7),
+            vec3(0.7, 1.0, 0.7),
+            vec3(0.7, 0.7, 1.0),
+        ][t as usize];
+        let col = vec3(s.x * mask.x, s.y * mask.y, s.z * mask.z) * beam * 1.5;
+        let bloom = halo(src, u, 4.0) * 0.35;
+        let vig = 1.0 - ((u - 0.5).dot(u - 0.5) * 1.3).min(0.8);
+        (col + bloom).mix(s, 1.0 - c.intensity) * vig
     }
-    let (px, py) = (u.x * src.w as f32, u.y * src.h as f32);
-    let s = src.sample(u);
-    // Beam: a gaussian across the scanline, wider where the pixel is bright.
-    let y = (py.fract() - 0.5).abs() * 2.0;
-    let sigma = 0.45 + 0.7 * s.luma();
-    let beam = (-(y * y) / (2.0 * sigma * sigma * 0.35)).exp();
-    // Shadow mask: RGB triads, 3 px wide.
-    let t = (px as i32).rem_euclid(3);
-    let mask = [
-        vec3(1.0, 0.7, 0.7),
-        vec3(0.7, 1.0, 0.7),
-        vec3(0.7, 0.7, 1.0),
-    ][t as usize];
-    let col = vec3(s.x * mask.x, s.y * mask.y, s.z * mask.z) * beam * 1.5;
-    let bloom = halo(src, u, 4.0) * 0.35;
-    let vig = 1.0 - ((u - 0.5).dot(u - 0.5) * 1.3).min(0.8);
-    (col + bloom).mix(s, 1.0 - c.intensity) * vig
 }
 
 pub fn gt_in_game_crt(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
     let u = barrel(uv, 0.18);
     if !inside(u) {
-        return Vec3::BLACK;
+        Vec3::BLACK
+    } else {
+        let k = c.intensity;
+        let tx = 1.0 / src.w as f32;
+        // Colour fringing and ghosting.
+        let spread = 1.2 * tx * k;
+        let mut s = vec3(
+            src.sample(u + vec2(spread, 0.0)).x,
+            src.sample(u).y,
+            src.sample(u - vec2(spread, 0.0)).z,
+        );
+        s = s + src.sample(u - vec2(6.0 * tx, 0.0)) * 0.1 * k;
+        s = s.mix(s * 0.6, 0.4);
+        let (px, py) = (u.x * src.w as f32, u.y * src.h as f32);
+        let sl = 1.0 - 0.2 * k * (0.65 + 0.35 * (py * TAU / 4.0).cos());
+        let grille = 1.0 - 0.3 * k * (0.5 + 0.5 * (px * PI).cos());
+        let flick = 1.0 + 0.04 * k * (c.time * 15.0 * TAU).sin();
+        let n = hash3(px as i32, py as i32, (c.time * 30.0) as i32) - 0.5;
+        let vig = 1.0 - smoothstep(0.2, 0.75, (u - 0.5).len() * 1.4) * 0.9;
+        let tint = vec3(0.93, 1.0, 0.96);
+        let g = vec3(s.x * tint.x, s.y * tint.y, s.z * tint.z) * sl * grille * flick;
+        (g + halo(src, u, 6.0) * 0.18 * k + Vec3::splat(n * 0.12 * k)) * vig * 1.9
     }
-    let k = c.intensity;
-    let tx = 1.0 / src.w as f32;
-    // Colour fringing and ghosting.
-    let spread = 1.2 * tx * k;
-    let mut s = vec3(
-        src.sample(u + vec2(spread, 0.0)).x,
-        src.sample(u).y,
-        src.sample(u - vec2(spread, 0.0)).z,
-    );
-    s = s + src.sample(u - vec2(6.0 * tx, 0.0)) * 0.1 * k;
-    s = s.mix(s * 0.6, 0.4);
-    let (px, py) = (u.x * src.w as f32, u.y * src.h as f32);
-    let sl = 1.0 - 0.2 * k * (0.65 + 0.35 * (py * TAU / 4.0).cos());
-    let grille = 1.0 - 0.3 * k * (0.5 + 0.5 * (px * PI).cos());
-    let flick = 1.0 + 0.04 * k * (c.time * 15.0 * TAU).sin();
-    let n = hash3(px as i32, py as i32, (c.time * 30.0) as i32) - 0.5;
-    let vig = 1.0 - smoothstep(0.2, 0.75, (u - 0.5).len() * 1.4) * 0.9;
-    let tint = vec3(0.93, 1.0, 0.96);
-    let g = vec3(s.x * tint.x, s.y * tint.y, s.z * tint.z) * sl * grille * flick;
-    (g + halo(src, u, 6.0) * 0.18 * k + Vec3::splat(n * 0.12 * k)) * vig * 1.9
 }
 
 // ── Colour and distortion ───────────────────────────────────────────────

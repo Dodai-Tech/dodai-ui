@@ -3,6 +3,8 @@
 
 use crate::frame::{Ctx, Frame};
 use crate::math::*;
+#[allow(unused_imports)]
+use crate::prelude::*;
 use crate::{Family, ShaderInfo};
 use std::f32::consts::{PI, TAU};
 
@@ -153,7 +155,7 @@ pub(crate) fn barrel(uv: Vec2, k: f32) -> Vec2 {
 }
 
 pub(crate) fn inside(uv: Vec2) -> bool {
-    (0.0..=1.0).contains(&uv.x) && (0.0..=1.0).contains(&uv.y)
+    uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0
 }
 
 /// Dark gaps between scanlines, `period` pixels apart.
@@ -175,28 +177,36 @@ pub(crate) fn halo(src: &Frame, uv: Vec2, r: f32) -> Vec3 {
 fn mono(src: &Frame, uv: Vec2, c: &Ctx, tint: Vec3, k: f32, glow_amt: f32, flick: f32) -> Vec3 {
     let u = barrel(uv, k);
     if !inside(u) {
-        return Vec3::BLACK;
+        Vec3::BLACK
+    } else {
+        let py = u.y * src.h as f32;
+        let l = src.sample(u).luma();
+        let h = halo(src, u, 2.5).luma();
+        let f = 1.0 - flick * (0.5 + 0.5 * (c.time * 47.0).sin()) * c.intensity;
+        let v = (l + h * glow_amt) * scan(py, 3.0, 0.35 * c.intensity) * f;
+        let edge = ((u - 0.5).dot(u - 0.5) * 1.6).min(1.0);
+        tint * v * (1.0 - edge * 0.5) * 1.25
     }
-    let py = u.y * src.h as f32;
-    let l = src.sample(u).luma();
-    let h = halo(src, u, 2.5).luma();
-    let f = 1.0 - flick * (0.5 + 0.5 * (c.time * 47.0).sin()) * c.intensity;
-    let v = (l + h * glow_amt) * scan(py, 3.0, 0.35 * c.intensity) * f;
-    let edge = ((u - 0.5).dot(u - 0.5) * 1.6).min(1.0);
-    tint * v * (1.0 - edge * 0.5) * 1.25
 }
 
-fn nearest_in(pal: &[[u8; 3]], c: Vec3) -> Vec3 {
-    let mut best = (f32::MAX, Vec3::BLACK);
-    for p in pal {
-        let v = Vec3::from_u8(*p);
-        let d = v - c;
-        let dist = d.dot(d);
-        if dist < best.0 {
-            best = (dist, v);
+/// Nearest colour of a `[[u8; 3]; N]` palette (a macro: the GPU build cannot
+/// take slices of constant arrays).
+macro_rules! nearest_in {
+    ($pal:expr, $c:expr) => {{
+        let c: Vec3 = $c;
+        let mut best = (f32::MAX, Vec3::BLACK);
+        let mut i = 0;
+        while i < $pal.len() {
+            let v = rgb8a($pal[i]);
+            let d = v - c;
+            let dist = d.dot(d);
+            if dist < best.0 {
+                best = (dist, v);
+            }
+            i += 1;
         }
-    }
-    best.1
+        best.1
+    }};
 }
 
 fn dithered(src: &Frame, uv: Vec2, amount: f32) -> Vec3 {
@@ -224,50 +234,49 @@ pub fn paper_white(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
     let paper = vec3(0.93, 0.91, 0.84);
     let ink = vec3(0.08, 0.08, 0.1);
     let shade = 1.0 - ((uv - 0.5).dot(uv - 0.5) * 0.5);
-    if on {
-        paper * shade
-    } else {
-        ink
-    }
+    if on { paper * shade } else { ink }
 }
 
 pub fn trinitron(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
     let u = barrel(uv, 0.06);
     if !inside(u) {
-        return Vec3::BLACK;
+        Vec3::BLACK
+    } else {
+        let px = u.x * src.w as f32;
+        let s = src.sample(u);
+        let stripe = (px % 3.0).floor() as i32;
+        let m = match stripe {
+            0 => vec3(1.0, 0.55, 0.55),
+            1 => vec3(0.55, 1.0, 0.55),
+            _ => vec3(0.55, 0.55, 1.0),
+        };
+        let mut col = vec3(s.x * m.x, s.y * m.y, s.z * m.z) * 1.7 + halo(src, u, 3.0) * 0.25;
+        for k in 0..2 {
+            let w = (k + 1) as f32 / 3.0;
+            col = col * (1.0 - 0.45 * smoothstep(0.012, 0.0, (u.y - w).abs()) * c.intensity);
+        }
+        col
     }
-    let px = u.x * src.w as f32;
-    let s = src.sample(u);
-    let stripe = (px % 3.0).floor() as i32;
-    let m = match stripe {
-        0 => vec3(1.0, 0.55, 0.55),
-        1 => vec3(0.55, 1.0, 0.55),
-        _ => vec3(0.55, 0.55, 1.0),
-    };
-    let mut col = vec3(s.x * m.x, s.y * m.y, s.z * m.z) * 1.7 + halo(src, u, 3.0) * 0.25;
-    for w in [1.0 / 3.0, 2.0 / 3.0] {
-        col = col * (1.0 - 0.45 * smoothstep(0.012, 0.0, (u.y - w).abs()) * c.intensity);
-    }
-    col
 }
 
 pub fn shadow_mask(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
     let u = barrel(uv, 0.1);
     if !inside(u) {
-        return Vec3::BLACK;
+        Vec3::BLACK
+    } else {
+        let (px, py) = (u.x * src.w as f32, u.y * src.h as f32);
+        let stagger = if (py as i32) % 2 == 0 { 0.0 } else { 1.5 };
+        let t = ((px + stagger) % 3.0).floor() as i32;
+        let m = [
+            vec3(1.0, 0.3, 0.3),
+            vec3(0.3, 1.0, 0.3),
+            vec3(0.3, 0.3, 1.0),
+        ][t as usize % 3];
+        let s = src.sample(u);
+        let k = c.intensity;
+        let strength = |v: f32, mm: f32| v * (1.0 - k + k * mm) * (1.0 + 0.6 * k);
+        vec3(strength(s.x, m.x), strength(s.y, m.y), strength(s.z, m.z)) * scan(py, 3.0, 0.2)
     }
-    let (px, py) = (u.x * src.w as f32, u.y * src.h as f32);
-    let stagger = if (py as i32) % 2 == 0 { 0.0 } else { 1.5 };
-    let t = ((px + stagger) % 3.0).floor() as i32;
-    let m = [
-        vec3(1.0, 0.3, 0.3),
-        vec3(0.3, 1.0, 0.3),
-        vec3(0.3, 0.3, 1.0),
-    ][t as usize % 3];
-    let s = src.sample(u);
-    let k = c.intensity;
-    let strength = |v: f32, mm: f32| v * (1.0 - k + k * mm) * (1.0 + 0.6 * k);
-    vec3(strength(s.x, m.x), strength(s.y, m.y), strength(s.z, m.z)) * scan(py, 3.0, 0.2)
 }
 
 pub fn dot_matrix(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
@@ -296,7 +305,7 @@ pub fn vector_glow(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
 
 // ── home computers ──────────────────────────────────────────────────────
 
-const C64: [[u8; 3]; 16] = [
+const C64: [[u32; 3]; 16] = [
     [0, 0, 0],
     [255, 255, 255],
     [136, 0, 0],
@@ -314,7 +323,7 @@ const C64: [[u8; 3]; 16] = [
     [0, 136, 255],
     [187, 187, 187],
 ];
-const EGA: [[u8; 3]; 16] = [
+const EGA: [[u32; 3]; 16] = [
     [0, 0, 0],
     [0, 0, 170],
     [0, 170, 0],
@@ -332,7 +341,7 @@ const EGA: [[u8; 3]; 16] = [
     [255, 255, 85],
     [255, 255, 255],
 ];
-const ZX: [[u8; 3]; 8] = [
+const ZX: [[u32; 3]; 8] = [
     [0, 0, 0],
     [0, 0, 215],
     [215, 0, 0],
@@ -347,17 +356,17 @@ pub fn c64(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
     let (bx, by) = (0.06, 0.09);
     let border = uv.x < bx || uv.x > 1.0 - bx || uv.y < by || uv.y > 1.0 - by;
     if border {
-        return Vec3::from_u8([136, 126, 203]);
+        return rgb8(136, 126, 203);
     }
     let u = vec2(
         (uv.x - bx) / (1.0 - 2.0 * bx),
         (uv.y - by) / (1.0 - 2.0 * by),
     );
-    nearest_in(&C64, dithered(src, u, 0.25 * c.intensity))
+    nearest_in!(C64, dithered(src, u, 0.25 * c.intensity))
 }
 
 pub fn ega(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
-    nearest_in(&EGA, dithered(src, uv, 0.22 * c.intensity))
+    nearest_in!(EGA, dithered(src, uv, 0.22 * c.intensity))
 }
 
 pub fn apple_ii(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
@@ -370,10 +379,10 @@ pub fn apple_ii(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
         vec3(1.0, 1.0, 1.0)
     } else if l > 0.2 {
         match (odd, warm) {
-            (false, true) => Vec3::from_u8([255, 68, 253]),
-            (true, true) => Vec3::from_u8([20, 245, 60]),
-            (false, false) => Vec3::from_u8([20, 207, 253]),
-            (true, false) => Vec3::from_u8([255, 106, 60]),
+            (false, true) => rgb8(255, 68, 253),
+            (true, true) => rgb8(20, 245, 60),
+            (false, false) => rgb8(20, 207, 253),
+            (true, false) => rgb8(255, 106, 60),
         }
     } else {
         Vec3::BLACK
@@ -407,8 +416,8 @@ pub fn zx_spectrum(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
     }
     let bright = hi_l > 0.55;
     let k = if bright { 255.0 / 215.0 } else { 1.0 };
-    let ink = nearest_in(&ZX, hi) * k;
-    let paper = nearest_in(&ZX, lo * 0.7);
+    let ink = nearest_in!(ZX, hi) * k;
+    let paper = nearest_in!(ZX, lo * 0.7);
     let (x, y) = (px as i32, py as i32);
     let l = src.get(x, y).luma() + (bayer4(x, y) - 0.5) * 0.3 * c.intensity;
     if l > (hi_l + lo_l) * 0.5 {
@@ -520,10 +529,11 @@ fn pseudo_char(id: i32, f: Vec2) -> f32 {
         ((f.x - 0.15) / 0.7 * 5.0) as i32,
         ((f.y - 0.1) / 0.8 * 7.0) as i32,
     );
-    let h = hash_u(id as u32 ^ 0x9e37_79b9);
-    let bits =
-        (h * 4_294_967_296.0) as u64 ^ ((hash_u(id as u32 + 77) * 4_294_967_296.0) as u64) << 20;
-    if (bits >> ((by * 5 + bx) % 35)) & 1 == 1 && hash2(id, by) > 0.18 {
+    let b1 = (hash_u(id as u32 ^ 0x9e37_79b9) * 4_294_967_296.0) as u32;
+    let b2 = (hash_u(id as u32 + 77) * 4_294_967_296.0) as u32;
+    let idx = ((by * 5 + bx) % 35) as u32;
+    let bit = ((b1 >> (idx % 32)) ^ (b2 >> ((idx + 7) % 32))) & 1;
+    if bit == 1 && hash2(id, by) > 0.18 {
         1.0
     } else {
         0.0
@@ -559,16 +569,12 @@ pub fn vga_text(uv: Vec2, c: &Ctx) -> Vec3 {
     let text_line = hash1(gy * 3.1) > 0.35 && gx < 8.0 + hash1(gy) * 55.0 && gx > 1.0;
     let on = text_line && pseudo_char(gx as i32 + gy as i32 * 91, f) > 0.0;
     let cur = gy == 23.0 && gx == 2.0 && (c.time * 2.0) as i32 % 2 == 0 && f.y > 0.8;
-    if on || cur {
-        grey
-    } else {
-        bg
-    }
+    if on || cur { grey } else { bg }
 }
 
 pub fn c64_screen(uv: Vec2, c: &Ctx) -> Vec3 {
     let (bx, by) = (0.06, 0.09);
-    let border = Vec3::from_u8([136, 126, 203]);
+    let border = rgb8(136, 126, 203);
     if uv.x < bx || uv.x > 1.0 - bx || uv.y < by || uv.y > 1.0 - by {
         return border;
     }
@@ -578,7 +584,7 @@ pub fn c64_screen(uv: Vec2, c: &Ctx) -> Vec3 {
     );
     let (gx, gy) = ((u.x * 40.0).floor(), (u.y * 25.0).floor());
     let f = vec2((u.x * 40.0).fract(), (u.y * 25.0).fract());
-    let bg = Vec3::from_u8([53, 40, 121]);
+    let bg = rgb8(53, 40, 121);
     let fg = border;
     let lines: [(f32, f32); 5] = [
         (1.0, 38.0),
@@ -587,16 +593,16 @@ pub fn c64_screen(uv: Vec2, c: &Ctx) -> Vec3 {
         (6.0, 6.0),
         (9.0, 6.0),
     ];
-    let on = lines
-        .iter()
-        .any(|(row, len)| gy == *row && gx >= 1.0 && gx < 1.0 + *len)
-        && pseudo_char(gx as i32 * 13 + gy as i32 * 5, f) > 0.0;
-    let cursor = gy == 10.0 && gx == 0.0 && (c.time * 1.6) as i32 % 2 == 0;
-    if on || cursor {
-        fg
-    } else {
-        bg
+    let mut any = false;
+    for i in 0..5 {
+        let (row, len) = lines[i];
+        if gy == row && gx >= 1.0 && gx < 1.0 + len {
+            any = true;
+        }
     }
+    let on = any && pseudo_char(gx as i32 * 13 + gy as i32 * 5, f) > 0.0;
+    let cursor = gy == 10.0 && gx == 0.0 && (c.time * 1.6) as i32 % 2 == 0;
+    if on || cursor { fg } else { bg }
 }
 
 pub fn zx_loading(uv: Vec2, c: &Ctx) -> Vec3 {
@@ -627,11 +633,7 @@ pub fn zx_loading(uv: Vec2, c: &Ctx) -> Vec3 {
     let ink = ZX[1 + (hash2(cx as i32, cy as i32) * 7.0) as usize % 7];
     let on =
         hash2(((u.x * 256.0) as i32) / 2, ((u.y * 192.0) as i32) / 2) > 0.5 + 0.25 * (u.y - 0.5);
-    if on {
-        Vec3::from_u8(ink)
-    } else {
-        Vec3::BLACK
-    }
+    if on { rgb8a(ink) } else { Vec3::BLACK }
 }
 
 pub fn smpte_bars(uv: Vec2, _c: &Ctx) -> Vec3 {

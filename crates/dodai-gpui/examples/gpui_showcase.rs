@@ -2626,7 +2626,10 @@ impl Render for Showcase {
                 "Shaders",
                 "Playground",
                 section!("Shader playground")
-                    .child(Muted::new("Pure-Rust shaders from `dodai-shaders`, rendered on the CPU. Pick a source, stack effects."))
+                    .child(Muted::new(format!(
+                        "Pure-Rust shaders from `dodai-shaders`, rendered on: {}. Pick a source, stack effects.",
+                        dodai_gpui::shader_backend()
+                    )))
                     .child(gen_row)
                     .child(fx_row)
                     .child(chain_row)

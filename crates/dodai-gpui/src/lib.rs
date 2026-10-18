@@ -181,7 +181,7 @@ pub use search::{count_label, highlight_runs, IconBadge, RichTooltip, SearchView
 #[cfg(feature = "components")]
 pub use select::{family_title, DesignSystemSelector, Select, SelectOption, ThemeSelector};
 #[cfg(feature = "shaders")]
-pub use shader_view::{PaletteSource, ShaderView};
+pub use shader_view::{shader_backend, PaletteSource, ShaderView};
 #[cfg(feature = "components")]
 pub use sheets::{sheet_style, BottomSheet, FullScreenDialog, SheetEdge, SideSheet, Snackbar};
 #[cfg(feature = "components")]

@@ -4,6 +4,8 @@
 use crate::frame::{Ctx, Frame};
 use crate::math::*;
 use crate::matrix::glyph;
+#[allow(unused_imports)]
+use crate::prelude::*;
 use crate::{Family, ShaderInfo};
 
 const F: Family = Family::Retro;
@@ -67,7 +69,8 @@ pub const SHADERS: &[ShaderInfo] = &[
     ),
 ];
 
-const TEXT: &[&str] = &[
+/// Terminal text as fixed-width byte rows (0 = blank), built at compile time.
+const LINES: [&str; 15] = [
     "DODAI-OS 2.0  (c) 2077 NIGHT CITY SYSTEMS",
     "",
     "login: operator",
@@ -84,6 +87,56 @@ const TEXT: &[&str] = &[
     "$ cat /etc/motd",
     "wake up, operator. the grid has you.",
 ];
+const COLS: usize = 48;
+const WORDS: usize = COLS / 4;
+/// Four characters per word (little-endian), so one line is only 12 words.
+const fn pack(s: &str) -> [u32; WORDS] {
+    let b = s.as_bytes();
+    let mut out = [0u32; WORDS];
+    let mut i = 0;
+    while i < b.len() && i < COLS {
+        out[i / 4] |= (b[i] as u32) << ((i % 4) * 8);
+        i += 1;
+    }
+    out
+}
+const fn build() -> [[u32; WORDS]; 15] {
+    let mut out = [[0u32; WORDS]; 15];
+    let mut i = 0;
+    while i < 15 {
+        out[i] = pack(LINES[i]);
+        i += 1;
+    }
+    out
+}
+const TEXT: [[u32; WORDS]; 15] = build();
+
+/// Character at (`row`, `col`), 0 outside. A `match` on the row keeps the GPU
+/// build from copying the whole table for every pixel.
+fn text_char(row: i32, col: i32) -> u32 {
+    if row < 0 || row >= 15 || col < 0 || col >= COLS as i32 {
+        return 0;
+    }
+    let w = (col / 4) as usize;
+    let word = match row {
+        0 => TEXT[0][w],
+        1 => TEXT[1][w],
+        2 => TEXT[2][w],
+        3 => TEXT[3][w],
+        4 => TEXT[4][w],
+        5 => TEXT[5][w],
+        6 => TEXT[6][w],
+        7 => TEXT[7][w],
+        8 => TEXT[8][w],
+        9 => TEXT[9][w],
+        10 => TEXT[10][w],
+        11 => TEXT[11][w],
+        12 => TEXT[12][w],
+        13 => TEXT[13][w],
+        _ => TEXT[14][w],
+    };
+    (word >> ((col % 4) as u32 * 8)) & 0xff
+}
 
 /// A screen of terminal text. Characters are pseudo-glyphs per letter.
 pub fn terminal_scene(uv: Vec2, c: &Ctx) -> Vec3 {
@@ -94,23 +147,26 @@ pub fn terminal_scene(uv: Vec2, c: &Ctx) -> Vec3 {
     let (cx, cy) = (q.x.floor() as i32, q.y.floor() as i32);
     let f = q.fract();
     let mut col = p.bg;
-    let line = TEXT.get((cy - 1) as usize).copied().unwrap_or("");
-    let bytes = line.as_bytes();
-    let ch = bytes.get((cx - 1) as usize).copied().unwrap_or(b' ');
-    let tinted = line.starts_with("[ ok") || line.starts_with("$");
+    let row = cy - 1;
+    let ch = match text_char(row, cx - 1) {
+        0 => b' ' as u32,
+        c => c,
+    };
+    let (l0, l1, l2) = (text_char(row, 0), text_char(row, 1), text_char(row, 2));
+    let tinted = (l0 == b'[' as u32 && l2 == b'o' as u32) || l0 == b'$' as u32;
     let mut fg = p.fg;
-    if line.starts_with("[warn") {
+    if l0 == b'[' as u32 && l1 == b'w' as u32 {
         fg = p.c;
     } else if tinted {
         fg = p.a;
     }
-    if ch != b' ' && cy >= 1 {
+    if ch != b' ' as u32 && cy >= 1 {
         col = col.mix(fg, glyph(ch as i32 * 31 + 7, f * vec2(1.0, 1.0)));
     }
     // title bar
     if cy == 0 {
         col = p.a * 0.85;
-        if ch != b' ' || (cx > 0 && cx < 30) {
+        if ch != b' ' as u32 || (cx > 0 && cx < 30) {
             let t = glyph(hash2(cx, 5) as i32 + cx * 13, f);
             col = col.mix(p.bg, t * step(1.0, cx as f32));
         }
@@ -187,7 +243,7 @@ fn curve(uv: Vec2, k: f32) -> Vec2 {
 }
 
 fn off_screen(uv: Vec2) -> bool {
-    !(0.0..=1.0).contains(&uv.x) || !(0.0..=1.0).contains(&uv.y)
+    uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0
 }
 
 fn blur(src: &Frame, uv: Vec2, r: f32) -> Vec3 {
@@ -204,48 +260,50 @@ pub fn crt(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
     let k = c.intensity;
     let u = curve(uv, k);
     if off_screen(u) {
-        return Vec3::BLACK;
+        Vec3::BLACK
+    } else {
+        let ca = 0.0007 * k;
+        let base = vec3(
+            src.sample(u + vec2(ca, 0.0)).x,
+            src.sample(u).y,
+            src.sample(u - vec2(ca, 0.0)).z,
+        );
+        let glowc = blur(src, u, 2.0);
+        let mut col = base + glowc * 0.35 * k;
+        // scanlines
+        let sl = 0.8 + 0.2 * (u.y * src.h as f32 * std::f32::consts::PI).sin().abs();
+        col = col * mix(1.0, sl, k);
+        // aperture grille
+        let px = ((u.x * src.w as f32) as i32).rem_euclid(3);
+        let mask = match px {
+            0 => vec3(1.0, 0.82, 0.82),
+            1 => vec3(0.82, 1.0, 0.82),
+            _ => vec3(0.82, 0.82, 1.0),
+        };
+        col = col * Vec3::WHITE.mix(mask, 0.6 * k);
+        // vignette + flicker
+        let d = (uv - 0.5) * vec2(1.0, 1.0);
+        col = col * (1.0 - 0.9 * d.dot(d) * k) * (1.0 + 0.015 * (c.time * 55.0).sin() * k);
+        col * 1.12
     }
-    let ca = 0.0007 * k;
-    let base = vec3(
-        src.sample(u + vec2(ca, 0.0)).x,
-        src.sample(u).y,
-        src.sample(u - vec2(ca, 0.0)).z,
-    );
-    let glowc = blur(src, u, 2.0);
-    let mut col = base + glowc * 0.35 * k;
-    // scanlines
-    let sl = 0.8 + 0.2 * (u.y * src.h as f32 * std::f32::consts::PI).sin().abs();
-    col = col * mix(1.0, sl, k);
-    // aperture grille
-    let px = ((u.x * src.w as f32) as i32).rem_euclid(3);
-    let mask = match px {
-        0 => vec3(1.0, 0.82, 0.82),
-        1 => vec3(0.82, 1.0, 0.82),
-        _ => vec3(0.82, 0.82, 1.0),
-    };
-    col = col * Vec3::WHITE.mix(mask, 0.6 * k);
-    // vignette + flicker
-    let d = (uv - 0.5) * vec2(1.0, 1.0);
-    col = col * (1.0 - 0.9 * d.dot(d) * k) * (1.0 + 0.015 * (c.time * 55.0).sin() * k);
-    col * 1.12
 }
 
 pub fn phosphor(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
     let u = curve(uv, c.intensity);
     if off_screen(u) {
-        return Vec3::BLACK;
+        Vec3::BLACK
+    } else {
+        let l = src.sample(u).luma();
+        let halo = blur(src, u, 3.0).luma();
+        let tint = c.pal.a;
+        let lit = (l * 1.4).min(1.2) + halo * 0.55;
+        let sl = 0.78 + 0.22 * (u.y * src.h as f32 * std::f32::consts::PI).sin().abs();
+        // slow vertical refresh band
+        let band = 0.06 * smoothstep(0.0, 0.2, fract(u.y - c.time * 0.12));
+        let col = c.pal.bg + tint * lit * sl + tint * band * 0.4;
+        let d = uv - 0.5;
+        col * (1.0 - 0.8 * d.dot(d))
     }
-    let l = src.sample(u).luma();
-    let halo = blur(src, u, 3.0).luma();
-    let tint = c.pal.a;
-    let lit = (l * 1.4).min(1.2) + halo * 0.55;
-    let sl = 0.78 + 0.22 * (u.y * src.h as f32 * std::f32::consts::PI).sin().abs();
-    // slow vertical refresh band
-    let band = 0.06 * smoothstep(0.0, 0.2, fract(u.y - c.time * 0.12));
-    let col = c.pal.bg + tint * lit * sl + tint * band * 0.4;
-    let d = uv - 0.5;
-    col * (1.0 - 0.8 * d.dot(d))
 }
 
 pub fn vhs(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {

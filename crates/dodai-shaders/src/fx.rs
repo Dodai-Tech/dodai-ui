@@ -2,6 +2,8 @@
 
 use crate::frame::{Ctx, Frame};
 use crate::math::*;
+#[allow(unused_imports)]
+use crate::prelude::*;
 use crate::{Family, ShaderInfo};
 
 pub const SHADERS: &[ShaderInfo] = &[
@@ -96,7 +98,8 @@ pub fn bloom(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
     ];
     let s = src.sample(uv);
     let mut acc = Vec3::BLACK;
-    for (dx, dy) in TAPS {
+    for i in 0..TAPS.len() {
+        let (dx, dy) = TAPS[i];
         let t = src.nearest(uv + vec2(dx / src.w as f32, dy / src.h as f32));
         acc = acc + t * (t.luma() - 0.35).max(0.0);
     }
@@ -149,11 +152,7 @@ pub fn neon_edges(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
 pub fn dither(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
     let (x, y) = ((uv.x * src.w as f32) as i32, (uv.y * src.h as f32) as i32);
     let l = src.sample(uv).luma().powf(0.8);
-    if l > bayer4(x, y) {
-        c.pal.fg
-    } else {
-        c.pal.bg
-    }
+    if l > bayer4(x, y) { c.pal.fg } else { c.pal.bg }
 }
 
 pub fn negative(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {

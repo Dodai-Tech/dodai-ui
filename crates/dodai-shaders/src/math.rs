@@ -1,20 +1,35 @@
 //! Tiny GLSL-flavoured maths: vectors, hashes, noise, easing. No dependencies.
 
+#[allow(unused_imports)]
+use crate::prelude::*;
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[cfg_attr(not(target_arch = "spirv"), derive(Debug, PartialEq))]
+#[derive(Clone, Copy, Default)]
 pub struct Vec2 {
     pub x: f32,
     pub y: f32,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[cfg_attr(not(target_arch = "spirv"), derive(Debug, PartialEq))]
+#[derive(Clone, Copy, Default)]
 pub struct Vec3 {
     pub x: f32,
     pub y: f32,
     pub z: f32,
 }
 
+/// Colour from 0..=255 channels (no `u8` values, so it also runs on the GPU).
+pub const fn rgb8(r: u32, g: u32, b: u32) -> Vec3 {
+    Vec3 {
+        x: r as f32 / 255.0,
+        y: g as f32 / 255.0,
+        z: b as f32 / 255.0,
+    }
+}
+pub const fn rgb8a(c: [u32; 3]) -> Vec3 {
+    rgb8(c[0], c[1], c[2])
+}
 pub const fn vec2(x: f32, y: f32) -> Vec2 {
     Vec2 { x, y }
 }
@@ -41,7 +56,7 @@ ops!(Vec3 { x, y, z });
 
 impl Vec2 {
     pub fn len(self) -> f32 {
-        self.x.hypot(self.y)
+        (self.x * self.x + self.y * self.y).sqrt()
     }
     pub fn dot(self, o: Vec2) -> f32 {
         self.x * o.x + self.y * o.y
@@ -133,11 +148,7 @@ pub fn mix(a: f32, b: f32, t: f32) -> f32 {
     a + (b - a) * t
 }
 pub fn step(edge: f32, x: f32) -> f32 {
-    if x < edge {
-        0.0
-    } else {
-        1.0
-    }
+    if x < edge { 0.0 } else { 1.0 }
 }
 pub fn smoothstep(a: f32, b: f32, x: f32) -> f32 {
     let t = sat((x - a) / (b - a));
@@ -215,7 +226,7 @@ pub fn hsv(h: f32, s: f32, v: f32) -> Vec3 {
 
 /// 4×4 Bayer threshold in `[0,1)`.
 pub fn bayer4(x: i32, y: i32) -> f32 {
-    const M: [[u8; 4]; 4] = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
+    const M: [[u32; 4]; 4] = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
     (M[(y & 3) as usize][(x & 3) as usize] as f32 + 0.5) / 16.0
 }
 

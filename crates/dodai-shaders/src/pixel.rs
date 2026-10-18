@@ -4,8 +4,10 @@
 //! Generators render on a small *virtual* canvas (144 px tall) and snap to
 //! it, so every output pixel is a crisp art pixel whatever the window size.
 
-use crate::frame::{Ctx, Frame};
+use crate::frame::{Ctx, Frame, ShaderPalette};
 use crate::math::*;
+#[allow(unused_imports)]
+use crate::prelude::*;
 use crate::{Family, ShaderInfo};
 
 const F: Family = Family::Pixel;
@@ -77,24 +79,42 @@ fn vpix(uv: Vec2, c: &Ctx) -> (Vec2, f32) {
     (vec2((uv.x * vw).floor(), (uv.y * VH).floor()), vw)
 }
 
-fn rgb(r: u8, g: u8, b: u8) -> Vec3 {
-    Vec3::from_u8([r, g, b])
+fn rgb(r: u32, g: u32, b: u32) -> Vec3 {
+    rgb8(r, g, b)
 }
 
-/// Character at `(x, y)` of a sprite given as rows of text; `None` outside.
-pub fn sprite_at<const N: usize>(rows: &[&str; N], x: i32, y: i32) -> Option<u8> {
-    if x < 0 || y < 0 || y as usize >= N {
+/// Builds a sprite from rows of text at compile time (`.` pads short rows);
+/// plain byte arrays, so the GPU build needs no strings.
+pub const fn spr<const W: usize, const H: usize>(rows: [&str; H]) -> [[u32; W]; H] {
+    let mut out = [[b'.' as u32; W]; H];
+    let mut y = 0;
+    while y < H {
+        let b = rows[y].as_bytes();
+        let mut x = 0;
+        while x < W && x < b.len() {
+            out[y][x] = b[x] as u32;
+            x += 1;
+        }
+        y += 1;
+    }
+    out
+}
+
+/// Character at `(x, y)` of a sprite; `None` outside or on `.`.
+pub fn sprite_at<const W: usize, const H: usize>(
+    rows: [[u32; W]; H],
+    x: i32,
+    y: i32,
+) -> Option<u32> {
+    if x < 0 || y < 0 || y as usize >= H || x as usize >= W {
         return None;
     }
-    rows[y as usize]
-        .as_bytes()
-        .get(x as usize)
-        .copied()
-        .filter(|c| *c != b'.')
+    let c = rows[y as usize][x as usize];
+    if c == b'.' as u32 { None } else { Some(c) }
 }
 
-const HERO: [[&str; 16]; 3] = [
-    [
+const HERO: [[[u32; 14]; 16]; 3] = [
+    spr([
         "....RRRRR...",
         "...RRRRRRRRR",
         "...BBBSSSBS.",
@@ -111,8 +131,8 @@ const HERO: [[&str; 16]; 3] = [
         "...BBB..BBB.",
         "..BBB....BBB.",
         ".BBBB....BBBB",
-    ],
-    [
+    ]),
+    spr([
         "....RRRRR...",
         "...RRRRRRRRR",
         "...BBBSSSBS.",
@@ -129,8 +149,8 @@ const HERO: [[&str; 16]; 3] = [
         "....BBBBB...",
         "....BB.BB...",
         "....BBB.BBB.",
-    ],
-    [
+    ]),
+    spr([
         "....RRRRR...",
         "...RRRRRRRRR",
         "...BBBSSSBS.",
@@ -147,22 +167,31 @@ const HERO: [[&str; 16]; 3] = [
         "..BB...BB.BB",
         "..B.....B..B",
         "............",
-    ],
+    ]),
 ];
 
-fn hero_color(ch: u8) -> Vec3 {
+// Sprite letters as u32 (the GPU build has no 8-bit integers).
+const CR: u32 = b'R' as u32;
+const CS: u32 = b'S' as u32;
+const CB: u32 = b'B' as u32;
+const CY: u32 = b'Y' as u32;
+const CW: u32 = b'W' as u32;
+const CO: u32 = b'O' as u32;
+const CK: u32 = b'K' as u32;
+
+fn hero_color(ch: u32) -> Vec3 {
     match ch {
-        b'R' => rgb(216, 40, 0),
-        b'S' => rgb(252, 188, 176),
-        b'B' => rgb(136, 80, 24),
-        b'Y' => rgb(252, 216, 80),
+        CR => rgb(216, 40, 0),
+        CS => rgb(252, 188, 176),
+        CB => rgb(136, 80, 24),
+        CY => rgb(252, 216, 80),
         _ => Vec3::BLACK,
     }
 }
 
-const QBLOCK: [&str; 8] = [
+const QBLOCK: [[u32; 8]; 8] = spr([
     "..XXXX..", ".X....X.", "......X.", "....XX..", "...X....", "........", "...X....", "........",
-];
+]);
 
 pub fn platformer(uv: Vec2, c: &Ctx) -> Vec3 {
     let (p, vw) = vpix(uv, c);
@@ -251,7 +280,7 @@ pub fn platformer(uv: Vec2, c: &Ctx) -> Vec3 {
         if (0.0..bt).contains(&ly) {
             if question {
                 let border = lx < 1.0 || lx > 14.0 || ly < 1.0 || ly > 14.0;
-                let ch = sprite_at(&QBLOCK, (lx / 2.0) as i32, (ly / 2.0) as i32);
+                let ch = sprite_at(QBLOCK, (lx / 2.0) as i32, (ly / 2.0) as i32);
                 col = if border || ch.is_some() {
                     rgb(136, 80, 24)
                 } else {
@@ -309,7 +338,15 @@ pub fn platformer(uv: Vec2, c: &Ctx) -> Vec3 {
     };
     let hx_ = p.x - hero_x;
     let hy_ = p.y - (ground - 16.0 - jump.floor());
-    if let Some(ch) = sprite_at(&HERO[frame], hx_ as i32, hy_ as i32) {
+    if let Some(ch) = sprite_at(
+        match frame {
+            0 => HERO[0],
+            1 => HERO[1],
+            _ => HERO[2],
+        },
+        hx_ as i32,
+        hy_ as i32,
+    ) {
         col = hero_color(ch);
     }
     col
@@ -355,11 +392,7 @@ pub fn metroid_cave(uv: Vec2, c: &Ctx) -> Vec3 {
         let mortar = lx < 1.0 || ly < 1.0;
         let h = hash2(bx as i32, ty as i32);
         let base = pal.a.mix(pal.bg, 0.35 - 0.1 * scale) * (0.8 + 0.5 * h);
-        if mortar {
-            pal.bg * 0.5
-        } else {
-            base
-        }
+        if mortar { pal.bg * 0.5 } else { base }
     };
     let mut col;
     // central cavern opening: darker, with near-layer bricks at the edges
@@ -561,28 +594,28 @@ pub fn pixel_mountains(uv: Vec2, c: &Ctx) -> Vec3 {
     col
 }
 
-const ITEMS: [[&str; 8]; 6] = [
-    [
+const ITEMS: [[[u32; 8]; 8]; 6] = [
+    spr([
         "..RR.RR.", ".RRRRRRR", ".RRWRRRR", ".RRRRRRR", "..RRRRR.", "...RRR..", "....R...",
         "........",
-    ],
-    [
+    ]),
+    spr([
         "..YYYY..", ".YWYYYY.", "YYWYYOYY", "YYWYYOYY", "YYWYYOYY", "YYYYYOYY", ".YYYOOY.",
         "..YYYY..",
-    ],
-    [
+    ]),
+    spr([
         "....YY..", "...YYYY.", "...YYYY.", "....YY..", "....Y...", "...YY...", "....Y...",
         "...YY...",
-    ],
-    [
+    ]),
+    spr([
         "..RRRR..", ".RWWRRR.", "RRWWRRWR", "RRRRRRRR", "..WWWW..", "..WSSW..", "..WSSW..",
         "..WWWW..",
-    ],
-    [
+    ]),
+    spr([
         "..WWWW..", ".WWWWWW.", "WWKWWKWW", "WWKWWKWW", "WWWWWWWW", "WWWWWWWW", "WW.WW.WW",
         "W..W..W.",
-    ],
-    [
+    ]),
+    spr([
         "......WW",
         ".....WW.",
         "....WW..",
@@ -591,18 +624,18 @@ const ITEMS: [[&str; 8]; 6] = [
         "..W.....",
         ".B.W....",
         "B........",
-    ],
+    ]),
 ];
 
-fn item_color(ch: u8, pal: &crate::ShaderPalette) -> Vec3 {
+fn item_color(ch: u32, pal: &ShaderPalette) -> Vec3 {
     match ch {
-        b'R' => rgb(228, 52, 52),
-        b'W' => Vec3::WHITE,
-        b'Y' => rgb(252, 208, 60),
-        b'O' => rgb(200, 130, 20),
-        b'S' => rgb(130, 90, 60),
-        b'K' => rgb(20, 20, 30),
-        b'B' => rgb(140, 90, 40),
+        CR => rgb(228, 52, 52),
+        CW => Vec3::WHITE,
+        CY => rgb(252, 208, 60),
+        CO => rgb(200, 130, 20),
+        CS => rgb(130, 90, 60),
+        CK => rgb(20, 20, 30),
+        CB => rgb(140, 90, 40),
         _ => pal.fg,
     }
 }
@@ -623,7 +656,18 @@ pub fn pixel_items(uv: Vec2, c: &Ctx) -> Vec3 {
     let bob = ((c.time * 3.0 + i as f32 * 0.9).sin() * 3.0).round();
     let ox = ((p.x - cx) / scale + 4.0).floor();
     let oy = ((p.y - VH * 0.5 - bob) / scale + 4.0).floor();
-    if let Some(ch) = sprite_at(&ITEMS[i], ox as i32, oy as i32) {
+    if let Some(ch) = sprite_at(
+        match i {
+            0 => ITEMS[0],
+            1 => ITEMS[1],
+            2 => ITEMS[2],
+            3 => ITEMS[3],
+            4 => ITEMS[4],
+            _ => ITEMS[5],
+        },
+        ox as i32,
+        oy as i32,
+    ) {
         col = item_color(ch, pal);
     }
     // shadow
@@ -647,7 +691,7 @@ pub fn pixelate(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
 }
 
 pub fn gameboy(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
-    const SHADES: [[u8; 3]; 4] = [[15, 56, 15], [48, 98, 48], [139, 172, 15], [155, 188, 15]];
+    const SHADES: [[u32; 3]; 4] = [[15, 56, 15], [48, 98, 48], [139, 172, 15], [155, 188, 15]];
     let block = 2.0;
     let (w, h) = (src.w as f32, src.h as f32);
     let (bx, by) = ((uv.x * w / block).floor(), (uv.y * h / block).floor());
@@ -655,10 +699,10 @@ pub fn gameboy(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
     let l = sat(s.luma().powf(0.8) * 1.15);
     let d = bayer4(bx as i32, by as i32) - 0.5;
     let q = ((l * 3.0 + d * 0.9 * c.intensity).round().clamp(0.0, 3.0)) as usize;
-    Vec3::from_u8(SHADES[q])
+    rgb8a(SHADES[q])
 }
 
-const P16: [[u8; 3]; 16] = [
+const P16: [[u32; 3]; 16] = [
     [0, 0, 0],
     [29, 43, 83],
     [126, 37, 83],
@@ -678,29 +722,25 @@ const P16: [[u8; 3]; 16] = [
 ];
 
 pub fn pico16(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
-    // Palette in linear light, computed once.
-    static LIN: std::sync::OnceLock<[(Vec3, Vec3); 16]> = std::sync::OnceLock::new();
-    let lin = LIN.get_or_init(|| {
-        let mut o = [(Vec3::BLACK, Vec3::BLACK); 16];
-        for (i, pc) in P16.iter().enumerate() {
-            let v = Vec3::from_u8(*pc);
-            o[i] = (v, v.powf(2.2));
-        }
-        o
-    });
     let (w, h) = (src.w as f32, src.h as f32);
     let (x, y) = ((uv.x * w) as i32, (uv.y * h) as i32);
     let s = src.get(x, y);
     let d = (bayer4(x, y) - 0.5) * 0.18 * c.intensity;
     let t = (s + Vec3::splat(d)).clamp01();
     let t = vec3(t.x * t.x, t.y * t.y, t.z * t.z); // ≈ gamma 2.2
-    let mut best = (f32::MAX, lin[0].0);
-    for (v, vl) in lin.iter() {
-        let dv = *vl - t;
+    // Nearest palette entry in (approximately) linear light. The palette is
+    // linearised on the fly: 16 entries are cheap next to the rest of the pixel.
+    let mut best = (f32::MAX, Vec3::BLACK);
+    let mut i = 0;
+    while i < 16 {
+        let v = rgb8a(P16[i]);
+        let vl = vec3(v.x * v.x, v.y * v.y, v.z * v.z);
+        let dv = vl - t;
         let dist = dv.dot(dv);
         if dist < best.0 {
-            best = (dist, *v);
+            best = (dist, v);
         }
+        i += 1;
     }
     best.1
 }

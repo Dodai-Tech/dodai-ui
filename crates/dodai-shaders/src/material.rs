@@ -3,6 +3,8 @@
 
 use crate::frame::Ctx;
 use crate::math::*;
+#[allow(unused_imports)]
+use crate::prelude::*;
 use crate::{Family, ShaderInfo};
 
 const F: Family = Family::Material3;
@@ -67,7 +69,8 @@ pub fn m3_blobs(uv: Vec2, c: &Ctx) -> Vec3 {
     let q = c.centered(uv);
     let mut col = tonal(p.bg, p.a, 1.0);
     let tones = [p.a, p.c, p.b, p.a.mix(p.c, 0.5)];
-    for (i, tone) in tones.iter().enumerate() {
+    for i in 0..4 {
+        let tone = &tones[i];
         let f = i as f32;
         let ctr = vec2(
             (c.time * 0.21 + f * 1.7).sin() * 0.9 * c.aspect() * 0.7,
