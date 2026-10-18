@@ -5,7 +5,7 @@ use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use dodai_core::Theme;
 use gpui::{
-    div, px, AnyElement, AnyView, App, AppContext as _, Context, IntoElement, ParentElement,
+    div, px, AnyElement, AnyView, App, AppContext as _, Context, Div, IntoElement, ParentElement,
     Render, RenderOnce, SharedString, Styled, Window,
 };
 
@@ -274,35 +274,67 @@ impl ParentElement for Panel {
 }
 
 /// One line (edge) or L-bracket (corner) of `w` px painted at `edge`.
-fn accent_mark(edge: Edge, c: gpui::Hsla, w: f32, inset: f32) -> gpui::Div {
+/// `i0`/`i1` pull the ends away from cut or rounded corners (for a bracket
+/// `i0` moves the arms off the corner).
+fn accent_mark(edge: Edge, c: gpui::Hsla, w: f32, i0: f32, i1: f32) -> gpui::Div {
     const ARM: f32 = 28.0;
     let bar = || div().absolute().bg(c);
-    let wrap = div().absolute().size_full();
+    let wrap = || div().absolute().size_full();
     let bracket = |top: bool, left: bool| {
         let h = bar().w(px(ARM)).h(px(w));
         let v = bar().h(px(ARM)).w(px(w));
         let (h, v) = if top {
-            (h.top_0(), v.top_0())
+            (h.top_0().left(px(i0)), v.top(px(i0)))
         } else {
-            (h.bottom_0(), v.bottom_0())
+            (h.bottom_0().left(px(i0)), v.bottom(px(i0)))
         };
         let (h, v) = if left {
-            (h.left_0(), v.left_0())
+            (h, v.left_0())
         } else {
-            (h.right_0(), v.right_0())
+            (h.left_auto().right(px(i0)), v.right_0())
         };
-        wrap.child(h).child(v)
+        wrap().child(h).child(v)
     };
-    let wrap = div().absolute().size_full();
     match edge {
         Edge::TopLeft => bracket(true, true),
         Edge::TopRight => bracket(true, false),
         Edge::BottomLeft => bracket(false, true),
         Edge::BottomRight => bracket(false, false),
-        Edge::Top => wrap.child(bar().top_0().left(px(inset)).right(px(inset)).h(px(w))),
-        Edge::Bottom => wrap.child(bar().bottom_0().left(px(inset)).right(px(inset)).h(px(w))),
-        Edge::Left => wrap.child(bar().left_0().top(px(inset)).bottom(px(inset)).w(px(w))),
-        Edge::Right => wrap.child(bar().right_0().top(px(inset)).bottom(px(inset)).w(px(w))),
+        Edge::Top => wrap().child(bar().top_0().left(px(i0)).right(px(i1)).h(px(w))),
+        Edge::Bottom => wrap().child(bar().bottom_0().left(px(i0)).right(px(i1)).h(px(w))),
+        Edge::Left => wrap().child(bar().left_0().top(px(i0)).bottom(px(i1)).w(px(w))),
+        Edge::Right => wrap().child(bar().right_0().top(px(i0)).bottom(px(i1)).w(px(w))),
+    }
+}
+
+/// How far a corner pulls a line in: the radius when that corner is rounded
+/// or cut, else 0.
+fn corner_inset(shape: &dodai_core::Shape, top: bool, left: bool) -> f32 {
+    let cut = match (top, left) {
+        (true, true) => shape.corners.top_left,
+        (true, false) => shape.corners.top_right,
+        (false, true) => shape.corners.bottom_left,
+        (false, false) => shape.corners.bottom_right,
+    };
+    match shape.kind() {
+        dodai_core::ShapeKind::Rounded => shape.radius,
+        dodai_core::ShapeKind::Chamfered if cut => shape.radius,
+        _ => 0.0,
+    }
+}
+
+/// Insets (start, end) for `edge` on `shape`.
+fn mark_insets(shape: &dodai_core::Shape, edge: Edge) -> (f32, f32) {
+    let ci = |t, l| corner_inset(shape, t, l);
+    match edge {
+        Edge::Top => (ci(true, true), ci(true, false)),
+        Edge::Bottom => (ci(false, true), ci(false, false)),
+        Edge::Left => (ci(true, true), ci(false, true)),
+        Edge::Right => (ci(true, false), ci(false, false)),
+        Edge::TopLeft => (ci(true, true), 0.0),
+        Edge::TopRight => (ci(true, false), 0.0),
+        Edge::BottomLeft => (ci(false, true), 0.0),
+        Edge::BottomRight => (ci(false, false), 0.0),
     }
 }
 
@@ -316,62 +348,77 @@ impl Panel {
         }
         let border = self.border.unwrap_or_else(|| section_border(cx));
         let mut style = border.apply(panel_style(&t, self.focused));
-        let grey = style.stroke;
+        let grey = style.stroke.map(|_| gpui::Hsla {
+            a: hsla(t.palette.border_strong).a * border.opacity.clamp(0.0, 1.0),
+            ..hsla(t.palette.border_strong)
+        });
         if border.accent.is_some() {
             // Accent mode replaces the full frame: yellow here, grey opposite.
             style.stroke = None;
+            style.shadow = None;
         }
         let mut d = shaped(&shape, style);
         if let Some(edge) = border.accent {
-            let inset = if matches!(
-                shape.kind(),
-                dodai_core::ShapeKind::Rounded | dodai_core::ShapeKind::Chamfered
-            ) {
-                shape.radius
-            } else {
-                0.0
-            };
             let b = border.clamped();
             let accent = hsla(t.panel(true).border);
             if let Some(g) = grey {
-                d = d.child(accent_mark(edge.opposite(), g, b.width, inset));
+                let o = edge.opposite();
+                let (i0, i1) = mark_insets(&shape, o);
+                d = d.child(accent_mark(o, g, b.width, i0, i1));
             }
-            d = d.child(accent_mark(edge, accent, b.accent_width, inset));
+            let (i0, i1) = mark_insets(&shape, edge);
+            d = d.child(accent_mark(edge, accent, b.accent_width, i0, i1));
         }
+        // Absolute accent marks are positioned against the padding box in gpui,
+        // so with an accent the padding moves to an inner wrapper and the marks
+        // sit on the true outer edge.
+        let wrap = border.accent.is_some();
         let mut d = d
             .flex()
             .flex_col()
             .min_w_0()
-            .gap(px(t.spacing.sm))
-            .p(px(t.spacing.lg))
             .text_color(hsla(t.palette.text))
             .text_size(px(t.typography.size_md))
             .font_family(first_family(t.typography.body));
+        let mut items: Vec<AnyElement> = Vec::new();
         if let Some(title) = self.title {
-            d = d.child(
+            items.push(
                 div()
                     .font_family(first_family(t.typography.display))
                     .text_size(px(t.typography.size_sm))
                     .text_color(hsla(p.title))
-                    .child(format_label(&t.typography, &title)),
+                    .child(format_label(&t.typography, &title))
+                    .into_any_element(),
             );
         }
         if let Some(sh) = self.subheader {
-            d = d.child(sh);
+            items.push(sh);
         }
         match self.scope {
             Some(set) => {
                 let key = self.scope_key.wrapping_mul(256);
-                d = d.children(self.children.into_iter().enumerate().map(|(i, c)| {
+                items.extend(self.children.into_iter().enumerate().map(|(i, c)| {
                     crate::motion::EntryScope::new(set, c)
                         .delay(std::time::Duration::from_millis(
                             set.stagger_ms() as u64 * i as u64,
                         ))
                         .key(("pscope", key.wrapping_add(i as u32)))
+                        .into_any_element()
                 }));
             }
-            None => d = d.children(self.children),
+            None => items.extend(self.children),
         }
+        let pad = |x: Div| {
+            x.flex()
+                .flex_col()
+                .gap(px(t.spacing.sm))
+                .p(px(t.spacing.lg))
+        };
+        d = if wrap {
+            d.child(pad(div()).min_w_0().children(items))
+        } else {
+            pad(d).children(items)
+        };
         match self.refine {
             Some(f) => f(d),
             None => d,

@@ -3291,6 +3291,15 @@ fn main() {
         install(cx, Theme::default());
         window_shortcuts(cx);
         set_glow_intensity(cx, 0.5);
+        // Debug: DODAI_ACCENT=<edge index 0..7> pre-selects the accent line.
+        if let Some(e) = std::env::var("DODAI_ACCENT")
+            .ok()
+            .and_then(|v| v.parse::<usize>().ok())
+            .and_then(|i| dodai_gpui::Edge::ALL.get(i).copied())
+        {
+            let b = dodai_gpui::section_border(cx);
+            dodai_gpui::set_section_border(cx, b.accent(Some(e)));
+        }
         let bounds = Bounds::centered(None, size(px(DEFAULT_W), px(DEFAULT_H)), cx);
         let win = cx
             .open_window(
