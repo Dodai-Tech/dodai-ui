@@ -72,6 +72,52 @@ pub const BLADE: &[Preset] = &[
     },
 ];
 
+/// Pixel-art scenes with palette-limiting effects.
+pub const PIXEL: &[Preset] = &[
+    Preset {
+        id: "px-gameboy-city",
+        name: "Game Boy city",
+        desc: "Rainy skyline in four green shades",
+        chain: &["px_city", "gameboy"],
+        palette: ShaderPalette::metroidvania,
+    },
+    Preset {
+        id: "px-pico-sunset",
+        name: "Pico sunset",
+        desc: "Sunset sea snapped to the 16-colour palette",
+        chain: &["px_ocean", "pico16"],
+        palette: ShaderPalette::metroidvania,
+    },
+    Preset {
+        id: "px-outlined-camp",
+        name: "Outlined camp",
+        desc: "Campfire with dark pixel outlines",
+        chain: &["px_campfire", "px_outline"],
+        palette: ShaderPalette::metroidvania,
+    },
+    Preset {
+        id: "px-cave-ramp",
+        name: "Dungeon duotone",
+        desc: "Torch-lit dungeon on the theme's colour ramp",
+        chain: &["px_dungeon", "px_duotone"],
+        palette: ShaderPalette::metroidvania,
+    },
+    Preset {
+        id: "px-posterized-reef",
+        name: "Posterized reef",
+        desc: "Underwater reef in a few dithered levels",
+        chain: &["px_reef", "px_posterize"],
+        palette: ShaderPalette::metroidvania,
+    },
+    Preset {
+        id: "px-snow-outline",
+        name: "Snow village",
+        desc: "Village with crisp outlines",
+        chain: &["px_snow", "px_outline"],
+        palette: ShaderPalette::metroidvania,
+    },
+];
+
 /// Hand-painted anime presets (use with `ShaderPalette::ghibli`).
 pub const GHIBLI: &[Preset] = &[
     Preset {
@@ -268,6 +314,7 @@ pub fn all() -> impl Iterator<Item = &'static Preset> {
         .chain(GHOSTTY.iter())
         .chain(BLADE.iter())
         .chain(GHIBLI.iter())
+        .chain(PIXEL.iter())
 }
 
 #[cfg(test)]

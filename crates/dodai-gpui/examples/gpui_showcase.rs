@@ -2696,6 +2696,10 @@ impl Render for Showcase {
                     dodai_gpui::dodai_shaders::presets::BLADE,
                 ),
                 ("Ghibli presets", dodai_gpui::dodai_shaders::presets::GHIBLI),
+                (
+                    "Pixel art presets",
+                    dodai_gpui::dodai_shaders::presets::PIXEL,
+                ),
             ] {
                 let mut r = row();
                 for p in list {
