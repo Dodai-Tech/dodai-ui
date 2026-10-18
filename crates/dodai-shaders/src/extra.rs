@@ -525,10 +525,15 @@ pub fn oscilloscope(uv: Vec2, c: &Ctx) -> Vec3 {
     let mut col = p.bg + p.a * grid;
     let mut dmin: f32 = 9.0;
     let (fa, fb) = (3.0, 2.0 + (c.time * 0.1).sin() * 0.5);
-    for i in 0..96 {
-        let t = i as f32 / 96.0 * TAU;
-        let pt = vec2((t * fa + c.time).sin() * 1.1, (t * fb).sin() * 0.7);
-        dmin = dmin.min((q - pt).len());
+    let pt = |i: i32| {
+        let t = i as f32 / 48.0 * TAU;
+        vec2((t * fa + c.time).sin() * 1.1, (t * fb).sin() * 0.7)
+    };
+    let mut prev = pt(0);
+    for i in 1..=48 {
+        let cur = pt(i);
+        dmin = dmin.min(sd_segment(q, prev, cur));
+        prev = cur;
     }
     col = col + p.a * (glow(dmin, 55.0) * 0.9 + glow(dmin, 12.0) * 0.18);
     col + p.fg * smoothstep(0.012, 0.0, dmin) * 0.6

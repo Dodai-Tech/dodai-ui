@@ -154,6 +154,7 @@ fn subs(cat: &str) -> &'static [&'static str] {
             "Retro terminals",
             "Pixel art",
             "Cosmic & nature",
+            "Ghostty",
         ],
         _ => &[],
     }
@@ -2570,13 +2571,14 @@ impl Render for Showcase {
                     .into_any_element(),
                 "Shader playground",
             ));
-            const TITLES: [(&str, &str); 6] = [
+            const TITLES: [(&str, &str); 7] = [
                 ("Cyberpunk shaders", "Cyberpunk effects"),
                 ("Material 3 shaders", "Material 3 effects"),
                 ("Matrix shaders", "Matrix effects"),
                 ("Retro terminals shaders", "Retro terminals effects"),
                 ("Pixel art shaders", "Pixel art effects"),
                 ("Cosmic & nature shaders", "Cosmic & nature effects"),
+                ("Ghostty shaders", "Ghostty effects"),
             ];
             for (fi, fam) in Family::ALL.iter().enumerate() {
                 let gens: Vec<_> = catalog()
@@ -2610,6 +2612,39 @@ impl Render for Showcase {
                         et,
                     ));
                 }
+            }
+            // Ready-made chains.
+            for (title, list) in [
+                (
+                    "Retro terminals presets",
+                    dodai_gpui::dodai_shaders::presets::RETRO,
+                ),
+                (
+                    "Ghostty presets",
+                    dodai_gpui::dodai_shaders::presets::GHOSTTY,
+                ),
+            ] {
+                let mut r = row();
+                for p in list {
+                    r = r.child(
+                        col()
+                            .flex_1()
+                            .min_w(px(220.0))
+                            .child(
+                                ShaderView::preset(format!("shp-{}", p.id), p)
+                                    .pixel(3.0)
+                                    .rounded(t.shape.radius),
+                            )
+                            .child(Mono::new(p.name))
+                            .child(Muted::new(p.desc)),
+                    );
+                }
+                sections.push((
+                    "Shaders",
+                    title,
+                    section!(title).child(r).into_any_element(),
+                    title,
+                ));
             }
         }
         for (i, el) in anim_sections.into_iter().enumerate() {

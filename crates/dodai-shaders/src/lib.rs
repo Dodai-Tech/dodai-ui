@@ -24,17 +24,21 @@ pub mod cyberpunk;
 pub mod extra;
 pub mod frame;
 pub mod fx;
+pub mod ghostty;
 pub mod material;
 pub mod math;
 pub mod matrix;
 pub mod nature;
 pub mod pixel;
 pub mod player;
+pub mod presets;
 pub mod retro;
+pub mod retro2;
 
 pub use frame::{apply_fx, render_gen, Ctx, Frame, FxFn, GenFn, ShaderPalette};
 pub use math::{vec2, vec3, Vec2, Vec3};
 pub use player::Player;
+pub use presets::Preset;
 
 use std::sync::OnceLock;
 
@@ -47,16 +51,19 @@ pub enum Family {
     Retro,
     Pixel,
     Nature,
+    /// Re-implementations of the ghostty-shaders collection.
+    Ghostty,
 }
 
 impl Family {
-    pub const ALL: [Family; 6] = [
+    pub const ALL: [Family; 7] = [
         Family::Cyberpunk,
         Family::Material3,
         Family::Matrix,
         Family::Retro,
         Family::Pixel,
         Family::Nature,
+        Family::Ghostty,
     ];
     pub fn name(self) -> &'static str {
         match self {
@@ -66,6 +73,7 @@ impl Family {
             Family::Retro => "Retro terminals",
             Family::Pixel => "Pixel art",
             Family::Nature => "Cosmic & nature",
+            Family::Ghostty => "Ghostty",
         }
     }
     /// Generator id that makes a good input for this family's post effects.
@@ -73,7 +81,7 @@ impl Family {
         match self {
             Family::Cyberpunk => "neon_city",
             Family::Material3 => "m3_blobs",
-            Family::Matrix | Family::Retro => "terminal_scene",
+            Family::Matrix | Family::Retro | Family::Ghostty => "terminal_scene",
             Family::Pixel => "platformer",
             Family::Nature => "plasma",
         }
@@ -87,6 +95,7 @@ impl Family {
             Family::Retro => ShaderPalette::amber(),
             Family::Pixel => ShaderPalette::metroidvania(),
             Family::Nature => ShaderPalette::cyberpunk(),
+            Family::Ghostty => ShaderPalette::matrix(),
         }
     }
 }
@@ -157,6 +166,8 @@ pub fn catalog() -> &'static [ShaderInfo] {
             nature::SHADERS,
             fx::SHADERS,
             extra::SHADERS,
+            retro2::SHADERS,
+            ghostty::SHADERS,
         ]
         .concat()
     })

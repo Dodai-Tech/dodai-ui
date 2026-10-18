@@ -23,6 +23,8 @@ struct Gallery {
     fx: Vec<&'static str>,
     grid: bool,
     palette: usize,
+    /// Set by a preset; cleared when the palette is cycled or a shader picked.
+    pal_override: Option<ShaderPalette>,
     palettes: Vec<(SharedString, Option<ShaderPalette>)>,
     intensity: f32,
     pixel: f32,
@@ -65,6 +67,7 @@ impl Gallery {
             fx: Vec::new(),
             grid: false,
             palette: 0,
+            pal_override: None,
             palettes,
             intensity: 1.0,
             pixel: 3.0,
@@ -111,7 +114,18 @@ impl Gallery {
             .unwrap_or_else(|| family.palette())
     }
 
+    fn apply_preset(&mut self, p: &'static dodai_shaders::Preset) {
+        let chain = p.shaders();
+        if let Some(i) = catalog().iter().position(|s| s.id == chain[0].id) {
+            self.sel = i;
+            self.fx = chain[1..].iter().map(|s| s.id).collect();
+            self.pal_override = Some((p.palette)());
+            self.grid = false;
+        }
+    }
+
     fn pick(&mut self, i: usize) {
+        self.pal_override = None;
         let s = &catalog()[i];
         if s.is_generator() {
             self.sel = i;
@@ -233,6 +247,33 @@ impl Render for Gallery {
             .flex()
             .flex_col()
             .gap(px(2.0));
+        side = side.child(
+            div()
+                .mb(px(4.0))
+                .text_size(px(11.0))
+                .text_color(rgb(ACCENT))
+                .child("PRESETS"),
+        );
+        for (pi, p) in dodai_shaders::presets::all().enumerate() {
+            side = side.child(
+                div()
+                    .id(("preset", pi))
+                    .px(px(8.0))
+                    .py(px(4.0))
+                    .text_size(px(13.0))
+                    .text_color(rgb(TEXT))
+                    .hover(|d| d.bg(rgb(LINE)))
+                    .cursor_pointer()
+                    .on_mouse_down(
+                        MouseButton::Left,
+                        cx.listener(move |g, _, _, cx| {
+                            g.apply_preset(p);
+                            cx.notify();
+                        }),
+                    )
+                    .child(format!("★ {}", p.name)),
+            );
+        }
         for fam in Family::ALL {
             side = side.child(
                 div()
@@ -314,6 +355,7 @@ impl Render for Gallery {
                     .on_mouse_down(
                         MouseButton::Left,
                         cx.listener(|g, _, _, cx| {
+                            g.pal_override = None;
                             g.palette = (g.palette + 1) % g.palettes.len();
                             cx.notify();
                         }),

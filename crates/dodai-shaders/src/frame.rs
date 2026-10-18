@@ -72,6 +72,26 @@ impl ShaderPalette {
             c: Vec3::from_u8([255, 220, 140]),
         }
     }
+    /// Commodore 64 READY. screen: blue paper, light-blue ink.
+    pub fn c64() -> Self {
+        Self {
+            bg: Vec3::from_u8([53, 40, 121]),
+            fg: Vec3::from_u8([136, 126, 203]),
+            a: Vec3::from_u8([170, 255, 238]),
+            b: Vec3::from_u8([0, 136, 255]),
+            c: Vec3::from_u8([255, 119, 119]),
+        }
+    }
+    /// DOS / VGA text mode: blue, grey and cyan.
+    pub fn dos() -> Self {
+        Self {
+            bg: Vec3::from_u8([0, 0, 170]),
+            fg: Vec3::from_u8([170, 170, 170]),
+            a: Vec3::from_u8([85, 255, 255]),
+            b: Vec3::from_u8([0, 170, 170]),
+            c: Vec3::from_u8([255, 85, 85]),
+        }
+    }
     /// Super-Mario-ish sky/brick/coin colours.
     pub fn platformer() -> Self {
         Self {

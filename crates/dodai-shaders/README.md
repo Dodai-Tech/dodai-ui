@@ -9,8 +9,9 @@ shown as an image by any toolkit. No GPU API, no shader language.
 | Cyberpunk | neon grid, rain city, hex pulse, circuit, HUD radar, data corruption, synthwave sunset, neon rain glass, neon signs · bloom, glitch, chromatic, neon edges, hologram |
 | Material 3 | dynamic colour, ripple, tonal waves, tonal elevation, shape morph, wavy progress, mesh gradient, dot wave, shape loader, tonal bars · tonal scrim, frosted blur |
 | Matrix | digital rain, code hallway, glyph wall, rain in depth · Matrix vision, green screen |
-| Retro terminals | terminal screen, test pattern, TV snow, oscilloscope, teletext · CRT, phosphor, VHS, TFT, static, 1-bit dither, negative, CRT power-on, vertical roll, halftone, ASCII art, CGA, vignette, film grain, sepia |
+| Retro terminals | terminal screen, test pattern, TV snow, oscilloscope, teletext · CRT, phosphor, VHS, TFT, static, 1-bit dither, negative, CRT power-on, vertical roll, halftone, ASCII art, CGA, vignette, film grain, sepia, amber monitor, green phosphor, paper-white, Trinitron, shadow mask, dot matrix, vector display, C64, Apple ][, ZX Spectrum, EGA, composite NTSC, tracking error, degauss · radar, DOS text, C64 READY., ZX loading, colour bars |
 | Pixel art | platformer world, metroidvania cave, castle hall, night mountains, item sprites, pine forest, sunset sea, block sky, invaders · pixelate, Game Boy, 16-colour, posterize |
+| Ghostty | retro terminal, better CRT, Lottes CRT, in-game CRT, glow + RGB split, drunkard, glitchy, underwater, cubes, sparks, smoke, lava, gradients · gears, inside the Matrix, noise flow |
 | Cosmic & nature | starfield, galaxy, fireworks, plasma, caustics, ocean, aurora, snow, lava lamp, fire, interference, gradient, spotlight, smoke, voronoi, clouds, tunnel, metaballs, Julia set, lightning, rain on water, sine waves · water warp, heat haze, kaleidoscope |
 
 ```rust
@@ -21,11 +22,23 @@ let frame = render(&chain, &Ctx::new(320, 180, 1.0, ShaderPalette::amber()));
 let rgba = frame.to_rgba8();
 ```
 
+Presets (`dodai_shaders::presets`) are ready chains: Amber VT220, Green mainframe, Pip-Boy,
+Nostromo, DOS, Commodore 64, ZX Spectrum loading, Apple ][, broadcast test, radar room, haunted
+VHS, Ghostty classic and more.
+
 Palettes: `ShaderPalette::{cyberpunk, material3, matrix, amber, platformer, metroidvania}` or
 `ShaderPalette::from_theme(&theme)`.
 
 Demo: `cargo run --release -p dodai-shaders --example gallery`
 (`dump` writes every shader as PPM files).
+
+## Credits
+
+The Ghostty family re-implements the looks in
+[0xhckr/ghostty-shaders](https://github.com/0xhckr/ghostty-shaders) in Rust (no GLSL copied).
+Ideas from the Shadertoy retro-terminal CRT, Timothy Lottes' CRTS (public domain), qwerasd205,
+moni-dz, kalgynirae, Jan Mróz, FabriceNeyret2 and otaviogood, rymdlego, unkn0wncode,
+Alex Sherwin and pkazmier. Oklab maths by Björn Ottosson.
 
 ## Performance
 

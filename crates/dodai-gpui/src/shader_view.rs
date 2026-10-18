@@ -60,6 +60,14 @@ impl ShaderView {
             fps: 30.0,
         }
     }
+    /// A ready-made chain from [`dodai_shaders::presets`].
+    pub fn preset(id: impl Into<SharedString>, p: &dodai_shaders::Preset) -> Self {
+        Self {
+            chain: p.shaders(),
+            palette: PaletteSource::Fixed((p.palette)()),
+            ..Self::new(id, "")
+        }
+    }
     /// Append a post effect by id.
     pub fn fx(mut self, id: &str) -> Self {
         self.chain.extend(by_id(id));

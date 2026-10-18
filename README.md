@@ -8,7 +8,7 @@ component styles) feeds four native adapters:
 |---|---|---|
 | [`dodai-core`](crates/dodai-core) | — | `Theme`, `Palette`, tokens, `ThemeSwitcher`, WCAG contrast, ANSI-256 fallback |
 | [`dodai-charts-core`](crates/dodai-charts-core) | — | Renderer-agnostic chart maths: ticks, Heikin-Ashi, indicators, Renko, depth, Gantt, binning, gradients |
-| [`dodai-shaders`](crates/dodai-shaders) | — (CPU) | 90 pure-Rust pixel shaders: cyberpunk, Material 3, Matrix, CRT/VHS, pixel-art platformer/metroidvania, cosmic; follows the theme palette |
+| [`dodai-shaders`](crates/dodai-shaders) | — (CPU) | 126 pure-Rust pixel shaders: cyberpunk, Material 3, Matrix, CRT/VHS/retro monitors, Ghostty ports, pixel-art platformer/metroidvania, cosmic; follows the theme palette |
 | [`dodai-ratatui`](crates/dodai-ratatui) | Ratatui 0.30 | `TuiTheme`: chamfered `╱ ╲` blocks, `◢ BUTTON ◤`, tabs, badges, inputs, status bar, `Scanlines`, `ThemeBadge` |
 | [`dodai-iced`](crates/dodai-iced) | Iced 0.14 | `IcedTheme`: native `iced::Theme`, button/container/text-input/text styles with neon glow, canvas `ChamferFrame` |
 | [`dodai-gpui`](crates/dodai-gpui) | GPUI 0.2 | `Global` theme store, `cx.dodai()`, `DodaiStyled` (`.dodai_panel()`, `.dodai_button()`, `.dodai_input()`) |
