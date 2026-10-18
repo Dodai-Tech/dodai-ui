@@ -43,6 +43,7 @@ pub mod math;
 pub mod matrix;
 pub mod nature;
 pub mod pixel;
+pub mod pixel2;
 pub mod player;
 pub mod prelude;
 pub mod presets;
@@ -181,6 +182,7 @@ pub fn catalog() -> &'static [ShaderInfo] {
             cyberpunk::SHADERS,
             blade::SHADERS,
             ghibli::SHADERS,
+            pixel2::SHADERS,
             material::SHADERS,
             matrix::SHADERS,
             retro::SHADERS,

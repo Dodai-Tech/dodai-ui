@@ -71,6 +71,8 @@ pub mod matrix;
 pub mod nature;
 #[path = "../../dodai-shaders/src/pixel.rs"]
 pub mod pixel;
+#[path = "../../dodai-shaders/src/pixel2.rs"]
+pub mod pixel2;
 #[path = "../../dodai-shaders/src/retro.rs"]
 pub mod retro;
 #[path = "../../dodai-shaders/src/retro2.rs"]

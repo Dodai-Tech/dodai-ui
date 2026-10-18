@@ -71,10 +71,10 @@ pub const SHADERS: &[ShaderInfo] = &[
     ),
 ];
 
-const VH: f32 = 144.0;
+pub(crate) const VH: f32 = 144.0;
 
 /// Virtual pixel coordinates (whole numbers, y down) and the canvas width.
-fn vpix(uv: Vec2, c: &Ctx) -> (Vec2, f32) {
+pub(crate) fn vpix(uv: Vec2, c: &Ctx) -> (Vec2, f32) {
     let vw = (VH * c.aspect()).round();
     (vec2((uv.x * vw).floor(), (uv.y * VH).floor()), vw)
 }
