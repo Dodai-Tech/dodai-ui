@@ -1288,7 +1288,7 @@ impl RenderOnce for PieChart {
 
 // ─────────────────────────────────── Gauge ───────────────────────────────────
 
-/// Radial gauge with a centre label. [`GaugeStyle`] picks the look: the
+/// Radial gauge with a centre label. [`crate::gauges::GaugeStyle`] picks the look: the
 /// default 270° arc, segmented ring, dial, meter, reticle or slanted-cell bar.
 #[derive(IntoElement)]
 pub struct Gauge {
