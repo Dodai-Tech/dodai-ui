@@ -1,5 +1,5 @@
 //! The shader context and palette: shared verbatim by the CPU renderer and
-//! the GPU build, so no std here.
+//! the GPU kernels (`dodai-shaders-kernels`), so no std here.
 
 use crate::math::*;
 

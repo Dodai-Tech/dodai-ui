@@ -1,10 +1,82 @@
-// GPU entry points, compiled only for the rust-gpu target. Included into the
-// crate root so entry names stay flat.
-//
-// Bindings (group 0): 0 `Params`, 1 source pixels, 2 destination pixels,
-// 3 packed output.
+//! GPU kernels for `dodai-shaders`.
+//!
+//! The shader source files of `dodai-shaders` are included verbatim and
+//! compiled by rust-gpu to WGSL, so there is one implementation of every
+//! shader. Each shader becomes a compute entry point (`gen_kernel!` /
+//! `post_kernel!`, listed in `entries.rs`), plus `pack` for the final BGRA
+//! conversion. Build with `just build-kernels`.
+//!
+//! Bindings (group 0): 0 `Params`, 1 source pixels, 2 destination pixels,
+//! 3 packed output.
+#![cfg_attr(target_arch = "spirv", no_std)]
+#![allow(clippy::all, dead_code, unused_imports, unused_variables)]
+
+#[cfg(target_arch = "spirv")]
+extern crate core as std;
+
 use glam::{UVec3, Vec2 as GVec2, Vec4};
 use spirv_std::spirv;
+
+#[path = "../../dodai-shaders/src/ctx.rs"]
+pub mod ctx;
+pub mod frame;
+#[path = "../../dodai-shaders/src/math.rs"]
+pub mod math;
+pub use ctx::ShaderPalette;
+pub mod prelude {
+    #[cfg(target_arch = "spirv")]
+    pub use spirv_std::num_traits::Float;
+}
+
+// Registration stubs: the shared sources declare `ShaderInfo` tables for the
+// CPU catalogue; here they are inert.
+#[derive(Clone, Copy)]
+pub enum Family {
+    Cyberpunk,
+    Material3,
+    Matrix,
+    Retro,
+    Pixel,
+    Nature,
+    Ghostty,
+    Ghibli,
+}
+pub struct ShaderInfo;
+impl ShaderInfo {
+    pub const fn generator<F: Copy>(_: &str, _: &str, _: Family, _: &str, _: F) -> Self {
+        Self
+    }
+    pub const fn post<F: Copy>(_: &str, _: &str, _: Family, _: &str, _: F) -> Self {
+        Self
+    }
+}
+
+#[path = "../../dodai-shaders/src/blade.rs"]
+pub mod blade;
+#[path = "../../dodai-shaders/src/cyberpunk.rs"]
+pub mod cyberpunk;
+#[path = "../../dodai-shaders/src/extra.rs"]
+pub mod extra;
+#[path = "../../dodai-shaders/src/fx.rs"]
+pub mod fx;
+#[path = "../../dodai-shaders/src/ghibli.rs"]
+pub mod ghibli;
+#[path = "../../dodai-shaders/src/ghostty.rs"]
+pub mod ghostty;
+#[path = "../../dodai-shaders/src/material.rs"]
+pub mod material;
+#[path = "../../dodai-shaders/src/matrix.rs"]
+pub mod matrix;
+#[path = "../../dodai-shaders/src/nature.rs"]
+pub mod nature;
+#[path = "../../dodai-shaders/src/pixel.rs"]
+pub mod pixel;
+#[path = "../../dodai-shaders/src/pixel2.rs"]
+pub mod pixel2;
+#[path = "../../dodai-shaders/src/retro.rs"]
+pub mod retro;
+#[path = "../../dodai-shaders/src/retro2.rs"]
+pub mod retro2;
 
 /// Per-dispatch constants. Mirrored byte for byte by the host.
 #[repr(C)]
@@ -21,14 +93,14 @@ pub struct Params {
 }
 
 impl Params {
-    pub fn ctx(&self) -> crate::ctx::Ctx {
-        let v = |p: Vec4| crate::math::vec3(p.x, p.y, p.z);
-        crate::ctx::Ctx {
+    pub fn ctx(&self) -> ctx::Ctx {
+        let v = |p: Vec4| math::vec3(p.x, p.y, p.z);
+        ctx::Ctx {
             time: self.time,
             w: self.res.x as u32,
             h: self.res.y as u32,
             intensity: self.intensity,
-            pal: crate::ctx::ShaderPalette {
+            pal: ctx::ShaderPalette {
                 bg: v(self.bg),
                 fg: v(self.fg),
                 a: v(self.a),
@@ -49,7 +121,7 @@ macro_rules! gen_kernel {
         ) {
             let (w, h) = (p.res.x as u32, p.res.y as u32);
             if id.x < w && id.y < h {
-                let uv = crate::math::vec2(
+                let uv = math::vec2(
                     (id.x as f32 + 0.5) / w as f32,
                     (id.y as f32 + 0.5) / h as f32,
                 );
@@ -71,11 +143,11 @@ macro_rules! post_kernel {
         ) {
             let (w, h) = (p.res.x as u32, p.res.y as u32);
             if id.x < w && id.y < h {
-                let uv = crate::math::vec2(
+                let uv = math::vec2(
                     (id.x as f32 + 0.5) / w as f32,
                     (id.y as f32 + 0.5) / h as f32,
                 );
-                let frame = crate::frame::Frame::new(w, h, src);
+                let frame = frame::Frame::new(w, h, src);
                 let c = $f(&frame, uv, &p.ctx());
                 dst[(id.y * w + id.x) as usize] = Vec4::new(c.x, c.y, c.z, 1.0);
             }

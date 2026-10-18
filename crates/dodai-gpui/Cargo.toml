@@ -20,7 +20,7 @@ charts     = []
 # CPU pixel shaders (cyberpunk, Material 3, Matrix, CRT, pixel art, ...) as `ShaderView`.
 shaders    = ["dep:dodai-shaders", "dep:image"]
 # Run shaders on the GPU (wgpu compute) when one is available; falls back to the CPU.
-gpu        = ["shaders", "dodai-shaders/gpu"]
+gpu        = ["shaders", "dep:dodai-shaders-gpu"]
 
 [dependencies]
 dodai-core = { workspace = true }
@@ -28,6 +28,7 @@ dodai-charts-core = { workspace = true }
 dodai-icons = { workspace = true }
 gpui = { workspace = true }
 dodai-shaders = { workspace = true, optional = true }
+dodai-shaders-gpu = { workspace = true, optional = true }
 image = { version = "0.25", default-features = false, optional = true }
 
 [[example]]

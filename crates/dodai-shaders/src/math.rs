@@ -148,11 +148,7 @@ pub fn mix(a: f32, b: f32, t: f32) -> f32 {
     a + (b - a) * t
 }
 pub fn step(edge: f32, x: f32) -> f32 {
-    if x < edge {
-        0.0
-    } else {
-        1.0
-    }
+    if x < edge { 0.0 } else { 1.0 }
 }
 pub fn smoothstep(a: f32, b: f32, x: f32) -> f32 {
     let t = sat((x - a) / (b - a));

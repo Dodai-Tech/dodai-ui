@@ -42,16 +42,8 @@ Alex Sherwin and pkazmier. Oklab maths by Björn Ottosson.
 
 ## GPU
 
-One crate, two back ends. The shader sources are compiled natively for the CPU, and by
-[rust-gpu](https://github.com/Rust-GPU/rust-gpu) to WGSL for the GPU. Enable feature `gpu`
-to run them through wgpu (`dodai_shaders::gpu::Gpu`): about 5× faster than all CPU cores at
-1080p, with matching output (`just parity`). `dodai-gpui` uses it by default and falls back to the
-CPU when no adapter is available or `DODAI_GPU=0`.
-
-The compiled `kernels.wgsl` is committed, so users need no nightly toolchain. Maintainers
-regenerate it with `just build-kernels` (needs `cargo install cargo-gpu`). Shader sources must stay
-GPU-compatible: no iterators over arrays, no strings, no `u8`/`u64`, no `contains(&x)`; use index
-loops and `match`; annotate float literals that could infer to `f64`. The `gpu` feature needs Rust 1.88.
+`dodai-shaders-gpu` runs the same shader sources on the GPU through rust-gpu and wgpu: about 5×
+faster than all CPU cores at 1080p, with matching output. `dodai-gpui` uses it by default.
 
 ## Performance
 

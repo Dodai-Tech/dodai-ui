@@ -43,12 +43,12 @@ run-shaders:
 # nightly and builds the codegen backend (~5 min): `cargo install cargo-gpu`.
 build-kernels:
     python3 scripts/gen-kernels.py
-    cd crates/dodai-shaders && cargo gpu build --shader-crate . --output-dir ../../target/kernels --auto-install-rust-toolchain --target spirv-unknown-naga-wgsl
-    cp target/kernels/dodai_shaders.wgsl crates/dodai-shaders/kernels.wgsl
+    cd crates/dodai-shaders-kernels && cargo gpu build --shader-crate . --output-dir ../../target/kernels --auto-install-rust-toolchain --target spirv-unknown-naga-wgsl
+    cp target/kernels/dodai_shaders_kernels.wgsl crates/dodai-shaders-gpu/kernels.wgsl
 
 # CPU vs GPU: per-shader difference and timing (release)
 parity w="1280" h="720":
-    cargo run --release -p dodai-shaders --features gpu --example parity {{w}} {{h}}
+    cargo run --release -p dodai-shaders-gpu --example parity {{w}} {{h}}
 
 build-charts-core:
     cargo build -p dodai-charts-core
@@ -190,6 +190,7 @@ publish: check-all
     cargo publish -p dodai-icons
     cargo publish -p dodai-charts-core
     cargo publish -p dodai-shaders
+    cargo publish -p dodai-shaders-gpu
     @echo "⏳ waiting for crates.io index…" && sleep 30
     cargo publish -p dodai-ratatui
     cargo publish -p dodai-iced

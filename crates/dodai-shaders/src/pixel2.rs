@@ -5,7 +5,7 @@
 
 use crate::frame::{Ctx, Frame};
 use crate::math::*;
-use crate::pixel::{spr, sprite_at, vpix, VH};
+use crate::pixel::{VH, spr, sprite_at, vpix};
 #[allow(unused_imports)]
 use crate::prelude::*;
 use crate::{Family, ShaderInfo};

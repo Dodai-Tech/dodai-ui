@@ -4,7 +4,7 @@
 //! is a plain function evaluated per pixel (`fn(uv, &Ctx) -> Vec3`), rendered
 //! on the CPU across threads into a [`Frame`] that any toolkit can show as an
 //! image: no GPU API, no shader language, no build step. The same sources also
-//! run on the GPU through the `gpu` feature (rust-gpu), which is why the shader
+//! run on the GPU through `dodai-shaders-gpu` (rust-gpu), which is why the shader
 //! files avoid iterators over arrays, slices of constants, strings and
 //! `u8`/`u64` values.
 //!
@@ -22,11 +22,6 @@
 //! Families: [`Family::Cyberpunk`], [`Family::Material3`], [`Family::Matrix`],
 //! [`Family::Retro`] (CRT/VHS/terminals), [`Family::Pixel`] (platformers and
 //! metroidvanias) and [`Family::Nature`] (cosmic, water, fire, abstract).
-#![cfg_attr(target_arch = "spirv", no_std)]
-#![cfg_attr(
-    target_arch = "spirv",
-    allow(clippy::all, dead_code, unused_imports, unused_variables)
-)]
 // Index loops, `match` ladders and range comparisons are deliberate: the GPU
 // build (rust-gpu) cannot lower the iterator / `contains` forms.
 #![allow(
@@ -35,14 +30,11 @@
     clippy::manual_memcpy
 )]
 
-#[cfg(target_arch = "spirv")]
-extern crate core as std;
-
-// Shader sources: shared by the CPU renderer and the GPU build.
 pub mod blade;
 pub mod ctx;
 pub mod cyberpunk;
 pub mod extra;
+pub mod frame;
 pub mod fx;
 pub mod ghibli;
 pub mod ghostty;
@@ -52,39 +44,17 @@ pub mod matrix;
 pub mod nature;
 pub mod pixel;
 pub mod pixel2;
+pub mod player;
 pub mod prelude;
+pub mod presets;
 pub mod retro;
 pub mod retro2;
 
-// CPU host: frames, renderer, catalogue, presets.
-#[cfg(not(target_arch = "spirv"))]
-pub mod frame;
-/// wgpu host for the GPU kernels (feature `gpu`).
-#[cfg(all(feature = "gpu", not(target_arch = "spirv")))]
-pub mod gpu;
-#[cfg(not(target_arch = "spirv"))]
-pub mod player;
-#[cfg(not(target_arch = "spirv"))]
-pub mod presets;
-
-// GPU build (rust-gpu): the same sources plus a compute entry per shader.
-#[cfg(target_arch = "spirv")]
-#[path = "gpu_frame.rs"]
-pub mod frame;
-#[cfg(target_arch = "spirv")]
-include!("gpu_kernels.rs");
-
-pub use ctx::ShaderPalette;
-#[cfg(not(target_arch = "spirv"))]
-pub use frame::{apply_fx, render_gen, Ctx, Frame, FxFn, GenFn};
-#[cfg(not(target_arch = "spirv"))]
+pub use frame::{apply_fx, render_gen, Ctx, Frame, FxFn, GenFn, ShaderPalette};
 pub use math::{vec2, vec3, Vec2, Vec3};
-#[cfg(not(target_arch = "spirv"))]
 pub use player::Player;
-#[cfg(not(target_arch = "spirv"))]
 pub use presets::Preset;
 
-#[cfg(not(target_arch = "spirv"))]
 use std::sync::OnceLock;
 
 /// Shader family; the design-system section it belongs to.
@@ -151,192 +121,171 @@ impl Family {
     }
 }
 
-// Registration stubs for the GPU build: the shader sources declare
-// `ShaderInfo` tables for the catalogue; there they are inert.
-#[cfg(target_arch = "spirv")]
-pub struct ShaderInfo;
-#[cfg(target_arch = "spirv")]
+/// Generator or post effect.
+#[derive(Clone, Copy)]
+pub enum Kind {
+    Generator(GenFn),
+    PostFx(FxFn),
+}
+
+/// One catalogued shader.
+#[derive(Clone, Copy)]
+pub struct ShaderInfo {
+    pub id: &'static str,
+    pub name: &'static str,
+    pub family: Family,
+    pub desc: &'static str,
+    pub kind: Kind,
+}
+
 impl ShaderInfo {
-    pub const fn generator<F: Copy>(_: &str, _: &str, _: Family, _: &str, _: F) -> Self {
-        Self
+    pub const fn generator(
+        id: &'static str,
+        name: &'static str,
+        family: Family,
+        desc: &'static str,
+        f: GenFn,
+    ) -> Self {
+        Self {
+            id,
+            name,
+            family,
+            desc,
+            kind: Kind::Generator(f),
+        }
     }
-    pub const fn post<F: Copy>(_: &str, _: &str, _: Family, _: &str, _: F) -> Self {
-        Self
+    pub const fn post(
+        id: &'static str,
+        name: &'static str,
+        family: Family,
+        desc: &'static str,
+        f: FxFn,
+    ) -> Self {
+        Self {
+            id,
+            name,
+            family,
+            desc,
+            kind: Kind::PostFx(f),
+        }
+    }
+    pub fn is_generator(&self) -> bool {
+        matches!(self.kind, Kind::Generator(_))
     }
 }
 
-#[cfg(not(target_arch = "spirv"))]
-pub use catalogue::*;
-#[cfg(not(target_arch = "spirv"))]
-mod catalogue {
+/// Every shader, in family order.
+pub fn catalog() -> &'static [ShaderInfo] {
+    static ALL: OnceLock<Vec<ShaderInfo>> = OnceLock::new();
+    ALL.get_or_init(|| {
+        [
+            cyberpunk::SHADERS,
+            blade::SHADERS,
+            ghibli::SHADERS,
+            pixel2::SHADERS,
+            material::SHADERS,
+            matrix::SHADERS,
+            retro::SHADERS,
+            pixel::SHADERS,
+            nature::SHADERS,
+            fx::SHADERS,
+            extra::SHADERS,
+            retro2::SHADERS,
+            ghostty::SHADERS,
+        ]
+        .concat()
+    })
+}
+
+/// Shaders of one family.
+pub fn of_family(f: Family) -> impl Iterator<Item = &'static ShaderInfo> {
+    catalog().iter().filter(move |s| s.family == f)
+}
+
+/// Look up by id.
+pub fn by_id(id: &str) -> Option<&'static ShaderInfo> {
+    catalog().iter().find(|s| s.id == id)
+}
+
+/// Render a chain: the first entry must be a generator, the rest post
+/// effects applied in order. Extra generators in the middle are skipped.
+pub fn render(chain: &[&ShaderInfo], ctx: &Ctx) -> Frame {
+    let mut it = chain.iter();
+    let mut frame = match it.next().map(|s| s.kind) {
+        Some(Kind::Generator(g)) => render_gen(g, ctx),
+        _ => Frame::new(ctx.w, ctx.h),
+    };
+    for s in it {
+        if let Kind::PostFx(f) = s.kind {
+            frame = apply_fx(f, &frame, ctx);
+        }
+    }
+    frame
+}
+
+#[cfg(test)]
+mod tests {
     use super::*;
+    use std::collections::HashSet;
 
-    /// Generator or post effect.
-    #[derive(Clone, Copy)]
-    pub enum Kind {
-        Generator(GenFn),
-        PostFx(FxFn),
+    #[test]
+    fn ids_unique_and_lookup_works() {
+        let mut seen = HashSet::new();
+        for s in catalog() {
+            assert!(seen.insert(s.id), "duplicate id {}", s.id);
+            assert!(by_id(s.id).is_some());
+        }
+        assert!(catalog().len() >= 40, "{}", catalog().len());
     }
 
-    /// One catalogued shader.
-    #[derive(Clone, Copy)]
-    pub struct ShaderInfo {
-        pub id: &'static str,
-        pub name: &'static str,
-        pub family: Family,
-        pub desc: &'static str,
-        pub kind: Kind,
-    }
-
-    impl ShaderInfo {
-        pub const fn generator(
-            id: &'static str,
-            name: &'static str,
-            family: Family,
-            desc: &'static str,
-            f: GenFn,
-        ) -> Self {
-            Self {
-                id,
-                name,
-                family,
-                desc,
-                kind: Kind::Generator(f),
-            }
-        }
-        pub const fn post(
-            id: &'static str,
-            name: &'static str,
-            family: Family,
-            desc: &'static str,
-            f: FxFn,
-        ) -> Self {
-            Self {
-                id,
-                name,
-                family,
-                desc,
-                kind: Kind::PostFx(f),
-            }
-        }
-        pub fn is_generator(&self) -> bool {
-            matches!(self.kind, Kind::Generator(_))
+    #[test]
+    fn every_family_has_generators() {
+        for f in Family::ALL {
+            assert!(
+                of_family(f).any(|s| s.is_generator()),
+                "{} has no generator",
+                f.name()
+            );
         }
     }
 
-    /// Every shader, in family order.
-    pub fn catalog() -> &'static [ShaderInfo] {
-        static ALL: OnceLock<Vec<ShaderInfo>> = OnceLock::new();
-        ALL.get_or_init(|| {
-            [
-                cyberpunk::SHADERS,
-                blade::SHADERS,
-                ghibli::SHADERS,
-                pixel2::SHADERS,
-                material::SHADERS,
-                matrix::SHADERS,
-                retro::SHADERS,
-                pixel::SHADERS,
-                nature::SHADERS,
-                fx::SHADERS,
-                extra::SHADERS,
-                retro2::SHADERS,
-                ghostty::SHADERS,
-            ]
-            .concat()
-        })
+    #[test]
+    fn every_shader_renders_finite_and_varied() {
+        let ctx = Ctx::new(48, 27, 1.7, ShaderPalette::cyberpunk());
+        let base = by_id("test_pattern").unwrap();
+        for s in catalog() {
+            let f = if s.is_generator() {
+                render(&[s], &ctx)
+            } else {
+                render(&[base, s], &ctx)
+            };
+            assert_eq!(f.px.len(), 48 * 27, "{}", s.id);
+            assert!(
+                f.px.iter()
+                    .all(|p| p.x.is_finite() && p.y.is_finite() && p.z.is_finite()),
+                "{} produced NaN",
+                s.id
+            );
+            let first = f.px[0];
+            let varied = f.px.iter().any(|p| (*p - first).len() > 0.02);
+            assert!(varied, "{} is a flat colour", s.id);
+        }
     }
 
-    /// Shaders of one family.
-    pub fn of_family(f: Family) -> impl Iterator<Item = &'static ShaderInfo> {
-        catalog().iter().filter(move |s| s.family == f)
-    }
-
-    /// Look up by id.
-    pub fn by_id(id: &str) -> Option<&'static ShaderInfo> {
-        catalog().iter().find(|s| s.id == id)
-    }
-
-    /// Render a chain: the first entry must be a generator, the rest post
-    /// effects applied in order. Extra generators in the middle are skipped.
-    pub fn render(chain: &[&ShaderInfo], ctx: &Ctx) -> Frame {
-        let mut it = chain.iter();
-        let mut frame = match it.next().map(|s| s.kind) {
-            Some(Kind::Generator(g)) => render_gen(g, ctx),
-            _ => Frame::new(ctx.w, ctx.h),
-        };
-        for s in it {
-            if let Kind::PostFx(f) = s.kind {
-                frame = apply_fx(f, &frame, ctx);
-            }
-        }
-        frame
-    }
-
-    #[cfg(test)]
-    mod tests {
-        use super::*;
-        use std::collections::HashSet;
-
-        #[test]
-        fn ids_unique_and_lookup_works() {
-            let mut seen = HashSet::new();
-            for s in catalog() {
-                assert!(seen.insert(s.id), "duplicate id {}", s.id);
-                assert!(by_id(s.id).is_some());
-            }
-            assert!(catalog().len() >= 40, "{}", catalog().len());
-        }
-
-        #[test]
-        fn every_family_has_generators() {
-            for f in Family::ALL {
-                assert!(
-                    of_family(f).any(|s| s.is_generator()),
-                    "{} has no generator",
-                    f.name()
-                );
-            }
-        }
-
-        #[test]
-        fn every_shader_renders_finite_and_varied() {
-            let ctx = Ctx::new(48, 27, 1.7, ShaderPalette::cyberpunk());
-            let base = by_id("test_pattern").unwrap();
-            for s in catalog() {
-                let f = if s.is_generator() {
-                    render(&[s], &ctx)
-                } else {
-                    render(&[base, s], &ctx)
-                };
-                assert_eq!(f.px.len(), 48 * 27, "{}", s.id);
-                assert!(
-                    f.px.iter()
-                        .all(|p| p.x.is_finite() && p.y.is_finite() && p.z.is_finite()),
-                    "{} produced NaN",
-                    s.id
-                );
-                let first = f.px[0];
-                let varied = f.px.iter().any(|p| (*p - first).len() > 0.02);
-                assert!(varied, "{} is a flat colour", s.id);
-            }
-        }
-
-        #[test]
-        fn animated_generators_change_over_time() {
-            let a = Ctx::new(40, 24, 0.0, ShaderPalette::cyberpunk());
-            let b = Ctx { time: 2.3, ..a };
-            let moving = [
-                "neon_grid",
-                "digital_rain",
-                "starfield",
-                "m3_blobs",
-                "platformer",
-            ];
-            for id in moving {
-                let s = by_id(id).unwrap();
-                assert_ne!(render(&[s], &a), render(&[s], &b), "{id} is static");
-            }
+    #[test]
+    fn animated_generators_change_over_time() {
+        let a = Ctx::new(40, 24, 0.0, ShaderPalette::cyberpunk());
+        let b = Ctx { time: 2.3, ..a };
+        let moving = [
+            "neon_grid",
+            "digital_rain",
+            "starfield",
+            "m3_blobs",
+            "platformer",
+        ];
+        for id in moving {
+            let s = by_id(id).unwrap();
+            assert_ne!(render(&[s], &a), render(&[s], &b), "{id} is static");
         }
     }
 }

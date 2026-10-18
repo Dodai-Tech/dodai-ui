@@ -110,11 +110,7 @@ pub fn sprite_at<const W: usize, const H: usize>(
         return None;
     }
     let c = rows[y as usize][x as usize];
-    if c == b'.' as u32 {
-        None
-    } else {
-        Some(c)
-    }
+    if c == b'.' as u32 { None } else { Some(c) }
 }
 
 const HERO: [[[u32; 14]; 16]; 3] = [
@@ -396,11 +392,7 @@ pub fn metroid_cave(uv: Vec2, c: &Ctx) -> Vec3 {
         let mortar = lx < 1.0 || ly < 1.0;
         let h = hash2(bx as i32, ty as i32);
         let base = pal.a.mix(pal.bg, 0.35 - 0.1 * scale) * (0.8 + 0.5 * h);
-        if mortar {
-            pal.bg * 0.5
-        } else {
-            base
-        }
+        if mortar { pal.bg * 0.5 } else { base }
     };
     let mut col;
     // central cavern opening: darker, with near-layer bricks at the edges
@@ -736,8 +728,8 @@ pub fn pico16(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
     let d = (bayer4(x, y) - 0.5) * 0.18 * c.intensity;
     let t = (s + Vec3::splat(d)).clamp01();
     let t = vec3(t.x * t.x, t.y * t.y, t.z * t.z); // ≈ gamma 2.2
-                                                   // Nearest palette entry in (approximately) linear light. The palette is
-                                                   // linearised on the fly: 16 entries are cheap next to the rest of the pixel.
+    // Nearest palette entry in (approximately) linear light. The palette is
+    // linearised on the fly: 16 entries are cheap next to the rest of the pixel.
     let mut best = (f32::MAX, Vec3::BLACK);
     let mut i = 0;
     while i < 16 {

@@ -61,6 +61,8 @@ jobs:
           - { crate: dodai-gpui, os: macos-latest, gui: true }
           - { crate: dodai-bevy, os: ubuntu-latest, gui: true }
           - { crate: dodai-shaders, os: ubuntu-latest, gui: true }
+          - { crate: dodai-shaders-gpu, os: ubuntu-latest, gui: true }
+          - { crate: dodai-shaders-kernels, os: ubuntu-latest }
     steps:
       - uses: actions/checkout@v4
       - name: Install Linux GUI system libraries
@@ -77,11 +79,6 @@ jobs:
           key: ${{ matrix.crate }}
       - run: cargo clippy -p ${{ matrix.crate }} --all-targets -- -D warnings
       - run: cargo test -p ${{ matrix.crate }}
-      - name: dodai-shaders gpu feature
-        if: matrix.crate == 'dodai-shaders'
-        run: |
-          cargo clippy -p dodai-shaders --features gpu --all-targets -- -D warnings
-          cargo test -p dodai-shaders --features gpu
       # Slices must compile alone: charts-only users get no components.
       - name: gpui feature slices
         if: matrix.crate == 'dodai-gpui'

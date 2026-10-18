@@ -1,0 +1,20 @@
+[package]
+name         = "dodai-shaders-gpu"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version = "1.88"
+description  = "Run the dodai-shaders catalogue on the GPU (wgpu compute). The shaders are the same Rust sources, compiled to WGSL by rust-gpu"
+keywords     = ["shaders", "wgpu", "rust-gpu", "gpu", "design-system"]
+categories   = ["graphics", "gui"]
+
+[dependencies]
+dodai-shaders = { workspace = true }
+wgpu     = { version = "30.0.1", default-features = false, features = ["std", "parking_lot", "wgsl", "metal", "vulkan", "dx12"] }
+pollster = "0.4"
+bytemuck = { version = "1.24", features = ["derive"] }
+
+[dev-dependencies]
+dodai-shaders = { workspace = true }

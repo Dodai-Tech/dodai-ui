@@ -1,0 +1,17 @@
+[package]
+name         = "dodai-shaders-kernels"
+version.workspace      = true
+edition      = "2024"
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+description  = "GPU kernels for dodai-shaders: the same Rust shader sources, compiled to WGSL with rust-gpu"
+publish      = false
+
+[lints.rust]
+unexpected_cfgs = { level = "allow", check-cfg = ['cfg(target_arch, values("spirv"))'] }
+
+[dependencies]
+spirv-std = "0.11.0"
+glam      = { version = "0.34", default-features = false, features = ["bytemuck"] }
+bytemuck  = { version = "1.24.0", features = ["derive"] }

@@ -1,7 +1,7 @@
 //! Renders every shader on the CPU and the GPU and compares them.
-//! `cargo run --release -p dodai-shaders --features gpu --example parity [w h]`
-use dodai_shaders::gpu::Gpu;
+//! `cargo run --release -p dodai-shaders-gpu --example parity [w h]`
 use dodai_shaders::{catalog, render, Ctx, ShaderPalette};
+use dodai_shaders_gpu::Gpu;
 use std::time::Instant;
 
 fn main() {
