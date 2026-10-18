@@ -197,6 +197,10 @@ const KNIGHT: [[u32; 8]; 10] = spr([
     "..gggg..", ".gWWWWg.", ".gWKKWg.", ".gWWWWg.", "..RRRR..", ".RRRRRR.", ".SRRRRS.", "..BBBB..",
     "..B..B..", "..K..K..",
 ]);
+const KNIGHT2: [[u32; 8]; 10] = spr([
+    "..gggg..", ".gWWWWg.", ".gWKKWg.", ".gWWWWg.", "..RRRR..", ".RRRRRR.", ".SRRRRS.", "..BBBB..",
+    ".B....B.", ".K....K.",
+]);
 
 const SLIME: [[u32; 9]; 6] = spr([
     "...GGG...",
@@ -614,15 +618,20 @@ pub fn px_dungeon(uv: Vec2, c: &Ctx) -> Vec3 {
         }
     }
     // knight and slimes
-    let kx = vw * 0.5 + (t * 0.6).sin() * vw * 0.3;
-    let kb = if (t * 6.0) % 2.0 < 1.0 { 0.0 } else { -1.0 };
-    if let Some(cc) = blit(KNIGHT, x, y, kx, 86.0 + kb, (t * 0.6).cos() < 0.0) {
+    // the knight roams the whole room on a looping path, facing where he walks
+    let kx = vw * 0.5 + (t * 0.45).sin() * vw * 0.38;
+    let ky = 66.0 + ((t * 0.31 + 1.0).sin() * 0.5 + 0.5) * 52.0;
+    let step = (t * 5.0) % 2.0 < 1.0;
+    let kb = if step { 0.0 } else { -1.0 };
+    let face_left = (t * 0.45).cos() < 0.0;
+    let kn = if step { KNIGHT } else { KNIGHT2 };
+    if let Some(cc) = blit(kn, x, y, kx, ky + kb, face_left) {
         col = cc;
     }
     for i in 0..2 {
         let fi = i as f32;
         let hop = -(t * 3.0 + fi * 2.0).sin().abs() * 8.0;
-        let sx = vw * (0.2 + fi * 0.6);
+        let sx = vw * (0.2 + fi * 0.6) + (t * 0.4 + fi * 3.0).sin() * 22.0;
         if let Some(cc) = blit(SLIME, x, y, sx, 108.0 + hop, false) {
             col = cc;
         }
@@ -654,6 +663,9 @@ pub fn px_dungeon(uv: Vec2, c: &Ctx) -> Vec3 {
             col = rgb(70, 44, 36);
         }
     }
+    // the knight carries a lantern
+    let kd = p - vec2(kx + 4.0, ky + 5.0);
+    light += 0.9 / (1.0 + kd.dot(kd) / (260.0 * (1.0 + 0.15 * (t * 13.0).sin())));
     let lv = (light * 4.0 + bayer4(x as i32, y as i32))
         .floor()
         .clamp(0.0, 4.0)
