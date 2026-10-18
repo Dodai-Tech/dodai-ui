@@ -9,6 +9,89 @@ use gpui::{
     Render, RenderOnce, SharedString, Styled, Window,
 };
 
+/// Border of a section/panel: thickness and strength. Reusable value type;
+/// set it per panel with [`Panel::border`] or for every panel with
+/// [`set_section_border`].
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct BorderStyle {
+    /// Line thickness in px (`0` = no border).
+    pub width: f32,
+    /// Colour strength `0..=1` (multiplies the theme border's alpha).
+    pub opacity: f32,
+}
+
+impl BorderStyle {
+    /// Barely-there hairline.
+    pub const SUBTLE: BorderStyle = BorderStyle {
+        width: 0.75,
+        opacity: 0.45,
+    };
+    /// Default for sections: thin and soft.
+    pub const THIN: BorderStyle = BorderStyle {
+        width: 1.0,
+        opacity: 0.6,
+    };
+    /// The theme's own border, unchanged strength.
+    pub const NORMAL: BorderStyle = BorderStyle {
+        width: 1.5,
+        opacity: 1.0,
+    };
+    /// Heavy frame.
+    pub const BOLD: BorderStyle = BorderStyle {
+        width: 3.0,
+        opacity: 1.0,
+    };
+    pub const NONE: BorderStyle = BorderStyle {
+        width: 0.0,
+        opacity: 0.0,
+    };
+
+    pub fn new(width: f32, opacity: f32) -> Self {
+        Self { width, opacity }.clamped()
+    }
+    fn clamped(self) -> Self {
+        Self {
+            width: self.width.clamp(0.0, 8.0),
+            opacity: self.opacity.clamp(0.0, 1.0),
+        }
+    }
+    /// Apply to a paint style (pure).
+    pub fn apply(self, mut s: ShapeStyle) -> ShapeStyle {
+        let b = self.clamped();
+        s.stroke = match s.stroke {
+            Some(c) if b.width > 0.0 && b.opacity > 0.0 => Some(gpui::Hsla {
+                a: c.a * b.opacity,
+                ..c
+            }),
+            _ => None,
+        };
+        s.stroke_width = b.width;
+        s
+    }
+}
+
+impl Default for BorderStyle {
+    fn default() -> Self {
+        Self::THIN
+    }
+}
+
+struct SectionBorderGlobal(BorderStyle);
+impl gpui::Global for SectionBorderGlobal {}
+
+/// Border used by every [`Panel`] without its own [`Panel::border`].
+pub fn section_border(cx: &App) -> BorderStyle {
+    cx.try_global::<SectionBorderGlobal>()
+        .map(|g| g.0)
+        .unwrap_or_default()
+}
+
+/// Set the border of every panel and repaint.
+pub fn set_section_border(cx: &mut App, b: BorderStyle) {
+    cx.set_global(SectionBorderGlobal(b.clamped()));
+    cx.refresh_windows();
+}
+
 /// Paint style of a panel (pure).
 pub fn panel_style(theme: &Theme, focused: bool) -> ShapeStyle {
     let p = theme.panel(focused);
@@ -32,11 +115,13 @@ pub struct Panel {
     children: Vec<AnyElement>,
     refine: Option<Box<dyn FnOnce(gpui::Div) -> gpui::Div>>,
     corners: Option<dodai_core::Corners>,
+    border: Option<BorderStyle>,
 }
 
 impl Panel {
     pub fn new() -> Self {
         Self {
+            border: None,
             title: None,
             corners: None,
             focused: false,
@@ -74,6 +159,11 @@ impl Panel {
         self.corners = Some(c);
         self
     }
+    /// Border thickness/strength for this panel (default: [`section_border`]).
+    pub fn border(mut self, b: BorderStyle) -> Self {
+        self.border = Some(b);
+        self
+    }
     /// Highlight border (and glow when enabled).
     pub fn focused(mut self, f: bool) -> Self {
         self.focused = f;
@@ -106,7 +196,8 @@ impl Panel {
         if let Some(c) = self.corners {
             shape.corners = c;
         }
-        let mut d = shaped(&shape, panel_style(&t, self.focused))
+        let border = self.border.unwrap_or_else(|| section_border(cx));
+        let mut d = shaped(&shape, border.apply(panel_style(&t, self.focused)))
             .flex()
             .flex_col()
             .min_w_0()
@@ -277,6 +368,24 @@ impl Render for DodaiTooltip {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn border_style_sets_width_and_softens_colour() {
+        let t = themes::cyberpunk::night_city();
+        let base = panel_style(&t, false);
+        let s = BorderStyle::new(0.5, 0.5).apply(base);
+        assert_eq!(s.stroke_width, 0.5);
+        assert!((s.stroke.unwrap().a - base.stroke.unwrap().a * 0.5).abs() < 1e-5);
+        assert!(BorderStyle::NONE.apply(base).stroke.is_none());
+        assert_eq!(
+            BorderStyle::new(99.0, 5.0),
+            BorderStyle {
+                width: 8.0,
+                opacity: 1.0
+            }
+        );
+    }
+
     use crate::testing::light_rounded;
     use dodai_core::themes;
 

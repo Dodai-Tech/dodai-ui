@@ -1184,6 +1184,43 @@ impl Render for Showcase {
                     .child(Muted::new("key: l")),
             )
             .child({
+                let b = dodai_gpui::section_border(cx);
+                row()
+                    .child(Label::new("Section border"))
+                    .child(
+                        div().w(px(160.0)).child(
+                            Slider::new("sb-width", b.width)
+                                .range(0.0, 4.0)
+                                .step(0.25)
+                                .show_value(true)
+                                .format(|v| format!("{v:.2}px"))
+                                .on_change(move |v, _, cx| {
+                                    let b = dodai_gpui::section_border(cx);
+                                    dodai_gpui::set_section_border(
+                                        cx,
+                                        dodai_gpui::BorderStyle::new(v, b.opacity),
+                                    );
+                                }),
+                        ),
+                    )
+                    .child(
+                        div().w(px(160.0)).child(
+                            Slider::new("sb-opacity", b.opacity)
+                                .range(0.0, 1.0)
+                                .step(0.05)
+                                .show_value(true)
+                                .format(|v| format!("{v:.2}"))
+                                .on_change(move |v, _, cx| {
+                                    let b = dodai_gpui::section_border(cx);
+                                    dodai_gpui::set_section_border(
+                                        cx,
+                                        dodai_gpui::BorderStyle::new(b.width, v),
+                                    );
+                                }),
+                        ),
+                    )
+            })
+            .child({
                 use dodai_core::Corners as C;
                 let cur = dodai_gpui::corners(cx);
                 let chip = |id: &'static str, label: &'static str, c: C| {
