@@ -168,7 +168,7 @@ pub use overlay::{Dialog, DialogCard};
 pub use paint::Playback;
 pub use paint::{shaped, ShapeStyle};
 pub use panel::{
-    section_border, set_section_border, BorderStyle, DodaiTooltip, Edge, InputBox, Panel,
+    section_border, set_section_border, BorderStyle, Corner, DodaiTooltip, InputBox, Panel,
 };
 #[cfg(feature = "components")]
 pub use picker::{

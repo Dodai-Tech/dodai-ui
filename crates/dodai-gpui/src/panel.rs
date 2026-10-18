@@ -18,61 +18,44 @@ pub struct BorderStyle {
     pub width: f32,
     /// Colour strength `0..=1` (multiplies the theme border's alpha).
     pub opacity: f32,
-    /// Edge drawn as the accent (theme primary, e.g. the yellow line); the
+    /// Corner that carries the accent (theme primary, e.g. the yellow line); the
     /// other three edges keep the grey border. `None` = plain border all round.
-    pub accent: Option<Edge>,
+    pub accent: Option<Corner>,
     /// Thickness of the accent line in px.
     pub accent_width: f32,
 }
 
-/// A side of a box.
+/// A corner of a box (where the accent bracket sits).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Edge {
-    Top,
-    Right,
-    Bottom,
-    Left,
-    /// Corner brackets: an L-shaped accent in the corner.
+pub enum Corner {
     TopLeft,
     TopRight,
     BottomLeft,
     BottomRight,
 }
 
-impl Edge {
-    /// The opposite side/corner (where the grey line goes).
-    pub fn opposite(self) -> Edge {
+impl Corner {
+    pub const ALL: [Corner; 4] = [
+        Corner::TopLeft,
+        Corner::TopRight,
+        Corner::BottomLeft,
+        Corner::BottomRight,
+    ];
+    /// The diagonally opposite corner (where the grey bracket goes).
+    pub fn opposite(self) -> Corner {
         match self {
-            Edge::Top => Edge::Bottom,
-            Edge::Bottom => Edge::Top,
-            Edge::Left => Edge::Right,
-            Edge::Right => Edge::Left,
-            Edge::TopLeft => Edge::BottomRight,
-            Edge::BottomRight => Edge::TopLeft,
-            Edge::TopRight => Edge::BottomLeft,
-            Edge::BottomLeft => Edge::TopRight,
+            Corner::TopLeft => Corner::BottomRight,
+            Corner::BottomRight => Corner::TopLeft,
+            Corner::TopRight => Corner::BottomLeft,
+            Corner::BottomLeft => Corner::TopRight,
         }
     }
-    pub const ALL: [Edge; 8] = [
-        Edge::Top,
-        Edge::Right,
-        Edge::Bottom,
-        Edge::Left,
-        Edge::TopLeft,
-        Edge::TopRight,
-        Edge::BottomLeft,
-        Edge::BottomRight,
-    ];
     pub fn name(self) -> &'static str {
         match self {
-            Edge::Top => "Top",
-            Edge::Right => "Right",
-            Edge::Bottom => "Bottom",
-            Edge::Left => "Left",
-            Edge::TopLeft => "Top left",
-            Edge::TopRight => "Top right",
-            Edge::BottomLeft => "Bottom left",
-            Edge::BottomRight => "Bottom right",
+            Corner::TopLeft => "Top left",
+            Corner::TopRight => "Top right",
+            Corner::BottomLeft => "Bottom left",
+            Corner::BottomRight => "Bottom right",
         }
     }
 }
@@ -123,7 +106,7 @@ impl BorderStyle {
         .clamped()
     }
     /// Same border with the accent line on `edge` (or none).
-    pub fn accent(mut self, edge: Option<Edge>) -> Self {
+    pub fn accent(mut self, edge: Option<Corner>) -> Self {
         self.accent = edge;
         self
     }
@@ -273,68 +256,40 @@ impl ParentElement for Panel {
     }
 }
 
-/// One line (edge) or L-bracket (corner) of `w` px painted at `edge`.
-/// `i0`/`i1` pull the ends away from cut or rounded corners (for a bracket
-/// `i0` moves the arms off the corner).
-fn accent_mark(edge: Edge, c: gpui::Hsla, w: f32, i0: f32, i1: f32) -> gpui::Div {
+/// L-bracket of `w` px in `corner`, arms pulled `inset` px off a cut or
+/// rounded corner.
+fn accent_mark(corner: Corner, c: gpui::Hsla, w: f32, inset: f32) -> gpui::Div {
     const ARM: f32 = 28.0;
-    let bar = || div().absolute().bg(c);
-    let wrap = || div().absolute().size_full();
-    let bracket = |top: bool, left: bool| {
-        let h = bar().w(px(ARM)).h(px(w));
-        let v = bar().h(px(ARM)).w(px(w));
-        let (h, v) = if top {
-            (h.top_0().left(px(i0)), v.top(px(i0)))
-        } else {
-            (h.bottom_0().left(px(i0)), v.bottom(px(i0)))
-        };
-        let (h, v) = if left {
-            (h, v.left_0())
-        } else {
-            (h.left_auto().right(px(i0)), v.right_0())
-        };
-        wrap().child(h).child(v)
+    let top = matches!(corner, Corner::TopLeft | Corner::TopRight);
+    let left = matches!(corner, Corner::TopLeft | Corner::BottomLeft);
+    let h = div().absolute().bg(c).w(px(ARM)).h(px(w));
+    let v = div().absolute().bg(c).h(px(ARM)).w(px(w));
+    let (h, v) = if top {
+        (h.top_0(), v.top(px(inset)))
+    } else {
+        (h.bottom_0(), v.bottom(px(inset)))
     };
-    match edge {
-        Edge::TopLeft => bracket(true, true),
-        Edge::TopRight => bracket(true, false),
-        Edge::BottomLeft => bracket(false, true),
-        Edge::BottomRight => bracket(false, false),
-        Edge::Top => wrap().child(bar().top_0().left(px(i0)).right(px(i1)).h(px(w))),
-        Edge::Bottom => wrap().child(bar().bottom_0().left(px(i0)).right(px(i1)).h(px(w))),
-        Edge::Left => wrap().child(bar().left_0().top(px(i0)).bottom(px(i1)).w(px(w))),
-        Edge::Right => wrap().child(bar().right_0().top(px(i0)).bottom(px(i1)).w(px(w))),
-    }
+    let (h, v) = if left {
+        (h.left(px(inset)), v.left_0())
+    } else {
+        (h.right(px(inset)), v.right_0())
+    };
+    div().absolute().size_full().child(h).child(v)
 }
 
-/// How far a corner pulls a line in: the radius when that corner is rounded
-/// or cut, else 0.
-fn corner_inset(shape: &dodai_core::Shape, top: bool, left: bool) -> f32 {
-    let cut = match (top, left) {
-        (true, true) => shape.corners.top_left,
-        (true, false) => shape.corners.top_right,
-        (false, true) => shape.corners.bottom_left,
-        (false, false) => shape.corners.bottom_right,
+/// How far a corner pulls the bracket in: the radius when that corner is
+/// rounded or cut, else 0.
+fn corner_inset(shape: &dodai_core::Shape, corner: Corner) -> f32 {
+    let cut = match corner {
+        Corner::TopLeft => shape.corners.top_left,
+        Corner::TopRight => shape.corners.top_right,
+        Corner::BottomLeft => shape.corners.bottom_left,
+        Corner::BottomRight => shape.corners.bottom_right,
     };
     match shape.kind() {
         dodai_core::ShapeKind::Rounded => shape.radius,
         dodai_core::ShapeKind::Chamfered if cut => shape.radius,
         _ => 0.0,
-    }
-}
-
-/// Insets (start, end) for `edge` on `shape`.
-fn mark_insets(shape: &dodai_core::Shape, edge: Edge) -> (f32, f32) {
-    let ci = |t, l| corner_inset(shape, t, l);
-    match edge {
-        Edge::Top => (ci(true, true), ci(true, false)),
-        Edge::Bottom => (ci(false, true), ci(false, false)),
-        Edge::Left => (ci(true, true), ci(false, true)),
-        Edge::Right => (ci(true, false), ci(false, false)),
-        Edge::TopLeft => (ci(true, true), 0.0),
-        Edge::TopRight => (ci(true, false), 0.0),
-        Edge::BottomLeft => (ci(false, true), 0.0),
-        Edge::BottomRight => (ci(false, false), 0.0),
     }
 }
 
@@ -363,11 +318,14 @@ impl Panel {
             let accent = hsla(t.panel(true).border);
             if let Some(g) = grey {
                 let o = edge.opposite();
-                let (i0, i1) = mark_insets(&shape, o);
-                d = d.child(accent_mark(o, g, b.width, i0, i1));
+                d = d.child(accent_mark(o, g, b.width, corner_inset(&shape, o)));
             }
-            let (i0, i1) = mark_insets(&shape, edge);
-            d = d.child(accent_mark(edge, accent, b.accent_width, i0, i1));
+            d = d.child(accent_mark(
+                edge,
+                accent,
+                b.accent_width,
+                corner_inset(&shape, edge),
+            ));
         }
         // Absolute accent marks are positioned against the padding box in gpui,
         // so with an accent the padding moves to an inner wrapper and the marks
@@ -567,8 +525,10 @@ mod tests {
         assert!(BorderStyle::NONE.apply(base).stroke.is_none());
         let c = BorderStyle::new(99.0, 5.0);
         assert_eq!((c.width, c.opacity), (8.0, 1.0));
-        let a = BorderStyle::THIN.accent(Some(Edge::Top)).accent_width(99.0);
-        assert_eq!((a.accent, a.accent_width), (Some(Edge::Top), 8.0));
+        let a = BorderStyle::THIN
+            .accent(Some(Corner::TopLeft))
+            .accent_width(99.0);
+        assert_eq!((a.accent, a.accent_width), (Some(Corner::TopLeft), 8.0));
     }
 
     use crate::testing::light_rounded;

@@ -2184,9 +2184,9 @@ impl Render for Showcase {
                         r
                     })
                     .child({
-                        use dodai_gpui::{BorderStyle as B, Edge};
+                        use dodai_gpui::{BorderStyle as B, Corner};
                         let mut r = row();
-                        for e in Edge::ALL {
+                        for e in Corner::ALL {
                             r = r.child(
                                 div().flex_1().min_w(px(110.0)).child(
                                     Panel::new()
@@ -2198,11 +2198,11 @@ impl Render for Showcase {
                         r
                     })
                     .child({
-                        use dodai_gpui::{BorderStyle as B, Edge};
+                        use dodai_gpui::{BorderStyle as B, Corner};
                         let cur = dodai_gpui::section_border(cx);
                         let mut r = row().child(Label::new("Accent line (all sections)"));
-                        let mut opts: Vec<Option<Edge>> = vec![None];
-                        opts.extend(Edge::ALL.map(Some));
+                        let mut opts: Vec<Option<Corner>> = vec![None];
+                        opts.extend(Corner::ALL.map(Some));
                         for (i, o) in opts.into_iter().enumerate() {
                             r = r.child(
                                 Button::new(
@@ -3295,7 +3295,7 @@ fn main() {
         if let Some(e) = std::env::var("DODAI_ACCENT")
             .ok()
             .and_then(|v| v.parse::<usize>().ok())
-            .and_then(|i| dodai_gpui::Edge::ALL.get(i).copied())
+            .and_then(|i| dodai_gpui::Corner::ALL.get(i).copied())
         {
             let b = dodai_gpui::section_border(cx);
             dodai_gpui::set_section_border(cx, b.accent(Some(e)));
