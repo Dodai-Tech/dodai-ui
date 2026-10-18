@@ -2225,19 +2225,35 @@ impl Render for Showcase {
                     .child({
                         let b = dodai_gpui::section_border(cx);
                         row()
-                            .child(Label::new("All sections"))
+                            .child(Label::new("Grey / yellow thickness"))
                             .child(
                                 div().w(px(180.0)).child(
                                     Slider::new("bd-width", b.width)
                                         .range(0.0, 4.0)
                                         .step(0.25)
                                         .show_value(true)
-                                        .format(|v| format!("{v:.2}px"))
+                                        .format(|v| format!("grey {v:.2}px"))
                                         .on_change(move |v, _, cx| {
                                             let b = dodai_gpui::section_border(cx);
                                             dodai_gpui::set_section_border(
                                                 cx,
-                                                dodai_gpui::BorderStyle::new(v, b.opacity),
+                                                dodai_gpui::BorderStyle { width: v.clamp(0.0, 8.0), ..b },
+                                            );
+                                        }),
+                                ),
+                            )
+                            .child(
+                                div().w(px(180.0)).child(
+                                    Slider::new("bd-accent", b.accent_width)
+                                        .range(0.5, 6.0)
+                                        .step(0.25)
+                                        .show_value(true)
+                                        .format(|v| format!("yellow {v:.2}px"))
+                                        .on_change(move |v, _, cx| {
+                                            let b = dodai_gpui::section_border(cx);
+                                            dodai_gpui::set_section_border(
+                                                cx,
+                                                b.accent_width(v),
                                             );
                                         }),
                                 ),
@@ -2253,7 +2269,7 @@ impl Render for Showcase {
                                             let b = dodai_gpui::section_border(cx);
                                             dodai_gpui::set_section_border(
                                                 cx,
-                                                dodai_gpui::BorderStyle::new(b.width, v),
+                                                dodai_gpui::BorderStyle { opacity: v.clamp(0.0, 1.0), ..b },
                                             );
                                         }),
                                 ),
