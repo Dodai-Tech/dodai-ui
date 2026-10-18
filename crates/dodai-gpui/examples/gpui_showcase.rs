@@ -130,7 +130,7 @@ fn caps(title: &str) -> Caps {
             c(false, false, false)
         }
         // Raw / non-animated components only.
-        "Tooltip" | "Input" | "Collapsible sidebar" => c(false, false, false),
+        "Tooltip" | "Input" | "Collapsible sidebar" | "Border" => c(false, false, false),
         // Single animated component.
         "Search view" | "Tag field" => c(true, false, false),
         // Value-in components.
@@ -2205,6 +2205,79 @@ impl Render for Showcase {
                     .child(shape_gallery)
                     .into_any_element(),
                 "Corner shape",
+            ),
+            (
+                "Shape",
+                "Border",
+                section!("Border")
+                    .child(Muted::new(
+                        "BorderStyle { width, opacity }: set per panel with `.border(..)`, or for every panel with `set_section_border`. Sections use THIN by default.",
+                    ))
+                    .child({
+                        use dodai_gpui::BorderStyle as B;
+                        let mut r = row();
+                        for (name, b) in [
+                            ("NONE", B::NONE),
+                            ("SUBTLE", B::SUBTLE),
+                            ("THIN (default)", B::THIN),
+                            ("NORMAL", B::NORMAL),
+                            ("BOLD", B::BOLD),
+                        ] {
+                            r = r.child(
+                                div().flex_1().min_w(px(140.0)).child(
+                                    Panel::new().border(b).child(
+                                        col()
+                                            .child(Label::new(name))
+                                            .child(Muted::new(format!(
+                                                "{:.2}px · {:.0}%",
+                                                b.width,
+                                                b.opacity * 100.0
+                                            ))),
+                                    ),
+                                ),
+                            );
+                        }
+                        r
+                    })
+                    .child({
+                        let b = dodai_gpui::section_border(cx);
+                        row()
+                            .child(Label::new("All sections"))
+                            .child(
+                                div().w(px(180.0)).child(
+                                    Slider::new("bd-width", b.width)
+                                        .range(0.0, 4.0)
+                                        .step(0.25)
+                                        .show_value(true)
+                                        .format(|v| format!("{v:.2}px"))
+                                        .on_change(move |v, _, cx| {
+                                            let b = dodai_gpui::section_border(cx);
+                                            dodai_gpui::set_section_border(
+                                                cx,
+                                                dodai_gpui::BorderStyle::new(v, b.opacity),
+                                            );
+                                        }),
+                                ),
+                            )
+                            .child(
+                                div().w(px(180.0)).child(
+                                    Slider::new("bd-opacity", b.opacity)
+                                        .range(0.0, 1.0)
+                                        .step(0.05)
+                                        .show_value(true)
+                                        .format(|v| format!("{v:.2}"))
+                                        .on_change(move |v, _, cx| {
+                                            let b = dodai_gpui::section_border(cx);
+                                            dodai_gpui::set_section_border(
+                                                cx,
+                                                dodai_gpui::BorderStyle::new(b.width, v),
+                                            );
+                                        }),
+                                ),
+                            )
+                    })
+                    .into_any_element(),
+                "Border",
             ),
             (
                 "Actions",
