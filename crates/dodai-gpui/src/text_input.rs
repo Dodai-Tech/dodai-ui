@@ -74,6 +74,29 @@ pub fn bind_keys(cx: &mut App) {
 // ---- pure text math (byte offsets into `&str`) -------------------------------
 
 /// Offset of the character boundary before `off` (0 at the start).
+/// Glyph drawn per character of a password field.
+const MASK: char = '•';
+
+/// Byte offset into the line as drawn: `col` (bytes of `text`) → masked bytes.
+fn to_disp(masked: bool, text: &str, col: usize) -> usize {
+    if masked {
+        text[..col.min(text.len())].chars().count() * MASK.len_utf8()
+    } else {
+        col
+    }
+}
+
+/// Inverse of [`to_disp`]: drawn byte offset → byte offset into `text`.
+fn from_disp(masked: bool, text: &str, d: usize) -> usize {
+    if masked {
+        text.char_indices()
+            .nth(d / MASK.len_utf8())
+            .map_or(text.len(), |(i, _)| i)
+    } else {
+        d
+    }
+}
+
 pub fn prev_boundary(s: &str, off: usize) -> usize {
     s[..off.min(s.len())]
         .char_indices()
@@ -148,6 +171,7 @@ pub struct TextInput {
     layout: Option<Layout>,
     selecting: bool,
     rows: Option<usize>,
+    masked: bool,
     disabled: bool,
     on_change: Option<ChangeHandler>,
     on_submit: Option<SubmitHandler>,
@@ -165,6 +189,7 @@ impl TextInput {
             layout: None,
             selecting: false,
             rows: None,
+            masked: false,
             disabled: false,
             on_change: None,
             on_submit: None,
@@ -185,6 +210,11 @@ impl TextInput {
     /// Textarea: Enter inserts a newline and the box is `rows` lines tall.
     pub fn multiline(mut self, rows: usize) -> Self {
         self.rows = Some(rows.max(1));
+        self
+    }
+    /// Password field: shows `•` per character and blocks copy/cut.
+    pub fn password(mut self, on: bool) -> Self {
+        self.masked = on;
         self
     }
     pub fn disabled(mut self, d: bool) -> Self {
@@ -312,14 +342,14 @@ impl TextInput {
         }
     }
     fn copy(&mut self, _: &Copy, _: &mut Window, cx: &mut Context<Self>) {
-        if !self.selected.is_empty() {
+        if !self.selected.is_empty() && !self.masked {
             cx.write_to_clipboard(ClipboardItem::new_string(
                 self.content[self.selected.clone()].to_string(),
             ));
         }
     }
     fn cut(&mut self, _: &Cut, w: &mut Window, cx: &mut Context<Self>) {
-        if !self.selected.is_empty() {
+        if !self.selected.is_empty() && !self.masked {
             self.copy(&Copy, w, cx);
             self.replace_text_in_range(None, "", w, cx);
         }
@@ -353,7 +383,13 @@ impl TextInput {
         let rel: f32 = ((p.y - l.bounds.top()) / l.line_height).floor();
         let i = (rel.max(0.0) as usize).min(l.lines.len() - 1);
         let (start, line) = &l.lines[i];
-        start + line.closest_index_for_x(p.x - l.bounds.left())
+        let text = lines_of(&self.content).get(i).map_or("", |l| l.1);
+        start
+            + from_disp(
+                self.masked,
+                text,
+                line.closest_index_for_x(p.x - l.bounds.left()),
+            )
     }
 
     fn offset_from_utf16(&self, offset: usize) -> usize {
@@ -492,7 +528,8 @@ impl EntityInputHandler for TextInput {
         let r = self.range_from_utf16(&r);
         let (li, col) = line_col(&self.content, r.start);
         let (_, line) = l.lines.get(li)?;
-        let x = line.x_for_index(col);
+        let text = lines_of(&self.content).get(li).map_or("", |l| l.1);
+        let x = line.x_for_index(to_disp(self.masked, text, col));
         let top = bounds.top() + l.line_height * li as f32;
         Some(Bounds::new(
             point(bounds.left() + x, top),
@@ -598,8 +635,13 @@ impl Element for TextElement {
                 hsla(tokens.text)
             };
             for (start, text) in lines_of(&input.content) {
+                let shown: String = if input.masked {
+                    MASK.to_string().repeat(text.chars().count())
+                } else {
+                    text.to_string()
+                };
                 let run = TextRun {
-                    len: text.len(),
+                    len: shown.len(),
                     font: style.font(),
                     color,
                     background_color: None,
@@ -614,7 +656,7 @@ impl Element for TextElement {
                 lines.push((
                     start,
                     window.text_system().shape_line(
-                        SharedString::from(text.to_string()),
+                        SharedString::from(shown),
                         font_size,
                         runs,
                         None,
@@ -631,7 +673,8 @@ impl Element for TextElement {
                 let x = if empty {
                     px(0.)
                 } else {
-                    lines[li].1.x_for_index(col)
+                    let text = lines_of(&input.content).get(li).map_or("", |l| l.1);
+                    lines[li].1.x_for_index(to_disp(input.masked, text, col))
                 };
                 cursor = Some(fill(
                     Bounds::new(
@@ -642,17 +685,22 @@ impl Element for TextElement {
                 ));
             } else {
                 for (i, (start, line)) in lines.iter().enumerate() {
-                    let end = start + input.content.split('\n').nth(i).map_or(0, str::len);
+                    let ltext = input.content.split('\n').nth(i).unwrap_or("");
+                    let end = start + ltext.len();
                     let (a, b) = (sel.start.max(*start), sel.end.min(end));
                     if a < b {
+                        let (a, b) = (
+                            to_disp(input.masked, ltext, a - start),
+                            to_disp(input.masked, ltext, b - start),
+                        );
                         selection.push(fill(
                             Bounds::from_corners(
                                 point(
-                                    bounds.left() + line.x_for_index(a - start),
+                                    bounds.left() + line.x_for_index(a),
                                     bounds.top() + lh * i as f32,
                                 ),
                                 point(
-                                    bounds.left() + line.x_for_index(b - start),
+                                    bounds.left() + line.x_for_index(b),
                                     bounds.top() + lh * (i + 1) as f32,
                                 ),
                             ),
@@ -791,6 +839,17 @@ mod tests {
         assert_eq!(prev_boundary(s, 7), 6);
         assert_eq!(prev_boundary(s, 3), 1);
         assert_eq!(prev_boundary(s, 0), 0);
+    }
+
+    #[test]
+    fn mask_offsets_round_trip() {
+        let s = "aé日b";
+        for col in [0, 1, 3, 6, 7] {
+            let d = to_disp(true, s, col);
+            assert_eq!(from_disp(true, s, d), col);
+        }
+        assert_eq!(to_disp(false, s, 3), 3);
+        assert_eq!(to_disp(true, s, 7), 4 * MASK.len_utf8());
     }
 
     #[test]

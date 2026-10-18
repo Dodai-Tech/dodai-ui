@@ -50,6 +50,9 @@ struct Showcase {
     search: Entity<TextInput>,
     in_name: Entity<TextInput>,
     in_notes: Entity<TextInput>,
+    pw: Entity<TextInput>,
+    dt_filter: Entity<TextInput>,
+    date_range: dodai_gpui::DateRange,
     cat: usize,
     cat_count: usize,
     /// Selected subsection inside the current category (`None` = all).
@@ -130,9 +133,21 @@ fn caps(title: &str) -> Caps {
             c(false, false, false)
         }
         // Raw / non-animated components only.
-        "Tooltip" | "Input" | "Collapsible sidebar" | "Border" | "Glow · Scanlines" => {
-            c(false, false, false)
-        }
+        "Tooltip"
+        | "Input"
+        | "Collapsible sidebar"
+        | "Border"
+        | "Glow · Scanlines"
+        | "Password · OTP"
+        | "Form field"
+        | "Toggle group · Checkbox group"
+        | "Date range"
+        | "Data table"
+        | "Code block · Markdown"
+        | "Image · Avatar group"
+        | "Circular progress · Banner"
+        | "Scroll area"
+        | "Popover · Hover card · Context menu · Dropdown" => c(false, false, false),
         // Single animated component.
         "Search view" | "Tag field" => c(true, false, false),
         // Value-in components.
@@ -1320,6 +1335,140 @@ impl Render for Showcase {
                 },
             ));
 
+        // ── new components ─────────────────────────────────────────────
+        let m_range = me.clone();
+        let range_picker = row()
+            .child(
+                DatePicker::new("date-range", y, mo)
+                    .range(self.date_range)
+                    .on_select({
+                        let m = m_range.clone();
+                        move |d, _, cx| {
+                            m.update(cx, |s, cx| {
+                                s.date_range = dodai_gpui::range_pick(s.date_range, d);
+                                cx.notify()
+                            })
+                        }
+                    })
+                    .on_month({
+                        let m = m_range.clone();
+                        move |y, mo, _, cx| {
+                            m.update(cx, |s, cx| {
+                                s.date.0 = y;
+                                s.date.1 = mo;
+                                cx.notify()
+                            })
+                        }
+                    }),
+            )
+            .child(Muted::new(match self.date_range.span() {
+                Some((a, b)) => format!(
+                    "{}-{:02}-{:02} → {}-{:02}-{:02}",
+                    a.year, a.month, a.day, b.year, b.month, b.day
+                ),
+                None => match self.date_range.start {
+                    Some(a) => format!("from {}-{:02}-{:02}: pick the end", a.year, a.month, a.day),
+                    None => "click a start day, then an end day".to_string(),
+                },
+            }));
+        let dt_rows: std::rc::Rc<Vec<Vec<SharedString>>> = std::rc::Rc::new(
+            (0..300)
+                .map(|i| {
+                    let roles = ["Engineer", "Designer", "Analyst", "Manager"];
+                    let regions = ["EMEA", "APAC", "AMER"];
+                    vec![
+                        SharedString::from(format!("User {:03}", (i * 37) % 300)),
+                        SharedString::from(roles[i % 4]),
+                        SharedString::from(regions[(i / 3) % 3]),
+                        SharedString::from(format!("{}", (i * 7919) % 1000)),
+                    ]
+                })
+                .collect(),
+        );
+        let dt_filter_text = self.dt_filter.read(cx).text().to_string();
+        let data_table = col()
+            .child(
+                row()
+                    .child(
+                        div()
+                            .flex_1()
+                            .min_w(px(200.0))
+                            .child(self.dt_filter.clone()),
+                    )
+                    .child(Muted::new(
+                        "click a header to sort · drag a column edge · click rows to select",
+                    )),
+            )
+            .child(
+                dodai_gpui::DataTable::new("dt")
+                    .columns([
+                        dodai_gpui::Column::new("Name").width(160.0),
+                        dodai_gpui::Column::new("Role").width(140.0),
+                        dodai_gpui::Column::new("Region").width(110.0),
+                        dodai_gpui::Column::new("Score").width(100.0).numeric(true),
+                    ])
+                    .rows_shared(dt_rows)
+                    .filter(dt_filter_text)
+                    .height(260.0),
+            );
+        let md_src = "# Markdown\n\nSupports **bold**, *italic*, `inline code` and [links](https://example.com).\n\n- headings and paragraphs\n- bullet and numbered lists\n- fenced code\n\n1. first\n2. second\n\n> quotes read muted\n\n```rust\nfn main() {\n    let n: u32 = 42; // answer\n    println!(\"{n}\");\n}\n```";
+        let sample = format!("{}/examples/assets/sample.png", env!("CARGO_MANIFEST_DIR"));
+        let m_ctx = me.clone();
+        let _ = m_ctx;
+        let popovers = row()
+            .child(
+                dodai_gpui::Popover::new("pop")
+                    .trigger(Button::new("pop-btn", "Popover").variant(ButtonVariant::Outline))
+                    .content(
+                        col()
+                            .child(Label::new("Popover"))
+                            .child(Muted::new("Click outside or press Esc to close."))
+                            .child(Button::new("pop-in", "Action")),
+                    )
+                    .width(240.0),
+            )
+            .child(
+                dodai_gpui::HoverCard::new("hc")
+                    .trigger(
+                        div()
+                            .px(px(8.0))
+                            .text_color(hsla(t.palette.link))
+                            .child("@hover-me"),
+                    )
+                    .content(
+                        row().child(dodai_gpui::Avatar::new("DD").size(40.0)).child(
+                            col()
+                                .child(Label::new("Dodai UI"))
+                                .child(Muted::new("Design system for Rust UIs")),
+                        ),
+                    ),
+            )
+            .child(
+                dodai_gpui::ContextMenu::new("ctx")
+                    .child(
+                        div()
+                            .px(px(24.0))
+                            .py(px(14.0))
+                            .border_1()
+                            .border_color(hsla(t.palette.border_strong))
+                            .text_color(hsla(t.palette.text_muted))
+                            .child("Right-click here"),
+                    )
+                    .items([
+                        dodai_gpui::MenuItem::new("Copy").shortcut("⌘C"),
+                        dodai_gpui::MenuItem::new("Paste").shortcut("⌘V"),
+                        dodai_gpui::MenuItem::separator(),
+                        dodai_gpui::MenuItem::new("Delete").danger(true),
+                    ]),
+            )
+            .child(dodai_gpui::DropdownMenu::new("dd", "Actions").items([
+                dodai_gpui::MenuItem::new("Rename"),
+                dodai_gpui::MenuItem::new("Duplicate"),
+                dodai_gpui::MenuItem::separator(),
+                dodai_gpui::MenuItem::new("Archive").disabled(true),
+                dodai_gpui::MenuItem::new("Delete").danger(true),
+            ]));
+
         let tree = TreeView::new(
             "tree",
             vec![
@@ -2350,6 +2499,100 @@ impl Render for Showcase {
                 "Tooltip",
             ),
             (
+                "Data display",
+                "Data table · sort filter select resize virtual scroll",
+                section!("Data table").child(data_table).into_any_element(),
+                "Data table",
+            ),
+            (
+                "Data display",
+                "Code block · Markdown · rich text",
+                section!("Code block · Markdown")
+                    .child(
+                        dodai_gpui::CodeBlock::new(
+                            "code",
+                            "use std::collections::HashMap;\n\n/// Count words.\nfn count(text: &str) -> HashMap<String, usize> {\n    let mut m = HashMap::new();\n    for w in text.split_whitespace() {\n        *m.entry(w.to_lowercase()).or_insert(0) += 1;\n    }\n    m // 42 buckets max\n}",
+                        )
+                        .language("rust"),
+                    )
+                    .child(dodai_gpui::Markdown::new("md", md_src))
+                    .into_any_element(),
+                "Code block · Markdown",
+            ),
+            (
+                "Data display",
+                "Image · media · Avatar group",
+                section!("Image · Avatar group")
+                    .child(
+                        row()
+                            .items_start()
+                            .child(
+                                dodai_gpui::Image::path(sample.clone())
+                                    .size(260.0, 160.0)
+                                    .caption("Image (cover)"),
+                            )
+                            .child(
+                                dodai_gpui::Image::path(sample.clone())
+                                    .size(260.0, 160.0)
+                                    .video(true)
+                                    .caption("Video poster"),
+                            )
+                            .child(
+                                dodai_gpui::Image::path(sample)
+                                    .size(160.0, 160.0)
+                                    .fit(dodai_gpui::ImageFit::Contain)
+                                    .caption("Contain"),
+                            ),
+                    )
+                    .child(
+                        row()
+                            .child(dodai_gpui::AvatarGroup::new(["AL", "BK", "CM", "DN"]))
+                            .child(dodai_gpui::AvatarGroup::new(["AL", "BK", "CM", "DN", "EO", "FP", "GQ"]).max(4))
+                            .child(dodai_gpui::AvatarGroup::new(["AL", "BK", "CM", "DN", "EO"]).max(3).size(28.0)),
+                    )
+                    .into_any_element(),
+                "Image · Avatar group",
+            ),
+            (
+                "Data display",
+                "Circular progress · Banner",
+                section!("Circular progress · Banner")
+                    .child(
+                        row()
+                            .child(dodai_gpui::CircularProgress::new(0.25))
+                            .child(dodai_gpui::CircularProgress::new(0.72).tone(Tone::Success).size(72.0).thickness(7.0))
+                            .child(dodai_gpui::CircularProgress::new(1.0).tone(Tone::Info).size(40.0).thickness(4.0))
+                            .child(dodai_gpui::CircularProgress::indeterminate()),
+                    )
+                    .child(dodai_gpui::Banner::new("bn1", Tone::Info, "A new version is available.").action("Update", |_, _| {}))
+                    .child(dodai_gpui::Banner::new("bn2", Tone::Warning, "Your trial ends in 3 days."))
+                    .child(dodai_gpui::Banner::new("bn3", Tone::Danger, "Connection lost. Retrying…").dismissible(false))
+                    .into_any_element(),
+                "Circular progress · Banner",
+            ),
+            (
+                "Data display",
+                "Scroll area · styled scrollbar",
+                section!("Scroll area")
+                    .child(
+                        dodai_gpui::ScrollArea::new("sa").height(200.0).child(
+                            div().flex().flex_col().gap(px(8.0)).children(
+                                (1..=40).map(|i| Label::new(format!("Row {i} · drag the thumb or use the wheel"))),
+                            ),
+                        ),
+                    )
+                    .into_any_element(),
+                "Scroll area",
+            ),
+            (
+                "Navigation",
+                "Popover · Hover card · Context menu · Dropdown menu",
+                section!("Popover · Hover card · Context menu · Dropdown")
+                    .child(popovers)
+                    .into_any_element(),
+                "Popover · Hover card · Context menu · Dropdown",
+            ),
+            (
                 "Inputs",
                 "Toggle · Checkbox · Radio",
                 section!("Toggle · Checkbox · Radio")
@@ -2420,6 +2663,101 @@ impl Render for Showcase {
                     .child(pickers)
                     .into_any_element(),
                 "Date / time pickers",
+            ),
+            (
+                "Inputs",
+                "Password · One-time code",
+                section!("Password · OTP")
+                    .child(
+                        dodai_gpui::FormField::new("Password")
+                            .required(true)
+                            .help("Shown as dots; copy is disabled")
+                            .child(self.pw.clone()),
+                    )
+                    .child(
+                        dodai_gpui::FormField::new("Verification code")
+                            .help("Type or paste 6 digits")
+                            .child(dodai_gpui::OtpInput::new("otp", 6)),
+                    )
+                    .child(
+                        dodai_gpui::FormField::new("PIN (masked)")
+                            .child(dodai_gpui::OtpInput::new("pin", 4).masked(true)),
+                    )
+                    .into_any_element(),
+                "Password · OTP",
+            ),
+            (
+                "Inputs",
+                "Form field · label help error validation",
+                section!("Form field")
+                    .child(
+                        row()
+                            .items_start()
+                            .child(div().flex_1().min_w(px(220.0)).child(
+                                dodai_gpui::FormField::new("Name")
+                                    .required(true)
+                                    .help("As on your ID")
+                                    .child(InputBox::new().placeholder("Ada Lovelace")),
+                            ))
+                            .child(div().flex_1().min_w(px(220.0)).child(
+                                dodai_gpui::FormField::new("Email")
+                                    .error("Enter a valid address")
+                                    .child(InputBox::new().placeholder("name@")),
+                            ))
+                            .child(div().flex_1().min_w(px(220.0)).child(
+                                dodai_gpui::FormField::new("Username")
+                                    .success("Available")
+                                    .child(InputBox::new().placeholder("ada")),
+                            ))
+                            .child(div().flex_1().min_w(px(220.0)).child(
+                                dodai_gpui::FormField::new("Bio")
+                                    .warning("Over 80% of the limit")
+                                    .child(InputBox::new().placeholder("…")),
+                            )),
+                    )
+                    .into_any_element(),
+                "Form field",
+            ),
+            (
+                "Inputs",
+                "Toggle group · Checkbox group · select all · switches",
+                section!("Toggle group · Checkbox group")
+                    .child(
+                        row()
+                            .child(
+                                dodai_gpui::ToggleGroup::new("tg1", ["Left", "Center", "Right"])
+                                    .selected([0]),
+                            )
+                            .child(
+                                dodai_gpui::ToggleGroup::new("tg2", ["Bold", "Italic", "Underline"])
+                                    .multiple(true)
+                                    .selected([0, 2]),
+                            ),
+                    )
+                    .child(
+                        row()
+                            .items_start()
+                            .gap(px(48.0))
+                            .child(
+                                dodai_gpui::CheckboxGroup::new("cg", ["Email", "SMS", "Push", "Slack"])
+                                    .select_all("All channels")
+                                    .checked([0, 2]),
+                            )
+                            .child(
+                                dodai_gpui::CheckboxGroup::new("sg", ["Wi-Fi", "Bluetooth", "Location"])
+                                    .select_all("Everything")
+                                    .switches(true)
+                                    .checked([0]),
+                            ),
+                    )
+                    .into_any_element(),
+                "Toggle group · Checkbox group",
+            ),
+            (
+                "Inputs",
+                "Date range picker",
+                section!("Date range").child(range_picker).into_any_element(),
+                "Date range",
             ),
             (
                 "Navigation",
@@ -3301,6 +3639,8 @@ fn main() {
                     let search = cx.new(|cx| TextInput::new(cx).placeholder("Search…"));
                     let filter = cx.new(|cx| TextInput::new(cx).placeholder("Filter components…"));
                     let in_name = cx.new(|cx| TextInput::new(cx).placeholder("handle…"));
+                    let pw = cx.new(|cx| TextInput::new(cx).placeholder("password").password(true));
+                    let dt_filter = cx.new(|cx| TextInput::new(cx).placeholder("Filter rows…"));
                     let in_notes = cx.new(|cx| {
                         TextInput::new(cx)
                             .multiline(4)
@@ -3311,6 +3651,9 @@ fn main() {
                         search,
                         in_name,
                         in_notes,
+                        pw,
+                        dt_filter,
+                        date_range: Default::default(),
                         cat: std::env::var("DODAI_CAT")
                             .ok()
                             .and_then(|v| v.parse().ok())

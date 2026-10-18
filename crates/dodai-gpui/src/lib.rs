@@ -45,15 +45,23 @@ pub mod charts_trend;
 #[cfg(feature = "components")]
 pub mod command;
 #[cfg(feature = "components")]
+pub mod content;
+#[cfg(feature = "components")]
 pub mod controls;
 #[cfg(feature = "components")]
 pub mod count;
 #[cfg(feature = "components")]
 pub mod data;
 #[cfg(feature = "components")]
+pub mod datatable;
+#[cfg(feature = "components")]
+pub mod display;
+#[cfg(feature = "components")]
 pub mod extras;
 #[cfg(feature = "components")]
 pub mod feedback;
+#[cfg(feature = "components")]
+pub mod forms;
 pub mod icons;
 pub mod interact;
 #[cfg(feature = "components")]
@@ -74,6 +82,8 @@ pub mod paint;
 pub mod panel;
 #[cfg(feature = "components")]
 pub mod picker;
+#[cfg(feature = "components")]
+pub mod popover;
 #[cfg(feature = "components")]
 pub mod range;
 pub mod scanlines;
@@ -128,6 +138,8 @@ pub use charts_trend::{
 #[cfg(feature = "components")]
 pub use command::{fuzzy_filter, Combobox, Command, CommandPalette};
 #[cfg(feature = "components")]
+pub use content::{highlight, parse_blocks, parse_inline, Block, CodeBlock, Inline, Markdown, Tok};
+#[cfg(feature = "components")]
 pub use controls::{
     tick_fractions, BubblePlacement, Checkbox, Direction, ProgressBar, Radio, Slider, Toggle,
 };
@@ -135,6 +147,15 @@ pub use controls::{
 pub use count::CountUp;
 #[cfg(feature = "components")]
 pub use data::{Avatar, Badge, Chip, Kbd, Table};
+#[cfg(feature = "components")]
+pub use datatable::{
+    compare_cells, max_scroll, next_sort, resized, view_indices, visible_range, Column, DataTable,
+};
+#[cfg(feature = "components")]
+pub use display::{
+    arc_points, avatar_split, thumb_geometry, AvatarGroup, Banner, CircularProgress, Image,
+    ImageFit, ScrollArea,
+};
 #[cfg(feature = "charts")]
 pub use dodai_charts_core::gantt::Task as GanttTask;
 #[cfg(feature = "charts")]
@@ -148,6 +169,11 @@ pub use extras::{
 };
 #[cfg(feature = "components")]
 pub use feedback::{Alert, IndeterminateBar, Skeleton, Spinner, Toast};
+#[cfg(feature = "components")]
+pub use forms::{
+    otp_push, select_all_state, toggle_select, CheckboxGroup, FieldState, FormField, OtpInput,
+    ToggleGroup,
+};
 pub use icons::{Icon, IconName};
 #[cfg(feature = "components")]
 pub use knob::Knob;
@@ -172,9 +198,11 @@ pub use panel::{
 };
 #[cfg(feature = "components")]
 pub use picker::{
-    days_in_month, month_grid, shift_month, step_hour, step_minute, to_12h, weekday, Date,
-    DatePicker, TimePicker,
+    days_in_month, month_grid, range_pick, shift_month, step_hour, step_minute, to_12h, weekday,
+    Date, DatePicker, DateRange, TimePicker,
 };
+#[cfg(feature = "components")]
+pub use popover::{ContextMenu, DropdownMenu, HoverCard, Placement, Popover};
 #[cfg(feature = "components")]
 pub use range::{nearest_thumb, range_update, RangeSlider};
 pub use scanlines::Scanlines;

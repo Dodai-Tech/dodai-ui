@@ -29,6 +29,43 @@ impl Date {
     }
 }
 
+/// Selected span of days (inclusive). `end` is `None` while the second click is pending.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct DateRange {
+    pub start: Option<Date>,
+    pub end: Option<Date>,
+}
+
+impl DateRange {
+    /// `(from, to)` once both ends are picked.
+    pub fn span(&self) -> Option<(Date, Date)> {
+        Some((self.start?, self.end?))
+    }
+    /// Whether `d` lies inside the picked span (ends included).
+    pub fn contains(&self, d: Date) -> bool {
+        match (self.start, self.end) {
+            (Some(a), Some(b)) => a <= d && d <= b,
+            (Some(a), None) => a == d,
+            _ => false,
+        }
+    }
+}
+
+/// Next range after clicking `d`: the first click starts, the second ends
+/// (clicking an earlier day restarts there), a third click starts over.
+pub fn range_pick(r: DateRange, d: Date) -> DateRange {
+    match (r.start, r.end) {
+        (Some(a), None) if d >= a => DateRange {
+            start: Some(a),
+            end: Some(d),
+        },
+        _ => DateRange {
+            start: Some(d),
+            end: None,
+        },
+    }
+}
+
 pub const MONTHS: [&str; 12] = [
     "January",
     "February",
@@ -106,6 +143,7 @@ pub struct DatePicker {
     year: i32,
     month: u32,
     selected: Option<Date>,
+    range: Option<DateRange>,
     on_select: Option<DateFn>,
     on_month: Option<MonthFn>,
     corners: Option<dodai_core::Corners>,
@@ -128,12 +166,18 @@ impl DatePicker {
             year,
             month: month.clamp(1, 12),
             selected: None,
+            range: None,
             on_select: None,
             on_month: None,
         }
     }
     pub fn selected(mut self, d: Option<Date>) -> Self {
         self.selected = d;
+        self
+    }
+    /// Highlight a span of days instead of one. Combine with [`range_pick`] in `on_select`.
+    pub fn range(mut self, r: DateRange) -> Self {
+        self.range = Some(r);
         self
     }
     pub fn on_select(mut self, f: impl Fn(Date, &mut Window, &mut App) + 'static) -> Self {
@@ -196,18 +240,27 @@ impl DatePicker {
                     continue;
                 };
                 let date = Date::new(y, m, day);
-                let on = self.selected == Some(date);
+                let on = match self.range {
+                    Some(r) => r.start == Some(date) || r.end == Some(date),
+                    None => self.selected == Some(date),
+                };
+                let inside = self.range.is_some_and(|r| r.contains(date)) && !on;
                 let id: ElementId = (self.id.clone(), format!("d{ri}{ci}")).into();
                 let st = use_interact(&id, window, cx);
                 let state = st.read(cx).control_state(false);
                 let variant = if on {
                     ButtonVariant::Primary
+                } else if inside {
+                    ButtonVariant::Secondary
                 } else {
                     ButtonVariant::Ghost
                 };
                 let (mut style, fg) = button_style(&t, variant, state);
                 if !on && state == ControlState::Idle {
                     style.stroke = None;
+                }
+                if inside && state == ControlState::Idle {
+                    style.fill = Some(hsla(t.palette.selection));
                 }
                 let mut el = track(shaped_id(id, &t.shape, style), &st)
                     .w(px(cell))
@@ -402,6 +455,20 @@ impl RenderOnce for TimePicker {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn range_pick_cycle() {
+        let d = |n| Date::new(2025, 3, n);
+        let r = range_pick(DateRange::default(), d(10));
+        assert_eq!((r.start, r.end), (Some(d(10)), None));
+        let r = range_pick(r, d(5)); // earlier restarts
+        assert_eq!((r.start, r.end), (Some(d(5)), None));
+        let r = range_pick(r, d(9));
+        assert_eq!(r.span(), Some((d(5), d(9))));
+        assert!(r.contains(d(7)) && !r.contains(d(10)));
+        let r = range_pick(r, d(20)); // third click restarts
+        assert_eq!((r.start, r.end), (Some(d(20)), None));
+    }
+
     use super::*;
 
     #[test]
