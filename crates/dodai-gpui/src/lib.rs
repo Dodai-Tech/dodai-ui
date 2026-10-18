@@ -108,6 +108,8 @@ pub mod tag;
 pub mod text;
 #[cfg(feature = "components")]
 pub mod text_input;
+#[cfg(feature = "components")]
+pub mod time;
 
 #[cfg(test)]
 mod testing;
@@ -230,6 +232,12 @@ pub use tag::Tag;
 pub use text::{Heading, Label, Mono, Muted};
 #[cfg(feature = "components")]
 pub use text_input::TextInput;
+#[cfg(feature = "components")]
+pub use time::{
+    beat_phase, civil_from_days, countdown_text, date_text, day_secs, hand_angles, hms, lap_splits,
+    local_utc_offset_minutes, segments, stopwatch_text, tap_bpm, tap_jitter, tempo_name,
+    weekday_name, Clock, ClockFace, Stopwatch, TapTempo, Timer,
+};
 
 use dodai_core::{ButtonVariant, Color, ControlState, Theme, ThemeSwitcher, Tone};
 use gpui::{px, App, BoxShadow, Global, Hsla, Rgba, Styled};

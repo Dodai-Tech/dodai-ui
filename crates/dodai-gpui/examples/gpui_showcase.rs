@@ -146,6 +146,8 @@ fn caps(title: &str) -> Caps {
         | "Code block · Markdown"
         | "Image · Avatar group"
         | "Circular progress · Banner"
+        | "Clock · Timer"
+        | "Stopwatch · Tap tempo"
         | "Scroll area"
         | "Popover · Hover card · Context menu · Dropdown" => c(false, false, false),
         // Single animated component.
@@ -2569,6 +2571,30 @@ impl Render for Showcase {
                     .child(dodai_gpui::Banner::new("bn3", Tone::Danger, "Connection lost. Retrying…").dismissible(false))
                     .into_any_element(),
                 "Circular progress · Banner",
+            ),
+            (
+                "Data display",
+                "Clock · Timer",
+                section!("Clock · Timer")
+                    .child(
+                        row()
+                            .child(dodai_gpui::Clock::new("clk").local())
+                            .child(dodai_gpui::Timer::new("tmr").minutes(1)),
+                    )
+                    .into_any_element(),
+                "Clock · Timer",
+            ),
+            (
+                "Data display",
+                "Stopwatch · Tap tempo",
+                section!("Stopwatch · Tap tempo")
+                    .child(
+                        row()
+                            .child(dodai_gpui::Stopwatch::new("sw"))
+                            .child(dodai_gpui::TapTempo::new("tap")),
+                    )
+                    .into_any_element(),
+                "Stopwatch · Tap tempo",
             ),
             (
                 "Data display",
