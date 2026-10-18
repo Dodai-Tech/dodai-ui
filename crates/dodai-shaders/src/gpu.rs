@@ -1,13 +1,13 @@
-//! Run [`dodai_shaders`] on the GPU.
+//! Run the shader catalogue on the GPU (feature `gpu`).
 //!
 //! The shaders are the *same Rust sources* as the CPU catalogue, compiled to
-//! WGSL by rust-gpu (`dodai-shaders-kernels`, regenerated with
+//! WGSL by rust-gpu (this same crate built for the rust-gpu target; regenerated with
 //! `just build-kernels`). This crate is the wgpu host: it owns a compute
 //! pipeline per shader and runs a chain (one generator, then post effects)
 //! into a packed BGRA image.
 //!
 //! ```no_run
-//! use dodai_shaders_gpu::Gpu;
+//! use dodai_shaders::gpu::Gpu;
 //! use dodai_shaders::ShaderPalette;
 //!
 //! let mut gpu = Gpu::new().expect("no GPU");
@@ -17,13 +17,13 @@
 //! assert_eq!(bgra.len(), 1280 * 720 * 4);
 //! ```
 
+use crate::{by_id, ShaderPalette};
 use bytemuck::{Pod, Zeroable};
-use dodai_shaders::{by_id, ShaderPalette};
 use std::collections::HashMap;
 
 const WGSL: &str = include_str!("../kernels.wgsl");
 
-/// Mirrors `dodai_shaders_kernels::Params` byte for byte.
+/// Mirrors the kernel-side `Params` (`gpu_kernels.rs`) byte for byte.
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 struct Params {
@@ -238,7 +238,7 @@ impl Gpu {
         }
         self.pipeline("pack");
 
-        let col = |v: dodai_shaders::math::Vec3| [v.x, v.y, v.z, 1.0];
+        let col = |v: crate::math::Vec3| [v.x, v.y, v.z, 1.0];
         let params = Params {
             res: [w as f32, h as f32],
             time,
@@ -335,7 +335,7 @@ mod tests {
     #[test]
     fn every_catalogue_entry_has_a_kernel() {
         let names = entry_names();
-        for s in dodai_shaders::catalog() {
+        for s in crate::catalog() {
             assert!(names.contains_key(s.id), "no GPU kernel for `{}`", s.id);
         }
         assert!(names.contains_key("pack"));
@@ -352,8 +352,7 @@ mod tests {
             .to_vec();
         assert_eq!(out.len(), (w * h * 4) as usize);
         let chain = [by_id("plasma").unwrap(), by_id("vignette").unwrap()];
-        let cpu =
-            dodai_shaders::render(&chain, &dodai_shaders::Ctx::new(w, h, 1.0, pal)).to_bgra8();
+        let cpu = crate::render(&chain, &crate::Ctx::new(w, h, 1.0, pal)).to_bgra8();
         let diff: f64 = out
             .iter()
             .zip(&cpu)

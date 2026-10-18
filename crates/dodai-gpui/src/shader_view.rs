@@ -131,15 +131,15 @@ impl ShaderView {
 }
 
 #[cfg(feature = "gpu")]
-fn gpu() -> Option<&'static std::sync::Mutex<dodai_shaders_gpu::Gpu>> {
-    static GPU: std::sync::OnceLock<Option<std::sync::Mutex<dodai_shaders_gpu::Gpu>>> =
+fn gpu() -> Option<&'static std::sync::Mutex<dodai_shaders::gpu::Gpu>> {
+    static GPU: std::sync::OnceLock<Option<std::sync::Mutex<dodai_shaders::gpu::Gpu>>> =
         std::sync::OnceLock::new();
     GPU.get_or_init(|| {
         // `DODAI_GPU=0` forces the CPU renderer.
         if std::env::var("DODAI_GPU").is_ok_and(|v| v == "0") {
             return None;
         }
-        dodai_shaders_gpu::Gpu::new().map(std::sync::Mutex::new)
+        dodai_shaders::gpu::Gpu::new().map(std::sync::Mutex::new)
     })
     .as_ref()
 }

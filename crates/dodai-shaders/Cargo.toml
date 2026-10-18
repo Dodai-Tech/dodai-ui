@@ -11,8 +11,21 @@ readme       = "README.md"
 keywords     = ["shaders", "procedural", "crt", "retro", "design-system"]
 categories   = ["graphics", "gui"]
 
-[dependencies]
+[features]
+default = []
+# wgpu host: runs the same shaders on the GPU from the committed `kernels.wgsl`.
+gpu = ["dep:wgpu", "dep:pollster", "dep:bytemuck"]
+
+[target.'cfg(not(target_arch = "spirv"))'.dependencies]
 dodai-core = { workspace = true }
+wgpu     = { version = "30.0.1", optional = true, default-features = false, features = ["std", "parking_lot", "wgsl", "metal", "vulkan", "dx12"] }
+pollster = { version = "0.4", optional = true }
+bytemuck = { version = "1.24", optional = true, features = ["derive"] }
+
+# Only for the rust-gpu build (`just build-kernels`).
+[target.'cfg(target_arch = "spirv")'.dependencies]
+spirv-std = "0.11.0"
+glam      = { version = "0.34", default-features = false, features = ["bytemuck"] }
 
 [dev-dependencies]
 gpui  = { workspace = true }
@@ -20,6 +33,10 @@ image = { version = "0.25", default-features = false }
 
 [[example]]
 name = "gallery"
+
+[[example]]
+name = "parity"
+required-features = ["gpu"]
 
 [lints.rust]
 unexpected_cfgs = { level = "allow", check-cfg = ['cfg(target_arch, values("spirv"))'] }

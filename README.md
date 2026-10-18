@@ -8,7 +8,6 @@ component styles) feeds four native adapters:
 |---|---|---|
 | [`dodai-core`](crates/dodai-core) | — | `Theme`, `Palette`, tokens, `ThemeSwitcher`, WCAG contrast, ANSI-256 fallback |
 | [`dodai-charts-core`](crates/dodai-charts-core) | — | Renderer-agnostic chart maths: ticks, Heikin-Ashi, indicators, Renko, depth, Gantt, binning, gradients |
-| [`dodai-shaders-gpu`](crates/dodai-shaders-gpu) | wgpu | the same shaders on the GPU (rust-gpu → WGSL); `dodai-shaders-kernels` is the build source |
 | [`dodai-shaders`](crates/dodai-shaders) | — (CPU) | 158 pure-Rust pixel shaders: Ghibli-style painted and cel-shaded 3D scenes, cyberpunk (rainy megacities, Blade Runner-inspired scenes), Material 3, Matrix, CRT/VHS/retro monitors, Ghostty ports, pixel-art platformer/metroidvania, cosmic; follows the theme palette |
 | [`dodai-ratatui`](crates/dodai-ratatui) | Ratatui 0.30 | `TuiTheme`: chamfered `╱ ╲` blocks, `◢ BUTTON ◤`, tabs, badges, inputs, status bar, `Scanlines`, `ThemeBadge` |
 | [`dodai-iced`](crates/dodai-iced) | Iced 0.14 | `IcedTheme`: native `iced::Theme`, button/container/text-input/text styles with neon glow, canvas `ChamferFrame` |

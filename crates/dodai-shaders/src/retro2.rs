@@ -234,7 +234,11 @@ pub fn paper_white(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
     let paper = vec3(0.93, 0.91, 0.84);
     let ink = vec3(0.08, 0.08, 0.1);
     let shade = 1.0 - ((uv - 0.5).dot(uv - 0.5) * 0.5);
-    if on { paper * shade } else { ink }
+    if on {
+        paper * shade
+    } else {
+        ink
+    }
 }
 
 pub fn trinitron(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
@@ -569,7 +573,11 @@ pub fn vga_text(uv: Vec2, c: &Ctx) -> Vec3 {
     let text_line = hash1(gy * 3.1) > 0.35 && gx < 8.0 + hash1(gy) * 55.0 && gx > 1.0;
     let on = text_line && pseudo_char(gx as i32 + gy as i32 * 91, f) > 0.0;
     let cur = gy == 23.0 && gx == 2.0 && (c.time * 2.0) as i32 % 2 == 0 && f.y > 0.8;
-    if on || cur { grey } else { bg }
+    if on || cur {
+        grey
+    } else {
+        bg
+    }
 }
 
 pub fn c64_screen(uv: Vec2, c: &Ctx) -> Vec3 {
@@ -602,7 +610,11 @@ pub fn c64_screen(uv: Vec2, c: &Ctx) -> Vec3 {
     }
     let on = any && pseudo_char(gx as i32 * 13 + gy as i32 * 5, f) > 0.0;
     let cursor = gy == 10.0 && gx == 0.0 && (c.time * 1.6) as i32 % 2 == 0;
-    if on || cursor { fg } else { bg }
+    if on || cursor {
+        fg
+    } else {
+        bg
+    }
 }
 
 pub fn zx_loading(uv: Vec2, c: &Ctx) -> Vec3 {
@@ -633,7 +645,11 @@ pub fn zx_loading(uv: Vec2, c: &Ctx) -> Vec3 {
     let ink = ZX[1 + (hash2(cx as i32, cy as i32) * 7.0) as usize % 7];
     let on =
         hash2(((u.x * 256.0) as i32) / 2, ((u.y * 192.0) as i32) / 2) > 0.5 + 0.25 * (u.y - 0.5);
-    if on { rgb8a(ink) } else { Vec3::BLACK }
+    if on {
+        rgb8a(ink)
+    } else {
+        Vec3::BLACK
+    }
 }
 
 pub fn smpte_bars(uv: Vec2, _c: &Ctx) -> Vec3 {

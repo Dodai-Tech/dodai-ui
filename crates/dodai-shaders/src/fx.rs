@@ -152,7 +152,11 @@ pub fn neon_edges(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
 pub fn dither(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
     let (x, y) = ((uv.x * src.w as f32) as i32, (uv.y * src.h as f32) as i32);
     let l = src.sample(uv).luma().powf(0.8);
-    if l > bayer4(x, y) { c.pal.fg } else { c.pal.bg }
+    if l > bayer4(x, y) {
+        c.pal.fg
+    } else {
+        c.pal.bg
+    }
 }
 
 pub fn negative(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
