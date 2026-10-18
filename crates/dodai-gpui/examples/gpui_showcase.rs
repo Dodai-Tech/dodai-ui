@@ -117,6 +117,14 @@ fn caps(title: &str) -> Caps {
         stagger,
     };
     match title {
+        // Shaders animate themselves; no entry/fill/stagger controls.
+        t if t == "Shader playground"
+            || t.ends_with(" shaders")
+            || t.ends_with(" effects")
+            || t.ends_with(" presets") =>
+        {
+            c(false, false, false)
+        }
         // Raw / non-animated components only.
         "Tooltip" | "Input" => c(false, false, false),
         // Single animated component.
@@ -192,6 +200,10 @@ fn section_id(title: &str) -> u32 {
 impl Showcase {
     /// Entry set applied to a section's components (`None` = app default).
     fn scope_of(&self, title: &'static str, cx: &gpui::App) -> EntrySet {
+        let cp = caps(title);
+        if !(cp.entry || cp.fill || cp.stagger) {
+            return EntrySet::NONE;
+        }
         if self.sec_mode.get(title) == Some(&Player::Stopped) {
             return EntrySet::NONE;
         }
