@@ -58,8 +58,10 @@ pub(crate) fn caps(title: &str) -> Caps {
         "Knob · Vertical sliders" => c(true, true, true),
         t if t.contains("chart")
             || [
-                "Pie · donut · gauge · sparkline",
-                "Gauge styles",
+                "Pie",
+                "Donut",
+                "Gauges",
+                "Sparkline",
                 "Instruments",
                 "Area · histogram · waterfall",
                 "Funnel · treemap · radial bar",
@@ -149,8 +151,9 @@ pub(crate) fn cat_icon(name: &str) -> dodai_gpui::IconName {
         "Navigation" => I::Menu,
         "Data display" => I::Table,
         "Charts" => I::BarChart,
-        "Animation" => I::Sparkle,
-        "Shaders" => I::Sparkle,
+        "Animation" => I::Wave,
+        "Shaders" => I::Pixels,
+        "Shape" => I::Cube,
         "Loading" => I::Repeat,
         _ => I::Dot,
     }

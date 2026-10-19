@@ -17,6 +17,8 @@
   "sparkle": "interface",
   "hash": "interface",
   "sun": "interface",
+  "wave": "interface",
+  "pixels": "interface",
   "moon": "interface",
   "arrow-right": "arrows",
   "arrow-left": "arrows",

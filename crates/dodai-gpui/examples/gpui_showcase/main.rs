@@ -18,7 +18,7 @@ use dodai_gpui::{
     EmptyState, Funnel, Gauge, GaugeStyle, Heatmap, HexMap, Histogram, IconBadge, LineChart,
     Marker, NumberStepper, Oscilloscope, PieChart, RadarChart, RadarScope, RadialBar, RangeSlider,
     Rating, RichTooltip, RingStack, ScatterPlot, SearchView, Series, SignalBars, Snackbar,
-    Sparkline, Spectrum, StackedAreaChart, TagField, TextInput, TimePicker, Timeline,
+    SparkStyle, Sparkline, Spectrum, StackedAreaChart, TagField, TextInput, TimePicker, Timeline,
     TimelineEvent, Toolbar, TreeItem, TreeView, Treemap, Waterfall,
 };
 use dodai_gpui::{
@@ -63,6 +63,7 @@ pub struct Showcase {
     date_range: dodai_gpui::DateRange,
     cat: usize,
     cat_count: usize,
+    spy: Vec<(&'static str, usize)>,
     /// Selected subsection inside the current category (`None` = all).
     sub: Option<&'static str>,
     side_focus: FocusHandle,
@@ -1409,6 +1410,8 @@ impl Render for Showcase {
             let dials = row()
                 .justify_around()
                 .flex_wrap()
+                .child(Gauge::new(72.0).label("72%").tone(Tone::Success))
+                .child(Gauge::new(31.0).tone(Tone::Warning))
                 .child(
                     Gauge::new(68.0)
                         .style(Segmented)
@@ -1573,55 +1576,196 @@ impl Render for Showcase {
                         ),
                 )
         };
-        let charts_round = row()
+        let tile = |title: &'static str, el: gpui::AnyElement| {
+            div()
+                .flex()
+                .flex_col()
+                .items_center()
+                .gap_2()
+                .child(el)
+                .child(Muted::new(title))
+                .into_any_element()
+        };
+        let mono = |c: dodai_core::Color| -> Vec<dodai_core::Color> {
+            (0..5)
+                .map(|i| c.mix(t.palette.background, i as f32 * 0.17))
+                .collect()
+        };
+        let langs = || [("Rust", 52.0), ("Kotlin", 28.0), ("Other", 20.0)];
+        let quarters = || [("Q1", 30.0), ("Q2", 24.0), ("Q3", 26.0), ("Q4", 20.0)];
+        let pies = row()
             .justify_around()
-            .child(PieChart::new([
-                ("Rust", 52.0),
-                ("Kotlin", 28.0),
-                ("Other", 20.0),
-            ]))
-            .child(
+            .flex_wrap()
+            .gap_6()
+            .child(tile("Classic", PieChart::new(langs()).into_any_element()))
+            .child(tile(
+                "Flush slices",
+                PieChart::new(langs()).gap(0.0).into_any_element(),
+            ))
+            .child(tile(
+                "Wide gaps",
+                PieChart::new(quarters())
+                    .gap(6.0)
+                    .legend(false)
+                    .into_any_element(),
+            ))
+            .child(tile(
+                "Exploded",
+                PieChart::new(quarters())
+                    .explode(6.0)
+                    .legend(false)
+                    .into_any_element(),
+            ))
+            .child(tile(
+                "Monochrome",
+                PieChart::new([
+                    ("A", 40.0),
+                    ("B", 25.0),
+                    ("C", 18.0),
+                    ("D", 11.0),
+                    ("E", 6.0),
+                ])
+                .colors(mono(t.palette.primary))
+                .legend(false)
+                .into_any_element(),
+            ))
+            .child(tile(
+                "Half pie",
+                PieChart::new(langs())
+                    .arc(0.75, 0.5)
+                    .size(200.0)
+                    .legend(false)
+                    .into_any_element(),
+            ));
+        let donuts = row()
+            .justify_around()
+            .flex_wrap()
+            .gap_6()
+            .child(tile(
+                "Centre value",
                 PieChart::new([("A", 3.0), ("B", 2.0), ("C", 1.0)])
                     .donut(0.62)
-                    .center("6"),
-            )
-            .child(Gauge::new(72.0).label("72%").tone(Tone::Success))
-            .child(Gauge::new(31.0).tone(Tone::Warning))
-            .child(CountUp::new("cu1", 12840.0).prefix("$ ").size(28.0))
+                    .center("6")
+                    .into_any_element(),
+            ))
+            .child(tile(
+                "Thin ring",
+                PieChart::new(quarters())
+                    .donut(0.84)
+                    .center("100")
+                    .legend(false)
+                    .into_any_element(),
+            ))
+            .child(tile(
+                "Thick ring",
+                PieChart::new(quarters())
+                    .donut(0.42)
+                    .gap(4.0)
+                    .legend(false)
+                    .into_any_element(),
+            ))
+            .child(tile(
+                "Half donut",
+                PieChart::new([("Used", 68.0), ("Free", 32.0)])
+                    .donut(0.7)
+                    .arc(0.75, 0.5)
+                    .size(200.0)
+                    .center("68%")
+                    .legend(false)
+                    .into_any_element(),
+            ))
+            .child(tile(
+                "Three-quarter",
+                PieChart::new([("Done", 72.0), ("Left", 28.0)])
+                    .donut(0.78)
+                    .arc(0.625, 0.75)
+                    .colors([t.palette.success, t.palette.border])
+                    .center("72")
+                    .legend(false)
+                    .into_any_element(),
+            ))
+            .child(tile(
+                "Monochrome",
+                PieChart::new([
+                    ("A", 40.0),
+                    ("B", 25.0),
+                    ("C", 18.0),
+                    ("D", 11.0),
+                    ("E", 6.0),
+                ])
+                .donut(0.6)
+                .colors(mono(t.palette.secondary))
+                .legend(false)
+                .into_any_element(),
+            ));
+        let series = || {
+            [
+                3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0, 10.0, 14.0, 9.0, 13.0,
+            ]
+        };
+        let spark = |name: &'static str, sp: Sparkline| {
+            div()
+                .flex_1()
+                .min_w(px(110.0))
+                .flex()
+                .flex_col()
+                .gap_1()
+                .child(sp.fluid(true))
+                .child(Muted::new(name))
+        };
+        let sparks = div()
+            .flex()
+            .flex_col()
+            .gap_6()
             .child(
-                CountUp::new("cu2", 98.6)
-                    .decimals(1)
-                    .suffix(" %")
-                    .size(28.0),
+                row()
+                    .gap_6()
+                    .child(spark("Line + area", Sparkline::new(series())))
+                    .child(spark("Line only", Sparkline::new(series()).area(false)))
+                    .child(spark(
+                        "Diamond tip",
+                        Sparkline::new(series()).marker(Marker::Diamond),
+                    ))
+                    .child(spark(
+                        "Mean baseline",
+                        Sparkline::new(series()).baseline(true),
+                    )),
             )
             .child(
-                div()
-                    .flex_1()
-                    .min_w(px(120.0))
-                    .child(Sparkline::new([3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0]).fluid(true)),
+                row()
+                    .gap_6()
+                    .child(spark(
+                        "Step",
+                        Sparkline::new(series()).style(SparkStyle::Step),
+                    ))
+                    .child(spark(
+                        "Bars",
+                        Sparkline::new(series()).style(SparkStyle::Bars),
+                    ))
+                    .child(spark(
+                        "Dots",
+                        Sparkline::new(series())
+                            .style(SparkStyle::Dots)
+                            .marker(Marker::Square),
+                    ))
+                    .child(spark(
+                        "Win / loss",
+                        Sparkline::new([
+                            3.0, 5.0, 4.0, 8.0, 6.0, 2.0, 7.0, 1.0, 10.0, 4.0, 9.0, 3.0,
+                        ])
+                        .style(SparkStyle::WinLoss),
+                    )),
             )
             .child(
-                div().flex_1().min_w(px(120.0)).child(
-                    Sparkline::new([3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0])
-                        .marker(Marker::Diamond)
-                        .fluid(true),
-                ),
-            )
-            .child(
-                div().flex_1().min_w(px(120.0)).child(
-                    Sparkline::new([3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0])
-                        .marker(Marker::Square)
-                        .area(false)
-                        .fluid(true),
-                ),
-            )
-            .child(
-                div().flex_1().min_w(px(120.0)).child(
-                    Sparkline::new([3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0])
-                        .marker(Marker::Triangle)
-                        .all_points(true)
-                        .fluid(true),
-                ),
+                row()
+                    .justify_around()
+                    .child(CountUp::new("cu1", 12840.0).prefix("$ ").size(28.0))
+                    .child(
+                        CountUp::new("cu2", 98.6)
+                            .decimals(1)
+                            .suffix(" %")
+                            .size(28.0),
+                    ),
             );
         let w = |e: gpui::AnyElement, px_w: f32| {
             div()
@@ -3012,19 +3156,27 @@ impl Render for Showcase {
             ),
             (
                 "Charts",
-                "Pie · Donut · Gauge · Sparkline",
-                section!("Pie · donut · gauge · sparkline")
-                    .child(charts_round)
-                    .into_any_element(),
-                "Pie · donut · gauge · sparkline",
+                "Pie",
+                section!("Pie").child(pies).into_any_element(),
+                "Pie",
             ),
             (
                 "Charts",
-                "Gauge styles",
-                section!("Gauge styles")
-                    .child(gauge_styles)
-                    .into_any_element(),
-                "Gauge styles",
+                "Donut",
+                section!("Donut").child(donuts).into_any_element(),
+                "Donut",
+            ),
+            (
+                "Charts",
+                "Gauges",
+                section!("Gauges").child(gauge_styles).into_any_element(),
+                "Gauges",
+            ),
+            (
+                "Charts",
+                "Sparkline",
+                section!("Sparkline").child(sparks).into_any_element(),
+                "Sparkline",
             ),
             (
                 "Charts",
@@ -3416,6 +3568,20 @@ impl Render for Showcase {
         };
         let sections_meta: Vec<(&'static str, &'static str)> =
             sections.iter().map(|(c, l, _, _)| (*c, *l)).collect();
+        // Scroll-spy: the last section whose top has reached the viewport top
+        // (positions come from the previous frame's layout).
+        let active: Option<&'static str> = {
+            let top = self.scroll.bounds().top();
+            self.spy
+                .iter()
+                .rfind(|(_, ix)| {
+                    self.scroll
+                        .bounds_for_item(*ix)
+                        .is_some_and(|b| b.top() <= top + px(48.0))
+                })
+                .or(self.spy.first())
+                .map(|(t, _)| *t)
+        };
         let rail = self.rail;
         let mut side = div()
             .id("side-nav")
@@ -3510,27 +3676,26 @@ impl Render for Showcase {
                         .filter(|(c, l)| *c == name && sub.is_none_or(|x| sub_of(c, l) == Some(x)))
                         .count();
                     side = side.child(
-                        div().pl(px(t.spacing.lg)).child(
-                            ListItem::new(
-                                (
-                                    "sub",
-                                    idx * 100
-                                        + sub.map_or(0, |x| {
-                                            1 + subs(name).iter().position(|y| *y == x).unwrap_or(0)
-                                        }),
-                                ),
-                                format!("{}  ·  {cnt}", sub.unwrap_or("All")),
-                            )
-                            .selected(self.sub == sub)
-                            .on_click(move |_, _, cx| {
-                                m.update(cx, |s, cx| {
-                                    s.sub = sub;
-                                    dodai_gpui::set_tree_expanded(cx, true);
-                                    s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
-                                    cx.notify()
-                                })
-                            }),
-                        ),
+                        ListItem::new(
+                            (
+                                "sub",
+                                idx * 100
+                                    + sub.map_or(0, |x| {
+                                        1 + subs(name).iter().position(|y| *y == x).unwrap_or(0)
+                                    }),
+                            ),
+                            format!("{}  ·  {cnt}", sub.unwrap_or("All")),
+                        )
+                        .depth(1)
+                        .selected(self.sub == sub)
+                        .on_click(move |_, _, cx| {
+                            m.update(cx, |s, cx| {
+                                s.sub = sub;
+                                dodai_gpui::set_tree_expanded(cx, true);
+                                s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
+                                cx.notify()
+                            })
+                        }),
                     );
                 }
                 // Jump list: every visible section of this category.
@@ -3544,17 +3709,10 @@ impl Render for Showcase {
                         continue;
                     }
                     let (m, title) = (me.clone(), *title);
-                    let hover = hsla(t.palette.primary);
                     side = side.child(
-                        div()
-                            .id(("jump", idx * 1000 + k))
-                            .pl(px(t.spacing.xl + t.spacing.sm))
-                            .py(px(2.0))
-                            .text_size(px(t.typography.size_sm))
-                            .text_color(hsla(t.palette.text_muted))
-                            .cursor_pointer()
-                            .hover(move |s| s.text_color(hover))
-                            .child(title)
+                        ListItem::new(("jump", idx * 1000 + k), title)
+                            .depth(2)
+                            .selected(active == Some(title))
                             .on_click(move |_, _, cx| {
                                 m.update(cx, |s, cx| {
                                     s.jump = Some((title, 1));
@@ -3726,6 +3884,7 @@ impl Render for Showcase {
             body = body.child(d);
             n_children += 1;
         }
+        let mut spy: Vec<(&'static str, usize)> = Vec::new();
         let mut shown = 0;
         let mut last_cat = "";
         let mut last_sub: Option<&str> = None;
@@ -3756,6 +3915,7 @@ impl Render for Showcase {
                     last_sub = Some(sb);
                 }
             }
+            spy.push((title, n_children));
             if jump_title == Some(title) {
                 jump_ix = Some(n_children);
             }
@@ -3763,6 +3923,7 @@ impl Render for Showcase {
             n_children += 1;
             body = body.child(el);
         }
+        self.spy = spy;
         if let Some((j, wait)) = self.jump {
             if wait > 0 {
                 self.jump = Some((j, wait - 1));
@@ -3969,6 +4130,7 @@ impl Showcase {
             pill_hover: None,
             pop_hover: None,
             cat_count: 1,
+            spy: Vec::new(),
             sub: None,
             side_focus: cx.focus_handle(),
             rail: false,

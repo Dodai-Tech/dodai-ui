@@ -849,6 +849,8 @@ impl RenderOnce for BarChart {
 /// Tiny inline line, no axes.
 #[derive(IntoElement)]
 pub struct Sparkline {
+    style: SparkStyle,
+    baseline: bool,
     values: Vec<f32>,
     w: f32,
     fluid: bool,
@@ -859,7 +861,69 @@ pub struct Sparkline {
     all_points: bool,
 }
 
+/// How a [`Sparkline`] draws its values.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum SparkStyle {
+    /// Polyline (default).
+    #[default]
+    Line,
+    /// Staircase: the value holds until the next sample.
+    Step,
+    /// One column per value.
+    Bars,
+    /// Points only, no connecting line.
+    Dots,
+    /// Up / down ticks around the mean: above it wins, below it loses.
+    WinLoss,
+}
+
+/// Column rectangles `(x0, y0, x1, y1)` for [`SparkStyle::Bars`] /
+/// [`SparkStyle::WinLoss`] in a `w`×`h` box (y down). Pure.
+pub fn spark_columns(vals: &[f32], w: f32, h: f32, win_loss: bool) -> Vec<(f32, f32, f32, f32)> {
+    let n = vals.len();
+    if n == 0 {
+        return Vec::new();
+    }
+    let gap = if n > 1 {
+        (w / n as f32 * 0.25).min(3.0)
+    } else {
+        0.0
+    };
+    let bw = ((w - gap * (n - 1) as f32) / n as f32).max(1.0);
+    let (lo, hi) = vals
+        .iter()
+        .fold((f32::MAX, f32::MIN), |(l, hh), v| (l.min(*v), hh.max(*v)));
+    let mean = vals.iter().sum::<f32>() / n as f32;
+    vals.iter()
+        .enumerate()
+        .map(|(i, v)| {
+            let x0 = i as f32 * (bw + gap);
+            if win_loss {
+                let half = h / 2.0;
+                if *v >= mean {
+                    (x0, 1.0, x0 + bw, half - 0.5)
+                } else {
+                    (x0, half + 0.5, x0 + bw, h - 1.0)
+                }
+            } else {
+                let frac = 0.12 + 0.88 * norm(*v, lo, hi);
+                (x0, h - frac * h, x0 + bw, h)
+            }
+        })
+        .collect()
+}
+
 impl Sparkline {
+    /// Drawing style (default [`SparkStyle::Line`]).
+    pub fn style(mut self, s: SparkStyle) -> Self {
+        self.style = s;
+        self
+    }
+    /// Faint dashed reference line at the mean.
+    pub fn baseline(mut self, b: bool) -> Self {
+        self.baseline = b;
+        self
+    }
     /// Stretch to the available width instead of the fixed `w`.
     pub fn fluid(mut self, f: bool) -> Self {
         self.fluid = f;
@@ -870,6 +934,8 @@ impl Sparkline {
 impl Sparkline {
     pub fn new(values: impl IntoIterator<Item = f32>) -> Self {
         Self {
+            style: SparkStyle::Line,
+            baseline: false,
             values: values.into_iter().collect(),
             w: 96.0,
             fluid: false,
@@ -919,6 +985,9 @@ impl Sparkline {
         let glow = glow_of(&t).map(|r| r.min(4.0));
         let (vals, area, marker, all_points) =
             (self.values, self.area, self.marker, self.all_points);
+        let (style, baseline) = (self.style, self.baseline);
+        let up = hsla(t.palette.success);
+        let down = hsla(t.palette.danger);
         let (lo, hi) = vals
             .iter()
             .fold((f32::MAX, f32::MIN), |(l, h), v| (l.min(*v), h.max(*v)));
@@ -949,6 +1018,60 @@ impl Sparkline {
                             )
                         })
                         .collect();
+                    if baseline {
+                        let mean = vals.iter().sum::<f32>() / m as f32;
+                        let y = pad + (1.0 - norm(mean, lo, hi)) * (bh - 2.0 * pad);
+                        let mut x = 0.0;
+                        while x < bw {
+                            stroke(
+                                w,
+                                b.origin,
+                                &[(x, y), ((x + 3.0).min(bw), y)],
+                                1.0,
+                                scale_alpha(c, 0.4),
+                                false,
+                            );
+                            x += 6.0;
+                        }
+                    }
+                    match style {
+                        SparkStyle::Bars | SparkStyle::WinLoss => {
+                            let win = style == SparkStyle::WinLoss;
+                            let mean = vals.iter().sum::<f32>() / m as f32;
+                            for (i, (x0, y0, x1, y1)) in
+                                spark_columns(&vals, bw, bh, win).into_iter().enumerate()
+                            {
+                                let col = if win && vals[i] < mean {
+                                    down
+                                } else if win {
+                                    up
+                                } else {
+                                    c
+                                };
+                                fill(w, b.origin, &[(x0, y0), (x1, y0), (x1, y1), (x0, y1)], col);
+                            }
+                            return;
+                        }
+                        SparkStyle::Dots => {
+                            for &(x, y) in &p {
+                                let x = x.clamp(3.0, bw - 3.0);
+                                fill(w, b.origin, &marker_points(marker, x, y, 2.6), c);
+                            }
+                            return;
+                        }
+                        SparkStyle::Step => {
+                            let sp = step_points(&p);
+                            if area {
+                                let mut poly = sp.clone();
+                                poly.push((bw, bh));
+                                poly.push((0.0, bh));
+                                fill(w, b.origin, &poly, scale_alpha(c, 0.16));
+                            }
+                            glow_stroke(w, b.origin, &sp, 1.5, c, glow);
+                            return;
+                        }
+                        SparkStyle::Line => {}
+                    }
                     if area {
                         let mut poly = p.clone();
                         poly.push((bw, bh));
@@ -992,7 +1115,9 @@ pub fn pie_hit(dx: f32, dy: f32, r: f32, hole: f32, fr: &[(f32, f32)]) -> Option
         return None;
     }
     let turn = (dx.atan2(-dy) / std::f32::consts::TAU).rem_euclid(1.0);
-    fr.iter().position(|(a, z)| turn >= *a && turn < *z)
+    // Fractions may run past 1 (a partial donut starting at 0.75).
+    fr.iter()
+        .position(|(a, z)| (turn >= *a && turn < *z) || (turn + 1.0 >= *a && turn + 1.0 < *z))
 }
 
 /// Pie or donut chart; `center` is shown in the donut hole.
@@ -1006,6 +1131,11 @@ pub struct PieChart {
     selected: Option<Option<usize>>,
     select_color: Option<Color>,
     on_select: Option<SelectFn>,
+    gap: f32,
+    explode: f32,
+    colors: Option<Vec<Color>>,
+    start: f32,
+    sweep: f32,
 }
 
 impl PieChart {
@@ -1019,7 +1149,35 @@ impl PieChart {
             selected: None,
             select_color: None,
             on_select: None,
+            gap: 2.0,
+            explode: 0.0,
+            colors: None,
+            start: 0.0,
+            sweep: 1.0,
         }
+    }
+    /// Straight gap between slices in px (default 2, `0` = flush).
+    pub fn gap(mut self, g: f32) -> Self {
+        self.gap = g.max(0.0);
+        self
+    }
+    /// Push every slice outward by `px` (an exploded pie), up to 10.
+    pub fn explode(mut self, px: f32) -> Self {
+        self.explode = px.clamp(0.0, 10.0);
+        self
+    }
+    /// Slice colours (cycled) instead of the theme's series colours, e.g. a
+    /// monochrome ramp.
+    pub fn colors(mut self, c: impl IntoIterator<Item = Color>) -> Self {
+        self.colors = Some(c.into_iter().collect());
+        self
+    }
+    /// Draw only `sweep` of a full turn (`0.5` = half donut), beginning at
+    /// `start` turns clockwise from the top (`0.75` = from the left).
+    pub fn arc(mut self, start: f32, sweep: f32) -> Self {
+        self.start = start;
+        self.sweep = sweep.clamp(0.05, 1.0);
+        self
     }
     /// Controlled selection (`None` = nothing selected). Without this the
     /// chart keeps its own selection, toggled by clicking a slice.
@@ -1060,7 +1218,11 @@ impl PieChart {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let vals: Vec<f32> = self.slices.iter().map(|s| s.1).collect();
-        let fr = pie_fractions(&vals);
+        let (start, sweep) = (self.start, self.sweep);
+        let fr: Vec<(f32, f32)> = pie_fractions(&vals)
+            .iter()
+            .map(|(a, z)| (start + a * sweep, start + z * sweep))
+            .collect();
         let key: SharedString = format!(
             "pie-{}",
             self.slices
@@ -1081,27 +1243,38 @@ impl PieChart {
         let fr_click = fr.clone();
         let fr_hit = fr.clone();
         let g = crate::motion::grow(window, cx, "PieChart");
-        let fr: Vec<(f32, f32)> = fr.iter().map(|(a, z)| (a * g, z * g)).collect();
-        let cols: Vec<Hsla> = (0..vals.len())
-            .map(|i| hsla(t.palette.series_at(i)))
+        let fr: Vec<(f32, f32)> = fr
+            .iter()
+            .map(|(a, z)| (start + (a - start) * g, start + (z - start) * g))
             .collect();
+        let slice_col = {
+            let (t2, custom) = (t.clone(), self.colors.clone());
+            move |i: usize| match &custom {
+                Some(c) if !c.is_empty() => c[i % c.len()],
+                _ => t2.palette.series_at(i),
+            }
+        };
+        let cols: Vec<Hsla> = (0..vals.len()).map(|i| hsla(slice_col(i))).collect();
         let (size, hole) = (self.size, self.hole);
-        let gap = if vals.len() > 1 { 2.0_f32 } else { 0.0 }; // px
+        let explode = self.explode;
+        let reserve = PIE_POP + explode;
+        let gap = if vals.len() > 1 { self.gap } else { 0.0 }; // px
         let cvs = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, cx| {
                 st_paint.update(cx, |s, _| s.bounds = b);
-                let r = size / 2.0 - 1.0 - PIE_POP;
+                let r = size / 2.0 - 1.0 - reserve;
                 let c = size / 2.0;
                 for (i, ((a, z), col)) in fr.iter().zip(&cols).enumerate() {
                     // Hovered slice pops out along its bisector.
-                    let target = if hover == Some(i) {
-                        PIE_POP
-                    } else if sel == Some(i) {
-                        PIE_POP * 0.5
-                    } else {
-                        0.0
-                    };
+                    let target = explode
+                        + if hover == Some(i) {
+                            PIE_POP
+                        } else if sel == Some(i) {
+                            PIE_POP * 0.5
+                        } else {
+                            0.0
+                        };
                     let (pop, busy) = st_paint.update(cx, |s, _| {
                         if s.pops.len() <= i {
                             s.pops.resize(i + 1, crate::motion::Tween::new(0.0, motion));
@@ -1179,11 +1352,15 @@ impl PieChart {
         )
         .absolute()
         .size_full();
+        // A top half-ring (arc 0.75 + 0.5) only needs the upper half of the box.
+        let top_half = self.sweep <= 0.5 && (self.start - 0.75).abs() < 0.01;
+        let disc_h = if top_half { size / 2.0 + 2.0 } else { size };
         let mut disc = div()
             .id(key)
             .relative()
             .w(px(size))
-            .h(px(size))
+            .h(px(disc_h))
+            .overflow_hidden()
             .child(cvs)
             .on_mouse_move(move |e, w, cx| {
                 let b = st_move.read(cx).bounds;
@@ -1192,7 +1369,7 @@ impl PieChart {
                 let h = pie_hit(
                     mx - ox - size / 2.0,
                     my - oy - size / 2.0,
-                    size / 2.0 - 1.0 - PIE_POP,
+                    size / 2.0 - 1.0 - reserve,
                     hole,
                     &fr_hit,
                 );
@@ -1205,7 +1382,7 @@ impl PieChart {
                 let b = st_click.read(cx).bounds;
                 let (ox, oy): (f32, f32) = (b.origin.x.into(), b.origin.y.into());
                 let (mx, my): (f32, f32) = (e.position.x.into(), e.position.y.into());
-                let r = size / 2.0 - 1.0 - PIE_POP;
+                let r = size / 2.0 - 1.0 - reserve;
                 let h = pie_hit(
                     mx - ox - size / 2.0,
                     my - oy - size / 2.0,
@@ -1238,10 +1415,15 @@ impl PieChart {
                 }
             });
         if let (Some(txt), true) = (self.center.clone(), self.hole > 0.0) {
+            let overlay = div().absolute().left_0().w(px(size));
+            // Top half ring: centre the value on the baseline, not the full circle.
+            let overlay = if top_half {
+                overlay.bottom_0().h(px(size * 0.3))
+            } else {
+                overlay.top_0().h(px(size))
+            };
             disc = disc.child(
-                div()
-                    .absolute()
-                    .size_full()
+                overlay
                     .flex()
                     .items_center()
                     .justify_center()
@@ -1265,12 +1447,7 @@ impl PieChart {
                         .flex()
                         .items_center()
                         .gap(px(t.spacing.xs))
-                        .child(
-                            div()
-                                .w(px(10.0))
-                                .h(px(10.0))
-                                .bg(hsla(t.palette.series_at(i))),
-                        )
+                        .child(div().w(px(10.0)).h(px(10.0)).bg(hsla(slice_col(i))))
                         .child(format!("{n} · {}%", trim(pct)))
                 }),
             ));
@@ -2002,6 +2179,33 @@ impl RenderOnce for Heatmap {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn spark_columns_shapes() {
+        let v = [1.0, 5.0, 3.0, 9.0];
+        let bars = spark_columns(&v, 40.0, 20.0, false);
+        assert_eq!(bars.len(), 4);
+        // Tallest value reaches the top; the lowest keeps a visible stub.
+        assert!(bars[3].1 < 0.5 && bars[0].3 - bars[0].1 > 2.0);
+        assert!(
+            bars.windows(2).all(|w| w[0].2 <= w[1].0 + 0.01),
+            "no overlap"
+        );
+        let wl = spark_columns(&v, 40.0, 20.0, true);
+        // mean 4.5: values 1,3 lose (below the midline), 5,9 win (above).
+        assert!(wl[0].1 > 10.0 && wl[2].1 > 10.0);
+        assert!(wl[1].3 < 10.0 && wl[3].3 < 10.0);
+        assert!(spark_columns(&[], 10.0, 10.0, false).is_empty());
+    }
+
+    #[test]
+    fn pie_hit_wraps_past_one_turn() {
+        // Half donut starting at the left (0.75) running over the top to 1.25.
+        let fr = [(0.75, 1.0), (1.0, 1.25)];
+        assert_eq!(pie_hit(0.0, -30.0, 50.0, 0.4, &fr), Some(1)); // just right of top
+        assert_eq!(pie_hit(-30.0, -1.0, 50.0, 0.4, &fr), Some(0)); // upper left
+        assert_eq!(pie_hit(0.0, 30.0, 50.0, 0.4, &fr), None); // empty lower half
+    }
+
     #[test]
     fn pie_hit_finds_slice() {
         let fr = [(0.0, 0.5), (0.5, 1.0)];

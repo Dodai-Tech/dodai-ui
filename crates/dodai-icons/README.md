@@ -1,6 +1,6 @@
 # dodai-icons
 
-Framework-agnostic icon geometry for Dodai UI: **133 icons** in 7 groups
+Framework-agnostic icon geometry for Dodai UI: **135 icons** in 7 groups
 (interface, arrows, actions, status, data, objects, cyber) on a 24×24 grid.
 
 The pack follows the Cyberpunk design language: no curves, only straight lines,

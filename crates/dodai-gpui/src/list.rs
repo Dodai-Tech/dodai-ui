@@ -33,9 +33,16 @@ pub struct ListItem {
     icon: Option<crate::icons::IconName>,
     on_click: Option<crate::interact::ClickHandler>,
     corners: Option<dodai_core::Corners>,
+    depth: u8,
 }
 
 impl ListItem {
+    /// Nest the row `levels` deep: indented, smaller, muted until selected.
+    /// Use it for the children of a menu entry (sub-groups, jump targets).
+    pub fn depth(mut self, levels: u8) -> Self {
+        self.depth = levels;
+        self
+    }
     /// Cut these corners instead of the theme's.
     pub fn corners(mut self, c: dodai_core::Corners) -> Self {
         self.corners = Some(c);
@@ -47,6 +54,7 @@ impl ListItem {
     pub fn new(id: impl Into<ElementId>, label: impl Into<SharedString>) -> Self {
         Self {
             corners: None,
+            depth: 0,
             id: id.into(),
             label: label.into(),
             selected: false,
@@ -75,15 +83,28 @@ impl ListItem {
         let t = crate::apply_corners(t, self.corners);
         let st = use_interact(&self.id, window, cx);
         let hovered = st.read(cx).hovered;
-        let (style, fg, marker) = list_style(&t, self.selected, hovered);
+        let (style, mut fg, marker) = list_style(&t, self.selected, hovered);
+        if self.depth > 0 && !self.selected {
+            fg = hsla(t.palette.text_muted);
+        }
+        let (pad, size, hgt) = if self.depth > 0 {
+            (
+                t.spacing.md + self.depth as f32 * t.spacing.lg,
+                t.typography.size_sm,
+                0.65,
+            )
+        } else {
+            (t.spacing.md, t.typography.size_md, 0.8)
+        };
         let mut el = track(shaped_id(self.id, &t.shape, style), &st)
-            .h(px(t.shape.control_height * 0.8))
-            .px(px(t.spacing.md))
+            .h(px(t.shape.control_height * hgt))
+            .pl(px(pad))
+            .pr(px(t.spacing.md))
             .flex()
             .items_center()
             .cursor_pointer()
             .font_family(first_family(t.typography.body))
-            .text_size(px(t.typography.size_md))
+            .text_size(px(size))
             .text_color(fg)
             .gap(px(t.spacing.sm));
         if let Some(g) = self.icon {
