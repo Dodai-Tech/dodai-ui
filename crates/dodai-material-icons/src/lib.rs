@@ -75,8 +75,7 @@ impl Icon {
     pub fn faceted(&self) -> Vec<Polygon> {
         self.polygons()
             .into_iter()
-            .map(|p| simplify_closed(&p, FACET_TOLERANCE))
-            .filter(|p| p.len() >= 3)
+            .filter_map(|p| facet_polygon(&p))
             .collect()
     }
 
@@ -86,8 +85,202 @@ impl Icon {
     }
 }
 
-/// Max distance (24-grid units) a facet may drift from the smooth outline.
-pub const FACET_TOLERANCE: f32 = 0.9;
+/// Max distance (24-grid units) a facet may drift from the smooth outline
+/// before octilinear snapping.
+pub const FACET_TOLERANCE: f32 = 0.55;
+
+/// Smallest outline area (24-grid units²) worth keeping.
+const MIN_AREA: f32 = 0.2;
+
+/// Smooth outline → angular polygon in the Cyberpunk language:
+///
+/// 1. round rings become regular octagons (flat top, like the hand-drawn pack);
+/// 2. everything else is simplified (Douglas–Peucker) and snapped so edges are
+///    horizontal, vertical or 45° ([`octilinear`]);
+/// 3. a snapped result that drifted from the outline or self-intersects falls
+///    back to the plain simplified polygon, so no icon is ever mangled.
+pub fn facet_polygon(p: &[(f32, f32)]) -> Option<Polygon> {
+    if let Some(o) = octagon_for(p) {
+        return Some(o);
+    }
+    // Coarse to fine: the first snapped polygon that stays faithful wins; thin
+    // strokes need the finer pass, and at worst we keep the plain facets.
+    let mut best = None;
+    for tol in [FACET_TOLERANCE, 0.38, 0.25] {
+        let dp = simplify_closed(p, tol);
+        let snapped = octilinear(&dp);
+        if faithful(&snapped, p) {
+            best = Some(snapped);
+            break;
+        }
+        best = Some(dp);
+    }
+    best.filter(|b| b.len() >= 3 && area(b).abs() >= MIN_AREA)
+}
+
+/// A regular octagon when `p` is (nearly) a circle.
+fn octagon_for(p: &[(f32, f32)]) -> Option<Polygon> {
+    if p.len() < 8 {
+        return None;
+    }
+    let (mut x0, mut y0, mut x1, mut y1) = (f32::MAX, f32::MAX, f32::MIN, f32::MIN);
+    for &(x, y) in p {
+        (x0, y0, x1, y1) = (x0.min(x), y0.min(y), x1.max(x), y1.max(y));
+    }
+    let (cx, cy) = ((x0 + x1) / 2.0, (y0 + y1) / 2.0);
+    let r = ((x1 - x0) + (y1 - y0)) / 4.0;
+    if r < 0.6 || ((x1 - x0) - (y1 - y0)).abs() > 0.15 * r {
+        return None;
+    }
+    let (lo, hi) = p.iter().fold((f32::MAX, f32::MIN), |(lo, hi), &(x, y)| {
+        let d = (x - cx).hypot(y - cy);
+        (lo.min(d), hi.max(d))
+    });
+    if hi - lo > 0.06 * r.max(1.0) {
+        return None;
+    }
+    let rc = r / (std::f32::consts::PI / 8.0).cos();
+    let flip = if area(p) < 0.0 { -1.0 } else { 1.0 };
+    Some(
+        (0..8)
+            .map(|i| {
+                let a = (22.5 + 45.0 * i as f32 * flip).to_radians();
+                (cx + rc * a.cos(), cy + rc * a.sin())
+            })
+            .collect(),
+    )
+}
+
+/// `cand` stays within `FAITHFUL` of `orig` both ways, keeps its area and does
+/// not cross itself.
+fn faithful(cand: &[(f32, f32)], orig: &[(f32, f32)]) -> bool {
+    const FAITHFUL: f32 = 0.5;
+    if cand.len() < 3 {
+        return false;
+    }
+    let (ac, ao) = (area(cand), area(orig));
+    if ac.signum() != ao.signum() || (ac - ao).abs() > 0.2 * ao.abs().max(1.0) {
+        return false;
+    }
+    if cand.iter().any(|&q| dist_to_ring(q, orig) > FAITHFUL)
+        || orig.iter().any(|&q| dist_to_ring(q, cand) > FAITHFUL)
+    {
+        return false;
+    }
+    !self_intersects(cand)
+}
+
+fn dist_to_ring(q: (f32, f32), ring: &[(f32, f32)]) -> f32 {
+    let n = ring.len();
+    (0..n)
+        .map(|i| {
+            let (a, b) = (ring[i], ring[(i + 1) % n]);
+            let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+            let l2 = dx * dx + dy * dy;
+            let t = if l2 < 1e-9 {
+                0.0
+            } else {
+                (((q.0 - a.0) * dx + (q.1 - a.1) * dy) / l2).clamp(0.0, 1.0)
+            };
+            (q.0 - (a.0 + dx * t)).hypot(q.1 - (a.1 + dy * t))
+        })
+        .fold(f32::MAX, f32::min)
+}
+
+fn self_intersects(p: &[(f32, f32)]) -> bool {
+    let n = p.len();
+    let ccw = |a: (f32, f32), b: (f32, f32), c: (f32, f32)| {
+        (b.0 - a.0) * (c.1 - a.1) - (b.1 - a.1) * (c.0 - a.0)
+    };
+    for i in 0..n {
+        let (a, b) = (p[i], p[(i + 1) % n]);
+        for j in i + 2..n {
+            if i == 0 && j == n - 1 {
+                continue;
+            }
+            let (c, d) = (p[j], p[(j + 1) % n]);
+            if ccw(a, b, c) * ccw(a, b, d) < 0.0 && ccw(c, d, a) * ccw(c, d, b) < 0.0 {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+fn area(p: &[(f32, f32)]) -> f32 {
+    let n = p.len();
+    (0..n)
+        .map(|i| {
+            let (a, b) = (p[i], p[(i + 1) % n]);
+            a.0 * b.1 - b.0 * a.1
+        })
+        .sum::<f32>()
+        / 2.0
+}
+
+/// Snap every edge direction to a multiple of 45° (lines through the edge
+/// midpoints, corners re-intersected). Corners that cannot be intersected
+/// sanely keep their original position.
+pub fn octilinear(p: &[(f32, f32)]) -> Polygon {
+    let n = p.len();
+    if n < 3 {
+        return p.to_vec();
+    }
+    // (midpoint, unit direction) per edge.
+    let lines: Vec<((f32, f32), (f32, f32))> = (0..n)
+        .map(|i| {
+            let (a, b) = (p[i], p[(i + 1) % n]);
+            let ang = (b.1 - a.1).atan2(b.0 - a.0);
+            let q = (ang / std::f32::consts::FRAC_PI_4).round() * std::f32::consts::FRAC_PI_4;
+            (((a.0 + b.0) / 2.0, (a.1 + b.1) / 2.0), (q.cos(), q.sin()))
+        })
+        .collect();
+    let mut out: Polygon = Vec::with_capacity(n);
+    for i in 0..n {
+        let (m0, d0) = lines[(i + n - 1) % n];
+        let (m1, d1) = lines[i];
+        let cross = d0.0 * d1.1 - d0.1 * d1.0;
+        let v = p[i];
+        let pt = if cross.abs() < 0.2 {
+            // Same direction: slide the vertex onto the shared line.
+            let (dx, dy) = d1;
+            let t = (v.0 - m1.0) * dx + (v.1 - m1.1) * dy;
+            (m1.0 + dx * t, m1.1 + dy * t)
+        } else {
+            let t = ((m1.0 - m0.0) * d1.1 - (m1.1 - m0.1) * d1.0) / cross;
+            (m0.0 + d0.0 * t, m0.1 + d0.1 * t)
+        };
+        let far = (pt.0 - v.0).hypot(pt.1 - v.1) > 1.6;
+        out.push(if far { v } else { pt });
+    }
+    // Drop repeats and collinear points.
+    let mut clean: Polygon = Vec::with_capacity(out.len());
+    for &q in &out {
+        if clean
+            .last()
+            .is_none_or(|l| (l.0 - q.0).hypot(l.1 - q.1) > 0.12)
+        {
+            clean.push(q);
+        }
+    }
+    if clean.len() > 1 {
+        let (f, l) = (clean[0], clean[clean.len() - 1]);
+        if (f.0 - l.0).hypot(f.1 - l.1) <= 0.12 {
+            clean.pop();
+        }
+    }
+    let m = clean.len();
+    if m < 3 {
+        return clean;
+    }
+    (0..m)
+        .filter(|&i| {
+            let (a, b, c) = (clean[(i + m - 1) % m], clean[i], clean[(i + 1) % m]);
+            ((b.0 - a.0) * (c.1 - b.1) - (b.1 - a.1) * (c.0 - b.0)).abs() > 0.02
+        })
+        .map(|i| clean[i])
+        .collect()
+}
 
 /// Douglas–Peucker for a closed ring: anchor on the first point and the one
 /// farthest from it, simplify both halves.
@@ -326,6 +519,45 @@ mod tests {
                 );
             }
         }
+    }
+
+    /// Whole catalogue: valid geometry and, overall, an angular (octilinear)
+    /// look rather than arbitrary angles.
+    #[cfg(feature = "outlined")]
+    #[test]
+    fn faceted_catalogue_is_valid_and_mostly_octilinear() {
+        let (mut edges, mut octi, mut empty) = (0usize, 0usize, 0usize);
+        for i in crate::outlined::ALL {
+            let f = i.faceted();
+            if f.is_empty() && !i.polygons().is_empty() {
+                empty += 1;
+            }
+            for p in &f {
+                assert!(p.len() >= 3, "{}", i.name);
+                for &(x, y) in p {
+                    assert!(x.is_finite() && y.is_finite(), "{}", i.name);
+                    assert!(
+                        (-2.0..=26.0).contains(&x) && (-2.0..=26.0).contains(&y),
+                        "{}",
+                        i.name
+                    );
+                }
+                for k in 0..p.len() {
+                    let (a, b) = (p[k], p[(k + 1) % p.len()]);
+                    let ang = (b.1 - a.1).atan2(b.0 - a.0).to_degrees().rem_euclid(45.0);
+                    edges += 1;
+                    if ang < 2.0 || ang > 43.0 {
+                        octi += 1;
+                    }
+                }
+            }
+        }
+        assert!(
+            empty * 100 <= crate::outlined::ALL.len(),
+            "{empty} icons vanished"
+        );
+        let share = octi as f32 / edges as f32;
+        assert!(share > 0.7, "only {:.0}% octilinear edges", share * 100.0);
     }
 
     #[test]
