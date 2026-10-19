@@ -389,13 +389,20 @@ pub(crate) fn icons_view(t: &dodai_core::Theme, query: &str) -> gpui::Div {
                     }),
             );
         }
-        out = out
-            .child(Muted::new(format!(
-                "{} · {}",
-                label.to_uppercase(),
-                members.len()
-            )))
-            .child(row);
+        // Each type is laid out only near the window: 380 icons cost milliseconds.
+        out = out.child(dodai_gpui::lazy(
+            g,
+            div()
+                .flex()
+                .flex_col()
+                .gap(px(t.spacing.lg))
+                .child(Muted::new(format!(
+                    "{} · {}",
+                    label.to_uppercase(),
+                    members.len()
+                )))
+                .child(row),
+        ));
     }
     if q.is_empty() {
         let mut row = div().flex().flex_wrap().w_full().gap(px(t.spacing.sm));

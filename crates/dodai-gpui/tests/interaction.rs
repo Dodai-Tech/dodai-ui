@@ -697,3 +697,40 @@ fn icons_paint_in_every_pack_and_theme(cx: &mut TestAppContext) {
         vcx.run_until_parked();
     }
 }
+
+#[gpui::test]
+fn lazy_blocks_far_from_the_window_are_not_laid_out(cx: &mut TestAppContext) {
+    let vcx = mount(cx, move |_, _| {
+        div()
+            .flex()
+            .flex_col()
+            .child(lazy(
+                "lz-near",
+                div().h(px(100.0)).debug_selector(|| "lz-near-body".into()),
+            ))
+            .child(div().h(px(4000.0)))
+            .child(div().debug_selector(|| "lz-far-slot".into()).child(lazy(
+                "lz-far",
+                div().h(px(200.0)).debug_selector(|| "lz-far-body".into()),
+            )))
+            .into_any_element()
+    });
+    for _ in 0..2 {
+        vcx.update(|w, _| w.refresh());
+        vcx.run_until_parked();
+    }
+    assert!(
+        vcx.debug_bounds("lz-near-body").is_some(),
+        "near stays realised"
+    );
+    assert!(
+        vcx.debug_bounds("lz-far-body").is_none(),
+        "far block is replaced by a spacer"
+    );
+    let slot = vcx.debug_bounds("lz-far-slot").expect("slot laid out");
+    assert_eq!(
+        slot.size.height,
+        px(200.0),
+        "the spacer keeps the measured height"
+    );
+}

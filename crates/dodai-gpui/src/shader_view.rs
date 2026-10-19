@@ -26,6 +26,32 @@ struct Slot {
     gpu_last: Option<(Instant, u64, (u32, u32))>,
     start: Option<Instant>,
     image: Option<Arc<RenderImage>>,
+    /// When the picture last changed (paces the redraws).
+    fresh_at: Option<Instant>,
+    /// A wake-up timer is pending.
+    waking: Arc<std::sync::atomic::AtomicBool>,
+}
+
+impl Slot {
+    fn wake_state(&self) -> (Option<Instant>, Arc<std::sync::atomic::AtomicBool>) {
+        (self.fresh_at, self.waking.clone())
+    }
+}
+
+/// Re-render the current view after `secs`, once at a time per `flag`.
+fn wake_in(w: &mut Window, cx: &mut App, secs: f32, flag: Arc<std::sync::atomic::AtomicBool>) {
+    use std::sync::atomic::Ordering;
+    if flag.swap(true, Ordering::AcqRel) {
+        return;
+    }
+    let view = w.current_view();
+    let exec = cx.background_executor().clone();
+    w.spawn(cx, async move |acx| {
+        exec.timer(std::time::Duration::from_secs_f32(secs)).await;
+        flag.store(false, Ordering::Release);
+        let _ = acx.update(|_, cx| cx.notify(view));
+    })
+    .detach();
 }
 
 /// Live shader. Fluid width, `aspect` high; each image pixel covers `pixel`
@@ -149,9 +175,10 @@ fn gpu() -> Option<&'static std::sync::Mutex<dodai_shaders_gpu::Gpu>> {
             .spawn(|| {
                 let g = dodai_shaders_gpu::Gpu::new();
                 if let Some(g) = &g {
-                    // Compile every pipeline in the background so switching
-                    // shaders never stalls a frame.
-                    g.prewarm_all();
+                    // Pipelines compile on demand (see `gpu_frame`); compiling
+                    // the whole catalogue up front would hog the CPU for
+                    // seconds for shaders nobody looks at.
+                    g.prewarm(["pack".to_string()]);
                 }
                 let _ = GPU.set(g.map(std::sync::Mutex::new));
             });
@@ -172,29 +199,70 @@ fn gpu_frame(
     now: Instant,
 ) -> Option<Option<Arc<RenderImage>>> {
     let g = gpu()?;
-    let dev_px = if pixel > 2.0 { pixel * scale } else { 1.0 };
+    // `pixel` is device pixels per shader pixel on a 2x display, so the default
+    // 2 is one image pixel per CSS pixel: a quarter of the work of full retina
+    // resolution, and shaders are smooth enough that it does not show.
+    let dev_px = (pixel * scale / 2.0).max(1.0);
     let (mut w, mut h) = ((bw * scale / dev_px) as u32, (bh * scale / dev_px) as u32);
     // Keep very large views to about 1080p; the image is scaled up.
     let big = (w as f32 / 1920.0).max(h as f32 / 1080.0).max(1.0);
     w = ((w as f32 / big) as u32).max(16);
     h = ((h as f32 / big) as u32).max(9);
+    let ids: Vec<&str> = chain.iter().map(|i| i.id).collect();
+    {
+        // Never stall a frame compiling: draw on the CPU until it is ready.
+        let gpu = g.lock().ok()?;
+        if !gpu.is_ready(&ids) {
+            gpu.warm_chain(&ids);
+            return None;
+        }
+    }
     let due = match s.gpu_last {
         None => true,
         Some((_, k, sz)) if k != cfg || sz != (w, h) || s.image.is_none() => true,
         Some((at, _, _)) => animated && (now - at).as_secs_f32() >= 1.0 / fps,
     };
-    if !due {
+    // One GPU render at a time per frame, spaced by what the last one cost:
+    // each blocks while the picture is read back, so several in one frame
+    // would drop it. Views that miss out keep their picture a frame longer.
+    if !due || !pace_allows(now, s.image.is_none()) {
         return Some(None);
     }
-    let ids: Vec<&str> = chain.iter().map(|i| i.id).collect();
     let t = if animated { t } else { 1.5 };
     let mut gpu = g.lock().ok()?;
+    let took = Instant::now();
     let bytes = gpu.render(&ids, w, h, t, intensity, pal).ok()?;
+    pace_record(took.elapsed().as_secs_f32());
     let buf = image::RgbaImage::from_raw(w, h, bytes.to_vec())?;
     s.gpu_last = Some((now, cfg, (w, h)));
     Some(Some(Arc::new(RenderImage::new(vec![image::Frame::new(
         buf,
     )]))))
+}
+
+/// Earliest time the next GPU render may start, and the cost of the last one.
+fn pace() -> &'static std::sync::Mutex<(Option<Instant>, f32)> {
+    static P: std::sync::Mutex<(Option<Instant>, f32)> = std::sync::Mutex::new((None, 0.0));
+    &P
+}
+
+/// May a GPU render start now? A view with no picture yet always may.
+fn pace_allows(now: Instant, first: bool) -> bool {
+    first
+        || pace()
+            .lock()
+            .map_or(true, |p| p.0.is_none_or(|at| now >= at))
+}
+
+/// Record a render that took `secs`: the next one waits as long again, which
+/// keeps the GPU's share of each frame at about half.
+fn pace_record(secs: f32) {
+    if let Ok(mut p) = pace().lock() {
+        *p = (
+            Some(Instant::now() + std::time::Duration::from_secs_f32(secs)),
+            secs,
+        );
+    }
 }
 
 /// Which renderer `ShaderView` uses: `"GPU · <adapter>"` or `"CPU"`.
@@ -255,12 +323,12 @@ impl RenderOnce for ShaderView {
                 let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
                 let visible = w.content_mask().bounds.intersects(&b);
                 let now = Instant::now();
-                let (image, old) = slot.update(cx, |s, _| {
+                let shown = slot.update(cx, |s, _| {
                     let start = *s.start.get_or_insert(now);
                     let secs = (now - start).as_secs_f32();
                     // Off-screen views keep their last picture and cost nothing.
                     if !visible && s.image.is_some() {
-                        return (s.image.clone().expect("checked"), None);
+                        return s.image.clone().map(|i| (i, None));
                     }
                     #[cfg(feature = "gpu")]
                     if use_gpu && !chain.is_empty() {
@@ -275,14 +343,21 @@ impl RenderOnce for ShaderView {
                             now,
                         ) {
                             return match res {
-                                None => (s.image.clone().expect("rendered earlier"), None),
+                                None => s.image.clone().map(|i| (i, None)),
                                 Some(img) => {
+                                    s.fresh_at = Some(now);
                                     let old = s.image.replace(img.clone());
-                                    (img, old)
+                                    Some((img, old))
                                 }
                             };
                         }
                     }
+                    // CPU rendering blocks too: share the per-frame budget, and
+                    // let a view that has no picture yet wait its turn.
+                    if !pace_allows(now, false) {
+                        return s.image.clone().map(|i| (i, None));
+                    }
+                    let took = Instant::now();
                     let pl = s
                         .player
                         .get_or_insert_with(|| Player::new(chain.clone(), pal));
@@ -294,21 +369,35 @@ impl RenderOnce for ShaderView {
                     pl.max_fps = if animated { fps } else { 0.0 };
                     let (frame, fresh) = pl.tick(secs, bw, bh, cfg);
                     if !fresh && s.image.is_some() {
-                        return (s.image.clone().expect("checked"), None);
+                        return s.image.clone().map(|i| (i, None));
+                    }
+                    if fresh {
+                        pace_record(took.elapsed().as_secs_f32());
                     }
                     let (fw, fh) = (frame.w, frame.h);
                     let buf = image::RgbaImage::from_raw(fw, fh, frame.to_bgra8()).expect("size");
                     let img = Arc::new(RenderImage::new(vec![image::Frame::new(buf)]));
+                    s.fresh_at = Some(now);
                     let old = s.image.replace(img.clone());
-                    (img, old)
+                    Some((img, old))
                 });
-                let _ = w.paint_image(b, Corners::all(px(rounded)), image, 0, false);
-                // Free the replaced GPU texture so animation does not leak.
-                if let Some(old) = old {
-                    let _ = w.drop_image(old);
+                if let Some((image, old)) = shown {
+                    let _ = w.paint_image(b, Corners::all(px(rounded)), image, 0, false);
+                    // Free the replaced GPU texture so animation does not leak.
+                    if let Some(old) = old {
+                        let _ = w.drop_image(old);
+                    }
                 }
                 if animated && visible {
-                    w.request_animation_frame();
+                    // Redraw when the next picture is due, not every frame: a
+                    // 30 fps shader needs 30 redraws a second, not 120.
+                    let (at, waking) = slot.read(cx).wake_state();
+                    let wait = at.map_or(0.0, |at| (1.0 / fps) - at.elapsed().as_secs_f32());
+                    if wait <= 0.006 {
+                        w.request_animation_frame();
+                    } else {
+                        wake_in(w, cx, wait, waking);
+                    }
                 }
             },
         )

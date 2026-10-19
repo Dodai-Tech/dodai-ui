@@ -128,6 +128,7 @@ pub mod interact;
 pub mod knob;
 #[cfg(feature = "components")]
 pub mod layout;
+pub mod lazy;
 #[cfg(feature = "components")]
 pub mod list;
 pub mod logic;
@@ -253,6 +254,7 @@ pub use icons::{Icon, IconName, IconPack};
 pub use knob::Knob;
 #[cfg(feature = "components")]
 pub use layout::{clamp_ratio, visible_rows, SplitPane, TreeItem, TreeRow, TreeView};
+pub use lazy::lazy;
 #[cfg(feature = "components")]
 pub use list::{Divider, ListItem};
 #[cfg(feature = "components")]

@@ -57,6 +57,14 @@ pub struct Showcase {
     ld_pb: dodai_gpui::Playback,
     ld_ms: u16,
     scroll: gpui::ScrollHandle,
+    /// Last measured height of each section (spacer height while it is culled).
+    heights: std::collections::HashMap<&'static str, f32>,
+    /// Sections laid out in the previous frame (their measured height is real).
+    realised: std::collections::HashSet<&'static str>,
+    /// Sections measured at the current width.
+    fresh: std::collections::HashSet<&'static str>,
+    /// Width the heights were measured at.
+    width: f32,
     /// Section title to scroll to (plus frames to wait for a new category to lay out).
     jump: Option<(&'static str, u8)>,
     sec_kind: std::collections::HashMap<&'static str, EntrySet>,
@@ -533,6 +541,7 @@ impl Showcase {
 
 impl Render for Showcase {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let _prof = Prof::start();
         let narrow = window.viewport_size().width < px(760.0);
         let t = theme_of(cx);
         let me = cx.entity();
@@ -660,19 +669,69 @@ impl Render for Showcase {
             }
             std::process::exit(0);
         }
-        let mut spy: Vec<(&'static str, usize)> = Vec::new();
-        let mut shown = 0;
-        let mut last_cat = "";
-        let mut last_sub: Option<&str> = None;
+        // Pass 1: which sections are shown, and where they sit among the children.
+        let mut shown_secs: Vec<(&'static str, &'static str, gpui::AnyElement)> = Vec::new();
         for (c, title, el, _key) in sections {
-            let in_cat = in_cat(c);
             let hit =
                 query.is_empty() || !fuzzy_filter(&query, &[format!("{c} {title}")]).is_empty();
             let only = std::env::var("DODAI_ONLY").is_ok_and(|o| !title.contains(&o));
             let sub_ok = self.sub.is_none_or(|x| sub_of(c, title) == Some(x));
-            if !(in_cat && hit && sub_ok) || only {
-                continue;
+            if in_cat(c) && hit && sub_ok && !only {
+                shown_secs.push((c, title, el));
             }
+        }
+        let mut order: Vec<(&'static str, usize)> = Vec::new();
+        {
+            let (mut n, mut lc, mut ls) = (n_children, "", None);
+            for (c, title, _) in &shown_secs {
+                if *c != lc {
+                    n += 1;
+                    lc = c;
+                    ls = None;
+                }
+                if let Some(sb) = sub_of(c, title) {
+                    if ls != Some(sb) {
+                        n += 1;
+                        ls = Some(sb);
+                    }
+                }
+                order.push((title, n));
+                n += 1;
+            }
+        }
+        // Virtualisation: only sections near the viewport are laid out and painted;
+        // the rest are fixed-height spacers (last measured height). Layout of the
+        // whole page costs tens of ms, so this keeps scrolling and hovering cheap.
+        let vp = self.scroll.bounds();
+        let vp_top: f32 = vp.origin.y.into();
+        let vp_h: f32 = vp.size.height.into();
+        let valid = vp_h > 0.0 && order == self.spy;
+        let margin = (vp_h * 0.5).max(300.0);
+        // Child bounds are unscrolled layout positions; add the live offset.
+        let shift: f32 = self.scroll.offset().y.into();
+        let prev_real = std::mem::take(&mut self.realised);
+        // Heights depend on the width (text wraps): re-measure after a resize.
+        let vp_w: f32 = vp.size.width.into();
+        if (vp_w - self.width).abs() > 1.0 {
+            self.width = vp_w;
+            self.fresh.clear();
+        }
+        let avg_h = if self.heights.is_empty() {
+            420.0
+        } else {
+            self.heights.values().sum::<f32>() / self.heights.len() as f32
+        };
+        // Sections below the viewport get measured a few per frame, so spacer
+        // heights become exact without one big hitch.
+        let mut budget = 3;
+        let mut unmeasured = false;
+        // Heights that changed above the viewport shift everything: compensate.
+        let mut delta_above = 0.0f32;
+        let mut shown = 0;
+        let mut last_cat = "";
+        let mut last_sub: Option<&str> = None;
+        let mut spy: Vec<(&'static str, usize)> = Vec::new();
+        for (seq, (c, title, el)) in shown_secs.into_iter().enumerate() {
             if c != last_cat {
                 body = body.child(Heading::new(c).level(2));
                 n_children += 1;
@@ -690,11 +749,62 @@ impl Render for Showcase {
             if jump_title == Some(title) {
                 jump_ix = Some(n_children);
             }
+            let known = self.heights.get(title).copied();
+            let bounds = if valid {
+                self.scroll.bounds_for_item(n_children)
+            } else {
+                None
+            };
+            if let Some(b) = bounds.filter(|_| prev_real.contains(title)) {
+                let h: f32 = b.size.height.into();
+                let bottom = f32::from(b.origin.y) + shift + h;
+                if let Some(old) = known {
+                    if bottom <= vp_top && (h - old).abs() > 0.5 && !self.fresh.contains(title) {
+                        delta_above += h - old;
+                    }
+                }
+                self.heights.insert(title, h);
+                self.fresh.insert(title);
+            }
+            let stale = !self.fresh.contains(title);
+            unmeasured |= stale;
+            let realise = match bounds {
+                Some(b) => {
+                    let top = f32::from(b.origin.y) + shift;
+                    let bottom = top + f32::from(b.size.height);
+                    let near = bottom > vp_top - margin && top < vp_top + vp_h + margin;
+                    let ahead = !near && stale && top >= vp_top + vp_h && budget > 0;
+                    if ahead {
+                        budget -= 1;
+                    }
+                    near || ahead
+                }
+                // No usable layout yet: the first few, and anything never measured
+                // while jumping (so the jump lands on true positions).
+                None => seq < 4 || (known.is_none() && self.jump.is_some()),
+            };
             shown += 1;
             n_children += 1;
-            body = body.child(el);
+            if realise || std::env::var_os("DODAI_NOCULL").is_some() {
+                self.realised.insert(title);
+                body = body.child(el);
+            } else {
+                body = body.child(div().flex_none().w_full().h(px(known.unwrap_or(avg_h))));
+            }
         }
         self.spy = spy;
+        if delta_above != 0.0 {
+            let o = self.scroll.offset();
+            self.scroll
+                .set_offset(gpui::point(o.x, o.y - px(delta_above)));
+        }
+        if unmeasured {
+            window.request_animation_frame();
+        }
+        // Perf probe: redraw every frame so the cost of the visible sections shows up.
+        if std::env::var_os("DODAI_BENCH").is_some() {
+            window.request_animation_frame();
+        }
         if let Some((j, wait)) = self.jump {
             if wait > 0 {
                 self.jump = Some((j, wait - 1));
@@ -715,27 +825,55 @@ impl Render for Showcase {
 
         if std::env::var_os("DODAI_AUTOSCROLL").is_some() {
             // Perf probe: sweep the scroll position every frame.
-            let t = (std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map_or(0.0, |d| d.as_secs_f32())
-                * 0.5)
-                % 2.0;
-            let tri = if t < 1.0 { t } else { 2.0 - t };
-            self.scroll
-                .set_offset(gpui::point(px(0.0), px(-4000.0 * tri)));
-            window.request_animation_frame();
             thread_local! {
-                static FPS: std::cell::Cell<(Option<std::time::Instant>, u32)> =
-                    const { std::cell::Cell::new((None, 0)) };
+                static T0: std::time::Instant = std::time::Instant::now();
+            }
+            let t = (T0.with(|t| t.elapsed().as_secs_f32()) * 0.25) % 2.0;
+            let tri = if t < 1.0 { t } else { 2.0 - t };
+            self.scroll.set_offset(gpui::point(
+                px(0.0),
+                -self.scroll.max_offset().height.max(px(1.0)) * tri,
+            ));
+            window.request_animation_frame();
+            // (window start, frames, last frame, slowest gap, frames over 12 ms)
+            type Probe = (
+                Option<std::time::Instant>,
+                u32,
+                Option<std::time::Instant>,
+                f32,
+                u32,
+            );
+            thread_local! {
+                static FPS: std::cell::Cell<Probe> =
+                    const { std::cell::Cell::new((None, 0, None, 0.0, 0)) };
+            }
+            // Perf probe: DODAI_CYCLE also switches category every 90 frames.
+            if std::env::var_os("DODAI_CYCLE").is_some() {
+                thread_local! { static N: std::cell::Cell<u32> = const { std::cell::Cell::new(0) }; }
+                let n = N.with(|n| {
+                    n.set(n.get() + 1);
+                    n.get()
+                });
+                if n % 90 == 0 {
+                    self.cat = (self.cat + 1) % self.cat_count.max(1);
+                    self.sub = None;
+                    self.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
+                }
             }
             FPS.with(|c| {
-                let (t0, n) = c.get();
-                let t0 = t0.unwrap_or_else(std::time::Instant::now);
+                let (t0, n, last, worst, slow) = c.get();
+                let now = std::time::Instant::now();
+                let t0 = t0.unwrap_or(now);
+                let gap = last.map_or(0.0, |l| now.duration_since(l).as_secs_f32() * 1000.0);
+                let (worst, slow) = (worst.max(gap), slow + u32::from(gap > 12.0));
+                if gap > 25.0 {
+                    eprintln!("hitch {gap:.0} ms in category {}", self.cat);
+                }
                 if t0.elapsed().as_secs_f32() >= 1.0 {
-                    eprintln!("fps {n}");
-                    c.set((Some(std::time::Instant::now()), 0));
+                    eprintln!("fps {n} worst {worst:.1} ms slow>12ms {slow}");
+                    c.set((Some(now), 0, Some(now), 0.0, 0));
                 } else {
-                    c.set((Some(t0), n + 1));
+                    c.set((Some(t0), n + 1, Some(now), worst, slow));
                 }
             });
         }
@@ -908,6 +1046,10 @@ impl Showcase {
             ld_pb: dodai_gpui::Playback::Loop,
             ld_ms: 0,
             scroll: gpui::ScrollHandle::new(),
+            heights: Default::default(),
+            realised: Default::default(),
+            fresh: Default::default(),
+            width: 0.0,
             jump: None,
             sec_kind: Default::default(),
             pill_hover: None,
@@ -1033,4 +1175,32 @@ fn ease_ctrl(e: Easing) -> Option<(f32, f32, f32, f32)> {
         | Easing::Back(_)
         | Easing::Anticipate(_) => return None,
     })
+}
+
+/// `DODAI_PROF=1`: print the average time `render` spends building the element tree.
+struct Prof(Option<std::time::Instant>);
+impl Prof {
+    fn start() -> Self {
+        Self(std::env::var_os("DODAI_PROF").map(|_| std::time::Instant::now()))
+    }
+}
+impl Drop for Prof {
+    fn drop(&mut self) {
+        thread_local! {
+            static ACC: std::cell::Cell<(Option<std::time::Instant>, f32, u32)> =
+                const { std::cell::Cell::new((None, 0.0, 0)) };
+        }
+        let Some(t) = self.0 else { return };
+        ACC.with(|c| {
+            let (t0, sum, n) = c.get();
+            let t0 = t0.unwrap_or_else(std::time::Instant::now);
+            let (sum, n) = (sum + t.elapsed().as_secs_f32() * 1000.0, n + 1);
+            if t0.elapsed().as_secs_f32() >= 1.0 {
+                eprintln!("build {:.2} ms avg over {n} renders", sum / n as f32);
+                c.set((Some(std::time::Instant::now()), 0.0, 0));
+            } else {
+                c.set((Some(t0), sum, n));
+            }
+        });
+    }
 }

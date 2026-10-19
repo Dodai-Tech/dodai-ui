@@ -120,6 +120,8 @@ pub struct Gpu {
     bgl: wgpu::BindGroupLayout,
     layout: wgpu::PipelineLayout,
     pipes: Pipes,
+    /// Ids being compiled by a background thread.
+    pending: Arc<Mutex<std::collections::HashSet<String>>>,
     entries: Arc<HashMap<String, String>>,
     targets: Option<Targets>,
     /// Name of the adapter in use.
@@ -191,6 +193,7 @@ impl Gpu {
             bgl,
             layout,
             pipes: Arc::default(),
+            pending: Arc::default(),
             entries: Arc::new(entry_names()),
             targets: None,
         })
@@ -218,6 +221,46 @@ impl Gpu {
                 c.get("pack");
                 for id in ids {
                     c.get(&id);
+                }
+            });
+    }
+
+    /// Whether every pipeline `chain` needs is already compiled, so rendering
+    /// it will not stall on shader compilation.
+    pub fn is_ready(&self, chain: &[&str]) -> bool {
+        let pipes = self.pipes.lock().expect("pipes");
+        pipes.contains_key("pack") && chain.iter().all(|id| pipes.contains_key(*id))
+    }
+
+    /// Compile what `chain` needs on a background thread (at most one thread
+    /// at a time per missing id). Use with [`Gpu::is_ready`]: render on the
+    /// CPU until it is.
+    pub fn warm_chain(&self, chain: &[&str]) {
+        let missing: Vec<String> = {
+            let pipes = self.pipes.lock().expect("pipes");
+            chain
+                .iter()
+                .filter(|id| !pipes.contains_key(**id))
+                .map(|id| (*id).to_string())
+                .collect()
+        };
+        let mut pending = self.pending.lock().expect("pending");
+        let todo: Vec<String> = missing
+            .into_iter()
+            .filter(|id| pending.insert(id.clone()))
+            .collect();
+        drop(pending);
+        if todo.is_empty() {
+            return;
+        }
+        let c = self.compiler();
+        let pending = self.pending.clone();
+        let _ = std::thread::Builder::new()
+            .name("dodai-gpu-warm".into())
+            .spawn(move || {
+                for id in todo {
+                    c.get(&id);
+                    pending.lock().expect("pending").remove(&id);
                 }
             });
     }
