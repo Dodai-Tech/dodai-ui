@@ -1,7 +1,7 @@
 //! Frame latency while every pipeline compiles in the background.
-//! `cargo run --release -p dodai-shaders-gpu --example warm`
+//! `cargo run --release -p dodai-shaders --features gpu --example warm`
+use dodai_shaders::gpu::Gpu;
 use dodai_shaders::ShaderPalette;
-use dodai_shaders_gpu::Gpu;
 use std::time::Instant;
 fn main() {
     let mut gpu = Gpu::new().expect("no GPU");

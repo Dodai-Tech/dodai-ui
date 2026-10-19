@@ -4,7 +4,7 @@
 //! is a plain function evaluated per pixel (`fn(uv, &Ctx) -> Vec3`), rendered
 //! on the CPU across threads into a [`Frame`] that any toolkit can show as an
 //! image: no GPU API, no shader language, no build step. The same sources also
-//! run on the GPU through `dodai-shaders-gpu` (rust-gpu), which is why the shader
+//! run on the GPU through the `gpu` feature (rust-gpu), which is why the shader
 //! files avoid iterators over arrays, slices of constants, strings and
 //! `u8`/`u64` values.
 //!
@@ -40,6 +40,8 @@ pub mod fx;
 pub mod ghibli;
 pub mod ghibli2;
 pub mod ghostty;
+#[cfg(feature = "gpu")]
+pub mod gpu;
 pub mod material;
 pub mod math;
 pub mod matrix;

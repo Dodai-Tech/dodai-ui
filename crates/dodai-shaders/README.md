@@ -42,8 +42,26 @@ Alex Sherwin and pkazmier. Oklab maths by Björn Ottosson.
 
 ## GPU
 
-`dodai-shaders-gpu` runs the same shader sources on the GPU through rust-gpu and wgpu: about 5×
-faster than all CPU cores at 1080p, with matching output. `dodai-gpui` uses it by default.
+Enable the `gpu` feature to run the same shader sources on the GPU (wgpu compute):
+
+```rust
+let mut gpu = dodai_shaders::gpu::Gpu::new().expect("no GPU");
+// generator first, then post effects; returns packed BGRA8
+let bgra = gpu.render(&["terminal_scene", "crt"], 1920, 1080, t, 1.0, &ShaderPalette::matrix())?;
+```
+
+The shaders are compiled to WGSL by [rust-gpu](https://github.com/Rust-GPU/rust-gpu)
+(`crates/dodai-shaders-kernels`, an unpublished build step) and the result is checked in as
+`kernels.wgsl`, so building needs no special toolchain. On an M4 Pro at 1080p all shaders take
+0.7 s on the GPU vs 3.4 s on 14 CPU cores (`just parity 1920 1080`; mean difference under 3/255 per
+shader). Small frames gain little because each render waits for the read-back. `dodai-gpui` uses it
+by default and falls back to the CPU (`DODAI_GPU=0` forces the CPU).
+
+### Changing a shader
+
+Edit the file in `src` as usual, then `just build-kernels` (needs `cargo install cargo-gpu`; the first
+run installs a pinned nightly, ~5 min). Keep shaders GPU-friendly: no iterators over arrays, no
+`&[..]` of constants, no strings, no `u8`/`u64`, no `contains(&x)`; use index loops and `match`.
 
 ## Performance
 

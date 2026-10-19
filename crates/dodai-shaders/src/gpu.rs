@@ -1,14 +1,13 @@
-//! Run [`dodai_shaders`] on the GPU.
+//! Run the catalogue on the GPU (feature `gpu`).
 //!
 //! The shaders are the *same Rust sources* as the CPU catalogue, compiled to
 //! WGSL by rust-gpu (`dodai-shaders-kernels`, regenerated with
-//! `just build-kernels`). This crate is the wgpu host: it owns a compute
+//! `just build-kernels`). This module is the wgpu host: it owns a compute
 //! pipeline per shader and runs a chain (one generator, then post effects)
 //! into a packed BGRA image.
 //!
 //! ```no_run
-//! use dodai_shaders_gpu::Gpu;
-//! use dodai_shaders::ShaderPalette;
+//! use dodai_shaders::{gpu::Gpu, ShaderPalette};
 //!
 //! let mut gpu = Gpu::new().expect("no GPU");
 //! let bgra = gpu
@@ -17,8 +16,8 @@
 //! assert_eq!(bgra.len(), 1280 * 720 * 4);
 //! ```
 
+use crate::{by_id, ShaderPalette};
 use bytemuck::{Pod, Zeroable};
-use dodai_shaders::{by_id, ShaderPalette};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -267,7 +266,7 @@ impl Gpu {
 
     /// [`Gpu::prewarm`] for the whole catalogue.
     pub fn prewarm_all(&self) {
-        self.prewarm(dodai_shaders::catalog().iter().map(|s| s.id.to_string()));
+        self.prewarm(crate::catalog().iter().map(|s| s.id.to_string()));
     }
 
     fn ensure_targets(&mut self, w: u32, h: u32) {
@@ -363,7 +362,7 @@ impl Gpu {
         let pipes: Vec<wgpu::ComputePipeline> = chain.iter().map(|id| comp.get(id)).collect();
         let pack = comp.get("pack");
 
-        let col = |v: dodai_shaders::math::Vec3| [v.x, v.y, v.z, 1.0];
+        let col = |v: crate::math::Vec3| [v.x, v.y, v.z, 1.0];
         let params = Params {
             res: [w as f32, h as f32],
             time,
@@ -434,7 +433,7 @@ mod tests {
     #[test]
     fn every_catalogue_entry_has_a_kernel() {
         let names = entry_names();
-        for s in dodai_shaders::catalog() {
+        for s in crate::catalog() {
             assert!(names.contains_key(s.id), "no GPU kernel for `{}`", s.id);
         }
         assert!(names.contains_key("pack"));
@@ -451,8 +450,7 @@ mod tests {
             .to_vec();
         assert_eq!(out.len(), (w * h * 4) as usize);
         let chain = [by_id("plasma").unwrap(), by_id("vignette").unwrap()];
-        let cpu =
-            dodai_shaders::render(&chain, &dodai_shaders::Ctx::new(w, h, 1.0, pal)).to_bgra8();
+        let cpu = crate::render(&chain, &crate::Ctx::new(w, h, 1.0, pal)).to_bgra8();
         let diff: f64 = out
             .iter()
             .zip(&cpu)

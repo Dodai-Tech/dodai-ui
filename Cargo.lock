@@ -4315,7 +4315,6 @@ dependencies = [
  "dodai-cyberpunk-icons",
  "dodai-material-icons",
  "dodai-shaders",
- "dodai-shaders-gpu",
  "gpui",
  "image",
 ]
@@ -4366,18 +4365,11 @@ dependencies = [
 name = "dodai-shaders"
 version = "0.1.0"
 dependencies = [
+ "bytemuck",
  "dodai",
  "dodai-core",
  "gpui",
  "image",
-]
-
-[[package]]
-name = "dodai-shaders-gpu"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "dodai-shaders",
  "pollster 0.4.0",
  "wgpu 30.0.1",
 ]

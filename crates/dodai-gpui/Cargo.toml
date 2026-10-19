@@ -23,7 +23,7 @@ shaders    = ["dep:dodai-shaders", "dep:image"]
 # and `MaterialIcon` draws any of the 3,900+ catalogue icons.
 material-icons = ["dep:dodai-material-icons"]
 # Run shaders on the GPU (wgpu compute) when one is available; falls back to the CPU.
-gpu        = ["shaders", "dep:dodai-shaders-gpu"]
+gpu        = ["shaders", "dodai-shaders/gpu"]
 
 [dependencies]
 dodai-core = { workspace = true }
@@ -32,7 +32,6 @@ dodai-cyberpunk-icons = { workspace = true }
 dodai-material-icons = { workspace = true, optional = true }
 gpui = { workspace = true }
 dodai-shaders = { workspace = true, optional = true }
-dodai-shaders-gpu = { workspace = true, optional = true }
 image = { version = "0.25", default-features = false, optional = true }
 
 [[example]]

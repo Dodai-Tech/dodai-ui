@@ -160,8 +160,8 @@ impl ShaderView {
 /// module takes 100-200 ms, so it happens on a background thread: until it
 /// finishes, views render on the CPU instead of stalling the first frame.
 #[cfg(feature = "gpu")]
-fn gpu() -> Option<&'static std::sync::Mutex<dodai_shaders_gpu::Gpu>> {
-    static GPU: std::sync::OnceLock<Option<std::sync::Mutex<dodai_shaders_gpu::Gpu>>> =
+fn gpu() -> Option<&'static std::sync::Mutex<dodai_shaders::gpu::Gpu>> {
+    static GPU: std::sync::OnceLock<Option<std::sync::Mutex<dodai_shaders::gpu::Gpu>>> =
         std::sync::OnceLock::new();
     static START: std::sync::Once = std::sync::Once::new();
     START.call_once(|| {
@@ -173,7 +173,7 @@ fn gpu() -> Option<&'static std::sync::Mutex<dodai_shaders_gpu::Gpu>> {
         let _ = std::thread::Builder::new()
             .name("dodai-gpu-init".into())
             .spawn(|| {
-                let g = dodai_shaders_gpu::Gpu::new();
+                let g = dodai_shaders::gpu::Gpu::new();
                 if let Some(g) = &g {
                     // Pipelines compile on demand (see `gpu_frame`); compiling
                     // the whole catalogue up front would hog the CPU for
