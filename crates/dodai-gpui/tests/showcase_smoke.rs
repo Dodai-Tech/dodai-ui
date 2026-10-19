@@ -32,6 +32,23 @@ fn every_category_renders_under_every_theme(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
+fn every_category_has_unique_sections(cx: &mut TestAppContext) {
+    cx.update(|cx| dodai_gpui::install(cx, dodai_core::Theme::default()));
+    let (view, vcx) = cx.add_window_view(|_, cx| showcase::Showcase::build(cx));
+    vcx.simulate_resize(size(px(1400.0), px(900.0)));
+    vcx.run_until_parked();
+    let meta = vcx.update(|_, cx| view.read(cx).section_titles().to_vec());
+    let cats: std::collections::BTreeSet<_> = meta.iter().map(|(c, _)| *c).collect();
+    assert_eq!(cats.len(), 10, "categories: {cats:?}");
+    let mut seen = std::collections::HashSet::new();
+    for m in &meta {
+        assert!(seen.insert(*m), "duplicate section {m:?}");
+    }
+    // Every section must live in exactly one category and be non-empty.
+    assert!(meta.len() >= 80, "sections went missing: {}", meta.len());
+}
+
+#[gpui::test]
 #[ignore = "timing probe: cargo test --release -- --ignored --nocapture"]
 fn frame_cost_probe(cx: &mut TestAppContext) {
     const TITLES: &[&str] = &[

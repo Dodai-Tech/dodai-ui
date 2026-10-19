@@ -1285,7 +1285,10 @@ impl PieChart {
         };
         let size = self.size;
         let explode = self.explode;
-        let hud = style == PieStyle::Hud;
+        // Rounded (Material-like) themes get the calm version: no tick scale
+        // or dashed ring, fewer and wider-spaced segments.
+        let soft = t.shape.kind() == dodai_core::ShapeKind::Rounded;
+        let hud = style == PieStyle::Hud && !soft;
         let reserve = PIE_POP + explode + if hud { 12.0 } else { 0.0 };
         let vmax = vals
             .iter()
@@ -1392,8 +1395,9 @@ impl PieChart {
                     }
                     if style == PieStyle::Segmented {
                         let r_in = r * hole;
-                        let n = (((zo - ao) * 36.0).ceil() as usize).max(1);
-                        let g = 0.004;
+                        let per_turn = if soft { 16.0 } else { 36.0 };
+                        let n = (((zo - ao) * per_turn).ceil() as usize).max(1);
+                        let g = if soft { 0.012 } else { 0.004 };
                         let mut cells = Vec::new();
                         for k in 0..n {
                             let c0 = ao + (zo - ao) * k as f32 / n as f32 + g / 2.0;
@@ -1685,7 +1689,9 @@ impl Gauge {
                 ]
             }),
             glow,
+            soft: t.shape.kind() == dodai_core::ShapeKind::Rounded,
         };
+        let soft = look.soft;
         let canvas_el = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
@@ -1696,6 +1702,22 @@ impl Gauge {
                 let c = size / 2.0;
                 let r = c - ring / 2.0 - 2.0;
                 let (s0, span) = crate::gauges::SWEEP;
+                if soft {
+                    crate::gauges::round_arc(w, b.origin, c, r, s0, s0 + span, ring, track);
+                    if frac > 0.0 {
+                        crate::gauges::round_arc(
+                            w,
+                            b.origin,
+                            c,
+                            r,
+                            s0,
+                            s0 + span * frac,
+                            ring,
+                            col,
+                        );
+                    }
+                    return;
+                }
                 stroke(
                     w,
                     b.origin,

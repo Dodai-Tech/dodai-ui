@@ -929,6 +929,11 @@ impl Showcase {
         }
     }
 
+    /// `(category, title)` of every section (empty until the first render).
+    pub fn section_titles(&self) -> &[(&'static str, &'static str)] {
+        &self.meta
+    }
+
     pub fn cat_count(&self) -> usize {
         self.cat_count
     }

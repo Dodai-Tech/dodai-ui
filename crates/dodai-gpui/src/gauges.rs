@@ -142,6 +142,54 @@ pub fn disc(cx: f32, cy: f32, r: f32, n: usize) -> Vec<(f32, f32)> {
         .collect()
 }
 
+/// Stadium (pill) outline: a `w`×`h` rectangle with fully round short ends.
+pub fn pill(x: f32, y: f32, w: f32, h: f32) -> Vec<(f32, f32)> {
+    let r = (w.min(h) / 2.0).max(0.0);
+    let n = 8;
+    let mut out = Vec::with_capacity(n * 2 + 2);
+    if w >= h {
+        // right cap (top → bottom), then left cap (bottom → top)
+        for i in 0..=n {
+            let a = -std::f32::consts::FRAC_PI_2 + std::f32::consts::PI * i as f32 / n as f32;
+            out.push((x + w - r + r * a.cos(), y + r + r * a.sin()));
+        }
+        for i in 0..=n {
+            let a = std::f32::consts::FRAC_PI_2 + std::f32::consts::PI * i as f32 / n as f32;
+            out.push((x + r + r * a.cos(), y + r + r * a.sin()));
+        }
+    } else {
+        // bottom cap (right → left), then top cap (left → right)
+        for i in 0..=n {
+            let a = std::f32::consts::PI * i as f32 / n as f32;
+            out.push((x + r + r * a.cos(), y + h - r + r * a.sin()));
+        }
+        for i in 0..=n {
+            let a = std::f32::consts::PI + std::f32::consts::PI * i as f32 / n as f32;
+            out.push((x + r + r * a.cos(), y + r + r * a.sin()));
+        }
+    }
+    out
+}
+
+#[allow(clippy::too_many_arguments)]
+/// Stroke an arc with round caps (butt-capped paths plus a disc at each end).
+pub(crate) fn round_arc(
+    w: &mut Window,
+    o: gpui::Point<Pixels>,
+    c: f32,
+    r: f32,
+    a0: f32,
+    a1: f32,
+    width: f32,
+    col: Hsla,
+) {
+    stroke(w, o, &turn_arc(c, c, r, a0, a1), width, col, false);
+    for a in [a0, a1] {
+        let (x, y) = crate::charts::polar(c, c, r, a);
+        fill(w, o, &disc(x, y, width / 2.0, 14), col);
+    }
+}
+
 // ─────────────────────────────── painting ───────────────────────────────
 
 /// Resolved colours and options for one paint.
@@ -157,6 +205,8 @@ pub(crate) struct Look {
     /// `Some([ok, warn, danger])` colours the value by zone.
     pub zones: Option<[Hsla; 3]>,
     pub glow: Option<f32>,
+    /// Rounded (Material-like) look: round caps, pills, no ticks or glow.
+    pub soft: bool,
 }
 
 impl Look {
@@ -166,6 +216,9 @@ impl Look {
 }
 
 pub(crate) fn paint(w: &mut Window, b: Bounds<Pixels>, k: Look) {
+    if k.soft && k.style != GaugeStyle::Arc {
+        return soft(w, b, k);
+    }
     match k.style {
         GaugeStyle::Arc => {}
         GaugeStyle::Segmented => segmented(w, b, k),
@@ -174,6 +227,69 @@ pub(crate) fn paint(w: &mut Window, b: Bounds<Pixels>, k: Look) {
         GaugeStyle::Reticle => reticle(w, b, k),
         GaugeStyle::Bar | GaugeStyle::Chevron => bar(w, b, k),
         GaugeStyle::Level => level(w, b, k),
+    }
+}
+
+/// Material-flavoured variants: the same value, drawn as rounded progress
+/// indicators (round-capped arcs, pill bars) with no ticks, glow or chamfers.
+fn soft(w: &mut Window, b: Bounds<Pixels>, k: Look) {
+    let o = b.origin;
+    let c = k.size / 2.0;
+    let track = scale_alpha(k.track, 0.8);
+    let cap = k.ring.min(10.0);
+    match k.style {
+        GaugeStyle::Arc => {}
+        GaugeStyle::Segmented | GaugeStyle::Dial | GaugeStyle::Meter | GaugeStyle::Reticle => {
+            let (s0, span, r) = match k.style {
+                GaugeStyle::Meter => (0.75, 0.5, c - cap / 2.0 - 2.0),
+                GaugeStyle::Reticle => (0.0, 1.0, c - cap / 2.0 - 2.0),
+                _ => (SWEEP.0, SWEEP.1, c - cap / 2.0 - 2.0),
+            };
+            if k.style == GaugeStyle::Segmented {
+                // a handful of rounded segments with visible gaps
+                let n = 12;
+                for i in 0..n {
+                    let a0 = s0 + span * (i as f32 + 0.12) / n as f32;
+                    let a1 = s0 + span * (i as f32 + 0.88) / n as f32;
+                    let cov = cell_lit(i, n, k.frac);
+                    let col = if cov > 0.0 {
+                        scale_alpha(k.at((i as f32 + 0.5) / n as f32), 0.45 + 0.55 * cov)
+                    } else {
+                        track
+                    };
+                    round_arc(w, o, c, r, a0, a1, cap * 0.8, col);
+                }
+            } else {
+                round_arc(w, o, c, r, s0, s0 + span, cap, track);
+                if k.frac > 0.0 {
+                    round_arc(w, o, c, r, s0, s0 + span * k.frac, cap, k.at(k.frac));
+                }
+                if k.style == GaugeStyle::Dial {
+                    // slim needle with a round hub
+                    let tip = crate::charts::polar(c, c, r - cap, s0 + span * k.frac);
+                    stroke(w, o, &[(c, c), tip], 2.5, k.text, false);
+                    fill(w, o, &disc(c, c, k.size * 0.045, 18), k.text);
+                }
+            }
+        }
+        GaugeStyle::Bar | GaugeStyle::Chevron => {
+            let (width, h) = k.style.dims(k.size);
+            let h = h * 0.55;
+            let y = (k.style.dims(k.size).1 - h) / 2.0;
+            fill(w, o, &pill(0.0, y, width, h), track);
+            if k.frac > 0.0 {
+                let fw = (width * k.frac).max(h);
+                fill(w, o, &pill(0.0, y, fw, h), k.at(k.frac));
+            }
+        }
+        GaugeStyle::Level => {
+            let (width, height) = k.style.dims(k.size);
+            fill(w, o, &pill(0.0, 0.0, width, height), track);
+            if k.frac > 0.0 {
+                let fh = (height * k.frac).max(width);
+                fill(w, o, &pill(0.0, height - fh, width, fh), k.at(k.frac));
+            }
+        }
     }
 }
 
@@ -447,6 +563,18 @@ mod tests {
         assert_eq!(d.len(), 12);
         for (x, y) in d {
             assert!((((x - 5.0).powi(2) + (y - 5.0).powi(2)).sqrt() - 2.0).abs() < 1e-4);
+        }
+    }
+
+    #[test]
+    fn pill_stays_inside_its_box_and_is_round_ended() {
+        for (w, h) in [(40.0, 10.0), (10.0, 40.0), (12.0, 12.0)] {
+            let p = pill(2.0, 3.0, w, h);
+            assert!(p.len() >= 16);
+            for (x, y) in p {
+                assert!(x >= 2.0 - 1e-3 && x <= 2.0 + w + 1e-3, "x {x}");
+                assert!(y >= 3.0 - 1e-3 && y <= 3.0 + h + 1e-3, "y {y}");
+            }
         }
     }
 
