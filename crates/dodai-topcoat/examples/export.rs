@@ -3,7 +3,9 @@
 //! ```text
 //! dist/tokens/dodai.tokens.json   W3C DTCG tokens, all themes
 //! dist/tokens/<theme>.tokens.json one file per theme
+//! dist/tokens/dodai-<system>.tokens.json  one design system only (cyberpunk, material)
 //! dist/css/dodai.css              custom properties + component CSS, all themes
+//! dist/css/dodai-<system>.css     the same, for one design system only
 //! dist/icons/svg/<name>.svg       one SVG per icon (currentColor)
 //! dist/icons/dodai-cyberpunk-icons.svg      sprite sheet (<symbol id="dodai-<name>">)
 //! dist/icons/manifest.json        name -> group
@@ -28,6 +30,24 @@ fn main() {
         out.join("tokens/dodai.tokens.json"),
         design_tokens_json(&all),
     );
+    // One bundle per design system, so a consumer can ship just Cyberpunk or just Material.
+    // A theme belongs to a system by id prefix (`cyberpunk`, `cyberpunk-red`, `material-dark`, ...).
+    for system in ["cyberpunk", "material"] {
+        let own: Vec<_> = all
+            .iter()
+            .filter(|t| t.id() == system || t.id().starts_with(&format!("{system}-")))
+            .cloned()
+            .collect();
+        assert!(!own.is_empty(), "no themes for design system {system}");
+        write(
+            out.join(format!("tokens/dodai-{system}.tokens.json")),
+            design_tokens_json(&own),
+        );
+        write(
+            out.join(format!("css/dodai-{system}.css")),
+            dodai_topcoat::multi_theme_stylesheet(&own),
+        );
+    }
     for t in &all {
         write(
             out.join(format!("tokens/{}.tokens.json", t.id())),
