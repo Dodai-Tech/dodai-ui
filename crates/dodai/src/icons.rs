@@ -37,19 +37,10 @@ pub const STROKE: f32 = 1.75;
 #[cfg(feature = "cyberpunk")]
 fn cyber_shapes(name: &str) -> Option<Vec<(Points, bool)>> {
     use dodai_cyberpunk::icons as c;
-    if let Some(s) = c::lookup(name) {
-        return Some(s);
-    }
     #[cfg(feature = "material")]
-    for (alias, mat) in dodai_material::icons::ALIASES {
-        if *mat == name {
-            if let Some(s) = c::lookup(alias) {
-                return Some(s);
-            }
-        }
-    }
-    let (base, m) = c::split_modifier(name)?;
-    cyber_shapes(base).map(|s| m.apply(s))
+    return c::lookup_with(name, &dodai_material::icons::alias_of);
+    #[cfg(not(feature = "material"))]
+    c::lookup(name)
 }
 
 /// Resolve `name` (Cyberpunk or Material Symbols spelling) for `theme`.

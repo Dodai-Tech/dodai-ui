@@ -397,7 +397,39 @@ pub(crate) fn icons_view(t: &dodai_core::Theme, query: &str) -> gpui::Div {
             )))
             .child(row);
     }
-    if total == 0 {
+    if q.is_empty() {
+        let mut row = div().flex().flex_wrap().w_full().gap(px(t.spacing.sm));
+        for base in ["heart", "cloud", "camera", "bell"] {
+            for m in dodai_cyberpunk_icons::Modifier::ALL {
+                let name = format!("{base}-{}", m.suffix());
+                row = row.child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .items_center()
+                        .gap(px(6.0))
+                        .w(px(104.0))
+                        .py(px(t.spacing.sm))
+                        .border_1()
+                        .border_color(hsla(t.palette.border))
+                        .child(
+                            dodai_gpui::Icon::named(&name)
+                                .size(28.0)
+                                .color(hsla(t.palette.primary)),
+                        )
+                        .child(
+                            div()
+                                .text_size(px(t.typography.size_xs))
+                                .text_color(hsla(t.palette.text_muted))
+                                .child(name),
+                        ),
+                );
+            }
+        }
+        out = out
+            .child(Muted::new("VARIANTS · derived with a suffix"))
+            .child(row);
+    } else if total == 0 {
         out = out.child(Muted::new("No icons match."));
     }
     out

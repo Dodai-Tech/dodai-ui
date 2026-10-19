@@ -477,9 +477,7 @@ icons! {
     FormatAlignCenter, "format_align_center", "edit" => vec![o(pl![4,6; 20,6]), o(pl![7,10; 17,10]), o(pl![4,14; 20,14]), o(pl![7,18; 17,18])];
     Title, "title", "edit" => vec![o(pl![4,7; 4,4; 20,4; 20,7]), o(pl![12,4; 12,20]), o(pl![9,20; 15,20])];
     Crop, "crop", "edit" => vec![o(pl![6,2; 6,18; 22,18]), o(pl![2,6; 18,6; 18,22])];
-    Brush, "brush", "edit" => vec![
-        o(pl![20,4; 11,13]), c(pl![11,13; 8,11; 4,15; 4,20; 9,20; 13,16]),
-    ];
+    Brush, "brush", "edit" => vec![c(pl![19,3; 21,5; 13,13; 11,11]), c(pl![10,12; 12,14; 11,17; 8,20; 3,21; 4,16; 7,13])];
     // devices
     Tablet, "tablet", "device" => vec![
         c(cb(2.0, 4.0, 22.0, 20.0, 3.0)), c(rect(5.0, 7.0, 16.0, 17.0)), o(pl![19,10; 19,14]),
@@ -674,7 +672,7 @@ icons! {
     SentimentDissatisfied, "sentiment_dissatisfied", "social" => vec![
         c(oct(3.0, 3.0, 21.0, 21.0, 6.0)), o(pl![9,9; 9,10]), o(pl![15,9; 15,10]), o(pl![8,17; 10,15; 14,15; 16,17]),
     ];
-    Cake, "cake", "social" => vec![c(rect(4.0, 12.0, 20.0, 21.0)), o(pl![4,16; 20,16]), o(pl![12,12; 12,7]), o(pl![12,4; 12,5])];
+    Cake, "cake", "social" => vec![c(rect(4.0, 12.0, 20.0, 21.0)), o(pl![4,15; 7,17; 10,15; 14,17; 17,15; 20,17]), o(pl![12,12; 12,7]), o(pl![12,4; 12,5])];
     // security
     Fingerprint, "fingerprint", "security" => vec![
         o(pl![5,10; 7,6; 12,4; 17,6; 19,10]), o(pl![8,18; 8,10; 10,8; 14,8; 16,10; 16,14]), o(pl![12,12; 12,20]), o(pl![5,14; 5,17]),
@@ -809,7 +807,7 @@ icons! {
     Accessible, "accessible", "access" => vec![
         c(ngon(10.0, 4.0, 2.0)), o(pl![10,8; 10,14; 16,14; 19,20]), o(pl![10,11; 15,11]), o(pl![7,12; 5,15; 6,19; 9,21; 13,21]),
     ];
-    Hearing, "hearing", "access" => vec![o(pl![8,9; 9,5; 12,3; 15,5; 16,9; 14,13; 12,16; 12,19; 10,21; 8,19]), o(pl![12,9; 12,10])];
+    Hearing, "hearing", "access" => vec![o(pl![6,11; 7,6; 11,3; 16,4; 19,8; 18,12; 15,15; 14,19; 11,21; 8,20; 7,17]), o(pl![10,10; 11,8; 14,8; 15,10; 13,13])];
     Contrast, "contrast", "access" => vec![c(ngon(12.0, 12.0, 9.0)), c(pl![12,3; 18.4,5.6; 21,12; 18.4,18.4; 12,21])];
     // home
     Kitchen, "kitchen", "home" => vec![c(rect(6.0, 2.0, 18.0, 22.0)), o(pl![6,10; 18,10]), o(pl![9,5; 9,8]), o(pl![9,13; 9,17])];
@@ -846,7 +844,7 @@ icons! {
     ];
     RotateLeft, "rotate_left", "design" => vec![o(pl![14,6; 9,6; 5,10; 5,16; 9,20; 15,20; 19,16; 19,12]), c(pl![11,2; 15,6; 11,10])];
     RotateRight, "rotate_right", "design" => vec![o(pl![10,6; 15,6; 19,10; 19,16; 15,20; 9,20; 5,16; 5,12]), c(pl![13,2; 9,6; 13,10])];
-    Opacity, "opacity", "design" => vec![c(pl![12,2; 19,10; 19,16; 16,20; 8,20; 5,16; 5,10]), o(pl![5,13; 19,13])];
+    Opacity, "opacity", "design" => vec![c(pl![12,2; 19,10; 19,16; 16,20; 8,20; 5,16; 5,10]), c(pl![12,8; 15,12; 15,15; 12,17; 9,15; 9,12])];
     Gradient, "gradient", "design" => vec![c(rect(3.0, 3.0, 21.0, 21.0)), o(pl![3,12; 12,3]), o(pl![3,17; 17,3]), o(pl![3,21; 21,3])];
     Texture, "texture", "design" => vec![
         c(rect(3.0, 3.0, 21.0, 21.0)), o(pl![3,9; 9,3]), o(pl![3,15; 15,3]), o(pl![3,21; 21,3]), o(pl![9,21; 21,9]), o(pl![15,21; 21,15]),
@@ -876,12 +874,10 @@ icons! {
     CellTower, "cell_tower", "device" => vec![
         o(pl![12,10; 7,21]), o(pl![12,10; 17,21]), o(pl![9,17; 15,17]), c(ngon(12.0, 9.0, 1.5)), o(pl![7,5; 5,9; 7,13]), o(pl![17,5; 19,9; 17,13]),
     ];
-    SatelliteAlt, "satellite_alt", "device" => vec![
-        c(pl![3,7; 7,3; 10,6; 6,10]), c(pl![14,18; 18,14; 21,17; 17,21]), o(pl![10,10; 14,14]), o(pl![14,6; 18,6; 18,10]),
-    ];
+    SatelliteAlt, "satellite_alt", "device" => vec![c(pl![4,8; 8,4; 11,7; 7,11]), c(pl![13,17; 17,13; 20,16; 16,20]), c(ngon(12.0, 12.0, 2.5)), o(pl![15,4; 20,9])];
     BatteryChargingFull, "battery_charging_full", "device" => vec![c(rect(3.0, 7.0, 19.0, 17.0)), o(pl![21,10; 21,14]), o(pl![11,9; 8,12; 12,12; 9,15])];
     BatteryAlert, "battery_alert", "device" => vec![c(rect(3.0, 7.0, 19.0, 17.0)), o(pl![21,10; 21,14]), o(pl![11,9; 11,13]), o(pl![11,14.5; 11,15])];
-    Cable, "cable", "device" => vec![c(rect(2.0, 3.0, 8.0, 8.0)), o(pl![5,8; 5,13; 12,13; 12,16]), c(rect(9.0, 16.0, 15.0, 21.0))];
+    Cable, "cable", "device" => vec![c(rect(7.0, 6.0, 17.0, 12.0)), o(pl![10,2; 10,6]), o(pl![14,2; 14,6]), o(pl![12,12; 12,16; 7,16; 7,22])];
     Lan, "lan", "device" => vec![
         c(rect(9.0, 3.0, 15.0, 8.0)), c(rect(3.0, 16.0, 9.0, 21.0)), c(rect(15.0, 16.0, 21.0, 21.0)), o(pl![12,8; 12,12]), o(pl![6,16; 6,12; 18,12; 18,16]),
     ];
@@ -1078,6 +1074,20 @@ pub fn lookup(name: &str) -> Option<Vec<Shape>> {
     lookup(base).map(|s| m.apply(s))
 }
 
+/// Like [`lookup`], also resolving names that `alias` maps to a drawn name
+/// (e.g. a Material spelling such as `arrow_back` -> `arrow-left`), with
+/// modifiers on either (`notifications_off`).
+pub fn lookup_with(name: &str, alias: &dyn Fn(&str) -> Option<&'static str>) -> Option<Vec<Shape>> {
+    if let Some(s) = lookup(name) {
+        return Some(s);
+    }
+    if let Some(s) = alias(name).and_then(lookup) {
+        return Some(s);
+    }
+    let (base, m) = split_modifier(name)?;
+    lookup_with(base, alias).map(|s| m.apply(s))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1198,6 +1208,14 @@ mod tests {
                 }
             }
         }
+        // Aliases resolve, with modifiers on either spelling.
+        let alias = |n: &str| (n == "arrow_back").then_some("arrow-left");
+        assert_eq!(
+            lookup_with("arrow_back", &alias).unwrap(),
+            IconName::ArrowLeft.shapes()
+        );
+        assert!(lookup_with("arrow_back_add", &alias).is_some());
+        assert!(lookup_with("arrow_fwd", &alias).is_none());
         // Modifiers stack.
         assert!(lookup("heart-add-circle").is_some());
     }

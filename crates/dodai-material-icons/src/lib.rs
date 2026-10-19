@@ -16,7 +16,7 @@
 //! font, no I/O and no dependency.
 
 mod aliases;
-pub use aliases::{resolve, ALIASES};
+pub use aliases::{alias_of, resolve, ALIASES};
 
 #[cfg(feature = "outlined")]
 pub mod outlined;

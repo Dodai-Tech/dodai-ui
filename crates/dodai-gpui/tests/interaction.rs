@@ -687,6 +687,9 @@ fn icons_paint_in_every_pack_and_theme(cx: &mut TestAppContext) {
                     .child(MaterialIcon::new("no_such_icon").into_any_element())
                     .child(MaterialIcon::new("trash").filled(true).into_any_element())
                     .child(Icon::new(IconName::Home).size(0.0))
+                    .child(Icon::named("heart-add-circle").size(24.0))
+                    .child(Icon::named("arrow_back_off"))
+                    .child(Icon::named("no-such-icon"))
                     .into_any_element()
             }),
         });

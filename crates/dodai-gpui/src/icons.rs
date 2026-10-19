@@ -37,7 +37,9 @@ impl IconPack {
 /// Vector icon. Defaults: 16 px, white-ish — set `.color(..)`.
 #[derive(IntoElement)]
 pub struct Icon {
-    name: IconName,
+    name: Option<IconName>,
+    /// Shapes resolved by name ([`Icon::named`]), for variants.
+    custom: Option<Vec<dodai_cyberpunk_icons::Shape>>,
     size: f32,
     color: Hsla,
     weight: f32,
@@ -47,8 +49,24 @@ pub struct Icon {
 
 impl Icon {
     pub fn new(name: IconName) -> Self {
+        Self::base(Some(name), None)
+    }
+
+    /// An icon by name, including derived variants: `"heart-add"`,
+    /// `"wifi_off"`, a Material spelling like `"arrow_back"`. Unknown names
+    /// draw nothing. Always the stroked Cyberpunk drawing.
+    pub fn named(name: &str) -> Self {
+        #[cfg(feature = "material-icons")]
+        let shapes = dodai_cyberpunk_icons::lookup_with(name, &dodai_material_icons::alias_of);
+        #[cfg(not(feature = "material-icons"))]
+        let shapes = dodai_cyberpunk_icons::lookup(name);
+        Self::base(None, Some(shapes.unwrap_or_default())).pack(IconPack::Stroked)
+    }
+
+    fn base(name: Option<IconName>, custom: Option<Vec<dodai_cyberpunk_icons::Shape>>) -> Self {
         Self {
             name,
+            custom,
             size: 16.0,
             color: gpui::white(),
             weight: 1.75,
@@ -86,14 +104,16 @@ impl RenderOnce for Icon {
         let (size, color, weight) = (self.size, self.color, self.weight);
         let rounded = crate::theme_of(cx).shape.kind() == dodai_core::ShapeKind::Rounded;
         #[cfg(feature = "material-icons")]
-        if self.pack.resolve(rounded) == IconPack::Material {
-            let name = dodai_material_icons::resolve(self.name.name());
+        if let (IconPack::Material, Some(n)) = (self.pack.resolve(rounded), self.name) {
+            let name = dodai_material_icons::resolve(n.name());
             if let Some(m) = material(name, self.filled) {
                 return glyph(size, color, m, false).into_any_element();
             }
         }
         let _ = rounded;
-        let shapes = self.name.shapes();
+        let shapes = self
+            .custom
+            .unwrap_or_else(|| self.name.map(|n| n.shapes()).unwrap_or_default());
         let k = size / 24.0;
         div()
             .size(px(size))

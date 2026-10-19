@@ -150,6 +150,15 @@ pub fn resolve(name: &str) -> &str {
     }
 }
 
+/// The familiar (Feather-style) alias of a Material name, when there is one:
+/// `"arrow_back"` -> `"arrow-left"`.
+pub fn alias_of(material: &str) -> Option<&'static str> {
+    ALIASES
+        .iter()
+        .find(|(_, m)| *m == material)
+        .map(|(a, _)| *a)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
