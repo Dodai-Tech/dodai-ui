@@ -13,3 +13,6 @@ categories   = ["gui"]
 
 [dependencies]
 dodai-core = { workspace = true }
+
+[dev-dependencies]
+dodai-icons = { workspace = true }

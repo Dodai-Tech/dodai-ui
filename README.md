@@ -72,6 +72,19 @@ Entry effects, value-in (grow) for charts/sliders/gauges, `CountUp`, eased toggl
 transitions, hover/press blend and a shape-adaptive `Shimmer`, all driven by `Motion`/`EntrySet`.
 Try them per section in `just run-gpui`.
 
+## Importable tokens and icons
+
+`just export` (or `cargo run -p dodai-topcoat --example export -- dist`) regenerates `dist/`, which is
+committed and checked in CI:
+
+| File | For |
+|---|---|
+| `dist/tokens/dodai.tokens.json`, `dist/tokens/<theme>.tokens.json` | W3C Design Tokens (DTCG): Style Dictionary v4, Tokens Studio / Figma Variables, Penpot |
+| `dist/css/dodai.css` | CSS custom properties (`--dodai-*`, `:root[data-theme=…]`) plus component CSS |
+| `dist/icons/svg/*.svg`, `dist/icons/dodai-icons.svg` | The icon pack as SVG (`currentColor`), one file each and as a `<symbol>` sprite |
+
+The pack (`dodai-icons`) has 133 icons in 7 groups, all straight lines, 45° chamfers and octagons.
+
 ## Charts only (gpui)
 
 `dodai-gpui` has two default features, `components` and `charts`. For charts without buttons, tables

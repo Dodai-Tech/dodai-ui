@@ -409,3 +409,7 @@ deny:
 
 audit:
     cargo audit
+
+# Regenerate dist/: W3C design tokens (JSON), CSS custom properties and the SVG icon pack.
+export:
+    cargo run -q -p dodai-topcoat --example export -- dist

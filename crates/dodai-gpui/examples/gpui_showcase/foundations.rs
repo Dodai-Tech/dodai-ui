@@ -293,37 +293,55 @@ pub(crate) fn shape_tokens_view(t: &dodai_core::Theme) -> gpui::Div {
 }
 
 pub(crate) fn icons_view(t: &dodai_core::Theme) -> gpui::Div {
-    let mut row = div().flex().flex_wrap().gap(px(t.spacing.md));
-    for (i, n) in dodai_icons::ALL.iter().enumerate() {
-        let name = format!("{n:?}");
-        let copy = name.clone();
-        row = row.child(
-            div()
-                .id(("ico", i))
-                .flex()
-                .flex_col()
-                .items_center()
-                .gap(px(6.0))
-                .w(px(88.0))
-                .py(px(t.spacing.sm))
-                .cursor_pointer()
-                .border_1()
-                .border_color(hsla(t.palette.border))
-                .on_click(move |_, _, cx| {
-                    cx.write_to_clipboard(gpui::ClipboardItem::new_string(copy.clone()))
-                })
-                .child(
-                    dodai_gpui::Icon::new(*n)
-                        .size(24.0)
-                        .color(hsla(t.palette.primary)),
-                )
-                .child(
-                    div()
-                        .text_size(px(t.typography.size_xs))
-                        .text_color(hsla(t.palette.text_muted))
-                        .child(name),
-                ),
-        );
+    let mut out = div().flex().flex_col().gap(px(t.spacing.lg));
+    let mut groups: Vec<&'static str> = Vec::new();
+    for n in dodai_icons::ALL {
+        if !groups.contains(&n.group()) {
+            groups.push(n.group());
+        }
     }
-    row
+    let mut idx = 0usize;
+    for g in groups {
+        let mut row = div().flex().flex_wrap().w_full().gap(px(t.spacing.sm));
+        let members: Vec<_> = dodai_icons::ALL.iter().filter(|n| n.group() == g).collect();
+        for n in &members {
+            idx += 1;
+            let copy = format!("IconName::{n:?}");
+            row = row.child(
+                div()
+                    .id(("ico", idx))
+                    .flex()
+                    .flex_col()
+                    .items_center()
+                    .gap(px(6.0))
+                    .w(px(96.0))
+                    .py(px(t.spacing.sm))
+                    .cursor_pointer()
+                    .border_1()
+                    .border_color(hsla(t.palette.border))
+                    .on_click(move |_, _, cx| {
+                        cx.write_to_clipboard(gpui::ClipboardItem::new_string(copy.clone()))
+                    })
+                    .child(
+                        dodai_gpui::Icon::new(**n)
+                            .size(28.0)
+                            .color(hsla(t.palette.primary)),
+                    )
+                    .child(
+                        div()
+                            .text_size(px(t.typography.size_xs))
+                            .text_color(hsla(t.palette.text_muted))
+                            .child(n.name()),
+                    ),
+            );
+        }
+        out = out
+            .child(Muted::new(format!(
+                "{} · {}",
+                g.to_uppercase(),
+                members.len()
+            )))
+            .child(row);
+    }
+    out
 }

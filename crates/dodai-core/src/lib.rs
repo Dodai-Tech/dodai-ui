@@ -16,6 +16,7 @@
 
 mod color;
 mod component;
+pub mod export;
 mod palette;
 mod shape_system;
 mod switcher;

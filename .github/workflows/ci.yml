@@ -45,6 +45,25 @@ jobs:
       - run: python3 scripts/gen-kernels.py
       - run: git diff --exit-code -- crates/dodai-shaders-kernels/src/entries.rs
 
+  # dist/ (DTCG tokens, CSS, SVG icons) is generated; keep it committed and fresh.
+  dist-in-sync:
+    name: dist in sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        id: rtd
+        continue-on-error: true
+      - name: Retry toolchain install (runner network is flaky)
+        if: steps.rtd.outcome == 'failure'
+        run: sleep 20
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.rtd.outcome == 'failure'
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo run -q -p dodai-topcoat --example export -- dist
+      - run: git diff --exit-code -- dist
+      - run: test -z "$(git status --porcelain dist)"
+
   # Base crates everything else depends on (dodai-gpui also uses dodai-icons
   # and dodai-charts-core).
   base:

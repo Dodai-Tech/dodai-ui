@@ -2360,7 +2360,7 @@ impl Render for Showcase {
                 "Foundations",
                 "Icons",
                 section!("Icons")
-                    .child(Muted::new("Built-in icon set. Click to copy the name."))
+                    .child(Muted::new("Cyberpunk icon pack: straight lines, 45° chamfers, octagons. Click to copy `IconName::…`."))
                     .child(icons_view(&t))
                     .into_any_element(),
                 "Icons",
