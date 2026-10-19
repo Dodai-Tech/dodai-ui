@@ -929,7 +929,7 @@ icons! {
     Subtitles, "subtitles", "media" => vec![c(rect(3.0, 5.0, 21.0, 19.0)), o(pl![6,12; 10,12]), o(pl![12,12; 18,12]), o(pl![6,15; 14,15]), o(pl![16,15; 18,15])];
     Hd, "hd", "media" => vec![c(rect(3.0, 5.0, 21.0, 19.0)), o(pl![7,9; 7,15]), o(pl![7,12; 11,12]), o(pl![11,9; 11,15]), o(pl![14,9; 14,15; 17,15; 18,14; 18,10; 17,9; 14,9])];
     Square, "square", "interface" => vec![c(rect(4.0, 4.0, 20.0, 20.0))];
-    Business, "business", "places" => vec![c(rect(4.0, 3.0, 14.0, 21.0)), c(rect(14.0, 10.0, 20.0, 21.0)), o(pl![7,7; 11,7]), o(pl![7,11; 11,11]), o(pl![7,15; 11,15]), o(pl![17,14; 17,17])];
+    Domain, "domain", "places" => vec![c(rect(4.0, 3.0, 14.0, 21.0)), c(rect(14.0, 10.0, 20.0, 21.0)), o(pl![7,7; 11,7]), o(pl![7,11; 11,11]), o(pl![7,15; 11,15]), o(pl![17,14; 17,17])];
 }
 
 /// Plain `<path>` data for one shape (`M x y L … [Z]`), integers trimmed.
@@ -1127,6 +1127,8 @@ pub const SYNONYMS: &[(&str, &str)] = &[
     ("grade", "star"),
     ("payment", "credit_card"),
     ("inventory_2", "inventory"),
+    ("business", "domain"),
+    ("apartment", "domain"),
     ("paid", "attach_money"),
     ("savings", "attach_money"),
     ("compare_arrows", "swap_horiz"),
