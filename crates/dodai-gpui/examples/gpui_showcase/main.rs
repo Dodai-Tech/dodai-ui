@@ -79,6 +79,11 @@ pub struct Showcase {
     /// Selected subsection inside the current category (`None` = all).
     sub: Option<&'static str>,
     side_focus: FocusHandle,
+    side_scroll: gpui::ScrollHandle,
+    /// Material-style stretch past the ends of the page / sidebar.
+    over: dodai_gpui::Overscroll,
+    side_over: dodai_gpui::Overscroll,
+    last_tick: std::time::Instant,
     /// Sidebar collapsed to an icon rail.
     rail: bool,
     /// Collapsed state of the Navigation-section demo shell.
@@ -598,12 +603,29 @@ impl Render for Showcase {
                 sections.extend(self.sections_of(c, cx));
             }
         }
+        // Overscroll: spring the stretch back, keep frames coming while it moves.
+        let now = std::time::Instant::now();
+        let dt = now.duration_since(self.last_tick).as_secs_f32().min(0.05);
+        self.last_tick = now;
+        let feel = dodai_gpui::Overscroll::for_theme(&t);
+        self.over.set_feel(feel);
+        self.side_over.set_feel(feel);
+        self.over.settle(now, dt);
+        self.side_over.settle(now, dt);
+        if self.over.active() || self.side_over.active() {
+            window.request_animation_frame();
+        }
         let mut body = div()
             .id(("body", self.cat * 1000 + self.replay))
             .track_scroll(&self.scroll)
+            .relative()
+            .top(px(self.over.offset()))
             // Scroll-spy reads layout, so repaint on scroll even on static pages.
-            .on_scroll_wheel(cx.listener(|s, _, _, cx| {
+            .on_scroll_wheel(cx.listener(|s, e: &gpui::ScrollWheelEvent, _, cx| {
                 s.pin.release();
+                let dy = f32::from(e.delta.pixel_delta(px(20.0)).y);
+                let (top, bottom) = dodai_gpui::overscroll::edges(&s.scroll);
+                s.over.on_wheel(dy, top, bottom, std::time::Instant::now());
                 cx.notify()
             }))
             .flex()
@@ -888,6 +910,10 @@ impl Showcase {
             pin: dodai_gpui::ScrollSpy::new(),
             sub: None,
             side_focus: cx.focus_handle(),
+            side_scroll: gpui::ScrollHandle::new(),
+            over: dodai_gpui::Overscroll::default(),
+            side_over: dodai_gpui::Overscroll::default(),
+            last_tick: std::time::Instant::now(),
             rail: false,
             demo_rail: false,
             rating: 3,

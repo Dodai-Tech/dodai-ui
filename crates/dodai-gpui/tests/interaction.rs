@@ -591,3 +591,73 @@ fn scroll_spy_pin_survives_until_released(cx: &mut TestAppContext) {
     spy.release();
     assert_eq!(spy.current(&handle, &SPY_ITEMS, 0.0), Some('a'));
 }
+
+// ───────────────────────────── overscroll ─────────────────────────────
+
+struct Stretchy {
+    scroll: gpui::ScrollHandle,
+    over: Overscroll,
+}
+
+impl Render for Stretchy {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        div().w(px(300.0)).h(px(300.0)).overflow_hidden().child(
+            div()
+                .id("os")
+                .track_scroll(&self.scroll)
+                .relative()
+                .top(px(self.over.offset()))
+                .overflow_y_scroll()
+                .size_full()
+                .on_scroll_wheel(cx.listener(|s, e: &gpui::ScrollWheelEvent, _, cx| {
+                    let dy = f32::from(e.delta.pixel_delta(px(20.0)).y);
+                    let (top, bottom) = dodai_gpui::overscroll::edges(&s.scroll);
+                    s.over.on_wheel(dy, top, bottom, std::time::Instant::now());
+                    cx.notify();
+                }))
+                .child(
+                    div()
+                        .debug_selector(|| "os-first".into())
+                        .h(px(200.0))
+                        .flex_none(),
+                )
+                .child(div().h(px(200.0)).flex_none()),
+        )
+    }
+}
+
+fn wheel(vcx: &mut VisualTestContext, dy: f32) {
+    vcx.simulate_event(gpui::ScrollWheelEvent {
+        position: point(px(100.0), px(100.0)),
+        delta: gpui::ScrollDelta::Pixels(point(px(0.0), px(dy))),
+        modifiers: Modifiers::none(),
+        touch_phase: gpui::TouchPhase::Moved,
+    });
+    vcx.run_until_parked();
+}
+
+#[gpui::test]
+fn wheel_past_the_top_stretches_and_mid_page_does_not(cx: &mut TestAppContext) {
+    cx.update(|cx| install(cx, dodai_core::Theme::default()));
+    let (view, vcx) = cx.add_window_view(|_, _| Stretchy {
+        scroll: gpui::ScrollHandle::new(),
+        over: Overscroll::default(),
+    });
+    vcx.simulate_resize(size(px(400.0), px(400.0)));
+    vcx.run_until_parked();
+    // at the top, pulling down stretches
+    wheel(vcx, 30.0);
+    let pulled = view.read_with(vcx, |v, _| v.over.offset());
+    assert!(pulled > 0.0, "stretched past the top: {pulled}");
+    assert!(
+        vcx.debug_bounds("os-first").unwrap().top() > px(0.0),
+        "content moved"
+    );
+    // scrolling down (towards content) unwinds the stretch, no scrolling yet
+    wheel(vcx, -300.0);
+    let after = view.read_with(vcx, |v, _| v.over.offset());
+    assert!(
+        after < pulled,
+        "wheel the other way relaxes: {after} < {pulled}"
+    );
+}
