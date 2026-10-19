@@ -32,7 +32,7 @@ component styles) feeds four native adapters:
 
 Glow is configurable: `theme.with_glow_intensity(1.5)` (0 = off, 1 = as designed) scales glow alpha and radius in every adapter.
 
-Variants: `cyberpunk` (yellow), `cyberpunk-netrunner` (cyan), `cyberpunk-samurai` (red).
+Variants: `cyberpunk` (yellow), `cyberpunk-netrunner` (cyan), `cyberpunk-samurai` (red), each also as a light theme on warm paper: `cyberpunk-light`, `cyberpunk-netrunner-light`, `cyberpunk-samurai-light` (same chamfered shape, deeper neons for contrast, glow dialled down).
 
 **Material 3** (a Material-3-inspired light/dark pair): `material`, `material-dark` — rounded, mixed-case, flat tonal surfaces, no glow.
 Every theme is contrast-tested (text ≥ 7:1, primary label ≥ 4.5:1).

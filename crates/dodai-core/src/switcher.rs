@@ -111,7 +111,7 @@ mod tests {
     fn families_group_variants() {
         let mut s = ThemeSwitcher::new();
         assert_eq!(s.families(), vec!["cyberpunk", "material"]);
-        assert_eq!(s.family_indices("cyberpunk").len(), 3);
+        assert_eq!(s.family_indices("cyberpunk").len(), 6);
         assert_eq!(s.family_indices("material").len(), 2);
         assert_eq!(
             s.family_indices("cyberpunk").len() + s.family_indices("material").len(),

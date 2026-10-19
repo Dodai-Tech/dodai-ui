@@ -270,6 +270,24 @@ mod tests {
     }
 
     #[test]
+    fn cyberpunk_has_light_and_dark() {
+        use crate::Mode;
+        let fam: Vec<_> = all()
+            .into_iter()
+            .filter(|t| t.meta.family == "cyberpunk")
+            .collect();
+        assert_eq!(fam.iter().filter(|t| t.meta.mode == Mode::Dark).count(), 3);
+        let light: Vec<_> = fam.iter().filter(|t| t.meta.mode == Mode::Light).collect();
+        assert_eq!(light.len(), 3);
+        for t in light {
+            let p = &t.palette;
+            assert!(p.link.contrast(p.background) >= 4.5, "{}: link", t.id());
+            assert!(p.background.luminance() > 0.5, "{}: paper", t.id());
+            assert_eq!(t.shape.kind(), cyberpunk::night_city().shape.kind());
+        }
+    }
+
+    #[test]
     fn lookup() {
         assert!(by_id("cyberpunk").is_some());
         assert!(by_id("missing").is_none());

@@ -116,6 +116,133 @@ fn build(
     }
 }
 
+/// Brand colours of a light variant (darkened neons that hold contrast on paper).
+struct Light {
+    primary: u32,
+    primary_hover: u32,
+    on_primary: u32,
+    secondary: u32,
+    accent: u32,
+}
+
+/// Light build: warm paper surfaces, ink text, deep neons, same hard shape.
+fn build_light(meta: ThemeMeta, l: Light) -> Theme {
+    let primary_c = Color::hex(l.primary);
+    let secondary_c = Color::hex(l.secondary);
+    let paper = Color::hex(0xf1f0e6);
+    let palette = Palette {
+        background: paper,
+        surface: Color::hex(0xe8e6d9),
+        surface_raised: Color::hex(0xfbfaf4),
+        overlay: paper.with_alpha(0.9),
+        border: Color::hex(0xb5b3a3),
+        border_strong: Color::hex(0x6b695c),
+        text: Color::hex(0x0a0a0c),
+        text_muted: Color::hex(0x3d3c36),
+        text_disabled: Color::hex(0x8d8b80),
+        primary: primary_c,
+        primary_hover: Color::hex(l.primary_hover),
+        primary_active: primary_c.darken(0.14),
+        on_primary: Color::hex(l.on_primary),
+        secondary: secondary_c,
+        secondary_hover: secondary_c.darken(0.12),
+        on_secondary: Color::hex(0xffffff),
+        accent: Color::hex(l.accent),
+        info: Color::hex(0x00788a),
+        success: Color::hex(0x138a47),
+        warning: Color::hex(0xd04a00),
+        danger: Color::hex(0xc8102e),
+        selection: primary_c.with_alpha(0.28),
+        focus_ring: secondary_c,
+        link: secondary_c,
+        series: [
+            Color::hex(0xe0b000),
+            Color::hex(0x00909f),
+            Color::hex(0xd01c62),
+            Color::hex(0xdd5200),
+            Color::hex(0x1b9c55),
+            Color::hex(0x7a2fe0),
+            Color::hex(0xc8102e),
+            Color::hex(0x55544a),
+        ],
+    };
+    Theme {
+        meta,
+        shape_system: None,
+        palette,
+        typography: typography(),
+        spacing: spacing(),
+        shape: shape(),
+        effects: Effects {
+            glow: primary_c.with_alpha(0.3),
+            glow_blur: 8.0,
+            glow_intensity: 0.4,
+            scanlines: false,
+            hard_shadow: 4.0,
+        },
+    }
+}
+
+/// Yellow on paper.
+pub fn night_city_light() -> Theme {
+    build_light(
+        ThemeMeta {
+            id: "cyberpunk-light",
+            name: "Cyberpunk · Yellow Light",
+            family: "cyberpunk",
+            description: "Signature yellow on warm paper, deep cyan secondary",
+            mode: Mode::Light,
+        },
+        Light {
+            primary: 0xf0c400,
+            primary_hover: 0xffd51f,
+            on_primary: 0x000000,
+            secondary: 0x006f7d,
+            accent: 0xd01c62,
+        },
+    )
+}
+
+/// Cyan on paper.
+pub fn netrunner_light() -> Theme {
+    build_light(
+        ThemeMeta {
+            id: "cyberpunk-netrunner-light",
+            name: "Cyberpunk · Cyan Light",
+            family: "cyberpunk",
+            description: "Deep cyan on warm paper, amber secondary",
+            mode: Mode::Light,
+        },
+        Light {
+            primary: 0x00a3b5,
+            primary_hover: 0x00bccf,
+            on_primary: 0x000000,
+            secondary: 0x765a00,
+            accent: 0xd01c62,
+        },
+    )
+}
+
+/// Red on paper.
+pub fn samurai_light() -> Theme {
+    build_light(
+        ThemeMeta {
+            id: "cyberpunk-samurai-light",
+            name: "Cyberpunk · Red Light",
+            family: "cyberpunk",
+            description: "Hot red on warm paper, deep cyan secondary",
+            mode: Mode::Light,
+        },
+        Light {
+            primary: 0xd6183a,
+            primary_hover: 0xec2a4c,
+            on_primary: 0xffffff,
+            secondary: 0x006f7d,
+            accent: 0x765a00,
+        },
+    )
+}
+
 /// Signature yellow-on-black (the signature cyberpunk look). Default theme.
 pub fn night_city() -> Theme {
     build(
@@ -170,7 +297,14 @@ pub fn samurai() -> Theme {
     )
 }
 
-/// All Cyberpunk variants.
+/// All Cyberpunk variants (dark first, then light).
 pub fn variants() -> Vec<Theme> {
-    vec![night_city(), netrunner(), samurai()]
+    vec![
+        night_city(),
+        netrunner(),
+        samurai(),
+        night_city_light(),
+        netrunner_light(),
+        samurai_light(),
+    ]
 }

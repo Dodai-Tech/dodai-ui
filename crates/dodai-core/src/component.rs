@@ -259,15 +259,25 @@ impl Theme {
                 ButtonTokens {
                     // Cyberpunk "fill on hover": outline inverts to solid.
                     background: if lit { Some(c) } else { None },
-                    foreground: if lit { self.on(c) } else { c },
+                    foreground: if lit { self.on(c) } else { self.legible(c) },
                     border: Some(c),
                 }
             }
             Ghost => ButtonTokens {
                 background: if lit { Some(p.surface_raised) } else { None },
-                foreground: if lit { p.primary } else { p.text },
+                foreground: if lit { self.legible(p.primary) } else { p.text },
                 border: None,
             },
+        }
+    }
+
+    /// `c` as text on the page background: itself when it holds 3:1 contrast,
+    /// otherwise the theme's text colour (a pale brand colour on a light page).
+    pub fn legible(&self, c: Color) -> Color {
+        if c.contrast(self.palette.background) >= 3.0 {
+            c
+        } else {
+            self.palette.text
         }
     }
 
@@ -287,7 +297,11 @@ impl Theme {
         PanelTokens {
             background: p.surface,
             border: if focused { p.primary } else { p.border },
-            title: if focused { p.primary } else { p.text_muted },
+            title: if focused {
+                self.legible(p.primary)
+            } else {
+                p.text_muted
+            },
         }
     }
 
