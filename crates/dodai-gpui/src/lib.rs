@@ -27,6 +27,21 @@
 //!     let _btn = div().dodai_button(&t, ButtonVariant::Primary, ControlState::Idle);
 //! }
 //! ```
+/// Adds the standard `.corners(..)` per-component override (cut these
+/// corners instead of the theme's). The type needs a `corners` field of
+/// type `Option<dodai_core::Corners>`.
+macro_rules! corners_setter {
+    ($ty:ident) => {
+        impl $ty {
+            /// Cut these corners instead of the theme's.
+            pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+                self.corners = Some(c);
+                self
+            }
+        }
+    };
+}
+pub(crate) use corners_setter;
 
 #[cfg(feature = "components")]
 pub mod button;
@@ -296,7 +311,20 @@ pub fn install(cx: &mut App, initial: Theme) {
         switcher = ThemeSwitcher::with_themes(all);
     }
     cx.set_global(DodaiTheme { switcher });
+    // Text-input editing keys (backspace, arrows, enter, clipboard) are
+    // actions: without bindings only plain typing would work.
+    #[cfg(feature = "components")]
+    if !cx.has_global::<KeysBound>() {
+        text_input::bind_keys(cx);
+        cx.set_global(KeysBound);
+    }
 }
+
+/// Marker: the text-input key bindings were registered (once per app).
+#[cfg(feature = "components")]
+struct KeysBound;
+#[cfg(feature = "components")]
+impl gpui::Global for KeysBound {}
 
 /// Clone of the active theme (components call this on render).
 pub fn theme_of(cx: &App) -> Theme {

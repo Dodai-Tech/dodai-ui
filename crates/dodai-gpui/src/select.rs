@@ -90,13 +90,7 @@ pub struct Select {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Select {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Select);
 
 impl Select {
     pub fn new(id: impl Into<ElementId>) -> Self {

@@ -352,13 +352,7 @@ pub struct Slider {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Slider {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Slider);
 
 const THUMB: f32 = 16.0;
 

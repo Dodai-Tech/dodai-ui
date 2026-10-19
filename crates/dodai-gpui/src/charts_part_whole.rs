@@ -72,13 +72,7 @@ pub struct Treemap {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Treemap {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Treemap);
 chart_cfg!(Treemap);
 
 impl Treemap {
@@ -89,7 +83,10 @@ impl Treemap {
         Self {
             corners: None,
             id: id.into(),
-            items: items.into_iter().map(|(a, b)| (a.into(), b)).collect(),
+            items: items
+                .into_iter()
+                .map(|(a, b)| (a.into(), crate::charts::finite_or_zero(b)))
+                .collect(),
             height: 220.0,
             fmt: None,
             title: None,

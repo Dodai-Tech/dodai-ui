@@ -24,13 +24,7 @@ pub struct Tag {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Tag {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Tag);
 
 impl Tag {
     pub fn new(text: impl Into<SharedString>, tone: Tone) -> Self {

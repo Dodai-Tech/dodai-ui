@@ -68,13 +68,7 @@ pub struct Histogram {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Histogram {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Histogram);
 chart_cfg!(Histogram);
 
 impl Histogram {

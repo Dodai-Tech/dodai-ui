@@ -84,13 +84,7 @@ pub struct BottomSheet {
     corners: Option<dodai_core::Corners>,
 }
 
-impl BottomSheet {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(BottomSheet);
 
 impl BottomSheet {
     pub fn new(id: impl Into<ElementId>) -> Self {
@@ -177,13 +171,7 @@ pub struct SideSheet {
     corners: Option<dodai_core::Corners>,
 }
 
-impl SideSheet {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(SideSheet);
 
 impl SideSheet {
     pub fn new(id: impl Into<ElementId>, title: impl Into<SharedString>) -> Self {
@@ -279,13 +267,7 @@ pub struct FullScreenDialog {
     corners: Option<dodai_core::Corners>,
 }
 
-impl FullScreenDialog {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(FullScreenDialog);
 
 impl FullScreenDialog {
     pub fn new(id: impl Into<ElementId>, title: impl Into<SharedString>) -> Self {
@@ -385,13 +367,7 @@ pub struct Snackbar {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Snackbar {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Snackbar);
 
 impl Snackbar {
     pub fn new(id: impl Into<ElementId>, message: impl Into<SharedString>) -> Self {

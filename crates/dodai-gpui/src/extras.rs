@@ -30,13 +30,7 @@ pub struct Toolbar {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Toolbar {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Toolbar);
 
 impl Toolbar {
     pub fn new() -> Self {
@@ -269,13 +263,7 @@ pub struct NumberStepper {
     corners: Option<dodai_core::Corners>,
 }
 
-impl NumberStepper {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(NumberStepper);
 
 impl NumberStepper {
     pub fn new(id: impl Into<ElementId>, value: i32) -> Self {
@@ -389,13 +377,7 @@ pub struct Timeline {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Timeline {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Timeline);
 
 impl Timeline {
     pub fn new(events: impl IntoIterator<Item = TimelineEvent>) -> Self {
@@ -490,13 +472,7 @@ pub struct ColorPicker {
     corners: Option<dodai_core::Corners>,
 }
 
-impl ColorPicker {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(ColorPicker);
 
 impl ColorPicker {
     pub fn new(id: impl Into<ElementId>, colors: impl IntoIterator<Item = Color>) -> Self {
@@ -595,13 +571,7 @@ pub struct FileDropZone {
     corners: Option<dodai_core::Corners>,
 }
 
-impl FileDropZone {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(FileDropZone);
 
 impl FileDropZone {
     pub fn new(id: impl Into<ElementId>) -> Self {
@@ -693,13 +663,7 @@ pub struct TagField {
     corners: Option<dodai_core::Corners>,
 }
 
-impl TagField {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(TagField);
 
 impl TagField {
     pub fn new<S: Into<SharedString>>(

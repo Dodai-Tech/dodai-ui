@@ -238,6 +238,11 @@ impl TextInput {
         self.on_submit = Some(Rc::new(f));
         self
     }
+    /// Replace the Enter handler on an existing input (used by composites
+    /// such as the command palette, which owns the Enter key while open).
+    pub fn set_on_submit(&mut self, f: impl Fn(&str, &mut Window, &mut App) + 'static) {
+        self.on_submit = Some(Rc::new(f));
+    }
     /// Current text.
     pub fn text(&self) -> &str {
         &self.content

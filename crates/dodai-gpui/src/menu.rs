@@ -72,13 +72,7 @@ pub struct Menu {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Menu {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Menu);
 
 impl Menu {
     pub fn new(id: impl Into<ElementId>) -> Self {

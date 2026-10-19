@@ -27,13 +27,7 @@ pub struct Table {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Table {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Table);
 
 impl Table {
     pub fn new(id: impl Into<ElementId>) -> Self {
@@ -219,13 +213,7 @@ pub struct Badge {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Badge {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Badge);
 
 impl Badge {
     /// Badge with a short label (e.g. a count).
@@ -286,13 +274,7 @@ pub struct Avatar {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Avatar {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Avatar);
 
 impl Avatar {
     pub fn new(initials: impl Into<SharedString>) -> Self {
@@ -418,13 +400,7 @@ pub struct Chip {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Chip {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Chip);
 
 impl Chip {
     pub fn new(id: impl Into<ElementId>, label: impl Into<SharedString>) -> Self {

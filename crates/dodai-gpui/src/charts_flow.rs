@@ -70,10 +70,11 @@ impl Funnel {
             move |b: Bounds<Pixels>, _, w, _| {
                 let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
                 let sh = bh / n as f32;
-                for i in 0..n {
-                    let next = fr2.get(i + 1).copied().unwrap_or(fr2[i] * 0.8);
+                for (i, col) in cols.iter().enumerate() {
+                    let cur = fr2.get(i).copied().unwrap_or(0.0);
+                    let next = fr2.get(i + 1).copied().unwrap_or(cur * 0.8);
                     let gi = crate::motion::reveal(g, i, n);
-                    let (w0, w1) = (fr2[i] * bw * gi, next * bw * gi);
+                    let (w0, w1) = (cur * bw * gi, next * bw * gi);
                     let (y0, y1) = (i as f32 * sh + 1.0, (i + 1) as f32 * sh - 1.0);
                     let c = bw / 2.0;
                     fill(
@@ -85,7 +86,7 @@ impl Funnel {
                             (c + w1 / 2.0, y1),
                             (c - w1 / 2.0, y1),
                         ],
-                        cols[i],
+                        *col,
                     );
                 }
             },
@@ -138,13 +139,7 @@ pub struct Waterfall {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Waterfall {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Waterfall);
 chart_cfg!(Waterfall);
 
 impl Waterfall {
@@ -155,7 +150,10 @@ impl Waterfall {
         Self {
             corners: None,
             id: id.into(),
-            steps: steps.into_iter().map(|(a, b)| (a.into(), b)).collect(),
+            steps: steps
+                .into_iter()
+                .map(|(a, b)| (a.into(), crate::charts::finite_or_zero(b)))
+                .collect(),
             total: true,
             height: 200.0,
             fmt: None,

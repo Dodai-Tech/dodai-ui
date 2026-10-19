@@ -36,13 +36,7 @@ pub struct DialogCard {
     corners: Option<dodai_core::Corners>,
 }
 
-impl DialogCard {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(DialogCard);
 
 impl DialogCard {
     pub fn new(title: impl Into<SharedString>) -> Self {

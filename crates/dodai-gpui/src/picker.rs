@@ -149,13 +149,7 @@ pub struct DatePicker {
     corners: Option<dodai_core::Corners>,
 }
 
-impl DatePicker {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(DatePicker);
 
 impl DatePicker {
     /// `year`/`month` (1-12) is the visible month.
@@ -335,13 +329,7 @@ pub struct TimePicker {
     corners: Option<dodai_core::Corners>,
 }
 
-impl TimePicker {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(TimePicker);
 
 impl TimePicker {
     pub fn new(id: impl Into<ElementId>, hour: u32, minute: u32) -> Self {

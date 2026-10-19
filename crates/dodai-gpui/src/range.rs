@@ -58,13 +58,7 @@ pub struct RangeSlider {
     corners: Option<dodai_core::Corners>,
 }
 
-impl RangeSlider {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(RangeSlider);
 
 impl RangeSlider {
     pub fn new(id: impl Into<ElementId>, lo: f32, hi: f32) -> Self {

@@ -193,13 +193,7 @@ pub struct IconButton {
     corners: Option<dodai_core::Corners>,
 }
 
-impl IconButton {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(IconButton);
 
 impl IconButton {
     pub fn new(id: impl Into<ElementId>, glyph: impl Into<SharedString>) -> Self {
@@ -317,13 +311,7 @@ pub struct Fab {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Fab {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Fab);
 
 impl Fab {
     pub fn new(id: impl Into<ElementId>, glyph: impl Into<SharedString>) -> Self {
@@ -463,13 +451,7 @@ pub struct Navigation {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Navigation {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Navigation);
 
 impl Navigation {
     pub fn new(id: impl Into<ElementId>, layout: NavLayout) -> Self {
@@ -599,13 +581,7 @@ pub struct TopAppBar {
     corners: Option<dodai_core::Corners>,
 }
 
-impl TopAppBar {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(TopAppBar);
 
 impl TopAppBar {
     pub fn new(title: impl Into<SharedString>) -> Self {
@@ -703,13 +679,7 @@ pub struct SearchBar {
     corners: Option<dodai_core::Corners>,
 }
 
-impl SearchBar {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(SearchBar);
 
 impl SearchBar {
     pub fn new(id: impl Into<ElementId>) -> Self {

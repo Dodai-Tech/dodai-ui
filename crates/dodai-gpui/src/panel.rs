@@ -401,13 +401,7 @@ pub struct InputBox {
     corners: Option<dodai_core::Corners>,
 }
 
-impl InputBox {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(InputBox);
 
 impl InputBox {
     pub fn new() -> Self {

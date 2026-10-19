@@ -468,6 +468,12 @@ pub(crate) fn pts(o: gpui::Point<Pixels>, p: &[(f32, f32)]) -> Vec<gpui::Point<P
         .collect()
 }
 
+/// True when every coordinate is a real number. The tessellator asserts on
+/// NaN / ±inf, so hostile chart data must never reach it.
+pub(crate) fn finite(p: &[(f32, f32)]) -> bool {
+    p.iter().all(|&(x, y)| x.is_finite() && y.is_finite())
+}
+
 pub(crate) fn stroke(
     w: &mut Window,
     o: gpui::Point<Pixels>,
@@ -476,6 +482,9 @@ pub(crate) fn stroke(
     c: Hsla,
     closed: bool,
 ) {
+    if !finite(p) || !width.is_finite() {
+        return;
+    }
     let mut pb = PathBuilder::stroke(px(width));
     pb.add_polygon(&pts(o, p), closed);
     if let Ok(path) = pb.build() {
@@ -485,6 +494,9 @@ pub(crate) fn stroke(
 
 #[cfg(feature = "charts")]
 pub(crate) fn fill(w: &mut Window, o: gpui::Point<Pixels>, p: &[(f32, f32)], c: Hsla) {
+    if !finite(p) {
+        return;
+    }
     let mut pb = PathBuilder::fill();
     pb.add_polygon(&pts(o, p), true);
     if let Ok(path) = pb.build() {
@@ -505,7 +517,7 @@ pub(crate) fn fill_batch(
         return;
     }
     let mut pb = PathBuilder::fill();
-    for p in polys {
+    for p in polys.iter().filter(|p| finite(p)) {
         pb.add_polygon(&pts(o, p), true);
     }
     if let Ok(path) = pb.build() {
@@ -526,8 +538,11 @@ pub(crate) fn stroke_batch(
     if polys.is_empty() {
         return;
     }
+    if !width.is_finite() {
+        return;
+    }
     let mut pb = PathBuilder::stroke(px(width));
-    for p in polys {
+    for p in polys.iter().filter(|p| finite(p)) {
         pb.add_polygon(&pts(o, p), closed);
     }
     if let Ok(path) = pb.build() {

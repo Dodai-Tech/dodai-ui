@@ -48,13 +48,7 @@ pub struct Alert {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Alert {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Alert);
 
 impl Alert {
     pub fn new(tone: Tone, title: impl Into<SharedString>) -> Self {
@@ -136,13 +130,7 @@ pub struct Toast {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Toast {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Toast);
 
 impl Toast {
     pub fn new(tone: Tone, message: impl Into<SharedString>) -> Self {
@@ -229,13 +217,7 @@ pub struct Spinner {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Spinner {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Spinner);
 
 impl Spinner {
     pub fn new(id: impl Into<ElementId>) -> Self {
@@ -316,13 +298,7 @@ pub struct IndeterminateBar {
     corners: Option<dodai_core::Corners>,
 }
 
-impl IndeterminateBar {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(IndeterminateBar);
 
 impl IndeterminateBar {
     pub fn new(id: impl Into<ElementId>) -> Self {
@@ -383,13 +359,7 @@ pub struct Skeleton {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Skeleton {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Skeleton);
 
 impl Skeleton {
     pub fn new(id: impl Into<ElementId>) -> Self {

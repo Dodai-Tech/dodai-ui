@@ -89,13 +89,7 @@ pub struct CommandPalette {
     corners: Option<dodai_core::Corners>,
 }
 
-impl CommandPalette {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(CommandPalette);
 
 impl CommandPalette {
     pub fn new(id: impl Into<ElementId>, input: Entity<TextInput>) -> Self {
@@ -133,6 +127,11 @@ impl RenderOnce for CommandPalette {
         let query = self.input.read(cx).text().to_string();
         let labels: Vec<&str> = self.commands.iter().map(|c| c.label.as_ref()).collect();
         let hits = fuzzy_filter(&query, &labels);
+        // Enter runs the highlighted (first) match.
+        if let (Some(&first), Some(f)) = (hits.first(), self.on_run.clone()) {
+            self.input
+                .update(cx, |i, _| i.set_on_submit(move |_, w, cx| f(first, w, cx)));
+        }
         let mut list = div().flex().flex_col();
         for (n, &ci) in hits.iter().take(self.max_rows).enumerate() {
             let c = &self.commands[ci];
@@ -231,13 +230,7 @@ pub struct Combobox {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Combobox {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Combobox);
 
 impl Combobox {
     pub fn new(id: impl Into<ElementId>, input: Entity<TextInput>) -> Self {

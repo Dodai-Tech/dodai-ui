@@ -231,13 +231,7 @@ pub struct Stepper {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Stepper {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Stepper);
 
 impl Stepper {
     pub fn new<S: Into<SharedString>>(steps: impl IntoIterator<Item = S>, current: usize) -> Self {
@@ -340,13 +334,7 @@ pub struct Segmented {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Segmented {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Segmented);
 
 impl Segmented {
     pub fn new<S: Into<SharedString>>(
@@ -445,13 +433,7 @@ pub struct Accordion {
     corners: Option<dodai_core::Corners>,
 }
 
-impl Accordion {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(Accordion);
 
 impl Accordion {
     pub fn new(id: impl Into<ElementId>) -> Self {

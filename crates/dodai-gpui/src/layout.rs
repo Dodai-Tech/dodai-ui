@@ -86,13 +86,7 @@ pub struct TreeView {
     corners: Option<dodai_core::Corners>,
 }
 
-impl TreeView {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(TreeView);
 
 impl TreeView {
     pub fn new(id: impl Into<ElementId>, items: Vec<TreeItem>) -> Self {
@@ -229,13 +223,7 @@ pub struct SplitPane {
     corners: Option<dodai_core::Corners>,
 }
 
-impl SplitPane {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(SplitPane);
 
 impl SplitPane {
     pub fn new(id: impl Into<ElementId>, ratio: f32) -> Self {

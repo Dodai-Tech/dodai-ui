@@ -58,11 +58,20 @@ pub struct Series {
     pub color: Option<Color>,
 }
 
+/// NaN / ±inf become 0: hostile data must never reach the tessellator.
+pub(crate) fn finite_or_zero(v: f32) -> f32 {
+    if v.is_finite() {
+        v
+    } else {
+        0.0
+    }
+}
+
 impl Series {
     pub fn new(name: impl Into<SharedString>, values: impl IntoIterator<Item = f32>) -> Self {
         Self {
             name: name.into(),
-            values: values.into_iter().collect(),
+            values: values.into_iter().map(finite_or_zero).collect(),
             color: None,
         }
     }
@@ -551,13 +560,7 @@ pub struct BarChart {
     corners: Option<dodai_core::Corners>,
 }
 
-impl BarChart {
-    /// Cut these corners instead of the theme's.
-    pub fn corners(mut self, c: dodai_core::Corners) -> Self {
-        self.corners = Some(c);
-        self
-    }
-}
+crate::corners_setter!(BarChart);
 
 impl BarChart {
     pub fn new(id: impl Into<SharedString>, series: impl IntoIterator<Item = Series>) -> Self {
