@@ -1,7 +1,7 @@
 //! `ShaderView`: shows a `dodai-shaders` chain as a live, fluid-width image.
 
 use crate::theme_of;
-use dodai_shaders::{by_id, Family, Player, ShaderInfo, ShaderPalette};
+use dodai_shaders::{by_id, Family, ShaderInfo, ShaderPalette};
 use gpui::{
     canvas, div, px, App, Bounds, Corners, InteractiveElement, IntoElement, ParentElement, Pixels,
     RenderImage, RenderOnce, SharedString, Styled, Window,
@@ -22,7 +22,6 @@ pub enum PaletteSource {
 
 #[derive(Default)]
 struct Slot {
-    player: Option<Player>,
     gpu_last: Option<(Instant, u64, (u32, u32))>,
     start: Option<Instant>,
     image: Option<Arc<RenderImage>>,
@@ -68,7 +67,6 @@ pub struct ShaderView {
     animated: bool,
     rounded: f32,
     fps: f32,
-    gpu: bool,
 }
 
 impl ShaderView {
@@ -86,7 +84,6 @@ impl ShaderView {
             animated: true,
             rounded: 0.0,
             fps: 30.0,
-            gpu: true,
         }
     }
     /// A ready-made chain from [`dodai_shaders::presets`].
@@ -143,13 +140,6 @@ impl ShaderView {
         self.fps = f.max(1.0);
         self
     }
-    /// Use the GPU when the `gpu` feature is on and an adapter exists (default
-    /// `true`). On the GPU the picture is rendered at device resolution unless
-    /// `pixel` is above 2, which keeps chunky pixel-art looks.
-    pub fn gpu(mut self, on: bool) -> Self {
-        self.gpu = on;
-        self
-    }
     pub fn rounded(mut self, r: f32) -> Self {
         self.rounded = r;
         self
@@ -158,14 +148,14 @@ impl ShaderView {
 
 /// The shared GPU, once ready. Opening the device and compiling the shader
 /// module takes 100-200 ms, so it happens on a background thread: until it
-/// finishes, views render on the CPU instead of stalling the first frame.
-#[cfg(feature = "gpu")]
+/// finishes (or if there is no adapter) views draw nothing instead of
+/// stalling the first frame.
 fn gpu() -> Option<&'static std::sync::Mutex<dodai_shaders::gpu::Gpu>> {
     static GPU: std::sync::OnceLock<Option<std::sync::Mutex<dodai_shaders::gpu::Gpu>>> =
         std::sync::OnceLock::new();
     static START: std::sync::Once = std::sync::Once::new();
     START.call_once(|| {
-        // `DODAI_GPU=0` forces the CPU renderer.
+        // `DODAI_GPU=0` pretends there is no adapter (for testing).
         if std::env::var("DODAI_GPU").is_ok_and(|v| v == "0") {
             let _ = GPU.set(None);
             return;
@@ -186,8 +176,8 @@ fn gpu() -> Option<&'static std::sync::Mutex<dodai_shaders::gpu::Gpu>> {
     GPU.get().and_then(Option::as_ref)
 }
 
-/// Renders on the GPU when possible: `Some(frame)` if a new picture was made.
-#[cfg(feature = "gpu")]
+/// Renders on the GPU: `None` while it is not ready, `Some(None)` to keep the
+/// current picture, `Some(Some(img))` for a new one.
 #[allow(clippy::too_many_arguments)]
 fn gpu_frame(
     s: &mut Slot,
@@ -210,7 +200,7 @@ fn gpu_frame(
     h = ((h as f32 / big) as u32).max(9);
     let ids: Vec<&str> = chain.iter().map(|i| i.id).collect();
     {
-        // Never stall a frame compiling: draw on the CPU until it is ready.
+        // Never stall a frame compiling: show the old picture until it is ready.
         let gpu = g.lock().ok()?;
         if !gpu.is_ready(&ids) {
             gpu.warm_chain(&ids);
@@ -265,15 +255,15 @@ fn pace_record(secs: f32) {
     }
 }
 
-/// Which renderer `ShaderView` uses: `"GPU · <adapter>"` or `"CPU"`.
+/// The adapter `ShaderView` renders on: `"GPU · <adapter>"`, or a note while
+/// it starts or when there is none.
 pub fn shader_backend() -> String {
-    #[cfg(feature = "gpu")]
-    if let Some(g) = gpu() {
-        if let Ok(g) = g.lock() {
-            return format!("GPU · {}", g.adapter);
-        }
+    match gpu() {
+        Some(g) => g
+            .lock()
+            .map_or_else(|_| "GPU".into(), |g| format!("GPU · {}", g.adapter)),
+        None => "no GPU (yet)".into(),
     }
-    "CPU".to_string()
 }
 
 fn hash_cfg(parts: &[u64]) -> u64 {
@@ -296,7 +286,6 @@ impl RenderOnce for ShaderView {
             PaletteSource::Fixed(p) => p,
         };
         let chain = self.chain.clone();
-        let use_gpu = self.gpu;
         let (aspect, pixel, intensity, speed, animated, rounded, fps) = (
             self.aspect,
             self.pixel,
@@ -330,8 +319,7 @@ impl RenderOnce for ShaderView {
                     if !visible && s.image.is_some() {
                         return s.image.clone().map(|i| (i, None));
                     }
-                    #[cfg(feature = "gpu")]
-                    if use_gpu && !chain.is_empty() {
+                    if !chain.is_empty() {
                         let scale = w.scale_factor();
                         if let Some(res) = gpu_frame(
                             s,
@@ -352,34 +340,7 @@ impl RenderOnce for ShaderView {
                             };
                         }
                     }
-                    // CPU rendering blocks too: share the per-frame budget, and
-                    // let a view that has no picture yet wait its turn.
-                    if !pace_allows(now, false) {
-                        return s.image.clone().map(|i| (i, None));
-                    }
-                    let took = Instant::now();
-                    let pl = s
-                        .player
-                        .get_or_insert_with(|| Player::new(chain.clone(), pal));
-                    pl.chain.clone_from(&chain);
-                    pl.palette = pal;
-                    pl.intensity = intensity;
-                    pl.speed = speed;
-                    pl.pixel = pixel;
-                    pl.max_fps = if animated { fps } else { 0.0 };
-                    let (frame, fresh) = pl.tick(secs, bw, bh, cfg);
-                    if !fresh && s.image.is_some() {
-                        return s.image.clone().map(|i| (i, None));
-                    }
-                    if fresh {
-                        pace_record(took.elapsed().as_secs_f32());
-                    }
-                    let (fw, fh) = (frame.w, frame.h);
-                    let buf = image::RgbaImage::from_raw(fw, fh, frame.to_bgra8()).expect("size");
-                    let img = Arc::new(RenderImage::new(vec![image::Frame::new(buf)]));
-                    s.fresh_at = Some(now);
-                    let old = s.image.replace(img.clone());
-                    Some((img, old))
+                    s.image.clone().map(|i| (i, None))
                 });
                 if let Some((image, old)) = shown {
                     let _ = w.paint_image(b, Corners::all(px(rounded)), image, 0, false);

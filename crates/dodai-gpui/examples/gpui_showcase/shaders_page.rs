@@ -59,11 +59,11 @@ impl Showcase {
             let me_p = me.clone();
             let gens: Vec<_> = catalog()
                 .iter()
-                .filter(|s| matches!(s.kind, Kind::Generator(_)))
+                .filter(|s| matches!(s.kind, Kind::Generator))
                 .collect();
             let fxs: Vec<_> = catalog()
                 .iter()
-                .filter(|s| matches!(s.kind, Kind::PostFx(_)))
+                .filter(|s| matches!(s.kind, Kind::PostFx))
                 .collect();
             let opt_label = |s: &dodai_gpui::dodai_shaders::ShaderInfo| {
                 format!("{} · {}", s.family.name(), s.name)
@@ -226,7 +226,7 @@ impl Showcase {
                 "Playground",
                 section!("Shader playground")
                     .child(Muted::new(format!(
-                        "Pure-Rust shaders from `dodai-shaders`, rendered on: {}. Pick a source, stack effects.",
+                        "Shaders written in Rust (`dodai-shaders`), rendered on: {}. Pick a source, stack effects.",
                         dodai_gpui::shader_backend()
                     )))
                     .child(gen_row)

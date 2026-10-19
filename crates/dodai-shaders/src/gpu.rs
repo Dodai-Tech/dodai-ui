@@ -1,6 +1,6 @@
-//! Run the catalogue on the GPU (feature `gpu`).
+//! Run the catalogue on the GPU.
 //!
-//! The shaders are the *same Rust sources* as the CPU catalogue, compiled to
+//! The shaders are Rust sources compiled to
 //! WGSL by rust-gpu (`dodai-shaders-kernels`, regenerated with
 //! `just build-kernels`). This module is the wgpu host: it owns a compute
 //! pipeline per shader and runs a chain (one generator, then post effects)
@@ -232,8 +232,8 @@ impl Gpu {
     }
 
     /// Compile what `chain` needs on a background thread (at most one thread
-    /// at a time per missing id). Use with [`Gpu::is_ready`]: render on the
-    /// CPU until it is.
+    /// at a time per missing id). Use with [`Gpu::is_ready`]: keep showing
+    /// the old picture until it is.
     pub fn warm_chain(&self, chain: &[&str]) {
         let missing: Vec<String> = {
             let pipes = self.pipes.lock().expect("pipes");
@@ -439,25 +439,44 @@ mod tests {
         assert!(names.contains_key("pack"));
     }
 
+    /// Every shader draws something finite and not a flat colour.
     #[test]
-    fn renders_and_matches_cpu() {
+    fn every_shader_renders_a_varied_picture() {
         let Some(mut gpu) = gpu() else { return };
         let pal = ShaderPalette::cyberpunk();
-        let (w, h) = (64, 36);
-        let out = gpu
-            .render(&["plasma", "vignette"], w, h, 1.0, 1.0, &pal)
-            .unwrap()
-            .to_vec();
-        assert_eq!(out.len(), (w * h * 4) as usize);
-        let chain = [by_id("plasma").unwrap(), by_id("vignette").unwrap()];
-        let cpu = crate::render(&chain, &crate::Ctx::new(w, h, 1.0, pal)).to_bgra8();
-        let diff: f64 = out
-            .iter()
-            .zip(&cpu)
-            .map(|(a, b)| (*a as f64 - *b as f64).abs())
-            .sum::<f64>()
-            / out.len() as f64;
-        assert!(diff < 3.0, "GPU and CPU differ by {diff}");
+        let (w, h) = (48u32, 27u32);
+        let base = crate::by_id("test_pattern").unwrap().id;
+        for s in crate::catalog() {
+            let chain: Vec<&str> = if s.is_generator() {
+                vec![s.id]
+            } else {
+                vec![base, s.id]
+            };
+            let out = gpu.render(&chain, w, h, 1.7, 1.0, &pal).unwrap().to_vec();
+            assert_eq!(out.len(), (w * h * 4) as usize, "{}", s.id);
+            let first = &out[..3];
+            let varied = out
+                .chunks(4)
+                .any(|p| (0..3).any(|i| (p[i] as i32 - first[i] as i32).abs() > 6));
+            assert!(varied, "{} is a flat colour", s.id);
+        }
+    }
+
+    #[test]
+    fn animated_generators_change_over_time() {
+        let Some(mut gpu) = gpu() else { return };
+        let pal = ShaderPalette::cyberpunk();
+        for id in [
+            "neon_grid",
+            "digital_rain",
+            "starfield",
+            "m3_blobs",
+            "platformer",
+        ] {
+            let a = gpu.render(&[id], 40, 24, 0.0, 1.0, &pal).unwrap().to_vec();
+            let b = gpu.render(&[id], 40, 24, 2.3, 1.0, &pal).unwrap().to_vec();
+            assert_ne!(a, b, "{id} is static");
+        }
     }
 
     #[test]

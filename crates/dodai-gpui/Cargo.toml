@@ -12,7 +12,7 @@ keywords     = ["theme", "design-system", "gpui", "cyberpunk"]
 categories   = ["gui"]
 
 [features]
-default    = ["components", "charts", "shaders", "gpu", "material-icons"]
+default    = ["components", "charts", "shaders", "material-icons"]
 # Buttons, tables, dialogs, pickers, navigation, ...
 components = []
 # Charts only (always includes the theme, painting and motion core).
@@ -22,8 +22,6 @@ shaders    = ["dep:dodai-shaders", "dep:image"]
 # Material Symbols glyphs: `Icon` follows the theme (rounded themes draw Material icons)
 # and `MaterialIcon` draws any of the 3,900+ catalogue icons.
 material-icons = ["dep:dodai-material-icons"]
-# Run shaders on the GPU (wgpu compute) when one is available; falls back to the CPU.
-gpu        = ["shaders", "dodai-shaders/gpu"]
 
 [dependencies]
 dodai-core = { workspace = true }

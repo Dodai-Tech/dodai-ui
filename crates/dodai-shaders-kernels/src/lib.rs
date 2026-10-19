@@ -52,35 +52,35 @@ impl ShaderInfo {
     }
 }
 
-#[path = "../../dodai-shaders/src/blade.rs"]
+#[path = "shaders/blade.rs"]
 pub mod blade;
-#[path = "../../dodai-shaders/src/cyberpunk.rs"]
+#[path = "shaders/cyberpunk.rs"]
 pub mod cyberpunk;
-#[path = "../../dodai-shaders/src/dmt.rs"]
+#[path = "shaders/dmt.rs"]
 pub mod dmt;
-#[path = "../../dodai-shaders/src/extra.rs"]
+#[path = "shaders/extra.rs"]
 pub mod extra;
-#[path = "../../dodai-shaders/src/fx.rs"]
+#[path = "shaders/fx.rs"]
 pub mod fx;
-#[path = "../../dodai-shaders/src/ghibli.rs"]
+#[path = "shaders/ghibli.rs"]
 pub mod ghibli;
-#[path = "../../dodai-shaders/src/ghibli2.rs"]
+#[path = "shaders/ghibli2.rs"]
 pub mod ghibli2;
-#[path = "../../dodai-shaders/src/ghostty.rs"]
+#[path = "shaders/ghostty.rs"]
 pub mod ghostty;
-#[path = "../../dodai-shaders/src/material.rs"]
+#[path = "shaders/material.rs"]
 pub mod material;
-#[path = "../../dodai-shaders/src/matrix.rs"]
+#[path = "shaders/matrix.rs"]
 pub mod matrix;
-#[path = "../../dodai-shaders/src/nature.rs"]
+#[path = "shaders/nature.rs"]
 pub mod nature;
-#[path = "../../dodai-shaders/src/pixel.rs"]
+#[path = "shaders/pixel.rs"]
 pub mod pixel;
-#[path = "../../dodai-shaders/src/pixel2.rs"]
+#[path = "shaders/pixel2.rs"]
 pub mod pixel2;
-#[path = "../../dodai-shaders/src/retro.rs"]
+#[path = "shaders/retro.rs"]
 pub mod retro;
-#[path = "../../dodai-shaders/src/retro2.rs"]
+#[path = "shaders/retro2.rs"]
 pub mod retro2;
 
 /// Per-dispatch constants. Mirrored byte for byte by the host.

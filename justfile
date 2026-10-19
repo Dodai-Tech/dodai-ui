@@ -35,10 +35,6 @@ build-core:
 build-shaders:
     cargo build -p dodai-shaders
 
-# Standalone demo of every shader (release: the shaders run on the CPU)
-run-shaders:
-    cargo run --release -p dodai-shaders --example gallery
-
 # Regenerate the GPU kernels (rust-gpu → WGSL). First run installs the pinned
 # nightly and builds the codegen backend (~5 min): `cargo install cargo-gpu`.
 build-kernels:
@@ -46,9 +42,9 @@ build-kernels:
     cd crates/dodai-shaders-kernels && cargo gpu build --shader-crate . --output-dir ../../target/kernels --auto-install-rust-toolchain --target spirv-unknown-naga-wgsl
     cp target/kernels/dodai_shaders_kernels.wgsl crates/dodai-shaders/kernels.wgsl
 
-# CPU vs GPU: per-shader difference and timing (release)
-parity w="1280" h="720":
-    cargo run --release -p dodai-shaders --features gpu --example parity {{w}} {{h}}
+# Render every shader to PPM files (GPU): just dump-shaders /tmp/dump 2.0
+dump-shaders dir="shader-dump" t="1.5":
+    cargo run --release -p dodai-shaders --example dump -- {{dir}} {{t}}
 
 build-charts-core:
     cargo build -p dodai-charts-core
@@ -104,7 +100,6 @@ check-gpui-features:
     cargo check -p dodai-gpui --no-default-features --features charts
     cargo check -p dodai-gpui --no-default-features --features components
     cargo check -p dodai-gpui --no-default-features --features shaders
-    cargo check -p dodai-gpui --no-default-features --features gpu
     cargo check -p dodai-gpui --no-default-features
 
 test-ratatui:

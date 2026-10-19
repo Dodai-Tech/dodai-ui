@@ -6,37 +6,19 @@ authors.workspace      = true
 license.workspace      = true
 repository.workspace   = true
 rust-version.workspace = true
-description  = "Pure-Rust pixel shaders for the Dodai UI design system: cyberpunk, Material 3, Matrix, retro terminals, pixel-art platformers and more"
+description  = "Rust pixel shaders (run on the GPU via wgpu) for the Dodai UI design system: cyberpunk, Material 3, Matrix, retro terminals, pixel-art platformers and more"
 readme       = "README.md"
 keywords     = ["shaders", "procedural", "crt", "retro", "design-system"]
 categories   = ["graphics", "gui"]
 
-[features]
-default = []
-# Run the same shaders on the GPU (wgpu compute; rust-gpu-built WGSL is embedded).
-gpu = ["dep:wgpu", "dep:pollster", "dep:bytemuck"]
-
 [dependencies]
 dodai-core = { workspace = true }
-wgpu     = { version = "30.0.1", optional = true, default-features = false, features = ["std", "parking_lot", "wgsl", "metal", "vulkan", "dx12"] }
-pollster = { version = "0.4", optional = true }
-bytemuck = { version = "1.24", optional = true, features = ["derive"] }
-
-[dev-dependencies]
-dodai = { workspace = true, features = ["cyberpunk", "material"] }
-gpui  = { workspace = true }
-image = { version = "0.25", default-features = false }
-
-[[example]]
-name = "gallery"
-
-[[example]]
-name = "parity"
-required-features = ["gpu"]
+wgpu     = { version = "30.0.1", default-features = false, features = ["std", "parking_lot", "wgsl", "metal", "vulkan", "dx12"] }
+pollster = "0.4"
+bytemuck = { version = "1.24", features = ["derive"] }
 
 [[example]]
 name = "warm"
-required-features = ["gpu"]
 
 [lints.rust]
 unexpected_cfgs = { level = "allow", check-cfg = ['cfg(target_arch, values("spirv"))'] }

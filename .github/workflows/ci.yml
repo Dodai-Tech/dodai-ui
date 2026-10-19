@@ -139,11 +139,6 @@ jobs:
           key: ${{ matrix.crate }}
       - run: cargo clippy -p ${{ matrix.crate }} --all-targets -- -D warnings
       - run: cargo test -p ${{ matrix.crate }}
-      - name: dodai-shaders gpu feature
-        if: matrix.crate == 'dodai-shaders'
-        run: |
-          cargo clippy -p dodai-shaders --features gpu --all-targets -- -D warnings
-          cargo test -p dodai-shaders --features gpu
       # Slices must compile alone: charts-only users get no components.
       - name: gpui feature slices
         if: matrix.crate == 'dodai-gpui'
@@ -151,7 +146,6 @@ jobs:
           cargo check -p dodai-gpui --no-default-features --features charts
           cargo check -p dodai-gpui --no-default-features --features components
           cargo check -p dodai-gpui --no-default-features --features shaders
-          cargo check -p dodai-gpui --no-default-features --features gpu
           cargo check -p dodai-gpui --no-default-features
 
   nu-tests:

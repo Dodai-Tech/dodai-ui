@@ -1,5 +1,5 @@
 //! Frame latency while every pipeline compiles in the background.
-//! `cargo run --release -p dodai-shaders --features gpu --example warm`
+//! `cargo run --release -p dodai-shaders --example warm`
 use dodai_shaders::gpu::Gpu;
 use dodai_shaders::ShaderPalette;
 use std::time::Instant;
