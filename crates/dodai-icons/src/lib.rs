@@ -108,6 +108,9 @@ icons! {
     Dots, "dots", "interface" => vec![
         c(rect(4.0, 10.0, 8.0, 14.0)), c(rect(10.0, 10.0, 14.0, 14.0)), c(rect(16.0, 10.0, 20.0, 14.0)),
     ];
+    DotsVertical, "dots-vertical", "interface" => vec![
+        c(rect(10.0, 4.0, 14.0, 8.0)), c(rect(10.0, 10.0, 14.0, 14.0)), c(rect(10.0, 16.0, 14.0, 20.0)),
+    ];
     Table, "table", "interface" => vec![
         c(rect(3.0, 5.0, 21.0, 19.0)), o(pl![3,10; 21,10]), o(pl![10,10; 10,19]),
     ];

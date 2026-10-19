@@ -282,6 +282,7 @@ pub struct Avatar {
     size: f32,
     status: Option<Tone>,
     tone: Option<Tone>,
+    solid: bool,
     corners: Option<dodai_core::Corners>,
 }
 
@@ -301,6 +302,7 @@ impl Avatar {
             size: 36.0,
             status: None,
             tone: None,
+            solid: false,
         }
     }
     pub fn size(mut self, s: f32) -> Self {
@@ -310,6 +312,12 @@ impl Avatar {
     /// Small presence dot at the bottom-right.
     pub fn status(mut self, t: Tone) -> Self {
         self.status = Some(t);
+        self
+    }
+    /// Opaque tile (tint pre-mixed with the surface), so overlapping avatars
+    /// don't show through each other.
+    pub fn solid(mut self, on: bool) -> Self {
+        self.solid = on;
         self
     }
     /// Tint the tile with a tone instead of the brand colour.
@@ -325,7 +333,12 @@ impl Avatar {
         let t = crate::apply_corners(t, self.corners);
         let c = self.tone.map_or(t.palette.primary, |x| t.palette.tone(x));
         let shape = round_shape(&t.shape, self.size);
-        let style = ShapeStyle::from_tokens(&t, Some(c.with_alpha(0.2)), Some(c), false, false);
+        let fill = if self.solid {
+            t.palette.surface.mix(c, 0.22)
+        } else {
+            c.with_alpha(0.2)
+        };
+        let style = ShapeStyle::from_tokens(&t, Some(fill), Some(c), false, false);
         let mut d = shaped(&shape, style)
             .w(px(self.size))
             .h(px(self.size))

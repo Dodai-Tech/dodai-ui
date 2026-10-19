@@ -4,6 +4,7 @@
   "sliders": "interface",
   "menu": "interface",
   "dots": "interface",
+  "dots-vertical": "interface",
   "table": "interface",
   "sidebar": "interface",
   "maximize": "interface",

@@ -114,9 +114,9 @@ impl RenderOnce for SearchView {
             .items_center()
             .gap(px(t.spacing.sm))
             .child(
-                div()
-                    .text_color(hsla(t.palette.text_muted))
-                    .child(SharedString::from("⌕")),
+                crate::icons::Icon::new(crate::icons::IconName::Search)
+                    .size(t.typography.size_md * 1.1)
+                    .color(hsla(t.palette.text_muted)),
             )
             .child(div().flex_1().child(self.input.clone()));
         if let (false, Some(f)) = (query.is_empty(), self.on_clear.clone()) {
@@ -126,7 +126,11 @@ impl RenderOnce for SearchView {
                     .cursor_pointer()
                     .text_color(hsla(t.palette.text_muted))
                     .on_click(move |_, w, cx| f(w, cx))
-                    .child(SharedString::from("✕")),
+                    .child(
+                        crate::icons::Icon::new(crate::icons::IconName::Close)
+                            .size(t.typography.size_md)
+                            .color(hsla(t.palette.text_muted)),
+                    ),
             );
         }
         let mut root = div().relative().w_full().child(head);

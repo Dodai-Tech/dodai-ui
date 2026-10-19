@@ -12,7 +12,10 @@ fn main() {
         let chain: Vec<_> = spec.split(',').filter_map(by_id).collect();
         f.push(render(&chain, &Ctx::new(w, h, t, ShaderPalette::ghibli())));
     }
-    let cols = 2usize;
+    let cols: usize = std::env::var("SHEET_COLS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(2);
     let rows = f.len().div_ceil(cols);
     let mut out = format!("P6\n{} {}\n255\n", w as usize * cols, h as usize * rows).into_bytes();
     for r in 0..rows {

@@ -299,9 +299,9 @@ impl RenderOnce for DataTable {
                 .whitespace_nowrap()
                 .px(px(t.spacing.xs));
             h = if i == last {
-                h.flex_1().min_w(px(w_of(i)))
+                h.flex_1().min_w(px(MIN_COL))
             } else {
-                h.w(px(w_of(i))).flex_none()
+                h.w(px(w_of(i))).flex_shrink().min_w(px(MIN_COL))
             };
             if c.right {
                 h = h.justify_end();
@@ -434,9 +434,9 @@ impl RenderOnce for DataTable {
                     .px(px(t.spacing.xs))
                     .child(row.get(i).cloned().unwrap_or_default());
                 cell = if i == last {
-                    cell.flex_1().min_w(px(w_of(i)))
+                    cell.flex_1().min_w(px(MIN_COL))
                 } else {
-                    cell.w(px(w_of(i))).flex_none()
+                    cell.w(px(w_of(i))).flex_shrink().min_w(px(MIN_COL))
                 };
                 if c.right {
                     cell = cell.justify_end();

@@ -598,13 +598,14 @@ impl AvatarGroup {
 impl RenderOnce for AvatarGroup {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
         let (shown, hidden) = avatar_split(self.names.len(), self.max);
-        let overlap = -self.size * 0.28;
+        let overlap = -self.size * 0.2;
         let tones = [Tone::Info, Tone::Success, Tone::Warning, Tone::Danger];
         let mut row = div().flex().items_center();
         for (i, n) in self.names.iter().take(shown).enumerate() {
             let mut a = div().child(
                 Avatar::new(n.clone())
                     .size(self.size)
+                    .solid(true)
                     .tone(tones[i % tones.len()]),
             );
             if i > 0 {
@@ -614,9 +615,11 @@ impl RenderOnce for AvatarGroup {
         }
         if hidden > 0 {
             row = row.child(
-                div()
-                    .ml(px(if shown > 0 { overlap } else { 0.0 }))
-                    .child(Avatar::new(format!("+{hidden}")).size(self.size)),
+                div().ml(px(if shown > 0 { overlap } else { 0.0 })).child(
+                    Avatar::new(format!("+{hidden}"))
+                        .size(self.size)
+                        .solid(true),
+                ),
             );
         }
         row

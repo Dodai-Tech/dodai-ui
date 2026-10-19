@@ -208,10 +208,9 @@ pub fn data_corrupt(uv: Vec2, c: &Ctx) -> Vec3 {
         let by = (uv.y * 24.0).floor();
         hash3(bx as i32, by as i32, t as i32 / 2)
     };
-    let v = |o: f32| step(0.55, blocks(x, o));
-    let col = vec3(v(0.0) * p.c.x, v(0.12) * p.b.y, v(-0.12) * p.a.z)
-        + p.c * v(0.0) * 0.3
-        + p.b * v(0.12) * 0.3;
+    // Sparse, colour-split blocks: stay below white so the palette reads.
+    let v = |o: f32| step(0.7, blocks(x, o));
+    let col = p.c * (v(0.0) * 0.55) + p.b * (v(0.12) * 0.42) + p.a * (v(-0.12) * 0.3);
     let scan = 0.8 + 0.2 * (uv.y * c.h as f32 * std::f32::consts::PI).sin().abs();
     (p.bg + col * scan) * (0.5 + 0.5 * step(0.1, hash2((uv.y * 80.0) as i32, t as i32)))
 }

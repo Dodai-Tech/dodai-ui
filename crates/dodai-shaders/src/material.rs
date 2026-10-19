@@ -144,7 +144,7 @@ pub fn m3_elevation(uv: Vec2, c: &Ctx) -> Vec3 {
         let blur = 0.02 + 0.03 * e;
         let shadow = smoothstep(blur, -blur * 0.3, sd) * (0.12 + 0.05 * e);
         col = col * (1.0 - shadow);
-        let surf = tonal(p.bg, p.a, e) + p.fg * 0.02;
+        let surf = tonal(p.bg, p.a, e + 1.0) + p.fg * 0.05;
         col = col.mix(surf, fill_aa(d, 2.0 / c.h as f32));
     }
     col

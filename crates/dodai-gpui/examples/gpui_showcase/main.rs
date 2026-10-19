@@ -15,11 +15,11 @@ use dodai_gpui::{
 };
 use dodai_gpui::{
     BarChart, Blip, BoxPlot, BubbleChart, Candle, Candlestick, Date, DatePicker, DotMatrix,
-    EmptyState, Funnel, Gauge, GaugeStyle, Heatmap, HexMap, Histogram, IconBadge, LineChart,
-    Marker, NumberStepper, Oscilloscope, PieChart, PieStyle, RadarChart, RadarScope, RadialBar,
-    RangeSlider, Rating, RichTooltip, RingStack, ScatterPlot, SearchView, Series, SignalBars,
-    Snackbar, SparkStyle, Sparkline, Spectrum, StackedAreaChart, TagField, TextInput, TimePicker,
-    Timeline, TimelineEvent, Toolbar, TreeItem, TreeView, Treemap, Waterfall,
+    EmptyState, Funnel, Gauge, GaugeStyle, Heatmap, HexMap, Histogram, IconBadge, IconName,
+    LineChart, Marker, NumberStepper, Oscilloscope, PieChart, PieStyle, RadarChart, RadarScope,
+    RadialBar, RangeSlider, Rating, RichTooltip, RingStack, ScatterPlot, SearchView, Series,
+    SignalBars, Snackbar, SparkStyle, Sparkline, Spectrum, StackedAreaChart, TagField, TextInput,
+    TimePicker, Timeline, TimelineEvent, Toolbar, TreeItem, TreeView, Treemap, Waterfall,
 };
 use dodai_gpui::{
     CandleStyle, ChartStack, DepthChart, Gantt, GanttTask, Overlay, Pane, RenkoChart, TradeMarker,
@@ -963,22 +963,46 @@ impl Render for Showcase {
             .flex_col()
             .gap(gap)
             .child(
-                TopAppBar::new("Cyberpunk")
+                TopAppBar::new(dodai_gpui::family_title(t.meta.family))
                     .leading("☰")
-                    .child(IconButton::new("ab-search", "⌕"))
-                    .child(IconButton::new("ab-more", "⋮")),
+                    .child(IconButton::new("ab-search", "⌕").icon(IconName::Search))
+                    .child(IconButton::new("ab-more", "⋮").icon(IconName::Dots)),
             )
             .child(SearchBar::new("search-bar").placeholder("Search the net…"))
             .child(
                 row()
-                    .child(IconButton::new("ib1", "♥").toggled(true))
-                    .child(IconButton::new("ib2", "♥").toggled(false))
-                    .child(IconButton::new("ib3", "✎"))
-                    .child(IconButton::new("ib4", "✎").disabled(true))
-                    .child(Fab::new("fab-s", "+").size(FabSize::Small))
-                    .child(Fab::new("fab", "+"))
-                    .child(Fab::new("fab-l", "+").size(FabSize::Large))
-                    .child(Fab::new("fab-x", "✎").extended("Compose")),
+                    .child(
+                        IconButton::new("ib1", "♥")
+                            .icon(IconName::Heart)
+                            .toggled(true),
+                    )
+                    .child(
+                        IconButton::new("ib2", "♥")
+                            .icon(IconName::Heart)
+                            .toggled(false),
+                    )
+                    .child(IconButton::new("ib3", "✎").icon(IconName::Edit))
+                    .child(
+                        IconButton::new("ib4", "✎")
+                            .icon(IconName::Edit)
+                            .disabled(true),
+                    )
+                    .child(
+                        Fab::new("fab-s", "+")
+                            .icon(IconName::Plus)
+                            .size(FabSize::Small),
+                    )
+                    .child(Fab::new("fab", "+").icon(IconName::Plus))
+                    .child(
+                        Fab::new("fab-l", "+")
+                            .icon(IconName::Plus)
+                            .size(FabSize::Large),
+                    )
+                    .child(
+                        Fab::new("fab-x", "✎")
+                            .icon(IconName::Edit)
+                            .extended("Compose"),
+                    ),
             )
             .child(
                 row()
@@ -987,7 +1011,7 @@ impl Render for Showcase {
                         div().flex_1().min_w(px(220.0)).child(
                             Card::new(CardVariant::Elevated)
                                 .headline("Elevated")
-                                .supporting("Raised surface with hard shadow."),
+                                .supporting("Raised surface."),
                         ),
                     )
                     .child(
@@ -1161,8 +1185,14 @@ impl Render for Showcase {
                     ))
                     .child("Hover (rich)"),
             )
-            .child(IconBadge::new(IconButton::new("bell", "🔔")).count(12, Tone::Danger))
-            .child(IconBadge::new(IconButton::new("mail", "✉")).dot(Tone::Success));
+            .child(
+                IconBadge::new(IconButton::new("bell", "🔔").icon(IconName::Bell))
+                    .count(12, Tone::Danger),
+            )
+            .child(
+                IconBadge::new(IconButton::new("mail", "✉").icon(IconName::Mail))
+                    .dot(Tone::Success),
+            );
         let w_range =
             RangeSlider::new("range", self.range.0, self.range.1).on_change(move |a, b, _, cx| {
                 m3.update(cx, |s, cx| {
@@ -1179,8 +1209,8 @@ impl Render for Showcase {
         });
         let w_snack = Snackbar::new("snack", "Message archived").action("Undo", |_, _| {});
         let w_toolbar = Toolbar::new()
-            .child(IconButton::new("tb1", "✎"))
-            .child(IconButton::new("tb2", "⎘"));
+            .child(IconButton::new("tb1", "✎").icon(IconName::Edit))
+            .child(IconButton::new("tb2", "⎘").icon(IconName::Copy));
 
         let (y, mo, sel) = self.date;
         let pickers = row()
@@ -3944,9 +3974,19 @@ impl Render for Showcase {
                 ));
             n_children += 2;
         }
-        if let Some(d) = ds_panel.take() {
+        // DODAI_ONLY (debug captures) hides the selector so the section fills the view.
+        if let Some(d) = ds_panel
+            .take()
+            .filter(|_| std::env::var_os("DODAI_ONLY").is_none())
+        {
             body = body.child(d);
             n_children += 1;
+        }
+        if std::env::var_os("DODAI_LIST").is_some() {
+            for (c, t) in &sections_meta {
+                eprintln!("{c}\t{t}");
+            }
+            std::process::exit(0);
         }
         let mut spy: Vec<(&'static str, usize)> = Vec::new();
         let mut shown = 0;
@@ -4252,7 +4292,12 @@ fn new_showcase(cx: &mut App) -> Entity<Showcase> {
 
 fn main() {
     Application::new().run(|cx: &mut App| {
-        install(cx, Theme::default());
+        // Debug: DODAI_THEME=<theme id> starts on that theme (e.g. material-dark).
+        let first = std::env::var("DODAI_THEME")
+            .ok()
+            .and_then(|id| dodai_core::themes::by_id(&id))
+            .unwrap_or_default();
+        install(cx, first);
         window_shortcuts(cx);
         set_glow_intensity(cx, 0.5);
         if std::env::var_os("DODAI_NOSCAN").is_some() {
@@ -4267,7 +4312,15 @@ fn main() {
             let b = dodai_gpui::section_border(cx);
             dodai_gpui::set_section_border(cx, b.accent(Some(e)));
         }
-        let bounds = Bounds::centered(None, size(px(DEFAULT_W), px(DEFAULT_H)), cx);
+        // Debug: DODAI_SIZE=WxH opens a differently sized window (e.g. 1100x1400).
+        let (dw, dh) = std::env::var("DODAI_SIZE")
+            .ok()
+            .and_then(|v| {
+                let (w, h) = v.split_once('x')?;
+                Some((w.parse().ok()?, h.parse().ok()?))
+            })
+            .unwrap_or((DEFAULT_W, DEFAULT_H));
+        let bounds = Bounds::centered(None, size(px(dw), px(dh)), cx);
         let win = cx
             .open_window(
                 WindowOptions {

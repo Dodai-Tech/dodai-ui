@@ -35,7 +35,13 @@ pub fn card_style(theme: &Theme, v: CardVariant) -> ShapeStyle {
     let raised = theme.palette.surface_raised;
     match v {
         CardVariant::Elevated => {
-            ShapeStyle::from_tokens(theme, Some(p.background), Some(p.border), false, true)
+            let mut st =
+                ShapeStyle::from_tokens(theme, Some(p.background), Some(p.border), false, true);
+            // No hard offset shadow in this theme: lift the card with a soft one.
+            if st.shadow.is_none() && st.glow.is_none() {
+                st.glow = Some((gpui::hsla(0.0, 0.0, 0.0, 0.16), 10.0));
+            }
+            st
         }
         CardVariant::Filled => ShapeStyle::from_tokens(theme, Some(raised), None, false, false),
         CardVariant::Outlined => ShapeStyle::from_tokens(theme, None, Some(p.border), false, false),
@@ -138,11 +144,48 @@ impl RenderOnce for Card {
 
 // ─────────────────────────── IconButton ───────────────────────────
 
+/// Vector icon for a well-known text glyph, so call sites that pass `"✕"`,
+/// `"⌕"`, `"‹"`... get crisp, theme-coloured drawn icons for free.
+pub fn glyph_icon(g: &str) -> Option<crate::icons::IconName> {
+    use crate::icons::IconName as I;
+    Some(match g {
+        "✕" | "×" => I::Close,
+        "⌕" => I::Search,
+        "‹" => I::ChevronLeft,
+        "›" => I::ChevronRight,
+        "▲" => I::ChevronUp,
+        "▼" => I::ChevronDown,
+        "⋮" => I::DotsVertical,
+        "☰" | "≡" => I::Menu,
+        "♥" => I::Heart,
+        "✎" => I::Edit,
+        "✓" => I::Check,
+        "+" => I::Plus,
+        "⎘" => I::Copy,
+        "✉" => I::Mail,
+        "🔔" => I::Bell,
+        "★" => I::Star,
+        _ => return None,
+    })
+}
+
+/// Render `glyph` as a drawn icon when it has one, else as text.
+fn glyph_el(glyph: SharedString, size: f32, color: gpui::Hsla) -> gpui::AnyElement {
+    match glyph_icon(&glyph) {
+        Some(i) => crate::icons::Icon::new(i)
+            .size(size)
+            .color(color)
+            .into_any_element(),
+        None => div().child(glyph).into_any_element(),
+    }
+}
+
 /// Square icon button. Pass any glyph string (emoji, symbol, icon-font char).
 #[derive(IntoElement)]
 pub struct IconButton {
     id: ElementId,
     glyph: SharedString,
+    icon: Option<crate::icons::IconName>,
     variant: ButtonVariant,
     toggled: Option<bool>,
     disabled: bool,
@@ -160,15 +203,22 @@ impl IconButton {
 
 impl IconButton {
     pub fn new(id: impl Into<ElementId>, glyph: impl Into<SharedString>) -> Self {
+        let glyph: SharedString = glyph.into();
         Self {
             corners: None,
             id: id.into(),
-            glyph: glyph.into(),
+            icon: glyph_icon(&glyph),
+            glyph,
             variant: ButtonVariant::Ghost,
             toggled: None,
             disabled: false,
             on_click: None,
         }
+    }
+    /// Draw a vector icon instead of the text glyph (crisp at any size/theme).
+    pub fn icon(mut self, i: crate::icons::IconName) -> Self {
+        self.icon = Some(i);
+        self
     }
     pub fn variant(mut self, v: ButtonVariant) -> Self {
         self.variant = v;
@@ -209,8 +259,11 @@ impl IconButton {
             .items_center()
             .justify_center()
             .text_size(px(t.typography.size_lg))
-            .text_color(fg)
-            .child(self.glyph);
+            .text_color(fg);
+        el = match self.icon {
+            Some(i) => el.child(crate::icons::Icon::new(i).size(side * 0.5).color(fg)),
+            None => el.child(self.glyph),
+        };
         if !self.disabled {
             el = el.cursor_pointer();
             if let Some(h) = self.on_click {
@@ -256,6 +309,7 @@ impl FabSize {
 pub struct Fab {
     id: ElementId,
     glyph: SharedString,
+    icon: Option<crate::icons::IconName>,
     label: Option<SharedString>,
     size: FabSize,
     variant: ButtonVariant,
@@ -273,15 +327,22 @@ impl Fab {
 
 impl Fab {
     pub fn new(id: impl Into<ElementId>, glyph: impl Into<SharedString>) -> Self {
+        let glyph: SharedString = glyph.into();
         Self {
             corners: None,
             id: id.into(),
-            glyph: glyph.into(),
+            icon: glyph_icon(&glyph),
+            glyph,
             label: None,
             size: FabSize::Regular,
             variant: ButtonVariant::Primary,
             on_click: None,
         }
+    }
+    /// Draw a vector icon instead of the text glyph.
+    pub fn icon(mut self, i: crate::icons::IconName) -> Self {
+        self.icon = Some(i);
+        self
     }
     pub fn extended(mut self, label: impl Into<SharedString>) -> Self {
         self.label = Some(label.into());
@@ -327,7 +388,10 @@ impl Fab {
             Some(_) => el.px(px(t.spacing.lg)),
             None => el.w(px(side)),
         };
-        el = el.child(self.glyph);
+        el = match self.icon {
+            Some(i) => el.child(crate::icons::Icon::new(i).size(side * 0.42).color(fg)),
+            None => el.child(self.glyph),
+        };
         if let Some(l) = self.label {
             el = el.child(
                 div()
@@ -590,7 +654,11 @@ impl TopAppBar {
             .px(px(t.spacing.md))
             .text_color(hsla(t.palette.text));
         if let Some(g) = self.leading {
-            bar = bar.child(div().text_size(px(t.typography.size_lg)).child(g));
+            bar = bar.child(glyph_el(
+                g,
+                t.typography.size_lg * 1.2,
+                hsla(t.palette.text),
+            ));
         }
         bar.child(
             div()
@@ -692,7 +760,7 @@ impl SearchBar {
             .text_size(px(t.typography.size_md))
             .text_color(hsla(fg))
             .cursor_text()
-            .child(self.glyph)
+            .child(glyph_el(self.glyph, t.typography.size_md * 1.1, hsla(fg)))
             .child(self.text);
         if let Some(h) = self.on_click {
             el = el.on_click(move |e, w, cx| h(e, w, cx));
