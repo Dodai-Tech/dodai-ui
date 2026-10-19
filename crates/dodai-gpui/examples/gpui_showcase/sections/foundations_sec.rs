@@ -95,7 +95,7 @@ impl Showcase {
             "Material Symbols",
             section!("Material Symbols")
                 .child(Muted::new(
-                    "`MaterialIcon::new(name)`: any of the 3,900+ catalogue icons, outlined and `.filled(true)`.",
+                    "`MaterialIcon::new(name)`: any of the 3,900+ catalogue icons, outlined and `.filled(true)`. Non-rounded themes draw them faceted (curves → straight cuts); override with `.faceted(bool)`.",
                 ))
                 .child(material_symbols_view(&t))
                 .into_any_element(),

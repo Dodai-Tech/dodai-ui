@@ -89,7 +89,7 @@ impl RenderOnce for Icon {
         if self.pack.resolve(rounded) == IconPack::Material {
             let name = dodai_material_icons::resolve(self.name.name());
             if let Some(m) = material(name, self.filled) {
-                return glyph(size, color, m).into_any_element();
+                return glyph(size, color, m, false).into_any_element();
             }
         }
         let _ = rounded;
@@ -129,9 +129,18 @@ fn material(name: &str, filled: bool) -> Option<&'static dodai_material_icons::I
 
 /// A filled glyph: all subpaths in one path, non-zero rule (holes wind opposite).
 #[cfg(feature = "material-icons")]
-fn glyph(size: f32, color: Hsla, icon: &'static dodai_material_icons::Icon) -> impl IntoElement {
-    let polys: Vec<Vec<(f32, f32)>> = icon
-        .polygons()
+fn glyph(
+    size: f32,
+    color: Hsla,
+    icon: &'static dodai_material_icons::Icon,
+    faceted: bool,
+) -> impl IntoElement {
+    let src = if faceted {
+        icon.faceted()
+    } else {
+        icon.polygons()
+    };
+    let polys: Vec<Vec<(f32, f32)>> = src
         .into_iter()
         .map(|p| {
             p.into_iter()
@@ -159,6 +168,7 @@ pub struct MaterialIcon {
     size: f32,
     color: Hsla,
     filled: bool,
+    faceted: Option<bool>,
 }
 
 #[cfg(feature = "material-icons")]
@@ -169,6 +179,7 @@ impl MaterialIcon {
             size: 24.0,
             color: gpui::white(),
             filled: false,
+            faceted: None,
         }
     }
     pub fn size(mut self, s: f32) -> Self {
@@ -177,6 +188,12 @@ impl MaterialIcon {
     }
     pub fn color(mut self, c: Hsla) -> Self {
         self.color = c;
+        self
+    }
+    /// Force straight facets (`true`) or smooth curves (`false`). By default
+    /// the theme decides: non-rounded shapes (Cyberpunk) get facets.
+    pub fn faceted(mut self, on: bool) -> Self {
+        self.faceted = Some(on);
         self
     }
     /// Use the `-fill` variant when the catalogue has one.
@@ -188,10 +205,13 @@ impl MaterialIcon {
 
 #[cfg(feature = "material-icons")]
 impl RenderOnce for MaterialIcon {
-    fn render(self, _: &mut gpui::Window, _: &mut gpui::App) -> impl IntoElement {
+    fn render(self, _: &mut gpui::Window, cx: &mut gpui::App) -> impl IntoElement {
         let name = dodai_material_icons::resolve(&self.name);
+        let faceted = self
+            .faceted
+            .unwrap_or_else(|| crate::theme_of(cx).shape.kind() != dodai_core::ShapeKind::Rounded);
         match material(name, self.filled) {
-            Some(m) => glyph(self.size, self.color, m).into_any_element(),
+            Some(m) => glyph(self.size, self.color, m, faceted).into_any_element(),
             None => div().size(px(self.size)).flex_none().into_any_element(),
         }
     }

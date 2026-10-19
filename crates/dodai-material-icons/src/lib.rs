@@ -68,10 +68,77 @@ impl Icon {
             .collect()
     }
 
+    /// The icon with every curve reduced to a few straight facets (24×24
+    /// grid, same winding rules as [`polygons`](Self::polygons)): circles
+    /// become octagon-like polygons, rounded corners become chamfers. This is
+    /// how the whole catalogue is drawn in an angular design language.
+    pub fn faceted(&self) -> Vec<Polygon> {
+        self.polygons()
+            .into_iter()
+            .map(|p| simplify_closed(&p, FACET_TOLERANCE))
+            .filter(|p| p.len() >= 3)
+            .collect()
+    }
+
     /// Whether this is a `-fill` variant.
     pub fn is_filled(&self) -> bool {
         self.name.ends_with("-fill")
     }
+}
+
+/// Max distance (24-grid units) a facet may drift from the smooth outline.
+pub const FACET_TOLERANCE: f32 = 0.9;
+
+/// Douglas–Peucker for a closed ring: anchor on the first point and the one
+/// farthest from it, simplify both halves.
+pub fn simplify_closed(p: &[(f32, f32)], tol: f32) -> Polygon {
+    if p.len() < 4 {
+        return p.to_vec();
+    }
+    let d2 = |a: (f32, f32), b: (f32, f32)| (a.0 - b.0).powi(2) + (a.1 - b.1).powi(2);
+    let far = (1..p.len())
+        .max_by(|&i, &j| d2(p[0], p[i]).total_cmp(&d2(p[0], p[j])))
+        .unwrap_or(1);
+    let mut first = p[..=far].to_vec();
+    let mut second = p[far..].to_vec();
+    second.push(p[0]);
+    let mut out = dp(&first, tol);
+    out.pop();
+    let mut tail = dp(&second, tol);
+    tail.pop();
+    out.extend(tail);
+    first.clear();
+    out
+}
+
+fn dp(p: &[(f32, f32)], tol: f32) -> Vec<(f32, f32)> {
+    if p.len() < 3 {
+        return p.to_vec();
+    }
+    let (a, b) = (p[0], p[p.len() - 1]);
+    let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+    let len = (dx * dx + dy * dy).sqrt();
+    let dist = |q: (f32, f32)| {
+        if len < 1e-6 {
+            ((q.0 - a.0).powi(2) + (q.1 - a.1).powi(2)).sqrt()
+        } else {
+            ((q.0 - a.0) * dy - (q.1 - a.1) * dx).abs() / len
+        }
+    };
+    let (mut at, mut best) = (0, 0.0f32);
+    for (i, &q) in p.iter().enumerate().take(p.len() - 1).skip(1) {
+        let d = dist(q);
+        if d > best {
+            (at, best) = (i, d);
+        }
+    }
+    if best <= tol {
+        return vec![a, b];
+    }
+    let mut l = dp(&p[..=at], tol);
+    l.pop();
+    l.extend(dp(&p[at..], tol));
+    l
 }
 
 /// Binary-search `name` in a catalogue sorted by name.
@@ -240,6 +307,24 @@ mod tests {
             "", "M", "M1", "Q1 2", "Z", "X1 2", "M0 0 L", "M0 0L1e", "...", "M-",
         ] {
             let _ = flatten(d);
+        }
+    }
+
+    #[test]
+    fn faceted_is_simpler_and_stays_close() {
+        #[cfg(feature = "outlined")]
+        for n in ["circle", "settings", "home", "favorite", "search"] {
+            let i = crate::outlined::get(n).unwrap();
+            let smooth: usize = i.polygons().iter().map(Vec::len).sum();
+            let facet = i.faceted();
+            let pts: usize = facet.iter().map(Vec::len).sum();
+            assert!(pts > 2 && pts <= smooth, "{n}: {pts} vs {smooth}");
+            for (x, y) in facet.iter().flatten() {
+                assert!(
+                    (-0.5..=24.5).contains(x) && (-0.5..=24.5).contains(y),
+                    "{n}"
+                );
+            }
         }
     }
 
