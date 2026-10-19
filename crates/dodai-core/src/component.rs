@@ -189,7 +189,9 @@ impl Theme {
             ListItemTokens {
                 background: Some(p.selection),
                 foreground: p.text,
-                marker: Some(p.primary),
+                // Chamfered themes mark the selection with an accent bar;
+                // rounded (Material) ones rely on the filled pill alone.
+                marker: (self.shape.kind() != crate::ShapeKind::Rounded).then_some(p.primary),
             }
         } else if hovered {
             ListItemTokens {

@@ -130,7 +130,12 @@ impl RenderOnce for DesignSystemTree {
                 let mut kids = gpui::div()
                     .ml(px(if as_dropdown { 0.0 } else { t.spacing.md }))
                     .pl(px(t.spacing.md))
-                    .border_l_1()
+                    // Material: nesting is shown by indent alone, no guide line.
+                    .border_l(px(if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+                        0.0
+                    } else {
+                        1.0
+                    }))
                     .border_color(hsla(t.palette.border_strong))
                     .flex()
                     .flex_col()

@@ -327,7 +327,7 @@ impl Select {
                 if !o.swatches.is_empty() {
                     row = row.child(swatch_row(&t, &o.swatches));
                 }
-                if let (true, Some(m)) = (is_sel, marker.or(Some(hsla(t.palette.primary)))) {
+                if let (true, Some(m)) = (is_sel, marker) {
                     row = row.child(
                         div()
                             .absolute()

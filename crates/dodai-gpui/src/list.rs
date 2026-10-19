@@ -185,11 +185,11 @@ impl RenderOnce for Divider {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::light_rounded;
+    use crate::testing::{light_rounded, square};
 
     #[test]
-    fn selected_row_has_marker() {
-        let t = light_rounded();
+    fn selected_row_has_marker_on_square_themes() {
+        let t = square();
         let (s, fg, m) = list_style(&t, true, false);
         assert_eq!(s.fill, Some(hsla(t.palette.selection)));
         assert_eq!(fg, hsla(t.palette.text));
@@ -197,5 +197,13 @@ mod tests {
         let (s, fg, m) = list_style(&t, false, false);
         assert!(s.fill.is_none() && m.is_none());
         assert_eq!(fg, hsla(t.palette.text_muted));
+    }
+
+    #[test]
+    fn rounded_themes_have_no_accent_bar() {
+        let t = light_rounded();
+        let (s, _, m) = list_style(&t, true, false);
+        assert_eq!(s.fill, Some(hsla(t.palette.selection)), "pill fill stays");
+        assert!(m.is_none(), "no vertical bar on Material");
     }
 }

@@ -254,7 +254,12 @@ mod tests {
                 t.toggle(true, ControlState::Idle).track,
                 t.toggle(false, ControlState::Idle).track
             );
-            assert!(t.list_item(true, false).marker.is_some());
+            assert_eq!(
+                t.list_item(true, false).marker.is_some(),
+                t.shape.kind() != crate::ShapeKind::Rounded,
+                "{}: accent bar on chamfered themes only",
+                t.id()
+            );
         }
     }
 
