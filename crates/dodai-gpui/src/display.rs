@@ -190,10 +190,7 @@ impl Banner {
         self.dismissible = on;
         self
     }
-    pub fn on_dismiss(mut self, f: impl Fn(&mut Window, &mut App) + 'static) -> Self {
-        self.on_dismiss = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_dismiss);
 }
 
 impl RenderOnce for Banner {

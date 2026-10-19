@@ -204,10 +204,7 @@ impl DataTable {
         self.corners = Some(c);
         self
     }
-    pub fn on_selection(mut self, f: impl Fn(&[usize], &mut Window, &mut App) + 'static) -> Self {
-        self.on_selection = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_selection, &[usize]);
 }
 
 impl RenderOnce for DataTable {

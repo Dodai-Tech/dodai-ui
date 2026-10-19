@@ -8,7 +8,7 @@ use crate::{hsla, theme_of};
 use dodai_core::{Color, Tone};
 use gpui::{
     canvas, div, px, relative, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement,
-    Pixels, RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window,
+    Pixels, SharedString, StatefulInteractiveElement, Styled, Window,
 };
 use std::rc::Rc;
 
@@ -118,12 +118,7 @@ impl Funnel {
     }
 }
 
-impl RenderOnce for Funnel {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Funnel", motion)
-    }
-}
+crate::entry_render!(Funnel);
 
 // ─────────────────────────────── Waterfall ───────────────────────────────
 
@@ -254,12 +249,7 @@ impl Waterfall {
     }
 }
 
-impl RenderOnce for Waterfall {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Waterfall", motion)
-    }
-}
+crate::entry_render!(Waterfall);
 
 #[cfg(test)]
 mod tests {

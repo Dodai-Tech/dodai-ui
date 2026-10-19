@@ -313,12 +313,7 @@ impl ProgressBar {
     }
 }
 
-impl RenderOnce for ProgressBar {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "ProgressBar", motion)
-    }
-}
+crate::entry_render!(ProgressBar);
 
 #[derive(Default)]
 struct SliderState {
@@ -415,11 +410,10 @@ impl Slider {
         self.step = Some(step);
         self
     }
-    /// Called with the new value while dragging/clicking.
-    pub fn on_change(mut self, f: impl Fn(f32, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(
+        /// Called with the new value while dragging/clicking.
+        on_change, f32
+    );
 }
 
 impl Slider {
@@ -623,12 +617,7 @@ impl Slider {
     }
 }
 
-impl RenderOnce for Slider {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Slider", motion)
-    }
-}
+crate::entry_render!(Slider);
 
 #[cfg(test)]
 mod tests {

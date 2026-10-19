@@ -9,7 +9,7 @@ use crate::{hsla, theme_of};
 use dodai_core::Color;
 use gpui::{
     canvas, div, px, relative, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement,
-    Pixels, RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window,
+    Pixels, SharedString, StatefulInteractiveElement, Styled, Window,
 };
 use std::rc::Rc;
 
@@ -156,12 +156,7 @@ impl Histogram {
     }
 }
 
-impl RenderOnce for Histogram {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Histogram", motion)
-    }
-}
+crate::entry_render!(Histogram);
 
 // ─────────────────────────────── BoxPlot ───────────────────────────────
 
@@ -293,12 +288,7 @@ impl BoxPlot {
     }
 }
 
-impl RenderOnce for BoxPlot {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "BoxPlot", motion)
-    }
-}
+crate::entry_render!(BoxPlot);
 
 // ─────────────────────────────── BubbleChart ───────────────────────────────
 
@@ -433,12 +423,7 @@ impl BubbleChart {
     }
 }
 
-impl RenderOnce for BubbleChart {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "BubbleChart", motion)
-    }
-}
+crate::entry_render!(BubbleChart);
 
 #[cfg(test)]
 mod tests {

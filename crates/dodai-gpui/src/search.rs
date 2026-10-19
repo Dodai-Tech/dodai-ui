@@ -87,16 +87,14 @@ impl SearchView {
         self.max_rows = n.max(1);
         self
     }
-    /// Called with the index into the original `items`.
-    pub fn on_pick(mut self, f: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
-        self.on_pick = Some(Rc::new(f));
-        self
-    }
-    /// Show a ✕ button while the query is non-empty.
-    pub fn on_clear(mut self, f: impl Fn(&mut Window, &mut App) + 'static) -> Self {
-        self.on_clear = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(
+        /// Called with the index into the original `items`.
+        on_pick, usize
+    );
+    crate::callback!(
+        /// Show a ✕ button while the query is non-empty.
+        on_clear
+    );
 }
 
 impl RenderOnce for SearchView {
@@ -304,12 +302,7 @@ impl IconBadge {
     }
 }
 
-impl RenderOnce for IconBadge {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "IconBadge", motion)
-    }
-}
+crate::entry_render!(IconBadge);
 
 #[cfg(test)]
 mod tests {

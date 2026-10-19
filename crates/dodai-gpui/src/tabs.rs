@@ -6,7 +6,7 @@ use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use dodai_core::Theme;
 use gpui::{
-    div, px, App, ElementId, Hsla, IntoElement, ParentElement, RenderOnce, SharedString,
+    div, px, App, ElementId, Hsla, IntoElement, ParentElement, SharedString,
     StatefulInteractiveElement, Styled, Window,
 };
 use std::rc::Rc;
@@ -55,11 +55,10 @@ impl Tabs {
         self.active = i;
         self
     }
-    /// Called with the clicked tab index.
-    pub fn on_select(mut self, f: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
-        self.on_select = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(
+        /// Called with the clicked tab index.
+        on_select, usize
+    );
 }
 
 impl Tabs {
@@ -107,12 +106,7 @@ impl Tabs {
     }
 }
 
-impl RenderOnce for Tabs {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Tabs", motion)
-    }
-}
+crate::entry_render!(Tabs);
 
 #[cfg(test)]
 mod tests {

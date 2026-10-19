@@ -14,7 +14,6 @@ use gpui::{
     IntoElement, MouseButton, ParentElement, Pixels, RenderOnce, SharedString,
     StatefulInteractiveElement, Styled, Window,
 };
-use std::rc::Rc;
 
 /// One entry of a [`Select`].
 #[derive(Clone)]
@@ -120,11 +119,10 @@ impl Select {
         self.disabled = d;
         self
     }
-    /// Called with the chosen option index.
-    pub fn on_change(mut self, f: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(
+        /// Called with the chosen option index.
+        on_change, usize
+    );
 }
 
 impl Select {
@@ -370,12 +368,7 @@ impl Select {
     }
 }
 
-impl RenderOnce for Select {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Select", motion)
-    }
-}
+crate::entry_render!(Select);
 
 /// Option list for a theme registry: name + colour swatches per theme.
 pub fn theme_options(themes: &[Theme]) -> Vec<SelectOption> {

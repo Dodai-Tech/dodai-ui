@@ -533,12 +533,7 @@ impl LineChart {
     }
 }
 
-impl RenderOnce for LineChart {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "LineChart", motion)
-    }
-}
+crate::entry_render!(LineChart);
 
 // ─────────────────────────────── BarChart ───────────────────────────────
 
@@ -840,12 +835,7 @@ impl BarChart {
     }
 }
 
-impl RenderOnce for BarChart {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "BarChart", motion)
-    }
-}
+crate::entry_render!(BarChart);
 
 // ─────────────────────────────── Sparkline ───────────────────────────────
 
@@ -1215,11 +1205,10 @@ impl PieChart {
         self.select_color = Some(c);
         self
     }
-    /// Called with the new selection (`None` when deselected) on click.
-    pub fn on_select(mut self, f: impl Fn(Option<usize>, &mut Window, &mut App) + 'static) -> Self {
-        self.on_select = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(
+        /// Called with the new selection (`None` when deselected) on click.
+        on_select, Option<usize>
+    );
     pub fn size(mut self, s: f32) -> Self {
         self.size = s;
         self
@@ -1588,12 +1577,7 @@ impl PieChart {
     }
 }
 
-impl RenderOnce for PieChart {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "PieChart", motion)
-    }
-}
+crate::entry_render!(PieChart);
 
 // ─────────────────────────────────── Gauge ───────────────────────────────────
 
@@ -1808,12 +1792,7 @@ impl Gauge {
     }
 }
 
-impl RenderOnce for Gauge {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Gauge", motion)
-    }
-}
+crate::entry_render!(Gauge);
 
 // ─────────────────────────────── RadarChart ───────────────────────────────
 
@@ -1941,12 +1920,7 @@ impl RadarChart {
     }
 }
 
-impl RenderOnce for RadarChart {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "RadarChart", motion)
-    }
-}
+crate::entry_render!(RadarChart);
 
 // ─────────────────────────────── ScatterPlot ───────────────────────────────
 
@@ -2074,12 +2048,7 @@ impl ScatterPlot {
     }
 }
 
-impl RenderOnce for ScatterPlot {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "ScatterPlot", motion)
-    }
-}
+crate::entry_render!(ScatterPlot);
 
 // ─────────────────────────────── Heatmap ───────────────────────────────
 
@@ -2320,12 +2289,7 @@ impl Heatmap {
     }
 }
 
-impl RenderOnce for Heatmap {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Heatmap", motion)
-    }
-}
+crate::entry_render!(Heatmap);
 
 #[cfg(test)]
 mod tests {

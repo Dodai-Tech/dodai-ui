@@ -8,7 +8,7 @@ use crate::{hsla, theme_of};
 use dodai_core::{Theme, Tone};
 use gpui::{
     div, px, App, ClickEvent, ElementId, InteractiveElement, IntoElement, ParentElement,
-    RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window,
+    SharedString, StatefulInteractiveElement, Styled, Window,
 };
 use std::rc::Rc;
 
@@ -65,20 +65,16 @@ impl Table {
         self.selected = i;
         self
     }
-    pub fn on_select(mut self, f: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
-        self.on_select = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_select, usize);
     /// Show a sort arrow on `column` (`ascending` → ▲).
     pub fn sorted(mut self, column: usize, ascending: bool) -> Self {
         self.sort = Some((column, ascending));
         self
     }
-    /// Make headers clickable; called with the column index.
-    pub fn on_sort(mut self, f: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
-        self.on_sort = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(
+        /// Make headers clickable; called with the column index.
+        on_sort, usize
+    );
 }
 
 impl Table {
@@ -180,12 +176,7 @@ impl Table {
     }
 }
 
-impl RenderOnce for Table {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Table", motion)
-    }
-}
+crate::entry_render!(Table);
 
 /// Small helper trait: apply a flex weight to a cell.
 trait Weight: Styled + Sized {
@@ -256,12 +247,7 @@ impl Badge {
     }
 }
 
-impl RenderOnce for Badge {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Badge", motion)
-    }
-}
+crate::entry_render!(Badge);
 
 /// Initials in a shaped tile, optional status dot.
 #[derive(IntoElement)]
@@ -356,12 +342,7 @@ impl Avatar {
     }
 }
 
-impl RenderOnce for Avatar {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Avatar", motion)
-    }
-}
+crate::entry_render!(Avatar);
 
 /// Paint of a [`Chip`] (pure): `(style, text colour)`.
 pub fn chip_style(theme: &Theme, selected: bool, hovered: bool) -> (ShapeStyle, gpui::Hsla) {
@@ -423,10 +404,7 @@ impl Chip {
         self.disabled = d;
         self
     }
-    pub fn on_click(mut self, f: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static) -> Self {
-        self.on_click = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_click, &ClickEvent);
     /// Show ✕ and call `f` when it is clicked.
     pub fn on_remove(mut self, f: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static) -> Self {
         self.removable = true;
@@ -480,12 +458,7 @@ impl Chip {
     }
 }
 
-impl RenderOnce for Chip {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Chip", motion)
-    }
-}
+crate::entry_render!(Chip);
 
 /// Keyboard key hint, e.g. `Kbd::new("⌘K")`.
 #[derive(IntoElement)]
@@ -527,12 +500,7 @@ impl Kbd {
     }
 }
 
-impl RenderOnce for Kbd {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Kbd", motion)
-    }
-}
+crate::entry_render!(Kbd);
 
 #[cfg(test)]
 mod tests {

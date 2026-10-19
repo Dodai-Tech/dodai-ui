@@ -116,12 +116,7 @@ impl RenkoChart {
     }
 }
 
-impl RenderOnce for RenkoChart {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "RenkoChart", motion)
-    }
-}
+crate::entry_render!(RenkoChart);
 
 // ─────────────────────────────── Depth ───────────────────────────────
 
@@ -241,12 +236,7 @@ impl DepthChart {
     }
 }
 
-impl RenderOnce for DepthChart {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "DepthChart", motion)
-    }
-}
+crate::entry_render!(DepthChart);
 
 // ─────────────────────────────── Gantt ───────────────────────────────
 
@@ -376,12 +366,7 @@ impl Gantt {
     }
 }
 
-impl RenderOnce for Gantt {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Gantt", motion)
-    }
-}
+crate::entry_render!(Gantt);
 
 // ─────────────────────────────── ChartStack ───────────────────────────────
 

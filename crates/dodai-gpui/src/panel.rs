@@ -461,12 +461,7 @@ impl InputBox {
     }
 }
 
-impl RenderOnce for InputBox {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "InputBox", motion)
-    }
-}
+crate::entry_render!(InputBox);
 
 /// Tooltip view: `.tooltip(DodaiTooltip::text("Hint"))` on an id'd element.
 pub struct DodaiTooltip {

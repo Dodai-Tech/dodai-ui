@@ -7,10 +7,9 @@ use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use dodai_core::{ButtonVariant, ControlState, Theme};
 use gpui::{
-    div, px, App, ElementId, InteractiveElement, IntoElement, ParentElement, RenderOnce,
-    SharedString, StatefulInteractiveElement, Styled, Window,
+    div, px, App, ElementId, InteractiveElement, IntoElement, ParentElement, SharedString,
+    StatefulInteractiveElement, Styled, Window,
 };
-use std::rc::Rc;
 
 /// Path trail; the last crumb is the current page. Earlier crumbs are clickable.
 #[derive(IntoElement)]
@@ -31,10 +30,7 @@ impl Breadcrumb {
             on_click: None,
         }
     }
-    pub fn on_click(mut self, f: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
-        self.on_click = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_click, usize);
 }
 
 impl Breadcrumb {
@@ -78,12 +74,7 @@ impl Breadcrumb {
     }
 }
 
-impl RenderOnce for Breadcrumb {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Breadcrumb", motion)
-    }
-}
+crate::entry_render!(Breadcrumb);
 
 /// Square-ish page/step button used by [`Pagination`].
 fn page_button(
@@ -134,11 +125,10 @@ impl Pagination {
             on_change: None,
         }
     }
-    /// Called with the requested 1-based page.
-    pub fn on_change(mut self, f: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(
+        /// Called with the requested 1-based page.
+        on_change, usize
+    );
 }
 
 impl Pagination {
@@ -216,12 +206,7 @@ impl Pagination {
     }
 }
 
-impl RenderOnce for Pagination {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Pagination", motion)
-    }
-}
+crate::entry_render!(Pagination);
 
 /// Multi-step progress: numbered nodes joined by lines. Done steps show ✓.
 #[derive(IntoElement)]
@@ -316,12 +301,7 @@ impl Stepper {
     }
 }
 
-impl RenderOnce for Stepper {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Stepper", motion)
-    }
-}
+crate::entry_render!(Stepper);
 
 /// Exclusive option group in one bordered strip. Controlled.
 #[derive(IntoElement)]
@@ -358,10 +338,7 @@ impl Segmented {
         self.disabled = d;
         self
     }
-    pub fn on_change(mut self, f: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_change, usize);
 }
 
 impl Segmented {
@@ -412,12 +389,7 @@ impl Segmented {
     }
 }
 
-impl RenderOnce for Segmented {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Segmented", motion)
-    }
-}
+crate::entry_render!(Segmented);
 
 struct AccState {
     open: Vec<bool>,
@@ -534,12 +506,7 @@ impl Accordion {
     }
 }
 
-impl RenderOnce for Accordion {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Accordion", motion)
-    }
-}
+crate::entry_render!(Accordion);
 
 /// Used by tests and docs: states a nav button resolves to.
 pub fn nav_state(disabled: bool) -> ControlState {

@@ -7,8 +7,7 @@ use crate::text::first_family;
 use crate::{hsla, theme_of};
 use gpui::{
     canvas, div, px, relative, AnyElement, App, Bounds, ElementId, InteractiveElement, IntoElement,
-    MouseButton, ParentElement, Pixels, RenderOnce, SharedString, StatefulInteractiveElement,
-    Styled, Window,
+    MouseButton, ParentElement, Pixels, SharedString, StatefulInteractiveElement, Styled, Window,
 };
 use std::rc::Rc;
 
@@ -103,15 +102,11 @@ impl TreeView {
         self.selected = path;
         self
     }
-    /// Called with the node path when the chevron is clicked.
-    pub fn on_toggle(mut self, f: impl Fn(&[usize], &mut Window, &mut App) + 'static) -> Self {
-        self.on_toggle = Some(Rc::new(f));
-        self
-    }
-    pub fn on_select(mut self, f: impl Fn(&[usize], &mut Window, &mut App) + 'static) -> Self {
-        self.on_select = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(
+        /// Called with the node path when the chevron is clicked.
+        on_toggle, &[usize]
+    );
+    crate::callback!(on_select, &[usize]);
 }
 
 impl TreeView {
@@ -189,12 +184,7 @@ impl TreeView {
     }
 }
 
-impl RenderOnce for TreeView {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "TreeView", motion)
-    }
-}
+crate::entry_render!(TreeView);
 
 // ─────────────────────────────── SplitPane ───────────────────────────────
 
@@ -249,10 +239,7 @@ impl SplitPane {
         self.second = Some(e.into_any_element());
         self
     }
-    pub fn on_change(mut self, f: impl Fn(f32, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_change, f32);
 }
 
 impl SplitPane {
@@ -329,12 +316,7 @@ impl SplitPane {
     }
 }
 
-impl RenderOnce for SplitPane {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "SplitPane", motion)
-    }
-}
+crate::entry_render!(SplitPane);
 
 #[cfg(test)]
 mod tests {

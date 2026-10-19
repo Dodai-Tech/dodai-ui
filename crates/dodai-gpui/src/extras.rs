@@ -11,7 +11,7 @@ use crate::{hsla, theme_of};
 use dodai_core::{Color, Theme, Tone};
 use gpui::{
     div, px, AnyElement, App, ClickEvent, ElementId, InteractiveElement, IntoElement,
-    ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window,
+    ParentElement, SharedString, StatefulInteractiveElement, Styled, Window,
 };
 use std::rc::Rc;
 
@@ -78,12 +78,7 @@ impl Toolbar {
     }
 }
 
-impl RenderOnce for Toolbar {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Toolbar", motion)
-    }
-}
+crate::entry_render!(Toolbar);
 
 /// Alias: a bottom app bar is a [`Toolbar`] with a trailing action.
 pub type BottomAppBar = Toolbar;
@@ -170,12 +165,7 @@ impl EmptyState {
     }
 }
 
-impl RenderOnce for EmptyState {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "EmptyState", motion)
-    }
-}
+crate::entry_render!(EmptyState);
 
 // ─────────────────────────────── Rating ───────────────────────────────
 
@@ -204,10 +194,7 @@ impl Rating {
         self.max = m.max(1);
         self
     }
-    pub fn on_change(mut self, f: impl Fn(u32, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_change, u32);
 }
 
 impl Rating {
@@ -235,12 +222,7 @@ impl Rating {
     }
 }
 
-impl RenderOnce for Rating {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Rating", motion)
-    }
-}
+crate::entry_render!(Rating);
 
 // ───────────────────────────── NumberStepper ─────────────────────────────
 
@@ -286,10 +268,7 @@ impl NumberStepper {
         self.step = s.max(1);
         self
     }
-    pub fn on_change(mut self, f: impl Fn(i32, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_change, i32);
 }
 
 impl NumberStepper {
@@ -330,12 +309,7 @@ impl NumberStepper {
     }
 }
 
-impl RenderOnce for NumberStepper {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "NumberStepper", motion)
-    }
-}
+crate::entry_render!(NumberStepper);
 
 // ───────────────────────────── Timeline ─────────────────────────────
 
@@ -450,12 +424,7 @@ impl Timeline {
     }
 }
 
-impl RenderOnce for Timeline {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Timeline", motion)
-    }
-}
+crate::entry_render!(Timeline);
 
 // ───────────────────────────── ColorPicker ─────────────────────────────
 
@@ -493,10 +462,7 @@ impl ColorPicker {
         self.columns = n.max(1);
         self
     }
-    pub fn on_select(mut self, f: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
-        self.on_select = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_select, usize);
 }
 
 impl ColorPicker {
@@ -552,12 +518,7 @@ impl ColorPicker {
     }
 }
 
-impl RenderOnce for ColorPicker {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "ColorPicker", motion)
-    }
-}
+crate::entry_render!(ColorPicker);
 
 // ───────────────────────────── FileDropZone ─────────────────────────────
 
@@ -591,10 +552,7 @@ impl FileDropZone {
         self.hint = t.into();
         self
     }
-    pub fn on_click(mut self, f: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static) -> Self {
-        self.on_click = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_click, &ClickEvent);
 }
 
 impl FileDropZone {
@@ -642,12 +600,7 @@ impl FileDropZone {
     }
 }
 
-impl RenderOnce for FileDropZone {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "FileDropZone", motion)
-    }
-}
+crate::entry_render!(FileDropZone);
 
 // ───────────────────────────── TagField ─────────────────────────────
 
@@ -678,10 +631,7 @@ impl TagField {
             trailing: None,
         }
     }
-    pub fn on_remove(mut self, f: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
-        self.on_remove = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_remove, usize);
     /// Element after the chips (typically a `TextInput`).
     pub fn trailing(mut self, e: impl IntoElement) -> Self {
         self.trailing = Some(e.into_any_element());
@@ -717,12 +667,7 @@ impl TagField {
     }
 }
 
-impl RenderOnce for TagField {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "TagField", motion)
-    }
-}
+crate::entry_render!(TagField);
 
 #[cfg(test)]
 mod tests {

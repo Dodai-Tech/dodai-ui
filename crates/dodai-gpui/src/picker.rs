@@ -8,8 +8,7 @@ use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use dodai_core::{ButtonVariant, ControlState};
 use gpui::{
-    div, px, App, ElementId, IntoElement, ParentElement, RenderOnce, StatefulInteractiveElement,
-    Styled, Window,
+    div, px, App, ElementId, IntoElement, ParentElement, StatefulInteractiveElement, Styled, Window,
 };
 use std::rc::Rc;
 
@@ -174,15 +173,11 @@ impl DatePicker {
         self.range = Some(r);
         self
     }
-    pub fn on_select(mut self, f: impl Fn(Date, &mut Window, &mut App) + 'static) -> Self {
-        self.on_select = Some(Rc::new(f));
-        self
-    }
-    /// Called with the new visible `(year, month)` when the arrows are used.
-    pub fn on_month(mut self, f: impl Fn(i32, u32, &mut Window, &mut App) + 'static) -> Self {
-        self.on_month = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_select, Date);
+    crate::callback!(
+        /// Called with the new visible `(year, month)` when the arrows are used.
+        on_month, i32, u32
+    );
 }
 
 impl DatePicker {
@@ -287,12 +282,7 @@ impl DatePicker {
     }
 }
 
-impl RenderOnce for DatePicker {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "DatePicker", motion)
-    }
-}
+crate::entry_render!(DatePicker);
 
 // ───────────────────────────── time picker ─────────────────────────────
 
@@ -352,10 +342,7 @@ impl TimePicker {
         self.minute_step = s.max(1);
         self
     }
-    pub fn on_change(mut self, f: impl Fn(u32, u32, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_change, u32, u32);
 }
 
 impl TimePicker {
@@ -434,12 +421,7 @@ impl TimePicker {
     }
 }
 
-impl RenderOnce for TimePicker {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "TimePicker", motion)
-    }
-}
+crate::entry_render!(TimePicker);
 
 #[cfg(test)]
 mod tests {

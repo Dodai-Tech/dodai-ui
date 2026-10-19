@@ -111,14 +111,8 @@ impl CommandPalette {
         self.max_rows = n.max(1);
         self
     }
-    pub fn on_run(mut self, f: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
-        self.on_run = Some(Rc::new(f));
-        self
-    }
-    pub fn on_dismiss(mut self, f: impl Fn(&mut Window, &mut App) + 'static) -> Self {
-        self.on_dismiss = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_run, usize);
+    crate::callback!(on_dismiss);
 }
 
 impl RenderOnce for CommandPalette {
@@ -252,11 +246,10 @@ impl Combobox {
         self.open = o;
         self
     }
-    /// Called with the index into the original `options`.
-    pub fn on_pick(mut self, f: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
-        self.on_pick = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(
+        /// Called with the index into the original `options`.
+        on_pick, usize
+    );
 }
 
 impl Combobox {
@@ -310,12 +303,7 @@ impl Combobox {
     }
 }
 
-impl RenderOnce for Combobox {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Combobox", motion)
-    }
-}
+crate::entry_render!(Combobox);
 
 #[cfg(test)]
 mod tests {

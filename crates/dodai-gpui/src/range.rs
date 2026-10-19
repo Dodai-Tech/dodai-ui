@@ -7,7 +7,7 @@ use crate::theme_of;
 use dodai_core::ControlState;
 use gpui::{
     canvas, div, px, relative, App, Bounds, ElementId, InteractiveElement, IntoElement,
-    MouseButton, ParentElement, Pixels, RenderOnce, Styled, Window,
+    MouseButton, ParentElement, Pixels, Styled, Window,
 };
 use std::rc::Rc;
 
@@ -106,10 +106,7 @@ impl RangeSlider {
         self.show_value = on;
         self
     }
-    pub fn on_change(mut self, f: impl Fn(f32, f32, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_change, f32, f32);
 }
 
 impl RangeSlider {
@@ -283,12 +280,7 @@ impl RangeSlider {
     }
 }
 
-impl RenderOnce for RangeSlider {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "RangeSlider", motion)
-    }
-}
+crate::entry_render!(RangeSlider);
 
 #[cfg(test)]
 mod tests {

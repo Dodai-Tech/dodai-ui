@@ -10,8 +10,8 @@ use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use dodai_core::{ButtonVariant, ControlState, Theme};
 use gpui::{
-    div, px, AnyElement, App, ClickEvent, ElementId, IntoElement, ParentElement, RenderOnce,
-    SharedString, StatefulInteractiveElement, Styled, Window,
+    div, px, AnyElement, App, ClickEvent, ElementId, IntoElement, ParentElement, SharedString,
+    StatefulInteractiveElement, Styled, Window,
 };
 use std::rc::Rc;
 
@@ -135,12 +135,7 @@ impl Card {
     }
 }
 
-impl RenderOnce for Card {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Card", motion)
-    }
-}
+crate::entry_render!(Card);
 
 // ─────────────────────────── IconButton ───────────────────────────
 
@@ -268,12 +263,7 @@ impl IconButton {
     }
 }
 
-impl RenderOnce for IconButton {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "IconButton", motion)
-    }
-}
+crate::entry_render!(IconButton);
 
 // ────────────────────────────── FAB ──────────────────────────────
 
@@ -394,12 +384,7 @@ impl Fab {
     }
 }
 
-impl RenderOnce for Fab {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Fab", motion)
-    }
-}
+crate::entry_render!(Fab);
 
 // ──────────────────────────── Navigation ────────────────────────────
 
@@ -472,10 +457,7 @@ impl Navigation {
         self.active = i;
         self
     }
-    pub fn on_select(mut self, f: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
-        self.on_select = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_select, usize);
 }
 
 impl Navigation {
@@ -554,12 +536,7 @@ impl Navigation {
     }
 }
 
-impl RenderOnce for Navigation {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Navigation", motion)
-    }
-}
+crate::entry_render!(Navigation);
 
 // ──────────────────────────── TopAppBar ────────────────────────────
 
@@ -658,12 +635,7 @@ impl TopAppBar {
     }
 }
 
-impl RenderOnce for TopAppBar {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "TopAppBar", motion)
-    }
-}
+crate::entry_render!(TopAppBar);
 
 // ───────────────────────────── SearchBar ─────────────────────────────
 
@@ -739,12 +711,7 @@ impl SearchBar {
     }
 }
 
-impl RenderOnce for SearchBar {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "SearchBar", motion)
-    }
-}
+crate::entry_render!(SearchBar);
 
 #[cfg(test)]
 mod tests {

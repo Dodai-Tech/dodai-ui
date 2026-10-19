@@ -4,7 +4,7 @@ use crate::paint::{shaped, ShapeStyle};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use dodai_core::{Theme, Tone};
-use gpui::{px, App, IntoElement, ParentElement, RenderOnce, SharedString, Styled, Window};
+use gpui::{px, App, IntoElement, ParentElement, SharedString, Styled, Window};
 
 /// Paint style + text colour of a tag (pure).
 pub fn tag_style(theme: &Theme, tone: Tone, solid: bool) -> (ShapeStyle, gpui::Hsla) {
@@ -57,12 +57,7 @@ impl Tag {
     }
 }
 
-impl RenderOnce for Tag {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Tag", motion)
-    }
-}
+crate::entry_render!(Tag);
 
 #[cfg(test)]
 mod tests {

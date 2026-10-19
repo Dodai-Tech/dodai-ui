@@ -186,15 +186,11 @@ impl OtpInput {
         self.masked = on;
         self
     }
-    pub fn on_change(mut self, f: impl Fn(&str, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(f));
-        self
-    }
-    /// Called once all cells are filled.
-    pub fn on_complete(mut self, f: impl Fn(&str, &mut Window, &mut App) + 'static) -> Self {
-        self.on_complete = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_change, &str);
+    crate::callback!(
+        /// Called once all cells are filled.
+        on_complete, &str
+    );
 }
 
 impl RenderOnce for OtpInput {
@@ -364,10 +360,7 @@ impl ToggleGroup {
         self.allow_empty = on;
         self
     }
-    pub fn on_change(mut self, f: impl Fn(&[usize], &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_change, &[usize]);
 }
 
 impl RenderOnce for ToggleGroup {
@@ -476,10 +469,7 @@ impl CheckboxGroup {
         self.switches = on;
         self
     }
-    pub fn on_change(mut self, f: impl Fn(&[usize], &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_change, &[usize]);
 }
 
 impl RenderOnce for CheckboxGroup {

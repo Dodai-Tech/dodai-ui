@@ -15,7 +15,6 @@ use gpui::{
     InteractiveElement, IntoElement, MouseButton, ParentElement, Pixels, Point, RenderOnce,
     StatefulInteractiveElement, Styled, Window,
 };
-use std::rc::Rc;
 
 /// Side of the anchor an overlay opens on.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -353,10 +352,7 @@ impl ContextMenu {
         self.width = w;
         self
     }
-    pub fn on_select(mut self, f: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
-        self.on_select = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_select, usize);
 }
 
 impl RenderOnce for ContextMenu {
@@ -447,10 +443,7 @@ impl DropdownMenu {
         self.width = w;
         self
     }
-    pub fn on_select(mut self, f: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
-        self.on_select = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_select, usize);
 }
 
 impl RenderOnce for DropdownMenu {

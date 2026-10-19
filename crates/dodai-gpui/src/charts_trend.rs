@@ -9,7 +9,7 @@ use crate::panel::DodaiTooltip;
 use crate::{hsla, theme_of};
 use gpui::{
     canvas, div, px, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels,
-    RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window,
+    SharedString, StatefulInteractiveElement, Styled, Window,
 };
 use std::rc::Rc;
 
@@ -142,12 +142,7 @@ impl StackedAreaChart {
     }
 }
 
-impl RenderOnce for StackedAreaChart {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "StackedAreaChart", motion)
-    }
-}
+crate::entry_render!(StackedAreaChart);
 
 // ─────────────────────────────── Candlestick ───────────────────────────────
 
@@ -578,12 +573,7 @@ impl Candlestick {
     }
 }
 
-impl RenderOnce for Candlestick {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Candlestick", motion)
-    }
-}
+crate::entry_render!(Candlestick);
 
 #[cfg(test)]
 mod tests {

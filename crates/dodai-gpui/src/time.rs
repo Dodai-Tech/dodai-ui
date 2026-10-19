@@ -621,11 +621,10 @@ impl Timer {
         self.size = s;
         self
     }
-    /// Called once when the countdown reaches zero.
-    pub fn on_finish(mut self, f: impl Fn(&mut Window, &mut App) + 'static) -> Self {
-        self.on_finish = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(
+        /// Called once when the countdown reaches zero.
+        on_finish
+    );
 }
 
 impl RenderOnce for Timer {
@@ -933,11 +932,10 @@ impl TapTempo {
         self.beats = n.clamp(1, 12);
         self
     }
-    /// Called with the new BPM after a tap or a ± adjustment.
-    pub fn on_change(mut self, f: impl Fn(f32, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(
+        /// Called with the new BPM after a tap or a ± adjustment.
+        on_change, f32
+    );
 }
 
 impl RenderOnce for TapTempo {

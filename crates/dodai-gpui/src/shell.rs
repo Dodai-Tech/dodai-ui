@@ -140,12 +140,11 @@ impl ResponsiveShell {
         self.collapsed = c;
         self
     }
-    /// Enables the drag/click handle on the sidebar edge. Called with the new
-    /// collapsed state when the user drags past the threshold or clicks it.
-    pub fn on_collapse(mut self, f: impl Fn(bool, &mut Window, &mut App) + 'static) -> Self {
-        self.on_collapse = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(
+        /// Enables the drag/click handle on the sidebar edge. Called with the new
+        /// collapsed state when the user drags past the threshold or clicks it.
+        on_collapse, bool
+    );
     pub fn menu_label(mut self, s: impl Into<String>) -> Self {
         self.menu_label = s.into();
         self

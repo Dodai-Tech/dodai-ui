@@ -6,8 +6,8 @@ use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use dodai_core::{ButtonVariant, ControlState, Theme};
 use gpui::{
-    div, px, App, ClickEvent, ElementId, Hsla, IntoElement, ParentElement, RenderOnce,
-    SharedString, Stateful, StatefulInteractiveElement, Styled, Window,
+    div, px, App, ClickEvent, ElementId, Hsla, IntoElement, ParentElement, SharedString, Stateful,
+    StatefulInteractiveElement, Styled, Window,
 };
 
 /// Resolve a button's paint style + text colour from tokens (pure, no gpui context).
@@ -165,12 +165,7 @@ impl Button {
     }
 }
 
-impl RenderOnce for Button {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Button", motion)
-    }
-}
+crate::entry_render!(Button);
 
 #[cfg(test)]
 mod tests {

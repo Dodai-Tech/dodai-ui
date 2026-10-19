@@ -105,10 +105,7 @@ impl BottomSheet {
         self.height = h;
         self
     }
-    pub fn on_dismiss(mut self, f: impl Fn(&mut Window, &mut App) + 'static) -> Self {
-        self.on_dismiss = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_dismiss);
 }
 
 impl ParentElement for BottomSheet {
@@ -199,10 +196,7 @@ impl SideSheet {
         self.modal = m;
         self
     }
-    pub fn on_dismiss(mut self, f: impl Fn(&mut Window, &mut App) + 'static) -> Self {
-        self.on_dismiss = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_dismiss);
 }
 
 impl ParentElement for SideSheet {
@@ -291,10 +285,7 @@ impl FullScreenDialog {
         self.on_action = Some(Rc::new(f));
         self
     }
-    pub fn on_dismiss(mut self, f: impl Fn(&mut Window, &mut App) + 'static) -> Self {
-        self.on_dismiss = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_dismiss);
 }
 
 impl ParentElement for FullScreenDialog {

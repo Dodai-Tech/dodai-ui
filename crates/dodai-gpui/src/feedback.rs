@@ -115,12 +115,7 @@ impl Alert {
     }
 }
 
-impl RenderOnce for Alert {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Alert", motion)
-    }
-}
+crate::entry_render!(Alert);
 
 /// Compact floating notification: raised surface, tone bar at the left, glow from tokens.
 #[derive(IntoElement)]

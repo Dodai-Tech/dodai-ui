@@ -2,9 +2,7 @@
 
 use crate::surfaces::IconButton;
 use crate::{hsla, theme_of};
-use gpui::{
-    div, px, AnyElement, App, ElementId, IntoElement, ParentElement, RenderOnce, Styled, Window,
-};
+use gpui::{div, px, AnyElement, App, ElementId, IntoElement, ParentElement, Styled, Window};
 use std::rc::Rc;
 
 /// First visible index when `active` is selected out of `count` items showing
@@ -57,10 +55,7 @@ impl Carousel {
         self.item_width = w;
         self
     }
-    pub fn on_select(mut self, f: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
-        self.on_select = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(on_select, usize);
 }
 
 impl Carousel {
@@ -121,12 +116,7 @@ impl Carousel {
     }
 }
 
-impl RenderOnce for Carousel {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Carousel", motion)
-    }
-}
+crate::entry_render!(Carousel);
 
 #[cfg(test)]
 mod tests {

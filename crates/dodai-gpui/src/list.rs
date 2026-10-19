@@ -144,12 +144,7 @@ impl ListItem {
     }
 }
 
-impl RenderOnce for ListItem {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "ListItem", motion)
-    }
-}
+crate::entry_render!(ListItem);
 
 /// Thin separator line in the `divider` colour.
 #[derive(IntoElement)]

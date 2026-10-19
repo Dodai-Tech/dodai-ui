@@ -43,6 +43,45 @@ macro_rules! corners_setter {
 }
 pub(crate) use corners_setter;
 
+/// `impl RenderOnce` that builds via `self.build(window, cx)` and wraps the
+/// result in the theme's entry animation, keyed by the type name.
+#[allow(unused_macros)]
+macro_rules! entry_render {
+    ($ty:ident) => {
+        impl gpui::RenderOnce for $ty {
+            fn render(
+                self,
+                window: &mut gpui::Window,
+                cx: &mut gpui::App,
+            ) -> impl gpui::IntoElement {
+                let motion = $crate::motion::Motion::of(cx);
+                $crate::motion::entry(self.build(window, cx), stringify!($ty), motion)
+            }
+        }
+    };
+}
+#[allow(unused_imports)]
+pub(crate) use entry_render;
+
+/// Builder setter that stores a callback: `callback!(on_change, usize)`
+/// expands to `pub fn on_change(self, f: impl Fn(usize, &mut Window, &mut App))`
+/// storing `Some(Rc::new(f))` in the field of the same name.
+#[allow(unused_macros)]
+macro_rules! callback {
+    ($(#[$m:meta])* $name:ident $(, $arg:ty)*) => {
+        $(#[$m])*
+        pub fn $name(
+            mut self,
+            f: impl Fn($($arg,)* &mut gpui::Window, &mut gpui::App) + 'static,
+        ) -> Self {
+            self.$name = Some(std::rc::Rc::new(f));
+            self
+        }
+    };
+}
+#[allow(unused_imports)]
+pub(crate) use callback;
+
 #[cfg(feature = "components")]
 pub mod button;
 #[cfg(feature = "components")]

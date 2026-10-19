@@ -10,7 +10,7 @@ use crate::{hsla, theme_of};
 use dodai_core::Theme;
 use gpui::{
     canvas, div, px, relative, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement,
-    Pixels, RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window,
+    Pixels, SharedString, StatefulInteractiveElement, Styled, Window,
 };
 use std::rc::Rc;
 
@@ -136,12 +136,7 @@ impl Treemap {
     }
 }
 
-impl RenderOnce for Treemap {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Treemap", motion)
-    }
-}
+crate::entry_render!(Treemap);
 
 // ─────────────────────────────── RadialBar ───────────────────────────────
 
@@ -238,12 +233,7 @@ impl RadialBar {
     }
 }
 
-impl RenderOnce for RadialBar {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "RadialBar", motion)
-    }
-}
+crate::entry_render!(RadialBar);
 
 fn cols_at(t: &Theme, i: usize) -> Hsla {
     hsla(t.palette.series_at(i))

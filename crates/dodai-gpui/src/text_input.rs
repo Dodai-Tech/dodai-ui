@@ -228,16 +228,14 @@ impl TextInput {
         self.disabled = d;
         self
     }
-    /// Called with the full text after every edit.
-    pub fn on_change(mut self, f: impl Fn(&str, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(f));
-        self
-    }
-    /// Called on Enter (single-line only).
-    pub fn on_submit(mut self, f: impl Fn(&str, &mut Window, &mut App) + 'static) -> Self {
-        self.on_submit = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(
+        /// Called with the full text after every edit.
+        on_change, &str
+    );
+    crate::callback!(
+        /// Called on Enter (single-line only).
+        on_submit, &str
+    );
     /// Replace the Enter handler on an existing input (used by composites
     /// such as the command palette, which owns the Enter key while open).
     pub fn set_on_submit(&mut self, f: impl Fn(&str, &mut Window, &mut App) + 'static) {

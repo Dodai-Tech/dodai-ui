@@ -8,7 +8,7 @@ use crate::{controls::slider_fraction, hsla, theme_of};
 use dodai_core::ControlState;
 use gpui::{
     canvas, div, point, px, App, Bounds, ElementId, InteractiveElement, IntoElement, MouseButton,
-    ParentElement, PathBuilder, Pixels, RenderOnce, ScrollDelta, Styled, Window,
+    ParentElement, PathBuilder, Pixels, ScrollDelta, Styled, Window,
 };
 use std::rc::Rc;
 
@@ -104,11 +104,10 @@ impl Knob {
         self.disabled = d;
         self
     }
-    /// Called with the new value while dragging or scrolling.
-    pub fn on_change(mut self, f: impl Fn(f32, &mut Window, &mut App) + 'static) -> Self {
-        self.on_change = Some(Rc::new(f));
-        self
-    }
+    crate::callback!(
+        /// Called with the new value while dragging or scrolling.
+        on_change, f32
+    );
 }
 
 fn pts(origin: gpui::Point<Pixels>, p: &[(f32, f32)]) -> Vec<gpui::Point<Pixels>> {
@@ -255,12 +254,7 @@ impl Knob {
     }
 }
 
-impl RenderOnce for Knob {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
-        crate::motion::entry(self.build(window, cx), "Knob", motion)
-    }
-}
+crate::entry_render!(Knob);
 
 fn full_circle(cx: f32, cy: f32, r: f32) -> Vec<(f32, f32)> {
     (0..64)
