@@ -543,7 +543,7 @@ impl Showcase {
 }
 
 impl Showcase {
-    /// A section plus, when it has a usage snippet, a "</> Code" toggle under it.
+    /// A section plus, when it has a usage snippet, a code-icon toggle under it (closed by default).
     fn with_code(
         &self,
         title: &'static str,
@@ -577,8 +577,15 @@ impl Showcase {
                 t.palette.text_muted
             }))
             .when(open, |d| d.bg(hsla(t.palette.primary)))
-            .child("</>")
-            .child(if open { "Hide code" } else { "Code" })
+            .child(
+                dodai_gpui::Icon::named("code")
+                    .size(14.0)
+                    .color(hsla(if open {
+                        t.palette.on_primary
+                    } else {
+                        t.palette.text_muted
+                    })),
+            )
             .on_click(move |_, _, cx| {
                 me.update(cx, |s, cx| {
                     if !s.code_open.remove(title) {
