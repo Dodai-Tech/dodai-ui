@@ -128,7 +128,7 @@ pub use carousel::{window_start, Carousel};
 pub use charts::{
     bar_max, fmt_num, heat_color, heat_color_with, marker_points, nice_ticks, norm, pie_fractions,
     pie_hit, polar, smooth_points, spark_columns, BarChart, Gauge, Heatmap, Legend, LineChart,
-    Marker, PieChart, RadarChart, ScatterPlot, Series, SparkStyle, Sparkline,
+    Marker, PieChart, PieStyle, RadarChart, ScatterPlot, Series, SparkStyle, Sparkline,
 };
 #[cfg(feature = "charts")]
 pub use charts_distribution::{histogram_bins, quartiles, BoxPlot, BubbleChart, Histogram};

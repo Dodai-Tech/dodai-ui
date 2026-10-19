@@ -16,10 +16,10 @@ use dodai_gpui::{
 use dodai_gpui::{
     BarChart, Blip, BoxPlot, BubbleChart, Candle, Candlestick, Date, DatePicker, DotMatrix,
     EmptyState, Funnel, Gauge, GaugeStyle, Heatmap, HexMap, Histogram, IconBadge, LineChart,
-    Marker, NumberStepper, Oscilloscope, PieChart, RadarChart, RadarScope, RadialBar, RangeSlider,
-    Rating, RichTooltip, RingStack, ScatterPlot, SearchView, Series, SignalBars, Snackbar,
-    SparkStyle, Sparkline, Spectrum, StackedAreaChart, TagField, TextInput, TimePicker, Timeline,
-    TimelineEvent, Toolbar, TreeItem, TreeView, Treemap, Waterfall,
+    Marker, NumberStepper, Oscilloscope, PieChart, PieStyle, RadarChart, RadarScope, RadialBar,
+    RangeSlider, Rating, RichTooltip, RingStack, ScatterPlot, SearchView, Series, SignalBars,
+    Snackbar, SparkStyle, Sparkline, Spectrum, StackedAreaChart, TagField, TextInput, TimePicker,
+    Timeline, TimelineEvent, Toolbar, TreeItem, TreeView, Treemap, Waterfall,
 };
 use dodai_gpui::{
     CandleStyle, ChartStack, DepthChart, Gantt, GanttTask, Overlay, Pane, RenkoChart, TradeMarker,
@@ -1630,6 +1630,22 @@ impl Render for Showcase {
                 .into_any_element(),
             ))
             .child(tile(
+                "Rose",
+                PieChart::new([
+                    ("N", 9.0),
+                    ("NE", 5.0),
+                    ("E", 7.0),
+                    ("SE", 3.0),
+                    ("S", 8.0),
+                    ("SW", 4.0),
+                ])
+                .style(PieStyle::Rose)
+                .gap(1.0)
+                .size(190.0)
+                .legend(false)
+                .into_any_element(),
+            ))
+            .child(tile(
                 "Half pie",
                 PieChart::new(langs())
                     .arc(0.75, 0.5)
@@ -1661,6 +1677,43 @@ impl Render for Showcase {
                 PieChart::new(quarters())
                     .donut(0.42)
                     .gap(4.0)
+                    .legend(false)
+                    .into_any_element(),
+            ))
+            .child(tile(
+                "Segmented",
+                PieChart::new(langs())
+                    .style(PieStyle::Segmented)
+                    .center("100")
+                    .legend(false)
+                    .into_any_element(),
+            ))
+            .child(tile(
+                "HUD ring",
+                PieChart::new(quarters())
+                    .style(PieStyle::Hud)
+                    .size(190.0)
+                    .center("4")
+                    .legend(false)
+                    .into_any_element(),
+            ))
+            .child(tile(
+                "Segmented half",
+                PieChart::new([("Used", 68.0), ("Free", 32.0)])
+                    .style(PieStyle::Segmented)
+                    .arc(0.75, 0.5)
+                    .size(200.0)
+                    .center("68%")
+                    .legend(false)
+                    .into_any_element(),
+            ))
+            .child(tile(
+                "HUD arc",
+                PieChart::new([("A", 45.0), ("B", 30.0), ("C", 25.0)])
+                    .style(PieStyle::Hud)
+                    .arc(0.625, 0.75)
+                    .size(190.0)
+                    .center("A·B·C")
                     .legend(false)
                     .into_any_element(),
             ))

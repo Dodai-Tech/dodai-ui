@@ -24,7 +24,7 @@ pub use dodai_charts_core::{
     turn_arc, Marker,
 };
 
-pub(crate) use crate::paint::{fill, stroke};
+pub(crate) use crate::paint::{fill, fill_batch, stroke, stroke_batch};
 
 /// Glow `(radius)` when the theme glows. Pure.
 pub(crate) fn glow_of(t: &Theme) -> Option<f32> {
@@ -1120,9 +1120,24 @@ pub fn pie_hit(dx: f32, dy: f32, r: f32, hole: f32, fr: &[(f32, f32)]) -> Option
         .position(|(a, z)| (turn >= *a && turn < *z) || (turn + 1.0 >= *a && turn + 1.0 < *z))
 }
 
+/// How a [`PieChart`] draws its slices.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum PieStyle {
+    /// Solid wedges / rings (default).
+    #[default]
+    Solid,
+    /// Ring built from separate cells, like a segmented readout.
+    Segmented,
+    /// Thin glowing band between an outer tick scale and a dashed inner ring.
+    Hud,
+    /// Radius follows the value (a rose / polar-area chart) over guide rings.
+    Rose,
+}
+
 /// Pie or donut chart; `center` is shown in the donut hole.
 #[derive(IntoElement)]
 pub struct PieChart {
+    style: PieStyle,
     slices: Vec<(SharedString, f32)>,
     size: f32,
     hole: f32,
@@ -1141,6 +1156,7 @@ pub struct PieChart {
 impl PieChart {
     pub fn new<S: Into<SharedString>>(slices: impl IntoIterator<Item = (S, f32)>) -> Self {
         Self {
+            style: PieStyle::Solid,
             slices: slices.into_iter().map(|(n, v)| (n.into(), v)).collect(),
             size: 160.0,
             hole: 0.0,
@@ -1155,6 +1171,12 @@ impl PieChart {
             start: 0.0,
             sweep: 1.0,
         }
+    }
+    /// Look of the slices (default [`PieStyle::Solid`]). `Segmented` and `Hud`
+    /// are rings: they use at least a 0.55 / 0.76 hole.
+    pub fn style(mut self, s: PieStyle) -> Self {
+        self.style = s;
+        self
     }
     /// Straight gap between slices in px (default 2, `0` = flush).
     pub fn gap(mut self, g: f32) -> Self {
@@ -1255,9 +1277,34 @@ impl PieChart {
             }
         };
         let cols: Vec<Hsla> = (0..vals.len()).map(|i| hsla(slice_col(i))).collect();
-        let (size, hole) = (self.size, self.hole);
+        let style = self.style;
+        let hole = match style {
+            PieStyle::Segmented => self.hole.max(0.55),
+            PieStyle::Hud => self.hole.max(0.76),
+            _ => self.hole,
+        };
+        let size = self.size;
         let explode = self.explode;
-        let reserve = PIE_POP + explode;
+        let hud = style == PieStyle::Hud;
+        let reserve = PIE_POP + explode + if hud { 12.0 } else { 0.0 };
+        let vmax = vals
+            .iter()
+            .cloned()
+            .fold(0.0_f32, f32::max)
+            .max(f32::EPSILON);
+        let rfac: Vec<f32> = vals
+            .iter()
+            .map(|v| {
+                if style == PieStyle::Rose {
+                    0.38 + 0.62 * (v / vmax).clamp(0.0, 1.0)
+                } else {
+                    1.0
+                }
+            })
+            .collect();
+        let scale_col = hsla(t.palette.text_muted);
+        let guide_col = hsla(t.palette.border);
+        let glow = glow_of(&t);
         let gap = if vals.len() > 1 { self.gap } else { 0.0 }; // px
         let cvs = canvas(
             |_, _, _| (),
@@ -1265,7 +1312,52 @@ impl PieChart {
                 st_paint.update(cx, |s, _| s.bounds = b);
                 let r = size / 2.0 - 1.0 - reserve;
                 let c = size / 2.0;
+                if hud {
+                    // Outer tick scale + dashed inner reference ring.
+                    let (mut minor, mut major) = (Vec::new(), Vec::new());
+                    // Only decorate the part of the turn the arc covers.
+                    let within = |u: f32| ((u - start).rem_euclid(1.0)) <= sweep + 0.001;
+                    for k in 0..72 {
+                        let u = k as f32 / 72.0;
+                        if !within(u) {
+                            continue;
+                        }
+                        let long = k % 6 == 0;
+                        let seg = vec![
+                            polar(c, c, r + 4.0, u),
+                            polar(c, c, r + if long { 11.0 } else { 7.0 }, u),
+                        ];
+                        if long {
+                            major.push(seg);
+                        } else {
+                            minor.push(seg);
+                        }
+                    }
+                    stroke_batch(w, b.origin, &minor, 1.0, guide_col, false);
+                    stroke_batch(w, b.origin, &major, 1.5, scale_col, false);
+                    let dashes: Vec<Vec<(f32, f32)>> = (0..48)
+                        .filter(|k| within(*k as f32 / 48.0))
+                        .map(|k| {
+                            let u = k as f32 / 48.0;
+                            turn_arc(c, c, r * hole - 6.0, u, u + 0.01)
+                        })
+                        .collect();
+                    stroke_batch(w, b.origin, &dashes, 1.0, scale_col, false);
+                }
+                if style == PieStyle::Rose {
+                    for f in [0.38, 0.69, 1.0] {
+                        stroke(
+                            w,
+                            b.origin,
+                            &turn_arc(c, c, r * f, 0.0, 1.0),
+                            1.0,
+                            guide_col,
+                            true,
+                        );
+                    }
+                }
                 for (i, ((a, z), col)) in fr.iter().zip(&cols).enumerate() {
+                    let r = r * rfac[i];
                     // Hovered slice pops out along its bisector.
                     let target = explode
                         + if hover == Some(i) {
@@ -1296,6 +1388,36 @@ impl PieChart {
                         |rad: f32| (half / rad).clamp(0.0, 1.0).asin() / std::f32::consts::TAU;
                     let (ao, zo) = (a + delta(r), z - delta(r));
                     if zo <= ao {
+                        continue;
+                    }
+                    if style == PieStyle::Segmented {
+                        let r_in = r * hole;
+                        let n = (((zo - ao) * 36.0).ceil() as usize).max(1);
+                        let g = 0.004;
+                        let mut cells = Vec::new();
+                        for k in 0..n {
+                            let c0 = ao + (zo - ao) * k as f32 / n as f32 + g / 2.0;
+                            let c1 = ao + (zo - ao) * (k + 1) as f32 / n as f32 - g / 2.0;
+                            if c1 <= c0 {
+                                continue;
+                            }
+                            let mut p = turn_arc(c, c, r, c0, c1);
+                            let mut inner = turn_arc(c, c, r_in, c0, c1);
+                            inner.reverse();
+                            p.extend(inner);
+                            cells.push(p);
+                        }
+                        fill_batch(w, origin, &cells, *col);
+                        if sel == Some(i) {
+                            stroke(
+                                w,
+                                origin,
+                                &turn_arc(c, c, r + 2.0, ao, zo),
+                                2.0,
+                                ring,
+                                false,
+                            );
+                        }
                         continue;
                     }
                     if hole <= 0.0 {
@@ -1339,6 +1461,9 @@ impl PieChart {
                         inner.reverse();
                         p.extend(inner);
                         fill(w, origin, &p, *col);
+                    }
+                    if hud {
+                        glow_stroke(w, origin, &turn_arc(c, c, r + 2.0, ao, zo), 1.5, *col, glow);
                     }
                     if sel == Some(i) {
                         let mut o = turn_arc(c, c, r, ao, zo);
@@ -1414,7 +1539,7 @@ impl PieChart {
                     w.refresh();
                 }
             });
-        if let (Some(txt), true) = (self.center.clone(), self.hole > 0.0) {
+        if let (Some(txt), true) = (self.center.clone(), hole > 0.0) {
             let overlay = div().absolute().left_0().w(px(size));
             // Top half ring: centre the value on the baseline, not the full circle.
             let overlay = if top_half {
