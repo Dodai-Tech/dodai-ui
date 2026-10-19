@@ -911,6 +911,25 @@ icons! {
     Construction, "construction", "objects" => vec![
         c(pl![3,18; 21,18; 21,15; 19,10; 15,6; 9,6; 5,10; 3,15]), o(pl![12,6; 12,12]), o(pl![9,12; 15,12]),
     ];
+
+    // ── gaps found by auditing common Material names ─────────────────────
+    Build, "build", "dev" => vec![c(pl![5,21; 3,19; 12,10; 14,12]), o(pl![14,12; 17,13; 21,9; 19,7; 17,9; 15,7; 17,5; 15,3; 11,7; 12,10])];
+    Extension, "extension", "objects" => vec![c(pl![4,8; 9,8; 9,6; 11,4; 13,6; 13,8; 18,8; 18,13; 20,13; 21,15; 20,17; 18,17; 18,21; 4,21])];
+    Api, "api", "dev" => vec![c(ngon(6.0, 12.0, 2.0)), c(ngon(18.0, 12.0, 2.0)), c(ngon(12.0, 6.0, 2.0)), o(pl![8,12; 16,12]), o(pl![7,10; 11,7.5]), o(pl![17,10; 13,7.5])];
+    Translate, "translate", "edit" => vec![o(pl![3,6; 13,6]), o(pl![8,4; 8,6]), o(pl![5,6; 6,10; 9,13]), o(pl![11,6; 9,10; 5,14]), o(pl![13,20; 17,10; 21,20]), o(pl![14.5,16; 19.5,16])];
+    Spellcheck, "spellcheck", "edit" => vec![o(pl![3,16; 6,6; 9,16]), o(pl![4,13; 8,13]), o(pl![12,14; 16,18; 21,10])];
+    TextFields, "text_fields", "edit" => vec![o(pl![2,18; 6,6; 10,18]), o(pl![3.5,14; 8.5,14]), o(pl![13,8; 21,8]), o(pl![17,8; 17,18])];
+    FormatAlignRight, "format_align_right", "edit" => vec![o(pl![3,5; 21,5]), o(pl![9,9; 21,9]), o(pl![3,13; 21,13]), o(pl![9,17; 21,17]), o(pl![3,21; 21,21])];
+    Umbrella, "umbrella", "weather" => vec![c(pl![3,12; 5,7; 9,4; 12,3; 15,4; 19,7; 21,12]), o(pl![12,12; 12,19; 10,21; 8,19])];
+    Casino, "casino", "objects" => vec![c(oct(3.0, 3.0, 21.0, 21.0, 3.0)), o(pl![8,8; 8,9]), o(pl![16,8; 16,9]), o(pl![12,12; 12,13]), o(pl![8,16; 8,17]), o(pl![16,16; 16,17])];
+    OpenWith, "open_with", "arrows" => vec![o(pl![12,3; 12,21]), o(pl![3,12; 21,12]), o(pl![9,6; 12,3; 15,6]), o(pl![9,18; 12,21; 15,18]), o(pl![6,9; 3,12; 6,15]), o(pl![18,9; 21,12; 18,15])];
+    Campaign, "campaign", "social" => vec![c(pl![3,10; 8,10; 15,5; 15,19; 8,14; 3,14]), o(pl![8,14; 9,19; 11,19; 11,16]), o(pl![18,9; 21,8]), o(pl![18,12; 21,12]), o(pl![18,15; 21,16])];
+    RssFeed, "rss_feed", "social" => vec![c(ngon(6.0, 18.0, 1.5)), o(pl![4,10; 8,10; 14,16; 14,20]), o(pl![4,4; 10,4; 20,14; 20,20])];
+    Radio, "radio", "media" => vec![c(rect(3.0, 8.0, 21.0, 21.0)), o(pl![6,8; 17,3]), c(ngon(9.0, 14.5, 3.0)), o(pl![15,12; 18,12]), o(pl![15,16; 18,16])];
+    Subtitles, "subtitles", "media" => vec![c(rect(3.0, 5.0, 21.0, 19.0)), o(pl![6,12; 10,12]), o(pl![12,12; 18,12]), o(pl![6,15; 14,15]), o(pl![16,15; 18,15])];
+    Hd, "hd", "media" => vec![c(rect(3.0, 5.0, 21.0, 19.0)), o(pl![7,9; 7,15]), o(pl![7,12; 11,12]), o(pl![11,9; 11,15]), o(pl![14,9; 14,15; 17,15; 18,14; 18,10; 17,9; 14,9])];
+    Square, "square", "interface" => vec![c(rect(4.0, 4.0, 20.0, 20.0))];
+    Business, "business", "places" => vec![c(rect(4.0, 3.0, 14.0, 21.0)), c(rect(14.0, 10.0, 20.0, 21.0)), o(pl![7,7; 11,7]), o(pl![7,11; 11,11]), o(pl![7,15; 11,15]), o(pl![17,14; 17,17])];
 }
 
 /// Plain `<path>` data for one shape (`M x y L … [Z]`), integers trimmed.
@@ -1064,11 +1083,101 @@ pub fn split_modifier(name: &str) -> Option<(&str, Modifier)> {
     })
 }
 
-/// Shapes for `name`: a drawn icon, or a drawn icon plus [`Modifier`]s
+/// Common Material / Lucide names that mean an icon we already draw.
+/// Resolved by [`lookup`] after exact names; targets may carry modifiers.
+pub const SYNONYMS: &[(&str, &str)] = &[
+    ("done", "check"),
+    ("clear", "close"),
+    ("people", "users"),
+    ("email", "mail"),
+    ("message", "chat"),
+    ("chat_bubble", "chat"),
+    ("photo", "image"),
+    ("sync", "refresh"),
+    ("filter_list", "filter"),
+    ("expand_more", "chevron-down"),
+    ("expand_less", "chevron-up"),
+    ("launch", "external-link"),
+    ("place", "map-pin"),
+    ("navigation", "near_me"),
+    ("public", "globe"),
+    ("today", "calendar"),
+    ("insert_chart", "bar-chart"),
+    ("timeline", "line-chart"),
+    ("list", "view_list"),
+    ("brightness_high", "sun"),
+    ("wb_sunny", "sun"),
+    ("storage", "database"),
+    ("security", "shield"),
+    ("admin_panel_settings", "shield"),
+    ("verified", "shield-check"),
+    ("vpn_key", "key"),
+    ("backup", "cloud_upload"),
+    ("update", "history"),
+    ("restore", "history"),
+    ("cancel", "error"),
+    ("error_outline", "error"),
+    ("help_outline", "help"),
+    ("contact_support", "help"),
+    ("info_outline", "info"),
+    ("report_problem", "warning"),
+    ("laptop", "laptop_mac"),
+    ("phone_iphone", "phone"),
+    ("volume_mute", "mute"),
+    ("grade", "star"),
+    ("payment", "credit_card"),
+    ("inventory_2", "inventory"),
+    ("paid", "attach_money"),
+    ("savings", "attach_money"),
+    ("compare_arrows", "swap_horiz"),
+    ("reorder", "menu"),
+    ("drag_handle", "menu"),
+    ("touch_app", "pan_tool"),
+    ("rate_review", "edit_note"),
+    ("question_answer", "forum"),
+    ("feedback", "comment"),
+    ("announcement", "report"),
+    ("collections", "photo_library"),
+    ("drafts", "mail"),
+    ("markunread", "mail"),
+    ("mark_email_read", "mail-check"),
+    ("forward_to_inbox", "send"),
+    ("move_to_inbox", "inbox"),
+    ("reply_all", "reply"),
+    ("unarchive", "archive"),
+    ("folder_zip", "archive"),
+    ("drive_file_move", "folder_open"),
+    ("snippet_folder", "folder"),
+    ("theaters", "movie"),
+    ("audiotrack", "music"),
+    ("library_music", "music"),
+    ("queue_music", "music"),
+    ("lyrics", "music"),
+    ("album", "record"),
+    ("manage_accounts", "account_circle"),
+    ("supervisor_account", "users"),
+    ("support_agent", "headphones"),
+    ("face", "user"),
+    ("badge", "user"),
+    ("center_focus_strong", "target"),
+    ("zoom_out_map", "maximize"),
+    ("closed_caption", "subtitles"),
+    ("emoji_emotions", "mood"),
+    ("print_disabled", "print-off"),
+    ("barcode_scanner", "qr_code"),
+    ("qr_code_scanner", "qr_code"),
+    ("pending", "timer"),
+    ("sync_problem", "refresh"),
+];
+
+/// Shapes for `name`: a drawn icon, a [`SYNONYMS`] entry, or either plus [`Modifier`]s
 /// (`bell-off`, `heart-add-circle`).
 pub fn lookup(name: &str) -> Option<Vec<Shape>> {
     if let Some(i) = IconName::from_name(name) {
         return Some(i.shapes());
+    }
+    if let Some((_, to)) = SYNONYMS.iter().find(|(k, _)| *k == name) {
+        return lookup(to);
     }
     let (base, m) = split_modifier(name)?;
     lookup(base).map(|s| m.apply(s))
@@ -1183,6 +1292,18 @@ mod tests {
         assert_eq!(trim(12.50), "12.5");
         assert_eq!(trim(3.0), "3");
         assert!(IconName::Check.path_data().contains("12.5"));
+    }
+
+    #[test]
+    fn synonyms_resolve_and_do_not_shadow_drawn_icons() {
+        for (k, to) in SYNONYMS {
+            assert!(
+                IconName::from_name(k).is_none(),
+                "{k} is drawn; drop the synonym"
+            );
+            assert!(lookup(to).is_some(), "{k} -> {to} does not resolve");
+            assert!(lookup(k).is_some());
+        }
     }
 
     #[test]

@@ -93,13 +93,17 @@ impl Showcase {
                 .into_any_element(),
             "Icons",
         ));
+        // The Material catalogue only belongs to Material themes.
+        if !rounded {
+            return out;
+        }
         let browser = self.icon_browser(&t, cx);
         out.push((
             "Foundations",
             "Icons Material",
             section!("Icons Material")
                 .child(Muted::new(
-                    "The entire Material Symbols catalogue (`MaterialIcon::new(name)`, outlined or `.filled(true)`). It is the Material pack: always drawn smooth, in every theme. Cyberpunk themes use their own hand-drawn pack (Icons, above) and never borrow from this one.",
+                    "The entire Material Symbols catalogue (`MaterialIcon::new(name)`, outlined or `.filled(true)`). It is the Material pack, always drawn smooth.",
                 ))
                 .child(browser)
                 .into_any_element(),
