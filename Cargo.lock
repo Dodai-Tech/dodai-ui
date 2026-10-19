@@ -4313,6 +4313,7 @@ dependencies = [
  "dodai-charts-core",
  "dodai-core",
  "dodai-cyberpunk-icons",
+ "dodai-material-icons",
  "dodai-shaders",
  "dodai-shaders-gpu",
  "gpui",

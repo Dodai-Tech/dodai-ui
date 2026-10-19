@@ -76,15 +76,31 @@ impl Showcase {
                 .into_any_element(),
             "Shape tokens",
         ));
+        let rounded = t.shape.kind() == dodai_core::ShapeKind::Rounded;
         out.push((
-                "Foundations",
-                "Icons",
-                section!("Icons")
-                    .child(Muted::new("Cyberpunk icon pack: straight lines, 45° chamfers, octagons. Click to copy `IconName::…`."))
-                    .child(icons_view(&t))
-                    .into_any_element(),
-                "Icons",
-            ));
+            "Foundations",
+            "Icons",
+            section!("Icons")
+                .child(Muted::new(if rounded {
+                    "`Icon` follows the theme: rounded themes draw the matching Material Symbols glyph. Click to copy `IconName::…`."
+                } else {
+                    "`Icon` follows the theme: chamfered themes draw the Cyberpunk pack (straight lines, 45° chamfers, octagons). Click to copy `IconName::…`."
+                }))
+                .child(icons_view(&t))
+                .into_any_element(),
+            "Icons",
+        ));
+        out.push((
+            "Foundations",
+            "Material Symbols",
+            section!("Material Symbols")
+                .child(Muted::new(
+                    "`MaterialIcon::new(name)`: any of the 3,900+ catalogue icons, outlined and `.filled(true)`.",
+                ))
+                .child(material_symbols_view(&t))
+                .into_any_element(),
+            "Material Symbols",
+        ));
         out
     }
 }

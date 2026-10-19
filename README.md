@@ -77,6 +77,8 @@ dodai-core     = "0.1"    # just the engine
 dodai-material = "0.1"    # + the Material 3 themes and icons (features: rounded, sharp)
 ```
 
+In gpui, `Icon::new(IconName::…)` follows the theme (rounded/Material themes draw the matching Material Symbols glyph; force with `.pack(IconPack::…)`), and `MaterialIcon::new("home").filled(true)` draws any catalogue icon.
+
 ## Showcases
 
 ```sh

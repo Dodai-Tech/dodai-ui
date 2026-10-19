@@ -246,7 +246,9 @@ pub use forms::{
 };
 #[cfg(feature = "charts")]
 pub use gauges::GaugeStyle;
-pub use icons::{Icon, IconName};
+#[cfg(feature = "material-icons")]
+pub use icons::MaterialIcon;
+pub use icons::{Icon, IconName, IconPack};
 #[cfg(feature = "components")]
 pub use knob::Knob;
 #[cfg(feature = "components")]

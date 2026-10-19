@@ -15,6 +15,9 @@
 //! The crate carries only path data (viewBox `0 -960 960 960`); there is no
 //! font, no I/O and no dependency.
 
+mod aliases;
+pub use aliases::{resolve, ALIASES};
+
 #[cfg(feature = "outlined")]
 pub mod outlined;
 #[cfg(feature = "rounded")]

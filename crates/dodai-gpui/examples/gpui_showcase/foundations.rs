@@ -348,3 +348,67 @@ pub(crate) fn icons_view(t: &dodai_core::Theme) -> gpui::Div {
     }
     out
 }
+
+/// A sample of the Material Symbols catalogue, outlined above filled.
+pub(crate) fn material_symbols_view(t: &dodai_core::Theme) -> gpui::Div {
+    const NAMES: &[&str] = &[
+        "home",
+        "search",
+        "settings",
+        "favorite",
+        "star",
+        "bookmark",
+        "schedule",
+        "mail",
+        "person",
+        "lock",
+        "notifications",
+        "shopping_cart",
+        "cloud",
+        "camera",
+        "mic",
+        "map",
+        "bolt",
+        "palette",
+        "language",
+        "work",
+        "code",
+        "build",
+        "flight",
+        "pets",
+    ];
+    let col = |name: &'static str, filled: bool| {
+        dodai_gpui::MaterialIcon::new(name)
+            .size(28.0)
+            .filled(filled)
+            .color(hsla(t.palette.primary))
+    };
+    let mut row = div().flex().flex_wrap().gap(px(t.spacing.sm));
+    for &n in NAMES {
+        row = row.child(
+            div()
+                .flex()
+                .flex_col()
+                .items_center()
+                .gap(px(6.0))
+                .w(px(96.0))
+                .py(px(t.spacing.sm))
+                .border_1()
+                .border_color(hsla(t.palette.border))
+                .child(
+                    div()
+                        .flex()
+                        .gap(px(6.0))
+                        .child(col(n, false))
+                        .child(col(n, true)),
+                )
+                .child(
+                    div()
+                        .text_size(px(t.typography.size_xs))
+                        .text_color(hsla(t.palette.text_muted))
+                        .child(n),
+                ),
+        );
+    }
+    row
+}

@@ -44,7 +44,10 @@ mod shaders_page;
 mod sidebar;
 use catalog::{caps, cat_blurb, cat_icon, section_id, sub_of, subs};
 use charts_page::ChartDemos;
-use foundations::{icons_view, palette_view, shape_tokens_view, spacing_elevation_view, type_view};
+use foundations::{
+    icons_view, material_symbols_view, palette_view, shape_tokens_view, spacing_elevation_view,
+    type_view,
+};
 pub(crate) use shaders_page::Section;
 
 pub struct Showcase {

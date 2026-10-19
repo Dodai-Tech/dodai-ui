@@ -661,3 +661,36 @@ fn wheel_past_the_top_stretches_and_mid_page_does_not(cx: &mut TestAppContext) {
         "wheel the other way relaxes: {after} < {pulled}"
     );
 }
+
+/// `Icon` follows the theme and `MaterialIcon` tolerates unknown names:
+/// every pack/theme combination must paint without panicking.
+#[gpui::test]
+fn icons_paint_in_every_pack_and_theme(cx: &mut TestAppContext) {
+    use dodai_gpui::{Icon, IconName, IconPack, MaterialIcon};
+    for theme in dodai::themes::all() {
+        cx.update(|cx| install(cx, theme));
+        let (_, vcx) = cx.add_window_view(|_, _| Host {
+            build: Box::new(|_, _| {
+                div()
+                    .flex()
+                    .children(dodai_cyberpunk_icons::ALL.iter().flat_map(|&n| {
+                        [
+                            Icon::new(n).size(20.0).into_any_element(),
+                            Icon::new(n)
+                                .pack(IconPack::Material)
+                                .filled(true)
+                                .into_any_element(),
+                            Icon::new(n).pack(IconPack::Stroked).into_any_element(),
+                        ]
+                    }))
+                    .child(MaterialIcon::new("home").into_any_element())
+                    .child(MaterialIcon::new("no_such_icon").into_any_element())
+                    .child(MaterialIcon::new("trash").filled(true).into_any_element())
+                    .child(Icon::new(IconName::Home).size(0.0))
+                    .into_any_element()
+            }),
+        });
+        vcx.simulate_resize(size(px(900.0), px(700.0)));
+        vcx.run_until_parked();
+    }
+}
