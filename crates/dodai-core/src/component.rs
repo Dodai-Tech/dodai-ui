@@ -236,7 +236,7 @@ impl Theme {
                 p.danger,
                 p.danger.lighten(0.15),
                 p.danger.darken(0.2),
-                p.text,
+                self.on(p.danger),
             ),
             _ => (p.primary, p.primary_hover, p.primary_active, p.on_primary),
         };
