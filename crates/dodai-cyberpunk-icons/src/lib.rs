@@ -598,6 +598,179 @@ icons! {
     ];
     Reply, "reply", "interface" => vec![o(pl![10,5; 3,11; 10,17]), o(pl![3,11; 14,11; 20,14; 20,19])];
     Forward, "forward", "interface" => vec![o(pl![14,5; 21,11; 14,17]), o(pl![21,11; 10,11; 4,14; 4,19])];
+
+    // ── batch 2 ──────────────────────────────────────────────────────────
+    // travel
+    LocationOn, "location_on", "travel" => vec![c(pl![12,22; 5,12; 5,7; 8,3; 16,3; 19,7; 19,12]), c(ngon(12.0, 9.0, 2.5))];
+    NearMe, "near_me", "travel" => vec![c(pl![3,11; 21,3; 13,21; 11,13])];
+    DirectionsWalk, "directions_walk", "travel" => vec![
+        c(ngon(13.0, 4.0, 2.0)), o(pl![13,8; 11,13; 14,16; 14,21]), o(pl![11,13; 9,21]), o(pl![13,9; 17,12]), o(pl![13,9; 9,12]),
+    ];
+    DirectionsBike, "directions_bike", "travel" => vec![
+        c(ngon(6.0, 16.0, 3.5)), c(ngon(18.0, 16.0, 3.5)), o(pl![6,16; 10,9; 16,9; 18,16]), o(pl![10,9; 12,16; 6,16]),
+        o(pl![10,9; 9,6; 7,6]), o(pl![16,9; 15,6; 17,6]),
+    ];
+    DirectionsBus, "directions_bus", "travel" => vec![
+        c(cb(4.0, 3.0, 20.0, 19.0, 3.0)), c(rect(6.0, 5.0, 18.0, 10.0)), o(pl![4,13; 20,13]),
+        c(rect(6.0, 19.0, 9.0, 22.0)), c(rect(15.0, 19.0, 18.0, 22.0)),
+    ];
+    Train, "train", "travel" => vec![
+        c(oct(6.0, 2.0, 18.0, 18.0, 3.0)), c(rect(8.0, 5.0, 16.0, 11.0)), o(pl![8,18; 5,22]), o(pl![16,18; 19,22]),
+        o(pl![9,14.5; 9,15]), o(pl![15,14.5; 15,15]),
+    ];
+    LocalGasStation, "local_gas_station", "travel" => vec![
+        c(rect(4.0, 4.0, 14.0, 21.0)), o(pl![4,10; 14,10]), o(pl![14,9; 17,9; 19,11; 19,18]), o(pl![3,21; 15,21]),
+    ];
+    Hotel, "hotel", "travel" => vec![
+        o(pl![3,4; 3,20]), o(pl![3,17; 21,17; 21,20]), o(pl![21,17; 21,11; 11,11; 11,17]), c(ngon(7.0, 13.0, 2.0)),
+    ];
+    Luggage, "luggage", "travel" => vec![
+        c(rect(6.0, 6.0, 18.0, 21.0)), o(pl![9,6; 9,3; 15,3; 15,6]), o(pl![10,10; 10,17]), o(pl![14,10; 14,17]),
+    ];
+    // weather
+    Thunderstorm, "thunderstorm", "weather" => vec![
+        c(pl![6,14; 3,11; 3,8; 6,6; 8,3; 14,3; 17,5; 20,6; 21,10; 21,14]), o(pl![13,12; 10,17; 14,17; 11,22]),
+    ];
+    Rainy, "rainy", "weather" => vec![
+        c(pl![6,14; 3,11; 3,8; 6,6; 8,3; 14,3; 17,5; 20,6; 21,10; 21,14]), o(pl![8,17; 7,21]), o(pl![12,17; 11,21]), o(pl![16,17; 15,21]),
+    ];
+    Snowing, "snowing", "weather" => vec![
+        c(pl![6,14; 3,11; 3,8; 6,6; 8,3; 14,3; 17,5; 20,6; 21,10; 21,14]),
+        c(rect(7.0, 17.0, 9.0, 19.0)), c(rect(11.0, 19.0, 13.0, 21.0)), c(rect(15.0, 17.0, 17.0, 19.0)),
+    ];
+    Air, "air", "weather" => vec![
+        o(pl![3,8; 14,8; 17,5; 20,5; 21,7]), o(pl![3,12; 19,12; 21,14; 20,17; 17,17]), o(pl![3,16; 9,16]),
+    ];
+    Thermostat, "thermostat", "weather" => vec![
+        c(pl![10,3; 14,3; 14,13; 16,15; 16,19; 14,21; 10,21; 8,19; 8,15; 10,13]), c(ngon(12.0, 17.0, 1.5)), o(pl![12,6; 12,15]),
+    ];
+    // health
+    MonitorHeart, "monitor_heart", "health" => vec![c(cb(2.0, 4.0, 22.0, 20.0, 3.0)), o(pl![5,12; 8,12; 10,8; 13,16; 15,12; 19,12])];
+    Medication, "medication", "health" => vec![
+        c(pl![9,3; 15,3; 18,6; 18,18; 15,21; 9,21; 6,18; 6,6]), o(pl![6,12; 18,12]),
+    ];
+    FitnessCenter, "fitness_center", "health" => vec![
+        o(pl![7,12; 17,12]), c(rect(4.0, 8.0, 7.0, 16.0)), c(rect(17.0, 8.0, 20.0, 16.0)), o(pl![2,10; 2,14]), o(pl![22,10; 22,14]),
+    ];
+    // finance
+    TrendingUp, "trending_up", "finance" => vec![o(pl![3,17; 9,11; 13,15; 21,7]), o(pl![15,7; 21,7; 21,13])];
+    TrendingDown, "trending_down", "finance" => vec![o(pl![3,7; 9,13; 13,9; 21,17]), o(pl![15,17; 21,17; 21,11])];
+    AccountBalance, "account_balance", "finance" => vec![
+        c(pl![3,10; 12,3; 21,10]), o(pl![5,12; 5,18]), o(pl![10,12; 10,18]), o(pl![14,12; 14,18]), o(pl![19,12; 19,18]), o(pl![3,21; 21,21]),
+    ];
+    AttachMoney, "attach_money", "finance" => vec![
+        o(pl![17,7; 15,5; 9,5; 7,7; 7,10; 9,12; 15,12; 17,14; 17,17; 15,19; 9,19; 7,17]), o(pl![12,2; 12,22]),
+    ];
+    Calculate, "calculate", "finance" => vec![
+        c(cb(4.0, 3.0, 20.0, 21.0, 3.0)), o(pl![8,8; 16,8]), o(pl![8,13; 16,13]), o(pl![8,17; 16,17]),
+    ];
+    Percent, "percent", "finance" => vec![o(pl![19,5; 5,19]), c(ngon(7.0, 7.0, 2.5)), c(ngon(17.0, 17.0, 2.5))];
+    // social
+    Forum, "forum", "social" => vec![c(pl![3,3; 15,3; 15,11; 8,11; 5,14; 5,11; 3,11]), c(pl![10,14; 21,14; 21,22; 18,19; 10,19])];
+    Comment, "comment", "social" => vec![c(pl![4,4; 20,4; 20,16; 11,16; 7,20; 7,16; 4,16])];
+    Mood, "mood", "social" => vec![
+        c(oct(3.0, 3.0, 21.0, 21.0, 6.0)), o(pl![9,9; 9,10]), o(pl![15,9; 15,10]), o(pl![8,14; 10,16; 14,16; 16,14]),
+    ];
+    SentimentDissatisfied, "sentiment_dissatisfied", "social" => vec![
+        c(oct(3.0, 3.0, 21.0, 21.0, 6.0)), o(pl![9,9; 9,10]), o(pl![15,9; 15,10]), o(pl![8,17; 10,15; 14,15; 16,17]),
+    ];
+    Cake, "cake", "social" => vec![c(rect(4.0, 12.0, 20.0, 21.0)), o(pl![4,16; 20,16]), o(pl![12,12; 12,7]), o(pl![12,4; 12,5])];
+    // security
+    Fingerprint, "fingerprint", "security" => vec![
+        o(pl![5,10; 7,6; 12,4; 17,6; 19,10]), o(pl![8,18; 8,10; 10,8; 14,8; 16,10; 16,14]), o(pl![12,12; 12,20]), o(pl![5,14; 5,17]),
+    ];
+    Password, "password", "security" => vec![
+        c(cb(2.0, 6.0, 22.0, 18.0, 3.0)), o(pl![6,10; 6,14]), o(pl![4,12; 8,12]), o(pl![12,10; 12,14]), o(pl![10,12; 14,12]),
+        o(pl![18,10; 18,14]), o(pl![16,12; 20,12]),
+    ];
+    // developer
+    DataObject, "data_object", "dev" => vec![
+        o(pl![9,4; 6,4; 5,5; 5,10; 3,12; 5,14; 5,19; 6,20; 9,20]), o(pl![15,4; 18,4; 19,5; 19,10; 21,12; 19,14; 19,19; 18,20; 15,20]),
+    ];
+    AccountTree, "account_tree", "dev" => vec![
+        c(rect(3.0, 9.0, 8.0, 15.0)), c(rect(15.0, 3.0, 21.0, 8.0)), c(rect(15.0, 16.0, 21.0, 21.0)),
+        o(pl![8,12; 11,12; 11,5.5; 15,5.5]), o(pl![11,12; 11,18.5; 15,18.5]),
+    ];
+    Hub, "hub", "dev" => vec![
+        c(ngon(12.0, 12.0, 3.0)), c(rect(3.0, 3.0, 6.0, 6.0)), c(rect(18.0, 3.0, 21.0, 6.0)), c(rect(3.0, 18.0, 6.0, 21.0)),
+        c(rect(18.0, 18.0, 21.0, 21.0)), o(pl![6,6; 9.5,9.5]), o(pl![18,6; 14.5,9.5]), o(pl![6,18; 9.5,14.5]), o(pl![18,18; 14.5,14.5]),
+    ];
+    Merge, "merge", "dev" => vec![
+        c(ngon(6.0, 5.0, 2.0)), c(ngon(6.0, 19.0, 2.0)), c(ngon(18.0, 16.0, 2.0)), o(pl![6,7; 6,17]), o(pl![6,10; 12,16; 16,16]),
+    ];
+    CallSplit, "call_split", "dev" => vec![
+        o(pl![3,3; 12,12]), o(pl![21,3; 12,12]), o(pl![12,12; 12,21]), o(pl![3,8; 3,3; 8,3]), o(pl![16,3; 21,3; 21,8]),
+    ];
+    // charts
+    ShowChart, "show_chart", "charts" => vec![o(pl![3,17; 9,10; 13,14; 21,6])];
+    StackedBarChart, "stacked_bar_chart", "charts" => vec![
+        c(rect(5.0, 4.0, 10.0, 20.0)), o(pl![5,12; 10,12]), c(rect(14.0, 9.0, 19.0, 20.0)), o(pl![14,15; 19,15]),
+    ];
+    DonutLarge, "donut_large", "charts" => vec![c(ngon(12.0, 12.0, 9.0)), c(ngon(12.0, 12.0, 4.0)), o(pl![12,3; 12,8])];
+    ScatterPlot, "scatter_plot", "charts" => vec![
+        c(rect(4.0, 14.0, 7.0, 17.0)), c(rect(10.0, 8.0, 13.0, 11.0)), c(rect(16.0, 15.0, 19.0, 18.0)),
+        c(rect(15.0, 4.0, 18.0, 7.0)), c(rect(5.0, 5.0, 8.0, 8.0)),
+    ];
+    BubbleChart, "bubble_chart", "charts" => vec![c(ngon(8.0, 16.0, 4.0)), c(ngon(16.0, 9.0, 3.0)), c(ngon(17.0, 18.0, 2.0))];
+    CandlestickChart, "candlestick_chart", "charts" => vec![
+        o(pl![7,3; 7,7]), o(pl![7,15; 7,21]), c(rect(5.0, 7.0, 9.0, 15.0)),
+        o(pl![12,3; 12,10]), o(pl![12,17; 12,21]), c(rect(10.0, 10.0, 14.0, 17.0)),
+        o(pl![17,3; 17,6]), o(pl![17,12; 17,19]), c(rect(15.0, 6.0, 19.0, 12.0)),
+    ];
+    Leaderboard, "leaderboard", "charts" => vec![
+        c(rect(3.0, 12.0, 8.0, 21.0)), c(rect(9.5, 4.0, 14.5, 21.0)), c(rect(16.0, 9.0, 21.0, 21.0)),
+    ];
+    Analytics, "analytics", "charts" => vec![
+        c(cb(3.0, 3.0, 21.0, 21.0, 3.0)), o(pl![8,17; 8,13]), o(pl![12,17; 12,8]), o(pl![16,17; 16,11]),
+    ];
+    TableChart, "table_chart", "charts" => vec![
+        c(rect(3.0, 4.0, 21.0, 20.0)), o(pl![3,9; 21,9]), o(pl![3,14; 21,14]), o(pl![9,9; 9,20]), o(pl![15,9; 15,20]),
+    ];
+    // controls & misc
+    EditNote, "edit_note", "edit" => vec![
+        o(pl![3,6; 14,6]), o(pl![3,11; 10,11]), o(pl![3,16; 8,16]), c(pl![12,20; 13,16; 19,10; 22,13; 16,19]),
+    ];
+    Checklist, "checklist", "edit" => vec![
+        o(pl![3,6; 5,8; 8,4]), o(pl![3,16; 5,18; 8,14]), o(pl![11,6; 21,6]), o(pl![11,16; 21,16]),
+    ];
+    TaskAlt, "task_alt", "status" => vec![
+        o(pl![21,10; 21,16; 16,21; 8,21; 3,16; 3,8; 8,3; 16,3; 18,4]), o(pl![8,12; 11,15; 21,5]),
+    ];
+    ToggleOn, "toggle_on", "interface" => vec![c(oct(2.0, 6.0, 22.0, 18.0, 4.0)), c(oct(14.0, 8.0, 20.0, 16.0, 2.0))];
+    ToggleOff, "toggle_off", "interface" => vec![c(oct(2.0, 6.0, 22.0, 18.0, 4.0)), c(oct(4.0, 8.0, 10.0, 16.0, 2.0))];
+    RadioButtonChecked, "radio_button_checked", "interface" => vec![c(ngon(12.0, 12.0, 9.0)), c(ngon(12.0, 12.0, 4.0))];
+    RadioButtonUnchecked, "radio_button_unchecked", "interface" => vec![c(ngon(12.0, 12.0, 9.0))];
+    CheckBox, "check_box", "interface" => vec![c(cb(3.0, 3.0, 21.0, 21.0, 3.0)), o(pl![8,12; 11,15; 16,9])];
+    CheckBoxOutlineBlank, "check_box_outline_blank", "interface" => vec![c(cb(3.0, 3.0, 21.0, 21.0, 3.0))];
+    IndeterminateCheckBox, "indeterminate_check_box", "interface" => vec![c(cb(3.0, 3.0, 21.0, 21.0, 3.0)), o(pl![8,12; 16,12])];
+    StarHalf, "star_half", "actions" => vec![c(pl![12,2; 15,9; 22,9; 16,14; 18,21; 12,17; 6,21; 8,14; 2,9; 9,9]), o(pl![12,2; 12,17])];
+    LinkOff, "link_off", "actions" => vec![
+        o(pl![10,7; 6,7; 3,10; 3,14; 6,17; 10,17]), o(pl![14,7; 18,7; 21,10; 21,14; 18,17; 14,17]), o(pl![3,3; 21,21]),
+    ];
+    QrCode, "qr_code", "device" => vec![
+        c(rect(3.0, 3.0, 10.0, 10.0)), c(rect(14.0, 3.0, 21.0, 10.0)), c(rect(3.0, 14.0, 10.0, 21.0)),
+        c(rect(5.5, 5.5, 7.5, 7.5)), c(rect(16.5, 5.5, 18.5, 7.5)), c(rect(5.5, 16.5, 7.5, 18.5)),
+        c(rect(14.0, 14.0, 17.0, 17.0)), c(rect(18.0, 18.0, 21.0, 21.0)),
+    ];
+    Speed, "speed", "status" => vec![
+        o(pl![3,18; 3,13; 6,7; 12,4; 18,7; 21,13; 21,18]), o(pl![12,15; 17,9]), c(rect(11.0, 14.0, 13.0, 16.0)),
+    ];
+    Alarm, "alarm", "status" => vec![c(ngon(12.0, 13.0, 8.0)), o(pl![12,9; 12,13; 15,15]), o(pl![3,5; 6,3]), o(pl![21,5; 18,3])];
+    Event, "event", "status" => vec![
+        c(rect(3.0, 5.0, 21.0, 21.0)), o(pl![3,10; 21,10]), o(pl![8,3; 8,7]), o(pl![16,3; 16,7]), c(rect(14.0, 13.0, 17.0, 16.0)),
+    ];
+    PhotoLibrary, "photo_library", "media" => vec![
+        c(rect(7.0, 3.0, 21.0, 17.0)), o(pl![3,7; 3,21; 17,21]), o(pl![7,14; 11,10; 14,13; 17,10; 21,14]),
+    ];
+    Slideshow, "slideshow", "media" => vec![c(rect(3.0, 4.0, 21.0, 20.0)), c(pl![10,8; 16,12; 10,16])];
+    Podcasts, "podcasts", "media" => vec![
+        c(ngon(12.0, 11.0, 2.0)), o(pl![12,13; 12,21]), o(pl![7,6; 4,9; 4,13; 7,16]), o(pl![17,6; 20,9; 20,13; 17,16]),
+    ];
+    Speaker, "speaker", "device" => vec![c(cb(5.0, 2.0, 19.0, 22.0, 3.0)), c(ngon(12.0, 15.0, 3.5)), c(rect(11.0, 5.0, 13.0, 7.0))];
+    Cast, "cast", "device" => vec![
+        o(pl![3,10; 3,6; 21,6; 21,19; 14,19]), o(pl![3,14; 7,18]), o(pl![3,10; 11,18]), c(rect(3.0, 18.0, 5.0, 20.0)),
+    ];
+    LaptopMac, "laptop_mac", "device" => vec![c(rect(5.0, 5.0, 19.0, 15.0)), c(pl![2,15; 22,15; 20,19; 4,19])];
 }
 
 /// Plain `<path>` data for one shape (`M x y L … [Z]`), integers trimmed.
