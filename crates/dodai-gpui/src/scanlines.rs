@@ -1,9 +1,7 @@
 //! [`Scanlines`]: CRT overlay, drawn only when `effects.scanlines` is set.
 
 use crate::theme_of;
-use gpui::{
-    canvas, div, fill, hsla, point, px, size, App, Bounds, IntoElement, RenderOnce, Styled, Window,
-};
+use gpui::{canvas, div, hsla, point, px, App, Bounds, IntoElement, RenderOnce, Styled, Window};
 
 /// Y offsets (px) of scanlines in a box of `height`, every `pitch` px.
 pub fn scanline_ys(height: f32, pitch: f32) -> Vec<f32> {
@@ -40,14 +38,24 @@ impl RenderOnce for Scanlines {
             |_, _, _| (),
             |b: Bounds<gpui::Pixels>, _, window, _| {
                 let h: f32 = b.size.height.into();
+                let w: f32 = b.size.width.into();
+                // All lines in one path: one tessellation + one draw instead of
+                // a quad per line.
+                let mut pb = gpui::PathBuilder::fill();
                 for y in scanline_ys(h, 3.0) {
-                    window.paint_quad(fill(
-                        Bounds::new(
-                            point(b.origin.x, b.origin.y + px(y)),
-                            size(b.size.width, px(1.0)),
-                        ),
-                        hsla(0.0, 0.0, 0.0, 0.18),
-                    ));
+                    let (x0, y0) = (b.origin.x, b.origin.y + px(y));
+                    pb.add_polygon(
+                        &[
+                            point(x0, y0),
+                            point(x0 + px(w), y0),
+                            point(x0 + px(w), y0 + px(1.0)),
+                            point(x0, y0 + px(1.0)),
+                        ],
+                        true,
+                    );
+                }
+                if let Ok(path) = pb.build() {
+                    window.paint_path(path, hsla(0.0, 0.0, 0.0, 0.18));
                 }
             },
         )

@@ -39,7 +39,7 @@ mod foundations;
 use catalog::{caps, cat_blurb, cat_icon, section_id, sub_of, subs};
 use foundations::{icons_view, palette_view, shape_tokens_view, spacing_elevation_view, type_view};
 
-struct Showcase {
+pub struct Showcase {
     replay: usize,
     sec_replay: std::collections::HashMap<&'static str, u32>,
     /// Sections whose one-shot Play run is still in progress.
@@ -3860,11 +3860,102 @@ fn window_shortcuts(cx: &mut App) {
     ]);
 }
 
+/// Build the showcase view (also used by the headless smoke test).
+impl Showcase {
+    /// Initial state; the TextInput entities are created here.
+    pub fn build(cx: &mut Context<Self>) -> Self {
+        let search = cx.new(|cx| TextInput::new(cx).placeholder("Search…"));
+        let filter = cx.new(|cx| TextInput::new(cx).placeholder("Filter components…"));
+        let in_name = cx.new(|cx| TextInput::new(cx).placeholder("handle…"));
+        let pw = cx.new(|cx| TextInput::new(cx).placeholder("password").password(true));
+        let dt_filter = cx.new(|cx| TextInput::new(cx).placeholder("Filter rows…"));
+        let in_notes = cx.new(|cx| {
+            TextInput::new(cx)
+                .multiline(4)
+                .placeholder("notes (multi-line)…")
+        });
+        Showcase {
+            filter,
+            search,
+            in_name,
+            in_notes,
+            pw,
+            dt_filter,
+            date_range: Default::default(),
+            cat: std::env::var("DODAI_CAT")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(0),
+            replay: 0,
+            sec_replay: Default::default(),
+            sec_playing: Default::default(),
+            sec_mode: Default::default(),
+            loop_gen: 0,
+            ld_pb: dodai_gpui::Playback::Loop,
+            ld_ms: 0,
+            scroll: gpui::ScrollHandle::new(),
+            jump: None,
+            sec_kind: Default::default(),
+            pill_hover: None,
+            pop_hover: None,
+            cat_count: 1,
+            sub: None,
+            side_focus: cx.focus_handle(),
+            rail: false,
+            demo_rail: false,
+            rating: 3,
+            stepper: 5,
+            range: (0.2, 0.7),
+            vrange: (0.2, 0.8),
+            stepped: 4.0,
+            db: -6.0,
+            bub: (35.0, 60.0),
+            date: (2025, 6, None),
+            time: (9, 30),
+            tags: vec!["rust", "gpui", "charts"],
+            focus: cx.focus_handle(),
+            tab: 0,
+            switch: true,
+            check: true,
+            radio: 0,
+            slider: 0.4,
+            nav: 0,
+            knob: [0.35, 0.7, 0.5],
+            vslider: [0.3, 0.6, 0.9],
+            list: 0,
+            clicks: 0,
+            btn_corners: None,
+            heat_res: 3,
+            heat_grad: 0,
+            sh_gen: "neon_grid",
+            sh_fx: vec!["crt"],
+            sh_int: 1.0,
+            sh_theme: false,
+            sh_px: 2.0,
+        }
+    }
+
+    pub fn cat_count(&self) -> usize {
+        self.cat_count
+    }
+
+    pub fn set_cat(&mut self, cat: usize) {
+        self.cat = cat;
+    }
+}
+
+fn new_showcase(cx: &mut App) -> Entity<Showcase> {
+    cx.new(Showcase::build)
+}
+
 fn main() {
     Application::new().run(|cx: &mut App| {
         install(cx, Theme::default());
         window_shortcuts(cx);
         set_glow_intensity(cx, 0.5);
+        if std::env::var_os("DODAI_NOSCAN").is_some() {
+            set_scanlines(cx, false);
+        }
         // Debug: DODAI_ACCENT=<edge index 0..7> pre-selects the accent line.
         if let Some(e) = std::env::var("DODAI_ACCENT")
             .ok()
@@ -3882,77 +3973,7 @@ fn main() {
                     window_min_size: Some(size(px(420.0), px(360.0))),
                     ..Default::default()
                 },
-                |_, cx| {
-                    let search = cx.new(|cx| TextInput::new(cx).placeholder("Search…"));
-                    let filter = cx.new(|cx| TextInput::new(cx).placeholder("Filter components…"));
-                    let in_name = cx.new(|cx| TextInput::new(cx).placeholder("handle…"));
-                    let pw = cx.new(|cx| TextInput::new(cx).placeholder("password").password(true));
-                    let dt_filter = cx.new(|cx| TextInput::new(cx).placeholder("Filter rows…"));
-                    let in_notes = cx.new(|cx| {
-                        TextInput::new(cx)
-                            .multiline(4)
-                            .placeholder("notes (multi-line)…")
-                    });
-                    cx.new(|cx| Showcase {
-                        filter,
-                        search,
-                        in_name,
-                        in_notes,
-                        pw,
-                        dt_filter,
-                        date_range: Default::default(),
-                        cat: std::env::var("DODAI_CAT")
-                            .ok()
-                            .and_then(|v| v.parse().ok())
-                            .unwrap_or(0),
-                        replay: 0,
-                        sec_replay: Default::default(),
-                        sec_playing: Default::default(),
-                        sec_mode: Default::default(),
-                        loop_gen: 0,
-                        ld_pb: dodai_gpui::Playback::Loop,
-                        ld_ms: 0,
-                        scroll: gpui::ScrollHandle::new(),
-                        jump: None,
-                        sec_kind: Default::default(),
-                        pill_hover: None,
-                        pop_hover: None,
-                        cat_count: 1,
-                        sub: None,
-                        side_focus: cx.focus_handle(),
-                        rail: false,
-                        demo_rail: false,
-                        rating: 3,
-                        stepper: 5,
-                        range: (0.2, 0.7),
-                        vrange: (0.2, 0.8),
-                        stepped: 4.0,
-                        db: -6.0,
-                        bub: (35.0, 60.0),
-                        date: (2025, 6, None),
-                        time: (9, 30),
-                        tags: vec!["rust", "gpui", "charts"],
-                        focus: cx.focus_handle(),
-                        tab: 0,
-                        switch: true,
-                        check: true,
-                        radio: 0,
-                        slider: 0.4,
-                        nav: 0,
-                        knob: [0.35, 0.7, 0.5],
-                        vslider: [0.3, 0.6, 0.9],
-                        list: 0,
-                        clicks: 0,
-                        btn_corners: None,
-                        heat_res: 3,
-                        heat_grad: 0,
-                        sh_gen: "neon_grid",
-                        sh_fx: vec!["crt"],
-                        sh_int: 1.0,
-                        sh_theme: false,
-                        sh_px: 2.0,
-                    })
-                },
+                |_, cx| new_showcase(cx),
             )
             .expect("open window");
         win.update(cx, |s, w, _| w.focus(&s.focus)).ok();
