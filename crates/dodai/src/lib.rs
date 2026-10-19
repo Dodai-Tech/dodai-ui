@@ -26,6 +26,9 @@ pub use dodai_material as material;
 #[cfg(feature = "shaders")]
 pub use dodai_shaders as shaders;
 
+#[cfg(feature = "icons")]
+pub mod icons;
+
 /// Built-in themes of the enabled design systems.
 pub mod themes {
     pub use dodai_core::themes::{neutral, Spec};

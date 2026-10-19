@@ -674,3 +674,113 @@ pub(crate) fn update_tooltip(
         _ => upd(&mut n.display, Display::None),
     }
 }
+
+// --------------------------------------------------------------- icons
+
+/// Rasterised icons, shared between entities.
+#[cfg(feature = "icons")]
+#[derive(Resource, Default)]
+pub struct IconCache(std::collections::HashMap<(String, u32, bool, bool), Handle<Image>>);
+
+/// `UiIcon` → `ImageNode` (rasterised on change / theme switch), tinted with
+/// the inherited foreground colour.
+#[cfg(feature = "icons")]
+#[allow(clippy::type_complexity)]
+pub(crate) fn style_icons(
+    mut commands: Commands,
+    theme: Res<DodaiTheme>,
+    mut cache: ResMut<IconCache>,
+    mut images: ResMut<Assets<Image>>,
+    mut q: Query<(
+        Entity,
+        Ref<UiIcon>,
+        Option<&mut ImageNode>,
+        Option<&Foreground>,
+        Option<&ChildOf>,
+    )>,
+    fgs: Query<&Foreground>,
+) {
+    use bevy::asset::RenderAssetUsages;
+    use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
+    let rounded = theme.shape.kind() == dodai_core::ShapeKind::Rounded;
+    for (e, u, node, own, parent) in &mut q {
+        let fg = color(
+            own.map(|f| f.0)
+                .or_else(|| parent.and_then(|p| fgs.get(p.parent()).ok()).map(|f| f.0))
+                .unwrap_or(theme.palette.text),
+        );
+        let key = (u.name.clone(), u.size, u.filled, rounded);
+        let needs_image = node.is_none() || u.is_changed() || theme.is_changed();
+        if needs_image {
+            let handle = match cache.0.get(&key) {
+                Some(h) => h.clone(),
+                None => {
+                    let Some(g) = dodai::icons::glyph(&u.name, &theme, u.filled) else {
+                        continue;
+                    };
+                    let px = u.size.max(1);
+                    let data: Vec<u8> = g
+                        .coverage(px)
+                        .into_iter()
+                        .flat_map(|a| [255, 255, 255, a])
+                        .collect();
+                    let h = images.add(Image::new(
+                        Extent3d {
+                            width: px,
+                            height: px,
+                            depth_or_array_layers: 1,
+                        },
+                        TextureDimension::D2,
+                        data,
+                        TextureFormat::Rgba8UnormSrgb,
+                        RenderAssetUsages::default(),
+                    ));
+                    cache.0.insert(key, h.clone());
+                    h
+                }
+            };
+            commands
+                .entity(e)
+                .insert(ImageNode::new(handle).with_color(fg));
+        } else if let Some(mut n) = node {
+            upd(&mut n.color, fg);
+        }
+    }
+}
+
+#[cfg(all(test, feature = "icons"))]
+mod icon_tests {
+    use super::*;
+
+    #[test]
+    fn icon_becomes_a_tinted_image_node_and_follows_theme() {
+        let mut app = App::new();
+        app.insert_resource(DodaiTheme::new())
+            .init_resource::<IconCache>()
+            .insert_resource(Assets::<Image>::default())
+            .add_systems(Update, style_icons);
+        let e = app.world_mut().spawn(icon("home", 24)).id();
+        app.update();
+        let handle = {
+            let n = app.world().get::<ImageNode>(e).expect("ImageNode inserted");
+            n.image.clone()
+        };
+        let img = app
+            .world()
+            .resource::<Assets<Image>>()
+            .get(&handle)
+            .unwrap();
+        let data = img.data.as_ref().unwrap();
+        assert_eq!(data.len(), 24 * 24 * 4);
+        assert!(data.chunks(4).any(|p| p[3] > 200), "icon drew nothing");
+        let first = handle.id();
+        app.world_mut().resource_mut::<DodaiTheme>().cycle_next();
+        app.update();
+        assert!(app.world().get::<ImageNode>(e).is_some());
+        let _ = first;
+        // Unknown names leave the entity without an image.
+        let bad = app.world_mut().spawn(icon("nope_nope", 16)).id();
+        app.update();
+        assert!(app.world().get::<ImageNode>(bad).is_none());
+    }
+}

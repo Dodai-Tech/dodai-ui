@@ -19,7 +19,9 @@ freya = { version = "0.3.4", optional = true }
 [features]
 cyberpunk = ["dodai/cyberpunk"]
 material  = ["dodai/material"]
-default = ["ui", "cyberpunk", "material"]
+## `icon_svg` / `DodaiIcon` (Material Symbols + Cyberpunk pack, chosen by the theme shape).
+icons     = ["dodai/icons"]
+default = ["ui", "cyberpunk", "material", "icons"]
 # Freya components + showcase. Disable for the pure token->style mapping layer.
 ui = ["dep:freya"]
 

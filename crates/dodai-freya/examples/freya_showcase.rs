@@ -63,6 +63,14 @@ fn app() -> Element {
                         DodaiTag { label: "danger", tone: Tone::Danger }
                         DodaiTag { label: "outline", tone: Tone::Info, solid: false }
                     }
+                    DodaiHeading { text: "Icons", size: t.typography.size_lg }
+                    rect { direction: "horizontal", spacing: "12",
+                        DodaiIcon { name: "home" }
+                        DodaiIcon { name: "search" }
+                        DodaiIcon { name: "settings" }
+                        DodaiIcon { name: "favorite", filled: true }
+                        DodaiIcon { name: "flight" }
+                    }
                     DodaiTabs { labels: vec!["Alpha".to_string(), "Beta".into(), "Gamma".into()], selected: *tab.read(), onselect: move |i| tab.set(i) }
                     rect { direction: "horizontal", spacing: "{gap}",
                         DodaiPanel { title: "Panel", width: 300.0, height: 200.0,

@@ -86,6 +86,9 @@ fn setup(mut commands: Commands, theme: Res<DodaiTheme>) {
                 ..default()
             })
             .with_children(|h| {
+                for n in ["home", "search", "settings", "favorite"] {
+                    h.spawn(icon(n, 24));
+                }
                 h.spawn(heading("Dodai UI - Bevy"));
                 h.spawn((ThemeName, muted("")));
                 for (i, n) in names.iter().enumerate() {

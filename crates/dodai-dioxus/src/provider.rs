@@ -346,4 +346,17 @@ mod tests {
             assert!(!body.contains("cyberpunk") && !body.contains("yellow"));
         }
     }
+
+    #[cfg(feature = "icons")]
+    #[test]
+    fn icon_renders_svg_and_unknown_is_empty() {
+        fn app() -> Element {
+            rsx! {
+                ThemeProvider { Icon { name: "home" } Icon { name: "flight", filled: true } Icon { name: "nope_nope" } }
+            }
+        }
+        let h = html(app);
+        assert_eq!(h.matches("<svg").count(), 2, "{h}");
+        assert!(h.contains("dodai-icon"));
+    }
 }

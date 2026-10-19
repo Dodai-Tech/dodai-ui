@@ -27,6 +27,11 @@
 
 pub mod style;
 
+#[cfg(feature = "icons")]
+mod icon;
+#[cfg(feature = "icons")]
+pub use icon::icon_svg;
+
 pub use dodai_core as core;
 pub use style::{
     button_style, chamfer_svg, css, input_style, list_item_style, panel_style, progress_style,
@@ -42,5 +47,7 @@ pub mod theme;
 pub use components::*;
 #[cfg(feature = "ui")]
 pub use dodai_core::{ButtonVariant, ControlState, Tone};
+#[cfg(all(feature = "ui", feature = "icons"))]
+pub use icon::{DodaiIcon, IconProps};
 #[cfg(feature = "ui")]
 pub use theme::{use_dodai, use_dodai_theme, use_init_dodai, Dodai, DodaiState};

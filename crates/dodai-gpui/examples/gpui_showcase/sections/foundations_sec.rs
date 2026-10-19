@@ -90,6 +90,18 @@ impl Showcase {
                 .into_any_element(),
             "Icons",
         ));
+        let browser = self.icon_browser(&t, cx);
+        out.push((
+            "Foundations",
+            "Icon browser",
+            section!("Icon browser")
+                .child(Muted::new(
+                    "The entire Material Symbols catalogue. Type to search; faceted drawing is the default on non-rounded themes.",
+                ))
+                .child(browser)
+                .into_any_element(),
+            "Icon browser",
+        ));
         out.push((
             "Foundations",
             "Material Symbols",
@@ -101,6 +113,103 @@ impl Showcase {
                 .into_any_element(),
             "Material Symbols",
         ));
+        out
+    }
+}
+
+impl Showcase {
+    /// Searchable, paged grid of every Material Symbols icon.
+    fn icon_browser(&mut self, t: &dodai_core::Theme, cx: &mut Context<Self>) -> gpui::Div {
+        let me = cx.entity();
+        let (me_f, me_s) = (me.clone(), me.clone());
+        let q = self
+            .icon_q
+            .read(cx)
+            .text()
+            .trim()
+            .to_lowercase()
+            .replace(' ', "_");
+        let facet = self
+            .icon_facet
+            .unwrap_or(t.shape.kind() != dodai_core::ShapeKind::Rounded);
+        let hits: Vec<&'static str> = dodai_material_icons::outlined::ALL
+            .iter()
+            .map(|i| i.name)
+            .filter(|n| !n.ends_with("-fill") && n.contains(q.as_str()))
+            .collect();
+        let shown = hits.len().min(self.icon_limit);
+        let controls = div()
+            .flex()
+            .flex_wrap()
+            .items_center()
+            .gap(px(t.spacing.md))
+            .child(div().flex_1().min_w(px(220.0)).child(self.icon_q.clone()))
+            .child(
+                Checkbox::new("ib-fill", self.icon_filled).on_change(move |v, _, cx| {
+                    me_f.update(cx, |s, cx| {
+                        s.icon_filled = v;
+                        cx.notify();
+                    })
+                }),
+            )
+            .child(Label::new("Filled"))
+            .child(Checkbox::new("ib-facet", facet).on_change(move |v, _, cx| {
+                me_s.update(cx, |s, cx| {
+                    s.icon_facet = Some(v);
+                    cx.notify();
+                })
+            }))
+            .child(Label::new("Faceted"))
+            .child(Muted::new(format!("{shown} of {} icons", hits.len())));
+        let mut grid = div().flex().flex_wrap().gap(px(t.spacing.xs));
+        for &n in hits.iter().take(shown) {
+            grid = grid.child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .items_center()
+                    .gap(px(4.0))
+                    .w(px(92.0))
+                    .py(px(t.spacing.sm))
+                    .border_1()
+                    .border_color(hsla(t.palette.border))
+                    .child(
+                        dodai_gpui::MaterialIcon::new(n)
+                            .size(28.0)
+                            .filled(self.icon_filled)
+                            .faceted(facet)
+                            .color(hsla(t.palette.primary)),
+                    )
+                    .child(
+                        div()
+                            .w_full()
+                            .px(px(4.0))
+                            .text_center()
+                            .truncate()
+                            .text_size(px(t.typography.size_xs))
+                            .text_color(hsla(t.palette.text_muted))
+                            .child(n),
+                    ),
+            );
+        }
+        let mut out = div()
+            .flex()
+            .flex_col()
+            .gap(px(t.spacing.md))
+            .child(controls)
+            .child(grid);
+        if hits.len() > shown {
+            out = out.child(
+                div().flex().child(
+                    Button::new("ib-more", "Show more")
+                        .variant(ButtonVariant::Secondary)
+                        .on_click(cx.listener(|s, _, _, cx| {
+                            s.icon_limit += 240;
+                            cx.notify();
+                        })),
+                ),
+            );
+        }
         out
     }
 }

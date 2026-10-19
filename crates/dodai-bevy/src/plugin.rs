@@ -95,12 +95,16 @@ impl Plugin for DodaiUiPlugin {
                     style_list_items,
                     style_dividers,
                     update_tooltip,
+                    #[cfg(feature = "icons")]
+                    style_icons,
                 ),
                 (style_text, apply_surfaces, sync_clear_color, sync_scanlines).chain(),
             )
                 .chain()
                 .in_set(DodaiSet),
         );
+        #[cfg(feature = "icons")]
+        app.init_resource::<IconCache>();
         if self.scanlines {
             app.add_systems(Startup, spawn_scanlines);
         }

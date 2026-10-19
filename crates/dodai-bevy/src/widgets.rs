@@ -267,6 +267,35 @@ pub fn body(raw: impl Into<String>) -> impl Bundle {
     text(raw, TextRole::Body)
 }
 
+/// A themed icon: Material Symbols on rounded themes, the Cyberpunk pack (or
+/// faceted Material) elsewhere. Rasterised to an `ImageNode` by the plugin and
+/// tinted with the inherited [`Foreground`] (or the theme text colour).
+#[cfg(feature = "icons")]
+#[derive(Component, Debug, Clone, PartialEq)]
+pub struct UiIcon {
+    pub name: String,
+    pub size: u32,
+    pub filled: bool,
+}
+
+/// Icon `name` at `size` px.
+#[cfg(feature = "icons")]
+pub fn icon(name: impl Into<String>, size: u32) -> impl Bundle {
+    (
+        UiIcon {
+            name: name.into(),
+            size,
+            filled: false,
+        },
+        Node {
+            width: Val::Px(size as f32),
+            height: Val::Px(size as f32),
+            flex_shrink: 0.0,
+            ..default()
+        },
+    )
+}
+
 /// Button.
 pub fn button(label: impl Into<String>, variant: ButtonVariant) -> impl Bundle {
     (

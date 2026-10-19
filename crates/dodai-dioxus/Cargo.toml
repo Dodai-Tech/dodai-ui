@@ -12,10 +12,12 @@ keywords     = ["theme", "design-system", "dioxus", "cyberpunk"]
 categories   = ["gui"]
 
 [features]
-default   = ["cyberpunk", "material"]
+default   = ["cyberpunk", "material", "icons"]
 # Design systems to bundle (each is its own crate; see `dodai`).
 cyberpunk = ["dodai/cyberpunk"]
 material  = ["dodai/material"]
+## `Icon` component (Material Symbols + Cyberpunk pack, chosen by the theme shape).
+icons     = ["dodai/icons"]
 
 [dependencies]
 dodai-core = { workspace = true }

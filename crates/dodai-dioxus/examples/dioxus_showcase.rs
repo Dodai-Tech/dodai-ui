@@ -109,6 +109,10 @@ fn Showcase() -> Element {
                 div { Muted { "muted text" } }
                 div { Mono { "mono_text()" } }
                 Divider {}
+                div { style: "display:flex;gap:12px;align-items:center",
+                    Icon { name: "home" } Icon { name: "search" } Icon { name: "settings" }
+                    Icon { name: "favorite", filled: true } Icon { name: "flight" } Icon { name: "notifications", size: 32 }
+                }
                 Tooltip { tip: "Tooltip bubble", Button { variant: ButtonVariant::Outline, "Hover me" } }
             }
         }

@@ -368,3 +368,32 @@ pub fn Muted(children: Element) -> Element {
 pub fn Mono(children: Element) -> Element {
     rsx! { code { class: "dodai-mono", {children} } }
 }
+
+/// Icon properties.
+#[cfg(feature = "icons")]
+#[derive(Props, Clone, PartialEq)]
+pub struct IconProps {
+    /// Material Symbols or Cyberpunk icon name (`home`, `arrow_back`, ...).
+    pub name: String,
+    #[props(default = 24)]
+    pub size: u32,
+    /// Use the `-fill` variant where the catalogue has one.
+    #[props(default)]
+    pub filled: bool,
+}
+
+/// Inline SVG icon in the current colour. Rounded themes get smooth Material
+/// Symbols, others the Cyberpunk pack (or faceted Material). Unknown names
+/// render nothing.
+#[cfg(feature = "icons")]
+#[component]
+pub fn Icon(props: IconProps) -> Element {
+    let theme = crate::use_theme().theme();
+    match dodai::icons::glyph(&props.name, &theme, props.filled) {
+        Some(g) => {
+            let svg = g.svg(props.size, "currentColor");
+            rsx! { span { class: "dodai-icon", style: "display:inline-flex;line-height:0", dangerous_inner_html: "{svg}" } }
+        }
+        None => rsx! {},
+    }
+}

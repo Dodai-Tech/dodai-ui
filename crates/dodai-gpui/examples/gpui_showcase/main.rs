@@ -71,6 +71,10 @@ pub struct Showcase {
     in_notes: Entity<TextInput>,
     pw: Entity<TextInput>,
     dt_filter: Entity<TextInput>,
+    icon_q: Entity<TextInput>,
+    icon_filled: bool,
+    icon_facet: Option<bool>,
+    icon_limit: usize,
     date_range: dodai_gpui::DateRange,
     cat: usize,
     cat_count: usize,
@@ -878,6 +882,7 @@ impl Showcase {
         let in_name = cx.new(|cx| TextInput::new(cx).placeholder("handle…"));
         let pw = cx.new(|cx| TextInput::new(cx).placeholder("password").password(true));
         let dt_filter = cx.new(|cx| TextInput::new(cx).placeholder("Filter rows…"));
+        let icon_q = cx.new(|cx| TextInput::new(cx).placeholder("Search 3,900 icons…"));
         let in_notes = cx.new(|cx| {
             TextInput::new(cx)
                 .multiline(4)
@@ -890,6 +895,10 @@ impl Showcase {
             in_notes,
             pw,
             dt_filter,
+            icon_q,
+            icon_filled: false,
+            icon_facet: None,
+            icon_limit: 240,
             date_range: Default::default(),
             cat: std::env::var("DODAI_CAT")
                 .ok()
