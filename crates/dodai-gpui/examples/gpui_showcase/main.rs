@@ -42,6 +42,7 @@ mod overview;
 mod sections;
 mod shaders_page;
 mod sidebar;
+mod snippets;
 use catalog::{caps, cat_blurb, cat_icon, section_id, sub_of, subs};
 use charts_page::ChartDemos;
 use foundations::{icons_view, palette_view, shape_tokens_view, spacing_elevation_view, type_view};
@@ -53,6 +54,8 @@ pub struct Showcase {
     /// Sections whose one-shot Play run is still in progress.
     sec_playing: std::collections::HashMap<&'static str, u32>,
     sec_mode: std::collections::HashMap<&'static str, Player>,
+    /// Sections whose "</> Code" panel is open.
+    code_open: std::collections::HashSet<&'static str>,
     loop_gen: u32,
     ld_pb: dodai_gpui::Playback,
     ld_ms: u16,
@@ -539,6 +542,64 @@ impl Showcase {
     }
 }
 
+impl Showcase {
+    /// A section plus, when it has a usage snippet, a "</> Code" toggle under it.
+    fn with_code(
+        &self,
+        title: &'static str,
+        key: Option<&'static str>,
+        el: gpui::AnyElement,
+        t: &Theme,
+        me: &gpui::Entity<Showcase>,
+    ) -> gpui::AnyElement {
+        let Some(key) = key else { return el };
+        let Some(code) = snippets::snippet(key) else {
+            return el;
+        };
+        let open = self.code_open.contains(title) || std::env::var_os("DODAI_CODE").is_some();
+        let me = me.clone();
+        let tid = section_id(title);
+        let toggle = div()
+            .id(("code-toggle", tid))
+            .flex()
+            .items_center()
+            .gap(px(6.0))
+            .px(px(8.0))
+            .py(px(3.0))
+            .rounded(px(4.0))
+            .cursor_pointer()
+            .border_1()
+            .border_color(hsla(t.palette.border))
+            .text_size(px(11.0))
+            .text_color(hsla(if open {
+                t.palette.on_primary
+            } else {
+                t.palette.text_muted
+            }))
+            .when(open, |d| d.bg(hsla(t.palette.primary)))
+            .child("</>")
+            .child(if open { "Hide code" } else { "Code" })
+            .on_click(move |_, _, cx| {
+                me.update(cx, |s, cx| {
+                    if !s.code_open.remove(title) {
+                        s.code_open.insert(title);
+                    }
+                    cx.notify();
+                })
+            });
+        div()
+            .flex()
+            .flex_col()
+            .gap(px(6.0))
+            .child(el)
+            .child(div().flex().justify_end().child(toggle))
+            .when(open, |d| {
+                d.child(dodai_gpui::CodeBlock::new(("snippet", tid), code).language("rust"))
+            })
+            .into_any_element()
+    }
+}
+
 impl Render for Showcase {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let _prof = Prof::start();
@@ -671,7 +732,9 @@ impl Render for Showcase {
         }
         // Pass 1: which sections are shown, and where they sit among the children.
         let mut shown_secs: Vec<(&'static str, &'static str, gpui::AnyElement)> = Vec::new();
-        for (c, title, el, _key) in sections {
+        let mut keys: std::collections::HashMap<&'static str, &'static str> = Default::default();
+        for (c, title, el, key) in sections {
+            keys.insert(title, key);
             let hit =
                 query.is_empty() || !fuzzy_filter(&query, &[format!("{c} {title}")]).is_empty();
             let only = std::env::var("DODAI_ONLY").is_ok_and(|o| !title.contains(&o));
@@ -787,7 +850,7 @@ impl Render for Showcase {
             n_children += 1;
             if realise || std::env::var_os("DODAI_NOCULL").is_some() {
                 self.realised.insert(title);
-                body = body.child(el);
+                body = body.child(self.with_code(title, keys.get(title).copied(), el, &t, &me));
             } else {
                 body = body.child(div().flex_none().w_full().h(px(known.unwrap_or(avg_h))));
             }
@@ -1042,6 +1105,7 @@ impl Showcase {
             sec_replay: Default::default(),
             sec_playing: Default::default(),
             sec_mode: Default::default(),
+            code_open: Default::default(),
             loop_gen: 0,
             ld_pb: dodai_gpui::Playback::Loop,
             ld_ms: 0,
