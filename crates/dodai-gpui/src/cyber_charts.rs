@@ -229,7 +229,7 @@ impl RenderOnce for Oscilloscope {
                             false,
                         );
                     }
-                    w.request_animation_frame();
+                    crate::motion::next_frame(w);
                 }
                 glow_stroke(w, o, &trace(0.0), 2.0, col, glow);
             },
@@ -373,7 +373,7 @@ impl RenderOnce for Spectrum {
                     fill_batch(w, b.origin, &caps[z], col);
                 }
                 if live {
-                    w.request_animation_frame();
+                    crate::motion::next_frame(w);
                 }
             },
         )
@@ -664,7 +664,7 @@ impl RenderOnce for RadarScope {
                 }
                 fill(w, o, &disc(c, c, 2.5, 8), col);
                 if live {
-                    w.request_animation_frame();
+                    crate::motion::next_frame(w);
                 }
             },
         )
@@ -762,7 +762,7 @@ impl RenderOnce for HexMap {
                 }
                 stroke_batch(w, b.origin, &edges, 1.0, edge, true);
                 if live {
-                    w.request_animation_frame();
+                    crate::motion::next_frame(w);
                 }
             },
         )

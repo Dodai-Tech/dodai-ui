@@ -339,7 +339,7 @@ impl RenderOnce for Clock {
                         line(sec, -r * 0.14, r * 0.86, 1.5, accent);
                     }
                     line(0.0, 0.0, 0.0, 7.0, accent); // hub dot
-                    window.request_animation_frame();
+                    crate::motion::next_frame(window);
                 },
             )
             .absolute()
@@ -547,7 +547,7 @@ fn digital_face(c: &Clock, t: &dodai_core::Theme) -> gpui::Div {
                             window.paint_path(p, c);
                         }
                     }
-                    window.request_animation_frame();
+                    crate::motion::next_frame(window);
                 },
             )
             .absolute()
@@ -653,7 +653,7 @@ impl RenderOnce for Timer {
         }
         let (running, done) = (st.read(cx).started.is_some(), st.read(cx).fired);
         if running {
-            window.request_animation_frame();
+            crate::motion::next_frame(window);
         }
         let left = total.saturating_sub(ms);
         let frac = if total == 0 {
@@ -817,7 +817,7 @@ impl RenderOnce for Stopwatch {
             (s.ms(), s.started.is_some(), s.laps.clone())
         };
         if running {
-            window.request_animation_frame();
+            crate::motion::next_frame(window);
         }
         let id = self.id.clone();
         let (s1, s2, s3) = (st.clone(), st.clone(), st.clone());
@@ -1031,7 +1031,7 @@ impl RenderOnce for TapTempo {
         // Beat lights.
         let (cur, frac) = match (playing, bpm) {
             (Some(at), Some(b)) => {
-                window.request_animation_frame();
+                crate::motion::next_frame(window);
                 let (i, f) = beat_phase(at.elapsed().as_secs_f64(), b);
                 (Some((i % self.beats as u64) as usize), f)
             }

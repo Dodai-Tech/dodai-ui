@@ -168,7 +168,7 @@ impl RenderOnce for ResponsiveShell {
             });
         let (cur_w, animating) = side_state.update(cx, |s, _| s.advance(target));
         if animating {
-            window.request_animation_frame();
+            crate::motion::next_frame(window);
         }
         let w = px(cur_w.clamp(rail_w.min(full_w) * 0.5, full_w.max(rail_w) * 1.1));
         let id = self.id.clone();

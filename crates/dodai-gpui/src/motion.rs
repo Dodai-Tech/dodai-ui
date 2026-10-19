@@ -304,9 +304,36 @@ pub fn grow(window: &mut gpui::Window, cx: &mut App, name: &'static str) -> f32 
     };
     let t = (start.elapsed().as_secs_f32() - m.delay.as_secs_f32()) / dur.max(1e-3);
     if t < 1.0 {
-        window.request_animation_frame();
+        crate::motion::next_frame(window);
     }
     m.eased(t.max(0.0))
+}
+
+/// Ask for another frame (animations call this while they are running).
+/// With `DODAI_PROF=1` it counts who keeps the window redrawing, once a second.
+#[track_caller]
+pub fn next_frame(window: &gpui::Window) {
+    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    if *ON.get_or_init(|| std::env::var_os("DODAI_PROF").is_some()) {
+        type Tally = (
+            Option<std::time::Instant>,
+            std::collections::HashMap<String, u32>,
+        );
+        thread_local! { static T: std::cell::RefCell<Tally> = Default::default(); }
+        let l = std::panic::Location::caller();
+        T.with(|t| {
+            let mut t = t.borrow_mut();
+            let t0 = *t.0.get_or_insert_with(std::time::Instant::now);
+            *t.1.entry(format!("{}:{}", l.file(), l.line())).or_default() += 1;
+            if t0.elapsed().as_secs_f32() >= 1.0 {
+                let mut v: Vec<_> = t.1.drain().collect();
+                v.sort_by_key(|x| std::cmp::Reverse(x.1));
+                eprintln!("frames requested by: {v:?}");
+                t.0 = Some(std::time::Instant::now());
+            }
+        });
+    }
+    window.request_animation_frame();
 }
 
 /// Staggered reveal: progress `0..=1` of item `i` of `n` while the whole chart
@@ -346,7 +373,7 @@ pub fn smooth_with(
         (t.value(), t.is_done())
     };
     if !done {
-        window.request_animation_frame();
+        crate::motion::next_frame(window);
     }
     v
 }

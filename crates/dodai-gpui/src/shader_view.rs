@@ -394,7 +394,7 @@ impl RenderOnce for ShaderView {
                     let (at, waking) = slot.read(cx).wake_state();
                     let wait = at.map_or(0.0, |at| (1.0 / fps) - at.elapsed().as_secs_f32());
                     if wait <= 0.006 {
-                        w.request_animation_frame();
+                        crate::motion::next_frame(w);
                     } else {
                         wake_in(w, cx, wait, waking);
                     }

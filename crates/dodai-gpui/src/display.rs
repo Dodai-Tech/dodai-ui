@@ -133,7 +133,7 @@ impl RenderOnce for CircularProgress {
                             None => {
                                 let a = elapsed_secs() * 4.0;
                                 ring(arc_points(c0, c1, r, a, full * 0.27), fill, false);
-                                window.request_animation_frame();
+                                crate::motion::next_frame(window);
                             }
                         }
                     },
@@ -299,7 +299,7 @@ impl RenderOnce for ScrollArea {
         let max = f32::from(handle.max_offset().height);
         let off = -f32::from(handle.offset().y);
         if view <= 0.0 {
-            window.request_animation_frame(); // first frame: bounds unknown yet
+            crate::motion::next_frame(window); // first frame: bounds unknown yet
         }
         let track = (self.height - 4.0).max(1.0);
         let (len, pos) = thumb_geometry(track, view, max, off);

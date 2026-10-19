@@ -1237,13 +1237,21 @@ impl PieChart {
             .iter()
             .map(|(a, z)| (start + a * sweep, start + z * sweep))
             .collect();
+        // Pies that differ in look must not share state: their pop targets
+        // would fight and the tween would never settle (a redraw every frame).
         let key: SharedString = format!(
-            "pie-{}",
+            "pie-{}-{:?}-{}-{}-{}-{}-{}",
             self.slices
                 .iter()
                 .map(|s| s.0.as_ref())
                 .collect::<Vec<_>>()
-                .join("|")
+                .join("|"),
+            self.style,
+            self.explode,
+            self.hole,
+            self.start,
+            self.sweep,
+            self.size,
         )
         .into();
         let st = window.use_keyed_state(key.clone(), cx, |_, _| PieState::default());
@@ -1370,7 +1378,7 @@ impl PieChart {
                         (s.pops[i].value(), !s.pops[i].is_done())
                     });
                     if busy {
-                        w.request_animation_frame();
+                        crate::motion::next_frame(w);
                     }
                     let (dx, dy) = polar(0.0, 0.0, pop, (a + z) / 2.0);
                     let origin = point(b.origin.x + px(dx), b.origin.y + px(dy));
