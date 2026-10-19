@@ -67,6 +67,7 @@ pub struct Menu {
     id: ElementId,
     items: Vec<MenuItem>,
     width: f32,
+    active: Option<usize>,
     on_select: Option<IndexHandler>,
     corners: Option<dodai_core::Corners>,
 }
@@ -80,6 +81,7 @@ impl Menu {
             id: id.into(),
             items: Vec::new(),
             width: 220.0,
+            active: None,
             on_select: None,
         }
     }
@@ -89,6 +91,12 @@ impl Menu {
     }
     pub fn width(mut self, w: f32) -> Self {
         self.width = w;
+        self
+    }
+    /// Highlight the item at `i` (index into the item list) as the current
+    /// one, e.g. the section a [`crate::ScrollSpy`] reports.
+    pub fn active(mut self, i: Option<usize>) -> Self {
+        self.active = i;
         self
     }
     crate::callback!(on_select, usize);
@@ -114,7 +122,9 @@ impl Menu {
             let id: ElementId = (self.id.clone(), i.to_string()).into();
             let st = use_interact(&id, window, cx);
             let hovered = st.read(cx).hovered && !item.disabled;
-            let (style, _, marker) = list_style(&t, hovered, false);
+            let current = self.active == Some(i) && !item.disabled;
+            let lit = hovered || current;
+            let (style, _, marker) = list_style(&t, lit, false);
             let mut fg = if hovered || !item.disabled {
                 hsla(t.palette.text)
             } else {
@@ -150,7 +160,7 @@ impl Menu {
                         .child(s.clone()),
                 );
             }
-            if let (Some(m), true) = (marker, hovered) {
+            if let (Some(m), true) = (marker, lit) {
                 row = row.child(
                     div()
                         .absolute()

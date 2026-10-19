@@ -36,6 +36,7 @@ impl Showcase {
                     _ => return,
                 }
                 s.sub = None;
+                s.pin.release();
                 dodai_gpui::set_tree_expanded(cx, true);
                 s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
                 cx.notify();
@@ -100,6 +101,7 @@ impl Showcase {
                         w.focus(&s.side_focus);
                         s.cat = idx;
                         s.sub = None;
+                        s.pin.release();
                         dodai_gpui::set_tree_expanded(cx, true);
                         s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
                         cx.notify()
@@ -133,6 +135,7 @@ impl Showcase {
                         .on_click(move |_, _, cx| {
                             m.update(cx, |s, cx| {
                                 s.sub = sub;
+                                s.pin.release();
                                 dodai_gpui::set_tree_expanded(cx, true);
                                 s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
                                 cx.notify()
@@ -158,6 +161,7 @@ impl Showcase {
                             .selected(active == Some(title))
                             .on_click(move |_, _, cx| {
                                 m.update(cx, |s, cx| {
+                                    s.pin.pin(title);
                                     s.jump = Some((title, 1));
                                     cx.notify()
                                 })

@@ -74,6 +74,8 @@ pub struct Showcase {
     /// `(category, title)` of every section, built once; drives the sidebar.
     meta: Vec<(&'static str, &'static str)>,
     spy: Vec<(&'static str, usize)>,
+    /// Click-pinned current section (see `dodai_gpui::ScrollSpy`).
+    pin: dodai_gpui::ScrollSpy<&'static str>,
     /// Selected subsection inside the current category (`None` = all).
     sub: Option<&'static str>,
     side_focus: FocusHandle,
@@ -573,20 +575,7 @@ impl Render for Showcase {
         let sections_meta = &meta;
         // Scroll-spy: the last section whose top has reached the viewport top
         // (positions come from the previous frame's layout).
-        let active: Option<&'static str> = {
-            // Item bounds are in unscrolled content space, so add the offset.
-            let top = self.scroll.bounds().top();
-            let off = self.scroll.offset().y;
-            self.spy
-                .iter()
-                .rfind(|(_, ix)| {
-                    self.scroll
-                        .bounds_for_item(*ix)
-                        .is_some_and(|b| b.top() + off <= top + px(SPY_SLACK))
-                })
-                .or(self.spy.first())
-                .map(|(t, _)| *t)
-        };
+        let active: Option<&'static str> = self.pin.current(&self.scroll, &self.spy, SPY_SLACK);
         let (side, side_need) =
             self.sidebar(&me, &cats, sections_meta, active, &query, count_in, cx);
 
@@ -613,7 +602,10 @@ impl Render for Showcase {
             .id(("body", self.cat * 1000 + self.replay))
             .track_scroll(&self.scroll)
             // Scroll-spy reads layout, so repaint on scroll even on static pages.
-            .on_scroll_wheel(cx.listener(|_, _, _, cx| cx.notify()))
+            .on_scroll_wheel(cx.listener(|s, _, _, cx| {
+                s.pin.release();
+                cx.notify()
+            }))
             .flex()
             .flex_col()
             .flex_1()
@@ -893,6 +885,7 @@ impl Showcase {
             cat_count: 1,
             meta: Vec::new(),
             spy: Vec::new(),
+            pin: dodai_gpui::ScrollSpy::new(),
             sub: None,
             side_focus: cx.focus_handle(),
             rail: false,

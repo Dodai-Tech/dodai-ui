@@ -158,6 +158,8 @@ pub mod sheets;
 #[cfg(feature = "components")]
 pub mod shell;
 #[cfg(feature = "components")]
+pub mod spy;
+#[cfg(feature = "components")]
 pub mod surfaces;
 #[cfg(feature = "components")]
 pub mod switcher;
@@ -284,6 +286,8 @@ pub use shader_view::{shader_backend, PaletteSource, ShaderView};
 pub use sheets::{sheet_style, BottomSheet, FullScreenDialog, SheetEdge, SideSheet, Snackbar};
 #[cfg(feature = "components")]
 pub use shell::{is_wide, snap_collapsed, spring_step, ResponsiveShell};
+#[cfg(feature = "components")]
+pub use spy::{pick as spy_pick, ScrollSpy};
 #[cfg(feature = "components")]
 pub use surfaces::{
     card_style, AppBarSize, Card, CardVariant, Fab, FabSize, IconButton, NavItem, NavLayout,

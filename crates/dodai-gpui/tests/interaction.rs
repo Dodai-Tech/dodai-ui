@@ -537,3 +537,57 @@ fn color_picker_selects_swatch(cx: &mut TestAppContext) {
     click(vcx, x + w - 8.0, y + h / 2.0);
     assert_eq!(*l.borrow(), vec![2], "last swatch");
 }
+
+// ───────────────────────────── scroll-spy ─────────────────────────────
+
+/// Four 300px sections in a 500px viewport: only ~400px of scroll range, so
+/// the last sections can never reach the top. The old highlight stuck on the
+/// first one.
+fn spy_page(cx: &mut TestAppContext) -> (gpui::ScrollHandle, &mut VisualTestContext) {
+    let handle = gpui::ScrollHandle::new();
+    let h = handle.clone();
+    let vcx = mount(cx, move |_, _| {
+        let mut col = div()
+            .id("spy-scroll")
+            .track_scroll(&h)
+            .overflow_y_scroll()
+            .w(px(300.0))
+            .h(px(500.0));
+        for _ in 0..4 {
+            col = col.child(div().h(px(300.0)).flex_none());
+        }
+        col.into_any_element()
+    });
+    (handle, vcx)
+}
+
+const SPY_ITEMS: [(char, usize); 4] = [('a', 0), ('b', 1), ('c', 2), ('d', 3)];
+
+#[gpui::test]
+fn scroll_spy_follows_scroll_and_reaches_the_last_section(cx: &mut TestAppContext) {
+    let (handle, vcx) = spy_page(cx);
+    let spy = ScrollSpy::new();
+    assert_eq!(spy.current(&handle, &SPY_ITEMS, 0.0), Some('a'));
+    handle.set_offset(point(px(0.0), px(-350.0)));
+    vcx.run_until_parked();
+    assert_eq!(spy.current(&handle, &SPY_ITEMS, 0.0), Some('b'));
+    // scrolled to the very end: 'd' top (y=900) never reaches the viewport top
+    let max = handle.max_offset().height;
+    handle.set_offset(point(px(0.0), -max));
+    vcx.run_until_parked();
+    assert_eq!(
+        spy.current(&handle, &SPY_ITEMS, 0.0),
+        Some('d'),
+        "last section must highlight at the end of the range"
+    );
+}
+
+#[gpui::test]
+fn scroll_spy_pin_survives_until_released(cx: &mut TestAppContext) {
+    let (handle, _vcx) = spy_page(cx);
+    let mut spy = ScrollSpy::new();
+    spy.pin('c'); // clicked, but the page can't scroll it to the top
+    assert_eq!(spy.current(&handle, &SPY_ITEMS, 0.0), Some('c'));
+    spy.release();
+    assert_eq!(spy.current(&handle, &SPY_ITEMS, 0.0), Some('a'));
+}
