@@ -3,15 +3,10 @@
 use super::*;
 
 impl Showcase {
-    /// `(loading panel, animation sections, animation titles)`.
-    pub(crate) fn motion_sections(
-        &mut self,
-        me: &Entity<Self>,
-        cx: &mut Context<Self>,
-    ) -> (Panel, Vec<gpui::AnyElement>, Vec<&'static str>) {
+    pub(crate) fn loading_section(&mut self, cx: &mut Context<Self>) -> Panel {
+        let me = cx.entity();
         let t = theme_of(cx);
         let gap = px(t.spacing.md);
-        let me = me.clone();
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let col = || div().flex().flex_col().gap(gap);
         let (pb, lms) = (self.ld_pb, self.ld_ms);
@@ -159,6 +154,20 @@ impl Showcase {
             ));
 
         // Animation page: one Panel per entry type (curve · live example · text).
+        loading
+    }
+
+    /// `(sections, titles)` for the Animation category.
+    pub(crate) fn animation_sections(
+        &mut self,
+        cx: &mut Context<Self>,
+    ) -> (Vec<gpui::AnyElement>, Vec<&'static str>) {
+        let me = cx.entity();
+        let t = theme_of(cx);
+        let gap = px(t.spacing.md);
+        let me = me.clone();
+        let row = || div().flex().flex_wrap().items_center().gap(gap);
+        let col = || div().flex().flex_col().gap(gap);
         let anim_defs: [(&'static str, EntryKind, Easing, &'static str); 12] = [
             (
                 EntryKind::Fade.label(),
@@ -384,6 +393,6 @@ impl Showcase {
                     .into_any_element(),
             );
         }
-        (loading, anim_sections, anim_titles)
+        (anim_sections, anim_titles)
     }
 }
