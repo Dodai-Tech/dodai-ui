@@ -44,6 +44,13 @@ pub const SHADERS: &[ShaderInfo] = &[
         "Displaced colour bands and RGB tearing",
         data_corrupt,
     ),
+    ShaderInfo::generator(
+        "kv_glitch",
+        "Key-art glitch",
+        F,
+        "Yellow washing into red, vertical streaks, dark skyline",
+        kv_glitch,
+    ),
 ];
 
 /// Synthwave: striped sun, horizon haze and a scrolling perspective grid.
@@ -213,4 +220,32 @@ pub fn data_corrupt(uv: Vec2, c: &Ctx) -> Vec3 {
     let col = p.c * (v(0.0) * 0.55) + p.b * (v(0.12) * 0.42) + p.a * (v(-0.12) * 0.3);
     let scan = 0.8 + 0.2 * (uv.y * c.h as f32 * std::f32::consts::PI).sin().abs();
     (p.bg + col * scan) * (0.5 + 0.5 * step(0.1, hash2((uv.y * 80.0) as i32, t as i32)))
+}
+
+/// Key-art backdrop: the accent washes into red towards the right, vertical
+/// pixel-sort streaks drip down and sometimes jump, a dark skyline sits below.
+pub fn kv_glitch(uv: Vec2, c: &Ctx) -> Vec3 {
+    let p = &c.pal;
+    let t = (c.time * 4.0).floor();
+    let front = uv.x + 0.04 * (c.time * 0.5 + uv.y * 3.0).sin();
+    let g = smoothstep(0.35, 0.9, front);
+    let base = p.a.mix(p.c, g);
+    // Streaks: columns whose brightness is smeared along y.
+    let col = (uv.x * 90.0).floor();
+    let r = hash2(col as i32, 7);
+    let live = step(0.55, r) * smoothstep(0.3, 0.7, g);
+    let drip = fract(uv.y * (0.4 + r) - c.time * (0.1 + 0.3 * r) + r * 9.0);
+    let streak = live * smoothstep(0.0, 0.8, drip);
+    // Tears: a few columns flash bright for a moment.
+    let jump = step(0.94, hash2(col as i32, t as i32)) * g;
+    let lit = base * (1.0 - 0.5 * streak) + p.fg * (0.3 * jump);
+    // Skyline: blocks of random height with a few lit windows.
+    let bx = (uv.x * 14.0).floor();
+    let top = 1.0 - (0.12 + 0.3 * hash2(bx as i32, 3));
+    let building = step(top, uv.y);
+    let wx = (uv.x * 14.0 * 6.0).floor();
+    let wy = (uv.y * 40.0).floor();
+    let window = building * step(0.8, hash3(wx as i32, wy as i32, (t / 6.0) as i32));
+    let city = p.bg.mix(base, 0.12) + p.a * (0.5 * window);
+    lit.mix(city, building)
 }
