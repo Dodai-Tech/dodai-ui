@@ -4253,6 +4253,10 @@ name = "dodai-core"
 version = "0.1.0"
 
 [[package]]
+name = "dodai-cyberpunk-icons"
+version = "0.1.0"
+
+[[package]]
 name = "dodai-dioxus"
 version = "0.1.0"
 dependencies = [
@@ -4285,7 +4289,7 @@ version = "0.1.0"
 dependencies = [
  "dodai-charts-core",
  "dodai-core",
- "dodai-icons",
+ "dodai-cyberpunk-icons",
  "dodai-shaders",
  "dodai-shaders-gpu",
  "gpui",
@@ -4300,10 +4304,6 @@ dependencies = [
  "iced",
  "naga 27.0.3",
 ]
-
-[[package]]
-name = "dodai-icons"
-version = "0.1.0"
 
 [[package]]
 name = "dodai-leptos"
@@ -4368,7 +4368,7 @@ name = "dodai-topcoat"
 version = "0.1.0"
 dependencies = [
  "dodai-core",
- "dodai-icons",
+ "dodai-cyberpunk-icons",
 ]
 
 [[package]]

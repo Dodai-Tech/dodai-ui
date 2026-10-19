@@ -5,7 +5,7 @@
 //! dist/tokens/<theme>.tokens.json one file per theme
 //! dist/css/dodai.css              custom properties + component CSS, all themes
 //! dist/icons/svg/<name>.svg       one SVG per icon (currentColor)
-//! dist/icons/dodai-icons.svg      sprite sheet (<symbol id="dodai-<name>">)
+//! dist/icons/dodai-cyberpunk-icons.svg      sprite sheet (<symbol id="dodai-<name>">)
 //! dist/icons/manifest.json        name -> group
 //! ```
 //!
@@ -39,14 +39,14 @@ fn main() {
         dodai_topcoat::multi_theme_stylesheet(&all),
     );
 
-    for &i in dodai_icons::ALL {
+    for &i in dodai_cyberpunk_icons::ALL {
         write(
             out.join(format!("icons/svg/{}.svg", i.name())),
-            dodai_icons::svg(i, 24, 2.0),
+            dodai_cyberpunk_icons::svg(i, 24, 2.0),
         );
     }
-    write(out.join("icons/dodai-icons.svg"), dodai_icons::sprite(2.0));
-    let manifest: Vec<String> = dodai_icons::ALL
+    write(out.join("icons/dodai-cyberpunk-icons.svg"), dodai_cyberpunk_icons::sprite(2.0));
+    let manifest: Vec<String> = dodai_cyberpunk_icons::ALL
         .iter()
         .map(|i| format!("  \"{}\": \"{}\"", i.name(), i.group()))
         .collect();
@@ -57,7 +57,7 @@ fn main() {
     println!(
         "wrote {} themes and {} icons to {}",
         all.len(),
-        dodai_icons::ALL.len(),
+        dodai_cyberpunk_icons::ALL.len(),
         out.display()
     );
 }

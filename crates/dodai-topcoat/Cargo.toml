@@ -15,4 +15,4 @@ categories   = ["gui"]
 dodai-core = { workspace = true }
 
 [dev-dependencies]
-dodai-icons = { workspace = true }
+dodai-cyberpunk-icons = { workspace = true }

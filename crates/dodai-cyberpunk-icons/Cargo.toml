@@ -1,12 +1,12 @@
 [package]
-name         = "dodai-icons"
+name         = "dodai-cyberpunk-icons"
 version.workspace      = true
 edition.workspace      = true
 authors.workspace      = true
 license.workspace      = true
 repository.workspace   = true
 rust-version.workspace = true
-description  = "Framework-agnostic vector icon geometry (24x24 polylines) for the Dodai UI design system"
+description  = "Cyberpunk-style vector icon pack (136 chamfered, curve-free 24x24 polyline icons) for the Dodai UI design system. Self-contained, no dependencies."
 readme       = "README.md"
 keywords     = ["icons", "design-system", "vector", "ui"]
 categories   = ["gui", "graphics"]

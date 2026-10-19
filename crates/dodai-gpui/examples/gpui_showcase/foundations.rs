@@ -295,7 +295,7 @@ pub(crate) fn shape_tokens_view(t: &dodai_core::Theme) -> gpui::Div {
 pub(crate) fn icons_view(t: &dodai_core::Theme) -> gpui::Div {
     let mut out = div().flex().flex_col().gap(px(t.spacing.lg));
     let mut groups: Vec<&'static str> = Vec::new();
-    for n in dodai_icons::ALL {
+    for n in dodai_cyberpunk_icons::ALL {
         if !groups.contains(&n.group()) {
             groups.push(n.group());
         }
@@ -303,7 +303,7 @@ pub(crate) fn icons_view(t: &dodai_core::Theme) -> gpui::Div {
     let mut idx = 0usize;
     for g in groups {
         let mut row = div().flex().flex_wrap().w_full().gap(px(t.spacing.sm));
-        let members: Vec<_> = dodai_icons::ALL.iter().filter(|n| n.group() == g).collect();
+        let members: Vec<_> = dodai_cyberpunk_icons::ALL.iter().filter(|n| n.group() == g).collect();
         for n in &members {
             idx += 1;
             let copy = format!("IconName::{n:?}");

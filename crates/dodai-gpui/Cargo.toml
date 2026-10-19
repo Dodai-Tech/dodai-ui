@@ -25,7 +25,7 @@ gpu        = ["shaders", "dep:dodai-shaders-gpu"]
 [dependencies]
 dodai-core = { workspace = true }
 dodai-charts-core = { workspace = true }
-dodai-icons = { workspace = true }
+dodai-cyberpunk-icons = { workspace = true }
 gpui = { workspace = true }
 dodai-shaders = { workspace = true, optional = true }
 dodai-shaders-gpu = { workspace = true, optional = true }

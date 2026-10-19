@@ -1,4 +1,4 @@
-# dodai-icons
+# dodai-cyberpunk-icons
 
 Framework-agnostic icon geometry for Dodai UI: **136 icons** in 7 groups
 (interface, arrows, actions, status, data, objects, cyber) on a 24×24 grid.

@@ -81,9 +81,9 @@ committed and checked in CI:
 |---|---|
 | `dist/tokens/dodai.tokens.json`, `dist/tokens/<theme>.tokens.json` | W3C Design Tokens (DTCG): Style Dictionary v4, Tokens Studio / Figma Variables, Penpot |
 | `dist/css/dodai.css` | CSS custom properties (`--dodai-*`, `:root[data-theme=…]`) plus component CSS |
-| `dist/icons/svg/*.svg`, `dist/icons/dodai-icons.svg` | The icon pack as SVG (`currentColor`), one file each and as a `<symbol>` sprite |
+| `dist/icons/svg/*.svg`, `dist/icons/dodai-cyberpunk-icons.svg` | The icon pack as SVG (`currentColor`), one file each and as a `<symbol>` sprite |
 
-The pack (`dodai-icons`) has 136 icons in 7 groups, all straight lines, 45° chamfers and octagons.
+The pack (`dodai-cyberpunk-icons`) has 136 icons in 7 groups, all straight lines, 45° chamfers and octagons.
 
 ## Charts only (gpui)
 
