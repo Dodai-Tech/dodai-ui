@@ -4315,6 +4315,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "dodai-material-icons"
+version = "0.1.0"
+
+[[package]]
 name = "dodai-ratatui"
 version = "0.1.0"
 dependencies = [

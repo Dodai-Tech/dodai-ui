@@ -1,0 +1,22 @@
+[package]
+name         = "dodai-material-icons"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license      = "Apache-2.0"
+repository.workspace   = true
+rust-version.workspace = true
+description  = "The Material Symbols icon catalogue (3,900+ icons, outlined/rounded/sharp, filled variants) as dependency-free vector data"
+readme       = "README.md"
+keywords     = ["icons", "material", "material-design", "svg", "ui"]
+categories   = ["gui", "graphics"]
+exclude      = ["scripts/"]
+
+[features]
+default  = ["outlined"]
+outlined = []
+rounded  = []
+sharp    = []
+all      = ["outlined", "rounded", "sharp"]
+
+[dependencies]
