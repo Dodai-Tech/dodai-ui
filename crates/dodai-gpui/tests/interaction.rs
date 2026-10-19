@@ -367,3 +367,173 @@ fn select_opens_and_picks_an_option(cx: &mut TestAppContext) {
         l.borrow()
     );
 }
+
+// ───────────────────────────── popovers / tables / chips ─────────────────────────────
+
+#[gpui::test]
+fn popover_opens_on_trigger_click_and_closes_outside(cx: &mut TestAppContext) {
+    let vcx = mount(cx, |_, _| {
+        Popover::new("pop")
+            .trigger(Button::new("pb", "Open"))
+            .content(div().debug_selector(|| "pop-body".into()).child("hello"))
+            .into_any_element()
+    });
+    assert!(vcx.debug_bounds("pop-body").is_none(), "closed initially");
+    let (x, y, w, h) = target(vcx);
+    click(vcx, x + w / 2.0, y + h / 2.0);
+    assert!(vcx.debug_bounds("pop-body").is_some(), "opened by click");
+    click(vcx, 850.0, 650.0);
+    assert!(
+        vcx.debug_bounds("pop-body").is_none(),
+        "closed by outside click"
+    );
+}
+
+#[gpui::test]
+fn dropdown_menu_opens_and_selects(cx: &mut TestAppContext) {
+    let l = log();
+    let l2 = l.clone();
+    let vcx = mount(cx, move |_, _| {
+        let l = l2.clone();
+        DropdownMenu::new("dd", "Actions")
+            .items([MenuItem::new("Edit"), MenuItem::new("Delete")])
+            .on_select(move |i, _, _| l.borrow_mut().push(i))
+            .into_any_element()
+    });
+    let (x, y, w, h) = target(vcx);
+    click(vcx, x + w / 2.0, y + h / 2.0);
+    // the menu is below the trigger; probe rows until one fires
+    for k in 1..8 {
+        click(vcx, x + w / 2.0, y + h + 6.0 + 14.0 * k as f32);
+        if !l.borrow().is_empty() {
+            break;
+        }
+    }
+    assert_eq!(l.borrow().len(), 1, "a menu item fired");
+}
+
+#[gpui::test]
+fn table_row_click_and_header_sort(cx: &mut TestAppContext) {
+    let picked = log();
+    let sorted = log();
+    let (p2, s2) = (picked.clone(), sorted.clone());
+    let vcx = mount(cx, move |_, _| {
+        let (p, s) = (p2.clone(), s2.clone());
+        div()
+            .w(px(400.0))
+            .child(
+                Table::new("tb")
+                    .columns(["Name", "Score"])
+                    .rows([["Ada", "9"], ["Bob", "7"], ["Cy", "5"]])
+                    .on_select(move |i, _, _| p.borrow_mut().push(i))
+                    .on_sort(move |c, _, _| s.borrow_mut().push(c)),
+            )
+            .into_any_element()
+    });
+    let (x, y, w, h) = target(vcx);
+    // header is the first of four rows
+    click(vcx, x + w * 0.9, y + 20.0); // header cells are text-height, centred
+    click(vcx, x + w * 0.5, y + h - 10.0);
+    assert_eq!(*sorted.borrow(), vec![1], "right column header sorts");
+    assert_eq!(*picked.borrow(), vec![2], "third body row selected");
+}
+
+#[gpui::test]
+fn chip_click_and_remove(cx: &mut TestAppContext) {
+    let clicks = Rc::new(Cell::new(0));
+    let removes = Rc::new(Cell::new(0));
+    let (c2, r2) = (clicks.clone(), removes.clone());
+    let vcx = mount(cx, move |_, _| {
+        let (c, r) = (c2.clone(), r2.clone());
+        Chip::new("chip", "Rust")
+            .on_click(move |_, _, _| c.set(c.get() + 1))
+            .on_remove(move |_, _, _| r.set(r.get() + 1))
+            .into_any_element()
+    });
+    let (x, y, w, h) = target(vcx);
+    click(vcx, x + 10.0, y + h / 2.0);
+    click(vcx, x + w - 20.0, y + h / 2.0);
+    assert_eq!(clicks.get(), 1, "remove must not count as a click");
+    assert_eq!(removes.get(), 1);
+}
+
+#[gpui::test]
+fn side_sheet_scrim_dismisses(cx: &mut TestAppContext) {
+    let hits = Rc::new(Cell::new(0));
+    let h2 = hits.clone();
+    let vcx = mount(cx, move |_, _| {
+        let h = h2.clone();
+        div()
+            .relative()
+            .w(px(900.0))
+            .h(px(700.0))
+            .child(
+                SideSheet::new("ss", "Side")
+                    .width(200.0)
+                    .on_dismiss(move |_, _| h.set(h.get() + 1)),
+            )
+            .into_any_element()
+    });
+    // far left of a right-edge sheet is the scrim
+    click(vcx, 20.0, 350.0);
+    assert!(hits.get() >= 1, "scrim click dismisses");
+}
+
+// ───────────────────────────── extras ─────────────────────────────
+
+#[gpui::test]
+fn number_stepper_buttons_clamp_to_range(cx: &mut TestAppContext) {
+    let seen = Rc::new(RefCell::new(Vec::<i32>::new()));
+    let s2 = seen.clone();
+    let vcx = mount(cx, move |_, _| {
+        let s = s2.clone();
+        NumberStepper::new("ns", 9)
+            .range(0, 10)
+            .step(2)
+            .on_change(move |v, _, _| s.borrow_mut().push(v))
+            .into_any_element()
+    });
+    let (x, y, w, h) = target(vcx);
+    click(vcx, x + w - 10.0, y + h / 2.0); // + : 9 + 2 clamps to 10
+    click(vcx, x + 10.0, y + h / 2.0); // − : 9 - 2 = 7
+    let got = seen.borrow().clone();
+    assert_eq!(got, vec![10, 7], "plus clamps at max, minus steps down");
+}
+
+#[gpui::test]
+fn rating_click_sets_star_count(cx: &mut TestAppContext) {
+    let seen = Rc::new(RefCell::new(Vec::<u32>::new()));
+    let s2 = seen.clone();
+    let vcx = mount(cx, move |_, _| {
+        let s = s2.clone();
+        Rating::new("r", 1)
+            .max(5)
+            .on_change(move |v, _, _| s.borrow_mut().push(v))
+            .into_any_element()
+    });
+    let (x, y, w, h) = target(vcx);
+    click(vcx, x + w - 6.0, y + h / 2.0); // last star
+    assert_eq!(*seen.borrow(), vec![5]);
+}
+
+#[gpui::test]
+fn color_picker_selects_swatch(cx: &mut TestAppContext) {
+    let l = log();
+    let l2 = l.clone();
+    let vcx = mount(cx, move |_, _| {
+        let l = l2.clone();
+        ColorPicker::new(
+            "cp",
+            [
+                dodai_core::Color::hex(0xff0000),
+                dodai_core::Color::hex(0x00ff00),
+                dodai_core::Color::hex(0x0000ff),
+            ],
+        )
+        .on_select(move |i, _, _| l.borrow_mut().push(i))
+        .into_any_element()
+    });
+    let (x, y, w, h) = target(vcx);
+    click(vcx, x + w - 8.0, y + h / 2.0);
+    assert_eq!(*l.borrow(), vec![2], "last swatch");
+}
