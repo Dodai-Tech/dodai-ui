@@ -44,10 +44,7 @@ mod shaders_page;
 mod sidebar;
 use catalog::{caps, cat_blurb, cat_icon, section_id, sub_of, subs};
 use charts_page::ChartDemos;
-use foundations::{
-    icons_view, material_symbols_view, palette_view, shape_tokens_view, spacing_elevation_view,
-    type_view,
-};
+use foundations::{icons_view, palette_view, shape_tokens_view, spacing_elevation_view, type_view};
 pub(crate) use shaders_page::Section;
 
 pub struct Showcase {
@@ -72,6 +69,7 @@ pub struct Showcase {
     pw: Entity<TextInput>,
     dt_filter: Entity<TextInput>,
     icon_q: Entity<TextInput>,
+    icon_search: Entity<TextInput>,
     icon_filled: bool,
     icon_facet: Option<bool>,
     icon_limit: usize,
@@ -882,7 +880,8 @@ impl Showcase {
         let in_name = cx.new(|cx| TextInput::new(cx).placeholder("handle…"));
         let pw = cx.new(|cx| TextInput::new(cx).placeholder("password").password(true));
         let dt_filter = cx.new(|cx| TextInput::new(cx).placeholder("Filter rows…"));
-        let icon_q = cx.new(|cx| TextInput::new(cx).placeholder("Search 3,900 icons…"));
+        let icon_q = cx.new(|cx| TextInput::new(cx).placeholder("Search 3,900 Material icons…"));
+        let icon_search = cx.new(|cx| TextInput::new(cx).placeholder("Search icons or types…"));
         let in_notes = cx.new(|cx| {
             TextInput::new(cx)
                 .multiline(4)
@@ -896,6 +895,7 @@ impl Showcase {
             pw,
             dt_filter,
             icon_q,
+            icon_search,
             icon_filled: false,
             icon_facet: None,
             icon_limit: 240,

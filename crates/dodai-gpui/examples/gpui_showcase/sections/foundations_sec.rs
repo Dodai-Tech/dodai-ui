@@ -77,41 +77,33 @@ impl Showcase {
             "Shape tokens",
         ));
         let rounded = t.shape.kind() == dodai_core::ShapeKind::Rounded;
+        let query = self.icon_search.read(cx).text().to_string();
+        let count = dodai_cyberpunk_icons::ALL.len();
         out.push((
             "Foundations",
             "Icons",
             section!("Icons")
                 .child(Muted::new(if rounded {
-                    "`Icon` follows the theme: rounded themes draw the matching Material Symbols glyph. Click to copy `IconName::…`."
+                    format!("{count} icons by type. `Icon` follows the theme: rounded themes draw the matching Material Symbols glyph. Click to copy `IconName::…`.")
                 } else {
-                    "`Icon` follows the theme: chamfered themes draw the Cyberpunk pack (straight lines, 45° chamfers, octagons). Click to copy `IconName::…`."
+                    format!("{count} hand-drawn icons by type: straight lines, 45° chamfers, octagons. `Icon` follows the theme. Click to copy `IconName::…`.")
                 }))
-                .child(icons_view(&t))
+                .child(div().w(px(360.0)).max_w_full().child(self.icon_search.clone()))
+                .child(icons_view(&t, &query))
                 .into_any_element(),
             "Icons",
         ));
         let browser = self.icon_browser(&t, cx);
         out.push((
             "Foundations",
-            "Icon browser",
-            section!("Icon browser")
+            "Icons Material",
+            section!("Icons Material")
                 .child(Muted::new(
-                    "The entire Material Symbols catalogue. Type to search; faceted drawing is the default on non-rounded themes.",
+                    "The entire Material Symbols catalogue (`MaterialIcon::new(name)`, outlined or `.filled(true)`). Material themes draw it smooth; other themes draw it faceted into straight cuts, or use the hand-drawn icon of the same name (`.faceted(true)` forces the generated facets).",
                 ))
                 .child(browser)
                 .into_any_element(),
-            "Icon browser",
-        ));
-        out.push((
-            "Foundations",
-            "Material Symbols",
-            section!("Material Symbols")
-                .child(Muted::new(
-                    "`MaterialIcon::new(name)`: any of the 3,900+ catalogue icons, outlined and `.filled(true)`. Non-rounded themes draw them faceted (curves → straight cuts); override with `.faceted(bool)`.",
-                ))
-                .child(material_symbols_view(&t))
-                .into_any_element(),
-            "Material Symbols",
+            "Icons Material",
         ));
         out
     }
@@ -180,16 +172,21 @@ impl Showcase {
                             .faceted(facet)
                             .color(hsla(t.palette.primary)),
                     )
-                    .child(
-                        div()
+                    .child({
+                        // Centred when it fits; long names stay left-aligned so
+                        // the ellipsis clips the end, not both sides.
+                        let mut label = div()
                             .w_full()
                             .px(px(4.0))
-                            .text_center()
                             .truncate()
                             .text_size(px(t.typography.size_xs))
                             .text_color(hsla(t.palette.text_muted))
-                            .child(n),
-                    ),
+                            .child(n);
+                        if n.len() <= 12 {
+                            label = label.text_center();
+                        }
+                        label
+                    }),
             );
         }
         let mut out = div()

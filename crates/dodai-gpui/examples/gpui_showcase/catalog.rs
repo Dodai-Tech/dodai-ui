@@ -36,7 +36,7 @@ pub(crate) fn caps(title: &str) -> Caps {
         | "Spacing · Elevation"
         | "Shape tokens"
         | "Icons"
-        | "Material Symbols"
+        | "Icons Material"
         | "Glow · Scanlines"
         | "Password · OTP"
         | "Form field"

@@ -210,8 +210,9 @@ impl RenderOnce for MaterialIcon {
         let faceted = self
             .faceted
             .unwrap_or_else(|| crate::theme_of(cx).shape.kind() != dodai_core::ShapeKind::Rounded);
-        // A hand-drawn Cyberpunk icon of the same name beats auto-faceting.
-        if faceted && !self.filled {
+        // Automatic mode: a hand-drawn Cyberpunk icon of the same name beats
+        // auto-faceting (`.faceted(true)` forces the generated facets).
+        if faceted && !self.filled && self.faceted.is_none() {
             if let Some(i) = IconName::from_name(&self.name) {
                 return Icon::new(i)
                     .size(self.size)

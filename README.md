@@ -77,7 +77,7 @@ dodai-core     = "0.1"    # just the engine
 dodai-material = "0.1"    # + the Material 3 themes and icons (features: rounded, sharp)
 ```
 
-In gpui, `Icon::new(IconName::…)` follows the theme (rounded/Material themes draw the matching Material Symbols glyph; force with `.pack(IconPack::…)`), and `MaterialIcon::new("home").filled(true)` draws any catalogue icon.
+In gpui, `Icon::new(IconName::…)` follows the theme (rounded/Material themes draw the matching Material Symbols glyph; force with `.pack(IconPack::…)`), and `MaterialIcon::new("home").filled(true)` draws any of the ~3,900 catalogue icons (faceted on non-rounded themes, or the hand-drawn icon of the same name).
 
 ## Showcases
 

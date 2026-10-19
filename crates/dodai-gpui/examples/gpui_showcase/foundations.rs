@@ -292,21 +292,55 @@ pub(crate) fn shape_tokens_view(t: &dodai_core::Theme) -> gpui::Div {
         .child(sample)
 }
 
-pub(crate) fn icons_view(t: &dodai_core::Theme) -> gpui::Div {
+/// Display order and label of the icon types.
+const ICON_TYPES: &[(&str, &str)] = &[
+    ("interface", "Interface"),
+    ("arrows", "Arrows & navigation"),
+    ("actions", "Actions"),
+    ("media", "Media"),
+    ("files", "Files & storage"),
+    ("edit", "Text & editing"),
+    ("status", "Status & alerts"),
+    ("data", "Data & code"),
+    ("charts", "Charts"),
+    ("dev", "Developer"),
+    ("device", "Devices"),
+    ("commerce", "Commerce"),
+    ("finance", "Finance"),
+    ("people", "People"),
+    ("social", "Social"),
+    ("security", "Security"),
+    ("travel", "Travel & maps"),
+    ("weather", "Weather"),
+    ("health", "Health"),
+    ("objects", "Objects"),
+    ("cyber", "Cyber"),
+];
+
+/// The hand-drawn pack, grouped by type and filtered by `query` (matches the
+/// icon name or its type).
+pub(crate) fn icons_view(t: &dodai_core::Theme, query: &str) -> gpui::Div {
+    let q = query.trim().to_lowercase().replace(' ', "_");
     let mut out = div().flex().flex_col().gap(px(t.spacing.lg));
-    let mut groups: Vec<&'static str> = Vec::new();
-    for n in dodai_cyberpunk_icons::ALL {
-        if !groups.contains(&n.group()) {
-            groups.push(n.group());
-        }
-    }
-    let mut idx = 0usize;
-    for g in groups {
-        let mut row = div().flex().flex_wrap().w_full().gap(px(t.spacing.sm));
+    let (mut idx, mut total) = (0usize, 0usize);
+    for &(g, label) in ICON_TYPES {
         let members: Vec<_> = dodai_cyberpunk_icons::ALL
             .iter()
             .filter(|n| n.group() == g)
+            .filter(|n| {
+                q.is_empty()
+                    || n.name().contains(q.as_str())
+                    || g.contains(q.as_str())
+                    || label
+                        .to_lowercase()
+                        .contains(query.trim().to_lowercase().as_str())
+            })
             .collect();
+        if members.is_empty() {
+            continue;
+        }
+        total += members.len();
+        let mut row = div().flex().flex_wrap().w_full().gap(px(t.spacing.sm));
         for n in &members {
             idx += 1;
             let copy = format!("IconName::{n:?}");
@@ -317,7 +351,7 @@ pub(crate) fn icons_view(t: &dodai_core::Theme) -> gpui::Div {
                     .flex_col()
                     .items_center()
                     .gap(px(6.0))
-                    .w(px(96.0))
+                    .w(px(104.0))
                     .py(px(t.spacing.sm))
                     .cursor_pointer()
                     .border_1()
@@ -330,85 +364,33 @@ pub(crate) fn icons_view(t: &dodai_core::Theme) -> gpui::Div {
                             .size(28.0)
                             .color(hsla(t.palette.primary)),
                     )
-                    .child(
-                        div()
+                    .child({
+                        // Centred when it fits; long names stay left-aligned so
+                        // the ellipsis clips the end, not both sides.
+                        let mut label = div()
+                            .w_full()
+                            .px(px(4.0))
+                            .truncate()
                             .text_size(px(t.typography.size_xs))
                             .text_color(hsla(t.palette.text_muted))
-                            .child(n.name()),
-                    ),
+                            .child(n.name());
+                        if n.name().len() <= 12 {
+                            label = label.text_center();
+                        }
+                        label
+                    }),
             );
         }
         out = out
             .child(Muted::new(format!(
                 "{} · {}",
-                g.to_uppercase(),
+                label.to_uppercase(),
                 members.len()
             )))
             .child(row);
     }
-    out
-}
-
-/// A sample of the Material Symbols catalogue, outlined above filled.
-pub(crate) fn material_symbols_view(t: &dodai_core::Theme) -> gpui::Div {
-    const NAMES: &[&str] = &[
-        "home",
-        "search",
-        "settings",
-        "favorite",
-        "star",
-        "bookmark",
-        "schedule",
-        "mail",
-        "person",
-        "lock",
-        "notifications",
-        "shopping_cart",
-        "cloud",
-        "camera",
-        "mic",
-        "map",
-        "bolt",
-        "palette",
-        "language",
-        "work",
-        "code",
-        "build",
-        "flight",
-        "pets",
-    ];
-    let col = |name: &'static str, filled: bool| {
-        dodai_gpui::MaterialIcon::new(name)
-            .size(28.0)
-            .filled(filled)
-            .color(hsla(t.palette.primary))
-    };
-    let mut row = div().flex().flex_wrap().gap(px(t.spacing.sm));
-    for &n in NAMES {
-        row = row.child(
-            div()
-                .flex()
-                .flex_col()
-                .items_center()
-                .gap(px(6.0))
-                .w(px(96.0))
-                .py(px(t.spacing.sm))
-                .border_1()
-                .border_color(hsla(t.palette.border))
-                .child(
-                    div()
-                        .flex()
-                        .gap(px(6.0))
-                        .child(col(n, false))
-                        .child(col(n, true)),
-                )
-                .child(
-                    div()
-                        .text_size(px(t.typography.size_xs))
-                        .text_color(hsla(t.palette.text_muted))
-                        .child(n),
-                ),
-        );
+    if total == 0 {
+        out = out.child(Muted::new("No icons match."));
     }
-    row
+    out
 }
