@@ -1,0 +1,26 @@
+[package]
+name         = "dodai"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description  = "Dodai UI in one dependency: tokens, every design system (Cyberpunk, Material 3), icon packs and shaders. Enable only the features you need."
+readme       = "README.md"
+keywords     = ["design-system", "theme", "ui", "cyberpunk", "material-design"]
+categories   = ["gui", "rendering"]
+
+[features]
+default   = ["cyberpunk", "material", "icons", "shaders"]
+cyberpunk = ["dep:dodai-cyberpunk"]
+material  = ["dep:dodai-material"]
+## Icon packs of the enabled design systems.
+icons     = ["dodai-cyberpunk?/icons", "dodai-material?/icons"]
+shaders   = ["dep:dodai-shaders"]
+
+[dependencies]
+dodai-core       = { workspace = true }
+dodai-cyberpunk  = { workspace = true, optional = true }
+dodai-material   = { workspace = true, optional = true }
+dodai-shaders    = { workspace = true, optional = true }

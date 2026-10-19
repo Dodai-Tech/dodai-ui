@@ -1,7 +1,9 @@
 //! Every Dodai component in Freya. Keys: `t`/`T` next/prev theme, `+`/`-` glow.
 //! Run: `cargo run -p dodai-freya --example freya_showcase`
 
-use dodai_core::{themes, ButtonVariant, Tone};
+use dodai::themes;
+
+use dodai_core::{ButtonVariant, Tone};
 use dodai_freya::*;
 use freya::prelude::*;
 

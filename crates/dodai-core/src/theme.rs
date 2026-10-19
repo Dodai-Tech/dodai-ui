@@ -79,6 +79,6 @@ impl Theme {
 
 impl Default for Theme {
     fn default() -> Self {
-        crate::themes::cyberpunk::night_city()
+        crate::themes::neutral()
     }
 }

@@ -41,21 +41,41 @@ Every theme is contrast-tested (text ≥ 7:1, primary label ≥ 4.5:1).
 
 ```toml
 [dependencies]
-dodai-core    = "0.1"
+dodai         = "0.1"   # everything: tokens + Cyberpunk + Material 3 + icons + shaders
 dodai-ratatui = "0.1"   # or -iced / -gpui / -topcoat
 ```
 
 ```rust
-use dodai_core::{ThemeSwitcher, ButtonVariant, ControlState};
+use dodai::{ThemeSwitcher, ButtonVariant, ControlState};
 use dodai_ratatui::TuiTheme;
 
-let mut sw = ThemeSwitcher::new();           // all built-in themes
+let mut sw = dodai::switcher();              // all built-in themes
 let mut tui = TuiTheme::new(sw.current().clone());
 tui.set_theme(sw.cycle_next().clone());      // switch at runtime — shape, type and glow change too
 let btn = tui.button("Continue", ButtonVariant::Primary, ControlState::Idle);
 ```
 
 Persist `theme.id()` (e.g. `"cyberpunk-netrunner"`) in your config and restore with `switcher.select(id)`.
+
+## Pick only what you need
+
+Every design system and icon pack is its own crate; `dodai` is the one-stop
+umbrella (features `cyberpunk`, `material`, `icons`, `shaders`, all on by default).
+
+| Crate | What it is |
+|---|---|
+| [`dodai-core`](crates/dodai-core) | Tokens, `Theme`, `ThemeSwitcher`, `Spec` builder, DTCG export. No concrete themes. |
+| [`dodai-cyberpunk`](crates/dodai-cyberpunk) | The 6 Cyberpunk themes (dark + light) + `icons` feature |
+| [`dodai-material`](crates/dodai-material) | The Material 3 light/dark pair + `icons` feature |
+| [`dodai-cyberpunk-icons`](crates/dodai-cyberpunk-icons) | 136 chamfered, curve-free icons. Standalone, no deps |
+| [`dodai-material-icons`](crates/dodai-material-icons) | The full Material Symbols catalogue (3,900+ icons, outlined/rounded/sharp + fill). Standalone, no deps |
+| [`dodai-shaders`](crates/dodai-shaders) | Pixel shaders |
+| [`dodai`](crates/dodai) | All of the above behind features |
+
+```toml
+dodai-core     = "0.1"    # just the engine
+dodai-material = "0.1"    # + the Material 3 themes and icons (features: rounded, sharp)
+```
 
 ## Showcases
 
@@ -102,9 +122,9 @@ and `Oscilloscope`, `Spectrum`, `RadarScope`, `HexMap`, `RingStack`, `DotMatrix`
 
 ## Adding a theme
 
-1. Add `crates/dodai-core/src/themes/<name>.rs` returning `Theme`s (copy `cyberpunk.rs`).
-2. Register it in `themes::all()` — every adapter picks it up automatically.
-3. `just test` — the shared contrast/uniqueness tests run on it.
+1. Copy `crates/dodai-material` to `crates/dodai-<name>` (themes via `dodai_core::themes::Spec`); optionally add an icon crate.
+2. Add it as a feature in `crates/dodai` and to `themes::all()` — every adapter picks it up through `dodai::switcher()`.
+3. `just test` — the shared contrast/uniqueness tests in `crates/dodai/tests` run on it.
 
 ## Development
 

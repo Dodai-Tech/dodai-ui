@@ -1,6 +1,6 @@
 //! Theme installation: [`ThemeProvider`] + [`ThemeContext`].
 
-use dodai_core::{Theme, ThemeSwitcher};
+use dodai_core::Theme;
 use yew::prelude::*;
 
 /// Shared theme state handed to descendants via context.
@@ -46,7 +46,7 @@ pub struct ThemeProviderProps {
 pub fn ThemeProvider(props: &ThemeProviderProps) -> Html {
     let id = props.theme_id.clone();
     let switcher = use_state(move || {
-        let mut s = ThemeSwitcher::new();
+        let mut s = dodai::switcher();
         s.select(&id);
         s
     });
@@ -112,7 +112,7 @@ pub fn ThemeSwitcherBar(props: &ThemeSwitcherBarProps) -> Html {
     let Some(ctx) = use_theme() else {
         return html! {};
     };
-    let buttons = dodai_core::themes::all().into_iter().map(|t| {
+    let buttons = dodai::themes::all().into_iter().map(|t| {
         let active = t.id() == ctx.theme.id();
         let cb = ctx.select.clone();
         let id = AttrValue::from(t.id());

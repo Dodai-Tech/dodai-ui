@@ -24,7 +24,7 @@ struct App {
 }
 
 fn main() -> io::Result<()> {
-    let sw = ThemeSwitcher::new();
+    let sw = dodai::switcher();
     let tui = TuiTheme::new(sw.current().clone());
     let mut app = App {
         sw,

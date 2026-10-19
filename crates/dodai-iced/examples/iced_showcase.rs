@@ -52,7 +52,7 @@ enum Msg {
 const OPTIONS: [&str; 3] = ["Compact", "Comfortable", "Spacious"];
 
 fn boot() -> App {
-    let sw = ThemeSwitcher::new();
+    let sw = dodai::switcher();
     let glow = 1.0;
     let lt = IcedTheme::new(sw.current().clone().with_glow_intensity(glow));
     App {

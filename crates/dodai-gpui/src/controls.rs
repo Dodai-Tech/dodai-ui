@@ -623,7 +623,7 @@ crate::entry_render!(Slider);
 mod tests {
     use super::*;
     use crate::testing::{light_rounded, square};
-    use dodai_core::themes;
+    use dodai::themes;
 
     #[test]
     fn clamp_and_fraction() {

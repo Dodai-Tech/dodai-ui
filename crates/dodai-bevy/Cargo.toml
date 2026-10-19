@@ -13,6 +13,7 @@ categories   = ["gui"]
 
 [dependencies]
 dodai-core = { workspace = true }
+dodai = { workspace = true, features = ["cyberpunk", "material"] }
 bevy = { version = "0.18", default-features = false, features = [
   "std", "async_executor", "multi_threaded", "bevy_winit", "bevy_window",
   "ui_api", "ui_bevy_render", "default_font", "bevy_log", "x11", "wayland",

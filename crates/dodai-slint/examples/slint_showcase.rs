@@ -1,6 +1,5 @@
 //! Every Dodai UI component in Slint, with a theme switcher (button per
 //! theme + `t`/`T`) and glow +/- controls.
-use dodai_core::ThemeSwitcher;
 use dodai_slint::slint::{self, ComponentHandle, ModelRc, SharedString, VecModel};
 use std::{cell::RefCell, rc::Rc};
 
@@ -116,7 +115,7 @@ slint::slint! {
 
 fn main() {
     let ui = Showcase::new().unwrap();
-    let sw = Rc::new(RefCell::new(ThemeSwitcher::new()));
+    let sw = Rc::new(RefCell::new(dodai::switcher()));
     let glow = Rc::new(RefCell::new(1.0f32));
     let names: Vec<SharedString> = sw
         .borrow()

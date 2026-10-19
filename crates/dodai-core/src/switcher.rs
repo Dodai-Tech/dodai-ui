@@ -1,6 +1,6 @@
 //! Runtime theme switching shared by all front-ends.
 
-use crate::{themes, Theme};
+use crate::Theme;
 
 /// Holds the available themes and the active one. Cycling wraps around.
 #[derive(Debug, Clone)]
@@ -10,11 +10,6 @@ pub struct ThemeSwitcher {
 }
 
 impl ThemeSwitcher {
-    /// Switcher over every built-in theme, starting at the first.
-    pub fn new() -> Self {
-        Self::with_themes(themes::all())
-    }
-
     /// Switcher over a custom list. Panics if `themes` is empty.
     pub fn with_themes(themes: Vec<Theme>) -> Self {
         assert!(!themes.is_empty(), "ThemeSwitcher needs at least one theme");
@@ -99,7 +94,7 @@ impl ThemeSwitcher {
 
 impl Default for ThemeSwitcher {
     fn default() -> Self {
-        Self::new()
+        Self::with_themes(vec![crate::themes::neutral()])
     }
 }
 
@@ -107,41 +102,50 @@ impl Default for ThemeSwitcher {
 mod tests {
     use super::*;
 
+    fn fam(id: &'static str, family: &'static str) -> Theme {
+        let mut t = crate::themes::neutral();
+        t.meta.id = id;
+        t.meta.family = family;
+        t
+    }
+
+    fn sample() -> ThemeSwitcher {
+        ThemeSwitcher::with_themes(vec![fam("a1", "a"), fam("a2", "a"), fam("b1", "b")])
+    }
+
     #[test]
     fn families_group_variants() {
-        let mut s = ThemeSwitcher::new();
-        assert_eq!(s.families(), vec!["cyberpunk", "material"]);
-        assert_eq!(s.family_indices("cyberpunk").len(), 6);
-        assert_eq!(s.family_indices("material").len(), 2);
-        assert_eq!(
-            s.family_indices("cyberpunk").len() + s.family_indices("material").len(),
-            s.themes().len()
-        );
-        assert!(s.select_family("material"));
-        assert_eq!(s.current().meta.family, "material");
-        assert!(s.select_family("cyberpunk"));
+        let mut s = sample();
+        assert_eq!(s.families(), vec!["a", "b"]);
+        assert_eq!(s.family_indices("a"), vec![0, 1]);
+        assert!(s.select_family("b"));
+        assert_eq!(s.current().id(), "b1");
         assert!(!s.select_family("nope"));
     }
 
     #[test]
     fn cycles_and_wraps() {
-        let mut s = ThemeSwitcher::new();
-        let n = s.themes().len();
-        let first = s.current().id();
-        for _ in 0..n {
+        let mut s = sample();
+        for _ in 0..3 {
             s.cycle_next();
         }
-        assert_eq!(s.current().id(), first);
+        assert_eq!(s.current().id(), "a1");
         s.cycle_prev();
-        assert_eq!(s.index(), n - 1);
+        assert_eq!(s.index(), 2);
     }
 
     #[test]
-    fn select_by_id() {
-        let mut s = ThemeSwitcher::new();
-        assert!(s.select("cyberpunk-netrunner"));
-        assert_eq!(s.current().id(), "cyberpunk-netrunner");
-        assert!(!s.select("nope"));
-        assert_eq!(s.current().id(), "cyberpunk-netrunner");
+    fn select_by_id_and_clamped_index() {
+        let mut s = sample();
+        assert!(s.select("a2"));
+        assert!(!s.select("zzz"));
+        assert_eq!(s.current().id(), "a2");
+        s.select_index(99);
+        assert_eq!(s.index(), 2);
+    }
+
+    #[test]
+    fn default_has_the_neutral_theme() {
+        assert_eq!(ThemeSwitcher::default().current().id(), "default");
     }
 }

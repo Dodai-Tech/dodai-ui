@@ -1,7 +1,8 @@
 //! Theme provider, stylesheet scoping and theme-switching handle.
 
 use dioxus::prelude::*;
-use dodai_core::{themes, Theme, ThemeSwitcher};
+use dodai::themes;
+use dodai_core::{Theme, ThemeSwitcher};
 
 /// Scope the topcoat multi-theme stylesheet to a `.dodai-root` element instead of `:root`,
 /// so it works in any renderer (no access to `<html>` needed).
@@ -321,13 +322,13 @@ mod tests {
         let cs = scoped_stylesheet(&[s]);
         assert!(cl.contains("--dodai-radius:8px"));
         assert!(cs.contains("--dodai-radius:0px"));
-        let cp = scoped_stylesheet(&[dodai_core::themes::all()[0].clone()]);
+        let cp = scoped_stylesheet(&[dodai::themes::all()[0].clone()]);
         assert!(cp.contains("--dodai-chamfer:16px"));
     }
 
     #[test]
     fn glow_intensity_applied() {
-        let base = dodai_core::themes::all();
+        let base = dodai::themes::all();
         let off = themes_with_glow(&base, Some(0.0));
         assert!(off.iter().all(|t| !t.effects.glow_enabled()));
         assert_eq!(themes_with_glow(&base, None), base);

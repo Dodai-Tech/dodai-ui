@@ -6,7 +6,9 @@
 //! type, uppercase labels, hard 0-radius edges, 48 px controls and
 //! chamfered (cut-corner) buttons/panels.
 
-use crate::{Color, Corners, Effects, Mode, Palette, Shape, Spacing, Theme, ThemeMeta, Typography};
+use dodai_core::{
+    Color, Corners, Effects, Mode, Palette, Shape, Spacing, Theme, ThemeMeta, Typography,
+};
 
 const YELLOW: u32 = 0xfcee0a;
 const YELLOW_HOVER: u32 = 0xf2e900;
@@ -308,3 +310,7 @@ pub fn variants() -> Vec<Theme> {
         samurai_light(),
     ]
 }
+
+/// The Cyberpunk icon pack (`icons` feature).
+#[cfg(feature = "icons")]
+pub use dodai_cyberpunk_icons as icons;

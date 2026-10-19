@@ -12,8 +12,14 @@ use gpui::{px, size, TestAppContext};
 
 #[gpui::test]
 fn every_category_renders_under_every_theme(cx: &mut TestAppContext) {
-    for theme in ThemeSwitcher::new().themes().to_vec() {
-        cx.update(|cx| dodai_gpui::install(cx, theme.clone()));
+    for theme in dodai::switcher().themes().to_vec() {
+        cx.update(|cx| {
+            dodai_gpui::install_switcher(cx, {
+                let mut s = dodai::switcher();
+                s.select(theme.id());
+                s
+            })
+        });
         let (view, vcx) = cx.add_window_view(|_, cx| showcase::Showcase::build(cx));
         vcx.simulate_resize(size(px(1400.0), px(900.0)));
         let cats = vcx.update(|_, cx| view.read(cx).cat_count());
@@ -33,7 +39,7 @@ fn every_category_renders_under_every_theme(cx: &mut TestAppContext) {
 
 #[gpui::test]
 fn every_category_has_unique_sections(cx: &mut TestAppContext) {
-    cx.update(|cx| dodai_gpui::install(cx, dodai_core::Theme::default()));
+    cx.update(|cx| dodai_gpui::install_switcher(cx, dodai::switcher()));
     let (view, vcx) = cx.add_window_view(|_, cx| showcase::Showcase::build(cx));
     vcx.simulate_resize(size(px(1400.0), px(900.0)));
     vcx.run_until_parked();
@@ -104,7 +110,7 @@ fn frame_cost_probe(cx: &mut TestAppContext) {
         "Radar · scatter · heatmap",
         "Shader playground",
     ];
-    cx.update(|cx| dodai_gpui::install(cx, dodai_core::Theme::default()));
+    cx.update(|cx| dodai_gpui::install_switcher(cx, dodai::switcher()));
     let (view, vcx) = cx.add_window_view(|_, cx| showcase::Showcase::build(cx));
     vcx.simulate_resize(size(px(1400.0), px(900.0)));
     vcx.run_until_parked();

@@ -2,8 +2,8 @@
 //! tonal palette): rounded corners, mixed-case labels, no glow or scanlines,
 //! flat tonal surfaces, 40 px controls.
 
-use super::Spec;
-use crate::{Corners, Mode, Shape, Spacing, Theme, ThemeMeta, Typography};
+use dodai_core::themes::Spec;
+use dodai_core::{Corners, Mode, Shape, Spacing, Theme, ThemeMeta, Typography};
 
 fn typography() -> Typography {
     Typography {
@@ -131,3 +131,7 @@ pub fn dark() -> Theme {
 pub fn variants() -> Vec<Theme> {
     vec![light(), dark()]
 }
+
+/// The Material Symbols catalogue (`icons` feature).
+#[cfg(feature = "icons")]
+pub use dodai_material_icons as icons;

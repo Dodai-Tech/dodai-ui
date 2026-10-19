@@ -4237,10 +4237,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "dodai"
+version = "0.1.0"
+dependencies = [
+ "dodai-core",
+ "dodai-cyberpunk",
+ "dodai-material",
+ "dodai-shaders",
+]
+
+[[package]]
 name = "dodai-bevy"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "dodai",
  "dodai-core",
 ]
 
@@ -4253,6 +4264,14 @@ name = "dodai-core"
 version = "0.1.0"
 
 [[package]]
+name = "dodai-cyberpunk"
+version = "0.1.0"
+dependencies = [
+ "dodai-core",
+ "dodai-cyberpunk-icons",
+]
+
+[[package]]
 name = "dodai-cyberpunk-icons"
 version = "0.1.0"
 
@@ -4262,6 +4281,7 @@ version = "0.1.0"
 dependencies = [
  "dioxus 0.7.10",
  "dioxus-ssr",
+ "dodai",
  "dodai-core",
  "dodai-topcoat",
 ]
@@ -4270,6 +4290,7 @@ dependencies = [
 name = "dodai-egui"
 version = "0.1.0"
 dependencies = [
+ "dodai",
  "dodai-core",
  "eframe",
  "egui",
@@ -4279,6 +4300,7 @@ dependencies = [
 name = "dodai-freya"
 version = "0.1.0"
 dependencies = [
+ "dodai",
  "dodai-core",
  "freya",
 ]
@@ -4287,6 +4309,7 @@ dependencies = [
 name = "dodai-gpui"
 version = "0.1.0"
 dependencies = [
+ "dodai",
  "dodai-charts-core",
  "dodai-core",
  "dodai-cyberpunk-icons",
@@ -4300,6 +4323,7 @@ dependencies = [
 name = "dodai-iced"
 version = "0.1.0"
 dependencies = [
+ "dodai",
  "dodai-core",
  "iced",
  "naga 27.0.3",
@@ -4309,9 +4333,18 @@ dependencies = [
 name = "dodai-leptos"
 version = "0.1.0"
 dependencies = [
+ "dodai",
  "dodai-core",
  "dodai-topcoat",
  "leptos",
+]
+
+[[package]]
+name = "dodai-material"
+version = "0.1.0"
+dependencies = [
+ "dodai-core",
+ "dodai-material-icons",
 ]
 
 [[package]]
@@ -4323,6 +4356,7 @@ name = "dodai-ratatui"
 version = "0.1.0"
 dependencies = [
  "crossterm",
+ "dodai",
  "dodai-core",
  "ratatui",
 ]
@@ -4331,6 +4365,7 @@ dependencies = [
 name = "dodai-shaders"
 version = "0.1.0"
 dependencies = [
+ "dodai",
  "dodai-core",
  "gpui",
  "image",
@@ -4359,6 +4394,7 @@ dependencies = [
 name = "dodai-slint"
 version = "0.1.0"
 dependencies = [
+ "dodai",
  "dodai-core",
  "slint",
 ]
@@ -4367,6 +4403,7 @@ dependencies = [
 name = "dodai-topcoat"
 version = "0.1.0"
 dependencies = [
+ "dodai",
  "dodai-core",
  "dodai-cyberpunk-icons",
 ]
@@ -4375,6 +4412,7 @@ dependencies = [
 name = "dodai-yew"
 version = "0.1.0"
 dependencies = [
+ "dodai",
  "dodai-core",
  "dodai-topcoat",
  "tokio",

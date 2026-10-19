@@ -55,7 +55,7 @@ impl Gallery {
             ("Platformer".into(), Some(ShaderPalette::platformer())),
             ("Metroidvania".into(), Some(ShaderPalette::metroidvania())),
         ];
-        for t in dodai_core::themes::all() {
+        for t in dodai::themes::all() {
             palettes.push((
                 format!("Theme: {}", t.meta.name).into(),
                 Some(ShaderPalette::from_theme(&t)),

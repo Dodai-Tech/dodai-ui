@@ -30,5 +30,5 @@ export def bump-workspace-text [cargo: string, version: string]: nothing -> stri
 
 # Crates in dependency order: core must be published before adapters.
 export def publish-order []: nothing -> list<string> {
-    ["dodai-core" "dodai-cyberpunk-icons" "dodai-material-icons" "dodai-charts-core" "dodai-shaders" "dodai-shaders-gpu" "dodai-ratatui" "dodai-iced" "dodai-gpui" "dodai-topcoat"]
+    ["dodai-core" "dodai-cyberpunk-icons" "dodai-material-icons" "dodai-charts-core" "dodai-shaders" "dodai-shaders-gpu" "dodai-cyberpunk" "dodai-material" "dodai" "dodai-ratatui" "dodai-iced" "dodai-gpui" "dodai-topcoat"]
 }

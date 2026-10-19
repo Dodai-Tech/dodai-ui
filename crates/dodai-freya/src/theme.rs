@@ -1,6 +1,8 @@
 //! Theme install + [`ThemeSwitcher`] integration via a Dioxus context signal.
 
-use dodai_core::{themes, Theme, ThemeSwitcher};
+use dodai::themes;
+
+use dodai_core::{Theme, ThemeSwitcher};
 use freya::prelude::*;
 
 /// Reactive state stored in context: the switcher plus an optional glow override.

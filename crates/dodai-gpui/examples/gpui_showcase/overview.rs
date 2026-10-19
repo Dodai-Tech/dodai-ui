@@ -23,7 +23,7 @@ impl Showcase {
         let stats: [(String, &str); 5] = [
             (total.to_string(), "components"),
             (cats.len().to_string(), "categories"),
-            (dodai_core::themes::all().len().to_string(), "themes"),
+            (dodai::themes::all().len().to_string(), "themes"),
             (dodai_cyberpunk_icons::ALL.len().to_string(), "icons"),
             (n_shaders.to_string(), "shaders"),
         ];

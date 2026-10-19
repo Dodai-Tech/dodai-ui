@@ -1,0 +1,21 @@
+[package]
+name         = "dodai-cyberpunk"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description  = "The Cyberpunk design system for Dodai UI: six themes (dark and light) plus an optional chamfered icon pack"
+readme       = "README.md"
+keywords     = ["theme", "cyberpunk", "design-system", "ui"]
+categories   = ["gui", "rendering"]
+
+[features]
+default = ["icons"]
+## Re-export the Cyberpunk icon pack as `dodai_cyberpunk::icons`.
+icons = ["dep:dodai-cyberpunk-icons"]
+
+[dependencies]
+dodai-core = { workspace = true }
+dodai-cyberpunk-icons = { workspace = true, optional = true }

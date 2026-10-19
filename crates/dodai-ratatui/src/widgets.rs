@@ -104,11 +104,13 @@ impl Widget for ThemeBadge<'_> {
 mod tests {
     use super::*;
     use crate::ColorDepth;
-    use dodai_core::Theme;
 
     #[test]
     fn scanlines_dim_odd_rows_only() {
-        let t = TuiTheme::with_depth(Theme::default(), ColorDepth::TrueColor);
+        let t = TuiTheme::with_depth(
+            dodai::themes::cyberpunk::night_city(),
+            ColorDepth::TrueColor,
+        );
         let area = Rect::new(0, 0, 2, 2);
         let mut buf = Buffer::empty(area);
         for y in 0..2 {
@@ -123,7 +125,10 @@ mod tests {
 
     #[test]
     fn badge_shows_name() {
-        let t = TuiTheme::with_depth(Theme::default(), ColorDepth::TrueColor);
+        let t = TuiTheme::with_depth(
+            dodai::themes::cyberpunk::night_city(),
+            ColorDepth::TrueColor,
+        );
         let s: String = ThemeBadge::new(&t)
             .line()
             .spans

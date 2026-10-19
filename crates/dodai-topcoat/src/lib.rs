@@ -7,7 +7,7 @@
 //! with chamfered cut-corners via `clip-path`) and a tiny client-side switcher.
 //!
 //! ```
-//! use dodai_core::themes;
+//! use dodai::themes;
 //! let css = dodai_topcoat::multi_theme_stylesheet(&themes::all());
 //! assert!(css.contains("[data-theme=\"cyberpunk-netrunner\"]"));
 //! ```
@@ -295,11 +295,12 @@ if(!t)return;t.hasAttribute('data-dodai-theme-next')?set(i+1):set(i-1)}});}})();
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dodai_core::themes::{self, Spec};
+    use dodai::themes;
+    use dodai_core::themes::Spec;
 
     #[test]
     fn vars_contain_brand_yellow() {
-        let v = theme_vars(&Theme::default());
+        let v = theme_vars(&dodai::themes::cyberpunk::night_city());
         assert!(v.contains("--dodai-primary:#fcee0a;"));
         assert!(v.contains("--dodai-secondary:#00f0ff;"));
         assert!(v.contains("--dodai-chamfer:16px;"));
@@ -330,7 +331,7 @@ mod tests {
 
     #[test]
     fn components_only_use_defined_vars() {
-        let defined = theme_vars(&Theme::default());
+        let defined = theme_vars(&dodai::themes::cyberpunk::night_city());
         let mut missing = vec![];
         for part in COMPONENTS_CSS.split("var(--dodai-").skip(1) {
             let name: String = part
@@ -491,7 +492,7 @@ mod tests {
 
     #[test]
     fn cyberpunk_clip_is_bottom_right_only() {
-        let t = Theme::default();
+        let t = dodai::themes::cyberpunk::night_city();
         assert_eq!(
             clip_path(&t.shape),
             "polygon(0 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%)"
@@ -535,10 +536,10 @@ mod tests {
 
     #[test]
     fn glow_uses_filter_when_chamfered_shadow_otherwise() {
-        let cp = theme_vars(&Theme::default());
+        let cp = theme_vars(&dodai::themes::cyberpunk::night_city());
         assert!(cp.contains("--dodai-glow-filter:drop-shadow("));
         assert!(cp.contains("--dodai-glow-shadow:0 0 0 0 transparent;"));
-        let off = theme_vars(&Theme::default().with_glow_intensity(0.0));
+        let off = theme_vars(&dodai::themes::cyberpunk::night_city().with_glow_intensity(0.0));
         assert!(off.contains("--dodai-glow-filter:none;"));
     }
 

@@ -6,7 +6,7 @@
 
 use dodai_core::{ButtonVariant, Theme, Tone};
 use dodai_gpui::{
-    cycle_next, cycle_prev, fuzzy_filter, glow_intensity, hsla, install, scanlines_enabled,
+    cycle_next, cycle_prev, fuzzy_filter, glow_intensity, hsla, scanlines_enabled,
     set_glow_intensity, set_scanlines, theme_of, BubblePlacement, Button, Card, CardVariant,
     Checkbox, DesignSystemTree, Direction, Divider, DodaiStyled, DodaiTooltip, Fab, FabSize,
     Heading, IconButton, InputBox, Knob, Label, ListItem, Mono, Muted, NavItem, NavLayout,
@@ -969,11 +969,11 @@ fn new_showcase(cx: &mut App) -> Entity<Showcase> {
 fn main() {
     Application::new().run(|cx: &mut App| {
         // Debug: DODAI_THEME=<theme id> starts on that theme (e.g. material-dark).
-        let first = std::env::var("DODAI_THEME")
-            .ok()
-            .and_then(|id| dodai_core::themes::by_id(&id))
-            .unwrap_or_default();
-        install(cx, first);
+        let mut switcher = dodai::switcher();
+        if let Ok(id) = std::env::var("DODAI_THEME") {
+            switcher.select(&id);
+        }
+        dodai_gpui::install_switcher(cx, switcher);
         window_shortcuts(cx);
         set_glow_intensity(cx, 0.5);
         if std::env::var_os("DODAI_NOSCAN").is_some() {

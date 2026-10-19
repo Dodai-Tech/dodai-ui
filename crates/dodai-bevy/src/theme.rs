@@ -21,7 +21,7 @@ pub struct DodaiTheme {
 impl DodaiTheme {
     /// Start on the first built-in theme with the switcher over all built-ins.
     pub fn new() -> Self {
-        Self::with_switcher(ThemeSwitcher::new())
+        Self::with_switcher(dodai::switcher())
     }
 
     /// Use a custom switcher (e.g. including your own themes).

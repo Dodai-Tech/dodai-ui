@@ -2,7 +2,8 @@
 //! Theme/glow switching in the page is done by a small inline script over
 //! `data-theme` / `data-glow` (pre-generated CSS), since SSR output is static.
 //! Usage: `yew_showcase [theme-id] > out.html`
-use dodai_core::{themes, ButtonVariant, Tone};
+use dodai::themes;
+use dodai_core::{ButtonVariant, Tone};
 use dodai_topcoat::{multi_theme_stylesheet, theme_vars, GOOGLE_FONTS_URL};
 use dodai_yew::*;
 use yew::prelude::*;

@@ -1,7 +1,8 @@
 //! Renders every component to a static HTML file via SSR.
 //! `cargo run -p dodai-leptos --example leptos_showcase [out.html] [theme-id]`
 //! Theme buttons, `t`/`T` keys and glow +/- are wired with a tiny inline script.
-use dodai_core::{themes, ButtonVariant, Tone};
+use dodai::themes;
+use dodai_core::{ButtonVariant, Tone};
 use dodai_leptos::class::TagTone;
 use dodai_leptos::*;
 use dodai_topcoat::{switcher_script, GOOGLE_FONTS_URL};

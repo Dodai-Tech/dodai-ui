@@ -2,7 +2,6 @@
 //! equal, negative, ragged) without panicking, under a chamfered and a
 //! rounded theme.
 
-use dodai_core::ThemeSwitcher;
 use dodai_gpui::*;
 use gpui::{div, prelude::*, px, size, AnyElement, Context, TestAppContext, Window};
 
@@ -89,7 +88,7 @@ impl Render for Page {
 #[gpui::test]
 fn charts_survive_degenerate_data(cx: &mut TestAppContext) {
     for id in ["cyberpunk", "material"] {
-        let theme = ThemeSwitcher::new()
+        let theme = dodai::switcher()
             .themes()
             .iter()
             .find(|t| t.id() == id)
@@ -145,7 +144,7 @@ impl Render for Controls {
 
 #[gpui::test]
 fn controls_survive_degenerate_inputs(cx: &mut TestAppContext) {
-    for theme in ThemeSwitcher::new().themes().to_vec() {
+    for theme in dodai::switcher().themes().to_vec() {
         cx.update(|cx| install(cx, theme));
         let (_, vcx) = cx.add_window_view(|_, _| Controls);
         vcx.simulate_resize(size(px(1200.0), px(900.0)));

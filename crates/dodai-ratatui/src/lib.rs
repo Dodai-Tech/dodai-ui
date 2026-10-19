@@ -392,7 +392,10 @@ mod tests {
     use super::*;
 
     fn tui() -> TuiTheme {
-        TuiTheme::with_depth(Theme::default(), ColorDepth::TrueColor)
+        TuiTheme::with_depth(
+            dodai::themes::cyberpunk::night_city(),
+            ColorDepth::TrueColor,
+        )
     }
 
     #[test]
@@ -403,7 +406,7 @@ mod tests {
 
     #[test]
     fn ansi256_is_indexed() {
-        let t = TuiTheme::with_depth(Theme::default(), ColorDepth::Ansi256);
+        let t = TuiTheme::with_depth(dodai::themes::cyberpunk::night_city(), ColorDepth::Ansi256);
         assert!(matches!(t.color(LColor::hex(0xfcee0a)), Color::Indexed(_)));
     }
 
@@ -425,7 +428,7 @@ mod tests {
 
     #[test]
     fn button_block_is_three_equal_rows() {
-        let tui = TuiTheme::new(dodai_core::themes::cyberpunk::night_city());
+        let tui = TuiTheme::new(dodai::themes::cyberpunk::night_city());
         for v in [ButtonVariant::Primary, ButtonVariant::Outline] {
             let b = tui.button_block("Go", v, ControlState::Idle);
             assert_eq!(b.lines.len(), 3);

@@ -5,7 +5,7 @@ use dodai_core::{Corners, Mode, Shape, Spacing, Theme, ThemeMeta, Typography};
 
 /// Built-in chamfered theme.
 pub fn chamfered() -> Theme {
-    dodai_core::themes::cyberpunk::night_city()
+    dodai::themes::cyberpunk::night_city()
 }
 
 /// Rounded light theme (no glow).

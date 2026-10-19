@@ -349,14 +349,15 @@ impl DodaiTheme {
     }
 }
 
-/// Install the global theme (first theme = `initial`, or the default list head).
+/// Install the global theme with `initial` as the only theme. Use
+/// [`install_switcher`] to offer several (e.g. `dodai::switcher()`).
 pub fn install(cx: &mut App, initial: Theme) {
-    let mut switcher = ThemeSwitcher::new();
-    if !switcher.select(initial.id()) {
-        let mut all = switcher.themes().to_vec();
-        all.insert(0, initial);
-        switcher = ThemeSwitcher::with_themes(all);
-    }
+    install_switcher(cx, ThemeSwitcher::with_themes(vec![initial]));
+}
+
+/// Install the global theme from a ready [`ThemeSwitcher`] (its current
+/// theme is the active one).
+pub fn install_switcher(cx: &mut App, switcher: ThemeSwitcher) {
     cx.set_global(DodaiTheme { switcher });
     // Text-input editing keys (backspace, arrows, enter, clipboard) are
     // actions: without bindings only plain typing would work.
@@ -567,7 +568,7 @@ mod tests {
 
     #[test]
     fn glow_intensity_applies_to_all_themes() {
-        let mut sw = ThemeSwitcher::new();
+        let mut sw = dodai::switcher();
         let themes: Vec<Theme> = sw
             .themes()
             .iter()

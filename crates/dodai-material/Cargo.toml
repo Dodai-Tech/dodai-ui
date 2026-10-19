@@ -1,0 +1,23 @@
+[package]
+name         = "dodai-material"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description  = "The Material 3 design system for Dodai UI: light and dark themes plus an optional Material Symbols icon catalogue"
+readme       = "README.md"
+keywords     = ["theme", "material", "material-design", "design-system"]
+categories   = ["gui", "rendering"]
+
+[features]
+default = ["icons"]
+## Re-export the Material Symbols catalogue as `dodai_material::icons` (outlined style).
+icons = ["dep:dodai-material-icons"]
+rounded = ["icons", "dodai-material-icons?/rounded"]
+sharp   = ["icons", "dodai-material-icons?/sharp"]
+
+[dependencies]
+dodai-core = { workspace = true }
+dodai-material-icons = { workspace = true, optional = true }

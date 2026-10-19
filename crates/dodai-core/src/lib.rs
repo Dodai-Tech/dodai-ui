@@ -8,8 +8,8 @@
 //!
 //! ```
 //! use dodai_core::{ThemeSwitcher, ButtonVariant, ControlState};
-//! let mut sw = ThemeSwitcher::new();
-//! let t = sw.cycle_next().clone();
+//! let sw = ThemeSwitcher::default(); // neutral fallback; real themes: `dodai-cyberpunk`, `dodai-material`
+//! let t = sw.current().clone();
 //! let b = t.button(ButtonVariant::Primary, ControlState::Idle);
 //! assert!(b.background.is_some());
 //! ```

@@ -62,7 +62,7 @@ pub fn control_padding(theme: &Theme) -> (f32, f32) {
 mod tests {
     use super::*;
     use crate::testing::{rounded_light, square_theme};
-    use dodai_core::themes;
+    use dodai::themes;
 
     #[test]
     fn uppercase_follows_token_not_id() {

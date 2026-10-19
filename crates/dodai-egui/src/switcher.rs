@@ -87,7 +87,7 @@ impl ThemeController {
     /// All built-in themes, glow as designed.
     pub fn new() -> Self {
         Self {
-            switcher: ThemeSwitcher::new(),
+            switcher: dodai::switcher(),
             glow: 1.0,
         }
     }

@@ -16,4 +16,5 @@ dodai-core = { workspace = true }
 ratatui = { workspace = true }
 
 [dev-dependencies]
+dodai = { workspace = true, features = ["cyberpunk", "material"] }
 crossterm = { workspace = true }

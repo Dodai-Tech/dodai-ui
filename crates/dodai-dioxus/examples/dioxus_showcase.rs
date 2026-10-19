@@ -7,7 +7,8 @@
 //! The same `App` works unchanged in any Dioxus renderer (desktop/web) where signals are live.
 
 use dioxus::prelude::*;
-use dodai_core::{themes, ButtonVariant, Tone};
+use dodai::themes;
+use dodai_core::{ButtonVariant, Tone};
 use dodai_dioxus::*;
 
 #[derive(Props, Clone, PartialEq)]

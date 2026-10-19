@@ -81,7 +81,10 @@ fn square() -> TuiTheme {
     TuiTheme::with_depth(t, ColorDepth::TrueColor)
 }
 fn cyber() -> TuiTheme {
-    TuiTheme::with_depth(Theme::default(), ColorDepth::TrueColor)
+    TuiTheme::with_depth(
+        dodai::themes::cyberpunk::night_city(),
+        ColorDepth::TrueColor,
+    )
 }
 
 fn draw(w: impl Widget, width: u16, height: u16) -> Buffer {

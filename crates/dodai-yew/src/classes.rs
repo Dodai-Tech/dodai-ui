@@ -57,7 +57,8 @@ pub fn clamp_pct(v: f32) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dodai_core::{themes, ShapeKind};
+    use dodai::themes;
+    use dodai_core::ShapeKind;
 
     #[test]
     fn every_variant_has_distinct_class() {

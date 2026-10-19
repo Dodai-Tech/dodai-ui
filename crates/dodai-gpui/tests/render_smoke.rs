@@ -1,7 +1,6 @@
 //! Headless render smoke test: every component draws under every built-in
 //! theme without panicking (key collisions, divide-by-zero, bad geometry).
 
-use dodai_core::ThemeSwitcher;
 use dodai_gpui::*;
 use gpui::{div, prelude::*, px, size, Context, TestAppContext, Window};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -54,12 +53,12 @@ impl Render for Page {
 
 #[gpui::test]
 fn renders_under_every_theme(cx: &mut TestAppContext) {
-    for theme in ThemeSwitcher::new().themes().to_vec() {
+    for theme in dodai::switcher().themes().to_vec() {
         cx.update(|cx| install(cx, theme.clone()));
         let (_, vcx) = cx.add_window_view(|_, _| Page);
         vcx.simulate_resize(size(px(900.0), px(1400.0)));
         vcx.run_until_parked();
     }
     // Not vacuous: the page was really rendered for each theme.
-    assert!(DRAWS.load(Ordering::SeqCst) >= ThemeSwitcher::new().themes().len());
+    assert!(DRAWS.load(Ordering::SeqCst) >= dodai::switcher().themes().len());
 }

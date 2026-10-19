@@ -568,7 +568,7 @@ mod tests {
 
     #[test]
     fn bottom_band_stops_at_cut_corner() {
-        let mut sh = dodai_core::themes::cyberpunk::night_city().shape;
+        let mut sh = dodai::themes::cyberpunk::night_city().shape;
         sh.chamfer = 10.0;
         sh.corners = dodai_core::Corners::BOTTOM_RIGHT;
         let b = bottom_band(&sh, 100.0, 40.0, 2.0);
@@ -579,7 +579,7 @@ mod tests {
 
     #[test]
     fn row_span_follows_shape() {
-        let mut sh = dodai_core::themes::cyberpunk::night_city().shape;
+        let mut sh = dodai::themes::cyberpunk::night_city().shape;
         sh.chamfer = 10.0;
         sh.radius = 0.0;
         sh.corners = dodai_core::Corners::BOTTOM_RIGHT;
@@ -596,7 +596,7 @@ mod tests {
         assert_eq!(row_span(&r, 100.0, 40.0, 20.0), Some((0.0, 100.0)));
     }
     use crate::testing::{light_rounded, square};
-    use dodai_core::themes;
+    use dodai::themes;
 
     #[test]
     fn glow_layers_are_ordered_and_bounded() {

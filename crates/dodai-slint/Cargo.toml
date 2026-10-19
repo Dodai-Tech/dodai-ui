@@ -14,3 +14,6 @@ categories   = ["gui"]
 [dependencies]
 dodai-core = { workspace = true }
 slint = "1"
+
+[dev-dependencies]
+dodai = { workspace = true, features = ["cyberpunk", "material"] }

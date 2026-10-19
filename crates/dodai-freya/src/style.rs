@@ -439,7 +439,7 @@ pub(crate) mod testing {
 mod tests {
     use super::testing::*;
     use super::*;
-    use dodai_core::themes;
+    use dodai::themes;
 
     #[test]
     fn css_alpha_is_u8() {
@@ -561,7 +561,10 @@ mod tests {
             assert_eq!(thumb_on, t.palette.on_primary);
             let (_, fill) = progress_style(&t, None);
             assert_eq!(fill, t.palette.primary);
-            assert!(list_item_style(&t, true, false).2.is_some());
+            assert_eq!(
+                list_item_style(&t, true, false).2.is_some(),
+                t.shape.kind() != dodai_core::ShapeKind::Rounded
+            );
             assert!(input_style(&t, false).fill.is_some());
         }
     }

@@ -36,6 +36,7 @@ name = "gpui_showcase"
 required-features = ["components", "charts"]
 
 [dev-dependencies]
+dodai = { workspace = true, features = ["cyberpunk", "material"] }
 gpui = { workspace = true, features = ["test-support"] }
 
 [[test]]

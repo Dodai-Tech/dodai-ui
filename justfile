@@ -192,6 +192,9 @@ publish: check-all
     cargo publish -p dodai-charts-core
     cargo publish -p dodai-shaders
     cargo publish -p dodai-shaders-gpu
+    cargo publish -p dodai-cyberpunk
+    cargo publish -p dodai-material
+    cargo publish -p dodai
     @echo "⏳ waiting for crates.io index…" && sleep 30
     cargo publish -p dodai-ratatui
     cargo publish -p dodai-iced

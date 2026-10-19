@@ -13,6 +13,7 @@ categories   = ["gui"]
 
 [dependencies]
 dodai-core = { workspace = true }
+dodai = { workspace = true, features = ["cyberpunk", "material"] }
 egui = "0.32"
 
 [dev-dependencies]

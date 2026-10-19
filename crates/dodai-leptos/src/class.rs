@@ -104,7 +104,8 @@ pub fn percent(v: f32) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dodai_core::themes::{self, Spec};
+    use dodai::themes;
+    use dodai_core::themes::Spec;
     use dodai_core::Theme;
     use dodai_core::{Corners, Mode, Shape, ShapeKind, Spacing, ThemeMeta, Typography};
     use dodai_topcoat::theme_vars;

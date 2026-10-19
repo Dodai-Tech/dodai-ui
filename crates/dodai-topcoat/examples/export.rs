@@ -11,8 +11,8 @@
 //!
 //! `cargo run -p dodai-topcoat --example export -- dist`
 
+use dodai::themes;
 use dodai_core::export::{design_tokens_json, theme_tokens_json};
-use dodai_core::themes;
 use std::{fs, path::PathBuf};
 
 fn write(path: PathBuf, body: String) {
@@ -45,7 +45,10 @@ fn main() {
             dodai_cyberpunk_icons::svg(i, 24, 2.0),
         );
     }
-    write(out.join("icons/dodai-cyberpunk-icons.svg"), dodai_cyberpunk_icons::sprite(2.0));
+    write(
+        out.join("icons/dodai-cyberpunk-icons.svg"),
+        dodai_cyberpunk_icons::sprite(2.0),
+    );
     let manifest: Vec<String> = dodai_cyberpunk_icons::ALL
         .iter()
         .map(|i| format!("  \"{}\": \"{}\"", i.name(), i.group()))
