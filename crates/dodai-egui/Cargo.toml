@@ -11,10 +11,17 @@ readme       = "README.md"
 keywords     = ["theme", "design-system", "egui", "cyberpunk"]
 categories   = ["gui"]
 
+[features]
+default   = ["cyberpunk", "material"]
+# Design systems to bundle (each is its own crate; see `dodai`).
+cyberpunk = ["dodai/cyberpunk"]
+material  = ["dodai/material"]
+
 [dependencies]
 dodai-core = { workspace = true }
-dodai = { workspace = true, features = ["cyberpunk", "material"] }
+dodai = { workspace = true }
 egui = "0.32"
 
 [dev-dependencies]
+dodai = { workspace = true, features = ["cyberpunk", "material"] }
 eframe = "0.32"

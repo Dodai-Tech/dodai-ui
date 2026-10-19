@@ -112,7 +112,7 @@ mod tests {
     fn state_selects_given_theme_and_overrides_glow() {
         let st = DodaiState::new(square());
         assert_eq!(st.theme().id(), "test-square");
-        let mut st2 = DodaiState::new(themes::cyberpunk::night_city());
+        let mut st2 = DodaiState::new(themes::cyberpunk::yellow());
         st2.glow_override = Some(2.0);
         assert_eq!(st2.theme().effects.glow_intensity, 2.0);
         assert!(!st2.switcher.themes().is_empty());

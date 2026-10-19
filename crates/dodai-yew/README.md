@@ -9,7 +9,7 @@ Components: `ThemeProvider`, `ThemeSwitcherBar`, `Button` (all `ButtonVariant`),
 `Label`, `Muted`, `Mono`.
 
 ```rust
-html! { <ThemeProvider theme_id="night-city"><Button>{"Go"}</Button></ThemeProvider> }
+html! { <ThemeProvider theme_id="cyberpunk"><Button>{"Go"}</Button></ThemeProvider> }
 ```
 
 Chamfer/rounded/square, glow (`Theme::with_glow_intensity`), scanlines and

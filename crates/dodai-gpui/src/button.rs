@@ -130,7 +130,13 @@ impl Button {
         }
         if self.shimmer {
             style = style.with_shimmer(crate::paint::Shimmer {
-                color: fg.opacity(0.3),
+                // A light sweep on filled buttons (dark label text would smear),
+                // the accent itself on outline/ghost ones.
+                color: if style.fill.is_some() {
+                    gpui::white().opacity(0.4)
+                } else {
+                    style.stroke.unwrap_or(fg).opacity(0.25)
+                },
                 ms: 1400,
                 playback: crate::paint::Playback::Loop,
             });
@@ -175,7 +181,7 @@ mod tests {
 
     #[test]
     fn colours_come_from_tokens() {
-        for t in [light_rounded(), square(), themes::cyberpunk::night_city()] {
+        for t in [light_rounded(), square(), themes::cyberpunk::yellow()] {
             let (s, fg) = button_style(&t, ButtonVariant::Primary, ControlState::Idle);
             assert_eq!(s.fill, Some(hsla(t.palette.primary)));
             assert_eq!(fg, hsla(t.palette.on_primary));
@@ -185,7 +191,7 @@ mod tests {
 
     #[test]
     fn outline_has_border_and_hover_glow_follows_theme() {
-        let c = themes::cyberpunk::night_city();
+        let c = themes::cyberpunk::yellow();
         let (s, _) = button_style(&c, ButtonVariant::Outline, ControlState::Hovered);
         assert!(s.stroke.is_some() && s.glow.is_some());
         let l = light_rounded();
@@ -195,7 +201,7 @@ mod tests {
 
     #[test]
     fn disabled_and_ghost() {
-        let t = themes::cyberpunk::night_city();
+        let t = themes::cyberpunk::yellow();
         let (s, _) = button_style(&t, ButtonVariant::Primary, ControlState::Disabled);
         assert!(s.glow.is_none() && s.shadow.is_none());
         let (s, _) = button_style(&t, ButtonVariant::Ghost, ControlState::Hovered);

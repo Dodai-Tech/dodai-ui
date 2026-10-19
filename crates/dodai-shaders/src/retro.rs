@@ -71,7 +71,7 @@ pub const SHADERS: &[ShaderInfo] = &[
 
 /// Terminal text as fixed-width byte rows (0 = blank), built at compile time.
 const LINES: [&str; 15] = [
-    "DODAI-OS 2.0  (c) 2077 NIGHT CITY SYSTEMS",
+    "DODAI-OS 2.0  (c) 2077 ACME SYSTEMS",
     "",
     "login: operator",
     "last login: tue jan 07 03:14:15 on tty1",

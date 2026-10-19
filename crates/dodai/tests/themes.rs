@@ -83,7 +83,7 @@ fn cyberpunk_has_light_and_dark() {
         let p = &t.palette;
         assert!(p.link.contrast(p.background) >= 4.5, "{}: link", t.id());
         assert!(p.background.luminance() > 0.5, "{}: paper", t.id());
-        assert_eq!(t.shape.kind(), themes::cyberpunk::night_city().shape.kind());
+        assert_eq!(t.shape.kind(), themes::cyberpunk::yellow().shape.kind());
     }
 }
 

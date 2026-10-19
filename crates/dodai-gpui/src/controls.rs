@@ -652,7 +652,7 @@ mod tests {
 
     #[test]
     fn toggle_style_tokens() {
-        for t in [light_rounded(), square(), themes::cyberpunk::night_city()] {
+        for t in [light_rounded(), square(), themes::cyberpunk::yellow()] {
             let on = toggle_style(&t, true, ControlState::Idle);
             let off = toggle_style(&t, false, ControlState::Idle);
             assert_ne!(on.fill, off.fill);

@@ -173,7 +173,7 @@ fn draw(f: &mut Frame, app: &mut App) {
     f.render_widget(tags(false), rows[1]);
     f.render_widget(Divider::new(t), rows[2]);
     f.render_widget(
-        Paragraph::new("Wake up, samurai. We have a city to burn.").style(t.muted()),
+        Paragraph::new("Ready. All systems nominal.").style(t.muted()),
         rows[3],
     );
     let btns = Layout::horizontal([

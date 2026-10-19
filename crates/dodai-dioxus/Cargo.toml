@@ -11,13 +11,20 @@ readme       = "README.md"
 keywords     = ["theme", "design-system", "dioxus", "cyberpunk"]
 categories   = ["gui"]
 
+[features]
+default   = ["cyberpunk", "material"]
+# Design systems to bundle (each is its own crate; see `dodai`).
+cyberpunk = ["dodai/cyberpunk"]
+material  = ["dodai/material"]
+
 [dependencies]
 dodai-core = { workspace = true }
-dodai = { workspace = true, features = ["cyberpunk", "material"] }
+dodai = { workspace = true }
 dodai-topcoat = { workspace = true }
 dioxus = { version = "0.7", default-features = false, features = ["macro", "html", "signals", "hooks"] }
 
 [dev-dependencies]
+dodai = { workspace = true, features = ["cyberpunk", "material"] }
 dioxus-ssr = "0.7"
 
 [[example]]

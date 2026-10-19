@@ -9,7 +9,7 @@
 //! ```
 //! use dodai::themes;
 //! let css = dodai_topcoat::multi_theme_stylesheet(&themes::all());
-//! assert!(css.contains("[data-theme=\"cyberpunk-netrunner\"]"));
+//! assert!(css.contains("[data-theme=\"cyberpunk-cyan\"]"));
 //! ```
 //!
 //! In a Topcoat page, inline it (it never contains `</style`):
@@ -300,7 +300,7 @@ mod tests {
 
     #[test]
     fn vars_contain_brand_yellow() {
-        let v = theme_vars(&dodai::themes::cyberpunk::night_city());
+        let v = theme_vars(&dodai::themes::cyberpunk::yellow());
         assert!(v.contains("--dodai-primary:#fcee0a;"));
         assert!(v.contains("--dodai-secondary:#00f0ff;"));
         assert!(v.contains("--dodai-chamfer:16px;"));
@@ -331,7 +331,7 @@ mod tests {
 
     #[test]
     fn components_only_use_defined_vars() {
-        let defined = theme_vars(&dodai::themes::cyberpunk::night_city());
+        let defined = theme_vars(&dodai::themes::cyberpunk::yellow());
         let mut missing = vec![];
         for part in COMPONENTS_CSS.split("var(--dodai-").skip(1) {
             let name: String = part
@@ -492,7 +492,7 @@ mod tests {
 
     #[test]
     fn cyberpunk_clip_is_bottom_right_only() {
-        let t = dodai::themes::cyberpunk::night_city();
+        let t = dodai::themes::cyberpunk::yellow();
         assert_eq!(
             clip_path(&t.shape),
             "polygon(0 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%)"
@@ -536,16 +536,16 @@ mod tests {
 
     #[test]
     fn glow_uses_filter_when_chamfered_shadow_otherwise() {
-        let cp = theme_vars(&dodai::themes::cyberpunk::night_city());
+        let cp = theme_vars(&dodai::themes::cyberpunk::yellow());
         assert!(cp.contains("--dodai-glow-filter:drop-shadow("));
         assert!(cp.contains("--dodai-glow-shadow:0 0 0 0 transparent;"));
-        let off = theme_vars(&dodai::themes::cyberpunk::night_city().with_glow_intensity(0.0));
+        let off = theme_vars(&dodai::themes::cyberpunk::yellow().with_glow_intensity(0.0));
         assert!(off.contains("--dodai-glow-filter:none;"));
     }
 
     #[test]
     fn script_lists_ids() {
         let js = switcher_script(&themes::all());
-        assert!(js.contains("\"cyberpunk\",\"cyberpunk-netrunner\",\"cyberpunk-samurai\""));
+        assert!(js.contains("\"cyberpunk\",\"cyberpunk-cyan\",\"cyberpunk-red\""));
     }
 }

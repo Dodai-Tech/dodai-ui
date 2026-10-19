@@ -13,14 +13,19 @@ categories   = ["gui"]
 
 [dependencies]
 dodai-core = { workspace = true }
-dodai = { workspace = true, features = ["cyberpunk", "material"] }
+dodai = { workspace = true }
 freya = { version = "0.3.4", optional = true }
 
 [features]
-default = ["ui"]
+cyberpunk = ["dodai/cyberpunk"]
+material  = ["dodai/material"]
+default = ["ui", "cyberpunk", "material"]
 # Freya components + showcase. Disable for the pure token->style mapping layer.
 ui = ["dep:freya"]
 
 [[example]]
 name = "freya_showcase"
 required-features = ["ui"]
+
+[dev-dependencies]
+dodai = { workspace = true, features = ["cyberpunk", "material"] }

@@ -343,7 +343,7 @@ mod tests {
     fn no_theme_id_branching_in_source() {
         for src in [include_str!("components.rs"), include_str!("provider.rs")] {
             let body = src.split("#[cfg(test)]").next().unwrap();
-            assert!(!body.contains("cyberpunk") && !body.contains("night_city"));
+            assert!(!body.contains("cyberpunk") && !body.contains("yellow"));
         }
     }
 }

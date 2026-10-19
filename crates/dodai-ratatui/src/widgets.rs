@@ -57,7 +57,7 @@ impl Widget for Scanlines<'_> {
     }
 }
 
-/// `◢ NIGHT CITY ◤  t: next theme` badge for headers/footers.
+/// `◢ YELLOW ◤  t: next theme` badge for headers/footers.
 pub struct ThemeBadge<'a> {
     theme: &'a TuiTheme,
     hint: Option<&'a str>,
@@ -107,10 +107,7 @@ mod tests {
 
     #[test]
     fn scanlines_dim_odd_rows_only() {
-        let t = TuiTheme::with_depth(
-            dodai::themes::cyberpunk::night_city(),
-            ColorDepth::TrueColor,
-        );
+        let t = TuiTheme::with_depth(dodai::themes::cyberpunk::yellow(), ColorDepth::TrueColor);
         let area = Rect::new(0, 0, 2, 2);
         let mut buf = Buffer::empty(area);
         for y in 0..2 {
@@ -125,10 +122,7 @@ mod tests {
 
     #[test]
     fn badge_shows_name() {
-        let t = TuiTheme::with_depth(
-            dodai::themes::cyberpunk::night_city(),
-            ColorDepth::TrueColor,
-        );
+        let t = TuiTheme::with_depth(dodai::themes::cyberpunk::yellow(), ColorDepth::TrueColor);
         let s: String = ThemeBadge::new(&t)
             .line()
             .spans

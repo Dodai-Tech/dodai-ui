@@ -517,7 +517,7 @@ mod tests {
 
     #[test]
     fn border_style_sets_width_and_softens_colour() {
-        let t = themes::cyberpunk::night_city();
+        let t = themes::cyberpunk::yellow();
         let base = panel_style(&t, false);
         let s = BorderStyle::new(0.5, 0.5).apply(base);
         assert_eq!(s.stroke_width, 0.5);
@@ -536,7 +536,7 @@ mod tests {
 
     #[test]
     fn panel_focus_changes_border_and_glow() {
-        let t = themes::cyberpunk::night_city();
+        let t = themes::cyberpunk::yellow();
         let a = panel_style(&t, false);
         let b = panel_style(&t, true);
         assert_ne!(a.stroke, b.stroke);

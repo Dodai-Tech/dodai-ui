@@ -11,12 +11,19 @@ readme       = "README.md"
 keywords     = ["theme", "design-system", "yew", "cyberpunk"]
 categories   = ["gui"]
 
+[features]
+default   = ["cyberpunk", "material"]
+# Design systems to bundle (each is its own crate; see `dodai`).
+cyberpunk = ["dodai/cyberpunk"]
+material  = ["dodai/material"]
+
 [dependencies]
 dodai-core = { workspace = true }
-dodai = { workspace = true, features = ["cyberpunk", "material"] }
+dodai = { workspace = true }
 dodai-topcoat.workspace = true
 web-sys = { version = "0.3.106", features = ["HtmlInputElement"] }
 yew = { version = "0.21", features = ["ssr"] }
 
 [dev-dependencies]
+dodai = { workspace = true, features = ["cyberpunk", "material"] }
 tokio = { version = "1.53.3", features = ["rt", "macros"] }

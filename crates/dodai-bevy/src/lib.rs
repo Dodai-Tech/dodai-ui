@@ -80,7 +80,7 @@ mod tests {
             format!("{}.id()", "theme"),
             format!("meta.{}", "id"),
             format!("\"{}\"", "cyberpunk"),
-            format!("{}::{}", "cyberpunk", "night_city"),
+            format!("{}::{}", "cyberpunk", "yellow"),
         ];
         for (name, src) in [
             ("surface", include_str!("surface.rs")),

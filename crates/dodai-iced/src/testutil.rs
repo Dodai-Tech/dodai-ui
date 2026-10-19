@@ -3,7 +3,7 @@
 use dodai_core::{themes::Spec, Corners, Mode, Shape, Spacing, Theme, ThemeMeta, Typography};
 
 pub fn cyberpunk() -> Theme {
-    dodai::themes::cyberpunk::night_city()
+    dodai::themes::cyberpunk::yellow()
 }
 
 fn spec(id: &'static str, shape: Shape, glow: f32, glow_blur: f32, hard_shadow: f32) -> Theme {

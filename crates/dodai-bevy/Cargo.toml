@@ -11,10 +11,19 @@ readme       = "README.md"
 keywords     = ["theme", "design-system", "bevy", "cyberpunk"]
 categories   = ["gui"]
 
+[features]
+default   = ["cyberpunk", "material"]
+# Design systems to bundle (each is its own crate; see `dodai`).
+cyberpunk = ["dodai/cyberpunk"]
+material  = ["dodai/material"]
+
 [dependencies]
 dodai-core = { workspace = true }
-dodai = { workspace = true, features = ["cyberpunk", "material"] }
+dodai = { workspace = true }
 bevy = { version = "0.18", default-features = false, features = [
   "std", "async_executor", "multi_threaded", "bevy_winit", "bevy_window",
   "ui_api", "ui_bevy_render", "default_font", "bevy_log", "x11", "wayland",
 ] }
+
+[dev-dependencies]
+dodai = { workspace = true, features = ["cyberpunk", "material"] }

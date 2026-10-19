@@ -186,7 +186,7 @@ fn build_light(meta: ThemeMeta, l: Light) -> Theme {
 }
 
 /// Yellow on paper.
-pub fn night_city_light() -> Theme {
+pub fn yellow_light() -> Theme {
     build_light(
         ThemeMeta {
             id: "cyberpunk-light",
@@ -206,10 +206,10 @@ pub fn night_city_light() -> Theme {
 }
 
 /// Cyan on paper.
-pub fn netrunner_light() -> Theme {
+pub fn cyan_light() -> Theme {
     build_light(
         ThemeMeta {
-            id: "cyberpunk-netrunner-light",
+            id: "cyberpunk-cyan-light",
             name: "Cyberpunk · Cyan Light",
             family: "cyberpunk",
             description: "Deep cyan on warm paper, amber secondary",
@@ -226,10 +226,10 @@ pub fn netrunner_light() -> Theme {
 }
 
 /// Red on paper.
-pub fn samurai_light() -> Theme {
+pub fn red_light() -> Theme {
     build_light(
         ThemeMeta {
-            id: "cyberpunk-samurai-light",
+            id: "cyberpunk-red-light",
             name: "Cyberpunk · Red Light",
             family: "cyberpunk",
             description: "Hot red on warm paper, deep cyan secondary",
@@ -246,7 +246,7 @@ pub fn samurai_light() -> Theme {
 }
 
 /// Signature yellow-on-black (the signature cyberpunk look). Default theme.
-pub fn night_city() -> Theme {
+pub fn yellow() -> Theme {
     build(
         ThemeMeta {
             id: "cyberpunk",
@@ -264,10 +264,10 @@ pub fn night_city() -> Theme {
 }
 
 /// Cyan-led variant.
-pub fn netrunner() -> Theme {
+pub fn cyan() -> Theme {
     build(
         ThemeMeta {
-            id: "cyberpunk-netrunner",
+            id: "cyberpunk-cyan",
             name: "Cyberpunk · Cyan",
             family: "cyberpunk",
             description: "Cyan primary with yellow secondary",
@@ -282,10 +282,10 @@ pub fn netrunner() -> Theme {
 }
 
 /// Red-led variant.
-pub fn samurai() -> Theme {
+pub fn red() -> Theme {
     build(
         ThemeMeta {
-            id: "cyberpunk-samurai",
+            id: "cyberpunk-red",
             name: "Cyberpunk · Red",
             family: "cyberpunk",
             description: "Hot red primary with cyan secondary",
@@ -302,12 +302,12 @@ pub fn samurai() -> Theme {
 /// All Cyberpunk variants (dark first, then light).
 pub fn variants() -> Vec<Theme> {
     vec![
-        night_city(),
-        netrunner(),
-        samurai(),
-        night_city_light(),
-        netrunner_light(),
-        samurai_light(),
+        yellow(),
+        cyan(),
+        red(),
+        yellow_light(),
+        cyan_light(),
+        red_light(),
     ]
 }
 

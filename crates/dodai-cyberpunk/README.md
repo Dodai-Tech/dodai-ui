@@ -5,7 +5,7 @@ The **Cyberpunk** design system for [Dodai UI](https://github.com/sorinirimies/d
 ```rust
 use dodai_cyberpunk as cp;
 let all = cp::variants();                 // 6 themes
-let t = cp::night_city();                 // or netrunner(), samurai(), *_light()
+let t = cp::yellow();                 // or cyan(), red(), *_light()
 // feature `icons` (default): the 136-icon chamfered pack
 let n = cp::icons::ALL.len();
 ```

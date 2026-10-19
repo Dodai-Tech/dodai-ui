@@ -568,7 +568,7 @@ mod tests {
 
     #[test]
     fn bottom_band_stops_at_cut_corner() {
-        let mut sh = dodai::themes::cyberpunk::night_city().shape;
+        let mut sh = dodai::themes::cyberpunk::yellow().shape;
         sh.chamfer = 10.0;
         sh.corners = dodai_core::Corners::BOTTOM_RIGHT;
         let b = bottom_band(&sh, 100.0, 40.0, 2.0);
@@ -579,7 +579,7 @@ mod tests {
 
     #[test]
     fn row_span_follows_shape() {
-        let mut sh = dodai::themes::cyberpunk::night_city().shape;
+        let mut sh = dodai::themes::cyberpunk::yellow().shape;
         sh.chamfer = 10.0;
         sh.radius = 0.0;
         sh.corners = dodai_core::Corners::BOTTOM_RIGHT;
@@ -610,7 +610,7 @@ mod tests {
 
     #[test]
     fn style_glow_follows_intensity_not_id() {
-        let t = themes::cyberpunk::night_city();
+        let t = themes::cyberpunk::yellow();
         let on = ShapeStyle::from_tokens(&t, None, None, true, false);
         assert!(on.glow.is_some());
         let off =
@@ -648,7 +648,7 @@ mod tests {
         let n = |t: &dodai_core::Theme| t.shape.outline(80.0, 40.0).len();
         assert_eq!(n(&light_rounded()), 4);
         assert_eq!(n(&square()), 4);
-        assert!(n(&themes::cyberpunk::night_city()) > 4);
+        assert!(n(&themes::cyberpunk::yellow()) > 4);
     }
 
     #[test]

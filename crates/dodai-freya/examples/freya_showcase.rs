@@ -12,7 +12,7 @@ fn main() {
 }
 
 fn app() -> Element {
-    let dodai = use_init_dodai(themes::cyberpunk::night_city());
+    let dodai = use_init_dodai(themes::cyberpunk::yellow());
     let t = dodai.theme();
     let mut tab = use_signal(|| 0usize);
     let mut on = use_signal(|| true);

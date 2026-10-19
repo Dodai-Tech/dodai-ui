@@ -20,7 +20,7 @@ Build only the pure layer: `cargo test -p dodai-freya --no-default-features`.
 
 ```rust
 let dodai = use_init_dodai(Theme::default()); // root
-dodai.next(); dodai.prev(); dodai.select("cyberpunk-netrunner"); dodai.select_index(i);
+dodai.next(); dodai.prev(); dodai.select("cyberpunk-cyan"); dodai.select_index(i);
 dodai.set_glow_intensity(1.5); dodai.theme();
 ```
 Components: `DodaiButton` (all `ButtonVariant`s, `disabled`), `DodaiPanel`, `DodaiTag`, `DodaiTabs`, `DodaiToggle`, `DodaiCheckbox`, `DodaiRadio`, `DodaiProgress`, `DodaiSlider`, `DodaiTextInput`, `DodaiListItem`, `DodaiDivider`, `DodaiTooltip`, `DodaiTooltipHost`, `DodaiHeading`/`DodaiLabel`/`DodaiMuted`/`DodaiMono`, `DodaiThemeSwitcher`. `shaped()` is the box primitive.

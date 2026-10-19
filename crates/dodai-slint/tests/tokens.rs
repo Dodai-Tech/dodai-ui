@@ -79,7 +79,7 @@ fn square() -> Theme {
 
 #[test]
 fn shape_flags_follow_kind() {
-    let c = ThemeValues::from_theme(&dodai::themes::cyberpunk::night_city());
+    let c = ThemeValues::from_theme(&dodai::themes::cyberpunk::yellow());
     assert!(c.chamfered && c.chamfer > 0.0 && (c.cut_tl || c.cut_tr || c.cut_br || c.cut_bl));
     let r = ThemeValues::from_theme(&rounded());
     assert!(!r.chamfered && r.radius == 8.0 && !r.cut_br);
@@ -89,7 +89,7 @@ fn shape_flags_follow_kind() {
 
 #[test]
 fn outline_geometry_per_kind() {
-    let t = dodai::themes::cyberpunk::night_city();
+    let t = dodai::themes::cyberpunk::yellow();
     assert!(outline(&t.shape, 100.0, 40.0).len() > 4);
     assert_eq!(outline(&rounded().shape, 100.0, 40.0).len(), 4);
     assert_eq!(outline(&square().shape, 100.0, 40.0).len(), 4);
@@ -97,7 +97,7 @@ fn outline_geometry_per_kind() {
 
 #[test]
 fn glow_intensity_applies() {
-    let t = dodai::themes::cyberpunk::night_city();
+    let t = dodai::themes::cyberpunk::yellow();
     let on = ThemeValues::from_theme(&t);
     assert!(on.glow_enabled && on.glow_radius > 0.0);
     let off = ThemeValues::from_theme(&t.clone().with_glow_intensity(0.0));
@@ -109,7 +109,7 @@ fn glow_intensity_applies() {
 
 #[test]
 fn table_sizes_and_button_tokens() {
-    for t in [dodai::themes::cyberpunk::night_city(), rounded(), square()] {
+    for t in [dodai::themes::cyberpunk::yellow(), rounded(), square()] {
         let v = ThemeValues::from_theme(&t);
         assert_eq!(v.button_bg.len(), 24);
         assert_eq!(v.tag_bg.len(), 8);
@@ -132,7 +132,7 @@ fn font_family_first_unquoted() {
 
 #[test]
 fn generator_matches_committed_theme_file() {
-    let generated = generate_theme_slint(&dodai::themes::cyberpunk::night_city());
+    let generated = generate_theme_slint(&dodai::themes::cyberpunk::yellow());
     let committed = include_str!("../ui/theme.slint");
     assert_eq!(
         generated, committed,

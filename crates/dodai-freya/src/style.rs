@@ -517,7 +517,7 @@ mod tests {
 
     #[test]
     fn svg_pad_covers_glow() {
-        let t = themes::cyberpunk::night_city().with_glow_intensity(2.0);
+        let t = themes::cyberpunk::yellow().with_glow_intensity(2.0);
         let s = button_style(&t, ButtonVariant::Primary, ControlState::Hovered).0;
         if let Some((_, r)) = s.glow {
             assert!(s.svg_pad() >= r);

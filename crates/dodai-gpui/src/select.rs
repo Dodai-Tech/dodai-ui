@@ -485,6 +485,6 @@ mod tests {
         assert!(l.glow.is_none() && l.shadow.is_none());
         let q = popup_style(&square());
         assert!(q.shadow.is_some());
-        assert!(popup_style(&themes::cyberpunk::night_city()).glow.is_some());
+        assert!(popup_style(&themes::cyberpunk::yellow()).glow.is_some());
     }
 }
