@@ -423,6 +423,11 @@ pub fn corners(cx: &App) -> dodai_core::Corners {
 /// Cut `corners` on **every** theme (so it survives switching) and repaint.
 /// Per-component `.corners()` overrides still win.
 pub fn set_corners(cx: &mut App, corners: dodai_core::Corners) {
+    // Remember the themes as installed, so `reset_corners` can restore them.
+    if cx.try_global::<CornerBase>().is_none() {
+        let base = cx.global::<DodaiTheme>().switcher.themes().to_vec();
+        cx.set_global(CornerBase(base));
+    }
     let g = cx.global_mut::<DodaiTheme>();
     let idx = g.switcher.index();
     let themes = g
@@ -433,6 +438,27 @@ pub fn set_corners(cx: &mut App, corners: dodai_core::Corners) {
         .collect();
     g.switcher = ThemeSwitcher::with_themes(themes);
     g.switcher.select_index(idx);
+    cx.refresh_windows();
+}
+
+struct CornerBase(Vec<Theme>);
+impl gpui::Global for CornerBase {}
+
+/// Whether [`set_corners`] has overridden the design systems' own corners.
+pub fn corners_overridden(cx: &App) -> bool {
+    cx.try_global::<CornerBase>().is_some()
+}
+
+/// Undo [`set_corners`]: every theme gets its own corner shape back.
+pub fn reset_corners(cx: &mut App) {
+    let Some(base) = cx.try_global::<CornerBase>().map(|b| b.0.clone()) else {
+        return;
+    };
+    let g = cx.global_mut::<DodaiTheme>();
+    let idx = g.switcher.index();
+    g.switcher = ThemeSwitcher::with_themes(base);
+    g.switcher.select_index(idx);
+    cx.remove_global::<CornerBase>();
     cx.refresh_windows();
 }
 

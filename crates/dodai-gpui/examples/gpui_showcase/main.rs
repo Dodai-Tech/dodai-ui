@@ -113,8 +113,6 @@ pub struct Showcase {
     vslider: [f32; 3],
     list: usize,
     clicks: u32,
-    /// Corner cut override for the Buttons demo (`None` = theme default).
-    btn_corners: Option<dodai_core::Corners>,
     heat_res: usize,
     heat_grad: usize,
     sh_gen: &'static str,
@@ -947,7 +945,6 @@ impl Showcase {
             vslider: [0.3, 0.6, 0.9],
             list: 0,
             clicks: 0,
-            btn_corners: None,
             heat_res: 3,
             heat_grad: 0,
             sh_gen: "neon_grid",
@@ -996,7 +993,7 @@ fn main() {
             .and_then(|i| dodai_gpui::Corner::ALL.get(i).copied())
         {
             let b = dodai_gpui::section_border(cx);
-            dodai_gpui::set_section_border(cx, b.accent(Some(e)));
+            dodai_gpui::set_section_border(cx, b.accent(e));
         }
         // Debug: DODAI_SIZE=WxH opens a differently sized window (e.g. 1100x1400).
         let (dw, dh) = std::env::var("DODAI_SIZE")

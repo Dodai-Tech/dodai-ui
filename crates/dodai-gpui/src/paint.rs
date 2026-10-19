@@ -27,6 +27,8 @@ pub struct ShapeStyle {
     pub glow: Option<(Hsla, f32)>,
     /// Hard offset shadow colour + offset in px.
     pub shadow: Option<(Hsla, f32)>,
+    /// Direction of the hard shadow, a unit `(dx, dy)` (default bottom right).
+    pub shadow_dir: (f32, f32),
     /// Fine horizontal scanline texture over the fill (from `effects.scanlines`).
     pub scanlines: bool,
     /// Animated highlight sweep, clipped to the shape (see [`Shimmer`]).
@@ -70,6 +72,7 @@ impl ShapeStyle {
             glow: (glow && fx.glow_enabled()).then(|| (hsla(fx.glow_color()), fx.glow_radius())),
             shadow: (shadow && fx.hard_shadow > 0.0)
                 .then(|| (hsla(theme.palette.primary_active), fx.hard_shadow)),
+            shadow_dir: (1.0, 1.0),
             scanlines: fx.scanlines && fill.is_some(),
             shimmer: None,
         }
@@ -146,7 +149,7 @@ pub fn bottom_band_canvas(shape: &Shape, band: f32, color: Hsla) -> impl gpui::I
         move |b, _, window, _| {
             let w: f32 = b.size.width.into();
             let h: f32 = b.size.height.into();
-            let pts = poly(b.origin, &bottom_band(&shape, w, h, band), 0.0);
+            let pts = poly(b.origin, &bottom_band(&shape, w, h, band), (0.0, 0.0));
             let mut pb = PathBuilder::fill();
             pb.add_polygon(&pts, true);
             if let Ok(p) = pb.build() {
@@ -228,9 +231,13 @@ pub(crate) fn scale_alpha(c: Hsla, k: f32) -> Hsla {
     }
 }
 
-fn poly(origin: gpui::Point<Pixels>, pts: &[(f32, f32)], dx: f32) -> Vec<gpui::Point<Pixels>> {
+fn poly(
+    origin: gpui::Point<Pixels>,
+    pts: &[(f32, f32)],
+    d: (f32, f32),
+) -> Vec<gpui::Point<Pixels>> {
     pts.iter()
-        .map(|&(x, y)| point(origin.x + px(x + dx), origin.y + px(y + dx)))
+        .map(|&(x, y)| point(origin.x + px(x + d.0), origin.y + px(y + d.1)))
         .collect()
 }
 
@@ -247,19 +254,27 @@ pub fn paint_polygon(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape,
         }
     };
     if let Some((c, off)) = s.shadow {
-        fill_path(window, poly(bounds.origin, &full, off), c);
+        fill_path(
+            window,
+            poly(
+                bounds.origin,
+                &full,
+                (off * s.shadow_dir.0, off * s.shadow_dir.1),
+            ),
+            c,
+        );
     }
     if let Some((c, r)) = s.glow {
         for l in glow_layers(r, s.stroke_width) {
             let mut b = PathBuilder::stroke(px(l.width));
-            b.add_polygon(&poly(bounds.origin, &full, 0.0), true);
+            b.add_polygon(&poly(bounds.origin, &full, (0.0, 0.0)), true);
             if let Ok(p) = b.build() {
                 window.paint_path(p, scale_alpha(c, l.alpha));
             }
         }
     }
     if let Some(c) = s.fill {
-        fill_path(window, poly(bounds.origin, &full, 0.0), c);
+        fill_path(window, poly(bounds.origin, &full, (0.0, 0.0)), c);
     }
     if s.scanlines {
         paint_scanlines(window, bounds, shape);
@@ -268,7 +283,7 @@ pub fn paint_polygon(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape,
         if bw > 0.0 {
             let pts = inset_outline(shape, w, h, bw / 2.0);
             let mut b = PathBuilder::stroke(px(bw));
-            b.add_polygon(&poly(bounds.origin, &pts, 0.0), true);
+            b.add_polygon(&poly(bounds.origin, &pts, (0.0, 0.0)), true);
             if let Ok(p) = b.build() {
                 window.paint_path(p, c);
             }
@@ -338,7 +353,7 @@ fn shaped_base(shape: &Shape, style: ShapeStyle) -> Div {
             if let Some((c, off)) = style.shadow {
                 shadows.push(BoxShadow {
                     color: c,
-                    offset: point(px(off), px(off)),
+                    offset: point(px(off * style.shadow_dir.0), px(off * style.shadow_dir.1)),
                     blur_radius: px(0.0),
                     spread_radius: px(0.0),
                 });

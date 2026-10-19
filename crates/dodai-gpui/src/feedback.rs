@@ -259,6 +259,7 @@ impl RenderOnce for Spinner {
                             stroke_width: 0.0,
                             glow: None,
                             shadow: None,
+                            shadow_dir: (1.0, 1.0),
                             scanlines: false,
                             shimmer: None,
                         };
