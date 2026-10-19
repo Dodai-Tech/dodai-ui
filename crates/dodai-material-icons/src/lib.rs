@@ -325,7 +325,9 @@ fn dp(p: &[(f32, f32)], tol: f32) -> Vec<(f32, f32)> {
             (at, best) = (i, d);
         }
     }
-    if best <= tol {
+    // `at == 0` means nothing is farther than the chord (also for a negative or NaN
+    // `tol`): without it the split below would recurse on the same slice forever.
+    if at == 0 || best <= tol {
         return vec![a, b];
     }
     let mut l = dp(&p[..=at], tol);
@@ -629,5 +631,15 @@ mod tests {
         }
         assert!(outlined::get("home-fill").unwrap().is_filled());
         assert!(outlined::get("no_such_icon").is_none());
+    }
+
+    /// Found by fuzzing: a negative or NaN tolerance used to recurse forever.
+    #[test]
+    fn simplify_survives_degenerate_tolerances() {
+        let ring = [(0.0, 0.0), (4.0, 0.0), (4.0, 4.0), (2.0, 5.0), (0.0, 4.0)];
+        for tol in [-1.0, f32::NAN, f32::INFINITY, 0.0] {
+            let out = simplify_closed(&ring, tol);
+            assert!(out.len() >= 2, "tol {tol}");
+        }
     }
 }

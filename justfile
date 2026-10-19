@@ -417,6 +417,18 @@ deny:
 audit:
     cargo audit
 
+# Fuzz a target (needs nightly + cargo-fuzz): just fuzz svg_path
+fuzz target="svg_path" secs="60":
+    cargo +nightly fuzz run {{target}} -- -max_total_time={{secs}}
+
+# Short fuzz run of every target (needs nightly + cargo-fuzz)
+fuzz-smoke secs="10":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for t in $(cargo +nightly fuzz list); do
+        cargo +nightly fuzz run "$t" -- -max_total_time={{secs}}
+    done
+
 # Regenerate dist/: W3C design tokens (JSON), CSS custom properties and the SVG icon pack.
 export:
     cargo run -q -p dodai-topcoat --example export -- dist

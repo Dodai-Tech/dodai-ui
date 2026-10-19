@@ -6,3 +6,8 @@ RELEASE_NOTES.md
 showcase.html
 .codegraph/
 .shots/
+
+# cargo-fuzz
+fuzz/target/
+fuzz/corpus/
+fuzz/artifacts/

@@ -1,0 +1,41 @@
+[package]
+name = "dodai-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+dodai = { path = "../crates/dodai", features = ["cyberpunk", "material", "icons"] }
+dodai-cyberpunk-icons = { path = "../crates/dodai-cyberpunk-icons" }
+dodai-material-icons = { path = "../crates/dodai-material-icons" }
+
+# Not part of the main workspace (needs nightly).
+[workspace]
+
+[[bin]]
+name = "svg_path"
+path = "fuzz_targets/svg_path.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "polygons"
+path = "fuzz_targets/polygons.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "icon_names"
+path = "fuzz_targets/icon_names.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "theme_lookup"
+path = "fuzz_targets/theme_lookup.rs"
+test = false
+doc = false
