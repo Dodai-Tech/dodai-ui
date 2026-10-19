@@ -832,6 +832,108 @@ stroke-width=\"{}\" stroke-linecap=\"square\" stroke-linejoin=\"miter\"><path d=
     s
 }
 
+/// A modifier that derives a variant from any icon: `wifi-off`, `heart-add`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Modifier {
+    /// Diagonal strike-through.
+    Off,
+    /// Small `+` badge, bottom right.
+    Add,
+    /// Small `-` badge.
+    Remove,
+    /// Small check-mark badge.
+    Check,
+    /// Small padlock badge.
+    Lock,
+    /// The icon inside an octagonal ring.
+    Circle,
+}
+
+impl Modifier {
+    pub const ALL: [Modifier; 6] = [
+        Modifier::Off,
+        Modifier::Add,
+        Modifier::Remove,
+        Modifier::Check,
+        Modifier::Lock,
+        Modifier::Circle,
+    ];
+
+    /// The name suffix, without its separator.
+    pub fn suffix(self) -> &'static str {
+        match self {
+            Modifier::Off => "off",
+            Modifier::Add => "add",
+            Modifier::Remove => "remove",
+            Modifier::Check => "check",
+            Modifier::Lock => "lock",
+            Modifier::Circle => "circle",
+        }
+    }
+
+    /// Apply the modifier to an icon's shapes (stays on the 24 grid).
+    pub fn apply(self, base: Vec<Shape>) -> Vec<Shape> {
+        let scale = |shapes: Vec<Shape>, k: f32, cx: f32, cy: f32| -> Vec<Shape> {
+            shapes
+                .into_iter()
+                .map(|(p, closed)| {
+                    (
+                        p.into_iter()
+                            .map(|(x, y)| (cx + (x - 12.0) * k, cy + (y - 12.0) * k))
+                            .collect(),
+                        closed,
+                    )
+                })
+                .collect()
+        };
+        match self {
+            Modifier::Off => {
+                let mut v = base;
+                v.push(o(pl![3, 3; 21, 21]));
+                v
+            }
+            Modifier::Circle => {
+                let mut v = scale(base, 0.55, 12.0, 12.0);
+                v.push(c(ngon(12.0, 12.0, 10.0)));
+                v
+            }
+            badge => {
+                // Base shrinks to the top-left; the badge sits bottom right.
+                let mut v = scale(base, 0.75, 9.0, 9.0);
+                v.extend(match badge {
+                    Modifier::Add => vec![o(pl![15, 18.5; 22, 18.5]), o(pl![18.5, 15; 18.5, 22])],
+                    Modifier::Remove => vec![o(pl![15, 18.5; 22, 18.5])],
+                    Modifier::Check => vec![o(pl![15, 18.5; 17.5, 21; 22, 15.5])],
+                    _ => vec![
+                        c(rect(16.0, 18.0, 22.0, 22.0)),
+                        o(pl![17, 18; 17, 16; 21, 16; 21, 18]),
+                    ],
+                });
+                v
+            }
+        }
+    }
+}
+
+/// Split `wifi_off` / `heart-add` into `("wifi", Off)` / `("heart", Add)`.
+pub fn split_modifier(name: &str) -> Option<(&str, Modifier)> {
+    Modifier::ALL.iter().find_map(|&m| {
+        let base = name.strip_suffix(m.suffix())?;
+        let base = base.strip_suffix(['-', '_'])?;
+        (!base.is_empty()).then_some((base, m))
+    })
+}
+
+/// Shapes for `name`: a drawn icon, or a drawn icon plus [`Modifier`]s
+/// (`bell-off`, `heart-add-circle`).
+pub fn lookup(name: &str) -> Option<Vec<Shape>> {
+    if let Some(i) = IconName::from_name(name) {
+        return Some(i.shapes());
+    }
+    let (base, m) = split_modifier(name)?;
+    lookup(base).map(|s| m.apply(s))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -927,5 +1029,32 @@ mod tests {
         assert_eq!(trim(12.50), "12.5");
         assert_eq!(trim(3.0), "3");
         assert!(IconName::Check.path_data().contains("12.5"));
+    }
+
+    #[test]
+    fn modifiers_derive_variants_on_the_grid() {
+        assert_eq!(split_modifier("heart-add"), Some(("heart", Modifier::Add)));
+        assert_eq!(split_modifier("wifi_off"), Some(("wifi", Modifier::Off)));
+        assert_eq!(split_modifier("off"), None);
+        assert!(lookup("nope-off").is_none());
+        // A drawn name wins over a derived one.
+        assert_eq!(lookup("wifi_off").unwrap(), IconName::WifiOff.shapes());
+        for base in ["heart", "grid", "home", "cloud"] {
+            let n = IconName::from_name(base).unwrap().shapes().len();
+            for m in Modifier::ALL {
+                let v = lookup(&format!("{base}-{}", m.suffix())).unwrap();
+                assert!(v.len() > n.min(1), "{base} {m:?}");
+                for (pts, _) in &v {
+                    for &(x, y) in pts {
+                        assert!(
+                            (0.0..=24.0).contains(&x) && (0.0..=24.0).contains(&y),
+                            "{base} {m:?}"
+                        );
+                    }
+                }
+            }
+        }
+        // Modifiers stack.
+        assert!(lookup("heart-add-circle").is_some());
     }
 }

@@ -84,9 +84,9 @@ impl Showcase {
             "Icons",
             section!("Icons")
                 .child(Muted::new(if rounded {
-                    format!("{count} icons by type. `Icon` follows the theme: rounded themes draw the matching Material Symbols glyph. Click to copy `IconName::…`.")
+                    format!("{count} icons by type. `Icon` follows the theme: rounded themes draw the matching Material Symbols glyph. Any name takes -off / -add / -remove / -check / -lock / -circle (e.g. `heart-add`). Click to copy `IconName::…`.")
                 } else {
-                    format!("{count} hand-drawn icons by type: straight lines, 45° chamfers, octagons. `Icon` follows the theme. Click to copy `IconName::…`.")
+                    format!("{count} hand-drawn icons by type: straight lines, 45° chamfers, octagons. `Icon` follows the theme. Any name takes -off / -add / -remove / -check / -lock / -circle (e.g. `heart-add`). Click to copy `IconName::…`.")
                 }))
                 .child(div().w(px(360.0)).max_w_full().child(self.icon_search.clone()))
                 .child(icons_view(&t, &query))

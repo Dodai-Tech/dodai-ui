@@ -32,26 +32,33 @@ pub enum Glyph {
 /// Stroke width of [`Glyph::Stroked`] on the 24 grid.
 pub const STROKE: f32 = 1.75;
 
+/// Hand-drawn shapes for `name`: its own spelling, the Material spelling of a
+/// drawn icon (`arrow_back`), or either plus modifiers (`notifications_off`).
+#[cfg(feature = "cyberpunk")]
+fn cyber_shapes(name: &str) -> Option<Vec<(Points, bool)>> {
+    use dodai_cyberpunk::icons as c;
+    if let Some(s) = c::lookup(name) {
+        return Some(s);
+    }
+    #[cfg(feature = "material")]
+    for (alias, mat) in dodai_material::icons::ALIASES {
+        if *mat == name {
+            if let Some(s) = c::lookup(alias) {
+                return Some(s);
+            }
+        }
+    }
+    let (base, m) = c::split_modifier(name)?;
+    cyber_shapes(base).map(|s| m.apply(s))
+}
+
 /// Resolve `name` (Cyberpunk or Material Symbols spelling) for `theme`.
 /// `filled` picks the Material `-fill` variant when there is one.
 pub fn glyph(name: &str, theme: &Theme, filled: bool) -> Option<Glyph> {
     let rounded = theme.shape.kind() == ShapeKind::Rounded;
     #[cfg(feature = "cyberpunk")]
     if !rounded {
-        use dodai_cyberpunk::icons::IconName;
-        let found = IconName::from_name(name).or_else(|| {
-            // A Material spelling of a hand-drawn icon ("arrow_back").
-            #[cfg(feature = "material")]
-            for (alias, mat) in dodai_material::icons::ALIASES {
-                if *mat == name {
-                    if let Some(i) = IconName::from_name(alias) {
-                        return Some(i);
-                    }
-                }
-            }
-            None
-        });
-        return found.map(|i| Glyph::Stroked(i.shapes()));
+        return cyber_shapes(name).map(Glyph::Stroked);
     }
     #[cfg(feature = "material")]
     {
@@ -220,6 +227,18 @@ mod tests {
             Some(Glyph::Stroked(_))
         ));
         assert!(glyph("sports_cricket", &cyber, false).is_none());
+        // Modifiers derive variants of hand-drawn icons, by either spelling.
+        for n in [
+            "home-add",
+            "person_add",
+            "notifications_add",
+            "arrow_back_circle",
+        ] {
+            assert!(
+                matches!(glyph(n, &cyber, false), Some(Glyph::Stroked(_))),
+                "{n}"
+            );
+        }
         assert!(glyph("sports_cricket", &mat, false).is_some());
         assert!(glyph("definitely_not_an_icon", &cyber, false).is_none());
     }
