@@ -30,7 +30,7 @@ impl Showcase {
             .relative()
             .top(px(self.side_over.offset()))
             .on_scroll_wheel(cx.listener(|s, e: &gpui::ScrollWheelEvent, _, cx| {
-                let dy = f32::from(e.delta.pixel_delta(px(20.0)).y);
+                let dy = dodai_gpui::overscroll::wheel_dy(&e.delta);
                 let (top, bottom) = dodai_gpui::overscroll::edges(&s.side_scroll);
                 s.side_over
                     .on_wheel(dy, top, bottom, std::time::Instant::now());

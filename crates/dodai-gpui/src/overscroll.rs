@@ -8,7 +8,7 @@
 //! container (e.g. `.relative().top(px(o.offset()))`) and call
 //! [`settle`](Overscroll::settle) every frame while [`active`](Overscroll::active).
 
-use gpui::{Pixels, ScrollHandle};
+use gpui::{Pixels, ScrollDelta, ScrollHandle};
 use std::time::{Duration, Instant};
 
 /// Feel of the effect.
@@ -144,6 +144,19 @@ impl Overscroll {
     }
 }
 
+/// Vertical content delta of a wheel event in px, platform-neutral. Smooth
+/// (touchpad) deltas pass through; discrete mouse-wheel notches (`Lines`) are
+/// scaled down and capped so one notch gives a small bump, not a lurch.
+pub fn wheel_dy(d: &ScrollDelta) -> f32 {
+    match d {
+        ScrollDelta::Pixels(p) => f32::from(p.y),
+        ScrollDelta::Lines(l) => (l.y * LINE_PX).clamp(-LINE_CAP, LINE_CAP),
+    }
+}
+
+const LINE_PX: f32 = 8.0;
+const LINE_CAP: f32 = 24.0;
+
 /// `(at_top, at_bottom)` of a scroll handle (a container with no range is
 /// both, so either direction stretches it).
 pub fn edges(handle: &ScrollHandle) -> (bool, bool) {
@@ -230,6 +243,21 @@ mod tests {
         };
         assert!(run(OverscrollFeel::SOFT) >= -0.5, "critically damped");
         assert!(run(OverscrollFeel::SNAPPY) < -0.5, "underdamped rebounds");
+    }
+
+    #[test]
+    fn wheel_notches_are_tamed_but_touchpad_pixels_pass_through() {
+        use gpui::{point, px};
+        assert_eq!(
+            wheel_dy(&ScrollDelta::Pixels(point(px(0.0), px(37.0)))),
+            37.0
+        );
+        assert_eq!(wheel_dy(&ScrollDelta::Lines(point(0.0, 1.0))), 8.0);
+        assert_eq!(
+            wheel_dy(&ScrollDelta::Lines(point(0.0, -50.0))),
+            -24.0,
+            "capped"
+        );
     }
 
     #[test]

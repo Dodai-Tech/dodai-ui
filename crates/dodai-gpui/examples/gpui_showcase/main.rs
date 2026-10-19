@@ -623,7 +623,7 @@ impl Render for Showcase {
             // Scroll-spy reads layout, so repaint on scroll even on static pages.
             .on_scroll_wheel(cx.listener(|s, e: &gpui::ScrollWheelEvent, _, cx| {
                 s.pin.release();
-                let dy = f32::from(e.delta.pixel_delta(px(20.0)).y);
+                let dy = dodai_gpui::overscroll::wheel_dy(&e.delta);
                 let (top, bottom) = dodai_gpui::overscroll::edges(&s.scroll);
                 s.over.on_wheel(dy, top, bottom, std::time::Instant::now());
                 cx.notify()
