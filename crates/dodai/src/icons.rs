@@ -208,7 +208,7 @@ mod tests {
         assert!(matches!(glyph("home", &mat, false), Some(Glyph::Filled(_))));
         // A catalogue-only name still resolves on Cyberpunk, as facets.
         assert!(matches!(
-            glyph("flight", &cyber, false),
+            glyph("sports_esports", &cyber, false),
             Some(Glyph::Filled(_))
         ));
         assert!(glyph("definitely_not_an_icon", &cyber, false).is_none());

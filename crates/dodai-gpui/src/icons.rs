@@ -210,6 +210,16 @@ impl RenderOnce for MaterialIcon {
         let faceted = self
             .faceted
             .unwrap_or_else(|| crate::theme_of(cx).shape.kind() != dodai_core::ShapeKind::Rounded);
+        // A hand-drawn Cyberpunk icon of the same name beats auto-faceting.
+        if faceted && !self.filled {
+            if let Some(i) = IconName::from_name(&self.name) {
+                return Icon::new(i)
+                    .size(self.size)
+                    .color(self.color)
+                    .pack(IconPack::Stroked)
+                    .into_any_element();
+            }
+        }
         match material(name, self.filled) {
             Some(m) => glyph(self.size, self.color, m, faceted).into_any_element(),
             None => div().size(px(self.size)).flex_none().into_any_element(),
