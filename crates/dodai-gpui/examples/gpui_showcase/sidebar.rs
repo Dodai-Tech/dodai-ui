@@ -146,7 +146,7 @@ impl Showcase {
                     if *c != name
                         || self.sub.is_some_and(|x| sub_of(c, title) != Some(x))
                         || !(query.is_empty()
-                            || !fuzzy_filter(&query, &[format!("{c} {title}")]).is_empty())
+                            || !fuzzy_filter(query, &[format!("{c} {title}")]).is_empty())
                     {
                         continue;
                     }
