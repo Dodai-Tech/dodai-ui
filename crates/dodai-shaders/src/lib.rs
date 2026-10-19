@@ -32,10 +32,12 @@
 )]
 
 mod catalog;
-pub mod ctx;
+mod ctx;
 pub mod gpu;
-pub mod math;
-pub mod prelude;
+// Shared verbatim with the GPU kernels; the host only needs `Vec3` and the palette.
+#[allow(dead_code)]
+mod math;
+mod prelude;
 pub mod presets;
 
 pub use ctx::{Ctx, ShaderPalette};

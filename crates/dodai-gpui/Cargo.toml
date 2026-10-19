@@ -17,7 +17,7 @@ default    = ["components", "charts", "shaders", "material-icons"]
 components = []
 # Charts only (always includes the theme, painting and motion core).
 charts     = []
-# CPU pixel shaders (cyberpunk, Material 3, Matrix, CRT, pixel art, ...) as `ShaderView`.
+# GPU pixel shaders (cyberpunk, Material 3, Matrix, CRT, pixel art, ...) as `ShaderView`.
 shaders    = ["dep:dodai-shaders", "dep:image"]
 # Material Symbols glyphs: `Icon` follows the theme (rounded themes draw Material icons)
 # and `MaterialIcon` draws any of the 3,900+ catalogue icons.

@@ -1,5 +1,5 @@
-//! GPU-side `Frame`: a read-only view of a storage buffer, with the same
-//! sampling methods as the CPU `Frame` so post effects compile unchanged.
+//! GPU-side `Frame`: a read-only view of a storage buffer, with the
+//! sampling methods post effects use.
 
 pub use crate::ctx::{Ctx, ShaderPalette};
 use crate::math::*;

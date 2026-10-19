@@ -29,7 +29,7 @@ pub mod prelude {
 }
 
 // Registration stubs: the shared sources declare `ShaderInfo` tables for the
-// CPU catalogue; here they are inert.
+// host catalogue (see `scripts/gen-kernels.py`); here they are inert.
 #[derive(Clone, Copy)]
 pub enum Family {
     Cyberpunk,
