@@ -3636,6 +3636,10 @@ impl Render for Showcase {
                 .map(|(t, _)| *t)
         };
         let rail = self.rail;
+        // Widest row (px estimate) so the sidebar grows with its labels up to a
+        // cap, after which labels wrap.
+        let mut side_need: f32 = 0.0;
+        let est = |chars: usize, depth: f32| depth * t.spacing.md + chars as f32 * 8.6 + 64.0;
         let mut side = div()
             .id("side-nav")
             .track_focus(&self.side_focus)
@@ -3696,6 +3700,7 @@ impl Render for Showcase {
         {
             let m = me.clone();
             let n = count_in(if idx == 0 { None } else { Some(cats[idx - 1]) });
+            side_need = side_need.max(est(name.len() + 8, 0.0) + 24.0);
             side = side.child(
                 ListItem::new(
                     ("cat", idx),
@@ -3724,6 +3729,7 @@ impl Render for Showcase {
                         break;
                     }
                     let m = me.clone();
+                    side_need = side_need.max(est(sub.map_or(3, str::len) + 8, 1.0));
                     let cnt = sections_meta
                         .iter()
                         .filter(|(c, l)| *c == name && sub.is_none_or(|x| sub_of(c, l) == Some(x)))
@@ -3761,6 +3767,7 @@ impl Render for Showcase {
                     {
                         continue;
                     }
+                    side_need = side_need.max(est(title.len(), 2.0));
                     let (m, title) = (me.clone(), *title);
                     side = side.child(
                         ListItem::new(("jump", idx * 1000 + k), title)
@@ -4047,7 +4054,11 @@ impl Render for Showcase {
             .child(
                 ResponsiveShell::new("shell")
                     .breakpoint(640.0)
-                    .sidebar_width(if narrow { 170.0 } else { 240.0 })
+                    .sidebar_width(if narrow {
+                        side_need.clamp(170.0, 230.0)
+                    } else {
+                        side_need.clamp(240.0, 340.0)
+                    })
                     .sidebar(side)
                     .collapsed(self.rail)
                     .on_collapse({

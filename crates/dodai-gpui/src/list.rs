@@ -83,23 +83,29 @@ impl ListItem {
         let t = crate::apply_corners(t, self.corners);
         let st = use_interact(&self.id, window, cx);
         let hovered = st.read(cx).hovered;
-        let (style, mut fg, marker) = list_style(&t, self.selected, hovered);
+        let (mut style, mut fg, marker) = list_style(&t, self.selected, hovered);
         if self.depth > 0 && !self.selected {
             fg = hsla(t.palette.text_muted);
         }
-        let (pad, size, hgt) = if self.depth > 0 {
-            (
-                t.spacing.md + self.depth as f32 * t.spacing.lg,
-                t.typography.size_sm,
-                0.65,
-            )
+        // Nested rows indent the whole row (fill and marker included), so a
+        // selected child reads as belonging to its parent instead of repeating
+        // the parent's full-width highlight.
+        let (indent, size, hgt) = if self.depth > 0 {
+            (self.depth as f32 * t.spacing.md, t.typography.size_sm, 0.65)
         } else {
-            (t.spacing.md, t.typography.size_md, 0.8)
+            (0.0, t.typography.size_md, 0.8)
         };
+        if self.depth > 0 {
+            style.fill = style.fill.map(|c| c.opacity(0.55));
+        }
+        let pad = t.spacing.md;
         let mut el = track(shaped_id(self.id, &t.shape, style), &st)
-            .h(px(t.shape.control_height * hgt))
+            .min_h(px(t.shape.control_height * hgt))
+            .py(px(t.spacing.xs * 0.5))
+            .ml(px(indent))
             .pl(px(pad))
             .pr(px(t.spacing.md))
+            .overflow_hidden()
             .flex()
             .items_center()
             .cursor_pointer()
@@ -114,7 +120,12 @@ impl ListItem {
                     .color(fg),
             );
         }
-        el = el.child(format_label(&t.typography, &self.label));
+        el = el.child(
+            div()
+                .flex_1()
+                .min_w_0()
+                .child(format_label(&t.typography, &self.label)),
+        );
         if let Some(c) = marker {
             el = el.child(
                 div()
