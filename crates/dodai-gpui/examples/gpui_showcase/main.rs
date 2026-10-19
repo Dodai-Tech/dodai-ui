@@ -586,6 +586,7 @@ impl Showcase {
                         t.palette.text_muted
                     })),
             )
+            .child(if open { "Hide code" } else { "Show code" })
             .on_click(move |_, _, cx| {
                 me.update(cx, |s, cx| {
                     if !s.code_open.remove(title) {
