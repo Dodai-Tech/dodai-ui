@@ -321,7 +321,7 @@ impl RenderOnce for IndeterminateBar {
         let t = theme_of(cx);
         let k = t.progress(None);
         let h = t.spacing.sm + 2.0;
-        let shape = scaled_shape(&t.shape, h);
+        let shape = crate::paint::round_shape(&t.shape, h);
         let track = ShapeStyle::from_tokens(&t, Some(k.track), Some(k.border), false, false);
         let fill = ShapeStyle::from_tokens(&t, Some(k.fill), None, true, false);
         shaped(&shape, track).w_full().h(px(h)).with_animation(

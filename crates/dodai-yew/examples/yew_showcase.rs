@@ -42,7 +42,7 @@ fn Showcase() -> Html {
           <Panel title="Focused" focused={true}><Muted>{"Glow border."}</Muted></Panel></div></section>
         <section><Heading level={2}>{"Tags"}</Heading><div class="dodai-row">
           <Tag>{"info"}</Tag><Tag tone={Tone::Success}>{"online"}</Tag>
-          <Tag tone={Tone::Warning}>{"warn"}</Tag><Tag tone={Tone::Danger}>{"breach"}</Tag>
+          <Tag tone={Tone::Warning}>{"warn"}</Tag><Tag tone={Tone::Danger}>{"error"}</Tag>
           <Tag primary={true}>{"primary"}</Tag><Tag secondary={true}>{"secondary"}</Tag>
           <Tag soft={true}>{"soft"}</Tag><Tag soft={true} tone={Tone::Danger}>{"soft bad"}</Tag>
           <Tag badge={true} primary={true}>{"7"}</Tag></div></section>

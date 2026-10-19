@@ -339,7 +339,7 @@ impl Showcase {
                         let demo = self.demo_rail;
                         let m = me.clone();
                         let m2 = me.clone();
-                        let items = ["Inbox", "Contracts", "Fixers", "Market"];
+                        let items = ["Inbox", "Drafts", "Sent", "Archive"];
                         let mut side = div()
                             .flex()
                             .flex_col()

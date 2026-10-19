@@ -105,13 +105,7 @@ fn draw(f: &mut Frame, app: &mut App) {
     f.render_widget(
         SelectList::new(
             t,
-            &[
-                "Arasaka",
-                "Militech",
-                "Kang Tao",
-                "Biotechnica",
-                "Trauma Team",
-            ],
+            &["Compact", "Comfortable", "Spacious", "Dense", "Custom"],
         )
         .selected(app.list.selected()),
         inner,
@@ -167,7 +161,7 @@ fn draw(f: &mut Frame, app: &mut App) {
         for (l, tone) in [
             ("online", Tone::Success),
             ("warn", Tone::Warning),
-            ("breach", Tone::Danger),
+            ("error", Tone::Danger),
             ("info", Tone::Info),
         ] {
             v.extend(Tag::new(t, l, tone).solid(solid).line().spans);
@@ -192,7 +186,7 @@ fn draw(f: &mut Frame, app: &mut App) {
     ])
     .split(rows[5]);
     f.render_widget(
-        t.button_block("Jack in", ButtonVariant::Primary, ControlState::Idle),
+        t.button_block("Continue", ButtonVariant::Primary, ControlState::Idle),
         btns[0],
     );
     f.render_widget(

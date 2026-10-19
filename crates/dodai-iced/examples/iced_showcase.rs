@@ -49,7 +49,7 @@ enum Msg {
     Noop,
 }
 
-const OPTIONS: [&str; 3] = ["Arasaka", "Militech", "Kang Tao"];
+const OPTIONS: [&str; 3] = ["Compact", "Comfortable", "Spacious"];
 
 fn boot() -> App {
     let sw = ThemeSwitcher::new();
@@ -221,14 +221,14 @@ fn view(app: &App) -> Element<'_, Msg> {
             row![
                 lt.tag("online", Tone::Success, true),
                 lt.tag("warn", Tone::Warning, true),
-                lt.tag("breach", Tone::Danger, true),
+                lt.tag("error", Tone::Danger, true),
                 lt.tag("info", Tone::Info, true),
             ]
             .spacing(sp.sm),
             row![
                 lt.tag("online", Tone::Success, false),
                 lt.tag("warn", Tone::Warning, false),
-                lt.tag("breach", Tone::Danger, false),
+                lt.tag("error", Tone::Danger, false),
                 lt.tag("info", Tone::Info, false),
             ]
             .spacing(sp.sm),
@@ -241,7 +241,7 @@ fn view(app: &App) -> Element<'_, Msg> {
         "Tabs",
         column![
             lt.tabs(
-                &["Overview", "Netwatch", "Braindance", "Settings"],
+                &["Overview", "Activity", "Reports", "Settings"],
                 app.tab,
                 Msg::Tab
             ),

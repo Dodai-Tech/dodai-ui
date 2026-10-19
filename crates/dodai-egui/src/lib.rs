@@ -18,7 +18,7 @@
 //! fn frame(ctx: &egui::Context) {
 //!     dodai_egui::install(ctx, &Theme::default());
 //!     egui::CentralPanel::default().show(ctx, |ui| {
-//!         ui.add(dodai_egui::Button::new("Jack in"));
+//!         ui.add(dodai_egui::Button::new("Continue"));
 //!     });
 //! }
 //! ```

@@ -21,7 +21,7 @@
 //!
 //! fn app() -> Element {
 //!     use_init_dodai(dodai_core::Theme::default());
-//!     rsx!(Button { label: "Jack in", variant: ButtonVariant::Primary })
+//!     rsx!(Button { label: "Continue", variant: ButtonVariant::Primary })
 //! }
 //! ```
 

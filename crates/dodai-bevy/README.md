@@ -14,7 +14,7 @@ App::new()
     .add_plugins((DefaultPlugins, DodaiUiPlugin::default()))
     .add_systems(Startup, |mut c: Commands| {
         c.spawn(Camera2d);
-        c.spawn(button("Jack in", ButtonVariant::Primary));
+        c.spawn(button("Continue", ButtonVariant::Primary));
     })
     .run();
 ```

@@ -24,15 +24,15 @@ impl Showcase {
         let tags = row()
             .child(Tag::new("online", Tone::Success).solid(true))
             .child(Tag::new("warn", Tone::Warning).solid(true))
-            .child(Tag::new("breach", Tone::Danger).solid(true))
+            .child(Tag::new("error", Tone::Danger).solid(true))
             .child(Tag::new("info", Tone::Info).solid(true))
             .child(Tag::new("online", Tone::Success))
             .child(Tag::new("warn", Tone::Warning))
-            .child(Tag::new("breach", Tone::Danger))
+            .child(Tag::new("error", Tone::Danger))
             .child(Tag::new("info", Tone::Info));
         let m3 = me.clone();
         let mut list = div().flex().flex_col().gap(px(t.spacing.xs));
-        for (i, name) in ["Inbox", "Contracts", "Fixers", "Black market"]
+        for (i, name) in ["Inbox", "Drafts", "Sent", "Archive"]
             .into_iter()
             .enumerate()
         {

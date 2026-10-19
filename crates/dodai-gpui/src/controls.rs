@@ -250,7 +250,7 @@ choice_component!(
 fn bar(t: &Theme, frac: f32, tone: Option<Tone>, height: f32) -> gpui::Div {
     let k = t.progress(tone);
     let track_style = ShapeStyle::from_tokens(t, Some(k.track), Some(k.border), false, false);
-    let shape = scaled_shape(&t.shape, height);
+    let shape = crate::paint::round_shape(&t.shape, height);
     let mut d = shaped(&shape, track_style).w_full().h(px(height));
     let f = clamp01(frac);
     if f > 0.0 {
@@ -270,7 +270,7 @@ fn bar(t: &Theme, frac: f32, tone: Option<Tone>, height: f32) -> gpui::Div {
 fn vbar(t: &Theme, frac: f32, width: f32) -> gpui::Div {
     let k = t.progress(None);
     let track_style = ShapeStyle::from_tokens(t, Some(k.track), Some(k.border), false, false);
-    let shape = scaled_shape(&t.shape, width);
+    let shape = crate::paint::round_shape(&t.shape, width);
     let mut d = shaped(&shape, track_style).h_full().w(px(width));
     let f = clamp01(frac);
     if f > 0.0 {

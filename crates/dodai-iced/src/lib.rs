@@ -31,7 +31,7 @@
 //!
 //! let lt = IcedTheme::new(Theme::default());
 //! # #[derive(Clone)] enum Msg { Go }
-//! let _btn: iced::Element<Msg> = lt.button_view("Jack in", ButtonVariant::Primary, Some(Msg::Go));
+//! let _btn: iced::Element<Msg> = lt.button_view("Continue", ButtonVariant::Primary, Some(Msg::Go));
 //! let _native: iced::Element<Msg> = button(text("Native"))
 //!     .style(lt.button(ButtonVariant::Outline))
 //!     .on_press(Msg::Go)

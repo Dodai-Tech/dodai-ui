@@ -81,8 +81,8 @@ mod tests {
 
     #[test]
     fn uppercase_from_token() {
-        assert_eq!(display_text(&rounded(), "Jack in"), "Jack in");
-        assert_eq!(display_text(&square(), "Jack in"), "JACK IN");
+        assert_eq!(display_text(&rounded(), "Continue"), "Continue");
+        assert_eq!(display_text(&square(), "Continue"), "CONTINUE");
     }
 
     #[test]

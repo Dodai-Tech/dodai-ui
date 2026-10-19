@@ -2,7 +2,7 @@
 
 use crate::controls::{clamp01, slider_fraction, slider_value, tick_fractions, Direction};
 use crate::hsla;
-use crate::paint::{round_shape, scaled_shape, shaped, ShapeStyle};
+use crate::paint::{round_shape, shaped, ShapeStyle};
 use crate::theme_of;
 use dodai_core::ControlState;
 use gpui::{
@@ -151,7 +151,7 @@ impl RangeSlider {
         let thumb_style = ShapeStyle::from_tokens(&t, Some(k.track), Some(k.border), true, false);
         let thumb_shape = round_shape(&t.shape, THUMB);
         let pk = t.progress(None);
-        let track_shape = scaled_shape(&t.shape, 6.0);
+        let track_shape = crate::paint::round_shape(&t.shape, 6.0);
         let fill_style = ShapeStyle::from_tokens(&t, Some(pk.fill), None, true, false);
         let fill = shaped(&track_shape, fill_style).absolute();
         let fill = if vertical {

@@ -61,7 +61,7 @@ fn Showcase(names: Vec<(String, String)>) -> impl IntoView {
                     <Tag>"info"</Tag>
                     <Tag tone=TagTone::Success>"online"</Tag>
                     <Tag tone=Tone::Warning.into()>"warn"</Tag>
-                    <Tag tone=TagTone::Danger>"breach"</Tag>
+                    <Tag tone=TagTone::Danger>"error"</Tag>
                     <Tag tone=TagTone::Primary soft=true>"soft"</Tag>
                     <Tag tone=TagTone::Secondary badge=true>"7"</Tag>
                 </div>

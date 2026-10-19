@@ -144,7 +144,7 @@ impl Showcase {
                 row()
                     .child(sc_tag(Tag::new("online", Tone::Success).solid(true)))
                     .child(sc_tag(Tag::new("warn", Tone::Warning)))
-                    .child(sc_tag(Tag::new("breach", Tone::Danger).solid(true))),
+                    .child(sc_tag(Tag::new("error", Tone::Danger).solid(true))),
             )
             .child(
                 row()

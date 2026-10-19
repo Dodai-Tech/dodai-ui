@@ -27,11 +27,11 @@ impl Showcase {
         let tags = row()
             .child(Tag::new("online", Tone::Success).solid(true))
             .child(Tag::new("warn", Tone::Warning).solid(true))
-            .child(Tag::new("breach", Tone::Danger).solid(true))
+            .child(Tag::new("error", Tone::Danger).solid(true))
             .child(Tag::new("info", Tone::Info).solid(true))
             .child(Tag::new("online", Tone::Success))
             .child(Tag::new("warn", Tone::Warning))
-            .child(Tag::new("breach", Tone::Danger))
+            .child(Tag::new("error", Tone::Danger))
             .child(Tag::new("info", Tone::Info));
         let controls = row()
             .child(Toggle::new("sw", self.switch).on_change(move |v, _, cx| {
@@ -51,7 +51,10 @@ impl Showcase {
             .child(Label::new("Checkbox"))
             .child(Checkbox::new("ck-dis", false).disabled(true));
         let mut radios = row();
-        for (i, name) in ["Netwatch", "Arasaka", "Militech"].into_iter().enumerate() {
+        for (i, name) in ["Compact", "Comfortable", "Spacious"]
+            .into_iter()
+            .enumerate()
+        {
             let m = me.clone();
             radios = radios
                 .child(

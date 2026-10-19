@@ -52,7 +52,7 @@ use dodai_ratatui::TuiTheme;
 let mut sw = ThemeSwitcher::new();           // all built-in themes
 let mut tui = TuiTheme::new(sw.current().clone());
 tui.set_theme(sw.cycle_next().clone());      // switch at runtime — shape, type and glow change too
-let btn = tui.button("Jack in", ButtonVariant::Primary, ControlState::Idle);
+let btn = tui.button("Continue", ButtonVariant::Primary, ControlState::Idle);
 ```
 
 Persist `theme.id()` (e.g. `"cyberpunk-netrunner"`) in your config and restore with `switcher.select(id)`.
