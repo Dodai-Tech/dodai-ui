@@ -3624,13 +3624,15 @@ impl Render for Showcase {
         // Scroll-spy: the last section whose top has reached the viewport top
         // (positions come from the previous frame's layout).
         let active: Option<&'static str> = {
+            // Item bounds are in unscrolled content space, so add the offset.
             let top = self.scroll.bounds().top();
+            let off = self.scroll.offset().y;
             self.spy
                 .iter()
                 .rfind(|(_, ix)| {
                     self.scroll
                         .bounds_for_item(*ix)
-                        .is_some_and(|b| b.top() <= top + px(48.0))
+                        .is_some_and(|b| b.top() + off <= top + px(SPY_SLACK))
                 })
                 .or(self.spy.first())
                 .map(|(t, _)| *t)
@@ -3799,6 +3801,8 @@ impl Render for Showcase {
         let mut body = div()
             .id(("body", self.cat * 1000 + self.replay))
             .track_scroll(&self.scroll)
+            // Scroll-spy reads layout, so repaint on scroll even on static pages.
+            .on_scroll_wheel(cx.listener(|_, _, _, cx| cx.notify()))
             .flex()
             .flex_col()
             .flex_1()
@@ -4090,6 +4094,8 @@ actions!(
     ]
 );
 
+/// Px below the scroll container top at which a section counts as current.
+const SPY_SLACK: f32 = 60.0;
 const DEFAULT_W: f32 = 980.0;
 const DEFAULT_H: f32 = 760.0;
 

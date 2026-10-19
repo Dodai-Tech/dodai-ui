@@ -84,7 +84,7 @@ impl ListItem {
         let st = use_interact(&self.id, window, cx);
         let hovered = st.read(cx).hovered;
         let (mut style, mut fg, marker) = list_style(&t, self.selected, hovered);
-        if self.depth > 0 && !self.selected {
+        if self.depth > 0 && !self.selected && !hovered {
             fg = hsla(t.palette.text_muted);
         }
         // Nested rows indent the whole row (fill and marker included), so a
