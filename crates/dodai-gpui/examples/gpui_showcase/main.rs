@@ -71,7 +71,6 @@ pub struct Showcase {
     icon_q: Entity<TextInput>,
     icon_search: Entity<TextInput>,
     icon_filled: bool,
-    icon_facet: Option<bool>,
     icon_limit: usize,
     date_range: dodai_gpui::DateRange,
     cat: usize,
@@ -897,7 +896,6 @@ impl Showcase {
             icon_q,
             icon_search,
             icon_filled: false,
-            icon_facet: None,
             icon_limit: 240,
             date_range: Default::default(),
             cat: std::env::var("DODAI_CAT")

@@ -2,9 +2,9 @@
 //! coverage mask, so any adapter can draw it.
 //!
 //! * Rounded themes (Material) get the smooth Material Symbols glyph.
-//! * Other themes (Cyberpunk) get the hand-drawn Cyberpunk icon when one
-//!   exists for the name, otherwise the Material glyph reduced to straight
-//!   facets.
+//! * Other themes (Cyberpunk) get the hand-drawn Cyberpunk icon, found by its
+//!   own name or by the Material name it mirrors. A name without a hand-drawn
+//!   icon resolves to `None`; Material glyphs are never reshaped for them.
 //!
 //! ```
 //! # #[cfg(all(feature = "cyberpunk", feature = "material"))] {
@@ -38,9 +38,20 @@ pub fn glyph(name: &str, theme: &Theme, filled: bool) -> Option<Glyph> {
     let rounded = theme.shape.kind() == ShapeKind::Rounded;
     #[cfg(feature = "cyberpunk")]
     if !rounded {
-        if let Some(i) = dodai_cyberpunk::icons::IconName::from_name(name) {
-            return Some(Glyph::Stroked(i.shapes()));
-        }
+        use dodai_cyberpunk::icons::IconName;
+        let found = IconName::from_name(name).or_else(|| {
+            // A Material spelling of a hand-drawn icon ("arrow_back").
+            #[cfg(feature = "material")]
+            for (alias, mat) in dodai_material::icons::ALIASES {
+                if *mat == name {
+                    if let Some(i) = IconName::from_name(alias) {
+                        return Some(i);
+                    }
+                }
+            }
+            None
+        });
+        return found.map(|i| Glyph::Stroked(i.shapes()));
     }
     #[cfg(feature = "material")]
     {
@@ -50,11 +61,7 @@ pub fn glyph(name: &str, theme: &Theme, filled: bool) -> Option<Glyph> {
             .then(|| m::outlined::get(&format!("{n}-fill")))
             .flatten()
             .or_else(|| m::outlined::get(n))?;
-        return Some(Glyph::Filled(if rounded {
-            icon.polygons()
-        } else {
-            icon.faceted()
-        }));
+        return Some(Glyph::Filled(icon.polygons()));
     }
     #[allow(unreachable_code)]
     {
@@ -206,11 +213,14 @@ mod tests {
             Some(Glyph::Stroked(_))
         ));
         assert!(matches!(glyph("home", &mat, false), Some(Glyph::Filled(_))));
-        // A catalogue-only name still resolves on Cyberpunk, as facets.
+        // Material spelling of a hand-drawn icon resolves; a catalogue-only
+        // name does not (no faceted Material on Cyberpunk).
         assert!(matches!(
-            glyph("sports_esports", &cyber, false),
-            Some(Glyph::Filled(_))
+            glyph("arrow_back", &cyber, false),
+            Some(Glyph::Stroked(_))
         ));
+        assert!(glyph("sports_cricket", &cyber, false).is_none());
+        assert!(glyph("sports_cricket", &mat, false).is_some());
         assert!(glyph("definitely_not_an_icon", &cyber, false).is_none());
     }
 

@@ -99,7 +99,7 @@ impl Showcase {
             "Icons Material",
             section!("Icons Material")
                 .child(Muted::new(
-                    "The entire Material Symbols catalogue (`MaterialIcon::new(name)`, outlined or `.filled(true)`). Material themes draw it smooth; other themes draw it faceted into straight cuts, or use the hand-drawn icon of the same name (`.faceted(true)` forces the generated facets).",
+                    "The entire Material Symbols catalogue (`MaterialIcon::new(name)`, outlined or `.filled(true)`). It is the Material pack: always drawn smooth, in every theme. Cyberpunk themes use their own hand-drawn pack (Icons, above) and never borrow from this one.",
                 ))
                 .child(browser)
                 .into_any_element(),
@@ -113,7 +113,7 @@ impl Showcase {
     /// Searchable, paged grid of every Material Symbols icon.
     fn icon_browser(&mut self, t: &dodai_core::Theme, cx: &mut Context<Self>) -> gpui::Div {
         let me = cx.entity();
-        let (me_f, me_s) = (me.clone(), me.clone());
+        let me_f = me.clone();
         let q = self
             .icon_q
             .read(cx)
@@ -121,9 +121,6 @@ impl Showcase {
             .trim()
             .to_lowercase()
             .replace(' ', "_");
-        let facet = self
-            .icon_facet
-            .unwrap_or(t.shape.kind() != dodai_core::ShapeKind::Rounded);
         let hits: Vec<&'static str> = dodai_material_icons::outlined::ALL
             .iter()
             .map(|i| i.name)
@@ -145,13 +142,6 @@ impl Showcase {
                 }),
             )
             .child(Label::new("Filled"))
-            .child(Checkbox::new("ib-facet", facet).on_change(move |v, _, cx| {
-                me_s.update(cx, |s, cx| {
-                    s.icon_facet = Some(v);
-                    cx.notify();
-                })
-            }))
-            .child(Label::new("Faceted"))
             .child(Muted::new(format!("{shown} of {} icons", hits.len())));
         let mut grid = div().flex().flex_wrap().gap(px(t.spacing.xs));
         for &n in hits.iter().take(shown) {
@@ -169,7 +159,6 @@ impl Showcase {
                         dodai_gpui::MaterialIcon::new(n)
                             .size(28.0)
                             .filled(self.icon_filled)
-                            .faceted(facet)
                             .color(hsla(t.palette.primary)),
                     )
                     .child({

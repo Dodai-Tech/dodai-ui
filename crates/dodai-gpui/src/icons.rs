@@ -190,8 +190,8 @@ impl MaterialIcon {
         self.color = c;
         self
     }
-    /// Force straight facets (`true`) or smooth curves (`false`). By default
-    /// the theme decides: non-rounded shapes (Cyberpunk) get facets.
+    /// Reduce the glyph to straight facets (`true`). Opt-in: the default is
+    /// the smooth Material drawing in every theme.
     pub fn faceted(mut self, on: bool) -> Self {
         self.faceted = Some(on);
         self
@@ -205,22 +205,9 @@ impl MaterialIcon {
 
 #[cfg(feature = "material-icons")]
 impl RenderOnce for MaterialIcon {
-    fn render(self, _: &mut gpui::Window, cx: &mut gpui::App) -> impl IntoElement {
+    fn render(self, _: &mut gpui::Window, _: &mut gpui::App) -> impl IntoElement {
         let name = dodai_material_icons::resolve(&self.name);
-        let faceted = self
-            .faceted
-            .unwrap_or_else(|| crate::theme_of(cx).shape.kind() != dodai_core::ShapeKind::Rounded);
-        // Automatic mode: a hand-drawn Cyberpunk icon of the same name beats
-        // auto-faceting (`.faceted(true)` forces the generated facets).
-        if faceted && !self.filled && self.faceted.is_none() {
-            if let Some(i) = IconName::from_name(&self.name) {
-                return Icon::new(i)
-                    .size(self.size)
-                    .color(self.color)
-                    .pack(IconPack::Stroked)
-                    .into_any_element();
-            }
-        }
+        let faceted = self.faceted.unwrap_or(false);
         match material(name, self.filled) {
             Some(m) => glyph(self.size, self.color, m, faceted).into_any_element(),
             None => div().size(px(self.size)).flex_none().into_any_element(),
