@@ -258,15 +258,18 @@ impl RenderOnce for OtpInput {
         let chars: Vec<char> = value.chars().collect();
         for i in 0..self.len {
             let active = focused && i == n.min(self.len - 1);
-            let mut cell = shaped(&t.shape, input_style(&t, active))
-                .w(px(cell_w))
-                .h(px(t.shape.control_height * 1.3))
-                .flex()
-                .items_center()
-                .justify_center()
-                .font_family(first_family(t.typography.display))
-                .text_size(px(t.typography.size_xl))
-                .text_color(hsla(t.palette.text));
+            let mut cell = shaped(
+                &t.role_shape(dodai_core::ShapeRole::Input),
+                input_style(&t, active),
+            )
+            .w(px(cell_w))
+            .h(px(t.shape.control_height * 1.3))
+            .flex()
+            .items_center()
+            .justify_center()
+            .font_family(first_family(t.typography.display))
+            .text_size(px(t.typography.size_xl))
+            .text_color(hsla(t.palette.text));
             if let Some(c) = chars.get(i) {
                 cell = cell.child(if self.masked {
                     "•".to_string()

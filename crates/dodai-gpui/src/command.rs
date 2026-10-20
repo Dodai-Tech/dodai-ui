@@ -173,16 +173,19 @@ impl RenderOnce for CommandPalette {
                     .child("No matching commands"),
             );
         }
-        let card = shaped(&t.shape, dialog_style(&t))
-            .w(px(520.0))
-            .flex()
-            .flex_col()
-            .gap(px(t.spacing.sm))
-            .p(px(t.spacing.md))
-            .font_family(first_family(t.typography.body))
-            .text_size(px(t.typography.size_md))
-            .child(self.input.clone())
-            .child(list);
+        let card = shaped(
+            &t.role_shape(dodai_core::ShapeRole::Dialog),
+            dialog_style(&t),
+        )
+        .w(px(520.0))
+        .flex()
+        .flex_col()
+        .gap(px(t.spacing.sm))
+        .p(px(t.spacing.md))
+        .font_family(first_family(t.typography.body))
+        .text_size(px(t.typography.size_md))
+        .child(self.input.clone())
+        .child(list);
         let dismiss = self.on_dismiss;
         deferred(
             div()

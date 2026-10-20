@@ -16,6 +16,15 @@ use gpui::{
 use std::rc::Rc;
 
 fn bar_style(t: &Theme) -> ShapeStyle {
+    if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+        return ShapeStyle::from_tokens(
+            t,
+            Some(t.palette.roles.surface_container),
+            None,
+            false,
+            false,
+        );
+    }
     let p = t.panel(false);
     ShapeStyle::from_tokens(t, Some(p.background), Some(p.border), false, false)
 }
@@ -63,7 +72,7 @@ impl Toolbar {
     fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
-        let mut bar = shaped(&t.shape, bar_style(&t))
+        let mut bar = shaped(&t.role_shape(dodai_core::ShapeRole::Toolbar), bar_style(&t))
             .flex()
             .items_center()
             .gap(px(t.spacing.xs))

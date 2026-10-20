@@ -47,7 +47,7 @@ impl Tag {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
         let (style, fg) = tag_style(&t, self.tone, self.solid);
-        shaped(&t.shape, style)
+        shaped(&t.role_shape(dodai_core::ShapeRole::Tag), style)
             .px(px(t.spacing.sm))
             .py(px(t.spacing.xs / 2.0))
             .font_family(first_family(t.typography.body))

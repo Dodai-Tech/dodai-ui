@@ -62,6 +62,42 @@ impl Theme {
         self.shape_system().spec(role)
     }
 
+    /// The legacy [`crate::Shape`] for a component role: radius or chamfer from the shape
+    /// system, with the theme's border width and control height. Rounded corners with differing
+    /// sizes collapse to the largest.
+    pub fn role_shape(&self, role: crate::ShapeRole) -> crate::Shape {
+        let spec = self.shape_for(role);
+        let mut s = self.shape.clone();
+        let cs = [
+            spec.top_left,
+            spec.top_right,
+            spec.bottom_right,
+            spec.bottom_left,
+        ];
+        let size = cs.iter().map(|c| c.size()).fold(0.0_f32, f32::max);
+        let cut = cs
+            .iter()
+            .any(|c| matches!(c, crate::shape_system::Corner::Cut(_)));
+        if cut {
+            s.radius = 0.0;
+            s.chamfer = size;
+            s.corners = spec.sides();
+        } else {
+            s.radius = size;
+            s.chamfer = 0.0;
+        }
+        s
+    }
+
+    /// Horizontal padding of a button label: M3 uses 24 px (a 16 px step is `spacing.md`).
+    pub fn button_padding(&self) -> f32 {
+        if self.shape.kind() == crate::ShapeKind::Rounded {
+            24.0
+        } else {
+            self.spacing.md
+        }
+    }
+
     /// Builder: cut these corners on chamfered controls (see [`crate::Corners`]).
     pub fn with_corners(mut self, c: crate::Corners) -> Self {
         self.shape.corners = c;

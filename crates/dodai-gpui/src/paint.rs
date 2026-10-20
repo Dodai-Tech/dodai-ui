@@ -35,6 +35,20 @@ pub struct ShapeStyle {
     pub scanline: Hsla,
     /// Animated highlight sweep, clipped to the shape (see [`Shimmer`]).
     pub shimmer: Option<Shimmer>,
+    /// Material 3 elevation level (0..=5) and shadow colour: the soft two-layer shadow.
+    pub elevation: Option<(u8, Hsla)>,
+}
+
+/// The two M3 shadow layers for an elevation level: `(offset_y, blur, spread, alpha)`.
+pub fn elevation_layers(level: u8) -> [(f32, f32, f32, f32); 2] {
+    match level {
+        0 => [(0.0, 0.0, 0.0, 0.0); 2],
+        1 => [(1.0, 2.0, 0.0, 0.30), (1.0, 3.0, 1.0, 0.15)],
+        2 => [(1.0, 2.0, 0.0, 0.30), (2.0, 6.0, 2.0, 0.15)],
+        3 => [(1.0, 3.0, 0.0, 0.30), (4.0, 8.0, 3.0, 0.15)],
+        4 => [(2.0, 3.0, 0.0, 0.30), (6.0, 10.0, 4.0, 0.15)],
+        _ => [(4.0, 4.0, 0.0, 0.30), (8.0, 12.0, 6.0, 0.15)],
+    }
 }
 
 /// Shimmer sweep painted by [`shaped`] over any shape.
@@ -51,6 +65,11 @@ impl ShapeStyle {
     /// Add a shimmer sweep that follows whatever shape this style is drawn in.
     pub fn with_shimmer(mut self, s: Shimmer) -> Self {
         self.shimmer = Some(s);
+        self
+    }
+    /// Lift this surface with the Material 3 elevation `level` in `colour`.
+    pub fn with_elevation(mut self, level: u8, colour: Hsla) -> Self {
+        self.elevation = (level > 0).then_some((level, colour));
         self
     }
     /// Build from token colours. `glow` adds the theme glow when enabled;
@@ -78,15 +97,18 @@ impl ShapeStyle {
             scanlines: fx.scanlines && fill.is_some(),
             scanline: hsla(fx.scanline),
             shimmer: None,
+            elevation: None,
         }
     }
 
     /// Style and text colour of a core [`SurfaceTokens`](dodai_core::SurfaceTokens).
     pub fn from_surface(theme: &Theme, k: dodai_core::SurfaceTokens) -> (Self, Hsla) {
-        (
-            Self::from_tokens(theme, k.background, k.border, k.glow, k.shadow),
-            hsla(k.foreground),
-        )
+        let mut st = Self::from_tokens(theme, k.background, k.border, k.glow, k.shadow);
+        if k.shadow && theme.shape.kind() == ShapeKind::Rounded {
+            // Material: a soft elevation shadow (level 2 by default; callers adjust).
+            st = st.with_elevation(2, hsla(theme.palette.roles.shadow));
+        }
+        (st, hsla(k.foreground))
     }
 }
 
@@ -375,6 +397,19 @@ fn shaped_base(shape: &Shape, style: ShapeStyle) -> Div {
                     blur_radius: px(r),
                     spread_radius: px(0.0),
                 });
+            }
+            if let Some((level, c)) = style.elevation {
+                for (y, blur, spread, a) in elevation_layers(level) {
+                    shadows.push(BoxShadow {
+                        color: Hsla {
+                            a: c.a * a * 0.6,
+                            ..c
+                        },
+                        offset: point(px(0.0), px(y)),
+                        blur_radius: px(blur),
+                        spread_radius: px(spread),
+                    });
+                }
             }
             if shadows.is_empty() {
                 d

@@ -83,6 +83,14 @@ pub struct ToggleTokens {
     pub border: Color,
 }
 
+/// Which selection control a [`ToggleTokens`] is for.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ToggleKind {
+    Switch,
+    Checkbox,
+    Radio,
+}
+
 /// Progress bar tokens.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ProgressTokens {
@@ -192,7 +200,7 @@ impl Theme {
                 } else {
                     p.background
                 }),
-                Some(line),
+                (!tonal).then_some(line),
                 p.text,
                 false,
                 true,
@@ -226,6 +234,17 @@ impl Theme {
             )
         } else if selected {
             Self::surface(Some(p.selection), Some(p.primary), p.text, false, false)
+        } else if self.tonal() {
+            // M3 filter chip, unselected: transparent with an `outline` border; hover is a
+            // state layer in `on-surface-variant`.
+            let r = &p.roles;
+            Self::surface(
+                hovered.then(|| r.on_surface_variant.with_alpha(0.08)),
+                Some(r.outline),
+                r.on_surface_variant,
+                false,
+                false,
+            )
         } else {
             Self::surface(
                 hovered.then_some(p.surface_raised),
@@ -296,18 +315,42 @@ impl Theme {
     /// Dialog box.
     pub fn dialog(&self) -> SurfaceTokens {
         let p = &self.palette;
+        if self.tonal() {
+            let r = &p.roles;
+            return Self::surface(
+                Some(r.surface_container_high),
+                None,
+                r.on_surface,
+                false,
+                true,
+            );
+        }
         Self::surface(Some(p.surface), Some(p.primary), p.text, true, true)
     }
 
     /// Side / bottom sheet.
     pub fn sheet(&self) -> SurfaceTokens {
         let p = &self.palette;
+        if self.tonal() {
+            let r = &p.roles;
+            return Self::surface(
+                Some(r.surface_container_low),
+                None,
+                r.on_surface,
+                false,
+                true,
+            );
+        }
         Self::surface(Some(p.surface), Some(p.border_strong), p.text, false, true)
     }
 
     /// Floating popup (menu, dropdown list).
     pub fn popup(&self) -> SurfaceTokens {
         let p = &self.palette;
+        if self.tonal() {
+            let r = &p.roles;
+            return Self::surface(Some(r.surface_container), None, r.on_surface, false, true);
+        }
         Self::surface(
             Some(p.surface_raised),
             Some(p.border_strong),
@@ -319,6 +362,9 @@ impl Theme {
 
     /// Modal scrim: the page colour, never fully opaque.
     pub fn scrim(&self) -> Color {
+        if self.tonal() {
+            return self.palette.roles.scrim.with_alpha(0.32);
+        }
         self.palette.background.with_alpha(0.7)
     }
 
@@ -432,9 +478,101 @@ impl Theme {
         }
     }
 
+    /// Material 3 switch / checkbox / radio colours (`track` = container, `thumb` = handle, mark
+    /// or dot, `border` = outline). Non-rounded themes get [`Theme::toggle`].
+    pub fn m3_toggle(&self, kind: ToggleKind, on: bool, state: ControlState) -> ToggleTokens {
+        if !self.tonal() {
+            return self.toggle(on, state);
+        }
+        let r = &self.palette.roles;
+        let p = &self.palette;
+        let clear = r.on_surface.with_alpha(0.0);
+        let lit = matches!(
+            state,
+            ControlState::Hovered | ControlState::Pressed | ControlState::Focused
+        );
+        if state == ControlState::Disabled {
+            let d = r.on_surface;
+            return match (kind, on) {
+                (ToggleKind::Switch, true) => ToggleTokens {
+                    track: d.with_alpha(0.12),
+                    thumb: p.surface,
+                    border: d.with_alpha(0.12),
+                },
+                (ToggleKind::Switch, false) => ToggleTokens {
+                    track: r.surface_container_highest.with_alpha(0.12),
+                    thumb: d.with_alpha(0.38),
+                    border: d.with_alpha(0.12),
+                },
+                (ToggleKind::Checkbox, true) => ToggleTokens {
+                    track: d.with_alpha(0.38),
+                    thumb: p.surface,
+                    border: d.with_alpha(0.38),
+                },
+                (_, _) => ToggleTokens {
+                    track: clear,
+                    thumb: if on { d.with_alpha(0.38) } else { clear },
+                    border: d.with_alpha(0.38),
+                },
+            };
+        }
+        match (kind, on) {
+            (ToggleKind::Switch, true) => ToggleTokens {
+                track: p.primary,
+                thumb: if lit {
+                    r.primary_container
+                } else {
+                    p.on_primary
+                },
+                border: p.primary,
+            },
+            (ToggleKind::Switch, false) => ToggleTokens {
+                track: r.surface_container_highest,
+                thumb: if lit { r.on_surface_variant } else { r.outline },
+                border: r.outline,
+            },
+            (ToggleKind::Checkbox, true) => ToggleTokens {
+                track: p.primary,
+                thumb: p.on_primary,
+                border: p.primary,
+            },
+            (ToggleKind::Checkbox, false) => ToggleTokens {
+                track: clear,
+                thumb: clear,
+                border: if lit {
+                    r.on_surface
+                } else {
+                    r.on_surface_variant
+                },
+            },
+            (ToggleKind::Radio, true) => ToggleTokens {
+                track: clear,
+                thumb: p.primary,
+                border: p.primary,
+            },
+            (ToggleKind::Radio, false) => ToggleTokens {
+                track: clear,
+                thumb: clear,
+                border: if lit {
+                    r.on_surface
+                } else {
+                    r.on_surface_variant
+                },
+            },
+        }
+    }
+
     /// Progress bar in a status tone (`None` = brand colour).
     pub fn progress(&self, tone: Option<Tone>) -> ProgressTokens {
         let p = &self.palette;
+        if self.tonal() {
+            let track = p.roles.surface_container_highest;
+            return ProgressTokens {
+                track,
+                fill: tone.map_or(p.primary, |t| p.tone(t)),
+                border: track,
+            };
+        }
         ProgressTokens {
             track: p.surface_raised,
             fill: tone.map_or(p.primary, |t| p.tone(t)),
@@ -492,6 +630,9 @@ impl Theme {
         let p = &self.palette;
         use ButtonVariant::*;
         use ControlState::*;
+        if self.tonal() {
+            return self.m3_button(variant, state);
+        }
         if state == Disabled {
             return ButtonTokens {
                 background: Some(p.surface_raised),
@@ -544,6 +685,109 @@ impl Theme {
                 foreground: if lit { self.legible(p.primary) } else { p.text },
                 border: None,
             },
+        }
+    }
+
+    /// Floating action button colours (M3 container roles on rounded themes; the plain
+    /// button tokens elsewhere). Primary/Secondary/other map to the primary / secondary /
+    /// tertiary container, Outline and Ghost to the surface FAB.
+    pub fn fab(&self, variant: ButtonVariant, state: ControlState) -> ButtonTokens {
+        if !self.tonal() {
+            return self.button(variant, state);
+        }
+        let r = &self.palette.roles;
+        use ButtonVariant::*;
+        let (bg, fg) = match variant {
+            Primary => (r.primary_container, r.on_primary_container),
+            Secondary => (r.secondary_container, r.on_secondary_container),
+            Danger => (r.error_container, r.on_error_container),
+            Outline | OutlineSecondary => (r.tertiary_container, r.on_tertiary_container),
+            Ghost => (r.surface_container_high, self.palette.primary),
+        };
+        let layer = match state {
+            ControlState::Hovered => 0.08,
+            ControlState::Pressed | ControlState::Focused => 0.10,
+            _ => 0.0,
+        };
+        ButtonTokens {
+            background: Some(bg.mix(fg, layer)),
+            foreground: fg,
+            border: None,
+        }
+    }
+
+    /// Icon button colours. M3: standard (`Ghost`) icons are `on-surface-variant`, `primary`
+    /// when `selected`; outlined icons are `on-surface-variant` on an `outline` border; filled
+    /// and tonal follow the buttons. Other themes use the button tokens.
+    pub fn icon_button(
+        &self,
+        variant: ButtonVariant,
+        state: ControlState,
+        selected: bool,
+    ) -> ButtonTokens {
+        let mut b = self.button(variant, state);
+        if !self.tonal() || state == ControlState::Disabled {
+            return b;
+        }
+        let r = &self.palette.roles;
+        let layer = match state {
+            ControlState::Hovered => 0.08,
+            ControlState::Pressed | ControlState::Focused => 0.10,
+            _ => 0.0,
+        };
+        match variant {
+            ButtonVariant::Ghost | ButtonVariant::Outline | ButtonVariant::OutlineSecondary => {
+                let fg = if selected {
+                    self.palette.primary
+                } else {
+                    r.on_surface_variant
+                };
+                b.foreground = fg;
+                b.background = (layer > 0.0).then(|| fg.with_alpha(layer));
+            }
+            _ => {}
+        }
+        b
+    }
+
+    /// Material 3 buttons: filled, tonal, outlined, text; state layers 8% hover / 10% focus and
+    /// press; disabled is `on-surface` at 12% (container) and 38% (label).
+    fn m3_button(&self, variant: ButtonVariant, state: ControlState) -> ButtonTokens {
+        use ButtonVariant::*;
+        use ControlState::*;
+        let r = &self.palette.roles;
+        let p = &self.palette;
+        // (container, label, outlined)
+        let (container, label, outlined) = match variant {
+            Primary => (Some(p.primary), p.on_primary, false),
+            Secondary => (Some(r.secondary_container), r.on_secondary_container, false),
+            Danger => (Some(p.danger), r.on_error, false),
+            Outline => (None, p.primary, true),
+            OutlineSecondary => (None, p.secondary, true),
+            Ghost => (None, p.primary, false),
+        };
+        if state == Disabled {
+            let disabled = r.on_surface;
+            return ButtonTokens {
+                background: container.map(|_| disabled.with_alpha(0.12)),
+                foreground: disabled.with_alpha(0.38),
+                border: outlined.then(|| disabled.with_alpha(0.12)),
+            };
+        }
+        let layer = match state {
+            Hovered => 0.08,
+            Pressed | Focused => 0.10,
+            _ => 0.0,
+        };
+        let background = match container {
+            Some(c) => Some(c.mix(label, layer)),
+            None if layer > 0.0 => Some(label.with_alpha(layer)),
+            None => None,
+        };
+        ButtonTokens {
+            background,
+            foreground: label,
+            border: outlined.then_some(if state == Focused { label } else { r.outline }),
         }
     }
 

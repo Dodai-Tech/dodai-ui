@@ -782,7 +782,7 @@ impl Render for TextInput {
             style.stroke = Some(hsla(t.palette.border));
             style.glow = None;
         }
-        let mut d = shaped(&t.shape, style)
+        let mut d = shaped(&t.role_shape(dodai_core::ShapeRole::Input), style)
             .w_full()
             .key_context("DodaiTextInput")
             .font_family(first_family(t.typography.body))

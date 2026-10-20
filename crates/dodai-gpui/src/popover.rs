@@ -177,7 +177,7 @@ impl RenderOnce for Popover {
             if let Some(content) = self.content.take() {
                 let mut popup = div().absolute();
                 if !self.bare {
-                    popup = shaped(&t.shape, popup_style(&t))
+                    popup = shaped(&t.role_shape(dodai_core::ShapeRole::Menu), popup_style(&t))
                         .absolute()
                         .p(px(t.spacing.md))
                         .font_family(first_family(t.typography.body))
@@ -288,7 +288,7 @@ impl RenderOnce for HoverCard {
             .children(self.trigger.take());
         if open {
             if let Some(content) = self.content.take() {
-                let card = shaped(&t.shape, popup_style(&t))
+                let card = shaped(&t.role_shape(dodai_core::ShapeRole::Menu), popup_style(&t))
                     .w(px(self.width))
                     .p(px(t.spacing.md))
                     .font_family(first_family(t.typography.body))

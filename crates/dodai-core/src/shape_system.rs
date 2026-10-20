@@ -310,6 +310,19 @@ pub enum ShapeRole {
     Dialog,
     Sheet,
     Tooltip,
+    /// Icon buttons and other round controls (pill / circle in M3).
+    IconButton,
+    FabSmall,
+    FabLarge,
+    SearchBar,
+    Snackbar,
+    Carousel,
+    SideSheet,
+    Checkbox,
+    /// Selection indicators (navigation, tabs).
+    Indicator,
+    RichTooltip,
+    Toolbar,
 }
 
 /// How a corner is drawn across a whole design system.
@@ -385,6 +398,17 @@ const M3_ROLES: &[RoleShape] = &[
     r(ShapeRole::Dialog, ShapeSize::ExtraLarge, ALL),
     r(ShapeRole::Sheet, ShapeSize::ExtraLarge, Corners::TOP),
     r(ShapeRole::Tooltip, ShapeSize::ExtraSmall, ALL),
+    r(ShapeRole::IconButton, ShapeSize::Full, ALL),
+    r(ShapeRole::FabSmall, ShapeSize::Medium, ALL),
+    r(ShapeRole::FabLarge, ShapeSize::ExtraLarge, ALL),
+    r(ShapeRole::SearchBar, ShapeSize::Full, ALL),
+    r(ShapeRole::Snackbar, ShapeSize::ExtraSmall, ALL),
+    r(ShapeRole::Carousel, ShapeSize::ExtraLarge, ALL),
+    r(ShapeRole::SideSheet, ShapeSize::Large, ALL),
+    r(ShapeRole::Checkbox, ShapeSize::Px(2.0), ALL),
+    r(ShapeRole::Indicator, ShapeSize::Full, ALL),
+    r(ShapeRole::RichTooltip, ShapeSize::Medium, ALL),
+    r(ShapeRole::Toolbar, ShapeSize::Full, ALL),
 ];
 
 impl ShapeSystem {

@@ -159,6 +159,7 @@ pub fn light() -> Theme {
     .build();
     t.palette.roles = light_roles();
     t.motion = motion();
+    t.shape_system = Some(dodai_core::ShapeSystem::material3());
     t
 }
 
@@ -205,6 +206,7 @@ pub fn dark() -> Theme {
     .build();
     t.palette.roles = dark_roles();
     t.motion = motion();
+    t.shape_system = Some(dodai_core::ShapeSystem::material3());
     t
 }
 

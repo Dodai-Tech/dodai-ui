@@ -154,13 +154,13 @@ impl Button {
                 state != ControlState::Idle,
             )
         };
-        let mut shape = t.shape.clone();
+        let mut shape = t.role_shape(dodai_core::ShapeRole::Button);
         if let Some(c) = self.corners {
             shape.corners = c;
         }
         let mut el = track(shaped_id(self.id, &shape, style), &st)
             .h(px(t.shape.control_height))
-            .px(px(t.spacing.md))
+            .px(px(t.button_padding()))
             .mt(px(lift + if pressed { 1.0 } else { 0.0 }))
             .mb(px(-lift + if pressed { -1.0 } else { 0.0 }))
             .flex()

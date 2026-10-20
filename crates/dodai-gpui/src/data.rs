@@ -403,8 +403,18 @@ impl Chip {
             style = ShapeStyle::from_tokens(&t, None, Some(t.palette.border), false, false);
             fg = hsla(t.palette.text_disabled);
         }
-        let h = t.shape.control_height * 0.7;
-        let shape = round_shape(&t.shape, h);
+        let tonal = t.shape.kind() == dodai_core::ShapeKind::Rounded;
+        // M3 chips are 32 px tall with the small corner radius.
+        let h = if tonal {
+            32.0
+        } else {
+            t.shape.control_height * 0.7
+        };
+        let shape = if tonal {
+            t.role_shape(dodai_core::ShapeRole::Chip)
+        } else {
+            round_shape(&t.shape, h)
+        };
         let rid: ElementId = (self.id.clone(), "x").into();
         let mut el = track(shaped_id(self.id, &shape, style), &st)
             .h(px(h))

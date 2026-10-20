@@ -171,34 +171,37 @@ impl Select {
             }
         };
 
-        let mut trigger = track(shaped_id(tid, &t.shape, style), &hov)
-            .h(px(t.shape.control_height))
-            .w_full()
-            .px(px(t.spacing.sm))
-            .flex()
-            .items_center()
-            .gap(px(t.spacing.sm))
-            .font_family(first_family(t.typography.body))
-            .text_size(px(t.typography.size_md))
-            .text_color(text_color)
-            .child(
-                canvas(
-                    {
-                        let st = st.clone();
-                        move |b, _, cx| st.update(cx, |s, _| s.trigger = b)
-                    },
-                    |_, _, _, _| (),
-                )
-                .absolute()
-                .size_full(),
+        let mut trigger = track(
+            shaped_id(tid, &t.role_shape(dodai_core::ShapeRole::Input), style),
+            &hov,
+        )
+        .h(px(t.shape.control_height))
+        .w_full()
+        .px(px(t.spacing.sm))
+        .flex()
+        .items_center()
+        .gap(px(t.spacing.sm))
+        .font_family(first_family(t.typography.body))
+        .text_size(px(t.typography.size_md))
+        .text_color(text_color)
+        .child(
+            canvas(
+                {
+                    let st = st.clone();
+                    move |b, _, cx| st.update(cx, |s, _| s.trigger = b)
+                },
+                |_, _, _, _| (),
             )
-            .child(
-                div().flex_1().overflow_hidden().whitespace_nowrap().child(
-                    current
-                        .as_ref()
-                        .map_or(self.placeholder.clone(), |o| o.label.clone()),
-                ),
-            );
+            .absolute()
+            .size_full(),
+        )
+        .child(
+            div().flex_1().overflow_hidden().whitespace_nowrap().child(
+                current
+                    .as_ref()
+                    .map_or(self.placeholder.clone(), |o| o.label.clone()),
+            ),
+        );
         if let Some(o) = &current {
             if !o.swatches.is_empty() {
                 trigger = trigger.child(swatch_row(&t, &o.swatches));
@@ -335,7 +338,7 @@ impl Select {
                 rows = rows.child(row);
             }
             let out = st.clone();
-            let popup = shaped(&t.shape, popup_style(&t))
+            let popup = shaped(&t.role_shape(dodai_core::ShapeRole::Menu), popup_style(&t))
                 .absolute()
                 .top(px(t.shape.control_height + 4.0))
                 .left_0()

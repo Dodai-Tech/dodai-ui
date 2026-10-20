@@ -29,7 +29,7 @@ pub use color::Color;
 pub use component::{
     ButtonTokens, ButtonVariant, CardVariant, ControlState, InputTokens, ListItemTokens,
     PanelTokens, ProgressTokens, StepState, StepTokens, SurfaceTokens, TabTokens, TagTokens,
-    ToggleTokens,
+    ToggleKind, ToggleTokens,
 };
 pub use dodai_motion;
 pub use dodai_motion::{Easing, EntryKind, EntrySet, Motion};

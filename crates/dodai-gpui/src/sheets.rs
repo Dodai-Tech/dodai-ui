@@ -112,11 +112,14 @@ impl ParentElement for BottomSheet {
 impl RenderOnce for BottomSheet {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        let handle = div()
-            .w(px(40.0))
-            .h(px(4.0))
-            .bg(hsla(t.palette.border_strong));
-        let mut sheet = shaped(&t.shape, sheet_style(&t))
+        let handle = div().w(px(32.0)).h(px(4.0)).rounded_full().bg(hsla(
+            if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+                t.palette.roles.on_surface_variant
+            } else {
+                t.palette.border_strong
+            },
+        ));
+        let mut sheet = shaped(&t.role_shape(dodai_core::ShapeRole::Sheet), sheet_style(&t))
             .w_full()
             .h(px(self.height))
             .p(px(t.spacing.lg))
@@ -208,31 +211,34 @@ impl RenderOnce for SideSheet {
         if let Some(f) = close {
             x = x.on_click(move |_, w, cx| f(w, cx));
         }
-        let sheet = shaped(&t.shape, sheet_style(&t))
-            .w(px(self.width))
-            .h_full()
-            .p(px(t.spacing.lg))
-            .flex()
-            .flex_col()
-            .gap(px(t.spacing.md))
-            .font_family(first_family(t.typography.body))
-            .text_size(px(t.typography.size_md))
-            .text_color(hsla(t.palette.text))
-            .child(
-                div()
-                    .flex()
-                    .items_center()
-                    .justify_between()
-                    .child(title_el(&t, &self.title))
-                    .child(x),
-            )
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap(px(t.spacing.sm))
-                    .children(self.body),
-            );
+        let sheet = shaped(
+            &t.role_shape(dodai_core::ShapeRole::SideSheet),
+            sheet_style(&t),
+        )
+        .w(px(self.width))
+        .h_full()
+        .p(px(t.spacing.lg))
+        .flex()
+        .flex_col()
+        .gap(px(t.spacing.md))
+        .font_family(first_family(t.typography.body))
+        .text_size(px(t.typography.size_md))
+        .text_color(hsla(t.palette.text))
+        .child(
+            div()
+                .flex()
+                .items_center()
+                .justify_between()
+                .child(title_el(&t, &self.title))
+                .child(x),
+        )
+        .child(
+            div()
+                .flex()
+                .flex_col()
+                .gap(px(t.spacing.sm))
+                .children(self.body),
+        );
         let mut layer = scrim(self.id, &t, self.on_dismiss, self.modal);
         layer = match self.edge {
             SheetEdge::Left => layer.justify_start(),
@@ -397,8 +403,16 @@ impl Snackbar {
                 .or(style.stroke)
                 .filter(|_| tokens.border.is_some()),
             ..style
-        };
-        let mut bar = shaped(&t.shape, style)
+        }
+        .with_elevation(
+            if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+                3
+            } else {
+                0
+            },
+            hsla(t.palette.roles.shadow),
+        );
+        let mut bar = shaped(&t.role_shape(dodai_core::ShapeRole::Snackbar), style)
             .px(px(t.spacing.lg))
             .py(px(t.spacing.sm))
             .flex()
@@ -433,8 +447,14 @@ mod tests {
     fn sheet_style_is_themed() {
         for t in [light_rounded(), square()] {
             let s = sheet_style(&t);
-            assert_eq!(s.fill, Some(hsla(t.palette.surface)));
-            assert!(s.stroke.is_some());
+            if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+                // M3: tonal container, no outline.
+                assert_eq!(s.fill, Some(hsla(t.palette.roles.surface_container_low)));
+                assert!(s.stroke.is_none());
+            } else {
+                assert_eq!(s.fill, Some(hsla(t.palette.surface)));
+                assert!(s.stroke.is_some());
+            }
         }
     }
 }

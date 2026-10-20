@@ -24,7 +24,11 @@ pub fn card_style(theme: &Theme, v: CardVariant) -> ShapeStyle {
     let mut st = ShapeStyle::from_surface(theme, theme.card(v)).0;
     // No hard offset shadow in this theme: lift an elevated card with a soft one.
     if v == CardVariant::Elevated && st.shadow.is_none() && st.glow.is_none() {
-        st.glow = Some((crate::hsla(theme.effects.shadow), 10.0));
+        if theme.shape.kind() == dodai_core::ShapeKind::Rounded {
+            st = st.with_elevation(1, crate::hsla(theme.palette.roles.shadow));
+        } else {
+            st.glow = Some((crate::hsla(theme.effects.shadow), 10.0));
+        }
     }
     st
 }
@@ -220,8 +224,26 @@ impl IconButton {
             Some(false) => ButtonVariant::Outline,
             None => self.variant,
         };
-        let (style, fg) = button_style(&t, variant, state);
+        let selected = self.toggled == Some(true);
+        let (style, fg) =
+            if t.shape.kind() == dodai_core::ShapeKind::Rounded && self.toggled.is_some() {
+                // M3 toggle icon button: selected = filled, unselected = outlined.
+                let b = t.icon_button(variant, state, false);
+                (
+                    ShapeStyle::from_tokens(&t, b.background, b.border, false, false),
+                    hsla(b.foreground),
+                )
+            } else if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+                let b = t.icon_button(variant, state, selected);
+                (
+                    ShapeStyle::from_tokens(&t, b.background, b.border, false, false),
+                    hsla(b.foreground),
+                )
+            } else {
+                button_style(&t, variant, state)
+            };
         let side = t.shape.control_height;
+        let shape = t.role_shape(dodai_core::ShapeRole::IconButton);
         let lift = if self.disabled {
             0.0
         } else {
@@ -232,7 +254,7 @@ impl IconButton {
                 state != ControlState::Idle,
             )
         };
-        let mut el = track(shaped_id(self.id, &t.shape, style), &st)
+        let mut el = track(shaped_id(self.id, &shape, style), &st)
             .mt(px(lift))
             .mb(px(-lift))
             .w(px(side))
@@ -273,6 +295,14 @@ impl FabSize {
     /// Side length in px relative to the theme control height.
     pub fn side(self, theme: &Theme) -> f32 {
         let h = theme.shape.control_height;
+        if theme.shape.kind() == dodai_core::ShapeKind::Rounded {
+            // M3: 40 / 56 / 96.
+            return match self {
+                FabSize::Small => 40.0,
+                FabSize::Regular => 56.0,
+                FabSize::Large => 96.0,
+            };
+        }
         match self {
             FabSize::Small => h,
             FabSize::Regular => h * 1.2,
@@ -339,7 +369,18 @@ impl Fab {
         let t = crate::apply_corners(t, self.corners);
         let st = use_interact(&self.id, window, cx);
         let state = st.read(cx).control_state(false);
-        let (mut style, fg) = button_style(&t, self.variant, state);
+        let b = t.fab(self.variant, state);
+        let (mut style, fg) = (
+            ShapeStyle::from_tokens(&t, b.background, b.border, false, false),
+            hsla(b.foreground),
+        );
+        if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+            let level = match state {
+                ControlState::Hovered => 4,
+                _ => 3,
+            };
+            style = style.with_elevation(level, hsla(t.palette.roles.shadow));
+        }
         // FABs always float: shadow + glow even at rest.
         let fx = &t.effects;
         if fx.glow_enabled() {
@@ -352,7 +393,13 @@ impl Fab {
             (self.id.clone(), "lift").into(),
             state != ControlState::Idle,
         );
-        let mut el = track(shaped_id(self.id, &t.shape, style), &st)
+        let role = match (self.label.is_some(), self.size) {
+            (false, FabSize::Small) => dodai_core::ShapeRole::FabSmall,
+            (false, FabSize::Large) => dodai_core::ShapeRole::FabLarge,
+            _ => dodai_core::ShapeRole::Fab,
+        };
+        let shape = t.role_shape(role);
+        let mut el = track(shaped_id(self.id, &shape, style), &st)
             .mt(px(lift))
             .mb(px(-lift))
             .h(px(side))
@@ -364,11 +411,22 @@ impl Fab {
             .text_size(px(t.typography.size_lg))
             .cursor_pointer();
         el = match &self.label {
-            Some(_) => el.px(px(t.spacing.lg)),
+            Some(_) => el.pl(px(t.spacing.md)).pr(px(t.spacing.lg)),
             None => el.w(px(side)),
         };
         el = match self.icon {
-            Some(i) => el.child(crate::icons::Icon::new(i).size(side * 0.42).color(fg)),
+            Some(i) => {
+                let sz = if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+                    if self.size == FabSize::Large && self.label.is_none() {
+                        36.0
+                    } else {
+                        24.0
+                    }
+                } else {
+                    side * 0.42
+                };
+                el.child(crate::icons::Icon::new(i).size(sz).color(fg))
+            }
             None => el.child(self.glyph),
         };
         if let Some(l) = self.label {
@@ -462,7 +520,148 @@ impl Navigation {
 }
 
 impl Navigation {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(self, window: &mut Window, cx: &mut App) -> AnyElement {
+        let t = theme_of(cx);
+        if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+            return self.build_m3(t, window, cx).into_any_element();
+        }
+        self.build_classic(window, cx).into_any_element()
+    }
+
+    /// Material 3 navigation bar (80 px), rail (80 px wide) and drawer (360 px wide): a pill
+    /// indicator in `secondary-container` behind the active icon, labels in `on-surface`.
+    fn build_m3(self, t: Theme, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let r = &t.palette.roles;
+        let layout = self.layout;
+        let (bg, root_w) = match layout {
+            NavLayout::Bar => (r.surface_container, None),
+            NavLayout::Rail => (t.palette.background, Some(80.0)),
+            NavLayout::Drawer => (r.surface_container_low, Some(360.0)),
+        };
+        let mut root = div()
+            .flex()
+            .bg(hsla(bg))
+            .font_family(first_family(t.typography.body));
+        root = match layout {
+            NavLayout::Bar => root.flex_row().h(px(80.0)).w_full().px(px(8.0)),
+            NavLayout::Rail => root
+                .flex_col()
+                .items_center()
+                .gap(px(12.0))
+                .pt(px(44.0))
+                .pb(px(16.0))
+                .w(px(root_w.unwrap_or(80.0))),
+            NavLayout::Drawer => root
+                .flex_col()
+                .gap(px(0.0))
+                .p(px(12.0))
+                .w(px(root_w.unwrap_or(360.0))),
+        };
+        let indicator_shape = t.role_shape(dodai_core::ShapeRole::Indicator);
+        for (i, item) in self.items.iter().enumerate() {
+            let id: ElementId = (self.id.clone(), i.to_string()).into();
+            let st = use_interact(&id, window, cx);
+            let hovered = st.read(cx).hovered;
+            let active = i == self.active;
+            let (icon_fg, label_fg) = if active {
+                (r.on_secondary_container, r.on_surface)
+            } else {
+                (r.on_surface_variant, r.on_surface_variant)
+            };
+            let layer = if hovered { 0.08 } else { 0.0 };
+            let ind_fill = if active {
+                Some(r.secondary_container)
+            } else if hovered {
+                Some(r.on_surface.with_alpha(layer))
+            } else {
+                None
+            };
+            let ind_style = ShapeStyle::from_tokens(&t, ind_fill, None, false, false);
+            let mk_glyph = || {
+                let mut glyph = div()
+                    .relative()
+                    .text_size(px(24.0))
+                    .text_color(hsla(icon_fg))
+                    .child(item.glyph.clone());
+                if let Some(n) = item.badge {
+                    glyph = glyph.child(
+                        div()
+                            .absolute()
+                            .top(px(-6.0))
+                            .right(px(-10.0))
+                            .min_w(px(16.0))
+                            .h(px(16.0))
+                            .px(px(4.0))
+                            .flex()
+                            .items_center()
+                            .justify_center()
+                            .rounded_full()
+                            .text_size(px(11.0))
+                            .bg(hsla(t.palette.danger))
+                            .text_color(hsla(r.on_error))
+                            .child(n.to_string()),
+                    );
+                }
+                glyph
+            };
+            let label = format_label(&t.typography, &item.label);
+            let mut el = track(gpui::InteractiveElement::id(div(), id), &st)
+                .cursor_pointer()
+                .flex()
+                .items_center()
+                .whitespace_nowrap();
+            el = match layout {
+                NavLayout::Bar => el
+                    .flex_col()
+                    .flex_1()
+                    .pt(px(12.0))
+                    .pb(px(16.0))
+                    .gap(px(4.0)),
+                NavLayout::Rail => el.flex_col().gap(px(4.0)).w_full(),
+                NavLayout::Drawer => el.flex_row().w_full(),
+            };
+            let ind = shaped(&indicator_shape, ind_style).flex().items_center();
+            let ind = match layout {
+                NavLayout::Bar => ind.w(px(64.0)).h(px(32.0)).justify_center(),
+                NavLayout::Rail => ind.w(px(56.0)).h(px(32.0)).justify_center(),
+                NavLayout::Drawer => ind
+                    .w_full()
+                    .h(px(56.0))
+                    .pl(px(16.0))
+                    .pr(px(24.0))
+                    .gap(px(12.0))
+                    .text_size(px(t.typography.size_md))
+                    .text_color(hsla(if active {
+                        r.on_secondary_container
+                    } else {
+                        r.on_surface_variant
+                    }))
+                    .child(mk_glyph())
+                    .child(label.clone()),
+            };
+            el = match layout {
+                NavLayout::Drawer => el.child(ind),
+                _ => el.child(ind.child(mk_glyph())).child(
+                    div()
+                        .text_size(px(12.0))
+                        .text_color(hsla(label_fg))
+                        .font_weight(if active {
+                            gpui::FontWeight::BOLD
+                        } else {
+                            gpui::FontWeight::MEDIUM
+                        })
+                        .child(label),
+                ),
+            };
+            if let Some(f) = self.on_select.clone() {
+                el = el.on_click(move |_, w, cx| f(i, w, cx));
+            }
+            root = root.child(el);
+        }
+        root
+    }
+
+    fn build_classic(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
         let layout = self.layout;
@@ -740,7 +939,12 @@ mod tests {
             let e = card_style(&t, CardVariant::Elevated);
             let f = card_style(&t, CardVariant::Filled);
             let o = card_style(&t, CardVariant::Outlined);
-            assert!(e.fill.is_some() && e.stroke.is_some());
+            assert!(e.fill.is_some());
+            // M3 elevated cards are lifted by a shadow, not an outline.
+            assert_eq!(
+                e.stroke.is_some(),
+                t.shape.kind() != dodai_core::ShapeKind::Rounded
+            );
             assert!(f.fill.is_some() && f.stroke.is_none());
             assert!(o.fill.is_none() && o.stroke.is_some());
         }

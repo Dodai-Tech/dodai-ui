@@ -106,7 +106,7 @@ impl Menu {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
-        let mut col = shaped(&t.shape, popup_style(&t))
+        let mut col = shaped(&t.role_shape(dodai_core::ShapeRole::Menu), popup_style(&t))
             .w(px(self.width))
             .p(px(t.spacing.xs + 2.0))
             .flex()

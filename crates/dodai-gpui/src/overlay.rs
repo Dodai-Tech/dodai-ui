@@ -12,7 +12,11 @@ use std::rc::Rc;
 
 /// Paint style of the dialog box (pure): raised surface, strong border, glow, hard shadow.
 pub fn dialog_style(theme: &Theme) -> ShapeStyle {
-    ShapeStyle::from_surface(theme, theme.dialog()).0
+    let st = ShapeStyle::from_surface(theme, theme.dialog()).0;
+    if theme.shape.kind() == dodai_core::ShapeKind::Rounded {
+        return st.with_elevation(3, hsla(theme.palette.roles.shadow));
+    }
+    st
 }
 
 /// Scrim colour: the theme overlay colour, never fully opaque.
@@ -70,29 +74,40 @@ impl DialogCard {
     fn build(self, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
-        let mut d = shaped(&t.shape, dialog_style(&t))
-            .w(px(self.width))
-            .p(px(t.spacing.lg))
-            .flex()
-            .flex_col()
-            .gap(px(t.spacing.md))
-            .font_family(first_family(t.typography.body))
-            .text_size(px(t.typography.size_md))
-            .text_color(hsla(t.palette.text))
-            .child(
-                div()
-                    .font_family(first_family(t.typography.display))
-                    .text_size(px(t.typography.size_lg))
-                    .child(format_label(&t.typography, &self.title)),
-            )
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap(px(t.spacing.sm))
-                    .text_color(hsla(t.palette.text_muted))
-                    .children(self.body),
-            );
+        let mut d = shaped(
+            &t.role_shape(dodai_core::ShapeRole::Dialog),
+            dialog_style(&t),
+        )
+        .w(px(self.width))
+        .p(px(t.spacing.lg))
+        .flex()
+        .flex_col()
+        .gap(px(t.spacing.md))
+        .font_family(first_family(t.typography.body))
+        .text_size(px(t.typography.size_md))
+        .text_color(hsla(t.palette.text))
+        .child(
+            div()
+                .font_family(first_family(t.typography.display))
+                .text_size(px(if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+                    t.typography.size_xl
+                } else {
+                    t.typography.size_lg
+                }))
+                .child(format_label(&t.typography, &self.title)),
+        )
+        .child(
+            div()
+                .flex()
+                .flex_col()
+                .gap(px(t.spacing.sm))
+                .text_color(hsla(if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+                    t.palette.roles.on_surface_variant
+                } else {
+                    t.palette.text_muted
+                }))
+                .children(self.body),
+        );
         if !self.actions.is_empty() {
             d = d.child(
                 div()
@@ -170,7 +185,12 @@ mod tests {
         for t in [light_rounded(), square()] {
             let s = scrim_color(&t);
             assert!(s.a < 1.0 && s.a > 0.3);
-            assert_eq!(s.l, hsla(t.palette.background).l);
+            // Material uses the `scrim` role (32 % black), the others the page colour.
+            if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+                assert_eq!(s.l, hsla(t.palette.roles.scrim).l);
+            } else {
+                assert_eq!(s.l, hsla(t.palette.background).l);
+            }
         }
     }
 
@@ -178,6 +198,11 @@ mod tests {
     fn dialog_follows_tokens() {
         let l = dialog_style(&light_rounded());
         assert!(l.glow.is_none() && l.shadow.is_none());
+        assert_eq!(
+            l.elevation.map(|e| e.0),
+            Some(3),
+            "M3 dialog is elevation 3"
+        );
         assert!(dialog_style(&square()).shadow.is_some());
     }
 }

@@ -103,8 +103,11 @@ fn choice(
     mixed: bool,
     window: &mut Window,
     cx: &mut App,
-) -> impl IntoElement {
+) -> gpui::AnyElement {
     let t = theme_of(cx);
+    if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+        return m3_choice(kind, id, on, disabled, handler, radio, mixed, window, cx);
+    }
     // A half-checked box is drawn "on" with a dash; clicking it selects all.
     let (on_value, on) = (on, on || mixed);
     let st = use_interact(&id, window, cx);
@@ -141,6 +144,9 @@ fn choice(
     };
     let shape = match kind {
         Kind::Switch | Kind::Radio => round_shape(&t.shape, h),
+        Kind::Checkbox if t.shape.kind() == dodai_core::ShapeKind::Rounded => {
+            t.role_shape(dodai_core::ShapeRole::Checkbox)
+        }
         Kind::Checkbox => scaled_shape(&t.shape, h),
     };
     let mut el = track(shaped_id(id, &shape, style), &st)
@@ -188,7 +194,155 @@ fn choice(
                 .on_click(move |_, w, cx| f(if radio || mixed { true } else { !on_value }, w, cx));
         }
     }
-    el
+    el.into_any_element()
+}
+
+/// Material 3 switch (52×32), checkbox (18 px box) and radio (20 px ring), each with the 40 px
+/// state layer; colours from [`Theme::m3_toggle`].
+#[allow(clippy::too_many_arguments)]
+fn m3_choice(
+    kind: Kind,
+    id: ElementId,
+    on: bool,
+    disabled: bool,
+    handler: Option<BoolHandler>,
+    radio: bool,
+    mixed: bool,
+    window: &mut Window,
+    cx: &mut App,
+) -> gpui::AnyElement {
+    use crate::motion::{lerp, mix, smooth_with, transition, Easing, Motion};
+    use dodai_core::ToggleKind;
+    let t = theme_of(cx);
+    let r = t.palette.roles.clone();
+    let (on_value, on) = (on, on || mixed);
+    let tk = match kind {
+        Kind::Switch => ToggleKind::Switch,
+        Kind::Checkbox => ToggleKind::Checkbox,
+        Kind::Radio => ToggleKind::Radio,
+    };
+    let st = use_interact(&id, window, cx);
+    let state = st.read(cx).control_state(disabled);
+    let p = transition(window, cx, id.clone(), on);
+    let (off_k, on_k) = (t.m3_toggle(tk, false, state), t.m3_toggle(tk, true, state));
+    let m = |a: dodai_core::Color, b: dodai_core::Color| mix(hsla(a), hsla(b), p);
+    let (track_c, border_c, thumb_c) = (
+        m(off_k.track, on_k.track),
+        m(off_k.border, on_k.border),
+        m(off_k.thumb, on_k.thumb),
+    );
+    let layer_alpha = match state {
+        ControlState::Hovered => 0.08,
+        ControlState::Pressed | ControlState::Focused => 0.10,
+        _ => 0.0,
+    };
+    let layer_c = hsla(if on { t.palette.primary } else { r.on_surface }).opacity(layer_alpha);
+    let layer_style = |d: f32| {
+        let mut s = ShapeStyle::from_tokens(&t, None, None, false, false);
+        s.fill = Some(layer_c);
+        (round_shape(&t.shape, d), s)
+    };
+    let mut el = match kind {
+        Kind::Switch => {
+            let thumb = smooth_with(
+                window,
+                cx,
+                (id.clone(), "thumb").into(),
+                if on { 1.0 } else { 0.0 },
+                Motion::new(std::time::Duration::from_millis(450), Easing::SPRING_STIFF),
+            );
+            let size = lerp(16.0, 24.0, p.clamp(0.0, 1.0));
+            let centre = lerp(16.0, 36.0, thumb);
+            // Absolute children sit inside the 2 px outline.
+            let (ls, lst) = layer_style(40.0);
+            let mut track_style = ShapeStyle::from_tokens(&t, None, None, false, false);
+            track_style.fill = Some(track_c);
+            track_style.stroke = Some(border_c);
+            track_style.stroke_width = 2.0;
+            let mut handle = ShapeStyle::from_tokens(&t, None, None, false, false);
+            handle.fill = Some(thumb_c);
+            track(
+                shaped_id(id, &round_shape(&t.shape, 32.0), track_style),
+                &st,
+            )
+            .w(px(52.0))
+            .h(px(32.0))
+            .flex_none()
+            .child(
+                shaped(&ls, lst)
+                    .absolute()
+                    .left(px(centre - 20.0 - 2.0))
+                    .top(px(-4.0 - 2.0))
+                    .w(px(40.0))
+                    .h(px(40.0)),
+            )
+            .child(
+                shaped(&round_shape(&t.shape, size), handle)
+                    .absolute()
+                    .left(px(centre - size / 2.0 - 2.0))
+                    .top(px((32.0 - size) / 2.0 - 2.0))
+                    .w(px(size))
+                    .h(px(size)),
+            )
+        }
+        Kind::Checkbox | Kind::Radio => {
+            let (ls, lst) = layer_style(40.0);
+            let outer = track(shaped_id(id, &ls, lst), &st)
+                .w(px(40.0))
+                .h(px(40.0))
+                .flex_none()
+                .flex()
+                .items_center()
+                .justify_center();
+            let mut ring = ShapeStyle::from_tokens(&t, None, None, false, false);
+            ring.fill = Some(track_c);
+            ring.stroke = Some(border_c);
+            ring.stroke_width = 2.0;
+            if kind == Kind::Checkbox {
+                // Selected: no outline (the container is filled).
+                if p > 0.5 {
+                    ring.stroke = None;
+                }
+                let mut b = shaped(&t.role_shape(dodai_core::ShapeRole::Checkbox), ring)
+                    .w(px(18.0))
+                    .h(px(18.0))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .text_color(thumb_c)
+                    .text_size(px(14.0));
+                if p > 0.01 {
+                    b = b.child(if mixed { "−" } else { "✓" });
+                }
+                outer.child(b)
+            } else {
+                let mut b = shaped(&round_shape(&t.shape, 20.0), ring)
+                    .w(px(20.0))
+                    .h(px(20.0))
+                    .flex()
+                    .items_center()
+                    .justify_center();
+                if p > 0.01 {
+                    let mut dot = ShapeStyle::from_tokens(&t, None, None, false, false);
+                    dot.fill = Some(thumb_c);
+                    b = b.child(
+                        shaped(&round_shape(&t.shape, 10.0), dot)
+                            .w(px(10.0 * p))
+                            .h(px(10.0 * p)),
+                    );
+                }
+                outer.child(b)
+            }
+        }
+    };
+    if !disabled {
+        el = el.cursor_pointer();
+        if let Some(f) = handler {
+            el = el
+                .on_click(move |_, w, cx| f(if radio || mixed { true } else { !on_value }, w, cx));
+        }
+    }
+    el.into_any_element()
 }
 
 macro_rules! choice_component {
@@ -309,7 +463,16 @@ impl ProgressBar {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let g = crate::motion::grow(window, cx, "ProgressBar");
-        bar(&t, self.value * g, self.tone, t.spacing.sm + 2.0)
+        bar(
+            &t,
+            self.value * g,
+            self.tone,
+            if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+                4.0
+            } else {
+                t.spacing.sm + 2.0
+            },
+        )
     }
 }
 
@@ -420,6 +583,10 @@ impl Slider {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
+        let tonal = t.shape.kind() == dodai_core::ShapeKind::Rounded;
+        // M3: 20 px handle on a 4 px track.
+        let thumb_d = if tonal { 20.0 } else { THUMB };
+        let track_h = if tonal { 4.0 } else { 6.0 };
         let vertical = self.direction == Direction::Vertical;
         let st = window.use_keyed_state(self.id.clone(), cx, |_, _| SliderState::default());
         let raw = slider_fraction(self.value, self.min, self.max);
@@ -441,7 +608,7 @@ impl Slider {
                     } else {
                         ((p.x - b.origin.x).into(), b.size.width.into())
                     };
-                    f(slider_value(pos, 0.0, len, THUMB, min, max, step), w, cx);
+                    f(slider_value(pos, 0.0, len, thumb_d, min, max, step), w, cx);
                 }
             }
         };
@@ -449,8 +616,14 @@ impl Slider {
         let (down, mv, up, up2) = (st.clone(), st.clone(), st.clone(), st.clone());
         let (apply_down, apply_move) = (apply.clone(), apply);
         let k = t.toggle(true, ControlState::Idle);
-        let thumb_style = ShapeStyle::from_tokens(&t, Some(k.track), Some(k.border), true, false);
-        let thumb_shape = round_shape(&t.shape, THUMB);
+        let thumb_style = if tonal {
+            let mut s = ShapeStyle::from_tokens(&t, Some(t.palette.primary), None, false, false);
+            s = s.with_elevation(1, hsla(t.palette.roles.shadow));
+            s
+        } else {
+            ShapeStyle::from_tokens(&t, Some(k.track), Some(k.border), true, false)
+        };
+        let thumb_shape = round_shape(&t.shape, thumb_d);
         let base = div()
             .id(self.id)
             .relative()
@@ -458,19 +631,21 @@ impl Slider {
             .items_center()
             .cursor_pointer();
         let base = if vertical {
-            base.w(px(THUMB + 4.0)).h(px(self.length)).justify_center()
+            base.w(px(thumb_d + 4.0))
+                .h(px(self.length))
+                .justify_center()
         } else {
-            base.w_full().h(px(THUMB + 4.0))
+            base.w_full().h(px(thumb_d + 4.0))
         };
         let track = if vertical {
-            div().h_full().w(px(6.0)).child(vbar(&t, frac, 6.0))
+            div().h_full().w(px(track_h)).child(vbar(&t, frac, track_h))
         } else {
-            div().w_full().child(bar(&t, frac, None, 6.0))
+            div().w_full().child(bar(&t, frac, None, track_h))
         };
         let thumb = shaped(&thumb_shape, thumb_style)
             .absolute()
-            .w(px(THUMB))
-            .h(px(THUMB));
+            .w(px(thumb_d))
+            .h(px(thumb_d));
         let rail = div().absolute().top_0().bottom_0().left_0().right_0();
         let tick_c = hsla(t.palette.border_strong);
         let ticks = if self.ticks {
@@ -479,7 +654,7 @@ impl Slider {
             Vec::new()
         };
         let rail = if vertical {
-            let mut r = rail.top(px(THUMB / 2.0)).bottom(px(THUMB / 2.0));
+            let mut r = rail.top(px(thumb_d / 2.0)).bottom(px(thumb_d / 2.0));
             for f in &ticks {
                 r = r.child(
                     div()
@@ -495,10 +670,10 @@ impl Slider {
                 thumb
                     .left(px(2.0))
                     .top(relative(1.0 - frac))
-                    .mt(px(-THUMB / 2.0)),
+                    .mt(px(-thumb_d / 2.0)),
             )
         } else {
-            let mut r = rail.left(px(THUMB / 2.0)).right(px(THUMB / 2.0));
+            let mut r = rail.left(px(thumb_d / 2.0)).right(px(thumb_d / 2.0));
             for f in &ticks {
                 r = r.child(
                     div()
@@ -518,7 +693,7 @@ impl Slider {
                 };
                 let y = match bp {
                     BubblePlacement::Above => -26.0,
-                    BubblePlacement::Below => THUMB + 8.0,
+                    BubblePlacement::Below => thumb_d + 8.0,
                 };
                 let pill = ShapeStyle::from_tokens(
                     &t,
@@ -548,7 +723,12 @@ impl Slider {
                         ),
                 );
             }
-            r.child(thumb.top(px(2.0)).left(relative(frac)).ml(px(-THUMB / 2.0)))
+            r.child(
+                thumb
+                    .top(px(2.0))
+                    .left(relative(frac))
+                    .ml(px(-thumb_d / 2.0)),
+            )
         };
         let readout = self.show_value.then(|| {
             let txt = match &self.format {
