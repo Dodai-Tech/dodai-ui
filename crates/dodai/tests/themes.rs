@@ -317,3 +317,30 @@ fn every_theme_has_its_own_sane_motion() {
         "design systems move differently"
     );
 }
+
+#[test]
+fn material_banners_are_tonal_and_snackbar_is_inverse() {
+    for t in themes::all() {
+        let (sb, action) = t.snackbar();
+        let b = t.alert(Tone::Warning, true);
+        let (bg, fg) = (b.background.unwrap(), b.foreground);
+        assert!(fg.contrast(bg) >= 4.5, "{}: banner text", t.meta.id);
+        let (sbg, sfg) = (sb.background.unwrap(), sb.foreground);
+        assert!(sfg.contrast(sbg) >= 4.5, "{}: snackbar text", t.meta.id);
+        assert!(
+            action.contrast(sbg) >= 3.0,
+            "{}: snackbar action",
+            t.meta.id
+        );
+        if t.shape.kind() == ShapeKind::Rounded {
+            assert_eq!(sbg, t.palette.roles.inverse_surface);
+            assert_ne!(
+                bg, t.palette.warning,
+                "{}: tonal, not the saturated tone",
+                t.meta.id
+            );
+        } else {
+            assert_eq!(bg, t.palette.warning);
+        }
+    }
+}

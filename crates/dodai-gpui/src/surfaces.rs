@@ -486,17 +486,19 @@ impl Navigation {
                 .text_size(px(t.typography.size_lg))
                 .child(item.glyph.clone());
             if let Some(n) = item.badge {
-                glyph = glyph.child(
-                    div()
-                        .absolute()
-                        .top(px(-4.0))
-                        .right(px(-14.0))
-                        .px(px(4.0))
-                        .text_size(px(10.0))
-                        .bg(hsla(t.palette.danger))
-                        .text_color(hsla(t.palette.text))
-                        .child(n.to_string()),
-                );
+                let mut pill = div()
+                    .absolute()
+                    .top(px(-4.0))
+                    .right(px(-14.0))
+                    .px(px(4.0))
+                    .text_size(px(10.0))
+                    .bg(hsla(t.palette.danger))
+                    .text_color(hsla(t.on(t.palette.danger)))
+                    .child(n.to_string());
+                if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+                    pill = pill.rounded_full().min_w(px(16.0)).flex().justify_center();
+                }
+                glyph = glyph.child(pill);
             }
             el = el
                 .child(glyph)
@@ -664,11 +666,24 @@ impl SearchBar {
 impl SearchBar {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        let t = crate::apply_corners(t, self.corners);
+        let mut t = crate::apply_corners(t, self.corners);
         let st = use_interact(&self.id, window, cx);
         let hovered = st.read(cx).control_state(false) != ControlState::Idle;
         let i = t.input(hovered);
-        let style = ShapeStyle::from_tokens(&t, Some(i.background), Some(i.border), hovered, false);
+        let pill = t.shape.kind() == dodai_core::ShapeKind::Rounded && self.corners.is_none();
+        let style = if pill {
+            // Rounded (Material): a full pill on a tonal container, no outline.
+            t.shape.radius = t.shape.control_height / 2.0;
+            ShapeStyle::from_tokens(
+                &t,
+                Some(t.palette.roles.surface_container_high),
+                None,
+                false,
+                false,
+            )
+        } else {
+            ShapeStyle::from_tokens(&t, Some(i.background), Some(i.border), hovered, false)
+        };
         let fg = if self.placeholder {
             i.placeholder
         } else {

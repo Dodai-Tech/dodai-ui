@@ -246,7 +246,14 @@ impl Theme {
     /// Alert: tinted and outlined, or a solid banner.
     pub fn alert(&self, tone: Tone, banner: bool) -> SurfaceTokens {
         let c = self.palette.tone(tone);
-        if banner {
+        if banner && self.shape.kind() == crate::ShapeKind::Rounded {
+            // Rounded (Material): a tonal container, not a saturated slab.
+            let fill = match tone {
+                Tone::Danger => self.palette.roles.error_container,
+                _ => self.palette.roles.surface_container_high.mix(c, 0.25),
+            };
+            Self::surface(Some(fill), None, self.on(fill), false, false)
+        } else if banner {
             Self::surface(Some(c), None, self.on(c), false, false)
         } else {
             Self::surface(
@@ -255,6 +262,33 @@ impl Theme {
                 self.palette.text,
                 false,
                 false,
+            )
+        }
+    }
+
+    /// Snackbar: `(surface, action colour)`. Rounded (Material) uses the inverse surface.
+    pub fn snackbar(&self) -> (SurfaceTokens, Color) {
+        let p = &self.palette;
+        if self.shape.kind() == crate::ShapeKind::Rounded {
+            (
+                Self::surface(
+                    Some(p.roles.inverse_surface),
+                    None,
+                    p.roles.inverse_on_surface,
+                    false,
+                    true,
+                ),
+                p.roles.inverse_primary,
+            )
+        } else {
+            let bg = p.surface_raised;
+            (
+                Self::surface(Some(bg), None, p.text, false, false),
+                if p.primary.contrast(bg) >= 3.0 {
+                    p.primary
+                } else {
+                    p.text
+                },
             )
         }
     }

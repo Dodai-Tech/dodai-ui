@@ -8,6 +8,7 @@ use crate::surfaces::IconButton;
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use dodai_core::{ButtonVariant, Theme};
+use gpui::StatefulInteractiveElement as _;
 use gpui::{
     deferred, div, px, AnyElement, App, ElementId, InteractiveElement, IntoElement, MouseButton,
     ParentElement, RenderOnce, SharedString, Styled, Window,
@@ -386,13 +387,17 @@ impl Snackbar {
     fn build(self, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
-        let (style, fg) =
-            button_style(&t, ButtonVariant::Secondary, dodai_core::ControlState::Idle);
+        let (tokens, action_colour) = t.snackbar();
+        let (style, _) = button_style(&t, ButtonVariant::Secondary, dodai_core::ControlState::Idle);
         let style = ShapeStyle {
-            fill: Some(hsla(t.palette.surface_raised)),
+            fill: tokens.background.map(hsla),
+            stroke: tokens
+                .border
+                .map(hsla)
+                .or(style.stroke)
+                .filter(|_| tokens.border.is_some()),
             ..style
         };
-        let _ = fg;
         let mut bar = shaped(&t.shape, style)
             .px(px(t.spacing.lg))
             .py(px(t.spacing.sm))
@@ -402,12 +407,16 @@ impl Snackbar {
             .gap(px(t.spacing.lg))
             .font_family(first_family(t.typography.body))
             .text_size(px(t.typography.size_md))
-            .text_color(hsla(t.palette.text))
+            .text_color(hsla(tokens.foreground))
             .child(self.message);
         if let (Some(l), Some(f)) = (self.action, self.on_action) {
             bar = bar.child(
-                crate::Button::new(self.id, l)
-                    .variant(ButtonVariant::Ghost)
+                div()
+                    .id(self.id)
+                    .cursor_pointer()
+                    .px(px(t.spacing.sm))
+                    .text_color(hsla(action_colour))
+                    .child(l)
                     .on_click(move |_, w, cx| f(w, cx)),
             );
         }
