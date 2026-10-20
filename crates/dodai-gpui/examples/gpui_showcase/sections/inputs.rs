@@ -1,6 +1,7 @@
 //! The "Inputs" category sections.
 
 use super::super::*;
+use dodai_gpui::CheckboxVariant;
 
 impl Showcase {
     #[allow(unused_variables, clippy::redundant_clone, clippy::vec_init_then_push)]
@@ -328,6 +329,54 @@ impl Showcase {
                 .child(radios)
                 .into_any_element(),
             "Toggle · Checkbox · Radio",
+        ));
+        let mut variants = col();
+        for v in CheckboxVariant::ALL {
+            let name = v.label();
+            let id = |k: &str| SharedString::from(format!("cv-{name}-{k}"));
+            let cell = |e: gpui::AnyElement| {
+                div()
+                    .w(px(56.0))
+                    .flex()
+                    .justify_center()
+                    .child(e)
+                    .into_any_element()
+            };
+            variants = variants.child(
+                row()
+                    .child(div().w(px(110.0)).child(Label::new(name)))
+                    .child(cell(
+                        Checkbox::new(id("off"), false)
+                            .variant(v)
+                            .into_any_element(),
+                    ))
+                    .child(cell(
+                        Checkbox::new(id("on"), true).variant(v).into_any_element(),
+                    ))
+                    .child(cell(
+                        Checkbox::new(id("mix"), false)
+                            .indeterminate(true)
+                            .variant(v)
+                            .into_any_element(),
+                    ))
+                    .child(cell(
+                        Checkbox::new(id("dis"), true)
+                            .disabled(true)
+                            .variant(v)
+                            .into_any_element(),
+                    ))
+                    .child(cell(
+                        Radio::new(id("ra"), true).variant(v).into_any_element(),
+                    )),
+            );
+        }
+        out.push((
+            "Inputs",
+            "Checkbox variants",
+            section!("Checkbox variants")
+                .child(variants)
+                .into_any_element(),
+            "Checkbox variants",
         ));
         out.push((
             "Inputs",

@@ -503,6 +503,7 @@ impl RenderOnce for CheckboxGroup {
             } else {
                 Checkbox::new(id, on)
                     .indeterminate(mixed)
+                    .variant(crate::CheckboxVariant::Compact)
                     .on_change(f)
                     .into_any_element()
             }

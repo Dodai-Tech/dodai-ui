@@ -85,6 +85,57 @@ pub fn slider_value(
 type FloatHandler = Rc<dyn Fn(f32, &mut Window, &mut App)>;
 type BoolHandler = Rc<dyn Fn(bool, &mut Window, &mut App)>;
 
+/// Size and look of a [`Checkbox`] / [`Radio`] under a Material (rounded) theme. Other design
+/// systems draw their own box and ignore it.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum CheckboxVariant {
+    /// M3 default: 18 px box inside a 40 px touch target with the state layer.
+    #[default]
+    Standard,
+    /// 18 px box in a 24 px target (dense lists, tables); the state layer shrinks with it.
+    Compact,
+    /// Bare 18 px box, no state layer and no padding (inline text, tight rows).
+    Dense,
+    /// 24 px box in a 48 px target (touch-first UIs).
+    Large,
+    /// Standard size, circular box (selection circles, task lists).
+    Round,
+    /// Standard size; selected state uses the secondary container instead of `primary`.
+    Tonal,
+}
+
+impl CheckboxVariant {
+    /// Every variant, in display order.
+    pub const ALL: [Self; 6] = [
+        Self::Standard,
+        Self::Compact,
+        Self::Dense,
+        Self::Large,
+        Self::Round,
+        Self::Tonal,
+    ];
+    /// `(touch target, box)` edge lengths in px; a target equal to the box has no state layer.
+    pub fn dims(self) -> (f32, f32) {
+        match self {
+            Self::Standard | Self::Round | Self::Tonal => (40.0, 18.0),
+            Self::Compact => (24.0, 18.0),
+            Self::Dense => (18.0, 18.0),
+            Self::Large => (48.0, 24.0),
+        }
+    }
+    /// Human-readable name.
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Standard => "Standard 40",
+            Self::Compact => "Compact 24",
+            Self::Dense => "Dense 18",
+            Self::Large => "Large 48",
+            Self::Round => "Round",
+            Self::Tonal => "Tonal",
+        }
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Kind {
     Switch,
@@ -101,12 +152,15 @@ fn choice(
     handler: Option<BoolHandler>,
     radio: bool,
     mixed: bool,
+    variant: CheckboxVariant,
     window: &mut Window,
     cx: &mut App,
 ) -> gpui::AnyElement {
     let t = theme_of(cx);
     if t.shape.kind() == dodai_core::ShapeKind::Rounded {
-        return m3_choice(kind, id, on, disabled, handler, radio, mixed, window, cx);
+        return m3_choice(
+            kind, id, on, disabled, handler, radio, mixed, variant, window, cx,
+        );
     }
     // A half-checked box is drawn "on" with a dash; clicking it selects all.
     let (on_value, on) = (on, on || mixed);
@@ -208,6 +262,7 @@ fn m3_choice(
     handler: Option<BoolHandler>,
     radio: bool,
     mixed: bool,
+    variant: CheckboxVariant,
     window: &mut Window,
     cx: &mut App,
 ) -> gpui::AnyElement {
@@ -224,7 +279,17 @@ fn m3_choice(
     let st = use_interact(&id, window, cx);
     let state = st.read(cx).control_state(disabled);
     let p = transition(window, cx, id.clone(), on);
-    let (off_k, on_k) = (t.m3_toggle(tk, false, state), t.m3_toggle(tk, true, state));
+    let (off_k, mut on_k) = (t.m3_toggle(tk, false, state), t.m3_toggle(tk, true, state));
+    let tonal = variant == CheckboxVariant::Tonal && kind == Kind::Checkbox && !disabled;
+    if tonal {
+        on_k.track = r.secondary_container;
+        on_k.thumb = r.on_secondary_container;
+    }
+    let (target, bx) = if kind == Kind::Switch {
+        (40.0, 18.0)
+    } else {
+        variant.dims()
+    };
     let m = |a: dodai_core::Color, b: dodai_core::Color| mix(hsla(a), hsla(b), p);
     let (track_c, border_c, thumb_c) = (
         m(off_k.track, on_k.track),
@@ -232,6 +297,7 @@ fn m3_choice(
         m(off_k.thumb, on_k.thumb),
     );
     let layer_alpha = match state {
+        _ if target <= bx => 0.0,
         ControlState::Hovered => 0.08,
         ControlState::Pressed | ControlState::Focused => 0.10,
         _ => 0.0,
@@ -286,10 +352,10 @@ fn m3_choice(
             )
         }
         Kind::Checkbox | Kind::Radio => {
-            let (ls, lst) = layer_style(40.0);
+            let (ls, lst) = layer_style(target);
             let outer = track(shaped_id(id, &ls, lst), &st)
-                .w(px(40.0))
-                .h(px(40.0))
+                .w(px(target))
+                .h(px(target))
                 .flex_none()
                 .flex()
                 .items_center()
@@ -303,22 +369,28 @@ fn m3_choice(
                 if p > 0.5 {
                     ring.stroke = None;
                 }
-                let mut b = shaped(&t.role_shape(dodai_core::ShapeRole::Checkbox), ring)
-                    .w(px(18.0))
-                    .h(px(18.0))
+                let box_shape = if variant == CheckboxVariant::Round {
+                    round_shape(&t.shape, bx)
+                } else {
+                    t.role_shape(dodai_core::ShapeRole::Checkbox)
+                };
+                let mut b = shaped(&box_shape, ring)
+                    .w(px(bx))
+                    .h(px(bx))
                     .flex()
                     .items_center()
                     .justify_center()
                     .text_color(thumb_c)
-                    .text_size(px(14.0));
+                    .text_size(px(bx * 0.78));
                 if p > 0.01 {
                     b = b.child(if mixed { "−" } else { "✓" });
                 }
                 outer.child(b)
             } else {
-                let mut b = shaped(&round_shape(&t.shape, 20.0), ring)
-                    .w(px(20.0))
-                    .h(px(20.0))
+                let d = bx + 2.0;
+                let mut b = shaped(&round_shape(&t.shape, d), ring)
+                    .w(px(d))
+                    .h(px(d))
                     .flex()
                     .items_center()
                     .justify_center();
@@ -326,9 +398,9 @@ fn m3_choice(
                     let mut dot = ShapeStyle::from_tokens(&t, None, None, false, false);
                     dot.fill = Some(thumb_c);
                     b = b.child(
-                        shaped(&round_shape(&t.shape, 10.0), dot)
-                            .w(px(10.0 * p))
-                            .h(px(10.0 * p)),
+                        shaped(&round_shape(&t.shape, d / 2.0), dot)
+                            .w(px(d / 2.0 * p))
+                            .h(px(d / 2.0 * p)),
                     );
                 }
                 outer.child(b)
@@ -354,13 +426,14 @@ macro_rules! choice_component {
             on: bool,
             disabled: bool,
             mixed: bool,
+            variant: CheckboxVariant,
             on_change: Option<BoolHandler>,
         }
 
         impl $name {
             /// `on` is the current (controlled) value.
             pub fn new(id: impl Into<ElementId>, on: bool) -> Self {
-                Self { id: id.into(), on, disabled: false, mixed: false, on_change: None }
+                Self { id: id.into(), on, disabled: false, mixed: false, variant: CheckboxVariant::Standard, on_change: None }
             }
             /// Disable interaction.
             pub fn disabled(mut self, d: bool) -> Self {
@@ -373,6 +446,12 @@ macro_rules! choice_component {
                 self.mixed = m;
                 self
             }
+            /// Size / look under Material themes; see [`CheckboxVariant`]. Meaningful for
+            /// [`Checkbox`] and [`Radio`] (sizes only); other design systems ignore it.
+            pub fn variant(mut self, v: CheckboxVariant) -> Self {
+                self.variant = v;
+                self
+            }
             /// Called with the requested new value on click.
             pub fn on_change(mut self, f: impl Fn(bool, &mut Window, &mut App) + 'static) -> Self {
                 self.on_change = Some(Rc::new(f));
@@ -382,7 +461,7 @@ macro_rules! choice_component {
 
         impl RenderOnce for $name {
             fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-                choice($kind, self.id, self.on, self.disabled, self.on_change, $radio, self.mixed, window, cx)
+                choice($kind, self.id, self.on, self.disabled, self.on_change, $radio, self.mixed, self.variant, window, cx)
             }
         }
     };
@@ -801,6 +880,17 @@ crate::entry_render!(Slider);
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn checkbox_variants_have_sane_geometry() {
+        for v in CheckboxVariant::ALL {
+            let (target, bx) = v.dims();
+            assert!(target >= bx, "{v:?}: target smaller than box");
+            assert!(!v.label().is_empty());
+        }
+        assert_eq!(CheckboxVariant::default().dims(), (40.0, 18.0));
+        assert_eq!(CheckboxVariant::Large.dims(), (48.0, 24.0));
+    }
+
     use super::*;
     use crate::testing::{light_rounded, square};
     use dodai::themes;

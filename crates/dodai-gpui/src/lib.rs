@@ -210,7 +210,8 @@ pub use command::{fuzzy_filter, Combobox, Command, CommandPalette};
 pub use content::{highlight, parse_blocks, parse_inline, Block, CodeBlock, Inline, Markdown, Tok};
 #[cfg(feature = "components")]
 pub use controls::{
-    tick_fractions, BubblePlacement, Checkbox, Direction, ProgressBar, Radio, Slider, Toggle,
+    tick_fractions, BubblePlacement, Checkbox, CheckboxVariant, Direction, ProgressBar, Radio,
+    Slider, Toggle,
 };
 #[cfg(feature = "components")]
 pub use count::CountUp;
