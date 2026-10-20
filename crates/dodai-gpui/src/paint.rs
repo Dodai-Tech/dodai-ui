@@ -521,7 +521,7 @@ pub(crate) fn fill(w: &mut Window, o: gpui::Point<Pixels>, p: &[(f32, f32)], c: 
 
 /// Fill many polygons with one colour in a single path (one tessellation and
 /// one draw call instead of one per polygon).
-#[cfg(any(feature = "charts", feature = "material-icons"))]
+#[cfg(any(feature = "charts", feature = "material"))]
 pub(crate) fn fill_batch(
     w: &mut Window,
     o: gpui::Point<Pixels>,

@@ -11,4 +11,10 @@ readme       = "README.md"
 keywords     = ["icons", "design-system", "vector", "ui"]
 categories   = ["gui", "graphics"]
 
+[features]
+default = ["shapes"]
+# The polyline geometry, SVG export and name lookup. Off: only `IconName`, `ALL`, `name()`,
+# `group()` and `from_name()` are compiled (for hosts that draw the names with another pack).
+shapes = []
+
 [dependencies]

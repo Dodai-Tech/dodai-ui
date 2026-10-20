@@ -5,6 +5,10 @@
 //! with a uniform stroke. Adapters stroke the polylines in the theme colour;
 //! [`svg`] / [`sprite`] export the same geometry as SVG for non-Rust consumers.
 
+// Without the `shapes` feature only the names and groups are compiled; the geometry (and
+// the helpers that build it) is not used.
+#![cfg_attr(not(feature = "shapes"), allow(dead_code, unused_macros))]
+
 /// One stroked polyline: `(points, closed)`.
 pub type Shape = (Vec<(f32, f32)>, bool);
 
@@ -72,6 +76,7 @@ macro_rules! icons {
 
         impl IconName {
             /// Polylines `(points, closed)` on the 24×24 grid. Pure.
+            #[cfg(feature = "shapes")]
             pub fn shapes(self) -> Vec<Shape> {
                 match self { $(IconName::$v => $body),+ }
             }
@@ -932,414 +937,428 @@ icons! {
     Domain, "domain", "places" => vec![c(rect(4.0, 3.0, 14.0, 21.0)), c(rect(14.0, 10.0, 20.0, 21.0)), o(pl![7,7; 11,7]), o(pl![7,11; 11,11]), o(pl![7,15; 11,15]), o(pl![17,14; 17,17])];
 }
 
-/// Plain `<path>` data for one shape (`M x y L … [Z]`), integers trimmed.
-fn path_d(points: &[(f32, f32)], closed: bool) -> String {
-    let mut d = String::new();
-    for (i, (x, y)) in points.iter().enumerate() {
-        d.push(if i == 0 { 'M' } else { 'L' });
-        d.push_str(&format!("{} {}", trim(*x), trim(*y)));
-        d.push(' ');
+// Everything below needs the geometry.
+#[cfg(feature = "shapes")]
+mod render {
+    use super::*;
+
+    /// Plain `<path>` data for one shape (`M x y L … [Z]`), integers trimmed.
+    fn path_d(points: &[(f32, f32)], closed: bool) -> String {
+        let mut d = String::new();
+        for (i, (x, y)) in points.iter().enumerate() {
+            d.push(if i == 0 { 'M' } else { 'L' });
+            d.push_str(&format!("{} {}", trim(*x), trim(*y)));
+            d.push(' ');
+        }
+        if closed {
+            d.push('Z');
+        } else {
+            d.pop();
+        }
+        d
     }
-    if closed {
-        d.push('Z');
-    } else {
-        d.pop();
+
+    fn trim(v: f32) -> String {
+        let s = format!("{v:.2}");
+        s.trim_end_matches('0').trim_end_matches('.').to_string()
     }
-    d
-}
 
-fn trim(v: f32) -> String {
-    let s = format!("{v:.2}");
-    s.trim_end_matches('0').trim_end_matches('.').to_string()
-}
-
-impl IconName {
-    /// SVG `d` attribute for the whole icon (all shapes, one path).
-    pub fn path_data(self) -> String {
-        self.shapes()
-            .iter()
-            .map(|(p, closed)| path_d(p, *closed))
-            .collect::<Vec<_>>()
-            .join(" ")
+    impl IconName {
+        /// SVG `d` attribute for the whole icon (all shapes, one path).
+        pub fn path_data(self) -> String {
+            self.shapes()
+                .iter()
+                .map(|(p, closed)| path_d(p, *closed))
+                .collect::<Vec<_>>()
+                .join(" ")
+        }
     }
-}
 
-/// A standalone SVG for `icon`, stroked with `currentColor` so CSS colours it.
-pub fn svg(icon: IconName, size: u32, stroke_width: f32) -> String {
-    format!(
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{size}\" height=\"{size}\" viewBox=\"0 0 24 24\" \
-fill=\"none\" stroke=\"currentColor\" stroke-width=\"{}\" stroke-linecap=\"square\" stroke-linejoin=\"miter\">\
-<path d=\"{}\"/></svg>\n",
-        trim(stroke_width),
-        icon.path_data()
-    )
-}
-
-/// One SVG sprite sheet with a `<symbol id="dodai-<name>">` per icon.
-pub fn sprite(stroke_width: f32) -> String {
-    let mut s = String::from("<svg xmlns=\"http://www.w3.org/2000/svg\" style=\"display:none\">\n");
-    for &i in ALL {
-        s.push_str(&format!(
-            "<symbol id=\"dodai-{}\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" \
-stroke-width=\"{}\" stroke-linecap=\"square\" stroke-linejoin=\"miter\"><path d=\"{}\"/></symbol>\n",
-            i.name(),
+    /// A standalone SVG for `icon`, stroked with `currentColor` so CSS colours it.
+    pub fn svg(icon: IconName, size: u32, stroke_width: f32) -> String {
+        format!(
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{size}\" height=\"{size}\" viewBox=\"0 0 24 24\" \
+    fill=\"none\" stroke=\"currentColor\" stroke-width=\"{}\" stroke-linecap=\"square\" stroke-linejoin=\"miter\">\
+    <path d=\"{}\"/></svg>\n",
             trim(stroke_width),
-            i.path_data()
-        ));
+            icon.path_data()
+        )
     }
-    s.push_str("</svg>\n");
-    s
-}
 
-/// A modifier that derives a variant from any icon: `wifi-off`, `heart-add`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Modifier {
-    /// Diagonal strike-through.
-    Off,
-    /// Small `+` badge, bottom right.
-    Add,
-    /// Small `-` badge.
-    Remove,
-    /// Small check-mark badge.
-    Check,
-    /// Small padlock badge.
-    Lock,
-    /// The icon inside an octagonal ring.
-    Circle,
-}
+    /// One SVG sprite sheet with a `<symbol id="dodai-<name>">` per icon.
+    pub fn sprite(stroke_width: f32) -> String {
+        let mut s =
+            String::from("<svg xmlns=\"http://www.w3.org/2000/svg\" style=\"display:none\">\n");
+        for &i in ALL {
+            s.push_str(&format!(
+                "<symbol id=\"dodai-{}\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" \
+    stroke-width=\"{}\" stroke-linecap=\"square\" stroke-linejoin=\"miter\"><path d=\"{}\"/></symbol>\n",
+                i.name(),
+                trim(stroke_width),
+                i.path_data()
+            ));
+        }
+        s.push_str("</svg>\n");
+        s
+    }
 
-impl Modifier {
-    pub const ALL: [Modifier; 6] = [
-        Modifier::Off,
-        Modifier::Add,
-        Modifier::Remove,
-        Modifier::Check,
-        Modifier::Lock,
-        Modifier::Circle,
+    /// A modifier that derives a variant from any icon: `wifi-off`, `heart-add`.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub enum Modifier {
+        /// Diagonal strike-through.
+        Off,
+        /// Small `+` badge, bottom right.
+        Add,
+        /// Small `-` badge.
+        Remove,
+        /// Small check-mark badge.
+        Check,
+        /// Small padlock badge.
+        Lock,
+        /// The icon inside an octagonal ring.
+        Circle,
+    }
+
+    impl Modifier {
+        pub const ALL: [Modifier; 6] = [
+            Modifier::Off,
+            Modifier::Add,
+            Modifier::Remove,
+            Modifier::Check,
+            Modifier::Lock,
+            Modifier::Circle,
+        ];
+
+        /// The name suffix, without its separator.
+        pub fn suffix(self) -> &'static str {
+            match self {
+                Modifier::Off => "off",
+                Modifier::Add => "add",
+                Modifier::Remove => "remove",
+                Modifier::Check => "check",
+                Modifier::Lock => "lock",
+                Modifier::Circle => "circle",
+            }
+        }
+
+        /// Apply the modifier to an icon's shapes (stays on the 24 grid).
+        pub fn apply(self, base: Vec<Shape>) -> Vec<Shape> {
+            let scale = |shapes: Vec<Shape>, k: f32, cx: f32, cy: f32| -> Vec<Shape> {
+                shapes
+                    .into_iter()
+                    .map(|(p, closed)| {
+                        (
+                            p.into_iter()
+                                .map(|(x, y)| (cx + (x - 12.0) * k, cy + (y - 12.0) * k))
+                                .collect(),
+                            closed,
+                        )
+                    })
+                    .collect()
+            };
+            match self {
+                Modifier::Off => {
+                    let mut v = base;
+                    v.push(o(pl![3, 3; 21, 21]));
+                    v
+                }
+                Modifier::Circle => {
+                    let mut v = scale(base, 0.55, 12.0, 12.0);
+                    v.push(c(ngon(12.0, 12.0, 10.0)));
+                    v
+                }
+                badge => {
+                    // Base shrinks to the top-left; the badge sits bottom right.
+                    let mut v = scale(base, 0.75, 9.0, 9.0);
+                    v.extend(match badge {
+                        Modifier::Add => {
+                            vec![o(pl![15, 18.5; 22, 18.5]), o(pl![18.5, 15; 18.5, 22])]
+                        }
+                        Modifier::Remove => vec![o(pl![15, 18.5; 22, 18.5])],
+                        Modifier::Check => vec![o(pl![15, 18.5; 17.5, 21; 22, 15.5])],
+                        _ => vec![
+                            c(rect(16.0, 18.0, 22.0, 22.0)),
+                            o(pl![17, 18; 17, 16; 21, 16; 21, 18]),
+                        ],
+                    });
+                    v
+                }
+            }
+        }
+    }
+
+    /// Split `wifi_off` / `heart-add` into `("wifi", Off)` / `("heart", Add)`.
+    pub fn split_modifier(name: &str) -> Option<(&str, Modifier)> {
+        Modifier::ALL.iter().find_map(|&m| {
+            let base = name.strip_suffix(m.suffix())?;
+            let base = base.strip_suffix(['-', '_'])?;
+            (!base.is_empty()).then_some((base, m))
+        })
+    }
+
+    /// Common Material / Lucide names that mean an icon we already draw.
+    /// Resolved by [`lookup`] after exact names; targets may carry modifiers.
+    pub const SYNONYMS: &[(&str, &str)] = &[
+        ("done", "check"),
+        ("clear", "close"),
+        ("people", "users"),
+        ("email", "mail"),
+        ("message", "chat"),
+        ("chat_bubble", "chat"),
+        ("photo", "image"),
+        ("sync", "refresh"),
+        ("filter_list", "filter"),
+        ("expand_more", "chevron-down"),
+        ("expand_less", "chevron-up"),
+        ("launch", "external-link"),
+        ("place", "map-pin"),
+        ("navigation", "near_me"),
+        ("public", "globe"),
+        ("today", "calendar"),
+        ("insert_chart", "bar-chart"),
+        ("timeline", "line-chart"),
+        ("list", "view_list"),
+        ("brightness_high", "sun"),
+        ("wb_sunny", "sun"),
+        ("storage", "database"),
+        ("security", "shield"),
+        ("admin_panel_settings", "shield"),
+        ("verified", "shield-check"),
+        ("vpn_key", "key"),
+        ("backup", "cloud_upload"),
+        ("update", "history"),
+        ("restore", "history"),
+        ("cancel", "error"),
+        ("error_outline", "error"),
+        ("help_outline", "help"),
+        ("contact_support", "help"),
+        ("info_outline", "info"),
+        ("report_problem", "warning"),
+        ("laptop", "laptop_mac"),
+        ("phone_iphone", "phone"),
+        ("volume_mute", "mute"),
+        ("grade", "star"),
+        ("payment", "credit_card"),
+        ("inventory_2", "inventory"),
+        ("business", "domain"),
+        ("apartment", "domain"),
+        ("paid", "attach_money"),
+        ("savings", "attach_money"),
+        ("compare_arrows", "swap_horiz"),
+        ("reorder", "menu"),
+        ("drag_handle", "menu"),
+        ("touch_app", "pan_tool"),
+        ("rate_review", "edit_note"),
+        ("question_answer", "forum"),
+        ("feedback", "comment"),
+        ("announcement", "report"),
+        ("collections", "photo_library"),
+        ("drafts", "mail"),
+        ("markunread", "mail"),
+        ("mark_email_read", "mail-check"),
+        ("forward_to_inbox", "send"),
+        ("move_to_inbox", "inbox"),
+        ("reply_all", "reply"),
+        ("unarchive", "archive"),
+        ("folder_zip", "archive"),
+        ("drive_file_move", "folder_open"),
+        ("snippet_folder", "folder"),
+        ("theaters", "movie"),
+        ("audiotrack", "music"),
+        ("library_music", "music"),
+        ("queue_music", "music"),
+        ("lyrics", "music"),
+        ("album", "record"),
+        ("manage_accounts", "account_circle"),
+        ("supervisor_account", "users"),
+        ("support_agent", "headphones"),
+        ("face", "user"),
+        ("badge", "user"),
+        ("center_focus_strong", "target"),
+        ("zoom_out_map", "maximize"),
+        ("closed_caption", "subtitles"),
+        ("emoji_emotions", "mood"),
+        ("print_disabled", "print-off"),
+        ("barcode_scanner", "qr_code"),
+        ("qr_code_scanner", "qr_code"),
+        ("pending", "timer"),
+        ("sync_problem", "refresh"),
     ];
 
-    /// The name suffix, without its separator.
-    pub fn suffix(self) -> &'static str {
-        match self {
-            Modifier::Off => "off",
-            Modifier::Add => "add",
-            Modifier::Remove => "remove",
-            Modifier::Check => "check",
-            Modifier::Lock => "lock",
-            Modifier::Circle => "circle",
+    /// Shapes for `name`: a drawn icon, a [`SYNONYMS`] entry, or either plus [`Modifier`]s
+    /// (`bell-off`, `heart-add-circle`).
+    pub fn lookup(name: &str) -> Option<Vec<Shape>> {
+        if let Some(i) = IconName::from_name(name) {
+            return Some(i.shapes());
         }
-    }
-
-    /// Apply the modifier to an icon's shapes (stays on the 24 grid).
-    pub fn apply(self, base: Vec<Shape>) -> Vec<Shape> {
-        let scale = |shapes: Vec<Shape>, k: f32, cx: f32, cy: f32| -> Vec<Shape> {
-            shapes
-                .into_iter()
-                .map(|(p, closed)| {
-                    (
-                        p.into_iter()
-                            .map(|(x, y)| (cx + (x - 12.0) * k, cy + (y - 12.0) * k))
-                            .collect(),
-                        closed,
-                    )
-                })
-                .collect()
-        };
-        match self {
-            Modifier::Off => {
-                let mut v = base;
-                v.push(o(pl![3, 3; 21, 21]));
-                v
-            }
-            Modifier::Circle => {
-                let mut v = scale(base, 0.55, 12.0, 12.0);
-                v.push(c(ngon(12.0, 12.0, 10.0)));
-                v
-            }
-            badge => {
-                // Base shrinks to the top-left; the badge sits bottom right.
-                let mut v = scale(base, 0.75, 9.0, 9.0);
-                v.extend(match badge {
-                    Modifier::Add => vec![o(pl![15, 18.5; 22, 18.5]), o(pl![18.5, 15; 18.5, 22])],
-                    Modifier::Remove => vec![o(pl![15, 18.5; 22, 18.5])],
-                    Modifier::Check => vec![o(pl![15, 18.5; 17.5, 21; 22, 15.5])],
-                    _ => vec![
-                        c(rect(16.0, 18.0, 22.0, 22.0)),
-                        o(pl![17, 18; 17, 16; 21, 16; 21, 18]),
-                    ],
-                });
-                v
-            }
+        if let Some((_, to)) = SYNONYMS.iter().find(|(k, _)| *k == name) {
+            return lookup(to);
         }
-    }
-}
-
-/// Split `wifi_off` / `heart-add` into `("wifi", Off)` / `("heart", Add)`.
-pub fn split_modifier(name: &str) -> Option<(&str, Modifier)> {
-    Modifier::ALL.iter().find_map(|&m| {
-        let base = name.strip_suffix(m.suffix())?;
-        let base = base.strip_suffix(['-', '_'])?;
-        (!base.is_empty()).then_some((base, m))
-    })
-}
-
-/// Common Material / Lucide names that mean an icon we already draw.
-/// Resolved by [`lookup`] after exact names; targets may carry modifiers.
-pub const SYNONYMS: &[(&str, &str)] = &[
-    ("done", "check"),
-    ("clear", "close"),
-    ("people", "users"),
-    ("email", "mail"),
-    ("message", "chat"),
-    ("chat_bubble", "chat"),
-    ("photo", "image"),
-    ("sync", "refresh"),
-    ("filter_list", "filter"),
-    ("expand_more", "chevron-down"),
-    ("expand_less", "chevron-up"),
-    ("launch", "external-link"),
-    ("place", "map-pin"),
-    ("navigation", "near_me"),
-    ("public", "globe"),
-    ("today", "calendar"),
-    ("insert_chart", "bar-chart"),
-    ("timeline", "line-chart"),
-    ("list", "view_list"),
-    ("brightness_high", "sun"),
-    ("wb_sunny", "sun"),
-    ("storage", "database"),
-    ("security", "shield"),
-    ("admin_panel_settings", "shield"),
-    ("verified", "shield-check"),
-    ("vpn_key", "key"),
-    ("backup", "cloud_upload"),
-    ("update", "history"),
-    ("restore", "history"),
-    ("cancel", "error"),
-    ("error_outline", "error"),
-    ("help_outline", "help"),
-    ("contact_support", "help"),
-    ("info_outline", "info"),
-    ("report_problem", "warning"),
-    ("laptop", "laptop_mac"),
-    ("phone_iphone", "phone"),
-    ("volume_mute", "mute"),
-    ("grade", "star"),
-    ("payment", "credit_card"),
-    ("inventory_2", "inventory"),
-    ("business", "domain"),
-    ("apartment", "domain"),
-    ("paid", "attach_money"),
-    ("savings", "attach_money"),
-    ("compare_arrows", "swap_horiz"),
-    ("reorder", "menu"),
-    ("drag_handle", "menu"),
-    ("touch_app", "pan_tool"),
-    ("rate_review", "edit_note"),
-    ("question_answer", "forum"),
-    ("feedback", "comment"),
-    ("announcement", "report"),
-    ("collections", "photo_library"),
-    ("drafts", "mail"),
-    ("markunread", "mail"),
-    ("mark_email_read", "mail-check"),
-    ("forward_to_inbox", "send"),
-    ("move_to_inbox", "inbox"),
-    ("reply_all", "reply"),
-    ("unarchive", "archive"),
-    ("folder_zip", "archive"),
-    ("drive_file_move", "folder_open"),
-    ("snippet_folder", "folder"),
-    ("theaters", "movie"),
-    ("audiotrack", "music"),
-    ("library_music", "music"),
-    ("queue_music", "music"),
-    ("lyrics", "music"),
-    ("album", "record"),
-    ("manage_accounts", "account_circle"),
-    ("supervisor_account", "users"),
-    ("support_agent", "headphones"),
-    ("face", "user"),
-    ("badge", "user"),
-    ("center_focus_strong", "target"),
-    ("zoom_out_map", "maximize"),
-    ("closed_caption", "subtitles"),
-    ("emoji_emotions", "mood"),
-    ("print_disabled", "print-off"),
-    ("barcode_scanner", "qr_code"),
-    ("qr_code_scanner", "qr_code"),
-    ("pending", "timer"),
-    ("sync_problem", "refresh"),
-];
-
-/// Shapes for `name`: a drawn icon, a [`SYNONYMS`] entry, or either plus [`Modifier`]s
-/// (`bell-off`, `heart-add-circle`).
-pub fn lookup(name: &str) -> Option<Vec<Shape>> {
-    if let Some(i) = IconName::from_name(name) {
-        return Some(i.shapes());
-    }
-    if let Some((_, to)) = SYNONYMS.iter().find(|(k, _)| *k == name) {
-        return lookup(to);
-    }
-    let (base, m) = split_modifier(name)?;
-    lookup(base).map(|s| m.apply(s))
-}
-
-/// Like [`lookup`], also resolving names that `alias` maps to a drawn name
-/// (e.g. a Material spelling such as `arrow_back` -> `arrow-left`), with
-/// modifiers on either (`notifications_off`).
-pub fn lookup_with(name: &str, alias: &dyn Fn(&str) -> Option<&'static str>) -> Option<Vec<Shape>> {
-    if let Some(s) = lookup(name) {
-        return Some(s);
-    }
-    if let Some(s) = alias(name).and_then(lookup) {
-        return Some(s);
-    }
-    let (base, m) = split_modifier(name)?;
-    lookup_with(base, alias).map(|s| m.apply(s))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::collections::HashSet;
-
-    #[test]
-    fn pack_is_extensive() {
-        assert!(ALL.len() >= 120, "only {} icons", ALL.len());
+        let (base, m) = split_modifier(name)?;
+        lookup(base).map(|s| m.apply(s))
     }
 
-    #[test]
-    fn shapes_inside_grid() {
-        for &n in ALL {
-            let s = n.shapes();
-            assert!(!s.is_empty(), "{} empty", n.name());
-            for (p, _) in s {
-                assert!(p.len() >= 2, "{} has a degenerate shape", n.name());
-                assert!(
-                    p.iter()
-                        .all(|&(x, y)| (0.0..=24.0).contains(&x) && (0.0..=24.0).contains(&y)),
-                    "{} leaves the 24x24 grid",
-                    n.name()
-                );
-            }
+    /// Like [`lookup`], also resolving names that `alias` maps to a drawn name
+    /// (e.g. a Material spelling such as `arrow_back` -> `arrow-left`), with
+    /// modifiers on either (`notifications_off`).
+    pub fn lookup_with(
+        name: &str,
+        alias: &dyn Fn(&str) -> Option<&'static str>,
+    ) -> Option<Vec<Shape>> {
+        if let Some(s) = lookup(name) {
+            return Some(s);
         }
-    }
-
-    #[test]
-    fn names_are_unique_kebab_and_round_trip() {
-        let mut seen = HashSet::new();
-        for &n in ALL {
-            let name = n.name();
-            assert!(seen.insert(name), "duplicate name {name}");
-            assert!(
-                name.chars()
-                    .all(|c| c.is_ascii_lowercase() || c == '-' || c == '_'),
-                "{name} is not kebab/snake-case"
-            );
-            assert_eq!(IconName::from_name(name), Some(n));
+        if let Some(s) = alias(name).and_then(lookup) {
+            return Some(s);
         }
-        assert_eq!(IconName::from_name("nope"), None);
+        let (base, m) = split_modifier(name)?;
+        lookup_with(base, alias).map(|s| m.apply(s))
     }
 
-    /// The pack is curve-free: every segment is horizontal, vertical or 45°,
-    /// or part of a regular octagon / a deliberate diagonal.
-    #[test]
-    fn no_degenerate_segments() {
-        for &n in ALL {
-            for (p, closed) in n.shapes() {
-                let mut pts = p.clone();
-                if closed {
-                    pts.push(p[0]);
-                }
-                for w in pts.windows(2) {
-                    let (dx, dy) = (w[1].0 - w[0].0, w[1].1 - w[0].1);
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use std::collections::HashSet;
+
+        #[test]
+        fn pack_is_extensive() {
+            assert!(ALL.len() >= 120, "only {} icons", ALL.len());
+        }
+
+        #[test]
+        fn shapes_inside_grid() {
+            for &n in ALL {
+                let s = n.shapes();
+                assert!(!s.is_empty(), "{} empty", n.name());
+                for (p, _) in s {
+                    assert!(p.len() >= 2, "{} has a degenerate shape", n.name());
                     assert!(
-                        dx.abs() + dy.abs() > 0.4,
-                        "{} has a zero-length segment",
+                        p.iter()
+                            .all(|&(x, y)| (0.0..=24.0).contains(&x) && (0.0..=24.0).contains(&y)),
+                        "{} leaves the 24x24 grid",
                         n.name()
                     );
                 }
             }
         }
-    }
 
-    #[test]
-    fn groups_are_known_and_every_group_has_icons() {
-        let groups: HashSet<_> = ALL.iter().map(|i| i.group()).collect();
-        for g in [
-            "interface",
-            "arrows",
-            "actions",
-            "status",
-            "data",
-            "objects",
-            "cyber",
-        ] {
-            assert!(groups.contains(g), "missing group {g}");
+        #[test]
+        fn names_are_unique_kebab_and_round_trip() {
+            let mut seen = HashSet::new();
+            for &n in ALL {
+                let name = n.name();
+                assert!(seen.insert(name), "duplicate name {name}");
+                assert!(
+                    name.chars()
+                        .all(|c| c.is_ascii_lowercase() || c == '-' || c == '_'),
+                    "{name} is not kebab/snake-case"
+                );
+                assert_eq!(IconName::from_name(name), Some(n));
+            }
+            assert_eq!(IconName::from_name("nope"), None);
         }
-    }
 
-    #[test]
-    fn svg_exports_are_well_formed() {
-        let s = svg(IconName::Home, 24, 2.0);
-        assert!(
-            s.starts_with("<svg")
-                && s.contains("viewBox=\"0 0 24 24\"")
-                && s.contains("<path d=\"M3 11 L12 3")
-        );
-        let sp = sprite(2.0);
-        assert_eq!(sp.matches("<symbol ").count(), ALL.len());
-        assert!(sp.contains("id=\"dodai-skull\""));
-        assert_eq!(trim(12.50), "12.5");
-        assert_eq!(trim(3.0), "3");
-        assert!(IconName::Check.path_data().contains("12.5"));
-    }
-
-    #[test]
-    fn synonyms_resolve_and_do_not_shadow_drawn_icons() {
-        for (k, to) in SYNONYMS {
-            assert!(
-                IconName::from_name(k).is_none(),
-                "{k} is drawn; drop the synonym"
-            );
-            assert!(lookup(to).is_some(), "{k} -> {to} does not resolve");
-            assert!(lookup(k).is_some());
-        }
-    }
-
-    #[test]
-    fn modifiers_derive_variants_on_the_grid() {
-        assert_eq!(split_modifier("heart-add"), Some(("heart", Modifier::Add)));
-        assert_eq!(split_modifier("wifi_off"), Some(("wifi", Modifier::Off)));
-        assert_eq!(split_modifier("off"), None);
-        assert!(lookup("nope-off").is_none());
-        // A drawn name wins over a derived one.
-        assert_eq!(lookup("wifi_off").unwrap(), IconName::WifiOff.shapes());
-        for base in ["heart", "grid", "home", "cloud"] {
-            let n = IconName::from_name(base).unwrap().shapes().len();
-            for m in Modifier::ALL {
-                let v = lookup(&format!("{base}-{}", m.suffix())).unwrap();
-                assert!(v.len() > n.min(1), "{base} {m:?}");
-                for (pts, _) in &v {
-                    for &(x, y) in pts {
+        /// The pack is curve-free: every segment is horizontal, vertical or 45°,
+        /// or part of a regular octagon / a deliberate diagonal.
+        #[test]
+        fn no_degenerate_segments() {
+            for &n in ALL {
+                for (p, closed) in n.shapes() {
+                    let mut pts = p.clone();
+                    if closed {
+                        pts.push(p[0]);
+                    }
+                    for w in pts.windows(2) {
+                        let (dx, dy) = (w[1].0 - w[0].0, w[1].1 - w[0].1);
                         assert!(
-                            (0.0..=24.0).contains(&x) && (0.0..=24.0).contains(&y),
-                            "{base} {m:?}"
+                            dx.abs() + dy.abs() > 0.4,
+                            "{} has a zero-length segment",
+                            n.name()
                         );
                     }
                 }
             }
         }
-        // Aliases resolve, with modifiers on either spelling.
-        let alias = |n: &str| (n == "arrow_back").then_some("arrow-left");
-        assert_eq!(
-            lookup_with("arrow_back", &alias).unwrap(),
-            IconName::ArrowLeft.shapes()
-        );
-        assert!(lookup_with("arrow_back_add", &alias).is_some());
-        assert!(lookup_with("arrow_fwd", &alias).is_none());
-        // Modifiers stack.
-        assert!(lookup("heart-add-circle").is_some());
+
+        #[test]
+        fn groups_are_known_and_every_group_has_icons() {
+            let groups: HashSet<_> = ALL.iter().map(|i| i.group()).collect();
+            for g in [
+                "interface",
+                "arrows",
+                "actions",
+                "status",
+                "data",
+                "objects",
+                "cyber",
+            ] {
+                assert!(groups.contains(g), "missing group {g}");
+            }
+        }
+
+        #[test]
+        fn svg_exports_are_well_formed() {
+            let s = svg(IconName::Home, 24, 2.0);
+            assert!(
+                s.starts_with("<svg")
+                    && s.contains("viewBox=\"0 0 24 24\"")
+                    && s.contains("<path d=\"M3 11 L12 3")
+            );
+            let sp = sprite(2.0);
+            assert_eq!(sp.matches("<symbol ").count(), ALL.len());
+            assert!(sp.contains("id=\"dodai-skull\""));
+            assert_eq!(trim(12.50), "12.5");
+            assert_eq!(trim(3.0), "3");
+            assert!(IconName::Check.path_data().contains("12.5"));
+        }
+
+        #[test]
+        fn synonyms_resolve_and_do_not_shadow_drawn_icons() {
+            for (k, to) in SYNONYMS {
+                assert!(
+                    IconName::from_name(k).is_none(),
+                    "{k} is drawn; drop the synonym"
+                );
+                assert!(lookup(to).is_some(), "{k} -> {to} does not resolve");
+                assert!(lookup(k).is_some());
+            }
+        }
+
+        #[test]
+        fn modifiers_derive_variants_on_the_grid() {
+            assert_eq!(split_modifier("heart-add"), Some(("heart", Modifier::Add)));
+            assert_eq!(split_modifier("wifi_off"), Some(("wifi", Modifier::Off)));
+            assert_eq!(split_modifier("off"), None);
+            assert!(lookup("nope-off").is_none());
+            // A drawn name wins over a derived one.
+            assert_eq!(lookup("wifi_off").unwrap(), IconName::WifiOff.shapes());
+            for base in ["heart", "grid", "home", "cloud"] {
+                let n = IconName::from_name(base).unwrap().shapes().len();
+                for m in Modifier::ALL {
+                    let v = lookup(&format!("{base}-{}", m.suffix())).unwrap();
+                    assert!(v.len() > n.min(1), "{base} {m:?}");
+                    for (pts, _) in &v {
+                        for &(x, y) in pts {
+                            assert!(
+                                (0.0..=24.0).contains(&x) && (0.0..=24.0).contains(&y),
+                                "{base} {m:?}"
+                            );
+                        }
+                    }
+                }
+            }
+            // Aliases resolve, with modifiers on either spelling.
+            let alias = |n: &str| (n == "arrow_back").then_some("arrow-left");
+            assert_eq!(
+                lookup_with("arrow_back", &alias).unwrap(),
+                IconName::ArrowLeft.shapes()
+            );
+            assert!(lookup_with("arrow_back_add", &alias).is_some());
+            assert!(lookup_with("arrow_fwd", &alias).is_none());
+            // Modifiers stack.
+            assert!(lookup("heart-add-circle").is_some());
+        }
     }
 }
+#[cfg(feature = "shapes")]
+pub use render::*;

@@ -12,16 +12,20 @@ keywords     = ["theme", "design-system", "gpui", "cyberpunk"]
 categories   = ["gui"]
 
 [features]
-default    = ["components", "charts", "shaders", "material-icons"]
+default    = ["components", "charts", "shaders", "cyberpunk", "material"]
 # Buttons, tables, dialogs, pickers, navigation, ...
 components = []
 # Charts only (always includes the theme, painting and motion core).
 charts     = []
 # GPU pixel shaders (cyberpunk, Material 3, Matrix, CRT, pixel art, ...) as `ShaderView`.
 shaders    = ["dep:dodai-shaders", "dep:image"]
+# The Cyberpunk stroked icon pack: curve-free polylines (`Icon` on chamfered/square themes,
+# `Icon::named` and its modifier variants). Off: `IconName` is still there, but is drawn by the
+# Material pack, so enable `material` too or icons draw nothing.
+cyberpunk = ["dodai-cyberpunk-icons/shapes"]
 # Material Symbols glyphs: `Icon` follows the theme (rounded themes draw Material icons)
 # and `MaterialIcon` draws any of the 3,900+ catalogue icons.
-material-icons = ["dep:dodai-material-icons"]
+material = ["dep:dodai-material-icons"]
 
 [dependencies]
 dodai-core = { workspace = true }
@@ -38,7 +42,7 @@ required-features = ["components", "charts"]
 
 [dev-dependencies]
 dodai = { workspace = true, features = ["cyberpunk", "material"] }
-dodai-cyberpunk-icons = { workspace = true }
+dodai-cyberpunk-icons = { workspace = true, features = ["shapes"] }
 gpui = { workspace = true, features = ["test-support"] }
 
 [[test]]
