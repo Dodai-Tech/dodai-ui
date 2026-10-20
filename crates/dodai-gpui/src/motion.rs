@@ -226,6 +226,41 @@ pub fn smooth_with(
     v
 }
 
+/// Drive reactive mixins from interaction state and return the layered [`dodai_motion::Pose`]
+/// for this frame. Keyed under `id`; keeps requesting frames until the springs settle. The
+/// personality comes from the active theme's motion, so each design system moves its own way.
+pub fn react(
+    window: &mut gpui::Window,
+    cx: &mut App,
+    id: gpui::ElementId,
+    mixins: &[dodai_motion::Reactive],
+    states: &[(dodai_motion::Trigger, bool)],
+) -> dodai_motion::Pose {
+    let personality = crate::motion::current(cx).personality;
+    let mixins = mixins.to_vec();
+    let st = window.with_id(id, |w| {
+        w.use_keyed_state(("react", 0u32), cx, move |_, _| {
+            mixins
+                .into_iter()
+                .fold(dodai_motion::Reactions::new(personality), |r, m| r.with(m))
+        })
+    });
+    let t = now();
+    st.update(cx, |r, _| {
+        for &(trigger, on) in states {
+            r.set(trigger, on, t);
+        }
+    });
+    let (pose, settled) = {
+        let r = st.read(cx);
+        (r.pose(t), r.settled(t))
+    };
+    if !settled {
+        crate::motion::next_frame(window);
+    }
+    pose
+}
+
 /// Component-wise mix of two colours (`t` in `0..=1`). Pure.
 pub fn mix(a: gpui::Hsla, b: gpui::Hsla, t: f32) -> gpui::Hsla {
     let (a, b) = (gpui::Rgba::from(a), gpui::Rgba::from(b));

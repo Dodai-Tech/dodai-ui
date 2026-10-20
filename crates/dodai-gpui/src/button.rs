@@ -142,6 +142,21 @@ impl Button {
             });
         }
         let pressed = state == ControlState::Pressed;
+        // Hover lift: a spring in the theme's personality (gpui has no transforms, so only the
+        // vertical offset of the pose is applied).
+        let lift = if state == ControlState::Disabled {
+            0.0
+        } else {
+            use dodai_motion::{Reactive, Trigger};
+            crate::motion::react(
+                window,
+                cx,
+                (self.id.clone(), "lift").into(),
+                &[Reactive::HoverLift],
+                &[(Trigger::Hover, state != ControlState::Idle)],
+            )
+            .dy
+        };
         let mut shape = t.shape.clone();
         if let Some(c) = self.corners {
             shape.corners = c;
@@ -149,8 +164,8 @@ impl Button {
         let mut el = track(shaped_id(self.id, &shape, style), &st)
             .h(px(t.shape.control_height))
             .px(px(t.spacing.md))
-            .mt(px(if pressed { 1.0 } else { 0.0 }))
-            .mb(px(if pressed { -1.0 } else { 0.0 }))
+            .mt(px(lift + if pressed { 1.0 } else { 0.0 }))
+            .mb(px(-lift + if pressed { -1.0 } else { 0.0 }))
             .flex()
             .items_center()
             .justify_center()
