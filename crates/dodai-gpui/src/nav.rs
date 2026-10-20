@@ -363,7 +363,14 @@ impl Segmented {
             let (fill, fg) = if self.disabled {
                 (on.then_some(p.surface_raised), p.text_disabled)
             } else if on {
-                (Some(p.primary), p.on_primary)
+                if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+                    (
+                        Some(p.roles.secondary_container),
+                        p.roles.on_secondary_container,
+                    )
+                } else {
+                    (Some(p.primary), p.on_primary)
+                }
             } else if hovered {
                 (Some(p.surface_raised), p.text)
             } else {

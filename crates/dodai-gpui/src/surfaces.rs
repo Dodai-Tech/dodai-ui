@@ -32,11 +32,23 @@ pub enum CardVariant {
 /// Paint style of a card (pure).
 pub fn card_style(theme: &Theme, v: CardVariant) -> ShapeStyle {
     let p = theme.panel(false);
-    let raised = theme.palette.surface_raised;
+    // Rounded (Material) shapes use the tonal container roles; others the base palette.
+    let tonal = theme.shape.kind() == dodai_core::ShapeKind::Rounded;
+    let r = &theme.palette.roles;
+    let raised = if tonal {
+        r.surface_container_highest
+    } else {
+        theme.palette.surface_raised
+    };
+    let line = if tonal { r.outline_variant } else { p.border };
     match v {
         CardVariant::Elevated => {
-            let mut st =
-                ShapeStyle::from_tokens(theme, Some(p.background), Some(p.border), false, true);
+            let bg = if tonal {
+                r.surface_container_low
+            } else {
+                p.background
+            };
+            let mut st = ShapeStyle::from_tokens(theme, Some(bg), Some(line), false, true);
             // No hard offset shadow in this theme: lift the card with a soft one.
             if st.shadow.is_none() && st.glow.is_none() {
                 st.glow = Some((gpui::hsla(0.0, 0.0, 0.0, 0.16), 10.0));
@@ -44,7 +56,7 @@ pub fn card_style(theme: &Theme, v: CardVariant) -> ShapeStyle {
             st
         }
         CardVariant::Filled => ShapeStyle::from_tokens(theme, Some(raised), None, false, false),
-        CardVariant::Outlined => ShapeStyle::from_tokens(theme, None, Some(p.border), false, false),
+        CardVariant::Outlined => ShapeStyle::from_tokens(theme, None, Some(line), false, false),
     }
 }
 
