@@ -342,7 +342,7 @@ impl RenderOnce for ResponsiveShell {
                         .id((self.id.clone(), "backdrop"))
                         .flex_1()
                         .h_full()
-                        .bg(gpui::black().opacity(0.45))
+                        .bg(crate::overlay::scrim_color(&t))
                         .on_click(move |_, _, cx| {
                             close.update(cx, |o, cx| {
                                 *o = false;
