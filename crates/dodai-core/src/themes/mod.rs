@@ -92,6 +92,7 @@ impl Spec {
         .with_derived_roles(dark);
         let fx = palette.effect_colours(dark);
         crate::Theme {
+            motion: crate::Motion::default(),
             shape_system: None,
             meta: self.meta,
             palette,

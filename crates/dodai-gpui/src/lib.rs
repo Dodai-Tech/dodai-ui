@@ -54,7 +54,7 @@ macro_rules! entry_render {
                 window: &mut gpui::Window,
                 cx: &mut gpui::App,
             ) -> impl gpui::IntoElement {
-                let motion = $crate::motion::Motion::of(cx);
+                let motion = $crate::motion::current(cx);
                 $crate::motion::entry(self.build(window, cx), stringify!($ty), motion)
             }
         }
@@ -261,7 +261,7 @@ pub use list::{Divider, ListItem};
 pub use menu::{Menu, MenuItem};
 pub use motion::{
     entry as entry_animation, grow, lerp, stagger_window, Curve, Easing, EntryKind, EntryScope,
-    EntrySet, Motion, Tween,
+    EntrySet, Motion, MotionExt, Tween,
 };
 #[cfg(feature = "components")]
 pub use nav::{Accordion, Breadcrumb, Pagination, Segmented, Stepper};

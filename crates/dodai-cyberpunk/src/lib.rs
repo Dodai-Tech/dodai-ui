@@ -17,6 +17,14 @@ const RED: u32 = 0xfe1038;
 const ORANGE: u32 = 0xff6000;
 const MAGENTA: u32 = 0xff2a6d;
 
+/// Cyberpunk moves fast and decisively: short, front-loaded, no overshoot.
+fn motion() -> dodai_core::Motion {
+    dodai_core::Motion::new(
+        std::time::Duration::from_millis(160),
+        dodai_core::Easing::CubicBezier(0.1, 0.9, 0.2, 1.0),
+    )
+}
+
 fn typography() -> Typography {
     Typography {
         display: "Blender Pro, Rajdhani, Orbitron, Segoe UI, sans-serif",
@@ -106,6 +114,7 @@ fn build(
     let fx = palette.effect_colours(true);
     Theme {
         meta,
+        motion: motion(),
         shape_system: None,
         palette,
         typography: typography(),
@@ -179,6 +188,7 @@ fn build_light(meta: ThemeMeta, l: Light) -> Theme {
     let fx = palette.effect_colours(false);
     Theme {
         meta,
+        motion: motion(),
         shape_system: None,
         palette,
         typography: typography(),

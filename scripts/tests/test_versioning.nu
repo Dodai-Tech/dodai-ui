@@ -54,9 +54,10 @@ def "test bump: is idempotent" [] {
     assert equal (bump-workspace-text $once "0.2.0") $once
 }
 
-def "test publish-order: core first, no duplicates, leaves after their deps" [] {
+def "test publish-order: leaves first, no duplicates, leaves after their deps" [] {
     let o = (publish-order)
-    assert equal ($o | first) "dodai-core"
+    assert equal ($o | first) "dodai-motion"
+    assert (($o | enumerate | where item == "dodai-motion" | get index.0) < ($o | enumerate | where item == "dodai-core" | get index.0))
     assert equal ($o | uniq | length) ($o | length)
     # the umbrella and the adapters come after the design systems they depend on
     assert (($o | enumerate | where item == "dodai-cyberpunk" | get index.0) < ($o | enumerate | where item == "dodai" | get index.0))

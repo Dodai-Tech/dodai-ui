@@ -158,7 +158,7 @@ impl Showcase {
         self.sec_kind
             .get(title)
             .copied()
-            .unwrap_or(Motion::of(cx).entry)
+            .unwrap_or(dodai_gpui::motion::current(cx).entry)
     }
 
     /// Replay one section only (re-keys just its subtree).
@@ -169,7 +169,7 @@ impl Showcase {
     /// Total time of one run of the section: longest of the entry effects and
     /// the value-in (fill) animation, plus the stagger across its items.
     fn run_len(&self, title: &'static str, cx: &gpui::App) -> Duration {
-        let m = Motion::of(cx);
+        let m = dodai_gpui::motion::current(cx);
         let set = self.sec_kind.get(title).copied().unwrap_or(m.entry);
         let entry = if set.is_empty() {
             Duration::ZERO
@@ -244,7 +244,7 @@ impl Showcase {
         cx: &mut Context<Self>,
     ) -> gpui::AnyElement {
         let tid = section_id(title);
-        let base = Motion::of(cx).entry;
+        let base = dodai_gpui::motion::current(cx).entry;
         let kind = Some(self.sec_kind.get(title).copied().unwrap_or(base));
         let chip = |id: (&'static str, u32), label: SharedString, on: bool| {
             div()

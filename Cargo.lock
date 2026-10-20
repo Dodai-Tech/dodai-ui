@@ -4262,6 +4262,9 @@ version = "0.1.0"
 [[package]]
 name = "dodai-core"
 version = "0.1.0"
+dependencies = [
+ "dodai-motion",
+]
 
 [[package]]
 name = "dodai-cyberpunk"
@@ -4314,6 +4317,7 @@ dependencies = [
  "dodai-core",
  "dodai-cyberpunk-icons",
  "dodai-material-icons",
+ "dodai-motion",
  "dodai-shaders",
  "gpui",
  "image",
@@ -4349,6 +4353,10 @@ dependencies = [
 
 [[package]]
 name = "dodai-material-icons"
+version = "0.1.0"
+
+[[package]]
+name = "dodai-motion"
 version = "0.1.0"
 
 [[package]]

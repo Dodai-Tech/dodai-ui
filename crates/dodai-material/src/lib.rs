@@ -5,6 +5,14 @@
 use dodai_core::themes::Spec;
 use dodai_core::{Color, Corners, Mode, Roles, Shape, Spacing, Theme, ThemeMeta, Typography};
 
+/// Material's emphasized motion: 300 ms on the M3 `emphasized` cubic-bezier.
+fn motion() -> dodai_core::Motion {
+    dodai_core::Motion::new(
+        std::time::Duration::from_millis(300),
+        dodai_core::Easing::CubicBezier(0.2, 0.0, 0.0, 1.0),
+    )
+}
+
 fn typography() -> Typography {
     Typography {
         display: "Roboto, Inter, Segoe UI, Helvetica Neue, sans-serif",
@@ -147,6 +155,7 @@ pub fn light() -> Theme {
     }
     .build();
     t.palette.roles = light_roles();
+    t.motion = motion();
     t
 }
 
@@ -192,6 +201,7 @@ pub fn dark() -> Theme {
     }
     .build();
     t.palette.roles = dark_roles();
+    t.motion = motion();
     t
 }
 

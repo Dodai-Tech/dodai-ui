@@ -61,7 +61,7 @@ impl Heading {
 
 impl RenderOnce for Heading {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
+        let motion = crate::motion::current(cx);
         crate::motion::entry(self.build(cx), "Heading", motion)
     }
 }
@@ -89,7 +89,7 @@ impl Label {
 
 impl RenderOnce for Label {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
+        let motion = crate::motion::current(cx);
         crate::motion::entry(self.build(cx), "Label", motion)
     }
 }
@@ -117,7 +117,7 @@ impl Muted {
 
 impl RenderOnce for Muted {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
+        let motion = crate::motion::current(cx);
         crate::motion::entry(self.build(cx), "Muted", motion)
     }
 }
@@ -145,7 +145,7 @@ impl Mono {
 
 impl RenderOnce for Mono {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
+        let motion = crate::motion::current(cx);
         crate::motion::entry(self.build(cx), "Mono", motion)
     }
 }

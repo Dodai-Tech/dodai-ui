@@ -141,7 +141,7 @@ impl Legend {
 
 impl RenderOnce for Legend {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
+        let motion = crate::motion::current(cx);
         crate::motion::entry(self.build(cx), "Legend", motion)
     }
 }
@@ -966,7 +966,7 @@ impl Sparkline {
 
 impl RenderOnce for Sparkline {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
+        let motion = crate::motion::current(cx);
         crate::motion::entry(self.build(cx), "Sparkline", motion)
     }
 }
@@ -1258,7 +1258,7 @@ impl PieChart {
         let hover = st.read(cx).hover;
         let sel = self.selected.unwrap_or(st.read(cx).sel);
         let ring = hsla(self.select_color.unwrap_or(t.palette.primary));
-        let motion = crate::motion::Motion::of(cx);
+        let motion = crate::motion::current(cx);
         let (st_paint, st_move, st_leave, st_click) =
             (st.clone(), st.clone(), st.clone(), st.clone());
         let (controlled, on_select) = (self.selected.is_some(), self.on_select.clone());

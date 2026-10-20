@@ -24,6 +24,8 @@ pub struct Theme {
     pub spacing: Spacing,
     pub shape: Shape,
     pub effects: Effects,
+    /// How this design system moves: default duration, easing and entry effect.
+    pub motion: dodai_motion::Motion,
     /// Explicit shape language; `None` derives one from [`Theme::shape`].
     pub shape_system: Option<crate::ShapeSystem>,
 }

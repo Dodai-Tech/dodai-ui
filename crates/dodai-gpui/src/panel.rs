@@ -331,7 +331,7 @@ impl Panel {
 
 impl RenderOnce for Panel {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
+        let motion = crate::motion::current(cx);
         crate::motion::entry_div(self.build(window, cx), "Panel", motion)
     }
 }

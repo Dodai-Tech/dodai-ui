@@ -292,3 +292,28 @@ fn effect_colours_are_set() {
         );
     }
 }
+
+#[test]
+fn every_theme_has_its_own_sane_motion() {
+    use std::time::Duration;
+    for t in themes::all() {
+        let d = t.motion.duration;
+        assert!(
+            d >= Duration::from_millis(80) && d <= Duration::from_millis(500),
+            "{}: {d:?}",
+            t.id()
+        );
+    }
+    let by = |fam: &str| {
+        themes::all()
+            .into_iter()
+            .find(|t| t.meta.family == fam)
+            .unwrap()
+            .motion
+    };
+    assert_ne!(
+        by("cyberpunk"),
+        by("material"),
+        "design systems move differently"
+    );
+}

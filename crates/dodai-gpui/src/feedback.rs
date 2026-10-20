@@ -1,7 +1,7 @@
 //! Feedback: [`Alert`] (also banner style), [`Toast`], [`Spinner`],
 //! [`IndeterminateBar`], [`Skeleton`].
 
-use crate::motion::{Easing, Motion};
+use crate::motion::{Easing, Motion, MotionExt};
 use crate::paint::{scaled_shape, shaped, ShapeStyle};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
@@ -128,7 +128,7 @@ impl Toast {
 
 impl RenderOnce for Toast {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let motion = crate::motion::Motion::of(cx);
+        let motion = crate::motion::current(cx);
         crate::motion::entry(self.build(cx), "Toast", motion)
     }
 }
