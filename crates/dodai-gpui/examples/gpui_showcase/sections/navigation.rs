@@ -234,6 +234,7 @@ impl Showcase {
                         div()
                             .px(px(24.0))
                             .py(px(14.0))
+                            .rounded(px(t.shape.radius.min(8.0)))
                             .border_1()
                             .border_color(hsla(t.palette.border_strong))
                             .text_color(hsla(t.palette.text_muted))

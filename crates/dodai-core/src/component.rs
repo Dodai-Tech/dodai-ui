@@ -382,7 +382,18 @@ impl Theme {
             ToggleTokens {
                 track: p.surface_raised,
                 thumb: if lit { p.text } else { p.text_muted },
-                border: if lit { p.border_strong } else { p.border },
+                // Rounded (Material): the unselected outline is the `outline` role.
+                border: if self.shape.kind() == crate::ShapeKind::Rounded {
+                    if lit {
+                        p.roles.on_surface
+                    } else {
+                        p.roles.outline
+                    }
+                } else if lit {
+                    p.border_strong
+                } else {
+                    p.border
+                },
             }
         }
     }
