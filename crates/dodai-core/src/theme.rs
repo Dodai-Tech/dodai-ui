@@ -28,6 +28,8 @@ pub struct Theme {
     pub motion: dodai_motion::Motion,
     /// Explicit shape language; `None` derives one from [`Theme::shape`].
     pub shape_system: Option<crate::ShapeSystem>,
+    /// This design system's component rules (see [`crate::DesignSpec`]); baseline when unset.
+    pub spec: crate::SpecRef,
 }
 
 impl Theme {
@@ -89,13 +91,10 @@ impl Theme {
         s
     }
 
-    /// Horizontal padding of a button label: M3 uses 24 px (a 16 px step is `spacing.md`).
-    pub fn button_padding(&self) -> f32 {
-        if self.shape.kind() == crate::ShapeKind::Rounded {
-            24.0
-        } else {
-            self.spacing.md
-        }
+    /// Builder: attach a design-system spec (component rules and geometry).
+    pub fn with_spec(mut self, spec: &'static dyn crate::DesignSpec) -> Self {
+        self.spec = crate::SpecRef::new(spec);
+        self
     }
 
     /// Builder: cut these corners on chamfered controls (see [`crate::Corners`]).

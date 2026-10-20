@@ -252,7 +252,7 @@ fn choice(
 }
 
 /// Material 3 switch (52×32), checkbox (18 px box) and radio (20 px ring), each with the 40 px
-/// state layer; colours from [`Theme::m3_toggle`].
+/// state layer; colours from [`Theme::choice_toggle`].
 #[allow(clippy::too_many_arguments)]
 fn m3_choice(
     kind: Kind,
@@ -279,7 +279,10 @@ fn m3_choice(
     let st = use_interact(&id, window, cx);
     let state = st.read(cx).control_state(disabled);
     let p = transition(window, cx, id.clone(), on);
-    let (off_k, mut on_k) = (t.m3_toggle(tk, false, state), t.m3_toggle(tk, true, state));
+    let (off_k, mut on_k) = (
+        t.choice_toggle(tk, false, state),
+        t.choice_toggle(tk, true, state),
+    );
     let tonal = variant == CheckboxVariant::Tonal && kind == Kind::Checkbox && !disabled;
     if tonal {
         on_k.track = r.secondary_container;

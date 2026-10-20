@@ -15,6 +15,8 @@ fn motion() -> dodai_core::Motion {
 }
 
 pub mod fx;
+mod spec;
+pub use spec::{shape_presets, shape_system, Material3, SHAPE_SCALE, SPEC};
 
 fn typography() -> Typography {
     Typography {
@@ -159,7 +161,8 @@ pub fn light() -> Theme {
     .build();
     t.palette.roles = light_roles();
     t.motion = motion();
-    t.shape_system = Some(dodai_core::ShapeSystem::material3());
+    t.shape_system = Some(shape_system());
+    t.spec = dodai_core::SpecRef::new(&SPEC);
     t
 }
 
@@ -206,7 +209,8 @@ pub fn dark() -> Theme {
     .build();
     t.palette.roles = dark_roles();
     t.motion = motion();
-    t.shape_system = Some(dodai_core::ShapeSystem::material3());
+    t.shape_system = Some(shape_system());
+    t.spec = dodai_core::SpecRef::new(&SPEC);
     t
 }
 

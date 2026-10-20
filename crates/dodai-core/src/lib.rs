@@ -19,6 +19,7 @@ mod component;
 pub mod export;
 mod palette;
 mod shape_system;
+mod spec;
 mod switcher;
 mod theme;
 mod tokens;
@@ -38,6 +39,7 @@ pub use shape_system::{
     Corner, CornerSpec, CornerStyle, DefaultShape, RoleShape, ShapePreset, ShapeRole, ShapeScale,
     ShapeSize, ShapeSystem, FULL,
 };
+pub use spec::{DesignSpec, SpecRef};
 pub use switcher::ThemeSwitcher;
 pub use theme::{Theme, ThemeMeta};
 pub use tokens::{Corners, Effects, Shape, ShapeKind, Spacing, Typography};

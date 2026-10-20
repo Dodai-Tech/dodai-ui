@@ -548,7 +548,7 @@ mod tests {
 
     #[test]
     fn component_styles_resolve_everywhere() {
-        for t in themes::all().into_iter().chain([light_rounded(), square()]) {
+        for t in themes::all().into_iter().chain([square()]) {
             let (tag, fg) = tag_style(&t, Tone::Danger, true);
             assert_eq!(tag.fill, Some(t.palette.danger));
             assert_eq!(fg, t.on(t.palette.danger));

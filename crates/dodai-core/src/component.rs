@@ -166,6 +166,15 @@ pub struct StepTokens {
     pub glow: bool,
 }
 
+/// Resolve a hook of the theme's design-system spec, falling back to the baseline below.
+macro_rules! hook {
+    ($self:ident . $m:ident ( $($a:expr),* )) => {
+        if let Some(v) = $self.spec.get().and_then(|s| s.$m($self $(, $a)*)) {
+            return v;
+        }
+    };
+}
+
 impl Theme {
     fn surface(
         background: Option<Color>,
@@ -183,68 +192,27 @@ impl Theme {
         }
     }
 
-    fn tonal(&self) -> bool {
-        self.shape.kind() == crate::ShapeKind::Rounded
-    }
-
-    /// Card. Rounded (Material) themes use the tonal container roles.
+    /// Card.
     pub fn card(&self, v: CardVariant) -> SurfaceTokens {
+        hook!(self.card(v));
         let p = &self.palette;
-        let r = &p.roles;
-        let tonal = self.tonal();
-        let line = if tonal { r.outline_variant } else { p.border };
         match v {
-            CardVariant::Elevated => Self::surface(
-                Some(if tonal {
-                    r.surface_container_low
-                } else {
-                    p.background
-                }),
-                (!tonal).then_some(line),
-                p.text,
-                false,
-                true,
-            ),
-            CardVariant::Filled => Self::surface(
-                Some(if tonal {
-                    r.surface_container_highest
-                } else {
-                    p.surface_raised
-                }),
-                None,
-                p.text,
-                false,
-                false,
-            ),
-            CardVariant::Outlined => Self::surface(None, Some(line), p.text, false, false),
+            CardVariant::Elevated => {
+                Self::surface(Some(p.background), Some(p.border), p.text, false, true)
+            }
+            CardVariant::Filled => {
+                Self::surface(Some(p.surface_raised), None, p.text, false, false)
+            }
+            CardVariant::Outlined => Self::surface(None, Some(p.border), p.text, false, false),
         }
     }
 
     /// Filter chip.
     pub fn chip(&self, selected: bool, hovered: bool) -> SurfaceTokens {
+        hook!(self.chip(selected, hovered));
         let p = &self.palette;
-        if selected && self.tonal() {
-            let r = &p.roles;
-            Self::surface(
-                Some(r.secondary_container),
-                None,
-                r.on_secondary_container,
-                false,
-                false,
-            )
-        } else if selected {
+        if selected {
             Self::surface(Some(p.selection), Some(p.primary), p.text, false, false)
-        } else if self.tonal() {
-            // M3 filter chip, unselected: transparent with an `outline` border; hover is a
-            // state layer in `on-surface-variant`.
-            let r = &p.roles;
-            Self::surface(
-                hovered.then(|| r.on_surface_variant.with_alpha(0.08)),
-                Some(r.outline),
-                r.on_surface_variant,
-                false,
-                false,
-            )
         } else {
             Self::surface(
                 hovered.then_some(p.surface_raised),
@@ -264,15 +232,9 @@ impl Theme {
 
     /// Alert: tinted and outlined, or a solid banner.
     pub fn alert(&self, tone: Tone, banner: bool) -> SurfaceTokens {
+        hook!(self.alert(tone, banner));
         let c = self.palette.tone(tone);
-        if banner && self.shape.kind() == crate::ShapeKind::Rounded {
-            // Rounded (Material): a tonal container, not a saturated slab.
-            let fill = match tone {
-                Tone::Danger => self.palette.roles.error_container,
-                _ => self.palette.roles.surface_container_high.mix(c, 0.25),
-            };
-            Self::surface(Some(fill), None, self.on(fill), false, false)
-        } else if banner {
+        if banner {
             Self::surface(Some(c), None, self.on(c), false, false)
         } else {
             Self::surface(
@@ -285,72 +247,39 @@ impl Theme {
         }
     }
 
-    /// Snackbar: `(surface, action colour)`. Rounded (Material) uses the inverse surface.
+    /// Snackbar: `(surface, action colour)`.
     pub fn snackbar(&self) -> (SurfaceTokens, Color) {
+        hook!(self.snackbar());
         let p = &self.palette;
-        if self.shape.kind() == crate::ShapeKind::Rounded {
-            (
-                Self::surface(
-                    Some(p.roles.inverse_surface),
-                    None,
-                    p.roles.inverse_on_surface,
-                    false,
-                    true,
-                ),
-                p.roles.inverse_primary,
-            )
-        } else {
-            let bg = p.surface_raised;
-            (
-                Self::surface(Some(bg), None, p.text, false, false),
-                if p.primary.contrast(bg) >= 3.0 {
-                    p.primary
-                } else {
-                    p.text
-                },
-            )
-        }
+        let bg = p.surface_raised;
+        (
+            Self::surface(Some(bg), None, p.text, false, false),
+            if p.primary.contrast(bg) >= 3.0 {
+                p.primary
+            } else {
+                p.text
+            },
+        )
     }
 
     /// Dialog box.
     pub fn dialog(&self) -> SurfaceTokens {
+        hook!(self.dialog());
         let p = &self.palette;
-        if self.tonal() {
-            let r = &p.roles;
-            return Self::surface(
-                Some(r.surface_container_high),
-                None,
-                r.on_surface,
-                false,
-                true,
-            );
-        }
         Self::surface(Some(p.surface), Some(p.primary), p.text, true, true)
     }
 
     /// Side / bottom sheet.
     pub fn sheet(&self) -> SurfaceTokens {
+        hook!(self.sheet());
         let p = &self.palette;
-        if self.tonal() {
-            let r = &p.roles;
-            return Self::surface(
-                Some(r.surface_container_low),
-                None,
-                r.on_surface,
-                false,
-                true,
-            );
-        }
         Self::surface(Some(p.surface), Some(p.border_strong), p.text, false, true)
     }
 
     /// Floating popup (menu, dropdown list).
     pub fn popup(&self) -> SurfaceTokens {
+        hook!(self.popup());
         let p = &self.palette;
-        if self.tonal() {
-            let r = &p.roles;
-            return Self::surface(Some(r.surface_container), None, r.on_surface, false, true);
-        }
         Self::surface(
             Some(p.surface_raised),
             Some(p.border_strong),
@@ -362,9 +291,7 @@ impl Theme {
 
     /// Modal scrim: the page colour, never fully opaque.
     pub fn scrim(&self) -> Color {
-        if self.tonal() {
-            return self.palette.roles.scrim.with_alpha(0.32);
-        }
+        hook!(self.scrim());
         self.palette.background.with_alpha(0.7)
     }
 
@@ -416,21 +343,8 @@ impl Theme {
 
     /// Tab: the active tab is highlighted with an indicator.
     pub fn tab(&self, active: bool, hovered: bool) -> TabTokens {
+        hook!(self.tab(active, hovered));
         let p = &self.palette;
-        if self.tonal() {
-            // M3 primary tab: transparent, `primary` label + indicator when active.
-            let r = &p.roles;
-            return TabTokens {
-                background: hovered
-                    .then(|| if active { p.primary } else { r.on_surface }.with_alpha(0.08)),
-                foreground: if active {
-                    p.primary
-                } else {
-                    r.on_surface_variant
-                },
-                indicator: active.then_some(p.primary),
-            };
-        }
         if active {
             TabTokens {
                 background: Some(p.primary),
@@ -454,6 +368,7 @@ impl Theme {
 
     /// Toggle / checkbox / radio.
     pub fn toggle(&self, on: bool, state: ControlState) -> ToggleTokens {
+        hook!(self.toggle(on, state));
         let p = &self.palette;
         if state == ControlState::Disabled {
             return ToggleTokens {
@@ -476,117 +391,23 @@ impl Theme {
             ToggleTokens {
                 track: p.surface_raised,
                 thumb: if lit { p.text } else { p.text_muted },
-                // Rounded (Material): the unselected outline is the `outline` role.
-                border: if self.shape.kind() == crate::ShapeKind::Rounded {
-                    if lit {
-                        p.roles.on_surface
-                    } else {
-                        p.roles.outline
-                    }
-                } else if lit {
-                    p.border_strong
-                } else {
-                    p.border
-                },
+                border: if lit { p.border_strong } else { p.border },
             }
         }
     }
 
-    /// Material 3 switch / checkbox / radio colours (`track` = container, `thumb` = handle, mark
-    /// or dot, `border` = outline). Non-rounded themes get [`Theme::toggle`].
-    pub fn m3_toggle(&self, kind: ToggleKind, on: bool, state: ControlState) -> ToggleTokens {
-        if !self.tonal() {
-            return self.toggle(on, state);
-        }
-        let r = &self.palette.roles;
-        let p = &self.palette;
-        let clear = r.on_surface.with_alpha(0.0);
-        let lit = matches!(
-            state,
-            ControlState::Hovered | ControlState::Pressed | ControlState::Focused
-        );
-        if state == ControlState::Disabled {
-            let d = r.on_surface;
-            return match (kind, on) {
-                (ToggleKind::Switch, true) => ToggleTokens {
-                    track: d.with_alpha(0.12),
-                    thumb: p.surface,
-                    border: d.with_alpha(0.12),
-                },
-                (ToggleKind::Switch, false) => ToggleTokens {
-                    track: r.surface_container_highest.with_alpha(0.12),
-                    thumb: d.with_alpha(0.38),
-                    border: d.with_alpha(0.12),
-                },
-                (ToggleKind::Checkbox, true) => ToggleTokens {
-                    track: d.with_alpha(0.38),
-                    thumb: p.surface,
-                    border: d.with_alpha(0.38),
-                },
-                (_, _) => ToggleTokens {
-                    track: clear,
-                    thumb: if on { d.with_alpha(0.38) } else { clear },
-                    border: d.with_alpha(0.38),
-                },
-            };
-        }
-        match (kind, on) {
-            (ToggleKind::Switch, true) => ToggleTokens {
-                track: p.primary,
-                thumb: if lit {
-                    r.primary_container
-                } else {
-                    p.on_primary
-                },
-                border: p.primary,
-            },
-            (ToggleKind::Switch, false) => ToggleTokens {
-                track: r.surface_container_highest,
-                thumb: if lit { r.on_surface_variant } else { r.outline },
-                border: r.outline,
-            },
-            (ToggleKind::Checkbox, true) => ToggleTokens {
-                track: p.primary,
-                thumb: p.on_primary,
-                border: p.primary,
-            },
-            (ToggleKind::Checkbox, false) => ToggleTokens {
-                track: clear,
-                thumb: clear,
-                border: if lit {
-                    r.on_surface
-                } else {
-                    r.on_surface_variant
-                },
-            },
-            (ToggleKind::Radio, true) => ToggleTokens {
-                track: clear,
-                thumb: p.primary,
-                border: p.primary,
-            },
-            (ToggleKind::Radio, false) => ToggleTokens {
-                track: clear,
-                thumb: clear,
-                border: if lit {
-                    r.on_surface
-                } else {
-                    r.on_surface_variant
-                },
-            },
-        }
+    /// Switch / checkbox / radio colours for a design system with its own selection controls
+    /// (`track` = container, `thumb` = handle, mark or dot, `border` = outline). Without a spec
+    /// override this is [`Theme::toggle`].
+    pub fn choice_toggle(&self, kind: ToggleKind, on: bool, state: ControlState) -> ToggleTokens {
+        hook!(self.choice_toggle(kind, on, state));
+        self.toggle(on, state)
     }
 
     /// Progress bar in a status tone (`None` = brand colour).
     pub fn progress(&self, tone: Option<Tone>) -> ProgressTokens {
+        hook!(self.progress(tone));
         let p = &self.palette;
-        if self.tonal() {
-            let track = p.roles.surface_container_highest;
-            return ProgressTokens {
-                track,
-                fill: tone.map_or(p.primary, |t| p.tone(t)),
-                border: track,
-            };
-        }
         ProgressTokens {
             track: p.surface_raised,
             fill: tone.map_or(p.primary, |t| p.tone(t)),
@@ -596,33 +417,14 @@ impl Theme {
 
     /// List / menu row.
     pub fn list_item(&self, selected: bool, hovered: bool) -> ListItemTokens {
+        hook!(self.list_item(selected, hovered));
         let p = &self.palette;
-        let rounded = self.shape.kind() == crate::ShapeKind::Rounded;
-        if rounded && !selected {
-            // M3 list: `on-surface` text, an 8 % state layer on hover.
-            let r = &p.roles;
-            return ListItemTokens {
-                background: hovered.then(|| r.on_surface.with_alpha(0.08)),
-                foreground: r.on_surface,
-                marker: None,
-            };
-        }
         if selected {
             ListItemTokens {
-                // Rounded (Material): the secondary-container pill.
-                background: Some(if rounded {
-                    p.roles.secondary_container
-                } else {
-                    p.selection
-                }),
-                foreground: if rounded {
-                    p.roles.on_secondary_container
-                } else {
-                    p.text
-                },
-                // Chamfered themes mark the selection with an accent bar;
-                // rounded (Material) ones rely on the filled pill alone.
-                marker: (self.shape.kind() != crate::ShapeKind::Rounded).then_some(p.primary),
+                background: Some(p.selection),
+                foreground: p.text,
+                // The selection is marked with an accent bar.
+                marker: Some(p.primary),
             }
         } else if hovered {
             ListItemTokens {
@@ -641,21 +443,16 @@ impl Theme {
 
     /// Divider / separator colour.
     pub fn divider(&self) -> Color {
-        if self.shape.kind() == crate::ShapeKind::Rounded {
-            self.palette.roles.outline_variant
-        } else {
-            self.palette.border
-        }
+        hook!(self.divider());
+        self.palette.border
     }
 
     /// Resolve a button style.
     pub fn button(&self, variant: ButtonVariant, state: ControlState) -> ButtonTokens {
+        hook!(self.button(variant, state));
         let p = &self.palette;
         use ButtonVariant::*;
         use ControlState::*;
-        if self.tonal() {
-            return self.m3_button(variant, state);
-        }
         if state == Disabled {
             return ButtonTokens {
                 background: Some(p.surface_raised),
@@ -711,175 +508,64 @@ impl Theme {
         }
     }
 
-    /// Floating action button colours (M3 container roles on rounded themes; the plain
-    /// button tokens elsewhere). Primary/Secondary/other map to the primary / secondary /
-    /// tertiary container, Outline and Ghost to the surface FAB.
-    /// Keyboard focus indicator `(colour, thickness px)`. M3: a 3 px `secondary` ring; other
-    /// design systems: their `focus_ring` colour at 2 px.
+    /// Keyboard focus indicator `(colour, thickness px)`.
     pub fn focus_ring(&self) -> (Color, f32) {
-        if self.tonal() {
-            (self.palette.secondary, 3.0)
-        } else {
-            (self.palette.focus_ring, 2.0)
-        }
+        hook!(self.focus_ring());
+        (self.palette.focus_ring, 2.0)
     }
 
-    /// Row height of a list item. M3: 56 px one-line rows (40 px for nested ones); other
-    /// design systems scale their control height.
+    /// Row height of a list item (nested rows are denser).
     pub fn list_row_height(&self, nested: bool) -> f32 {
-        match (self.tonal(), nested) {
-            (true, false) => 56.0,
-            (true, true) => 40.0,
-            (false, false) => self.shape.control_height * 0.8,
-            (false, true) => self.shape.control_height * 0.65,
-        }
+        hook!(self.list_row_height(nested));
+        self.shape.control_height * if nested { 0.65 } else { 0.8 }
     }
 
-    /// Row height of a menu / dropdown item. M3: 48 px.
+    /// Row height of a menu / dropdown item.
     pub fn menu_row_height(&self) -> f32 {
-        if self.tonal() {
-            48.0
-        } else {
-            self.shape.control_height * 0.8
-        }
+        hook!(self.menu_row_height());
+        self.shape.control_height * 0.8
     }
 
-    /// Tooltip `(container, label)` colours. M3 plain tooltips use the inverse surface, rich
-    /// ones a tonal container; other design systems use their overlay.
+    /// Tooltip `(container, label)` colours; `rich` tooltips carry a title and body.
     pub fn tooltip(&self, rich: bool) -> (Color, Color) {
-        let r = &self.palette.roles;
-        match (self.tonal(), rich) {
-            (true, false) => (r.inverse_surface, r.inverse_on_surface),
-            (true, true) => (r.surface_container, r.on_surface),
-            (false, _) => (self.palette.overlay, self.palette.text),
-        }
+        hook!(self.tooltip(rich));
+        (self.palette.overlay, self.palette.text)
     }
 
-    /// M3 elevated button: `surface-container-low` container, `primary` label, lifted by a
-    /// shadow (the caller adds the elevation). Themes without tonal surfaces get the plain
-    /// `Secondary` button, so nothing needs a theme id.
+    /// Horizontal padding of a button label.
+    pub fn button_padding(&self) -> f32 {
+        hook!(self.button_padding());
+        self.spacing.md
+    }
+
+    /// A raised button: the `Secondary` button unless the design system lifts it.
     pub fn elevated_button(&self, state: ControlState) -> ButtonTokens {
-        if !self.tonal() {
-            return self.button(ButtonVariant::Secondary, state);
-        }
-        let r = &self.palette.roles;
-        if state == ControlState::Disabled {
-            return ButtonTokens {
-                background: Some(r.on_surface.with_alpha(0.12)),
-                foreground: r.on_surface.with_alpha(0.38),
-                border: None,
-            };
-        }
-        let layer = match state {
-            ControlState::Hovered => 0.08,
-            ControlState::Pressed | ControlState::Focused => 0.10,
-            _ => 0.0,
-        };
-        ButtonTokens {
-            background: Some(r.surface_container_low.mix(self.palette.primary, layer)),
-            foreground: self.palette.primary,
-            border: None,
-        }
+        hook!(self.elevated_button(state));
+        self.button(ButtonVariant::Secondary, state)
     }
 
+    /// Floating action button colours (the plain button tokens unless overridden).
     pub fn fab(&self, variant: ButtonVariant, state: ControlState) -> ButtonTokens {
-        if !self.tonal() {
-            return self.button(variant, state);
-        }
-        let r = &self.palette.roles;
-        use ButtonVariant::*;
-        let (bg, fg) = match variant {
-            Primary => (r.primary_container, r.on_primary_container),
-            Secondary => (r.secondary_container, r.on_secondary_container),
-            Danger => (r.error_container, r.on_error_container),
-            Outline | OutlineSecondary => (r.tertiary_container, r.on_tertiary_container),
-            Ghost => (r.surface_container_high, self.palette.primary),
-        };
-        let layer = match state {
-            ControlState::Hovered => 0.08,
-            ControlState::Pressed | ControlState::Focused => 0.10,
-            _ => 0.0,
-        };
-        ButtonTokens {
-            background: Some(bg.mix(fg, layer)),
-            foreground: fg,
-            border: None,
-        }
+        hook!(self.fab(variant, state));
+        self.button(variant, state)
     }
 
-    /// Icon button colours. M3: standard (`Ghost`) icons are `on-surface-variant`, `primary`
-    /// when `selected`; outlined icons are `on-surface-variant` on an `outline` border; filled
-    /// and tonal follow the buttons. Other themes use the button tokens.
+    /// Icon button colours (the plain button tokens unless overridden).
     pub fn icon_button(
         &self,
         variant: ButtonVariant,
         state: ControlState,
         selected: bool,
     ) -> ButtonTokens {
-        let mut b = self.button(variant, state);
-        if !self.tonal() || state == ControlState::Disabled {
+        let base = self.button(variant, state);
+        if let Some(b) = self
+            .spec
+            .get()
+            .and_then(|s| s.icon_button(self, variant, state, selected, base))
+        {
             return b;
         }
-        let r = &self.palette.roles;
-        let layer = match state {
-            ControlState::Hovered => 0.08,
-            ControlState::Pressed | ControlState::Focused => 0.10,
-            _ => 0.0,
-        };
-        match variant {
-            ButtonVariant::Ghost | ButtonVariant::Outline | ButtonVariant::OutlineSecondary => {
-                let fg = if selected {
-                    self.palette.primary
-                } else {
-                    r.on_surface_variant
-                };
-                b.foreground = fg;
-                b.background = (layer > 0.0).then(|| fg.with_alpha(layer));
-            }
-            _ => {}
-        }
-        b
-    }
-
-    /// Material 3 buttons: filled, tonal, outlined, text; state layers 8% hover / 10% focus and
-    /// press; disabled is `on-surface` at 12% (container) and 38% (label).
-    fn m3_button(&self, variant: ButtonVariant, state: ControlState) -> ButtonTokens {
-        use ButtonVariant::*;
-        use ControlState::*;
-        let r = &self.palette.roles;
-        let p = &self.palette;
-        // (container, label, outlined)
-        let (container, label, outlined) = match variant {
-            Primary => (Some(p.primary), p.on_primary, false),
-            Secondary => (Some(r.secondary_container), r.on_secondary_container, false),
-            Danger => (Some(p.danger), r.on_error, false),
-            Outline => (None, p.primary, true),
-            OutlineSecondary => (None, p.secondary, true),
-            Ghost => (None, p.primary, false),
-        };
-        if state == Disabled {
-            let disabled = r.on_surface;
-            return ButtonTokens {
-                background: container.map(|_| disabled.with_alpha(0.12)),
-                foreground: disabled.with_alpha(0.38),
-                border: outlined.then(|| disabled.with_alpha(0.12)),
-            };
-        }
-        let layer = match state {
-            Hovered => 0.08,
-            Pressed | Focused => 0.10,
-            _ => 0.0,
-        };
-        let background = match container {
-            Some(c) => Some(c.mix(label, layer)),
-            None if layer > 0.0 => Some(label.with_alpha(layer)),
-            None => None,
-        };
-        ButtonTokens {
-            background,
-            foreground: label,
-            border: outlined.then_some(if state == Focused { label } else { r.outline }),
-        }
+        base
     }
 
     /// `c` as text on the page background: itself when it holds 3:1 contrast,
@@ -928,18 +614,8 @@ impl Theme {
 
     /// Resolve a text-input style.
     pub fn input(&self, focused: bool) -> InputTokens {
+        hook!(self.input(focused));
         let p = &self.palette;
-        if self.tonal() {
-            // M3 outlined text field: `outline` border (primary when focused), `on-surface` text.
-            let r = &p.roles;
-            return InputTokens {
-                background: p.background,
-                border: if focused { p.primary } else { r.outline },
-                text: r.on_surface,
-                placeholder: r.on_surface_variant,
-                selection: p.selection,
-            };
-        }
         InputTokens {
             background: p.background,
             border: if focused {

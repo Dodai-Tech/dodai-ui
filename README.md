@@ -88,7 +88,15 @@ just run-gpui
 just run-topcoat   # writes showcase.html and opens it
 ```
 
-### Material 3 conformance
+### Where a design system lives
+
+`dodai-core` is infrastructure: tokens, the shape-system engine, the `DesignSpec` trait and a generic baseline for component
+tokens. A design-system crate owns everything specific to it: palettes, shape language and presets, and a `DesignSpec`
+(component tokens, row heights, focus ring, tooltip colours, …) attached with `Theme::with_spec`. Every hook is optional, so a
+new design system overrides only what differs. `dodai-material` is the reference (`Material3`, `shape_system()`);
+Cyberpunk keeps the core baseline and ships its shape presets in `dodai_cyberpunk::shape`.
+
+## Material 3 conformance
 
 The Material themes follow the M3 component specs: shape per component (`ShapeRole`: pill buttons,
 16 px FAB, 12 px cards, 28 px dialogs, 4 px menus and fields, 8 px chips, ...), tonal containers

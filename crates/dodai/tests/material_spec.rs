@@ -189,7 +189,7 @@ fn selection_controls_follow_the_spec() {
     for t in material() {
         let r = &t.palette.roles;
         let p = &t.palette;
-        let k = |kind, on| t.m3_toggle(kind, on, ControlState::Idle);
+        let k = |kind, on| t.choice_toggle(kind, on, ControlState::Idle);
         // Switch: unselected track surface-container-highest + outline handle; selected primary.
         let off = k(ToggleKind::Switch, false);
         assert_eq!(
@@ -209,7 +209,7 @@ fn selection_controls_follow_the_spec() {
         let on = k(ToggleKind::Radio, true);
         assert_eq!((on.border, on.thumb), (p.primary, p.primary));
         // Disabled controls are on-surface at 38 % (12 % for switch containers).
-        let d = t.m3_toggle(ToggleKind::Checkbox, false, ControlState::Disabled);
+        let d = t.choice_toggle(ToggleKind::Checkbox, false, ControlState::Disabled);
         assert_eq!(d.border, r.on_surface.with_alpha(0.38));
     }
 }
@@ -292,5 +292,18 @@ fn list_menu_tooltip_and_focus_follow_the_spec() {
             t.id()
         );
         assert_eq!(t.focus_ring().0, t.palette.focus_ring, "{}", t.id());
+    }
+}
+
+#[test]
+fn the_spec_lives_with_the_design_system() {
+    for t in material() {
+        assert_eq!(t.spec.name(), "Material 3", "{}", t.id());
+    }
+    for t in themes::all()
+        .into_iter()
+        .filter(|t| t.meta.family != "material")
+    {
+        assert!(t.spec.get().is_none(), "{} uses the core baseline", t.id());
     }
 }

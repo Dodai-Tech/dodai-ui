@@ -63,22 +63,9 @@ fn base(id: &'static str, shape: Shape, glow: f32, scan: bool, hard: f32, upper:
     .build()
 }
 
-/// Light theme, rounded corners, no effects, mixed-case labels.
+/// The Material 3 light theme (rounded corners, tonal surfaces, its own spec).
 pub fn light_rounded() -> Theme {
-    base(
-        "test-light",
-        Shape {
-            corners: Corners::NONE,
-            radius: 8.0,
-            chamfer: 0.0,
-            border_width: 1.0,
-            control_height: 40.0,
-        },
-        0.0,
-        false,
-        0.0,
-        false,
-    )
+    dodai::themes::material::light()
 }
 
 /// Square theme with scanlines, uppercase labels and a hard shadow.

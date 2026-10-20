@@ -9,10 +9,8 @@
 //!   for a [`ShapeRole`] and get a [`CornerSpec`].
 //!
 //! ```
-//! use dodai_core::{ShapeRole, ShapeSystem};
-//! let m3 = ShapeSystem::material3();
-//! assert!(m3.spec(ShapeRole::Button).has_curves());
-//! let pts = m3.spec(ShapeRole::Card).outline(200.0, 100.0);
+//! use dodai_core::{Corner, CornerSpec};
+//! let pts = CornerSpec::uniform(Corner::Round(12.0)).outline(200.0, 100.0);
 //! assert!(pts.len() > 4);
 //! ```
 
@@ -264,21 +262,13 @@ pub struct ShapeScale {
 }
 
 impl ShapeScale {
-    /// Material 3: 4 / 8 / 12 / 16 / 28.
-    pub const MATERIAL3: Self = Self {
-        xs: 4.0,
-        sm: 8.0,
-        md: 12.0,
-        lg: 16.0,
-        xl: 28.0,
-    };
-    /// Cyberpunk cut sizes.
-    pub const CHAMFER: Self = Self {
-        xs: 4.0,
-        sm: 6.0,
-        md: 10.0,
-        lg: 14.0,
-        xl: 20.0,
+    /// Every step 0 (no rounding or cutting).
+    pub const ZERO: Self = Self {
+        xs: 0.0,
+        sm: 0.0,
+        md: 0.0,
+        lg: 0.0,
+        xl: 0.0,
     };
 
     pub fn px(&self, s: ShapeSize) -> f32 {
@@ -381,86 +371,12 @@ const ALL: Corners = Corners {
     bottom_left: true,
 };
 
-const fn r(role: ShapeRole, size: ShapeSize, sides: Corners) -> RoleShape {
-    RoleShape::new(role, CornerStyle::Round, size, sides)
-}
-
-const M3_ROLES: &[RoleShape] = &[
-    r(ShapeRole::Button, ShapeSize::Full, ALL),
-    r(ShapeRole::Fab, ShapeSize::Large, ALL),
-    r(ShapeRole::Chip, ShapeSize::Small, ALL),
-    r(ShapeRole::Tag, ShapeSize::Small, ALL),
-    r(ShapeRole::Badge, ShapeSize::Full, ALL),
-    r(ShapeRole::Input, ShapeSize::ExtraSmall, Corners::TOP),
-    r(ShapeRole::Card, ShapeSize::Medium, ALL),
-    r(ShapeRole::Panel, ShapeSize::Medium, ALL),
-    r(ShapeRole::Menu, ShapeSize::ExtraSmall, ALL),
-    r(ShapeRole::Dialog, ShapeSize::ExtraLarge, ALL),
-    r(ShapeRole::Sheet, ShapeSize::ExtraLarge, Corners::TOP),
-    r(ShapeRole::Tooltip, ShapeSize::ExtraSmall, ALL),
-    r(ShapeRole::IconButton, ShapeSize::Full, ALL),
-    r(ShapeRole::FabSmall, ShapeSize::Medium, ALL),
-    r(ShapeRole::FabLarge, ShapeSize::ExtraLarge, ALL),
-    r(ShapeRole::SearchBar, ShapeSize::Full, ALL),
-    r(ShapeRole::Snackbar, ShapeSize::ExtraSmall, ALL),
-    r(ShapeRole::Carousel, ShapeSize::ExtraLarge, ALL),
-    r(ShapeRole::SideSheet, ShapeSize::Large, ALL),
-    r(ShapeRole::Checkbox, ShapeSize::Px(2.0), ALL),
-    r(ShapeRole::Indicator, ShapeSize::Full, ALL),
-    r(ShapeRole::RichTooltip, ShapeSize::Medium, ALL),
-    r(ShapeRole::Toolbar, ShapeSize::Full, ALL),
-];
-
 impl ShapeSystem {
-    /// Material 3: rounded scale, pill buttons, top-rounded fields.
-    pub const fn material3() -> Self {
-        Self {
-            name: "Material 3",
-            scale: ShapeScale::MATERIAL3,
-            roles: std::borrow::Cow::Borrowed(M3_ROLES),
-            default: DefaultShape {
-                style: CornerStyle::Round,
-                size: ShapeSize::Medium,
-                sides: ALL,
-            },
-        }
-    }
-
-    /// Cyberpunk "slab": bottom-right cut on everything.
-    pub const fn cyberpunk_slab() -> Self {
-        Self::cyberpunk("Slab", Corners::BOTTOM_RIGHT)
-    }
-    /// Cyberpunk "diagonal": top-left + bottom-right.
-    pub const fn cyberpunk_diagonal() -> Self {
-        Self::cyberpunk("Diagonal", Corners::DIAGONAL)
-    }
-    /// Cyberpunk "tab": both top corners.
-    pub const fn cyberpunk_tab() -> Self {
-        Self::cyberpunk("Tab", Corners::TOP)
-    }
-    /// Cyberpunk "bracket": both left corners.
-    pub const fn cyberpunk_bracket() -> Self {
-        Self::cyberpunk("Bracket", Corners::LEFT)
-    }
-
-    const fn cyberpunk(name: &'static str, corners: Corners) -> Self {
-        Self {
-            name,
-            scale: ShapeScale::CHAMFER,
-            roles: std::borrow::Cow::Borrowed(&[]),
-            default: DefaultShape {
-                style: CornerStyle::Cut,
-                size: ShapeSize::Medium,
-                sides: corners,
-            },
-        }
-    }
-
     /// No rounding or cutting anywhere.
     pub const fn sharp() -> Self {
         Self {
             name: "Sharp",
-            scale: ShapeScale::MATERIAL3,
+            scale: ShapeScale::ZERO,
             roles: std::borrow::Cow::Borrowed(&[]),
             default: DefaultShape {
                 style: CornerStyle::Round,
@@ -573,32 +489,9 @@ pub struct ShapePreset {
 }
 
 impl ShapePreset {
-    fn of(id: &'static str, name: &'static str, system: ShapeSystem) -> Self {
+    /// A named preset.
+    pub fn new(id: &'static str, name: &'static str, system: ShapeSystem) -> Self {
         Self { id, name, system }
-    }
-
-    /// Presets offered by Cyberpunk.
-    pub fn cyberpunk() -> Vec<ShapePreset> {
-        vec![
-            Self::of("slab", "Slab", ShapeSystem::cyberpunk_slab()),
-            Self::of("diagonal", "Diagonal", ShapeSystem::cyberpunk_diagonal()),
-            Self::of("tab", "Tab", ShapeSystem::cyberpunk_tab()),
-            Self::of("bracket", "Bracket", ShapeSystem::cyberpunk_bracket()),
-            Self::of("sharp", "Sharp", ShapeSystem::sharp()),
-        ]
-    }
-
-    /// Presets offered by Material 3.
-    pub fn material3() -> Vec<ShapePreset> {
-        vec![
-            Self::of("m3", "Material", ShapeSystem::material3()),
-            Self::of(
-                "m3-cut",
-                "Cut",
-                ShapeSystem::material3().with_style(CornerStyle::Cut),
-            ),
-            Self::of("sharp", "Sharp", ShapeSystem::sharp()),
-        ]
     }
 }
 
@@ -640,20 +533,7 @@ mod tests {
     }
 
     #[test]
-    fn m3_roles_map_as_expected() {
-        let m3 = ShapeSystem::material3();
-        assert_eq!(m3.spec(ShapeRole::Button).uniform_radius(), Some(FULL));
-        assert_eq!(m3.spec(ShapeRole::Card).uniform_radius(), Some(12.0));
-        let input = m3.spec(ShapeRole::Input);
-        assert_eq!(input.top_left, Corner::Round(4.0));
-        assert_eq!(input.bottom_left, Corner::Square);
-    }
-
-    #[test]
-    fn cyberpunk_presets_cut_expected_corners() {
-        let slab = ShapeSystem::cyberpunk_slab().spec(ShapeRole::Button);
-        assert_eq!(slab.sides(), Corners::BOTTOM_RIGHT);
-        assert!(!slab.has_curves());
+    fn sharp_is_square() {
         assert!(ShapeSystem::sharp().spec(ShapeRole::Card).is_square());
     }
 
@@ -675,9 +555,29 @@ mod tests {
 mod compose_tests {
     use super::*;
 
+    /// A Material-like rounded system for the composition tests.
+    fn rounded() -> ShapeSystem {
+        ShapeSystem {
+            name: "test",
+            scale: ShapeScale {
+                xs: 4.0,
+                sm: 8.0,
+                md: 12.0,
+                lg: 16.0,
+                xl: 28.0,
+            },
+            roles: std::borrow::Cow::Borrowed(&[]),
+            default: DefaultShape {
+                style: CornerStyle::Round,
+                size: ShapeSize::Medium,
+                sides: ALL,
+            },
+        }
+    }
+
     #[test]
     fn mixes_kinds_per_role() {
-        let sys = ShapeSystem::material3().with_role(
+        let sys = rounded().with_role(
             ShapeRole::Button,
             CornerStyle::Cut,
             ShapeSize::Medium,
@@ -698,11 +598,11 @@ mod compose_tests {
 
     #[test]
     fn style_and_scale_swap() {
-        let cut = ShapeSystem::material3().with_style(CornerStyle::Cut);
+        let cut = rounded().with_style(CornerStyle::Cut);
         assert_eq!(cut.spec(ShapeRole::Card).top_left, Corner::Cut(12.0));
-        let big = ShapeSystem::material3().with_scale(ShapeScale {
+        let big = rounded().with_scale(ShapeScale {
             md: 20.0,
-            ..ShapeScale::MATERIAL3
+            ..rounded().scale
         });
         assert_eq!(big.spec(ShapeRole::Card).uniform_radius(), Some(20.0));
     }
