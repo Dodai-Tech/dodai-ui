@@ -42,8 +42,8 @@ fn elapsed_secs() -> f32 {
 #[derive(IntoElement)]
 pub struct CircularProgress {
     value: Option<f32>,
-    size: f32,
-    thickness: f32,
+    size: Option<f32>,
+    thickness: Option<f32>,
     tone: Option<Tone>,
     label: bool,
 }
@@ -52,8 +52,8 @@ impl CircularProgress {
     pub fn new(value: f32) -> Self {
         Self {
             value: Some(value.clamp(0.0, 1.0)),
-            size: 56.0,
-            thickness: 5.0,
+            size: None,
+            thickness: None,
             tone: None,
             label: true,
         }
@@ -66,11 +66,11 @@ impl CircularProgress {
         }
     }
     pub fn size(mut self, s: f32) -> Self {
-        self.size = s;
+        self.size = Some(s);
         self
     }
     pub fn thickness(mut self, t: f32) -> Self {
-        self.thickness = t;
+        self.thickness = Some(t);
         self
     }
     pub fn tone(mut self, t: Tone) -> Self {
@@ -89,7 +89,13 @@ impl RenderOnce for CircularProgress {
         let t = theme_of(cx);
         let k = t.progress(self.tone);
         let (track, fill) = (hsla(k.track), hsla(k.fill));
-        let (size, th, value) = (self.size, self.thickness, self.value);
+        // M3: 48 px indicator with a 4 px stroke, and a gap between the active arc and the
+        // track; other design systems keep their 56 / 5 px ring.
+        let m3 = t.shape.kind() == dodai_core::ShapeKind::Rounded;
+        let (size, th) = if m3 { (48.0, 4.0) } else { (56.0, 5.0) };
+        let size = self.size.unwrap_or(size);
+        let th = self.thickness.unwrap_or(th);
+        let value = self.value;
         let mut d = div()
             .relative()
             .flex_none()
@@ -119,7 +125,26 @@ impl RenderOnce for CircularProgress {
                         };
                         let full = std::f32::consts::TAU;
                         let (c0, c1) = (size / 2.0 - th / 2.0, size / 2.0 - th / 2.0);
-                        ring(arc_points(c0, c1, r, 0.0, full), track, true);
+                        let start = -std::f32::consts::FRAC_PI_2;
+                        match value {
+                            Some(v) if m3 && v > 0.0 && v < 1.0 => {
+                                // Track resumes one stroke-width past the active arc's end.
+                                let gap = (th * 1.5 / r).min(0.5);
+                                let a = full * v;
+                                ring(
+                                    arc_points(
+                                        c0,
+                                        c1,
+                                        r,
+                                        start + a + gap,
+                                        (full - a - 2.0 * gap).max(0.0),
+                                    ),
+                                    track,
+                                    false,
+                                );
+                            }
+                            _ => ring(arc_points(c0, c1, r, 0.0, full), track, true),
+                        }
                         match value {
                             Some(v) if v > 0.0 => {
                                 let start = -std::f32::consts::FRAC_PI_2;

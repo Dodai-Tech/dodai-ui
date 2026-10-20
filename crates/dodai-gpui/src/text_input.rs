@@ -44,8 +44,25 @@ actions!(
     ]
 );
 
+gpui::actions!(dodai_focus, [FocusNext, FocusPrev]);
+
 /// Register text-input key bindings (called by [`crate::install`]).
 pub fn bind_keys(cx: &mut App) {
+    // Keyboard navigation: Tab / Shift-Tab walk the focusable controls.
+    cx.bind_keys([
+        KeyBinding::new("tab", FocusNext, None),
+        KeyBinding::new("shift-tab", FocusPrev, None),
+    ]);
+    cx.on_action(|_: &FocusNext, cx| {
+        if let Some(w) = cx.active_window() {
+            let _ = w.update(cx, |_, window, _| window.focus_next());
+        }
+    });
+    cx.on_action(|_: &FocusPrev, cx| {
+        if let Some(w) = cx.active_window() {
+            let _ = w.update(cx, |_, window, _| window.focus_prev());
+        }
+    });
     let m = if cfg!(target_os = "macos") {
         "cmd"
     } else {
@@ -175,6 +192,7 @@ pub struct TextInput {
     disabled: bool,
     label: Option<SharedString>,
     filled: bool,
+    pub(crate) bare: bool,
     corners: Option<dodai_core::Corners>,
     on_change: Option<ChangeHandler>,
     on_submit: Option<SubmitHandler>,
@@ -188,6 +206,7 @@ impl TextInput {
             placeholder: SharedString::default(),
             label: None,
             filled: false,
+            bare: false,
             selected: 0..0,
             reversed: false,
             marked: None,
@@ -223,6 +242,12 @@ impl TextInput {
     /// one. Other design systems draw their normal field.
     pub fn filled(mut self, f: bool) -> Self {
         self.filled = f;
+        self
+    }
+    /// No container: no fill, border, glow or height; for embedding the field in another
+    /// surface (search bars, toolbars).
+    pub fn bare(mut self, b: bool) -> Self {
+        self.bare = b;
         self
     }
     /// Textarea: Enter inserts a newline and the box is `rows` lines tall.
@@ -802,6 +827,11 @@ impl Render for TextInput {
         let r = t.palette.roles.clone();
         if filled {
             style.fill = Some(hsla(r.surface_container_highest));
+            style.stroke = None;
+            style.glow = None;
+        }
+        if self.bare {
+            style.fill = None;
             style.stroke = None;
             style.glow = None;
         }

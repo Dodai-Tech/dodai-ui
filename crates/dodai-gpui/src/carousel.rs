@@ -14,6 +14,42 @@ pub fn window_start(active: usize, count: usize, visible: usize) -> usize {
         .min(count.saturating_sub(v))
 }
 
+/// How items share the row (Material 3 carousel layouts).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum CarouselLayout {
+    /// Equal fixed-width items ([`Carousel::item_width`]).
+    #[default]
+    Uncontained,
+    /// One large, one medium and one small item.
+    MultiBrowse,
+    /// One large item and a small peek of the next.
+    Hero,
+    /// A large item centred between two small ones.
+    CenterHero,
+}
+
+/// Smallest item width of the contained layouts (the "peek" items).
+pub const SMALL_ITEM: f32 = 56.0;
+
+/// Item widths for `layout` filling exactly `total` px with `gap` between items. Pure.
+/// [`CarouselLayout::Uncontained`] returns an empty list (it uses a fixed width instead).
+pub fn layout_widths(layout: CarouselLayout, total: f32, gap: f32) -> Vec<f32> {
+    let small = SMALL_ITEM;
+    match layout {
+        CarouselLayout::Uncontained => Vec::new(),
+        CarouselLayout::Hero => vec![(total - gap - small).max(small), small],
+        CarouselLayout::CenterHero => {
+            let large = (total - 2.0 * gap - 2.0 * small).max(small);
+            vec![small, large, small]
+        }
+        CarouselLayout::MultiBrowse => {
+            let rest = (total - 2.0 * gap - small).max(2.0 * small);
+            let large = rest * 0.62;
+            vec![large, rest - large, small]
+        }
+    }
+}
+
 type IndexFn = Rc<dyn Fn(usize, &mut Window, &mut App)>;
 
 /// Controlled carousel; each item gets a fixed `item_width`.
@@ -24,6 +60,9 @@ pub struct Carousel {
     active: usize,
     visible: usize,
     item_width: f32,
+    layout: CarouselLayout,
+    width: f32,
+    item_height: f32,
     on_select: Option<IndexFn>,
 }
 
@@ -35,6 +74,9 @@ impl Carousel {
             active: 0,
             visible: 3,
             item_width: 160.0,
+            layout: CarouselLayout::Uncontained,
+            width: 560.0,
+            item_height: 160.0,
             on_select: None,
         }
     }
@@ -55,6 +97,21 @@ impl Carousel {
         self.item_width = w;
         self
     }
+    /// Item arrangement; the contained layouts ignore `visible` / `item_width`.
+    pub fn layout(mut self, l: CarouselLayout) -> Self {
+        self.layout = l;
+        self
+    }
+    /// Total width of the item row for the contained layouts.
+    pub fn width(mut self, w: f32) -> Self {
+        self.width = w;
+        self
+    }
+    /// Item height for the contained layouts.
+    pub fn item_height(mut self, h: f32) -> Self {
+        self.item_height = h;
+        self
+    }
     crate::callback!(on_select, usize);
 }
 
@@ -62,8 +119,19 @@ impl Carousel {
     fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let n = self.items.len();
-        let start = window_start(self.active, n, self.visible);
-        let max_start = n.saturating_sub(self.visible);
+        let gap = if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+            8.0
+        } else {
+            t.spacing.md
+        };
+        let widths = layout_widths(self.layout, self.width, gap);
+        let visible = if widths.is_empty() {
+            self.visible
+        } else {
+            widths.len()
+        };
+        let start = window_start(self.active, n, visible);
+        let max_start = n.saturating_sub(visible);
         let mk = |suffix: &'static str, glyph: &'static str, to: usize, enabled: bool| {
             let mut b = IconButton::new((self.id.clone(), suffix), glyph).disabled(!enabled);
             if let (true, Some(f)) = (enabled, self.on_select.clone()) {
@@ -74,13 +142,30 @@ impl Carousel {
         let prev = mk("prev", "‹", start.saturating_sub(1), start > 0);
         let next = mk("next", "›", (start + 1).min(max_start), start < max_start);
         let w = self.item_width;
+        let radius = if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+            t.role_shape(dodai_core::ShapeRole::Carousel).radius
+        } else {
+            0.0
+        };
+        let height = self.item_height;
         let shown = self
             .items
             .into_iter()
             .enumerate()
             .skip(start)
-            .take(self.visible)
-            .map(|(_, e)| div().w(px(w)).flex_none().child(e));
+            .take(visible)
+            .enumerate()
+            .map(|(k, (_, e))| match widths.get(k) {
+                // Contained layouts: clipped, rounded slots of computed width.
+                Some(&cw) => div()
+                    .w(px(cw))
+                    .h(px(height))
+                    .flex_none()
+                    .overflow_hidden()
+                    .rounded(px(radius))
+                    .child(e),
+                None => div().w(px(w)).flex_none().child(e),
+            });
         let pages = max_start + 1;
         let dots = (0..pages).map(|i| {
             let on = i == start;
@@ -103,7 +188,7 @@ impl Carousel {
                     .items_center()
                     .gap(px(t.spacing.sm))
                     .child(prev)
-                    .child(div().flex().gap(px(t.spacing.md)).children(shown))
+                    .child(div().flex().gap(px(gap)).children(shown))
                     .child(next),
             )
             .child(
@@ -121,6 +206,23 @@ crate::entry_render!(Carousel);
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn layouts_fill_the_row_exactly() {
+        for l in [
+            CarouselLayout::Hero,
+            CarouselLayout::CenterHero,
+            CarouselLayout::MultiBrowse,
+        ] {
+            let w = layout_widths(l, 600.0, 8.0);
+            let sum: f32 = w.iter().sum::<f32>() + 8.0 * (w.len() as f32 - 1.0);
+            assert!((sum - 600.0).abs() < 0.01, "{l:?}: {sum}");
+            assert!(w.iter().all(|&x| x >= SMALL_ITEM));
+            let max = w.iter().cloned().fold(0.0, f32::max);
+            assert!(max > SMALL_ITEM * 2.0, "{l:?} has a large item");
+        }
+        assert!(layout_widths(CarouselLayout::Uncontained, 600.0, 8.0).is_empty());
+    }
 
     #[test]
     fn window_stays_in_bounds() {

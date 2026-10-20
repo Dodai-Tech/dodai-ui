@@ -45,6 +45,16 @@ pub fn highlight_runs(text: &str, query: &str) -> Vec<(String, bool)> {
     runs
 }
 
+/// Where a [`SearchView`] opens (Material 3 search view modes).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum SearchMode {
+    /// Results drop down from the search bar in one rounded container.
+    #[default]
+    Docked,
+    /// The view fills its (relatively positioned) parent: back arrow, input, results.
+    FullScreen,
+}
+
 /// Full-text search: input, clear button and a fuzzy-filtered result list
 /// with matched characters highlighted. Owns no state: pass the
 /// [`TextInput`] entity and an `open` flag.
@@ -55,6 +65,7 @@ pub struct SearchView {
     items: Vec<SharedString>,
     open: bool,
     max_rows: usize,
+    mode: SearchMode,
     on_pick: Option<IndexFn>,
     on_clear: Option<VoidFn>,
     corners: Option<dodai_core::Corners>,
@@ -71,6 +82,7 @@ impl SearchView {
             items: Vec::new(),
             open: false,
             max_rows: 6,
+            mode: SearchMode::Docked,
             on_pick: None,
             on_clear: None,
         }
@@ -81,6 +93,11 @@ impl SearchView {
     }
     pub fn open(mut self, o: bool) -> Self {
         self.open = o;
+        self
+    }
+    /// Docked or full-screen; Material themes only (others always drop down).
+    pub fn mode(mut self, m: SearchMode) -> Self {
+        self.mode = m;
         self
     }
     pub fn max_rows(mut self, n: usize) -> Self {
@@ -97,10 +114,151 @@ impl SearchView {
     );
 }
 
+impl SearchView {
+    /// Material 3 search view: one tonal container holding the header (search icon or back
+    /// arrow, input, clear), a divider and the result rows.
+    fn render_m3(
+        self,
+        t: dodai_core::Theme,
+        query: String,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> impl IntoElement {
+        use crate::icons::{Icon, IconName};
+        let r = t.palette.roles.clone();
+        let full = self.mode == SearchMode::FullScreen;
+        let head_h = if full { 72.0 } else { 56.0 };
+        let fill = if full {
+            t.palette.background
+        } else {
+            r.surface_container_high
+        };
+        let mut shape = t.role_shape(dodai_core::ShapeRole::SearchBar);
+        if full {
+            shape.radius = 0.0;
+        } else if self.open {
+            shape.radius = 28.0;
+        }
+        let style = ShapeStyle::from_tokens(&t, Some(fill), None, false, false);
+        let mut head = div()
+            .h(px(head_h))
+            .px(px(16.0))
+            .flex()
+            .items_center()
+            .gap(px(16.0))
+            .child(
+                Icon::new(if full {
+                    IconName::ArrowLeft
+                } else {
+                    IconName::Search
+                })
+                .size(24.0)
+                .color(hsla(r.on_surface)),
+            )
+            .child(div().flex_1().child(self.input.clone()));
+        if let (false, Some(f)) = (query.is_empty(), self.on_clear.clone()) {
+            head = head.child(
+                div()
+                    .id((self.id.clone(), "clear"))
+                    .cursor_pointer()
+                    .on_click(move |_, w, cx| f(w, cx))
+                    .child(
+                        Icon::new(IconName::Close)
+                            .size(24.0)
+                            .color(hsla(r.on_surface_variant)),
+                    ),
+            );
+        }
+        let mut body = shaped(&shape, style)
+            .w_full()
+            .flex()
+            .flex_col()
+            .font_family(first_family(t.typography.body))
+            .text_size(px(t.typography.size_md))
+            .child(head);
+        if full {
+            body = body.size_full();
+        }
+        if self.open || full {
+            let hits = fuzzy_filter(&query, &self.items);
+            body = body.child(div().h(px(1.0)).w_full().bg(hsla(r.outline)));
+            if hits.is_empty() {
+                body = body.child(
+                    div()
+                        .h(px(56.0))
+                        .px(px(16.0))
+                        .flex()
+                        .items_center()
+                        .text_color(hsla(r.on_surface_variant))
+                        .child(SharedString::from("No results")),
+                );
+            }
+            let limit = if full { usize::MAX } else { self.max_rows };
+            for &i in hits.iter().take(limit) {
+                let id: ElementId = (self.id.clone(), format!("r{i}")).into();
+                let st = use_interact(&id, window, cx);
+                let hovered = st.read(cx).hovered;
+                let mut row = track(gpui::InteractiveElement::id(div(), id), &st)
+                    .h(px(t.list_row_height(false)))
+                    .px(px(16.0))
+                    .flex()
+                    .items_center()
+                    .gap(px(16.0))
+                    .cursor_pointer()
+                    .child(
+                        Icon::new(IconName::Search)
+                            .size(24.0)
+                            .color(hsla(r.on_surface_variant)),
+                    );
+                if hovered {
+                    row = row.bg(hsla(r.on_surface.with_alpha(0.08)));
+                }
+                let mut label = div().flex();
+                for (seg, hit) in highlight_runs(&self.items[i], &query) {
+                    label = label.child(
+                        div()
+                            .text_color(hsla(if hit { t.palette.primary } else { r.on_surface }))
+                            .child(seg),
+                    );
+                }
+                row = row.child(label);
+                if let Some(f) = self.on_pick.clone() {
+                    row = row.on_click(move |_, w, cx| f(i, w, cx));
+                }
+                body = body.child(row);
+            }
+        }
+        if full {
+            return div()
+                .absolute()
+                .top_0()
+                .left_0()
+                .size_full()
+                .child(body)
+                .into_any_element();
+        }
+        // Docked: the container floats over the page; the slot keeps the bar's height.
+        div()
+            .relative()
+            .w_full()
+            .h(px(head_h))
+            .child(
+                deferred(div().absolute().top_0().left_0().w_full().child(body)).with_priority(50),
+            )
+            .into_any_element()
+    }
+}
+
 impl RenderOnce for SearchView {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let query = self.input.read(cx).text().to_string();
+        let rounded = t.shape.kind() == dodai_core::ShapeKind::Rounded;
+        // Material draws its own container around the field.
+        self.input.update(cx, |i, _| i.bare = rounded);
+        if rounded {
+            return self.render_m3(t, query, window, cx).into_any_element();
+        }
         let mut head = div()
             .flex()
             .items_center()
@@ -179,7 +337,7 @@ impl RenderOnce for SearchView {
             }
             root = root.child(deferred(menu).with_priority(50));
         }
-        root
+        root.into_any_element()
     }
 }
 
@@ -214,38 +372,84 @@ impl RichTooltip {
     }
 }
 
+impl RichTooltip {
+    /// The tooltip as an ordinary view (static previews, docs).
+    pub fn view(
+        title: impl Into<SharedString>,
+        body: impl Into<SharedString>,
+        action: Option<&str>,
+        cx: &mut App,
+    ) -> AnyView {
+        let (title, body) = (title.into(), body.into());
+        let action = action.map(|a| SharedString::from(a.to_string()));
+        cx.new(|_| RichTooltip {
+            title,
+            body,
+            action,
+        })
+        .into()
+    }
+}
+
 impl Render for RichTooltip {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let t = theme_of(cx);
-        let style = ShapeStyle::from_tokens(
+        let rounded = t.shape.kind() == dodai_core::ShapeKind::Rounded;
+        let (bg, _) = t.tooltip(true);
+        let r = t.palette.roles.clone();
+        // M3 rich tooltip: tonal container, 12 px corners, elevation 2, 16 px / 12 px padding,
+        // title in `on-surface-variant`, body and action as labels.
+        let (fill, title_c, body_c) = if rounded {
+            (bg, r.on_surface_variant, r.on_surface_variant)
+        } else {
+            (bg, t.palette.text, t.palette.text_muted)
+        };
+        let mut style = ShapeStyle::from_tokens(
             &t,
-            Some(t.palette.overlay),
-            Some(t.palette.border_strong),
+            Some(fill),
+            if rounded {
+                None
+            } else {
+                Some(t.palette.border_strong)
+            },
             false,
-            true,
+            !rounded,
         );
-        let mut el = shaped(&t.shape, style)
-            .max_w(px(280.0))
-            .p(px(t.spacing.md))
+        let shape = if rounded {
+            style = style.with_elevation(2, hsla(r.shadow));
+            t.role_shape(dodai_core::ShapeRole::RichTooltip)
+        } else {
+            t.shape.clone()
+        };
+        let (px_, py_) = if rounded {
+            (16.0, 12.0)
+        } else {
+            (t.spacing.md, t.spacing.md)
+        };
+        let mut el = shaped(&shape, style)
+            .max_w(px(if rounded { 320.0 } else { 280.0 }))
+            .px(px(px_))
+            .py(px(py_))
             .flex()
             .flex_col()
-            .gap(px(t.spacing.xs))
+            .gap(px(if rounded { 4.0 } else { t.spacing.xs }))
             .font_family(first_family(t.typography.body))
             .child(
                 div()
                     .text_size(px(t.typography.size_md))
-                    .text_color(hsla(t.palette.text))
+                    .text_color(hsla(title_c))
                     .child(self.title.clone()),
             )
             .child(
                 div()
                     .text_size(px(t.typography.size_sm))
-                    .text_color(hsla(t.palette.text_muted))
+                    .text_color(hsla(body_c))
                     .child(self.body.clone()),
             );
         if let Some(a) = self.action.clone() {
             el = el.child(
                 div()
+                    .mt(px(if rounded { 8.0 } else { 0.0 }))
                     .text_size(px(t.typography.size_sm))
                     .text_color(hsla(t.palette.primary))
                     .child(a),

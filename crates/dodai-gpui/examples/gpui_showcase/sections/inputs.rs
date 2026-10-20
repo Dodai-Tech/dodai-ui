@@ -433,10 +433,25 @@ impl Showcase {
                 .into_any_element(),
             "Input",
         ));
+        let full = SearchView::new("search-full", self.search_full.clone())
+            .items(["Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot"])
+            .mode(dodai_gpui::SearchMode::FullScreen)
+            .open(true);
         out.push((
             "Inputs",
             "Search view · SearchBar",
-            section!("Search view").child(w_search).into_any_element(),
+            section!("Search view")
+                .child(w_search)
+                .child(Muted::new("Full screen (Material)"))
+                .child(
+                    div()
+                        .relative()
+                        .w_full()
+                        .h(px(380.0))
+                        .overflow_hidden()
+                        .child(full),
+                )
+                .into_any_element(),
             "Search view",
         ));
         out.push((

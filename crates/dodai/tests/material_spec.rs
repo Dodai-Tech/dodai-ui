@@ -264,3 +264,33 @@ fn other_design_systems_keep_their_geometry() {
         }
     }
 }
+
+#[test]
+fn list_menu_tooltip_and_focus_follow_the_spec() {
+    for t in material() {
+        let r = &t.palette.roles;
+        assert_eq!(t.list_row_height(false), 56.0);
+        assert_eq!(t.menu_row_height(), 48.0);
+        assert_eq!(t.tooltip(false), (r.inverse_surface, r.inverse_on_surface));
+        assert_eq!(t.tooltip(true).0, r.surface_container);
+        assert_eq!(t.focus_ring(), (t.palette.secondary, 3.0));
+    }
+    for t in themes::all()
+        .into_iter()
+        .filter(|t| t.meta.family != "material")
+    {
+        assert_eq!(
+            t.menu_row_height(),
+            t.shape.control_height * 0.8,
+            "{}",
+            t.id()
+        );
+        assert_eq!(
+            t.tooltip(false),
+            (t.palette.overlay, t.palette.text),
+            "{}",
+            t.id()
+        );
+        assert_eq!(t.focus_ring().0, t.palette.focus_ring, "{}", t.id());
+    }
+}

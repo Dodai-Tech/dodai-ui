@@ -714,6 +714,47 @@ impl Theme {
     /// Floating action button colours (M3 container roles on rounded themes; the plain
     /// button tokens elsewhere). Primary/Secondary/other map to the primary / secondary /
     /// tertiary container, Outline and Ghost to the surface FAB.
+    /// Keyboard focus indicator `(colour, thickness px)`. M3: a 3 px `secondary` ring; other
+    /// design systems: their `focus_ring` colour at 2 px.
+    pub fn focus_ring(&self) -> (Color, f32) {
+        if self.tonal() {
+            (self.palette.secondary, 3.0)
+        } else {
+            (self.palette.focus_ring, 2.0)
+        }
+    }
+
+    /// Row height of a list item. M3: 56 px one-line rows (40 px for nested ones); other
+    /// design systems scale their control height.
+    pub fn list_row_height(&self, nested: bool) -> f32 {
+        match (self.tonal(), nested) {
+            (true, false) => 56.0,
+            (true, true) => 40.0,
+            (false, false) => self.shape.control_height * 0.8,
+            (false, true) => self.shape.control_height * 0.65,
+        }
+    }
+
+    /// Row height of a menu / dropdown item. M3: 48 px.
+    pub fn menu_row_height(&self) -> f32 {
+        if self.tonal() {
+            48.0
+        } else {
+            self.shape.control_height * 0.8
+        }
+    }
+
+    /// Tooltip `(container, label)` colours. M3 plain tooltips use the inverse surface, rich
+    /// ones a tonal container; other design systems use their overlay.
+    pub fn tooltip(&self, rich: bool) -> (Color, Color) {
+        let r = &self.palette.roles;
+        match (self.tonal(), rich) {
+            (true, false) => (r.inverse_surface, r.inverse_on_surface),
+            (true, true) => (r.surface_container, r.on_surface),
+            (false, _) => (self.palette.overlay, self.palette.text),
+        }
+    }
+
     /// M3 elevated button: `surface-container-low` container, `primary` label, lifted by a
     /// shadow (the caller adds the elevation). Themes without tonal surfaces get the plain
     /// `Secondary` button, so nothing needs a theme id.

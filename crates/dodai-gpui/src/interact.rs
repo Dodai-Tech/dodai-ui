@@ -2,22 +2,46 @@
 
 use dodai_core::ControlState;
 use gpui::{
-    App, ClickEvent, ElementId, Entity, InteractiveElement, MouseButton, Stateful,
-    StatefulInteractiveElement, Window,
+    App, ClickEvent, ElementId, Entity, FocusHandle, Hsla, InteractiveElement, MouseButton,
+    Stateful, StatefulInteractiveElement, Styled, Window,
 };
+use std::cell::{Cell, RefCell};
+use std::collections::VecDeque;
+
+thread_local! {
+    /// Corner radius of the most recently built shaped element (for the focus ring overlay).
+    static RING_RADIUS: Cell<f32> = const { Cell::new(0.0) };
+}
+
+/// Remember the corner radius of the shape being built, so [`track`] can round its focus ring.
+pub(crate) fn set_ring_radius(r: f32) {
+    RING_RADIUS.with(|c| c.set(r));
+}
+
+thread_local! {
+    /// The last few focus handles handed out by [`use_interact`], so [`track`] (which only gets
+    /// the state entity) can attach the right one. Bounded: tracking follows creation closely.
+    static HANDLES: RefCell<VecDeque<(gpui::EntityId, FocusHandle)>> = const { RefCell::new(VecDeque::new()) };
+    /// Focus ring of the theme in use, refreshed by every [`use_interact`] call (the ring is
+    /// theme-wide, so any recent value is right) and read by [`track`].
+    static RING: Cell<(Hsla, f32)> = const { Cell::new((Hsla { h: 0.0, s: 0.0, l: 0.0, a: 0.0 }, 0.0)) };
+}
 
 /// Pointer state of one control (kept in gpui keyed element state).
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Default)]
 pub struct Interact {
     /// Pointer is over the control.
     pub hovered: bool,
     /// Primary button is held down on the control.
     pub pressed: bool,
+    /// Keyboard focus target: makes the control a tab stop (Enter / Space click it) and shows
+    /// the theme's focus ring while focused.
+    pub focus: Option<FocusHandle>,
 }
 
 impl Interact {
     /// Map pointer state (and `disabled`) to a token [`ControlState`].
-    pub fn control_state(self, disabled: bool) -> ControlState {
+    pub fn control_state(&self, disabled: bool) -> ControlState {
         if disabled {
             ControlState::Disabled
         } else if self.pressed {
@@ -32,17 +56,68 @@ impl Interact {
 
 /// Get (or create) the pointer state entity for `id`.
 pub fn use_interact(id: &ElementId, window: &mut Window, cx: &mut App) -> Entity<Interact> {
-    window.use_keyed_state(id.clone(), cx, |_, _| Interact::default())
+    let t = crate::theme_of(cx);
+    let (c, w) = t.focus_ring();
+    RING.with(|r| r.set((crate::hsla(c), w)));
+    let st = window.use_keyed_state(id.clone(), cx, |_, cx| Interact {
+        focus: Some(cx.focus_handle().tab_stop(true)),
+        ..Interact::default()
+    });
+    if let Some(h) = st.read(cx).focus.clone() {
+        HANDLES.with(|q| {
+            let mut q = q.borrow_mut();
+            q.retain(|(e, _)| *e != st.entity_id());
+            if q.len() >= 64 {
+                q.pop_front();
+            }
+            q.push_back((st.entity_id(), h));
+        });
+    }
+    st
 }
 
 /// Wire hover/press tracking onto an id'd element.
 pub fn track<E>(el: Stateful<E>, state: &Entity<Interact>) -> Stateful<E>
 where
-    Stateful<E>: StatefulInteractiveElement + InteractiveElement,
+    Stateful<E>: StatefulInteractiveElement + InteractiveElement + gpui::ParentElement,
 {
     let s1 = state.clone();
     let s2 = state.clone();
     let s3 = state.clone();
+    let focus = HANDLES.with(|q| {
+        q.borrow()
+            .iter()
+            .find(|(e, _)| *e == state.entity_id())
+            .map(|(_, h)| h.clone())
+    });
+    let (ring, thick) = RING.with(Cell::get);
+    let radius = RING_RADIUS.with(Cell::get);
+    let el = match focus {
+        Some(h) => {
+            // The ring is an absolutely positioned overlay tracking the same focus handle, so it
+            // takes no layout space and shows only while the control has keyboard focus.
+            let overlay = gpui::div()
+                .id(("dodai-focus-ring", state.entity_id()))
+                .track_focus(&h)
+                .absolute()
+                .top_0()
+                .left_0()
+                .size_full()
+                .rounded(gpui::px(radius))
+                .focus(move |s| {
+                    let mut s = s.border_color(ring);
+                    s.border_widths = gpui::EdgesRefinement {
+                        top: Some(gpui::px(thick).into()),
+                        right: Some(gpui::px(thick).into()),
+                        bottom: Some(gpui::px(thick).into()),
+                        left: Some(gpui::px(thick).into()),
+                    };
+                    s
+                });
+            gpui::ParentElement::child(el.track_focus(&h), overlay)
+        }
+        None => el,
+    };
     el.on_hover(move |h, _, cx| {
         let h = *h;
         s1.update(cx, |s, cx| {
@@ -63,13 +138,18 @@ where
             }
         });
     })
-    .on_mouse_up(MouseButton::Left, move |_, _, cx| {
+    .on_mouse_up(MouseButton::Left, move |_, window, cx| {
+        // Pointer users don't get the keyboard focus ring: drop the focus a click gave us.
+        let mine = s3.read(cx).focus.clone();
         s3.update(cx, |s, cx| {
             if s.pressed {
                 s.pressed = false;
                 cx.notify();
             }
         });
+        if mine.is_some_and(|h| h.is_focused(window)) {
+            window.blur();
+        }
     })
 }
 
@@ -88,6 +168,7 @@ mod tests {
         let i = |h, p| Interact {
             hovered: h,
             pressed: p,
+            focus: None,
         };
         assert_eq!(i(false, false).control_state(false), ControlState::Idle);
         assert_eq!(i(true, false).control_state(false), ControlState::Hovered);

@@ -335,6 +335,11 @@ pub fn shaped(shape: &Shape, style: ShapeStyle) -> Div {
 }
 
 fn shaped_base(shape: &Shape, style: ShapeStyle) -> Div {
+    crate::interact::set_ring_radius(if shape.kind() == ShapeKind::Rounded {
+        shape.radius
+    } else {
+        0.0
+    });
     let base = gpui::div().relative();
     match shape.kind() {
         ShapeKind::Chamfered => {

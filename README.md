@@ -96,6 +96,11 @@ The Material themes follow the M3 component specs: shape per component (`ShapeRo
 and the 80 px navigation bar, rail and drawer with pill indicators. `crates/dodai/tests/material_spec.rs`
 pins these numbers against the spec; other design systems keep their own geometry (also tested).
 Material-only components: `ButtonGroup`, `SplitButton`, `LoadingIndicator`.
+Also: 56 px list rows and 48 px menu rows, plain / rich tooltips, docked and full-screen
+`SearchView`, carousel layouts (multi-browse, hero, centre hero), floating-label and filled
+`TextInput`, `CheckboxVariant`, and keyboard focus: every tracked control is a Tab stop
+(Enter / Space click it) and shows the theme's focus ring (`Theme::focus_ring`, 3 px `secondary`
+on Material) while keyboard-focused.
 
 ## Motion (gpui)
 

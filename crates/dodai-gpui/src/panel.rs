@@ -429,22 +429,40 @@ impl DodaiTooltip {
     }
 }
 
+impl DodaiTooltip {
+    /// The tooltip as an ordinary view (static previews, docs).
+    pub fn view(text: impl Into<SharedString>, cx: &mut App) -> AnyView {
+        let text = text.into();
+        cx.new(|_| DodaiTooltip { text }).into()
+    }
+}
+
 impl Render for DodaiTooltip {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let t = theme_of(cx);
-        let style = ShapeStyle::from_tokens(
-            &t,
-            Some(t.palette.overlay),
-            Some(t.palette.border_strong),
-            false,
-            false,
-        );
-        shaped(&t.shape, style)
-            .px(px(t.spacing.sm))
-            .py(px(t.spacing.xs))
+        let (bg, fg) = t.tooltip(false);
+        let rounded = t.shape.kind() == dodai_core::ShapeKind::Rounded;
+        let border = if rounded {
+            None
+        } else {
+            Some(t.palette.border_strong)
+        };
+        let style = ShapeStyle::from_tokens(&t, Some(bg), border, false, false);
+        // M3 plain tooltip: 4 px corners, 24 px tall, 8 px side padding, 12 px label.
+        let shape = if rounded {
+            t.role_shape(dodai_core::ShapeRole::Tooltip)
+        } else {
+            t.shape.clone()
+        };
+        let d = shaped(&shape, style)
             .text_size(px(t.typography.size_sm))
-            .text_color(hsla(t.palette.text))
-            .child(self.text.clone())
+            .text_color(hsla(fg))
+            .child(self.text.clone());
+        if rounded {
+            d.px(px(8.0)).min_h(px(24.0)).flex().items_center()
+        } else {
+            d.px(px(t.spacing.sm)).py(px(t.spacing.xs))
+        }
     }
 }
 

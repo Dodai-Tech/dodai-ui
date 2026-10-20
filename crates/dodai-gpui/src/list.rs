@@ -90,17 +90,17 @@ impl ListItem {
         // Nested rows indent the whole row (fill and marker included), so a
         // selected child reads as belonging to its parent instead of repeating
         // the parent's full-width highlight.
-        let (indent, size, hgt) = if self.depth > 0 {
-            (self.depth as f32 * t.spacing.md, t.typography.size_sm, 0.65)
+        let (indent, size) = if self.depth > 0 {
+            (self.depth as f32 * t.spacing.md, t.typography.size_sm)
         } else {
-            (0.0, t.typography.size_md, 0.8)
+            (0.0, t.typography.size_md)
         };
         if self.depth > 0 {
             style.fill = style.fill.map(|c| c.opacity(0.55));
         }
         let pad = t.spacing.md;
         let mut el = track(shaped_id(self.id, &t.shape, style), &st)
-            .min_h(px(t.shape.control_height * hgt))
+            .min_h(px(t.list_row_height(self.depth > 0)))
             .py(px(t.spacing.xs * 0.5))
             .ml(px(indent))
             .pl(px(pad))

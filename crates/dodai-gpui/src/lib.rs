@@ -184,7 +184,7 @@ mod testing;
 #[cfg(feature = "components")]
 pub use button::Button;
 #[cfg(feature = "components")]
-pub use carousel::{window_start, Carousel};
+pub use carousel::{layout_widths, window_start, Carousel, CarouselLayout, SMALL_ITEM};
 #[cfg(feature = "charts")]
 pub use charts::{
     bar_max, fmt_num, heat_color, heat_color_with, marker_points, nice_ticks, norm, pie_fractions,
@@ -291,7 +291,7 @@ pub use popover::{ContextMenu, DropdownMenu, HoverCard, Placement, Popover};
 pub use range::{nearest_thumb, range_update, RangeSlider};
 pub use scanlines::Scanlines;
 #[cfg(feature = "components")]
-pub use search::{count_label, highlight_runs, IconBadge, RichTooltip, SearchView};
+pub use search::{count_label, highlight_runs, IconBadge, RichTooltip, SearchMode, SearchView};
 #[cfg(feature = "components")]
 pub use select::{family_title, DesignSystemSelector, Select, SelectOption, ThemeSelector};
 #[cfg(feature = "shaders")]

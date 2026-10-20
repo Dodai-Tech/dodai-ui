@@ -134,7 +134,7 @@ impl Menu {
                 fg = hsla(t.palette.danger);
             }
             let mut row = track(shaped_id(id, &t.shape, style), &st)
-                .h(px(t.shape.control_height * 0.8))
+                .h(px(t.menu_row_height()))
                 .px(px(t.spacing.md))
                 .flex()
                 .items_center()

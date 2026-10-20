@@ -438,6 +438,8 @@ impl Showcase {
                 .rounded(px(t.role_shape(dodai::ShapeRole::Carousel).radius))
                 .bg(hsla(c))
                 .p(px(t.spacing.md))
+                .whitespace_nowrap()
+                .overflow_hidden()
                 .text_color(hsla(t.on(c)))
                 .child(label)
         };
@@ -451,10 +453,35 @@ impl Showcase {
             .item(tile(r.tertiary_container, "Tertiary"))
             .item(tile(r.surface_container_high, "Surface"))
             .item(tile(r.error_container, "Error"));
+        let mut layouts = div().flex().flex_col().gap(gap).child(carousel);
+        for (name, l) in [
+            ("Multi-browse", dodai_gpui::CarouselLayout::MultiBrowse),
+            ("Hero", dodai_gpui::CarouselLayout::Hero),
+            (
+                "Center-aligned hero",
+                dodai_gpui::CarouselLayout::CenterHero,
+            ),
+        ] {
+            let mut c = Carousel::new(name)
+                .layout(l)
+                .width(560.0)
+                .item_height(140.0)
+                .active(self.group_sel);
+            for (col, label) in [
+                (r.primary_container, "Primary"),
+                (r.secondary_container, "Secondary"),
+                (r.tertiary_container, "Tertiary"),
+                (r.surface_container_high, "Surface"),
+                (r.error_container, "Error"),
+            ] {
+                c = c.item(tile(col, label).h_full());
+            }
+            layouts = layouts.child(Muted::new(name)).child(c);
+        }
         out.push((
             "Navigation",
             "Carousel",
-            section!("Carousel").child(carousel).into_any_element(),
+            section!("Carousel").child(layouts).into_any_element(),
             "Carousel",
         ));
         // Overlays shown inside a frame: they are absolutely positioned against their parent.

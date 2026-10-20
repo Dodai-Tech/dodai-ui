@@ -76,6 +76,7 @@ pub struct Showcase {
     pop_hover: Option<(&'static str, u8)>,
     filter: Entity<TextInput>,
     search: Entity<TextInput>,
+    search_full: Entity<TextInput>,
     in_name: Entity<TextInput>,
     in_notes: Entity<TextInput>,
     in_outlined: Entity<TextInput>,
@@ -899,6 +900,26 @@ impl Render for Showcase {
             );
         }
 
+        // Debug probe: DODAI_TABS=n moves the keyboard focus n stops once, after a few frames
+        // (shows the focus ring without needing synthetic key events).
+        if let Some(n) = std::env::var("DODAI_TABS")
+            .ok()
+            .and_then(|v| v.parse::<u32>().ok())
+        {
+            thread_local! { static F: std::cell::Cell<u32> = const { std::cell::Cell::new(0) }; }
+            let f = F.with(|f| {
+                f.set(f.get() + 1);
+                f.get()
+            });
+            if f == 20 {
+                for _ in 0..n {
+                    window.focus_next();
+                }
+            }
+            if f < 40 {
+                window.request_animation_frame();
+            }
+        }
         if std::env::var_os("DODAI_AUTOSCROLL").is_some() {
             // Perf probe: sweep the scroll position every frame.
             thread_local! {
@@ -1087,6 +1108,7 @@ impl Showcase {
     /// Initial state; the TextInput entities are created here.
     pub fn build(cx: &mut Context<Self>) -> Self {
         let search = cx.new(|cx| TextInput::new(cx).placeholder("Search…"));
+        let search_full = cx.new(|cx| TextInput::new(cx).placeholder("Search…").value("a"));
         let filter = cx.new(|cx| TextInput::new(cx).placeholder("Filter components…"));
         let in_name = cx.new(|cx| TextInput::new(cx).placeholder("handle…"));
         let pw = cx.new(|cx| TextInput::new(cx).placeholder("password").password(true));
@@ -1103,6 +1125,7 @@ impl Showcase {
         Showcase {
             filter,
             search,
+            search_full,
             in_name,
             in_notes,
             in_outlined,

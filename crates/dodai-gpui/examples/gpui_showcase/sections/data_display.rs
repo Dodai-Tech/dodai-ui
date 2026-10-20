@@ -209,6 +209,13 @@ impl Showcase {
                         .tooltip(DodaiTooltip::text("Themed tooltip"))
                         .child("Hover me"),
                 )
+                .child(div().flex().child(DodaiTooltip::view("Plain tooltip", cx)))
+                .child(div().flex().child(RichTooltip::view(
+                    "Rich tooltip",
+                    "Supporting text, 12 px corners, elevation 2.",
+                    Some("Learn more"),
+                    cx,
+                )))
                 .into_any_element(),
             "Tooltip",
         ));
