@@ -347,7 +347,14 @@ crate::entry_render!(Avatar);
 /// Paint of a [`Chip`] (pure): `(style, text colour)`.
 pub fn chip_style(theme: &Theme, selected: bool, hovered: bool) -> (ShapeStyle, gpui::Hsla) {
     let p = &theme.palette;
-    if selected {
+    if selected && theme.shape.kind() == dodai_core::ShapeKind::Rounded {
+        // Material filter chip: secondary-container fill, no outline.
+        let r = &p.roles;
+        (
+            ShapeStyle::from_tokens(theme, Some(r.secondary_container), None, false, false),
+            hsla(r.on_secondary_container),
+        )
+    } else if selected {
         (
             ShapeStyle::from_tokens(theme, Some(p.selection), Some(p.primary), false, false),
             hsla(p.text),
@@ -514,8 +521,12 @@ mod tests {
         assert_eq!(s.fill, Some(hsla(t.palette.warning)));
         assert_eq!(fg, hsla(t.on(t.palette.warning)));
         let l = light_rounded();
-        let (s, _) = chip_style(&l, true, false);
-        assert_eq!(s.stroke, Some(hsla(l.palette.primary)));
+        let (s, fg) = chip_style(&l, true, false);
+        assert_eq!(s.fill, Some(hsla(l.palette.roles.secondary_container)));
+        assert!(s.stroke.is_none(), "tonal chip has no outline");
+        assert_eq!(fg, hsla(l.palette.roles.on_secondary_container));
+        let (s, _) = chip_style(&t, true, false);
+        assert_eq!(s.stroke, Some(hsla(t.palette.primary)));
         let (s, _) = chip_style(&l, false, false);
         assert!(s.fill.is_none());
     }

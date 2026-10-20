@@ -203,7 +203,11 @@ mod tests {
     fn rounded_themes_have_no_accent_bar() {
         let t = light_rounded();
         let (s, _, m) = list_style(&t, true, false);
-        assert_eq!(s.fill, Some(hsla(t.palette.selection)), "pill fill stays");
+        assert_eq!(
+            s.fill,
+            Some(hsla(t.palette.roles.secondary_container)),
+            "tonal pill"
+        );
         assert!(m.is_none(), "no vertical bar on Material");
     }
 }

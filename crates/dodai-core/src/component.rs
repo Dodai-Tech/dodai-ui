@@ -185,10 +185,20 @@ impl Theme {
     /// List / menu row.
     pub fn list_item(&self, selected: bool, hovered: bool) -> ListItemTokens {
         let p = &self.palette;
+        let rounded = self.shape.kind() == crate::ShapeKind::Rounded;
         if selected {
             ListItemTokens {
-                background: Some(p.selection),
-                foreground: p.text,
+                // Rounded (Material): the secondary-container pill.
+                background: Some(if rounded {
+                    p.roles.secondary_container
+                } else {
+                    p.selection
+                }),
+                foreground: if rounded {
+                    p.roles.on_secondary_container
+                } else {
+                    p.text
+                },
                 // Chamfered themes mark the selection with an accent bar;
                 // rounded (Material) ones rely on the filled pill alone.
                 marker: (self.shape.kind() != crate::ShapeKind::Rounded).then_some(p.primary),
@@ -210,7 +220,11 @@ impl Theme {
 
     /// Divider / separator colour.
     pub fn divider(&self) -> Color {
-        self.palette.border
+        if self.shape.kind() == crate::ShapeKind::Rounded {
+            self.palette.roles.outline_variant
+        } else {
+            self.palette.border
+        }
     }
 
     /// Resolve a button style.
