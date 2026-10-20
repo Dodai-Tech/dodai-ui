@@ -31,6 +31,7 @@ impl Showcase {
             .child(cut(
                 Button::new("b-secondary", "Secondary").variant(ButtonVariant::Secondary)
             ))
+            .child(cut(Button::new("b-elev", "Elevated").elevated(true)))
             .child(cut(
                 Button::new("b-outline", "Outline").variant(ButtonVariant::Outline)
             ))

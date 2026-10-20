@@ -52,6 +52,7 @@ pub struct Button {
     shimmer: bool,
     corners: Option<dodai_core::Corners>,
     radii: Option<[f32; 4]>,
+    elevated: bool,
 }
 
 impl Button {
@@ -64,6 +65,7 @@ impl Button {
             shimmer: false,
             corners: None,
             radii: None,
+            elevated: false,
             on_click: None,
             refine: None,
         }
@@ -107,6 +109,12 @@ impl Button {
         self.radii = Some(r);
         self
     }
+    /// Material elevated button: tonal surface lifted by a shadow (1 dp, 2 dp on hover).
+    /// Other design systems draw the `Secondary` variant.
+    pub fn elevated(mut self, on: bool) -> Self {
+        self.elevated = on;
+        self
+    }
     /// Sweep a shimmer highlight over the button (e.g. while busy), clipped to its shape.
     pub fn shimmer(mut self, on: bool) -> Self {
         self.shimmer = on;
@@ -119,7 +127,21 @@ impl Button {
         let t = theme_of(cx);
         let st = use_interact(&self.id, window, cx);
         let state = st.read(cx).control_state(self.disabled);
-        let (mut style, mut fg) = button_style(&t, self.variant, state);
+        let lifted = self.elevated && t.shape.kind() == dodai_core::ShapeKind::Rounded;
+        let resolve = |s: ControlState| {
+            if self.elevated {
+                let b = t.elevated_button(s);
+                let mut st = ShapeStyle::from_tokens(&t, b.background, b.border, false, false);
+                if lifted && s != ControlState::Disabled {
+                    let level = if s == ControlState::Idle { 1 } else { 2 };
+                    st = st.with_elevation(level, hsla(t.palette.roles.shadow));
+                }
+                (st, hsla(b.foreground))
+            } else {
+                button_style(&t, self.variant, s)
+            }
+        };
+        let (mut style, mut fg) = resolve(state);
         if state != ControlState::Disabled {
             let lvl = crate::motion::smooth(
                 window,
@@ -131,7 +153,7 @@ impl Button {
                     1.0
                 },
             );
-            let (idle, idle_fg) = button_style(&t, self.variant, ControlState::Idle);
+            let (idle, idle_fg) = resolve(ControlState::Idle);
             style.fill = crate::motion::mix_opt(idle.fill, style.fill, lvl);
             style.stroke = crate::motion::mix_opt(idle.stroke, style.stroke, lvl);
             fg = crate::motion::mix(idle_fg, fg, lvl);

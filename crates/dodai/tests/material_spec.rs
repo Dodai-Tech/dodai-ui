@@ -114,6 +114,29 @@ fn buttons_use_the_m3_roles_and_state_layers() {
 }
 
 #[test]
+fn elevated_button_is_a_low_container_with_primary_label() {
+    for t in material() {
+        let r = &t.palette.roles;
+        let e = t.elevated_button(ControlState::Idle);
+        assert_eq!(e.background, Some(r.surface_container_low));
+        assert_eq!(e.foreground, t.palette.primary);
+        let d = t.elevated_button(ControlState::Disabled);
+        assert_eq!(d.background, Some(r.on_surface.with_alpha(0.12)));
+    }
+    // Other systems fall back to the secondary button.
+    for t in themes::all()
+        .into_iter()
+        .filter(|t| t.meta.family != "material")
+    {
+        let (a, b) = (
+            t.elevated_button(ControlState::Idle),
+            t.button(ButtonVariant::Secondary, ControlState::Idle),
+        );
+        assert_eq!(a.background, b.background, "{}", t.id());
+    }
+}
+
+#[test]
 fn fab_uses_container_roles() {
     for t in material() {
         let r = &t.palette.roles;

@@ -714,6 +714,33 @@ impl Theme {
     /// Floating action button colours (M3 container roles on rounded themes; the plain
     /// button tokens elsewhere). Primary/Secondary/other map to the primary / secondary /
     /// tertiary container, Outline and Ghost to the surface FAB.
+    /// M3 elevated button: `surface-container-low` container, `primary` label, lifted by a
+    /// shadow (the caller adds the elevation). Themes without tonal surfaces get the plain
+    /// `Secondary` button, so nothing needs a theme id.
+    pub fn elevated_button(&self, state: ControlState) -> ButtonTokens {
+        if !self.tonal() {
+            return self.button(ButtonVariant::Secondary, state);
+        }
+        let r = &self.palette.roles;
+        if state == ControlState::Disabled {
+            return ButtonTokens {
+                background: Some(r.on_surface.with_alpha(0.12)),
+                foreground: r.on_surface.with_alpha(0.38),
+                border: None,
+            };
+        }
+        let layer = match state {
+            ControlState::Hovered => 0.08,
+            ControlState::Pressed | ControlState::Focused => 0.10,
+            _ => 0.0,
+        };
+        ButtonTokens {
+            background: Some(r.surface_container_low.mix(self.palette.primary, layer)),
+            foreground: self.palette.primary,
+            border: None,
+        }
+    }
+
     pub fn fab(&self, variant: ButtonVariant, state: ControlState) -> ButtonTokens {
         if !self.tonal() {
             return self.button(variant, state);
