@@ -87,7 +87,9 @@ impl Spec {
             focus_ring: secondary,
             link: secondary,
             series: self.series.map(h),
-        };
+            roles: crate::Roles::placeholder(),
+        }
+        .with_derived_roles(dark);
         crate::Theme {
             shape_system: None,
             meta: self.meta,

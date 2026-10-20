@@ -50,7 +50,7 @@ pub(crate) fn swatch(
 
 pub(crate) fn palette_view(t: &dodai_core::Theme) -> gpui::Div {
     let p = &t.palette;
-    let groups: [(&str, Vec<(&str, dodai_core::Color)>); 5] = [
+    let groups: [(&str, Vec<(&str, dodai_core::Color)>); 6] = [
         (
             "Surfaces",
             vec![
@@ -93,6 +93,10 @@ pub(crate) fn palette_view(t: &dodai_core::Theme) -> gpui::Div {
                 ("selection", p.selection),
                 ("focus_ring", p.focus_ring),
             ],
+        ),
+        (
+            "Extended roles (containers, on-colours, outline, inverse)",
+            p.roles.list(),
         ),
         (
             "Series",

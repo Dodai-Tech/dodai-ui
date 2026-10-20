@@ -3,7 +3,7 @@
 //! flat tonal surfaces, 40 px controls.
 
 use dodai_core::themes::Spec;
-use dodai_core::{Corners, Mode, Shape, Spacing, Theme, ThemeMeta, Typography};
+use dodai_core::{Color, Corners, Mode, Roles, Shape, Spacing, Theme, ThemeMeta, Typography};
 
 fn typography() -> Typography {
     Typography {
@@ -41,9 +41,73 @@ fn spacing() -> Spacing {
     }
 }
 
+/// The Material 3 baseline roles (light), straight from the spec's tonal palette.
+fn light_roles() -> Roles {
+    let h = Color::hex;
+    Roles {
+        surface_container_lowest: h(0xffffff),
+        surface_container_low: h(0xf7f2fa),
+        surface_container: h(0xf3edf7),
+        surface_container_high: h(0xece6f0),
+        surface_container_highest: h(0xe6e0e9),
+        on_surface: h(0x1d1b20),
+        on_surface_variant: h(0x49454f),
+        outline: h(0x79747e),
+        outline_variant: h(0xcac4d0),
+        primary_container: h(0xeaddff),
+        on_primary_container: h(0x21005d),
+        secondary_container: h(0xe8def8),
+        on_secondary_container: h(0x1d192b),
+        tertiary: h(0x7d5260),
+        on_tertiary: h(0xffffff),
+        tertiary_container: h(0xffd8e4),
+        on_tertiary_container: h(0x31111d),
+        error_container: h(0xf9dedc),
+        on_error: h(0xffffff),
+        on_error_container: h(0x410e0b),
+        inverse_surface: h(0x322f35),
+        inverse_on_surface: h(0xf5eff7),
+        inverse_primary: h(0xd0bcff),
+        scrim: h(0x000000),
+        shadow: h(0x000000),
+    }
+}
+
+/// The Material 3 baseline roles (dark).
+fn dark_roles() -> Roles {
+    let h = Color::hex;
+    Roles {
+        surface_container_lowest: h(0x0f0d13),
+        surface_container_low: h(0x1d1b20),
+        surface_container: h(0x211f26),
+        surface_container_high: h(0x2b2930),
+        surface_container_highest: h(0x36343b),
+        on_surface: h(0xe6e0e9),
+        on_surface_variant: h(0xcac4d0),
+        outline: h(0x938f99),
+        outline_variant: h(0x49454f),
+        primary_container: h(0x4f378b),
+        on_primary_container: h(0xeaddff),
+        secondary_container: h(0x4a4458),
+        on_secondary_container: h(0xe8def8),
+        tertiary: h(0xefb8c8),
+        on_tertiary: h(0x492532),
+        tertiary_container: h(0x633b48),
+        on_tertiary_container: h(0xffd8e4),
+        error_container: h(0x8c1d18),
+        on_error: h(0x601410),
+        on_error_container: h(0xf9dedc),
+        inverse_surface: h(0xe6e0e9),
+        inverse_on_surface: h(0x322f35),
+        inverse_primary: h(0x6750a4),
+        scrim: h(0x000000),
+        shadow: h(0x000000),
+    }
+}
+
 /// Light scheme (baseline purple).
 pub fn light() -> Theme {
-    Spec {
+    let mut t = Spec {
         meta: ThemeMeta {
             id: "material",
             name: "Material 3 · Light",
@@ -81,12 +145,14 @@ pub fn light() -> Theme {
         scanlines: false,
         hard_shadow: 0.0,
     }
-    .build()
+    .build();
+    t.palette.roles = light_roles();
+    t
 }
 
 /// Dark scheme.
 pub fn dark() -> Theme {
-    Spec {
+    let mut t = Spec {
         meta: ThemeMeta {
             id: "material-dark",
             name: "Material 3 · Dark",
@@ -124,7 +190,9 @@ pub fn dark() -> Theme {
         scanlines: false,
         hard_shadow: 0.0,
     }
-    .build()
+    .build();
+    t.palette.roles = dark_roles();
+    t
 }
 
 /// Both Material 3 schemes.

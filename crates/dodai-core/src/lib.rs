@@ -30,7 +30,7 @@ pub use component::{
     ButtonTokens, ButtonVariant, ControlState, InputTokens, ListItemTokens, PanelTokens,
     ProgressTokens, TabTokens, TagTokens, ToggleTokens,
 };
-pub use palette::{Mode, Palette, Tone};
+pub use palette::{Mode, Palette, Roles, Tone};
 pub use shape_system::{
     Corner, CornerSpec, CornerStyle, DefaultShape, RoleShape, ShapePreset, ShapeRole, ShapeScale,
     ShapeSize, ShapeSystem, FULL,

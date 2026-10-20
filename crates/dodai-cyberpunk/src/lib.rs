@@ -100,7 +100,9 @@ fn build(
             Color::hex(RED),
             Color::hex(0xcbcbcb),
         ],
-    };
+        roles: dodai_core::Roles::placeholder(),
+    }
+    .with_derived_roles(true);
     Theme {
         meta,
         shape_system: None,
@@ -167,7 +169,9 @@ fn build_light(meta: ThemeMeta, l: Light) -> Theme {
             Color::hex(0xc8102e),
             Color::hex(0x55544a),
         ],
-    };
+        roles: dodai_core::Roles::placeholder(),
+    }
+    .with_derived_roles(false);
     Theme {
         meta,
         shape_system: None,

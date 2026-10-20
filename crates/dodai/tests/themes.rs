@@ -124,3 +124,97 @@ fn design_systems_carry_their_icons() {
 fn material_icons_are_reachable() {
     assert!(dodai::material::icons::outlined::get("home").is_some());
 }
+
+#[test]
+fn extended_roles_are_complete_unique_and_readable() {
+    for t in themes::all() {
+        let r = &t.palette.roles;
+        let list = r.list();
+        let names: HashSet<_> = list.iter().map(|(n, _)| *n).collect();
+        assert_eq!(names.len(), list.len(), "{}: duplicate role name", t.id());
+        assert_ne!(
+            *r,
+            dodai::Roles::placeholder(),
+            "{}: roles never set",
+            t.id()
+        );
+        for (fg, bg, what) in [
+            (
+                r.on_surface,
+                r.surface_container_lowest,
+                "on-surface/lowest",
+            ),
+            (r.on_surface, r.surface_container, "on-surface/container"),
+            (
+                r.on_surface,
+                r.surface_container_highest,
+                "on-surface/highest",
+            ),
+            (
+                r.on_surface_variant,
+                r.surface_container,
+                "variant/container",
+            ),
+            (
+                r.on_primary_container,
+                r.primary_container,
+                "on-primary-container",
+            ),
+            (
+                r.on_secondary_container,
+                r.secondary_container,
+                "on-secondary-container",
+            ),
+            (
+                r.on_tertiary_container,
+                r.tertiary_container,
+                "on-tertiary-container",
+            ),
+            (
+                r.on_error_container,
+                r.error_container,
+                "on-error-container",
+            ),
+            (r.on_tertiary, r.tertiary, "on-tertiary"),
+            (r.on_error, t.palette.danger, "on-error"),
+            (r.inverse_on_surface, r.inverse_surface, "inverse"),
+        ] {
+            assert!(
+                fg.contrast(bg) >= 4.5,
+                "{}: {what} {:.2}",
+                t.id(),
+                fg.contrast(bg)
+            );
+        }
+    }
+}
+
+#[test]
+fn container_surfaces_step_in_order() {
+    // Material: each container is further from the page than the one below it.
+    for t in themes::all()
+        .into_iter()
+        .filter(|t| t.meta.family == "material")
+    {
+        let r = &t.palette.roles;
+        let lum = |c: dodai::Color| c.luminance();
+        let steps = [
+            r.surface_container_low,
+            r.surface_container,
+            r.surface_container_high,
+            r.surface_container_highest,
+        ];
+        let dark = t.meta.mode == Mode::Dark;
+        for w in steps.windows(2) {
+            assert!(
+                if dark {
+                    lum(w[1]) > lum(w[0])
+                } else {
+                    lum(w[1]) < lum(w[0])
+                },
+                "{}: containers out of order",
+                t.id()
+            );
+        }
+    }
+}

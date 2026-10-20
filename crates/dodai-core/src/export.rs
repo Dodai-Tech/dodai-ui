@@ -88,6 +88,9 @@ pub fn theme_tokens_json(t: &Theme) -> String {
         c("focus-ring", p.focus_ring),
         c("link", p.link),
     ];
+    for (name, col) in p.roles.list() {
+        colors.push(c(name, col));
+    }
     let series: Vec<(String, String)> = p
         .series
         .iter()

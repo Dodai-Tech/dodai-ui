@@ -152,6 +152,9 @@ pub fn theme_vars(t: &Theme) -> String {
     ] {
         v(k, c.to_css());
     }
+    for (k, c) in p.roles.list() {
+        v(k, c.to_css());
+    }
     for (i, c) in p.series.iter().enumerate() {
         v(&format!("series-{i}"), c.to_css());
     }
