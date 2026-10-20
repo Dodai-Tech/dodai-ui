@@ -174,6 +174,17 @@ impl Palette {
         }
     }
 
+    /// `(shadow, scanline, highlight)` effect colours that suit this palette: the shadow and
+    /// scanlines use the `shadow` / `scrim` roles (lighter on light themes), the shimmer
+    /// highlight is the colour that reads on a primary fill.
+    pub fn effect_colours(&self, dark: bool) -> (Color, Color, Color) {
+        (
+            self.roles.shadow.with_alpha(if dark { 0.16 } else { 0.12 }),
+            self.roles.scrim.with_alpha(if dark { 0.18 } else { 0.07 }),
+            self.on_primary.with_alpha(0.4),
+        )
+    }
+
     /// Replace [`roles`](Self::roles) with ones derived from the base palette. Call after
     /// building a palette by hand.
     pub fn with_derived_roles(mut self, dark: bool) -> Self {

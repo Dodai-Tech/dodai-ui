@@ -103,6 +103,7 @@ fn build(
         roles: dodai_core::Roles::placeholder(),
     }
     .with_derived_roles(true);
+    let fx = palette.effect_colours(true);
     Theme {
         meta,
         shape_system: None,
@@ -116,9 +117,9 @@ fn build(
             glow_intensity: 1.0,
             scanlines: scan,
             hard_shadow: 4.0,
-            shadow: Effects::SHADOW,
-            scanline: Effects::SCANLINE,
-            highlight: Effects::HIGHLIGHT,
+            shadow: fx.0,
+            scanline: fx.1,
+            highlight: fx.2,
         },
     }
 }
@@ -175,6 +176,7 @@ fn build_light(meta: ThemeMeta, l: Light) -> Theme {
         roles: dodai_core::Roles::placeholder(),
     }
     .with_derived_roles(false);
+    let fx = palette.effect_colours(false);
     Theme {
         meta,
         shape_system: None,
@@ -188,9 +190,9 @@ fn build_light(meta: ThemeMeta, l: Light) -> Theme {
             glow_intensity: 0.4,
             scanlines: false,
             hard_shadow: 4.0,
-            shadow: Effects::SHADOW,
-            scanline: Effects::SCANLINE,
-            highlight: Effects::HIGHLIGHT,
+            shadow: fx.0,
+            scanline: fx.1,
+            highlight: fx.2,
         },
     }
 }

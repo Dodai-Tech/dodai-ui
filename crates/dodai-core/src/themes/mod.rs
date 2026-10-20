@@ -90,6 +90,7 @@ impl Spec {
             roles: crate::Roles::placeholder(),
         }
         .with_derived_roles(dark);
+        let fx = palette.effect_colours(dark);
         crate::Theme {
             shape_system: None,
             meta: self.meta,
@@ -103,9 +104,9 @@ impl Spec {
                 glow_intensity: 1.0,
                 scanlines: self.scanlines,
                 hard_shadow: self.hard_shadow,
-                shadow: Effects::SHADOW,
-                scanline: Effects::SCANLINE,
-                highlight: Effects::HIGHLIGHT,
+                shadow: fx.0,
+                scanline: fx.1,
+                highlight: fx.2,
             },
         }
     }
