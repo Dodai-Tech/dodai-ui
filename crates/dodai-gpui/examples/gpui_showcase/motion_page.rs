@@ -1,6 +1,7 @@
 //! The Loading and Animation categories: indicator demos and the easing / entry catalogue.
 
 use super::*;
+use std::sync::Arc;
 
 impl Showcase {
     pub(crate) fn loading_section(&mut self, cx: &mut Context<Self>) -> Panel {
@@ -393,6 +394,242 @@ impl Showcase {
                     .into_any_element(),
             );
         }
+        let mut anim_titles = anim_titles;
+        anim_sections.push(self.dynamics_physics(cx));
+        anim_titles.push("Dynamics · physics models");
+        anim_sections.push(self.dynamics_mixins(cx));
+        anim_titles.push("Dynamics · one-shot mixins");
         (anim_sections, anim_titles)
+    }
+
+    /// Plots of the closed-form physics models plus a live lane for each.
+    fn dynamics_physics(&mut self, cx: &mut Context<Self>) -> gpui::AnyElement {
+        use dodai_gpui::dodai_motion::{rubber_band, Bounce, Decay, Shake, Spring};
+        type F = Arc<dyn Fn(f32) -> f32 + Send + Sync>;
+        let t = theme_of(cx);
+        let (border, accent, muted) = (
+            hsla(t.palette.border),
+            hsla(t.palette.primary),
+            hsla(t.palette.text_muted),
+        );
+        let lane = |name: &'static str, note: &'static str, f: F, lo: f32, hi: f32| {
+            let f2 = f.clone();
+            let plot = gpui::canvas(
+                |_, _, _| (),
+                move |b: Bounds<gpui::Pixels>, _, w, _| {
+                    let (bw, bh) = (f32::from(b.size.width), f32::from(b.size.height));
+                    let at = |x: f32, y: f32| {
+                        gpui::point(
+                            b.origin.x + px(4.0 + x * (bw - 8.0)),
+                            b.origin.y + px(4.0 + (1.0 - (y - lo) / (hi - lo)) * (bh - 8.0)),
+                        )
+                    };
+                    let stroke = |pts: Vec<(f32, f32)>, c: gpui::Hsla, w: &mut Window| {
+                        let mut p = gpui::PathBuilder::stroke(px(2.0));
+                        for (k, (x, y)) in pts.into_iter().enumerate() {
+                            if k == 0 {
+                                p.move_to(at(x, y));
+                            } else {
+                                p.line_to(at(x, y));
+                            }
+                        }
+                        if let Ok(path) = p.build() {
+                            w.paint_path(path, c);
+                        }
+                    };
+                    stroke(vec![(0.0, 0.0), (1.0, 0.0)], border, w);
+                    stroke(
+                        (0..=80)
+                            .map(|k| (k as f32 / 80.0, f2(k as f32 / 80.0)))
+                            .collect(),
+                        accent,
+                        w,
+                    );
+                },
+            )
+            .size_full();
+            let f3 = f.clone();
+            let dot = div().size(px(14.0)).rounded_full().bg(accent);
+            let live = div()
+                .id(("dyn-live", section_id(name)))
+                .relative()
+                .w(px(220.0))
+                .h(px(34.0))
+                .child(dot.absolute().top(px(10.0)).with_animation(
+                    ("dyn-live-a", section_id(name)),
+                    gpui::Animation::new(Duration::from_millis(2600)).repeat(),
+                    move |el, p| {
+                        let y = (f3(p.min(1.0)) - lo) / (hi - lo);
+                        el.left(px(4.0 + y * 200.0))
+                    },
+                ));
+            div()
+                .flex()
+                .items_center()
+                .gap(px(16.0))
+                .child(div().w(px(150.0)).h(px(70.0)).flex_none().child(plot))
+                .child(live)
+                .child(
+                    div()
+                        .flex_1()
+                        .min_w(px(180.0))
+                        .child(Label::new(name))
+                        .child(Muted::new(note)),
+                )
+        };
+        let sp = |bounce: f32| -> F {
+            let s = Spring::from_response(0.5, bounce);
+            Arc::new(move |x| s.at(x * 1.6, 0.0, 0.0, 1.0).0)
+        };
+        let decay = Decay::new(0.0, 4.0, 3.5);
+        let ball = Bounce::new(100.0, 900.0, 0.6);
+        let dur = ball.duration();
+        let shake = Shake::new(5.0, 3.5);
+        let rows = vec![
+            lane(
+                "Spring · critical",
+                "bounce 0: fastest arrival with no overshoot. Cyberpunk's feel.",
+                sp(0.0),
+                0.0,
+                1.4,
+            ),
+            lane(
+                "Spring · smooth",
+                "bounce 0.1: a hair of overshoot. Material's feel.",
+                sp(0.1),
+                0.0,
+                1.4,
+            ),
+            lane(
+                "Spring · playful",
+                "bounce 0.5: clear overshoot and ring-down.",
+                sp(0.5),
+                0.0,
+                1.4,
+            ),
+            lane(
+                "Fling (decay)",
+                "Exponential friction: coasts to rest at v0 / friction, then snap to a page.",
+                Arc::new(move |x| decay.position(x * 1.6)),
+                0.0,
+                1.4,
+            ),
+            lane(
+                "Dropped ball",
+                "Gravity with restitution: each bounce keeps 60 % of the speed.",
+                Arc::new(move |x| 1.0 - ball.at(x * dur) / 100.0),
+                0.0,
+                1.05,
+            ),
+            lane(
+                "Shake",
+                "A decaying sine: invalid input, doorbell wobble.",
+                Arc::new(move |x| 0.5 + 0.5 * shake.at(x * 1.5)),
+                0.0,
+                1.0,
+            ),
+            lane(
+                "Rubber band",
+                "Drag past an edge with resistance: output never reaches the limit.",
+                Arc::new(|x| rubber_band(x * 6.0, 1.0, 0.55)),
+                0.0,
+                1.0,
+            ),
+        ];
+        let _ = muted;
+        let mut col = div().flex().flex_col().gap(px(t.spacing.md));
+        for r in rows {
+            col = col.child(r);
+        }
+        Panel::new()
+            .title("Dynamics · physics models")
+            .child(col)
+            .into_any_element()
+    }
+
+    /// One-shot mixins: each card plays its `Clip<Pose>` when its button is pressed.
+    fn dynamics_mixins(&mut self, cx: &mut Context<Self>) -> gpui::AnyElement {
+        use dodai_gpui::dodai_motion as dm;
+        let me = cx.entity();
+        let t = theme_of(cx);
+        let p = t.motion.personality;
+        let title: &'static str = "Dynamics · one-shot mixins";
+        let n = self.sec_replay.get(title).copied().unwrap_or(0);
+        let reduced = false;
+        let defs: Vec<(&'static str, &'static str, dm::Clip<dm::Pose>)> = vec![
+            ("Shake", "invalid input", dm::shake(p)),
+            ("Nudge", "gentle tap", dm::nudge(p)),
+            ("Attention bounce", "look at me", dm::attention_bounce(p)),
+            ("Flash on change", "value changed", dm::flash_on_change()),
+            ("Pop in", "springy appear", dm::pop_in(p)),
+        ];
+        let glow = hsla(t.palette.primary);
+        let mut row = div().flex().flex_wrap().gap(px(t.spacing.md));
+        for (i, (name, note, clip)) in defs.into_iter().enumerate() {
+            let clip = if reduced { clip.reduced() } else { clip };
+            let secs = clip.duration().max(0.2);
+            let id = section_id(name) + n * 7919;
+            row = row.child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(8.0))
+                    .w(px(170.0))
+                    .child(
+                        div()
+                            .h(px(90.0))
+                            .flex()
+                            .items_center()
+                            .justify_center()
+                            .child(
+                                div()
+                                    .id(("mx-card", id))
+                                    .px(px(14.0))
+                                    .py(px(10.0))
+                                    .rounded(px(t.shape.radius.min(10.0)))
+                                    .border_1()
+                                    .border_color(hsla(t.palette.border))
+                                    .bg(hsla(t.palette.surface_raised))
+                                    .child(Label::new(name))
+                                    .with_animation(
+                                        ("mx-a", id),
+                                        gpui::Animation::new(Duration::from_secs_f32(secs)),
+                                        move |el, k| {
+                                            let pose = clip.at(k * secs);
+                                            el.relative()
+                                                .left(px(pose.dx))
+                                                .top(px(pose.dy))
+                                                .opacity(pose.opacity)
+                                                .border_color(glow.opacity(pose.glow))
+                                        },
+                                    ),
+                            ),
+                    )
+                    .child(Muted::new(note))
+                    .child({
+                        let me = me.clone();
+                        Button::new(("mx-play", i as u32), "Play").on_click(move |_, _, cx| {
+                            me.update(cx, |s, cx| {
+                                s.bump(title);
+                                cx.notify();
+                            })
+                        })
+                    }),
+            );
+        }
+        Panel::new()
+            .title(title)
+            .child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(t.spacing.md))
+                    .child(Muted::new(format!(
+                        "Personality: {} (from the active theme's motion). Each mixin is a Clip<Pose>; the adapter only applies dx, dy, opacity and glow.",
+                        p.label()
+                    )))
+                    .child(row),
+            )
+            .into_any_element()
     }
 }

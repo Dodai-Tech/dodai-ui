@@ -232,6 +232,7 @@ pub use dodai_charts_core::gantt::Task as GanttTask;
 #[cfg(feature = "charts")]
 pub use dodai_charts_core::Gradient;
 #[cfg(feature = "shaders")]
+pub use dodai_motion;
 pub use dodai_shaders;
 #[cfg(feature = "components")]
 pub use extras::{

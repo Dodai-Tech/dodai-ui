@@ -28,6 +28,8 @@ pub(crate) fn caps(title: &str) -> Caps {
         }
         // Raw / non-animated components only.
         "Tooltip"
+        | "Dynamics · physics models"
+        | "Dynamics · one-shot mixins"
         | "Input"
         | "Collapsible sidebar"
         | "Border"
@@ -80,7 +82,7 @@ pub(crate) fn caps(title: &str) -> Caps {
 /// Subsections of a category (shown in the sidebar under the selected category).
 pub(crate) fn subs(cat: &str) -> &'static [&'static str] {
     match cat {
-        "Animation" => &["Entry", "Physics"],
+        "Animation" => &["Entry", "Physics", "Dynamics"],
         "Shaders" => &[
             "Playground",
             "Cyberpunk",
@@ -100,16 +102,16 @@ pub(crate) fn subs(cat: &str) -> &'static [&'static str] {
 /// Subsection a section belongs to.
 pub(crate) fn sub_of(cat: &str, label: &str) -> Option<&'static str> {
     match cat {
-        "Animation" => Some(
-            if ["Spring", "Bounce", "Elastic", "Back"]
-                .iter()
-                .any(|p| label.starts_with(p))
-            {
-                "Physics"
-            } else {
-                "Entry"
-            },
-        ),
+        "Animation" => Some(if label.starts_with("Dynamics") {
+            "Dynamics"
+        } else if ["Spring", "Bounce", "Elastic", "Back"]
+            .iter()
+            .any(|p| label.starts_with(p))
+        {
+            "Physics"
+        } else {
+            "Entry"
+        }),
         "Shaders" => Some(
             dodai_gpui::dodai_shaders::Family::ALL
                 .iter()
