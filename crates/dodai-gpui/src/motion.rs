@@ -16,6 +16,15 @@ pub use dodai_motion::{
 struct DefaultMotion(Motion);
 impl Global for DefaultMotion {}
 
+/// Seconds on gpui's monotonic clock (since first use): what [`Tween`] is driven with.
+pub fn now() -> f32 {
+    static START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
+    START
+        .get_or_init(std::time::Instant::now)
+        .elapsed()
+        .as_secs_f32()
+}
+
 /// The motion in force (see [`MotionExt::of`]).
 pub fn current(cx: &App) -> Motion {
     Motion::of(cx)
@@ -206,10 +215,10 @@ pub fn smooth_with(
     let st = window.with_id(id, |w| {
         w.use_keyed_state(("smooth", 0u32), cx, move |_, _| Tween::new(target, m))
     });
-    st.update(cx, |t, _| t.to(target, m));
+    st.update(cx, |t, _| t.to(target, m, now()));
     let (v, done) = {
         let t = st.read(cx);
-        (t.value(), t.is_done())
+        (t.value(now()), t.is_done(now()))
     };
     if !done {
         crate::motion::next_frame(window);

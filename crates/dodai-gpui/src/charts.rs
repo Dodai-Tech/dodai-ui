@@ -1374,8 +1374,9 @@ impl PieChart {
                         if s.pops.len() <= i {
                             s.pops.resize(i + 1, crate::motion::Tween::new(0.0, motion));
                         }
-                        s.pops[i].to(target, motion);
-                        (s.pops[i].value(), !s.pops[i].is_done())
+                        s.pops[i].to(target, motion, crate::motion::now());
+                        let now = crate::motion::now();
+                        (s.pops[i].value(now), !s.pops[i].is_done(now))
                     });
                     if busy {
                         crate::motion::next_frame(w);

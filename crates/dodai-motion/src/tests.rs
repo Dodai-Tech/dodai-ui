@@ -103,3 +103,44 @@ fn speed_scales_duration() {
     let m = Motion::default().millis(200).speed(2.0);
     assert_eq!(m.duration, Duration::from_millis(100));
 }
+
+#[test]
+fn tween_is_driven_by_the_callers_clock() {
+    let m = Motion::new(Duration::from_millis(100), Easing::Linear);
+    let mut t = Tween::new(0.0, m);
+    t.to(10.0, m, 1.0);
+    assert!((t.value(1.0)).abs() < 1e-5);
+    assert!((t.value(1.05) - 5.0).abs() < 1e-3);
+    assert!(t.is_done(1.2) && (t.value(9.0) - 10.0).abs() < 1e-5);
+    t.to(0.0, m, 1.05); // retarget mid-flight: starts from 5
+    assert!((t.value(1.05) - 5.0).abs() < 1e-3);
+}
+
+#[test]
+fn entry_frame_needs_only_a_clock() {
+    let m = Motion::new(Duration::from_millis(200), Easing::Linear)
+        .entry(EntrySet::of(EntryKind::Rise))
+        .delay(Duration::from_millis(100));
+    assert_eq!(m.entry_frame(0.0).0, 0.0, "waits for the delay");
+    assert!((m.entry_frame(0.2).0 - 0.5).abs() < 1e-3);
+    assert_eq!(m.entry_frame(5.0), (1.0, 0.0, 0.0));
+}
+
+#[test]
+fn easing_css_forms() {
+    assert_eq!(Easing::EaseOut.to_css(), "ease-out");
+    assert_eq!(
+        Easing::CubicBezier(0.2, 0.0, 0.0, 1.0).to_css(),
+        "cubic-bezier(0.2, 0, 0, 1)"
+    );
+    let s = Easing::SPRING.to_css();
+    assert!(s.starts_with("linear(0,") && s.ends_with("1)"), "{s}");
+}
+
+#[test]
+fn curves_and_motion_are_send_sync() {
+    fn ok<T: Send + Sync>() {}
+    ok::<Curve>();
+    ok::<Motion>();
+    ok::<Tween>();
+}

@@ -221,6 +221,18 @@ impl Motion {
         self.duration = self.duration.div_f32(factor.max(0.01));
         self
     }
+    /// Linear progress `0..=1` after `elapsed` seconds (past `delay`).
+    pub fn progress(&self, elapsed: f32) -> f32 {
+        let d = self.duration.as_secs_f32().max(1e-3);
+        ((elapsed - self.delay.as_secs_f32()) / d).clamp(0.0, 1.0)
+    }
+    /// The whole entry for a host that only has a clock: `(opacity, dx, dy)` after
+    /// `elapsed` seconds, with this motion's easing, delay and entry effects applied.
+    pub fn entry_frame(&self, elapsed: f32) -> (f32, f32, f32) {
+        let total = self.entry.duration(self.duration).as_secs_f32().max(1e-3);
+        let t = ((elapsed - self.delay.as_secs_f32()) / total).clamp(0.0, 1.0);
+        self.entry.frame(self.eased(t), self.duration)
+    }
     /// Eased progress for linear `t`.
     pub fn eased(&self, t: f32) -> f32 {
         self.easing.apply(t)

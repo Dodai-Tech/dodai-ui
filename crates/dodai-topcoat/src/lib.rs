@@ -192,6 +192,12 @@ pub fn theme_vars(t: &Theme) -> String {
     );
     v("tracking", format!("{}em", ty.label_tracking));
     v(
+        "motion-duration",
+        format!("{}ms", t.motion.duration.as_millis()),
+    );
+    v("motion-delay", format!("{}ms", t.motion.delay.as_millis()));
+    v("motion-easing", t.motion.easing.to_css());
+    v(
         "scanlines",
         if t.effects.scanlines { "1" } else { "0" }.to_string(),
     );

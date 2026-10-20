@@ -207,8 +207,21 @@ pub fn theme_tokens_json(t: &Theme) -> String {
         ),
     ];
 
+    let m = &t.motion;
+    let motion = vec![
+        (
+            "duration".to_string(),
+            tok("duration", js(&format!("{}ms", m.duration.as_millis()))),
+        ),
+        (
+            "delay".to_string(),
+            tok("duration", js(&format!("{}ms", m.delay.as_millis()))),
+        ),
+        ("easing".to_string(), tok("string", js(&m.easing.to_css()))),
+    ];
+
     format!(
-        "{}:{{\"$description\":{},\"$extensions\":{{\"dodai.mode\":{},\"dodai.family\":{}}},{},{},{},{},{}}}",
+        "{}:{{\"$description\":{},\"$extensions\":{{\"dodai.mode\":{},\"dodai.family\":{}}},{},{},{},{},{},{}}}",
         js(t.id()),
         js(t.meta.description),
         js(if t.is_dark() { "dark" } else { "light" }),
@@ -218,6 +231,7 @@ pub fn theme_tokens_json(t: &Theme) -> String {
         group("space", &space),
         group("shape", &shape),
         group("effect", &effect),
+        group("motion", &motion),
     )
 }
 

@@ -51,6 +51,29 @@ impl Easing {
         damping: 20.0,
     };
 
+    /// This curve as a CSS `transition-timing-function`. The standard curves map to their
+    /// keyword or `cubic-bezier(..)`; the physical ones (spring, bounce, ...) are sampled
+    /// into a CSS `linear(..)` function.
+    pub fn to_css(self) -> String {
+        let n = |v: f32| {
+            let s = format!("{:.3}", v);
+            s.trim_end_matches('0').trim_end_matches('.').to_string()
+        };
+        match self {
+            Easing::Linear => "linear".into(),
+            Easing::EaseIn => "ease-in".into(),
+            Easing::EaseOut => "ease-out".into(),
+            Easing::EaseInOut => "ease-in-out".into(),
+            Easing::CubicBezier(a, b, c, d) => {
+                format!("cubic-bezier({}, {}, {}, {})", n(a), n(b), n(c), n(d))
+            }
+            _ => {
+                let pts: Vec<String> = (0..=16).map(|i| n(self.apply(i as f32 / 16.0))).collect();
+                format!("linear({})", pts.join(", "))
+            }
+        }
+    }
+
     /// Eased progress for linear `t` (clamped to `0..=1`). Pure.
     pub fn apply(self, t: f32) -> f32 {
         let t = t.clamp(0.0, 1.0);

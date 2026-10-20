@@ -1,24 +1,24 @@
 //! Composable progress curves, stagger and interpolation.
 
 use crate::Easing;
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Composable progress curve `0..1 -> 0..1`. Cheap to clone; build from an
 /// [`Easing`] or closure, then combine: [`window`](Curve::window) (stagger /
 /// delay), [`reverse`](Curve::reverse), [`ping_pong`](Curve::ping_pong),
 /// [`then`](Curve::then), [`pipe`](Curve::pipe).
 #[derive(Clone)]
-pub struct Curve(Rc<dyn Fn(f32) -> f32>);
+pub struct Curve(Arc<dyn Fn(f32) -> f32 + Send + Sync>);
 
 impl From<Easing> for Curve {
     fn from(e: Easing) -> Self {
-        Curve(Rc::new(move |t| e.apply(t)))
+        Curve(Arc::new(move |t| e.apply(t)))
     }
 }
 
 impl Curve {
-    pub fn new(f: impl Fn(f32) -> f32 + 'static) -> Self {
-        Curve(Rc::new(f))
+    pub fn new(f: impl Fn(f32) -> f32 + Send + Sync + 'static) -> Self {
+        Curve(Arc::new(f))
     }
     pub fn apply(&self, t: f32) -> f32 {
         (self.0)(t.clamp(0.0, 1.0))
