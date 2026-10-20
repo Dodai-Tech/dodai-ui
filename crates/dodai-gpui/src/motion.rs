@@ -261,6 +261,25 @@ pub fn react(
     pose
 }
 
+/// Vertical hover-lift offset in px for the element keyed `id`: a spring in the theme's
+/// personality, `0.0` at rest. Apply as `.mt(lift).mb(-lift)` so layout doesn't move.
+pub fn hover_lift(
+    window: &mut gpui::Window,
+    cx: &mut App,
+    id: gpui::ElementId,
+    hovered: bool,
+) -> f32 {
+    use dodai_motion::{Reactive, Trigger};
+    react(
+        window,
+        cx,
+        id,
+        &[Reactive::HoverLift],
+        &[(Trigger::Hover, hovered)],
+    )
+    .dy
+}
+
 /// Component-wise mix of two colours (`t` in `0..=1`). Pure.
 pub fn mix(a: gpui::Hsla, b: gpui::Hsla, t: f32) -> gpui::Hsla {
     let (a, b) = (gpui::Rgba::from(a), gpui::Rgba::from(b));

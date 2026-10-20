@@ -147,15 +147,12 @@ impl Button {
         let lift = if state == ControlState::Disabled {
             0.0
         } else {
-            use dodai_motion::{Reactive, Trigger};
-            crate::motion::react(
+            crate::motion::hover_lift(
                 window,
                 cx,
                 (self.id.clone(), "lift").into(),
-                &[Reactive::HoverLift],
-                &[(Trigger::Hover, state != ControlState::Idle)],
+                state != ControlState::Idle,
             )
-            .dy
         };
         let mut shape = t.shape.clone();
         if let Some(c) = self.corners {

@@ -222,7 +222,19 @@ impl IconButton {
         };
         let (style, fg) = button_style(&t, variant, state);
         let side = t.shape.control_height;
+        let lift = if self.disabled {
+            0.0
+        } else {
+            crate::motion::hover_lift(
+                window,
+                cx,
+                (self.id.clone(), "lift").into(),
+                state != ControlState::Idle,
+            )
+        };
         let mut el = track(shaped_id(self.id, &t.shape, style), &st)
+            .mt(px(lift))
+            .mb(px(-lift))
             .w(px(side))
             .h(px(side))
             .flex()
@@ -334,7 +346,15 @@ impl Fab {
             style.glow = Some((hsla(fx.glow_color()), fx.glow_radius()));
         }
         let side = self.size.side(&t);
+        let lift = crate::motion::hover_lift(
+            window,
+            cx,
+            (self.id.clone(), "lift").into(),
+            state != ControlState::Idle,
+        );
         let mut el = track(shaped_id(self.id, &t.shape, style), &st)
+            .mt(px(lift))
+            .mb(px(-lift))
             .h(px(side))
             .flex()
             .items_center()
