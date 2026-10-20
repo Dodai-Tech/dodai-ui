@@ -227,9 +227,22 @@ pub struct Effects {
     pub scanlines: bool,
     /// Hard offset shadow (px) typical of cyberpunk UI, 0 = none.
     pub hard_shadow: f32,
+    /// Soft drop-shadow colour (lifts cards on themes without a hard shadow).
+    pub shadow: Color,
+    /// Colour of the CRT scanline bars.
+    pub scanline: Color,
+    /// Light sweep over filled controls (shimmer).
+    pub highlight: Color,
 }
 
 impl Effects {
+    /// Neutral soft shadow: black at 16 %.
+    pub const SHADOW: Color = Color::rgba(0, 0, 0, 41);
+    /// Neutral scanline bar: black at 18 %.
+    pub const SCANLINE: Color = Color::rgba(0, 0, 0, 46);
+    /// Neutral highlight: white at 40 %.
+    pub const HIGHLIGHT: Color = Color::rgba(255, 255, 255, 102);
+
     /// Glow colour with alpha scaled by [`Effects::glow_intensity`].
     pub fn glow_color(&self) -> Color {
         let k = self.glow_intensity.max(0.0);
@@ -258,6 +271,9 @@ mod glow_tests {
             glow_intensity: i,
             scanlines: false,
             hard_shadow: 0.0,
+            shadow: Effects::SHADOW,
+            scanline: Effects::SCANLINE,
+            highlight: Effects::HIGHLIGHT,
         }
     }
 

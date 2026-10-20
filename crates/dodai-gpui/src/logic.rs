@@ -61,21 +61,11 @@ pub fn page_window(current: usize, total: usize, slots: usize) -> Vec<PageItem> 
     out
 }
 
-/// Progress of one step in a stepper.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum StepStatus {
-    Done,
-    Current,
-    Todo,
-}
+pub use dodai_core::StepState as StepStatus;
 
 /// Status of step `i` when `current` is the active step.
 pub fn step_status(i: usize, current: usize) -> StepStatus {
-    match i.cmp(&current) {
-        std::cmp::Ordering::Less => StepStatus::Done,
-        std::cmp::Ordering::Equal => StepStatus::Current,
-        std::cmp::Ordering::Greater => StepStatus::Todo,
-    }
+    StepStatus::of(i, current)
 }
 
 #[cfg(test)]

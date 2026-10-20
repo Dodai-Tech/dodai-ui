@@ -1,7 +1,7 @@
 //! [`Scanlines`]: CRT overlay, drawn only when `effects.scanlines` is set.
 
 use crate::theme_of;
-use gpui::{canvas, div, hsla, point, px, App, Bounds, IntoElement, RenderOnce, Styled, Window};
+use gpui::{canvas, div, point, px, App, Bounds, IntoElement, RenderOnce, Styled, Window};
 
 /// Y offsets (px) of scanlines in a box of `height`, every `pitch` px.
 pub fn scanline_ys(height: f32, pitch: f32) -> Vec<f32> {
@@ -34,9 +34,10 @@ impl RenderOnce for Scanlines {
         if !t.effects.scanlines {
             return div().into_any_element();
         }
+        let line = crate::hsla(t.effects.scanline);
         canvas(
             |_, _, _| (),
-            |b: Bounds<gpui::Pixels>, _, window, _| {
+            move |b: Bounds<gpui::Pixels>, _, window, _| {
                 let h: f32 = b.size.height.into();
                 let w: f32 = b.size.width.into();
                 // All lines in one path: one tessellation + one draw instead of
@@ -55,7 +56,7 @@ impl RenderOnce for Scanlines {
                     );
                 }
                 if let Ok(path) = pb.build() {
-                    window.paint_path(path, hsla(0.0, 0.0, 0.0, 0.18));
+                    window.paint_path(path, line);
                 }
             },
         )

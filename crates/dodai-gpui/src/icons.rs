@@ -38,7 +38,7 @@ impl IconPack {
     }
 }
 
-/// Vector icon. Defaults: 16 px, white-ish — set `.color(..)`.
+/// Vector icon. Defaults: 16 px, the theme text colour; set `.color(..)` to override.
 #[cfg_attr(
     not(all(feature = "cyberpunk", feature = "material")),
     allow(dead_code)
@@ -51,7 +51,7 @@ pub struct Icon {
     /// The name given to [`Icon::named`], for the Material pack.
     label: Option<String>,
     size: f32,
-    color: Hsla,
+    color: Option<Hsla>,
     weight: f32,
     pack: IconPack,
     filled: bool,
@@ -84,7 +84,7 @@ impl Icon {
             custom,
             label: None,
             size: 16.0,
-            color: gpui::white(),
+            color: None,
             weight: 1.75,
             pack: IconPack::Auto,
             filled: false,
@@ -95,7 +95,7 @@ impl Icon {
         self
     }
     pub fn color(mut self, c: Hsla) -> Self {
-        self.color = c;
+        self.color = Some(c);
         self
     }
     /// Stroke width in px at 24 px size (scales with `size`; stroked pack only).
@@ -117,8 +117,12 @@ impl Icon {
 
 impl RenderOnce for Icon {
     fn render(self, _: &mut gpui::Window, cx: &mut gpui::App) -> impl IntoElement {
-        let (size, color, weight) = (self.size, self.color, self.weight);
-        let rounded = crate::theme_of(cx).shape.kind() == dodai_core::ShapeKind::Rounded;
+        let theme = crate::theme_of(cx);
+        let color = self
+            .color
+            .unwrap_or_else(|| crate::hsla(theme.palette.text));
+        let (size, weight) = (self.size, self.weight);
+        let rounded = theme.shape.kind() == dodai_core::ShapeKind::Rounded;
         #[cfg(feature = "material")]
         if self.pack.resolve(rounded) == IconPack::Material {
             let wanted = self.name.map(|n| n.name().to_string()).or(self.label);
@@ -207,7 +211,7 @@ fn glyph(
 pub struct MaterialIcon {
     name: String,
     size: f32,
-    color: Hsla,
+    color: Option<Hsla>,
     filled: bool,
     faceted: Option<bool>,
 }
@@ -218,7 +222,7 @@ impl MaterialIcon {
         Self {
             name: name.into(),
             size: 24.0,
-            color: gpui::white(),
+            color: None,
             filled: false,
             faceted: None,
         }
@@ -228,7 +232,7 @@ impl MaterialIcon {
         self
     }
     pub fn color(mut self, c: Hsla) -> Self {
-        self.color = c;
+        self.color = Some(c);
         self
     }
     /// Reduce the glyph to straight facets (`true`). Opt-in: the default is
@@ -246,11 +250,14 @@ impl MaterialIcon {
 
 #[cfg(feature = "material")]
 impl RenderOnce for MaterialIcon {
-    fn render(self, _: &mut gpui::Window, _: &mut gpui::App) -> impl IntoElement {
+    fn render(self, _: &mut gpui::Window, cx: &mut gpui::App) -> impl IntoElement {
         let name = dodai_material_icons::resolve(&self.name);
         let faceted = self.faceted.unwrap_or(false);
+        let color = self
+            .color
+            .unwrap_or_else(|| crate::hsla(crate::theme_of(cx).palette.text));
         match material(name, self.filled) {
-            Some(m) => glyph(self.size, self.color, m, faceted).into_any_element(),
+            Some(m) => glyph(self.size, color, m, faceted).into_any_element(),
             None => div().size(px(self.size)).flex_none().into_any_element(),
         }
     }

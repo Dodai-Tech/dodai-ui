@@ -26,13 +26,7 @@ pub enum SheetEdge {
 
 /// Paint style of a sheet surface (pure).
 pub fn sheet_style(theme: &Theme) -> ShapeStyle {
-    ShapeStyle::from_tokens(
-        theme,
-        Some(theme.palette.surface),
-        Some(theme.palette.border_strong),
-        false,
-        true,
-    )
+    ShapeStyle::from_surface(theme, theme.sheet()).0
 }
 
 fn scrim(

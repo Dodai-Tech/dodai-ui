@@ -12,18 +12,12 @@ use std::rc::Rc;
 
 /// Paint style of the dialog box (pure): raised surface, strong border, glow, hard shadow.
 pub fn dialog_style(theme: &Theme) -> ShapeStyle {
-    ShapeStyle::from_tokens(
-        theme,
-        Some(theme.palette.surface),
-        Some(theme.palette.primary),
-        true,
-        true,
-    )
+    ShapeStyle::from_surface(theme, theme.dialog()).0
 }
 
 /// Scrim colour: the theme overlay colour, never fully opaque.
 pub fn scrim_color(theme: &Theme) -> gpui::Hsla {
-    hsla(theme.palette.background.with_alpha(0.7))
+    hsla(theme.scrim())
 }
 
 /// Dialog box: title, body children, action row (right aligned).

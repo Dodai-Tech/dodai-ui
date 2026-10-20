@@ -116,6 +116,9 @@ fn build(
             glow_intensity: 1.0,
             scanlines: scan,
             hard_shadow: 4.0,
+            shadow: Effects::SHADOW,
+            scanline: Effects::SCANLINE,
+            highlight: Effects::HIGHLIGHT,
         },
     }
 }
@@ -185,6 +188,9 @@ fn build_light(meta: ThemeMeta, l: Light) -> Theme {
             glow_intensity: 0.4,
             scanlines: false,
             hard_shadow: 4.0,
+            shadow: Effects::SHADOW,
+            scanline: Effects::SCANLINE,
+            highlight: Effects::HIGHLIGHT,
         },
     }
 }

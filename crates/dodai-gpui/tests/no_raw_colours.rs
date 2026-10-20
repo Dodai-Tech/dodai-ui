@@ -8,31 +8,6 @@ use std::{fs, path::Path};
 
 /// `(file, text on the line, why a literal is right here)`.
 const ALLOWED: &[(&str, &str, &str)] = &[
-    (
-        "button.rs",
-        "gpui::white().opacity(0.4)",
-        "shimmer highlight sweeping over a filled button",
-    ),
-    (
-        "icons.rs",
-        "gpui::white()",
-        "default icon colour until `.color(..)` is set",
-    ),
-    (
-        "paint.rs",
-        "gpui::hsla(0.0, 0.0, 0.0, SCANLINE_ALPHA)",
-        "CRT scanline darkening: black at an effect alpha",
-    ),
-    (
-        "scanlines.rs",
-        "hsla(0.0, 0.0, 0.0, 0.18)",
-        "CRT scanline darkening: black at an effect alpha",
-    ),
-    (
-        "surfaces.rs",
-        "gpui::hsla(0.0, 0.0, 0.0, 0.16)",
-        "soft drop shadow of an elevated card: shadows are black in every theme",
-    ),
     ("nav.rs", "gpui::transparent_black()", "no fill"),
     (
         "charts.rs",

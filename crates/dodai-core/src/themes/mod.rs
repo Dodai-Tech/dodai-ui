@@ -103,6 +103,9 @@ impl Spec {
                 glow_intensity: 1.0,
                 scanlines: self.scanlines,
                 hard_shadow: self.hard_shadow,
+                shadow: Effects::SHADOW,
+                scanline: Effects::SCANLINE,
+                highlight: Effects::HIGHLIGHT,
             },
         }
     }

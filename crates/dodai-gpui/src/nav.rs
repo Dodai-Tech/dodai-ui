@@ -244,18 +244,9 @@ impl Stepper {
         let n = self.steps.len();
         for (i, label) in self.steps.iter().enumerate() {
             let status = step_status(i, self.current);
-            let (fill, stroke, fg, text) = match status {
-                StepStatus::Done => (Some(p.primary), p.primary, p.on_primary, p.text),
-                StepStatus::Current => (Some(p.selection), p.primary, p.text, p.text),
-                StepStatus::Todo => (None, p.border_strong, p.text_muted, p.text_muted),
-            };
-            let style = ShapeStyle::from_tokens(
-                &t,
-                fill,
-                Some(stroke),
-                status == StepStatus::Current,
-                false,
-            );
+            let k = t.step(status);
+            let (fill, stroke, fg, text) = (k.fill, k.stroke, k.mark, k.text);
+            let style = ShapeStyle::from_tokens(&t, fill, Some(stroke), k.glow, false);
             row = row.child(
                 div()
                     .flex()

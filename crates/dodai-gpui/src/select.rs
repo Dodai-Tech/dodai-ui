@@ -44,13 +44,7 @@ impl<S: Into<SharedString>> From<S> for SelectOption {
 
 /// Paint style of a floating popup (menus, dropdown lists). Pure.
 pub fn popup_style(theme: &Theme) -> ShapeStyle {
-    ShapeStyle::from_tokens(
-        theme,
-        Some(theme.palette.surface_raised),
-        Some(theme.palette.border_strong),
-        true,
-        true,
-    )
+    ShapeStyle::from_surface(theme, theme.popup()).0
 }
 
 /// Row of small colour chips.

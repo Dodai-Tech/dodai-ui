@@ -133,7 +133,7 @@ impl Button {
                 // A light sweep on filled buttons (dark label text would smear),
                 // the accent itself on outline/ghost ones.
                 color: if style.fill.is_some() {
-                    gpui::white().opacity(0.4)
+                    hsla(t.effects.highlight)
                 } else {
                     style.stroke.unwrap_or(fg).opacity(0.25)
                 },

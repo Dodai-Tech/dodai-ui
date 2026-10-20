@@ -17,47 +17,16 @@ use std::rc::Rc;
 
 // ───────────────────────────── Card ─────────────────────────────
 
-/// Card emphasis.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
-pub enum CardVariant {
-    /// Raised surface with hard shadow / glow.
-    #[default]
-    Elevated,
-    /// Flat raised surface, no border.
-    Filled,
-    /// Transparent with a border.
-    Outlined,
-}
+pub use dodai_core::CardVariant;
 
 /// Paint style of a card (pure).
 pub fn card_style(theme: &Theme, v: CardVariant) -> ShapeStyle {
-    let p = theme.panel(false);
-    // Rounded (Material) shapes use the tonal container roles; others the base palette.
-    let tonal = theme.shape.kind() == dodai_core::ShapeKind::Rounded;
-    let r = &theme.palette.roles;
-    let raised = if tonal {
-        r.surface_container_highest
-    } else {
-        theme.palette.surface_raised
-    };
-    let line = if tonal { r.outline_variant } else { p.border };
-    match v {
-        CardVariant::Elevated => {
-            let bg = if tonal {
-                r.surface_container_low
-            } else {
-                p.background
-            };
-            let mut st = ShapeStyle::from_tokens(theme, Some(bg), Some(line), false, true);
-            // No hard offset shadow in this theme: lift the card with a soft one.
-            if st.shadow.is_none() && st.glow.is_none() {
-                st.glow = Some((gpui::hsla(0.0, 0.0, 0.0, 0.16), 10.0));
-            }
-            st
-        }
-        CardVariant::Filled => ShapeStyle::from_tokens(theme, Some(raised), None, false, false),
-        CardVariant::Outlined => ShapeStyle::from_tokens(theme, None, Some(line), false, false),
+    let mut st = ShapeStyle::from_surface(theme, theme.card(v)).0;
+    // No hard offset shadow in this theme: lift an elevated card with a soft one.
+    if v == CardVariant::Elevated && st.shadow.is_none() && st.glow.is_none() {
+        st.glow = Some((crate::hsla(theme.effects.shadow), 10.0));
     }
+    st
 }
 
 /// Container with optional headline, supporting text and children.

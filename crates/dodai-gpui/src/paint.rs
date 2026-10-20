@@ -31,6 +31,8 @@ pub struct ShapeStyle {
     pub shadow_dir: (f32, f32),
     /// Fine horizontal scanline texture over the fill (from `effects.scanlines`).
     pub scanlines: bool,
+    /// Colour of those scanlines (`effects.scanline`).
+    pub scanline: Hsla,
     /// Animated highlight sweep, clipped to the shape (see [`Shimmer`]).
     pub shimmer: Option<Shimmer>,
 }
@@ -74,15 +76,22 @@ impl ShapeStyle {
                 .then(|| (hsla(theme.palette.primary_active), fx.hard_shadow)),
             shadow_dir: (1.0, 1.0),
             scanlines: fx.scanlines && fill.is_some(),
+            scanline: hsla(fx.scanline),
             shimmer: None,
         }
+    }
+
+    /// Style and text colour of a core [`SurfaceTokens`](dodai_core::SurfaceTokens).
+    pub fn from_surface(theme: &Theme, k: dodai_core::SurfaceTokens) -> (Self, Hsla) {
+        (
+            Self::from_tokens(theme, k.background, k.border, k.glow, k.shadow),
+            hsla(k.foreground),
+        )
     }
 }
 
 /// Scanline pitch in px (one dark 1px line per pitch).
 pub const SCANLINE_PITCH: f32 = 3.0;
-/// Scanline alpha (black).
-pub const SCANLINE_ALPHA: f32 = 0.18;
 
 /// Horizontal extent `(x0, x1)` of `shape` at row `y` in a `w`×`h` box, or
 /// `None` when the row is outside. Follows chamfers and rounded corners.
@@ -164,7 +173,7 @@ pub fn bottom_band_canvas(shape: &Shape, band: f32, color: Hsla) -> impl gpui::I
 }
 
 /// Paint scanline rows inside `bounds`, clipped to `shape`.
-pub fn paint_scanlines(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape) {
+pub fn paint_scanlines(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape, color: Hsla) {
     let w: f32 = bounds.size.width.into();
     let h: f32 = bounds.size.height.into();
     let bw = shape.border_width;
@@ -179,7 +188,7 @@ pub fn paint_scanlines(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shap
                             point(bounds.origin.x + px(x0), bounds.origin.y + px(y)),
                             gpui::size(px(x1 - x0), px(1.0)),
                         ),
-                        gpui::hsla(0.0, 0.0, 0.0, SCANLINE_ALPHA),
+                        color,
                     ));
                 }
             }
@@ -277,7 +286,7 @@ pub fn paint_polygon(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape,
         fill_path(window, poly(bounds.origin, &full, (0.0, 0.0)), c);
     }
     if s.scanlines {
-        paint_scanlines(window, bounds, shape);
+        paint_scanlines(window, bounds, shape, s.scanline);
     }
     if let (Some(c), bw) = (s.stroke, s.stroke_width) {
         if bw > 0.0 {
@@ -323,10 +332,11 @@ fn shaped_base(shape: &Shape, style: ShapeStyle) -> Div {
             let mut d = base;
             if style.scanlines {
                 let sh = shape.clone();
+                let sc = style.scanline;
                 d = d.child(
                     canvas(
                         |_, _, _| (),
-                        move |b, _, window, _| paint_scanlines(window, b, &sh),
+                        move |b, _, window, _| paint_scanlines(window, b, &sh, sc),
                     )
                     .absolute()
                     .top_0()

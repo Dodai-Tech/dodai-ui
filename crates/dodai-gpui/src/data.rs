@@ -189,11 +189,7 @@ impl<T: Styled + Sized> Weight for T {}
 
 /// Paint for a [`Badge`]: solid tone fill. Pure.
 pub fn badge_style(theme: &Theme, tone: Tone) -> (ShapeStyle, gpui::Hsla) {
-    let c = theme.palette.tone(tone);
-    (
-        ShapeStyle::from_tokens(theme, Some(c), None, false, false),
-        hsla(theme.on(c)),
-    )
+    ShapeStyle::from_surface(theme, theme.badge(tone))
 }
 
 /// Count / dot indicator. Round on rounded themes, shaped otherwise.
@@ -346,31 +342,7 @@ crate::entry_render!(Avatar);
 
 /// Paint of a [`Chip`] (pure): `(style, text colour)`.
 pub fn chip_style(theme: &Theme, selected: bool, hovered: bool) -> (ShapeStyle, gpui::Hsla) {
-    let p = &theme.palette;
-    if selected && theme.shape.kind() == dodai_core::ShapeKind::Rounded {
-        // Material filter chip: secondary-container fill, no outline.
-        let r = &p.roles;
-        (
-            ShapeStyle::from_tokens(theme, Some(r.secondary_container), None, false, false),
-            hsla(r.on_secondary_container),
-        )
-    } else if selected {
-        (
-            ShapeStyle::from_tokens(theme, Some(p.selection), Some(p.primary), false, false),
-            hsla(p.text),
-        )
-    } else {
-        (
-            ShapeStyle::from_tokens(
-                theme,
-                hovered.then_some(p.surface_raised),
-                Some(if hovered { p.border_strong } else { p.border }),
-                false,
-                false,
-            ),
-            hsla(if hovered { p.text } else { p.text_muted }),
-        )
-    }
+    ShapeStyle::from_surface(theme, theme.chip(selected, hovered))
 }
 
 type ClickFn = Rc<dyn Fn(&ClickEvent, &mut Window, &mut App)>;

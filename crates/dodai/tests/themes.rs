@@ -218,3 +218,77 @@ fn container_surfaces_step_in_order() {
         }
     }
 }
+
+#[test]
+fn surface_tokens_resolve_for_every_theme() {
+    use dodai::{CardVariant, StepState};
+    for t in themes::all() {
+        let p = &t.palette;
+        // Text on every surface that has a fill stays readable.
+        let surfaces = [
+            ("card/elevated", t.card(CardVariant::Elevated)),
+            ("card/filled", t.card(CardVariant::Filled)),
+            ("chip/selected", t.chip(true, false)),
+            ("badge", t.badge(Tone::Danger)),
+            ("alert/banner", t.alert(Tone::Warning, true)),
+            ("alert/tinted", t.alert(Tone::Info, false)),
+            ("dialog", t.dialog()),
+            ("sheet", t.sheet()),
+            ("popup", t.popup()),
+        ];
+        for (what, s) in surfaces {
+            // A tinted fill is translucent, so measure against the page.
+            let bg = s.background.unwrap_or(p.background);
+            let bg = if bg.a < 255 { p.background } else { bg };
+            assert!(
+                s.foreground.contrast(bg) >= 4.5,
+                "{}: {what} {:.2}",
+                t.id(),
+                s.foreground.contrast(bg)
+            );
+        }
+        assert!(t.card(CardVariant::Outlined).background.is_none());
+        assert!(t.card(CardVariant::Outlined).border.is_some());
+        assert!(t.scrim().a < 255 && t.scrim().a > 0, "{}: scrim", t.id());
+        // Stepper: done is filled, todo is hollow, only the current node glows.
+        assert!(t.step(StepState::Done).fill.is_some());
+        assert!(t.step(StepState::Todo).fill.is_none());
+        assert!(t.step(StepState::Current).glow && !t.step(StepState::Done).glow);
+        assert_eq!(StepState::of(0, 1), StepState::Done);
+        assert_eq!(StepState::of(1, 1), StepState::Current);
+        assert_eq!(StepState::of(2, 1), StepState::Todo);
+    }
+}
+
+#[test]
+fn material_cards_are_tonal_and_others_unchanged() {
+    use dodai::CardVariant;
+    for t in themes::all() {
+        let r = &t.palette.roles;
+        let f = t.card(CardVariant::Filled);
+        if t.shape.kind() == ShapeKind::Rounded {
+            assert_eq!(
+                f.background,
+                Some(r.surface_container_highest),
+                "{}",
+                t.id()
+            );
+            assert_eq!(t.divider(), r.outline_variant, "{}", t.id());
+        } else {
+            assert_eq!(f.background, Some(t.palette.surface_raised), "{}", t.id());
+            assert_eq!(t.divider(), t.palette.border, "{}", t.id());
+        }
+    }
+}
+
+#[test]
+fn effect_colours_are_set() {
+    for t in themes::all() {
+        let fx = &t.effects;
+        assert!(
+            fx.shadow.a > 0 && fx.scanline.a > 0 && fx.highlight.a > 0,
+            "{}",
+            t.id()
+        );
+    }
+}

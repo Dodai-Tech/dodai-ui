@@ -100,7 +100,222 @@ pub struct ListItemTokens {
     pub marker: Option<Color>,
 }
 
+/// Card emphasis.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum CardVariant {
+    /// Raised surface with hard shadow / glow.
+    #[default]
+    Elevated,
+    /// Flat raised surface, no border.
+    Filled,
+    /// Transparent with a border.
+    Outlined,
+}
+
+/// Progress of one step in a stepper.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StepState {
+    Done,
+    Current,
+    Todo,
+}
+
+impl StepState {
+    /// State of step `i` when `current` is the active step.
+    pub fn of(i: usize, current: usize) -> Self {
+        match i.cmp(&current) {
+            std::cmp::Ordering::Less => Self::Done,
+            std::cmp::Ordering::Equal => Self::Current,
+            std::cmp::Ordering::Greater => Self::Todo,
+        }
+    }
+}
+
+/// A generic surface (card, chip, badge, alert, dialog, sheet, popup).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SurfaceTokens {
+    /// `None` = transparent.
+    pub background: Option<Color>,
+    /// `None` = no border.
+    pub border: Option<Color>,
+    /// Text colour on the surface.
+    pub foreground: Color,
+    /// Draw the theme glow around it.
+    pub glow: bool,
+    /// Draw the theme shadow behind it.
+    pub shadow: bool,
+}
+
+/// One stepper node.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StepTokens {
+    pub fill: Option<Color>,
+    pub stroke: Color,
+    /// Colour of the number / check inside the node.
+    pub mark: Color,
+    /// Colour of the label.
+    pub text: Color,
+    pub glow: bool,
+}
+
 impl Theme {
+    fn surface(
+        background: Option<Color>,
+        border: Option<Color>,
+        foreground: Color,
+        glow: bool,
+        shadow: bool,
+    ) -> SurfaceTokens {
+        SurfaceTokens {
+            background,
+            border,
+            foreground,
+            glow,
+            shadow,
+        }
+    }
+
+    fn tonal(&self) -> bool {
+        self.shape.kind() == crate::ShapeKind::Rounded
+    }
+
+    /// Card. Rounded (Material) themes use the tonal container roles.
+    pub fn card(&self, v: CardVariant) -> SurfaceTokens {
+        let p = &self.palette;
+        let r = &p.roles;
+        let tonal = self.tonal();
+        let line = if tonal { r.outline_variant } else { p.border };
+        match v {
+            CardVariant::Elevated => Self::surface(
+                Some(if tonal {
+                    r.surface_container_low
+                } else {
+                    p.background
+                }),
+                Some(line),
+                p.text,
+                false,
+                true,
+            ),
+            CardVariant::Filled => Self::surface(
+                Some(if tonal {
+                    r.surface_container_highest
+                } else {
+                    p.surface_raised
+                }),
+                None,
+                p.text,
+                false,
+                false,
+            ),
+            CardVariant::Outlined => Self::surface(None, Some(line), p.text, false, false),
+        }
+    }
+
+    /// Filter chip.
+    pub fn chip(&self, selected: bool, hovered: bool) -> SurfaceTokens {
+        let p = &self.palette;
+        if selected && self.tonal() {
+            let r = &p.roles;
+            Self::surface(
+                Some(r.secondary_container),
+                None,
+                r.on_secondary_container,
+                false,
+                false,
+            )
+        } else if selected {
+            Self::surface(Some(p.selection), Some(p.primary), p.text, false, false)
+        } else {
+            Self::surface(
+                hovered.then_some(p.surface_raised),
+                Some(if hovered { p.border_strong } else { p.border }),
+                if hovered { p.text } else { p.text_muted },
+                false,
+                false,
+            )
+        }
+    }
+
+    /// Solid status badge.
+    pub fn badge(&self, tone: Tone) -> SurfaceTokens {
+        let c = self.palette.tone(tone);
+        Self::surface(Some(c), None, self.on(c), false, false)
+    }
+
+    /// Alert: tinted and outlined, or a solid banner.
+    pub fn alert(&self, tone: Tone, banner: bool) -> SurfaceTokens {
+        let c = self.palette.tone(tone);
+        if banner {
+            Self::surface(Some(c), None, self.on(c), false, false)
+        } else {
+            Self::surface(
+                Some(c.with_alpha(0.12)),
+                Some(c),
+                self.palette.text,
+                false,
+                false,
+            )
+        }
+    }
+
+    /// Dialog box.
+    pub fn dialog(&self) -> SurfaceTokens {
+        let p = &self.palette;
+        Self::surface(Some(p.surface), Some(p.primary), p.text, true, true)
+    }
+
+    /// Side / bottom sheet.
+    pub fn sheet(&self) -> SurfaceTokens {
+        let p = &self.palette;
+        Self::surface(Some(p.surface), Some(p.border_strong), p.text, false, true)
+    }
+
+    /// Floating popup (menu, dropdown list).
+    pub fn popup(&self) -> SurfaceTokens {
+        let p = &self.palette;
+        Self::surface(
+            Some(p.surface_raised),
+            Some(p.border_strong),
+            p.text,
+            true,
+            true,
+        )
+    }
+
+    /// Modal scrim: the page colour, never fully opaque.
+    pub fn scrim(&self) -> Color {
+        self.palette.background.with_alpha(0.7)
+    }
+
+    /// Stepper node.
+    pub fn step(&self, state: StepState) -> StepTokens {
+        let p = &self.palette;
+        match state {
+            StepState::Done => StepTokens {
+                fill: Some(p.primary),
+                stroke: p.primary,
+                mark: p.on_primary,
+                text: p.text,
+                glow: false,
+            },
+            StepState::Current => StepTokens {
+                fill: Some(p.selection),
+                stroke: p.primary,
+                mark: p.text,
+                text: p.text,
+                glow: true,
+            },
+            StepState::Todo => StepTokens {
+                fill: None,
+                stroke: p.border_strong,
+                mark: p.text_muted,
+                text: p.text_muted,
+                glow: false,
+            },
+        }
+    }
+
     /// Tag / badge: `solid` fills with the tone, otherwise outlined.
     pub fn tag(&self, tone: Tone, solid: bool) -> TagTokens {
         let c = self.palette.tone(tone);
@@ -300,10 +515,20 @@ impl Theme {
     /// Readable text colour on top of `bg`.
     pub fn on(&self, bg: Color) -> Color {
         let p = &self.palette;
-        if bg.contrast(p.background) >= bg.contrast(p.text) {
+        let best = if bg.contrast(p.background) >= bg.contrast(p.text) {
             p.background
         } else {
             p.text
+        };
+        if best.contrast(bg) >= 4.5 {
+            return best;
+        }
+        // Neither theme colour reads well enough (a mid-tone fill): use black or white.
+        let (black, white) = (Color::hex(0x000000), Color::hex(0xffffff));
+        if black.contrast(bg) >= white.contrast(bg) {
+            black
+        } else {
+            white
         }
     }
 

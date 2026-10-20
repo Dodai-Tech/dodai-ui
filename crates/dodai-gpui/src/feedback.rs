@@ -24,18 +24,7 @@ pub fn tone_glyph(tone: Tone) -> &'static str {
 
 /// Alert paint: tinted outlined, or solid for banners. Returns (style, text colour). Pure.
 pub fn alert_style(theme: &Theme, tone: Tone, banner: bool) -> (ShapeStyle, gpui::Hsla) {
-    let c = theme.palette.tone(tone);
-    if banner {
-        (
-            ShapeStyle::from_tokens(theme, Some(c), None, false, false),
-            hsla(theme.on(c)),
-        )
-    } else {
-        (
-            ShapeStyle::from_tokens(theme, Some(c.with_alpha(0.12)), Some(c), false, false),
-            hsla(theme.palette.text),
-        )
-    }
+    ShapeStyle::from_surface(theme, theme.alert(tone, banner))
 }
 
 /// Inline status message with title + optional body. `banner()` = full solid strip.
@@ -261,6 +250,7 @@ impl RenderOnce for Spinner {
                             shadow: None,
                             shadow_dir: (1.0, 1.0),
                             scanlines: false,
+                            scanline: c,
                             shimmer: None,
                         };
                         let _ = glow;
