@@ -297,14 +297,13 @@ fn list_menu_tooltip_and_focus_follow_the_spec() {
 
 #[test]
 fn the_spec_lives_with_the_design_system() {
-    for t in material() {
-        assert_eq!(t.spec.name(), "Material 3", "{}", t.id());
-    }
-    for t in themes::all()
-        .into_iter()
-        .filter(|t| t.meta.family != "material")
-    {
-        assert!(t.spec.get().is_none(), "{} uses the core baseline", t.id());
+    for t in themes::all() {
+        let want = if t.meta.family == "material" {
+            "Material 3"
+        } else {
+            "Cyberpunk"
+        };
+        assert_eq!(t.spec.name(), want, "{}", t.id());
     }
 }
 

@@ -28,6 +28,8 @@ fn motion() -> dodai_core::Motion {
 
 pub mod fx;
 pub mod shape;
+mod spec;
+pub use spec::{Cyberpunk, SPEC};
 
 fn typography() -> Typography {
     Typography {
@@ -120,7 +122,7 @@ fn build(
         meta,
         motion: motion(),
         shape_system: None,
-        spec: Default::default(),
+        spec: dodai_core::SpecRef::new(&SPEC),
         palette,
         typography: typography(),
         spacing: spacing(),
@@ -195,7 +197,7 @@ fn build_light(meta: ThemeMeta, l: Light) -> Theme {
         meta,
         motion: motion(),
         shape_system: None,
-        spec: Default::default(),
+        spec: dodai_core::SpecRef::new(&SPEC),
         palette,
         typography: typography(),
         spacing: spacing(),

@@ -563,7 +563,7 @@ mod tests {
             assert_eq!(fill, t.palette.primary);
             assert_eq!(
                 list_item_style(&t, true, false).2.is_some(),
-                !t.look().tonal
+                t.spec.name() == "Cyberpunk"
             );
             assert!(input_style(&t, false).fill.is_some());
         }

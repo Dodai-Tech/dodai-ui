@@ -7,7 +7,8 @@
 
 use crate::{
     ButtonTokens, ButtonVariant, CardVariant, Color, ControlState, InputTokens, ListItemTokens,
-    ProgressTokens, SurfaceTokens, TabTokens, Theme, ToggleKind, ToggleTokens, Tone,
+    ProgressTokens, StepState, StepTokens, SurfaceTokens, TabTokens, Theme, ToggleKind,
+    ToggleTokens, Tone,
 };
 
 /// Semantic capabilities a design system declares. Adapters ask these instead of guessing a
@@ -58,6 +59,9 @@ pub trait DesignSpec: Send + Sync + std::fmt::Debug {
         None
     }
     fn scrim(&self, t: &Theme) -> Option<Color> {
+        None
+    }
+    fn step(&self, t: &Theme, state: StepState) -> Option<StepTokens> {
         None
     }
     fn tab(&self, t: &Theme, active: bool, hovered: bool) -> Option<TabTokens> {

@@ -266,7 +266,7 @@ impl Theme {
     pub fn dialog(&self) -> SurfaceTokens {
         hook!(self.dialog());
         let p = &self.palette;
-        Self::surface(Some(p.surface), Some(p.primary), p.text, true, true)
+        Self::surface(Some(p.surface), Some(p.border_strong), p.text, false, true)
     }
 
     /// Side / bottom sheet.
@@ -284,19 +284,20 @@ impl Theme {
             Some(p.surface_raised),
             Some(p.border_strong),
             p.text,
-            true,
+            false,
             true,
         )
     }
 
-    /// Modal scrim: the page colour, never fully opaque.
+    /// Modal scrim: a translucent dark veil.
     pub fn scrim(&self) -> Color {
         hook!(self.scrim());
-        self.palette.background.with_alpha(0.7)
+        self.palette.roles.scrim.with_alpha(0.4)
     }
 
     /// Stepper node.
     pub fn step(&self, state: StepState) -> StepTokens {
+        hook!(self.step(state));
         let p = &self.palette;
         match state {
             StepState::Done => StepTokens {
@@ -346,9 +347,10 @@ impl Theme {
         hook!(self.tab(active, hovered));
         let p = &self.palette;
         if active {
+            // Plain: brand-coloured label with an underline indicator.
             TabTokens {
-                background: Some(p.primary),
-                foreground: p.on_primary,
+                background: None,
+                foreground: self.legible(p.primary),
                 indicator: Some(p.primary),
             }
         } else if hovered {
@@ -423,8 +425,7 @@ impl Theme {
             ListItemTokens {
                 background: Some(p.selection),
                 foreground: p.text,
-                // The selection is marked with an accent bar.
-                marker: Some(p.primary),
+                marker: None,
             }
         } else if hovered {
             ListItemTokens {
@@ -494,9 +495,9 @@ impl Theme {
                     p.secondary
                 };
                 ButtonTokens {
-                    // Baseline "fill on hover": the outline inverts to solid.
-                    background: if lit { Some(c) } else { None },
-                    foreground: if lit { self.on(c) } else { self.legible(c) },
+                    // Plain: a tint on hover, the outline stays.
+                    background: if lit { Some(c.with_alpha(0.12)) } else { None },
+                    foreground: self.legible(c),
                     border: Some(c),
                 }
             }
@@ -618,11 +619,7 @@ impl Theme {
         let p = &self.palette;
         InputTokens {
             background: p.background,
-            border: if focused {
-                p.secondary
-            } else {
-                p.border_strong
-            },
+            border: if focused { p.primary } else { p.border_strong },
             text: p.text,
             placeholder: p.text_disabled,
             selection: p.selection,

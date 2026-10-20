@@ -68,9 +68,9 @@ pub fn light_rounded() -> Theme {
     dodai::themes::material::light()
 }
 
-/// Square theme with scanlines, uppercase labels and a hard shadow.
+/// Square theme with scanlines, uppercase labels, a hard shadow and the Cyberpunk spec.
 pub fn square() -> Theme {
-    base(
+    let t = base(
         "test-square",
         Shape {
             corners: Corners::NONE,
@@ -83,5 +83,6 @@ pub fn square() -> Theme {
         true,
         3.0,
         true,
-    )
+    );
+    t.with_spec(&dodai::cyberpunk::SPEC)
 }

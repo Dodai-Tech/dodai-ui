@@ -94,7 +94,7 @@ just run-topcoat   # writes showcase.html and opens it
 tokens. A design-system crate owns everything specific to it: palettes, shape language and presets, and a `DesignSpec`
 (component tokens, row heights, focus ring, tooltip colours, …) attached with `Theme::with_spec`. Every hook is optional, so a
 new design system overrides only what differs. `dodai-material` is the reference (`Material3`, `shape_system()`);
-Cyberpunk keeps the core baseline and ships its shape presets in `dodai_cyberpunk::shape`.
+Cyberpunk has its own `DesignSpec` (glow, accent bar, outline-to-solid hover, solid active tab) and its shape presets in `dodai_cyberpunk::shape`; core's baseline is a plain, neutral design for custom themes.
 
 ## Material 3 conformance
 
