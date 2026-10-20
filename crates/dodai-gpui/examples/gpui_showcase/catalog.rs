@@ -28,6 +28,9 @@ pub(crate) fn caps(title: &str) -> Caps {
         }
         // Raw / non-animated components only.
         "Tooltip"
+        | "Loading indicator"
+        | "Dialog · Bottom sheet · Side sheet"
+        | "Button groups · Split button"
         | "Dynamics · physics models"
         | "Dynamics · one-shot mixins"
         | "Input"

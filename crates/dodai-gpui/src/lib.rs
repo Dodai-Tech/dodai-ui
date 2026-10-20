@@ -133,6 +133,8 @@ pub mod lazy;
 pub mod list;
 pub mod logic;
 #[cfg(feature = "components")]
+pub mod m3;
+#[cfg(feature = "components")]
 pub mod menu;
 pub mod motion;
 #[cfg(feature = "components")]
@@ -258,6 +260,8 @@ pub use layout::{clamp_ratio, visible_rows, SplitPane, TreeItem, TreeRow, TreeVi
 pub use lazy::lazy;
 #[cfg(feature = "components")]
 pub use list::{Divider, ListItem};
+#[cfg(feature = "components")]
+pub use m3::{ButtonGroup, LoadingIndicator, SplitButton};
 #[cfg(feature = "components")]
 pub use menu::{Menu, MenuItem};
 pub use motion::{

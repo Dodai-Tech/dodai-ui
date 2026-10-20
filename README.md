@@ -88,6 +88,15 @@ just run-gpui
 just run-topcoat   # writes showcase.html and opens it
 ```
 
+### Material 3 conformance
+
+The Material themes follow the M3 component specs: shape per component (`ShapeRole`: pill buttons,
+16 px FAB, 12 px cards, 28 px dialogs, 4 px menus and fields, 8 px chips, ...), tonal containers
+(`surface-container-*`), 8 % hover / 10 % press state layers, elevation as soft two-layer shadows,
+and the 80 px navigation bar, rail and drawer with pill indicators. `crates/dodai/tests/material_spec.rs`
+pins these numbers against the spec; other design systems keep their own geometry (also tested).
+Material-only components: `ButtonGroup`, `SplitButton`, `LoadingIndicator`.
+
 ## Motion (gpui)
 
 Entry effects, value-in (grow) for charts/sliders/gauges, `CountUp`, eased toggle/tab/accordion

@@ -117,12 +117,17 @@ mod tests {
     fn active_tab_uses_indicator_tokens() {
         let t = light_rounded();
         let (s, fg, ind) = tab_style(&t, true, false);
-        assert_eq!(s.fill, Some(hsla(t.palette.primary)));
-        assert_eq!(fg, hsla(t.palette.on_primary));
-        assert!(ind.is_some());
-        let (s, _, ind) = tab_style(&t, false, false);
+        // M3 primary tab: no fill, `primary` label and indicator.
+        assert!(s.fill.is_none());
+        assert_eq!(fg, hsla(t.palette.primary));
+        assert_eq!(ind, Some(hsla(t.palette.primary)));
+        let (s, fg, ind) = tab_style(&t, false, false);
         assert!(s.fill.is_none() && ind.is_none());
+        assert_eq!(fg, hsla(t.palette.roles.on_surface_variant));
         let (s, _, _) = tab_style(&t, false, true);
-        assert_eq!(s.fill, Some(hsla(t.palette.surface_raised)));
+        assert_eq!(
+            s.fill,
+            Some(hsla(t.palette.roles.on_surface.with_alpha(0.08)))
+        );
     }
 }

@@ -119,7 +119,12 @@ impl RenderOnce for BottomSheet {
                 t.palette.border_strong
             },
         ));
-        let mut sheet = shaped(&t.role_shape(dodai_core::ShapeRole::Sheet), sheet_style(&t))
+        let mut sheet = shaped(&t.role_shape(dodai_core::ShapeRole::Sheet), sheet_style(&t));
+        if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+            // Anchored to the bottom edge: only the top corners are rounded.
+            sheet = sheet.rounded_bl(px(0.0)).rounded_br(px(0.0));
+        }
+        let mut sheet = sheet
             .w_full()
             .h(px(self.height))
             .p(px(t.spacing.lg))
@@ -211,34 +216,42 @@ impl RenderOnce for SideSheet {
         if let Some(f) = close {
             x = x.on_click(move |_, w, cx| f(w, cx));
         }
-        let sheet = shaped(
+        let mut sheet = shaped(
             &t.role_shape(dodai_core::ShapeRole::SideSheet),
             sheet_style(&t),
-        )
-        .w(px(self.width))
-        .h_full()
-        .p(px(t.spacing.lg))
-        .flex()
-        .flex_col()
-        .gap(px(t.spacing.md))
-        .font_family(first_family(t.typography.body))
-        .text_size(px(t.typography.size_md))
-        .text_color(hsla(t.palette.text))
-        .child(
-            div()
-                .flex()
-                .items_center()
-                .justify_between()
-                .child(title_el(&t, &self.title))
-                .child(x),
-        )
-        .child(
-            div()
-                .flex()
-                .flex_col()
-                .gap(px(t.spacing.sm))
-                .children(self.body),
         );
+        if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+            // Attached to an edge: only the corners facing the page are rounded.
+            sheet = match self.edge {
+                SheetEdge::Right => sheet.rounded_tr(px(0.0)).rounded_br(px(0.0)),
+                SheetEdge::Left => sheet.rounded_tl(px(0.0)).rounded_bl(px(0.0)),
+            };
+        }
+        let sheet = sheet
+            .w(px(self.width))
+            .h_full()
+            .p(px(t.spacing.lg))
+            .flex()
+            .flex_col()
+            .gap(px(t.spacing.md))
+            .font_family(first_family(t.typography.body))
+            .text_size(px(t.typography.size_md))
+            .text_color(hsla(t.palette.text))
+            .child(
+                div()
+                    .flex()
+                    .items_center()
+                    .justify_between()
+                    .child(title_el(&t, &self.title))
+                    .child(x),
+            )
+            .child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(t.spacing.sm))
+                    .children(self.body),
+            );
         let mut layer = scrim(self.id, &t, self.on_dismiss, self.modal);
         layer = match self.edge {
             SheetEdge::Left => layer.justify_start(),

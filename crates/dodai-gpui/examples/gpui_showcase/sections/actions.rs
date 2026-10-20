@@ -59,6 +59,51 @@ impl Showcase {
             section!("Buttons").child(buttons).into_any_element(),
             "Buttons",
         ));
+        let groups = div()
+            .flex()
+            .flex_col()
+            .gap(gap)
+            .child(Muted::new("Standard"))
+            .child(
+                ButtonGroup::new("bg-std")
+                    .labels(["Day", "Week", "Month"])
+                    .selected(Some(self.group_sel)),
+            )
+            .child(Muted::new("Connected (the selected item is a pill)"))
+            .child(
+                ButtonGroup::new("bg-conn")
+                    .connected(true)
+                    .labels(["Day", "Week", "Month", "Year"])
+                    .selected(Some(self.group_sel))
+                    .on_select({
+                        let m = me.clone();
+                        move |i, _, cx| {
+                            m.update(cx, |s, cx| {
+                                s.group_sel = i;
+                                cx.notify()
+                            })
+                        }
+                    }),
+            )
+            .child(Muted::new("Split button"))
+            .child(
+                row()
+                    .child(SplitButton::new("sb-filled", "Save"))
+                    .child(SplitButton::new("sb-tonal", "Save").variant(ButtonVariant::Secondary))
+                    .child(
+                        SplitButton::new("sb-out", "Save")
+                            .variant(ButtonVariant::Outline)
+                            .open(true),
+                    ),
+            );
+        out.push((
+            "Actions",
+            "Button groups · Split button",
+            section!("Button groups · Split button")
+                .child(groups)
+                .into_any_element(),
+            "Button groups · Split button",
+        ));
         out.push((
             "Actions",
             "Toolbar · Snackbar",

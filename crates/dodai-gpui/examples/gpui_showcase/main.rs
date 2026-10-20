@@ -7,11 +7,12 @@
 use dodai_core::{ButtonVariant, Theme, Tone};
 use dodai_gpui::{
     cycle_next, cycle_prev, fuzzy_filter, glow_intensity, hsla, scanlines_enabled,
-    set_glow_intensity, set_scanlines, theme_of, BubblePlacement, Button, Card, CardVariant,
-    Checkbox, DesignSystemTree, Direction, Divider, DodaiStyled, DodaiTooltip, Fab, FabSize,
-    Heading, IconButton, InputBox, Knob, Label, ListItem, Mono, Muted, NavItem, NavLayout,
-    Navigation, Panel, ProgressBar, Radio, ResponsiveShell, Scanlines, SearchBar, Slider, Tabs,
-    Tag, Toggle, TopAppBar,
+    set_glow_intensity, set_scanlines, theme_of, Accordion, BottomSheet, Breadcrumb,
+    BubblePlacement, Button, ButtonGroup, Card, CardVariant, Carousel, Checkbox, DesignSystemTree,
+    Dialog, DialogCard, Direction, Divider, DodaiStyled, DodaiTooltip, Fab, FabSize, Heading,
+    IconButton, InputBox, Knob, Label, ListItem, LoadingIndicator, Mono, Muted, NavItem, NavLayout,
+    Navigation, Pagination, Panel, ProgressBar, Radio, ResponsiveShell, Scanlines, SearchBar,
+    Segmented, SideSheet, Slider, SplitButton, Stepper, Tabs, Tag, Toggle, TopAppBar,
 };
 use dodai_gpui::{
     BarChart, Blip, BoxPlot, BubbleChart, Candle, Candlestick, Date, DatePicker, DotMatrix,
@@ -104,6 +105,8 @@ pub struct Showcase {
     /// Collapsed state of the Navigation-section demo shell.
     demo_rail: bool,
     rating: u32,
+    /// Selected item of the showcase button groups.
+    group_sel: usize,
     stepper: i32,
     range: (f32, f32),
     vrange: (f32, f32),
@@ -1139,6 +1142,7 @@ impl Showcase {
             rail: false,
             demo_rail: false,
             rating: 3,
+            group_sel: 1,
             stepper: 5,
             range: (0.2, 0.7),
             vrange: (0.2, 0.8),

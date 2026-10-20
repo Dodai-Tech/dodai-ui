@@ -333,7 +333,80 @@ impl Segmented {
 }
 
 impl Segmented {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(self, window: &mut Window, cx: &mut App) -> gpui::AnyElement {
+        let t = theme_of(cx);
+        if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+            return self.build_m3(t, window, cx).into_any_element();
+        }
+        self.build_classic(window, cx).into_any_element()
+    }
+
+    /// Material 3 segmented button: a 40 px pill outlined in `outline`, segments split by
+    /// 1 px dividers, the selected one filled `secondary-container` with a check mark.
+    fn build_m3(self, t: Theme, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let r = t.palette.roles.clone();
+        let n = self.options.len();
+        let outline = if self.disabled {
+            r.on_surface.with_alpha(0.12)
+        } else {
+            r.outline
+        };
+        let strip = ShapeStyle::from_tokens(&t, None, Some(outline), false, false);
+        let mut row = shaped(&t.role_shape(dodai_core::ShapeRole::Button), strip)
+            .flex()
+            .h(px(40.0))
+            .font_family(first_family(t.typography.body))
+            .text_size(px(t.typography.size_md));
+        for (i, label) in self.options.iter().enumerate() {
+            let id: ElementId = (self.id.clone(), i.to_string()).into();
+            let st = use_interact(&id, window, cx);
+            let hovered = st.read(cx).hovered && !self.disabled;
+            let on = i == self.selected;
+            let (fill, fg) = if self.disabled {
+                (None, r.on_surface.with_alpha(0.38))
+            } else if on {
+                (Some(r.secondary_container), r.on_secondary_container)
+            } else if hovered {
+                (Some(r.on_surface.with_alpha(0.08)), r.on_surface)
+            } else {
+                (None, r.on_surface)
+            };
+            let mut seg = track(gpui::InteractiveElement::id(div(), id), &st)
+                .h_full()
+                .px(px(12.0))
+                .flex()
+                .items_center()
+                .justify_center()
+                .gap(px(8.0))
+                .text_color(hsla(fg));
+            if let Some(f) = fill {
+                seg = seg.bg(hsla(f));
+            }
+            if i == 0 {
+                seg = seg.rounded_tl(px(19.0)).rounded_bl(px(19.0));
+            }
+            if i + 1 == n {
+                seg = seg.rounded_tr(px(19.0)).rounded_br(px(19.0));
+            }
+            if i > 0 {
+                seg = seg.border_l_1().border_color(hsla(outline));
+            }
+            if on {
+                seg = seg.child("✓");
+            }
+            seg = seg.child(format_label(&t.typography, label));
+            if !self.disabled {
+                seg = seg.cursor_pointer();
+                if let Some(f) = self.on_change.clone() {
+                    seg = seg.on_click(move |_, w, cx| f(i, w, cx));
+                }
+            }
+            row = row.child(seg);
+        }
+        row
+    }
+
+    fn build_classic(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
         let p = &t.palette;

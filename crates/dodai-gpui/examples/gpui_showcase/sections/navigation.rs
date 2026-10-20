@@ -394,6 +394,118 @@ impl Showcase {
                     .into_any_element(),
                 "Collapsible sidebar",
             ));
+        let sel_me = me.clone();
+        let strips = div()
+            .flex()
+            .flex_col()
+            .gap(gap)
+            .child(
+                div().flex().child(
+                    Segmented::new("seg", ["Day", "Week", "Month"])
+                        .selected(self.group_sel)
+                        .on_change(move |i, _, cx| {
+                            sel_me.update(cx, |s, cx| {
+                                s.group_sel = i;
+                                cx.notify()
+                            })
+                        }),
+                ),
+            )
+            .child(Breadcrumb::new("crumbs", ["Home", "Library", "Data"]))
+            .child(Pagination::new("pages", 5, 20))
+            .child(Stepper::new(["Account", "Profile", "Done"], 1))
+            .child(
+                Accordion::new("acc")
+                    .item("What is Dodai?", "A themeable design system for Rust UIs.")
+                    .item(
+                        "Does it support Material 3?",
+                        "Yes, tonal roles, shapes and state layers.",
+                    )
+                    .open([0]),
+            );
+        out.push((
+            "Navigation",
+            "Segmented · Breadcrumb · Pagination · Stepper",
+            section!("Segmented · Breadcrumb · Pagination · Stepper")
+                .child(strips)
+                .into_any_element(),
+            "Segmented · Breadcrumb · Pagination · Stepper",
+        ));
+        let tile = |c: dodai::Color, label: &'static str| {
+            div()
+                .h(px(120.0))
+                .w_full()
+                .rounded(px(t.role_shape(dodai::ShapeRole::Carousel).radius))
+                .bg(hsla(c))
+                .p(px(t.spacing.md))
+                .text_color(hsla(t.on(c)))
+                .child(label)
+        };
+        let r = &t.palette.roles;
+        let carousel = Carousel::new("car")
+            .visible(3)
+            .item_width(220.0)
+            .active(self.group_sel)
+            .item(tile(r.primary_container, "Primary"))
+            .item(tile(r.secondary_container, "Secondary"))
+            .item(tile(r.tertiary_container, "Tertiary"))
+            .item(tile(r.surface_container_high, "Surface"))
+            .item(tile(r.error_container, "Error"));
+        out.push((
+            "Navigation",
+            "Carousel",
+            section!("Carousel").child(carousel).into_any_element(),
+            "Carousel",
+        ));
+        // Overlays shown inside a frame: they are absolutely positioned against their parent.
+        let frame = |h: f32| {
+            div()
+                .relative()
+                .h(px(h))
+                .w_full()
+                .overflow_hidden()
+                .border_1()
+                .border_color(dodai_gpui::hsla(t.palette.border))
+                .p(px(t.spacing.md))
+                .child(Muted::new("Page content behind the overlay."))
+        };
+        let dialog = frame(300.0).child(Dialog::new(
+            "ov-dialog",
+            DialogCard::new("Discard draft?")
+                .width(360.0)
+                .child(Muted::new(
+                    "Your unsent message will be lost. This cannot be undone.",
+                ))
+                .action(Button::new("dg-cancel", "Cancel").variant(ButtonVariant::Ghost))
+                .action(Button::new("dg-ok", "Discard").variant(ButtonVariant::Ghost)),
+        ));
+        let bottom = frame(260.0).child(
+            BottomSheet::new("ov-bottom")
+                .title("Share")
+                .height(150.0)
+                .child(Muted::new("Copy link · Message · Mail")),
+        );
+        let side = frame(260.0).child(
+            SideSheet::new("ov-side", "Filters")
+                .width(240.0)
+                .child(Muted::new("Date range · Owner · Status")),
+        );
+        out.push((
+            "Navigation",
+            "Dialog · Bottom sheet · Side sheet",
+            section!("Dialog · Bottom sheet · Side sheet")
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .gap(gap)
+                        .child(dialog)
+                        .child(bottom)
+                        .child(side),
+                )
+                .into_any_element(),
+            "Dialog · Bottom sheet · Side sheet",
+        ));
         out.push((
             "Navigation",
             "App bar · Cards · FAB · Navigation",

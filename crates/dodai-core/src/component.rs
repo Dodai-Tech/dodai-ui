@@ -417,6 +417,20 @@ impl Theme {
     /// Tab: the active tab is highlighted with an indicator.
     pub fn tab(&self, active: bool, hovered: bool) -> TabTokens {
         let p = &self.palette;
+        if self.tonal() {
+            // M3 primary tab: transparent, `primary` label + indicator when active.
+            let r = &p.roles;
+            return TabTokens {
+                background: hovered
+                    .then(|| if active { p.primary } else { r.on_surface }.with_alpha(0.08)),
+                foreground: if active {
+                    p.primary
+                } else {
+                    r.on_surface_variant
+                },
+                indicator: active.then_some(p.primary),
+            };
+        }
         if active {
             TabTokens {
                 background: Some(p.primary),
@@ -584,6 +598,15 @@ impl Theme {
     pub fn list_item(&self, selected: bool, hovered: bool) -> ListItemTokens {
         let p = &self.palette;
         let rounded = self.shape.kind() == crate::ShapeKind::Rounded;
+        if rounded && !selected {
+            // M3 list: `on-surface` text, an 8 % state layer on hover.
+            let r = &p.roles;
+            return ListItemTokens {
+                background: hovered.then(|| r.on_surface.with_alpha(0.08)),
+                foreground: r.on_surface,
+                marker: None,
+            };
+        }
         if selected {
             ListItemTokens {
                 // Rounded (Material): the secondary-container pill.
@@ -838,6 +861,17 @@ impl Theme {
     /// Resolve a text-input style.
     pub fn input(&self, focused: bool) -> InputTokens {
         let p = &self.palette;
+        if self.tonal() {
+            // M3 outlined text field: `outline` border (primary when focused), `on-surface` text.
+            let r = &p.roles;
+            return InputTokens {
+                background: p.background,
+                border: if focused { p.primary } else { r.outline },
+                text: r.on_surface,
+                placeholder: r.on_surface_variant,
+                selection: p.selection,
+            };
+        }
         InputTokens {
             background: p.background,
             border: if focused {

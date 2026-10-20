@@ -37,12 +37,27 @@ impl Showcase {
             "Charts" => self.sections_charts_sec(cx),
             "Loading" => {
                 let p = self.loading_section(cx);
-                vec![(
-                    "Loading",
-                    "Spinner · Indeterminate · Skeleton",
-                    p.into_any_element(),
-                    "Loading",
-                )]
+                let t = theme_of(cx);
+                let li = Panel::new()
+                    .title("Loading indicator")
+                    .child(
+                        div()
+                            .flex()
+                            .items_center()
+                            .gap(px(t.spacing.lg))
+                            .child(LoadingIndicator::new("li-plain"))
+                            .child(LoadingIndicator::new("li-contained").contained(true)),
+                    )
+                    .into_any_element();
+                vec![
+                    (
+                        "Loading",
+                        "Spinner · Indeterminate · Skeleton",
+                        p.into_any_element(),
+                        "Loading",
+                    ),
+                    ("Loading", "Loading indicator", li, "Loading indicator"),
+                ]
             }
             "Animation" => {
                 let (els, titles) = self.animation_sections(cx);

@@ -51,6 +51,7 @@ pub struct Button {
     refine: Option<Refine>,
     shimmer: bool,
     corners: Option<dodai_core::Corners>,
+    radii: Option<[f32; 4]>,
 }
 
 impl Button {
@@ -62,6 +63,7 @@ impl Button {
             disabled: false,
             shimmer: false,
             corners: None,
+            radii: None,
             on_click: None,
             refine: None,
         }
@@ -97,6 +99,12 @@ impl Button {
     /// a chamfer size.
     pub fn corners(mut self, c: dodai_core::Corners) -> Self {
         self.corners = Some(c);
+        self
+    }
+    /// Per-corner radii `[top-left, top-right, bottom-right, bottom-left]` in px on rounded
+    /// themes (connected button groups, split buttons). Ignored by other shapes.
+    pub fn radii(mut self, r: [f32; 4]) -> Self {
+        self.radii = Some(r);
         self
     }
     /// Sweep a shimmer highlight over the button (e.g. while busy), clipped to its shape.
@@ -170,6 +178,13 @@ impl Button {
             .text_size(px(t.typography.size_md))
             .text_color(fg)
             .child(div().child(format_label(&t.typography, &self.label)));
+        if let (Some(r), true) = (self.radii, t.shape.kind() == dodai_core::ShapeKind::Rounded) {
+            el = el
+                .rounded_tl(px(r[0]))
+                .rounded_tr(px(r[1]))
+                .rounded_br(px(r[2]))
+                .rounded_bl(px(r[3]));
+        }
         if !self.disabled {
             el = el.cursor_pointer();
             if let Some(h) = self.on_click {
