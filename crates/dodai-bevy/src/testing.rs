@@ -1,10 +1,10 @@
 //! Test-only themes: a rounded light theme and a square theme.
 
-use dodai_core::themes::Spec;
+use dodai_core::themes::ThemeBuilder;
 use dodai_core::{Corners, Mode, Shape, Spacing, Theme, ThemeMeta, Typography};
 
 fn spec(id: &'static str, shape: Shape) -> Theme {
-    Spec {
+    ThemeBuilder {
         meta: ThemeMeta {
             id,
             name: id,

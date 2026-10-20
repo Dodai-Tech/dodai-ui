@@ -1,10 +1,10 @@
 //! Test-only themes proving components adapt purely from tokens.
 
-use dodai_core::themes::Spec;
+use dodai_core::themes::ThemeBuilder;
 use dodai_core::{Corners, Mode, Shape, Spacing, Theme, ThemeMeta, Typography};
 
 fn base(id: &'static str, shape: Shape, glow: f32, scan: bool, hard: f32, upper: bool) -> Theme {
-    Spec {
+    ThemeBuilder {
         meta: ThemeMeta {
             id,
             name: id,

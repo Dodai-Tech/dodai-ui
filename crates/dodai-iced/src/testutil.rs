@@ -1,13 +1,15 @@
 //! Test-only themes: proves components adapt to tokens, not theme ids.
 
-use dodai_core::{themes::Spec, Corners, Mode, Shape, Spacing, Theme, ThemeMeta, Typography};
+use dodai_core::{
+    themes::ThemeBuilder, Corners, Mode, Shape, Spacing, Theme, ThemeMeta, Typography,
+};
 
 pub fn cyberpunk() -> Theme {
     dodai::themes::cyberpunk::yellow()
 }
 
 fn spec(id: &'static str, shape: Shape, glow: f32, glow_blur: f32, hard_shadow: f32) -> Theme {
-    Spec {
+    ThemeBuilder {
         meta: ThemeMeta {
             id,
             name: id,

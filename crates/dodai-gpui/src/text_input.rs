@@ -822,7 +822,7 @@ impl Render for TextInput {
         let focused = self.focus.is_focused(window) && !self.disabled;
         let lh = (t.typography.size_md * 1.45).round();
         let mut style = input_style(&t, focused);
-        let rounded = t.shape.kind() == dodai_core::ShapeKind::Rounded;
+        let rounded = t.look().floating_label;
         let filled = self.filled && rounded && self.label.is_some() && self.rows.is_none();
         let r = t.palette.roles.clone();
         if filled {

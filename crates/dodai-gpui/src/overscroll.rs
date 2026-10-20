@@ -81,7 +81,7 @@ impl Overscroll {
 
     /// Feel for a theme: soft for rounded (Material) shapes, snappy otherwise.
     pub fn for_theme(t: &dodai_core::Theme) -> OverscrollFeel {
-        if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+        if t.look().soft_elevation {
             OverscrollFeel::SOFT
         } else {
             OverscrollFeel::SNAPPY

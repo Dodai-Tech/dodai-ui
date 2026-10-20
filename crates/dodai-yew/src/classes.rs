@@ -79,9 +79,9 @@ mod tests {
     }
 
     fn light() -> dodai_core::Theme {
-        use dodai_core::themes::Spec;
+        use dodai_core::themes::ThemeBuilder;
         use dodai_core::{Corners, Mode, Shape, Spacing, ThemeMeta, Typography};
-        let s = Spec {
+        let s = ThemeBuilder {
             meta: ThemeMeta {
                 id: "test-light",
                 name: "Test Light",

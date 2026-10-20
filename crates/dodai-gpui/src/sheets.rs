@@ -112,15 +112,17 @@ impl ParentElement for BottomSheet {
 impl RenderOnce for BottomSheet {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        let handle = div().w(px(32.0)).h(px(4.0)).rounded_full().bg(hsla(
-            if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+        let handle = div()
+            .w(px(32.0))
+            .h(px(4.0))
+            .rounded_full()
+            .bg(hsla(if t.look().tonal {
                 t.palette.roles.on_surface_variant
             } else {
                 t.palette.border_strong
-            },
-        ));
+            }));
         let mut sheet = shaped(&t.role_shape(dodai_core::ShapeRole::Sheet), sheet_style(&t));
-        if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+        if t.look().tonal {
             // Anchored to the bottom edge: only the top corners are rounded.
             sheet = sheet.rounded_bl(px(0.0)).rounded_br(px(0.0));
         }
@@ -220,7 +222,7 @@ impl RenderOnce for SideSheet {
             &t.role_shape(dodai_core::ShapeRole::SideSheet),
             sheet_style(&t),
         );
-        if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+        if t.look().tonal {
             // Attached to an edge: only the corners facing the page are rounded.
             sheet = match self.edge {
                 SheetEdge::Right => sheet.rounded_tr(px(0.0)).rounded_br(px(0.0)),
@@ -418,11 +420,7 @@ impl Snackbar {
             ..style
         }
         .with_elevation(
-            if t.shape.kind() == dodai_core::ShapeKind::Rounded {
-                3
-            } else {
-                0
-            },
+            if t.look().soft_elevation { 3 } else { 0 },
             hsla(t.palette.roles.shadow),
         );
         let mut bar = shaped(&t.role_shape(dodai_core::ShapeRole::Snackbar), style)
@@ -460,7 +458,7 @@ mod tests {
     fn sheet_style_is_themed() {
         for t in [light_rounded(), square()] {
             let s = sheet_style(&t);
-            if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+            if t.look().tonal {
                 // M3: tonal container, no outline.
                 assert_eq!(s.fill, Some(hsla(t.palette.roles.surface_container_low)));
                 assert!(s.stroke.is_none());

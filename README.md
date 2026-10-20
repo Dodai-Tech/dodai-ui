@@ -64,7 +64,7 @@ umbrella (features `cyberpunk`, `material`, `icons`, `shaders`, all on by defaul
 
 | Crate | What it is |
 |---|---|
-| [`dodai-core`](crates/dodai-core) | Tokens, `Theme`, `ThemeSwitcher`, `Spec` builder, DTCG export. No concrete themes. |
+| [`dodai-core`](crates/dodai-core) | Tokens, `Theme`, `ThemeSwitcher`, `ThemeBuilder` builder, DTCG export. No concrete themes. |
 | [`dodai-cyberpunk`](crates/dodai-cyberpunk) | The 6 Cyberpunk themes (dark + light) + `icons` feature |
 | [`dodai-material`](crates/dodai-material) | The Material 3 light/dark pair + `icons` feature |
 | [`dodai-cyberpunk-icons`](crates/dodai-cyberpunk-icons) | 136 chamfered, curve-free icons. Standalone, no deps |
@@ -173,9 +173,9 @@ and `Oscilloscope`, `Spectrum`, `RadarScope`, `HexMap`, `RingStack`, `DotMatrix`
 
 ## Adding a theme
 
-1. Copy `crates/dodai-material` to `crates/dodai-<name>` (themes via `dodai_core::themes::Spec`); optionally add an icon crate.
-2. Add it as a feature in `crates/dodai` and to `themes::all()` — every adapter picks it up through `dodai::switcher()`.
-3. `just test` — the shared contrast/uniqueness tests in `crates/dodai/tests` run on it.
+1. Copy `crates/dodai-material` to `crates/dodai-<name>`: themes via `dodai_core::themes::ThemeBuilder`, a `DesignSpec` for the component tokens that differ (each hook is optional; set `Look` flags for tonal surfaces, soft elevation, floating labels, symbol icons), optionally a shape system and an icon crate. Attach the spec with `Theme::with_spec`.
+2. Register it in one place: a feature plus an entry in `dodai::themes::systems()`. The switcher, `themes::all()`, `by_id()` and the `dist` export pick it up; adapters need no change.
+3. `just test`: the shared contrast/uniqueness tests in `crates/dodai/tests` run on it. Add the design's own conformance tests next to its spec.
 
 ## Development
 

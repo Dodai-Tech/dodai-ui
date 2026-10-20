@@ -104,7 +104,7 @@ impl ShapeStyle {
     /// Style and text colour of a core [`SurfaceTokens`](dodai_core::SurfaceTokens).
     pub fn from_surface(theme: &Theme, k: dodai_core::SurfaceTokens) -> (Self, Hsla) {
         let mut st = Self::from_tokens(theme, k.background, k.border, k.glow, k.shadow);
-        if k.shadow && theme.shape.kind() == ShapeKind::Rounded {
+        if k.shadow && theme.look().soft_elevation {
             // Material: a soft elevation shadow (level 2 by default; callers adjust).
             st = st.with_elevation(2, hsla(theme.palette.roles.shadow));
         }

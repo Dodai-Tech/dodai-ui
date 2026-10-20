@@ -105,7 +105,7 @@ pub fn percent(v: f32) -> String {
 mod tests {
     use super::*;
     use dodai::themes;
-    use dodai_core::themes::Spec;
+    use dodai_core::themes::ThemeBuilder;
     use dodai_core::Theme;
     use dodai_core::{Corners, Mode, Shape, ShapeKind, Spacing, ThemeMeta, Typography};
     use dodai_topcoat::theme_vars;
@@ -151,7 +151,7 @@ mod tests {
             uppercase_labels: label_upper,
             label_tracking: 0.0,
         };
-        Spec {
+        ThemeBuilder {
             meta: ThemeMeta {
                 id: "t",
                 name: "T",

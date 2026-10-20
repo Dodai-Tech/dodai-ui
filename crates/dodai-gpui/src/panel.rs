@@ -441,7 +441,7 @@ impl Render for DodaiTooltip {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let t = theme_of(cx);
         let (bg, fg) = t.tooltip(false);
-        let rounded = t.shape.kind() == dodai_core::ShapeKind::Rounded;
+        let rounded = t.look().tonal;
         let border = if rounded {
             None
         } else {

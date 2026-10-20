@@ -131,11 +131,7 @@ impl RenderOnce for DesignSystemTree {
                     .ml(px(if as_dropdown { 0.0 } else { t.spacing.md }))
                     .pl(px(t.spacing.md))
                     // Material: nesting is shown by indent alone, no guide line.
-                    .border_l(px(if t.shape.kind() == dodai_core::ShapeKind::Rounded {
-                        0.0
-                    } else {
-                        1.0
-                    }))
+                    .border_l(px(if t.look().tonal { 0.0 } else { 1.0 }))
                     .border_color(hsla(t.palette.border_strong))
                     .flex()
                     .flex_col()

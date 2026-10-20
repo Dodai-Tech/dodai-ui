@@ -335,7 +335,7 @@ impl Segmented {
 impl Segmented {
     fn build(self, window: &mut Window, cx: &mut App) -> gpui::AnyElement {
         let t = theme_of(cx);
-        if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+        if t.look().tonal {
             return self.build_m3(t, window, cx).into_any_element();
         }
         self.build_classic(window, cx).into_any_element()
@@ -427,7 +427,7 @@ impl Segmented {
             let (fill, fg) = if self.disabled {
                 (on.then_some(p.surface_raised), p.text_disabled)
             } else if on {
-                if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+                if t.look().tonal {
                     (
                         Some(p.roles.secondary_container),
                         p.roles.on_secondary_container,

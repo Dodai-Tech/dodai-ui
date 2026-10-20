@@ -338,12 +338,12 @@ pub fn estimate_text_width(text: &str, size: f32, tracking: f32) -> f32 {
 
 #[cfg(test)]
 pub(crate) mod testing {
-    //! Test-only rounded light and square/uppercase themes built from `Spec`.
-    use dodai_core::themes::Spec;
+    //! Test-only rounded light and square/uppercase themes built from `ThemeBuilder`.
+    use dodai_core::themes::ThemeBuilder;
     use dodai_core::{Corners, Mode, Shape, Spacing, Theme, ThemeMeta, Typography};
 
     fn base(id: &'static str, shape: Shape, glow: f32, hard: f32, upper: bool) -> Theme {
-        Spec {
+        ThemeBuilder {
             meta: ThemeMeta {
                 id,
                 name: id,
@@ -563,7 +563,7 @@ mod tests {
             assert_eq!(fill, t.palette.primary);
             assert_eq!(
                 list_item_style(&t, true, false).2.is_some(),
-                t.shape.kind() != dodai_core::ShapeKind::Rounded
+                !t.look().tonal
             );
             assert!(input_style(&t, false).fill.is_some());
         }

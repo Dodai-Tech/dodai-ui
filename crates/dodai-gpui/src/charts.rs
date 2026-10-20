@@ -1287,7 +1287,7 @@ impl PieChart {
         let explode = self.explode;
         // Rounded (Material-like) themes get the calm version: no tick scale
         // or dashed ring, fewer and wider-spaced segments.
-        let soft = t.shape.kind() == dodai_core::ShapeKind::Rounded;
+        let soft = t.look().soft_elevation;
         let hud = style == PieStyle::Hud && !soft;
         let reserve = PIE_POP + explode + if hud { 12.0 } else { 0.0 };
         let vmax = vals
@@ -1685,7 +1685,7 @@ impl Gauge {
                 ]
             }),
             glow,
-            soft: t.shape.kind() == dodai_core::ShapeKind::Rounded,
+            soft: t.look().soft_elevation,
         };
         let soft = look.soft;
         let canvas_el = canvas(

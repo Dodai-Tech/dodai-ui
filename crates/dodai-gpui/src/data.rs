@@ -403,7 +403,7 @@ impl Chip {
             style = ShapeStyle::from_tokens(&t, None, Some(t.palette.border), false, false);
             fg = hsla(t.palette.text_disabled);
         }
-        let tonal = t.shape.kind() == dodai_core::ShapeKind::Rounded;
+        let tonal = t.look().tonal;
         // M3 chips are 32 px tall with the small corner radius.
         let h = if tonal {
             32.0

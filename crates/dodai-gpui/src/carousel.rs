@@ -119,11 +119,7 @@ impl Carousel {
     fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let n = self.items.len();
-        let gap = if t.shape.kind() == dodai_core::ShapeKind::Rounded {
-            8.0
-        } else {
-            t.spacing.md
-        };
+        let gap = if t.look().tonal { 8.0 } else { t.spacing.md };
         let widths = layout_widths(self.layout, self.width, gap);
         let visible = if widths.is_empty() {
             self.visible
@@ -142,7 +138,7 @@ impl Carousel {
         let prev = mk("prev", "‹", start.saturating_sub(1), start > 0);
         let next = mk("next", "›", (start + 1).min(max_start), start < max_start);
         let w = self.item_width;
-        let radius = if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+        let radius = if t.look().tonal {
             t.role_shape(dodai_core::ShapeRole::Carousel).radius
         } else {
             0.0

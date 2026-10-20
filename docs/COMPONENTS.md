@@ -54,7 +54,7 @@ Dodai extras: `Knob` (rotary), `Kbd`, `Avatar`, `Table`, `Accordion`,
 `Alert`, `Skeleton`, `ThemeSelector`, `Scanlines`.
 
 Planned theme: **Material 3** (tonal palette, rounded shapes, no glow) — built with
-`dodai_core::themes::Spec`; needs elevation/state-layer tokens in core.
+`dodai_core::themes::ThemeBuilder`; needs elevation/state-layer tokens in core.
 
 
 ## Motion

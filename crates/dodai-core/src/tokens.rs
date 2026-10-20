@@ -93,7 +93,7 @@ impl Corners {
         bottom_left: true,
         ..Self::NONE
     };
-    /// Only bottom-right (LR; cyberpunk-style buttons).
+    /// Only bottom-right (LR).
     pub const BOTTOM_RIGHT: Self = Self {
         bottom_right: true,
         ..Self::NONE
@@ -225,7 +225,7 @@ pub struct Effects {
     pub glow_intensity: f32,
     /// Draw CRT scanlines where the framework supports it.
     pub scanlines: bool,
-    /// Hard offset shadow (px) typical of cyberpunk UI, 0 = none.
+    /// Hard offset shadow (px) for hard-edged designs, 0 = none.
     pub hard_shadow: f32,
     /// Soft drop-shadow colour (lifts cards on themes without a hard shadow).
     pub shadow: Color,

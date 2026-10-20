@@ -31,11 +31,11 @@ fn main() {
         design_tokens_json(&all),
     );
     // One bundle per design system, so a consumer can ship just Cyberpunk or just Material.
-    // A theme belongs to a system by id prefix (`cyberpunk`, `cyberpunk-red`, `material-dark`, ...).
-    for system in ["cyberpunk", "material"] {
+    for sys in themes::systems() {
+        let system = sys.family;
         let own: Vec<_> = all
             .iter()
-            .filter(|t| t.id() == system || t.id().starts_with(&format!("{system}-")))
+            .filter(|t| t.meta.family == system)
             .cloned()
             .collect();
         assert!(!own.is_empty(), "no themes for design system {system}");

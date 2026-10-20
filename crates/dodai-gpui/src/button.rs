@@ -127,7 +127,7 @@ impl Button {
         let t = theme_of(cx);
         let st = use_interact(&self.id, window, cx);
         let state = st.read(cx).control_state(self.disabled);
-        let lifted = self.elevated && t.shape.kind() == dodai_core::ShapeKind::Rounded;
+        let lifted = self.elevated && t.look().tonal;
         let resolve = |s: ControlState| {
             if self.elevated {
                 let b = t.elevated_button(s);
@@ -200,7 +200,7 @@ impl Button {
             .text_size(px(t.typography.size_md))
             .text_color(fg)
             .child(div().child(format_label(&t.typography, &self.label)));
-        if let (Some(r), true) = (self.radii, t.shape.kind() == dodai_core::ShapeKind::Rounded) {
+        if let (Some(r), true) = (self.radii, t.look().tonal) {
             el = el
                 .rounded_tl(px(r[0]))
                 .rounded_tr(px(r[1]))

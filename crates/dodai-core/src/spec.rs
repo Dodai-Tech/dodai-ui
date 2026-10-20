@@ -10,11 +10,31 @@ use crate::{
     ProgressTokens, SurfaceTokens, TabTokens, Theme, ToggleKind, ToggleTokens, Tone,
 };
 
+/// Semantic capabilities a design system declares. Adapters ask these instead of guessing a
+/// look from the corner geometry, so a new rounded design never inherits another design's layout.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Look {
+    /// Tonal surfaces and the matching component structure: container-coloured pills, tonal
+    /// selection, borderless cards, taller touch targets.
+    pub tonal: bool,
+    /// Blurred elevation shadows (levels 1-5) instead of hard offset shadows or none.
+    pub soft_elevation: bool,
+    /// Text fields with a floating label inside a filled container.
+    pub floating_label: bool,
+    /// Prefers the symbol-font icon set over the stroke-shape icons.
+    pub symbol_icons: bool,
+}
+
 /// Component rules of one design system. All hooks are optional overrides.
 #[allow(unused_variables)]
 pub trait DesignSpec: Send + Sync + std::fmt::Debug {
     /// Display name, e.g. `"Material 3"`.
     fn name(&self) -> &'static str;
+
+    /// The capabilities of this design (default: none, i.e. the classic look).
+    fn look(&self) -> Look {
+        Look::default()
+    }
 
     fn card(&self, t: &Theme, v: CardVariant) -> Option<SurfaceTokens> {
         None

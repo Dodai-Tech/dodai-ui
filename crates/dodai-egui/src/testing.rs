@@ -1,6 +1,6 @@
 //! Test-only themes: chamfered (built-in), rounded light and square.
 
-use dodai_core::themes::Spec;
+use dodai_core::themes::ThemeBuilder;
 use dodai_core::{Corners, Mode, Shape, Spacing, Theme, ThemeMeta, Typography};
 
 /// Built-in chamfered theme.
@@ -10,7 +10,7 @@ pub fn chamfered() -> Theme {
 
 /// Rounded light theme (no glow).
 pub fn rounded() -> Theme {
-    Spec {
+    ThemeBuilder {
         meta: ThemeMeta {
             id: "test-light",
             name: "Test Light",

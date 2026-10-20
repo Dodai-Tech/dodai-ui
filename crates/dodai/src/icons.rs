@@ -1,7 +1,7 @@
 //! Toolkit-neutral icons by name: the right glyph for a theme, as SVG or as a
 //! coverage mask, so any adapter can draw it.
 //!
-//! * Rounded themes (Material) get the smooth Material Symbols glyph.
+//! * Themes that declare `Look::symbol_icons` (Material) get the smooth Material Symbols glyph.
 //! * Other themes (Cyberpunk) get the hand-drawn Cyberpunk icon, found by its
 //!   own name or by the Material name it mirrors. A name without a hand-drawn
 //!   icon resolves to `None`; Material glyphs are never reshaped for them.
@@ -15,7 +15,7 @@
 //! # }
 //! ```
 
-use crate::{ShapeKind, Theme};
+use crate::Theme;
 
 /// Points on the 24×24 design grid.
 pub type Points = Vec<(f32, f32)>;
@@ -46,7 +46,7 @@ fn cyber_shapes(name: &str) -> Option<Vec<(Points, bool)>> {
 /// Resolve `name` (Cyberpunk or Material Symbols spelling) for `theme`.
 /// `filled` picks the Material `-fill` variant when there is one.
 pub fn glyph(name: &str, theme: &Theme, filled: bool) -> Option<Glyph> {
-    let rounded = theme.shape.kind() == ShapeKind::Rounded;
+    let rounded = theme.look().symbol_icons;
     #[cfg(feature = "cyberpunk")]
     if !rounded {
         return cyber_shapes(name).map(Glyph::Stroked);

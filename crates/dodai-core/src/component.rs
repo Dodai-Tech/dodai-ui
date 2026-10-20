@@ -494,7 +494,7 @@ impl Theme {
                     p.secondary
                 };
                 ButtonTokens {
-                    // Cyberpunk "fill on hover": outline inverts to solid.
+                    // Baseline "fill on hover": the outline inverts to solid.
                     background: if lit { Some(c) } else { None },
                     foreground: if lit { self.on(c) } else { self.legible(c) },
                     border: Some(c),

@@ -307,3 +307,26 @@ fn the_spec_lives_with_the_design_system() {
         assert!(t.spec.get().is_none(), "{} uses the core baseline", t.id());
     }
 }
+
+#[test]
+fn look_flags_belong_to_the_design() {
+    for t in material() {
+        let l = t.look();
+        assert!(l.tonal && l.soft_elevation && l.floating_label && l.symbol_icons);
+    }
+    for t in themes::all()
+        .into_iter()
+        .filter(|t| t.meta.family != "material")
+    {
+        assert_eq!(t.look(), dodai::Look::default(), "{}", t.id());
+    }
+}
+
+#[test]
+fn registry_covers_every_theme() {
+    let n: usize = themes::systems().iter().map(|s| (s.themes)().len()).sum();
+    assert_eq!(n, themes::all().len());
+    for s in themes::systems() {
+        assert!((s.themes)().iter().all(|t| t.meta.family == s.family));
+    }
+}

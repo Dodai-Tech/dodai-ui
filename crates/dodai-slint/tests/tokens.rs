@@ -1,9 +1,11 @@
 //! Window-free tests: token → value mapping, geometry, generator sync.
-use dodai_core::{themes::Spec, Corners, Mode, Shape, Spacing, Theme, ThemeMeta, Typography};
+use dodai_core::{
+    themes::ThemeBuilder, Corners, Mode, Shape, Spacing, Theme, ThemeMeta, Typography,
+};
 use dodai_slint::*;
 
 fn spec(id: &'static str, shape: Shape, glow: f32, blur: f32, caps: bool) -> Theme {
-    Spec {
+    ThemeBuilder {
         meta: ThemeMeta {
             id,
             name: id,

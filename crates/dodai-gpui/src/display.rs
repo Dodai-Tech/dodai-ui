@@ -91,7 +91,7 @@ impl RenderOnce for CircularProgress {
         let (track, fill) = (hsla(k.track), hsla(k.fill));
         // M3: 48 px indicator with a 4 px stroke, and a gap between the active arc and the
         // track; other design systems keep their 56 / 5 px ring.
-        let m3 = t.shape.kind() == dodai_core::ShapeKind::Rounded;
+        let m3 = t.look().tonal;
         let (size, th) = if m3 { (48.0, 4.0) } else { (56.0, 5.0) };
         let size = self.size.unwrap_or(size);
         let th = self.thickness.unwrap_or(th);

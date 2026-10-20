@@ -122,7 +122,7 @@ impl RenderOnce for Icon {
             .color
             .unwrap_or_else(|| crate::hsla(theme.palette.text));
         let (size, weight) = (self.size, self.weight);
-        let rounded = theme.shape.kind() == dodai_core::ShapeKind::Rounded;
+        let rounded = theme.look().symbol_icons;
         #[cfg(feature = "material")]
         if self.pack.resolve(rounded) == IconPack::Material {
             let wanted = self.name.map(|n| n.name().to_string()).or(self.label);

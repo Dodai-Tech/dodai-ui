@@ -91,6 +91,11 @@ impl Theme {
         s
     }
 
+    /// The design system's declared capabilities (the classic look when it has no spec).
+    pub fn look(&self) -> crate::Look {
+        self.spec.get().map(|d| d.look()).unwrap_or_default()
+    }
+
     /// Builder: attach a design-system spec (component rules and geometry).
     pub fn with_spec(mut self, spec: &'static dyn crate::DesignSpec) -> Self {
         self.spec = crate::SpecRef::new(spec);

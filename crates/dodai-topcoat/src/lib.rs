@@ -305,7 +305,7 @@ if(!t)return;t.hasAttribute('data-dodai-theme-next')?set(i+1):set(i-1)}});}})();
 mod tests {
     use super::*;
     use dodai::themes;
-    use dodai_core::themes::Spec;
+    use dodai_core::themes::ThemeBuilder;
 
     #[test]
     fn vars_contain_brand_yellow() {
@@ -367,7 +367,7 @@ mod tests {
 
     fn sample_light() -> Theme {
         use dodai_core::{Corners, Mode, Shape, Spacing, ThemeMeta, Typography};
-        Spec {
+        ThemeBuilder {
             meta: ThemeMeta {
                 id: "test-light",
                 name: "Test Light",

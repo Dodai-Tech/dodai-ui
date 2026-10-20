@@ -6,9 +6,9 @@
 
 use dodai_core::{
     ButtonTokens, ButtonVariant, CardVariant, Color, ControlState, CornerStyle, Corners,
-    DefaultShape, DesignSpec, InputTokens, ListItemTokens, ProgressTokens, RoleShape, ShapePreset,
-    ShapeRole, ShapeScale, ShapeSize, ShapeSystem, SurfaceTokens, TabTokens, Theme, ToggleKind,
-    ToggleTokens, Tone,
+    DefaultShape, DesignSpec, InputTokens, ListItemTokens, Look, ProgressTokens, RoleShape,
+    ShapePreset, ShapeRole, ShapeScale, ShapeSize, ShapeSystem, SurfaceTokens, TabTokens, Theme,
+    ToggleKind, ToggleTokens, Tone,
 };
 
 const ALL: Corners = Corners::ALL;
@@ -109,6 +109,15 @@ fn layer(state: ControlState) -> f32 {
 impl DesignSpec for Material3 {
     fn name(&self) -> &'static str {
         "Material 3"
+    }
+
+    fn look(&self) -> Look {
+        Look {
+            tonal: true,
+            soft_elevation: true,
+            floating_label: true,
+            symbol_icons: true,
+        }
     }
 
     fn card(&self, t: &Theme, v: CardVariant) -> Option<SurfaceTokens> {

@@ -16,7 +16,7 @@ use gpui::{
 use std::rc::Rc;
 
 fn bar_style(t: &Theme) -> ShapeStyle {
-    if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+    if t.look().tonal {
         return ShapeStyle::from_tokens(
             t,
             Some(t.palette.roles.surface_container),

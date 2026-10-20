@@ -128,12 +128,12 @@ pub fn ThemeProvider(props: ThemeProviderProps) -> Element {
 mod tests {
     use super::*;
     use crate::*;
-    use dodai_core::themes::Spec;
+    use dodai_core::themes::ThemeBuilder;
     use dodai_core::{ButtonVariant, ShapeKind, Theme};
     use dodai_core::{Corners, Mode, Shape, Spacing, ThemeMeta, Typography};
 
     fn light() -> Theme {
-        Spec {
+        ThemeBuilder {
             meta: ThemeMeta {
                 id: "test-light",
                 name: "Test Light",
@@ -199,7 +199,7 @@ mod tests {
     }
 
     fn square() -> Theme {
-        Spec {
+        ThemeBuilder {
             meta: ThemeMeta {
                 id: "test-square",
                 name: "Test Light",

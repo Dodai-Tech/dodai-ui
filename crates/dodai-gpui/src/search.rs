@@ -253,7 +253,7 @@ impl RenderOnce for SearchView {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let query = self.input.read(cx).text().to_string();
-        let rounded = t.shape.kind() == dodai_core::ShapeKind::Rounded;
+        let rounded = t.look().tonal;
         // Material draws its own container around the field.
         self.input.update(cx, |i, _| i.bare = rounded);
         if rounded {
@@ -394,7 +394,7 @@ impl RichTooltip {
 impl Render for RichTooltip {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let t = theme_of(cx);
-        let rounded = t.shape.kind() == dodai_core::ShapeKind::Rounded;
+        let rounded = t.look().tonal;
         let (bg, _) = t.tooltip(true);
         let r = t.palette.roles.clone();
         // M3 rich tooltip: tonal container, 12 px corners, elevation 2, 16 px / 12 px padding,

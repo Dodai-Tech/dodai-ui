@@ -1,11 +1,11 @@
 //! Buffer-level tests proving components adapt to theme tokens.
 
 use super::*;
-use dodai_core::{themes::Spec, Corners, Mode, Shape, Spacing, ThemeMeta, Typography};
+use dodai_core::{themes::ThemeBuilder, Corners, Mode, Shape, Spacing, ThemeMeta, Typography};
 use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 fn spec(id: &'static str, shape: Shape, upper: bool, scan: bool) -> Theme {
-    Spec {
+    ThemeBuilder {
         meta: ThemeMeta {
             id,
             name: id,

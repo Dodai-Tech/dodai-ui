@@ -2,16 +2,16 @@
 //! (`dodai-cyberpunk`, `dodai-material`); [`neutral`] is the fallback.
 //!
 //! **Adding a theme:** return a [`crate::Theme`] — the
-//! easiest way is [`Spec`], which derives hover/active/selection roles from a
+//! easiest way is [`ThemeBuilder`], which derives hover/active/selection roles from a
 //! handful of colours and lets you set typography, spacing, shape (`Square`,
 //! `Rounded`, `Chamfered` + which corners) and effects (glow, scanlines).
 //! Adapters never branch on theme ids.
 
 use crate::Theme;
 
-/// Compact description of a theme; [`Spec::build`] derives the full token set.
+/// Compact description of a theme; [`ThemeBuilder::build`] derives the full token set.
 /// Use this to add new themes without filling every palette role by hand.
-pub struct Spec {
+pub struct ThemeBuilder {
     pub meta: crate::ThemeMeta,
     pub mode: crate::Mode,
     // surfaces / lines / text (hex)
@@ -45,7 +45,7 @@ pub struct Spec {
     pub hard_shadow: f32,
 }
 
-impl Spec {
+impl ThemeBuilder {
     pub fn build(self) -> crate::Theme {
         use crate::{Color, Effects, Palette};
         let h = Color::hex;
@@ -118,7 +118,7 @@ impl Spec {
 /// no glow. Real design systems live in their own crates.
 pub fn neutral() -> Theme {
     use crate::{Corners, Mode, Shape, Spacing, ThemeMeta, Typography};
-    Spec {
+    ThemeBuilder {
         meta: ThemeMeta {
             id: "default",
             name: "Default",

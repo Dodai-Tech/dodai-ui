@@ -2,7 +2,7 @@
 //! tonal palette): rounded corners, mixed-case labels, no glow or scanlines,
 //! flat tonal surfaces, 40 px controls.
 
-use dodai_core::themes::Spec;
+use dodai_core::themes::ThemeBuilder;
 use dodai_core::{Color, Corners, Mode, Roles, Shape, Spacing, Theme, ThemeMeta, Typography};
 
 /// Material's emphasized motion: 300 ms on the M3 `emphasized` cubic-bezier.
@@ -120,7 +120,7 @@ fn dark_roles() -> Roles {
 
 /// Light scheme (baseline purple).
 pub fn light() -> Theme {
-    let mut t = Spec {
+    let mut t = ThemeBuilder {
         meta: ThemeMeta {
             id: "material",
             name: "Material 3 · Light",
@@ -168,7 +168,7 @@ pub fn light() -> Theme {
 
 /// Dark scheme.
 pub fn dark() -> Theme {
-    let mut t = Spec {
+    let mut t = ThemeBuilder {
         meta: ThemeMeta {
             id: "material-dark",
             name: "Material 3 · Dark",

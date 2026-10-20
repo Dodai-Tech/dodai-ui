@@ -13,7 +13,7 @@ use std::rc::Rc;
 /// Paint style of the dialog box (pure): raised surface, strong border, glow, hard shadow.
 pub fn dialog_style(theme: &Theme) -> ShapeStyle {
     let st = ShapeStyle::from_surface(theme, theme.dialog()).0;
-    if theme.shape.kind() == dodai_core::ShapeKind::Rounded {
+    if theme.look().soft_elevation {
         return st.with_elevation(3, hsla(theme.palette.roles.shadow));
     }
     st
@@ -89,7 +89,7 @@ impl DialogCard {
         .child(
             div()
                 .font_family(first_family(t.typography.display))
-                .text_size(px(if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+                .text_size(px(if t.look().tonal {
                     t.typography.size_xl
                 } else {
                     t.typography.size_lg
@@ -101,7 +101,7 @@ impl DialogCard {
                 .flex()
                 .flex_col()
                 .gap(px(t.spacing.sm))
-                .text_color(hsla(if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+                .text_color(hsla(if t.look().tonal {
                     t.palette.roles.on_surface_variant
                 } else {
                     t.palette.text_muted
@@ -186,7 +186,7 @@ mod tests {
             let s = scrim_color(&t);
             assert!(s.a < 1.0 && s.a > 0.3);
             // Material uses the `scrim` role (32 % black), the others the page colour.
-            if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+            if t.look().tonal {
                 assert_eq!(s.l, hsla(t.palette.roles.scrim).l);
             } else {
                 assert_eq!(s.l, hsla(t.palette.background).l);

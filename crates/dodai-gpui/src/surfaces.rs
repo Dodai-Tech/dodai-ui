@@ -24,7 +24,7 @@ pub fn card_style(theme: &Theme, v: CardVariant) -> ShapeStyle {
     let mut st = ShapeStyle::from_surface(theme, theme.card(v)).0;
     // No hard offset shadow in this theme: lift an elevated card with a soft one.
     if v == CardVariant::Elevated && st.shadow.is_none() && st.glow.is_none() {
-        if theme.shape.kind() == dodai_core::ShapeKind::Rounded {
+        if theme.look().soft_elevation {
             st = st.with_elevation(1, crate::hsla(theme.palette.roles.shadow));
         } else {
             st.glow = Some((crate::hsla(theme.effects.shadow), 10.0));
@@ -225,23 +225,22 @@ impl IconButton {
             None => self.variant,
         };
         let selected = self.toggled == Some(true);
-        let (style, fg) =
-            if t.shape.kind() == dodai_core::ShapeKind::Rounded && self.toggled.is_some() {
-                // M3 toggle icon button: selected = filled, unselected = outlined.
-                let b = t.icon_button(variant, state, false);
-                (
-                    ShapeStyle::from_tokens(&t, b.background, b.border, false, false),
-                    hsla(b.foreground),
-                )
-            } else if t.shape.kind() == dodai_core::ShapeKind::Rounded {
-                let b = t.icon_button(variant, state, selected);
-                (
-                    ShapeStyle::from_tokens(&t, b.background, b.border, false, false),
-                    hsla(b.foreground),
-                )
-            } else {
-                button_style(&t, variant, state)
-            };
+        let (style, fg) = if t.look().tonal && self.toggled.is_some() {
+            // M3 toggle icon button: selected = filled, unselected = outlined.
+            let b = t.icon_button(variant, state, false);
+            (
+                ShapeStyle::from_tokens(&t, b.background, b.border, false, false),
+                hsla(b.foreground),
+            )
+        } else if t.look().tonal {
+            let b = t.icon_button(variant, state, selected);
+            (
+                ShapeStyle::from_tokens(&t, b.background, b.border, false, false),
+                hsla(b.foreground),
+            )
+        } else {
+            button_style(&t, variant, state)
+        };
         let side = t.shape.control_height;
         let shape = t.role_shape(dodai_core::ShapeRole::IconButton);
         let lift = if self.disabled {
@@ -295,7 +294,7 @@ impl FabSize {
     /// Side length in px relative to the theme control height.
     pub fn side(self, theme: &Theme) -> f32 {
         let h = theme.shape.control_height;
-        if theme.shape.kind() == dodai_core::ShapeKind::Rounded {
+        if theme.look().tonal {
             // M3: 40 / 56 / 96.
             return match self {
                 FabSize::Small => 40.0,
@@ -374,7 +373,7 @@ impl Fab {
             ShapeStyle::from_tokens(&t, b.background, b.border, false, false),
             hsla(b.foreground),
         );
-        if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+        if t.look().soft_elevation {
             let level = match state {
                 ControlState::Hovered => 4,
                 _ => 3,
@@ -416,7 +415,7 @@ impl Fab {
         };
         el = match self.icon {
             Some(i) => {
-                let sz = if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+                let sz = if t.look().tonal {
                     if self.size == FabSize::Large && self.label.is_none() {
                         36.0
                     } else {
@@ -522,7 +521,7 @@ impl Navigation {
 impl Navigation {
     fn build(self, window: &mut Window, cx: &mut App) -> AnyElement {
         let t = theme_of(cx);
-        if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+        if t.look().tonal {
             return self.build_m3(t, window, cx).into_any_element();
         }
         self.build_classic(window, cx).into_any_element()
@@ -714,7 +713,7 @@ impl Navigation {
                     .bg(hsla(t.palette.danger))
                     .text_color(hsla(t.on(t.palette.danger)))
                     .child(n.to_string());
-                if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+                if t.look().tonal {
                     pill = pill.rounded_full().min_w(px(16.0)).flex().justify_center();
                 }
                 glyph = glyph.child(pill);
@@ -889,7 +888,7 @@ impl SearchBar {
         let st = use_interact(&self.id, window, cx);
         let hovered = st.read(cx).control_state(false) != ControlState::Idle;
         let i = t.input(hovered);
-        let pill = t.shape.kind() == dodai_core::ShapeKind::Rounded && self.corners.is_none();
+        let pill = t.look().tonal && self.corners.is_none();
         let style = if pill {
             // Rounded (Material): a full pill on a tonal container, no outline.
             t.shape.radius = t.shape.control_height / 2.0;
@@ -941,10 +940,7 @@ mod tests {
             let o = card_style(&t, CardVariant::Outlined);
             assert!(e.fill.is_some());
             // M3 elevated cards are lifted by a shadow, not an outline.
-            assert_eq!(
-                e.stroke.is_some(),
-                t.shape.kind() != dodai_core::ShapeKind::Rounded
-            );
+            assert_eq!(e.stroke.is_some(), !t.look().tonal);
             assert!(f.fill.is_some() && f.stroke.is_none());
             assert!(o.fill.is_none() && o.stroke.is_some());
         }

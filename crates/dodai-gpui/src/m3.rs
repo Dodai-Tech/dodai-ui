@@ -71,7 +71,7 @@ impl ButtonGroup {
 impl RenderOnce for ButtonGroup {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        let rounded = t.shape.kind() == dodai_core::ShapeKind::Rounded;
+        let rounded = t.look().tonal;
         let n = self.labels.len();
         let gap = if self.connected && rounded { 2.0 } else { 8.0 };
         let mut row = div().flex().items_center().gap(px(gap));
@@ -140,7 +140,7 @@ impl SplitButton {
 impl RenderOnce for SplitButton {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        let rounded = t.shape.kind() == dodai_core::ShapeKind::Rounded;
+        let rounded = t.look().tonal;
         let mut lead = Button::new((self.id.clone(), "lead"), self.label)
             .variant(self.variant)
             .radii([FULL, 4.0, 4.0, FULL]);

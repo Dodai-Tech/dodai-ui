@@ -31,22 +31,49 @@ pub mod icons;
 
 /// Built-in themes of the enabled design systems.
 pub mod themes {
-    pub use dodai_core::themes::{neutral, Spec};
+    pub use dodai_core::themes::{neutral, ThemeBuilder};
 
     #[cfg(feature = "cyberpunk")]
     pub use dodai_cyberpunk as cyberpunk;
     #[cfg(feature = "material")]
     pub use dodai_material as material;
 
-    /// Every theme of the enabled design systems, in switcher order
-    /// (Cyberpunk, then Material). Falls back to [`neutral`] if none is enabled.
-    pub fn all() -> Vec<crate::Theme> {
-        #[allow(unused_mut)]
-        let mut v: Vec<crate::Theme> = Vec::new();
+    /// A registered design system: its family id, display name and themes.
+    #[derive(Clone, Copy)]
+    pub struct DesignSystem {
+        /// Family id shared by its themes (`Theme::meta.family`).
+        pub family: &'static str,
+        /// Display name.
+        pub name: &'static str,
+        /// Builds its themes (light/dark/accent variants).
+        pub themes: fn() -> Vec<crate::Theme>,
+    }
+
+    /// The enabled design systems, in switcher order. **The one place a new design system is
+    /// registered**: add a feature-gated entry here; the switcher, `all()`, `by_id()` and the
+    /// `dist` export pick it up.
+    #[allow(unused_mut, clippy::vec_init_then_push)]
+    pub fn systems() -> Vec<DesignSystem> {
+        let mut v: Vec<DesignSystem> = Vec::new();
         #[cfg(feature = "cyberpunk")]
-        v.extend(dodai_cyberpunk::variants());
+        v.push(DesignSystem {
+            family: "cyberpunk",
+            name: "Cyberpunk",
+            themes: dodai_cyberpunk::variants,
+        });
         #[cfg(feature = "material")]
-        v.extend(dodai_material::variants());
+        v.push(DesignSystem {
+            family: "material",
+            name: "Material 3",
+            themes: dodai_material::variants,
+        });
+        v
+    }
+
+    /// Every theme of the enabled design systems, in switcher order.
+    /// Falls back to [`neutral`] if none is enabled.
+    pub fn all() -> Vec<crate::Theme> {
+        let mut v: Vec<crate::Theme> = systems().iter().flat_map(|s| (s.themes)()).collect();
         if v.is_empty() {
             v.push(neutral());
         }

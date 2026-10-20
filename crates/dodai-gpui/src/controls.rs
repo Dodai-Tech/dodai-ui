@@ -157,7 +157,7 @@ fn choice(
     cx: &mut App,
 ) -> gpui::AnyElement {
     let t = theme_of(cx);
-    if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+    if t.look().tonal {
         return m3_choice(
             kind, id, on, disabled, handler, radio, mixed, variant, window, cx,
         );
@@ -198,9 +198,7 @@ fn choice(
     };
     let shape = match kind {
         Kind::Switch | Kind::Radio => round_shape(&t.shape, h),
-        Kind::Checkbox if t.shape.kind() == dodai_core::ShapeKind::Rounded => {
-            t.role_shape(dodai_core::ShapeRole::Checkbox)
-        }
+        Kind::Checkbox if t.look().tonal => t.role_shape(dodai_core::ShapeRole::Checkbox),
         Kind::Checkbox => scaled_shape(&t.shape, h),
     };
     let mut el = track(shaped_id(id, &shape, style), &st)
@@ -549,7 +547,7 @@ impl ProgressBar {
             &t,
             self.value * g,
             self.tone,
-            if t.shape.kind() == dodai_core::ShapeKind::Rounded {
+            if t.look().tonal {
                 4.0
             } else {
                 t.spacing.sm + 2.0
@@ -665,7 +663,7 @@ impl Slider {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
-        let tonal = t.shape.kind() == dodai_core::ShapeKind::Rounded;
+        let tonal = t.look().tonal;
         // M3: 20 px handle on a 4 px track.
         let thumb_d = if tonal { 20.0 } else { THUMB };
         let track_h = if tonal { 4.0 } else { 6.0 };
