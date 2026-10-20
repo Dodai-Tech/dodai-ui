@@ -108,10 +108,36 @@ committed and checked in CI:
 
 The pack (`dodai-cyberpunk-icons`) has 136 icons in 7 groups, all straight lines, 45° chamfers and octagons.
 
-## Charts only (gpui)
+## gpui features
 
-`dodai-gpui` has two default features, `components` and `charts`. For charts without buttons, tables
+`dodai-gpui` features (all default, all additive): `components`, `charts`, `shaders`, `cyberpunk`
+(the stroked icon pack), `material` (the Material Symbols icons). For charts without buttons, tables
 or dialogs: `dodai-gpui = { version = "0.1", default-features = false, features = ["charts"] }`.
+Components never look at a theme id: soft, tonal Material rendering is chosen by the theme's
+`ShapeKind::Rounded`, and every colour comes from the palette or its M3-style `roles`
+(`surface-container-*`, `outline`, `inverse-surface`, ...), which every theme has.
+
+## Motion
+
+`dodai-motion` is dependency-free and toolkit-independent: you pass it the clock (seconds) and apply
+what it returns.
+
+- **Easing / curves / tweens**: `Easing` (cubic-bezier, spring, bounce, elastic, back), `Curve`, `Tween`, stagger.
+- **Physics** (closed form, any frame rate): `Spring` / `SpringState` (retarget keeps velocity), `Decay` (fling),
+  `Bounce`, `rubber_band`, `damp`, `Shake`.
+- **Composition**: `Clip<T>` with `then`, `zip`, `delay`, `repeat`, `forever`, `ping_pong`, `reverse`, `speed`, `map`, `stagger`.
+- **Mixins**: reactive (`Reactions`: press squash, hover lift, focus glow, select pop), one-shot (shake, nudge,
+  attention bounce, flash, pop in, count up, check draw), loading (shimmer, indeterminate, typewriter, marquee),
+  gestures (swipe release, page snap, overscroll, pull to refresh, magnetic, tilt). They return a `Pose`
+  (opacity, offset, scale, rotation, glow); an adapter applies one layered pose per widget.
+- **Per design system**: each `Theme` carries a `Motion` (duration, easing, `Personality`), and
+  `dodai_cyberpunk::fx` (glitch, flicker, decrypt, hologram, scan sweep, chamfer wipe) and
+  `dodai_material::fx` (state layers, ripple, container transform, fade through, shared axis) add the
+  system-specific ones. `.reduced()` degrades any pose to fades.
+- **Web / slint**: no Rust needed; the exporter writes `--dodai-motion-duration|delay|easing` and a DTCG `motion` group.
+
+In gpui, `dodai_gpui::motion::react` / `hover_lift` drive the mixins from interaction state; `Button`,
+`IconButton` and `Fab` use it. See *Animation → Dynamics* in the showcase.
 
 Instrument-style pieces: `Gauge` with `GaugeStyle` (arc, segmented, dial, meter, reticle, bar, chevron, level)
 and `Oscilloscope`, `Spectrum`, `RadarScope`, `HexMap`, `RingStack`, `DotMatrix`, `SignalBars`.

@@ -64,8 +64,8 @@ jobs:
       - run: git diff --exit-code -- dist
       - run: test -z "$(git status --porcelain dist)"
 
-  # Base crates everything else depends on (dodai-gpui also uses dodai-icons
-  # and dodai-charts-core).
+  # Base crates everything else depends on (dodai-gpui also uses dodai-motion,
+  # dodai-cyberpunk-icons and dodai-charts-core).
   base:
     name: ${{ matrix.crate }}
     runs-on: ubuntu-latest
