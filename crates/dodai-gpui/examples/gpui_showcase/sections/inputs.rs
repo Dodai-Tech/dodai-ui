@@ -418,6 +418,18 @@ impl Showcase {
                 .child(div().flex_1().min_w(px(260.0)).child(self.in_name.clone()))
                 .child(div().flex_1().min_w(px(260.0)).child(self.in_notes.clone()))
                 .child(InputBox::new().placeholder("static placeholder box"))
+                .child(
+                    div()
+                        .flex_1()
+                        .min_w(px(260.0))
+                        .child(self.in_outlined.clone()),
+                )
+                .child(
+                    div()
+                        .flex_1()
+                        .min_w(px(260.0))
+                        .child(self.in_filled.clone()),
+                )
                 .into_any_element(),
             "Input",
         ));

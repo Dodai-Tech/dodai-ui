@@ -173,6 +173,8 @@ pub struct TextInput {
     rows: Option<usize>,
     masked: bool,
     disabled: bool,
+    label: Option<SharedString>,
+    filled: bool,
     corners: Option<dodai_core::Corners>,
     on_change: Option<ChangeHandler>,
     on_submit: Option<SubmitHandler>,
@@ -184,6 +186,8 @@ impl TextInput {
             focus: cx.focus_handle(),
             content: SharedString::default(),
             placeholder: SharedString::default(),
+            label: None,
+            filled: false,
             selected: 0..0,
             reversed: false,
             marked: None,
@@ -207,6 +211,18 @@ impl TextInput {
     /// Dimmed hint shown while empty.
     pub fn placeholder(mut self, p: impl Into<SharedString>) -> Self {
         self.placeholder = p.into();
+        self
+    }
+    /// Floating label: sits in the field while it is empty and unfocused, then moves up
+    /// (onto the border, or inside the top of a filled field) and shrinks.
+    pub fn label(mut self, l: impl Into<SharedString>) -> Self {
+        self.label = Some(l.into());
+        self
+    }
+    /// Material filled text field (tonal container, bottom indicator) instead of the outlined
+    /// one. Other design systems draw their normal field.
+    pub fn filled(mut self, f: bool) -> Self {
+        self.filled = f;
         self
     }
     /// Textarea: Enter inserts a newline and the box is `rows` lines tall.
@@ -623,7 +639,11 @@ impl Element for TextElement {
         let empty = input.content.is_empty();
         let mut lines = Vec::new();
         if empty {
-            let p = input.placeholder.clone();
+            let p = if input.label.is_some() && !input.focus.is_focused(window) {
+                SharedString::default()
+            } else {
+                input.placeholder.clone()
+            };
             let run = TextRun {
                 len: p.len(),
                 font: style.font(),
@@ -777,6 +797,14 @@ impl Render for TextInput {
         let focused = self.focus.is_focused(window) && !self.disabled;
         let lh = (t.typography.size_md * 1.45).round();
         let mut style = input_style(&t, focused);
+        let rounded = t.shape.kind() == dodai_core::ShapeKind::Rounded;
+        let filled = self.filled && rounded && self.label.is_some() && self.rows.is_none();
+        let r = t.palette.roles.clone();
+        if filled {
+            style.fill = Some(hsla(r.surface_container_highest));
+            style.stroke = None;
+            style.glow = None;
+        }
         if self.disabled {
             style.fill = Some(hsla(t.palette.surface_raised));
             style.stroke = Some(hsla(t.palette.border));
@@ -794,9 +822,17 @@ impl Render for TextInput {
             } else {
                 CursorStyle::IBeam
             });
+        let field_h = if self.label.is_some() && rounded {
+            56.0
+        } else {
+            t.shape.control_height
+        };
+        if filled {
+            d = d.rounded_bl(px(0.0)).rounded_br(px(0.0));
+        }
         d = match self.rows {
             Some(rows) => d.min_h(px(lh * rows as f32 + t.spacing.sm * 2.0 + 4.0)),
-            None => d.h(px(t.shape.control_height)).flex().items_center(),
+            None => d.h(px(field_h)).flex().items_center(),
         };
         if !self.disabled {
             d = d
@@ -821,7 +857,44 @@ impl Render for TextInput {
                 .on_mouse_up_out(MouseButton::Left, cx.listener(Self::on_mouse_up))
                 .on_mouse_move(cx.listener(Self::on_mouse_move));
         }
-        d.child(
+        // Floating label: rests like a placeholder, floats while focused or filled.
+        // Rounded (Material) fields float the label inside the top of a taller box; others put
+        // it on the border.
+        let inside = rounded && self.label.is_some() && self.rows.is_none();
+        let eid = cx.entity_id();
+        let label = self.label.clone().map(|text| {
+            let floated = focused || !self.content.is_empty();
+            let p = crate::motion::smooth(
+                window,
+                cx,
+                ("tin-label", eid).into(),
+                if floated { 1.0 } else { 0.0 },
+            );
+            let rest = (field_h - lh) / 2.0;
+            let up = if inside { 7.0 } else { -lh * 0.4 };
+            let size = t.typography.size_md + (12.0 - t.typography.size_md) * p;
+            let colour = if self.disabled {
+                t.palette.text_disabled
+            } else if focused {
+                t.palette.primary
+            } else {
+                t.input(false).placeholder
+            };
+            let mut l = div()
+                .absolute()
+                .left(px(t.spacing.sm - if inside || p < 0.5 { 0.0 } else { 4.0 }))
+                .top(px(rest + (up - rest) * p))
+                .px(px(if inside || p < 0.5 { 0.0 } else { 4.0 }))
+                .text_size(px(size))
+                .line_height(px(size * 1.4))
+                .text_color(hsla(colour))
+                .child(text);
+            if !inside && p > 0.5 {
+                l = l.bg(hsla(t.palette.background));
+            }
+            l
+        });
+        let mut d = d.child(
             div()
                 .w_full()
                 .px(px(t.spacing.sm))
@@ -830,8 +903,30 @@ impl Render for TextInput {
                 } else {
                     0.0
                 }))
+                .pt(px(if inside { 14.0 } else { 0.0 }))
                 .child(TextElement { input: cx.entity() }),
-        )
+        );
+        if let Some(l) = label {
+            d = d.child(l);
+        }
+        if filled {
+            // Active indicator: 1 px `on-surface-variant`, 2 px `primary` while focused.
+            let (h, c) = if focused {
+                (2.0, t.palette.primary)
+            } else {
+                (1.0, r.on_surface_variant)
+            };
+            d = d.child(
+                div()
+                    .absolute()
+                    .left_0()
+                    .right_0()
+                    .bottom_0()
+                    .h(px(h))
+                    .bg(hsla(c)),
+            );
+        }
+        d
     }
 }
 

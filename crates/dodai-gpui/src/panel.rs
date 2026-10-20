@@ -386,14 +386,17 @@ impl InputBox {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
         let i = t.input(self.focused);
-        let d = shaped(&t.shape, input_style(&t, self.focused))
-            .h(px(t.shape.control_height))
-            .px(px(t.spacing.sm))
-            .flex()
-            .items_center()
-            .font_family(first_family(t.typography.body))
-            .text_size(px(t.typography.size_md))
-            .text_color(hsla(i.text));
+        let d = shaped(
+            &t.role_shape(dodai_core::ShapeRole::Input),
+            input_style(&t, self.focused),
+        )
+        .h(px(t.shape.control_height))
+        .px(px(t.spacing.sm))
+        .flex()
+        .items_center()
+        .font_family(first_family(t.typography.body))
+        .text_size(px(t.typography.size_md))
+        .text_color(hsla(i.text));
         if self.children.is_empty() {
             d.child(
                 div()

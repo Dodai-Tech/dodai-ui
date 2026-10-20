@@ -78,6 +78,8 @@ pub struct Showcase {
     search: Entity<TextInput>,
     in_name: Entity<TextInput>,
     in_notes: Entity<TextInput>,
+    in_outlined: Entity<TextInput>,
+    in_filled: Entity<TextInput>,
     pw: Entity<TextInput>,
     dt_filter: Entity<TextInput>,
     icon_q: Entity<TextInput>,
@@ -1091,6 +1093,8 @@ impl Showcase {
         let dt_filter = cx.new(|cx| TextInput::new(cx).placeholder("Filter rows…"));
         let icon_q = cx.new(|cx| TextInput::new(cx).placeholder("Search 3,900 Material icons…"));
         let icon_search = cx.new(|cx| TextInput::new(cx).placeholder("Search icons or types…"));
+        let in_outlined = cx.new(|cx| TextInput::new(cx).label("Email").value("ada@example.com"));
+        let in_filled = cx.new(|cx| TextInput::new(cx).label("Name").filled(true));
         let in_notes = cx.new(|cx| {
             TextInput::new(cx)
                 .multiline(4)
@@ -1101,6 +1105,8 @@ impl Showcase {
             search,
             in_name,
             in_notes,
+            in_outlined,
+            in_filled,
             pw,
             dt_filter,
             icon_q,
