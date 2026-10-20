@@ -12,6 +12,8 @@ pub struct Motion {
     pub delay: Duration,
     /// How components enter (see [`EntryKind`]).
     pub entry: EntrySet,
+    /// How lively the design system is: drives springs and gesture sizes in mixins.
+    pub personality: crate::Personality,
 }
 
 /// How a component animates in when it first appears.
@@ -183,6 +185,7 @@ impl Default for Motion {
             easing: Easing::EaseOut,
             delay: Duration::ZERO,
             entry: EntrySet::of(EntryKind::Fade),
+            personality: crate::Personality::Smooth,
         }
     }
 }
@@ -194,6 +197,7 @@ impl Motion {
             easing,
             delay: Duration::ZERO,
             entry: EntrySet::of(EntryKind::Fade),
+            personality: crate::Personality::Smooth,
         }
     }
     pub fn duration(mut self, d: Duration) -> Self {
@@ -202,6 +206,10 @@ impl Motion {
     }
     pub fn millis(self, ms: u64) -> Self {
         self.duration(Duration::from_millis(ms))
+    }
+    pub fn personality(mut self, p: crate::Personality) -> Self {
+        self.personality = p;
+        self
     }
     pub fn entry(mut self, k: impl Into<EntrySet>) -> Self {
         self.entry = k.into();

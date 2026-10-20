@@ -152,6 +152,12 @@ impl fmt::Display for Color {
     }
 }
 
+impl dodai_motion::Lerp for Color {
+    fn lerp(&self, other: &Self, t: f32) -> Self {
+        self.mix(*other, t)
+    }
+}
+
 impl From<u32> for Color {
     fn from(rgb: u32) -> Self {
         Self::hex(rgb)

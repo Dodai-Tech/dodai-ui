@@ -23,7 +23,10 @@ fn motion() -> dodai_core::Motion {
         std::time::Duration::from_millis(160),
         dodai_core::Easing::CubicBezier(0.1, 0.9, 0.2, 1.0),
     )
+    .personality(dodai_core::dodai_motion::Personality::Snappy)
 }
+
+pub mod fx;
 
 fn typography() -> Typography {
     Typography {
