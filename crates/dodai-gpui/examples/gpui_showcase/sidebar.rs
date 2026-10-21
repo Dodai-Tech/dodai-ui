@@ -1,6 +1,7 @@
 //! The left navigation: filter box, category list, sub-groups and section jumps.
 
 use super::*;
+use dodai_gpui::{NavigationDrawer, NavigationItem, NavigationRail};
 use gpui::Div;
 
 impl Showcase {
@@ -76,7 +77,7 @@ impl Showcase {
             .flex_shrink_0()
             .h_full()
             .overflow_y_scroll()
-            .p(px(if rail { t.spacing.xs } else { t.spacing.md }))
+            .p(px(if rail { 0.0 } else { t.spacing.md }))
             .child({
                 let m = me.clone();
                 let toggle = IconButton::new("rail-toggle", if rail { "»" } else { "«" }).on_click(
@@ -105,6 +106,8 @@ impl Showcase {
         if !rail {
             side = side.child(div().pb(px(t.spacing.sm)).child(self.filter.clone()));
         }
+        let mut drawer = NavigationDrawer::new("nav");
+        let mut rail_nav = NavigationRail::new("nav-rail");
         for (idx, name) in std::iter::once("All")
             .chain(cats.iter().copied())
             .enumerate()
@@ -112,29 +115,32 @@ impl Showcase {
             let m = me.clone();
             let n = count_in(if idx == 0 { None } else { Some(cats[idx - 1]) });
             side_need = side_need.max(est(name.len() + 8, 0.0) + 24.0);
-            side = side.child(
-                ListItem::new(
-                    ("cat", idx),
-                    if rail {
-                        name.to_string()
-                    } else {
-                        format!("{name}  ·  {n}")
-                    },
-                )
-                .collapsed(rail)
-                .icon(cat_icon(name))
-                .selected(self.cat == idx)
-                .on_click(move |_, _, cx| {
-                    m.update(cx, |s, cx| {
-                        s.cat = idx;
-                        s.sub = None;
-                        s.pin.release();
-                        s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
-                        cx.notify()
-                    })
-                }),
+            let go = move |_: &gpui::ClickEvent, _: &mut Window, cx: &mut App| {
+                m.update(cx, |s, cx| {
+                    s.cat = idx;
+                    s.sub = None;
+                    s.pin.release();
+                    s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
+                    cx.notify()
+                })
+            };
+            if rail {
+                rail_nav = rail_nav.item(
+                    NavigationItem::new(("cat", idx), name)
+                        .icon(cat_icon(name))
+                        .selected(self.cat == idx)
+                        .on_click(go),
+                );
+                continue;
+            }
+            drawer = drawer.item(
+                NavigationItem::new(("cat", idx), name)
+                    .icon(cat_icon(name))
+                    .badge(n.to_string())
+                    .selected(self.cat == idx)
+                    .on_click(go),
             );
-            if self.cat == idx && idx > 0 && !rail {
+            if self.cat == idx && idx > 0 {
                 for sub in std::iter::once(None).chain(subs(name).iter().copied().map(Some)) {
                     if sub.is_none() && subs(name).is_empty() {
                         break;
@@ -145,8 +151,8 @@ impl Showcase {
                         .iter()
                         .filter(|(c, l)| *c == name && sub.is_none_or(|x| sub_of(c, l) == Some(x)))
                         .count();
-                    side = side.child(
-                        ListItem::new(
+                    drawer = drawer.item(
+                        NavigationItem::new(
                             (
                                 "sub",
                                 idx * 100
@@ -154,9 +160,10 @@ impl Showcase {
                                         1 + subs(name).iter().position(|y| *y == x).unwrap_or(0)
                                     }),
                             ),
-                            format!("{}  ·  {cnt}", sub.unwrap_or("All")),
+                            sub.unwrap_or("All"),
                         )
                         .depth(1)
+                        .badge(cnt.to_string())
                         .selected(self.sub == sub)
                         .on_click(move |_, _, cx| {
                             m.update(cx, |s, cx| {
@@ -180,15 +187,12 @@ impl Showcase {
                     }
                     side_need = side_need.max(est(title.len(), 2.0));
                     let (m, title) = (me.clone(), *title);
-                    let mut row = ListItem::new(("jump", idx * 1000 + k), title);
+                    let mut row = NavigationItem::new(("jump", idx * 1000 + k), title);
                     // The Icons section shows how many icons the active design ships.
                     if title == "Icons" {
-                        row = row.badge(dodai_gpui::Badge::new(
-                            group_thousands(dodai_gpui::IconId::ALL.len()),
-                            dodai_core::Tone::Info,
-                        ));
+                        row = row.badge(group_thousands(dodai_gpui::IconId::ALL.len()));
                     }
-                    side = side.child(row.depth(2).selected(active == Some(title)).on_click(
+                    drawer = drawer.item(row.depth(2).selected(active == Some(title)).on_click(
                         move |_, _, cx| {
                             m.update(cx, |s, cx| {
                                 s.pin.pin(title);
@@ -201,6 +205,11 @@ impl Showcase {
                 }
             }
         }
+        side = if rail {
+            side.child(rail_nav)
+        } else {
+            side.child(drawer)
+        };
         if !rail {
             side = side.child(div().pt(px(t.spacing.md)).child(Muted::new(
                 "↑↓ / Tab move · Enter select · t / T theme · l scanlines",

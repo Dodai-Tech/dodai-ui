@@ -984,6 +984,7 @@ impl Render for Showcase {
                         side_need.clamp(240.0, 340.0)
                     })
                     .sidebar(side)
+                    .rail_width(dodai_gpui::navigation::RAIL_WIDTH)
                     .collapsed(self.rail)
                     .on_collapse({
                         let m = me.clone();
