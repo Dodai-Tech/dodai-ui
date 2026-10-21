@@ -223,9 +223,15 @@ impl Showcase {
             side.child(drawer.width(w - 2.0 * t.spacing.md))
         };
         if !rail {
-            side = side.child(div().pt(px(t.spacing.md)).child(Muted::new(
-                "↑↓ / Tab move · Enter select · t / T theme · l scanlines",
-            )));
+            side = side.child(
+                div()
+                    .pt(px(t.spacing.md))
+                    .child(Muted::new(if t.look().luminous {
+                        "↑↓ / Tab move · Enter select · t / T theme · l scanlines"
+                    } else {
+                        "↑↓ / Tab move · Enter select · t / T theme"
+                    })),
+            );
         }
 
         (side, side_need)

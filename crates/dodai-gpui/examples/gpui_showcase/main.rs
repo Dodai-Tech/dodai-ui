@@ -967,7 +967,7 @@ impl Render for Showcase {
                 if !s.focus.is_focused(w) {
                     return;
                 }
-                if e.keystroke.key == "l" {
+                if e.keystroke.key == "l" && theme_of(cx).look().luminous {
                     let on = scanlines_enabled(cx);
                     set_scanlines(cx, !on);
                 }

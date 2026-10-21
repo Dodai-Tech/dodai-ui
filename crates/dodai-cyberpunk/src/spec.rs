@@ -5,8 +5,8 @@
 
 use dodai_core::{
     AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, Color, ControlState,
-    DesignSpec, InputTokens, ListItemTokens, ProgressTokens, StepState, StepTokens, SurfaceTokens,
-    TabTokens, Theme, ToggleTokens, Tone,
+    DesignSpec, InputTokens, ListItemTokens, Look, ProgressTokens, StepState, StepTokens,
+    SurfaceTokens, TabTokens, Theme, ToggleTokens, Tone,
 };
 
 /// The Cyberpunk spec (attach with [`dodai_core::Theme::with_spec`]).
@@ -33,6 +33,15 @@ fn surface(
 }
 
 impl DesignSpec for Cyberpunk {
+    fn look(&self) -> Look {
+        Look {
+            luminous: true,
+            cut_corners: true,
+            accent_border: true,
+            ..Look::default()
+        }
+    }
+
     fn name(&self) -> &'static str {
         "Cyberpunk"
     }
@@ -441,7 +450,17 @@ mod tests {
     fn plain_look_and_raised_surfaces() {
         use dodai_core::{CardVariant, Look};
         for t in crate::variants() {
-            assert_eq!(t.look(), Look::default(), "{}", t.id());
+            assert_eq!(
+                t.look(),
+                Look {
+                    luminous: true,
+                    cut_corners: true,
+                    accent_border: true,
+                    ..Look::default()
+                },
+                "{}",
+                t.id()
+            );
             assert_eq!(
                 t.card(CardVariant::Filled).background,
                 Some(t.palette.surface_raised),

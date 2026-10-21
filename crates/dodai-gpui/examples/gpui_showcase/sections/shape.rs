@@ -127,7 +127,8 @@ impl Showcase {
                     .child(Muted::new("key: l")),
             );
         let m = me.clone();
-        out.push((
+        if t.look().luminous {
+            out.push((
                 "Shape",
                 "Glow · Scanlines",
                 section!("Glow · Scanlines")
@@ -138,7 +139,9 @@ impl Showcase {
                     .into_any_element(),
                 "Glow · Scanlines",
             ));
-        out.push((
+        }
+        if t.look().cut_corners {
+            out.push((
                 "Shape",
                 "Corner shape",
                 section!("Corner shape")
@@ -150,7 +153,9 @@ impl Showcase {
                     .into_any_element(),
                 "Corner shape",
             ));
-        out.push((
+        }
+        if t.look().accent_border {
+            out.push((
                 "Shape",
                 "Border",
                 section!("Border")
@@ -274,6 +279,7 @@ impl Showcase {
                     .into_any_element(),
                 "Border",
             ));
+        }
         out
     }
 }

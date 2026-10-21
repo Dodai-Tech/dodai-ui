@@ -40,6 +40,12 @@ pub struct Look {
     pub icons: IconSet,
     /// Hard-shadowed controls sink into their shadow on hover and press.
     pub sink: bool,
+    /// Neon look: the design supports glow and scanline effects.
+    pub luminous: bool,
+    /// Corners may be cut (chamfered) per corner.
+    pub cut_corners: bool,
+    /// Panels carry an accent border segment alongside the contour.
+    pub accent_border: bool,
 }
 
 /// Component rules of one design system. All hooks are optional overrides.
