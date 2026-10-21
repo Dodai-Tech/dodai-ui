@@ -37,9 +37,6 @@ pub struct ShapeStyle {
     pub shimmer: Option<Shimmer>,
     /// Material 3 elevation level (0..=5) and shadow colour: the soft two-layer shadow.
     pub elevation: Option<(u8, Hsla)>,
-    /// A second thin line parallel to every cut corner, this many px inside the border
-    /// (the Phantom Liberty cropped buttons). Needs `stroke`.
-    pub cut_ring: Option<f32>,
     /// Interrupt the border on the right (`true`) or left (`false`) side, centred vertically,
     /// over a span of `2 * half` px (the empty space between a cropped button's tick bars).
     pub edge_gap: Option<(bool, f32)>,
@@ -104,7 +101,6 @@ impl ShapeStyle {
             scanline: hsla(fx.scanline),
             shimmer: None,
             elevation: None,
-            cut_ring: None,
             edge_gap: None,
         }
     }
@@ -112,12 +108,6 @@ impl ShapeStyle {
     /// Leave the right/left border open over `2 * half` px at mid-height.
     pub fn with_edge_gap(mut self, right: bool, half: f32) -> Self {
         self.edge_gap = Some((right, half));
-        self
-    }
-
-    /// Add the inner line along cut corners, `gap` px inside the border.
-    pub fn with_cut_ring(mut self, gap: f32) -> Self {
-        self.cut_ring = Some(gap);
         self
     }
 
@@ -345,16 +335,6 @@ pub fn paint_polygon(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape,
                 window.paint_path(p, c);
             }
         }
-        if let Some(gap) = s.cut_ring.filter(|_| bw > 0.0) {
-            let pts = inset_outline(shape, w, h, bw + gap + bw / 2.0);
-            for line in cut_lines(&pts) {
-                let mut b = PathBuilder::stroke(px(bw));
-                b.add_polygon(&poly(bounds.origin, &line, (0.0, 0.0)), false);
-                if let Ok(p) = b.build() {
-                    window.paint_path(p, c);
-                }
-            }
-        }
     }
 }
 
@@ -390,26 +370,6 @@ fn open_at_edge(pts: &[(f32, f32)], right: bool, mid: f32, half: f32) -> Option<
     out.extend((0..n).map(|k| pts[(i + 1 + k) % n]));
     out.push(first);
     Some(out)
-}
-
-/// For each diagonal edge of a closed outline: that edge plus a short lead-in along the two
-/// edges that meet it (so the line hugs the cut and fades into the sides).
-fn cut_lines(pts: &[(f32, f32)]) -> Vec<Vec<(f32, f32)>> {
-    let n = pts.len();
-    let toward = |a: (f32, f32), b: (f32, f32)| {
-        let k = 0.3;
-        (a.0 + (b.0 - a.0) * k, a.1 + (b.1 - a.1) * k)
-    };
-    (0..n)
-        .filter_map(|i| {
-            let (a, b) = (pts[i], pts[(i + 1) % n]);
-            ((a.0 - b.0).abs() > 0.5 && (a.1 - b.1).abs() > 0.5).then(|| {
-                let before = pts[(i + n - 1) % n];
-                let after = pts[(i + 2) % n];
-                vec![toward(a, before), a, b, toward(b, after)]
-            })
-        })
-        .collect()
 }
 
 /// A `relative()` [`Div`] drawn in `shape` with `style`; add children afterwards.

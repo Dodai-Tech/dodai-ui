@@ -152,9 +152,8 @@ impl Button {
         self.crop = Some(c);
         self
     }
-    /// Space in px between a cropped button's border and its inner contour line, and between
-    /// the two bars of the edge tick (default: the theme's `xs` spacing). `0.0` draws a single
-    /// tick and no inner line. Only used with [`Button::crop`].
+    /// Space in px between the two bars of a cropped button's edge tick, left open in the border
+    /// (default: the theme's `xs` spacing). `0.0` draws a single tick. Only used with [`Button::crop`].
     pub fn cut_gap(mut self, px: f32) -> Self {
         self.cut_gap = Some(px.max(0.0));
         self
@@ -242,9 +241,6 @@ impl Button {
         let gap = self.cut_gap.unwrap_or(t.spacing.xs);
         if let Some(c) = crop {
             style = style.with_edge_gap(c == Crop::Left, gap / 2.0);
-        }
-        if crop.is_some() && gap > 0.0 {
-            style = style.with_cut_ring(gap);
         }
         if let Some(c) = crop {
             shape.corners = match c {

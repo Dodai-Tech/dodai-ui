@@ -54,6 +54,25 @@ impl Showcase {
                             .variant(ButtonVariant::Scrim)
                             .crop(dodai_gpui::Crop::Right),
                     )
+                    .children(
+                        [
+                            ("Primary", ButtonVariant::Primary),
+                            ("Secondary", ButtonVariant::Secondary),
+                            ("Outline", ButtonVariant::Outline),
+                            ("Danger", ButtonVariant::Danger),
+                        ]
+                        .into_iter()
+                        .enumerate()
+                        .map(|(i, (l, v))| {
+                            Button::new(SharedString::from(format!("b-crop-{i}")), l)
+                                .variant(v)
+                                .crop(if i % 2 == 0 {
+                                    dodai_gpui::Crop::Left
+                                } else {
+                                    dodai_gpui::Crop::Right
+                                })
+                        }),
+                    )
             }))
             .child(cut(
                 Button::new("b-danger", "Danger").variant(ButtonVariant::Danger)
