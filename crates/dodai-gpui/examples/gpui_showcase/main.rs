@@ -1209,6 +1209,7 @@ fn main() {
             switcher.select(&id);
         }
         dodai_gpui::install_switcher(cx, switcher);
+        dodai_gpui::set_tree_expanded(cx, false); // theme tree starts contracted
         window_shortcuts(cx);
         set_glow_intensity(cx, 0.5);
         if std::env::var_os("DODAI_NOSCAN").is_some() {

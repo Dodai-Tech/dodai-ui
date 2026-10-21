@@ -39,7 +39,6 @@ impl Showcase {
                 }
                 s.sub = None;
                 s.pin.release();
-                dodai_gpui::set_tree_expanded(cx, true);
                 s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
                 cx.notify();
             }))
@@ -105,7 +104,6 @@ impl Showcase {
                         s.cat = idx;
                         s.sub = None;
                         s.pin.release();
-                        dodai_gpui::set_tree_expanded(cx, true);
                         s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
                         cx.notify()
                     })
@@ -139,7 +137,6 @@ impl Showcase {
                             m.update(cx, |s, cx| {
                                 s.sub = sub;
                                 s.pin.release();
-                                dodai_gpui::set_tree_expanded(cx, true);
                                 s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
                                 cx.notify()
                             })
