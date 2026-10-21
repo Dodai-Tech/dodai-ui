@@ -83,8 +83,13 @@ pub fn glyph(name: &str, theme: &Theme, filled: bool) -> Option<Glyph> {
     #[cfg(feature = "material")]
     {
         use dodai_material::icons as m;
-        let n = m::resolve(name);
-        let icon = (filled)
+        // `house-fill` is Material's `home`, filled.
+        let (base, filled_form) = match name.strip_suffix("-fill") {
+            Some(b) => (b, true),
+            None => (name, filled),
+        };
+        let n = m::resolve(base);
+        let icon = (filled_form)
             .then(|| m::outlined::get(&format!("{n}-fill")))
             .flatten()
             .or_else(|| m::outlined::get(n))

@@ -178,13 +178,7 @@ impl Showcase {
             let hits: Vec<&'static str> = names
                 .iter()
                 .copied()
-                .filter(|n| {
-                    !searching
-                        || n.replace('-', "_").contains(q.as_str())
-                        || cat
-                            .to_lowercase()
-                            .contains(query.trim().to_lowercase().as_str())
-                })
+                .filter(|n| !searching || n.replace('-', "_").contains(q.as_str()))
                 .collect();
             if hits.is_empty() {
                 continue;

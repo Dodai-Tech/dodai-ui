@@ -151,7 +151,11 @@ impl RenderOnce for Icon {
         if pack == IconPack::Material {
             let wanted = self.name.map(|n| n.name().to_string()).or(self.label);
             if let Some(w) = wanted {
-                if let Some(m) = material(dodai_material_icons::resolve(&w), self.filled) {
+                let (base, filled) = match w.strip_suffix("-fill") {
+                    Some(b) => (b, true),
+                    None => (w.as_str(), self.filled),
+                };
+                if let Some(m) = material(dodai_material_icons::resolve(base), filled) {
                     return glyph(size, color, m, false).into_any_element();
                 }
                 // Not in Material Symbols: the shared Phosphor vocabulary, drawn as is.

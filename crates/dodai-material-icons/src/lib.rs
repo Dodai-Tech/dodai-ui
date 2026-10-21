@@ -16,7 +16,9 @@
 //! font, no I/O and no dependency.
 
 mod aliases;
+mod phosphor_aliases;
 pub use aliases::{alias_of, resolve, ALIASES};
+pub use phosphor_aliases::PHOSPHOR_ALIASES;
 
 #[cfg(feature = "outlined")]
 mod categories;
