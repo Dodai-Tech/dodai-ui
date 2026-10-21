@@ -515,6 +515,7 @@ fn bar(t: &Theme, frac: f32, tone: Option<Tone>, height: f32) -> gpui::Div {
     let shape = crate::paint::round_shape(&t.shape, height);
     let mut d = shaped(&shape, track_style).w_full().h(px(height));
     let f = clamp01(frac);
+    let n = k.segments;
     if f > 0.0 {
         let fill = ShapeStyle::from_tokens(t, Some(k.fill), None, true, false);
         d = d.child(
@@ -524,6 +525,18 @@ fn bar(t: &Theme, frac: f32, tone: Option<Tone>, height: f32) -> gpui::Div {
                 .left_0()
                 .h_full()
                 .w(relative(f)),
+        );
+    }
+    // HUD gauge: thin gaps in the track colour cut the bar into segments.
+    for i in 1..n {
+        d = d.child(
+            div()
+                .absolute()
+                .top_0()
+                .h_full()
+                .left(relative(i as f32 / n as f32))
+                .w(px(3.0))
+                .bg(hsla(k.track)),
         );
     }
     d

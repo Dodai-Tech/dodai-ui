@@ -97,6 +97,8 @@ pub struct ProgressTokens {
     pub track: Color,
     pub fill: Color,
     pub border: Color,
+    /// Draw the bar as this many HUD segments (`0` = one continuous bar).
+    pub segments: u32,
 }
 
 /// List / menu row tokens.
@@ -265,6 +267,7 @@ impl Theme {
 
     /// Solid status badge.
     pub fn badge(&self, tone: Tone) -> SurfaceTokens {
+        hook!(self.badge(tone));
         let c = self.palette.tone(tone);
         Self::surface(Some(c), None, self.on(c), false, false)
     }
@@ -453,6 +456,7 @@ impl Theme {
             track: p.surface_raised,
             fill: tone.map_or(p.primary, |t| p.tone(t)),
             border: p.border,
+            segments: 0,
         }
     }
 

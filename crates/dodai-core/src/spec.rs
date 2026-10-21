@@ -82,6 +82,9 @@ pub trait DesignSpec: Send + Sync + std::fmt::Debug {
     ) -> Option<ToggleTokens> {
         None
     }
+    fn badge(&self, t: &Theme, tone: Tone) -> Option<SurfaceTokens> {
+        None
+    }
     fn progress(&self, t: &Theme, tone: Option<Tone>) -> Option<ProgressTokens> {
         None
     }

@@ -325,6 +325,7 @@ impl DesignSpec for Material3 {
             track,
             fill: tone.map_or(p.primary, |x| p.tone(x)),
             border: track,
+            segments: 0,
         })
     }
 

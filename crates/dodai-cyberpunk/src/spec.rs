@@ -5,8 +5,8 @@
 
 use dodai_core::{
     AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, Color, ControlState,
-    DesignSpec, InputTokens, ListItemTokens, StepState, StepTokens, SurfaceTokens, TabTokens,
-    Theme, Tone,
+    DesignSpec, InputTokens, ListItemTokens, ProgressTokens, StepState, StepTokens, SurfaceTokens,
+    TabTokens, Theme, ToggleTokens, Tone,
 };
 
 /// The Cyberpunk spec (attach with [`dodai_core::Theme::with_spec`]).
@@ -207,6 +207,54 @@ impl DesignSpec for Cyberpunk {
             collapsed_title_size: 20.0,
             glow: lit,
         })
+    }
+
+    /// Outlined, tinted tags with a glow instead of solid blobs.
+    fn badge(&self, t: &Theme, tone: Tone) -> Option<SurfaceTokens> {
+        let c = t.legible(t.palette.tone(tone));
+        Some(surface(Some(c.with_alpha(0.16)), Some(c), c, true, false))
+    }
+
+    /// Hollow switches outlined in the secondary colour; lit solid when on.
+    fn toggle(&self, t: &Theme, on: bool, state: ControlState) -> Option<ToggleTokens> {
+        let p = &t.palette;
+        if state == ControlState::Disabled {
+            return None;
+        }
+        let lit = matches!(
+            state,
+            ControlState::Hovered | ControlState::Pressed | ControlState::Focused
+        );
+        Some(if on {
+            ToggleTokens {
+                track: if lit { p.primary_hover } else { p.primary },
+                thumb: p.on_primary,
+                border: p.primary,
+            }
+        } else {
+            let edge = t.legible(p.secondary);
+            ToggleTokens {
+                track: p.background,
+                thumb: if lit { edge } else { p.text_muted },
+                border: if lit { edge } else { p.border_strong },
+            }
+        })
+    }
+
+    /// A segmented HUD gauge.
+    fn progress(&self, t: &Theme, tone: Option<Tone>) -> Option<ProgressTokens> {
+        let p = &t.palette;
+        Some(ProgressTokens {
+            track: p.surface_raised,
+            fill: tone.map_or(p.primary, |x| p.tone(x)),
+            border: p.border_strong,
+            segments: 10,
+        })
+    }
+
+    /// A heavier ring in the secondary colour.
+    fn focus_ring(&self, t: &Theme) -> Option<(Color, f32)> {
+        Some((t.legible(t.palette.secondary), 3.0))
     }
 
     /// Readout-style tooltips: raised plate, cyan text.

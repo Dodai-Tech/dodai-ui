@@ -544,9 +544,13 @@ mod tests {
     fn badge_and_chip_tokens() {
         let t = square();
         let (s, fg) = badge_style(&t, Tone::Warning);
-        assert_eq!(s.fill, Some(hsla(t.palette.warning)));
-        assert_eq!(fg, hsla(t.on(t.palette.warning)));
+        // Cyberpunk: a tinted, outlined tag in the tone colour.
+        assert!(s.fill.is_some_and(|f| f.a < 0.5) && s.stroke.is_some());
+        assert_eq!(Some(fg), s.stroke);
         let l = light_rounded();
+        let (s, fg) = badge_style(&l, Tone::Warning);
+        assert_eq!(s.fill, Some(hsla(l.palette.warning)));
+        assert_eq!(fg, hsla(l.on(l.palette.warning)));
         let (s, fg) = chip_style(&l, true, false);
         assert_eq!(s.fill, Some(hsla(l.palette.roles.secondary_container)));
         assert!(s.stroke.is_none(), "tonal chip has no outline");

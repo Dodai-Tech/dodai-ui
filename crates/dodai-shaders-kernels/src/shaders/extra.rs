@@ -703,8 +703,8 @@ pub fn vignette(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
 
 pub fn film_grain(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
     let (x, y) = ((uv.x * src.w as f32) as i32, (uv.y * src.h as f32) as i32);
-    let n = hash3(x, y, (c.time * 24.0) as i32) - 0.5;
-    src.sample(uv) + Vec3::splat(n * 0.28 * c.intensity)
+    let n = hash3(x, y, (c.time * 10.0) as i32) - 0.5;
+    src.sample(uv) + Vec3::splat(n * 0.2 * c.intensity)
 }
 
 pub fn sepia(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {

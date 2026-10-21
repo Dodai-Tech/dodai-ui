@@ -222,7 +222,7 @@ fn tower_layer(x: f32, y: f32, t: f32, l: i32, n: i32, k: &Look, below: Vec3) ->
         let lit = hash3(ci + l * 101, ix, iy);
         let occ = 0.25 + 0.55 * h1;
         let slow = (t * 0.4 + lit * 60.0).sin();
-        let on = step(lit, occ) * step(-0.92, slow);
+        let on = step(lit, occ) * smoothstep(-0.97, -0.8, slow);
         let wm = smoothstep(0.1, 0.22, fxw)
             * smoothstep(0.9, 0.78, fxw)
             * smoothstep(0.18, 0.3, fyw)
@@ -250,7 +250,7 @@ fn tower_layer(x: f32, y: f32, t: f32, l: i32, n: i32, k: &Look, below: Vec3) ->
     if h3 > 0.55 && y < top && y > top - alen && ax.abs() < 0.0013 {
         col = k.sky * 0.8 + k.fog * 0.3;
     }
-    let blink = step(0.65, fract(t * 0.5 + h2));
+    let blink = smoothstep(0.55, 0.75, fract(t * 0.2 + h2));
     let ad = vec2(ax, y - (top - alen)).len();
     col =
         col + vec3(1.0, 0.15, 0.1) * (0.0006 / (ad * ad + 0.00002)) * 0.02 * blink * step(0.55, h3);
@@ -265,7 +265,7 @@ fn tower_layer(x: f32, y: f32, t: f32, l: i32, n: i32, k: &Look, below: Vec3) ->
     let seg = (y - sy0) * (60.0 - 20.0 * d);
     let glyph = step(0.2, fract(seg)) * step(0.35, hash2(ci + 5, seg.floor() as i32));
     let broken = if h4 > 0.8 {
-        step(0.3, fract(t * 0.9 + h1 * 9.0))
+        0.4 + 0.6 * smoothstep(0.2, 0.5, fract(t * 0.25 + h1 * 9.0))
     } else {
         1.0
     };
@@ -310,7 +310,7 @@ fn spinner(x: f32, y: f32, t: f32, k: &Look, aspect: f32, seed: f32) -> Vec3 {
     let head = vec2(dx - dir * 0.022, dy).len();
     let tail = vec2(dx + dir * 0.022, dy).len();
     let body = smoothstep(0.03, 0.01, vec2(dx, dy * 2.2).len());
-    let strobe = 0.5 + 0.5 * (t * 6.0 + seed * 10.0).sin();
+    let strobe = 0.8 + 0.2 * (t * 1.5 + seed * 10.0).sin();
     let mut c = Vec3::WHITE * (0.00045 / (head * head + 0.00001)) * 0.05;
     c = c + k.n1 * (0.0004 / (tail * tail + 0.00001)) * 0.05 * strobe;
     c = c + k.warm * body * 0.25;
@@ -394,9 +394,9 @@ fn finish(col: Vec3, uv: Vec2, t: f32) -> Vec3 {
     let grain = (hash3(
         (uv.x * 997.0) as i32,
         (uv.y * 991.0) as i32,
-        (t * 24.0) as i32,
+        (t * 6.0) as i32,
     ) - 0.5)
-        * 0.03;
+        * 0.012;
     (col * vig + grain).clamp01()
 }
 
@@ -460,7 +460,7 @@ fn wall(z: f32, y: f32, side: f32, t: f32, k: &Look) -> Vec3 {
     let seg = (v * 1.6).floor();
     let glyph = step(0.22, fract(v * 1.6)) * step(0.3, hash2(ti + 9, seg as i32));
     let flick = if h1 > 0.8 {
-        step(0.25, fract(t * 0.8 + h2 * 7.0))
+        0.45 + 0.55 * smoothstep(0.15, 0.45, fract(t * 0.25 + h2 * 7.0))
     } else {
         1.0
     };
@@ -587,7 +587,7 @@ pub fn br_tyrell(uv: Vec2, c: &Ctx) -> Vec3 {
     let lit = hash3(gx.floor() as i32, tier_i as i32, (tf * 5.0) as i32);
     let rows = smoothstep(0.2, 0.3, fract(tf * 5.0)) * smoothstep(0.85, 0.75, fract(tf * 5.0));
     let cols = smoothstep(0.1, 0.25, fract(gx)) * smoothstep(0.9, 0.75, fract(gx));
-    let win = k.warm * rows * cols * step(lit, 0.8) * (0.8 + 0.25 * (t * 2.0 + lit * 40.0).sin());
+    let win = k.warm * rows * cols * step(lit, 0.8) * (0.9 + 0.08 * (t * 0.8 + lit * 40.0).sin());
     let pyr = face + win * 1.3 + k.warm * smoothstep(0.1, 0.0, tf) * 0.4;
     col = col.mix(pyr, hit);
     // apex beacon
@@ -660,7 +660,7 @@ pub fn br_off_world(uv: Vec2, c: &Ctx) -> Vec3 {
         let fc = Vec3::WHITE
             .mix(k.warm, sat(fy * 6.0))
             .mix(k.n1, sat(fy * 3.0 - 0.5));
-        col = col + fc * flame * (1.4 + 0.5 * (t * 9.0 + fi * 3.0).sin());
+        col = col + fc * flame * (1.4 + 0.15 * (t * 2.5 + fi * 3.0).sin());
         col = col + k.warm * (-(d * d + fy * fy * 0.4) / 0.02).exp() * 0.3;
         col = col.mix(k.sky * 0.35, body);
         // lattice + red lights on the stack
@@ -672,7 +672,7 @@ pub fn br_off_world(uv: Vec2, c: &Ctx) -> Vec3 {
         col = col
             + vec3(1.0, 0.2, 0.1) * 0.00025 / (lamp * lamp + 0.00001)
                 * 0.1
-                * step(0.6, fract(t * 0.5 + fi * 0.3));
+                * smoothstep(0.5, 0.7, fract(t * 0.2 + fi * 0.3));
     }
     // refinery silhouette along the ground
     let ground = 0.9 + 0.01 * noise(vec2(x * 30.0, 1.0));
@@ -740,7 +740,7 @@ pub fn br_eye(uv: Vec2, c: &Ctx) -> Vec3 {
     for i in 0..6 {
         let fi = i as f32;
         let by = 0.7 - fi * 0.22;
-        let val = 0.3 + 0.7 * hash2((t * 3.0 + fi) as i32, i + 5);
+        let val = 0.3 + 0.7 * hash2((t * 0.8 + fi) as i32, i + 5);
         let in_row = step((q.y - by).abs(), 0.025);
         let lenx = val * 0.5;
         let left = step(-q.x - 1.0, 0.0) * step(0.0, -q.x - 1.0 + lenx) * in_row;
