@@ -184,51 +184,20 @@ impl Showcase {
             total += hits.len().min(cap);
             let mut grid = div().flex().flex_wrap().gap(px(t.spacing.xs));
             for (i, &pick) in hits.iter().take(cap).enumerate() {
-                let n = pick.name();
-                grid = grid.child(
-                    div()
-                        .id(SharedString::from(format!("{tag}-{cat}-{i}")))
-                        .flex()
-                        .flex_col()
-                        .items_center()
-                        .gap(px(4.0))
-                        .w(px(92.0))
-                        .py(px(t.spacing.sm))
-                        .cursor_pointer()
-                        .border_1()
-                        .border_color(hsla(t.palette.border))
-                        .on_click({
-                            let me = cx.entity();
-                            move |_, _, cx| {
-                                me.update(cx, |s, cx| {
-                                    s.icon_sel = Some(pick);
-                                    s.icon_msg = None;
-                                    cx.notify();
-                                })
-                            }
+                let me = cx.entity();
+                grid = grid.child(IconTile {
+                    id: SharedString::from(format!("{tag}-{cat}-{i}")),
+                    icon: pick,
+                    filled: self.icon_filled,
+                    selected: self.icon_sel == Some(pick),
+                    on_click: std::rc::Rc::new(move |cx: &mut gpui::App| {
+                        me.update(cx, |s, cx| {
+                            s.icon_sel = Some(pick);
+                            s.icon_msg = None;
+                            cx.notify();
                         })
-                        .child(
-                            dodai_gpui::Icon::new(pick)
-                                .size(28.0)
-                                .filled(self.icon_filled)
-                                .color(hsla(t.palette.primary)),
-                        )
-                        .child({
-                            // Centred when it fits; long names stay left-aligned so the
-                            // ellipsis clips the end, not both sides.
-                            let mut label = div()
-                                .w_full()
-                                .px(px(4.0))
-                                .truncate()
-                                .text_size(px(t.typography.size_xs))
-                                .text_color(hsla(t.palette.text_muted))
-                                .child(n);
-                            if n.len() <= 12 {
-                                label = label.text_center();
-                            }
-                            label
-                        }),
-                );
+                    }),
+                });
             }
             let mut block = div()
                 .flex()
@@ -372,23 +341,15 @@ impl Showcase {
                                                 cx.notify();
                                             })),
                                     )
-                                    .child(
-                                        Button::new(
-                                            "ico-code",
-                                            if self.icon_code {
-                                                "Hide code"
-                                            } else {
-                                                "Show code"
-                                            },
-                                        )
-                                        .variant(ButtonVariant::Secondary)
-                                        .on_click(
-                                            cx.listener(|s, _, _, cx| {
-                                                s.icon_code = !s.icon_code;
-                                                cx.notify();
-                                            }),
-                                        ),
-                                    )
+                                    .child(code_toggle(
+                                        "ico-code",
+                                        t,
+                                        self.icon_code,
+                                        cx.listener(|s, _, _, cx| {
+                                            s.icon_code = !s.icon_code;
+                                            cx.notify();
+                                        }),
+                                    ))
                                     .child(
                                         Button::new("ico-close", "Close")
                                             .variant(ButtonVariant::Secondary)
@@ -443,4 +404,68 @@ fn pretty_svg(svg: &str) -> String {
         out.push('\n');
     }
     out.trim_end().to_string()
+}
+
+/// One tile of the icon grid. The selection fades in (fill, border, label) instead of snapping,
+/// so it needs the window's frame clock: hence a component, not a plain `div`.
+#[derive(IntoElement)]
+struct IconTile {
+    id: SharedString,
+    icon: IconId,
+    filled: bool,
+    selected: bool,
+    on_click: std::rc::Rc<dyn Fn(&mut gpui::App)>,
+}
+
+impl RenderOnce for IconTile {
+    fn render(self, window: &mut gpui::Window, cx: &mut gpui::App) -> impl IntoElement {
+        let t = dodai_gpui::theme_of(cx);
+        let sel = dodai_gpui::motion::transition(
+            window,
+            cx,
+            SharedString::from(format!("{}-sel", self.id)).into(),
+            self.selected,
+        );
+        let mix = dodai_gpui::motion::mix;
+        let primary = hsla(t.palette.primary);
+        let border = mix(hsla(t.palette.border), primary, sel);
+        let fill = mix(gpui::transparent_black(), primary.opacity(0.14), sel);
+        let label = mix(hsla(t.palette.text_muted), primary, sel);
+        let n = self.icon.name();
+        let on_click = self.on_click;
+        div()
+            .id(self.id)
+            .flex()
+            .flex_col()
+            .items_center()
+            .gap(px(4.0))
+            .w(px(92.0))
+            .py(px(t.spacing.sm))
+            .cursor_pointer()
+            .border_1()
+            .border_color(border)
+            .bg(fill)
+            .on_click(move |_, _, cx| on_click(cx))
+            .child(
+                dodai_gpui::Icon::new(self.icon)
+                    .size(28.0)
+                    .filled(self.filled)
+                    .color(primary),
+            )
+            .child({
+                // Centred when it fits; long names stay left-aligned so the ellipsis clips
+                // the end, not both sides.
+                let mut l = div()
+                    .w_full()
+                    .px(px(4.0))
+                    .truncate()
+                    .text_size(px(t.typography.size_xs))
+                    .text_color(label)
+                    .child(n);
+                if n.len() <= 12 {
+                    l = l.text_center();
+                }
+                l
+            })
+    }
 }

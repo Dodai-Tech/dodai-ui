@@ -569,38 +569,14 @@ impl Showcase {
         let open = self.code_open.contains(title) || std::env::var_os("DODAI_CODE").is_some();
         let me = me.clone();
         let tid = section_id(title);
-        let toggle = div()
-            .id(("code-toggle", tid))
-            .flex()
-            .items_center()
-            .gap(px(6.0))
-            .px(px(8.0))
-            .py(px(3.0))
-            .rounded(px(4.0))
-            .cursor_pointer()
-            .border_1()
-            .border_color(hsla(t.palette.border))
-            .text_size(px(11.0))
-            .text_color(hsla(if open {
-                t.palette.on_primary
-            } else {
-                t.palette.text_muted
-            }))
-            .when(open, |d| d.bg(hsla(t.palette.primary)))
-            .child(dodai_gpui::Icon::Code.size(14.0).color(hsla(if open {
-                t.palette.on_primary
-            } else {
-                t.palette.text_muted
-            })))
-            .child(if open { "Hide code" } else { "Show code" })
-            .on_click(move |_, _, cx| {
-                me.update(cx, |s, cx| {
-                    if !s.code_open.remove(title) {
-                        s.code_open.insert(title);
-                    }
-                    cx.notify();
-                })
-            });
+        let toggle = code_toggle(("code-toggle", tid), t, open, move |_, _, cx| {
+            me.update(cx, |s, cx| {
+                if !s.code_open.remove(title) {
+                    s.code_open.insert(title);
+                }
+                cx.notify();
+            })
+        });
         div()
             .flex()
             .flex_col()
@@ -612,6 +588,37 @@ impl Showcase {
             })
             .into_any_element()
     }
+}
+
+/// The "Show code" / "Hide code" toggle every section uses.
+pub(crate) fn code_toggle(
+    id: impl Into<gpui::ElementId>,
+    t: &Theme,
+    open: bool,
+    on_click: impl Fn(&gpui::ClickEvent, &mut Window, &mut gpui::App) + 'static,
+) -> gpui::Stateful<gpui::Div> {
+    let fg = hsla(if open {
+        t.palette.on_primary
+    } else {
+        t.palette.text_muted
+    });
+    div()
+        .id(id)
+        .flex()
+        .items_center()
+        .gap(px(6.0))
+        .px(px(8.0))
+        .py(px(3.0))
+        .rounded(px(4.0))
+        .cursor_pointer()
+        .border_1()
+        .border_color(hsla(t.palette.border))
+        .text_size(px(11.0))
+        .text_color(fg)
+        .when(open, |d| d.bg(hsla(t.palette.primary)))
+        .child(dodai_gpui::Icon::Code.size(14.0).color(fg))
+        .child(if open { "Hide code" } else { "Show code" })
+        .on_click(on_click)
 }
 
 impl Render for Showcase {
