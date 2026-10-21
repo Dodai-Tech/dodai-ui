@@ -994,7 +994,32 @@ impl Render for Showcase {
                             })
                         }
                     })
-                    .content(body),
+                    .content(
+                        div()
+                            .flex()
+                            .flex_col()
+                            .size_full()
+                            .child(
+                                // Top bar: the theme picker, always in reach.
+                                div()
+                                    .flex()
+                                    .flex_none()
+                                    .items_center()
+                                    .justify_end()
+                                    .gap(px(t.spacing.sm))
+                                    .px(px(t.spacing.lg))
+                                    .py(px(t.spacing.sm))
+                                    .border_b_1()
+                                    .border_color(hsla(t.palette.border))
+                                    .child(Muted::new("Theme"))
+                                    .child(
+                                        div()
+                                            .w(px(240.0))
+                                            .child(dodai_gpui::ThemeSelect::new("top-theme")),
+                                    ),
+                            )
+                            .child(body.min_h_0()),
+                    ),
             )
             .child(Scanlines::new())
     }

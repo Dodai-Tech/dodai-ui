@@ -6,7 +6,39 @@ use crate::list::ListItem;
 use crate::select::{family_title, DesignSystemSelector};
 use crate::{select_theme, ActiveDodai};
 use dodai_core::ButtonVariant;
-use gpui::{px, App, ElementId, IntoElement, ParentElement, RenderOnce, Styled, Window};
+use gpui::{
+    px, App, ElementId, IntoElement, ParentElement, RenderOnce, SharedString, Styled, Window,
+};
+
+/// Dropdown of every theme in the global switcher (`Select`); picking one switches the app.
+/// Compact enough for a top bar.
+#[derive(IntoElement)]
+pub struct ThemeSelect {
+    id: ElementId,
+}
+
+impl ThemeSelect {
+    pub fn new(id: impl Into<ElementId>) -> Self {
+        Self { id: id.into() }
+    }
+}
+
+impl RenderOnce for ThemeSelect {
+    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let lt = cx.dodai();
+        let active = lt.switcher().index();
+        let names: Vec<SharedString> = lt
+            .switcher()
+            .themes()
+            .iter()
+            .map(|t| SharedString::from(t.name()))
+            .collect();
+        crate::Select::new(self.id)
+            .options(names)
+            .selected(Some(active))
+            .on_change(|i, _, cx| select_theme(cx, i))
+    }
+}
 
 /// Row of buttons, one per theme in the global switcher; the active one is filled.
 #[derive(IntoElement)]
