@@ -476,3 +476,49 @@ pub(crate) fn icons_view(t: &dodai_core::Theme, query: &str) -> gpui::Div {
     }
     out
 }
+
+pub(crate) fn motion_tokens_view(t: &dodai_core::Theme) -> gpui::Div {
+    use dodai_gpui::dodai_motion::{material_easing as e, DurationToken};
+    let mut out = div().flex().flex_col().gap(px(4.0));
+    for d in DurationToken::ALL {
+        out = out.child(
+            div()
+                .flex()
+                .items_center()
+                .gap(px(t.spacing.md))
+                .child(
+                    div()
+                        .w(px(130.0))
+                        .flex_none()
+                        .font_family(dodai_gpui::text::first_family(t.typography.mono))
+                        .text_size(px(t.typography.size_xs))
+                        .text_color(hsla(t.palette.text_muted))
+                        .child(format!("{} · {} ms", d.name(), d.millis())),
+                )
+                .child(
+                    div()
+                        .h(px(8.0))
+                        .w(px(d.millis() as f32 * 0.5))
+                        .rounded(px(4.0))
+                        .bg(hsla(t.palette.primary)),
+                ),
+        );
+    }
+    let curves = [
+        ("emphasized", e::EMPHASIZED),
+        ("emphasized-decelerate", e::EMPHASIZED_DECELERATE),
+        ("emphasized-accelerate", e::EMPHASIZED_ACCELERATE),
+        ("standard-decelerate", e::STANDARD_DECELERATE),
+        ("standard-accelerate", e::STANDARD_ACCELERATE),
+    ];
+    for (name, c) in curves {
+        out = out.child(
+            div()
+                .font_family(dodai_gpui::text::first_family(t.typography.mono))
+                .text_size(px(t.typography.size_xs))
+                .text_color(hsla(t.palette.text_muted))
+                .child(format!("{name}: {}", c.to_css())),
+        );
+    }
+    out
+}

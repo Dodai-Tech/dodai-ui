@@ -30,6 +30,29 @@ pub fn arc_points(cx: f32, cy: f32, r: f32, start: f32, sweep: f32) -> Vec<(f32,
         .collect()
 }
 
+/// Like [`arc_points`] but the radius oscillates by `amp` with `waves` crests over the full
+/// circle (Material 3 Expressive wavy circular indicator). `phase` travels the wave.
+pub fn wavy_arc_points(
+    c: (f32, f32),
+    r: f32,
+    start: f32,
+    sweep: f32,
+    amp: f32,
+    waves: f32,
+    phase: f32,
+) -> Vec<(f32, f32)> {
+    let n = ((sweep.abs() / std::f32::consts::TAU) * 192.0)
+        .ceil()
+        .max(2.0) as usize;
+    (0..=n)
+        .map(|i| {
+            let a = start + sweep * i as f32 / n as f32;
+            let rr = r + amp * (a * waves - phase).sin();
+            (c.0 + rr * a.cos(), c.1 + rr * a.sin())
+        })
+        .collect()
+}
+
 pub(crate) fn elapsed_secs() -> f32 {
     static START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
     START
@@ -46,6 +69,7 @@ pub struct CircularProgress {
     thickness: Option<f32>,
     tone: Option<Tone>,
     label: bool,
+    wavy: bool,
 }
 
 impl CircularProgress {
@@ -56,6 +80,7 @@ impl CircularProgress {
             thickness: None,
             tone: None,
             label: true,
+            wavy: false,
         }
     }
     pub fn indeterminate() -> Self {
@@ -77,6 +102,11 @@ impl CircularProgress {
         self.tone = Some(t);
         self
     }
+    /// Material 3 Expressive wavy ring. Ignored by other design systems.
+    pub fn wavy(mut self, on: bool) -> Self {
+        self.wavy = on;
+        self
+    }
     /// Show the percentage in the middle (determinate only; default on).
     pub fn label(mut self, on: bool) -> Self {
         self.label = on;
@@ -96,6 +126,7 @@ impl RenderOnce for CircularProgress {
         let size = self.size.unwrap_or(size);
         let th = self.thickness.unwrap_or(th);
         let value = self.value;
+        let wavy = self.wavy && m3;
         let mut d = div()
             .relative()
             .flex_none()
@@ -148,18 +179,37 @@ impl RenderOnce for CircularProgress {
                         match value {
                             Some(v) if v > 0.0 => {
                                 let start = -std::f32::consts::FRAC_PI_2;
-                                ring(
-                                    arc_points(c0, c1, r, start, full * v.min(0.9999)),
-                                    fill,
-                                    false,
-                                )
+                                let sweep = full * v.min(0.9999);
+                                let pts = if wavy {
+                                    let ph = elapsed_secs() * 3.0;
+                                    wavy_arc_points((c0, c1), r - 1.5, start, sweep, 1.2, 7.0, ph)
+                                } else {
+                                    arc_points(c0, c1, r, start, sweep)
+                                };
+                                ring(pts, fill, false)
                             }
                             Some(_) => {}
                             None => {
                                 let a = elapsed_secs() * 4.0;
-                                ring(arc_points(c0, c1, r, a, full * 0.27), fill, false);
+                                let pts = if wavy {
+                                    wavy_arc_points(
+                                        (c0, c1),
+                                        r - 1.5,
+                                        a,
+                                        full * 0.4,
+                                        1.2,
+                                        7.0,
+                                        a * 2.0,
+                                    )
+                                } else {
+                                    arc_points(c0, c1, r, a, full * 0.27)
+                                };
+                                ring(pts, fill, false);
                                 crate::motion::next_frame(window);
                             }
+                        }
+                        if wavy && value.is_some_and(|v| v > 0.0) {
+                            crate::motion::next_frame(window);
                         }
                     },
                 )
@@ -651,6 +701,16 @@ impl RenderOnce for AvatarGroup {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn wavy_arc_stays_within_amplitude_of_the_radius() {
+        let p = wavy_arc_points((0.0, 0.0), 20.0, 0.0, std::f32::consts::TAU, 2.0, 9.0, 0.3);
+        assert!(p.len() > 100);
+        for (x, y) in p {
+            let r = (x * x + y * y).sqrt();
+            assert!((r - 20.0).abs() <= 2.0 + 1e-3, "{r}");
+        }
+    }
 
     #[test]
     fn arc_runs_from_start_by_sweep() {

@@ -27,10 +27,10 @@ items are unverified. ✓ = implemented and spec-tested, ◐ = partly, ✗ = mis
 | Loading indicator | ✓ | |
 | Menus | ✓ | `MenuItem::icon`, `::submenu` |
 | Navigation bar, rail, drawer | ✓ | `ModalDrawer`, `Navigation::header` |
-| Progress: linear, circular | ◐ | wavy linear ✓ (`.wavy`), wavy circular ✗ |
+| Progress: linear, circular, wavy | ✓ | `ProgressBar::wavy`, `CircularProgress::wavy` |
 | Search (docked, full-screen) | ✓ | `SearchView::recent` |
 | Sheets: bottom, side | ✓ | |
-| Sliders: continuous, discrete, range, centred | ◐ | inset icon ✗ |
+| Sliders: continuous, discrete, range, centred, inset icon | ✓ | `Slider::centered`, `.icon` |
 | Snackbar | ✓ | |
 | Switch | ✓ | with icons ✓ |
 | Tabs: primary, secondary, icons | ✓ | `Tabs::scrollable` |
@@ -41,8 +41,8 @@ items are unverified. ✓ = implemented and spec-tested, ◐ = partly, ✗ = mis
 | Colour: baseline + generated schemes | ✓ | 25 + 14 roles, `Scheme`, 7 styles, pastel and seeded presets |
 | Shape scale and role mapping | ✓ | |
 | Elevation (soft shadows), state layers | ✓ | |
-| Typography: M3 type scale | ◐ | `TypeRole`, `Text`; used by list items, chips, tabs; other components keep theme sizes |
-| Motion: emphasized easing, durations | ◐ | `fx.rs` mixins; duration tokens not exhaustive |
+| Typography: M3 type scale | ✓ | `TypeRole`, `Text`; list items, chips, tabs, menus and dialogs use it; buttons use the control-size text; text fields keep their fixed line height |
+| Motion: easing curves, 16 duration tokens | ✓ | `dodai_motion::{DurationToken, material_easing}`; showcase "Motion tokens" |
 
 # Cyberpunk coverage
 

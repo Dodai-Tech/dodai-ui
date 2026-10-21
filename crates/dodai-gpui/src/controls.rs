@@ -714,6 +714,7 @@ pub struct Slider {
     ticks: bool,
     show_value: bool,
     centered: bool,
+    icon: Option<crate::icons::IconName>,
     bubble: Option<BubblePlacement>,
     format: Option<Rc<dyn Fn(f32) -> String>>,
     on_change: Option<FloatHandler>,
@@ -738,6 +739,7 @@ impl Slider {
             ticks: false,
             show_value: false,
             centered: false,
+            icon: None,
             bubble: None,
             format: None,
             on_change: None,
@@ -752,6 +754,12 @@ impl Slider {
     /// (horizontal only), for values that go both ways such as balance.
     pub fn centered(mut self, on: bool) -> Self {
         self.centered = on;
+        self
+    }
+    /// Material 3 Expressive slider with an icon inset at the start of a tall track and a
+    /// slim handle (horizontal, tonal themes only).
+    pub fn icon(mut self, i: crate::icons::IconName) -> Self {
+        self.icon = Some(i);
         self
     }
     /// Show the current value next to the slider.
@@ -802,9 +810,22 @@ impl Slider {
         let t = crate::apply_corners(t, self.corners);
         let tonal = t.look().tonal;
         // M3: 20 px handle on a 4 px track.
-        let thumb_d = if tonal { 20.0 } else { THUMB };
-        let track_h = if tonal { 4.0 } else { 6.0 };
         let vertical = self.direction == Direction::Vertical;
+        let inset = tonal && !vertical && self.icon.is_some();
+        let thumb_d = if inset {
+            4.0
+        } else if tonal {
+            20.0
+        } else {
+            THUMB
+        };
+        let track_h = if inset {
+            40.0
+        } else if tonal {
+            4.0
+        } else {
+            6.0
+        };
         let st = window.use_keyed_state(self.id.clone(), cx, |_, _| SliderState::default());
         let raw = slider_fraction(self.value, self.min, self.max);
         let frac = crate::motion::smooth(window, cx, self.id.clone(), raw)
@@ -852,12 +873,35 @@ impl Slider {
                 .h(px(self.length))
                 .justify_center()
         } else {
-            base.w_full().h(px(thumb_d + 4.0))
+            base.w_full()
+                .h(px(if inset { 48.0 } else { thumb_d + 4.0 }))
         };
         let track = if vertical {
             div().h_full().w(px(track_h)).child(vbar(&t, frac, track_h))
         } else {
-            if self.centered {
+            if inset {
+                let r = &t.palette.roles;
+                div()
+                    .w_full()
+                    .h(px(track_h))
+                    .relative()
+                    .rounded(px(12.0))
+                    .bg(hsla(r.secondary_container))
+                    .child(
+                        div()
+                            .h_full()
+                            .w(relative(frac))
+                            .rounded(px(12.0))
+                            .bg(hsla(t.palette.primary)),
+                    )
+                    .children(self.icon.map(|i| {
+                        div().absolute().left(px(12.0)).top(px(8.0)).child(
+                            crate::icons::Icon::new(i)
+                                .size(24.0)
+                                .color(hsla(t.palette.on_primary)),
+                        )
+                    }))
+            } else if self.centered {
                 div().w_full().child(centered_bar(&t, frac, track_h))
             } else {
                 div().w_full().child(bar(&t, frac, None, track_h))
@@ -866,7 +910,7 @@ impl Slider {
         let thumb = shaped(&thumb_shape, thumb_style)
             .absolute()
             .w(px(thumb_d))
-            .h(px(thumb_d));
+            .h(px(if inset { 44.0 } else { thumb_d }));
         let rail = div().absolute().top_0().bottom_0().left_0().right_0();
         let tick_c = hsla(t.palette.border_strong);
         let ticks = if self.ticks {

@@ -141,6 +141,9 @@ impl Menu {
             .gap(px(2.0))
             .font_family(first_family(t.typography.body))
             .text_size(px(t.typography.size_md));
+        if t.look().tonal {
+            col = crate::text::typeset(col, &t, dodai_core::TypeRole::LabelLarge);
+        }
         let open = window.use_keyed_state((self.id.clone(), "open"), cx, |_, _| None::<usize>);
         for (i, item) in self.items.iter().enumerate() {
             if item.separator {

@@ -349,7 +349,13 @@ impl Showcase {
                                 .size(40.0)
                                 .thickness(4.0),
                         )
-                        .child(dodai_gpui::CircularProgress::indeterminate()),
+                        .child(dodai_gpui::CircularProgress::indeterminate())
+                        .child(dodai_gpui::CircularProgress::new(0.6).wavy(true).size(64.0))
+                        .child(
+                            dodai_gpui::CircularProgress::indeterminate()
+                                .wavy(true)
+                                .size(64.0),
+                        ),
                 )
                 .child(
                     dodai_gpui::Banner::new("bn1", Tone::Info, "A new version is available.")

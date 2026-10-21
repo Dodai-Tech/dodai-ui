@@ -60,6 +60,17 @@ impl Showcase {
         ));
         out.push((
             "Foundations",
+            "Motion tokens",
+            section!("Motion tokens")
+                .child(Muted::new(
+                    "Material 3 duration scale (bar = duration) and named easing curves.",
+                ))
+                .child(motion_tokens_view(&t))
+                .into_any_element(),
+            "Motion tokens",
+        ));
+        out.push((
+            "Foundations",
             "Spacing · Elevation",
             section!("Spacing · Elevation")
                 .child(Muted::new(

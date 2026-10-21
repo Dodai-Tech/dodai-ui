@@ -742,10 +742,10 @@ impl Theme {
         let h = self.shape.control_height;
         let ty = &self.typography;
         SizeMetrics {
-            height: h * [0.8, 1.0, 1.4, 2.4, 3.4][i],
-            padding: self.spacing.md * [0.75, 1.0, 1.5, 3.0, 4.0][i],
+            height: h * [0.75, 1.0, 1.25, 1.6, 2.0][i],
+            padding: self.spacing.md * [0.75, 1.0, 1.25, 1.75, 2.25][i],
             text_size: [ty.size_sm, ty.size_md, ty.size_lg, ty.size_xl, ty.size_xxl][i],
-            icon_size: h * [0.5, 0.5, 0.6, 0.8, 1.0][i],
+            icon_size: h * [0.45, 0.5, 0.5, 0.55, 0.65][i],
             square_radius: [12.0, 12.0, 16.0, 28.0, 28.0][i],
         }
     }

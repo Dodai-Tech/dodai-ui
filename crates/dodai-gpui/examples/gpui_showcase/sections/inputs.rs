@@ -363,6 +363,19 @@ impl Showcase {
                             })
                         }
                     }),
+            )
+            .child(
+                Slider::new("inset", self.slider)
+                    .icon(dodai_gpui::IconName::Heart)
+                    .on_change({
+                        let m = me.clone();
+                        move |v, _, cx| {
+                            m.update(cx, |s, cx| {
+                                s.slider = v;
+                                cx.notify()
+                            })
+                        }
+                    }),
             );
         out.push((
             "Inputs",
@@ -413,14 +426,17 @@ impl Showcase {
                     )),
             );
         }
-        out.push((
-            "Inputs",
-            "Checkbox variants",
-            section!("Checkbox variants")
-                .child(variants)
-                .into_any_element(),
-            "Checkbox variants",
-        ));
+        // Sizes and shapes are Material 3 options; other designs ignore them.
+        if t.look().tonal {
+            out.push((
+                "Inputs",
+                "Checkbox variants",
+                section!("Checkbox variants")
+                    .child(variants)
+                    .into_any_element(),
+                "Checkbox variants",
+            ));
+        }
         out.push((
             "Inputs",
             "Slider · Progress",

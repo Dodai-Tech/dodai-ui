@@ -108,7 +108,7 @@ impl DialogCard {
                 )
         }))
         .child({
-            let title = div()
+            let mut title = div()
                 .font_family(first_family(t.typography.display))
                 .text_size(px(if t.look().tonal {
                     t.typography.size_xl
@@ -116,6 +116,9 @@ impl DialogCard {
                     t.typography.size_lg
                 }))
                 .child(format_label(&t.typography, &self.title));
+            if t.look().tonal {
+                title = crate::text::typeset(title, &t, dodai_core::TypeRole::HeadlineSmall);
+            }
             if self.icon.is_some() {
                 title.flex().justify_center()
             } else {
@@ -142,6 +145,9 @@ impl DialogCard {
                     .gap(px(t.spacing.sm))
                     .children(self.actions),
             );
+        }
+        if t.look().tonal {
+            d = crate::text::typeset(d, &t, dodai_core::TypeRole::BodyMedium);
         }
         d
     }

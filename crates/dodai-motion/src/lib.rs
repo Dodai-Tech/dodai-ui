@@ -16,6 +16,7 @@ mod player;
 mod pose;
 #[cfg(test)]
 mod tests;
+mod tokens;
 mod tween;
 
 pub use clip::Clip;
@@ -32,4 +33,5 @@ pub use motion::{EntryKind, EntrySet, Motion};
 pub use physics::{damp, nearest, rubber_band, Bounce, Decay, Shake, Spring, SpringState};
 pub use player::{Animator, Player};
 pub use pose::Pose;
+pub use tokens::{material_easing, token_motion, DurationToken};
 pub use tween::Tween;
