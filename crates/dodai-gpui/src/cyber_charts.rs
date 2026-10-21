@@ -296,6 +296,7 @@ impl Spectrum {
 impl RenderOnce for Spectrum {
     fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let chamfered = t.shape.kind() == dodai_core::ShapeKind::Chamfered;
         let (gw, gh, cells, live) = (self.w, self.h, self.cells, self.live);
         let values = self.values;
         let zc = self.zones.then(|| {
@@ -319,7 +320,11 @@ impl RenderOnce for Spectrum {
                 let bw = ((gw - gap * (n as f32 - 1.0)) / n as f32).max(2.0);
                 let cg = 2.0;
                 let ch = (gh - cg * (cells as f32 - 1.0)) / cells as f32;
-                let cut = (ch * 0.5).min(bw * 0.4);
+                let cut = if chamfered {
+                    (ch * 0.5).min(bw * 0.4)
+                } else {
+                    0.0
+                };
                 let now = clock();
                 // one bucket per colour: [zone 0..3] lit, [zone 0..3] peak caps, dim
                 let mut lit: [Vec<Vec<(f32, f32)>>; 3] = Default::default();
@@ -495,6 +500,7 @@ impl SignalBars {
 impl RenderOnce for SignalBars {
     fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let chamfered = t.shape.kind() == dodai_core::ShapeKind::Chamfered;
         let (n, level, h) = (self.bars, self.level, self.height);
         let bw = h * 0.22;
         let gap = bw * 0.5;
@@ -508,11 +514,17 @@ impl RenderOnce for SignalBars {
                 for i in 0..n {
                     let bh = h * (i as f32 + 1.0) / n as f32;
                     let x = i as f32 * (bw + gap);
-                    let poly = chamfer_rect(x, h - bh, bw, bh, bw * 0.45);
+                    let poly =
+                        chamfer_rect(x, h - bh, bw, bh, if chamfered { bw * 0.45 } else { 0.0 });
                     if i < level {
                         if let Some(r) = glow {
-                            let big =
-                                chamfer_rect(x - 2.0, h - bh - 2.0, bw + 4.0, bh + 4.0, bw * 0.45);
+                            let big = chamfer_rect(
+                                x - 2.0,
+                                h - bh - 2.0,
+                                bw + 4.0,
+                                bh + 4.0,
+                                if chamfered { bw * 0.45 } else { 0.0 },
+                            );
                             fill(w, b.origin, &big, scale_alpha(on, 0.12 + r * 0.004));
                         }
                         fill(w, b.origin, &poly, on);

@@ -1685,7 +1685,8 @@ impl Gauge {
                 ]
             }),
             glow,
-            soft: t.look().soft_elevation,
+            // Cut-corner gauges are Cyberpunk's; every other design gets the round ones.
+            soft: t.look().soft_elevation || t.shape.kind() != dodai_core::ShapeKind::Chamfered,
         };
         let soft = look.soft;
         let canvas_el = canvas(

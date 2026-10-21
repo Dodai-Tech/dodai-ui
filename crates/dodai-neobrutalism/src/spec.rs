@@ -69,6 +69,7 @@ impl DesignSpec for NeoBrutalism {
     fn look(&self) -> Look {
         Look {
             sink: true,
+            symbol_icons: true,
             ..Look::default()
         }
     }

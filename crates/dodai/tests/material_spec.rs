@@ -336,6 +336,7 @@ fn look_flags_belong_to_the_design() {
     {
         let want = dodai::Look {
             sink: t.meta.family == "neobrutalism",
+            symbol_icons: t.meta.family == "neobrutalism",
             ..dodai::Look::default()
         };
         assert_eq!(t.look(), want, "{}", t.id());
