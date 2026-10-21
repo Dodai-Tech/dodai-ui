@@ -10,9 +10,9 @@ use dodai_gpui::{
     set_glow_intensity, set_scanlines, theme_of, Accordion, BottomSheet, Breadcrumb,
     BubblePlacement, Button, ButtonGroup, Card, CardVariant, Carousel, Checkbox, DesignSystemTree,
     Dialog, DialogCard, Direction, Divider, DodaiStyled, DodaiTooltip, Fab, FabSize, Heading,
-    IconButton, InputBox, Knob, Label, ListItem, LoadingIndicator, Mono, Muted, NavItem, NavLayout,
-    Navigation, Pagination, Panel, ProgressBar, Radio, ResponsiveShell, Scanlines, SearchBar,
-    Segmented, SideSheet, Slider, SplitButton, Stepper, Tabs, Tag, Toggle, TopAppBar,
+    IconButton, InputBox, Knob, Label, ListItem, LoadingIndicator, Mono, Muted, Pagination, Panel,
+    ProgressBar, Radio, ResponsiveShell, Scanlines, SearchBar, Segmented, SideSheet, Slider,
+    SplitButton, Stepper, Tabs, Tag, Toggle, TopAppBar,
 };
 use dodai_gpui::{
     BarChart, Blip, BoxPlot, BubbleChart, Candle, Candlestick, Date, DatePicker, DotMatrix,

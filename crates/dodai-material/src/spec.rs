@@ -348,6 +348,8 @@ impl DesignSpec for Material3 {
             rail_width: 80.0,
             indicator: (56.0, 32.0),
             rail_label_gap: 4.0,
+            bar_height: 80.0,
+            bar_indicator_width: 64.0,
             pill: true,
             container: Some(t.palette.roles.surface_container_low),
             roles: (

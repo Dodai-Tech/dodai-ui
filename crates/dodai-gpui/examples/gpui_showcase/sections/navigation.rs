@@ -51,13 +51,34 @@ impl Showcase {
             .child(Label::new("Checkbox"))
             .child(Checkbox::new("ck-dis", false).disabled(true));
         let m3 = me.clone();
-        let nav_items = || {
+        // Destinations of the bar, rail and drawer demos; `tag` keeps the element ids apart.
+        let nav_items = |tag: &'static str| {
+            let sel = self.nav;
             [
-                NavItem::new("⌂", "Home"),
-                NavItem::new("✉", "Mail").badge(3),
-                NavItem::new("★", "Saved"),
-                NavItem::new("⚙", "Settings"),
+                (IconName::Home, "Home", None),
+                (IconName::Mail, "Mail", Some("3")),
+                (IconName::Star, "Saved", None),
+                (IconName::Settings, "Settings", None),
             ]
+            .into_iter()
+            .enumerate()
+            .map(|(i, (icon, label, badge))| {
+                let m = m3.clone();
+                let mut it = dodai_gpui::NavigationItem::new((tag, i), label)
+                    .icon(icon)
+                    .selected(i == sel)
+                    .on_click(move |_, _, cx| {
+                        m.update(cx, |s, cx| {
+                            s.nav = i;
+                            cx.notify();
+                        })
+                    });
+                if let Some(b) = badge {
+                    it = it.badge(b);
+                }
+                it
+            })
+            .collect::<Vec<_>>()
         };
         let structure = div()
             .flex()
@@ -136,50 +157,28 @@ impl Showcase {
                     ),
             )
             .child(
-                Navigation::new("nav-bar", NavLayout::Bar)
-                    .items(nav_items())
-                    .active(self.nav)
-                    .on_select({
-                        let m = m3.clone();
-                        move |i, _, cx| {
-                            m.update(cx, |s, cx| {
-                                s.nav = i;
-                                cx.notify();
-                            })
-                        }
-                    }),
+                nav_items("nav-bar")
+                    .into_iter()
+                    .fold(dodai_gpui::NavigationBar::new(), |bar, it| bar.item(it)),
             )
             .child(
                 row()
                     .items_start()
                     .child(
-                        Navigation::new("nav-rail", NavLayout::Rail)
-                            .header(
+                        nav_items("nav-rail").into_iter().fold(
+                            dodai_gpui::NavigationRail::new("nav-rail").header(
                                 Fab::new("rail-fab", "+")
                                     .icon(IconName::Edit)
                                     .size(FabSize::Small),
-                            )
-                            .items(nav_items())
-                            .active(self.nav)
-                            .on_select({
-                                let m = m3.clone();
-                                move |i, _, cx| {
-                                    m.update(cx, |s, cx| {
-                                        s.nav = i;
-                                        cx.notify();
-                                    })
-                                }
-                            }),
+                            ),
+                            |rail, it| rail.item(it),
+                        ),
                     )
                     .child(
-                        Navigation::new("nav-drawer", NavLayout::Drawer)
-                            .items(nav_items())
-                            .active(self.nav)
-                            .on_select(move |i, _, cx| {
-                                m3.update(cx, |s, cx| {
-                                    s.nav = i;
-                                    cx.notify();
-                                })
+                        nav_items("nav-drawer")
+                            .into_iter()
+                            .fold(dodai_gpui::NavigationDrawer::new("nav-drawer"), |d, it| {
+                                d.item(it)
                             }),
                     ),
             );
@@ -589,11 +588,8 @@ impl Showcase {
                 .width(240.0)
                 .child(Muted::new("Date range · Owner · Status")),
         );
-        let modal_drawer = frame(260.0).child(
-            dodai_gpui::ModalDrawer::new("ov-drawer")
-                .items(nav_items())
-                .active(self.nav),
-        );
+        let modal_drawer = frame(260.0)
+            .child(dodai_gpui::ModalDrawer::new("ov-drawer").items(nav_items("ov-drawer-item")));
         out.push((
             "Navigation",
             "Modal navigation drawer",

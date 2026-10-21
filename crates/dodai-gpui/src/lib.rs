@@ -275,7 +275,7 @@ pub use motion::{
 #[cfg(feature = "components")]
 pub use nav::{Accordion, Breadcrumb, Pagination, Segmented, Stepper};
 #[cfg(feature = "components")]
-pub use navigation::{NavigationDrawer, NavigationItem, NavigationRail};
+pub use navigation::{NavigationBar, NavigationDrawer, NavigationItem, NavigationRail};
 #[cfg(feature = "components")]
 pub use overlay::{Dialog, DialogCard};
 #[cfg(feature = "components")]
@@ -313,7 +313,7 @@ pub use spy::{pick as spy_pick, ScrollSpy};
 #[cfg(feature = "components")]
 pub use surfaces::{
     card_style, AppBarSize, Card, CardVariant, Fab, FabMenu, FabSize, IconButton, IconWidth,
-    NavItem, NavLayout, Navigation, SearchBar, TopAppBar,
+    SearchBar, TopAppBar,
 };
 #[cfg(feature = "components")]
 pub use switcher::{set_tree_expanded, tree_expanded, DesignSystemTree, ThemeSwitcherBar};

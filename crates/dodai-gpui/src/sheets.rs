@@ -265,16 +265,12 @@ impl RenderOnce for SideSheet {
 
 // ────────────────────────────── ModalDrawer ──────────────────────────────
 
-type IndexFn = Rc<dyn Fn(usize, &mut Window, &mut App)>;
-
-/// Modal navigation drawer: a [`crate::Navigation`] drawer sliding over the page from the left
+/// Modal navigation drawer: a [`crate::NavigationDrawer`] sliding over the page from the left
 /// edge with a scrim; picking an item or clicking the scrim dismisses it.
 #[derive(IntoElement)]
 pub struct ModalDrawer {
     id: ElementId,
-    items: Vec<crate::NavItem>,
-    active: usize,
-    on_select: Option<IndexFn>,
+    items: Vec<crate::NavigationItem>,
     on_dismiss: Option<DismissFn>,
 }
 
@@ -283,38 +279,28 @@ impl ModalDrawer {
         Self {
             id: id.into(),
             items: Vec::new(),
-            active: 0,
-            on_select: None,
             on_dismiss: None,
         }
     }
-    pub fn items(mut self, items: impl IntoIterator<Item = crate::NavItem>) -> Self {
+    pub fn items(mut self, items: impl IntoIterator<Item = crate::NavigationItem>) -> Self {
         self.items = items.into_iter().collect();
         self
     }
-    pub fn active(mut self, i: usize) -> Self {
-        self.active = i;
-        self
-    }
-    crate::callback!(on_select, usize);
     crate::callback!(on_dismiss);
 }
 
 impl RenderOnce for ModalDrawer {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        let mut nav = crate::Navigation::new((self.id.clone(), "nav"), crate::NavLayout::Drawer)
-            .items(self.items)
-            .active(self.active);
-        let (sel, dismiss) = (self.on_select, self.on_dismiss.clone());
-        nav = nav.on_select(move |i, w, cx| {
-            if let Some(f) = &sel {
-                f(i, w, cx);
-            }
-            if let Some(d) = &dismiss {
-                d(w, cx);
-            }
-        });
+        let mut nav = crate::NavigationDrawer::new((self.id.clone(), "nav"));
+        for it in self.items {
+            let dismiss = self.on_dismiss.clone();
+            nav = nav.item(it.also_on_click(move |w, cx| {
+                if let Some(d) = &dismiss {
+                    d(w, cx);
+                }
+            }));
+        }
         let mut panel = div().h_full().overflow_hidden().child(nav);
         if t.look().tonal {
             // M3: 16 px end corners on the edge facing the page.

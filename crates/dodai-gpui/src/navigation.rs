@@ -1,4 +1,4 @@
-//! [`NavigationDrawer`] and [`NavigationRail`]: app-level navigation following the Material 3
+//! [`NavigationDrawer`], [`NavigationRail`] and [`NavigationBar`]: app-level navigation following the Material 3
 //! specs (drawer: 56 px pill rows, section headlines, dividers, `surface-container-low`; rail:
 //! 80 px wide, 56×32 indicator pill, label below the icon, badge). Other designs keep their own
 //! shape and colours through the same theme tokens.
@@ -58,6 +58,17 @@ impl NavigationItem {
     }
     pub fn on_click(mut self, f: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static) -> Self {
         self.on_click = Some(Box::new(f));
+        self
+    }
+    /// Run `extra` after the item's own click handler.
+    pub(crate) fn also_on_click(mut self, extra: impl Fn(&mut Window, &mut App) + 'static) -> Self {
+        let own = self.on_click.take();
+        self.on_click = Some(Box::new(move |e, w, cx| {
+            if let Some(f) = &own {
+                f(e, w, cx);
+            }
+            extra(w, cx);
+        }));
         self
     }
 }
@@ -253,6 +264,113 @@ impl NavigationRail {
     }
 }
 
+/// A stacked destination (indicator over its label), shared by the rail and the bar.
+fn destination(
+    it: NavigationItem,
+    t: &Theme,
+    k: &NavigationTokens,
+    ind_w: f32,
+    window: &mut Window,
+    cx: &mut App,
+) -> gpui::Stateful<gpui::Div> {
+    let st = use_interact(&it.id, window, cx);
+    let hovered = st.read(cx).hovered;
+    let (fill, fg, outline) = nav_paint(t, it.selected, hovered);
+    // The label sits outside the indicator, so it reads on the surface.
+    let label_fg = if it.selected {
+        hsla(t.palette.text)
+    } else {
+        fg
+    };
+    let pill_shape = indicator_shape(t, k, k.indicator.1);
+    let pill = shaped(
+        &pill_shape,
+        ShapeStyle {
+            fill,
+            ..ShapeStyle::from_tokens(
+                t,
+                None,
+                outline.then_some(t.palette.border_strong),
+                false,
+                outline,
+            )
+        },
+    )
+    .w(px(ind_w))
+    .h(px(k.indicator.1))
+    .flex()
+    .items_center()
+    .justify_center()
+    .relative()
+    .children(it.icon.map(|i| icon_el(i, k.icon_size, fg)))
+    .children(it.badge.map(|b| {
+        div()
+            .absolute()
+            .top(px(-2.0))
+            .right(px(6.0))
+            .child(crate::Badge::new(b, dodai_core::Tone::Danger))
+    }));
+    let mut el = track(div().id(it.id.clone()), &st)
+        .flex()
+        .flex_col()
+        .items_center()
+        .gap(px(k.rail_label_gap))
+        .cursor_pointer()
+        .child(pill)
+        .child(
+            typeset(div(), t, k.roles.2)
+                .text_color(label_fg)
+                .child(format_label(&t.typography, &it.label)),
+        );
+    if let Some(h) = it.on_click {
+        el = el.on_click(move |e, w, cx| h(e, w, cx));
+    }
+    el
+}
+
+/// Navigation bar: the destinations side by side along the bottom of a compact screen.
+#[derive(IntoElement)]
+pub struct NavigationBar {
+    items: Vec<NavigationItem>,
+}
+
+impl Default for NavigationBar {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl NavigationBar {
+    pub fn new() -> Self {
+        Self { items: Vec::new() }
+    }
+    pub fn item(mut self, i: NavigationItem) -> Self {
+        self.items.push(i);
+        self
+    }
+}
+
+impl RenderOnce for NavigationBar {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let k = t.navigation();
+        let mut row = div()
+            .flex()
+            .w_full()
+            .h(px(k.bar_height))
+            .px(px(k.container_padding))
+            .pt(px(k.container_padding))
+            .pb(px(k.container_padding + k.rail_label_gap));
+        if let Some(c) = k.container {
+            row = row.bg(hsla(c));
+        }
+        for it in self.items {
+            row = row.child(destination(it, &t, &k, k.bar_indicator_width, window, cx).flex_1());
+        }
+        row
+    }
+}
+
 impl RenderOnce for NavigationRail {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
@@ -272,59 +390,7 @@ impl RenderOnce for NavigationRail {
             col = col.child(h);
         }
         for it in self.items {
-            let st = use_interact(&it.id, window, cx);
-            let hovered = st.read(cx).hovered;
-            let (fill, fg, outline) = nav_paint(&t, it.selected, hovered);
-            // The label sits outside the indicator, so it reads on the surface.
-            let label_fg = if it.selected {
-                hsla(t.palette.text)
-            } else {
-                fg
-            };
-            let pill_shape = indicator_shape(&t, &k, k.indicator.1);
-            let pill = shaped(
-                &pill_shape,
-                ShapeStyle {
-                    fill,
-                    ..ShapeStyle::from_tokens(
-                        &t,
-                        None,
-                        outline.then_some(t.palette.border_strong),
-                        false,
-                        outline,
-                    )
-                },
-            )
-            .w(px(k.indicator.0))
-            .h(px(k.indicator.1))
-            .flex()
-            .items_center()
-            .justify_center()
-            .relative()
-            .children(it.icon.map(|i| icon_el(i, k.icon_size, fg)))
-            .children(it.badge.map(|b| {
-                div()
-                    .absolute()
-                    .top(px(-2.0))
-                    .right(px(6.0))
-                    .child(crate::Badge::new(b, dodai_core::Tone::Danger))
-            }));
-            let mut el = track(div().id(it.id.clone()), &st)
-                .flex()
-                .flex_col()
-                .items_center()
-                .gap(px(k.rail_label_gap))
-                .w_full()
-                .cursor_pointer()
-                .child(pill)
-                .child(
-                    typeset(div(), &t, k.roles.2)
-                        .text_color(label_fg)
-                        .child(format_label(&t.typography, &it.label)),
-                );
-            if let Some(h) = it.on_click {
-                el = el.on_click(move |e, w, cx| h(e, w, cx));
-            }
+            let el = destination(it, &t, &k, k.indicator.0, window, cx).w_full();
             col = col.child(el);
         }
         col

@@ -95,6 +95,10 @@ pub struct NavigationTokens {
     pub indicator: (f32, f32),
     /// Rail gap between the indicator and its label.
     pub rail_label_gap: f32,
+    /// Navigation bar height.
+    pub bar_height: f32,
+    /// Width of the navigation bar's indicator.
+    pub bar_indicator_width: f32,
     /// Rows and indicators are fully rounded pills.
     pub pill: bool,
     /// Surface behind the drawer and rail.
@@ -674,6 +678,8 @@ impl Theme {
             rail_width: 80.0,
             indicator: (self.shape.control_height * 1.75, self.shape.control_height),
             rail_label_gap: sp.xs,
+            bar_height: 80.0,
+            bar_indicator_width: self.shape.control_height * 1.75 + sp.sm,
             pill: false,
             container: None,
             roles: (
