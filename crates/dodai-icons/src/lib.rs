@@ -16,10 +16,7 @@
 //! assert_eq!(g.coverage(24).len(), 24 * 24);
 //! ```
 
-pub use dodai_icon_id::IconId;
-
-/// Points on the 24×24 design grid.
-pub type Points = Vec<(f32, f32)>;
+pub use dodai_icons_core::{Glyph, IconId, IconPack, PackChain, Points, STROKE};
 
 /// Cyberpunk's polyline modifiers (`Off`, `Add`, `Circle`, ...), derived from a drawn icon.
 #[cfg(feature = "cyberpunk")]
@@ -46,25 +43,35 @@ impl From<dodai_core::IconSet> for Pack {
     }
 }
 
-/// An icon resolved for a design.
-#[derive(Clone, Debug, PartialEq)]
-pub enum Glyph {
-    /// Closed outlines filled with the non-zero rule (holes wind opposite).
-    Filled(Vec<Points>),
-    /// Polylines `(points, closed)` drawn with a uniform stroke.
-    Stroked(Vec<(Points, bool)>),
+/// The ordered packs of a design: first hit wins, the last covers every id.
+pub fn chain(pack: Pack) -> &'static PackChain {
+    static CHAINS: std::sync::OnceLock<[PackChain; 3]> = std::sync::OnceLock::new();
+    let c = CHAINS.get_or_init(|| {
+        let phosphor = || Box::new(PhosphorPack { faceted: false }) as Box<dyn IconPack>;
+        [
+            PackChain::new(vec![
+                #[cfg(feature = "cyberpunk")]
+                Box::new(CyberpunkPack),
+                Box::new(PhosphorPack { faceted: true }),
+            ]),
+            PackChain::new(vec![
+                #[cfg(feature = "material")]
+                Box::new(MaterialPack),
+                phosphor(),
+            ]),
+            PackChain::new(vec![
+                #[cfg(feature = "neobrutalism")]
+                Box::new(BoldPack),
+                phosphor(),
+            ]),
+        ]
+    });
+    &c[pack as usize]
 }
-
-/// Stroke width of [`Glyph::Stroked`] on the 24 grid.
-pub const STROKE: f32 = 1.75;
 
 /// Resolve `id` for `pack`. `filled` picks the filled form where the pack has one.
 pub fn glyph(id: IconId, pack: Pack, filled: bool) -> Option<Glyph> {
-    match pack {
-        Pack::Stroked => stroked(id, filled),
-        Pack::Material => material(id, filled),
-        Pack::Bold => bold(id, filled),
-    }
+    chain(pack).glyph(id, filled)
 }
 
 /// Resolve `id` for a design's declared [`IconSet`](dodai_core::IconSet).
@@ -76,19 +83,70 @@ fn filled_glyph(icon: &dodai_material_icons::Icon) -> Glyph {
     Glyph::Filled(icon.polygons())
 }
 
-/// Phosphor's drawing, as is.
-fn phosphor(id: IconId, filled: bool) -> Option<&'static dodai_phosphor_icons::Icon> {
-    dodai_phosphor_icons::get(id, filled)
+/// Phosphor's drawing, plain or faceted into straight segments (Cyberpunk).
+struct PhosphorPack {
+    faceted: bool,
 }
 
-/// Cyberpunk: the hand-drawn icon, else Phosphor faceted.
-#[allow(unused_variables)]
-fn stroked(id: IconId, filled: bool) -> Option<Glyph> {
-    #[cfg(feature = "cyberpunk")]
-    if let Some(s) = cyber_shapes(id, None) {
-        return Some(Glyph::Stroked(s));
+impl IconPack for PhosphorPack {
+    fn name(&self) -> &'static str {
+        if self.faceted {
+            "phosphor-faceted"
+        } else {
+            "phosphor"
+        }
     }
-    phosphor(id, filled).map(|i| Glyph::Filled(i.faceted()))
+    fn glyph(&self, id: IconId, filled: bool) -> Option<Glyph> {
+        dodai_phosphor_icons::get(id, filled).map(|i| {
+            if self.faceted {
+                Glyph::Filled(i.faceted())
+            } else {
+                filled_glyph(i)
+            }
+        })
+    }
+}
+
+/// Cyberpunk's hand-drawn, curve-free icons.
+#[cfg(feature = "cyberpunk")]
+struct CyberpunkPack;
+
+#[cfg(feature = "cyberpunk")]
+impl IconPack for CyberpunkPack {
+    fn name(&self) -> &'static str {
+        "cyberpunk"
+    }
+    fn glyph(&self, id: IconId, _: bool) -> Option<Glyph> {
+        cyber_shapes(id, None).map(Glyph::Stroked)
+    }
+}
+
+/// Material Symbols.
+#[cfg(feature = "material")]
+struct MaterialPack;
+
+#[cfg(feature = "material")]
+impl IconPack for MaterialPack {
+    fn name(&self) -> &'static str {
+        "material-symbols"
+    }
+    fn glyph(&self, id: IconId, filled: bool) -> Option<Glyph> {
+        dodai_material_icons::outlined::get_id(id, filled).map(filled_glyph)
+    }
+}
+
+/// Neo-Brutalism's bold Phosphor.
+#[cfg(feature = "neobrutalism")]
+struct BoldPack;
+
+#[cfg(feature = "neobrutalism")]
+impl IconPack for BoldPack {
+    fn name(&self) -> &'static str {
+        "phosphor-bold"
+    }
+    fn glyph(&self, id: IconId, filled: bool) -> Option<Glyph> {
+        dodai_neobrutalism_icons::get(id, filled).map(filled_glyph)
+    }
 }
 
 /// The hand-drawn shapes of `id` (its own name, a synonym, or the Material spelling it mirrors),
@@ -104,138 +162,6 @@ pub fn cyber_shapes(id: IconId, modifier: Option<Modifier>) -> Option<Vec<(Point
         Some(m) => m.apply(shapes),
         None => shapes,
     })
-}
-
-/// Material 3: the Material Symbols icon, else Phosphor as is.
-fn material(id: IconId, filled: bool) -> Option<Glyph> {
-    #[cfg(feature = "material")]
-    if let Some(i) = dodai_material_icons::outlined::get_id(id, filled) {
-        return Some(filled_glyph(i));
-    }
-    phosphor(id, filled).map(filled_glyph)
-}
-
-/// Neo-Brutalism: bold Phosphor.
-#[allow(unused_variables)]
-fn bold(id: IconId, filled: bool) -> Option<Glyph> {
-    #[cfg(feature = "neobrutalism")]
-    if let Some(i) = dodai_neobrutalism_icons::get(id, filled) {
-        return Some(filled_glyph(i));
-    }
-    phosphor(id, filled).map(filled_glyph)
-}
-
-impl Glyph {
-    /// Polygons covering the glyph (strokes expanded to quads), all wound the
-    /// same way so a non-zero fill unions them.
-    pub fn polygons(&self) -> Vec<Points> {
-        match self {
-            Glyph::Filled(p) => p.clone(),
-            Glyph::Stroked(lines) => {
-                let h = STROKE / 2.0;
-                let mut out = Vec::new();
-                for (pts, closed) in lines {
-                    let n = pts.len();
-                    let segs = if *closed { n } else { n.saturating_sub(1) };
-                    for i in 0..segs {
-                        let (a, b) = (pts[i], pts[(i + 1) % n]);
-                        let (dx, dy) = (b.0 - a.0, b.1 - a.1);
-                        let l = (dx * dx + dy * dy).sqrt();
-                        if l < 1e-4 {
-                            continue;
-                        }
-                        let (ux, uy) = (dx / l * h, dy / l * h);
-                        let (nx, ny) = (-uy, ux);
-                        // Extend by h so corners join without gaps.
-                        let (a, b) = ((a.0 - ux, a.1 - uy), (b.0 + ux, b.1 + uy));
-                        out.push(vec![
-                            (a.0 + nx, a.1 + ny),
-                            (b.0 + nx, b.1 + ny),
-                            (b.0 - nx, b.1 - ny),
-                            (a.0 - nx, a.1 - ny),
-                        ]);
-                    }
-                }
-                out
-            }
-        }
-    }
-
-    /// Standalone SVG. `color` is any SVG paint (`"currentColor"`, `"#fcee0a"`).
-    pub fn svg(&self, size: u32, color: &str) -> String {
-        let head = format!(
-            "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{size}\" height=\"{size}\" viewBox=\"0 0 24 24\""
-        );
-        match self {
-            Glyph::Filled(polys) => {
-                let d: String = polys.iter().map(|p| path(p, true)).collect();
-                format!("{head} fill=\"{color}\"><path fill-rule=\"nonzero\" d=\"{d}\"/></svg>")
-            }
-            Glyph::Stroked(lines) => {
-                let d: String = lines.iter().map(|(p, c)| path(p, *c)).collect();
-                format!(
-                    "{head} fill=\"none\" stroke=\"{color}\" stroke-width=\"{STROKE}\" \
-                     stroke-linecap=\"square\" stroke-linejoin=\"miter\"><path d=\"{d}\"/></svg>"
-                )
-            }
-        }
-    }
-
-    /// Anti-aliased alpha mask, `px × px` bytes, row-major (4×4 supersampling).
-    /// Tint it with the theme colour: this is how toolkits without vector
-    /// drawing (bevy, terminals with images, …) show icons.
-    pub fn coverage(&self, px: u32) -> Vec<u8> {
-        const SS: u32 = 4;
-        let polys = self.polygons();
-        let k = 24.0 / px as f32;
-        let mut out = vec![0u8; (px * px) as usize];
-        for y in 0..px {
-            for x in 0..px {
-                let mut hit = 0;
-                for sy in 0..SS {
-                    for sx in 0..SS {
-                        let fx = (x * SS + sx) as f32 + 0.5;
-                        let fy = (y * SS + sy) as f32 + 0.5;
-                        let (gx, gy) = (fx * k / SS as f32, fy * k / SS as f32);
-                        if polys.iter().map(|p| winding(p, gx, gy)).sum::<i32>() != 0 {
-                            hit += 1;
-                        }
-                    }
-                }
-                out[(y * px + x) as usize] = (hit * 255 / (SS * SS)) as u8;
-            }
-        }
-        out
-    }
-}
-
-fn path(p: &[(f32, f32)], closed: bool) -> String {
-    let mut s = String::new();
-    for (i, (x, y)) in p.iter().enumerate() {
-        s.push(if i == 0 { 'M' } else { 'L' });
-        s.push_str(&format!("{:.2} {:.2}", x, y));
-    }
-    if closed {
-        s.push('Z');
-    }
-    s
-}
-
-/// Winding number of `p` around `(x, y)`.
-fn winding(p: &[(f32, f32)], x: f32, y: f32) -> i32 {
-    let mut w = 0;
-    for i in 0..p.len() {
-        let (a, b) = (p[i], p[(i + 1) % p.len()]);
-        let cross = (b.0 - a.0) * (y - a.1) - (x - a.0) * (b.1 - a.1);
-        if a.1 <= y {
-            if b.1 > y && cross > 0.0 {
-                w += 1;
-            }
-        } else if b.1 <= y && cross < 0.0 {
-            w -= 1;
-        }
-    }
-    w
 }
 
 #[cfg(test)]
@@ -257,6 +183,22 @@ mod tests {
                 .filter(|&&id| glyph(id, pack, false).is_none())
                 .collect();
             assert!(missing.is_empty(), "{pack:?}: {missing:?}");
+        }
+    }
+
+    #[test]
+    fn chains_end_in_a_pack_that_covers_everything() {
+        for pack in PACKS {
+            let c = chain(pack);
+            assert!(c.missing().is_empty(), "{:?}", c.names());
+            assert!(
+                c.names().len() >= 2
+                    || !cfg!(all(
+                        feature = "cyberpunk",
+                        feature = "material",
+                        feature = "neobrutalism"
+                    ))
+            );
         }
     }
 

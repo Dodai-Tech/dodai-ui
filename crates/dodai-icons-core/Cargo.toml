@@ -1,0 +1,15 @@
+[package]
+name         = "dodai-icons-core"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+readme       = "README.md"
+description  = "Shared icon contract for Dodai: Glyph (SVG/coverage export), the IconPack trait and PackChain, which guarantees every design system draws every IconId"
+keywords     = ["icons", "ui", "design-system", "svg"]
+categories   = ["gui", "graphics"]
+
+[dependencies]
+dodai-icon-id = { workspace = true }

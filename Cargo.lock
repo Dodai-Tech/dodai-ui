@@ -4353,9 +4353,17 @@ dependencies = [
  "dodai-core",
  "dodai-cyberpunk-icons",
  "dodai-icon-id",
+ "dodai-icons-core",
  "dodai-material-icons",
  "dodai-neobrutalism-icons",
  "dodai-phosphor-icons",
+]
+
+[[package]]
+name = "dodai-icons-core"
+version = "0.1.0"
+dependencies = [
+ "dodai-icon-id",
 ]
 
 [[package]]

@@ -23,6 +23,7 @@ neobrutalism = ["dep:dodai-neobrutalism-icons"]
 [dependencies]
 dodai-core            = { workspace = true }
 dodai-icon-id         = { workspace = true }
+dodai-icons-core      = { workspace = true }
 dodai-material-icons  = { workspace = true }
 dodai-phosphor-icons  = { workspace = true }
 dodai-cyberpunk-icons = { workspace = true, features = ["shapes"], optional = true }
