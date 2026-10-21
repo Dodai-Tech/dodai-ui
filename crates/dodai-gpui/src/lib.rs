@@ -253,7 +253,9 @@ pub use forms::{
 pub use gauges::GaugeStyle;
 #[cfg(feature = "material")]
 pub use icons::MaterialIcon;
-pub use icons::{Icon, IconName, IconPack};
+#[cfg(feature = "cyberpunk")]
+pub use icons::Modifier;
+pub use icons::{Icon, IconId, IconName, IconPack};
 #[cfg(feature = "components")]
 pub use knob::Knob;
 #[cfg(feature = "components")]

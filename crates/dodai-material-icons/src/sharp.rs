@@ -7863,7 +7863,18 @@ pub static ALL: &[Icon] = &[
     Icon { name: "zoom_out_map-fill", path: "M120-120v-230h60v127l148-148 43 43-148 148h127v60H120Zm490 0v-60h127L590-327l43-43 147 147v-127h60v230H610ZM327-590 180-737v127h-60v-230h230v60H223l147 147-43 43Zm306 0-43-43 147-147H610v-60h230v230h-60v-127L633-590Z" },
 ];
 
-/// Look an icon up by name (e.g. `"home"`, `"home-fill"`).
-pub fn get(name: &str) -> Option<&'static Icon> {
-    crate::find(ALL, name)
+/// The outline form of a catalogue icon.
+pub fn get(sym: crate::MaterialSymbol) -> Option<&'static Icon> {
+    crate::find(ALL, sym.name())
+}
+
+/// The filled form of a catalogue icon.
+pub fn get_fill(sym: crate::MaterialSymbol) -> Option<&'static Icon> {
+    crate::find_fill(ALL, sym.name())
+}
+
+/// Material's drawing of a shared-vocabulary icon (`filled` falls back to the outline when the
+/// icon has no filled form).
+pub fn get_id(id: dodai_icon_id::IconId, filled: bool) -> Option<&'static Icon> {
+    crate::lookup(ALL, id, filled)
 }

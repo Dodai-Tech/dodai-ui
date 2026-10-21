@@ -224,17 +224,14 @@ pub(crate) fn icon_total(set: dodai_core::IconSet) -> usize {
 }
 
 fn count_icons(with_material: bool) -> usize {
-    let norm = |n: &str| n.replace('-', "_");
-    let mut names: std::collections::HashSet<String> = dodai_cyberpunk_icons::ALL
-        .iter()
-        .map(|i| norm(i.name()))
-        .collect();
-    names.extend(dodai_phosphor_icons::names().map(norm));
+    // Every design draws the whole shared vocabulary; Material adds its own catalogue.
+    let mut names: std::collections::HashSet<&'static str> =
+        dodai_gpui::IconId::ALL.iter().map(|i| i.name()).collect();
     if with_material {
         names.extend(
-            dodai_material_icons::CATEGORIES
+            dodai_material_icons::MaterialSymbol::ALL
                 .iter()
-                .flat_map(|(_, n)| n.iter().map(|n| norm(n))),
+                .map(|m| m.name()),
         );
     }
     names.len()

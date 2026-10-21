@@ -1,6 +1,6 @@
 //! `cargo run -p dodai-material-icons --example facets > facets.html`
 //! Smooth vs faceted, side by side, for design review.
-use dodai_material_icons::outlined;
+use dodai_material_icons::{outlined, MaterialSymbol};
 
 fn path(polys: &[Vec<(f32, f32)>]) -> String {
     let mut d = String::new();
@@ -22,7 +22,13 @@ fn main() {
     };
     println!("<body style='background:#0b0b10;color:#999;font:11px monospace;margin:12px'><div style='display:grid;grid-template-columns:repeat(8,1fr);gap:6px'>");
     for n in names {
-        let Some(i) = outlined::get(n) else { continue };
+        let Some(i) = MaterialSymbol::ALL
+            .iter()
+            .find(|m| m.name() == n)
+            .and_then(|&m| outlined::get(m))
+        else {
+            continue;
+        };
         println!("<div style='border:1px solid #2a2a33;padding:6px;text-align:center'>");
         for polys in [i.polygons(), i.faceted()] {
             println!("<svg width='64' height='64' viewBox='0 0 24 24' fill='#fcee0a'><path fill-rule='nonzero' d='{}'/></svg>", path(&polys));

@@ -349,10 +349,11 @@ mod tests {
 
     #[cfg(feature = "icons")]
     #[test]
-    fn icon_renders_svg_and_unknown_is_empty() {
+    fn icon_renders_svg() {
+        use dodai::icons::IconId;
         fn app() -> Element {
             rsx! {
-                ThemeProvider { Icon { name: "home" } Icon { name: "flight", filled: true } Icon { name: "nope_nope" } }
+                ThemeProvider { Icon { icon: IconId::Home } Icon { icon: IconId::Airplane, filled: true } }
             }
         }
         let h = html(app);

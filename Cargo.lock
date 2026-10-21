@@ -4242,9 +4242,9 @@ version = "0.1.0"
 dependencies = [
  "dodai-core",
  "dodai-cyberpunk",
+ "dodai-icons",
  "dodai-material",
  "dodai-neobrutalism",
- "dodai-phosphor-icons",
  "dodai-shaders",
 ]
 
@@ -4279,6 +4279,9 @@ dependencies = [
 [[package]]
 name = "dodai-cyberpunk-icons"
 version = "0.1.0"
+dependencies = [
+ "dodai-icon-id",
+]
 
 [[package]]
 name = "dodai-dioxus"
@@ -4318,6 +4321,8 @@ dependencies = [
  "dodai-charts-core",
  "dodai-core",
  "dodai-cyberpunk-icons",
+ "dodai-icon-id",
+ "dodai-icons",
  "dodai-material-icons",
  "dodai-motion",
  "dodai-neobrutalism-icons",
@@ -4335,6 +4340,22 @@ dependencies = [
  "dodai-core",
  "iced",
  "naga 27.0.3",
+]
+
+[[package]]
+name = "dodai-icon-id"
+version = "0.1.0"
+
+[[package]]
+name = "dodai-icons"
+version = "0.1.0"
+dependencies = [
+ "dodai-core",
+ "dodai-cyberpunk-icons",
+ "dodai-icon-id",
+ "dodai-material-icons",
+ "dodai-neobrutalism-icons",
+ "dodai-phosphor-icons",
 ]
 
 [[package]]
@@ -4358,6 +4379,9 @@ dependencies = [
 [[package]]
 name = "dodai-material-icons"
 version = "0.1.0"
+dependencies = [
+ "dodai-icon-id",
+]
 
 [[package]]
 name = "dodai-motion"
@@ -4375,6 +4399,7 @@ dependencies = [
 name = "dodai-neobrutalism-icons"
 version = "0.1.0"
 dependencies = [
+ "dodai-icon-id",
  "dodai-material-icons",
  "dodai-phosphor-icons",
 ]
@@ -4383,6 +4408,7 @@ dependencies = [
 name = "dodai-phosphor-icons"
 version = "0.1.0"
 dependencies = [
+ "dodai-icon-id",
  "dodai-material-icons",
 ]
 

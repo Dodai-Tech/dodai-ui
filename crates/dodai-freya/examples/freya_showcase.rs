@@ -1,6 +1,7 @@
 //! Every Dodai component in Freya. Keys: `t`/`T` next/prev theme, `+`/`-` glow.
 //! Run: `cargo run -p dodai-freya --example freya_showcase`
 
+use dodai::icons::IconId;
 use dodai::themes;
 
 use dodai_core::{ButtonVariant, Tone};
@@ -65,11 +66,11 @@ fn app() -> Element {
                     }
                     DodaiHeading { text: "Icons", size: t.typography.size_lg }
                     rect { direction: "horizontal", spacing: "12",
-                        DodaiIcon { name: "home" }
-                        DodaiIcon { name: "search" }
-                        DodaiIcon { name: "settings" }
-                        DodaiIcon { name: "favorite", filled: true }
-                        DodaiIcon { name: "flight" }
+                        DodaiIcon { icon: IconId::Home }
+                        DodaiIcon { icon: IconId::Search }
+                        DodaiIcon { icon: IconId::Settings }
+                        DodaiIcon { icon: IconId::Heart, filled: true }
+                        DodaiIcon { icon: IconId::Airplane }
                     }
                     DodaiTabs { labels: vec!["Alpha".to_string(), "Beta".into(), "Gamma".into()], selected: *tab.read(), onselect: move |i| tab.set(i) }
                     rect { direction: "horizontal", spacing: "{gap}",

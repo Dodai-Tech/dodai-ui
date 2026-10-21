@@ -1,0 +1,15 @@
+[package]
+name         = "dodai-icon-id"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description  = "IconId: the typed, shared icon vocabulary of the Dodai design systems (autocomplete and type safety instead of icon-name strings)"
+readme       = "README.md"
+keywords     = ["icons", "ui", "design-system"]
+categories   = ["gui"]
+exclude      = ["scripts/"]
+
+[dependencies]

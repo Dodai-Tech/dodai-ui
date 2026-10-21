@@ -13,5 +13,6 @@ categories   = ["gui", "graphics"]
 exclude      = ["scripts/"]
 
 [dependencies]
+dodai-icon-id = { workspace = true }
 dodai-material-icons = { workspace = true }
 dodai-phosphor-icons = { workspace = true }

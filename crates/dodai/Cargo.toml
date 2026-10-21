@@ -13,16 +13,16 @@ categories   = ["gui", "rendering"]
 
 [features]
 default   = ["cyberpunk", "material", "neobrutalism", "icons", "shaders"]
-cyberpunk = ["dep:dodai-cyberpunk"]
-material  = ["dep:dodai-material"]
-neobrutalism = ["dep:dodai-neobrutalism"]
+cyberpunk = ["dep:dodai-cyberpunk", "dodai-icons?/cyberpunk"]
+material  = ["dep:dodai-material", "dodai-icons?/material"]
+neobrutalism = ["dep:dodai-neobrutalism", "dodai-icons?/neobrutalism"]
 ## Icon packs of the enabled design systems.
-icons     = ["dodai-cyberpunk?/icons", "dodai-material?/icons", "dodai-neobrutalism?/icons"]
+icons     = ["dep:dodai-icons", "dodai-cyberpunk?/icons", "dodai-material?/icons", "dodai-neobrutalism?/icons"]
 shaders   = ["dep:dodai-shaders"]
 
 [dependencies]
 dodai-core       = { workspace = true }
-dodai-phosphor-icons = { workspace = true }
+dodai-icons      = { workspace = true, optional = true }
 dodai-cyberpunk  = { workspace = true, optional = true }
 dodai-material   = { workspace = true, optional = true }
 dodai-neobrutalism = { workspace = true, optional = true }

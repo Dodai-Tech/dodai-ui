@@ -7863,7 +7863,18 @@ pub static ALL: &[Icon] = &[
     Icon { name: "zoom_out_map-fill", path: "M223-180h97q13 0 21.5 8.5T350-150q0 13-8.5 21.5T320-120H150q-13 0-21.5-8.5T120-150v-170q0-13 8.5-21.5T150-350q13 0 21.5 8.5T180-320v97l127-127q9-9 21.5-9t21.5 9q9 9 9 21.5t-9 21.5L223-180Zm514 0L611-306q-9-9-8.5-21.5T612-349q9-9 21.5-9t21.5 9l125 126v-97q0-13 8.5-21.5T810-350q13 0 21.5 8.5T840-320v170q0 13-8.5 21.5T810-120H640q-13 0-21.5-8.5T610-150q0-13 8.5-21.5T640-180h97ZM180-737v97q0 13-8.5 21.5T150-610q-13 0-21.5-8.5T120-640v-170q0-13 8.5-21.5T150-840h170q13 0 21.5 8.5T350-810q0 13-8.5 21.5T320-780h-97l126 126q9 9 9 21t-9 21q-9 9-21.5 9t-21.5-9L180-737Zm600 0L654-611q-9 9-21 8.5t-21-9.5q-9-9-9-21.5t9-21.5l125-125h-97q-13 0-21.5-8.5T610-810q0-13 8.5-21.5T640-840h170q13 0 21.5 8.5T840-810v170q0 13-8.5 21.5T810-610q-13 0-21.5-8.5T780-640v-97Z" },
 ];
 
-/// Look an icon up by name (e.g. `"home"`, `"home-fill"`).
-pub fn get(name: &str) -> Option<&'static Icon> {
-    crate::find(ALL, name)
+/// The outline form of a catalogue icon.
+pub fn get(sym: crate::MaterialSymbol) -> Option<&'static Icon> {
+    crate::find(ALL, sym.name())
+}
+
+/// The filled form of a catalogue icon.
+pub fn get_fill(sym: crate::MaterialSymbol) -> Option<&'static Icon> {
+    crate::find_fill(ALL, sym.name())
+}
+
+/// Material's drawing of a shared-vocabulary icon (`filled` falls back to the outline when the
+/// icon has no filled form).
+pub fn get_id(id: dodai_icon_id::IconId, filled: bool) -> Option<&'static Icon> {
+    crate::lookup(ALL, id, filled)
 }

@@ -20,3 +20,4 @@ sharp    = []
 all      = ["outlined", "rounded", "sharp"]
 
 [dependencies]
+dodai-icon-id = { workspace = true }

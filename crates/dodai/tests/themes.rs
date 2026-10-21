@@ -121,7 +121,8 @@ fn design_systems_carry_their_icons() {
 #[cfg(all(feature = "material", feature = "icons"))]
 #[test]
 fn material_icons_are_reachable() {
-    assert!(dodai::material::icons::outlined::get("home").is_some());
+    use dodai::material::icons::MaterialSymbol;
+    assert!(dodai::material::icons::outlined::get(MaterialSymbol::Home).is_some());
 }
 
 #[test]
@@ -363,27 +364,25 @@ fn neon_schemes_stay_readable_for_any_accents() {
     }
 }
 
-/// Every design resolves every icon name the library ships: a design names its own pack, and a
-/// name a design has no icon of its own for is derived from the shared Phosphor vocabulary.
-#[cfg(all(feature = "icons", feature = "cyberpunk"))]
+/// Every design draws every [`IconId`] of the shared vocabulary: a design uses its own pack and a
+/// fixed fallback, so naming an icon never yields a hole.
+#[cfg(feature = "icons")]
 #[test]
 fn every_design_draws_every_icon() {
-    let names: Vec<&str> = dodai::cyberpunk::icons::ALL
-        .iter()
-        .map(|i| i.name())
-        .collect();
-    assert!(names.len() > 300);
-    // The shared vocabulary: the Dodai names plus every Phosphor name.
-    let phosphor: Vec<&str> = dodai_phosphor_icons::names().collect();
-    assert!(phosphor.len() > 1400);
-    let mut names = names;
-    names.extend(phosphor);
+    use dodai::icons::IconId;
+    assert!(IconId::ALL.len() > 1500);
     for sys in dodai::themes::systems() {
         let t = (sys.themes)().into_iter().next().expect("a theme");
-        let missing: Vec<&&str> = names
-            .iter()
-            .filter(|n| dodai::icons::glyph(n, &t, false).is_none())
-            .collect();
-        assert!(missing.is_empty(), "{}: {missing:?}", t.id());
+        for filled in [false, true] {
+            let missing: Vec<_> = IconId::ALL
+                .iter()
+                .filter(|&&id| dodai::icons::glyph(id, &t, filled).is_none())
+                .collect();
+            assert!(
+                missing.is_empty(),
+                "{} filled={filled}: {missing:?}",
+                t.id()
+            );
+        }
     }
 }

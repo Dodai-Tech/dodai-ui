@@ -1,6 +1,7 @@
 //! Headless interaction tests: real clicks / keys against rendered components.
 
 use dodai_gpui::*;
+use dodai_material_icons::MaterialSymbol;
 use gpui::{
     div, point, prelude::*, px, size, AnyElement, Context, Focusable, Modifiers, TestAppContext,
     VisualTestContext, Window,
@@ -683,13 +684,20 @@ fn icons_paint_in_every_pack_and_theme(cx: &mut TestAppContext) {
                             Icon::new(n).pack(IconPack::Stroked).into_any_element(),
                         ]
                     }))
-                    .child(MaterialIcon::new("home").into_any_element())
-                    .child(MaterialIcon::new("no_such_icon").into_any_element())
-                    .child(MaterialIcon::new("trash").filled(true).into_any_element())
+                    .child(MaterialIcon::new(MaterialSymbol::Home).into_any_element())
+                    .child(
+                        MaterialIcon::new(MaterialSymbol::Delete)
+                            .filled(true)
+                            .into_any_element(),
+                    )
                     .child(Icon::new(IconName::Home).size(0.0))
-                    .child(Icon::named("heart-add-circle").size(24.0))
-                    .child(Icon::named("arrow_back_off"))
-                    .child(Icon::named("no-such-icon"))
+                    .child(
+                        Icon::new(IconName::Heart)
+                            .modifier(Modifier::Add)
+                            .size(24.0),
+                    )
+                    .child(Icon::new(IconId::Acorn))
+                    .child(Icon::new(IconId::HouseLine).filled(true))
                     .into_any_element()
             }),
         });

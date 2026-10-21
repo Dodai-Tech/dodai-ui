@@ -6,7 +6,7 @@ The **Material 3** design system for [Dodai UI](https://github.com/sorinirimies/
 use dodai_material as m3;
 let themes = m3::variants();              // [light, dark]
 // feature `icons` (default): the full Material Symbols catalogue
-let home = m3::icons::outlined::get("home");
+let home = m3::icons::outlined::get(m3::icons::MaterialSymbol::Home);
 ```
 
 Features: `icons` (default, outlined), `rounded`, `sharp` select the Material Symbols style. Depends only on `dodai-core` (and optionally `dodai-material-icons`).

@@ -680,7 +680,9 @@ pub(crate) fn update_tooltip(
 /// Rasterised icons, shared between entities.
 #[cfg(feature = "icons")]
 #[derive(Resource, Default)]
-pub struct IconCache(std::collections::HashMap<(String, u32, bool, bool), Handle<Image>>);
+pub struct IconCache(
+    std::collections::HashMap<(dodai::icons::IconId, u32, bool, bool), Handle<Image>>,
+);
 
 /// `UiIcon` → `ImageNode` (rasterised on change / theme switch), tinted with
 /// the inherited foreground colour.
@@ -709,13 +711,13 @@ pub(crate) fn style_icons(
                 .or_else(|| parent.and_then(|p| fgs.get(p.parent()).ok()).map(|f| f.0))
                 .unwrap_or(theme.palette.text),
         );
-        let key = (u.name.clone(), u.size, u.filled, rounded);
+        let key = (u.icon, u.size, u.filled, rounded);
         let needs_image = node.is_none() || u.is_changed() || theme.is_changed();
         if needs_image {
             let handle = match cache.0.get(&key) {
                 Some(h) => h.clone(),
                 None => {
-                    let Some(g) = dodai::icons::glyph(&u.name, &theme, u.filled) else {
+                    let Some(g) = dodai::icons::glyph(u.icon, &theme, u.filled) else {
                         continue;
                     };
                     let px = u.size.max(1);
@@ -759,7 +761,10 @@ mod icon_tests {
             .init_resource::<IconCache>()
             .insert_resource(Assets::<Image>::default())
             .add_systems(Update, style_icons);
-        let e = app.world_mut().spawn(icon("home", 24)).id();
+        let e = app
+            .world_mut()
+            .spawn(icon(dodai::icons::IconId::Home, 24))
+            .id();
         app.update();
         let handle = {
             let n = app.world().get::<ImageNode>(e).expect("ImageNode inserted");
@@ -778,9 +783,5 @@ mod icon_tests {
         app.update();
         assert!(app.world().get::<ImageNode>(e).is_some());
         let _ = first;
-        // Unknown names leave the entity without an image.
-        let bad = app.world_mut().spawn(icon("nope_nope", 16)).id();
-        app.update();
-        assert!(app.world().get::<ImageNode>(bad).is_none());
     }
 }

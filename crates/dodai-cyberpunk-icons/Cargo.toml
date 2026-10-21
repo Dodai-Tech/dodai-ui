@@ -18,3 +18,4 @@ default = ["shapes"]
 shapes = []
 
 [dependencies]
+dodai-icon-id = { workspace = true }

@@ -362,12 +362,37 @@ const ICON_TYPES: &[(&str, &str)] = &[
 
 /// The hand-drawn pack, grouped by type and filtered by `query` (matches the
 /// icon name or its type).
+/// An icon picked in the Icons section: a shared-vocabulary id or a Material catalogue symbol.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) enum IconPick {
+    Id(dodai_gpui::IconId),
+    Material(dodai_material_icons::MaterialSymbol),
+}
+
+impl IconPick {
+    /// The name shown on a tile and used for file names.
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::Id(i) => i.name(),
+            Self::Material(m) => m.name(),
+        }
+    }
+
+    /// The Rust expression that draws it.
+    pub(crate) fn usage(self) -> String {
+        match self {
+            Self::Id(i) => format!("Icon::new(IconId::{i:?})"),
+            Self::Material(m) => format!("MaterialIcon::new(MaterialSymbol::{m:?})"),
+        }
+    }
+}
+
 pub(crate) fn icons_view(
     t: &dodai_core::Theme,
     query: &str,
     filled: bool,
     variants: bool,
-    pick_icon: impl Fn(String, &mut gpui::App) + Clone + 'static,
+    pick_icon: impl Fn(dodai_gpui::IconId, &mut gpui::App) + Clone + 'static,
 ) -> gpui::Div {
     let q = query.trim().to_lowercase().replace(' ', "_");
     let mut out = div().flex().flex_col().gap(px(t.spacing.lg));
@@ -392,7 +417,7 @@ pub(crate) fn icons_view(
         let mut row = div().flex().flex_wrap().w_full().gap(px(t.spacing.sm));
         for n in &members {
             idx += 1;
-            let pick = n.name().to_string();
+            let pick = dodai_gpui::IconId::from(**n);
             let pick_icon = pick_icon.clone();
             row = row.child(
                 div()
@@ -406,7 +431,7 @@ pub(crate) fn icons_view(
                     .cursor_pointer()
                     .border_1()
                     .border_color(hsla(t.palette.border))
-                    .on_click(move |_, _, cx| pick_icon(pick.clone(), cx))
+                    .on_click(move |_, _, cx| pick_icon(pick, cx))
                     .child(
                         dodai_gpui::Icon::new(**n)
                             .filled(filled)
@@ -447,9 +472,14 @@ pub(crate) fn icons_view(
     }
     if q.is_empty() && variants {
         let mut row = div().flex().flex_wrap().w_full().gap(px(t.spacing.sm));
-        for base in ["heart", "cloud", "camera", "bell"] {
-            for m in dodai_cyberpunk_icons::Modifier::ALL {
-                let name = format!("{base}-{}", m.suffix());
+        for base in [
+            dodai_gpui::IconName::Heart,
+            dodai_gpui::IconName::Cloud,
+            dodai_gpui::IconName::Camera,
+            dodai_gpui::IconName::Bell,
+        ] {
+            for m in dodai_gpui::Modifier::ALL {
+                let name = format!("{}-{}", base.name(), m.suffix());
                 row = row.child(
                     div()
                         .flex()
@@ -461,7 +491,8 @@ pub(crate) fn icons_view(
                         .border_1()
                         .border_color(hsla(t.palette.border))
                         .child(
-                            dodai_gpui::Icon::named(&name)
+                            dodai_gpui::Icon::new(base)
+                                .modifier(m)
                                 .size(28.0)
                                 .color(hsla(t.palette.primary)),
                         )

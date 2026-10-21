@@ -3,20 +3,24 @@
 //! in the three official styles (feature-gated so you only compile what you use).
 //!
 //! ```
-//! use dodai_material_icons::outlined;
-//! let home = outlined::get("home").unwrap();
+//! use dodai_material_icons::{outlined, MaterialSymbol};
+//! let home = outlined::get(MaterialSymbol::Home).unwrap();
 //! assert!(home.svg().starts_with("<svg"));
 //! // Flattened to polygons on a 24×24 grid, for renderers without an SVG parser.
 //! assert!(!home.polygons().is_empty());
-//! assert!(outlined::get("home-fill").is_some());
+//! assert!(outlined::get_fill(MaterialSymbol::Home).is_some());
 //! ```
 //!
 //! Icon artwork © Google, [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0).
 //! The crate carries only path data (viewBox `0 -960 960 960`); there is no
-//! font, no I/O and no dependency.
+//! font and no I/O. Icons are named by the typed [`MaterialSymbol`] enum (autocomplete, no
+//! strings); the shared cross-design vocabulary is [`IconId`](dodai_icon_id::IconId).
 
 mod aliases;
-pub use aliases::{alias_of, resolve, ALIASES};
+mod symbol;
+#[doc(hidden)]
+pub use aliases::alias_of;
+pub use symbol::MaterialSymbol;
 
 #[cfg(feature = "outlined")]
 mod categories;
@@ -340,11 +344,37 @@ fn dp(p: &[(f32, f32)], tol: f32) -> Vec<(f32, f32)> {
     l
 }
 
-/// Binary-search `name` in a catalogue sorted by name.
+/// Binary-search `name` in a catalogue sorted by name. For the icon pack crates' own tables.
+#[doc(hidden)]
 pub fn find(all: &'static [Icon], name: &str) -> Option<&'static Icon> {
     all.binary_search_by(|i| i.name.cmp(name))
         .ok()
         .map(|i| &all[i])
+}
+
+/// The `-fill` form of the icon `name`.
+fn find_fill(all: &'static [Icon], name: &str) -> Option<&'static Icon> {
+    find(all, &format!("{name}-fill"))
+}
+
+/// Material's drawing of a shared-vocabulary icon: the Material icon a Dodai name is an alias of
+/// (`arrow-left` is `arrow_back`), else the Material icon of the same name. `None` when
+/// Material has neither.
+pub fn lookup(
+    all: &'static [Icon],
+    id: dodai_icon_id::IconId,
+    filled: bool,
+) -> Option<&'static Icon> {
+    let key = id.name();
+    let kebab = key.replace('_', "-");
+    let target = aliases::resolve(&kebab);
+    let pick = |n: &str| {
+        (filled)
+            .then(|| find_fill(all, n))
+            .flatten()
+            .or_else(|| find(all, n))
+    };
+    pick(target).or_else(|| pick(key))
 }
 
 /// Segments per quadratic curve.
@@ -512,16 +542,22 @@ mod tests {
     #[test]
     fn faceted_is_simpler_and_stays_close() {
         #[cfg(feature = "outlined")]
-        for n in ["circle", "settings", "home", "favorite", "search"] {
+        for n in [
+            MaterialSymbol::Circle,
+            MaterialSymbol::Settings,
+            MaterialSymbol::Home,
+            MaterialSymbol::Favorite,
+            MaterialSymbol::Search,
+        ] {
             let i = crate::outlined::get(n).unwrap();
             let smooth: usize = i.polygons().iter().map(Vec::len).sum();
             let facet = i.faceted();
             let pts: usize = facet.iter().map(Vec::len).sum();
-            assert!(pts > 2 && pts <= smooth, "{n}: {pts} vs {smooth}");
+            assert!(pts > 2 && pts <= smooth, "{n:?}: {pts} vs {smooth}");
             for (x, y) in facet.iter().flatten() {
                 assert!(
                     (-0.5..=24.5).contains(x) && (-0.5..=24.5).contains(y),
-                    "{n}"
+                    "{n:?}"
                 );
             }
         }
@@ -621,20 +657,39 @@ mod tests {
     #[cfg(feature = "outlined")]
     #[test]
     fn lookup_finds_known_icons_and_fill_variants() {
+        use MaterialSymbol as M;
         for n in [
-            "home",
-            "home-fill",
-            "search",
-            "settings",
-            "arrow_back",
-            "close",
-            "menu",
-            "favorite",
+            M::Home,
+            M::Search,
+            M::Settings,
+            M::ArrowBack,
+            M::Close,
+            M::Menu,
+            M::Favorite,
         ] {
-            assert!(outlined::get(n).is_some(), "{n}");
+            assert!(outlined::get(n).is_some(), "{n:?}");
+            assert!(outlined::get_fill(n).is_some(), "{n:?} fill");
         }
-        assert!(outlined::get("home-fill").unwrap().is_filled());
-        assert!(outlined::get("no_such_icon").is_none());
+        assert!(outlined::get_fill(M::Home).unwrap().is_filled());
+    }
+
+    /// Every catalogue symbol has its outline form in the table.
+    #[cfg(feature = "outlined")]
+    #[test]
+    fn every_symbol_is_in_the_catalogue() {
+        for &m in MaterialSymbol::ALL {
+            assert!(outlined::get(m).is_some(), "{m:?}");
+        }
+    }
+
+    /// A Dodai name resolves to Material's own icon for it (`arrow-left` is `arrow_back`).
+    #[cfg(feature = "outlined")]
+    #[test]
+    fn shared_vocabulary_resolves_through_aliases() {
+        use dodai_icon_id::IconId;
+        let back = outlined::get(MaterialSymbol::ArrowBack).unwrap();
+        assert_eq!(outlined::get_id(IconId::ArrowLeft, false), Some(back));
+        assert!(outlined::get_id(IconId::Home, true).unwrap().is_filled());
     }
 
     /// Found by fuzzing: a negative or NaN tolerance used to recurse forever.
@@ -651,13 +706,13 @@ mod tests {
     #[test]
     fn every_icon_is_in_exactly_one_category() {
         let mut seen = std::collections::HashMap::new();
-        for (cat, names) in CATEGORIES {
-            for n in *names {
-                assert!(seen.insert(*n, *cat).is_none(), "{n} listed twice");
+        for (cat, syms) in CATEGORIES {
+            for n in *syms {
+                assert!(seen.insert(*n, *cat).is_none(), "{n:?} listed twice");
             }
         }
-        for i in outlined::ALL.iter().filter(|i| !i.name.ends_with("-fill")) {
-            assert!(seen.contains_key(i.name), "{} has no category", i.name);
+        for &m in MaterialSymbol::ALL {
+            assert!(seen.contains_key(&m), "{m:?} has no category");
         }
     }
 }

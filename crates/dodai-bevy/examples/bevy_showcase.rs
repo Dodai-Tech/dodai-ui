@@ -3,6 +3,7 @@
 //! (when no text input has focus). Pass `--frames N` to exit after N frames.
 
 use bevy::prelude::*;
+use dodai::icons::IconId;
 use dodai_bevy::prelude::*;
 
 #[derive(Component)]
@@ -86,7 +87,12 @@ fn setup(mut commands: Commands, theme: Res<DodaiTheme>) {
                 ..default()
             })
             .with_children(|h| {
-                for n in ["home", "search", "settings", "favorite"] {
+                for n in [
+                    IconId::Home,
+                    IconId::Search,
+                    IconId::Settings,
+                    IconId::Heart,
+                ] {
                     h.spawn(icon(n, 24));
                 }
                 h.spawn(heading("Dodai UI - Bevy"));

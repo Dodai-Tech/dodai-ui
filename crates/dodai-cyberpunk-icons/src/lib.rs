@@ -88,12 +88,23 @@ macro_rules! icons {
             pub fn group(self) -> &'static str {
                 match self { $(IconName::$v => $group),+ }
             }
-            /// Look an icon up by [`name`](Self::name).
+            /// Look an icon up by [`name`](Self::name). For the pack's own tables; authored code
+            /// uses the variants.
+            #[doc(hidden)]
             pub fn from_name(n: &str) -> Option<Self> {
                 match n { $($name => Some(IconName::$v),)+ _ => None }
             }
         }
     };
+}
+
+impl From<IconName> for dodai_icon_id::IconId {
+    /// The shared-vocabulary id of a hand-drawn icon, so `Icon::new(IconName::Heart)` and
+    /// `Icon::new(IconId::Heart)` are the same icon.
+    fn from(n: IconName) -> Self {
+        dodai_icon_id::IconId::from_key(&n.name().replace('-', "_"))
+            .expect("every hand-drawn icon is in the shared vocabulary")
+    }
 }
 
 icons! {
@@ -1188,6 +1199,7 @@ mod render {
 
     /// Shapes for `name`: a drawn icon, a [`SYNONYMS`] entry, or either plus [`Modifier`]s
     /// (`bell-off`, `heart-add-circle`).
+    #[doc(hidden)]
     pub fn lookup(name: &str) -> Option<Vec<Shape>> {
         if let Some(i) = IconName::from_name(name) {
             return Some(i.shapes());
@@ -1202,6 +1214,7 @@ mod render {
     /// Like [`lookup`], also resolving names that `alias` maps to a drawn name
     /// (e.g. a Material spelling such as `arrow_back` -> `arrow-left`), with
     /// modifiers on either (`notifications_off`).
+    #[doc(hidden)]
     pub fn lookup_with(
         name: &str,
         alias: &dyn Fn(&str) -> Option<&'static str>,
@@ -1363,3 +1376,17 @@ mod render {
 }
 #[cfg(feature = "shapes")]
 pub use render::*;
+
+#[cfg(test)]
+mod id_tests {
+    use super::*;
+    use dodai_icon_id::IconId;
+
+    #[test]
+    fn every_hand_drawn_icon_has_an_id() {
+        for &n in ALL {
+            let id = IconId::from(n);
+            assert_eq!(id.name(), n.name().replace('-', "_"));
+        }
+    }
+}

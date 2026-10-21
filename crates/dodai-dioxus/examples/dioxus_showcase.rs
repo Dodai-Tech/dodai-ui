@@ -7,6 +7,7 @@
 //! The same `App` works unchanged in any Dioxus renderer (desktop/web) where signals are live.
 
 use dioxus::prelude::*;
+use dodai::icons::IconId;
 use dodai::themes;
 use dodai_core::{ButtonVariant, Tone};
 use dodai_dioxus::*;
@@ -110,8 +111,8 @@ fn Showcase() -> Element {
                 div { Mono { "mono_text()" } }
                 Divider {}
                 div { style: "display:flex;gap:12px;align-items:center",
-                    Icon { name: "home" } Icon { name: "search" } Icon { name: "settings" }
-                    Icon { name: "favorite", filled: true } Icon { name: "flight" } Icon { name: "notifications", size: 32 }
+                    Icon { icon: IconId::Home } Icon { icon: IconId::Search } Icon { icon: IconId::Settings }
+                    Icon { icon: IconId::Heart, filled: true } Icon { icon: IconId::Airplane } Icon { icon: IconId::Bell, size: 32 }
                 }
                 Tooltip { tip: "Tooltip bubble", Button { variant: ButtonVariant::Outline, "Hover me" } }
             }

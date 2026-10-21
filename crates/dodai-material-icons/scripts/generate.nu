@@ -28,6 +28,7 @@ def main [src: string = "package"] {
             "pub static ALL: &[Icon] = &[\n"
             $body
             "];\n"
+            (open --raw ($env.FILE_PWD | path join style-tail.rs))
         ] | str join | save --force ($out | path join $"($style).rs")
         print $"($style) ($rows | length)"
     }

@@ -48,7 +48,7 @@ use catalog::{caps, cat_blurb, cat_icon, section_id, sub_of, subs};
 use charts_page::ChartDemos;
 use foundations::{
     icons_view, motion_tokens_view, palette_view, shape_tokens_view, spacing_elevation_view,
-    type_scale_view, type_view,
+    type_scale_view, type_view, IconPick,
 };
 pub(crate) use shaders_page::Section;
 
@@ -89,7 +89,7 @@ pub struct Showcase {
     icon_search: Entity<TextInput>,
     icon_filled: bool,
     /// The icon whose SVG and code the Icons section shows.
-    icon_sel: Option<String>,
+    icon_sel: Option<IconPick>,
     icon_code: bool,
     icon_msg: Option<String>,
     /// Material icon categories shown in full (the rest show a preview).
@@ -588,7 +588,7 @@ impl Showcase {
             }))
             .when(open, |d| d.bg(hsla(t.palette.primary)))
             .child(
-                dodai_gpui::Icon::named("code")
+                dodai_gpui::Icon::new(dodai_gpui::IconId::Code)
                     .size(14.0)
                     .color(hsla(if open {
                         t.palette.on_primary
@@ -1124,7 +1124,12 @@ impl Showcase {
             dt_filter,
             icon_search,
             icon_filled: false,
-            icon_sel: std::env::var("DODAI_ICON_SEL").ok(),
+            icon_sel: std::env::var("DODAI_ICON_SEL").ok().and_then(|n| {
+                dodai_gpui::IconId::ALL
+                    .iter()
+                    .find(|i| i.name() == n)
+                    .map(|&i| IconPick::Id(i))
+            }),
             icon_code: std::env::var_os("DODAI_CODE").is_some(),
             icon_msg: None,
             icon_open: std::collections::HashSet::new(),

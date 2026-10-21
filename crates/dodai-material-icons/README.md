@@ -11,12 +11,12 @@ dodai-material-icons = { version = "0.1", features = ["all"] }
 ```
 
 ```rust
-use dodai_material_icons::outlined;
+use dodai_material_icons::{outlined, MaterialSymbol};
 
-let home = outlined::get("home").unwrap();
+let home = outlined::get(MaterialSymbol::Home).unwrap();
 let svg = home.svg();            // standalone SVG, fill = currentColor
 let polys = home.polygons();     // flattened 24×24 polygons (non-zero fill)
-let on = outlined::get("favorite-fill");
+let on = outlined::get_fill(MaterialSymbol::Favorite);
 ```
 
 Styles are Cargo features so you compile only what you use (`outlined`,

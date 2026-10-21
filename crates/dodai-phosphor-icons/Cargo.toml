@@ -12,4 +12,5 @@ keywords     = ["icons", "phosphor", "svg", "ui"]
 categories   = ["gui", "graphics"]
 
 [dependencies]
+dodai-icon-id = { workspace = true }
 dodai-material-icons = { workspace = true }

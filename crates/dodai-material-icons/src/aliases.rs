@@ -2,7 +2,7 @@
 //! names, so code written against another icon set keeps working.
 
 /// `(alias, material name)`, sorted by alias.
-pub static ALIASES: &[(&str, &str)] = &[
+pub(crate) static ALIASES: &[(&str, &str)] = &[
     ("archive", "archive"),
     ("area-chart", "area_chart"),
     ("arrow-down", "arrow_downward"),
@@ -143,7 +143,7 @@ pub static ALIASES: &[(&str, &str)] = &[
 
 /// The Material name for `name`: the mapped name when `name` is a known alias
 /// (`"trash"` → `"delete"`), otherwise `name` unchanged.
-pub fn resolve(name: &str) -> &str {
+pub(crate) fn resolve(name: &str) -> &str {
     match ALIASES.binary_search_by(|(a, _)| (*a).cmp(name)) {
         Ok(i) => ALIASES[i].1,
         Err(_) => name,
@@ -152,6 +152,7 @@ pub fn resolve(name: &str) -> &str {
 
 /// The familiar (Feather-style) alias of a Material name, when there is one:
 /// `"arrow_back"` -> `"arrow-left"`.
+#[doc(hidden)]
 pub fn alias_of(material: &str) -> Option<&'static str> {
     ALIASES
         .iter()
@@ -175,9 +176,9 @@ mod tests {
     #[test]
     fn every_alias_target_exists_in_the_catalogue() {
         for (a, m) in ALIASES {
-            assert!(crate::outlined::get(m).is_some(), "{a} -> {m}");
+            assert!(crate::find(crate::outlined::ALL, m).is_some(), "{a} -> {m}");
             assert!(
-                crate::outlined::get(&format!("{m}-fill")).is_some(),
+                crate::find(crate::outlined::ALL, &format!("{m}-fill")).is_some(),
                 "{a} -> {m}-fill"
             );
         }

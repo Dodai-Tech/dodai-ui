@@ -9,6 +9,8 @@ members = [
     "crates/dodai-charts-core",
     "crates/dodai-shaders",
     "crates/dodai-shaders-kernels",
+    "crates/dodai-icon-id",
+    "crates/dodai-icons",
     "crates/dodai-cyberpunk-icons",
     "crates/dodai-material-icons",
     "crates/dodai-neobrutalism-icons",
@@ -55,6 +57,8 @@ dodai-neobrutalism = { path = "crates/dodai-neobrutalism", version = "0.1.0", de
 dodai-motion = { path = "crates/dodai-motion", version = "0.1.0" }
 dodai-charts-core = { path = "crates/dodai-charts-core", version = "0.1.0" }
 dodai-shaders = { path = "crates/dodai-shaders", version = "0.1.0" }
+dodai-icon-id = { path = "crates/dodai-icon-id", version = "0.1.0" }
+dodai-icons = { path = "crates/dodai-icons", version = "0.1.0", default-features = false }
 dodai-cyberpunk-icons   = { path = "crates/dodai-cyberpunk-icons",   version = "0.1.0", default-features = false }
 dodai-material-icons = { path = "crates/dodai-material-icons", version = "0.1.0" }
 dodai-neobrutalism-icons = { path = "crates/dodai-neobrutalism-icons", version = "0.1.0" }

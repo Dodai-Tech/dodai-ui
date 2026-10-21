@@ -1,0 +1,29 @@
+[package]
+name         = "dodai-icons"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description  = "Resolves a typed IconId to a drawing in the style of a Dodai design system (Cyberpunk, Material 3, Neo-Brutalism); toolkit-neutral glyphs with SVG and coverage-mask export"
+readme       = "README.md"
+keywords     = ["icons", "ui", "design-system", "svg"]
+categories   = ["gui", "graphics"]
+
+[features]
+default      = ["cyberpunk", "material", "neobrutalism"]
+## Cyberpunk's hand-drawn, curve-free pack (a design system without it draws Phosphor, faceted).
+cyberpunk    = ["dep:dodai-cyberpunk-icons"]
+## Material Symbols art for the Material design system.
+material     = []
+## Neo-Brutalism's bold Phosphor pack.
+neobrutalism = ["dep:dodai-neobrutalism-icons"]
+
+[dependencies]
+dodai-core            = { workspace = true }
+dodai-icon-id         = { workspace = true }
+dodai-material-icons  = { workspace = true }
+dodai-phosphor-icons  = { workspace = true }
+dodai-cyberpunk-icons = { workspace = true, features = ["shapes"], optional = true }
+dodai-neobrutalism-icons = { workspace = true, optional = true }
