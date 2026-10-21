@@ -576,13 +576,13 @@ impl Navigation {
                 None
             };
             let ind_style = ShapeStyle::from_tokens(&t, ind_fill, None, false, false);
-            let mk_glyph = || {
+            let mk_glyph = |badge: bool| {
                 let mut glyph = div()
                     .relative()
                     .text_size(px(24.0))
                     .text_color(hsla(icon_fg))
                     .child(item.glyph.clone());
-                if let Some(n) = item.badge {
+                if let (true, Some(n)) = (badge, item.badge) {
                     glyph = glyph.child(
                         div()
                             .absolute()
@@ -635,12 +635,18 @@ impl Navigation {
                     } else {
                         r.on_surface_variant
                     }))
-                    .child(mk_glyph())
-                    .child(label.clone()),
+                    .child(mk_glyph(false))
+                    .child(div().flex_1().child(label.clone()))
+                    // Drawers show the count at the trailing edge, clear of the label.
+                    .children(item.badge.map(|n| {
+                        div()
+                            .text_size(px(t.typography.size_sm))
+                            .child(n.to_string())
+                    })),
             };
             el = match layout {
                 NavLayout::Drawer => el.child(ind),
-                _ => el.child(ind.child(mk_glyph())).child(
+                _ => el.child(ind.child(mk_glyph(true))).child(
                     div()
                         .text_size(px(12.0))
                         .text_color(hsla(label_fg))
