@@ -38,8 +38,9 @@ pub struct ShapeStyle {
     /// Material 3 elevation level (0..=5) and shadow colour: the soft two-layer shadow.
     pub elevation: Option<(u8, Hsla)>,
     /// Interrupt the border on the right (`true`) or left (`false`) side, centred vertically,
-    /// over a span of `2 * half` px (the empty space between a cropped button's tick bars).
-    pub edge_gap: Option<(bool, f32)>,
+    /// over a span of `2 * half` px (the empty space between a cropped button's tick bars); the
+    /// fill is notched `depth` px inward there.
+    pub edge_gap: Option<(bool, f32, f32)>,
 }
 
 /// The two M3 shadow layers for an elevation level: `(offset_y, blur, spread, alpha)`.
@@ -105,9 +106,10 @@ impl ShapeStyle {
         }
     }
 
-    /// Leave the right/left border open over `2 * half` px at mid-height.
-    pub fn with_edge_gap(mut self, right: bool, half: f32) -> Self {
-        self.edge_gap = Some((right, half));
+    /// Leave the right/left border open (and the fill notched `depth` px) over `2 * half` px at
+    /// mid-height.
+    pub fn with_edge_gap(mut self, right: bool, half: f32, depth: f32) -> Self {
+        self.edge_gap = Some((right, half, depth));
         self
     }
 
@@ -315,7 +317,11 @@ pub fn paint_polygon(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape,
         }
     }
     if let Some(c) = s.fill {
-        fill_path(window, poly(bounds.origin, &full, (0.0, 0.0)), c);
+        let notched = s
+            .edge_gap
+            .and_then(|(r, half, depth)| notch_at_edge(&full, r, h / 2.0, half, depth));
+        let pts = notched.as_deref().unwrap_or(&full);
+        fill_path(window, poly(bounds.origin, pts, (0.0, 0.0)), c);
     }
     if s.scanlines {
         paint_scanlines(window, bounds, shape, s.scanline);
@@ -326,7 +332,7 @@ pub fn paint_polygon(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape,
             let mut b = PathBuilder::stroke(px(bw));
             match s
                 .edge_gap
-                .and_then(|(r, half)| open_at_edge(&pts, r, h / 2.0, half))
+                .and_then(|(r, half, _)| open_at_edge(&pts, r, h / 2.0, half))
             {
                 Some(open) => b.add_polygon(&poly(bounds.origin, &open, (0.0, 0.0)), false),
                 None => b.add_polygon(&poly(bounds.origin, &pts, (0.0, 0.0)), true),
@@ -338,9 +344,14 @@ pub fn paint_polygon(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape,
     }
 }
 
-/// The closed outline as an open path that skips `mid ± half` on the right or left vertical
-/// side. `None` when that side has no vertical edge there.
-fn open_at_edge(pts: &[(f32, f32)], right: bool, mid: f32, half: f32) -> Option<Vec<(f32, f32)>> {
+/// Locate the vertical edge on the right/left side that spans `mid ± half`: returns its index,
+/// x, and the (first, second) cut points in walking order.
+fn edge_cut(
+    pts: &[(f32, f32)],
+    right: bool,
+    mid: f32,
+    half: f32,
+) -> Option<(usize, f32, (f32, f32), (f32, f32))> {
     let n = pts.len();
     let x = pts
         .iter()
@@ -366,9 +377,33 @@ fn open_at_edge(pts: &[(f32, f32)], right: bool, mid: f32, half: f32) -> Option<
     } else {
         ((x, hi), (x, lo))
     };
+    Some((i, x, first, second))
+}
+
+/// The closed outline as an open path that skips `mid ± half` on the right or left vertical
+/// side. `None` when that side has no vertical edge there.
+fn open_at_edge(pts: &[(f32, f32)], right: bool, mid: f32, half: f32) -> Option<Vec<(f32, f32)>> {
+    let n = pts.len();
+    let (i, _, first, second) = edge_cut(pts, right, mid, half)?;
     let mut out = vec![second];
     out.extend((0..n).map(|k| pts[(i + 1 + k) % n]));
     out.push(first);
+    Some(out)
+}
+
+/// The closed outline with a rectangular notch `depth` px deep cut into that side.
+fn notch_at_edge(
+    pts: &[(f32, f32)],
+    right: bool,
+    mid: f32,
+    half: f32,
+    depth: f32,
+) -> Option<Vec<(f32, f32)>> {
+    let (i, x, first, second) = edge_cut(pts, right, mid, half)?;
+    let inx = if right { x - depth } else { x + depth };
+    let mut out = pts[..=i].to_vec();
+    out.extend([first, (inx, first.1), (inx, second.1), second]);
+    out.extend_from_slice(&pts[i + 1..]);
     Some(out)
 }
 

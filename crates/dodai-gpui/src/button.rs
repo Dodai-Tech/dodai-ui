@@ -238,7 +238,7 @@ impl Button {
         let crop = self.crop.filter(|_| t.look().cut_corners);
         let gap = self.cut_gap.unwrap_or(t.spacing.xs);
         if let Some(c) = crop {
-            style = style.with_edge_gap(c == Crop::Left, gap / 2.0);
+            style = style.with_edge_gap(c == Crop::Left, gap / 2.0, t.spacing.md);
             // Flat: an offset shadow would sit over the cut and hide it.
             style.shadow = None;
         }

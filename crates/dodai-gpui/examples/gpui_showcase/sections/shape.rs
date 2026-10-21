@@ -229,6 +229,25 @@ impl Showcase {
                                     .corners(dodai_core::Corners::ALL),
                             ),
                     )
+                    .child({
+                        let mut r = row().child(Label::new("Filled, both cuts"));
+                        for (i, (l, v)) in [
+                            ("Primary", ButtonVariant::Primary),
+                            ("Secondary", ButtonVariant::Secondary),
+                            ("Danger", ButtonVariant::Danger),
+                        ]
+                        .into_iter()
+                        .enumerate()
+                        {
+                            r = r.child(
+                                Button::new(SharedString::from(format!("cr-fb-{i}")), l)
+                                    .variant(v)
+                                    .crop(if i == 1 { Crop::Right } else { Crop::Left })
+                                    .corners(dodai_core::Corners::DIAGONAL),
+                            );
+                        }
+                        r
+                    })
                     .into_any_element(),
                 "Cropped buttons",
             ));
