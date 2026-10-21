@@ -341,15 +341,6 @@ impl Showcase {
                                                 cx.notify();
                                             })),
                                     )
-                                    .child(code_toggle("ico-code", t, self.icon_code, {
-                                        let me = cx.entity();
-                                        move |on, _, cx| {
-                                            me.update(cx, |s, cx| {
-                                                s.icon_code = on;
-                                                cx.notify();
-                                            })
-                                        }
-                                    }))
                                     .child(
                                         Button::new("ico-close", "Close")
                                             .variant(ButtonVariant::Secondary)
@@ -365,6 +356,21 @@ impl Showcase {
         if let Some(m) = &self.icon_msg {
             panel = panel.child(Muted::new(m.clone()));
         }
+        // Below the selected icon, same footer position as the other sections.
+        panel = panel.child(div().flex().justify_end().child(code_toggle(
+            "ico-code",
+            t,
+            self.icon_code,
+            {
+                let me = cx.entity();
+                move |on, _, cx| {
+                    me.update(cx, |s, cx| {
+                        s.icon_code = on;
+                        cx.notify();
+                    })
+                }
+            },
+        )));
         if self.icon_code {
             panel = panel
                 .child(dodai_gpui::CodeBlock::new("ico-usage", usage).language("rust"))
