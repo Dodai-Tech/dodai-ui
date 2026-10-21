@@ -28,14 +28,6 @@ impl Showcase {
             .track_focus(&self.side_focus)
             .track_scroll(&self.side_scroll)
             .relative()
-            .top(px(self.side_over.offset()))
-            .on_scroll_wheel(cx.listener(|s, e: &gpui::ScrollWheelEvent, _, cx| {
-                let dy = dodai_gpui::overscroll::wheel_dy(&e.delta);
-                let (top, bottom) = dodai_gpui::overscroll::edges(&s.side_scroll);
-                s.side_over
-                    .on_wheel(dy, top, bottom, std::time::Instant::now());
-                cx.notify()
-            }))
             .on_key_down(cx.listener(|s, e: &KeyDownEvent, _, cx| {
                 let last = s.cat_count.saturating_sub(1);
                 match e.keystroke.key.as_str() {
