@@ -344,14 +344,13 @@ pub fn paint_polygon(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape,
     }
 }
 
+type Pt = (f32, f32);
+/// Index of the cut edge, its x, and the (first, second) cut points in walking order.
+type EdgeCut = (usize, f32, Pt, Pt);
+
 /// Locate the vertical edge on the right/left side that spans `mid ± half`: returns its index,
 /// x, and the (first, second) cut points in walking order.
-fn edge_cut(
-    pts: &[(f32, f32)],
-    right: bool,
-    mid: f32,
-    half: f32,
-) -> Option<(usize, f32, (f32, f32), (f32, f32))> {
+fn edge_cut(pts: &[(f32, f32)], right: bool, mid: f32, half: f32) -> Option<EdgeCut> {
     let n = pts.len();
     let x = pts
         .iter()
