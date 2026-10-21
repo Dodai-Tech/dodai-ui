@@ -50,6 +50,4 @@ let vocab = ((cyberpunk-names) ++ (table-names crates/dodai-phosphor-icons/src/r
 emit "IconId" "An icon of the shared vocabulary: every design system draws every one, in its own style." $vocab crates/dodai-icon-id/src/id.rs true
 emit "MaterialSymbol" "A Material Symbols catalogue icon." (table-names crates/dodai-material-icons/src/outlined.rs) crates/dodai-material-icons/src/symbol.rs false
 
-let material = (table-names crates/dodai-material-icons/src/outlined.rs)
 emit-consts "Icon" "of" "IconId" $vocab crates/dodai-gpui/src/icon_names.rs
-emit-consts "MaterialIcon" "of" "dodai_material_icons::MaterialSymbol" $material crates/dodai-gpui/src/material_icon_names.rs

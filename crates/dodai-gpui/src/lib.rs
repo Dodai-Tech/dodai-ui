@@ -251,10 +251,6 @@ pub use forms::{
 };
 #[cfg(feature = "charts")]
 pub use gauges::GaugeStyle;
-#[cfg(feature = "material")]
-pub use icons::MaterialIcon;
-#[cfg(feature = "material")]
-mod material_icon_names;
 #[cfg(feature = "cyberpunk")]
 pub use icons::Modifier;
 pub use icons::{Icon, IconId, IconName, IconPack};

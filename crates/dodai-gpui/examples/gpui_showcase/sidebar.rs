@@ -184,7 +184,7 @@ impl Showcase {
                     // The Icons section shows how many icons the active design ships.
                     if title == "Icons" {
                         row = row.badge(dodai_gpui::Badge::new(
-                            group_thousands(icon_total(t.look().icons)),
+                            group_thousands(dodai_gpui::IconId::ALL.len()),
                             dodai_core::Tone::Info,
                         ));
                     }
@@ -209,32 +209,6 @@ impl Showcase {
 
         (side, side_need)
     }
-}
-
-/// Distinct icon names the design draws (outline forms): the shared vocabulary (Dodai names and
-/// every Phosphor name), plus the whole Material catalogue under Material.
-pub(crate) fn icon_total(set: dodai_core::IconSet) -> usize {
-    static COUNTS: std::sync::OnceLock<(usize, usize)> = std::sync::OnceLock::new();
-    let (shared, material) = *COUNTS.get_or_init(|| (count_icons(false), count_icons(true)));
-    if set == dodai_core::IconSet::Symbols {
-        material
-    } else {
-        shared
-    }
-}
-
-fn count_icons(with_material: bool) -> usize {
-    // Every design draws the whole shared vocabulary; Material adds its own catalogue.
-    let mut names: std::collections::HashSet<&'static str> =
-        dodai_gpui::IconId::ALL.iter().map(|i| i.name()).collect();
-    if with_material {
-        names.extend(
-            dodai_material_icons::MaterialSymbol::ALL
-                .iter()
-                .map(|m| m.name()),
-        );
-    }
-    names.len()
 }
 
 fn group_thousands(n: usize) -> String {

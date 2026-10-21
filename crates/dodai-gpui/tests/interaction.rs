@@ -662,11 +662,11 @@ fn wheel_past_the_top_stretches_and_mid_page_does_not(cx: &mut TestAppContext) {
     );
 }
 
-/// `Icon` follows the theme and `MaterialIcon` tolerates unknown names:
+/// `Icon` follows the theme:
 /// every pack/theme combination must paint without panicking.
 #[gpui::test]
 fn icons_paint_in_every_pack_and_theme(cx: &mut TestAppContext) {
-    use dodai_gpui::{Icon, IconPack, MaterialIcon};
+    use dodai_gpui::{Icon, IconPack};
     for theme in dodai::themes::all() {
         cx.update(|cx| install(cx, theme));
         let (_, vcx) = cx.add_window_view(|_, _| Host {
@@ -683,8 +683,6 @@ fn icons_paint_in_every_pack_and_theme(cx: &mut TestAppContext) {
                             Icon::new(n).pack(IconPack::Stroked).into_any_element(),
                         ]
                     }))
-                    .child(MaterialIcon::Home.into_any_element())
-                    .child(MaterialIcon::Delete.filled(true).into_any_element())
                     .child(Icon::Home.size(0.0))
                     .child(Icon::Heart.modifier(Modifier::Add).size(24.0))
                     .child(Icon::Acorn)

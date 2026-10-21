@@ -1,6 +1,7 @@
 //! The "Foundations" category sections.
 
 use super::super::*;
+use dodai_gpui::IconId;
 
 impl Showcase {
     #[allow(unused_variables, clippy::redundant_clone, clippy::vec_init_then_push)]
@@ -93,12 +94,10 @@ impl Showcase {
         ));
         let set = t.look().icons;
         let query = self.icon_search.read(cx).text().to_string();
-        let count = dodai_cyberpunk_icons::ALL.len();
-        let intro = match set {
-            dodai_core::IconSet::Symbols => "The Material Symbols catalogue by Material's own categories (`MaterialIcon::Home`). Click an icon for its SVG and code.".to_string(),
-            dodai_core::IconSet::Bold => format!("{count} bold icons with a filled form each (Phosphor), by type. Click an icon for its SVG and code."),
-            dodai_core::IconSet::Stroked => format!("{count} hand-drawn icons by type: straight lines, 45° chamfers, octagons. Any icon takes a `Modifier` (Off, Add, Remove, Check, Lock, Circle), e.g. `Icon::Heart.modifier(Modifier::Add)`. Click an icon for its SVG and code."),
-        };
+        let count = dodai_gpui::IconId::ALL.len();
+        let intro = format!(
+            "{count} icons, the same names in every design system; each draws them in its own style. Write one as `Icon::Heart`. Click an icon for its SVG and code."
+        );
         let mut section = section!("Icons").child(Muted::new(intro)).child(
             div()
                 .w(px(360.0))
@@ -124,41 +123,15 @@ impl Showcase {
                 )
                 .child(Label::new("Filled"))
         };
-        section = match set {
-            dodai_core::IconSet::Symbols => section
-                .child(filled_toggle)
-                .child(Muted::new("MATERIAL SYMBOLS"))
-                .child(self.icon_browser(&t, &query, cx, IconSource::Material)),
-            dodai_core::IconSet::Bold => section.child(filled_toggle).child(icons_view(
-                &t,
-                &query,
-                self.icon_filled,
-                false,
-                pick_id(&me),
-            )),
-            dodai_core::IconSet::Stroked => {
-                section.child(icons_view(&t, &query, false, true, pick_id(&me)))
-            }
-        };
-        // Parity: every design draws the whole shared vocabulary, in its own style.
-        let vocab = dodai_phosphor_icons::ids().count();
         section = section
-            .child(Muted::new(format!(
-                "SHARED VOCABULARY · {vocab} Phosphor icons, drawn in this design's style"
-            )))
-            .child(self.icon_browser(&t, &query, cx, IconSource::Phosphor));
+            .child(filled_toggle)
+            .child(self.icon_browser(&t, &query, cx));
+        if t.look().icons == dodai_core::IconSet::Stroked && query.trim().is_empty() {
+            section = section.child(modifier_variants_view(&t));
+        }
         out.push(("Foundations", "Icons", section.into_any_element(), "Icons"));
         out
     }
-}
-
-/// Which category list an icon browser walks.
-#[derive(Clone, Copy)]
-enum IconSource {
-    /// Material Symbols by Material's own categories.
-    Material,
-    /// The shared Phosphor vocabulary by Phosphor's categories.
-    Phosphor,
 }
 
 impl Showcase {
@@ -169,24 +142,22 @@ impl Showcase {
         t: &dodai_core::Theme,
         query: &str,
         cx: &mut Context<Self>,
-        kind: IconSource,
     ) -> gpui::Div {
-        let (source, tag): (Vec<(&'static str, Vec<IconPick>)>, &str) = match kind {
-            IconSource::Material => (
-                dodai_material_icons::CATEGORIES
-                    .iter()
-                    .map(|&(c, s)| (c, s.iter().map(|&m| IconPick::Material(m)).collect()))
-                    .collect(),
-                "mi",
-            ),
-            IconSource::Phosphor => (
-                dodai_phosphor_icons::CATEGORIES
-                    .iter()
-                    .map(|&(c, s)| (c, s.iter().map(|&i| IconPick::Id(i)).collect()))
-                    .collect(),
-                "ph",
-            ),
-        };
+        // Phosphor's categories, then whatever the shared names hold beyond them (the Dodai
+        // names Phosphor does not have), so each icon is listed once.
+        let mut source: Vec<(&'static str, Vec<IconId>)> = dodai_phosphor_icons::CATEGORIES
+            .iter()
+            .map(|&(c, ids)| (c, ids.to_vec()))
+            .collect();
+        let listed: std::collections::HashSet<IconId> =
+            source.iter().flat_map(|(_, v)| v.iter().copied()).collect();
+        let rest: Vec<IconId> = IconId::ALL
+            .iter()
+            .copied()
+            .filter(|i| !listed.contains(i))
+            .collect();
+        source.push(("other", rest));
+        let tag = "ic";
         const PREVIEW: usize = 24;
         const MAX_HITS: usize = 480;
         let q = query.trim().to_lowercase().replace(' ', "_");
@@ -194,7 +165,7 @@ impl Showcase {
         let mut out = div().flex().flex_col().gap(px(t.spacing.lg));
         let mut total = 0usize;
         for (cat, picks) in source {
-            let hits: Vec<IconPick> = picks
+            let hits: Vec<IconId> = picks
                 .iter()
                 .copied()
                 .filter(|p| !searching || p.name().contains(q.as_str()))
@@ -236,20 +207,12 @@ impl Showcase {
                                 })
                             }
                         })
-                        .child(match pick {
-                            IconPick::Material(m) => dodai_gpui::MaterialIcon::new(m)
+                        .child(
+                            dodai_gpui::Icon::new(pick)
                                 .size(28.0)
                                 .filled(self.icon_filled)
-                                .color(hsla(t.palette.primary))
-                                .into_any_element(),
-                            // Drawn by the active design: its own icon if it has one, else
-                            // the Phosphor drawing in the design's style.
-                            IconPick::Id(i) => dodai_gpui::Icon::new(i)
-                                .size(28.0)
-                                .filled(self.icon_filled)
-                                .color(hsla(t.palette.primary))
-                                .into_any_element(),
-                        })
+                                .color(hsla(t.palette.primary)),
+                        )
                         .child({
                             // Centred when it fits; long names stay left-aligned so the
                             // ellipsis clips the end, not both sides.
@@ -316,24 +279,11 @@ impl Showcase {
         let pick = self.icon_sel?;
         let name = pick.name().to_string();
         let filled = self.icon_filled;
-        let svg = match pick {
-            // The design's own drawing of the shared vocabulary.
-            IconPick::Id(id) => dodai::icons::glyph(id, t, filled)
-                .map(|g| g.svg(24, "currentColor"))
-                .unwrap_or_default(),
-            // The catalogue's original curve path, not a flattened copy.
-            IconPick::Material(m) => {
-                use dodai_material_icons::outlined;
-                (filled)
-                    .then(|| outlined::get_fill(m))
-                    .flatten()
-                    .or_else(|| outlined::get(m))
-                    .map(|i| i.svg())
-                    .unwrap_or_default()
-            }
-        };
+        let svg = dodai::icons::glyph(pick, t, filled)
+            .map(|g| g.svg(24, "currentColor"))
+            .unwrap_or_default();
         let svg = pretty_svg(&svg);
-        let usage = pick.usage();
+        let usage = format!("Icon::{pick:?}");
         let file = name.replace(
             |c: char| !(c.is_ascii_alphanumeric() || c == '-' || c == '_'),
             "_",
@@ -361,18 +311,12 @@ impl Showcase {
                             .justify_center()
                             .border_1()
                             .border_color(hsla(t.palette.border))
-                            .child(match pick {
-                                IconPick::Id(i) => dodai_gpui::Icon::new(i)
+                            .child(
+                                dodai_gpui::Icon::new(pick)
                                     .size(56.0)
                                     .filled(filled)
-                                    .color(hsla(t.palette.primary))
-                                    .into_any_element(),
-                                IconPick::Material(m) => dodai_gpui::MaterialIcon::new(m)
-                                    .size(56.0)
-                                    .filled(filled)
-                                    .color(hsla(t.palette.primary))
-                                    .into_any_element(),
-                            }),
+                                    .color(hsla(t.palette.primary)),
+                            ),
                     )
                     .child(
                         div()
@@ -499,18 +443,4 @@ fn pretty_svg(svg: &str) -> String {
         out.push('\n');
     }
     out.trim_end().to_string()
-}
-
-/// Select an icon of the shared vocabulary from a grid tile.
-fn pick_id(
-    me: &gpui::Entity<Showcase>,
-) -> impl Fn(dodai_gpui::IconId, &mut gpui::App) + Clone + 'static {
-    let me = me.clone();
-    move |id, cx| {
-        me.update(cx, |s, cx| {
-            s.icon_sel = Some(IconPick::Id(id));
-            s.icon_msg = None;
-            cx.notify();
-        })
-    }
 }

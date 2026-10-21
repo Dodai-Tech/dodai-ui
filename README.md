@@ -70,7 +70,7 @@ umbrella (features `cyberpunk`, `material`, `icons`, `shaders`, all on by defaul
 | [`dodai-cyberpunk`](crates/dodai-cyberpunk) | The 6 Cyberpunk themes (dark + light) + `icons` feature |
 | [`dodai-material`](crates/dodai-material) | The Material 3 light/dark pair + `icons` feature |
 | [`dodai-neobrutalism`](crates/dodai-neobrutalism) | Neo-Brutalism: six accents, light and dark |
-| [`dodai-cyberpunk-icons`](crates/dodai-cyberpunk-icons) | 136 chamfered, curve-free icons. Standalone, no deps |
+| [`dodai-cyberpunk-icons`](crates/dodai-cyberpunk-icons) | 378 hand-drawn, curve-free icons. Standalone, no deps |
 | [`dodai-material-icons`](crates/dodai-material-icons) | The full Material Symbols catalogue (3,900+ icons, outlined/rounded/sharp + fill). Standalone, no deps |
 | [`dodai-shaders`](crates/dodai-shaders) | Pixel shaders |
 | [`dodai`](crates/dodai) | All of the above behind features |
@@ -80,7 +80,7 @@ dodai-core     = "0.1"    # just the engine
 dodai-material = "0.1"    # + the Material 3 themes and icons (features: rounded, sharp)
 ```
 
-Icons are typed: `Icon::Heart` (autocomplete, no name strings) draws in the style of the active design system. Every one of the ~1,770 `IconId`s draws in every design: Cyberpunk's hand-drawn straight segments (Phosphor, faceted, where it has none), Material 3's Material Symbols (Phosphor where Material has none) and Neo-Brutalism's bold Phosphor. Force a pack with `.pack(IconPack::…)`. `MaterialIcon::Home.filled(true)` draws any of the ~3,900 Material catalogue icons.
+Icons are typed: `Icon::Heart` (autocomplete, no name strings) draws in the style of the active design system. Every one of the ~1,770 `IconId`s draws in every design: Cyberpunk's hand-drawn straight segments (Phosphor, faceted, where it has none), Material 3's Material Symbols (Phosphor where Material has none) and Neo-Brutalism's bold Phosphor. Force a pack with `.pack(IconPack::…)`.
 
 ## Showcases
 
@@ -131,7 +131,7 @@ committed and checked in CI:
 | `dist/css/dodai-cyberpunk.css`, `dist/css/dodai-material.css`, `dist/tokens/dodai-cyberpunk.tokens.json`, `dist/tokens/dodai-material.tokens.json` | The same, for one design system only: ship just Cyberpunk or just Material 3 |
 | `dist/icons/svg/*.svg`, `dist/icons/dodai-cyberpunk-icons.svg` | The icon pack as SVG (`currentColor`), one file each and as a `<symbol>` sprite |
 
-The pack (`dodai-cyberpunk-icons`) has 136 icons in 7 groups, all straight lines, 45° chamfers and octagons.
+The pack (`dodai-cyberpunk-icons`) has 378 icons in 7 groups, all straight lines, 45° chamfers and octagons.
 
 ## gpui features
 

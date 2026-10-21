@@ -24,7 +24,7 @@ impl Showcase {
             (total.to_string(), "components"),
             (cats.len().to_string(), "categories"),
             (dodai::themes::all().len().to_string(), "themes"),
-            (dodai_cyberpunk_icons::ALL.len().to_string(), "icons"),
+            (dodai_gpui::IconId::ALL.len().to_string(), "icons"),
             (n_shaders.to_string(), "shaders"),
         ];
         let mut stat_row = div().flex().gap(px(t.spacing.md)).w_full();

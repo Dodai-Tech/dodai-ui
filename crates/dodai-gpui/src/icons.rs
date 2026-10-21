@@ -4,8 +4,7 @@
 //! is a compile error, and the editor completes it). It is drawn in the
 //! style of the active design system: Cyberpunk's straight segments and chamfers, Material 3's
 //! Material Symbols, Neo-Brutalism's bold Phosphor. Every icon draws in every design. Force a pack
-//! with [`Icon::pack`]. [`MaterialIcon`] draws any Material Symbols catalogue icon:
-//! `MaterialIcon::Home`.
+//! with [`Icon::pack`].
 
 use crate::paint::stroke;
 pub use dodai_cyberpunk_icons::IconName;
@@ -166,77 +165,6 @@ fn draw(glyph: Option<Glyph>, size: f32, weight: f32, color: Hsla) -> gpui::AnyE
                 )
                 .into_any_element()
         }
-    }
-}
-
-/// Any Material Symbols catalogue icon, by its typed
-/// [`MaterialSymbol`](dodai_material_icons::MaterialSymbol), in every design.
-#[cfg(feature = "material")]
-#[derive(IntoElement)]
-pub struct MaterialIcon {
-    symbol: dodai_material_icons::MaterialSymbol,
-    size: f32,
-    color: Option<Hsla>,
-    filled: bool,
-    faceted: Option<bool>,
-}
-
-#[cfg(feature = "material")]
-impl MaterialIcon {
-    pub fn new(symbol: dodai_material_icons::MaterialSymbol) -> Self {
-        Self::of(symbol)
-    }
-
-    /// `const` constructor behind the generated `MaterialIcon::Home`-style constants.
-    pub(crate) const fn of(symbol: dodai_material_icons::MaterialSymbol) -> Self {
-        Self {
-            symbol,
-            size: 24.0,
-            color: None,
-            filled: false,
-            faceted: None,
-        }
-    }
-    pub fn size(mut self, s: f32) -> Self {
-        self.size = s;
-        self
-    }
-    pub fn color(mut self, c: Hsla) -> Self {
-        self.color = Some(c);
-        self
-    }
-    /// Reduce the glyph to straight facets (`true`). Opt-in: the default is
-    /// the smooth Material drawing in every theme.
-    pub fn faceted(mut self, on: bool) -> Self {
-        self.faceted = Some(on);
-        self
-    }
-    /// Use the filled form when the catalogue has one.
-    pub fn filled(mut self, on: bool) -> Self {
-        self.filled = on;
-        self
-    }
-}
-
-#[cfg(feature = "material")]
-impl RenderOnce for MaterialIcon {
-    fn render(self, _: &mut gpui::Window, cx: &mut gpui::App) -> impl IntoElement {
-        use dodai_material_icons::outlined;
-        let color = self
-            .color
-            .unwrap_or_else(|| crate::hsla(crate::theme_of(cx).palette.text));
-        let icon = (self.filled)
-            .then(|| outlined::get_fill(self.symbol))
-            .flatten()
-            .or_else(|| outlined::get(self.symbol));
-        let glyph = icon.map(|i| {
-            Glyph::Filled(if self.faceted.unwrap_or(false) {
-                i.faceted()
-            } else {
-                i.polygons()
-            })
-        });
-        draw(glyph, self.size, 1.75, color)
     }
 }
 
