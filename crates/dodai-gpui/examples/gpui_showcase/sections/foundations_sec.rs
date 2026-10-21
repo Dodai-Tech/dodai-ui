@@ -95,9 +95,9 @@ impl Showcase {
         let query = self.icon_search.read(cx).text().to_string();
         let count = dodai_cyberpunk_icons::ALL.len();
         let intro = match set {
-            dodai_core::IconSet::Symbols => "The Material Symbols catalogue by Material's own categories (`MaterialIcon::new(name)`). Click to copy.".to_string(),
-            dodai_core::IconSet::Bold => format!("{count} bold icons with a filled form each (Phosphor), by type. Click to copy `IconName::…`."),
-            dodai_core::IconSet::Stroked => format!("{count} hand-drawn icons by type: straight lines, 45° chamfers, octagons. Any name takes -off / -add / -remove / -check / -lock / -circle (e.g. `heart-add`). Click to copy `IconName::…`."),
+            dodai_core::IconSet::Symbols => "The Material Symbols catalogue by Material's own categories (`MaterialIcon::new(name)`). Click an icon for its SVG and code.".to_string(),
+            dodai_core::IconSet::Bold => format!("{count} bold icons with a filled form each (Phosphor), by type. Click an icon for its SVG and code."),
+            dodai_core::IconSet::Stroked => format!("{count} hand-drawn icons by type: straight lines, 45° chamfers, octagons. Any name takes -off / -add / -remove / -check / -lock / -circle (e.g. `heart-add`). Click an icon for its SVG and code."),
         };
         let mut section = section!("Icons").child(Muted::new(intro)).child(
             div()
@@ -105,6 +105,9 @@ impl Showcase {
                 .max_w_full()
                 .child(self.icon_search.clone()),
         );
+        if let Some(panel) = self.icon_detail(&t, cx) {
+            section = section.child(panel);
+        }
         let filled_toggle = {
             let me_f = me.clone();
             div()
@@ -126,12 +129,32 @@ impl Showcase {
                 .child(filled_toggle)
                 .child(Muted::new("MATERIAL SYMBOLS"))
                 .child(self.icon_browser(&t, &query, cx, IconSource::Material)),
-            dodai_core::IconSet::Bold => {
-                section
-                    .child(filled_toggle)
-                    .child(icons_view(&t, &query, self.icon_filled, false))
-            }
-            dodai_core::IconSet::Stroked => section.child(icons_view(&t, &query, false, true)),
+            dodai_core::IconSet::Bold => section.child(filled_toggle).child(icons_view(
+                &t,
+                &query,
+                self.icon_filled,
+                false,
+                {
+                    let me = me.clone();
+                    move |n: String, cx: &mut gpui::App| {
+                        me.update(cx, |s, cx| {
+                            s.icon_sel = Some(n);
+                            s.icon_msg = None;
+                            cx.notify();
+                        })
+                    }
+                },
+            )),
+            dodai_core::IconSet::Stroked => section.child(icons_view(&t, &query, false, true, {
+                let me = me.clone();
+                move |n: String, cx: &mut gpui::App| {
+                    me.update(cx, |s, cx| {
+                        s.icon_sel = Some(n);
+                        s.icon_msg = None;
+                        cx.notify();
+                    })
+                }
+            })),
         };
         // Parity: every design draws the whole shared vocabulary, in its own style.
         let vocab = dodai_phosphor_icons::names().count();
@@ -206,11 +229,15 @@ impl Showcase {
                         .cursor_pointer()
                         .border_1()
                         .border_color(hsla(t.palette.border))
-                        .on_click(move |_, _, cx| {
-                            cx.write_to_clipboard(gpui::ClipboardItem::new_string(match kind {
-                                IconSource::Material => format!("MaterialIcon::new(\"{n}\")"),
-                                IconSource::Phosphor => format!("Icon::named(\"{n}\")"),
-                            }))
+                        .on_click({
+                            let me = cx.entity();
+                            move |_, _, cx| {
+                                me.update(cx, |s, cx| {
+                                    s.icon_sel = Some(n.to_string());
+                                    s.icon_msg = None;
+                                    cx.notify();
+                                })
+                            }
                         })
                         .child(match kind {
                             IconSource::Material => dodai_gpui::MaterialIcon::new(n)
@@ -285,4 +312,178 @@ impl Showcase {
         }
         out
     }
+}
+
+impl Showcase {
+    /// The selected icon: preview, a download, copy actions, and the SVG source on request.
+    fn icon_detail(&mut self, t: &dodai_core::Theme, cx: &mut Context<Self>) -> Option<gpui::Div> {
+        let name = self.icon_sel.clone()?;
+        let filled = self.icon_filled;
+        let svg = dodai::icons::glyph(&name, t, filled)
+            .map(|g| pretty_svg(&g.svg(24, "currentColor")))
+            .unwrap_or_default();
+        let usage = match t.look().icons {
+            dodai_core::IconSet::Symbols => format!("MaterialIcon::new(\"{name}\")"),
+            _ => format!("Icon::named(\"{name}\")"),
+        };
+        let file = name.replace(
+            |c: char| !(c.is_ascii_alphanumeric() || c == '-' || c == '_'),
+            "_",
+        );
+        let (svg_dl, svg_cp, usage_cp, name_cp) =
+            (svg.clone(), svg.clone(), usage.clone(), name.clone());
+        let mut panel = div()
+            .flex()
+            .flex_col()
+            .gap(px(t.spacing.md))
+            .p(px(t.spacing.md))
+            .border_1()
+            .border_color(hsla(t.palette.border))
+            .child(
+                div()
+                    .flex()
+                    .flex_wrap()
+                    .items_center()
+                    .gap(px(t.spacing.md))
+                    .child(
+                        div()
+                            .size(px(88.0))
+                            .flex()
+                            .items_center()
+                            .justify_center()
+                            .border_1()
+                            .border_color(hsla(t.palette.border))
+                            .child(
+                                dodai_gpui::Icon::named(&name)
+                                    .pack(dodai_gpui::IconPack::Auto)
+                                    .size(56.0)
+                                    .filled(filled)
+                                    .color(hsla(t.palette.primary)),
+                            ),
+                    )
+                    .child(
+                        div()
+                            .flex()
+                            .flex_col()
+                            .gap(px(t.spacing.sm))
+                            .child(Label::new(name.clone()))
+                            .child(
+                                div()
+                                    .flex()
+                                    .flex_wrap()
+                                    .gap(px(t.spacing.sm))
+                                    .child(Button::new("ico-dl", "Download SVG").on_click(
+                                        cx.listener(move |s, _, _, cx| {
+                                            let dir = std::env::var_os("HOME")
+                                                .map(std::path::PathBuf::from)
+                                                .unwrap_or_default()
+                                                .join("Downloads");
+                                            let path = dir.join(format!("{file}.svg"));
+                                            s.icon_msg = Some(
+                                                match std::fs::create_dir_all(&dir)
+                                                    .and_then(|_| std::fs::write(&path, &svg_dl))
+                                                {
+                                                    Ok(()) => format!("Saved {}", path.display()),
+                                                    Err(e) => format!("Could not save: {e}"),
+                                                },
+                                            );
+                                            cx.notify();
+                                        }),
+                                    ))
+                                    .child(
+                                        Button::new("ico-cp-svg", "Copy SVG")
+                                            .variant(ButtonVariant::Secondary)
+                                            .on_click(cx.listener(move |s, _, _, cx| {
+                                                cx.write_to_clipboard(
+                                                    gpui::ClipboardItem::new_string(svg_cp.clone()),
+                                                );
+                                                s.icon_msg = Some("SVG copied".into());
+                                                cx.notify();
+                                            })),
+                                    )
+                                    .child(
+                                        Button::new("ico-cp-name", "Copy Rust")
+                                            .variant(ButtonVariant::Secondary)
+                                            .on_click(cx.listener(move |s, _, _, cx| {
+                                                cx.write_to_clipboard(
+                                                    gpui::ClipboardItem::new_string(
+                                                        usage_cp.clone(),
+                                                    ),
+                                                );
+                                                s.icon_msg = Some(format!("Copied `{usage_cp}`"));
+                                                let _ = &name_cp;
+                                                cx.notify();
+                                            })),
+                                    )
+                                    .child(
+                                        Button::new(
+                                            "ico-code",
+                                            if self.icon_code {
+                                                "Hide code"
+                                            } else {
+                                                "Show code"
+                                            },
+                                        )
+                                        .variant(ButtonVariant::Secondary)
+                                        .on_click(
+                                            cx.listener(|s, _, _, cx| {
+                                                s.icon_code = !s.icon_code;
+                                                cx.notify();
+                                            }),
+                                        ),
+                                    )
+                                    .child(
+                                        Button::new("ico-close", "Close")
+                                            .variant(ButtonVariant::Secondary)
+                                            .on_click(cx.listener(|s, _, _, cx| {
+                                                s.icon_sel = None;
+                                                s.icon_msg = None;
+                                                cx.notify();
+                                            })),
+                                    ),
+                            ),
+                    ),
+            );
+        if let Some(m) = &self.icon_msg {
+            panel = panel.child(Muted::new(m.clone()));
+        }
+        if self.icon_code {
+            panel = panel
+                .child(dodai_gpui::CodeBlock::new("ico-usage", usage).language("rust"))
+                .child(dodai_gpui::CodeBlock::new("ico-svg", svg).language("xml"));
+        }
+        Some(panel)
+    }
+}
+
+/// Lay the one-line SVG out for reading: attributes and path data on their own lines, wrapped at
+/// spaces (still valid SVG, and the same drawing).
+fn pretty_svg(svg: &str) -> String {
+    let flat = svg
+        .replace(" xmlns=", "\n  xmlns=")
+        .replace(" width=", "\n  width=")
+        .replace(" height=", "\n  height=")
+        .replace(" viewBox=", "\n  viewBox=")
+        .replace("><path", ">\n  <path")
+        .replace(" d=\"", "\n    d=\"")
+        .replace("/></svg>", "/>\n</svg>");
+    let mut out = String::new();
+    for line in flat.lines() {
+        let mut width = 0;
+        for (i, word) in line.split(' ').enumerate() {
+            if i > 0 {
+                if width + word.len() > 96 {
+                    out.push_str("\n      ");
+                    width = 6;
+                } else {
+                    out.push(' ');
+                    width += 1;
+                }
+            }
+            out.push_str(word);
+            width += word.len();
+        }
+        out.push('\n');
+    }
+    out.trim_end().to_string()
 }

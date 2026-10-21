@@ -88,6 +88,10 @@ pub struct Showcase {
     dt_filter: Entity<TextInput>,
     icon_search: Entity<TextInput>,
     icon_filled: bool,
+    /// The icon whose SVG and code the Icons section shows.
+    icon_sel: Option<String>,
+    icon_code: bool,
+    icon_msg: Option<String>,
     /// Material icon categories shown in full (the rest show a preview).
     icon_open: std::collections::HashSet<&'static str>,
     date_range: dodai_gpui::DateRange,
@@ -1120,6 +1124,9 @@ impl Showcase {
             dt_filter,
             icon_search,
             icon_filled: false,
+            icon_sel: std::env::var("DODAI_ICON_SEL").ok(),
+            icon_code: std::env::var_os("DODAI_CODE").is_some(),
+            icon_msg: None,
             icon_open: std::collections::HashSet::new(),
             date_range: Default::default(),
             cat: std::env::var("DODAI_CAT")

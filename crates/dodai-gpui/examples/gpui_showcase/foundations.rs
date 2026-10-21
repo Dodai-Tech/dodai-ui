@@ -367,6 +367,7 @@ pub(crate) fn icons_view(
     query: &str,
     filled: bool,
     variants: bool,
+    pick_icon: impl Fn(String, &mut gpui::App) + Clone + 'static,
 ) -> gpui::Div {
     let q = query.trim().to_lowercase().replace(' ', "_");
     let mut out = div().flex().flex_col().gap(px(t.spacing.lg));
@@ -391,7 +392,8 @@ pub(crate) fn icons_view(
         let mut row = div().flex().flex_wrap().w_full().gap(px(t.spacing.sm));
         for n in &members {
             idx += 1;
-            let copy = format!("IconName::{n:?}");
+            let pick = n.name().to_string();
+            let pick_icon = pick_icon.clone();
             row = row.child(
                 div()
                     .id(("ico", idx))
@@ -404,9 +406,7 @@ pub(crate) fn icons_view(
                     .cursor_pointer()
                     .border_1()
                     .border_color(hsla(t.palette.border))
-                    .on_click(move |_, _, cx| {
-                        cx.write_to_clipboard(gpui::ClipboardItem::new_string(copy.clone()))
-                    })
+                    .on_click(move |_, _, cx| pick_icon(pick.clone(), cx))
                     .child(
                         dodai_gpui::Icon::new(**n)
                             .filled(filled)
