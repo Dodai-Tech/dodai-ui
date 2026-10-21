@@ -170,86 +170,57 @@ impl Showcase {
         }
         if t.look().cut_corners {
             use dodai_gpui::Crop;
-            let variants = [
-                ("Primary", ButtonVariant::Primary),
-                ("Secondary", ButtonVariant::Secondary),
-                ("Outline", ButtonVariant::Outline),
-                ("Scrim", ButtonVariant::Scrim),
-                ("Danger", ButtonVariant::Danger),
-            ];
-            let side = |name: &'static str, crop: Crop| {
-                let mut r = row().child(Label::new(name));
-                for (i, (l, v)) in variants.into_iter().enumerate() {
-                    r = r.child(
-                        Button::new(SharedString::from(format!("cr-{name}-{i}")), l)
-                            .variant(v)
-                            .crop(crop),
-                    );
-                }
-                r
+            let cur = dodai_gpui::button_crop(cx);
+            let gap_cur = dodai_gpui::button_cut_gap(cx);
+            let chip = |id: SharedString, label: String, on: bool, f: Box<dyn Fn(&mut App)>| {
+                Button::new(id, label)
+                    .variant(if on {
+                        ButtonVariant::Primary
+                    } else {
+                        ButtonVariant::Outline
+                    })
+                    .on_click(move |_, _, cx| f(cx))
             };
-            let mut gaps = row().child(Label::new("cut_gap"));
-            for g in [0.0_f32, 2.0, 4.0, 8.0] {
-                gaps = gaps.child(
-                    Button::new(SharedString::from(format!("cr-gap-{g}")), format!("{g} px"))
-                        .variant(ButtonVariant::Outline)
-                        .crop(Crop::Left)
-                        .cut_gap(g),
-                );
+            let mut crop_row = row().child(Label::new("Crop"));
+            for (name, c) in [
+                ("None", None),
+                ("Left", Some(Crop::Left)),
+                ("Right", Some(Crop::Right)),
+            ] {
+                crop_row = crop_row.child(chip(
+                    SharedString::from(format!("bc-{name}")),
+                    name.to_string(),
+                    cur == c,
+                    Box::new(move |cx| dodai_gpui::set_button_crop(cx, c)),
+                ));
+            }
+            let mut gap_row = row().child(Label::new("Tick gap"));
+            for (name, g) in [
+                ("Theme default", None),
+                ("0 px", Some(0.0_f32)),
+                ("2 px", Some(2.0)),
+                ("4 px", Some(4.0)),
+                ("8 px", Some(8.0)),
+            ] {
+                gap_row = gap_row.child(chip(
+                    SharedString::from(format!("bg-{name}")),
+                    name.to_string(),
+                    gap_cur == g,
+                    Box::new(move |cx| dodai_gpui::set_button_cut_gap(cx, g)),
+                ));
             }
             out.push((
                 "Shape",
-                "Cropped buttons",
-                section!("Cropped buttons")
+                "Button crop",
+                section!("Button crop")
                     .child(Muted::new(
-                        "`.crop(Crop::Left | Crop::Right)` cuts one end and opens the border between a double tick on the other, on any variant. `.cut_gap(px)` sets the space between the bars. `.corners(..)` overrides which corners are cut.",
+                        "Crop one end of every button: a cut corner plus a double tick on the other side. Pick the corner under Corner shape too; ready-made cropped buttons are under Actions.",
                     ))
-                    .child(side("Left", Crop::Left))
-                    .child(side("Right", Crop::Right))
-                    .child(gaps)
-                    .child(
-                        row()
-                            .child(Label::new("With corners"))
-                            .child(
-                                Button::new("cr-diag", "Diagonal")
-                                    .variant(ButtonVariant::Outline)
-                                    .crop(Crop::Left)
-                                    .corners(dodai_core::Corners::DIAGONAL),
-                            )
-                            .child(
-                                Button::new("cr-anti", "Anti-diagonal")
-                                    .variant(ButtonVariant::Outline)
-                                    .crop(Crop::Right)
-                                    .corners(dodai_core::Corners::ANTI_DIAGONAL),
-                            )
-                            .child(
-                                Button::new("cr-all", "All corners")
-                                    .variant(ButtonVariant::Scrim)
-                                    .crop(Crop::Left)
-                                    .corners(dodai_core::Corners::ALL),
-                            ),
-                    )
-                    .child({
-                        let mut r = row().child(Label::new("Filled, both cuts"));
-                        for (i, (l, v)) in [
-                            ("Primary", ButtonVariant::Primary),
-                            ("Secondary", ButtonVariant::Secondary),
-                            ("Danger", ButtonVariant::Danger),
-                        ]
-                        .into_iter()
-                        .enumerate()
-                        {
-                            r = r.child(
-                                Button::new(SharedString::from(format!("cr-fb-{i}")), l)
-                                    .variant(v)
-                                    .crop(if i == 1 { Crop::Right } else { Crop::Left })
-                                    .corners(dodai_core::Corners::DIAGONAL),
-                            );
-                        }
-                        r
-                    })
+                    .child(crop_row)
+                    .child(gap_row)
+                    .child(shape_gallery())
                     .into_any_element(),
-                "Cropped buttons",
+                "Button crop",
             ));
         }
         if t.look().accent_border {

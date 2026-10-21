@@ -48,6 +48,35 @@ pub enum Crop {
     Right,
 }
 
+#[derive(Default)]
+struct CropDefaults {
+    crop: Option<Crop>,
+    gap: Option<f32>,
+}
+impl gpui::Global for CropDefaults {}
+
+/// The crop every [`Button`] gets unless it sets its own with [`Button::crop`].
+pub fn button_crop(cx: &App) -> Option<Crop> {
+    cx.try_global::<CropDefaults>().and_then(|d| d.crop)
+}
+
+/// The tick gap (px) every cropped [`Button`] uses unless it sets [`Button::cut_gap`].
+pub fn button_cut_gap(cx: &App) -> Option<f32> {
+    cx.try_global::<CropDefaults>().and_then(|d| d.gap)
+}
+
+/// Crop every button (`None` = no crop) and repaint. Per-button `.crop(..)` still wins.
+pub fn set_button_crop(cx: &mut App, crop: Option<Crop>) {
+    cx.default_global::<CropDefaults>().crop = crop;
+    cx.refresh_windows();
+}
+
+/// Set the tick gap for every cropped button (`None` = theme default) and repaint.
+pub fn set_button_cut_gap(cx: &mut App, gap: Option<f32>) {
+    cx.default_global::<CropDefaults>().gap = gap;
+    cx.refresh_windows();
+}
+
 /// Themed button. Construct with an id so hover/press state can be tracked.
 ///
 /// ```ignore
@@ -235,8 +264,14 @@ impl Button {
             )
         };
         let mut shape = t.role_shape(dodai_core::ShapeRole::Button);
-        let crop = self.crop.filter(|_| t.look().cut_corners);
-        let gap = self.cut_gap.unwrap_or(t.spacing.xs);
+        let crop = self
+            .crop
+            .or_else(|| button_crop(cx))
+            .filter(|_| t.look().cut_corners);
+        let gap = self
+            .cut_gap
+            .or_else(|| button_cut_gap(cx))
+            .unwrap_or(t.spacing.xs);
         if let Some(c) = crop {
             style = style.with_edge_gap(c == Crop::Left, gap / 2.0, t.spacing.md);
             // Flat: an offset shadow would sit over the cut and hide it.

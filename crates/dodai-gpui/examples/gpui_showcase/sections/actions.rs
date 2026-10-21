@@ -60,6 +60,12 @@ impl Showcase {
                             .crop(dodai_gpui::Crop::Left)
                             .corners(dodai_core::Corners::DIAGONAL),
                     )
+                    .child(
+                        Button::new("b-crop-both-p", "Both cuts")
+                            .variant(ButtonVariant::Primary)
+                            .crop(dodai_gpui::Crop::Right)
+                            .corners(dodai_core::Corners::ANTI_DIAGONAL),
+                    )
                     .children(
                         [
                             ("Primary", ButtonVariant::Primary),

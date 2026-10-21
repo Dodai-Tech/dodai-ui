@@ -184,7 +184,7 @@ pub mod time;
 mod testing;
 
 #[cfg(feature = "components")]
-pub use button::{Button, Crop};
+pub use button::{button_crop, button_cut_gap, set_button_crop, set_button_cut_gap, Button, Crop};
 #[cfg(feature = "components")]
 pub use carousel::{layout_widths, window_start, Carousel, CarouselLayout, SMALL_ITEM};
 #[cfg(feature = "charts")]

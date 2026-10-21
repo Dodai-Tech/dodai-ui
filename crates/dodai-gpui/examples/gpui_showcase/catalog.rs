@@ -37,7 +37,7 @@ pub(crate) fn caps(title: &str) -> Caps {
         | "Collapsible sidebar"
         | "Border"
         | "Shape gallery"
-        | "Cropped buttons"
+        | "Button crop"
         | "Colour palette"
         | "Type scale"
         | "Motion tokens"
