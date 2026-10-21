@@ -18,7 +18,13 @@ pub fn list_style(
 ) -> (ShapeStyle, Hsla, Option<Hsla>) {
     let k = theme.list_item(selected, hovered);
     (
-        ShapeStyle::from_tokens(theme, k.background, None, false, false),
+        ShapeStyle::from_tokens(
+            theme,
+            k.background,
+            k.outline.then_some(theme.palette.border_strong),
+            false,
+            k.outline,
+        ),
         hsla(k.foreground),
         k.marker.map(hsla),
     )

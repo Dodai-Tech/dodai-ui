@@ -140,18 +140,21 @@ impl DesignSpec for Cyberpunk {
                 background: Some(p.primary),
                 foreground: p.on_primary,
                 indicator: Some(p.primary),
+                outline: false,
             }
         } else if hovered {
             TabTokens {
                 background: Some(p.surface_raised),
                 foreground: p.text,
                 indicator: None,
+                outline: false,
             }
         } else {
             TabTokens {
                 background: None,
                 foreground: p.text_muted,
                 indicator: None,
+                outline: false,
             }
         })
     }
@@ -164,18 +167,21 @@ impl DesignSpec for Cyberpunk {
                 background: Some(p.selection),
                 foreground: p.text,
                 marker: Some(p.primary),
+                outline: false,
             }
         } else if hovered {
             ListItemTokens {
                 background: Some(p.surface_raised),
                 foreground: p.text,
                 marker: None,
+                outline: false,
             }
         } else {
             ListItemTokens {
                 background: None,
                 foreground: p.text_muted,
                 marker: None,
+                outline: false,
             }
         })
     }

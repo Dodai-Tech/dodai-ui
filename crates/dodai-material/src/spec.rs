@@ -216,6 +216,7 @@ impl DesignSpec for Material3 {
                 r.on_surface_variant
             },
             indicator: active.then_some(p.primary),
+            outline: false,
         })
     }
 
@@ -339,12 +340,14 @@ impl DesignSpec for Material3 {
                 background: Some(r.secondary_container),
                 foreground: r.on_secondary_container,
                 marker: None,
+                outline: false,
             }
         } else {
             ListItemTokens {
                 background: hovered.then(|| r.on_surface.with_alpha(0.08)),
                 foreground: r.on_surface,
                 marker: None,
+                outline: false,
             }
         })
     }

@@ -15,7 +15,13 @@ use std::rc::Rc;
 pub fn tab_style(theme: &Theme, active: bool, hovered: bool) -> (ShapeStyle, Hsla, Option<Hsla>) {
     let k = theme.tab(active, hovered);
     (
-        ShapeStyle::from_tokens(theme, k.background, None, active, false),
+        ShapeStyle::from_tokens(
+            theme,
+            k.background,
+            k.outline.then_some(theme.palette.border_strong),
+            active,
+            k.outline,
+        ),
         hsla(k.foreground),
         k.indicator.map(hsla),
     )

@@ -73,6 +73,8 @@ pub struct TabTokens {
     pub foreground: Color,
     /// Underline / indicator colour (active tab).
     pub indicator: Option<Color>,
+    /// Drawn as an outlined block with a hard shadow.
+    pub outline: bool,
 }
 
 /// Toggle / checkbox / radio tokens.
@@ -108,6 +110,8 @@ pub struct ListItemTokens {
     pub foreground: Color,
     /// Accent bar at the row's left edge when selected.
     pub marker: Option<Color>,
+    /// Drawn as an outlined block with a hard shadow (Neo-Brutalism's selected row).
+    pub outline: bool,
 }
 
 /// Card emphasis.
@@ -517,18 +521,21 @@ impl Theme {
                 background: None,
                 foreground: self.legible(p.primary),
                 indicator: Some(p.primary),
+                outline: false,
             }
         } else if hovered {
             TabTokens {
                 background: Some(p.surface_raised),
                 foreground: p.text,
                 indicator: None,
+                outline: false,
             }
         } else {
             TabTokens {
                 background: None,
                 foreground: p.text_muted,
                 indicator: None,
+                outline: false,
             }
         }
     }
@@ -592,18 +599,21 @@ impl Theme {
                 background: Some(p.selection),
                 foreground: p.text,
                 marker: None,
+                outline: false,
             }
         } else if hovered {
             ListItemTokens {
                 background: Some(p.surface_raised),
                 foreground: p.text,
                 marker: None,
+                outline: false,
             }
         } else {
             ListItemTokens {
                 background: None,
                 foreground: p.text_muted,
                 marker: None,
+                outline: false,
             }
         }
     }

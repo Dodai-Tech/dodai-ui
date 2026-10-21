@@ -158,12 +158,14 @@ impl DesignSpec for NeoBrutalism {
                 background: Some(p.primary),
                 foreground: p.on_primary,
                 indicator: Some(p.border),
+                outline: true,
             }
         } else {
             TabTokens {
                 background: hovered.then(|| p.primary.with_alpha(0.7)),
                 foreground: if hovered { p.on_primary } else { p.text },
                 indicator: None,
+                outline: false,
             }
         })
     }
@@ -176,18 +178,21 @@ impl DesignSpec for NeoBrutalism {
                 background: Some(p.primary),
                 foreground: p.on_primary,
                 marker: None,
+                outline: true,
             }
         } else if hovered {
             ListItemTokens {
                 background: Some(p.primary.with_alpha(0.7)),
                 foreground: p.on_primary,
                 marker: None,
+                outline: false,
             }
         } else {
             ListItemTokens {
                 background: None,
                 foreground: p.text,
                 marker: None,
+                outline: false,
             }
         })
     }
