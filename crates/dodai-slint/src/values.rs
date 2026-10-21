@@ -11,13 +11,14 @@ pub type Rgba = [u8; 4];
 pub const TRANSPARENT: Rgba = [0, 0, 0, 0];
 
 /// Button variants in index order (`variant * 4 + state`).
-pub const BUTTON_VARIANTS: [ButtonVariant; 6] = [
+pub const BUTTON_VARIANTS: [ButtonVariant; 7] = [
     ButtonVariant::Primary,
     ButtonVariant::Secondary,
     ButtonVariant::Outline,
     ButtonVariant::OutlineSecondary,
     ButtonVariant::Danger,
     ButtonVariant::Ghost,
+    ButtonVariant::Scrim,
 ];
 /// Interaction states in index order: idle, hovered, pressed, disabled.
 pub const STATES: [ControlState; 4] = [

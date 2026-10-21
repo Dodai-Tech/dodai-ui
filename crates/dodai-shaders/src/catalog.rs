@@ -40,6 +40,12 @@ pub(crate) const SHADERS: &[ShaderInfo] = &[
         "Yellow washing into red, vertical streaks, dark skyline",
     ),
     ShaderInfo::generator(
+        "phantom_liberty",
+        "Phantom Liberty",
+        Family::Cyberpunk,
+        "Red key-art field, yellow slashes, datamosh blocks, magenta decay",
+    ),
+    ShaderInfo::generator(
         "neon_city",
         "Rain city",
         Family::Cyberpunk,

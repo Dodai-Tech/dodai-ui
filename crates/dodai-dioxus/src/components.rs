@@ -12,6 +12,7 @@ pub fn button_class(v: ButtonVariant) -> &'static str {
         ButtonVariant::OutlineSecondary => "dodai-btn dodai-btn--outline-secondary",
         ButtonVariant::Danger => "dodai-btn dodai-btn--danger",
         ButtonVariant::Ghost => "dodai-btn dodai-btn--ghost",
+        ButtonVariant::Scrim => "dodai-btn dodai-btn--scrim",
     }
 }
 

@@ -56,7 +56,8 @@ code,pre,.dodai-mono{font-family:var(--dodai-font-mono)}
 .dodai-btn--danger:active{--f-bg:var(--dodai-danger-active);--f-bd:var(--dodai-danger-active)}
 .dodai-btn--outline,.dodai-btn--outline-secondary{--c:var(--dodai-primary);--oc:var(--dodai-on-primary-solid);--f-bg:transparent;--f-bd:var(--c);--b-fg:var(--c)}
 .dodai-btn--outline-secondary{--c:var(--dodai-secondary);--oc:var(--dodai-on-secondary-solid)}
-.dodai-btn--outline:hover,.dodai-btn--outline-secondary:hover{--f-bg:var(--c);--b-fg:var(--oc)}
+.dodai-btn--scrim{--c:var(--dodai-primary);--oc:var(--dodai-on-primary-solid);--f-bg:color-mix(in srgb,var(--dodai-background) 50%,transparent);--f-bd:var(--c);--b-fg:var(--c)}
+.dodai-btn--outline:hover,.dodai-btn--outline-secondary:hover,.dodai-btn--scrim:hover{--f-bg:var(--c);--b-fg:var(--oc)}
 .dodai-btn--ghost{--f-bg:transparent;--f-bd:transparent;--b-fg:var(--dodai-text)}
 .dodai-btn--ghost:hover{--f-bg:var(--dodai-surface-raised);--b-fg:var(--dodai-primary);--f-glow:0 0 0 0 transparent;--f-filter:none}
 .dodai-btn:disabled,.dodai-btn[aria-disabled=true]{--f-bg:var(--dodai-surface-raised);--f-bd:var(--dodai-surface-raised);--b-fg:var(--dodai-text-disabled);cursor:not-allowed;--f-glow:0 0 0 0 transparent;--f-filter:none}

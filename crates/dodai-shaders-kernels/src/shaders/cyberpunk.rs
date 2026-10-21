@@ -51,6 +51,13 @@ pub const SHADERS: &[ShaderInfo] = &[
         "Yellow washing into red, vertical streaks, dark skyline",
         kv_glitch,
     ),
+    ShaderInfo::generator(
+        "phantom_liberty",
+        "Phantom Liberty",
+        F,
+        "Red key-art field, yellow slashes, datamosh blocks, magenta decay",
+        phantom_liberty,
+    ),
 ];
 
 /// Synthwave: striped sun, horizon haze and a scrolling perspective grid.
@@ -248,4 +255,56 @@ pub fn kv_glitch(uv: Vec2, c: &Ctx) -> Vec3 {
     let window = building * step(0.8, hash3(wx as i32, wy as i32, (t / 6.0) as i32));
     let city = p.bg.mix(base, 0.12) + p.a * (0.5 * window);
     lit.mix(city, building)
+}
+
+/// Phantom Liberty key art: a red field with slanted yellow slashes, blocky datamosh
+/// smear that turns magenta on the right, and a fade to black. Brand colours are fixed
+/// (the look is a specific piece of art, not a palette).
+pub fn phantom_liberty(uv: Vec2, c: &Ctx) -> Vec3 {
+    let t = (c.time * 6.0).floor();
+    let red = vec3(0.96, 0.12, 0.17);
+    let deep = vec3(0.55, 0.05, 0.12);
+    let yellow = vec3(0.99, 0.93, 0.04);
+    let magenta = vec3(0.86, 0.12, 0.55);
+    // Red field, darker toward the corners.
+    let v = (uv.x - 0.5) * (uv.x - 0.5) + (uv.y - 0.4) * (uv.y - 0.4);
+    let mut col = red.mix(deep, smoothstep(0.05, 0.5, v));
+    // Right side decays toward magenta.
+    col = col.mix(magenta, smoothstep(0.62, 1.0, uv.x) * 0.7);
+    // Yellow slashes: irregular slanted bands; each has its own width and vertical extent,
+    // and rows shift sideways in jumps like a corrupted frame.
+    let row = (uv.y * 36.0).floor();
+    let jitter =
+        (hash2(row as i32, (t / 4.0) as i32) - 0.5) * 0.05 * step(0.6, hash2(row as i32, 5));
+    let slant = (uv.x + jitter) * 3.2 + uv.y * 1.6 - 0.03 * (c.time * 0.4 + uv.y * 5.0).sin();
+    let cell = slant.floor();
+    let r1 = hash2(cell as i32, 5);
+    let r2 = hash2(cell as i32, 9);
+    let r3 = hash2(cell as i32, 13);
+    let width = 0.22 + 0.4 * r1;
+    let lo = 0.12 + 0.25 * r2;
+    let hi = 0.5 + 0.3 * r3;
+    let strip = smoothstep(lo, lo + 0.03, uv.y) * (1.0 - smoothstep(hi, hi + 0.03, uv.y));
+    let slash = step(fract(slant), width) * step(0.15, r1) * strip;
+    // Datamosh blocks: some cells shift tone, some wash toward yellow.
+    let bx = (uv.x * 48.0).floor();
+    let by = (uv.y * 27.0).floor();
+    let h = hash3(bx as i32, by as i32, (t / 3.0) as i32);
+    let mosh = step(0.86, h) * (0.4 + 0.6 * uv.x);
+    let tone = red.mix(magenta, hash2(bx as i32, by as i32 + 40));
+    col = col.mix(tone, mosh * 0.8);
+    // Vertical smear columns that drip down from the slashes.
+    let colid = (uv.x * 120.0).floor();
+    let r = hash2(colid as i32, 11);
+    let drip = fract(uv.y * (0.5 + r) - c.time * (0.05 + 0.2 * r) + r * 7.0);
+    let smear = step(0.7, r) * smoothstep(0.0, 0.9, drip) * slash;
+    let sl = yellow * (1.0 - 0.35 * smear);
+    col = col.mix(sl, slash);
+    // Horizontal tearing: a thin row flashes bright for a moment.
+    let ty = (uv.y * 90.0).floor();
+    let tear = step(0.985, hash2(ty as i32, t as i32));
+    col = col + vec3(0.25, 0.2, 0.1) * tear;
+    // Fade to black at the bottom, a touch at the top.
+    let fade = smoothstep(0.7, 1.0, uv.y) + (1.0 - smoothstep(0.0, 0.12, uv.y)) * 0.4;
+    col * (1.0 - fade.min(1.0))
 }

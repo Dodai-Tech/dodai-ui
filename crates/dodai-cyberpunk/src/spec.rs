@@ -367,6 +367,19 @@ impl DesignSpec for Cyberpunk {
                     border: Some(c),
                 }
             }
+            Scrim => ButtonTokens {
+                background: Some(if lit {
+                    p.primary
+                } else {
+                    p.background.with_alpha(0.5)
+                }),
+                foreground: if lit {
+                    p.on_primary
+                } else {
+                    t.legible(p.primary)
+                },
+                border: Some(p.primary),
+            },
             Ghost => ButtonTokens {
                 background: lit.then_some(p.surface_raised),
                 foreground: if lit { t.legible(p.primary) } else { p.text },

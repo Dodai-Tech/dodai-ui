@@ -226,6 +226,15 @@ pub const PRESETS: &[NeonPreset] = &[
         backdrop: Backdrop::Moss,
         description: "Radioactive mint and amber",
     },
+    NeonPreset {
+        stem: "phantom",
+        name: "Phantom",
+        primary: 0xfd0130,
+        secondary: 0xfcee0a,
+        accent: 0x00f0ff,
+        backdrop: Backdrop::Black,
+        description: "Phantom Liberty red with signal yellow and cyan",
+    },
 ];
 
 fn leak(s: String) -> &'static str {

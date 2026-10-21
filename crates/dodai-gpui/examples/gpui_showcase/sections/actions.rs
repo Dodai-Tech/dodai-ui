@@ -39,6 +39,31 @@ impl Showcase {
                 Button::new("b-outline2", "Outline 2").variant(ButtonVariant::OutlineSecondary)
             ))
             .child(cut(
+                Button::new("b-scrim", "Scrim").variant(ButtonVariant::Scrim)
+            ))
+            .children(t.look().cut_corners.then(|| {
+                // Edgerunners-style: one cut corner, top-right or bottom-right.
+                let tr = dodai_core::Corners {
+                    top_right: true,
+                    ..dodai_core::Corners::NONE
+                };
+                let br = dodai_core::Corners {
+                    bottom_right: true,
+                    ..dodai_core::Corners::NONE
+                };
+                row()
+                    .child(
+                        Button::new("b-scrim-tr", "Stream now")
+                            .variant(ButtonVariant::Scrim)
+                            .corners(tr),
+                    )
+                    .child(
+                        Button::new("b-scrim-br", "Watch trailer")
+                            .variant(ButtonVariant::Scrim)
+                            .corners(br),
+                    )
+            }))
+            .child(cut(
                 Button::new("b-danger", "Danger").variant(ButtonVariant::Danger)
             ))
             .child(cut(

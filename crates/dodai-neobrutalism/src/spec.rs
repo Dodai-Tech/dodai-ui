@@ -311,6 +311,7 @@ impl DesignSpec for NeoBrutalism {
             Danger => (Some(p.danger), t.on(p.danger)),
             Outline => (Some(p.surface), p.text),
             OutlineSecondary => (Some(p.surface), p.text),
+            Scrim => (Some(p.surface), p.text),
             Ghost => (None, p.text),
         };
         Some(ButtonTokens {

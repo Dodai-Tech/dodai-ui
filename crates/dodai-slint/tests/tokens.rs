@@ -113,7 +113,7 @@ fn glow_intensity_applies() {
 fn table_sizes_and_button_tokens() {
     for t in [dodai::themes::cyberpunk::yellow(), rounded(), square()] {
         let v = ThemeValues::from_theme(&t);
-        assert_eq!(v.button_bg.len(), 24);
+        assert_eq!(v.button_bg.len(), 28);
         assert_eq!(v.tag_bg.len(), 8);
         assert_eq!(v.toggle_track.len(), 8);
         assert_eq!(v.progress_fill.len(), 5);

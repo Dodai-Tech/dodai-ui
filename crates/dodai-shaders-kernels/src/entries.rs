@@ -6,6 +6,7 @@ gen_kernel!(circuit, cyberpunk::circuit);
 gen_kernel!(hud_radar, cyberpunk::hud_radar);
 gen_kernel!(data_corrupt, cyberpunk::data_corrupt);
 gen_kernel!(kv_glitch, cyberpunk::kv_glitch);
+gen_kernel!(phantom_liberty, cyberpunk::phantom_liberty);
 gen_kernel!(neon_city, blade::neon_city);
 gen_kernel!(br_city, blade::br_city);
 gen_kernel!(br_street, blade::br_street);

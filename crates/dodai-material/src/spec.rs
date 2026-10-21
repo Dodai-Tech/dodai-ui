@@ -422,7 +422,7 @@ impl DesignSpec for Material3 {
             Primary => (Some(p.primary), p.on_primary, false),
             Secondary => (Some(r.secondary_container), r.on_secondary_container, false),
             Danger => (Some(p.danger), r.on_error, false),
-            Outline => (None, t.legible(p.primary), true),
+            Outline | Scrim => (None, t.legible(p.primary), true),
             OutlineSecondary => (None, t.legible(p.secondary), true),
             Ghost => (None, t.legible(p.primary), false),
         };
@@ -472,7 +472,7 @@ impl DesignSpec for Material3 {
             Primary => (r.primary_container, r.on_primary_container),
             Secondary => (r.secondary_container, r.on_secondary_container),
             Danger => (r.error_container, r.on_error_container),
-            Outline | OutlineSecondary => (r.tertiary_container, r.on_tertiary_container),
+            Outline | OutlineSecondary | Scrim => (r.tertiary_container, r.on_tertiary_container),
             Ghost => (r.surface_container_high, t.palette.primary),
         };
         Some(ButtonTokens {
@@ -496,7 +496,10 @@ impl DesignSpec for Material3 {
         }
         if matches!(
             variant,
-            ButtonVariant::Ghost | ButtonVariant::Outline | ButtonVariant::OutlineSecondary
+            ButtonVariant::Ghost
+                | ButtonVariant::Outline
+                | ButtonVariant::OutlineSecondary
+                | ButtonVariant::Scrim
         ) {
             let fg = if selected {
                 t.palette.primary

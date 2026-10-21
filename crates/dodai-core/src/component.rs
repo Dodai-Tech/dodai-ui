@@ -15,6 +15,8 @@ pub enum ButtonVariant {
     OutlineSecondary,
     /// Solid danger fill.
     Danger,
+    /// Brand outline over a translucent dark fill, for use on imagery; fills solid on hover.
+    Scrim,
     /// Text only.
     Ghost,
 }
@@ -762,6 +764,19 @@ impl Theme {
                     border: Some(c),
                 }
             }
+            Scrim => ButtonTokens {
+                background: Some(if lit {
+                    p.primary
+                } else {
+                    p.background.with_alpha(0.5)
+                }),
+                foreground: if lit {
+                    p.on_primary
+                } else {
+                    self.legible(p.primary)
+                },
+                border: Some(p.primary),
+            },
             Ghost => ButtonTokens {
                 background: if lit { Some(p.surface_raised) } else { None },
                 foreground: if lit { self.legible(p.primary) } else { p.text },

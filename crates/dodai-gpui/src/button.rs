@@ -28,7 +28,9 @@ pub fn button_style(
             b.background,
             b.border,
             glows,
-            state != ControlState::Disabled && b.background.is_some(),
+            state != ControlState::Disabled
+                && variant != ButtonVariant::Scrim
+                && b.background.is_some(),
         ),
         hsla(b.foreground),
     )
