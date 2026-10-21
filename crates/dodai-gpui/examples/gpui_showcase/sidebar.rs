@@ -14,6 +14,7 @@ impl Showcase {
         sections_meta: &[(&'static str, &'static str)],
         active: Option<&'static str>,
         query: &str,
+        narrow: bool,
         count_in: impl Fn(Option<&'static str>) -> usize,
         cx: &mut Context<Self>,
     ) -> (gpui::Stateful<Div>, f32) {
@@ -56,6 +57,12 @@ impl Showcase {
                                 break;
                             }
                         }
+                    }
+                    // Left collapses the sidebar to the rail, Right expands it.
+                    "left" | "right" => {
+                        s.rail = e.keystroke.key == "left";
+                        cx.notify();
+                        return;
                     }
                     _ => return,
                 }
@@ -208,7 +215,12 @@ impl Showcase {
         side = if rail {
             side.child(rail_nav)
         } else {
-            side.child(drawer)
+            let w = if narrow {
+                side_need.clamp(170.0, 230.0)
+            } else {
+                side_need.clamp(240.0, 340.0)
+            };
+            side.child(drawer.width(w - 2.0 * t.spacing.md))
         };
         if !rail {
             side = side.child(div().pt(px(t.spacing.md)).child(Muted::new(

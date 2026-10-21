@@ -196,11 +196,16 @@ impl Select {
             .size_full(),
         )
         .child(
-            div().flex_1().overflow_hidden().whitespace_nowrap().child(
-                current
-                    .as_ref()
-                    .map_or(self.placeholder.clone(), |o| o.label.clone()),
-            ),
+            div()
+                .flex_1()
+                .min_w_0()
+                .overflow_hidden()
+                .whitespace_nowrap()
+                .child(
+                    current
+                        .as_ref()
+                        .map_or(self.placeholder.clone(), |o| o.label.clone()),
+                ),
         );
         if let Some(o) = &current {
             if !o.swatches.is_empty() {

@@ -108,6 +108,7 @@ enum Entry {
 pub struct NavigationDrawer {
     entries: Vec<Entry>,
     max_width: Option<f32>,
+    width: Option<f32>,
 }
 
 impl NavigationDrawer {
@@ -115,6 +116,7 @@ impl NavigationDrawer {
         Self {
             entries: Vec::new(),
             max_width: None,
+            width: None,
         }
     }
     pub fn item(mut self, i: NavigationItem) -> Self {
@@ -128,6 +130,12 @@ impl NavigationDrawer {
     }
     pub fn divider(mut self) -> Self {
         self.entries.push(Entry::Divider);
+        self
+    }
+    /// Known pixel width of the drawer; long labels are cut with an ellipsis to fit.
+    /// (gpui only truncates text whose width is definite at measure time.)
+    pub fn width(mut self, px: f32) -> Self {
+        self.width = Some(px);
         self
     }
     /// Width cap; defaults to the design's `drawer_max_width`. The drawer fills its parent up to it.
@@ -176,7 +184,7 @@ impl RenderOnce for NavigationDrawer {
                     );
                 }
                 Entry::Item(it) => {
-                    col = col.child(drawer_item(it, &t, window, cx));
+                    col = col.child(drawer_item(it, &t, self.width, window, cx));
                 }
             }
         }
@@ -187,6 +195,7 @@ impl RenderOnce for NavigationDrawer {
 fn drawer_item(
     it: NavigationItem,
     t: &Theme,
+    drawer_w: Option<f32>,
     window: &mut Window,
     cx: &mut App,
 ) -> impl IntoElement {
@@ -222,14 +231,36 @@ fn drawer_item(
     if let Some(i) = it.icon.filter(|_| !nested) {
         el = el.child(icon_el(i, k.icon_size, fg));
     }
+    let role = if nested { k.roles.1 } else { k.roles.0 };
+    let label = format_label(&t.typography, &it.label);
+    let label: SharedString = match drawer_w {
+        Some(w) => {
+            let icon = if it.icon.is_some() && !nested {
+                k.icon_size + k.item_content_gap
+            } else {
+                0.0
+            };
+            let badge = it.badge.as_ref().map_or(0.0, |b| {
+                b.len() as f32 * t.type_style(k.roles.0).size * 0.6 + k.item_content_gap
+            });
+            let room = w
+                - 2.0 * k.container_padding
+                - 2.0 * k.item_padding
+                - it.depth as f32 * k.indent
+                - icon
+                - badge;
+            ellipsize(cx, t, role, label, room)
+        }
+        None => label,
+    };
     el = el.child(
-        typeset(div(), t, if nested { k.roles.1 } else { k.roles.0 })
+        typeset(div(), t, role)
             .flex_1()
             .min_w_0()
             .overflow_hidden()
             .whitespace_nowrap()
             .text_ellipsis()
-            .child(format_label(&t.typography, &it.label)),
+            .child(label),
     );
     if let Some(b) = it.badge {
         el = el.child(typeset(div(), t, k.roles.0).child(b));
@@ -396,6 +427,34 @@ impl RenderOnce for NavigationRail {
         }
         col
     }
+}
+
+/// Cut `text` with an ellipsis so it fits `max_w` pixels in the given type role.
+fn ellipsize(
+    cx: &App,
+    t: &Theme,
+    role: dodai_core::TypeRole,
+    text: SharedString,
+    max_w: f32,
+) -> SharedString {
+    let s = t.type_style(role);
+    let fam = if role.is_heading() {
+        t.typography.display
+    } else {
+        t.typography.body
+    };
+    let mut f = gpui::font(first_family(fam));
+    f.weight = gpui::FontWeight(s.weight as f32);
+    let mut runs = vec![gpui::TextRun {
+        len: text.len(),
+        font: f.clone(),
+        color: gpui::Hsla::default(),
+        background_color: None,
+        underline: None,
+        strikethrough: None,
+    }];
+    let mut wrapper = cx.text_system().line_wrapper(f, px(s.size));
+    wrapper.truncate_line(text, px(max_w.max(0.0)), "…", &mut runs)
 }
 
 #[cfg(test)]

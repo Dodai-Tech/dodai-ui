@@ -661,8 +661,16 @@ impl Render for Showcase {
         // Scroll-spy: the last section whose top has reached the viewport top
         // (positions come from the previous frame's layout).
         let active: Option<&'static str> = self.pin.current(&self.scroll, &self.spy, SPY_SLACK);
-        let (side, side_need) =
-            self.sidebar(&me, &cats, sections_meta, active, &query, count_in, cx);
+        let (side, side_need) = self.sidebar(
+            &me,
+            &cats,
+            sections_meta,
+            active,
+            &query,
+            narrow,
+            count_in,
+            cx,
+        );
 
         let overview = self.cat == 0
             && self.sub.is_none()
@@ -1021,7 +1029,7 @@ impl Render for Showcase {
                                     .child(Muted::new("Theme"))
                                     .child(
                                         div()
-                                            .w(px(300.0))
+                                            .w(px(360.0))
                                             .child(dodai_gpui::ThemeSelector::new("top-theme")),
                                     ),
                             )
