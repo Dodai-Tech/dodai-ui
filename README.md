@@ -80,7 +80,7 @@ dodai-core     = "0.1"    # just the engine
 dodai-material = "0.1"    # + the Material 3 themes and icons (features: rounded, sharp)
 ```
 
-Icons are typed: `Icon::new(IconId::Heart)` (autocomplete, no name strings) draws in the style of the active design system. Every one of the ~1,770 `IconId`s draws in every design: Cyberpunk's hand-drawn straight segments (Phosphor, faceted, where it has none), Material 3's Material Symbols (Phosphor where Material has none) and Neo-Brutalism's bold Phosphor. Force a pack with `.pack(IconPack::…)`. `MaterialIcon::new(MaterialSymbol::Home).filled(true)` draws any of the ~3,900 Material catalogue icons.
+Icons are typed: `Icon::Heart` (autocomplete, no name strings) draws in the style of the active design system. Every one of the ~1,770 `IconId`s draws in every design: Cyberpunk's hand-drawn straight segments (Phosphor, faceted, where it has none), Material 3's Material Symbols (Phosphor where Material has none) and Neo-Brutalism's bold Phosphor. Force a pack with `.pack(IconPack::…)`. `MaterialIcon::Home.filled(true)` draws any of the ~3,900 Material catalogue icons.
 
 ## Showcases
 

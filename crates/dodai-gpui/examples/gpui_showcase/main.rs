@@ -587,15 +587,11 @@ impl Showcase {
                 t.palette.text_muted
             }))
             .when(open, |d| d.bg(hsla(t.palette.primary)))
-            .child(
-                dodai_gpui::Icon::new(dodai_gpui::IconId::Code)
-                    .size(14.0)
-                    .color(hsla(if open {
-                        t.palette.on_primary
-                    } else {
-                        t.palette.text_muted
-                    })),
-            )
+            .child(dodai_gpui::Icon::Code.size(14.0).color(hsla(if open {
+                t.palette.on_primary
+            } else {
+                t.palette.text_muted
+            })))
             .child(if open { "Hide code" } else { "Show code" })
             .on_click(move |_, _, cx| {
                 me.update(cx, |s, cx| {

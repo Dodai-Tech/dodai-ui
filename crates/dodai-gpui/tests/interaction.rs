@@ -1,7 +1,6 @@
 //! Headless interaction tests: real clicks / keys against rendered components.
 
 use dodai_gpui::*;
-use dodai_material_icons::MaterialSymbol;
 use gpui::{
     div, point, prelude::*, px, size, AnyElement, Context, Focusable, Modifiers, TestAppContext,
     VisualTestContext, Window,
@@ -667,7 +666,7 @@ fn wheel_past_the_top_stretches_and_mid_page_does_not(cx: &mut TestAppContext) {
 /// every pack/theme combination must paint without panicking.
 #[gpui::test]
 fn icons_paint_in_every_pack_and_theme(cx: &mut TestAppContext) {
-    use dodai_gpui::{Icon, IconName, IconPack, MaterialIcon};
+    use dodai_gpui::{Icon, IconPack, MaterialIcon};
     for theme in dodai::themes::all() {
         cx.update(|cx| install(cx, theme));
         let (_, vcx) = cx.add_window_view(|_, _| Host {
@@ -684,20 +683,12 @@ fn icons_paint_in_every_pack_and_theme(cx: &mut TestAppContext) {
                             Icon::new(n).pack(IconPack::Stroked).into_any_element(),
                         ]
                     }))
-                    .child(MaterialIcon::new(MaterialSymbol::Home).into_any_element())
-                    .child(
-                        MaterialIcon::new(MaterialSymbol::Delete)
-                            .filled(true)
-                            .into_any_element(),
-                    )
-                    .child(Icon::new(IconName::Home).size(0.0))
-                    .child(
-                        Icon::new(IconName::Heart)
-                            .modifier(Modifier::Add)
-                            .size(24.0),
-                    )
-                    .child(Icon::new(IconId::Acorn))
-                    .child(Icon::new(IconId::HouseLine).filled(true))
+                    .child(MaterialIcon::Home.into_any_element())
+                    .child(MaterialIcon::Delete.filled(true).into_any_element())
+                    .child(Icon::Home.size(0.0))
+                    .child(Icon::Heart.modifier(Modifier::Add).size(24.0))
+                    .child(Icon::Acorn)
+                    .child(Icon::HouseLine.filled(true))
                     .into_any_element()
             }),
         });

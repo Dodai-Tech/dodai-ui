@@ -169,11 +169,7 @@ impl SearchView {
                     .id((self.id.clone(), "clear"))
                     .cursor_pointer()
                     .on_click(move |_, w, cx| f(w, cx))
-                    .child(
-                        Icon::new(IconName::Close)
-                            .size(24.0)
-                            .color(hsla(r.on_surface_variant)),
-                    ),
+                    .child(Icon::Close.size(24.0).color(hsla(r.on_surface_variant))),
             );
         }
         let mut body = shaped(&shape, style)
@@ -275,7 +271,7 @@ impl RenderOnce for SearchView {
             .items_center()
             .gap(px(t.spacing.sm))
             .child(
-                crate::icons::Icon::new(crate::icons::IconName::Search)
+                crate::icons::Icon::Search
                     .size(t.typography.size_md * 1.1)
                     .color(hsla(t.palette.text_muted)),
             )
@@ -288,7 +284,7 @@ impl RenderOnce for SearchView {
                     .text_color(hsla(t.palette.text_muted))
                     .on_click(move |_, w, cx| f(w, cx))
                     .child(
-                        crate::icons::Icon::new(crate::icons::IconName::Close)
+                        crate::icons::Icon::Close
                             .size(t.typography.size_md)
                             .color(hsla(t.palette.text_muted)),
                     ),

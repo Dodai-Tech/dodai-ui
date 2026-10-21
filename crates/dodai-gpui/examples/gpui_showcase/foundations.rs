@@ -381,8 +381,8 @@ impl IconPick {
     /// The Rust expression that draws it.
     pub(crate) fn usage(self) -> String {
         match self {
-            Self::Id(i) => format!("Icon::new(IconId::{i:?})"),
-            Self::Material(m) => format!("MaterialIcon::new(MaterialSymbol::{m:?})"),
+            Self::Id(i) => format!("Icon::{i:?}"),
+            Self::Material(m) => format!("MaterialIcon::{m:?}"),
         }
     }
 }

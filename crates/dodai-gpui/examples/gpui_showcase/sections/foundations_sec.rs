@@ -95,9 +95,9 @@ impl Showcase {
         let query = self.icon_search.read(cx).text().to_string();
         let count = dodai_cyberpunk_icons::ALL.len();
         let intro = match set {
-            dodai_core::IconSet::Symbols => "The Material Symbols catalogue by Material's own categories (`MaterialIcon::new(MaterialSymbol::…)`). Click an icon for its SVG and code.".to_string(),
+            dodai_core::IconSet::Symbols => "The Material Symbols catalogue by Material's own categories (`MaterialIcon::Home`). Click an icon for its SVG and code.".to_string(),
             dodai_core::IconSet::Bold => format!("{count} bold icons with a filled form each (Phosphor), by type. Click an icon for its SVG and code."),
-            dodai_core::IconSet::Stroked => format!("{count} hand-drawn icons by type: straight lines, 45° chamfers, octagons. Any icon takes a `Modifier` (Off, Add, Remove, Check, Lock, Circle), e.g. `Icon::new(IconName::Heart).modifier(Modifier::Add)`. Click an icon for its SVG and code."),
+            dodai_core::IconSet::Stroked => format!("{count} hand-drawn icons by type: straight lines, 45° chamfers, octagons. Any icon takes a `Modifier` (Off, Add, Remove, Check, Lock, Circle), e.g. `Icon::Heart.modifier(Modifier::Add)`. Click an icon for its SVG and code."),
         };
         let mut section = section!("Icons").child(Muted::new(intro)).child(
             div()

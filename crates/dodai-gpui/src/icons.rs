@@ -1,10 +1,11 @@
 //! Vector [`Icon`]s drawn with gpui paths (no asset files, any colour/size).
 //!
-//! An [`Icon`] is named by the typed [`IconId`] (`Icon::new(IconId::Heart)`) and drawn in the
+//! An [`Icon`] is named by writing it: `Icon::Heart`, `Icon::HouseLine.size(20.0)` (typed: a typo
+//! is a compile error, and the editor completes it). It is drawn in the
 //! style of the active design system: Cyberpunk's straight segments and chamfers, Material 3's
-//! Material Symbols, Neo-Brutalism's bold Phosphor. Every id draws in every design. Force a pack
-//! with [`Icon::pack`]. [`MaterialIcon`] draws any Material Symbols catalogue icon by its typed
-//! [`MaterialSymbol`](dodai_material_icons::MaterialSymbol).
+//! Material Symbols, Neo-Brutalism's bold Phosphor. Every icon draws in every design. Force a pack
+//! with [`Icon::pack`]. [`MaterialIcon`] draws any Material Symbols catalogue icon:
+//! `MaterialIcon::Home`.
 
 use crate::paint::stroke;
 pub use dodai_cyberpunk_icons::IconName;
@@ -55,11 +56,16 @@ pub struct Icon {
 }
 
 impl Icon {
-    /// An icon of the shared vocabulary: `Icon::new(IconId::Heart)`. A hand-drawn
-    /// [`IconName`] converts too.
+    /// An icon from a value chosen at run time (`Icon::new(id)`); written out by hand, name it
+    /// directly: `Icon::Heart`, `Icon::HouseLine`. A hand-drawn [`IconName`] converts too.
     pub fn new(id: impl Into<IconId>) -> Self {
+        Self::of(id.into())
+    }
+
+    /// `const` constructor behind the generated `Icon::House`-style constants.
+    pub(crate) const fn of(id: IconId) -> Self {
         Self {
-            id: id.into(),
+            id,
             #[cfg(feature = "cyberpunk")]
             modifier: None,
             size: 16.0,
@@ -178,6 +184,11 @@ pub struct MaterialIcon {
 #[cfg(feature = "material")]
 impl MaterialIcon {
     pub fn new(symbol: dodai_material_icons::MaterialSymbol) -> Self {
+        Self::of(symbol)
+    }
+
+    /// `const` constructor behind the generated `MaterialIcon::Home`-style constants.
+    pub(crate) const fn of(symbol: dodai_material_icons::MaterialSymbol) -> Self {
         Self {
             symbol,
             size: 24.0,
