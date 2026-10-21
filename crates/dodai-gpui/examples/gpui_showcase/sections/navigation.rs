@@ -175,11 +175,13 @@ impl Showcase {
                         ),
                     )
                     .child(
-                        nav_items("nav-drawer")
-                            .into_iter()
-                            .fold(dodai_gpui::NavigationDrawer::new("nav-drawer"), |d, it| {
-                                d.item(it)
-                            }),
+                        div().w(px(320.0)).child(
+                            nav_items("nav-drawer")
+                                .into_iter()
+                                .fold(dodai_gpui::NavigationDrawer::new("nav-drawer"), |d, it| {
+                                    d.item(it)
+                                }),
+                        ),
                     ),
             );
         let open = !self.search.read(cx).text().is_empty();

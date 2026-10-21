@@ -343,7 +343,7 @@ impl DesignSpec for Material3 {
             item_content_gap: 12.0,
             item_gap: 0.0,
             indent: 16.0,
-            icon_size: 24.0,
+            icon_size: t.sizes().icon,
             drawer_max_width: 360.0,
             rail_width: 80.0,
             indicator: (56.0, 32.0),

@@ -195,7 +195,7 @@ fn choice(
     };
     let (w, h) = match kind {
         Kind::Switch => (42.0, 22.0),
-        _ => (20.0, 20.0),
+        _ => (t.sizes().selection_box, t.sizes().selection_box),
     };
     let shape = match kind {
         Kind::Switch | Kind::Radio => round_shape(&t.shape, h),
@@ -288,8 +288,9 @@ fn m3_choice(
         on_k.track = r.secondary_container;
         on_k.thumb = r.on_secondary_container;
     }
+    let sz = t.sizes();
     let (target, bx) = if kind == Kind::Switch {
-        (40.0, 18.0)
+        (sz.state_layer, 18.0)
     } else {
         variant.dims()
     };
@@ -320,59 +321,57 @@ fn m3_choice(
                 if on { 1.0 } else { 0.0 },
                 Motion::new(std::time::Duration::from_millis(450), Easing::SPRING_STIFF),
             );
+            let ((tw, th), (off_d, on_d)) = (sz.switch_track, sz.switch_handle);
             let size = if icons {
-                24.0
+                on_d
             } else {
-                lerp(16.0, 24.0, p.clamp(0.0, 1.0))
+                lerp(off_d, on_d, p.clamp(0.0, 1.0))
             };
-            let centre = lerp(16.0, 36.0, thumb);
+            let centre = lerp(th / 2.0, tw - th / 2.0, thumb);
             // Absolute children sit inside the 2 px outline.
-            let (ls, lst) = layer_style(40.0);
+            let (ls, lst) = layer_style(sz.state_layer);
             let mut track_style = ShapeStyle::from_tokens(&t, None, None, false, false);
             track_style.fill = Some(track_c);
             track_style.stroke = Some(border_c);
             track_style.stroke_width = 2.0;
             let mut handle = ShapeStyle::from_tokens(&t, None, None, false, false);
             handle.fill = Some(thumb_c);
-            track(
-                shaped_id(id, &round_shape(&t.shape, 32.0), track_style),
-                &st,
-            )
-            .w(px(52.0))
-            .h(px(32.0))
-            .flex_none()
-            .child(
-                shaped(&ls, lst)
-                    .absolute()
-                    .left(px(centre - 20.0 - 2.0))
-                    .top(px(-4.0 - 2.0))
-                    .w(px(40.0))
-                    .h(px(40.0)),
-            )
-            .child({
-                let mut h = shaped(&round_shape(&t.shape, size), handle)
-                    .absolute()
-                    .left(px(centre - size / 2.0 - 2.0))
-                    .top(px((32.0 - size) / 2.0 - 2.0))
-                    .w(px(size))
-                    .h(px(size));
-                if icons {
-                    // M3 switch with icons: a check when on, a cross when off.
-                    let glyph_c = if on {
-                        r.on_primary_container
-                    } else {
-                        r.surface_container_highest
-                    };
-                    h = h
-                        .flex()
-                        .items_center()
-                        .justify_center()
-                        .text_size(px(14.0))
-                        .text_color(hsla(glyph_c))
-                        .child(if on { "✓" } else { "✕" });
-                }
-                h
-            })
+            track(shaped_id(id, &round_shape(&t.shape, th), track_style), &st)
+                .w(px(tw))
+                .h(px(th))
+                .flex_none()
+                .child(
+                    shaped(&ls, lst)
+                        .absolute()
+                        .left(px(centre - sz.state_layer / 2.0 - 2.0))
+                        .top(px(-(sz.state_layer - th) / 2.0 - 2.0))
+                        .w(px(sz.state_layer))
+                        .h(px(sz.state_layer)),
+                )
+                .child({
+                    let mut h = shaped(&round_shape(&t.shape, size), handle)
+                        .absolute()
+                        .left(px(centre - size / 2.0 - 2.0))
+                        .top(px((th - size) / 2.0 - 2.0))
+                        .w(px(size))
+                        .h(px(size));
+                    if icons {
+                        // M3 switch with icons: a check when on, a cross when off.
+                        let glyph_c = if on {
+                            r.on_primary_container
+                        } else {
+                            r.surface_container_highest
+                        };
+                        h = h
+                            .flex()
+                            .items_center()
+                            .justify_center()
+                            .text_size(px(14.0))
+                            .text_color(hsla(glyph_c))
+                            .child(if on { "✓" } else { "✕" });
+                    }
+                    h
+                })
         }
         Kind::Checkbox | Kind::Radio => {
             let (ls, lst) = layer_style(target);
@@ -723,8 +722,6 @@ pub struct Slider {
 
 crate::corners_setter!(Slider);
 
-const THUMB: f32 = 16.0;
-
 impl Slider {
     pub fn new(id: impl Into<ElementId>, value: f32) -> Self {
         Self {
@@ -817,7 +814,7 @@ impl Slider {
         } else if tonal {
             20.0
         } else {
-            THUMB
+            t.sizes().slider_thumb
         };
         let track_h = if inset {
             40.0

@@ -354,7 +354,7 @@ impl Segmented {
         let strip = ShapeStyle::from_tokens(&t, None, Some(outline), false, false);
         let mut row = shaped(&t.role_shape(dodai_core::ShapeRole::Button), strip)
             .flex()
-            .h(px(40.0))
+            .h(px(t.sizes().segmented_height))
             .font_family(first_family(t.typography.body))
             .text_size(px(t.typography.size_md));
         for (i, label) in self.options.iter().enumerate() {

@@ -32,6 +32,48 @@ pub struct Spacing {
     pub xl: f32,
 }
 
+/// Fixed dimensions shared by components, in logical pixels (the "size scale" next to [`Spacing`]).
+#[derive(Debug, Clone, PartialEq)]
+pub struct Sizes {
+    /// Small icon (inline with text, compact controls).
+    pub icon_sm: f32,
+    /// Standard icon.
+    pub icon: f32,
+    /// Large icon.
+    pub icon_lg: f32,
+    /// Minimum interactive target.
+    pub touch_target: f32,
+    /// State-layer diameter of icon-sized controls (switch handle, checkbox).
+    pub state_layer: f32,
+    /// Switch track `(width, height)`.
+    pub switch_track: (f32, f32),
+    /// Switch handle diameter `(off, on)`.
+    pub switch_handle: (f32, f32),
+    /// Checkbox / radio box edge.
+    pub selection_box: f32,
+    /// Slider handle diameter.
+    pub slider_thumb: f32,
+    /// Segmented-button height.
+    pub segmented_height: f32,
+}
+
+impl Default for Sizes {
+    fn default() -> Self {
+        Self {
+            icon_sm: 18.0,
+            icon: 24.0,
+            icon_lg: 32.0,
+            touch_target: 48.0,
+            state_layer: 40.0,
+            switch_track: (52.0, 32.0),
+            switch_handle: (16.0, 24.0),
+            selection_box: 20.0,
+            slider_thumb: 16.0,
+            segmented_height: 40.0,
+        }
+    }
+}
+
 /// Which corners of a control are cut (chamfered).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Corners {

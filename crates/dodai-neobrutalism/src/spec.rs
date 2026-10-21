@@ -7,7 +7,7 @@ use dodai_core::{
     ShapePreset, ShapeScale, ShapeSize, ShapeSystem, StepState, StepTokens, SurfaceTokens,
     TabTokens, Theme, ToggleTokens, Tone,
 };
-use dodai_core::{Corners, IconSet, Look};
+use dodai_core::{Corners, IconSet, Look, Sizes};
 
 /// The neo-brutalism spec (attach with [`dodai_core::Theme::with_spec`]).
 #[derive(Debug)]
@@ -171,6 +171,14 @@ impl DesignSpec for NeoBrutalism {
     }
 
     /// Hover and selection fill with the main colour (the kit's sidebar rows).
+    /// Chunkier hit areas to match the thick outlines.
+    fn sizes(&self, _: &Theme) -> Option<Sizes> {
+        Some(Sizes {
+            selection_box: 22.0,
+            slider_thumb: 20.0,
+            ..Sizes::default()
+        })
+    }
     fn list_item(&self, t: &Theme, selected: bool, hovered: bool) -> Option<ListItemTokens> {
         let p = &t.palette;
         Some(if selected {

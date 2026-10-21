@@ -44,5 +44,5 @@ pub use shape_system::{
 pub use spec::{DesignSpec, IconSet, Look, SpecRef};
 pub use switcher::ThemeSwitcher;
 pub use theme::{Theme, ThemeMeta};
-pub use tokens::{Corners, Effects, Shape, ShapeKind, Spacing, Typography};
+pub use tokens::{Corners, Effects, Shape, ShapeKind, Sizes, Spacing, Typography};
 pub use tonal::TonalPalette;

@@ -1,6 +1,6 @@
 //! Resolved, framework-agnostic component styles derived from a [`Theme`].
 
-use crate::{Color, Theme, Tone};
+use crate::{Color, Sizes, Theme, Tone};
 
 /// Button emphasis.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -659,6 +659,12 @@ impl Theme {
         }
     }
 
+    /// The size scale; the design's own, or the shared defaults.
+    pub fn sizes(&self) -> Sizes {
+        hook!(self.sizes());
+        Sizes::default()
+    }
+
     /// Drawer and rail geometry; derived from spacing and the control height unless the design
     /// overrides it.
     pub fn navigation(&self) -> NavigationTokens {
@@ -671,13 +677,13 @@ impl Theme {
             item_padding: sp.md,
             container_padding: sp.sm,
             item_content_gap: sp.sm,
-            item_gap: sp.xs,
+            item_gap: sp.sm,
             indent: sp.md,
-            icon_size: 20.0,
+            icon_size: self.sizes().icon_sm,
             drawer_max_width: 360.0,
             rail_width: 80.0,
             indicator: (self.shape.control_height * 1.75, self.shape.control_height),
-            rail_label_gap: sp.xs,
+            rail_label_gap: sp.sm,
             bar_height: 80.0,
             bar_indicator_width: self.shape.control_height * 1.75 + sp.sm,
             pill: false,

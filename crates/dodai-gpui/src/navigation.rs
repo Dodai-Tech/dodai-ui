@@ -145,7 +145,8 @@ impl RenderOnce for NavigationDrawer {
         let mut col = div()
             .flex()
             .flex_col()
-            .min_w(gpui::relative(1.0))
+            .w_full()
+            .min_w_0()
             .max_w(px(self.max_width.unwrap_or(k.drawer_max_width)))
             .gap(px(k.item_gap))
             .p(px(k.container_padding));
