@@ -89,8 +89,65 @@ impl Toolbar {
 
 crate::entry_render!(Toolbar);
 
-/// Alias: a bottom app bar is a [`Toolbar`] with a trailing action.
-pub type BottomAppBar = Toolbar;
+/// Bottom app bar: actions (children) at the start, a floating action at the end.
+#[derive(IntoElement)]
+pub struct BottomAppBar {
+    items: Vec<AnyElement>,
+    trailing: Option<AnyElement>,
+    corners: Option<dodai_core::Corners>,
+}
+
+crate::corners_setter!(BottomAppBar);
+
+impl BottomAppBar {
+    pub fn new() -> Self {
+        Self {
+            corners: None,
+            items: Vec::new(),
+            trailing: None,
+        }
+    }
+    /// Element pinned to the end (e.g. a [`crate::Fab`]).
+    pub fn trailing(mut self, e: impl IntoElement) -> Self {
+        self.trailing = Some(e.into_any_element());
+        self
+    }
+}
+
+impl Default for BottomAppBar {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ParentElement for BottomAppBar {
+    fn extend(&mut self, e: impl IntoIterator<Item = AnyElement>) {
+        self.items.extend(e);
+    }
+}
+
+impl BottomAppBar {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
+        let tok = t.app_bar(dodai_core::AppBarKind::Bottom, false);
+        let style = ShapeStyle::from_tokens(&t, tok.background, tok.border, false, false);
+        let mut bar = shaped(&t.role_shape(dodai_core::ShapeRole::AppBar), style)
+            .h(px(tok.height))
+            .flex()
+            .items_center()
+            .gap(px(t.spacing.xs))
+            .px(px(t.spacing.md))
+            .text_color(hsla(tok.leading))
+            .children(self.items);
+        if let Some(e) = self.trailing {
+            bar = bar.child(div().flex_1()).child(e);
+        }
+        bar
+    }
+}
+
+crate::entry_render!(BottomAppBar);
 
 // ───────────────────────────── EmptyState ─────────────────────────────
 

@@ -154,6 +154,43 @@ pub struct SurfaceTokens {
     pub shadow: bool,
 }
 
+/// Which app bar.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum AppBarKind {
+    /// Title centred between the leading and trailing icons.
+    CenterAligned,
+    /// One row, title at the start.
+    Small,
+    /// Icons on top, title in a second row.
+    Medium,
+    /// Icons on top, a large title in a tall second row.
+    Large,
+    /// Actions at the start, a floating action at the end.
+    Bottom,
+}
+
+/// Resolved app bar.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct AppBarTokens {
+    /// Height of the icon row (64 in M3), which is the whole bar for Small / CenterAligned.
+    pub row_height: f32,
+    /// Total height when fully expanded (Medium 112, Large 152 in M3).
+    pub height: f32,
+    /// `None` = transparent.
+    pub background: Option<Color>,
+    pub border: Option<Color>,
+    /// Title colour.
+    pub title: Color,
+    /// Colour of the leading navigation icon.
+    pub leading: Color,
+    /// Colour of the trailing action icons.
+    pub trailing: Color,
+    /// Font size of the title when expanded.
+    pub title_size: f32,
+    /// Font size of the title when collapsed into the icon row.
+    pub collapsed_title_size: f32,
+}
+
 /// One stepper node.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StepTokens {
@@ -506,6 +543,33 @@ impl Theme {
                 foreground: if lit { self.legible(p.primary) } else { p.text },
                 border: None,
             },
+        }
+    }
+
+    /// App bar tokens; `scrolled` is true once content scrolls beneath it.
+    pub fn app_bar(&self, kind: AppBarKind, scrolled: bool) -> AppBarTokens {
+        hook!(self.app_bar(kind, scrolled));
+        let p = &self.palette;
+        let h = self.shape.control_height;
+        let (row, height, title) = match kind {
+            AppBarKind::CenterAligned | AppBarKind::Small => {
+                (h * 1.3, h * 1.3, self.typography.size_lg)
+            }
+            AppBarKind::Medium => (h * 1.3, h * 2.0, self.typography.size_xl),
+            AppBarKind::Large => (h * 1.3, h * 2.4, self.typography.size_xl),
+            AppBarKind::Bottom => (h * 1.3, h * 1.3, self.typography.size_lg),
+        };
+        let panel = self.panel(false);
+        AppBarTokens {
+            row_height: row,
+            height,
+            background: Some(panel.background),
+            border: Some(panel.border),
+            title: panel.title,
+            leading: p.text,
+            trailing: p.text,
+            title_size: title,
+            collapsed_title_size: self.typography.size_lg,
         }
     }
 

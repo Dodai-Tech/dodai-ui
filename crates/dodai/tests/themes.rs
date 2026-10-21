@@ -95,7 +95,10 @@ fn lookup_and_switcher_families() {
     let mut s = dodai::switcher();
     assert_eq!(s.families(), vec!["cyberpunk", "material"]);
     assert_eq!(s.family_indices("cyberpunk").len(), 6);
-    assert_eq!(s.family_indices("material").len(), 2);
+    assert_eq!(
+        s.family_indices("material").len(),
+        2 + 2 * dodai_material::PRESETS.len()
+    );
     assert!(s.select_family("material"));
     assert_eq!(s.current().meta.family, "material");
 }

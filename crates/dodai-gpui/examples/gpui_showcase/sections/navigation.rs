@@ -533,6 +533,69 @@ impl Showcase {
                 .into_any_element(),
             "Dialog · Bottom sheet · Side sheet",
         ));
+        let bar = |t: TopAppBar| {
+            t.leading("☰")
+                .child(IconButton::new("ab-a", "⌕").icon(IconName::Search))
+                .child(IconButton::new("ab-b", "⋮").icon(IconName::Dots))
+        };
+        let family = dodai_gpui::family_title(t.meta.family);
+        let labelled = |name: &'static str, el: gpui::AnyElement| {
+            col().gap(px(4.0)).child(Muted::new(name)).child(el)
+        };
+        out.push((
+            "Navigation",
+            "App bars",
+            section!("App bars")
+                .child(
+                    col()
+                        .child(labelled(
+                            "Center-aligned",
+                            bar(TopAppBar::new(family.clone())
+                                .size(dodai_gpui::AppBarSize::CenterAligned))
+                            .into_any_element(),
+                        ))
+                        .child(labelled(
+                            "Small",
+                            bar(TopAppBar::new(family.clone())).into_any_element(),
+                        ))
+                        .child(labelled(
+                            "Small · scrolled",
+                            bar(TopAppBar::new(family.clone()).scrolled(true)).into_any_element(),
+                        ))
+                        .child(
+                            labelled(
+                                "Medium",
+                                bar(TopAppBar::new(family.clone())
+                                    .size(dodai_gpui::AppBarSize::Medium))
+                                .into_any_element(),
+                            ),
+                        )
+                        .child(labelled(
+                            "Large",
+                            bar(TopAppBar::new(family.clone()).size(dodai_gpui::AppBarSize::Large))
+                                .into_any_element(),
+                        ))
+                        .child(labelled(
+                            "Large · collapsing (50 %)",
+                            bar(TopAppBar::new(family.clone())
+                                .size(dodai_gpui::AppBarSize::Large)
+                                .collapse(0.5)
+                                .scrolled(true))
+                            .into_any_element(),
+                        ))
+                        .child(labelled(
+                            "Bottom",
+                            dodai_gpui::BottomAppBar::new()
+                                .child(IconButton::new("bb-1", "✎").icon(IconName::Edit))
+                                .child(IconButton::new("bb-2", "♥").icon(IconName::Heart))
+                                .child(IconButton::new("bb-3", "⋮").icon(IconName::Dots))
+                                .trailing(Fab::new("bb-fab", "+").icon(IconName::Plus))
+                                .into_any_element(),
+                        )),
+                )
+                .into_any_element(),
+            "App bars",
+        ));
         out.push((
             "Navigation",
             "App bar · Cards · FAB · Navigation",

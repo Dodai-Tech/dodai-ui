@@ -5,10 +5,10 @@
 //! tokens (state layers 8 % hover / 10 % focus and press, disabled 12 % / 38 %).
 
 use dodai_core::{
-    ButtonTokens, ButtonVariant, CardVariant, Color, ControlState, CornerStyle, Corners,
-    DefaultShape, DesignSpec, InputTokens, ListItemTokens, Look, ProgressTokens, RoleShape,
-    ShapePreset, ShapeRole, ShapeScale, ShapeSize, ShapeSystem, SurfaceTokens, TabTokens, Theme,
-    ToggleKind, ToggleTokens, Tone,
+    AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, Color, ControlState,
+    CornerStyle, Corners, DefaultShape, DesignSpec, InputTokens, ListItemTokens, Look,
+    ProgressTokens, RoleShape, ShapePreset, ShapeRole, ShapeScale, ShapeSize, ShapeSystem,
+    SurfaceTokens, TabTokens, Theme, ToggleKind, ToggleTokens, Tone,
 };
 
 const ALL: Corners = Corners::ALL;
@@ -57,6 +57,7 @@ const ROLES: &[RoleShape] = &[
     r(ShapeRole::Indicator, ShapeSize::Full, ALL),
     r(ShapeRole::RichTooltip, ShapeSize::Medium, ALL),
     r(ShapeRole::Toolbar, ShapeSize::Full, ALL),
+    r(ShapeRole::AppBar, ShapeSize::None, ALL),
 ];
 
 /// The Material 3 shape language: rounded scale, pill buttons, top-rounded fields.
@@ -208,7 +209,7 @@ impl DesignSpec for Material3 {
             background: hovered
                 .then(|| if active { p.primary } else { r.on_surface }.with_alpha(0.08)),
             foreground: if active {
-                p.primary
+                t.legible(p.primary)
             } else {
                 r.on_surface_variant
             },
@@ -365,9 +366,9 @@ impl DesignSpec for Material3 {
             Primary => (Some(p.primary), p.on_primary, false),
             Secondary => (Some(r.secondary_container), r.on_secondary_container, false),
             Danger => (Some(p.danger), r.on_error, false),
-            Outline => (None, p.primary, true),
-            OutlineSecondary => (None, p.secondary, true),
-            Ghost => (None, p.primary, false),
+            Outline => (None, t.legible(p.primary), true),
+            OutlineSecondary => (None, t.legible(p.secondary), true),
+            Ghost => (None, t.legible(p.primary), false),
         };
         if state == Disabled {
             let disabled = r.on_surface;
@@ -487,6 +488,41 @@ impl DesignSpec for Material3 {
             (r.surface_container, r.on_surface)
         } else {
             (r.inverse_surface, r.inverse_on_surface)
+        })
+    }
+
+    /// Surface-coloured and borderless; tonal once scrolled. Heights 64 / 112 / 152, bottom 80.
+    fn app_bar(&self, t: &Theme, kind: AppBarKind, scrolled: bool) -> Option<AppBarTokens> {
+        let r = &t.palette.roles;
+        let (height, title_size, background) = match kind {
+            AppBarKind::CenterAligned | AppBarKind::Small => (64.0, 22.0, t.palette.background),
+            AppBarKind::Medium => (112.0, 24.0, t.palette.background),
+            AppBarKind::Large => (152.0, 28.0, t.palette.background),
+            AppBarKind::Bottom => (80.0, 22.0, r.surface_container),
+        };
+        let background = if scrolled && kind != AppBarKind::Bottom {
+            r.surface_container
+        } else {
+            background
+        };
+        Some(AppBarTokens {
+            row_height: if kind == AppBarKind::Bottom {
+                80.0
+            } else {
+                64.0
+            },
+            height,
+            background: Some(background),
+            border: None,
+            title: r.on_surface,
+            leading: if kind == AppBarKind::Bottom {
+                r.on_surface_variant
+            } else {
+                r.on_surface
+            },
+            trailing: r.on_surface_variant,
+            title_size,
+            collapsed_title_size: 22.0,
         })
     }
 

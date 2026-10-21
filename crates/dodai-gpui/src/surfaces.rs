@@ -741,15 +741,34 @@ crate::entry_render!(Navigation);
 
 // ──────────────────────────── TopAppBar ────────────────────────────
 
-/// App bar height class.
+/// Top app bar kind (M3: centre-aligned, small, medium, large).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum AppBarSize {
+    /// Title centred between the icons.
+    CenterAligned,
     #[default]
     Small,
+    /// Icons on top, title below (headline-small).
+    Medium,
+    /// Icons on top, a large title below (headline-medium).
     Large,
 }
 
+impl AppBarSize {
+    fn kind(self) -> dodai_core::AppBarKind {
+        match self {
+            Self::CenterAligned => dodai_core::AppBarKind::CenterAligned,
+            Self::Small => dodai_core::AppBarKind::Small,
+            Self::Medium => dodai_core::AppBarKind::Medium,
+            Self::Large => dodai_core::AppBarKind::Large,
+        }
+    }
+}
+
 /// Top app bar: leading glyph, title, trailing actions (children).
+///
+/// `scrolled(true)` switches to the tonal "content is scrolling beneath" container;
+/// `collapse(0..1)` shrinks a medium or large bar into the single-row layout as the page scrolls.
 #[derive(IntoElement)]
 pub struct TopAppBar {
     title: SharedString,
@@ -757,6 +776,8 @@ pub struct TopAppBar {
     size: AppBarSize,
     actions: Vec<AnyElement>,
     corners: Option<dodai_core::Corners>,
+    scrolled: bool,
+    collapse: f32,
 }
 
 crate::corners_setter!(TopAppBar);
@@ -769,6 +790,8 @@ impl TopAppBar {
             leading: None,
             size: AppBarSize::Small,
             actions: Vec::new(),
+            scrolled: false,
+            collapse: 0.0,
         }
     }
     pub fn leading(mut self, glyph: impl Into<SharedString>) -> Self {
@@ -777,6 +800,16 @@ impl TopAppBar {
     }
     pub fn size(mut self, s: AppBarSize) -> Self {
         self.size = s;
+        self
+    }
+    /// Content is scrolled beneath the bar (tonal container in Material).
+    pub fn scrolled(mut self, scrolled: bool) -> Self {
+        self.scrolled = scrolled;
+        self
+    }
+    /// Collapse progress of a medium / large bar, `0.0` expanded to `1.0` one row.
+    pub fn collapse(mut self, progress: f32) -> Self {
+        self.collapse = progress.clamp(0.0, 1.0);
         self
     }
 }
@@ -791,48 +824,80 @@ impl TopAppBar {
     fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
-        let p = t.panel(false);
-        let style = ShapeStyle::from_tokens(&t, Some(p.background), Some(p.border), false, false);
-        let h = t.shape.control_height
-            * if self.size == AppBarSize::Large {
-                2.4
-            } else {
-                1.3
-            };
-        let large = self.size == AppBarSize::Large;
-        let mut bar = shaped(&t.shape, style)
-            .h(px(h))
+        let tok = t.app_bar(self.size.kind(), self.scrolled);
+        let style = ShapeStyle::from_tokens(&t, tok.background, tok.border, false, false);
+        let tall = matches!(self.size, AppBarSize::Medium | AppBarSize::Large);
+        let two_row = tall && self.collapse < 0.999;
+        let height = if tall {
+            tok.height + (tok.row_height - tok.height) * self.collapse
+        } else {
+            tok.row_height
+        };
+        let title_size = if tall {
+            tok.title_size + (tok.collapsed_title_size - tok.title_size) * self.collapse
+        } else {
+            tok.title_size
+        };
+        let title = || {
+            div()
+                .font_family(first_family(t.typography.display))
+                .text_size(px(title_size))
+                .text_color(hsla(tok.title))
+                .child(format_label(&t.typography, &self.title))
+        };
+        let actions = div()
             .flex()
             .items_center()
-            .gap(px(t.spacing.md))
-            .px(px(t.spacing.md))
-            .text_color(hsla(t.palette.text));
-        if let Some(g) = self.leading {
-            bar = bar.child(glyph_el(
+            .justify_end()
+            .gap(px(t.spacing.xs))
+            .text_color(hsla(tok.trailing))
+            .children(self.actions);
+        let leading = |g: SharedString| {
+            div().w(px(48.0)).flex().justify_center().child(glyph_el(
                 g,
                 t.typography.size_lg * 1.2,
-                hsla(t.palette.text),
-            ));
+                hsla(tok.leading),
+            ))
+        };
+        let mut bar = shaped(&t.role_shape(dodai_core::ShapeRole::AppBar), style)
+            .h(px(height))
+            .flex()
+            .flex_col();
+        let mut row = div()
+            .h(px(tok.row_height))
+            .flex_none()
+            .flex()
+            .items_center()
+            .gap(px(t.spacing.sm))
+            .px(px(t.spacing.sm + 4.0));
+        if let Some(g) = self.leading {
+            row = row.child(leading(g));
         }
-        bar.child(
-            div()
-                .flex_1()
-                .font_family(first_family(t.typography.display))
-                .text_size(px(if large {
-                    t.typography.size_xl
-                } else {
-                    t.typography.size_lg
-                }))
-                .text_color(hsla(p.title))
-                .child(format_label(&t.typography, &self.title)),
-        )
-        .child(
-            div()
-                .flex()
-                .items_center()
-                .gap(px(t.spacing.xs))
-                .children(self.actions),
-        )
+        row = if two_row {
+            row.child(div().flex_1()).child(actions)
+        } else if self.size == AppBarSize::CenterAligned {
+            row.child(div().flex_1().flex().justify_center().child(title()))
+                .child(div().min_w(px(48.0)).child(actions))
+        } else {
+            row.child(div().flex_1().child(title())).child(actions)
+        };
+        bar = bar.child(row);
+        if two_row {
+            bar = bar.child(
+                div()
+                    .flex_1()
+                    .flex()
+                    .items_end()
+                    .px(px(t.spacing.md))
+                    .pb(px(if self.size == AppBarSize::Large {
+                        28.0
+                    } else {
+                        24.0
+                    }))
+                    .child(title()),
+            );
+        }
+        bar
     }
 }
 

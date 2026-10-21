@@ -6,9 +6,9 @@
 //! baseline in [`Theme`]'s resolvers, so a spec only lists what it does differently.
 
 use crate::{
-    ButtonTokens, ButtonVariant, CardVariant, Color, ControlState, InputTokens, ListItemTokens,
-    ProgressTokens, StepState, StepTokens, SurfaceTokens, TabTokens, Theme, ToggleKind,
-    ToggleTokens, Tone,
+    AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, Color, ControlState,
+    InputTokens, ListItemTokens, ProgressTokens, StepState, StepTokens, SurfaceTokens, TabTokens,
+    Theme, ToggleKind, ToggleTokens, Tone,
 };
 
 /// Semantic capabilities a design system declares. Adapters ask these instead of guessing a
@@ -59,6 +59,9 @@ pub trait DesignSpec: Send + Sync + std::fmt::Debug {
         None
     }
     fn scrim(&self, t: &Theme) -> Option<Color> {
+        None
+    }
+    fn app_bar(&self, t: &Theme, kind: AppBarKind, scrolled: bool) -> Option<AppBarTokens> {
         None
     }
     fn step(&self, t: &Theme, state: StepState) -> Option<StepTokens> {

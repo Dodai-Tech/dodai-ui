@@ -15,7 +15,9 @@ fn motion() -> dodai_core::Motion {
 }
 
 pub mod fx;
+mod scheme;
 mod spec;
+pub use scheme::{preset_themes, Preset, Scheme, SchemeStyle, PRESETS};
 pub use spec::{shape_presets, shape_system, Material3, SHAPE_SCALE, SPEC};
 
 fn typography() -> Typography {
@@ -216,7 +218,9 @@ pub fn dark() -> Theme {
 
 /// Both Material 3 schemes.
 pub fn variants() -> Vec<Theme> {
-    vec![light(), dark()]
+    let mut v = vec![light(), dark()];
+    v.extend(preset_themes());
+    v
 }
 
 /// The Material Symbols catalogue (`icons` feature).

@@ -18,7 +18,11 @@ fn radius(t: &Theme, role: ShapeRole) -> f32 {
 
 #[test]
 fn there_are_light_and_dark_material_themes() {
-    assert_eq!(material().len(), 2);
+    let all = material();
+    assert_eq!(all.len(), 2 + 2 * dodai_material::PRESETS.len());
+    for m in [dodai_core::Mode::Light, dodai_core::Mode::Dark] {
+        assert!(all.iter().filter(|t| t.meta.mode == m).count() > 1);
+    }
 }
 
 #[test]
@@ -86,9 +90,15 @@ fn buttons_use_the_m3_roles_and_state_layers() {
             r.on_secondary_container
         );
         let o = b(ButtonVariant::Outline, ControlState::Idle);
-        assert!(o.background.is_none() && o.border == Some(r.outline) && o.foreground == p.primary);
+        assert!(
+            o.background.is_none()
+                && o.border == Some(r.outline)
+                && o.foreground == t.legible(p.primary)
+        );
         let g = b(ButtonVariant::Ghost, ControlState::Idle);
-        assert!(g.background.is_none() && g.border.is_none() && g.foreground == p.primary);
+        assert!(
+            g.background.is_none() && g.border.is_none() && g.foreground == t.legible(p.primary)
+        );
         // State layers: hover 8 %, press / focus 10 % of the label colour over the container.
         let hover = b(ButtonVariant::Primary, ControlState::Hovered)
             .background
@@ -100,7 +110,7 @@ fn buttons_use_the_m3_roles_and_state_layers() {
         assert_eq!(press, p.primary.mix(p.on_primary, 0.10));
         assert_eq!(
             b(ButtonVariant::Ghost, ControlState::Hovered).background,
-            Some(p.primary.with_alpha(0.08))
+            Some(t.legible(p.primary).with_alpha(0.08))
         );
         // Disabled: container on-surface 12 %, label 38 %.
         let d = b(ButtonVariant::Primary, ControlState::Disabled);
@@ -221,7 +231,10 @@ fn tabs_lists_inputs_and_progress_follow_the_spec() {
         let p = &t.palette;
         // Primary tab: active label + indicator primary, inactive on-surface-variant.
         let on = t.tab(true, false);
-        assert_eq!((on.foreground, on.indicator), (p.primary, Some(p.primary)));
+        assert_eq!(
+            (on.foreground, on.indicator),
+            (t.legible(p.primary), Some(p.primary))
+        );
         assert_eq!(t.tab(false, false).foreground, r.on_surface_variant);
         // Lists: on-surface text, selected is the secondary-container pill.
         assert_eq!(t.list_item(false, false).foreground, r.on_surface);
@@ -327,5 +340,101 @@ fn registry_covers_every_theme() {
     assert_eq!(n, themes::all().len());
     for s in themes::systems() {
         assert!((s.themes)().iter().all(|t| t.meta.family == s.family));
+    }
+}
+
+#[test]
+fn every_scheme_style_is_readable_for_any_seed() {
+    use dodai_core::{Color, Mode};
+    use dodai_material::{Scheme, SchemeStyle};
+    let seeds = [
+        0x6750a4, 0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0x808080, 0x000000, 0xffffff, 0x00ffff,
+        0xff00ff,
+    ];
+    for style in SchemeStyle::ALL {
+        for seed in seeds {
+            for mode in [Mode::Light, Mode::Dark] {
+                let t = Scheme::new(Color::hex(seed), style, mode).theme(dodai_core::ThemeMeta {
+                    id: "t",
+                    name: "t",
+                    family: "material",
+                    description: "",
+                    mode,
+                });
+                let (p, r) = (&t.palette, &t.palette.roles);
+                let tag = format!("{style:?} {seed:06x} {mode:?}");
+                assert!(p.text.contrast(p.background) >= 7.0, "{tag}: text");
+                assert!(p.on_primary.contrast(p.primary) >= 4.5, "{tag}: on_primary");
+                assert!(
+                    p.on_secondary.contrast(p.secondary) >= 4.5,
+                    "{tag}: on_secondary"
+                );
+                assert!(
+                    r.on_primary_container.contrast(r.primary_container) >= 7.0,
+                    "{tag}: container"
+                );
+                assert!(
+                    r.on_secondary_container.contrast(r.secondary_container) >= 7.0,
+                    "{tag}: sec container"
+                );
+                assert!(r.on_tertiary.contrast(r.tertiary) >= 4.5, "{tag}: tertiary");
+                assert!(
+                    r.on_error_container.contrast(r.error_container) >= 7.0,
+                    "{tag}: error"
+                );
+                assert!(
+                    r.on_surface_variant.contrast(r.surface_container_highest) >= 4.5,
+                    "{tag}: variant"
+                );
+                assert!(
+                    r.inverse_on_surface.contrast(r.inverse_surface) >= 7.0,
+                    "{tag}: inverse"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn pastel_is_lighter_and_softer_than_the_baseline() {
+    use dodai_core::{tonal::to_lch, Mode};
+    let base = dodai_material::light();
+    let pastel = dodai_material::PRESETS[0].theme(Mode::Light);
+    assert!(to_lch(pastel.palette.primary).0 > to_lch(base.palette.primary).0 + 15.0);
+    let dark_base = dodai_material::dark();
+    let dark_pastel = dodai_material::PRESETS[0].theme(Mode::Dark);
+    assert!(
+        to_lch(dark_pastel.palette.background).0 > to_lch(dark_base.palette.background).0 + 5.0
+    );
+}
+
+#[test]
+fn app_bars_follow_the_spec() {
+    use dodai_core::AppBarKind::*;
+    for t in material() {
+        let r = &t.palette.roles;
+        for (k, h) in [
+            (CenterAligned, 64.0),
+            (Small, 64.0),
+            (Medium, 112.0),
+            (Large, 152.0),
+            (Bottom, 80.0),
+        ] {
+            let b = t.app_bar(k, false);
+            assert_eq!(b.height, h, "{} {k:?}", t.id());
+            assert!(b.border.is_none(), "app bars are borderless");
+            assert_eq!(b.title, r.on_surface);
+        }
+        assert_eq!(
+            t.app_bar(Small, false).background,
+            Some(t.palette.background)
+        );
+        assert_eq!(t.app_bar(Small, true).background, Some(r.surface_container));
+        assert_eq!(
+            t.app_bar(Bottom, false).background,
+            Some(r.surface_container)
+        );
+        assert_eq!(t.app_bar(Large, false).title_size, 28.0);
+        assert_eq!(t.role_shape(ShapeRole::AppBar).radius, 0.0);
     }
 }

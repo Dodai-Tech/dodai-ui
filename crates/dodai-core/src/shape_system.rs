@@ -313,6 +313,8 @@ pub enum ShapeRole {
     Indicator,
     RichTooltip,
     Toolbar,
+    /// Top and bottom app bars.
+    AppBar,
 }
 
 /// How a corner is drawn across a whole design system.

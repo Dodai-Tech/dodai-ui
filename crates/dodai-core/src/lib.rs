@@ -23,14 +23,15 @@ mod spec;
 mod switcher;
 mod theme;
 mod tokens;
+pub mod tonal;
 
 pub mod themes;
 
 pub use color::Color;
 pub use component::{
-    ButtonTokens, ButtonVariant, CardVariant, ControlState, InputTokens, ListItemTokens,
-    PanelTokens, ProgressTokens, StepState, StepTokens, SurfaceTokens, TabTokens, TagTokens,
-    ToggleKind, ToggleTokens,
+    AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, ControlState, InputTokens,
+    ListItemTokens, PanelTokens, ProgressTokens, StepState, StepTokens, SurfaceTokens, TabTokens,
+    TagTokens, ToggleKind, ToggleTokens,
 };
 pub use dodai_motion;
 pub use dodai_motion::{Easing, EntryKind, EntrySet, Motion};
@@ -43,3 +44,4 @@ pub use spec::{DesignSpec, Look, SpecRef};
 pub use switcher::ThemeSwitcher;
 pub use theme::{Theme, ThemeMeta};
 pub use tokens::{Corners, Effects, Shape, ShapeKind, Spacing, Typography};
+pub use tonal::TonalPalette;
