@@ -88,7 +88,8 @@ pub struct Showcase {
     dt_filter: Entity<TextInput>,
     icon_search: Entity<TextInput>,
     icon_filled: bool,
-    icon_limit: usize,
+    /// Material icon categories shown in full (the rest show a preview).
+    icon_open: std::collections::HashSet<&'static str>,
     date_range: dodai_gpui::DateRange,
     cat: usize,
     cat_count: usize,
@@ -1116,7 +1117,7 @@ impl Showcase {
             dt_filter,
             icon_search,
             icon_filled: false,
-            icon_limit: 240,
+            icon_open: std::collections::HashSet::new(),
             date_range: Default::default(),
             cat: std::env::var("DODAI_CAT")
                 .ok()

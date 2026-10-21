@@ -91,106 +91,171 @@ impl Showcase {
                 .into_any_element(),
             "Shape tokens",
         ));
-        let rounded = t.look().icons == dodai_core::IconSet::Symbols;
+        let set = t.look().icons;
         let query = self.icon_search.read(cx).text().to_string();
         let count = dodai_cyberpunk_icons::ALL.len();
-        let mut icons = section!("Icons")
-            .child(Muted::new(if rounded {
-                format!("{count} icons by type, then the whole Material Symbols catalogue. One search covers both. `Icon` follows the theme: rounded themes draw the matching Material Symbols glyph. Any name takes -off / -add / -remove / -check / -lock / -circle (e.g. `heart-add`). Click to copy `IconName::…`.")
-            } else {
-                format!("{count} hand-drawn icons by type: straight lines, 45° chamfers, octagons. `Icon` follows the theme. Any name takes -off / -add / -remove / -check / -lock / -circle (e.g. `heart-add`). Click to copy `IconName::…`.")
-            }))
-            .child(div().w(px(360.0)).max_w_full().child(self.icon_search.clone()))
-            .child(icons_view(&t, &query));
-        // The Material catalogue only belongs to Material themes.
-        if rounded {
-            icons = icons.child(self.icon_browser(&t, &query, cx));
-        }
-        out.push(("Foundations", "Icons", icons.into_any_element(), "Icons"));
+        let intro = match set {
+            dodai_core::IconSet::Symbols => "The Material Symbols catalogue by Material's own categories (`MaterialIcon::new(name)`). Click to copy.".to_string(),
+            dodai_core::IconSet::Bold => format!("{count} bold icons with a filled form each (Phosphor), by type. Click to copy `IconName::…`."),
+            dodai_core::IconSet::Stroked => format!("{count} hand-drawn icons by type: straight lines, 45° chamfers, octagons. Any name takes -off / -add / -remove / -check / -lock / -circle (e.g. `heart-add`). Click to copy `IconName::…`."),
+        };
+        let mut section = section!("Icons").child(Muted::new(intro)).child(
+            div()
+                .w(px(360.0))
+                .max_w_full()
+                .child(self.icon_search.clone()),
+        );
+        let filled_toggle = {
+            let me_f = me.clone();
+            div()
+                .flex()
+                .items_center()
+                .gap(px(t.spacing.sm))
+                .child(
+                    Checkbox::new("ib-fill", self.icon_filled).on_change(move |v, _, cx| {
+                        me_f.update(cx, |s, cx| {
+                            s.icon_filled = v;
+                            cx.notify();
+                        })
+                    }),
+                )
+                .child(Label::new("Filled"))
+        };
+        section = match set {
+            dodai_core::IconSet::Symbols => section
+                .child(filled_toggle)
+                .child(self.icon_browser(&t, &query, cx)),
+            dodai_core::IconSet::Bold => {
+                section
+                    .child(filled_toggle)
+                    .child(icons_view(&t, &query, self.icon_filled, false))
+            }
+            dodai_core::IconSet::Stroked => section.child(icons_view(&t, &query, false, true)),
+        };
+        out.push(("Foundations", "Icons", section.into_any_element(), "Icons"));
         out
     }
 }
 
 impl Showcase {
-    /// Searchable, paged grid of every Material Symbols icon.
-    fn icon_browser(&mut self, t: &dodai_core::Theme, query: &str, cx: &mut Context<Self>) -> gpui::Div {
-        let me = cx.entity();
-        let me_f = me.clone();
+    /// The Material Symbols catalogue grouped by Material's own categories. A category shows a
+    /// preview until opened; a search lists every match.
+    fn icon_browser(
+        &mut self,
+        t: &dodai_core::Theme,
+        query: &str,
+        cx: &mut Context<Self>,
+    ) -> gpui::Div {
+        const PREVIEW: usize = 24;
+        const MAX_HITS: usize = 480;
         let q = query.trim().to_lowercase().replace(' ', "_");
-        let hits: Vec<&'static str> = dodai_material_icons::outlined::ALL
-            .iter()
-            .map(|i| i.name)
-            .filter(|n| !n.ends_with("-fill") && n.contains(q.as_str()))
-            .collect();
-        let shown = hits.len().min(self.icon_limit);
-        let controls = div()
-            .flex()
-            .flex_wrap()
-            .items_center()
-            .gap(px(t.spacing.md))
-            .child(Muted::new("ALL MATERIAL SYMBOLS"))
-            .child(
-                Checkbox::new("ib-fill", self.icon_filled).on_change(move |v, _, cx| {
-                    me_f.update(cx, |s, cx| {
-                        s.icon_filled = v;
-                        cx.notify();
-                    })
-                }),
-            )
-            .child(Label::new("Filled"))
-            .child(Muted::new(format!("{shown} of {} icons", hits.len())));
-        let mut grid = div().flex().flex_wrap().gap(px(t.spacing.xs));
-        for &n in hits.iter().take(shown) {
-            grid = grid.child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .items_center()
-                    .gap(px(4.0))
-                    .w(px(92.0))
-                    .py(px(t.spacing.sm))
-                    .border_1()
-                    .border_color(hsla(t.palette.border))
-                    .child(
-                        dodai_gpui::MaterialIcon::new(n)
-                            .size(28.0)
-                            .filled(self.icon_filled)
-                            .color(hsla(t.palette.primary)),
-                    )
-                    .child({
-                        // Centred when it fits; long names stay left-aligned so
-                        // the ellipsis clips the end, not both sides.
-                        let mut label = div()
-                            .w_full()
-                            .px(px(4.0))
-                            .truncate()
-                            .text_size(px(t.typography.size_xs))
-                            .text_color(hsla(t.palette.text_muted))
-                            .child(n);
-                        if n.len() <= 12 {
-                            label = label.text_center();
-                        }
-                        label
-                    }),
-            );
-        }
-        let mut out = div()
-            .flex()
-            .flex_col()
-            .gap(px(t.spacing.md))
-            .child(controls)
-            .child(grid);
-        if hits.len() > shown {
-            out = out.child(
-                div().flex().child(
-                    Button::new("ib-more", "Show more")
+        let searching = !q.is_empty();
+        let mut out = div().flex().flex_col().gap(px(t.spacing.lg));
+        let mut total = 0usize;
+        for &(cat, names) in dodai_material_icons::CATEGORIES {
+            let hits: Vec<&'static str> = names
+                .iter()
+                .copied()
+                .filter(|n| {
+                    !searching
+                        || n.contains(q.as_str())
+                        || cat
+                            .to_lowercase()
+                            .contains(query.trim().to_lowercase().as_str())
+                })
+                .collect();
+            if hits.is_empty() {
+                continue;
+            }
+            let open = self.icon_open.contains(cat);
+            let cap = if searching {
+                MAX_HITS.saturating_sub(total)
+            } else if open {
+                hits.len()
+            } else {
+                PREVIEW
+            };
+            total += hits.len().min(cap);
+            let mut grid = div().flex().flex_wrap().gap(px(t.spacing.xs));
+            for (i, &n) in hits.iter().take(cap).enumerate() {
+                grid = grid.child(
+                    div()
+                        .id(SharedString::from(format!("mi-{cat}-{i}")))
+                        .flex()
+                        .flex_col()
+                        .items_center()
+                        .gap(px(4.0))
+                        .w(px(92.0))
+                        .py(px(t.spacing.sm))
+                        .cursor_pointer()
+                        .border_1()
+                        .border_color(hsla(t.palette.border))
+                        .on_click(move |_, _, cx| {
+                            cx.write_to_clipboard(gpui::ClipboardItem::new_string(format!(
+                                "MaterialIcon::new(\"{n}\")"
+                            )))
+                        })
+                        .child(
+                            dodai_gpui::MaterialIcon::new(n)
+                                .size(28.0)
+                                .filled(self.icon_filled)
+                                .color(hsla(t.palette.primary)),
+                        )
+                        .child({
+                            // Centred when it fits; long names stay left-aligned so the
+                            // ellipsis clips the end, not both sides.
+                            let mut label = div()
+                                .w_full()
+                                .px(px(4.0))
+                                .truncate()
+                                .text_size(px(t.typography.size_xs))
+                                .text_color(hsla(t.palette.text_muted))
+                                .child(n);
+                            if n.len() <= 12 {
+                                label = label.text_center();
+                            }
+                            label
+                        }),
+                );
+            }
+            let mut block = div()
+                .flex()
+                .flex_col()
+                .gap(px(t.spacing.md))
+                .child(Muted::new(format!(
+                    "{} · {}",
+                    cat.to_uppercase(),
+                    hits.len()
+                )))
+                .child(grid);
+            if !searching && hits.len() > PREVIEW {
+                block = block.child(
+                    div().flex().child(
+                        Button::new(
+                            SharedString::from(format!("mi-more-{cat}")),
+                            if open {
+                                "Show fewer".to_string()
+                            } else {
+                                format!("Show all {}", hits.len())
+                            },
+                        )
                         .variant(ButtonVariant::Secondary)
-                        .on_click(cx.listener(|s, _, _, cx| {
-                            s.icon_limit += 240;
+                        .on_click(cx.listener(move |s, _, _, cx| {
+                            if !s.icon_open.remove(cat) {
+                                s.icon_open.insert(cat);
+                            }
                             cx.notify();
                         })),
-                ),
-            );
+                    ),
+                );
+            }
+            out = out.child(dodai_gpui::lazy(
+                SharedString::from(format!("mi-cat-{cat}")),
+                block,
+            ));
+        }
+        if total == 0 {
+            out = out.child(Muted::new("No icons match."));
         }
         out
     }

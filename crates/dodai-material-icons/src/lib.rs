@@ -19,6 +19,10 @@ mod aliases;
 pub use aliases::{alias_of, resolve, ALIASES};
 
 #[cfg(feature = "outlined")]
+mod categories;
+#[cfg(feature = "outlined")]
+pub use categories::CATEGORIES;
+#[cfg(feature = "outlined")]
 pub mod outlined;
 #[cfg(feature = "rounded")]
 pub mod rounded;
@@ -640,6 +644,20 @@ mod tests {
         for tol in [-1.0, f32::NAN, f32::INFINITY, 0.0] {
             let out = simplify_closed(&ring, tol);
             assert!(out.len() >= 2, "tol {tol}");
+        }
+    }
+
+    #[cfg(feature = "outlined")]
+    #[test]
+    fn every_icon_is_in_exactly_one_category() {
+        let mut seen = std::collections::HashMap::new();
+        for (cat, names) in CATEGORIES {
+            for n in *names {
+                assert!(seen.insert(*n, *cat).is_none(), "{n} listed twice");
+            }
+        }
+        for i in outlined::ALL.iter().filter(|i| !i.name.ends_with("-fill")) {
+            assert!(seen.contains_key(i.name), "{} has no category", i.name);
         }
     }
 }

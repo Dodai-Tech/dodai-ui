@@ -197,11 +197,9 @@ impl Showcase {
             }
         }
         if !rail {
-            side = side.child(
-                div()
-                    .pt(px(t.spacing.md))
-                    .child(Muted::new("↑↓ / Tab move · Enter select · t / T theme · l scanlines")),
-            );
+            side = side.child(div().pt(px(t.spacing.md)).child(Muted::new(
+                "↑↓ / Tab move · Enter select · t / T theme · l scanlines",
+            )));
         }
 
         (side, side_need)

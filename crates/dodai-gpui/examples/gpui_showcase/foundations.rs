@@ -362,7 +362,12 @@ const ICON_TYPES: &[(&str, &str)] = &[
 
 /// The hand-drawn pack, grouped by type and filtered by `query` (matches the
 /// icon name or its type).
-pub(crate) fn icons_view(t: &dodai_core::Theme, query: &str) -> gpui::Div {
+pub(crate) fn icons_view(
+    t: &dodai_core::Theme,
+    query: &str,
+    filled: bool,
+    variants: bool,
+) -> gpui::Div {
     let q = query.trim().to_lowercase().replace(' ', "_");
     let mut out = div().flex().flex_col().gap(px(t.spacing.lg));
     let (mut idx, mut total) = (0usize, 0usize);
@@ -404,6 +409,7 @@ pub(crate) fn icons_view(t: &dodai_core::Theme, query: &str) -> gpui::Div {
                     })
                     .child(
                         dodai_gpui::Icon::new(**n)
+                            .filled(filled)
                             .size(28.0)
                             .color(hsla(t.palette.primary)),
                     )
@@ -439,7 +445,7 @@ pub(crate) fn icons_view(t: &dodai_core::Theme, query: &str) -> gpui::Div {
                 .child(row),
         ));
     }
-    if q.is_empty() {
+    if q.is_empty() && variants {
         let mut row = div().flex().flex_wrap().w_full().gap(px(t.spacing.sm));
         for base in ["heart", "cloud", "camera", "bell"] {
             for m in dodai_cyberpunk_icons::Modifier::ALL {
