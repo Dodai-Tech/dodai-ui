@@ -28,19 +28,45 @@ impl Showcase {
             .track_focus(&self.side_focus)
             .track_scroll(&self.side_scroll)
             .relative()
-            .on_key_down(cx.listener(|s, e: &KeyDownEvent, _, cx| {
-                let last = s.cat_count.saturating_sub(1);
+            // Arrows move the keyboard focus through the rows (every row is a tab stop, so
+            // Tab works too); Enter / Space activate the focused row through its click.
+            .on_key_down(cx.listener(|s, e: &KeyDownEvent, window, cx| {
                 match e.keystroke.key.as_str() {
-                    "down" => s.cat = (s.cat + 1).min(last),
-                    "up" => s.cat = s.cat.saturating_sub(1),
-                    "home" => s.cat = 0,
-                    "end" => s.cat = last,
+                    "down" => window.focus_next(),
+                    "up" => window.focus_prev(),
+                    "home" | "end" => {
+                        let down = e.keystroke.key == "end";
+                        for _ in 0..512 {
+                            let before = window.focused(cx);
+                            if down {
+                                window.focus_next();
+                            } else {
+                                window.focus_prev();
+                            }
+                            if !s.side_focus.contains_focused(window, cx) {
+                                if down {
+                                    window.focus_prev();
+                                } else {
+                                    window.focus_next();
+                                }
+                                break;
+                            }
+                            if window.focused(cx) == before {
+                                break;
+                            }
+                        }
+                    }
                     _ => return,
                 }
-                s.sub = None;
-                s.pin.release();
-                s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
-                cx.notify();
+                // The sidebar's tab stops are bracketed by other controls: don't leave it.
+                if !s.side_focus.contains_focused(window, cx) {
+                    if e.keystroke.key == "up" {
+                        window.focus_next();
+                    } else if e.keystroke.key == "down" {
+                        window.focus_prev();
+                    }
+                }
+                cx.stop_propagation();
             }))
             .flex()
             .flex_col()
@@ -98,9 +124,8 @@ impl Showcase {
                 .collapsed(rail)
                 .icon(cat_icon(name))
                 .selected(self.cat == idx)
-                .on_click(move |_, w, cx| {
+                .on_click(move |_, _, cx| {
                     m.update(cx, |s, cx| {
-                        w.focus(&s.side_focus);
                         s.cat = idx;
                         s.sub = None;
                         s.pin.release();
@@ -175,7 +200,7 @@ impl Showcase {
             side = side.child(
                 div()
                     .pt(px(t.spacing.md))
-                    .child(Muted::new("t / T theme · l scanlines")),
+                    .child(Muted::new("↑↓ / Tab move · Enter select · t / T theme · l scanlines")),
             );
         }
 
