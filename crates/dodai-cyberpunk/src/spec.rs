@@ -4,8 +4,9 @@
 //! Core's baseline is deliberately plain; everything that gives Cyberpunk its character is here.
 
 use dodai_core::{
-    ButtonTokens, ButtonVariant, CardVariant, Color, ControlState, DesignSpec, InputTokens,
-    ListItemTokens, StepState, StepTokens, SurfaceTokens, TabTokens, Theme,
+    AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, Color, ControlState,
+    DesignSpec, InputTokens, ListItemTokens, StepState, StepTokens, SurfaceTokens, TabTokens,
+    Theme, Tone,
 };
 
 /// The Cyberpunk spec (attach with [`dodai_core::Theme::with_spec`]).
@@ -179,6 +180,75 @@ impl DesignSpec for Cyberpunk {
         })
     }
 
+    /// A HUD header: raised plate, neon title, cyan icons; it lights up (border + glow) once the
+    /// content scrolls beneath it. Compact rows (56) with 104 / 136 for the tall variants.
+    fn app_bar(&self, t: &Theme, kind: AppBarKind, scrolled: bool) -> Option<AppBarTokens> {
+        let p = &t.palette;
+        let (row, height, title) = match kind {
+            AppBarKind::CenterAligned | AppBarKind::Small => (56.0, 56.0, 20.0),
+            AppBarKind::Medium => (56.0, 104.0, 26.0),
+            AppBarKind::Large => (56.0, 136.0, 32.0),
+            AppBarKind::Bottom => (64.0, 64.0, 18.0),
+        };
+        let lit = scrolled && kind != AppBarKind::Bottom;
+        Some(AppBarTokens {
+            row_height: row,
+            height,
+            background: Some(if kind == AppBarKind::Bottom {
+                p.surface_raised
+            } else {
+                p.surface
+            }),
+            border: Some(if lit { p.primary } else { p.border_strong }),
+            title: t.legible(p.primary),
+            leading: t.legible(p.secondary),
+            trailing: p.text,
+            title_size: title,
+            collapsed_title_size: 20.0,
+            glow: lit,
+        })
+    }
+
+    /// Readout-style tooltips: raised plate, cyan text.
+    fn tooltip(&self, t: &Theme, rich: bool) -> Option<(Color, Color)> {
+        let p = &t.palette;
+        Some(if rich {
+            (p.surface_raised, p.text)
+        } else {
+            (p.surface_raised, t.legible(p.secondary))
+        })
+    }
+
+    /// A glowing, brand-outlined notification plate.
+    fn snackbar(&self, t: &Theme) -> Option<(SurfaceTokens, Color)> {
+        let p = &t.palette;
+        Some((
+            surface(
+                Some(p.surface_raised),
+                Some(t.legible(p.primary)),
+                p.text,
+                true,
+                true,
+            ),
+            t.legible(p.secondary),
+        ))
+    }
+
+    /// Tinted alerts glow in their tone; banners stay solid.
+    fn alert(&self, t: &Theme, tone: Tone, banner: bool) -> Option<SurfaceTokens> {
+        if banner {
+            return None;
+        }
+        let c = t.palette.tone(tone);
+        Some(surface(
+            Some(c.with_alpha(0.12)),
+            Some(c),
+            t.palette.text,
+            true,
+            false,
+        ))
+    }
+
     /// Solid fills brighten, outlines invert to solid on hover.
     fn button(
         &self,
@@ -286,5 +356,30 @@ mod tests {
             assert_eq!(hovered.background, Some(t.palette.primary));
             assert_eq!(t.scrim(), t.palette.background.with_alpha(0.7));
         }
+    }
+
+    #[test]
+    fn app_bars_are_compact_huds_that_light_up_when_scrolled() {
+        use dodai_core::AppBarKind::*;
+        for t in crate::variants() {
+            for k in [CenterAligned, Small, Medium, Large] {
+                let rest = t.app_bar(k, false);
+                let lit = t.app_bar(k, true);
+                assert!(!rest.glow && lit.glow, "{} {k:?}", t.id());
+                assert_eq!(lit.border, Some(t.palette.primary));
+                assert!(rest.border.is_some(), "HUD plates keep their outline");
+                assert!(rest.row_height < 64.0, "compact rows");
+            }
+            assert!(t.app_bar(Large, false).height > t.app_bar(Medium, false).height);
+            assert!(!t.app_bar(Bottom, true).glow);
+        }
+    }
+
+    #[test]
+    fn presets_ship_a_dark_and_a_light_theme_each() {
+        let all = crate::preset_themes();
+        assert_eq!(all.len(), 2 * crate::PRESETS.len());
+        let ids: std::collections::HashSet<_> = all.iter().map(|t| t.id()).collect();
+        assert_eq!(ids.len(), all.len(), "ids are unique");
     }
 }

@@ -189,6 +189,8 @@ pub struct AppBarTokens {
     pub title_size: f32,
     /// Font size of the title when collapsed into the icon row.
     pub collapsed_title_size: f32,
+    /// Draw the theme glow around the bar.
+    pub glow: bool,
 }
 
 /// One stepper node.
@@ -570,6 +572,7 @@ impl Theme {
             trailing: p.text,
             title_size: title,
             collapsed_title_size: self.typography.size_lg,
+            glow: false,
         }
     }
 

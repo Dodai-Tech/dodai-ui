@@ -825,7 +825,7 @@ impl TopAppBar {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
         let tok = t.app_bar(self.size.kind(), self.scrolled);
-        let style = ShapeStyle::from_tokens(&t, tok.background, tok.border, false, false);
+        let style = ShapeStyle::from_tokens(&t, tok.background, tok.border, tok.glow, false);
         let tall = matches!(self.size, AppBarSize::Medium | AppBarSize::Large);
         let two_row = tall && self.collapse < 0.999;
         let height = if tall {

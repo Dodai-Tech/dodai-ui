@@ -131,7 +131,7 @@ impl BottomAppBar {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
         let tok = t.app_bar(dodai_core::AppBarKind::Bottom, false);
-        let style = ShapeStyle::from_tokens(&t, tok.background, tok.border, false, false);
+        let style = ShapeStyle::from_tokens(&t, tok.background, tok.border, tok.glow, false);
         let mut bar = shaped(&t.role_shape(dodai_core::ShapeRole::AppBar), style)
             .h(px(tok.height))
             .flex()

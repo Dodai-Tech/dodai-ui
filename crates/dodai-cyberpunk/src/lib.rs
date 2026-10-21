@@ -27,8 +27,10 @@ fn motion() -> dodai_core::Motion {
 }
 
 pub mod fx;
+mod neon;
 pub mod shape;
 mod spec;
+pub use neon::{preset_themes, Backdrop, Neon, NeonPreset, PRESETS};
 pub use spec::{Cyberpunk, SPEC};
 
 fn typography() -> Typography {
@@ -331,14 +333,16 @@ pub fn red() -> Theme {
 
 /// All Cyberpunk variants (dark first, then light).
 pub fn variants() -> Vec<Theme> {
-    vec![
+    let mut v = vec![
         yellow(),
         cyan(),
         red(),
         yellow_light(),
         cyan_light(),
         red_light(),
-    ]
+    ];
+    v.extend(preset_themes());
+    v
 }
 
 /// The Cyberpunk icon pack (`icons` feature).

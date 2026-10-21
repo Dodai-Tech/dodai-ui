@@ -76,9 +76,10 @@ fn cyberpunk_has_light_and_dark() {
         .into_iter()
         .filter(|t| t.meta.family == "cyberpunk")
         .collect();
-    assert_eq!(fam.iter().filter(|t| t.meta.mode == Mode::Dark).count(), 3);
+    let n = 3 + dodai_cyberpunk::PRESETS.len();
+    assert_eq!(fam.iter().filter(|t| t.meta.mode == Mode::Dark).count(), n);
     let light: Vec<_> = fam.iter().filter(|t| t.meta.mode == Mode::Light).collect();
-    assert_eq!(light.len(), 3);
+    assert_eq!(light.len(), n);
     for t in light {
         let p = &t.palette;
         assert!(p.link.contrast(p.background) >= 4.5, "{}: link", t.id());
@@ -94,7 +95,10 @@ fn lookup_and_switcher_families() {
     assert!(themes::by_id("missing").is_none());
     let mut s = dodai::switcher();
     assert_eq!(s.families(), vec!["cyberpunk", "material"]);
-    assert_eq!(s.family_indices("cyberpunk").len(), 6);
+    assert_eq!(
+        s.family_indices("cyberpunk").len(),
+        6 + 2 * dodai_cyberpunk::PRESETS.len()
+    );
     assert_eq!(
         s.family_indices("material").len(),
         2 + 2 * dodai_material::PRESETS.len()
@@ -344,6 +348,50 @@ fn material_banners_are_tonal_and_snackbar_is_inverse() {
             );
         } else {
             assert_eq!(bg, t.palette.warning);
+        }
+    }
+}
+
+#[cfg(feature = "cyberpunk")]
+#[test]
+fn neon_schemes_stay_readable_for_any_accents() {
+    use dodai::Color;
+    use dodai_cyberpunk::{Backdrop, Neon};
+    let seeds = [
+        0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0x808080, 0x000000, 0xffffff, 0x3a2a7a,
+    ];
+    for backdrop in Backdrop::ALL {
+        for p in seeds {
+            for s in seeds {
+                let neon = Neon::new(Color::hex(p), Color::hex(s), Color::hex(0xff2a8a))
+                    .backdrop(backdrop);
+                for mode in [Mode::Dark, Mode::Light] {
+                    let meta = dodai::ThemeMeta {
+                        id: "t",
+                        name: "t",
+                        family: "cyberpunk",
+                        description: "",
+                        mode,
+                    };
+                    let t = if mode == Mode::Dark {
+                        neon.dark(meta)
+                    } else {
+                        neon.light(meta)
+                    };
+                    let pl = &t.palette;
+                    let tag = format!("{backdrop:?} {p:06x}/{s:06x} {mode:?}");
+                    assert!(pl.text.contrast(pl.background) >= 7.0, "{tag}: text");
+                    assert!(
+                        pl.on_primary.contrast(pl.primary) >= 4.5,
+                        "{tag}: on_primary"
+                    );
+                    assert!(
+                        pl.on_secondary.contrast(pl.secondary) >= 4.5,
+                        "{tag}: on_secondary"
+                    );
+                    assert!(pl.link.contrast(pl.background) >= 4.5, "{tag}: link");
+                }
+            }
         }
     }
 }

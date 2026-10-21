@@ -298,12 +298,16 @@ fn list_menu_tooltip_and_focus_follow_the_spec() {
             "{}",
             t.id()
         );
-        assert_eq!(
-            t.tooltip(false),
-            (t.palette.overlay, t.palette.text),
-            "{}",
-            t.id()
-        );
+        if t.meta.family == "cyberpunk" {
+            assert_eq!(t.tooltip(false).0, t.palette.surface_raised, "{}", t.id());
+        } else {
+            assert_eq!(
+                t.tooltip(false),
+                (t.palette.overlay, t.palette.text),
+                "{}",
+                t.id()
+            );
+        }
         assert_eq!(t.focus_ring().0, t.palette.focus_ring, "{}", t.id());
     }
 }

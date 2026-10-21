@@ -528,6 +528,7 @@ impl DesignSpec for Material3 {
             trailing: r.on_surface_variant,
             title_size,
             collapsed_title_size: 22.0,
+            glow: false,
         })
     }
 
