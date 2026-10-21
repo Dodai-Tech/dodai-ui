@@ -312,9 +312,7 @@ pub use surfaces::{
     NavItem, NavLayout, Navigation, SearchBar, TopAppBar,
 };
 #[cfg(feature = "components")]
-pub use switcher::{
-    set_tree_expanded, tree_expanded, DesignSystemTree, ThemeSelect, ThemeSwitcherBar,
-};
+pub use switcher::{set_tree_expanded, tree_expanded, DesignSystemTree, ThemeSwitcherBar};
 #[cfg(feature = "components")]
 pub use tabs::Tabs;
 #[cfg(feature = "components")]

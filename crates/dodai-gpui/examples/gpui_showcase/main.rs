@@ -1011,11 +1011,17 @@ impl Render for Showcase {
                                     .py(px(t.spacing.sm))
                                     .border_b_1()
                                     .border_color(hsla(t.palette.border))
+                                    .child(Muted::new("Design"))
+                                    .child(
+                                        div().w(px(230.0)).child(
+                                            dodai_gpui::DesignSystemSelector::new("top-design"),
+                                        ),
+                                    )
                                     .child(Muted::new("Theme"))
                                     .child(
                                         div()
-                                            .w(px(240.0))
-                                            .child(dodai_gpui::ThemeSelect::new("top-theme")),
+                                            .w(px(300.0))
+                                            .child(dodai_gpui::ThemeSelector::new("top-theme")),
                                     ),
                             )
                             .child(body.min_h_0()),
