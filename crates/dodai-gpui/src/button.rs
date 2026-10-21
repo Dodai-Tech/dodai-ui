@@ -146,7 +146,8 @@ impl Button {
         self.square = on;
         self
     }
-    /// Crop the left or right end (cut corner plus an edge tick). Only designs with cut
+    /// Crop the left or right end (cut corner plus an edge tick). Combine with
+    /// [`Button::corners`] to cut other corners instead. Only designs with cut
     /// corners draw it; others ignore it.
     pub fn crop(mut self, c: Crop) -> Self {
         self.crop = Some(c);
@@ -234,13 +235,12 @@ impl Button {
             )
         };
         let mut shape = t.role_shape(dodai_core::ShapeRole::Button);
-        if let Some(c) = self.corners {
-            shape.corners = c;
-        }
         let crop = self.crop.filter(|_| t.look().cut_corners);
         let gap = self.cut_gap.unwrap_or(t.spacing.xs);
         if let Some(c) = crop {
             style = style.with_edge_gap(c == Crop::Left, gap / 2.0);
+            // Flat: an offset shadow would sit over the cut and hide it.
+            style.shadow = None;
         }
         if let Some(c) = crop {
             shape.corners = match c {
@@ -249,6 +249,10 @@ impl Button {
             };
             // Steep 45° cut: the largest the shape allows (a third of the height).
             shape.chamfer = shape.chamfer.max(t.shape.control_height);
+        }
+        // Explicit corners win over the crop's default cut (the tick stays).
+        if let Some(c) = self.corners {
+            shape.corners = c;
         }
         let tick_colour = style.stroke.unwrap_or(fg);
         let m = self.size.map(|s| t.control_metrics(s));

@@ -168,6 +168,71 @@ impl Showcase {
                 "Corner shape",
             ));
         }
+        if t.look().cut_corners {
+            use dodai_gpui::Crop;
+            let variants = [
+                ("Primary", ButtonVariant::Primary),
+                ("Secondary", ButtonVariant::Secondary),
+                ("Outline", ButtonVariant::Outline),
+                ("Scrim", ButtonVariant::Scrim),
+                ("Danger", ButtonVariant::Danger),
+            ];
+            let side = |name: &'static str, crop: Crop| {
+                let mut r = row().child(Label::new(name));
+                for (i, (l, v)) in variants.into_iter().enumerate() {
+                    r = r.child(
+                        Button::new(SharedString::from(format!("cr-{name}-{i}")), l)
+                            .variant(v)
+                            .crop(crop),
+                    );
+                }
+                r
+            };
+            let mut gaps = row().child(Label::new("cut_gap"));
+            for g in [0.0_f32, 2.0, 4.0, 8.0] {
+                gaps = gaps.child(
+                    Button::new(SharedString::from(format!("cr-gap-{g}")), format!("{g} px"))
+                        .variant(ButtonVariant::Outline)
+                        .crop(Crop::Left)
+                        .cut_gap(g),
+                );
+            }
+            out.push((
+                "Shape",
+                "Cropped buttons",
+                section!("Cropped buttons")
+                    .child(Muted::new(
+                        "`.crop(Crop::Left | Crop::Right)` cuts one end and opens the border between a double tick on the other, on any variant. `.cut_gap(px)` sets the space between the bars. `.corners(..)` overrides which corners are cut.",
+                    ))
+                    .child(side("Left", Crop::Left))
+                    .child(side("Right", Crop::Right))
+                    .child(gaps)
+                    .child(
+                        row()
+                            .child(Label::new("With corners"))
+                            .child(
+                                Button::new("cr-diag", "Diagonal")
+                                    .variant(ButtonVariant::Outline)
+                                    .crop(Crop::Left)
+                                    .corners(dodai_core::Corners::DIAGONAL),
+                            )
+                            .child(
+                                Button::new("cr-anti", "Anti-diagonal")
+                                    .variant(ButtonVariant::Outline)
+                                    .crop(Crop::Right)
+                                    .corners(dodai_core::Corners::ANTI_DIAGONAL),
+                            )
+                            .child(
+                                Button::new("cr-all", "All corners")
+                                    .variant(ButtonVariant::Scrim)
+                                    .crop(Crop::Left)
+                                    .corners(dodai_core::Corners::ALL),
+                            ),
+                    )
+                    .into_any_element(),
+                "Cropped buttons",
+            ));
+        }
         if t.look().accent_border {
             out.push((
                 "Shape",
