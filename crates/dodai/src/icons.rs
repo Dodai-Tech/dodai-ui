@@ -2,10 +2,13 @@
 //! coverage mask, so any adapter can draw it.
 //!
 //! * Themes that declare `Look::icons == IconSet::Symbols` (Material) get the smooth Material Symbols glyph.
-//! * `IconSet::Bold` (Neo-Brutalism) gets the heavy Phosphor-based pack; a name it lacks resolves to `None`.
+//! * `IconSet::Bold` (Neo-Brutalism) gets the heavy Phosphor-based pack.
 //! * Other themes (Cyberpunk) get the hand-drawn Cyberpunk icon, found by its
-//!   own name or by the Material name it mirrors. A name without a hand-drawn
-//!   icon resolves to `None`; Material glyphs are never reshaped for them.
+//!   own name or by the Material name it mirrors.
+//!
+//! Every design draws every name of the shared vocabulary (the Dodai / Material names above plus
+//! every Phosphor name): a name a design has no icon of its own for is derived from Phosphor in
+//! that design's style. Material draws it as is, Cyberpunk facets it into straight segments.
 //!
 //! ```
 //! # #[cfg(all(feature = "cyberpunk", feature = "material"))] {
@@ -44,6 +47,15 @@ fn cyber_shapes(name: &str) -> Option<Vec<(Points, bool)>> {
     c::lookup(name)
 }
 
+/// A Phosphor icon by its own name (`acorn`, `acorn-fill`), kebab or snake case.
+fn phosphor(name: &str, filled: bool) -> Option<&'static dodai_phosphor_icons::Icon> {
+    let n = name.replace('_', "-");
+    filled
+        .then(|| dodai_phosphor_icons::get(&format!("{n}-fill")))
+        .flatten()
+        .or_else(|| dodai_phosphor_icons::get(&n))
+}
+
 /// Resolve `name` (Cyberpunk or Material Symbols spelling) for `theme`.
 /// `filled` picks the Material `-fill` variant when there is one.
 pub fn glyph(name: &str, theme: &Theme, filled: bool) -> Option<Glyph> {
@@ -56,14 +68,17 @@ pub fn glyph(name: &str, theme: &Theme, filled: bool) -> Option<Glyph> {
             .then(|| b::get(&format!("{name}-fill")))
             .flatten()
             .or_else(|| b::get(name))
-            .or_else(|| b::get(&name.replace('_', "-")))?;
+            .or_else(|| b::get(&name.replace('_', "-")))
+            .or_else(|| phosphor(name, filled))?;
         return Some(Glyph::Filled(icon.polygons()));
     }
     #[cfg(not(feature = "neobrutalism"))]
     let _ = set;
     #[cfg(feature = "cyberpunk")]
     if !rounded {
-        return cyber_shapes(name).map(Glyph::Stroked);
+        return cyber_shapes(name)
+            .map(Glyph::Stroked)
+            .or_else(|| phosphor(name, filled).map(|i| Glyph::Filled(i.faceted())));
     }
     #[cfg(feature = "material")]
     {
@@ -72,7 +87,8 @@ pub fn glyph(name: &str, theme: &Theme, filled: bool) -> Option<Glyph> {
         let icon = (filled)
             .then(|| m::outlined::get(&format!("{n}-fill")))
             .flatten()
-            .or_else(|| m::outlined::get(n))?;
+            .or_else(|| m::outlined::get(n))
+            .or_else(|| phosphor(name, filled))?;
         return Some(Glyph::Filled(icon.polygons()));
     }
     #[allow(unreachable_code)]

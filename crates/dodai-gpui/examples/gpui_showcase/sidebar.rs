@@ -211,19 +211,33 @@ impl Showcase {
     }
 }
 
-/// Distinct icons (outline forms) the design's own pack ships.
+/// Distinct icon names the design draws (outline forms): the shared vocabulary (Dodai names and
+/// every Phosphor name), plus the whole Material catalogue under Material.
 pub(crate) fn icon_total(set: dodai_core::IconSet) -> usize {
-    match set {
-        dodai_core::IconSet::Symbols => dodai_material_icons::CATEGORIES
-            .iter()
-            .map(|(_, n)| n.len())
-            .sum(),
-        dodai_core::IconSet::Bold => dodai_neobrutalism_icons::ALL
-            .iter()
-            .filter(|i| !i.name.ends_with("-fill"))
-            .count(),
-        dodai_core::IconSet::Stroked => dodai_cyberpunk_icons::ALL.len(),
+    static COUNTS: std::sync::OnceLock<(usize, usize)> = std::sync::OnceLock::new();
+    let (shared, material) = *COUNTS.get_or_init(|| (count_icons(false), count_icons(true)));
+    if set == dodai_core::IconSet::Symbols {
+        material
+    } else {
+        shared
     }
+}
+
+fn count_icons(with_material: bool) -> usize {
+    let norm = |n: &str| n.replace('-', "_");
+    let mut names: std::collections::HashSet<String> = dodai_cyberpunk_icons::ALL
+        .iter()
+        .map(|i| norm(i.name()))
+        .collect();
+    names.extend(dodai_phosphor_icons::names().map(norm));
+    if with_material {
+        names.extend(
+            dodai_material_icons::CATEGORIES
+                .iter()
+                .flat_map(|(_, n)| n.iter().map(|n| norm(n))),
+        );
+    }
+    names.len()
 }
 
 fn group_thousands(n: usize) -> String {

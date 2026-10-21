@@ -364,7 +364,7 @@ fn neon_schemes_stay_readable_for_any_accents() {
 }
 
 /// Every design resolves every icon name the library ships: a design names its own pack, and a
-/// name that pack lacks is a hole, not something another design's pack should fill in.
+/// name a design has no icon of its own for is derived from the shared Phosphor vocabulary.
 #[cfg(all(feature = "icons", feature = "cyberpunk"))]
 #[test]
 fn every_design_draws_every_icon() {
@@ -373,6 +373,11 @@ fn every_design_draws_every_icon() {
         .map(|i| i.name())
         .collect();
     assert!(names.len() > 300);
+    // The shared vocabulary: the Dodai names plus every Phosphor name.
+    let phosphor: Vec<&str> = dodai_phosphor_icons::names().collect();
+    assert!(phosphor.len() > 1400);
+    let mut names = names;
+    names.extend(phosphor);
     for sys in dodai::themes::systems() {
         let t = (sys.themes)().into_iter().next().expect("a theme");
         let missing: Vec<&&str> = names

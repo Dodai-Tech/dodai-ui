@@ -4244,6 +4244,7 @@ dependencies = [
  "dodai-cyberpunk",
  "dodai-material",
  "dodai-neobrutalism",
+ "dodai-phosphor-icons",
  "dodai-shaders",
 ]
 
@@ -4320,6 +4321,7 @@ dependencies = [
  "dodai-material-icons",
  "dodai-motion",
  "dodai-neobrutalism-icons",
+ "dodai-phosphor-icons",
  "dodai-shaders",
  "gpui",
  "image",
@@ -4371,6 +4373,14 @@ dependencies = [
 
 [[package]]
 name = "dodai-neobrutalism-icons"
+version = "0.1.0"
+dependencies = [
+ "dodai-material-icons",
+ "dodai-phosphor-icons",
+]
+
+[[package]]
+name = "dodai-phosphor-icons"
 version = "0.1.0"
 dependencies = [
  "dodai-material-icons",

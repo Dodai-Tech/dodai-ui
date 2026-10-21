@@ -154,12 +154,24 @@ impl RenderOnce for Icon {
                 if let Some(m) = material(dodai_material_icons::resolve(&w), self.filled) {
                     return glyph(size, color, m, false).into_any_element();
                 }
+                // Not in Material Symbols: the shared Phosphor vocabulary, drawn as is.
+                if let Some(m) = phosphor(&w, self.filled) {
+                    return glyph(size, color, m, false).into_any_element();
+                }
             }
+            return div().size(px(size)).flex_none().into_any_element();
         }
         #[cfg(feature = "cyberpunk")]
         let shapes = self
             .custom
             .unwrap_or_else(|| self.name.map(|n| n.shapes()).unwrap_or_default());
+        // No hand-drawn icon: the shared Phosphor vocabulary, faceted into the angular style.
+        #[cfg(feature = "cyberpunk")]
+        if shapes.is_empty() {
+            if let Some(m) = self.label.as_deref().and_then(|w| phosphor(w, self.filled)) {
+                return glyph(size, color, m, true).into_any_element();
+            }
+        }
         #[cfg(not(feature = "cyberpunk"))]
         let shapes: Vec<dodai_cyberpunk_icons::Shape> = Vec::new();
         let k = size / 24.0;
@@ -195,12 +207,21 @@ fn material(name: &str, filled: bool) -> Option<&'static dodai_material_icons::I
     outlined::get(name)
 }
 
+/// A Phosphor icon by its own name (`"acorn"`, kebab or snake case).
+fn phosphor(name: &str, filled: bool) -> Option<&'static dodai_phosphor_icons::Icon> {
+    let n = name.replace('_', "-");
+    filled
+        .then(|| dodai_phosphor_icons::get(&format!("{n}-fill")))
+        .flatten()
+        .or_else(|| dodai_phosphor_icons::get(&n))
+}
+
 /// A filled glyph: all subpaths in one path, non-zero rule (holes wind opposite).
-#[cfg(any(feature = "material", feature = "neobrutalism"))]
+#[allow(dead_code)]
 fn glyph(
     size: f32,
     color: Hsla,
-    icon: &'static dodai_material_icons::Icon,
+    icon: &'static dodai_phosphor_icons::Icon,
     faceted: bool,
 ) -> impl IntoElement {
     let src = if faceted {

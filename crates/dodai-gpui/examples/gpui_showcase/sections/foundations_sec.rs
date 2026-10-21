@@ -124,7 +124,8 @@ impl Showcase {
         section = match set {
             dodai_core::IconSet::Symbols => section
                 .child(filled_toggle)
-                .child(self.icon_browser(&t, &query, cx)),
+                .child(Muted::new("MATERIAL SYMBOLS"))
+                .child(self.icon_browser(&t, &query, cx, IconSource::Material)),
             dodai_core::IconSet::Bold => {
                 section
                     .child(filled_toggle)
@@ -132,9 +133,25 @@ impl Showcase {
             }
             dodai_core::IconSet::Stroked => section.child(icons_view(&t, &query, false, true)),
         };
+        // Parity: every design draws the whole shared vocabulary, in its own style.
+        let vocab = dodai_phosphor_icons::names().count();
+        section = section
+            .child(Muted::new(format!(
+                "SHARED VOCABULARY · {vocab} Phosphor names, drawn in this design's style"
+            )))
+            .child(self.icon_browser(&t, &query, cx, IconSource::Phosphor));
         out.push(("Foundations", "Icons", section.into_any_element(), "Icons"));
         out
     }
+}
+
+/// Which category list an icon browser walks.
+#[derive(Clone, Copy)]
+enum IconSource {
+    /// Material Symbols by Material's own categories.
+    Material,
+    /// The shared Phosphor vocabulary by Phosphor's categories.
+    Phosphor,
 }
 
 impl Showcase {
@@ -145,20 +162,25 @@ impl Showcase {
         t: &dodai_core::Theme,
         query: &str,
         cx: &mut Context<Self>,
+        kind: IconSource,
     ) -> gpui::Div {
+        let (source, tag): (&'static [(&'static str, &'static [&'static str])], &str) = match kind {
+            IconSource::Material => (dodai_material_icons::CATEGORIES, "mi"),
+            IconSource::Phosphor => (dodai_phosphor_icons::CATEGORIES, "ph"),
+        };
         const PREVIEW: usize = 24;
         const MAX_HITS: usize = 480;
         let q = query.trim().to_lowercase().replace(' ', "_");
         let searching = !q.is_empty();
         let mut out = div().flex().flex_col().gap(px(t.spacing.lg));
         let mut total = 0usize;
-        for &(cat, names) in dodai_material_icons::CATEGORIES {
+        for &(cat, names) in source {
             let hits: Vec<&'static str> = names
                 .iter()
                 .copied()
                 .filter(|n| {
                     !searching
-                        || n.contains(q.as_str())
+                        || n.replace('-', "_").contains(q.as_str())
                         || cat
                             .to_lowercase()
                             .contains(query.trim().to_lowercase().as_str())
@@ -180,7 +202,7 @@ impl Showcase {
             for (i, &n) in hits.iter().take(cap).enumerate() {
                 grid = grid.child(
                     div()
-                        .id(SharedString::from(format!("mi-{cat}-{i}")))
+                        .id(SharedString::from(format!("{tag}-{cat}-{i}")))
                         .flex()
                         .flex_col()
                         .items_center()
@@ -191,16 +213,26 @@ impl Showcase {
                         .border_1()
                         .border_color(hsla(t.palette.border))
                         .on_click(move |_, _, cx| {
-                            cx.write_to_clipboard(gpui::ClipboardItem::new_string(format!(
-                                "MaterialIcon::new(\"{n}\")"
-                            )))
+                            cx.write_to_clipboard(gpui::ClipboardItem::new_string(match kind {
+                                IconSource::Material => format!("MaterialIcon::new(\"{n}\")"),
+                                IconSource::Phosphor => format!("Icon::named(\"{n}\")"),
+                            }))
                         })
-                        .child(
-                            dodai_gpui::MaterialIcon::new(n)
+                        .child(match kind {
+                            IconSource::Material => dodai_gpui::MaterialIcon::new(n)
                                 .size(28.0)
                                 .filled(self.icon_filled)
-                                .color(hsla(t.palette.primary)),
-                        )
+                                .color(hsla(t.palette.primary))
+                                .into_any_element(),
+                            // Drawn by the active design: its own icon if it has one, else
+                            // the Phosphor drawing in the design's style.
+                            IconSource::Phosphor => dodai_gpui::Icon::named(n)
+                                .pack(dodai_gpui::IconPack::Auto)
+                                .size(28.0)
+                                .filled(self.icon_filled)
+                                .color(hsla(t.palette.primary))
+                                .into_any_element(),
+                        })
                         .child({
                             // Centred when it fits; long names stay left-aligned so the
                             // ellipsis clips the end, not both sides.
@@ -232,7 +264,7 @@ impl Showcase {
                 block = block.child(
                     div().flex().child(
                         Button::new(
-                            SharedString::from(format!("mi-more-{cat}")),
+                            SharedString::from(format!("{tag}-more-{cat}")),
                             if open {
                                 "Show fewer".to_string()
                             } else {
@@ -250,7 +282,7 @@ impl Showcase {
                 );
             }
             out = out.child(dodai_gpui::lazy(
-                SharedString::from(format!("mi-cat-{cat}")),
+                SharedString::from(format!("{tag}-cat-{cat}")),
                 block,
             ));
         }

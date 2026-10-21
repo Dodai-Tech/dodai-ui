@@ -36,6 +36,7 @@ dodai-charts-core = { workspace = true }
 dodai-cyberpunk-icons = { workspace = true }
 dodai-material-icons = { workspace = true, optional = true }
 dodai-neobrutalism-icons = { workspace = true, optional = true }
+dodai-phosphor-icons = { workspace = true }
 gpui = { workspace = true }
 dodai-shaders = { workspace = true, optional = true }
 image = { version = "0.25", default-features = false, optional = true }

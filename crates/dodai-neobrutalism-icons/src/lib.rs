@@ -12,12 +12,17 @@
 //! assert!(dodai_neobrutalism_icons::get("home-fill").is_some());
 //! ```
 //!
+//! The whole Phosphor set is here: the Dodai / Material spellings above, plus every other
+//! Phosphor icon under its own name (`acorn`, `address-book`, `airplane-tilt-fill`), grouped by
+//! Phosphor's own [`CATEGORIES`].
+//!
 //! Icon artwork © Phosphor Icons, MIT (see `LICENSE-MIT`).
 
 mod bold;
 
 pub use bold::ALL;
 pub use dodai_material_icons::Icon;
+pub use dodai_phosphor_icons::CATEGORIES;
 
 /// Look an icon up by name (e.g. `"home"`, `"home-fill"`).
 pub fn get(name: &str) -> Option<&'static Icon> {
@@ -47,6 +52,18 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn every_phosphor_icon_is_in_one_category_and_drawn() {
+        let mut seen = std::collections::HashSet::new();
+        for (_, names) in CATEGORIES {
+            for n in *names {
+                assert!(seen.insert(*n), "{n} listed twice");
+                assert!(get(n).is_some(), "{n} missing");
+            }
+        }
+        assert!(seen.len() > 1400);
     }
 
     #[test]

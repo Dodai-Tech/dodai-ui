@@ -14,3 +14,4 @@ exclude      = ["scripts/"]
 
 [dependencies]
 dodai-material-icons = { workspace = true }
+dodai-phosphor-icons = { workspace = true }

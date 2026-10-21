@@ -1098,6 +1098,9 @@ impl Showcase {
         let pw = cx.new(|cx| TextInput::new(cx).placeholder("password").password(true));
         let dt_filter = cx.new(|cx| TextInput::new(cx).placeholder("Filter rows…"));
         let icon_search = cx.new(|cx| TextInput::new(cx).placeholder("Search icons or types…"));
+        if let Ok(q) = std::env::var("DODAI_ICON_QUERY") {
+            icon_search.update(cx, |i, cx| i.set_text(q, cx));
+        }
         let in_outlined = cx.new(|cx| TextInput::new(cx).label("Email").value("ada@example.com"));
         let in_filled = cx.new(|cx| TextInput::new(cx).label("Name").filled(true));
         let in_notes = cx.new(|cx| {

@@ -22,6 +22,7 @@ shaders   = ["dep:dodai-shaders"]
 
 [dependencies]
 dodai-core       = { workspace = true }
+dodai-phosphor-icons = { workspace = true }
 dodai-cyberpunk  = { workspace = true, optional = true }
 dodai-material   = { workspace = true, optional = true }
 dodai-neobrutalism = { workspace = true, optional = true }
