@@ -253,6 +253,7 @@ impl RenderOnce for Spinner {
                             scanline: c,
                             shimmer: None,
                             elevation: None,
+                            cut_ring: None,
                         };
                         let _ = glow;
                         el = el.child(

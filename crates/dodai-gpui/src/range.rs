@@ -11,8 +11,6 @@ use gpui::{
 };
 use std::rc::Rc;
 
-const THUMB: f32 = 16.0;
-
 /// Which thumb (`0` = low, `1` = high) is closest to `v`; ties go to the
 /// side that can still move toward `v`.
 pub fn nearest_thumb(lo: f32, hi: f32, v: f32) -> usize {
@@ -113,6 +111,7 @@ impl RangeSlider {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
+        let thumb_size = t.sizes().slider_thumb;
         let vertical = self.direction == Direction::Vertical;
         let st = window.use_keyed_state(self.id.clone(), cx, |_, _| RangeState::default());
         let (min, max, step, lo, hi) = (self.min, self.max, self.step, self.lo, self.hi);
@@ -134,7 +133,7 @@ impl RangeSlider {
                 } else {
                     ((p.x - b.origin.x).into(), b.size.width.into())
                 };
-                let v = slider_value(pos, 0.0, len, THUMB, min, max, step);
+                let v = slider_value(pos, 0.0, len, thumb_size, min, max, step);
                 if pick {
                     st.update(cx, |s, _| s.active = Some(nearest_thumb(lo, hi, v)));
                 }
@@ -149,7 +148,7 @@ impl RangeSlider {
         let (mv, up, up2) = (st.clone(), st.clone(), st.clone());
         let k = t.toggle(true, ControlState::Idle);
         let thumb_style = ShapeStyle::from_tokens(&t, Some(k.track), Some(k.border), true, false);
-        let thumb_shape = round_shape(&t.shape, THUMB);
+        let thumb_shape = round_shape(&t.shape, thumb_size);
         let pk = t.progress(None);
         let track_shape = crate::paint::round_shape(&t.shape, 6.0);
         let fill_style = ShapeStyle::from_tokens(&t, Some(pk.fill), None, true, false);
@@ -178,20 +177,22 @@ impl RangeSlider {
         let thumb = |f: f32| {
             let th = shaped(&thumb_shape, thumb_style)
                 .absolute()
-                .w(px(THUMB))
-                .h(px(THUMB));
+                .w(px(thumb_size))
+                .h(px(thumb_size));
             if vertical {
-                th.left(px(2.0)).top(relative(1.0 - f)).mt(px(-THUMB / 2.0))
+                th.left(px(2.0))
+                    .top(relative(1.0 - f))
+                    .mt(px(-thumb_size / 2.0))
             } else {
-                th.top(px(2.0)).left(relative(f)).ml(px(-THUMB / 2.0))
+                th.top(px(2.0)).left(relative(f)).ml(px(-thumb_size / 2.0))
             }
         };
         let tick_c = hsla(t.palette.border_strong);
         let mut rail = div().absolute().top_0().bottom_0().left_0().right_0();
         rail = if vertical {
-            rail.top(px(THUMB / 2.0)).bottom(px(THUMB / 2.0))
+            rail.top(px(thumb_size / 2.0)).bottom(px(thumb_size / 2.0))
         } else {
-            rail.left(px(THUMB / 2.0)).right(px(THUMB / 2.0))
+            rail.left(px(thumb_size / 2.0)).right(px(thumb_size / 2.0))
         };
         if self.ticks {
             for f in tick_fractions(min, max, step) {
@@ -218,9 +219,11 @@ impl RangeSlider {
             .items_center()
             .cursor_pointer();
         let base = if vertical {
-            base.w(px(THUMB + 4.0)).h(px(self.length)).justify_center()
+            base.w(px(thumb_size + 4.0))
+                .h(px(self.length))
+                .justify_center()
         } else {
-            base.w_full().h(px(THUMB + 4.0))
+            base.w_full().h(px(thumb_size + 4.0))
         };
         let slider = base
             .child(

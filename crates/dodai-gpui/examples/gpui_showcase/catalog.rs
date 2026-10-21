@@ -36,6 +36,7 @@ pub(crate) fn caps(title: &str) -> Caps {
         | "Input"
         | "Collapsible sidebar"
         | "Border"
+        | "Shape gallery"
         | "Colour palette"
         | "Type scale"
         | "Motion tokens"
@@ -134,7 +135,7 @@ pub(crate) fn section_id(title: &str) -> u32 {
 pub(crate) fn cat_blurb(name: &str) -> &'static str {
     match name {
         "Foundations" => "Design tokens: colour, type, spacing.",
-        "Shape" => "Glow, scanlines, corner cuts and borders.",
+        "Shape" => "Corners, borders and shadows; glow and cuts where a design has them.",
         "Actions" => "Buttons and triggers.",
         "Inputs" => "Text, choice, date and form controls.",
         "Navigation" => "Menus, tabs, overlays and sidebars.",

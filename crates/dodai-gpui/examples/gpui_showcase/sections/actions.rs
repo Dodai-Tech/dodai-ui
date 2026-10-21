@@ -42,25 +42,17 @@ impl Showcase {
                 Button::new("b-scrim", "Scrim").variant(ButtonVariant::Scrim)
             ))
             .children(t.look().cut_corners.then(|| {
-                // Edgerunners-style: one cut corner, top-right or bottom-right.
-                let tr = dodai_core::Corners {
-                    top_right: true,
-                    ..dodai_core::Corners::NONE
-                };
-                let br = dodai_core::Corners {
-                    bottom_right: true,
-                    ..dodai_core::Corners::NONE
-                };
+                // Phantom Liberty: cropped left or right, with an edge tick.
                 row()
                     .child(
-                        Button::new("b-scrim-tr", "Stream now")
+                        Button::new("b-scrim-l", "Buy now")
                             .variant(ButtonVariant::Scrim)
-                            .corners(tr),
+                            .crop(dodai_gpui::Crop::Left),
                     )
                     .child(
-                        Button::new("b-scrim-br", "Watch trailer")
+                        Button::new("b-scrim-r", "Watch trailer")
                             .variant(ButtonVariant::Scrim)
-                            .corners(br),
+                            .crop(dodai_gpui::Crop::Right),
                     )
             }))
             .child(cut(

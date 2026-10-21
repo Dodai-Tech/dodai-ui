@@ -66,42 +66,43 @@ impl Showcase {
                 .child(chip("cc-none", "None", cur == C::NONE, Some(C::NONE)))
                 .child(chip("cc-theme", "Theme default", !over, None))
         };
-        let shape_gallery = col()
-            .child(
-                row()
-                    .child(Button::new("sg-p", "Primary"))
-                    .child(Button::new("sg-s", "Secondary").variant(ButtonVariant::Secondary))
-                    .child(Button::new("sg-o", "Outline").variant(ButtonVariant::Outline))
-                    .child(Button::new("sg-d", "Danger").variant(ButtonVariant::Danger)),
-            )
-            .child(
-                row()
-                    .child(Tag::new("online", Tone::Success).solid(true))
-                    .child(Tag::new("warn", Tone::Warning))
-                    .child(Tag::new("error", Tone::Danger).solid(true)),
-            )
-            .child(
-                row()
-                    .items_start()
+        let shape_gallery =
+            || {
+                col()
                     .child(
-                        div()
-                            .flex_1()
-                            .min_w(px(220.0))
-                            .child(Card::new(CardVariant::Outlined).headline("Card")),
+                        row()
+                            .child(Button::new("sg-p", "Primary"))
+                            .child(
+                                Button::new("sg-s", "Secondary").variant(ButtonVariant::Secondary),
+                            )
+                            .child(Button::new("sg-o", "Outline").variant(ButtonVariant::Outline))
+                            .child(Button::new("sg-d", "Danger").variant(ButtonVariant::Danger)),
                     )
                     .child(
-                        div()
-                            .flex_1()
-                            .min_w(px(220.0))
-                            .child(Card::new(CardVariant::Elevated).headline("Elevated card")),
+                        row()
+                            .child(Tag::new("online", Tone::Success).solid(true))
+                            .child(Tag::new("warn", Tone::Warning))
+                            .child(Tag::new("error", Tone::Danger).solid(true)),
                     )
                     .child(
-                        div()
-                            .flex_1()
-                            .min_w(px(220.0))
-                            .child(Panel::new().title("Panel").child(Muted::new("Panel body"))),
-                    ),
-            );
+                        row()
+                            .items_start()
+                            .child(
+                                div()
+                                    .flex_1()
+                                    .min_w(px(220.0))
+                                    .child(Card::new(CardVariant::Outlined).headline("Card")),
+                            )
+                            .child(
+                                div().flex_1().min_w(px(220.0)).child(
+                                    Card::new(CardVariant::Elevated).headline("Elevated card"),
+                                ),
+                            )
+                            .child(div().flex_1().min_w(px(220.0)).child(
+                                Panel::new().title("Panel").child(Muted::new("Panel body")),
+                            )),
+                    )
+            };
         let shape_props = div()
             .flex()
             .flex_col()
@@ -127,6 +128,19 @@ impl Showcase {
                     .child(Muted::new("key: l")),
             );
         let m = me.clone();
+        // Every design: its own corner radius, border and shadow on real components.
+        out.push((
+            "Shape",
+            "Shape gallery",
+            section!("Shape gallery")
+                .child(Muted::new(
+                    "The design system's own corners, borders and shadows on real components, with the tokens behind them.",
+                ))
+                .child(shape_tokens_view(&t))
+                .child(shape_gallery())
+                .into_any_element(),
+            "Shape gallery",
+        ));
         if t.look().luminous {
             out.push((
                 "Shape",
@@ -149,7 +163,7 @@ impl Showcase {
                         "The corner cut applies to every component in every theme, immediately. \"Theme default\" restores each design system's own shape.",
                     ))
                     .child(corner_picker)
-                    .child(shape_gallery)
+                    .child(shape_gallery())
                     .into_any_element(),
                 "Corner shape",
             ));

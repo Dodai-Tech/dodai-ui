@@ -38,6 +38,16 @@ pub fn button_style(
 
 type Refine = Box<dyn FnOnce(Stateful<gpui::Div>) -> Stateful<gpui::Div>>;
 
+/// Which end of a [`Button`] is cropped (the Phantom Liberty cut-corner buttons). The cut
+/// sits on one corner; a small tick mark on the opposite edge points at the neighbour.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Crop {
+    /// Top-left corner cut, tick on the right edge.
+    Left,
+    /// Bottom-right corner cut, tick on the left edge.
+    Right,
+}
+
 /// Themed button. Construct with an id so hover/press state can be tracked.
 ///
 /// ```ignore
@@ -57,6 +67,8 @@ pub struct Button {
     elevated: bool,
     size: Option<dodai_core::ControlSize>,
     square: bool,
+    crop: Option<Crop>,
+    cut_gap: Option<f32>,
 }
 
 impl Button {
@@ -72,6 +84,8 @@ impl Button {
             elevated: false,
             size: None,
             square: false,
+            crop: None,
+            cut_gap: None,
             on_click: None,
             refine: None,
         }
@@ -130,6 +144,19 @@ impl Button {
     /// Square (rounded-rectangle) shape instead of the pill, on rounded designs.
     pub fn square(mut self, on: bool) -> Self {
         self.square = on;
+        self
+    }
+    /// Crop the left or right end (cut corner plus an edge tick). Only designs with cut
+    /// corners draw it; others ignore it.
+    pub fn crop(mut self, c: Crop) -> Self {
+        self.crop = Some(c);
+        self
+    }
+    /// Space in px between a cropped button's border and its inner contour line, and between
+    /// the two bars of the edge tick (default: the theme's `xs` spacing). `0.0` draws a single
+    /// tick and no inner line. Only used with [`Button::crop`].
+    pub fn cut_gap(mut self, px: f32) -> Self {
+        self.cut_gap = Some(px.max(0.0));
         self
     }
     /// Sweep a shimmer highlight over the button (e.g. while busy), clipped to its shape.
@@ -211,13 +238,26 @@ impl Button {
         if let Some(c) = self.corners {
             shape.corners = c;
         }
+        let crop = self.crop.filter(|_| t.look().cut_corners);
+        let gap = self.cut_gap.unwrap_or(t.spacing.xs);
+        if crop.is_some() && gap > 0.0 {
+            style = style.with_cut_ring(gap);
+        }
+        if let Some(c) = crop {
+            shape.corners = match c {
+                Crop::Left => dodai_core::Corners::TOP_LEFT,
+                Crop::Right => dodai_core::Corners::BOTTOM_RIGHT,
+            };
+        }
+        let tick_colour = style.stroke.unwrap_or(fg);
         let m = self.size.map(|s| t.control_metrics(s));
         if let (true, Some(m), true) = (self.square, m, t.look().tonal) {
             shape.radius = m.square_radius;
         }
         let mut el = track(shaped_id(self.id, &shape, style), &st)
             .h(px(m.map_or(t.shape.control_height, |m| m.height)))
-            .px(px(m.map_or(t.button_padding(), |m| m.padding)))
+            .px(px(m.map_or(t.button_padding(), |m| m.padding)
+                + if crop.is_some() { t.spacing.md } else { 0.0 }))
             .mt(px(lift + sink + if pressed { 1.0 } else { 0.0 }))
             .mb(px(-lift - sink + if pressed { -1.0 } else { 0.0 }))
             .ml(px(sink))
@@ -229,6 +269,23 @@ impl Button {
             .text_size(px(m.map_or(t.typography.size_md, |m| m.text_size)))
             .text_color(fg)
             .child(div().child(format_label(&t.typography, &self.label)));
+        if let Some(c) = crop {
+            let bar = t.shape.border_width.max(1.0);
+            let tick = div()
+                .absolute()
+                .top(gpui::relative(0.5))
+                .mt(px(-(bar + gap / 2.0)))
+                .w(px(t.spacing.md))
+                .flex()
+                .flex_col()
+                .gap(px(gap))
+                .child(div().h(px(bar)).bg(tick_colour))
+                .children((gap > 0.0).then(|| div().h(px(bar)).bg(tick_colour)));
+            el = el.relative().child(match c {
+                Crop::Left => tick.right(px(0.0)),
+                Crop::Right => tick.left(px(0.0)),
+            });
+        }
         if let (Some(r), true) = (self.radii, t.look().tonal) {
             el = el
                 .rounded_tl(px(r[0]))
