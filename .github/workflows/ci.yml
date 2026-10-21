@@ -42,7 +42,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: python3 scripts/gen-kernels.py
+      - uses: hustcer/setup-nu@v3
+        with:
+          version: "*"
+      - run: nu scripts/gen-kernels.nu
       - run: git diff --exit-code -- crates/dodai-shaders-kernels/src/entries.rs
 
   # dist/ (DTCG tokens, CSS, SVG icons) is generated; keep it committed and fresh.

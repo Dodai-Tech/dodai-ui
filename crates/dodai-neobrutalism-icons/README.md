@@ -9,5 +9,5 @@ let home = dodai_neobrutalism_icons::get("home").unwrap();
 let polys = home.polygons(); // 24×24 polygons, fill with the non-zero rule
 ```
 
-`scripts/generate.py` rebuilds `src/bold.rs` from a Phosphor checkout; `scripts/names.py`
+`scripts/generate.nu` rebuilds `src/bold.rs` from a Phosphor checkout; `scripts/names.nuon`
 maps Dodai names to Phosphor names. Licence: MIT, © Phosphor Icons (see `LICENSE-MIT`).

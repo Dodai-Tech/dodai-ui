@@ -22,7 +22,7 @@ let on = outlined::get("favorite-fill");
 Styles are Cargo features so you compile only what you use (`outlined`,
 `rounded`, `sharp`). Weight 400, 24 px optical size.
 
-Regenerate from upstream with `scripts/generate.py` (see the header).
+Regenerate from upstream with `scripts/generate.nu` (see the header).
 
 Icon artwork © Google, licensed under the Apache License 2.0
 (`LICENSE-APACHE`). Part of [Dodai UI](https://github.com/sorinirimies/dodai-ui).
