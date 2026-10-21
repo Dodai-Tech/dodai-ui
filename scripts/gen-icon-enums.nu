@@ -46,7 +46,7 @@ def emit-consts [ty: string, ctor: string, enum_name: string, names: list<string
   print $"($ty): ($rows | length) constants"
 }
 
-let vocab = ((cyberpunk-names) ++ (table-names crates/dodai-phosphor-icons/src/regular.rs))
+let vocab = ((cyberpunk-names) ++ (table-names crates/dodai-icons/src/phosphor/regular.rs))
 emit "IconId" "An icon of the shared vocabulary: every design system draws every one, in its own style." $vocab crates/dodai-icon-id/src/id.rs true
 emit "MaterialSymbol" "A Material Symbols catalogue icon." (table-names crates/dodai-material-icons/src/outlined.rs) crates/dodai-material-icons/src/symbol.rs false
 

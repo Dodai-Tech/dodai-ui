@@ -17,7 +17,7 @@ cyberpunk = ["dep:dodai-cyberpunk", "dodai-icons?/cyberpunk"]
 material  = ["dep:dodai-material", "dodai-icons?/material"]
 neobrutalism = ["dep:dodai-neobrutalism", "dodai-icons?/neobrutalism"]
 ## Icon packs of the enabled design systems.
-icons     = ["dep:dodai-icons", "dodai-cyberpunk?/icons", "dodai-material?/icons", "dodai-neobrutalism?/icons"]
+icons     = ["dep:dodai-icons", "dodai-cyberpunk?/icons", "dodai-material?/icons"]
 shaders   = ["dep:dodai-shaders"]
 
 [dependencies]

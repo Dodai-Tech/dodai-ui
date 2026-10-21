@@ -154,7 +154,7 @@ impl Showcase {
     ) -> gpui::Div {
         // Phosphor's categories, then whatever the shared names hold beyond them (the Dodai
         // names Phosphor does not have), so each icon is listed once.
-        let mut source: Vec<(&'static str, Vec<IconId>)> = dodai_phosphor_icons::CATEGORIES
+        let mut source: Vec<(&'static str, Vec<IconId>)> = dodai_icons::CATEGORIES
             .iter()
             .map(|&(c, ids)| (c, ids.to_vec()))
             .collect();

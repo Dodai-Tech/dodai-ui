@@ -16,7 +16,13 @@
 //! assert_eq!(g.coverage(24).len(), 24 * 24);
 //! ```
 
+#[cfg(feature = "neobrutalism")]
+mod bold;
+mod phosphor;
+
 pub use dodai_icons_core::{Glyph, IconId, IconPack, PackChain, Points, STROKE};
+/// The icon set grouped into categories (for browsers and pickers).
+pub use phosphor::CATEGORIES;
 
 /// Cyberpunk's polyline modifiers (`Off`, `Add`, `Circle`, ...), derived from a drawn icon.
 #[cfg(feature = "cyberpunk")]
@@ -97,7 +103,7 @@ impl IconPack for PhosphorPack {
         }
     }
     fn glyph(&self, id: IconId, filled: bool) -> Option<Glyph> {
-        dodai_phosphor_icons::get(id, filled).map(|i| {
+        phosphor::get(id, filled).map(|i| {
             if self.faceted {
                 Glyph::Filled(i.faceted())
             } else {
@@ -145,7 +151,7 @@ impl IconPack for BoldPack {
         "phosphor-bold"
     }
     fn glyph(&self, id: IconId, filled: bool) -> Option<Glyph> {
-        dodai_neobrutalism_icons::get(id, filled).map(filled_glyph)
+        bold::get(id, filled).map(filled_glyph)
     }
 }
 
