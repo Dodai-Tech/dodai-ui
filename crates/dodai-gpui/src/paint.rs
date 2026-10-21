@@ -40,6 +40,9 @@ pub struct ShapeStyle {
     /// A second thin line parallel to every cut corner, this many px inside the border
     /// (the Phantom Liberty cropped buttons). Needs `stroke`.
     pub cut_ring: Option<f32>,
+    /// Interrupt the border on the right (`true`) or left (`false`) side, centred vertically,
+    /// over a span of `2 * half` px (the empty space between a cropped button's tick bars).
+    pub edge_gap: Option<(bool, f32)>,
 }
 
 /// The two M3 shadow layers for an elevation level: `(offset_y, blur, spread, alpha)`.
@@ -102,7 +105,14 @@ impl ShapeStyle {
             shimmer: None,
             elevation: None,
             cut_ring: None,
+            edge_gap: None,
         }
+    }
+
+    /// Leave the right/left border open over `2 * half` px at mid-height.
+    pub fn with_edge_gap(mut self, right: bool, half: f32) -> Self {
+        self.edge_gap = Some((right, half));
+        self
     }
 
     /// Add the inner line along cut corners, `gap` px inside the border.
@@ -324,7 +334,13 @@ pub fn paint_polygon(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape,
         if bw > 0.0 {
             let pts = inset_outline(shape, w, h, bw / 2.0);
             let mut b = PathBuilder::stroke(px(bw));
-            b.add_polygon(&poly(bounds.origin, &pts, (0.0, 0.0)), true);
+            match s
+                .edge_gap
+                .and_then(|(r, half)| open_at_edge(&pts, r, h / 2.0, half))
+            {
+                Some(open) => b.add_polygon(&poly(bounds.origin, &open, (0.0, 0.0)), false),
+                None => b.add_polygon(&poly(bounds.origin, &pts, (0.0, 0.0)), true),
+            }
             if let Ok(p) = b.build() {
                 window.paint_path(p, c);
             }
@@ -340,6 +356,40 @@ pub fn paint_polygon(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape,
             }
         }
     }
+}
+
+/// The closed outline as an open path that skips `mid ± half` on the right or left vertical
+/// side. `None` when that side has no vertical edge there.
+fn open_at_edge(pts: &[(f32, f32)], right: bool, mid: f32, half: f32) -> Option<Vec<(f32, f32)>> {
+    let n = pts.len();
+    let x = pts
+        .iter()
+        .map(|p| p.0)
+        .fold(if right { f32::MIN } else { f32::MAX }, |a, b| {
+            if right {
+                a.max(b)
+            } else {
+                a.min(b)
+            }
+        });
+    let i = (0..n).find(|&i| {
+        let (a, b) = (pts[i], pts[(i + 1) % n]);
+        (a.0 - x).abs() < 0.5
+            && (b.0 - x).abs() < 0.5
+            && a.1.min(b.1) < mid - half
+            && a.1.max(b.1) > mid + half
+    })?;
+    let (p, q) = (pts[i], pts[(i + 1) % n]);
+    let (lo, hi) = (mid - half, mid + half);
+    let (first, second) = if p.1 < q.1 {
+        ((x, lo), (x, hi))
+    } else {
+        ((x, hi), (x, lo))
+    };
+    let mut out = vec![second];
+    out.extend((0..n).map(|k| pts[(i + 1 + k) % n]));
+    out.push(first);
+    Some(out)
 }
 
 /// For each diagonal edge of a closed outline: that edge plus a short lead-in along the two

@@ -240,6 +240,9 @@ impl Button {
         }
         let crop = self.crop.filter(|_| t.look().cut_corners);
         let gap = self.cut_gap.unwrap_or(t.spacing.xs);
+        if let Some(c) = crop {
+            style = style.with_edge_gap(c == Crop::Left, gap / 2.0);
+        }
         if crop.is_some() && gap > 0.0 {
             style = style.with_cut_ring(gap);
         }
@@ -248,6 +251,8 @@ impl Button {
                 Crop::Left => dodai_core::Corners::TOP_LEFT,
                 Crop::Right => dodai_core::Corners::BOTTOM_RIGHT,
             };
+            // Steep 45° cut: the largest the shape allows (a third of the height).
+            shape.chamfer = shape.chamfer.max(t.shape.control_height);
         }
         let tick_colour = style.stroke.unwrap_or(fg);
         let m = self.size.map(|s| t.control_metrics(s));
