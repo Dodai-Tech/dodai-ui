@@ -290,7 +290,7 @@ fn list_menu_tooltip_and_focus_follow_the_spec() {
     }
     for t in themes::all()
         .into_iter()
-        .filter(|t| t.meta.family != "material")
+        .filter(|t| t.meta.family != "material" && t.meta.family != "neobrutalism")
     {
         assert_eq!(
             t.menu_row_height(),
@@ -315,10 +315,10 @@ fn list_menu_tooltip_and_focus_follow_the_spec() {
 #[test]
 fn the_spec_lives_with_the_design_system() {
     for t in themes::all() {
-        let want = if t.meta.family == "material" {
-            "Material 3"
-        } else {
-            "Cyberpunk"
+        let want = match t.meta.family {
+            "material" => "Material 3",
+            "neobrutalism" => "Neo-Brutalism",
+            _ => "Cyberpunk",
         };
         assert_eq!(t.spec.name(), want, "{}", t.id());
     }
@@ -334,7 +334,11 @@ fn look_flags_belong_to_the_design() {
         .into_iter()
         .filter(|t| t.meta.family != "material")
     {
-        assert_eq!(t.look(), dodai::Look::default(), "{}", t.id());
+        let want = dodai::Look {
+            sink: t.meta.family == "neobrutalism",
+            ..dodai::Look::default()
+        };
+        assert_eq!(t.look(), want, "{}", t.id());
     }
 }
 

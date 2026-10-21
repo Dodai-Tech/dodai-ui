@@ -119,6 +119,7 @@ impl DesignSpec for Material3 {
             soft_elevation: true,
             floating_label: true,
             symbol_icons: true,
+            sink: false,
         }
     }
 

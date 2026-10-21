@@ -9,6 +9,7 @@
 //! |---|---|
 //! | `cyberpunk` | [`dodai-cyberpunk`](https://docs.rs/dodai-cyberpunk) (+ `dodai-cyberpunk-icons`) |
 //! | `material` | [`dodai-material`](https://docs.rs/dodai-material) (+ `dodai-material-icons`) |
+//! | `neobrutalism` | [`dodai-neobrutalism`](https://docs.rs/dodai-neobrutalism) |
 //! | `shaders` | [`dodai-shaders`](https://docs.rs/dodai-shaders) |
 //!
 //! ```
@@ -23,6 +24,8 @@ pub use dodai_core::*;
 pub use dodai_cyberpunk as cyberpunk;
 #[cfg(feature = "material")]
 pub use dodai_material as material;
+#[cfg(feature = "neobrutalism")]
+pub use dodai_neobrutalism as neobrutalism;
 #[cfg(feature = "shaders")]
 pub use dodai_shaders as shaders;
 
@@ -37,6 +40,8 @@ pub mod themes {
     pub use dodai_cyberpunk as cyberpunk;
     #[cfg(feature = "material")]
     pub use dodai_material as material;
+    #[cfg(feature = "neobrutalism")]
+    pub use dodai_neobrutalism as neobrutalism;
 
     /// A registered design system: its family id, display name and themes.
     #[derive(Clone, Copy)]
@@ -66,6 +71,12 @@ pub mod themes {
             family: "material",
             name: "Material 3",
             themes: dodai_material::variants,
+        });
+        #[cfg(feature = "neobrutalism")]
+        v.push(DesignSystem {
+            family: "neobrutalism",
+            name: "Neo-Brutalism",
+            themes: dodai_neobrutalism::variants,
         });
         v
     }

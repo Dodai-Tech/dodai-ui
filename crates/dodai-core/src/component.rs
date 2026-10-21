@@ -703,6 +703,12 @@ impl Theme {
         }
     }
 
+    /// Colour of the hard offset shadow of hard-edged designs.
+    pub fn hard_shadow_color(&self) -> Color {
+        hook!(self.hard_shadow_color());
+        self.palette.primary_active
+    }
+
     /// Keyboard focus indicator `(colour, thickness px)`.
     pub fn focus_ring(&self) -> (Color, f32) {
         hook!(self.focus_ring());

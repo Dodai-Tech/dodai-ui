@@ -34,6 +34,8 @@ Glow is configurable: `theme.with_glow_intensity(1.5)` (0 = off, 1 = as designed
 
 Variants: `cyberpunk` (yellow), `cyberpunk-cyan` (cyan), `cyberpunk-red` (red), each also as a light theme on warm paper: `cyberpunk-light`, `cyberpunk-cyan-light`, `cyberpunk-red-light` (same chamfered shape, deeper neons for contrast, glow dialled down).
 
+**Neo-Brutalism** (`neobrutalism[-accent][-dark]`, 12 themes): 2 px outlines, 4 px hard shadows, flat colour blocks, buttons that sink into their shadow on hover.
+
 **Material 3** (a Material-3-inspired light/dark pair): `material`, `material-dark` — rounded, mixed-case, flat tonal surfaces, no glow.
 Every theme is contrast-tested (text ≥ 7:1, primary label ≥ 4.5:1).
 
@@ -67,6 +69,7 @@ umbrella (features `cyberpunk`, `material`, `icons`, `shaders`, all on by defaul
 | [`dodai-core`](crates/dodai-core) | Tokens, `Theme`, `ThemeSwitcher`, `ThemeBuilder` builder, DTCG export. No concrete themes. |
 | [`dodai-cyberpunk`](crates/dodai-cyberpunk) | The 6 Cyberpunk themes (dark + light) + `icons` feature |
 | [`dodai-material`](crates/dodai-material) | The Material 3 light/dark pair + `icons` feature |
+| [`dodai-neobrutalism`](crates/dodai-neobrutalism) | Neo-Brutalism: six accents, light and dark |
 | [`dodai-cyberpunk-icons`](crates/dodai-cyberpunk-icons) | 136 chamfered, curve-free icons. Standalone, no deps |
 | [`dodai-material-icons`](crates/dodai-material-icons) | The full Material Symbols catalogue (3,900+ icons, outlined/rounded/sharp + fill). Standalone, no deps |
 | [`dodai-shaders`](crates/dodai-shaders) | Pixel shaders |

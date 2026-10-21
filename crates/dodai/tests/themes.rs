@@ -51,8 +51,8 @@ fn component_tokens_resolve_for_every_theme() {
         );
         assert_eq!(
             t.list_item(true, false).marker.is_some(),
-            t.shape.kind() != ShapeKind::Rounded,
-            "{}: accent bar on chamfered themes only",
+            t.meta.family == "cyberpunk",
+            "{}: accent bar on Cyberpunk only",
             t.id()
         );
     }
@@ -88,13 +88,13 @@ fn cyberpunk_has_light_and_dark() {
     }
 }
 
-#[cfg(all(feature = "cyberpunk", feature = "material"))]
+#[cfg(all(feature = "cyberpunk", feature = "material", feature = "neobrutalism"))]
 #[test]
 fn lookup_and_switcher_families() {
     assert!(themes::by_id("cyberpunk").is_some());
     assert!(themes::by_id("missing").is_none());
     let mut s = dodai::switcher();
-    assert_eq!(s.families(), vec!["cyberpunk", "material"]);
+    assert_eq!(s.families(), vec!["cyberpunk", "material", "neobrutalism"]);
     assert_eq!(
         s.family_indices("cyberpunk").len(),
         6 + 2 * dodai_cyberpunk::PRESETS.len()
@@ -260,7 +260,9 @@ fn surface_tokens_resolve_for_every_theme() {
         // Stepper: done is filled, todo is hollow, only the current node glows.
         assert!(t.step(StepState::Done).fill.is_some());
         assert!(t.step(StepState::Todo).fill.is_none());
-        assert!(t.step(StepState::Current).glow && !t.step(StepState::Done).glow);
+        if t.meta.family != "neobrutalism" {
+            assert!(t.step(StepState::Current).glow && !t.step(StepState::Done).glow);
+        }
         assert_eq!(StepState::of(0, 1), StepState::Done);
         assert_eq!(StepState::of(1, 1), StepState::Current);
         assert_eq!(StepState::of(2, 1), StepState::Todo);
@@ -273,7 +275,7 @@ fn material_cards_are_tonal_and_others_unchanged() {
     for t in themes::all() {
         let r = &t.palette.roles;
         let f = t.card(CardVariant::Filled);
-        if t.shape.kind() == ShapeKind::Rounded {
+        if t.meta.family == "material" {
             assert_eq!(
                 f.background,
                 Some(r.surface_container_highest),
@@ -281,6 +283,8 @@ fn material_cards_are_tonal_and_others_unchanged() {
                 t.id()
             );
             assert_eq!(t.divider(), r.outline_variant, "{}", t.id());
+        } else if t.meta.family == "neobrutalism" {
+            assert_eq!(t.divider(), t.palette.border, "{}", t.id());
         } else {
             assert_eq!(f.background, Some(t.palette.surface_raised), "{}", t.id());
             assert_eq!(t.divider(), t.palette.border, "{}", t.id());
@@ -339,7 +343,7 @@ fn material_banners_are_tonal_and_snackbar_is_inverse() {
             "{}: snackbar action",
             t.meta.id
         );
-        if t.shape.kind() == ShapeKind::Rounded {
+        if t.meta.family == "material" {
             assert_eq!(sbg, t.palette.roles.inverse_surface);
             assert_ne!(
                 bg, t.palette.warning,

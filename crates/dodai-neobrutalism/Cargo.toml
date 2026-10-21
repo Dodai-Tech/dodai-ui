@@ -1,0 +1,15 @@
+[package]
+name         = "dodai-neobrutalism"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description  = "The Neo-Brutalism design system for Dodai UI: thick black outlines, hard offset shadows and flat saturated colour, in light and dark"
+readme       = "README.md"
+keywords     = ["theme", "neobrutalism", "design-system", "ui"]
+categories   = ["gui", "rendering"]
+
+[dependencies]
+dodai-core = { workspace = true }

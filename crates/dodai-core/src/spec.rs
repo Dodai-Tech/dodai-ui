@@ -24,6 +24,8 @@ pub struct Look {
     pub floating_label: bool,
     /// Prefers the symbol-font icon set over the stroke-shape icons.
     pub symbol_icons: bool,
+    /// Hard-shadowed controls sink into their shadow on hover and press.
+    pub sink: bool,
 }
 
 /// Component rules of one design system. All hooks are optional overrides.
@@ -115,6 +117,10 @@ pub trait DesignSpec: Send + Sync + std::fmt::Debug {
         None
     }
     fn input(&self, t: &Theme, focused: bool) -> Option<InputTokens> {
+        None
+    }
+    /// Colour of the hard offset shadow (default: the pressed primary).
+    fn hard_shadow_color(&self, t: &Theme) -> Option<Color> {
         None
     }
     /// Keyboard focus indicator `(colour, thickness px)`.

@@ -92,7 +92,7 @@ impl ShapeStyle {
             },
             glow: (glow && fx.glow_enabled()).then(|| (hsla(fx.glow_color()), fx.glow_radius())),
             shadow: (shadow && fx.hard_shadow > 0.0)
-                .then(|| (hsla(theme.palette.primary_active), fx.hard_shadow)),
+                .then(|| (hsla(theme.hard_shadow_color()), fx.hard_shadow)),
             shadow_dir: (1.0, 1.0),
             scanlines: fx.scanlines && fill.is_some(),
             scanline: hsla(fx.scanline),

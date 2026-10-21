@@ -157,6 +157,8 @@ impl Button {
             }
         };
         let (mut style, mut fg) = resolve(state);
+        // Neo-brutalism: the button sinks into its hard shadow on hover.
+        let mut sink = 0.0;
         if state != ControlState::Disabled {
             let lvl = crate::motion::smooth(
                 window,
@@ -172,6 +174,10 @@ impl Button {
             style.fill = crate::motion::mix_opt(idle.fill, style.fill, lvl);
             style.stroke = crate::motion::mix_opt(idle.stroke, style.stroke, lvl);
             fg = crate::motion::mix(idle_fg, fg, lvl);
+            if let (true, Some((c, off))) = (t.look().sink, style.shadow) {
+                sink = off * lvl;
+                style.shadow = Some((c, off - sink));
+            }
         }
         if self.shimmer {
             style = style.with_shimmer(crate::paint::Shimmer {
@@ -189,7 +195,7 @@ impl Button {
         let pressed = state == ControlState::Pressed;
         // Hover lift: a spring in the theme's personality (gpui has no transforms, so only the
         // vertical offset of the pose is applied).
-        let lift = if state == ControlState::Disabled {
+        let lift = if state == ControlState::Disabled || t.look().sink {
             0.0
         } else {
             crate::motion::hover_lift(
@@ -210,8 +216,10 @@ impl Button {
         let mut el = track(shaped_id(self.id, &shape, style), &st)
             .h(px(m.map_or(t.shape.control_height, |m| m.height)))
             .px(px(m.map_or(t.button_padding(), |m| m.padding)))
-            .mt(px(lift + if pressed { 1.0 } else { 0.0 }))
-            .mb(px(-lift + if pressed { -1.0 } else { 0.0 }))
+            .mt(px(lift + sink + if pressed { 1.0 } else { 0.0 }))
+            .mb(px(-lift - sink + if pressed { -1.0 } else { 0.0 }))
+            .ml(px(sink))
+            .mr(px(-sink))
             .flex()
             .items_center()
             .justify_center()
