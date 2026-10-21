@@ -341,15 +341,15 @@ impl Showcase {
                                                 cx.notify();
                                             })),
                                     )
-                                    .child(code_toggle(
-                                        "ico-code",
-                                        t,
-                                        self.icon_code,
-                                        cx.listener(|s, _, _, cx| {
-                                            s.icon_code = !s.icon_code;
-                                            cx.notify();
-                                        }),
-                                    ))
+                                    .child(code_toggle("ico-code", t, self.icon_code, {
+                                        let me = cx.entity();
+                                        move |on, _, cx| {
+                                            me.update(cx, |s, cx| {
+                                                s.icon_code = on;
+                                                cx.notify();
+                                            })
+                                        }
+                                    }))
                                     .child(
                                         Button::new("ico-close", "Close")
                                             .variant(ButtonVariant::Secondary)

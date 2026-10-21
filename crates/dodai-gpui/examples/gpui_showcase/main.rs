@@ -590,35 +590,22 @@ impl Showcase {
     }
 }
 
-/// The "Show code" / "Hide code" toggle every section uses.
+/// The "Show code" switch every section uses (on = code visible).
 pub(crate) fn code_toggle(
     id: impl Into<gpui::ElementId>,
     t: &Theme,
     open: bool,
-    on_click: impl Fn(&gpui::ClickEvent, &mut Window, &mut gpui::App) + 'static,
-) -> gpui::Stateful<gpui::Div> {
-    let fg = hsla(if open {
-        t.palette.on_primary
-    } else {
-        t.palette.text_muted
-    });
+    on_change: impl Fn(bool, &mut Window, &mut gpui::App) + 'static,
+) -> gpui::Div {
     div()
-        .id(id)
         .flex()
         .items_center()
-        .gap(px(6.0))
-        .px(px(8.0))
-        .py(px(3.0))
-        .rounded(px(4.0))
-        .cursor_pointer()
-        .border_1()
-        .border_color(hsla(t.palette.border))
+        .gap(px(8.0))
         .text_size(px(11.0))
-        .text_color(fg)
-        .when(open, |d| d.bg(hsla(t.palette.primary)))
-        .child(dodai_gpui::Icon::Code.size(14.0).color(fg))
-        .child(if open { "Hide code" } else { "Show code" })
-        .on_click(on_click)
+        .text_color(hsla(t.palette.text_muted))
+        .child(dodai_gpui::Icon::Code.size(14.0))
+        .child("Show code")
+        .child(dodai_gpui::Toggle::new(id, open).on_change(on_change))
 }
 
 impl Render for Showcase {
