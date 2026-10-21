@@ -38,6 +38,7 @@ pub struct ListItem {
     supporting: Option<SharedString>,
     trailing: Option<SharedString>,
     leading: Option<gpui::AnyElement>,
+    badge: Option<gpui::AnyElement>,
     collapsed: bool,
 }
 
@@ -74,6 +75,7 @@ impl ListItem {
             supporting: None,
             trailing: None,
             leading: None,
+            badge: None,
             collapsed: false,
         }
     }
@@ -93,6 +95,11 @@ impl ListItem {
         self
     }
     /// A leading element (avatar, image, checkbox) in place of the icon.
+    /// Element shown at the row end (e.g. a [`crate::Badge`] with a count).
+    pub fn badge(mut self, e: impl IntoElement) -> Self {
+        self.badge = Some(e.into_any_element());
+        self
+    }
     pub fn leading(mut self, e: impl IntoElement) -> Self {
         self.leading = Some(e.into_any_element());
         self
@@ -218,6 +225,9 @@ impl ListItem {
                     .text_color(muted)
                     .child(tr),
             );
+        }
+        if let Some(b) = self.badge {
+            el = el.child(b);
         }
         if let Some(c) = marker {
             el = el.child(

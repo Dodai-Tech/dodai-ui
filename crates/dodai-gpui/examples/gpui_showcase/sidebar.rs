@@ -180,18 +180,23 @@ impl Showcase {
                     }
                     side_need = side_need.max(est(title.len(), 2.0));
                     let (m, title) = (me.clone(), *title);
-                    side = side.child(
-                        ListItem::new(("jump", idx * 1000 + k), title)
-                            .depth(2)
-                            .selected(active == Some(title))
-                            .on_click(move |_, _, cx| {
-                                m.update(cx, |s, cx| {
-                                    s.pin.pin(title);
-                                    s.jump = Some((title, 1));
-                                    cx.notify()
-                                })
-                            }),
-                    );
+                    let mut row = ListItem::new(("jump", idx * 1000 + k), title);
+                    // The Icons section shows how many icons the active design ships.
+                    if title == "Icons" {
+                        row = row.badge(dodai_gpui::Badge::new(
+                            group_thousands(icon_total(t.look().icons)),
+                            dodai_core::Tone::Info,
+                        ));
+                    }
+                    side = side.child(row.depth(2).selected(active == Some(title)).on_click(
+                        move |_, _, cx| {
+                            m.update(cx, |s, cx| {
+                                s.pin.pin(title);
+                                s.jump = Some((title, 1));
+                                cx.notify()
+                            })
+                        },
+                    ));
                     k += 1;
                 }
             }
@@ -204,4 +209,31 @@ impl Showcase {
 
         (side, side_need)
     }
+}
+
+/// Distinct icons (outline forms) the design's own pack ships.
+pub(crate) fn icon_total(set: dodai_core::IconSet) -> usize {
+    match set {
+        dodai_core::IconSet::Symbols => dodai_material_icons::CATEGORIES
+            .iter()
+            .map(|(_, n)| n.len())
+            .sum(),
+        dodai_core::IconSet::Bold => dodai_neobrutalism_icons::ALL
+            .iter()
+            .filter(|i| !i.name.ends_with("-fill"))
+            .count(),
+        dodai_core::IconSet::Stroked => dodai_cyberpunk_icons::ALL.len(),
+    }
+}
+
+fn group_thousands(n: usize) -> String {
+    let s = n.to_string();
+    let mut out = String::new();
+    for (i, c) in s.chars().enumerate() {
+        if i > 0 && (s.len() - i) % 3 == 0 {
+            out.push(',');
+        }
+        out.push(c);
+    }
+    out
 }
