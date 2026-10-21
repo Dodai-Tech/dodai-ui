@@ -1,8 +1,6 @@
 //! Familiar (Feather/Lucide-style) icon names mapped to Material Symbols
 //! names, so code written against another icon set keeps working.
 
-use crate::phosphor_aliases::PHOSPHOR_ALIASES;
-
 /// `(alias, material name)`, sorted by alias.
 pub static ALIASES: &[(&str, &str)] = &[
     ("archive", "archive"),
@@ -146,11 +144,8 @@ pub static ALIASES: &[(&str, &str)] = &[
 /// The Material name for `name`: the mapped name when `name` is a known alias
 /// (`"trash"` → `"delete"`), otherwise `name` unchanged.
 pub fn resolve(name: &str) -> &str {
-    if let Ok(i) = ALIASES.binary_search_by(|(a, _)| (*a).cmp(name)) {
-        return ALIASES[i].1;
-    }
-    match PHOSPHOR_ALIASES.binary_search_by(|(a, _)| (*a).cmp(name)) {
-        Ok(i) => PHOSPHOR_ALIASES[i].1,
+    match ALIASES.binary_search_by(|(a, _)| (*a).cmp(name)) {
+        Ok(i) => ALIASES[i].1,
         Err(_) => name,
     }
 }
@@ -171,22 +166,9 @@ mod tests {
     #[test]
     fn sorted_and_resolves() {
         assert!(ALIASES.windows(2).all(|w| w[0].0 < w[1].0));
-        assert!(PHOSPHOR_ALIASES.windows(2).all(|w| w[0].0 < w[1].0));
         assert_eq!(resolve("trash"), "delete");
-        assert_eq!(resolve("gear"), "settings");
-        assert_eq!(resolve("magnifying-glass"), "search");
         assert_eq!(resolve("home"), "home");
         assert_eq!(resolve("not-an-alias"), "not-an-alias");
-    }
-
-    #[cfg(feature = "outlined")]
-    #[test]
-    fn phosphor_aliases_point_at_real_icons() {
-        for (p, m) in PHOSPHOR_ALIASES {
-            assert!(crate::outlined::get(m).is_some(), "{p} -> {m}");
-            // An alias never shadows a Material icon of the same name.
-            assert!(crate::outlined::get(&p.replace('-', "_")).is_none(), "{p}");
-        }
     }
 
     #[cfg(feature = "outlined")]
