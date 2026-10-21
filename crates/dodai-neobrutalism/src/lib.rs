@@ -192,6 +192,8 @@ pub fn build(p: &Preset, mode: Mode) -> Theme {
     // Keep every "on" role readable on its block.
     t.palette.roles.on_tertiary = t.on(t.palette.roles.tertiary);
     t.palette.roles.on_error = t.on(t.palette.danger);
+    // Links are plain ink, like the kit: underline carries the affordance.
+    t.palette.link = t.palette.text;
     t.palette.primary_active = dodai_core::Color::hex(p.main);
     t.motion = motion();
     t.shape_system = Some(shape_system());

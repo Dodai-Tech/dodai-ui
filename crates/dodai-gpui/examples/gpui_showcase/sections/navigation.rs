@@ -25,7 +25,7 @@ impl Showcase {
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let col = || div().flex().flex_col().gap(gap);
         let tabs = Tabs::new("tabs")
-            .labels(["Overview", "Netrunning", "Gear", "Settings"])
+            .labels(["Overview", "Activity", "Billing", "Settings"])
             .active(self.tab)
             .on_select(move |i, _, cx| {
                 me_tab.update(cx, |s, cx| {
@@ -320,7 +320,7 @@ impl Showcase {
                 .child(Muted::new("Secondary"))
                 .child(
                     Tabs::new("tabs-secondary")
-                        .labels(["Overview", "Netrunning", "Gear", "Settings"])
+                        .labels(["Overview", "Activity", "Billing", "Settings"])
                         .active(self.tab)
                         .secondary(true),
                 )
@@ -329,14 +329,8 @@ impl Showcase {
                     div().w(px(360.0)).child(
                         Tabs::new("tabs-scroll")
                             .labels([
-                                "Overview",
-                                "Netrunning",
-                                "Gear",
-                                "Settings",
-                                "Contacts",
-                                "Gigs",
-                                "Archive",
-                                "Help",
+                                "Overview", "Activity", "Billing", "Settings", "Contacts", "Gigs",
+                                "Archive", "Help",
                             ])
                             .active(self.tab)
                             .scrollable(true),

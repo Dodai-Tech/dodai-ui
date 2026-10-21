@@ -59,7 +59,7 @@ fn range() -> impl IntoElement {
 // snippet: Tabs
 fn tabs() -> impl IntoElement {
     Tabs::new("tabs")
-        .labels(["Overview", "Gear", "Settings"])
+        .labels(["Overview", "Billing", "Settings"])
         .active(0)
         .on_select(|i, _, _| println!("tab {i}"))
 }
