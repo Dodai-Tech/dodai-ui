@@ -109,6 +109,20 @@ roles! {
     inverse_primary => "inverse-primary",
     scrim => "scrim",
     shadow => "shadow",
+    surface_dim => "surface-dim",
+    surface_bright => "surface-bright",
+    primary_fixed => "primary-fixed",
+    primary_fixed_dim => "primary-fixed-dim",
+    on_primary_fixed => "on-primary-fixed",
+    on_primary_fixed_variant => "on-primary-fixed-variant",
+    secondary_fixed => "secondary-fixed",
+    secondary_fixed_dim => "secondary-fixed-dim",
+    on_secondary_fixed => "on-secondary-fixed",
+    on_secondary_fixed_variant => "on-secondary-fixed-variant",
+    tertiary_fixed => "tertiary-fixed",
+    tertiary_fixed_dim => "tertiary-fixed-dim",
+    on_tertiary_fixed => "on-tertiary-fixed",
+    on_tertiary_fixed_variant => "on-tertiary-fixed-variant",
 }
 
 /// Whichever of the theme's text / page colours reads better on `bg`.
@@ -159,6 +173,30 @@ impl Roles {
             },
             scrim: black,
             shadow: black,
+            // Dim / bright surfaces: the page, pushed away from / towards the text colour.
+            surface_dim: if dark {
+                p.background
+            } else {
+                p.background.mix(p.text, 0.1)
+            },
+            surface_bright: if dark {
+                p.background.mix(p.text, 0.12)
+            } else {
+                p.background
+            },
+            // Fixed accents keep their tone in light and dark.
+            primary_fixed: p.primary.mix(white, 0.75),
+            primary_fixed_dim: p.primary.mix(white, 0.55),
+            on_primary_fixed: p.primary.mix(black, 0.85),
+            on_primary_fixed_variant: p.primary.mix(black, 0.65),
+            secondary_fixed: p.secondary.mix(white, 0.75),
+            secondary_fixed_dim: p.secondary.mix(white, 0.55),
+            on_secondary_fixed: p.secondary.mix(black, 0.85),
+            on_secondary_fixed_variant: p.secondary.mix(black, 0.65),
+            tertiary_fixed: p.accent.mix(white, 0.75),
+            tertiary_fixed_dim: p.accent.mix(white, 0.55),
+            on_tertiary_fixed: p.accent.mix(black, 0.85),
+            on_tertiary_fixed_variant: p.accent.mix(black, 0.65),
         }
     }
 }

@@ -224,6 +224,7 @@ impl Scheme {
     /// The 25 extended roles for this scheme.
     pub fn roles(&self) -> Roles {
         let (p, t) = (self.palettes(), tones(self.style, self.mode));
+        let dark = self.mode == Mode::Dark;
         let (on_c, c) = (t.on_container, t.container);
         let on_acc = t.on_primary;
         Roles {
@@ -252,6 +253,20 @@ impl Scheme {
             inverse_primary: p.primary.tone(t.inverse_primary),
             scrim: Color::hex(0x000000),
             shadow: Color::hex(0x000000),
+            surface_dim: p.neutral.tone(if dark { 6.0 } else { 87.0 }),
+            surface_bright: p.neutral.tone(if dark { 24.0 } else { 98.0 }),
+            primary_fixed: p.primary.tone(90.0),
+            primary_fixed_dim: p.primary.tone(80.0),
+            on_primary_fixed: p.primary.tone(10.0),
+            on_primary_fixed_variant: p.primary.tone(30.0),
+            secondary_fixed: p.secondary.tone(90.0),
+            secondary_fixed_dim: p.secondary.tone(80.0),
+            on_secondary_fixed: p.secondary.tone(10.0),
+            on_secondary_fixed_variant: p.secondary.tone(30.0),
+            tertiary_fixed: p.tertiary.tone(90.0),
+            tertiary_fixed_dim: p.tertiary.tone(80.0),
+            on_tertiary_fixed: p.tertiary.tone(10.0),
+            on_tertiary_fixed_variant: p.tertiary.tone(30.0),
         }
     }
 

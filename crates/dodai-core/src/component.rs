@@ -585,6 +585,13 @@ impl Theme {
         self.shape.control_height * if nested { 0.65 } else { 0.8 }
     }
 
+    /// Row height of a list item with `lines` lines of text (1 to 3).
+    pub fn list_lines_height(&self, lines: u8) -> f32 {
+        let lines = lines.clamp(1, 3);
+        hook!(self.list_lines_height(lines));
+        self.list_row_height(false) * (1.0 + 0.4 * (lines - 1) as f32)
+    }
+
     /// Row height of a menu / dropdown item.
     pub fn menu_row_height(&self) -> f32 {
         hook!(self.menu_row_height());

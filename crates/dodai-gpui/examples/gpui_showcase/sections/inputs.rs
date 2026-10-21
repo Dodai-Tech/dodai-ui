@@ -42,6 +42,9 @@ impl Showcase {
                 })
             }))
             .child(Label::new("Switch"))
+            .child(Toggle::new("sw-icons", true).icons(true))
+            .child(Toggle::new("sw-icons-off", false).icons(true))
+            .child(Label::new("With icons"))
             .child(Toggle::new("sw-dis", true).disabled(true))
             .child(Checkbox::new("ck", self.check).on_change(move |v, _, cx| {
                 me_ck.update(cx, |s, cx| {

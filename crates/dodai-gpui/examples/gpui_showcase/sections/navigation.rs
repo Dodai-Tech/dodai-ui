@@ -277,6 +277,20 @@ impl Showcase {
             "Tabs",
             section!("Tabs")
                 .child(tabs)
+                .child(Muted::new("Secondary"))
+                .child(
+                    Tabs::new("tabs-secondary")
+                        .labels(["Overview", "Netrunning", "Gear", "Settings"])
+                        .active(self.tab)
+                        .secondary(true),
+                )
+                .child(Muted::new("With icons"))
+                .child(
+                    Tabs::new("tabs-icons")
+                        .labels(["Home", "Saved", "Search"])
+                        .icons([IconName::Home, IconName::Heart, IconName::Search])
+                        .active(self.tab % 3),
+                )
                 .child(Muted::new(format!("active tab: {}", self.tab)))
                 .into_any_element(),
             "Tabs",

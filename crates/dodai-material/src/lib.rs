@@ -85,6 +85,20 @@ fn light_roles() -> Roles {
         inverse_primary: h(0xd0bcff),
         scrim: h(0x000000),
         shadow: h(0x000000),
+        surface_dim: h(0xded8e1),
+        surface_bright: h(0xfef7ff),
+        primary_fixed: h(0xeaddff),
+        primary_fixed_dim: h(0xd0bcff),
+        on_primary_fixed: h(0x21005d),
+        on_primary_fixed_variant: h(0x4f378b),
+        secondary_fixed: h(0xe8def8),
+        secondary_fixed_dim: h(0xccc2dc),
+        on_secondary_fixed: h(0x1d192b),
+        on_secondary_fixed_variant: h(0x4a4458),
+        tertiary_fixed: h(0xffd8e4),
+        tertiary_fixed_dim: h(0xefb8c8),
+        on_tertiary_fixed: h(0x31111d),
+        on_tertiary_fixed_variant: h(0x633b48),
     }
 }
 
@@ -117,6 +131,20 @@ fn dark_roles() -> Roles {
         inverse_primary: h(0x6750a4),
         scrim: h(0x000000),
         shadow: h(0x000000),
+        surface_dim: h(0x141218),
+        surface_bright: h(0x3b383e),
+        primary_fixed: h(0xeaddff),
+        primary_fixed_dim: h(0xd0bcff),
+        on_primary_fixed: h(0x21005d),
+        on_primary_fixed_variant: h(0x4f378b),
+        secondary_fixed: h(0xe8def8),
+        secondary_fixed_dim: h(0xccc2dc),
+        on_secondary_fixed: h(0x1d192b),
+        on_secondary_fixed_variant: h(0x4a4458),
+        tertiary_fixed: h(0xffd8e4),
+        tertiary_fixed_dim: h(0xefb8c8),
+        on_tertiary_fixed: h(0x31111d),
+        on_tertiary_fixed_variant: h(0x633b48),
     }
 }
 

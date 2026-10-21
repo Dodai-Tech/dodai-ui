@@ -34,6 +34,10 @@ pub struct ListItem {
     on_click: Option<crate::interact::ClickHandler>,
     corners: Option<dodai_core::Corners>,
     depth: u8,
+    overline: Option<SharedString>,
+    supporting: Option<SharedString>,
+    trailing: Option<SharedString>,
+    leading: Option<gpui::AnyElement>,
 }
 
 impl ListItem {
@@ -60,7 +64,31 @@ impl ListItem {
             selected: false,
             icon: None,
             on_click: None,
+            overline: None,
+            supporting: None,
+            trailing: None,
+            leading: None,
         }
+    }
+    /// Small text above the headline (a three-line item when combined with supporting text).
+    pub fn overline(mut self, t: impl Into<SharedString>) -> Self {
+        self.overline = Some(t.into());
+        self
+    }
+    /// Supporting text below the headline (makes a two-line item).
+    pub fn supporting(mut self, t: impl Into<SharedString>) -> Self {
+        self.supporting = Some(t.into());
+        self
+    }
+    /// Trailing supporting text (a time, a count, a shortcut).
+    pub fn trailing(mut self, t: impl Into<SharedString>) -> Self {
+        self.trailing = Some(t.into());
+        self
+    }
+    /// A leading element (avatar, image, checkbox) in place of the icon.
+    pub fn leading(mut self, e: impl IntoElement) -> Self {
+        self.leading = Some(e.into_any_element());
+        self
     }
     pub fn selected(mut self, s: bool) -> Self {
         self.selected = s;
@@ -100,7 +128,13 @@ impl ListItem {
         }
         let pad = t.spacing.md;
         let mut el = track(shaped_id(self.id, &t.shape, style), &st)
-            .min_h(px(t.list_row_height(self.depth > 0)))
+            .min_h(px(if self.depth > 0 {
+                t.list_row_height(true)
+            } else {
+                t.list_lines_height(
+                    1 + u8::from(self.supporting.is_some()) + u8::from(self.overline.is_some()),
+                )
+            }))
             .py(px(t.spacing.xs * 0.5))
             .ml(px(indent))
             .pl(px(pad))
@@ -113,19 +147,43 @@ impl ListItem {
             .text_size(px(size))
             .text_color(fg)
             .gap(px(t.spacing.sm));
-        if let Some(g) = self.icon {
+        if let Some(lead) = self.leading {
+            el = el.child(lead);
+        } else if let Some(g) = self.icon {
             el = el.child(
                 crate::icons::Icon::new(g)
                     .size(t.typography.size_md * 1.2)
                     .color(fg),
             );
         }
-        el = el.child(
-            div()
-                .flex_1()
-                .min_w_0()
-                .child(format_label(&t.typography, &self.label)),
-        );
+        let muted = hsla(t.palette.roles.on_surface_variant);
+        let mut text = div().flex_1().min_w_0().flex().flex_col();
+        if let Some(o) = self.overline {
+            text = text.child(
+                div()
+                    .text_size(px(t.typography.size_xs))
+                    .text_color(muted)
+                    .child(format_label(&t.typography, &o)),
+            );
+        }
+        text = text.child(format_label(&t.typography, &self.label));
+        if let Some(sup) = self.supporting {
+            text = text.child(
+                div()
+                    .text_size(px(t.typography.size_sm))
+                    .text_color(muted)
+                    .child(sup),
+            );
+        }
+        el = el.child(text);
+        if let Some(tr) = self.trailing {
+            el = el.child(
+                div()
+                    .text_size(px(t.typography.size_xs))
+                    .text_color(muted)
+                    .child(tr),
+            );
+        }
         if let Some(c) = marker {
             el = el.child(
                 div()

@@ -438,3 +438,74 @@ fn app_bars_follow_the_spec() {
         assert_eq!(t.role_shape(ShapeRole::AppBar).radius, 0.0);
     }
 }
+
+#[test]
+fn fixed_and_dim_roles_are_readable_and_ordered() {
+    use dodai_core::{Color, Mode};
+    use dodai_material::{Scheme, SchemeStyle};
+    let mut all = material();
+    for style in SchemeStyle::ALL {
+        for mode in [Mode::Light, Mode::Dark] {
+            all.push(
+                Scheme::new(Color::hex(0x3366cc), style, mode).theme(dodai_core::ThemeMeta {
+                    id: "t",
+                    name: "t",
+                    family: "material",
+                    description: "",
+                    mode,
+                }),
+            );
+        }
+    }
+    for t in all {
+        let r = &t.palette.roles;
+        let id = t.id();
+        for (on, bg, min, what) in [
+            (r.on_primary_fixed, r.primary_fixed, 7.0, "primary"),
+            (
+                r.on_primary_fixed_variant,
+                r.primary_fixed,
+                4.5,
+                "primary variant",
+            ),
+            (r.on_secondary_fixed, r.secondary_fixed, 7.0, "secondary"),
+            (
+                r.on_secondary_fixed_variant,
+                r.secondary_fixed,
+                4.5,
+                "secondary variant",
+            ),
+            (r.on_tertiary_fixed, r.tertiary_fixed, 7.0, "tertiary"),
+            (
+                r.on_tertiary_fixed_variant,
+                r.tertiary_fixed,
+                4.5,
+                "tertiary variant",
+            ),
+        ] {
+            assert!(on.contrast(bg) >= min, "{id}: fixed {what}");
+        }
+        assert!(
+            r.primary_fixed_dim.luminance() <= r.primary_fixed.luminance(),
+            "{id}"
+        );
+        assert!(
+            r.surface_bright.luminance() >= r.surface_dim.luminance(),
+            "{id}"
+        );
+    }
+}
+
+#[test]
+fn list_items_grow_with_their_lines() {
+    for t in material() {
+        assert_eq!(
+            [1u8, 2, 3].map(|n| t.list_lines_height(n)),
+            [56.0, 72.0, 88.0]
+        );
+    }
+    // The baseline scales from the base row height.
+    let base = dodai::themes::neutral();
+    assert!(base.list_lines_height(3) > base.list_lines_height(2));
+    assert!(base.list_lines_height(2) > base.list_lines_height(1));
+}

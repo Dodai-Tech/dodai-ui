@@ -48,6 +48,44 @@ impl Showcase {
                     }),
             );
         }
+        let lists = div()
+            .flex()
+            .flex_col()
+            .child(Muted::new("One line"))
+            .child(ListItem::new("l1", "Inbox").icon(IconName::Home))
+            .child(Muted::new("Two lines · trailing text"))
+            .child(
+                ListItem::new("l2", "Weekly digest")
+                    .supporting("Everything that changed this week")
+                    .trailing("10:24")
+                    .leading(dodai_gpui::Avatar::new("WD").size(40.0)),
+            )
+            .child(Muted::new("Three lines"))
+            .child(
+                ListItem::new("l3", "Design review")
+                    .overline("Tomorrow")
+                    .supporting("Bring the colour schemes and the new app bars")
+                    .icon(IconName::Heart),
+            );
+        let chips = row()
+            .child(dodai_gpui::Chip::new("c-assist", "Assist").leading(IconName::Edit))
+            .child(
+                dodai_gpui::Chip::new("c-assist-e", "Elevated")
+                    .leading(IconName::Edit)
+                    .elevated(true),
+            )
+            .child(dodai_gpui::Chip::new("c-filter-off", "Filter").filter(true))
+            .child(
+                dodai_gpui::Chip::new("c-filter-on", "Filter")
+                    .filter(true)
+                    .selected(true),
+            )
+            .child(
+                dodai_gpui::Chip::new("c-input", "Input")
+                    .leading(IconName::Heart)
+                    .on_remove(|_, _, _| {}),
+            )
+            .child(dodai_gpui::Chip::new("c-sugg", "Suggestion"));
         let m = me.clone();
         let (m1, m2, m3, m4, m5, m6) = (
             me.clone(),
@@ -163,6 +201,15 @@ impl Showcase {
             "Tags · Chips · Badges",
             section!("Tags").child(tags).into_any_element(),
             "Tags",
+        ));
+        out.push((
+            "Data display",
+            "List items · Chips",
+            section!("List items · Chips")
+                .child(lists)
+                .child(chips)
+                .into_any_element(),
+            "List items · Chips",
         ));
         out.push((
             "Data display",

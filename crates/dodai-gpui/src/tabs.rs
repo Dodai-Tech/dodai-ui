@@ -31,6 +31,8 @@ pub struct Tabs {
     active: usize,
     on_select: Option<SelectHandler>,
     corners: Option<dodai_core::Corners>,
+    icons: Vec<crate::icons::IconName>,
+    secondary: bool,
 }
 
 crate::corners_setter!(Tabs);
@@ -43,7 +45,19 @@ impl Tabs {
             labels: Vec::new(),
             active: 0,
             on_select: None,
+            icons: Vec::new(),
+            secondary: false,
         }
+    }
+    /// One icon per tab, stacked above the label (icon-only when there are no labels).
+    pub fn icons(mut self, icons: impl IntoIterator<Item = crate::icons::IconName>) -> Self {
+        self.icons = icons.into_iter().collect();
+        self
+    }
+    /// Secondary tabs: an on-surface label and a full-width underline, for sub-navigation.
+    pub fn secondary(mut self, on: bool) -> Self {
+        self.secondary = on;
+        self
     }
     /// Tab labels in order.
     pub fn labels<S: Into<SharedString>>(mut self, labels: impl IntoIterator<Item = S>) -> Self {
@@ -66,7 +80,9 @@ impl Tabs {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
         let mut row = div().flex().gap(px(t.spacing.xs));
-        for (i, label) in self.labels.iter().enumerate() {
+        let count = self.labels.len().max(self.icons.len());
+        for i in 0..count {
+            let label = self.labels.get(i);
             let id: ElementId = (self.id.clone(), i.to_string()).into();
             let st = use_interact(&id, window, cx);
             let hovered = st.read(cx).hovered;
@@ -84,16 +100,37 @@ impl Tabs {
             let indicator = indicator
                 .or_else(|| tab_style(&t, true, hovered).2.filter(|_| p > 0.01))
                 .map(|c| c.opacity(p));
+            let fg = if self.secondary && active {
+                hsla(t.palette.roles.on_surface)
+            } else {
+                fg
+            };
+            let stacked = label.is_some() && self.icons.get(i).is_some();
+            let height = if stacked && !self.secondary {
+                t.shape.control_height * 1.6
+            } else {
+                t.shape.control_height
+            };
             let mut tab = track(shaped_id(id, &t.shape, style), &st)
-                .h(px(t.shape.control_height))
+                .h(px(height))
                 .px(px(t.spacing.md))
                 .flex()
                 .items_center()
                 .cursor_pointer()
                 .font_family(first_family(t.typography.body))
                 .text_size(px(t.typography.size_md))
-                .text_color(fg)
-                .child(format_label(&t.typography, label));
+                .text_color(fg);
+            if stacked && !self.secondary {
+                tab = tab.flex_col().justify_center().gap(px(2.0));
+            } else {
+                tab = tab.gap(px(t.spacing.sm));
+            }
+            if let Some(icon) = self.icons.get(i) {
+                tab = tab.child(crate::icons::Icon::new(*icon).size(20.0).color(fg));
+            }
+            if let Some(label) = label {
+                tab = tab.child(format_label(&t.typography, label));
+            }
             if let Some(c) = indicator {
                 tab = tab.child(bottom_band_canvas(&t.shape, t.shape.border_width, c));
             }

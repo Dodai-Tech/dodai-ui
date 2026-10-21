@@ -358,6 +358,9 @@ pub struct Chip {
     on_click: Option<ClickFn>,
     on_remove: Option<ClickFn>,
     corners: Option<dodai_core::Corners>,
+    leading: Option<crate::icons::IconName>,
+    filter: bool,
+    elevated: bool,
 }
 
 crate::corners_setter!(Chip);
@@ -373,10 +376,29 @@ impl Chip {
             disabled: false,
             on_click: None,
             on_remove: None,
+            leading: None,
+            filter: false,
+            elevated: false,
         }
     }
     pub fn selected(mut self, s: bool) -> Self {
         self.selected = s;
+        self
+    }
+    /// Leading icon (assist and input chips).
+    pub fn leading(mut self, icon: crate::icons::IconName) -> Self {
+        self.leading = Some(icon);
+        self
+    }
+    /// Filter chip: a check mark replaces the leading icon while selected.
+    pub fn filter(mut self, on: bool) -> Self {
+        self.filter = on;
+        self
+    }
+    /// Elevated chip: a tonal container with a shadow instead of an outline (where the design
+    /// system has soft elevation).
+    pub fn elevated(mut self, on: bool) -> Self {
+        self.elevated = on;
         self
     }
     pub fn disabled(mut self, d: bool) -> Self {
@@ -404,6 +426,20 @@ impl Chip {
             fg = hsla(t.palette.text_disabled);
         }
         let tonal = t.look().tonal;
+        if self.elevated && t.look().soft_elevation && !self.selected && !self.disabled {
+            let r = &t.palette.roles;
+            style = ShapeStyle::from_tokens(
+                &t,
+                Some(
+                    r.surface_container_low
+                        .mix(r.on_surface, if hovered { 0.08 } else { 0.0 }),
+                ),
+                None,
+                false,
+                false,
+            )
+            .with_elevation(1, hsla(r.shadow));
+        }
         // M3 chips are 32 px tall with the small corner radius.
         let h = if tonal {
             32.0
@@ -424,8 +460,16 @@ impl Chip {
             .gap(px(t.spacing.sm))
             .text_color(fg)
             .font_family(first_family(t.typography.body))
-            .text_size(px(t.typography.size_sm))
-            .child(format_label(&t.typography, &self.label));
+            .text_size(px(t.typography.size_sm));
+        let lead = if self.filter && self.selected {
+            Some(crate::icons::IconName::Check)
+        } else {
+            self.leading
+        };
+        if let Some(icon) = lead {
+            el = el.child(crate::icons::Icon::new(icon).size(18.0).color(fg));
+        }
+        el = el.child(format_label(&t.typography, &self.label));
         if self.removable {
             let mut x = div()
                 .id(rid)

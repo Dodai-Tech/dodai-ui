@@ -153,13 +153,14 @@ fn choice(
     radio: bool,
     mixed: bool,
     variant: CheckboxVariant,
+    icons: bool,
     window: &mut Window,
     cx: &mut App,
 ) -> gpui::AnyElement {
     let t = theme_of(cx);
     if t.look().tonal {
         return m3_choice(
-            kind, id, on, disabled, handler, radio, mixed, variant, window, cx,
+            kind, id, on, disabled, handler, radio, mixed, variant, icons, window, cx,
         );
     }
     // A half-checked box is drawn "on" with a dash; clicking it selects all.
@@ -261,6 +262,7 @@ fn m3_choice(
     radio: bool,
     mixed: bool,
     variant: CheckboxVariant,
+    icons: bool,
     window: &mut Window,
     cx: &mut App,
 ) -> gpui::AnyElement {
@@ -318,7 +320,11 @@ fn m3_choice(
                 if on { 1.0 } else { 0.0 },
                 Motion::new(std::time::Duration::from_millis(450), Easing::SPRING_STIFF),
             );
-            let size = lerp(16.0, 24.0, p.clamp(0.0, 1.0));
+            let size = if icons {
+                24.0
+            } else {
+                lerp(16.0, 24.0, p.clamp(0.0, 1.0))
+            };
             let centre = lerp(16.0, 36.0, thumb);
             // Absolute children sit inside the 2 px outline.
             let (ls, lst) = layer_style(40.0);
@@ -343,14 +349,30 @@ fn m3_choice(
                     .w(px(40.0))
                     .h(px(40.0)),
             )
-            .child(
-                shaped(&round_shape(&t.shape, size), handle)
+            .child({
+                let mut h = shaped(&round_shape(&t.shape, size), handle)
                     .absolute()
                     .left(px(centre - size / 2.0 - 2.0))
                     .top(px((32.0 - size) / 2.0 - 2.0))
                     .w(px(size))
-                    .h(px(size)),
-            )
+                    .h(px(size));
+                if icons {
+                    // M3 switch with icons: a check when on, a cross when off.
+                    let glyph_c = if on {
+                        r.on_primary_container
+                    } else {
+                        r.surface_container_highest
+                    };
+                    h = h
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .text_size(px(14.0))
+                        .text_color(hsla(glyph_c))
+                        .child(if on { "✓" } else { "✕" });
+                }
+                h
+            })
         }
         Kind::Checkbox | Kind::Radio => {
             let (ls, lst) = layer_style(target);
@@ -428,13 +450,14 @@ macro_rules! choice_component {
             disabled: bool,
             mixed: bool,
             variant: CheckboxVariant,
+            icons: bool,
             on_change: Option<BoolHandler>,
         }
 
         impl $name {
             /// `on` is the current (controlled) value.
             pub fn new(id: impl Into<ElementId>, on: bool) -> Self {
-                Self { id: id.into(), on, disabled: false, mixed: false, variant: CheckboxVariant::Standard, on_change: None }
+                Self { id: id.into(), on, disabled: false, mixed: false, variant: CheckboxVariant::Standard, icons: false, on_change: None }
             }
             /// Disable interaction.
             pub fn disabled(mut self, d: bool) -> Self {
@@ -453,6 +476,11 @@ macro_rules! choice_component {
                 self.variant = v;
                 self
             }
+            /// Show a check / cross in the thumb (Material switch with icons); [`Toggle`] only.
+            pub fn icons(mut self, on: bool) -> Self {
+                self.icons = on;
+                self
+            }
             /// Called with the requested new value on click.
             pub fn on_change(mut self, f: impl Fn(bool, &mut Window, &mut App) + 'static) -> Self {
                 self.on_change = Some(Rc::new(f));
@@ -462,7 +490,7 @@ macro_rules! choice_component {
 
         impl RenderOnce for $name {
             fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-                choice($kind, self.id, self.on, self.disabled, self.on_change, $radio, self.mixed, self.variant, window, cx)
+                choice($kind, self.id, self.on, self.disabled, self.on_change, $radio, self.mixed, self.variant, self.icons, window, cx)
             }
         }
     };

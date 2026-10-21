@@ -477,6 +477,11 @@ impl DesignSpec for Material3 {
         Some(if nested { 40.0 } else { 56.0 })
     }
 
+    /// One line 56, two lines 72, three lines 88.
+    fn list_lines_height(&self, _t: &Theme, lines: u8) -> Option<f32> {
+        Some(56.0 + 16.0 * (lines.clamp(1, 3) - 1) as f32)
+    }
+
     fn menu_row_height(&self, _t: &Theme) -> Option<f32> {
         Some(48.0)
     }

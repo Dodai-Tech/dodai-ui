@@ -121,6 +121,9 @@ pub trait DesignSpec: Send + Sync + std::fmt::Debug {
     fn list_row_height(&self, t: &Theme, nested: bool) -> Option<f32> {
         None
     }
+    fn list_lines_height(&self, t: &Theme, lines: u8) -> Option<f32> {
+        None
+    }
     fn menu_row_height(&self, t: &Theme) -> Option<f32> {
         None
     }
