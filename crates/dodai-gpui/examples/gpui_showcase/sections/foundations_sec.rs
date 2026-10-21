@@ -105,7 +105,16 @@ impl Showcase {
                 .child(self.icon_search.clone()),
         );
         if let Some(panel) = self.icon_detail(&t, cx) {
-            section = section.child(panel);
+            // Fades and rises in; a new selection replays it (the id carries the icon).
+            let key = self.icon_sel.map_or(0, |i| i as u32);
+            section = section.child(
+                panel.id(("ico-panel", key)).with_animation(
+                    ("ico-panel-in", key),
+                    gpui::Animation::new(Duration::from_millis(180))
+                        .with_easing(gpui::ease_out_quint()),
+                    |el, p| el.opacity(p).mt(px((1.0 - p) * 6.0)),
+                ),
+            );
         }
         let filled_toggle = {
             let me_f = me.clone();
