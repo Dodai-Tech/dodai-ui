@@ -557,3 +557,30 @@ fn material_cards_are_tonal_and_snackbar_is_inverse() {
         assert_ne!(banner, t.palette.warning, "{}: tonal banner", t.id());
     }
 }
+
+#[test]
+fn navigation_follows_the_m3_drawer_and_rail_specs() {
+    for t in material() {
+        let k = t.navigation();
+        assert_eq!((k.item_height, k.drawer_max_width), (56.0, 360.0));
+        assert_eq!((k.rail_width, k.indicator), (80.0, (56.0, 32.0)));
+        assert!(k.pill && k.container.is_some());
+        let on = t.navigation_item(true, false);
+        assert_eq!(on.foreground, t.palette.roles.on_secondary_container);
+        let off = t.navigation_item(false, false);
+        assert_eq!(off.foreground, t.palette.roles.on_surface_variant);
+    }
+}
+
+#[test]
+fn other_designs_derive_navigation_from_their_spacing() {
+    for t in dodai::themes::all()
+        .iter()
+        .filter(|t| t.look().icons != dodai_core::IconSet::Symbols)
+    {
+        let k = t.navigation();
+        assert!(!k.pill && k.container.is_none());
+        assert_eq!(k.item_padding, t.spacing.md);
+        assert_eq!(k.item_height, t.list_row_height(false));
+    }
+}

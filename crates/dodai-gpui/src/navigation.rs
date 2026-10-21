@@ -7,7 +7,7 @@ use crate::interact::{track, use_interact};
 use crate::paint::{round_shape, shaped, shaped_id, ShapeStyle};
 use crate::text::{first_family, format_label, typeset};
 use crate::{hsla, theme_of};
-use dodai_core::{Theme, TypeRole};
+use dodai_core::{NavigationTokens, Shape, Theme};
 use gpui::{
     div, px, App, ClickEvent, ElementId, Hsla, InteractiveElement, IntoElement, ParentElement,
     RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window,
@@ -62,27 +62,28 @@ impl NavigationItem {
     }
 }
 
-/// Colours of a destination: (indicator fill, foreground, label foreground) (pure).
+/// Colours of a destination: (indicator fill, foreground) (pure; from the design's tokens).
 pub fn nav_colors(t: &Theme, selected: bool, hovered: bool) -> (Option<Hsla>, Hsla) {
-    let r = &t.palette.roles;
-    if t.look().tonal {
-        if selected {
-            (
-                Some(hsla(r.secondary_container)),
-                hsla(r.on_secondary_container),
-            )
-        } else {
-            let hover = hovered.then(|| hsla(r.on_surface_variant).opacity(0.08));
-            (hover, hsla(r.on_surface_variant))
-        }
+    let (fill, fg, _) = nav_paint(t, selected, hovered);
+    (fill, fg)
+}
+
+/// [`nav_colors`] plus whether the destination is drawn outlined with a hard shadow.
+pub fn nav_paint(t: &Theme, selected: bool, hovered: bool) -> (Option<Hsla>, Hsla, bool) {
+    let k = t.navigation_item(selected, hovered);
+    (k.background.map(hsla), hsla(k.foreground), k.outline)
+}
+
+fn indicator_shape(t: &Theme, k: &NavigationTokens, side: f32) -> Shape {
+    if k.pill {
+        round_shape(&t.shape, side)
     } else {
-        let k = t.list_item(selected, hovered);
-        (k.background.map(hsla), hsla(k.foreground))
+        t.shape.clone()
     }
 }
 
-fn icon_el(i: crate::icons::IconName, fg: Hsla) -> impl IntoElement {
-    crate::icons::Icon::new(i).size(24.0).color(fg)
+fn icon_el(i: crate::icons::IconName, size: f32, fg: Hsla) -> impl IntoElement {
+    crate::icons::Icon::new(i).size(size).color(fg)
 }
 
 enum Entry {
@@ -95,14 +96,14 @@ enum Entry {
 #[derive(IntoElement)]
 pub struct NavigationDrawer {
     entries: Vec<Entry>,
-    max_width: f32,
+    max_width: Option<f32>,
 }
 
 impl NavigationDrawer {
     pub fn new(_id: impl Into<ElementId>) -> Self {
         Self {
             entries: Vec::new(),
-            max_width: 360.0,
+            max_width: None,
         }
     }
     pub fn item(mut self, i: NavigationItem) -> Self {
@@ -118,9 +119,9 @@ impl NavigationDrawer {
         self.entries.push(Entry::Divider);
         self
     }
-    /// Spec width cap (360 px by default); the drawer fills its parent up to it.
+    /// Width cap; defaults to the design's `drawer_max_width`. The drawer fills its parent up to it.
     pub fn max_width(mut self, px: f32) -> Self {
-        self.max_width = px;
+        self.max_width = Some(px);
         self
     }
 }
@@ -128,26 +129,25 @@ impl NavigationDrawer {
 impl RenderOnce for NavigationDrawer {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        let tonal = t.look().tonal;
+        let k = t.navigation();
         let muted = hsla(t.palette.roles.on_surface_variant);
         let mut col = div()
             .flex()
             .flex_col()
-            .w_full()
-            .max_w(px(self.max_width))
-            .gap(px(if tonal { 0.0 } else { t.spacing.xs }))
-            .px(px(if tonal { 12.0 } else { t.spacing.sm }))
-            .py(px(if tonal { 12.0 } else { t.spacing.sm }));
-        if tonal {
-            col = col.bg(hsla(t.palette.roles.surface_container_low));
+            .min_w(gpui::relative(1.0))
+            .max_w(px(self.max_width.unwrap_or(k.drawer_max_width)))
+            .gap(px(k.item_gap))
+            .p(px(k.container_padding));
+        if let Some(c) = k.container {
+            col = col.bg(hsla(c));
         }
         for e in self.entries {
             match e {
                 Entry::Headline(h) => {
                     col = col.child(
-                        typeset(div(), &t, TypeRole::TitleSmall)
-                            .h(px(56.0))
-                            .px(px(16.0))
+                        typeset(div(), &t, k.roles.3)
+                            .h(px(k.headline_height))
+                            .px(px(k.item_padding))
                             .flex()
                             .items_center()
                             .text_color(muted)
@@ -157,8 +157,8 @@ impl RenderOnce for NavigationDrawer {
                 Entry::Divider => {
                     col = col.child(
                         div()
-                            .my(px(8.0))
-                            .mx(px(16.0))
+                            .my(px(k.item_content_gap * 0.67))
+                            .mx(px(k.item_padding))
                             .h(px(1.0))
                             .bg(hsla(t.palette.roles.outline_variant)),
                     );
@@ -178,48 +178,49 @@ fn drawer_item(
     window: &mut Window,
     cx: &mut App,
 ) -> impl IntoElement {
-    let tonal = t.look().tonal;
+    let k = t.navigation();
     let st = use_interact(&it.id, window, cx);
     let hovered = st.read(cx).hovered;
-    let (fill, fg) = nav_colors(t, it.selected, hovered);
+    let (fill, fg, outline) = nav_paint(t, it.selected, hovered);
     let nested = it.depth > 0;
-    let h = match (tonal, nested) {
-        (true, false) => 56.0,
-        (true, true) => 40.0,
-        (false, n) => t.list_row_height(n),
+    let h = if nested {
+        k.nested_height
+    } else {
+        k.item_height
     };
-    let shape = round_shape(&t.shape, h);
-    let style = ShapeStyle::from_tokens(t, None, None, false, false);
+    let shape = indicator_shape(t, &k, h);
+    let style = ShapeStyle::from_tokens(
+        t,
+        None,
+        outline.then_some(t.palette.border_strong),
+        false,
+        outline,
+    );
     let style = ShapeStyle { fill, ..style };
     let mut el = track(shaped_id(it.id, &shape, style), &st)
         .h(px(h))
-        .ml(px(it.depth as f32 * 16.0))
-        .px(px(if tonal { 16.0 } else { t.spacing.md }))
+        .ml(px(it.depth as f32 * k.indent))
+        .px(px(k.item_padding))
         .flex()
         .items_center()
-        .gap(px(12.0))
+        .gap(px(k.item_content_gap))
         .cursor_pointer()
         .text_color(fg)
         .font_family(first_family(t.typography.body));
     if let Some(i) = it.icon.filter(|_| !nested) {
-        el = el.child(icon_el(i, fg));
+        el = el.child(icon_el(i, k.icon_size, fg));
     }
     el = el.child(
-        typeset(
-            div(),
-            t,
-            if nested {
-                TypeRole::LabelMedium
-            } else {
-                TypeRole::LabelLarge
-            },
-        )
-        .flex_1()
-        .min_w_0()
-        .child(format_label(&t.typography, &it.label)),
+        typeset(div(), t, if nested { k.roles.1 } else { k.roles.0 })
+            .flex_1()
+            .min_w_0()
+            .overflow_hidden()
+            .whitespace_nowrap()
+            .text_ellipsis()
+            .child(format_label(&t.typography, &it.label)),
     );
     if let Some(b) = it.badge {
-        el = el.child(typeset(div(), t, TypeRole::LabelLarge).child(b));
+        el = el.child(typeset(div(), t, k.roles.0).child(b));
     }
     if let Some(h) = it.on_click {
         el = el.on_click(move |e, w, cx| h(e, w, cx));
@@ -227,7 +228,7 @@ fn drawer_item(
     el
 }
 
-/// Narrow icon rail: 80 px wide, label under each icon, indicator pill behind the icon.
+/// Narrow icon rail (width from the design's tokens): label under each icon, indicator pill behind the icon.
 #[derive(IntoElement)]
 pub struct NavigationRail {
     items: Vec<NavigationItem>,
@@ -252,23 +253,20 @@ impl NavigationRail {
     }
 }
 
-/// Spec width of the rail (px).
-pub const RAIL_WIDTH: f32 = 80.0;
-
 impl RenderOnce for NavigationRail {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        let tonal = t.look().tonal;
+        let k = t.navigation();
         let mut col = div()
             .flex()
             .flex_col()
             .items_center()
-            .w(px(RAIL_WIDTH))
+            .w(px(k.rail_width))
             .flex_none()
-            .gap(px(12.0))
-            .py(px(12.0));
-        if tonal {
-            col = col.bg(hsla(t.palette.roles.surface_container_low));
+            .gap(px(k.container_padding))
+            .py(px(k.container_padding));
+        if let Some(c) = k.container {
+            col = col.bg(hsla(c));
         }
         if let Some(h) = self.header {
             col = col.child(h);
@@ -276,29 +274,34 @@ impl RenderOnce for NavigationRail {
         for it in self.items {
             let st = use_interact(&it.id, window, cx);
             let hovered = st.read(cx).hovered;
-            let (fill, fg) = nav_colors(&t, it.selected, hovered);
-            let label_fg = if tonal && it.selected {
-                hsla(t.palette.roles.on_surface)
-            } else if tonal {
-                hsla(t.palette.roles.on_surface_variant)
+            let (fill, fg, outline) = nav_paint(&t, it.selected, hovered);
+            // The label sits outside the indicator, so it reads on the surface.
+            let label_fg = if it.selected {
+                hsla(t.palette.text)
             } else {
                 fg
             };
-            let pill_shape = round_shape(&t.shape, 32.0);
+            let pill_shape = indicator_shape(&t, &k, k.indicator.1);
             let pill = shaped(
                 &pill_shape,
                 ShapeStyle {
                     fill,
-                    ..ShapeStyle::from_tokens(&t, None, None, false, false)
+                    ..ShapeStyle::from_tokens(
+                        &t,
+                        None,
+                        outline.then_some(t.palette.border_strong),
+                        false,
+                        outline,
+                    )
                 },
             )
-            .w(px(56.0))
-            .h(px(32.0))
+            .w(px(k.indicator.0))
+            .h(px(k.indicator.1))
             .flex()
             .items_center()
             .justify_center()
             .relative()
-            .children(it.icon.map(|i| icon_el(i, fg)))
+            .children(it.icon.map(|i| icon_el(i, k.icon_size, fg)))
             .children(it.badge.map(|b| {
                 div()
                     .absolute()
@@ -310,12 +313,12 @@ impl RenderOnce for NavigationRail {
                 .flex()
                 .flex_col()
                 .items_center()
-                .gap(px(4.0))
+                .gap(px(k.rail_label_gap))
                 .w_full()
                 .cursor_pointer()
                 .child(pill)
                 .child(
-                    typeset(div(), &t, TypeRole::LabelMedium)
+                    typeset(div(), &t, k.roles.2)
                         .text_color(label_fg)
                         .child(format_label(&t.typography, &it.label)),
                 );

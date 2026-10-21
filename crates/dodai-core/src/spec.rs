@@ -7,8 +7,9 @@
 
 use crate::{
     AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, Color, ControlSize,
-    ControlState, InputTokens, ListItemTokens, ProgressTokens, SizeMetrics, StepState, StepTokens,
-    SurfaceTokens, TabTokens, Theme, ToggleKind, ToggleTokens, Tone, TypeRole, TypeStyle,
+    ControlState, InputTokens, ListItemTokens, NavigationTokens, ProgressTokens, SizeMetrics,
+    StepState, StepTokens, SurfaceTokens, TabTokens, Theme, ToggleKind, ToggleTokens, Tone,
+    TypeRole, TypeStyle,
 };
 
 /// The icon pack a design system draws from. A design names its own source, so no pack is a
@@ -104,6 +105,12 @@ pub trait DesignSpec: Send + Sync + std::fmt::Debug {
         None
     }
     fn list_item(&self, t: &Theme, selected: bool, hovered: bool) -> Option<ListItemTokens> {
+        None
+    }
+    fn navigation(&self, t: &Theme) -> Option<NavigationTokens> {
+        None
+    }
+    fn navigation_item(&self, t: &Theme, selected: bool, hovered: bool) -> Option<ListItemTokens> {
         None
     }
     fn divider(&self, t: &Theme) -> Option<Color> {

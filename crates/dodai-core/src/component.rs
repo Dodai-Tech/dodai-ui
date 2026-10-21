@@ -66,6 +66,43 @@ pub struct TagTokens {
     pub border: Option<Color>,
 }
 
+/// Geometry of the app-level navigation components (drawer and rail), in px.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct NavigationTokens {
+    /// Drawer row height.
+    pub item_height: f32,
+    /// Height of a nested drawer row.
+    pub nested_height: f32,
+    /// Section headline height.
+    pub headline_height: f32,
+    /// Horizontal padding inside a row.
+    pub item_padding: f32,
+    /// Padding around the drawer's rows.
+    pub container_padding: f32,
+    /// Gap between a row's icon, label and badge.
+    pub item_content_gap: f32,
+    /// Gap between rows.
+    pub item_gap: f32,
+    /// Extra left margin per nesting level.
+    pub indent: f32,
+    /// Icon size.
+    pub icon_size: f32,
+    /// Widest the drawer grows.
+    pub drawer_max_width: f32,
+    /// Rail width.
+    pub rail_width: f32,
+    /// Rail indicator size (width, height).
+    pub indicator: (f32, f32),
+    /// Rail gap between the indicator and its label.
+    pub rail_label_gap: f32,
+    /// Rows and indicators are fully rounded pills.
+    pub pill: bool,
+    /// Surface behind the drawer and rail.
+    pub container: Option<Color>,
+    /// Label type roles: (row, nested row, rail label, headline).
+    pub roles: (TypeRole, TypeRole, TypeRole, TypeRole),
+}
+
 /// Tab tokens.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TabTokens {
@@ -616,6 +653,42 @@ impl Theme {
                 outline: false,
             }
         }
+    }
+
+    /// Drawer and rail geometry; derived from spacing and the control height unless the design
+    /// overrides it.
+    pub fn navigation(&self) -> NavigationTokens {
+        hook!(self.navigation());
+        let sp = &self.spacing;
+        NavigationTokens {
+            item_height: self.list_row_height(false),
+            nested_height: self.list_row_height(true),
+            headline_height: self.list_row_height(false),
+            item_padding: sp.md,
+            container_padding: sp.sm,
+            item_content_gap: sp.sm,
+            item_gap: sp.xs,
+            indent: sp.md,
+            icon_size: 20.0,
+            drawer_max_width: 360.0,
+            rail_width: 80.0,
+            indicator: (self.shape.control_height * 1.75, self.shape.control_height),
+            rail_label_gap: sp.xs,
+            pill: false,
+            container: None,
+            roles: (
+                TypeRole::LabelLarge,
+                TypeRole::LabelMedium,
+                TypeRole::LabelMedium,
+                TypeRole::TitleSmall,
+            ),
+        }
+    }
+
+    /// Colours of a drawer row or rail destination (a list row unless the design overrides).
+    pub fn navigation_item(&self, selected: bool, hovered: bool) -> ListItemTokens {
+        hook!(self.navigation_item(selected, hovered));
+        self.list_item(selected, hovered)
     }
 
     /// Divider / separator colour.

@@ -7,9 +7,9 @@
 use dodai_core::{
     AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, Color, ControlSize,
     ControlState, CornerStyle, Corners, DefaultShape, DesignSpec, IconSet, InputTokens,
-    ListItemTokens, Look, ProgressTokens, RoleShape, ShapePreset, ShapeRole, ShapeScale, ShapeSize,
-    ShapeSystem, SizeMetrics, SurfaceTokens, TabTokens, Theme, ToggleKind, ToggleTokens, Tone,
-    TypeRole, TypeStyle,
+    ListItemTokens, Look, NavigationTokens, ProgressTokens, RoleShape, ShapePreset, ShapeRole,
+    ShapeScale, ShapeSize, ShapeSystem, SizeMetrics, SurfaceTokens, TabTokens, Theme, ToggleKind,
+    ToggleTokens, Tone, TypeRole, TypeStyle,
 };
 
 const ALL: Corners = Corners::ALL;
@@ -329,6 +329,53 @@ impl DesignSpec for Material3 {
             fill: tone.map_or(p.primary, |x| p.tone(x)),
             border: track,
             segments: 0,
+        })
+    }
+
+    /// M3 navigation drawer / rail: 56 px pills, 360 px drawer, 80 px rail, 56×32 indicator.
+    fn navigation(&self, t: &Theme) -> Option<NavigationTokens> {
+        Some(NavigationTokens {
+            item_height: 56.0,
+            nested_height: 40.0,
+            headline_height: 56.0,
+            item_padding: 16.0,
+            container_padding: 12.0,
+            item_content_gap: 12.0,
+            item_gap: 0.0,
+            indent: 16.0,
+            icon_size: 24.0,
+            drawer_max_width: 360.0,
+            rail_width: 80.0,
+            indicator: (56.0, 32.0),
+            rail_label_gap: 4.0,
+            pill: true,
+            container: Some(t.palette.roles.surface_container_low),
+            roles: (
+                TypeRole::LabelLarge,
+                TypeRole::LabelMedium,
+                TypeRole::LabelMedium,
+                TypeRole::TitleSmall,
+            ),
+        })
+    }
+
+    /// Inactive destinations use `on-surface-variant`; the active one a secondary-container pill.
+    fn navigation_item(&self, t: &Theme, selected: bool, hovered: bool) -> Option<ListItemTokens> {
+        let r = &t.palette.roles;
+        Some(if selected {
+            ListItemTokens {
+                background: Some(r.secondary_container),
+                foreground: r.on_secondary_container,
+                marker: None,
+                outline: false,
+            }
+        } else {
+            ListItemTokens {
+                background: hovered.then(|| r.on_surface_variant.with_alpha(0.08)),
+                foreground: r.on_surface_variant,
+                marker: None,
+                outline: false,
+            }
         })
     }
 
