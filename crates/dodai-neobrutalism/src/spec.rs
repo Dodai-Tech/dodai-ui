@@ -7,7 +7,7 @@ use dodai_core::{
     ShapePreset, ShapeScale, ShapeSize, ShapeSystem, StepState, StepTokens, SurfaceTokens,
     TabTokens, Theme, ToggleTokens, Tone,
 };
-use dodai_core::{Corners, Look};
+use dodai_core::{Corners, IconSet, Look};
 
 /// The neo-brutalism spec (attach with [`dodai_core::Theme::with_spec`]).
 #[derive(Debug)]
@@ -69,7 +69,7 @@ impl DesignSpec for NeoBrutalism {
     fn look(&self) -> Look {
         Look {
             sink: true,
-            symbol_icons: true,
+            icons: IconSet::Bold,
             ..Look::default()
         }
     }
@@ -382,7 +382,7 @@ mod tests {
     fn look_and_tooltip() {
         for t in crate::variants() {
             let l = t.look();
-            assert!(l.sink && l.symbol_icons && !l.tonal, "{}", t.id());
+            assert!(l.sink && l.icons == IconSet::Bold && !l.tonal, "{}", t.id());
             assert_eq!(t.divider(), t.palette.border, "{}", t.id());
             assert_eq!(t.tooltip(false).0, t.palette.primary, "{}", t.id());
         }

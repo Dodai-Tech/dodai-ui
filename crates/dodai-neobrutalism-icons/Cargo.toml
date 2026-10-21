@@ -1,0 +1,16 @@
+[package]
+name         = "dodai-neobrutalism-icons"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license      = "MIT"
+repository.workspace   = true
+rust-version.workspace = true
+description  = "Bold, chunky icon pack for the Dodai Neo-Brutalism design system, drawn from Phosphor Icons (MIT) as dependency-light vector data"
+readme       = "README.md"
+keywords     = ["icons", "neobrutalism", "phosphor", "svg", "ui"]
+categories   = ["gui", "graphics"]
+exclude      = ["scripts/"]
+
+[dependencies]
+dodai-material-icons = { workspace = true }

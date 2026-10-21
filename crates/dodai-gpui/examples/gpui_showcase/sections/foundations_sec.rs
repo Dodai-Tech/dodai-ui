@@ -91,7 +91,7 @@ impl Showcase {
                 .into_any_element(),
             "Shape tokens",
         ));
-        let rounded = t.look().symbol_icons;
+        let rounded = t.look().icons == dodai_core::IconSet::Symbols;
         let query = self.icon_search.read(cx).text().to_string();
         let count = dodai_cyberpunk_icons::ALL.len();
         out.push((

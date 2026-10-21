@@ -11,5 +11,11 @@ readme       = "README.md"
 keywords     = ["theme", "neobrutalism", "design-system", "ui"]
 categories   = ["gui", "rendering"]
 
+[features]
+default = ["icons"]
+## Re-export the bold icon pack as `dodai_neobrutalism::icons`.
+icons = ["dep:dodai-neobrutalism-icons"]
+
 [dependencies]
 dodai-core = { workspace = true }
+dodai-neobrutalism-icons = { workspace = true, optional = true }

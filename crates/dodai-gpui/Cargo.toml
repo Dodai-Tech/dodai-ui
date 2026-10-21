@@ -12,7 +12,7 @@ keywords     = ["theme", "design-system", "gpui", "cyberpunk"]
 categories   = ["gui"]
 
 [features]
-default    = ["components", "charts", "shaders", "cyberpunk", "material"]
+default    = ["components", "charts", "shaders", "cyberpunk", "material", "neobrutalism"]
 # Buttons, tables, dialogs, pickers, navigation, ...
 components = []
 # Charts only (always includes the theme, painting and motion core).
@@ -26,6 +26,8 @@ cyberpunk = ["dodai-cyberpunk-icons/shapes"]
 # Material Symbols glyphs: `Icon` follows the theme (rounded themes draw Material icons)
 # and `MaterialIcon` draws any of the 3,900+ catalogue icons.
 material = ["dep:dodai-material-icons"]
+# The bold Neo-Brutalism icon pack (`Icon` on themes that declare `IconSet::Bold`).
+neobrutalism = ["dep:dodai-neobrutalism-icons", "dep:dodai-material-icons"]
 
 [dependencies]
 dodai-core = { workspace = true }
@@ -33,6 +35,7 @@ dodai-motion = { workspace = true }
 dodai-charts-core = { workspace = true }
 dodai-cyberpunk-icons = { workspace = true }
 dodai-material-icons = { workspace = true, optional = true }
+dodai-neobrutalism-icons = { workspace = true, optional = true }
 gpui = { workspace = true }
 dodai-shaders = { workspace = true, optional = true }
 image = { version = "0.25", default-features = false, optional = true }

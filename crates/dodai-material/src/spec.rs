@@ -6,10 +6,10 @@
 
 use dodai_core::{
     AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, Color, ControlSize,
-    ControlState, CornerStyle, Corners, DefaultShape, DesignSpec, InputTokens, ListItemTokens,
-    Look, ProgressTokens, RoleShape, ShapePreset, ShapeRole, ShapeScale, ShapeSize, ShapeSystem,
-    SizeMetrics, SurfaceTokens, TabTokens, Theme, ToggleKind, ToggleTokens, Tone, TypeRole,
-    TypeStyle,
+    ControlState, CornerStyle, Corners, DefaultShape, DesignSpec, IconSet, InputTokens,
+    ListItemTokens, Look, ProgressTokens, RoleShape, ShapePreset, ShapeRole, ShapeScale, ShapeSize,
+    ShapeSystem, SizeMetrics, SurfaceTokens, TabTokens, Theme, ToggleKind, ToggleTokens, Tone,
+    TypeRole, TypeStyle,
 };
 
 const ALL: Corners = Corners::ALL;
@@ -118,7 +118,7 @@ impl DesignSpec for Material3 {
             tonal: true,
             soft_elevation: true,
             floating_label: true,
-            symbol_icons: true,
+            icons: IconSet::Symbols,
             sink: false,
         }
     }

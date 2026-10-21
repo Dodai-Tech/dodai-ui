@@ -1,7 +1,8 @@
 //! Toolkit-neutral icons by name: the right glyph for a theme, as SVG or as a
 //! coverage mask, so any adapter can draw it.
 //!
-//! * Themes that declare `Look::symbol_icons` (Material) get the smooth Material Symbols glyph.
+//! * Themes that declare `Look::icons == IconSet::Symbols` (Material) get the smooth Material Symbols glyph.
+//! * `IconSet::Bold` (Neo-Brutalism) gets the heavy Phosphor-based pack; a name it lacks resolves to `None`.
 //! * Other themes (Cyberpunk) get the hand-drawn Cyberpunk icon, found by its
 //!   own name or by the Material name it mirrors. A name without a hand-drawn
 //!   icon resolves to `None`; Material glyphs are never reshaped for them.
@@ -46,7 +47,20 @@ fn cyber_shapes(name: &str) -> Option<Vec<(Points, bool)>> {
 /// Resolve `name` (Cyberpunk or Material Symbols spelling) for `theme`.
 /// `filled` picks the Material `-fill` variant when there is one.
 pub fn glyph(name: &str, theme: &Theme, filled: bool) -> Option<Glyph> {
-    let rounded = theme.look().symbol_icons;
+    let set = theme.look().icons;
+    let rounded = set == crate::IconSet::Symbols;
+    #[cfg(feature = "neobrutalism")]
+    if set == crate::IconSet::Bold {
+        use dodai_neobrutalism::icons as b;
+        let icon = (filled)
+            .then(|| b::get(&format!("{name}-fill")))
+            .flatten()
+            .or_else(|| b::get(name))
+            .or_else(|| b::get(&name.replace('_', "-")))?;
+        return Some(Glyph::Filled(icon.polygons()));
+    }
+    #[cfg(not(feature = "neobrutalism"))]
+    let _ = set;
     #[cfg(feature = "cyberpunk")]
     if !rounded {
         return cyber_shapes(name).map(Glyph::Stroked);

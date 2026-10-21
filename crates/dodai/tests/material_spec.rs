@@ -306,7 +306,9 @@ fn the_spec_lives_with_the_design_system() {
 fn material_look_flags() {
     for t in material() {
         let l = t.look();
-        assert!(l.tonal && l.soft_elevation && l.floating_label && l.symbol_icons);
+        assert!(
+            l.tonal && l.soft_elevation && l.floating_label && l.icons == dodai::IconSet::Symbols
+        );
     }
 }
 

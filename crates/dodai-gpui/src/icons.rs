@@ -20,15 +20,20 @@ pub enum IconPack {
     Stroked,
     /// Material Symbols (needs feature `material`; falls back to stroked).
     Material,
+    /// The heavy Neo-Brutalism pack (needs feature `neobrutalism`; falls back to stroked).
+    Bold,
 }
 
 impl IconPack {
     /// Resolve `Auto` against the theme's shape kind.
     #[cfg_attr(not(feature = "material"), allow(dead_code))]
-    pub(crate) fn resolve(self, rounded: bool) -> Self {
+    pub(crate) fn resolve(self, set: dodai_core::IconSet) -> Self {
         let (mat, stroked) = (cfg!(feature = "material"), cfg!(feature = "cyberpunk"));
+        let bold = cfg!(feature = "neobrutalism");
         match self {
-            Self::Auto if rounded && mat => Self::Material,
+            Self::Auto if set == dodai_core::IconSet::Bold && bold => Self::Bold,
+            Self::Bold if !bold => Self::Stroked,
+            Self::Auto if set == dodai_core::IconSet::Symbols && mat => Self::Material,
             // The stroked pack is not compiled in: the only pack left is Material.
             Self::Auto | Self::Stroked if !stroked && mat => Self::Material,
             Self::Auto => Self::Stroked,
@@ -122,9 +127,28 @@ impl RenderOnce for Icon {
             .color
             .unwrap_or_else(|| crate::hsla(theme.palette.text));
         let (size, weight) = (self.size, self.weight);
-        let rounded = theme.look().symbol_icons;
+        let set = theme.look().icons;
+        let pack = self.pack.resolve(set);
+        #[cfg(feature = "neobrutalism")]
+        if pack == IconPack::Bold {
+            let wanted = self.name.map(|n| n.name().to_string()).or(self.label);
+            if let Some(w) = wanted {
+                let alt = w.replace('_', "-");
+                let hit = |n: &str| {
+                    (self.filled)
+                        .then(|| dodai_neobrutalism_icons::get(&format!("{n}-fill")))
+                        .flatten()
+                        .or_else(|| dodai_neobrutalism_icons::get(n))
+                };
+                if let Some(m) = hit(&w).or_else(|| hit(&alt)) {
+                    return glyph(size, color, m, false).into_any_element();
+                }
+            }
+            // A name the pack lacks draws nothing: no other pack stands in for it.
+            return div().size(px(size)).flex_none().into_any_element();
+        }
         #[cfg(feature = "material")]
-        if self.pack.resolve(rounded) == IconPack::Material {
+        if pack == IconPack::Material {
             let wanted = self.name.map(|n| n.name().to_string()).or(self.label);
             if let Some(w) = wanted {
                 if let Some(m) = material(dodai_material_icons::resolve(&w), self.filled) {
@@ -132,7 +156,6 @@ impl RenderOnce for Icon {
                 }
             }
         }
-        let _ = rounded;
         #[cfg(feature = "cyberpunk")]
         let shapes = self
             .custom
@@ -173,7 +196,7 @@ fn material(name: &str, filled: bool) -> Option<&'static dodai_material_icons::I
 }
 
 /// A filled glyph: all subpaths in one path, non-zero rule (holes wind opposite).
-#[cfg(feature = "material")]
+#[cfg(any(feature = "material", feature = "neobrutalism"))]
 fn glyph(
     size: f32,
     color: Hsla,
@@ -277,9 +300,17 @@ mod tests {
                 IconPack::Stroked
             }
         };
-        assert_eq!(IconPack::Auto.resolve(true), want(mat));
-        assert_eq!(IconPack::Auto.resolve(false), want(mat && !stroked));
-        assert_eq!(IconPack::Stroked.resolve(true), want(mat && !stroked));
+        use dodai_core::IconSet::{Bold, Stroked, Symbols};
+        assert_eq!(IconPack::Auto.resolve(Symbols), want(mat));
+        assert_eq!(IconPack::Auto.resolve(Stroked), want(mat && !stroked));
+        assert_eq!(IconPack::Stroked.resolve(Symbols), want(mat && !stroked));
+        // A design that names the bold pack never gets another pack's glyphs.
+        let bold = if cfg!(feature = "neobrutalism") {
+            IconPack::Bold
+        } else {
+            want(mat && !stroked)
+        };
+        assert_eq!(IconPack::Auto.resolve(Bold), bold);
     }
 
     #[cfg(feature = "material")]

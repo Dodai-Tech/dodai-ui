@@ -218,3 +218,7 @@ pub fn variants() -> Vec<Theme> {
         .flat_map(|p| [build(p, Mode::Light), build(p, Mode::Dark)])
         .collect()
 }
+
+/// The bold icon pack (`icons` feature).
+#[cfg(feature = "icons")]
+pub use dodai_neobrutalism_icons as icons;

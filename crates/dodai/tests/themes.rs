@@ -362,3 +362,23 @@ fn neon_schemes_stay_readable_for_any_accents() {
         }
     }
 }
+
+/// Every design resolves every icon name the library ships: a design names its own pack, and a
+/// name that pack lacks is a hole, not something another design's pack should fill in.
+#[cfg(all(feature = "icons", feature = "cyberpunk"))]
+#[test]
+fn every_design_draws_every_icon() {
+    let names: Vec<&str> = dodai::cyberpunk::icons::ALL
+        .iter()
+        .map(|i| i.name())
+        .collect();
+    assert!(names.len() > 300);
+    for sys in dodai::themes::systems() {
+        let t = (sys.themes)().into_iter().next().expect("a theme");
+        let missing: Vec<&&str> = names
+            .iter()
+            .filter(|n| dodai::icons::glyph(n, &t, false).is_none())
+            .collect();
+        assert!(missing.is_empty(), "{}: {missing:?}", t.id());
+    }
+}

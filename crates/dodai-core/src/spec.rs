@@ -11,6 +11,19 @@ use crate::{
     SurfaceTokens, TabTokens, Theme, ToggleKind, ToggleTokens, Tone, TypeRole, TypeStyle,
 };
 
+/// The icon pack a design system draws from. A design names its own source, so no pack is a
+/// silent fallback for another.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum IconSet {
+    /// Hand-drawn stroked icons (the classic pack).
+    #[default]
+    Stroked,
+    /// Material Symbols glyphs.
+    Symbols,
+    /// Heavy, chunky glyphs (the Neo-Brutalism pack).
+    Bold,
+}
+
 /// Semantic capabilities a design system declares. Adapters ask these instead of guessing a
 /// look from the corner geometry, so a new rounded design never inherits another design's layout.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -22,8 +35,8 @@ pub struct Look {
     pub soft_elevation: bool,
     /// Text fields with a floating label inside a filled container.
     pub floating_label: bool,
-    /// Prefers the symbol-font icon set over the stroke-shape icons.
-    pub symbol_icons: bool,
+    /// Which icon pack the design draws its icons from.
+    pub icons: IconSet,
     /// Hard-shadowed controls sink into their shadow on hover and press.
     pub sink: bool,
 }
