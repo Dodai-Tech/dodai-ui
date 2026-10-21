@@ -406,7 +406,13 @@ impl Showcase {
                         let demo = self.demo_rail;
                         let m = me.clone();
                         let m2 = me.clone();
-                        let items = ["Inbox", "Drafts", "Sent", "Archive"];
+                        // "Drafts" has no icon on purpose: collapsed, it shows its first letter.
+                        let items = [
+                            ("Inbox", Some(dodai_gpui::IconName::Inbox)),
+                            ("Drafts", None),
+                            ("Sent", Some(dodai_gpui::IconName::Send)),
+                            ("Archive", Some(dodai_gpui::IconName::Archive)),
+                        ];
                         let mut side = div()
                             .flex()
                             .flex_col()
@@ -422,13 +428,12 @@ impl Showcase {
                                         })
                                     }),
                             );
-                        for (i, name) in items.into_iter().enumerate() {
-                            let label = if demo {
-                                name.chars().take(1).collect::<String>()
-                            } else {
-                                name.to_string()
-                            };
-                            side = side.child(ListItem::new(("demo-li", i), label));
+                        for (i, (name, icon)) in items.into_iter().enumerate() {
+                            let mut row = ListItem::new(("demo-li", i), name).collapsed(demo);
+                            if let Some(g) = icon {
+                                row = row.icon(g);
+                            }
+                            side = side.child(row);
                         }
                         div()
                             .relative()

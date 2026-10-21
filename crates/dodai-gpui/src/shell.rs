@@ -195,10 +195,19 @@ impl RenderOnce for ResponsiveShell {
                 .top_0()
                 .bottom_0()
                 .right_0()
-                .w(px(6.0))
+                // A 1 px line inside a wider invisible hit area; it thickens on hover.
+                .group("shell-grip")
+                .w(px(8.0))
+                .flex()
+                .justify_end()
                 .cursor_col_resize()
-                .bg(hsla(t.palette.border))
-                .hover(|s| s.bg(hsla(t.palette.primary)))
+                .child(
+                    div()
+                        .h_full()
+                        .w(px(1.0))
+                        .bg(hsla(t.palette.border))
+                        .group_hover("shell-grip", |s| s.w(px(3.0)).bg(hsla(t.palette.primary))),
+                )
                 .on_mouse_down(MouseButton::Left, move |e, _, cx| {
                     let x = f32::from(e.position.x);
                     down.update(cx, |s, _| {

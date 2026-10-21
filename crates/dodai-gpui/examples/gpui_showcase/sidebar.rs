@@ -99,11 +99,12 @@ impl Showcase {
                 ListItem::new(
                     ("cat", idx),
                     if rail {
-                        String::new()
+                        name.to_string()
                     } else {
                         format!("{name}  ·  {n}")
                     },
                 )
+                .collapsed(rail)
                 .icon(cat_icon(name))
                 .selected(self.cat == idx)
                 .on_click(move |_, w, cx| {

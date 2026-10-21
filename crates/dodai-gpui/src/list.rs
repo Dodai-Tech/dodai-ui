@@ -38,9 +38,15 @@ pub struct ListItem {
     supporting: Option<SharedString>,
     trailing: Option<SharedString>,
     leading: Option<gpui::AnyElement>,
+    collapsed: bool,
 }
 
 impl ListItem {
+    /// Rail form: only the icon, or the label's first letter when there is no icon.
+    pub fn collapsed(mut self, c: bool) -> Self {
+        self.collapsed = c;
+        self
+    }
     /// Nest the row `levels` deep: indented, smaller, muted until selected.
     /// Use it for the children of a menu entry (sub-groups, jump targets).
     pub fn depth(mut self, levels: u8) -> Self {
@@ -68,6 +74,7 @@ impl ListItem {
             supporting: None,
             trailing: None,
             leading: None,
+            collapsed: false,
         }
     }
     /// Small text above the headline (a three-line item when combined with supporting text).
@@ -147,6 +154,32 @@ impl ListItem {
             .text_size(px(size))
             .text_color(fg)
             .gap(px(t.spacing.sm));
+        if self.collapsed {
+            // Rail: centre the icon, or the first letter when the row has none.
+            el = el
+                .justify_center()
+                .pl(px(t.spacing.xs))
+                .pr(px(t.spacing.xs));
+            if let Some(g) = self.icon {
+                el = el.child(
+                    crate::icons::Icon::new(g)
+                        .size(t.typography.size_md * 1.2)
+                        .color(fg),
+                );
+            } else {
+                let letter: String = self
+                    .label
+                    .chars()
+                    .take(1)
+                    .flat_map(char::to_uppercase)
+                    .collect();
+                el = el.child(div().font_weight(gpui::FontWeight::MEDIUM).child(letter));
+            }
+            if let Some(h) = self.on_click {
+                el = el.on_click(move |e, w, cx| h(e, w, cx));
+            }
+            return el;
+        }
         if let Some(lead) = self.leading {
             el = el.child(lead);
         } else if let Some(g) = self.icon {
