@@ -94,52 +94,29 @@ impl Showcase {
         let rounded = t.look().icons == dodai_core::IconSet::Symbols;
         let query = self.icon_search.read(cx).text().to_string();
         let count = dodai_cyberpunk_icons::ALL.len();
-        out.push((
-            "Foundations",
-            "Icons",
-            section!("Icons")
-                .child(Muted::new(if rounded {
-                    format!("{count} icons by type. `Icon` follows the theme: rounded themes draw the matching Material Symbols glyph. Any name takes -off / -add / -remove / -check / -lock / -circle (e.g. `heart-add`). Click to copy `IconName::…`.")
-                } else {
-                    format!("{count} hand-drawn icons by type: straight lines, 45° chamfers, octagons. `Icon` follows the theme. Any name takes -off / -add / -remove / -check / -lock / -circle (e.g. `heart-add`). Click to copy `IconName::…`.")
-                }))
-                .child(div().w(px(360.0)).max_w_full().child(self.icon_search.clone()))
-                .child(icons_view(&t, &query))
-                .into_any_element(),
-            "Icons",
-        ));
+        let mut icons = section!("Icons")
+            .child(Muted::new(if rounded {
+                format!("{count} icons by type, then the whole Material Symbols catalogue. One search covers both. `Icon` follows the theme: rounded themes draw the matching Material Symbols glyph. Any name takes -off / -add / -remove / -check / -lock / -circle (e.g. `heart-add`). Click to copy `IconName::…`.")
+            } else {
+                format!("{count} hand-drawn icons by type: straight lines, 45° chamfers, octagons. `Icon` follows the theme. Any name takes -off / -add / -remove / -check / -lock / -circle (e.g. `heart-add`). Click to copy `IconName::…`.")
+            }))
+            .child(div().w(px(360.0)).max_w_full().child(self.icon_search.clone()))
+            .child(icons_view(&t, &query));
         // The Material catalogue only belongs to Material themes.
-        if !rounded {
-            return out;
+        if rounded {
+            icons = icons.child(self.icon_browser(&t, &query, cx));
         }
-        let browser = self.icon_browser(&t, cx);
-        out.push((
-            "Foundations",
-            "Icons Material",
-            section!("Icons Material")
-                .child(Muted::new(
-                    "The entire Material Symbols catalogue (`MaterialIcon::new(name)`, outlined or `.filled(true)`). It is the Material pack, always drawn smooth.",
-                ))
-                .child(browser)
-                .into_any_element(),
-            "Icons Material",
-        ));
+        out.push(("Foundations", "Icons", icons.into_any_element(), "Icons"));
         out
     }
 }
 
 impl Showcase {
     /// Searchable, paged grid of every Material Symbols icon.
-    fn icon_browser(&mut self, t: &dodai_core::Theme, cx: &mut Context<Self>) -> gpui::Div {
+    fn icon_browser(&mut self, t: &dodai_core::Theme, query: &str, cx: &mut Context<Self>) -> gpui::Div {
         let me = cx.entity();
         let me_f = me.clone();
-        let q = self
-            .icon_q
-            .read(cx)
-            .text()
-            .trim()
-            .to_lowercase()
-            .replace(' ', "_");
+        let q = query.trim().to_lowercase().replace(' ', "_");
         let hits: Vec<&'static str> = dodai_material_icons::outlined::ALL
             .iter()
             .map(|i| i.name)
@@ -151,7 +128,7 @@ impl Showcase {
             .flex_wrap()
             .items_center()
             .gap(px(t.spacing.md))
-            .child(div().flex_1().min_w(px(220.0)).child(self.icon_q.clone()))
+            .child(Muted::new("ALL MATERIAL SYMBOLS"))
             .child(
                 Checkbox::new("ib-fill", self.icon_filled).on_change(move |v, _, cx| {
                     me_f.update(cx, |s, cx| {
