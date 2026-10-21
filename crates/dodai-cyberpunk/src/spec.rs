@@ -430,4 +430,20 @@ mod tests {
         let ids: std::collections::HashSet<_> = all.iter().map(|t| t.id()).collect();
         assert_eq!(ids.len(), all.len(), "ids are unique");
     }
+
+    #[test]
+    fn plain_look_and_raised_surfaces() {
+        use dodai_core::{CardVariant, Look};
+        for t in crate::variants() {
+            assert_eq!(t.look(), Look::default(), "{}", t.id());
+            assert_eq!(
+                t.card(CardVariant::Filled).background,
+                Some(t.palette.surface_raised),
+                "{}",
+                t.id()
+            );
+            assert_eq!(t.tooltip(false).0, t.palette.surface_raised, "{}", t.id());
+            assert_eq!(t.divider(), t.palette.border, "{}", t.id());
+        }
+    }
 }

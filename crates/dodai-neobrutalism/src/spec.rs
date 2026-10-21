@@ -377,4 +377,14 @@ mod tests {
             assert!(t.look().sink);
         }
     }
+
+    #[test]
+    fn look_and_tooltip() {
+        for t in crate::variants() {
+            let l = t.look();
+            assert!(l.sink && l.symbol_icons && !l.tonal, "{}", t.id());
+            assert_eq!(t.divider(), t.palette.border, "{}", t.id());
+            assert_eq!(t.tooltip(false).0, t.palette.primary, "{}", t.id());
+        }
+    }
 }

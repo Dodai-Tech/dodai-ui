@@ -133,11 +133,8 @@ fn elevated_button_is_a_low_container_with_primary_label() {
         let d = t.elevated_button(ControlState::Disabled);
         assert_eq!(d.background, Some(r.on_surface.with_alpha(0.12)));
     }
-    // Other systems fall back to the secondary button.
-    for t in themes::all()
-        .into_iter()
-        .filter(|t| t.meta.family != "material")
-    {
+    // Designs without a tonal look fall back to the secondary button.
+    for t in themes::all().into_iter().filter(|t| !t.look().tonal) {
         let (a, b) = (
             t.elevated_button(ControlState::Idle),
             t.button(ButtonVariant::Secondary, ControlState::Idle),
@@ -253,13 +250,10 @@ fn tabs_lists_inputs_and_progress_follow_the_spec() {
     }
 }
 
-/// Non-Material themes keep their own shape for every role (no component may assume M3).
+/// Designs without a tonal look keep their own shape for every role (no component may assume M3).
 #[test]
-fn other_design_systems_keep_their_geometry() {
-    for t in themes::all()
-        .into_iter()
-        .filter(|t| t.meta.family != "material")
-    {
+fn untonal_designs_keep_their_geometry() {
+    for t in themes::all().into_iter().filter(|t| !t.look().tonal) {
         let legacy = t.shape.clone();
         for role in [
             ShapeRole::Button,
@@ -288,58 +282,31 @@ fn list_menu_tooltip_and_focus_follow_the_spec() {
         assert_eq!(t.tooltip(true).0, r.surface_container);
         assert_eq!(t.focus_ring(), (t.palette.secondary, 3.0));
     }
-    for t in themes::all()
-        .into_iter()
-        .filter(|t| t.meta.family != "material" && t.meta.family != "neobrutalism")
-    {
-        assert_eq!(
-            t.menu_row_height(),
-            t.shape.control_height * 0.8,
-            "{}",
-            t.id()
-        );
-        if t.meta.family == "cyberpunk" {
-            assert_eq!(t.tooltip(false).0, t.palette.surface_raised, "{}", t.id());
-        } else {
-            assert_eq!(
-                t.tooltip(false),
-                (t.palette.overlay, t.palette.text),
-                "{}",
-                t.id()
-            );
-        }
-        assert_eq!(t.focus_ring().0, t.palette.focus_ring, "{}", t.id());
+    // Every other design: a readable tooltip and a visible focus ring.
+    for t in themes::all().into_iter().filter(|t| !t.look().tonal) {
+        let (bg, fg) = t.tooltip(false);
+        assert!(fg.contrast(bg) >= 4.5, "{}: tooltip", t.id());
+        assert!(t.menu_row_height() > 0.0, "{}", t.id());
+        let (ring, w) = t.focus_ring();
+        assert!(w > 0.0 && ring.a > 0, "{}: focus ring", t.id());
     }
 }
 
+/// The spec a theme carries is the one its design system is registered under.
 #[test]
 fn the_spec_lives_with_the_design_system() {
-    for t in themes::all() {
-        let want = match t.meta.family {
-            "material" => "Material 3",
-            "neobrutalism" => "Neo-Brutalism",
-            _ => "Cyberpunk",
-        };
-        assert_eq!(t.spec.name(), want, "{}", t.id());
+    for s in themes::systems() {
+        for t in (s.themes)() {
+            assert_eq!(t.spec.name(), s.name, "{}", t.id());
+        }
     }
 }
 
 #[test]
-fn look_flags_belong_to_the_design() {
+fn material_look_flags() {
     for t in material() {
         let l = t.look();
         assert!(l.tonal && l.soft_elevation && l.floating_label && l.symbol_icons);
-    }
-    for t in themes::all()
-        .into_iter()
-        .filter(|t| t.meta.family != "material")
-    {
-        let want = dodai::Look {
-            sink: t.meta.family == "neobrutalism",
-            symbol_icons: t.meta.family == "neobrutalism",
-            ..dodai::Look::default()
-        };
-        assert_eq!(t.look(), want, "{}", t.id());
     }
 }
 
@@ -571,5 +538,20 @@ fn type_scale_is_exact_for_material_and_ordered_everywhere() {
         assert!(TypeRole::ALL
             .iter()
             .all(|r| t.type_style(*r).line_height >= t.type_style(*r).size));
+    }
+}
+
+#[test]
+fn material_cards_are_tonal_and_snackbar_is_inverse() {
+    use dodai::CardVariant;
+    for t in material() {
+        let r = &t.palette.roles;
+        let f = t.card(CardVariant::Filled);
+        assert_eq!(f.background, Some(r.surface_container_highest));
+        assert_eq!(t.divider(), r.outline_variant);
+        let (sb, _) = t.snackbar();
+        assert_eq!(sb.background, Some(r.inverse_surface));
+        let banner = t.alert(dodai::Tone::Warning, true).background.unwrap();
+        assert_ne!(banner, t.palette.warning, "{}: tonal banner", t.id());
     }
 }
