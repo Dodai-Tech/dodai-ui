@@ -33,6 +33,7 @@ pub struct Tabs {
     corners: Option<dodai_core::Corners>,
     icons: Vec<crate::icons::IconName>,
     secondary: bool,
+    scrollable: bool,
 }
 
 crate::corners_setter!(Tabs);
@@ -47,7 +48,14 @@ impl Tabs {
             on_select: None,
             icons: Vec::new(),
             secondary: false,
+            scrollable: false,
         }
+    }
+    /// Scrollable tabs: keep every tab at its natural width and scroll the strip sideways when
+    /// it overflows (instead of squeezing the labels).
+    pub fn scrollable(mut self, on: bool) -> Self {
+        self.scrollable = on;
+        self
     }
     /// One icon per tab, stacked above the label (icon-only when there are no labels).
     pub fn icons(mut self, icons: impl IntoIterator<Item = crate::icons::IconName>) -> Self {
@@ -120,6 +128,9 @@ impl Tabs {
                 .font_family(first_family(t.typography.body))
                 .text_size(px(t.typography.size_md))
                 .text_color(fg);
+            if t.look().tonal {
+                tab = crate::text::typeset(tab, &t, dodai_core::TypeRole::TitleSmall);
+            }
             if stacked && !self.secondary {
                 tab = tab.flex_col().justify_center().gap(px(2.0));
             } else {
@@ -137,9 +148,19 @@ impl Tabs {
             if let Some(f) = self.on_select.clone() {
                 tab = tab.on_click(move |_, w, cx| f(i, w, cx));
             }
+            if self.scrollable {
+                tab = tab.flex_none().whitespace_nowrap();
+            }
             row = row.child(tab);
         }
-        row
+        if self.scrollable {
+            return gpui::InteractiveElement::id(div(), (self.id.clone(), "scroll"))
+                .w_full()
+                .overflow_x_scroll()
+                .child(row.flex_none())
+                .into_any_element();
+        }
+        row.into_any_element()
     }
 }
 

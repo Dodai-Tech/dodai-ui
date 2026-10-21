@@ -156,6 +156,129 @@ pub struct SurfaceTokens {
     pub shadow: bool,
 }
 
+/// Control size step (buttons, icon buttons): the five Material 3 Expressive sizes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub enum ControlSize {
+    XSmall,
+    #[default]
+    Small,
+    Medium,
+    Large,
+    XLarge,
+}
+
+impl ControlSize {
+    /// Every size, smallest first.
+    pub const ALL: [ControlSize; 5] = [
+        Self::XSmall,
+        Self::Small,
+        Self::Medium,
+        Self::Large,
+        Self::XLarge,
+    ];
+    /// Short label.
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::XSmall => "XS",
+            Self::Small => "S",
+            Self::Medium => "M",
+            Self::Large => "L",
+            Self::XLarge => "XL",
+        }
+    }
+    fn index(self) -> usize {
+        self as usize
+    }
+}
+
+/// Geometry of a [`ControlSize`].
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct SizeMetrics {
+    pub height: f32,
+    /// Horizontal padding of a label.
+    pub padding: f32,
+    pub text_size: f32,
+    pub icon_size: f32,
+    /// Corner radius of the *square* shape variant (rounded designs).
+    pub square_radius: f32,
+}
+
+/// One of the 15 Material 3 type-scale roles.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum TypeRole {
+    DisplayLarge,
+    DisplayMedium,
+    DisplaySmall,
+    HeadlineLarge,
+    HeadlineMedium,
+    HeadlineSmall,
+    TitleLarge,
+    TitleMedium,
+    TitleSmall,
+    BodyLarge,
+    BodyMedium,
+    BodySmall,
+    LabelLarge,
+    LabelMedium,
+    LabelSmall,
+}
+
+impl TypeRole {
+    /// Every role, largest first.
+    pub const ALL: [TypeRole; 15] = [
+        Self::DisplayLarge,
+        Self::DisplayMedium,
+        Self::DisplaySmall,
+        Self::HeadlineLarge,
+        Self::HeadlineMedium,
+        Self::HeadlineSmall,
+        Self::TitleLarge,
+        Self::TitleMedium,
+        Self::TitleSmall,
+        Self::BodyLarge,
+        Self::BodyMedium,
+        Self::BodySmall,
+        Self::LabelLarge,
+        Self::LabelMedium,
+        Self::LabelSmall,
+    ];
+    /// Readable name.
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::DisplayLarge => "Display large",
+            Self::DisplayMedium => "Display medium",
+            Self::DisplaySmall => "Display small",
+            Self::HeadlineLarge => "Headline large",
+            Self::HeadlineMedium => "Headline medium",
+            Self::HeadlineSmall => "Headline small",
+            Self::TitleLarge => "Title large",
+            Self::TitleMedium => "Title medium",
+            Self::TitleSmall => "Title small",
+            Self::BodyLarge => "Body large",
+            Self::BodyMedium => "Body medium",
+            Self::BodySmall => "Body small",
+            Self::LabelLarge => "Label large",
+            Self::LabelMedium => "Label medium",
+            Self::LabelSmall => "Label small",
+        }
+    }
+    /// Display / headline / title use the heading family; body / label the text family.
+    pub fn is_heading(self) -> bool {
+        (self as usize) < 9
+    }
+}
+
+/// Size, line height, weight and tracking of a [`TypeRole`].
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct TypeStyle {
+    pub size: f32,
+    pub line_height: f32,
+    /// CSS weight (400 regular, 500 medium).
+    pub weight: u16,
+    /// Letter spacing in px.
+    pub tracking: f32,
+}
+
 /// Which app bar.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AppBarKind {
@@ -609,6 +732,60 @@ impl Theme {
     pub fn tooltip(&self, rich: bool) -> (Color, Color) {
         hook!(self.tooltip(rich));
         (self.palette.overlay, self.palette.text)
+    }
+
+    /// Height, padding, text and icon size of a button at `size`. Baseline: multiples of the
+    /// theme's control height, spacing and type scale.
+    pub fn control_metrics(&self, size: ControlSize) -> SizeMetrics {
+        hook!(self.control_metrics(size));
+        let i = size.index();
+        let h = self.shape.control_height;
+        let ty = &self.typography;
+        SizeMetrics {
+            height: h * [0.8, 1.0, 1.4, 2.4, 3.4][i],
+            padding: self.spacing.md * [0.75, 1.0, 1.5, 3.0, 4.0][i],
+            text_size: [ty.size_sm, ty.size_md, ty.size_lg, ty.size_xl, ty.size_xxl][i],
+            icon_size: h * [0.5, 0.5, 0.6, 0.8, 1.0][i],
+            square_radius: [12.0, 12.0, 16.0, 28.0, 28.0][i],
+        }
+    }
+
+    /// Type-scale style of `role`. Baseline: derived from the theme's six sizes.
+    pub fn type_style(&self, role: TypeRole) -> TypeStyle {
+        hook!(self.type_style(role));
+        let ty = &self.typography;
+        use TypeRole::*;
+        let size = match role {
+            DisplayLarge => ty.size_xxl * 1.5,
+            DisplayMedium => ty.size_xxl * 1.25,
+            DisplaySmall => ty.size_xxl,
+            HeadlineLarge => ty.size_xl * 1.33,
+            HeadlineMedium => ty.size_xl * 1.17,
+            HeadlineSmall => ty.size_xl,
+            TitleLarge => ty.size_lg * 1.2,
+            TitleMedium => ty.size_lg,
+            TitleSmall => ty.size_md,
+            BodyLarge => ty.size_md,
+            BodyMedium => ty.size_sm,
+            BodySmall => ty.size_xs * 1.1,
+            LabelLarge => ty.size_sm,
+            LabelMedium => ty.size_xs * 1.1,
+            LabelSmall => ty.size_xs,
+        };
+        let heading = (role as usize) < 6;
+        TypeStyle {
+            size,
+            line_height: size * if heading { 1.2 } else { 1.4 },
+            weight: if matches!(
+                role,
+                TitleMedium | TitleSmall | LabelLarge | LabelMedium | LabelSmall
+            ) {
+                500
+            } else {
+                400
+            },
+            tracking: 0.0,
+        }
     }
 
     /// Horizontal padding of a button label.

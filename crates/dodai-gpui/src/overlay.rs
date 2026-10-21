@@ -31,6 +31,7 @@ pub struct DialogCard {
     body: Vec<AnyElement>,
     actions: Vec<AnyElement>,
     width: f32,
+    icon: Option<crate::icons::IconName>,
     corners: Option<dodai_core::Corners>,
 }
 
@@ -44,7 +45,13 @@ impl DialogCard {
             body: Vec::new(),
             actions: Vec::new(),
             width: 420.0,
+            icon: None,
         }
+    }
+    /// Material 3 icon header: a secondary-coloured icon above a centred title.
+    pub fn icon(mut self, i: crate::icons::IconName) -> Self {
+        self.icon = Some(i);
+        self
     }
     /// Footer action (usually a `Button`); order is left to right.
     pub fn action(mut self, a: impl IntoElement) -> Self {
@@ -86,16 +93,35 @@ impl DialogCard {
         .font_family(first_family(t.typography.body))
         .text_size(px(t.typography.size_md))
         .text_color(hsla(t.palette.text))
-        .child(
+        .children(self.icon.map(|i| {
             div()
+                .flex()
+                .justify_center()
+                .child(
+                    crate::icons::Icon::new(i)
+                        .size(24.0)
+                        .color(hsla(if t.look().tonal {
+                            t.palette.secondary
+                        } else {
+                            t.palette.primary
+                        })),
+                )
+        }))
+        .child({
+            let title = div()
                 .font_family(first_family(t.typography.display))
                 .text_size(px(if t.look().tonal {
                     t.typography.size_xl
                 } else {
                     t.typography.size_lg
                 }))
-                .child(format_label(&t.typography, &self.title)),
-        )
+                .child(format_label(&t.typography, &self.title));
+            if self.icon.is_some() {
+                title.flex().justify_center()
+            } else {
+                title
+            }
+        })
         .child(
             div()
                 .flex()

@@ -6,9 +6,9 @@
 //! baseline in [`Theme`]'s resolvers, so a spec only lists what it does differently.
 
 use crate::{
-    AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, Color, ControlState,
-    InputTokens, ListItemTokens, ProgressTokens, StepState, StepTokens, SurfaceTokens, TabTokens,
-    Theme, ToggleKind, ToggleTokens, Tone,
+    AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, Color, ControlSize,
+    ControlState, InputTokens, ListItemTokens, ProgressTokens, SizeMetrics, StepState, StepTokens,
+    SurfaceTokens, TabTokens, Theme, ToggleKind, ToggleTokens, Tone, TypeRole, TypeStyle,
 };
 
 /// Semantic capabilities a design system declares. Adapters ask these instead of guessing a
@@ -135,6 +135,12 @@ pub trait DesignSpec: Send + Sync + std::fmt::Debug {
         None
     }
     /// Horizontal padding of a button label.
+    fn control_metrics(&self, t: &Theme, size: ControlSize) -> Option<SizeMetrics> {
+        None
+    }
+    fn type_style(&self, t: &Theme, role: TypeRole) -> Option<TypeStyle> {
+        None
+    }
     fn button_padding(&self, t: &Theme) -> Option<f32> {
         None
     }

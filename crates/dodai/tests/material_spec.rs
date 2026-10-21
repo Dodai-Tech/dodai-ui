@@ -513,3 +513,58 @@ fn list_items_grow_with_their_lines() {
     assert!(base.list_lines_height(3) > base.list_lines_height(2));
     assert!(base.list_lines_height(2) > base.list_lines_height(1));
 }
+
+#[test]
+fn control_sizes_follow_the_spec_and_grow_everywhere() {
+    use dodai::ControlSize;
+    for t in material() {
+        let h = ControlSize::ALL.map(|s| t.control_metrics(s).height);
+        assert_eq!(h, [32.0, 40.0, 56.0, 96.0, 136.0]);
+    }
+    for t in themes::all() {
+        let m = ControlSize::ALL.map(|s| t.control_metrics(s));
+        for w in m.windows(2) {
+            assert!(
+                w[0].height < w[1].height && w[0].text_size <= w[1].text_size,
+                "{}",
+                t.id()
+            );
+        }
+    }
+}
+
+#[test]
+fn type_scale_is_exact_for_material_and_ordered_everywhere() {
+    use dodai::TypeRole;
+    for t in material() {
+        let s = |r| t.type_style(r);
+        assert_eq!(
+            (
+                s(TypeRole::DisplayLarge).size,
+                s(TypeRole::DisplayLarge).line_height
+            ),
+            (57.0, 64.0)
+        );
+        assert_eq!(
+            (
+                s(TypeRole::BodyLarge).size,
+                s(TypeRole::BodyLarge).line_height
+            ),
+            (16.0, 24.0)
+        );
+        assert_eq!(
+            (s(TypeRole::LabelSmall).size, s(TypeRole::LabelSmall).weight),
+            (11.0, 500)
+        );
+    }
+    for t in themes::all() {
+        let sizes = TypeRole::ALL.map(|r| t.type_style(r).size);
+        // Within each family of three the sizes never grow.
+        for g in sizes.chunks(3) {
+            assert!(g[0] >= g[1] && g[1] >= g[2], "{}: {g:?}", t.id());
+        }
+        assert!(TypeRole::ALL
+            .iter()
+            .all(|r| t.type_style(*r).line_height >= t.type_style(*r).size));
+    }
+}

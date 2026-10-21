@@ -5,10 +5,11 @@
 //! tokens (state layers 8 % hover / 10 % focus and press, disabled 12 % / 38 %).
 
 use dodai_core::{
-    AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, Color, ControlState,
-    CornerStyle, Corners, DefaultShape, DesignSpec, InputTokens, ListItemTokens, Look,
-    ProgressTokens, RoleShape, ShapePreset, ShapeRole, ShapeScale, ShapeSize, ShapeSystem,
-    SurfaceTokens, TabTokens, Theme, ToggleKind, ToggleTokens, Tone,
+    AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, Color, ControlSize,
+    ControlState, CornerStyle, Corners, DefaultShape, DesignSpec, InputTokens, ListItemTokens,
+    Look, ProgressTokens, RoleShape, ShapePreset, ShapeRole, ShapeScale, ShapeSize, ShapeSystem,
+    SizeMetrics, SurfaceTokens, TabTokens, Theme, ToggleKind, ToggleTokens, Tone, TypeRole,
+    TypeStyle,
 };
 
 const ALL: Corners = Corners::ALL;
@@ -530,6 +531,47 @@ impl DesignSpec for Material3 {
             title_size,
             collapsed_title_size: 22.0,
             glow: false,
+        })
+    }
+
+    /// The M3 type scale, exactly.
+    fn type_style(&self, _t: &Theme, role: TypeRole) -> Option<TypeStyle> {
+        // (size, line height, weight, tracking)
+        const S: [(f32, f32, u16, f32); 15] = [
+            (57.0, 64.0, 400, -0.25),
+            (45.0, 52.0, 400, 0.0),
+            (36.0, 44.0, 400, 0.0),
+            (32.0, 40.0, 400, 0.0),
+            (28.0, 36.0, 400, 0.0),
+            (24.0, 32.0, 400, 0.0),
+            (22.0, 28.0, 400, 0.0),
+            (16.0, 24.0, 500, 0.15),
+            (14.0, 20.0, 500, 0.1),
+            (16.0, 24.0, 400, 0.5),
+            (14.0, 20.0, 400, 0.25),
+            (12.0, 16.0, 400, 0.4),
+            (14.0, 20.0, 500, 0.1),
+            (12.0, 16.0, 500, 0.5),
+            (11.0, 16.0, 500, 0.5),
+        ];
+        let (size, line_height, weight, tracking) = S[role as usize];
+        Some(TypeStyle {
+            size,
+            line_height,
+            weight,
+            tracking,
+        })
+    }
+
+    /// M3 Expressive: XS 32, S 40, M 56, L 96, XL 136.
+    fn control_metrics(&self, _t: &Theme, size: ControlSize) -> Option<SizeMetrics> {
+        let i = size as usize;
+        Some(SizeMetrics {
+            height: [32.0, 40.0, 56.0, 96.0, 136.0][i],
+            padding: [12.0, 16.0, 24.0, 48.0, 64.0][i],
+            text_size: [14.0, 14.0, 16.0, 24.0, 32.0][i],
+            icon_size: [20.0, 20.0, 24.0, 32.0, 40.0][i],
+            square_radius: [12.0, 12.0, 16.0, 28.0, 28.0][i],
         })
     }
 

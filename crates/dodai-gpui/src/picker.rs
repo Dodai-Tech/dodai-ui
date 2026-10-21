@@ -8,7 +8,8 @@ use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use dodai_core::{ButtonVariant, ControlState};
 use gpui::{
-    div, px, App, ElementId, IntoElement, ParentElement, StatefulInteractiveElement, Styled, Window,
+    div, px, App, ElementId, IntoElement, ParentElement, RenderOnce, StatefulInteractiveElement,
+    Styled, Window,
 };
 use std::rc::Rc;
 
@@ -423,8 +424,228 @@ impl TimePicker {
 
 crate::entry_render!(TimePicker);
 
+// ───────────────────────────── text input mode ─────────────────────────────
+
+/// Parse a typed date: `YYYY-MM-DD`, `YYYY/MM/DD` or `MM/DD/YYYY`; `None` when it is not a real
+/// calendar date.
+pub fn parse_date(s: &str) -> Option<Date> {
+    let s = s.trim();
+    let parts: Vec<&str> = s.split(['-', '/', '.']).map(str::trim).collect();
+    let [a, b, c] = parts.as_slice() else {
+        return None;
+    };
+    let n = |x: &str| x.parse::<i32>().ok();
+    let (y, m, d) = if a.len() == 4 {
+        (n(a)?, n(b)?, n(c)?)
+    } else if c.len() == 4 {
+        (n(c)?, n(a)?, n(b)?)
+    } else {
+        return None;
+    };
+    if !(1..=12).contains(&m) || d < 1 || d as u32 > days_in_month(y, m as u32) {
+        return None;
+    }
+    Some(Date::new(y, m as u32, d as u32))
+}
+
+/// `YYYY-MM-DD`.
+pub fn format_date(d: Date) -> String {
+    format!("{:04}-{:02}-{:02}", d.year, d.month, d.day)
+}
+
+/// Parse a typed time: `HH:MM` (24 h) or `H:MM AM` / `H:MM PM`.
+pub fn parse_time(s: &str) -> Option<(u32, u32)> {
+    let s = s.trim().to_uppercase();
+    let (body, meridiem) = match s.strip_suffix("PM") {
+        Some(b) => (b.trim(), Some(true)),
+        None => match s.strip_suffix("AM") {
+            Some(b) => (b.trim(), Some(false)),
+            None => (s.as_str(), None),
+        },
+    };
+    let (h, m) = body.split_once(':')?;
+    let (h, m) = (h.trim().parse::<u32>().ok()?, m.trim().parse::<u32>().ok()?);
+    if m > 59 {
+        return None;
+    }
+    match meridiem {
+        None => (h < 24).then_some((h, m)),
+        Some(pm) => ((1..=12).contains(&h)).then(|| ((h % 12) + if pm { 12 } else { 0 }, m)),
+    }
+}
+
+/// `HH:MM`.
+pub fn format_time(h: u32, m: u32) -> String {
+    format!("{h:02}:{m:02}")
+}
+
+type DateChange = Rc<dyn Fn(Date, &mut Window, &mut App)>;
+type TimeChange = Rc<dyn Fn(u32, u32, &mut Window, &mut App)>;
+
+/// Typed date entry (the picker's text-input mode): a labelled field that reports each valid
+/// date and shows an error line for text that is not one.
+#[derive(IntoElement)]
+pub struct DateInput {
+    id: ElementId,
+    value: Option<Date>,
+    on_change: Option<DateChange>,
+}
+
+impl DateInput {
+    pub fn new(id: impl Into<ElementId>) -> Self {
+        Self {
+            id: id.into(),
+            value: None,
+            on_change: None,
+        }
+    }
+    /// The current (controlled) date; changing it rewrites the field.
+    pub fn value(mut self, d: Option<Date>) -> Self {
+        self.value = d;
+        self
+    }
+    crate::callback!(on_change, Date);
+}
+
+impl RenderOnce for DateInput {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        text_mode(
+            window,
+            cx,
+            self.id,
+            "Date",
+            "YYYY-MM-DD",
+            "Use YYYY-MM-DD or MM/DD/YYYY",
+            self.value.map(format_date),
+            |s| parse_date(s).is_some(),
+            {
+                let f = self.on_change;
+                move |s, w, cx| {
+                    if let (Some(f), Some(d)) = (&f, parse_date(s)) {
+                        f(d, w, cx);
+                    }
+                }
+            },
+        )
+    }
+}
+
+/// Typed time entry: `HH:MM` or `H:MM AM/PM`.
+#[derive(IntoElement)]
+pub struct TimeInput {
+    id: ElementId,
+    value: Option<(u32, u32)>,
+    on_change: Option<TimeChange>,
+}
+
+impl TimeInput {
+    pub fn new(id: impl Into<ElementId>) -> Self {
+        Self {
+            id: id.into(),
+            value: None,
+            on_change: None,
+        }
+    }
+    pub fn value(mut self, hm: Option<(u32, u32)>) -> Self {
+        self.value = hm;
+        self
+    }
+    crate::callback!(on_change, u32, u32);
+}
+
+impl RenderOnce for TimeInput {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        text_mode(
+            window,
+            cx,
+            self.id,
+            "Time",
+            "HH:MM",
+            "Use HH:MM or H:MM AM/PM",
+            self.value.map(|(h, m)| format_time(h, m)),
+            |s| parse_time(s).is_some(),
+            {
+                let f = self.on_change;
+                move |s, w, cx| {
+                    if let (Some(f), Some((h, m))) = (&f, parse_time(s)) {
+                        f(h, m, w, cx);
+                    }
+                }
+            },
+        )
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn text_mode(
+    window: &mut Window,
+    cx: &mut App,
+    id: ElementId,
+    label: &'static str,
+    placeholder: &'static str,
+    hint: &'static str,
+    value: Option<String>,
+    valid: impl Fn(&str) -> bool,
+    on_text: impl Fn(&str, &mut Window, &mut App) + 'static,
+) -> gpui::Div {
+    let t = theme_of(cx);
+    let input = window.use_keyed_state((id.clone(), "field"), cx, |_, cx| {
+        let mut ti = crate::TextInput::new(cx)
+            .label(label)
+            .placeholder(placeholder)
+            .on_change(on_text);
+        if let Some(v) = &value {
+            ti.set_text(v.clone(), cx);
+        }
+        ti
+    });
+    // Rewrite the field only when the controlled value itself changed (not while typing).
+    let last = window.use_keyed_state((id, "last"), cx, |_, _| value.clone());
+    if *last.read(cx) != value {
+        last.update(cx, |l, _| *l = value.clone());
+        if let Some(v) = value {
+            input.update(cx, |ti, cx| ti.set_text(v, cx));
+        }
+    }
+    let text = input.read(cx).text().to_string();
+    let bad = !text.trim().is_empty() && !valid(&text);
+    let mut col = div().flex().flex_col().gap(px(t.spacing.xs)).w(px(220.0));
+    col = col.child(input);
+    if bad {
+        col = col.child(
+            div()
+                .text_size(px(t.typography.size_xs))
+                .text_color(hsla(t.palette.danger))
+                .child(hint),
+        );
+    }
+    col
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn typed_dates_and_times() {
+        use super::*;
+        assert_eq!(parse_date("2025-03-14"), Some(Date::new(2025, 3, 14)));
+        assert_eq!(parse_date("3/14/2025"), Some(Date::new(2025, 3, 14)));
+        assert_eq!(parse_date("2025-02-30"), None);
+        assert_eq!(parse_date("2024-02-29"), Some(Date::new(2024, 2, 29)));
+        assert_eq!(parse_date("nonsense"), None);
+        assert_eq!(parse_date("2025-13-01"), None);
+        assert_eq!(parse_time("14:05"), Some((14, 5)));
+        assert_eq!(parse_time("2:05 pm"), Some((14, 5)));
+        assert_eq!(parse_time("12:00 AM"), Some((0, 0)));
+        assert_eq!(parse_time("12:30 PM"), Some((12, 30)));
+        assert_eq!(parse_time("24:00"), None);
+        assert_eq!(parse_time("9:75"), None);
+        assert_eq!(format_date(Date::new(2025, 3, 4)), "2025-03-04");
+        assert_eq!(
+            parse_date(&format_date(Date::new(1999, 12, 31))),
+            Some(Date::new(1999, 12, 31))
+        );
+    }
+
     #[test]
     fn range_pick_cycle() {
         let d = |n| Date::new(2025, 3, n);

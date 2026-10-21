@@ -54,10 +54,45 @@ impl Showcase {
         let w_toolbar = Toolbar::new()
             .child(IconButton::new("tb1", "✎").icon(IconName::Edit))
             .child(IconButton::new("tb2", "⎘").icon(IconName::Copy));
+        let w_toolbar_float = Toolbar::new()
+            .floating(true)
+            .child(IconButton::new("tbf1", "✎").icon(IconName::Edit))
+            .child(IconButton::new("tbf2", "⎘").icon(IconName::Copy))
+            .child(IconButton::new("tbf3", "♥").icon(IconName::Heart));
+        let w_toolbar_vibrant = Toolbar::new()
+            .floating(true)
+            .vibrant(true)
+            .child(IconButton::new("tbv1", "✎").icon(IconName::Edit))
+            .child(IconButton::new("tbv2", "⎘").icon(IconName::Copy));
+        let mut sizes = row().items_center();
+        let mut sizes_square = row().items_center();
+        let mut icon_sizes = row().items_center();
+        for z in dodai_core::ControlSize::ALL {
+            sizes = sizes.child(
+                Button::new(SharedString::from(format!("sz-{}", z.name())), z.name()).size(z),
+            );
+            sizes_square = sizes_square.child(
+                Button::new(SharedString::from(format!("szq-{}", z.name())), z.name())
+                    .size(z)
+                    .square(true)
+                    .variant(ButtonVariant::Secondary),
+            );
+            icon_sizes = icon_sizes.child(
+                IconButton::new(SharedString::from(format!("szi-{}", z.name())), "✎")
+                    .icon(IconName::Edit)
+                    .size(z)
+                    .variant(ButtonVariant::Secondary),
+            );
+        }
         out.push((
             "Actions",
             "Buttons · IconButton · FAB",
-            section!("Buttons").child(buttons).into_any_element(),
+            section!("Buttons")
+                .child(buttons)
+                .child(sizes)
+                .child(sizes_square)
+                .child(icon_sizes)
+                .into_any_element(),
             "Buttons",
         ));
         let groups = div()
@@ -110,6 +145,7 @@ impl Showcase {
             "Toolbar · Snackbar",
             section!("Toolbar · Snackbar")
                 .child(w_toolbar)
+                .child(row().child(w_toolbar_float).child(w_toolbar_vibrant))
                 .child(w_snack)
                 .into_any_element(),
             "Toolbar · Snackbar",

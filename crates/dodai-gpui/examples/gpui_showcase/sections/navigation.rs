@@ -94,6 +94,11 @@ impl Showcase {
                             .size(FabSize::Small),
                     )
                     .child(Fab::new("fab", "+").icon(IconName::Plus))
+                    .child(dodai_gpui::FabMenu::new("fab-menu", IconName::Plus).items([
+                        (IconName::Edit, "Compose"),
+                        (IconName::Copy, "Duplicate"),
+                        (IconName::Heart, "Save"),
+                    ]))
                     .child(
                         Fab::new("fab-l", "+")
                             .icon(IconName::Plus)
@@ -149,6 +154,11 @@ impl Showcase {
                     .items_start()
                     .child(
                         Navigation::new("nav-rail", NavLayout::Rail)
+                            .header(
+                                Fab::new("rail-fab", "+")
+                                    .icon(IconName::Edit)
+                                    .size(FabSize::Small),
+                            )
                             .items(nav_items())
                             .active(self.nav)
                             .on_select({
@@ -177,6 +187,7 @@ impl Showcase {
         let m = me.clone();
         let search = SearchView::new("search", self.search.clone())
             .items(["Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot"])
+            .recent(2)
             .open(open)
             .on_clear({
                 let m = me.clone();
@@ -274,6 +285,35 @@ impl Showcase {
         ));
         out.push((
             "Navigation",
+            "Menu · Sub-menu",
+            section!("Menu · Sub-menu")
+                .child(Muted::new(
+                    "Leading icons, shortcuts, and a sub-menu (hover \"Share\").",
+                ))
+                .child(
+                    dodai_gpui::Menu::new("menu-demo").width(240.0).items([
+                        dodai_gpui::MenuItem::new("Edit")
+                            .icon(IconName::Edit)
+                            .shortcut("⌘E"),
+                        dodai_gpui::MenuItem::new("Copy")
+                            .icon(IconName::Copy)
+                            .shortcut("⌘C"),
+                        dodai_gpui::MenuItem::new("Share")
+                            .icon(IconName::Heart)
+                            .submenu([
+                                dodai_gpui::MenuItem::new("Mail"),
+                                dodai_gpui::MenuItem::new("Link"),
+                                dodai_gpui::MenuItem::new("Export…"),
+                            ]),
+                        dodai_gpui::MenuItem::separator(),
+                        dodai_gpui::MenuItem::new("Delete").danger(true),
+                    ]),
+                )
+                .into_any_element(),
+            "Menu · Sub-menu",
+        ));
+        out.push((
+            "Navigation",
             "Tabs",
             section!("Tabs")
                 .child(tabs)
@@ -283,6 +323,24 @@ impl Showcase {
                         .labels(["Overview", "Netrunning", "Gear", "Settings"])
                         .active(self.tab)
                         .secondary(true),
+                )
+                .child(Muted::new("Scrollable"))
+                .child(
+                    div().w(px(360.0)).child(
+                        Tabs::new("tabs-scroll")
+                            .labels([
+                                "Overview",
+                                "Netrunning",
+                                "Gear",
+                                "Settings",
+                                "Contacts",
+                                "Gigs",
+                                "Archive",
+                                "Help",
+                            ])
+                            .active(self.tab)
+                            .scrollable(true),
+                    ),
                 )
                 .child(Muted::new("With icons"))
                 .child(
@@ -513,6 +571,7 @@ impl Showcase {
         let dialog = frame(300.0).child(Dialog::new(
             "ov-dialog",
             DialogCard::new("Discard draft?")
+                .icon(IconName::Heart)
                 .width(360.0)
                 .child(Muted::new(
                     "Your unsent message will be lost. This cannot be undone.",
@@ -531,6 +590,22 @@ impl Showcase {
                 .width(240.0)
                 .child(Muted::new("Date range · Owner · Status")),
         );
+        let modal_drawer = frame(260.0).child(
+            dodai_gpui::ModalDrawer::new("ov-drawer")
+                .items(nav_items())
+                .active(self.nav),
+        );
+        out.push((
+            "Navigation",
+            "Modal navigation drawer",
+            section!("Modal navigation drawer")
+                .child(Muted::new(
+                    "Scrim + drawer from the edge; picking an item dismisses.",
+                ))
+                .child(modal_drawer)
+                .into_any_element(),
+            "Modal navigation drawer",
+        ));
         out.push((
             "Navigation",
             "Dialog · Bottom sheet · Side sheet",

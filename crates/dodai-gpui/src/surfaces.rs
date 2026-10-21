@@ -10,8 +10,8 @@ use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use dodai_core::{ButtonVariant, ControlState, Theme};
 use gpui::{
-    div, px, AnyElement, App, ClickEvent, ElementId, IntoElement, ParentElement, SharedString,
-    StatefulInteractiveElement, Styled, Window,
+    div, px, AnyElement, App, ClickEvent, ElementId, IntoElement, ParentElement, RenderOnce,
+    SharedString, StatefulInteractiveElement, Styled, Window,
 };
 use std::rc::Rc;
 
@@ -160,6 +160,26 @@ fn glyph_el(glyph: SharedString, size: f32, color: gpui::Hsla) -> gpui::AnyEleme
     }
 }
 
+/// Width of an [`IconButton`] relative to its height (Material 3: narrow, default, wide).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum IconWidth {
+    Narrow,
+    #[default]
+    Default,
+    Wide,
+}
+
+impl IconWidth {
+    /// Width as a multiple of the height.
+    pub fn factor(self) -> f32 {
+        match self {
+            Self::Narrow => 0.8,
+            Self::Default => 1.0,
+            Self::Wide => 1.3,
+        }
+    }
+}
+
 /// Square icon button. Pass any glyph string (emoji, symbol, icon-font char).
 #[derive(IntoElement)]
 pub struct IconButton {
@@ -171,6 +191,9 @@ pub struct IconButton {
     disabled: bool,
     on_click: Option<ClickHandler>,
     corners: Option<dodai_core::Corners>,
+    size: Option<dodai_core::ControlSize>,
+    square: bool,
+    width: IconWidth,
 }
 
 crate::corners_setter!(IconButton);
@@ -187,7 +210,25 @@ impl IconButton {
             toggled: None,
             disabled: false,
             on_click: None,
+            size: None,
+            square: false,
+            width: IconWidth::Default,
         }
+    }
+    /// Narrow, default or wide (0.8 / 1 / 1.3 × the height).
+    pub fn width(mut self, w: IconWidth) -> Self {
+        self.width = w;
+        self
+    }
+    /// One of the five sizes (XS 32 … XL 136 under Material).
+    pub fn size(mut self, s: dodai_core::ControlSize) -> Self {
+        self.size = Some(s);
+        self
+    }
+    /// Square shape instead of the circle, on rounded designs.
+    pub fn square(mut self, on: bool) -> Self {
+        self.square = on;
+        self
     }
     /// Draw a vector icon instead of the text glyph (crisp at any size/theme).
     pub fn icon(mut self, i: crate::icons::IconName) -> Self {
@@ -241,8 +282,12 @@ impl IconButton {
         } else {
             button_style(&t, variant, state)
         };
-        let side = t.shape.control_height;
-        let shape = t.role_shape(dodai_core::ShapeRole::IconButton);
+        let m = self.size.map(|s| t.control_metrics(s));
+        let side = m.map_or(t.shape.control_height, |m| m.height);
+        let mut shape = t.role_shape(dodai_core::ShapeRole::IconButton);
+        if let (true, Some(m), true) = (self.square, m, t.look().tonal) {
+            shape.radius = m.square_radius;
+        }
         let lift = if self.disabled {
             0.0
         } else {
@@ -256,7 +301,7 @@ impl IconButton {
         let mut el = track(shaped_id(self.id, &shape, style), &st)
             .mt(px(lift))
             .mb(px(-lift))
-            .w(px(side))
+            .w(px(side * self.width.factor()))
             .h(px(side))
             .flex()
             .items_center()
@@ -264,7 +309,11 @@ impl IconButton {
             .text_size(px(t.typography.size_lg))
             .text_color(fg);
         el = match self.icon {
-            Some(i) => el.child(crate::icons::Icon::new(i).size(side * 0.5).color(fg)),
+            Some(i) => el.child(
+                crate::icons::Icon::new(i)
+                    .size(m.map_or(side * 0.5, |m| m.icon_size))
+                    .color(fg),
+            ),
             None => el.child(self.glyph),
         };
         if !self.disabled {
@@ -444,6 +493,88 @@ impl Fab {
 
 crate::entry_render!(Fab);
 
+// ────────────────────────────── FAB menu ──────────────────────────────
+
+/// A FAB that opens a stack of labelled actions above it (Material 3 FAB menu). The main
+/// button turns into a close button while open.
+#[derive(IntoElement)]
+pub struct FabMenu {
+    id: ElementId,
+    icon: crate::icons::IconName,
+    items: Vec<(crate::icons::IconName, SharedString)>,
+    on_select: Option<IndexHandler>,
+}
+
+type IndexHandler = Rc<dyn Fn(usize, &mut Window, &mut App)>;
+
+impl FabMenu {
+    pub fn new(id: impl Into<ElementId>, icon: crate::icons::IconName) -> Self {
+        Self {
+            id: id.into(),
+            icon,
+            items: Vec::new(),
+            on_select: None,
+        }
+    }
+    /// The actions, nearest to the button last.
+    pub fn items<S: Into<SharedString>>(
+        mut self,
+        items: impl IntoIterator<Item = (crate::icons::IconName, S)>,
+    ) -> Self {
+        self.items = items.into_iter().map(|(i, s)| (i, s.into())).collect();
+        self
+    }
+    crate::callback!(on_select, usize);
+}
+
+impl RenderOnce for FabMenu {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let open = window.use_keyed_state((self.id.clone(), "open"), cx, |_, _| false);
+        let is_open = *open.read(cx);
+        let mut col = div()
+            .flex()
+            .flex_col()
+            .items_end()
+            .gap(px(t.spacing.sm + 2.0));
+        if is_open {
+            for (i, (icon, label)) in self.items.iter().enumerate() {
+                let (open, f) = (open.clone(), self.on_select.clone());
+                col = col.child(
+                    Fab::new((self.id.clone(), format!("item{i}")), "+")
+                        .icon(*icon)
+                        .extended(label.clone())
+                        .variant(ButtonVariant::Secondary)
+                        .on_click(move |_, w, cx| {
+                            open.update(cx, |o, cx| {
+                                *o = false;
+                                cx.notify();
+                            });
+                            if let Some(f) = &f {
+                                f(i, w, cx);
+                            }
+                        }),
+                );
+            }
+        }
+        let toggle = open.clone();
+        col.child(
+            Fab::new((self.id.clone(), "main"), "+")
+                .icon(if is_open {
+                    crate::icons::IconName::Close
+                } else {
+                    self.icon
+                })
+                .on_click(move |_, _, cx| {
+                    toggle.update(cx, |o, cx| {
+                        *o = !*o;
+                        cx.notify();
+                    })
+                }),
+        )
+    }
+}
+
 // ──────────────────────────── Navigation ────────────────────────────
 
 /// One destination.
@@ -481,8 +612,6 @@ pub enum NavLayout {
     Drawer,
 }
 
-type IndexHandler = Rc<dyn Fn(usize, &mut Window, &mut App)>;
-
 /// Navigation bar / rail / drawer.
 #[derive(IntoElement)]
 pub struct Navigation {
@@ -491,6 +620,7 @@ pub struct Navigation {
     items: Vec<NavItem>,
     active: usize,
     on_select: Option<IndexHandler>,
+    header: Option<AnyElement>,
     corners: Option<dodai_core::Corners>,
 }
 
@@ -505,7 +635,13 @@ impl Navigation {
             items: Vec::new(),
             active: 0,
             on_select: None,
+            header: None,
         }
+    }
+    /// Element above the destinations of a rail or drawer (menu button, FAB…).
+    pub fn header(mut self, e: impl IntoElement) -> Self {
+        self.header = Some(e.into_any_element());
+        self
     }
     pub fn items(mut self, items: impl IntoIterator<Item = NavItem>) -> Self {
         self.items = items.into_iter().collect();
@@ -529,7 +665,7 @@ impl Navigation {
 
     /// Material 3 navigation bar (80 px), rail (80 px wide) and drawer (360 px wide): a pill
     /// indicator in `secondary-container` behind the active icon, labels in `on-surface`.
-    fn build_m3(self, t: Theme, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build_m3(mut self, t: Theme, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let r = &t.palette.roles;
         let layout = self.layout;
         let (bg, root_w) = match layout {
@@ -557,6 +693,9 @@ impl Navigation {
                 .w(px(root_w.unwrap_or(360.0))),
         };
         let indicator_shape = t.role_shape(dodai_core::ShapeRole::Indicator);
+        if let (Some(h), false) = (self.header.take(), layout == NavLayout::Bar) {
+            root = root.child(div().pb(px(8.0)).child(h));
+        }
         for (i, item) in self.items.iter().enumerate() {
             let id: ElementId = (self.id.clone(), i.to_string()).into();
             let st = use_interact(&id, window, cx);

@@ -87,6 +87,7 @@ impl Showcase {
             .child(ProgressBar::new(self.slider))
             .child(ProgressBar::new(0.7).tone(Tone::Success))
             .child(ProgressBar::new(0.4).tone(Tone::Warning))
+            .child(ProgressBar::new(0.55).wavy(true))
             .child(ProgressBar::new(0.15).tone(Tone::Danger));
         let mut dials = row().gap(px(24.0));
         for i in 0..3 {
@@ -233,6 +234,30 @@ impl Showcase {
                     })
                 },
             ));
+        let typed = row()
+            .items_start()
+            .child(dodai_gpui::DateInput::new("date-in").value(sel).on_change({
+                let m = me.clone();
+                move |d, _, cx| {
+                    m.update(cx, |s, cx| {
+                        s.date = (d.year, d.month, Some(d));
+                        cx.notify()
+                    })
+                }
+            }))
+            .child(
+                dodai_gpui::TimeInput::new("time-in")
+                    .value(Some(self.time))
+                    .on_change({
+                        let m = me.clone();
+                        move |h, mi, _, cx| {
+                            m.update(cx, |s, cx| {
+                                s.time = (h, mi);
+                                cx.notify()
+                            })
+                        }
+                    }),
+            );
         let m_range = me.clone();
         let range_picker = row()
             .child(
@@ -322,6 +347,21 @@ impl Showcase {
                             s.db = v;
                             cx.notify()
                         })
+                    }),
+            )
+            .child(
+                Slider::new("centered", self.slider)
+                    .centered(true)
+                    .show_value(true)
+                    .format(|v| format!("balance {:+.0}", (v - 0.5) * 200.0))
+                    .on_change({
+                        let m = me.clone();
+                        move |v, _, cx| {
+                            m.update(cx, |s, cx| {
+                                s.slider = v;
+                                cx.notify()
+                            })
+                        }
                     }),
             );
         out.push((
@@ -468,6 +508,8 @@ impl Showcase {
             "Date picker · Time picker",
             section!("Date / time pickers")
                 .child(pickers)
+                .child(Muted::new("Text input mode"))
+                .child(typed)
                 .into_any_element(),
             "Date / time pickers",
         ));

@@ -160,17 +160,20 @@ impl ListItem {
         let mut text = div().flex_1().min_w_0().flex().flex_col();
         if let Some(o) = self.overline {
             text = text.child(
-                div()
-                    .text_size(px(t.typography.size_xs))
+                crate::text::typeset(div(), &t, dodai_core::TypeRole::LabelSmall)
                     .text_color(muted)
                     .child(format_label(&t.typography, &o)),
             );
         }
-        text = text.child(format_label(&t.typography, &self.label));
+        let headline = div().child(format_label(&t.typography, &self.label));
+        text = text.child(if t.look().tonal && self.depth == 0 {
+            crate::text::typeset(headline, &t, dodai_core::TypeRole::BodyLarge)
+        } else {
+            headline
+        });
         if let Some(sup) = self.supporting {
             text = text.child(
-                div()
-                    .text_size(px(t.typography.size_sm))
+                crate::text::typeset(div(), &t, dodai_core::TypeRole::BodyMedium)
                     .text_color(muted)
                     .child(sup),
             );
@@ -178,8 +181,7 @@ impl ListItem {
         el = el.child(text);
         if let Some(tr) = self.trailing {
             el = el.child(
-                div()
-                    .text_size(px(t.typography.size_xs))
+                crate::text::typeset(div(), &t, dodai_core::TypeRole::LabelSmall)
                     .text_color(muted)
                     .child(tr),
             );

@@ -10,6 +10,9 @@ use gpui::{
     div, px, App, ElementId, IntoElement, ParentElement, SharedString, StatefulInteractiveElement,
     Styled, Window,
 };
+use std::rc::Rc;
+
+type SubHandler = Rc<dyn Fn(usize, usize, &mut Window, &mut App)>;
 
 /// One row of a [`Menu`].
 #[derive(Clone)]
@@ -20,6 +23,8 @@ pub struct MenuItem {
     danger: bool,
     checked: bool,
     separator: bool,
+    icon: Option<crate::icons::IconName>,
+    children: Vec<MenuItem>,
 }
 
 impl MenuItem {
@@ -31,7 +36,19 @@ impl MenuItem {
             danger: false,
             checked: false,
             separator: false,
+            icon: None,
+            children: Vec::new(),
         }
+    }
+    /// Leading icon (replaces the check column).
+    pub fn icon(mut self, i: crate::icons::IconName) -> Self {
+        self.icon = Some(i);
+        self
+    }
+    /// Nested items: shown in a sub-menu to the right while this row is hovered.
+    pub fn submenu(mut self, items: impl IntoIterator<Item = MenuItem>) -> Self {
+        self.children = items.into_iter().collect();
+        self
     }
     /// Horizontal rule between groups.
     pub fn separator() -> Self {
@@ -69,6 +86,7 @@ pub struct Menu {
     width: f32,
     active: Option<usize>,
     on_select: Option<IndexHandler>,
+    on_select_sub: Option<SubHandler>,
     corners: Option<dodai_core::Corners>,
 }
 
@@ -83,6 +101,7 @@ impl Menu {
             width: 220.0,
             active: None,
             on_select: None,
+            on_select_sub: None,
         }
     }
     pub fn items(mut self, i: impl IntoIterator<Item = MenuItem>) -> Self {
@@ -100,6 +119,14 @@ impl Menu {
         self
     }
     crate::callback!(on_select, usize);
+    /// Called with `(parent index, child index)` when a sub-menu item is chosen.
+    pub fn on_select_sub(
+        mut self,
+        f: impl Fn(usize, usize, &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.on_select_sub = Some(Rc::new(f));
+        self
+    }
 }
 
 impl Menu {
@@ -114,6 +141,7 @@ impl Menu {
             .gap(px(2.0))
             .font_family(first_family(t.typography.body))
             .text_size(px(t.typography.size_md));
+        let open = window.use_keyed_state((self.id.clone(), "open"), cx, |_, _| None::<usize>);
         for (i, item) in self.items.iter().enumerate() {
             if item.separator {
                 col = col.child(div().py(px(t.spacing.xs)).child(Divider::new()));
@@ -122,6 +150,15 @@ impl Menu {
             let id: ElementId = (self.id.clone(), i.to_string()).into();
             let st = use_interact(&id, window, cx);
             let hovered = st.read(cx).hovered && !item.disabled;
+            if !item.disabled && st.read(cx).hovered {
+                let want = (!item.children.is_empty()).then_some(i);
+                if *open.read(cx) != want {
+                    open.update(cx, |o, cx| {
+                        *o = want;
+                        cx.notify();
+                    });
+                }
+            }
             let current = self.active == Some(i) && !item.disabled;
             let lit = hovered || current;
             let (style, _, marker) = list_style(&t, lit, false);
@@ -140,12 +177,23 @@ impl Menu {
                 .items_center()
                 .gap(px(t.spacing.sm))
                 .text_color(fg)
-                .child(
-                    div()
-                        .w(px(14.0))
+                .child(match item.icon {
+                    Some(ic) => div()
+                        .w(px(20.0))
+                        .min_w(px(20.0))
+                        .max_w(px(20.0))
                         .flex_none()
-                        .child(if item.checked { "✓" } else { "" }),
-                )
+                        .flex()
+                        .justify_center()
+                        .overflow_hidden()
+                        .child(crate::icons::Icon::new(ic).size(18.0).color(fg)),
+                    None => {
+                        div()
+                            .w(px(14.0))
+                            .flex_none()
+                            .child(if item.checked { "✓" } else { "" })
+                    }
+                })
                 .child(
                     div()
                         .flex_1()
@@ -159,6 +207,25 @@ impl Menu {
                         .text_color(hsla(t.palette.text_muted))
                         .child(s.clone()),
                 );
+            }
+            if !item.children.is_empty() {
+                row = row.child(div().text_size(px(t.typography.size_sm)).child("▸"));
+                if *open.read(cx) == Some(i) {
+                    let parent = i;
+                    let mut sub = Menu::new((self.id.clone(), format!("sub{i}")))
+                        .items(item.children.clone())
+                        .width((self.width * 0.8).max(160.0));
+                    if let Some(f) = self.on_select_sub.clone() {
+                        sub = sub.on_select(move |c, w, cx| f(parent, c, w, cx));
+                    }
+                    row = row.child(
+                        div()
+                            .absolute()
+                            .left(px(self.width - t.spacing.xs * 2.0))
+                            .top(px(-(t.spacing.xs + 2.0)))
+                            .child(sub),
+                    );
+                }
             }
             if let (Some(m), true) = (marker, lit) {
                 row = row.child(

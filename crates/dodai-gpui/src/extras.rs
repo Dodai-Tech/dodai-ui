@@ -37,6 +37,8 @@ pub struct Toolbar {
     items: Vec<AnyElement>,
     trailing: Option<AnyElement>,
     corners: Option<dodai_core::Corners>,
+    floating: bool,
+    vibrant: bool,
 }
 
 crate::corners_setter!(Toolbar);
@@ -47,7 +49,20 @@ impl Toolbar {
             corners: None,
             items: Vec::new(),
             trailing: None,
+            floating: false,
+            vibrant: false,
         }
+    }
+    /// Material 3 Expressive floating toolbar: a lifted pill that hugs its content, instead of
+    /// the docked full-width bar.
+    pub fn floating(mut self, on: bool) -> Self {
+        self.floating = on;
+        self
+    }
+    /// Vibrant colour scheme (primary container) instead of the standard surface one.
+    pub fn vibrant(mut self, on: bool) -> Self {
+        self.vibrant = on;
+        self
     }
     /// Element pinned to the right end (e.g. a [`crate::Fab`]).
     pub fn trailing(mut self, e: impl IntoElement) -> Self {
@@ -72,14 +87,33 @@ impl Toolbar {
     fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
-        let mut bar = shaped(&t.role_shape(dodai_core::ShapeRole::Toolbar), bar_style(&t))
+        let mut style = bar_style(&t);
+        let mut shape = t.role_shape(dodai_core::ShapeRole::Toolbar);
+        let tonal = t.look().tonal;
+        let mut fg = hsla(t.palette.text);
+        if tonal && self.vibrant {
+            style.fill = Some(hsla(t.palette.roles.primary_container));
+            fg = hsla(t.palette.roles.on_primary_container);
+        }
+        if tonal && self.floating {
+            style = style.with_elevation(3, hsla(t.palette.roles.shadow));
+            shape.radius = 999.0;
+        }
+        let mut bar = shaped(&shape, style)
             .flex()
             .items_center()
             .gap(px(t.spacing.xs))
             .px(px(t.spacing.sm))
             .py(px(t.spacing.xs))
-            .text_color(hsla(t.palette.text))
+            .text_color(fg)
             .children(self.items);
+        if tonal {
+            // Docked: 64 px tall; floating: 64 px pill.
+            bar = bar.h(px(64.0));
+            if self.floating {
+                bar = bar.flex_none().w_auto();
+            }
+        }
         if let Some(e) = self.trailing {
             bar = bar.child(div().flex_1()).child(e);
         }

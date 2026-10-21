@@ -65,6 +65,7 @@ pub struct SearchView {
     items: Vec<SharedString>,
     open: bool,
     max_rows: usize,
+    recent: usize,
     mode: SearchMode,
     on_pick: Option<IndexFn>,
     on_clear: Option<VoidFn>,
@@ -82,6 +83,7 @@ impl SearchView {
             items: Vec::new(),
             open: false,
             max_rows: 6,
+            recent: 0,
             mode: SearchMode::Docked,
             on_pick: None,
             on_clear: None,
@@ -98,6 +100,11 @@ impl SearchView {
     /// Docked or full-screen; Material themes only (others always drop down).
     pub fn mode(mut self, m: SearchMode) -> Self {
         self.mode = m;
+        self
+    }
+    /// The first `n` items are recent searches and get the history icon (Material 3).
+    pub fn recent(mut self, n: usize) -> Self {
+        self.recent = n;
         self
     }
     pub fn max_rows(mut self, n: usize) -> Self {
@@ -206,9 +213,13 @@ impl SearchView {
                     .gap(px(16.0))
                     .cursor_pointer()
                     .child(
-                        Icon::new(IconName::Search)
-                            .size(24.0)
-                            .color(hsla(r.on_surface_variant)),
+                        Icon::new(if i < self.recent {
+                            IconName::History
+                        } else {
+                            IconName::Search
+                        })
+                        .size(24.0)
+                        .color(hsla(r.on_surface_variant)),
                     );
                 if hovered {
                     row = row.bg(hsla(r.on_surface.with_alpha(0.08)));

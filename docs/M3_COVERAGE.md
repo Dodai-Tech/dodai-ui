@@ -11,45 +11,45 @@ items are unverified. ✓ = implemented and spec-tested, ◐ = partly, ✗ = mis
 | App bar: search | ✓ | `SearchBar` |
 | Badges | ✓ | `Badge`, `IconBadge` |
 | Buttons: filled, tonal, elevated, outlined, text | ✓ | `Button` (+ `.elevated`) |
-| Buttons: sizes XS to XL, shape toggle (Expressive) | ✗ | |
+| Buttons: sizes XS to XL, shape toggle (Expressive) | ✓ | `Button::size`, `.square`; `ControlSize` |
 | Button groups, split button | ✓ | `ButtonGroup`, `SplitButton` |
 | FAB, small, large, extended | ✓ | `Fab` |
-| FAB menu | ✗ | |
-| Icon buttons (standard, filled, tonal, outlined, toggle) | ✓ | sizes XS to XL ✗ |
+| FAB menu | ✓ | `FabMenu` |
+| Icon buttons (standard, filled, tonal, outlined, toggle) | ✓ | sizes XS to XL, narrow/default/wide (`IconWidth`) |
 | Cards: elevated, filled, outlined | ✓ | |
 | Carousel: uncontained, multi-browse, hero, centre-hero | ✓ | |
 | Checkbox, radio | ✓ | sizes via `CheckboxVariant` |
 | Chips: assist, filter, input, suggestion, elevated | ✓ | leading icon, check on filter |
-| Date pickers (docked, modal, range) | ◐ | text-input mode ✗ |
-| Dialogs: basic, full-screen | ✓ | icon header ✗ |
+| Date pickers (docked, modal, range) | ✓ | text input: `DateInput` |
+| Dialogs: basic, full-screen | ✓ | icon header: `DialogCard::icon` |
 | Divider | ✓ | |
 | Lists: 1/2/3 line, leading, trailing text, overline | ✓ | trailing controls (switch, checkbox) by composition |
 | Loading indicator | ✓ | |
-| Menus | ◐ | sub-menus ✗, leading icons ✗ |
-| Navigation bar, rail, drawer | ◐ | modal drawer ✗, rail FAB/menu slot ✗ |
-| Progress: linear, circular | ✓ | wavy (Expressive) ✗ |
-| Search (docked, full-screen) | ✓ | history icons ✗ |
+| Menus | ✓ | `MenuItem::icon`, `::submenu` |
+| Navigation bar, rail, drawer | ✓ | `ModalDrawer`, `Navigation::header` |
+| Progress: linear, circular | ◐ | wavy linear ✓ (`.wavy`), wavy circular ✗ |
+| Search (docked, full-screen) | ✓ | `SearchView::recent` |
 | Sheets: bottom, side | ✓ | |
-| Sliders: continuous, discrete, range | ◐ | centred ✗, inset icon ✗ |
+| Sliders: continuous, discrete, range, centred | ◐ | inset icon ✗ |
 | Snackbar | ✓ | |
 | Switch | ✓ | with icons ✓ |
-| Tabs: primary, secondary, icons | ✓ | scrollable ✗ |
+| Tabs: primary, secondary, icons | ✓ | `Tabs::scrollable` |
 | Text fields: filled, outlined | ✓ | floating label |
-| Time pickers | ◐ | keyboard input mode ✗ |
+| Time pickers | ◐ | keyboard mode: `TimeInput`; analogue dial ✗ |
 | Tooltips: plain, rich | ✓ | |
-| Toolbars (Expressive: docked, floating) | ◐ | `Toolbar` approximates the docked one |
+| Toolbars (Expressive: docked, floating, vibrant) | ✓ | `Toolbar::floating`, `.vibrant` |
 | Colour: baseline + generated schemes | ✓ | 25 + 14 roles, `Scheme`, 7 styles, pastel and seeded presets |
 | Shape scale and role mapping | ✓ | |
 | Elevation (soft shadows), state layers | ✓ | |
-| Typography: M3 type scale | ✗ | components use the theme sizes, not the 15 M3 styles |
+| Typography: M3 type scale | ◐ | `TypeRole`, `Text`; used by list items, chips, tabs; other components keep theme sizes |
 | Motion: emphasized easing, durations | ◐ | `fx.rs` mixins; duration tokens not exhaustive |
 
 # Cyberpunk coverage
 
 Own `DesignSpec` hooks: card, chip, dialog, sheet, popup, scrim, step, tab, list_item, button,
 input, **app_bar** (HUD plate, neon title, lights up when scrolled), **tooltip** (readout),
-**snackbar** (glowing outline), **alert** (glow in tone). Still on the neutral baseline: toggle,
-progress, badge, focus ring (a segmented HUD progress bar would fit).
+**snackbar** (glowing outline), **alert** (glow in tone), **badge** (outlined tag), **toggle**
+(hollow switch), **progress** (10-segment gauge), **focus ring** (3 px).
 
 Colour theming: 3 base variants × dark/light, plus `Neon::new(primary, secondary, accent)
 .backdrop(Backdrop::…)` which yields a readable dark and light theme from any three colours

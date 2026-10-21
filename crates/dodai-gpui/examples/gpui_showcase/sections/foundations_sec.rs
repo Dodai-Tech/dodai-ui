@@ -51,6 +51,10 @@ impl Showcase {
                     "Sizes and families from the theme's Typography.",
                 ))
                 .child(type_view(&t))
+                .child(Muted::new(
+                    "Type scale roles (Material 3: exact; others derive them)",
+                ))
+                .child(type_scale_view(&t))
                 .into_any_element(),
             "Type scale",
         ));

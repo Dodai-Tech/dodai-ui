@@ -7,6 +7,57 @@ use crate::{hsla, theme_of};
 use dodai_core::Typography;
 use gpui::{div, px, App, IntoElement, ParentElement, RenderOnce, SharedString, Styled, Window};
 
+/// Style `el` with a type-scale role: family, size, line height and weight.
+pub fn typeset<E: Styled>(el: E, t: &dodai_core::Theme, role: dodai_core::TypeRole) -> E {
+    let s = t.type_style(role);
+    let fam = if role.is_heading() {
+        t.typography.display
+    } else {
+        t.typography.body
+    };
+    el.font_family(first_family(fam))
+        .text_size(px(s.size))
+        .line_height(px(s.line_height))
+        .font_weight(gpui::FontWeight(s.weight as f32))
+}
+
+/// Text in a type-scale role (Material 3: 15 roles; other designs derive them from their sizes).
+#[derive(IntoElement)]
+pub struct Text {
+    text: SharedString,
+    role: dodai_core::TypeRole,
+    muted: bool,
+}
+
+impl Text {
+    pub fn new(role: dodai_core::TypeRole, text: impl Into<SharedString>) -> Self {
+        Self {
+            text: text.into(),
+            role,
+            muted: false,
+        }
+    }
+    /// Use the secondary text colour.
+    pub fn muted(mut self, on: bool) -> Self {
+        self.muted = on;
+        self
+    }
+}
+
+impl RenderOnce for Text {
+    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let c = if self.muted {
+            t.palette.text_muted
+        } else {
+            t.palette.text
+        };
+        typeset(div(), &t, self.role)
+            .text_color(hsla(c))
+            .child(self.text)
+    }
+}
+
 /// Apply `uppercase_labels` to `s`.
 pub fn format_label(t: &Typography, s: &str) -> SharedString {
     if t.uppercase_labels {

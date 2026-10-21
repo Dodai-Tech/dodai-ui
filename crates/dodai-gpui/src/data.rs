@@ -461,6 +461,9 @@ impl Chip {
             .text_color(fg)
             .font_family(first_family(t.typography.body))
             .text_size(px(t.typography.size_sm));
+        if t.look().tonal {
+            el = crate::text::typeset(el, &t, dodai_core::TypeRole::LabelLarge);
+        }
         let lead = if self.filter && self.selected {
             Some(crate::icons::IconName::Check)
         } else {

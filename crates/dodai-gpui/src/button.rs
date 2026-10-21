@@ -53,6 +53,8 @@ pub struct Button {
     corners: Option<dodai_core::Corners>,
     radii: Option<[f32; 4]>,
     elevated: bool,
+    size: Option<dodai_core::ControlSize>,
+    square: bool,
 }
 
 impl Button {
@@ -66,6 +68,8 @@ impl Button {
             corners: None,
             radii: None,
             elevated: false,
+            size: None,
+            square: false,
             on_click: None,
             refine: None,
         }
@@ -113,6 +117,17 @@ impl Button {
     /// Other design systems draw the `Secondary` variant.
     pub fn elevated(mut self, on: bool) -> Self {
         self.elevated = on;
+        self
+    }
+    /// One of the five sizes (XS 32 … XL 136 under Material); default is the theme's own
+    /// control height.
+    pub fn size(mut self, s: dodai_core::ControlSize) -> Self {
+        self.size = Some(s);
+        self
+    }
+    /// Square (rounded-rectangle) shape instead of the pill, on rounded designs.
+    pub fn square(mut self, on: bool) -> Self {
+        self.square = on;
         self
     }
     /// Sweep a shimmer highlight over the button (e.g. while busy), clipped to its shape.
@@ -188,16 +203,20 @@ impl Button {
         if let Some(c) = self.corners {
             shape.corners = c;
         }
+        let m = self.size.map(|s| t.control_metrics(s));
+        if let (true, Some(m), true) = (self.square, m, t.look().tonal) {
+            shape.radius = m.square_radius;
+        }
         let mut el = track(shaped_id(self.id, &shape, style), &st)
-            .h(px(t.shape.control_height))
-            .px(px(t.button_padding()))
+            .h(px(m.map_or(t.shape.control_height, |m| m.height)))
+            .px(px(m.map_or(t.button_padding(), |m| m.padding)))
             .mt(px(lift + if pressed { 1.0 } else { 0.0 }))
             .mb(px(-lift + if pressed { -1.0 } else { 0.0 }))
             .flex()
             .items_center()
             .justify_center()
             .font_family(first_family(t.typography.body))
-            .text_size(px(t.typography.size_md))
+            .text_size(px(m.map_or(t.typography.size_md, |m| m.text_size)))
             .text_color(fg)
             .child(div().child(format_label(&t.typography, &self.label)));
         if let (Some(r), true) = (self.radii, t.look().tonal) {

@@ -282,8 +282,9 @@ pub use panel::{
 };
 #[cfg(feature = "components")]
 pub use picker::{
-    days_in_month, month_grid, range_pick, shift_month, step_hour, step_minute, to_12h, weekday,
-    Date, DatePicker, DateRange, TimePicker,
+    days_in_month, format_date, format_time, month_grid, parse_date, parse_time, range_pick,
+    shift_month, step_hour, step_minute, to_12h, weekday, Date, DateInput, DatePicker, DateRange,
+    TimeInput, TimePicker,
 };
 #[cfg(feature = "components")]
 pub use popover::{ContextMenu, DropdownMenu, HoverCard, Placement, Popover};
@@ -297,15 +298,17 @@ pub use select::{family_title, DesignSystemSelector, Select, SelectOption, Theme
 #[cfg(feature = "shaders")]
 pub use shader_view::{shader_backend, PaletteSource, ShaderView};
 #[cfg(feature = "components")]
-pub use sheets::{sheet_style, BottomSheet, FullScreenDialog, SheetEdge, SideSheet, Snackbar};
+pub use sheets::{
+    sheet_style, BottomSheet, FullScreenDialog, ModalDrawer, SheetEdge, SideSheet, Snackbar,
+};
 #[cfg(feature = "components")]
 pub use shell::{is_wide, snap_collapsed, spring_step, ResponsiveShell};
 #[cfg(feature = "components")]
 pub use spy::{pick as spy_pick, ScrollSpy};
 #[cfg(feature = "components")]
 pub use surfaces::{
-    card_style, AppBarSize, Card, CardVariant, Fab, FabSize, IconButton, NavItem, NavLayout,
-    Navigation, SearchBar, TopAppBar,
+    card_style, AppBarSize, Card, CardVariant, Fab, FabMenu, FabSize, IconButton, IconWidth,
+    NavItem, NavLayout, Navigation, SearchBar, TopAppBar,
 };
 #[cfg(feature = "components")]
 pub use switcher::{set_tree_expanded, tree_expanded, DesignSystemTree, ThemeSwitcherBar};
@@ -313,7 +316,7 @@ pub use switcher::{set_tree_expanded, tree_expanded, DesignSystemTree, ThemeSwit
 pub use tabs::Tabs;
 #[cfg(feature = "components")]
 pub use tag::Tag;
-pub use text::{Heading, Label, Mono, Muted};
+pub use text::{Heading, Label, Mono, Muted, Text};
 #[cfg(feature = "components")]
 pub use text_input::TextInput;
 #[cfg(feature = "components")]

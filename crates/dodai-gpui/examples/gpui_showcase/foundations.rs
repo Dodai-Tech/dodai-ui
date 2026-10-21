@@ -118,6 +118,37 @@ pub(crate) fn palette_view(t: &dodai_core::Theme) -> gpui::Div {
     ))
 }
 
+/// The 15 type-scale roles with their resolved size / line height / weight.
+pub(crate) fn type_scale_view(t: &dodai_core::Theme) -> gpui::Div {
+    let mut out = div().flex().flex_col().gap(px(t.spacing.xs));
+    for role in dodai_core::TypeRole::ALL {
+        let s = t.type_style(role);
+        out = out.child(
+            div()
+                .flex()
+                .items_baseline()
+                .gap(px(t.spacing.md))
+                .child(
+                    div()
+                        .w(px(190.0))
+                        .flex_none()
+                        .font_family(dodai_gpui::text::first_family(t.typography.mono))
+                        .text_size(px(t.typography.size_xs))
+                        .text_color(hsla(t.palette.text_muted))
+                        .child(format!(
+                            "{} · {:.0}/{:.0} · {}",
+                            role.name(),
+                            s.size,
+                            s.line_height,
+                            s.weight
+                        )),
+                )
+                .child(dodai_gpui::Text::new(role, "Sphinx of black quartz")),
+        );
+    }
+    out
+}
+
 pub(crate) fn type_view(t: &dodai_core::Theme) -> gpui::Div {
     let ty = &t.typography;
     let mut out = div().flex().flex_col().gap(px(t.spacing.sm));

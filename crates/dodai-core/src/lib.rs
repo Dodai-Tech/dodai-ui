@@ -29,9 +29,9 @@ pub mod themes;
 
 pub use color::Color;
 pub use component::{
-    AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, ControlState, InputTokens,
-    ListItemTokens, PanelTokens, ProgressTokens, StepState, StepTokens, SurfaceTokens, TabTokens,
-    TagTokens, ToggleKind, ToggleTokens,
+    AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, ControlSize, ControlState,
+    InputTokens, ListItemTokens, PanelTokens, ProgressTokens, SizeMetrics, StepState, StepTokens,
+    SurfaceTokens, TabTokens, TagTokens, ToggleKind, ToggleTokens, TypeRole, TypeStyle,
 };
 pub use dodai_motion;
 pub use dodai_motion::{Easing, EntryKind, EntrySet, Motion};

@@ -30,7 +30,7 @@ pub fn arc_points(cx: f32, cy: f32, r: f32, start: f32, sweep: f32) -> Vec<(f32,
         .collect()
 }
 
-fn elapsed_secs() -> f32 {
+pub(crate) fn elapsed_secs() -> f32 {
     static START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
     START
         .get_or_init(std::time::Instant::now)
