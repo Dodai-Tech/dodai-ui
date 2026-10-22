@@ -73,10 +73,34 @@ pub struct Shimmer {
 impl ShapeStyle {
     /// Let the active texture and effects (if they target `class`) paint over the fill.
     pub fn with_surface(mut self, theme: &Theme, class: dodai_core::SurfaceClass) -> Self {
-        self.surface = self
-            .fill
-            .and_then(|_| crate::surface_fx::SurfacePaint::of(theme, class));
+        self.surface = self.fill.and_then(|fill| {
+            let mut sp = crate::surface_fx::SurfacePaint::of(theme, class)?;
+            // Draw the pattern in whichever of text/background contrasts with this fill,
+            // so it stays visible on bright fills (a primary button) as well as dark ones.
+            let (text, back) = (sp.ink, sp.hole);
+            let (ink, hole) = if (text.l - fill.l).abs() >= (back.l - fill.l).abs() {
+                (text, back)
+            } else {
+                (back, text)
+            };
+            sp.ink = ink;
+            sp.hole = hole;
+            Some(sp)
+        });
         self
+    }
+
+    /// Like [`with_surface`](Self::with_surface), but an outline-only surface (no fill) also gets
+    /// the texture, drawn against the page background.
+    pub fn with_surface_outlined(self, theme: &Theme, class: dodai_core::SurfaceClass) -> Self {
+        let mut me = self;
+        if me.fill.is_none() && me.stroke.is_some() {
+            me.fill = Some(crate::hsla(theme.palette.background));
+            me = me.with_surface(theme, class);
+            me.fill = None;
+            return me;
+        }
+        me.with_surface(theme, class)
     }
 
     /// Add a shimmer sweep that follows whatever shape this style is drawn in.

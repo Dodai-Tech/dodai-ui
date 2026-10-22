@@ -22,19 +22,23 @@ pub fn button_style(
         ControlState::Hovered | ControlState::Pressed | ControlState::Focused
     );
     let glows = lit && variant != ButtonVariant::Ghost;
-    (
-        ShapeStyle::from_tokens(
-            theme,
-            b.background,
-            b.border,
-            glows,
-            state != ControlState::Disabled
-                && variant != ButtonVariant::Scrim
-                && b.background.is_some(),
-        )
-        .with_surface(theme, dodai_core::SurfaceClass::Button),
-        hsla(b.foreground),
-    )
+    let style = ShapeStyle::from_tokens(
+        theme,
+        b.background,
+        b.border,
+        glows,
+        state != ControlState::Disabled
+            && variant != ButtonVariant::Scrim
+            && b.background.is_some(),
+    );
+    let class = dodai_core::SurfaceClass::Button;
+    // Outline buttons have no fill but still wear the texture.
+    let style = if variant == ButtonVariant::Outline {
+        style.with_surface_outlined(theme, class)
+    } else {
+        style.with_surface(theme, class)
+    };
+    (style, hsla(b.foreground))
 }
 
 type Refine = Box<dyn FnOnce(Stateful<gpui::Div>) -> Stateful<gpui::Div>>;
