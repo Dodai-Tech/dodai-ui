@@ -238,10 +238,10 @@ impl Showcase {
             };
             let status = match mode {
                 0 => "Off: nothing is drawn.".to_string(),
-                1 => format!("{family} preset."),
+                1 => format!("Default: the {family} design's own mix."),
                 _ => "Custom mix.".to_string(),
             };
-            let presets = Segmented::new("sfx-mode", ["Off", "Design preset", "Custom"])
+            let presets = Segmented::new("sfx-mode", ["Off", "Default", "Custom"])
                 .selected(mode)
                 .on_select(|i, _, cx| match i {
                     0 => {
