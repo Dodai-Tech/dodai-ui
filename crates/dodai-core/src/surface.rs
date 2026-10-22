@@ -28,11 +28,33 @@ pub enum Texture {
     Perforation,
     /// Fine horizontal scanlines.
     Scanlines,
+    /// Evenly spaced small dots, like a notebook.
+    DotGrid,
+    /// Fine grid with heavier lines, corner registration crosses.
+    Blueprint,
+    /// Hatching in both diagonal directions.
+    Crosshatch,
+    /// Wide diagonal bands.
+    Stripes,
+    /// A large two-tone checkerboard.
+    Checker,
+    /// Right-angle traces ending in solder pads.
+    Circuit,
+    /// Raised diamond tread, like industrial floor metal.
+    DiamondPlate,
+    /// Soft fibre flecks, like paper stock.
+    Paper,
+    /// A grid of round lamps, some lit.
+    LedMatrix,
+    /// A barcode strip along the bottom edge.
+    Barcode,
+    /// Horizontal bands of broadcast noise.
+    Static,
 }
 
 impl Texture {
     /// Every texture, `None` first.
-    pub const ALL: [Texture; 10] = [
+    pub const ALL: [Texture; 21] = [
         Texture::None,
         Texture::Grain,
         Texture::Halftone,
@@ -43,6 +65,17 @@ impl Texture {
         Texture::Carbon,
         Texture::Perforation,
         Texture::Scanlines,
+        Texture::DotGrid,
+        Texture::Blueprint,
+        Texture::Crosshatch,
+        Texture::Stripes,
+        Texture::Checker,
+        Texture::Circuit,
+        Texture::DiamondPlate,
+        Texture::Paper,
+        Texture::LedMatrix,
+        Texture::Barcode,
+        Texture::Static,
     ];
 
     /// A short label for pickers.
@@ -58,7 +91,33 @@ impl Texture {
             Texture::Carbon => "Carbon",
             Texture::Perforation => "Perforation",
             Texture::Scanlines => "Scanlines",
+            Texture::DotGrid => "Dot grid",
+            Texture::Blueprint => "Blueprint",
+            Texture::Crosshatch => "Crosshatch",
+            Texture::Stripes => "Stripes",
+            Texture::Checker => "Checker",
+            Texture::Circuit => "Circuit",
+            Texture::DiamondPlate => "Diamond plate",
+            Texture::Paper => "Paper",
+            Texture::LedMatrix => "LED matrix",
+            Texture::Barcode => "Barcode",
+            Texture::Static => "Static",
         }
+    }
+}
+
+impl Texture {
+    /// Whether the pattern is small enough to sit under a button label or an input.
+    /// Large layouts (blueprint, circuit, barcode, paper, static) are for containers only.
+    pub const fn for_components(self) -> bool {
+        !matches!(
+            self,
+            Texture::Blueprint
+                | Texture::Circuit
+                | Texture::Barcode
+                | Texture::Paper
+                | Texture::Static
+        )
     }
 }
 
@@ -164,6 +223,8 @@ pub struct SurfaceFx {
     pub flicker: f32,
     /// Soft bloom around the outline.
     pub bloom: f32,
+    /// Lit lines: line-based textures glow in the accent colour (`0.0..=1.0`).
+    pub neon: f32,
     /// Texture for containers (cards, panels, bars); `texture` is for UI components.
     pub container_texture: Texture,
     /// Strength of the container texture.
@@ -190,6 +251,7 @@ impl SurfaceFx {
         sheen: 0.0,
         flicker: 0.0,
         bloom: 0.0,
+        neon: 0.0,
         container_texture: Texture::None,
         container_strength: 0.5,
         container_scale: 1.0,
@@ -228,6 +290,17 @@ impl SurfaceFx {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn large_layouts_are_container_only_and_labels_are_unique() {
+        use super::*;
+        assert!(Texture::Grain.for_components());
+        assert!(!Texture::Circuit.for_components());
+        let mut l: Vec<_> = Texture::ALL.iter().map(|t| t.label()).collect();
+        l.sort();
+        l.dedup();
+        assert_eq!(l.len(), Texture::ALL.len());
+    }
+
     #[test]
     fn containers_use_their_own_texture() {
         use super::*;

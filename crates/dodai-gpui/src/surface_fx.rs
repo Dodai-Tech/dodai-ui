@@ -53,6 +53,8 @@ pub struct SurfacePaint {
     pub b: Hsla,
     /// Sheen band.
     pub light: Hsla,
+    /// Colour of lit lines and lamps.
+    pub neon: Hsla,
 }
 
 impl SurfacePaint {
@@ -70,6 +72,7 @@ impl SurfacePaint {
             a: hsla(p.link),
             b: hsla(p.danger),
             light: hsla(p.text),
+            neon: hsla(p.accent),
         })
     }
 }
@@ -108,6 +111,8 @@ struct Canvas<'a> {
     w: f32,
     h: f32,
     inset: f32,
+    neon: f32,
+    neon_c: Hsla,
 }
 
 impl Canvas<'_> {
@@ -139,6 +144,24 @@ impl Canvas<'_> {
                 c,
             ));
         }
+    }
+
+    /// A thin line segment: flat ink, or lit (halo plus bright core) when neon is on.
+    fn line(&mut self, x: f32, y: f32, w: f32, h: f32, ink: Hsla) {
+        if self.neon <= 0.0 {
+            self.quad(x, y, w, h, ink);
+            return;
+        }
+        let (n, c) = (self.neon, self.neon_c);
+        self.quad(x - 2.0, y - 2.0, w + 4.0, h + 4.0, scale_alpha(c, 0.10 * n));
+        self.quad(x - 1.0, y - 1.0, w + 2.0, h + 2.0, scale_alpha(c, 0.22 * n));
+        self.quad(
+            x,
+            y,
+            w,
+            h,
+            scale_alpha(c, (ink.a * 2.0).min(1.0) * (0.5 + 0.5 * n)),
+        );
     }
 
     /// A round dot of diameter `d` centred at `cx, cy`, kept fully inside the shape.
@@ -215,6 +238,8 @@ pub fn paint_surface(
         w,
         h,
         inset: shape.border_width,
+        neon: fx.neon.clamp(0.0, 1.0),
+        neon_c: sp.neon,
     };
     if fx.has_texture() {
         texture(&mut cv, sp, seed);
@@ -304,54 +329,154 @@ fn texture(cv: &mut Canvas, sp: &SurfacePaint, seed: i32) {
                 }
             }
         }
-        Texture::Hatch => {
-            let p = (8.0 * k).max(3.0);
+        Texture::Hatch => hatch(cv, sp, 8.0 * k, 1.0, 0.3 * s),
+        Texture::Crosshatch => {
+            hatch(cv, sp, 9.0 * k, 1.0, 0.24 * s);
+            hatch(cv, sp, 9.0 * k, -1.0, 0.24 * s);
+        }
+        Texture::Grid => grid(cv, sp, 12.0 * k, 5, 0.18 * s, 0.4 * s),
+        Texture::Blueprint => {
+            grid(cv, sp, 8.0 * k, 4, 0.12 * s, 0.32 * s);
+            // registration crosses in the corners
+            let m = 8.0;
+            for (x, y) in [(m, m), (w - m, m), (m, h - m), (w - m, h - m)] {
+                cv.line(x - 4.0, y, 9.0, 1.0, scale_alpha(sp.ink, 0.5 * s));
+                cv.line(x, y - 4.0, 1.0, 9.0, scale_alpha(sp.ink, 0.5 * s));
+            }
+        }
+        Texture::DotGrid => {
+            let p = fit(8.0 * k, |p| w * h / (p * p));
+            let (nx, ny) = ((w / p) as i32, (h / p) as i32);
+            for iy in 0..=ny {
+                for ix in 0..=nx {
+                    cv.dot(
+                        ix as f32 * p + p / 2.0,
+                        iy as f32 * p + p / 2.0,
+                        1.5 + 0.5 * k.min(2.0),
+                        scale_alpha(sp.ink, 0.55 * s),
+                    );
+                }
+            }
+        }
+        Texture::Stripes => {
+            let p = (18.0 * k).max(6.0);
             let step = fit(2.0, |st| (h / st) * (w / p));
             let mut y = 0.0;
             while y < h {
-                let mut x = (-y).rem_euclid(p);
+                let mut x = (-y).rem_euclid(p) - p;
                 while x < w {
-                    cv.quad(x, y, 1.5, step, scale_alpha(sp.ink, 0.3 * s));
+                    cv.quad(x, y, p / 2.0, step, scale_alpha(sp.ink, 0.14 * s));
                     x += p;
                 }
                 y += step;
             }
         }
-        Texture::Grid => {
-            let p = (12.0 * k).max(4.0);
+        Texture::Checker => {
+            let p = fit((10.0 * k).max(4.0), |p| w * h / (2.0 * p * p));
+            let (nx, ny) = ((w / p) as i32 + 1, (h / p) as i32 + 1);
+            for iy in 0..ny {
+                for ix in 0..nx {
+                    if (ix + iy) % 2 == 0 {
+                        cv.quad(
+                            ix as f32 * p,
+                            iy as f32 * p,
+                            p,
+                            p,
+                            scale_alpha(sp.ink, 0.1 * s),
+                        );
+                    }
+                }
+            }
+        }
+        Texture::Circuit => {
+            let p = fit((14.0 * k).max(8.0), |p| w * h / (p * p) * 2.0);
+            let (nx, ny) = ((w / p) as i32, (h / p) as i32);
+            let a = scale_alpha(sp.ink, 0.28 * s);
+            for iy in 0..=ny {
+                for ix in 0..=nx {
+                    let (x, y) = (ix as f32 * p, iy as f32 * p);
+                    let r = noise(ix + seed, iy);
+                    if r < 0.35 {
+                        cv.line(x, y, p, 1.0, a);
+                    } else if r < 0.7 {
+                        cv.line(x, y, 1.0, p, a);
+                    }
+                    if noise(iy + 91, ix + seed) > 0.82 {
+                        cv.dot(x + 0.5, y + 0.5, 4.0, scale_alpha(sp.ink, 0.45 * s));
+                    }
+                }
+            }
+        }
+        Texture::DiamondPlate => {
+            let p = fit((9.0 * k).max(5.0), |p| w * h / (p * p));
+            let (nx, ny) = ((w / p) as i32 + 1, (h / p) as i32 + 1);
+            for iy in 0..ny {
+                for ix in 0..nx {
+                    let off = if iy % 2 == 0 { 0.0 } else { p / 2.0 };
+                    let (cx, cy) = (ix as f32 * p + off, iy as f32 * p);
+                    let (a, b) = (scale_alpha(sp.ink, 0.22 * s), scale_alpha(sp.ink, 0.1 * s));
+                    let u = p / 8.0;
+                    cv.quad(cx - u, cy, 2.0 * u, u, a);
+                    cv.quad(cx - 3.0 * u, cy + u, 6.0 * u, u, a);
+                    cv.quad(cx - 3.0 * u, cy + 2.0 * u, 6.0 * u, u, b);
+                    cv.quad(cx - u, cy + 3.0 * u, 2.0 * u, u, b);
+                }
+            }
+        }
+        Texture::Paper => {
+            let n = ((w * h / 90.0) as i32).min(MAX_QUADS as i32 / 2);
+            for i in 0..n {
+                let (x, y) = (noise(i, seed) * w, noise(seed, i + 7) * h);
+                let len = 2.0 + noise(i, 5) * 7.0 * k;
+                let a = 0.06 + 0.18 * noise(i + 3, 11);
+                cv.quad(x, y, len, 1.0, scale_alpha(sp.ink, a * s * 2.0));
+            }
+        }
+        Texture::LedMatrix => {
+            let p = fit((7.0 * k).max(4.0), |p| w * h / (p * p));
+            let (nx, ny) = ((w / p) as i32, (h / p) as i32);
+            for iy in 0..=ny {
+                for ix in 0..=nx {
+                    let lit = noise(ix + seed, iy + 13) > 0.72;
+                    let c = if lit {
+                        scale_alpha(sp.neon, 0.85 * s.max(0.4))
+                    } else {
+                        scale_alpha(sp.ink, 0.12 * s)
+                    };
+                    cv.dot(ix as f32 * p + p / 2.0, iy as f32 * p + p / 2.0, p * 0.5, c);
+                }
+            }
+        }
+        Texture::Barcode => {
+            let bar_h = (10.0 * k).clamp(6.0, h * 0.3);
+            let y = h - cv.inset - bar_h - 6.0;
+            let mut x = 8.0;
+            let end = (w * 0.45).min(w - 16.0);
             let mut i = 0;
-            let mut y = p;
-            while y < h {
-                let major = i % 5 == 4;
-                cv.quad(
-                    0.0,
-                    y,
-                    w,
-                    1.0,
-                    scale_alpha(sp.ink, (if major { 0.4 } else { 0.18 }) * s),
-                );
-                y += p;
+            while x < end {
+                let bw = 1.0 + (noise(i, seed) * 3.0).floor();
+                cv.quad(x, y, bw, bar_h, scale_alpha(sp.ink, 0.5 * s));
+                x += bw + 1.0 + (noise(seed, i + 1) * 2.0).floor();
                 i += 1;
             }
+        }
+        Texture::Static => {
+            let mut y = cv.inset;
             let mut i = 0;
-            let mut x = p;
-            while x < w {
-                let major = i % 5 == 4;
-                let a = scale_alpha(sp.ink, (if major { 0.4 } else { 0.18 }) * s);
-                // vertical extent of the shape at this column
-                let mut yy = 0.0;
-                let (mut top, mut bot) = (None, 0.0);
-                while yy <= h {
-                    if cv.span(yy).is_some_and(|(lo, hi)| x >= lo && x <= hi) {
-                        top.get_or_insert(yy);
-                        bot = yy;
-                    }
-                    yy += 2.0;
+            while y < h {
+                let bh = 1.0 + (noise(i, seed) * 4.0 * k).floor();
+                if noise(i + 5, seed) < 0.3 {
+                    let len = w * (0.15 + 0.6 * noise(i, 9));
+                    let xs = (w - len) * noise(i, 21);
+                    cv.quad(
+                        xs,
+                        y,
+                        len,
+                        bh,
+                        scale_alpha(sp.ink, (0.08 + 0.18 * noise(i, 4)) * s * 2.0),
+                    );
                 }
-                if let Some(t) = top {
-                    cv.quad(x, t, 1.0, bot - t + 2.0, a);
-                }
-                x += p;
+                y += bh + 2.0;
                 i += 1;
             }
         }
@@ -418,6 +543,60 @@ fn texture(cv: &mut Canvas, sp: &SurfacePaint, seed: i32) {
                 scale_alpha(sp.ink, 0.22 * s),
             );
         }
+    }
+}
+
+fn hatch(cv: &mut Canvas, sp: &SurfacePaint, pitch: f32, dir: f32, alpha: f32) {
+    let (w, h) = (cv.w, cv.h);
+    let p = pitch.max(3.0);
+    let step = fit(2.0, |st| (h / st) * (w / p));
+    let mut y = 0.0;
+    while y < h {
+        let base = if dir > 0.0 { -y } else { y };
+        let mut x = base.rem_euclid(p);
+        while x < w {
+            cv.line(x, y, 1.5, step, scale_alpha(sp.ink, alpha));
+            x += p;
+        }
+        y += step;
+    }
+}
+
+fn grid(cv: &mut Canvas, sp: &SurfacePaint, pitch: f32, major: i32, minor_a: f32, major_a: f32) {
+    let (w, h) = (cv.w, cv.h);
+    let p = fit(pitch.max(4.0), |p| (w + h) / p * 3.0);
+    let alpha = |i: i32| {
+        scale_alpha(
+            sp.ink,
+            if i % major == major - 1 {
+                major_a
+            } else {
+                minor_a
+            },
+        )
+    };
+    let (mut i, mut y) = (0, p);
+    while y < h {
+        cv.line(0.0, y, w, 1.0, alpha(i));
+        y += p;
+        i += 1;
+    }
+    let (mut i, mut x) = (0, p);
+    while x < w {
+        // vertical extent of the shape at this column
+        let (mut top, mut bot, mut yy) = (None, 0.0, 0.0);
+        while yy <= h {
+            if cv.span(yy).is_some_and(|(lo, hi)| x >= lo && x <= hi) {
+                top.get_or_insert(yy);
+                bot = yy;
+            }
+            yy += 2.0;
+        }
+        if let Some(t) = top {
+            cv.line(x, t, 1.0, bot - t + 2.0, alpha(i));
+        }
+        x += p;
+        i += 1;
     }
 }
 

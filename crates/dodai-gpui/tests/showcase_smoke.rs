@@ -155,6 +155,7 @@ fn every_surface_texture_and_effect_renders(cx: &mut TestAppContext) {
                         sheen: 1.0,
                         flicker: 1.0,
                         bloom: 1.0,
+                        neon: 1.0,
                         container_texture: tex,
                         container_strength: 1.0,
                         container_scale: 1.5,

@@ -187,16 +187,32 @@ impl Showcase {
                         ),
                     )
             };
-            let labels: Vec<&str> = Texture::ALL.iter().map(|x| x.label()).collect();
-            let picker = |id: &'static str, cur: Texture, set: fn(&mut SurfaceFx, Texture)| {
-                let sel = Texture::ALL.iter().position(|x| *x == cur).unwrap_or(0);
-                Segmented::new(id, labels.clone())
-                    .selected(sel)
-                    .on_select(move |i, _, cx| {
-                        let mut f = dodai_gpui::surface_fx();
-                        set(&mut f, Texture::ALL[i]);
-                        dodai_gpui::set_surface_fx(cx, f);
-                    })
+            let picker = |id: &'static str,
+                          cur: Texture,
+                          components: bool,
+                          set: fn(&mut SurfaceFx, Texture)| {
+                row().children(
+                    Texture::ALL
+                        .iter()
+                        .copied()
+                        .filter(|x| !components || x.for_components())
+                        .map(|x| {
+                            Button::new(
+                                gpui::SharedString::from(format!("{id}-{}", x.label())),
+                                x.label(),
+                            )
+                            .variant(if x == cur {
+                                ButtonVariant::Primary
+                            } else {
+                                ButtonVariant::Outline
+                            })
+                            .on_click(move |_, _, cx| {
+                                let mut f = dodai_gpui::surface_fx();
+                                set(&mut f, x);
+                                dodai_gpui::set_surface_fx(cx, f);
+                            })
+                        }),
+                )
             };
             let presets = row()
                 .child(
@@ -263,9 +279,10 @@ impl Showcase {
                     .child(Muted::new(
                         "A pattern on UI components: buttons, inputs and tags. Keep it fine and subtle so labels stay readable.",
                     ))
-                    .child(picker("sfx-tex", fx.texture, |f, v| f.texture = v))
+                    .child(picker("sfx-tex", fx.texture, true, |f, v| f.texture = v))
                     .child(amount("sfx-strength", "Strength", fx.strength, 1.0, |f, v| f.strength = v))
                     .child(amount("sfx-scale", "Scale", fx.scale, 4.0, |f, v| f.scale = v.max(0.25)))
+                    .child(amount("sfx-neon", "Lit lines", fx.neon, 1.0, |f, v| f.neon = v))
                     .child(preview_components("sfx-tx"))
                     .into_any_element(),
                 "Component textures",
@@ -277,9 +294,10 @@ impl Showcase {
                     .child(Muted::new(
                         "A pattern on containers: cards, panels and bars. Larger areas can take bolder patterns such as grids or halftone.",
                     ))
-                    .child(picker("sfx-ctex", fx.container_texture, |f, v| f.container_texture = v))
+                    .child(picker("sfx-ctex", fx.container_texture, false, |f, v| f.container_texture = v))
                     .child(amount("sfx-cstrength", "Strength", fx.container_strength, 1.0, |f, v| f.container_strength = v))
                     .child(amount("sfx-cscale", "Scale", fx.container_scale, 4.0, |f, v| f.container_scale = v.max(0.25)))
+                    .child(amount("sfx-cneon", "Lit lines", fx.neon, 1.0, |f, v| f.neon = v))
                     .child(preview_containers("sfx-ctx"))
                     .into_any_element(),
                 "Container textures",
