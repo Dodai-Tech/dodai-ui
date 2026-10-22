@@ -853,7 +853,7 @@ impl Slider {
         let k = t.toggle(true, ControlState::Idle);
         let thumb_style = if tonal {
             let mut s = ShapeStyle::from_tokens(&t, Some(t.palette.primary), None, false, false);
-            s = s.with_elevation(1, hsla(t.palette.roles.shadow));
+            s = s.with_lift(&t, 1);
             s
         } else {
             ShapeStyle::from_tokens(&t, Some(k.track), Some(k.border), true, false)

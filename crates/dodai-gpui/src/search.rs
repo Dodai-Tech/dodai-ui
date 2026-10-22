@@ -423,7 +423,7 @@ impl Render for RichTooltip {
             !rounded,
         );
         let shape = if rounded {
-            style = style.with_elevation(2, hsla(r.shadow));
+            style = style.with_lift(&t, 2);
             t.role_shape(dodai_core::ShapeRole::RichTooltip)
         } else {
             t.shape.clone()

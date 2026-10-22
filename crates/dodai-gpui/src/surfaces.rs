@@ -24,7 +24,7 @@ pub fn card_style(theme: &Theme, v: CardVariant) -> ShapeStyle {
     // No hard offset shadow in this theme: lift an elevated card with a soft one.
     if v == CardVariant::Elevated && st.shadow.is_none() && st.glow.is_none() {
         if theme.look().soft_elevation {
-            st = st.with_elevation(1, crate::hsla(theme.palette.roles.shadow));
+            st = st.with_lift(theme, 1);
         } else {
             st.glow = Some((crate::hsla(theme.effects.shadow), 10.0));
         }
@@ -446,7 +446,7 @@ impl Fab {
                 ControlState::Hovered => 4,
                 _ => 3,
             };
-            style = style.with_elevation(level, hsla(t.palette.roles.shadow));
+            style = style.with_lift(&t, level);
         }
         // FABs always float: shadow + glow even at rest.
         let fx = &t.effects;

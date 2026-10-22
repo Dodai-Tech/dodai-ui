@@ -96,7 +96,7 @@ impl Toolbar {
             fg = hsla(t.palette.roles.on_primary_container);
         }
         if tonal && self.floating {
-            style = style.with_elevation(3, hsla(t.palette.roles.shadow));
+            style = style.with_lift(&t, 3);
             shape.radius = 999.0;
         }
         let mut bar = shaped(&shape, style)

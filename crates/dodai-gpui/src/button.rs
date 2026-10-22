@@ -272,7 +272,7 @@ impl Button {
                 let mut st = ShapeStyle::from_tokens(&t, b.background, b.border, false, false);
                 if lifted && s != ControlState::Disabled {
                     let level = if s == ControlState::Idle { 1 } else { 2 };
-                    st = st.with_elevation(level, hsla(t.palette.roles.shadow));
+                    st = st.with_lift(&t, level);
                 }
                 (st, hsla(b.foreground))
             } else {

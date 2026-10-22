@@ -474,10 +474,7 @@ impl Snackbar {
                 .filter(|_| tokens.border.is_some()),
             ..style
         }
-        .with_elevation(
-            if t.look().soft_elevation { 3 } else { 0 },
-            hsla(t.palette.roles.shadow),
-        );
+        .with_lift(&t, if t.look().soft_elevation { 3 } else { 0 });
         let mut bar = shaped(&t.role_shape(dodai_core::ShapeRole::Snackbar), style)
             .px(px(t.spacing.lg))
             .py(px(t.spacing.sm))

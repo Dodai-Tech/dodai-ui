@@ -37,6 +37,8 @@ pub struct ShapeStyle {
     pub shimmer: Option<Shimmer>,
     /// Material 3 elevation level (0..=5) and shadow colour: the soft two-layer shadow.
     pub elevation: Option<(u8, Hsla)>,
+    /// The design's own shadow layers for the elevation (`(y, blur, spread, alpha)`).
+    pub lift_layers: Option<[(f32, f32, f32, f32); 3]>,
     /// Interrupt the border on the right (`true`) or left (`false`) side, centred vertically,
     /// over a span of `2 * half` px (the empty space between a cropped button's tick bars); the
     /// fill is notched `depth` px inward there.
@@ -76,6 +78,18 @@ impl ShapeStyle {
         self.elevation = (level > 0).then_some((level, colour));
         self
     }
+    /// Lift this surface with elevation `level` in the theme's shadow colour, using the
+    /// design's own shadow layers when it declares them.
+    pub fn with_lift(mut self, theme: &Theme, level: u8) -> Self {
+        self.lift_layers = theme.elevation_layers(level).map(|v| {
+            let mut a = [(0.0, 0.0, 0.0, 0.0); 3];
+            for (slot, l) in a.iter_mut().zip(v) {
+                *slot = l;
+            }
+            a
+        });
+        self.with_elevation(level, hsla(theme.palette.roles.shadow))
+    }
     /// Build from token colours. `glow` adds the theme glow when enabled;
     /// the hard shadow is added whenever `effects.hard_shadow > 0` and `shadow` is set.
     pub fn from_tokens(
@@ -102,6 +116,7 @@ impl ShapeStyle {
             scanline: hsla(fx.scanline),
             shimmer: None,
             elevation: None,
+            lift_layers: None,
             edge_gap: None,
         }
     }
@@ -488,10 +503,14 @@ fn shaped_base(shape: &Shape, style: ShapeStyle) -> Div {
                 });
             }
             if let Some((level, c)) = style.elevation {
-                for (y, blur, spread, a) in elevation_layers(level) {
+                let own = style.lift_layers.is_some();
+                let layers = style
+                    .lift_layers
+                    .map_or_else(|| elevation_layers(level).to_vec(), |l| l.to_vec());
+                for (y, blur, spread, a) in layers.into_iter().filter(|l| l.3 > 0.0) {
                     shadows.push(BoxShadow {
                         color: Hsla {
-                            a: c.a * a * 0.6,
+                            a: if own { a } else { c.a * a * 0.6 },
                             ..c
                         },
                         offset: point(px(0.0), px(y)),

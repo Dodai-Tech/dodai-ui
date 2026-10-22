@@ -152,6 +152,12 @@ pub trait DesignSpec: Send + Sync + std::fmt::Debug {
     fn hard_shadow_color(&self, t: &Theme) -> Option<Color> {
         None
     }
+    /// Soft shadow layers `(offset_y, blur, spread, alpha)` for an elevation `level` (1-5), when
+    /// the design has its own shadow tokens instead of the two Material layers. The alpha is
+    /// absolute; the colour is the theme's shadow colour.
+    fn elevation_layers(&self, t: &Theme, level: u8) -> Option<Vec<(f32, f32, f32, f32)>> {
+        None
+    }
     /// Keyboard focus indicator `(colour, thickness px)`.
     fn focus_ring(&self, t: &Theme) -> Option<(Color, f32)> {
         None

@@ -14,7 +14,7 @@ use std::rc::Rc;
 pub fn dialog_style(theme: &Theme) -> ShapeStyle {
     let st = ShapeStyle::from_surface(theme, theme.dialog()).0;
     if theme.look().soft_elevation {
-        return st.with_elevation(3, hsla(theme.palette.roles.shadow));
+        return st.with_lift(theme, 3);
     }
     st
 }

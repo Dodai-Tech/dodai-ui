@@ -819,6 +819,14 @@ impl Theme {
         self.palette.primary_active
     }
 
+    /// The design's own shadow layers `(offset_y, blur, spread, alpha)` for an elevation level,
+    /// or `None` to use the default two-layer shadow.
+    pub fn elevation_layers(&self, level: u8) -> Option<Vec<(f32, f32, f32, f32)>> {
+        self.spec
+            .get()
+            .and_then(|s| s.elevation_layers(self, level))
+    }
+
     /// Keyboard focus indicator `(colour, thickness px)`.
     pub fn focus_ring(&self) -> (Color, f32) {
         hook!(self.focus_ring());

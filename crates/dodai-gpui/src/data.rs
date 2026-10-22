@@ -445,7 +445,7 @@ impl Chip {
                 false,
                 false,
             )
-            .with_elevation(1, hsla(r.shadow));
+            .with_lift(&t, 1);
         }
         // M3 chips are 32 px tall with the small corner radius.
         let h = if tonal {
