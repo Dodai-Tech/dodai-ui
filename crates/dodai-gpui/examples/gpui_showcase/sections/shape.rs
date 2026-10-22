@@ -24,47 +24,81 @@ impl Showcase {
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let col = || div().flex().flex_col().gap(gap);
         let cut = |b: Button| b;
+        // One labelled setting: fixed label column, the control, a muted hint underneath.
+        let setting = |label: &'static str, hint: &'static str, control: gpui::AnyElement| {
+            div()
+                .flex()
+                .items_start()
+                .gap(px(t.spacing.lg))
+                .child(
+                    div()
+                        .w(px(120.0))
+                        .pt(px(t.spacing.sm))
+                        .child(Label::new(label)),
+                )
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .gap(px(t.spacing.xs))
+                        .child(control)
+                        .child(Muted::new(hint)),
+                )
+        };
         // Global: picking a cut changes every component in every theme.
         let corner_picker = {
             use dodai_core::Corners as C;
             let cur = dodai_gpui::corners(cx);
             let over = dodai_gpui::corners_overridden(cx);
-            let chip = |id: &'static str, label: &'static str, on: bool, to: Option<C>| {
-                Button::new(id, label)
-                    .variant(if on {
-                        ButtonVariant::Primary
-                    } else {
-                        ButtonVariant::Outline
-                    })
-                    .on_click(move |_, _, cx| match to {
-                        Some(c) => dodai_gpui::set_corners(cx, c),
-                        None => dodai_gpui::reset_corners(cx),
-                    })
+            type Preset = (&'static str, Option<C>);
+            let sets: [Preset; 5] = [
+                ("Theme", None),
+                ("None", Some(C::NONE)),
+                ("All", Some(C::ALL)),
+                ("Diagonal", Some(C::DIAGONAL)),
+                ("Anti-diagonal", Some(C::ANTI_DIAGONAL)),
+            ];
+            let singles: [Preset; 6] = [
+                ("Top left", Some(C::TOP_LEFT)),
+                ("Top right", Some(C::TOP_RIGHT)),
+                ("Bottom right", Some(C::BOTTOM_RIGHT)),
+                ("Bottom left", Some(C::BOTTOM_LEFT)),
+                ("Left", Some(C::LEFT)),
+                ("Right", Some(C::RIGHT)),
+            ];
+            let pos = |list: &[Preset]| {
+                if !over {
+                    return list.iter().position(|p| p.1.is_none());
+                }
+                list.iter().position(|p| p.1 == Some(cur))
             };
-            let tog = |i: usize| Some(cur.set(i, !cur.get(i)));
-            row()
-                .child(Label::new("Cut corner"))
-                .child(chip("cc-ul", "UL", cur.get(0), tog(0)))
-                .child(chip("cc-ur", "UR", cur.get(1), tog(1)))
-                .child(chip("cc-lr", "LR", cur.get(2), tog(2)))
-                .child(chip("cc-ll", "LL", cur.get(3), tog(3)))
-                .child(chip(
-                    "cc-diag",
-                    "Diagonal",
-                    cur == C::DIAGONAL,
-                    Some(C::DIAGONAL),
-                ))
-                .child(chip(
-                    "cc-anti",
-                    "Anti-diagonal",
-                    cur == C::ANTI_DIAGONAL,
-                    Some(C::ANTI_DIAGONAL),
-                ))
-                .child(chip("cc-left", "Left", cur == C::LEFT, Some(C::LEFT)))
-                .child(chip("cc-right", "Right", cur == C::RIGHT, Some(C::RIGHT)))
-                .child(chip("cc-all", "All", cur == C::ALL, Some(C::ALL)))
-                .child(chip("cc-none", "None", cur == C::NONE, Some(C::NONE)))
-                .child(chip("cc-theme", "Theme default", !over, None))
+            let apply = |c: Option<C>, cx: &mut App| match c {
+                Some(c) => dodai_gpui::set_corners(cx, c),
+                None => dodai_gpui::reset_corners(cx),
+            };
+            setting(
+                "Cut corners",
+                "Which corners every component cuts, in every design. \"Theme\" restores each design's own.",
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(t.spacing.sm))
+                    .child(
+                        div().flex().child(
+                            Segmented::new("cut-sets", sets.map(|p| p.0))
+                                .selected(pos(&sets).unwrap_or(usize::MAX))
+                                .on_change(move |i, _, cx| apply(sets[i].1, cx)),
+                        ),
+                    )
+                    .child(
+                        div().flex().child(
+                            Segmented::new("cut-singles", singles.map(|p| p.0))
+                                .selected(pos(&singles).unwrap_or(usize::MAX))
+                                .on_change(move |i, _, cx| apply(singles[i].1, cx)),
+                        ),
+                    )
+                    .into_any_element(),
+            )
         };
         let shape_gallery =
             || {
@@ -160,7 +194,7 @@ impl Showcase {
                 "Corner shape",
                 section!("Corner shape")
                     .child(Muted::new(
-                        "The corner cut applies to every component in every theme, immediately. \"Theme default\" restores each design system's own shape.",
+                        "The corner cut applies to every component in every theme, immediately. Pick \"Theme\" to restore each design's own shape.",
                     ))
                     .child(corner_picker)
                     .child(shape_gallery())
@@ -170,55 +204,55 @@ impl Showcase {
         }
         if t.look().cut_corners {
             use dodai_gpui::Crop;
-            let cur = dodai_gpui::button_crop(cx);
-            let gap_cur = dodai_gpui::button_cut_gap(cx);
-            let chip = |id: SharedString, label: String, on: bool, f: Box<dyn Fn(&mut App)>| {
-                Button::new(id, label)
-                    .variant(if on {
-                        ButtonVariant::Primary
-                    } else {
-                        ButtonVariant::Outline
-                    })
-                    .on_click(move |_, _, cx| f(cx))
-            };
-            let mut crop_row = row().child(Label::new("Crop"));
-            for (name, c) in [
-                ("None", None),
-                ("Left", Some(Crop::Left)),
-                ("Right", Some(Crop::Right)),
-            ] {
-                crop_row = crop_row.child(chip(
-                    SharedString::from(format!("bc-{name}")),
-                    name.to_string(),
-                    cur == c,
-                    Box::new(move |cx| dodai_gpui::set_button_crop(cx, c)),
-                ));
-            }
-            let mut gap_row = row().child(Label::new("Tick gap"));
-            for (name, g) in [
-                ("Theme default", None),
-                ("0 px", Some(0.0_f32)),
-                ("2 px", Some(2.0)),
-                ("4 px", Some(4.0)),
-                ("8 px", Some(8.0)),
-            ] {
-                gap_row = gap_row.child(chip(
-                    SharedString::from(format!("bg-{name}")),
-                    name.to_string(),
-                    gap_cur == g,
-                    Box::new(move |cx| dodai_gpui::set_button_cut_gap(cx, g)),
-                ));
-            }
+            let crops = [None, Some(Crop::Left), Some(Crop::Right)];
+            let gaps = [None, Some(0.0_f32), Some(2.0), Some(4.0), Some(8.0)];
+            let crop_sel = crops
+                .iter()
+                .position(|c| *c == dodai_gpui::button_crop(cx))
+                .unwrap_or(0);
+            let gap_sel = gaps
+                .iter()
+                .position(|g| *g == dodai_gpui::button_cut_gap(cx))
+                .unwrap_or(0);
+            let crop_row = setting(
+                "Crop end",
+                "Cuts one end of every button and adds a double tick on the other. Left cuts the top left, Right the bottom right.",
+                Segmented::new("bc-crop", ["Off", "Left", "Right"])
+                    .selected(crop_sel)
+                    .on_change(move |i, _, cx| dodai_gpui::set_button_crop(cx, crops[i]))
+                    .into_any_element(),
+            );
+            let gap_row = setting(
+                "Tick gap",
+                "Space between the two tick bars, left open in the border.",
+                Segmented::new("bc-gap", ["Theme", "0 px", "2 px", "4 px", "8 px"])
+                    .selected(gap_sel)
+                    .on_change(move |i, _, cx| dodai_gpui::set_button_cut_gap(cx, gaps[i]))
+                    .into_any_element(),
+            );
+            let preview = div()
+                .flex()
+                .flex_col()
+                .gap(px(t.spacing.sm))
+                .child(Muted::new("Preview"))
+                .child(
+                    row()
+                        .child(Button::new("bp-p", "Primary"))
+                        .child(Button::new("bp-s", "Secondary").variant(ButtonVariant::Secondary))
+                        .child(Button::new("bp-o", "Outline").variant(ButtonVariant::Outline))
+                        .child(Button::new("bp-c", "Scrim").variant(ButtonVariant::Scrim))
+                        .child(Button::new("bp-d", "Danger").variant(ButtonVariant::Danger)),
+                );
             out.push((
                 "Shape",
                 "Button crop",
                 section!("Button crop")
                     .child(Muted::new(
-                        "Crop one end of every button: a cut corner plus a double tick on the other side. Pick the corner under Corner shape too; ready-made cropped buttons are under Actions.",
+                        "Settings apply to every button below and across the showcase. Ready-made cropped buttons are under Actions.",
                     ))
                     .child(crop_row)
                     .child(gap_row)
-                    .child(shape_gallery())
+                    .child(preview)
                     .into_any_element(),
                 "Button crop",
             ));
