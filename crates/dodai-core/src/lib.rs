@@ -43,7 +43,7 @@ pub use shape_system::{
     ShapeSize, ShapeSystem, FULL,
 };
 pub use spec::{DesignSpec, FadeStop, Fluid, Frost, GridSpec, IconSet, Look, ShadowLayer, SpecRef};
-pub use surface::{SurfaceClass, SurfaceFx, SurfaceTargets, Texture};
+pub use surface::{SurfaceClass, SurfaceFx, SurfaceStyle, SurfaceTargets, Texture};
 pub use switcher::ThemeSwitcher;
 pub use theme::{Theme, ThemeMeta};
 pub use tokens::{Corners, Effects, Shape, ShapeKind, Sizes, Spacing, Typography};

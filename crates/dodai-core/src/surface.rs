@@ -2,7 +2,7 @@
 //! clipped to its shape.
 //!
 //! These are runtime settings (the showcase and apps switch them), while a design suggests
-//! its own mix through [`crate::DesignSpec::surface_preset`].
+//! its own mix through [`crate::Theme::surface_style`].
 
 /// A static pattern over a surface.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -364,5 +364,32 @@ mod tests {
         labels.sort();
         labels.dedup();
         assert_eq!(labels.len(), Texture::ALL.len());
+    }
+}
+
+/// A design's own surface styling: the mix it suggests and which textures and animated
+/// effects it owns. Part of the theme, so it travels with it like colours and shapes.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct SurfaceStyle {
+    /// The mix the "design preset" action applies (nothing is drawn until an app opts in).
+    pub preset: SurfaceFx,
+    /// Textures this design owns; others are never drawn for it.
+    pub textures: &'static [Texture],
+    /// Whether the animated effects (glitch, sheen, flicker, bloom) belong to this design.
+    pub effects: bool,
+}
+
+impl SurfaceStyle {
+    /// A design with no textures or effects of its own.
+    pub const NONE: Self = Self {
+        preset: SurfaceFx::NONE,
+        textures: &[],
+        effects: false,
+    };
+}
+
+impl Default for SurfaceStyle {
+    fn default() -> Self {
+        Self::NONE
     }
 }

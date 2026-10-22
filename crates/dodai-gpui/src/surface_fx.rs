@@ -32,7 +32,7 @@ pub fn set_surface_fx(cx: &mut App, fx: SurfaceFx) {
     cx.refresh_windows();
 }
 
-/// Apply the active design's suggested mix (see `DesignSpec::surface_preset`).
+/// Apply the active design's suggested mix (see `Theme::surface_style`).
 pub fn apply_surface_preset(cx: &mut App) {
     let fx = crate::theme_of(cx).surface_preset();
     set_surface_fx(cx, fx);

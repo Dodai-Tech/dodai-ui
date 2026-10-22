@@ -851,22 +851,19 @@ impl Theme {
         t
     }
 
-    /// The surface mix this design suggests (none when the design has no opinion).
+    /// The surface mix this design suggests (empty when it has none).
     pub fn surface_preset(&self) -> crate::SurfaceFx {
-        self.spec
-            .get()
-            .and_then(|s| s.surface_preset(self))
-            .unwrap_or_default()
+        self.surface_style.preset
     }
 
     /// The textures this design owns (empty when it has none).
     pub fn surface_textures(&self) -> &'static [crate::Texture] {
-        self.spec.get().map_or(&[], |s| s.surface_textures(self))
+        self.surface_style.textures
     }
 
     /// Whether this design owns the animated surface effects.
     pub fn surface_effects(&self) -> bool {
-        self.spec.get().is_some_and(|s| s.surface_effects(self))
+        self.surface_style.effects
     }
 
     /// The design's frosted glass: tint and backdrop blur.

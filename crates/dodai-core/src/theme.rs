@@ -30,6 +30,8 @@ pub struct Theme {
     pub shape_system: Option<crate::ShapeSystem>,
     /// This design system's component rules (see [`crate::DesignSpec`]); baseline when unset.
     pub spec: crate::SpecRef,
+    /// Textures and effects this design owns, and the mix it suggests.
+    pub surface_style: crate::SurfaceStyle,
 }
 
 impl Theme {

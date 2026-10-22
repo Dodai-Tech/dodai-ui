@@ -95,6 +95,7 @@ impl ThemeBuilder {
             motion: crate::Motion::default(),
             shape_system: None,
             spec: Default::default(),
+            surface_style: Default::default(),
             meta: self.meta,
             palette,
             typography: self.typography,

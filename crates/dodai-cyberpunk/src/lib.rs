@@ -126,6 +126,7 @@ fn build(
         motion: motion(),
         shape_system: None,
         spec: dodai_core::SpecRef::new(&SPEC),
+        surface_style: surface_style(true),
         palette,
         typography: typography(),
         spacing: spacing(),
@@ -201,6 +202,7 @@ fn build_light(meta: ThemeMeta, l: Light) -> Theme {
         motion: motion(),
         shape_system: None,
         spec: dodai_core::SpecRef::new(&SPEC),
+        surface_style: surface_style(false),
         palette,
         typography: typography(),
         spacing: spacing(),
@@ -359,3 +361,25 @@ pub fn variants() -> Vec<Theme> {
 /// The Cyberpunk icon pack (`icons` feature).
 #[cfg(feature = "icons")]
 pub use dodai_cyberpunk_icons as icons;
+
+/// Cyberpunk owns every texture and the animated effects. The dark variants suggest grain on
+/// components, circuit traces on containers with lit lines, a glitch burst and a bloom;
+/// the light variants suggest the same, quieter.
+fn surface_style(dark: bool) -> dodai_core::SurfaceStyle {
+    let calm = if dark { 1.0 } else { 0.6 };
+    dodai_core::SurfaceStyle {
+        preset: dodai_core::SurfaceFx {
+            texture: dodai_core::Texture::Grain,
+            strength: 0.45 * calm,
+            container_texture: dodai_core::Texture::Circuit,
+            neon: 0.4,
+            container_strength: 0.35 * calm,
+            glitch: 0.4,
+            flicker: 0.15,
+            bloom: 0.3 * calm,
+            ..dodai_core::SurfaceFx::NONE
+        },
+        textures: &dodai_core::Texture::ALL,
+        effects: true,
+    }
+}
