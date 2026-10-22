@@ -46,7 +46,7 @@ pub(crate) fn caps(title: &str) -> Caps {
         | "Frosted glass"
         | "Layout · Fluid scales"
         | "Icons"
-        | "Glow · Scanlines"
+        | "Glow · Textures · Effects"
         | "Password · OTP"
         | "Form field"
         | "Toggle group · Checkbox group"
@@ -180,7 +180,7 @@ pub(crate) fn owner(title: &str) -> Option<&'static str> {
         "Button groups · Split button" | "Loading indicator" | "Material 3 shaders" => {
             Some("material")
         }
-        "Instruments" | "Glow · Scanlines" | "Cyberpunk shaders" => Some("cyberpunk"),
+        "Instruments" | "Cyberpunk shaders" => Some("cyberpunk"),
         "Layout · Fluid scales" | "Frosted glass" => Some("aurora"),
         _ => None,
     }

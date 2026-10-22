@@ -175,19 +175,6 @@ impl Showcase {
                 .into_any_element(),
             "Shape gallery",
         ));
-        if t.look().luminous {
-            out.push((
-                "Surface effects",
-                "Glow · Scanlines",
-                section!("Glow · Scanlines")
-                    .child(Muted::new(
-                        "Theme-wide effects. They apply to every component. Cut corners: pick them under Corner shape.",
-                    ))
-                    .child(shape_props)
-                    .into_any_element(),
-                "Glow · Scanlines",
-            ));
-        }
         {
             use dodai_core::{SurfaceClass, SurfaceFx, Texture};
             let fx = dodai_gpui::surface_fx();
@@ -226,11 +213,30 @@ impl Showcase {
                         f.texture = Texture::ALL[i];
                         dodai_gpui::set_surface_fx(cx, f);
                     });
-            let controls = div()
-                .flex()
-                .flex_col()
-                .gap(px(t.spacing.sm))
-                .child(Muted::new("Texture"))
+            let group = |title: &'static str, hint: &'static str| {
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(t.spacing.sm))
+                    .child(Label::new(title))
+                    .child(Muted::new(hint))
+            };
+            let presets = row()
+                .child(
+                    Button::new("sfx-preset", "Apply design preset")
+                        .on_click(|_, _, cx| dodai_gpui::apply_surface_preset(cx)),
+                )
+                .child(
+                    Button::new("sfx-clear", "Clear all")
+                        .variant(ButtonVariant::Outline)
+                        .on_click(|_, _, cx| dodai_gpui::set_surface_fx(cx, SurfaceFx::NONE)),
+                );
+            let glow = group(
+                "Glow and scanlines",
+                "Theme-wide, on every component. Cut corners are under Corner shape.",
+            )
+            .child(shape_props);
+            let texture = group("Texture", "A static pattern over filled surfaces.")
                 .child(picker)
                 .child(amount(
                     "sfx-strength",
@@ -241,25 +247,8 @@ impl Showcase {
                 ))
                 .child(amount("sfx-scale", "Scale", fx.scale, 4.0, |f, v| {
                     f.scale = v.max(0.25)
-                }))
-                .child(Muted::new("Apply to"))
-                .child(row().children(SurfaceClass::ALL.iter().map(|c| {
-                    let c = *c;
-                    row()
-                        .child(
-                            Checkbox::new(
-                                gpui::SharedString::from(format!("sfx-t-{}", c.label())),
-                                fx.targets.contains(c),
-                            )
-                            .on_change(move |on, _, cx| {
-                                let mut f = dodai_gpui::surface_fx();
-                                f.targets = f.targets.with(c, on);
-                                dodai_gpui::set_surface_fx(cx, f);
-                            }),
-                        )
-                        .child(Label::new(c.label()))
-                })))
-                .child(Muted::new("Effects"))
+                }));
+            let effects = group("Effects", "Animated accents. 0 turns one off.")
                 .child(amount("sfx-glitch", "Glitch", fx.glitch, 1.0, |f, v| {
                     f.glitch = v
                 }))
@@ -271,21 +260,36 @@ impl Showcase {
                 }))
                 .child(amount("sfx-bloom", "Bloom", fx.bloom, 1.0, |f, v| {
                     f.bloom = v
-                }))
-                .child(
-                    row()
-                        .child(
-                            Button::new("sfx-preset", "Apply design preset")
-                                .on_click(|_, _, cx| dodai_gpui::apply_surface_preset(cx)),
+                }));
+            let targets = group(
+                "Apply to",
+                "Which kinds of surface get the texture and effects above.",
+            )
+            .child(row().children(SurfaceClass::ALL.iter().map(|c| {
+                let c = *c;
+                row()
+                    .child(
+                        Checkbox::new(
+                            gpui::SharedString::from(format!("sfx-t-{}", c.label())),
+                            fx.targets.contains(c),
                         )
-                        .child(
-                            Button::new("sfx-clear", "Clear")
-                                .variant(ButtonVariant::Outline)
-                                .on_click(|_, _, cx| {
-                                    dodai_gpui::set_surface_fx(cx, SurfaceFx::NONE)
-                                }),
-                        ),
-                );
+                        .on_change(move |on, _, cx| {
+                            let mut f = dodai_gpui::surface_fx();
+                            f.targets = f.targets.with(c, on);
+                            dodai_gpui::set_surface_fx(cx, f);
+                        }),
+                    )
+                    .child(Label::new(c.label()))
+            })));
+            let controls = div()
+                .flex()
+                .flex_col()
+                .gap(px(t.spacing.lg))
+                .child(presets)
+                .children(t.look().luminous.then_some(glow))
+                .child(texture)
+                .child(effects)
+                .child(targets);
             let preview = div()
                 .flex()
                 .flex_col()
@@ -307,15 +311,15 @@ impl Showcase {
                 );
             out.push((
                 "Surface effects",
-                "Textures · Effects",
-                section!("Textures · Effects")
+                "Glow · Textures · Effects",
+                section!("Glow · Textures · Effects")
                     .child(Muted::new(
-                        "Patterns and animated accents over every filled surface, clipped to its shape. Each design can suggest a mix.",
+                        "Everything that changes how surfaces look, in one place. Textures and effects are clipped to each surface's shape, and each design can suggest a mix.",
                     ))
                     .child(controls)
                     .child(preview)
                     .into_any_element(),
-                "Textures · Effects",
+                "Glow · Textures · Effects",
             ));
         }
         if t.look().cut_corners {
