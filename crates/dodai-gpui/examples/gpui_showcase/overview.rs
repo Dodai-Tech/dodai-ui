@@ -56,7 +56,10 @@ impl Showcase {
         for name in [
             "gpui", "iced", "egui", "slint", "ratatui", "dioxus", "leptos", "yew", "bevy", "web",
         ] {
-            toolkits = toolkits.child(dodai_gpui::Tag::new(name, dodai_core::Tone::Info));
+            // This showcase runs on gpui: that toolkit is the solid, highlighted one.
+            let here = name == "gpui";
+            toolkits =
+                toolkits.child(dodai_gpui::Tag::new(name, dodai_core::Tone::Info).solid(here));
         }
         let hero = Panel::new().focused(true).child(
             div()
