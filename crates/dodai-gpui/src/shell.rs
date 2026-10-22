@@ -95,6 +95,7 @@ pub struct ResponsiveShell {
 }
 
 impl ResponsiveShell {
+    /// Create a new [`ResponsiveShell`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
@@ -109,10 +110,12 @@ impl ResponsiveShell {
             on_collapse: None,
         }
     }
+    /// The sidebar content.
     pub fn sidebar(mut self, el: impl IntoElement) -> Self {
         self.sidebar = Some(el.into_any_element());
         self
     }
+    /// The popup content.
     pub fn content(mut self, el: impl IntoElement) -> Self {
         self.content = Some(el.into_any_element());
         self
@@ -122,6 +125,7 @@ impl ResponsiveShell {
         self.breakpoint = px;
         self
     }
+    /// Sidebar width in px.
     pub fn sidebar_width(mut self, px: f32) -> Self {
         self.sidebar_width = px;
         self
@@ -131,6 +135,7 @@ impl ResponsiveShell {
         self.rail = Some(el.into_any_element());
         self
     }
+    /// Collapsed rail width in px.
     pub fn rail_width(mut self, px: f32) -> Self {
         self.rail_width = px;
         self
@@ -145,6 +150,7 @@ impl ResponsiveShell {
         /// collapsed state when the user drags past the threshold or clicks it.
         on_collapse, bool
     );
+    /// Label of the menu button when collapsed.
     pub fn menu_label(mut self, s: impl Into<String>) -> Self {
         self.menu_label = s.into();
         self

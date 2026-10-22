@@ -29,6 +29,7 @@ pub enum GaugeStyle {
 }
 
 impl GaugeStyle {
+    /// Every gauge style, in showcase order.
     pub const ALL: [GaugeStyle; 8] = [
         GaugeStyle::Arc,
         GaugeStyle::Segmented,
@@ -39,6 +40,7 @@ impl GaugeStyle {
         GaugeStyle::Chevron,
         GaugeStyle::Level,
     ];
+    /// Display name.
     pub fn name(self) -> &'static str {
         match self {
             GaugeStyle::Arc => "Arc",

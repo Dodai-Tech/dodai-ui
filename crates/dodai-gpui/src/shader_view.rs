@@ -17,6 +17,7 @@ pub enum PaletteSource {
     Family,
     /// The active Dodai theme, so shaders follow the design system.
     Theme,
+    /// A fixed palette.
     Fixed(ShaderPalette),
 }
 
@@ -106,6 +107,7 @@ impl ShaderView {
         let src = info.map(|i| i.family.default_source()).unwrap_or("plasma");
         Self::new(id, src).fx(fx)
     }
+    /// Where the shader palette comes from.
     pub fn palette(mut self, p: PaletteSource) -> Self {
         self.palette = p;
         self
@@ -140,6 +142,7 @@ impl ShaderView {
         self.fps = f.max(1.0);
         self
     }
+    /// Corner radius in px.
     pub fn rounded(mut self, r: f32) -> Self {
         self.rounded = r;
         self

@@ -55,6 +55,7 @@ pub fn resist(delta: f32, stretch: f32, max: f32) -> f32 {
     delta * k * k * 0.5
 }
 
+/// Overscroll physics for a scrolling surface: feed it wheel deltas and read the resulting offset.
 #[derive(Clone, Copy, Debug)]
 pub struct Overscroll {
     feel: OverscrollFeel,
@@ -70,6 +71,7 @@ impl Default for Overscroll {
 }
 
 impl Overscroll {
+    /// Create a new [`Overscroll`].
     pub fn new(feel: OverscrollFeel) -> Self {
         Self {
             feel,
@@ -88,6 +90,7 @@ impl Overscroll {
         }
     }
 
+    /// Change the overscroll feel.
     pub fn set_feel(&mut self, feel: OverscrollFeel) {
         self.feel = feel;
     }

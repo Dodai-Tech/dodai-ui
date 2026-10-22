@@ -18,18 +18,21 @@ use gpui::{
 /// One entry of a [`Select`].
 #[derive(Clone)]
 pub struct SelectOption {
+    /// Text shown in the list and, when chosen, in the field.
     pub label: SharedString,
     /// Small colour chips drawn after the label (used by [`ThemeSelector`]).
     pub swatches: Vec<Color>,
 }
 
 impl SelectOption {
+    /// Create a new [`SelectOption`].
     pub fn new(label: impl Into<SharedString>) -> Self {
         Self {
             label: label.into(),
             swatches: Vec::new(),
         }
     }
+    /// Colour swatches shown beside the label.
     pub fn swatches(mut self, s: impl IntoIterator<Item = Color>) -> Self {
         self.swatches = s.into_iter().collect();
         self
@@ -70,7 +73,7 @@ struct SelectState {
     trigger: Bounds<Pixels>,
 }
 
-/// Dropdown list. Controlled: pass `selected` and update it in `on_change`.
+/// Dropdown list. Controlled: pass `selected` and update it in `on_select`.
 /// Keyboard (trigger focused): ↑/↓ move, Enter/Space open or choose, Esc close.
 #[derive(IntoElement)]
 pub struct Select {
@@ -79,13 +82,14 @@ pub struct Select {
     selected: Option<usize>,
     placeholder: SharedString,
     disabled: bool,
-    on_change: Option<IndexHandler>,
+    on_select: Option<IndexHandler>,
     corners: Option<dodai_core::Corners>,
 }
 
 crate::corners_setter!(Select);
 
 impl Select {
+    /// Create a new [`Select`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             corners: None,
@@ -94,28 +98,32 @@ impl Select {
             selected: None,
             placeholder: "Select…".into(),
             disabled: false,
-            on_change: None,
+            on_select: None,
         }
     }
+    /// The options to offer.
     pub fn options<O: Into<SelectOption>>(mut self, o: impl IntoIterator<Item = O>) -> Self {
         self.options = o.into_iter().map(Into::into).collect();
         self
     }
+    /// The selected item (controlled).
     pub fn selected(mut self, i: Option<usize>) -> Self {
         self.selected = i;
         self
     }
+    /// Placeholder text.
     pub fn placeholder(mut self, p: impl Into<SharedString>) -> Self {
         self.placeholder = p.into();
         self
     }
+    /// Disable the control.
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
         self
     }
     crate::callback!(
         /// Called with the chosen option index.
-        on_change, usize
+        on_select, usize
     );
 }
 
@@ -156,7 +164,7 @@ impl Select {
             hsla(t.palette.text_disabled)
         };
 
-        let on_change = self.on_change.clone();
+        let on_select = self.on_select.clone();
         let commit = {
             let st = st.clone();
             move |i: usize, w: &mut Window, cx: &mut App| {
@@ -165,7 +173,7 @@ impl Select {
                     s.highlight = i;
                     cx.notify();
                 });
-                if let Some(f) = &on_change {
+                if let Some(f) = &on_select {
                     f(i, w, cx);
                 }
             }
@@ -399,6 +407,7 @@ pub struct ThemeSelector {
 }
 
 impl ThemeSelector {
+    /// Create a new [`ThemeSelector`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self { id: id.into() }
     }
@@ -414,7 +423,7 @@ impl RenderOnce for ThemeSelector {
         Select::new(self.id)
             .options(theme_options(&list))
             .selected(pos)
-            .on_change(move |i, _, cx| select_theme(cx, idx[i]))
+            .on_select(move |i, _, cx| select_theme(cx, idx[i]))
     }
 }
 
@@ -426,6 +435,7 @@ pub struct DesignSystemSelector {
 }
 
 impl DesignSystemSelector {
+    /// Create a new [`DesignSystemSelector`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self { id: id.into() }
     }
@@ -453,7 +463,7 @@ impl RenderOnce for DesignSystemSelector {
         Select::new(self.id)
             .options(opts)
             .selected(cur)
-            .on_change(move |i, _, cx| {
+            .on_select(move |i, _, cx| {
                 let idx = cx.dodai().switcher().family_indices(fams[i])[0];
                 select_theme(cx, idx)
             })

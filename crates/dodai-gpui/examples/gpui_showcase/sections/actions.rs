@@ -103,8 +103,6 @@ impl Showcase {
                             .extended("Create")
                             .crop(dodai_gpui::Crop::Right),
                     )
-                    .child(SplitButton::new("sb-crop-l", "Save").crop(dodai_gpui::Crop::Left))
-                    .child(SplitButton::new("sb-crop-r", "Save").crop(dodai_gpui::Crop::Right))
             }))
             .child(cut(
                 Button::new("b-danger", "Danger").variant(ButtonVariant::Danger)
@@ -198,7 +196,9 @@ impl Showcase {
                         SplitButton::new("sb-out", "Save")
                             .variant(ButtonVariant::Outline)
                             .open(true),
-                    ),
+                    )
+                    .child(SplitButton::new("sb-crop-l", "Save").crop(dodai_gpui::Crop::Left))
+                    .child(SplitButton::new("sb-crop-r", "Save").crop(dodai_gpui::Crop::Right)),
             );
         out.push((
             "Actions",

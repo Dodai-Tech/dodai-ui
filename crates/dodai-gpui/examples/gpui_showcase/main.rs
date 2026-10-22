@@ -9,8 +9,8 @@ use dodai_gpui::{
     cycle_next, cycle_prev, fuzzy_filter, glow_intensity, hsla, scanlines_enabled,
     set_glow_intensity, set_scanlines, theme_of, Accordion, BottomSheet, Breadcrumb,
     BubblePlacement, Button, ButtonGroup, Card, CardVariant, Carousel, Checkbox, DesignSystemTree,
-    Dialog, DialogCard, Direction, Divider, DodaiStyled, DodaiTooltip, Fab, FabSize, Heading,
-    IconButton, InputBox, Knob, Label, ListItem, LoadingIndicator, Mono, Muted, Pagination, Panel,
+    Dialog, DialogCard, Divider, DodaiStyled, DodaiTooltip, Fab, FabSize, Heading, IconButton,
+    InputBox, Knob, Label, ListItem, LoadingIndicator, Mono, Muted, Orientation, Pagination, Panel,
     ProgressBar, Radio, ResponsiveShell, Scanlines, SearchBar, Segmented, SideSheet, Slider,
     SplitButton, Stepper, Tabs, Tag, Toggle, TopAppBar,
 };
@@ -23,7 +23,8 @@ use dodai_gpui::{
     TimePicker, Timeline, TimelineEvent, Toolbar, TreeItem, TreeView, Treemap, Waterfall,
 };
 use dodai_gpui::{
-    CandleStyle, ChartStack, DepthChart, Gantt, GanttTask, Overlay, Pane, RenkoChart, TradeMarker,
+    CandleOverlay, CandlePane, CandleStyle, ChartStack, DepthChart, Gantt, GanttTask, RenkoChart,
+    TradeMarker,
 };
 use dodai_gpui::{
     CountUp, Easing, EntryKind, EntrySet, IndeterminateBar, Motion, Skeleton, Spinner,
@@ -102,6 +103,8 @@ pub struct Showcase {
     cat_count: usize,
     /// `(category, title)` of every section, built once; drives the sidebar.
     meta: Vec<(&'static str, &'static str)>,
+    /// The design family `meta` was built for (sections differ per design).
+    meta_family: &'static str,
     spy: Vec<(&'static str, usize)>,
     /// Click-pinned current section (see `dodai_gpui::ScrollSpy`).
     pin: dodai_gpui::ScrollSpy<&'static str>,
@@ -614,7 +617,7 @@ impl Showcase {
                         div().flex().child(
                             dodai_gpui::Segmented::new(("code-tabs", tid), tabs.clone())
                                 .selected(pick)
-                                .on_change(move |i, _, cx| {
+                                .on_select(move |i, _, cx| {
                                     me.update(cx, |s, cx| {
                                         s.code_pick.insert(title, i);
                                         cx.notify();
@@ -672,8 +675,10 @@ impl Render for Showcase {
 
         // Stepped / configurable sliders.
 
-        if self.meta.is_empty() {
+        let family = theme_of(cx).meta.family;
+        if self.meta.is_empty() || self.meta_family != family {
             self.meta = self.section_meta(cx);
+            self.meta_family = family;
         }
         let meta = self.meta.clone();
         let cats: Vec<&'static str> = {
@@ -1224,6 +1229,7 @@ impl Showcase {
             pop_hover: None,
             cat_count: 1,
             meta: Vec::new(),
+            meta_family: "",
             spy: Vec::new(),
             pin: dodai_gpui::ScrollSpy::new(),
             sub: None,
@@ -1298,7 +1304,7 @@ fn main() {
         if let Some(e) = std::env::var("DODAI_ACCENT")
             .ok()
             .and_then(|v| v.parse::<usize>().ok())
-            .and_then(|i| dodai_gpui::Corner::ALL.get(i).copied())
+            .and_then(|i| dodai_gpui::AccentCorner::ALL.get(i).copied())
         {
             let b = dodai_gpui::section_border(cx);
             dodai_gpui::set_section_border(cx, b.accent(e));

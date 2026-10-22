@@ -49,6 +49,7 @@ impl<K> Default for ScrollSpy<K> {
 }
 
 impl<K: Copy + PartialEq> ScrollSpy<K> {
+    /// Create a new [`ScrollSpy`].
     pub fn new() -> Self {
         Self::default()
     }

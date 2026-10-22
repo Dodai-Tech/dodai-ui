@@ -67,7 +67,7 @@ pub struct SearchView {
     max_rows: usize,
     recent: usize,
     mode: SearchMode,
-    on_pick: Option<IndexFn>,
+    on_select: Option<IndexFn>,
     on_clear: Option<VoidFn>,
     corners: Option<dodai_core::Corners>,
 }
@@ -75,6 +75,7 @@ pub struct SearchView {
 crate::corners_setter!(SearchView);
 
 impl SearchView {
+    /// Create a new [`SearchView`].
     pub fn new(id: impl Into<ElementId>, input: Entity<TextInput>) -> Self {
         Self {
             corners: None,
@@ -85,14 +86,16 @@ impl SearchView {
             max_rows: 6,
             recent: 0,
             mode: SearchMode::Docked,
-            on_pick: None,
+            on_select: None,
             on_clear: None,
         }
     }
+    /// The items.
     pub fn items<S: Into<SharedString>>(mut self, i: impl IntoIterator<Item = S>) -> Self {
         self.items = i.into_iter().map(Into::into).collect();
         self
     }
+    /// Whether the popup is open (controlled).
     pub fn open(mut self, o: bool) -> Self {
         self.open = o;
         self
@@ -107,13 +110,14 @@ impl SearchView {
         self.recent = n;
         self
     }
+    /// Most rows shown before scrolling.
     pub fn max_rows(mut self, n: usize) -> Self {
         self.max_rows = n.max(1);
         self
     }
     crate::callback!(
         /// Called with the index into the original `items`.
-        on_pick, usize
+        on_select, usize
     );
     crate::callback!(
         /// Show a ✕ button while the query is non-empty.
@@ -229,7 +233,7 @@ impl SearchView {
                     );
                 }
                 row = row.child(label);
-                if let Some(f) = self.on_pick.clone() {
+                if let Some(f) = self.on_select.clone() {
                     row = row.on_click(move |_, w, cx| f(i, w, cx));
                 }
                 body = body.child(row);
@@ -337,7 +341,7 @@ impl RenderOnce for SearchView {
                             .child(seg),
                     );
                 }
-                if let Some(f) = self.on_pick.clone() {
+                if let Some(f) = self.on_select.clone() {
                     row = row.on_click(move |_, w, cx| f(i, w, cx));
                 }
                 menu = menu.child(row);
@@ -476,6 +480,7 @@ pub struct IconBadge {
 }
 
 impl IconBadge {
+    /// Create a new [`IconBadge`].
     pub fn new(child: impl IntoElement) -> Self {
         Self {
             child: child.into_any_element(),

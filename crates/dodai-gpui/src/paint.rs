@@ -64,6 +64,7 @@ pub struct Shimmer {
     pub color: Hsla,
     /// Duration of one sweep in ms.
     pub ms: u32,
+    /// Whether and how the loop plays.
     pub playback: Playback,
 }
 

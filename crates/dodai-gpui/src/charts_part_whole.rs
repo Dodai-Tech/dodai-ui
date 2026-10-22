@@ -76,6 +76,7 @@ crate::corners_setter!(Treemap);
 chart_cfg!(Treemap);
 
 impl Treemap {
+    /// Create a new [`Treemap`].
     pub fn new<S: Into<SharedString>>(
         id: impl Into<SharedString>,
         items: impl IntoIterator<Item = (S, f32)>,
@@ -149,6 +150,7 @@ pub struct RadialBar {
 }
 
 impl RadialBar {
+    /// Create a new [`RadialBar`].
     pub fn new<S: Into<SharedString>>(rings: impl IntoIterator<Item = (S, f32, f32)>) -> Self {
         Self {
             rings: rings
@@ -159,10 +161,12 @@ impl RadialBar {
             legend: true,
         }
     }
+    /// Size in px.
     pub fn size(mut self, s: f32) -> Self {
         self.size = s;
         self
     }
+    /// Show or hide the legend.
     pub fn legend(mut self, l: bool) -> Self {
         self.legend = l;
         self

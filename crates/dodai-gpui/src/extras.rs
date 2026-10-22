@@ -44,6 +44,7 @@ pub struct Toolbar {
 crate::corners_setter!(Toolbar);
 
 impl Toolbar {
+    /// Create a new [`Toolbar`].
     pub fn new() -> Self {
         Self {
             corners: None,
@@ -134,6 +135,7 @@ pub struct BottomAppBar {
 crate::corners_setter!(BottomAppBar);
 
 impl BottomAppBar {
+    /// Create a new [`BottomAppBar`].
     pub fn new() -> Self {
         Self {
             corners: None,
@@ -196,6 +198,7 @@ pub struct EmptyState {
 }
 
 impl EmptyState {
+    /// Create a new [`EmptyState`].
     pub fn new(glyph: impl Into<SharedString>, title: impl Into<SharedString>) -> Self {
         Self {
             glyph: glyph.into(),
@@ -205,6 +208,7 @@ impl EmptyState {
             actions: Vec::new(),
         }
     }
+    /// Message text.
     pub fn message(mut self, m: impl Into<SharedString>) -> Self {
         self.message = Some(m.into());
         self
@@ -282,6 +286,7 @@ pub struct Rating {
 }
 
 impl Rating {
+    /// Create a new [`Rating`].
     pub fn new(id: impl Into<ElementId>, value: u32) -> Self {
         Self {
             id: id.into(),
@@ -290,11 +295,15 @@ impl Rating {
             on_change: None,
         }
     }
+    /// Maximum value.
     pub fn max(mut self, m: u32) -> Self {
         self.max = m.max(1);
         self
     }
-    crate::callback!(on_change, u32);
+    crate::callback!(
+        /// Called when the value changes, with the new value.
+        on_change, u32
+    );
 }
 
 impl Rating {
@@ -348,6 +357,7 @@ pub struct NumberStepper {
 crate::corners_setter!(NumberStepper);
 
 impl NumberStepper {
+    /// Create a new [`NumberStepper`].
     pub fn new(id: impl Into<ElementId>, value: i32) -> Self {
         Self {
             corners: None,
@@ -359,16 +369,21 @@ impl NumberStepper {
             on_change: None,
         }
     }
+    /// Value range `min..max`.
     pub fn range(mut self, min: i32, max: i32) -> Self {
         self.min = min;
         self.max = max;
         self
     }
+    /// Step between values.
     pub fn step(mut self, s: i32) -> Self {
         self.step = s.max(1);
         self
     }
-    crate::callback!(on_change, i32);
+    crate::callback!(
+        /// Called when the value changes, with the new value.
+        on_change, i32
+    );
 }
 
 impl NumberStepper {
@@ -415,13 +430,18 @@ crate::entry_render!(NumberStepper);
 
 /// One timeline entry.
 pub struct TimelineEvent {
+    /// Event title.
     pub title: SharedString,
+    /// Optional detail line.
     pub detail: Option<SharedString>,
+    /// Optional time label.
     pub time: Option<SharedString>,
+    /// Marker colour.
     pub tone: Tone,
 }
 
 impl TimelineEvent {
+    /// Create a new [`TimelineEvent`].
     pub fn new(title: impl Into<SharedString>) -> Self {
         Self {
             title: title.into(),
@@ -430,14 +450,17 @@ impl TimelineEvent {
             tone: Tone::Info,
         }
     }
+    /// Detail text.
     pub fn detail(mut self, d: impl Into<SharedString>) -> Self {
         self.detail = Some(d.into());
         self
     }
+    /// Time label.
     pub fn time(mut self, d: impl Into<SharedString>) -> Self {
         self.time = Some(d.into());
         self
     }
+    /// Semantic tone (colour).
     pub fn tone(mut self, t: Tone) -> Self {
         self.tone = t;
         self
@@ -454,6 +477,7 @@ pub struct Timeline {
 crate::corners_setter!(Timeline);
 
 impl Timeline {
+    /// Create a new [`Timeline`].
     pub fn new(events: impl IntoIterator<Item = TimelineEvent>) -> Self {
         Self {
             corners: None,
@@ -544,6 +568,7 @@ pub struct ColorPicker {
 crate::corners_setter!(ColorPicker);
 
 impl ColorPicker {
+    /// Create a new [`ColorPicker`].
     pub fn new(id: impl Into<ElementId>, colors: impl IntoIterator<Item = Color>) -> Self {
         Self {
             corners: None,
@@ -554,15 +579,20 @@ impl ColorPicker {
             on_select: None,
         }
     }
+    /// The selected item (controlled).
     pub fn selected(mut self, i: Option<usize>) -> Self {
         self.selected = i;
         self
     }
+    /// Number of columns.
     pub fn columns(mut self, n: usize) -> Self {
         self.columns = n.max(1);
         self
     }
-    crate::callback!(on_select, usize);
+    crate::callback!(
+        /// Called when an item is chosen, with the index.
+        on_select, usize
+    );
 }
 
 impl ColorPicker {
@@ -635,6 +665,7 @@ pub struct FileDropZone {
 crate::corners_setter!(FileDropZone);
 
 impl FileDropZone {
+    /// Create a new [`FileDropZone`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             corners: None,
@@ -644,15 +675,20 @@ impl FileDropZone {
             on_click: None,
         }
     }
+    /// Title text.
     pub fn title(mut self, t: impl Into<SharedString>) -> Self {
         self.title = t.into();
         self
     }
+    /// Secondary hint text.
     pub fn hint(mut self, t: impl Into<SharedString>) -> Self {
         self.hint = t.into();
         self
     }
-    crate::callback!(on_click, &ClickEvent);
+    crate::callback!(
+        /// Called when it is clicked, with the click event.
+        on_click, &ClickEvent
+    );
 }
 
 impl FileDropZone {
@@ -719,6 +755,7 @@ pub struct TagField {
 crate::corners_setter!(TagField);
 
 impl TagField {
+    /// Create a new [`TagField`].
     pub fn new<S: Into<SharedString>>(
         id: impl Into<ElementId>,
         tags: impl IntoIterator<Item = S>,
@@ -731,7 +768,10 @@ impl TagField {
             trailing: None,
         }
     }
-    crate::callback!(on_remove, usize);
+    crate::callback!(
+        /// Called when it is removed, with the index.
+        on_remove, usize
+    );
     /// Element after the chips (typically a `TextInput`).
     pub fn trailing(mut self, e: impl IntoElement) -> Self {
         self.trailing = Some(e.into_any_element());

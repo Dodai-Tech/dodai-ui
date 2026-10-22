@@ -99,6 +99,7 @@ pub struct Column {
 }
 
 impl Column {
+    /// Create a new [`Column`].
     pub fn new(title: impl Into<SharedString>) -> Self {
         Self {
             title: title.into(),
@@ -112,6 +113,7 @@ impl Column {
         self.width = w;
         self
     }
+    /// Allow sorting by this column.
     pub fn sortable(mut self, on: bool) -> Self {
         self.sortable = on;
         self
@@ -147,10 +149,11 @@ pub struct DataTable {
     selectable: bool,
     height: f32,
     corners: Option<dodai_core::Corners>,
-    on_selection: Option<SelectionFn>,
+    on_change: Option<SelectionFn>,
 }
 
 impl DataTable {
+    /// Create a new [`DataTable`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
@@ -160,13 +163,15 @@ impl DataTable {
             selectable: true,
             height: 280.0,
             corners: None,
-            on_selection: None,
+            on_change: None,
         }
     }
+    /// The column headers.
     pub fn columns(mut self, c: impl IntoIterator<Item = Column>) -> Self {
         self.columns = c.into_iter().collect();
         self
     }
+    /// The rows.
     pub fn rows<S: Into<SharedString>, R: IntoIterator<Item = S>>(
         mut self,
         rows: impl IntoIterator<Item = R>,
@@ -204,7 +209,10 @@ impl DataTable {
         self.corners = Some(c);
         self
     }
-    crate::callback!(on_selection, &[usize]);
+    crate::callback!(
+        /// Called when the value changes, with the selected indices.
+        on_change, &[usize]
+    );
 }
 
 impl RenderOnce for DataTable {
@@ -235,7 +243,7 @@ impl RenderOnce for DataTable {
         let check_w = if self.selectable { 40.0 } else { 0.0 };
 
         let notify_selection = {
-            let f = self.on_selection.clone();
+            let f = self.on_change.clone();
             move |sel: &BTreeSet<usize>, w: &mut Window, cx: &mut App| {
                 if let Some(f) = &f {
                     let v: Vec<usize> = sel.iter().copied().collect();

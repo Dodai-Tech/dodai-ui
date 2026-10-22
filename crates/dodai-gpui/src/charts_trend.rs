@@ -44,6 +44,7 @@ pub struct StackedAreaChart {
 chart_cfg!(StackedAreaChart);
 
 impl StackedAreaChart {
+    /// Create a new [`StackedAreaChart`].
     pub fn new(series: impl IntoIterator<Item = Series>) -> Self {
         Self {
             series: series.into_iter().collect(),
@@ -54,10 +55,12 @@ impl StackedAreaChart {
             legend: true,
         }
     }
+    /// Labels, one per item.
     pub fn labels<S: Into<SharedString>>(mut self, l: impl IntoIterator<Item = S>) -> Self {
         self.labels = labels_of(l);
         self
     }
+    /// Show or hide the legend.
     pub fn legend(mut self, l: bool) -> Self {
         self.legend = l;
         self
@@ -151,6 +154,7 @@ pub use dodai_charts_core::Candle;
 /// How candles are drawn.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum CandleStyle {
+    /// Plain candlesticks.
     #[default]
     Candles,
     /// Smoothed Heikin-Ashi candles.
@@ -161,8 +165,10 @@ pub enum CandleStyle {
 
 /// Price overlay drawn on the main pane.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Overlay {
+pub enum CandleOverlay {
+    /// Simple moving average over this many candles.
     Sma(usize),
+    /// Exponential moving average over this many candles.
     Ema(usize),
     /// `(period, deviations)`
     Bollinger(usize, f32),
@@ -170,7 +176,8 @@ pub enum Overlay {
 
 /// Indicator pane drawn under the candles.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Pane {
+pub enum CandlePane {
+    /// Relative strength index over this many candles.
     Rsi(usize),
     /// `(fast, slow, signal)`
     Macd(usize, usize, usize),
@@ -179,12 +186,16 @@ pub enum Pane {
 /// A buy or sell marker on candle `index`.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TradeMarker {
+    /// Candle index the trade happened on.
     pub index: usize,
+    /// Trade price.
     pub price: f32,
+    /// `true` for a buy, `false` for a sell.
     pub buy: bool,
 }
 
 impl TradeMarker {
+    /// A buy marker at candle `index` and `price`.
     pub fn buy(index: usize, price: f32) -> Self {
         Self {
             index,
@@ -192,6 +203,7 @@ impl TradeMarker {
             buy: true,
         }
     }
+    /// A sell marker at candle `index` and `price`.
     pub fn sell(index: usize, price: f32) -> Self {
         Self {
             index,
@@ -204,12 +216,12 @@ impl TradeMarker {
 type Line = Vec<Option<f32>>;
 
 /// Overlay lines `(values, alpha)` for `o` over `closes`. Pure.
-pub fn overlay_lines(o: Overlay, closes: &[f32]) -> Vec<(Line, f32)> {
+pub fn overlay_lines(o: CandleOverlay, closes: &[f32]) -> Vec<(Line, f32)> {
     use dodai_charts_core::indicators::{bollinger, ema, sma};
     match o {
-        Overlay::Sma(p) => vec![(sma(closes, p), 1.0)],
-        Overlay::Ema(p) => vec![(ema(closes, p), 1.0)],
-        Overlay::Bollinger(p, k) => {
+        CandleOverlay::Sma(p) => vec![(sma(closes, p), 1.0)],
+        CandleOverlay::Ema(p) => vec![(ema(closes, p), 1.0)],
+        CandleOverlay::Bollinger(p, k) => {
             let (m, u, l) = bollinger(closes, p, k);
             vec![(m, 1.0), (u, 0.55), (l, 0.55)]
         }
@@ -249,13 +261,14 @@ pub struct Candlestick {
     title: Option<SharedString>,
     style: CandleStyle,
     volume: bool,
-    overlays: Vec<Overlay>,
-    panes: Vec<Pane>,
+    overlays: Vec<CandleOverlay>,
+    panes: Vec<CandlePane>,
     markers: Vec<TradeMarker>,
 }
 chart_cfg!(Candlestick);
 
 impl Candlestick {
+    /// Create a new [`Candlestick`].
     pub fn new(id: impl Into<SharedString>, candles: impl IntoIterator<Item = Candle>) -> Self {
         Self {
             id: id.into(),
@@ -271,6 +284,7 @@ impl Candlestick {
             markers: Vec::new(),
         }
     }
+    /// Labels, one per item.
     pub fn labels<S: Into<SharedString>>(mut self, l: impl IntoIterator<Item = S>) -> Self {
         self.labels = labels_of(l);
         self
@@ -286,12 +300,12 @@ impl Candlestick {
         self
     }
     /// Add a price overlay (call repeatedly).
-    pub fn overlay(mut self, o: Overlay) -> Self {
+    pub fn overlay(mut self, o: CandleOverlay) -> Self {
         self.overlays.push(o);
         self
     }
     /// Add an indicator pane under the chart (call repeatedly).
-    pub fn pane(mut self, p: Pane) -> Self {
+    pub fn pane(mut self, p: CandlePane) -> Self {
         self.panes.push(p);
         self
     }
@@ -308,7 +322,7 @@ impl Candlestick {
     fn indicator_pane(
         &self,
         t: &dodai_core::Theme,
-        pane: Pane,
+        pane: CandlePane,
         closes: &[f32],
         g: f32,
     ) -> gpui::Div {
@@ -319,7 +333,7 @@ impl Candlestick {
         let glow = glow_of(t);
         let n = closes.len();
         let (labels, cv) = match pane {
-            Pane::Rsi(p) => {
+            CandlePane::Rsi(p) => {
                 let r = rsi(closes, p);
                 let cv = canvas(
                     |_, _, _| (),
@@ -339,7 +353,7 @@ impl Candlestick {
                 );
                 (vec!["0".to_string(), "50".into(), "100".into()], cv)
             }
-            Pane::Macd(f, s, sg) => {
+            CandlePane::Macd(f, s, sg) => {
                 let (m, sig, h) = macd(closes, f, s, sg);
                 let top = h
                     .iter()
@@ -593,8 +607,8 @@ mod candle_tests {
     #[test]
     fn overlays_have_expected_lines() {
         let c: Vec<f32> = (0..10).map(|i| i as f32).collect();
-        assert_eq!(overlay_lines(Overlay::Sma(3), &c).len(), 1);
-        assert_eq!(overlay_lines(Overlay::Bollinger(3, 2.0), &c).len(), 3);
+        assert_eq!(overlay_lines(CandleOverlay::Sma(3), &c).len(), 1);
+        assert_eq!(overlay_lines(CandleOverlay::Bollinger(3, 2.0), &c).len(), 3);
     }
 
     #[test]

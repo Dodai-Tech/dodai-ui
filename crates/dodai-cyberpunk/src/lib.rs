@@ -31,6 +31,7 @@ mod neon;
 pub mod shape;
 mod spec;
 pub use neon::{preset_themes, Backdrop, Neon, NeonPreset, PRESETS};
+pub use shape::{shape_presets, CHAMFER_SCALE as SHAPE_SCALE};
 pub use spec::{Cyberpunk, SPEC};
 
 fn typography() -> Typography {
@@ -329,6 +330,16 @@ pub fn red() -> Theme {
         YELLOW,
         false,
     )
+}
+
+/// The default dark theme (yellow on black).
+pub fn dark() -> Theme {
+    yellow()
+}
+
+/// The default light theme (yellow on paper).
+pub fn light() -> Theme {
+    yellow_light()
 }
 
 /// All Cyberpunk variants (dark first, then light).

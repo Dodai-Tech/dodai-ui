@@ -25,8 +25,16 @@ pub(crate) const CATEGORIES: [&str; 10] = [
 ];
 
 impl Showcase {
-    /// Build the sections of one category (nothing else is constructed).
+    /// Build the sections of one category (nothing else is constructed), without those that
+    /// belong to another design (see `catalog::owner`).
     pub(crate) fn sections_of(&mut self, cat: &str, cx: &mut Context<Self>) -> Vec<Section> {
+        let family = theme_of(cx).meta.family;
+        let mut v = self.sections_of_all(cat, cx);
+        v.retain(|(_, title, _, _)| super::catalog::owner(title).is_none_or(|o| o == family));
+        v
+    }
+
+    fn sections_of_all(&mut self, cat: &str, cx: &mut Context<Self>) -> Vec<Section> {
         match cat {
             "Foundations" => self.sections_foundations_sec(cx),
             "Shape" => self.sections_shape(cx),

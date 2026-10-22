@@ -78,7 +78,7 @@ impl Showcase {
                         dodai_gpui::Select::new("sh-gen")
                             .options(gens.iter().map(|g| opt_label(g)))
                             .selected(gen_sel)
-                            .on_change(move |i, _, cx| {
+                            .on_select(move |i, _, cx| {
                                 let id = gen_ids[i];
                                 m_g.update(cx, |s, cx| {
                                     s.sh_gen = id;
@@ -101,7 +101,7 @@ impl Showcase {
                             .placeholder("Add an effect…")
                             .options(fxs.iter().map(|f| opt_label(f)))
                             .selected(None)
-                            .on_change(move |i, _, cx| {
+                            .on_select(move |i, _, cx| {
                                 let id = fx_ids[i];
                                 m_f.update(cx, |s, cx| {
                                     if !s.sh_fx.contains(&id) {

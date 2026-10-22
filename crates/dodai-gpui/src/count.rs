@@ -33,10 +33,12 @@ impl CountUp {
             size: None,
         }
     }
+    /// Text before the number.
     pub fn prefix(mut self, p: impl Into<SharedString>) -> Self {
         self.prefix = p.into();
         self
     }
+    /// Text after the number.
     pub fn suffix(mut self, s: impl Into<SharedString>) -> Self {
         self.suffix = s.into();
         self

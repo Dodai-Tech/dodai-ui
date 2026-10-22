@@ -20,51 +20,57 @@ pub struct BorderStyle {
     pub opacity: f32,
     /// Corner where the accent (theme primary, the hard offset shadow) sits;
     /// the grey contour sits on the opposite edges. Same design, rotated.
-    pub accent: Corner,
+    pub accent: AccentCorner,
     /// Thickness of the accent in px (`None` = the theme's own hard shadow).
     pub accent_width: Option<f32>,
 }
 
 /// A corner of a box (where the accent bracket sits).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Corner {
+pub enum AccentCorner {
+    /// Top left.
     TopLeft,
+    /// Top right.
     TopRight,
+    /// Bottom left.
     BottomLeft,
+    /// Bottom right.
     BottomRight,
 }
 
-impl Corner {
-    pub const ALL: [Corner; 4] = [
-        Corner::TopLeft,
-        Corner::TopRight,
-        Corner::BottomLeft,
-        Corner::BottomRight,
+impl AccentCorner {
+    /// The four corners, clockwise from the top left.
+    pub const ALL: [AccentCorner; 4] = [
+        AccentCorner::TopLeft,
+        AccentCorner::TopRight,
+        AccentCorner::BottomLeft,
+        AccentCorner::BottomRight,
     ];
     /// Unit direction `(dx, dy)` of this corner from the centre.
     pub fn dir(self) -> (f32, f32) {
         match self {
-            Corner::TopLeft => (-1.0, -1.0),
-            Corner::TopRight => (1.0, -1.0),
-            Corner::BottomLeft => (-1.0, 1.0),
-            Corner::BottomRight => (1.0, 1.0),
+            AccentCorner::TopLeft => (-1.0, -1.0),
+            AccentCorner::TopRight => (1.0, -1.0),
+            AccentCorner::BottomLeft => (-1.0, 1.0),
+            AccentCorner::BottomRight => (1.0, 1.0),
         }
     }
     /// The diagonally opposite corner (where the grey contour goes).
-    pub fn opposite(self) -> Corner {
+    pub fn opposite(self) -> AccentCorner {
         match self {
-            Corner::TopLeft => Corner::BottomRight,
-            Corner::BottomRight => Corner::TopLeft,
-            Corner::TopRight => Corner::BottomLeft,
-            Corner::BottomLeft => Corner::TopRight,
+            AccentCorner::TopLeft => AccentCorner::BottomRight,
+            AccentCorner::BottomRight => AccentCorner::TopLeft,
+            AccentCorner::TopRight => AccentCorner::BottomLeft,
+            AccentCorner::BottomLeft => AccentCorner::TopRight,
         }
     }
+    /// Display name.
     pub fn name(self) -> &'static str {
         match self {
-            Corner::TopLeft => "Top left",
-            Corner::TopRight => "Top right",
-            Corner::BottomLeft => "Bottom left",
-            Corner::BottomRight => "Bottom right",
+            AccentCorner::TopLeft => "Top left",
+            AccentCorner::TopRight => "Top right",
+            AccentCorner::BottomLeft => "Bottom left",
+            AccentCorner::BottomRight => "Bottom right",
         }
     }
 }
@@ -74,48 +80,50 @@ impl BorderStyle {
     pub const SUBTLE: BorderStyle = BorderStyle {
         width: 0.75,
         opacity: 0.45,
-        accent: Corner::BottomRight,
+        accent: AccentCorner::BottomRight,
         accent_width: None,
     };
     /// Default for sections: thin and soft.
     pub const THIN: BorderStyle = BorderStyle {
         width: 1.0,
         opacity: 0.6,
-        accent: Corner::BottomRight,
+        accent: AccentCorner::BottomRight,
         accent_width: None,
     };
     /// The theme's own border, unchanged strength.
     pub const NORMAL: BorderStyle = BorderStyle {
         width: 1.5,
         opacity: 1.0,
-        accent: Corner::BottomRight,
+        accent: AccentCorner::BottomRight,
         accent_width: None,
     };
     /// Heavy frame.
     pub const BOLD: BorderStyle = BorderStyle {
         width: 3.0,
         opacity: 1.0,
-        accent: Corner::BottomRight,
+        accent: AccentCorner::BottomRight,
         accent_width: None,
     };
+    /// No section border.
     pub const NONE: BorderStyle = BorderStyle {
         width: 0.0,
         opacity: 0.0,
-        accent: Corner::BottomRight,
+        accent: AccentCorner::BottomRight,
         accent_width: None,
     };
 
+    /// Create a new [`BorderStyle`].
     pub fn new(width: f32, opacity: f32) -> Self {
         Self {
             width,
             opacity,
-            accent: Corner::BottomRight,
+            accent: AccentCorner::BottomRight,
             accent_width: None,
         }
         .clamped()
     }
     /// Same border with the accent moved to `corner` (grey goes opposite).
-    pub fn accent(mut self, corner: Corner) -> Self {
+    pub fn accent(mut self, corner: AccentCorner) -> Self {
         self.accent = corner;
         self
     }
@@ -200,6 +208,7 @@ pub struct Panel {
 }
 
 impl Panel {
+    /// Create a new [`Panel`].
     pub fn new() -> Self {
         Self {
             border: None,
@@ -231,6 +240,7 @@ impl Panel {
         self.subheader = Some(el.into_any_element());
         self
     }
+    /// Title text.
     pub fn title(mut self, t: impl Into<SharedString>) -> Self {
         self.title = Some(t.into());
         self
@@ -349,6 +359,7 @@ pub struct InputBox {
 crate::corners_setter!(InputBox);
 
 impl InputBox {
+    /// Create a new [`InputBox`].
     pub fn new() -> Self {
         Self {
             corners: None,
@@ -472,12 +483,13 @@ mod tests {
 
     #[test]
     fn corner_opposite_is_an_involution_on_the_diagonal() {
-        for c in Corner::ALL {
+        for c in AccentCorner::ALL {
             assert_ne!(c, c.opposite());
             assert_eq!(c, c.opposite().opposite());
         }
-        assert_eq!(Corner::TopRight.opposite(), Corner::BottomLeft);
-        let names: std::collections::HashSet<_> = Corner::ALL.iter().map(|c| c.name()).collect();
+        assert_eq!(AccentCorner::TopRight.opposite(), AccentCorner::BottomLeft);
+        let names: std::collections::HashSet<_> =
+            AccentCorner::ALL.iter().map(|c| c.name()).collect();
         assert_eq!(names.len(), 4);
     }
 
@@ -491,8 +503,13 @@ mod tests {
         assert!(BorderStyle::NONE.apply(base).stroke.is_none());
         let c = BorderStyle::new(99.0, 5.0);
         assert_eq!((c.width, c.opacity), (8.0, 1.0));
-        let a = BorderStyle::THIN.accent(Corner::TopLeft).accent_width(99.0);
-        assert_eq!((a.accent, a.accent_width), (Corner::TopLeft, Some(8.0)));
+        let a = BorderStyle::THIN
+            .accent(AccentCorner::TopLeft)
+            .accent_width(99.0);
+        assert_eq!(
+            (a.accent, a.accent_width),
+            (AccentCorner::TopLeft, Some(8.0))
+        );
         // The accent moves the hard shadow; the grey contour stays put.
         let s = a.apply(base);
         assert_eq!(s.shadow_dir, (-1.0, -1.0));

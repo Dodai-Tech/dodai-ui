@@ -379,7 +379,7 @@ impl Showcase {
             section!("Clock · Timer")
                 .child(
                     row()
-                        .child(dodai_gpui::Clock::new("clk").local())
+                        .child(dodai_gpui::Clock::new().local())
                         .child(dodai_gpui::Timer::new("tmr").minutes(1)),
                 )
                 .into_any_element(),

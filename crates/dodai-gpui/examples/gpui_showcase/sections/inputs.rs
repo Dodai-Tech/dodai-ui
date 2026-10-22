@@ -122,7 +122,7 @@ impl Showcase {
                     .gap(gap)
                     .child(
                         Slider::new(("vslider", i), self.vslider[i])
-                            .direction(Direction::Vertical)
+                            .orientation(Orientation::Vertical)
                             .length(120.0)
                             .on_change(move |v, _, cx| {
                                 m.update(cx, |s, cx| {
@@ -144,7 +144,7 @@ impl Showcase {
                     .gap(gap)
                     .child(
                         RangeSlider::new("vrange", self.vrange.0, self.vrange.1)
-                            .direction(Direction::Vertical)
+                            .orientation(Orientation::Vertical)
                             .length(120.0)
                             .step(0.1)
                             .ticks(true)
@@ -178,7 +178,7 @@ impl Showcase {
                     })
                 }
             })
-            .on_pick(move |_, _, _| {
+            .on_select(move |_, _, _| {
                 let _ = &m;
             });
         let (m1, m2, m3, m4, m5, m6) = (
@@ -614,7 +614,7 @@ impl Showcase {
                         .child(
                             dodai_gpui::CheckboxGroup::new("cg", ["Email", "SMS", "Push", "Slack"])
                                 .select_all("All channels")
-                                .checked([0, 2]),
+                                .selected([0, 2]),
                         )
                         .child(
                             dodai_gpui::CheckboxGroup::new(
@@ -623,7 +623,7 @@ impl Showcase {
                             )
                             .select_all("Everything")
                             .switches(true)
-                            .checked([0]),
+                            .selected([0]),
                         ),
                 )
                 .into_any_element(),

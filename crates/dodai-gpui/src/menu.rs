@@ -28,6 +28,7 @@ pub struct MenuItem {
 }
 
 impl MenuItem {
+    /// Create a new [`MenuItem`].
     pub fn new(label: impl Into<SharedString>) -> Self {
         Self {
             label: label.into(),
@@ -62,6 +63,7 @@ impl MenuItem {
         self.shortcut = Some(s.into());
         self
     }
+    /// Disable the control.
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
         self
@@ -93,6 +95,7 @@ pub struct Menu {
 crate::corners_setter!(Menu);
 
 impl Menu {
+    /// Create a new [`Menu`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             corners: None,
@@ -104,10 +107,12 @@ impl Menu {
             on_select_sub: None,
         }
     }
+    /// The items.
     pub fn items(mut self, i: impl IntoIterator<Item = MenuItem>) -> Self {
         self.items = i.into_iter().collect();
         self
     }
+    /// Width in px.
     pub fn width(mut self, w: f32) -> Self {
         self.width = w;
         self
@@ -118,7 +123,10 @@ impl Menu {
         self.active = i;
         self
     }
-    crate::callback!(on_select, usize);
+    crate::callback!(
+        /// Called when an item is chosen, with the index.
+        on_select, usize
+    );
     /// Called with `(parent index, child index)` when a sub-menu item is chosen.
     pub fn on_select_sub(
         mut self,

@@ -7,14 +7,54 @@
 //! ## Components
 //!
 //! Every component is a `RenderOnce` builder reading the active theme from the
-//! global ([`install`] first): [`Button`], [`Panel`], [`Tag`], [`Tabs`],
-//! [`Toggle`], [`Checkbox`], [`Radio`], [`ProgressBar`], [`Slider`], [`InputBox`],
-//! [`ListItem`], [`Divider`], [`DodaiTooltip`], [`Heading`]/[`Label`]/[`Muted`]/[`Mono`],
-//! [`Scanlines`], [`ThemeSwitcherBar`], plus overlays ([`popover`]), forms
-//! ([`forms`]), data display ([`display`], [`datatable`], [`content`]), time
-//! ([`time`]: clock, timer, stopwatch, tap tempo) and charts. Shapes (square / rounded / chamfered),
-//! glow, hard shadow and uppercase labels all come from tokens; no component
-//! looks at a theme id. See [`paint`] for the shaped-box primitive.
+//! global ([`install`] first). Shapes (square / rounded / chamfered), glow, hard shadow,
+//! shadows, frosted glass and uppercase labels all come from tokens and the active design's
+//! spec; no component looks at a theme id.
+//!
+//! | Area | Modules |
+//! |---|---|
+//! | Actions | [`button`], [`surfaces`] (icon button, FAB, cards, app bars), [`expressive`] (button group, split button; Material) |
+//! | Inputs | [`controls`], [`forms`], [`select`], [`picker`], [`range`], [`knob`], [`text_input`] |
+//! | Navigation | [`tabs`], [`nav`], [`navigation`], [`menu`], [`command`], [`search`] |
+//! | Data display | [`data`], [`datatable`], [`display`], [`content`], [`list`], [`layout`] (tree, split pane, page grid) |
+//! | Feedback | [`feedback`], [`overlay`], [`popover`], [`sheets`] |
+//! | Charts | [`charts`] and its `charts_*` / `instrument_charts` / [`gauges`] siblings |
+//! | Time | [`time`] (clock, timer, stopwatch, tap tempo) |
+//! | Look | [`paint`] (the shaped box), [`motion`], [`frosted`] (glass over a picture) |
+//!
+//! ## Design-exclusive components
+//!
+//! A few components belong to one design and are compiled only with its feature (and the
+//! showcase lists them only for that design):
+//!
+//! | Feature | Components |
+//! |---|---|
+//! | `material` | [`expressive`]: `ButtonGroup`, `SplitButton`, `LoadingIndicator`; `overscroll` |
+//! | `cyberpunk` | `instrument_charts` (oscilloscope, spectrum, radar scope, hex map, ring stack), `scanlines` |
+//! | `aurora` | `frosted` (`FrostedScene`), `page_grid` (`PageGrid`) |
+//! | `neobrutalism` | none; its look is tokens and spec only |
+//!
+//! Everything else is shared by all designs and looks different only through tokens.
+//!
+//! `use dodai_gpui::prelude::*;` brings in the everyday names.
+//!
+//! ## Conventions
+//!
+//! * **Constructors**: `Type::new(id, ..)`; the id (`impl Into<ElementId>`) keys the widget's
+//!   state. Stateless display types take their content instead.
+//! * **Controlled state**: the caller owns the value and passes it back in.
+//!   - `selected(..)` is the chosen item (an index, an `Option<usize>`, a set of indices, or a
+//!     `bool` on a single item).
+//!   - `expanded(..)` is the open nodes, `open(bool)` is a popup.
+//!   - `value(..)` is a typed value.
+//! * **Callbacks** (`on_*`, always last in the argument list: `(.., &mut Window, &mut App)`):
+//!   - `on_click(&ClickEvent)`: pressed.
+//!   - `on_select(index or item)`: one item picked out of several.
+//!   - `on_change(value)`: a value (number, text, date, set of indices) edited.
+//!   - `on_dismiss()`: a surface asked to close.
+//! * **Sizes**: `size(ControlSize | FabSize | AppBarSize)` is a named step; `size(side)` is a
+//!   square of that many px; `size(w, h)` a rectangle; `width(px)` / `height(px)` one side.
+//! * **Booleans** are `on`/`off` setters (`disabled(true)`, `legend(false)`).
 //!
 //! ```no_run
 //! use gpui::{div, prelude::*, App};
@@ -27,6 +67,7 @@
 //!     let _btn = div().dodai_button(&t, ButtonVariant::Primary, ControlState::Idle);
 //! }
 //! ```
+#![warn(missing_docs)]
 /// Adds the standard `.corners(..)` per-component override (cut these
 /// corners instead of the theme's). The type needs a `corners` field of
 /// type `Option<dodai_core::Corners>`.
@@ -125,8 +166,6 @@ pub mod content;
 pub mod controls;
 #[cfg(feature = "components")]
 pub mod count;
-#[cfg(feature = "charts")]
-pub mod cyber_charts;
 #[cfg(feature = "components")]
 pub mod data;
 #[cfg(feature = "components")]
@@ -134,16 +173,21 @@ pub mod datatable;
 #[cfg(feature = "components")]
 pub mod display;
 #[cfg(feature = "components")]
+#[cfg(all(feature = "components", feature = "material"))]
+pub mod expressive;
+#[cfg(feature = "components")]
 pub mod extras;
 #[cfg(feature = "components")]
 pub mod feedback;
 #[cfg(feature = "components")]
 pub mod forms;
-#[cfg(feature = "shaders")]
+#[cfg(feature = "aurora")]
 pub mod frosted;
 #[cfg(feature = "charts")]
 pub mod gauges;
 pub mod icons;
+#[cfg(all(feature = "charts", feature = "cyberpunk"))]
+pub mod instrument_charts;
 pub mod interact;
 #[cfg(feature = "components")]
 pub mod knob;
@@ -154,8 +198,6 @@ pub mod lazy;
 pub mod list;
 pub mod logic;
 #[cfg(feature = "components")]
-pub mod m3;
-#[cfg(feature = "components")]
 pub mod menu;
 pub mod motion;
 #[cfg(feature = "components")]
@@ -164,8 +206,10 @@ pub mod nav;
 pub mod navigation;
 #[cfg(feature = "components")]
 pub mod overlay;
-#[cfg(feature = "components")]
+#[cfg(all(feature = "components", feature = "material"))]
 pub mod overscroll;
+#[cfg(feature = "aurora")]
+pub mod page_grid;
 pub mod paint;
 pub mod panel;
 #[cfg(feature = "components")]
@@ -174,6 +218,7 @@ pub mod picker;
 pub mod popover;
 #[cfg(feature = "components")]
 pub mod range;
+#[cfg(feature = "cyberpunk")]
 pub mod scanlines;
 #[cfg(feature = "components")]
 pub mod search;
@@ -224,24 +269,22 @@ pub use charts_market::{ChartStack, DepthChart, Gantt, RenkoChart};
 pub use charts_part_whole::{treemap_layout, RadialBar, Treemap};
 #[cfg(feature = "charts")]
 pub use charts_trend::{
-    overlay_lines, stack_cumulative, Candle, CandleStyle, Candlestick, Overlay, Pane,
+    overlay_lines, stack_cumulative, Candle, CandleOverlay, CandlePane, CandleStyle, Candlestick,
     StackedAreaChart, TradeMarker,
 };
 #[cfg(feature = "components")]
 pub use command::{fuzzy_filter, Combobox, Command, CommandPalette};
 #[cfg(feature = "components")]
-pub use content::{highlight, parse_blocks, parse_inline, Block, CodeBlock, Inline, Markdown, Tok};
+pub use content::{
+    highlight, parse_blocks, parse_inline, CodeBlock, CodeToken, Markdown, MdBlock, MdInline,
+};
 #[cfg(feature = "components")]
 pub use controls::{
-    tick_fractions, BubblePlacement, Checkbox, CheckboxVariant, Direction, ProgressBar, Radio,
+    tick_fractions, BubblePlacement, Checkbox, CheckboxVariant, Orientation, ProgressBar, Radio,
     Slider, Toggle,
 };
 #[cfg(feature = "components")]
 pub use count::CountUp;
-#[cfg(feature = "charts")]
-pub use cyber_charts::{
-    Blip, DotMatrix, HexMap, Oscilloscope, RadarScope, RingStack, SignalBars, Spectrum,
-};
 #[cfg(feature = "components")]
 pub use data::{Avatar, Badge, Chip, Kbd, Table};
 #[cfg(feature = "components")]
@@ -257,8 +300,8 @@ pub use display::{
 pub use dodai_charts_core::gantt::Task as GanttTask;
 #[cfg(feature = "charts")]
 pub use dodai_charts_core::Gradient;
-#[cfg(feature = "shaders")]
 pub use dodai_motion;
+#[cfg(feature = "shaders")]
 pub use dodai_shaders;
 #[cfg(feature = "components")]
 pub use extras::{
@@ -277,19 +320,24 @@ pub use gauges::GaugeStyle;
 #[cfg(feature = "cyberpunk")]
 pub use icons::Modifier;
 pub use icons::{Icon, IconId, IconName, IconPack};
+#[cfg(all(feature = "charts", feature = "cyberpunk"))]
+pub use instrument_charts::{
+    Blip, DotMatrix, HexMap, Oscilloscope, RadarScope, RingStack, SignalBars, Spectrum,
+};
 mod icon_names;
+#[cfg(feature = "components")]
+#[cfg(all(feature = "components", feature = "material"))]
+pub use expressive::{ButtonGroup, LoadingIndicator, SplitButton};
 #[cfg(feature = "shaders")]
-#[cfg(feature = "shaders")]
+#[cfg(feature = "aurora")]
 pub use frosted::FrostedScene;
 #[cfg(feature = "components")]
 pub use knob::Knob;
 #[cfg(feature = "components")]
-pub use layout::{clamp_ratio, visible_rows, PageGrid, SplitPane, TreeItem, TreeRow, TreeView};
+pub use layout::{clamp_ratio, visible_rows, SplitPane, TreeItem, TreeRow, TreeView};
 pub use lazy::lazy;
 #[cfg(feature = "components")]
 pub use list::{Divider, ListItem};
-#[cfg(feature = "components")]
-pub use m3::{ButtonGroup, LoadingIndicator, SplitButton};
 #[cfg(feature = "components")]
 pub use menu::{Menu, MenuItem};
 pub use motion::{
@@ -302,12 +350,14 @@ pub use nav::{Accordion, Breadcrumb, Pagination, Segmented, Stepper};
 pub use navigation::{NavigationBar, NavigationDrawer, NavigationItem, NavigationRail};
 #[cfg(feature = "components")]
 pub use overlay::{Dialog, DialogCard};
-#[cfg(feature = "components")]
+#[cfg(all(feature = "components", feature = "material"))]
 pub use overscroll::{Overscroll, OverscrollFeel};
+#[cfg(feature = "aurora")]
+pub use page_grid::PageGrid;
 pub use paint::Playback;
 pub use paint::{shaped, ShapeStyle};
 pub use panel::{
-    section_border, set_section_border, BorderStyle, Corner, DodaiTooltip, InputBox, Panel,
+    section_border, set_section_border, AccentCorner, BorderStyle, DodaiTooltip, InputBox, Panel,
 };
 #[cfg(feature = "components")]
 pub use picker::{
@@ -316,14 +366,16 @@ pub use picker::{
     TimeInput, TimePicker,
 };
 #[cfg(feature = "components")]
-pub use popover::{ContextMenu, DropdownMenu, HoverCard, Placement, Popover};
+pub use popover::{ContextMenu, DropdownMenu, HoverCard, Popover, PopoverPlacement};
 #[cfg(feature = "components")]
 pub use range::{nearest_thumb, range_update, RangeSlider};
+#[cfg(feature = "cyberpunk")]
 pub use scanlines::Scanlines;
 #[cfg(feature = "components")]
 pub use search::{count_label, highlight_runs, IconBadge, RichTooltip, SearchMode, SearchView};
 #[cfg(feature = "components")]
 pub use select::{family_title, DesignSystemSelector, Select, SelectOption, ThemeSelector};
+#[cfg(feature = "shaders")]
 pub use shader_view::{shader_backend, PaletteSource, ShaderView};
 #[cfg(feature = "components")]
 pub use sheets::{
@@ -376,10 +428,12 @@ pub struct DodaiTheme {
 impl Global for DodaiTheme {}
 
 impl DodaiTheme {
+    /// The active theme.
     pub fn theme(&self) -> &Theme {
         self.switcher.current()
     }
 
+    /// The theme switcher.
     pub fn switcher(&self) -> &ThemeSwitcher {
         &self.switcher
     }
@@ -536,6 +590,7 @@ pub fn cycle_prev(cx: &mut App) {
 
 /// `cx.dodai()` accessor.
 pub trait ActiveDodai {
+    /// The Dodai theme store of this context.
     fn dodai(&self) -> &DodaiTheme;
 }
 
@@ -654,4 +709,15 @@ mod tests {
             ControlState::Hovered,
         );
     }
+}
+
+/// The everyday names: the theme store and extension traits, and the common components.
+pub mod prelude {
+    pub use crate::{install, theme_of, ActiveDodai, DodaiStyled};
+    #[cfg(feature = "components")]
+    pub use crate::{
+        Button, Checkbox, Dialog, DialogCard, Divider, Heading, Label, Menu, Muted, Panel,
+        ProgressBar, Radio, Segmented, Select, Slider, Tabs, Tag, Toggle,
+    };
+    pub use dodai_core::{ButtonVariant, ControlSize, ControlState, Theme, Tone};
 }

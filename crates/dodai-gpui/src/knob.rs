@@ -70,6 +70,7 @@ pub struct Knob {
 crate::corners_setter!(Knob);
 
 impl Knob {
+    /// Create a new [`Knob`].
     pub fn new(id: impl Into<ElementId>, value: f32) -> Self {
         Self {
             corners: None,

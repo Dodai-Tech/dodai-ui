@@ -1,6 +1,6 @@
-//! Material 3 (expressive) components with no equivalent elsewhere: [`ButtonGroup`],
-//! [`SplitButton`] and [`LoadingIndicator`]. They render on every theme; the Material look
-//! (pill corners, morphing shapes, tonal colours) keys off `Shape::kind() == Rounded`.
+//! Material 3 Expressive components: [`ButtonGroup`] (a row of toggle buttons, standard or
+//! connected), [`SplitButton`] (an action plus a menu arrow) and [`LoadingIndicator`] (a
+//! morphing shape). Compiled with the `material` feature and shown for the Material design.
 
 use crate::interact::ClickHandler;
 use crate::{hsla, theme_of, Button};
@@ -44,6 +44,7 @@ pub struct ButtonGroup {
 }
 
 impl ButtonGroup {
+    /// Create a new [`ButtonGroup`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
@@ -53,19 +54,25 @@ impl ButtonGroup {
             on_select: None,
         }
     }
+    /// Labels, one per item.
     pub fn labels<S: Into<SharedString>>(mut self, labels: impl IntoIterator<Item = S>) -> Self {
         self.labels = labels.into_iter().map(Into::into).collect();
         self
     }
+    /// The selected item (controlled).
     pub fn selected(mut self, i: Option<usize>) -> Self {
         self.selected = i;
         self
     }
+    /// Join the buttons into one group.
     pub fn connected(mut self, c: bool) -> Self {
         self.connected = c;
         self
     }
-    crate::callback!(on_select, usize);
+    crate::callback!(
+        /// Called when an item is chosen, with the index.
+        on_select, usize
+    );
 }
 
 impl RenderOnce for ButtonGroup {
@@ -113,6 +120,7 @@ pub struct SplitButton {
 crate::crop_setters!(SplitButton);
 
 impl SplitButton {
+    /// Create a new [`SplitButton`].
     pub fn new(id: impl Into<ElementId>, label: impl Into<SharedString>) -> Self {
         Self {
             id: id.into(),
@@ -125,6 +133,7 @@ impl SplitButton {
             cut_gap: None,
         }
     }
+    /// Visual variant.
     pub fn variant(mut self, v: ButtonVariant) -> Self {
         self.variant = v;
         self
@@ -134,10 +143,12 @@ impl SplitButton {
         self.open = o;
         self
     }
+    /// Called when clicked.
     pub fn on_click(mut self, f: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static) -> Self {
         self.on_click = Some(Box::new(f));
         self
     }
+    /// Called when the arrow part is clicked.
     pub fn on_toggle(mut self, f: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static) -> Self {
         self.on_toggle = Some(Box::new(f));
         self
@@ -228,6 +239,7 @@ pub struct LoadingIndicator {
 }
 
 impl LoadingIndicator {
+    /// Create a new [`LoadingIndicator`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
@@ -235,6 +247,7 @@ impl LoadingIndicator {
             motion: None,
         }
     }
+    /// Draw inside a filled container.
     pub fn contained(mut self, c: bool) -> Self {
         self.contained = c;
         self

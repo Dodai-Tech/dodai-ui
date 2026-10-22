@@ -32,6 +32,7 @@ pub struct RenkoChart {
 chart_cfg!(RenkoChart);
 
 impl RenkoChart {
+    /// Create a new [`RenkoChart`].
     pub fn new(
         id: impl Into<SharedString>,
         closes: impl IntoIterator<Item = f32>,
@@ -253,6 +254,7 @@ pub struct Gantt {
 }
 
 impl Gantt {
+    /// Create a new [`Gantt`].
     pub fn new(id: impl Into<SharedString>, tasks: impl IntoIterator<Item = Task>) -> Self {
         Self {
             id: id.into(),
@@ -267,6 +269,7 @@ impl Gantt {
         self.fmt = Some(Rc::new(f));
         self
     }
+    /// Title text.
     pub fn title(mut self, t: impl Into<SharedString>) -> Self {
         self.title = Some(t.into());
         self
@@ -389,6 +392,7 @@ impl Default for ChartStack {
 }
 
 impl ChartStack {
+    /// Create a new [`ChartStack`].
     pub fn new() -> Self {
         Self {
             panes: Vec::new(),
@@ -411,6 +415,7 @@ impl ChartStack {
         self.height = h;
         self
     }
+    /// Gap in px.
     pub fn gap(mut self, g: f32) -> Self {
         self.gap = g;
         self

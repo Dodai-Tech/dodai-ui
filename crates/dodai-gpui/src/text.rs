@@ -30,6 +30,7 @@ pub struct Text {
 }
 
 impl Text {
+    /// Create a new [`Text`].
     pub fn new(role: dodai_core::TypeRole, text: impl Into<SharedString>) -> Self {
         Self {
             text: text.into(),
@@ -133,6 +134,7 @@ impl Heading {
 pub struct Label(SharedString);
 
 impl Label {
+    /// Create a new [`Label`].
     pub fn new(text: impl Into<SharedString>) -> Self {
         Self(text.into())
     }
@@ -161,6 +163,7 @@ impl Label {
 pub struct Muted(SharedString);
 
 impl Muted {
+    /// Create a new [`Muted`].
     pub fn new(text: impl Into<SharedString>) -> Self {
         Self(text.into())
     }
@@ -189,6 +192,7 @@ impl Muted {
 pub struct Mono(SharedString);
 
 impl Mono {
+    /// Create a new [`Mono`].
     pub fn new(text: impl Into<SharedString>) -> Self {
         Self(text.into())
     }

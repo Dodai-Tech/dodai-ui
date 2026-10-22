@@ -67,6 +67,7 @@ pub struct Carousel {
 }
 
 impl Carousel {
+    /// Create a new [`Carousel`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
@@ -80,11 +81,13 @@ impl Carousel {
             on_select: None,
         }
     }
+    /// Add an item.
     pub fn item(mut self, e: impl IntoElement) -> Self {
         self.items.push(e.into_any_element());
         self
     }
-    pub fn active(mut self, i: usize) -> Self {
+    /// The selected item (controlled).
+    pub fn selected(mut self, i: usize) -> Self {
         self.active = i;
         self
     }
@@ -93,6 +96,7 @@ impl Carousel {
         self.visible = n.max(1);
         self
     }
+    /// Width of each item in px.
     pub fn item_width(mut self, w: f32) -> Self {
         self.item_width = w;
         self
@@ -112,7 +116,10 @@ impl Carousel {
         self.item_height = h;
         self
     }
-    crate::callback!(on_select, usize);
+    crate::callback!(
+        /// Called when an item is chosen, with the index.
+        on_select, usize
+    );
 }
 
 impl Carousel {

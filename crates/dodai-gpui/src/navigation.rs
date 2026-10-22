@@ -27,6 +27,7 @@ pub struct NavigationItem {
 }
 
 impl NavigationItem {
+    /// Create a new [`NavigationItem`].
     pub fn new(id: impl Into<ElementId>, label: impl Into<SharedString>) -> Self {
         Self {
             id: id.into(),
@@ -43,6 +44,7 @@ impl NavigationItem {
         self.depth = levels;
         self
     }
+    /// Leading icon.
     pub fn icon(mut self, i: crate::icons::IconName) -> Self {
         self.icon = Some(i);
         self
@@ -52,10 +54,12 @@ impl NavigationItem {
         self.badge = Some(b.into());
         self
     }
+    /// The selected item (controlled).
     pub fn selected(mut self, s: bool) -> Self {
         self.selected = s;
         self
     }
+    /// Called when clicked.
     pub fn on_click(mut self, f: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static) -> Self {
         self.on_click = Some(Box::new(f));
         self
@@ -112,13 +116,15 @@ pub struct NavigationDrawer {
 }
 
 impl NavigationDrawer {
-    pub fn new(_id: impl Into<ElementId>) -> Self {
+    /// Create a new [`NavigationDrawer`].
+    pub fn new() -> Self {
         Self {
             entries: Vec::new(),
             max_width: None,
             width: None,
         }
     }
+    /// Add an item.
     pub fn item(mut self, i: NavigationItem) -> Self {
         self.entries.push(Entry::Item(i));
         self
@@ -128,6 +134,7 @@ impl NavigationDrawer {
         self.entries.push(Entry::Headline(t.into()));
         self
     }
+    /// Add a divider.
     pub fn divider(mut self) -> Self {
         self.entries.push(Entry::Divider);
         self
@@ -279,12 +286,14 @@ pub struct NavigationRail {
 }
 
 impl NavigationRail {
-    pub fn new(_id: impl Into<ElementId>) -> Self {
+    /// Create a new [`NavigationRail`].
+    pub fn new() -> Self {
         Self {
             items: Vec::new(),
             header: None,
         }
     }
+    /// Add an item.
     pub fn item(mut self, i: NavigationItem) -> Self {
         self.items.push(i);
         self
@@ -373,9 +382,11 @@ impl Default for NavigationBar {
 }
 
 impl NavigationBar {
+    /// Create a new [`NavigationBar`].
     pub fn new() -> Self {
         Self { items: Vec::new() }
     }
+    /// Add an item.
     pub fn item(mut self, i: NavigationItem) -> Self {
         self.items.push(i);
         self
@@ -455,6 +466,18 @@ fn ellipsize(
     }];
     let mut wrapper = cx.text_system().line_wrapper(f, px(s.size));
     wrapper.truncate_line(text, px(max_w.max(0.0)), "…", &mut runs)
+}
+
+impl Default for NavigationDrawer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Default for NavigationRail {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]

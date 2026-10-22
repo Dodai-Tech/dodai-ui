@@ -17,11 +17,16 @@ use std::ops::Range;
 
 /// Colour class of a highlighted span.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Tok {
+pub enum CodeToken {
+    /// A language keyword.
     Keyword,
+    /// A string literal.
     Str,
+    /// A comment.
     Comment,
+    /// A number literal.
     Number,
+    /// A type name.
     Type,
 }
 
@@ -149,7 +154,7 @@ fn is_ident(c: char) -> bool {
 }
 
 /// Highlight spans over the whole `code` (sorted, non-overlapping).
-pub fn highlight(code: &str, lang: &str) -> Vec<(Range<usize>, Tok)> {
+pub fn highlight(code: &str, lang: &str) -> Vec<(Range<usize>, CodeToken)> {
     let l = lang_of(lang);
     let mut out = Vec::new();
     let mut i = 0;
@@ -160,14 +165,14 @@ pub fn highlight(code: &str, lang: &str) -> Vec<(Range<usize>, Tok)> {
         // comments
         if !l.line_comment.is_empty() && rest.starts_with(l.line_comment) {
             let e = rest.find('\n').unwrap_or(rest.len());
-            out.push((i..i + e, Tok::Comment));
+            out.push((i..i + e, CodeToken::Comment));
             i += e;
             prev = None;
             continue;
         }
         if l.block_comments && rest.starts_with("/*") {
             let e = rest.find("*/").map_or(rest.len(), |p| p + 2);
-            out.push((i..i + e, Tok::Comment));
+            out.push((i..i + e, CodeToken::Comment));
             i += e;
             prev = None;
             continue;
@@ -195,7 +200,7 @@ pub fn highlight(code: &str, lang: &str) -> Vec<(Range<usize>, Tok)> {
                     break;
                 }
             }
-            out.push((i..i + e, Tok::Str));
+            out.push((i..i + e, CodeToken::Str));
             i += e;
             prev = Some(ch);
             continue;
@@ -205,7 +210,7 @@ pub fn highlight(code: &str, lang: &str) -> Vec<(Range<usize>, Tok)> {
             let e = rest
                 .find(|c: char| !(c.is_ascii_alphanumeric() || c == '.' || c == '_'))
                 .unwrap_or(rest.len());
-            out.push((i..i + e, Tok::Number));
+            out.push((i..i + e, CodeToken::Number));
             i += e;
             prev = Some('0');
             continue;
@@ -214,10 +219,10 @@ pub fn highlight(code: &str, lang: &str) -> Vec<(Range<usize>, Tok)> {
             let e = rest.find(|c: char| !is_ident(c)).unwrap_or(rest.len());
             let word = &rest[..e];
             if l.keywords.contains(&word) {
-                out.push((i..i + e, Tok::Keyword));
+                out.push((i..i + e, CodeToken::Keyword));
             } else if word.chars().next().is_some_and(char::is_uppercase) && !l.keywords.is_empty()
             {
-                out.push((i..i + e, Tok::Type));
+                out.push((i..i + e, CodeToken::Type));
             }
             i += e;
             prev = Some('a');
@@ -230,7 +235,7 @@ pub fn highlight(code: &str, lang: &str) -> Vec<(Range<usize>, Tok)> {
 }
 
 /// Per-line spans (ranges relative to each line) of `code`.
-pub fn highlight_lines(code: &str, lang: &str) -> Vec<Vec<(Range<usize>, Tok)>> {
+pub fn highlight_lines(code: &str, lang: &str) -> Vec<Vec<(Range<usize>, CodeToken)>> {
     let spans = highlight(code, lang);
     let mut starts = Vec::new();
     let mut s = 0;
@@ -252,14 +257,14 @@ pub fn highlight_lines(code: &str, lang: &str) -> Vec<Vec<(Range<usize>, Tok)>> 
         .collect()
 }
 
-fn tok_color(t: &Theme, k: Tok) -> gpui::Hsla {
+fn tok_color(t: &Theme, k: CodeToken) -> gpui::Hsla {
     let p = &t.palette;
     hsla(match k {
-        Tok::Keyword => p.primary,
-        Tok::Str => p.success,
-        Tok::Comment => p.text_muted,
-        Tok::Number => p.warning,
-        Tok::Type => p.info,
+        CodeToken::Keyword => p.primary,
+        CodeToken::Str => p.success,
+        CodeToken::Comment => p.text_muted,
+        CodeToken::Number => p.warning,
+        CodeToken::Type => p.info,
     })
 }
 
@@ -276,6 +281,7 @@ pub struct CodeBlock {
 }
 
 impl CodeBlock {
+    /// Create a new [`CodeBlock`].
     pub fn new(id: impl Into<ElementId>, code: impl Into<SharedString>) -> Self {
         Self {
             id: id.into(),
@@ -290,10 +296,12 @@ impl CodeBlock {
         self.lang = l.into();
         self
     }
+    /// Show line numbers.
     pub fn line_numbers(mut self, on: bool) -> Self {
         self.numbers = on;
         self
     }
+    /// Show a copy button.
     pub fn copy_button(mut self, on: bool) -> Self {
         self.copy = on;
         self
@@ -395,22 +403,26 @@ impl RenderOnce for CodeBlock {
 
 /// Inline formatting kinds.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Inline {
+pub enum MdInline {
+    /// Bold text.
     Bold,
+    /// Italic text.
     Italic,
+    /// Inline code.
     Code,
+    /// A link.
     Link,
 }
 
 /// Strip inline markers from `src`; returns the plain text and the formatted ranges into it.
-pub fn parse_inline(src: &str) -> (String, Vec<(Range<usize>, Inline)>) {
+pub fn parse_inline(src: &str) -> (String, Vec<(Range<usize>, MdInline)>) {
     let mut out = String::new();
     let mut spans = Vec::new();
     let mut i = 0;
     let mut prev: Option<char> = None;
     while i < src.len() {
         let rest = &src[i..];
-        let mut take = |inner: &str, kind: Inline, consumed: usize| {
+        let mut take = |inner: &str, kind: MdInline, consumed: usize| {
             let at = out.len();
             out.push_str(inner);
             spans.push((at..out.len(), kind));
@@ -419,23 +431,23 @@ pub fn parse_inline(src: &str) -> (String, Vec<(Range<usize>, Inline)>) {
         let step = if let Some(r) = rest.strip_prefix("**") {
             r.find("**")
                 .filter(|&e| e > 0)
-                .map(|e| take(&r[..e], Inline::Bold, e + 4))
+                .map(|e| take(&r[..e], MdInline::Bold, e + 4))
         } else if let Some(r) = rest.strip_prefix('`') {
             r.find('`')
                 .filter(|&e| e > 0)
-                .map(|e| take(&r[..e], Inline::Code, e + 2))
+                .map(|e| take(&r[..e], MdInline::Code, e + 2))
         } else if rest.starts_with('*') || (rest.starts_with('_') && !prev.is_some_and(is_ident)) {
             let m = &rest[..1];
             let r = &rest[1..];
             r.find(m)
                 .filter(|&e| e > 0 && !r.starts_with(' '))
-                .map(|e| take(&r[..e], Inline::Italic, e + 2))
+                .map(|e| take(&r[..e], MdInline::Italic, e + 2))
         } else if let Some(r) = rest.strip_prefix('[') {
             r.find("](").and_then(|e| {
                 let url = &r[e + 2..];
                 url.find(')')
                     .filter(|_| e > 0)
-                    .map(|u| take(&r[..e], Inline::Link, 1 + e + 2 + u + 1))
+                    .map(|u| take(&r[..e], MdInline::Link, 1 + e + 2 + u + 1))
             })
         } else {
             None
@@ -458,38 +470,55 @@ pub fn parse_inline(src: &str) -> (String, Vec<(Range<usize>, Inline)>) {
 
 /// A parsed Markdown block.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Block {
+pub enum MdBlock {
+    /// A heading of the given level (1-6).
     Heading(u8, String),
+    /// A paragraph.
     Paragraph(String),
     /// Bulleted / numbered items, possibly nested (see [`ListItem`]).
     List(Vec<ListItem>),
+    /// A table.
     Table {
+        /// Header cells.
         head: Vec<String>,
+        /// Column alignments.
         aligns: Vec<Align>,
+        /// Body rows.
         rows: Vec<Vec<String>>,
     },
+    /// A block quote.
     Quote(String),
+    /// A fenced code block.
     Code {
+        /// Language tag after the opening fence.
         lang: String,
+        /// The code.
         text: String,
     },
+    /// A horizontal rule.
     Rule,
 }
 
 /// One list entry; `depth` counts two-space (or one-tab) indents.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ListItem {
+    /// Nesting depth, 0 for top level.
     pub depth: u8,
+    /// Numbered (`true`) or bulleted.
     pub ordered: bool,
+    /// Item text.
     pub text: String,
 }
 
 /// Column alignment from a table's `:---:` row.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum Align {
+    /// Align left.
     #[default]
     Left,
+    /// Centre.
     Center,
+    /// Align right.
     Right,
 }
 
@@ -551,12 +580,12 @@ fn numbered(line: &str) -> Option<&str> {
 
 /// Parse the Markdown subset: headings, paragraphs, `-`/`*` and `1.` lists (nested by
 /// indentation), pipe tables, `>` quotes, fenced code, `---` rules.
-pub fn parse_blocks(src: &str) -> Vec<Block> {
-    let mut out: Vec<Block> = Vec::new();
+pub fn parse_blocks(src: &str) -> Vec<MdBlock> {
+    let mut out: Vec<MdBlock> = Vec::new();
     let mut para: Vec<&str> = Vec::new();
-    let flush = |para: &mut Vec<&str>, out: &mut Vec<Block>| {
+    let flush = |para: &mut Vec<&str>, out: &mut Vec<MdBlock>| {
         if !para.is_empty() {
-            out.push(Block::Paragraph(para.join(" ")));
+            out.push(MdBlock::Paragraph(para.join(" ")));
             para.clear();
         }
     };
@@ -575,7 +604,7 @@ pub fn parse_blocks(src: &str) -> Vec<Block> {
                 }
                 text.push(l);
             }
-            out.push(Block::Code {
+            out.push(MdBlock::Code {
                 lang: lang.trim().to_string(),
                 text: text.join("\n"),
             });
@@ -583,11 +612,11 @@ pub fn parse_blocks(src: &str) -> Vec<Block> {
             flush(&mut para, &mut out);
         } else if matches!(t, "---" | "***" | "___") {
             flush(&mut para, &mut out);
-            out.push(Block::Rule);
+            out.push(MdBlock::Rule);
         } else if t.starts_with('#') && t.trim_start_matches('#').starts_with(' ') {
             flush(&mut para, &mut out);
             let level = t.chars().take_while(|&c| c == '#').count().min(6) as u8;
-            out.push(Block::Heading(
+            out.push(MdBlock::Heading(
                 level,
                 t[level as usize..].trim().to_string(),
             ));
@@ -595,11 +624,11 @@ pub fn parse_blocks(src: &str) -> Vec<Block> {
             flush(&mut para, &mut out);
             let q = q.trim().to_string();
             match out.last_mut() {
-                Some(Block::Quote(prev)) => {
+                Some(MdBlock::Quote(prev)) => {
                     prev.push(' ');
                     prev.push_str(&q);
                 }
-                _ => out.push(Block::Quote(q)),
+                _ => out.push(MdBlock::Quote(q)),
             }
         } else if t.contains('|') && lines.peek().is_some_and(|n| table_aligns(n).is_some()) {
             flush(&mut para, &mut out);
@@ -616,7 +645,7 @@ pub fn parse_blocks(src: &str) -> Vec<Block> {
                 rows.push(cells);
                 lines.next();
             }
-            out.push(Block::Table { head, aligns, rows });
+            out.push(MdBlock::Table { head, aligns, rows });
         } else if let Some((ordered, item)) = list_marker(t) {
             flush(&mut para, &mut out);
             let it = ListItem {
@@ -625,8 +654,8 @@ pub fn parse_blocks(src: &str) -> Vec<Block> {
                 text: item.to_string(),
             };
             match out.last_mut() {
-                Some(Block::List(v)) if !was_gap => v.push(it),
-                _ => out.push(Block::List(vec![it])),
+                Some(MdBlock::List(v)) if !was_gap => v.push(it),
+                _ => out.push(MdBlock::List(vec![it])),
             }
         } else {
             para.push(t);
@@ -644,6 +673,7 @@ pub struct Markdown {
 }
 
 impl Markdown {
+    /// Create a new [`Markdown`].
     pub fn new(id: impl Into<ElementId>, src: impl Into<SharedString>) -> Self {
         Self {
             id: id.into(),
@@ -659,20 +689,20 @@ fn inline_text(t: &Theme, src: &str) -> StyledText {
         .into_iter()
         .map(|(r, k)| {
             let s = match k {
-                Inline::Bold => HighlightStyle {
+                MdInline::Bold => HighlightStyle {
                     font_weight: Some(FontWeight::BOLD),
                     ..Default::default()
                 },
-                Inline::Italic => HighlightStyle {
+                MdInline::Italic => HighlightStyle {
                     font_style: Some(FontStyle::Italic),
                     ..Default::default()
                 },
-                Inline::Code => HighlightStyle {
+                MdInline::Code => HighlightStyle {
                     color: Some(hsla(p.primary)),
                     background_color: Some(hsla(p.surface_raised)),
                     ..Default::default()
                 },
-                Inline::Link => HighlightStyle {
+                MdInline::Link => HighlightStyle {
                     color: Some(hsla(p.link)),
                     underline: Some(UnderlineStyle {
                         thickness: px(1.0),
@@ -702,7 +732,7 @@ impl RenderOnce for Markdown {
             .text_color(hsla(p.text));
         for (bi, b) in parse_blocks(&self.src).into_iter().enumerate() {
             let el = match b {
-                Block::Heading(l, s) => {
+                MdBlock::Heading(l, s) => {
                     let size = match l {
                         1 => t.typography.size_xl * 1.3,
                         2 => t.typography.size_xl,
@@ -716,22 +746,22 @@ impl RenderOnce for Markdown {
                         .child(inline_text(&t, &s))
                         .into_any_element()
                 }
-                Block::Paragraph(s) => div().child(inline_text(&t, &s)).into_any_element(),
-                Block::List(items) => list(&t, &items),
-                Block::Table { head, aligns, rows } => table(&t, &head, &aligns, &rows),
-                Block::Quote(s) => div()
+                MdBlock::Paragraph(s) => div().child(inline_text(&t, &s)).into_any_element(),
+                MdBlock::List(items) => list(&t, &items),
+                MdBlock::Table { head, aligns, rows } => table(&t, &head, &aligns, &rows),
+                MdBlock::Quote(s) => div()
                     .pl(px(t.spacing.md))
                     .border_l_2()
                     .border_color(hsla(p.primary))
                     .text_color(hsla(p.text_muted))
                     .child(inline_text(&t, &s))
                     .into_any_element(),
-                Block::Code { lang, text } => {
+                MdBlock::Code { lang, text } => {
                     CodeBlock::new((self.id.clone(), format!("code{bi}")), text)
                         .language(lang)
                         .into_any_element()
                 }
-                Block::Rule => Divider::new().into_any_element(),
+                MdBlock::Rule => Divider::new().into_any_element(),
             };
             col = col.child(el);
         }
@@ -832,7 +862,7 @@ fn table(t: &Theme, head: &[String], aligns: &[Align], rows: &[Vec<String>]) -> 
 mod tests {
     use super::*;
 
-    fn kinds(code: &str, lang: &str) -> Vec<(String, Tok)> {
+    fn kinds(code: &str, lang: &str) -> Vec<(String, CodeToken)> {
         highlight(code, lang)
             .into_iter()
             .map(|(r, k)| (code[r].to_string(), k))
@@ -842,34 +872,36 @@ mod tests {
     #[test]
     fn rust_tokens() {
         let k = kinds("let x: Vec<i32> = 42; // hi", "rust");
-        assert!(k.contains(&("let".into(), Tok::Keyword)));
-        assert!(k.contains(&("Vec".into(), Tok::Type)));
-        assert!(k.contains(&("42".into(), Tok::Number)));
-        assert!(k.contains(&("// hi".into(), Tok::Comment)));
+        assert!(k.contains(&("let".into(), CodeToken::Keyword)));
+        assert!(k.contains(&("Vec".into(), CodeToken::Type)));
+        assert!(k.contains(&("42".into(), CodeToken::Number)));
+        assert!(k.contains(&("// hi".into(), CodeToken::Comment)));
     }
 
     #[test]
     fn strings_comments_and_lifetimes() {
         let k = kinds("fn f<'a>(s: &'a str) -> char { 'x' } \"a // b\"", "rust");
-        assert!(k.contains(&("'x'".into(), Tok::Str)));
-        assert!(!k.iter().any(|(s, t)| s.starts_with("'a") && *t == Tok::Str));
-        assert!(k.contains(&("\"a // b\"".into(), Tok::Str)));
-        assert!(!k.iter().any(|(_, t)| *t == Tok::Comment));
+        assert!(k.contains(&("'x'".into(), CodeToken::Str)));
+        assert!(!k
+            .iter()
+            .any(|(s, t)| s.starts_with("'a") && *t == CodeToken::Str));
+        assert!(k.contains(&("\"a // b\"".into(), CodeToken::Str)));
+        assert!(!k.iter().any(|(_, t)| *t == CodeToken::Comment));
     }
 
     #[test]
     fn lines_split_block_comments() {
         let l = highlight_lines("a /* x\ny */ b", "js");
         assert_eq!(l.len(), 2);
-        assert_eq!(l[0], vec![(2..6, Tok::Comment)]);
-        assert_eq!(l[1], vec![(0..4, Tok::Comment)]);
+        assert_eq!(l[0], vec![(2..6, CodeToken::Comment)]);
+        assert_eq!(l[1], vec![(0..4, CodeToken::Comment)]);
     }
 
     #[test]
     fn unknown_language_stays_plain() {
         assert!(highlight("let x = 1", "klingon")
             .iter()
-            .all(|(_, t)| *t == Tok::Number));
+            .all(|(_, t)| *t == CodeToken::Number));
     }
 
     #[test]
@@ -877,10 +909,10 @@ mod tests {
         let (t, s) = parse_inline("a **bold** and *it* `c` [go](http://x) snake_case");
         assert_eq!(t, "a bold and it c go snake_case");
         let get = |i: usize| (&t[s[i].0.clone()], s[i].1);
-        assert_eq!(get(0), ("bold", Inline::Bold));
-        assert_eq!(get(1), ("it", Inline::Italic));
-        assert_eq!(get(2), ("c", Inline::Code));
-        assert_eq!(get(3), ("go", Inline::Link));
+        assert_eq!(get(0), ("bold", MdInline::Bold));
+        assert_eq!(get(1), ("it", MdInline::Italic));
+        assert_eq!(get(2), ("c", MdInline::Code));
+        assert_eq!(get(3), ("go", MdInline::Link));
         assert_eq!(s.len(), 4);
         assert_eq!(parse_inline("2 * 3 * 4").0, "2 * 3 * 4");
         assert_eq!(parse_inline("**open").0, "**open");
@@ -889,8 +921,8 @@ mod tests {
     #[test]
     fn blocks() {
         let b = parse_blocks("# T\n\npara one\ncontinues\n\n- a\n- b\n\n1. x\n2. y\n> q\n> r\n---\n```rust\nfn f() {}\n```");
-        assert_eq!(b[0], Block::Heading(1, "T".into()));
-        assert_eq!(b[1], Block::Paragraph("para one continues".into()));
+        assert_eq!(b[0], MdBlock::Heading(1, "T".into()));
+        assert_eq!(b[1], MdBlock::Paragraph("para one continues".into()));
         let item = |d: u8, o: bool, t: &str| ListItem {
             depth: d,
             ordered: o,
@@ -898,17 +930,17 @@ mod tests {
         };
         assert_eq!(
             b[2],
-            Block::List(vec![item(0, false, "a"), item(0, false, "b")])
+            MdBlock::List(vec![item(0, false, "a"), item(0, false, "b")])
         );
         assert_eq!(
             b[3],
-            Block::List(vec![item(0, true, "x"), item(0, true, "y")])
+            MdBlock::List(vec![item(0, true, "x"), item(0, true, "y")])
         );
-        assert_eq!(b[4], Block::Quote("q r".into()));
-        assert_eq!(b[5], Block::Rule);
+        assert_eq!(b[4], MdBlock::Quote("q r".into()));
+        assert_eq!(b[5], MdBlock::Rule);
         assert_eq!(
             b[6],
-            Block::Code {
+            MdBlock::Code {
                 lang: "rust".into(),
                 text: "fn f() {}".into()
             }
@@ -918,7 +950,7 @@ mod tests {
     #[test]
     fn nested_lists_and_markers() {
         let b = parse_blocks("- a\n  - b\n  - c\n    1. d\n    2. e\n- f");
-        let Block::List(items) = &b[0] else {
+        let MdBlock::List(items) = &b[0] else {
             panic!("{b:?}")
         };
         let depths: Vec<u8> = items.iter().map(|i| i.depth).collect();
@@ -926,7 +958,9 @@ mod tests {
         assert_eq!(list_markers(items), vec!["•", "◦", "◦", "1.", "2.", "•"]);
         // numbering restarts after dropping back out of a nested level
         let b = parse_blocks("1. x\n   1. y\n2. z\n   1. w");
-        let Block::List(items) = &b[0] else { panic!() };
+        let MdBlock::List(items) = &b[0] else {
+            panic!()
+        };
         assert_eq!(list_markers(items), vec!["1.", "1.", "2.", "1."]);
     }
 
@@ -935,16 +969,16 @@ mod tests {
         let b = parse_blocks(
             "intro\n\n| Name | Qty | Note |\n|:--|--:|:-:|\n| a | 1 | x |\n| b | 22 |\n\nafter",
         );
-        assert_eq!(b[0], Block::Paragraph("intro".into()));
-        let Block::Table { head, aligns, rows } = &b[1] else {
+        assert_eq!(b[0], MdBlock::Paragraph("intro".into()));
+        let MdBlock::Table { head, aligns, rows } = &b[1] else {
             panic!("{b:?}")
         };
         assert_eq!(head, &["Name", "Qty", "Note"]);
         assert_eq!(aligns, &[Align::Left, Align::Right, Align::Center]);
         assert_eq!(rows.len(), 2);
         assert_eq!(rows[1], vec!["b", "22", ""]); // short rows are padded
-        assert_eq!(b[2], Block::Paragraph("after".into()));
+        assert_eq!(b[2], MdBlock::Paragraph("after".into()));
         // a lone pipe line without a separator row stays a paragraph
-        assert!(matches!(parse_blocks("a | b")[0], Block::Paragraph(_)));
+        assert!(matches!(parse_blocks("a | b")[0], MdBlock::Paragraph(_)));
     }
 }

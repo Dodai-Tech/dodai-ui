@@ -221,6 +221,7 @@ pub enum ClockFace {
     /// the others the analog dial.
     #[default]
     Auto,
+    /// A dial with hands.
     Analog,
     /// Glowing seven-segment readout with ghost segments and a seconds bar.
     Digital,
@@ -240,7 +241,7 @@ impl ClockFace {
 /// Live clock: analog dial, or a futuristic seven-segment face (see [`ClockFace`]).
 ///
 /// ```ignore
-/// Clock::new("clock").size(180.0).local()
+/// Clock::new().size(180.0).local()
 /// ```
 #[derive(IntoElement)]
 pub struct Clock {
@@ -252,7 +253,8 @@ pub struct Clock {
 }
 
 impl Clock {
-    pub fn new(_id: impl Into<ElementId>) -> Self {
+    /// Create a new [`Clock`].
+    pub fn new() -> Self {
         Self {
             face: ClockFace::Auto,
             size: 180.0,
@@ -261,6 +263,7 @@ impl Clock {
             offset_min: 0,
         }
     }
+    /// Size in px.
     pub fn size(mut self, s: f32) -> Self {
         self.size = s;
         self
@@ -602,6 +605,7 @@ pub struct Timer {
 }
 
 impl Timer {
+    /// Create a new [`Timer`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
@@ -610,13 +614,16 @@ impl Timer {
             on_finish: None,
         }
     }
+    /// Duration in seconds.
     pub fn seconds(mut self, s: u64) -> Self {
         self.total_ms = s * 1000;
         self
     }
+    /// Duration in minutes.
     pub fn minutes(self, m: u64) -> Self {
         self.seconds(m * 60)
     }
+    /// Size in px.
     pub fn size(mut self, s: f32) -> Self {
         self.size = s;
         self
@@ -791,6 +798,7 @@ pub struct Stopwatch {
 }
 
 impl Stopwatch {
+    /// Create a new [`Stopwatch`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
@@ -920,6 +928,7 @@ pub struct TapTempo {
 }
 
 impl TapTempo {
+    /// Create a new [`TapTempo`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
@@ -1117,6 +1126,12 @@ impl RenderOnce for TapTempo {
                     .child(pb),
             )
             .child(div().flex().gap(px(t.spacing.sm)).child(play).child(reset))
+    }
+}
+
+impl Default for Clock {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

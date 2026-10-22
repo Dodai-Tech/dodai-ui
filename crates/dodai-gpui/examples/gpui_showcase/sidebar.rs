@@ -126,8 +126,8 @@ impl Showcase {
                 .and_then(|(c, _)| cats.iter().position(|x| x == c))
                 .map_or(0, |i| i + 1)
         };
-        let mut drawer = NavigationDrawer::new("nav");
-        let mut rail_nav = NavigationRail::new("nav-rail");
+        let mut drawer = NavigationDrawer::new();
+        let mut rail_nav = NavigationRail::new();
         for (idx, name) in std::iter::once("All")
             .chain(cats.iter().copied())
             .enumerate()

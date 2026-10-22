@@ -15,6 +15,7 @@ pub struct ThemeSwitcherBar {
 }
 
 impl ThemeSwitcherBar {
+    /// Create a new [`ThemeSwitcherBar`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self { id: id.into() }
     }
@@ -61,6 +62,7 @@ pub fn set_tree_expanded(cx: &mut App, open: bool) {
     cx.refresh_windows();
 }
 
+/// Tree of design systems and their themes for picking a theme.
 #[derive(IntoElement)]
 pub struct DesignSystemTree {
     id: ElementId,
@@ -69,6 +71,7 @@ pub struct DesignSystemTree {
 }
 
 impl DesignSystemTree {
+    /// Create a new [`DesignSystemTree`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),

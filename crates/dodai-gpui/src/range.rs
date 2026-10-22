@@ -1,6 +1,6 @@
 //! [`RangeSlider`]: two-thumb slider selecting `lo..=hi`.
 
-use crate::controls::{clamp01, slider_fraction, slider_value, tick_fractions, Direction};
+use crate::controls::{clamp01, slider_fraction, slider_value, tick_fractions, Orientation};
 use crate::hsla;
 use crate::paint::{round_shape, shaped, ShapeStyle};
 use crate::theme_of;
@@ -43,7 +43,7 @@ type RangeHandler = Rc<dyn Fn(f32, f32, &mut Window, &mut App)>;
 #[derive(IntoElement)]
 pub struct RangeSlider {
     id: ElementId,
-    direction: Direction,
+    direction: Orientation,
     length: f32,
     lo: f32,
     hi: f32,
@@ -59,11 +59,12 @@ pub struct RangeSlider {
 crate::corners_setter!(RangeSlider);
 
 impl RangeSlider {
+    /// Create a new [`RangeSlider`].
     pub fn new(id: impl Into<ElementId>, lo: f32, hi: f32) -> Self {
         Self {
             corners: None,
             id: id.into(),
-            direction: Direction::Horizontal,
+            direction: Orientation::Horizontal,
             length: 160.0,
             lo,
             hi,
@@ -76,7 +77,7 @@ impl RangeSlider {
         }
     }
     /// Horizontal (default) or vertical (fixed [`RangeSlider::length`]).
-    pub fn direction(mut self, d: Direction) -> Self {
+    pub fn orientation(mut self, d: Orientation) -> Self {
         self.direction = d;
         self
     }
@@ -85,11 +86,13 @@ impl RangeSlider {
         self.length = px;
         self
     }
+    /// Value range `min..max`.
     pub fn range(mut self, min: f32, max: f32) -> Self {
         self.min = min;
         self.max = max;
         self
     }
+    /// Step between values.
     pub fn step(mut self, s: f32) -> Self {
         self.step = Some(s);
         self
@@ -104,7 +107,10 @@ impl RangeSlider {
         self.show_value = on;
         self
     }
-    crate::callback!(on_change, f32, f32);
+    crate::callback!(
+        /// Called when the value changes, with low and high.
+        on_change, f32, f32
+    );
 }
 
 impl RangeSlider {
@@ -112,7 +118,7 @@ impl RangeSlider {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
         let thumb_size = t.sizes().slider_thumb;
-        let vertical = self.direction == Direction::Vertical;
+        let vertical = self.direction == Orientation::Vertical;
         let st = window.use_keyed_state(self.id.clone(), cx, |_, _| RangeState::default());
         let (min, max, step, lo, hi) = (self.min, self.max, self.step, self.lo, self.hi);
         let grow = crate::motion::grow(window, cx, "RangeSlider");

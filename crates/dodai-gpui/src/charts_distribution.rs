@@ -72,6 +72,7 @@ crate::corners_setter!(Histogram);
 chart_cfg!(Histogram);
 
 impl Histogram {
+    /// Create a new [`Histogram`].
     pub fn new(id: impl Into<SharedString>, values: impl IntoIterator<Item = f32>) -> Self {
         Self {
             corners: None,
@@ -84,10 +85,12 @@ impl Histogram {
             title: None,
         }
     }
+    /// Number of bins.
     pub fn bins(mut self, n: usize) -> Self {
         self.bins = n.max(1);
         self
     }
+    /// Colour (default: the theme's).
     pub fn color(mut self, c: Color) -> Self {
         self.color = Some(c);
         self
@@ -171,6 +174,7 @@ pub struct BoxPlot {
 chart_cfg!(BoxPlot);
 
 impl BoxPlot {
+    /// Create a new [`BoxPlot`].
     pub fn new<S: Into<SharedString>>(groups: impl IntoIterator<Item = (S, Vec<f32>)>) -> Self {
         Self {
             groups: groups.into_iter().map(|(a, b)| (a.into(), b)).collect(),
@@ -305,6 +309,7 @@ pub struct BubbleChart {
 chart_cfg!(BubbleChart);
 
 impl BubbleChart {
+    /// Create a new [`BubbleChart`].
     pub fn new<S: Into<SharedString>>(
         id: impl Into<SharedString>,
         groups: impl IntoIterator<Item = (S, Vec<(f32, f32, f32)>)>,

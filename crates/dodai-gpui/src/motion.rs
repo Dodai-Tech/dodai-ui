@@ -320,6 +320,7 @@ impl EntryScope {
         self
     }
 
+    /// Create a new [`EntryScope`].
     pub fn new(kind: impl Into<EntrySet>, child: impl IntoElement) -> Self {
         Self {
             kind: kind.into(),

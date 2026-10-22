@@ -30,6 +30,7 @@ pub struct Table {
 crate::corners_setter!(Table);
 
 impl Table {
+    /// Create a new [`Table`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             corners: None,
@@ -43,14 +44,17 @@ impl Table {
             on_sort: None,
         }
     }
+    /// The column headers.
     pub fn columns<S: Into<SharedString>>(mut self, c: impl IntoIterator<Item = S>) -> Self {
         self.columns = c.into_iter().map(Into::into).collect();
         self
     }
+    /// Relative column widths.
     pub fn weights(mut self, w: impl IntoIterator<Item = f32>) -> Self {
         self.weights = w.into_iter().collect();
         self
     }
+    /// The rows.
     pub fn rows<S: Into<SharedString>, R: IntoIterator<Item = S>>(
         mut self,
         rows: impl IntoIterator<Item = R>,
@@ -61,11 +65,15 @@ impl Table {
             .collect();
         self
     }
+    /// The selected item (controlled).
     pub fn selected(mut self, i: Option<usize>) -> Self {
         self.selected = i;
         self
     }
-    crate::callback!(on_select, usize);
+    crate::callback!(
+        /// Called when an item is chosen, with the index.
+        on_select, usize
+    );
     /// Show a sort arrow on `column` (`ascending` → ▲).
     pub fn sorted(mut self, column: usize, ascending: bool) -> Self {
         self.sort = Some((column, ascending));
@@ -266,6 +274,7 @@ pub struct Avatar {
 crate::corners_setter!(Avatar);
 
 impl Avatar {
+    /// Create a new [`Avatar`].
     pub fn new(initials: impl Into<SharedString>) -> Self {
         Self {
             corners: None,
@@ -276,6 +285,7 @@ impl Avatar {
             solid: false,
         }
     }
+    /// Size in px.
     pub fn size(mut self, s: f32) -> Self {
         self.size = s;
         self
@@ -373,6 +383,7 @@ pub struct Chip {
 crate::corners_setter!(Chip);
 
 impl Chip {
+    /// Create a new [`Chip`].
     pub fn new(id: impl Into<ElementId>, label: impl Into<SharedString>) -> Self {
         Self {
             corners: None,
@@ -388,6 +399,7 @@ impl Chip {
             elevated: false,
         }
     }
+    /// The selected item (controlled).
     pub fn selected(mut self, s: bool) -> Self {
         self.selected = s;
         self
@@ -408,11 +420,15 @@ impl Chip {
         self.elevated = on;
         self
     }
+    /// Disable the control.
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
         self
     }
-    crate::callback!(on_click, &ClickEvent);
+    crate::callback!(
+        /// Called when it is clicked, with the click event.
+        on_click, &ClickEvent
+    );
     /// Show ✕ and call `f` when it is clicked.
     pub fn on_remove(mut self, f: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static) -> Self {
         self.removable = true;
@@ -508,6 +524,7 @@ crate::entry_render!(Chip);
 pub struct Kbd(SharedString, Option<dodai_core::Corners>);
 
 impl Kbd {
+    /// Create a new [`Kbd`].
     pub fn new(key: impl Into<SharedString>) -> Self {
         Self(key.into(), None)
     }

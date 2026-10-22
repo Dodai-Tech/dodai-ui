@@ -40,6 +40,7 @@ pub struct Alert {
 crate::corners_setter!(Alert);
 
 impl Alert {
+    /// Create a new [`Alert`].
     pub fn new(tone: Tone, title: impl Into<SharedString>) -> Self {
         Self {
             corners: None,
@@ -49,6 +50,7 @@ impl Alert {
             banner: false,
         }
     }
+    /// Message text.
     pub fn message(mut self, m: impl Into<SharedString>) -> Self {
         self.message = Some(m.into());
         self
@@ -117,6 +119,7 @@ pub struct Toast {
 crate::corners_setter!(Toast);
 
 impl Toast {
+    /// Create a new [`Toast`].
     pub fn new(tone: Tone, message: impl Into<SharedString>) -> Self {
         Self {
             corners: None,
@@ -204,6 +207,7 @@ pub struct Spinner {
 crate::corners_setter!(Spinner);
 
 impl Spinner {
+    /// Create a new [`Spinner`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             corners: None,
@@ -290,6 +294,7 @@ pub struct IndeterminateBar {
 crate::corners_setter!(IndeterminateBar);
 
 impl IndeterminateBar {
+    /// Create a new [`IndeterminateBar`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             corners: None,
@@ -351,6 +356,7 @@ pub struct Skeleton {
 crate::corners_setter!(Skeleton);
 
 impl Skeleton {
+    /// Create a new [`Skeleton`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             corners: None,
@@ -377,6 +383,7 @@ impl Skeleton {
         self.w = Some(w);
         self
     }
+    /// Height in px.
     pub fn height(mut self, h: f32) -> Self {
         self.h = h;
         self

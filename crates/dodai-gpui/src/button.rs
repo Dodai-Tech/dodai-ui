@@ -166,6 +166,7 @@ pub struct Button {
 }
 
 impl Button {
+    /// Create a new [`Button`].
     pub fn new(id: impl Into<ElementId>, label: impl Into<SharedString>) -> Self {
         Self {
             id: id.into(),

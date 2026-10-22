@@ -43,7 +43,9 @@ pub fn slider_fraction(value: f32, min: f32, max: f32) -> f32 {
 /// Where a slider's value bubble sits relative to the thumb.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BubblePlacement {
+    /// Above the thumb.
     Above,
+    /// Below the thumb.
     Below,
 }
 
@@ -592,6 +594,7 @@ pub struct ProgressBar {
 }
 
 impl ProgressBar {
+    /// Create a new [`ProgressBar`].
     pub fn new(value: f32) -> Self {
         Self {
             value,
@@ -694,9 +697,11 @@ struct SliderState {
 
 /// Axis of a [`Slider`]. Vertical sliders grow upwards (min at the bottom).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
-pub enum Direction {
+pub enum Orientation {
+    /// Left to right.
     #[default]
     Horizontal,
+    /// Bottom to top.
     Vertical,
 }
 
@@ -704,7 +709,7 @@ pub enum Direction {
 #[derive(IntoElement)]
 pub struct Slider {
     id: ElementId,
-    direction: Direction,
+    direction: Orientation,
     length: f32,
     value: f32,
     min: f32,
@@ -723,11 +728,12 @@ pub struct Slider {
 crate::corners_setter!(Slider);
 
 impl Slider {
+    /// Create a new [`Slider`].
     pub fn new(id: impl Into<ElementId>, value: f32) -> Self {
         Self {
             corners: None,
             id: id.into(),
-            direction: Direction::Horizontal,
+            direction: Orientation::Horizontal,
             length: 160.0,
             value,
             min: 0.0,
@@ -775,7 +781,7 @@ impl Slider {
         self
     }
     /// Horizontal (default, full width) or vertical (fixed [`Slider::length`]).
-    pub fn direction(mut self, d: Direction) -> Self {
+    pub fn orientation(mut self, d: Orientation) -> Self {
         self.direction = d;
         self
     }
@@ -807,7 +813,7 @@ impl Slider {
         let t = crate::apply_corners(t, self.corners);
         let tonal = t.look().tonal;
         // M3: 20 px handle on a 4 px track.
-        let vertical = self.direction == Direction::Vertical;
+        let vertical = self.direction == Orientation::Vertical;
         let inset = tonal && !vertical && self.icon.is_some();
         let thumb_d = if inset {
             4.0

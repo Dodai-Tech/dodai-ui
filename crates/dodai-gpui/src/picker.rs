@@ -18,12 +18,16 @@ use std::rc::Rc;
 /// Calendar date (proleptic Gregorian).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Date {
+    /// Year.
     pub year: i32,
+    /// Month, 1-12.
     pub month: u32,
+    /// Day of the month, 1-31.
     pub day: u32,
 }
 
 impl Date {
+    /// Create a new [`Date`].
     pub fn new(year: i32, month: u32, day: u32) -> Self {
         Self { year, month, day }
     }
@@ -32,7 +36,9 @@ impl Date {
 /// Selected span of days (inclusive). `end` is `None` while the second click is pending.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct DateRange {
+    /// First day.
     pub start: Option<Date>,
+    /// Last day.
     pub end: Option<Date>,
 }
 
@@ -66,6 +72,7 @@ pub fn range_pick(r: DateRange, d: Date) -> DateRange {
     }
 }
 
+/// English month names, January first.
 pub const MONTHS: [&str; 12] = [
     "January",
     "February",
@@ -80,12 +87,15 @@ pub const MONTHS: [&str; 12] = [
     "November",
     "December",
 ];
+/// Two-letter weekday names, Monday first.
 pub const WEEKDAYS: [&str; 7] = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 
+/// Whether `y` is a Gregorian leap year.
 pub fn is_leap(y: i32) -> bool {
     (y % 4 == 0 && y % 100 != 0) || y % 400 == 0
 }
 
+/// Number of days in month `m` (1-12) of year `y`.
 pub fn days_in_month(y: i32, m: u32) -> u32 {
     match m {
         1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
@@ -165,6 +175,7 @@ impl DatePicker {
             on_month: None,
         }
     }
+    /// The selected item (controlled).
     pub fn selected(mut self, d: Option<Date>) -> Self {
         self.selected = d;
         self
@@ -174,7 +185,10 @@ impl DatePicker {
         self.range = Some(r);
         self
     }
-    crate::callback!(on_select, Date);
+    crate::callback!(
+        /// Called when an item is chosen, with the date.
+        on_select, Date
+    );
     crate::callback!(
         /// Called with the new visible `(year, month)` when the arrows are used.
         on_month, i32, u32
@@ -323,6 +337,7 @@ pub struct TimePicker {
 crate::corners_setter!(TimePicker);
 
 impl TimePicker {
+    /// Create a new [`TimePicker`].
     pub fn new(id: impl Into<ElementId>, hour: u32, minute: u32) -> Self {
         Self {
             corners: None,
@@ -339,11 +354,15 @@ impl TimePicker {
         self.twelve = on;
         self
     }
+    /// Minute step of the picker.
     pub fn minute_step(mut self, s: i32) -> Self {
         self.minute_step = s.max(1);
         self
     }
-    crate::callback!(on_change, u32, u32);
+    crate::callback!(
+        /// Called when the value changes, with hour and minute.
+        on_change, u32, u32
+    );
 }
 
 impl TimePicker {
@@ -492,6 +511,7 @@ pub struct DateInput {
 }
 
 impl DateInput {
+    /// Create a new [`DateInput`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
@@ -504,7 +524,10 @@ impl DateInput {
         self.value = d;
         self
     }
-    crate::callback!(on_change, Date);
+    crate::callback!(
+        /// Called when the value changes, with the date.
+        on_change, Date
+    );
 }
 
 impl RenderOnce for DateInput {
@@ -539,6 +562,7 @@ pub struct TimeInput {
 }
 
 impl TimeInput {
+    /// Create a new [`TimeInput`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
@@ -546,11 +570,15 @@ impl TimeInput {
             on_change: None,
         }
     }
+    /// Current value.
     pub fn value(mut self, hm: Option<(u32, u32)>) -> Self {
         self.value = hm;
         self
     }
-    crate::callback!(on_change, u32, u32);
+    crate::callback!(
+        /// Called when the value changes, with hour and minute.
+        on_change, u32, u32
+    );
 }
 
 impl RenderOnce for TimeInput {

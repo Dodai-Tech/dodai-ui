@@ -73,6 +73,7 @@ pub struct CircularProgress {
 }
 
 impl CircularProgress {
+    /// Create a new [`CircularProgress`].
     pub fn new(value: f32) -> Self {
         Self {
             value: Some(value.clamp(0.0, 1.0)),
@@ -83,6 +84,7 @@ impl CircularProgress {
             wavy: false,
         }
     }
+    /// Show the indeterminate state.
     pub fn indeterminate() -> Self {
         Self {
             value: None,
@@ -90,14 +92,17 @@ impl CircularProgress {
             ..Self::new(0.0)
         }
     }
+    /// Size in px.
     pub fn size(mut self, s: f32) -> Self {
         self.size = Some(s);
         self
     }
+    /// Stroke thickness in px.
     pub fn thickness(mut self, t: f32) -> Self {
         self.thickness = Some(t);
         self
     }
+    /// Semantic tone (colour).
     pub fn tone(mut self, t: Tone) -> Self {
         self.tone = Some(t);
         self
@@ -240,6 +245,7 @@ pub struct Banner {
 }
 
 impl Banner {
+    /// Create a new [`Banner`].
     pub fn new(id: impl Into<ElementId>, tone: Tone, message: impl Into<SharedString>) -> Self {
         Self {
             id: id.into(),
@@ -261,11 +267,15 @@ impl Banner {
         self.on_action = Some(Rc::new(f));
         self
     }
+    /// Show a dismiss button.
     pub fn dismissible(mut self, on: bool) -> Self {
         self.dismissible = on;
         self
     }
-    crate::callback!(on_dismiss);
+    crate::callback!(
+        /// Called when the surface is dismissed.
+        on_dismiss
+    );
 }
 
 impl RenderOnce for Banner {
@@ -346,6 +356,7 @@ pub struct ScrollArea {
 }
 
 impl ScrollArea {
+    /// Create a new [`ScrollArea`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
@@ -358,6 +369,7 @@ impl ScrollArea {
         self.height = h;
         self
     }
+    /// Add a child.
     pub fn child(mut self, c: impl IntoElement) -> Self {
         self.children.push(c.into_any_element());
         self
@@ -498,21 +510,26 @@ pub struct Image {
 }
 
 impl Image {
+    /// Load the picture from a file path.
     pub fn path(p: impl Into<PathBuf>) -> Self {
         Self::from(Source::Path(p.into()))
     }
+    /// Load the picture from a URL.
     pub fn url(u: impl Into<SharedString>) -> Self {
         Self::from(Source::Url(u.into()))
     }
+    /// Width and height in px.
     pub fn size(mut self, w: f32, h: f32) -> Self {
         self.width = w;
         self.height = h;
         self
     }
+    /// How the picture fills its box.
     pub fn fit(mut self, f: ImageFit) -> Self {
         self.fit = f;
         self
     }
+    /// Caption text.
     pub fn caption(mut self, c: impl Into<SharedString>) -> Self {
         self.caption = Some(c.into());
         self
@@ -672,6 +689,7 @@ pub struct AvatarGroup {
 }
 
 impl AvatarGroup {
+    /// Create a new [`AvatarGroup`].
     pub fn new<S: Into<SharedString>>(initials: impl IntoIterator<Item = S>) -> Self {
         Self {
             names: initials.into_iter().map(Into::into).collect(),
@@ -684,6 +702,7 @@ impl AvatarGroup {
         self.max = m;
         self
     }
+    /// Size in px.
     pub fn size(mut self, s: f32) -> Self {
         self.size = s;
         self

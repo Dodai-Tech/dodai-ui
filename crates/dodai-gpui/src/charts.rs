@@ -53,8 +53,11 @@ pub(crate) fn glow_stroke(
 /// Named numeric series; colour defaults to `palette.series[index]`.
 #[derive(Clone)]
 pub struct Series {
+    /// Series name (legend entry).
     pub name: SharedString,
+    /// One value per category or x position.
     pub values: Vec<f32>,
+    /// Explicit colour; `None` takes the next palette colour.
     pub color: Option<Color>,
 }
 
@@ -68,6 +71,7 @@ pub(crate) fn finite_or_zero(v: f32) -> f32 {
 }
 
 impl Series {
+    /// Create a new [`Series`].
     pub fn new(name: impl Into<SharedString>, values: impl IntoIterator<Item = f32>) -> Self {
         Self {
             name: name.into(),
@@ -75,6 +79,7 @@ impl Series {
             color: None,
         }
     }
+    /// Colour (default: the theme's).
     pub fn color(mut self, c: Color) -> Self {
         self.color = Some(c);
         self
@@ -123,6 +128,7 @@ pub struct Legend {
 }
 
 impl Legend {
+    /// Create a new [`Legend`].
     pub fn new(items: impl IntoIterator<Item = (SharedString, Color)>) -> Self {
         Self {
             items: items.into_iter().collect(),
@@ -306,6 +312,7 @@ pub struct LineChart {
 }
 
 impl LineChart {
+    /// Create a new [`LineChart`].
     pub fn new(id: impl Into<SharedString>, series: impl IntoIterator<Item = Series>) -> Self {
         Self {
             id: id.into(),
@@ -372,6 +379,7 @@ impl LineChart {
         self.labels = l.into_iter().map(Into::into).collect();
         self
     }
+    /// Height in px.
     pub fn height(mut self, h: f32) -> Self {
         self.height = h;
         self
@@ -381,6 +389,7 @@ impl LineChart {
         self.area = a;
         self
     }
+    /// Draw smooth curves instead of straight segments.
     pub fn smooth(mut self, s: bool) -> Self {
         self.smooth = s;
         self
@@ -390,6 +399,7 @@ impl LineChart {
         self.points = p;
         self
     }
+    /// Show or hide the legend.
     pub fn legend(mut self, l: bool) -> Self {
         self.legend = l;
         self
@@ -563,6 +573,7 @@ pub struct BarChart {
 crate::corners_setter!(BarChart);
 
 impl BarChart {
+    /// Create a new [`BarChart`].
     pub fn new(id: impl Into<SharedString>, series: impl IntoIterator<Item = Series>) -> Self {
         Self {
             corners: None,
@@ -605,22 +616,27 @@ impl BarChart {
         self.title = Some(t.into());
         self
     }
+    /// Labels, one per item.
     pub fn labels<S: Into<SharedString>>(mut self, l: impl IntoIterator<Item = S>) -> Self {
         self.labels = l.into_iter().map(Into::into).collect();
         self
     }
+    /// Height in px.
     pub fn height(mut self, h: f32) -> Self {
         self.height = h;
         self
     }
+    /// Lay out horizontally.
     pub fn horizontal(mut self, h: bool) -> Self {
         self.horizontal = h;
         self
     }
+    /// Stack the series instead of grouping them.
     pub fn stacked(mut self, s: bool) -> Self {
         self.stacked = s;
         self
     }
+    /// Show or hide the legend.
     pub fn legend(mut self, l: bool) -> Self {
         self.legend = l;
         self
@@ -936,6 +952,7 @@ impl Sparkline {
 }
 
 impl Sparkline {
+    /// Create a new [`Sparkline`].
     pub fn new(values: impl IntoIterator<Item = f32>) -> Self {
         Self {
             style: SparkStyle::Line,
@@ -960,15 +977,18 @@ impl Sparkline {
         self.all_points = a;
         self
     }
+    /// Width and height in px.
     pub fn size(mut self, w: f32, h: f32) -> Self {
         self.w = w;
         self.h = h;
         self
     }
+    /// Colour (default: the theme's).
     pub fn color(mut self, c: Color) -> Self {
         self.color = Some(c);
         self
     }
+    /// Fill the area under the line.
     pub fn area(mut self, a: bool) -> Self {
         self.area = a;
         self
@@ -1158,6 +1178,7 @@ pub struct PieChart {
 }
 
 impl PieChart {
+    /// Create a new [`PieChart`].
     pub fn new<S: Into<SharedString>>(slices: impl IntoIterator<Item = (S, f32)>) -> Self {
         Self {
             style: PieStyle::Solid,
@@ -1220,6 +1241,7 @@ impl PieChart {
         /// Called with the new selection (`None` when deselected) on click.
         on_select, Option<usize>
     );
+    /// Size in px.
     pub fn size(mut self, s: f32) -> Self {
         self.size = s;
         self
@@ -1229,10 +1251,12 @@ impl PieChart {
         self.hole = hole.clamp(0.0, 0.9);
         self
     }
+    /// Text shown in the centre.
     pub fn center(mut self, c: impl Into<SharedString>) -> Self {
         self.center = Some(c.into());
         self
     }
+    /// Show or hide the legend.
     pub fn legend(mut self, l: bool) -> Self {
         self.legend = l;
         self
@@ -1622,6 +1646,7 @@ pub struct Gauge {
 }
 
 impl Gauge {
+    /// Create a new [`Gauge`].
     pub fn new(value: f32) -> Self {
         Self {
             value,
@@ -1635,11 +1660,13 @@ impl Gauge {
             zones: false,
         }
     }
+    /// Value range `min..max`.
     pub fn range(mut self, min: f32, max: f32) -> Self {
         self.min = min;
         self.max = max;
         self
     }
+    /// Size in px.
     pub fn size(mut self, s: f32) -> Self {
         self.size = s;
         self
@@ -1654,10 +1681,12 @@ impl Gauge {
         self.caption = Some(c.into());
         self
     }
+    /// Semantic tone (colour).
     pub fn tone(mut self, t: dodai_core::Tone) -> Self {
         self.tone = Some(t);
         self
     }
+    /// Visual style.
     pub fn style(mut self, s: crate::gauges::GaugeStyle) -> Self {
         self.style = s;
         self
@@ -1833,6 +1862,7 @@ pub struct RadarChart {
 }
 
 impl RadarChart {
+    /// Create a new [`RadarChart`].
     pub fn new<S: Into<SharedString>>(
         axes: impl IntoIterator<Item = S>,
         series: impl IntoIterator<Item = Series>,
@@ -1845,14 +1875,17 @@ impl RadarChart {
             legend: true,
         }
     }
+    /// Size in px.
     pub fn size(mut self, s: f32) -> Self {
         self.size = s;
         self
     }
+    /// Maximum value.
     pub fn max(mut self, m: f32) -> Self {
         self.max = Some(m);
         self
     }
+    /// Show or hide the legend.
     pub fn legend(mut self, l: bool) -> Self {
         self.legend = l;
         self
@@ -1960,6 +1993,7 @@ pub struct ScatterPlot {
 }
 
 impl ScatterPlot {
+    /// Create a new [`ScatterPlot`].
     pub fn new<S: Into<SharedString>>(
         id: impl Into<SharedString>,
         series: impl IntoIterator<Item = (S, Vec<(f32, f32)>)>,
@@ -1971,10 +2005,12 @@ impl ScatterPlot {
             legend: true,
         }
     }
+    /// Height in px.
     pub fn height(mut self, h: f32) -> Self {
         self.height = h;
         self
     }
+    /// Show or hide the legend.
     pub fn legend(mut self, l: bool) -> Self {
         self.legend = l;
         self
@@ -2105,6 +2141,7 @@ pub struct Heatmap {
 }
 
 impl Heatmap {
+    /// Create a new [`Heatmap`].
     pub fn new(id: impl Into<SharedString>, rows: Vec<Vec<f32>>) -> Self {
         Self {
             id: id.into(),
@@ -2115,14 +2152,17 @@ impl Heatmap {
             gradient: dodai_charts_core::Gradient::Theme,
         }
     }
+    /// Row labels.
     pub fn row_labels<S: Into<SharedString>>(mut self, l: impl IntoIterator<Item = S>) -> Self {
         self.row_labels = l.into_iter().map(Into::into).collect();
         self
     }
+    /// Column labels.
     pub fn col_labels<S: Into<SharedString>>(mut self, l: impl IntoIterator<Item = S>) -> Self {
         self.col_labels = l.into_iter().map(Into::into).collect();
         self
     }
+    /// Cell size in px.
     pub fn cell(mut self, s: f32) -> Self {
         self.cell = s;
         self

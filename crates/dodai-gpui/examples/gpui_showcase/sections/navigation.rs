@@ -26,7 +26,7 @@ impl Showcase {
         let col = || div().flex().flex_col().gap(gap);
         let tabs = Tabs::new("tabs")
             .labels(["Overview", "Activity", "Billing", "Settings"])
-            .active(self.tab)
+            .selected(self.tab)
             .on_select(move |i, _, cx| {
                 me_tab.update(cx, |s, cx| {
                     s.tab = i;
@@ -96,12 +96,12 @@ impl Showcase {
                     .child(
                         IconButton::new("ib1", "♥")
                             .icon(IconName::Heart)
-                            .toggled(true),
+                            .selected(true),
                     )
                     .child(
                         IconButton::new("ib2", "♥")
                             .icon(IconName::Heart)
-                            .toggled(false),
+                            .selected(false),
                     )
                     .child(IconButton::new("ib3", "✎").icon(IconName::Edit))
                     .child(
@@ -166,7 +166,7 @@ impl Showcase {
                     .items_start()
                     .child(
                         nav_items("nav-rail").into_iter().fold(
-                            dodai_gpui::NavigationRail::new("nav-rail").header(
+                            dodai_gpui::NavigationRail::new().header(
                                 Fab::new("rail-fab", "+")
                                     .icon(IconName::Edit)
                                     .size(FabSize::Small),
@@ -178,9 +178,7 @@ impl Showcase {
                         div().w(px(320.0)).child(
                             nav_items("nav-drawer")
                                 .into_iter()
-                                .fold(dodai_gpui::NavigationDrawer::new("nav-drawer"), |d, it| {
-                                    d.item(it)
-                                }),
+                                .fold(dodai_gpui::NavigationDrawer::new(), |d, it| d.item(it)),
                         ),
                     ),
             );
@@ -201,7 +199,7 @@ impl Showcase {
                     })
                 }
             })
-            .on_pick(move |_, _, _| {
+            .on_select(move |_, _, _| {
                 let _ = &m;
             });
         let (m1, m2, m3, m4, m5, m6) = (
@@ -322,7 +320,7 @@ impl Showcase {
                 .child(
                     Tabs::new("tabs-secondary")
                         .labels(["Overview", "Activity", "Billing", "Settings"])
-                        .active(self.tab)
+                        .selected(self.tab)
                         .secondary(true),
                 )
                 .child(Muted::new("Scrollable"))
@@ -333,7 +331,7 @@ impl Showcase {
                                 "Overview", "Activity", "Billing", "Settings", "Contacts", "Gigs",
                                 "Archive", "Help",
                             ])
-                            .active(self.tab)
+                            .selected(self.tab)
                             .scrollable(true),
                     ),
                 )
@@ -342,7 +340,7 @@ impl Showcase {
                     Tabs::new("tabs-icons")
                         .labels(["Home", "Saved", "Search"])
                         .icons([IconName::Home, IconName::Heart, IconName::Search])
-                        .active(self.tab % 3),
+                        .selected(self.tab % 3),
                 )
                 .child(Muted::new(format!("active tab: {}", self.tab)))
                 .into_any_element(),
@@ -475,7 +473,7 @@ impl Showcase {
                 div().flex().child(
                     Segmented::new("seg", ["Day", "Week", "Month"])
                         .selected(self.group_sel)
-                        .on_change(move |i, _, cx| {
+                        .on_select(move |i, _, cx| {
                             sel_me.update(cx, |s, cx| {
                                 s.group_sel = i;
                                 cx.notify()
@@ -493,7 +491,7 @@ impl Showcase {
                         "Does it support Material 3?",
                         "Yes, tonal roles, shapes and state layers.",
                     )
-                    .open([0]),
+                    .expanded([0]),
             );
         out.push((
             "Navigation",
@@ -519,7 +517,7 @@ impl Showcase {
         let carousel = Carousel::new("car")
             .visible(3)
             .item_width(220.0)
-            .active(self.group_sel)
+            .selected(self.group_sel)
             .item(tile(r.primary_container, "Primary"))
             .item(tile(r.secondary_container, "Secondary"))
             .item(tile(r.tertiary_container, "Tertiary"))
@@ -538,7 +536,7 @@ impl Showcase {
                 .layout(l)
                 .width(560.0)
                 .item_height(140.0)
-                .active(self.group_sel);
+                .selected(self.group_sel);
             for (col, label) in [
                 (r.primary_container, "Primary"),
                 (r.secondary_container, "Secondary"),

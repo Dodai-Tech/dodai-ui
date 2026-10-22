@@ -23,6 +23,7 @@ pub fn scanline_ys(height: f32, pitch: f32) -> Vec<f32> {
 pub struct Scanlines;
 
 impl Scanlines {
+    /// Create a new [`Scanlines`].
     pub fn new() -> Self {
         Self
     }

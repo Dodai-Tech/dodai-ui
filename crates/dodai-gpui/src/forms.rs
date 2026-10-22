@@ -20,10 +20,14 @@ use std::rc::Rc;
 /// Validation state shown under a [`FormField`].
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub enum FieldState {
+    /// No validation message.
     #[default]
     Default,
+    /// Invalid, with a message.
     Error(SharedString),
+    /// Valid but worth a look, with a message.
     Warning(SharedString),
+    /// Valid, with a message.
     Success(SharedString),
 }
 
@@ -42,6 +46,7 @@ pub struct FormField {
 }
 
 impl FormField {
+    /// Create a new [`FormField`].
     pub fn new(label: impl Into<SharedString>) -> Self {
         Self {
             label: label.into(),
@@ -61,18 +66,22 @@ impl FormField {
         self.help = Some(h.into());
         self
     }
+    /// Show an error message and the error state.
     pub fn error(mut self, m: impl Into<SharedString>) -> Self {
         self.state = FieldState::Error(m.into());
         self
     }
+    /// Show a warning message and the warning state.
     pub fn warning(mut self, m: impl Into<SharedString>) -> Self {
         self.state = FieldState::Warning(m.into());
         self
     }
+    /// Show a success message and the success state.
     pub fn success(mut self, m: impl Into<SharedString>) -> Self {
         self.state = FieldState::Success(m.into());
         self
     }
+    /// Validation state.
     pub fn state(mut self, s: FieldState) -> Self {
         self.state = s;
         self
@@ -166,6 +175,7 @@ pub struct OtpInput {
 }
 
 impl OtpInput {
+    /// Create a new [`OtpInput`].
     pub fn new(id: impl Into<ElementId>, len: usize) -> Self {
         Self {
             id: id.into(),
@@ -186,7 +196,10 @@ impl OtpInput {
         self.masked = on;
         self
     }
-    crate::callback!(on_change, &str);
+    crate::callback!(
+        /// Called when the value changes, with the text.
+        on_change, &str
+    );
     crate::callback!(
         /// Called once all cells are filled.
         on_complete, &str
@@ -335,6 +348,7 @@ pub struct ToggleGroup {
 }
 
 impl ToggleGroup {
+    /// Create a new [`ToggleGroup`].
     pub fn new<S: Into<SharedString>>(
         id: impl Into<ElementId>,
         options: impl IntoIterator<Item = S>,
@@ -363,7 +377,10 @@ impl ToggleGroup {
         self.allow_empty = on;
         self
     }
-    crate::callback!(on_change, &[usize]);
+    crate::callback!(
+        /// Called when the value changes, with the selected indices.
+        on_change, &[usize]
+    );
 }
 
 impl RenderOnce for ToggleGroup {
@@ -444,6 +461,7 @@ pub struct CheckboxGroup {
 }
 
 impl CheckboxGroup {
+    /// Create a new [`CheckboxGroup`].
     pub fn new<S: Into<SharedString>>(
         id: impl Into<ElementId>,
         options: impl IntoIterator<Item = S>,
@@ -458,7 +476,7 @@ impl CheckboxGroup {
         }
     }
     /// Initially checked indices.
-    pub fn checked(mut self, c: impl IntoIterator<Item = usize>) -> Self {
+    pub fn selected(mut self, c: impl IntoIterator<Item = usize>) -> Self {
         self.initial = c.into_iter().collect();
         self
     }
@@ -472,7 +490,10 @@ impl CheckboxGroup {
         self.switches = on;
         self
     }
-    crate::callback!(on_change, &[usize]);
+    crate::callback!(
+        /// Called when the value changes, with the selected indices.
+        on_change, &[usize]
+    );
 }
 
 impl RenderOnce for CheckboxGroup {

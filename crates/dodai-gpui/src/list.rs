@@ -68,6 +68,7 @@ impl ListItem {
 }
 
 impl ListItem {
+    /// Create a new [`ListItem`].
     pub fn new(id: impl Into<ElementId>, label: impl Into<SharedString>) -> Self {
         Self {
             corners: None,
@@ -106,10 +107,12 @@ impl ListItem {
         self.badge = Some(e.into_any_element());
         self
     }
+    /// Leading content.
     pub fn leading(mut self, e: impl IntoElement) -> Self {
         self.leading = Some(e.into_any_element());
         self
     }
+    /// The selected item (controlled).
     pub fn selected(mut self, s: bool) -> Self {
         self.selected = s;
         self
@@ -119,6 +122,7 @@ impl ListItem {
         self.icon = Some(g);
         self
     }
+    /// Called when clicked.
     pub fn on_click(mut self, f: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static) -> Self {
         self.on_click = Some(Box::new(f));
         self

@@ -44,6 +44,7 @@ pub struct Card {
 }
 
 impl Card {
+    /// Create a new [`Card`].
     pub fn new(variant: CardVariant) -> Self {
         Self {
             variant,
@@ -54,6 +55,7 @@ impl Card {
             children: Vec::new(),
         }
     }
+    /// Headline text.
     pub fn headline(mut self, t: impl Into<SharedString>) -> Self {
         self.headline = Some(t.into());
         self
@@ -68,6 +70,7 @@ impl Card {
         self.corners = Some(c);
         self
     }
+    /// Supporting text.
     pub fn supporting(mut self, t: impl Into<SharedString>) -> Self {
         self.supporting = Some(t.into());
         self
@@ -162,9 +165,12 @@ fn glyph_el(glyph: SharedString, size: f32, color: gpui::Hsla) -> gpui::AnyEleme
 /// Width of an [`IconButton`] relative to its height (Material 3: narrow, default, wide).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum IconWidth {
+    /// Narrow icon button.
     Narrow,
+    /// Default width.
     #[default]
     Default,
+    /// Wide icon button.
     Wide,
 }
 
@@ -201,6 +207,7 @@ crate::corners_setter!(IconButton);
 crate::crop_setters!(IconButton);
 
 impl IconButton {
+    /// Create a new [`IconButton`].
     pub fn new(id: impl Into<ElementId>, glyph: impl Into<SharedString>) -> Self {
         let glyph: SharedString = glyph.into();
         Self {
@@ -220,7 +227,7 @@ impl IconButton {
         }
     }
     /// Narrow, default or wide (0.8 / 1 / 1.3 × the height).
-    pub fn width(mut self, w: IconWidth) -> Self {
+    pub fn icon_width(mut self, w: IconWidth) -> Self {
         self.width = w;
         self
     }
@@ -239,19 +246,22 @@ impl IconButton {
         self.icon = Some(i);
         self
     }
+    /// Visual variant.
     pub fn variant(mut self, v: ButtonVariant) -> Self {
         self.variant = v;
         self
     }
     /// Make it a toggle button; `true` renders as the filled (primary) state.
-    pub fn toggled(mut self, on: bool) -> Self {
+    pub fn selected(mut self, on: bool) -> Self {
         self.toggled = Some(on);
         self
     }
+    /// Disable the control.
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
         self
     }
+    /// Called when clicked.
     pub fn on_click(mut self, f: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static) -> Self {
         self.on_click = Some(Box::new(f));
         self
@@ -347,9 +357,12 @@ crate::entry_render!(IconButton);
 /// Floating action button size.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum FabSize {
+    /// Small.
     Small,
+    /// Regular.
     #[default]
     Regular,
+    /// Large.
     Large,
 }
 
@@ -392,6 +405,7 @@ crate::corners_setter!(Fab);
 crate::crop_setters!(Fab);
 
 impl Fab {
+    /// Create a new [`Fab`].
     pub fn new(id: impl Into<ElementId>, glyph: impl Into<SharedString>) -> Self {
         let glyph: SharedString = glyph.into();
         Self {
@@ -412,18 +426,22 @@ impl Fab {
         self.icon = Some(i);
         self
     }
+    /// Show a label next to the glyph (extended FAB).
     pub fn extended(mut self, label: impl Into<SharedString>) -> Self {
         self.label = Some(label.into());
         self
     }
+    /// Size step.
     pub fn size(mut self, s: FabSize) -> Self {
         self.size = s;
         self
     }
+    /// Visual variant.
     pub fn variant(mut self, v: ButtonVariant) -> Self {
         self.variant = v;
         self
     }
+    /// Called when clicked.
     pub fn on_click(mut self, f: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static) -> Self {
         self.on_click = Some(Box::new(f));
         self
@@ -544,6 +562,7 @@ pub struct FabMenu {
 type IndexHandler = Rc<dyn Fn(usize, &mut Window, &mut App)>;
 
 impl FabMenu {
+    /// Create a new [`FabMenu`].
     pub fn new(id: impl Into<ElementId>, icon: crate::icons::IconName) -> Self {
         Self {
             id: id.into(),
@@ -560,7 +579,10 @@ impl FabMenu {
         self.items = items.into_iter().map(|(i, s)| (i, s.into())).collect();
         self
     }
-    crate::callback!(on_select, usize);
+    crate::callback!(
+        /// Called when an item is chosen, with the index.
+        on_select, usize
+    );
 }
 
 impl RenderOnce for FabMenu {
@@ -618,6 +640,7 @@ impl RenderOnce for FabMenu {
 pub enum AppBarSize {
     /// Title centred between the icons.
     CenterAligned,
+    /// Small.
     #[default]
     Small,
     /// Icons on top, title below (headline-small).
@@ -655,6 +678,7 @@ pub struct TopAppBar {
 crate::corners_setter!(TopAppBar);
 
 impl TopAppBar {
+    /// Create a new [`TopAppBar`].
     pub fn new(title: impl Into<SharedString>) -> Self {
         Self {
             corners: None,
@@ -666,10 +690,12 @@ impl TopAppBar {
             collapse: 0.0,
         }
     }
+    /// Leading content.
     pub fn leading(mut self, glyph: impl Into<SharedString>) -> Self {
         self.leading = Some(glyph.into());
         self
     }
+    /// Size step.
     pub fn size(mut self, s: AppBarSize) -> Self {
         self.size = s;
         self
@@ -792,6 +818,7 @@ pub struct SearchBar {
 crate::corners_setter!(SearchBar);
 
 impl SearchBar {
+    /// Create a new [`SearchBar`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             corners: None,
@@ -802,16 +829,19 @@ impl SearchBar {
             on_click: None,
         }
     }
+    /// Placeholder text.
     pub fn placeholder(mut self, p: impl Into<SharedString>) -> Self {
         self.text = p.into();
         self.placeholder = true;
         self
     }
+    /// Current value.
     pub fn value(mut self, v: impl Into<SharedString>) -> Self {
         self.text = v.into();
         self.placeholder = false;
         self
     }
+    /// Called when clicked.
     pub fn on_click(mut self, f: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static) -> Self {
         self.on_click = Some(Box::new(f));
         self

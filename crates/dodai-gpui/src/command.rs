@@ -55,18 +55,21 @@ fn fuzzy_score(q: &[char], s: &str) -> Option<usize> {
 /// One command in a [`CommandPalette`].
 #[derive(Clone)]
 pub struct Command {
+    /// Text shown in the list.
     pub label: SharedString,
     /// Right-aligned hint such as a shortcut.
     pub hint: Option<SharedString>,
 }
 
 impl Command {
+    /// Create a new [`Command`].
     pub fn new(label: impl Into<SharedString>) -> Self {
         Self {
             label: label.into(),
             hint: None,
         }
     }
+    /// Secondary hint text.
     pub fn hint(mut self, h: impl Into<SharedString>) -> Self {
         self.hint = Some(h.into());
         self
@@ -92,6 +95,7 @@ pub struct CommandPalette {
 crate::corners_setter!(CommandPalette);
 
 impl CommandPalette {
+    /// Create a new [`CommandPalette`].
     pub fn new(id: impl Into<ElementId>, input: Entity<TextInput>) -> Self {
         Self {
             corners: None,
@@ -103,16 +107,24 @@ impl CommandPalette {
             on_dismiss: None,
         }
     }
+    /// The commands to offer.
     pub fn commands(mut self, c: impl IntoIterator<Item = Command>) -> Self {
         self.commands = c.into_iter().collect();
         self
     }
+    /// Most rows shown before scrolling.
     pub fn max_rows(mut self, n: usize) -> Self {
         self.max_rows = n.max(1);
         self
     }
-    crate::callback!(on_run, usize);
-    crate::callback!(on_dismiss);
+    crate::callback!(
+        /// Called when a command is run, with the index.
+        on_run, usize
+    );
+    crate::callback!(
+        /// Called when the surface is dismissed.
+        on_dismiss
+    );
 }
 
 impl RenderOnce for CommandPalette {
@@ -223,13 +235,14 @@ pub struct Combobox {
     options: Vec<SharedString>,
     open: bool,
     max_rows: usize,
-    on_pick: Option<IndexFn>,
+    on_select: Option<IndexFn>,
     corners: Option<dodai_core::Corners>,
 }
 
 crate::corners_setter!(Combobox);
 
 impl Combobox {
+    /// Create a new [`Combobox`].
     pub fn new(id: impl Into<ElementId>, input: Entity<TextInput>) -> Self {
         Self {
             corners: None,
@@ -238,20 +251,22 @@ impl Combobox {
             options: Vec::new(),
             open: false,
             max_rows: 6,
-            on_pick: None,
+            on_select: None,
         }
     }
+    /// The options to offer.
     pub fn options<S: Into<SharedString>>(mut self, o: impl IntoIterator<Item = S>) -> Self {
         self.options = o.into_iter().map(Into::into).collect();
         self
     }
+    /// Whether the popup is open (controlled).
     pub fn open(mut self, o: bool) -> Self {
         self.open = o;
         self
     }
     crate::callback!(
         /// Called with the index into the original `options`.
-        on_pick, usize
+        on_select, usize
     );
 }
 
@@ -295,7 +310,7 @@ impl Combobox {
                     .text_color(hsla(t.palette.text))
                     .cursor_pointer()
                     .child(self.options[oi].clone());
-                if let Some(f) = self.on_pick.clone() {
+                if let Some(f) = self.on_select.clone() {
                     row = row.on_click(move |_, w, cx| f(oi, w, cx));
                 }
                 menu = menu.child(row);

@@ -18,31 +18,35 @@ use gpui::{
 
 /// Side of the anchor an overlay opens on.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum Placement {
+pub enum PopoverPlacement {
+    /// Below the trigger.
     #[default]
     Below,
+    /// Above the trigger.
     Above,
+    /// To the right of the trigger.
     Right,
+    /// To the left of the trigger.
     Left,
 }
 
-impl Placement {
+impl PopoverPlacement {
     /// Position `d` (already `absolute`) against its relative anchor, `gap` px away.
     fn place(self, d: gpui::Div, gap: f32) -> gpui::Div {
         match self {
-            Placement::Below => d.top_full().left_0().mt(px(gap)),
-            Placement::Above => d.bottom_full().left_0().mb(px(gap)),
-            Placement::Right => d.left_full().top_0().ml(px(gap)),
-            Placement::Left => d.right_full().top_0().mr(px(gap)),
+            PopoverPlacement::Below => d.top_full().left_0().mt(px(gap)),
+            PopoverPlacement::Above => d.bottom_full().left_0().mb(px(gap)),
+            PopoverPlacement::Right => d.left_full().top_0().ml(px(gap)),
+            PopoverPlacement::Left => d.right_full().top_0().mr(px(gap)),
         }
     }
     /// Transparent padding that bridges the anchor and the card (hover cards).
     fn bridge(self, d: gpui::Div, gap: f32) -> gpui::Div {
         match self {
-            Placement::Below => d.top_full().left_0().pt(px(gap)),
-            Placement::Above => d.bottom_full().left_0().pb(px(gap)),
-            Placement::Right => d.left_full().top_0().pl(px(gap)),
-            Placement::Left => d.right_full().top_0().pr(px(gap)),
+            PopoverPlacement::Below => d.top_full().left_0().pt(px(gap)),
+            PopoverPlacement::Above => d.bottom_full().left_0().pb(px(gap)),
+            PopoverPlacement::Right => d.left_full().top_0().pl(px(gap)),
+            PopoverPlacement::Left => d.right_full().top_0().pr(px(gap)),
         }
     }
 }
@@ -61,19 +65,20 @@ pub struct Popover {
     id: ElementId,
     trigger: Option<AnyElement>,
     content: Option<AnyElement>,
-    placement: Placement,
+    placement: PopoverPlacement,
     width: Option<f32>,
     close_on_click: bool,
     bare: bool,
 }
 
 impl Popover {
+    /// Create a new [`Popover`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
             trigger: None,
             content: None,
-            placement: Placement::Below,
+            placement: PopoverPlacement::Below,
             width: None,
             close_on_click: false,
             bare: false,
@@ -89,10 +94,12 @@ impl Popover {
         self.content = Some(c.into_any_element());
         self
     }
-    pub fn placement(mut self, p: Placement) -> Self {
+    /// Where the popup sits relative to its trigger.
+    pub fn placement(mut self, p: PopoverPlacement) -> Self {
         self.placement = p;
         self
     }
+    /// Width in px.
     pub fn width(mut self, w: f32) -> Self {
         self.width = Some(w);
         self
@@ -228,32 +235,37 @@ pub struct HoverCard {
     id: ElementId,
     trigger: Option<AnyElement>,
     content: Option<AnyElement>,
-    placement: Placement,
+    placement: PopoverPlacement,
     width: f32,
 }
 
 impl HoverCard {
+    /// Create a new [`HoverCard`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
             trigger: None,
             content: None,
-            placement: Placement::Below,
+            placement: PopoverPlacement::Below,
             width: 260.0,
         }
     }
+    /// The element that opens the popup.
     pub fn trigger(mut self, t: impl IntoElement) -> Self {
         self.trigger = Some(t.into_any_element());
         self
     }
+    /// The popup content.
     pub fn content(mut self, c: impl IntoElement) -> Self {
         self.content = Some(c.into_any_element());
         self
     }
-    pub fn placement(mut self, p: Placement) -> Self {
+    /// Where the popup sits relative to its trigger.
+    pub fn placement(mut self, p: PopoverPlacement) -> Self {
         self.placement = p;
         self
     }
+    /// Width in px.
     pub fn width(mut self, w: f32) -> Self {
         self.width = w;
         self
@@ -330,6 +342,7 @@ pub struct ContextMenu {
 }
 
 impl ContextMenu {
+    /// Create a new [`ContextMenu`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
@@ -344,15 +357,20 @@ impl ContextMenu {
         self.child = Some(c.into_any_element());
         self
     }
+    /// The items.
     pub fn items(mut self, i: impl IntoIterator<Item = MenuItem>) -> Self {
         self.items = i.into_iter().collect();
         self
     }
+    /// Width in px.
     pub fn width(mut self, w: f32) -> Self {
         self.width = w;
         self
     }
-    crate::callback!(on_select, usize);
+    crate::callback!(
+        /// Called when an item is chosen, with the index.
+        on_select, usize
+    );
 }
 
 impl RenderOnce for ContextMenu {
@@ -426,6 +444,7 @@ pub struct DropdownMenu {
 }
 
 impl DropdownMenu {
+    /// Create a new [`DropdownMenu`].
     pub fn new(id: impl Into<ElementId>, label: impl Into<gpui::SharedString>) -> Self {
         Self {
             id: id.into(),
@@ -435,15 +454,20 @@ impl DropdownMenu {
             on_select: None,
         }
     }
+    /// The items.
     pub fn items(mut self, i: impl IntoIterator<Item = MenuItem>) -> Self {
         self.items = i.into_iter().collect();
         self
     }
+    /// Width in px.
     pub fn width(mut self, w: f32) -> Self {
         self.width = w;
         self
     }
-    crate::callback!(on_select, usize);
+    crate::callback!(
+        /// Called when an item is chosen, with the index.
+        on_select, usize
+    );
 }
 
 impl RenderOnce for DropdownMenu {

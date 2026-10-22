@@ -116,6 +116,7 @@ pub struct Oscilloscope {
 }
 
 impl Oscilloscope {
+    /// Create a new [`Oscilloscope`].
     pub fn new(samples: impl IntoIterator<Item = f32>) -> Self {
         Self {
             samples: samples.into_iter().collect(),
@@ -143,6 +144,7 @@ impl Oscilloscope {
                 / norm_amp
         }))
     }
+    /// Width and height in px.
     pub fn size(mut self, w: f32, h: f32) -> Self {
         self.w = w;
         self.h = h;
@@ -153,10 +155,12 @@ impl Oscilloscope {
         self.live = on;
         self
     }
+    /// Colour (default: the theme's).
     pub fn color(mut self, c: Color) -> Self {
         self.color = Some(c);
         self
     }
+    /// Caption text.
     pub fn caption(mut self, c: impl Into<SharedString>) -> Self {
         self.caption = Some(c.into());
         self
@@ -267,6 +271,7 @@ impl Spectrum {
             caption: None,
         }
     }
+    /// Width and height in px.
     pub fn size(mut self, w: f32, h: f32) -> Self {
         self.w = w;
         self.h = h;
@@ -287,6 +292,7 @@ impl Spectrum {
         self.zones = on;
         self
     }
+    /// Caption text.
     pub fn caption(mut self, c: impl Into<SharedString>) -> Self {
         self.caption = Some(c.into());
         self
@@ -400,6 +406,7 @@ pub struct DotMatrix {
 }
 
 impl DotMatrix {
+    /// Create a new [`DotMatrix`].
     pub fn new(values: impl IntoIterator<Item = f32>) -> Self {
         Self {
             values: values.into_iter().collect(),
@@ -413,10 +420,12 @@ impl DotMatrix {
         self.rows = r.max(2);
         self
     }
+    /// Width in px.
     pub fn width(mut self, w: f32) -> Self {
         self.w = w;
         self
     }
+    /// Caption text.
     pub fn caption(mut self, c: impl Into<SharedString>) -> Self {
         self.caption = Some(c.into());
         self
@@ -480,6 +489,7 @@ pub struct SignalBars {
 }
 
 impl SignalBars {
+    /// Create a new [`SignalBars`].
     pub fn new(level: usize) -> Self {
         Self {
             level,
@@ -487,10 +497,12 @@ impl SignalBars {
             height: 28.0,
         }
     }
+    /// Number of bars.
     pub fn bars(mut self, n: usize) -> Self {
         self.bars = n.max(1);
         self
     }
+    /// Height in px.
     pub fn height(mut self, h: f32) -> Self {
         self.height = h;
         self
@@ -545,11 +557,14 @@ impl RenderOnce for SignalBars {
 /// `range` as `0..=1` of the radius.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Blip {
+    /// Angle in degrees clockwise from north.
     pub bearing: f32,
+    /// Distance from the centre, 0 to 1.
     pub range: f32,
 }
 
 impl Blip {
+    /// Create a new [`Blip`].
     pub fn new(bearing: f32, range: f32) -> Self {
         Self { bearing, range }
     }
@@ -566,6 +581,7 @@ pub struct RadarScope {
 }
 
 impl RadarScope {
+    /// Create a new [`RadarScope`].
     pub fn new(blips: impl IntoIterator<Item = Blip>) -> Self {
         Self {
             blips: blips.into_iter().collect(),
@@ -575,6 +591,7 @@ impl RadarScope {
             caption: None,
         }
     }
+    /// Size in px.
     pub fn size(mut self, s: f32) -> Self {
         self.size = s;
         self
@@ -589,6 +606,7 @@ impl RadarScope {
         self.period = s.max(0.5);
         self
     }
+    /// Caption text.
     pub fn caption(mut self, c: impl Into<SharedString>) -> Self {
         self.caption = Some(c.into());
         self
@@ -699,6 +717,7 @@ pub struct HexMap {
 }
 
 impl HexMap {
+    /// Create a new [`HexMap`].
     pub fn new(cols: usize, values: impl IntoIterator<Item = f32>) -> Self {
         Self {
             values: values.into_iter().collect(),
@@ -718,6 +737,7 @@ impl HexMap {
         self.live = on;
         self
     }
+    /// Caption text.
     pub fn caption(mut self, c: impl Into<SharedString>) -> Self {
         self.caption = Some(c.into());
         self
@@ -794,12 +814,14 @@ pub struct RingStack {
 }
 
 impl RingStack {
+    /// Create a new [`RingStack`].
     pub fn new<S: Into<SharedString>>(items: impl IntoIterator<Item = (S, f32)>) -> Self {
         Self {
             items: items.into_iter().map(|(l, v)| (l.into(), v)).collect(),
             size: 150.0,
         }
     }
+    /// Size in px.
     pub fn size(mut self, s: f32) -> Self {
         self.size = s;
         self

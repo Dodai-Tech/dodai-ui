@@ -25,6 +25,7 @@ pub fn step_index(cur: Option<usize>, len: usize, delta: i32, wrap: bool) -> Opt
 pub enum PageItem {
     /// 1-based page number.
     Page(usize),
+    /// A gap, drawn as an ellipsis.
     Ellipsis,
 }
 

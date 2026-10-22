@@ -600,10 +600,10 @@ impl Showcase {
                 Candlestick::new("ext", ohlc.clone())
                     .style(CandleStyle::HeikinAshi)
                     .volume(true)
-                    .overlay(Overlay::Sma(10))
-                    .overlay(Overlay::Bollinger(20, 2.0))
-                    .pane(Pane::Rsi(14))
-                    .pane(Pane::Macd(12, 26, 9))
+                    .overlay(CandleOverlay::Sma(10))
+                    .overlay(CandleOverlay::Bollinger(20, 2.0))
+                    .pane(CandlePane::Rsi(14))
+                    .pane(CandlePane::Macd(12, 26, 9))
                     .markers([
                         TradeMarker::buy(20, ohlc[20].low),
                         TradeMarker::sell(45, ohlc[45].high),

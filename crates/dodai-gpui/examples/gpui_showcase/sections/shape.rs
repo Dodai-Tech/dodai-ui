@@ -87,14 +87,14 @@ impl Showcase {
                         div().flex().child(
                             Segmented::new("cut-sets", sets.map(|p| p.0))
                                 .selected(pos(&sets).unwrap_or(usize::MAX))
-                                .on_change(move |i, _, cx| apply(sets[i].1, cx)),
+                                .on_select(move |i, _, cx| apply(sets[i].1, cx)),
                         ),
                     )
                     .child(
                         div().flex().child(
                             Segmented::new("cut-singles", singles.map(|p| p.0))
                                 .selected(pos(&singles).unwrap_or(usize::MAX))
-                                .on_change(move |i, _, cx| apply(singles[i].1, cx)),
+                                .on_select(move |i, _, cx| apply(singles[i].1, cx)),
                         ),
                     )
                     .into_any_element(),
@@ -219,7 +219,7 @@ impl Showcase {
                 "Cuts one end of every button and adds a double tick on the other. Left cuts the top left, Right the bottom right.",
                 Segmented::new("bc-crop", ["Off", "Left", "Right"])
                     .selected(crop_sel)
-                    .on_change(move |i, _, cx| dodai_gpui::set_button_crop(cx, crops[i]))
+                    .on_select(move |i, _, cx| dodai_gpui::set_button_crop(cx, crops[i]))
                     .into_any_element(),
             );
             let gap_row = setting(
@@ -227,7 +227,7 @@ impl Showcase {
                 "Space between the two tick bars, left open in the border.",
                 Segmented::new("bc-gap", ["Theme", "0 px", "2 px", "4 px", "8 px"])
                     .selected(gap_sel)
-                    .on_change(move |i, _, cx| dodai_gpui::set_button_cut_gap(cx, gaps[i]))
+                    .on_select(move |i, _, cx| dodai_gpui::set_button_cut_gap(cx, gaps[i]))
                     .into_any_element(),
             );
             let preview = div()
@@ -258,7 +258,7 @@ impl Showcase {
             ));
         }
         if t.look().accent_border {
-            use dodai_gpui::{BorderStyle as B, Corner};
+            use dodai_gpui::{AccentCorner, BorderStyle as B};
             let cur = dodai_gpui::section_border(cx);
             let presets: [(&str, B); 5] = [
                 ("None", B::NONE),
@@ -271,7 +271,7 @@ impl Showcase {
                 .iter()
                 .position(|(_, b)| b.width == cur.width && b.opacity == cur.opacity)
                 .unwrap_or(usize::MAX);
-            let corner_sel = Corner::ALL
+            let corner_sel = AccentCorner::ALL
                 .iter()
                 .position(|c| *c == cur.accent)
                 .unwrap_or(usize::MAX);
@@ -309,7 +309,7 @@ impl Showcase {
                             .child(
                                 Segmented::new("bd-preset", presets.map(|p| p.0))
                                     .selected(preset_sel)
-                                    .on_change(move |i, _, cx| {
+                                    .on_select(move |i, _, cx| {
                                         let c = dodai_gpui::section_border(cx);
                                         let p = presets[i].1;
                                         dodai_gpui::set_section_border(
@@ -330,11 +330,11 @@ impl Showcase {
                         div()
                             .flex()
                             .child(
-                                Segmented::new("bd-corner", Corner::ALL.map(|c| c.name()))
+                                Segmented::new("bd-corner", AccentCorner::ALL.map(|c| c.name()))
                                     .selected(corner_sel)
-                                    .on_change(move |i, _, cx| {
+                                    .on_select(move |i, _, cx| {
                                         let b = dodai_gpui::section_border(cx);
-                                        dodai_gpui::set_section_border(cx, b.accent(Corner::ALL[i]));
+                                        dodai_gpui::set_section_border(cx, b.accent(AccentCorner::ALL[i]));
                                     }),
                             )
                             .into_any_element(),

@@ -16,10 +16,11 @@ use gpui::{
 pub struct Breadcrumb {
     id: ElementId,
     items: Vec<SharedString>,
-    on_click: Option<IndexHandler>,
+    on_select: Option<IndexHandler>,
 }
 
 impl Breadcrumb {
+    /// Create a new [`Breadcrumb`].
     pub fn new<S: Into<SharedString>>(
         id: impl Into<ElementId>,
         items: impl IntoIterator<Item = S>,
@@ -27,10 +28,13 @@ impl Breadcrumb {
         Self {
             id: id.into(),
             items: items.into_iter().map(Into::into).collect(),
-            on_click: None,
+            on_select: None,
         }
     }
-    crate::callback!(on_click, usize);
+    crate::callback!(
+        /// Called when an item is chosen, with the index.
+        on_select, usize
+    );
 }
 
 impl Breadcrumb {
@@ -64,7 +68,7 @@ impl Breadcrumb {
                 .child(format_label(&t.typography, label));
             if !current {
                 c = c.cursor_pointer();
-                if let Some(f) = self.on_click.clone() {
+                if let Some(f) = self.on_select.clone() {
                     c = c.on_click(move |_, w, cx| f(i, w, cx));
                 }
             }
@@ -117,6 +121,7 @@ pub struct Pagination {
 }
 
 impl Pagination {
+    /// Create a new [`Pagination`].
     pub fn new(id: impl Into<ElementId>, page: usize, total: usize) -> Self {
         Self {
             id: id.into(),
@@ -219,6 +224,7 @@ pub struct Stepper {
 crate::corners_setter!(Stepper);
 
 impl Stepper {
+    /// Create a new [`Stepper`].
     pub fn new<S: Into<SharedString>>(steps: impl IntoIterator<Item = S>, current: usize) -> Self {
         Self {
             corners: None,
@@ -301,13 +307,14 @@ pub struct Segmented {
     options: Vec<SharedString>,
     selected: usize,
     disabled: bool,
-    on_change: Option<IndexHandler>,
+    on_select: Option<IndexHandler>,
     corners: Option<dodai_core::Corners>,
 }
 
 crate::corners_setter!(Segmented);
 
 impl Segmented {
+    /// Create a new [`Segmented`].
     pub fn new<S: Into<SharedString>>(
         id: impl Into<ElementId>,
         options: impl IntoIterator<Item = S>,
@@ -318,18 +325,23 @@ impl Segmented {
             options: options.into_iter().map(Into::into).collect(),
             selected: 0,
             disabled: false,
-            on_change: None,
+            on_select: None,
         }
     }
+    /// The selected item (controlled).
     pub fn selected(mut self, i: usize) -> Self {
         self.selected = i;
         self
     }
+    /// Disable the control.
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
         self
     }
-    crate::callback!(on_change, usize);
+    crate::callback!(
+        /// Called when an item is chosen, with the index.
+        on_select, usize
+    );
 }
 
 impl Segmented {
@@ -397,7 +409,7 @@ impl Segmented {
             seg = seg.child(format_label(&t.typography, label));
             if !self.disabled {
                 seg = seg.cursor_pointer();
-                if let Some(f) = self.on_change.clone() {
+                if let Some(f) = self.on_select.clone() {
                     seg = seg.on_click(move |_, w, cx| f(i, w, cx));
                 }
             }
@@ -450,7 +462,7 @@ impl Segmented {
                 .child(format_label(&t.typography, label));
             if !self.disabled {
                 seg = seg.cursor_pointer();
-                if let Some(f) = self.on_change.clone() {
+                if let Some(f) = self.on_select.clone() {
                     seg = seg.on_click(move |_, w, cx| f(i, w, cx));
                 }
             }
@@ -467,7 +479,7 @@ struct AccState {
 }
 
 /// Collapsible sections `(title, body)`. Each toggles independently; sections
-/// listed in `open` start expanded.
+/// listed in `expanded` start expanded.
 #[derive(IntoElement)]
 pub struct Accordion {
     id: ElementId,
@@ -479,6 +491,7 @@ pub struct Accordion {
 crate::corners_setter!(Accordion);
 
 impl Accordion {
+    /// Create a new [`Accordion`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             corners: None,
@@ -487,12 +500,13 @@ impl Accordion {
             open: Vec::new(),
         }
     }
+    /// Add an item.
     pub fn item(mut self, title: impl Into<SharedString>, body: impl Into<SharedString>) -> Self {
         self.items.push((title.into(), body.into()));
         self
     }
     /// Indices expanded initially.
-    pub fn open(mut self, open: impl IntoIterator<Item = usize>) -> Self {
+    pub fn expanded(mut self, open: impl IntoIterator<Item = usize>) -> Self {
         self.open = open.into_iter().collect();
         self
     }

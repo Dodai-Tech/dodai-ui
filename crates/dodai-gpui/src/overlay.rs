@@ -38,6 +38,7 @@ pub struct DialogCard {
 crate::corners_setter!(DialogCard);
 
 impl DialogCard {
+    /// Create a new [`DialogCard`].
     pub fn new(title: impl Into<SharedString>) -> Self {
         Self {
             corners: None,
@@ -58,6 +59,7 @@ impl DialogCard {
         self.actions.push(a.into_any_element());
         self
     }
+    /// Width in px.
     pub fn width(mut self, w: f32) -> Self {
         self.width = w;
         self
@@ -166,6 +168,7 @@ pub struct Dialog {
 }
 
 impl Dialog {
+    /// Create a new [`Dialog`].
     pub fn new(id: impl Into<ElementId>, card: DialogCard) -> Self {
         Self {
             id: id.into(),
@@ -173,7 +176,10 @@ impl Dialog {
             on_dismiss: None,
         }
     }
-    crate::callback!(on_dismiss);
+    crate::callback!(
+        /// Called when the surface is dismissed.
+        on_dismiss
+    );
 }
 
 impl RenderOnce for Dialog {

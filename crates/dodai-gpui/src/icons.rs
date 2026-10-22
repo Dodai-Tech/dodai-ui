@@ -74,10 +74,12 @@ impl Icon {
             filled: false,
         }
     }
+    /// Size in px.
     pub fn size(mut self, s: f32) -> Self {
         self.size = s;
         self
     }
+    /// Colour (default: the theme's).
     pub fn color(mut self, c: Hsla) -> Self {
         self.color = Some(c);
         self

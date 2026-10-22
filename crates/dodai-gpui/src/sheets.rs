@@ -20,7 +20,9 @@ type DismissFn = Rc<dyn Fn(&mut Window, &mut App)>;
 /// Edge a sheet is attached to.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum SheetEdge {
+    /// Slides in from the left.
     Left,
+    /// Slides in from the right.
     #[default]
     Right,
 }
@@ -82,6 +84,7 @@ pub struct BottomSheet {
 crate::corners_setter!(BottomSheet);
 
 impl BottomSheet {
+    /// Create a new [`BottomSheet`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             corners: None,
@@ -92,15 +95,20 @@ impl BottomSheet {
             on_dismiss: None,
         }
     }
+    /// Title text.
     pub fn title(mut self, t: impl Into<SharedString>) -> Self {
         self.title = Some(t.into());
         self
     }
+    /// Height in px.
     pub fn height(mut self, h: f32) -> Self {
         self.height = h;
         self
     }
-    crate::callback!(on_dismiss);
+    crate::callback!(
+        /// Called when the surface is dismissed.
+        on_dismiss
+    );
 }
 
 impl ParentElement for BottomSheet {
@@ -176,6 +184,7 @@ pub struct SideSheet {
 crate::corners_setter!(SideSheet);
 
 impl SideSheet {
+    /// Create a new [`SideSheet`].
     pub fn new(id: impl Into<ElementId>, title: impl Into<SharedString>) -> Self {
         Self {
             corners: None,
@@ -188,10 +197,12 @@ impl SideSheet {
             on_dismiss: None,
         }
     }
+    /// Screen edge it slides in from.
     pub fn edge(mut self, e: SheetEdge) -> Self {
         self.edge = e;
         self
     }
+    /// Width in px.
     pub fn width(mut self, w: f32) -> Self {
         self.width = w;
         self
@@ -201,7 +212,10 @@ impl SideSheet {
         self.modal = m;
         self
     }
-    crate::callback!(on_dismiss);
+    crate::callback!(
+        /// Called when the surface is dismissed.
+        on_dismiss
+    );
 }
 
 impl ParentElement for SideSheet {
@@ -275,6 +289,7 @@ pub struct ModalDrawer {
 }
 
 impl ModalDrawer {
+    /// Create a new [`ModalDrawer`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
@@ -282,17 +297,21 @@ impl ModalDrawer {
             on_dismiss: None,
         }
     }
+    /// The items.
     pub fn items(mut self, items: impl IntoIterator<Item = crate::NavigationItem>) -> Self {
         self.items = items.into_iter().collect();
         self
     }
-    crate::callback!(on_dismiss);
+    crate::callback!(
+        /// Called when the surface is dismissed.
+        on_dismiss
+    );
 }
 
 impl RenderOnce for ModalDrawer {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        let mut nav = crate::NavigationDrawer::new((self.id.clone(), "nav"));
+        let mut nav = crate::NavigationDrawer::new();
         for it in self.items {
             let dismiss = self.on_dismiss.clone();
             nav = nav.item(it.also_on_click(move |w, cx| {
@@ -335,6 +354,7 @@ pub struct FullScreenDialog {
 crate::corners_setter!(FullScreenDialog);
 
 impl FullScreenDialog {
+    /// Create a new [`FullScreenDialog`].
     pub fn new(id: impl Into<ElementId>, title: impl Into<SharedString>) -> Self {
         Self {
             corners: None,
@@ -356,7 +376,10 @@ impl FullScreenDialog {
         self.on_action = Some(Rc::new(f));
         self
     }
-    crate::callback!(on_dismiss);
+    crate::callback!(
+        /// Called when the surface is dismissed.
+        on_dismiss
+    );
 }
 
 impl ParentElement for FullScreenDialog {
@@ -432,6 +455,7 @@ pub struct Snackbar {
 crate::corners_setter!(Snackbar);
 
 impl Snackbar {
+    /// Create a new [`Snackbar`].
     pub fn new(id: impl Into<ElementId>, message: impl Into<SharedString>) -> Self {
         Self {
             corners: None,
@@ -441,6 +465,7 @@ impl Snackbar {
             on_action: None,
         }
     }
+    /// Action label and handler.
     pub fn action(
         mut self,
         label: impl Into<SharedString>,

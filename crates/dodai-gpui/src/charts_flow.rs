@@ -38,6 +38,7 @@ pub struct Funnel {
 chart_cfg!(Funnel);
 
 impl Funnel {
+    /// Create a new [`Funnel`].
     pub fn new<S: Into<SharedString>>(stages: impl IntoIterator<Item = (S, f32)>) -> Self {
         Self {
             stages: stages.into_iter().map(|(a, b)| (a.into(), b)).collect(),
@@ -138,6 +139,7 @@ crate::corners_setter!(Waterfall);
 chart_cfg!(Waterfall);
 
 impl Waterfall {
+    /// Create a new [`Waterfall`].
     pub fn new<S: Into<SharedString>>(
         id: impl Into<SharedString>,
         steps: impl IntoIterator<Item = (S, f32)>,

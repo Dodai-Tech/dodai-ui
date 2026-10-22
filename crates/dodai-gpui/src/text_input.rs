@@ -14,7 +14,7 @@ use crate::panel::input_style;
 use crate::text::first_family;
 use crate::{hsla, theme_of};
 use gpui::{
-    actions, div, fill, point, prelude::*, px, relative, size, App, Bounds, ClipboardItem, Context,
+    div, fill, point, prelude::*, px, relative, size, App, Bounds, ClipboardItem, Context,
     CursorStyle, ElementId, ElementInputHandler, Entity, EntityInputHandler, FocusHandle,
     Focusable, GlobalElementId, KeyBinding, LayoutId, MouseButton, MouseDownEvent, MouseMoveEvent,
     MouseUpEvent, PaintQuad, Pixels, Point, ShapedLine, SharedString, Style, TextRun,
@@ -23,28 +23,33 @@ use gpui::{
 use std::ops::Range;
 use std::rc::Rc;
 
-actions!(
-    dodai_text_input,
-    [
-        Backspace,
-        Delete,
-        Left,
-        Right,
-        Up,
-        Down,
-        SelectLeft,
-        SelectRight,
-        SelectAll,
-        Home,
-        End,
-        Enter,
-        Paste,
-        Cut,
-        Copy
-    ]
-);
-
-gpui::actions!(dodai_focus, [FocusNext, FocusPrev]);
+/// Key actions (one per key; the names say what they do).
+#[allow(missing_docs)]
+mod actions_def {
+    use gpui::actions;
+    actions!(
+        dodai_text_input,
+        [
+            Backspace,
+            Delete,
+            Left,
+            Right,
+            Up,
+            Down,
+            SelectLeft,
+            SelectRight,
+            SelectAll,
+            Home,
+            End,
+            Enter,
+            Paste,
+            Cut,
+            Copy
+        ]
+    );
+    actions!(dodai_focus, [FocusNext, FocusPrev]);
+}
+pub use actions_def::*;
 
 /// Register text-input key bindings (called by [`crate::install`]).
 pub fn bind_keys(cx: &mut App) {
@@ -114,6 +119,7 @@ fn from_disp(masked: bool, text: &str, d: usize) -> usize {
     }
 }
 
+/// Byte offset of the character boundary before `off` in `s`.
 pub fn prev_boundary(s: &str, off: usize) -> usize {
     s[..off.min(s.len())]
         .char_indices()
@@ -199,6 +205,7 @@ pub struct TextInput {
 }
 
 impl TextInput {
+    /// Create a new [`TextInput`].
     pub fn new(cx: &mut Context<Self>) -> Self {
         Self {
             focus: cx.focus_handle(),
@@ -265,6 +272,7 @@ impl TextInput {
         self.corners = Some(c);
         self
     }
+    /// Disable the control.
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;
         self

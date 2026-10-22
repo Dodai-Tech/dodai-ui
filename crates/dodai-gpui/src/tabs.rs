@@ -29,7 +29,7 @@ pub fn tab_style(theme: &Theme, active: bool, hovered: bool) -> (ShapeStyle, Hsl
 
 type SelectHandler = Rc<dyn Fn(usize, &mut Window, &mut App)>;
 
-/// Tab strip. Controlled: pass `active` and update it in `on_select`.
+/// Tab strip. Controlled: pass `selected` and update it in `on_select`.
 #[derive(IntoElement)]
 pub struct Tabs {
     id: ElementId,
@@ -45,6 +45,7 @@ pub struct Tabs {
 crate::corners_setter!(Tabs);
 
 impl Tabs {
+    /// Create a new [`Tabs`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             corners: None,
@@ -79,7 +80,7 @@ impl Tabs {
         self
     }
     /// Index of the active tab.
-    pub fn active(mut self, i: usize) -> Self {
+    pub fn selected(mut self, i: usize) -> Self {
         self.active = i;
         self
     }

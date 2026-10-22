@@ -55,7 +55,7 @@ fn carousel_arrows_select_neighbouring_pages(cx: &mut TestAppContext) {
         Carousel::new("car")
             .visible(2)
             .item_width(80.0)
-            .active(1)
+            .selected(1)
             .on_select(move |i, _, _| p.borrow_mut().push(i))
             .item("a")
             .item("b")
@@ -120,7 +120,7 @@ fn segmented_changes_selection(cx: &mut TestAppContext) {
     let vcx = mount(cx, move |_, _| {
         let l = l2.clone();
         Segmented::new("s", ["AAAA", "BBBB", "CCCC"])
-            .on_change(move |i, _, _| l.borrow_mut().push(i))
+            .on_select(move |i, _, _| l.borrow_mut().push(i))
             .into_any_element()
     });
     let (x, y, w, h) = target(vcx);
@@ -154,7 +154,7 @@ fn breadcrumb_reports_clicked_crumb(cx: &mut TestAppContext) {
     let vcx = mount(cx, move |_, _| {
         let l = l2.clone();
         Breadcrumb::new("bc", ["Home", "Library", "Data"])
-            .on_click(move |i, _, _| l.borrow_mut().push(i))
+            .on_select(move |i, _, _| l.borrow_mut().push(i))
             .into_any_element()
     });
     let (x, y, _, h) = target(vcx);
@@ -353,7 +353,7 @@ fn select_opens_and_picks_an_option(cx: &mut TestAppContext) {
         let l = l2.clone();
         Select::new("sel")
             .options(["One", "Two", "Three"])
-            .on_change(move |i, _, _| l.borrow_mut().push(i))
+            .on_select(move |i, _, _| l.borrow_mut().push(i))
             .into_any_element()
     });
     let (x, y, w, h) = target(vcx);

@@ -27,6 +27,7 @@ pub struct Tag {
 crate::corners_setter!(Tag);
 
 impl Tag {
+    /// Create a new [`Tag`].
     pub fn new(text: impl Into<SharedString>, tone: Tone) -> Self {
         Self {
             corners: None,
