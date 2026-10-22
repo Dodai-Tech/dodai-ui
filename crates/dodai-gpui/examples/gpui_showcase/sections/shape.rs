@@ -137,7 +137,7 @@ impl Showcase {
                     )
             };
         let shape_props = div().flex().flex_col().gap(px(t.spacing.sm)).child(
-            row().child(Label::new("Glow")).child(
+            row().child(Label::new("Intensity")).child(
                 div().w(px(200.0)).child(
                     Slider::new("glow-slider", glow)
                         .range(0.0, 2.0)
@@ -256,19 +256,6 @@ impl Showcase {
                     .into_any_element(),
                 "Presets · Apply to",
             ));
-            if t.look().luminous {
-                out.push((
-                    "Surface effects",
-                    "Glow",
-                    section!("Glow")
-                        .child(Muted::new(
-                            "Theme-wide glow around components. Cut corners are under Corner shape.",
-                        ))
-                        .child(shape_props)
-                        .into_any_element(),
-                    "Glow",
-                ));
-            }
             out.push((
                 "Surface effects",
                 "Component textures",
@@ -297,13 +284,22 @@ impl Showcase {
                     .into_any_element(),
                 "Container textures",
             ));
+            let mut light = section!("Light FX").child(Muted::new(
+                "Light and animated accents on filled surfaces. 0 turns an effect off.",
+            ));
+            if t.look().luminous {
+                light = light
+                    .child(Label::new("Glow"))
+                    .child(Muted::new(
+                        "Theme-wide glow around components. Cut corners are under Corner shape.",
+                    ))
+                    .child(shape_props);
+            }
             out.push((
                 "Surface effects",
-                "Effects",
-                section!("Effects")
-                    .child(Muted::new(
-                        "Animated accents on filled surfaces. 0 turns one off.",
-                    ))
+                "Light FX",
+                light
+                    .child(Label::new("Effects"))
                     .child(amount("sfx-glitch", "Glitch", fx.glitch, 1.0, |f, v| {
                         f.glitch = v
                     }))
@@ -318,7 +314,7 @@ impl Showcase {
                     }))
                     .child(preview("sfx-fx"))
                     .into_any_element(),
-                "Effects",
+                "Light FX",
             ));
         }
         if t.look().cut_corners {
