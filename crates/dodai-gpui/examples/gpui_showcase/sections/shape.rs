@@ -252,18 +252,6 @@ impl Showcase {
                     .child(Button::new(id(p, "b2"), "Secondary").variant(ButtonVariant::Secondary))
                     .child(Button::new(id(p, "b3"), "Outline").variant(ButtonVariant::Outline))
             };
-            let preview_containers = |_p: &'static str| {
-                div().w(px(360.0)).child(
-                    Card::new(dodai_gpui::CardVariant::Elevated)
-                        .child(Heading::new("Card"))
-                        .child(Muted::new("Containers hold other content.")),
-                )
-            };
-            let preview = |p: &'static str| {
-                col()
-                    .child(preview_components(p))
-                    .child(preview_containers(p))
-            };
             out.push((
                 "Surface effects",
                 "Presets · Apply to",
@@ -303,7 +291,6 @@ impl Showcase {
                     .child(amount("sfx-cstrength", "Strength", fx.container_strength, 1.0, |f, v| f.container_strength = v))
                     .child(amount("sfx-cscale", "Scale", fx.container_scale, 4.0, |f, v| f.container_scale = v.max(0.25)))
                     .child(amount("sfx-cneon", "Lit lines", fx.neon, 1.0, |f, v| f.neon = v))
-                    .child(preview_containers("sfx-ctx"))
                     .into_any_element(),
                 "Container textures",
             ));
@@ -335,7 +322,6 @@ impl Showcase {
                     .child(amount("sfx-bloom", "Bloom", fx.bloom, 1.0, |f, v| {
                         f.bloom = v
                     }))
-                    .child(preview("sfx-fx"))
                     .into_any_element(),
                 "Light FX",
             ));
