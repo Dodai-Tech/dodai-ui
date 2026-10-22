@@ -219,32 +219,84 @@ impl Showcase {
                         }),
                 )
             };
-            let presets = row()
-                .child(
-                    Button::new("sfx-preset", "Apply design preset")
-                        .on_click(|_, _, cx| dodai_gpui::apply_surface_preset(cx)),
+            // One mode selector: Off / design preset / custom (any hand edit lands on Custom).
+            let preset = t.surface_preset();
+            let mode = if fx.is_none() {
+                0
+            } else if fx == preset {
+                1
+            } else {
+                2
+            };
+            let family = {
+                let mut c = t.meta.family.chars();
+                c.next()
+                    .map(|f| f.to_uppercase().chain(c).collect::<String>())
+                    .unwrap_or_default()
+            };
+            let status = match mode {
+                0 => "Off: nothing is drawn.".to_string(),
+                1 => format!("{family} preset."),
+                _ => "Custom mix.".to_string(),
+            };
+            let presets = Segmented::new("sfx-mode", ["Off", "Design preset", "Custom"])
+                .selected(mode)
+                .on_select(|i, _, cx| match i {
+                    0 => {
+                        let mut f = SurfaceFx::NONE;
+                        f.targets = dodai_gpui::surface_fx().targets;
+                        dodai_gpui::set_surface_fx(cx, f);
+                    }
+                    1 => dodai_gpui::apply_surface_preset(cx),
+                    _ => {}
+                });
+            let chip = |c: SurfaceClass| {
+                let on = fx.targets.contains(c);
+                Button::new(
+                    gpui::SharedString::from(format!("sfx-t-{}", c.label())),
+                    c.label(),
                 )
-                .child(
-                    Button::new("sfx-clear", "Clear all")
-                        .variant(ButtonVariant::Outline)
-                        .on_click(|_, _, cx| dodai_gpui::set_surface_fx(cx, SurfaceFx::NONE)),
-                );
-            let targets = row().children(SurfaceClass::ALL.iter().map(|c| {
-                let c = *c;
-                row()
-                    .child(
-                        Checkbox::new(
-                            gpui::SharedString::from(format!("sfx-t-{}", c.label())),
-                            fx.targets.contains(c),
-                        )
-                        .on_change(move |on, _, cx| {
+                .variant(if on {
+                    ButtonVariant::Primary
+                } else {
+                    ButtonVariant::Outline
+                })
+                .on_click(move |_, _, cx| {
+                    let mut f = dodai_gpui::surface_fx();
+                    f.targets = f.targets.with(c, !on);
+                    dodai_gpui::set_surface_fx(cx, f);
+                })
+            };
+            let shortcut =
+                |id: &'static str, label: &'static str, to: dodai_core::SurfaceTargets| {
+                    div()
+                        .id(id)
+                        .cursor_pointer()
+                        .px_2()
+                        .child(Muted::new(label))
+                        .on_click(move |_, _, cx| {
                             let mut f = dodai_gpui::surface_fx();
-                            f.targets = f.targets.with(c, on);
+                            f.targets = to;
                             dodai_gpui::set_surface_fx(cx, f);
-                        }),
-                    )
-                    .child(Label::new(c.label()))
-            }));
+                        })
+                };
+            let targets = row()
+                .children(SurfaceClass::ALL.iter().map(|c| chip(*c)))
+                .child(shortcut(
+                    "sfx-t-default",
+                    "Default",
+                    dodai_core::SurfaceTargets::DEFAULT,
+                ))
+                .child(shortcut(
+                    "sfx-t-all",
+                    "All",
+                    dodai_core::SurfaceTargets::ALL,
+                ))
+                .child(shortcut(
+                    "sfx-t-none",
+                    "None",
+                    dodai_core::SurfaceTargets::NONE,
+                ));
             let id = |p: &'static str, n: &str| gpui::SharedString::from(format!("{p}-{n}"));
             let preview_components = |p: &'static str| {
                 row()
@@ -256,12 +308,13 @@ impl Showcase {
                 "Surface effects",
                 "Presets · Apply to",
                 section!("Presets · Apply to")
-                    .child(Muted::new(
-                        "A design can suggest a mix of texture and effects. Choose which kinds of surface receive them; nothing is drawn until you turn something on.",
-                    ))
-                    .child(presets)
+                    .child(Muted::new(status))
+                    .child(div().w_1_2().child(presets))
                     .child(Label::new("Apply to"))
                     .child(targets)
+                    .child(Muted::new(
+                        "Default is buttons, cards and panels. Picking a texture or effect below changes the mode to Custom.",
+                    ))
                     .into_any_element(),
                 "Presets · Apply to",
             ));
