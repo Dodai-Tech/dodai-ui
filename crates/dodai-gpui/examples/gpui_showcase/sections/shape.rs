@@ -51,7 +51,7 @@ impl Showcase {
             let over = dodai_gpui::corners_overridden(cx);
             type Preset = (&'static str, Option<C>);
             let sets: [Preset; 5] = [
-                ("Theme", None),
+                ("Default", None),
                 ("None", Some(C::NONE)),
                 ("All", Some(C::ALL)),
                 ("Diagonal", Some(C::DIAGONAL)),
@@ -77,7 +77,7 @@ impl Showcase {
             };
             setting(
                 "Cut corners",
-                "Which corners every component cuts, in every design. \"Theme\" restores each design's own.",
+                "Which corners every component cuts, in every design. \"Default\" restores each design's own.",
                 div()
                     .flex()
                     .flex_col()
@@ -429,7 +429,7 @@ impl Showcase {
                 "Corner shape",
                 section!("Corner shape")
                     .child(Muted::new(
-                        "The corner cut applies to every component in every theme, immediately. Pick \"Theme\" to restore each design's own shape.",
+                        "The corner cut applies to every component in every theme, immediately. Pick \"Default\" to restore each design's own shape.",
                     ))
                     .child(corner_picker)
                     .child(shape_gallery())
@@ -458,7 +458,7 @@ impl Showcase {
             let crop_row = setting(
                 "Crop end",
                 "Cuts one end of every button and adds a double tick on the other. Left cuts the top left, Right the bottom right.",
-                Segmented::new("bc-crop", ["Off", "Left", "Right", "Top", "Bottom"])
+                Segmented::new("bc-crop", ["Default", "Left", "Right", "Top", "Bottom"])
                     .selected(crop_sel)
                     .on_select(move |i, _, cx| dodai_gpui::set_button_crop(cx, crops[i]))
                     .into_any_element(),
@@ -466,7 +466,7 @@ impl Showcase {
             let gap_row = setting(
                 "Tick gap",
                 "Space between the two tick bars, left open in the border.",
-                Segmented::new("bc-gap", ["Theme", "0 px", "2 px", "4 px", "8 px"])
+                Segmented::new("bc-gap", ["Default", "0 px", "2 px", "4 px", "8 px"])
                     .selected(gap_sel)
                     .on_select(move |i, _, cx| dodai_gpui::set_button_cut_gap(cx, gaps[i]))
                     .into_any_element(),
