@@ -137,7 +137,7 @@ impl Showcase {
                     )
             };
         let shape_props = div().flex().flex_col().gap(px(t.spacing.sm)).child(
-            row().child(Label::new("Intensity")).child(
+            row().child(Label::new("Glow")).child(
                 div().w(px(200.0)).child(
                     Slider::new("glow-slider", glow)
                         .range(0.0, 2.0)
@@ -388,20 +388,14 @@ impl Showcase {
                 "Container textures",
             ));
             let mut light = section!("Light FX").child(Muted::new(
-                "Light and animated accents on filled surfaces. 0 turns an effect off.",
+                "Glow and animated accents on components and containers. 0 turns an effect off.",
             ));
             if t.look().luminous {
-                light = light
-                    .child(Label::new("Glow"))
-                    .child(Muted::new(
-                        "Theme-wide glow around components. Cut corners are under Corner shape.",
-                    ))
-                    .child(shape_props);
+                light = light.child(shape_props);
             }
             if t.look().luminous || t.surface_effects() {
                 if t.surface_effects() {
                     light = light
-                        .child(Label::new("Effects"))
                         .child(amount("sfx-glitch", "Glitch", fx.glitch, 1.0, |f, v| {
                             f.glitch = v
                         }))

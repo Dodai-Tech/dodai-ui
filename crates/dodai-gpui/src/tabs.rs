@@ -161,11 +161,22 @@ impl Tabs {
             row = row.child(tab);
         }
         if self.scrollable {
-            return gpui::InteractiveElement::id(div(), (self.id.clone(), "scroll"))
-                .w_full()
-                .overflow_x_scroll()
-                .child(row.flex_none())
-                .into_any_element();
+            // Keep the selected tab in view, but only when the selection changes so the user
+            // can still scroll the strip freely.
+            let state = window.use_keyed_state((self.id.clone(), "scroll"), cx, |_, _| {
+                (gpui::ScrollHandle::new(), usize::MAX)
+            });
+            let handle = state.read(cx).0.clone();
+            if state.read(cx).1 != self.active {
+                handle.scroll_to_item(self.active);
+                state.update(cx, |s, _| s.1 = self.active);
+            }
+            return gpui::StatefulInteractiveElement::track_scroll(
+                gpui::InteractiveElement::id(row.w_full(), (self.id.clone(), "scroll")),
+                &handle,
+            )
+            .overflow_x_scroll()
+            .into_any_element();
         }
         row.into_any_element()
     }
