@@ -1356,6 +1356,22 @@ fn main() {
             .expect("open window");
         win.update(cx, |s, w, _| w.focus(&s.focus)).ok();
         cx.activate(true);
+        if !windowed {
+            // The platform may ignore a fullscreen request made before the window is on
+            // screen (macOS), so ask again once it is.
+            cx.spawn(async move |cx| {
+                cx.background_executor()
+                    .timer(std::time::Duration::from_millis(300))
+                    .await;
+                win.update(cx, |_, w, _| {
+                    if !w.is_fullscreen() {
+                        w.toggle_fullscreen();
+                    }
+                })
+                .ok();
+            })
+            .detach();
+        }
     });
 }
 
