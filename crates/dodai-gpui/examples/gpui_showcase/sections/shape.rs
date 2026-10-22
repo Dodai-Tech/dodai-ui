@@ -188,6 +188,148 @@ impl Showcase {
                 "Glow · Scanlines",
             ));
         }
+        {
+            use dodai_core::{SurfaceFx, Texture};
+            let fx = dodai_gpui::surface_fx();
+            let sel = Texture::ALL
+                .iter()
+                .position(|x| *x == fx.texture)
+                .unwrap_or(0);
+            let labels: Vec<&str> = Texture::ALL.iter().map(|x| x.label()).collect();
+            let amount = move |id: &'static str,
+                               name: &'static str,
+                               v: f32,
+                               max: f32,
+                               set: fn(&mut SurfaceFx, f32)| {
+                row()
+                    .child(div().w(px(90.0)).child(Label::new(name)))
+                    .child(
+                        div().w(px(220.0)).child(
+                            Slider::new(id, v)
+                                .range(0.0, max)
+                                .step(0.05)
+                                .show_value(true)
+                                .format(|v| format!("{v:.2}"))
+                                .on_change(move |v, _, cx| {
+                                    let mut f = dodai_gpui::surface_fx();
+                                    set(&mut f, v);
+                                    dodai_gpui::set_surface_fx(cx, f);
+                                }),
+                        ),
+                    )
+            };
+            let picker =
+                Segmented::new("sfx-tex", labels)
+                    .selected(sel)
+                    .on_select(move |i, _, cx| {
+                        let mut f = dodai_gpui::surface_fx();
+                        f.texture = Texture::ALL[i];
+                        dodai_gpui::set_surface_fx(cx, f);
+                    });
+            let controls = div()
+                .flex()
+                .flex_col()
+                .gap(px(t.spacing.sm))
+                .child(Muted::new("Texture"))
+                .child(picker)
+                .child(amount(
+                    "sfx-strength",
+                    "Strength",
+                    fx.strength,
+                    1.0,
+                    |f, v| f.strength = v,
+                ))
+                .child(amount("sfx-scale", "Scale", fx.scale, 4.0, |f, v| {
+                    f.scale = v.max(0.25)
+                }))
+                .child(Muted::new("Effects"))
+                .child(amount("sfx-glitch", "Glitch", fx.glitch, 1.0, |f, v| {
+                    f.glitch = v
+                }))
+                .child(amount("sfx-sheen", "Sheen", fx.sheen, 1.0, |f, v| {
+                    f.sheen = v
+                }))
+                .child(amount("sfx-flicker", "Flicker", fx.flicker, 1.0, |f, v| {
+                    f.flicker = v
+                }))
+                .child(amount("sfx-bloom", "Bloom", fx.bloom, 1.0, |f, v| {
+                    f.bloom = v
+                }))
+                .child(
+                    row()
+                        .child(
+                            Button::new("sfx-preset", "Apply design preset")
+                                .on_click(|_, _, cx| dodai_gpui::apply_surface_preset(cx)),
+                        )
+                        .child(
+                            Button::new("sfx-clear", "Clear")
+                                .variant(ButtonVariant::Outline)
+                                .on_click(|_, _, cx| {
+                                    dodai_gpui::set_surface_fx(cx, SurfaceFx::NONE)
+                                }),
+                        ),
+                );
+            let preview = div()
+                .flex()
+                .flex_col()
+                .gap(px(t.spacing.sm))
+                .child(
+                    row()
+                        .child(Button::new("sfx-b1", "Primary"))
+                        .child(Button::new("sfx-b2", "Secondary").variant(ButtonVariant::Secondary))
+                        .child(Button::new("sfx-b3", "Outline").variant(ButtonVariant::Outline)),
+                )
+                .child(
+                    div().w(px(360.0)).child(
+                        Card::new(dodai_gpui::CardVariant::Elevated)
+                            .child(Heading::new("Card"))
+                            .child(Muted::new(
+                                "Texture and effects follow the card's own shape.",
+                            )),
+                    ),
+                );
+            out.push((
+                "Surface effects",
+                "Textures · Effects",
+                section!("Textures · Effects")
+                    .child(Muted::new(
+                        "Patterns and animated accents over every filled surface, clipped to its shape. Each design can suggest a mix.",
+                    ))
+                    .child(controls)
+                    .child(preview)
+                    .into_any_element(),
+                "Textures · Effects",
+            ));
+        }
+        {
+            use dodai_gpui::dodai_shaders::presets;
+            let card =
+                |id: &'static str, p: &'static dodai_gpui::dodai_shaders::Preset, name: &str| {
+                    dodai_gpui::ShaderSurface::new(id, p, 300.0, 150.0)
+                        .child(Heading::new(name.to_string()))
+                        .child(Muted::new("A live shader as the panel fill."))
+                        .child(Button::new(
+                            gpui::SharedString::from(format!("{id}-b")),
+                            "Action",
+                        ))
+                };
+            out.push((
+                "Surface effects",
+                "Shader surfaces",
+                section!("Shader surfaces")
+                    .child(Muted::new(
+                        "Panels filled by a live shader, in the design's own shape. Cut corners are covered in the page colour.",
+                    ))
+                    .child(
+                        row()
+                            .child(card("ss-1", &presets::DMT[0], "Hyperspace"))
+                            .child(card("ss-2", &presets::BLADE[0], "Blade"))
+                            .child(card("ss-3", &presets::GHIBLI[0], "Meadow")),
+                    )
+                    .into_any_element(),
+                "Shader surfaces",
+            ));
+        }
         if t.look().cut_corners {
             out.push((
                 "Shape",

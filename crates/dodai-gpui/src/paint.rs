@@ -33,6 +33,8 @@ pub struct ShapeStyle {
     pub scanlines: bool,
     /// Colour of those scanlines (`effects.scanline`).
     pub scanline: Hsla,
+    /// Texture and effects over the fill (see [`mod@crate::surface_fx`]).
+    pub surface: Option<crate::surface_fx::SurfacePaint>,
     /// Animated highlight sweep, clipped to the shape (see [`Shimmer`]).
     pub shimmer: Option<Shimmer>,
     /// Material 3 elevation level (0..=5) and shadow colour: the soft two-layer shadow.
@@ -115,6 +117,7 @@ impl ShapeStyle {
             shadow_dir: (1.0, 1.0),
             scanlines: fx.scanlines && fill.is_some(),
             scanline: hsla(fx.scanline),
+            surface: fill.and_then(|_| crate::surface_fx::SurfacePaint::of(theme)),
             shimmer: None,
             elevation: None,
             lift_layers: None,
@@ -150,28 +153,7 @@ pub fn row_span(shape: &Shape, w: f32, h: f32, y: f32) -> Option<(f32, f32)> {
         return None;
     }
     match shape.kind() {
-        ShapeKind::Chamfered => {
-            let pts = shape.outline(w, h);
-            let (mut lo, mut hi) = (f32::MAX, f32::MIN);
-            for i in 0..pts.len() {
-                let (a, b) = (pts[i], pts[(i + 1) % pts.len()]);
-                let (y0, y1) = (a.1.min(b.1), a.1.max(b.1));
-                if y < y0 || y > y1 {
-                    continue;
-                }
-                let x = if (b.1 - a.1).abs() < 1e-6 {
-                    // horizontal edge: both ends count
-                    lo = lo.min(a.0.min(b.0));
-                    hi = hi.max(a.0.max(b.0));
-                    continue;
-                } else {
-                    a.0 + (b.0 - a.0) * (y - a.1) / (b.1 - a.1)
-                };
-                lo = lo.min(x);
-                hi = hi.max(x);
-            }
-            (lo <= hi).then_some((lo, hi))
-        }
+        ShapeKind::Chamfered => poly_span(&shape.outline(w, h), y),
         ShapeKind::Rounded => {
             let r = shape.radius.min(w / 2.0).min(h / 2.0);
             let dy = if y < r {
@@ -190,6 +172,28 @@ pub fn row_span(shape: &Shape, w: f32, h: f32, y: f32) -> Option<(f32, f32)> {
         }
         ShapeKind::Square => Some((0.0, w)),
     }
+}
+
+/// Horizontal extent of a polygon at row `y` (min and max x over the edges it crosses).
+pub(crate) fn poly_span(pts: &[(f32, f32)], y: f32) -> Option<(f32, f32)> {
+    let (mut lo, mut hi) = (f32::MAX, f32::MIN);
+    for i in 0..pts.len() {
+        let (a, b) = (pts[i], pts[(i + 1) % pts.len()]);
+        let (y0, y1) = (a.1.min(b.1), a.1.max(b.1));
+        if y < y0 || y > y1 {
+            continue;
+        }
+        if (b.1 - a.1).abs() < 1e-6 {
+            // horizontal edge: both ends count
+            lo = lo.min(a.0.min(b.0));
+            hi = hi.max(a.0.max(b.0));
+            continue;
+        }
+        let x = a.0 + (b.0 - a.0) * (y - a.1) / (b.1 - a.1);
+        lo = lo.min(x);
+        hi = hi.max(x);
+    }
+    (lo <= hi).then_some((lo, hi))
 }
 
 /// Polygon of the bottom `band` px of `shape` in a `w`×`h` box (follows cut corners).
@@ -290,7 +294,7 @@ pub(crate) fn scale_alpha(c: Hsla, k: f32) -> Hsla {
     }
 }
 
-fn poly(
+pub(crate) fn poly(
     origin: gpui::Point<Pixels>,
     pts: &[(f32, f32)],
     d: (f32, f32),
@@ -343,6 +347,9 @@ pub fn paint_polygon(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape,
     }
     if s.scanlines {
         paint_scanlines(window, bounds, shape, s.scanline);
+    }
+    if let Some(sp) = &s.surface {
+        crate::surface_fx::paint_surface(window, bounds, shape, sp);
     }
     if let (Some(c), bw) = (s.stroke, s.stroke_width) {
         if bw > 0.0 {
@@ -486,13 +493,20 @@ fn shaped_base(shape: &Shape, style: ShapeStyle) -> Div {
         }
         kind => {
             let mut d = base;
-            if style.scanlines {
+            if style.scanlines || style.surface.is_some() {
                 let sh = shape.clone();
-                let sc = style.scanline;
+                let (on, sc, sp) = (style.scanlines, style.scanline, style.surface);
                 d = d.child(
                     canvas(
                         |_, _, _| (),
-                        move |b, _, window, _| paint_scanlines(window, b, &sh, sc),
+                        move |b, _, window, _| {
+                            if on {
+                                paint_scanlines(window, b, &sh, sc);
+                            }
+                            if let Some(sp) = &sp {
+                                crate::surface_fx::paint_surface(window, b, &sh, sp);
+                            }
+                        },
                     )
                     .absolute()
                     .top_0()

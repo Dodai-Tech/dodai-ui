@@ -216,6 +216,11 @@ pub trait DesignSpec: Send + Sync + std::fmt::Debug {
     fn frost(&self, t: &Theme) -> Option<Frost> {
         None
     }
+    /// The surface texture and effects this design suggests (default: none). Apps may turn
+    /// them on with the "apply preset" action; nothing is drawn until they do.
+    fn surface_preset(&self, t: &Theme) -> Option<crate::SurfaceFx> {
+        None
+    }
     /// Stops of the dark fade laid over media so text on it stays legible (default: a two-stop
     /// linear fade).
     fn fade_stops(&self, t: &Theme) -> Option<Vec<FadeStop>> {

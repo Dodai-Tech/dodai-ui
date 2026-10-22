@@ -33,6 +33,18 @@ fn surface(
 }
 
 impl DesignSpec for Cyberpunk {
+    /// Grain, a bloom around edges and an occasional glitch burst.
+    fn surface_preset(&self, _t: &Theme) -> Option<dodai_core::SurfaceFx> {
+        Some(dodai_core::SurfaceFx {
+            texture: dodai_core::Texture::Grain,
+            strength: 0.45,
+            glitch: 0.4,
+            flicker: 0.15,
+            bloom: 0.3,
+            ..dodai_core::SurfaceFx::NONE
+        })
+    }
+
     fn look(&self) -> Look {
         Look {
             luminous: true,

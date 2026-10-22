@@ -126,3 +126,44 @@ fn frame_cost_probe(cx: &mut TestAppContext) {
         println!("{:6.2} ms  {title}", t.elapsed().as_secs_f64() * 100.0);
     }
 }
+
+/// Every texture and every effect paints over the whole showcase, on cut and rounded designs,
+/// without panicking.
+#[gpui::test]
+fn every_surface_texture_and_effect_renders(cx: &mut TestAppContext) {
+    for theme in ["cyberpunk", "material", "neobrutalism"] {
+        cx.update(|cx| {
+            dodai_gpui::install_switcher(cx, {
+                let mut s = dodai::switcher();
+                s.select(theme);
+                s
+            })
+        });
+        let (view, vcx) = cx.add_window_view(|_, cx| showcase::Showcase::build(cx));
+        vcx.simulate_resize(size(px(1400.0), px(900.0)));
+        for tex in dodai_core::Texture::ALL {
+            vcx.update(|_, cx| {
+                dodai_gpui::set_surface_fx(
+                    cx,
+                    dodai_core::SurfaceFx {
+                        texture: tex,
+                        strength: 1.0,
+                        scale: 1.5,
+                        glitch: 1.0,
+                        sheen: 1.0,
+                        flicker: 1.0,
+                        bloom: 1.0,
+                    },
+                )
+            });
+            for cat in [2, 3, 4, 5] {
+                view.update(vcx, |s, cx| {
+                    s.set_cat(cat);
+                    cx.notify();
+                });
+                vcx.run_until_parked();
+            }
+        }
+        vcx.update(|_, cx| dodai_gpui::set_surface_fx(cx, dodai_core::SurfaceFx::NONE));
+    }
+}

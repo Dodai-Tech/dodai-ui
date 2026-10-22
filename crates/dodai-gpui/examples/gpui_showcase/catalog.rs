@@ -139,7 +139,9 @@ pub(crate) fn cat_blurb(name: &str) -> &'static str {
     match name {
         "Foundations" => "Design tokens: colour, type, spacing.",
         "Shape" => "Corners, borders and cuts.",
-        "Surface effects" => "Theme-wide glow and scanlines, for designs that have them.",
+        "Surface effects" => {
+            "Theme-wide glow and scanlines, plus textures, glitch, sheen and bloom."
+        }
         "Actions" => "Buttons and triggers.",
         "Inputs" => "Text, choice, date and form controls.",
         "Navigation" => "Menus, tabs, overlays and sidebars.",

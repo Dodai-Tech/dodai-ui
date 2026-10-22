@@ -124,6 +124,7 @@ where
                         shadow_dir: (1.0, 1.0),
                         scanlines: false,
                         scanline: ring,
+                        surface: None,
                         shimmer: None,
                         elevation: None,
                         lift_layers: None,

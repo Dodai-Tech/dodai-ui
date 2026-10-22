@@ -45,3 +45,15 @@ fn every_design_has_the_common_surface() {
         assert!(shapes >= 1, "{family} shape presets");
     }
 }
+
+#[test]
+fn only_designs_with_an_opinion_suggest_a_surface_mix() {
+    for sys in dodai::themes::systems() {
+        let t = (sys.themes)().into_iter().next().unwrap();
+        let fx = t.surface_preset();
+        // A preset is either empty or valid (every amount within 0..=1).
+        for v in [fx.strength, fx.glitch, fx.sheen, fx.flicker, fx.bloom] {
+            assert!((0.0..=1.0).contains(&v), "{}: {v}", sys.name);
+        }
+    }
+}

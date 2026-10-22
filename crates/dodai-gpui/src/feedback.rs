@@ -255,6 +255,7 @@ impl RenderOnce for Spinner {
                             shadow_dir: (1.0, 1.0),
                             scanlines: false,
                             scanline: c,
+                            surface: None,
                             shimmer: None,
                             elevation: None,
                             lift_layers: None,

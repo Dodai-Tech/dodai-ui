@@ -225,6 +225,8 @@ pub mod search;
 #[cfg(feature = "components")]
 pub mod select;
 #[cfg(feature = "shaders")]
+pub mod shader_surface;
+#[cfg(feature = "shaders")]
 pub mod shader_view;
 #[cfg(feature = "components")]
 pub mod sheets;
@@ -232,6 +234,7 @@ pub mod sheets;
 pub mod shell;
 #[cfg(feature = "components")]
 pub mod spy;
+pub mod surface_fx;
 #[cfg(feature = "components")]
 pub mod surfaces;
 #[cfg(feature = "components")]
@@ -376,6 +379,8 @@ pub use search::{count_label, highlight_runs, IconBadge, RichTooltip, SearchMode
 #[cfg(feature = "components")]
 pub use select::{family_title, DesignSystemSelector, Select, SelectOption, ThemeSelector};
 #[cfg(feature = "shaders")]
+pub use shader_surface::ShaderSurface;
+#[cfg(feature = "shaders")]
 pub use shader_view::{shader_backend, PaletteSource, ShaderView};
 #[cfg(feature = "components")]
 pub use sheets::{
@@ -385,6 +390,7 @@ pub use sheets::{
 pub use shell::{is_wide, snap_collapsed, spring_step, ResponsiveShell};
 #[cfg(feature = "components")]
 pub use spy::{pick as spy_pick, ScrollSpy};
+pub use surface_fx::{apply_surface_preset, set_surface_fx, surface_fx};
 #[cfg(feature = "components")]
 pub use surfaces::{
     card_style, AppBarSize, Card, CardVariant, Fab, FabMenu, FabSize, IconButton, IconWidth,

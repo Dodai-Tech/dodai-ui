@@ -20,6 +20,7 @@ pub mod export;
 mod palette;
 mod shape_system;
 mod spec;
+mod surface;
 mod switcher;
 mod theme;
 mod tokens;
@@ -42,6 +43,7 @@ pub use shape_system::{
     ShapeSize, ShapeSystem, FULL,
 };
 pub use spec::{DesignSpec, FadeStop, Fluid, Frost, GridSpec, IconSet, Look, ShadowLayer, SpecRef};
+pub use surface::{SurfaceFx, Texture};
 pub use switcher::ThemeSwitcher;
 pub use theme::{Theme, ThemeMeta};
 pub use tokens::{Corners, Effects, Shape, ShapeKind, Sizes, Spacing, Typography};

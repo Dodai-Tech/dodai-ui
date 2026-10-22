@@ -851,6 +851,14 @@ impl Theme {
         t
     }
 
+    /// The surface mix this design suggests (none when the design has no opinion).
+    pub fn surface_preset(&self) -> crate::SurfaceFx {
+        self.spec
+            .get()
+            .and_then(|s| s.surface_preset(self))
+            .unwrap_or_default()
+    }
+
     /// The design's frosted glass: tint and backdrop blur.
     pub fn frost(&self) -> crate::Frost {
         self.spec
