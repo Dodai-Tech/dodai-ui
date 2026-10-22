@@ -1,7 +1,7 @@
 //! [`Button`]: every [`ButtonVariant`], hover/press/disabled, shaped per theme.
 
 use crate::interact::{track, use_interact, ClickHandler};
-use crate::paint::{shaped_id, ShapeStyle};
+use crate::paint::{shaped_id, ShapeEdge, ShapeStyle};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use dodai_core::{ButtonVariant, ControlState, Theme};
@@ -46,6 +46,10 @@ pub enum Crop {
     Left,
     /// Bottom-right corner cut, tick on the left edge.
     Right,
+    /// A shallow slot in the middle of the top edge; the corners stay as they are.
+    Top,
+    /// A shallow slot in the middle of the bottom edge; the corners stay as they are.
+    Bottom,
 }
 
 #[derive(Default)]
@@ -99,15 +103,23 @@ pub(crate) fn resolve_crop(
 }
 
 impl CropSpec {
-    /// Cut the corner, open the border for the tick, and drop the shadow.
+    /// Cut the corner (or slot the edge), open the border, and drop the shadow.
     pub(crate) fn apply(&self, t: &Theme, shape: &mut dodai_core::Shape, style: &mut ShapeStyle) {
-        *style = style.with_edge_gap(self.end == Crop::Left, self.gap / 2.0, t.spacing.md);
+        let (edge, half, depth) = match self.end {
+            Crop::Left => (ShapeEdge::Right, self.gap / 2.0, t.spacing.md),
+            Crop::Right => (ShapeEdge::Left, self.gap / 2.0, t.spacing.md),
+            // Superficial: a wide, shallow slot.
+            Crop::Top => (ShapeEdge::Top, t.spacing.md, t.spacing.xs),
+            Crop::Bottom => (ShapeEdge::Bottom, t.spacing.md, t.spacing.xs),
+        };
+        *style = style.with_edge_gap(edge, half, depth);
         // Flat: an offset shadow would sit over the cut and hide it.
         style.shadow = None;
-        shape.corners = match self.end {
-            Crop::Left => dodai_core::Corners::TOP_LEFT,
-            Crop::Right => dodai_core::Corners::BOTTOM_RIGHT,
-        };
+        match self.end {
+            Crop::Left => shape.corners = dodai_core::Corners::TOP_LEFT,
+            Crop::Right => shape.corners = dodai_core::Corners::BOTTOM_RIGHT,
+            Crop::Top | Crop::Bottom => return,
+        }
         // Steep 45° cut: the largest the shape allows (a third of the height).
         shape.chamfer = shape.chamfer.max(t.shape.control_height);
     }
@@ -119,11 +131,17 @@ impl CropSpec {
 
     /// Extra width the tick needs inside the control.
     pub(crate) fn inset(&self, t: &Theme) -> f32 {
-        t.spacing.md
+        match self.end {
+            Crop::Left | Crop::Right => t.spacing.md,
+            Crop::Top | Crop::Bottom => 0.0,
+        }
     }
 
     /// The two-bar tick on the end opposite the cut.
-    pub(crate) fn tick(&self, t: &Theme, colour: Hsla) -> gpui::Div {
+    pub(crate) fn tick(&self, t: &Theme, colour: Hsla) -> Option<gpui::Div> {
+        if matches!(self.end, Crop::Top | Crop::Bottom) {
+            return None;
+        }
         let bar = t.shape.border_width.max(1.0);
         let tick = div()
             .absolute()
@@ -135,10 +153,10 @@ impl CropSpec {
             .gap(px(self.gap))
             .child(div().h(px(bar)).bg(colour))
             .children((self.gap > 0.0).then(|| div().h(px(bar)).bg(colour)));
-        match self.end {
-            Crop::Left => tick.right(px(0.0)),
+        Some(match self.end {
+            Crop::Left | Crop::Top | Crop::Bottom => tick.right(px(0.0)),
             Crop::Right => tick.left(px(0.0)),
-        }
+        })
     }
 }
 
@@ -360,7 +378,7 @@ impl Button {
             .text_color(fg)
             .child(div().child(format_label(&t.typography, &self.label)));
         if let Some(c) = &crop {
-            el = el.relative().child(c.tick(&t, tick_colour));
+            el = el.relative().children(c.tick(&t, tick_colour));
         }
         if let (Some(r), true) = (self.radii, t.look().tonal) {
             el = el

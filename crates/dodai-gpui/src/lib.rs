@@ -88,7 +88,7 @@ pub(crate) use corners_setter;
 macro_rules! crop_setters {
     ($ty:ident) => {
         impl $ty {
-            /// Crop the left or right end (cut corner plus an edge tick); see `Button::crop`.
+            /// Crop an end: cut corner plus edge tick (left/right) or a shallow slot (top/bottom); see `Button::crop`.
             pub fn crop(mut self, c: $crate::Crop) -> Self {
                 self.crop = Some(c);
                 self
@@ -355,7 +355,7 @@ pub use overscroll::{Overscroll, OverscrollFeel};
 #[cfg(feature = "aurora")]
 pub use page_grid::PageGrid;
 pub use paint::Playback;
-pub use paint::{shaped, ShapeStyle};
+pub use paint::{shaped, ShapeEdge, ShapeStyle};
 pub use panel::{
     section_border, set_section_border, AccentCorner, BorderStyle, DodaiTooltip, InputBox, Panel,
 };

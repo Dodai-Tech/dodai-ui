@@ -9,13 +9,13 @@ use std::cell::{Cell, RefCell};
 use std::collections::VecDeque;
 
 thread_local! {
-    /// Corner radius of the most recently built shaped element (for the focus ring overlay).
-    static RING_RADIUS: Cell<f32> = const { Cell::new(0.0) };
+    /// Shape of the most recently built shaped element (for the focus ring overlay).
+    static RING_SHAPE: RefCell<Option<dodai_core::Shape>> = const { RefCell::new(None) };
 }
 
-/// Remember the corner radius of the shape being built, so [`track`] can round its focus ring.
-pub(crate) fn set_ring_radius(r: f32) {
-    RING_RADIUS.with(|c| c.set(r));
+/// Remember the shape being built, so [`track`] can draw its focus ring along the same outline.
+pub(crate) fn set_ring_shape(s: &dodai_core::Shape) {
+    RING_SHAPE.with(|c| *c.borrow_mut() = Some(s.clone()));
 }
 
 thread_local! {
@@ -91,29 +91,62 @@ where
             .map(|(_, h)| h.clone())
     });
     let (ring, thick) = RING.with(Cell::get);
-    let radius = RING_RADIUS.with(Cell::get);
+    let shape = RING_SHAPE.with(|c| c.borrow().clone());
     let el = match focus {
         Some(h) => {
             // The ring is an absolutely positioned overlay tracking the same focus handle, so it
             // takes no layout space and shows only while the control has keyboard focus.
-            let overlay = gpui::div()
+            let base = gpui::div()
                 .id(("dodai-focus-ring", state.entity_id()))
                 .track_focus(&h)
                 .absolute()
                 .top_0()
                 .left_0()
-                .size_full()
-                .rounded(gpui::px(radius))
-                .focus(move |s| {
-                    let mut s = s.border_color(ring);
-                    s.border_widths = gpui::EdgesRefinement {
-                        top: Some(gpui::px(thick).into()),
-                        right: Some(gpui::px(thick).into()),
-                        bottom: Some(gpui::px(thick).into()),
-                        left: Some(gpui::px(thick).into()),
+                .size_full();
+            let overlay = match shape {
+                // Cut shapes: the ring follows the polygon, hidden until the control has focus.
+                Some(sh) if sh.kind() == dodai_core::ShapeKind::Chamfered => {
+                    let style = crate::paint::ShapeStyle {
+                        fill: None,
+                        stroke: Some(ring),
+                        stroke_width: thick,
+                        glow: None,
+                        shadow: None,
+                        shadow_dir: (1.0, 1.0),
+                        scanlines: false,
+                        scanline: ring,
+                        shimmer: None,
+                        elevation: None,
+                        lift_layers: None,
+                        edge_gap: None,
                     };
-                    s
-                });
+                    gpui::ParentElement::child(
+                        base.invisible().focus(|s| s.visible()),
+                        gpui::canvas(
+                            |_, _, _| (),
+                            move |b, _, window, _| {
+                                crate::paint::paint_polygon(window, b, &sh, &style)
+                            },
+                        )
+                        .size_full(),
+                    )
+                }
+                other => {
+                    let radius = other
+                        .filter(|s| s.kind() == dodai_core::ShapeKind::Rounded)
+                        .map_or(0.0, |s| s.radius);
+                    base.rounded(gpui::px(radius)).focus(move |s| {
+                        let mut s = s.border_color(ring);
+                        s.border_widths = gpui::EdgesRefinement {
+                            top: Some(gpui::px(thick).into()),
+                            right: Some(gpui::px(thick).into()),
+                            bottom: Some(gpui::px(thick).into()),
+                            left: Some(gpui::px(thick).into()),
+                        };
+                        s
+                    })
+                }
+            };
             gpui::ParentElement::child(el.track_focus(&h), overlay)
         }
         None => el,

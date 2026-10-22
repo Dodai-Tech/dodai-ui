@@ -42,7 +42,7 @@ pub struct ShapeStyle {
     /// Interrupt the border on the right (`true`) or left (`false`) side, centred vertically,
     /// over a span of `2 * half` px (the empty space between a cropped button's tick bars); the
     /// fill is notched `depth` px inward there.
-    pub edge_gap: Option<(bool, f32, f32)>,
+    pub edge_gap: Option<(ShapeEdge, f32, f32)>,
 }
 
 /// The two M3 shadow layers for an elevation level: `(offset_y, blur, spread, alpha)`.
@@ -124,8 +124,8 @@ impl ShapeStyle {
 
     /// Leave the right/left border open (and the fill notched `depth` px) over `2 * half` px at
     /// mid-height.
-    pub fn with_edge_gap(mut self, right: bool, half: f32, depth: f32) -> Self {
-        self.edge_gap = Some((right, half, depth));
+    pub fn with_edge_gap(mut self, edge: ShapeEdge, half: f32, depth: f32) -> Self {
+        self.edge_gap = Some((edge, half, depth));
         self
     }
 
@@ -333,9 +333,11 @@ pub fn paint_polygon(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape,
         }
     }
     if let Some(c) = s.fill {
-        let notched = s
-            .edge_gap
-            .and_then(|(r, half, depth)| notch_at_edge(&full, r, h / 2.0, half, depth));
+        let notched = s.edge_gap.and_then(|(e, half, depth)| {
+            on_edge(&full, e, w, h, |p, r, mid| {
+                notch_at_edge(p, r, mid, half, depth)
+            })
+        });
         let pts = notched.as_deref().unwrap_or(&full);
         fill_path(window, poly(bounds.origin, pts, (0.0, 0.0)), c);
     }
@@ -346,10 +348,9 @@ pub fn paint_polygon(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape,
         if bw > 0.0 {
             let pts = inset_outline(shape, w, h, bw / 2.0);
             let mut b = PathBuilder::stroke(px(bw));
-            match s
-                .edge_gap
-                .and_then(|(r, half, _)| open_at_edge(&pts, r, h / 2.0, half))
-            {
+            match s.edge_gap.and_then(|(e, half, _)| {
+                on_edge(&pts, e, w, h, |p, r, mid| open_at_edge(p, r, mid, half))
+            }) {
                 Some(open) => b.add_polygon(&poly(bounds.origin, &open, (0.0, 0.0)), false),
                 None => b.add_polygon(&poly(bounds.origin, &pts, (0.0, 0.0)), true),
             }
@@ -395,6 +396,38 @@ fn edge_cut(pts: &[(f32, f32)], right: bool, mid: f32, half: f32) -> Option<Edge
     Some((i, x, first, second))
 }
 
+/// A side of a shape, for [`ShapeStyle::edge_gap`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ShapeEdge {
+    /// The left side, centred vertically.
+    Left,
+    /// The right side, centred vertically.
+    Right,
+    /// The top side, centred horizontally.
+    Top,
+    /// The bottom side, centred horizontally.
+    Bottom,
+}
+
+/// Run a vertical-side edit (`f(points, right, mid)`) on any side by swapping x and y for the
+/// horizontal ones.
+fn on_edge(
+    pts: &[(f32, f32)],
+    edge: ShapeEdge,
+    w: f32,
+    h: f32,
+    f: impl Fn(&[(f32, f32)], bool, f32) -> Option<Vec<(f32, f32)>>,
+) -> Option<Vec<(f32, f32)>> {
+    match edge {
+        ShapeEdge::Left | ShapeEdge::Right => f(pts, edge == ShapeEdge::Right, h / 2.0),
+        ShapeEdge::Top | ShapeEdge::Bottom => {
+            let t: Vec<(f32, f32)> = pts.iter().map(|&(x, y)| (y, x)).collect();
+            f(&t, edge == ShapeEdge::Bottom, w / 2.0)
+                .map(|v| v.into_iter().map(|(x, y)| (y, x)).collect())
+        }
+    }
+}
+
 /// The closed outline as an open path that skips `mid ± half` on the right or left vertical
 /// side. `None` when that side has no vertical edge there.
 fn open_at_edge(pts: &[(f32, f32)], right: bool, mid: f32, half: f32) -> Option<Vec<(f32, f32)>> {
@@ -435,11 +468,7 @@ pub fn shaped(shape: &Shape, style: ShapeStyle) -> Div {
 }
 
 fn shaped_base(shape: &Shape, style: ShapeStyle) -> Div {
-    crate::interact::set_ring_radius(if shape.kind() == ShapeKind::Rounded {
-        shape.radius
-    } else {
-        0.0
-    });
+    crate::interact::set_ring_shape(shape);
     let base = gpui::div().relative();
     match shape.kind() {
         ShapeKind::Chamfered => {
@@ -779,6 +808,22 @@ pub(crate) fn fade_overlay(theme: &Theme, height: f32) -> gpui::Div {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn top_and_bottom_slots_cut_the_middle_of_the_edge() {
+        let rect = [(0.0, 0.0), (100.0, 0.0), (100.0, 40.0), (0.0, 40.0)];
+        let top = on_edge(&rect, ShapeEdge::Top, 100.0, 40.0, |p, r, mid| {
+            notch_at_edge(p, r, mid, 10.0, 4.0)
+        })
+        .unwrap();
+        assert!(top.contains(&(40.0, 4.0)) && top.contains(&(60.0, 4.0)));
+        assert!(top.iter().all(|p| p.1 <= 40.0));
+        let bottom = on_edge(&rect, ShapeEdge::Bottom, 100.0, 40.0, |p, r, mid| {
+            notch_at_edge(p, r, mid, 10.0, 4.0)
+        })
+        .unwrap();
+        assert!(bottom.contains(&(40.0, 36.0)) && bottom.contains(&(60.0, 36.0)));
+    }
 
     #[test]
     fn bottom_band_stops_at_cut_corner() {

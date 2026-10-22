@@ -330,7 +330,7 @@ impl IconButton {
             .text_size(px(t.typography.size_lg))
             .text_color(fg);
         if let Some(c) = &crop {
-            el = el.relative().child(c.tick(&t, style_stroke));
+            el = el.relative().children(c.tick(&t, style_stroke));
         }
         el = match self.icon {
             Some(i) => el.child(
@@ -514,7 +514,7 @@ impl Fab {
             None => el.w(px(side + inset)),
         };
         if let Some(c) = &crop {
-            el = el.relative().child(c.tick(&t, style_stroke));
+            el = el.relative().children(c.tick(&t, style_stroke));
         }
         el = match self.icon {
             Some(i) => {

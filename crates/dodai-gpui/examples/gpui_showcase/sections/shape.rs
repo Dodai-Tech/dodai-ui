@@ -204,7 +204,13 @@ impl Showcase {
         }
         if t.look().cut_corners {
             use dodai_gpui::Crop;
-            let crops = [None, Some(Crop::Left), Some(Crop::Right)];
+            let crops = [
+                None,
+                Some(Crop::Left),
+                Some(Crop::Right),
+                Some(Crop::Top),
+                Some(Crop::Bottom),
+            ];
             let gaps = [None, Some(0.0_f32), Some(2.0), Some(4.0), Some(8.0)];
             let crop_sel = crops
                 .iter()
@@ -217,7 +223,7 @@ impl Showcase {
             let crop_row = setting(
                 "Crop end",
                 "Cuts one end of every button and adds a double tick on the other. Left cuts the top left, Right the bottom right.",
-                Segmented::new("bc-crop", ["Off", "Left", "Right"])
+                Segmented::new("bc-crop", ["Off", "Left", "Right", "Top", "Bottom"])
                     .selected(crop_sel)
                     .on_select(move |i, _, cx| dodai_gpui::set_button_crop(cx, crops[i]))
                     .into_any_element(),

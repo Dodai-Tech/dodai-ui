@@ -1300,6 +1300,8 @@ fn main() {
         set_glow_intensity(cx, 0.25);
         // Scanlines start off; DODAI_SCAN=1 (or the `l` key / Shape page) turns them on.
         set_scanlines(cx, std::env::var_os("DODAI_SCAN").is_some());
+        // Buttons start cropped on the left (the Shape page can switch it off or to the right).
+        dodai_gpui::set_button_crop(cx, Some(dodai_gpui::Crop::Left));
         // Debug: DODAI_ACCENT=<edge index 0..7> pre-selects the accent line.
         if let Some(e) = std::env::var("DODAI_ACCENT")
             .ok()

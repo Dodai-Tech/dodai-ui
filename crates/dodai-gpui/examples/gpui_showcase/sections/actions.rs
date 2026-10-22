@@ -42,7 +42,7 @@ impl Showcase {
                 Button::new("b-scrim", "Scrim").variant(ButtonVariant::Scrim)
             ))
             .children(t.look().cut_corners.then(|| {
-                // Phantom Liberty: cropped left or right, with an edge tick.
+                // Phantom Liberty: cropped left or right (edge tick) or slotted top/bottom.
                 row()
                     .child(
                         Button::new("b-scrim-l", "Buy now")
@@ -53,6 +53,16 @@ impl Showcase {
                         Button::new("b-scrim-r", "Watch trailer")
                             .variant(ButtonVariant::Scrim)
                             .crop(dodai_gpui::Crop::Right),
+                    )
+                    .child(
+                        Button::new("b-crop-top", "Top slot")
+                            .variant(ButtonVariant::Outline)
+                            .crop(dodai_gpui::Crop::Top),
+                    )
+                    .child(
+                        Button::new("b-crop-bottom", "Bottom slot")
+                            .variant(ButtonVariant::Primary)
+                            .crop(dodai_gpui::Crop::Bottom),
                     )
                     .child(
                         Button::new("b-crop-both", "Both cuts")
