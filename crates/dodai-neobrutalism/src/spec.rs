@@ -67,6 +67,9 @@ impl DesignSpec for NeoBrutalism {
         Some(dodai_core::SurfaceFx {
             texture: dodai_core::Texture::Halftone,
             strength: 0.5,
+            targets: dodai_core::SurfaceTargets::NONE
+                .with(dodai_core::SurfaceClass::Card, true)
+                .with(dodai_core::SurfaceClass::Panel, true),
             ..dodai_core::SurfaceFx::NONE
         })
     }

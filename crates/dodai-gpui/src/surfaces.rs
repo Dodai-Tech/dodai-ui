@@ -20,7 +20,9 @@ pub use dodai_core::CardVariant;
 
 /// Paint style of a card (pure).
 pub fn card_style(theme: &Theme, v: CardVariant) -> ShapeStyle {
-    let mut st = ShapeStyle::from_surface(theme, theme.card(v)).0;
+    let mut st = ShapeStyle::from_surface(theme, theme.card(v))
+        .0
+        .with_surface(theme, dodai_core::SurfaceClass::Card);
     // No hard offset shadow in this theme: lift an elevated card with a soft one.
     if v == CardVariant::Elevated && st.shadow.is_none() && st.glow.is_none() {
         if theme.look().soft_elevation {

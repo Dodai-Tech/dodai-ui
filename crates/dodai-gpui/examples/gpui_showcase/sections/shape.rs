@@ -189,7 +189,7 @@ impl Showcase {
             ));
         }
         {
-            use dodai_core::{SurfaceFx, Texture};
+            use dodai_core::{SurfaceClass, SurfaceFx, Texture};
             let fx = dodai_gpui::surface_fx();
             let sel = Texture::ALL
                 .iter()
@@ -242,6 +242,23 @@ impl Showcase {
                 .child(amount("sfx-scale", "Scale", fx.scale, 4.0, |f, v| {
                     f.scale = v.max(0.25)
                 }))
+                .child(Muted::new("Apply to"))
+                .child(row().children(SurfaceClass::ALL.iter().map(|c| {
+                    let c = *c;
+                    row()
+                        .child(
+                            Checkbox::new(
+                                gpui::SharedString::from(format!("sfx-t-{}", c.label())),
+                                fx.targets.contains(c),
+                            )
+                            .on_change(move |on, _, cx| {
+                                let mut f = dodai_gpui::surface_fx();
+                                f.targets = f.targets.with(c, on);
+                                dodai_gpui::set_surface_fx(cx, f);
+                            }),
+                        )
+                        .child(Label::new(c.label()))
+                })))
                 .child(Muted::new("Effects"))
                 .child(amount("sfx-glitch", "Glitch", fx.glitch, 1.0, |f, v| {
                     f.glitch = v

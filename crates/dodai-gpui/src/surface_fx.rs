@@ -6,7 +6,7 @@
 
 use crate::hsla;
 use crate::paint::{poly, poly_span, row_span, scale_alpha};
-use dodai_core::{Shape, ShapeKind, SurfaceFx, Texture, Theme};
+use dodai_core::{Shape, ShapeKind, SurfaceClass, SurfaceFx, Texture, Theme};
 use gpui::{point, px, size, App, Bounds, Hsla, PathBuilder, Pixels, Window};
 use std::cell::Cell;
 use std::sync::OnceLock;
@@ -56,10 +56,10 @@ pub struct SurfacePaint {
 }
 
 impl SurfacePaint {
-    /// Resolve colours for `theme`; `None` when nothing would be drawn.
-    pub fn of(theme: &Theme) -> Option<Self> {
+    /// Resolve colours for `theme`; `None` when nothing would be drawn on a `class` surface.
+    pub fn of(theme: &Theme, class: SurfaceClass) -> Option<Self> {
         let fx = surface_fx();
-        if fx.is_none() {
+        if fx.is_none() || !fx.targets.contains(class) {
             return None;
         }
         let p = &theme.palette;
@@ -487,12 +487,16 @@ mod tests {
     #[test]
     fn nothing_is_drawn_for_the_default_mix() {
         set_surface_fx_for_test(SurfaceFx::NONE);
-        assert!(SurfacePaint::of(&dodai::themes::cyberpunk::yellow()).is_none());
+        assert!(
+            SurfacePaint::of(&dodai::themes::cyberpunk::yellow(), SurfaceClass::Button).is_none()
+        );
         set_surface_fx_for_test(SurfaceFx {
             glitch: 0.5,
             ..SurfaceFx::NONE
         });
-        assert!(SurfacePaint::of(&dodai::themes::cyberpunk::yellow()).is_some());
+        assert!(
+            SurfacePaint::of(&dodai::themes::cyberpunk::yellow(), SurfaceClass::Button).is_some()
+        );
         set_surface_fx_for_test(SurfaceFx::NONE);
     }
 

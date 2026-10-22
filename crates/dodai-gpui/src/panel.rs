@@ -185,12 +185,14 @@ pub fn set_section_border(cx: &mut App, b: BorderStyle) {
 pub fn panel_style(theme: &Theme, focused: bool) -> ShapeStyle {
     let p = theme.panel(focused);
     ShapeStyle::from_tokens(theme, Some(p.background), Some(p.border), focused, true)
+        .with_surface(theme, dodai_core::SurfaceClass::Panel)
 }
 
 /// Paint style of an input box (pure).
 pub fn input_style(theme: &Theme, focused: bool) -> ShapeStyle {
     let i = theme.input(focused);
     ShapeStyle::from_tokens(theme, Some(i.background), Some(i.border), focused, false)
+        .with_surface(theme, dodai_core::SurfaceClass::Input)
 }
 
 /// Shaped card with optional title; focused border/glow; hard shadow from tokens.

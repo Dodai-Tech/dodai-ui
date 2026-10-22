@@ -71,6 +71,14 @@ pub struct Shimmer {
 }
 
 impl ShapeStyle {
+    /// Let the active texture and effects (if they target `class`) paint over the fill.
+    pub fn with_surface(mut self, theme: &Theme, class: dodai_core::SurfaceClass) -> Self {
+        self.surface = self
+            .fill
+            .and_then(|_| crate::surface_fx::SurfacePaint::of(theme, class));
+        self
+    }
+
     /// Add a shimmer sweep that follows whatever shape this style is drawn in.
     pub fn with_shimmer(mut self, s: Shimmer) -> Self {
         self.shimmer = Some(s);
@@ -117,7 +125,7 @@ impl ShapeStyle {
             shadow_dir: (1.0, 1.0),
             scanlines: fx.scanlines && fill.is_some(),
             scanline: hsla(fx.scanline),
-            surface: fill.and_then(|_| crate::surface_fx::SurfacePaint::of(theme)),
+            surface: None,
             shimmer: None,
             elevation: None,
             lift_layers: None,

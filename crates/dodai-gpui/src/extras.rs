@@ -23,10 +23,12 @@ fn bar_style(t: &Theme) -> ShapeStyle {
             None,
             false,
             false,
-        );
+        )
+        .with_surface(t, dodai_core::SurfaceClass::Bar);
     }
     let p = t.panel(false);
     ShapeStyle::from_tokens(t, Some(p.background), Some(p.border), false, false)
+        .with_surface(t, dodai_core::SurfaceClass::Bar)
 }
 
 // ──────────────────────── Toolbar / BottomAppBar ────────────────────────

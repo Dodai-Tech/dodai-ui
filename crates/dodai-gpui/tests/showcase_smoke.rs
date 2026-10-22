@@ -153,6 +153,7 @@ fn every_surface_texture_and_effect_renders(cx: &mut TestAppContext) {
                         sheen: 1.0,
                         flicker: 1.0,
                         bloom: 1.0,
+                        targets: dodai_core::SurfaceTargets::ALL,
                     },
                 )
             });

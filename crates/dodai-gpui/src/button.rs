@@ -31,7 +31,8 @@ pub fn button_style(
             state != ControlState::Disabled
                 && variant != ButtonVariant::Scrim
                 && b.background.is_some(),
-        ),
+        )
+        .with_surface(theme, dodai_core::SurfaceClass::Button),
         hsla(b.foreground),
     )
 }
@@ -288,7 +289,8 @@ impl Button {
         let resolve = |s: ControlState| {
             if self.elevated {
                 let b = t.elevated_button(s);
-                let mut st = ShapeStyle::from_tokens(&t, b.background, b.border, false, false);
+                let mut st = ShapeStyle::from_tokens(&t, b.background, b.border, false, false)
+                    .with_surface(&t, dodai_core::SurfaceClass::Button);
                 if lifted && s != ControlState::Disabled {
                     let level = if s == ControlState::Idle { 1 } else { 2 };
                     st = st.with_lift(&t, level);

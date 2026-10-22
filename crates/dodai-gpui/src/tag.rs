@@ -10,7 +10,8 @@ use gpui::{px, App, IntoElement, ParentElement, SharedString, Styled, Window};
 pub fn tag_style(theme: &Theme, tone: Tone, solid: bool) -> (ShapeStyle, gpui::Hsla) {
     let k = theme.tag(tone, solid);
     (
-        ShapeStyle::from_tokens(theme, k.background, k.border, false, false),
+        ShapeStyle::from_tokens(theme, k.background, k.border, false, false)
+            .with_surface(theme, dodai_core::SurfaceClass::Tag),
         hsla(k.foreground),
     )
 }

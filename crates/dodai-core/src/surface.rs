@@ -62,6 +62,85 @@ impl Texture {
     }
 }
 
+/// A kind of surface a texture or effect can be applied to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SurfaceClass {
+    /// Buttons of every variant.
+    Button,
+    /// Cards.
+    Card,
+    /// Panels and popups.
+    Panel,
+    /// Text inputs and selects.
+    Input,
+    /// Tags and badges.
+    Tag,
+    /// App bars and toolbars.
+    Bar,
+}
+
+impl SurfaceClass {
+    /// Every class, in display order.
+    pub const ALL: [SurfaceClass; 6] = [
+        Self::Button,
+        Self::Card,
+        Self::Panel,
+        Self::Input,
+        Self::Tag,
+        Self::Bar,
+    ];
+
+    /// Display name.
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::Button => "Buttons",
+            Self::Card => "Cards",
+            Self::Panel => "Panels",
+            Self::Input => "Inputs",
+            Self::Tag => "Tags",
+            Self::Bar => "Bars",
+        }
+    }
+
+    const fn bit(self) -> u8 {
+        1 << self as u8
+    }
+}
+
+/// A set of [`SurfaceClass`]es.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SurfaceTargets(u8);
+
+impl SurfaceTargets {
+    /// No surface.
+    pub const NONE: Self = Self(0);
+    /// Buttons, cards and panels: where a texture reads best.
+    pub const DEFAULT: Self =
+        Self(SurfaceClass::Button.bit() | SurfaceClass::Card.bit() | SurfaceClass::Panel.bit());
+    /// Every surface.
+    pub const ALL: Self = Self(0x3f);
+
+    /// Whether `c` is in the set.
+    pub const fn contains(self, c: SurfaceClass) -> bool {
+        self.0 & c.bit() != 0
+    }
+
+    /// The set with `c` added or removed.
+    pub const fn with(self, c: SurfaceClass, on: bool) -> Self {
+        if on {
+            Self(self.0 | c.bit())
+        } else {
+            Self(self.0 & !c.bit())
+        }
+    }
+}
+
+impl Default for SurfaceTargets {
+    fn default() -> Self {
+        Self::DEFAULT
+    }
+}
+
 /// The surface mix: one texture plus animated effects. Every amount is `0.0..=1.0`
 /// (`0.0` = off), so a design preset and a slider speak the same language.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -80,6 +159,8 @@ pub struct SurfaceFx {
     pub flicker: f32,
     /// Soft bloom around the outline.
     pub bloom: f32,
+    /// Which kinds of surface receive the mix.
+    pub targets: SurfaceTargets,
 }
 
 impl Default for SurfaceFx {
@@ -98,6 +179,7 @@ impl SurfaceFx {
         sheen: 0.0,
         flicker: 0.0,
         bloom: 0.0,
+        targets: SurfaceTargets::DEFAULT,
     };
 
     /// True when a texture is set and visible.
@@ -118,6 +200,17 @@ impl SurfaceFx {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn targets_toggle_independently() {
+        use super::*;
+        let t = SurfaceTargets::NONE.with(SurfaceClass::Tag, true);
+        assert!(t.contains(SurfaceClass::Tag) && !t.contains(SurfaceClass::Button));
+        assert!(!t.with(SurfaceClass::Tag, false).contains(SurfaceClass::Tag));
+        assert!(SurfaceClass::ALL
+            .iter()
+            .all(|c| SurfaceTargets::ALL.contains(*c)));
+    }
+
     use super::*;
 
     #[test]
