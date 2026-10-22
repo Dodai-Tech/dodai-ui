@@ -494,6 +494,7 @@ pub struct Image {
     fit: ImageFit,
     caption: Option<SharedString>,
     video: bool,
+    on_image: bool,
 }
 
 impl Image {
@@ -516,6 +517,11 @@ impl Image {
         self.caption = Some(c.into());
         self
     }
+    /// Lay the caption over the picture on the design's dark fade instead of below it.
+    pub fn caption_on_image(mut self, on: bool) -> Self {
+        self.on_image = on;
+        self
+    }
     /// Overlay a ▶ badge (a video poster).
     pub fn video(mut self, on: bool) -> Self {
         self.video = on;
@@ -532,6 +538,7 @@ impl From<Source> for Image {
             fit: ImageFit::Cover,
             caption: None,
             video: false,
+            on_image: false,
         }
     }
 }
@@ -614,6 +621,22 @@ impl RenderOnce for Image {
             .flex_col()
             .gap(px(t.spacing.xs))
             .w(px(self.width));
+        if let (true, Some(c)) = (self.on_image, self.caption.clone()) {
+            let fade_h = (self.height * 0.5).max(t.sizes().touch_target);
+            let ink = hsla(t.on(t.palette.roles.shadow.with_alpha(1.0)));
+            frame = frame.child(crate::paint::fade_overlay(&t, fade_h)).child(
+                div()
+                    .absolute()
+                    .left(px(t.spacing.md))
+                    .right(px(t.spacing.md))
+                    .bottom(px(t.spacing.sm))
+                    .font_family(first_family(t.typography.body))
+                    .text_size(px(t.typography.size_sm))
+                    .text_color(ink)
+                    .child(c),
+            );
+            return col.child(frame);
+        }
         col = col.child(frame);
         if let Some(c) = self.caption {
             col = col.child(

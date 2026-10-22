@@ -730,6 +730,34 @@ pub enum Playback {
     Stopped,
 }
 
+/// The design's dark fade for text laid over media: `height` px tall, strongest at the bottom
+/// edge. Built from [`Theme::fade_stops`] as stacked two-stop gradients.
+pub fn fade_overlay(theme: &Theme, height: f32) -> gpui::Div {
+    use gpui::{linear_color_stop, linear_gradient, relative};
+    let base = hsla(theme.palette.roles.shadow);
+    let at = |a: f32| Hsla { a, ..base };
+    let stops = theme.fade_stops();
+    let mut d = gpui::div()
+        .absolute()
+        .left_0()
+        .right_0()
+        .bottom_0()
+        .h(px(height))
+        .flex()
+        .flex_col();
+    // Top to bottom: the far edge (position 1) first.
+    for w in stops.windows(2).rev() {
+        let ((a0, p0), (a1, p1)) = (w[0], w[1]);
+        let frac = (p1 - p0).max(0.0);
+        d = d.child(gpui::div().w_full().h(relative(frac)).bg(linear_gradient(
+            180.0,
+            linear_color_stop(at(a1), 0.0),
+            linear_color_stop(at(a0), 1.0),
+        )));
+    }
+    d
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

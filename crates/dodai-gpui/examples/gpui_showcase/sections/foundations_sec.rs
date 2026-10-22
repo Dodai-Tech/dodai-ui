@@ -83,6 +83,17 @@ impl Showcase {
         ));
         out.push((
             "Foundations",
+            "Layout · Fluid scales",
+            section!("Layout · Fluid scales")
+                .child(Muted::new(
+                    "Type and spacing resolved at five viewport widths, the page grid at 800 px, and the media fade.",
+                ))
+                .child(layout_view(&t))
+                .into_any_element(),
+            "Layout · Fluid scales",
+        ));
+        out.push((
+            "Foundations",
             "Shape tokens",
             section!("Shape tokens")
                 .child(Muted::new(

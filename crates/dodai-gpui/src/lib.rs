@@ -279,7 +279,9 @@ mod icon_names;
 #[cfg(feature = "components")]
 pub use knob::Knob;
 #[cfg(feature = "components")]
-pub use layout::{clamp_ratio, visible_rows, SplitPane, TreeItem, TreeRow, TreeView};
+pub use layout::{
+    clamp_ratio, grid_span_width, visible_rows, PageGrid, SplitPane, TreeItem, TreeRow, TreeView,
+};
 pub use lazy::lazy;
 #[cfg(feature = "components")]
 pub use list::{Divider, ListItem};

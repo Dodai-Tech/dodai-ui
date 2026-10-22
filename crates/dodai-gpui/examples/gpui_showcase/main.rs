@@ -48,7 +48,7 @@ mod snippets;
 use catalog::{caps, cat_blurb, cat_icon, section_id, sub_of, subs};
 use charts_page::ChartDemos;
 use foundations::{
-    modifier_variants_view, motion_tokens_view, palette_view, shape_tokens_view,
+    layout_view, modifier_variants_view, motion_tokens_view, palette_view, shape_tokens_view,
     spacing_elevation_view, type_scale_view, type_view,
 };
 pub(crate) use shaders_page::Section;

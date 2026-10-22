@@ -414,3 +414,67 @@ pub(crate) fn motion_tokens_view(t: &dodai_core::Theme) -> gpui::Div {
     }
     out
 }
+
+/// Fluid scales, the page grid and the media fade of the active design.
+pub(crate) fn layout_view(t: &dodai_core::Theme) -> gpui::Div {
+    let mono = dodai_gpui::text::first_family(t.typography.mono);
+    let line = |s: String| {
+        div()
+            .font_family(mono.clone())
+            .text_size(px(t.typography.size_xs))
+            .text_color(hsla(t.palette.text_muted))
+            .child(s)
+    };
+    let mut out = div().flex().flex_col().gap(px(t.spacing.md));
+    let mut table = div().flex().flex_col().gap(px(t.spacing.xs));
+    table = table.child(line(
+        "viewport · type xs sm md lg xl xxl · spacing md lg · grid cols gap margin".into(),
+    ));
+    for w in [480.0, 760.0, 1000.0, 1440.0, 1920.0] {
+        let r = t.responsive(w);
+        let g = t.page_grid(w);
+        let ty = &r.typography;
+        table = table.child(line(format!(
+            "{w:>5.0} · {:>4.1} {:>4.1} {:>4.1} {:>4.1} {:>4.1} {:>4.1} · {:>4.1} {:>4.1} · {:>2} {:>4.1} {:>5.1}",
+            ty.size_xs,
+            ty.size_sm,
+            ty.size_md,
+            ty.size_lg,
+            ty.size_xl,
+            ty.size_xxl,
+            r.spacing.md,
+            r.spacing.lg,
+            g.columns,
+            g.gap,
+            g.margin,
+        )));
+    }
+    out = out.child(table);
+    let cell = |label: &str| {
+        div()
+            .h(px(t.sizes().touch_target))
+            .flex()
+            .items_center()
+            .justify_center()
+            .bg(hsla(t.palette.surface_raised))
+            .border_1()
+            .border_color(hsla(t.palette.border))
+            .text_size(px(t.typography.size_xs))
+            .text_color(hsla(t.palette.text))
+            .child(label.to_string())
+    };
+    out = out.child(
+        dodai_gpui::PageGrid::new()
+            .width(800.0)
+            .cell(4, cell("4"))
+            .cell(4, cell("4"))
+            .cell(8, cell("8"))
+            .cell(16, cell("16 (clamped to the grid)")),
+    );
+    out.child(
+        dodai_gpui::Image::url("about:blank")
+            .size(360.0, 180.0)
+            .caption("Caption on the design's fade")
+            .caption_on_image(true),
+    )
+}

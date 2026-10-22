@@ -827,6 +827,51 @@ impl Theme {
             .and_then(|s| s.elevation_layers(self, level))
     }
 
+    /// The page grid at a viewport width.
+    pub fn page_grid(&self, viewport: f32) -> crate::PageGrid {
+        self.spec
+            .get()
+            .and_then(|s| s.page_grid(self, viewport))
+            .unwrap_or(crate::PageGrid {
+                columns: if viewport >= 760.0 { 12 } else { 4 },
+                gap: self.spacing.md,
+                margin: self.spacing.lg,
+                max_width: None,
+            })
+    }
+
+    /// This theme with its type sizes and spacing resolved for a viewport width. Designs
+    /// without fluid scales return an unchanged copy.
+    pub fn responsive(&self, viewport: f32) -> Theme {
+        let mut t = self.clone();
+        if let Some(f) = self.spec.get().and_then(|s| s.fluid(self, viewport)) {
+            let [xs, sm, md, lg, xl, xxl] = f.typography;
+            t.typography.size_xs = xs;
+            t.typography.size_sm = sm;
+            t.typography.size_md = md;
+            t.typography.size_lg = lg;
+            t.typography.size_xl = xl;
+            t.typography.size_xxl = xxl;
+            let [a, b, c, d, e] = f.spacing;
+            t.spacing = crate::Spacing {
+                xs: a,
+                sm: b,
+                md: c,
+                lg: d,
+                xl: e,
+            };
+        }
+        t
+    }
+
+    /// Fade stops `(alpha, position 0..=1)` for the dark overlay on media.
+    pub fn fade_stops(&self) -> Vec<(f32, f32)> {
+        self.spec
+            .get()
+            .and_then(|s| s.fade_stops(self))
+            .unwrap_or_else(|| vec![(0.7, 0.0), (0.0, 1.0)])
+    }
+
     /// Keyboard focus indicator `(colour, thickness px)`.
     pub fn focus_ring(&self) -> (Color, f32) {
         hook!(self.focus_ring());

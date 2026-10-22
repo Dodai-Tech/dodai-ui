@@ -48,6 +48,25 @@ pub struct Look {
     pub accent_border: bool,
 }
 
+/// The page grid of a design at a viewport width: columns between two outer margins.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PageGrid {
+    pub columns: u32,
+    /// Gap between columns and rows.
+    pub gap: f32,
+    /// Outer margin on each side.
+    pub margin: f32,
+    /// The widest the grid grows; beyond it the page is centred.
+    pub max_width: Option<f32>,
+}
+
+/// Type sizes and spacing a design resolves for one viewport width (fluid scales).
+#[derive(Debug, Clone, PartialEq)]
+pub struct Fluid {
+    pub typography: [f32; 6],
+    pub spacing: [f32; 5],
+}
+
 /// Component rules of one design system. All hooks are optional overrides.
 #[allow(unused_variables)]
 pub trait DesignSpec: Send + Sync + std::fmt::Debug {
@@ -156,6 +175,21 @@ pub trait DesignSpec: Send + Sync + std::fmt::Debug {
     /// the design has its own shadow tokens instead of the two Material layers. The alpha is
     /// absolute; the colour is the theme's shadow colour.
     fn elevation_layers(&self, t: &Theme, level: u8) -> Option<Vec<(f32, f32, f32, f32)>> {
+        None
+    }
+    /// The page grid at a viewport width (default: the theme's own spacing, 12 columns, or 4 on
+    /// a narrow viewport).
+    fn page_grid(&self, t: &Theme, viewport: f32) -> Option<PageGrid> {
+        None
+    }
+    /// Type sizes `[xs, sm, md, lg, xl, xxl]` and spacing `[xs, sm, md, lg, xl]` at a viewport
+    /// width, for designs with fluid scales (default: the static theme values).
+    fn fluid(&self, t: &Theme, viewport: f32) -> Option<Fluid> {
+        None
+    }
+    /// Stops `(alpha, position 0..=1)` of the dark fade laid over media so text on it stays
+    /// legible (default: a two-stop linear fade). Position 0 is the edge the text sits on, 1 the far edge.
+    fn fade_stops(&self, t: &Theme) -> Option<Vec<(f32, f32)>> {
         None
     }
     /// Keyboard focus indicator `(colour, thickness px)`.
