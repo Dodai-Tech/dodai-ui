@@ -362,8 +362,9 @@ impl DesignSpec for Cyberpunk {
                     p.secondary
                 };
                 ButtonTokens {
-                    background: lit.then_some(c),
-                    foreground: if lit { t.on(c) } else { t.legible(c) },
+                    // A faint tint on hover; the outline stays and the glow does the rest.
+                    background: lit.then(|| c.with_alpha(0.14)),
+                    foreground: t.legible(c),
                     border: Some(c),
                 }
             }
@@ -429,7 +430,7 @@ mod tests {
                 t.id()
             );
             let hovered = t.button(ButtonVariant::Outline, ControlState::Hovered);
-            assert_eq!(hovered.background, Some(t.palette.primary));
+            assert_eq!(hovered.background, Some(t.palette.primary.with_alpha(0.14)));
             assert_eq!(t.scrim(), t.palette.background.with_alpha(0.7));
         }
     }
