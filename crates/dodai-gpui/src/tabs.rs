@@ -9,6 +9,7 @@ use gpui::{
     div, px, App, ElementId, Hsla, IntoElement, ParentElement, SharedString,
     StatefulInteractiveElement, Styled, Window,
 };
+use std::cell::Cell;
 use std::rc::Rc;
 
 /// Resolved tab paint: shape style, text colour, optional indicator colour.
@@ -95,6 +96,15 @@ impl Tabs {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
         let mut row = div().flex().gap(px(t.spacing.xs));
+        // Scrollable strips pan with the pointer too: a swipe or drag moves them sideways.
+        let scroll = self.scrollable.then(|| {
+            window.use_keyed_state((self.id.clone(), "scroll"), cx, |_, _| ScrollState {
+                handle: gpui::ScrollHandle::new(),
+                seen: usize::MAX,
+                tries: 0,
+                pan: Rc::new(Cell::new(Pan::default())),
+            })
+        });
         let count = self.labels.len().max(self.icons.len());
         for i in 0..count {
             let label = self.labels.get(i);
@@ -153,7 +163,14 @@ impl Tabs {
                 tab = tab.child(bottom_band_canvas(&t.shape, t.shape.border_width, c));
             }
             if let Some(f) = self.on_select.clone() {
-                tab = tab.on_click(move |_, w, cx| f(i, w, cx));
+                let pan = scroll.as_ref().map(|s| s.read(cx).pan.clone());
+                tab = tab.on_click(move |_, w, cx| {
+                    // A drag that ends over a tab is a pan, not a click.
+                    if pan.as_ref().is_some_and(|p| p.get().moved) {
+                        return;
+                    }
+                    f(i, w, cx)
+                });
             }
             if self.scrollable {
                 tab = tab.flex_none().whitespace_nowrap();
@@ -162,24 +179,111 @@ impl Tabs {
         }
         if self.scrollable {
             // Keep the selected tab in view, but only when the selection changes so the user
-            // can still scroll the strip freely.
-            let state = window.use_keyed_state((self.id.clone(), "scroll"), cx, |_, _| {
-                (gpui::ScrollHandle::new(), usize::MAX)
-            });
-            let handle = state.read(cx).0.clone();
-            if state.read(cx).1 != self.active {
+            // can still scroll the strip freely. gpui only knows the strip's size after its
+            // first layout, so the request is repeated for a few frames after a change.
+            let state = scroll.expect("scrollable strips have scroll state");
+            let (handle, pan) = {
+                let s = state.read(cx);
+                (s.handle.clone(), s.pan.clone())
+            };
+            let (seen, tries) = (state.read(cx).seen, state.read(cx).tries);
+            if seen != self.active || tries < 3 {
                 handle.scroll_to_item(self.active);
-                state.update(cx, |s, _| s.1 = self.active);
+                let fresh = seen != self.active;
+                state.update(cx, |s, _| {
+                    s.seen = self.active;
+                    s.tries = if fresh { 1 } else { s.tries + 1 };
+                });
+                window.request_animation_frame();
             }
-            return gpui::StatefulInteractiveElement::track_scroll(
+            // A mouse wheel only scrolls vertically; over an overflowing strip, turn it into a
+            // sideways scroll (trackpads already send horizontal deltas, which gpui handles).
+            let (wheel, down, drag, up) = (
+                handle.clone(),
+                (handle.clone(), pan.clone()),
+                (handle.clone(), pan.clone()),
+                pan,
+            );
+            let el = gpui::StatefulInteractiveElement::track_scroll(
                 gpui::InteractiveElement::id(row.w_full(), (self.id.clone(), "scroll")),
                 &handle,
             )
-            .overflow_x_scroll()
+            .overflow_x_scroll();
+            let el = gpui::InteractiveElement::on_scroll_wheel(el, move |ev, window, cx| {
+                let d = ev.delta.pixel_delta(window.line_height());
+                let max = wheel.max_offset().width;
+                if max > px(0.0) && d.y.abs() > d.x.abs() {
+                    let mut o = wheel.offset();
+                    o.x = (o.x - d.y).clamp(-max, px(0.0));
+                    wheel.set_offset(o);
+                    window.refresh();
+                    cx.stop_propagation();
+                }
+            });
+            let el = gpui::InteractiveElement::on_mouse_down(
+                el,
+                gpui::MouseButton::Left,
+                move |ev, _, _| {
+                    down.1.set(Pan {
+                        from: Some((f32::from(ev.position.x), f32::from(down.0.offset().x))),
+                        moved: false,
+                    });
+                },
+            );
+            let el = gpui::InteractiveElement::on_mouse_move(el, move |ev, window, _| {
+                let mut p = drag.1.get();
+                let Some((x0, o0)) = p.from else {
+                    return;
+                };
+                if ev.pressed_button != Some(gpui::MouseButton::Left) {
+                    drag.1.set(Pan::default());
+                    return;
+                }
+                let dx = f32::from(ev.position.x) - x0;
+                if dx.abs() > 4.0 {
+                    p.moved = true;
+                }
+                if p.moved {
+                    let max = f32::from(drag.0.max_offset().width);
+                    let mut o = drag.0.offset();
+                    o.x = px((o0 + dx).clamp(-max, 0.0));
+                    drag.0.set_offset(o);
+                    window.refresh();
+                }
+                drag.1.set(p);
+            });
+            return gpui::InteractiveElement::on_mouse_up(
+                el,
+                gpui::MouseButton::Left,
+                move |_, _, _| {
+                    let p = up.get();
+                    // Keep `moved` through the click that follows the release, clear it after.
+                    up.set(Pan {
+                        from: None,
+                        moved: p.moved,
+                    });
+                },
+            )
             .into_any_element();
         }
         row.into_any_element()
     }
+}
+
+/// Pointer pan state of a scrollable strip.
+#[derive(Clone, Copy, Default)]
+struct Pan {
+    /// Pointer x and scroll offset when the button went down.
+    from: Option<(f32, f32)>,
+    /// The pointer travelled far enough that this press is a drag, not a click.
+    moved: bool,
+}
+
+struct ScrollState {
+    handle: gpui::ScrollHandle,
+    seen: usize,
+    tries: u8,
+    pan: Rc<Cell<Pan>>,
 }
 
 crate::entry_render!(Tabs);

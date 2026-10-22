@@ -50,11 +50,29 @@ pub enum Texture {
     Barcode,
     /// Horizontal bands of broadcast noise.
     Static,
+    /// Diagonal warning bands, like hazard tape.
+    Hazard,
+    /// A honeycomb of hexagons.
+    HexMesh,
+    /// Thin vertical streaks, like rain on glass.
+    Rain,
+    /// Smudges and scuffs, like worn metal.
+    Grime,
+    /// Rows of tiny data cells, a few lit.
+    DataStream,
+    /// Small rectangles that look displaced by a glitch.
+    GlitchBlocks,
+    /// A chip die: concentric squares with pins along the edges.
+    ChipDie,
+    /// Parallel wires that bend at right angles.
+    Wiring,
+    /// Concentric radar rings with crosshair.
+    Radar,
 }
 
 impl Texture {
     /// Every texture, `None` first.
-    pub const ALL: [Texture; 21] = [
+    pub const ALL: [Texture; 30] = [
         Texture::None,
         Texture::Grain,
         Texture::Halftone,
@@ -76,6 +94,15 @@ impl Texture {
         Texture::LedMatrix,
         Texture::Barcode,
         Texture::Static,
+        Texture::Hazard,
+        Texture::HexMesh,
+        Texture::Rain,
+        Texture::Grime,
+        Texture::DataStream,
+        Texture::GlitchBlocks,
+        Texture::ChipDie,
+        Texture::Wiring,
+        Texture::Radar,
     ];
 
     /// A short label for pickers.
@@ -102,6 +129,15 @@ impl Texture {
             Texture::LedMatrix => "LED matrix",
             Texture::Barcode => "Barcode",
             Texture::Static => "Static",
+            Texture::Hazard => "Hazard",
+            Texture::HexMesh => "Hex mesh",
+            Texture::Rain => "Rain",
+            Texture::Grime => "Grime",
+            Texture::DataStream => "Data stream",
+            Texture::GlitchBlocks => "Glitch blocks",
+            Texture::ChipDie => "Chip die",
+            Texture::Wiring => "Wiring",
+            Texture::Radar => "Radar",
         }
     }
 }
@@ -117,6 +153,9 @@ impl Texture {
                 | Texture::Barcode
                 | Texture::Paper
                 | Texture::Static
+                | Texture::ChipDie
+                | Texture::Wiring
+                | Texture::Radar
         )
     }
 }
@@ -225,6 +264,18 @@ pub struct SurfaceFx {
     pub bloom: f32,
     /// Lit lines: line-based textures glow in the accent colour (`0.0..=1.0`).
     pub neon: f32,
+    /// Breathing light along the border.
+    pub pulse: f32,
+    /// A bright segment running around the border.
+    pub chase: f32,
+    /// Light falling inward from the edges.
+    pub edge: f32,
+    /// Bracket marks in the corners.
+    pub brackets: f32,
+    /// Inner shadow: the surface looks sunk or lit from within.
+    pub depth: f32,
+    /// How much the texture fades towards the centre, keeping text clean (`0.0` = even).
+    pub clear: f32,
     /// Texture for containers (cards, panels, bars); `texture` is for UI components.
     pub container_texture: Texture,
     /// Strength of the container texture.
@@ -252,6 +303,12 @@ impl SurfaceFx {
         flicker: 0.0,
         bloom: 0.0,
         neon: 0.0,
+        pulse: 0.0,
+        chase: 0.0,
+        edge: 0.0,
+        brackets: 0.0,
+        depth: 0.0,
+        clear: 0.0,
         container_texture: Texture::None,
         container_strength: 0.5,
         container_scale: 1.0,
@@ -272,6 +329,11 @@ impl SurfaceFx {
             self.sheen = 0.0;
             self.flicker = 0.0;
             self.bloom = 0.0;
+            self.pulse = 0.0;
+            self.chase = 0.0;
+            self.edge = 0.0;
+            self.brackets = 0.0;
+            self.depth = 0.0;
         }
         self
     }
@@ -297,12 +359,21 @@ impl SurfaceFx {
 
     /// True when any animated effect is on (the surface needs frames).
     pub fn animated(&self) -> bool {
-        self.glitch > 0.0 || self.sheen > 0.0 || self.flicker > 0.0
+        self.glitch > 0.0
+            || self.sheen > 0.0
+            || self.flicker > 0.0
+            || self.pulse > 0.0
+            || self.chase > 0.0
     }
 
     /// True when nothing would be drawn.
     pub fn is_none(&self) -> bool {
-        !self.has_texture() && !self.animated() && self.bloom <= 0.0
+        !self.has_texture()
+            && !self.animated()
+            && self.bloom <= 0.0
+            && self.edge <= 0.0
+            && self.brackets <= 0.0
+            && self.depth <= 0.0
     }
 }
 
@@ -400,6 +471,10 @@ pub struct SurfaceTuning {
     pub glitch_period: f32,
     /// Seconds a glitch burst lasts at the lowest setting (grows with the amount).
     pub glitch_burst: f32,
+    /// Seconds for one pulse of the border light.
+    pub pulse_period: f32,
+    /// Seconds for the border chase to run once around.
+    pub chase_period: f32,
 }
 
 impl SurfaceTuning {
@@ -413,6 +488,8 @@ impl SurfaceTuning {
         sheen_period: 3.6,
         glitch_period: 2.6,
         glitch_burst: 0.1,
+        pulse_period: 2.4,
+        chase_period: 4.0,
     };
 }
 
@@ -463,6 +540,12 @@ pub struct Surface {
     sheen: Option<f32>,
     flicker: Option<f32>,
     bloom: Option<f32>,
+    pulse: Option<f32>,
+    chase: Option<f32>,
+    edge: Option<f32>,
+    brackets: Option<f32>,
+    depth: Option<f32>,
+    clear: Option<f32>,
     glow: Option<f32>,
 }
 
@@ -478,6 +561,12 @@ impl Surface {
         sheen: None,
         flicker: None,
         bloom: None,
+        pulse: None,
+        chase: None,
+        edge: None,
+        brackets: None,
+        depth: None,
+        clear: None,
         glow: None,
     };
     /// No texture or effect on this component, whatever the app-wide mix is.
@@ -530,6 +619,36 @@ impl Surface {
         self.bloom = Some(v);
         self
     }
+    /// Breathing border light, `0.0..=1.0`.
+    pub const fn pulse(mut self, v: f32) -> Self {
+        self.pulse = Some(v);
+        self
+    }
+    /// A light segment running around the border, `0.0..=1.0`.
+    pub const fn chase(mut self, v: f32) -> Self {
+        self.chase = Some(v);
+        self
+    }
+    /// Light falling inward from the edges, `0.0..=1.0`.
+    pub const fn edge(mut self, v: f32) -> Self {
+        self.edge = Some(v);
+        self
+    }
+    /// Corner brackets, `0.0..=1.0`.
+    pub const fn brackets(mut self, v: f32) -> Self {
+        self.brackets = Some(v);
+        self
+    }
+    /// Inner shadow, `0.0..=1.0`.
+    pub const fn depth(mut self, v: f32) -> Self {
+        self.depth = Some(v);
+        self
+    }
+    /// Fade the texture towards the centre, `0.0..=1.0`.
+    pub const fn clear(mut self, v: f32) -> Self {
+        self.clear = Some(v);
+        self
+    }
     /// Scale the design's glow on this component (`0.0` = none, `1.0` = as designed).
     pub const fn glow(mut self, v: f32) -> Self {
         self.glow = Some(v);
@@ -568,6 +687,11 @@ impl Surface {
             || self.sheen.is_some()
             || self.flicker.is_some()
             || self.bloom.is_some()
+            || self.pulse.is_some()
+            || self.chase.is_some()
+            || self.edge.is_some()
+            || self.brackets.is_some()
+            || self.depth.is_some()
     }
 
     /// `fx` (already resolved for the component's class) with this override on top.
@@ -595,6 +719,24 @@ impl Surface {
         }
         if let Some(v) = self.bloom {
             fx.bloom = v;
+        }
+        if let Some(v) = self.pulse {
+            fx.pulse = v;
+        }
+        if let Some(v) = self.chase {
+            fx.chase = v;
+        }
+        if let Some(v) = self.edge {
+            fx.edge = v;
+        }
+        if let Some(v) = self.brackets {
+            fx.brackets = v;
+        }
+        if let Some(v) = self.depth {
+            fx.depth = v;
+        }
+        if let Some(v) = self.clear {
+            fx.clear = v;
         }
         fx
     }

@@ -55,6 +55,8 @@ pub struct SurfacePaint {
     pub light: Hsla,
     /// Colour of lit lines and lamps.
     pub neon: Hsla,
+    /// Colour of inner shadows.
+    pub shade: Hsla,
     /// Timing and sizes from the theme.
     pub tune: dodai_core::SurfaceTuning,
 }
@@ -85,6 +87,7 @@ impl SurfacePaint {
             b: hsla(p.danger),
             light: hsla(p.text),
             neon: hsla(p.accent),
+            shade: hsla(p.roles.shadow),
             tune: theme.surface_style.tuning,
         })
     }
@@ -109,6 +112,7 @@ pub fn texture_swatch(theme: &Theme, texture: Texture) -> gpui::Canvas<()> {
         b: hsla(p.danger),
         light: hsla(p.text),
         neon: hsla(p.accent),
+        shade: hsla(p.roles.shadow),
         tune: theme.surface_style.tuning,
     };
     let shape = theme.shape.clone();
@@ -159,6 +163,8 @@ struct Canvas<'a> {
     neon: f32,
     neon_c: Hsla,
     halo: f32,
+    /// Texture fade towards the centre (`0` = even); set only while a texture is drawn.
+    clear: f32,
 }
 
 impl Canvas<'_> {
@@ -169,8 +175,21 @@ impl Canvas<'_> {
         }
     }
 
+    /// Alpha factor for the texture at `x, y`: 1 at the edges, down to `1 - clear` in the middle.
+    fn keep(&self, x: f32, y: f32) -> f32 {
+        if self.clear <= 0.0 {
+            return 1.0;
+        }
+        let nx = ((x - self.w / 2.0) / (self.w / 2.0).max(1.0)).abs();
+        let ny = ((y - self.h / 2.0) / (self.h / 2.0).max(1.0)).abs();
+        let t = ((nx.max(ny) - 0.3) / 0.7).clamp(0.0, 1.0);
+        let t = t * t * (3.0 - 2.0 * t);
+        1.0 - self.clear * (1.0 - t)
+    }
+
     /// Paint `x, y, w, h` clipped to the shape (and inside the border).
     fn quad(&mut self, x: f32, y: f32, w: f32, h: f32, c: Hsla) {
+        let c = scale_alpha(c, self.keep(x + w / 2.0, y + h / 2.0));
         let (y0, y1) = (y.max(self.inset), (y + h).min(self.h - self.inset));
         if y1 <= y0 {
             return;
@@ -226,6 +245,7 @@ impl Canvas<'_> {
 
     /// A round dot of diameter `d` centred at `cx, cy`, kept fully inside the shape.
     fn dot(&mut self, cx: f32, cy: f32, d: f32, c: Hsla) {
+        let c = scale_alpha(c, self.keep(cx, cy));
         let r = d / 2.0;
         let (Some(a), Some(b)) = (self.span(cy - r), self.span(cy + r)) else {
             return;
@@ -258,6 +278,48 @@ impl Canvas<'_> {
         if let Ok(p) = b.build() {
             self.window.paint_path(p, c);
         }
+    }
+
+    /// The shape's outline pulled in by `d` px, stroked `width` px wide (inner glow and shadow).
+    fn outline_inset(&mut self, d: f32, width: f32, c: Hsla) {
+        let (w, h) = (self.w - 2.0 * d, self.h - 2.0 * d);
+        if w < 4.0 || h < 4.0 {
+            return;
+        }
+        let pts = self.shape.outline(w, h);
+        let mut b = PathBuilder::stroke(px(width));
+        b.add_polygon(&poly(self.origin, &pts, (d, d)), true);
+        if let Ok(p) = b.build() {
+            self.window.paint_path(p, c);
+        }
+    }
+
+    /// An open polyline through `pts` (shape-local px).
+    fn polyline(&mut self, pts: &[(f32, f32)], width: f32, c: Hsla) {
+        let mut it = pts.iter();
+        let Some(&(x0, y0)) = it.next() else {
+            return;
+        };
+        let mut b = PathBuilder::stroke(px(width));
+        b.move_to(point(self.origin.x + px(x0), self.origin.y + px(y0)));
+        for &(x, y) in it {
+            b.line_to(point(self.origin.x + px(x), self.origin.y + px(y)));
+        }
+        if let Ok(p) = b.build() {
+            self.window.paint_path(p, c);
+        }
+    }
+
+    /// A circle outline.
+    fn ring(&mut self, cx: f32, cy: f32, r: f32, width: f32, c: Hsla) {
+        let n = 48;
+        let pts: Vec<(f32, f32)> = (0..=n)
+            .map(|i| {
+                let a = std::f32::consts::TAU * i as f32 / n as f32;
+                (cx + r * a.cos(), cy + r * a.sin())
+            })
+            .collect();
+        self.polyline(&pts, width, c);
     }
 
     fn fill_shape(&mut self, c: Hsla) {
@@ -301,9 +363,27 @@ pub fn paint_surface(
         neon: fx.neon.clamp(0.0, 1.0),
         neon_c: sp.neon,
         halo: sp.tune.halo,
+        clear: 0.0,
     };
     if fx.has_texture() {
+        cv.clear = fx.clear.clamp(0.0, 1.0);
         texture(&mut cv, sp, seed);
+        cv.clear = 0.0;
+    }
+    if fx.depth > 0.0 {
+        depth(&mut cv, sp);
+    }
+    if fx.edge > 0.0 {
+        edge_light(&mut cv, sp);
+    }
+    if fx.brackets > 0.0 {
+        brackets(&mut cv, sp);
+    }
+    if fx.pulse > 0.0 {
+        pulse(&mut cv, sp);
+    }
+    if fx.chase > 0.0 {
+        chase(&mut cv, sp, seed);
     }
     if fx.bloom > 0.0 {
         let n = 4;
@@ -452,7 +532,7 @@ fn texture(cv: &mut Canvas, sp: &SurfacePaint, seed: i32) {
         Texture::Circuit => {
             let p = fit((14.0 * k).max(8.0), |p| w * h / (p * p) * 2.0);
             let (nx, ny) = ((w / p) as i32, (h / p) as i32);
-            let a = scale_alpha(sp.ink, 0.28 * s);
+            let a = scale_alpha(sp.ink, 0.36 * s);
             for iy in 0..=ny {
                 for ix in 0..=nx {
                     let (x, y) = (ix as f32 * p, iy as f32 * p);
@@ -463,7 +543,7 @@ fn texture(cv: &mut Canvas, sp: &SurfacePaint, seed: i32) {
                         cv.line(x, y, 1.0, p, a);
                     }
                     if noise(iy + 91, ix + seed) > 0.82 {
-                        cv.dot(x + 0.5, y + 0.5, 4.0, scale_alpha(sp.ink, 0.45 * s));
+                        cv.dot(x + 0.5, y + 0.5, 4.0, scale_alpha(sp.ink, 0.55 * s));
                     }
                 }
             }
@@ -596,6 +676,165 @@ fn texture(cv: &mut Canvas, sp: &SurfacePaint, seed: i32) {
                 }
             }
         }
+        Texture::Hazard => {
+            // Warning tape along the top and bottom edges only, so the middle stays clean.
+            let band = (h * 0.2).clamp(4.0, 9.0 * k);
+            let p = (10.0 * k).max(5.0);
+            let step = fit(1.0, |st| (band * 2.0 / st) * (w / p));
+            for (y0, flip) in [(cv.inset, false), (h - cv.inset - band, true)] {
+                let mut y = 0.0;
+                while y < band {
+                    let base = if flip { y } else { -y };
+                    let mut x = base.rem_euclid(p) - p;
+                    while x < w {
+                        cv.quad(x, y0 + y, p / 2.0, step, scale_alpha(sp.ink, 0.32 * s));
+                        x += p;
+                    }
+                    y += step;
+                }
+            }
+        }
+        Texture::HexMesh => {
+            let a = (7.0 * k).max(4.0);
+            let (cw, rh) = (a * 1.732, a * 1.5);
+            let rows = fit(rh, |r| (h / r) * (w / cw) * 2.0);
+            let rows_n = (h / rows) as i32 + 1;
+            let cols_n = (w / cw) as i32 + 1;
+            for iy in 0..rows_n {
+                let off = if iy % 2 == 0 { 0.0 } else { cw / 2.0 };
+                let y = iy as f32 * rows;
+                for ix in 0..cols_n {
+                    let x = ix as f32 * cw + off;
+                    cv.line(x, y, 1.0, a * 0.5, scale_alpha(sp.ink, 0.42 * s));
+                    cv.dot(x + 0.5, y, 2.0, scale_alpha(sp.ink, 0.6 * s));
+                    cv.quad(
+                        x + 0.5,
+                        y + a * 0.5,
+                        cw / 2.0,
+                        1.0,
+                        scale_alpha(sp.ink, 0.24 * s),
+                    );
+                }
+            }
+        }
+        Texture::Rain => {
+            let n = ((w * h / 650.0 / k) as i32).min(MAX_QUADS as i32 / 3);
+            for i in 0..n {
+                let (x, y) = (noise(i, seed) * w, noise(seed, i + 3) * h);
+                let len = (6.0 + noise(i, 8) * 14.0) * k;
+                let a = 0.1 + 0.3 * noise(i + 1, 2);
+                cv.line(x, y, 1.0, len, scale_alpha(sp.ink, a * s * 1.5));
+            }
+        }
+        Texture::Grime => {
+            let clusters = ((w * h / 1400.0) as i32).min(60);
+            for i in 0..clusters {
+                let (cx, cy) = (noise(i, seed) * w, noise(seed, i + 9) * h);
+                for j in 0..7 {
+                    let (dx, dy) = (
+                        (noise(i, j + 40) - 0.5) * 14.0 * k,
+                        (noise(j, i + 70) - 0.5) * 8.0 * k,
+                    );
+                    let sz = 1.5 + noise(i + j, 6) * 3.5 * k;
+                    let a = 0.05 + 0.13 * noise(j + 11, i);
+                    cv.quad(
+                        cx + dx,
+                        cy + dy,
+                        sz,
+                        sz * 0.7,
+                        scale_alpha(sp.ink, a * s * 2.0),
+                    );
+                }
+            }
+        }
+        Texture::DataStream => {
+            let (px_, py) = (fit(5.0 * k, |p| w * h / (p * p * 1.5)), 6.0 * k);
+            let (nx, ny) = ((w / px_) as i32, (h / py) as i32);
+            for iy in 0..=ny {
+                for ix in 0..=nx {
+                    let r = noise(ix + seed, iy + 17);
+                    if r > 0.55 {
+                        let lit = r > 0.93;
+                        let c = if lit {
+                            scale_alpha(sp.neon, 0.8 * s.max(0.4))
+                        } else {
+                            scale_alpha(sp.ink, 0.2 * s)
+                        };
+                        cv.quad(ix as f32 * px_, iy as f32 * py, px_ * 0.6, py * 0.3, c);
+                    }
+                }
+            }
+        }
+        Texture::GlitchBlocks => {
+            let n = ((w * h / 2600.0) as i32).clamp(3, 40);
+            for i in 0..n {
+                let (x, y) = (noise(i, seed) * w, noise(seed, i + 5) * h);
+                let (bw, bh) = ((8.0 + noise(i, 3) * 26.0) * k, 2.0 + noise(i, 4) * 3.0);
+                let a = 0.1 + 0.22 * noise(i, 12);
+                cv.quad(x, y, bw, bh, scale_alpha(sp.ink, a * s * 1.6));
+                cv.quad(x + 2.0, y, bw, bh, scale_alpha(sp.a, 0.16 * s));
+            }
+        }
+        Texture::ChipDie => {
+            let a = scale_alpha(sp.ink, 0.42 * s);
+            let (mx, my) = (w * 0.2, h * 0.2);
+            let (x0, y0, x1, y1) = (mx, my, w - mx, h - my);
+            cv.line(x0, y0, x1 - x0, 1.0, a);
+            cv.line(x0, y1, x1 - x0, 1.0, a);
+            cv.line(x0, y0, 1.0, y1 - y0, a);
+            cv.line(x1, y0, 1.0, y1 - y0 + 1.0, a);
+            let q = scale_alpha(sp.ink, 0.28 * s);
+            let (ix, iy) = (w * 0.32, h * 0.32);
+            cv.quad(ix, iy, w - 2.0 * ix, 1.0, q);
+            cv.quad(ix, h - iy, w - 2.0 * ix, 1.0, q);
+            cv.quad(ix, iy, 1.0, h - 2.0 * iy, q);
+            cv.quad(w - ix, iy, 1.0, h - 2.0 * iy, q);
+            let pin = fit((6.0 * k).max(4.0), |p| (w + h) / p * 2.0);
+            let mut x = x0 + pin;
+            while x < x1 {
+                cv.quad(x, y0 - 4.0, 1.0, 4.0, a);
+                cv.quad(x, y1, 1.0, 4.0, a);
+                x += pin;
+            }
+            let mut y = y0 + pin;
+            while y < y1 {
+                cv.quad(x0 - 4.0, y, 4.0, 1.0, a);
+                cv.quad(x1, y, 4.0, 1.0, a);
+                y += pin;
+            }
+        }
+        Texture::Wiring => {
+            let p = fit((6.0 * k).max(4.0), |p| h / p * 6.0);
+            let rows = (h / p) as i32;
+            let a = scale_alpha(sp.ink, 0.26 * s);
+            for iy in 0..=rows {
+                let y = iy as f32 * p;
+                let mut x = noise(iy, seed) * 20.0;
+                let mut seg = 0;
+                while x < w {
+                    let len = 18.0 + noise(iy, seg + 30) * 50.0 * k;
+                    if noise(iy + 50, seg + seed) > 0.25 {
+                        cv.line(x, y, len, 1.0, a);
+                    }
+                    if noise(seg, iy + 80) > 0.6 {
+                        cv.line(x + len, y, 1.0, p, a);
+                    }
+                    x += len + 4.0 + noise(seg, iy) * 10.0;
+                    seg += 1;
+                }
+            }
+        }
+        Texture::Radar => {
+            let (cx, cy) = (w / 2.0, h / 2.0);
+            let m = w.min(h) / 2.0 - cv.inset - 2.0;
+            if m > 6.0 {
+                for f in [0.34, 0.67, 1.0] {
+                    cv.ring(cx, cy, m * f, 1.0, scale_alpha(sp.ink, 0.24 * s));
+                }
+                cv.quad(cx - m, cy, 2.0 * m, 1.0, scale_alpha(sp.ink, 0.2 * s));
+                cv.quad(cx, cy - m, 1.0, 2.0 * m, scale_alpha(sp.ink, 0.2 * s));
+            }
+        }
         Texture::Scanlines => {
             crate::paint::paint_scanlines(
                 cv.window,
@@ -659,6 +898,116 @@ fn grid(cv: &mut Canvas, sp: &SurfacePaint, pitch: f32, major: i32, minor_a: f32
         }
         x += p;
         i += 1;
+    }
+}
+
+/// Inner shadow: dark rings pulled in from the edge, fading inward.
+fn depth(cv: &mut Canvas, sp: &SurfacePaint) {
+    let d = sp.fx.depth.clamp(0.0, 1.0);
+    let n = 6;
+    for k in 0..n {
+        let f = 1.0 - k as f32 / n as f32;
+        cv.outline_inset(
+            cv.inset + 1.0 + 2.0 * k as f32,
+            2.0,
+            scale_alpha(sp.shade, 0.55 * d * f * f),
+        );
+    }
+}
+
+/// Light falling inward from the edges, in the neon colour.
+fn edge_light(cv: &mut Canvas, sp: &SurfacePaint) {
+    let e = sp.fx.edge.clamp(0.0, 1.0);
+    let n = 5;
+    for k in 0..n {
+        let f = 1.0 - k as f32 / n as f32;
+        cv.outline_inset(
+            cv.inset + 0.5 + 1.6 * k as f32,
+            1.6,
+            scale_alpha(sp.neon, 0.5 * e * f * f),
+        );
+    }
+}
+
+/// Bracket marks in the four corners (kept clear of cut corners).
+fn brackets(cv: &mut Canvas, sp: &SurfacePaint) {
+    let b = sp.fx.brackets.clamp(0.0, 1.0);
+    let (w, h) = (cv.w, cv.h);
+    let arm = (w.min(h) * 0.22).clamp(5.0, 12.0);
+    let m = cv.inset + 3.0;
+    let c = scale_alpha(sp.neon, 0.9 * b);
+    let left = |cv: &Canvas, y: f32| cv.span(y).map_or(m, |s| s.0.max(0.0) + m);
+    let right = |cv: &Canvas, y: f32| cv.span(y).map_or(w - m, |s| s.1.min(w) - m);
+    let tl = left(cv, m).max(left(cv, m + arm));
+    let tr = right(cv, m).min(right(cv, m + arm));
+    let bl = left(cv, h - m).max(left(cv, h - m - arm));
+    let br = right(cv, h - m).min(right(cv, h - m - arm));
+    cv.quad(tl, m, arm, 1.5, c);
+    cv.quad(tl, m, 1.5, arm, c);
+    cv.quad(tr - arm, m, arm, 1.5, c);
+    cv.quad(tr - 1.5, m, 1.5, arm, c);
+    cv.quad(bl, h - m - 1.5, arm, 1.5, c);
+    cv.quad(bl, h - m - arm, 1.5, arm, c);
+    cv.quad(br - arm, h - m - 1.5, arm, 1.5, c);
+    cv.quad(br - 1.5, h - m - arm, 1.5, arm, c);
+}
+
+/// Breathing light along the border.
+fn pulse(cv: &mut Canvas, sp: &SurfacePaint) {
+    let p = sp.fx.pulse.clamp(0.0, 1.0);
+    let phase = clock() / sp.tune.pulse_period.max(0.4) * std::f32::consts::TAU;
+    let a = 0.5 + 0.5 * phase.sin();
+    let d = cv.inset * 0.5;
+    cv.outline_inset(d, cv.inset + 4.0, scale_alpha(sp.neon, 0.12 * p * a));
+    cv.outline_inset(
+        d,
+        cv.inset + 1.0,
+        scale_alpha(sp.neon, (0.15 + 0.7 * a) * p),
+    );
+}
+
+/// A bright segment (with a fading tail) running around the border.
+fn chase(cv: &mut Canvas, sp: &SurfacePaint, seed: i32) {
+    let k = sp.fx.chase.clamp(0.0, 1.0);
+    let d = cv.inset * 0.5;
+    let (w, h) = (cv.w - 2.0 * d, cv.h - 2.0 * d);
+    if w < 4.0 || h < 4.0 {
+        return;
+    }
+    let pts: Vec<(f32, f32)> = cv
+        .shape
+        .outline(w, h)
+        .into_iter()
+        .map(|(x, y)| (x + d, y + d))
+        .collect();
+    let n = pts.len();
+    let mut cum = vec![0.0_f32];
+    for i in 0..n {
+        let (a, b) = (pts[i], pts[(i + 1) % n]);
+        cum.push(cum[i] + ((b.0 - a.0).powi(2) + (b.1 - a.1).powi(2)).sqrt());
+    }
+    let total = cum[n].max(1.0);
+    let at = |s: f32| {
+        let s = s.rem_euclid(total);
+        let i = cum.partition_point(|c| *c <= s).clamp(1, n) - 1;
+        let (a, b) = (pts[i], pts[(i + 1) % n]);
+        let t = (s - cum[i]) / (cum[i + 1] - cum[i]).max(1e-3);
+        (a.0 + (b.0 - a.0) * t, a.1 + (b.1 - a.1) * t)
+    };
+    let head = ((clock() / sp.tune.chase_period.max(0.5) + noise(seed, 5)).fract()) * total;
+    let len = (total * 0.16).max(18.0);
+    let parts = 3;
+    for j in 0..parts {
+        let (s0, s1) = (
+            head - len * (j + 1) as f32 / parts as f32,
+            head - len * j as f32 / parts as f32,
+        );
+        let seg: Vec<(f32, f32)> = (0..=6)
+            .map(|i| at(s0 + (s1 - s0) * i as f32 / 6.0))
+            .collect();
+        let f = (parts - j) as f32 / parts as f32;
+        cv.polyline(&seg, cv.inset + 3.0, scale_alpha(sp.neon, 0.15 * k * f));
+        cv.polyline(&seg, cv.inset + 0.5, scale_alpha(sp.neon, 0.9 * k * f * f));
     }
 }
 

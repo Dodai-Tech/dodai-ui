@@ -1305,6 +1305,12 @@ fn main() {
                     "sheen" => fx.sheen = 1.0,
                     "flicker" => fx.flicker = 0.6,
                     "bloom" => fx.bloom = 0.6,
+                    "pulse" => fx.pulse = 0.8,
+                    "chase" => fx.chase = 0.8,
+                    "edge" => fx.edge = 0.8,
+                    "brackets" => fx.brackets = 0.8,
+                    "depth" => fx.depth = 0.8,
+                    "clear" => fx.clear = 0.7,
                     "preset" => fx = theme_of(cx).surface_preset(),
                     name => {
                         if let Some(t) = dodai_core::Texture::ALL

@@ -275,8 +275,13 @@ impl Showcase {
                     div()
                         .id(id)
                         .cursor_pointer()
-                        .px_2()
-                        .child(Muted::new(label))
+                        .flex_none()
+                        .whitespace_nowrap()
+                        .text_size(px(t.typography.size_sm))
+                        .text_color(dodai_gpui::hsla(t.palette.link))
+                        .underline()
+                        .hover(|s| s.opacity(0.7))
+                        .child(label)
                         .on_click(move |_, _, cx| {
                             let mut f = dodai_gpui::surface_fx();
                             f.targets = to;
@@ -285,21 +290,28 @@ impl Showcase {
                 };
             let targets = row()
                 .children(SurfaceClass::ALL.iter().map(|c| chip(*c)))
-                .child(shortcut(
-                    "sfx-t-default",
-                    "Default",
-                    dodai_core::SurfaceTargets::DEFAULT,
-                ))
-                .child(shortcut(
-                    "sfx-t-all",
-                    "All",
-                    dodai_core::SurfaceTargets::ALL,
-                ))
-                .child(shortcut(
-                    "sfx-t-none",
-                    "None",
-                    dodai_core::SurfaceTargets::NONE,
-                ));
+                .child(
+                    div()
+                        .flex()
+                        .flex_none()
+                        .items_center()
+                        .gap(px(t.spacing.md))
+                        .child(shortcut(
+                            "sfx-t-default",
+                            "Default",
+                            dodai_core::SurfaceTargets::DEFAULT,
+                        ))
+                        .child(shortcut(
+                            "sfx-t-all",
+                            "All",
+                            dodai_core::SurfaceTargets::ALL,
+                        ))
+                        .child(shortcut(
+                            "sfx-t-none",
+                            "None",
+                            dodai_core::SurfaceTargets::NONE,
+                        )),
+                );
             let id = |p: &'static str, n: &str| gpui::SharedString::from(format!("{p}-{n}"));
             let preview_components = |p: &'static str| {
                 row()
@@ -349,6 +361,7 @@ impl Showcase {
                     .child(amount("sfx-strength", "Strength", fx.strength, 1.0, |f, v| f.strength = v))
                     .child(amount("sfx-scale", "Scale", fx.scale, 4.0, |f, v| f.scale = v.max(0.25)))
                     .child(amount("sfx-neon", "Lit lines", fx.neon, 1.0, |f, v| f.neon = v))
+                    .child(amount("sfx-clear", "Clear centre", fx.clear, 1.0, |f, v| f.clear = v))
                     .child(preview_components("sfx-tx"))
                     .into_any_element(),
                 "Component textures",
@@ -385,6 +398,7 @@ impl Showcase {
                     .child(amount("sfx-cstrength", "Strength", fx.container_strength, 1.0, |f, v| f.container_strength = v))
                     .child(amount("sfx-cscale", "Scale", fx.container_scale, 4.0, |f, v| f.container_scale = v.max(0.25)))
                     .child(amount("sfx-cneon", "Lit lines", fx.neon, 1.0, |f, v| f.neon = v))
+                    .child(amount("sfx-cclear", "Clear centre", fx.clear, 1.0, |f, v| f.clear = v))
                     .into_any_element(),
                 "Container textures",
             ));
@@ -408,6 +422,12 @@ impl Showcase {
                         }))
                         .child(amount("sfx-bloom", "Bloom", fx.bloom, 1.0, |f, v| {
                             f.bloom = v
+                        }))
+                        .child(amount("sfx-pulse", "Pulse", fx.pulse, 1.0, |f, v| {
+                            f.pulse = v
+                        }))
+                        .child(amount("sfx-chase", "Chase", fx.chase, 1.0, |f, v| {
+                            f.chase = v
                         }));
                 }
                 out.push((
@@ -415,6 +435,22 @@ impl Showcase {
                     "Light FX",
                     light.into_any_element(),
                     "Light FX",
+                ));
+            }
+            if t.surface_effects() {
+                out.push((
+                    "Surface effects",
+                    "Edges · Depth",
+                    section!("Edges · Depth")
+                        .child(Muted::new(
+                            "How the edges look: light falling inward, corner brackets and an inner shadow. Clear centre (under textures) keeps text clean.",
+                        ))
+                        .child(amount("sfx-edge", "Edge light", fx.edge, 1.0, |f, v| f.edge = v))
+                        .child(amount("sfx-brackets", "Brackets", fx.brackets, 1.0, |f, v| f.brackets = v))
+                        .child(amount("sfx-depth", "Depth", fx.depth, 1.0, |f, v| f.depth = v))
+                        .child(preview_components("sfx-ed"))
+                        .into_any_element(),
+                    "Edges · Depth",
                 ));
             }
         }

@@ -369,6 +369,8 @@ pub use dodai_cyberpunk_icons as icons;
 /// the light variants suggest the same, quieter.
 fn surface_style(dark: bool) -> dodai_core::SurfaceStyle {
     let calm = if dark { 1.0 } else { 0.6 };
+    // Light surfaces show motion more, so the animations run slower there.
+    let slow = if dark { 1.0 } else { 1.5 };
     dodai_core::SurfaceStyle {
         preset: dodai_core::SurfaceFx {
             texture: dodai_core::Texture::Grain,
@@ -379,13 +381,19 @@ fn surface_style(dark: bool) -> dodai_core::SurfaceStyle {
             glitch: 0.3,
             flicker: 0.15,
             bloom: 0.3 * calm,
+            edge: 0.2 * calm,
+            clear: 0.5,
             ..dodai_core::SurfaceFx::NONE
         },
         textures: &dodai_core::Texture::ALL,
         effects: true,
         tuning: dodai_core::SurfaceTuning {
             halo: 1.5,
-            glitch_period: 3.2,
+            glitch_period: 3.2 * slow,
+            sheen_period: 3.6 * slow,
+            flicker_chance: 0.18 / slow,
+            pulse_period: 2.4 * slow,
+            chase_period: 4.0 * slow,
             ..dodai_core::SurfaceTuning::DEFAULT
         },
     }
