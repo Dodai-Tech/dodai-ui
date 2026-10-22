@@ -250,10 +250,16 @@ fn tabs_lists_inputs_and_progress_follow_the_spec() {
     }
 }
 
-/// Designs without a tonal look keep their own shape for every role (no component may assume M3).
+/// Designs without a tonal look and without per-role shapes keep their own shape for every
+/// role (no component may assume M3).
 #[test]
 fn untonal_designs_keep_their_geometry() {
-    for t in themes::all().into_iter().filter(|t| !t.look().tonal) {
+    let has_roles =
+        |t: &dodai_core::Theme| t.shape_system.as_ref().is_some_and(|s| !s.roles.is_empty());
+    for t in themes::all()
+        .into_iter()
+        .filter(|t| !t.look().tonal && !has_roles(t))
+    {
         let legacy = t.shape.clone();
         for role in [
             ShapeRole::Button,

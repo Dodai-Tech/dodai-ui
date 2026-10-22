@@ -38,6 +38,7 @@ use std::time::Duration;
 mod catalog;
 mod charts_page;
 mod foundations;
+mod impl_src;
 mod motion_page;
 mod overview;
 mod sections;
@@ -60,6 +61,8 @@ pub struct Showcase {
     sec_mode: std::collections::HashMap<&'static str, Player>,
     /// Sections whose "</> Code" panel is open.
     code_open: std::collections::HashSet<&'static str>,
+    /// Which component's implementation (or the usage snippet) each open code panel shows.
+    code_pick: std::collections::HashMap<&'static str, usize>,
     loop_gen: u32,
     ld_pb: dodai_gpui::Playback,
     ld_ms: u16,
@@ -562,29 +565,77 @@ impl Showcase {
         t: &Theme,
         me: &gpui::Entity<Showcase>,
     ) -> gpui::AnyElement {
-        let Some(key) = key else { return el };
-        let Some(code) = snippets::snippet(key) else {
+        // What the panel can show: the implementation of each component the section uses, then
+        // (when there is one) the usage snippet.
+        let comps = impl_src::components(key.unwrap_or(title));
+        let usage = key.and_then(snippets::snippet);
+        let mut tabs: Vec<String> = comps.clone();
+        if usage.is_some() {
+            tabs.push("Usage".into());
+        }
+        if tabs.is_empty() {
             return el;
+        }
+        let pick = self
+            .code_pick
+            .get(title)
+            .copied()
+            .unwrap_or(0)
+            .min(tabs.len() - 1);
+        let code = match comps.get(pick) {
+            Some(name) => impl_src::implementation(name).unwrap_or_default(),
+            None => usage.unwrap_or_default(),
         };
         let open = self.code_open.contains(title) || std::env::var_os("DODAI_CODE").is_some();
         let me = me.clone();
         let tid = section_id(title);
-        let toggle = code_toggle(("code-toggle", tid), t, open, move |_, _, cx| {
-            me.update(cx, |s, cx| {
-                if !s.code_open.remove(title) {
-                    s.code_open.insert(title);
-                }
-                cx.notify();
-            })
+        let toggle = code_toggle(("code-toggle", tid), t, open, {
+            let me = me.clone();
+            move |_, _, cx| {
+                me.update(cx, |s, cx| {
+                    if !s.code_open.remove(title) {
+                        s.code_open.insert(title);
+                    }
+                    cx.notify();
+                })
+            }
         });
+        let max_h = t.typography.size_md * 26.0;
         div()
             .flex()
             .flex_col()
-            .gap(px(6.0))
+            .gap(px(t.spacing.sm - t.spacing.xs / 2.0))
             .child(el)
             .child(div().flex().justify_end().child(toggle))
             .when(open, |d| {
-                d.child(dodai_gpui::CodeBlock::new(("snippet", tid), code).language("rust"))
+                d.when(tabs.len() > 1, |d| {
+                    let me = me.clone();
+                    d.child(
+                        div().flex().child(
+                            dodai_gpui::Segmented::new(("code-tabs", tid), tabs.clone())
+                                .selected(pick)
+                                .on_change(move |i, _, cx| {
+                                    me.update(cx, |s, cx| {
+                                        s.code_pick.insert(title, i);
+                                        cx.notify();
+                                    })
+                                }),
+                        ),
+                    )
+                })
+                .child(
+                    div()
+                        .id(SharedString::from(format!("code-scroll-{tid}")))
+                        .max_h(px(max_h))
+                        .overflow_y_scroll()
+                        .child(
+                            dodai_gpui::CodeBlock::new(
+                                SharedString::from(format!("snippet-{tid}-{pick}")),
+                                code,
+                            )
+                            .language("rust"),
+                        ),
+                )
             })
             .into_any_element()
     }
@@ -1155,6 +1206,7 @@ impl Showcase {
             sec_playing: Default::default(),
             sec_mode: Default::default(),
             code_open: Default::default(),
+            code_pick: Default::default(),
             loop_gen: 0,
             ld_pb: dodai_gpui::Playback::Loop,
             ld_ms: 0,
@@ -1163,7 +1215,10 @@ impl Showcase {
             realised: Default::default(),
             fresh: Default::default(),
             width: 0.0,
-            jump: None,
+            // Test aid: start scrolled to a section (`DODAI_JUMP=Tabs`).
+            jump: std::env::var("DODAI_JUMP")
+                .ok()
+                .map(|j| (&*Box::leak(j.into_boxed_str()), 1)),
             sec_kind: Default::default(),
             pill_hover: None,
             pop_hover: None,

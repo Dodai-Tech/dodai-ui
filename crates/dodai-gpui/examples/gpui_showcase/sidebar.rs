@@ -113,6 +113,19 @@ impl Showcase {
         if !rail {
             side = side.child(div().pb(px(t.spacing.sm)).child(self.filter.clone()));
         }
+        // Where the reader is: on a category page that is the page itself; on All it follows the
+        // scroll (the category of the section at the top, "All" while the hero is showing).
+        let at_top = f32::from(self.scroll.offset().y) > -1.0;
+        let cur_cat = if self.cat > 0 {
+            self.cat
+        } else if at_top {
+            0
+        } else {
+            active
+                .and_then(|a| sections_meta.iter().find(|(_, t)| *t == a))
+                .and_then(|(c, _)| cats.iter().position(|x| x == c))
+                .map_or(0, |i| i + 1)
+        };
         let mut drawer = NavigationDrawer::new("nav");
         let mut rail_nav = NavigationRail::new("nav-rail");
         for (idx, name) in std::iter::once("All")
@@ -135,7 +148,7 @@ impl Showcase {
                 rail_nav = rail_nav.item(
                     NavigationItem::new(("cat", idx), name)
                         .icon(cat_icon(name))
-                        .selected(self.cat == idx)
+                        .selected(cur_cat == idx)
                         .on_click(go),
                 );
                 continue;
@@ -144,12 +157,15 @@ impl Showcase {
                 NavigationItem::new(("cat", idx), name)
                     .icon(cat_icon(name))
                     .badge(n.to_string())
-                    .selected(self.cat == idx)
+                    .selected(cur_cat == idx)
                     .on_click(go),
             );
-            if self.cat == idx && idx > 0 {
-                for sub in std::iter::once(None).chain(subs(name).iter().copied().map(Some)) {
-                    if sub.is_none() && subs(name).is_empty() {
+            if cur_cat == idx && idx > 0 {
+                // The sub-group the reader is in: the chosen filter, else the one scrolled to.
+                let cur_sub = self.sub.or_else(|| active.and_then(|a| sub_of(name, a)));
+                let shown_subs = if self.cat == idx { subs(name) } else { &[] };
+                for sub in std::iter::once(None).chain(shown_subs.iter().copied().map(Some)) {
+                    if sub.is_none() && shown_subs.is_empty() {
                         break;
                     }
                     let m = me.clone();
@@ -171,7 +187,7 @@ impl Showcase {
                         )
                         .depth(1)
                         .badge(cnt.to_string())
-                        .selected(self.sub == sub)
+                        .selected(cur_sub == sub)
                         .on_click(move |_, _, cx| {
                             m.update(cx, |s, cx| {
                                 s.sub = sub;

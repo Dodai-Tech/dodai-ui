@@ -10,6 +10,7 @@
 //! | `cyberpunk` | [`dodai-cyberpunk`](https://docs.rs/dodai-cyberpunk) (+ `dodai-cyberpunk-icons`) |
 //! | `material` | [`dodai-material`](https://docs.rs/dodai-material) (+ `dodai-material-icons`) |
 //! | `neobrutalism` | [`dodai-neobrutalism`](https://docs.rs/dodai-neobrutalism) |
+//! | `aurora` | [`dodai-aurora`](https://docs.rs/dodai-aurora) |
 //! | `shaders` | [`dodai-shaders`](https://docs.rs/dodai-shaders) |
 //!
 //! ```
@@ -26,6 +27,8 @@ pub use dodai_cyberpunk as cyberpunk;
 pub use dodai_material as material;
 #[cfg(feature = "neobrutalism")]
 pub use dodai_neobrutalism as neobrutalism;
+#[cfg(feature = "aurora")]
+pub use dodai_aurora as aurora;
 #[cfg(feature = "shaders")]
 pub use dodai_shaders as shaders;
 
@@ -42,6 +45,8 @@ pub mod themes {
     pub use dodai_material as material;
     #[cfg(feature = "neobrutalism")]
     pub use dodai_neobrutalism as neobrutalism;
+    #[cfg(feature = "aurora")]
+    pub use dodai_aurora as aurora;
 
     /// A registered design system: its family id, display name and themes.
     #[derive(Clone, Copy)]
@@ -77,6 +82,12 @@ pub mod themes {
             family: "neobrutalism",
             name: "Neo-Brutalism",
             themes: dodai_neobrutalism::variants,
+        });
+        #[cfg(feature = "aurora")]
+        v.push(DesignSystem {
+            family: "aurora",
+            name: "Aurora",
+            themes: dodai_aurora::variants,
         });
         v
     }

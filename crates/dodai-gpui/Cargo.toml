@@ -12,7 +12,7 @@ keywords     = ["theme", "design-system", "gpui", "cyberpunk"]
 categories   = ["gui"]
 
 [features]
-default    = ["components", "charts", "shaders", "cyberpunk", "material", "neobrutalism"]
+default    = ["components", "charts", "shaders", "cyberpunk", "material", "neobrutalism", "aurora"]
 # Buttons, tables, dialogs, pickers, navigation, ...
 components = []
 # Charts only (always includes the theme, painting and motion core).
@@ -28,6 +28,8 @@ cyberpunk = ["dodai-cyberpunk-icons/shapes", "dodai-icons/cyberpunk"]
 material = ["dep:dodai-material-icons", "dodai-icons/material"]
 # The bold Neo-Brutalism icon pack (`Icon` on themes that declare `IconSet::Bold`).
 neobrutalism = ["dodai-icons/neobrutalism"]
+# Aurora Design System 4: draws Material Symbols, so it implies `material`.
+aurora = ["material"]
 
 [dependencies]
 dodai-core = { workspace = true }
@@ -46,7 +48,7 @@ name = "gpui_showcase"
 required-features = ["components", "charts"]
 
 [dev-dependencies]
-dodai = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "icons"] }
+dodai = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "aurora", "icons"] }
 dodai-cyberpunk-icons = { workspace = true, features = ["shapes"] }
 gpui = { workspace = true, features = ["test-support"] }
 

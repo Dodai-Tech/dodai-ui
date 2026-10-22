@@ -4245,6 +4245,7 @@ dependencies = [
  "dodai-icons",
  "dodai-material",
  "dodai-neobrutalism",
+ "dodai-aurora",
  "dodai-shaders",
 ]
 
@@ -4393,6 +4394,13 @@ version = "0.1.0"
 
 [[package]]
 name = "dodai-neobrutalism"
+version = "0.1.0"
+dependencies = [
+ "dodai-core",
+]
+
+[[package]]
+name = "dodai-aurora"
 version = "0.1.0"
 dependencies = [
  "dodai-core",
