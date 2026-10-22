@@ -1329,7 +1329,9 @@ fn main() {
             let b = dodai_gpui::section_border(cx);
             dodai_gpui::set_section_border(cx, b.accent(e));
         }
-        // Debug: DODAI_SIZE=WxH opens a differently sized window (e.g. 1100x1400).
+        // Starts full screen. DODAI_SIZE=WxH (e.g. 1100x1400) or DODAI_WINDOWED=1 opens a normal window.
+        let windowed = std::env::var_os("DODAI_SIZE").is_some()
+            || std::env::var_os("DODAI_WINDOWED").is_some();
         let (dw, dh) = std::env::var("DODAI_SIZE")
             .ok()
             .and_then(|v| {
@@ -1341,7 +1343,11 @@ fn main() {
         let win = cx
             .open_window(
                 WindowOptions {
-                    window_bounds: Some(WindowBounds::Windowed(bounds)),
+                    window_bounds: Some(if windowed {
+                        WindowBounds::Windowed(bounds)
+                    } else {
+                        WindowBounds::Fullscreen(bounds)
+                    }),
                     window_min_size: Some(size(px(420.0), px(360.0))),
                     ..Default::default()
                 },
