@@ -213,14 +213,6 @@ impl Showcase {
                         f.texture = Texture::ALL[i];
                         dodai_gpui::set_surface_fx(cx, f);
                     });
-            let group = |title: &'static str, hint: &'static str| {
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap(px(t.spacing.sm))
-                    .child(Label::new(title))
-                    .child(Muted::new(hint))
-            };
             let presets = row()
                 .child(
                     Button::new("sfx-preset", "Apply design preset")
@@ -231,41 +223,7 @@ impl Showcase {
                         .variant(ButtonVariant::Outline)
                         .on_click(|_, _, cx| dodai_gpui::set_surface_fx(cx, SurfaceFx::NONE)),
                 );
-            let glow = group(
-                "Glow and scanlines",
-                "Theme-wide, on every component. Cut corners are under Corner shape.",
-            )
-            .child(shape_props);
-            let texture = group("Texture", "A static pattern over filled surfaces.")
-                .child(picker)
-                .child(amount(
-                    "sfx-strength",
-                    "Strength",
-                    fx.strength,
-                    1.0,
-                    |f, v| f.strength = v,
-                ))
-                .child(amount("sfx-scale", "Scale", fx.scale, 4.0, |f, v| {
-                    f.scale = v.max(0.25)
-                }));
-            let effects = group("Effects", "Animated accents. 0 turns one off.")
-                .child(amount("sfx-glitch", "Glitch", fx.glitch, 1.0, |f, v| {
-                    f.glitch = v
-                }))
-                .child(amount("sfx-sheen", "Sheen", fx.sheen, 1.0, |f, v| {
-                    f.sheen = v
-                }))
-                .child(amount("sfx-flicker", "Flicker", fx.flicker, 1.0, |f, v| {
-                    f.flicker = v
-                }))
-                .child(amount("sfx-bloom", "Bloom", fx.bloom, 1.0, |f, v| {
-                    f.bloom = v
-                }));
-            let targets = group(
-                "Apply to",
-                "Which kinds of surface get the texture and effects above.",
-            )
-            .child(row().children(SurfaceClass::ALL.iter().map(|c| {
+            let targets = row().children(SurfaceClass::ALL.iter().map(|c| {
                 let c = *c;
                 row()
                     .child(
@@ -280,46 +238,109 @@ impl Showcase {
                         }),
                     )
                     .child(Label::new(c.label()))
-            })));
-            let controls = div()
-                .flex()
-                .flex_col()
-                .gap(px(t.spacing.lg))
-                .child(presets)
-                .children(t.look().luminous.then_some(glow))
-                .child(texture)
-                .child(effects)
-                .child(targets);
-            let preview = div()
-                .flex()
-                .flex_col()
-                .gap(px(t.spacing.sm))
-                .child(
-                    row()
-                        .child(Button::new("sfx-b1", "Primary"))
-                        .child(Button::new("sfx-b2", "Secondary").variant(ButtonVariant::Secondary))
-                        .child(Button::new("sfx-b3", "Outline").variant(ButtonVariant::Outline)),
-                )
-                .child(
-                    div().w(px(360.0)).child(
-                        Card::new(dodai_gpui::CardVariant::Elevated)
-                            .child(Heading::new("Card"))
-                            .child(Muted::new(
-                                "Texture and effects follow the card's own shape.",
-                            )),
-                    ),
-                );
+            }));
+            let preview = |p: &'static str| {
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(t.spacing.sm))
+                    .child(Muted::new("Preview"))
+                    .child(
+                        row()
+                            .child(Button::new(
+                                gpui::SharedString::from(format!("{p}-b1")),
+                                "Primary",
+                            ))
+                            .child(
+                                Button::new(
+                                    gpui::SharedString::from(format!("{p}-b2")),
+                                    "Secondary",
+                                )
+                                .variant(ButtonVariant::Secondary),
+                            )
+                            .child(
+                                Button::new(gpui::SharedString::from(format!("{p}-b3")), "Outline")
+                                    .variant(ButtonVariant::Outline),
+                            ),
+                    )
+                    .child(
+                        div().w(px(360.0)).child(
+                            Card::new(dodai_gpui::CardVariant::Elevated)
+                                .child(Heading::new("Card"))
+                                .child(Muted::new("Follows the card's own shape.")),
+                        ),
+                    )
+            };
             out.push((
                 "Surface effects",
-                "Glow · Textures · Effects",
-                section!("Glow · Textures · Effects")
+                "Presets · Apply to",
+                section!("Presets · Apply to")
                     .child(Muted::new(
-                        "Everything that changes how surfaces look, in one place. Textures and effects are clipped to each surface's shape, and each design can suggest a mix.",
+                        "A design can suggest a mix of texture and effects. Choose which kinds of surface receive them; nothing is drawn until you turn something on.",
                     ))
-                    .child(controls)
-                    .child(preview)
+                    .child(presets)
+                    .child(Label::new("Apply to"))
+                    .child(targets)
                     .into_any_element(),
-                "Glow · Textures · Effects",
+                "Presets · Apply to",
+            ));
+            if t.look().luminous {
+                out.push((
+                    "Surface effects",
+                    "Glow · Scanlines",
+                    section!("Glow · Scanlines")
+                        .child(Muted::new(
+                            "Theme-wide, on every component. Cut corners are under Corner shape.",
+                        ))
+                        .child(shape_props)
+                        .into_any_element(),
+                    "Glow · Scanlines",
+                ));
+            }
+            out.push((
+                "Surface effects",
+                "Textures",
+                section!("Textures")
+                    .child(Muted::new(
+                        "A static pattern over filled surfaces, clipped to each surface's shape.",
+                    ))
+                    .child(picker)
+                    .child(amount(
+                        "sfx-strength",
+                        "Strength",
+                        fx.strength,
+                        1.0,
+                        |f, v| f.strength = v,
+                    ))
+                    .child(amount("sfx-scale", "Scale", fx.scale, 4.0, |f, v| {
+                        f.scale = v.max(0.25)
+                    }))
+                    .child(preview("sfx-tx"))
+                    .into_any_element(),
+                "Textures",
+            ));
+            out.push((
+                "Surface effects",
+                "Effects",
+                section!("Effects")
+                    .child(Muted::new(
+                        "Animated accents on filled surfaces. 0 turns one off.",
+                    ))
+                    .child(amount("sfx-glitch", "Glitch", fx.glitch, 1.0, |f, v| {
+                        f.glitch = v
+                    }))
+                    .child(amount("sfx-sheen", "Sheen", fx.sheen, 1.0, |f, v| {
+                        f.sheen = v
+                    }))
+                    .child(amount("sfx-flicker", "Flicker", fx.flicker, 1.0, |f, v| {
+                        f.flicker = v
+                    }))
+                    .child(amount("sfx-bloom", "Bloom", fx.bloom, 1.0, |f, v| {
+                        f.bloom = v
+                    }))
+                    .child(preview("sfx-fx"))
+                    .into_any_element(),
+                "Effects",
             ));
         }
         if t.look().cut_corners {
