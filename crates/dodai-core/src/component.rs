@@ -864,6 +864,17 @@ impl Theme {
         t
     }
 
+    /// The design's frosted glass: tint and backdrop blur.
+    pub fn frost(&self) -> crate::Frost {
+        self.spec
+            .get()
+            .and_then(|s| s.frost(self))
+            .unwrap_or(crate::Frost {
+                tint: self.palette.surface.with_alpha(0.6),
+                blur: 24.0,
+            })
+    }
+
     /// Fade stops `(alpha, position 0..=1)` for the dark overlay on media.
     pub fn fade_stops(&self) -> Vec<(f32, f32)> {
         self.spec

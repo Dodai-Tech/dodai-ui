@@ -60,6 +60,14 @@ pub struct PageGrid {
     pub max_width: Option<f32>,
 }
 
+/// Frosted glass: a translucent `tint` laid over a backdrop blurred by `blur` px (CSS blur
+/// sigma).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Frost {
+    pub tint: crate::Color,
+    pub blur: f32,
+}
+
 /// Type sizes and spacing a design resolves for one viewport width (fluid scales).
 #[derive(Debug, Clone, PartialEq)]
 pub struct Fluid {
@@ -185,6 +193,10 @@ pub trait DesignSpec: Send + Sync + std::fmt::Debug {
     /// Type sizes `[xs, sm, md, lg, xl, xxl]` and spacing `[xs, sm, md, lg, xl]` at a viewport
     /// width, for designs with fluid scales (default: the static theme values).
     fn fluid(&self, t: &Theme, viewport: f32) -> Option<Fluid> {
+        None
+    }
+    /// The design's frosted glass (default: the surface colour at 60% over a 24 px blur).
+    fn frost(&self, t: &Theme) -> Option<Frost> {
         None
     }
     /// Stops `(alpha, position 0..=1)` of the dark fade laid over media so text on it stays

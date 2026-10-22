@@ -43,6 +43,7 @@ pub(crate) fn caps(title: &str) -> Caps {
         | "Motion tokens"
         | "Spacing · Elevation"
         | "Shape tokens"
+        | "Frosted glass"
         | "Layout · Fluid scales"
         | "Icons"
         | "Glow · Scanlines"

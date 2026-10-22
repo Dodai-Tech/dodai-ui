@@ -94,6 +94,17 @@ impl Showcase {
         ));
         out.push((
             "Foundations",
+            "Frosted glass",
+            section!("Frosted glass")
+                .child(Muted::new(
+                    "Panels over a picture: a blurred copy of it under the design's frosted tint.",
+                ))
+                .child(frosted_view(&t))
+                .into_any_element(),
+            "Frosted glass",
+        ));
+        out.push((
+            "Foundations",
             "Shape tokens",
             section!("Shape tokens")
                 .child(Muted::new(

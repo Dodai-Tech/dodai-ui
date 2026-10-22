@@ -478,3 +478,50 @@ pub(crate) fn layout_view(t: &dodai_core::Theme) -> gpui::Div {
             .caption_on_image(true),
     )
 }
+
+/// Frosted glass panels over a picture, blurred with the design's blur and tint.
+pub(crate) fn frosted_view(t: &dodai_core::Theme) -> gpui::Div {
+    let f = t.frost();
+    let text = |s: String, c: dodai_core::Color, size: f32| {
+        div().text_size(px(size)).text_color(hsla(c)).child(s)
+    };
+    let panel = |title: &str, body: String| {
+        div()
+            .flex()
+            .flex_col()
+            .gap(px(t.spacing.xs))
+            .child(text(
+                title.to_string(),
+                t.palette.text,
+                t.typography.size_md,
+            ))
+            .child(text(body, t.palette.text, t.typography.size_sm))
+    };
+    div().child(
+        dodai_gpui::FrostedScene::mesh("showcase", 720.0, 300.0)
+            .panel(
+                40.0,
+                40.0,
+                300.0,
+                120.0,
+                panel(
+                    "Frosted",
+                    format!(
+                        "blur {:.0} px, tint alpha {:.2}",
+                        f.blur,
+                        f.tint.a as f32 / 255.0
+                    ),
+                ),
+            )
+            .panel(
+                380.0,
+                110.0,
+                300.0,
+                150.0,
+                panel(
+                    "Over hard edges",
+                    "The picture behind is sharp; each panel shows a blurred copy of it.".into(),
+                ),
+            ),
+    )
+}

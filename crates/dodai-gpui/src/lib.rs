@@ -139,6 +139,8 @@ pub mod extras;
 pub mod feedback;
 #[cfg(feature = "components")]
 pub mod forms;
+#[cfg(feature = "shaders")]
+pub mod frosted;
 #[cfg(feature = "charts")]
 pub mod gauges;
 pub mod icons;
@@ -276,6 +278,9 @@ pub use gauges::GaugeStyle;
 pub use icons::Modifier;
 pub use icons::{Icon, IconId, IconName, IconPack};
 mod icon_names;
+#[cfg(feature = "shaders")]
+#[cfg(feature = "shaders")]
+pub use frosted::FrostedScene;
 #[cfg(feature = "components")]
 pub use knob::Knob;
 #[cfg(feature = "components")]
@@ -321,7 +326,6 @@ pub use scanlines::Scanlines;
 pub use search::{count_label, highlight_runs, IconBadge, RichTooltip, SearchMode, SearchView};
 #[cfg(feature = "components")]
 pub use select::{family_title, DesignSystemSelector, Select, SelectOption, ThemeSelector};
-#[cfg(feature = "shaders")]
 pub use shader_view::{shader_backend, PaletteSource, ShaderView};
 #[cfg(feature = "components")]
 pub use sheets::{
