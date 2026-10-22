@@ -74,9 +74,20 @@ pub struct Shimmer {
 
 impl ShapeStyle {
     /// Let the active texture and effects (if they target `class`) paint over the fill.
-    pub fn with_surface(mut self, theme: &Theme, class: dodai_core::SurfaceClass) -> Self {
+    pub fn with_surface(self, theme: &Theme, class: dodai_core::SurfaceClass) -> Self {
+        self.with_surface_of(theme, class, &dodai_core::Surface::INHERIT)
+    }
+
+    /// [`with_surface`](Self::with_surface) with a component's own
+    /// [`Surface`](dodai_core::Surface) on top. Its glow scale applies here too.
+    pub fn with_surface_of(
+        mut self,
+        theme: &Theme,
+        class: dodai_core::SurfaceClass,
+        over: &dodai_core::Surface,
+    ) -> Self {
         self.surface = self.fill.and_then(|fill| {
-            let mut sp = crate::surface_fx::SurfacePaint::of(theme, class)?;
+            let mut sp = crate::surface_fx::SurfacePaint::of_with(theme, class, over)?;
             // Draw the pattern in whichever of text/background contrasts with this fill,
             // so it stays visible on bright fills (a primary button) as well as dark ones.
             let (text, back) = (sp.ink, sp.hole);
@@ -89,20 +100,48 @@ impl ShapeStyle {
             sp.hole = hole;
             Some(sp)
         });
+        if let Some(g) = over.glow_scale() {
+            self.glow = self.glow.filter(|_| g > 0.0).map(|(c, r)| (c, r * g));
+        }
         self
+    }
+
+    /// Apply a component's own [`Surface`](dodai_core::Surface) on top of what the pure style
+    /// function resolved. Does nothing when the component sets none.
+    pub fn with_own_surface(
+        self,
+        theme: &Theme,
+        class: dodai_core::SurfaceClass,
+        over: &dodai_core::Surface,
+    ) -> Self {
+        if over.is_set() {
+            self.with_surface_of(theme, class, over)
+        } else {
+            self
+        }
     }
 
     /// Like [`with_surface`](Self::with_surface), but an outline-only surface (no fill) also gets
     /// the texture, drawn against the page background.
     pub fn with_surface_outlined(self, theme: &Theme, class: dodai_core::SurfaceClass) -> Self {
+        self.with_surface_outlined_of(theme, class, &dodai_core::Surface::INHERIT)
+    }
+
+    /// [`with_surface_outlined`](Self::with_surface_outlined) with a component's own surface.
+    pub fn with_surface_outlined_of(
+        self,
+        theme: &Theme,
+        class: dodai_core::SurfaceClass,
+        over: &dodai_core::Surface,
+    ) -> Self {
         let mut me = self;
         if me.fill.is_none() && me.stroke.is_some() {
             me.fill = Some(crate::hsla(theme.palette.background));
-            me = me.with_surface(theme, class);
+            me = me.with_surface_of(theme, class, over);
             me.fill = None;
             return me;
         }
-        me.with_surface(theme, class)
+        me.with_surface_of(theme, class, over)
     }
 
     /// Add a shimmer sweep that follows whatever shape this style is drawn in.

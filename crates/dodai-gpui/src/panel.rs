@@ -206,8 +206,11 @@ pub struct Panel {
     children: Vec<AnyElement>,
     refine: Option<Box<dyn FnOnce(gpui::Div) -> gpui::Div>>,
     corners: Option<dodai_core::Corners>,
+    surface: dodai_core::Surface,
     border: Option<BorderStyle>,
 }
+
+crate::surface_setter!(Panel);
 
 impl Panel {
     /// Create a new [`Panel`].
@@ -216,6 +219,7 @@ impl Panel {
             border: None,
             title: None,
             corners: None,
+            surface: dodai_core::Surface::INHERIT,
             focused: false,
             subheader: None,
             scope: None,
@@ -290,7 +294,11 @@ impl Panel {
             shape.corners = c;
         }
         let border = self.border.unwrap_or_else(|| section_border(cx));
-        let style = border.apply(panel_style(&t, self.focused));
+        let style = border.apply(panel_style(&t, self.focused).with_own_surface(
+            &t,
+            dodai_core::SurfaceClass::Panel,
+            &self.surface,
+        ));
         let d = shaped(&shape, style);
         let mut d = d
             .flex()

@@ -200,9 +200,12 @@ pub struct TextInput {
     filled: bool,
     pub(crate) bare: bool,
     corners: Option<dodai_core::Corners>,
+    surface: dodai_core::Surface,
     on_change: Option<ChangeHandler>,
     on_submit: Option<SubmitHandler>,
 }
+
+crate::surface_setter!(TextInput);
 
 impl TextInput {
     /// Create a new [`TextInput`].
@@ -223,6 +226,7 @@ impl TextInput {
             masked: false,
             disabled: false,
             corners: None,
+            surface: dodai_core::Surface::INHERIT,
             on_change: None,
             on_submit: None,
         }
@@ -829,7 +833,11 @@ impl Render for TextInput {
         let t = crate::apply_corners(theme_of(cx), self.corners);
         let focused = self.focus.is_focused(window) && !self.disabled;
         let lh = (t.typography.size_md * 1.45).round();
-        let mut style = input_style(&t, focused);
+        let mut style = input_style(&t, focused).with_own_surface(
+            &t,
+            dodai_core::SurfaceClass::Input,
+            &self.surface,
+        );
         let rounded = t.look().floating_label;
         let filled = self.filled && rounded && self.label.is_some() && self.rows.is_none();
         let r = t.palette.roles.clone();

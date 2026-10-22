@@ -62,10 +62,18 @@ pub struct SurfacePaint {
 impl SurfacePaint {
     /// Resolve colours for `theme`; `None` when nothing would be drawn on a `class` surface.
     pub fn of(theme: &Theme, class: SurfaceClass) -> Option<Self> {
-        let fx = surface_fx()
-            .limited(theme.surface_textures(), theme.surface_effects())
-            .for_class(class);
-        if fx.is_none() || !fx.targets.contains(class) {
+        Self::of_with(theme, class, &dodai_core::Surface::INHERIT)
+    }
+
+    /// Like [`of`](Self::of), with a component's own [`Surface`](dodai_core::Surface) on top.
+    pub fn of_with(theme: &Theme, class: SurfaceClass, over: &dodai_core::Surface) -> Option<Self> {
+        if over.is_off() {
+            return None;
+        }
+        let owned = (theme.surface_textures(), theme.surface_effects());
+        let base = surface_fx().limited(owned.0, owned.1).for_class(class);
+        let fx = over.over(base).limited(owned.0, owned.1);
+        if fx.is_none() || !(fx.targets.contains(class) || over.forces_on()) {
             return None;
         }
         let p = &theme.palette;
@@ -729,6 +737,33 @@ mod tests {
         assert!(
             SurfacePaint::of(&dodai::themes::cyberpunk::yellow(), SurfaceClass::Button).is_some()
         );
+        set_surface_fx_for_test(SurfaceFx::NONE);
+    }
+
+    #[test]
+    fn a_component_surface_overrides_the_app_wide_mix() {
+        use dodai_core::Surface;
+        let t = dodai::themes::cyberpunk::yellow();
+        let m = dodai::themes::material::light();
+        set_surface_fx_for_test(SurfaceFx::NONE);
+        let own = Surface::new().texture(Texture::Grid);
+        // Nothing app-wide, but this component asks for a texture (even on a Tag, which is
+        // not under "Apply to").
+        assert!(SurfacePaint::of_with(&t, SurfaceClass::Tag, &own).is_some());
+        // A design draws only what it owns: Material owns no textures.
+        assert!(SurfacePaint::of_with(&m, SurfaceClass::Tag, &own).is_none());
+        // `Surface::NONE` opts one component out of an app-wide mix.
+        set_surface_fx_for_test(SurfaceFx {
+            texture: Texture::Grid,
+            targets: dodai_core::SurfaceTargets::ALL,
+            ..SurfaceFx::NONE
+        });
+        assert!(SurfacePaint::of(&t, SurfaceClass::Button).is_some());
+        assert!(SurfacePaint::of_with(&t, SurfaceClass::Button, &Surface::NONE).is_none());
+        // Setting one field keeps the rest of the app-wide mix.
+        let p =
+            SurfacePaint::of_with(&t, SurfaceClass::Button, &Surface::new().strength(0.9)).unwrap();
+        assert_eq!((p.fx.texture, p.fx.strength), (Texture::Grid, 0.9));
         set_surface_fx_for_test(SurfaceFx::NONE);
     }
 

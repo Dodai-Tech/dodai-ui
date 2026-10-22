@@ -437,3 +437,199 @@ impl Default for SurfaceStyle {
         Self::NONE
     }
 }
+
+/// A per-component override of the app-wide surface mix, set with a component's
+/// `.surface(..)` method.
+///
+/// Every field is optional: what is not set falls back to the app-wide mix
+/// ([`SurfaceFx`]), which falls back to the design's own. Setting any field puts the
+/// component in the mix even when its kind is not under "Apply to"; [`Surface::NONE`]
+/// takes it out. A design still draws only the textures and effects it owns.
+///
+/// ```
+/// use dodai_core::{Surface, Texture};
+/// let calm = Surface::new().texture(Texture::Grain).strength(0.3);
+/// let plain = Surface::NONE;
+/// assert!(calm.is_set() && plain.is_off());
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct Surface {
+    on: Option<bool>,
+    texture: Option<Texture>,
+    strength: Option<f32>,
+    scale: Option<f32>,
+    neon: Option<f32>,
+    glitch: Option<f32>,
+    sheen: Option<f32>,
+    flicker: Option<f32>,
+    bloom: Option<f32>,
+    glow: Option<f32>,
+}
+
+impl Surface {
+    /// Follow the app-wide mix (the default).
+    pub const INHERIT: Self = Self {
+        on: None,
+        texture: None,
+        strength: None,
+        scale: None,
+        neon: None,
+        glitch: None,
+        sheen: None,
+        flicker: None,
+        bloom: None,
+        glow: None,
+    };
+    /// No texture or effect on this component, whatever the app-wide mix is.
+    pub const NONE: Self = Self {
+        on: Some(false),
+        ..Self::INHERIT
+    };
+
+    /// An override that sets nothing yet; chain the setters below.
+    pub const fn new() -> Self {
+        Self::INHERIT
+    }
+    /// Use this texture (also puts the component in the mix).
+    pub const fn texture(mut self, t: Texture) -> Self {
+        self.texture = Some(t);
+        self
+    }
+    /// Texture visibility, `0.0..=1.0`.
+    pub const fn strength(mut self, v: f32) -> Self {
+        self.strength = Some(v);
+        self
+    }
+    /// Pattern size multiplier (`1.0` = as designed).
+    pub const fn scale(mut self, v: f32) -> Self {
+        self.scale = Some(v);
+        self
+    }
+    /// Lit lines on line textures, `0.0..=1.0`.
+    pub const fn neon(mut self, v: f32) -> Self {
+        self.neon = Some(v);
+        self
+    }
+    /// Glitch bursts, `0.0..=1.0`.
+    pub const fn glitch(mut self, v: f32) -> Self {
+        self.glitch = Some(v);
+        self
+    }
+    /// Sheen sweep, `0.0..=1.0`.
+    pub const fn sheen(mut self, v: f32) -> Self {
+        self.sheen = Some(v);
+        self
+    }
+    /// Flicker, `0.0..=1.0`.
+    pub const fn flicker(mut self, v: f32) -> Self {
+        self.flicker = Some(v);
+        self
+    }
+    /// Bloom around the outline, `0.0..=1.0`.
+    pub const fn bloom(mut self, v: f32) -> Self {
+        self.bloom = Some(v);
+        self
+    }
+    /// Scale the design's glow on this component (`0.0` = none, `1.0` = as designed).
+    pub const fn glow(mut self, v: f32) -> Self {
+        self.glow = Some(v);
+        self
+    }
+    /// Force the component into (`true`) or out of (`false`) the mix without changing it.
+    pub const fn enabled(mut self, on: bool) -> Self {
+        self.on = Some(on);
+        self
+    }
+
+    /// Whether anything is overridden.
+    pub fn is_set(&self) -> bool {
+        *self != Self::INHERIT
+    }
+    /// Whether the component is explicitly out of the mix.
+    pub fn is_off(&self) -> bool {
+        self.on == Some(false)
+    }
+    /// The glow scale, when set.
+    pub fn glow_scale(&self) -> Option<f32> {
+        self.glow
+    }
+
+    /// Whether this override puts the component in the mix regardless of "Apply to".
+    pub fn forces_on(&self) -> bool {
+        self.on == Some(true) || (self.is_set() && !self.is_off() && self.sets_fx())
+    }
+
+    fn sets_fx(&self) -> bool {
+        self.texture.is_some()
+            || self.strength.is_some()
+            || self.scale.is_some()
+            || self.neon.is_some()
+            || self.glitch.is_some()
+            || self.sheen.is_some()
+            || self.flicker.is_some()
+            || self.bloom.is_some()
+    }
+
+    /// `fx` (already resolved for the component's class) with this override on top.
+    pub fn over(&self, mut fx: SurfaceFx) -> SurfaceFx {
+        if let Some(v) = self.texture {
+            fx.texture = v;
+        }
+        if let Some(v) = self.strength {
+            fx.strength = v;
+        }
+        if let Some(v) = self.scale {
+            fx.scale = v;
+        }
+        if let Some(v) = self.neon {
+            fx.neon = v;
+        }
+        if let Some(v) = self.glitch {
+            fx.glitch = v;
+        }
+        if let Some(v) = self.sheen {
+            fx.sheen = v;
+        }
+        if let Some(v) = self.flicker {
+            fx.flicker = v;
+        }
+        if let Some(v) = self.bloom {
+            fx.bloom = v;
+        }
+        fx
+    }
+}
+
+#[cfg(test)]
+mod surface_override_tests {
+    use super::*;
+
+    #[test]
+    fn inherit_changes_nothing_and_none_is_off() {
+        let fx = SurfaceFx {
+            texture: Texture::Grid,
+            strength: 0.7,
+            ..SurfaceFx::NONE
+        };
+        assert_eq!(Surface::INHERIT.over(fx), fx);
+        assert!(!Surface::INHERIT.is_set() && !Surface::INHERIT.forces_on());
+        assert!(Surface::NONE.is_off() && !Surface::NONE.forces_on());
+    }
+
+    #[test]
+    fn set_fields_win_and_force_the_component_in() {
+        let fx = SurfaceFx {
+            texture: Texture::Grid,
+            strength: 0.7,
+            ..SurfaceFx::NONE
+        };
+        let s = Surface::new().texture(Texture::Hatch).glitch(0.5);
+        let o = s.over(fx);
+        assert_eq!(o.texture, Texture::Hatch);
+        assert_eq!(o.strength, 0.7);
+        assert_eq!(o.glitch, 0.5);
+        assert!(s.forces_on());
+        // A glow-only override does not pull a component into the texture mix.
+        assert!(!Surface::new().glow(0.0).forces_on());
+    }
+}

@@ -39,17 +39,20 @@ pub struct Toolbar {
     items: Vec<AnyElement>,
     trailing: Option<AnyElement>,
     corners: Option<dodai_core::Corners>,
+    surface: dodai_core::Surface,
     floating: bool,
     vibrant: bool,
 }
 
 crate::corners_setter!(Toolbar);
+crate::surface_setter!(Toolbar);
 
 impl Toolbar {
     /// Create a new [`Toolbar`].
     pub fn new() -> Self {
         Self {
             corners: None,
+            surface: dodai_core::Surface::INHERIT,
             items: Vec::new(),
             trailing: None,
             floating: false,
@@ -90,7 +93,8 @@ impl Toolbar {
     fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
-        let mut style = bar_style(&t);
+        let mut style =
+            bar_style(&t).with_own_surface(&t, dodai_core::SurfaceClass::Bar, &self.surface);
         let mut shape = t.role_shape(dodai_core::ShapeRole::Toolbar);
         let tonal = t.look().tonal;
         let mut fg = hsla(t.palette.text);

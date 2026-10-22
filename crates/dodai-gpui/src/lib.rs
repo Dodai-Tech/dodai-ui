@@ -55,6 +55,10 @@
 //!   - `on_dismiss()`: a surface asked to close.
 //! * **Sizes**: `size(ControlSize | FabSize | AppBarSize)` is a named step; `size(side)` is a
 //!   square of that many px; `size(w, h)` a rectangle; `width(px)` / `height(px)` one side.
+//! * **Surface**: `surface(dodai_core::Surface)` gives one component its own texture and
+//!   effects over the app-wide mix (`Surface::NONE` turns them off). Button, IconButton, Card,
+//!   Panel, Tag, TextInput, Select and Toolbar take it; `corners`, `crop` and `cut_gap` are the
+//!   per-component shape overrides.
 //! * **Booleans** are `on`/`off` setters (`disabled(true)`, `legend(false)`).
 //!
 //! ```no_run
@@ -84,6 +88,22 @@ macro_rules! corners_setter {
     };
 }
 pub(crate) use corners_setter;
+
+/// Adds the standard `.surface(..)` per-component override of the texture and effects.
+/// The type needs a `surface` field of type `dodai_core::Surface`.
+macro_rules! surface_setter {
+    ($ty:ident) => {
+        impl $ty {
+            /// Texture and effects for this component, over the app-wide mix. Anything not
+            /// set follows the app, then the design. `Surface::NONE` turns them off.
+            pub fn surface(mut self, s: dodai_core::Surface) -> Self {
+                self.surface = s;
+                self
+            }
+        }
+    };
+}
+pub(crate) use surface_setter;
 
 /// `crop` / `cut_gap` setters for a control with `crop: Option<Crop>` and `cut_gap: Option<f32>`.
 macro_rules! crop_setters {

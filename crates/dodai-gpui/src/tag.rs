@@ -23,15 +23,18 @@ pub struct Tag {
     tone: Tone,
     solid: bool,
     corners: Option<dodai_core::Corners>,
+    surface: dodai_core::Surface,
 }
 
 crate::corners_setter!(Tag);
+crate::surface_setter!(Tag);
 
 impl Tag {
     /// Create a new [`Tag`].
     pub fn new(text: impl Into<SharedString>, tone: Tone) -> Self {
         Self {
             corners: None,
+            surface: dodai_core::Surface::INHERIT,
             text: text.into(),
             tone,
             solid: false,
@@ -49,6 +52,7 @@ impl Tag {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
         let (style, fg) = tag_style(&t, self.tone, self.solid);
+        let style = style.with_own_surface(&t, dodai_core::SurfaceClass::Tag, &self.surface);
         shaped(&t.role_shape(dodai_core::ShapeRole::Tag), style)
             .px(px(t.spacing.sm))
             .py(px(t.spacing.xs / 2.0))

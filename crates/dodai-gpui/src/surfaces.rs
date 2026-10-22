@@ -42,8 +42,11 @@ pub struct Card {
     supporting: Option<SharedString>,
     width: Option<f32>,
     corners: Option<dodai_core::Corners>,
+    surface: dodai_core::Surface,
     children: Vec<AnyElement>,
 }
+
+crate::surface_setter!(Card);
 
 impl Card {
     /// Create a new [`Card`].
@@ -54,6 +57,7 @@ impl Card {
             supporting: None,
             width: None,
             corners: None,
+            surface: dodai_core::Surface::INHERIT,
             children: Vec::new(),
         }
     }
@@ -93,14 +97,21 @@ impl Card {
         if let Some(c) = self.corners {
             shape.corners = c;
         }
-        let mut el = shaped(&shape, card_style(&t, self.variant))
-            .flex()
-            .flex_col()
-            .gap(px(t.spacing.sm))
-            .p(px(t.spacing.lg))
-            .font_family(first_family(t.typography.body))
-            .text_size(px(t.typography.size_md))
-            .text_color(hsla(t.palette.text));
+        let mut el = shaped(
+            &shape,
+            card_style(&t, self.variant).with_own_surface(
+                &t,
+                dodai_core::SurfaceClass::Card,
+                &self.surface,
+            ),
+        )
+        .flex()
+        .flex_col()
+        .gap(px(t.spacing.sm))
+        .p(px(t.spacing.lg))
+        .font_family(first_family(t.typography.body))
+        .text_size(px(t.typography.size_md))
+        .text_color(hsla(t.palette.text));
         if let Some(w) = self.width {
             el = el.w(px(w));
         }
@@ -198,6 +209,7 @@ pub struct IconButton {
     disabled: bool,
     on_click: Option<ClickHandler>,
     corners: Option<dodai_core::Corners>,
+    surface: dodai_core::Surface,
     size: Option<dodai_core::ControlSize>,
     square: bool,
     width: IconWidth,
@@ -206,6 +218,7 @@ pub struct IconButton {
 }
 
 crate::corners_setter!(IconButton);
+crate::surface_setter!(IconButton);
 crate::crop_setters!(IconButton);
 
 impl IconButton {
@@ -214,6 +227,7 @@ impl IconButton {
         let glyph: SharedString = glyph.into();
         Self {
             corners: None,
+            surface: dodai_core::Surface::INHERIT,
             id: id.into(),
             icon: glyph_icon(&glyph),
             glyph,
@@ -304,6 +318,7 @@ impl IconButton {
         if let (true, Some(m), true) = (self.square, m, t.look().tonal) {
             shape.radius = m.square_radius;
         }
+        style = style.with_own_surface(&t, dodai_core::SurfaceClass::Button, &self.surface);
         let crop = crate::button::resolve_crop(&t, cx, self.crop, self.cut_gap);
         if let Some(c) = &crop {
             c.apply(&t, &mut shape, &mut style);

@@ -84,15 +84,18 @@ pub struct Select {
     disabled: bool,
     on_select: Option<IndexHandler>,
     corners: Option<dodai_core::Corners>,
+    surface: dodai_core::Surface,
 }
 
 crate::corners_setter!(Select);
+crate::surface_setter!(Select);
 
 impl Select {
     /// Create a new [`Select`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             corners: None,
+            surface: dodai_core::Surface::INHERIT,
             id: id.into(),
             options: Vec::new(),
             selected: None,
@@ -148,7 +151,11 @@ impl Select {
         let hovered = hov.read(cx).hovered && !self.disabled;
         let n = self.options.len();
 
-        let mut style = input_style(&t, focused || open);
+        let mut style = input_style(&t, focused || open).with_own_surface(
+            &t,
+            dodai_core::SurfaceClass::Input,
+            &self.surface,
+        );
         if self.disabled {
             style.fill = Some(hsla(t.palette.surface_raised));
             style.stroke = Some(hsla(t.palette.border));

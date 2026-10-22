@@ -180,6 +180,7 @@ pub struct Button {
     refine: Option<Refine>,
     shimmer: bool,
     corners: Option<dodai_core::Corners>,
+    surface: dodai_core::Surface,
     radii: Option<[f32; 4]>,
     elevated: bool,
     size: Option<dodai_core::ControlSize>,
@@ -187,6 +188,8 @@ pub struct Button {
     crop: Option<Crop>,
     cut_gap: Option<f32>,
 }
+
+crate::surface_setter!(Button);
 
 impl Button {
     /// Create a new [`Button`].
@@ -198,6 +201,7 @@ impl Button {
             disabled: false,
             shimmer: false,
             corners: None,
+            surface: dodai_core::Surface::INHERIT,
             radii: None,
             elevated: false,
             size: None,
@@ -290,6 +294,16 @@ impl Button {
         let st = use_interact(&self.id, window, cx);
         let state = st.read(cx).control_state(self.disabled);
         let lifted = self.elevated && t.look().tonal;
+        let own = |st: ShapeStyle| {
+            let class = dodai_core::SurfaceClass::Button;
+            if !self.surface.is_set() {
+                st
+            } else if self.variant == ButtonVariant::Outline {
+                st.with_surface_outlined_of(&t, class, &self.surface)
+            } else {
+                st.with_surface_of(&t, class, &self.surface)
+            }
+        };
         let resolve = |s: ControlState| {
             if self.elevated {
                 let b = t.elevated_button(s);
@@ -299,9 +313,10 @@ impl Button {
                     let level = if s == ControlState::Idle { 1 } else { 2 };
                     st = st.with_lift(&t, level);
                 }
-                (st, hsla(b.foreground))
+                (own(st), hsla(b.foreground))
             } else {
-                button_style(&t, self.variant, s)
+                let (st, fg) = button_style(&t, self.variant, s);
+                (own(st), fg)
             }
         };
         let (mut style, mut fg) = resolve(state);
