@@ -221,6 +221,15 @@ pub trait DesignSpec: Send + Sync + std::fmt::Debug {
     fn surface_preset(&self, t: &Theme) -> Option<crate::SurfaceFx> {
         None
     }
+    /// The textures this design owns (default: none). Only these appear in its showcase and
+    /// are ever drawn for it; other designs' textures are filtered out.
+    fn surface_textures(&self, t: &Theme) -> &'static [crate::Texture] {
+        &[]
+    }
+    /// Whether this design owns the animated effects (glitch, sheen, flicker, bloom).
+    fn surface_effects(&self, t: &Theme) -> bool {
+        false
+    }
     /// Stops of the dark fade laid over media so text on it stays legible (default: a two-stop
     /// linear fade).
     fn fade_stops(&self, t: &Theme) -> Option<Vec<FadeStop>> {

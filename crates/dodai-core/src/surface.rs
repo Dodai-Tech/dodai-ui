@@ -258,6 +258,24 @@ impl SurfaceFx {
         targets: SurfaceTargets::DEFAULT,
     };
 
+    /// The mix restricted to what a design owns: textures outside `textures` become
+    /// [`Texture::None`], and the animated effects are zeroed unless `effects`.
+    pub fn limited(mut self, textures: &[Texture], effects: bool) -> Self {
+        if !textures.contains(&self.texture) {
+            self.texture = Texture::None;
+        }
+        if !textures.contains(&self.container_texture) {
+            self.container_texture = Texture::None;
+        }
+        if !effects {
+            self.glitch = 0.0;
+            self.sheen = 0.0;
+            self.flicker = 0.0;
+            self.bloom = 0.0;
+        }
+        self
+    }
+
     /// The mix as seen by a `class` surface: containers use the container texture.
     pub fn for_class(self, class: SurfaceClass) -> Self {
         if class.is_container() {

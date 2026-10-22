@@ -859,6 +859,16 @@ impl Theme {
             .unwrap_or_default()
     }
 
+    /// The textures this design owns (empty when it has none).
+    pub fn surface_textures(&self) -> &'static [crate::Texture] {
+        self.spec.get().map_or(&[], |s| s.surface_textures(self))
+    }
+
+    /// Whether this design owns the animated surface effects.
+    pub fn surface_effects(&self) -> bool {
+        self.spec.get().is_some_and(|s| s.surface_effects(self))
+    }
+
     /// The design's frosted glass: tint and backdrop blur.
     pub fn frost(&self) -> crate::Frost {
         self.spec

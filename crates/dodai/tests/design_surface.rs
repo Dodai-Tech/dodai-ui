@@ -57,3 +57,38 @@ fn only_designs_with_an_opinion_suggest_a_surface_mix() {
         }
     }
 }
+
+#[test]
+fn a_design_suggests_only_textures_and_effects_it_owns() {
+    for sys in dodai::themes::systems() {
+        let t = (sys.themes)().into_iter().next().unwrap();
+        let fx = t.surface_preset();
+        let owned = t.surface_textures();
+        for tex in [fx.texture, fx.container_texture] {
+            assert!(
+                tex == dodai_core::Texture::None || owned.contains(&tex),
+                "{}: preset uses {tex:?}, which it does not own",
+                sys.name
+            );
+        }
+        if !t.surface_effects() {
+            assert_eq!(
+                (fx.glitch, fx.sheen, fx.flicker, fx.bloom),
+                (0.0, 0.0, 0.0, 0.0),
+                "{}",
+                sys.name
+            );
+        }
+        // Whatever the app turned on, a design never draws what it does not own.
+        let all_on = dodai_core::SurfaceFx {
+            texture: dodai_core::Texture::Circuit,
+            container_texture: dodai_core::Texture::Halftone,
+            glitch: 1.0,
+            ..dodai_core::SurfaceFx::NONE
+        }
+        .limited(owned, t.surface_effects());
+        for tex in [all_on.texture, all_on.container_texture] {
+            assert!(tex == dodai_core::Texture::None || owned.contains(&tex));
+        }
+    }
+}

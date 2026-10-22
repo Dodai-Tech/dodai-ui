@@ -60,7 +60,9 @@ pub struct SurfacePaint {
 impl SurfacePaint {
     /// Resolve colours for `theme`; `None` when nothing would be drawn on a `class` surface.
     pub fn of(theme: &Theme, class: SurfaceClass) -> Option<Self> {
-        let fx = surface_fx().for_class(class);
+        let fx = surface_fx()
+            .limited(theme.surface_textures(), theme.surface_effects())
+            .for_class(class);
         if fx.is_none() || !fx.targets.contains(class) {
             return None;
         }

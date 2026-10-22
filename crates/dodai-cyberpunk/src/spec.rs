@@ -33,6 +33,15 @@ fn surface(
 }
 
 impl DesignSpec for Cyberpunk {
+    /// Every surface texture: this design owns them all.
+    fn surface_textures(&self, _t: &Theme) -> &'static [dodai_core::Texture] {
+        &dodai_core::Texture::ALL
+    }
+
+    fn surface_effects(&self, _t: &Theme) -> bool {
+        true
+    }
+
     /// Grain, a bloom around edges and an occasional glitch burst.
     fn surface_preset(&self, _t: &Theme) -> Option<dodai_core::SurfaceFx> {
         Some(dodai_core::SurfaceFx {

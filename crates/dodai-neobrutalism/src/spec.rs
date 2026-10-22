@@ -62,18 +62,6 @@ fn block(bg: Option<Color>, fg: Color, line: Color, shadow: bool) -> SurfaceToke
 }
 
 impl DesignSpec for NeoBrutalism {
-    /// Halftone dots, like a printed poster.
-    fn surface_preset(&self, _t: &Theme) -> Option<dodai_core::SurfaceFx> {
-        Some(dodai_core::SurfaceFx {
-            container_texture: dodai_core::Texture::Halftone,
-            container_strength: 0.5,
-            targets: dodai_core::SurfaceTargets::NONE
-                .with(dodai_core::SurfaceClass::Card, true)
-                .with(dodai_core::SurfaceClass::Panel, true),
-            ..dodai_core::SurfaceFx::NONE
-        })
-    }
-
     fn name(&self) -> &'static str {
         "Neo-Brutalism"
     }

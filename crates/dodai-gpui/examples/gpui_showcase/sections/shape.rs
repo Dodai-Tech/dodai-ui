@@ -162,8 +162,10 @@ impl Showcase {
                 .into_any_element(),
             "Shape gallery",
         ));
-        {
+        // Textures and effects belong to the designs that declare them.
+        if !t.surface_textures().is_empty() {
             use dodai_core::{SurfaceClass, SurfaceFx, Texture};
+            let owned = t.surface_textures();
             let fx = dodai_gpui::surface_fx();
             let amount = move |id: &'static str,
                                name: &'static str,
@@ -195,7 +197,7 @@ impl Showcase {
                     Texture::ALL
                         .iter()
                         .copied()
-                        .filter(|x| !components || x.for_components())
+                        .filter(|x| (!components || x.for_components()) && owned.contains(x))
                         .map(|x| {
                             let btn = Button::new(
                                 gpui::SharedString::from(format!("{id}-{}", x.label())),
@@ -330,7 +332,7 @@ impl Showcase {
                         let list: Vec<Texture> = Texture::ALL
                             .iter()
                             .copied()
-                            .filter(|x| x.for_components())
+                            .filter(|x| x.for_components() && owned.contains(x))
                             .collect();
                         let sel = list.iter().position(|x| *x == fx.texture).unwrap_or(0);
                         Tabs::new("sfx-tex")
@@ -375,26 +377,30 @@ impl Showcase {
                     ))
                     .child(shape_props);
             }
-            out.push((
-                "Surface effects",
-                "Light FX",
-                light
-                    .child(Label::new("Effects"))
-                    .child(amount("sfx-glitch", "Glitch", fx.glitch, 1.0, |f, v| {
-                        f.glitch = v
-                    }))
-                    .child(amount("sfx-sheen", "Sheen", fx.sheen, 1.0, |f, v| {
-                        f.sheen = v
-                    }))
-                    .child(amount("sfx-flicker", "Flicker", fx.flicker, 1.0, |f, v| {
-                        f.flicker = v
-                    }))
-                    .child(amount("sfx-bloom", "Bloom", fx.bloom, 1.0, |f, v| {
-                        f.bloom = v
-                    }))
-                    .into_any_element(),
-                "Light FX",
-            ));
+            if t.look().luminous || t.surface_effects() {
+                if t.surface_effects() {
+                    light = light
+                        .child(Label::new("Effects"))
+                        .child(amount("sfx-glitch", "Glitch", fx.glitch, 1.0, |f, v| {
+                            f.glitch = v
+                        }))
+                        .child(amount("sfx-sheen", "Sheen", fx.sheen, 1.0, |f, v| {
+                            f.sheen = v
+                        }))
+                        .child(amount("sfx-flicker", "Flicker", fx.flicker, 1.0, |f, v| {
+                            f.flicker = v
+                        }))
+                        .child(amount("sfx-bloom", "Bloom", fx.bloom, 1.0, |f, v| {
+                            f.bloom = v
+                        }));
+                }
+                out.push((
+                    "Surface effects",
+                    "Light FX",
+                    light.into_any_element(),
+                    "Light FX",
+                ));
+            }
         }
         if t.look().cut_corners {
             out.push((
