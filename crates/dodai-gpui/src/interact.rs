@@ -124,6 +124,7 @@ where
                         shadow_dir: (1.0, 1.0),
                         scanlines: false,
                         scanline: ring,
+                        scanline_pitch: dodai_core::Effects::SCANLINE_PITCH,
                         surface: None,
                         shimmer: None,
                         elevation: None,

@@ -139,6 +139,7 @@ fn build(
             hard_shadow: 4.0,
             shadow: fx.0,
             scanline: fx.1,
+            scanline_pitch: Effects::SCANLINE_PITCH,
             highlight: fx.2,
         },
     }
@@ -215,6 +216,7 @@ fn build_light(meta: ThemeMeta, l: Light) -> Theme {
             hard_shadow: 4.0,
             shadow: fx.0,
             scanline: fx.1,
+            scanline_pitch: Effects::SCANLINE_PITCH,
             highlight: fx.2,
         },
     }
@@ -381,5 +383,6 @@ fn surface_style(dark: bool) -> dodai_core::SurfaceStyle {
         },
         textures: &dodai_core::Texture::ALL,
         effects: true,
+        tuning: dodai_core::SurfaceTuning::DEFAULT,
     }
 }

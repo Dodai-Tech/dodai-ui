@@ -55,6 +55,8 @@ pub struct SurfacePaint {
     pub light: Hsla,
     /// Colour of lit lines and lamps.
     pub neon: Hsla,
+    /// Timing and sizes from the theme.
+    pub tune: dodai_core::SurfaceTuning,
 }
 
 impl SurfacePaint {
@@ -75,6 +77,7 @@ impl SurfacePaint {
             b: hsla(p.danger),
             light: hsla(p.text),
             neon: hsla(p.accent),
+            tune: theme.surface_style.tuning,
         })
     }
 }
@@ -98,6 +101,7 @@ pub fn texture_swatch(theme: &Theme, texture: Texture) -> gpui::Canvas<()> {
         b: hsla(p.danger),
         light: hsla(p.text),
         neon: hsla(p.accent),
+        tune: theme.surface_style.tuning,
     };
     let shape = theme.shape.clone();
     canvas(
@@ -146,6 +150,7 @@ struct Canvas<'a> {
     inset: f32,
     neon: f32,
     neon_c: Hsla,
+    halo: f32,
 }
 
 impl Canvas<'_> {
@@ -186,8 +191,22 @@ impl Canvas<'_> {
             return;
         }
         let (n, c) = (self.neon, self.neon_c);
-        self.quad(x - 2.0, y - 2.0, w + 4.0, h + 4.0, scale_alpha(c, 0.10 * n));
-        self.quad(x - 1.0, y - 1.0, w + 2.0, h + 2.0, scale_alpha(c, 0.22 * n));
+        let o = self.halo;
+        self.quad(
+            x - o,
+            y - o,
+            w + 2.0 * o,
+            h + 2.0 * o,
+            scale_alpha(c, 0.10 * n),
+        );
+        let i = o / 2.0;
+        self.quad(
+            x - i,
+            y - i,
+            w + 2.0 * i,
+            h + 2.0 * i,
+            scale_alpha(c, 0.22 * n),
+        );
         self.quad(
             x,
             y,
@@ -273,6 +292,7 @@ pub fn paint_surface(
         inset: shape.border_width,
         neon: fx.neon.clamp(0.0, 1.0),
         neon_c: sp.neon,
+        halo: sp.tune.halo,
     };
     if fx.has_texture() {
         texture(&mut cv, sp, seed);
@@ -280,7 +300,7 @@ pub fn paint_surface(
     if fx.bloom > 0.0 {
         let n = 4;
         for k in (1..=n).rev() {
-            let width = cv.inset + 2.0 * fx.bloom * 3.0 * k as f32 / n as f32;
+            let width = cv.inset + 2.0 * fx.bloom * sp.tune.bloom_spread * k as f32 / n as f32;
             cv.outline(0.0, width, scale_alpha(sp.a, 0.5 * fx.bloom / n as f32));
         }
     }
@@ -288,8 +308,8 @@ pub fn paint_surface(
         sheen(&mut cv, sp);
     }
     if fx.flicker > 0.0 {
-        let frame = (clock() * 18.0) as i32;
-        if noise(frame, seed) < fx.flicker * 0.18 {
+        let frame = (clock() * sp.tune.flicker_rate) as i32;
+        if noise(frame, seed) < fx.flicker * sp.tune.flicker_chance {
             cv.fill_shape(scale_alpha(sp.hole, 0.28 * fx.flicker.max(0.3)));
         }
     }
@@ -304,7 +324,7 @@ pub fn paint_surface(
 fn texture(cv: &mut Canvas, sp: &SurfacePaint, seed: i32) {
     let fx = sp.fx;
     let (w, h) = (cv.w, cv.h);
-    let k = fx.scale.max(0.25);
+    let k = fx.scale.max(0.25) * sp.tune.cell;
     let s = fx.strength.clamp(0.0, 1.0);
     match fx.texture {
         Texture::None => {}
@@ -574,6 +594,7 @@ fn texture(cv: &mut Canvas, sp: &SurfacePaint, seed: i32) {
                 Bounds::new(cv.origin, size(px(w), px(h))),
                 cv.shape,
                 scale_alpha(sp.ink, 0.22 * s),
+                dodai_core::Effects::SCANLINE_PITCH * k,
             );
         }
     }
@@ -634,8 +655,7 @@ fn grid(cv: &mut Canvas, sp: &SurfacePaint, pitch: f32, major: i32, minor_a: f32
 }
 
 fn sheen(cv: &mut Canvas, sp: &SurfacePaint) {
-    const PERIOD: f32 = 3.6;
-    let phase = (clock() / PERIOD).fract();
+    let phase = (clock() / sp.tune.sheen_period.max(0.5)).fract();
     if phase > 0.45 {
         return;
     }
@@ -654,8 +674,8 @@ fn sheen(cv: &mut Canvas, sp: &SurfacePaint) {
 
 fn glitch(cv: &mut Canvas, sp: &SurfacePaint, seed: i32) {
     let g = sp.fx.glitch.clamp(0.0, 1.0);
-    let period = 2.6;
-    let burst = 0.1 + 0.25 * g;
+    let period = sp.tune.glitch_period.max(0.5);
+    let burst = sp.tune.glitch_burst + 0.25 * g;
     let t = (clock() + noise(seed, 3) * period) % period;
     if t > burst {
         return;

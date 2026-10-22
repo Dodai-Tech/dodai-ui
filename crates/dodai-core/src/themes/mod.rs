@@ -109,6 +109,7 @@ impl ThemeBuilder {
                 hard_shadow: self.hard_shadow,
                 shadow: fx.0,
                 scanline: fx.1,
+                scanline_pitch: crate::Effects::SCANLINE_PITCH,
                 highlight: fx.2,
             },
         }

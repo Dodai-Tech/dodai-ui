@@ -377,6 +377,49 @@ pub struct SurfaceStyle {
     pub textures: &'static [Texture],
     /// Whether the animated effects (glitch, sheen, flicker, bloom) belong to this design.
     pub effects: bool,
+    /// Timing and sizes of the drawing.
+    pub tuning: SurfaceTuning,
+}
+
+/// How a design's textures and effects are timed and sized. The defaults are the neutral values.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct SurfaceTuning {
+    /// Multiplier on every texture's cell and line spacing (1 = as drawn).
+    pub cell: f32,
+    /// Width in px of the halo around lit lines.
+    pub halo: f32,
+    /// Width in px a full bloom spreads past the edge.
+    pub bloom_spread: f32,
+    /// Flicker steps per second.
+    pub flicker_rate: f32,
+    /// Chance per step, at full flicker, that the surface dims.
+    pub flicker_chance: f32,
+    /// Seconds between sheen sweeps.
+    pub sheen_period: f32,
+    /// Seconds between glitch bursts.
+    pub glitch_period: f32,
+    /// Seconds a glitch burst lasts at the lowest setting (grows with the amount).
+    pub glitch_burst: f32,
+}
+
+impl SurfaceTuning {
+    /// The neutral timing and sizes.
+    pub const DEFAULT: Self = Self {
+        cell: 1.0,
+        halo: 2.0,
+        bloom_spread: 3.0,
+        flicker_rate: 18.0,
+        flicker_chance: 0.18,
+        sheen_period: 3.6,
+        glitch_period: 2.6,
+        glitch_burst: 0.1,
+    };
+}
+
+impl Default for SurfaceTuning {
+    fn default() -> Self {
+        Self::DEFAULT
+    }
 }
 
 impl SurfaceStyle {
@@ -385,6 +428,7 @@ impl SurfaceStyle {
         preset: SurfaceFx::NONE,
         textures: &[],
         effects: false,
+        tuning: SurfaceTuning::DEFAULT,
     };
 }
 

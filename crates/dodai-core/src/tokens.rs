@@ -321,11 +321,15 @@ pub struct Effects {
     pub shadow: Color,
     /// Colour of the CRT scanline bars.
     pub scanline: Color,
+    /// Distance in px between scanline bars.
+    pub scanline_pitch: f32,
     /// Light sweep over filled controls (shimmer).
     pub highlight: Color,
 }
 
 impl Effects {
+    /// Neutral distance between scanline bars: 3 px.
+    pub const SCANLINE_PITCH: f32 = 3.0;
     /// Neutral soft shadow: black at 16 %.
     pub const SHADOW: Color = Color::rgba(0, 0, 0, 41);
     /// Neutral scanline bar: black at 18 %.
@@ -363,6 +367,7 @@ mod glow_tests {
             hard_shadow: 0.0,
             shadow: Effects::SHADOW,
             scanline: Effects::SCANLINE,
+            scanline_pitch: Effects::SCANLINE_PITCH,
             highlight: Effects::HIGHLIGHT,
         }
     }

@@ -33,6 +33,8 @@ pub struct ShapeStyle {
     pub scanlines: bool,
     /// Colour of those scanlines (`effects.scanline`).
     pub scanline: Hsla,
+    /// Distance between those scanlines (`effects.scanline_pitch`).
+    pub scanline_pitch: f32,
     /// Texture and effects over the fill (see [`mod@crate::surface_fx`]).
     pub surface: Option<crate::surface_fx::SurfacePaint>,
     /// Animated highlight sweep, clipped to the shape (see [`Shimmer`]).
@@ -149,6 +151,7 @@ impl ShapeStyle {
             shadow_dir: (1.0, 1.0),
             scanlines: fx.scanlines && fill.is_some(),
             scanline: hsla(fx.scanline),
+            scanline_pitch: fx.scanline_pitch,
             surface: None,
             shimmer: None,
             elevation: None,
@@ -174,9 +177,6 @@ impl ShapeStyle {
         (st, hsla(k.foreground))
     }
 }
-
-/// Scanline pitch in px (one dark 1px line per pitch).
-pub const SCANLINE_PITCH: f32 = 3.0;
 
 /// Horizontal extent `(x0, x1)` of `shape` at row `y` in a `w`×`h` box, or
 /// `None` when the row is outside. Follows chamfers and rounded corners.
@@ -259,11 +259,18 @@ pub fn bottom_band_canvas(shape: &Shape, band: f32, color: Hsla) -> impl gpui::I
 }
 
 /// Paint scanline rows inside `bounds`, clipped to `shape`.
-pub fn paint_scanlines(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape, color: Hsla) {
+pub fn paint_scanlines(
+    window: &mut Window,
+    bounds: Bounds<Pixels>,
+    shape: &Shape,
+    color: Hsla,
+    pitch: f32,
+) {
     let w: f32 = bounds.size.width.into();
     let h: f32 = bounds.size.height.into();
     let bw = shape.border_width;
-    let mut y = SCANLINE_PITCH - 1.0;
+    let pitch = pitch.max(2.0);
+    let mut y = pitch - 1.0;
     while y < h {
         if y > bw && y < h - bw {
             if let Some((x0, x1)) = row_span(shape, w, h, y) {
@@ -279,7 +286,7 @@ pub fn paint_scanlines(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shap
                 }
             }
         }
-        y += SCANLINE_PITCH;
+        y += pitch;
     }
 }
 
@@ -378,7 +385,7 @@ pub fn paint_polygon(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape,
         fill_path(window, poly(bounds.origin, pts, (0.0, 0.0)), c);
     }
     if s.scanlines {
-        paint_scanlines(window, bounds, shape, s.scanline);
+        paint_scanlines(window, bounds, shape, s.scanline, s.scanline_pitch);
     }
     if let Some(sp) = &s.surface {
         crate::surface_fx::paint_surface(window, bounds, shape, sp);
@@ -527,13 +534,18 @@ fn shaped_base(shape: &Shape, style: ShapeStyle) -> Div {
             let mut d = base;
             if style.scanlines || style.surface.is_some() {
                 let sh = shape.clone();
-                let (on, sc, sp) = (style.scanlines, style.scanline, style.surface);
+                let (on, sc, pitch, sp) = (
+                    style.scanlines,
+                    style.scanline,
+                    style.scanline_pitch,
+                    style.surface,
+                );
                 d = d.child(
                     canvas(
                         |_, _, _| (),
                         move |b, _, window, _| {
                             if on {
-                                paint_scanlines(window, b, &sh, sc);
+                                paint_scanlines(window, b, &sh, sc, pitch);
                             }
                             if let Some(sp) = &sp {
                                 crate::surface_fx::paint_surface(window, b, &sh, sp);
