@@ -318,35 +318,6 @@ impl Showcase {
                 "Textures · Effects",
             ));
         }
-        {
-            use dodai_gpui::dodai_shaders::presets;
-            let card =
-                |id: &'static str, p: &'static dodai_gpui::dodai_shaders::Preset, name: &str| {
-                    dodai_gpui::ShaderSurface::new(id, p, 300.0, 150.0)
-                        .child(Heading::new(name.to_string()))
-                        .child(Muted::new("A live shader as the panel fill."))
-                        .child(Button::new(
-                            gpui::SharedString::from(format!("{id}-b")),
-                            "Action",
-                        ))
-                };
-            out.push((
-                "Surface effects",
-                "Shader surfaces",
-                section!("Shader surfaces")
-                    .child(Muted::new(
-                        "Panels filled by a live shader, in the design's own shape. Cut corners are covered in the page colour.",
-                    ))
-                    .child(
-                        row()
-                            .child(card("ss-1", &presets::DMT[0], "Hyperspace"))
-                            .child(card("ss-2", &presets::BLADE[0], "Blade"))
-                            .child(card("ss-3", &presets::GHIBLI[0], "Meadow")),
-                    )
-                    .into_any_element(),
-                "Shader surfaces",
-            ));
-        }
         if t.look().cut_corners {
             out.push((
                 "Shape",

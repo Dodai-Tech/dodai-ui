@@ -19,7 +19,7 @@
 //! | Data display | [`data`], [`datatable`], [`display`], [`content`], [`list`], [`layout`] (tree, split pane, page grid) |
 //! | Feedback | [`feedback`], [`overlay`], [`popover`], [`sheets`] |
 //! | Charts | [`charts`] and its `charts_*` / `instrument_charts` / [`gauges`] siblings |
-//! | Surface effects | [`mod@surface_fx`] (textures, glitch, sheen, flicker, bloom over any filled surface), `shader_surface` (`ShaderSurface`: a shader-filled panel) |
+//! | Surface effects | [`mod@surface_fx`] (textures, glitch, sheen, flicker, bloom over any filled surface) |
 //! | Time | [`time`] (clock, timer, stopwatch, tap tempo) |
 //! | Look | [`paint`] (the shaped box), [`motion`], [`frosted`] (glass over a picture) |
 //!
@@ -226,8 +226,6 @@ pub mod search;
 #[cfg(feature = "components")]
 pub mod select;
 #[cfg(feature = "shaders")]
-pub mod shader_surface;
-#[cfg(feature = "shaders")]
 pub mod shader_view;
 #[cfg(feature = "components")]
 pub mod sheets;
@@ -379,8 +377,6 @@ pub use scanlines::Scanlines;
 pub use search::{count_label, highlight_runs, IconBadge, RichTooltip, SearchMode, SearchView};
 #[cfg(feature = "components")]
 pub use select::{family_title, DesignSystemSelector, Select, SelectOption, ThemeSelector};
-#[cfg(feature = "shaders")]
-pub use shader_surface::ShaderSurface;
 #[cfg(feature = "shaders")]
 pub use shader_view::{shader_backend, PaletteSource, ShaderView};
 #[cfg(feature = "components")]
