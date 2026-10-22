@@ -79,15 +79,18 @@ pub struct BottomSheet {
     body: Vec<AnyElement>,
     on_dismiss: Option<DismissFn>,
     corners: Option<dodai_core::Corners>,
+    surface: dodai_core::Surface,
 }
 
 crate::corners_setter!(BottomSheet);
+crate::surface_setter!(BottomSheet);
 
 impl BottomSheet {
     /// Create a new [`BottomSheet`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             corners: None,
+            surface: dodai_core::Surface::INHERIT,
             id: id.into(),
             title: None,
             height: 280.0,
@@ -129,7 +132,10 @@ impl RenderOnce for BottomSheet {
             } else {
                 t.palette.border_strong
             }));
-        let mut sheet = shaped(&t.role_shape(dodai_core::ShapeRole::Sheet), sheet_style(&t));
+        let mut sheet = shaped(
+            &t.role_shape(dodai_core::ShapeRole::Sheet),
+            sheet_style(&t).with_own_surface(&t, dodai_core::SurfaceClass::Panel, &self.surface),
+        );
         if t.look().tonal {
             // Anchored to the bottom edge: only the top corners are rounded.
             sheet = sheet.rounded_bl(px(0.0)).rounded_br(px(0.0));
@@ -179,15 +185,18 @@ pub struct SideSheet {
     body: Vec<AnyElement>,
     on_dismiss: Option<DismissFn>,
     corners: Option<dodai_core::Corners>,
+    surface: dodai_core::Surface,
 }
 
 crate::corners_setter!(SideSheet);
+crate::surface_setter!(SideSheet);
 
 impl SideSheet {
     /// Create a new [`SideSheet`].
     pub fn new(id: impl Into<ElementId>, title: impl Into<SharedString>) -> Self {
         Self {
             corners: None,
+            surface: dodai_core::Surface::INHERIT,
             id: id.into(),
             title: title.into(),
             edge: SheetEdge::Right,
@@ -234,7 +243,7 @@ impl RenderOnce for SideSheet {
         }
         let mut sheet = shaped(
             &t.role_shape(dodai_core::ShapeRole::SideSheet),
-            sheet_style(&t),
+            sheet_style(&t).with_own_surface(&t, dodai_core::SurfaceClass::Panel, &self.surface),
         );
         if t.look().tonal {
             // Attached to an edge: only the corners facing the page are rounded.
@@ -349,15 +358,18 @@ pub struct FullScreenDialog {
     on_dismiss: Option<DismissFn>,
     on_action: Option<DismissFn>,
     corners: Option<dodai_core::Corners>,
+    surface: dodai_core::Surface,
 }
 
 crate::corners_setter!(FullScreenDialog);
+crate::surface_setter!(FullScreenDialog);
 
 impl FullScreenDialog {
     /// Create a new [`FullScreenDialog`].
     pub fn new(id: impl Into<ElementId>, title: impl Into<SharedString>) -> Self {
         Self {
             corners: None,
+            surface: dodai_core::Surface::INHERIT,
             id: id.into(),
             title: title.into(),
             action: None,
@@ -408,23 +420,26 @@ impl RenderOnce for FullScreenDialog {
                     .on_click(move |_, w, cx| f(w, cx)),
             );
         }
-        let body = shaped(&t.shape, sheet_style(&t))
-            .size_full()
-            .p(px(t.spacing.lg))
-            .flex()
-            .flex_col()
-            .gap(px(t.spacing.lg))
-            .font_family(first_family(t.typography.body))
-            .text_size(px(t.typography.size_md))
-            .text_color(hsla(t.palette.text))
-            .child(header)
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap(px(t.spacing.md))
-                    .children(self.body),
-            );
+        let body = shaped(
+            &t.shape,
+            sheet_style(&t).with_own_surface(&t, dodai_core::SurfaceClass::Panel, &self.surface),
+        )
+        .size_full()
+        .p(px(t.spacing.lg))
+        .flex()
+        .flex_col()
+        .gap(px(t.spacing.lg))
+        .font_family(first_family(t.typography.body))
+        .text_size(px(t.typography.size_md))
+        .text_color(hsla(t.palette.text))
+        .child(header)
+        .child(
+            div()
+                .flex()
+                .flex_col()
+                .gap(px(t.spacing.md))
+                .children(self.body),
+        );
         deferred(
             div()
                 .id(self.id)

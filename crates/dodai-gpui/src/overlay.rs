@@ -33,15 +33,18 @@ pub struct DialogCard {
     width: f32,
     icon: Option<crate::icons::IconName>,
     corners: Option<dodai_core::Corners>,
+    surface: dodai_core::Surface,
 }
 
 crate::corners_setter!(DialogCard);
+crate::surface_setter!(DialogCard);
 
 impl DialogCard {
     /// Create a new [`DialogCard`].
     pub fn new(title: impl Into<SharedString>) -> Self {
         Self {
             corners: None,
+            surface: dodai_core::Surface::INHERIT,
             title: title.into(),
             body: Vec::new(),
             actions: Vec::new(),
@@ -85,7 +88,7 @@ impl DialogCard {
         let t = crate::apply_corners(t, self.corners);
         let mut d = shaped(
             &t.role_shape(dodai_core::ShapeRole::Dialog),
-            dialog_style(&t),
+            dialog_style(&t).with_own_surface(&t, dodai_core::SurfaceClass::Panel, &self.surface),
         )
         .w(px(self.width))
         .p(px(t.spacing.lg))
@@ -180,6 +183,11 @@ impl Dialog {
         /// Called when the surface is dismissed.
         on_dismiss
     );
+    /// Texture and effects for the dialog box; see [`DialogCard::surface`].
+    pub fn surface(mut self, s: dodai_core::Surface) -> Self {
+        self.card = self.card.surface(s);
+        self
+    }
 }
 
 impl RenderOnce for Dialog {

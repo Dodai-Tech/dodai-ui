@@ -39,6 +39,7 @@ pub struct ListItem {
     icon: Option<crate::icons::IconName>,
     on_click: Option<crate::interact::ClickHandler>,
     corners: Option<dodai_core::Corners>,
+    surface: dodai_core::Surface,
     depth: u8,
     overline: Option<SharedString>,
     supporting: Option<SharedString>,
@@ -47,6 +48,8 @@ pub struct ListItem {
     badge: Option<gpui::AnyElement>,
     collapsed: bool,
 }
+
+crate::surface_setter!(ListItem);
 
 impl ListItem {
     /// Rail form: only the icon, or the label's first letter when there is no icon.
@@ -72,6 +75,7 @@ impl ListItem {
     pub fn new(id: impl Into<ElementId>, label: impl Into<SharedString>) -> Self {
         Self {
             corners: None,
+            surface: dodai_core::Surface::INHERIT,
             depth: 0,
             id: id.into(),
             label: label.into(),
@@ -136,6 +140,7 @@ impl ListItem {
         let st = use_interact(&self.id, window, cx);
         let hovered = st.read(cx).hovered;
         let (mut style, mut fg, marker) = list_style(&t, self.selected, hovered);
+        style = style.with_own_surface(&t, dodai_core::SurfaceClass::Card, &self.surface);
         if self.depth > 0 && !self.selected && !hovered {
             fg = hsla(t.palette.text_muted);
         }

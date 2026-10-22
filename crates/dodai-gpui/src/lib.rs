@@ -57,7 +57,7 @@
 //!   square of that many px; `size(w, h)` a rectangle; `width(px)` / `height(px)` one side.
 //! * **Surface**: `surface(dodai_core::Surface)` gives one component its own texture and
 //!   effects over the app-wide mix (`Surface::NONE` turns them off). Button, IconButton, Card,
-//!   Panel, Tag, TextInput, Select and Toolbar take it; `corners`, `crop` and `cut_gap` are the
+//!   Panel, Tag, TextInput, Select, Toolbar, ListItem (lit rows), DialogCard/Dialog and the sheets take it; `corners`, `crop` and `cut_gap` are the
 //!   per-component shape overrides.
 //! * **Booleans** are `on`/`off` setters (`disabled(true)`, `legend(false)`).
 //!
