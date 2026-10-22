@@ -270,9 +270,26 @@ impl Showcase {
                 "Component textures",
                 section!("Component textures")
                     .child(Muted::new(
-                        "A pattern on UI components: buttons, inputs and tags. Keep it fine and subtle so labels stay readable.",
+                        "A pattern on UI components: buttons, inputs and tags. The buttons below wear it. Keep it fine and subtle so labels stay readable.",
                     ))
-                    .child(picker("sfx-tex", fx.texture, true, |f, v| f.texture = v))
+                    .child({
+                        // Components get a tab bar; the three buttons below wear the texture.
+                        let list: Vec<Texture> = Texture::ALL
+                            .iter()
+                            .copied()
+                            .filter(|x| x.for_components())
+                            .collect();
+                        let sel = list.iter().position(|x| *x == fx.texture).unwrap_or(0);
+                        Tabs::new("sfx-tex")
+                            .scrollable(true)
+                            .labels(list.iter().map(|x| x.label()))
+                            .selected(sel)
+                            .on_select(move |i, _, cx| {
+                                let mut f = dodai_gpui::surface_fx();
+                                f.texture = list[i];
+                                dodai_gpui::set_surface_fx(cx, f);
+                            })
+                    })
                     .child(amount("sfx-strength", "Strength", fx.strength, 1.0, |f, v| f.strength = v))
                     .child(amount("sfx-scale", "Scale", fx.scale, 4.0, |f, v| f.scale = v.max(0.25)))
                     .child(amount("sfx-neon", "Lit lines", fx.neon, 1.0, |f, v| f.neon = v))
