@@ -1089,8 +1089,8 @@ actions!(
 
 /// Px below the scroll container top at which a section counts as current.
 const SPY_SLACK: f32 = 60.0;
-const DEFAULT_W: f32 = 980.0;
-const DEFAULT_H: f32 = 760.0;
+const DEFAULT_W: f32 = 1400.0;
+const DEFAULT_H: f32 = 800.0;
 
 /// Run `f` on the active window (menu/shortcut actions are app-global).
 fn on_active(cx: &mut App, f: impl FnOnce(&mut Window) + 'static) {
@@ -1343,20 +1343,21 @@ fn main() {
         let win = cx
             .open_window(
                 WindowOptions {
-                    window_bounds: Some(if windowed {
-                        WindowBounds::Windowed(bounds)
-                    } else {
-                        // Maximised, like a normal app: open at the screen's size so the
-                        // window doesn't start small and then jump.
-                        WindowBounds::Maximized(cx.primary_display().map_or(bounds, |d| d.bounds()))
-                    }),
+                    window_bounds: Some(WindowBounds::Windowed(bounds)),
                     window_min_size: Some(size(px(420.0), px(360.0))),
                     ..Default::default()
                 },
                 |_, cx| new_showcase(cx),
             )
             .expect("open window");
-        win.update(cx, |s, w, _| w.focus(&s.focus)).ok();
+        win.update(cx, |s, w, _| {
+            w.focus(&s.focus);
+            // Like GitKraft: open at the default size, and maximise at boot.
+            if !windowed {
+                w.zoom_window();
+            }
+        })
+        .ok();
         cx.activate(true);
     });
 }
