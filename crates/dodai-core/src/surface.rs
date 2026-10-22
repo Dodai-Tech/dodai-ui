@@ -102,6 +102,11 @@ impl SurfaceClass {
         }
     }
 
+    /// Containers hold other content (cards, panels, bars); the rest are UI components.
+    pub const fn is_container(self) -> bool {
+        matches!(self, Self::Card | Self::Panel | Self::Bar)
+    }
+
     const fn bit(self) -> u8 {
         1 << self as u8
     }
@@ -159,6 +164,12 @@ pub struct SurfaceFx {
     pub flicker: f32,
     /// Soft bloom around the outline.
     pub bloom: f32,
+    /// Texture for containers (cards, panels, bars); `texture` is for UI components.
+    pub container_texture: Texture,
+    /// Strength of the container texture.
+    pub container_strength: f32,
+    /// Scale of the container texture.
+    pub container_scale: f32,
     /// Which kinds of surface receive the mix.
     pub targets: SurfaceTargets,
 }
@@ -179,8 +190,25 @@ impl SurfaceFx {
         sheen: 0.0,
         flicker: 0.0,
         bloom: 0.0,
+        container_texture: Texture::None,
+        container_strength: 0.5,
+        container_scale: 1.0,
         targets: SurfaceTargets::DEFAULT,
     };
+
+    /// The mix as seen by a `class` surface: containers use the container texture.
+    pub fn for_class(self, class: SurfaceClass) -> Self {
+        if class.is_container() {
+            Self {
+                texture: self.container_texture,
+                strength: self.container_strength,
+                scale: self.container_scale,
+                ..self
+            }
+        } else {
+            self
+        }
+    }
 
     /// True when a texture is set and visible.
     pub fn has_texture(&self) -> bool {
@@ -200,6 +228,19 @@ impl SurfaceFx {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn containers_use_their_own_texture() {
+        use super::*;
+        let fx = SurfaceFx {
+            texture: Texture::Grain,
+            container_texture: Texture::Grid,
+            ..SurfaceFx::NONE
+        };
+        assert_eq!(fx.for_class(SurfaceClass::Button).texture, Texture::Grain);
+        assert_eq!(fx.for_class(SurfaceClass::Card).texture, Texture::Grid);
+        assert_eq!(fx.for_class(SurfaceClass::Input).texture, Texture::Grain);
+    }
+
     #[test]
     fn targets_toggle_independently() {
         use super::*;

@@ -38,6 +38,8 @@ impl DesignSpec for Cyberpunk {
         Some(dodai_core::SurfaceFx {
             texture: dodai_core::Texture::Grain,
             strength: 0.45,
+            container_texture: dodai_core::Texture::Grid,
+            container_strength: 0.35,
             glitch: 0.4,
             flicker: 0.15,
             bloom: 0.3,

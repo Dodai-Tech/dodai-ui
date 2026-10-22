@@ -1316,6 +1316,7 @@ fn main() {
                             .find(|t| t.label().eq_ignore_ascii_case(name))
                         {
                             fx.texture = *t;
+                            fx.container_texture = *t;
                         }
                     }
                 }

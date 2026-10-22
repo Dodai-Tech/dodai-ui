@@ -178,11 +178,6 @@ impl Showcase {
         {
             use dodai_core::{SurfaceClass, SurfaceFx, Texture};
             let fx = dodai_gpui::surface_fx();
-            let sel = Texture::ALL
-                .iter()
-                .position(|x| *x == fx.texture)
-                .unwrap_or(0);
-            let labels: Vec<&str> = Texture::ALL.iter().map(|x| x.label()).collect();
             let amount = move |id: &'static str,
                                name: &'static str,
                                v: f32,
@@ -205,14 +200,17 @@ impl Showcase {
                         ),
                     )
             };
-            let picker =
-                Segmented::new("sfx-tex", labels)
+            let labels: Vec<&str> = Texture::ALL.iter().map(|x| x.label()).collect();
+            let picker = |id: &'static str, cur: Texture, set: fn(&mut SurfaceFx, Texture)| {
+                let sel = Texture::ALL.iter().position(|x| *x == cur).unwrap_or(0);
+                Segmented::new(id, labels.clone())
                     .selected(sel)
                     .on_select(move |i, _, cx| {
                         let mut f = dodai_gpui::surface_fx();
-                        f.texture = Texture::ALL[i];
+                        set(&mut f, Texture::ALL[i]);
                         dodai_gpui::set_surface_fx(cx, f);
-                    });
+                    })
+            };
             let presets = row()
                 .child(
                     Button::new("sfx-preset", "Apply design preset")
@@ -239,37 +237,24 @@ impl Showcase {
                     )
                     .child(Label::new(c.label()))
             }));
+            let id = |p: &'static str, n: &str| gpui::SharedString::from(format!("{p}-{n}"));
+            let preview_components = |p: &'static str| {
+                row()
+                    .child(Button::new(id(p, "b1"), "Primary"))
+                    .child(Button::new(id(p, "b2"), "Secondary").variant(ButtonVariant::Secondary))
+                    .child(Button::new(id(p, "b3"), "Outline").variant(ButtonVariant::Outline))
+            };
+            let preview_containers = |_p: &'static str| {
+                div().w(px(360.0)).child(
+                    Card::new(dodai_gpui::CardVariant::Elevated)
+                        .child(Heading::new("Card"))
+                        .child(Muted::new("Containers hold other content.")),
+                )
+            };
             let preview = |p: &'static str| {
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap(px(t.spacing.sm))
-                    .child(Muted::new("Preview"))
-                    .child(
-                        row()
-                            .child(Button::new(
-                                gpui::SharedString::from(format!("{p}-b1")),
-                                "Primary",
-                            ))
-                            .child(
-                                Button::new(
-                                    gpui::SharedString::from(format!("{p}-b2")),
-                                    "Secondary",
-                                )
-                                .variant(ButtonVariant::Secondary),
-                            )
-                            .child(
-                                Button::new(gpui::SharedString::from(format!("{p}-b3")), "Outline")
-                                    .variant(ButtonVariant::Outline),
-                            ),
-                    )
-                    .child(
-                        div().w(px(360.0)).child(
-                            Card::new(dodai_gpui::CardVariant::Elevated)
-                                .child(Heading::new("Card"))
-                                .child(Muted::new("Follows the card's own shape.")),
-                        ),
-                    )
+                col()
+                    .child(preview_components(p))
+                    .child(preview_containers(p))
             };
             out.push((
                 "Surface effects",
@@ -299,25 +284,31 @@ impl Showcase {
             }
             out.push((
                 "Surface effects",
-                "Textures",
-                section!("Textures")
+                "Component textures",
+                section!("Component textures")
                     .child(Muted::new(
-                        "A static pattern over filled surfaces, clipped to each surface's shape.",
+                        "A pattern on UI components: buttons, inputs and tags. Keep it fine and subtle so labels stay readable.",
                     ))
-                    .child(picker)
-                    .child(amount(
-                        "sfx-strength",
-                        "Strength",
-                        fx.strength,
-                        1.0,
-                        |f, v| f.strength = v,
-                    ))
-                    .child(amount("sfx-scale", "Scale", fx.scale, 4.0, |f, v| {
-                        f.scale = v.max(0.25)
-                    }))
-                    .child(preview("sfx-tx"))
+                    .child(picker("sfx-tex", fx.texture, |f, v| f.texture = v))
+                    .child(amount("sfx-strength", "Strength", fx.strength, 1.0, |f, v| f.strength = v))
+                    .child(amount("sfx-scale", "Scale", fx.scale, 4.0, |f, v| f.scale = v.max(0.25)))
+                    .child(preview_components("sfx-tx"))
                     .into_any_element(),
-                "Textures",
+                "Component textures",
+            ));
+            out.push((
+                "Surface effects",
+                "Container textures",
+                section!("Container textures")
+                    .child(Muted::new(
+                        "A pattern on containers: cards, panels and bars. Larger areas can take bolder patterns such as grids or halftone.",
+                    ))
+                    .child(picker("sfx-ctex", fx.container_texture, |f, v| f.container_texture = v))
+                    .child(amount("sfx-cstrength", "Strength", fx.container_strength, 1.0, |f, v| f.container_strength = v))
+                    .child(amount("sfx-cscale", "Scale", fx.container_scale, 4.0, |f, v| f.container_scale = v.max(0.25)))
+                    .child(preview_containers("sfx-ctx"))
+                    .into_any_element(),
+                "Container textures",
             ));
             out.push((
                 "Surface effects",
