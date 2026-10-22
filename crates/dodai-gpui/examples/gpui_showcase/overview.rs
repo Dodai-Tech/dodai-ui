@@ -58,15 +58,6 @@ impl Showcase {
         ] {
             toolkits = toolkits.child(dodai_gpui::Tag::new(name, dodai_core::Tone::Info));
         }
-        let live = div()
-            .flex()
-            .flex_wrap()
-            .items_center()
-            .gap(px(t.spacing.sm))
-            .child(Button::new("ov-b1", "Get started"))
-            .child(Button::new("ov-b2", "Secondary").variant(ButtonVariant::Secondary))
-            .child(Button::new("ov-b3", "Outline").variant(ButtonVariant::Outline))
-            .child(dodai_gpui::Toggle::new("ov-t", true));
         let hero = Panel::new().focused(true).child(
             div()
                 .flex()
@@ -87,7 +78,6 @@ impl Showcase {
                         .child("One set of tokens, components, charts and shaders. Three designs, every toolkit."),
                 )
                 .child(toolkits)
-                .child(live)
                 .child(stat_row),
         );
         out.push(hero.into_any_element());
