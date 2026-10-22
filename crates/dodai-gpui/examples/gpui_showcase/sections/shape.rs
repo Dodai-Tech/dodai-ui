@@ -197,7 +197,7 @@ impl Showcase {
                         .copied()
                         .filter(|x| !components || x.for_components())
                         .map(|x| {
-                            Button::new(
+                            let btn = Button::new(
                                 gpui::SharedString::from(format!("{id}-{}", x.label())),
                                 x.label(),
                             )
@@ -210,7 +210,12 @@ impl Showcase {
                                 let mut f = dodai_gpui::surface_fx();
                                 set(&mut f, x);
                                 dodai_gpui::set_surface_fx(cx, f);
-                            })
+                            });
+                            // The button previews its own texture.
+                            div()
+                                .relative()
+                                .child(btn)
+                                .child(dodai_gpui::texture_swatch(&t, x))
                         }),
                 )
             };

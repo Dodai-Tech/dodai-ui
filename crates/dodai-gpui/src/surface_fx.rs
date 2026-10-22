@@ -77,6 +77,37 @@ impl SurfacePaint {
     }
 }
 
+/// An overlay that paints `texture` over its parent (which must be `relative`), in the
+/// theme's shape: a live preview of the texture for pickers.
+pub fn texture_swatch(theme: &Theme, texture: Texture) -> gpui::Canvas<()> {
+    use gpui::{canvas, Styled};
+    let p = &theme.palette;
+    let sp = SurfacePaint {
+        fx: SurfaceFx {
+            texture,
+            strength: 0.8,
+            scale: 1.0,
+            neon: surface_fx().neon,
+            ..SurfaceFx::NONE
+        },
+        ink: hsla(p.text),
+        hole: hsla(p.background),
+        a: hsla(p.link),
+        b: hsla(p.danger),
+        light: hsla(p.text),
+        neon: hsla(p.accent),
+    };
+    let shape = theme.shape.clone();
+    canvas(
+        |_, _, _| (),
+        move |b, _, window, _| paint_surface(window, b, &shape, &sp),
+    )
+    .absolute()
+    .top_0()
+    .left_0()
+    .size_full()
+}
+
 fn clock() -> f32 {
     static START: OnceLock<Instant> = OnceLock::new();
     START.get_or_init(Instant::now).elapsed().as_secs_f32()

@@ -387,7 +387,7 @@ pub use sheets::{
 pub use shell::{is_wide, snap_collapsed, spring_step, ResponsiveShell};
 #[cfg(feature = "components")]
 pub use spy::{pick as spy_pick, ScrollSpy};
-pub use surface_fx::{apply_surface_preset, set_surface_fx, surface_fx};
+pub use surface_fx::{apply_surface_preset, set_surface_fx, surface_fx, texture_swatch};
 #[cfg(feature = "components")]
 pub use surfaces::{
     card_style, AppBarSize, Card, CardVariant, Fab, FabMenu, FabSize, IconButton, IconWidth,
