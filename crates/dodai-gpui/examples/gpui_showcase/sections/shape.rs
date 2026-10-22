@@ -258,127 +258,144 @@ impl Showcase {
             ));
         }
         if t.look().accent_border {
+            use dodai_gpui::{BorderStyle as B, Corner};
+            let cur = dodai_gpui::section_border(cx);
+            let presets: [(&str, B); 5] = [
+                ("None", B::NONE),
+                ("Subtle", B::SUBTLE),
+                ("Thin", B::THIN),
+                ("Normal", B::NORMAL),
+                ("Bold", B::BOLD),
+            ];
+            let preset_sel = presets
+                .iter()
+                .position(|(_, b)| b.width == cur.width && b.opacity == cur.opacity)
+                .unwrap_or(usize::MAX);
+            let corner_sel = Corner::ALL
+                .iter()
+                .position(|c| *c == cur.accent)
+                .unwrap_or(usize::MAX);
+            let slider = |id: &'static str,
+                          v: f32,
+                          lo: f32,
+                          hi: f32,
+                          unit: &'static str,
+                          f: fn(B, f32) -> B| {
+                div().w(px(280.0)).child(
+                    Slider::new(id, v)
+                        .range(lo, hi)
+                        .step(0.25)
+                        .show_value(true)
+                        .format(move |v| format!("{v:.2}{unit}"))
+                        .on_change(move |v, _, cx| {
+                            let b = dodai_gpui::section_border(cx);
+                            dodai_gpui::set_section_border(cx, f(b, v));
+                        }),
+                )
+            };
+            let theme_shadow = t.effects.hard_shadow.max(0.5);
             out.push((
                 "Shape",
                 "Border",
                 section!("Border")
                     .child(Muted::new(
-                        "BorderStyle { width, opacity, accent }: the yellow accent and the grey contour swap sides together; set per panel with `.border(..)`, or for every panel with `set_section_border`. Sections use THIN by default.",
+                        "Every section frame is a grey contour plus an accent line on the opposite corner. These settings change all sections at once; a single panel can use `.border(..)`.",
                     ))
-                    .child({
-                        use dodai_gpui::BorderStyle as B;
-                        let mut r = row();
-                        for (name, b) in [
-                            ("NONE", B::NONE),
-                            ("SUBTLE", B::SUBTLE),
-                            ("THIN (default)", B::THIN),
-                            ("NORMAL", B::NORMAL),
-                            ("BOLD", B::BOLD),
-                        ] {
-                            r = r.child(
-                                div().flex_1().min_w(px(140.0)).child(
-                                    Panel::new().border(b).child(
-                                        col()
-                                            .child(Label::new(name))
-                                            .child(Muted::new(format!(
-                                                "{:.2}px · {:.0}%",
-                                                b.width,
-                                                b.opacity * 100.0
-                                            ))),
-                                    ),
-                                ),
-                            );
-                        }
-                        r
-                    })
-                    .child({
-                        use dodai_gpui::{BorderStyle as B, Corner};
-                        let mut r = row();
-                        for e in Corner::ALL {
-                            r = r.child(
-                                div().flex_1().min_w(px(110.0)).child(
-                                    Panel::new()
-                                        .border(B::THIN.accent(e))
-                                        .child(Label::new(e.name())),
-                                ),
-                            );
-                        }
-                        r
-                    })
-                    .child({
-                        use dodai_gpui::{BorderStyle as B, Corner};
-                        let cur = dodai_gpui::section_border(cx);
-                        let mut r = row().child(Label::new("Accent position (all sections)"));
-                        for (i, e) in Corner::ALL.into_iter().enumerate() {
-                            r = r.child(
-                                Button::new(("bd-acc", i), e.name())
-                                    .variant(if cur.accent == e {
-                                        ButtonVariant::Primary
-                                    } else {
-                                        ButtonVariant::Outline
-                                    })
-                                    .on_click(move |_, _, cx| {
-                                        let b: B = dodai_gpui::section_border(cx);
-                                        dodai_gpui::set_section_border(cx, b.accent(e));
+                    .child(setting(
+                        "Preset",
+                        "Width and strength of the grey contour.",
+                        div()
+                            .flex()
+                            .child(
+                                Segmented::new("bd-preset", presets.map(|p| p.0))
+                                    .selected(preset_sel)
+                                    .on_change(move |i, _, cx| {
+                                        let c = dodai_gpui::section_border(cx);
+                                        let p = presets[i].1;
+                                        dodai_gpui::set_section_border(
+                                            cx,
+                                            B {
+                                                accent: c.accent,
+                                                accent_width: c.accent_width,
+                                                ..p
+                                            },
+                                        );
                                     }),
-                            );
-                        }
-                        r
-                    })
-                    .child({
-                        let b = dodai_gpui::section_border(cx);
-                        let theme_shadow = t.effects.hard_shadow.max(0.5);
-                        row()
-                            .child(Label::new("Grey / yellow thickness"))
-                            .child(
-                                div().w(px(180.0)).child(
-                                    Slider::new("bd-width", b.width)
-                                        .range(0.0, 4.0)
-                                        .step(0.25)
-                                        .show_value(true)
-                                        .format(|v| format!("grey {v:.2}px"))
-                                        .on_change(move |v, _, cx| {
-                                            let b = dodai_gpui::section_border(cx);
-                                            dodai_gpui::set_section_border(
-                                                cx,
-                                                dodai_gpui::BorderStyle { width: v.clamp(0.0, 8.0), ..b },
-                                            );
-                                        }),
-                                ),
                             )
+                            .into_any_element(),
+                    ))
+                    .child(setting(
+                        "Accent corner",
+                        "Where the bright line sits. The grey contour moves to the opposite side.",
+                        div()
+                            .flex()
                             .child(
-                                div().w(px(180.0)).child(
-                                    Slider::new("bd-accent", b.accent_width.unwrap_or(theme_shadow))
-                                        .range(0.5, 6.0)
-                                        .step(0.25)
-                                        .show_value(true)
-                                        .format(|v| format!("yellow {v:.2}px"))
-                                        .on_change(move |v, _, cx| {
-                                            let b = dodai_gpui::section_border(cx);
-                                            dodai_gpui::set_section_border(
-                                                cx,
-                                                b.accent_width(v),
-                                            );
-                                        }),
-                                ),
+                                Segmented::new("bd-corner", Corner::ALL.map(|c| c.name()))
+                                    .selected(corner_sel)
+                                    .on_change(move |i, _, cx| {
+                                        let b = dodai_gpui::section_border(cx);
+                                        dodai_gpui::set_section_border(cx, b.accent(Corner::ALL[i]));
+                                    }),
                             )
-                            .child(
-                                div().w(px(180.0)).child(
-                                    Slider::new("bd-opacity", b.opacity)
-                                        .range(0.0, 1.0)
-                                        .step(0.05)
-                                        .show_value(true)
-                                        .format(|v| format!("{v:.2}"))
-                                        .on_change(move |v, _, cx| {
-                                            let b = dodai_gpui::section_border(cx);
-                                            dodai_gpui::set_section_border(
-                                                cx,
-                                                dodai_gpui::BorderStyle { opacity: v.clamp(0.0, 1.0), ..b },
-                                            );
-                                        }),
-                                ),
-                            )
-                    })
+                            .into_any_element(),
+                    ))
+                    .child(setting(
+                        "Grey width",
+                        "Thickness of the grey contour in px.",
+                        slider("bd-width", cur.width, 0.0, 4.0, " px", |b, v| B {
+                            width: v.clamp(0.0, 8.0),
+                            ..b
+                        })
+                        .into_any_element(),
+                    ))
+                    .child(setting(
+                        "Accent width",
+                        "Thickness of the bright line in px.",
+                        slider(
+                            "bd-accent",
+                            cur.accent_width.unwrap_or(theme_shadow),
+                            0.5,
+                            6.0,
+                            " px",
+                            |b, v| b.accent_width(v),
+                        )
+                        .into_any_element(),
+                    ))
+                    .child(setting(
+                        "Grey opacity",
+                        "0 hides the contour, 1 is fully solid.",
+                        slider("bd-opacity", cur.opacity, 0.0, 1.0, "", |b, v| B {
+                            opacity: v.clamp(0.0, 1.0),
+                            ..b
+                        })
+                        .into_any_element(),
+                    ))
+                    .child(
+                        div()
+                            .flex()
+                            .flex_col()
+                            .gap(px(t.spacing.sm))
+                            .child(Muted::new("Presets, side by side"))
+                            .child({
+                                let mut r = row();
+                                for (name, b) in presets {
+                                    r = r.child(
+                                        div().flex_1().min_w(px(140.0)).child(
+                                            Panel::new().border(b.accent(cur.accent)).child(
+                                                col().child(Label::new(name)).child(Muted::new(
+                                                    format!(
+                                                        "{:.2} px · {:.0}%",
+                                                        b.width,
+                                                        b.opacity * 100.0
+                                                    ),
+                                                )),
+                                            ),
+                                        ),
+                                    );
+                                }
+                                r
+                            }),
+                    )
                     .into_any_element(),
                 "Border",
             ));
