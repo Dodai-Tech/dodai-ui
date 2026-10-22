@@ -819,20 +819,20 @@ impl Theme {
         self.palette.primary_active
     }
 
-    /// The design's own shadow layers `(offset_y, blur, spread, alpha)` for an elevation level,
+    /// The design's own shadow layers for an elevation level,
     /// or `None` to use the default two-layer shadow.
-    pub fn elevation_layers(&self, level: u8) -> Option<Vec<(f32, f32, f32, f32)>> {
+    pub fn elevation_layers(&self, level: u8) -> Option<Vec<crate::ShadowLayer>> {
         self.spec
             .get()
             .and_then(|s| s.elevation_layers(self, level))
     }
 
     /// The page grid at a viewport width.
-    pub fn page_grid(&self, viewport: f32) -> crate::PageGrid {
+    pub fn page_grid(&self, viewport: f32) -> crate::GridSpec {
         self.spec
             .get()
             .and_then(|s| s.page_grid(self, viewport))
-            .unwrap_or(crate::PageGrid {
+            .unwrap_or(crate::GridSpec {
                 columns: if viewport >= 760.0 { 12 } else { 4 },
                 gap: self.spacing.md,
                 margin: self.spacing.lg,
@@ -845,21 +845,8 @@ impl Theme {
     pub fn responsive(&self, viewport: f32) -> Theme {
         let mut t = self.clone();
         if let Some(f) = self.spec.get().and_then(|s| s.fluid(self, viewport)) {
-            let [xs, sm, md, lg, xl, xxl] = f.typography;
-            t.typography.size_xs = xs;
-            t.typography.size_sm = sm;
-            t.typography.size_md = md;
-            t.typography.size_lg = lg;
-            t.typography.size_xl = xl;
-            t.typography.size_xxl = xxl;
-            let [a, b, c, d, e] = f.spacing;
-            t.spacing = crate::Spacing {
-                xs: a,
-                sm: b,
-                md: c,
-                lg: d,
-                xl: e,
-            };
+            t.typography = f.typography;
+            t.spacing = f.spacing;
         }
         t
     }
@@ -875,12 +862,23 @@ impl Theme {
             })
     }
 
-    /// Fade stops `(alpha, position 0..=1)` for the dark overlay on media.
-    pub fn fade_stops(&self) -> Vec<(f32, f32)> {
+    /// Stops of the dark fade laid over media.
+    pub fn fade_stops(&self) -> Vec<crate::FadeStop> {
         self.spec
             .get()
             .and_then(|s| s.fade_stops(self))
-            .unwrap_or_else(|| vec![(0.7, 0.0), (0.0, 1.0)])
+            .unwrap_or_else(|| {
+                vec![
+                    crate::FadeStop {
+                        alpha: 0.7,
+                        at: 0.0,
+                    },
+                    crate::FadeStop {
+                        alpha: 0.0,
+                        at: 1.0,
+                    },
+                ]
+            })
     }
 
     /// Keyboard focus indicator `(colour, thickness px)`.

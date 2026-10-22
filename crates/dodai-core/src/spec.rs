@@ -50,7 +50,7 @@ pub struct Look {
 
 /// The page grid of a design at a viewport width: columns between two outer margins.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct PageGrid {
+pub struct GridSpec {
     pub columns: u32,
     /// Gap between columns and rows.
     pub gap: f32,
@@ -58,6 +58,16 @@ pub struct PageGrid {
     pub margin: f32,
     /// The widest the grid grows; beyond it the page is centred.
     pub max_width: Option<f32>,
+}
+
+/// One layer of a soft shadow: offset down by `dy`, `blur` and `spread` in px, `alpha` absolute
+/// (the colour is the theme's shadow colour).
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct ShadowLayer {
+    pub dy: f32,
+    pub blur: f32,
+    pub spread: f32,
+    pub alpha: f32,
 }
 
 /// Frosted glass: a translucent `tint` laid over a backdrop blurred by `blur` px (CSS blur
@@ -68,11 +78,20 @@ pub struct Frost {
     pub blur: f32,
 }
 
-/// Type sizes and spacing a design resolves for one viewport width (fluid scales).
+/// Type sizes and spacing a design resolves for one viewport width (fluid scales). Start from
+/// the theme's own `typography` and `spacing` and change the sizes.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Fluid {
-    pub typography: [f32; 6],
-    pub spacing: [f32; 5],
+    pub typography: crate::Typography,
+    pub spacing: crate::Spacing,
+}
+
+/// One stop of a media fade: `alpha` of the fade colour at `at` (0 = the edge the text sits on,
+/// 1 = the far edge).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct FadeStop {
+    pub alpha: f32,
+    pub at: f32,
 }
 
 /// Component rules of one design system. All hooks are optional overrides.
@@ -179,19 +198,17 @@ pub trait DesignSpec: Send + Sync + std::fmt::Debug {
     fn hard_shadow_color(&self, t: &Theme) -> Option<Color> {
         None
     }
-    /// Soft shadow layers `(offset_y, blur, spread, alpha)` for an elevation `level` (1-5), when
-    /// the design has its own shadow tokens instead of the two Material layers. The alpha is
-    /// absolute; the colour is the theme's shadow colour.
-    fn elevation_layers(&self, t: &Theme, level: u8) -> Option<Vec<(f32, f32, f32, f32)>> {
+    /// Soft shadow layers for an elevation `level` (1-5), when the design has its own shadow
+    /// tokens instead of the two Material layers.
+    fn elevation_layers(&self, t: &Theme, level: u8) -> Option<Vec<ShadowLayer>> {
         None
     }
     /// The page grid at a viewport width (default: the theme's own spacing, 12 columns, or 4 on
     /// a narrow viewport).
-    fn page_grid(&self, t: &Theme, viewport: f32) -> Option<PageGrid> {
+    fn page_grid(&self, t: &Theme, viewport: f32) -> Option<GridSpec> {
         None
     }
-    /// Type sizes `[xs, sm, md, lg, xl, xxl]` and spacing `[xs, sm, md, lg, xl]` at a viewport
-    /// width, for designs with fluid scales (default: the static theme values).
+    /// Type sizes and spacing at a viewport width, for designs with fluid scales (default: the static theme values).
     fn fluid(&self, t: &Theme, viewport: f32) -> Option<Fluid> {
         None
     }
@@ -199,9 +216,9 @@ pub trait DesignSpec: Send + Sync + std::fmt::Debug {
     fn frost(&self, t: &Theme) -> Option<Frost> {
         None
     }
-    /// Stops `(alpha, position 0..=1)` of the dark fade laid over media so text on it stays
-    /// legible (default: a two-stop linear fade). Position 0 is the edge the text sits on, 1 the far edge.
-    fn fade_stops(&self, t: &Theme) -> Option<Vec<(f32, f32)>> {
+    /// Stops of the dark fade laid over media so text on it stays legible (default: a two-stop
+    /// linear fade).
+    fn fade_stops(&self, t: &Theme) -> Option<Vec<FadeStop>> {
         None
     }
     /// Keyboard focus indicator `(colour, thickness px)`.

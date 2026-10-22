@@ -17,7 +17,7 @@ use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Mutex, OnceLock};
 
 /// Gaussian-like blur (three box passes) of an RGBA image, edges clamped. `sigma` is in pixels.
-pub fn blur_pixels(src: &[u8], w: usize, h: usize, sigma: f32) -> Vec<u8> {
+fn blur_pixels(src: &[u8], w: usize, h: usize, sigma: f32) -> Vec<u8> {
     assert_eq!(src.len(), w * h * 4);
     if sigma <= 0.0 || w == 0 || h == 0 {
         return src.to_vec();
@@ -87,14 +87,14 @@ fn downscale(src: &[u8], w: usize, h: usize, f: usize) -> (Vec<u8>, usize, usize
 }
 
 /// The blurred picture, at reduced size (it is scaled back up when drawn).
-pub fn blurred(src: &[u8], w: usize, h: usize, sigma: f32) -> (Vec<u8>, usize, usize) {
+fn blurred(src: &[u8], w: usize, h: usize, sigma: f32) -> (Vec<u8>, usize, usize) {
     let f = (sigma / 6.0).ceil().max(1.0) as usize;
     let (small, sw, sh) = downscale(src, w, h, f);
     (blur_pixels(&small, sw, sh, sigma / f as f32), sw, sh)
 }
 
 /// A showcase picture with hard edges (so the blur is visible), in the theme's colours.
-pub fn mesh_pixels(t: &Theme, w: usize, h: usize) -> Vec<u8> {
+fn mesh_pixels(t: &Theme, w: usize, h: usize) -> Vec<u8> {
     let p = &t.palette;
     let colours = [p.primary, p.info, p.success, p.warning, p.danger];
     let mut out = vec![0u8; w * h * 4];
@@ -132,6 +132,10 @@ fn render_image(rgba: Vec<u8>, w: usize, h: usize) -> Option<Arc<RenderImage>> {
     Some(Arc::new(RenderImage::new(vec![image::Frame::new(buf)])))
 }
 
+/// Cached pictures (and panel crops) kept before the cache is emptied, so switching themes
+/// does not grow it without bound.
+const CACHE_LIMIT: usize = 32;
+
 /// A picture and its blurred, reduced copy.
 #[derive(Clone)]
 struct Entry {
@@ -152,7 +156,7 @@ fn crops() -> &'static Mutex<HashMap<u64, Arc<RenderImage>>> {
 
 /// The `w`×`h` rectangle at `(x, y)` of the picture (`full` px wide) cut from its reduced blurred
 /// copy `soft` (`sw`×`sh`) by bilinear sampling, so it lines up with the sharp picture.
-pub fn crop_bilinear(
+fn crop_bilinear(
     soft: &[u8],
     (sw, sh): (usize, usize),
     full: (f32, f32),
@@ -226,13 +230,12 @@ impl FrostedScene {
         self.radius = Some(r);
         self
     }
-    /// A glass panel at `(x, y)` of `width`×`height` holding `content`.
+    /// A glass panel at `(x, y)` of `(width, height)` px, over the picture, holding `content`
+    /// (inset by the theme's medium spacing).
     pub fn panel(
         mut self,
-        x: f32,
-        y: f32,
-        width: f32,
-        height: f32,
+        (x, y): (f32, f32),
+        (width, height): (f32, f32),
         content: impl IntoElement,
     ) -> Self {
         self.panels
@@ -286,6 +289,9 @@ impl RenderOnce for FrostedScene {
                 soft_size: (bw, bh),
             };
             if let Ok(mut c) = cache().lock() {
+                if c.len() >= CACHE_LIMIT {
+                    c.clear();
+                }
                 c.insert(key, e.clone());
             }
             Some(e)
@@ -319,6 +325,9 @@ impl RenderOnce for FrostedScene {
                 );
                 let i = render_image(pixels, cw, ch)?;
                 if let Ok(mut c) = crops().lock() {
+                    if c.len() >= CACHE_LIMIT {
+                        c.clear();
+                    }
                     c.insert(ck, i.clone());
                 }
                 Some(i)

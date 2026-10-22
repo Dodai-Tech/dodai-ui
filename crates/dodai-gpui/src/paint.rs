@@ -38,7 +38,7 @@ pub struct ShapeStyle {
     /// Material 3 elevation level (0..=5) and shadow colour: the soft two-layer shadow.
     pub elevation: Option<(u8, Hsla)>,
     /// The design's own shadow layers for the elevation (`(y, blur, spread, alpha)`).
-    pub lift_layers: Option<[(f32, f32, f32, f32); 3]>,
+    pub lift_layers: Option<[dodai_core::ShadowLayer; 3]>,
     /// Interrupt the border on the right (`true`) or left (`false`) side, centred vertically,
     /// over a span of `2 * half` px (the empty space between a cropped button's tick bars); the
     /// fill is notched `depth` px inward there.
@@ -82,7 +82,7 @@ impl ShapeStyle {
     /// design's own shadow layers when it declares them.
     pub fn with_lift(mut self, theme: &Theme, level: u8) -> Self {
         self.lift_layers = theme.elevation_layers(level).map(|v| {
-            let mut a = [(0.0, 0.0, 0.0, 0.0); 3];
+            let mut a = [dodai_core::ShadowLayer::default(); 3];
             for (slot, l) in a.iter_mut().zip(v) {
                 *slot = l;
             }
@@ -504,10 +504,27 @@ fn shaped_base(shape: &Shape, style: ShapeStyle) -> Div {
             }
             if let Some((level, c)) = style.elevation {
                 let own = style.lift_layers.is_some();
-                let layers = style
-                    .lift_layers
-                    .map_or_else(|| elevation_layers(level).to_vec(), |l| l.to_vec());
-                for (y, blur, spread, a) in layers.into_iter().filter(|l| l.3 > 0.0) {
+                let layers: Vec<dodai_core::ShadowLayer> = style.lift_layers.map_or_else(
+                    || {
+                        elevation_layers(level)
+                            .iter()
+                            .map(|&(dy, blur, spread, alpha)| dodai_core::ShadowLayer {
+                                dy,
+                                blur,
+                                spread,
+                                alpha,
+                            })
+                            .collect()
+                    },
+                    |l| l.to_vec(),
+                );
+                for dodai_core::ShadowLayer {
+                    dy: y,
+                    blur,
+                    spread,
+                    alpha: a,
+                } in layers.into_iter().filter(|l| l.alpha > 0.0)
+                {
                     shadows.push(BoxShadow {
                         color: Hsla {
                             a: if own { a } else { c.a * a * 0.6 },
@@ -732,7 +749,7 @@ pub enum Playback {
 
 /// The design's dark fade for text laid over media: `height` px tall, strongest at the bottom
 /// edge. Built from [`Theme::fade_stops`] as stacked two-stop gradients.
-pub fn fade_overlay(theme: &Theme, height: f32) -> gpui::Div {
+pub(crate) fn fade_overlay(theme: &Theme, height: f32) -> gpui::Div {
     use gpui::{linear_color_stop, linear_gradient, relative};
     let base = hsla(theme.palette.roles.shadow);
     let at = |a: f32| Hsla { a, ..base };
@@ -747,12 +764,12 @@ pub fn fade_overlay(theme: &Theme, height: f32) -> gpui::Div {
         .flex_col();
     // Top to bottom: the far edge (position 1) first.
     for w in stops.windows(2).rev() {
-        let ((a0, p0), (a1, p1)) = (w[0], w[1]);
-        let frac = (p1 - p0).max(0.0);
+        let (lo, hi) = (w[0], w[1]);
+        let frac = (hi.at - lo.at).max(0.0);
         d = d.child(gpui::div().w_full().h(relative(frac)).bg(linear_gradient(
             180.0,
-            linear_color_stop(at(a1), 0.0),
-            linear_color_stop(at(a0), 1.0),
+            linear_color_stop(at(hi.alpha), 0.0),
+            linear_color_stop(at(lo.alpha), 1.0),
         )));
     }
     d

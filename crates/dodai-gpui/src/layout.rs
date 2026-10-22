@@ -349,9 +349,9 @@ mod tests {
 
 // ───────────────────────────────── PageGrid ─────────────────────────────────
 
-/// Column cell widths `(offset-free)` of a [`PageGrid`]: the width in px of a cell spanning
+/// Width in px of a cell spanning
 /// `span` of `columns` columns inside `inner` px with `gap` between columns.
-pub fn grid_span_width(inner: f32, columns: u32, gap: f32, span: u32) -> f32 {
+fn grid_span_width(inner: f32, columns: u32, gap: f32, span: u32) -> f32 {
     let columns = columns.max(1);
     let span = span.clamp(1, columns);
     let col = (inner - gap * (columns - 1) as f32) / columns as f32;

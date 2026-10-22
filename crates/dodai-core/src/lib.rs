@@ -41,7 +41,7 @@ pub use shape_system::{
     Corner, CornerSpec, CornerStyle, DefaultShape, RoleShape, ShapePreset, ShapeRole, ShapeScale,
     ShapeSize, ShapeSystem, FULL,
 };
-pub use spec::{DesignSpec, Fluid, Frost, IconSet, Look, PageGrid, SpecRef};
+pub use spec::{DesignSpec, FadeStop, Fluid, Frost, GridSpec, IconSet, Look, ShadowLayer, SpecRef};
 pub use switcher::ThemeSwitcher;
 pub use theme::{Theme, ThemeMeta};
 pub use tokens::{Corners, Effects, Shape, ShapeKind, Sizes, Spacing, Typography};

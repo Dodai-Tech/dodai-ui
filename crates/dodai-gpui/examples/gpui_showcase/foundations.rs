@@ -500,10 +500,8 @@ pub(crate) fn frosted_view(t: &dodai_core::Theme) -> gpui::Div {
     div().child(
         dodai_gpui::FrostedScene::mesh("showcase", 720.0, 300.0)
             .panel(
-                40.0,
-                40.0,
-                300.0,
-                120.0,
+                (40.0, 40.0),
+                (300.0, 120.0),
                 panel(
                     "Frosted",
                     format!(
@@ -514,10 +512,8 @@ pub(crate) fn frosted_view(t: &dodai_core::Theme) -> gpui::Div {
                 ),
             )
             .panel(
-                380.0,
-                110.0,
-                300.0,
-                150.0,
+                (380.0, 110.0),
+                (300.0, 150.0),
                 panel(
                     "Over hard edges",
                     "The picture behind is sharp; each panel shows a blurred copy of it.".into(),
