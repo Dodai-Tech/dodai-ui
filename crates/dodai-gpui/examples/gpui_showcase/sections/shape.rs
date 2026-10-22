@@ -357,9 +357,30 @@ impl Showcase {
                 "Container textures",
                 section!("Container textures")
                     .child(Muted::new(
-                        "A pattern on containers: cards, panels and bars. Larger areas can take bolder patterns such as grids or halftone.",
+                        "A pattern on containers: cards, panels and bars. This panel is a container, so it shows the chosen pattern behind these controls.",
                     ))
-                    .child(picker("sfx-ctex", fx.container_texture, false, |f, v| f.container_texture = v))
+                    .child({
+                        // Same tab bar as components; this panel is itself a container, so it
+                        // wears the pattern.
+                        let list: Vec<Texture> = Texture::ALL
+                            .iter()
+                            .copied()
+                            .filter(|x| owned.contains(x))
+                            .collect();
+                        let sel = list
+                            .iter()
+                            .position(|x| *x == fx.container_texture)
+                            .unwrap_or(0);
+                        Tabs::new("sfx-ctex")
+                            .scrollable(true)
+                            .labels(list.iter().map(|x| x.label()))
+                            .selected(sel)
+                            .on_select(move |i, _, cx| {
+                                let mut f = dodai_gpui::surface_fx();
+                                f.container_texture = list[i];
+                                dodai_gpui::set_surface_fx(cx, f);
+                            })
+                    })
                     .child(amount("sfx-cstrength", "Strength", fx.container_strength, 1.0, |f, v| f.container_strength = v))
                     .child(amount("sfx-cscale", "Scale", fx.container_scale, 4.0, |f, v| f.container_scale = v.max(0.25)))
                     .child(amount("sfx-cneon", "Lit lines", fx.neon, 1.0, |f, v| f.neon = v))

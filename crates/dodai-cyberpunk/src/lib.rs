@@ -374,15 +374,19 @@ fn surface_style(dark: bool) -> dodai_core::SurfaceStyle {
             texture: dodai_core::Texture::Grain,
             strength: 0.45 * calm,
             container_texture: dodai_core::Texture::Circuit,
-            neon: 0.4,
-            container_strength: 0.35 * calm,
-            glitch: 0.4,
+            neon: 0.3,
+            container_strength: 0.22 * calm,
+            glitch: 0.3,
             flicker: 0.15,
             bloom: 0.3 * calm,
             ..dodai_core::SurfaceFx::NONE
         },
         textures: &dodai_core::Texture::ALL,
         effects: true,
-        tuning: dodai_core::SurfaceTuning::DEFAULT,
+        tuning: dodai_core::SurfaceTuning {
+            halo: 1.5,
+            glitch_period: 3.2,
+            ..dodai_core::SurfaceTuning::DEFAULT
+        },
     }
 }
