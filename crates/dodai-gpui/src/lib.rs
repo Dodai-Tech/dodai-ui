@@ -19,7 +19,7 @@
 //! | Data display | [`data`], [`datatable`], [`display`], [`content`], [`list`], [`layout`] (tree, split pane, page grid) |
 //! | Feedback | [`feedback`], [`overlay`], [`popover`], [`sheets`] |
 //! | Charts | [`charts`] and its `charts_*` / `instrument_charts` / [`gauges`] siblings |
-//! | Surface effects | [`surface_fx`] (textures, glitch, sheen, flicker, bloom over any filled surface), `shader_surface` (`ShaderSurface`: a shader-filled panel) |
+//! | Surface effects | [`mod@surface_fx`] (textures, glitch, sheen, flicker, bloom over any filled surface), `shader_surface` (`ShaderSurface`: a shader-filled panel) |
 //! | Time | [`time`] (clock, timer, stopwatch, tap tempo) |
 //! | Look | [`paint`] (the shaped box), [`motion`], [`frosted`] (glass over a picture) |
 //!
