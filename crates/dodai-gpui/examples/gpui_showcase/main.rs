@@ -1292,8 +1292,8 @@ fn main() {
         dodai_gpui::install_switcher(cx, switcher);
         dodai_gpui::set_tree_expanded(cx, false); // theme tree starts contracted
         window_shortcuts(cx);
-        // Surface effects all start off (no glow, texture or animation); the section turns them on.
-        set_glow_intensity(cx, 0.0);
+        // Textures and animated effects start off; glow starts at a subtle 0.25 (hover feedback).
+        set_glow_intensity(cx, 0.25);
         // The old per-component scanline body stays off; scanlines are a texture now.
         set_scanlines(cx, false);
         // Test aid: DODAI_SFX=halftone,glitch,sheen,flicker,bloom (or `preset`).
