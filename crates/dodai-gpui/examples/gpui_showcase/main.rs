@@ -617,15 +617,6 @@ impl Render for Showcase {
 
         // Global shape properties (glow, scanlines, cut corners): Shape category.
 
-        let ds_panel = Panel::new().focused(true).child(
-            div()
-                .flex()
-                .flex_col()
-                .gap(px(t.spacing.sm))
-                .child(Label::new("Design System Selection"))
-                .child(DesignSystemTree::new("ds-tree")),
-        );
-
         // ── new components ─────────────────────────────────────────────
 
         // Stepped / configurable sliders.
@@ -707,22 +698,13 @@ impl Render for Showcase {
             .min_w_0()
             .overflow_y_scroll()
             .p(px(if narrow { t.spacing.md } else { t.spacing.xl }));
-        let mut ds_panel = Some(ds_panel);
         let mut n_children = 0usize;
         let mut jump_ix: Option<usize> = None;
         let jump_title = self.jump.map(|(j, _)| j);
         if overview {
-            let kids = self.overview(&me, &cats, sections_meta, ds_panel.take(), cx);
+            let kids = self.overview(&me, &cats, sections_meta, cx);
             n_children += kids.len();
             body = body.children(kids);
-        }
-        // DODAI_ONLY (debug captures) hides the selector so the section fills the view.
-        if let Some(d) = ds_panel
-            .take()
-            .filter(|_| std::env::var_os("DODAI_ONLY").is_none())
-        {
-            body = body.child(d);
-            n_children += 1;
         }
         if std::env::var_os("DODAI_LIST").is_some() {
             for (c, t) in sections_meta {
@@ -1254,10 +1236,9 @@ fn main() {
         dodai_gpui::install_switcher(cx, switcher);
         dodai_gpui::set_tree_expanded(cx, false); // theme tree starts contracted
         window_shortcuts(cx);
-        set_glow_intensity(cx, 0.5);
-        if std::env::var_os("DODAI_NOSCAN").is_some() {
-            set_scanlines(cx, false);
-        }
+        set_glow_intensity(cx, 0.25);
+        // Scanlines start off; DODAI_SCAN=1 (or the `l` key / Shape page) turns them on.
+        set_scanlines(cx, std::env::var_os("DODAI_SCAN").is_some());
         // Debug: DODAI_ACCENT=<edge index 0..7> pre-selects the accent line.
         if let Some(e) = std::env::var("DODAI_ACCENT")
             .ok()

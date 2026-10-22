@@ -9,7 +9,6 @@ impl Showcase {
         me: &Entity<Self>,
         cats: &[&'static str],
         sections_meta: &[(&'static str, &'static str)],
-        mut ds_panel: Option<Panel>,
         cx: &mut Context<Self>,
     ) -> Vec<gpui::AnyElement> {
         let t = theme_of(cx);
@@ -54,9 +53,6 @@ impl Showcase {
             ))
             .child(stat_row);
         out.push(hero.into_any_element());
-        if let Some(d) = ds_panel.take() {
-            out.push(d.into_any_element());
-        }
         let mut grid = div().flex().flex_wrap().gap(px(t.spacing.md)).w_full();
         for (ci, cname) in cats.iter().enumerate() {
             let names: Vec<&'static str> = sections_meta
