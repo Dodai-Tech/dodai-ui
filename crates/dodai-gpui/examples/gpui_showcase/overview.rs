@@ -75,7 +75,7 @@ impl Showcase {
                         .max_w(px(820.0))
                         .text_size(px(t.typography.size_lg))
                         .text_color(hsla(t.palette.text_muted))
-                        .child("One set of tokens, components, charts and shaders. Three designs, every toolkit."),
+                        .child("One set of tokens, components, charts and shaders. Swappable design systems, every toolkit."),
                 )
                 .child(toolkits)
                 .child(stat_row),
