@@ -363,7 +363,8 @@ impl DesignSpec for Cyberpunk {
                 };
                 ButtonTokens {
                     // A faint tint on hover; the outline stays and the glow does the rest.
-                    background: lit.then(|| c.with_alpha(0.14)),
+                    background: lit
+                        .then(|| c.with_alpha(if state == Pressed { 0.3 } else { 0.14 })),
                     foreground: t.legible(c),
                     border: Some(c),
                 }

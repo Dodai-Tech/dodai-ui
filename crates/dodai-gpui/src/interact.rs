@@ -7,12 +7,16 @@ use gpui::{
 };
 use std::cell::{Cell, RefCell};
 use std::collections::VecDeque;
+use std::rc::Rc;
 
 /// Shape plus the edge gap (a cropped control) the focus ring has to follow.
 type RingShape = (
     dodai_core::Shape,
     Option<(crate::paint::ShapeEdge, f32, f32)>,
 );
+
+/// A control's focus handle and its "focus came from the pointer" flag.
+type Handle = (gpui::EntityId, FocusHandle, Rc<Cell<bool>>);
 
 thread_local! {
     /// Shape of the most recently built shaped element (for the focus ring overlay).
@@ -30,7 +34,7 @@ pub(crate) fn set_ring_shape(
 thread_local! {
     /// The last few focus handles handed out by [`use_interact`], so [`track`] (which only gets
     /// the state entity) can attach the right one. Bounded: tracking follows creation closely.
-    static HANDLES: RefCell<VecDeque<(gpui::EntityId, FocusHandle)>> = const { RefCell::new(VecDeque::new()) };
+    static HANDLES: RefCell<VecDeque<Handle>> = const { RefCell::new(VecDeque::new()) };
     /// Focus ring of the theme in use, refreshed by every [`use_interact`] call (the ring is
     /// theme-wide, so any recent value is right) and read by [`track`].
     static RING: Cell<(Hsla, f32)> = const { Cell::new((Hsla { h: 0.0, s: 0.0, l: 0.0, a: 0.0 }, 0.0)) };
@@ -46,6 +50,9 @@ pub struct Interact {
     /// Keyboard focus target: makes the control a tab stop (Enter / Space click it) and shows
     /// the theme's focus ring while focused.
     pub focus: Option<FocusHandle>,
+    /// Set while focus came from a click rather than the keyboard: the focus ring stays hidden
+    /// (like CSS `:focus-visible`). Cleared on blur and on the first key press.
+    pointer: Rc<Cell<bool>>,
 }
 
 impl Interact {
@@ -68,18 +75,26 @@ pub fn use_interact(id: &ElementId, window: &mut Window, cx: &mut App) -> Entity
     let t = crate::theme_of(cx);
     let (c, w) = t.focus_ring();
     RING.with(|r| r.set((crate::hsla(c), w)));
-    let st = window.use_keyed_state(id.clone(), cx, |_, cx| Interact {
-        focus: Some(cx.focus_handle().tab_stop(true)),
-        ..Interact::default()
+    let st = window.use_keyed_state(id.clone(), cx, |window, cx| {
+        let focus = cx.focus_handle().tab_stop(true);
+        let me = Interact {
+            focus: Some(focus.clone()),
+            ..Interact::default()
+        };
+        let flag = me.pointer.clone();
+        cx.on_blur(&focus, window, move |_, _, _| flag.set(false))
+            .detach();
+        me
     });
+    let flag = st.read(cx).pointer.clone();
     if let Some(h) = st.read(cx).focus.clone() {
         HANDLES.with(|q| {
             let mut q = q.borrow_mut();
-            q.retain(|(e, _)| *e != st.entity_id());
+            q.retain(|(e, _, _)| *e != st.entity_id());
             if q.len() >= 64 {
                 q.pop_front();
             }
-            q.push_back((st.entity_id(), h));
+            q.push_back((st.entity_id(), h, flag));
         });
     }
     st
@@ -93,14 +108,18 @@ where
     let s1 = state.clone();
     let s2 = state.clone();
     let s3 = state.clone();
-    let focus = HANDLES.with(|q| {
-        q.borrow()
-            .iter()
-            .find(|(e, _)| *e == state.entity_id())
-            .map(|(_, h)| h.clone())
-    });
+    let (focus, pointer) = HANDLES
+        .with(|q| {
+            q.borrow()
+                .iter()
+                .find(|(e, _, _)| *e == state.entity_id())
+                .map(|(_, h, f)| (h.clone(), f.clone()))
+        })
+        .unzip();
     let (ring, thick) = RING.with(Cell::get);
     let shape = RING_SHAPE.with(|c| c.borrow().clone());
+    let pointer: Rc<Cell<bool>> = pointer.unwrap_or_default();
+    let (p1, p2, p3) = (pointer.clone(), pointer.clone(), pointer);
     let el = match focus {
         Some(h) => {
             // The ring is an absolutely positioned overlay tracking the same focus handle, so it
@@ -132,7 +151,8 @@ where
                         edge_gap: gap,
                     };
                     gpui::ParentElement::child(
-                        base.invisible().focus(|s| s.visible()),
+                        base.invisible()
+                            .focus(move |s| if p1.get() { s } else { s.visible() }),
                         gpui::canvas(
                             |_, _, _| (),
                             move |b, _, window, _| {
@@ -148,6 +168,9 @@ where
                         .filter(|s| s.kind() == dodai_core::ShapeKind::Rounded)
                         .map_or(0.0, |s| s.radius);
                     base.rounded(gpui::px(radius)).focus(move |s| {
+                        if p2.get() {
+                            return s;
+                        }
                         let mut s = s.border_color(ring);
                         s.border_widths = gpui::EdgesRefinement {
                             top: Some(gpui::px(thick).into()),
@@ -175,8 +198,10 @@ where
             }
         });
     })
+    .on_key_down(move |_, _, _| p3.set(false))
     .on_mouse_down(MouseButton::Left, move |_, _, cx| {
         s2.update(cx, |s, cx| {
+            s.pointer.set(true);
             if !s.pressed {
                 s.pressed = true;
                 cx.notify();
@@ -214,6 +239,7 @@ mod tests {
             hovered: h,
             pressed: p,
             focus: None,
+            pointer: Default::default(),
         };
         assert_eq!(i(false, false).control_state(false), ControlState::Idle);
         assert_eq!(i(true, false).control_state(false), ControlState::Hovered);
