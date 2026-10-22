@@ -6,13 +6,13 @@
 
 use dodai_core::{ButtonVariant, Theme, Tone};
 use dodai_gpui::{
-    cycle_next, cycle_prev, fuzzy_filter, glow_intensity, hsla, scanlines_enabled,
-    set_glow_intensity, set_scanlines, theme_of, Accordion, BottomSheet, Breadcrumb,
-    BubblePlacement, Button, ButtonGroup, Card, CardVariant, Carousel, Checkbox, DesignSystemTree,
-    Dialog, DialogCard, Divider, DodaiStyled, DodaiTooltip, Fab, FabSize, Heading, IconButton,
-    InputBox, Knob, Label, ListItem, LoadingIndicator, Mono, Muted, Orientation, Pagination, Panel,
-    ProgressBar, Radio, ResponsiveShell, Scanlines, SearchBar, Segmented, SideSheet, Slider,
-    SplitButton, Stepper, Tabs, Tag, Toggle, TopAppBar,
+    cycle_next, cycle_prev, fuzzy_filter, glow_intensity, hsla, set_glow_intensity, set_scanlines,
+    theme_of, Accordion, BottomSheet, Breadcrumb, BubblePlacement, Button, ButtonGroup, Card,
+    CardVariant, Carousel, Checkbox, DesignSystemTree, Dialog, DialogCard, Divider, DodaiStyled,
+    DodaiTooltip, Fab, FabSize, Heading, IconButton, InputBox, Knob, Label, ListItem,
+    LoadingIndicator, Mono, Muted, Orientation, Pagination, Panel, ProgressBar, Radio,
+    ResponsiveShell, SearchBar, Segmented, SideSheet, Slider, SplitButton, Stepper, Tabs, Tag,
+    Toggle, TopAppBar,
 };
 use dodai_gpui::{
     BarChart, Blip, BoxPlot, BubbleChart, Candle, Candlestick, Date, DatePicker, DotMatrix,
@@ -1005,10 +1005,6 @@ impl Render for Showcase {
                 if !s.focus.is_focused(w) {
                     return;
                 }
-                if e.keystroke.key == "l" && theme_of(cx).look().luminous {
-                    let on = scanlines_enabled(cx);
-                    set_scanlines(cx, !on);
-                }
                 if e.keystroke.key == "t" {
                     if e.keystroke.modifiers.shift {
                         cycle_prev(cx)
@@ -1074,7 +1070,6 @@ impl Render for Showcase {
                             .child(body.min_h_0()),
                     ),
             )
-            .child(Scanlines::new())
     }
 }
 
@@ -1298,8 +1293,8 @@ fn main() {
         dodai_gpui::set_tree_expanded(cx, false); // theme tree starts contracted
         window_shortcuts(cx);
         set_glow_intensity(cx, 0.25);
-        // Scanlines start off; DODAI_SCAN=1 (or the `l` key / Shape page) turns them on.
-        set_scanlines(cx, std::env::var_os("DODAI_SCAN").is_some());
+        // The old per-component scanline body stays off; scanlines are a texture now.
+        set_scanlines(cx, false);
         // Test aid: DODAI_SFX=halftone,glitch,sheen,flicker,bloom (or `preset`).
         if let Ok(v) = std::env::var("DODAI_SFX") {
             let mut fx = dodai_core::SurfaceFx::NONE;

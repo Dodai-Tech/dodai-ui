@@ -20,7 +20,6 @@ impl Showcase {
         let mut out: Vec<Section> = Vec::new();
         let gap = px(t.spacing.md);
         let glow = glow_intensity(cx);
-        let scan = scanlines_enabled(cx);
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let col = || div().flex().flex_col().gap(gap);
         let cut = |b: Button| b;
@@ -137,30 +136,18 @@ impl Showcase {
                             )),
                     )
             };
-        let shape_props = div()
-            .flex()
-            .flex_col()
-            .gap(px(t.spacing.sm))
-            .child(
-                row().child(Label::new("Glow")).child(
-                    div().w(px(200.0)).child(
-                        Slider::new("glow-slider", glow)
-                            .range(0.0, 2.0)
-                            .step(0.05)
-                            .show_value(true)
-                            .format(|v| format!("{v:.2}"))
-                            .on_change(move |v, _, cx| set_glow_intensity(cx, v)),
-                    ),
+        let shape_props = div().flex().flex_col().gap(px(t.spacing.sm)).child(
+            row().child(Label::new("Glow")).child(
+                div().w(px(200.0)).child(
+                    Slider::new("glow-slider", glow)
+                        .range(0.0, 2.0)
+                        .step(0.05)
+                        .show_value(true)
+                        .format(|v| format!("{v:.2}"))
+                        .on_change(move |v, _, cx| set_glow_intensity(cx, v)),
                 ),
-            )
-            .child(
-                row()
-                    .child(Label::new("Scanlines"))
-                    .child(Toggle::new("scan", scan).on_change(move |on, _, cx| {
-                        set_scanlines(cx, on);
-                    }))
-                    .child(Muted::new("key: l")),
-            );
+            ),
+        );
         let m = me.clone();
         // Every design: its own corner radius, border and shadow on real components.
         out.push((
@@ -272,14 +259,14 @@ impl Showcase {
             if t.look().luminous {
                 out.push((
                     "Surface effects",
-                    "Glow · Scanlines",
-                    section!("Glow · Scanlines")
+                    "Glow",
+                    section!("Glow")
                         .child(Muted::new(
-                            "Theme-wide, on every component. Cut corners are under Corner shape.",
+                            "Theme-wide glow around components. Cut corners are under Corner shape.",
                         ))
                         .child(shape_props)
                         .into_any_element(),
-                    "Glow · Scanlines",
+                    "Glow",
                 ));
             }
             out.push((

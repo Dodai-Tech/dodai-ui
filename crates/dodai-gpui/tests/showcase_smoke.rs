@@ -64,7 +64,7 @@ fn frame_cost_probe(cx: &mut TestAppContext) {
         "Spacing · Elevation",
         "Shape tokens",
         "Icons",
-        "Glow · Scanlines",
+        "Glow",
         "Component textures",
         "Container textures",
         "Effects",

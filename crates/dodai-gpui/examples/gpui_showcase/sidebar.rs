@@ -242,11 +242,7 @@ impl Showcase {
             side = side.child(
                 div()
                     .pt(px(t.spacing.md))
-                    .child(Muted::new(if t.look().luminous {
-                        "↑↓ / Tab move · Enter select · t / T theme · l scanlines"
-                    } else {
-                        "↑↓ / Tab move · Enter select · t / T theme"
-                    })),
+                    .child(Muted::new("↑↓ / Tab move · Enter select · t / T theme")),
             );
         }
 

@@ -46,7 +46,7 @@ pub(crate) fn caps(title: &str) -> Caps {
         | "Frosted glass"
         | "Layout · Fluid scales"
         | "Icons"
-        | "Glow · Scanlines"
+        | "Glow"
         | "Component textures"
         | "Container textures"
         | "Effects"
@@ -143,9 +143,7 @@ pub(crate) fn cat_blurb(name: &str) -> &'static str {
     match name {
         "Foundations" => "Design tokens: colour, type, spacing.",
         "Shape" => "Corners, borders and cuts.",
-        "Surface effects" => {
-            "Theme-wide glow and scanlines, plus textures, glitch, sheen and bloom."
-        }
+        "Surface effects" => "Theme-wide glow, plus textures, glitch, sheen and bloom.",
         "Actions" => "Buttons and triggers.",
         "Inputs" => "Text, choice, date and form controls.",
         "Navigation" => "Menus, tabs, overlays and sidebars.",
