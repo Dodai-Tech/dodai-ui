@@ -100,16 +100,17 @@ impl Showcase {
             )
         };
         let shape_gallery =
-            || {
+            |scope: &str| {
+                let id = |k: &str| gpui::SharedString::from(format!("{scope}-sg-{k}"));
                 col()
                     .child(
                         row()
-                            .child(Button::new("sg-p", "Primary"))
+                            .child(Button::new(id("p"), "Primary"))
                             .child(
-                                Button::new("sg-s", "Secondary").variant(ButtonVariant::Secondary),
+                                Button::new(id("s"), "Secondary").variant(ButtonVariant::Secondary),
                             )
-                            .child(Button::new("sg-o", "Outline").variant(ButtonVariant::Outline))
-                            .child(Button::new("sg-d", "Danger").variant(ButtonVariant::Danger)),
+                            .child(Button::new(id("o"), "Outline").variant(ButtonVariant::Outline))
+                            .child(Button::new(id("d"), "Danger").variant(ButtonVariant::Danger)),
                     )
                     .child(
                         row()
@@ -158,7 +159,7 @@ impl Showcase {
                     "The design system's own corners, borders and shadows on real components, with the tokens behind them.",
                 ))
                 .child(shape_tokens_view(&t))
-                .child(shape_gallery())
+                .child(shape_gallery("gallery"))
                 .into_any_element(),
             "Shape gallery",
         ));
@@ -426,7 +427,7 @@ impl Showcase {
                         "The corner cut applies to every component in every theme, immediately. Pick \"Default\" to restore each design's own shape.",
                     ))
                     .child(corner_picker)
-                    .child(shape_gallery())
+                    .child(shape_gallery("corner"))
                     .into_any_element(),
                 "Corner shape",
             ));
