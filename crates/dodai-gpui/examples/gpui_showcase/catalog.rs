@@ -167,7 +167,7 @@ pub(crate) fn cat_icon(name: &str) -> dodai_gpui::IconName {
         "Animation" => I::Wave,
         "Shaders" => I::Pixels,
         "Shape" => I::Cube,
-        "Surface effects" => I::Sparkle,
+        "Surface effects" => I::Texture,
         "Loading" => I::Repeat,
         _ => I::Dot,
     }
