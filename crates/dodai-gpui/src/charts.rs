@@ -161,7 +161,12 @@ impl Legend {
                     .flex()
                     .items_center()
                     .gap(px(t.spacing.xs))
-                    .child(div().w(px(10.0)).h(px(10.0)).bg(hsla(c)))
+                    .child(
+                        div()
+                            .w(px(t.sizes().legend_swatch))
+                            .h(px(t.sizes().legend_swatch))
+                            .bg(hsla(c)),
+                    )
                     .child(n)
             }))
     }
@@ -183,7 +188,7 @@ pub(crate) fn framed(
     plot: gpui::Div,
 ) -> gpui::Div {
     let ycol = label_style(t, div())
-        .w(px(36.0))
+        .w(px(t.sizes().axis_gutter))
         .flex()
         .flex_col()
         .justify_between()
@@ -486,10 +491,10 @@ impl LineChart {
                             .absolute()
                             .left(relative(fx))
                             .top(relative(fy))
-                            .ml(px(-5.0))
-                            .mt(px(-5.0))
-                            .w(px(10.0))
-                            .h(px(10.0))
+                            .ml(px(-t.sizes().legend_swatch / 2.0))
+                            .mt(px(-t.sizes().legend_swatch / 2.0))
+                            .w(px(t.sizes().legend_swatch))
+                            .h(px(t.sizes().legend_swatch))
                             .rounded_full()
                             .hover(move |d| d.bg(c))
                             .tooltip(DodaiTooltip::text(format!(
@@ -517,7 +522,7 @@ impl LineChart {
             root = root.child(left);
         } else {
             let right = label_style(&t, div())
-                .w(px(36.0))
+                .w(px(t.sizes().axis_gutter))
                 .h(px(self.height))
                 .flex()
                 .flex_col()
@@ -688,13 +693,13 @@ impl BarChart {
                 .flex_1()
                 .size_full()
                 .flex()
-                .gap(px(2.0))
+                .gap(px(t.spacing.xs / 2.0))
                 .p(px(t.spacing.xs));
             if h {
                 // Bars grow right; stacked bars lay segments left→right.
                 cell = cell.items_center();
                 if self.stacked {
-                    let mut stack = div().h(px(18.0)).flex();
+                    let mut stack = div().h(px(t.sizes().chart_bar)).flex();
                     for (si, s) in self.series.iter().enumerate() {
                         let v = s.values.get(i).copied().unwrap_or(0.0).max(0.0);
                         stack = stack.child(bar(si, i, v, v / bar_top.max(f32::EPSILON)));
@@ -712,7 +717,7 @@ impl BarChart {
                     cell = cell.flex_col().justify_center();
                     for (si, s) in self.series.iter().enumerate() {
                         let v = s.values.get(i).copied().unwrap_or(0.0).max(0.0);
-                        cell = cell.child(div().w_full().h(px(14.0)).child(bar(
+                        cell = cell.child(div().w_full().h(px(t.sizes().chart_cell)).child(bar(
                             si,
                             i,
                             v,
@@ -778,9 +783,15 @@ impl BarChart {
         for f in &grid_fracs {
             let line = div().absolute().bg(grid);
             plot = plot.child(if h {
-                line.left(relative(*f)).top_0().h_full().w(px(1.0))
+                line.left(relative(*f))
+                    .top_0()
+                    .h_full()
+                    .w(px(t.sizes().hairline))
             } else {
-                line.bottom(relative(*f)).left_0().w_full().h(px(1.0))
+                line.bottom(relative(*f))
+                    .left_0()
+                    .w_full()
+                    .h(px(t.sizes().hairline))
             });
         }
         plot = plot.child(cats);
@@ -790,7 +801,7 @@ impl BarChart {
             .collect();
         let body = if h {
             let ycol = label_style(&t, div())
-                .w(px(56.0))
+                .w(px(t.sizes().axis_gutter_lg))
                 .h(px(self.height))
                 .flex()
                 .flex_col()
@@ -804,7 +815,7 @@ impl BarChart {
                         .child(l)
                 }));
             let xrow = label_style(&t, div())
-                .ml(px(56.0))
+                .ml(px(t.sizes().axis_gutter_lg))
                 .flex()
                 .justify_between()
                 .children(ticks.iter().map(|v| div().child(fmt_with(&self.fmt, *v))));
@@ -1577,7 +1588,12 @@ impl PieChart {
                         .flex()
                         .items_center()
                         .gap(px(t.spacing.xs))
-                        .child(div().w(px(10.0)).h(px(10.0)).bg(hsla(slice_col(i))))
+                        .child(
+                            div()
+                                .w(px(t.sizes().legend_swatch))
+                                .h(px(t.sizes().legend_swatch))
+                                .bg(hsla(slice_col(i))),
+                        )
                         .child(format!("{n} · {}%", trim(pct)))
                 }),
             ));
@@ -1761,7 +1777,7 @@ impl Gauge {
             GaugeStyle::Bar | GaugeStyle::Chevron | GaugeStyle::Level => div()
                 .flex()
                 .items_center()
-                .gap(px(12.0))
+                .gap(px(t.spacing.md))
                 .child(frame)
                 .child(readout)
                 .into_any_element(),
@@ -1921,7 +1937,7 @@ impl RadarChart {
             .flex_col()
             .items_center()
             .gap(px(t.spacing.sm))
-            .p(px(24.0))
+            .p(px(t.sizes().chart_pad))
             .child(web);
         if self.legend && self.series.len() > 1 {
             root = root.child(Legend::of_series(&t, &self.series));
@@ -2023,10 +2039,10 @@ impl ScatterPlot {
                         .absolute()
                         .left(relative(norm(*x, x0, x1)))
                         .top(relative(1.0 - norm(*y, y0, y1)))
-                        .ml(px(-4.0 * gi))
-                        .mt(px(-4.0 * gi))
-                        .w(px(8.0 * gi))
-                        .h(px(8.0 * gi))
+                        .ml(px(-t.sizes().scatter_dot / 2.0 * gi))
+                        .mt(px(-t.sizes().scatter_dot / 2.0 * gi))
+                        .w(px(t.sizes().scatter_dot * gi))
+                        .h(px(t.sizes().scatter_dot * gi))
                         .rounded_full()
                         .bg(scale_alpha(c, 0.85))
                         .hover(move |d| d.bg(c))
@@ -2212,9 +2228,9 @@ impl Heatmap {
         };
         let mut cols = div().flex().flex_col();
         if !self.col_labels.is_empty() {
-            let mut hdr = label_style(&t, div()).flex().h(px(14.0));
+            let mut hdr = label_style(&t, div()).flex().h(px(t.sizes().chart_cell));
             if !self.row_labels.is_empty() {
-                hdr = hdr.child(div().w(px(48.0)).flex_none());
+                hdr = hdr.child(div().w(px(t.sizes().axis_label)).flex_none());
             }
             cols = cols.child(hdr.children(self.col_labels.iter().map(|l| {
                 div()
@@ -2228,15 +2244,22 @@ impl Heatmap {
         let mut body = div().flex();
         if !self.row_labels.is_empty() {
             body = body.child(
-                label_style(&t, div()).w(px(48.0)).flex_none().children(
-                    self.row_labels
-                        .iter()
-                        .map(|l| div().h(px(cell)).whitespace_nowrap().child(l.clone())),
-                ),
+                label_style(&t, div())
+                    .w(px(t.sizes().axis_label))
+                    .flex_none()
+                    .children(
+                        self.row_labels
+                            .iter()
+                            .map(|l| div().h(px(cell)).whitespace_nowrap().child(l.clone())),
+                    ),
             );
         }
         cols.child(body.child(canvas))
-            .child(label_style(&t, div()).pt(px(6.0)).child(readout))
+            .child(
+                label_style(&t, div())
+                    .pt(px(t.spacing.sm - t.spacing.xs / 2.0))
+                    .child(readout),
+            )
             .into_any_element()
     }
 
@@ -2256,11 +2279,11 @@ impl Heatmap {
             .flatten()
             .fold((f32::MAX, f32::MIN), |(l, h), v| (l.min(*v), h.max(*v)));
         let cell = self.cell;
-        let mut root = div().flex().flex_col().gap(px(2.0));
+        let mut root = div().flex().flex_col().gap(px(t.spacing.xs / 2.0));
         if !self.col_labels.is_empty() {
-            let mut hdr = label_style(&t, div()).flex().gap(px(2.0));
+            let mut hdr = label_style(&t, div()).flex().gap(px(t.spacing.xs / 2.0));
             if !self.row_labels.is_empty() {
-                hdr = hdr.child(div().w(px(48.0)));
+                hdr = hdr.child(div().w(px(t.sizes().axis_label)));
             }
             root = root.child(hdr.children(self.col_labels.iter().map(|l| {
                 div()
@@ -2273,11 +2296,15 @@ impl Heatmap {
             })));
         }
         for (r, row) in self.rows.iter().enumerate() {
-            let mut line = div().flex().gap(px(2.0)).items_center();
+            let mut line = div().flex().gap(px(t.spacing.xs / 2.0)).items_center();
             if let Some(l) = self.row_labels.get(r) {
-                line = line.child(label_style(&t, div()).w(px(48.0)).child(l.clone()));
+                line = line.child(
+                    label_style(&t, div())
+                        .w(px(t.sizes().axis_label))
+                        .child(l.clone()),
+                );
             } else if !self.row_labels.is_empty() {
-                line = line.child(div().w(px(48.0)));
+                line = line.child(div().w(px(t.sizes().axis_label)));
             }
             for (c, v) in row.iter().enumerate() {
                 let color = heat_color_with(&t, self.gradient, norm(*v, lo, hi));

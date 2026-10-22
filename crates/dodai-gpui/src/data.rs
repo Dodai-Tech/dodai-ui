@@ -226,7 +226,11 @@ impl Badge {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
         let (style, fg) = badge_style(&t, self.tone);
-        let h = if self.text.is_some() { 18.0 } else { 10.0 };
+        let h = if self.text.is_some() {
+            t.sizes().badge_min
+        } else {
+            t.sizes().legend_swatch
+        };
         let shape = round_shape(&t.shape, h);
         let d = shaped(&shape, style)
             .h(px(h))
@@ -237,7 +241,10 @@ impl Badge {
             .text_size(px(t.typography.size_xs))
             .font_family(first_family(t.typography.body));
         match self.text {
-            Some(s) => d.min_w(px(18.0)).px(px(5.0)).child(s),
+            Some(s) => d
+                .min_w(px(t.sizes().badge_min))
+                .px(px(t.sizes().chip_pad))
+                .child(s),
             None => d.w(px(h)),
         }
     }
@@ -315,7 +322,7 @@ impl Avatar {
             .font_family(first_family(t.typography.display))
             .child(self.initials.to_uppercase());
         if let Some(s) = self.status {
-            let dot = round_shape(&t.shape, 10.0);
+            let dot = round_shape(&t.shape, t.sizes().status_dot);
             d = d.child(
                 shaped(
                     &dot,
@@ -328,10 +335,10 @@ impl Avatar {
                     ),
                 )
                 .absolute()
-                .right(px(-2.0))
-                .bottom(px(-2.0))
-                .w(px(11.0))
-                .h(px(11.0)),
+                .right(px(-t.spacing.xs / 2.0))
+                .bottom(px(-t.spacing.xs / 2.0))
+                .w(px(t.sizes().status_dot))
+                .h(px(t.sizes().status_dot)),
             );
         }
         d
@@ -522,10 +529,10 @@ impl Kbd {
             false,
             false,
         );
-        shaped(&scaled_shape(&t.shape, 20.0), style)
-            .h(px(22.0))
-            .min_w(px(22.0))
-            .px(px(6.0))
+        shaped(&scaled_shape(&t.shape, t.sizes().chip_height - 2.0), style)
+            .h(px(t.sizes().chip_height))
+            .min_w(px(t.sizes().chip_height))
+            .px(px(t.sizes().chip_pad))
             .flex()
             .items_center()
             .justify_center()

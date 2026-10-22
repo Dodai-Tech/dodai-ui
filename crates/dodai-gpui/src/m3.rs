@@ -97,6 +97,7 @@ impl RenderOnce for ButtonGroup {
 
 /// A button with a trailing menu toggle: `[ Label | ▾ ]`. `on_click` runs the main action,
 /// `on_toggle` opens or closes the menu (rendered by the caller, e.g. a `DropdownMenu`).
+/// `crop(Left)` cuts the lead's outer corner, `crop(Right)` the menu's.
 #[derive(IntoElement)]
 pub struct SplitButton {
     id: ElementId,
@@ -105,7 +106,11 @@ pub struct SplitButton {
     open: bool,
     on_click: Option<ClickHandler>,
     on_toggle: Option<ClickHandler>,
+    crop: Option<crate::Crop>,
+    cut_gap: Option<f32>,
 }
+
+crate::crop_setters!(SplitButton);
 
 impl SplitButton {
     pub fn new(id: impl Into<ElementId>, label: impl Into<SharedString>) -> Self {
@@ -116,6 +121,8 @@ impl SplitButton {
             open: false,
             on_click: None,
             on_toggle: None,
+            crop: None,
+            cut_gap: None,
         }
     }
     pub fn variant(mut self, v: ButtonVariant) -> Self {
@@ -144,6 +151,12 @@ impl RenderOnce for SplitButton {
         let mut lead = Button::new((self.id.clone(), "lead"), self.label)
             .variant(self.variant)
             .radii([FULL, 4.0, 4.0, FULL]);
+        if let Some(g) = self.cut_gap {
+            lead = lead.cut_gap(g);
+        }
+        if self.crop == Some(crate::Crop::Left) {
+            lead = lead.crop(crate::Crop::Left);
+        }
         if let Some(f) = self.on_click {
             lead = lead.on_click(move |e, w, cx| f(e, w, cx));
         }
@@ -151,6 +164,12 @@ impl RenderOnce for SplitButton {
             .variant(self.variant)
             .radii([4.0, FULL, FULL, 4.0])
             .refine(|d| d.w(px(48.0)).px(px(0.0)));
+        if let Some(g) = self.cut_gap {
+            menu = menu.cut_gap(g);
+        }
+        if self.crop == Some(crate::Crop::Right) {
+            menu = menu.crop(crate::Crop::Right);
+        }
         if let Some(f) = self.on_toggle {
             menu = menu.on_click(move |e, w, cx| f(e, w, cx));
         }

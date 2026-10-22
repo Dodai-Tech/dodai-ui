@@ -43,6 +43,25 @@ macro_rules! corners_setter {
 }
 pub(crate) use corners_setter;
 
+/// `crop` / `cut_gap` setters for a control with `crop: Option<Crop>` and `cut_gap: Option<f32>`.
+macro_rules! crop_setters {
+    ($ty:ident) => {
+        impl $ty {
+            /// Crop the left or right end (cut corner plus an edge tick); see `Button::crop`.
+            pub fn crop(mut self, c: $crate::Crop) -> Self {
+                self.crop = Some(c);
+                self
+            }
+            /// Gap in px between the bars of the edge tick; see `Button::cut_gap`.
+            pub fn cut_gap(mut self, px: f32) -> Self {
+                self.cut_gap = Some(px.max(0.0));
+                self
+            }
+        }
+    };
+}
+pub(crate) use crop_setters;
+
 /// `impl RenderOnce` that builds via `self.build(window, cx)` and wraps the
 /// result in the theme's entry animation, keyed by the type name.
 #[allow(unused_macros)]

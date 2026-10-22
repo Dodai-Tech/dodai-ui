@@ -55,6 +55,38 @@ pub struct Sizes {
     pub slider_thumb: f32,
     /// Segmented-button height.
     pub segmented_height: f32,
+    /// Slider / range track thickness.
+    pub slider_track: f32,
+    /// Range tick length (across the track).
+    pub tick_len: f32,
+    /// Range tick thickness.
+    pub tick_width: f32,
+    /// Chart grid line thickness.
+    pub hairline: f32,
+    /// Legend swatch and dot-badge edge.
+    pub legend_swatch: f32,
+    /// Avatar status dot diameter.
+    pub status_dot: f32,
+    /// Badge minimum width and height.
+    pub badge_min: f32,
+    /// Key-cap / chip height and minimum width.
+    pub chip_height: f32,
+    /// Key-cap / badge horizontal padding.
+    pub chip_pad: f32,
+    /// Chart value-axis gutter width.
+    pub axis_gutter: f32,
+    /// Wide chart category-axis gutter width.
+    pub axis_gutter_lg: f32,
+    /// Heatmap row-label column width.
+    pub axis_label: f32,
+    /// Stacked-bar thickness.
+    pub chart_bar: f32,
+    /// Grouped-bar / heatmap header thickness.
+    pub chart_cell: f32,
+    /// Radial chart padding.
+    pub chart_pad: f32,
+    /// Scatter point diameter.
+    pub scatter_dot: f32,
 }
 
 impl Default for Sizes {
@@ -70,6 +102,22 @@ impl Default for Sizes {
             selection_box: 20.0,
             slider_thumb: 16.0,
             segmented_height: 40.0,
+            slider_track: 6.0,
+            tick_len: 10.0,
+            tick_width: 2.0,
+            hairline: 1.0,
+            legend_swatch: 10.0,
+            status_dot: 11.0,
+            badge_min: 18.0,
+            chip_height: 22.0,
+            chip_pad: 6.0,
+            axis_gutter: 36.0,
+            axis_gutter_lg: 56.0,
+            axis_label: 48.0,
+            chart_bar: 18.0,
+            chart_cell: 14.0,
+            chart_pad: 24.0,
+            scatter_dot: 8.0,
         }
     }
 }

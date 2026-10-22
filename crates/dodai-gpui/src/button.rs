@@ -77,6 +77,71 @@ pub fn set_button_cut_gap(cx: &mut App, gap: Option<f32>) {
     cx.refresh_windows();
 }
 
+/// A resolved crop: which end, and the gap between the two bars of its edge tick.
+#[derive(Clone, Copy)]
+pub(crate) struct CropSpec {
+    end: Crop,
+    gap: f32,
+}
+
+/// The crop a control gets: its own, else the global default; only on designs with cut corners.
+pub(crate) fn resolve_crop(
+    t: &Theme,
+    cx: &App,
+    crop: Option<Crop>,
+    gap: Option<f32>,
+) -> Option<CropSpec> {
+    let end = crop
+        .or_else(|| button_crop(cx))
+        .filter(|_| t.look().cut_corners)?;
+    let gap = gap.or_else(|| button_cut_gap(cx)).unwrap_or(t.spacing.xs);
+    Some(CropSpec { end, gap })
+}
+
+impl CropSpec {
+    /// Cut the corner, open the border for the tick, and drop the shadow.
+    pub(crate) fn apply(&self, t: &Theme, shape: &mut dodai_core::Shape, style: &mut ShapeStyle) {
+        *style = style.with_edge_gap(self.end == Crop::Left, self.gap / 2.0, t.spacing.md);
+        // Flat: an offset shadow would sit over the cut and hide it.
+        style.shadow = None;
+        shape.corners = match self.end {
+            Crop::Left => dodai_core::Corners::TOP_LEFT,
+            Crop::Right => dodai_core::Corners::BOTTOM_RIGHT,
+        };
+        // Steep 45° cut: the largest the shape allows (a third of the height).
+        shape.chamfer = shape.chamfer.max(t.shape.control_height);
+    }
+
+    /// Whether the tick sits on the leading (left) edge.
+    pub(crate) fn tick_leads(&self) -> bool {
+        self.end == Crop::Right
+    }
+
+    /// Extra width the tick needs inside the control.
+    pub(crate) fn inset(&self, t: &Theme) -> f32 {
+        t.spacing.md
+    }
+
+    /// The two-bar tick on the end opposite the cut.
+    pub(crate) fn tick(&self, t: &Theme, colour: Hsla) -> gpui::Div {
+        let bar = t.shape.border_width.max(1.0);
+        let tick = div()
+            .absolute()
+            .top(gpui::relative(0.5))
+            .mt(px(-(bar + self.gap / 2.0)))
+            .w(px(t.spacing.md))
+            .flex()
+            .flex_col()
+            .gap(px(self.gap))
+            .child(div().h(px(bar)).bg(colour))
+            .children((self.gap > 0.0).then(|| div().h(px(bar)).bg(colour)));
+        match self.end {
+            Crop::Left => tick.right(px(0.0)),
+            Crop::Right => tick.left(px(0.0)),
+        }
+    }
+}
+
 /// Themed button. Construct with an id so hover/press state can be tracked.
 ///
 /// ```ignore
@@ -264,26 +329,9 @@ impl Button {
             )
         };
         let mut shape = t.role_shape(dodai_core::ShapeRole::Button);
-        let crop = self
-            .crop
-            .or_else(|| button_crop(cx))
-            .filter(|_| t.look().cut_corners);
-        let gap = self
-            .cut_gap
-            .or_else(|| button_cut_gap(cx))
-            .unwrap_or(t.spacing.xs);
-        if let Some(c) = crop {
-            style = style.with_edge_gap(c == Crop::Left, gap / 2.0, t.spacing.md);
-            // Flat: an offset shadow would sit over the cut and hide it.
-            style.shadow = None;
-        }
-        if let Some(c) = crop {
-            shape.corners = match c {
-                Crop::Left => dodai_core::Corners::TOP_LEFT,
-                Crop::Right => dodai_core::Corners::BOTTOM_RIGHT,
-            };
-            // Steep 45° cut: the largest the shape allows (a third of the height).
-            shape.chamfer = shape.chamfer.max(t.shape.control_height);
+        let crop = resolve_crop(&t, cx, self.crop, self.cut_gap);
+        if let Some(c) = &crop {
+            c.apply(&t, &mut shape, &mut style);
         }
         // Explicit corners win over the crop's default cut (the tick stays).
         if let Some(c) = self.corners {
@@ -296,8 +344,9 @@ impl Button {
         }
         let mut el = track(shaped_id(self.id, &shape, style), &st)
             .h(px(m.map_or(t.shape.control_height, |m| m.height)))
-            .px(px(m.map_or(t.button_padding(), |m| m.padding)
-                + if crop.is_some() { t.spacing.md } else { 0.0 }))
+            .px(px(
+                m.map_or(t.button_padding(), |m| m.padding) + crop.map_or(0.0, |c| c.inset(&t))
+            ))
             .mt(px(lift + sink + if pressed { 1.0 } else { 0.0 }))
             .mb(px(-lift - sink + if pressed { -1.0 } else { 0.0 }))
             .ml(px(sink))
@@ -309,22 +358,8 @@ impl Button {
             .text_size(px(m.map_or(t.typography.size_md, |m| m.text_size)))
             .text_color(fg)
             .child(div().child(format_label(&t.typography, &self.label)));
-        if let Some(c) = crop {
-            let bar = t.shape.border_width.max(1.0);
-            let tick = div()
-                .absolute()
-                .top(gpui::relative(0.5))
-                .mt(px(-(bar + gap / 2.0)))
-                .w(px(t.spacing.md))
-                .flex()
-                .flex_col()
-                .gap(px(gap))
-                .child(div().h(px(bar)).bg(tick_colour))
-                .children((gap > 0.0).then(|| div().h(px(bar)).bg(tick_colour)));
-            el = el.relative().child(match c {
-                Crop::Left => tick.right(px(0.0)),
-                Crop::Right => tick.left(px(0.0)),
-            });
+        if let Some(c) = &crop {
+            el = el.relative().child(c.tick(&t, tick_colour));
         }
         if let (Some(r), true) = (self.radii, t.look().tonal) {
             el = el

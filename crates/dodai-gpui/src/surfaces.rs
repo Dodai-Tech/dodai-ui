@@ -1,5 +1,5 @@
 //! Material-3-style structural components, themed purely from tokens:
-//! [`Card`], [`IconButton`], [`Fab`], [`Navigation`] (bar / rail / drawer),
+//! [`Card`], [`IconButton`], [`Fab`], `Navigation` (bar / rail / drawer),
 //! [`TopAppBar`] and [`SearchBar`].
 
 use crate::button::button_style;
@@ -193,9 +193,12 @@ pub struct IconButton {
     size: Option<dodai_core::ControlSize>,
     square: bool,
     width: IconWidth,
+    crop: Option<crate::Crop>,
+    cut_gap: Option<f32>,
 }
 
 crate::corners_setter!(IconButton);
+crate::crop_setters!(IconButton);
 
 impl IconButton {
     pub fn new(id: impl Into<ElementId>, glyph: impl Into<SharedString>) -> Self {
@@ -212,6 +215,8 @@ impl IconButton {
             size: None,
             square: false,
             width: IconWidth::Default,
+            crop: None,
+            cut_gap: None,
         }
     }
     /// Narrow, default or wide (0.8 / 1 / 1.3 × the height).
@@ -265,7 +270,7 @@ impl IconButton {
             None => self.variant,
         };
         let selected = self.toggled == Some(true);
-        let (style, fg) = if t.look().tonal && self.toggled.is_some() {
+        let (mut style, fg) = if t.look().tonal && self.toggled.is_some() {
             // M3 toggle icon button: selected = filled, unselected = outlined.
             let b = t.icon_button(variant, state, false);
             (
@@ -287,6 +292,11 @@ impl IconButton {
         if let (true, Some(m), true) = (self.square, m, t.look().tonal) {
             shape.radius = m.square_radius;
         }
+        let crop = crate::button::resolve_crop(&t, cx, self.crop, self.cut_gap);
+        if let Some(c) = &crop {
+            c.apply(&t, &mut shape, &mut style);
+        }
+        let style_stroke = style.stroke.unwrap_or(fg);
         let lift = if self.disabled {
             0.0
         } else {
@@ -300,13 +310,18 @@ impl IconButton {
         let mut el = track(shaped_id(self.id, &shape, style), &st)
             .mt(px(lift))
             .mb(px(-lift))
-            .w(px(side * self.width.factor()))
+            .w(px(
+                side * self.width.factor() + crop.map_or(0.0, |c| c.inset(&t))
+            ))
             .h(px(side))
             .flex()
             .items_center()
             .justify_center()
             .text_size(px(t.typography.size_lg))
             .text_color(fg);
+        if let Some(c) = &crop {
+            el = el.relative().child(c.tick(&t, style_stroke));
+        }
         el = match self.icon {
             Some(i) => el.child(
                 crate::icons::Icon::new(i)
@@ -369,9 +384,12 @@ pub struct Fab {
     variant: ButtonVariant,
     on_click: Option<ClickHandler>,
     corners: Option<dodai_core::Corners>,
+    crop: Option<crate::Crop>,
+    cut_gap: Option<f32>,
 }
 
 crate::corners_setter!(Fab);
+crate::crop_setters!(Fab);
 
 impl Fab {
     pub fn new(id: impl Into<ElementId>, glyph: impl Into<SharedString>) -> Self {
@@ -385,6 +403,8 @@ impl Fab {
             size: FabSize::Regular,
             variant: ButtonVariant::Primary,
             on_click: None,
+            crop: None,
+            cut_gap: None,
         }
     }
     /// Draw a vector icon instead of the text glyph.
@@ -445,7 +465,13 @@ impl Fab {
             (false, FabSize::Large) => dodai_core::ShapeRole::FabLarge,
             _ => dodai_core::ShapeRole::Fab,
         };
-        let shape = t.role_shape(role);
+        let mut shape = t.role_shape(role);
+        let crop = crate::button::resolve_crop(&t, cx, self.crop, self.cut_gap);
+        if let Some(c) = &crop {
+            c.apply(&t, &mut shape, &mut style);
+        }
+        let inset = crop.map_or(0.0, |c| c.inset(&t));
+        let style_stroke = style.stroke.unwrap_or(fg);
         let mut el = track(shaped_id(self.id, &shape, style), &st)
             .mt(px(lift))
             .mb(px(-lift))
@@ -458,9 +484,20 @@ impl Fab {
             .text_size(px(t.typography.size_lg))
             .cursor_pointer();
         el = match &self.label {
-            Some(_) => el.pl(px(t.spacing.md)).pr(px(t.spacing.lg)),
-            None => el.w(px(side)),
+            Some(_) => {
+                let lead = crop.is_some_and(|c| c.tick_leads());
+                let (pl, pr) = (t.spacing.md, t.spacing.lg);
+                if lead {
+                    el.pl(px(pl + inset)).pr(px(pr))
+                } else {
+                    el.pl(px(pl)).pr(px(pr + inset))
+                }
+            }
+            None => el.w(px(side + inset)),
         };
+        if let Some(c) = &crop {
+            el = el.relative().child(c.tick(&t, style_stroke));
+        }
         el = match self.icon {
             Some(i) => {
                 let sz = if t.look().tonal {

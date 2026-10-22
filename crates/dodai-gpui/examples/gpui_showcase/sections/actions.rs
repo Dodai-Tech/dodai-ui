@@ -85,6 +85,26 @@ impl Showcase {
                                 })
                         }),
                     )
+                    .child(
+                        IconButton::new("ib-crop-l", "✎")
+                            .icon(IconName::Edit)
+                            .variant(ButtonVariant::Outline)
+                            .crop(dodai_gpui::Crop::Left),
+                    )
+                    .child(
+                        IconButton::new("ib-crop-r", "♥")
+                            .icon(IconName::Heart)
+                            .variant(ButtonVariant::Primary)
+                            .crop(dodai_gpui::Crop::Right),
+                    )
+                    .child(Fab::new("fab-crop", "+").crop(dodai_gpui::Crop::Left))
+                    .child(
+                        Fab::new("fab-crop-x", "+")
+                            .extended("Create")
+                            .crop(dodai_gpui::Crop::Right),
+                    )
+                    .child(SplitButton::new("sb-crop-l", "Save").crop(dodai_gpui::Crop::Left))
+                    .child(SplitButton::new("sb-crop-r", "Save").crop(dodai_gpui::Crop::Right))
             }))
             .child(cut(
                 Button::new("b-danger", "Danger").variant(ButtonVariant::Danger)

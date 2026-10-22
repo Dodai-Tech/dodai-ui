@@ -150,7 +150,9 @@ impl RangeSlider {
         let thumb_style = ShapeStyle::from_tokens(&t, Some(k.track), Some(k.border), true, false);
         let thumb_shape = round_shape(&t.shape, thumb_size);
         let pk = t.progress(None);
-        let track_shape = crate::paint::round_shape(&t.shape, 6.0);
+        let sz = t.sizes();
+        let tick_off = (thumb_size + t.spacing.xs - sz.tick_len) / 2.0;
+        let track_shape = crate::paint::round_shape(&t.shape, sz.slider_track);
         let fill_style = ShapeStyle::from_tokens(&t, Some(pk.fill), None, true, false);
         let fill = shaped(&track_shape, fill_style).absolute();
         let fill = if vertical {
@@ -169,9 +171,9 @@ impl RangeSlider {
             ShapeStyle::from_tokens(&t, Some(pk.track), Some(pk.border), false, false),
         );
         let track = if vertical {
-            track.h_full().w(px(6.0))
+            track.h_full().w(px(sz.slider_track))
         } else {
-            track.w_full().h(px(6.0))
+            track.w_full().h(px(sz.slider_track))
         }
         .child(fill);
         let thumb = |f: f32| {
@@ -180,11 +182,13 @@ impl RangeSlider {
                 .w(px(thumb_size))
                 .h(px(thumb_size));
             if vertical {
-                th.left(px(2.0))
+                th.left(px(t.spacing.xs / 2.0))
                     .top(relative(1.0 - f))
                     .mt(px(-thumb_size / 2.0))
             } else {
-                th.top(px(2.0)).left(relative(f)).ml(px(-thumb_size / 2.0))
+                th.top(px(t.spacing.xs / 2.0))
+                    .left(relative(f))
+                    .ml(px(-thumb_size / 2.0))
             }
         };
         let tick_c = hsla(t.palette.border_strong);
@@ -198,16 +202,16 @@ impl RangeSlider {
             for f in tick_fractions(min, max, step) {
                 let tk = div().absolute().bg(tick_c);
                 rail = rail.child(if vertical {
-                    tk.left(px(5.0))
-                        .w(px(10.0))
-                        .h(px(2.0))
+                    tk.left(px(tick_off))
+                        .w(px(sz.tick_len))
+                        .h(px(sz.tick_width))
                         .top(relative(1.0 - f))
                 } else {
-                    tk.top(px(5.0))
-                        .h(px(10.0))
-                        .w(px(2.0))
+                    tk.top(px(tick_off))
+                        .h(px(sz.tick_len))
+                        .w(px(sz.tick_width))
                         .left(relative(f))
-                        .ml(px(-1.0))
+                        .ml(px(-sz.tick_width / 2.0))
                 });
             }
         }
