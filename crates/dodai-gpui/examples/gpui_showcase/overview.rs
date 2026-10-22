@@ -26,33 +26,76 @@ impl Showcase {
             (dodai_gpui::IconId::ALL.len().to_string(), "icons"),
             (n_shaders.to_string(), "shaders"),
         ];
-        let mut stat_row = div().flex().gap(px(t.spacing.md)).w_full();
-        for (n, label) in stats {
-            stat_row = stat_row.child(
-                div()
-                    .flex_1()
-                    .min_w_0()
-                    .flex()
-                    .flex_col()
-                    .gap(px(2.0))
-                    .child(
-                        div()
-                            .text_size(px(t.typography.size_xxl + 6.0))
-                            .text_color(hsla(t.palette.primary))
-                            .child(n),
-                    )
-                    .child(Muted::new(label.to_uppercase())),
-            );
+        let line = hsla(t.palette.border);
+        let mut stat_row = div()
+            .flex()
+            .w_full()
+            .border_t_1()
+            .border_color(line)
+            .pt(px(t.spacing.md));
+        for (i, (n, label)) in stats.into_iter().enumerate() {
+            let mut cell = div()
+                .flex_1()
+                .min_w_0()
+                .flex()
+                .flex_col()
+                .gap(px(2.0))
+                .child(
+                    div()
+                        .text_size(px(t.typography.size_xxl))
+                        .text_color(hsla(t.palette.primary))
+                        .child(n),
+                )
+                .child(Muted::new(label.to_uppercase()));
+            if i > 0 {
+                cell = cell.pl(px(t.spacing.md)).border_l_1().border_color(line);
+            }
+            stat_row = stat_row.child(cell);
         }
-        let hero = Panel::new()
-            .child(Heading::new("Dodai UI").level(1))
-            .child(Muted::new(
-                "One design system for gpui, iced, ratatui, dioxus, bevy and the web: \
-                     tokens, components, charts and shaders. Pick a category, jump to a \
-                     component, or just scroll.",
-            ))
-            .child(stat_row);
+        let mut toolkits = div().flex().flex_wrap().gap(px(t.spacing.xs));
+        for name in [
+            "gpui", "iced", "egui", "slint", "ratatui", "dioxus", "leptos", "yew", "bevy", "web",
+        ] {
+            toolkits = toolkits.child(dodai_gpui::Tag::new(name, dodai_core::Tone::Info));
+        }
+        let live = div()
+            .flex()
+            .flex_wrap()
+            .items_center()
+            .gap(px(t.spacing.sm))
+            .child(Button::new("ov-b1", "Get started"))
+            .child(Button::new("ov-b2", "Secondary").variant(ButtonVariant::Secondary))
+            .child(Button::new("ov-b3", "Outline").variant(ButtonVariant::Outline))
+            .child(dodai_gpui::Toggle::new("ov-t", true));
+        let hero = Panel::new().focused(true).child(
+            div()
+                .flex()
+                .flex_col()
+                .gap(px(t.spacing.md))
+                .child(Muted::new("DESIGN SYSTEM · RUST · MULTI-TOOLKIT"))
+                .child(
+                    div()
+                        .text_size(px(t.typography.size_xxl * 1.5))
+                        .text_color(hsla(t.palette.text))
+                        .child("Dodai UI"),
+                )
+                .child(
+                    div()
+                        .max_w(px(820.0))
+                        .text_size(px(t.typography.size_lg))
+                        .text_color(hsla(t.palette.text_muted))
+                        .child("One set of tokens, components, charts and shaders. Three designs, every toolkit."),
+                )
+                .child(toolkits)
+                .child(live)
+                .child(stat_row),
+        );
         out.push(hero.into_any_element());
+        out.push(
+            Heading::new("Browse by category")
+                .level(2)
+                .into_any_element(),
+        );
         let mut grid = div().flex().flex_wrap().gap(px(t.spacing.md)).w_full();
         for (ci, cname) in cats.iter().enumerate() {
             let names: Vec<&'static str> = sections_meta
@@ -60,41 +103,66 @@ impl Showcase {
                 .filter(|(c, _)| c == cname)
                 .map(|(_, l)| *l)
                 .collect();
-            let m0 = me.clone();
-            let mut card = Panel::new().refine(move |d| d.flex_1().min_w(px(250.0)));
-            let head = div()
-                .id(("ov-cat", ci))
-                .flex()
-                .items_center()
-                .gap(px(t.spacing.sm))
-                .cursor_pointer()
-                .child(
-                    dodai_gpui::Icon::new(cat_icon(cname))
-                        .size(16.0)
-                        .color(hsla(t.palette.primary)),
-                )
-                .child(Heading::new(*cname).level(3))
-                .child(Muted::new(format!("· {}", names.len())))
-                .on_click(move |_, _, cx| {
-                    m0.update(cx, |s, cx| {
+            let open = {
+                let m = me.clone();
+                move |_: &gpui::ClickEvent, _: &mut Window, cx: &mut App| {
+                    m.update(cx, |s, cx| {
                         s.cat = ci + 1;
                         s.sub = None;
                         s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
                         cx.notify()
                     })
-                });
-            card = card.child(head).child(Muted::new(cat_blurb(cname)));
-            let hover = hsla(t.palette.primary);
-            for (k, title) in names.iter().take(6).enumerate() {
+                }
+            };
+            let primary = hsla(t.palette.primary);
+            let icon_box = div()
+                .flex()
+                .items_center()
+                .justify_center()
+                .size(px(36.0))
+                .border_1()
+                .border_color(primary)
+                .child(
+                    dodai_gpui::Icon::new(cat_icon(cname))
+                        .size(20.0)
+                        .color(primary),
+                );
+            let head = div()
+                .id(("ov-cat", ci))
+                .flex()
+                .items_center()
+                .gap(px(t.spacing.md))
+                .cursor_pointer()
+                .child(icon_box)
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .flex_1()
+                        .child(Heading::new(*cname).level(3))
+                        .child(Muted::new(format!(
+                            "{} section{}",
+                            names.len(),
+                            if names.len() == 1 { "" } else { "s" }
+                        ))),
+                )
+                .on_click(open.clone());
+            let mut chips = div().flex().flex_wrap().gap(px(t.spacing.xs));
+            for (k, title) in names.iter().take(4).enumerate() {
                 let (m, title, cname_s) = (me.clone(), *title, *cname);
-                card = card.child(
+                let short = title.split(" · ").next().unwrap_or(title).to_string();
+                chips = chips.child(
                     div()
                         .id(("ov", ci * 1000 + k))
-                        .text_size(px(t.typography.size_sm))
+                        .px(px(t.spacing.sm))
+                        .py(px(2.0))
+                        .border_1()
+                        .border_color(line)
+                        .text_size(px(t.typography.size_xs))
                         .text_color(hsla(t.palette.text))
                         .cursor_pointer()
-                        .hover(move |s| s.text_color(hover))
-                        .child(title)
+                        .hover(move |s| s.border_color(primary).text_color(primary))
+                        .child(short)
                         .on_click(move |_, _, cx| {
                             // Scroll to it right here in the overview, unless it
                             // lives on its own page (Loading, Shaders).
@@ -110,23 +178,29 @@ impl Showcase {
                         }),
                 );
             }
-            if names.len() > 6 {
-                let m = me.clone();
-                card = card.child(
+            let footer = div()
+                .id(("ov-more", ci))
+                .cursor_pointer()
+                .text_size(px(t.typography.size_sm))
+                .text_color(primary)
+                .child(if names.len() > 4 {
+                    format!("Open all {} →", names.len())
+                } else {
+                    "Open →".to_string()
+                })
+                .on_click(open);
+            let card = Panel::new()
+                .refine(move |d| d.flex_1().min_w(px(260.0)).min_h(px(190.0)))
+                .child(
                     div()
-                        .id(("ov-more", ci))
-                        .cursor_pointer()
-                        .child(Muted::new(format!("+ {} more →", names.len() - 6)))
-                        .on_click(move |_, _, cx| {
-                            m.update(cx, |s, cx| {
-                                s.cat = ci + 1;
-                                s.sub = None;
-                                s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
-                                cx.notify()
-                            })
-                        }),
+                        .flex()
+                        .flex_col()
+                        .gap(px(t.spacing.md))
+                        .child(head)
+                        .child(Muted::new(cat_blurb(cname)))
+                        .child(chips)
+                        .child(footer),
                 );
-            }
             grid = grid.child(card);
         }
         out.push(grid.into_any_element());
