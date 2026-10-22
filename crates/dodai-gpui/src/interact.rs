@@ -8,14 +8,23 @@ use gpui::{
 use std::cell::{Cell, RefCell};
 use std::collections::VecDeque;
 
+/// Shape plus the edge gap (a cropped control) the focus ring has to follow.
+type RingShape = (
+    dodai_core::Shape,
+    Option<(crate::paint::ShapeEdge, f32, f32)>,
+);
+
 thread_local! {
     /// Shape of the most recently built shaped element (for the focus ring overlay).
-    static RING_SHAPE: RefCell<Option<dodai_core::Shape>> = const { RefCell::new(None) };
+    static RING_SHAPE: RefCell<Option<RingShape>> = const { RefCell::new(None) };
 }
 
 /// Remember the shape being built, so [`track`] can draw its focus ring along the same outline.
-pub(crate) fn set_ring_shape(s: &dodai_core::Shape) {
-    RING_SHAPE.with(|c| *c.borrow_mut() = Some(s.clone()));
+pub(crate) fn set_ring_shape(
+    s: &dodai_core::Shape,
+    edge_gap: Option<(crate::paint::ShapeEdge, f32, f32)>,
+) {
+    RING_SHAPE.with(|c| *c.borrow_mut() = Some((s.clone(), edge_gap)));
 }
 
 thread_local! {
@@ -105,7 +114,7 @@ where
                 .size_full();
             let overlay = match shape {
                 // Cut shapes: the ring follows the polygon, hidden until the control has focus.
-                Some(sh) if sh.kind() == dodai_core::ShapeKind::Chamfered => {
+                Some((sh, gap)) if sh.kind() == dodai_core::ShapeKind::Chamfered => {
                     let style = crate::paint::ShapeStyle {
                         fill: None,
                         stroke: Some(ring),
@@ -118,7 +127,7 @@ where
                         shimmer: None,
                         elevation: None,
                         lift_layers: None,
-                        edge_gap: None,
+                        edge_gap: gap,
                     };
                     gpui::ParentElement::child(
                         base.invisible().focus(|s| s.visible()),
@@ -132,6 +141,7 @@ where
                     )
                 }
                 other => {
+                    let other = other.map(|(s, _)| s);
                     let radius = other
                         .filter(|s| s.kind() == dodai_core::ShapeKind::Rounded)
                         .map_or(0.0, |s| s.radius);

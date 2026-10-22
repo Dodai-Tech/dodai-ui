@@ -468,7 +468,7 @@ pub fn shaped(shape: &Shape, style: ShapeStyle) -> Div {
 }
 
 fn shaped_base(shape: &Shape, style: ShapeStyle) -> Div {
-    crate::interact::set_ring_shape(shape);
+    crate::interact::set_ring_shape(shape, style.edge_gap);
     let base = gpui::div().relative();
     match shape.kind() {
         ShapeKind::Chamfered => {

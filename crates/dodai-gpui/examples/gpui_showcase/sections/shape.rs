@@ -177,7 +177,7 @@ impl Showcase {
         ));
         if t.look().luminous {
             out.push((
-                "Shape",
+                "Surface effects",
                 "Glow · Scanlines",
                 section!("Glow · Scanlines")
                     .child(Muted::new(

@@ -138,7 +138,8 @@ pub(crate) fn section_id(title: &str) -> u32 {
 pub(crate) fn cat_blurb(name: &str) -> &'static str {
     match name {
         "Foundations" => "Design tokens: colour, type, spacing.",
-        "Shape" => "Corners, borders and shadows; glow and cuts where a design has them.",
+        "Shape" => "Corners, borders and cuts.",
+        "Surface effects" => "Theme-wide glow and scanlines, for designs that have them.",
         "Actions" => "Buttons and triggers.",
         "Inputs" => "Text, choice, date and form controls.",
         "Navigation" => "Menus, tabs, overlays and sidebars.",
@@ -164,6 +165,7 @@ pub(crate) fn cat_icon(name: &str) -> dodai_gpui::IconName {
         "Animation" => I::Wave,
         "Shaders" => I::Pixels,
         "Shape" => I::Cube,
+        "Surface effects" => I::Sparkle,
         "Loading" => I::Repeat,
         _ => I::Dot,
     }

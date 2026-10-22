@@ -11,9 +11,10 @@ mod shape;
 use super::*;
 
 /// Every category, in sidebar order (Shaders last: it is the biggest).
-pub(crate) const CATEGORIES: [&str; 10] = [
+pub(crate) const CATEGORIES: [&str; 11] = [
     "Foundations",
     "Shape",
+    "Surface effects",
     "Actions",
     "Data display",
     "Navigation",
@@ -37,7 +38,11 @@ impl Showcase {
     fn sections_of_all(&mut self, cat: &str, cx: &mut Context<Self>) -> Vec<Section> {
         match cat {
             "Foundations" => self.sections_foundations_sec(cx),
-            "Shape" => self.sections_shape(cx),
+            "Shape" | "Surface effects" => {
+                let mut v = self.sections_shape(cx);
+                v.retain(|(c, ..)| *c == cat);
+                v
+            }
             "Actions" => self.sections_actions(cx),
             "Data display" => self.sections_data_display(cx),
             "Navigation" => self.sections_navigation(cx),
