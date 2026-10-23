@@ -551,12 +551,12 @@ impl Showcase {
             if round_ok {
                 sec = sec.child(setting(
                     "Roundness",
-                    "0 is square, 100% is the design's own corners, more is rounder.",
+                    "0 is square, 100% is the design's own corners, more is rounder (up to 300%).",
                     div()
                         .w(px(280.0))
                         .child(
                             Slider::new("rb-round", tune.roundness)
-                                .range(0.0, 2.0)
+                                .range(0.0, 3.0)
                                 .step(0.05)
                                 .show_value(true)
                                 .format(|v| format!("{:.0}%", v * 100.0))
