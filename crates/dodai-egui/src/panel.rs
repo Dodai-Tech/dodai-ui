@@ -1,6 +1,6 @@
 //! Panel / card, text input and tooltip.
 
-use crate::paint::{box_shapes, color32};
+use crate::paint::{box_shapes_for, color32};
 use crate::{active_theme, display_text};
 use egui::{vec2, Frame, InnerResponse, Margin, Response, RichText, Shape, TextEdit, Ui, Widget};
 
@@ -48,15 +48,19 @@ impl Panel {
             });
         ui.painter().set(
             idx,
-            Shape::Vec(box_shapes(
+            Shape::Vec(box_shapes_for(
                 &t,
                 inner.response.rect,
                 Some(tok.background),
                 Some(tok.border),
                 self.focused,
                 true,
+                Some(dodai_core::SurfaceClass::Panel),
             )),
         );
+        if crate::surface::take_animated() {
+            ui.ctx().request_repaint();
+        }
         inner
     }
 }
@@ -115,15 +119,19 @@ impl Widget for TextInput<'_> {
         let tok = t.input(resp.has_focus());
         ui.painter().set(
             idx,
-            Shape::Vec(box_shapes(
+            Shape::Vec(box_shapes_for(
                 &t,
                 rect,
                 Some(tok.background),
                 Some(tok.border),
                 resp.has_focus(),
                 false,
+                Some(dodai_core::SurfaceClass::Input),
             )),
         );
+        if crate::surface::take_animated() {
+            ui.ctx().request_repaint();
+        }
         resp
     }
 }

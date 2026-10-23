@@ -1,6 +1,6 @@
 //! Tag / badge.
 
-use crate::paint::{add_all, box_shapes, color32, layout};
+use crate::paint::{add_all, box_shapes_for, color32, layout};
 use crate::{active_theme, display_text};
 use dodai_core::Tone;
 use egui::{vec2, Align2, Response, Sense, Ui, Widget};
@@ -43,7 +43,15 @@ impl Widget for Tag {
             let tok = t.tag(self.tone, self.solid);
             add_all(
                 ui,
-                box_shapes(&t, rect, tok.background, tok.border, false, false),
+                box_shapes_for(
+                    &t,
+                    rect,
+                    tok.background,
+                    tok.border,
+                    false,
+                    false,
+                    Some(dodai_core::SurfaceClass::Tag),
+                ),
             );
             let pos = Align2::CENTER_CENTER
                 .align_size_within_rect(g.size(), rect)

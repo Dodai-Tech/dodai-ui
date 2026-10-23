@@ -4301,6 +4301,7 @@ version = "0.1.0"
 dependencies = [
  "dodai",
  "dodai-core",
+ "dodai-icons",
  "eframe",
  "egui",
 ]

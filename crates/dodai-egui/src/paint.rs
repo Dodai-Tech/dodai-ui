@@ -82,28 +82,62 @@ pub fn box_shapes(
     glow: bool,
     shadow: bool,
 ) -> Vec<Shape> {
+    box_shapes_for(theme, rect, fill, border, glow, shadow, None)
+}
+
+/// [`box_shapes`] for a surface of `class`: the app-wide texture and effects of the design
+/// ([`crate::set_surface_fx`]) are painted over the body when the class is targeted.
+pub fn box_shapes_for(
+    theme: &Theme,
+    rect: Rect,
+    fill: Option<Color>,
+    border: Option<Color>,
+    glow: bool,
+    shadow: bool,
+    class: Option<dodai_core::SurfaceClass>,
+) -> Vec<Shape> {
+    let tune = crate::shape_tune();
+    let p = &theme.palette;
+    let tint = match tune.tint {
+        dodai_core::BorderTint::Design => None,
+        dodai_core::BorderTint::Strong => Some(p.border_strong),
+        dodai_core::BorderTint::Accent => Some(p.primary),
+        dodai_core::BorderTint::Text => Some(p.text),
+    };
+    let border = match (border, tune.outline_all) {
+        (Some(c), _) => Some(tint.unwrap_or(c)),
+        (None, true) if fill.is_some() => Some(tint.unwrap_or(p.border)),
+        (None, _) => None,
+    };
+    let bw = if border.is_some() && tune.outline_all && tune.border_width.is_none() {
+        theme.shape.border_width.max(1.0)
+    } else {
+        theme.shape.border_width
+    };
     let mut out = Vec::new();
     if glow {
         out.extend(glow_shapes(theme, rect));
     }
     let s = theme.effects.hard_shadow;
     if shadow && s > 0.0 {
+        let (dx, dy) = tune.shadow_dir.dir();
         out.push(outline_shape(
             &theme.shape,
-            rect.translate(vec2(s, s)),
+            rect.translate(vec2(s * dx, s * dy)),
             color32(theme.palette.border),
             Stroke::NONE,
         ));
     }
-    let stroke = border.map_or(Stroke::NONE, |c| {
-        Stroke::new(theme.shape.border_width, color32(c))
-    });
+    let stroke = border.map_or(Stroke::NONE, |c| Stroke::new(bw, color32(c)));
     out.push(outline_shape(
         &theme.shape,
         rect,
         fill.map_or(Color32::TRANSPARENT, color32),
         stroke,
     ));
+    if let Some(class) = class {
+        out.extend(crate::surface::surface_shapes(theme, rect, class, fill));
+    }
     out
 }
 
@@ -140,6 +174,9 @@ pub fn layout(ui: &egui::Ui, text: String, size: f32) -> std::sync::Arc<egui::Ga
 /// Paint `shapes` on `ui`.
 pub fn add_all(ui: &egui::Ui, shapes: Vec<Shape>) {
     ui.painter().extend(shapes);
+    if crate::surface::take_animated() {
+        ui.ctx().request_repaint();
+    }
 }
 
 #[cfg(test)]

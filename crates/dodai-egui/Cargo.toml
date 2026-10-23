@@ -12,16 +12,21 @@ keywords     = ["theme", "design-system", "egui", "cyberpunk"]
 categories   = ["gui"]
 
 [features]
-default   = ["cyberpunk", "material"]
+default   = ["cyberpunk", "material", "neobrutalism", "aurora", "icons"]
 # Design systems to bundle (each is its own crate; see `dodai`).
 cyberpunk = ["dodai/cyberpunk"]
 material  = ["dodai/material"]
+neobrutalism = ["dodai/neobrutalism"]
+aurora   = ["dodai/aurora"]
+# The `Icon` widget (every design draws every shared icon in its own pack).
+icons     = ["dep:dodai-icons", "dodai/icons"]
 
 [dependencies]
 dodai-core = { workspace = true }
 dodai = { workspace = true }
+dodai-icons = { workspace = true, optional = true }
 egui = "0.32"
 
 [dev-dependencies]
-dodai = { workspace = true, features = ["cyberpunk", "material"] }
+dodai = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "aurora", "icons"] }
 eframe = "0.32"

@@ -1,6 +1,6 @@
 //! Button.
 
-use crate::paint::{add_all, box_shapes, color32, control_state, layout, sense};
+use crate::paint::{add_all, box_shapes_for, color32, control_state, layout, sense};
 use crate::{active_theme, display_text};
 use dodai_core::{ButtonVariant, ControlState};
 use egui::{vec2, Align2, Response, Ui, Widget};
@@ -59,7 +59,15 @@ impl Widget for Button {
                 && (state != ControlState::Idle || self.variant == ButtonVariant::Primary);
             add_all(
                 ui,
-                box_shapes(&t, rect, tok.background, tok.border, glow, false),
+                box_shapes_for(
+                    &t,
+                    rect,
+                    tok.background,
+                    tok.border,
+                    glow,
+                    false,
+                    Some(dodai_core::SurfaceClass::Button),
+                ),
             );
             let pos = Align2::CENTER_CENTER
                 .align_size_within_rect(g.size(), rect)

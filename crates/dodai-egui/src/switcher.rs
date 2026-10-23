@@ -75,6 +75,10 @@ pub struct ThemeController {
     pub switcher: ThemeSwitcher,
     /// Glow intensity applied on top of the active theme.
     pub glow: f32,
+    /// Roundness, borders and hard shadows applied on top of every design.
+    pub tune: dodai_core::ShapeTune,
+    /// The texture and effect mix drawn on controls (each design draws only what it owns).
+    pub surface: dodai_core::SurfaceFx,
 }
 
 impl Default for ThemeController {
@@ -89,17 +93,26 @@ impl ThemeController {
         Self {
             switcher: dodai::switcher(),
             glow: 1.0,
+            tune: dodai_core::ShapeTune::DEFAULT,
+            surface: dodai_core::SurfaceFx::NONE,
         }
     }
-    /// Active theme with the glow intensity applied.
+    /// Active theme with the glow intensity and shape tuning applied.
     pub fn theme(&self) -> Theme {
         self.switcher
             .current()
             .clone()
             .with_glow_intensity(self.glow)
+            .tuned(&self.tune)
+    }
+    /// The design's own suggested texture and effect mix, ready to assign to [`Self::surface`].
+    pub fn preset(&self) -> dodai_core::SurfaceFx {
+        self.switcher.current().surface_preset()
     }
     /// Install the active theme (cheap when unchanged).
     pub fn install(&self, ctx: &Context) {
+        crate::set_shape_tune(self.tune);
+        crate::set_surface_fx(self.surface);
         install(ctx, &self.theme());
     }
     /// `t` next theme, `Shift+T` previous, `+`/`-` glow. Returns `true` on change.
@@ -147,6 +160,31 @@ mod tests {
         assert_eq!(step_glow(0.0, -GLOW_STEP), 0.0);
         assert_eq!(step_glow(GLOW_MAX, GLOW_STEP), GLOW_MAX);
         assert_eq!(step_glow(1.0, GLOW_STEP), 1.25);
+    }
+
+    #[test]
+    fn controller_applies_the_shape_tuning() {
+        let mut c = ThemeController::new();
+        // A rounded design, so roundness has something to scale.
+        while c.switcher.current().shape.kind() != dodai_core::ShapeKind::Rounded {
+            c.switcher.cycle_next();
+        }
+        let base = c.theme().shape.radius;
+        c.tune.roundness = 0.5;
+        assert!((c.theme().shape.radius - base * 0.5).abs() < 1e-3);
+        c.tune.border_width = Some(3.0);
+        assert_eq!(c.theme().shape.border_width, 3.0);
+        c.tune = dodai_core::ShapeTune::DEFAULT;
+        assert_eq!(c.theme().shape.radius, base);
+    }
+
+    #[test]
+    fn controller_offers_the_design_preset() {
+        let mut c = ThemeController::new();
+        while c.switcher.current().surface_textures().is_empty() {
+            c.switcher.cycle_next();
+        }
+        assert_ne!(c.preset(), dodai_core::SurfaceFx::NONE);
     }
 
     #[test]

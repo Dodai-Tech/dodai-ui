@@ -220,8 +220,65 @@ pub fn theme_tokens_json(t: &Theme) -> String {
         ("easing".to_string(), tok("string", js(&m.easing.to_css()))),
     ];
 
+    let s = &t.surface_style;
+    let fx = &s.preset;
+    let ef = &s.effects;
+    let word = |v: String| tok("string", js(&v));
+    let owned_effects: Vec<&str> = [
+        (ef.glitch, "glitch"),
+        (ef.sheen, "sheen"),
+        (ef.flicker, "flicker"),
+        (ef.bloom, "bloom"),
+        (ef.pulse, "pulse"),
+        (ef.chase, "chase"),
+        (ef.edge, "edge"),
+        (ef.brackets, "brackets"),
+        (ef.depth, "depth"),
+        (ef.neon, "neon"),
+    ]
+    .iter()
+    .filter_map(|(on, n)| on.then_some(*n))
+    .collect();
+    let surface = vec![
+        (
+            "textures".to_string(),
+            word(
+                s.textures
+                    .iter()
+                    .filter(|x| **x != crate::Texture::None)
+                    .map(|x| x.label())
+                    .collect::<Vec<_>>()
+                    .join(","),
+            ),
+        ),
+        ("effects".to_string(), word(owned_effects.join(","))),
+        ("texture".to_string(), word(fx.texture.label().to_string())),
+        (
+            "texture-strength".to_string(),
+            tok("number", num(fx.strength)),
+        ),
+        (
+            "container-texture".to_string(),
+            word(fx.container_texture.label().to_string()),
+        ),
+        (
+            "container-strength".to_string(),
+            tok("number", num(fx.container_strength)),
+        ),
+        ("sheen".to_string(), tok("number", num(fx.sheen))),
+        ("glitch".to_string(), tok("number", num(fx.glitch))),
+        ("flicker".to_string(), tok("number", num(fx.flicker))),
+        ("bloom".to_string(), tok("number", num(fx.bloom))),
+        ("pulse".to_string(), tok("number", num(fx.pulse))),
+        ("chase".to_string(), tok("number", num(fx.chase))),
+        ("edge".to_string(), tok("number", num(fx.edge))),
+        ("brackets".to_string(), tok("number", num(fx.brackets))),
+        ("depth".to_string(), tok("number", num(fx.depth))),
+        ("clear".to_string(), tok("number", num(fx.clear))),
+    ];
+
     format!(
-        "{}:{{\"$description\":{},\"$extensions\":{{\"dodai.mode\":{},\"dodai.family\":{}}},{},{},{},{},{},{}}}",
+        "{}:{{\"$description\":{},\"$extensions\":{{\"dodai.mode\":{},\"dodai.family\":{}}},{},{},{},{},{},{},{}}}",
         js(t.id()),
         js(t.meta.description),
         js(if t.is_dark() { "dark" } else { "light" }),
@@ -232,6 +289,7 @@ pub fn theme_tokens_json(t: &Theme) -> String {
         group("shape", &shape),
         group("effect", &effect),
         group("motion", &motion),
+        group("surface", &surface),
     )
 }
 

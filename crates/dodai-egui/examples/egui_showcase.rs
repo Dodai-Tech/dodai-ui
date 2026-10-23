@@ -3,7 +3,7 @@
 //!
 //! `cargo run -p dodai-egui --example egui_showcase`
 
-use dodai_core::{ButtonVariant, Tone};
+use dodai_core::{BorderTint, ButtonVariant, ShadowDir, Texture, Tone};
 use dodai_egui::{
     paint_scanlines, tooltip, Button, Checkbox, Divider, DodaiUi, ListItem, Panel, ProgressBar,
     Radio, Slider, Tabs, Tag, TextInput, ThemeController, Toggle,
@@ -36,6 +36,166 @@ impl Default for App {
     }
 }
 
+/// One labelled row of toggle buttons: the current entry is the primary one.
+fn choice<T: Copy + PartialEq>(ui: &mut egui::Ui, label: &str, cur: &mut T, items: &[(&str, T)]) {
+    ui.horizontal_wrapped(|ui| {
+        ui.dodai_muted(label);
+        for (name, v) in items {
+            let variant = if *cur == *v {
+                ButtonVariant::Primary
+            } else {
+                ButtonVariant::Outline
+            };
+            if ui.add(Button::new(*name).variant(variant)).clicked() {
+                *cur = *v;
+            }
+        }
+    });
+}
+
+impl App {
+    /// Shape tuning and the surface mix, like the gpui showcase's Shape and Surface effects.
+    fn tuning(&mut self, ui: &mut egui::Ui) {
+        let t = self.theme.theme();
+        ui.dodai_label("Shape · roundness and borders");
+        if t.shape.kind() != dodai_core::ShapeKind::Chamfered {
+            ui.horizontal(|ui| {
+                ui.dodai_muted("Roundness");
+                ui.add(Slider::new(&mut self.theme.tune.roundness, 0.0..=2.0));
+            });
+        }
+        choice(
+            ui,
+            "Border width",
+            &mut self.theme.tune.border_width,
+            &[
+                ("Default", None),
+                ("None", Some(0.0)),
+                ("Hairline", Some(1.0)),
+                ("Medium", Some(2.0)),
+                ("Thick", Some(3.0)),
+            ],
+        );
+        let tints = BorderTint::ALL.map(|b| (b.label(), b));
+        choice(ui, "Border colour", &mut self.theme.tune.tint, &tints);
+        choice(
+            ui,
+            "Outline all",
+            &mut self.theme.tune.outline_all,
+            &[("Off", false), ("On", true)],
+        );
+        if t.effects.hard_shadow > 0.0 {
+            let dirs = ShadowDir::ALL.map(|d| (d.label(), d));
+            choice(
+                ui,
+                "Shadow direction",
+                &mut self.theme.tune.shadow_dir,
+                &dirs,
+            );
+            let mut off = self.theme.tune.hard_shadow.unwrap_or(t.effects.hard_shadow);
+            ui.horizontal(|ui| {
+                ui.dodai_muted("Shadow offset");
+                if ui.add(Slider::new(&mut off, 0.0..=12.0)).changed() {
+                    self.theme.tune.hard_shadow = Some(off);
+                }
+            });
+        }
+        if ui
+            .add(Button::new("Reset shape").variant(ButtonVariant::Ghost))
+            .clicked()
+        {
+            self.theme.tune = dodai_core::ShapeTune::DEFAULT;
+        }
+
+        ui.add_space(8.0);
+        ui.dodai_label("Surface effects");
+        ui.horizontal_wrapped(|ui| {
+            if ui
+                .add(Button::new("Off").variant(ButtonVariant::Outline))
+                .clicked()
+            {
+                self.theme.surface = dodai_core::SurfaceFx::NONE;
+            }
+            if ui.add(Button::new("Design preset")).clicked() {
+                self.theme.surface = self.theme.preset();
+            }
+        });
+        let fx = &mut self.theme.surface;
+        ui.horizontal_wrapped(|ui| {
+            ui.dodai_muted("Texture");
+            for tex in t.surface_textures() {
+                let on = fx.texture == *tex;
+                let v = if on {
+                    ButtonVariant::Primary
+                } else {
+                    ButtonVariant::Outline
+                };
+                if ui.add(Button::new(tex.label()).variant(v)).clicked() {
+                    fx.texture = *tex;
+                    fx.container_texture = *tex;
+                    if fx.strength <= 0.0 {
+                        fx.strength = 0.5;
+                        fx.container_strength = 0.3;
+                    }
+                }
+            }
+        });
+        if fx.texture != Texture::None {
+            ui.horizontal(|ui| {
+                ui.dodai_muted("Strength");
+                ui.add(Slider::new(&mut fx.strength, 0.0..=1.0));
+            });
+            ui.horizontal(|ui| {
+                ui.dodai_muted("Scale");
+                ui.add(Slider::new(&mut fx.scale, 0.5..=3.0));
+            });
+        }
+        let ef = t.surface_effects();
+        for (on, name, v) in [
+            (ef.sheen, "Sheen", &mut fx.sheen),
+            (ef.pulse, "Pulse", &mut fx.pulse),
+            (ef.chase, "Chase", &mut fx.chase),
+            (ef.edge, "Edge light", &mut fx.edge),
+            (ef.depth, "Depth", &mut fx.depth),
+            (ef.brackets, "Brackets", &mut fx.brackets),
+        ] {
+            if on {
+                ui.horizontal(|ui| {
+                    ui.dodai_muted(name);
+                    ui.add(Slider::new(v, 0.0..=1.0));
+                });
+            }
+        }
+        fx.targets = dodai_core::SurfaceTargets::ALL;
+
+        ui.add_space(8.0);
+        ui.dodai_label("Icons (the design's own pack)");
+        ui.horizontal_wrapped(|ui| {
+            use dodai_icons::IconId as I;
+            for id in [
+                I::Home,
+                I::Search,
+                I::Heart,
+                I::Settings,
+                I::Bell,
+                I::Calendar,
+                I::Camera,
+                I::Car,
+                I::ChargingStation,
+                I::Download,
+                I::Envelope,
+                I::Eye,
+                I::Globe,
+                I::Lock,
+                I::User,
+                I::Wrench,
+            ] {
+                ui.add(dodai_egui::Icon::new(id).size(24.0));
+            }
+        });
+    }
+}
+
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
         self.theme.handle_keys(ctx);
@@ -45,7 +205,20 @@ impl eframe::App for App {
                 let name = self.theme.switcher.current().name();
                 ui.dodai_heading(&format!("Dodai UI · egui · {name}"));
                 ui.dodai_muted("t / Shift+T: theme · + / -: glow");
+                // This showcase runs on egui: that toolkit is the solid, highlighted one.
+                ui.horizontal_wrapped(|ui| {
+                    for name in [
+                        "gpui", "iced", "egui", "slint", "ratatui", "dioxus", "leptos", "yew",
+                        "bevy", "web",
+                    ] {
+                        ui.add(Tag::new(name).tone(Tone::Info).solid(name == "egui"));
+                    }
+                });
                 self.theme.show(ui);
+                ui.add(Divider);
+                egui::CollapsingHeader::new("Shape · Surface effects · Icons")
+                    .default_open(false)
+                    .show(ui, |ui| self.tuning(ui));
                 ui.add(Divider);
                 ui.add_space(8.0);
 

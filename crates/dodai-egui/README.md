@@ -17,4 +17,13 @@ ctl.install(ctx);          // every frame; no-op if unchanged
 ctl.handle_keys(ctx);
 ```
 
+Every design system is bundled (`cyberpunk`, `material`, `neobrutalism`, `aurora` features). Also:
+
+- **Shape tuning**: `ThemeController::tune` (`dodai_core::ShapeTune`): roundness, border width and
+  colour, outline-all, hard shadow offset and direction.
+- **Surface effects**: `ThemeController::surface` (`dodai_core::SurfaceFx`) draws textures and light
+  effects over buttons, panels, tags and inputs; each design draws only what it owns. Glitch,
+  flicker and the lit lines of textures are not drawn in egui.
+- **Icons** (`icons` feature): `Icon::new(IconId::Home).size(24.0)` draws in the design's own pack.
+
 Showcase: `cargo run -p dodai-egui --example egui_showcase`.
