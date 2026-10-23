@@ -176,13 +176,28 @@ impl ShapeStyle {
         shadow: bool,
     ) -> Self {
         let fx = &theme.effects;
+        let tune = crate::shape_tune();
+        let p = &theme.palette;
+        let tint = match tune.tint {
+            dodai_core::BorderTint::Design => None,
+            dodai_core::BorderTint::Strong => Some(p.border_strong),
+            dodai_core::BorderTint::Accent => Some(p.primary),
+            dodai_core::BorderTint::Text => Some(p.text),
+        };
+        let stroke = match (stroke, tune.outline_all) {
+            (Some(c), _) => Some(tint.unwrap_or(c)),
+            (None, true) if fill.is_some() => Some(tint.unwrap_or(p.border)),
+            (None, _) => None,
+        };
         Self {
             fill: fill.map(hsla),
             stroke: stroke.map(hsla),
-            stroke_width: if stroke.is_some() {
-                theme.shape.border_width
-            } else {
-                0.0
+            stroke_width: match stroke {
+                Some(_) if tune.outline_all && tune.border_width.is_none() => {
+                    theme.shape.border_width.max(1.0)
+                }
+                Some(_) => theme.shape.border_width,
+                None => 0.0,
             },
             glow: (glow && fx.glow_enabled()).then(|| (hsla(fx.glow_color()), fx.glow_radius())),
             shadow: (shadow && fx.hard_shadow > 0.0)

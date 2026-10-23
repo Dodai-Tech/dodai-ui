@@ -862,7 +862,7 @@ impl Theme {
     }
 
     /// Whether this design owns the animated surface effects.
-    pub fn surface_effects(&self) -> bool {
+    pub fn surface_effects(&self) -> crate::EffectSet {
         self.surface_style.effects
     }
 

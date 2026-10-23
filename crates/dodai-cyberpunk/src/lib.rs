@@ -386,7 +386,7 @@ fn surface_style(dark: bool) -> dodai_core::SurfaceStyle {
             ..dodai_core::SurfaceFx::NONE
         },
         textures: &dodai_core::Texture::ALL,
-        effects: true,
+        effects: dodai_core::EffectSet::ALL,
         tuning: dodai_core::SurfaceTuning {
             halo: 1.5,
             glitch_period: 3.2 * slow,

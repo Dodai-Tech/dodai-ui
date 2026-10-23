@@ -38,6 +38,7 @@ pub(crate) fn caps(title: &str) -> Caps {
         | "Border"
         | "Shape gallery"
         | "Button crop"
+        | "Roundness · Borders"
         | "Colour palette"
         | "Type scale"
         | "Motion tokens"

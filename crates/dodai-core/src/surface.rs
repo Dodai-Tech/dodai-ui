@@ -317,24 +317,24 @@ impl SurfaceFx {
 
     /// The mix restricted to what a design owns: textures outside `textures` become
     /// [`Texture::None`], and the animated effects are zeroed unless `effects`.
-    pub fn limited(mut self, textures: &[Texture], effects: bool) -> Self {
+    pub fn limited(mut self, textures: &[Texture], effects: EffectSet) -> Self {
         if !textures.contains(&self.texture) {
             self.texture = Texture::None;
         }
         if !textures.contains(&self.container_texture) {
             self.container_texture = Texture::None;
         }
-        if !effects {
-            self.glitch = 0.0;
-            self.sheen = 0.0;
-            self.flicker = 0.0;
-            self.bloom = 0.0;
-            self.pulse = 0.0;
-            self.chase = 0.0;
-            self.edge = 0.0;
-            self.brackets = 0.0;
-            self.depth = 0.0;
-        }
+        let keep = |on: bool, v: f32| if on { v } else { 0.0 };
+        self.glitch = keep(effects.glitch, self.glitch);
+        self.sheen = keep(effects.sheen, self.sheen);
+        self.flicker = keep(effects.flicker, self.flicker);
+        self.bloom = keep(effects.bloom, self.bloom);
+        self.pulse = keep(effects.pulse, self.pulse);
+        self.chase = keep(effects.chase, self.chase);
+        self.edge = keep(effects.edge, self.edge);
+        self.brackets = keep(effects.brackets, self.brackets);
+        self.depth = keep(effects.depth, self.depth);
+        self.neon = keep(effects.neon, self.neon);
         self
     }
 
@@ -438,6 +438,74 @@ mod tests {
     }
 }
 
+/// Which light effects a design owns. A design draws only the ones it lists, so each keeps
+/// its own character (a neon design glitches, a material one only shimmers).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EffectSet {
+    /// Glitch bursts.
+    pub glitch: bool,
+    /// Light sweeping across.
+    pub sheen: bool,
+    /// Flicker.
+    pub flicker: bool,
+    /// Bloom past the edge.
+    pub bloom: bool,
+    /// A pulsing border light.
+    pub pulse: bool,
+    /// A light chasing around the border.
+    pub chase: bool,
+    /// Light falling in from the edges.
+    pub edge: bool,
+    /// Corner brackets.
+    pub brackets: bool,
+    /// Inner shadow.
+    pub depth: bool,
+    /// Lit lines in textures.
+    pub neon: bool,
+}
+
+impl EffectSet {
+    /// No effects.
+    pub const NONE: Self = Self {
+        glitch: false,
+        sheen: false,
+        flicker: false,
+        bloom: false,
+        pulse: false,
+        chase: false,
+        edge: false,
+        brackets: false,
+        depth: false,
+        neon: false,
+    };
+    /// Every effect.
+    pub const ALL: Self = Self {
+        glitch: true,
+        sheen: true,
+        flicker: true,
+        bloom: true,
+        pulse: true,
+        chase: true,
+        edge: true,
+        brackets: true,
+        depth: true,
+        neon: true,
+    };
+    /// Whether any effect is owned.
+    pub const fn any(&self) -> bool {
+        self.glitch
+            || self.sheen
+            || self.flicker
+            || self.bloom
+            || self.pulse
+            || self.chase
+            || self.edge
+            || self.brackets
+            || self.depth
+            || self.neon
+    }
+}
+
 /// A design's own surface styling: the mix it suggests and which textures and animated
 /// effects it owns. Part of the theme, so it travels with it like colours and shapes.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -446,8 +514,8 @@ pub struct SurfaceStyle {
     pub preset: SurfaceFx,
     /// Textures this design owns; others are never drawn for it.
     pub textures: &'static [Texture],
-    /// Whether the animated effects (glitch, sheen, flicker, bloom) belong to this design.
-    pub effects: bool,
+    /// Which of the animated and edge effects belong to this design.
+    pub effects: EffectSet,
     /// Timing and sizes of the drawing.
     pub tuning: SurfaceTuning,
 }
@@ -504,7 +572,7 @@ impl SurfaceStyle {
     pub const NONE: Self = Self {
         preset: SurfaceFx::NONE,
         textures: &[],
-        effects: false,
+        effects: EffectSet::NONE,
         tuning: SurfaceTuning::DEFAULT,
     };
 }

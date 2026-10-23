@@ -9,6 +9,7 @@ use dodai_core::themes::ThemeBuilder;
 use dodai_core::{Corners, Mode, Shape, Spacing, Theme, ThemeMeta, Typography};
 
 mod spec;
+pub mod surface;
 pub use spec::{shape_presets, shape_system, NeoBrutalism, SHAPE_SCALE, SPEC};
 
 /// Chunky and a little bouncy: short, with a slight overshoot.
@@ -196,6 +197,7 @@ pub fn build(p: &Preset, mode: Mode) -> Theme {
     t.palette.link = t.palette.text;
     t.palette.primary_active = dodai_core::Color::hex(p.main);
     t.motion = motion();
+    t.surface_style = surface::style(matches!(mode, Mode::Dark));
     t.shape_system = Some(shape_system());
     t.spec = dodai_core::SpecRef::new(&SPEC);
     t

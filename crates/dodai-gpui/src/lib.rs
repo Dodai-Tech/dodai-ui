@@ -494,7 +494,29 @@ impl gpui::Global for KeysBound {}
 
 /// Clone of the active theme (components call this on render).
 pub fn theme_of(cx: &App) -> Theme {
-    cx.dodai().theme().clone()
+    let t = cx.dodai().theme();
+    let tune = shape_tune();
+    if tune.is_default() {
+        t.clone()
+    } else {
+        t.tuned(&tune)
+    }
+}
+
+thread_local! {
+    static TUNE: std::cell::Cell<dodai_core::ShapeTune> =
+        const { std::cell::Cell::new(dodai_core::ShapeTune::DEFAULT) };
+}
+
+/// The shape tuning applied to every component (roundness and borders).
+pub fn shape_tune() -> dodai_core::ShapeTune {
+    TUNE.with(std::cell::Cell::get)
+}
+
+/// Tune corner roundness and borders for every component and repaint.
+pub fn set_shape_tune(cx: &mut App, tune: dodai_core::ShapeTune) {
+    TUNE.with(|c| c.set(tune));
+    cx.refresh_windows();
 }
 
 /// Select theme by index (clamped) and repaint.

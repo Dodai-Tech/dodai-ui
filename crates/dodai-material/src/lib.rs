@@ -17,6 +17,7 @@ fn motion() -> dodai_core::Motion {
 pub mod fx;
 mod scheme;
 mod spec;
+pub mod surface;
 pub use scheme::{preset_themes, Preset, Scheme, SchemeStyle, PRESETS};
 pub use spec::{shape_presets, shape_system, Material3, SHAPE_SCALE, SPEC};
 
@@ -191,6 +192,7 @@ pub fn light() -> Theme {
     .build();
     t.palette.roles = light_roles();
     t.motion = motion();
+    t.surface_style = surface::style(false);
     t.shape_system = Some(shape_system());
     t.spec = dodai_core::SpecRef::new(&SPEC);
     t
@@ -239,6 +241,7 @@ pub fn dark() -> Theme {
     .build();
     t.palette.roles = dark_roles();
     t.motion = motion();
+    t.surface_style = surface::style(true);
     t.shape_system = Some(shape_system());
     t.spec = dodai_core::SpecRef::new(&SPEC);
     t

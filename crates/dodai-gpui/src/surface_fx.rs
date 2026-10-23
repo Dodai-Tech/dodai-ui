@@ -1095,11 +1095,11 @@ mod tests {
         let t = dodai::themes::cyberpunk::yellow();
         let m = dodai::themes::material::light();
         set_surface_fx_for_test(SurfaceFx::NONE);
-        let own = Surface::new().texture(Texture::Grid);
+        let own = Surface::new().texture(Texture::Circuit);
         // Nothing app-wide, but this component asks for a texture (even on a Tag, which is
         // not under "Apply to").
         assert!(SurfacePaint::of_with(&t, SurfaceClass::Tag, &own).is_some());
-        // A design draws only what it owns: Material owns no textures.
+        // A design draws only what it owns: Material has no circuit traces.
         assert!(SurfacePaint::of_with(&m, SurfaceClass::Tag, &own).is_none());
         // `Surface::NONE` opts one component out of an app-wide mix.
         set_surface_fx_for_test(SurfaceFx {

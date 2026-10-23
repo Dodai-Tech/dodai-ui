@@ -25,6 +25,7 @@ mod switcher;
 mod theme;
 mod tokens;
 pub mod tonal;
+mod tune;
 
 pub mod themes;
 
@@ -44,9 +45,11 @@ pub use shape_system::{
 };
 pub use spec::{DesignSpec, FadeStop, Fluid, Frost, GridSpec, IconSet, Look, ShadowLayer, SpecRef};
 pub use surface::{
-    Surface, SurfaceClass, SurfaceFx, SurfaceStyle, SurfaceTargets, SurfaceTuning, Texture,
+    EffectSet, Surface, SurfaceClass, SurfaceFx, SurfaceStyle, SurfaceTargets, SurfaceTuning,
+    Texture,
 };
 pub use switcher::ThemeSwitcher;
 pub use theme::{Theme, ThemeMeta};
 pub use tokens::{Corners, Effects, Shape, ShapeKind, Sizes, Spacing, Typography};
 pub use tonal::TonalPalette;
+pub use tune::{BorderTint, ShapeTune};

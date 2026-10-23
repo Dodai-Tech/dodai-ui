@@ -71,7 +71,7 @@ fn a_design_suggests_only_textures_and_effects_it_owns() {
                 sys.name
             );
         }
-        if !t.surface_effects() {
+        if !t.surface_effects().any() {
             assert_eq!(
                 (fx.glitch, fx.sheen, fx.flicker, fx.bloom),
                 (0.0, 0.0, 0.0, 0.0),

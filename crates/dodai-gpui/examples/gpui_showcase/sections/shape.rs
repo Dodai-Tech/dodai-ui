@@ -360,7 +360,7 @@ impl Showcase {
                     })
                     .child(amount("sfx-strength", "Strength", fx.strength, 1.0, |f, v| f.strength = v))
                     .child(amount("sfx-scale", "Scale", fx.scale, 4.0, |f, v| f.scale = v.max(0.25)))
-                    .child(amount("sfx-neon", "Lit lines", fx.neon, 1.0, |f, v| f.neon = v))
+                    .children(t.surface_effects().neon.then(|| amount("sfx-neon", "Lit lines", fx.neon, 1.0, |f, v| f.neon = v)))
                     .child(amount("sfx-clear", "Clear centre", fx.clear, 1.0, |f, v| f.clear = v))
                     .child(preview_components("sfx-tx"))
                     .into_any_element(),
@@ -397,7 +397,7 @@ impl Showcase {
                     })
                     .child(amount("sfx-cstrength", "Strength", fx.container_strength, 1.0, |f, v| f.container_strength = v))
                     .child(amount("sfx-cscale", "Scale", fx.container_scale, 4.0, |f, v| f.container_scale = v.max(0.25)))
-                    .child(amount("sfx-cneon", "Lit lines", fx.neon, 1.0, |f, v| f.neon = v))
+                    .children(t.surface_effects().neon.then(|| amount("sfx-cneon", "Lit lines", fx.neon, 1.0, |f, v| f.neon = v)))
                     .child(amount("sfx-cclear", "Clear centre", fx.clear, 1.0, |f, v| f.clear = v))
                     .into_any_element(),
                 "Container textures",
@@ -408,28 +408,31 @@ impl Showcase {
             if t.look().luminous {
                 light = light.child(shape_props);
             }
-            if t.look().luminous || t.surface_effects() {
-                if t.surface_effects() {
-                    light = light
-                        .child(amount("sfx-glitch", "Glitch", fx.glitch, 1.0, |f, v| {
-                            f.glitch = v
+            let ef = t.surface_effects();
+            let any_light = ef.glitch || ef.sheen || ef.flicker || ef.bloom || ef.pulse || ef.chase;
+            if t.look().luminous || any_light {
+                light =
+                    light
+                        .children(ef.glitch.then(|| {
+                            amount("sfx-glitch", "Glitch", fx.glitch, 1.0, |f, v| f.glitch = v)
                         }))
-                        .child(amount("sfx-sheen", "Sheen", fx.sheen, 1.0, |f, v| {
-                            f.sheen = v
+                        .children(ef.sheen.then(|| {
+                            amount("sfx-sheen", "Sheen", fx.sheen, 1.0, |f, v| f.sheen = v)
                         }))
-                        .child(amount("sfx-flicker", "Flicker", fx.flicker, 1.0, |f, v| {
-                            f.flicker = v
+                        .children(ef.flicker.then(|| {
+                            amount("sfx-flicker", "Flicker", fx.flicker, 1.0, |f, v| {
+                                f.flicker = v
+                            })
                         }))
-                        .child(amount("sfx-bloom", "Bloom", fx.bloom, 1.0, |f, v| {
-                            f.bloom = v
+                        .children(ef.bloom.then(|| {
+                            amount("sfx-bloom", "Bloom", fx.bloom, 1.0, |f, v| f.bloom = v)
                         }))
-                        .child(amount("sfx-pulse", "Pulse", fx.pulse, 1.0, |f, v| {
-                            f.pulse = v
+                        .children(ef.pulse.then(|| {
+                            amount("sfx-pulse", "Pulse", fx.pulse, 1.0, |f, v| f.pulse = v)
                         }))
-                        .child(amount("sfx-chase", "Chase", fx.chase, 1.0, |f, v| {
-                            f.chase = v
+                        .children(ef.chase.then(|| {
+                            amount("sfx-chase", "Chase", fx.chase, 1.0, |f, v| f.chase = v)
                         }));
-                }
                 out.push((
                     "Surface effects",
                     "Light FX",
@@ -437,7 +440,7 @@ impl Showcase {
                     "Light FX",
                 ));
             }
-            if t.surface_effects() {
+            if ef.edge || ef.brackets || ef.depth {
                 out.push((
                     "Surface effects",
                     "Edges · Depth",
@@ -445,14 +448,139 @@ impl Showcase {
                         .child(Muted::new(
                             "How the edges look: light falling inward, corner brackets and an inner shadow. Clear centre (under textures) keeps text clean.",
                         ))
-                        .child(amount("sfx-edge", "Edge light", fx.edge, 1.0, |f, v| f.edge = v))
-                        .child(amount("sfx-brackets", "Brackets", fx.brackets, 1.0, |f, v| f.brackets = v))
-                        .child(amount("sfx-depth", "Depth", fx.depth, 1.0, |f, v| f.depth = v))
+                        .children(ef.edge.then(|| {
+                            amount("sfx-edge", "Edge light", fx.edge, 1.0, |f, v| f.edge = v)
+                        }))
+                        .children(ef.brackets.then(|| {
+                            amount("sfx-brackets", "Brackets", fx.brackets, 1.0, |f, v| f.brackets = v)
+                        }))
+                        .children(ef.depth.then(|| {
+                            amount("sfx-depth", "Depth", fx.depth, 1.0, |f, v| f.depth = v)
+                        }))
                         .child(preview_components("sfx-ed"))
                         .into_any_element(),
                     "Edges · Depth",
                 ));
             }
+        }
+        {
+            use dodai_core::{BorderTint, ShapeKind, ShapeTune};
+            let tune = dodai_gpui::shape_tune();
+            let round_ok = t.shape.kind() != ShapeKind::Chamfered;
+            let widths: [(&str, Option<f32>); 5] = [
+                ("Default", None),
+                ("None", Some(0.0)),
+                ("Hairline", Some(1.0)),
+                ("Medium", Some(2.0)),
+                ("Thick", Some(3.0)),
+            ];
+            let width_sel = widths
+                .iter()
+                .position(|w| w.1 == tune.border_width)
+                .unwrap_or(usize::MAX);
+            let tint_sel = BorderTint::ALL
+                .iter()
+                .position(|b| *b == tune.tint)
+                .unwrap_or(0);
+            let mut sec = section!("Roundness · Borders").child(Muted::new(
+                "Applies to every component in every design, immediately. \"Default\" is each design's own.",
+            ));
+            if round_ok {
+                sec = sec.child(setting(
+                    "Roundness",
+                    "0 is square, 100% is the design's own corners, more is rounder.",
+                    div()
+                        .w(px(280.0))
+                        .child(
+                            Slider::new("rb-round", tune.roundness)
+                                .range(0.0, 2.0)
+                                .step(0.05)
+                                .show_value(true)
+                                .format(|v| format!("{:.0}%", v * 100.0))
+                                .on_change(|v, _, cx| {
+                                    let t = dodai_gpui::shape_tune();
+                                    dodai_gpui::set_shape_tune(cx, ShapeTune { roundness: v, ..t });
+                                }),
+                        )
+                        .into_any_element(),
+                ));
+            }
+            sec = sec
+                .child(setting(
+                    "Border width",
+                    "Thickness of every outline.",
+                    div()
+                        .flex()
+                        .child(
+                            Segmented::new("rb-width", widths.map(|w| w.0))
+                                .selected(width_sel)
+                                .on_select(move |i, _, cx| {
+                                    let t = dodai_gpui::shape_tune();
+                                    dodai_gpui::set_shape_tune(
+                                        cx,
+                                        ShapeTune {
+                                            border_width: widths[i].1,
+                                            ..t
+                                        },
+                                    );
+                                }),
+                        )
+                        .into_any_element(),
+                ))
+                .child(setting(
+                    "Border colour",
+                    "Which colour outlines take.",
+                    div()
+                        .flex()
+                        .child(
+                            Segmented::new("rb-tint", BorderTint::ALL.map(|b| b.label()))
+                                .selected(tint_sel)
+                                .on_select(move |i, _, cx| {
+                                    let t = dodai_gpui::shape_tune();
+                                    dodai_gpui::set_shape_tune(
+                                        cx,
+                                        ShapeTune {
+                                            tint: BorderTint::ALL[i],
+                                            ..t
+                                        },
+                                    );
+                                }),
+                        )
+                        .into_any_element(),
+                ))
+                .child(setting(
+                    "Outline all",
+                    "Give filled components without a border one too.",
+                    div()
+                        .flex()
+                        .child(
+                            Segmented::new("rb-all", ["Off", "On"])
+                                .selected(usize::from(tune.outline_all))
+                                .on_select(|i, _, cx| {
+                                    let t = dodai_gpui::shape_tune();
+                                    dodai_gpui::set_shape_tune(
+                                        cx,
+                                        ShapeTune {
+                                            outline_all: i == 1,
+                                            ..t
+                                        },
+                                    );
+                                }),
+                        )
+                        .into_any_element(),
+                ))
+                .child(
+                    Button::new("rb-reset", "Reset")
+                        .variant(ButtonVariant::Outline)
+                        .on_click(|_, _, cx| dodai_gpui::set_shape_tune(cx, ShapeTune::DEFAULT)),
+                )
+                .child(shape_gallery("round"));
+            out.push((
+                "Shape",
+                "Roundness · Borders",
+                sec.into_any_element(),
+                "Roundness · Borders",
+            ));
         }
         if t.look().cut_corners {
             out.push((
