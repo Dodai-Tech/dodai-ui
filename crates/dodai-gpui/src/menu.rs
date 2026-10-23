@@ -181,6 +181,7 @@ impl Menu {
             if item.danger && !item.disabled {
                 fg = hsla(t.palette.danger);
             }
+            let slot = t.sizes().icon_sm + t.spacing.xs * 0.5;
             let mut row = track(shaped_id(id, &t.shape, style), &st)
                 .min_h(px(t.menu_row_height()))
                 .py(px(t.spacing.xs * 0.5))
@@ -191,17 +192,17 @@ impl Menu {
                 .text_color(fg)
                 .child(match item.icon {
                     Some(ic) => div()
-                        .w(px(20.0))
-                        .min_w(px(20.0))
-                        .max_w(px(20.0))
+                        .w(px(slot))
+                        .min_w(px(slot))
+                        .max_w(px(slot))
                         .flex_none()
                         .flex()
                         .justify_center()
                         .overflow_hidden()
-                        .child(crate::icons::Icon::new(ic).size(18.0).color(fg)),
+                        .child(crate::icons::Icon::new(ic).size(t.sizes().icon_sm).color(fg)),
                     None => {
                         div()
-                            .w(px(14.0))
+                            .w(px(slot * 0.7))
                             .flex_none()
                             .child(if item.checked { "✓" } else { "" })
                     }

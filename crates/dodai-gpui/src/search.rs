@@ -153,17 +153,17 @@ impl SearchView {
         let style = ShapeStyle::from_tokens(&t, Some(fill), None, false, false);
         let mut head = div()
             .h(px(head_h))
-            .px(px(16.0))
+            .px(px(t.spacing.md))
             .flex()
             .items_center()
-            .gap(px(16.0))
+            .gap(px(t.spacing.md))
             .child(
                 Icon::new(if full {
                     IconName::ArrowLeft
                 } else {
                     IconName::Search
                 })
-                .size(24.0)
+                .size(t.sizes().icon)
                 .color(hsla(r.on_surface)),
             )
             .child(div().flex_1().child(self.input.clone()));
@@ -173,7 +173,7 @@ impl SearchView {
                     .id((self.id.clone(), "clear"))
                     .cursor_pointer()
                     .on_click(move |_, w, cx| f(w, cx))
-                    .child(Icon::Close.size(24.0).color(hsla(r.on_surface_variant))),
+                    .child(Icon::Close.size(t.sizes().icon).color(hsla(r.on_surface_variant))),
             );
         }
         let mut body = shaped(&shape, style)
@@ -192,8 +192,8 @@ impl SearchView {
             if hits.is_empty() {
                 body = body.child(
                     div()
-                        .h(px(56.0))
-                        .px(px(16.0))
+                        .h(px(t.list_row_height(false)))
+                        .px(px(t.spacing.md))
                         .flex()
                         .items_center()
                         .text_color(hsla(r.on_surface_variant))
@@ -219,7 +219,7 @@ impl SearchView {
                         } else {
                             IconName::Search
                         })
-                        .size(24.0)
+                        .size(t.sizes().icon)
                         .color(hsla(r.on_surface_variant)),
                     );
                 if hovered {
@@ -326,7 +326,7 @@ impl RenderOnce for SearchView {
                 let hovered = st.read(cx).hovered;
                 let (style, _, _) = list_style(&t, false, hovered);
                 let mut row = track(shaped_id(id, &t.shape, style), &st)
-                    .h(px(t.shape.control_height * 0.9))
+                    .min_h(px(t.shape.control_height * 0.9))
                     .px(px(t.spacing.md))
                     .flex()
                     .items_center()

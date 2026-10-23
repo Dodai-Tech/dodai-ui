@@ -94,7 +94,7 @@ fn page_button(
     let state = st.read(cx).control_state(disabled);
     let (style, fg) = crate::button::button_style(t, variant, state);
     let el = track(shaped_id(id, &t.shape, style), &st)
-        .h(px(t.shape.control_height))
+        .min_h(px(t.shape.control_height))
         .min_w(px(t.shape.control_height))
         .px(px(t.spacing.sm))
         .flex()
@@ -388,11 +388,11 @@ impl Segmented {
             };
             let mut seg = track(gpui::InteractiveElement::id(div(), id), &st)
                 .h_full()
-                .px(px(12.0))
+                .px(px(t.spacing.sm * 1.5))
                 .flex()
                 .items_center()
                 .justify_center()
-                .gap(px(8.0))
+                .gap(px(t.spacing.sm))
                 .text_color(hsla(fg));
             if let Some(f) = fill {
                 seg = seg.bg(hsla(f));
@@ -541,7 +541,7 @@ impl Accordion {
             let is_open = open.get(i).copied().unwrap_or(false);
             let stc = st.clone();
             let head = track(div().id(id), &hv)
-                .h(px(t.shape.control_height))
+                .min_h(px(t.shape.control_height))
                 .px(px(t.spacing.md))
                 .flex()
                 .items_center()
@@ -565,7 +565,7 @@ impl Accordion {
                         cx.notify();
                     })
                 })
-                .child(div().w(px(12.0)).child(if is_open { "▾" } else { "▸" }))
+                .child(div().w(px(t.spacing.sm * 1.5)).child(if is_open { "▾" } else { "▸" }))
                 .child(format_label(&t.typography, title));
             if i > 0 {
                 col = col.child(div().h(px(1.0)).w_full().bg(hsla(t.palette.border)));

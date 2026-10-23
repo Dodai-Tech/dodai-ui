@@ -104,7 +104,7 @@ impl DialogCard {
                 .justify_center()
                 .child(
                     crate::icons::Icon::new(i)
-                        .size(24.0)
+                        .size(t.sizes().icon)
                         .color(hsla(if t.look().tonal {
                             t.palette.secondary
                         } else {

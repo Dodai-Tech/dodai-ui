@@ -173,7 +173,7 @@ impl RenderOnce for NavigationDrawer {
                 Entry::Headline(h) => {
                     col = col.child(
                         typeset(div(), &t, k.roles.3)
-                            .h(px(k.headline_height))
+                            .min_h(px(k.headline_height))
                             .px(px(k.item_padding))
                             .flex()
                             .items_center()
@@ -226,7 +226,7 @@ fn drawer_item(
     );
     let style = ShapeStyle { fill, ..style };
     let mut el = track(shaped_id(it.id, &shape, style), &st)
-        .h(px(h))
+        .min_h(px(h))
         .ml(px(it.depth as f32 * k.indent))
         // Nested rows never touch the row above, even when the design stacks items tight.
         .mt(px(if nested {

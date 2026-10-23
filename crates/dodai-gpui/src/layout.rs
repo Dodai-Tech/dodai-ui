@@ -173,7 +173,7 @@ impl TreeView {
                 .flex()
                 .items_center()
                 .gap(px(t.spacing.xs))
-                .h(px(t.shape.control_height * 0.8))
+                .min_h(px(t.shape.control_height * 0.8))
                 .pl(px(t.spacing.sm + row.depth as f32 * 16.0))
                 .text_color(hsla(t.palette.text))
                 .child(chevron)

@@ -52,15 +52,16 @@ pub fn popup_style(theme: &Theme) -> ShapeStyle {
 
 /// Row of small colour chips.
 pub fn swatch_row(t: &Theme, colors: &[Color]) -> gpui::Div {
-    let mut row = div().flex().gap(px(2.0)).flex_none();
+    let swatch = t.sizes().legend_swatch * 1.2;
+    let mut row = div().flex().gap(px(t.spacing.xs * 0.5)).flex_none();
     for c in colors {
         row = row.child(
             shaped(
-                &crate::paint::scaled_shape(&t.shape, 12.0),
+                &crate::paint::scaled_shape(&t.shape, swatch),
                 ShapeStyle::from_tokens(t, Some(*c), Some(t.palette.border_strong), false, false),
             )
-            .w(px(14.0))
-            .h(px(14.0)),
+            .w(px(swatch))
+            .h(px(swatch)),
         );
     }
     row
@@ -190,7 +191,7 @@ impl Select {
             shaped_id(tid, &t.role_shape(dodai_core::ShapeRole::Input), style),
             &hov,
         )
-        .h(px(t.shape.control_height))
+        .min_h(px(t.shape.control_height))
         .w_full()
         .px(px(t.spacing.sm))
         .flex()
@@ -307,8 +308,8 @@ impl Select {
                 .id((self.id.clone(), "rows"))
                 .flex()
                 .flex_col()
-                .gap(px(2.0))
-                .max_h(px(280.0))
+                .gap(px(t.spacing.xs * 0.5))
+                .max_h(px(t.shape.control_height * 7.0))
                 .overflow_y_scroll();
             for (i, o) in self.options.iter().enumerate() {
                 let is_sel = self.selected == Some(i);
@@ -364,8 +365,8 @@ impl Select {
                 .top(px(t.shape.control_height + 4.0))
                 .left_0()
                 .w_full()
-                .min_w(px(180.0))
-                .p(px(t.spacing.xs + 2.0))
+                .min_w(px(t.shape.control_height * 4.5))
+                .p(px(t.spacing.xs + t.spacing.xs * 0.5))
                 .occlude()
                 .font_family(first_family(t.typography.body))
                 .text_size(px(t.typography.size_md))

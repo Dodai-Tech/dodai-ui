@@ -493,7 +493,7 @@ impl Chip {
             self.leading
         };
         if let Some(icon) = lead {
-            el = el.child(crate::icons::Icon::new(icon).size(18.0).color(fg));
+            el = el.child(crate::icons::Icon::new(icon).size(t.sizes().icon_sm).color(fg));
         }
         el = el.child(format_label(&t.typography, &self.label));
         if self.removable {

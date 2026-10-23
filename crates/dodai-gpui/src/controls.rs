@@ -900,7 +900,7 @@ impl Slider {
                     .children(self.icon.map(|i| {
                         div().absolute().left(px(12.0)).top(px(8.0)).child(
                             crate::icons::Icon::new(i)
-                                .size(24.0)
+                                .size(t.sizes().icon)
                                 .color(hsla(t.palette.on_primary)),
                         )
                     }))

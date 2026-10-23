@@ -137,7 +137,7 @@ impl Tabs {
                 t.shape.control_height
             };
             let mut tab = track(shaped_id(id, &t.shape, style), &st)
-                .h(px(height))
+                .min_h(px(height))
                 .px(px(t.spacing.md))
                 .flex()
                 .items_center()
@@ -154,7 +154,7 @@ impl Tabs {
                 tab = tab.gap(px(t.spacing.sm));
             }
             if let Some(icon) = self.icons.get(i) {
-                tab = tab.child(crate::icons::Icon::new(*icon).size(20.0).color(fg));
+                tab = tab.child(crate::icons::Icon::new(*icon).size(t.sizes().icon_sm).color(fg));
             }
             if let Some(label) = label {
                 tab = tab.child(format_label(&t.typography, label));

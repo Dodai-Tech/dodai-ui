@@ -676,7 +676,7 @@ pub trait DodaiStyled: Styled + Sized {
     fn dodai_button(self, t: &Theme, v: ButtonVariant, state: ControlState) -> Self {
         let b = t.button(v, state);
         let s = self
-            .h(px(t.shape.control_height))
+            .min_h(px(t.shape.control_height))
             .px(px(t.spacing.md))
             .text_color(hsla(b.foreground))
             .rounded(px(t.shape.radius));

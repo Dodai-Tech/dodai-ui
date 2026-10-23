@@ -411,7 +411,7 @@ impl InputBox {
             &t.role_shape(dodai_core::ShapeRole::Input),
             input_style(&t, self.focused),
         )
-        .h(px(t.shape.control_height))
+        .min_h(px(t.shape.control_height))
         .px(px(t.spacing.sm))
         .flex()
         .items_center()
@@ -480,7 +480,7 @@ impl Render for DodaiTooltip {
             .text_color(hsla(fg))
             .child(self.text.clone());
         if rounded {
-            d.px(px(8.0)).min_h(px(24.0)).flex().items_center()
+            d.px(px(t.spacing.sm)).min_h(px(t.sizes().icon)).flex().items_center()
         } else {
             d.px(px(t.spacing.sm)).py(px(t.spacing.xs))
         }

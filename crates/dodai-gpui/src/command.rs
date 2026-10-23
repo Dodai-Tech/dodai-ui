@@ -150,7 +150,7 @@ impl RenderOnce for CommandPalette {
                 .flex()
                 .items_center()
                 .justify_between()
-                .h(px(t.shape.control_height * 0.9))
+                .min_h(px(t.shape.control_height * 0.9))
                 .px(px(t.spacing.md))
                 .text_color(hsla(t.palette.text))
                 .cursor_pointer()
@@ -303,7 +303,7 @@ impl Combobox {
                 let hovered = st.read(cx).hovered;
                 let (style, _, _) = list_style(&t, false, hovered);
                 let mut row = track(shaped_id(id, &t.shape, style), &st)
-                    .h(px(t.shape.control_height * 0.9))
+                    .min_h(px(t.shape.control_height * 0.9))
                     .px(px(t.spacing.md))
                     .flex()
                     .items_center()

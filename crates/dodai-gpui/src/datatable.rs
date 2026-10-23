@@ -400,7 +400,7 @@ impl RenderOnce for DataTable {
             )
             .flex()
             .items_center()
-            .h(px(row_h))
+            .min_h(px(row_h))
             .flex_none()
             .px(px(t.spacing.md))
             .border_t_1()
