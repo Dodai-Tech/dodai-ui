@@ -228,6 +228,12 @@ fn drawer_item(
     let mut el = track(shaped_id(it.id, &shape, style), &st)
         .h(px(h))
         .ml(px(it.depth as f32 * k.indent))
+        // Nested rows never touch the row above, even when the design stacks items tight.
+        .mt(px(if nested {
+            (t.spacing.xs - k.item_gap).max(0.0)
+        } else {
+            0.0
+        }))
         .px(px(k.item_padding))
         .flex()
         .items_center()
