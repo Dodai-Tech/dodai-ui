@@ -551,12 +551,12 @@ impl Showcase {
             if round_ok {
                 sec = sec.child(setting(
                     "Roundness",
-                    "0 is square, 100% is the design's own corners, more is rounder (up to 300%).",
+                    "0 is square, 100% is the design's own corners, more is rounder (up to 200%).",
                     div()
                         .w(px(280.0))
                         .child(
                             Slider::new("rb-round", tune.roundness)
-                                .range(0.0, 3.0)
+                                .range(0.0, 2.0)
                                 .step(0.05)
                                 .show_value(true)
                                 .format(|v| format!("{:.0}%", v * 100.0))
@@ -567,6 +567,31 @@ impl Showcase {
                         )
                         .into_any_element(),
                 ));
+                for g in dodai_core::RoundnessGroup::ALL {
+                    let k = dodai_core::RoundnessGroup::ALL
+                        .iter()
+                        .position(|x| *x == g)
+                        .unwrap_or(0);
+                    sec = sec.child(setting(
+                        g.label(),
+                        "On top of the global roundness; 100% leaves this group alone.",
+                        div()
+                            .w(px(280.0))
+                            .child(
+                                Slider::new(("rb-group", k), tune.groups[k])
+                                    .range(0.0, 2.0)
+                                    .step(0.05)
+                                    .show_value(true)
+                                    .format(|v| format!("{:.0}%", v * 100.0))
+                                    .on_change(move |v, _, cx| {
+                                        let mut t = dodai_gpui::shape_tune();
+                                        t.groups[k] = v;
+                                        dodai_gpui::set_shape_tune(cx, t);
+                                    }),
+                            )
+                            .into_any_element(),
+                    ));
+                }
             }
             sec = sec
                 .child(setting(

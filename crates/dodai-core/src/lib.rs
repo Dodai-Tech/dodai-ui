@@ -52,4 +52,4 @@ pub use switcher::ThemeSwitcher;
 pub use theme::{Theme, ThemeMeta};
 pub use tokens::{Corners, Effects, Shape, ShapeKind, Sizes, Spacing, Typography};
 pub use tonal::TonalPalette;
-pub use tune::{BorderTint, ShadowDir, ShapeTune};
+pub use tune::{BorderTint, RoundnessGroup, ShadowDir, ShapeTune};

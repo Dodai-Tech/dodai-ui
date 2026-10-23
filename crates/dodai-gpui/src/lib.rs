@@ -498,11 +498,7 @@ impl gpui::Global for KeysBound {}
 pub fn theme_of(cx: &App) -> Theme {
     let t = cx.dodai().theme();
     let tune = shape_tune();
-    if tune.is_default() {
-        t.clone()
-    } else {
-        t.tuned(&tune)
-    }
+    t.tuned(&tune)
 }
 
 thread_local! {

@@ -317,6 +317,36 @@ pub enum ShapeRole {
     AppBar,
 }
 
+impl ShapeRole {
+    /// Every role.
+    pub const ALL: [Self; 24] = [
+        Self::Button,
+        Self::Fab,
+        Self::Chip,
+        Self::Tag,
+        Self::Badge,
+        Self::Input,
+        Self::Card,
+        Self::Panel,
+        Self::Menu,
+        Self::Dialog,
+        Self::Sheet,
+        Self::Tooltip,
+        Self::IconButton,
+        Self::FabSmall,
+        Self::FabLarge,
+        Self::SearchBar,
+        Self::Snackbar,
+        Self::Carousel,
+        Self::SideSheet,
+        Self::Checkbox,
+        Self::Indicator,
+        Self::RichTooltip,
+        Self::Toolbar,
+        Self::AppBar,
+    ];
+}
+
 /// How a corner is drawn across a whole design system.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CornerStyle {
