@@ -322,7 +322,8 @@ impl Select {
                 let hs = st.clone();
                 let mut row = shaped(&t.shape, rs)
                     .id((self.id.clone(), format!("opt{i}")))
-                    .h(px(t.menu_row_height()))
+                    .min_h(px(t.menu_row_height()))
+                    .py(px(t.spacing.xs * 0.5))
                     .px(px(t.spacing.md))
                     .flex()
                     .items_center()

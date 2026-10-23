@@ -561,18 +561,22 @@ impl DesignSpec for Material3 {
         Some((t.palette.secondary, 3.0))
     }
 
-    /// One-line rows are 56 px (40 px nested).
-    fn list_row_height(&self, _t: &Theme, nested: bool) -> Option<f32> {
-        Some(if nested { 40.0 } else { 56.0 })
+    /// One-line rows are 1.4 × the control height (56 px at 40), nested rows 1.0 ×.
+    fn list_row_height(&self, t: &Theme, nested: bool) -> Option<f32> {
+        Some(t.shape.control_height * if nested { 1.0 } else { 1.4 })
     }
 
-    /// One line 56, two lines 72, three lines 88.
-    fn list_lines_height(&self, _t: &Theme, lines: u8) -> Option<f32> {
-        Some(56.0 + 16.0 * (lines.clamp(1, 3) - 1) as f32)
+    /// Each extra line adds 0.4 × the control height (one line 56, two 72, three 88 at 40).
+    fn list_lines_height(&self, t: &Theme, lines: u8) -> Option<f32> {
+        Some(
+            t.list_row_height(false)
+                + t.shape.control_height * 0.4 * (lines.clamp(1, 3) - 1) as f32,
+        )
     }
 
-    fn menu_row_height(&self, _t: &Theme) -> Option<f32> {
-        Some(48.0)
+    /// Menu rows are 1.2 × the control height (48 px at 40).
+    fn menu_row_height(&self, t: &Theme) -> Option<f32> {
+        Some(t.shape.control_height * 1.2)
     }
 
     /// Plain tooltips use the inverse surface, rich ones a tonal container.

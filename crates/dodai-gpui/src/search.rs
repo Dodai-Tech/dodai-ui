@@ -206,11 +206,12 @@ impl SearchView {
                 let st = use_interact(&id, window, cx);
                 let hovered = st.read(cx).hovered;
                 let mut row = track(gpui::InteractiveElement::id(div(), id), &st)
-                    .h(px(t.list_row_height(false)))
-                    .px(px(16.0))
+                    .min_h(px(t.list_row_height(false)))
+                    .py(px(t.spacing.xs * 0.5))
+                    .px(px(t.spacing.md))
                     .flex()
                     .items_center()
-                    .gap(px(16.0))
+                    .gap(px(t.spacing.md))
                     .cursor_pointer()
                     .child(
                         Icon::new(if i < self.recent {
