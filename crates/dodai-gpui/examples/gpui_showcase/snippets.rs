@@ -78,7 +78,9 @@ fn tags() -> impl IntoElement {
 
 // snippet: Rating · Stepper · Badges · Tooltips
 fn rating() -> impl IntoElement {
-    Rating::new("rating", 3).on_change(|stars, _, _| println!("{stars} stars"))
+    Rating::new("rating", 3.5)
+        .half(true)
+        .on_change(|stars, _, _| println!("{stars} stars"))
 }
 // end snippet
 

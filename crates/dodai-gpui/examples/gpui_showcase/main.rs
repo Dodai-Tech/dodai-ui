@@ -117,7 +117,7 @@ pub struct Showcase {
     rail: bool,
     /// Collapsed state of the Navigation-section demo shell.
     demo_rail: bool,
-    rating: u32,
+    rating: f32,
     /// Selected item of the showcase button groups.
     group_sel: usize,
     stepper: i32,
@@ -1232,7 +1232,7 @@ impl Showcase {
             side_scroll: gpui::ScrollHandle::new(),
             rail: std::env::var_os("DODAI_RAIL").is_some(),
             demo_rail: std::env::var_os("DODAI_RAIL").is_some(),
-            rating: 3,
+            rating: 3.5,
             group_sel: 1,
             stepper: 5,
             range: (0.2, 0.7),

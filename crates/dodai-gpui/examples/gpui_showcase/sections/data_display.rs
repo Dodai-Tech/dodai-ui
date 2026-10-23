@@ -97,12 +97,14 @@ impl Showcase {
         );
         let w_misc = row()
             .child(
-                Rating::new("rating", self.rating).on_change(move |v, _, cx| {
-                    m1.update(cx, |s, cx| {
-                        s.rating = v;
-                        cx.notify()
-                    })
-                }),
+                Rating::new("rating", self.rating)
+                    .half(true)
+                    .on_change(move |v, _, cx| {
+                        m1.update(cx, |s, cx| {
+                            s.rating = v;
+                            cx.notify()
+                        })
+                    }),
             )
             .child(
                 NumberStepper::new("step", self.stepper)

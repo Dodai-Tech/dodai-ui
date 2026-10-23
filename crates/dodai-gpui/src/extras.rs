@@ -280,24 +280,28 @@ crate::entry_render!(EmptyState);
 // ─────────────────────────────── Rating ───────────────────────────────
 
 type ClickFn = Rc<dyn Fn(&ClickEvent, &mut Window, &mut App)>;
-type CountFn = Rc<dyn Fn(u32, &mut Window, &mut App)>;
 
-/// Star rating (`value` of `max`).
+type StarFn = Rc<dyn Fn(f32, &mut Window, &mut App)>;
+
+/// Star rating (`value` of `max`). With [`Rating::half`] it also takes half stars: the left
+/// half of a star is `n - 0.5`, the right half is `n`.
 #[derive(IntoElement)]
 pub struct Rating {
     id: ElementId,
-    value: u32,
+    value: f32,
     max: u32,
-    on_change: Option<CountFn>,
+    half: bool,
+    on_change: Option<StarFn>,
 }
 
 impl Rating {
-    /// Create a new [`Rating`].
-    pub fn new(id: impl Into<ElementId>, value: u32) -> Self {
+    /// Create a new [`Rating`]. Without [`Rating::half`] the value is rounded to whole stars.
+    pub fn new(id: impl Into<ElementId>, value: f32) -> Self {
         Self {
             id: id.into(),
             value,
             max: 5,
+            half: false,
             on_change: None,
         }
     }
@@ -306,30 +310,90 @@ impl Rating {
         self.max = m.max(1);
         self
     }
+    /// Allow half stars.
+    pub fn half(mut self, on: bool) -> Self {
+        self.half = on;
+        self
+    }
     crate::callback!(
         /// Called when the value changes, with the new value.
-        on_change, u32
+        on_change, f32
     );
 }
 
 impl Rating {
     fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let value = if self.half {
+            (self.value * 2.0).round() / 2.0
+        } else {
+            self.value.round()
+        };
+        let size = px(t.typography.size_xl);
+        let (lit, dim) = (hsla(t.palette.primary), hsla(t.palette.border_strong));
         let stars = (1..=self.max).map(|i| {
-            let on = i <= self.value;
+            let n = i as f32;
+            // How much of this star is filled: 0, 0.5 or 1.
+            let fill = (value - (n - 1.0)).clamp(0.0, 1.0);
+            let glyph = |c, g: &'static str| div().text_size(size).text_color(c).child(g);
             let mut s = div()
                 .id((self.id.clone(), i.to_string()))
-                .text_size(px(t.typography.size_xl))
-                .text_color(hsla(if on {
-                    t.palette.primary
-                } else {
-                    t.palette.border_strong
-                }))
-                .child(if on { "★" } else { "☆" });
+                .relative()
+                .child(glyph(
+                    if fill >= 1.0 { lit } else { dim },
+                    if fill >= 1.0 { "★" } else { "☆" },
+                ));
+            if fill > 0.0 && fill < 1.0 {
+                // The left half of a lit star over the outline.
+                s = s.child(
+                    div()
+                        .absolute()
+                        .top_0()
+                        .left_0()
+                        .h_full()
+                        .w_1_2()
+                        .overflow_hidden()
+                        .child(glyph(lit, "★")),
+                );
+            }
             if let Some(f) = self.on_change.clone() {
-                // Clicking the current value clears it.
-                let to = if i == self.value { i - 1 } else { i };
-                s = s.cursor_pointer().on_click(move |_, w, cx| f(to, w, cx));
+                s = s.cursor_pointer();
+                // Clicking the current value clears one step.
+                let pick = move |to: f32| {
+                    if (to - value).abs() < 0.01 {
+                        to - if self.half { 0.5 } else { 1.0 }
+                    } else {
+                        to
+                    }
+                };
+                if self.half {
+                    let (f1, f2) = (f.clone(), f.clone());
+                    let (lo, hi) = (pick(n - 0.5), pick(n));
+                    s = s
+                        .child(
+                            div()
+                                .id((self.id.clone(), format!("{i}l")))
+                                .absolute()
+                                .top_0()
+                                .left_0()
+                                .h_full()
+                                .w_1_2()
+                                .on_click(move |_, w, cx| f1(lo, w, cx)),
+                        )
+                        .child(
+                            div()
+                                .id((self.id.clone(), format!("{i}r")))
+                                .absolute()
+                                .top_0()
+                                .right_0()
+                                .h_full()
+                                .w_1_2()
+                                .on_click(move |_, w, cx| f2(hi, w, cx)),
+                        );
+                } else {
+                    let to = pick(n);
+                    s = s.on_click(move |_, w, cx| f(to, w, cx));
+                }
             }
             s
         });

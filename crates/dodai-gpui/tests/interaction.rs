@@ -502,18 +502,36 @@ fn number_stepper_buttons_clamp_to_range(cx: &mut TestAppContext) {
 
 #[gpui::test]
 fn rating_click_sets_star_count(cx: &mut TestAppContext) {
-    let seen = Rc::new(RefCell::new(Vec::<u32>::new()));
+    let seen = Rc::new(RefCell::new(Vec::<f32>::new()));
     let s2 = seen.clone();
     let vcx = mount(cx, move |_, _| {
         let s = s2.clone();
-        Rating::new("r", 1)
+        Rating::new("r", 1.0)
             .max(5)
             .on_change(move |v, _, _| s.borrow_mut().push(v))
             .into_any_element()
     });
     let (x, y, w, h) = target(vcx);
     click(vcx, x + w - 6.0, y + h / 2.0); // last star
-    assert_eq!(*seen.borrow(), vec![5]);
+    assert_eq!(*seen.borrow(), vec![5.0]);
+}
+
+#[gpui::test]
+fn rating_half_click_sets_half_star(cx: &mut TestAppContext) {
+    let seen = Rc::new(RefCell::new(Vec::<f32>::new()));
+    let s2 = seen.clone();
+    let vcx = mount(cx, move |_, _| {
+        let s = s2.clone();
+        Rating::new("r", 1.0)
+            .max(5)
+            .half(true)
+            .on_change(move |v, _, _| s.borrow_mut().push(v))
+            .into_any_element()
+    });
+    let (x, y, w, h) = target(vcx);
+    click(vcx, x + w - 2.0, y + h / 2.0); // right edge: the right half of the last star
+    click(vcx, x + w - 12.0, y + h / 2.0); // the left half of the last star
+    assert_eq!(*seen.borrow(), vec![5.0, 4.5]);
 }
 
 #[gpui::test]
