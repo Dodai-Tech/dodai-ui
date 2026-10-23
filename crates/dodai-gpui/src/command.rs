@@ -189,7 +189,7 @@ impl RenderOnce for CommandPalette {
             &t.role_shape(dodai_core::ShapeRole::Dialog),
             dialog_style(&t),
         )
-        .w(px(520.0))
+        .w(px(t.sizes().dialog_width))
         .flex()
         .flex_col()
         .gap(px(t.spacing.sm))
@@ -210,7 +210,7 @@ impl RenderOnce for CommandPalette {
                 .bg(scrim_color(&t))
                 .flex()
                 .justify_center()
-                .pt(px(80.0))
+                .pt(px(t.shape.control_height * 2.0))
                 .on_mouse_down(MouseButton::Left, move |_, w, cx| {
                     if let Some(f) = &dismiss {
                         f(w, cx);

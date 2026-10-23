@@ -116,7 +116,7 @@ impl Toolbar {
             .children(self.items);
         if tonal {
             // Docked: 64 px tall; floating: 64 px pill.
-            bar = bar.h(px(64.0));
+            bar = bar.h(px(t.shape.control_height * 1.6));
             if self.floating {
                 bar = bar.flex_none().w_auto();
             }

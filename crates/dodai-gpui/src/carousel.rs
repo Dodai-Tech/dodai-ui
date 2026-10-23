@@ -170,11 +170,12 @@ impl Carousel {
                 None => div().w(px(w)).flex_none().child(e),
             });
         let pages = max_start + 1;
+        let dot = t.sizes().bar_thickness;
         let dots = (0..pages).map(|i| {
             let on = i == start;
             div()
-                .w(px(if on { 18.0 } else { 6.0 }))
-                .h(px(6.0))
+                .w(px(if on { dot * 3.0 } else { dot }))
+                .h(px(dot))
                 .bg(hsla(if on {
                     t.palette.primary
                 } else {

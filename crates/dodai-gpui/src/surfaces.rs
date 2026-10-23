@@ -768,11 +768,11 @@ impl TopAppBar {
             .text_color(hsla(tok.trailing))
             .children(self.actions);
         let leading = |g: SharedString| {
-            div().w(px(48.0)).flex().justify_center().child(glyph_el(
-                g,
-                t.typography.size_lg * 1.2,
-                hsla(tok.leading),
-            ))
+            div()
+                .w(px(t.sizes().touch_target))
+                .flex()
+                .justify_center()
+                .child(glyph_el(g, t.typography.size_lg * 1.2, hsla(tok.leading)))
         };
         let mut bar = shaped(&t.role_shape(dodai_core::ShapeRole::AppBar), style)
             .h(px(height))
@@ -792,7 +792,7 @@ impl TopAppBar {
             row.child(div().flex_1()).child(actions)
         } else if self.size == AppBarSize::CenterAligned {
             row.child(div().flex_1().flex().justify_center().child(title()))
-                .child(div().min_w(px(48.0)).child(actions))
+                .child(div().min_w(px(t.sizes().touch_target)).child(actions))
         } else {
             row.child(div().flex_1().child(title())).child(actions)
         };

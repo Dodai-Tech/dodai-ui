@@ -331,7 +331,7 @@ impl RenderOnce for DataTable {
                     .top_0()
                     .bottom_0()
                     .right_0()
-                    .w(px(6.0))
+                    .w(px(t.sizes().bar_thickness))
                     .cursor_col_resize()
                     .on_mouse_down(MouseButton::Left, move |e, _, cx| {
                         let x = f32::from(e.position.x);
@@ -477,7 +477,7 @@ impl RenderOnce for DataTable {
                     .absolute()
                     .top(px(2.0 + pos))
                     .right(px(2.0))
-                    .w(px(5.0))
+                    .w(px(t.sizes().bar_thickness - 1.0))
                     .h(px(len))
                     .bg(hsla(p.border_strong)),
             );

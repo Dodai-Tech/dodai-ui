@@ -87,6 +87,12 @@ pub struct Sizes {
     pub chart_pad: f32,
     /// Scatter point diameter.
     pub scatter_dot: f32,
+    /// Thickness of scrollbars, resize handles and carousel dots.
+    pub bar_thickness: f32,
+    /// Bottom-sheet drag handle `(width, height)`.
+    pub sheet_handle: (f32, f32),
+    /// Width of command palettes and similar centred dialogs.
+    pub dialog_width: f32,
 }
 
 impl Default for Sizes {
@@ -118,6 +124,9 @@ impl Default for Sizes {
             chart_cell: 14.0,
             chart_pad: 24.0,
             scatter_dot: 8.0,
+            bar_thickness: 6.0,
+            sheet_handle: (32.0, 4.0),
+            dialog_width: 520.0,
         }
     }
 }

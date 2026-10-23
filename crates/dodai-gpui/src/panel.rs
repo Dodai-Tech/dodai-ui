@@ -480,7 +480,10 @@ impl Render for DodaiTooltip {
             .text_color(hsla(fg))
             .child(self.text.clone());
         if rounded {
-            d.px(px(t.spacing.sm)).min_h(px(t.sizes().icon)).flex().items_center()
+            d.px(px(t.spacing.sm))
+                .min_h(px(t.sizes().icon))
+                .flex()
+                .items_center()
         } else {
             d.px(px(t.spacing.sm)).py(px(t.spacing.xs))
         }

@@ -637,7 +637,11 @@ fn text_mode(
     }
     let text = input.read(cx).text().to_string();
     let bad = !text.trim().is_empty() && !valid(&text);
-    let mut col = div().flex().flex_col().gap(px(t.spacing.xs)).w(px(220.0));
+    let mut col = div()
+        .flex()
+        .flex_col()
+        .gap(px(t.spacing.xs))
+        .w(px(t.shape.control_height * 5.5));
     col = col.child(input);
     if bad {
         col = col.child(

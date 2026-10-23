@@ -124,8 +124,8 @@ impl RenderOnce for BottomSheet {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let handle = div()
-            .w(px(32.0))
-            .h(px(4.0))
+            .w(px(t.sizes().sheet_handle.0))
+            .h(px(t.sizes().sheet_handle.1))
             .rounded_full()
             .bg(hsla(if t.look().tonal {
                 t.palette.roles.on_surface_variant

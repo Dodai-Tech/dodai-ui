@@ -158,7 +158,7 @@ impl TreeView {
             let toggle = self.on_toggle.clone();
             let mut chevron = div()
                 .id((id.clone(), "chev"))
-                .w(px(16.0))
+                .w(px(t.spacing.md))
                 .text_color(hsla(t.palette.text_muted))
                 .child(chev);
             if let (Some(f), true) = (toggle, row.expandable) {
@@ -294,7 +294,7 @@ impl SplitPane {
                 false,
             ),
         )
-        .w(px(6.0))
+        .w(px(t.sizes().bar_thickness))
         .h_full()
         .flex_none()
         .cursor_col_resize();

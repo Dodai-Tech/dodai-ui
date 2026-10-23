@@ -203,7 +203,7 @@ impl RenderOnce for ResponsiveShell {
                 .right_0()
                 // A 1 px line inside a wider invisible hit area; it thickens on hover.
                 .group("shell-grip")
-                .w(px(8.0))
+                .w(px(t.spacing.sm))
                 .flex()
                 .justify_end()
                 .cursor_col_resize()

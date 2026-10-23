@@ -159,7 +159,7 @@ impl RenderOnce for DesignSystemTree {
                             .gap(px(t.spacing.xs))
                             .child(
                                 gpui::div()
-                                    .text_size(px(10.0))
+                                    .text_size(px(t.typography.size_xs))
                                     .text_color(hsla(t.palette.text_muted))
                                     .child("PROPERTIES"),
                             )

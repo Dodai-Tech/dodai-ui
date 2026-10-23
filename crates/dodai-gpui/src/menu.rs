@@ -199,13 +199,16 @@ impl Menu {
                         .flex()
                         .justify_center()
                         .overflow_hidden()
-                        .child(crate::icons::Icon::new(ic).size(t.sizes().icon_sm).color(fg)),
-                    None => {
-                        div()
-                            .w(px(slot * 0.7))
-                            .flex_none()
-                            .child(if item.checked { "✓" } else { "" })
-                    }
+                        .child(
+                            crate::icons::Icon::new(ic)
+                                .size(t.sizes().icon_sm)
+                                .color(fg),
+                        ),
+                    None => div().w(px(slot * 0.7)).flex_none().child(if item.checked {
+                        "✓"
+                    } else {
+                        ""
+                    }),
                 })
                 .child(
                     div()

@@ -273,7 +273,11 @@ impl RenderOnce for LoadingIndicator {
         let m = self.motion.unwrap_or_else(|| {
             crate::motion::Motion::new(Duration::from_millis(4200), crate::motion::Easing::Linear)
         });
-        let mut base = div().w(px(48.0)).h(px(48.0)).rounded_full().flex_none();
+        let mut base = div()
+            .w(px(t.sizes().touch_target))
+            .h(px(t.sizes().touch_target))
+            .rounded_full()
+            .flex_none();
         if let Some(c) = container {
             base = base.bg(hsla(c));
         }

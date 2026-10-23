@@ -98,7 +98,7 @@ impl Alert {
             .child(
                 div()
                     .flex_none()
-                    .w(px(20.0))
+                    .w(px(t.sizes().icon_sm + t.spacing.xs * 0.5))
                     .text_color(accent)
                     .child(tone_glyph(self.tone)),
             )

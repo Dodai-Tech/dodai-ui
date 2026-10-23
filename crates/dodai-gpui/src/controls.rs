@@ -196,7 +196,10 @@ fn choice(
         p
     };
     let (w, h) = match kind {
-        Kind::Switch => (42.0, 22.0),
+        Kind::Switch => {
+            let h = t.sizes().selection_box + 2.0;
+            (h * 1.9, h)
+        }
         _ => (t.sizes().selection_box, t.sizes().selection_box),
     };
     let shape = match kind {
@@ -214,14 +217,20 @@ fn choice(
     let mark = ShapeStyle::from_tokens(&t, Some(k.thumb), None, false, false);
     el = match kind {
         Kind::Switch => {
-            let tshape = round_shape(&t.shape, 14.0);
+            let thumb_d = (h * 0.64).round();
+            let inset = (h - thumb_d) / 2.0 - 1.0;
+            let tshape = round_shape(&t.shape, thumb_d);
             el.child(
                 shaped(&tshape, mark)
                     .absolute()
-                    .top(px(3.0))
-                    .left(px(crate::motion::lerp(3.0, w - 14.0 - 3.0 - 1.0, thumb)))
-                    .w(px(14.0))
-                    .h(px(14.0)),
+                    .top(px(inset))
+                    .left(px(crate::motion::lerp(
+                        inset,
+                        w - thumb_d - inset - 1.0,
+                        thumb,
+                    )))
+                    .w(px(thumb_d))
+                    .h(px(thumb_d)),
             )
         }
         Kind::Checkbox => {
@@ -368,7 +377,7 @@ fn m3_choice(
                             .flex()
                             .items_center()
                             .justify_center()
-                            .text_size(px(14.0))
+                            .text_size(px(t.typography.size_md))
                             .text_color(hsla(glyph_c))
                             .child(if on { "✓" } else { "✕" });
                     }
@@ -621,7 +630,7 @@ fn wavy_bar(t: &Theme, frac: f32, tone: Option<Tone>) -> gpui::Div {
     let k = t.progress(tone);
     let (track, fill) = (hsla(k.track), hsla(k.fill));
     let frac = clamp01(frac);
-    div().w_full().h(px(14.0)).relative().child(
+    div().w_full().h(px(t.sizes().chart_cell)).relative().child(
         canvas(
             |_, _, _| (),
             move |b, _, window, _| {
@@ -871,6 +880,7 @@ impl Slider {
             .flex()
             .items_center()
             .cursor_pointer();
+        let bubble_h = t.shape.control_height * 0.5;
         let base = if vertical {
             base.w(px(thumb_d + 4.0))
                 .h(px(self.length))
@@ -979,9 +989,9 @@ impl Slider {
                         .flex()
                         .justify_center()
                         .child(
-                            shaped(&scaled_shape(&t.shape, 20.0), pill)
+                            shaped(&scaled_shape(&t.shape, bubble_h), pill)
                                 .px(px(t.spacing.sm))
-                                .h(px(20.0))
+                                .h(px(bubble_h))
                                 .flex()
                                 .items_center()
                                 .whitespace_nowrap()
@@ -1036,12 +1046,14 @@ impl Slider {
                 up2.update(cx, |s, _| s.dragging = false)
             });
         let slider = match (self.bubble, vertical) {
-            (Some(BubblePlacement::Above), false) => {
-                div().pt(px(28.0)).child(slider).into_any_element()
-            }
-            (Some(BubblePlacement::Below), false) => {
-                div().pb(px(28.0)).child(slider).into_any_element()
-            }
+            (Some(BubblePlacement::Above), false) => div()
+                .pt(px(bubble_h + t.spacing.sm))
+                .child(slider)
+                .into_any_element(),
+            (Some(BubblePlacement::Below), false) => div()
+                .pb(px(bubble_h + t.spacing.sm))
+                .child(slider)
+                .into_any_element(),
             _ => slider.into_any_element(),
         };
         match (readout, vertical) {

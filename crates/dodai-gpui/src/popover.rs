@@ -421,7 +421,7 @@ impl RenderOnce for ContextMenu {
                 deferred(
                     anchored()
                         .position(p)
-                        .snap_to_window_with_margin(px(8.0))
+                        .snap_to_window_with_margin(px(crate::theme_of(cx).spacing.sm))
                         .child(host),
                 )
                 .with_priority(20),

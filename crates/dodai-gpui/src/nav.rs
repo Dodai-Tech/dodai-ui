@@ -283,7 +283,7 @@ impl Stepper {
                 row = row.child(
                     div()
                         .flex_1()
-                        .min_w(px(16.0))
+                        .min_w(px(t.spacing.md))
                         .mx(px(t.spacing.sm))
                         .h(px(2.0))
                         .bg(hsla(if i < self.current {
@@ -565,7 +565,11 @@ impl Accordion {
                         cx.notify();
                     })
                 })
-                .child(div().w(px(t.spacing.sm * 1.5)).child(if is_open { "▾" } else { "▸" }))
+                .child(
+                    div()
+                        .w(px(t.spacing.sm * 1.5))
+                        .child(if is_open { "▾" } else { "▸" }),
+                )
                 .child(format_label(&t.typography, title));
             if i > 0 {
                 col = col.child(div().h(px(1.0)).w_full().bg(hsla(t.palette.border)));

@@ -173,7 +173,11 @@ impl SearchView {
                     .id((self.id.clone(), "clear"))
                     .cursor_pointer()
                     .on_click(move |_, w, cx| f(w, cx))
-                    .child(Icon::Close.size(t.sizes().icon).color(hsla(r.on_surface_variant))),
+                    .child(
+                        Icon::Close
+                            .size(t.sizes().icon)
+                            .color(hsla(r.on_surface_variant)),
+                    ),
             );
         }
         let mut body = shaped(&shape, style)

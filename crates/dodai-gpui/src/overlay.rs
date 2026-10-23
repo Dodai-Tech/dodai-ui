@@ -99,18 +99,15 @@ impl DialogCard {
         .text_size(px(t.typography.size_md))
         .text_color(hsla(t.palette.text))
         .children(self.icon.map(|i| {
-            div()
-                .flex()
-                .justify_center()
-                .child(
-                    crate::icons::Icon::new(i)
-                        .size(t.sizes().icon)
-                        .color(hsla(if t.look().tonal {
-                            t.palette.secondary
-                        } else {
-                            t.palette.primary
-                        })),
-                )
+            div().flex().justify_center().child(
+                crate::icons::Icon::new(i)
+                    .size(t.sizes().icon)
+                    .color(hsla(if t.look().tonal {
+                        t.palette.secondary
+                    } else {
+                        t.palette.primary
+                    })),
+            )
         }))
         .child({
             let mut title = div()

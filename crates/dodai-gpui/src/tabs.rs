@@ -154,7 +154,11 @@ impl Tabs {
                 tab = tab.gap(px(t.spacing.sm));
             }
             if let Some(icon) = self.icons.get(i) {
-                tab = tab.child(crate::icons::Icon::new(*icon).size(t.sizes().icon_sm).color(fg));
+                tab = tab.child(
+                    crate::icons::Icon::new(*icon)
+                        .size(t.sizes().icon_sm)
+                        .color(fg),
+                );
             }
             if let Some(label) = label {
                 tab = tab.child(format_label(&t.typography, label));
