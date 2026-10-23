@@ -222,6 +222,20 @@ impl Showcase {
         self.sec_mode.insert(title, mode);
         self.loop_gen += 1;
         self.replay(title, cx);
+        if mode == Player::Stopped {
+            // Stop shows its final state, then dismisses itself after two seconds.
+            let gen = self.loop_gen;
+            cx.spawn(async move |this, cx| {
+                cx.background_executor().timer(Duration::from_secs(2)).await;
+                let _ = this.update(cx, |s, cx| {
+                    if s.sec_mode.get(title) == Some(&Player::Stopped) && s.loop_gen == gen {
+                        s.sec_mode.remove(title);
+                        cx.notify();
+                    }
+                });
+            })
+            .detach();
+        }
         if mode == Player::Looping {
             let gen = self.loop_gen;
             cx.spawn(async move |this, cx| loop {
