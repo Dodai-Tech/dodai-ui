@@ -50,6 +50,8 @@ pub use surface::{
 };
 pub use switcher::ThemeSwitcher;
 pub use theme::{Theme, ThemeMeta};
-pub use tokens::{Corners, Effects, Scale, Shape, ShapeKind, Sizes, Spacing, Typography};
+pub use tokens::{
+    Corners, Effects, Scale, Shape, ShapeKind, Sizes, Spacing, StateLayer, Typography,
+};
 pub use tonal::TonalPalette;
 pub use tune::{BorderTint, RoundnessGroup, ShadowDir, ShapeTune};

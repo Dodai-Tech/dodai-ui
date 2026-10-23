@@ -39,6 +39,22 @@ impl Spacing {
     }
 }
 
+/// Opacity of the overlay a control shows for its interaction state (Material state layers).
+/// One definition, so hover, focus, press and selection read the same everywhere.
+#[derive(Debug, Clone, Copy)]
+pub struct StateLayer;
+
+impl StateLayer {
+    /// Pointer over the control.
+    pub const HOVER: f32 = 0.08;
+    /// Keyboard focus.
+    pub const FOCUS: f32 = 0.10;
+    /// Pressed.
+    pub const PRESSED: f32 = 0.10;
+    /// Selected or active row.
+    pub const SELECTED: f32 = 0.12;
+}
+
 /// Named multiples of the control height. Components size themselves from these instead of
 /// carrying their own ratios, so density follows the theme.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -448,10 +448,14 @@ impl Chip {
             let r = &t.palette.roles;
             style = ShapeStyle::from_tokens(
                 &t,
-                Some(
-                    r.surface_container_low
-                        .mix(r.on_surface, if hovered { 0.08 } else { 0.0 }),
-                ),
+                Some(r.surface_container_low.mix(
+                    r.on_surface,
+                    if hovered {
+                        dodai_core::StateLayer::HOVER
+                    } else {
+                        0.0
+                    },
+                )),
                 None,
                 false,
                 false,

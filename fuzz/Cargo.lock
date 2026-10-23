@@ -164,13 +164,23 @@ version = "0.1.0"
 dependencies = [
  "dodai-core",
  "dodai-cyberpunk",
+ "dodai-icons",
  "dodai-material",
+ "dodai-neobrutalism",
+ "dodai-aurora",
  "dodai-shaders",
 ]
 
 [[package]]
+name = "dodai-charts-core"
+version = "0.1.0"
+
+[[package]]
 name = "dodai-core"
 version = "0.1.0"
+dependencies = [
+ "dodai-motion",
+]
 
 [[package]]
 name = "dodai-cyberpunk"
@@ -183,15 +193,42 @@ dependencies = [
 [[package]]
 name = "dodai-cyberpunk-icons"
 version = "0.1.0"
+dependencies = [
+ "dodai-icon-id",
+]
 
 [[package]]
 name = "dodai-fuzz"
 version = "0.0.0"
 dependencies = [
  "dodai",
+ "dodai-charts-core",
  "dodai-cyberpunk-icons",
  "dodai-material-icons",
  "libfuzzer-sys",
+]
+
+[[package]]
+name = "dodai-icon-id"
+version = "0.1.0"
+
+[[package]]
+name = "dodai-icons"
+version = "0.1.0"
+dependencies = [
+ "dodai-core",
+ "dodai-cyberpunk-icons",
+ "dodai-icon-id",
+ "dodai-icons-core",
+ "dodai-material-icons",
+ "dodai-aurora-icons",
+]
+
+[[package]]
+name = "dodai-icons-core"
+version = "0.1.0"
+dependencies = [
+ "dodai-icon-id",
 ]
 
 [[package]]
@@ -205,6 +242,34 @@ dependencies = [
 [[package]]
 name = "dodai-material-icons"
 version = "0.1.0"
+dependencies = [
+ "dodai-icon-id",
+]
+
+[[package]]
+name = "dodai-motion"
+version = "0.1.0"
+
+[[package]]
+name = "dodai-neobrutalism"
+version = "0.1.0"
+dependencies = [
+ "dodai-core",
+]
+
+[[package]]
+name = "dodai-aurora"
+version = "0.1.0"
+dependencies = [
+ "dodai-core",
+]
+
+[[package]]
+name = "dodai-aurora-icons"
+version = "0.1.0"
+dependencies = [
+ "dodai-icon-id",
+]
 
 [[package]]
 name = "dodai-shaders"

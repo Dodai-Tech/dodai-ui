@@ -1,0 +1,21 @@
+#![no_main]
+use dodai::{BorderTint, ShadowDir, ShapeTune};
+use libfuzzer_sys::fuzz_target;
+
+// Any tuning (NaN, negative, huge) applied to every built-in theme must not panic.
+fuzz_target!(|d: (f32, [f32; 3], Option<f32>, Option<f32>, u8, bool, u8)| {
+    let (roundness, groups, width, shadow, tint, outline_all, dir) = d;
+    let tune = ShapeTune {
+        roundness,
+        groups,
+        border_width: width,
+        tint: [BorderTint::Design, BorderTint::Strong, BorderTint::Accent, BorderTint::Text][tint as usize % 4],
+        outline_all,
+        hard_shadow: shadow,
+        shadow_dir: [ShadowDir::BottomRight, ShadowDir::BottomLeft, ShadowDir::TopRight, ShadowDir::TopLeft][dir as usize % 4],
+    };
+    for t in dodai::themes::all() {
+        let tuned = t.tuned(&tune);
+        let _ = tuned.scale(dodai::Scale::ListMax);
+    }
+});

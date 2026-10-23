@@ -311,7 +311,12 @@ mod tests {
         let (s, _, _) = tab_style(&t, false, true);
         assert_eq!(
             s.fill,
-            Some(hsla(t.palette.roles.on_surface.with_alpha(0.08)))
+            Some(hsla(
+                t.palette
+                    .roles
+                    .on_surface
+                    .with_alpha(dodai_core::StateLayer::HOVER)
+            ))
         );
     }
 }

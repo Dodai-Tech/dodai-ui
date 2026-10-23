@@ -9,11 +9,11 @@ pub struct Bin {
 
 /// Bin count via Freedman–Diaconis, falling back to Sturges. Pure.
 pub fn auto_bin_count(values: &[f32]) -> usize {
-    let n = values.len();
+    let mut v: Vec<f32> = values.iter().copied().filter(|x| x.is_finite()).collect();
+    let n = v.len();
     if n < 2 {
         return 1;
     }
-    let mut v: Vec<f32> = values.iter().copied().filter(|x| x.is_finite()).collect();
     v.sort_by(f32::total_cmp);
     let q = |p: f32| v[((v.len() - 1) as f32 * p).round() as usize];
     let range = v[v.len() - 1] - v[0];
@@ -53,6 +53,13 @@ pub fn histogram(values: &[f32], bins: Option<usize>) -> Vec<Bin> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn non_finite_values_are_ignored_not_fatal() {
+        assert_eq!(auto_bin_count(&[f32::NAN, f32::INFINITY]), 1);
+        assert_eq!(auto_bin_count(&[f32::NAN, 1.0, f32::NAN]), 1);
+        assert!(histogram(&[f32::NAN, f32::NAN], None).is_empty());
+    }
 
     #[test]
     fn counts_sum_and_edges() {

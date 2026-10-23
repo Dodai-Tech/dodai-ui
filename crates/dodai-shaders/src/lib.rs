@@ -30,6 +30,7 @@
     clippy::manual_range_contains,
     clippy::manual_memcpy
 )]
+#![recursion_limit = "256"]
 
 mod catalog;
 mod ctx;

@@ -9,16 +9,24 @@ pub struct Brick {
     pub up: bool,
 }
 
+/// Most bricks one call returns.
+pub const MAX_BRICKS: usize = 10_000;
+
 /// Convert closes into bricks of `size`. A reversal needs two bricks of
 /// movement (the usual Renko rule). Pure.
 pub fn renko(closes: &[f32], size: f32) -> Vec<Brick> {
     let mut out: Vec<Brick> = Vec::new();
-    if size <= 0.0 || closes.is_empty() {
+    let mut closes = closes.iter().copied().filter(|c| c.is_finite());
+    let (true, Some(first)) = (size.is_finite() && size > 0.0, closes.next()) else {
+        return out;
+    };
+    let mut level = (first / size).floor() * size;
+    if !level.is_finite() {
         return out;
     }
-    let mut level = (closes[0] / size).floor() * size;
-    for &c in &closes[1..] {
-        loop {
+    for c in closes {
+        // A tiny brick against a big move would never finish; stop at a sane count.
+        while out.len() < MAX_BRICKS {
             let last_up = out.last().map(|b| b.up);
             if c >= level + size * if last_up == Some(false) { 2.0 } else { 1.0 } {
                 let lo = if last_up == Some(false) {
@@ -55,6 +63,13 @@ pub fn renko(closes: &[f32], size: f32) -> Vec<Brick> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn hostile_input_is_bounded() {
+        assert!(renko(&[0.0, 1e30], 1e-30).len() <= MAX_BRICKS);
+        assert!(renko(&[1.0, 2.0], f32::NAN).is_empty());
+        assert!(renko(&[f32::NAN, f32::INFINITY], 1.0).is_empty());
+    }
 
     #[test]
     fn rises_make_up_bricks() {

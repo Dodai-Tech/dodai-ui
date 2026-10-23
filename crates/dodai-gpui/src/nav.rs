@@ -359,7 +359,7 @@ impl Segmented {
         let r = t.palette.roles.clone();
         let n = self.options.len();
         let outline = if self.disabled {
-            r.on_surface.with_alpha(0.12)
+            r.on_surface.with_alpha(dodai_core::StateLayer::SELECTED)
         } else {
             r.outline
         };
@@ -382,7 +382,10 @@ impl Segmented {
             } else if on {
                 (Some(r.secondary_container), r.on_secondary_container)
             } else if hovered {
-                (Some(r.on_surface.with_alpha(0.08)), r.on_surface)
+                (
+                    Some(r.on_surface.with_alpha(dodai_core::StateLayer::HOVER)),
+                    r.on_surface,
+                )
             } else {
                 (None, r.on_surface)
             };

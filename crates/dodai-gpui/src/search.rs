@@ -227,7 +227,7 @@ impl SearchView {
                         .color(hsla(r.on_surface_variant)),
                     );
                 if hovered {
-                    row = row.bg(hsla(r.on_surface.with_alpha(0.08)));
+                    row = row.bg(hsla(r.on_surface.with_alpha(dodai_core::StateLayer::HOVER)));
                 }
                 let mut label = div().flex();
                 for (seg, hit) in highlight_runs(&self.items[i], &query) {

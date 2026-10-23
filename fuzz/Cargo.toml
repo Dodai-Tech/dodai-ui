@@ -9,7 +9,8 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-dodai = { path = "../crates/dodai", features = ["cyberpunk", "material", "icons"] }
+dodai = { path = "../crates/dodai", features = ["cyberpunk", "material", "neobrutalism", "aurora", "icons"] }
+dodai-charts-core = { path = "../crates/dodai-charts-core" }
 dodai-cyberpunk-icons = { path = "../crates/dodai-cyberpunk-icons" }
 dodai-material-icons = { path = "../crates/dodai-material-icons" }
 
@@ -37,5 +38,23 @@ doc = false
 [[bin]]
 name = "theme_lookup"
 path = "fuzz_targets/theme_lookup.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "charts_math"
+path = "fuzz_targets/charts_math.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "shape_tune"
+path = "fuzz_targets/shape_tune.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "color_math"
+path = "fuzz_targets/color_math.rs"
 test = false
 doc = false

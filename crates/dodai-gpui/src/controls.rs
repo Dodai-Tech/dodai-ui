@@ -313,8 +313,9 @@ fn m3_choice(
     );
     let layer_alpha = match state {
         _ if target <= bx => 0.0,
-        ControlState::Hovered => 0.08,
-        ControlState::Pressed | ControlState::Focused => 0.10,
+        ControlState::Hovered => dodai_core::StateLayer::HOVER,
+        ControlState::Pressed => dodai_core::StateLayer::PRESSED,
+        ControlState::Focused => dodai_core::StateLayer::FOCUS,
         _ => 0.0,
     };
     let layer_c = hsla(if on { t.palette.primary } else { r.on_surface }).opacity(layer_alpha);
