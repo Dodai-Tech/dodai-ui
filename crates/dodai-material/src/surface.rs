@@ -10,7 +10,6 @@ use dodai_core::{EffectSet, SurfaceFx, SurfaceStyle, SurfaceTuning, Texture};
 pub const TEXTURES: &[Texture] = &[
     Texture::None,
     Texture::Paper,
-    Texture::Grain,
     Texture::DotGrid,
     Texture::Ripples,
 ];

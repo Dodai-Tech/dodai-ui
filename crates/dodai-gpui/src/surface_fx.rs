@@ -152,6 +152,29 @@ fn fit(pitch: f32, count: impl Fn(f32) -> f32) -> f32 {
     }
 }
 
+/// The shape's outline polygon; rounded shapes get their corner arcs flattened too.
+fn outline_of(shape: &Shape, w: f32, h: f32) -> Vec<(f32, f32)> {
+    if shape.kind() != ShapeKind::Rounded {
+        return shape.outline(w, h);
+    }
+    let r = shape.radius.min(w / 2.0).min(h / 2.0);
+    let n = ((r / 2.0) as usize).clamp(3, 12);
+    let mut p = Vec::with_capacity(4 * (n + 1));
+    // Corner centres, clockwise from top-left, with the arc's start angle.
+    for (cx, cy, a0) in [
+        (r, r, 180.0_f32),
+        (w - r, r, 270.0),
+        (w - r, h - r, 0.0),
+        (r, h - r, 90.0),
+    ] {
+        for i in 0..=n {
+            let a = (a0 + 90.0 * i as f32 / n as f32).to_radians();
+            p.push((cx + r * a.cos(), cy + r * a.sin()));
+        }
+    }
+    p
+}
+
 struct Canvas<'a> {
     window: &'a mut Window,
     origin: gpui::Point<Pixels>,
@@ -272,7 +295,7 @@ impl Canvas<'_> {
         let pts = self
             .pts
             .clone()
-            .unwrap_or_else(|| self.shape.outline(self.w, self.h));
+            .unwrap_or_else(|| outline_of(self.shape, self.w, self.h));
         let mut b = PathBuilder::stroke(px(width));
         b.add_polygon(&poly(self.origin, &pts, (dx, 0.0)), true);
         if let Ok(p) = b.build() {
@@ -286,7 +309,9 @@ impl Canvas<'_> {
         if w < 4.0 || h < 4.0 {
             return;
         }
-        let pts = self.shape.outline(w, h);
+        let mut sh = self.shape.clone();
+        sh.radius = (sh.radius - d).max(0.0);
+        let pts = outline_of(&sh, w, h);
         let mut b = PathBuilder::stroke(px(width));
         b.add_polygon(&poly(self.origin, &pts, (d, d)), true);
         if let Ok(p) = b.build() {
@@ -356,7 +381,7 @@ impl Canvas<'_> {
         let pts = self
             .pts
             .clone()
-            .unwrap_or_else(|| self.shape.outline(self.w, self.h));
+            .unwrap_or_else(|| outline_of(self.shape, self.w, self.h));
         let mut b = PathBuilder::fill();
         b.add_polygon(&poly(self.origin, &pts, (0.0, 0.0)), true);
         if let Ok(p) = b.build() {
@@ -670,41 +695,46 @@ fn texture(cv: &mut Canvas, sp: &SurfacePaint, seed: i32) {
             }
         }
         Texture::Brushed => {
+            // Fine lines over the whole width, with a few brighter streaks.
             let p = fit((2.0 * k).max(1.5), |p| h / p * 2.0);
             let mut y = 0.0;
             let mut i = 0;
             while y < h {
-                for seg in 0..3 {
-                    let r = noise(i * 7 + seg + seed, i);
-                    let len = w * (0.25 + 0.6 * noise(i, seg * 5 + seed));
-                    let xs = (w - len) * r;
-                    cv.quad(
-                        xs,
-                        y,
-                        len,
-                        1.0,
-                        scale_alpha(sp.ink, (0.08 + 0.2 * noise(seg, i)) * s * 2.0),
-                    );
-                }
+                cv.quad(
+                    0.0,
+                    y,
+                    w,
+                    1.0,
+                    scale_alpha(sp.ink, (0.04 + 0.08 * noise(i, seed)) * s),
+                );
+                let len = w * (0.15 + 0.35 * noise(i, seed + 3));
+                let xs = (w - len) * noise(i * 7, seed);
+                cv.quad(
+                    xs,
+                    y,
+                    len,
+                    1.0,
+                    scale_alpha(sp.ink, (0.08 + 0.14 * noise(i, seed + 9)) * s),
+                );
                 y += p;
                 i += 1;
             }
         }
         Texture::Carbon => {
-            let p = fit((3.0 * k).max(2.0), |p| w * h / (p * p) / 2.0);
+            // A 2/2 twill: diagonal bands of tows passing over and under.
+            let p = fit((3.0 * k).max(2.0), |p| w * h / (p * p));
             let (nx, ny) = ((w / p) as i32 + 1, (h / p) as i32 + 1);
             for iy in 0..ny {
                 for ix in 0..nx {
-                    if (ix + iy) % 2 == 0 {
-                        let a = if (ix / 2 + iy) % 2 == 0 { 0.26 } else { 0.12 };
-                        cv.quad(
-                            ix as f32 * p,
-                            iy as f32 * p,
-                            p,
-                            p,
-                            scale_alpha(sp.ink, a * s),
-                        );
-                    }
+                    let over = (ix - iy).rem_euclid(4) < 2;
+                    let a = if over { 0.24 } else { 0.07 };
+                    cv.quad(
+                        ix as f32 * p,
+                        iy as f32 * p,
+                        p,
+                        p,
+                        scale_alpha(sp.ink, a * s),
+                    );
                 }
             }
         }
@@ -726,17 +756,17 @@ fn texture(cv: &mut Canvas, sp: &SurfacePaint, seed: i32) {
         }
         Texture::Ripples => {
             // Soft rings spreading from the top-right corner, fading with distance.
-            let p = (14.0 * k).max(6.0);
-            let reach = (w * w + h * h).sqrt();
-            let n = ((reach / p) as i32).min(200);
+            let p = (24.0 * k).max(10.0);
+            // The rings die out after a fixed number: a corner flourish, not a full-panel pattern.
+            let n = 14;
             for i in 1..=n {
-                let f = 1.0 - i as f32 / n as f32;
+                let f = 1.0 - i as f32 / (n + 1) as f32;
                 cv.ring_clipped(
-                    w * 0.9,
-                    h * 0.1,
+                    w * 0.92,
+                    h * 0.12,
                     i as f32 * p,
                     1.5,
-                    scale_alpha(sp.ink, 0.5 * s * f),
+                    scale_alpha(sp.ink, 0.55 * s * f * f),
                 );
             }
         }
@@ -754,13 +784,13 @@ fn texture(cv: &mut Canvas, sp: &SurfacePaint, seed: i32) {
                         (x, y + if i % 2 == 0 { -amp } else { amp })
                     })
                     .collect();
-                cv.polyline(&pts, 2.0, scale_alpha(sp.ink, 0.45 * s));
+                cv.polyline(&pts, 2.0, scale_alpha(sp.ink, 0.35 * s));
             }
         }
         Texture::Houndstooth => {
             // A 4×4 houndstooth tile: stepped diagonal teeth.
             const TILE: [[u8; 4]; 4] = [[1, 1, 0, 0], [1, 1, 1, 0], [0, 0, 1, 1], [0, 1, 1, 1]];
-            let p = fit((2.0 * k).max(2.0), |p| w * h / (p * p) * 0.6);
+            let p = fit((0.8 * k).max(1.0), |p| w * h / (p * p) * 0.6);
             let (nx, ny) = ((w / p) as i32 + 1, (h / p) as i32 + 1);
             for iy in 0..ny {
                 for ix in 0..nx {
@@ -770,7 +800,7 @@ fn texture(cv: &mut Canvas, sp: &SurfacePaint, seed: i32) {
                             iy as f32 * p,
                             p,
                             p,
-                            scale_alpha(sp.ink, 0.28 * s),
+                            scale_alpha(sp.ink, 0.2 * s),
                         );
                     }
                 }
@@ -1028,7 +1058,7 @@ fn tint(cv: &mut Canvas, sp: &SurfacePaint) {
             y,
             w,
             step,
-            scale_alpha(sp.neon, (0.03 + 0.17 * f * f) * t),
+            scale_alpha(sp.neon, (0.02 + 0.10 * f * f) * t),
         );
         y += step;
     }
@@ -1055,7 +1085,12 @@ fn ripple(cv: &mut Canvas, sp: &SurfacePaint) {
 /// Neo-brutalism: a hard offset block along the bottom and right inner edges.
 fn pop(cv: &mut Canvas, sp: &SurfacePaint) {
     let k = sp.fx.pop.clamp(0.0, 1.0);
-    let t = 3.0 + 5.0 * k;
+    // Thinner on small controls so the block never touches a label.
+    let t = if cv.h < 64.0 {
+        2.0 + 1.5 * k
+    } else {
+        3.0 + 4.0 * k
+    };
     let (w, h, i) = (cv.w, cv.h, cv.inset);
     let c = scale_alpha(sp.ink, 0.9);
     cv.quad(i + t, h - i - t, w - 2.0 * i - t, t, c);
@@ -1070,7 +1105,7 @@ fn tape(cv: &mut Canvas, sp: &SurfacePaint) {
     if h < 64.0 {
         return;
     }
-    let l = (w.min(h) * 0.3).clamp(16.0, 40.0);
+    let l = (w.min(h) * 0.22).clamp(14.0, 30.0);
     let t = l * 0.45;
     let c = scale_alpha(sp.neon, 0.75 * k);
     let edge = scale_alpha(sp.ink, 0.35 * k);
@@ -1088,8 +1123,15 @@ fn tape(cv: &mut Canvas, sp: &SurfacePaint) {
 fn gloss(cv: &mut Canvas, sp: &SurfacePaint) {
     let g = sp.fx.gloss.clamp(0.0, 1.0);
     let (w, h) = (cv.w, cv.h);
+    // A reflection is always lighter than the surface, so it brightens the background tone.
+    let lit = Hsla {
+        s: 0.0,
+        l: 1.0,
+        a: 1.0,
+        ..sp.hole
+    };
     let band = h * 0.5;
-    let step = 2.0;
+    let step = 1.0;
     let mut y = 0.0;
     while y < band {
         let t = y / band;
@@ -1099,39 +1141,58 @@ fn gloss(cv: &mut Canvas, sp: &SurfacePaint) {
             y,
             len,
             step,
-            scale_alpha(sp.light, 0.22 * g * (1.0 - t) * (1.0 - t)),
+            scale_alpha(lit, 0.45 * g * (1.0 - t) * (1.0 - t)),
         );
         y += step;
     }
-    cv.quad(0.0, cv.inset, w, 1.0, scale_alpha(sp.light, 0.35 * g));
+    cv.quad(0.0, cv.inset, w, 1.0, scale_alpha(lit, 0.6 * g));
 }
 
-/// Aurora: a thin light strip that glides along the top edge and fades at both ends.
+/// Aurora: a thin line of light all around the border, following every corner, with a
+/// brighter spot that travels along it and a tail that fades out behind.
 fn strip(cv: &mut Canvas, sp: &SurfacePaint) {
     let s = sp.fx.strip.clamp(0.0, 1.0);
-    let (w, i) = (cv.w, cv.inset);
-    let len = w * 0.3;
-    let t = (clock() / sp.tune.sheen_period.max(0.8)).fract();
-    let x = -len + (w + len) * t;
-    let n = 10;
+    let d = cv.inset + 1.0;
+    let (w, h) = (cv.w - 2.0 * d, cv.h - 2.0 * d);
+    if w < 8.0 || h < 8.0 {
+        return;
+    }
+    let mut sh = cv.shape.clone();
+    sh.radius = (sh.radius - d).max(0.0);
+    let mut pts: Vec<(f32, f32)> = outline_of(&sh, w, h)
+        .into_iter()
+        .map(|(x, y)| (x + d, y + d))
+        .collect();
+    pts.push(pts[0]);
+    let mut cum = vec![0.0_f32];
+    for k in 1..pts.len() {
+        let (a, b) = (pts[k - 1], pts[k]);
+        cum.push(cum[k - 1] + ((b.0 - a.0).powi(2) + (b.1 - a.1).powi(2)).sqrt());
+    }
+    let total = cum[cum.len() - 1];
+    // Point at distance `t` along the closed outline.
+    let at = |t: f32| -> (f32, f32) {
+        let t = t.rem_euclid(total);
+        let k = cum.partition_point(|&c| c <= t).clamp(1, cum.len() - 1);
+        let f = (t - cum[k - 1]) / (cum[k] - cum[k - 1]).max(1e-3);
+        (
+            pts[k - 1].0 + (pts[k].0 - pts[k - 1].0) * f,
+            pts[k - 1].1 + (pts[k].1 - pts[k - 1].1) * f,
+        )
+    };
+    // The whole border carries a thin line of light, so it reads as one outline all around.
+    cv.polyline(&pts, 1.5, scale_alpha(sp.neon, 0.4 * s));
+    let len = (total * 0.28).clamp(40.0, 260.0);
+    let head = (clock() / sp.tune.sheen_period.max(0.8)).fract() * total;
+    let n = 24;
+    let seg = len / n as f32;
     for j in 0..n {
-        let f = (j as f32 + 0.5) / n as f32;
-        let a = (std::f32::consts::PI * f).sin();
-        let seg = len / n as f32;
-        cv.quad(
-            x + j as f32 * seg,
-            i,
-            seg + 0.5,
-            2.0,
-            scale_alpha(sp.neon, 0.95 * s * a),
-        );
-        cv.quad(
-            x + j as f32 * seg,
-            i + 2.0,
-            seg + 0.5,
-            3.0,
-            scale_alpha(sp.neon, 0.18 * s * a),
-        );
+        // The head is bright and the tail fades.
+        let f = (j + 1) as f32 / n as f32;
+        let t0 = head - len + j as f32 * seg;
+        let run: Vec<(f32, f32)> = (0..=2).map(|q| at(t0 + seg * q as f32 / 2.0)).collect();
+        cv.polyline(&run, 3.5, scale_alpha(sp.neon, 0.18 * s * f * f));
+        cv.polyline(&run, 1.5, scale_alpha(sp.neon, 0.95 * s * f * f));
     }
 }
 
