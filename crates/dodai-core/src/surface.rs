@@ -257,6 +257,48 @@ impl Default for SurfaceTargets {
     }
 }
 
+/// How the click ripple plays when a control is pressed (Material).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub enum PressStyle {
+    /// A filled circle of ink spreading from the touch point to the far corner (the M3 ripple).
+    #[default]
+    Ink,
+    /// The same circle, but spreading from the centre of the control.
+    Centre,
+    /// An expanding outline wave from the touch point.
+    Ring,
+    /// Three staggered outline waves from the touch point.
+    Echo,
+    /// A soft band wiping across the control from the touch point.
+    Sweep,
+    /// A soft glow at the touch point that fades without spreading.
+    Glow,
+}
+
+impl PressStyle {
+    /// Every style, in display order.
+    pub const ALL: [PressStyle; 6] = [
+        Self::Ink,
+        Self::Centre,
+        Self::Ring,
+        Self::Echo,
+        Self::Sweep,
+        Self::Glow,
+    ];
+
+    /// Display name.
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::Ink => "Ink",
+            Self::Centre => "Centre",
+            Self::Ring => "Ring",
+            Self::Echo => "Echo",
+            Self::Sweep => "Sweep",
+            Self::Glow => "Glow",
+        }
+    }
+}
+
 /// The surface mix: one texture plus animated effects. Every amount is `0.0..=1.0`
 /// (`0.0` = off), so a design preset and a slider speak the same language.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -287,8 +329,10 @@ pub struct SurfaceFx {
     pub brackets: f32,
     /// Inner shadow: the surface looks sunk or lit from within.
     pub depth: f32,
-    /// Material: soft rings of the state layer spreading from the centre.
+    /// Material: strength of the click ripple (`0.0` = none), played in `press` style.
     pub ripple: f32,
+    /// Material: how the click ripple plays.
+    pub press: PressStyle,
     /// Material: a tonal wash of the accent colour, like an elevation tint.
     pub tint: f32,
     /// Neo-brutalism: a hard offset block along the bottom and right inner edges.
@@ -334,6 +378,7 @@ impl SurfaceFx {
         brackets: 0.0,
         depth: 0.0,
         ripple: 0.0,
+        press: PressStyle::Ink,
         tint: 0.0,
         pop: 0.0,
         tape: 0.0,
@@ -401,7 +446,6 @@ impl SurfaceFx {
             || self.flicker > 0.0
             || self.pulse > 0.0
             || self.chase > 0.0
-            || self.ripple > 0.0
             || self.strip > 0.0
     }
 
@@ -413,6 +457,7 @@ impl SurfaceFx {
             && self.edge <= 0.0
             && self.brackets <= 0.0
             && self.depth <= 0.0
+            && self.ripple <= 0.0
             && self.tint <= 0.0
             && self.pop <= 0.0
             && self.tape <= 0.0
@@ -505,7 +550,7 @@ pub struct EffectSet {
     pub depth: bool,
     /// Lit lines in textures.
     pub neon: bool,
-    /// Spreading state-layer rings.
+    /// Click ripple.
     pub ripple: bool,
     /// Tonal wash.
     pub tint: bool,
@@ -687,6 +732,7 @@ pub struct Surface {
     brackets: Option<f32>,
     depth: Option<f32>,
     ripple: Option<f32>,
+    press: Option<PressStyle>,
     tint: Option<f32>,
     pop: Option<f32>,
     tape: Option<f32>,
@@ -714,6 +760,7 @@ impl Surface {
         brackets: None,
         depth: None,
         ripple: None,
+        press: None,
         tint: None,
         pop: None,
         tape: None,
@@ -792,7 +839,13 @@ impl Surface {
         self.brackets = Some(v);
         self
     }
-    /// Spreading state-layer rings, `0.0..=1.0`.
+    /// Click ripple, `0.0..=1.0`.
+    /// How the click ripple plays.
+    pub const fn press(mut self, v: PressStyle) -> Self {
+        self.press = Some(v);
+        self
+    }
+    /// Click ripple strength, `0.0..=1.0`.
     pub const fn ripple(mut self, v: f32) -> Self {
         self.ripple = Some(v);
         self
@@ -876,6 +929,7 @@ impl Surface {
             || self.brackets.is_some()
             || self.depth.is_some()
             || self.ripple.is_some()
+            || self.press.is_some()
             || self.tint.is_some()
             || self.pop.is_some()
             || self.tape.is_some()
@@ -926,6 +980,9 @@ impl Surface {
         }
         if let Some(v) = self.ripple {
             fx.ripple = v;
+        }
+        if let Some(v) = self.press {
+            fx.press = v;
         }
         if let Some(v) = self.tint {
             fx.tint = v;

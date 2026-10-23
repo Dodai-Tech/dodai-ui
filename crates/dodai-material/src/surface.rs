@@ -1,10 +1,10 @@
 //! Material 3 surface styling: tonal, soft and quiet.
 //!
 //! Material has no neon and no hard graphics. Its surfaces are paper and dots, a tonal wash of
-//! the primary colour (the elevation tint), soft ripples of the state layer and a gentle inner
+//! the primary colour (the elevation tint), a click ripple and a gentle inner
 //! shadow. Nothing here is shared with the other designs.
 
-use dodai_core::{EffectSet, SurfaceFx, SurfaceStyle, SurfaceTuning, Texture};
+use dodai_core::{EffectSet, PressStyle, SurfaceFx, SurfaceStyle, SurfaceTuning, Texture};
 
 /// Textures this design owns.
 pub const TEXTURES: &[Texture] = &[
@@ -33,6 +33,8 @@ pub fn style(dark: bool) -> SurfaceStyle {
             container_texture: Texture::Ripples,
             container_strength: 0.3 * calm,
             tint: 0.35,
+            ripple: 0.7,
+            press: PressStyle::Ink,
             depth: 0.15,
             clear: 0.4,
             ..SurfaceFx::NONE

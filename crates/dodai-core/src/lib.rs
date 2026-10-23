@@ -45,8 +45,8 @@ pub use shape_system::{
 };
 pub use spec::{DesignSpec, FadeStop, Fluid, Frost, GridSpec, IconSet, Look, ShadowLayer, SpecRef};
 pub use surface::{
-    EffectSet, Surface, SurfaceClass, SurfaceFx, SurfaceStyle, SurfaceTargets, SurfaceTuning,
-    Texture,
+    EffectSet, PressStyle, Surface, SurfaceClass, SurfaceFx, SurfaceStyle, SurfaceTargets,
+    SurfaceTuning, Texture,
 };
 pub use switcher::ThemeSwitcher;
 pub use theme::{Theme, ThemeMeta};

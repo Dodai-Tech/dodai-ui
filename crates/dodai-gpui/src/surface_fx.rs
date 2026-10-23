@@ -59,6 +59,8 @@ pub struct SurfacePaint {
     pub shade: Hsla,
     /// Timing and sizes from the theme.
     pub tune: dodai_core::SurfaceTuning,
+    /// Whether a press on this surface plays the click ripple.
+    pub pressable: bool,
 }
 
 impl SurfacePaint {
@@ -89,6 +91,7 @@ impl SurfacePaint {
             neon: hsla(p.accent),
             shade: hsla(p.roles.shadow),
             tune: theme.surface_style.tuning,
+            pressable: matches!(class, SurfaceClass::Button | SurfaceClass::Tag),
         })
     }
 }
@@ -114,6 +117,7 @@ pub fn texture_swatch(theme: &Theme, texture: Texture) -> gpui::Canvas<()> {
         neon: hsla(p.accent),
         shade: hsla(p.roles.shadow),
         tune: theme.surface_style.tuning,
+        pressable: false,
     };
     let shape = theme.shape.clone();
     canvas(
@@ -359,13 +363,17 @@ impl Canvas<'_> {
     /// A circle outline clipped to the surface rectangle (inside the border).
     fn ring_clipped(&mut self, cx: f32, cy: f32, r: f32, width: f32, c: Hsla) {
         let n = ((r * 0.6) as usize).clamp(24, 96);
-        let (x0, y0) = (self.inset + 1.0, self.inset + 1.0);
-        let (x1, y1) = (self.w - self.inset - 1.0, self.h - self.inset - 1.0);
+        let (y0, y1) = (self.inset + 1.0, self.h - self.inset - 1.0);
         let mut run: Vec<(f32, f32)> = Vec::new();
         for i in 0..=n {
             let a = std::f32::consts::TAU * i as f32 / n as f32;
             let (x, y) = (cx + r * a.cos(), cy + r * a.sin());
-            if x >= x0 && x <= x1 && y >= y0 && y <= y1 {
+            let inside = y >= y0
+                && y <= y1
+                && self.span(y).is_some_and(|(a, b)| {
+                    x >= a.max(self.inset + 1.0) && x <= b.min(self.w - self.inset - 1.0)
+                });
+            if inside {
                 run.push((x, y));
             } else if !run.is_empty() {
                 self.polyline(&run, width, c);
@@ -446,8 +454,8 @@ pub fn paint_surface(
     if fx.tape > 0.0 {
         tape(&mut cv, sp);
     }
-    if fx.ripple > 0.0 {
-        ripple(&mut cv, sp);
+    if fx.ripple > 0.0 && sp.pressable {
+        press(&mut cv, sp, bounds);
     }
     if fx.strip > 0.0 {
         strip(&mut cv, sp);
@@ -1064,21 +1072,168 @@ fn tint(cv: &mut Canvas, sp: &SurfacePaint) {
     }
 }
 
-/// Material: rings of the state layer spreading from the centre and fading out.
-fn ripple(cv: &mut Canvas, sp: &SurfacePaint) {
-    let r = sp.fx.ripple.clamp(0.0, 1.0);
-    let period = sp.tune.pulse_period.max(0.8);
-    let reach = cv.w.max(cv.h) * 0.6;
-    for k in 0..3 {
-        let t = (clock() / period + k as f32 / 3.0).fract();
-        let f = (1.0 - t) * (1.0 - t);
-        cv.ring_clipped(
-            cv.w / 2.0,
-            cv.h / 2.0,
-            reach * t,
-            2.0,
-            scale_alpha(sp.neon, 0.4 * r * f),
-        );
+/// One click on a surface, kept while its ripple plays.
+struct Press {
+    /// Size of the surface, to find it again on later frames.
+    size: (f32, f32),
+    /// Window position of the surface's top left corner when last painted.
+    origin: (f32, f32),
+    /// Touch point, relative to the surface.
+    at: (f32, f32),
+    /// `clock()` when pressed.
+    t0: f32,
+}
+
+thread_local! {
+    static PRESSES: std::cell::RefCell<Vec<Press>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// How long a click ripple plays, in seconds.
+const PRESS_SECS: f32 = 0.7;
+
+/// Material: listen for presses on this surface and play the click ripple of every live one.
+fn press(cv: &mut Canvas, sp: &SurfacePaint, bounds: Bounds<Pixels>) {
+    let (ox, oy): (f32, f32) = (bounds.origin.x.into(), bounds.origin.y.into());
+    let size_key = (cv.w, cv.h);
+    cv.window.on_mouse_event(
+        move |e: &gpui::MouseDownEvent, phase, window: &mut Window, _| {
+            if phase == gpui::DispatchPhase::Bubble
+                && e.button == gpui::MouseButton::Left
+                && bounds.contains(&e.position)
+            {
+                let (px_, py_): (f32, f32) = (e.position.x.into(), e.position.y.into());
+                PRESSES.with(|p| {
+                    p.borrow_mut().push(Press {
+                        size: size_key,
+                        origin: (ox, oy),
+                        at: (px_ - ox, py_ - oy),
+                        t0: clock(),
+                    });
+                });
+                window.refresh();
+            }
+        },
+    );
+    let now = clock();
+    let live: Vec<(f32, f32, f32)> = PRESSES.with(|p| {
+        let mut p = p.borrow_mut();
+        p.retain(|r| now - r.t0 < PRESS_SECS);
+        p.iter_mut()
+            .filter(|r| {
+                (r.size.0 - size_key.0).abs() < 1.0
+                    && (r.size.1 - size_key.1).abs() < 1.0
+                    // Controls lift a few px on hover, so allow a little drift.
+                    && (r.origin.0 - ox).abs() < 8.0
+                    && (r.origin.1 - oy).abs() < 8.0
+            })
+            .map(|r| {
+                r.origin = (ox, oy);
+                (r.at.0, r.at.1, (now - r.t0) / PRESS_SECS)
+            })
+            .collect()
+    });
+    // Debug: DODAI_PRESS_DEMO freezes a ripple mid-play, since screenshots cannot click.
+    let live = if live.is_empty() && std::env::var_os("DODAI_PRESS_DEMO").is_some() {
+        vec![(cv.w * 0.3, cv.h * 0.5, 0.35)]
+    } else {
+        live
+    };
+    if live.is_empty() {
+        return;
+    }
+    cv.window.request_animation_frame();
+    let k = sp.fx.ripple.clamp(0.0, 1.0);
+    for (x, y, t) in live {
+        press_frame(cv, sp.fx.press, sp.ink, sp.ink, k, (x, y), t);
+    }
+}
+
+/// Draw one frame (`t` in `0..1`) of a click ripple of the given style.
+fn press_frame(
+    cv: &mut Canvas,
+    style: dodai_core::PressStyle,
+    accent: Hsla,
+    ink: Hsla,
+    k: f32,
+    at: (f32, f32),
+    t: f32,
+) {
+    use dodai_core::PressStyle as P;
+    let (w, h) = (cv.w, cv.h);
+    // Ease-out spread, and a fade that holds for the first third.
+    let spread = 1.0 - (1.0 - t).powi(3);
+    let fade = 1.0 - ((t - 0.3).max(0.0) / 0.7).powi(2);
+    let far = |x: f32, y: f32| {
+        let dx = x.max(w - x);
+        let dy = y.max(h - y);
+        (dx * dx + dy * dy).sqrt()
+    };
+    let (cx, cy) = (w / 2.0, h / 2.0);
+    match style {
+        P::Ink | P::Centre => {
+            let (px0, py0) = if style == P::Ink { at } else { (cx, cy) };
+            let r = far(px0, py0) * spread;
+            let c = scale_alpha(ink, 0.18 * k * fade);
+            let mut y = cv.inset;
+            while y < h - cv.inset {
+                let dy = y + 0.5 - py0;
+                if dy.abs() < r {
+                    let half = (r * r - dy * dy).sqrt();
+                    cv.quad(px0 - half, y, 2.0 * half, 1.0, c);
+                }
+                y += 1.0;
+            }
+        }
+        P::Ring | P::Echo => {
+            let waves = if style == P::Ring { 1 } else { 3 };
+            for i in 0..waves {
+                let ti = (t - 0.12 * i as f32).clamp(0.0, 1.0);
+                if ti <= 0.0 {
+                    continue;
+                }
+                let r = far(at.0, at.1) * (1.0 - (1.0 - ti).powi(3));
+                let f = (1.0 - ti) * (1.0 - ti);
+                cv.ring_clipped(at.0, at.1, r, 2.0, scale_alpha(accent, 0.6 * k * f));
+            }
+        }
+        P::Sweep => {
+            // A soft vertical band moving away from the touch point towards the far side.
+            let dir = if at.0 < cx { 1.0 } else { -1.0 };
+            let travel = w * spread;
+            let x = at.0 + dir * travel;
+            let band = (w * 0.25).max(12.0);
+            let n = 10;
+            for j in 0..n {
+                let f = (j as f32 + 0.5) / n as f32;
+                let a = (std::f32::consts::PI * f).sin();
+                let seg = band / n as f32;
+                cv.quad(
+                    x - band / 2.0 + j as f32 * seg,
+                    0.0,
+                    seg + 0.5,
+                    h,
+                    scale_alpha(accent, 0.4 * k * a * fade),
+                );
+            }
+        }
+        P::Glow => {
+            // Stacked discs make a soft radial glow that only fades.
+            let r0 = h.max(24.0);
+            let layers = 6;
+            for j in (0..layers).rev() {
+                let r = r0 * (0.35 + 0.65 * (j + 1) as f32 / layers as f32);
+                let c = scale_alpha(accent, 0.14 * k * (1.0 - t));
+                let mut y = cv.inset;
+                while y < h - cv.inset {
+                    let dy = y + 0.5 - at.1;
+                    if dy.abs() < r {
+                        let half = (r * r - dy * dy).sqrt();
+                        cv.quad(at.0 - half, y, 2.0 * half, 1.0, c);
+                    }
+                    y += 1.0;
+                }
+            }
+        }
     }
 }
 
@@ -1332,6 +1487,12 @@ fn glitch(cv: &mut Canvas, sp: &SurfacePaint, seed: i32) {
         cv.quad(off, y, w, th, scale_alpha(c, 0.35));
         cv.quad(-off, y + th, w * 0.4, 1.0, scale_alpha(sp.light, 0.4));
     }
+}
+
+/// Number of click ripples still playing (for tests).
+#[doc(hidden)]
+pub fn live_press_count() -> usize {
+    PRESSES.with(|p| p.borrow().len())
 }
 
 #[cfg(test)]

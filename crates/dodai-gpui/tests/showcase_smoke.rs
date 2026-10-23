@@ -162,6 +162,7 @@ fn every_surface_texture_and_effect_renders(cx: &mut TestAppContext) {
                         brackets: 1.0,
                         depth: 1.0,
                         ripple: 1.0,
+                        press: dodai_core::PressStyle::Ink,
                         tint: 1.0,
                         pop: 1.0,
                         tape: 1.0,

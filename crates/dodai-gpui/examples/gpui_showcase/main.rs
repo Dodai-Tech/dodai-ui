@@ -1325,6 +1325,19 @@ fn main() {
                     "brackets" => fx.brackets = 0.8,
                     "depth" => fx.depth = 0.8,
                     "ripple" => fx.ripple = 0.8,
+                    p if dodai_core::PressStyle::ALL
+                        .iter()
+                        .any(|s| s.label().eq_ignore_ascii_case(p)) =>
+                    {
+                        // DODAI_SFX=ring,... also freezes a ripple mid-play for screenshots.
+                        fx.ripple = 0.8;
+                        if let Some(s) = dodai_core::PressStyle::ALL
+                            .iter()
+                            .find(|s| s.label().eq_ignore_ascii_case(p))
+                        {
+                            fx.press = *s;
+                        }
+                    }
                     "tint" => fx.tint = 0.8,
                     "pop" => fx.pop = 0.8,
                     "tape" => fx.tape = 0.8,

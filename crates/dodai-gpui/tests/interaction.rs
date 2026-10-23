@@ -749,3 +749,23 @@ fn lazy_blocks_far_from_the_window_are_not_laid_out(cx: &mut TestAppContext) {
         "the spacer keeps the measured height"
     );
 }
+
+#[gpui::test]
+fn clicking_a_button_plays_the_click_ripple(cx: &mut TestAppContext) {
+    cx.update(|cx| install(cx, dodai::material::light()));
+    let (_, vcx) = cx.add_window_view(|_, _| Host {
+        build: Box::new(|_, _| Button::new("rip", "Press").into_any_element()),
+    });
+    vcx.simulate_resize(size(px(900.0), px(700.0)));
+    vcx.update(|_, cx| {
+        let mut fx = dodai_core::SurfaceFx::NONE;
+        fx.ripple = 0.8;
+        set_surface_fx(cx, fx);
+    });
+    vcx.run_until_parked();
+    assert_eq!(live_press_count(), 0);
+    let b = vcx.debug_bounds("target").expect("button was laid out");
+    click(vcx, f32::from(b.left()) + 20.0, f32::from(b.top()) + 10.0);
+    assert_eq!(live_press_count(), 1, "one ripple per press");
+    vcx.update(|_, cx| set_surface_fx(cx, dodai_core::SurfaceFx::NONE));
+}

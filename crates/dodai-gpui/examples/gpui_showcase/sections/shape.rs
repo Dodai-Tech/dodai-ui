@@ -462,19 +462,51 @@ impl Showcase {
                     "Edges · Depth",
                 ));
             }
-            if ef.ripple || ef.tint || ef.pop || ef.tape || ef.gloss || ef.strip {
+            if ef.ripple {
+                let styles = dodai_core::PressStyle::ALL;
+                out.push((
+                    "Surface effects",
+                    "Click ripple",
+                    section!("Click ripple")
+                        .child(Muted::new(
+                            "Press any control below: the ripple plays from the touch point. Pick how it plays and how strong it is.",
+                        ))
+                        .child(
+                            row()
+                                .child(div().w(px(90.0)).child(Label::new("Style")))
+                                .child(
+                                    Segmented::new("sfx-press", styles.map(|p| p.label()))
+                                        .selected(
+                                            styles
+                                                .iter()
+                                                .position(|p| *p == fx.press)
+                                                .unwrap_or(usize::MAX),
+                                        )
+                                        .on_select(move |i, _, cx| {
+                                            let mut f = dodai_gpui::surface_fx();
+                                            f.press = styles[i];
+                                            dodai_gpui::set_surface_fx(cx, f);
+                                        }),
+                                ),
+                        )
+                        .child(amount("sfx-ripple", "Strength", fx.ripple, 1.0, |f, v| {
+                            f.ripple = v
+                        }))
+                        .child(preview_components("sfx-press-demo"))
+                        .into_any_element(),
+                    "Click ripple",
+                ));
+            }
+            if ef.tint || ef.pop || ef.tape || ef.gloss || ef.strip {
                 out.push((
                     "Surface effects",
                     "Signature",
                     section!("Signature")
                         .child(Muted::new(
-                            "Effects that belong to this design only: tonal wash and ripples, a hard pop block and tape, a clear-coat gloss and a light strip.",
+                            "Effects that belong to this design only: tonal wash, a hard pop block and tape, a clear-coat gloss and a light strip.",
                         ))
                         .children(ef.tint.then(|| {
                             amount("sfx-tint", "Tonal wash", fx.tint, 1.0, |f, v| f.tint = v)
-                        }))
-                        .children(ef.ripple.then(|| {
-                            amount("sfx-ripple", "Ripple", fx.ripple, 1.0, |f, v| f.ripple = v)
                         }))
                         .children(ef.pop.then(|| {
                             amount("sfx-pop", "Pop", fx.pop, 1.0, |f, v| f.pop = v)
