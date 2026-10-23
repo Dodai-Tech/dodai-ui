@@ -23,6 +23,8 @@ pub enum IconSet {
     Symbols,
     /// Heavy, chunky glyphs (the Neo-Brutalism pack).
     Bold,
+    /// The Aurora Design System icons (Material Symbols where Aurora has none).
+    Aurora,
 }
 
 /// Semantic capabilities a design system declares. Adapters ask these instead of guessing a

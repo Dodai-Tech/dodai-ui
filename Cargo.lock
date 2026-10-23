@@ -4354,6 +4354,7 @@ dependencies = [
  "dodai-icon-id",
  "dodai-icons-core",
  "dodai-material-icons",
+ "dodai-aurora-icons",
 ]
 
 [[package]]
@@ -4404,6 +4405,13 @@ name = "dodai-aurora"
 version = "0.1.0"
 dependencies = [
  "dodai-core",
+]
+
+[[package]]
+name = "dodai-aurora-icons"
+version = "0.1.0"
+dependencies = [
+ "dodai-icon-id",
 ]
 
 [[package]]

@@ -26,6 +26,8 @@ pub enum IconPack {
     Material,
     /// Neo-Brutalism: bold Phosphor.
     Bold,
+    /// Aurora Design System icons (Material Symbols where Aurora has none).
+    Aurora,
 }
 
 impl IconPack {
@@ -36,6 +38,7 @@ impl IconPack {
             Self::Stroked => Pack::Stroked,
             Self::Material => Pack::Material,
             Self::Bold => Pack::Bold,
+            Self::Aurora => Pack::Aurora,
         }
     }
 }
@@ -180,6 +183,10 @@ mod tests {
         assert_eq!(IconPack::Auto.resolve(Symbols), Pack::Material);
         assert_eq!(IconPack::Auto.resolve(Stroked), Pack::Stroked);
         assert_eq!(IconPack::Auto.resolve(Bold), Pack::Bold);
+        assert_eq!(
+            IconPack::Auto.resolve(dodai_core::IconSet::Aurora),
+            Pack::Aurora
+        );
         assert_eq!(IconPack::Stroked.resolve(Symbols), Pack::Stroked);
     }
 

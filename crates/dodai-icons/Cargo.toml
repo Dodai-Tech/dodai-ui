@@ -12,17 +12,20 @@ keywords     = ["icons", "ui", "design-system", "svg"]
 categories   = ["gui", "graphics"]
 
 [features]
-default      = ["cyberpunk", "material", "neobrutalism"]
+default      = ["cyberpunk", "material", "neobrutalism", "aurora"]
 ## Cyberpunk's hand-drawn, curve-free pack (a design system without it draws the shared set, faceted).
 cyberpunk    = ["dep:dodai-cyberpunk-icons"]
 ## Material Symbols art for the Material design system.
 material     = []
 ## Neo-Brutalism's bold pack.
 neobrutalism = []
+## The Aurora Design System icons (only when fetched, see `scripts/fetch-aurora-icons.nu`); else Material Symbols.
+aurora      = ["dep:dodai-aurora-icons"]
 
 [dependencies]
 dodai-core            = { workspace = true }
 dodai-icon-id         = { workspace = true }
 dodai-icons-core      = { workspace = true }
 dodai-material-icons  = { workspace = true }
+dodai-aurora-icons   = { workspace = true, optional = true }
 dodai-cyberpunk-icons = { workspace = true, features = ["shapes"], optional = true }
