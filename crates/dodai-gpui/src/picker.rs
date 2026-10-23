@@ -225,7 +225,7 @@ impl DatePicker {
                     )),
             )
             .child(nav("next", "›", 1));
-        let cell = t.shape.control_height * 0.8;
+        let cell = t.scale(dodai_core::Scale::Compact);
         let weekdays = div().flex().children(WEEKDAYS.iter().map(|d| {
             div()
                 .w(px(cell))
@@ -389,8 +389,8 @@ impl TimePicker {
                 false,
             );
             shaped(&t.shape, st)
-                .w(px(t.shape.control_height * 1.6))
-                .h(px(t.shape.control_height * 1.4))
+                .w(px(t.scale(dodai_core::Scale::Wide)))
+                .h(px(t.scale(dodai_core::Scale::Tall)))
                 .flex()
                 .items_center()
                 .justify_center()
@@ -641,7 +641,7 @@ fn text_mode(
         .flex()
         .flex_col()
         .gap(px(t.spacing.xs))
-        .w(px(t.shape.control_height * 5.5));
+        .w(px(t.scale(dodai_core::Scale::Popup)));
     col = col.child(input);
     if bad {
         col = col.child(

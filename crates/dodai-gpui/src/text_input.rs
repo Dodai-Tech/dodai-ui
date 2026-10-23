@@ -166,7 +166,7 @@ pub fn lines_of(s: &str) -> Vec<(usize, &str)> {
 pub fn vertical(s: &str, off: usize, dir: i32) -> usize {
     let lines = lines_of(s);
     let (li, col_bytes) = line_col(s, off);
-    let (start, text) = lines[li];
+    let (_, text) = lines[li];
     let col = text[..col_bytes.min(text.len())].chars().count();
     let target = li as i64 + dir.signum() as i64;
     if target < 0 {
@@ -176,7 +176,6 @@ pub fn vertical(s: &str, off: usize, dir: i32) -> usize {
         return s.len();
     }
     let (ts, tt) = lines[target as usize];
-    let _ = start;
     ts + tt.char_indices().nth(col).map_or(tt.len(), |(i, _)| i)
 }
 

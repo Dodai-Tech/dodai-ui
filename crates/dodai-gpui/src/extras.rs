@@ -116,7 +116,7 @@ impl Toolbar {
             .children(self.items);
         if tonal {
             // Docked: 64 px tall; floating: 64 px pill.
-            bar = bar.h(px(t.shape.control_height * 1.6));
+            bar = bar.h(px(t.scale(dodai_core::Scale::Wide)));
             if self.floating {
                 bar = bar.flex_none().w_auto();
             }
@@ -476,7 +476,7 @@ impl NumberStepper {
             &t.shape,
             ShapeStyle::from_tokens(&t, None, Some(p.border), false, false),
         )
-        .w(px(t.shape.control_height * 1.6))
+        .w(px(t.scale(dodai_core::Scale::Wide)))
         .h(px(t.shape.control_height))
         .flex()
         .items_center()
@@ -669,7 +669,7 @@ impl ColorPicker {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
-        let side = t.shape.control_height * 0.8;
+        let side = t.scale(dodai_core::Scale::Compact);
         let mut grid = div().flex().flex_col().gap(px(t.spacing.xs));
         for (ri, chunk) in self.colors.chunks(self.columns).enumerate() {
             let mut row = div().flex().gap(px(t.spacing.xs));

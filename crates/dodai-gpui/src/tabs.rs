@@ -132,7 +132,7 @@ impl Tabs {
             };
             let stacked = label.is_some() && self.icons.get(i).is_some();
             let height = if stacked && !self.secondary {
-                t.shape.control_height * 1.6
+                t.scale(dodai_core::Scale::Wide)
             } else {
                 t.shape.control_height
             };

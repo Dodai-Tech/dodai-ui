@@ -123,10 +123,14 @@ impl ParentElement for BottomSheet {
 impl RenderOnce for BottomSheet {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let (hw, hh) = t.sizes().sheet_handle;
         let handle = div()
-            .w(px(t.sizes().sheet_handle.0))
-            .h(px(t.sizes().sheet_handle.1))
-            .rounded_full()
+            .w(px(hw))
+            .h(px(hh))
+            .rounded(px(t
+                .role_shape(dodai_core::ShapeRole::Indicator)
+                .radius
+                .min(hh / 2.0)))
             .bg(hsla(if t.look().tonal {
                 t.palette.roles.on_surface_variant
             } else {
@@ -331,11 +335,12 @@ impl RenderOnce for ModalDrawer {
         }
         let mut panel = div().h_full().overflow_hidden().child(nav);
         if t.look().tonal {
-            // M3: 16 px end corners on the edge facing the page.
+            // M3: the side sheet's own end corners on the edge facing the page.
+            let end_r = t.role_shape(dodai_core::ShapeRole::SideSheet).radius;
             panel = panel
                 .bg(hsla(t.palette.roles.surface_container_low))
-                .rounded_tr(px(16.0 * crate::shape_tune().roundness))
-                .rounded_br(px(16.0 * crate::shape_tune().roundness));
+                .rounded_tr(px(end_r))
+                .rounded_br(px(end_r));
         }
         deferred(
             scrim(self.id, &t, self.on_dismiss, true)

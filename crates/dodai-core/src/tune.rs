@@ -169,10 +169,6 @@ impl Default for ShapeTune {
     }
 }
 
-/// A pill's real radius as a share of the control height. Below half (0.5 = a full pill) so
-/// roundness above 100% can still make pills rounder, and pills scale like every other corner.
-const PILL_OF_CONTROL: f32 = 0.4;
-
 impl ShapeSystem {
     /// Whether any role (or the fallback) is a pill.
     fn has_pill(&self) -> bool {
@@ -187,14 +183,14 @@ impl ShapeSystem {
 
     /// This shape language with each role's rounded corners scaled by `factor(role)`.
     /// Cut corners keep their size. A fully rounded corner becomes a real radius
-    /// (`PILL_OF_CONTROL` of `control_height`), scaled like the rest.
+    /// (`pill` × `control_height`), scaled like the rest.
     pub fn with_roundness_by(
         &self,
         control_height: f32,
         factor: impl Fn(ShapeRole) -> f32,
     ) -> Self {
         let px = |size: ShapeSize| match size {
-            ShapeSize::Full => PILL_OF_CONTROL * control_height,
+            ShapeSize::Full => self.pill * control_height,
             other => self.scale.px(other),
         };
         let mut out = self.clone();

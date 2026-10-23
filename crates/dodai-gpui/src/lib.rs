@@ -174,9 +174,15 @@ pub mod charts_distribution;
 #[cfg(feature = "charts")]
 pub mod charts_flow;
 #[cfg(feature = "charts")]
+pub mod charts_grid;
+#[cfg(feature = "charts")]
 pub mod charts_market;
 #[cfg(feature = "charts")]
 pub mod charts_part_whole;
+#[cfg(feature = "charts")]
+pub mod charts_pie;
+#[cfg(feature = "charts")]
+pub mod charts_radial;
 #[cfg(feature = "charts")]
 pub mod charts_trend;
 #[cfg(feature = "components")]
@@ -218,6 +224,8 @@ pub mod lazy;
 #[cfg(feature = "components")]
 pub mod list;
 pub mod logic;
+#[cfg(feature = "components")]
+pub mod markdown;
 #[cfg(feature = "components")]
 pub mod menu;
 pub mod motion;

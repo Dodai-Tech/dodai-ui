@@ -145,8 +145,7 @@ impl TreeView {
             let st = use_interact(&id, window, cx);
             let hovered = st.read(cx).hovered;
             let sel = self.selected.as_deref() == Some(row.path.as_slice());
-            let (style, fg, marker) = list_style(&t, sel, hovered);
-            let _ = fg;
+            let (style, _, marker) = list_style(&t, sel, hovered);
             let chev = if !row.expandable {
                 "  "
             } else if row.expanded {
@@ -173,7 +172,7 @@ impl TreeView {
                 .flex()
                 .items_center()
                 .gap(px(t.spacing.xs))
-                .min_h(px(t.shape.control_height * 0.8))
+                .min_h(px(t.scale(dodai_core::Scale::Compact)))
                 .pl(px(t.spacing.sm + row.depth as f32 * 16.0))
                 .text_color(hsla(t.palette.text))
                 .child(chevron)

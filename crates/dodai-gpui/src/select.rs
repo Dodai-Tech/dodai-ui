@@ -53,7 +53,7 @@ pub fn popup_style(theme: &Theme) -> ShapeStyle {
 /// Row of small colour chips.
 pub fn swatch_row(t: &Theme, colors: &[Color]) -> gpui::Div {
     let swatch = t.sizes().legend_swatch * 1.2;
-    let mut row = div().flex().gap(px(t.spacing.xs * 0.5)).flex_none();
+    let mut row = div().flex().gap(px(t.spacing.half())).flex_none();
     for c in colors {
         row = row.child(
             shaped(
@@ -308,8 +308,8 @@ impl Select {
                 .id((self.id.clone(), "rows"))
                 .flex()
                 .flex_col()
-                .gap(px(t.spacing.xs * 0.5))
-                .max_h(px(t.shape.control_height * 7.0))
+                .gap(px(t.spacing.half()))
+                .max_h(px(t.scale(dodai_core::Scale::ListMax)))
                 .overflow_y_scroll();
             for (i, o) in self.options.iter().enumerate() {
                 let is_sel = self.selected == Some(i);
@@ -324,7 +324,7 @@ impl Select {
                 let mut row = shaped(&t.shape, rs)
                     .id((self.id.clone(), format!("opt{i}")))
                     .min_h(px(t.menu_row_height()))
-                    .py(px(t.spacing.xs * 0.5))
+                    .py(px(t.spacing.half()))
                     .px(px(t.spacing.md))
                     .flex()
                     .items_center()
@@ -365,8 +365,8 @@ impl Select {
                 .top(px(t.shape.control_height + 4.0))
                 .left_0()
                 .w_full()
-                .min_w(px(t.shape.control_height * 4.5))
-                .p(px(t.spacing.xs + t.spacing.xs * 0.5))
+                .min_w(px(t.scale(dodai_core::Scale::Panel)))
+                .p(px(t.spacing.xs + t.spacing.half()))
                 .occlude()
                 .font_family(first_family(t.typography.body))
                 .text_size(px(t.typography.size_md))

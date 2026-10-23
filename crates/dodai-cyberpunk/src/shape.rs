@@ -15,6 +15,7 @@ pub const CHAMFER_SCALE: ShapeScale = ShapeScale {
 
 fn cut(name: &'static str, corners: Corners) -> ShapeSystem {
     ShapeSystem {
+        pill: ShapeSystem::PILL_OF_CONTROL,
         name,
         scale: CHAMFER_SCALE,
         roles: std::borrow::Cow::Borrowed(&[]),

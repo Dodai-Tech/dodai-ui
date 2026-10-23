@@ -10,7 +10,7 @@ use std::{fs, path::Path};
 const ALLOWED: &[(&str, &str, &str)] = &[
     ("nav.rs", "gpui::transparent_black()", "no fill"),
     (
-        "charts.rs",
+        "charts_grid.rs",
         "Color::rgba(r, gr, b, 255)",
         "converts a gradient sample (data), not a design colour",
     ),

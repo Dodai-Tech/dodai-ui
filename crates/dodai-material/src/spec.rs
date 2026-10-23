@@ -64,6 +64,7 @@ const ROLES: &[RoleShape] = &[
 /// The Material 3 shape language: rounded scale, pill buttons, top-rounded fields.
 pub fn shape_system() -> ShapeSystem {
     ShapeSystem {
+        pill: ShapeSystem::PILL_OF_CONTROL,
         name: "Material 3",
         scale: SHAPE_SCALE,
         roles: std::borrow::Cow::Borrowed(ROLES),

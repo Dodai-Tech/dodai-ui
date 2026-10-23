@@ -98,7 +98,7 @@ impl Alert {
             .child(
                 div()
                     .flex_none()
-                    .w(px(t.sizes().icon_sm + t.spacing.xs * 0.5))
+                    .w(px(t.sizes().icon_sm + t.spacing.half()))
                     .text_color(accent)
                     .child(tone_glyph(self.tone)),
             )
@@ -233,7 +233,6 @@ impl RenderOnce for Spinner {
         let t = theme_of(cx);
         let c = hsla(t.palette.primary);
         let shape = t.shape.clone();
-        let glow = t.effects.glow_enabled();
         div()
             .flex()
             .items_end()
@@ -262,7 +261,6 @@ impl RenderOnce for Spinner {
                             lift_layers: None,
                             edge_gap: None,
                         };
-                        let _ = glow;
                         el = el.child(
                             shaped(&scaled_shape(&shape, 4.0), style)
                                 .w(px(4.0))

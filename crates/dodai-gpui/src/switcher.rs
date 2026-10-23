@@ -143,7 +143,7 @@ impl RenderOnce for DesignSystemTree {
                     kids = kids.child(
                         ListItem::new(
                             (self.id.clone(), format!("th{ti}")),
-                            short_name(sw.themes()[ti].name(), fam),
+                            short_name(sw.themes()[ti].name()),
                         )
                         .selected(ti == cur_idx)
                         .on_click(move |_, _, cx| select_theme(cx, ti)),
@@ -174,10 +174,8 @@ impl RenderOnce for DesignSystemTree {
 }
 
 /// Theme name without its design-system prefix (`"Cyberpunk · Red"` → `"Red"`).
-fn short_name(name: &str, family: &str) -> String {
-    let rest = name.split_once(" · ").map_or(name, |(_, r)| r);
-    let _ = family;
-    rest.to_string()
+fn short_name(name: &str) -> String {
+    name.split_once(" · ").map_or(name, |(_, r)| r).to_string()
 }
 
 #[cfg(test)]
@@ -186,7 +184,7 @@ mod tests {
 
     #[test]
     fn strips_family_prefix() {
-        assert_eq!(short_name("Cyberpunk · Red", "cyberpunk"), "Red");
-        assert_eq!(short_name("Plain", "x"), "Plain");
+        assert_eq!(short_name("Cyberpunk · Red"), "Red");
+        assert_eq!(short_name("Plain"), "Plain");
     }
 }

@@ -389,6 +389,9 @@ pub struct DefaultShape {
 #[derive(Debug, Clone, PartialEq)]
 pub struct ShapeSystem {
     pub name: &'static str,
+    /// A fully rounded corner's real radius as a share of the control height, used when the
+    /// shape is tuned. Below 0.5 (a full pill), so roundness above 100% can round pills further.
+    pub pill: f32,
     pub scale: ShapeScale,
     /// Per-role entries; later entries for the same role win.
     pub roles: std::borrow::Cow<'static, [RoleShape]>,
@@ -404,9 +407,13 @@ const ALL: Corners = Corners {
 };
 
 impl ShapeSystem {
+    /// The usual [`pill`](Self::pill) share.
+    pub const PILL_OF_CONTROL: f32 = 0.4;
+
     /// No rounding or cutting anywhere.
     pub const fn sharp() -> Self {
         Self {
+            pill: Self::PILL_OF_CONTROL,
             name: "Sharp",
             scale: ShapeScale::ZERO,
             roles: std::borrow::Cow::Borrowed(&[]),
@@ -432,6 +439,7 @@ impl ShapeSystem {
             ALL
         };
         Self {
+            pill: Self::PILL_OF_CONTROL,
             name: "Theme",
             scale: ShapeScale {
                 xs: v,
@@ -590,6 +598,7 @@ mod compose_tests {
     /// A Material-like rounded system for the composition tests.
     fn rounded() -> ShapeSystem {
         ShapeSystem {
+            pill: ShapeSystem::PILL_OF_CONTROL,
             name: "test",
             scale: ShapeScale {
                 xs: 4.0,

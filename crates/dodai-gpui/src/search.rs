@@ -211,7 +211,7 @@ impl SearchView {
                 let hovered = st.read(cx).hovered;
                 let mut row = track(gpui::InteractiveElement::id(div(), id), &st)
                     .min_h(px(t.list_row_height(false)))
-                    .py(px(t.spacing.xs * 0.5))
+                    .py(px(t.spacing.half()))
                     .px(px(t.spacing.md))
                     .flex()
                     .items_center()
@@ -330,7 +330,7 @@ impl RenderOnce for SearchView {
                 let hovered = st.read(cx).hovered;
                 let (style, _, _) = list_style(&t, false, hovered);
                 let mut row = track(shaped_id(id, &t.shape, style), &st)
-                    .min_h(px(t.shape.control_height * 0.9))
+                    .min_h(px(t.scale(dodai_core::Scale::Row)))
                     .px(px(t.spacing.md))
                     .flex()
                     .items_center()

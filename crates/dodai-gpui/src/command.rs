@@ -150,7 +150,7 @@ impl RenderOnce for CommandPalette {
                 .flex()
                 .items_center()
                 .justify_between()
-                .min_h(px(t.shape.control_height * 0.9))
+                .min_h(px(t.scale(dodai_core::Scale::Row)))
                 .px(px(t.spacing.md))
                 .text_color(hsla(t.palette.text))
                 .cursor_pointer()
@@ -210,7 +210,7 @@ impl RenderOnce for CommandPalette {
                 .bg(scrim_color(&t))
                 .flex()
                 .justify_center()
-                .pt(px(t.shape.control_height * 2.0))
+                .pt(px(t.scale(dodai_core::Scale::Offset)))
                 .on_mouse_down(MouseButton::Left, move |_, w, cx| {
                     if let Some(f) = &dismiss {
                         f(w, cx);
@@ -303,7 +303,7 @@ impl Combobox {
                 let hovered = st.read(cx).hovered;
                 let (style, _, _) = list_style(&t, false, hovered);
                 let mut row = track(shaped_id(id, &t.shape, style), &st)
-                    .min_h(px(t.shape.control_height * 0.9))
+                    .min_h(px(t.scale(dodai_core::Scale::Row)))
                     .px(px(t.spacing.md))
                     .flex()
                     .items_center()

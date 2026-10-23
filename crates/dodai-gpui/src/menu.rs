@@ -181,10 +181,10 @@ impl Menu {
             if item.danger && !item.disabled {
                 fg = hsla(t.palette.danger);
             }
-            let slot = t.sizes().icon_sm + t.spacing.xs * 0.5;
+            let slot = t.sizes().icon_sm + t.spacing.half();
             let mut row = track(shaped_id(id, &t.shape, style), &st)
                 .min_h(px(t.menu_row_height()))
-                .py(px(t.spacing.xs * 0.5))
+                .py(px(t.spacing.half()))
                 .px(px(t.spacing.md))
                 .flex()
                 .items_center()

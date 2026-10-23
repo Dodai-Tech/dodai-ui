@@ -32,6 +32,83 @@ pub struct Spacing {
     pub xl: f32,
 }
 
+impl Spacing {
+    /// Half of [`xs`](Self::xs): the smallest gap between touching parts.
+    pub fn half(&self) -> f32 {
+        self.xs * 0.5
+    }
+}
+
+/// Named multiples of the control height. Components size themselves from these instead of
+/// carrying their own ratios, so density follows the theme.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Scale {
+    /// Half a control (slider value bubble).
+    Half,
+    /// Dense data rows.
+    Dense,
+    /// Compact rows and small cells (colour cells, list rows in menus).
+    Compact,
+    /// Table and list headers.
+    Header,
+    /// A result or option row.
+    Row,
+    /// A square input cell (one-time-code digit).
+    Cell,
+    /// A tall field (one-time-code, text area line block).
+    Field,
+    /// A tall preview or swatch.
+    Tall,
+    /// A wide bar or preview.
+    Wide,
+    /// Offset of a top-anchored overlay from the window edge.
+    Offset,
+    /// Minimum width of a small panel.
+    Panel,
+    /// Width of a popup picker.
+    Popup,
+    /// Tallest a dropdown list grows before it scrolls.
+    ListMax,
+}
+
+impl Scale {
+    /// Every step, smallest first.
+    pub const ALL: [Self; 13] = [
+        Self::Half,
+        Self::Dense,
+        Self::Compact,
+        Self::Header,
+        Self::Row,
+        Self::Cell,
+        Self::Field,
+        Self::Tall,
+        Self::Wide,
+        Self::Offset,
+        Self::Panel,
+        Self::Popup,
+        Self::ListMax,
+    ];
+
+    /// The multiple of the control height.
+    pub fn ratio(self) -> f32 {
+        match self {
+            Self::Half => 0.5,
+            Self::Dense => 0.7,
+            Self::Compact => 0.8,
+            Self::Header => 0.85,
+            Self::Row => 0.9,
+            Self::Cell => 1.05,
+            Self::Field => 1.3,
+            Self::Tall => 1.4,
+            Self::Wide => 1.6,
+            Self::Offset => 2.0,
+            Self::Panel => 4.5,
+            Self::Popup => 5.5,
+            Self::ListMax => 7.0,
+        }
+    }
+}
+
 /// Fixed dimensions shared by components, in logical pixels (the "size scale" next to [`Spacing`]).
 #[derive(Debug, Clone, PartialEq)]
 pub struct Sizes {
@@ -405,5 +482,28 @@ mod corner_tests {
         let c = Corners::NONE.set(1, true).set(3, true);
         assert_eq!(c, Corners::ANTI_DIAGONAL);
         assert!(c.get(1) && !c.get(0));
+    }
+}
+
+#[cfg(test)]
+mod scale_tests {
+    use super::*;
+
+    #[test]
+    fn scale_steps_grow_and_are_positive() {
+        assert!(Scale::ALL.windows(2).all(|w| w[0].ratio() < w[1].ratio()));
+        assert!(Scale::ALL[0].ratio() > 0.0);
+    }
+
+    #[test]
+    fn half_is_half_of_xs() {
+        let s = Spacing {
+            xs: 4.0,
+            sm: 8.0,
+            md: 16.0,
+            lg: 24.0,
+            xl: 32.0,
+        };
+        assert_eq!(s.half(), 2.0);
     }
 }

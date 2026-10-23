@@ -880,7 +880,7 @@ impl Slider {
             .flex()
             .items_center()
             .cursor_pointer();
-        let bubble_h = t.shape.control_height * 0.5;
+        let bubble_h = t.scale(dodai_core::Scale::Half);
         let base = if vertical {
             base.w(px(thumb_d + 4.0))
                 .h(px(self.length))
@@ -898,13 +898,13 @@ impl Slider {
                     .w_full()
                     .h(px(track_h))
                     .relative()
-                    .rounded(px(12.0 * crate::shape_tune().roundness))
+                    .rounded(px(t.shape.radius))
                     .bg(hsla(r.secondary_container))
                     .child(
                         div()
                             .h_full()
                             .w(relative(frac))
-                            .rounded(px(12.0 * crate::shape_tune().roundness))
+                            .rounded(px(t.shape.radius))
                             .bg(hsla(t.palette.primary)),
                     )
                     .children(self.icon.map(|i| {

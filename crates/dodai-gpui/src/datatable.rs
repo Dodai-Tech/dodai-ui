@@ -234,7 +234,7 @@ impl RenderOnce for DataTable {
         let view = view_indices(&self.rows, &self.filter, sort);
         let n = view.len();
         let row_h = t.shape.control_height;
-        let head_h = t.shape.control_height * 0.85;
+        let head_h = t.scale(dodai_core::Scale::Header);
         let max = max_scroll(n, row_h, self.height);
         let scroll = st.read(cx).scroll.min(max);
         let range = visible_range(n, row_h, self.height, scroll, 2);

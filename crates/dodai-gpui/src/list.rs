@@ -164,7 +164,7 @@ impl ListItem {
                     1 + u8::from(self.supporting.is_some()) + u8::from(self.overline.is_some()),
                 )
             }))
-            .py(px(t.spacing.xs * 0.5))
+            .py(px(t.spacing.half()))
             .ml(px(indent))
             .pl(px(pad))
             .pr(px(t.spacing.md))

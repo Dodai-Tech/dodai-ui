@@ -28,6 +28,7 @@ pub const SHAPE_SCALE: ShapeScale = ShapeScale {
 /// The default shape language: 5 px corners everywhere.
 pub fn shape_system() -> ShapeSystem {
     ShapeSystem {
+        pill: ShapeSystem::PILL_OF_CONTROL,
         name: "Neo-Brutalism",
         scale: SHAPE_SCALE,
         roles: std::borrow::Cow::Borrowed(&[]),

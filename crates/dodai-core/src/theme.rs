@@ -35,6 +35,11 @@ pub struct Theme {
 }
 
 impl Theme {
+    /// A step of the [`crate::Scale`] in px (a multiple of the control height).
+    pub fn scale(&self, step: crate::Scale) -> f32 {
+        self.shape.control_height * step.ratio()
+    }
+
     /// Builder: set glow strength (0 = off, 1 = as designed, >1 = stronger).
     pub fn with_glow_intensity(mut self, intensity: f32) -> Self {
         self.effects.glow_intensity = intensity.max(0.0);

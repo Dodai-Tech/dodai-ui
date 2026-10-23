@@ -113,7 +113,7 @@ impl Table {
         let mut head = div()
             .flex()
             .items_center()
-            .h(px(t.shape.control_height * 0.85))
+            .h(px(t.scale(dodai_core::Scale::Header)))
             .px(px(t.spacing.md))
             .bg(hsla(p.surface_raised))
             .text_size(px(t.typography.size_sm))
@@ -136,13 +136,8 @@ impl Table {
             let id: ElementId = (self.id.clone(), ri.to_string()).into();
             let st = use_interact(&id, window, cx);
             let hovered = st.read(cx).hovered;
-            let (style, fg, marker) = list_style(&t, self.selected == Some(ri), hovered);
-            let fg = if self.selected == Some(ri) || hovered {
-                hsla(p.text)
-            } else {
-                let _ = fg;
-                hsla(p.text)
-            };
+            let (style, _, marker) = list_style(&t, self.selected == Some(ri), hovered);
+            let fg = hsla(p.text);
             let mut r = track(
                 shaped_id(
                     id,
@@ -467,7 +462,7 @@ impl Chip {
         let h = if tonal {
             32.0
         } else {
-            t.shape.control_height * 0.7
+            t.scale(dodai_core::Scale::Dense)
         };
         let shape = if tonal {
             t.role_shape(dodai_core::ShapeRole::Chip)

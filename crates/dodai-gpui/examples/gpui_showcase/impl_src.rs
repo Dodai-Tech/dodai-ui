@@ -23,8 +23,15 @@ const FILES: &[(&str, &str)] = &[
     ),
     ("charts_trend.rs", include_str!("../../src/charts_trend.rs")),
     ("charts.rs", include_str!("../../src/charts.rs")),
+    ("charts_pie.rs", include_str!("../../src/charts_pie.rs")),
+    (
+        "charts_radial.rs",
+        include_str!("../../src/charts_radial.rs"),
+    ),
+    ("charts_grid.rs", include_str!("../../src/charts_grid.rs")),
     ("command.rs", include_str!("../../src/command.rs")),
     ("content.rs", include_str!("../../src/content.rs")),
+    ("markdown.rs", include_str!("../../src/markdown.rs")),
     ("controls.rs", include_str!("../../src/controls.rs")),
     ("count.rs", include_str!("../../src/count.rs")),
     (
@@ -104,17 +111,22 @@ fn section_text(title: &str) -> Option<String> {
                 continue;
             }
             seen.push(tok);
-            for pat in [
-                format!("\n        let {tok} ="),
-                format!("\n        let mut {tok} ="),
-            ] {
-                if let Some(at) = above.rfind(&pat) {
-                    let def = &above[at + 1..];
-                    let stop = def[1..].find("\n        let ").map_or(def.len(), |e| e + 1);
-                    text.push_str(&def[..stop]);
-                    text.push('\n');
-                    break;
+            for pat in [format!("let {tok} ="), format!("let mut {tok} =")] {
+                // The statement may sit at any indentation (inside a block or closure).
+                let Some(at) = above.rfind(&pat) else {
+                    continue;
+                };
+                let line = above[..at].rfind('\n').map_or(0, |n| n + 1);
+                let indent = &above[line..at];
+                if !indent.chars().all(|c| c == ' ') {
+                    continue;
                 }
+                let def = &above[line..];
+                let next = format!("\n{indent}let ");
+                let stop = def[1..].find(&next).map_or(def.len(), |e| e + 1);
+                text.push_str(&def[..stop]);
+                text.push('\n');
+                break;
             }
         }
         text.push_str(body);

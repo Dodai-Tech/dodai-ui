@@ -242,7 +242,7 @@ impl RenderOnce for OtpInput {
                 }
             }
         };
-        let cell_w = t.shape.control_height * 1.05;
+        let cell_w = t.scale(dodai_core::Scale::Cell);
         let mut row = div()
             .id(self.id.clone())
             .flex()
@@ -276,7 +276,7 @@ impl RenderOnce for OtpInput {
                 input_style(&t, active),
             )
             .w(px(cell_w))
-            .h(px(t.shape.control_height * 1.3))
+            .h(px(t.scale(dodai_core::Scale::Field)))
             .flex()
             .items_center()
             .justify_center()
