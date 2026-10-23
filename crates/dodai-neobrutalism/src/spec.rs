@@ -66,6 +66,16 @@ impl DesignSpec for NeoBrutalism {
         "Neo-Brutalism"
     }
 
+    /// A chunky grid: wide gutters and margins so the hard shadows never touch.
+    fn page_grid(&self, _t: &Theme, viewport: f32) -> Option<dodai_core::GridSpec> {
+        Some(dodai_core::GridSpec {
+            columns: if viewport >= 760.0 { 12 } else { 4 },
+            gap: GRID_GAP,
+            margin: GRID_MARGIN,
+            max_width: Some(GRID_WIDTH_MAX),
+        })
+    }
+
     fn look(&self) -> Look {
         Look {
             sink: true,
@@ -332,6 +342,13 @@ impl DesignSpec for NeoBrutalism {
         })
     }
 }
+
+/// Gap between grid columns, wide enough for the hard shadow.
+pub const GRID_GAP: f32 = 24.0;
+/// Outer margin of the page grid.
+pub const GRID_MARGIN: f32 = 32.0;
+/// The widest the page grid grows.
+pub const GRID_WIDTH_MAX: f32 = 1200.0;
 
 #[cfg(test)]
 mod tests {

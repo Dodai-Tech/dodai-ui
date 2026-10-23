@@ -113,6 +113,17 @@ impl DesignSpec for Material3 {
         "Material 3"
     }
 
+    /// The Material 3 window size classes: columns and margins grow with the window.
+    fn page_grid(&self, _t: &Theme, viewport: f32) -> Option<dodai_core::GridSpec> {
+        let (columns, gap, margin) = window_class(viewport);
+        Some(dodai_core::GridSpec {
+            columns,
+            gap,
+            margin,
+            max_width: None,
+        })
+    }
+
     fn look(&self) -> Look {
         Look {
             tonal: true,
@@ -637,8 +648,36 @@ impl DesignSpec for Material3 {
     }
 }
 
+/// Window size classes (lower bound in px, columns, gutter, margin), after the Material 3
+/// layout guidance: compact, medium, expanded, large and extra large.
+pub const WINDOW_CLASSES: [(f32, u32, f32, f32); 5] = [
+    (0.0, 4, 8.0, 16.0),
+    (600.0, 8, 16.0, 24.0),
+    (840.0, 12, 16.0, 24.0),
+    (1200.0, 12, 24.0, 24.0),
+    (1600.0, 12, 24.0, 32.0),
+];
+
+/// Columns, gutter and margin of the window size class that holds `viewport`.
+pub fn window_class(viewport: f32) -> (u32, f32, f32) {
+    let c = WINDOW_CLASSES
+        .iter()
+        .rev()
+        .find(|c| viewport >= c.0)
+        .unwrap_or(&WINDOW_CLASSES[0]);
+    (c.1, c.2, c.3)
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn window_classes_grow_with_the_window() {
+        assert_eq!(super::window_class(360.0).0, 4);
+        assert_eq!(super::window_class(700.0).0, 8);
+        assert_eq!(super::window_class(1000.0).0, 12);
+        assert!(super::window_class(1700.0).2 >= super::window_class(500.0).2);
+    }
+
     use super::*;
     use dodai_core::{Corner, ShapeRole};
 

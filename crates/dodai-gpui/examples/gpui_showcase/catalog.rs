@@ -183,7 +183,7 @@ pub(crate) fn owner(title: &str) -> Option<&'static str> {
             Some("material")
         }
         "Instruments" | "Cyberpunk shaders" => Some("cyberpunk"),
-        "Layout · Fluid scales" | "Frosted glass" => Some("aurora"),
+        "Frosted glass" => Some("aurora"),
         _ => None,
     }
 }

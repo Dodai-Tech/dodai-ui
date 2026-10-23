@@ -31,6 +31,48 @@ impl BorderTint {
     }
 }
 
+/// Which way a hard offset shadow falls.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ShadowDir {
+    /// Down and to the right (the usual).
+    #[default]
+    BottomRight,
+    /// Down and to the left.
+    BottomLeft,
+    /// Up and to the right.
+    TopRight,
+    /// Up and to the left.
+    TopLeft,
+}
+
+impl ShadowDir {
+    /// Every direction, in picker order.
+    pub const ALL: [Self; 4] = [
+        Self::BottomRight,
+        Self::BottomLeft,
+        Self::TopRight,
+        Self::TopLeft,
+    ];
+    /// Picker label.
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::BottomRight => "Bottom right",
+            Self::BottomLeft => "Bottom left",
+            Self::TopRight => "Top right",
+            Self::TopLeft => "Top left",
+        }
+    }
+    /// Unit offset `(dx, dy)`, y pointing down.
+    pub const fn dir(self) -> (f32, f32) {
+        match self {
+            Self::BottomRight => (1.0, 1.0),
+            Self::BottomLeft => (-1.0, 1.0),
+            Self::TopRight => (1.0, -1.0),
+            Self::TopLeft => (-1.0, -1.0),
+        }
+    }
+}
+
 /// Shape tuning applied to every component.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ShapeTune {
@@ -42,6 +84,11 @@ pub struct ShapeTune {
     pub tint: BorderTint,
     /// Give components that have no border one.
     pub outline_all: bool,
+    /// Offset in px of hard shadows; `None` keeps each design's own (designs without hard
+    /// shadows stay without).
+    pub hard_shadow: Option<f32>,
+    /// Direction hard shadows fall.
+    pub shadow_dir: ShadowDir,
 }
 
 impl ShapeTune {
@@ -51,6 +98,8 @@ impl ShapeTune {
         border_width: None,
         tint: BorderTint::Design,
         outline_all: false,
+        hard_shadow: None,
+        shadow_dir: ShadowDir::BottomRight,
     };
 
     /// Whether this changes nothing.
@@ -112,6 +161,11 @@ impl Theme {
         }
         if let Some(w) = tune.border_width {
             t.shape.border_width = w.max(0.0);
+        }
+        if let Some(s) = tune.hard_shadow {
+            if t.effects.hard_shadow > 0.0 {
+                t.effects.hard_shadow = s.max(0.0);
+            }
         }
         t
     }

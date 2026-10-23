@@ -71,6 +71,13 @@ fn a_design_suggests_only_textures_and_effects_it_owns() {
                 sys.name
             );
         }
+        // Everything the preset asks for is something the design owns.
+        assert_eq!(
+            fx.limited(owned, t.surface_effects()),
+            fx,
+            "{}: the preset uses a texture or effect it does not own",
+            sys.name
+        );
         if !t.surface_effects().any() {
             assert_eq!(
                 (fx.glitch, fx.sheen, fx.flicker, fx.bloom),

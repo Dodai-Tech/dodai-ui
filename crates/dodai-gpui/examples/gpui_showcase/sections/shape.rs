@@ -569,6 +569,63 @@ impl Showcase {
                         )
                         .into_any_element(),
                 ))
+                .children((t.effects.hard_shadow > 0.0).then(|| {
+                    let cur = tune.hard_shadow.unwrap_or(t.effects.hard_shadow);
+                    div()
+                        .flex()
+                        .flex_col()
+                        .gap(gap)
+                        .child(setting(
+                            "Shadow offset",
+                            "How far the hard shadow is offset, in px. Only designs with hard shadows have one.",
+                            div()
+                                .w(px(280.0))
+                                .child(
+                                    Slider::new("rb-shadow", cur)
+                                        .range(0.0, 12.0)
+                                        .step(1.0)
+                                        .show_value(true)
+                                        .format(|v| format!("{v:.0}px"))
+                                        .on_change(|v, _, cx| {
+                                            let t = dodai_gpui::shape_tune();
+                                            dodai_gpui::set_shape_tune(
+                                                cx,
+                                                ShapeTune { hard_shadow: Some(v), ..t },
+                                            );
+                                        }),
+                                )
+                                .into_any_element(),
+                        ))
+                        .child(setting(
+                            "Shadow direction",
+                            "Which way the hard shadow falls.",
+                            div()
+                                .flex()
+                                .child(
+                                    Segmented::new(
+                                        "rb-shadow-dir",
+                                        dodai_core::ShadowDir::ALL.map(|d| d.label()),
+                                    )
+                                    .selected(
+                                        dodai_core::ShadowDir::ALL
+                                            .iter()
+                                            .position(|d| *d == tune.shadow_dir)
+                                            .unwrap_or(0),
+                                    )
+                                    .on_select(move |i, _, cx| {
+                                        let t = dodai_gpui::shape_tune();
+                                        dodai_gpui::set_shape_tune(
+                                            cx,
+                                            ShapeTune {
+                                                shadow_dir: dodai_core::ShadowDir::ALL[i],
+                                                ..t
+                                            },
+                                        );
+                                    }),
+                                )
+                                .into_any_element(),
+                        ))
+                }))
                 .child(
                     Button::new("rb-reset", "Reset")
                         .variant(ButtonVariant::Outline)
