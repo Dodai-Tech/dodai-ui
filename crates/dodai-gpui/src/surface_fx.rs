@@ -728,7 +728,7 @@ fn texture(cv: &mut Canvas, sp: &SurfacePaint, seed: i32) {
             // Soft rings spreading from the top-right corner, fading with distance.
             let p = (14.0 * k).max(6.0);
             let reach = (w * w + h * h).sqrt();
-            let n = ((reach / p) as i32).min(40);
+            let n = ((reach / p) as i32).min(200);
             for i in 1..=n {
                 let f = 1.0 - i as f32 / n as f32;
                 cv.ring_clipped(
@@ -744,7 +744,7 @@ fn texture(cv: &mut Canvas, sp: &SurfacePaint, seed: i32) {
             let p = (12.0 * k).max(6.0);
             let amp = p * 0.3;
             let rows = ((h - 2.0 * (cv.inset + amp)) / p) as i32;
-            let teeth = ((w / p) as i32).clamp(1, 60);
+            let teeth = (w / p).ceil() as i32 + 1;
             let (x0, x1) = (cv.inset + 1.0, w - cv.inset - 1.0);
             for r in 0..=rows.max(0) {
                 let y = cv.inset + amp + 1.0 + r as f32 * p;
