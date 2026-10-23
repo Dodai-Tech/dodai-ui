@@ -641,17 +641,13 @@ impl Showcase {
                     )
                 })
                 .child(
-                    div()
-                        .id(SharedString::from(format!("code-scroll-{tid}")))
-                        .max_h(px(max_h))
-                        .overflow_y_scroll()
-                        .child(
-                            dodai_gpui::CodeBlock::new(
-                                SharedString::from(format!("snippet-{tid}-{pick}")),
-                                code,
-                            )
-                            .language("rust"),
-                        ),
+                    dodai_gpui::CodeBlock::new(
+                        SharedString::from(format!("snippet-{tid}-{pick}")),
+                        code,
+                    )
+                    .language("rust")
+                    .max_height(max_h)
+                    .scrollbar(true),
                 )
             })
             .into_any_element()

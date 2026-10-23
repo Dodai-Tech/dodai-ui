@@ -8,7 +8,7 @@ use crate::text::first_family;
 use crate::{hsla, theme_of};
 use dodai_core::Tone;
 use gpui::{
-    canvas, div, img, point, px, AnyElement, App, ElementId, InteractiveElement, IntoElement,
+    canvas, div, img, point, px, AnyElement, App, Axis, ElementId, InteractiveElement, IntoElement,
     MouseButton, ObjectFit, ParentElement, PathBuilder, RenderOnce, ScrollHandle, SharedString,
     StatefulInteractiveElement, Styled, StyledImage, Window,
 };
@@ -347,26 +347,54 @@ pub fn thumb_geometry(track: f32, view: f32, max: f32, scrolled: f32) -> (f32, f
     (len, pos)
 }
 
-/// Vertical scroll container with a thin themed scrollbar (drag the thumb or use the wheel).
+/// Scroll container with thin themed scrollbars (drag a thumb or use the wheel). Scrolls
+/// vertically; [`horizontal`](Self::horizontal) adds the other axis.
 #[derive(IntoElement)]
 pub struct ScrollArea {
     id: ElementId,
-    height: f32,
+    height: Option<f32>,
+    max_height: Option<f32>,
+    horizontal: bool,
+    bars: bool,
     children: Vec<AnyElement>,
 }
 
+/// Thickness of a scrollbar track and its gap to the edge, in px.
+const BAR: f32 = 6.0;
+const BAR_GAP: f32 = 2.0;
+
 impl ScrollArea {
-    /// Create a new [`ScrollArea`].
+    /// Create a new [`ScrollArea`] (240 px tall unless sized otherwise).
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
-            height: 240.0,
+            height: Some(240.0),
+            max_height: None,
+            horizontal: false,
+            bars: true,
             children: Vec::new(),
         }
     }
     /// Viewport height in px.
     pub fn height(mut self, h: f32) -> Self {
-        self.height = h;
+        self.height = Some(h);
+        self.max_height = None;
+        self
+    }
+    /// Grow with the content up to `h` px, then scroll.
+    pub fn max_height(mut self, h: f32) -> Self {
+        self.max_height = Some(h);
+        self.height = None;
+        self
+    }
+    /// Also scroll sideways when the content is wider than the viewport.
+    pub fn horizontal(mut self, on: bool) -> Self {
+        self.horizontal = on;
+        self
+    }
+    /// Draw the scrollbars (default on). Off keeps wheel and trackpad scrolling.
+    pub fn scrollbar(mut self, on: bool) -> Self {
+        self.bars = on;
         self
     }
     /// Add a child.
@@ -381,81 +409,142 @@ impl RenderOnce for ScrollArea {
         let t = theme_of(cx);
         let hs = window.use_keyed_state(self.id.clone(), cx, |_, _| ScrollHandle::new());
         let handle = hs.read(cx).clone();
-        let drag = window.use_keyed_state((self.id.clone(), "drag"), cx, |_, _| None::<(f32, f32)>);
-        let view = f32::from(handle.bounds().size.height);
-        let max = f32::from(handle.max_offset().height);
-        let off = -f32::from(handle.offset().y);
-        if view <= 0.0 {
+        let drag =
+            window.use_keyed_state(
+                (self.id.clone(), "drag"),
+                cx,
+                |_, _| None::<(Axis, f32, f32)>,
+            );
+        let bounds = handle.bounds().size;
+        let (view_h, view_w) = (f32::from(bounds.height), f32::from(bounds.width));
+        let max = handle.max_offset();
+        let (max_y, max_x) = (f32::from(max.height), f32::from(max.width));
+        let off = handle.offset();
+        let (off_y, off_x) = (-f32::from(off.y), -f32::from(off.x));
+        if view_h <= 0.0 {
             crate::motion::next_frame(window); // first frame: bounds unknown yet
         }
-        let track = (self.height - 4.0).max(1.0);
-        let (len, pos) = thumb_geometry(track, view, max, off);
-        let dragging = drag.read(cx).is_some();
+        let both = self.horizontal && max_x > 0.0 && max_y > 0.0;
+        let corner = if both { BAR + BAR_GAP } else { 0.0 };
+        let track_y = (view_h - 2.0 * BAR_GAP - corner).max(1.0);
+        let track_x = (view_w - 2.0 * BAR_GAP - corner).max(1.0);
+        let (len_y, pos_y) = thumb_geometry(track_y, view_h, max_y, off_y);
+        let (len_x, pos_x) = if self.horizontal {
+            thumb_geometry(track_x, view_w, max_x, off_x)
+        } else {
+            (0.0, 0.0)
+        };
+        let dragging = *drag.read(cx);
+        let pad = if self.bars { BAR + 2.0 * BAR_GAP } else { 0.0 };
+        let mut view = div()
+            .id((self.id.clone(), "view"))
+            .track_scroll(&handle)
+            .pr(px(if len_y > 0.0 { pad } else { 0.0 }))
+            .pb(px(if len_x > 0.0 { pad } else { 0.0 }));
+        view = match self.height {
+            Some(_) => view.size_full(),
+            None => view.max_h(px(self.max_height.unwrap_or(240.0))),
+        };
+        view = if self.horizontal {
+            view.overflow_scroll()
+        } else {
+            view.overflow_y_scroll()
+        };
         let mut root = div()
             .id((self.id.clone(), "root"))
             .relative()
             .w_full()
-            .h(px(self.height))
-            .overflow_hidden()
-            .child(
-                div()
-                    .id((self.id.clone(), "view"))
-                    .size_full()
-                    .overflow_y_scroll()
-                    .track_scroll(&handle)
-                    .pr(px(10.0))
-                    .children(self.children),
-            );
-        if len > 0.0 {
-            let thumb_color = if dragging {
+            .overflow_hidden();
+        if let Some(h) = self.height {
+            root = root.h(px(h));
+        }
+        root = root.child(view.children(self.children));
+        let bar = |axis: Axis, len: f32, pos: f32, track: f32| {
+            let vertical = axis == Axis::Vertical;
+            let active = dragging.is_some_and(|d| d.0 == axis);
+            let thumb_color = if active {
                 t.palette.primary
             } else {
                 t.palette.border_strong
             };
-            let thumb = shaped_id(
-                (self.id.clone(), "thumb"),
-                &crate::paint::scaled_shape(&t.shape, 6.0),
+            let id = (
+                self.id.clone(),
+                if vertical { "thumb-y" } else { "thumb-x" },
+            );
+            let mut thumb = shaped_id(
+                id,
+                &crate::paint::scaled_shape(&t.shape, BAR),
                 ShapeStyle::from_tokens(&t, Some(thumb_color), None, false, false),
             )
             .absolute()
-            .top(px(2.0 + pos))
-            .right(px(2.0))
-            .w(px(6.0))
-            .h(px(len))
-            .cursor_pointer()
-            .on_mouse_down(MouseButton::Left, {
-                let drag = drag.clone();
-                move |e, _, cx| {
-                    let y = f32::from(e.position.y);
-                    drag.update(cx, |d, cx| {
-                        *d = Some((y, off));
-                        cx.notify();
-                    });
-                    cx.stop_propagation();
-                }
+            .cursor_pointer();
+            let mut rail = div()
+                .absolute()
+                .bg(hsla(t.palette.surface_raised.with_alpha(0.5)));
+            if vertical {
+                thumb = thumb
+                    .top(px(BAR_GAP + pos))
+                    .right(px(BAR_GAP))
+                    .w(px(BAR))
+                    .h(px(len));
+                rail = rail
+                    .top(px(BAR_GAP))
+                    .right(px(BAR_GAP))
+                    .w(px(BAR))
+                    .h(px(track));
+            } else {
+                thumb = thumb
+                    .left(px(BAR_GAP + pos))
+                    .bottom(px(BAR_GAP))
+                    .h(px(BAR))
+                    .w(px(len));
+                rail = rail
+                    .left(px(BAR_GAP))
+                    .bottom(px(BAR_GAP))
+                    .h(px(BAR))
+                    .w(px(track));
+            }
+            let start = if vertical { off_y } else { off_x };
+            let drag = drag.clone();
+            let thumb = thumb.on_mouse_down(MouseButton::Left, move |e, _, cx| {
+                let p = f32::from(if vertical { e.position.y } else { e.position.x });
+                drag.update(cx, |d, cx| {
+                    *d = Some((axis, p, start));
+                    cx.notify();
+                });
+                cx.stop_propagation();
             });
-            root = root
-                .child(
-                    div()
-                        .absolute()
-                        .top(px(2.0))
-                        .right(px(2.0))
-                        .w(px(6.0))
-                        .h(px(track))
-                        .bg(hsla(t.palette.surface_raised.with_alpha(0.5))),
-                )
-                .child(thumb);
+            (rail, thumb)
+        };
+        if self.bars && len_y > 0.0 {
+            let (rail, thumb) = bar(Axis::Vertical, len_y, pos_y, track_y);
+            root = root.child(rail).child(thumb);
+        }
+        if self.bars && len_x > 0.0 {
+            let (rail, thumb) = bar(Axis::Horizontal, len_x, pos_x, track_x);
+            root = root.child(rail).child(thumb);
         }
         root.on_mouse_move({
             let (drag, handle) = (drag.clone(), handle.clone());
             move |e, window, cx| {
-                let Some((y0, off0)) = *drag.read(cx) else {
+                let Some((axis, p0, off0)) = *drag.read(cx) else {
                     return;
                 };
-                let span = (track - len).max(1.0);
-                let new = (off0 + (f32::from(e.position.y) - y0) * max / span).clamp(0.0, max);
                 let o = handle.offset();
-                handle.set_offset(point(o.x, px(-new)));
+                match axis {
+                    Axis::Vertical => {
+                        let span = (track_y - len_y).max(1.0);
+                        let new = (off0 + (f32::from(e.position.y) - p0) * max_y / span)
+                            .clamp(0.0, max_y);
+                        handle.set_offset(point(o.x, px(-new)));
+                    }
+                    Axis::Horizontal => {
+                        let span = (track_x - len_x).max(1.0);
+                        let new = (off0 + (f32::from(e.position.x) - p0) * max_x / span)
+                            .clamp(0.0, max_x);
+                        handle.set_offset(point(px(-new), o.y));
+                    }
+                }
                 window.refresh();
             }
         })

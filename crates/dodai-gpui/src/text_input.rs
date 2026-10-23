@@ -91,6 +91,12 @@ pub fn bind_keys(cx: &mut App) {
         KeyBinding::new(&format!("{m}-c"), Copy, ctx),
         KeyBinding::new(&format!("{m}-x"), Cut, ctx),
     ]);
+    // Read-only selectable text (code blocks).
+    let code = Some("DodaiCode");
+    cx.bind_keys([
+        KeyBinding::new(&format!("{m}-a"), SelectAll, code),
+        KeyBinding::new(&format!("{m}-c"), Copy, code),
+    ]);
 }
 
 // ---- pure text math (byte offsets into `&str`) -------------------------------
