@@ -61,9 +61,25 @@ fn block(bg: Option<Color>, fg: Color, line: Color, shadow: bool) -> SurfaceToke
     }
 }
 
+/// Frosted glass: blur sigma in px and tint opacity.
+const FROST_BLUR: f32 = 10.0;
+const FROST_ALPHA: f32 = 0.72;
+/// Hard outline width of a frosted panel, px.
+const FROST_EDGE: f32 = 2.0;
+
 impl DesignSpec for NeoBrutalism {
     fn name(&self) -> &'static str {
         "Neo-Brutalism"
+    }
+
+    /// Frosted glass, brutalist: an opaque-ish paper tint over a short, gritty 10 px blur. The
+    /// hard border and shadow of the panel do the rest.
+    fn frost(&self, t: &Theme) -> Option<dodai_core::Frost> {
+        Some(dodai_core::Frost {
+            tint: t.palette.surface.with_alpha(FROST_ALPHA),
+            blur: FROST_BLUR,
+            edge: Some((t.palette.border_strong, FROST_EDGE)),
+        })
     }
 
     /// A chunky grid: wide gutters and margins so the hard shadows never touch.

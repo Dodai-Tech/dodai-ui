@@ -33,7 +33,7 @@ pub fn button_style(
     );
     let class = dodai_core::SurfaceClass::Button;
     // Outline buttons have no fill but still wear the texture.
-    let style = if variant == ButtonVariant::Outline {
+    let style = if b.background.is_none() {
         style.with_surface_outlined(theme, class)
     } else {
         style.with_surface(theme, class)
@@ -298,7 +298,7 @@ impl Button {
             let class = dodai_core::SurfaceClass::Button;
             if !self.surface.is_set() {
                 st
-            } else if self.variant == ButtonVariant::Outline {
+            } else if st.fill.is_none() {
                 st.with_surface_outlined_of(&t, class, &self.surface)
             } else {
                 st.with_surface_of(&t, class, &self.surface)

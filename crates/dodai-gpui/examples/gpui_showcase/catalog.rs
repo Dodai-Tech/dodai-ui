@@ -177,13 +177,13 @@ pub(crate) fn cat_icon(name: &str) -> dodai_gpui::IconName {
 
 /// The design family that owns a section, when it shows a component only that design ships.
 /// Other designs neither build nor list it. Everything not listed is shared by all designs.
-pub(crate) fn owner(title: &str) -> Option<&'static str> {
+pub(crate) fn owner(title: &str) -> Option<&'static [&'static str]> {
     match title {
         "Button groups · Split button" | "Loading indicator" | "Material 3 shaders" => {
-            Some("material")
+            Some(&["material"])
         }
-        "Instruments" | "Cyberpunk shaders" => Some("cyberpunk"),
-        "Frosted glass" => Some("aurora"),
+        "Instruments" | "Cyberpunk shaders" => Some(&["cyberpunk"]),
+        "Frosted glass" => Some(&["aurora", "material", "neobrutalism"]),
         _ => None,
     }
 }
@@ -194,9 +194,9 @@ mod owner_tests {
 
     #[test]
     fn each_design_owns_its_own_sections() {
-        assert_eq!(owner("Loading indicator"), Some("material"));
-        assert_eq!(owner("Instruments"), Some("cyberpunk"));
-        assert_eq!(owner("Frosted glass"), Some("aurora"));
+        assert_eq!(owner("Loading indicator"), Some(&["material"][..]));
+        assert_eq!(owner("Instruments"), Some(&["cyberpunk"][..]));
+        assert!(owner("Frosted glass").unwrap().contains(&"material"));
         assert_eq!(owner("Buttons"), None);
     }
 }

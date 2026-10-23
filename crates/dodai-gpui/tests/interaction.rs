@@ -752,9 +752,24 @@ fn lazy_blocks_far_from_the_window_are_not_laid_out(cx: &mut TestAppContext) {
 
 #[gpui::test]
 fn clicking_a_button_plays_the_click_ripple(cx: &mut TestAppContext) {
+    for variant in [
+        dodai_core::ButtonVariant::Primary,
+        dodai_core::ButtonVariant::Secondary,
+        dodai_core::ButtonVariant::Outline,
+        dodai_core::ButtonVariant::Ghost,
+    ] {
+        press_plays_ripple(cx, variant);
+    }
+}
+
+fn press_plays_ripple(cx: &mut TestAppContext, variant: dodai_core::ButtonVariant) {
     cx.update(|cx| install(cx, dodai::material::light()));
-    let (_, vcx) = cx.add_window_view(|_, _| Host {
-        build: Box::new(|_, _| Button::new("rip", "Press").into_any_element()),
+    let (_, vcx) = cx.add_window_view(move |_, _| Host {
+        build: Box::new(move |_, _| {
+            Button::new("rip", "Press")
+                .variant(variant)
+                .into_any_element()
+        }),
     });
     vcx.simulate_resize(size(px(900.0), px(700.0)));
     vcx.update(|_, cx| {
@@ -763,9 +778,13 @@ fn clicking_a_button_plays_the_click_ripple(cx: &mut TestAppContext) {
         set_surface_fx(cx, fx);
     });
     vcx.run_until_parked();
-    assert_eq!(live_press_count(), 0);
+    while live_press_count() > 0 {
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        vcx.run_until_parked();
+        vcx.update(|_, cx| cx.refresh_windows());
+    }
     let b = vcx.debug_bounds("target").expect("button was laid out");
     click(vcx, f32::from(b.left()) + 20.0, f32::from(b.top()) + 10.0);
-    assert_eq!(live_press_count(), 1, "one ripple per press");
+    assert_eq!(live_press_count(), 1, "{variant:?}: one ripple per press");
     vcx.update(|_, cx| set_surface_fx(cx, dodai_core::SurfaceFx::NONE));
 }

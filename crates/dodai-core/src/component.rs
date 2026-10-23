@@ -874,6 +874,7 @@ impl Theme {
             .unwrap_or(crate::Frost {
                 tint: self.palette.surface.with_alpha(0.6),
                 blur: 24.0,
+                edge: None,
             })
     }
 

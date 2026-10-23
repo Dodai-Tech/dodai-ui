@@ -108,9 +108,28 @@ fn layer(state: ControlState) -> f32 {
     }
 }
 
+/// Frosted glass: blur sigma in px, tint opacity, and how much primary colours the tint.
+const FROST_BLUR: f32 = 28.0;
+const FROST_ALPHA: f32 = 0.7;
+const FROST_PRIMARY_MIX: f32 = 0.06;
+
 impl DesignSpec for Material3 {
     fn name(&self) -> &'static str {
         "Material 3"
+    }
+
+    /// Glass for scrims, sheets and floating bars: the high surface container, a touch of
+    /// primary, 70% opaque over a 28 px blur (M3 has no glass spec; this stays tonal).
+    fn frost(&self, t: &Theme) -> Option<dodai_core::Frost> {
+        let r = &t.palette.roles;
+        Some(dodai_core::Frost {
+            tint: r
+                .surface_container_high
+                .mix(t.palette.primary, FROST_PRIMARY_MIX)
+                .with_alpha(FROST_ALPHA),
+            blur: FROST_BLUR,
+            edge: None,
+        })
     }
 
     /// The Material 3 window size classes: columns and margins grow with the window.

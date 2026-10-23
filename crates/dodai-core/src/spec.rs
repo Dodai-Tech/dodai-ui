@@ -78,6 +78,8 @@ pub struct ShadowLayer {
 pub struct Frost {
     pub tint: crate::Color,
     pub blur: f32,
+    /// An outline around the glass `(colour, width px)`, for designs whose panels have one.
+    pub edge: Option<(crate::Color, f32)>,
 }
 
 /// Type sizes and spacing a design resolves for one viewport width (fluid scales). Start from

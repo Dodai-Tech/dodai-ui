@@ -31,7 +31,9 @@ impl Showcase {
     pub(crate) fn sections_of(&mut self, cat: &str, cx: &mut Context<Self>) -> Vec<Section> {
         let family = theme_of(cx).meta.family;
         let mut v = self.sections_of_all(cat, cx);
-        v.retain(|(_, title, _, _)| super::catalog::owner(title).is_none_or(|o| o == family));
+        v.retain(|(_, title, _, _)| {
+            super::catalog::owner(title).is_none_or(|o| o.contains(&family))
+        });
         v
     }
 

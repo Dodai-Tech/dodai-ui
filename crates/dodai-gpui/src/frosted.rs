@@ -352,15 +352,19 @@ impl RenderOnce for FrostedScene {
             }
             root = root.child(
                 glass
-                    .child(
-                        div()
+                    .child({
+                        let mut tint = div()
                             .absolute()
                             .top_0()
                             .left_0()
                             .size_full()
                             .rounded(px(r))
-                            .bg(hsla(frost.tint)),
-                    )
+                            .bg(hsla(frost.tint));
+                        if let Some((c, wd)) = frost.edge {
+                            tint = tint.border(px(wd)).border_color(hsla(c));
+                        }
+                        tint
+                    })
                     .child(
                         div()
                             .relative()

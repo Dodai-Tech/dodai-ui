@@ -135,10 +135,25 @@ impl ShapeStyle {
         over: &dodai_core::Surface,
     ) -> Self {
         let mut me = self;
-        if me.fill.is_none() && me.stroke.is_some() {
+        if me.fill.is_none() {
+            let bare = me.stroke.is_none();
             me.fill = Some(crate::hsla(theme.palette.background));
             me = me.with_surface_of(theme, class, over);
             me.fill = None;
+            if bare {
+                // No outline to dress: keep only the click ripple, not the texture.
+                me.surface = me.surface.and_then(|mut sp| {
+                    (sp.fx.ripple > 0.0).then(|| {
+                        sp.fx = dodai_core::SurfaceFx {
+                            ripple: sp.fx.ripple,
+                            press: sp.fx.press,
+                            targets: sp.fx.targets,
+                            ..dodai_core::SurfaceFx::NONE
+                        };
+                        sp
+                    })
+                });
+            }
             return me;
         }
         me.with_surface_of(theme, class, over)
