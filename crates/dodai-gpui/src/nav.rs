@@ -418,7 +418,9 @@ impl Segmented {
             }
             row = row.child(seg);
         }
-        row
+        // Hug the segments: in a column the strip would stretch to the full width and leave the
+        // last segment's fill short of the outline. Inside a row it keeps its content width.
+        div().flex().child(row.flex_none())
     }
 
     fn build_classic(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
