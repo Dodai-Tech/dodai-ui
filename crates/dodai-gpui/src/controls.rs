@@ -888,13 +888,13 @@ impl Slider {
                     .w_full()
                     .h(px(track_h))
                     .relative()
-                    .rounded(px(12.0))
+                    .rounded(px(12.0 * crate::shape_tune().roundness))
                     .bg(hsla(r.secondary_container))
                     .child(
                         div()
                             .h_full()
                             .w(relative(frac))
-                            .rounded(px(12.0))
+                            .rounded(px(12.0 * crate::shape_tune().roundness))
                             .bg(hsla(t.palette.primary)),
                     )
                     .children(self.icon.map(|i| {

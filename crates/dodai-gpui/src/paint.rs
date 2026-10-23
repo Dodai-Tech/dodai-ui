@@ -716,7 +716,8 @@ pub fn shaped_id(
 pub fn round_shape(shape: &Shape, side: f32) -> Shape {
     let mut s = shape.clone();
     if s.kind() == ShapeKind::Rounded {
-        s.radius = side / 2.0;
+        // Fully round, less so as the app-wide roundness drops below 100%.
+        s.radius = side / 2.0 * crate::shape_tune().roundness.clamp(0.0, 1.0);
     }
     s
 }

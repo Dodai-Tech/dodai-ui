@@ -1310,6 +1310,19 @@ fn main() {
         set_glow_intensity(cx, 0.25);
         // The old per-component scanline body stays off; scanlines are a texture now.
         set_scanlines(cx, false);
+        // Debug: DODAI_TUNE=round=0.0,width=3,all starts with that shape tuning.
+        if let Ok(v) = std::env::var("DODAI_TUNE") {
+            let mut tune = dodai_core::ShapeTune::DEFAULT;
+            for k in v.split(',') {
+                match k.split_once('=') {
+                    Some(("round", n)) => tune.roundness = n.parse().unwrap_or(1.0),
+                    Some(("width", n)) => tune.border_width = n.parse().ok(),
+                    _ if k == "all" => tune.outline_all = true,
+                    _ => {}
+                }
+            }
+            dodai_gpui::set_shape_tune(cx, tune);
+        }
         // Test aid: DODAI_SFX=halftone,glitch,sheen,flicker,bloom (or `preset`).
         if let Ok(v) = std::env::var("DODAI_SFX") {
             let mut fx = dodai_core::SurfaceFx::NONE;

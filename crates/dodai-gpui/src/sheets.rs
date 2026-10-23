@@ -334,8 +334,8 @@ impl RenderOnce for ModalDrawer {
             // M3: 16 px end corners on the edge facing the page.
             panel = panel
                 .bg(hsla(t.palette.roles.surface_container_low))
-                .rounded_tr(px(16.0))
-                .rounded_br(px(16.0));
+                .rounded_tr(px(16.0 * crate::shape_tune().roundness))
+                .rounded_br(px(16.0 * crate::shape_tune().roundness));
         }
         deferred(
             scrim(self.id, &t, self.on_dismiss, true)

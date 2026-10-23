@@ -364,7 +364,10 @@ impl Segmented {
             r.outline
         };
         let strip = ShapeStyle::from_tokens(&t, None, Some(outline), false, false);
-        let mut row = shaped(&t.role_shape(dodai_core::ShapeRole::Button), strip)
+        let strip_shape = t.role_shape(dodai_core::ShapeRole::Button);
+        // The selected / hovered fills follow the strip's own end radius.
+        let end_r = strip_shape.radius.min(t.sizes().segmented_height / 2.0);
+        let mut row = shaped(&strip_shape, strip)
             .flex()
             .h(px(t.sizes().segmented_height))
             .font_family(first_family(t.typography.body))
@@ -395,10 +398,10 @@ impl Segmented {
                 seg = seg.bg(hsla(f));
             }
             if i == 0 {
-                seg = seg.rounded_tl(px(19.0)).rounded_bl(px(19.0));
+                seg = seg.rounded_tl(px(end_r)).rounded_bl(px(end_r));
             }
             if i + 1 == n {
-                seg = seg.rounded_tr(px(19.0)).rounded_br(px(19.0));
+                seg = seg.rounded_tr(px(end_r)).rounded_br(px(end_r));
             }
             if i > 0 {
                 seg = seg.border_l_1().border_color(hsla(outline));
