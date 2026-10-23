@@ -4,9 +4,10 @@
 //! Core's baseline is deliberately plain; everything that gives Cyberpunk its character is here.
 
 use dodai_core::{
-    AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, Color, ControlState,
-    DesignSpec, InputTokens, ListItemTokens, Look, ProgressTokens, StepState, StepTokens,
-    SurfaceTokens, TabTokens, Theme, ToggleTokens, Tone,
+    AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, Color, ControlSize,
+    ControlState, DesignSpec, InputTokens, ListItemTokens, Look, NavigationTokens, ProgressTokens,
+    SizeMetrics, StepState, StepTokens, SurfaceTokens, TabTokens, Theme, ToggleTokens, Tone,
+    TypeRole,
 };
 
 /// The Cyberpunk spec (attach with [`dodai_core::Theme::with_spec`]).
@@ -165,6 +166,60 @@ impl DesignSpec for Cyberpunk {
                 indicator: None,
                 outline: false,
             }
+        })
+    }
+
+    /// Cyberpunk drawer / rail geometry, fixed in px (control height 48.0).
+    fn navigation(&self, t: &Theme) -> Option<NavigationTokens> {
+        Some(NavigationTokens {
+            item_height: 38.4,
+            nested_height: 31.2,
+            headline_height: 38.4,
+            item_padding: 16.0,
+            container_padding: 8.0,
+            item_content_gap: 8.0,
+            item_gap: 8.0,
+            indent: 16.0,
+            icon_size: t.sizes().icon_sm,
+            drawer_max_width: 360.0,
+            rail_width: 80.0,
+            indicator: (84.0, 48.0),
+            rail_label_gap: 8.0,
+            bar_height: 80.0,
+            bar_indicator_width: 92.0,
+            pill: false,
+            container: None,
+            roles: (
+                TypeRole::LabelLarge,
+                TypeRole::LabelMedium,
+                TypeRole::LabelMedium,
+                TypeRole::TitleSmall,
+            ),
+        })
+    }
+
+    fn navigation_item(&self, t: &Theme, selected: bool, hovered: bool) -> Option<ListItemTokens> {
+        self.list_item(t, selected, hovered)
+    }
+
+    fn divider(&self, t: &Theme) -> Option<Color> {
+        Some(t.palette.border)
+    }
+
+    fn fab(&self, t: &Theme, v: ButtonVariant, s: ControlState) -> Option<ButtonTokens> {
+        self.button(t, v, s)
+    }
+
+    /// XS to XL control sizes, fixed in px.
+    fn control_metrics(&self, t: &Theme, size: ControlSize) -> Option<SizeMetrics> {
+        let i = size as usize;
+        let ty = &t.typography;
+        Some(SizeMetrics {
+            height: [36.0, 48.0, 60.0, 76.8, 96.0][i],
+            padding: [12.0, 16.0, 20.0, 28.0, 36.0][i],
+            text_size: [ty.size_sm, ty.size_md, ty.size_lg, ty.size_xl, ty.size_xxl][i],
+            icon_size: [21.6, 24.0, 24.0, 26.4, 31.2][i],
+            square_radius: [12.0, 12.0, 16.0, 28.0, 28.0][i],
         })
     }
 

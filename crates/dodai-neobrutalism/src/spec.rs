@@ -2,10 +2,10 @@
 //! a hard shadow; selected things fill with the main colour; nothing glows.
 
 use dodai_core::{
-    AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, Color, ControlState,
-    CornerStyle, DefaultShape, DesignSpec, InputTokens, ListItemTokens, ProgressTokens,
-    ShapePreset, ShapeScale, ShapeSize, ShapeSystem, StepState, StepTokens, SurfaceTokens,
-    TabTokens, Theme, ToggleTokens, Tone,
+    AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, Color, ControlSize,
+    ControlState, CornerStyle, DefaultShape, DesignSpec, InputTokens, ListItemTokens,
+    NavigationTokens, ProgressTokens, ShapePreset, ShapeScale, ShapeSize, ShapeSystem, SizeMetrics,
+    StepState, StepTokens, SurfaceTokens, TabTokens, Theme, ToggleTokens, Tone, TypeRole,
 };
 use dodai_core::{Corners, IconSet, Look, Sizes};
 
@@ -189,6 +189,61 @@ impl DesignSpec for NeoBrutalism {
             ..Sizes::default()
         })
     }
+
+    /// Neo-brutalism drawer / rail geometry, fixed in px (control height 40.0).
+    fn navigation(&self, t: &Theme) -> Option<NavigationTokens> {
+        Some(NavigationTokens {
+            item_height: 32.0,
+            nested_height: 26.0,
+            headline_height: 32.0,
+            item_padding: 16.0,
+            container_padding: 8.0,
+            item_content_gap: 8.0,
+            item_gap: 8.0,
+            indent: 16.0,
+            icon_size: t.sizes().icon_sm,
+            drawer_max_width: 360.0,
+            rail_width: 80.0,
+            indicator: (70.0, 40.0),
+            rail_label_gap: 8.0,
+            bar_height: 80.0,
+            bar_indicator_width: 78.0,
+            pill: false,
+            container: None,
+            roles: (
+                TypeRole::LabelLarge,
+                TypeRole::LabelMedium,
+                TypeRole::LabelMedium,
+                TypeRole::TitleSmall,
+            ),
+        })
+    }
+
+    fn navigation_item(&self, t: &Theme, selected: bool, hovered: bool) -> Option<ListItemTokens> {
+        self.list_item(t, selected, hovered)
+    }
+
+    fn divider(&self, t: &Theme) -> Option<Color> {
+        Some(t.palette.border)
+    }
+
+    fn fab(&self, t: &Theme, v: ButtonVariant, s: ControlState) -> Option<ButtonTokens> {
+        self.button(t, v, s)
+    }
+
+    /// XS to XL control sizes, fixed in px.
+    fn control_metrics(&self, t: &Theme, size: ControlSize) -> Option<SizeMetrics> {
+        let i = size as usize;
+        let ty = &t.typography;
+        Some(SizeMetrics {
+            height: [30.0, 40.0, 50.0, 64.0, 80.0][i],
+            padding: [12.0, 16.0, 20.0, 28.0, 36.0][i],
+            text_size: [ty.size_sm, ty.size_md, ty.size_lg, ty.size_xl, ty.size_xxl][i],
+            icon_size: [18.0, 20.0, 20.0, 22.0, 26.0][i],
+            square_radius: [12.0, 12.0, 16.0, 28.0, 28.0][i],
+        })
+    }
+
     fn list_item(&self, t: &Theme, selected: bool, hovered: bool) -> Option<ListItemTokens> {
         let p = &t.palette;
         Some(if selected {

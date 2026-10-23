@@ -462,6 +462,37 @@ impl Showcase {
                     "Edges · Depth",
                 ));
             }
+            if ef.ripple || ef.tint || ef.pop || ef.tape || ef.gloss || ef.strip {
+                out.push((
+                    "Surface effects",
+                    "Signature",
+                    section!("Signature")
+                        .child(Muted::new(
+                            "Effects that belong to this design only: tonal wash and ripples, a hard pop block and tape, a clear-coat gloss and a light strip.",
+                        ))
+                        .children(ef.tint.then(|| {
+                            amount("sfx-tint", "Tonal wash", fx.tint, 1.0, |f, v| f.tint = v)
+                        }))
+                        .children(ef.ripple.then(|| {
+                            amount("sfx-ripple", "Ripple", fx.ripple, 1.0, |f, v| f.ripple = v)
+                        }))
+                        .children(ef.pop.then(|| {
+                            amount("sfx-pop", "Pop", fx.pop, 1.0, |f, v| f.pop = v)
+                        }))
+                        .children(ef.tape.then(|| {
+                            amount("sfx-tape", "Tape", fx.tape, 1.0, |f, v| f.tape = v)
+                        }))
+                        .children(ef.gloss.then(|| {
+                            amount("sfx-gloss", "Gloss", fx.gloss, 1.0, |f, v| f.gloss = v)
+                        }))
+                        .children(ef.strip.then(|| {
+                            amount("sfx-strip", "Light strip", fx.strip, 1.0, |f, v| f.strip = v)
+                        }))
+                        .child(preview_components("sfx-sig"))
+                        .into_any_element(),
+                    "Signature",
+                ));
+            }
         }
         {
             use dodai_core::{BorderTint, ShapeKind, ShapeTune};

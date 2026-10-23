@@ -235,6 +235,12 @@ pub fn theme_tokens_json(t: &Theme) -> String {
         (ef.brackets, "brackets"),
         (ef.depth, "depth"),
         (ef.neon, "neon"),
+        (ef.ripple, "ripple"),
+        (ef.tint, "tint"),
+        (ef.pop, "pop"),
+        (ef.tape, "tape"),
+        (ef.gloss, "gloss"),
+        (ef.strip, "strip"),
     ]
     .iter()
     .filter_map(|(on, n)| on.then_some(*n))
@@ -274,6 +280,12 @@ pub fn theme_tokens_json(t: &Theme) -> String {
         ("edge".to_string(), tok("number", num(fx.edge))),
         ("brackets".to_string(), tok("number", num(fx.brackets))),
         ("depth".to_string(), tok("number", num(fx.depth))),
+        ("ripple".to_string(), tok("number", num(fx.ripple))),
+        ("tint".to_string(), tok("number", num(fx.tint))),
+        ("pop".to_string(), tok("number", num(fx.pop))),
+        ("tape".to_string(), tok("number", num(fx.tape))),
+        ("gloss".to_string(), tok("number", num(fx.gloss))),
+        ("strip".to_string(), tok("number", num(fx.strip))),
         ("clear".to_string(), tok("number", num(fx.clear))),
     ];
 

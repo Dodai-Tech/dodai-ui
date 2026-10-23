@@ -68,11 +68,17 @@ pub enum Texture {
     Wiring,
     /// Concentric radar rings with crosshair.
     Radar,
+    /// Soft concentric ripples spreading from a corner (Material).
+    Ripples,
+    /// Bold zigzag stripes (Neo-brutalism).
+    Zigzag,
+    /// Houndstooth: the small houndstooth check (Aurora).
+    Houndstooth,
 }
 
 impl Texture {
     /// Every texture, `None` first.
-    pub const ALL: [Texture; 30] = [
+    pub const ALL: [Texture; 33] = [
         Texture::None,
         Texture::Grain,
         Texture::Halftone,
@@ -103,6 +109,9 @@ impl Texture {
         Texture::ChipDie,
         Texture::Wiring,
         Texture::Radar,
+        Texture::Ripples,
+        Texture::Zigzag,
+        Texture::Houndstooth,
     ];
 
     /// A short label for pickers.
@@ -138,6 +147,9 @@ impl Texture {
             Texture::ChipDie => "Chip die",
             Texture::Wiring => "Wiring",
             Texture::Radar => "Radar",
+            Texture::Ripples => "Ripples",
+            Texture::Zigzag => "Zigzag",
+            Texture::Houndstooth => "Houndstooth",
         }
     }
 }
@@ -156,6 +168,7 @@ impl Texture {
                 | Texture::ChipDie
                 | Texture::Wiring
                 | Texture::Radar
+                | Texture::Ripples
         )
     }
 }
@@ -274,6 +287,18 @@ pub struct SurfaceFx {
     pub brackets: f32,
     /// Inner shadow: the surface looks sunk or lit from within.
     pub depth: f32,
+    /// Material: soft rings of the state layer spreading from the centre.
+    pub ripple: f32,
+    /// Material: a tonal wash of the accent colour, like an elevation tint.
+    pub tint: f32,
+    /// Neo-brutalism: a hard offset block along the bottom and right inner edges.
+    pub pop: f32,
+    /// Neo-brutalism: strips of masking tape across two corners.
+    pub tape: f32,
+    /// Aurora: a clear-coat reflection across the top of the surface.
+    pub gloss: f32,
+    /// Aurora: a thin light strip gliding along the top edge.
+    pub strip: f32,
     /// How much the texture fades towards the centre, keeping text clean (`0.0` = even).
     pub clear: f32,
     /// Texture for containers (cards, panels, bars); `texture` is for UI components.
@@ -308,6 +333,12 @@ impl SurfaceFx {
         edge: 0.0,
         brackets: 0.0,
         depth: 0.0,
+        ripple: 0.0,
+        tint: 0.0,
+        pop: 0.0,
+        tape: 0.0,
+        gloss: 0.0,
+        strip: 0.0,
         clear: 0.0,
         container_texture: Texture::None,
         container_strength: 0.5,
@@ -335,6 +366,12 @@ impl SurfaceFx {
         self.brackets = keep(effects.brackets, self.brackets);
         self.depth = keep(effects.depth, self.depth);
         self.neon = keep(effects.neon, self.neon);
+        self.ripple = keep(effects.ripple, self.ripple);
+        self.tint = keep(effects.tint, self.tint);
+        self.pop = keep(effects.pop, self.pop);
+        self.tape = keep(effects.tape, self.tape);
+        self.gloss = keep(effects.gloss, self.gloss);
+        self.strip = keep(effects.strip, self.strip);
         self
     }
 
@@ -364,6 +401,8 @@ impl SurfaceFx {
             || self.flicker > 0.0
             || self.pulse > 0.0
             || self.chase > 0.0
+            || self.ripple > 0.0
+            || self.strip > 0.0
     }
 
     /// True when nothing would be drawn.
@@ -374,6 +413,10 @@ impl SurfaceFx {
             && self.edge <= 0.0
             && self.brackets <= 0.0
             && self.depth <= 0.0
+            && self.tint <= 0.0
+            && self.pop <= 0.0
+            && self.tape <= 0.0
+            && self.gloss <= 0.0
     }
 }
 
@@ -462,6 +505,18 @@ pub struct EffectSet {
     pub depth: bool,
     /// Lit lines in textures.
     pub neon: bool,
+    /// Spreading state-layer rings.
+    pub ripple: bool,
+    /// Tonal wash.
+    pub tint: bool,
+    /// Hard offset block.
+    pub pop: bool,
+    /// Masking-tape corners.
+    pub tape: bool,
+    /// Clear-coat reflection.
+    pub gloss: bool,
+    /// Gliding light strip.
+    pub strip: bool,
 }
 
 impl EffectSet {
@@ -477,6 +532,12 @@ impl EffectSet {
         brackets: false,
         depth: false,
         neon: false,
+        ripple: false,
+        tint: false,
+        pop: false,
+        tape: false,
+        gloss: false,
+        strip: false,
     };
     /// Every effect.
     pub const ALL: Self = Self {
@@ -490,6 +551,12 @@ impl EffectSet {
         brackets: true,
         depth: true,
         neon: true,
+        ripple: true,
+        tint: true,
+        pop: true,
+        tape: true,
+        gloss: true,
+        strip: true,
     };
     /// Whether any effect is owned.
     pub const fn any(&self) -> bool {
@@ -503,6 +570,12 @@ impl EffectSet {
             || self.brackets
             || self.depth
             || self.neon
+            || self.ripple
+            || self.tint
+            || self.pop
+            || self.tape
+            || self.gloss
+            || self.strip
     }
 }
 
@@ -613,6 +686,12 @@ pub struct Surface {
     edge: Option<f32>,
     brackets: Option<f32>,
     depth: Option<f32>,
+    ripple: Option<f32>,
+    tint: Option<f32>,
+    pop: Option<f32>,
+    tape: Option<f32>,
+    gloss: Option<f32>,
+    strip: Option<f32>,
     clear: Option<f32>,
     glow: Option<f32>,
 }
@@ -634,6 +713,12 @@ impl Surface {
         edge: None,
         brackets: None,
         depth: None,
+        ripple: None,
+        tint: None,
+        pop: None,
+        tape: None,
+        gloss: None,
+        strip: None,
         clear: None,
         glow: None,
     };
@@ -707,6 +792,36 @@ impl Surface {
         self.brackets = Some(v);
         self
     }
+    /// Spreading state-layer rings, `0.0..=1.0`.
+    pub const fn ripple(mut self, v: f32) -> Self {
+        self.ripple = Some(v);
+        self
+    }
+    /// Tonal wash, `0.0..=1.0`.
+    pub const fn tint(mut self, v: f32) -> Self {
+        self.tint = Some(v);
+        self
+    }
+    /// Hard offset block, `0.0..=1.0`.
+    pub const fn pop(mut self, v: f32) -> Self {
+        self.pop = Some(v);
+        self
+    }
+    /// Masking-tape corners, `0.0..=1.0`.
+    pub const fn tape(mut self, v: f32) -> Self {
+        self.tape = Some(v);
+        self
+    }
+    /// Clear-coat reflection, `0.0..=1.0`.
+    pub const fn gloss(mut self, v: f32) -> Self {
+        self.gloss = Some(v);
+        self
+    }
+    /// Gliding light strip, `0.0..=1.0`.
+    pub const fn strip(mut self, v: f32) -> Self {
+        self.strip = Some(v);
+        self
+    }
     /// Inner shadow, `0.0..=1.0`.
     pub const fn depth(mut self, v: f32) -> Self {
         self.depth = Some(v);
@@ -760,6 +875,12 @@ impl Surface {
             || self.edge.is_some()
             || self.brackets.is_some()
             || self.depth.is_some()
+            || self.ripple.is_some()
+            || self.tint.is_some()
+            || self.pop.is_some()
+            || self.tape.is_some()
+            || self.gloss.is_some()
+            || self.strip.is_some()
     }
 
     /// `fx` (already resolved for the component's class) with this override on top.
@@ -802,6 +923,24 @@ impl Surface {
         }
         if let Some(v) = self.depth {
             fx.depth = v;
+        }
+        if let Some(v) = self.ripple {
+            fx.ripple = v;
+        }
+        if let Some(v) = self.tint {
+            fx.tint = v;
+        }
+        if let Some(v) = self.pop {
+            fx.pop = v;
+        }
+        if let Some(v) = self.tape {
+            fx.tape = v;
+        }
+        if let Some(v) = self.gloss {
+            fx.gloss = v;
+        }
+        if let Some(v) = self.strip {
+            fx.strip = v;
         }
         if let Some(v) = self.clear {
             fx.clear = v;

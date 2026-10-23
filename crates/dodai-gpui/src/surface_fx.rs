@@ -322,6 +322,36 @@ impl Canvas<'_> {
         self.polyline(&pts, width, c);
     }
 
+    /// A filled polygon (shape-local px), for strips and tape.
+    fn polygon(&mut self, pts: &[(f32, f32)], c: Hsla) {
+        let mut b = PathBuilder::fill();
+        b.add_polygon(&poly(self.origin, pts, (0.0, 0.0)), true);
+        if let Ok(p) = b.build() {
+            self.window.paint_path(p, c);
+        }
+    }
+
+    /// A circle outline clipped to the surface rectangle (inside the border).
+    fn ring_clipped(&mut self, cx: f32, cy: f32, r: f32, width: f32, c: Hsla) {
+        let n = ((r * 0.6) as usize).clamp(24, 96);
+        let (x0, y0) = (self.inset + 1.0, self.inset + 1.0);
+        let (x1, y1) = (self.w - self.inset - 1.0, self.h - self.inset - 1.0);
+        let mut run: Vec<(f32, f32)> = Vec::new();
+        for i in 0..=n {
+            let a = std::f32::consts::TAU * i as f32 / n as f32;
+            let (x, y) = (cx + r * a.cos(), cy + r * a.sin());
+            if x >= x0 && x <= x1 && y >= y0 && y <= y1 {
+                run.push((x, y));
+            } else if !run.is_empty() {
+                self.polyline(&run, width, c);
+                run.clear();
+            }
+        }
+        if run.len() > 1 {
+            self.polyline(&run, width, c);
+        }
+    }
+
     fn fill_shape(&mut self, c: Hsla) {
         let pts = self
             .pts
@@ -365,6 +395,9 @@ pub fn paint_surface(
         halo: sp.tune.halo,
         clear: 0.0,
     };
+    if fx.tint > 0.0 {
+        tint(&mut cv, sp);
+    }
     if fx.has_texture() {
         cv.clear = fx.clear.clamp(0.0, 1.0);
         texture(&mut cv, sp, seed);
@@ -378,6 +411,21 @@ pub fn paint_surface(
     }
     if fx.brackets > 0.0 {
         brackets(&mut cv, sp);
+    }
+    if fx.pop > 0.0 {
+        pop(&mut cv, sp);
+    }
+    if fx.gloss > 0.0 {
+        gloss(&mut cv, sp);
+    }
+    if fx.tape > 0.0 {
+        tape(&mut cv, sp);
+    }
+    if fx.ripple > 0.0 {
+        ripple(&mut cv, sp);
+    }
+    if fx.strip > 0.0 {
+        strip(&mut cv, sp);
     }
     if fx.pulse > 0.0 {
         pulse(&mut cv, sp);
@@ -676,6 +724,58 @@ fn texture(cv: &mut Canvas, sp: &SurfacePaint, seed: i32) {
                 }
             }
         }
+        Texture::Ripples => {
+            // Soft rings spreading from the top-right corner, fading with distance.
+            let p = (14.0 * k).max(6.0);
+            let reach = (w * w + h * h).sqrt();
+            let n = ((reach / p) as i32).min(40);
+            for i in 1..=n {
+                let f = 1.0 - i as f32 / n as f32;
+                cv.ring_clipped(
+                    w * 0.9,
+                    h * 0.1,
+                    i as f32 * p,
+                    1.5,
+                    scale_alpha(sp.ink, 0.5 * s * f),
+                );
+            }
+        }
+        Texture::Zigzag => {
+            let p = (12.0 * k).max(6.0);
+            let amp = p * 0.3;
+            let rows = ((h - 2.0 * (cv.inset + amp)) / p) as i32;
+            let teeth = ((w / p) as i32).clamp(1, 60);
+            let (x0, x1) = (cv.inset + 1.0, w - cv.inset - 1.0);
+            for r in 0..=rows.max(0) {
+                let y = cv.inset + amp + 1.0 + r as f32 * p;
+                let pts: Vec<(f32, f32)> = (0..=teeth * 2)
+                    .map(|i| {
+                        let x = (i as f32 * p / 2.0).clamp(x0, x1);
+                        (x, y + if i % 2 == 0 { -amp } else { amp })
+                    })
+                    .collect();
+                cv.polyline(&pts, 2.0, scale_alpha(sp.ink, 0.45 * s));
+            }
+        }
+        Texture::Houndstooth => {
+            // A 4×4 houndstooth tile: stepped diagonal teeth.
+            const TILE: [[u8; 4]; 4] = [[1, 1, 0, 0], [1, 1, 1, 0], [0, 0, 1, 1], [0, 1, 1, 1]];
+            let p = fit((2.0 * k).max(2.0), |p| w * h / (p * p) * 0.6);
+            let (nx, ny) = ((w / p) as i32 + 1, (h / p) as i32 + 1);
+            for iy in 0..ny {
+                for ix in 0..nx {
+                    if TILE[(iy % 4) as usize][(ix % 4) as usize] == 1 {
+                        cv.quad(
+                            ix as f32 * p,
+                            iy as f32 * p,
+                            p,
+                            p,
+                            scale_alpha(sp.ink, 0.28 * s),
+                        );
+                    }
+                }
+            }
+        }
         Texture::Hazard => {
             // Warning tape along the top and bottom edges only, so the middle stays clean.
             let band = (h * 0.2).clamp(4.0, 9.0 * k);
@@ -911,6 +1011,126 @@ fn depth(cv: &mut Canvas, sp: &SurfacePaint) {
             cv.inset + 1.0 + 2.0 * k as f32,
             2.0,
             scale_alpha(sp.shade, 0.55 * d * f * f),
+        );
+    }
+}
+
+/// Material: a tonal wash of the accent, strongest at the top (the elevation tint).
+fn tint(cv: &mut Canvas, sp: &SurfacePaint) {
+    let t = sp.fx.tint.clamp(0.0, 1.0);
+    let (w, h) = (cv.w, cv.h);
+    let step = 3.0;
+    let mut y = 0.0;
+    while y < h {
+        let f = 1.0 - y / h;
+        cv.quad(
+            0.0,
+            y,
+            w,
+            step,
+            scale_alpha(sp.neon, (0.03 + 0.17 * f * f) * t),
+        );
+        y += step;
+    }
+}
+
+/// Material: rings of the state layer spreading from the centre and fading out.
+fn ripple(cv: &mut Canvas, sp: &SurfacePaint) {
+    let r = sp.fx.ripple.clamp(0.0, 1.0);
+    let period = sp.tune.pulse_period.max(0.8);
+    let reach = cv.w.max(cv.h) * 0.6;
+    for k in 0..3 {
+        let t = (clock() / period + k as f32 / 3.0).fract();
+        let f = (1.0 - t) * (1.0 - t);
+        cv.ring_clipped(
+            cv.w / 2.0,
+            cv.h / 2.0,
+            reach * t,
+            2.0,
+            scale_alpha(sp.neon, 0.4 * r * f),
+        );
+    }
+}
+
+/// Neo-brutalism: a hard offset block along the bottom and right inner edges.
+fn pop(cv: &mut Canvas, sp: &SurfacePaint) {
+    let k = sp.fx.pop.clamp(0.0, 1.0);
+    let t = 3.0 + 5.0 * k;
+    let (w, h, i) = (cv.w, cv.h, cv.inset);
+    let c = scale_alpha(sp.ink, 0.9);
+    cv.quad(i + t, h - i - t, w - 2.0 * i - t, t, c);
+    cv.quad(w - i - t, i + t, t, h - 2.0 * i - 2.0 * t, c);
+}
+
+/// Neo-brutalism: translucent masking tape across the top-left and bottom-right corners.
+fn tape(cv: &mut Canvas, sp: &SurfacePaint) {
+    let k = sp.fx.tape.clamp(0.0, 1.0);
+    let (w, h, i) = (cv.w, cv.h, cv.inset);
+    // Tape is for containers; on a button it would sit over the label.
+    if h < 64.0 {
+        return;
+    }
+    let l = (w.min(h) * 0.3).clamp(16.0, 40.0);
+    let t = l * 0.45;
+    let c = scale_alpha(sp.neon, 0.75 * k);
+    let edge = scale_alpha(sp.ink, 0.35 * k);
+    let band = |cv: &mut Canvas, a: (f32, f32), b: (f32, f32), d: (f32, f32)| {
+        let q = [a, b, (b.0 + d.0, b.1 + d.1), (a.0 + d.0, a.1 + d.1)];
+        cv.polygon(&q, c);
+        cv.polyline(&[q[0], q[1]], 1.0, edge);
+        cv.polyline(&[q[2], q[3]], 1.0, edge);
+    };
+    band(cv, (i, i + l), (i + l, i), (-0.0, t));
+    band(cv, (w - i - l, h - i), (w - i, h - i - l), (0.0, -t));
+}
+
+/// Aurora: a clear-coat reflection across the top, cut on a slant like a windscreen glint.
+fn gloss(cv: &mut Canvas, sp: &SurfacePaint) {
+    let g = sp.fx.gloss.clamp(0.0, 1.0);
+    let (w, h) = (cv.w, cv.h);
+    let band = h * 0.5;
+    let step = 2.0;
+    let mut y = 0.0;
+    while y < band {
+        let t = y / band;
+        let len = w * (1.0 - 0.45 * t);
+        cv.quad(
+            0.0,
+            y,
+            len,
+            step,
+            scale_alpha(sp.light, 0.22 * g * (1.0 - t) * (1.0 - t)),
+        );
+        y += step;
+    }
+    cv.quad(0.0, cv.inset, w, 1.0, scale_alpha(sp.light, 0.35 * g));
+}
+
+/// Aurora: a thin light strip that glides along the top edge and fades at both ends.
+fn strip(cv: &mut Canvas, sp: &SurfacePaint) {
+    let s = sp.fx.strip.clamp(0.0, 1.0);
+    let (w, i) = (cv.w, cv.inset);
+    let len = w * 0.3;
+    let t = (clock() / sp.tune.sheen_period.max(0.8)).fract();
+    let x = -len + (w + len) * t;
+    let n = 10;
+    for j in 0..n {
+        let f = (j as f32 + 0.5) / n as f32;
+        let a = (std::f32::consts::PI * f).sin();
+        let seg = len / n as f32;
+        cv.quad(
+            x + j as f32 * seg,
+            i,
+            seg + 0.5,
+            2.0,
+            scale_alpha(sp.neon, 0.95 * s * a),
+        );
+        cv.quad(
+            x + j as f32 * seg,
+            i + 2.0,
+            seg + 0.5,
+            3.0,
+            scale_alpha(sp.neon, 0.18 * s * a),
         );
     }
 }

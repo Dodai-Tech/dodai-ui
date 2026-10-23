@@ -1,32 +1,25 @@
-//! Material 3 surface styling: soft, tonal textures and quiet light, nothing neon.
+//! Material 3 surface styling: tonal, soft and quiet.
 //!
-//! Inspired by the Material 3 look: paper and dot textures that stay behind the content, a
-//! slow sheen like a highlight moving across a lacquered surface, breathing borders and light
-//! that falls in from the edges. There is no glitch, flicker or bracket.
+//! Material has no neon and no hard graphics. Its surfaces are paper and dots, a tonal wash of
+//! the primary colour (the elevation tint), soft ripples of the state layer and a gentle inner
+//! shadow. Nothing here is shared with the other designs.
 
 use dodai_core::{EffectSet, SurfaceFx, SurfaceStyle, SurfaceTuning, Texture};
 
 /// Textures this design owns.
 pub const TEXTURES: &[Texture] = &[
     Texture::None,
-    Texture::Grain,
     Texture::Paper,
-    Texture::Dither,
-    Texture::Halftone,
+    Texture::Grain,
     Texture::DotGrid,
-    Texture::Perforation,
-    Texture::Stripes,
-    Texture::Grid,
-    Texture::Hatch,
+    Texture::Ripples,
 ];
 
-/// The effects this design owns: gentle ones only.
+/// The effects this design owns.
 pub const EFFECTS: EffectSet = EffectSet {
-    sheen: true,
-    pulse: true,
-    edge: true,
+    tint: true,
+    ripple: true,
     depth: true,
-    bloom: true,
     ..EffectSet::NONE
 };
 
@@ -38,21 +31,17 @@ pub fn style(dark: bool) -> SurfaceStyle {
         preset: SurfaceFx {
             texture: Texture::Paper,
             strength: 0.4 * calm,
-            container_texture: Texture::DotGrid,
-            container_strength: 0.25 * calm,
-            sheen: 0.2,
-            edge: 0.18,
-            depth: 0.2,
+            container_texture: Texture::Ripples,
+            container_strength: 0.3 * calm,
+            tint: 0.35,
+            depth: 0.15,
             clear: 0.4,
             ..SurfaceFx::NONE
         },
         textures: TEXTURES,
         effects: EFFECTS,
         tuning: SurfaceTuning {
-            halo: 1.0,
-            bloom_spread: 4.0,
-            sheen_period: 5.0,
-            pulse_period: 3.4,
+            pulse_period: 2.8,
             ..SurfaceTuning::DEFAULT
         },
     }

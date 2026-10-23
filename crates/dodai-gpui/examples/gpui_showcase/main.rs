@@ -1324,6 +1324,12 @@ fn main() {
                     "edge" => fx.edge = 0.8,
                     "brackets" => fx.brackets = 0.8,
                     "depth" => fx.depth = 0.8,
+                    "ripple" => fx.ripple = 0.8,
+                    "tint" => fx.tint = 0.8,
+                    "pop" => fx.pop = 0.8,
+                    "tape" => fx.tape = 0.8,
+                    "gloss" => fx.gloss = 0.8,
+                    "strip" => fx.strip = 0.8,
                     "clear" => fx.clear = 0.7,
                     "preset" => fx = theme_of(cx).surface_preset(),
                     name => {
