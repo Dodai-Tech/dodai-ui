@@ -136,6 +136,8 @@ pub struct ShapeTune {
     /// Draw every corner as this style (round, straight cut, concave scoop); `None` keeps each
     /// design's own.
     pub corner_style: Option<CornerStyle>,
+    /// Control height and spacing multiplier (see [`Theme::with_density`]); 1 as designed.
+    pub density: f32,
 }
 
 impl ShapeTune {
@@ -149,6 +151,7 @@ impl ShapeTune {
         hard_shadow: None,
         shadow_dir: ShadowDir::BottomRight,
         corner_style: None,
+        density: 1.0,
     };
 
     /// Corner multiplier for one role: the global roundness times its group's.
@@ -254,6 +257,9 @@ impl Theme {
                 t.effects.hard_shadow = s.max(0.0);
             }
         }
+        if (tune.density - 1.0).abs() > f32::EPSILON {
+            t = t.with_density(tune.density);
+        }
         t
     }
 }
@@ -261,6 +267,17 @@ impl Theme {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn density_in_the_tune_scales_controls() {
+        let t = Theme::default();
+        let roomy = t.tuned(&ShapeTune {
+            density: 1.5,
+            ..ShapeTune::DEFAULT
+        });
+        assert!(roomy.shape.control_height > t.shape.control_height);
+        assert!(roomy.spacing.md > t.spacing.md);
+    }
 
     #[test]
     fn default_tuning_changes_nothing() {

@@ -3,8 +3,8 @@ use dodai::{BorderTint, CornerStyle, ShadowDir, ShapeTune};
 use libfuzzer_sys::fuzz_target;
 
 // Any tuning (NaN, negative, huge) applied to every built-in theme must not panic.
-fuzz_target!(|d: (f32, [f32; 3], Option<f32>, Option<f32>, u8, bool, u8, u8, [f32; 2])| {
-    let (roundness, groups, width, shadow, tint, outline_all, dir, style, size) = d;
+fuzz_target!(|d: (f32, [f32; 3], Option<f32>, Option<f32>, u8, bool, u8, u8, [f32; 2], f32)| {
+    let (roundness, groups, width, shadow, tint, outline_all, dir, style, size, density) = d;
     let tune = ShapeTune {
         roundness,
         groups,
@@ -14,6 +14,7 @@ fuzz_target!(|d: (f32, [f32; 3], Option<f32>, Option<f32>, u8, bool, u8, u8, [f3
         hard_shadow: shadow,
         shadow_dir: [ShadowDir::BottomRight, ShadowDir::BottomLeft, ShadowDir::TopRight, ShadowDir::TopLeft][dir as usize % 4],
         corner_style: [None, Some(CornerStyle::Round), Some(CornerStyle::Cut), Some(CornerStyle::Scoop)][style as usize % 4],
+        density,
     };
     for t in dodai::themes::all() {
         let tuned = t.tuned(&tune);

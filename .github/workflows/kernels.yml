@@ -1,8 +1,17 @@
 name: kernels
 
-# Full rust-gpu rebuild; slow (installs a pinned nightly), so manual + weekly.
+# Full rust-gpu rebuild; slow (installs a pinned nightly), so weekly, manual, and on pushes
+# that touch the shader sources or the kernel crate (so a stale kernels.wgsl is caught at once).
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "crates/dodai-shaders/src/shaders/**"
+      - "crates/dodai-shaders-kernels/**"
+      - "crates/dodai-shaders/kernels.wgsl"
+      - "scripts/gen-kernels.nu"
+      - ".github/workflows/kernels.yml"
   schedule:
     - cron: "0 4 * * 1"
 

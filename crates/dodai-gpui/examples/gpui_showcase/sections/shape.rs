@@ -473,6 +473,7 @@ impl Showcase {
             ("Medium", Some(2.0)),
             ("Thick", Some(3.0)),
         ];
+        const DENSITIES: [(&str, f32); 3] = [("Compact", 0.8), ("Default", 1.0), ("Roomy", 1.25)];
         let style_sel = STYLES.iter().position(|s| s.1 == tune.corner_style);
         let width_sel = WIDTHS.iter().position(|w| w.1 == tune.border_width);
         let tint_sel = BorderTint::ALL.iter().position(|b| *b == tune.tint);
@@ -508,6 +509,20 @@ impl Showcase {
                 "rb-all",
                 (vec!["Off", "On"], usize::from(tune.outline_all)),
                 |tn, i| tn.outline_all = i == 1,
+            ))
+            .child(tune_choice(
+                &t,
+                "Density",
+                "Control height and spacing: compact, as designed, or roomy. Type and icons keep their size.",
+                "rb-density",
+                (
+                    DENSITIES.map(|d| d.0).to_vec(),
+                    DENSITIES
+                        .iter()
+                        .position(|d| (d.1 - tune.density).abs() < 1e-3)
+                        .unwrap_or(usize::MAX),
+                ),
+                |tn, i| tn.density = DENSITIES[i].1,
             ));
         if t.effects.hard_shadow > 0.0 {
             let cur = tune.hard_shadow.unwrap_or(t.effects.hard_shadow);

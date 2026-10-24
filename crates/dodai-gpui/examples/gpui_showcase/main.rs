@@ -678,6 +678,19 @@ fn main() {
                 },
             );
         }
+        // Debug: DODAI_DENSITY=0.8 scales control height and spacing on every design.
+        if let Some(density) = std::env::var("DODAI_DENSITY")
+            .ok()
+            .and_then(|v| v.parse().ok())
+        {
+            dodai_gpui::set_shape_tune(
+                cx,
+                dodai_core::ShapeTune {
+                    density,
+                    ..dodai_gpui::shape_tune()
+                },
+            );
+        }
         // Debug: DODAI_CROP=off|left|right|top|bottom forces that crop on every design.
         if let Ok(v) = std::env::var("DODAI_CROP") {
             use dodai_gpui::Crop;
