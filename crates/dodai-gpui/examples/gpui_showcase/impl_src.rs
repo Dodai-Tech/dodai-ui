@@ -340,7 +340,10 @@ mod tests {
     #[test]
     fn every_listed_component_has_code() {
         for (_, src) in SECTIONS.iter().map(|s| ((), s)) {
-            for l in src.lines().filter_map(|l| l.split("section!(\"").nth(1)) {
+            for l in src
+                .lines()
+                .filter_map(|l| l.split("self.section(\"").nth(1))
+            {
                 let title = l.split('"').next().unwrap_or("");
                 for c in components(title) {
                     assert!(implementation(&c).is_some(), "{title}: {c}");
