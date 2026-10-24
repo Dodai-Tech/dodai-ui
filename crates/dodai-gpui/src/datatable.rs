@@ -495,7 +495,7 @@ impl DataTable {
             let hs = use_interact(&id, window, cx);
             let hovered = hs.read(cx).hovered;
             let is_sel = selected.contains(&ri);
-            let (style, _, marker) = list_style(&t, is_sel, hovered);
+            let (style, _, marker) = list_style(t, is_sel, hovered);
             let mut r = track(
                 shaped_id(
                     id,
