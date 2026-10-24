@@ -4,7 +4,7 @@ use dodai_frost::{blur, Backend, Blurrer};
 use std::time::Instant;
 
 fn main() {
-    let mut gpu = Blurrer::new(Backend::Gpu);
+    let mut gpu = Blurrer::new(Backend::Auto);
     for (w, h) in [
         (256usize, 256usize),
         (1280, 720),
@@ -21,7 +21,7 @@ fn main() {
         let gpu_ms = t.elapsed().as_secs_f64() * 1e3;
         println!(
             "{w}x{h}: cpu {cpu_ms:7.1} ms   {} {gpu_ms:7.1} ms   identical: {}",
-            if gpu.uses_gpu(w * h) {
+            if gpu.uses_gpu() {
                 "gpu"
             } else {
                 "gpu unavailable, cpu"

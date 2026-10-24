@@ -2,8 +2,8 @@
 //! toolkit, no theme: see the README.
 //!
 //! [`blur`], [`blurred`] and [`glass`] run on the CPU. With the `gpu` feature, a [`Blurrer`]
-//! can run the same blur on the GPU (`wgpu`) and, in [`Backend::Auto`], picks whichever is
-//! available and worthwhile. The GPU path is bit-identical to the CPU one.
+//! runs the same blur on the GPU (`wgpu`) whenever a real adapter exists, and on the CPU
+//! otherwise. The GPU path is bit-identical to the CPU one.
 
 #[cfg(feature = "gpu")]
 mod gpu;
@@ -137,23 +137,14 @@ pub struct Glass {
 pub enum Backend {
     /// Always the CPU.
     Cpu,
-    /// The GPU; falls back to the CPU when there is no adapter or the `gpu` feature is off.
-    Gpu,
-    /// The GPU for pictures of at least [`GPU_MIN_PIXELS`] pixels, else the CPU.
+    /// The GPU whenever a real adapter is available (it keeps the CPU free and the UI smooth);
+    /// the CPU when there is none or the `gpu` feature is off.
     #[default]
     Auto,
 }
 
-/// Below this many pixels the upload and readback cost more than the blur: `Auto` uses the CPU.
-pub const GPU_MIN_PIXELS: usize = 256 * 256;
-
-/// Blurs with the backend chosen at construction, reusing GPU resources between calls.
+/// Blurs on the GPU when it can, else on the CPU, reusing GPU resources between calls.
 pub struct Blurrer {
-    #[cfg(feature = "gpu")]
-    backend: Backend,
-    /// `Auto` uses the GPU from this many pixels.
-    #[cfg(feature = "gpu")]
-    min_pixels: usize,
     #[cfg(feature = "gpu")]
     gpu: Option<GpuBlur>,
 }
@@ -165,10 +156,6 @@ impl Blurrer {
         let _ = backend;
         Self {
             #[cfg(feature = "gpu")]
-            backend,
-            #[cfg(feature = "gpu")]
-            min_pixels: GPU_MIN_PIXELS,
-            #[cfg(feature = "gpu")]
             gpu: if backend == Backend::Cpu {
                 None
             } else {
@@ -177,39 +164,19 @@ impl Blurrer {
         }
     }
 
-    /// Sets the picture size (in pixels) from which `Backend::Auto` uses the GPU; the default is
-    /// [`GPU_MIN_PIXELS`]. Tune it from a measurement on the target machine (see the `bench`
-    /// example). Without the `gpu` feature this does nothing.
-    #[must_use]
-    pub fn with_min_pixels(mut self, pixels: usize) -> Self {
-        #[cfg(feature = "gpu")]
-        {
-            self.min_pixels = pixels;
-        }
-        #[cfg(not(feature = "gpu"))]
-        let _ = &mut self;
-        let _ = pixels;
-        self
-    }
-
-    /// Whether blurs of `pixels` pixels run on the GPU.
-    pub fn uses_gpu(&self, pixels: usize) -> bool {
+    /// Whether blurs run on the GPU.
+    pub fn uses_gpu(&self) -> bool {
         #[cfg(feature = "gpu")]
         if self.gpu.is_some() {
-            return match self.backend {
-                Backend::Cpu => false,
-                Backend::Gpu => true,
-                Backend::Auto => pixels >= self.min_pixels,
-            };
+            return true;
         }
-        let _ = pixels;
         false
     }
 
     /// [`blur`] on the chosen backend.
     pub fn blur(&mut self, src: &[u8], w: usize, h: usize, sigma: f32) -> Vec<u8> {
         #[cfg(feature = "gpu")]
-        if self.uses_gpu(w * h) && sigma > 0.0 && w > 0 && h > 0 {
+        if self.uses_gpu() && sigma > 0.0 && w > 0 && h > 0 {
             if let Some(out) = self
                 .gpu
                 .as_mut()
@@ -373,7 +340,7 @@ mod tests {
             blur: 6.0,
             edge: None,
         };
-        for backend in [Backend::Cpu, Backend::Gpu, Backend::Auto] {
+        for backend in [Backend::Cpu, Backend::Auto] {
             let mut b = Blurrer::new(backend);
             assert_eq!(
                 b.blur(&src, w, h, 6.0),
@@ -391,10 +358,6 @@ mod tests {
                 "{backend:?}"
             );
         }
-        assert!(!Blurrer::new(Backend::Cpu).uses_gpu(usize::MAX));
-        assert!(
-            !Blurrer::new(Backend::Auto).uses_gpu(16),
-            "small pictures stay on the CPU"
-        );
+        assert!(!Blurrer::new(Backend::Cpu).uses_gpu());
     }
 }

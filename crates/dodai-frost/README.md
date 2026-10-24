@@ -16,7 +16,7 @@ assert_eq!(pane.len(), backdrop.len());
 
 ## CPU or GPU
 
-`Blurrer::new(Backend::Auto)` (feature `gpu`, wgpu compute) opens the GPU once and blurs there when a picture has at least `GPU_MIN_PIXELS` pixels, else on the CPU; with no adapter it silently stays on the CPU. `Backend::Cpu` / `Backend::Gpu` force one. Both run the same integer maths, so the output is **byte-identical** (tested). Measured on an Apple GPU, sigma 12, including upload and readback (`cargo run --release -p dodai-frost --features gpu --example bench`):
+`Blurrer::new(Backend::Auto)` (feature `gpu`, wgpu compute) opens the GPU once and always blurs there when a real adapter exists (it keeps the CPU free and the UI smooth, even for small pictures); with no adapter, or only a software one, it stays on the CPU. `Backend::Cpu` forces the CPU. Both run the same integer maths, so the output is **byte-identical** (tested). Measured on an Apple GPU, sigma 12, including upload and readback (`cargo run --release -p dodai-frost --features gpu --example bench`):
 
 | picture | CPU | GPU |
 |---|---|---|
