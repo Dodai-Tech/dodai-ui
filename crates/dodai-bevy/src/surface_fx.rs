@@ -144,6 +144,7 @@ mod tests {
             texture: Texture::Circuit,
             strength: 0.8,
             scale: 1.0,
+            targets: dodai_core::SurfaceTargets::ALL,
             ..SurfaceFx::NONE
         };
         let rec = record_surface_fx(&t, fx, Vec2::new(200.0, 100.0)).unwrap();
