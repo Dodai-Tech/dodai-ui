@@ -14,4 +14,17 @@ let pane = glass(&backdrop, 64, 32, &Glass { tint: [20, 20, 30, 140], blur: 12.0
 assert_eq!(pane.len(), backdrop.len());
 ```
 
+## CPU or GPU
+
+`Blurrer::new(Backend::Auto)` (feature `gpu`, wgpu compute) opens the GPU once and blurs there when a picture has at least `GPU_MIN_PIXELS` pixels, else on the CPU; with no adapter it silently stays on the CPU. `Backend::Cpu` / `Backend::Gpu` force one. Both run the same integer maths, so the output is **byte-identical** (tested). Measured on an Apple GPU, sigma 12, including upload and readback (`cargo run --release -p dodai-frost --features gpu --example bench`):
+
+| picture | CPU | GPU |
+|---|---|---|
+| 256×256 | 3.2 ms | 2.3 ms |
+| 1280×720 | 50 ms | 5.4 ms |
+| 1920×1080 | 79 ms | 9.1 ms |
+| 3840×2160 | 688 ms | 18 ms |
+
+The GPU path is faster, not different: it is the same box-blur approximation. A toolkit that can blur its own live backdrop in a render pass should do that instead.
+
 `dodai-core`'s `Theme::frost()` gives each design's tint, blur and edge; map it onto `Glass`.

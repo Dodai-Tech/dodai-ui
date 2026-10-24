@@ -11,4 +11,11 @@ readme                 = "README.md"
 keywords               = ["blur", "glass", "frosted", "design-system", "rgba"]
 categories             = ["graphics", "gui"]
 
+[features]
+default = []
+# The same blur on the GPU (wgpu); `Backend::Auto` falls back to the CPU without an adapter.
+gpu = ["dep:wgpu", "dep:pollster"]
+
 [dependencies]
+wgpu     = { version = "30.0.1", optional = true, default-features = false, features = ["std", "parking_lot", "wgsl", "metal", "vulkan", "dx12"] }
+pollster = { version = "1", optional = true }

@@ -1,5 +1,20 @@
 //! Frosted glass on plain RGBA8 pixels (row-major, 4 bytes per pixel). No dependencies, no
 //! toolkit, no theme: see the README.
+//!
+//! [`blur`], [`blurred`] and [`glass`] run on the CPU. With the `gpu` feature, a [`Blurrer`]
+//! can run the same blur on the GPU (`wgpu`) and, in [`Backend::Auto`], picks whichever is
+//! available and worthwhile. The GPU path is bit-identical to the CPU one.
+
+#[cfg(feature = "gpu")]
+mod gpu;
+#[cfg(feature = "gpu")]
+pub use gpu::GpuBlur;
+
+/// Radius of each of the three box passes that approximate a Gaussian of `sigma`.
+fn box_radius(sigma: f32) -> usize {
+    let wi = (12.0 * sigma * sigma / 3.0 + 1.0).sqrt();
+    (((wi - 1.0) / 2.0).round() as usize).max(1)
+}
 
 /// Gaussian-like blur (three box passes) of an RGBA image, edges clamped. `sigma` is in pixels.
 pub fn blur(src: &[u8], w: usize, h: usize, sigma: f32) -> Vec<u8> {
@@ -7,8 +22,7 @@ pub fn blur(src: &[u8], w: usize, h: usize, sigma: f32) -> Vec<u8> {
     if sigma <= 0.0 || w == 0 || h == 0 {
         return src.to_vec();
     }
-    let wi = (12.0 * sigma * sigma / 3.0 + 1.0).sqrt();
-    let r = (((wi - 1.0) / 2.0).round() as usize).max(1);
+    let r = box_radius(sigma);
     let mut a = src.to_vec();
     let mut b = vec![0u8; a.len()];
     for _ in 0..3 {
@@ -118,10 +132,100 @@ pub struct Glass {
     pub edge: Option<([u8; 4], f32)>,
 }
 
+/// Which implementation a [`Blurrer`] may use.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Backend {
+    /// Always the CPU.
+    Cpu,
+    /// The GPU; falls back to the CPU when there is no adapter or the `gpu` feature is off.
+    Gpu,
+    /// The GPU for pictures of at least [`GPU_MIN_PIXELS`] pixels, else the CPU.
+    #[default]
+    Auto,
+}
+
+/// Below this many pixels the upload and readback cost more than the blur: `Auto` uses the CPU.
+pub const GPU_MIN_PIXELS: usize = 256 * 256;
+
+/// Blurs with the backend chosen at construction, reusing GPU resources between calls.
+pub struct Blurrer {
+    #[cfg(feature = "gpu")]
+    backend: Backend,
+    #[cfg(feature = "gpu")]
+    gpu: Option<GpuBlur>,
+}
+
+impl Blurrer {
+    /// A blurrer for `backend`. The GPU is opened here (once), not per call.
+    pub fn new(backend: Backend) -> Self {
+        #[cfg(not(feature = "gpu"))]
+        let _ = backend;
+        Self {
+            #[cfg(feature = "gpu")]
+            backend,
+            #[cfg(feature = "gpu")]
+            gpu: if backend == Backend::Cpu {
+                None
+            } else {
+                GpuBlur::new()
+            },
+        }
+    }
+
+    /// Whether blurs of `pixels` pixels run on the GPU.
+    pub fn uses_gpu(&self, pixels: usize) -> bool {
+        #[cfg(feature = "gpu")]
+        if self.gpu.is_some() {
+            return match self.backend {
+                Backend::Cpu => false,
+                Backend::Gpu => true,
+                Backend::Auto => pixels >= GPU_MIN_PIXELS,
+            };
+        }
+        let _ = pixels;
+        false
+    }
+
+    /// [`blur`] on the chosen backend.
+    pub fn blur(&mut self, src: &[u8], w: usize, h: usize, sigma: f32) -> Vec<u8> {
+        #[cfg(feature = "gpu")]
+        if self.uses_gpu(w * h) && sigma > 0.0 && w > 0 && h > 0 {
+            if let Some(out) = self
+                .gpu
+                .as_mut()
+                .and_then(|g| g.blur(src, w, h, box_radius(sigma)))
+            {
+                return out;
+            }
+        }
+        blur(src, w, h, sigma)
+    }
+
+    /// [`blurred`] on the chosen backend (the reduced copy is what gets blurred).
+    pub fn blurred(&mut self, src: &[u8], w: usize, h: usize, sigma: f32) -> Reduced {
+        let f = (sigma / 6.0).ceil().max(1.0) as usize;
+        let (small, sw, sh) = downscale(src, w, h, f);
+        Reduced {
+            pixels: self.blur(&small, sw, sh, sigma / f as f32),
+            size: (sw, sh),
+            full: (w, h),
+        }
+    }
+
+    /// [`glass`] on the chosen backend.
+    pub fn glass(&mut self, backdrop: &[u8], w: usize, h: usize, g: &Glass) -> Vec<u8> {
+        let blurred = self.blur(backdrop, w, h, g.blur);
+        tint_and_edge(blurred, w, h, g)
+    }
+}
+
 /// The finished pane for a whole backdrop: blur, then tint, then edge. The result is opaque
 /// where the backdrop is.
 pub fn glass(backdrop: &[u8], w: usize, h: usize, g: &Glass) -> Vec<u8> {
-    let mut out = blur(backdrop, w, h, g.blur);
+    tint_and_edge(blur(backdrop, w, h, g.blur), w, h, g)
+}
+
+fn tint_and_edge(mut out: Vec<u8>, w: usize, h: usize, g: &Glass) -> Vec<u8> {
     let a = g.tint[3] as u32;
     for px in out.chunks_exact_mut(4) {
         for (p, &t) in px.iter_mut().zip(&g.tint).take(3) {
@@ -238,5 +342,39 @@ mod tests {
             edge: None,
         };
         assert_eq!(glass(&src, 8, 8, &clear), src, "clear tint leaves the blur");
+    }
+
+    #[test]
+    fn blurrer_matches_the_free_functions_on_every_backend() {
+        let (w, h) = (300, 260);
+        let src: Vec<u8> = (0..w * h * 4).map(|i| (i * 13 % 255) as u8).collect();
+        let g = Glass {
+            tint: [10, 20, 30, 120],
+            blur: 6.0,
+            edge: None,
+        };
+        for backend in [Backend::Cpu, Backend::Gpu, Backend::Auto] {
+            let mut b = Blurrer::new(backend);
+            assert_eq!(
+                b.blur(&src, w, h, 6.0),
+                blur(&src, w, h, 6.0),
+                "{backend:?}"
+            );
+            assert_eq!(
+                b.blurred(&src, w, h, 12.0),
+                blurred(&src, w, h, 12.0),
+                "{backend:?}"
+            );
+            assert_eq!(
+                b.glass(&src, w, h, &g),
+                glass(&src, w, h, &g),
+                "{backend:?}"
+            );
+        }
+        assert!(!Blurrer::new(Backend::Cpu).uses_gpu(usize::MAX));
+        assert!(
+            !Blurrer::new(Backend::Auto).uses_gpu(16),
+            "small pictures stay on the CPU"
+        );
     }
 }

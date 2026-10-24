@@ -95,6 +95,11 @@ jobs:
           key: ${{ matrix.crate }}
       - run: cargo clippy -p ${{ matrix.crate }} --all-targets -- -D warnings
       - run: cargo test -p ${{ matrix.crate }}
+      - name: dodai-frost GPU feature (tests skip without an adapter)
+        if: matrix.crate == 'dodai-frost'
+        run: |
+          cargo clippy -p dodai-frost --all-targets --features gpu -- -D warnings
+          cargo test -p dodai-frost --features gpu
 
   # One job per dependent crate; runs only once the base crates are green.
   # `gui: true` crates need native libs on Linux and also run on macOS.
