@@ -149,20 +149,23 @@ impl ShaderView {
     }
 }
 
-/// The shared GPU, once ready. Opening the device and compiling the shader
-/// module takes 100-200 ms, so it happens on a background thread: until it
-/// finishes (or if there is no adapter) views draw nothing instead of
-/// stalling the first frame.
-fn gpu() -> Option<&'static std::sync::Mutex<dodai_shaders::gpu::Gpu>> {
+/// Where shader views render.
+enum Backend {
+    /// The GPU is still opening (100-200 ms, on a background thread so the first frame does not
+    /// stall): views keep what they show.
+    Starting,
+    /// The shared GPU.
+    Gpu(&'static std::sync::Mutex<dodai_shaders::gpu::Gpu>),
+    /// No real adapter (or `DODAI_GPU=0`): the CPU renderer.
+    Cpu,
+}
+
+/// GPU first: opened once, off the UI thread. The CPU renders only when there is no adapter.
+fn backend() -> Backend {
     static GPU: std::sync::OnceLock<Option<std::sync::Mutex<dodai_shaders::gpu::Gpu>>> =
         std::sync::OnceLock::new();
     static START: std::sync::Once = std::sync::Once::new();
     START.call_once(|| {
-        // `DODAI_GPU=0` pretends there is no adapter (for testing).
-        if std::env::var("DODAI_GPU").is_ok_and(|v| v == "0") {
-            let _ = GPU.set(None);
-            return;
-        }
         let _ = std::thread::Builder::new()
             .name("dodai-gpu-init".into())
             .spawn(|| {
@@ -176,10 +179,21 @@ fn gpu() -> Option<&'static std::sync::Mutex<dodai_shaders::gpu::Gpu>> {
                 let _ = GPU.set(g.map(std::sync::Mutex::new));
             });
     });
-    GPU.get().and_then(Option::as_ref)
+    match GPU.get() {
+        None => Backend::Starting,
+        Some(Some(g)) => Backend::Gpu(g),
+        Some(None) => Backend::Cpu,
+    }
 }
 
-/// Renders on the GPU: `None` while it is not ready, `Some(None)` to keep the
+/// The CPU renderer, shared by all views.
+fn cpu_renderer() -> &'static std::sync::Mutex<dodai_shaders::Renderer> {
+    static R: std::sync::OnceLock<std::sync::Mutex<dodai_shaders::Renderer>> =
+        std::sync::OnceLock::new();
+    R.get_or_init(|| std::sync::Mutex::new(dodai_shaders::Renderer::from_gpu(None)))
+}
+
+/// Renders on the GPU, or on the CPU without one: `None` while it is not ready, `Some(None)` to keep the
 /// current picture, `Some(Some(img))` for a new one.
 #[allow(clippy::too_many_arguments)]
 fn gpu_frame(
@@ -191,7 +205,10 @@ fn gpu_frame(
     cfg: u64,
     now: Instant,
 ) -> Option<Option<Arc<RenderImage>>> {
-    let g = gpu()?;
+    let backend = backend();
+    if matches!(backend, Backend::Starting) {
+        return None;
+    }
     // `pixel` is device pixels per shader pixel on a 2x display, so the default
     // 2 is one image pixel per CSS pixel: a quarter of the work of full retina
     // resolution, and shaders are smooth enough that it does not show.
@@ -202,7 +219,7 @@ fn gpu_frame(
     w = ((w as f32 / big) as u32).max(16);
     h = ((h as f32 / big) as u32).max(9);
     let ids: Vec<&str> = chain.iter().map(|i| i.id).collect();
-    {
+    if let Backend::Gpu(g) = &backend {
         // Never stall a frame compiling: show the old picture until it is ready.
         let gpu = g.lock().ok()?;
         if !gpu.is_ready(&ids) {
@@ -222,11 +239,25 @@ fn gpu_frame(
         return Some(None);
     }
     let t = if animated { t } else { 1.5 };
-    let mut gpu = g.lock().ok()?;
     let took = Instant::now();
-    let bytes = gpu.render(&ids, w, h, t, intensity, pal).ok()?;
+    let bytes = match &backend {
+        Backend::Gpu(g) => {
+            let mut gpu = g.lock().ok()?;
+            match gpu.render(&ids, w, h, t, intensity, pal) {
+                Ok(b) => b.to_vec(),
+                // A failed GPU render still shows a picture, from the CPU.
+                Err(_) => dodai_shaders::cpu::render(&ids, w, h, t, intensity, pal).ok()?,
+            }
+        }
+        _ => cpu_renderer()
+            .lock()
+            .ok()?
+            .render(&ids, w, h, t, intensity, pal)
+            .ok()?
+            .to_vec(),
+    };
     pace_record(took.elapsed().as_secs_f32());
-    let buf = image::RgbaImage::from_raw(w, h, bytes.to_vec())?;
+    let buf = image::RgbaImage::from_raw(w, h, bytes)?;
     s.gpu_last = Some((now, cfg, (w, h)));
     Some(Some(Arc::new(RenderImage::new(vec![image::Frame::new(
         buf,
@@ -258,14 +289,15 @@ fn pace_record(secs: f32) {
     }
 }
 
-/// The adapter `ShaderView` renders on: `"GPU · <adapter>"`, or a note while
-/// it starts or when there is none.
+/// What `ShaderView` renders on: `"GPU · <adapter>"`, `"CPU (no GPU)"`, or a note while the GPU
+/// starts.
 pub fn shader_backend() -> String {
-    match gpu() {
-        Some(g) => g
+    match backend() {
+        Backend::Gpu(g) => g
             .lock()
             .map_or_else(|_| "GPU".into(), |g| format!("GPU · {}", g.adapter)),
-        None => "no GPU (yet)".into(),
+        Backend::Cpu => "CPU (no GPU)".into(),
+        Backend::Starting => "starting GPU…".into(),
     }
 }
 

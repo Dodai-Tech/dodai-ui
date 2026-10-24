@@ -4230,7 +4230,6 @@ dependencies = [
  "bytemuck",
  "dodai-core",
  "dodai-gpu",
- "dodai-shaders-kernels",
  "wgpu 30.0.1",
 ]
 

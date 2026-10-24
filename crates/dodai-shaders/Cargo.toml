@@ -22,6 +22,3 @@ name = "warm"
 
 [lints.rust]
 unexpected_cfgs = { level = "allow", check-cfg = ['cfg(target_arch, values("spirv"))'] }
-
-[dev-dependencies]
-dodai-shaders-kernels = { path = "../dodai-shaders-kernels" }

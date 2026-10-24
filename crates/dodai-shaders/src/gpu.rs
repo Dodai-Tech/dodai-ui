@@ -16,7 +16,8 @@
 //! assert_eq!(bgra.len(), 1280 * 720 * 4);
 //! ```
 
-use crate::{by_id, ShaderPalette};
+use crate::ShaderPalette;
+use crate::{check_chain, RenderError};
 use bytemuck::{Pod, Zeroable};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -48,28 +49,6 @@ struct Targets {
     /// `[0]` reads pong and writes ping, `[1]` the reverse.
     groups: [wgpu::BindGroup; 2],
 }
-
-/// Why a render did not happen.
-#[derive(Debug)]
-pub enum GpuError {
-    /// The chain is empty, or does not start with a generator.
-    BadChain(String),
-    /// Unknown shader id.
-    Unknown(String),
-    /// Reading the image back failed.
-    Readback(String),
-}
-
-impl std::fmt::Display for GpuError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            GpuError::BadChain(s) => write!(f, "bad chain: {s}"),
-            GpuError::Unknown(s) => write!(f, "unknown shader `{s}`"),
-            GpuError::Readback(s) => write!(f, "readback failed: {s}"),
-        }
-    }
-}
-impl std::error::Error for GpuError {}
 
 type Pipes = Arc<Mutex<HashMap<String, wgpu::ComputePipeline>>>;
 
@@ -336,24 +315,9 @@ impl Gpu {
         time: f32,
         intensity: f32,
         pal: &ShaderPalette,
-    ) -> Result<&[u8], GpuError> {
+    ) -> Result<&[u8], RenderError> {
         let (w, h) = (w.max(1), h.max(1));
-        for (i, id) in chain.iter().enumerate() {
-            let info = by_id(id).ok_or_else(|| GpuError::Unknown((*id).to_string()))?;
-            if (i == 0) != info.is_generator() {
-                return Err(GpuError::BadChain(format!(
-                    "`{id}` is {} at position {i}",
-                    if info.is_generator() {
-                        "a generator"
-                    } else {
-                        "a post effect"
-                    }
-                )));
-            }
-        }
-        if chain.is_empty() {
-            return Err(GpuError::BadChain("empty".into()));
-        }
+        check_chain(chain)?;
         self.ensure_targets(w, h);
         let comp = self.compiler();
         let pipes: Vec<wgpu::ComputePipeline> = chain.iter().map(|id| comp.get(id)).collect();
@@ -400,17 +364,17 @@ impl Gpu {
         });
         self.device
             .poll(wgpu::PollType::wait_indefinitely())
-            .map_err(|e| GpuError::Readback(e.to_string()))?;
+            .map_err(|e| RenderError::Readback(e.to_string()))?;
         rx.recv()
-            .map_err(|e| GpuError::Readback(e.to_string()))?
-            .map_err(|e| GpuError::Readback(e.to_string()))?;
+            .map_err(|e| RenderError::Readback(e.to_string()))?
+            .map_err(|e| RenderError::Readback(e.to_string()))?;
         let t = self.targets.as_mut().expect("targets");
         {
             let data = t
                 .read
                 .slice(..)
                 .get_mapped_range()
-                .map_err(|e| GpuError::Readback(e.to_string()))?;
+                .map_err(|e| RenderError::Readback(e.to_string()))?;
             t.bytes.copy_from_slice(&data);
         }
         t.read.unmap();
@@ -482,15 +446,15 @@ mod tests {
         let pal = ShaderPalette::default();
         assert!(matches!(
             gpu.render(&[], 8, 8, 0.0, 1.0, &pal),
-            Err(GpuError::BadChain(_))
+            Err(RenderError::BadChain(_))
         ));
         assert!(matches!(
             gpu.render(&["crt"], 8, 8, 0.0, 1.0, &pal),
-            Err(GpuError::BadChain(_))
+            Err(RenderError::BadChain(_))
         ));
         assert!(matches!(
             gpu.render(&["nope"], 8, 8, 0.0, 1.0, &pal),
-            Err(GpuError::Unknown(_))
+            Err(RenderError::Unknown(_))
         ));
     }
 }

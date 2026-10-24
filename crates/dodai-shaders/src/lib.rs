@@ -1,10 +1,10 @@
 //! # dodai-shaders
 //!
 //! Pixel shaders for the Dodai design system and beyond, written in plain Rust
-//! and run on the GPU. A shader is a function evaluated per pixel
-//! (`fn(uv, &Ctx) -> Vec3`); the sources are compiled once by rust-gpu to WGSL
-//! (`dodai-shaders-kernels`, an unpublished build step) and the result is
-//! embedded here, so using the crate needs no special toolchain. It runs on
+//! and run on the GPU first, with the CPU as the fallback. A shader is a function evaluated per pixel
+//! (`fn(uv, &Ctx) -> Vec3`). The same sources run on the CPU as ordinary Rust and are
+//! compiled once by rust-gpu to WGSL (`dodai-shaders-kernels`, an unpublished build step);
+//! the result is embedded here, so using the crate needs no special toolchain. It runs on
 //! every wgpu backend: Metal, Vulkan, DX12 and, through WebGPU, the browser.
 //!
 //! * **Generators** make a picture from nothing (`neon_grid`, `digital_rain`).
@@ -12,11 +12,12 @@
 //! * Both read colours from a [`ShaderPalette`], so they follow the theme.
 //!
 //! ```no_run
-//! use dodai_shaders::{gpu::Gpu, ShaderPalette};
+//! use dodai_shaders::{Renderer, ShaderPalette};
 //!
-//! let mut gpu = Gpu::new().expect("no GPU");
+//! // GPU when a real adapter exists, else the CPU: there is no choice to make
+//! let mut renderer = Renderer::new();
 //! // a generator first, then post effects; returns packed BGRA8
-//! let bgra = gpu
+//! let bgra = renderer
 //!     .render(&["neon_grid", "crt"], 1280, 720, 1.5, 1.0, &ShaderPalette::cyberpunk())
 //!     .unwrap();
 //! assert_eq!(bgra.len(), 1280 * 720 * 4);
@@ -25,24 +26,32 @@
 //! [`catalog`] lists every shader (id, name, family, kind) without a GPU.
 // Index loops, `match` ladders and range comparisons are deliberate: the GPU
 // build (rust-gpu) cannot lower the iterator / `contains` forms.
+// `use crate::prelude::*` is empty on the host but needed by the GPU build.
 #![allow(
+    unused_imports,
     clippy::needless_range_loop,
     clippy::manual_range_contains,
     clippy::manual_memcpy
 )]
 #![recursion_limit = "256"]
 
-mod catalog;
+pub mod cpu;
 mod ctx;
+mod frame;
 pub mod gpu;
 /// Shader maths, shared verbatim with the GPU kernels (vectors, hashes, noise, easing).
 pub mod math;
 mod prelude;
 pub mod presets;
+mod renderer;
+mod shaders;
+// The shader sources refer to each other as `crate::matrix` etc. (also in the GPU build).
+use shaders::{matrix, pixel, retro2};
 
 pub use ctx::{Ctx, ShaderPalette};
 pub use math::{vec2, vec3, Vec2, Vec3};
 pub use presets::Preset;
+pub use renderer::Renderer;
 
 /// Shader family; the design-system section it belongs to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -121,6 +130,17 @@ pub enum Kind {
     PostFx,
 }
 
+/// A generator's per-pixel function.
+type GenFn = fn(Vec2, &Ctx) -> Vec3;
+/// A post effect's per-pixel function.
+type PostFn = fn(&frame::Frame, Vec2, &Ctx) -> Vec3;
+
+#[derive(Clone, Copy, Debug)]
+enum Func {
+    Gen(GenFn),
+    Post(PostFn),
+}
+
 /// One catalogued shader.
 #[derive(Clone, Copy, Debug)]
 pub struct ShaderInfo {
@@ -129,6 +149,7 @@ pub struct ShaderInfo {
     pub family: Family,
     pub desc: &'static str,
     pub kind: Kind,
+    func: Func,
 }
 
 impl ShaderInfo {
@@ -137,6 +158,7 @@ impl ShaderInfo {
         name: &'static str,
         family: Family,
         desc: &'static str,
+        f: GenFn,
     ) -> Self {
         Self {
             id,
@@ -144,6 +166,7 @@ impl ShaderInfo {
             family,
             desc,
             kind: Kind::Generator,
+            func: Func::Gen(f),
         }
     }
     pub(crate) const fn post(
@@ -151,6 +174,7 @@ impl ShaderInfo {
         name: &'static str,
         family: Family,
         desc: &'static str,
+        f: PostFn,
     ) -> Self {
         Self {
             id,
@@ -158,6 +182,7 @@ impl ShaderInfo {
             family,
             desc,
             kind: Kind::PostFx,
+            func: Func::Post(f),
         }
     }
     pub fn is_generator(&self) -> bool {
@@ -167,7 +192,73 @@ impl ShaderInfo {
 
 /// Every shader, in family order.
 pub fn catalog() -> &'static [ShaderInfo] {
-    catalog::SHADERS
+    static ALL: std::sync::OnceLock<Vec<ShaderInfo>> = std::sync::OnceLock::new();
+    ALL.get_or_init(|| {
+        use shaders::*;
+        [
+            cyberpunk::SHADERS,
+            blade::SHADERS,
+            ghibli::SHADERS,
+            ghibli2::SHADERS,
+            dmt::SHADERS,
+            pixel2::SHADERS,
+            material::SHADERS,
+            matrix::SHADERS,
+            retro::SHADERS,
+            pixel::SHADERS,
+            nature::SHADERS,
+            fx::SHADERS,
+            extra::SHADERS,
+            retro2::SHADERS,
+            ghostty::SHADERS,
+        ]
+        .concat()
+    })
+}
+
+/// Why a render did not happen.
+#[derive(Debug)]
+pub enum RenderError {
+    /// The chain is empty, or does not start with a generator.
+    BadChain(String),
+    /// Unknown shader id.
+    Unknown(String),
+    /// Reading the image back failed.
+    Readback(String),
+}
+
+impl std::fmt::Display for RenderError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RenderError::BadChain(s) => write!(f, "bad chain: {s}"),
+            RenderError::Unknown(s) => write!(f, "unknown shader `{s}`"),
+            RenderError::Readback(s) => write!(f, "readback failed: {s}"),
+        }
+    }
+}
+impl std::error::Error for RenderError {}
+
+/// The shaders of `chain`: a generator, then post effects.
+pub(crate) fn check_chain(chain: &[&str]) -> Result<Vec<&'static ShaderInfo>, RenderError> {
+    if chain.is_empty() {
+        return Err(RenderError::BadChain("empty".into()));
+    }
+    let mut out = Vec::with_capacity(chain.len());
+    for (i, id) in chain.iter().enumerate() {
+        let info = by_id(id).ok_or_else(|| RenderError::Unknown((*id).to_string()))?;
+        if (i == 0) != info.is_generator() {
+            return Err(RenderError::BadChain(format!(
+                "`{id}` is {} at position {i}",
+                if info.is_generator() {
+                    "a generator"
+                } else {
+                    "a post effect"
+                }
+            )));
+        }
+        out.push(info);
+    }
+    Ok(out)
 }
 
 /// Shaders of one family.

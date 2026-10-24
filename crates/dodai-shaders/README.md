@@ -37,14 +37,20 @@ Palettes: `ShaderPalette::{cyberpunk, material3, matrix, amber, platformer, metr
 
 ## How it works
 
-The shaders live in `dodai-shaders-kernels` (unpublished). `just build-kernels` compiles them with
-rust-gpu to `kernels.wgsl`, which is checked in and embedded here, and regenerates `src/catalog.rs`
-from the shader tables. `Gpu` owns one compute pipeline per shader (compiled on first use, or in the
-background with `warm_chain`) and runs a chain into a packed BGRA image.
+The shaders are plain Rust in `src/shaders`, one implementation for both paths:
+
+* **GPU (first):** `dodai-shaders-kernels` (unpublished) includes the same files by path and
+  `just build-kernels` compiles them with rust-gpu to `kernels.wgsl`, which is checked in and
+  embedded here. `Gpu` owns one compute pipeline per shader (compiled on first use, or in the
+  background with `warm_chain`) and runs a chain into a packed BGRA image.
+* **CPU (fallback):** `cpu::render` calls the same functions per pixel on all cores. Output matches
+  the GPU to within a few levels of 255 (`tests/cpu_matches_gpu.rs` checks every shader).
+* `Renderer` picks: GPU when `dodai-gpu` finds a real adapter, else the CPU (large pictures are
+  rendered at most `CPU_MAX_PIXELS` big and scaled up). There is no way to choose a backend.
 
 ### Changing a shader
 
-Edit the file in `crates/dodai-shaders-kernels/src/shaders`, then `just build-kernels` (needs
+Edit the file in `crates/dodai-shaders/src/shaders`, then `just build-kernels` (needs
 `cargo install cargo-gpu`; the first run installs a pinned nightly, ~5 min). Keep shaders
 GPU-friendly: no iterators over arrays, no `&[..]` of constants, no strings, no `u8`/`u64`, no
 `contains(&x)`; use index loops and `match`.
