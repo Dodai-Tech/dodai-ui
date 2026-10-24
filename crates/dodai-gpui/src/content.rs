@@ -423,116 +423,121 @@ impl CodeBlock {
     }
 }
 
-impl RenderOnce for CodeBlock {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let t = theme_of(cx);
+/// The shared selection state of a code block.
+struct CodeState {
+    sel: gpui::Entity<Sel>,
+    selecting: gpui::Entity<bool>,
+    focus: gpui::FocusHandle,
+}
+
+impl CodeBlock {
+    /// Line `i` of the code: gutter number, highlighted text, and the selection handlers.
+    fn row(
+        &self,
+        t: &dodai_core::Theme,
+        (i, text, spans): (usize, &str, Vec<(Range<usize>, CodeToken)>),
+        cur: Sel,
+        state: &CodeState,
+        gutter: f32,
+    ) -> gpui::Div {
         let p = &t.palette;
-        let copied = window.use_keyed_state((self.id.clone(), "copied"), cx, |_, _| false);
-        let sel = window.use_keyed_state((self.id.clone(), "sel"), cx, |_, _| None::<(Pos, Pos)>);
-        let selecting = window.use_keyed_state((self.id.clone(), "selecting"), cx, |_, _| false);
-        let focus =
-            window.use_keyed_state((self.id.clone(), "focus"), cx, |_, cx| cx.focus_handle());
-        let focus = focus.read(cx).clone();
-        let cur: Sel = *sel.read(cx);
-        let lines = highlight_lines(&self.code, &self.lang);
-        let n = lines.len();
-        let gutter = (n.to_string().len() as f32) * 8.0 + 14.0;
         let select_bg = p.primary.with_alpha(0.3);
-        let mut body = div().flex().flex_col().py(px(t.spacing.sm)).cursor_text();
-        for (i, (text, spans)) in self.code.split('\n').zip(lines).enumerate() {
-            let tokens: Vec<(Range<usize>, Hsla)> = spans
-                .into_iter()
-                .map(|(r, k)| (r, tok_color(&t, k)))
-                .collect();
-            let hl = styled_spans(
-                &tokens,
-                cur.and_then(|s| line_selection(s, i, text.len())),
-                hsla(select_bg),
-                text.len(),
-            );
-            let styled = StyledText::new(text.to_string()).with_highlights(hl);
-            let layout = styled.layout().clone();
-            // Byte offset in this line under the pointer (clamped to the line).
-            let at = {
-                let layout = layout.clone();
-                move |pos| layout.index_for_position(pos).unwrap_or_else(|e| e)
-            };
-            let mut row = div()
-                .flex()
-                .min_h(px(t.typography.size_sm * 1.6))
-                .on_mouse_down(MouseButton::Left, {
-                    let (sel, selecting, focus, at) =
-                        (sel.clone(), selecting.clone(), focus.clone(), at.clone());
-                    let line_text = text.to_string();
-                    move |e, window, cx| {
-                        window.focus(&focus);
-                        let here = (i, at(e.position));
-                        // Double-click selects a word, triple-click the line.
-                        let picked = match e.click_count {
-                            2 => Some(word_range(&line_text, here.1)),
-                            n if n >= 3 => Some(0..line_text.len()),
-                            _ => None,
-                        };
-                        if let Some(r) = picked {
-                            sel.update(cx, |s, cx| {
-                                *s = Some(((i, r.start), (i, r.end)));
-                                cx.notify();
-                            });
-                            return;
-                        }
-                        let anchor = match (*sel.read(cx), e.modifiers.shift) {
-                            (Some((a, _)), true) => a,
-                            _ => here,
-                        };
+        let (sel, selecting, focus) = (&state.sel, &state.selecting, &state.focus);
+        let tokens: Vec<(Range<usize>, Hsla)> = spans
+            .into_iter()
+            .map(|(r, k)| (r, tok_color(t, k)))
+            .collect();
+        let hl = styled_spans(
+            &tokens,
+            cur.and_then(|s| line_selection(s, i, text.len())),
+            hsla(select_bg),
+            text.len(),
+        );
+        let styled = StyledText::new(text.to_string()).with_highlights(hl);
+        let layout = styled.layout().clone();
+        // Byte offset in this line under the pointer (clamped to the line).
+        let at = {
+            let layout = layout.clone();
+            move |pos| layout.index_for_position(pos).unwrap_or_else(|e| e)
+        };
+        let mut row = div()
+            .flex()
+            .min_h(px(t.typography.size_sm * 1.6))
+            .on_mouse_down(MouseButton::Left, {
+                let (sel, selecting, focus, at) =
+                    (sel.clone(), selecting.clone(), focus.clone(), at.clone());
+                let line_text = text.to_string();
+                move |e, window, cx| {
+                    window.focus(&focus);
+                    let here = (i, at(e.position));
+                    // Double-click selects a word, triple-click the line.
+                    let picked = match e.click_count {
+                        2 => Some(word_range(&line_text, here.1)),
+                        n if n >= 3 => Some(0..line_text.len()),
+                        _ => None,
+                    };
+                    if let Some(r) = picked {
                         sel.update(cx, |s, cx| {
-                            *s = Some((anchor, here));
+                            *s = Some(((i, r.start), (i, r.end)));
                             cx.notify();
                         });
-                        selecting.update(cx, |s, _| *s = true);
+                        return;
                     }
-                })
-                .on_mouse_move({
-                    let (sel, selecting) = (sel.clone(), selecting.clone());
-                    move |e, _, cx| {
-                        if !*selecting.read(cx) {
-                            return;
+                    let anchor = match (*sel.read(cx), e.modifiers.shift) {
+                        (Some((a, _)), true) => a,
+                        _ => here,
+                    };
+                    sel.update(cx, |s, cx| {
+                        *s = Some((anchor, here));
+                        cx.notify();
+                    });
+                    selecting.update(cx, |s, _| *s = true);
+                }
+            })
+            .on_mouse_move({
+                let (sel, selecting) = (sel.clone(), selecting.clone());
+                move |e, _, cx| {
+                    if !*selecting.read(cx) {
+                        return;
+                    }
+                    let here = (i, at(e.position));
+                    sel.update(cx, |s, cx| {
+                        if let Some((a, _)) = *s {
+                            *s = Some((a, here));
+                            cx.notify();
                         }
-                        let here = (i, at(e.position));
-                        sel.update(cx, |s, cx| {
-                            if let Some((a, _)) = *s {
-                                *s = Some((a, here));
-                                cx.notify();
-                            }
-                        });
-                    }
-                });
-            if self.numbers {
-                row = row.child(
-                    div()
-                        .w(px(gutter))
-                        .flex_none()
-                        .pr(px(t.spacing.sm))
-                        .flex()
-                        .justify_end()
-                        .text_color(hsla(p.text_disabled))
-                        .child((i + 1).to_string()),
-                );
-            }
+                    });
+                }
+            });
+        if self.numbers {
             row = row.child(
                 div()
-                    .pl(px(if self.numbers {
-                        t.spacing.xs
-                    } else {
-                        t.spacing.md
-                    }))
-                    .pr(px(t.spacing.md))
-                    .whitespace_nowrap()
-                    .child(styled),
+                    .w(px(gutter))
+                    .flex_none()
+                    .pr(px(t.spacing.sm))
+                    .flex()
+                    .justify_end()
+                    .text_color(hsla(p.text_disabled))
+                    .child((i + 1).to_string()),
             );
-            body = body.child(row);
         }
-        let style =
-            ShapeStyle::from_tokens(&t, Some(p.surface_raised), Some(p.border), false, false);
+        row = row.child(
+            div()
+                .pl(px(if self.numbers {
+                    t.spacing.xs
+                } else {
+                    t.spacing.md
+                }))
+                .pr(px(t.spacing.md))
+                .whitespace_nowrap()
+                .child(styled),
+        );
+        row
+    }
+
+    /// The header: language name and the copy button.
+    fn head(&self, t: &dodai_core::Theme, copied: gpui::Entity<bool>, cx: &App) -> gpui::Div {
+        let p = &t.palette;
         let mut head = div()
             .flex()
             .items_center()
@@ -560,6 +565,36 @@ impl RenderOnce for CodeBlock {
                     }),
             );
         }
+        head
+    }
+}
+
+impl RenderOnce for CodeBlock {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let p = &t.palette;
+        let copied = window.use_keyed_state((self.id.clone(), "copied"), cx, |_, _| false);
+        let sel = window.use_keyed_state((self.id.clone(), "sel"), cx, |_, _| None::<(Pos, Pos)>);
+        let selecting = window.use_keyed_state((self.id.clone(), "selecting"), cx, |_, _| false);
+        let focus =
+            window.use_keyed_state((self.id.clone(), "focus"), cx, |_, cx| cx.focus_handle());
+        let focus = focus.read(cx).clone();
+        let cur: Sel = *sel.read(cx);
+        let state = CodeState {
+            sel: sel.clone(),
+            selecting: selecting.clone(),
+            focus: focus.clone(),
+        };
+        let lines = highlight_lines(&self.code, &self.lang);
+        let n = lines.len();
+        let gutter = (n.to_string().len() as f32) * 8.0 + 14.0;
+        let mut body = div().flex().flex_col().py(px(t.spacing.sm)).cursor_text();
+        for (i, (text, spans)) in self.code.split('\n').zip(lines).enumerate() {
+            body = body.child(self.row(&t, (i, text, spans), cur, &state, gutter));
+        }
+        let style =
+            ShapeStyle::from_tokens(&t, Some(p.surface_raised), Some(p.border), false, false);
+        let head = self.head(&t, copied, cx);
         let area = crate::display::ScrollArea::new((self.id.clone(), "scroll"))
             .max_height(self.max_height.unwrap_or(f32::from(px(100_000.0))))
             .horizontal(true)

@@ -134,6 +134,53 @@ impl Select {
     );
 }
 
+/// Keyboard on the trigger: arrows move (opening the list first), Enter/Space choose or open,
+/// Home/End jump, Escape/Tab close.
+fn key_down(
+    st: &Entity<SelectState>,
+    commit: &Commit,
+    sel: Option<usize>,
+    n: usize,
+    key: &str,
+    w: &mut Window,
+    cx: &mut App,
+) {
+    let (open, hi) = {
+        let s = st.read(cx);
+        (s.open, s.highlight)
+    };
+    let mv = |delta: i32, cx: &mut App| {
+        st.update(cx, |s, cx| {
+            if !s.open {
+                s.open = true;
+                s.highlight = sel.unwrap_or(0);
+            } else if let Some(i) = step_index(Some(hi), n, delta, true) {
+                s.highlight = i;
+            }
+            cx.notify();
+        });
+    };
+    match key {
+        "down" => mv(1, cx),
+        "up" => mv(-1, cx),
+        "home" if open => st.update(cx, |s, cx| {
+            s.highlight = 0;
+            cx.notify();
+        }),
+        "end" if open => st.update(cx, |s, cx| {
+            s.highlight = n.saturating_sub(1);
+            cx.notify();
+        }),
+        "enter" | "space" if open && n > 0 => commit(hi.min(n - 1), w, cx),
+        "enter" | "space" => mv(1, cx),
+        "escape" | "tab" if open => st.update(cx, |s, cx| {
+            s.open = false;
+            cx.notify();
+        }),
+        _ => {}
+    }
+}
+
 impl Select {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
@@ -265,43 +312,7 @@ impl Select {
                     let st = st.clone();
                     let commit = commit.clone();
                     let sel = self.selected;
-                    move |e, w, cx| {
-                        let key = e.keystroke.key.as_str();
-                        let (open, hi) = {
-                            let s = st.read(cx);
-                            (s.open, s.highlight)
-                        };
-                        let mv = |delta: i32, cx: &mut App| {
-                            st.update(cx, |s, cx| {
-                                if !s.open {
-                                    s.open = true;
-                                    s.highlight = sel.unwrap_or(0);
-                                } else if let Some(i) = step_index(Some(hi), n, delta, true) {
-                                    s.highlight = i;
-                                }
-                                cx.notify();
-                            });
-                        };
-                        match key {
-                            "down" => mv(1, cx),
-                            "up" => mv(-1, cx),
-                            "home" if open => st.update(cx, |s, cx| {
-                                s.highlight = 0;
-                                cx.notify();
-                            }),
-                            "end" if open => st.update(cx, |s, cx| {
-                                s.highlight = n.saturating_sub(1);
-                                cx.notify();
-                            }),
-                            "enter" | "space" if open && n > 0 => commit(hi.min(n - 1), w, cx),
-                            "enter" | "space" => mv(1, cx),
-                            "escape" | "tab" if open => st.update(cx, |s, cx| {
-                                s.open = false;
-                                cx.notify();
-                            }),
-                            _ => {}
-                        }
-                    }
+                    move |e, w, cx| key_down(&st, &commit, sel, n, e.keystroke.key.as_str(), w, cx)
                 });
         }
 
