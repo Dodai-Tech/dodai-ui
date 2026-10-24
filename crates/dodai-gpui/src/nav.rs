@@ -613,3 +613,14 @@ pub fn nav_state(disabled: bool) -> ControlState {
         ControlState::Idle
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn disabled_items_resolve_to_the_disabled_state() {
+        assert_eq!(nav_state(true), ControlState::Disabled);
+        assert_eq!(nav_state(false), ControlState::Idle);
+    }
+}

@@ -109,6 +109,29 @@ impl Theme {
         self
     }
 
+    /// Builder: denser (`< 1`) or roomier (`> 1`) layout. Scales the control height and the
+    /// spacing scale, so every control, row and gap follows; type, icons and fixed parts
+    /// ([`crate::Sizes`]) keep their size. `1.0` changes nothing. Clamped to `0.5..=2.0`, and the
+    /// control height stays on a half pixel so edges stay crisp.
+    pub fn with_density(mut self, density: f32) -> Self {
+        let d = if density.is_finite() {
+            density.clamp(0.5, 2.0)
+        } else {
+            1.0
+        };
+        let snap = |v: f32| (v * d * 2.0).round() / 2.0;
+        self.shape.control_height = snap(self.shape.control_height);
+        let sp = &mut self.spacing;
+        (sp.xs, sp.sm, sp.md, sp.lg, sp.xl) = (
+            snap(sp.xs),
+            snap(sp.sm),
+            snap(sp.md),
+            snap(sp.lg),
+            snap(sp.xl),
+        );
+        self
+    }
+
     /// Builder: cut these corners on chamfered controls (see [`crate::Corners`]).
     pub fn with_corners(mut self, c: crate::Corners) -> Self {
         self.shape.corners = c;
@@ -129,5 +152,42 @@ impl Theme {
 impl Default for Theme {
     fn default() -> Self {
         crate::themes::neutral()
+    }
+}
+
+#[cfg(test)]
+mod density_tests {
+    use crate::Theme;
+
+    #[test]
+    fn one_changes_nothing() {
+        let t = Theme::default();
+        let d = t.clone().with_density(1.0);
+        assert_eq!(d.shape.control_height, t.shape.control_height);
+        assert_eq!(d.spacing, t.spacing);
+    }
+
+    #[test]
+    fn denser_shrinks_controls_and_gaps_and_roomier_grows_them() {
+        let t = Theme::default();
+        let dense = t.clone().with_density(0.8);
+        let roomy = t.clone().with_density(1.25);
+        assert!(dense.shape.control_height < t.shape.control_height);
+        assert!(roomy.shape.control_height > t.shape.control_height);
+        assert!(dense.spacing.md < t.spacing.md && roomy.spacing.md > t.spacing.md);
+        assert_eq!(
+            dense.shape.control_height * 2.0,
+            (dense.shape.control_height * 2.0).round()
+        );
+    }
+
+    #[test]
+    fn out_of_range_and_nan_are_tamed() {
+        let t = Theme::default();
+        assert_eq!(t.clone().with_density(f32::NAN).spacing, t.spacing);
+        assert_eq!(
+            t.clone().with_density(100.0).shape.control_height,
+            t.clone().with_density(2.0).shape.control_height
+        );
     }
 }

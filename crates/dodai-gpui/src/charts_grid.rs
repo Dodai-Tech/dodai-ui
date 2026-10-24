@@ -397,3 +397,17 @@ impl Heatmap {
 }
 
 crate::entry_render!(Heatmap);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn heat_runs_from_the_raised_surface_to_the_primary_and_clamps() {
+        let t = dodai::themes::cyberpunk::yellow();
+        assert_eq!(heat_color(&t, 0.0), t.palette.surface_raised);
+        assert_eq!(heat_color(&t, 1.0), t.palette.primary);
+        assert_eq!(heat_color(&t, -5.0), heat_color(&t, 0.0));
+        assert_eq!(heat_color(&t, 9.0), heat_color(&t, 1.0));
+    }
+}

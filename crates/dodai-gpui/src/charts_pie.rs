@@ -635,3 +635,37 @@ impl PieChart {
 }
 
 crate::entry_render!(PieChart);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A pie of a quarter, a quarter and a half, 0 at the top and clockwise.
+    const SLICES: [(f32, f32); 3] = [(0.0, 0.25), (0.25, 0.5), (0.5, 1.0)];
+
+    #[test]
+    fn quadrants_hit_the_slice_there() {
+        // Right of centre → the first slice's far edge… (turn 0.25 starts the second).
+        assert_eq!(pie_hit(10.0, -10.0, 50.0, 0.0, &SLICES), Some(0)); // top right
+        assert_eq!(pie_hit(10.0, 10.0, 50.0, 0.0, &SLICES), Some(1)); // bottom right
+        assert_eq!(pie_hit(-10.0, 10.0, 50.0, 0.0, &SLICES), Some(2)); // bottom left
+        assert_eq!(pie_hit(-10.0, -10.0, 50.0, 0.0, &SLICES), Some(2)); // top left
+    }
+
+    #[test]
+    fn outside_the_disc_or_inside_the_hole_hits_nothing() {
+        assert_eq!(pie_hit(200.0, 0.0, 50.0, 0.0, &SLICES), None);
+        assert_eq!(pie_hit(1.0, 1.0, 50.0, 0.5, &SLICES), None);
+        // A hovered slice pops out, so the pointer may sit PIE_POP beyond the radius.
+        assert!(pie_hit(50.0 + PIE_POP - 1.0, -1.0, 50.0, 0.0, &SLICES).is_some());
+    }
+
+    #[test]
+    fn a_partial_donut_that_wraps_past_one_is_still_hit() {
+        // Starts at 0.75 (left) and sweeps half a turn, ending at 1.25 = the right side.
+        let arc = [(0.75, 1.25)];
+        assert_eq!(pie_hit(-30.0, 0.0, 50.0, 0.3, &arc), Some(0)); // left
+        assert_eq!(pie_hit(30.0, -1.0, 50.0, 0.3, &arc), Some(0)); // just right of top
+        assert_eq!(pie_hit(0.0, 30.0, 50.0, 0.3, &arc), None); // bottom is outside the arc
+    }
+}

@@ -392,3 +392,32 @@ impl gpui::Element for EntryScope {
         self.child.paint(window, cx);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn rgb(r: f32, g: f32, b: f32) -> gpui::Hsla {
+        gpui::Rgba { r, g, b, a: 1.0 }.into()
+    }
+
+    #[test]
+    fn mix_hits_both_ends_and_the_middle() {
+        let (a, b) = (rgb(0.0, 0.0, 0.0), rgb(1.0, 0.5, 0.0));
+        let close = |x: gpui::Hsla, y: gpui::Hsla| {
+            let (x, y) = (gpui::Rgba::from(x), gpui::Rgba::from(y));
+            (x.r - y.r).abs() + (x.g - y.g).abs() + (x.b - y.b).abs() < 1e-3
+        };
+        assert!(close(mix(a, b, 0.0), a));
+        assert!(close(mix(a, b, 1.0), b));
+        assert!(close(mix(a, b, 0.5), rgb(0.5, 0.25, 0.0)));
+    }
+
+    #[test]
+    fn mixing_with_nothing_fades_to_transparent() {
+        let c = rgb(0.2, 0.4, 0.6);
+        assert_eq!(mix_opt(None, None, 0.5), None);
+        let half = mix_opt(Some(c), None, 1.0).expect("a colour fades, it does not vanish");
+        assert!(half.a < 1e-3);
+    }
+}

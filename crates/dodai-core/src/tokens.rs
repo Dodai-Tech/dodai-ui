@@ -132,8 +132,6 @@ pub struct Sizes {
     pub icon_sm: f32,
     /// Standard icon.
     pub icon: f32,
-    /// Large icon.
-    pub icon_lg: f32,
     /// Minimum interactive target.
     pub touch_target: f32,
     /// State-layer diameter of icon-sized controls (switch handle, checkbox).
@@ -193,7 +191,6 @@ impl Default for Sizes {
         Self {
             icon_sm: 18.0,
             icon: 24.0,
-            icon_lg: 32.0,
             touch_target: 48.0,
             state_layer: 40.0,
             switch_track: (52.0, 32.0),
