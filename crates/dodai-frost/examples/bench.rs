@@ -1,10 +1,10 @@
 //! `cargo run --release -p dodai-frost --features gpu --example bench`: CPU vs GPU blur timings.
 
-use dodai_frost::{blur, Backend, Blurrer};
+use dodai_frost::{blur, Blurrer};
 use std::time::Instant;
 
 fn main() {
-    let mut gpu = Blurrer::new(Backend::Auto);
+    let mut gpu = Blurrer::new();
     for (w, h) in [
         (256usize, 256usize),
         (1280, 720),

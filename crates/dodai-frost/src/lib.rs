@@ -132,35 +132,25 @@ pub struct Glass {
     pub edge: Option<([u8; 4], f32)>,
 }
 
-/// Which implementation a [`Blurrer`] may use.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum Backend {
-    /// Always the CPU.
-    Cpu,
-    /// The GPU whenever a real adapter is available (it keeps the CPU free and the UI smooth);
-    /// the CPU when there is none or the `gpu` feature is off.
-    #[default]
-    Auto,
-}
-
 /// Blurs on the GPU when it can, else on the CPU, reusing GPU resources between calls.
 pub struct Blurrer {
     #[cfg(feature = "gpu")]
     gpu: Option<GpuBlur>,
 }
 
+impl Default for Blurrer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Blurrer {
-    /// A blurrer for `backend`. The GPU is opened here (once), not per call.
-    pub fn new(backend: Backend) -> Self {
-        #[cfg(not(feature = "gpu"))]
-        let _ = backend;
+    /// A blurrer on the GPU when a real adapter exists, else on the CPU. The GPU is opened
+    /// here (once), not per call. Use the free functions ([`blur`], ...) for plain CPU calls.
+    pub fn new() -> Self {
         Self {
             #[cfg(feature = "gpu")]
-            gpu: if backend == Backend::Cpu {
-                None
-            } else {
-                GpuBlur::new()
-            },
+            gpu: GpuBlur::new(),
         }
     }
 
@@ -332,7 +322,7 @@ mod tests {
     }
 
     #[test]
-    fn blurrer_matches_the_free_functions_on_every_backend() {
+    fn blurrer_matches_the_free_functions() {
         let (w, h) = (300, 260);
         let src: Vec<u8> = (0..w * h * 4).map(|i| (i * 13 % 255) as u8).collect();
         let g = Glass {
@@ -340,24 +330,11 @@ mod tests {
             blur: 6.0,
             edge: None,
         };
-        for backend in [Backend::Cpu, Backend::Auto] {
-            let mut b = Blurrer::new(backend);
-            assert_eq!(
-                b.blur(&src, w, h, 6.0),
-                blur(&src, w, h, 6.0),
-                "{backend:?}"
-            );
-            assert_eq!(
-                b.blurred(&src, w, h, 12.0),
-                blurred(&src, w, h, 12.0),
-                "{backend:?}"
-            );
-            assert_eq!(
-                b.glass(&src, w, h, &g),
-                glass(&src, w, h, &g),
-                "{backend:?}"
-            );
+        {
+            let mut b = Blurrer::new();
+            assert_eq!(b.blur(&src, w, h, 6.0), blur(&src, w, h, 6.0),);
+            assert_eq!(b.blurred(&src, w, h, 12.0), blurred(&src, w, h, 12.0),);
+            assert_eq!(b.glass(&src, w, h, &g), glass(&src, w, h, &g),);
         }
-        assert!(!Blurrer::new(Backend::Cpu).uses_gpu());
     }
 }
