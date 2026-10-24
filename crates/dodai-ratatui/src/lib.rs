@@ -15,8 +15,15 @@
 mod controls;
 mod input;
 mod list;
+mod nuances;
 mod shape;
 mod widgets;
+
+pub use tui_nuances::{ThemeProvider, Themed};
+/// The widget crates this adapter themes. Style any of their widgets with
+/// `widget.themed(&tui)` ([`tui_nuances::Themed`]); [`TuiTheme`] is the
+/// [`tui_nuances::ThemeProvider`].
+pub use {tui_chart, tui_checkbox, tui_nuances, tui_piechart, tui_rating, tui_slider, tui_spinner};
 
 pub use controls::{Divider, Progress, Tag, Toggle, ToggleKind};
 pub use input::InputField;

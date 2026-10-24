@@ -6,11 +6,19 @@ use std::io;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use dodai_core::{ButtonVariant, ControlState, ThemeSwitcher, Tone};
 use dodai_ratatui::{
-    Divider, InputField, Progress, Scanlines, SelectList, Tag, ThemeBadge, Toggle, ToggleKind,
-    TuiTheme,
+    tui_chart::{
+        Axis, BarChart, BarGroup, Candle, CandlestickChart, Gauge, LineChart, Series, Sparkline,
+    },
+    tui_checkbox::Checkbox,
+    tui_piechart::{PieChart, PieSlice},
+    tui_rating::{Rating, RatingState},
+    tui_slider::{Slider, SliderState},
+    tui_spinner::{BarSpinner, CircleSpinner, FluxSpinner, LinearSpinner},
+    Divider, InputField, Progress, Scanlines, SelectList, Tag, ThemeBadge, Themed, Toggle,
+    ToggleKind, TuiTheme,
 };
 use ratatui::{
-    layout::{Constraint, Layout},
+    layout::{Constraint, Layout, Rect},
     text::{Line, Span},
     widgets::{Block, ListState, Paragraph},
     DefaultTerminal, Frame,
@@ -21,6 +29,8 @@ struct App {
     tui: TuiTheme,
     tab: usize,
     list: ListState,
+    /// Animation frame for the spinners.
+    tick: u64,
 }
 
 fn main() -> io::Result<()> {
@@ -31,6 +41,7 @@ fn main() -> io::Result<()> {
         tui,
         tab: 0,
         list: ListState::default().with_selected(Some(0)),
+        tick: 0,
     };
     if let Ok(path) = std::env::var("DODAI_DUMP") {
         // DODAI_THEME=n cycles n themes forward before dumping.
@@ -42,6 +53,11 @@ fn main() -> io::Result<()> {
             let t = app.sw.cycle_next().clone();
             app.tui.set_theme(t);
         }
+        // DODAI_TAB=n picks the page.
+        app.tab = std::env::var("DODAI_TAB")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(0);
         return dump_html(&mut app, &path);
     }
     let mut term = ratatui::init();
@@ -53,6 +69,10 @@ fn main() -> io::Result<()> {
 fn run(term: &mut DefaultTerminal, app: &mut App) -> io::Result<()> {
     loop {
         term.draw(|f| draw(f, app))?;
+        if !event::poll(std::time::Duration::from_millis(100))? {
+            app.tick = app.tick.wrapping_add(1);
+            continue;
+        }
         if let Event::Key(k) = event::read()? {
             if k.kind != KeyEventKind::Press {
                 continue;
@@ -88,12 +108,26 @@ fn draw(f: &mut Frame, app: &mut App) {
         Constraint::Length(1),
     ])
     .areas(area);
-    f.render_widget(t.tabs(&["Overview", "Network", "Systems"], app.tab), head);
+    f.render_widget(t.tabs(&["Overview", "Widgets", "Charts"], app.tab), head);
     f.render_widget(
         ThemeBadge::new(t),
         head.offset(ratatui::layout::Offset { x: 0, y: 1 }),
     );
 
+    match app.tab {
+        1 => draw_widgets(f, t, body, app.tick),
+        2 => draw_charts(f, t, body),
+        _ => draw_overview(f, t, body, app.list.selected()),
+    }
+
+    f.render_widget(
+        t.status_bar(t.theme().name(), "q quit · t theme", foot.width),
+        foot,
+    );
+    f.render_widget(Scanlines::new(t), area);
+}
+
+fn draw_overview(f: &mut Frame, t: &TuiTheme, body: Rect, selected: Option<usize>) {
     let [left, right] =
         Layout::horizontal([Constraint::Percentage(40), Constraint::Percentage(60)]).areas(body);
 
@@ -107,7 +141,7 @@ fn draw(f: &mut Frame, app: &mut App) {
             t,
             &["Compact", "Comfortable", "Spacious", "Dense", "Custom"],
         )
-        .selected(app.list.selected()),
+        .selected(selected),
         inner,
     );
 
@@ -207,12 +241,116 @@ fn draw(f: &mut Frame, app: &mut App) {
         InputField::new(t, "v.silverhand").cursor(4).focused(true),
         rows[9],
     );
+}
 
+/// The third-party widget crates, all styled with one `.themed(t)` call.
+fn draw_widgets(f: &mut Frame, t: &TuiTheme, body: Rect, tick: u64) {
+    let [left, right] =
+        Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)]).areas(body);
+
+    let blk = t.block("tui-checkbox · tui-slider · tui-rating", true);
+    let inner = blk.inner(left);
+    f.render_widget(blk, left);
+    let rows = Layout::vertical([Constraint::Length(1); 9]).split(inner);
+    f.render_widget(Checkbox::new("Neural link", true).themed(t), rows[0]);
+    f.render_widget(Checkbox::new("Stealth", false).themed(t), rows[1]);
+    let vol = SliderState::new(65.0, 0.0, 100.0);
     f.render_widget(
-        t.status_bar(t.theme().name(), "q quit · t theme", foot.width),
-        foot,
+        Slider::from_state(&vol)
+            .label("Volume")
+            .show_value(true)
+            .themed(t),
+        rows[3],
     );
-    f.render_widget(Scanlines::new(t), area);
+    let stars = RatingState::new(3.5, 5).with_half_steps(true);
+    f.render_widget(
+        Rating::from_state(&stars).show_value(true).themed(t),
+        rows[5],
+    );
+
+    let blk = t.block("tui-spinner", false);
+    let inner = blk.inner(right);
+    f.render_widget(blk, right);
+    let rows = Layout::vertical([Constraint::Length(1); 4]).split(inner);
+    f.render_widget(FluxSpinner::new(tick).themed(t), rows[0]);
+    f.render_widget(LinearSpinner::new(tick).themed(t), rows[1]);
+    f.render_widget(BarSpinner::new(tick).themed(t), rows[2]);
+    let ring = Rect::new(
+        inner.x,
+        inner.y + 4,
+        inner.width,
+        inner.height.saturating_sub(4),
+    );
+    f.render_widget(CircleSpinner::new(tick).radius(4).themed(t), ring);
+}
+
+/// `tui-chart` and `tui-piechart`.
+fn draw_charts(f: &mut Frame, t: &TuiTheme, body: Rect) {
+    let [top, bottom] = Layout::vertical([Constraint::Percentage(50); 2]).areas(body);
+    let [line_a, bars_a, pie_a] = Layout::horizontal([
+        Constraint::Percentage(40),
+        Constraint::Percentage(30),
+        Constraint::Percentage(30),
+    ])
+    .areas(top);
+    let [candle_a, side_a] =
+        Layout::horizontal([Constraint::Percentage(60), Constraint::Percentage(40)]).areas(bottom);
+
+    let wave = |phase: f64| (0..60).map(move |i| (i as f64, (i as f64 / 6.0 + phase).sin()));
+    let line = LineChart::new(vec![
+        Series::new("alpha").data(wave(0.0)),
+        Series::new("beta").data(wave(1.6)),
+    ])
+    .x_axis(Axis::new().title("t"))
+    .y_axis(Axis::new().grid(true))
+    .themed(t);
+    f.render_widget(&line, t.block("LineChart", false).inner(line_a));
+    f.render_widget(t.block("LineChart", false), line_a);
+
+    let bars = BarChart::new(vec![
+        BarGroup::new("Q1", [4.0, 7.0]),
+        BarGroup::new("Q2", [6.0, 3.0]),
+        BarGroup::new("Q3", [9.0, 5.0]),
+    ])
+    .themed(t);
+    f.render_widget(&bars, t.block("BarChart", false).inner(bars_a));
+    f.render_widget(t.block("BarChart", false), bars_a);
+
+    let slices = [("Rust", 45.0), ("Go", 25.0), ("C", 20.0), ("Other", 10.0)];
+    let pie = PieChart::new(
+        slices
+            .iter()
+            .enumerate()
+            .map(|(i, (l, v))| PieSlice::new(l, *v, t.series(i).fg.unwrap_or_default()))
+            .collect(),
+    )
+    .themed(t);
+    f.render_widget(&pie, t.block("PieChart", false).inner(pie_a));
+    f.render_widget(t.block("PieChart", false), pie_a);
+
+    let candles: Vec<Candle> = (0..24)
+        .map(|i| {
+            let m = 100.0 + (i as f64 / 3.0).sin() * 8.0 + i as f64 * 0.4;
+            let (o, c) = if i % 3 == 0 {
+                (m + 2.0, m - 2.0)
+            } else {
+                (m - 2.0, m + 2.0)
+            };
+            Candle::new(o, m + 4.0, m - 4.0, c)
+        })
+        .collect();
+    let candle = CandlestickChart::new(candles).themed(t);
+    f.render_widget(&candle, t.block("CandlestickChart", false).inner(candle_a));
+    f.render_widget(t.block("CandlestickChart", false), candle_a);
+
+    let [spark_a, gauge_a] =
+        Layout::vertical([Constraint::Length(4), Constraint::Min(3)]).areas(side_a);
+    let spark = Sparkline::new((0..40).map(|i| ((i as f64) / 4.0).sin().abs() * 10.0)).themed(t);
+    f.render_widget(&spark, t.block("Sparkline", false).inner(spark_a));
+    f.render_widget(t.block("Sparkline", false), spark_a);
+    let gauge = Gauge::new(72.0).themed(t);
+    f.render_widget(&gauge, t.block("Gauge", false).inner(gauge_a));
+    f.render_widget(t.block("Gauge", false), gauge_a);
 }
 
 /// Headless render of one frame to HTML (for screenshots / docs): `DODAI_DUMP=out.html`.
