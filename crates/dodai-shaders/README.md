@@ -45,7 +45,7 @@ The shaders are plain Rust in `src/shaders`, one implementation for both paths:
   background with `warm_chain`) and runs a chain into a packed BGRA image.
 * **CPU (fallback):** `cpu::render` calls the same functions per pixel on all cores. Output matches
   the GPU to within a few levels of 255 (`tests/cpu_matches_gpu.rs` checks every shader).
-* `Renderer` picks: GPU when `dodai-gpu` finds a real adapter, else the CPU (large pictures are
+* `Renderer` picks: GPU when a real adapter exists, else the CPU (large pictures are
   rendered at most `CPU_MAX_PIXELS` big and scaled up). There is no way to choose a backend.
 
 ### Changing a shader

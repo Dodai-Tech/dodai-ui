@@ -75,7 +75,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        crate: [dodai-motion, dodai-core, dodai-cyberpunk-icons, dodai-material-icons, dodai-cyberpunk, dodai-material, dodai-neobrutalism, dodai, dodai-charts-core, dodai-frost, dodai-surface, dodai-gpu]
+        crate: [dodai-motion, dodai-core, dodai-cyberpunk-icons, dodai-material-icons, dodai-cyberpunk, dodai-material, dodai-neobrutalism, dodai, dodai-charts-core, dodai-frost, dodai-surface]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable

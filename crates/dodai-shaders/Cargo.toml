@@ -14,7 +14,7 @@ categories   = ["graphics", "gui"]
 [dependencies]
 dodai-core = { workspace = true }
 wgpu     = { version = "30.0.1", default-features = false, features = ["std", "parking_lot", "wgsl", "metal", "vulkan", "dx12"] }
-dodai-gpu = { workspace = true }
+pollster = "1"
 bytemuck = { version = "1.24", features = ["derive"] }
 
 [[example]]

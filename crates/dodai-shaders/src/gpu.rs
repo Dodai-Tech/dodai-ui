@@ -135,13 +135,26 @@ fn storage(binding: u32, read_only: bool) -> wgpu::BindGroupLayoutEntry {
 }
 
 impl Gpu {
-    /// Opens the GPU (see `dodai-gpu`). `None` without a real adapter.
+    /// Opens the best adapter; `None` without a real GPU (software adapters do not count).
     pub fn new() -> Option<Self> {
-        let dodai_gpu::Gpu {
-            adapter,
-            device,
-            queue,
-        } = dodai_gpu::open()?;
+        // `DODAI_GPU=0` pretends there is no adapter (for testing the CPU fallback).
+        if std::env::var("DODAI_GPU").is_ok_and(|v| v == "0") {
+            return None;
+        }
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::new_without_display_handle());
+        let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            ..Default::default()
+        }))
+        .ok()?;
+        let info = adapter.get_info();
+        // A software rasteriser (llvmpipe, WARP, ...) is slower than the CPU path.
+        if matches!(info.device_type, wgpu::DeviceType::Cpu) {
+            return None;
+        }
+        let (device, queue) =
+            pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor::default())).ok()?;
+        let adapter = info.name;
         let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("dodai-shaders"),
             source: wgpu::ShaderSource::Wgsl(WGSL.into()),
