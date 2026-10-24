@@ -142,6 +142,7 @@ mod tests {
         let t = dodai::themes::cyberpunk::yellow();
         let fx = SurfaceFx {
             texture: Texture::Circuit,
+            container_texture: Texture::Circuit,
             strength: 0.8,
             scale: 1.0,
             targets: dodai_core::SurfaceTargets::ALL,
