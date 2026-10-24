@@ -8,8 +8,6 @@
 //! * **Material** (Material 3): the Material Symbols icon, with the spec's own art for every name
 //!   Material has; else Phosphor, as is.
 //! * **Bold** (Neo-Brutalism): Phosphor's bold weight (`-fill` for filled).
-//! * **Aurora** (Aurora Design System): Aurora's own icon where it has one (needs the files
-//!   fetched, see `dodai-aurora-icons`), else the Material Symbols icon, else Phosphor.
 //!
 //! ```
 //! use dodai_icons::{glyph, IconId, Pack};
@@ -39,8 +37,6 @@ pub enum Pack {
     Material,
     /// Neo-Brutalism: bold Phosphor.
     Bold,
-    /// Aurora Design System: its own icons where it has one, else Material Symbols.
-    Aurora,
 }
 
 impl From<dodai_core::IconSet> for Pack {
@@ -49,14 +45,13 @@ impl From<dodai_core::IconSet> for Pack {
             dodai_core::IconSet::Stroked => Pack::Stroked,
             dodai_core::IconSet::Symbols => Pack::Material,
             dodai_core::IconSet::Bold => Pack::Bold,
-            dodai_core::IconSet::Aurora => Pack::Aurora,
         }
     }
 }
 
 /// The ordered packs of a design: first hit wins, the last covers every id.
 pub fn chain(pack: Pack) -> &'static PackChain {
-    static CHAINS: std::sync::OnceLock<[PackChain; 4]> = std::sync::OnceLock::new();
+    static CHAINS: std::sync::OnceLock<[PackChain; 3]> = std::sync::OnceLock::new();
     let c = CHAINS.get_or_init(|| {
         let phosphor = || Box::new(PhosphorPack { faceted: false }) as Box<dyn IconPack>;
         [
@@ -73,13 +68,6 @@ pub fn chain(pack: Pack) -> &'static PackChain {
             PackChain::new(vec![
                 #[cfg(feature = "neobrutalism")]
                 Box::new(BoldPack),
-                phosphor(),
-            ]),
-            PackChain::new(vec![
-                #[cfg(feature = "aurora")]
-                Box::new(AuroraPack),
-                #[cfg(feature = "material")]
-                Box::new(MaterialPack),
                 phosphor(),
             ]),
         ]
@@ -153,20 +141,6 @@ impl IconPack for MaterialPack {
     }
 }
 
-/// The Aurora Design System icons (empty until they are fetched).
-#[cfg(feature = "aurora")]
-struct AuroraPack;
-
-#[cfg(feature = "aurora")]
-impl IconPack for AuroraPack {
-    fn name(&self) -> &'static str {
-        "aurora"
-    }
-    fn glyph(&self, id: IconId, filled: bool) -> Option<Glyph> {
-        dodai_aurora_icons::polygons(id, filled).map(Glyph::Filled)
-    }
-}
-
 /// Neo-Brutalism's bold Phosphor.
 #[cfg(feature = "neobrutalism")]
 struct BoldPack;
@@ -204,7 +178,7 @@ mod tests {
         g.coverage(px).iter().filter(|&&a| a > 127).count()
     }
 
-    const PACKS: [Pack; 4] = [Pack::Stroked, Pack::Material, Pack::Bold, Pack::Aurora];
+    const PACKS: [Pack; 3] = [Pack::Stroked, Pack::Material, Pack::Bold];
 
     /// Every id of the shared vocabulary draws in every pack: that is what the type promises.
     #[test]

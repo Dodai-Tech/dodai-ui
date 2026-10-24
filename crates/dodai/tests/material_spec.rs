@@ -582,10 +582,7 @@ fn navigation_follows_the_m3_drawer_and_rail_specs() {
 fn other_designs_derive_navigation_from_their_spacing() {
     for t in dodai::themes::all().iter().filter(|t| {
         // Material and Aurora derive their own navigation.
-        !matches!(
-            t.look().icons,
-            dodai_core::IconSet::Symbols | dodai_core::IconSet::Aurora
-        )
+        !matches!(t.look().icons, dodai_core::IconSet::Symbols)
     }) {
         let k = t.navigation();
         assert!(!k.pill && k.container.is_none());

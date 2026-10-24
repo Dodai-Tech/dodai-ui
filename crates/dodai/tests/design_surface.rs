@@ -1,7 +1,7 @@
 //! Every design crate offers the same entry points: `light()`, `dark()`, `variants()`, `SPEC`
 //! and `shape_presets()`.
 
-use dodai::themes::{cyberpunk, material, neobrutalism, aurora};
+use dodai::themes::{aurora, cyberpunk, material, neobrutalism};
 use dodai_core::Mode;
 
 #[test]

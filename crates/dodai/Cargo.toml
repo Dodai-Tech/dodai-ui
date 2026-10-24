@@ -16,8 +16,8 @@ default   = ["cyberpunk", "material", "neobrutalism", "aurora", "icons", "shader
 cyberpunk = ["dep:dodai-cyberpunk", "dodai-icons?/cyberpunk"]
 material  = ["dep:dodai-material", "dodai-icons?/material"]
 neobrutalism = ["dep:dodai-neobrutalism", "dodai-icons?/neobrutalism"]
-## Aurora Design System 4 inspired; draws Material Symbols icons.
-aurora   = ["dep:dodai-aurora", "dodai-icons?/material", "dodai-icons?/aurora"]
+## Aurora: frosted glass and gradients; draws Material Symbols icons.
+aurora   = ["dep:dodai-aurora", "dodai-icons?/material"]
 ## Icon packs of the enabled design systems.
 icons     = ["dep:dodai-icons", "dodai-cyberpunk?/icons", "dodai-material?/icons"]
 shaders   = ["dep:dodai-shaders"]

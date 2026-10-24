@@ -11,7 +11,4 @@ showcase.html
 fuzz/target/
 fuzz/corpus/
 fuzz/artifacts/
-
-# Aurora Design System Assets: licensed, never redistributed (see scripts/fetch-aurora-icons.nu)
-crates/dodai-aurora-icons/assets/
 /crates/dodai-freya/target

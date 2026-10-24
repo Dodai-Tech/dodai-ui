@@ -21,14 +21,14 @@
 
 pub use dodai_core::*;
 
+#[cfg(feature = "aurora")]
+pub use dodai_aurora as aurora;
 #[cfg(feature = "cyberpunk")]
 pub use dodai_cyberpunk as cyberpunk;
 #[cfg(feature = "material")]
 pub use dodai_material as material;
 #[cfg(feature = "neobrutalism")]
 pub use dodai_neobrutalism as neobrutalism;
-#[cfg(feature = "aurora")]
-pub use dodai_aurora as aurora;
 #[cfg(feature = "shaders")]
 pub use dodai_shaders as shaders;
 
@@ -39,14 +39,14 @@ pub mod icons;
 pub mod themes {
     pub use dodai_core::themes::{neutral, ThemeBuilder};
 
+    #[cfg(feature = "aurora")]
+    pub use dodai_aurora as aurora;
     #[cfg(feature = "cyberpunk")]
     pub use dodai_cyberpunk as cyberpunk;
     #[cfg(feature = "material")]
     pub use dodai_material as material;
     #[cfg(feature = "neobrutalism")]
     pub use dodai_neobrutalism as neobrutalism;
-    #[cfg(feature = "aurora")]
-    pub use dodai_aurora as aurora;
 
     /// A registered design system: its family id, display name and themes.
     #[derive(Clone, Copy)]

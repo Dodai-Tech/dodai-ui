@@ -72,7 +72,7 @@ pub enum Texture {
     Ripples,
     /// Bold zigzag stripes (Neo-brutalism).
     Zigzag,
-    /// Houndstooth: the small houndstooth check (Aurora).
+    /// Houndstooth: the small houndstooth check.
     Houndstooth,
 }
 
@@ -339,9 +339,9 @@ pub struct SurfaceFx {
     pub pop: f32,
     /// Neo-brutalism: strips of masking tape across two corners.
     pub tape: f32,
-    /// Aurora: a clear-coat reflection across the top of the surface.
+    /// A clear-coat reflection across the top of the surface.
     pub gloss: f32,
-    /// Aurora: a thin light strip gliding along the top edge.
+    /// A thin light strip gliding along the top edge.
     pub strip: f32,
     /// How much the texture fades towards the centre, keeping text clean (`0.0` = even).
     pub clear: f32,

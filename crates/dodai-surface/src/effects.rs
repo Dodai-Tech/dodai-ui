@@ -823,7 +823,7 @@ pub(crate) fn tape(cv: &mut Canvas, sp: &SurfacePaint) {
     band(cv, (w - i - l, h - i), (w - i, h - i - l), (0.0, -t));
 }
 
-/// Aurora: a clear-coat reflection across the top, cut on a slant like a windscreen glint.
+/// A clear-coat reflection across the top, cut on a slant like a windscreen glint.
 pub(crate) fn gloss(cv: &mut Canvas, sp: &SurfacePaint) {
     let g = sp.fx.gloss.clamp(0.0, 1.0);
     let (w, h) = (cv.w, cv.h);
@@ -847,7 +847,7 @@ pub(crate) fn gloss(cv: &mut Canvas, sp: &SurfacePaint) {
     cv.quad(0.0, cv.inset, w, 1.0, scale_alpha(lit, 0.6 * g));
 }
 
-/// Aurora: a thin line of light all around the border, following every corner, with a
+/// A thin line of light all around the border, following every corner, with a
 /// brighter spot that travels along it and a tail that fades out behind.
 pub(crate) fn strip(cv: &mut Canvas, sp: &SurfacePaint) {
     let s = sp.fx.strip.clamp(0.0, 1.0);

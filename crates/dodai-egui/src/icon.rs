@@ -1,5 +1,5 @@
 //! Icons: any shared [`IconId`], drawn in the pack of the active design (Cyberpunk strokes,
-//! Material Symbols, bold Phosphor, Aurora Design System icons where fetched).
+//! Material Symbols, bold Phosphor).
 
 use crate::{active_theme, color32};
 use dodai_icons::{glyph_for, IconId};

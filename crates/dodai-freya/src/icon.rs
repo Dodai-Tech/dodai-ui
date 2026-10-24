@@ -1,4 +1,4 @@
-//! Icons: Material Symbols / Cyberpunk / Aurora packs as SVG for freya's `SvgViewer`.
+//! Icons: Material Symbols / Cyberpunk packs as SVG for freya's `SvgViewer`.
 
 use dodai_core::{Color, Theme};
 

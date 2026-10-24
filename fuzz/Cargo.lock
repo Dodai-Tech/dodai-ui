@@ -162,13 +162,20 @@ dependencies = [
 name = "dodai"
 version = "0.1.0"
 dependencies = [
+ "dodai-aurora",
  "dodai-core",
  "dodai-cyberpunk",
  "dodai-icons",
  "dodai-material",
  "dodai-neobrutalism",
- "dodai-aurora",
  "dodai-shaders",
+]
+
+[[package]]
+name = "dodai-aurora"
+version = "0.1.0"
+dependencies = [
+ "dodai-core",
 ]
 
 [[package]]
@@ -221,7 +228,6 @@ dependencies = [
  "dodai-icon-id",
  "dodai-icons-core",
  "dodai-material-icons",
- "dodai-aurora-icons",
 ]
 
 [[package]]
@@ -255,20 +261,6 @@ name = "dodai-neobrutalism"
 version = "0.1.0"
 dependencies = [
  "dodai-core",
-]
-
-[[package]]
-name = "dodai-aurora"
-version = "0.1.0"
-dependencies = [
- "dodai-core",
-]
-
-[[package]]
-name = "dodai-aurora-icons"
-version = "0.1.0"
-dependencies = [
- "dodai-icon-id",
 ]
 
 [[package]]

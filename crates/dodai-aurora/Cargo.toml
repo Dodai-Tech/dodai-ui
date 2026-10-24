@@ -1,0 +1,15 @@
+[package]
+name         = "dodai-aurora"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description  = "Aurora: a frosted-glass and gradient design system for Dodai UI, light and dark"
+readme       = "README.md"
+keywords     = ["theme", "glass", "gradient", "design-system", "ui"]
+categories   = ["gui", "rendering"]
+
+[dependencies]
+dodai-core = { workspace = true }
