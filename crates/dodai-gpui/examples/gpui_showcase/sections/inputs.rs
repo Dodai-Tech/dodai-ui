@@ -4,36 +4,33 @@ use super::super::*;
 use dodai_gpui::CheckboxVariant;
 
 impl Showcase {
-    #[allow(unused_variables, clippy::redundant_clone, clippy::vec_init_then_push)]
     pub(crate) fn sections_inputs(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let mut out: Vec<Section> = Vec::new();
+        out.extend(self.toggle_section(cx));
+        out.extend(self.variants_section(cx));
+        out.extend(self.slider_section(cx));
+        out.extend(self.stepped_section(cx));
+        out.extend(self.range_section(cx));
+        out.extend(self.knob_section(cx));
+        out.extend(self.input_section(cx));
+        out.extend(self.search_section(cx));
+        out.extend(self.tag_field_section(cx));
+        out.extend(self.picker_section(cx));
+        out.extend(self.password_section(cx));
+        out.extend(self.form_field_section(cx));
+        out.extend(self.group_section(cx));
+        out.extend(self.date_range_section(cx));
+        out
+    }
+
+    fn toggle_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
         let me = cx.entity();
-        #[allow(unused_macros)]
-        macro_rules! section {
-            ($t:expr) => {
-                Panel::new()
-                    .title($t)
-                    .subheader(self.chips($t, &t, &me, cx))
-                    .scope(Some(self.scope_of($t, cx)))
-                    .scope_key(self.sec_replay.get($t).copied().unwrap_or(0))
-            };
-        }
-        let mut out: Vec<Section> = Vec::new();
         let gap = px(t.spacing.md);
+        let row = || div().flex().flex_wrap().items_center().gap(gap);
+        let mut out: Vec<Section> = Vec::new();
         let me_sw = me.clone();
         let me_ck = me.clone();
-        let me_sl = me.clone();
-        let row = || div().flex().flex_wrap().items_center().gap(gap);
-        let col = || div().flex().flex_col().gap(gap);
-        let tags = row()
-            .child(Tag::new("online", Tone::Success).solid(true))
-            .child(Tag::new("warn", Tone::Warning).solid(true))
-            .child(Tag::new("error", Tone::Danger).solid(true))
-            .child(Tag::new("info", Tone::Info).solid(true))
-            .child(Tag::new("online", Tone::Success))
-            .child(Tag::new("warn", Tone::Warning))
-            .child(Tag::new("error", Tone::Danger))
-            .child(Tag::new("info", Tone::Info));
         let controls = row()
             .child(Toggle::new("sw", self.switch).on_change(move |v, _, cx| {
                 me_sw.update(cx, |s, cx| {
@@ -71,6 +68,85 @@ impl Showcase {
                 )
                 .child(Label::new(name));
         }
+        out.push((
+            "Inputs",
+            "Toggle · Checkbox · Radio",
+            self.section("Toggle · Checkbox · Radio", &t, &me, cx)
+                .child(controls)
+                .child(radios)
+                .into_any_element(),
+            "Toggle · Checkbox · Radio",
+        ));
+        out
+    }
+
+    fn variants_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let row = || div().flex().flex_wrap().items_center().gap(gap);
+        let col = || div().flex().flex_col().gap(gap);
+        let mut out: Vec<Section> = Vec::new();
+        let mut variants = col();
+        for v in CheckboxVariant::ALL {
+            let name = v.label();
+            let id = |k: &str| SharedString::from(format!("cv-{name}-{k}"));
+            let cell = |e: gpui::AnyElement| {
+                div()
+                    .w(px(56.0))
+                    .flex()
+                    .justify_center()
+                    .child(e)
+                    .into_any_element()
+            };
+            variants = variants.child(
+                row()
+                    .child(div().w(px(110.0)).child(Label::new(name)))
+                    .child(cell(
+                        Checkbox::new(id("off"), false)
+                            .variant(v)
+                            .into_any_element(),
+                    ))
+                    .child(cell(
+                        Checkbox::new(id("on"), true).variant(v).into_any_element(),
+                    ))
+                    .child(cell(
+                        Checkbox::new(id("mix"), false)
+                            .indeterminate(true)
+                            .variant(v)
+                            .into_any_element(),
+                    ))
+                    .child(cell(
+                        Checkbox::new(id("dis"), true)
+                            .disabled(true)
+                            .variant(v)
+                            .into_any_element(),
+                    ))
+                    .child(cell(
+                        Radio::new(id("ra"), true).variant(v).into_any_element(),
+                    )),
+            );
+        }
+        // Sizes and shapes are Material 3 options; other designs ignore them.
+        if t.look().tonal {
+            out.push((
+                "Inputs",
+                "Checkbox variants",
+                self.section("Checkbox variants", &t, &me, cx)
+                    .child(variants)
+                    .into_any_element(),
+                "Checkbox variants",
+            ));
+        }
+        out
+    }
+
+    fn slider_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let mut out: Vec<Section> = Vec::new();
+        let me_sl = me.clone();
         let sliders = div()
             .flex()
             .flex_col()
@@ -89,210 +165,23 @@ impl Showcase {
             .child(ProgressBar::new(0.4).tone(Tone::Warning))
             .child(ProgressBar::new(0.55).wavy(true))
             .child(ProgressBar::new(0.15).tone(Tone::Danger));
-        let mut dials = row().gap(px(24.0));
-        for i in 0..3 {
-            let m = me.clone();
-            dials = dials.child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .items_center()
-                    .gap(gap)
-                    .child(
-                        Knob::new(("knob", i), self.knob[i])
-                            .size(if i == 1 { 96.0 } else { 72.0 })
-                            .disabled(i == 2)
-                            .on_change(move |v, _, cx| {
-                                m.update(cx, |s, cx| {
-                                    s.knob[i] = v;
-                                    cx.notify();
-                                })
-                            }),
-                    )
-                    .child(Mono::new(format!("{:.2}", self.knob[i]))),
-            );
-        }
-        for i in 0..3 {
-            let m = me.clone();
-            dials = dials.child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .items_center()
-                    .gap(gap)
-                    .child(
-                        Slider::new(("vslider", i), self.vslider[i])
-                            .orientation(Orientation::Vertical)
-                            .length(120.0)
-                            .on_change(move |v, _, cx| {
-                                m.update(cx, |s, cx| {
-                                    s.vslider[i] = v;
-                                    cx.notify();
-                                })
-                            }),
-                    )
-                    .child(Mono::new(format!("{:.2}", self.vslider[i]))),
-            );
-        }
-        {
-            let m = me.clone();
-            dials = dials.child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .items_center()
-                    .gap(gap)
-                    .child(
-                        RangeSlider::new("vrange", self.vrange.0, self.vrange.1)
-                            .orientation(Orientation::Vertical)
-                            .length(120.0)
-                            .step(0.1)
-                            .ticks(true)
-                            .on_change(move |a, b, _, cx| {
-                                m.update(cx, |s, cx| {
-                                    s.vrange = (a, b);
-                                    cx.notify()
-                                })
-                            }),
-                    )
-                    .child(Mono::new(format!(
-                        "{:.1}–{:.1}",
-                        self.vrange.0, self.vrange.1
-                    ))),
-            );
-        }
-        let m3 = me.clone();
-        let open = !self.search.read(cx).text().is_empty();
-        let m = me.clone();
-        let search = SearchView::new("search", self.search.clone())
-            .items(["Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot"])
-            .open(open)
-            .on_clear({
-                let m = me.clone();
-                move |w, cx| {
-                    m.update(cx, |s, cx| {
-                        s.search.update(cx, |i, cx| {
-                            i.set_text("", cx);
-                            let _ = w;
-                        })
-                    })
-                }
-            })
-            .on_select(move |_, _, _| {
-                let _ = &m;
-            });
-        let (m1, m2, m3, m4, m5, m6) = (
-            me.clone(),
-            me.clone(),
-            me.clone(),
-            me.clone(),
-            me.clone(),
-            me.clone(),
-        );
-        let w_search = search;
-        let w_range =
-            RangeSlider::new("range", self.range.0, self.range.1).on_change(move |a, b, _, cx| {
-                m3.update(cx, |s, cx| {
-                    s.range = (a, b);
-                    cx.notify()
-                })
-            });
-        let w_range_txt = Muted::new(format!("range {:.2} – {:.2}", self.range.0, self.range.1));
-        let w_tags = TagField::new("tags", self.tags.clone()).on_remove(move |i, _, cx| {
-            m4.update(cx, |s, cx| {
-                s.tags.remove(i);
-                cx.notify()
-            })
-        });
-        let (y, mo, sel) = self.date;
-        let pickers = row()
-            .child(
-                DatePicker::new("date", y, mo)
-                    .selected(sel)
-                    .on_select({
-                        let m = m5.clone();
-                        move |d, _, cx| {
-                            m.update(cx, |s, cx| {
-                                s.date.2 = Some(d);
-                                cx.notify()
-                            })
-                        }
-                    })
-                    .on_month(move |y, mo, _, cx| {
-                        m5.update(cx, |s, cx| {
-                            s.date.0 = y;
-                            s.date.1 = mo;
-                            cx.notify()
-                        })
-                    }),
-            )
-            .child(TimePicker::new("time", self.time.0, self.time.1).on_change(
-                move |h, mi, _, cx| {
-                    m6.update(cx, |s, cx| {
-                        s.time = (h, mi);
-                        cx.notify()
-                    })
-                },
-            ));
-        let typed = row()
-            .items_start()
-            .child(dodai_gpui::DateInput::new("date-in").value(sel).on_change({
-                let m = me.clone();
-                move |d, _, cx| {
-                    m.update(cx, |s, cx| {
-                        s.date = (d.year, d.month, Some(d));
-                        cx.notify()
-                    })
-                }
-            }))
-            .child(
-                dodai_gpui::TimeInput::new("time-in")
-                    .value(Some(self.time))
-                    .on_change({
-                        let m = me.clone();
-                        move |h, mi, _, cx| {
-                            m.update(cx, |s, cx| {
-                                s.time = (h, mi);
-                                cx.notify()
-                            })
-                        }
-                    }),
-            );
-        let m_range = me.clone();
-        let range_picker = row()
-            .child(
-                DatePicker::new("date-range", y, mo)
-                    .range(self.date_range)
-                    .on_select({
-                        let m = m_range.clone();
-                        move |d, _, cx| {
-                            m.update(cx, |s, cx| {
-                                s.date_range = dodai_gpui::range_pick(s.date_range, d);
-                                cx.notify()
-                            })
-                        }
-                    })
-                    .on_month({
-                        let m = m_range.clone();
-                        move |y, mo, _, cx| {
-                            m.update(cx, |s, cx| {
-                                s.date.0 = y;
-                                s.date.1 = mo;
-                                cx.notify()
-                            })
-                        }
-                    }),
-            )
-            .child(Muted::new(match self.date_range.span() {
-                Some((a, b)) => format!(
-                    "{}-{:02}-{:02} → {}-{:02}-{:02}",
-                    a.year, a.month, a.day, b.year, b.month, b.day
-                ),
-                None => match self.date_range.start {
-                    Some(a) => format!("from {}-{:02}-{:02}: pick the end", a.year, a.month, a.day),
-                    None => "click a start day, then an end day".to_string(),
-                },
-            }));
+        out.push((
+            "Inputs",
+            "Slider · Progress",
+            self.section("Slider · Progress", &t, &me, cx)
+                .child(sliders)
+                .into_any_element(),
+            "Slider · Progress",
+        ));
+        out
+    }
+
+    fn stepped_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let col = || div().flex().flex_col().gap(gap);
+        let mut out: Vec<Section> = Vec::new();
         let (ms1, ms2) = (me.clone(), me.clone());
         let (mb1, mb2) = (me.clone(), me.clone());
         let stepped = col()
@@ -379,101 +268,136 @@ impl Showcase {
             );
         out.push((
             "Inputs",
-            "Toggle · Checkbox · Radio",
-            section!("Toggle · Checkbox · Radio")
-                .child(controls)
-                .child(radios)
-                .into_any_element(),
-            "Toggle · Checkbox · Radio",
-        ));
-        let mut variants = col();
-        for v in CheckboxVariant::ALL {
-            let name = v.label();
-            let id = |k: &str| SharedString::from(format!("cv-{name}-{k}"));
-            let cell = |e: gpui::AnyElement| {
-                div()
-                    .w(px(56.0))
-                    .flex()
-                    .justify_center()
-                    .child(e)
-                    .into_any_element()
-            };
-            variants = variants.child(
-                row()
-                    .child(div().w(px(110.0)).child(Label::new(name)))
-                    .child(cell(
-                        Checkbox::new(id("off"), false)
-                            .variant(v)
-                            .into_any_element(),
-                    ))
-                    .child(cell(
-                        Checkbox::new(id("on"), true).variant(v).into_any_element(),
-                    ))
-                    .child(cell(
-                        Checkbox::new(id("mix"), false)
-                            .indeterminate(true)
-                            .variant(v)
-                            .into_any_element(),
-                    ))
-                    .child(cell(
-                        Checkbox::new(id("dis"), true)
-                            .disabled(true)
-                            .variant(v)
-                            .into_any_element(),
-                    ))
-                    .child(cell(
-                        Radio::new(id("ra"), true).variant(v).into_any_element(),
-                    )),
-            );
-        }
-        // Sizes and shapes are Material 3 options; other designs ignore them.
-        if t.look().tonal {
-            out.push((
-                "Inputs",
-                "Checkbox variants",
-                section!("Checkbox variants")
-                    .child(variants)
-                    .into_any_element(),
-                "Checkbox variants",
-            ));
-        }
-        out.push((
-            "Inputs",
-            "Slider · Progress",
-            section!("Slider · Progress")
-                .child(sliders)
-                .into_any_element(),
-            "Slider · Progress",
-        ));
-        out.push((
-            "Inputs",
             "Stepped slider · ticks · formatted value",
-            section!("Slider (stepped, ticks, value readout)")
+            self.section("Slider (stepped, ticks, value readout)", &t, &me, cx)
                 .child(stepped)
                 .into_any_element(),
             "Slider (stepped, ticks, value readout)",
         ));
+        out
+    }
+
+    fn range_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let mut out: Vec<Section> = Vec::new();
+        let m3 = me.clone();
+        let w_range =
+            RangeSlider::new("range", self.range.0, self.range.1).on_change(move |a, b, _, cx| {
+                m3.update(cx, |s, cx| {
+                    s.range = (a, b);
+                    cx.notify()
+                })
+            });
+        let w_range_txt = Muted::new(format!("range {:.2} – {:.2}", self.range.0, self.range.1));
         out.push((
             "Inputs",
             "Range slider",
-            section!("Range slider")
+            self.section("Range slider", &t, &me, cx)
                 .child(w_range)
                 .child(w_range_txt)
                 .into_any_element(),
             "Range slider",
         ));
+        out
+    }
+
+    fn knob_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let row = || div().flex().flex_wrap().items_center().gap(gap);
+        let mut out: Vec<Section> = Vec::new();
+        let mut dials = row().gap(px(24.0));
+        for i in 0..3 {
+            let m = me.clone();
+            dials = dials.child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .items_center()
+                    .gap(gap)
+                    .child(
+                        Knob::new(("knob", i), self.knob[i])
+                            .size(if i == 1 { 96.0 } else { 72.0 })
+                            .disabled(i == 2)
+                            .on_change(move |v, _, cx| {
+                                m.update(cx, |s, cx| {
+                                    s.knob[i] = v;
+                                    cx.notify();
+                                })
+                            }),
+                    )
+                    .child(Mono::new(format!("{:.2}", self.knob[i]))),
+            );
+        }
+        for i in 0..3 {
+            let m = me.clone();
+            dials = dials.child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .items_center()
+                    .gap(gap)
+                    .child(
+                        Slider::new(("vslider", i), self.vslider[i])
+                            .orientation(Orientation::Vertical)
+                            .length(120.0)
+                            .on_change(move |v, _, cx| {
+                                m.update(cx, |s, cx| {
+                                    s.vslider[i] = v;
+                                    cx.notify();
+                                })
+                            }),
+                    )
+                    .child(Mono::new(format!("{:.2}", self.vslider[i]))),
+            );
+        }
+        {
+            let m = me.clone();
+            dials = dials.child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .items_center()
+                    .gap(gap)
+                    .child(
+                        RangeSlider::new("vrange", self.vrange.0, self.vrange.1)
+                            .orientation(Orientation::Vertical)
+                            .length(120.0)
+                            .step(0.1)
+                            .ticks(true)
+                            .on_change(move |a, b, _, cx| {
+                                m.update(cx, |s, cx| {
+                                    s.vrange = (a, b);
+                                    cx.notify()
+                                })
+                            }),
+                    )
+                    .child(Mono::new(format!(
+                        "{:.1}–{:.1}",
+                        self.vrange.0, self.vrange.1
+                    ))),
+            );
+        }
         out.push((
             "Inputs",
             "Knob · Vertical slider · Vertical range slider",
-            section!("Knob · Vertical sliders")
+            self.section("Knob · Vertical sliders", &t, &me, cx)
                 .child(dials)
                 .into_any_element(),
             "Knob · Vertical sliders",
         ));
-        out.push((
+        out
+    }
+
+    fn input_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        vec![(
             "Inputs",
             "Input field",
-            section!("Input")
+            self.section("Input", &t, &me, cx)
                 .child(div().flex_1().min_w(px(260.0)).child(self.in_name.clone()))
                 .child(div().flex_1().min_w(px(260.0)).child(self.in_notes.clone()))
                 .child(InputBox::new().placeholder("static placeholder box"))
@@ -491,7 +415,33 @@ impl Showcase {
                 )
                 .into_any_element(),
             "Input",
-        ));
+        )]
+    }
+
+    fn search_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let mut out: Vec<Section> = Vec::new();
+        let open = !self.search.read(cx).text().is_empty();
+        let m = me.clone();
+        let search = SearchView::new("search", self.search.clone())
+            .items(["Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot"])
+            .open(open)
+            .on_clear({
+                let m = me.clone();
+                move |w, cx| {
+                    m.update(cx, |s, cx| {
+                        s.search.update(cx, |i, cx| {
+                            i.set_text("", cx);
+                            let _ = w;
+                        })
+                    })
+                }
+            })
+            .on_select(move |_, _, _| {
+                let _ = &m;
+            });
+        let w_search = search;
         let full = SearchView::new("search-full", self.search_full.clone())
             .items(["Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot"])
             .mode(dodai_gpui::SearchMode::FullScreen)
@@ -499,7 +449,7 @@ impl Showcase {
         out.push((
             "Inputs",
             "Search view · SearchBar",
-            section!("Search view")
+            self.section("Search view", &t, &me, cx)
                 .child(w_search)
                 .child(Muted::new("Full screen (Material)"))
                 .child(
@@ -513,26 +463,112 @@ impl Showcase {
                 .into_any_element(),
             "Search view",
         ));
+        out
+    }
+
+    fn tag_field_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let mut out: Vec<Section> = Vec::new();
+        let m4 = me.clone();
+        let w_tags = TagField::new("tags", self.tags.clone()).on_remove(move |i, _, cx| {
+            m4.update(cx, |s, cx| {
+                s.tags.remove(i);
+                cx.notify()
+            })
+        });
         out.push((
             "Inputs",
             "Tag field · chips",
-            section!("Tag field").child(w_tags).into_any_element(),
+            self.section("Tag field", &t, &me, cx)
+                .child(w_tags)
+                .into_any_element(),
             "Tag field",
         ));
+        out
+    }
+
+    fn picker_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let row = || div().flex().flex_wrap().items_center().gap(gap);
+        let mut out: Vec<Section> = Vec::new();
+        let (m5, m6) = (me.clone(), me.clone());
+        let (y, mo, sel) = self.date;
+        let pickers = row()
+            .child(
+                DatePicker::new("date", y, mo)
+                    .selected(sel)
+                    .on_select({
+                        let m = m5.clone();
+                        move |d, _, cx| {
+                            m.update(cx, |s, cx| {
+                                s.date.2 = Some(d);
+                                cx.notify()
+                            })
+                        }
+                    })
+                    .on_month(move |y, mo, _, cx| {
+                        m5.update(cx, |s, cx| {
+                            s.date.0 = y;
+                            s.date.1 = mo;
+                            cx.notify()
+                        })
+                    }),
+            )
+            .child(TimePicker::new("time", self.time.0, self.time.1).on_change(
+                move |h, mi, _, cx| {
+                    m6.update(cx, |s, cx| {
+                        s.time = (h, mi);
+                        cx.notify()
+                    })
+                },
+            ));
+        let typed = row()
+            .items_start()
+            .child(dodai_gpui::DateInput::new("date-in").value(sel).on_change({
+                let m = me.clone();
+                move |d, _, cx| {
+                    m.update(cx, |s, cx| {
+                        s.date = (d.year, d.month, Some(d));
+                        cx.notify()
+                    })
+                }
+            }))
+            .child(
+                dodai_gpui::TimeInput::new("time-in")
+                    .value(Some(self.time))
+                    .on_change({
+                        let m = me.clone();
+                        move |h, mi, _, cx| {
+                            m.update(cx, |s, cx| {
+                                s.time = (h, mi);
+                                cx.notify()
+                            })
+                        }
+                    }),
+            );
         out.push((
             "Inputs",
             "Date picker · Time picker",
-            section!("Date / time pickers")
+            self.section("Date / time pickers", &t, &me, cx)
                 .child(pickers)
                 .child(Muted::new("Text input mode"))
                 .child(typed)
                 .into_any_element(),
             "Date / time pickers",
         ));
-        out.push((
+        out
+    }
+
+    fn password_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        vec![(
             "Inputs",
             "Password · One-time code",
-            section!("Password · OTP")
+            self.section("Password · OTP", &t, &me, cx)
                 .child(
                     dodai_gpui::FormField::new("Password")
                         .required(true)
@@ -550,11 +586,18 @@ impl Showcase {
                 )
                 .into_any_element(),
             "Password · OTP",
-        ));
-        out.push((
+        )]
+    }
+
+    fn form_field_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let row = || div().flex().flex_wrap().items_center().gap(gap);
+        vec![(
             "Inputs",
             "Form field · label help error validation",
-            section!("Form field")
+            self.section("Form field", &t, &me, cx)
                 .child(
                     row()
                         .items_start()
@@ -590,11 +633,18 @@ impl Showcase {
                 )
                 .into_any_element(),
             "Form field",
-        ));
-        out.push((
+        )]
+    }
+
+    fn group_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let row = || div().flex().flex_wrap().items_center().gap(gap);
+        vec![(
             "Inputs",
             "Toggle group · Checkbox group · select all · switches",
-            section!("Toggle group · Checkbox group")
+            self.section("Toggle group · Checkbox group", &t, &me, cx)
                 .child(
                     row()
                         .child(
@@ -628,11 +678,55 @@ impl Showcase {
                 )
                 .into_any_element(),
             "Toggle group · Checkbox group",
-        ));
+        )]
+    }
+
+    fn date_range_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let row = || div().flex().flex_wrap().items_center().gap(gap);
+        let mut out: Vec<Section> = Vec::new();
+        let (y, mo, _) = self.date;
+        let m_range = me.clone();
+        let range_picker = row()
+            .child(
+                DatePicker::new("date-range", y, mo)
+                    .range(self.date_range)
+                    .on_select({
+                        let m = m_range.clone();
+                        move |d, _, cx| {
+                            m.update(cx, |s, cx| {
+                                s.date_range = dodai_gpui::range_pick(s.date_range, d);
+                                cx.notify()
+                            })
+                        }
+                    })
+                    .on_month({
+                        let m = m_range.clone();
+                        move |y, mo, _, cx| {
+                            m.update(cx, |s, cx| {
+                                s.date.0 = y;
+                                s.date.1 = mo;
+                                cx.notify()
+                            })
+                        }
+                    }),
+            )
+            .child(Muted::new(match self.date_range.span() {
+                Some((a, b)) => format!(
+                    "{}-{:02}-{:02} → {}-{:02}-{:02}",
+                    a.year, a.month, a.day, b.year, b.month, b.day
+                ),
+                None => match self.date_range.start {
+                    Some(a) => format!("from {}-{:02}-{:02}: pick the end", a.year, a.month, a.day),
+                    None => "click a start day, then an end day".to_string(),
+                },
+            }));
         out.push((
             "Inputs",
             "Date range picker",
-            section!("Date range")
+            self.section("Date range", &t, &me, cx)
                 .child(range_picker)
                 .into_any_element(),
             "Date range",

@@ -3,326 +3,146 @@
 use super::super::*;
 
 impl Showcase {
-    #[allow(unused_variables, clippy::redundant_clone, clippy::vec_init_then_push)]
     pub(crate) fn sections_shape(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let mut out: Vec<Section> = Vec::new();
+        out.extend(self.gallery_section(cx));
+        out.extend(self.presets_section(cx));
+        out.extend(self.component_textures_section(cx));
+        out.extend(self.container_textures_section(cx));
+        out.extend(self.light_section(cx));
+        out.extend(self.edges_section(cx));
+        out.extend(self.ripple_section(cx));
+        out.extend(self.signature_section(cx));
+        out.extend(self.roundness_section(cx));
+        out.extend(self.corner_shape_section(cx));
+        out.extend(self.crop_section(cx));
+        out.extend(self.border_section(cx));
+        out
+    }
+
+    fn gallery_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
         let me = cx.entity();
-        #[allow(unused_macros)]
-        macro_rules! section {
-            ($t:expr) => {
-                Panel::new()
-                    .title($t)
-                    .subheader(self.chips($t, &t, &me, cx))
-                    .scope(Some(self.scope_of($t, cx)))
-                    .scope_key(self.sec_replay.get($t).copied().unwrap_or(0))
-            };
-        }
-        let mut out: Vec<Section> = Vec::new();
         let gap = px(t.spacing.md);
-        let glow = glow_intensity(cx);
-        let row = || div().flex().flex_wrap().items_center().gap(gap);
-        let col = || div().flex().flex_col().gap(gap);
-        let cut = |b: Button| b;
-        // One labelled setting: fixed label column, the control, a muted hint underneath.
-        let setting = |label: &'static str, hint: &'static str, control: gpui::AnyElement| {
-            div()
-                .flex()
-                .items_start()
-                .gap(px(t.spacing.lg))
-                .child(
-                    div()
-                        .w(px(120.0))
-                        .pt(px(t.spacing.sm))
-                        .child(Label::new(label)),
-                )
-                .child(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .gap(px(t.spacing.xs))
-                        .child(control)
-                        .child(Muted::new(hint)),
-                )
-        };
-        // Global: picking a cut changes every component in every theme.
-        let corner_picker = {
-            use dodai_core::Corners as C;
-            let cur = dodai_gpui::corners(cx);
-            let over = dodai_gpui::corners_overridden(cx);
-            type Preset = (&'static str, Option<C>);
-            let sets: [Preset; 5] = [
-                ("Default", None),
-                ("None", Some(C::NONE)),
-                ("All", Some(C::ALL)),
-                ("Diagonal", Some(C::DIAGONAL)),
-                ("Anti-diagonal", Some(C::ANTI_DIAGONAL)),
-            ];
-            let singles: [Preset; 6] = [
-                ("Top left", Some(C::TOP_LEFT)),
-                ("Top right", Some(C::TOP_RIGHT)),
-                ("Bottom right", Some(C::BOTTOM_RIGHT)),
-                ("Bottom left", Some(C::BOTTOM_LEFT)),
-                ("Left", Some(C::LEFT)),
-                ("Right", Some(C::RIGHT)),
-            ];
-            let pos = |list: &[Preset]| {
-                if !over {
-                    return list.iter().position(|p| p.1.is_none());
-                }
-                list.iter().position(|p| p.1 == Some(cur))
-            };
-            let apply = |c: Option<C>, cx: &mut App| match c {
-                Some(c) => dodai_gpui::set_corners(cx, c),
-                None => dodai_gpui::reset_corners(cx),
-            };
-            setting(
-                "Cut corners",
-                "Which corners every component cuts, in every design. \"Default\" restores each design's own.",
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap(px(t.spacing.sm))
-                    .child(
-                        div().flex().child(
-                            Segmented::new("cut-sets", sets.map(|p| p.0))
-                                .selected(pos(&sets).unwrap_or(usize::MAX))
-                                .on_select(move |i, _, cx| apply(sets[i].1, cx)),
-                        ),
-                    )
-                    .child(
-                        div().flex().child(
-                            Segmented::new("cut-singles", singles.map(|p| p.0))
-                                .selected(pos(&singles).unwrap_or(usize::MAX))
-                                .on_select(move |i, _, cx| apply(singles[i].1, cx)),
-                        ),
-                    )
-                    .into_any_element(),
-            )
-        };
-        let shape_gallery =
-            |scope: &str| {
-                let id = |k: &str| gpui::SharedString::from(format!("{scope}-sg-{k}"));
-                col()
-                    .child(
-                        row()
-                            .child(Button::new(id("p"), "Primary"))
-                            .child(
-                                Button::new(id("s"), "Secondary").variant(ButtonVariant::Secondary),
-                            )
-                            .child(Button::new(id("o"), "Outline").variant(ButtonVariant::Outline))
-                            .child(Button::new(id("d"), "Danger").variant(ButtonVariant::Danger)),
-                    )
-                    .child(
-                        row()
-                            .child(Tag::new("online", Tone::Success).solid(true))
-                            .child(Tag::new("warn", Tone::Warning))
-                            .child(Tag::new("error", Tone::Danger).solid(true)),
-                    )
-                    .child(
-                        row()
-                            .items_start()
-                            .child(
-                                div()
-                                    .flex_1()
-                                    .min_w(px(220.0))
-                                    .child(Card::new(CardVariant::Outlined).headline("Card")),
-                            )
-                            .child(
-                                div().flex_1().min_w(px(220.0)).child(
-                                    Card::new(CardVariant::Elevated).headline("Elevated card"),
-                                ),
-                            )
-                            .child(div().flex_1().min_w(px(220.0)).child(
-                                Panel::new().title("Panel").child(Muted::new("Panel body")),
-                            )),
-                    )
-            };
-        let shape_props = div().flex().flex_col().gap(px(t.spacing.sm)).child(
-            row().child(Label::new("Glow")).child(
-                div().w(px(200.0)).child(
-                    Slider::new("glow-slider", glow)
-                        .range(0.0, 2.0)
-                        .step(0.05)
-                        .show_value(true)
-                        .format(|v| format!("{v:.2}"))
-                        .on_change(move |v, _, cx| set_glow_intensity(cx, v)),
-                ),
-            ),
-        );
-        let m = me.clone();
         // Every design: its own corner radius, border and shadow on real components.
-        out.push((
+        vec![(
             "Shape",
             "Shape gallery",
-            section!("Shape gallery")
+            self.section("Shape gallery", &t, &me, cx)
                 .child(Muted::new(
                     "The design system's own corners, borders and shadows on real components, with the tokens behind them.",
                 ))
                 .child(shape_tokens_view(&t))
-                .child(shape_gallery("gallery"))
+                .child(shape_gallery(gap, "gallery"))
                 .into_any_element(),
             "Shape gallery",
-        ));
-        // Textures and effects belong to the designs that declare them.
-        if !t.surface_textures().is_empty() {
-            use dodai_core::{SurfaceClass, SurfaceFx, Texture};
-            let owned = t.surface_textures();
-            let fx = dodai_gpui::surface_fx();
-            let amount = move |id: &'static str,
-                               name: &'static str,
-                               v: f32,
-                               max: f32,
-                               set: fn(&mut SurfaceFx, f32)| {
-                row()
-                    .child(div().w(px(90.0)).child(Label::new(name)))
-                    .child(
-                        div().w(px(220.0)).child(
-                            Slider::new(id, v)
-                                .range(0.0, max)
-                                .step(0.05)
-                                .show_value(true)
-                                .format(|v| format!("{v:.2}"))
-                                .on_change(move |v, _, cx| {
-                                    let mut f = dodai_gpui::surface_fx();
-                                    set(&mut f, v);
-                                    dodai_gpui::set_surface_fx(cx, f);
-                                }),
-                        ),
-                    )
-            };
-            let picker = |id: &'static str,
-                          cur: Texture,
-                          components: bool,
-                          set: fn(&mut SurfaceFx, Texture)| {
-                row().children(
-                    Texture::ALL
-                        .iter()
-                        .copied()
-                        .filter(|x| (!components || x.for_components()) && owned.contains(x))
-                        .map(|x| {
-                            let btn = Button::new(
-                                gpui::SharedString::from(format!("{id}-{}", x.label())),
-                                x.label(),
-                            )
-                            .variant(if x == cur {
-                                ButtonVariant::Primary
-                            } else {
-                                ButtonVariant::Outline
-                            })
-                            .on_click(move |_, _, cx| {
-                                let mut f = dodai_gpui::surface_fx();
-                                set(&mut f, x);
-                                dodai_gpui::set_surface_fx(cx, f);
-                            });
-                            // The button previews its own texture.
-                            div()
-                                .relative()
-                                .child(btn)
-                                .child(dodai_gpui::texture_swatch(&t, x))
-                        }),
-                )
-            };
-            // One mode selector: Off / design preset / custom (any hand edit lands on Custom).
-            let preset = t.surface_preset();
-            let mode = if fx.is_none() {
-                0
-            } else if fx == preset {
-                1
+        )]
+    }
+
+    fn presets_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let row = || div().flex().flex_wrap().items_center().gap(gap);
+        let mut out: Vec<Section> = Vec::new();
+        if t.surface_textures().is_empty() {
+            return out;
+        }
+        use dodai_core::{SurfaceClass, SurfaceFx};
+        let fx = dodai_gpui::surface_fx();
+        // One mode selector: Off / design preset / custom (any hand edit lands on Custom).
+        let preset = t.surface_preset();
+        let mode = if fx.is_none() {
+            0
+        } else if fx == preset {
+            1
+        } else {
+            2
+        };
+        let family = {
+            let mut c = t.meta.family.chars();
+            c.next()
+                .map(|f| f.to_uppercase().chain(c).collect::<String>())
+                .unwrap_or_default()
+        };
+        let status = match mode {
+            0 => "Off: nothing is drawn.".to_string(),
+            1 => format!("Default: the {family} design's own mix."),
+            _ => "Custom mix.".to_string(),
+        };
+        let presets = Segmented::new("sfx-mode", ["Off", "Default", "Custom"])
+            .selected(mode)
+            .on_select(|i, _, cx| match i {
+                0 => {
+                    let mut f = SurfaceFx::NONE;
+                    f.targets = dodai_gpui::surface_fx().targets;
+                    dodai_gpui::set_surface_fx(cx, f);
+                }
+                1 => dodai_gpui::apply_surface_preset(cx),
+                _ => {}
+            });
+        let chip = |c: SurfaceClass| {
+            let on = fx.targets.contains(c);
+            Button::new(
+                gpui::SharedString::from(format!("sfx-t-{}", c.label())),
+                c.label(),
+            )
+            .variant(if on {
+                ButtonVariant::Primary
             } else {
-                2
-            };
-            let family = {
-                let mut c = t.meta.family.chars();
-                c.next()
-                    .map(|f| f.to_uppercase().chain(c).collect::<String>())
-                    .unwrap_or_default()
-            };
-            let status = match mode {
-                0 => "Off: nothing is drawn.".to_string(),
-                1 => format!("Default: the {family} design's own mix."),
-                _ => "Custom mix.".to_string(),
-            };
-            let presets = Segmented::new("sfx-mode", ["Off", "Default", "Custom"])
-                .selected(mode)
-                .on_select(|i, _, cx| match i {
-                    0 => {
-                        let mut f = SurfaceFx::NONE;
-                        f.targets = dodai_gpui::surface_fx().targets;
-                        dodai_gpui::set_surface_fx(cx, f);
-                    }
-                    1 => dodai_gpui::apply_surface_preset(cx),
-                    _ => {}
-                });
-            let chip = |c: SurfaceClass| {
-                let on = fx.targets.contains(c);
-                Button::new(
-                    gpui::SharedString::from(format!("sfx-t-{}", c.label())),
-                    c.label(),
-                )
-                .variant(if on {
-                    ButtonVariant::Primary
-                } else {
-                    ButtonVariant::Outline
-                })
+                ButtonVariant::Outline
+            })
+            .on_click(move |_, _, cx| {
+                let mut f = dodai_gpui::surface_fx();
+                f.targets = f.targets.with(c, !on);
+                dodai_gpui::set_surface_fx(cx, f);
+            })
+        };
+        let shortcut = |id: &'static str, label: &'static str, to: dodai_core::SurfaceTargets| {
+            div()
+                .id(id)
+                .cursor_pointer()
+                .flex_none()
+                .whitespace_nowrap()
+                .text_size(px(t.typography.size_sm))
+                .text_color(dodai_gpui::hsla(t.palette.link))
+                .underline()
+                .hover(|s| s.opacity(0.7))
+                .child(label)
                 .on_click(move |_, _, cx| {
                     let mut f = dodai_gpui::surface_fx();
-                    f.targets = f.targets.with(c, !on);
+                    f.targets = to;
                     dodai_gpui::set_surface_fx(cx, f);
                 })
-            };
-            let shortcut =
-                |id: &'static str, label: &'static str, to: dodai_core::SurfaceTargets| {
-                    div()
-                        .id(id)
-                        .cursor_pointer()
-                        .flex_none()
-                        .whitespace_nowrap()
-                        .text_size(px(t.typography.size_sm))
-                        .text_color(dodai_gpui::hsla(t.palette.link))
-                        .underline()
-                        .hover(|s| s.opacity(0.7))
-                        .child(label)
-                        .on_click(move |_, _, cx| {
-                            let mut f = dodai_gpui::surface_fx();
-                            f.targets = to;
-                            dodai_gpui::set_surface_fx(cx, f);
-                        })
-                };
-            let targets = row()
-                .children(SurfaceClass::ALL.iter().map(|c| chip(*c)))
-                .child(
-                    div()
-                        .flex()
-                        .flex_none()
-                        .items_center()
-                        .gap(px(t.spacing.md))
-                        .child(shortcut(
-                            "sfx-t-default",
-                            "Default",
-                            dodai_core::SurfaceTargets::DEFAULT,
-                        ))
-                        .child(shortcut(
-                            "sfx-t-all",
-                            "All",
-                            dodai_core::SurfaceTargets::ALL,
-                        ))
-                        .child(shortcut(
-                            "sfx-t-none",
-                            "None",
-                            dodai_core::SurfaceTargets::NONE,
-                        )),
-                );
-            let id = |p: &'static str, n: &str| gpui::SharedString::from(format!("{p}-{n}"));
-            let preview_components = |p: &'static str| {
-                row()
-                    .child(Button::new(id(p, "b1"), "Primary"))
-                    .child(Button::new(id(p, "b2"), "Secondary").variant(ButtonVariant::Secondary))
-                    .child(Button::new(id(p, "b3"), "Outline").variant(ButtonVariant::Outline))
-            };
-            out.push((
+        };
+        let targets = row()
+            .children(SurfaceClass::ALL.iter().map(|c| chip(*c)))
+            .child(
+                div()
+                    .flex()
+                    .flex_none()
+                    .items_center()
+                    .gap(px(t.spacing.md))
+                    .child(shortcut(
+                        "sfx-t-default",
+                        "Default",
+                        dodai_core::SurfaceTargets::DEFAULT,
+                    ))
+                    .child(shortcut(
+                        "sfx-t-all",
+                        "All",
+                        dodai_core::SurfaceTargets::ALL,
+                    ))
+                    .child(shortcut(
+                        "sfx-t-none",
+                        "None",
+                        dodai_core::SurfaceTargets::NONE,
+                    )),
+            );
+        out.push((
                 "Surface effects",
                 "Presets · Apply to",
-                section!("Presets · Apply to")
+                self.section("Presets · Apply to", &t, &me, cx)
                     .child(Muted::new(status))
                     .child(div().w_1_2().child(presets))
                     .child(Label::new("Apply to"))
@@ -333,10 +153,24 @@ impl Showcase {
                     .into_any_element(),
                 "Presets · Apply to",
             ));
-            out.push((
+        out
+    }
+
+    fn component_textures_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let mut out: Vec<Section> = Vec::new();
+        if t.surface_textures().is_empty() {
+            return out;
+        }
+        use dodai_core::Texture;
+        let owned = t.surface_textures();
+        let fx = dodai_gpui::surface_fx();
+        out.push((
                 "Surface effects",
                 "Component textures",
-                section!("Component textures")
+                self.section("Component textures", &t, &me, cx)
                     .child(Muted::new(
                         "A pattern on UI components: buttons, inputs and tags. The buttons below wear it. Keep it fine and subtle so labels stay readable.",
                     ))
@@ -358,18 +192,32 @@ impl Showcase {
                                 dodai_gpui::set_surface_fx(cx, f);
                             })
                     })
-                    .child(amount("sfx-strength", "Strength", fx.strength, 1.0, |f, v| f.strength = v))
-                    .child(amount("sfx-scale", "Scale", fx.scale, 4.0, |f, v| f.scale = v.max(0.25)))
-                    .children(t.surface_effects().neon.then(|| amount("sfx-neon", "Lit lines", fx.neon, 1.0, |f, v| f.neon = v)))
-                    .child(amount("sfx-clear", "Clear centre", fx.clear, 1.0, |f, v| f.clear = v))
-                    .child(preview_components("sfx-tx"))
+                    .child(fx_amount(gap, "sfx-strength", "Strength", fx.strength, 1.0, |f, v| f.strength = v))
+                    .child(fx_amount(gap, "sfx-scale", "Scale", fx.scale, 4.0, |f, v| f.scale = v.max(0.25)))
+                    .children(t.surface_effects().neon.then(|| fx_amount(gap, "sfx-neon", "Lit lines", fx.neon, 1.0, |f, v| f.neon = v)))
+                    .child(fx_amount(gap, "sfx-clear", "Clear centre", fx.clear, 1.0, |f, v| f.clear = v))
+                    .child(fx_preview(gap, "sfx-tx"))
                     .into_any_element(),
                 "Component textures",
             ));
-            out.push((
+        out
+    }
+
+    fn container_textures_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let mut out: Vec<Section> = Vec::new();
+        if t.surface_textures().is_empty() {
+            return out;
+        }
+        use dodai_core::Texture;
+        let owned = t.surface_textures();
+        let fx = dodai_gpui::surface_fx();
+        out.push((
                 "Surface effects",
                 "Container textures",
-                section!("Container textures")
+                self.section("Container textures", &t, &me, cx)
                     .child(Muted::new(
                         "A pattern on containers: cards, panels and bars. This panel is a container, so it shows the chosen pattern behind these controls.",
                     ))
@@ -395,79 +243,119 @@ impl Showcase {
                                 dodai_gpui::set_surface_fx(cx, f);
                             })
                     })
-                    .child(amount("sfx-cstrength", "Strength", fx.container_strength, 1.0, |f, v| f.container_strength = v))
-                    .child(amount("sfx-cscale", "Scale", fx.container_scale, 4.0, |f, v| f.container_scale = v.max(0.25)))
-                    .children(t.surface_effects().neon.then(|| amount("sfx-cneon", "Lit lines", fx.neon, 1.0, |f, v| f.neon = v)))
-                    .child(amount("sfx-cclear", "Clear centre", fx.clear, 1.0, |f, v| f.clear = v))
+                    .child(fx_amount(gap, "sfx-cstrength", "Strength", fx.container_strength, 1.0, |f, v| f.container_strength = v))
+                    .child(fx_amount(gap, "sfx-cscale", "Scale", fx.container_scale, 4.0, |f, v| f.container_scale = v.max(0.25)))
+                    .children(t.surface_effects().neon.then(|| fx_amount(gap, "sfx-cneon", "Lit lines", fx.neon, 1.0, |f, v| f.neon = v)))
+                    .child(fx_amount(gap, "sfx-cclear", "Clear centre", fx.clear, 1.0, |f, v| f.clear = v))
                     .into_any_element(),
                 "Container textures",
             ));
-            let mut light = section!("Light FX").child(Muted::new(
-                "Glow and animated accents on components and containers. 0 turns an effect off.",
+        out
+    }
+
+    fn light_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let mut out: Vec<Section> = Vec::new();
+        if t.surface_textures().is_empty() {
+            return out;
+        }
+        let fx = dodai_gpui::surface_fx();
+        let mut light = self.section("Light FX", &t, &me, cx).child(Muted::new(
+            "Glow and animated accents on components and containers. 0 turns an effect off.",
+        ));
+        if t.look().luminous {
+            light = light.child(shape_props(&t, glow_intensity(cx)));
+        }
+        let ef = t.surface_effects();
+        let any_light = ef.glitch || ef.sheen || ef.flicker || ef.bloom || ef.pulse || ef.chase;
+        if t.look().luminous || any_light {
+            light = light
+                .children(ef.glitch.then(|| {
+                    fx_amount(gap, "sfx-glitch", "Glitch", fx.glitch, 1.0, |f, v| {
+                        f.glitch = v
+                    })
+                }))
+                .children(ef.sheen.then(|| {
+                    fx_amount(gap, "sfx-sheen", "Sheen", fx.sheen, 1.0, |f, v| f.sheen = v)
+                }))
+                .children(ef.flicker.then(|| {
+                    fx_amount(gap, "sfx-flicker", "Flicker", fx.flicker, 1.0, |f, v| {
+                        f.flicker = v
+                    })
+                }))
+                .children(ef.bloom.then(|| {
+                    fx_amount(gap, "sfx-bloom", "Bloom", fx.bloom, 1.0, |f, v| f.bloom = v)
+                }))
+                .children(ef.pulse.then(|| {
+                    fx_amount(gap, "sfx-pulse", "Pulse", fx.pulse, 1.0, |f, v| f.pulse = v)
+                }))
+                .children(ef.chase.then(|| {
+                    fx_amount(gap, "sfx-chase", "Chase", fx.chase, 1.0, |f, v| f.chase = v)
+                }));
+            out.push((
+                "Surface effects",
+                "Light FX",
+                light.into_any_element(),
+                "Light FX",
             ));
-            if t.look().luminous {
-                light = light.child(shape_props);
-            }
-            let ef = t.surface_effects();
-            let any_light = ef.glitch || ef.sheen || ef.flicker || ef.bloom || ef.pulse || ef.chase;
-            if t.look().luminous || any_light {
-                light =
-                    light
-                        .children(ef.glitch.then(|| {
-                            amount("sfx-glitch", "Glitch", fx.glitch, 1.0, |f, v| f.glitch = v)
-                        }))
-                        .children(ef.sheen.then(|| {
-                            amount("sfx-sheen", "Sheen", fx.sheen, 1.0, |f, v| f.sheen = v)
-                        }))
-                        .children(ef.flicker.then(|| {
-                            amount("sfx-flicker", "Flicker", fx.flicker, 1.0, |f, v| {
-                                f.flicker = v
-                            })
-                        }))
-                        .children(ef.bloom.then(|| {
-                            amount("sfx-bloom", "Bloom", fx.bloom, 1.0, |f, v| f.bloom = v)
-                        }))
-                        .children(ef.pulse.then(|| {
-                            amount("sfx-pulse", "Pulse", fx.pulse, 1.0, |f, v| f.pulse = v)
-                        }))
-                        .children(ef.chase.then(|| {
-                            amount("sfx-chase", "Chase", fx.chase, 1.0, |f, v| f.chase = v)
-                        }));
-                out.push((
-                    "Surface effects",
-                    "Light FX",
-                    light.into_any_element(),
-                    "Light FX",
-                ));
-            }
-            if ef.edge || ef.brackets || ef.depth {
-                out.push((
+        }
+        out
+    }
+
+    fn edges_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let mut out: Vec<Section> = Vec::new();
+        if t.surface_textures().is_empty() {
+            return out;
+        }
+        let fx = dodai_gpui::surface_fx();
+        let ef = t.surface_effects();
+        if ef.edge || ef.brackets || ef.depth {
+            out.push((
                     "Surface effects",
                     "Edges · Depth",
-                    section!("Edges · Depth")
+                    self.section("Edges · Depth", &t, &me, cx)
                         .child(Muted::new(
                             "How the edges look: light falling inward, corner brackets and an inner shadow. Clear centre (under textures) keeps text clean.",
                         ))
                         .children(ef.edge.then(|| {
-                            amount("sfx-edge", "Edge light", fx.edge, 1.0, |f, v| f.edge = v)
+                            fx_amount(gap, "sfx-edge", "Edge light", fx.edge, 1.0, |f, v| f.edge = v)
                         }))
                         .children(ef.brackets.then(|| {
-                            amount("sfx-brackets", "Brackets", fx.brackets, 1.0, |f, v| f.brackets = v)
+                            fx_amount(gap, "sfx-brackets", "Brackets", fx.brackets, 1.0, |f, v| f.brackets = v)
                         }))
                         .children(ef.depth.then(|| {
-                            amount("sfx-depth", "Depth", fx.depth, 1.0, |f, v| f.depth = v)
+                            fx_amount(gap, "sfx-depth", "Depth", fx.depth, 1.0, |f, v| f.depth = v)
                         }))
-                        .child(preview_components("sfx-ed"))
+                        .child(fx_preview(gap, "sfx-ed"))
                         .into_any_element(),
                     "Edges · Depth",
                 ));
-            }
-            if ef.ripple {
-                let styles = dodai_core::PressStyle::ALL;
-                out.push((
+        }
+        out
+    }
+
+    fn ripple_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let row = || div().flex().flex_wrap().items_center().gap(gap);
+        let mut out: Vec<Section> = Vec::new();
+        if t.surface_textures().is_empty() {
+            return out;
+        }
+        let fx = dodai_gpui::surface_fx();
+        let ef = t.surface_effects();
+        if ef.ripple {
+            let styles = dodai_core::PressStyle::ALL;
+            out.push((
                     "Surface effects",
                     "Click ripple",
-                    section!("Click ripple")
+                    self.section("Click ripple", &t, &me, cx)
                         .child(Muted::new(
                             "Press any control below: the ripple plays from the touch point. Pick how it plays and how strong it is.",
                         ))
@@ -489,289 +377,205 @@ impl Showcase {
                                         }),
                                 ),
                         )
-                        .child(amount("sfx-ripple", "Strength", fx.ripple, 1.0, |f, v| {
+                        .child(fx_amount(gap, "sfx-ripple", "Strength", fx.ripple, 1.0, |f, v| {
                             f.ripple = v
                         }))
-                        .child(preview_components("sfx-press-demo"))
+                        .child(fx_preview(gap, "sfx-press-demo"))
                         .into_any_element(),
                     "Click ripple",
                 ));
-            }
-            if ef.tint || ef.pop || ef.tape || ef.gloss || ef.strip {
-                out.push((
+        }
+        out
+    }
+
+    fn signature_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let mut out: Vec<Section> = Vec::new();
+        if t.surface_textures().is_empty() {
+            return out;
+        }
+        let fx = dodai_gpui::surface_fx();
+        let ef = t.surface_effects();
+        if ef.tint || ef.pop || ef.tape || ef.gloss || ef.strip {
+            out.push((
                     "Surface effects",
                     "Signature",
-                    section!("Signature")
+                    self.section("Signature", &t, &me, cx)
                         .child(Muted::new(
                             "Effects that belong to this design only: tonal wash, a hard pop block and tape, a clear-coat gloss and a light strip.",
                         ))
                         .children(ef.tint.then(|| {
-                            amount("sfx-tint", "Tonal wash", fx.tint, 1.0, |f, v| f.tint = v)
+                            fx_amount(gap, "sfx-tint", "Tonal wash", fx.tint, 1.0, |f, v| f.tint = v)
                         }))
                         .children(ef.pop.then(|| {
-                            amount("sfx-pop", "Pop", fx.pop, 1.0, |f, v| f.pop = v)
+                            fx_amount(gap, "sfx-pop", "Pop", fx.pop, 1.0, |f, v| f.pop = v)
                         }))
                         .children(ef.tape.then(|| {
-                            amount("sfx-tape", "Tape", fx.tape, 1.0, |f, v| f.tape = v)
+                            fx_amount(gap, "sfx-tape", "Tape", fx.tape, 1.0, |f, v| f.tape = v)
                         }))
                         .children(ef.gloss.then(|| {
-                            amount("sfx-gloss", "Gloss", fx.gloss, 1.0, |f, v| f.gloss = v)
+                            fx_amount(gap, "sfx-gloss", "Gloss", fx.gloss, 1.0, |f, v| f.gloss = v)
                         }))
                         .children(ef.strip.then(|| {
-                            amount("sfx-strip", "Light strip", fx.strip, 1.0, |f, v| f.strip = v)
+                            fx_amount(gap, "sfx-strip", "Light strip", fx.strip, 1.0, |f, v| f.strip = v)
                         }))
-                        .child(preview_components("sfx-sig"))
+                        .child(fx_preview(gap, "sfx-sig"))
                         .into_any_element(),
                     "Signature",
                 ));
-            }
         }
-        {
-            use dodai_core::{BorderTint, ShapeKind, ShapeTune};
-            let tune = dodai_gpui::shape_tune();
-            let round_ok = t.shape.kind() != ShapeKind::Chamfered;
-            let widths: [(&str, Option<f32>); 5] = [
-                ("Default", None),
-                ("None", Some(0.0)),
-                ("Hairline", Some(1.0)),
-                ("Medium", Some(2.0)),
-                ("Thick", Some(3.0)),
-            ];
-            let width_sel = widths
-                .iter()
-                .position(|w| w.1 == tune.border_width)
-                .unwrap_or(usize::MAX);
-            let tint_sel = BorderTint::ALL
-                .iter()
-                .position(|b| *b == tune.tint)
-                .unwrap_or(0);
-            let mut sec = section!("Roundness · Borders").child(Muted::new(
-                "Applies to every component in every design, immediately. \"Default\" is each design's own.",
+        out
+    }
+
+    fn roundness_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        use dodai_core::{BorderTint, CornerStyle, RoundnessGroup, ShadowDir, ShapeKind};
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let tune = dodai_gpui::shape_tune();
+        let percent: fn(f32) -> String = |v| format!("{:.0}%", v * 100.0);
+        let mut sec = self.section("Roundness · Borders", &t, &me, cx).child(Muted::new(
+            "Applies to every component in every design, immediately. \"Default\" is each design's own.",
+        ));
+        if t.shape.kind() != ShapeKind::Chamfered {
+            sec = sec.child(tune_slider(
+                &t,
+                "Roundness",
+                "0 is square, 100% is the design's own corners, more is rounder (up to 200%).",
+                ("rb-round", 0),
+                (tune.roundness, 2.0, 0.05),
+                percent,
+                |tn, v| tn.roundness = v,
             ));
-            if round_ok {
-                sec = sec.child(setting(
-                    "Roundness",
-                    "0 is square, 100% is the design's own corners, more is rounder (up to 200%).",
-                    div()
-                        .w(px(280.0))
-                        .child(
-                            Slider::new("rb-round", tune.roundness)
-                                .range(0.0, 2.0)
-                                .step(0.05)
-                                .show_value(true)
-                                .format(|v| format!("{:.0}%", v * 100.0))
-                                .on_change(|v, _, cx| {
-                                    let t = dodai_gpui::shape_tune();
-                                    dodai_gpui::set_shape_tune(cx, ShapeTune { roundness: v, ..t });
-                                }),
-                        )
-                        .into_any_element(),
+            for (k, g) in RoundnessGroup::ALL.into_iter().enumerate() {
+                sec = sec.child(tune_slider(
+                    &t,
+                    g.label(),
+                    "On top of the global roundness; 100% leaves this group alone.",
+                    ("rb-group", k),
+                    (tune.groups[k], 2.0, 0.05),
+                    percent,
+                    move |tn, v| tn.groups[k] = v,
                 ));
-                for g in dodai_core::RoundnessGroup::ALL {
-                    let k = dodai_core::RoundnessGroup::ALL
-                        .iter()
-                        .position(|x| *x == g)
-                        .unwrap_or(0);
-                    sec = sec.child(setting(
-                        g.label(),
-                        "On top of the global roundness; 100% leaves this group alone.",
-                        div()
-                            .w(px(280.0))
-                            .child(
-                                Slider::new(("rb-group", k), tune.groups[k])
-                                    .range(0.0, 2.0)
-                                    .step(0.05)
-                                    .show_value(true)
-                                    .format(|v| format!("{:.0}%", v * 100.0))
-                                    .on_change(move |v, _, cx| {
-                                        let mut t = dodai_gpui::shape_tune();
-                                        t.groups[k] = v;
-                                        dodai_gpui::set_shape_tune(cx, t);
-                                    }),
-                            )
-                            .into_any_element(),
-                    ));
-                }
             }
-            let styles = [
-                ("Design", None),
-                ("Round", Some(dodai_core::CornerStyle::Round)),
-                ("Cut", Some(dodai_core::CornerStyle::Cut)),
-                ("Scoop", Some(dodai_core::CornerStyle::Scoop)),
-            ];
-            let style_sel = styles
-                .iter()
-                .position(|s| s.1 == tune.corner_style)
-                .unwrap_or(0);
-            sec = sec
-                .child(setting(
-                    "Corner style",
-                    "Round, straight cut or concave scoop, on every design (Cut and Scoop take each role's size).",
-                    div()
-                        .flex()
-                        .child(
-                            Segmented::new("rb-style", styles.map(|s| s.0))
-                                .selected(style_sel)
-                                .on_select(move |i, _, cx| {
-                                    let t = dodai_gpui::shape_tune();
-                                    dodai_gpui::set_shape_tune(
-                                        cx,
-                                        ShapeTune {
-                                            corner_style: styles[i].1,
-                                            ..t
-                                        },
-                                    );
-                                }),
-                        )
-                        .into_any_element(),
-                ))
-                .child(setting(
-                    "Border width",
-                    "Thickness of every outline.",
-                    div()
-                        .flex()
-                        .child(
-                            Segmented::new("rb-width", widths.map(|w| w.0))
-                                .selected(width_sel)
-                                .on_select(move |i, _, cx| {
-                                    let t = dodai_gpui::shape_tune();
-                                    dodai_gpui::set_shape_tune(
-                                        cx,
-                                        ShapeTune {
-                                            border_width: widths[i].1,
-                                            ..t
-                                        },
-                                    );
-                                }),
-                        )
-                        .into_any_element(),
-                ))
-                .child(setting(
-                    "Border colour",
-                    "Which colour outlines take.",
-                    div()
-                        .flex()
-                        .child(
-                            Segmented::new("rb-tint", BorderTint::ALL.map(|b| b.label()))
-                                .selected(tint_sel)
-                                .on_select(move |i, _, cx| {
-                                    let t = dodai_gpui::shape_tune();
-                                    dodai_gpui::set_shape_tune(
-                                        cx,
-                                        ShapeTune {
-                                            tint: BorderTint::ALL[i],
-                                            ..t
-                                        },
-                                    );
-                                }),
-                        )
-                        .into_any_element(),
-                ))
-                .child(setting(
-                    "Outline all",
-                    "Give filled components without a border one too.",
-                    div()
-                        .flex()
-                        .child(
-                            Segmented::new("rb-all", ["Off", "On"])
-                                .selected(usize::from(tune.outline_all))
-                                .on_select(|i, _, cx| {
-                                    let t = dodai_gpui::shape_tune();
-                                    dodai_gpui::set_shape_tune(
-                                        cx,
-                                        ShapeTune {
-                                            outline_all: i == 1,
-                                            ..t
-                                        },
-                                    );
-                                }),
-                        )
-                        .into_any_element(),
-                ))
-                .children((t.effects.hard_shadow > 0.0).then(|| {
-                    let cur = tune.hard_shadow.unwrap_or(t.effects.hard_shadow);
-                    div()
-                        .flex()
-                        .flex_col()
-                        .gap(gap)
-                        .child(setting(
-                            "Shadow offset",
-                            "How far the hard shadow is offset, in px. Only designs with hard shadows have one.",
-                            div()
-                                .w(px(280.0))
-                                .child(
-                                    Slider::new("rb-shadow", cur)
-                                        .range(0.0, 12.0)
-                                        .step(1.0)
-                                        .show_value(true)
-                                        .format(|v| format!("{v:.0}px"))
-                                        .on_change(|v, _, cx| {
-                                            let t = dodai_gpui::shape_tune();
-                                            dodai_gpui::set_shape_tune(
-                                                cx,
-                                                ShapeTune { hard_shadow: Some(v), ..t },
-                                            );
-                                        }),
-                                )
-                                .into_any_element(),
-                        ))
-                        .child(setting(
-                            "Shadow direction",
-                            "Which way the hard shadow falls.",
-                            div()
-                                .flex()
-                                .child(
-                                    Segmented::new(
-                                        "rb-shadow-dir",
-                                        dodai_core::ShadowDir::ALL.map(|d| d.label()),
-                                    )
-                                    .selected(
-                                        dodai_core::ShadowDir::ALL
-                                            .iter()
-                                            .position(|d| *d == tune.shadow_dir)
-                                            .unwrap_or(0),
-                                    )
-                                    .on_select(move |i, _, cx| {
-                                        let t = dodai_gpui::shape_tune();
-                                        dodai_gpui::set_shape_tune(
-                                            cx,
-                                            ShapeTune {
-                                                shadow_dir: dodai_core::ShadowDir::ALL[i],
-                                                ..t
-                                            },
-                                        );
-                                    }),
-                                )
-                                .into_any_element(),
-                        ))
-                }))
-                .child(
-                    Button::new("rb-reset", "Reset")
-                        .variant(ButtonVariant::Outline)
-                        .on_click(|_, _, cx| dodai_gpui::set_shape_tune(cx, ShapeTune::DEFAULT)),
-                )
-                .child(shape_gallery("round"));
-            out.push((
-                "Shape",
-                "Roundness · Borders",
-                sec.into_any_element(),
-                "Roundness · Borders",
-            ));
         }
+        const STYLES: [(&str, Option<CornerStyle>); 4] = [
+            ("Design", None),
+            ("Round", Some(CornerStyle::Round)),
+            ("Cut", Some(CornerStyle::Cut)),
+            ("Scoop", Some(CornerStyle::Scoop)),
+        ];
+        const WIDTHS: [(&str, Option<f32>); 5] = [
+            ("Default", None),
+            ("None", Some(0.0)),
+            ("Hairline", Some(1.0)),
+            ("Medium", Some(2.0)),
+            ("Thick", Some(3.0)),
+        ];
+        let style_sel = STYLES.iter().position(|s| s.1 == tune.corner_style);
+        let width_sel = WIDTHS.iter().position(|w| w.1 == tune.border_width);
+        let tint_sel = BorderTint::ALL.iter().position(|b| *b == tune.tint);
+        sec = sec
+            .child(tune_choice(
+                &t,
+                "Corner style",
+                "Round, straight cut or concave scoop, on every design (Cut and Scoop take each role's size).",
+                "rb-style",
+                (STYLES.map(|s| s.0).to_vec(), style_sel.unwrap_or(0)),
+                |tn, i| tn.corner_style = STYLES[i].1,
+            ))
+            .child(tune_choice(
+                &t,
+                "Border width",
+                "Thickness of every outline.",
+                "rb-width",
+                (WIDTHS.map(|w| w.0).to_vec(), width_sel.unwrap_or(usize::MAX)),
+                |tn, i| tn.border_width = WIDTHS[i].1,
+            ))
+            .child(tune_choice(
+                &t,
+                "Border colour",
+                "Which colour outlines take.",
+                "rb-tint",
+                (BorderTint::ALL.map(|b| b.label()).to_vec(), tint_sel.unwrap_or(0)),
+                |tn, i| tn.tint = BorderTint::ALL[i],
+            ))
+            .child(tune_choice(
+                &t,
+                "Outline all",
+                "Give filled components without a border one too.",
+                "rb-all",
+                (vec!["Off", "On"], usize::from(tune.outline_all)),
+                |tn, i| tn.outline_all = i == 1,
+            ));
+        if t.effects.hard_shadow > 0.0 {
+            let cur = tune.hard_shadow.unwrap_or(t.effects.hard_shadow);
+            let dir = ShadowDir::ALL.iter().position(|d| *d == tune.shadow_dir);
+            sec = sec
+                .child(tune_slider(
+                    &t,
+                    "Shadow offset",
+                    "How far the hard shadow is offset, in px. Only designs with hard shadows have one.",
+                    ("rb-shadow", 0),
+                    (cur, 12.0, 1.0),
+                    |v| format!("{v:.0}px"),
+                    |tn, v| tn.hard_shadow = Some(v),
+                ))
+                .child(tune_choice(
+                    &t,
+                    "Shadow direction",
+                    "Which way the hard shadow falls.",
+                    "rb-shadow-dir",
+                    (ShadowDir::ALL.map(|d| d.label()).to_vec(), dir.unwrap_or(0)),
+                    |tn, i| tn.shadow_dir = ShadowDir::ALL[i],
+                ));
+        }
+        let sec = sec
+            .child(
+                Button::new("rb-reset", "Reset")
+                    .variant(ButtonVariant::Outline)
+                    .on_click(|_, _, cx| {
+                        dodai_gpui::set_shape_tune(cx, dodai_core::ShapeTune::DEFAULT)
+                    }),
+            )
+            .child(shape_gallery(px(t.spacing.md), "round"));
+        vec![(
+            "Shape",
+            "Roundness · Borders",
+            sec.into_any_element(),
+            "Roundness · Borders",
+        )]
+    }
+
+    fn corner_shape_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let mut out: Vec<Section> = Vec::new();
         if t.look().cut_corners {
             out.push((
                 "Shape",
                 "Corner shape",
-                section!("Corner shape")
+                self.section("Corner shape", &t, &me, cx)
                     .child(Muted::new(
                         "The corner cut applies to every component in every theme, immediately. Pick \"Default\" to restore each design's own shape.",
                     ))
-                    .child(corner_picker)
-                    .child(shape_gallery("corner"))
+                    .child(corner_picker(&t, cx))
+                    .child(shape_gallery(gap, "corner"))
                     .into_any_element(),
                 "Corner shape",
             ));
         }
+        out
+    }
+
+    fn crop_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let row = || div().flex().flex_wrap().items_center().gap(gap);
+        let mut out: Vec<Section> = Vec::new();
         {
             use dodai_gpui::Crop;
             // Segments: 0 hands the choice back to the design, 1 is "no crop", then these four.
@@ -786,7 +590,7 @@ impl Showcase {
                 .iter()
                 .position(|g| *g == dodai_gpui::button_cut_gap(cx))
                 .unwrap_or(0);
-            let crop_row = setting(
+            let crop_row = setting(&t,
                 "Crop end",
                 "Cuts one end of every button and adds a double tick on the other. Left cuts the top left, Right the bottom right.",
                 Segmented::new("bc-crop", ["Design", "Off", "Left", "Right", "Top", "Bottom"])
@@ -799,6 +603,7 @@ impl Showcase {
                     .into_any_element(),
             );
             let gap_row = setting(
+                &t,
                 "Tick gap",
                 "Space between the two tick bars, left open in the border.",
                 Segmented::new("bc-gap", ["Default", "0 px", "2 px", "4 px", "8 px"])
@@ -822,7 +627,7 @@ impl Showcase {
             out.push((
                 "Shape",
                 "Button crop",
-                section!("Button crop")
+                self.section("Button crop", &t, &me, cx)
                     .child(Muted::new(
                         "Settings apply to every button below and across the showcase. Ready-made cropped buttons are under Actions.",
                     ))
@@ -833,6 +638,16 @@ impl Showcase {
                 "Button crop",
             ));
         }
+        out
+    }
+
+    fn border_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let row = || div().flex().flex_wrap().items_center().gap(gap);
+        let col = || div().flex().flex_col().gap(gap);
+        let mut out: Vec<Section> = Vec::new();
         if t.look().accent_border {
             use dodai_gpui::{AccentCorner, BorderStyle as B};
             let cur = dodai_gpui::section_border(cx);
@@ -873,11 +688,11 @@ impl Showcase {
             out.push((
                 "Shape",
                 "Border",
-                section!("Border")
+                self.section("Border", &t, &me, cx)
                     .child(Muted::new(
                         "Every section frame is a grey contour plus an accent line on the opposite corner. These settings change all sections at once; a single panel can use `.border(..)`.",
                     ))
-                    .child(setting(
+                    .child(setting(&t,
                         "Preset",
                         "Width and strength of the grey contour.",
                         div()
@@ -900,7 +715,7 @@ impl Showcase {
                             )
                             .into_any_element(),
                     ))
-                    .child(setting(
+                    .child(setting(&t,
                         "Accent corner",
                         "Where the bright line sits. The grey contour moves to the opposite side.",
                         div()
@@ -915,7 +730,7 @@ impl Showcase {
                             )
                             .into_any_element(),
                     ))
-                    .child(setting(
+                    .child(setting(&t,
                         "Grey width",
                         "Thickness of the grey contour in px.",
                         slider("bd-width", cur.width, 0.0, 4.0, " px", |b, v| B {
@@ -924,7 +739,7 @@ impl Showcase {
                         })
                         .into_any_element(),
                     ))
-                    .child(setting(
+                    .child(setting(&t,
                         "Accent width",
                         "Thickness of the bright line in px.",
                         slider(
@@ -937,7 +752,7 @@ impl Showcase {
                         )
                         .into_any_element(),
                     ))
-                    .child(setting(
+                    .child(setting(&t,
                         "Grey opacity",
                         "0 hides the contour, 1 is fully solid.",
                         slider("bd-opacity", cur.opacity, 0.0, 1.0, "", |b, v| B {
@@ -978,4 +793,239 @@ impl Showcase {
         }
         out
     }
+}
+
+/// Apply `edit` to the current global shape tune.
+fn edit_tune(cx: &mut App, edit: impl FnOnce(&mut dodai_core::ShapeTune)) {
+    let mut tune = dodai_gpui::shape_tune();
+    edit(&mut tune);
+    dodai_gpui::set_shape_tune(cx, tune);
+}
+
+/// A setting with a slider; `range` is `(value, max, step)`, `set` writes the value into the tune.
+fn tune_slider(
+    t: &dodai_core::Theme,
+    label: &'static str,
+    hint: &'static str,
+    id: (&'static str, usize),
+    range: (f32, f32, f32),
+    unit: fn(f32) -> String,
+    set: impl Fn(&mut dodai_core::ShapeTune, f32) + 'static,
+) -> gpui::Div {
+    let (value, max, step) = range;
+    let slider = Slider::new(id, value)
+        .range(0.0, max)
+        .step(step)
+        .show_value(true)
+        .format(unit)
+        .on_change(move |v, _, cx| edit_tune(cx, |tune| set(tune, v)));
+    setting(
+        t,
+        label,
+        hint,
+        div().w(px(280.0)).child(slider).into_any_element(),
+    )
+}
+
+/// A setting with a segmented choice; `choice` is `(labels, selected)`.
+fn tune_choice(
+    t: &dodai_core::Theme,
+    label: &'static str,
+    hint: &'static str,
+    id: &'static str,
+    choice: (Vec<&'static str>, usize),
+    set: impl Fn(&mut dodai_core::ShapeTune, usize) + 'static,
+) -> gpui::Div {
+    let (labels, selected) = choice;
+    let seg = Segmented::new(id, labels)
+        .selected(selected)
+        .on_select(move |i, _, cx| edit_tune(cx, |tune| set(tune, i)));
+    setting(t, label, hint, div().flex().child(seg).into_any_element())
+}
+
+/// One labelled setting: fixed label column, the control, a muted hint underneath.
+fn setting(
+    t: &dodai_core::Theme,
+    label: &'static str,
+    hint: &'static str,
+    control: gpui::AnyElement,
+) -> gpui::Div {
+    div()
+        .flex()
+        .items_start()
+        .gap(px(t.spacing.lg))
+        .child(
+            div()
+                .w(px(120.0))
+                .pt(px(t.spacing.sm))
+                .child(Label::new(label)),
+        )
+        .child(
+            div()
+                .flex()
+                .flex_col()
+                .gap(px(t.spacing.xs))
+                .child(control)
+                .child(Muted::new(hint)),
+        )
+}
+
+/// Global: picking a cut changes every component in every theme.
+fn corner_picker(t: &dodai_core::Theme, cx: &mut App) -> gpui::Div {
+    use dodai_core::Corners as C;
+    let cur = dodai_gpui::corners(cx);
+    let over = dodai_gpui::corners_overridden(cx);
+    type Preset = (&'static str, Option<C>);
+    let sets: [Preset; 5] = [
+        ("Default", None),
+        ("None", Some(C::NONE)),
+        ("All", Some(C::ALL)),
+        ("Diagonal", Some(C::DIAGONAL)),
+        ("Anti-diagonal", Some(C::ANTI_DIAGONAL)),
+    ];
+    let singles: [Preset; 6] = [
+        ("Top left", Some(C::TOP_LEFT)),
+        ("Top right", Some(C::TOP_RIGHT)),
+        ("Bottom right", Some(C::BOTTOM_RIGHT)),
+        ("Bottom left", Some(C::BOTTOM_LEFT)),
+        ("Left", Some(C::LEFT)),
+        ("Right", Some(C::RIGHT)),
+    ];
+    let pos = |list: &[Preset]| {
+        if !over {
+            return list.iter().position(|p| p.1.is_none());
+        }
+        list.iter().position(|p| p.1 == Some(cur))
+    };
+    let apply = |c: Option<C>, cx: &mut App| match c {
+        Some(c) => dodai_gpui::set_corners(cx, c),
+        None => dodai_gpui::reset_corners(cx),
+    };
+    setting(t,
+                "Cut corners",
+                "Which corners every component cuts, in every design. \"Default\" restores each design's own.",
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(t.spacing.sm))
+                    .child(
+                        div().flex().child(
+                            Segmented::new("cut-sets", sets.map(|p| p.0))
+                                .selected(pos(&sets).unwrap_or(usize::MAX))
+                                .on_select(move |i, _, cx| apply(sets[i].1, cx)),
+                        ),
+                    )
+                    .child(
+                        div().flex().child(
+                            Segmented::new("cut-singles", singles.map(|p| p.0))
+                                .selected(pos(&singles).unwrap_or(usize::MAX))
+                                .on_select(move |i, _, cx| apply(singles[i].1, cx)),
+                        ),
+                    )
+                    .into_any_element(),
+            )
+}
+
+/// The same row of buttons, tags and cards, to show a shape setting on real components.
+fn shape_gallery(gap: gpui::Pixels, scope: &str) -> gpui::Div {
+    let row = || div().flex().flex_wrap().items_center().gap(gap);
+    let col = || div().flex().flex_col().gap(gap);
+    let id = |k: &str| gpui::SharedString::from(format!("{scope}-sg-{k}"));
+    col()
+        .child(
+            row()
+                .child(Button::new(id("p"), "Primary"))
+                .child(Button::new(id("s"), "Secondary").variant(ButtonVariant::Secondary))
+                .child(Button::new(id("o"), "Outline").variant(ButtonVariant::Outline))
+                .child(Button::new(id("d"), "Danger").variant(ButtonVariant::Danger)),
+        )
+        .child(
+            row()
+                .child(Tag::new("online", Tone::Success).solid(true))
+                .child(Tag::new("warn", Tone::Warning))
+                .child(Tag::new("error", Tone::Danger).solid(true)),
+        )
+        .child(
+            row()
+                .items_start()
+                .child(
+                    div()
+                        .flex_1()
+                        .min_w(px(220.0))
+                        .child(Card::new(CardVariant::Outlined).headline("Card")),
+                )
+                .child(
+                    div()
+                        .flex_1()
+                        .min_w(px(220.0))
+                        .child(Card::new(CardVariant::Elevated).headline("Elevated card")),
+                )
+                .child(
+                    div()
+                        .flex_1()
+                        .min_w(px(220.0))
+                        .child(Panel::new().title("Panel").child(Muted::new("Panel body"))),
+                ),
+        )
+}
+
+/// The glow slider shown on luminous designs.
+fn shape_props(t: &dodai_core::Theme, glow: f32) -> gpui::Div {
+    let row = || {
+        div()
+            .flex()
+            .flex_wrap()
+            .items_center()
+            .gap(px(t.spacing.md))
+    };
+    div().flex().flex_col().gap(px(t.spacing.sm)).child(
+        row().child(Label::new("Glow")).child(
+            div().w(px(200.0)).child(
+                Slider::new("glow-slider", glow)
+                    .range(0.0, 2.0)
+                    .step(0.05)
+                    .show_value(true)
+                    .format(|v| format!("{v:.2}"))
+                    .on_change(move |v, _, cx| set_glow_intensity(cx, v)),
+            ),
+        ),
+    )
+}
+
+/// A labelled slider that edits one strength of the global surface effects.
+fn fx_amount(
+    gap: gpui::Pixels,
+    id: &'static str,
+    name: &'static str,
+    v: f32,
+    max: f32,
+    set: fn(&mut dodai_core::SurfaceFx, f32),
+) -> gpui::Div {
+    let row = || div().flex().flex_wrap().items_center().gap(gap);
+    row()
+        .child(div().w(px(90.0)).child(Label::new(name)))
+        .child(
+            div().w(px(220.0)).child(
+                Slider::new(id, v)
+                    .range(0.0, max)
+                    .step(0.05)
+                    .show_value(true)
+                    .format(|v| format!("{v:.2}"))
+                    .on_change(move |v, _, cx| {
+                        let mut f = dodai_gpui::surface_fx();
+                        set(&mut f, v);
+                        dodai_gpui::set_surface_fx(cx, f);
+                    }),
+            ),
+        )
+}
+
+/// Three real buttons, so each surface effect shows on components.
+fn fx_preview(gap: gpui::Pixels, p: &'static str) -> gpui::Div {
+    let row = || div().flex().flex_wrap().items_center().gap(gap);
+    let id = |n: &str| gpui::SharedString::from(format!("{p}-{n}"));
+    row()
+        .child(Button::new(id("b1"), "Primary"))
+        .child(Button::new(id("b2"), "Secondary").variant(ButtonVariant::Secondary))
+        .child(Button::new(id("b3"), "Outline").variant(ButtonVariant::Outline))
 }

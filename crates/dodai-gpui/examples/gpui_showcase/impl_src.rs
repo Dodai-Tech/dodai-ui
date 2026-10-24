@@ -115,13 +115,13 @@ const SECTIONS: &[&str] = &[
 const SKIP: &[&str] = &["Panel", "Muted", "Heading", "Theme", "Self"];
 
 /// The source a section is built from: the statements that define the widgets it shows
-/// (`let buttons = …`, which sit above the section) plus its own `section!("title")` body.
+/// (`let buttons = …`, which sit above the section) plus its own `self.section("title", …)` body.
 fn section_text(title: &str) -> Option<String> {
-    let marker = format!("section!(\"{title}\")");
+    let marker = format!("self.section(\"{title}\"");
     SECTIONS.iter().find_map(|src| {
         let start = src.find(&marker)?;
         let rest = &src[start + marker.len()..];
-        let end = rest.find("section!(\"").unwrap_or(rest.len());
+        let end = rest.find("self.section(\"").unwrap_or(rest.len());
         let body = &rest[..end];
         let above = &src[..start];
         let mut text = String::new();

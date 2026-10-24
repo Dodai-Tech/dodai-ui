@@ -3,24 +3,28 @@
 use super::super::*;
 
 impl Showcase {
-    #[allow(unused_variables, clippy::redundant_clone, clippy::vec_init_then_push)]
     pub(crate) fn sections_data_display(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let mut out: Vec<Section> = Vec::new();
+        out.extend(self.tags_lists_section(cx));
+        out.extend(self.misc_section(cx));
+        out.extend(self.list_divider_section(cx));
+        out.extend(self.tree_section(cx));
+        out.extend(self.tooltip_section(cx));
+        out.extend(self.table_section(cx));
+        out.extend(self.code_section(cx));
+        out.extend(self.image_section(cx));
+        out.extend(self.progress_section(cx));
+        out.extend(self.clock_section(cx));
+        out.extend(self.scroll_section(cx));
+        out
+    }
+
+    fn tags_lists_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
         let me = cx.entity();
-        #[allow(unused_macros)]
-        macro_rules! section {
-            ($t:expr) => {
-                Panel::new()
-                    .title($t)
-                    .subheader(self.chips($t, &t, &me, cx))
-                    .scope(Some(self.scope_of($t, cx)))
-                    .scope_key(self.sec_replay.get($t).copied().unwrap_or(0))
-            };
-        }
-        let mut out: Vec<Section> = Vec::new();
         let gap = px(t.spacing.md);
         let row = || div().flex().flex_wrap().items_center().gap(gap);
-        let col = || div().flex().flex_col().gap(gap);
+        let mut out: Vec<Section> = Vec::new();
         let tags = row()
             .child(Tag::new("online", Tone::Success).solid(true))
             .child(Tag::new("warn", Tone::Warning).solid(true))
@@ -30,24 +34,6 @@ impl Showcase {
             .child(Tag::new("warn", Tone::Warning))
             .child(Tag::new("error", Tone::Danger))
             .child(Tag::new("info", Tone::Info));
-        let m3 = me.clone();
-        let mut list = div().flex().flex_col().gap(px(t.spacing.xs));
-        for (i, name) in ["Inbox", "Drafts", "Sent", "Archive"]
-            .into_iter()
-            .enumerate()
-        {
-            let m = me.clone();
-            list = list.child(
-                ListItem::new(("li", i), name)
-                    .selected(self.list == i)
-                    .on_click(move |_, _, cx| {
-                        m.update(cx, |s, cx| {
-                            s.list = i;
-                            cx.notify();
-                        })
-                    }),
-            );
-        }
         let lists = div()
             .flex()
             .flex_col()
@@ -86,15 +72,33 @@ impl Showcase {
                     .on_remove(|_, _, _| {}),
             )
             .child(dodai_gpui::Chip::new("c-sugg", "Suggestion"));
-        let m = me.clone();
-        let (m1, m2, m3, m4, m5, m6) = (
-            me.clone(),
-            me.clone(),
-            me.clone(),
-            me.clone(),
-            me.clone(),
-            me.clone(),
-        );
+        out.push((
+            "Data display",
+            "Tags · Chips · Badges",
+            self.section("Tags", &t, &me, cx)
+                .child(tags)
+                .into_any_element(),
+            "Tags",
+        ));
+        out.push((
+            "Data display",
+            "List items · Chips",
+            self.section("List items · Chips", &t, &me, cx)
+                .child(lists)
+                .child(chips)
+                .into_any_element(),
+            "List items · Chips",
+        ));
+        out
+    }
+
+    fn misc_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let row = || div().flex().flex_wrap().items_center().gap(gap);
+        let mut out: Vec<Section> = Vec::new();
+        let (m1, m2) = (me.clone(), me.clone());
         let w_misc = row()
             .child(
                 Rating::new("rating", self.rating)
@@ -135,6 +139,130 @@ impl Showcase {
                 IconBadge::new(IconButton::new("mail", "✉").icon(IconName::Mail))
                     .dot(Tone::Success),
             );
+        out.push((
+            "Data display",
+            "Badges · Rating · Tooltips",
+            self.section("Rating · Stepper · Badges · Tooltips", &t, &me, cx)
+                .child(w_misc)
+                .into_any_element(),
+            "Rating · Stepper · Badges · Tooltips",
+        ));
+        out
+    }
+
+    fn list_divider_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let mut out: Vec<Section> = Vec::new();
+        let mut list = div().flex().flex_col().gap(px(t.spacing.xs));
+        for (i, name) in ["Inbox", "Drafts", "Sent", "Archive"]
+            .into_iter()
+            .enumerate()
+        {
+            let m = me.clone();
+            list = list.child(
+                ListItem::new(("li", i), name)
+                    .selected(self.list == i)
+                    .on_click(move |_, _, cx| {
+                        m.update(cx, |s, cx| {
+                            s.list = i;
+                            cx.notify();
+                        })
+                    }),
+            );
+        }
+        out.push((
+            "Data display",
+            "List · Divider",
+            self.section("List · Divider", &t, &me, cx)
+                .child(list)
+                .child(Divider::new())
+                .into_any_element(),
+            "List · Divider",
+        ));
+        out
+    }
+
+    fn tree_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let row = || div().flex().flex_wrap().items_center().gap(gap);
+        let mut out: Vec<Section> = Vec::new();
+        let tree = TreeView::new(
+            "tree",
+            vec![
+                TreeItem::new("src")
+                    .expanded(true)
+                    .child(TreeItem::new("lib.rs"))
+                    .child(TreeItem::new("charts.rs")),
+                TreeItem::new("examples").child(TreeItem::new("gpui_showcase.rs")),
+            ],
+        );
+        let timeline = Timeline::new([
+            TimelineEvent::new("Charts added")
+                .time("today")
+                .tone(Tone::Success),
+            TimelineEvent::new("Search view")
+                .time("today")
+                .detail("fuzzy + highlight"),
+            TimelineEvent::new("Build failed")
+                .time("earlier")
+                .tone(Tone::Danger),
+        ]);
+        out.push((
+            "Data display",
+            "Tree · Timeline · Empty state",
+            self.section("Tree · timeline · empty state", &t, &me, cx)
+                .child(
+                    row()
+                        .child(div().flex_1().min_w(px(200.0)).child(tree))
+                        .child(div().flex_1().min_w(px(220.0)).child(timeline))
+                        .child(
+                            EmptyState::new("∅", "Nothing here")
+                                .message("Add something to get started."),
+                        ),
+                )
+                .into_any_element(),
+            "Tree · timeline · empty state",
+        ));
+        out
+    }
+
+    fn tooltip_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        vec![(
+            "Data display",
+            "Tooltip · Rich tooltip",
+            self.section("Tooltip", &t, &me, cx)
+                .child(
+                    div()
+                        .id("tip")
+                        .w(px(220.0))
+                        .text_color(hsla(t.palette.link))
+                        .tooltip(DodaiTooltip::text("Themed tooltip"))
+                        .child("Hover me"),
+                )
+                .child(div().flex().child(DodaiTooltip::view("Plain tooltip", cx)))
+                .child(div().flex().child(RichTooltip::view(
+                    "Rich tooltip",
+                    "Supporting text, 12 px corners, elevation 2.",
+                    Some("Learn more"),
+                    cx,
+                )))
+                .into_any_element(),
+            "Tooltip",
+        )]
+    }
+
+    fn table_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let row = || div().flex().flex_wrap().items_center().gap(gap);
+        let col = || div().flex().flex_col().gap(gap);
+        let mut out: Vec<Section> = Vec::new();
         let dt_rows: std::rc::Rc<Vec<Vec<SharedString>>> = std::rc::Rc::new(
             (0..300)
                 .map(|i| {
@@ -175,109 +303,26 @@ impl Showcase {
                     .filter(dt_filter_text)
                     .height(260.0),
             );
-        let md_src = "# Markdown\n\nSupports **bold**, *italic*, `inline code` and [links](https://example.com).\n\n- headings and paragraphs\n- nested lists\n  - indent two spaces\n    1. numbered inside\n    2. restarts per level\n- fenced code and tables\n\n| Token | Value | Note |\n|:--|--:|:-:|\n| radius | 12 | rounded |\n| chamfer | 0 | none |\n\n> quotes read muted\n\n```rust\nfn main() {\n    let n: u32 = 42; // answer\n    println!(\"{n}\");\n}\n```";
-        let sample = format!("{}/examples/assets/sample.png", env!("CARGO_MANIFEST_DIR"));
-        let tree = TreeView::new(
-            "tree",
-            vec![
-                TreeItem::new("src")
-                    .expanded(true)
-                    .child(TreeItem::new("lib.rs"))
-                    .child(TreeItem::new("charts.rs")),
-                TreeItem::new("examples").child(TreeItem::new("gpui_showcase.rs")),
-            ],
-        );
-        let timeline = Timeline::new([
-            TimelineEvent::new("Charts added")
-                .time("today")
-                .tone(Tone::Success),
-            TimelineEvent::new("Search view")
-                .time("today")
-                .detail("fuzzy + highlight"),
-            TimelineEvent::new("Build failed")
-                .time("earlier")
-                .tone(Tone::Danger),
-        ]);
-        out.push((
-            "Data display",
-            "Tags · Chips · Badges",
-            section!("Tags").child(tags).into_any_element(),
-            "Tags",
-        ));
-        out.push((
-            "Data display",
-            "List items · Chips",
-            section!("List items · Chips")
-                .child(lists)
-                .child(chips)
-                .into_any_element(),
-            "List items · Chips",
-        ));
-        out.push((
-            "Data display",
-            "Badges · Rating · Tooltips",
-            section!("Rating · Stepper · Badges · Tooltips")
-                .child(w_misc)
-                .into_any_element(),
-            "Rating · Stepper · Badges · Tooltips",
-        ));
-        out.push((
-            "Data display",
-            "List · Divider",
-            section!("List · Divider")
-                .child(list)
-                .child(Divider::new())
-                .into_any_element(),
-            "List · Divider",
-        ));
-        out.push((
-            "Data display",
-            "Tree · Timeline · Empty state",
-            section!("Tree · timeline · empty state")
-                .child(
-                    row()
-                        .child(div().flex_1().min_w(px(200.0)).child(tree))
-                        .child(div().flex_1().min_w(px(220.0)).child(timeline))
-                        .child(
-                            EmptyState::new("∅", "Nothing here")
-                                .message("Add something to get started."),
-                        ),
-                )
-                .into_any_element(),
-            "Tree · timeline · empty state",
-        ));
-        out.push((
-            "Data display",
-            "Tooltip · Rich tooltip",
-            section!("Tooltip")
-                .child(
-                    div()
-                        .id("tip")
-                        .w(px(220.0))
-                        .text_color(hsla(t.palette.link))
-                        .tooltip(DodaiTooltip::text("Themed tooltip"))
-                        .child("Hover me"),
-                )
-                .child(div().flex().child(DodaiTooltip::view("Plain tooltip", cx)))
-                .child(div().flex().child(RichTooltip::view(
-                    "Rich tooltip",
-                    "Supporting text, 12 px corners, elevation 2.",
-                    Some("Learn more"),
-                    cx,
-                )))
-                .into_any_element(),
-            "Tooltip",
-        ));
         out.push((
             "Data display",
             "Data table · sort filter select resize virtual scroll",
-            section!("Data table").child(data_table).into_any_element(),
+            self.section("Data table", &t, &me, cx)
+                .child(data_table)
+                .into_any_element(),
             "Data table",
         ));
+        out
+    }
+
+    fn code_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let mut out: Vec<Section> = Vec::new();
+        let md_src = "# Markdown\n\nSupports **bold**, *italic*, `inline code` and [links](https://example.com).\n\n- headings and paragraphs\n- nested lists\n  - indent two spaces\n    1. numbered inside\n    2. restarts per level\n- fenced code and tables\n\n| Token | Value | Note |\n|:--|--:|:-:|\n| radius | 12 | rounded |\n| chamfer | 0 | none |\n\n> quotes read muted\n\n```rust\nfn main() {\n    let n: u32 = 42; // answer\n    println!(\"{n}\");\n}\n```";
         out.push((
                 "Data display",
                 "Code block · Markdown · rich text",
-                section!("Code block · Markdown")
+                self.section("Code block · Markdown", &t, &me, cx)
                     .child(
                         dodai_gpui::CodeBlock::new(
                             "code",
@@ -289,10 +334,20 @@ impl Showcase {
                     .into_any_element(),
                 "Code block · Markdown",
             ));
+        out
+    }
+
+    fn image_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let row = || div().flex().flex_wrap().items_center().gap(gap);
+        let mut out: Vec<Section> = Vec::new();
+        let sample = format!("{}/examples/assets/sample.png", env!("CARGO_MANIFEST_DIR"));
         out.push((
             "Data display",
             "Image · media · Avatar group",
-            section!("Image · Avatar group")
+            self.section("Image · Avatar group", &t, &me, cx)
                 .child(
                     row()
                         .items_start()
@@ -332,10 +387,19 @@ impl Showcase {
                 .into_any_element(),
             "Image · Avatar group",
         ));
+        out
+    }
+
+    fn progress_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let row = || div().flex().flex_wrap().items_center().gap(gap);
+        let mut out: Vec<Section> = Vec::new();
         out.push((
             "Data display",
             "Circular progress · Banner",
-            section!("Circular progress · Banner")
+            self.section("Circular progress · Banner", &t, &me, cx)
                 .child(
                     row()
                         .child(dodai_gpui::CircularProgress::new(0.25))
@@ -375,34 +439,50 @@ impl Showcase {
                 .into_any_element(),
             "Circular progress · Banner",
         ));
-        out.push((
-            "Data display",
-            "Clock · Timer",
-            section!("Clock · Timer")
-                .child(
-                    row()
-                        .child(dodai_gpui::Clock::new().local())
-                        .child(dodai_gpui::Timer::new("tmr").minutes(1)),
-                )
-                .into_any_element(),
-            "Clock · Timer",
-        ));
-        out.push((
-            "Data display",
-            "Stopwatch · Tap tempo",
-            section!("Stopwatch · Tap tempo")
-                .child(
-                    row()
-                        .child(dodai_gpui::Stopwatch::new("sw"))
-                        .child(dodai_gpui::TapTempo::new("tap")),
-                )
-                .into_any_element(),
-            "Stopwatch · Tap tempo",
-        ));
+        out
+    }
+
+    fn clock_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let row = || div().flex().flex_wrap().items_center().gap(gap);
+        vec![
+            (
+                "Data display",
+                "Clock · Timer",
+                self.section("Clock · Timer", &t, &me, cx)
+                    .child(
+                        row()
+                            .child(dodai_gpui::Clock::new().local())
+                            .child(dodai_gpui::Timer::new("tmr").minutes(1)),
+                    )
+                    .into_any_element(),
+                "Clock · Timer",
+            ),
+            (
+                "Data display",
+                "Stopwatch · Tap tempo",
+                self.section("Stopwatch · Tap tempo", &t, &me, cx)
+                    .child(
+                        row()
+                            .child(dodai_gpui::Stopwatch::new("sw"))
+                            .child(dodai_gpui::TapTempo::new("tap")),
+                    )
+                    .into_any_element(),
+                "Stopwatch · Tap tempo",
+            ),
+        ]
+    }
+
+    fn scroll_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let mut out: Vec<Section> = Vec::new();
         out.push((
             "Data display",
             "Scroll area · styled scrollbar",
-            section!("Scroll area")
+            self.section("Scroll area", &t, &me, cx)
                 .child(dodai_gpui::ScrollArea::new("sa").height(200.0).child(
                     div().flex().flex_col().gap(px(8.0)).children(
                         (1..=40).map(|i| {

@@ -4,26 +4,20 @@ use super::super::*;
 use dodai_gpui::IconId;
 
 impl Showcase {
-    #[allow(unused_variables, clippy::redundant_clone, clippy::vec_init_then_push)]
     pub(crate) fn sections_foundations_sec(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let mut out: Vec<Section> = Vec::new();
+        out.extend(self.token_sections(cx));
+        out.extend(self.icons_section(cx));
+        out
+    }
+
+    fn token_sections(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
         let me = cx.entity();
-        #[allow(unused_macros)]
-        macro_rules! section {
-            ($t:expr) => {
-                Panel::new()
-                    .title($t)
-                    .subheader(self.chips($t, &t, &me, cx))
-                    .scope(Some(self.scope_of($t, cx)))
-                    .scope_key(self.sec_replay.get($t).copied().unwrap_or(0))
-            };
-        }
-        let mut out: Vec<Section> = Vec::new();
-
-        out.push((
+        vec![(
             "Foundations",
             "Text · Heading · Label · Mono",
-            section!("Text")
+            self.section("Text", &t, &me, cx)
                 .child(Heading::new("Heading 1").level(1))
                 .child(Heading::new("Heading 2"))
                 .child(Heading::new("Heading 3").level(3))
@@ -32,22 +26,22 @@ impl Showcase {
                 .child(Mono::new("mono_text() // 0xDEADBEEF"))
                 .into_any_element(),
             "Text",
-        ));
-        out.push((
+        ),
+        (
             "Foundations",
             "Colour palette",
-            section!("Colour palette")
+            self.section("Colour palette", &t, &me, cx)
                 .child(Muted::new(
                     "Every Palette token of the active design system.",
                 ))
                 .child(palette_view(&t))
                 .into_any_element(),
             "Colour palette",
-        ));
-        out.push((
+        ),
+        (
             "Foundations",
             "Type scale",
-            section!("Type scale")
+            self.section("Type scale", &t, &me, cx)
                 .child(Muted::new(
                     "Sizes and families from the theme's Typography.",
                 ))
@@ -58,74 +52,82 @@ impl Showcase {
                 .child(type_scale_view(&t))
                 .into_any_element(),
             "Type scale",
-        ));
-        out.push((
+        ),
+        (
             "Foundations",
             "Motion tokens",
-            section!("Motion tokens")
+            self.section("Motion tokens", &t, &me, cx)
                 .child(Muted::new(
                     "Material 3 duration scale (bar = duration) and named easing curves.",
                 ))
                 .child(motion_tokens_view(&t))
                 .into_any_element(),
             "Motion tokens",
-        ));
-        out.push((
+        ),
+        (
             "Foundations",
             "Spacing · Elevation",
-            section!("Spacing · Elevation")
+            self.section("Spacing · Elevation", &t, &me, cx)
                 .child(Muted::new(
                     "Spacing scale (bars are 8x the value) and surface layers.",
                 ))
                 .child(spacing_elevation_view(&t))
                 .into_any_element(),
             "Spacing · Elevation",
-        ));
-        out.push((
+        ),
+        (
             "Foundations",
             "Layout · Fluid scales",
-            section!("Layout · Fluid scales")
+            self.section("Layout · Fluid scales", &t, &me, cx)
                 .child(Muted::new(
                     "Type and spacing resolved at five viewport widths, the page grid at 800 px, and the media fade.",
                 ))
                 .child(layout_view(&t))
                 .into_any_element(),
             "Layout · Fluid scales",
-        ));
-        out.push((
+        ),
+        (
             "Foundations",
             "Frosted glass",
-            section!("Frosted glass")
+            self.section("Frosted glass", &t, &me, cx)
                 .child(Muted::new(
                     "Panels over a picture: a blurred copy of it under the design's frosted tint.",
                 ))
                 .child(frosted_view(&t))
                 .into_any_element(),
             "Frosted glass",
-        ));
-        out.push((
+        ),
+        (
             "Foundations",
             "Shape tokens",
-            section!("Shape tokens")
+            self.section("Shape tokens", &t, &me, cx)
                 .child(Muted::new(
                     "Read-only summary of the theme's shape and effect tokens.",
                 ))
                 .child(shape_tokens_view(&t))
                 .into_any_element(),
             "Shape tokens",
-        ));
-        let set = t.look().icons;
+        )]
+    }
+
+    fn icons_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let mut out: Vec<Section> = Vec::new();
         let query = self.icon_search.read(cx).text().to_string();
         let count = dodai_gpui::IconId::ALL.len();
         let intro = format!(
             "{count} icons, the same names in every design system; each draws them in its own style. Write one as `Icon::Heart`. Click an icon for its SVG and code."
         );
-        let mut section = section!("Icons").child(Muted::new(intro)).child(
-            div()
-                .w(px(360.0))
-                .max_w_full()
-                .child(self.icon_search.clone()),
-        );
+        let mut section = self
+            .section("Icons", &t, &me, cx)
+            .child(Muted::new(intro))
+            .child(
+                div()
+                    .w(px(360.0))
+                    .max_w_full()
+                    .child(self.icon_search.clone()),
+            );
         if let Some(panel) = self.icon_detail(&t, cx) {
             // Fades and rises in; a new selection replays it (the id carries the icon).
             let key = self.icon_sel.map_or(0, |i| i as u32);
