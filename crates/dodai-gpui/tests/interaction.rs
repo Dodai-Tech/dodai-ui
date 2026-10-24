@@ -222,7 +222,11 @@ fn text_input_selection_replaces_text(cx: &mut TestAppContext) {
     vcx.simulate_keystrokes("shift-left shift-left z");
     assert_eq!(text(&input, vcx), "abcdz");
     // The platform's select-all: cmd on macOS, ctrl elsewhere (as the key bindings choose).
-    let select_all = if cfg!(target_os = "macos") { "cmd-a q" } else { "ctrl-a q" };
+    let select_all = if cfg!(target_os = "macos") {
+        "cmd-a q"
+    } else {
+        "ctrl-a q"
+    };
     vcx.simulate_keystrokes(select_all);
     assert_eq!(text(&input, vcx), "q");
 }
