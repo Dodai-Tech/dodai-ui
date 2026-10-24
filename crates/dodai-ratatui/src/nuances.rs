@@ -55,7 +55,8 @@ mod tests {
     #[test]
     fn provider_maps_tokens_for_every_theme() {
         for th in dodai::themes::all() {
-            let tui = TuiTheme::new(th.clone());
+            // Explicit depth: `TuiTheme::new` reads `COLORTERM`, which CI runners do not set.
+            let tui = TuiTheme::with_depth(th.clone(), crate::ColorDepth::TrueColor);
             let n = tui.nuance_theme();
             let rgb = |c: Color| Tc::Rgb(c.r, c.g, c.b);
             assert_eq!(n.name, th.name());

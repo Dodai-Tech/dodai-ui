@@ -32,7 +32,18 @@ const FILES: &[(&str, &str)] = &[
     ("command.rs", include_str!("../../src/command.rs")),
     ("content.rs", include_str!("../../src/content.rs")),
     ("markdown.rs", include_str!("../../src/markdown.rs")),
-    ("controls.rs", include_str!("../../src/controls.rs")),
+    (
+        "controls/bars.rs",
+        include_str!("../../src/controls/bars.rs"),
+    ),
+    (
+        "controls/choice.rs",
+        include_str!("../../src/controls/choice.rs"),
+    ),
+    (
+        "controls/slider.rs",
+        include_str!("../../src/controls/slider.rs"),
+    ),
     ("count.rs", include_str!("../../src/count.rs")),
     (
         "instrument_charts.rs",
