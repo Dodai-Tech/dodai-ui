@@ -106,6 +106,7 @@ macro_rules! surface_setter {
 pub(crate) use surface_setter;
 
 /// `crop` / `cut_gap` setters for a control with `crop: Option<Crop>` and `cut_gap: Option<f32>`.
+#[cfg(feature = "components")]
 macro_rules! crop_setters {
     ($ty:ident) => {
         impl $ty {
@@ -122,6 +123,7 @@ macro_rules! crop_setters {
         }
     };
 }
+#[cfg(feature = "components")]
 pub(crate) use crop_setters;
 
 /// `impl RenderOnce` that builds via `self.build(window, cx)` and wraps the
@@ -145,6 +147,7 @@ pub(crate) use entry_render;
 /// Builder setter that stores a callback: `callback!(on_change, usize)`
 /// expands to `pub fn on_change(self, f: impl Fn(usize, &mut Window, &mut App))`
 /// storing `Some(Rc::new(f))` in the field of the same name.
+#[cfg(any(feature = "components", feature = "charts"))]
 macro_rules! callback {
     ($(#[$m:meta])* $name:ident $(, $arg:ty)*) => {
         $(#[$m])*
@@ -157,6 +160,7 @@ macro_rules! callback {
         }
     };
 }
+#[cfg(any(feature = "components", feature = "charts"))]
 pub(crate) use callback;
 
 #[cfg(feature = "components")]

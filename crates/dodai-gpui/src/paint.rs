@@ -792,7 +792,6 @@ pub(crate) fn fill(w: &mut Window, o: gpui::Point<Pixels>, p: &[(f32, f32)], c: 
 
 /// Fill many polygons with one colour in a single path (one tessellation and
 /// one draw call instead of one per polygon).
-#[cfg(any(feature = "charts", feature = "material"))]
 pub(crate) fn fill_batch(
     w: &mut Window,
     o: gpui::Point<Pixels>,
@@ -850,6 +849,7 @@ pub enum Playback {
 
 /// The design's dark fade for text laid over media: `height` px tall, strongest at the bottom
 /// edge. Built from [`Theme::fade_stops`] as stacked two-stop gradients.
+#[cfg(feature = "components")]
 pub(crate) fn fade_overlay(theme: &Theme, height: f32) -> gpui::Div {
     use gpui::{linear_color_stop, linear_gradient, relative};
     let base = hsla(theme.palette.roles.shadow);
