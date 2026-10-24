@@ -4221,6 +4221,7 @@ version = "0.1.0"
 dependencies = [
  "bytemuck",
  "dodai-core",
+ "dodai-shaders-kernels",
  "pollster 1.0.1",
  "wgpu 30.0.1",
 ]
