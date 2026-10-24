@@ -215,6 +215,9 @@ impl DataTable {
     );
 }
 
+/// Reports the selected source-row indices.
+type Notify = Rc<dyn Fn(&BTreeSet<usize>, &mut Window, &mut App)>;
+
 /// Everything the parts of one table frame share.
 struct Frame {
     t: dodai_core::Theme,
@@ -231,7 +234,7 @@ struct Frame {
     range: Range<usize>,
     last: usize,
     check_w: f32,
-    notify: Rc<dyn Fn(&BTreeSet<usize>, &mut Window, &mut App)>,
+    notify: Notify,
 }
 
 impl Frame {
@@ -265,7 +268,7 @@ impl RenderOnce for DataTable {
         let last = self.columns.len().saturating_sub(1);
         let check_w = if self.selectable { 40.0 } else { 0.0 };
 
-        let notify: Rc<dyn Fn(&BTreeSet<usize>, &mut Window, &mut App)> = {
+        let notify: Notify = {
             let f = self.on_change.clone();
             Rc::new(move |sel, w, cx| {
                 if let Some(f) = &f {
