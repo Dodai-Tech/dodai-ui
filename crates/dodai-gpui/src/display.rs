@@ -404,6 +404,105 @@ impl ScrollArea {
     }
 }
 
+/// Scrollbar geometry along both axes, as `(x, y)` pairs.
+struct ScrollMetrics {
+    track: (f32, f32),
+    len: (f32, f32),
+    max: (f32, f32),
+}
+
+type DragState = gpui::Entity<Option<(Axis, f32, f32)>>;
+
+/// Move the scroll offset while a thumb is dragged.
+fn drag_scroll(
+    m: &ScrollMetrics,
+    handle: &ScrollHandle,
+    drag: &DragState,
+    pos: gpui::Point<gpui::Pixels>,
+    window: &mut Window,
+    cx: &mut App,
+) {
+    let Some((axis, p0, off0)) = *drag.read(cx) else {
+        return;
+    };
+    let o = handle.offset();
+    match axis {
+        Axis::Vertical => {
+            let span = (m.track.1 - m.len.1).max(1.0);
+            let new = (off0 + (f32::from(pos.y) - p0) * m.max.1 / span).clamp(0.0, m.max.1);
+            handle.set_offset(point(o.x, px(-new)));
+        }
+        Axis::Horizontal => {
+            let span = (m.track.0 - m.len.0).max(1.0);
+            let new = (off0 + (f32::from(pos.x) - p0) * m.max.0 / span).clamp(0.0, m.max.0);
+            handle.set_offset(point(px(-new), o.y));
+        }
+    }
+    window.refresh();
+}
+
+/// One scrollbar: its rail and draggable thumb. `g` is `[len, pos, track, start offset]`.
+fn scroll_bar(
+    t: &dodai_core::Theme,
+    id: &ElementId,
+    drag: &DragState,
+    axis: Axis,
+    g: [f32; 4],
+    active: bool,
+) -> (gpui::Div, gpui::Stateful<gpui::Div>) {
+    let [len, pos, track, start] = g;
+    let vertical = axis == Axis::Vertical;
+    let thumb_color = if active {
+        t.palette.primary
+    } else {
+        t.palette.border_strong
+    };
+    let id = (id.clone(), if vertical { "thumb-y" } else { "thumb-x" });
+    let mut thumb = shaped_id(
+        id,
+        &crate::paint::scaled_shape(&t.shape, BAR),
+        ShapeStyle::from_tokens(t, Some(thumb_color), None, false, false),
+    )
+    .absolute()
+    .cursor_pointer();
+    let mut rail = div()
+        .absolute()
+        .bg(hsla(t.palette.surface_raised.with_alpha(0.5)));
+    if vertical {
+        thumb = thumb
+            .top(px(BAR_GAP + pos))
+            .right(px(BAR_GAP))
+            .w(px(BAR))
+            .h(px(len));
+        rail = rail
+            .top(px(BAR_GAP))
+            .right(px(BAR_GAP))
+            .w(px(BAR))
+            .h(px(track));
+    } else {
+        thumb = thumb
+            .left(px(BAR_GAP + pos))
+            .bottom(px(BAR_GAP))
+            .h(px(BAR))
+            .w(px(len));
+        rail = rail
+            .left(px(BAR_GAP))
+            .bottom(px(BAR_GAP))
+            .h(px(BAR))
+            .w(px(track));
+    }
+    let drag = drag.clone();
+    let thumb = thumb.on_mouse_down(MouseButton::Left, move |e, _, cx| {
+        let p = f32::from(if vertical { e.position.y } else { e.position.x });
+        drag.update(cx, |d, cx| {
+            *d = Some((axis, p, start));
+            cx.notify();
+        });
+        cx.stop_propagation();
+    });
+    (rail, thumb)
+}
+
 impl RenderOnce for ScrollArea {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
@@ -460,61 +559,9 @@ impl RenderOnce for ScrollArea {
         }
         root = root.child(view.children(self.children));
         let bar = |axis: Axis, len: f32, pos: f32, track: f32| {
-            let vertical = axis == Axis::Vertical;
+            let start = if axis == Axis::Vertical { off_y } else { off_x };
             let active = dragging.is_some_and(|d| d.0 == axis);
-            let thumb_color = if active {
-                t.palette.primary
-            } else {
-                t.palette.border_strong
-            };
-            let id = (
-                self.id.clone(),
-                if vertical { "thumb-y" } else { "thumb-x" },
-            );
-            let mut thumb = shaped_id(
-                id,
-                &crate::paint::scaled_shape(&t.shape, BAR),
-                ShapeStyle::from_tokens(&t, Some(thumb_color), None, false, false),
-            )
-            .absolute()
-            .cursor_pointer();
-            let mut rail = div()
-                .absolute()
-                .bg(hsla(t.palette.surface_raised.with_alpha(0.5)));
-            if vertical {
-                thumb = thumb
-                    .top(px(BAR_GAP + pos))
-                    .right(px(BAR_GAP))
-                    .w(px(BAR))
-                    .h(px(len));
-                rail = rail
-                    .top(px(BAR_GAP))
-                    .right(px(BAR_GAP))
-                    .w(px(BAR))
-                    .h(px(track));
-            } else {
-                thumb = thumb
-                    .left(px(BAR_GAP + pos))
-                    .bottom(px(BAR_GAP))
-                    .h(px(BAR))
-                    .w(px(len));
-                rail = rail
-                    .left(px(BAR_GAP))
-                    .bottom(px(BAR_GAP))
-                    .h(px(BAR))
-                    .w(px(track));
-            }
-            let start = if vertical { off_y } else { off_x };
-            let drag = drag.clone();
-            let thumb = thumb.on_mouse_down(MouseButton::Left, move |e, _, cx| {
-                let p = f32::from(if vertical { e.position.y } else { e.position.x });
-                drag.update(cx, |d, cx| {
-                    *d = Some((axis, p, start));
-                    cx.notify();
-                });
-                cx.stop_propagation();
-            });
-            (rail, thumb)
+            scroll_bar(&t, &self.id, &drag, axis, [len, pos, track, start], active)
         };
         if self.bars && len_y > 0.0 {
             let (rail, thumb) = bar(Axis::Vertical, len_y, pos_y, track_y);
@@ -524,29 +571,14 @@ impl RenderOnce for ScrollArea {
             let (rail, thumb) = bar(Axis::Horizontal, len_x, pos_x, track_x);
             root = root.child(rail).child(thumb);
         }
+        let m = ScrollMetrics {
+            track: (track_x, track_y),
+            len: (len_x, len_y),
+            max: (max_x, max_y),
+        };
         root.on_mouse_move({
             let (drag, handle) = (drag.clone(), handle.clone());
-            move |e, window, cx| {
-                let Some((axis, p0, off0)) = *drag.read(cx) else {
-                    return;
-                };
-                let o = handle.offset();
-                match axis {
-                    Axis::Vertical => {
-                        let span = (track_y - len_y).max(1.0);
-                        let new = (off0 + (f32::from(e.position.y) - p0) * max_y / span)
-                            .clamp(0.0, max_y);
-                        handle.set_offset(point(o.x, px(-new)));
-                    }
-                    Axis::Horizontal => {
-                        let span = (track_x - len_x).max(1.0);
-                        let new = (off0 + (f32::from(e.position.x) - p0) * max_x / span)
-                            .clamp(0.0, max_x);
-                        handle.set_offset(point(px(-new), o.y));
-                    }
-                }
-                window.refresh();
-            }
+            move |e, window, cx| drag_scroll(&m, &handle, &drag, e.position, window, cx)
         })
         .on_mouse_up(MouseButton::Left, {
             let drag = drag.clone();
