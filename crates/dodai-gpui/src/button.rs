@@ -59,14 +59,18 @@ pub enum Crop {
 
 #[derive(Default)]
 struct CropDefaults {
-    crop: Option<Crop>,
+    /// What the app chose: `Some(None)` = no crop anywhere, `None` = leave it to the design.
+    chosen: Option<Option<Crop>>,
+    /// The crop designs with cut corners start with.
+    design: Option<Crop>,
     gap: Option<f32>,
 }
 impl gpui::Global for CropDefaults {}
 
-/// The crop every [`Button`] gets unless it sets its own with [`Button::crop`].
-pub fn button_crop(cx: &App) -> Option<Crop> {
-    cx.try_global::<CropDefaults>().and_then(|d| d.crop)
+/// What the app chose for every [`Button`]: `Some(None)` is "no crop", `None` leaves it to the
+/// design (see [`set_design_button_crop`]).
+pub fn button_crop(cx: &App) -> Option<Option<Crop>> {
+    cx.try_global::<CropDefaults>().and_then(|d| d.chosen)
 }
 
 /// The tick gap (px) every cropped [`Button`] uses unless it sets [`Button::cut_gap`].
@@ -74,9 +78,22 @@ pub fn button_cut_gap(cx: &App) -> Option<f32> {
     cx.try_global::<CropDefaults>().and_then(|d| d.gap)
 }
 
-/// Crop every button (`None` = no crop) and repaint. Per-button `.crop(..)` still wins.
+/// Crop every button on every design (`None` = no crop) and repaint. Per-button `.crop(..)` still wins.
 pub fn set_button_crop(cx: &mut App, crop: Option<Crop>) {
-    cx.default_global::<CropDefaults>().crop = crop;
+    cx.default_global::<CropDefaults>().chosen = Some(crop);
+    cx.refresh_windows();
+}
+
+/// Give the choice back to the design: designs with cut corners use [`set_design_button_crop`]'s
+/// crop, the others draw no crop.
+pub fn reset_button_crop(cx: &mut App) {
+    cx.default_global::<CropDefaults>().chosen = None;
+    cx.refresh_windows();
+}
+
+/// The crop designs with cut corners start with, until the app chooses with [`set_button_crop`].
+pub fn set_design_button_crop(cx: &mut App, crop: Option<Crop>) {
+    cx.default_global::<CropDefaults>().design = crop;
     cx.refresh_windows();
 }
 
@@ -93,16 +110,18 @@ pub(crate) struct CropSpec {
     gap: f32,
 }
 
-/// The crop a control gets: its own, else the global default; only on designs with cut corners.
+/// The crop a control gets: its own, else the app's choice, else the design's.
 pub(crate) fn resolve_crop(
     t: &Theme,
     cx: &App,
     crop: Option<Crop>,
     gap: Option<f32>,
 ) -> Option<CropSpec> {
-    let end = crop
-        .or_else(|| button_crop(cx))
-        .filter(|_| t.look().cut_corners)?;
+    let end = crop.or_else(|| {
+        let d = cx.try_global::<CropDefaults>()?;
+        d.chosen
+            .unwrap_or(if t.look().cut_corners { d.design } else { None })
+    })?;
     let gap = gap.or_else(|| button_cut_gap(cx)).unwrap_or(t.spacing.xs);
     Some(CropSpec { end, gap })
 }

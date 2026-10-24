@@ -76,6 +76,7 @@ pub fn square() -> Theme {
             corners: Corners::NONE,
             radius: 0.0,
             chamfer: 0.0,
+            scoop: false,
             border_width: 2.0,
             control_height: 36.0,
         },

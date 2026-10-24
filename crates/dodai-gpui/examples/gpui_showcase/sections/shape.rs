@@ -593,7 +593,38 @@ impl Showcase {
                     ));
                 }
             }
+            let styles = [
+                ("Design", None),
+                ("Round", Some(dodai_core::CornerStyle::Round)),
+                ("Cut", Some(dodai_core::CornerStyle::Cut)),
+                ("Scoop", Some(dodai_core::CornerStyle::Scoop)),
+            ];
+            let style_sel = styles
+                .iter()
+                .position(|s| s.1 == tune.corner_style)
+                .unwrap_or(0);
             sec = sec
+                .child(setting(
+                    "Corner style",
+                    "Round, straight cut or concave scoop, on every design (Cut and Scoop take each role's size).",
+                    div()
+                        .flex()
+                        .child(
+                            Segmented::new("rb-style", styles.map(|s| s.0))
+                                .selected(style_sel)
+                                .on_select(move |i, _, cx| {
+                                    let t = dodai_gpui::shape_tune();
+                                    dodai_gpui::set_shape_tune(
+                                        cx,
+                                        ShapeTune {
+                                            corner_style: styles[i].1,
+                                            ..t
+                                        },
+                                    );
+                                }),
+                        )
+                        .into_any_element(),
+                ))
                 .child(setting(
                     "Border width",
                     "Thickness of every outline.",
@@ -741,20 +772,16 @@ impl Showcase {
                 "Corner shape",
             ));
         }
-        if t.look().cut_corners {
+        {
             use dodai_gpui::Crop;
-            let crops = [
-                None,
-                Some(Crop::Left),
-                Some(Crop::Right),
-                Some(Crop::Top),
-                Some(Crop::Bottom),
-            ];
+            // Segments: 0 hands the choice back to the design, 1 is "no crop", then these four.
+            let crops = [Crop::Left, Crop::Right, Crop::Top, Crop::Bottom];
             let gaps = [None, Some(0.0_f32), Some(2.0), Some(4.0), Some(8.0)];
-            let crop_sel = crops
-                .iter()
-                .position(|c| *c == dodai_gpui::button_crop(cx))
-                .unwrap_or(0);
+            let crop_sel = match dodai_gpui::button_crop(cx) {
+                None => 0,
+                Some(None) => 1,
+                Some(Some(c)) => 2 + crops.iter().position(|x| *x == c).unwrap_or(0),
+            };
             let gap_sel = gaps
                 .iter()
                 .position(|g| *g == dodai_gpui::button_cut_gap(cx))
@@ -762,9 +789,13 @@ impl Showcase {
             let crop_row = setting(
                 "Crop end",
                 "Cuts one end of every button and adds a double tick on the other. Left cuts the top left, Right the bottom right.",
-                Segmented::new("bc-crop", ["Default", "Left", "Right", "Top", "Bottom"])
+                Segmented::new("bc-crop", ["Design", "Off", "Left", "Right", "Top", "Bottom"])
                     .selected(crop_sel)
-                    .on_select(move |i, _, cx| dodai_gpui::set_button_crop(cx, crops[i]))
+                    .on_select(move |i, _, cx| match i {
+                        0 => dodai_gpui::reset_button_crop(cx),
+                        1 => dodai_gpui::set_button_crop(cx, None),
+                        i => dodai_gpui::set_button_crop(cx, Some(crops[i - 2])),
+                    })
                     .into_any_element(),
             );
             let gap_row = setting(

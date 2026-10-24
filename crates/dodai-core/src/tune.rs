@@ -133,6 +133,9 @@ pub struct ShapeTune {
     pub hard_shadow: Option<f32>,
     /// Direction hard shadows fall.
     pub shadow_dir: ShadowDir,
+    /// Draw every corner as this style (round, straight cut, concave scoop); `None` keeps each
+    /// design's own.
+    pub corner_style: Option<CornerStyle>,
 }
 
 impl ShapeTune {
@@ -145,6 +148,7 @@ impl ShapeTune {
         outline_all: false,
         hard_shadow: None,
         shadow_dir: ShadowDir::BottomRight,
+        corner_style: None,
     };
 
     /// Corner multiplier for one role: the global roundness times its group's.
@@ -229,7 +233,13 @@ impl Theme {
     /// affects rounded corners.
     pub fn tuned(&self, tune: &ShapeTune) -> Theme {
         let mut t = self.clone();
-        let sys = self.shape_system();
+        let sys = match tune.corner_style {
+            Some(style) => self.shape_system().with_style(style),
+            None => self.shape_system(),
+        };
+        if tune.corner_style.is_some() {
+            t.shape_system = Some(sys.clone());
+        }
         let rounds = (tune.roundness - 1.0).abs() > f32::EPSILON || !tune.uniform();
         if (rounds || sys.has_pill()) && t.shape.kind() != ShapeKind::Chamfered {
             t.shape.radius *= tune.roundness.max(0.0);
@@ -264,6 +274,7 @@ mod tests {
             corners: crate::Corners::NONE,
             radius: 12.0,
             chamfer: 0.0,
+            scoop: false,
             border_width: 1.0,
             control_height: 40.0,
         });
@@ -281,6 +292,7 @@ mod tests {
             corners: crate::Corners::NONE,
             radius: 12.0,
             chamfer: 0.0,
+            scoop: false,
             border_width: 1.0,
             control_height: 40.0,
         })
@@ -339,5 +351,49 @@ mod tests {
         for r in ShapeRole::ALL {
             let _ = RoundnessGroup::of(r);
         }
+    }
+
+    #[test]
+    fn corner_style_scoops_and_cuts_every_role() {
+        let t = Theme::default();
+        let size = |t: &Theme| t.role_shape(ShapeRole::Card);
+        let scooped = t.tuned(&ShapeTune {
+            corner_style: Some(CornerStyle::Scoop),
+            ..ShapeTune::DEFAULT
+        });
+        let s = size(&scooped);
+        assert!(s.scoop && s.chamfer > 0.0, "scoop carries a size");
+        let cut = t.tuned(&ShapeTune {
+            corner_style: Some(CornerStyle::Cut),
+            ..ShapeTune::DEFAULT
+        });
+        let c = size(&cut);
+        assert!(!c.scoop && c.chamfer > 0.0);
+        assert_eq!(c.chamfer, s.chamfer, "same size, different edge");
+        assert!(s.outline(100.0, 60.0).len() > c.outline(100.0, 60.0).len());
+    }
+
+    #[test]
+    fn scooped_outline_bows_into_the_box() {
+        let sh = crate::Shape {
+            corners: crate::Corners::TOP_LEFT,
+            radius: 0.0,
+            chamfer: 10.0,
+            scoop: true,
+            border_width: 1.0,
+            control_height: 40.0,
+        };
+        let p = sh.outline(100.0, 50.0);
+        let straight = crate::Shape {
+            scoop: false,
+            ..sh.clone()
+        }
+        .outline(100.0, 50.0);
+        assert!(p.len() > straight.len());
+        // Every arc point sits inside the straight cut's triangle's far side: x + y >= 10.
+        assert!(p.iter().take(9).all(|&(x, y)| x + y >= 10.0 - 1e-3));
+        assert!(p
+            .iter()
+            .all(|&(x, y)| (0.0..=100.0).contains(&x) && (0.0..=50.0).contains(&y)));
     }
 }

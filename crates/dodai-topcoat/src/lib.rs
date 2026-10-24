@@ -68,6 +68,7 @@ pub fn clip_path(shape: &Shape) -> String {
 fn with_chamfer(shape: &Shape, chamfer: f32) -> Shape {
     Shape {
         chamfer: chamfer.max(0.0),
+        scoop: false,
         ..shape.clone()
     }
 }
@@ -421,6 +422,7 @@ mod tests {
                 corners: Corners::NONE,
                 radius: 8.0,
                 chamfer: 0.0,
+                scoop: false,
                 border_width: 1.0,
                 control_height: 40.0,
             },

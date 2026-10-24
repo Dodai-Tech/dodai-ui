@@ -65,6 +65,7 @@ fn shape() -> Shape {
         corners: Corners::BOTTOM_RIGHT,
         radius: 0.0,
         chamfer: 16.0,
+        scoop: false,
         border_width: 2.0,
         control_height: 48.0,
     }

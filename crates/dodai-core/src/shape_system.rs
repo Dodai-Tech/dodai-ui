@@ -545,6 +545,7 @@ mod tests {
             corners: Corners::DIAGONAL,
             radius: 0.0,
             chamfer: 10.0,
+            scoop: false,
             border_width: 1.0,
             control_height: 32.0,
         };
@@ -654,6 +655,7 @@ mod compose_tests {
             corners: Corners::BOTTOM_RIGHT,
             radius: 0.0,
             chamfer: 8.0,
+            scoop: false,
             border_width: 1.0,
             control_height: 32.0,
         };

@@ -84,10 +84,11 @@ impl Theme {
             spec.bottom_left,
         ];
         let size = cs.iter().map(|c| c.size()).fold(0.0_f32, f32::max);
-        let cut = cs
-            .iter()
-            .any(|c| matches!(c, crate::shape_system::Corner::Cut(_)));
-        if cut {
+        use crate::shape_system::Corner;
+        let cut = cs.iter().any(|c| matches!(c, Corner::Cut(_)));
+        let scoop = cs.iter().any(|c| matches!(c, Corner::Scoop(_)));
+        s.scoop = scoop;
+        if cut || scoop {
             s.radius = 0.0;
             s.chamfer = size;
             s.corners = spec.sides();

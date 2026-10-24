@@ -67,6 +67,7 @@ fn shape(corners: Corners, radius: f32, chamfer: f32) -> Shape {
         corners,
         radius,
         chamfer,
+        scoop: false,
         border_width: 1.0,
         control_height: 40.0,
     }

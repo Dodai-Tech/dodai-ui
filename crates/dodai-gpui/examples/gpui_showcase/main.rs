@@ -659,8 +659,37 @@ fn main() {
             }
             dodai_gpui::set_surface_fx(cx, fx);
         }
-        // Buttons start cropped on the left (the Shape page can switch it off or to the right).
-        dodai_gpui::set_button_crop(cx, Some(dodai_gpui::Crop::Left));
+        // Designs with cut corners start cropped on the left (the Shape page can change it, on any design).
+        dodai_gpui::set_design_button_crop(cx, Some(dodai_gpui::Crop::Left));
+        // Debug: DODAI_STYLE=round|cut|scoop forces that corner style on every design.
+        if let Ok(v) = std::env::var("DODAI_STYLE") {
+            use dodai_core::CornerStyle as S;
+            let corner_style = match v.as_str() {
+                "round" => Some(S::Round),
+                "cut" => Some(S::Cut),
+                "scoop" => Some(S::Scoop),
+                _ => None,
+            };
+            dodai_gpui::set_shape_tune(
+                cx,
+                dodai_core::ShapeTune {
+                    corner_style,
+                    ..dodai_gpui::shape_tune()
+                },
+            );
+        }
+        // Debug: DODAI_CROP=off|left|right|top|bottom forces that crop on every design.
+        if let Ok(v) = std::env::var("DODAI_CROP") {
+            use dodai_gpui::Crop;
+            let crop = match v.as_str() {
+                "left" => Some(Crop::Left),
+                "right" => Some(Crop::Right),
+                "top" => Some(Crop::Top),
+                "bottom" => Some(Crop::Bottom),
+                _ => None,
+            };
+            dodai_gpui::set_button_crop(cx, crop);
+        }
         // Debug: DODAI_ACCENT=<edge index 0..7> pre-selects the accent line.
         if let Some(e) = std::env::var("DODAI_ACCENT")
             .ok()

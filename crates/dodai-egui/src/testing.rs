@@ -64,6 +64,7 @@ pub fn rounded() -> Theme {
             corners: Corners::NONE,
             radius: 8.0,
             chamfer: 0.0,
+            scoop: false,
             border_width: 1.0,
             control_height: 40.0,
         },

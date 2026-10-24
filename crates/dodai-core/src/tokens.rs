@@ -337,6 +337,9 @@ pub enum ShapeKind {
     Chamfered,
 }
 
+/// Segments in a scooped corner's arc.
+const SCOOP_STEPS: usize = 8;
+
 /// Shape tokens.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Shape {
@@ -346,6 +349,8 @@ pub struct Shape {
     pub radius: f32,
     /// Cut-corner size for chamfered panels/buttons (0 = none).
     pub chamfer: f32,
+    /// Draw the chamfered corners as concave quarter-circle arcs (a scoop) instead of straight cuts.
+    pub scoop: bool,
     pub border_width: f32,
     pub control_height: f32,
 }
@@ -374,30 +379,25 @@ impl Shape {
         };
         let k = self.corners;
         let mut p = Vec::with_capacity(8);
-        if k.top_left && c > 0.0 {
-            p.push((0.0, c));
-            p.push((c, 0.0));
-        } else {
-            p.push((0.0, 0.0));
-        }
-        if k.top_right && c > 0.0 {
-            p.push((w - c, 0.0));
-            p.push((w, c));
-        } else {
-            p.push((w, 0.0));
-        }
-        if k.bottom_right && c > 0.0 {
-            p.push((w, h - c));
-            p.push((w - c, h));
-        } else {
-            p.push((w, h));
-        }
-        if k.bottom_left && c > 0.0 {
-            p.push((c, h));
-            p.push((0.0, h - c));
-        } else {
-            p.push((0.0, h));
-        }
+        // One corner: a straight cut between its two end points, or a concave arc about the
+        // box corner `(cx, cy)` when scooped. `at(sin θ, cos θ)` runs from the first end point (θ = 0) to the second.
+        let mut corner = |on: bool, plain: (f32, f32), at: &dyn Fn(f32, f32) -> (f32, f32)| {
+            if !(on && c > 0.0) {
+                p.push(plain);
+            } else if self.scoop {
+                for i in 0..=SCOOP_STEPS {
+                    let a = std::f32::consts::FRAC_PI_2 * i as f32 / SCOOP_STEPS as f32;
+                    p.push(at(a.sin(), a.cos().max(0.0)));
+                }
+            } else {
+                p.push(at(0.0, 1.0));
+                p.push(at(1.0, 0.0));
+            }
+        };
+        corner(k.top_left, (0.0, 0.0), &|sn, cs| (c * sn, c * cs));
+        corner(k.top_right, (w, 0.0), &|sn, cs| (w - c * cs, c * sn));
+        corner(k.bottom_right, (w, h), &|sn, cs| (w - c * sn, h - c * cs));
+        corner(k.bottom_left, (0.0, h), &|sn, cs| (c * cs, h - c * sn));
         p
     }
 }

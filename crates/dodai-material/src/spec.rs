@@ -81,6 +81,11 @@ pub fn shape_presets() -> Vec<ShapePreset> {
     vec![
         ShapePreset::new("m3", "Material", shape_system()),
         ShapePreset::new("m3-cut", "Cut", shape_system().with_style(CornerStyle::Cut)),
+        ShapePreset::new(
+            "m3-scoop",
+            "Scoop",
+            shape_system().with_style(CornerStyle::Scoop),
+        ),
         ShapePreset::new("sharp", "Sharp", ShapeSystem::sharp()),
     ]
 }
