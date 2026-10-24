@@ -37,6 +37,7 @@ dodai-core = { workspace = true }
 dodai-motion = { workspace = true }
 dodai-charts-core = { workspace = true }
 dodai-frost = { workspace = true }
+dodai-surface = { workspace = true }
 dodai-cyberpunk-icons = { workspace = true }
 dodai-material-icons = { workspace = true, optional = true }
 dodai-icon-id = { workspace = true }

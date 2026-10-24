@@ -87,18 +87,9 @@ impl ShapeStyle {
         over: &dodai_core::Surface,
     ) -> Self {
         self.surface = self.fill.and_then(|fill| {
-            let mut sp = crate::surface_fx::SurfacePaint::of_with(theme, class, over)?;
-            // Draw the pattern in whichever of text/background contrasts with this fill,
-            // so it stays visible on bright fills (a primary button) as well as dark ones.
-            let (text, back) = (sp.ink, sp.hole);
-            let (ink, hole) = if (text.l - fill.l).abs() >= (back.l - fill.l).abs() {
-                (text, back)
-            } else {
-                (back, text)
-            };
-            sp.ink = ink;
-            sp.hole = hole;
-            Some(sp)
+            let sp = crate::surface_fx::surface_paint_with(theme, class, over)?;
+            // Contrast the pattern with this fill.
+            Some(sp.contrasting(fill.l))
         });
         if let Some(g) = over.glow_scale() {
             self.glow = self.glow.filter(|_| g > 0.0).map(|(c, r)| (c, r * g));
@@ -247,55 +238,7 @@ impl ShapeStyle {
     }
 }
 
-/// Horizontal extent `(x0, x1)` of `shape` at row `y` in a `w`×`h` box, or
-/// `None` when the row is outside. Follows chamfers and rounded corners.
-pub fn row_span(shape: &Shape, w: f32, h: f32, y: f32) -> Option<(f32, f32)> {
-    if y < 0.0 || y > h || w <= 0.0 {
-        return None;
-    }
-    match shape.kind() {
-        ShapeKind::Chamfered => poly_span(&shape.outline(w, h), y),
-        ShapeKind::Rounded => {
-            let r = shape.radius.min(w / 2.0).min(h / 2.0);
-            let dy = if y < r {
-                r - y
-            } else if y > h - r {
-                y - (h - r)
-            } else {
-                0.0
-            };
-            let inset = if dy > 0.0 && r > 0.0 {
-                r - (r * r - dy * dy).max(0.0).sqrt()
-            } else {
-                0.0
-            };
-            Some((inset, w - inset))
-        }
-        ShapeKind::Square => Some((0.0, w)),
-    }
-}
-
-/// Horizontal extent of a polygon at row `y` (min and max x over the edges it crosses).
-pub(crate) fn poly_span(pts: &[(f32, f32)], y: f32) -> Option<(f32, f32)> {
-    let (mut lo, mut hi) = (f32::MAX, f32::MIN);
-    for i in 0..pts.len() {
-        let (a, b) = (pts[i], pts[(i + 1) % pts.len()]);
-        let (y0, y1) = (a.1.min(b.1), a.1.max(b.1));
-        if y < y0 || y > y1 {
-            continue;
-        }
-        if (b.1 - a.1).abs() < 1e-6 {
-            // horizontal edge: both ends count
-            lo = lo.min(a.0.min(b.0));
-            hi = hi.max(a.0.max(b.0));
-            continue;
-        }
-        let x = a.0 + (b.0 - a.0) * (y - a.1) / (b.1 - a.1);
-        lo = lo.min(x);
-        hi = hi.max(x);
-    }
-    (lo <= hi).then_some((lo, hi))
-}
+pub use dodai_surface::{poly_span, row_span};
 
 /// Polygon of the bottom `band` px of `shape` in a `w`×`h` box (follows cut corners).
 pub fn bottom_band(shape: &Shape, w: f32, h: f32, band: f32) -> Vec<(f32, f32)> {
@@ -964,24 +907,6 @@ mod tests {
         assert_eq!(b[3], (0.0, 40.0));
     }
 
-    #[test]
-    fn row_span_follows_shape() {
-        let mut sh = dodai::themes::cyberpunk::yellow().shape;
-        sh.chamfer = 10.0;
-        sh.radius = 0.0;
-        sh.corners = dodai_core::Corners::BOTTOM_RIGHT;
-        assert_eq!(sh.kind(), ShapeKind::Chamfered);
-        assert_eq!(row_span(&sh, 100.0, 40.0, 5.0), Some((0.0, 100.0)));
-        let (_, x1) = row_span(&sh, 100.0, 40.0, 39.0).unwrap();
-        assert!(x1 < 95.0, "cut corner narrows the last row, got {x1}");
-        assert_eq!(row_span(&sh, 100.0, 40.0, 41.0), None);
-        let mut r = crate::testing::light_rounded().shape;
-        r.radius = 8.0;
-        r.chamfer = 0.0;
-        let (x0, _) = row_span(&r, 100.0, 40.0, 1.0).unwrap();
-        assert!(x0 > 1.0);
-        assert_eq!(row_span(&r, 100.0, 40.0, 20.0), Some((0.0, 100.0)));
-    }
     use crate::testing::{light_rounded, square};
     use dodai::themes;
 
@@ -1051,5 +976,24 @@ mod tests {
         assert_eq!(round_shape(&l.shape, 20.0).radius, 10.0);
         let q = square();
         assert_eq!(round_shape(&q.shape, 20.0), q.shape);
+    }
+
+    #[test]
+    fn row_span_follows_shape() {
+        let mut sh = dodai::themes::cyberpunk::yellow().shape;
+        sh.chamfer = 10.0;
+        sh.radius = 0.0;
+        sh.corners = dodai_core::Corners::BOTTOM_RIGHT;
+        assert_eq!(sh.kind(), ShapeKind::Chamfered);
+        assert_eq!(row_span(&sh, 100.0, 40.0, 5.0), Some((0.0, 100.0)));
+        let (_, x1) = row_span(&sh, 100.0, 40.0, 39.0).unwrap();
+        assert!(x1 < 95.0, "cut corner narrows the last row, got {x1}");
+        assert_eq!(row_span(&sh, 100.0, 40.0, 41.0), None);
+        let mut r = crate::testing::light_rounded().shape;
+        r.radius = 8.0;
+        r.chamfer = 0.0;
+        let (x0, _) = row_span(&r, 100.0, 40.0, 1.0).unwrap();
+        assert!(x0 > 1.0);
+        assert_eq!(row_span(&r, 100.0, 40.0, 20.0), Some((0.0, 100.0)));
     }
 }
