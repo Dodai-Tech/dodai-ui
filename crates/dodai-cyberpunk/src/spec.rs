@@ -10,6 +10,13 @@ use dodai_core::{
     TypeRole,
 };
 
+/// Frosted glass: blur sigma in px and tint opacity. Dark glass lets the neon behind it bleed
+/// through, so it is the most transparent of the designs.
+const FROST_BLUR: f32 = 16.0;
+const FROST_ALPHA: f32 = 0.55;
+/// Hairline neon edge of a frosted panel, px.
+const FROST_EDGE: f32 = 1.0;
+
 /// The Cyberpunk spec (attach with [`dodai_core::Theme::with_spec`]).
 #[derive(Debug)]
 pub struct Cyberpunk;
@@ -45,6 +52,15 @@ impl DesignSpec for Cyberpunk {
 
     fn name(&self) -> &'static str {
         "Cyberpunk"
+    }
+
+    /// Smoked glass: the page-dark surface at 55% over a 16 px blur, with a one-pixel neon edge.
+    fn frost(&self, t: &Theme) -> Option<dodai_core::Frost> {
+        Some(dodai_core::Frost {
+            tint: t.palette.surface.with_alpha(FROST_ALPHA),
+            blur: FROST_BLUR,
+            edge: Some((t.palette.primary, FROST_EDGE)),
+        })
     }
 
     /// Elevated: page-coloured slab with a hard shadow; filled: raised, borderless.
@@ -470,6 +486,16 @@ mod tests {
     fn every_variant_attaches_the_spec() {
         for t in crate::variants() {
             assert_eq!(t.spec.name(), "Cyberpunk", "{}", t.id());
+        }
+    }
+
+    #[test]
+    fn frost_is_smoked_glass_with_a_neon_edge() {
+        for t in crate::variants() {
+            let f = t.frost();
+            assert_eq!(f.tint.a, (FROST_ALPHA * 255.0).round() as u8, "{}", t.id());
+            assert_eq!(f.blur, FROST_BLUR);
+            assert_eq!(f.edge, Some((t.palette.primary, FROST_EDGE)));
         }
     }
 

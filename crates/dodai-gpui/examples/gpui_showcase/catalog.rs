@@ -183,7 +183,7 @@ pub(crate) fn owner(title: &str) -> Option<&'static [&'static str]> {
             Some(&["material"])
         }
         "Instruments" | "Cyberpunk shaders" => Some(&["cyberpunk"]),
-        "Frosted glass" => Some(&["aurora", "material", "neobrutalism"]),
+        "Frosted glass" => Some(&["aurora", "material", "neobrutalism", "cyberpunk"]),
         _ => None,
     }
 }

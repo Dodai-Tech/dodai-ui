@@ -1,0 +1,14 @@
+[package]
+name                   = "dodai-frost"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description            = "Frosted-glass maths on plain RGBA pixels: blur, crops and tint compositing. No dependencies."
+readme                 = "README.md"
+keywords               = ["blur", "glass", "frosted", "design-system", "rgba"]
+categories             = ["graphics", "gui"]
+
+[dependencies]

@@ -4087,6 +4087,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "dodai-frost"
+version = "0.1.0"
+
+[[package]]
 name = "dodai-gpui"
 version = "0.1.0"
 dependencies = [
@@ -4094,6 +4098,7 @@ dependencies = [
  "dodai-charts-core",
  "dodai-core",
  "dodai-cyberpunk-icons",
+ "dodai-frost",
  "dodai-icon-id",
  "dodai-icons",
  "dodai-material-icons",

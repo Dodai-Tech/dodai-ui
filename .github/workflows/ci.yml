@@ -75,7 +75,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        crate: [dodai-motion, dodai-core, dodai-cyberpunk-icons, dodai-material-icons, dodai-cyberpunk, dodai-material, dodai-neobrutalism, dodai, dodai-charts-core]
+        crate: [dodai-motion, dodai-core, dodai-cyberpunk-icons, dodai-material-icons, dodai-cyberpunk, dodai-material, dodai-neobrutalism, dodai, dodai-charts-core, dodai-frost]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -193,7 +193,7 @@ jobs:
         with:
           toolchain: ${{ steps.msrv.outputs.version }}
       - uses: Swatinem/rust-cache@v2
-      - run: cargo check --locked -p dodai-core -p dodai-motion -p dodai-charts-core -p dodai-cyberpunk -p dodai-material -p dodai-neobrutalism -p dodai-aurora --all-targets
+      - run: cargo check --locked -p dodai-core -p dodai-motion -p dodai-charts-core -p dodai-frost -p dodai-cyberpunk -p dodai-material -p dodai-neobrutalism -p dodai-aurora --all-targets
 
   nu-tests:
     name: nushell tests
