@@ -4,7 +4,6 @@
 use crate::frame::{Ctx, Frame};
 use crate::math::*;
 use crate::matrix::glyph;
-#[allow(unused_imports)]
 use crate::prelude::*;
 use crate::{Family, ShaderInfo};
 

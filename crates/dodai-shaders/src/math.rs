@@ -1,6 +1,6 @@
 //! Tiny GLSL-flavoured maths: vectors, hashes, noise, easing. No dependencies.
 
-#[allow(unused_imports)]
+#[cfg(target_arch = "spirv")]
 use crate::prelude::*;
 use std::ops::{Add, Div, Mul, Neg, Sub};
 

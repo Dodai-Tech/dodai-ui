@@ -35,9 +35,8 @@
 mod catalog;
 mod ctx;
 pub mod gpu;
-// Shared verbatim with the GPU kernels; the host only needs `Vec3` and the palette.
-#[allow(dead_code)]
-mod math;
+/// Shader maths, shared verbatim with the GPU kernels (vectors, hashes, noise, easing).
+pub mod math;
 mod prelude;
 pub mod presets;
 

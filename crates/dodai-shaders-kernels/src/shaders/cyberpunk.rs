@@ -2,7 +2,6 @@
 
 use crate::frame::Ctx;
 use crate::math::*;
-#[allow(unused_imports)]
 use crate::prelude::*;
 use crate::{Family, ShaderInfo};
 

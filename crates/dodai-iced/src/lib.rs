@@ -63,8 +63,6 @@ mod testutil;
 
 pub use frame::{shaped_frame, BoxStyle, ShapedFrame};
 pub use geometry::ShapeGeom;
-#[allow(deprecated)]
-pub use shaped_button::ChamferButton;
 pub use shaped_button::{ButtonState, ShapedButton, ShapedColors};
 
 use dodai_core::{Color as LColor, Theme};

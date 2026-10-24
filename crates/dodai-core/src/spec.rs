@@ -99,7 +99,6 @@ pub struct FadeStop {
 }
 
 /// Component rules of one design system. All hooks are optional overrides.
-#[allow(unused_variables)]
 pub trait DesignSpec: Send + Sync + std::fmt::Debug {
     /// Display name, e.g. `"Material 3"`.
     fn name(&self) -> &'static str;
@@ -109,147 +108,152 @@ pub trait DesignSpec: Send + Sync + std::fmt::Debug {
         Look::default()
     }
 
-    fn card(&self, t: &Theme, v: CardVariant) -> Option<SurfaceTokens> {
+    fn card(&self, _t: &Theme, _v: CardVariant) -> Option<SurfaceTokens> {
         None
     }
-    fn chip(&self, t: &Theme, selected: bool, hovered: bool) -> Option<SurfaceTokens> {
+    fn chip(&self, _t: &Theme, _selected: bool, _hovered: bool) -> Option<SurfaceTokens> {
         None
     }
-    fn alert(&self, t: &Theme, tone: Tone, banner: bool) -> Option<SurfaceTokens> {
+    fn alert(&self, _t: &Theme, _tone: Tone, _banner: bool) -> Option<SurfaceTokens> {
         None
     }
-    fn snackbar(&self, t: &Theme) -> Option<(SurfaceTokens, Color)> {
+    fn snackbar(&self, _t: &Theme) -> Option<(SurfaceTokens, Color)> {
         None
     }
-    fn dialog(&self, t: &Theme) -> Option<SurfaceTokens> {
+    fn dialog(&self, _t: &Theme) -> Option<SurfaceTokens> {
         None
     }
-    fn sheet(&self, t: &Theme) -> Option<SurfaceTokens> {
+    fn sheet(&self, _t: &Theme) -> Option<SurfaceTokens> {
         None
     }
-    fn popup(&self, t: &Theme) -> Option<SurfaceTokens> {
+    fn popup(&self, _t: &Theme) -> Option<SurfaceTokens> {
         None
     }
-    fn scrim(&self, t: &Theme) -> Option<Color> {
+    fn scrim(&self, _t: &Theme) -> Option<Color> {
         None
     }
-    fn app_bar(&self, t: &Theme, kind: AppBarKind, scrolled: bool) -> Option<AppBarTokens> {
+    fn app_bar(&self, _t: &Theme, _kind: AppBarKind, _scrolled: bool) -> Option<AppBarTokens> {
         None
     }
-    fn step(&self, t: &Theme, state: StepState) -> Option<StepTokens> {
+    fn step(&self, _t: &Theme, _state: StepState) -> Option<StepTokens> {
         None
     }
-    fn tab(&self, t: &Theme, active: bool, hovered: bool) -> Option<TabTokens> {
+    fn tab(&self, _t: &Theme, _active: bool, _hovered: bool) -> Option<TabTokens> {
         None
     }
-    fn toggle(&self, t: &Theme, on: bool, state: ControlState) -> Option<ToggleTokens> {
+    fn toggle(&self, _t: &Theme, _on: bool, _state: ControlState) -> Option<ToggleTokens> {
         None
     }
     fn choice_toggle(
         &self,
-        t: &Theme,
-        kind: ToggleKind,
-        on: bool,
-        state: ControlState,
+        _t: &Theme,
+        _kind: ToggleKind,
+        _on: bool,
+        _state: ControlState,
     ) -> Option<ToggleTokens> {
         None
     }
-    fn badge(&self, t: &Theme, tone: Tone) -> Option<SurfaceTokens> {
+    fn badge(&self, _t: &Theme, _tone: Tone) -> Option<SurfaceTokens> {
         None
     }
-    fn progress(&self, t: &Theme, tone: Option<Tone>) -> Option<ProgressTokens> {
+    fn progress(&self, _t: &Theme, _tone: Option<Tone>) -> Option<ProgressTokens> {
         None
     }
-    fn list_item(&self, t: &Theme, selected: bool, hovered: bool) -> Option<ListItemTokens> {
+    fn list_item(&self, _t: &Theme, _selected: bool, _hovered: bool) -> Option<ListItemTokens> {
         None
     }
-    fn sizes(&self, t: &Theme) -> Option<Sizes> {
+    fn sizes(&self, _t: &Theme) -> Option<Sizes> {
         None
     }
-    fn navigation(&self, t: &Theme) -> Option<NavigationTokens> {
+    fn navigation(&self, _t: &Theme) -> Option<NavigationTokens> {
         None
     }
-    fn navigation_item(&self, t: &Theme, selected: bool, hovered: bool) -> Option<ListItemTokens> {
+    fn navigation_item(
+        &self,
+        _t: &Theme,
+        _selected: bool,
+        _hovered: bool,
+    ) -> Option<ListItemTokens> {
         None
     }
-    fn divider(&self, t: &Theme) -> Option<Color> {
+    fn divider(&self, _t: &Theme) -> Option<Color> {
         None
     }
-    fn button(&self, t: &Theme, v: ButtonVariant, s: ControlState) -> Option<ButtonTokens> {
+    fn button(&self, _t: &Theme, _v: ButtonVariant, _s: ControlState) -> Option<ButtonTokens> {
         None
     }
-    fn elevated_button(&self, t: &Theme, s: ControlState) -> Option<ButtonTokens> {
+    fn elevated_button(&self, _t: &Theme, _s: ControlState) -> Option<ButtonTokens> {
         None
     }
-    fn fab(&self, t: &Theme, v: ButtonVariant, s: ControlState) -> Option<ButtonTokens> {
+    fn fab(&self, _t: &Theme, _v: ButtonVariant, _s: ControlState) -> Option<ButtonTokens> {
         None
     }
     /// Adjust the icon-button tokens `base` (already resolved as a plain button).
     fn icon_button(
         &self,
-        t: &Theme,
-        v: ButtonVariant,
-        s: ControlState,
-        selected: bool,
-        base: ButtonTokens,
+        _t: &Theme,
+        _v: ButtonVariant,
+        _s: ControlState,
+        _selected: bool,
+        _base: ButtonTokens,
     ) -> Option<ButtonTokens> {
         None
     }
-    fn input(&self, t: &Theme, focused: bool) -> Option<InputTokens> {
+    fn input(&self, _t: &Theme, _focused: bool) -> Option<InputTokens> {
         None
     }
     /// Colour of the hard offset shadow (default: the pressed primary).
-    fn hard_shadow_color(&self, t: &Theme) -> Option<Color> {
+    fn hard_shadow_color(&self, _t: &Theme) -> Option<Color> {
         None
     }
     /// Soft shadow layers for an elevation `level` (1-5), when the design has its own shadow
     /// tokens instead of the two Material layers.
-    fn elevation_layers(&self, t: &Theme, level: u8) -> Option<Vec<ShadowLayer>> {
+    fn elevation_layers(&self, _t: &Theme, _level: u8) -> Option<Vec<ShadowLayer>> {
         None
     }
     /// The page grid at a viewport width (default: the theme's own spacing, 12 columns, or 4 on
     /// a narrow viewport).
-    fn page_grid(&self, t: &Theme, viewport: f32) -> Option<GridSpec> {
+    fn page_grid(&self, _t: &Theme, _viewport: f32) -> Option<GridSpec> {
         None
     }
     /// Type sizes and spacing at a viewport width, for designs with fluid scales (default: the static theme values).
-    fn fluid(&self, t: &Theme, viewport: f32) -> Option<Fluid> {
+    fn fluid(&self, _t: &Theme, _viewport: f32) -> Option<Fluid> {
         None
     }
     /// The design's frosted glass (default: the surface colour at 60% over a 24 px blur).
-    fn frost(&self, t: &Theme) -> Option<Frost> {
+    fn frost(&self, _t: &Theme) -> Option<Frost> {
         None
     }
     /// Stops of the dark fade laid over media so text on it stays legible (default: a two-stop
     /// linear fade).
-    fn fade_stops(&self, t: &Theme) -> Option<Vec<FadeStop>> {
+    fn fade_stops(&self, _t: &Theme) -> Option<Vec<FadeStop>> {
         None
     }
     /// Keyboard focus indicator `(colour, thickness px)`.
-    fn focus_ring(&self, t: &Theme) -> Option<(Color, f32)> {
+    fn focus_ring(&self, _t: &Theme) -> Option<(Color, f32)> {
         None
     }
-    fn list_row_height(&self, t: &Theme, nested: bool) -> Option<f32> {
+    fn list_row_height(&self, _t: &Theme, _nested: bool) -> Option<f32> {
         None
     }
-    fn list_lines_height(&self, t: &Theme, lines: u8) -> Option<f32> {
+    fn list_lines_height(&self, _t: &Theme, _lines: u8) -> Option<f32> {
         None
     }
-    fn menu_row_height(&self, t: &Theme) -> Option<f32> {
+    fn menu_row_height(&self, _t: &Theme) -> Option<f32> {
         None
     }
     /// Tooltip `(container, label)`.
-    fn tooltip(&self, t: &Theme, rich: bool) -> Option<(Color, Color)> {
+    fn tooltip(&self, _t: &Theme, _rich: bool) -> Option<(Color, Color)> {
         None
     }
     /// Horizontal padding of a button label.
-    fn control_metrics(&self, t: &Theme, size: ControlSize) -> Option<SizeMetrics> {
+    fn control_metrics(&self, _t: &Theme, _size: ControlSize) -> Option<SizeMetrics> {
         None
     }
-    fn type_style(&self, t: &Theme, role: TypeRole) -> Option<TypeStyle> {
+    fn type_style(&self, _t: &Theme, _role: TypeRole) -> Option<TypeStyle> {
         None
     }
-    fn button_padding(&self, t: &Theme) -> Option<f32> {
+    fn button_padding(&self, _t: &Theme) -> Option<f32> {
         None
     }
 }

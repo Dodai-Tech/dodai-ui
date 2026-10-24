@@ -15,7 +15,6 @@
 
 use crate::frame::{Ctx, Frame};
 use crate::math::*;
-#[allow(unused_imports)]
 use crate::prelude::*;
 use crate::retro2::{barrel, halo, inside, scan};
 use crate::{Family, ShaderInfo};

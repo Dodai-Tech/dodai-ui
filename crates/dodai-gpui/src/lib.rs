@@ -126,7 +126,6 @@ pub(crate) use crop_setters;
 
 /// `impl RenderOnce` that builds via `self.build(window, cx)` and wraps the
 /// result in the theme's entry animation, keyed by the type name.
-#[allow(unused_macros)]
 macro_rules! entry_render {
     ($ty:ident) => {
         impl gpui::RenderOnce for $ty {
@@ -141,13 +140,11 @@ macro_rules! entry_render {
         }
     };
 }
-#[allow(unused_imports)]
 pub(crate) use entry_render;
 
 /// Builder setter that stores a callback: `callback!(on_change, usize)`
 /// expands to `pub fn on_change(self, f: impl Fn(usize, &mut Window, &mut App))`
 /// storing `Some(Rc::new(f))` in the field of the same name.
-#[allow(unused_macros)]
 macro_rules! callback {
     ($(#[$m:meta])* $name:ident $(, $arg:ty)*) => {
         $(#[$m])*
@@ -160,7 +157,6 @@ macro_rules! callback {
         }
     };
 }
-#[allow(unused_imports)]
 pub(crate) use callback;
 
 #[cfg(feature = "components")]

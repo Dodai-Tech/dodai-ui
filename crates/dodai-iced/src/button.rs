@@ -84,17 +84,6 @@ impl IcedTheme {
         }
     }
 
-    /// Chamfered button.
-    #[deprecated(note = "use `shaped_button` (any shape) or `button_view`")]
-    pub fn chamfer_button<Message: Clone>(
-        &self,
-        label: &str,
-        variant: ButtonVariant,
-        on_press: Option<Message>,
-    ) -> ShapedButton<Message> {
-        self.shaped_button(label, variant, on_press)
-    }
-
     /// Ready-to-use button: native for rounded / square themes, canvas
     /// [`ShapedButton`] for chamfered themes. `None` renders it disabled.
     pub fn button_view<'a, Message: Clone + 'a>(

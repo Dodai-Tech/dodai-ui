@@ -49,10 +49,6 @@ pub struct ShapedButton<Message> {
     pub padding_x: f32,
 }
 
-/// Old name of [`ShapedButton`].
-#[deprecated(note = "use `ShapedButton`")]
-pub type ChamferButton<Message> = ShapedButton<Message>;
-
 #[derive(Debug, Default, Clone, Copy)]
 pub struct ButtonState {
     pressed: bool,
