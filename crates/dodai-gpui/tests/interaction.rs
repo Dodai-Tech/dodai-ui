@@ -794,3 +794,69 @@ fn press_plays_ripple(cx: &mut TestAppContext, variant: dodai_core::ButtonVarian
     assert_eq!(live_press_count(), 1, "{variant:?}: one ripple per press");
     vcx.update(|_, cx| set_surface_fx(cx, dodai_core::SurfaceFx::NONE));
 }
+
+// ───────────────────────────── select keyboard / scrollbar drag ─────────────────────────────
+
+#[gpui::test]
+fn select_keyboard_opens_moves_and_commits(cx: &mut TestAppContext) {
+    let l = log();
+    let l2 = l.clone();
+    let vcx = mount(cx, move |_, _| {
+        let l = l2.clone();
+        Select::new("sel-kb")
+            .options(["One", "Two", "Three"])
+            .on_select(move |i, _, _| l.borrow_mut().push(i))
+            .into_any_element()
+    });
+    let (x, y, w, h) = target(vcx);
+    click(vcx, x + w / 2.0, y + h / 2.0); // open and focus
+    vcx.simulate_keystrokes("end enter");
+    assert_eq!(*l.borrow(), vec![2], "End then Enter picks the last option");
+    click(vcx, x + w / 2.0, y + h / 2.0);
+    vcx.simulate_keystrokes("home down enter");
+    assert_eq!(
+        l.borrow().last(),
+        Some(&1),
+        "Home, Down, Enter picks the second"
+    );
+}
+
+#[gpui::test]
+fn scroll_area_thumb_drag_scrolls_the_content(cx: &mut TestAppContext) {
+    let vcx = mount(cx, |_, _| {
+        ScrollArea::new("sa-drag")
+            .height(100.0)
+            .child(
+                div()
+                    .h(px(400.0))
+                    .w(px(200.0))
+                    .debug_selector(|| "content".into()),
+            )
+            .into_any_element()
+    });
+    // the first frame only measures; the next one draws the thumb
+    vcx.update(|_, cx| cx.refresh_windows());
+    vcx.run_until_parked();
+    let top_before = f32::from(vcx.debug_bounds("content").expect("content").top());
+    let (x, y, w, _) = target(vcx);
+    // vertical thumb: right edge, BAR_GAP in, starting at the top of the rail
+    let (tx, ty) = (x + w - 5.0, y + 2.0 + 5.0);
+    let at = |px_x: f32, px_y: f32| point(px(px_x), px(px_y));
+    vcx.simulate_mouse_down(at(tx, ty), gpui::MouseButton::Left, Modifiers::none());
+    vcx.simulate_mouse_move(
+        at(tx, ty + 40.0),
+        gpui::MouseButton::Left,
+        Modifiers::none(),
+    );
+    vcx.simulate_mouse_up(
+        at(tx, ty + 40.0),
+        gpui::MouseButton::Left,
+        Modifiers::none(),
+    );
+    vcx.run_until_parked();
+    let top_after = f32::from(vcx.debug_bounds("content").expect("content").top());
+    assert!(
+        top_after < top_before - 20.0,
+        "dragging the thumb scrolled the content: {top_before} -> {top_after}"
+    );
+}
