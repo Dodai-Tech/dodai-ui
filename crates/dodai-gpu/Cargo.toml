@@ -6,10 +6,9 @@ authors.workspace      = true
 license.workspace      = true
 repository.workspace   = true
 rust-version.workspace = true
-description            = "Opens the GPU once for the Dodai crates: the best real adapter, never a software rasteriser"
+description            = "Internal helper: opens the GPU for the Dodai crates (best real adapter, never a software rasteriser)"
 readme                 = "README.md"
-keywords               = ["wgpu", "gpu", "design-system"]
-categories             = ["graphics", "gui"]
+publish                = false
 
 [dependencies]
 wgpu     = { version = "30.0.1", default-features = false, features = ["std", "parking_lot", "wgsl", "metal", "vulkan", "dx12"] }

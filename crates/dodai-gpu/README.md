@@ -1,6 +1,6 @@
 # dodai-gpu
 
-Opens a wgpu device for the Dodai effect crates (`dodai-frost`, `dodai-shaders`).
+Internal helper (`publish = false`): opens a wgpu device for the Dodai effect crates (`dodai-frost`, `dodai-shaders`). Not a public API.
 
 The rule behind it: **GPU first, CPU as the fallback**. [`open`] returns `None` when there is no
 real adapter (a software rasteriser such as llvmpipe or WARP counts as none, it is slower than
