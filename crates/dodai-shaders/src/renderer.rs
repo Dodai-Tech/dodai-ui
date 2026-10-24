@@ -55,13 +55,8 @@ impl Renderer {
     ) -> Result<&[u8], RenderError> {
         let (w, h) = (w.max(1), h.max(1));
         if let Some(g) = self.gpu.as_mut() {
-            // Borrowck cannot see that the Ok arm is the only one returning the borrow.
-            if g.render(chain, w, h, time, intensity, pal).is_ok() {
-                return self
-                    .gpu
-                    .as_mut()
-                    .expect("gpu")
-                    .render(chain, w, h, time, intensity, pal);
+            if g.run(chain, w, h, time, intensity, pal).is_ok() {
+                return Ok(g.pixels());
             }
         }
         self.cpu_out = render_cpu(chain, w, h, time, intensity, pal)?;

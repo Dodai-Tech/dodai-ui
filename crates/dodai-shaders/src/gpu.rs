@@ -20,7 +20,7 @@ use crate::ShaderPalette;
 use crate::{check_chain, RenderError};
 use bytemuck::{Pod, Zeroable};
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, PoisonError};
 
 const WGSL: &str = include_str!("../kernels.wgsl");
 
@@ -67,7 +67,12 @@ impl Compiler {
     /// The pipeline for `entry`, compiled on first use. The cache lock is
     /// never held while compiling, so lookups of ready pipelines never wait.
     fn get(&self, entry: &str) -> wgpu::ComputePipeline {
-        if let Some(p) = self.pipes.lock().expect("pipes").get(entry) {
+        if let Some(p) = self
+            .pipes
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .get(entry)
+        {
             return p.clone();
         }
         let real = self.entries.get(entry).map_or(entry, String::as_str);
@@ -216,7 +221,7 @@ impl Gpu {
     /// Whether every pipeline `chain` needs is already compiled, so rendering
     /// it will not stall on shader compilation.
     pub fn is_ready(&self, chain: &[&str]) -> bool {
-        let pipes = self.pipes.lock().expect("pipes");
+        let pipes = self.pipes.lock().unwrap_or_else(PoisonError::into_inner);
         pipes.contains_key("pack") && chain.iter().all(|id| pipes.contains_key(*id))
     }
 
@@ -225,14 +230,14 @@ impl Gpu {
     /// the old picture until it is.
     pub fn warm_chain(&self, chain: &[&str]) {
         let missing: Vec<String> = {
-            let pipes = self.pipes.lock().expect("pipes");
+            let pipes = self.pipes.lock().unwrap_or_else(PoisonError::into_inner);
             chain
                 .iter()
                 .filter(|id| !pipes.contains_key(**id))
                 .map(|id| (*id).to_string())
                 .collect()
         };
-        let mut pending = self.pending.lock().expect("pending");
+        let mut pending = self.pending.lock().unwrap_or_else(PoisonError::into_inner);
         let todo: Vec<String> = missing
             .into_iter()
             .filter(|id| pending.insert(id.clone()))
@@ -248,7 +253,10 @@ impl Gpu {
             .spawn(move || {
                 for id in todo {
                     c.get(&id);
-                    pending.lock().expect("pending").remove(&id);
+                    pending
+                        .lock()
+                        .unwrap_or_else(PoisonError::into_inner)
+                        .remove(&id);
                 }
             });
     }
@@ -329,6 +337,25 @@ impl Gpu {
         intensity: f32,
         pal: &ShaderPalette,
     ) -> Result<&[u8], RenderError> {
+        self.run(chain, w, h, time, intensity, pal)?;
+        Ok(self.pixels())
+    }
+
+    /// The picture of the last successful [`render`](Self::render) / `run`.
+    pub(crate) fn pixels(&self) -> &[u8] {
+        self.targets.as_ref().map_or(&[], |t| &t.bytes)
+    }
+
+    /// [`render`](Self::render) without borrowing the result.
+    pub(crate) fn run(
+        &mut self,
+        chain: &[&str],
+        w: u32,
+        h: u32,
+        time: f32,
+        intensity: f32,
+        pal: &ShaderPalette,
+    ) -> Result<(), RenderError> {
         let (w, h) = (w.max(1), h.max(1));
         check_chain(chain)?;
         self.ensure_targets(w, h);
@@ -391,7 +418,7 @@ impl Gpu {
             t.bytes.copy_from_slice(&data);
         }
         t.read.unmap();
-        Ok(&t.bytes)
+        Ok(())
     }
 }
 
