@@ -58,8 +58,8 @@ fn px(v: f32) -> String {
     tok("dimension", js(&format!("{}px", num(v))))
 }
 
-/// One theme as a DTCG group (`color`, `font`, `space`, `shape`, `effect`).
-pub fn theme_tokens_json(t: &Theme) -> String {
+/// The `color` group: palette, roles and the numbered series.
+fn colour_tokens(t: &Theme) -> Vec<(String, String)> {
     let p = &t.palette;
     let c = |name: &str, col: Color| (name.to_string(), tok("color", js(&color(col))));
     let mut colors = vec![
@@ -107,7 +107,11 @@ pub fn theme_tokens_json(t: &Theme) -> String {
             b.join(",")
         }),
     ));
+    colors
+}
 
+/// The `font` group.
+fn font_tokens(t: &Theme) -> Vec<(String, String)> {
     let ty = &t.typography;
     let font = vec![
         (
@@ -153,7 +157,11 @@ pub fn theme_tokens_json(t: &Theme) -> String {
             ),
         ),
     ];
+    font
+}
 
+/// The `space` group.
+fn space_tokens(t: &Theme) -> Vec<(String, String)> {
     let s = &t.spacing;
     let space: Vec<(String, String)> = [
         ("xs", s.xs),
@@ -165,7 +173,11 @@ pub fn theme_tokens_json(t: &Theme) -> String {
     .iter()
     .map(|(k, v)| (k.to_string(), px(*v)))
     .collect();
+    space
+}
 
+/// The `shape` group.
+fn shape_tokens(t: &Theme) -> Vec<(String, String)> {
     let sh = &t.shape;
     let corners = [
         sh.corners.top_left,
@@ -188,7 +200,11 @@ pub fn theme_tokens_json(t: &Theme) -> String {
             format!("{{\"$type\":\"string\",\"$value\":{}}}", js(&corners)),
         ),
     ];
+    shape
+}
 
+/// The `effect` group.
+fn effect_tokens(t: &Theme) -> Vec<(String, String)> {
     let e = &t.effects;
     let effect = vec![
         ("glow".to_string(), tok("color", js(&color(e.glow)))),
@@ -206,7 +222,11 @@ pub fn theme_tokens_json(t: &Theme) -> String {
             ),
         ),
     ];
+    effect
+}
 
+/// The `motion` group.
+fn motion_tokens(t: &Theme) -> Vec<(String, String)> {
     let m = &t.motion;
     let motion = vec![
         (
@@ -219,7 +239,11 @@ pub fn theme_tokens_json(t: &Theme) -> String {
         ),
         ("easing".to_string(), tok("string", js(&m.easing.to_css()))),
     ];
+    motion
+}
 
+/// The `surface` group: textures and effect strengths.
+fn surface_tokens(t: &Theme) -> Vec<(String, String)> {
     let s = &t.surface_style;
     let fx = &s.preset;
     let ef = &s.effects;
@@ -288,6 +312,14 @@ pub fn theme_tokens_json(t: &Theme) -> String {
         ("strip".to_string(), tok("number", num(fx.strip))),
         ("clear".to_string(), tok("number", num(fx.clear))),
     ];
+    surface
+}
+
+/// One theme as a DTCG group (`color`, `font`, `space`, `shape`, `effect`).
+pub fn theme_tokens_json(t: &Theme) -> String {
+    let (colors, font, space) = (colour_tokens(t), font_tokens(t), space_tokens(t));
+    let (shape, effect) = (shape_tokens(t), effect_tokens(t));
+    let (motion, surface) = (motion_tokens(t), surface_tokens(t));
 
     format!(
         "{}:{{\"$description\":{},\"$extensions\":{{\"dodai.mode\":{},\"dodai.family\":{}}},{},{},{},{},{},{},{}}}",
