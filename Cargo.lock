@@ -4091,6 +4091,14 @@ dependencies = [
 name = "dodai-frost"
 version = "0.1.0"
 dependencies = [
+ "dodai-gpu",
+ "wgpu 30.0.1",
+]
+
+[[package]]
+name = "dodai-gpu"
+version = "0.1.0"
+dependencies = [
  "pollster 1.0.1",
  "wgpu 30.0.1",
 ]
@@ -4221,8 +4229,8 @@ version = "0.1.0"
 dependencies = [
  "bytemuck",
  "dodai-core",
+ "dodai-gpu",
  "dodai-shaders-kernels",
- "pollster 1.0.1",
  "wgpu 30.0.1",
 ]
 

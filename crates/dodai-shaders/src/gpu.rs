@@ -156,16 +156,13 @@ fn storage(binding: u32, read_only: bool) -> wgpu::BindGroupLayoutEntry {
 }
 
 impl Gpu {
-    /// Opens the default adapter. `None` without a usable GPU.
+    /// Opens the GPU (see `dodai-gpu`). `None` without a real adapter.
     pub fn new() -> Option<Self> {
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::new_without_display_handle());
-        let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::HighPerformance,
-            ..Default::default()
-        }))
-        .ok()?;
-        let (device, queue) =
-            pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor::default())).ok()?;
+        let dodai_gpu::Gpu {
+            adapter,
+            device,
+            queue,
+        } = dodai_gpu::open()?;
         let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("dodai-shaders"),
             source: wgpu::ShaderSource::Wgsl(WGSL.into()),
@@ -185,7 +182,7 @@ impl Gpu {
             immediate_size: 0,
         });
         Some(Self {
-            adapter: adapter.get_info().name,
+            adapter,
             device,
             queue,
             module,

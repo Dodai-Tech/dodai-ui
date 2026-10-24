@@ -1,0 +1,16 @@
+[package]
+name                   = "dodai-gpu"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description            = "Opens the GPU once for the Dodai crates: the best real adapter, never a software rasteriser"
+readme                 = "README.md"
+keywords               = ["wgpu", "gpu", "design-system"]
+categories             = ["graphics", "gui"]
+
+[dependencies]
+wgpu     = { version = "30.0.1", default-features = false, features = ["std", "parking_lot", "wgsl", "metal", "vulkan", "dx12"] }
+pollster = "1"

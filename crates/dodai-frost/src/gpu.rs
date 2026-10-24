@@ -11,20 +11,9 @@ pub struct GpuBlur {
 }
 
 impl GpuBlur {
-    /// Opens the default adapter; `None` without a usable GPU.
+    /// Opens the GPU (see `dodai-gpu`); `None` without a real adapter.
     pub fn new() -> Option<Self> {
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::new_without_display_handle());
-        let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::HighPerformance,
-            ..Default::default()
-        }))
-        .ok()?;
-        // A software rasteriser (llvmpipe, WARP, ...) is slower than the CPU path.
-        if matches!(adapter.get_info().device_type, wgpu::DeviceType::Cpu) {
-            return None;
-        }
-        let (device, queue) =
-            pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor::default())).ok()?;
+        let dodai_gpu::Gpu { device, queue, .. } = dodai_gpu::open()?;
         let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("dodai-frost"),
             source: wgpu::ShaderSource::Wgsl(include_str!("blur.wgsl").into()),
