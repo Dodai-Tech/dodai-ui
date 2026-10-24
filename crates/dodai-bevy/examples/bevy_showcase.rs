@@ -5,6 +5,7 @@
 use bevy::prelude::*;
 use dodai::icons::IconId;
 use dodai_bevy::prelude::*;
+use dodai_bevy::surface_fx::spawn_surface_fx;
 
 #[derive(Component)]
 struct ThemeButton(usize);
@@ -222,6 +223,28 @@ fn setup(mut commands: Commands, theme: Res<DodaiTheme>) {
                     p.spawn(mono("mono: 0xDEADBEEF"));
                     p.spawn(divider());
                     p.spawn(text("Caption", TextRole::Caption));
+                });
+
+                // dodai-surface through Bevy UI nodes: the design's own surface mix.
+                cols.spawn((
+                    panel("Surface effects"),
+                    Node {
+                        width: Val::Px(300.0),
+                        height: Val::Px(220.0),
+                        // Test aid: DODAI_FX_TOP=1 floats the panel over the header for screenshots.
+                        position_type: if std::env::var_os("DODAI_FX_TOP").is_some() {
+                            PositionType::Absolute
+                        } else {
+                            PositionType::Relative
+                        },
+                        top: Val::Px(120.0),
+                        left: Val::Px(700.0),
+                        ..default()
+                    },
+                ))
+                .with_children(|p| {
+                    let fx = theme.theme().surface_preset();
+                    spawn_surface_fx(p, theme.theme(), fx, Vec2::new(300.0, 220.0));
                 });
             });
         });

@@ -200,16 +200,24 @@ fn view(app: &App) -> Element<'_, Msg> {
         .spacing(sp.md),
     );
 
+    // The design's own surface mix (textures, tint, brackets...), drawn by dodai-surface.
+    let fx = lt.theme().surface_preset();
     let panels = section(
         lt,
         "Panels",
         row![
-            lt.panel_view(Some("Idle panel"), lt.body_text("Border only."), false),
-            lt.panel_view(
-                Some("Focused panel"),
-                lt.body_text("Glow + bright border."),
-                true
-            ),
+            stack![
+                lt.panel_view(Some("Idle panel"), lt.body_text("Border only."), false),
+                lt.surface_fx(fx)
+            ],
+            stack![
+                lt.panel_view(
+                    Some("Focused panel"),
+                    lt.body_text("Glow + bright border."),
+                    true
+                ),
+                lt.surface_fx(fx)
+            ],
         ]
         .spacing(sp.xl),
     );
@@ -353,6 +361,15 @@ fn view(app: &App) -> Element<'_, Msg> {
         ]
         .spacing(sp.sm),
     );
+
+    // Test aid: DODAI_ONLY=panels shows just the panels (with the surface effects) for screenshots.
+    if std::env::var("DODAI_ONLY").is_ok_and(|v| v == "panels") {
+        let page = container(column![panels].spacing(sp.lg).padding(sp.xl))
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .style(lt.background());
+        return stack![page, lt.scanlines()].into();
+    }
 
     let body = column![header, buttons, panels, tags, tabs, controls, sliders, inputs, list, misc]
         .spacing(sp.lg)

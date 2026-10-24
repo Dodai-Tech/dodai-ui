@@ -13,6 +13,7 @@ categories   = ["gui"]
 
 [dependencies]
 dodai-core = { workspace = true }
+dodai-surface = { workspace = true }
 iced = { workspace = true }
 
 [dev-dependencies]

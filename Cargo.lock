@@ -4036,6 +4036,7 @@ dependencies = [
  "bevy",
  "dodai",
  "dodai-core",
+ "dodai-surface",
 ]
 
 [[package]]
@@ -4119,6 +4120,7 @@ version = "0.1.0"
 dependencies = [
  "dodai",
  "dodai-core",
+ "dodai-surface",
  "iced",
  "naga 27.0.3",
 ]

@@ -54,6 +54,7 @@ mod list;
 mod panel;
 mod scanlines;
 mod shaped_button;
+mod surface_fx;
 mod tabs;
 mod tag;
 mod text;
@@ -64,6 +65,7 @@ mod testutil;
 pub use frame::{shaped_frame, BoxStyle, ShapedFrame};
 pub use geometry::ShapeGeom;
 pub use shaped_button::{ButtonState, ShapedButton, ShapedColors};
+pub use surface_fx::SurfaceFxProgram;
 
 use dodai_core::{Color as LColor, Theme};
 use iced::{

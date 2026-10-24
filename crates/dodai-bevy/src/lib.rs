@@ -26,6 +26,7 @@ pub mod material;
 pub mod plugin;
 pub mod style;
 pub mod surface;
+pub mod surface_fx;
 mod systems;
 pub mod theme;
 pub mod widgets;
