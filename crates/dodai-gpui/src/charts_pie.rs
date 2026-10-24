@@ -363,6 +363,272 @@ fn annular_slice(w: &mut Window, origin: gpui::Point<Pixels>, geo: &SliceGeo, lo
     }
 }
 
+/// The selection after a click on `hit`: clicking the selected slice (or empty space) clears it.
+fn next_selection(cur: Option<usize>, hit: Option<usize>) -> Option<usize> {
+    hit.filter(|i| cur != Some(*i))
+}
+
+/// The value shown in the middle of the ring.
+fn center_overlay(
+    t: &dodai_core::Theme,
+    txt: SharedString,
+    size: f32,
+    top_half: bool,
+) -> gpui::Div {
+    let overlay = div().absolute().left_0().w(px(size));
+    // Top half ring: centre the value on the baseline, not the full circle.
+    let overlay = if top_half {
+        overlay.bottom_0().h(px(size * 0.3))
+    } else {
+        overlay.top_0().h(px(size))
+    };
+    overlay
+        .flex()
+        .items_center()
+        .justify_center()
+        .font_family(first_family(t.typography.display))
+        .text_size(px(t.typography.size_xl))
+        .text_color(hsla(t.palette.text))
+        .child(txt)
+}
+
+/// The legend: a swatch, the name and its share per slice.
+fn legend(
+    t: &dodai_core::Theme,
+    slices: &[(SharedString, f32)],
+    cols: &[Hsla],
+    total: f32,
+) -> gpui::Div {
+    div()
+        .flex()
+        .flex_col()
+        .gap(px(t.spacing.xs))
+        .children(slices.iter().enumerate().map(|(i, (n, v))| {
+            let pct = if total > 0.0 { v / total * 100.0 } else { 0.0 };
+            label_style(t, div())
+                .flex()
+                .items_center()
+                .gap(px(t.spacing.xs))
+                .child(
+                    div()
+                        .w(px(t.sizes().legend_swatch))
+                        .h(px(t.sizes().legend_swatch))
+                        .bg(cols[i]),
+                )
+                .child(format!("{n} · {}%", trim(pct)))
+        }))
+}
+
+/// Pointer handling for a pie: hover, click-to-select and leaving.
+struct PieInput {
+    st: gpui::Entity<PieState>,
+    /// Slice edges in turns, before the grow-in animation.
+    fr: Vec<(f32, f32)>,
+    size: f32,
+    reserve: f32,
+    hole: f32,
+    /// Whether the app owns the selection (`PieChart::selected`).
+    controlled: bool,
+    sel: Option<usize>,
+    on_select: Option<SelectFn>,
+}
+
+impl PieInput {
+    /// The slice under `pos`, if any.
+    fn hit(&self, pos: gpui::Point<Pixels>, cx: &App) -> Option<usize> {
+        let b = self.st.read(cx).bounds;
+        let (ox, oy): (f32, f32) = (b.origin.x.into(), b.origin.y.into());
+        let (mx, my): (f32, f32) = (pos.x.into(), pos.y.into());
+        pie_hit(
+            mx - ox - self.size / 2.0,
+            my - oy - self.size / 2.0,
+            self.size / 2.0 - 1.0 - self.reserve,
+            self.hole,
+            &self.fr,
+        )
+    }
+
+    fn moved(&self, pos: gpui::Point<Pixels>, w: &mut Window, cx: &mut App) {
+        let h = self.hit(pos, cx);
+        if self.st.read(cx).hover != h {
+            self.st.update(cx, |s, _| s.hover = h);
+            w.refresh();
+        }
+    }
+
+    fn clicked(&self, pos: gpui::Point<Pixels>, w: &mut Window, cx: &mut App) {
+        let h = self.hit(pos, cx);
+        let cur = if self.controlled {
+            self.sel
+        } else {
+            self.st.read(cx).sel
+        };
+        let next = next_selection(cur, h);
+        if !self.controlled {
+            self.st.update(cx, |s, _| s.sel = next);
+            w.refresh();
+        }
+        if let Some(f) = &self.on_select {
+            f(next, w, cx);
+        }
+    }
+
+    fn hover_changed(&self, over: bool, w: &mut Window, cx: &mut App) {
+        if !over && self.st.read(cx).hover.is_some() {
+            self.st.update(cx, |s, _| s.hover = None);
+            w.refresh();
+        }
+    }
+}
+
+/// Everything the pie's canvas needs to paint one frame.
+struct PiePaint {
+    st: gpui::Entity<PieState>,
+    fr: Vec<(f32, f32)>,
+    cols: Vec<Hsla>,
+    rfac: Vec<f32>,
+    hover: Option<usize>,
+    sel: Option<usize>,
+    ring: Hsla,
+    motion: crate::motion::Motion,
+    gap: f32,
+    glow: Option<f32>,
+    hud: bool,
+    soft: bool,
+    style: PieStyle,
+    hole: f32,
+    size: f32,
+    explode: f32,
+    reserve: f32,
+    start: f32,
+    sweep: f32,
+    guide_col: Hsla,
+    scale_col: Hsla,
+}
+
+impl PiePaint {
+    fn paint(&self, b: Bounds<Pixels>, w: &mut Window, cx: &mut App) {
+        let Self {
+            st: st_paint,
+            fr,
+            cols,
+            rfac,
+            hover,
+            sel,
+            ring,
+            motion,
+            gap,
+            glow,
+            hud,
+            soft,
+            style,
+            hole,
+            size,
+            explode,
+            reserve,
+            start,
+            sweep,
+            guide_col,
+            scale_col,
+        } = self;
+        let (
+            hover,
+            sel,
+            ring,
+            motion,
+            gap,
+            glow,
+            hud,
+            soft,
+            style,
+            hole,
+            size,
+            explode,
+            reserve,
+            start,
+            sweep,
+            guide_col,
+            scale_col,
+        ) = (
+            *hover, *sel, *ring, *motion, *gap, *glow, *hud, *soft, *style, *hole, *size, *explode,
+            *reserve, *start, *sweep, *guide_col, *scale_col,
+        );
+        st_paint.update(cx, |s, _| s.bounds = b);
+        let r = size / 2.0 - 1.0 - reserve;
+        let c = size / 2.0;
+        if hud {
+            hud_scale(
+                w,
+                b.origin,
+                c,
+                r,
+                hole,
+                (start, sweep),
+                (guide_col, scale_col),
+            );
+        }
+        if style == PieStyle::Rose {
+            rose_guides(w, b.origin, c, r, guide_col);
+        }
+        for (i, ((a, z), col)) in fr.iter().zip(cols).enumerate() {
+            let r = r * rfac[i];
+            // Hovered slice pops out along its bisector.
+            let target = explode
+                + if hover == Some(i) {
+                    PIE_POP
+                } else if sel == Some(i) {
+                    PIE_POP * 0.5
+                } else {
+                    0.0
+                };
+            let (pop, busy) = st_paint.update(cx, |s, _| {
+                if s.pops.len() <= i {
+                    s.pops.resize(i + 1, crate::motion::Tween::new(0.0, motion));
+                }
+                s.pops[i].to(target, motion, crate::motion::now());
+                let now = crate::motion::now();
+                (s.pops[i].value(now), !s.pops[i].is_done(now))
+            });
+            if busy {
+                crate::motion::next_frame(w);
+            }
+            let (dx, dy) = polar(0.0, 0.0, pop, (a + z) / 2.0);
+            let origin = point(b.origin.x + px(dx), b.origin.y + px(dy));
+            // Constant-width straight gap: each edge is offset by
+            // `gap / 2` from the true radial line, so the gap has
+            // parallel sides instead of widening towards the rim.
+            let half = gap / 2.0;
+            let (a, z) = (*a, *z);
+            let delta = |rad: f32| (half / rad).clamp(0.0, 1.0).asin() / std::f32::consts::TAU;
+            let (ao, zo) = (a + delta(r), z - delta(r));
+            if zo <= ao {
+                continue;
+            }
+            let geo = SliceGeo {
+                c,
+                r,
+                hole,
+                half,
+                edges: (a, z),
+                trimmed: (ao, zo),
+            };
+            let look = SliceLook {
+                col: *col,
+                ring,
+                selected: sel == Some(i),
+                glow,
+                hud,
+                soft,
+            };
+            match (style, hole <= 0.0) {
+                (PieStyle::Segmented, _) => segmented_slice(w, origin, &geo, &look),
+                (_, true) => wedge_slice(w, origin, &geo, &look),
+                _ => annular_slice(w, origin, &geo, &look),
+            }
+        }
+    }
+}
+
 impl PieChart {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
@@ -394,10 +660,8 @@ impl PieChart {
         let sel = self.selected.unwrap_or(st.read(cx).sel);
         let ring = hsla(self.select_color.unwrap_or(t.palette.primary));
         let motion = crate::motion::current(cx);
-        let (st_paint, st_move, st_leave, st_click) =
-            (st.clone(), st.clone(), st.clone(), st.clone());
+        let (st_paint, st_move) = (st.clone(), st.clone());
         let (controlled, on_select) = (self.selected.is_some(), self.on_select.clone());
-        let fr_click = fr.clone();
         let fr_hit = fr.clone();
         let g = crate::motion::grow(window, cx, "PieChart");
         let fr: Vec<(f32, f32)> = fr
@@ -444,87 +708,45 @@ impl PieChart {
         let guide_col = hsla(t.palette.border);
         let glow = glow_of(&t);
         let gap = if vals.len() > 1 { self.gap } else { 0.0 }; // px
+        let paint = PiePaint {
+            st: st_paint,
+            fr,
+            cols: cols.clone(),
+            rfac,
+            hover,
+            sel,
+            ring,
+            motion,
+            gap,
+            glow,
+            hud,
+            soft,
+            style,
+            hole,
+            size,
+            explode,
+            reserve,
+            start,
+            sweep,
+            guide_col,
+            scale_col,
+        };
         let cvs = canvas(
             |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, cx| {
-                st_paint.update(cx, |s, _| s.bounds = b);
-                let r = size / 2.0 - 1.0 - reserve;
-                let c = size / 2.0;
-                if hud {
-                    hud_scale(
-                        w,
-                        b.origin,
-                        c,
-                        r,
-                        hole,
-                        (start, sweep),
-                        (guide_col, scale_col),
-                    );
-                }
-                if style == PieStyle::Rose {
-                    rose_guides(w, b.origin, c, r, guide_col);
-                }
-                for (i, ((a, z), col)) in fr.iter().zip(&cols).enumerate() {
-                    let r = r * rfac[i];
-                    // Hovered slice pops out along its bisector.
-                    let target = explode
-                        + if hover == Some(i) {
-                            PIE_POP
-                        } else if sel == Some(i) {
-                            PIE_POP * 0.5
-                        } else {
-                            0.0
-                        };
-                    let (pop, busy) = st_paint.update(cx, |s, _| {
-                        if s.pops.len() <= i {
-                            s.pops.resize(i + 1, crate::motion::Tween::new(0.0, motion));
-                        }
-                        s.pops[i].to(target, motion, crate::motion::now());
-                        let now = crate::motion::now();
-                        (s.pops[i].value(now), !s.pops[i].is_done(now))
-                    });
-                    if busy {
-                        crate::motion::next_frame(w);
-                    }
-                    let (dx, dy) = polar(0.0, 0.0, pop, (a + z) / 2.0);
-                    let origin = point(b.origin.x + px(dx), b.origin.y + px(dy));
-                    // Constant-width straight gap: each edge is offset by
-                    // `gap / 2` from the true radial line, so the gap has
-                    // parallel sides instead of widening towards the rim.
-                    let half = gap / 2.0;
-                    let (a, z) = (*a, *z);
-                    let delta =
-                        |rad: f32| (half / rad).clamp(0.0, 1.0).asin() / std::f32::consts::TAU;
-                    let (ao, zo) = (a + delta(r), z - delta(r));
-                    if zo <= ao {
-                        continue;
-                    }
-                    let geo = SliceGeo {
-                        c,
-                        r,
-                        hole,
-                        half,
-                        edges: (a, z),
-                        trimmed: (ao, zo),
-                    };
-                    let look = SliceLook {
-                        col: *col,
-                        ring,
-                        selected: sel == Some(i),
-                        glow,
-                        hud,
-                        soft,
-                    };
-                    match (style, hole <= 0.0) {
-                        (PieStyle::Segmented, _) => segmented_slice(w, origin, &geo, &look),
-                        (_, true) => wedge_slice(w, origin, &geo, &look),
-                        _ => annular_slice(w, origin, &geo, &look),
-                    }
-                }
-            },
+            move |b: Bounds<Pixels>, _, w, cx| paint.paint(b, w, cx),
         )
         .absolute()
         .size_full();
+        let input = std::rc::Rc::new(PieInput {
+            st: st_move,
+            fr: fr_hit,
+            size,
+            reserve,
+            hole,
+            controlled,
+            sel,
+            on_select,
+        });
         // A top half-ring (arc 0.75 + 0.5) only needs the upper half of the box.
         let top_half = self.sweep <= 0.5 && (self.start - 0.75).abs() < 0.01;
         let disc_h = if top_half { size / 2.0 + 2.0 } else { size };
@@ -535,76 +757,17 @@ impl PieChart {
             .h(px(disc_h))
             .overflow_hidden()
             .child(cvs)
-            .on_mouse_move(move |e, w, cx| {
-                let b = st_move.read(cx).bounds;
-                let (ox, oy): (f32, f32) = (b.origin.x.into(), b.origin.y.into());
-                let (mx, my): (f32, f32) = (e.position.x.into(), e.position.y.into());
-                let h = pie_hit(
-                    mx - ox - size / 2.0,
-                    my - oy - size / 2.0,
-                    size / 2.0 - 1.0 - reserve,
-                    hole,
-                    &fr_hit,
-                );
-                if st_move.read(cx).hover != h {
-                    st_move.update(cx, |s, _| s.hover = h);
-                    w.refresh();
-                }
+            .on_mouse_move({
+                let input = input.clone();
+                move |e, w, cx| input.moved(e.position, w, cx)
             })
-            .on_mouse_down(gpui::MouseButton::Left, move |e, w, cx| {
-                let b = st_click.read(cx).bounds;
-                let (ox, oy): (f32, f32) = (b.origin.x.into(), b.origin.y.into());
-                let (mx, my): (f32, f32) = (e.position.x.into(), e.position.y.into());
-                let r = size / 2.0 - 1.0 - reserve;
-                let h = pie_hit(
-                    mx - ox - size / 2.0,
-                    my - oy - size / 2.0,
-                    r,
-                    hole,
-                    &fr_click,
-                );
-                let cur = if controlled {
-                    sel
-                } else {
-                    st_click.read(cx).sel
-                };
-                let next = match h {
-                    Some(i) if cur == Some(i) => None,
-                    Some(i) => Some(i),
-                    None => None,
-                };
-                if !controlled {
-                    st_click.update(cx, |s, _| s.sel = next);
-                    w.refresh();
-                }
-                if let Some(f) = &on_select {
-                    f(next, w, cx);
-                }
+            .on_mouse_down(gpui::MouseButton::Left, {
+                let input = input.clone();
+                move |e, w, cx| input.clicked(e.position, w, cx)
             })
-            .on_hover(move |over, w, cx| {
-                if !*over && st_leave.read(cx).hover.is_some() {
-                    st_leave.update(cx, |s, _| s.hover = None);
-                    w.refresh();
-                }
-            });
+            .on_hover(move |over, w, cx| input.hover_changed(*over, w, cx));
         if let (Some(txt), true) = (self.center.clone(), hole > 0.0) {
-            let overlay = div().absolute().left_0().w(px(size));
-            // Top half ring: centre the value on the baseline, not the full circle.
-            let overlay = if top_half {
-                overlay.bottom_0().h(px(size * 0.3))
-            } else {
-                overlay.top_0().h(px(size))
-            };
-            disc = disc.child(
-                overlay
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .font_family(first_family(t.typography.display))
-                    .text_size(px(t.typography.size_xl))
-                    .text_color(hsla(t.palette.text))
-                    .child(txt),
-            );
+            disc = disc.child(center_overlay(&t, txt, size, top_half));
         }
         let total: f32 = vals.iter().sum();
         let mut root = div()
@@ -613,22 +776,7 @@ impl PieChart {
             .gap(px(t.spacing.lg))
             .child(disc);
         if self.legend {
-            root = root.child(div().flex().flex_col().gap(px(t.spacing.xs)).children(
-                self.slices.iter().enumerate().map(|(i, (n, v))| {
-                    let pct = if total > 0.0 { v / total * 100.0 } else { 0.0 };
-                    label_style(&t, div())
-                        .flex()
-                        .items_center()
-                        .gap(px(t.spacing.xs))
-                        .child(
-                            div()
-                                .w(px(t.sizes().legend_swatch))
-                                .h(px(t.sizes().legend_swatch))
-                                .bg(hsla(slice_col(i))),
-                        )
-                        .child(format!("{n} · {}%", trim(pct)))
-                }),
-            ));
+            root = root.child(legend(&t, &self.slices, &cols, total));
         }
         root
     }
@@ -638,6 +786,14 @@ crate::entry_render!(PieChart);
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn clicking_the_selected_slice_clears_it() {
+        assert_eq!(super::next_selection(None, Some(2)), Some(2));
+        assert_eq!(super::next_selection(Some(2), Some(2)), None);
+        assert_eq!(super::next_selection(Some(1), Some(2)), Some(2));
+        assert_eq!(super::next_selection(Some(1), None), None);
+    }
+
     use super::*;
 
     /// A pie of a quarter, a quarter and a half, 0 at the top and clockwise.
