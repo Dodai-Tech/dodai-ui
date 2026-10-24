@@ -644,6 +644,7 @@ fn main() {
                     "tape" => fx.tape = 0.8,
                     "gloss" => fx.gloss = 0.8,
                     "strip" => fx.strip = 0.8,
+                    "wash" => fx.wash = 0.8,
                     "clear" => fx.clear = 0.7,
                     "preset" => fx = theme_of(cx).surface_preset(),
                     name => {

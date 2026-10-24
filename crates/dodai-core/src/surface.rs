@@ -343,6 +343,8 @@ pub struct SurfaceFx {
     pub gloss: f32,
     /// A thin light strip gliding along the top edge.
     pub strip: f32,
+    /// A frosted gradient wash: the design's own three-colour gradient laid over the surface.
+    pub wash: f32,
     /// How much the texture fades towards the centre, keeping text clean (`0.0` = even).
     pub clear: f32,
     /// Texture for containers (cards, panels, bars); `texture` is for UI components.
@@ -384,6 +386,7 @@ impl SurfaceFx {
         tape: 0.0,
         gloss: 0.0,
         strip: 0.0,
+        wash: 0.0,
         clear: 0.0,
         container_texture: Texture::None,
         container_strength: 0.5,
@@ -417,6 +420,7 @@ impl SurfaceFx {
         self.tape = keep(effects.tape, self.tape);
         self.gloss = keep(effects.gloss, self.gloss);
         self.strip = keep(effects.strip, self.strip);
+        self.wash = keep(effects.wash, self.wash);
         self
     }
 
@@ -462,6 +466,7 @@ impl SurfaceFx {
             && self.pop <= 0.0
             && self.tape <= 0.0
             && self.gloss <= 0.0
+            && self.wash <= 0.0
     }
 }
 
@@ -562,6 +567,8 @@ pub struct EffectSet {
     pub gloss: bool,
     /// Gliding light strip.
     pub strip: bool,
+    /// Gradient wash.
+    pub wash: bool,
 }
 
 impl EffectSet {
@@ -583,6 +590,7 @@ impl EffectSet {
         tape: false,
         gloss: false,
         strip: false,
+        wash: false,
     };
     /// Every effect.
     pub const ALL: Self = Self {
@@ -602,6 +610,7 @@ impl EffectSet {
         tape: true,
         gloss: true,
         strip: true,
+        wash: true,
     };
     /// Whether any effect is owned.
     pub const fn any(&self) -> bool {
@@ -621,6 +630,7 @@ impl EffectSet {
             || self.tape
             || self.gloss
             || self.strip
+            || self.wash
     }
 }
 
@@ -636,6 +646,8 @@ pub struct SurfaceStyle {
     pub effects: EffectSet,
     /// Timing and sizes of the drawing.
     pub tuning: SurfaceTuning,
+    /// The three colours of the design's gradient (the `wash` effect), start to end.
+    pub wash: [crate::Color; 3],
 }
 
 /// How a design's textures and effects are timed and sized. The defaults are the neutral values.
@@ -692,6 +704,7 @@ impl SurfaceStyle {
         textures: &[],
         effects: EffectSet::NONE,
         tuning: SurfaceTuning::DEFAULT,
+        wash: [crate::Color::rgba(0, 0, 0, 0); 3],
     };
 }
 
@@ -738,6 +751,7 @@ pub struct Surface {
     tape: Option<f32>,
     gloss: Option<f32>,
     strip: Option<f32>,
+    wash: Option<f32>,
     clear: Option<f32>,
     glow: Option<f32>,
 }
@@ -766,6 +780,7 @@ impl Surface {
         tape: None,
         gloss: None,
         strip: None,
+        wash: None,
         clear: None,
         glow: None,
     };
@@ -870,6 +885,12 @@ impl Surface {
         self.gloss = Some(v);
         self
     }
+    /// Gradient wash, `0.0..=1.0`.
+    pub const fn wash(mut self, v: f32) -> Self {
+        self.wash = Some(v);
+        self
+    }
+
     /// Gliding light strip, `0.0..=1.0`.
     pub const fn strip(mut self, v: f32) -> Self {
         self.strip = Some(v);
@@ -935,6 +956,7 @@ impl Surface {
             || self.tape.is_some()
             || self.gloss.is_some()
             || self.strip.is_some()
+            || self.wash.is_some()
     }
 
     /// `fx` (already resolved for the component's class) with this override on top.
@@ -998,6 +1020,9 @@ impl Surface {
         }
         if let Some(v) = self.strip {
             fx.strip = v;
+        }
+        if let Some(v) = self.wash {
+            fx.wash = v;
         }
         if let Some(v) = self.clear {
             fx.clear = v;

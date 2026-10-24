@@ -51,5 +51,6 @@ pub fn style(dark: bool) -> SurfaceStyle {
             chase_period: 3.0,
             ..SurfaceTuning::DEFAULT
         },
+        ..SurfaceStyle::NONE
     }
 }

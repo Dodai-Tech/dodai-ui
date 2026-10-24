@@ -14,7 +14,7 @@ use canvas::Canvas;
 use dodai_core::{Color, Shape, ShapeKind, SurfaceClass, SurfaceFx, Texture, Theme};
 use effects::{
     brackets, chase, depth, edge_light, glitch, gloss, pop, press_frame, pulse, sheen, strip, tape,
-    texture, tint,
+    texture, tint, wash,
 };
 use geom::noise;
 pub use geom::{poly_span, row_span};
@@ -104,6 +104,8 @@ pub struct SurfacePaint {
     pub neon: Rgba,
     /// Colour of inner shadows.
     pub shade: Rgba,
+    /// The gradient of the `wash` effect, start to end.
+    pub wash: [Rgba; 3],
     /// Timing and sizes from the theme.
     pub tune: dodai_core::SurfaceTuning,
     /// Whether a press on this surface plays the click ripple.
@@ -122,6 +124,7 @@ impl SurfacePaint {
             light: p.text.into(),
             neon: p.accent.into(),
             shade: p.roles.shadow.into(),
+            wash: theme.surface_style.wash.map(Rgba::from),
             tune: theme.surface_style.tuning,
             pressable,
         }
@@ -242,6 +245,9 @@ pub fn paint(out: &mut dyn Painter, f: &Frame, sp: &SurfacePaint) -> bool {
     }
     if fx.pop > 0.0 {
         pop(&mut cv, sp);
+    }
+    if fx.wash > 0.0 {
+        wash(&mut cv, sp);
     }
     if fx.gloss > 0.0 {
         gloss(&mut cv, sp);
@@ -409,5 +415,37 @@ mod tests {
         let on_light = sp.contrasting(1.0);
         assert!(on_dark.ink.lightness() >= on_light.ink.lightness());
         assert_ne!(on_dark.ink, on_light.ink);
+    }
+
+    #[test]
+    fn wash_runs_through_the_three_colours_and_stays_inside() {
+        let t = Theme::default();
+        let mut sp = only(SurfaceFx {
+            wash: 1.0,
+            ..SurfaceFx::NONE
+        });
+        let red = Rgba {
+            r: 1.0,
+            g: 0.0,
+            b: 0.0,
+            a: 1.0,
+        };
+        let blue = Rgba {
+            r: 0.0,
+            g: 0.0,
+            b: 1.0,
+            a: 1.0,
+        };
+        sp.wash = [red, red, blue];
+        let (rec, anim) = run(&sp, &t, &[]);
+        assert!(!anim && !rec.quads.is_empty());
+        for (x, y, w, h, c) in &rec.quads {
+            assert!(*x >= -0.5 && *y >= -0.5 && x + w <= 160.5 && y + h <= 64.5);
+            assert!(c.a > 0.0 && c.a <= 0.24 + 1e-4);
+        }
+        let first = rec.quads.first().unwrap().4;
+        let last = rec.quads.last().unwrap().4;
+        assert!(first.r > first.b, "starts red");
+        assert!(last.b > last.r, "ends blue");
     }
 }

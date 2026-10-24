@@ -168,6 +168,7 @@ fn every_surface_texture_and_effect_renders(cx: &mut TestAppContext) {
                         tape: 1.0,
                         gloss: 1.0,
                         strip: 1.0,
+                        wash: 1.0,
                         clear: 1.0,
                         container_texture: tex,
                         container_strength: 1.0,

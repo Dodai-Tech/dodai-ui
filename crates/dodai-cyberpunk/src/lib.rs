@@ -397,5 +397,6 @@ fn surface_style(dark: bool) -> dodai_core::SurfaceStyle {
             chase_period: 4.0 * slow,
             ..dodai_core::SurfaceTuning::DEFAULT
         },
+        ..dodai_core::SurfaceStyle::NONE
     }
 }

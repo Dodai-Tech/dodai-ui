@@ -265,6 +265,7 @@ fn surface_tokens(t: &Theme) -> Vec<(String, String)> {
         (ef.tape, "tape"),
         (ef.gloss, "gloss"),
         (ef.strip, "strip"),
+        (ef.wash, "wash"),
     ]
     .iter()
     .filter_map(|(on, n)| on.then_some(*n))
@@ -310,6 +311,7 @@ fn surface_tokens(t: &Theme) -> Vec<(String, String)> {
         ("tape".to_string(), tok("number", num(fx.tape))),
         ("gloss".to_string(), tok("number", num(fx.gloss))),
         ("strip".to_string(), tok("number", num(fx.strip))),
+        ("wash".to_string(), tok("number", num(fx.wash))),
         ("clear".to_string(), tok("number", num(fx.clear))),
     ];
     surface

@@ -1,6 +1,6 @@
 //! Aurora surface styling: frosted glass lit from within. Textures are barely there (fine
-//! brushing, dots, a grid); the light is a clear-coat gloss across the top, a thin
-//! strip of light along the edge and a hairline of light falling in from the borders. Nothing
+//! brushing, dots, a grid); the light is the aurora gradient wash and a hairline of light
+//! falling in from the borders. Nothing
 //! neon, nothing loud.
 
 use dodai_core::{EffectSet, SurfaceFx, SurfaceStyle, SurfaceTuning, Texture};
@@ -16,6 +16,7 @@ pub const TEXTURES: &[Texture] = &[
 /// The effects this design owns.
 pub const EFFECTS: EffectSet = EffectSet {
     gloss: true,
+    wash: true,
     strip: true,
     edge: true,
     ..EffectSet::NONE
@@ -23,14 +24,14 @@ pub const EFFECTS: EffectSet = EffectSet {
 
 /// The Aurora surface style.
 pub fn style(dark: bool) -> SurfaceStyle {
-    let calm = if dark { 0.9 } else { 1.0 };
     SurfaceStyle {
         preset: SurfaceFx {
             texture: Texture::None,
             strength: 0.0,
             container_texture: Texture::None,
             container_strength: 0.0,
-            gloss: 0.3 * calm,
+            gloss: 0.0,
+            wash: 0.8,
             edge: 0.2,
             clear: 0.45,
             ..SurfaceFx::NONE
@@ -41,6 +42,14 @@ pub fn style(dark: bool) -> SurfaceStyle {
             halo: 1.0,
             sheen_period: 4.5,
             ..SurfaceTuning::DEFAULT
+        },
+        wash: {
+            let g = if dark {
+                crate::tokens::AURORA_DARK
+            } else {
+                crate::tokens::AURORA_LIGHT
+            };
+            g.stops.map(|s| s.color.color())
         },
     }
 }

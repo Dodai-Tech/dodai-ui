@@ -45,5 +45,6 @@ pub fn style(dark: bool) -> SurfaceStyle {
             pulse_period: 2.8,
             ..SurfaceTuning::DEFAULT
         },
+        ..SurfaceStyle::NONE
     }
 }

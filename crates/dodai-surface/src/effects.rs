@@ -823,6 +823,51 @@ pub(crate) fn tape(cv: &mut Canvas, sp: &SurfacePaint) {
     band(cv, (w - i - l, h - i), (w - i, h - i - l), (0.0, -t));
 }
 
+/// A three-colour gradient laid over the surface at 135°, in coarse cells so it stays cheap.
+/// It is faint on purpose: frosted glass is tinted by it, not covered.
+pub(crate) fn wash(cv: &mut Canvas, sp: &SurfacePaint) {
+    let k = sp.fx.wash.clamp(0.0, 1.0);
+    let (w, h) = (cv.w, cv.h);
+    let cols = (w / 10.0).clamp(2.0, 20.0) as usize;
+    // Rows are coarse in the middle but 2 px tall through the rounded corners, where each cell
+    // is clipped to the curve; coarse rows there would turn it into steps.
+    let corner = cv.shape.radius.min(h / 2.0).ceil();
+    let mut ys = vec![0.0_f32];
+    while *ys.last().unwrap() < h - 0.5 {
+        let y = *ys.last().unwrap();
+        let step = if y < corner || y >= h - corner {
+            2.0
+        } else {
+            6.0
+        };
+        ys.push((y + step).min(h));
+    }
+    let rows = ys.len() - 1;
+    let edge = |n: usize, len: f32, of: usize| (len * n as f32 / of as f32).round();
+    let at = |t: f32| {
+        let s = &sp.wash;
+        let (a, b, t) = if t < 0.5 {
+            (s[0], s[1], t * 2.0)
+        } else {
+            (s[1], s[2], t * 2.0 - 1.0)
+        };
+        Rgba {
+            r: a.r + (b.r - a.r) * t,
+            g: a.g + (b.g - a.g) * t,
+            b: a.b + (b.b - a.b) * t,
+            a: 1.0,
+        }
+    };
+    for j in 0..rows {
+        for i in 0..cols {
+            let t = ((i as f32 + 0.5) / cols as f32 + ((ys[j] + ys[j + 1]) / 2.0) / h) / 2.0;
+            let (x0, x1) = (edge(i, w, cols), edge(i + 1, w, cols));
+            let (y0, y1) = (ys[j], ys[j + 1]);
+            cv.quad(x0, y0, x1 - x0, y1 - y0, scale_alpha(at(t), 0.24 * k));
+        }
+    }
+}
+
 /// A clear-coat reflection across the top, cut on a slant like a windscreen glint.
 pub(crate) fn gloss(cv: &mut Canvas, sp: &SurfacePaint) {
     let g = sp.fx.gloss.clamp(0.0, 1.0);

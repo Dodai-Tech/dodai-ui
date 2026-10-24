@@ -398,13 +398,13 @@ impl Showcase {
         }
         let fx = dodai_gpui::surface_fx();
         let ef = t.surface_effects();
-        if ef.tint || ef.pop || ef.tape || ef.gloss || ef.strip {
+        if ef.tint || ef.pop || ef.tape || ef.gloss || ef.strip || ef.wash {
             out.push((
                     "Surface effects",
                     "Signature",
                     self.section("Signature", &t, &me, cx)
                         .child(Muted::new(
-                            "Effects that belong to this design only: tonal wash, a hard pop block and tape, a clear-coat gloss and a light strip.",
+                            "Effects that belong to this design only: tonal wash, a hard pop block and tape, a clear-coat gloss, a light strip and a gradient wash.",
                         ))
                         .children(ef.tint.then(|| {
                             fx_amount(gap, "sfx-tint", "Tonal wash", fx.tint, 1.0, |f, v| f.tint = v)
@@ -420,6 +420,9 @@ impl Showcase {
                         }))
                         .children(ef.strip.then(|| {
                             fx_amount(gap, "sfx-strip", "Light strip", fx.strip, 1.0, |f, v| f.strip = v)
+                        }))
+                        .children(ef.wash.then(|| {
+                            fx_amount(gap, "sfx-wash", "Gradient wash", fx.wash, 1.0, |f, v| f.wash = v)
                         }))
                         .child(fx_preview(gap, "sfx-sig"))
                         .into_any_element(),
