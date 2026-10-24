@@ -231,4 +231,14 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         if: steps.rt4.outcome == 'failure'
       - uses: Swatinem/rust-cache@v2
-      - run: cargo doc --workspace --no-deps
+      # One crate at a time: a single workspace-wide build unifies features across the GUI stacks
+      # (gpui turns on fontconfig `dlopen`, which breaks slint's fontique; naga 27 vs 30 under
+      # `cargo doc`), so it cannot compile on Linux even though every crate does on its own.
+      - name: cargo doc (per crate)
+        run: |
+          for d in crates/*/; do
+            p=$(basename "$d")
+            [ "$p" = dodai-freya ] && continue   # its own workspace
+            [ -f "$d/Cargo.toml" ] || continue
+            cargo doc --no-deps -p "$p" || exit 1
+          done
