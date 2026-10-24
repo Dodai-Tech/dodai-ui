@@ -237,10 +237,6 @@ pub const PRESETS: &[NeonPreset] = &[
     },
 ];
 
-fn leak(s: String) -> &'static str {
-    Box::leak(s.into_boxed_str())
-}
-
 impl NeonPreset {
     fn neon(&self) -> Neon {
         Neon::new(
@@ -255,12 +251,12 @@ impl NeonPreset {
     pub fn theme(&self, mode: Mode) -> Theme {
         let dark = mode == Mode::Dark;
         let meta = ThemeMeta {
-            id: leak(format!(
+            id: dodai_core::intern(format!(
                 "cyberpunk-{}{}",
                 self.stem,
                 if dark { "" } else { "-light" }
             )),
-            name: leak(format!(
+            name: dodai_core::intern(format!(
                 "Cyberpunk · {}{}",
                 self.name,
                 if dark { "" } else { " Light" }

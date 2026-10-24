@@ -55,3 +55,35 @@ pub use tokens::{
 };
 pub use tonal::TonalPalette;
 pub use tune::{BorderTint, RoundnessGroup, ShadowDir, ShapeTune};
+
+/// Turn a generated string into a `&'static str`, once per distinct value.
+///
+/// Theme ids and names are `&'static str`, but presets build them with `format!`. Leaking a new
+/// copy on every theme build grows without bound (a theme switcher rebuilds them all), so equal
+/// strings share one allocation, kept in a table that stays reachable.
+pub fn intern(s: String) -> &'static str {
+    use std::collections::HashSet;
+    use std::sync::{Mutex, OnceLock, PoisonError};
+    static TABLE: OnceLock<Mutex<HashSet<&'static str>>> = OnceLock::new();
+    let mut table = TABLE
+        .get_or_init(Default::default)
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner);
+    if let Some(&hit) = table.get(s.as_str()) {
+        return hit;
+    }
+    let leaked: &'static str = Box::leak(s.into_boxed_str());
+    table.insert(leaked);
+    leaked
+}
+
+#[cfg(test)]
+mod intern_tests {
+    #[test]
+    fn equal_strings_share_one_allocation() {
+        let a = super::intern(format!("theme-{}", 7));
+        let b = super::intern(format!("theme-{}", 7));
+        assert!(std::ptr::eq(a, b));
+        assert_ne!(a, super::intern("other".into()));
+    }
+}

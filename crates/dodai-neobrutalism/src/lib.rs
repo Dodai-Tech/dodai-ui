@@ -132,17 +132,16 @@ const WHITE: u32 = 0xffffff;
 /// Build one accent in one mode.
 pub fn build(p: &Preset, mode: Mode) -> Theme {
     let dark = mode == Mode::Dark;
-    let id: &'static str = Box::leak(
-        format!("neobrutalism{}{}", p.key, if dark { "-dark" } else { "" }).into_boxed_str(),
-    );
-    let name: &'static str = Box::leak(
-        format!(
-            "Neo-Brutalism · {}{}",
-            p.name,
-            if dark { " · Dark" } else { "" }
-        )
-        .into_boxed_str(),
-    );
+    let id: &'static str = dodai_core::intern(format!(
+        "neobrutalism{}{}",
+        p.key,
+        if dark { "-dark" } else { "" }
+    ));
+    let name: &'static str = dodai_core::intern(format!(
+        "Neo-Brutalism · {}{}",
+        p.name,
+        if dark { " · Dark" } else { "" }
+    ));
     // Dark: warm graphite paper, off-white outlines (black ones would vanish).
     let (bg, surface, raised, line, text, muted, disabled) = if dark {
         (

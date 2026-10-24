@@ -412,19 +412,14 @@ pub const PRESETS: &[Preset] = &[
     },
 ];
 
-/// Leak a generated string so it can sit in a `&'static str` meta field (done once per preset).
-fn leak(s: String) -> &'static str {
-    Box::leak(s.into_boxed_str())
-}
-
 impl Preset {
     /// The theme of this preset in `mode`.
     pub fn theme(&self, mode: Mode) -> Theme {
         let suffix = if mode == Mode::Dark { "dark" } else { "light" };
         let label = if mode == Mode::Dark { "Dark" } else { "Light" };
         Scheme::new(Color::hex(self.seed), self.style, mode).theme(ThemeMeta {
-            id: leak(format!("material-{}-{suffix}", self.stem)),
-            name: leak(format!("Material 3 · {} {label}", self.name)),
+            id: dodai_core::intern(format!("material-{}-{suffix}", self.stem)),
+            name: dodai_core::intern(format!("Material 3 · {} {label}", self.name)),
             family: "material",
             description: self.description,
             mode,
