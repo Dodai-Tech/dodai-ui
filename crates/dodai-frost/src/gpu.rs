@@ -19,6 +19,10 @@ impl GpuBlur {
             ..Default::default()
         }))
         .ok()?;
+        // A software rasteriser (llvmpipe, WARP, ...) is slower than the CPU path.
+        if matches!(adapter.get_info().device_type, wgpu::DeviceType::Cpu) {
+            return None;
+        }
         let (device, queue) =
             pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor::default())).ok()?;
         let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {

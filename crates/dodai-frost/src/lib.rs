@@ -151,6 +151,9 @@ pub const GPU_MIN_PIXELS: usize = 256 * 256;
 pub struct Blurrer {
     #[cfg(feature = "gpu")]
     backend: Backend,
+    /// `Auto` uses the GPU from this many pixels.
+    #[cfg(feature = "gpu")]
+    min_pixels: usize,
     #[cfg(feature = "gpu")]
     gpu: Option<GpuBlur>,
 }
@@ -164,12 +167,29 @@ impl Blurrer {
             #[cfg(feature = "gpu")]
             backend,
             #[cfg(feature = "gpu")]
+            min_pixels: GPU_MIN_PIXELS,
+            #[cfg(feature = "gpu")]
             gpu: if backend == Backend::Cpu {
                 None
             } else {
                 GpuBlur::new()
             },
         }
+    }
+
+    /// Sets the picture size (in pixels) from which `Backend::Auto` uses the GPU; the default is
+    /// [`GPU_MIN_PIXELS`]. Tune it from a measurement on the target machine (see the `bench`
+    /// example). Without the `gpu` feature this does nothing.
+    #[must_use]
+    pub fn with_min_pixels(mut self, pixels: usize) -> Self {
+        #[cfg(feature = "gpu")]
+        {
+            self.min_pixels = pixels;
+        }
+        #[cfg(not(feature = "gpu"))]
+        let _ = &mut self;
+        let _ = pixels;
+        self
     }
 
     /// Whether blurs of `pixels` pixels run on the GPU.
@@ -179,7 +199,7 @@ impl Blurrer {
             return match self.backend {
                 Backend::Cpu => false,
                 Backend::Gpu => true,
-                Backend::Auto => pixels >= GPU_MIN_PIXELS,
+                Backend::Auto => pixels >= self.min_pixels,
             };
         }
         let _ = pixels;
