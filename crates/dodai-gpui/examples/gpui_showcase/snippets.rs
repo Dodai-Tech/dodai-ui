@@ -174,7 +174,7 @@ mod tests {
         .concat();
         for t in titles() {
             assert!(
-                sources.contains(&format!("section!(\"{t}\")")),
+                sources.contains(&format!("self.section(\"{t}\"")),
                 "no section titled {t:?}"
             );
         }
