@@ -215,10 +215,34 @@ impl DataTable {
     );
 }
 
+/// Everything the parts of one table frame share.
+struct Frame {
+    t: dodai_core::Theme,
+    st: gpui::Entity<DtState>,
+    view: Vec<usize>,
+    selected: BTreeSet<usize>,
+    widths: Vec<f32>,
+    sort: Option<(usize, bool)>,
+    resize: Option<(usize, f32, f32)>,
+    row_h: f32,
+    head_h: f32,
+    max: f32,
+    scroll: f32,
+    range: Range<usize>,
+    last: usize,
+    check_w: f32,
+    notify: Rc<dyn Fn(&BTreeSet<usize>, &mut Window, &mut App)>,
+}
+
+impl Frame {
+    fn w_of(&self, i: usize) -> f32 {
+        self.widths.get(i).copied().unwrap_or(140.0)
+    }
+}
+
 impl RenderOnce for DataTable {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = crate::apply_corners(theme_of(cx), self.corners);
-        let p = &t.palette;
         let init: Vec<f32> = self.columns.iter().map(|c| c.width).collect();
         let st = window.use_keyed_state(self.id.clone(), cx, move |_, _| DtState {
             sort: None,
@@ -238,20 +262,92 @@ impl RenderOnce for DataTable {
         let max = max_scroll(n, row_h, self.height);
         let scroll = st.read(cx).scroll.min(max);
         let range = visible_range(n, row_h, self.height, scroll, 2);
-        let w_of = |i: usize| widths.get(i).copied().unwrap_or(140.0);
         let last = self.columns.len().saturating_sub(1);
         let check_w = if self.selectable { 40.0 } else { 0.0 };
 
-        let notify_selection = {
+        let notify: Rc<dyn Fn(&BTreeSet<usize>, &mut Window, &mut App)> = {
             let f = self.on_change.clone();
-            move |sel: &BTreeSet<usize>, w: &mut Window, cx: &mut App| {
+            Rc::new(move |sel, w, cx| {
                 if let Some(f) = &f {
                     let v: Vec<usize> = sel.iter().copied().collect();
                     f(&v, w, cx);
                 }
-            }
+            })
         };
+        let fr = Frame {
+            t,
+            st,
+            view,
+            selected,
+            widths,
+            sort,
+            resize,
+            row_h,
+            head_h,
+            max,
+            scroll,
+            range,
+            last,
+            check_w,
+            notify,
+        };
+        let outer = ShapeStyle::from_tokens(
+            &fr.t,
+            Some(fr.t.palette.surface),
+            Some(fr.t.palette.border),
+            false,
+            false,
+        );
+        let t = &fr.t;
+        let (s1, s2, s3) = (fr.st.clone(), fr.st.clone(), fr.st.clone());
+        let (head, body, footer) = (self.head(&fr), self.body(&fr, window, cx), self.footer(&fr));
 
+        shaped(&t.shape, outer)
+            .w_full()
+            .flex()
+            .flex_col()
+            .overflow_hidden()
+            .font_family(first_family(t.typography.body))
+            .text_size(px(t.typography.size_md))
+            .on_mouse_move(move |e, _, cx| {
+                let Some((col, x0, w0)) = s1.read(cx).resize else {
+                    return;
+                };
+                let w = resized(w0, f32::from(e.position.x) - x0, MIN_COL);
+                s1.update(cx, |s, cx| {
+                    if let Some(slot) = s.widths.get_mut(col) {
+                        *slot = w;
+                    }
+                    cx.notify();
+                });
+            })
+            .on_mouse_up(MouseButton::Left, move |_, _, cx| {
+                s2.update(cx, |s, cx| {
+                    if s.resize.take().is_some() {
+                        cx.notify();
+                    }
+                })
+            })
+            .on_mouse_up_out(MouseButton::Left, move |_, _, cx| {
+                s3.update(cx, |s, cx| {
+                    if s.resize.take().is_some() {
+                        cx.notify();
+                    }
+                })
+            })
+            .child(head)
+            .child(body)
+            .child(footer)
+    }
+}
+
+impl DataTable {
+    fn head(&self, fr: &Frame) -> impl IntoElement {
+        let (t, st, view, selected, notify) = (&fr.t, &fr.st, &fr.view, &fr.selected, &fr.notify);
+        let (sort, resize, head_h, last, check_w) =
+            (fr.sort, fr.resize, fr.head_h, fr.last, fr.check_w);
+        let w_of = |i: usize| fr.w_of(i);
+        let p = &t.palette;
         // header
         let flags: Vec<bool> = view.iter().map(|i| selected.contains(i)).collect();
         let (all_on, any_on) = crate::forms::select_all_state(&flags);
@@ -264,7 +360,7 @@ impl RenderOnce for DataTable {
             .text_size(px(t.typography.size_sm))
             .text_color(hsla(p.text_muted));
         if self.selectable {
-            let (st2, view2, notify) = (st.clone(), view.clone(), notify_selection.clone());
+            let (st2, view2, notify) = (st.clone(), view.clone(), notify.clone());
             head = head.child(
                 div().w(px(check_w)).flex_none().child(
                     Checkbox::new((self.id.clone(), "all"), all_on)
@@ -358,6 +454,16 @@ impl RenderOnce for DataTable {
             head = head.child(h);
         }
 
+        head
+    }
+
+    fn body(&self, fr: &Frame, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let (t, st, view, selected, notify) = (&fr.t, &fr.st, &fr.view, &fr.selected, &fr.notify);
+        let (row_h, max, scroll, last, check_w) =
+            (fr.row_h, fr.max, fr.scroll, fr.last, fr.check_w);
+        let range = fr.range.clone();
+        let w_of = |i: usize| fr.w_of(i);
+        let p = &t.palette;
         // body (windowed)
         let mut body = div()
             .id((self.id.clone(), "body"))
@@ -408,7 +514,7 @@ impl RenderOnce for DataTable {
             .text_color(hsla(p.text))
             .cursor_pointer();
             if self.selectable {
-                let (st2, notify) = (st.clone(), notify_selection.clone());
+                let (st2, notify) = (st.clone(), notify.clone());
                 r = r
                     .on_click(move |_, w, cx| {
                         let mut sel = st2.read(cx).selected.clone();
@@ -462,7 +568,7 @@ impl RenderOnce for DataTable {
             rows = rows.child(r);
         }
         body = body.child(rows);
-        if n == 0 {
+        if view.is_empty() {
             body = body.child(
                 div()
                     .p(px(t.spacing.lg))
@@ -483,6 +589,12 @@ impl RenderOnce for DataTable {
             );
         }
 
+        body
+    }
+
+    fn footer(&self, fr: &Frame) -> impl IntoElement {
+        let (t, view, selected, head_h) = (&fr.t, &fr.view, &fr.selected, fr.head_h);
+        let p = &t.palette;
         let footer = div()
             .flex()
             .justify_between()
@@ -492,51 +604,14 @@ impl RenderOnce for DataTable {
             .bg(hsla(p.surface_raised))
             .text_size(px(t.typography.size_xs))
             .text_color(hsla(p.text_muted))
-            .child(format!("{} of {} rows", n, self.rows.len()))
+            .child(format!("{} of {} rows", view.len(), self.rows.len()))
             .child(if self.selectable {
                 format!("{} selected", selected.len())
             } else {
                 String::new()
             });
 
-        let outer = ShapeStyle::from_tokens(&t, Some(p.surface), Some(p.border), false, false);
-        let (s1, s2, s3) = (st.clone(), st.clone(), st);
-        shaped(&t.shape, outer)
-            .w_full()
-            .flex()
-            .flex_col()
-            .overflow_hidden()
-            .font_family(first_family(t.typography.body))
-            .text_size(px(t.typography.size_md))
-            .on_mouse_move(move |e, _, cx| {
-                let Some((col, x0, w0)) = s1.read(cx).resize else {
-                    return;
-                };
-                let w = resized(w0, f32::from(e.position.x) - x0, MIN_COL);
-                s1.update(cx, |s, cx| {
-                    if let Some(slot) = s.widths.get_mut(col) {
-                        *slot = w;
-                    }
-                    cx.notify();
-                });
-            })
-            .on_mouse_up(MouseButton::Left, move |_, _, cx| {
-                s2.update(cx, |s, cx| {
-                    if s.resize.take().is_some() {
-                        cx.notify();
-                    }
-                })
-            })
-            .on_mouse_up_out(MouseButton::Left, move |_, _, cx| {
-                s3.update(cx, |s, cx| {
-                    if s.resize.take().is_some() {
-                        cx.notify();
-                    }
-                })
-            })
-            .child(head)
-            .child(body)
-            .child(footer)
+        footer
     }
 }
 
