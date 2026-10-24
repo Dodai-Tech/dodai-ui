@@ -14,8 +14,8 @@ categories             = ["graphics", "gui"]
 [features]
 default = []
 # The same blur on the GPU (wgpu); `Blurrer` falls back to the CPU without a real adapter.
-gpu = ["dep:wgpu", "dep:dodai-gpu"]
+gpu = ["dep:wgpu", "dep:pollster"]
 
 [dependencies]
 wgpu     = { version = "30.0.1", optional = true, default-features = false, features = ["std", "parking_lot", "wgsl", "metal", "vulkan", "dx12"] }
-dodai-gpu = { workspace = true, optional = true }
+pollster = { version = "1", optional = true }
