@@ -1,0 +1,325 @@
+//! [`BarChart`].
+
+use crate::charts::*;
+use crate::paint::{shaped, ShapeStyle};
+use crate::panel::DodaiTooltip;
+use crate::{hsla, theme_of};
+use gpui::{
+    div, px, relative, App, InteractiveElement, IntoElement, ParentElement, SharedString,
+    StatefulInteractiveElement, Styled, Window,
+};
+use std::rc::Rc;
+
+// ─────────────────────────────── BarChart ───────────────────────────────
+
+/// Bar chart: vertical or horizontal, grouped or stacked.
+#[derive(IntoElement)]
+pub struct BarChart {
+    id: SharedString,
+    series: Vec<Series>,
+    labels: Vec<SharedString>,
+    height: f32,
+    horizontal: bool,
+    stacked: bool,
+    legend: bool,
+    y_max: Option<f32>,
+    fmt: Option<NumFmt>,
+    value_labels: bool,
+    bar_width: f32,
+    title: Option<SharedString>,
+    corners: Option<dodai_core::Corners>,
+}
+
+crate::corners_setter!(BarChart);
+
+impl BarChart {
+    /// Create a new [`BarChart`].
+    pub fn new(id: impl Into<SharedString>, series: impl IntoIterator<Item = Series>) -> Self {
+        Self {
+            corners: None,
+            id: id.into(),
+            series: series.into_iter().collect(),
+            labels: Vec::new(),
+            height: 200.0,
+            horizontal: false,
+            stacked: false,
+            legend: true,
+            y_max: None,
+            fmt: None,
+            value_labels: false,
+            bar_width: 32.0,
+            title: None,
+        }
+    }
+    /// Fix the value-axis maximum (default: fit data).
+    pub fn max(mut self, m: f32) -> Self {
+        self.y_max = Some(m);
+        self
+    }
+    /// Custom number formatter for axis labels, tooltips and value labels.
+    pub fn format(mut self, f: impl Fn(f32) -> String + 'static) -> Self {
+        self.fmt = Some(Rc::new(f));
+        self
+    }
+    /// Print the value above each bar (vertical, grouped only).
+    pub fn value_labels(mut self, v: bool) -> Self {
+        self.value_labels = v;
+        self
+    }
+    /// Maximum bar thickness in px (default 32).
+    pub fn bar_width(mut self, w: f32) -> Self {
+        self.bar_width = w;
+        self
+    }
+    /// Title above the chart.
+    pub fn title(mut self, t: impl Into<SharedString>) -> Self {
+        self.title = Some(t.into());
+        self
+    }
+    /// Labels, one per item.
+    pub fn labels<S: Into<SharedString>>(mut self, l: impl IntoIterator<Item = S>) -> Self {
+        self.labels = l.into_iter().map(Into::into).collect();
+        self
+    }
+    /// Height in px.
+    pub fn height(mut self, h: f32) -> Self {
+        self.height = h;
+        self
+    }
+    /// Lay out horizontally.
+    pub fn horizontal(mut self, h: bool) -> Self {
+        self.horizontal = h;
+        self
+    }
+    /// Stack the series instead of grouping them.
+    pub fn stacked(mut self, s: bool) -> Self {
+        self.stacked = s;
+        self
+    }
+    /// Show or hide the legend.
+    pub fn legend(mut self, l: bool) -> Self {
+        self.legend = l;
+        self
+    }
+}
+
+/// Max of per-category totals (stacked) or single values (grouped). Pure.
+pub fn bar_max(series: &[Series], stacked: bool) -> f32 {
+    let n = series.iter().map(|s| s.values.len()).max().unwrap_or(0);
+    (0..n)
+        .map(|i| {
+            let it = series
+                .iter()
+                .map(|s| s.values.get(i).copied().unwrap_or(0.0).max(0.0));
+            if stacked {
+                it.sum::<f32>()
+            } else {
+                it.fold(0.0, f32::max)
+            }
+        })
+        .fold(0.0, f32::max)
+}
+
+impl BarChart {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
+        let g = crate::motion::grow(window, cx, "BarChart");
+        let ticks = nice_ticks(
+            0.0,
+            self.y_max
+                .unwrap_or_else(|| bar_max(&self.series, self.stacked)),
+            4,
+        );
+        let top = *ticks.last().unwrap_or(&1.0);
+        let n = self
+            .series
+            .iter()
+            .map(|s| s.values.len())
+            .max()
+            .unwrap_or(0);
+        let h = self.horizontal;
+        let grid = hsla(t.palette.border);
+
+        let bar = |si: usize, i: usize, v: f32, frac: f32| {
+            let s = &self.series[si];
+            let style =
+                ShapeStyle::from_tokens(&t, Some(series_color(&t, s, si)), None, false, false);
+            let label = self.labels.get(i).cloned().unwrap_or_default();
+            let el = div()
+                .id((SharedString::from(format!("{}-{si}-{i}", self.id)), i))
+                .tooltip(DodaiTooltip::text(format!(
+                    "{} {label}: {}",
+                    s.name,
+                    fmt_with(&self.fmt, v)
+                )))
+                .child(shaped(&t.shape, style).size_full());
+            if h {
+                el.h_full().w(relative(frac))
+            } else {
+                el.w_full().h(relative(frac))
+            }
+        };
+
+        let bar_top = top / g.max(1e-3);
+        let mut cats = div().flex().size_full();
+        cats = if h { cats.flex_col() } else { cats };
+        for i in 0..n {
+            let mut cell = div()
+                .flex_1()
+                .size_full()
+                .flex()
+                .gap(px(t.spacing.xs / 2.0))
+                .p(px(t.spacing.xs));
+            if h {
+                // Bars grow right; stacked bars lay segments left→right.
+                cell = cell.items_center();
+                if self.stacked {
+                    let mut stack = div().h(px(t.sizes().chart_bar)).flex();
+                    for (si, s) in self.series.iter().enumerate() {
+                        let v = s.values.get(i).copied().unwrap_or(0.0).max(0.0);
+                        stack = stack.child(bar(si, i, v, v / bar_top.max(f32::EPSILON)));
+                    }
+                    cell = cell.child(
+                        div()
+                            .h_full()
+                            .w_full()
+                            .flex()
+                            .items_center()
+                            .child(stack.w_full()),
+                    );
+                    cell = cell.flex_col();
+                } else {
+                    cell = cell.flex_col().justify_center();
+                    for (si, s) in self.series.iter().enumerate() {
+                        let v = s.values.get(i).copied().unwrap_or(0.0).max(0.0);
+                        cell = cell.child(div().w_full().h(px(t.sizes().chart_cell)).child(bar(
+                            si,
+                            i,
+                            v,
+                            norm(v, 0.0, bar_top),
+                        )));
+                    }
+                }
+            } else {
+                cell = cell.items_end().justify_center();
+                if self.stacked {
+                    let total: f32 = self
+                        .series
+                        .iter()
+                        .map(|s| s.values.get(i).copied().unwrap_or(0.0).max(0.0))
+                        .sum();
+                    let mut stack = div()
+                        .h(relative(norm(total, 0.0, bar_top)))
+                        .w_full()
+                        .max_w(px(self.bar_width * 1.5))
+                        .flex()
+                        .flex_col_reverse();
+                    for (si, s) in self.series.iter().enumerate() {
+                        let v = s.values.get(i).copied().unwrap_or(0.0).max(0.0);
+                        stack = stack.child(
+                            bar(si, i, v, v / total.max(f32::EPSILON))
+                                .h(relative(v / total.max(f32::EPSILON))),
+                        );
+                    }
+                    cell = cell.child(stack);
+                } else {
+                    for (si, s) in self.series.iter().enumerate() {
+                        let v = s.values.get(i).copied().unwrap_or(0.0).max(0.0);
+                        cell = cell.child(
+                            div()
+                                .h_full()
+                                .flex_1()
+                                .max_w(px(self.bar_width))
+                                .flex()
+                                .flex_col()
+                                .justify_end()
+                                .children(self.value_labels.then(|| {
+                                    label_style(&t, div())
+                                        .flex()
+                                        .justify_center()
+                                        .child(fmt_with(&self.fmt, v))
+                                }))
+                                .child(
+                                    div()
+                                        .w_full()
+                                        .h(relative(norm(v, 0.0, bar_top)))
+                                        .child(bar(si, i, v, 1.0)),
+                                ),
+                        );
+                    }
+                }
+            }
+            cats = cats.child(cell);
+        }
+
+        // Gridlines behind the bars (vertical orientation: horizontal lines).
+        let grid_fracs: Vec<f32> = ticks.iter().map(|v| norm(*v, 0.0, top)).collect();
+        let mut plot = div().relative().w_full().h(px(self.height));
+        for f in &grid_fracs {
+            let line = div().absolute().bg(grid);
+            plot = plot.child(if h {
+                line.left(relative(*f))
+                    .top_0()
+                    .h_full()
+                    .w(px(t.sizes().hairline))
+            } else {
+                line.bottom(relative(*f))
+                    .left_0()
+                    .w_full()
+                    .h(px(t.sizes().hairline))
+            });
+        }
+        plot = plot.child(cats);
+
+        let labels: Vec<SharedString> = (0..n)
+            .map(|i| self.labels.get(i).cloned().unwrap_or_default())
+            .collect();
+        let body = if h {
+            let ycol = label_style(&t, div())
+                .w(px(t.sizes().axis_gutter_lg))
+                .h(px(self.height))
+                .flex()
+                .flex_col()
+                .children(labels.into_iter().map(|l| {
+                    div()
+                        .flex_1()
+                        .flex()
+                        .items_center()
+                        .justify_end()
+                        .pr(px(t.spacing.xs))
+                        .child(l)
+                }));
+            let xrow = label_style(&t, div())
+                .ml(px(t.sizes().axis_gutter_lg))
+                .flex()
+                .justify_between()
+                .children(ticks.iter().map(|v| div().child(fmt_with(&self.fmt, *v))));
+            div()
+                .flex()
+                .flex_col()
+                .w_full()
+                .child(div().flex().child(ycol).child(div().flex_1().child(plot)))
+                .child(xrow)
+        } else {
+            framed(
+                &t,
+                ticks.iter().map(|v| fmt_with(&self.fmt, *v)).collect(),
+                labels,
+                plot,
+            )
+        };
+        let mut root = div()
+            .flex()
+            .flex_col()
+            .gap(px(t.spacing.sm))
+            .w_full()
+            .child(body);
+        if self.legend && self.series.len() > 1 {
+            root = root.child(Legend::of_series(&t, &self.series));
+        }
+        titled(&t, self.title.clone(), root)
+    }
+}
+
+crate::entry_render!(BarChart);

@@ -166,11 +166,15 @@ pub mod carousel;
 #[cfg(feature = "charts")]
 pub mod charts;
 #[cfg(feature = "charts")]
+pub mod charts_bar;
+#[cfg(feature = "charts")]
 pub mod charts_distribution;
 #[cfg(feature = "charts")]
 pub mod charts_flow;
 #[cfg(feature = "charts")]
 pub mod charts_grid;
+#[cfg(feature = "charts")]
+pub mod charts_line;
 #[cfg(feature = "charts")]
 pub mod charts_market;
 #[cfg(feature = "charts")]
@@ -179,6 +183,8 @@ pub mod charts_part_whole;
 pub mod charts_pie;
 #[cfg(feature = "charts")]
 pub mod charts_radial;
+#[cfg(feature = "charts")]
+pub mod charts_spark;
 #[cfg(feature = "charts")]
 pub mod charts_trend;
 #[cfg(feature = "components")]

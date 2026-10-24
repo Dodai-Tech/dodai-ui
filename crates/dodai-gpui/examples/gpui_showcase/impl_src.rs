@@ -23,6 +23,9 @@ const FILES: &[(&str, &str)] = &[
     ),
     ("charts_trend.rs", include_str!("../../src/charts_trend.rs")),
     ("charts.rs", include_str!("../../src/charts.rs")),
+    ("charts_bar.rs", include_str!("../../src/charts_bar.rs")),
+    ("charts_line.rs", include_str!("../../src/charts_line.rs")),
+    ("charts_spark.rs", include_str!("../../src/charts_spark.rs")),
     ("charts_pie.rs", include_str!("../../src/charts_pie.rs")),
     (
         "charts_radial.rs",
