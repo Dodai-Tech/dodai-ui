@@ -158,6 +158,211 @@ impl PieChart {
     }
 }
 
+/// Where one slice sits: centre, radii, and its edges before and after the constant-width gap.
+#[derive(Clone, Copy)]
+struct SliceGeo {
+    c: f32,
+    r: f32,
+    hole: f32,
+    /// Half the gap between slices, px.
+    half: f32,
+    edges: (f32, f32),
+    trimmed: (f32, f32),
+}
+
+/// How one slice is drawn.
+#[derive(Clone, Copy)]
+struct SliceLook {
+    col: Hsla,
+    ring: Hsla,
+    selected: bool,
+    glow: Option<f32>,
+    hud: bool,
+    soft: bool,
+}
+
+/// Outer tick scale and dashed inner reference ring of a HUD donut; only the part of the turn
+/// the arc covers is decorated.
+fn hud_scale(
+    w: &mut Window,
+    origin: gpui::Point<Pixels>,
+    c: f32,
+    r: f32,
+    hole: f32,
+    (start, sweep): (f32, f32),
+    (guide_col, scale_col): (Hsla, Hsla),
+) {
+    // Outer tick scale + dashed inner reference ring.
+    let (mut minor, mut major) = (Vec::new(), Vec::new());
+    // Only decorate the part of the turn the arc covers.
+    let within = |u: f32| ((u - start).rem_euclid(1.0)) <= sweep + 0.001;
+    for k in 0..72 {
+        let u = k as f32 / 72.0;
+        if !within(u) {
+            continue;
+        }
+        let long = k % 6 == 0;
+        let seg = vec![
+            polar(c, c, r + 4.0, u),
+            polar(c, c, r + if long { 11.0 } else { 7.0 }, u),
+        ];
+        if long {
+            major.push(seg);
+        } else {
+            minor.push(seg);
+        }
+    }
+    stroke_batch(w, origin, &minor, 1.0, guide_col, false);
+    stroke_batch(w, origin, &major, 1.5, scale_col, false);
+    let dashes: Vec<Vec<(f32, f32)>> = (0..48)
+        .filter(|k| within(*k as f32 / 48.0))
+        .map(|k| {
+            let u = k as f32 / 48.0;
+            turn_arc(c, c, r * hole - 6.0, u, u + 0.01)
+        })
+        .collect();
+    stroke_batch(w, origin, &dashes, 1.0, scale_col, false);
+}
+
+/// Faint reference rings behind a rose chart.
+fn rose_guides(w: &mut Window, origin: gpui::Point<Pixels>, c: f32, r: f32, col: Hsla) {
+    for f in [0.38, 0.69, 1.0] {
+        stroke(w, origin, &turn_arc(c, c, r * f, 0.0, 1.0), 1.0, col, true);
+    }
+}
+
+/// A segmented-ring slice: small filled cells with gaps between them.
+fn segmented_slice(w: &mut Window, origin: gpui::Point<Pixels>, geo: &SliceGeo, look: &SliceLook) {
+    let SliceGeo {
+        c,
+        r,
+        hole,
+        trimmed: (ao, zo),
+        ..
+    } = *geo;
+    let SliceLook {
+        col,
+        ring,
+        selected,
+        soft,
+        ..
+    } = *look;
+    let r_in = r * hole;
+    let per_turn = if soft { 16.0 } else { 36.0 };
+    let n = (((zo - ao) * per_turn).ceil() as usize).max(1);
+    let g = if soft { 0.012 } else { 0.004 };
+    let mut cells = Vec::new();
+    for k in 0..n {
+        let c0 = ao + (zo - ao) * k as f32 / n as f32 + g / 2.0;
+        let c1 = ao + (zo - ao) * (k + 1) as f32 / n as f32 - g / 2.0;
+        if c1 <= c0 {
+            continue;
+        }
+        let mut p = turn_arc(c, c, r, c0, c1);
+        let mut inner = turn_arc(c, c, r_in, c0, c1);
+        inner.reverse();
+        p.extend(inner);
+        cells.push(p);
+    }
+    fill_batch(w, origin, &cells, col);
+    if selected {
+        stroke(
+            w,
+            origin,
+            &turn_arc(c, c, r + 2.0, ao, zo),
+            2.0,
+            ring,
+            false,
+        );
+    }
+}
+
+/// A pie slice (no hole): convex wedges meeting at the gap-offset apex.
+fn wedge_slice(w: &mut Window, origin: gpui::Point<Pixels>, geo: &SliceGeo, look: &SliceLook) {
+    let SliceGeo {
+        c,
+        r,
+        half,
+        edges: (a, z),
+        trimmed: (ao, zo),
+        ..
+    } = *geo;
+    let SliceLook {
+        col,
+        ring,
+        selected,
+        ..
+    } = *look;
+    let theta = (z - a) * std::f32::consts::TAU;
+    let d = if half > 0.0 {
+        half / (theta / 2.0).sin().max(0.05)
+    } else {
+        0.0
+    };
+    let (ax, ay) = polar(c, c, d, (a + z) / 2.0);
+    // Convex wedges (<= half a turn) tessellate without
+    // holes; fewer pieces means fewer AA seams.
+    let n = (((zo - ao) * 2.0).ceil() as usize).max(1);
+    for k in 0..n {
+        let w0 = ao + (zo - ao) * k as f32 / n as f32;
+        let w1 = ao + (zo - ao) * (k + 1) as f32 / n as f32;
+        let mut p = turn_arc(c, c, r, w0, if k + 1 == n { w1 } else { w1 + 0.0015 });
+        p.push((ax, ay));
+        fill(w, origin, &p, col);
+    }
+    if selected {
+        let mut o = turn_arc(c, c, r, ao, zo);
+        o.push((ax, ay));
+        stroke(w, origin, &o, 1.5, ring, true);
+    }
+}
+
+/// A donut slice: annular sectors as small filled quads (thick strokes leave mitre seams).
+fn annular_slice(w: &mut Window, origin: gpui::Point<Pixels>, geo: &SliceGeo, look: &SliceLook) {
+    let SliceGeo {
+        c,
+        r,
+        hole,
+        half,
+        edges: (a, z),
+        trimmed: (ao, zo),
+    } = *geo;
+    let SliceLook {
+        col,
+        ring,
+        selected,
+        glow,
+        hud,
+        ..
+    } = *look;
+    let delta = |rad: f32| (half / rad).clamp(0.0, 1.0).asin() / std::f32::consts::TAU;
+    // Annular sectors as small filled quads: thick strokes
+    // leave mitre artefacts and seams, fills do not.
+    let r_in = r * hole;
+    let (ai, zi) = (a + delta(r_in), z - delta(r_in));
+    let n = (((zo - ao) * 24.0).ceil() as usize).max(1);
+    for k in 0..n {
+        let f0 = k as f32 / n as f32;
+        let f1 = (k + 1) as f32 / n as f32;
+        let e = if k + 1 == n { 0.0 } else { 0.001 };
+        let mut p = turn_arc(c, c, r, ao + (zo - ao) * f0, ao + (zo - ao) * f1 + e);
+        let mut inner = turn_arc(c, c, r_in, ai + (zi - ai) * f0, ai + (zi - ai) * f1 + e);
+        inner.reverse();
+        p.extend(inner);
+        fill(w, origin, &p, col);
+    }
+    if hud {
+        glow_stroke(w, origin, &turn_arc(c, c, r + 2.0, ao, zo), 1.5, col, glow);
+    }
+    if selected {
+        let mut o = turn_arc(c, c, r, ao, zo);
+        let mut inner = turn_arc(c, c, r_in, ai, zi);
+        inner.reverse();
+        o.extend(inner);
+        stroke(w, origin, &o, 1.5, ring, true);
+    }
+}
+
 impl PieChart {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
@@ -246,48 +451,18 @@ impl PieChart {
                 let r = size / 2.0 - 1.0 - reserve;
                 let c = size / 2.0;
                 if hud {
-                    // Outer tick scale + dashed inner reference ring.
-                    let (mut minor, mut major) = (Vec::new(), Vec::new());
-                    // Only decorate the part of the turn the arc covers.
-                    let within = |u: f32| ((u - start).rem_euclid(1.0)) <= sweep + 0.001;
-                    for k in 0..72 {
-                        let u = k as f32 / 72.0;
-                        if !within(u) {
-                            continue;
-                        }
-                        let long = k % 6 == 0;
-                        let seg = vec![
-                            polar(c, c, r + 4.0, u),
-                            polar(c, c, r + if long { 11.0 } else { 7.0 }, u),
-                        ];
-                        if long {
-                            major.push(seg);
-                        } else {
-                            minor.push(seg);
-                        }
-                    }
-                    stroke_batch(w, b.origin, &minor, 1.0, guide_col, false);
-                    stroke_batch(w, b.origin, &major, 1.5, scale_col, false);
-                    let dashes: Vec<Vec<(f32, f32)>> = (0..48)
-                        .filter(|k| within(*k as f32 / 48.0))
-                        .map(|k| {
-                            let u = k as f32 / 48.0;
-                            turn_arc(c, c, r * hole - 6.0, u, u + 0.01)
-                        })
-                        .collect();
-                    stroke_batch(w, b.origin, &dashes, 1.0, scale_col, false);
+                    hud_scale(
+                        w,
+                        b.origin,
+                        c,
+                        r,
+                        hole,
+                        (start, sweep),
+                        (guide_col, scale_col),
+                    );
                 }
                 if style == PieStyle::Rose {
-                    for f in [0.38, 0.69, 1.0] {
-                        stroke(
-                            w,
-                            b.origin,
-                            &turn_arc(c, c, r * f, 0.0, 1.0),
-                            1.0,
-                            guide_col,
-                            true,
-                        );
-                    }
+                    rose_guides(w, b.origin, c, r, guide_col);
                 }
                 for (i, ((a, z), col)) in fr.iter().zip(&cols).enumerate() {
                     let r = r * rfac[i];
@@ -324,88 +499,26 @@ impl PieChart {
                     if zo <= ao {
                         continue;
                     }
-                    if style == PieStyle::Segmented {
-                        let r_in = r * hole;
-                        let per_turn = if soft { 16.0 } else { 36.0 };
-                        let n = (((zo - ao) * per_turn).ceil() as usize).max(1);
-                        let g = if soft { 0.012 } else { 0.004 };
-                        let mut cells = Vec::new();
-                        for k in 0..n {
-                            let c0 = ao + (zo - ao) * k as f32 / n as f32 + g / 2.0;
-                            let c1 = ao + (zo - ao) * (k + 1) as f32 / n as f32 - g / 2.0;
-                            if c1 <= c0 {
-                                continue;
-                            }
-                            let mut p = turn_arc(c, c, r, c0, c1);
-                            let mut inner = turn_arc(c, c, r_in, c0, c1);
-                            inner.reverse();
-                            p.extend(inner);
-                            cells.push(p);
-                        }
-                        fill_batch(w, origin, &cells, *col);
-                        if sel == Some(i) {
-                            stroke(
-                                w,
-                                origin,
-                                &turn_arc(c, c, r + 2.0, ao, zo),
-                                2.0,
-                                ring,
-                                false,
-                            );
-                        }
-                        continue;
-                    }
-                    if hole <= 0.0 {
-                        let theta = (z - a) * std::f32::consts::TAU;
-                        let d = if half > 0.0 {
-                            half / (theta / 2.0).sin().max(0.05)
-                        } else {
-                            0.0
-                        };
-                        let (ax, ay) = polar(c, c, d, (a + z) / 2.0);
-                        // Convex wedges (<= half a turn) tessellate without
-                        // holes; fewer pieces means fewer AA seams.
-                        let n = (((zo - ao) * 2.0).ceil() as usize).max(1);
-                        for k in 0..n {
-                            let w0 = ao + (zo - ao) * k as f32 / n as f32;
-                            let w1 = ao + (zo - ao) * (k + 1) as f32 / n as f32;
-                            let mut p =
-                                turn_arc(c, c, r, w0, if k + 1 == n { w1 } else { w1 + 0.0015 });
-                            p.push((ax, ay));
-                            fill(w, origin, &p, *col);
-                        }
-                        if sel == Some(i) {
-                            let mut o = turn_arc(c, c, r, ao, zo);
-                            o.push((ax, ay));
-                            stroke(w, origin, &o, 1.5, ring, true);
-                        }
-                        continue;
-                    }
-                    // Annular sectors as small filled quads: thick strokes
-                    // leave mitre artefacts and seams, fills do not.
-                    let r_in = r * hole;
-                    let (ai, zi) = (a + delta(r_in), z - delta(r_in));
-                    let n = (((zo - ao) * 24.0).ceil() as usize).max(1);
-                    for k in 0..n {
-                        let f0 = k as f32 / n as f32;
-                        let f1 = (k + 1) as f32 / n as f32;
-                        let e = if k + 1 == n { 0.0 } else { 0.001 };
-                        let mut p = turn_arc(c, c, r, ao + (zo - ao) * f0, ao + (zo - ao) * f1 + e);
-                        let mut inner =
-                            turn_arc(c, c, r_in, ai + (zi - ai) * f0, ai + (zi - ai) * f1 + e);
-                        inner.reverse();
-                        p.extend(inner);
-                        fill(w, origin, &p, *col);
-                    }
-                    if hud {
-                        glow_stroke(w, origin, &turn_arc(c, c, r + 2.0, ao, zo), 1.5, *col, glow);
-                    }
-                    if sel == Some(i) {
-                        let mut o = turn_arc(c, c, r, ao, zo);
-                        let mut inner = turn_arc(c, c, r_in, ai, zi);
-                        inner.reverse();
-                        o.extend(inner);
-                        stroke(w, origin, &o, 1.5, ring, true);
+                    let geo = SliceGeo {
+                        c,
+                        r,
+                        hole,
+                        half,
+                        edges: (a, z),
+                        trimmed: (ao, zo),
+                    };
+                    let look = SliceLook {
+                        col: *col,
+                        ring,
+                        selected: sel == Some(i),
+                        glow,
+                        hud,
+                        soft,
+                    };
+                    match (style, hole <= 0.0) {
+                        (PieStyle::Segmented, _) => segmented_slice(w, origin, &geo, &look),
+                        (_, true) => wedge_slice(w, origin, &geo, &look),
+                        _ => annular_slice(w, origin, &geo, &look),
                     }
                 }
             },
