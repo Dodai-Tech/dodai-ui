@@ -1,20 +1,10 @@
-//! Pure token → Freya-attribute mapping. No Freya types, no window: everything
-//! here returns strings / numbers that the components feed into `rsx!`.
+//! Pure token → paint mapping. No Freya types, no window: everything here returns
+//! plain numbers and [`Color`]s that [`crate::paint`] turns into Freya values.
 //!
 //! Nothing in this module looks at a theme id or name; shape, glow, hard shadow
 //! and label casing are all read from [`Theme`] tokens.
 
 use dodai_core::{ButtonVariant, Color, ControlState, ShapeKind, Theme, Tone};
-
-/// Token colour → Freya colour string. Alpha is always emitted as `0..=255`
-/// (Freya reads `0..1` floats ambiguously for values like `1`).
-pub fn css(c: Color) -> String {
-    if c.a == 255 {
-        format!("rgb({}, {}, {})", c.r, c.g, c.b)
-    } else {
-        format!("rgb({}, {}, {}, {})", c.r, c.g, c.b, c.a)
-    }
-}
 
 /// Everything needed to paint one themed box.
 #[derive(Debug, Clone, PartialEq)]
@@ -57,43 +47,28 @@ impl ShapeStyle {
         self.kind == ShapeKind::Chamfered
     }
 
-    /// Freya `background` value.
-    pub fn background(&self) -> String {
-        self.fill.map_or_else(|| "transparent".into(), css)
-    }
-
-    /// Freya `border` value (rect path only; chamfered boxes stroke the polygon).
-    pub fn border(&self) -> String {
-        match self.stroke {
-            Some(c) if self.stroke_width > 0.0 => {
-                format!("{} inner {}", self.stroke_width, css(c))
-            }
-            _ => "none".into(),
-        }
-    }
-
-    /// Freya `corner_radius` value. Only `Rounded` themes round.
-    pub fn corner_radius(&self) -> String {
+    /// Corner radius in px. Only `Rounded` themes round.
+    pub fn corner_radius(&self) -> f32 {
         match self.kind {
-            ShapeKind::Rounded => format!("{}", self.radius),
-            _ => "0".into(),
+            ShapeKind::Rounded => self.radius,
+            _ => 0.0,
         }
     }
 
-    /// Freya `shadow` value (rect path): glow + hard shadow, comma separated.
-    pub fn shadow(&self) -> String {
-        let mut v = Vec::new();
+    /// Border (colour, width) for the rect path; chamfered boxes stroke the polygon.
+    pub fn border(&self) -> Option<(Color, f32)> {
+        self.stroke
+            .filter(|_| self.stroke_width > 0.0)
+            .map(|c| (c, self.stroke_width))
+    }
+
+    /// The single shadow Freya can paint on a rect: the hard (offset) shadow when the
+    /// theme has one, otherwise the glow. `(x, y, blur, colour)`.
+    pub fn shadow(&self) -> Option<(f32, f32, f32, Color)> {
         if let Some((o, c)) = self.hard_shadow {
-            v.push(format!("{o} {o} 0 0 {}", css(c)));
+            return Some((o, o, 0.0, c));
         }
-        if let Some((c, r)) = self.glow {
-            v.push(format!("0 0 {r} 0 {}", css(c)));
-        }
-        if v.is_empty() {
-            "none".into()
-        } else {
-            v.join(", ")
-        }
+        self.glow.map(|(c, r)| (0.0, 0.0, r, c))
     }
 
     /// Padding (px) the SVG needs around the box so glow/shadow are not clipped.
@@ -276,7 +251,8 @@ pub struct TextStyle {
     pub color: Color,
     pub uppercase: bool,
     pub letter_spacing: f32,
-    pub weight: &'static str,
+    /// CSS-style weight: 400 regular, 700 bold.
+    pub weight: u16,
 }
 
 impl TextStyle {
@@ -302,7 +278,7 @@ pub fn text_style(theme: &Theme, role: TextRole, size: Option<f32>) -> TextStyle
             color: p.text,
             uppercase: upper,
             letter_spacing: ty.label_tracking,
-            weight: "bold",
+            weight: 700,
         },
         TextRole::Label => TextStyle {
             family: ty.body,
@@ -310,7 +286,7 @@ pub fn text_style(theme: &Theme, role: TextRole, size: Option<f32>) -> TextStyle
             color: p.text,
             uppercase: upper,
             letter_spacing: ty.label_tracking,
-            weight: "normal",
+            weight: 400,
         },
         TextRole::Muted => TextStyle {
             family: ty.body,
@@ -318,7 +294,7 @@ pub fn text_style(theme: &Theme, role: TextRole, size: Option<f32>) -> TextStyle
             color: p.text_muted,
             uppercase: false,
             letter_spacing: 0.0,
-            weight: "normal",
+            weight: 400,
         },
         TextRole::Mono => TextStyle {
             family: ty.mono,
@@ -326,7 +302,7 @@ pub fn text_style(theme: &Theme, role: TextRole, size: Option<f32>) -> TextStyle
             color: p.text,
             uppercase: false,
             letter_spacing: 0.0,
-            weight: "normal",
+            weight: 400,
         },
     }
 }
@@ -442,21 +418,12 @@ mod tests {
     use dodai::themes;
 
     #[test]
-    fn css_alpha_is_u8() {
-        assert_eq!(css(Color::hex(0x102030)), "rgb(16, 32, 48)");
-        assert_eq!(
-            css(Color::hex(0x102030).with_alpha(0.5)),
-            "rgb(16, 32, 48, 128)"
-        );
-    }
-
-    #[test]
     fn rounded_theme_uses_radius_no_effects() {
         let t = light_rounded();
         let (s, _) = button_style(&t, ButtonVariant::Primary, ControlState::Hovered);
         assert_eq!(s.kind, ShapeKind::Rounded);
-        assert_eq!(s.corner_radius(), "8");
-        assert_eq!(s.shadow(), "none");
+        assert_eq!(s.corner_radius(), 8.0);
+        assert_eq!(s.shadow(), None);
         assert!(!s.is_chamfered());
     }
 
@@ -465,10 +432,13 @@ mod tests {
         let t = square();
         let (s, _) = button_style(&t, ButtonVariant::Primary, ControlState::Idle);
         assert_eq!(s.kind, ShapeKind::Square);
-        assert_eq!(s.corner_radius(), "0");
-        assert!(s.shadow().starts_with("3 3 0 0 "));
+        assert_eq!(s.corner_radius(), 0.0);
+        assert_eq!(
+            s.shadow().map(|(x, y, b, _)| (x, y, b)),
+            Some((3.0, 3.0, 0.0))
+        );
         let (o, _) = button_style(&t, ButtonVariant::Outline, ControlState::Idle);
-        assert_eq!(o.border(), format!("2 inner {}", css(o.stroke.unwrap())));
+        assert_eq!(o.border(), Some((o.stroke.unwrap(), 2.0)));
     }
 
     #[test]

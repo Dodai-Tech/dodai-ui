@@ -103,7 +103,7 @@ pub fn resolve(theme: &Theme, s: &Surface) -> ResolvedSurface {
 
 /// Signed distance (px, positive inside) from `(x, y)` to the edge of a
 /// `w`×`h` box with cuts of size `chamfer` at `corners`. Rust mirror of
-/// `shaders/chamfer.wgsl`; used to test the shader maths against
+/// `shaders/chamfer.wesl`; used to test the shader maths against
 /// `Shape::outline`.
 pub fn chamfer_distance(x: f32, y: f32, w: f32, h: f32, chamfer: f32, corners: Corners) -> f32 {
     const K: f32 = std::f32::consts::FRAC_1_SQRT_2;
@@ -188,15 +188,16 @@ pub(crate) fn apply_surfaces(
                         corners.bottom_left as u8 as f32,
                     ),
                 };
-                match mat.and_then(|h| materials.get_mut(&h.0)) {
-                    Some(existing) => {
+                let found = mat.is_some_and(|h| {
+                    materials.get_mut(&h.0).is_some_and(|mut existing| {
                         if *existing != m {
-                            *existing = m;
+                            *existing = m.clone();
                         }
-                    }
-                    None => {
-                        commands.entity(e).insert(MaterialNode(materials.add(m)));
-                    }
+                        true
+                    })
+                });
+                if !found {
+                    commands.entity(e).insert(MaterialNode(materials.add(m)));
                 }
             }
         }

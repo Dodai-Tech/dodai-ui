@@ -47,7 +47,7 @@ impl Widget for Icon {
         let (rect, resp) = ui.allocate_exact_size(vec2(self.size, self.size), Sense::hover());
         let px = (self.size * ui.ctx().pixels_per_point()).round().max(8.0) as u32;
         let set = t.look().icons;
-        let key = egui::Id::new(("dodai-egui/icon", self.id, set as u8, self.filled, px));
+        let key = egui::Id::unique(("dodai-egui/icon", self.id, set as u8, self.filled, px));
         let tex: Option<TextureHandle> = ui.ctx().data_mut(|d| d.get_temp(key));
         let tex = match tex {
             Some(t) => Some(t),

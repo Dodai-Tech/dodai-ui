@@ -108,7 +108,7 @@ impl Widget for TextInput<'_> {
                 ui.centered_and_justified(|ui| {
                     ui.add(
                         TextEdit::singleline(self.text)
-                            .frame(false)
+                            .frame(egui::Frame::NONE)
                             .text_color(color32(tok0.text))
                             .hint_text(RichText::new(&self.hint).color(color32(tok0.placeholder))),
                     )

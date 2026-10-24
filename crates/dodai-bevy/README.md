@@ -1,6 +1,6 @@
 # dodai-bevy
 
-[Bevy](https://bevy.org) 0.18 `bevy_ui` adapter for the **Dodai UI** design system.
+[Bevy](https://bevy.org) 0.20 `bevy_ui` adapter for the **Dodai UI** design system.
 All visuals derive from `dodai-core` tokens — shapes follow `ShapeKind`
 (square / rounded / chamfered via `Shape::outline`-equivalent shader maths), glow
 follows `Effects` (`Theme::with_glow_intensity`), text case follows

@@ -17,32 +17,66 @@ use crate::widgets::*;
 #[derive(Resource, Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct FocusedInput(pub Option<Entity>);
 
+/// Picking → [`ControlPointer`]: over/out/press/release keep the state of the control under the cursor.
+pub(crate) fn pointer_over(
+    over: On<bevy::picking::events::PointerOver>,
+    mut q: Query<&mut ControlPointer>,
+) {
+    if let Ok(mut p) = q.get_mut(over.entity) {
+        upd(&mut *p, ControlPointer::Hovered);
+    }
+}
+pub(crate) fn pointer_out(
+    out: On<bevy::picking::events::PointerOut>,
+    mut q: Query<&mut ControlPointer>,
+) {
+    if let Ok(mut p) = q.get_mut(out.entity) {
+        upd(&mut *p, ControlPointer::None);
+    }
+}
+pub(crate) fn pointer_press(
+    press: On<bevy::picking::events::PointerPress>,
+    mut q: Query<&mut ControlPointer>,
+) {
+    if let Ok(mut p) = q.get_mut(press.entity) {
+        upd(&mut *p, ControlPointer::Pressed);
+    }
+}
+pub(crate) fn pointer_release(
+    release: On<bevy::picking::events::PointerRelease>,
+    mut q: Query<&mut ControlPointer>,
+) {
+    if let Ok(mut p) = q.get_mut(release.entity) {
+        upd(&mut *p, ControlPointer::Hovered);
+    }
+}
+
 fn upd<T: PartialEq>(slot: &mut T, v: T) {
     if *slot != v {
         *slot = v;
     }
 }
 
-fn cs(i: &Interaction, disabled: bool, focused: bool) -> ControlState {
+fn cs(i: &ControlPointer, disabled: bool, focused: bool) -> ControlState {
     if disabled {
         return ControlState::Disabled;
     }
     match i {
-        Interaction::Pressed => ControlState::Pressed,
-        Interaction::Hovered => ControlState::Hovered,
-        Interaction::None if focused => ControlState::Focused,
-        Interaction::None => ControlState::Idle,
+        ControlPointer::Pressed => ControlState::Pressed,
+        ControlPointer::Hovered => ControlState::Hovered,
+        ControlPointer::None if focused => ControlState::Focused,
+        ControlPointer::None => ControlState::Idle,
     }
 }
 
 // ---------------------------------------------------------------- input
 
 pub(crate) fn button_input(
-    q: Query<(Entity, &Interaction, &UiButton), Changed<Interaction>>,
+    q: Query<(Entity, &ControlPointer, &UiButton), Changed<ControlPointer>>,
     mut out: MessageWriter<ControlEvent>,
 ) {
     for (entity, i, b) in &q {
-        if *i == Interaction::Pressed && !b.disabled {
+        if *i == ControlPointer::Pressed && !b.disabled {
             out.write(ControlEvent {
                 entity,
                 kind: ControlKind::Pressed,
@@ -52,11 +86,11 @@ pub(crate) fn button_input(
 }
 
 pub(crate) fn toggle_input(
-    mut q: Query<(Entity, &Interaction, &mut UiToggle), Changed<Interaction>>,
+    mut q: Query<(Entity, &ControlPointer, &mut UiToggle), Changed<ControlPointer>>,
     mut out: MessageWriter<ControlEvent>,
 ) {
     for (entity, i, mut t) in &mut q {
-        if *i != Interaction::Pressed || t.disabled {
+        if *i != ControlPointer::Pressed || t.disabled {
             continue;
         }
         if t.kind == ToggleKind::Radio {
@@ -97,12 +131,12 @@ pub(crate) fn radio_exclusive(
 }
 
 pub(crate) fn tab_input(
-    q: Query<(Entity, &Interaction, &ChildOf), (Changed<Interaction>, With<UiTab>)>,
+    q: Query<(Entity, &ControlPointer, &ChildOf), (Changed<ControlPointer>, With<UiTab>)>,
     mut tabs: Query<(Entity, &mut UiTab, &ChildOf)>,
     mut out: MessageWriter<ControlEvent>,
 ) {
     for (entity, i, parent) in &q {
-        if *i != Interaction::Pressed {
+        if *i != ControlPointer::Pressed {
             continue;
         }
         for (e, mut t, p) in &mut tabs {
@@ -118,12 +152,12 @@ pub(crate) fn tab_input(
 }
 
 pub(crate) fn list_input(
-    q: Query<(Entity, &Interaction, &ChildOf), (Changed<Interaction>, With<UiListItem>)>,
+    q: Query<(Entity, &ControlPointer, &ChildOf), (Changed<ControlPointer>, With<UiListItem>)>,
     mut rows: Query<(Entity, &mut UiListItem, &ChildOf)>,
     mut out: MessageWriter<ControlEvent>,
 ) {
     for (entity, i, parent) in &q {
-        if *i != Interaction::Pressed {
+        if *i != ControlPointer::Pressed {
             continue;
         }
         for (e, mut r, p) in &mut rows {
@@ -139,11 +173,16 @@ pub(crate) fn list_input(
 }
 
 pub(crate) fn slider_input(
-    mut q: Query<(Entity, &Interaction, &RelativeCursorPosition, &mut UiSlider)>,
+    mut q: Query<(
+        Entity,
+        &ControlPointer,
+        &RelativeCursorPosition,
+        &mut UiSlider,
+    )>,
     mut out: MessageWriter<ControlEvent>,
 ) {
     for (entity, i, rel, mut s) in &mut q {
-        if *i != Interaction::Pressed {
+        if *i != ControlPointer::Pressed {
             continue;
         }
         if let Some(n) = rel.normalized {
@@ -161,13 +200,13 @@ pub(crate) fn slider_input(
 
 pub(crate) fn input_focus(
     mouse: Res<ButtonInput<MouseButton>>,
-    inputs: Query<(Entity, &Interaction), With<UiTextInput>>,
+    inputs: Query<(Entity, &ControlPointer), With<UiTextInput>>,
     mut focus: ResMut<FocusedInput>,
 ) {
     if mouse.just_pressed(MouseButton::Left) {
         let hit = inputs
             .iter()
-            .find(|(_, i)| **i != Interaction::None)
+            .find(|(_, i)| **i != ControlPointer::None)
             .map(|(e, _)| e);
         if focus.0 != hit {
             focus.0 = hit;
@@ -218,7 +257,7 @@ pub(crate) fn style_buttons(
     theme: Res<DodaiTheme>,
     mut q: Query<(
         &UiButton,
-        &Interaction,
+        &ControlPointer,
         &mut Surface,
         &mut Node,
         &mut Foreground,
@@ -297,16 +336,16 @@ pub(crate) fn style_tabs(
     theme: Res<DodaiTheme>,
     mut q: Query<(
         &UiTab,
-        &Interaction,
+        &ControlPointer,
         &mut Surface,
         &mut Node,
         &mut Foreground,
     )>,
     mut ind: Query<(&ChildOf, &mut BackgroundColor), With<TabIndicator>>,
-    tabs: Query<(&UiTab, &Interaction)>,
+    tabs: Query<(&UiTab, &ControlPointer)>,
 ) {
     for (t, i, mut s, mut n, mut fg) in &mut q {
-        let k = theme.tab(t.active, *i == Interaction::Hovered);
+        let k = theme.tab(t.active, *i == ControlPointer::Hovered);
         upd(
             &mut *s,
             Surface {
@@ -325,7 +364,7 @@ pub(crate) fn style_tabs(
     }
     for (p, mut bg) in &mut ind {
         if let Ok((t, i)) = tabs.get(p.parent()) {
-            let k = theme.tab(t.active, *i == Interaction::Hovered);
+            let k = theme.tab(t.active, *i == ControlPointer::Hovered);
             upd(&mut bg.0, k.indicator.map_or(Color::NONE, color));
         }
     }
@@ -333,9 +372,9 @@ pub(crate) fn style_tabs(
 
 pub(crate) fn style_toggles(
     theme: Res<DodaiTheme>,
-    mut q: Query<(&UiToggle, &Interaction, &mut Surface, &mut Node), Without<TogglePart>>,
+    mut q: Query<(&UiToggle, &ControlPointer, &mut Surface, &mut Node), Without<TogglePart>>,
     mut parts: Query<(&ChildOf, &mut Node, &mut Surface), With<TogglePart>>,
-    owners: Query<(&UiToggle, &Interaction), Without<TogglePart>>,
+    owners: Query<(&UiToggle, &ControlPointer), Without<TogglePart>>,
 ) {
     let round = theme.shape.kind() == ShapeKind::Rounded;
     let bw = theme.shape.border_width;
@@ -551,16 +590,16 @@ pub(crate) fn style_list_items(
     theme: Res<DodaiTheme>,
     mut q: Query<(
         &UiListItem,
-        &Interaction,
+        &ControlPointer,
         &mut Surface,
         &mut Node,
         &mut Foreground,
     )>,
     mut markers: Query<(&ChildOf, &mut BackgroundColor), With<ListMarker>>,
-    rows: Query<(&UiListItem, &Interaction)>,
+    rows: Query<(&UiListItem, &ControlPointer)>,
 ) {
     for (r, i, mut s, mut n, mut fg) in &mut q {
-        let k = theme.list_item(r.selected, *i == Interaction::Hovered);
+        let k = theme.list_item(r.selected, *i == ControlPointer::Hovered);
         upd(
             &mut *s,
             Surface {
@@ -579,7 +618,7 @@ pub(crate) fn style_list_items(
     }
     for (c, mut bg) in &mut markers {
         if let Ok((r, i)) = rows.get(c.parent()) {
-            let k = theme.list_item(r.selected, *i == Interaction::Hovered);
+            let k = theme.list_item(r.selected, *i == ControlPointer::Hovered);
             upd(&mut bg.0, k.marker.map_or(Color::NONE, color));
         }
     }
@@ -612,7 +651,7 @@ pub(crate) fn style_text(
         let st = text_style(&theme, u.role);
         let shown = display_text(&u.raw, &st);
         upd(&mut text.0, shown);
-        upd(&mut font.font_size, st.size);
+        upd(&mut font.font_size, bevy::text::FontSize::Px(st.size));
         let fg = st
             .color
             .or(own.map(|f| f.0))
@@ -641,7 +680,7 @@ pub(crate) fn spawn_tooltip(mut commands: Commands) {
 pub(crate) fn update_tooltip(
     theme: Res<DodaiTheme>,
     window: Query<&Window, With<PrimaryWindow>>,
-    hovered: Query<(&UiTooltip, &Interaction)>,
+    hovered: Query<(&UiTooltip, &ControlPointer)>,
     mut popup: Query<(&mut Node, &mut Surface), With<TooltipPopup>>,
     mut label: Query<&mut UiText, With<TooltipText>>,
 ) {
@@ -660,7 +699,7 @@ pub(crate) fn update_tooltip(
     );
     let pad = UiRect::axes(Val::Px(theme.spacing.sm), Val::Px(theme.spacing.xs));
     upd(&mut n.padding, pad);
-    let hit = hovered.iter().find(|(_, i)| **i != Interaction::None);
+    let hit = hovered.iter().find(|(_, i)| **i != ControlPointer::None);
     let cursor = window.single().ok().and_then(Window::cursor_position);
     match (hit, cursor) {
         (Some((tip, _)), Some(c)) => {

@@ -6,7 +6,20 @@
 //! re-skins when the theme switches.
 
 use bevy::prelude::*;
-use bevy::ui::RelativeCursorPosition;
+use bevy::ui::{FocusPolicy, RelativeCursorPosition};
+
+/// What the pointer is doing to a control. Kept up to date by [`crate::DodaiUiPlugin`]
+/// from picking events; every widget requires it.
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ControlPointer {
+    /// Not over the control.
+    #[default]
+    None,
+    /// Over the control.
+    Hovered,
+    /// Held down on the control.
+    Pressed,
+}
 use dodai_core::{ButtonVariant, Color as Rgba, Tone};
 
 use crate::surface::Surface;
@@ -58,7 +71,7 @@ pub struct UiText {
 
 /// Themed button.
 #[derive(Component, Debug, Clone, Copy, PartialEq)]
-#[require(Button, Surface, Foreground)]
+#[require(ControlPointer, FocusPolicy::Block, Surface, Foreground)]
 pub struct UiButton {
     /// Emphasis.
     pub variant: ButtonVariant,
@@ -90,7 +103,7 @@ pub struct UiTabs;
 
 /// One tab.
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq)]
-#[require(Surface, Interaction, Foreground)]
+#[require(Surface, ControlPointer, Foreground)]
 pub struct UiTab {
     /// Active tab.
     pub active: bool,
@@ -109,7 +122,7 @@ pub enum ToggleKind {
 
 /// Switch / checkbox / radio.
 #[derive(Component, Debug, Clone, Copy, PartialEq)]
-#[require(Surface, Interaction)]
+#[require(Surface, ControlPointer)]
 pub struct UiToggle {
     /// Control kind.
     pub kind: ToggleKind,
@@ -131,7 +144,7 @@ pub struct UiProgress {
 
 /// Draggable slider.
 #[derive(Component, Debug, Clone, Copy, PartialEq)]
-#[require(Surface, Interaction, RelativeCursorPosition)]
+#[require(Surface, ControlPointer, RelativeCursorPosition)]
 pub struct UiSlider {
     /// Current value.
     pub value: f32,
@@ -154,7 +167,7 @@ impl UiSlider {
 
 /// Single-line text input (keyboard focus via click).
 #[derive(Component, Debug, Clone, PartialEq, Default)]
-#[require(Surface, Interaction)]
+#[require(Surface, ControlPointer)]
 pub struct UiTextInput {
     /// Current text.
     pub value: String,
@@ -164,7 +177,7 @@ pub struct UiTextInput {
 
 /// Selectable list row.
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq)]
-#[require(Surface, Interaction, Foreground)]
+#[require(Surface, ControlPointer, Foreground)]
 pub struct UiListItem {
     /// Selected row.
     pub selected: bool,
@@ -179,7 +192,7 @@ pub struct UiDivider {
 
 /// Tooltip text shown near the cursor while this entity is hovered.
 #[derive(Component, Debug, Clone, PartialEq)]
-#[require(Interaction)]
+#[require(ControlPointer)]
 pub struct UiTooltip(pub String);
 
 // Internal part markers (children styled from their owner).

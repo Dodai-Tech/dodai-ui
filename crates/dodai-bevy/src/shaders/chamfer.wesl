@@ -1,6 +1,6 @@
 // Chamfered (cut-corner) surface: fill + border, antialiased, all from uniforms.
 // Mirrors `dodai_bevy::surface::chamfer_distance` (Rust, unit-tested).
-#import bevy_ui::ui_vertex_output::UiVertexOutput
+import bevy_ui_render::ui_vertex_output::UiVertexOutput;
 
 @group(1) @binding(0) var<uniform> fill: vec4<f32>;
 @group(1) @binding(1) var<uniform> border: vec4<f32>;

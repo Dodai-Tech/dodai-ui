@@ -19,10 +19,10 @@ pub fn paint_scanlines(ctx: &Context) {
     if !t.effects.scanlines {
         return;
     }
-    let screen = ctx.screen_rect();
+    let screen = ctx.content_rect();
     let p = ctx.layer_painter(LayerId::new(
         Order::Foreground,
-        egui::Id::new("dodai-scanlines"),
+        egui::Id::unique("dodai-scanlines"),
     ));
     let s = Stroke::new(1.0_f32, Color32::from_black_alpha(36));
     for y in scanline_ys(screen, 3.0) {

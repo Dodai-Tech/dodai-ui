@@ -15,9 +15,9 @@
 //!
 //! ```no_run
 //! use dodai_core::Theme;
-//! fn frame(ctx: &egui::Context) {
-//!     dodai_egui::install(ctx, &Theme::default());
-//!     egui::CentralPanel::default().show(ctx, |ui| {
+//! fn frame(root: &mut egui::Ui) {
+//!     dodai_egui::install(root.ctx(), &Theme::default());
+//!     egui::CentralPanel::default().show(root, |ui| {
 //!         ui.add(dodai_egui::Button::new("Continue"));
 //!     });
 //! }

@@ -18,13 +18,13 @@ pub(crate) fn load_shaders(app: &mut App) {
     let mut shaders = app.world_mut().resource_mut::<Assets<Shader>>();
     let _ = shaders.insert(
         CHAMFER_SHADER.id(),
-        Shader::from_wgsl(include_str!("shaders/chamfer.wgsl"), "dodai/chamfer.wgsl"),
+        Shader::from_wesl(include_str!("shaders/chamfer.wesl"), "dodai/chamfer.wesl"),
     );
     let _ = shaders.insert(
         SCANLINE_SHADER.id(),
-        Shader::from_wgsl(
-            include_str!("shaders/scanlines.wgsl"),
-            "dodai/scanlines.wgsl",
+        Shader::from_wesl(
+            include_str!("shaders/scanlines.wesl"),
+            "dodai/scanlines.wesl",
         ),
     );
 }

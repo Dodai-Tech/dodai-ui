@@ -1,20 +1,25 @@
+# Own workspace and lockfile: freya links its own Skia (`links = "skia"`), which cannot share a
+# dependency graph with slint 1.11+ (also Skia) or gpui (fontconfig). That is what lets every
+# toolkit track its own latest version.
+[workspace]
+
 [package]
 name         = "dodai-freya"
-version.workspace      = true
-edition.workspace      = true
-authors.workspace      = true
-license.workspace      = true
-repository.workspace   = true
-rust-version.workspace = true
+version      = "0.1.0"
+edition      = "2021"
+authors      = ["Sorin Irimies <sorinirimies@gmail.com>"]
+license      = "MIT"
+repository   = "https://github.com/sorinirimies/dodai-ui"
+rust-version = "1.88"
 description  = "freya adapter for the Dodai UI design system"
 readme       = "README.md"
 keywords     = ["theme", "design-system", "freya", "cyberpunk"]
 categories   = ["gui"]
 
 [dependencies]
-dodai-core = { workspace = true }
-dodai = { workspace = true }
-freya = { version = "0.3.4", optional = true }
+dodai-core = { path = "../dodai-core", version = "0.1.0" }
+dodai = { path = "../dodai", version = "0.1.0", default-features = false }
+freya = { version = "0.5.0-rc.10", optional = true }
 
 [features]
 cyberpunk = ["dodai/cyberpunk"]
@@ -30,4 +35,4 @@ name = "freya_showcase"
 required-features = ["ui"]
 
 [dev-dependencies]
-dodai = { workspace = true, features = ["cyberpunk", "material"] }
+dodai = { path = "../dodai", version = "0.1.0", default-features = false, features = ["cyberpunk", "material"] }

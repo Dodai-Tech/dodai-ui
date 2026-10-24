@@ -26,9 +26,10 @@ members = [
     "crates/dodai-leptos",
     "crates/dodai-yew",
     "crates/dodai-bevy",
-    "crates/dodai-freya",
 ]
 resolver = "2"
+# Own workspace (own Skia, own lockfile): see crates/dodai-freya/Cargo.toml.
+exclude = ["crates/dodai-freya"]
 
 [workspace.package]
 version      = "0.1.0"
@@ -75,7 +76,6 @@ dodai-dioxus  = { path = "crates/dodai-dioxus", version = "0.1.0" }
 dodai-leptos  = { path = "crates/dodai-leptos", version = "0.1.0" }
 dodai-yew     = { path = "crates/dodai-yew", version = "0.1.0" }
 dodai-bevy    = { path = "crates/dodai-bevy", version = "0.1.0" }
-dodai-freya   = { path = "crates/dodai-freya", version = "0.1.0" }
 
 [profile.dev]
 opt-level = 1

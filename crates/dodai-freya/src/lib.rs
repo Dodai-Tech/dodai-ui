@@ -2,26 +2,27 @@
 //!
 //! Freya adapter for the Dodai UI design system.
 //!
-//! * [`style`] — pure token → Freya-attribute mapping (colour strings,
-//!   `border`/`corner_radius`/`shadow` values, chamfered-polygon SVG, text
-//!   roles). No Freya types: always compiled, unit-tested without a window.
-//! * `theme`, `components` (feature `ui`, default) — theme install
-//!   ([`use_init_dodai`]), [`ThemeSwitcher`](dodai_core::ThemeSwitcher)
-//!   integration and the component set.
+//! * [`style`] — pure token → paint mapping (colours, border / radius / shadow
+//!   numbers, chamfered-polygon SVG, text roles). No Freya types: always
+//!   compiled, unit-tested without a window.
+//! * `paint`, `theme`, `components` (feature `ui`, default) — token → Freya
+//!   values, theme install ([`use_init_dodai`]),
+//!   [`ThemeSwitcher`](dodai_core::ThemeSwitcher) integration and the component
+//!   set. Targets freya 0.5 (builder API: `rect()`, `label()`, `Component`).
 //!
 //! Shapes come from tokens only: `Rounded` → `corner_radius`, `Square` → plain
-//! rect, `Chamfered` → an absolutely positioned `svg` polygon built from
+//! rect, `Chamfered` → an absolutely positioned `SvgViewer` polygon built from
 //! [`dodai_core::Shape::outline`] behind the content (needs explicit
-//! `width`/`height`). Glow is a Freya `shadow` (rect path) or a blurred SVG
+//! width/height). Glow is a Freya `Shadow` (rect path) or a blurred SVG
 //! polygon (chamfered path), driven by `Effects`. No code branches on a theme id.
 //!
 //! ```ignore
 //! use freya::prelude::*;
 //! use dodai_freya::*;
 //!
-//! fn app() -> Element {
+//! fn app() -> impl IntoElement {
 //!     use_init_dodai(dodai_core::Theme::default());
-//!     rsx!(Button { label: "Continue", variant: ButtonVariant::Primary })
+//!     DodaiButton::new("Continue").variant(ButtonVariant::Primary)
 //! }
 //! ```
 
@@ -34,12 +35,14 @@ pub use icon::icon_svg;
 
 pub use dodai_core as core;
 pub use style::{
-    button_style, chamfer_svg, css, input_style, list_item_style, panel_style, progress_style,
+    button_style, chamfer_svg, input_style, list_item_style, panel_style, progress_style,
     tab_style, tag_style, text_style, toggle_style, ShapeStyle, TextRole, TextStyle,
 };
 
 #[cfg(feature = "ui")]
 pub mod components;
+#[cfg(feature = "ui")]
+pub mod paint;
 #[cfg(feature = "ui")]
 pub mod theme;
 
@@ -48,6 +51,6 @@ pub use components::*;
 #[cfg(feature = "ui")]
 pub use dodai_core::{ButtonVariant, ControlState, Tone};
 #[cfg(all(feature = "ui", feature = "icons"))]
-pub use icon::{DodaiIcon, IconProps};
+pub use icon::DodaiIcon;
 #[cfg(feature = "ui")]
 pub use theme::{use_dodai, use_dodai_theme, use_init_dodai, Dodai, DodaiState};

@@ -67,6 +67,10 @@ impl Plugin for DodaiUiPlugin {
             UiMaterialPlugin::<ChamferMaterial>::default(),
             UiMaterialPlugin::<ScanlineMaterial>::default(),
         ))
+        .add_observer(pointer_over)
+        .add_observer(pointer_out)
+        .add_observer(pointer_press)
+        .add_observer(pointer_release)
         .init_resource::<FocusedInput>()
         .add_message::<ControlEvent>()
         .add_systems(Startup, spawn_tooltip)
@@ -146,7 +150,7 @@ fn sync_scanlines(
     for (mut n, m) in &mut q {
         let on = theme.effects.scanlines;
         n.display = if on { Display::Flex } else { Display::None };
-        if let Some(mat) = mats.get_mut(&m.0) {
+        if let Some(mut mat) = mats.get_mut(&m.0) {
             mat.color = color(theme.palette.background).to_linear().with_alpha(0.28);
         }
     }

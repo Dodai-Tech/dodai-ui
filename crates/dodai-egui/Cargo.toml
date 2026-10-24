@@ -25,8 +25,8 @@ icons     = ["dep:dodai-icons", "dodai/icons"]
 dodai-core = { workspace = true }
 dodai = { workspace = true }
 dodai-icons = { workspace = true, optional = true }
-egui = "0.32"
+egui = "0.37"
 
 [dev-dependencies]
 dodai = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "aurora", "icons"] }
-eframe = "0.32"
+eframe = "0.37"

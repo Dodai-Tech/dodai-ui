@@ -1,146 +1,79 @@
 //! Themed Freya components. All read the active theme via
-//! [`use_dodai_theme`]; shape, glow, hard shadow
-//! and label casing come from tokens only.
+//! [`use_dodai_theme`]; shape, glow, hard shadow and label casing come from
+//! tokens only.
 //!
-//! Boxes with a chamfered theme need explicit pixel `width`/`height` (the SVG
+//! Boxes with a chamfered theme need explicit pixel width/height (the SVG
 //! outline is generated for that size); components estimate a width from the
 //! label when none is given.
 
+pub use crate::paint::shaped;
+use crate::paint::{color, text};
 use crate::style::*;
 use crate::theme::{use_dodai, use_dodai_theme};
-use dodai_core::{ButtonVariant, Color, ControlState, ShapeKind, Theme, Tone};
+use dodai_core::{ButtonVariant, Color as Rgba, ControlState, ShapeKind, Theme, Tone};
 use freya::prelude::*;
 
-fn c(col: Color) -> String {
-    css(col)
+/// A no-argument callback prop.
+type Action = EventHandler<()>;
+
+fn action(f: impl FnMut() + 'static) -> Action {
+    let mut f = f;
+    EventHandler::new(move |()| f())
 }
 
-/// Paint a shaped box of `w`×`h` containing `children` (centred).
-pub fn shaped(
-    theme: &Theme,
-    style: &ShapeStyle,
-    w: f32,
-    h: f32,
-    padding: f32,
-    vertical: bool,
-    children: Element,
-) -> Element {
-    let chamfer = style.is_chamfered();
-    let svg = chamfer.then(|| chamfer_svg(theme, style, w, h));
-    let pad = style.svg_pad();
-    let (bg, border, radius, shadow) = if chamfer {
-        (
-            "transparent".to_string(),
-            "none".to_string(),
-            "0".to_string(),
-            "none".to_string(),
-        )
-    } else {
-        (
-            style.background(),
-            style.border(),
-            style.corner_radius(),
-            style.shadow(),
-        )
-    };
-    let dir = if vertical { "vertical" } else { "horizontal" };
-    let (main, cross) = if vertical {
-        ("start", "start")
-    } else {
-        ("center", "center")
-    };
-    rsx! {
-        rect {
-            width: "{w}",
-            height: "{h}",
-            padding: "{padding}",
-            direction: "{dir}",
-            main_align: "{main}",
-            cross_align: "{cross}",
-            background: "{bg}",
-            border: "{border}",
-            corner_radius: "{radius}",
-            shadow: "{shadow}",
-            if let Some(svg) = svg {
-                svg {
-                    position: "absolute",
-                    layer: "1",
-                    position_top: "-{pad}",
-                    position_left: "-{pad}",
-                    width: "{w + 2.0 * pad}",
-                    height: "{h + 2.0 * pad}",
-                    svg_content: "{svg}",
-                }
-            }
-            {children}
-        }
-    }
-}
-
-fn text(ts: &TextStyle, color: Option<Color>, s: &str) -> Element {
-    let col = c(color.unwrap_or(ts.color));
-    let t = ts.apply(s);
-    rsx! {
-        label {
-            color: "{col}",
-            font_size: "{ts.size}",
-            font_family: "{ts.family}",
-            font_weight: "{ts.weight}",
-            letter_spacing: "{ts.letter_spacing}",
-            "{t}"
-        }
+fn fire(handler: &Option<Action>) {
+    if let Some(h) = handler {
+        h.call(());
     }
 }
 
 // ── text ────────────────────────────────────────────────────────────────────
 
-#[derive(Props, Clone, PartialEq)]
-pub struct TextProps {
-    #[props(into)]
-    pub text: String,
-    #[props(default)]
-    pub size: Option<f32>,
+/// Themed text in one of the [`TextRole`]s (uppercased when the theme says so,
+/// never for mono).
+#[derive(PartialEq)]
+pub struct DodaiText {
+    role: TextRole,
+    text: String,
+    size: Option<f32>,
 }
 
-/// Display heading (uppercased when the theme says so).
-#[component]
-pub fn DodaiHeading(props: TextProps) -> Element {
-    let t = use_dodai_theme();
-    text(
-        &text_style(&t, TextRole::Heading, props.size),
-        None,
-        &props.text,
-    )
+impl DodaiText {
+    fn of(role: TextRole, text: impl Into<String>) -> Self {
+        Self {
+            role,
+            text: text.into(),
+            size: None,
+        }
+    }
+    /// Display heading.
+    pub fn heading(text: impl Into<String>) -> Self {
+        Self::of(TextRole::Heading, text)
+    }
+    /// Body label.
+    pub fn label(text: impl Into<String>) -> Self {
+        Self::of(TextRole::Label, text)
+    }
+    /// Muted secondary text.
+    pub fn muted(text: impl Into<String>) -> Self {
+        Self::of(TextRole::Muted, text)
+    }
+    /// Monospace text.
+    pub fn mono(text: impl Into<String>) -> Self {
+        Self::of(TextRole::Mono, text)
+    }
+    /// Override the role's default size (px).
+    pub fn size(mut self, size: f32) -> Self {
+        self.size = Some(size);
+        self
+    }
 }
-/// Body label (uppercased when the theme says so).
-#[component]
-pub fn DodaiLabel(props: TextProps) -> Element {
-    let t = use_dodai_theme();
-    text(
-        &text_style(&t, TextRole::Label, props.size),
-        None,
-        &props.text,
-    )
-}
-/// Muted secondary text.
-#[component]
-pub fn DodaiMuted(props: TextProps) -> Element {
-    let t = use_dodai_theme();
-    text(
-        &text_style(&t, TextRole::Muted, props.size),
-        None,
-        &props.text,
-    )
-}
-/// Monospace text (never uppercased).
-#[component]
-pub fn DodaiMono(props: TextProps) -> Element {
-    let t = use_dodai_theme();
-    text(
-        &text_style(&t, TextRole::Mono, props.size),
-        None,
-        &props.text,
-    )
+
+impl Component for DodaiText {
+    fn render(&self) -> impl IntoElement {
+        let t = use_dodai_theme();
+        text(&text_style(&t, self.role, self.size), None, &self.text)
+    }
 }
 
 // ── interaction helper ──────────────────────────────────────────────────────
@@ -159,532 +92,903 @@ fn state_of(hover: bool, down: bool, disabled: bool) -> ControlState {
 
 // ── button ──────────────────────────────────────────────────────────────────
 
-#[derive(Props, Clone, PartialEq)]
-pub struct ButtonProps {
-    #[props(into)]
-    pub label: String,
-    #[props(default = ButtonVariant::Primary)]
-    pub variant: ButtonVariant,
-    #[props(default)]
-    pub disabled: bool,
-    /// Fixed width in px; estimated from the label when `None`.
-    #[props(default)]
-    pub width: Option<f32>,
-    #[props(default)]
-    pub onclick: EventHandler<()>,
+/// Themed button, every [`ButtonVariant`] plus disabled.
+#[derive(PartialEq)]
+pub struct DodaiButton {
+    label: String,
+    variant: ButtonVariant,
+    disabled: bool,
+    width: Option<f32>,
+    on_press: Option<Action>,
+    key: DiffKey,
 }
 
-/// Themed button, every [`ButtonVariant`] plus disabled.
-#[component]
-pub fn DodaiButton(props: ButtonProps) -> Element {
-    let t = use_dodai_theme();
-    let mut hover = use_signal(|| false);
-    let mut down = use_signal(|| false);
-    let state = state_of(*hover.read(), *down.read(), props.disabled);
-    let (style, fg) = button_style(&t, props.variant, state);
-    let ts = text_style(&t, TextRole::Label, None);
-    let w = props.width.unwrap_or_else(|| {
-        estimate_text_width(&ts.apply(&props.label), ts.size, ts.letter_spacing)
-            + 2.0 * t.spacing.lg
-    });
-    let h = t.shape.control_height;
-    let disabled = props.disabled;
-    let body = text(&ts, Some(fg), &props.label);
-    let boxed = shaped(&t, &style, w, h, 0.0, false, body);
-    rsx! {
-        rect {
-            onpointerenter: move |_| hover.set(true),
-            onpointerleave: move |_| {
+impl KeyExt for DodaiButton {
+    fn write_key(&mut self) -> &mut DiffKey {
+        &mut self.key
+    }
+}
+
+impl DodaiButton {
+    /// Primary button with `label`.
+    pub fn new(label: impl Into<String>) -> Self {
+        Self {
+            label: label.into(),
+            variant: ButtonVariant::Primary,
+            disabled: false,
+            width: None,
+            on_press: None,
+            key: DiffKey::None,
+        }
+    }
+    /// Emphasis.
+    pub fn variant(mut self, variant: ButtonVariant) -> Self {
+        self.variant = variant;
+        self
+    }
+    /// Ignore input and show the disabled style.
+    pub fn disabled(mut self, disabled: bool) -> Self {
+        self.disabled = disabled;
+        self
+    }
+    /// Fixed width in px; estimated from the label when unset.
+    pub fn width(mut self, width: f32) -> Self {
+        self.width = Some(width);
+        self
+    }
+    /// Called on press (never while disabled).
+    pub fn on_press(mut self, f: impl FnMut() + 'static) -> Self {
+        self.on_press = Some(action(f));
+        self
+    }
+}
+
+impl Component for DodaiButton {
+    fn render_key(&self) -> DiffKey {
+        self.key.clone().or(self.default_key())
+    }
+
+    fn render(&self) -> impl IntoElement {
+        let t = use_dodai_theme();
+        let mut hover = use_state(|| false);
+        let mut down = use_state(|| false);
+        let state = state_of(*hover.read(), *down.read(), self.disabled);
+        let (style, fg) = button_style(&t, self.variant, state);
+        let ts = text_style(&t, TextRole::Label, None);
+        let w = self.width.unwrap_or_else(|| {
+            estimate_text_width(&ts.apply(&self.label), ts.size, ts.letter_spacing)
+                + 2.0 * t.spacing.lg
+        });
+        let (on_press, disabled) = (self.on_press.clone(), self.disabled);
+        rect()
+            .on_pointer_enter(move |_| hover.set(true))
+            .on_pointer_leave(move |_| {
                 hover.set(false);
                 down.set(false);
-            },
-            onmousedown: move |_| down.set(true),
-            onmouseup: move |_| down.set(false),
-            onclick: move |_| {
+            })
+            .on_pointer_down(move |_| down.set(true))
+            .on_mouse_up(move |_| down.set(false))
+            .on_press(move |_| {
                 if !disabled {
-                    props.onclick.call(());
+                    fire(&on_press);
                 }
-            },
-            {boxed}
-        }
+            })
+            .child(shaped(
+                &t,
+                &style,
+                w,
+                t.shape.control_height,
+                0.0,
+                false,
+                text(&ts, Some(fg), &self.label),
+            ))
     }
 }
 
 // ── panel ───────────────────────────────────────────────────────────────────
 
-#[derive(Props, Clone, PartialEq)]
-pub struct PanelProps {
-    #[props(default)]
-    pub title: Option<String>,
-    #[props(default = 320.0)]
-    pub width: f32,
-    #[props(default = 160.0)]
-    pub height: f32,
-    /// Glows when focused (if the theme has glow).
-    #[props(default)]
-    pub focused: bool,
-    pub children: Element,
+/// Bordered container with optional title.
+#[derive(PartialEq)]
+pub struct DodaiPanel {
+    title: Option<String>,
+    width: f32,
+    height: f32,
+    focused: bool,
+    children: Vec<Element>,
 }
 
-/// Bordered container with optional title.
-#[component]
-pub fn DodaiPanel(props: PanelProps) -> Element {
-    let t = use_dodai_theme();
-    let style = panel_style(&t, props.focused);
-    let title = props.title.as_ref().map(|s| {
-        let mut ts = text_style(&t, TextRole::Label, Some(t.typography.size_lg));
-        ts.color = t.panel(props.focused).title;
-        ts.weight = "bold";
-        text(&ts, None, s)
-    });
-    let (spacing, pad) = (t.spacing.sm, t.spacing.md);
-    let inner = rsx! {
-        rect { direction: "vertical", spacing: "{spacing}", margin: "{pad}", {title} {props.children} }
-    };
-    shaped(&t, &style, props.width, props.height, 0.0, true, inner)
+impl DodaiPanel {
+    /// Empty 320×160 panel.
+    pub fn new() -> Self {
+        Self {
+            title: None,
+            width: 320.0,
+            height: 160.0,
+            focused: false,
+            children: Vec::new(),
+        }
+    }
+    /// Title shown at the top.
+    pub fn title(mut self, title: impl Into<String>) -> Self {
+        self.title = Some(title.into());
+        self
+    }
+    /// Size in px.
+    pub fn size(mut self, width: f32, height: f32) -> Self {
+        self.width = width;
+        self.height = height;
+        self
+    }
+    /// Glows when focused (if the theme has glow).
+    pub fn focused(mut self, focused: bool) -> Self {
+        self.focused = focused;
+        self
+    }
+}
+
+impl Default for DodaiPanel {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ChildrenExt for DodaiPanel {
+    fn get_children(&mut self) -> &mut Vec<Element> {
+        &mut self.children
+    }
+}
+
+impl Component for DodaiPanel {
+    fn render(&self) -> impl IntoElement {
+        let t = use_dodai_theme();
+        let style = panel_style(&t, self.focused);
+        let title = self.title.as_ref().map(|s| {
+            let mut ts = text_style(&t, TextRole::Label, Some(t.typography.size_lg));
+            ts.color = t.panel(self.focused).title;
+            ts.weight = 700;
+            text(&ts, None, s)
+        });
+        let inner = rect()
+            .direction(Direction::Vertical)
+            .spacing(t.spacing.sm)
+            .margin(t.spacing.md)
+            .maybe_child(title)
+            .children(self.children.clone());
+        shaped(&t, &style, self.width, self.height, 0.0, true, inner)
+    }
 }
 
 // ── tag ─────────────────────────────────────────────────────────────────────
 
-#[derive(Props, Clone, PartialEq)]
-pub struct TagProps {
-    #[props(into)]
-    pub label: String,
-    #[props(default = Tone::Info)]
-    pub tone: Tone,
-    #[props(default = true)]
-    pub solid: bool,
+/// Status tag.
+#[derive(PartialEq)]
+pub struct DodaiTag {
+    label: String,
+    tone: Tone,
+    solid: bool,
 }
 
-/// Status tag.
-#[component]
-pub fn DodaiTag(props: TagProps) -> Element {
-    let t = use_dodai_theme();
-    let (style, fg) = tag_style(&t, props.tone, props.solid);
-    let ts = text_style(&t, TextRole::Label, Some(t.typography.size_xs));
-    let w = estimate_text_width(&ts.apply(&props.label), ts.size, ts.letter_spacing)
-        + 2.0 * t.spacing.sm;
-    let h = t.typography.size_xs + 2.0 * t.spacing.xs + 4.0;
-    shaped(
-        &t,
-        &style,
-        w,
-        h,
-        0.0,
-        false,
-        text(&ts, Some(fg), &props.label),
-    )
+impl DodaiTag {
+    /// Solid info tag.
+    pub fn new(label: impl Into<String>) -> Self {
+        Self {
+            label: label.into(),
+            tone: Tone::Info,
+            solid: true,
+        }
+    }
+    /// Status colour.
+    pub fn tone(mut self, tone: Tone) -> Self {
+        self.tone = tone;
+        self
+    }
+    /// Filled (default) or outline.
+    pub fn solid(mut self, solid: bool) -> Self {
+        self.solid = solid;
+        self
+    }
+}
+
+impl Component for DodaiTag {
+    fn render(&self) -> impl IntoElement {
+        let t = use_dodai_theme();
+        let (style, fg) = tag_style(&t, self.tone, self.solid);
+        let ts = text_style(&t, TextRole::Label, Some(t.typography.size_xs));
+        let w = estimate_text_width(&ts.apply(&self.label), ts.size, ts.letter_spacing)
+            + 2.0 * t.spacing.sm;
+        let h = t.typography.size_xs + 2.0 * t.spacing.xs + 4.0;
+        shaped(
+            &t,
+            &style,
+            w,
+            h,
+            0.0,
+            false,
+            text(&ts, Some(fg), &self.label),
+        )
+    }
 }
 
 // ── tabs ────────────────────────────────────────────────────────────────────
 
-#[derive(Props, Clone, PartialEq)]
-pub struct TabProps {
-    #[props(into)]
+#[derive(PartialEq)]
+struct DodaiTab {
     label: String,
     active: bool,
-    onselect: EventHandler<()>,
+    on_select: Option<Action>,
+    key: DiffKey,
 }
 
-#[component]
-fn DodaiTab(props: TabProps) -> Element {
-    let t = use_dodai_theme();
-    let mut hover = use_signal(|| false);
-    let (style, fg, ind) = tab_style(&t, props.active, *hover.read());
-    let ts = text_style(&t, TextRole::Label, Some(t.typography.size_sm));
-    let w = estimate_text_width(&ts.apply(&props.label), ts.size, ts.letter_spacing)
-        + 2.0 * t.spacing.md;
-    let h = t.shape.control_height;
-    let line = ind.map(|i| {
-        let col = c(i);
-        rsx! { rect { position: "absolute", position_bottom: "0", width: "{w}", height: "2", background: "{col}" } }
-    });
-    let body = rsx! { {text(&ts, Some(fg), &props.label)} {line} };
-    let boxed = shaped(&t, &style, w, h, 0.0, false, body);
-    rsx! {
-        rect {
-            onpointerenter: move |_| hover.set(true),
-            onpointerleave: move |_| hover.set(false),
-            onclick: move |_| props.onselect.call(()),
-            {boxed}
-        }
+impl KeyExt for DodaiTab {
+    fn write_key(&mut self) -> &mut DiffKey {
+        &mut self.key
     }
 }
 
-#[derive(Props, Clone, PartialEq)]
-pub struct TabsProps {
-    pub labels: Vec<String>,
-    #[props(default)]
-    pub selected: usize,
-    #[props(default)]
-    pub onselect: EventHandler<usize>,
+impl Component for DodaiTab {
+    fn render_key(&self) -> DiffKey {
+        self.key.clone().or(self.default_key())
+    }
+
+    fn render(&self) -> impl IntoElement {
+        let t = use_dodai_theme();
+        let mut hover = use_state(|| false);
+        let (style, fg, ind) = tab_style(&t, self.active, *hover.read());
+        let ts = text_style(&t, TextRole::Label, Some(t.typography.size_sm));
+        let w = estimate_text_width(&ts.apply(&self.label), ts.size, ts.letter_spacing)
+            + 2.0 * t.spacing.md;
+        let line = ind.map(|i| {
+            rect()
+                .position(Position::new_absolute().bottom(0.0))
+                .width(Size::px(w))
+                .height(Size::px(2.0))
+                .background(color(i))
+        });
+        let body = rect()
+            .child(text(&ts, Some(fg), &self.label))
+            .maybe_child(line);
+        let on_select = self.on_select.clone();
+        rect()
+            .on_pointer_enter(move |_| hover.set(true))
+            .on_pointer_leave(move |_| hover.set(false))
+            .on_press(move |_| fire(&on_select))
+            .child(shaped(
+                &t,
+                &style,
+                w,
+                t.shape.control_height,
+                0.0,
+                false,
+                body,
+            ))
+    }
 }
 
 /// Tab strip.
-#[component]
-pub fn DodaiTabs(props: TabsProps) -> Element {
-    let t = use_dodai_theme();
-    let gap = t.spacing.xs;
-    rsx! {
-        rect {
-            direction: "horizontal",
-            spacing: "{gap}",
-            for (i, l) in props.labels.iter().enumerate() {
-                DodaiTab {
-                    key: "{i}",
-                    label: l.clone(),
-                    active: i == props.selected,
-                    onselect: move |_| props.onselect.call(i),
-                }
-            }
+#[derive(PartialEq)]
+pub struct DodaiTabs {
+    labels: Vec<String>,
+    selected: usize,
+    on_select: Option<EventHandler<usize>>,
+}
+
+impl DodaiTabs {
+    /// Strip with one tab per label.
+    pub fn new<S: Into<String>>(labels: impl IntoIterator<Item = S>) -> Self {
+        Self {
+            labels: labels.into_iter().map(Into::into).collect(),
+            selected: 0,
+            on_select: None,
         }
+    }
+    /// Index of the active tab.
+    pub fn selected(mut self, selected: usize) -> Self {
+        self.selected = selected;
+        self
+    }
+    /// Called with the index of the pressed tab.
+    pub fn on_select(mut self, f: impl FnMut(usize) + 'static) -> Self {
+        self.on_select = Some(EventHandler::new(f));
+        self
+    }
+}
+
+impl Component for DodaiTabs {
+    fn render(&self) -> impl IntoElement {
+        let t = use_dodai_theme();
+        rect()
+            .direction(Direction::Horizontal)
+            .spacing(t.spacing.xs)
+            .children(self.labels.iter().enumerate().map(|(i, l)| {
+                let handler = self.on_select.clone();
+                DodaiTab {
+                    label: l.clone(),
+                    active: i == self.selected,
+                    on_select: Some(action(move || {
+                        if let Some(h) = &handler {
+                            h.call(i);
+                        }
+                    })),
+                    key: DiffKey::None,
+                }
+                .key(i)
+            }))
     }
 }
 
 // ── toggle / checkbox / radio ───────────────────────────────────────────────
 
-fn thumb(theme: &Theme, color: Color, size: f32, round: bool) -> Element {
-    let col = c(color);
+fn thumb(theme: &Theme, col: Rgba, size: f32, round: bool) -> Rect {
     let r = if round && theme.shape.kind() == ShapeKind::Rounded {
-        format!("{}", (theme.shape.radius).min(size / 2.0))
+        theme.shape.radius.min(size / 2.0)
     } else {
-        "0".into()
+        0.0
     };
-    rsx! { rect { width: "{size}", height: "{size}", background: "{col}", corner_radius: "{r}" } }
-}
-
-#[derive(Props, Clone, PartialEq)]
-pub struct ToggleProps {
-    pub on: bool,
-    #[props(default)]
-    pub disabled: bool,
-    #[props(default)]
-    pub onchange: EventHandler<bool>,
+    rect()
+        .width(Size::px(size))
+        .height(Size::px(size))
+        .background(color(col))
+        .corner_radius(r)
 }
 
 /// On/off switch.
-#[component]
-pub fn DodaiToggle(props: ToggleProps) -> Element {
-    let t = use_dodai_theme();
-    let mut hover = use_signal(|| false);
-    let state = state_of(*hover.read(), false, props.disabled);
-    let (style, thumb_c) = toggle_style(&t, props.on, state);
-    let (w, h, pad) = (44.0, 24.0, 4.0);
-    let align = if props.on { "end" } else { "start" };
-    let inner = rsx! {
-        rect { width: "{w - 2.0 * pad}", height: "{h - 2.0 * pad}", direction: "horizontal", main_align: "{align}", cross_align: "center",
-            {thumb(&t, thumb_c, h - 2.0 * pad, true)} }
-    };
-    let boxed = shaped(&t, &style, w, h, pad, false, inner);
-    let (on, disabled) = (props.on, props.disabled);
-    rsx! {
-        rect {
-            onpointerenter: move |_| hover.set(true),
-            onpointerleave: move |_| hover.set(false),
-            onclick: move |_| if !disabled { props.onchange.call(!on) },
-            {boxed}
+#[derive(PartialEq)]
+pub struct DodaiToggle {
+    on: bool,
+    disabled: bool,
+    on_change: Option<EventHandler<bool>>,
+}
+
+impl DodaiToggle {
+    /// Switch in the given state.
+    pub fn new(on: bool) -> Self {
+        Self {
+            on,
+            disabled: false,
+            on_change: None,
         }
+    }
+    /// Ignore input and show the disabled style.
+    pub fn disabled(mut self, disabled: bool) -> Self {
+        self.disabled = disabled;
+        self
+    }
+    /// Called with the new state on press.
+    pub fn on_change(mut self, f: impl FnMut(bool) + 'static) -> Self {
+        self.on_change = Some(EventHandler::new(f));
+        self
     }
 }
 
-#[derive(Props, Clone, PartialEq)]
-pub struct CheckProps {
-    pub checked: bool,
-    #[props(default, into)]
-    pub label: Option<String>,
-    #[props(default)]
-    pub disabled: bool,
-    #[props(default)]
-    pub onchange: EventHandler<bool>,
+impl Component for DodaiToggle {
+    fn render(&self) -> impl IntoElement {
+        let t = use_dodai_theme();
+        let mut hover = use_state(|| false);
+        let state = state_of(*hover.read(), false, self.disabled);
+        let (style, thumb_c) = toggle_style(&t, self.on, state);
+        let (w, h, pad) = (44.0, 24.0, 4.0);
+        let inner = rect()
+            .width(Size::px(w - 2.0 * pad))
+            .height(Size::px(h - 2.0 * pad))
+            .direction(Direction::Horizontal)
+            .main_align(if self.on {
+                Alignment::End
+            } else {
+                Alignment::Start
+            })
+            .cross_align(Alignment::Center)
+            .child(thumb(&t, thumb_c, h - 2.0 * pad, true));
+        let (on, disabled, handler) = (self.on, self.disabled, self.on_change.clone());
+        rect()
+            .on_pointer_enter(move |_| hover.set(true))
+            .on_pointer_leave(move |_| hover.set(false))
+            .on_press(move |_| {
+                if let (false, Some(h)) = (disabled, &handler) {
+                    h.call(!on);
+                }
+            })
+            .child(shaped(&t, &style, w, h, pad, false, inner))
+    }
 }
 
-fn mark_box(t: &Theme, on: bool, state: ControlState, round: bool) -> Element {
+fn mark_box(t: &Theme, on: bool, state: ControlState, round: bool) -> Rect {
     let (mut style, mark) = toggle_style(t, on, state);
     if round && style.kind == ShapeKind::Rounded {
         style.radius = 9.0;
     }
-    let inner = if on {
-        thumb(t, mark, 8.0, round)
-    } else {
-        rsx! {}
-    };
-    shaped(t, &style, 18.0, 18.0, 0.0, false, inner)
+    let inner = on.then(|| thumb(t, mark, 8.0, round));
+    shaped(t, &style, 18.0, 18.0, 0.0, false, rect().maybe_child(inner))
+}
+
+/// Mark + optional label row shared by checkbox and radio.
+fn mark_row(t: &Theme, mark: Rect, label: &Option<String>, disabled: bool) -> Rect {
+    let ts = text_style(t, TextRole::Label, Some(t.typography.size_sm));
+    let col = disabled.then_some(t.palette.text_disabled);
+    rect()
+        .direction(Direction::Horizontal)
+        .cross_align(Alignment::Center)
+        .spacing(t.spacing.sm)
+        .child(mark)
+        .maybe_child(label.as_ref().map(|l| text(&ts, col, l)))
 }
 
 /// Checkbox with optional label.
-#[component]
-pub fn DodaiCheckbox(props: CheckProps) -> Element {
-    let t = use_dodai_theme();
-    let mut hover = use_signal(|| false);
-    let state = state_of(*hover.read(), false, props.disabled);
-    let ts = text_style(&t, TextRole::Label, Some(t.typography.size_sm));
-    let col = if props.disabled {
-        Some(t.palette.text_disabled)
-    } else {
-        None
-    };
-    let lbl = props.label.as_ref().map(|l| text(&ts, col, l));
-    let (on, disabled, gap) = (props.checked, props.disabled, t.spacing.sm);
-    rsx! {
-        rect {
-            direction: "horizontal", cross_align: "center", spacing: "{gap}",
-            onpointerenter: move |_| hover.set(true),
-            onpointerleave: move |_| hover.set(false),
-            onclick: move |_| if !disabled { props.onchange.call(!on) },
-            {mark_box(&t, on, state, false)}
-            {lbl}
+#[derive(PartialEq)]
+pub struct DodaiCheckbox {
+    checked: bool,
+    label: Option<String>,
+    disabled: bool,
+    on_change: Option<EventHandler<bool>>,
+}
+
+impl DodaiCheckbox {
+    /// Checkbox in the given state.
+    pub fn new(checked: bool) -> Self {
+        Self {
+            checked,
+            label: None,
+            disabled: false,
+            on_change: None,
         }
+    }
+    /// Text next to the box.
+    pub fn label(mut self, label: impl Into<String>) -> Self {
+        self.label = Some(label.into());
+        self
+    }
+    /// Ignore input and show the disabled style.
+    pub fn disabled(mut self, disabled: bool) -> Self {
+        self.disabled = disabled;
+        self
+    }
+    /// Called with the new state on press.
+    pub fn on_change(mut self, f: impl FnMut(bool) + 'static) -> Self {
+        self.on_change = Some(EventHandler::new(f));
+        self
     }
 }
 
-#[derive(Props, Clone, PartialEq)]
-pub struct RadioProps {
-    pub selected: bool,
-    #[props(default, into)]
-    pub label: Option<String>,
-    #[props(default)]
-    pub disabled: bool,
-    #[props(default)]
-    pub onselect: EventHandler<()>,
+impl Component for DodaiCheckbox {
+    fn render(&self) -> impl IntoElement {
+        let t = use_dodai_theme();
+        let mut hover = use_state(|| false);
+        let state = state_of(*hover.read(), false, self.disabled);
+        let (on, disabled, handler) = (self.checked, self.disabled, self.on_change.clone());
+        mark_row(&t, mark_box(&t, on, state, false), &self.label, disabled)
+            .on_pointer_enter(move |_| hover.set(true))
+            .on_pointer_leave(move |_| hover.set(false))
+            .on_press(move |_| {
+                if let (false, Some(h)) = (disabled, &handler) {
+                    h.call(!on);
+                }
+            })
+    }
 }
 
 /// Radio button (round only when the theme's shape is `Rounded`).
-#[component]
-pub fn DodaiRadio(props: RadioProps) -> Element {
-    let t = use_dodai_theme();
-    let mut hover = use_signal(|| false);
-    let state = state_of(*hover.read(), false, props.disabled);
-    let ts = text_style(&t, TextRole::Label, Some(t.typography.size_sm));
-    let col = if props.disabled {
-        Some(t.palette.text_disabled)
-    } else {
-        None
-    };
-    let lbl = props.label.as_ref().map(|l| text(&ts, col, l));
-    let (disabled, gap) = (props.disabled, t.spacing.sm);
-    rsx! {
-        rect {
-            direction: "horizontal", cross_align: "center", spacing: "{gap}",
-            onpointerenter: move |_| hover.set(true),
-            onpointerleave: move |_| hover.set(false),
-            onclick: move |_| if !disabled { props.onselect.call(()) },
-            {mark_box(&t, props.selected, state, true)}
-            {lbl}
+#[derive(PartialEq)]
+pub struct DodaiRadio {
+    selected: bool,
+    label: Option<String>,
+    disabled: bool,
+    on_select: Option<Action>,
+}
+
+impl DodaiRadio {
+    /// Radio in the given state.
+    pub fn new(selected: bool) -> Self {
+        Self {
+            selected,
+            label: None,
+            disabled: false,
+            on_select: None,
         }
+    }
+    /// Text next to the mark.
+    pub fn label(mut self, label: impl Into<String>) -> Self {
+        self.label = Some(label.into());
+        self
+    }
+    /// Ignore input and show the disabled style.
+    pub fn disabled(mut self, disabled: bool) -> Self {
+        self.disabled = disabled;
+        self
+    }
+    /// Called on press.
+    pub fn on_select(mut self, f: impl FnMut() + 'static) -> Self {
+        self.on_select = Some(action(f));
+        self
+    }
+}
+
+impl Component for DodaiRadio {
+    fn render(&self) -> impl IntoElement {
+        let t = use_dodai_theme();
+        let mut hover = use_state(|| false);
+        let state = state_of(*hover.read(), false, self.disabled);
+        let (disabled, handler) = (self.disabled, self.on_select.clone());
+        mark_row(
+            &t,
+            mark_box(&t, self.selected, state, true),
+            &self.label,
+            disabled,
+        )
+        .on_pointer_enter(move |_| hover.set(true))
+        .on_pointer_leave(move |_| hover.set(false))
+        .on_press(move |_| {
+            if !disabled {
+                fire(&handler);
+            }
+        })
     }
 }
 
 // ── progress / slider ───────────────────────────────────────────────────────
 
-#[derive(Props, Clone, PartialEq)]
-pub struct ProgressProps {
-    /// 0..=100
-    pub value: f32,
-    #[props(default)]
-    pub tone: Option<Tone>,
-    #[props(default = 240.0)]
-    pub width: f32,
-    #[props(default = 12.0)]
-    pub height: f32,
-}
-
 /// Progress bar.
-#[component]
-pub fn DodaiProgress(props: ProgressProps) -> Element {
-    let t = use_dodai_theme();
-    let (style, fill) = progress_style(&t, props.tone);
-    let bw = t.shape.border_width;
-    let inner_w = (props.width - 2.0 * bw) * props.value.clamp(0.0, 100.0) / 100.0;
-    let inner_h = props.height - 2.0 * bw;
-    let col = c(fill);
-    let r = style.corner_radius();
-    let bar = rsx! { rect { width: "{inner_w}", height: "{inner_h}", background: "{col}", corner_radius: "{r}" } };
-    shaped(&t, &style, props.width, props.height, bw, false, bar)
+#[derive(PartialEq)]
+pub struct DodaiProgress {
+    value: f32,
+    tone: Option<Tone>,
+    width: f32,
+    height: f32,
 }
 
-#[derive(Props, Clone, PartialEq)]
-pub struct SliderProps {
-    /// 0..=100
-    pub value: f64,
-    #[props(default)]
-    pub onmoved: EventHandler<f64>,
-    #[props(default = "220".to_string(), into)]
-    pub width: String,
+impl DodaiProgress {
+    /// Bar at `value` (0..=100), 240×12.
+    pub fn new(value: f32) -> Self {
+        Self {
+            value,
+            tone: None,
+            width: 240.0,
+            height: 12.0,
+        }
+    }
+    /// Fill colour from a status tone (default: primary).
+    pub fn tone(mut self, tone: Tone) -> Self {
+        self.tone = Some(tone);
+        self
+    }
+    /// Size in px.
+    pub fn size(mut self, width: f32, height: f32) -> Self {
+        self.width = width;
+        self.height = height;
+        self
+    }
+}
+
+impl Component for DodaiProgress {
+    fn render(&self) -> impl IntoElement {
+        let t = use_dodai_theme();
+        let (style, fill) = progress_style(&t, self.tone);
+        let bw = t.shape.border_width;
+        let inner_w = (self.width - 2.0 * bw) * self.value.clamp(0.0, 100.0) / 100.0;
+        let bar = rect()
+            .width(Size::px(inner_w))
+            .height(Size::px(self.height - 2.0 * bw))
+            .background(color(fill))
+            .corner_radius(style.corner_radius());
+        shaped(&t, &style, self.width, self.height, bw, false, bar)
+    }
 }
 
 /// Slider (wraps Freya's `Slider`, themed from tokens).
-#[component]
-pub fn DodaiSlider(props: SliderProps) -> Element {
-    let t = use_dodai_theme();
-    let p = &t.palette;
-    let theme = theme_with!(SliderTheme {
-        background: c(p.surface_raised).into(),
-        thumb_background: c(p.primary).into(),
-        thumb_inner_background: c(p.primary).into(),
-        border_fill: c(p.border).into(),
-    });
-    rsx! {
-        rect { width: "{props.width}",
-            Slider { theme, size: "100%", value: props.value, onmoved: move |v| props.onmoved.call(v) }
+#[derive(PartialEq)]
+pub struct DodaiSlider {
+    value: f64,
+    width: f32,
+    on_moved: Option<EventHandler<f64>>,
+}
+
+impl DodaiSlider {
+    /// Slider at `value` (0..=100), 220 px wide.
+    pub fn new(value: f64) -> Self {
+        Self {
+            value,
+            width: 220.0,
+            on_moved: None,
         }
+    }
+    /// Width in px.
+    pub fn width(mut self, width: f32) -> Self {
+        self.width = width;
+        self
+    }
+    /// Called with the dragged value.
+    pub fn on_moved(mut self, f: impl FnMut(f64) + 'static) -> Self {
+        self.on_moved = Some(EventHandler::new(f));
+        self
+    }
+}
+
+impl Component for DodaiSlider {
+    fn render(&self) -> impl IntoElement {
+        let t = use_dodai_theme();
+        let p = &t.palette;
+        let theme = SliderThemePartial {
+            background: Some(color(p.surface_raised).into()),
+            thumb_background: Some(color(p.primary).into()),
+            thumb_inner_background: Some(color(p.primary).into()),
+            border_fill: Some(color(p.border).into()),
+        };
+        let handler = self.on_moved.clone();
+        rect().width(Size::px(self.width)).child(
+            Slider::new(move |v| {
+                if let Some(h) = &handler {
+                    h.call(v);
+                }
+            })
+            .theme(theme)
+            .size(Size::fill())
+            .value(self.value),
+        )
     }
 }
 
 // ── text input ──────────────────────────────────────────────────────────────
 
-#[derive(Props, Clone, PartialEq)]
-pub struct InputProps {
-    pub value: String,
-    #[props(default, into)]
-    pub placeholder: Option<String>,
-    #[props(default)]
-    pub onchange: EventHandler<String>,
-    #[props(default = "220".to_string(), into)]
-    pub width: String,
-}
-
 /// Text input (wraps Freya's `Input`; chamfered themes render it square since
 /// Freya's `Input` cannot be clipped to a polygon).
-#[component]
-pub fn DodaiTextInput(props: InputProps) -> Element {
-    let t = use_dodai_theme();
-    let idle = input_style(&t, false);
-    let tok = t.input(false);
-    let focus = t.input(true);
-    let radius = idle.corner_radius();
-    let theme = theme_with!(InputTheme {
-        background: c(tok.background).into(),
-        hover_background: c(tok.background).into(),
-        border_fill: c(tok.border).into(),
-        focus_border_fill: c(focus.border).into(),
-        corner_radius: radius.into(),
-        shadow: "none".into(),
-        font_theme: theme_with!(FontTheme {
-            color: c(tok.text).into()
-        }),
-        placeholder_font_theme: theme_with!(FontTheme {
-            color: c(tok.placeholder).into()
-        }),
-    });
-    rsx! {
-        Input {
-            theme,
-            value: props.value.clone(),
-            placeholder: props.placeholder.clone(),
-            width: props.width.clone(),
-            onchange: move |v| props.onchange.call(v),
+#[derive(PartialEq)]
+pub struct DodaiTextInput {
+    value: State<String>,
+    placeholder: Option<String>,
+    width: f32,
+}
+
+impl DodaiTextInput {
+    /// Input editing `value`, 220 px wide.
+    pub fn new(value: State<String>) -> Self {
+        Self {
+            value,
+            placeholder: None,
+            width: 220.0,
+        }
+    }
+    /// Hint shown while empty.
+    pub fn placeholder(mut self, placeholder: impl Into<String>) -> Self {
+        self.placeholder = Some(placeholder.into());
+        self
+    }
+    /// Width in px.
+    pub fn width(mut self, width: f32) -> Self {
+        self.width = width;
+        self
+    }
+}
+
+impl Component for DodaiTextInput {
+    fn render(&self) -> impl IntoElement {
+        let t = use_dodai_theme();
+        let tok = t.input(false);
+        let focus = t.input(true);
+        let colors = InputColorsThemePartial {
+            background: Some(color(tok.background).into()),
+            focus_background: Some(color(tok.background).into()),
+            border_fill: Some(color(tok.border).into()),
+            focus_border_fill: Some(color(focus.border).into()),
+            color: Some(color(tok.text).into()),
+            placeholder_color: Some(color(tok.placeholder).into()),
+        };
+        let layout = InputLayoutThemePartial {
+            corner_radius: Some(
+                CornerRadius::new_all(input_style(&t, false).corner_radius()).into(),
+            ),
+            padding: None,
+        };
+        let input = Input::new(self.value)
+            .width(Size::px(self.width))
+            .theme_colors(colors)
+            .theme_layout(layout);
+        match &self.placeholder {
+            Some(p) => input.placeholder(p.clone()),
+            None => input,
         }
     }
 }
 
 // ── list / divider / tooltip ────────────────────────────────────────────────
 
-#[derive(Props, Clone, PartialEq)]
-pub struct ListItemProps {
-    #[props(into)]
-    pub label: String,
-    #[props(default)]
-    pub selected: bool,
-    #[props(default = 260.0)]
-    pub width: f32,
-    #[props(default)]
-    pub onclick: EventHandler<()>,
+/// Selectable list row with marker.
+#[derive(PartialEq)]
+pub struct DodaiListItem {
+    label: String,
+    selected: bool,
+    width: f32,
+    on_press: Option<Action>,
+    key: DiffKey,
 }
 
-/// Selectable list row with marker.
-#[component]
-pub fn DodaiListItem(props: ListItemProps) -> Element {
-    let t = use_dodai_theme();
-    let mut hover = use_signal(|| false);
-    let (bg, fg, marker) = list_item_style(&t, props.selected, *hover.read());
-    let bg = bg.map_or("transparent".to_string(), c);
-    let ts = text_style(&t, TextRole::Label, Some(t.typography.size_sm));
-    let m = marker.map_or("transparent".to_string(), c);
-    let h = t.shape.control_height;
-    rsx! {
-        rect {
-            width: "{props.width}", height: "{h}", direction: "horizontal", cross_align: "center", background: "{bg}",
-            onpointerenter: move |_| hover.set(true),
-            onpointerleave: move |_| hover.set(false),
-            onclick: move |_| props.onclick.call(()),
-            rect { width: "3", height: "100%", background: "{m}" }
-            rect { padding: "0 {t.spacing.md}", {text(&ts, Some(fg), &props.label)} }
+impl DodaiListItem {
+    /// Row with `label`, 260 px wide.
+    pub fn new(label: impl Into<String>) -> Self {
+        Self {
+            label: label.into(),
+            selected: false,
+            width: 260.0,
+            on_press: None,
+            key: DiffKey::None,
         }
+    }
+    /// Highlight as selected.
+    pub fn selected(mut self, selected: bool) -> Self {
+        self.selected = selected;
+        self
+    }
+    /// Width in px.
+    pub fn width(mut self, width: f32) -> Self {
+        self.width = width;
+        self
+    }
+    /// Called on press.
+    pub fn on_press(mut self, f: impl FnMut() + 'static) -> Self {
+        self.on_press = Some(action(f));
+        self
+    }
+}
+
+impl KeyExt for DodaiListItem {
+    fn write_key(&mut self) -> &mut DiffKey {
+        &mut self.key
+    }
+}
+
+impl Component for DodaiListItem {
+    fn render_key(&self) -> DiffKey {
+        self.key.clone().or(self.default_key())
+    }
+
+    fn render(&self) -> impl IntoElement {
+        let t = use_dodai_theme();
+        let mut hover = use_state(|| false);
+        let (bg, fg, marker) = list_item_style(&t, self.selected, *hover.read());
+        let ts = text_style(&t, TextRole::Label, Some(t.typography.size_sm));
+        let handler = self.on_press.clone();
+        rect()
+            .width(Size::px(self.width))
+            .height(Size::px(t.shape.control_height))
+            .direction(Direction::Horizontal)
+            .cross_align(Alignment::Center)
+            .background(bg.map_or(Color::TRANSPARENT, color))
+            .on_pointer_enter(move |_| hover.set(true))
+            .on_pointer_leave(move |_| hover.set(false))
+            .on_press(move |_| fire(&handler))
+            .child(
+                rect()
+                    .width(Size::px(3.0))
+                    .height(Size::fill())
+                    .background(marker.map_or(Color::TRANSPARENT, color)),
+            )
+            .child(
+                rect()
+                    .padding(Gaps::new(0.0, t.spacing.md, 0.0, t.spacing.md))
+                    .child(text(&ts, Some(fg), &self.label)),
+            )
     }
 }
 
 /// Horizontal rule.
-#[component]
-pub fn DodaiDivider() -> Element {
-    let t = use_dodai_theme();
-    let col = c(t.divider());
-    rsx! { rect { width: "100%", height: "{t.shape.border_width}", background: "{col}" } }
+#[derive(PartialEq, Default)]
+pub struct DodaiDivider;
+
+impl Component for DodaiDivider {
+    fn render(&self) -> impl IntoElement {
+        let t = use_dodai_theme();
+        rect()
+            .width(Size::fill())
+            .height(Size::px(t.shape.border_width))
+            .background(color(t.divider()))
+    }
 }
 
 /// Tooltip bubble (static). Use [`DodaiTooltipHost`] for hover behaviour.
-#[component]
-pub fn DodaiTooltip(#[props(into)] text: String) -> Element {
-    let t = use_dodai_theme();
-    let style = ShapeStyle::from_tokens(
-        &t,
-        Some(t.palette.overlay),
-        Some(t.palette.border_strong),
-        false,
-        false,
-    );
-    let ts = text_style(&t, TextRole::Muted, Some(t.typography.size_xs));
-    let w = estimate_text_width(&text, ts.size, 0.0) + 2.0 * t.spacing.sm;
-    let h = ts.size + 2.0 * t.spacing.sm;
-    let body = self::text(&ts, Some(t.palette.text), &text);
-    shaped(&t, &style, w, h, 0.0, false, body)
+#[derive(PartialEq)]
+pub struct DodaiTooltip {
+    text: String,
 }
 
-#[derive(Props, Clone, PartialEq)]
-pub struct TooltipHostProps {
-    #[props(into)]
-    pub tip: String,
-    /// Distance from the top of the host to the tooltip.
-    #[props(default = 44.0)]
-    pub offset: f32,
-    pub children: Element,
+impl DodaiTooltip {
+    /// Bubble showing `text`.
+    pub fn new(text: impl Into<String>) -> Self {
+        Self { text: text.into() }
+    }
 }
 
-/// Shows [`DodaiTooltip`] under its children while hovered.
-#[component]
-pub fn DodaiTooltipHost(props: TooltipHostProps) -> Element {
-    let mut hover = use_signal(|| false);
-    rsx! {
-        rect {
-            onpointerenter: move |_| hover.set(true),
-            onpointerleave: move |_| hover.set(false),
-            {props.children}
-            if *hover.read() {
-                rect { position: "absolute", position_top: "{props.offset}", position_left: "0", layer: "-50",
-                    DodaiTooltip { text: props.tip.clone() } }
-            }
+impl Component for DodaiTooltip {
+    fn render(&self) -> impl IntoElement {
+        let t = use_dodai_theme();
+        let style = ShapeStyle::from_tokens(
+            &t,
+            Some(t.palette.overlay),
+            Some(t.palette.border_strong),
+            false,
+            false,
+        );
+        let ts = text_style(&t, TextRole::Muted, Some(t.typography.size_xs));
+        let w = estimate_text_width(&self.text, ts.size, 0.0) + 2.0 * t.spacing.sm;
+        let h = ts.size + 2.0 * t.spacing.sm;
+        shaped(
+            &t,
+            &style,
+            w,
+            h,
+            0.0,
+            false,
+            text(&ts, Some(t.palette.text), &self.text),
+        )
+    }
+}
+
+/// Shows [`DodaiTooltip`] under its child while hovered.
+#[derive(PartialEq)]
+pub struct DodaiTooltipHost {
+    tip: String,
+    offset: f32,
+    children: Vec<Element>,
+}
+
+impl DodaiTooltipHost {
+    /// Host that shows `tip`.
+    pub fn new(tip: impl Into<String>) -> Self {
+        Self {
+            tip: tip.into(),
+            offset: 44.0,
+            children: Vec::new(),
         }
+    }
+    /// Distance from the top of the host to the tooltip.
+    pub fn offset(mut self, offset: f32) -> Self {
+        self.offset = offset;
+        self
+    }
+}
+
+impl ChildrenExt for DodaiTooltipHost {
+    fn get_children(&mut self) -> &mut Vec<Element> {
+        &mut self.children
+    }
+}
+
+impl Component for DodaiTooltipHost {
+    fn render(&self) -> impl IntoElement {
+        let mut hover = use_state(|| false);
+        let tip = (*hover.read()).then(|| {
+            rect()
+                .position(Position::new_absolute().top(self.offset).left(0.0))
+                .layer(Layer::Overlay)
+                .child(DodaiTooltip::new(self.tip.clone()))
+        });
+        rect()
+            .on_pointer_enter(move |_| hover.set(true))
+            .on_pointer_leave(move |_| hover.set(false))
+            .children(self.children.clone())
+            .maybe_child(tip)
     }
 }
 
 // ── theme switcher bar ──────────────────────────────────────────────────────
 
 /// One button per registered theme; the active one is `Primary`, others `Outline`.
-#[component]
-pub fn DodaiThemeSwitcher() -> Element {
-    let dodai = use_dodai();
-    let t = dodai.theme();
-    let cur = dodai.current_index();
-    let gap = t.spacing.sm;
-    rsx! {
-        rect { direction: "horizontal", spacing: "{gap}",
-            for (i, (id, name)) in dodai.list().into_iter().enumerate() {
-                DodaiButton {
-                    key: "{id}",
-                    label: name,
-                    variant: if i == cur { ButtonVariant::Primary } else { ButtonVariant::Outline },
-                    onclick: move |_| dodai.select_index(i),
-                }
-            }
-        }
+#[derive(PartialEq, Default)]
+pub struct DodaiThemeSwitcher;
+
+impl Component for DodaiThemeSwitcher {
+    fn render(&self) -> impl IntoElement {
+        let dodai = use_dodai();
+        let t = dodai.theme();
+        let cur = dodai.current_index();
+        rect()
+            .direction(Direction::Horizontal)
+            .spacing(t.spacing.sm)
+            .children(dodai.list().into_iter().enumerate().map(|(i, (id, name))| {
+                DodaiButton::new(name)
+                    .variant(if i == cur {
+                        ButtonVariant::Primary
+                    } else {
+                        ButtonVariant::Outline
+                    })
+                    .on_press(move || dodai.select_index(i))
+                    .key(id)
+            }))
     }
 }

@@ -125,7 +125,7 @@ impl ThemeController {
                 i.key_pressed(Key::Minus),
             )
         });
-        if ctx.wants_keyboard_input() {
+        if ctx.egui_wants_keyboard_input() {
             return false;
         }
         if t {

@@ -197,10 +197,11 @@ impl App {
 }
 
 impl eframe::App for App {
-    fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
+    fn ui(&mut self, root: &mut egui::Ui, _: &mut eframe::Frame) {
+        let ctx = &root.ctx().clone();
         self.theme.handle_keys(ctx);
         self.theme.install(ctx);
-        egui::CentralPanel::default().show(ctx, |ui| {
+        egui::CentralPanel::default().show(root, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 let name = self.theme.switcher.current().name();
                 ui.dodai_heading(&format!("Dodai UI · egui · {name}"));

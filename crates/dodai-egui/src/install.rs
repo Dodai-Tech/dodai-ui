@@ -8,7 +8,7 @@ use egui::{
 use std::sync::Arc;
 
 fn store_id() -> Id {
-    Id::new("dodai-egui/theme")
+    Id::unique("dodai-egui/theme")
 }
 
 /// Build egui [`Visuals`] from tokens.
@@ -92,7 +92,7 @@ pub fn install(ctx: &Context, theme: &Theme) {
         }
     }
     ctx.set_visuals(visuals(theme));
-    ctx.style_mut(|s| apply_to_style(theme, s));
+    ctx.global_style_mut(|s| apply_to_style(theme, s));
     ctx.data_mut(|d| d.insert_temp(store_id(), Arc::new(theme.clone())));
     ctx.request_repaint();
 }

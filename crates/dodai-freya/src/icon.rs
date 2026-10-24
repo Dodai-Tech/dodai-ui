@@ -1,4 +1,4 @@
-//! Icons: Material Symbols / Cyberpunk pack as SVG for freya's `svg` element.
+//! Icons: Material Symbols / Cyberpunk / Aurora packs as SVG for freya's `SvgViewer`.
 
 use dodai_core::{Color, Theme};
 
@@ -15,7 +15,7 @@ pub fn icon_svg(
 }
 
 #[cfg(feature = "ui")]
-pub use component::*;
+pub use component::DodaiIcon;
 
 #[cfg(feature = "ui")]
 mod component {
@@ -23,30 +23,54 @@ mod component {
     use crate::theme::use_dodai_theme;
     use freya::prelude::*;
 
-    #[derive(Props, Clone, PartialEq)]
-    pub struct IconProps {
-        pub icon: dodai::icons::IconId,
-        #[props(default = 24)]
-        pub size: u32,
-        #[props(default)]
-        pub filled: bool,
-        #[props(default)]
-        pub color: Option<dodai_core::Color>,
+    /// Theme-aware icon (the pack follows the theme's shape).
+    #[derive(PartialEq)]
+    pub struct DodaiIcon {
+        icon: dodai::icons::IconId,
+        size: u32,
+        filled: bool,
+        color: Option<dodai_core::Color>,
     }
 
-    /// Theme-aware icon (rounded themes: Material Symbols; others: Cyberpunk).
-    #[component]
-    pub fn DodaiIcon(props: IconProps) -> Element {
-        let t = use_dodai_theme();
-        match icon_svg(&t, props.icon, props.size, props.filled, props.color) {
-            Some(svg) => rsx! {
-                svg {
-                    width: "{props.size}",
-                    height: "{props.size}",
-                    svg_content: "{svg}",
-                }
-            },
-            None => rsx! { rect { width: "{props.size}", height: "{props.size}" } },
+    impl DodaiIcon {
+        /// 24 px outline icon in the theme text colour.
+        pub fn new(icon: dodai::icons::IconId) -> Self {
+            Self {
+                icon,
+                size: 24,
+                filled: false,
+                color: None,
+            }
+        }
+        /// Edge length in px.
+        pub fn size(mut self, size: u32) -> Self {
+            self.size = size;
+            self
+        }
+        /// Use the filled glyph.
+        pub fn filled(mut self, filled: bool) -> Self {
+            self.filled = filled;
+            self
+        }
+        /// Paint with `color` instead of the theme text colour.
+        pub fn color(mut self, color: dodai_core::Color) -> Self {
+            self.color = Some(color);
+            self
+        }
+    }
+
+    impl Component for DodaiIcon {
+        fn render(&self) -> impl IntoElement {
+            let t = use_dodai_theme();
+            let px = Size::px(self.size as f32);
+            match icon_svg(&t, self.icon, self.size, self.filled, self.color) {
+                Some(svg) => SvgViewer::new(Bytes::from(svg.into_bytes()))
+                    .show_loader(false)
+                    .width(px.clone())
+                    .height(px)
+                    .into_element(),
+                None => rect().width(px.clone()).height(px).into_element(),
+            }
         }
     }
 }

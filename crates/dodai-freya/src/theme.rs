@@ -1,4 +1,4 @@
-//! Theme install + [`ThemeSwitcher`] integration via a Dioxus context signal.
+//! Theme install + [`ThemeSwitcher`] integration via a Freya context state.
 
 use dodai::themes;
 
@@ -40,7 +40,7 @@ impl DodaiState {
 
 /// Copyable handle to the installed theme state.
 #[derive(Clone, Copy)]
-pub struct Dodai(Signal<DodaiState>);
+pub struct Dodai(State<DodaiState>);
 
 impl Dodai {
     /// Active theme (subscribes the calling component to changes).
@@ -90,12 +90,14 @@ impl Dodai {
 
 /// Install the theme state in context (call once at the app root).
 pub fn use_init_dodai(theme: Theme) -> Dodai {
-    Dodai(use_context_provider(|| Signal::new(DodaiState::new(theme))))
+    let state = use_state(|| DodaiState::new(theme));
+    use_provide_context(move || state);
+    Dodai(state)
 }
 
 /// Fetch the handle installed by [`use_init_dodai`].
 pub fn use_dodai() -> Dodai {
-    Dodai(use_context::<Signal<DodaiState>>())
+    Dodai(use_consume::<State<DodaiState>>())
 }
 
 /// Active theme, subscribing the component to switches / glow changes.

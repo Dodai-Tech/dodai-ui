@@ -22,7 +22,7 @@ dodai-core = { workspace = true }
 dodai = { workspace = true }
 dodai-topcoat.workspace = true
 web-sys = { version = "0.3.106", features = ["HtmlInputElement"] }
-yew = { version = "0.21", features = ["ssr"] }
+yew = { version = "0.23", features = ["ssr"] }
 
 [dev-dependencies]
 dodai = { workspace = true, features = ["cyberpunk", "material"] }
