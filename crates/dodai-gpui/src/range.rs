@@ -114,52 +114,13 @@ impl RangeSlider {
 }
 
 impl RangeSlider {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let t = theme_of(cx);
-        let t = crate::apply_corners(t, self.corners);
-        let thumb_size = t.sizes().slider_thumb;
+    /// The track with the filled span from `fl` to `fh` (fractions of the length).
+    fn track_el(&self, t: &dodai_core::Theme, fl: f32, fh: f32) -> impl IntoElement {
         let vertical = self.direction == Orientation::Vertical;
-        let st = window.use_keyed_state(self.id.clone(), cx, |_, _| RangeState::default());
-        let (min, max, step, lo, hi) = (self.min, self.max, self.step, self.lo, self.hi);
-        let grow = crate::motion::grow(window, cx, "RangeSlider");
-        let (fl, fh) = (
-            slider_fraction(lo, min, max) * grow,
-            slider_fraction(hi, min, max) * grow,
-        );
-        let apply = {
-            let st = st.clone();
-            let f = self.on_change.clone();
-            move |p: gpui::Point<Pixels>, pick: bool, w: &mut Window, cx: &mut App| {
-                let b = st.read(cx).bounds;
-                let (pos, len): (f32, f32) = if vertical {
-                    (
-                        (b.origin.y + b.size.height - p.y).into(),
-                        b.size.height.into(),
-                    )
-                } else {
-                    ((p.x - b.origin.x).into(), b.size.width.into())
-                };
-                let v = slider_value(pos, 0.0, len, thumb_size, min, max, step);
-                if pick {
-                    st.update(cx, |s, _| s.active = Some(nearest_thumb(lo, hi, v)));
-                }
-                if let (Some(f), Some(a)) = (&f, st.read(cx).active) {
-                    let (l, h) = range_update(a, v, lo, hi);
-                    f(l, h, w, cx);
-                }
-            }
-        };
-        let (a1, a2) = (apply.clone(), apply);
-        let rec = st.clone();
-        let (mv, up, up2) = (st.clone(), st.clone(), st.clone());
-        let k = t.toggle(true, ControlState::Idle);
-        let thumb_style = ShapeStyle::from_tokens(&t, Some(k.track), Some(k.border), true, false);
-        let thumb_shape = round_shape(&t.shape, thumb_size);
         let pk = t.progress(None);
         let sz = t.sizes();
-        let tick_off = (thumb_size + t.spacing.xs - sz.tick_len) / 2.0;
         let track_shape = crate::paint::round_shape(&t.shape, sz.slider_track);
-        let fill_style = ShapeStyle::from_tokens(&t, Some(pk.fill), None, true, false);
+        let fill_style = ShapeStyle::from_tokens(t, Some(pk.fill), None, true, false);
         let fill = shaped(&track_shape, fill_style).absolute();
         let fill = if vertical {
             fill.left_0()
@@ -174,14 +135,27 @@ impl RangeSlider {
         };
         let track = shaped(
             &track_shape,
-            ShapeStyle::from_tokens(&t, Some(pk.track), Some(pk.border), false, false),
+            ShapeStyle::from_tokens(t, Some(pk.track), Some(pk.border), false, false),
         );
-        let track = if vertical {
+
+        if vertical {
             track.h_full().w(px(sz.slider_track))
         } else {
             track.w_full().h(px(sz.slider_track))
         }
-        .child(fill);
+        .child(fill)
+    }
+
+    /// The rail over the track: ticks and the two thumbs at fractions `fl` and `fh`.
+    fn rail_el(&self, t: &dodai_core::Theme, fl: f32, fh: f32) -> impl IntoElement {
+        let vertical = self.direction == Orientation::Vertical;
+        let thumb_size = t.sizes().slider_thumb;
+        let sz = t.sizes();
+        let (min, max, step) = (self.min, self.max, self.step);
+        let k = t.toggle(true, ControlState::Idle);
+        let thumb_style = ShapeStyle::from_tokens(t, Some(k.track), Some(k.border), true, false);
+        let thumb_shape = round_shape(&t.shape, thumb_size);
+        let tick_off = (thumb_size + t.spacing.xs - sz.tick_len) / 2.0;
         let thumb = |f: f32| {
             let th = shaped(&thumb_shape, thumb_style)
                 .absolute()
@@ -222,8 +196,88 @@ impl RangeSlider {
             }
         }
         rail = rail.child(thumb(fl)).child(thumb(fh));
+        rail
+    }
+
+    /// Wrap the slider with its `lo – hi` readout.
+    fn with_value(
+        &self,
+        t: &dodai_core::Theme,
+        slider: gpui::Stateful<gpui::Div>,
+    ) -> gpui::AnyElement {
+        let vertical = self.direction == Orientation::Vertical;
+        let (lo, hi) = (self.lo, self.hi);
+        let r = div()
+            .font_family(crate::text::first_family(t.typography.mono))
+            .text_size(px(t.typography.size_xs))
+            .text_color(hsla(t.palette.text_muted))
+            .child(format!(
+                "{} – {}",
+                dodai_charts_core::fmt_num((lo * 100.0).round() / 100.0),
+                dodai_charts_core::fmt_num((hi * 100.0).round() / 100.0)
+            ));
+        if vertical {
+            div()
+                .flex()
+                .flex_col()
+                .items_center()
+                .gap(px(t.spacing.xs))
+                .child(r)
+                .child(slider)
+                .into_any_element()
+        } else {
+            div()
+                .flex()
+                .items_center()
+                .gap(px(t.spacing.sm))
+                .child(slider.flex_1())
+                .child(r)
+                .into_any_element()
+        }
+    }
+
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
+        let thumb_size = t.sizes().slider_thumb;
+        let vertical = self.direction == Orientation::Vertical;
+        let st = window.use_keyed_state(self.id.clone(), cx, |_, _| RangeState::default());
+        let (min, max, step, lo, hi) = (self.min, self.max, self.step, self.lo, self.hi);
+        let grow = crate::motion::grow(window, cx, "RangeSlider");
+        let (fl, fh) = (
+            slider_fraction(lo, min, max) * grow,
+            slider_fraction(hi, min, max) * grow,
+        );
+        let apply = {
+            let st = st.clone();
+            let f = self.on_change.clone();
+            move |p: gpui::Point<Pixels>, pick: bool, w: &mut Window, cx: &mut App| {
+                let b = st.read(cx).bounds;
+                let (pos, len): (f32, f32) = if vertical {
+                    (
+                        (b.origin.y + b.size.height - p.y).into(),
+                        b.size.height.into(),
+                    )
+                } else {
+                    ((p.x - b.origin.x).into(), b.size.width.into())
+                };
+                let v = slider_value(pos, 0.0, len, thumb_size, min, max, step);
+                if pick {
+                    st.update(cx, |s, _| s.active = Some(nearest_thumb(lo, hi, v)));
+                }
+                if let (Some(f), Some(a)) = (&f, st.read(cx).active) {
+                    let (l, h) = range_update(a, v, lo, hi);
+                    f(l, h, w, cx);
+                }
+            }
+        };
+        let (a1, a2) = (apply.clone(), apply);
+        let rec = st.clone();
+        let (mv, up, up2) = (st.clone(), st.clone(), st.clone());
+        let track = self.track_el(&t, fl, fh);
+        let rail = self.rail_el(&t, fl, fh);
         let base = div()
-            .id(self.id)
+            .id(self.id.clone())
             .relative()
             .flex()
             .items_center()
@@ -260,35 +314,10 @@ impl RangeSlider {
             .on_mouse_up_out(MouseButton::Left, move |_, _, cx| {
                 up2.update(cx, |s, _| s.active = None)
             });
-        if !self.show_value {
-            return slider.into_any_element();
-        }
-        let r = div()
-            .font_family(crate::text::first_family(t.typography.mono))
-            .text_size(px(t.typography.size_xs))
-            .text_color(hsla(t.palette.text_muted))
-            .child(format!(
-                "{} – {}",
-                dodai_charts_core::fmt_num((lo * 100.0).round() / 100.0),
-                dodai_charts_core::fmt_num((hi * 100.0).round() / 100.0)
-            ));
-        if vertical {
-            div()
-                .flex()
-                .flex_col()
-                .items_center()
-                .gap(px(t.spacing.xs))
-                .child(r)
-                .child(slider)
-                .into_any_element()
+        if self.show_value {
+            self.with_value(&t, slider)
         } else {
-            div()
-                .flex()
-                .items_center()
-                .gap(px(t.spacing.sm))
-                .child(slider.flex_1())
-                .child(r)
-                .into_any_element()
+            slider.into_any_element()
         }
     }
 }
