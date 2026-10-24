@@ -77,7 +77,13 @@ const FILES: &[(&str, &str)] = &[
     ("tag.rs", include_str!("../../src/tag.rs")),
     ("text_input.rs", include_str!("../../src/text_input.rs")),
     ("text.rs", include_str!("../../src/text.rs")),
-    ("time.rs", include_str!("../../src/time.rs")),
+    ("time/clock.rs", include_str!("../../src/time/clock.rs")),
+    (
+        "time/stopwatch.rs",
+        include_str!("../../src/time/stopwatch.rs"),
+    ),
+    ("time/tap.rs", include_str!("../../src/time/tap.rs")),
+    ("time/timer.rs", include_str!("../../src/time/timer.rs")),
 ];
 
 /// Source of every showcase section file, to find what a section uses.

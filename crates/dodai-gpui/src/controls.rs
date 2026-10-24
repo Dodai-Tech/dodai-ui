@@ -876,7 +876,7 @@ impl Slider {
         };
         let thumb_shape = round_shape(&t.shape, thumb_d);
         let base = div()
-            .id(self.id)
+            .id(self.id.clone())
             .relative()
             .flex()
             .items_center()
@@ -890,130 +890,14 @@ impl Slider {
             base.w_full()
                 .h(px(if inset { 48.0 } else { thumb_d + 4.0 }))
         };
-        let track = if vertical {
-            div().h_full().w(px(track_h)).child(vbar(&t, frac, track_h))
-        } else {
-            if inset {
-                let r = &t.palette.roles;
-                div()
-                    .w_full()
-                    .h(px(track_h))
-                    .relative()
-                    .rounded(px(t.shape.radius))
-                    .bg(hsla(r.secondary_container))
-                    .child(
-                        div()
-                            .h_full()
-                            .w(relative(frac))
-                            .rounded(px(t.shape.radius))
-                            .bg(hsla(t.palette.primary)),
-                    )
-                    .children(self.icon.map(|i| {
-                        div().absolute().left(px(12.0)).top(px(8.0)).child(
-                            crate::icons::Icon::new(i)
-                                .size(t.sizes().icon)
-                                .color(hsla(t.palette.on_primary)),
-                        )
-                    }))
-            } else if self.centered {
-                div().w_full().child(centered_bar(&t, frac, track_h))
-            } else {
-                div().w_full().child(bar(&t, frac, None, track_h))
-            }
-        };
+        let track = self.track_el(&t, frac, track_h, inset, vertical);
         let thumb = shaped(&thumb_shape, thumb_style)
             .absolute()
             .w(px(thumb_d))
             .h(px(if inset { 44.0 } else { thumb_d }));
-        let rail = div().absolute().top_0().bottom_0().left_0().right_0();
-        let tick_c = hsla(t.palette.border_strong);
-        let ticks = if self.ticks {
-            tick_fractions(min, max, step)
-        } else {
-            Vec::new()
-        };
-        let rail = if vertical {
-            let mut r = rail.top(px(thumb_d / 2.0)).bottom(px(thumb_d / 2.0));
-            for f in &ticks {
-                r = r.child(
-                    div()
-                        .absolute()
-                        .left(px(5.0))
-                        .w(px(10.0))
-                        .h(px(2.0))
-                        .top(relative(1.0 - f))
-                        .bg(tick_c),
-                );
-            }
-            r.child(
-                thumb
-                    .left(px(2.0))
-                    .top(relative(1.0 - frac))
-                    .mt(px(-thumb_d / 2.0)),
-            )
-        } else {
-            let mut r = rail.left(px(thumb_d / 2.0)).right(px(thumb_d / 2.0));
-            for f in &ticks {
-                r = r.child(
-                    div()
-                        .absolute()
-                        .top(px(5.0))
-                        .h(px(10.0))
-                        .w(px(2.0))
-                        .left(relative(*f))
-                        .ml(px(-1.0))
-                        .bg(tick_c),
-                );
-            }
-            if let Some(bp) = self.bubble {
-                let txt = match &self.format {
-                    Some(f) => f(self.value),
-                    None => dodai_charts_core::fmt_num((self.value * 100.0).round() / 100.0),
-                };
-                let y = match bp {
-                    BubblePlacement::Above => -26.0,
-                    BubblePlacement::Below => thumb_d + 8.0,
-                };
-                let pill = ShapeStyle::from_tokens(
-                    &t,
-                    Some(t.palette.surface_raised),
-                    Some(t.palette.border),
-                    false,
-                    false,
-                );
-                r = r.child(
-                    div()
-                        .absolute()
-                        .top(px(y))
-                        .left(relative(frac))
-                        .w_0()
-                        .flex()
-                        .justify_center()
-                        .child(
-                            shaped(&scaled_shape(&t.shape, bubble_h), pill)
-                                .px(px(t.spacing.sm))
-                                .h(px(bubble_h))
-                                .flex()
-                                .items_center()
-                                .whitespace_nowrap()
-                                .text_size(px(t.typography.size_xs))
-                                .text_color(hsla(t.palette.text))
-                                .child(txt),
-                        ),
-                );
-            }
-            r.child(
-                thumb
-                    .top(px(2.0))
-                    .left(relative(frac))
-                    .ml(px(-thumb_d / 2.0)),
-            )
-        };
+        let rail = self.rail_el(&t, frac, thumb, thumb_d, vertical, bubble_h);
         let readout = self.show_value.then(|| {
-            let txt = match &self.format {
-                Some(f) => f(self.value),
-                None => dodai_charts_core::fmt_num((self.value * 100.0).round() / 100.0),
-            };
+            let txt = self.value_text();
             div()
                 .font_family(crate::text::first_family(t.typography.mono))
                 .text_size(px(t.typography.size_xs))
@@ -1074,6 +958,151 @@ impl Slider {
                 .child(div().flex_1().child(slider))
                 .child(r)
                 .into_any_element(),
+        }
+    }
+}
+
+impl Slider {
+    /// The readout: the custom format, or the value to two decimals.
+    fn value_text(&self) -> String {
+        match &self.format {
+            Some(f) => f(self.value),
+            None => dodai_charts_core::fmt_num((self.value * 100.0).round() / 100.0),
+        }
+    }
+
+    /// The filled track: vertical bar, M3 inset track with an icon, centred or plain bar.
+    fn track_el(
+        &self,
+        t: &Theme,
+        frac: f32,
+        track_h: f32,
+        inset: bool,
+        vertical: bool,
+    ) -> gpui::Div {
+        if vertical {
+            div().h_full().w(px(track_h)).child(vbar(t, frac, track_h))
+        } else {
+            if inset {
+                let r = &t.palette.roles;
+                div()
+                    .w_full()
+                    .h(px(track_h))
+                    .relative()
+                    .rounded(px(t.shape.radius))
+                    .bg(hsla(r.secondary_container))
+                    .child(
+                        div()
+                            .h_full()
+                            .w(relative(frac))
+                            .rounded(px(t.shape.radius))
+                            .bg(hsla(t.palette.primary)),
+                    )
+                    .children(self.icon.map(|i| {
+                        div().absolute().left(px(12.0)).top(px(8.0)).child(
+                            crate::icons::Icon::new(i)
+                                .size(t.sizes().icon)
+                                .color(hsla(t.palette.on_primary)),
+                        )
+                    }))
+            } else if self.centered {
+                div().w_full().child(centered_bar(t, frac, track_h))
+            } else {
+                div().w_full().child(bar(t, frac, None, track_h))
+            }
+        }
+    }
+
+    /// Thumb, tick marks and the value bubble, positioned over the track.
+    fn rail_el(
+        &self,
+        t: &Theme,
+        frac: f32,
+        thumb: gpui::Div,
+        thumb_d: f32,
+        vertical: bool,
+        bubble_h: f32,
+    ) -> gpui::Div {
+        let rail = div().absolute().top_0().bottom_0().left_0().right_0();
+        let tick_c = hsla(t.palette.border_strong);
+        let ticks = if self.ticks {
+            tick_fractions(self.min, self.max, self.step)
+        } else {
+            Vec::new()
+        };
+        if vertical {
+            let mut r = rail.top(px(thumb_d / 2.0)).bottom(px(thumb_d / 2.0));
+            for f in &ticks {
+                r = r.child(
+                    div()
+                        .absolute()
+                        .left(px(5.0))
+                        .w(px(10.0))
+                        .h(px(2.0))
+                        .top(relative(1.0 - f))
+                        .bg(tick_c),
+                );
+            }
+            r.child(
+                thumb
+                    .left(px(2.0))
+                    .top(relative(1.0 - frac))
+                    .mt(px(-thumb_d / 2.0)),
+            )
+        } else {
+            let mut r = rail.left(px(thumb_d / 2.0)).right(px(thumb_d / 2.0));
+            for f in &ticks {
+                r = r.child(
+                    div()
+                        .absolute()
+                        .top(px(5.0))
+                        .h(px(10.0))
+                        .w(px(2.0))
+                        .left(relative(*f))
+                        .ml(px(-1.0))
+                        .bg(tick_c),
+                );
+            }
+            if let Some(bp) = self.bubble {
+                let txt = self.value_text();
+                let y = match bp {
+                    BubblePlacement::Above => -26.0,
+                    BubblePlacement::Below => thumb_d + 8.0,
+                };
+                let pill = ShapeStyle::from_tokens(
+                    t,
+                    Some(t.palette.surface_raised),
+                    Some(t.palette.border),
+                    false,
+                    false,
+                );
+                r = r.child(
+                    div()
+                        .absolute()
+                        .top(px(y))
+                        .left(relative(frac))
+                        .w_0()
+                        .flex()
+                        .justify_center()
+                        .child(
+                            shaped(&scaled_shape(&t.shape, bubble_h), pill)
+                                .px(px(t.spacing.sm))
+                                .h(px(bubble_h))
+                                .flex()
+                                .items_center()
+                                .whitespace_nowrap()
+                                .text_size(px(t.typography.size_xs))
+                                .text_color(hsla(t.palette.text))
+                                .child(txt),
+                        ),
+                );
+            }
+            r.child(
+                thumb
+                    .top(px(2.0))
+                    .left(relative(frac))
+                    .ml(px(-thumb_d / 2.0)),
+            )
         }
     }
 }

@@ -2,9 +2,10 @@
 //! (opened from a ☰ button) when the window is narrower than a breakpoint.
 
 use crate::{hsla, theme_of};
+use dodai_core::Theme;
 use gpui::{
-    deferred, div, px, AnyElement, App, ElementId, InteractiveElement, IntoElement, MouseButton,
-    ParentElement, RenderOnce, StatefulInteractiveElement, Styled, Window,
+    deferred, div, px, AnyElement, App, ElementId, Entity, InteractiveElement, IntoElement,
+    MouseButton, ParentElement, RenderOnce, StatefulInteractiveElement, Styled, Window,
 };
 use std::rc::Rc;
 
@@ -157,6 +158,101 @@ impl ResponsiveShell {
     }
 }
 
+/// Drag the sidebar edge to resize it; on release it snaps to the rail or the full width and the
+/// owner hears about each change of the collapsed state.
+fn drag_handlers(
+    root: gpui::Div,
+    side_state: &Entity<SideState>,
+    f: CollapseFn,
+    collapsed: bool,
+    (rail_w, full_w): (f32, f32),
+) -> gpui::Div {
+    let (mv, up, f2) = (side_state.clone(), side_state.clone(), f.clone());
+    root.on_mouse_move(move |e, w, cx| {
+        let x = f32::from(e.position.x);
+        let mut live = None;
+        mv.update(cx, |s, cx| {
+            let Some(mut d) = s.drag else { return };
+            let dx = x - d.start_x;
+            d.moved |= dx.abs() > 3.0;
+            let dt = d.last_at.elapsed().as_secs_f32();
+            if dt > 0.004 {
+                s.v = 0.6 * s.v + 0.4 * (x - d.last_x) / dt;
+                d.last_x = x;
+                d.last_at = std::time::Instant::now();
+            }
+            if d.moved {
+                s.w = (d.start_w + dx).clamp(rail_w, full_w);
+                live = Some(s.w < (rail_w + full_w) * 0.5);
+            }
+            s.drag = Some(d);
+            cx.notify();
+        });
+        if let Some(c) = live {
+            if c != collapsed {
+                f(c, w, cx);
+            }
+        }
+    })
+    .on_mouse_up(MouseButton::Left, move |_, w, cx| {
+        let mut next = None;
+        up.update(cx, |s, cx| {
+            let Some(d) = s.drag.take() else { return };
+            if d.last_at.elapsed().as_secs_f32() > 0.08 {
+                s.v = 0.0;
+            }
+            next = Some(if d.moved {
+                snap_collapsed(s.w, s.v, rail_w, full_w)
+            } else {
+                !collapsed
+            });
+            cx.notify();
+        });
+        if let Some(c) = next {
+            if c != collapsed {
+                f2(c, w, cx);
+            }
+        }
+    })
+}
+
+/// The drag handle on the sidebar edge: a 1 px line in a wider hit area that thickens on hover.
+fn grip(id: &ElementId, t: &Theme, side_state: &Entity<SideState>) -> gpui::Stateful<gpui::Div> {
+    let down = side_state.clone();
+    div()
+        .id((id.clone(), "grip"))
+        .absolute()
+        .top_0()
+        .bottom_0()
+        .right_0()
+        // A 1 px line inside a wider invisible hit area; it thickens on hover.
+        .group("shell-grip")
+        .w(px(t.spacing.sm))
+        .flex()
+        .justify_end()
+        .cursor_col_resize()
+        .child(
+            div()
+                .h_full()
+                .w(px(1.0))
+                .bg(hsla(t.palette.border))
+                .group_hover("shell-grip", |s| s.w(px(3.0)).bg(hsla(t.palette.primary))),
+        )
+        .on_mouse_down(MouseButton::Left, move |e, _, cx| {
+            let x = f32::from(e.position.x);
+            down.update(cx, |s, _| {
+                s.v = 0.0;
+                s.drag = Some(Drag {
+                    start_x: x,
+                    start_w: s.w,
+                    last_x: x,
+                    last_at: std::time::Instant::now(),
+                    moved: false,
+                });
+            });
+        })
+}
+
 impl RenderOnce for ResponsiveShell {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
@@ -193,41 +289,10 @@ impl RenderOnce for ResponsiveShell {
                 .child(s)
         });
         let collapsed = self.collapsed;
-        let grip = self.on_collapse.clone().map(|_| {
-            let down = side_state.clone();
-            div()
-                .id((id.clone(), "grip"))
-                .absolute()
-                .top_0()
-                .bottom_0()
-                .right_0()
-                // A 1 px line inside a wider invisible hit area; it thickens on hover.
-                .group("shell-grip")
-                .w(px(t.spacing.sm))
-                .flex()
-                .justify_end()
-                .cursor_col_resize()
-                .child(
-                    div()
-                        .h_full()
-                        .w(px(1.0))
-                        .bg(hsla(t.palette.border))
-                        .group_hover("shell-grip", |s| s.w(px(3.0)).bg(hsla(t.palette.primary))),
-                )
-                .on_mouse_down(MouseButton::Left, move |e, _, cx| {
-                    let x = f32::from(e.position.x);
-                    down.update(cx, |s, _| {
-                        s.v = 0.0;
-                        s.drag = Some(Drag {
-                            start_x: x,
-                            start_w: s.w,
-                            last_x: x,
-                            last_at: std::time::Instant::now(),
-                            moved: false,
-                        });
-                    });
-                })
-        });
+        let grip = self
+            .on_collapse
+            .as_ref()
+            .map(|_| grip(&id, &t, &side_state));
         let wide_side = wide_body.map(|b| {
             div()
                 .id((id.clone(), "wide-side"))
@@ -256,54 +321,7 @@ impl RenderOnce for ResponsiveShell {
         let mut root = div().relative().size_full().flex();
         if wide {
             if let Some(f) = self.on_collapse.clone() {
-                let (mv, up, f2) = (side_state.clone(), side_state.clone(), f.clone());
-                root = root
-                    .on_mouse_move(move |e, w, cx| {
-                        let x = f32::from(e.position.x);
-                        let mut live = None;
-                        mv.update(cx, |s, cx| {
-                            let Some(mut d) = s.drag else { return };
-                            let dx = x - d.start_x;
-                            d.moved |= dx.abs() > 3.0;
-                            let dt = d.last_at.elapsed().as_secs_f32();
-                            if dt > 0.004 {
-                                s.v = 0.6 * s.v + 0.4 * (x - d.last_x) / dt;
-                                d.last_x = x;
-                                d.last_at = std::time::Instant::now();
-                            }
-                            if d.moved {
-                                s.w = (d.start_w + dx).clamp(rail_w, full_w);
-                                live = Some(s.w < (rail_w + full_w) * 0.5);
-                            }
-                            s.drag = Some(d);
-                            cx.notify();
-                        });
-                        if let Some(c) = live {
-                            if c != collapsed {
-                                f(c, w, cx);
-                            }
-                        }
-                    })
-                    .on_mouse_up(MouseButton::Left, move |_, w, cx| {
-                        let mut next = None;
-                        up.update(cx, |s, cx| {
-                            let Some(d) = s.drag.take() else { return };
-                            if d.last_at.elapsed().as_secs_f32() > 0.08 {
-                                s.v = 0.0;
-                            }
-                            next = Some(if d.moved {
-                                snap_collapsed(s.w, s.v, rail_w, full_w)
-                            } else {
-                                !collapsed
-                            });
-                            cx.notify();
-                        });
-                        if let Some(c) = next {
-                            if c != collapsed {
-                                f2(c, w, cx);
-                            }
-                        }
-                    });
+                root = drag_handlers(root, &side_state, f, collapsed, (rail_w, full_w));
             }
             return root.children(wide_side).child(content);
         }

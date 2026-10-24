@@ -10,10 +10,13 @@ use crate::text::first_family;
 use crate::{hsla, select_theme, theme_of, ActiveDodai};
 use dodai_core::{Color, Theme};
 use gpui::{
-    canvas, deferred, div, px, App, Bounds, ElementId, FocusHandle, InteractiveElement,
+    canvas, deferred, div, px, App, Bounds, ElementId, Entity, FocusHandle, InteractiveElement,
     IntoElement, MouseButton, ParentElement, Pixels, RenderOnce, SharedString,
     StatefulInteractiveElement, Styled, Window,
 };
+
+/// Commits the option at an index (closes the list, then notifies the owner).
+type Commit = std::rc::Rc<dyn Fn(usize, &mut Window, &mut App)>;
 
 /// One entry of a [`Select`].
 #[derive(Clone)]
@@ -173,9 +176,9 @@ impl Select {
         };
 
         let on_select = self.on_select.clone();
-        let commit = {
+        let commit: Commit = {
             let st = st.clone();
-            move |i: usize, w: &mut Window, cx: &mut App| {
+            std::rc::Rc::new(move |i: usize, w: &mut Window, cx: &mut App| {
                 st.update(cx, |s, cx| {
                     s.open = false;
                     s.highlight = i;
@@ -184,7 +187,7 @@ impl Select {
                 if let Some(f) = &on_select {
                     f(i, w, cx);
                 }
-            }
+            })
         };
 
         let mut trigger = track(
@@ -304,86 +307,100 @@ impl Select {
 
         let mut root = div().relative().w_full().child(trigger);
         if open && !self.disabled {
-            let mut rows = div()
-                .id((self.id.clone(), "rows"))
-                .flex()
-                .flex_col()
-                .gap(px(t.spacing.half()))
-                .max_h(px(t.scale(dodai_core::Scale::ListMax)))
-                .overflow_y_scroll();
-            for (i, o) in self.options.iter().enumerate() {
-                let is_sel = self.selected == Some(i);
-                let (rs, fg, marker) = list_style(&t, is_sel || highlight == i, false);
-                let fg = if is_sel || highlight == i {
-                    hsla(t.palette.text)
-                } else {
-                    fg
-                };
-                let c = commit.clone();
-                let hs = st.clone();
-                let mut row = shaped(&t.shape, rs)
-                    .id((self.id.clone(), format!("opt{i}")))
-                    .min_h(px(t.menu_row_height()))
-                    .py(px(t.spacing.half()))
-                    .px(px(t.spacing.md))
-                    .flex()
-                    .items_center()
-                    .gap(px(t.spacing.sm))
-                    .cursor_pointer()
-                    .text_color(fg)
-                    .on_hover(move |h, _, cx| {
-                        if *h {
-                            hs.update(cx, |s, cx| {
-                                if s.highlight != i {
-                                    s.highlight = i;
-                                    cx.notify();
-                                }
-                            });
-                        }
-                    })
-                    .on_click(move |_, w, cx| c(i, w, cx))
-                    .child(div().flex_1().whitespace_nowrap().child(o.label.clone()));
-                if !o.swatches.is_empty() {
-                    row = row.child(swatch_row(&t, &o.swatches));
-                }
-                if let (true, Some(m)) = (is_sel, marker) {
-                    row = row.child(
-                        div()
-                            .absolute()
-                            .left_0()
-                            .top_0()
-                            .bottom_0()
-                            .w(px(t.shape.border_width.max(2.0)))
-                            .bg(m),
-                    );
-                }
-                rows = rows.child(row);
-            }
-            let out = st.clone();
-            let popup = shaped(&t.role_shape(dodai_core::ShapeRole::Menu), popup_style(&t))
-                .absolute()
-                .top(px(t.shape.control_height + 4.0))
-                .left_0()
-                .w_full()
-                .min_w(px(t.scale(dodai_core::Scale::Panel)))
-                .p(px(t.spacing.xs + t.spacing.half()))
-                .occlude()
-                .font_family(first_family(t.typography.body))
-                .text_size(px(t.typography.size_md))
-                .on_mouse_down_out(move |e, _, cx| {
-                    let inside = out.read(cx).trigger.contains(&e.position);
-                    if !inside {
-                        out.update(cx, |s, cx| {
-                            s.open = false;
-                            cx.notify();
-                        });
-                    }
-                })
-                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-                .child(rows);
+            let popup = self.popup(&t, &st, highlight, &commit);
             root = root.child(deferred(popup).with_priority(10));
         }
         root
+    }
+}
+
+impl Select {
+    /// The open option list: scrolling rows with a highlight, in a deferred popup.
+    fn popup(
+        &self,
+        t: &Theme,
+        st: &Entity<SelectState>,
+        highlight: usize,
+        commit: &Commit,
+    ) -> impl IntoElement {
+        let mut rows = div()
+            .id((self.id.clone(), "rows"))
+            .flex()
+            .flex_col()
+            .gap(px(t.spacing.half()))
+            .max_h(px(t.scale(dodai_core::Scale::ListMax)))
+            .overflow_y_scroll();
+        for (i, o) in self.options.iter().enumerate() {
+            let is_sel = self.selected == Some(i);
+            let (rs, fg, marker) = list_style(t, is_sel || highlight == i, false);
+            let fg = if is_sel || highlight == i {
+                hsla(t.palette.text)
+            } else {
+                fg
+            };
+            let c = commit.clone();
+            let hs = st.clone();
+            let mut row = shaped(&t.shape, rs)
+                .id((self.id.clone(), format!("opt{i}")))
+                .min_h(px(t.menu_row_height()))
+                .py(px(t.spacing.half()))
+                .px(px(t.spacing.md))
+                .flex()
+                .items_center()
+                .gap(px(t.spacing.sm))
+                .cursor_pointer()
+                .text_color(fg)
+                .on_hover(move |h, _, cx| {
+                    if *h {
+                        hs.update(cx, |s, cx| {
+                            if s.highlight != i {
+                                s.highlight = i;
+                                cx.notify();
+                            }
+                        });
+                    }
+                })
+                .on_click(move |_, w, cx| c(i, w, cx))
+                .child(div().flex_1().whitespace_nowrap().child(o.label.clone()));
+            if !o.swatches.is_empty() {
+                row = row.child(swatch_row(t, &o.swatches));
+            }
+            if let (true, Some(m)) = (is_sel, marker) {
+                row = row.child(
+                    div()
+                        .absolute()
+                        .left_0()
+                        .top_0()
+                        .bottom_0()
+                        .w(px(t.shape.border_width.max(2.0)))
+                        .bg(m),
+                );
+            }
+            rows = rows.child(row);
+        }
+        let out = st.clone();
+        let popup = shaped(&t.role_shape(dodai_core::ShapeRole::Menu), popup_style(t))
+            .absolute()
+            .top(px(t.shape.control_height + 4.0))
+            .left_0()
+            .w_full()
+            .min_w(px(t.scale(dodai_core::Scale::Panel)))
+            .p(px(t.spacing.xs + t.spacing.half()))
+            .occlude()
+            .font_family(first_family(t.typography.body))
+            .text_size(px(t.typography.size_md))
+            .on_mouse_down_out(move |e, _, cx| {
+                let inside = out.read(cx).trigger.contains(&e.position);
+                if !inside {
+                    out.update(cx, |s, cx| {
+                        s.open = false;
+                        cx.notify();
+                    });
+                }
+            })
+            .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+            .child(rows);
+        popup
     }
 }
 
