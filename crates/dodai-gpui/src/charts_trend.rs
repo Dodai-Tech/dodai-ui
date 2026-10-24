@@ -267,6 +267,150 @@ pub struct Candlestick {
 }
 chart_cfg!(Candlestick);
 
+/// Everything the candlestick canvas needs to paint one frame.
+struct CandlePaint {
+    /// Gridline heights as fractions of the plot.
+    tf: Vec<f32>,
+    cs: Vec<Candle>,
+    lines: Vec<(Line, f32, usize)>,
+    line_cols: Vec<Hsla>,
+    markers: Vec<TradeMarker>,
+    lo: f32,
+    hi: f32,
+    vmax: f32,
+    up: Hsla,
+    down: Hsla,
+    grid: Hsla,
+    /// Grow-in progress.
+    g: f32,
+    show_vol: bool,
+    style: CandleStyle,
+}
+
+impl CandlePaint {
+    fn paint(&self, b: Bounds<Pixels>, w: &mut Window) {
+        let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+        for f in &self.tf {
+            let y = bh - f * bh;
+            stroke(w, b.origin, &[(0.0, y), (bw, y)], 1.0, self.grid, false);
+        }
+        let slot = bw / self.cs.len().max(1) as f32;
+        let yr = |v: f32| bh - norm(v, self.lo, self.hi) * bh;
+        if self.show_vol && self.vmax > 0.0 {
+            self.volume(w, b.origin, slot, bh);
+        }
+        self.candles(w, b.origin, slot, &yr);
+        self.overlays(w, b.origin, slot, &yr);
+        self.trades(w, b.origin, slot, &yr);
+    }
+
+    fn colour(&self, c: &Candle) -> Hsla {
+        if c.bullish() {
+            self.up
+        } else {
+            self.down
+        }
+    }
+
+    /// Volume bars along the bottom.
+    fn volume(&self, w: &mut Window, origin: gpui::Point<Pixels>, slot: f32, bh: f32) {
+        let n = self.cs.len();
+        for (i, c) in self.cs.iter().enumerate() {
+            let h = c.volume / self.vmax * bh * 0.18 * crate::motion::reveal(self.g, i, n);
+            let bwid = (slot * 0.6).min(24.0);
+            fill(
+                w,
+                origin,
+                &rect((i as f32 + 0.5) * slot - bwid / 2.0, bh - h, bwid, h),
+                scale_alpha(self.colour(c), 0.3),
+            );
+        }
+    }
+
+    /// Wicks plus bodies (or open/close ticks for OHLC).
+    fn candles(
+        &self,
+        w: &mut Window,
+        origin: gpui::Point<Pixels>,
+        slot: f32,
+        yr: &dyn Fn(f32) -> f32,
+    ) {
+        let n = self.cs.len();
+        for (i, c) in self.cs.iter().enumerate() {
+            let ym = yr((c.high + c.low) / 2.0);
+            let gi = crate::motion::reveal(self.g, i, n);
+            let y = |v: f32| ym + (yr(v) - ym) * gi;
+            let col = self.colour(c);
+            let x = (i as f32 + 0.5) * slot;
+            stroke(w, origin, &[(x, y(c.high)), (x, y(c.low))], 1.5, col, false);
+            if self.style == CandleStyle::Ohlc {
+                let half = (slot * 0.3).min(8.0);
+                let open = [(x - half, y(c.open)), (x, y(c.open))];
+                let close = [(x, y(c.close)), (x + half, y(c.close))];
+                stroke(w, origin, &open, 1.5, col, false);
+                stroke(w, origin, &close, 1.5, col, false);
+            } else {
+                let (top, bot) = (y(c.open.max(c.close)), y(c.open.min(c.close)));
+                let bwid = (slot * 0.6).min(24.0);
+                fill(
+                    w,
+                    origin,
+                    &rect(x - bwid / 2.0, top, bwid, (bot - top).max(1.5)),
+                    col,
+                );
+            }
+        }
+    }
+
+    /// Indicator overlays (moving averages and the like) over the candles.
+    fn overlays(
+        &self,
+        w: &mut Window,
+        origin: gpui::Point<Pixels>,
+        slot: f32,
+        yr: &dyn Fn(f32) -> f32,
+    ) {
+        for (l, a, k) in &self.lines {
+            for run in runs(l, |i, v| ((i as f32 + 0.5) * slot, yr(v))) {
+                stroke(
+                    w,
+                    origin,
+                    &run,
+                    1.5,
+                    scale_alpha(self.line_cols[*k], *a),
+                    false,
+                );
+            }
+        }
+    }
+
+    /// Buy / sell triangles.
+    fn trades(
+        &self,
+        w: &mut Window,
+        origin: gpui::Point<Pixels>,
+        slot: f32,
+        yr: &dyn Fn(f32) -> f32,
+    ) {
+        for m in &self.markers {
+            let x = (m.index as f32 + 0.5) * slot;
+            let y0 = yr(m.price);
+            let (tri, col) = if m.buy {
+                (
+                    [(x, y0 + 2.0), (x - 5.0, y0 + 11.0), (x + 5.0, y0 + 11.0)],
+                    self.up,
+                )
+            } else {
+                (
+                    [(x, y0 - 2.0), (x - 5.0, y0 - 11.0), (x + 5.0, y0 - 11.0)],
+                    self.down,
+                )
+            };
+            fill(w, origin, &tri, col);
+        }
+    }
+}
+
 impl Candlestick {
     /// Create a new [`Candlestick`].
     pub fn new(id: impl Into<SharedString>, candles: impl IntoIterator<Item = Candle>) -> Self {
@@ -442,110 +586,28 @@ impl Candlestick {
         let (lo, hi) = (*ticks.first().unwrap_or(&lo), *ticks.last().unwrap_or(&hi));
         let (up, down, grid) = (up_color(&t), down_color(&t), hsla(t.palette.border));
         let n = shown.len();
-        let cs = shown.clone();
-        let style = self.style;
-        let show_vol = self.volume;
-        let vmax = shown.iter().map(|c| c.volume).fold(0.0f32, f32::max);
         let line_cols: Vec<Hsla> = (0..self.overlays.len())
             .map(|k| hsla(t.palette.series[(k + 2) % t.palette.series.len()]))
             .collect();
-        let markers = self.markers.clone();
-        let tf: Vec<f32> = ticks.iter().map(|v| norm(*v, lo, hi)).collect();
+        let paint = CandlePaint {
+            tf: ticks.iter().map(|v| norm(*v, lo, hi)).collect(),
+            vmax: shown.iter().map(|c| c.volume).fold(0.0f32, f32::max),
+            cs: shown.clone(),
+            lines,
+            line_cols,
+            markers: self.markers.clone(),
+            lo,
+            hi,
+            up,
+            down,
+            grid,
+            g,
+            show_vol: self.volume,
+            style: self.style,
+        };
         let cv = canvas(
             |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                for f in &tf {
-                    let y = bh - f * bh;
-                    stroke(w, b.origin, &[(0.0, y), (bw, y)], 1.0, grid, false);
-                }
-                let slot = bw / n.max(1) as f32;
-                let yr = |v: f32| bh - norm(v, lo, hi) * bh;
-                if show_vol && vmax > 0.0 {
-                    for (i, c) in cs.iter().enumerate() {
-                        let h = c.volume / vmax * bh * 0.18 * crate::motion::reveal(g, i, n);
-                        let col = if c.bullish() { up } else { down };
-                        let bwid = (slot * 0.6).min(24.0);
-                        fill(
-                            w,
-                            b.origin,
-                            &rect((i as f32 + 0.5) * slot - bwid / 2.0, bh - h, bwid, h),
-                            scale_alpha(col, 0.3),
-                        );
-                    }
-                }
-                for (i, c) in cs.iter().enumerate() {
-                    let ym = yr((c.high + c.low) / 2.0);
-                    let gi = crate::motion::reveal(g, i, n);
-                    let y = |v: f32| ym + (yr(v) - ym) * gi;
-                    let col = if c.bullish() { up } else { down };
-                    let x = (i as f32 + 0.5) * slot;
-                    stroke(
-                        w,
-                        b.origin,
-                        &[(x, y(c.high)), (x, y(c.low))],
-                        1.5,
-                        col,
-                        false,
-                    );
-                    if style == CandleStyle::Ohlc {
-                        let half = (slot * 0.3).min(8.0);
-                        stroke(
-                            w,
-                            b.origin,
-                            &[(x - half, y(c.open)), (x, y(c.open))],
-                            1.5,
-                            col,
-                            false,
-                        );
-                        stroke(
-                            w,
-                            b.origin,
-                            &[(x, y(c.close)), (x + half, y(c.close))],
-                            1.5,
-                            col,
-                            false,
-                        );
-                    } else {
-                        let (top, bot) = (y(c.open.max(c.close)), y(c.open.min(c.close)));
-                        let bwid = (slot * 0.6).min(24.0);
-                        fill(
-                            w,
-                            b.origin,
-                            &rect(x - bwid / 2.0, top, bwid, (bot - top).max(1.5)),
-                            col,
-                        );
-                    }
-                }
-                for (l, a, k) in &lines {
-                    for run in runs(l, |i, v| ((i as f32 + 0.5) * slot, yr(v))) {
-                        stroke(
-                            w,
-                            b.origin,
-                            &run,
-                            1.5,
-                            scale_alpha(line_cols[*k], *a),
-                            false,
-                        );
-                    }
-                }
-                for m in &markers {
-                    let x = (m.index as f32 + 0.5) * slot;
-                    let y0 = yr(m.price);
-                    let (tri, col) = if m.buy {
-                        (
-                            [(x, y0 + 2.0), (x - 5.0, y0 + 11.0), (x + 5.0, y0 + 11.0)],
-                            up,
-                        )
-                    } else {
-                        (
-                            [(x, y0 - 2.0), (x - 5.0, y0 - 11.0), (x + 5.0, y0 - 11.0)],
-                            down,
-                        )
-                    };
-                    fill(w, b.origin, &tri, col);
-                }
-            },
+            move |b: Bounds<Pixels>, _, w, _| paint.paint(b, w),
         )
         .absolute()
         .size_full();
