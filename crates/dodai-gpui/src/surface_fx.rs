@@ -176,7 +176,7 @@ pub fn paint_surface(
         origin: bounds.origin,
     };
     if dodai_surface::paint(&mut out, &frame, sp) {
-        window.request_animation_frame();
+        crate::motion::next_frame(window);
     }
 }
 

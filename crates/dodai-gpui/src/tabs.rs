@@ -199,7 +199,7 @@ impl Tabs {
                 s.seen = self.active;
                 s.tries = if fresh { 1 } else { s.tries + 1 };
             });
-            window.request_animation_frame();
+            crate::motion::next_frame(window);
         }
         // A mouse wheel only scrolls vertically; over an overflowing strip, turn it into a
         // sideways scroll (trackpads already send horizontal deltas, which gpui handles).
