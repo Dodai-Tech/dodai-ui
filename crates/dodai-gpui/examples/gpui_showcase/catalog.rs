@@ -129,6 +129,17 @@ pub(crate) fn sub_of(cat: &str, label: &str) -> Option<&'static str> {
                 .find(|f| label.starts_with(f.name()))
                 .map_or("Playground", |f| f.name()),
         ),
+        "Shape" => Some(if label == "Shape gallery" {
+            "Overview"
+        } else {
+            "Corners & borders"
+        }),
+        "Surface effects" => Some(match label {
+            "Presets · Apply to" => "Start here",
+            "Component textures" | "Container textures" => "Textures",
+            "Light FX" | "Click ripple" => "Light & motion",
+            _ => "Edges & signature",
+        }),
         _ => None,
     }
 }

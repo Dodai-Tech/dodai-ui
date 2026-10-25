@@ -1019,23 +1019,61 @@ fn fx_amount(
     max: f32,
     set: fn(&mut dodai_core::SurfaceFx, f32),
 ) -> gpui::Div {
-    let row = || div().flex().flex_wrap().items_center().gap(gap);
-    row()
-        .child(div().w(px(90.0)).child(Label::new(name)))
+    let slider = Slider::new(id, v)
+        .range(0.0, max)
+        .step(0.05)
+        .show_value(true)
+        .format(|v| format!("{v:.2}"))
+        .on_change(move |v, _, cx| {
+            let mut f = dodai_gpui::surface_fx();
+            set(&mut f, v);
+            dodai_gpui::set_surface_fx(cx, f);
+        });
+    div()
+        .flex()
+        .items_start()
+        .gap(gap)
+        .child(div().w(px(120.0)).pt(px(4.0)).child(Label::new(name)))
         .child(
-            div().w(px(220.0)).child(
-                Slider::new(id, v)
-                    .range(0.0, max)
-                    .step(0.05)
-                    .show_value(true)
-                    .format(|v| format!("{v:.2}"))
-                    .on_change(move |v, _, cx| {
-                        let mut f = dodai_gpui::surface_fx();
-                        set(&mut f, v);
-                        dodai_gpui::set_surface_fx(cx, f);
-                    }),
-            ),
+            div()
+                .flex()
+                .flex_col()
+                .gap(px(2.0))
+                .child(div().w(px(260.0)).child(slider))
+                .child(Muted::new(fx_hint(id))),
         )
+}
+
+/// What an effect slider does, keyed by its id (the `sfx-c…` twins share the text).
+fn fx_hint(id: &str) -> &'static str {
+    let key = id.trim_start_matches("sfx-");
+    let key = match key {
+        "cstrength" | "cscale" | "cneon" | "cclear" => &key[1..],
+        k => k,
+    };
+    match key {
+        "strength" => "How visible the pattern is. 0 hides it.",
+        "scale" => "Size of the pattern. 1 is the design's own.",
+        "neon" => "Brightness of the lit pattern lines.",
+        "clear" => "Keeps the middle clean so labels stay readable.",
+        "glitch" => "Short digital tears, now and then.",
+        "sheen" => "A slow light sweep across the surface.",
+        "flicker" => "Unsteady light, like a failing tube.",
+        "bloom" => "A soft halo around bright parts.",
+        "pulse" => "Slow breathing of the glow.",
+        "chase" => "Light that travels along the border.",
+        "edge" => "Light falling in from the borders.",
+        "brackets" => "Marks in the four corners.",
+        "depth" => "An inner shadow that sinks the surface.",
+        "ripple" => "How strong the click ripple plays.",
+        "tint" => "A tonal wash over the whole surface.",
+        "pop" => "A hard offset block behind the surface.",
+        "tape" => "A strip of tape across a corner.",
+        "gloss" => "A clear-coat reflection across the top.",
+        "strip" => "A thin strip of light.",
+        "wash" => "The design's gradient tinting the surface.",
+        _ => "",
+    }
 }
 
 /// Three real buttons, so each surface effect shows on components.
@@ -1078,8 +1116,7 @@ pub(crate) fn live_preview(t: &dodai_core::Theme) -> gpui::Div {
                 .child(Button::new("pv-o", "Outline").variant(ButtonVariant::Outline))
                 .child(Button::new("pv-d", "Danger").variant(ButtonVariant::Danger))
                 .child(Tag::new("online", Tone::Success).solid(true))
-                .child(Tag::new("warn", Tone::Warning))
-                .child(Checkbox::new("pv-ck", true)),
+                .child(Tag::new("warn", Tone::Warning)),
         )
         .child(
             row()
