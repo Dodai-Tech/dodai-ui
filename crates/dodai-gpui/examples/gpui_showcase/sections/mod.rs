@@ -63,7 +63,7 @@ impl Showcase {
     pub(crate) fn build_group(
         &mut self,
         cat: &str,
-        group: crate::shaders_page::Group,
+        group: Group,
         cx: &mut Context<Self>,
     ) -> Vec<Section> {
         let family = theme_of(cx).meta.family;
