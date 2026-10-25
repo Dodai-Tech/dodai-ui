@@ -176,7 +176,11 @@ pub mod charts_annotate;
 #[cfg(feature = "charts")]
 pub mod charts_bar;
 #[cfg(feature = "charts")]
+pub mod charts_compare;
+#[cfg(feature = "charts")]
 pub mod charts_distribution;
+#[cfg(feature = "charts")]
+pub mod charts_extra;
 #[cfg(feature = "charts")]
 pub mod charts_flow;
 #[cfg(feature = "charts")]
@@ -305,7 +309,11 @@ pub use charts::{
 #[cfg(feature = "charts")]
 pub use charts_annotate::Annotation;
 #[cfg(feature = "charts")]
+pub use charts_compare::{Bullet, Lollipop, PairedBars, SlopeChart};
+#[cfg(feature = "charts")]
 pub use charts_distribution::{histogram_bins, quartiles, BoxPlot, BubbleChart, Histogram};
+#[cfg(feature = "charts")]
+pub use charts_extra::{CalendarHeatmap, RoseChart, RoseScale, Sankey, ViolinChart};
 #[cfg(feature = "charts")]
 pub use charts_flow::{waterfall_steps, Funnel, Waterfall};
 #[cfg(feature = "charts")]

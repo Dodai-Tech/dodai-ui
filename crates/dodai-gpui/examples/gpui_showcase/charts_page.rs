@@ -16,6 +16,7 @@ pub(crate) struct ChartDemos {
     pub charts_more1: Div,
     pub charts_more2: Div,
     pub charts_more3: Div,
+    pub charts_new: (Div, Div),
 }
 
 impl Showcase {
@@ -848,6 +849,172 @@ impl Showcase {
                 ])
                 .into_any_element(),
             );
+        let charts_new = {
+            let days: Vec<f32> = (0..182)
+                .map(|i| {
+                    let x = (i as f32 * 0.37).sin() * (i as f32 * 0.11).cos();
+                    if i % 9 == 4 {
+                        0.0
+                    } else {
+                        (x * 0.5 + 0.5) * 12.0
+                    }
+                })
+                .collect();
+            let samples = |seed: f32, mean: f32, spread: f32| -> Vec<f32> {
+                (0..60)
+                    .map(|i| {
+                        let u = ((i as f32 * 12.9898 + seed * 78.233).sin() * 43758.545)
+                            .fract()
+                            .abs();
+                        let v = ((i as f32 * 4.1414 + seed * 9.31).sin() * 24634.63)
+                            .fract()
+                            .abs();
+                        mean + (u + v - 1.0) * spread
+                    })
+                    .collect()
+            };
+            let a = col()
+                .child(
+                    row()
+                        .child(w(
+                            div()
+                                .flex()
+                                .flex_col()
+                                .gap_3()
+                                .child(
+                                    Bullet::new("Revenue", 270.0)
+                                        .target(300.0)
+                                        .ranges([150.0, 225.0, 300.0]),
+                                )
+                                .child(
+                                    Bullet::new("Profit", 22.0)
+                                        .target(26.0)
+                                        .ranges([15.0, 20.0, 30.0]),
+                                )
+                                .child(
+                                    Bullet::new("Orders", 1520.0)
+                                        .target(1400.0)
+                                        .ranges([800.0, 1200.0, 1800.0]),
+                                )
+                                .into_any_element(),
+                            440.0,
+                        ))
+                        .child(w(
+                            PairedBars::new([
+                                ("Latency ms", 120.0, 84.0),
+                                ("Errors", 42.0, 51.0),
+                                ("Users k", 8.0, 11.5),
+                            ])
+                            .names("Q1", "Q2")
+                            .title("Paired bars")
+                            .into_any_element(),
+                            440.0,
+                        )),
+                )
+                .child(
+                    row()
+                        .child(w(
+                            Lollipop::new(
+                                "lolli",
+                                [
+                                    ("Mon", 12.0),
+                                    ("Tue", 18.0),
+                                    ("Wed", 9.0),
+                                    ("Thu", 24.0),
+                                    ("Fri", 15.0),
+                                ],
+                            )
+                            .title("Lollipop")
+                            .into_any_element(),
+                            300.0,
+                        ))
+                        .child(w(
+                            Lollipop::new(
+                                "dumb",
+                                [
+                                    ("North", 12.0),
+                                    ("South", 18.0),
+                                    ("East", 9.0),
+                                    ("West", 24.0),
+                                ],
+                            )
+                            .compare([17.0, 14.0, 16.0, 21.0])
+                            .names("2023", "2024")
+                            .title("Dumbbell")
+                            .into_any_element(),
+                            300.0,
+                        ))
+                        .child(w(
+                            SlopeChart::new([
+                                ("Alpha", 12.0, 18.0),
+                                ("Beta", 20.0, 15.0),
+                                ("Gamma", 9.0, 9.0),
+                                ("Delta", 14.0, 22.0),
+                            ])
+                            .headers("2023", "2024")
+                            .title("Slope")
+                            .into_any_element(),
+                            340.0,
+                        )),
+                );
+            let b = col()
+                .child(
+                    row()
+                        .child(w(
+                            Sankey::new([
+                                ("Wages", "Budget", 50.0),
+                                ("Grants", "Budget", 20.0),
+                                ("Sales", "Budget", 30.0),
+                                ("Budget", "Staff", 45.0),
+                                ("Budget", "Ops", 35.0),
+                                ("Budget", "R&D", 20.0),
+                                ("Staff", "Payroll", 45.0),
+                                ("Ops", "Rent", 15.0),
+                                ("Ops", "Tools", 20.0),
+                            ])
+                            .title("Sankey")
+                            .into_any_element(),
+                            560.0,
+                        ))
+                        .child(w(
+                            CalendarHeatmap::new(days)
+                                .from_date(2024, 1, 1)
+                                .title("Calendar heatmap")
+                                .into_any_element(),
+                            560.0,
+                        )),
+                )
+                .child(
+                    row()
+                        .child(w(
+                            ViolinChart::new([
+                                ("A", samples(1.0, 10.0, 8.0)),
+                                ("B", samples(2.0, 14.0, 4.0)),
+                                ("C", samples(3.0, 8.0, 10.0)),
+                            ])
+                            .title("Violin")
+                            .into_any_element(),
+                            420.0,
+                        ))
+                        .child(w(
+                            RoseChart::new([
+                                ("N", 8.0),
+                                ("NE", 14.0),
+                                ("E", 22.0),
+                                ("SE", 11.0),
+                                ("S", 17.0),
+                                ("SW", 25.0),
+                                ("W", 9.0),
+                                ("NW", 12.0),
+                            ])
+                            .hole(0.15)
+                            .title("Rose (area scale)")
+                            .into_any_element(),
+                            340.0,
+                        )),
+                );
+            (a, b)
+        };
         let charts_more3 = row()
             .child(w(
                 Candlestick::new(
@@ -907,6 +1074,7 @@ impl Showcase {
             charts_more1,
             charts_more2,
             charts_more3,
+            charts_new,
         }
     }
 }

@@ -19,6 +19,7 @@ impl Showcase {
             charts_more1,
             charts_more2,
             charts_more3,
+            charts_new,
         } = self.chart_demos(&me, cx);
         out.push((
             "Charts",
@@ -91,6 +92,22 @@ impl Showcase {
                 .child(charts_more3)
                 .into_any_element(),
             "Candlestick · box plot · bubble",
+        ));
+        out.push((
+            "Charts",
+            "Bullet · Paired · Lollipop · Slope",
+            self.section("Bullet · paired · lollipop · slope", &t, &me, cx)
+                .child(charts_new.0)
+                .into_any_element(),
+            "Bullet · paired · lollipop · slope",
+        ));
+        out.push((
+            "Charts",
+            "Sankey · Calendar · Violin · Rose",
+            self.section("Sankey · calendar · violin · rose", &t, &me, cx)
+                .child(charts_new.1)
+                .into_any_element(),
+            "Sankey · calendar · violin · rose",
         ));
         out.push((
             "Charts",

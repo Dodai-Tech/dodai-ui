@@ -14,18 +14,24 @@
 //! | [`gantt`] | task timeline layout |
 //! | [`stack`] | shared-gutter chart stacking |
 //! | [`bins`] | histogram binning |
+//! | [`calendar`] | civil-date helpers |
 //! | [`axis`] | secondary-axis tick alignment |
 //! | [`gradient`] | continuous colour scales |
+//! | [`sankey`] | flow diagram layout |
+//! | [`density`] | kernel density estimate |
 
 pub mod axis;
 pub mod bins;
+pub mod calendar;
 pub mod candles;
+pub mod density;
 pub mod depth;
 pub mod gantt;
 pub mod gradient;
 pub mod indicators;
 pub mod math;
 pub mod renko;
+pub mod sankey;
 pub mod stack;
 
 pub use candles::{heikin_ashi, price_range, Candle};
