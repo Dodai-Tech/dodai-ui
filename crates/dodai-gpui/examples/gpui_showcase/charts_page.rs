@@ -134,6 +134,7 @@ impl Showcase {
                                 .labels(months)
                                 .area(true)
                                 .smooth(true)
+                                .crosshair(true)
                                 .annotations([
                                     Annotation::hline(20.0).label("Target"),
                                     Annotation::x_band(2.0, 3.0).label("Launch"),

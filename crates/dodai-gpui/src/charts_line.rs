@@ -26,6 +26,7 @@ pub struct LineChart {
     area: bool,
     smooth: bool,
     points: bool,
+    crosshair: bool,
     legend: bool,
     y_bounds: Option<(f32, f32)>,
     fmt: Option<NumFmt>,
@@ -63,6 +64,7 @@ impl LineChart {
             area: false,
             smooth: false,
             points: true,
+            crosshair: false,
             legend: true,
             y_bounds: None,
             fmt: None,
@@ -134,6 +136,12 @@ impl LineChart {
         self.smooth = s;
         self
     }
+    /// Vertical hairline that snaps to the nearest sample under the pointer,
+    /// with a value readout for every series.
+    pub fn crosshair(mut self, on: bool) -> Self {
+        self.crosshair = on;
+        self
+    }
     /// Hoverable point markers (default on).
     pub fn points(mut self, p: bool) -> Self {
         self.points = p;
@@ -181,6 +189,13 @@ impl LineChart {
             .enumerate()
             .map(|(i, s)| (hsla(series_color(&t, s, i)), s.values.clone(), range_of(i)))
             .collect();
+        let xh = self.crosshair.then(|| {
+            window.use_keyed_state(SharedString::from(format!("{}-xh", self.id)), cx, |_, _| {
+                None::<usize>
+            })
+        });
+        let cur: Option<usize> = xh.as_ref().and_then(|s| *s.read(cx)).filter(|i| *i < n);
+        let hair = hsla(t.palette.text_muted);
         let tick_fracs: Vec<f32> = ticks.iter().map(|v| norm(*v, lo, hi)).collect();
 
         let cv = canvas(
@@ -220,6 +235,28 @@ impl LineChart {
                     }
                     glow_stroke(w, b.origin, &p, sw, *c, glow);
                 }
+                if let Some(st) = xh.clone() {
+                    if let Some(i) = cur {
+                        let x = (i as f32 + 0.5) / n as f32 * bw;
+                        stroke(w, b.origin, &[(x, 0.0), (x, bh)], 1.0, hair, false);
+                        for (c, vals, (lo, hi)) in &lines {
+                            if let Some(v) = vals.get(i) {
+                                let y = bh - norm(*v, *lo, *hi) * bh * g;
+                                fill(w, b.origin, &marker_points(Marker::Dot, x, y, 4.0), *c);
+                            }
+                        }
+                    }
+                    w.on_mouse_event(move |e: &gpui::MouseMoveEvent, _, w, cx| {
+                        let next = b.contains(&e.position).then(|| {
+                            let fx = f32::from(e.position.x - b.origin.x) / f32::from(b.size.width);
+                            ((fx * n as f32) as usize).min(n.saturating_sub(1))
+                        });
+                        if *st.read(cx) != next {
+                            st.update(cx, |v, _| *v = next);
+                            w.refresh();
+                        }
+                    });
+                }
             },
         )
         .absolute()
@@ -233,6 +270,41 @@ impl LineChart {
             &crate::charts_annotate::category_x(n),
         ));
 
+        if let Some(i) = cur {
+            let label = self
+                .labels
+                .get(i)
+                .map(|l| l.to_string())
+                .unwrap_or_default();
+            let mut tip = label_style(&t, div())
+                .absolute()
+                .top(px(t.spacing.xs))
+                .px(px(t.spacing.sm))
+                .py(px(t.spacing.xs))
+                .rounded(px(t.spacing.xs))
+                .bg(hsla(t.palette.surface_raised))
+                .border_1()
+                .border_color(grid)
+                .flex()
+                .flex_col()
+                .child(div().child(label));
+            for (si, s) in all.iter().enumerate() {
+                if let Some(v) = s.values.get(i) {
+                    tip = tip.child(
+                        div()
+                            .text_color(hsla(series_color(&t, s, si)))
+                            .child(format!("{}: {}", s.name, fmt_with(&self.fmt, *v))),
+                    );
+                }
+            }
+            // Park the readout on the side away from the pointer.
+            tip = if i * 2 < n {
+                tip.right(px(t.spacing.xs))
+            } else {
+                tip.left(px(t.spacing.xs))
+            };
+            plot = plot.child(tip);
+        }
         if self.points {
             for (si, s) in all.iter().enumerate() {
                 let (lo, hi) = range_of(si);

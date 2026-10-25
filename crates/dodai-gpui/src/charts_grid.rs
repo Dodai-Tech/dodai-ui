@@ -184,6 +184,7 @@ pub struct Heatmap {
     row_labels: Vec<SharedString>,
     col_labels: Vec<SharedString>,
     cell: f32,
+    stretch: bool,
     gradient: dodai_charts_core::Gradient,
 }
 
@@ -196,6 +197,7 @@ impl Heatmap {
             row_labels: Vec::new(),
             col_labels: Vec::new(),
             cell: 28.0,
+            stretch: false,
             gradient: dodai_charts_core::Gradient::Theme,
         }
     }
@@ -207,6 +209,11 @@ impl Heatmap {
     /// Column labels.
     pub fn col_labels<S: Into<SharedString>>(mut self, l: impl IntoIterator<Item = S>) -> Self {
         self.col_labels = l.into_iter().map(Into::into).collect();
+        self
+    }
+    /// Let cells grow to fill the full width instead of capping at 4× the cell size.
+    pub fn stretch(mut self, on: bool) -> Self {
+        self.stretch = on;
         self
     }
     /// Cell size in px.
@@ -366,6 +373,7 @@ impl Heatmap {
             .flatten()
             .fold((f32::MAX, f32::MIN), |(l, h), v| (l.min(*v), h.max(*v)));
         let cell = self.cell;
+        let max_w = if self.stretch { f32::MAX } else { cell * 4.0 };
         let mut root = div().flex().flex_col().gap(px(t.spacing.xs / 2.0));
         if !self.col_labels.is_empty() {
             let mut hdr = label_style(&t, div()).flex().gap(px(t.spacing.xs / 2.0));
@@ -376,7 +384,7 @@ impl Heatmap {
                 div()
                     .flex_1()
                     .min_w_0()
-                    .max_w(px(cell * 4.0))
+                    .max_w(px(max_w))
                     .flex()
                     .justify_center()
                     .child(l.clone())
@@ -401,7 +409,7 @@ impl Heatmap {
                         .id((SharedString::from(format!("{}-{r}", self.id)), c))
                         .flex_1()
                         .min_w_0()
-                        .max_w(px(cell * 4.0))
+                        .max_w(px(max_w))
                         .h(px(cell))
                         .tooltip(DodaiTooltip::text(fmt_num(*v)))
                         .child(shaped(&t.shape, style).size_full()),
