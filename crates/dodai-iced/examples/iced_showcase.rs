@@ -362,6 +362,30 @@ fn view(app: &App) -> Element<'_, Msg> {
         .spacing(sp.sm),
     );
 
+    let charts = section(
+        lt,
+        "Charts",
+        column![
+            lt.sparkline([3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 11.0]),
+            lt.chart(
+                dodai_iced::ChartKind::Line(vec![
+                    vec![12.0, 18.0, 15.0, 26.0, 22.0, 31.0],
+                    vec![8.0, 11.0, 14.0, 13.0, 19.0, 17.0],
+                ]),
+                120.0
+            ),
+            lt.chart(
+                dodai_iced::ChartKind::Bars(vec![
+                    vec![12.0, 18.0, 15.0, 26.0],
+                    vec![8.0, 11.0, 14.0, 13.0],
+                ]),
+                120.0
+            ),
+            lt.chart(dodai_iced::ChartKind::Gauge(0.72), 120.0),
+        ]
+        .spacing(sp.md),
+    );
+
     // Test aid: DODAI_ONLY=panels shows just the panels (with the surface effects) for screenshots.
     if std::env::var("DODAI_ONLY").is_ok_and(|v| v == "panels") {
         let page = container(column![panels].spacing(sp.lg).padding(sp.xl))
@@ -371,9 +395,10 @@ fn view(app: &App) -> Element<'_, Msg> {
         return stack![page, lt.scanlines()].into();
     }
 
-    let body = column![header, buttons, panels, tags, tabs, controls, sliders, inputs, list, misc]
-        .spacing(sp.lg)
-        .padding(sp.xl);
+    let body =
+        column![header, buttons, panels, tags, tabs, controls, sliders, inputs, list, charts, misc]
+            .spacing(sp.lg)
+            .padding(sp.xl);
 
     let page = container(scrollable(body).style(lt.scrollable()))
         .width(Length::Fill)

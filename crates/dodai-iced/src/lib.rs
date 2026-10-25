@@ -23,6 +23,7 @@
 //! | misc | [`divider`](IcedTheme::divider), [`scrollable`](IcedTheme::scrollable), [`tooltip_style`](IcedTheme::tooltip_style), [`tooltip`](IcedTheme::tooltip) |
 //! | text | [`heading_text`](IcedTheme::heading_text), [`label_text`](IcedTheme::label_text), [`body_text`](IcedTheme::body_text), [`muted_text`](IcedTheme::muted_text), [`mono_text`](IcedTheme::mono_text) |
 //! | effects | [`scanlines`](IcedTheme::scanlines) |
+//! | charts | [`chart`](IcedTheme::chart), [`sparkline`](IcedTheme::sparkline) |
 //!
 //! ```no_run
 //! use iced::widget::{button, text};
@@ -46,6 +47,7 @@
 //! [iced]: https://iced.rs
 
 mod button;
+mod charts;
 mod controls;
 mod frame;
 mod geometry;
@@ -62,6 +64,7 @@ mod text;
 #[cfg(test)]
 mod testutil;
 
+pub use charts::{ChartKind, Prim};
 pub use frame::{shaped_frame, BoxStyle, ShapedFrame};
 pub use geometry::ShapeGeom;
 pub use shaped_button::{ButtonState, ShapedButton, ShapedColors};

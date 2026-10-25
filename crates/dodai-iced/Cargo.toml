@@ -14,6 +14,7 @@ categories   = ["gui"]
 [dependencies]
 dodai-core = { workspace = true }
 dodai-surface = { workspace = true }
+dodai-charts-core = { workspace = true }
 iced = { workspace = true }
 
 [dev-dependencies]
