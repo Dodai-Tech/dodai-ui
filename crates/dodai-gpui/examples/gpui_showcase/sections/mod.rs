@@ -6,7 +6,7 @@ mod data_display;
 mod foundations_sec;
 mod inputs;
 mod navigation;
-mod shape;
+pub(crate) mod shape;
 
 use super::*;
 

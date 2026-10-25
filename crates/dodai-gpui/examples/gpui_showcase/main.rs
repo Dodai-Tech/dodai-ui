@@ -561,6 +561,10 @@ impl Render for Showcase {
                                             .child(dodai_gpui::ThemeSelector::new("top-theme")),
                                     ),
                             )
+                            .children(
+                                matches!(selected_cat, Some("Shape" | "Surface effects"))
+                                    .then(|| sections::shape::live_preview(&t)),
+                            )
                             .child(body.min_h_0()),
                     ),
             )

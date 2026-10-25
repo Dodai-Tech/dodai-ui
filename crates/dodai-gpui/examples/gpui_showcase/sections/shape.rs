@@ -66,9 +66,9 @@ impl Showcase {
                 .unwrap_or_default()
         };
         let status = match mode {
-            0 => "Off: nothing is drawn.".to_string(),
+            0 => "Off: no texture or effect is drawn on any component.".to_string(),
             1 => format!("Default: the {family} design's own mix."),
-            _ => "Custom mix.".to_string(),
+            _ => "Custom: your own mix of textures and effects.".to_string(),
         };
         let presets = Segmented::new("sfx-mode", ["Off", "Default", "Custom"])
             .selected(mode)
@@ -1046,4 +1046,49 @@ fn fx_preview(gap: gpui::Pixels, p: &'static str) -> gpui::Div {
         .child(Button::new(id("b1"), "Primary"))
         .child(Button::new(id("b2"), "Secondary").variant(ButtonVariant::Secondary))
         .child(Button::new(id("b3"), "Outline").variant(ButtonVariant::Outline))
+}
+
+/// The pinned strip above the Shape and Surface-effects pages: real components that restyle the
+/// moment any control below changes, so nothing has to be scrolled to see its effect.
+pub(crate) fn live_preview(t: &dodai_core::Theme) -> gpui::Div {
+    let gap = px(t.spacing.md);
+    let row = || div().flex().flex_wrap().items_center().gap(gap);
+    let card = |k: &'static str, v: CardVariant, h: &'static str| {
+        div()
+            .w(px(150.0))
+            .child(Card::new(v).headline(h))
+            .id(gpui::SharedString::from(format!("pv-{k}")))
+    };
+    div()
+        .flex()
+        .flex_none()
+        .flex_col()
+        .gap(px(t.spacing.sm))
+        .px(px(t.spacing.lg))
+        .py(px(t.spacing.md))
+        .border_b_1()
+        .border_color(hsla(t.palette.border))
+        .child(Muted::new(
+            "Live preview: every shape and effect setting below is applied here at once.",
+        ))
+        .child(
+            row()
+                .child(Button::new("pv-p", "Primary"))
+                .child(Button::new("pv-s", "Secondary").variant(ButtonVariant::Secondary))
+                .child(Button::new("pv-o", "Outline").variant(ButtonVariant::Outline))
+                .child(Button::new("pv-d", "Danger").variant(ButtonVariant::Danger))
+                .child(Tag::new("online", Tone::Success).solid(true))
+                .child(Tag::new("warn", Tone::Warning))
+                .child(Checkbox::new("pv-ck", true)),
+        )
+        .child(
+            row()
+                .child(card("c", CardVariant::Outlined, "Card"))
+                .child(card("e", CardVariant::Elevated, "Elevated"))
+                .child(
+                    div()
+                        .w(px(150.0))
+                        .child(Panel::new().title("Panel").child(Muted::new("body"))),
+                ),
+        )
 }
