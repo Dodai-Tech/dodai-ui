@@ -107,8 +107,6 @@ jobs:
     needs: base
     name: ${{ matrix.crate }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    # macOS runners exist only on GitHub; on self-hosted Gitea they would queue forever.
-    if: matrix.os != 'macos-latest' || github.server_url == 'https://github.com'
     strategy:
       fail-fast: false
       matrix:
@@ -116,9 +114,7 @@ jobs:
         crate: [dodai-ratatui, dodai-topcoat, dodai-dioxus]
         include:
           - { crate: dodai-iced, os: ubuntu-latest, gui: true }
-          - { crate: dodai-iced, os: macos-latest, gui: true }
           - { crate: dodai-gpui, os: ubuntu-latest, gui: true }
-          - { crate: dodai-gpui, os: macos-latest, gui: true }
           - { crate: dodai-bevy, os: ubuntu-latest, gui: true }
           - { crate: dodai-shaders, os: ubuntu-latest, gui: true }
           - { crate: dodai-shaders-kernels, os: ubuntu-latest }
@@ -130,6 +126,49 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
             pkg-config libxkbcommon-dev libxkbcommon-x11-dev libx11-dev libxcb1-dev libxcb-xkb-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libwayland-dev libgl1-mesa-dev libvulkan-dev libfontconfig1-dev libasound2-dev libudev-dev libssl-dev
+      - uses: dtolnay/rust-toolchain@stable
+        id: rt3
+        continue-on-error: true
+        with:
+          components: clippy
+      - name: Retry toolchain install (runner network is flaky)
+        if: steps.rt3.outcome == 'failure'
+        run: sleep 20
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.rt3.outcome == 'failure'
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.crate }}
+      - run: cargo clippy -p ${{ matrix.crate }} --all-targets -- -D warnings
+      - run: cargo test -p ${{ matrix.crate }}
+      # Slices must compile alone: charts-only users get no components.
+      - name: gpui feature slices
+        if: matrix.crate == 'dodai-gpui'
+        run: |
+          cargo check -p dodai-gpui --no-default-features --features charts
+          cargo check -p dodai-gpui --no-default-features --features components
+          cargo check -p dodai-gpui --no-default-features --features shaders
+          cargo check -p dodai-gpui --no-default-features
+          cargo check -p dodai-gpui --no-default-features --features cyberpunk
+          cargo check -p dodai-gpui --no-default-features --features material
+          cargo check -p dodai-gpui --no-default-features --features components,charts,cyberpunk
+          cargo check -p dodai-gpui --no-default-features --features components,charts,material
+          cargo check -p dodai-cyberpunk-icons --no-default-features
+
+  # macOS runners exist only on GitHub; on self-hosted Gitea they would queue forever.
+  crate-macos:
+    needs: base
+    name: ${{ matrix.crate }} (macos-latest)
+    runs-on: macos-latest
+    if: github.server_url == 'https://github.com'
+    strategy:
+      fail-fast: false
+      matrix:
+        crate: [dodai-iced, dodai-gpui]
+    steps:
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         id: rt3
         continue-on-error: true
