@@ -671,6 +671,7 @@ impl Showcase {
                     .gap_6()
                     .child(spark("Line + area", Sparkline::new(series())))
                     .child(spark("Line only", Sparkline::new(series()).area(false)))
+                    .child(spark("Smooth", Sparkline::new(series()).smooth(8)))
                     .child(spark(
                         "Diamond tip",
                         Sparkline::new(series()).marker(Marker::Diamond),
@@ -867,6 +868,8 @@ impl Showcase {
                     (0..120).map(|i| ((i * 37 % 100) as f32 / 10.0 + (i % 7) as f32).min(18.0)),
                 )
                 .bins(9)
+                .kde(true)
+                .stats(true)
                 .annotations([Annotation::hline(20.0).label("Alert")])
                 .title("Latency distribution")
                 .format(|v| format!("{v:.0}ms"))
@@ -1227,6 +1230,9 @@ impl Showcase {
                     ("B", vec![4.0, 5.0, 6.0, 6.5, 7.0, 8.0, 12.0]),
                     ("C", vec![1.0, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5]),
                 ])
+                .notch(true)
+                .mean(true)
+                .points(true)
                 .title("Box plot")
                 .into_any_element(),
                 380.0,

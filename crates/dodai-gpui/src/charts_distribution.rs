@@ -1,7 +1,7 @@
 //! Histogram, box plot and bubble charts (distribution of values).
 
 use crate::charts::{
-    chart_cfg, fill, fmt_with, framed, nice_ticks, norm, rect, stroke, titled, Legend, NumFmt,
+    chart_cfg, fill, fmt_with, framed, nice_ticks, norm, stroke, titled, Legend, NumFmt,
 };
 use crate::paint::{scale_alpha, shaped, ShapeStyle};
 use crate::panel::DodaiTooltip;
@@ -59,6 +59,8 @@ type Pts3 = Vec<(f32, f32, f32)>;
 #[derive(IntoElement)]
 pub struct Histogram {
     annotations: Vec<crate::charts_annotate::Annotation>,
+    kde: bool,
+    stats: bool,
     id: SharedString,
     values: Vec<f32>,
     bins: usize,
@@ -85,6 +87,8 @@ impl Histogram {
     pub fn new(id: impl Into<SharedString>, values: impl IntoIterator<Item = f32>) -> Self {
         Self {
             annotations: Vec::new(),
+            kde: false,
+            stats: false,
             corners: None,
             id: id.into(),
             values: values.into_iter().collect(),
@@ -94,6 +98,16 @@ impl Histogram {
             fmt: None,
             title: None,
         }
+    }
+    /// Overlay a kernel-density curve (scaled to the tallest bin).
+    pub fn kde(mut self, on: bool) -> Self {
+        self.kde = on;
+        self
+    }
+    /// Mark the mean (solid) and median (dashed) with labelled lines.
+    pub fn stats(mut self, on: bool) -> Self {
+        self.stats = on;
+        self
     }
     /// Number of bins.
     pub fn bins(mut self, n: usize) -> Self {
@@ -119,9 +133,26 @@ impl Histogram {
         let col = self.color.unwrap_or(t.palette.series_at(0));
         let grid = hsla(t.palette.border);
         let mut plot = div().relative().w_full().h(px(self.height));
+        let mut anns = self.annotations.clone();
+        if self.stats && !bins.is_empty() && !self.values.is_empty() {
+            let (lo, hi) = (bins[0].0, bins[bins.len() - 1].1);
+            let at = |v: f32| norm(v, lo, hi) * bins.len() as f32 - 0.5;
+            let mean = self.values.iter().sum::<f32>() / self.values.len() as f32;
+            let mut sorted = self.values.clone();
+            sorted.sort_by(|a, b| a.total_cmp(b));
+            let med = sorted[sorted.len() / 2];
+            anns.push(
+                crate::charts_annotate::Annotation::vline(at(mean)).label(format!(
+                    "mean {} · median {}",
+                    fmt_with(&self.fmt, mean),
+                    fmt_with(&self.fmt, med)
+                )),
+            );
+            anns.push(crate::charts_annotate::Annotation::vline(at(med)).color(t.palette.warning));
+        }
         plot = plot.child(crate::charts_annotate::layer(
             &t,
-            &self.annotations,
+            &anns,
             (0.0, top),
             &crate::charts_annotate::category_x(bins.len()),
         ));
@@ -162,6 +193,35 @@ impl Histogram {
             );
         }
         plot = plot.child(row);
+        if self.kde && !bins.is_empty() {
+            let d = dodai_charts_core::density::kde(&self.values, 96);
+            let (blo, bhi) = (bins[0].0, bins[bins.len() - 1].1);
+            let line = hsla(t.palette.series_at(1));
+            let k = maxc / top;
+            plot = plot.child(
+                div().absolute().top_0().left_0().size_full().child(
+                    canvas(
+                        |_, _, _| (),
+                        move |b: Bounds<Pixels>, _, w, _| {
+                            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+                            let n = d.y.len();
+                            let pts: Vec<(f32, f32)> = d
+                                .y
+                                .iter()
+                                .enumerate()
+                                .map(|(i, y)| {
+                                    let v = d.lo + (d.hi - d.lo) * i as f32 / (n.max(2) - 1) as f32;
+                                    (norm(v, blo, bhi) * bw, bh - y * k * g * bh)
+                                })
+                                .filter(|p| p.0 >= 0.0 && p.0 <= bw)
+                                .collect();
+                            stroke(w, b.origin, &pts, 2.0, line, false);
+                        },
+                    )
+                    .size_full(),
+                ),
+            );
+        }
         let x_labels: Vec<SharedString> = bins
             .iter()
             .map(|b| fmt_with(&self.fmt, b.0).into())
@@ -178,11 +238,40 @@ impl Histogram {
 
 crate::entry_render!(Histogram);
 
+/// Outline of a notched box (screen coords, y down): the notch narrows to
+/// 60% width at the median and spans its ~95% interval, clamped to the box.
+fn notched_box(
+    x: f32,
+    half: f32,
+    (q1, md, q3): (f32, f32, f32),
+    n: usize,
+    y: &dyn Fn(f32) -> f32,
+) -> Vec<(f32, f32)> {
+    let ci = 1.57 * (q3 - q1) / (n.max(1) as f32).sqrt();
+    let (nl, nh) = ((md - ci).max(q1), (md + ci).min(q3));
+    let inner = half * 0.6;
+    vec![
+        (x - half, y(q3)),
+        (x + half, y(q3)),
+        (x + half, y(nh)),
+        (x + inner, y(md)),
+        (x + half, y(nl)),
+        (x + half, y(q1)),
+        (x - half, y(q1)),
+        (x - half, y(nl)),
+        (x - inner, y(md)),
+        (x - half, y(nh)),
+    ]
+}
+
 // ─────────────────────────────── BoxPlot ───────────────────────────────
 
 /// Box-and-whisker plot from raw samples per category.
 #[derive(IntoElement)]
 pub struct BoxPlot {
+    notch: bool,
+    mean: bool,
+    points: bool,
     groups: Vec<(SharedString, Vec<f32>)>,
     height: f32,
     fmt: Option<NumFmt>,
@@ -194,11 +283,32 @@ impl BoxPlot {
     /// Create a new [`BoxPlot`].
     pub fn new<S: Into<SharedString>>(groups: impl IntoIterator<Item = (S, Vec<f32>)>) -> Self {
         Self {
+            notch: false,
+            mean: false,
+            points: false,
             groups: groups.into_iter().map(|(a, b)| (a.into(), b)).collect(),
             height: 220.0,
             fmt: None,
             title: None,
         }
+    }
+}
+
+impl BoxPlot {
+    /// Notched boxes: the notch is the ~95% confidence interval of the median.
+    pub fn notch(mut self, on: bool) -> Self {
+        self.notch = on;
+        self
+    }
+    /// Mark each group's mean with a diamond.
+    pub fn mean(mut self, on: bool) -> Self {
+        self.mean = on;
+        self
+    }
+    /// Draw every sample as a jittered dot behind the box.
+    pub fn points(mut self, on: bool) -> Self {
+        self.points = on;
+        self
     }
 }
 
@@ -218,6 +328,8 @@ impl BoxPlot {
             .map(|i| hsla(t.palette.series_at(i)))
             .collect();
         let n = stats.len();
+        let (notch, show_mean, show_pts) = (self.notch, self.mean, self.points);
+        let raw: Vec<Vec<f32>> = self.groups.iter().map(|g| g.1.clone()).collect();
         let tf: Vec<f32> = ticks.iter().map(|v| norm(*v, lo, hi)).collect();
         let cv = canvas(
             |_, _, _| (),
@@ -270,20 +382,31 @@ impl BoxPlot {
                         cols[i],
                         false,
                     );
-                    fill(
-                        w,
-                        b.origin,
-                        &rect(x - half, y(*q3), half * 2.0, (y(*q1) - y(*q3)).max(1.0)),
-                        scale_alpha(cols[i], 0.35),
-                    );
-                    stroke(
-                        w,
-                        b.origin,
-                        &rect(x - half, y(*q3), half * 2.0, (y(*q1) - y(*q3)).max(1.0)),
-                        1.5,
-                        cols[i],
-                        true,
-                    );
+                    if show_pts {
+                        for (k, v) in raw[i].iter().enumerate() {
+                            let j = dodai_charts_core::pulse::hash((k + 977 * i) as f32);
+                            let dx = (j - 0.5) * half * 1.6;
+                            fill(
+                                w,
+                                b.origin,
+                                &crate::charts::marker_points(
+                                    crate::charts::Marker::Dot,
+                                    x + dx,
+                                    y(*v),
+                                    2.0,
+                                ),
+                                scale_alpha(cols[i], 0.55),
+                            );
+                        }
+                    }
+                    let outline = if notch {
+                        notched_box(x, half, (*q1, *md, *q3), raw[i].len(), &y)
+                    } else {
+                        let (t, bt) = (y(*q3), y(*q1));
+                        vec![(x - half, t), (x + half, t), (x + half, bt), (x - half, bt)]
+                    };
+                    fill(w, b.origin, &outline, scale_alpha(cols[i], 0.35));
+                    stroke(w, b.origin, &outline, 1.5, cols[i], true);
                     stroke(
                         w,
                         b.origin,
@@ -292,6 +415,13 @@ impl BoxPlot {
                         text,
                         false,
                     );
+                    if show_mean && !raw[i].is_empty() {
+                        let m = raw[i].iter().sum::<f32>() / raw[i].len() as f32;
+                        let (cx, cy) = (x, y(m));
+                        let d = 4.5;
+                        let dia = [(cx, cy - d), (cx + d, cy), (cx, cy + d), (cx - d, cy)];
+                        fill(w, b.origin, &dia, text);
+                    }
                 }
             },
         )
@@ -468,5 +598,20 @@ mod tests {
         );
         assert_eq!(quartiles(&[]), None);
         assert_eq!(quartiles(&[7.0]), Some((7.0, 7.0, 7.0, 7.0, 7.0)));
+    }
+}
+
+#[cfg(test)]
+mod notch_tests {
+    use super::*;
+
+    #[test]
+    fn notch_stays_inside_the_box_and_pinches_at_the_median() {
+        let y = |v: f32| 100.0 - v;
+        let p = notched_box(50.0, 10.0, (20.0, 30.0, 40.0), 9, &y);
+        assert_eq!(p.len(), 10);
+        let (top, bottom) = (y(40.0), y(20.0));
+        assert!(p.iter().all(|q| q.1 >= top && q.1 <= bottom));
+        assert!(p.iter().any(|q| q.0 == 56.0 && q.1 == y(30.0)));
     }
 }

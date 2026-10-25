@@ -24,6 +24,7 @@ pub struct Sparkline {
     area: bool,
     marker: Marker,
     all_points: bool,
+    smooth: usize,
 }
 
 /// How a [`Sparkline`] draws its values.
@@ -116,6 +117,7 @@ impl Sparkline {
             area: true,
             marker: Marker::Dot,
             all_points: false,
+            smooth: 0,
         }
     }
     /// Shape at the line's tip (default `Dot`; `Marker::None` to hide).
@@ -139,6 +141,11 @@ impl Sparkline {
         self.color = Some(c);
         self
     }
+    /// Round the line with `n` interpolated points per segment (0 = straight).
+    pub fn smooth(mut self, n: usize) -> Self {
+        self.smooth = n;
+        self
+    }
     /// Fill the area under the line.
     pub fn area(mut self, a: bool) -> Self {
         self.area = a;
@@ -160,7 +167,7 @@ impl Sparkline {
         let glow = self.glow.resolve(&t).map(|r| r.min(4.0));
         let (vals, area, marker, all_points) =
             (self.values, self.area, self.marker, self.all_points);
-        let (style, baseline) = (self.style, self.baseline);
+        let (style, baseline, smooth) = (self.style, self.baseline, self.smooth);
         let up = hsla(t.palette.success);
         let down = hsla(t.palette.danger);
         let (lo, hi) = vals
@@ -247,13 +254,18 @@ impl Sparkline {
                         }
                         SparkStyle::Line => {}
                     }
+                    let curve = if smooth > 0 {
+                        smooth_points(&p, smooth)
+                    } else {
+                        p.clone()
+                    };
                     if area {
-                        let mut poly = p.clone();
+                        let mut poly = curve.clone();
                         poly.push((bw, bh));
                         poly.push((0.0, bh));
                         fill(w, b.origin, &poly, scale_alpha(c, 0.16));
                     }
-                    glow_stroke(w, b.origin, &p, 1.5, c, glow);
+                    glow_stroke(w, b.origin, &curve, 1.5, c, glow);
                     let tips = if all_points { &p[..] } else { &p[m - 1..] };
                     for &(x, y) in tips {
                         let x = x.clamp(3.0, bw - 3.0);
