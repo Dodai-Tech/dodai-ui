@@ -826,7 +826,17 @@ pub(crate) fn tape(cv: &mut Canvas, sp: &SurfacePaint) {
 /// A three-colour gradient laid over the surface at 135°, in coarse cells so it stays cheap.
 /// It is faint on purpose: frosted glass is tinted by it, not covered.
 pub(crate) fn wash(cv: &mut Canvas, sp: &SurfacePaint) {
-    let k = sp.fx.wash.clamp(0.0, 1.0);
+    let luma = |c: Rgba| 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+    let wash_luma = sp.wash.iter().map(|c| luma(*c)).sum::<f32>() / 3.0;
+    // A wash darker than a bright surface (a pale primary button) would only grey it, so it
+    // fades out in proportion to how much it would darken.
+    let hole = luma(sp.hole);
+    let darken = if hole > 0.6 {
+        (hole - wash_luma).max(0.0)
+    } else {
+        0.0
+    };
+    let k = sp.fx.wash.clamp(0.0, 1.0) * (1.0 - 0.8 * darken.min(1.0));
     let (w, h) = (cv.w, cv.h);
     let cols = (w / 10.0).clamp(2.0, 20.0) as usize;
     // Rows are coarse in the middle but 2 px tall through the rounded corners, where each cell

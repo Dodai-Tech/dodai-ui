@@ -110,6 +110,8 @@ pub struct SurfacePaint {
     pub tune: dodai_core::SurfaceTuning,
     /// Whether a press on this surface plays the click ripple.
     pub pressable: bool,
+    /// Lightness (0..1) of the fill underneath, when known (see [`Self::contrasting`]).
+    pub fill_lightness: f32,
 }
 
 impl SurfacePaint {
@@ -127,6 +129,7 @@ impl SurfacePaint {
             wash: theme.surface_style.wash.map(Rgba::from),
             tune: theme.surface_style.tuning,
             pressable,
+            fill_lightness: 0.0,
         }
     }
 
@@ -158,6 +161,7 @@ impl SurfacePaint {
     /// `fill_lightness`, so it stays visible on bright fills (a primary button) as well as dark ones.
     #[must_use]
     pub fn contrasting(mut self, fill_lightness: f32) -> Self {
+        self.fill_lightness = fill_lightness;
         let (text, back) = (self.ink, self.hole);
         if (text.lightness() - fill_lightness).abs() < (back.lightness() - fill_lightness).abs() {
             self.ink = back;
