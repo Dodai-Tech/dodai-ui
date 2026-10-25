@@ -113,6 +113,19 @@ const SOURCE: &str = include_str!("snippets.rs");
 
 /// The displayed code for a section title, dedented; `None` if it has no snippet.
 pub(crate) fn snippet(section: &str) -> Option<String> {
+    thread_local! {
+        static CACHE: std::cell::RefCell<std::collections::HashMap<String, Option<String>>> =
+            Default::default();
+    }
+    if let Some(hit) = CACHE.with(|c| c.borrow().get(section).cloned()) {
+        return hit;
+    }
+    let out = scan_snippet(section);
+    CACHE.with(|c| c.borrow_mut().insert(section.to_string(), out.clone()));
+    out
+}
+
+fn scan_snippet(section: &str) -> Option<String> {
     extract(SOURCE, section)
 }
 

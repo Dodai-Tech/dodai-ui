@@ -175,6 +175,20 @@ fn ident_start(s: &str) -> &str {
 
 /// Components a section demonstrates, in order of first use.
 pub(crate) fn components(title: &str) -> Vec<String> {
+    // The sources are static and scanning them takes milliseconds: do it once per title.
+    thread_local! {
+        static CACHE: std::cell::RefCell<std::collections::HashMap<String, Vec<String>>> =
+            Default::default();
+    }
+    if let Some(hit) = CACHE.with(|c| c.borrow().get(title).cloned()) {
+        return hit;
+    }
+    let out = scan_components(title);
+    CACHE.with(|c| c.borrow_mut().insert(title.to_string(), out.clone()));
+    out
+}
+
+fn scan_components(title: &str) -> Vec<String> {
     let Some(text) = section_text(title) else {
         return Vec::new();
     };
@@ -257,6 +271,19 @@ fn is_item_of(header: &str, name: &str) -> bool {
 /// A type's definition and every `impl` block for it, in file order (docs and attributes
 /// included), joined by blank lines. `None` if `name` is not defined in `dodai-gpui`.
 pub(crate) fn implementation(name: &str) -> Option<String> {
+    thread_local! {
+        static CACHE: std::cell::RefCell<std::collections::HashMap<String, Option<String>>> =
+            Default::default();
+    }
+    if let Some(hit) = CACHE.with(|c| c.borrow().get(name).cloned()) {
+        return hit;
+    }
+    let out = scan_implementation(name);
+    CACHE.with(|c| c.borrow_mut().insert(name.to_string(), out.clone()));
+    out
+}
+
+fn scan_implementation(name: &str) -> Option<String> {
     let (_, src) = FILES.iter().find(|(_, src)| {
         src.lines().any(|l| {
             ["pub struct ", "pub enum "]
