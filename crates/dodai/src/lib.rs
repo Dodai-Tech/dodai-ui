@@ -65,6 +65,12 @@ pub mod themes {
     #[allow(unused_mut, clippy::vec_init_then_push)]
     pub fn systems() -> Vec<DesignSystem> {
         let mut v: Vec<DesignSystem> = Vec::new();
+        #[cfg(feature = "aurora")]
+        v.push(DesignSystem {
+            family: "aurora",
+            name: "Aurora",
+            themes: dodai_aurora::variants,
+        });
         #[cfg(feature = "cyberpunk")]
         v.push(DesignSystem {
             family: "cyberpunk",
@@ -82,12 +88,6 @@ pub mod themes {
             family: "neobrutalism",
             name: "Neo-Brutalism",
             themes: dodai_neobrutalism::variants,
-        });
-        #[cfg(feature = "aurora")]
-        v.push(DesignSystem {
-            family: "aurora",
-            name: "Aurora",
-            themes: dodai_aurora::variants,
         });
         v
     }

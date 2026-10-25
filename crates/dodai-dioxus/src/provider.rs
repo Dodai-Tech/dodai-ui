@@ -324,7 +324,10 @@ mod tests {
         let cs = scoped_stylesheet(&[s]);
         assert!(cl.contains("--dodai-radius:8px"));
         assert!(cs.contains("--dodai-radius:0px"));
-        let cp = scoped_stylesheet(&[dodai::themes::all()[0].clone()]);
+        let cp = scoped_stylesheet(&[dodai::themes::all()
+            .into_iter()
+            .find(|t| t.id() == "cyberpunk")
+            .expect("cyberpunk theme")]);
         assert!(cp.contains("--dodai-chamfer:16px"));
     }
 

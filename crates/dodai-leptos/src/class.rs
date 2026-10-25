@@ -228,8 +228,12 @@ mod tests {
             assert!(css.contains(&format!("[data-theme=\"{}\"]", t.id())));
         }
         assert!(css.contains("[data-glow=\"0\"]"));
-        let off = theme_vars(&all[0].clone().with_glow_intensity(0.0));
-        assert_ne!(off, theme_vars(&all[0]));
+        let glowing = all
+            .iter()
+            .find(|t| t.effects.glow_enabled())
+            .expect("a glowing theme");
+        let off = theme_vars(&glowing.clone().with_glow_intensity(0.0));
+        assert_ne!(off, theme_vars(glowing));
     }
 
     #[test]
