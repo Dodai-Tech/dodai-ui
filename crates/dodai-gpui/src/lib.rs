@@ -384,8 +384,8 @@ pub use list::{Divider, ListItem};
 #[cfg(feature = "components")]
 pub use menu::{Menu, MenuItem};
 pub use motion::{
-    entry as entry_animation, grow, lerp, stagger_window, Curve, Easing, EntryKind, EntryScope,
-    EntrySet, Motion, MotionExt, Tween,
+    entry as entry_animation, grow, lerp, set_max_fps, stagger_window, Curve, Easing, EntryKind,
+    EntryScope, EntrySet, Motion, MotionExt, Tween,
 };
 #[cfg(feature = "components")]
 pub use nav::{Accordion, Breadcrumb, Pagination, Segmented, Stepper};

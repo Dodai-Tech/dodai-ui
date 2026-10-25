@@ -188,7 +188,56 @@ pub fn next_frame(window: &gpui::Window) {
             }
         });
     }
-    window.request_animation_frame();
+    match frame_cap() {
+        None => window.request_animation_frame(),
+        Some(gap) => {
+            // Every request inside the budget joins one tick, so they redraw together
+            // (separate timers would each cause their own frame).
+            let view = window.current_view();
+            let first = PENDING.with(|p| {
+                let mut p = p.borrow_mut();
+                let first = p.is_empty();
+                p.insert(view);
+                first
+            });
+            if first {
+                window.on_next_frame(move |window, cx| {
+                    window
+                        .spawn(cx, async move |cx| {
+                            cx.background_executor().timer(gap).await;
+                            cx.update(|_, cx| {
+                                for v in PENDING.with(|p| std::mem::take(&mut *p.borrow_mut())) {
+                                    cx.notify(v);
+                                }
+                            })
+                            .ok();
+                        })
+                        .detach();
+                });
+            }
+        }
+    }
+}
+
+thread_local! {
+    static PENDING: std::cell::RefCell<std::collections::HashSet<gpui::EntityId>> = Default::default();
+    static FRAME_CAP: std::cell::Cell<Option<std::time::Duration>> =
+        const { std::cell::Cell::new(None) };
+}
+
+/// Cap how fast running animations redraw (`None`: every display refresh). Looping animations
+/// on a 120 Hz display cost twice the frames for no visible gain; 60 is plenty.
+pub fn set_max_fps(fps: Option<u32>) {
+    FRAME_CAP.with(|c| {
+        c.set(fps.filter(|f| *f > 0).map(|f| {
+            // Minus one display refresh of latency already spent waiting for the callback.
+            std::time::Duration::from_secs_f32((1.0 / f as f32 - 1.0 / 120.0).max(0.0))
+        }));
+    });
+}
+
+fn frame_cap() -> Option<std::time::Duration> {
+    FRAME_CAP.with(std::cell::Cell::get)
 }
 
 /// Eased `0..1` value following `on` (retargets from the current value, so

@@ -45,6 +45,7 @@ mod impl_src;
 mod motion_page;
 mod overview;
 mod player;
+mod section_view;
 mod sections;
 mod shaders_page;
 mod sidebar;
@@ -111,6 +112,13 @@ pub struct Showcase {
     meta: Vec<(&'static str, &'static str)>,
     /// The design family `meta` was built for (sections differ per design).
     meta_family: &'static str,
+    section_views: std::collections::HashMap<&'static str, Entity<section_view::SectionView>>,
+    /// Elements of the groups built this frame, by section title (siblings of a rebuilt section).
+    built: std::collections::HashMap<&'static str, gpui::AnyElement>,
+    /// Heights the sections measured themselves (a cached view is sized from its style).
+    real_h: std::collections::HashMap<&'static str, f32>,
+    /// Set while a scroll notifies: the sections need no rebuild for it.
+    quiet: bool,
     /// Per section title: its category, the index of the group that builds it, and its key.
     section_group: std::collections::HashMap<&'static str, (&'static str, usize, &'static str)>,
     spy: Vec<(&'static str, usize)>,
@@ -160,6 +168,8 @@ pub struct Showcase {
 impl Render for Showcase {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let _prof = Prof::start();
+        self.quiet = false;
+        self.built.clear();
         let narrow = window.viewport_size().width < px(760.0);
         let t = theme_of(cx);
         let me = cx.entity();
@@ -237,6 +247,7 @@ impl Render for Showcase {
             // Scroll-spy reads layout, so repaint on scroll even on static pages.
             .on_scroll_wheel(cx.listener(|s, _: &gpui::ScrollWheelEvent, _, cx| {
                 s.pin.release();
+                s.quiet = true;
                 cx.notify()
             }))
             .flex()
@@ -326,9 +337,6 @@ impl Render for Showcase {
         let mut last_cat = "";
         let mut last_sub: Option<&str> = None;
         let mut spy: Vec<(&'static str, usize)> = Vec::new();
-        // Elements of the groups built this frame, by section title.
-        let mut built: std::collections::HashMap<&'static str, gpui::AnyElement> =
-            Default::default();
         for (seq, (c, title)) in shown_secs.into_iter().enumerate() {
             if c != last_cat {
                 body = body.child(Heading::new(c).level(2));
@@ -347,13 +355,19 @@ impl Render for Showcase {
             if jump_title == Some(title) {
                 jump_ix = Some(n_children);
             }
-            let known = self.heights.get(title).copied();
+            let known = self
+                .real_h
+                .get(title)
+                .or_else(|| self.heights.get(title))
+                .copied();
             let bounds = if valid {
                 self.scroll.bounds_for_item(n_children)
             } else {
                 None
             };
-            if let Some(b) = bounds.filter(|_| prev_real.contains(title)) {
+            if let Some(b) =
+                bounds.filter(|_| prev_real.contains(title) && !self.real_h.contains_key(title))
+            {
                 let h: f32 = b.size.height.into();
                 let bottom = f32::from(b.origin.y) + shift + h;
                 if let Some(old) = known {
@@ -385,18 +399,22 @@ impl Render for Showcase {
             n_children += 1;
             if realise || std::env::var_os("DODAI_NOCULL").is_some() {
                 self.realised.insert(title);
-                if !built.contains_key(title) {
-                    if let Some(&(cat, gi, _)) = self.section_group.get(title) {
-                        if let Some(group) = Self::groups_of(cat).get(gi).copied() {
-                            for (_, ti, el, _) in self.build_group(cat, group, cx) {
-                                built.insert(ti, el);
-                            }
-                        }
-                    }
-                }
-                if let Some(el) = built.remove(title) {
-                    body = body.child(self.with_code(title, keys.get(title).copied(), el, &t, &me));
-                }
+                let view = self
+                    .section_views
+                    .entry(title)
+                    .or_insert_with(|| {
+                        cx.new(|cx| section_view::SectionView::new(me.clone(), title, cx))
+                    })
+                    .clone();
+                let h = known.unwrap_or(avg_h);
+                body = body.child(
+                    gpui::AnyView::from(view).cached(
+                        gpui::StyleRefinement::default()
+                            .w_full()
+                            .flex_none()
+                            .h(px(h)),
+                    ),
+                );
             } else {
                 body = body.child(div().flex_none().w_full().h(px(known.unwrap_or(avg_h))));
             }
@@ -606,6 +624,12 @@ fn new_showcase(cx: &mut App) -> Entity<Showcase> {
 
 fn main() {
     Application::new().run(|cx: &mut App| {
+        // Running animations redraw at most 60 times a second (DODAI_FPS=0 lifts the cap).
+        let fps = std::env::var("DODAI_FPS")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(60);
+        dodai_gpui::set_max_fps(Some(fps));
         // Debug: DODAI_THEME=<theme id> starts on that theme (e.g. material-dark).
         let mut switcher = dodai::switcher();
         if let Ok(id) = std::env::var("DODAI_THEME") {
