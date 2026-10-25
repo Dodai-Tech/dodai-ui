@@ -116,8 +116,30 @@ impl Showcase {
                     dodai_gpui::set_surface_fx(cx, f);
                 })
         };
-        let targets = row()
-            .children(SurfaceClass::ALL.iter().map(|c| chip(*c)))
+        // Controls (things you press or type in) apart from containers (things that hold content).
+        let group = |caption: &'static str, container: bool| {
+            row()
+                .child(
+                    div()
+                        .w(px(96.0))
+                        .flex_none()
+                        .text_size(px(t.typography.size_sm))
+                        .text_color(dodai_gpui::hsla(t.palette.text_muted))
+                        .child(caption),
+                )
+                .children(
+                    SurfaceClass::ALL
+                        .iter()
+                        .filter(|c| c.is_container() == container)
+                        .map(|c| chip(*c)),
+                )
+        };
+        let targets = div()
+            .flex()
+            .flex_col()
+            .gap(px(t.spacing.sm))
+            .child(group("Controls", false))
+            .child(group("Containers", true))
             .child(
                 div()
                     .flex()
