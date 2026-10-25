@@ -5,6 +5,7 @@
 //! `Theme::with_glow_intensity` live.
 
 use dodai_core::{ButtonVariant, Tone};
+use dodai_gpui::Annotation;
 use dodai_gpui::{
     cycle_next, cycle_prev, fuzzy_filter, glow_intensity, hsla, set_glow_intensity, set_scanlines,
     theme_of, Accordion, BottomSheet, Breadcrumb, BubblePlacement, Button, ButtonGroup, Card,

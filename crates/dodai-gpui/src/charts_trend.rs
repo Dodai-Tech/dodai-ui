@@ -34,6 +34,7 @@ pub fn stack_cumulative(series: &[Series]) -> Vec<Vec<f32>> {
 /// Stacked area chart: layers add up to the total.
 #[derive(IntoElement)]
 pub struct StackedAreaChart {
+    annotations: Vec<crate::charts_annotate::Annotation>,
     series: Vec<Series>,
     labels: Vec<SharedString>,
     height: f32,
@@ -44,9 +45,18 @@ pub struct StackedAreaChart {
 chart_cfg!(StackedAreaChart);
 
 impl StackedAreaChart {
+    /// Threshold lines and highlighted bands drawn over the plot.
+    pub fn annotations(
+        mut self,
+        a: impl IntoIterator<Item = crate::charts_annotate::Annotation>,
+    ) -> Self {
+        self.annotations = a.into_iter().collect();
+        self
+    }
     /// Create a new [`StackedAreaChart`].
     pub fn new(series: impl IntoIterator<Item = Series>) -> Self {
         Self {
+            annotations: Vec::new(),
             series: series.into_iter().collect(),
             labels: Vec::new(),
             height: 200.0,
@@ -121,7 +131,14 @@ impl StackedAreaChart {
         )
         .absolute()
         .size_full();
-        let plot = div().relative().w_full().h(px(self.height)).child(cv);
+        let mut plot = div().relative().w_full().h(px(self.height)).child(cv);
+        plot = plot.child(crate::charts_annotate::layer(
+            &t,
+            &self.annotations,
+            (0.0, top),
+            &crate::charts_annotate::category_x(n),
+        ));
+
         let x_labels = if self.labels.len() == n {
             self.labels.clone()
         } else {

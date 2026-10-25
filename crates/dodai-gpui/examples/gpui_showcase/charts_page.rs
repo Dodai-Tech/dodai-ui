@@ -131,14 +131,22 @@ impl Showcase {
                             LineChart::new("line", [a.clone(), b.clone()])
                                 .labels(months)
                                 .area(true)
-                                .smooth(true),
+                                .smooth(true)
+                                .annotations([
+                                    Annotation::hline(20.0).label("Target"),
+                                    Annotation::x_band(2.0, 3.0).label("Launch"),
+                                ]),
                         ),
                     )
                     .child(
-                        div()
-                            .flex_1()
-                            .min_w(px(300.0))
-                            .child(BarChart::new("bars", [a.clone(), b.clone()]).labels(months)),
+                        div().flex_1().min_w(px(300.0)).child(
+                            BarChart::new("bars", [a.clone(), b.clone()])
+                                .labels(months)
+                                .annotations([
+                                    Annotation::y_band(10.0, 20.0).label("Plan"),
+                                    Annotation::hline(25.0).label("Cap"),
+                                ]),
+                        ),
                     ),
             )
             .child(
@@ -782,6 +790,7 @@ impl Showcase {
                     (0..120).map(|i| ((i * 37 % 100) as f32 / 10.0 + (i % 7) as f32).min(18.0)),
                 )
                 .bins(9)
+                .annotations([Annotation::hline(20.0).label("Alert")])
                 .title("Latency distribution")
                 .format(|v| format!("{v:.0}ms"))
                 .into_any_element(),

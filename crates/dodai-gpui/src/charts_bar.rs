@@ -15,6 +15,7 @@ use std::rc::Rc;
 /// Bar chart: vertical or horizontal, grouped or stacked.
 #[derive(IntoElement)]
 pub struct BarChart {
+    annotations: Vec<crate::charts_annotate::Annotation>,
     id: SharedString,
     series: Vec<Series>,
     labels: Vec<SharedString>,
@@ -33,9 +34,18 @@ pub struct BarChart {
 crate::corners_setter!(BarChart);
 
 impl BarChart {
+    /// Threshold lines and highlighted bands drawn over the plot.
+    pub fn annotations(
+        mut self,
+        a: impl IntoIterator<Item = crate::charts_annotate::Annotation>,
+    ) -> Self {
+        self.annotations = a.into_iter().collect();
+        self
+    }
     /// Create a new [`BarChart`].
     pub fn new(id: impl Into<SharedString>, series: impl IntoIterator<Item = Series>) -> Self {
         Self {
+            annotations: Vec::new(),
             corners: None,
             id: id.into(),
             series: series.into_iter().collect(),
@@ -260,6 +270,20 @@ impl BarChart {
                     .w_full()
                     .h(px(t.sizes().hairline))
             });
+        }
+        if !h {
+            let n = self
+                .series
+                .iter()
+                .map(|s| s.values.len())
+                .max()
+                .unwrap_or(0);
+            plot = plot.child(crate::charts_annotate::layer(
+                t,
+                &self.annotations,
+                (0.0, top),
+                &crate::charts_annotate::category_x(n),
+            ));
         }
         plot = plot.child(cats);
         plot

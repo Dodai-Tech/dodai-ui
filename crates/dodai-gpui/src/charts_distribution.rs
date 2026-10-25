@@ -58,6 +58,7 @@ type Pts3 = Vec<(f32, f32, f32)>;
 /// Histogram of raw values with equal-width bins.
 #[derive(IntoElement)]
 pub struct Histogram {
+    annotations: Vec<crate::charts_annotate::Annotation>,
     id: SharedString,
     values: Vec<f32>,
     bins: usize,
@@ -72,9 +73,18 @@ crate::corners_setter!(Histogram);
 chart_cfg!(Histogram);
 
 impl Histogram {
+    /// Threshold lines and highlighted bands drawn over the plot.
+    pub fn annotations(
+        mut self,
+        a: impl IntoIterator<Item = crate::charts_annotate::Annotation>,
+    ) -> Self {
+        self.annotations = a.into_iter().collect();
+        self
+    }
     /// Create a new [`Histogram`].
     pub fn new(id: impl Into<SharedString>, values: impl IntoIterator<Item = f32>) -> Self {
         Self {
+            annotations: Vec::new(),
             corners: None,
             id: id.into(),
             values: values.into_iter().collect(),
@@ -109,6 +119,13 @@ impl Histogram {
         let col = self.color.unwrap_or(t.palette.series_at(0));
         let grid = hsla(t.palette.border);
         let mut plot = div().relative().w_full().h(px(self.height));
+        plot = plot.child(crate::charts_annotate::layer(
+            &t,
+            &self.annotations,
+            (0.0, top),
+            &crate::charts_annotate::category_x(bins.len()),
+        ));
+
         for v in &ticks {
             plot = plot.child(
                 div()

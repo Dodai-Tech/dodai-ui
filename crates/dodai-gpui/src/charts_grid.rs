@@ -16,6 +16,7 @@ use std::rc::Rc;
 /// Scatter plot of `(x, y)` points per series, with hover tooltips.
 #[derive(IntoElement)]
 pub struct ScatterPlot {
+    annotations: Vec<crate::charts_annotate::Annotation>,
     id: SharedString,
     series: Vec<(SharedString, Vec<(f32, f32)>)>,
     height: f32,
@@ -23,12 +24,21 @@ pub struct ScatterPlot {
 }
 
 impl ScatterPlot {
+    /// Threshold lines and highlighted bands drawn over the plot.
+    pub fn annotations(
+        mut self,
+        a: impl IntoIterator<Item = crate::charts_annotate::Annotation>,
+    ) -> Self {
+        self.annotations = a.into_iter().collect();
+        self
+    }
     /// Create a new [`ScatterPlot`].
     pub fn new<S: Into<SharedString>>(
         id: impl Into<SharedString>,
         series: impl IntoIterator<Item = (S, Vec<(f32, f32)>)>,
     ) -> Self {
         Self {
+            annotations: Vec::new(),
             id: id.into(),
             series: series.into_iter().map(|(n, p)| (n.into(), p)).collect(),
             height: 200.0,
@@ -95,6 +105,13 @@ impl ScatterPlot {
         .absolute()
         .size_full();
         let mut plot = div().relative().w_full().h(px(self.height)).child(cvs);
+        plot = plot.child(crate::charts_annotate::layer(
+            &t,
+            &self.annotations,
+            (y0, y1),
+            &|v: f32| norm(v, x0, x1),
+        ));
+
         for (si, (name, pts)) in self.series.iter().enumerate() {
             let c = hsla(t.palette.series_at(si));
             for (i, (x, y)) in pts.iter().enumerate() {

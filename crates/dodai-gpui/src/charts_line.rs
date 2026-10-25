@@ -16,6 +16,7 @@ use std::rc::Rc;
 /// (with hover tooltips) and glow on glowing themes.
 #[derive(IntoElement)]
 pub struct LineChart {
+    annotations: Vec<crate::charts_annotate::Annotation>,
     id: SharedString,
     series: Vec<Series>,
     secondary: Vec<Series>,
@@ -35,9 +36,18 @@ pub struct LineChart {
 }
 
 impl LineChart {
+    /// Threshold lines and highlighted bands drawn over the plot.
+    pub fn annotations(
+        mut self,
+        a: impl IntoIterator<Item = crate::charts_annotate::Annotation>,
+    ) -> Self {
+        self.annotations = a.into_iter().collect();
+        self
+    }
     /// Create a new [`LineChart`].
     pub fn new(id: impl Into<SharedString>, series: impl IntoIterator<Item = Series>) -> Self {
         Self {
+            annotations: Vec::new(),
             id: id.into(),
             secondary: Vec::new(),
             series: series.into_iter().collect(),
@@ -209,6 +219,13 @@ impl LineChart {
         .size_full();
 
         let mut plot = div().relative().w_full().h(px(self.height)).child(cv);
+        plot = plot.child(crate::charts_annotate::layer(
+            &t,
+            &self.annotations,
+            (lo, hi),
+            &crate::charts_annotate::category_x(n),
+        ));
+
         if self.points {
             for (si, s) in all.iter().enumerate() {
                 let (lo, hi) = range_of(si);

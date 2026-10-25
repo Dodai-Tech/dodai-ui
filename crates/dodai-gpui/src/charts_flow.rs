@@ -126,6 +126,7 @@ crate::entry_render!(Funnel);
 /// Waterfall of deltas; increases green, decreases red, optional total bar.
 #[derive(IntoElement)]
 pub struct Waterfall {
+    annotations: Vec<crate::charts_annotate::Annotation>,
     id: SharedString,
     steps: Vec<(SharedString, f32)>,
     total: bool,
@@ -139,12 +140,21 @@ crate::corners_setter!(Waterfall);
 chart_cfg!(Waterfall);
 
 impl Waterfall {
+    /// Threshold lines and highlighted bands drawn over the plot.
+    pub fn annotations(
+        mut self,
+        a: impl IntoIterator<Item = crate::charts_annotate::Annotation>,
+    ) -> Self {
+        self.annotations = a.into_iter().collect();
+        self
+    }
     /// Create a new [`Waterfall`].
     pub fn new<S: Into<SharedString>>(
         id: impl Into<SharedString>,
         steps: impl IntoIterator<Item = (S, f32)>,
     ) -> Self {
         Self {
+            annotations: Vec::new(),
             corners: None,
             id: id.into(),
             steps: steps
@@ -178,6 +188,13 @@ impl Waterfall {
         let (lo, hi) = (*ticks.first().unwrap_or(&lo), *ticks.last().unwrap_or(&hi));
         let grid = hsla(t.palette.border);
         let mut plot = div().relative().w_full().h(px(self.height));
+        plot = plot.child(crate::charts_annotate::layer(
+            &t,
+            &self.annotations,
+            (lo, hi),
+            &crate::charts_annotate::category_x(self.steps.len() + usize::from(self.total)),
+        ));
+
         for v in &ticks {
             plot = plot.child(
                 div()

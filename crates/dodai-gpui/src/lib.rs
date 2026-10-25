@@ -172,6 +172,8 @@ pub mod carousel;
 #[cfg(feature = "charts")]
 pub mod charts;
 #[cfg(feature = "charts")]
+pub mod charts_annotate;
+#[cfg(feature = "charts")]
 pub mod charts_bar;
 #[cfg(feature = "charts")]
 pub mod charts_distribution;
@@ -300,6 +302,8 @@ pub use charts::{
     pie_hit, polar, smooth_points, spark_columns, BarChart, ChartGlow, Gauge, Heatmap, Legend,
     LineChart, Marker, PieChart, PieStyle, RadarChart, ScatterPlot, Series, SparkStyle, Sparkline,
 };
+#[cfg(feature = "charts")]
+pub use charts_annotate::Annotation;
 #[cfg(feature = "charts")]
 pub use charts_distribution::{histogram_bins, quartiles, BoxPlot, BubbleChart, Histogram};
 #[cfg(feature = "charts")]
