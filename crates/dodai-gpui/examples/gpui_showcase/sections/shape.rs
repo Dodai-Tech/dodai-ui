@@ -3,21 +3,22 @@
 use super::super::*;
 
 impl Showcase {
-    pub(crate) fn sections_shape(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
-        let mut out: Vec<Section> = Vec::new();
-        out.extend(self.gallery_section(cx));
-        out.extend(self.presets_section(cx));
-        out.extend(self.component_textures_section(cx));
-        out.extend(self.container_textures_section(cx));
-        out.extend(self.light_section(cx));
-        out.extend(self.edges_section(cx));
-        out.extend(self.ripple_section(cx));
-        out.extend(self.signature_section(cx));
-        out.extend(self.roundness_section(cx));
-        out.extend(self.corner_shape_section(cx));
-        out.extend(self.crop_section(cx));
-        out.extend(self.border_section(cx));
-        out
+    /// The builders of this category, one per group of sections (built lazily).
+    pub(crate) fn groups_shape() -> Vec<Group> {
+        vec![
+            Self::gallery_section,
+            Self::presets_section,
+            Self::component_textures_section,
+            Self::container_textures_section,
+            Self::light_section,
+            Self::edges_section,
+            Self::ripple_section,
+            Self::signature_section,
+            Self::roundness_section,
+            Self::corner_shape_section,
+            Self::crop_section,
+            Self::border_section,
+        ]
     }
 
     fn gallery_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {

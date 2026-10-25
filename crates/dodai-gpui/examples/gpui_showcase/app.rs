@@ -143,6 +143,7 @@ impl Showcase {
             cat_count: 1,
             meta: Vec::new(),
             meta_family: "",
+            section_group: Default::default(),
             spy: Vec::new(),
             pin: dodai_gpui::ScrollSpy::new(),
             sub: None,

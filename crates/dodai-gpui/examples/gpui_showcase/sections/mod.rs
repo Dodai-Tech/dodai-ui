@@ -41,79 +41,93 @@ impl Showcase {
             .scope_key(self.sec_replay.get(title).copied().unwrap_or(0))
     }
 
-    /// Build the sections of one category (nothing else is constructed), without those that
-    /// belong to another design (see `catalog::owner`).
-    pub(crate) fn sections_of(&mut self, cat: &str, cx: &mut Context<Self>) -> Vec<Section> {
+    /// The group builders of a category. Each builds a few related sections; they are called
+    /// only when one of their sections is on screen.
+    pub(crate) fn groups_of(cat: &str) -> Vec<Group> {
+        match cat {
+            "Foundations" => Self::groups_foundations_sec(),
+            "Shape" | "Surface effects" => Self::groups_shape(),
+            "Actions" => Self::groups_actions(),
+            "Data display" => Self::groups_data_display(),
+            "Navigation" => Self::groups_navigation(),
+            "Inputs" => Self::groups_inputs(),
+            "Charts" => vec![Self::sections_charts_sec],
+            "Loading" => vec![Self::loading_group],
+            "Animation" => vec![Self::animation_group],
+            _ => vec![Self::shaders_group],
+        }
+    }
+
+    /// One group, without the sections that belong to another design (see `catalog::owner`) or
+    /// another category (the Shape and Surface-effects pages share their builders).
+    pub(crate) fn build_group(
+        &mut self,
+        cat: &str,
+        group: crate::shaders_page::Group,
+        cx: &mut Context<Self>,
+    ) -> Vec<Section> {
         let family = theme_of(cx).meta.family;
-        let mut v = self.sections_of_all(cat, cx);
-        v.retain(|(_, title, _, _)| {
-            super::catalog::owner(title).is_none_or(|o| o.contains(&family))
+        let mut v = group(self, cx);
+        v.retain(|(c, title, _, _)| {
+            *c == cat && super::catalog::owner(title).is_none_or(|o| o.contains(&family))
         });
         v
     }
 
-    fn sections_of_all(&mut self, cat: &str, cx: &mut Context<Self>) -> Vec<Section> {
-        match cat {
-            "Foundations" => self.sections_foundations_sec(cx),
-            "Shape" | "Surface effects" => {
-                let mut v = self.sections_shape(cx);
-                v.retain(|(c, ..)| *c == cat);
-                v
-            }
-            "Actions" => self.sections_actions(cx),
-            "Data display" => self.sections_data_display(cx),
-            "Navigation" => self.sections_navigation(cx),
-            "Inputs" => self.sections_inputs(cx),
-            "Charts" => self.sections_charts_sec(cx),
-            "Loading" => {
-                let p = self.loading_section(cx);
-                let t = theme_of(cx);
-                let li = Panel::new()
-                    .title("Loading indicator")
-                    .child(
-                        div()
-                            .flex()
-                            .items_center()
-                            .gap(px(t.spacing.lg))
-                            .child(LoadingIndicator::new("li-plain"))
-                            .child(LoadingIndicator::new("li-contained").contained(true)),
-                    )
-                    .into_any_element();
-                vec![
-                    (
-                        "Loading",
-                        "Spinner · Indeterminate · Skeleton",
-                        p.into_any_element(),
-                        "Loading",
-                    ),
-                    ("Loading", "Loading indicator", li, "Loading indicator"),
-                ]
-            }
-            "Animation" => {
-                let (els, titles) = self.animation_sections(cx);
-                els.into_iter()
-                    .zip(titles)
-                    .map(|(el, k)| ("Animation", k, el, k))
-                    .collect()
-            }
-            _ => {
-                let me = cx.entity();
-                let mut v = Vec::new();
-                self.shader_sections(&me, &mut v, cx);
-                v
-            }
-        }
+    fn loading_group(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let p = self.loading_section(cx);
+        let t = theme_of(cx);
+        let li = Panel::new()
+            .title("Loading indicator")
+            .child(
+                div()
+                    .flex()
+                    .items_center()
+                    .gap(px(t.spacing.lg))
+                    .child(LoadingIndicator::new("li-plain"))
+                    .child(LoadingIndicator::new("li-contained").contained(true)),
+            )
+            .into_any_element();
+        vec![
+            (
+                "Loading",
+                "Spinner · Indeterminate · Skeleton",
+                p.into_any_element(),
+                "Loading",
+            ),
+            ("Loading", "Loading indicator", li, "Loading indicator"),
+        ]
     }
 
-    /// `(category, title)` of every section, built once up front.
+    fn animation_group(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let (els, titles) = self.animation_sections(cx);
+        els.into_iter()
+            .zip(titles)
+            .map(|(el, k)| ("Animation", k, el, k))
+            .collect()
+    }
+
+    fn shaders_group(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let me = cx.entity();
+        let mut v = Vec::new();
+        self.shader_sections(&me, &mut v, cx);
+        v
+    }
+
+    /// `(category, title)` of every section, built once up front. Also records each section's
+    /// key and the group that builds it (`self.section_group`).
     pub(crate) fn section_meta(
         &mut self,
         cx: &mut Context<Self>,
     ) -> Vec<(&'static str, &'static str)> {
         let mut out = Vec::new();
+        self.section_group.clear();
         for cat in CATEGORIES {
-            for (c, title, _, _) in self.sections_of(cat, cx) {
-                out.push((c, title));
+            for (gi, group) in Self::groups_of(cat).into_iter().enumerate() {
+                for (c, title, _, key) in self.build_group(cat, group, cx) {
+                    out.push((c, title));
+                    self.section_group.insert(title, (cat, gi, key));
+                }
             }
         }
         out

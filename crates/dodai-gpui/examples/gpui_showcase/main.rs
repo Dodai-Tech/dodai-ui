@@ -58,7 +58,7 @@ use foundations::{
     shape_tokens_view, spacing_elevation_view, type_scale_view, type_view,
 };
 use player::Player;
-pub(crate) use shaders_page::Section;
+pub(crate) use shaders_page::{Group, Section};
 
 pub struct Showcase {
     replay: usize,
@@ -111,6 +111,8 @@ pub struct Showcase {
     meta: Vec<(&'static str, &'static str)>,
     /// The design family `meta` was built for (sections differ per design).
     meta_family: &'static str,
+    /// Per section title: its category, the index of the group that builds it, and its key.
+    section_group: std::collections::HashMap<&'static str, (&'static str, usize, &'static str)>,
     spy: Vec<(&'static str, usize)>,
     /// Click-pinned current section (see `dodai_gpui::ScrollSpy`).
     pin: dodai_gpui::ScrollSpy<&'static str>,
@@ -224,13 +226,10 @@ impl Render for Showcase {
                 selected_cat.map_or(c != "Loading", |sc| sc == c)
             }
         };
-        // Build only the categories on screen.
-        let mut sections: Vec<Section> = Vec::new();
-        for c in &cats {
-            if in_cat(c) {
-                sections.extend(self.sections_of(c, cx));
-            }
-        }
+        // The sections on screen, in order; their elements are built later, only for the ones
+        // that are realised (near the viewport).
+        let sections: Vec<(&'static str, &'static str)> =
+            meta.iter().filter(|(c, _)| in_cat(c)).copied().collect();
         let mut body = div()
             .id(("body", self.cat * 1000 + self.replay))
             .track_scroll(&self.scroll)
@@ -262,22 +261,24 @@ impl Render for Showcase {
             std::process::exit(0);
         }
         // Pass 1: which sections are shown, and where they sit among the children.
-        let mut shown_secs: Vec<(&'static str, &'static str, gpui::AnyElement)> = Vec::new();
+        let mut shown_secs: Vec<(&'static str, &'static str)> = Vec::new();
         let mut keys: std::collections::HashMap<&'static str, &'static str> = Default::default();
-        for (c, title, el, key) in sections {
-            keys.insert(title, key);
+        for (c, title) in sections {
+            if let Some((_, _, key)) = self.section_group.get(title) {
+                keys.insert(title, key);
+            }
             let hit =
                 query.is_empty() || !fuzzy_filter(&query, &[format!("{c} {title}")]).is_empty();
             let only = std::env::var("DODAI_ONLY").is_ok_and(|o| !title.contains(&o));
             let sub_ok = self.sub.is_none_or(|x| sub_of(c, title) == Some(x));
             if in_cat(c) && hit && sub_ok && !only {
-                shown_secs.push((c, title, el));
+                shown_secs.push((c, title));
             }
         }
         let mut order: Vec<(&'static str, usize)> = Vec::new();
         {
             let (mut n, mut lc, mut ls) = (n_children, "", None);
-            for (c, title, _) in &shown_secs {
+            for (c, title) in &shown_secs {
                 if *c != lc {
                     n += 1;
                     lc = c;
@@ -325,7 +326,10 @@ impl Render for Showcase {
         let mut last_cat = "";
         let mut last_sub: Option<&str> = None;
         let mut spy: Vec<(&'static str, usize)> = Vec::new();
-        for (seq, (c, title, el)) in shown_secs.into_iter().enumerate() {
+        // Elements of the groups built this frame, by section title.
+        let mut built: std::collections::HashMap<&'static str, gpui::AnyElement> =
+            Default::default();
+        for (seq, (c, title)) in shown_secs.into_iter().enumerate() {
             if c != last_cat {
                 body = body.child(Heading::new(c).level(2));
                 n_children += 1;
@@ -381,7 +385,18 @@ impl Render for Showcase {
             n_children += 1;
             if realise || std::env::var_os("DODAI_NOCULL").is_some() {
                 self.realised.insert(title);
-                body = body.child(self.with_code(title, keys.get(title).copied(), el, &t, &me));
+                if !built.contains_key(title) {
+                    if let Some(&(cat, gi, _)) = self.section_group.get(title) {
+                        if let Some(group) = Self::groups_of(cat).get(gi).copied() {
+                            for (_, ti, el, _) in self.build_group(cat, group, cx) {
+                                built.insert(ti, el);
+                            }
+                        }
+                    }
+                }
+                if let Some(el) = built.remove(title) {
+                    body = body.child(self.with_code(title, keys.get(title).copied(), el, &t, &me));
+                }
             } else {
                 body = body.child(div().flex_none().w_full().h(px(known.unwrap_or(avg_h))));
             }

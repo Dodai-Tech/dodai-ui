@@ -3,20 +3,21 @@
 use super::super::*;
 
 impl Showcase {
-    pub(crate) fn sections_data_display(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
-        let mut out: Vec<Section> = Vec::new();
-        out.extend(self.tags_lists_section(cx));
-        out.extend(self.misc_section(cx));
-        out.extend(self.list_divider_section(cx));
-        out.extend(self.tree_section(cx));
-        out.extend(self.tooltip_section(cx));
-        out.extend(self.table_section(cx));
-        out.extend(self.code_section(cx));
-        out.extend(self.image_section(cx));
-        out.extend(self.progress_section(cx));
-        out.extend(self.clock_section(cx));
-        out.extend(self.scroll_section(cx));
-        out
+    /// The builders of this category, one per group of sections (built lazily).
+    pub(crate) fn groups_data_display() -> Vec<Group> {
+        vec![
+            Self::tags_lists_section,
+            Self::misc_section,
+            Self::list_divider_section,
+            Self::tree_section,
+            Self::tooltip_section,
+            Self::table_section,
+            Self::code_section,
+            Self::image_section,
+            Self::progress_section,
+            Self::clock_section,
+            Self::scroll_section,
+        ]
     }
 
     fn tags_lists_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {

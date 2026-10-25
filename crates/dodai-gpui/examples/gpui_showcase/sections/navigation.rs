@@ -3,19 +3,20 @@
 use super::super::*;
 
 impl Showcase {
-    pub(crate) fn sections_navigation(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
-        let mut out: Vec<Section> = Vec::new();
-        out.extend(self.popovers_section(cx));
-        out.extend(self.menu_section(cx));
-        out.extend(self.tabs_section(cx));
-        out.extend(self.nav_tree_section(cx));
-        out.extend(self.sidebar_section(cx));
-        out.extend(self.strips_section(cx));
-        out.extend(self.carousel_section(cx));
-        out.extend(self.overlay_section(cx));
-        out.extend(self.app_bar_section(cx));
-        out.extend(self.structure_section(cx));
-        out
+    /// The builders of this category, one per group of sections (built lazily).
+    pub(crate) fn groups_navigation() -> Vec<Group> {
+        vec![
+            Self::popovers_section,
+            Self::menu_section,
+            Self::tabs_section,
+            Self::nav_tree_section,
+            Self::sidebar_section,
+            Self::strips_section,
+            Self::carousel_section,
+            Self::overlay_section,
+            Self::app_bar_section,
+            Self::structure_section,
+        ]
     }
 
     /// Destinations of the bar, rail and drawer demos; `tag` keeps the element ids apart.

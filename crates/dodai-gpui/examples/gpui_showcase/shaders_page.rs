@@ -3,6 +3,9 @@
 use super::*;
 
 /// One showcase section: `(category, title, element, key)`.
+/// Builds a few related sections.
+pub(crate) type Group = fn(&mut Showcase, &mut gpui::Context<Showcase>) -> Vec<Section>;
+
 pub(crate) type Section = (&'static str, &'static str, gpui::AnyElement, &'static str);
 
 impl Showcase {

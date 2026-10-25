@@ -4,23 +4,24 @@ use super::super::*;
 use dodai_gpui::CheckboxVariant;
 
 impl Showcase {
-    pub(crate) fn sections_inputs(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
-        let mut out: Vec<Section> = Vec::new();
-        out.extend(self.toggle_section(cx));
-        out.extend(self.variants_section(cx));
-        out.extend(self.slider_section(cx));
-        out.extend(self.stepped_section(cx));
-        out.extend(self.range_section(cx));
-        out.extend(self.knob_section(cx));
-        out.extend(self.input_section(cx));
-        out.extend(self.search_section(cx));
-        out.extend(self.tag_field_section(cx));
-        out.extend(self.picker_section(cx));
-        out.extend(self.password_section(cx));
-        out.extend(self.form_field_section(cx));
-        out.extend(self.group_section(cx));
-        out.extend(self.date_range_section(cx));
-        out
+    /// The builders of this category, one per group of sections (built lazily).
+    pub(crate) fn groups_inputs() -> Vec<Group> {
+        vec![
+            Self::toggle_section,
+            Self::variants_section,
+            Self::slider_section,
+            Self::stepped_section,
+            Self::range_section,
+            Self::knob_section,
+            Self::input_section,
+            Self::search_section,
+            Self::tag_field_section,
+            Self::picker_section,
+            Self::password_section,
+            Self::form_field_section,
+            Self::group_section,
+            Self::date_range_section,
+        ]
     }
 
     fn toggle_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {

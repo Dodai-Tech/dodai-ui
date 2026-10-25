@@ -3,12 +3,13 @@
 use super::super::*;
 
 impl Showcase {
-    pub(crate) fn sections_actions(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
-        let mut out: Vec<Section> = Vec::new();
-        out.extend(self.buttons_section(cx));
-        out.extend(self.groups_section(cx));
-        out.extend(self.toolbar_section(cx));
-        out
+    /// The builders of this category, one per group of sections (built lazily).
+    pub(crate) fn groups_actions() -> Vec<Group> {
+        vec![
+            Self::buttons_section,
+            Self::groups_section,
+            Self::toolbar_section,
+        ]
     }
 
     fn buttons_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {

@@ -4,11 +4,9 @@ use super::super::*;
 use dodai_gpui::IconId;
 
 impl Showcase {
-    pub(crate) fn sections_foundations_sec(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
-        let mut out: Vec<Section> = Vec::new();
-        out.extend(self.token_sections(cx));
-        out.extend(self.icons_section(cx));
-        out
+    /// The builders of this category, one per group of sections (built lazily).
+    pub(crate) fn groups_foundations_sec() -> Vec<Group> {
+        vec![Self::token_sections, Self::icons_section]
     }
 
     fn token_sections(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
