@@ -133,6 +133,29 @@ impl Theme {
         self
     }
 
+    /// Builder for touch screens: every control is at least `min_target` px tall (use
+    /// [`Theme::TOUCH_TARGET`], 48 px) and neighbouring targets are at least
+    /// [`Theme::TOUCH_GAP`] px apart. Larger controls and gaps are left alone, so a design that
+    /// is already roomy (Cyberpunk, Aurora at 48) does not change. Type and icons keep their size.
+    pub fn with_min_target(mut self, min_target: f32) -> Self {
+        if min_target.is_finite() {
+            let h = (min_target.clamp(24.0, 96.0) * 2.0).round() / 2.0;
+            self.shape.control_height = self.shape.control_height.max(h);
+        }
+        let sp = &mut self.spacing;
+        sp.xs = sp.xs.max(Self::TOUCH_GAP / 2.0);
+        sp.sm = sp.sm.max(Self::TOUCH_GAP);
+        sp.md = sp.md.max(sp.sm);
+        sp.lg = sp.lg.max(sp.md);
+        sp.xl = sp.xl.max(sp.lg);
+        self
+    }
+
+    /// Recommended minimum touch target, px (Material 48 dp; Apple asks for 44 pt).
+    pub const TOUCH_TARGET: f32 = 48.0;
+    /// Recommended minimum gap between touch targets, px.
+    pub const TOUCH_GAP: f32 = 8.0;
+
     /// Builder: cut these corners on chamfered controls (see [`crate::Corners`]).
     pub fn with_corners(mut self, c: crate::Corners) -> Self {
         self.shape.corners = c;

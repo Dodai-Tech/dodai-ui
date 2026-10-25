@@ -280,6 +280,18 @@ mod tests {
     }
 
     #[test]
+    fn min_target_raises_small_controls_only() {
+        let t = Theme::default();
+        let touch = t.clone().with_min_target(Theme::TOUCH_TARGET);
+        assert!(touch.shape.control_height >= Theme::TOUCH_TARGET);
+        assert!(touch.spacing.sm >= Theme::TOUCH_GAP);
+        // Already-roomy themes are unchanged, and the call is idempotent.
+        assert_eq!(touch.clone().with_min_target(Theme::TOUCH_TARGET), touch);
+        let small = t.with_min_target(10.0);
+        assert!(small.shape.control_height >= 24.0);
+    }
+
+    #[test]
     fn default_tuning_changes_nothing() {
         let t = Theme::default();
         assert_eq!(t.tuned(&ShapeTune::DEFAULT), t);
