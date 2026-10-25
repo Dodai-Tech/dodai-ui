@@ -40,6 +40,7 @@ pub struct ButtonGroup {
     labels: Vec<SharedString>,
     selected: Option<usize>,
     connected: bool,
+    disabled: bool,
     on_select: Option<IndexHandler>,
 }
 
@@ -51,8 +52,14 @@ impl ButtonGroup {
             labels: Vec::new(),
             selected: None,
             connected: false,
+            disabled: false,
             on_select: None,
         }
+    }
+    /// Disable interaction and use disabled tokens.
+    pub fn disabled(mut self, d: bool) -> Self {
+        self.disabled = d;
+        self
     }
     /// Labels, one per item.
     pub fn labels<S: Into<SharedString>>(mut self, labels: impl IntoIterator<Item = S>) -> Self {
@@ -92,7 +99,8 @@ impl RenderOnce for ButtonGroup {
                 } else {
                     ButtonVariant::Outline
                 })
-                .radii(group_radii(i, n, self.connected, on));
+                .radii(group_radii(i, n, self.connected, on))
+                .disabled(self.disabled);
             if let Some(f) = self.on_select.clone() {
                 b = b.on_click(move |_, w, cx| f(i, w, cx));
             }
@@ -111,6 +119,7 @@ pub struct SplitButton {
     label: SharedString,
     variant: ButtonVariant,
     open: bool,
+    disabled: bool,
     on_click: Option<ClickHandler>,
     on_toggle: Option<ClickHandler>,
     crop: Option<crate::Crop>,
@@ -127,6 +136,7 @@ impl SplitButton {
             label: label.into(),
             variant: ButtonVariant::Primary,
             open: false,
+            disabled: false,
             on_click: None,
             on_toggle: None,
             crop: None,
@@ -136,6 +146,11 @@ impl SplitButton {
     /// Visual variant.
     pub fn variant(mut self, v: ButtonVariant) -> Self {
         self.variant = v;
+        self
+    }
+    /// Disable interaction and use disabled tokens.
+    pub fn disabled(mut self, d: bool) -> Self {
+        self.disabled = d;
         self
     }
     /// Draw the toggle as open (chevron up).
@@ -161,7 +176,8 @@ impl RenderOnce for SplitButton {
         let rounded = t.look().tonal;
         let mut lead = Button::new((self.id.clone(), "lead"), self.label)
             .variant(self.variant)
-            .radii([FULL, 4.0, 4.0, FULL]);
+            .radii([FULL, 4.0, 4.0, FULL])
+            .disabled(self.disabled);
         if let Some(g) = self.cut_gap {
             lead = lead.cut_gap(g);
         }
@@ -174,6 +190,7 @@ impl RenderOnce for SplitButton {
         let mut menu = Button::new((self.id, "menu"), if self.open { "▴" } else { "▾" })
             .variant(self.variant)
             .radii([4.0, FULL, FULL, 4.0])
+            .disabled(self.disabled)
             .refine(|d| d.w(px(48.0)).px(px(0.0)));
         if let Some(g) = self.cut_gap {
             menu = menu.cut_gap(g);

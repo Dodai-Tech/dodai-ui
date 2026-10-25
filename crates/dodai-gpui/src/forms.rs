@@ -10,7 +10,7 @@ use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use dodai_core::ButtonVariant;
 use gpui::{
-    div, px, AnyElement, App, ElementId, FocusHandle, InteractiveElement, IntoElement,
+    div, px, AnyElement, App, CursorStyle, ElementId, FocusHandle, InteractiveElement, IntoElement,
     ParentElement, RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window,
 };
 use std::rc::Rc;
@@ -170,6 +170,7 @@ pub struct OtpInput {
     len: usize,
     numeric: bool,
     masked: bool,
+    disabled: bool,
     on_change: Option<TextFn>,
     on_complete: Option<TextFn>,
 }
@@ -182,6 +183,7 @@ impl OtpInput {
             len: len.clamp(1, 12),
             numeric: true,
             masked: false,
+            disabled: false,
             on_change: None,
             on_complete: None,
         }
@@ -189,6 +191,11 @@ impl OtpInput {
     /// Accept letters as well as digits.
     pub fn alphanumeric(mut self) -> Self {
         self.numeric = false;
+        self
+    }
+    /// Disable interaction and dim.
+    pub fn disabled(mut self, d: bool) -> Self {
+        self.disabled = d;
         self
     }
     /// Show `•` instead of the character.
@@ -219,7 +226,7 @@ impl RenderOnce for OtpInput {
         };
         let focused = focus.is_focused(window);
         let n = value.chars().count();
-        let (len, numeric) = (self.len, self.numeric);
+        let (len, numeric, disabled) = (self.len, self.numeric, self.disabled);
         let (on_change, on_complete) = (self.on_change.clone(), self.on_complete.clone());
         let apply = {
             let st = st.clone();
@@ -250,9 +257,16 @@ impl RenderOnce for OtpInput {
             .track_focus(&focus)
             .on_click({
                 let focus = focus.clone();
-                move |_, w, _| w.focus(&focus)
+                move |_, w, _| {
+                    if !disabled {
+                        w.focus(&focus)
+                    }
+                }
             })
             .on_key_down(move |e, w, cx| {
+                if disabled {
+                    return;
+                }
                 let k = &e.keystroke;
                 if k.modifiers.platform || k.modifiers.control {
                     if k.key == "v" {
@@ -270,7 +284,7 @@ impl RenderOnce for OtpInput {
             });
         let chars: Vec<char> = value.chars().collect();
         for i in 0..self.len {
-            let active = focused && i == n.min(self.len - 1);
+            let active = focused && !disabled && i == n.min(self.len - 1);
             let mut cell = shaped(
                 &t.role_shape(dodai_core::ShapeRole::Input),
                 input_style(&t, active),
@@ -282,7 +296,8 @@ impl RenderOnce for OtpInput {
             .justify_center()
             .font_family(first_family(t.typography.display))
             .text_size(px(t.typography.size_xl))
-            .text_color(hsla(t.palette.text));
+            .text_color(hsla(t.palette.text))
+            .opacity(if disabled { 0.5 } else { 1.0 });
             if let Some(c) = chars.get(i) {
                 cell = cell.child(if self.masked {
                     "•".to_string()
@@ -344,6 +359,7 @@ pub struct ToggleGroup {
     initial: Vec<usize>,
     multiple: bool,
     allow_empty: bool,
+    disabled: bool,
     on_change: Option<SetFn>,
 }
 
@@ -359,6 +375,7 @@ impl ToggleGroup {
             initial: Vec::new(),
             multiple: false,
             allow_empty: true,
+            disabled: false,
             on_change: None,
         }
     }
@@ -370,6 +387,11 @@ impl ToggleGroup {
     /// Initially selected indices.
     pub fn selected(mut self, s: impl IntoIterator<Item = usize>) -> Self {
         self.initial = s.into_iter().collect();
+        self
+    }
+    /// Disable interaction and dim.
+    pub fn disabled(mut self, d: bool) -> Self {
+        self.disabled = d;
         self
     }
     /// Whether the last selected item can be switched off (default yes).
@@ -397,13 +419,14 @@ impl RenderOnce for ToggleGroup {
             let on = sel.contains(&i);
             let id: ElementId = (self.id.clone(), i.to_string()).into();
             let hs = use_interact(&id, window, cx);
-            let state = hs.read(cx).control_state(false);
+            let state = hs.read(cx).control_state(self.disabled);
             let variant = if on {
                 ButtonVariant::Primary
             } else {
                 ButtonVariant::Outline
             };
             let (style, fg) = button_style(&t, variant, state);
+            let disabled = self.disabled;
             let (st2, f, multiple, allow_empty) = (
                 st.clone(),
                 self.on_change.clone(),
@@ -416,8 +439,15 @@ impl RenderOnce for ToggleGroup {
                 .flex()
                 .items_center()
                 .text_color(fg)
-                .cursor_pointer()
+                .cursor(if self.disabled {
+                    CursorStyle::OperationNotAllowed
+                } else {
+                    CursorStyle::PointingHand
+                })
                 .on_click(move |_, w, cx| {
+                    if disabled {
+                        return;
+                    }
                     let mut v = st2.read(cx).clone();
                     if toggle_select(&mut v, i, multiple, allow_empty) {
                         st2.update(cx, |s, cx| {
@@ -457,6 +487,7 @@ pub struct CheckboxGroup {
     initial: Vec<usize>,
     select_all: Option<SharedString>,
     switches: bool,
+    disabled: bool,
     on_change: Option<SetFn>,
 }
 
@@ -472,6 +503,7 @@ impl CheckboxGroup {
             initial: Vec::new(),
             select_all: None,
             switches: false,
+            disabled: false,
             on_change: None,
         }
     }
@@ -483,6 +515,11 @@ impl CheckboxGroup {
     /// Add a master row with this label.
     pub fn select_all(mut self, label: impl Into<SharedString>) -> Self {
         self.select_all = Some(label.into());
+        self
+    }
+    /// Disable interaction and dim.
+    pub fn disabled(mut self, d: bool) -> Self {
+        self.disabled = d;
         self
     }
     /// Use switches instead of checkboxes.
@@ -520,10 +557,14 @@ impl RenderOnce for CheckboxGroup {
         };
         let control = |id: ElementId, on: bool, mixed: bool, f: BoolFn| {
             if self.switches {
-                Toggle::new(id, on).on_change(f).into_any_element()
+                Toggle::new(id, on)
+                    .disabled(self.disabled)
+                    .on_change(f)
+                    .into_any_element()
             } else {
                 Checkbox::new(id, on)
                     .indeterminate(mixed)
+                    .disabled(self.disabled)
                     .variant(crate::CheckboxVariant::Compact)
                     .on_change(f)
                     .into_any_element()

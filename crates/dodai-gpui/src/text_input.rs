@@ -281,6 +281,13 @@ impl TextInput {
         self.corners = Some(c);
         self
     }
+    /// Disable or enable a field that already exists (the builder form is [`Self::disabled`]).
+    pub fn set_disabled(&mut self, d: bool, cx: &mut Context<Self>) {
+        if self.disabled != d {
+            self.disabled = d;
+            cx.notify();
+        }
+    }
     /// Disable the control.
     pub fn disabled(mut self, d: bool) -> Self {
         self.disabled = d;

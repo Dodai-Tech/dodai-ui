@@ -339,7 +339,12 @@ pub struct ContextMenu {
     items: Vec<MenuItem>,
     width: f32,
     on_select: Option<IndexHandler>,
+    corners: Option<dodai_core::Corners>,
+    surface: dodai_core::Surface,
 }
+
+crate::corners_setter!(ContextMenu);
+crate::surface_setter!(ContextMenu);
 
 impl ContextMenu {
     /// Create a new [`ContextMenu`].
@@ -350,6 +355,8 @@ impl ContextMenu {
             items: Vec::new(),
             width: 200.0,
             on_select: None,
+            corners: None,
+            surface: dodai_core::Surface::INHERIT,
         }
     }
     /// The area that reacts to right-clicks.
@@ -401,9 +408,10 @@ impl RenderOnce for ContextMenu {
                 }
             };
             let sel = self.on_select.clone();
-            let menu = Menu::new((self.id.clone(), "menu"))
+            let mut menu = Menu::new((self.id.clone(), "menu"))
                 .items(self.items.clone())
                 .width(self.width)
+                .surface(self.surface)
                 .on_select({
                     let close = close.clone();
                     move |i, w, cx| {
@@ -413,6 +421,9 @@ impl RenderOnce for ContextMenu {
                         }
                     }
                 });
+            if let Some(c) = self.corners {
+                menu = menu.corners(c);
+            }
             let host = div()
                 .occlude()
                 .on_mouse_down_out(move |_, _, cx| close(cx))
@@ -441,7 +452,12 @@ pub struct DropdownMenu {
     items: Vec<MenuItem>,
     width: f32,
     on_select: Option<IndexHandler>,
+    corners: Option<dodai_core::Corners>,
+    surface: dodai_core::Surface,
 }
+
+crate::corners_setter!(DropdownMenu);
+crate::surface_setter!(DropdownMenu);
 
 impl DropdownMenu {
     /// Create a new [`DropdownMenu`].
@@ -452,6 +468,8 @@ impl DropdownMenu {
             items: Vec::new(),
             width: 200.0,
             on_select: None,
+            corners: None,
+            surface: dodai_core::Surface::INHERIT,
         }
     }
     /// The items.
@@ -474,7 +492,11 @@ impl RenderOnce for DropdownMenu {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
         let mut menu = Menu::new((self.id.clone(), "menu"))
             .items(self.items)
-            .width(self.width);
+            .width(self.width)
+            .surface(self.surface);
+        if let Some(c) = self.corners {
+            menu = menu.corners(c);
+        }
         if let Some(f) = self.on_select {
             menu = menu.on_select(move |i, w, cx| f(i, w, cx));
         }

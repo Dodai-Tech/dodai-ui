@@ -470,15 +470,18 @@ pub struct Snackbar {
     action: Option<SharedString>,
     on_action: Option<DismissFn>,
     corners: Option<dodai_core::Corners>,
+    surface: dodai_core::Surface,
 }
 
 crate::corners_setter!(Snackbar);
+crate::surface_setter!(Snackbar);
 
 impl Snackbar {
     /// Create a new [`Snackbar`].
     pub fn new(id: impl Into<ElementId>, message: impl Into<SharedString>) -> Self {
         Self {
             corners: None,
+            surface: dodai_core::Surface::INHERIT,
             id: id.into(),
             message: message.into(),
             action: None,
@@ -519,7 +522,8 @@ impl Snackbar {
                 .filter(|_| tokens.border.is_some()),
             ..style
         }
-        .with_lift(&t, if t.look().soft_elevation { 3 } else { 0 });
+        .with_lift(&t, if t.look().soft_elevation { 3 } else { 0 })
+        .with_own_surface(&t, dodai_core::SurfaceClass::Bar, &self.surface);
         let mut bar = shaped(&t.role_shape(dodai_core::ShapeRole::Snackbar), style)
             .px(px(t.spacing.lg))
             .py(px(t.spacing.sm))

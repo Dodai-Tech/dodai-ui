@@ -90,15 +90,18 @@ pub struct Menu {
     on_select: Option<IndexHandler>,
     on_select_sub: Option<SubHandler>,
     corners: Option<dodai_core::Corners>,
+    surface: dodai_core::Surface,
 }
 
 crate::corners_setter!(Menu);
+crate::surface_setter!(Menu);
 
 impl Menu {
     /// Create a new [`Menu`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             corners: None,
+            surface: dodai_core::Surface::INHERIT,
             id: id.into(),
             items: Vec::new(),
             width: 220.0,
@@ -141,14 +144,17 @@ impl Menu {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
-        let mut col = shaped(&t.role_shape(dodai_core::ShapeRole::Menu), popup_style(&t))
-            .w(px(self.width))
-            .p(px(t.spacing.xs + 2.0))
-            .flex()
-            .flex_col()
-            .gap(px(2.0))
-            .font_family(first_family(t.typography.body))
-            .text_size(px(t.typography.size_md));
+        let mut col = shaped(
+            &t.role_shape(dodai_core::ShapeRole::Menu),
+            popup_style(&t).with_own_surface(&t, dodai_core::SurfaceClass::Panel, &self.surface),
+        )
+        .w(px(self.width))
+        .p(px(t.spacing.xs + 2.0))
+        .flex()
+        .flex_col()
+        .gap(px(2.0))
+        .font_family(first_family(t.typography.body))
+        .text_size(px(t.typography.size_md));
         if t.look().tonal {
             col = crate::text::typeset(col, &t, dodai_core::TypeRole::LabelLarge);
         }

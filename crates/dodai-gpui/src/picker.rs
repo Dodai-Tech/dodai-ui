@@ -507,6 +507,7 @@ type TimeChange = Rc<dyn Fn(u32, u32, &mut Window, &mut App)>;
 pub struct DateInput {
     id: ElementId,
     value: Option<Date>,
+    disabled: bool,
     on_change: Option<DateChange>,
 }
 
@@ -516,12 +517,18 @@ impl DateInput {
         Self {
             id: id.into(),
             value: None,
+            disabled: false,
             on_change: None,
         }
     }
     /// The current (controlled) date; changing it rewrites the field.
     pub fn value(mut self, d: Option<Date>) -> Self {
         self.value = d;
+        self
+    }
+    /// Disable the field.
+    pub fn disabled(mut self, d: bool) -> Self {
+        self.disabled = d;
         self
     }
     crate::callback!(
@@ -536,6 +543,7 @@ impl RenderOnce for DateInput {
             window,
             cx,
             self.id,
+            self.disabled,
             "Date",
             "YYYY-MM-DD",
             "Use YYYY-MM-DD or MM/DD/YYYY",
@@ -558,6 +566,7 @@ impl RenderOnce for DateInput {
 pub struct TimeInput {
     id: ElementId,
     value: Option<(u32, u32)>,
+    disabled: bool,
     on_change: Option<TimeChange>,
 }
 
@@ -567,12 +576,18 @@ impl TimeInput {
         Self {
             id: id.into(),
             value: None,
+            disabled: false,
             on_change: None,
         }
     }
     /// Current value.
     pub fn value(mut self, hm: Option<(u32, u32)>) -> Self {
         self.value = hm;
+        self
+    }
+    /// Disable the field.
+    pub fn disabled(mut self, d: bool) -> Self {
+        self.disabled = d;
         self
     }
     crate::callback!(
@@ -587,6 +602,7 @@ impl RenderOnce for TimeInput {
             window,
             cx,
             self.id,
+            self.disabled,
             "Time",
             "HH:MM",
             "Use HH:MM or H:MM AM/PM",
@@ -609,6 +625,7 @@ fn text_mode(
     window: &mut Window,
     cx: &mut App,
     id: ElementId,
+    disabled: bool,
     label: &'static str,
     placeholder: &'static str,
     hint: &'static str,
@@ -635,6 +652,7 @@ fn text_mode(
             input.update(cx, |ti, cx| ti.set_text(v, cx));
         }
     }
+    input.update(cx, |ti, cx| ti.set_disabled(disabled, cx));
     let text = input.read(cx).text().to_string();
     let bad = !text.trim().is_empty() && !valid(&text);
     let mut col = div()

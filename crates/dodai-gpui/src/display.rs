@@ -242,7 +242,12 @@ pub struct Banner {
     on_action: Option<VoidFn>,
     on_dismiss: Option<VoidFn>,
     dismissible: bool,
+    corners: Option<dodai_core::Corners>,
+    surface: dodai_core::Surface,
 }
+
+crate::corners_setter!(Banner);
+crate::surface_setter!(Banner);
 
 impl Banner {
     /// Create a new [`Banner`].
@@ -255,6 +260,8 @@ impl Banner {
             on_action: None,
             on_dismiss: None,
             dismissible: true,
+            corners: None,
+            surface: dodai_core::Surface::INHERIT,
         }
     }
     /// Text button on the right, e.g. "Undo".
@@ -280,12 +287,13 @@ impl Banner {
 
 impl RenderOnce for Banner {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let t = theme_of(cx);
+        let t = crate::apply_corners(theme_of(cx), self.corners);
         let gone = window.use_keyed_state(self.id.clone(), cx, |_, _| false);
         if *gone.read(cx) {
             return div().into_any_element();
         }
         let (style, fg) = alert_style(&t, self.tone, true);
+        let style = style.with_own_surface(&t, dodai_core::SurfaceClass::Bar, &self.surface);
         let mut row = shaped(&t.shape, style)
             .w_full()
             .px(px(t.spacing.md))
