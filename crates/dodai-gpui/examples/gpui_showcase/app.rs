@@ -180,6 +180,7 @@ impl Showcase {
             heat_res: 3,
             heat_grad: 0,
             inst_glow: 0,
+            inst_trail: 2,
             sh_gen: "neon_grid",
             sh_fx: vec!["crt"],
             sh_int: 1.0,

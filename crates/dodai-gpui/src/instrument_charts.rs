@@ -107,6 +107,7 @@ fn grid_color(t: &Theme) -> Hsla {
 /// Phosphor-style trace over a divided graticule. Samples are `-1..=1`.
 #[derive(IntoElement)]
 pub struct Oscilloscope {
+    trail: f32,
     glow: ChartGlow,
     samples: Vec<f32>,
     w: f32,
@@ -117,6 +118,12 @@ pub struct Oscilloscope {
 }
 
 impl Oscilloscope {
+    /// Strength of the faded afterimage trailing the live trace: `0` none,
+    /// `1` the default, up to `2` for a longer, stronger smear.
+    pub fn trail(mut self, amount: f32) -> Self {
+        self.trail = amount.clamp(0.0, 2.0);
+        self
+    }
     /// The glow ("shadow") under the lines: the theme's own, none, or a radius.
     pub fn glow(mut self, g: ChartGlow) -> Self {
         self.glow = g;
@@ -125,6 +132,7 @@ impl Oscilloscope {
     /// Create a new [`Oscilloscope`].
     pub fn new(samples: impl IntoIterator<Item = f32>) -> Self {
         Self {
+            trail: 1.0,
             glow: ChartGlow::Theme,
             samples: samples.into_iter().collect(),
             w: 320.0,
@@ -181,6 +189,7 @@ impl RenderOnce for Oscilloscope {
         let (gw, gh) = (self.w, self.h);
         let samples = self.samples;
         let live = self.live;
+        let trail = self.trail;
         let glow = self.glow.resolve(&t);
         let grid = grid_color(&t);
         let bright = scale_alpha(hsla(t.palette.text_muted), 0.6);
@@ -230,13 +239,13 @@ impl RenderOnce for Oscilloscope {
                         .collect()
                 };
                 if live {
-                    for g in (1..=3).rev() {
+                    for g in (1..=3).rev().filter(|_| trail > 0.0) {
                         stroke(
                             w,
                             o,
-                            &trace(g as f32 * 0.06),
+                            &trace(g as f32 * 0.06 * trail),
                             2.0,
-                            scale_alpha(col, 0.16 / g as f32 * 2.0),
+                            scale_alpha(col, (0.16 / g as f32 * 2.0 * trail).min(0.9)),
                             false,
                         );
                     }

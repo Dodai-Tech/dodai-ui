@@ -254,6 +254,25 @@ impl Showcase {
                 3 => dodai_gpui::ChartGlow::Radius(10.0),
                 _ => dodai_gpui::ChartGlow::Theme,
             };
+            let trail_picker = {
+                let m = me.clone();
+                row()
+                    .child(Label::new("Trail"))
+                    .child(
+                        Segmented::new("inst-trail", ["Off", "Subtle", "Default", "Long"])
+                            .selected(self.inst_trail)
+                            .on_select(move |i, _, cx| {
+                                m.update(cx, |s, cx| {
+                                    s.inst_trail = i;
+                                    cx.notify();
+                                })
+                            }),
+                    )
+                    .child(Muted::new(
+                        "The faded afterimage that follows the live trace to the right.",
+                    ))
+            };
+            let trail = [0.0, 0.5, 1.0, 2.0][self.inst_trail.min(3)];
             let glow_picker = {
                 let m = me.clone();
                 row()
@@ -294,6 +313,7 @@ impl Showcase {
                 .flex_col()
                 .gap_6()
                 .child(glow_picker)
+                .child(trail_picker)
                 .child(
                     row()
                         .justify_around()
@@ -301,6 +321,7 @@ impl Showcase {
                         .child(
                             Oscilloscope::ecg(2, 240)
                                 .glow(glow)
+                                .trail(trail)
                                 .live(true)
                                 .size(320.0, 120.0)
                                 .caption("Pulse · 72 bpm"),
@@ -325,6 +346,7 @@ impl Showcase {
                         .child(
                             Oscilloscope::wave(&[(3.0, 1.0), (7.0, 0.4)], 160)
                                 .glow(glow)
+                                .trail(trail)
                                 .live(true)
                                 .caption("CH1 · 2 ms/div"),
                         )

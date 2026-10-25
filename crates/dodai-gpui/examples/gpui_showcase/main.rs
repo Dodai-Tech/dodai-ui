@@ -160,6 +160,8 @@ pub struct Showcase {
     heat_grad: usize,
     /// Glow of the instrument charts: 0 theme, 1 off, 2 soft, 3 strong.
     inst_glow: usize,
+    /// Oscilloscope afterimage: 0 off, 1 subtle, 2 default, 3 long.
+    inst_trail: usize,
     sh_gen: &'static str,
     sh_fx: Vec<&'static str>,
     sh_int: f32,
