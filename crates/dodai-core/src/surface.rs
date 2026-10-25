@@ -648,6 +648,9 @@ pub struct SurfaceStyle {
     pub tuning: SurfaceTuning,
     /// The three colours of the design's gradient (the `wash` effect), start to end.
     pub wash: [crate::Color; 3],
+    /// How strongly the same three colours light the canvas as a soft mesh behind everything
+    /// (0 = a flat canvas). Panels that are translucent let it show through.
+    pub backdrop: f32,
 }
 
 /// How a design's textures and effects are timed and sized. The defaults are the neutral values.
@@ -705,6 +708,7 @@ impl SurfaceStyle {
         effects: EffectSet::NONE,
         tuning: SurfaceTuning::DEFAULT,
         wash: [crate::Color::rgba(0, 0, 0, 0); 3],
+        backdrop: 0.0,
     };
 }
 

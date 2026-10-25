@@ -21,7 +21,7 @@
 //! | Charts | [`charts`] and its `charts_*` / `instrument_charts` / [`gauges`] siblings |
 //! | Surface effects | [`mod@surface_fx`] (textures, glitch, sheen, flicker, bloom over any filled surface) |
 //! | Time | [`time`] (clock, timer, stopwatch, tap tempo) |
-//! | Look | [`paint`] (the shaped box), [`motion`], [`frosted`] (glass over a picture) |
+//! | Look | [`paint`] (the shaped box), [`motion`], [`frosted`] (glass over a picture), [`mod@backdrop`] (the canvas mesh of a design that has one) |
 //!
 //! ## Design-exclusive components
 //!
@@ -163,6 +163,8 @@ macro_rules! callback {
 #[cfg(any(feature = "components", feature = "charts"))]
 pub(crate) use callback;
 
+#[cfg(any(feature = "shaders", feature = "aurora"))]
+pub mod backdrop;
 #[cfg(feature = "components")]
 pub mod button;
 #[cfg(feature = "components")]
@@ -364,6 +366,8 @@ pub use instrument_charts::{
     Blip, DotMatrix, HexMap, Oscilloscope, RadarScope, RingStack, SignalBars, Spectrum,
 };
 mod icon_names;
+#[cfg(any(feature = "shaders", feature = "aurora"))]
+pub use backdrop::backdrop;
 #[cfg(feature = "components")]
 #[cfg(all(feature = "components", feature = "material"))]
 pub use expressive::{ButtonGroup, LoadingIndicator, SplitButton};

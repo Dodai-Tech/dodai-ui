@@ -6,6 +6,7 @@
 //! rectangle (with the panel's rounded corners). The blur is computed once per picture and
 //! cached.
 
+use crate::backdrop::render_image;
 use crate::{hsla, theme_of};
 use dodai_core::Theme;
 use gpui::{
@@ -43,16 +44,6 @@ fn mesh_pixels(t: &Theme, w: usize, h: usize) -> Vec<u8> {
         }
     }
     out
-}
-
-fn render_image(rgba: Vec<u8>, w: usize, h: usize) -> Option<Arc<RenderImage>> {
-    // gpui stores frames as BGRA.
-    let mut rgba = rgba;
-    for px in rgba.chunks_exact_mut(4) {
-        px.swap(0, 2);
-    }
-    let buf = image::RgbaImage::from_raw(w as u32, h as u32, rgba)?;
-    Some(Arc::new(RenderImage::new(vec![image::Frame::new(buf)])))
 }
 
 /// Cached pictures (and panel crops) kept before the cache is emptied, so switching themes

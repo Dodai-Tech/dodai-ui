@@ -43,6 +43,7 @@ pub fn style(dark: bool) -> SurfaceStyle {
             sheen_period: 4.5,
             ..SurfaceTuning::DEFAULT
         },
+        backdrop: if dark { 0.55 } else { 0.38 },
         wash: {
             let g = if dark {
                 crate::tokens::AURORA_DARK

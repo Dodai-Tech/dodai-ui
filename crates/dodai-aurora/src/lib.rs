@@ -162,6 +162,13 @@ fn build(mode: Mode) -> Theme {
     t.palette.link = t.palette.text;
     t.motion = motion();
     t.surface_style = surface::style(matches!(mode, Mode::Dark));
+    // Glass: the panels are translucent so the canvas mesh (`surface_style.backdrop`) shows
+    // through; text keeps its contrast because the mesh stays pale (light) or deep (dark).
+    t.palette.surface = t.palette.surface.with_alpha(if dark { 0.66 } else { 0.58 });
+    t.palette.surface_raised = t
+        .palette
+        .surface_raised
+        .with_alpha(if dark { 0.72 } else { 0.66 });
     t.shape_system = Some(shape_system());
     t.spec = dodai_core::SpecRef::new(&SPEC);
     t

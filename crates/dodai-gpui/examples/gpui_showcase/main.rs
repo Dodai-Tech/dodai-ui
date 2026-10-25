@@ -510,6 +510,7 @@ impl Render for Showcase {
             .size_full()
             .dodai_background(&t)
             .flex()
+            .children(dodai_gpui::backdrop(&t))
             .child(
                 ResponsiveShell::new("shell")
                     .breakpoint(640.0)
