@@ -145,6 +145,19 @@ check-all: fmt clippy test test-nu
     cargo fmt --all -- --check
     @echo "✅ All checks passed!"
 
+# freya is its own workspace (own Skia, own lock): not covered by the workspace recipes
+check-freya:
+    cd crates/dodai-freya && cargo clippy --locked --all-targets -- -D warnings
+    cd crates/dodai-freya && cargo test --locked
+
+# The fuzz crate is outside the workspace; it must still compile after public struct changes
+check-fuzz:
+    cd fuzz && cargo check --bins
+
+# Every toolkit, every test: workspace (incl. bevy) + Nu scripts + freya + fuzz. Stops on the first failure.
+gate: check-all check-freya check-fuzz
+    @echo "✅ Full gate passed (all toolkits)!"
+
 # Full pre-release gate: check-all + release build
 check-release: check-all build-release
     @echo "✅ Release quality gate passed!"
