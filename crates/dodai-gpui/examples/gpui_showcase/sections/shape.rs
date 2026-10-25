@@ -82,11 +82,16 @@ impl Showcase {
                 1 => dodai_gpui::apply_surface_preset(cx),
                 _ => {}
             });
+        // A toggle per class: filled with a check when on, outlined when off.
         let chip = |c: SurfaceClass| {
             let on = fx.targets.contains(c);
             Button::new(
                 gpui::SharedString::from(format!("sfx-t-{}", c.label())),
-                c.label(),
+                if on {
+                    format!("\u{2713} {}", c.label())
+                } else {
+                    c.label().to_string()
+                },
             )
             .variant(if on {
                 ButtonVariant::Primary
@@ -100,82 +105,94 @@ impl Showcase {
             })
         };
         let shortcut = |id: &'static str, label: &'static str, to: dodai_core::SurfaceTargets| {
-            div()
-                .id(id)
-                .cursor_pointer()
-                .flex_none()
-                .whitespace_nowrap()
-                .text_size(px(t.typography.size_sm))
-                .text_color(dodai_gpui::hsla(t.palette.link))
-                .underline()
-                .hover(|s| s.opacity(0.7))
-                .child(label)
+            Button::new(id, label)
+                .variant(ButtonVariant::Ghost)
                 .on_click(move |_, _, cx| {
                     let mut f = dodai_gpui::surface_fx();
                     f.targets = to;
                     dodai_gpui::set_surface_fx(cx, f);
                 })
         };
-        // Controls (things you press or type in) apart from containers (things that hold content).
-        let group = |caption: &'static str, container: bool| {
-            row()
+        // Name and one-line meaning on the left, the toggles on the right.
+        let group = |title: &'static str, meaning: &'static str, container: bool| {
+            div()
+                .flex()
+                .items_center()
+                .gap(px(t.spacing.lg))
                 .child(
                     div()
-                        .w(px(96.0))
+                        .w(px(200.0))
                         .flex_none()
-                        .text_size(px(t.typography.size_sm))
-                        .text_color(dodai_gpui::hsla(t.palette.text_muted))
-                        .child(caption),
+                        .flex()
+                        .flex_col()
+                        .child(Label::new(title))
+                        .child(Muted::new(meaning)),
                 )
-                .children(
-                    SurfaceClass::ALL
-                        .iter()
-                        .filter(|c| c.is_container() == container)
-                        .map(|c| chip(*c)),
+                .child(
+                    row().children(
+                        SurfaceClass::ALL
+                            .iter()
+                            .filter(|c| c.is_container() == container)
+                            .map(|c| chip(*c)),
+                    ),
                 )
         };
-        let targets = div()
-            .flex()
-            .flex_col()
-            .gap(px(t.spacing.sm))
-            .child(group("Controls", false))
-            .child(group("Containers", true))
+        let section = self
+            .section("Presets · Apply to", &t, &me, cx)
+            .child(Label::new("Mode"))
+            .child(div().w_1_2().child(presets))
+            .child(Muted::new(status))
+            .child(Divider::new())
             .child(
                 div()
                     .flex()
-                    .flex_none()
                     .items_center()
-                    .gap(px(t.spacing.md))
-                    .child(shortcut(
-                        "sfx-t-default",
-                        "Default",
-                        dodai_core::SurfaceTargets::DEFAULT,
-                    ))
-                    .child(shortcut(
-                        "sfx-t-all",
-                        "All",
-                        dodai_core::SurfaceTargets::ALL,
-                    ))
-                    .child(shortcut(
-                        "sfx-t-none",
-                        "None",
-                        dodai_core::SurfaceTargets::NONE,
-                    )),
-            );
-        out.push((
-                "Surface effects",
-                "Presets · Apply to",
-                self.section("Presets · Apply to", &t, &me, cx)
-                    .child(Muted::new(status))
-                    .child(div().w_1_2().child(presets))
-                    .child(Label::new("Apply to"))
-                    .child(targets)
-                    .child(Muted::new(
-                        "Default is buttons, cards and panels. Picking a texture or effect below changes the mode to Custom.",
-                    ))
-                    .into_any_element(),
-                "Presets · Apply to",
+                    .child(div().flex_1().child(Label::new("Apply effects to")))
+                    .child(
+                        row()
+                            .gap(px(t.spacing.xs))
+                            .child(shortcut(
+                                "sfx-t-default",
+                                "Default",
+                                dodai_core::SurfaceTargets::DEFAULT,
+                            ))
+                            .child(shortcut(
+                                "sfx-t-all",
+                                "All",
+                                dodai_core::SurfaceTargets::ALL,
+                            ))
+                            .child(shortcut(
+                                "sfx-t-none",
+                                "None",
+                                dodai_core::SurfaceTargets::NONE,
+                            )),
+                    ),
+            )
+            .child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(t.spacing.lg))
+                    .child(group(
+                "Controls",
+                "Things you press or type in",
+                false,
+            ))
+                    .child(group(
+                "Containers",
+                "Things that hold other content",
+                true,
+            ))
+            )
+            .child(Muted::new(
+                "Default is buttons, cards and panels. Picking a texture or effect below changes the mode to Custom.",
             ));
+        out.push((
+            "Surface effects",
+            "Presets · Apply to",
+            section.into_any_element(),
+            "Presets · Apply to",
+        ));
         out
     }
 
