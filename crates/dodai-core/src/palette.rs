@@ -230,8 +230,37 @@ impl Palette {
         self
     }
 
+    /// This palette with the series colours turned into a text-to-background ramp, so charts
+    /// read by lightness alone (print, colour-blind, or a calm look).
+    #[must_use]
+    pub fn monochrome(&self) -> Self {
+        let n = self.series.len();
+        let mut p = self.clone();
+        p.series = std::array::from_fn(|i| {
+            self.text
+                .mix(self.background, 0.7 * i as f32 / (n - 1) as f32)
+        });
+        p
+    }
+
     /// Series colour, wrapping around.
     pub fn series_at(&self, i: usize) -> Color {
         self.series[i % self.series.len()]
+    }
+}
+
+#[cfg(test)]
+mod mono_tests {
+    use crate::Theme;
+
+    #[test]
+    fn monochrome_ramps_from_the_text_colour_towards_the_background() {
+        let p = crate::Palette::monochrome;
+        let t = Theme::default();
+        let m = p(&t.palette);
+        assert_eq!(m.series[0], t.palette.text);
+        assert_ne!(m.series[7], t.palette.text);
+        assert_ne!(m.series[1], m.series[2]);
+        assert_eq!(m.text, t.palette.text);
     }
 }

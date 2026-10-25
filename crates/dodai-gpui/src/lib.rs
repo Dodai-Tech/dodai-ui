@@ -537,7 +537,26 @@ impl gpui::Global for KeysBound {}
 pub fn theme_of(cx: &App) -> Theme {
     let t = cx.dodai().theme();
     let tune = shape_tune();
-    t.tuned(&tune)
+    let mut t = t.tuned(&tune);
+    if chart_monochrome() {
+        t.palette = t.palette.monochrome();
+    }
+    t
+}
+
+thread_local! {
+    static MONO: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Whether series colours (charts, tags, graph lanes) are drawn as a grey ramp.
+pub fn chart_monochrome() -> bool {
+    MONO.with(std::cell::Cell::get)
+}
+
+/// Draw series colours as a lightness ramp instead of hues, everywhere, and repaint.
+pub fn set_chart_monochrome(cx: &mut App, on: bool) {
+    MONO.with(|c| c.set(on));
+    cx.refresh_windows();
 }
 
 thread_local! {

@@ -26,6 +26,22 @@ impl Showcase {
             "Charts",
             "Line · Bar · Area · Stacked charts",
             self.section("Line & bar charts", &t, &me, cx)
+                .child({
+                    let m = me.clone();
+                    div().flex().flex_wrap().items_center().gap(px(t.spacing.md))
+                        .child(Label::new("Series colours"))
+                        .child(
+                            Segmented::new("chart-mono", ["Colour", "Monochrome"])
+                                .selected(usize::from(dodai_gpui::chart_monochrome()))
+                                .on_select(move |i, _, cx| {
+                                    dodai_gpui::set_chart_monochrome(cx, i == 1);
+                                    m.update(cx, |_, cx| cx.notify());
+                                }),
+                        )
+                        .child(Muted::new(
+                            "Monochrome reads by lightness alone, for print or colour-blind viewing. Applies to every chart.",
+                        ))
+                })
                 .child(charts_xy)
                 .into_any_element(),
             "Line & bar charts",

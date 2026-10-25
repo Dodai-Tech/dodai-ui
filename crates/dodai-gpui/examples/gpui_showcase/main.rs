@@ -647,6 +647,10 @@ fn main() {
         }
         dodai_gpui::install_switcher(cx, switcher);
         dodai_gpui::set_tree_expanded(cx, false); // theme tree starts contracted
+                                                  // Debug: DODAI_MONO=1 starts with monochrome series colours.
+        if std::env::var_os("DODAI_MONO").is_some() {
+            dodai_gpui::set_chart_monochrome(cx, true);
+        }
         window_shortcuts(cx);
         // Textures and animated effects start off; glow starts at a subtle 0.25 (hover feedback).
         set_glow_intensity(cx, 0.25);
