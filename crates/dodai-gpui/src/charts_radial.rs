@@ -15,6 +15,7 @@ use gpui::{
 /// default 270° arc, segmented ring, dial, meter, reticle or slanted-cell bar.
 #[derive(IntoElement)]
 pub struct Gauge {
+    glow: crate::charts::ChartGlow,
     value: f32,
     min: f32,
     max: f32,
@@ -24,12 +25,19 @@ pub struct Gauge {
     tone: Option<dodai_core::Tone>,
     style: crate::gauges::GaugeStyle,
     zones: bool,
+    target: Option<f32>,
 }
 
 impl Gauge {
+    /// The glow ("shadow") under the lines: the theme's own, none, or a radius.
+    pub fn glow(mut self, g: crate::charts::ChartGlow) -> Self {
+        self.glow = g;
+        self
+    }
     /// Create a new [`Gauge`].
     pub fn new(value: f32) -> Self {
         Self {
+            glow: crate::charts::ChartGlow::Theme,
             value,
             min: 0.0,
             max: 100.0,
@@ -39,6 +47,7 @@ impl Gauge {
             tone: None,
             style: crate::gauges::GaugeStyle::Arc,
             zones: false,
+            target: None,
         }
     }
     /// Value range `min..max`.
@@ -72,6 +81,11 @@ impl Gauge {
         self.style = s;
         self
     }
+    /// Target marker at `value` (same range as the gauge).
+    pub fn target(mut self, v: f32) -> Self {
+        self.target = Some(v);
+        self
+    }
     /// Colour the value green → amber → red as it climbs (overrides `tone`).
     pub fn zones(mut self, on: bool) -> Self {
         self.zones = on;
@@ -87,7 +101,7 @@ impl Gauge {
         let frac = norm(self.value, self.min, self.max) * g;
         let col = hsla(self.tone.map_or(t.palette.primary, |k| t.palette.tone(k)));
         let track = hsla(t.palette.border);
-        let glow = glow_of(&t);
+        let glow = self.glow.resolve(&t);
         let size = self.size;
         let style = self.style;
         let (bw, bh) = style.dims(size);
@@ -111,6 +125,8 @@ impl Gauge {
                 ]
             }),
             glow,
+            alert: hsla(t.palette.danger),
+            target: self.target.map(|v| norm(v, self.min, self.max)),
             // Cut-corner gauges are Cyberpunk's; every other design gets the round ones.
             soft: t.look().soft_elevation || t.shape.kind() != dodai_core::ShapeKind::Chamfered,
         };
@@ -139,6 +155,7 @@ impl Gauge {
                             col,
                         );
                     }
+                    crate::gauges::paint(w, b, look);
                     return;
                 }
                 stroke(
@@ -153,6 +170,7 @@ impl Gauge {
                     let p = turn_arc(c, c, r, s0, s0 + span * frac);
                     glow_stroke(w, b.origin, &p, ring, col, glow);
                 }
+                crate::gauges::paint(w, b, look);
             },
         )
         .absolute()
@@ -161,7 +179,8 @@ impl Gauge {
             .caption
             .map(|c| crate::text::format_label(&t.typography, &c));
         let value_size = match style {
-            GaugeStyle::Bar | GaugeStyle::Chevron => bh * 0.9,
+            GaugeStyle::Bar | GaugeStyle::Chevron | GaugeStyle::Led => bh * 0.9,
+            GaugeStyle::Battery | GaugeStyle::Signal | GaugeStyle::Thermometer => size * 0.16,
             GaugeStyle::Dial => size * 0.17,
             GaugeStyle::Meter => size * 0.15,
             GaugeStyle::Level => size * 0.13,
@@ -184,7 +203,13 @@ impl Gauge {
             }));
         let frame = div().relative().w(px(bw)).h(px(bh)).child(canvas_el);
         match style {
-            GaugeStyle::Bar | GaugeStyle::Chevron | GaugeStyle::Level => div()
+            GaugeStyle::Bar
+            | GaugeStyle::Chevron
+            | GaugeStyle::Level
+            | GaugeStyle::Led
+            | GaugeStyle::Battery
+            | GaugeStyle::Signal
+            | GaugeStyle::Thermometer => div()
                 .flex()
                 .items_center()
                 .gap(px(t.spacing.md))
@@ -235,6 +260,7 @@ crate::entry_render!(Gauge);
 /// Radar (spider) chart: one polygon per series over shared axes.
 #[derive(IntoElement)]
 pub struct RadarChart {
+    glow: crate::charts::ChartGlow,
     axes: Vec<SharedString>,
     series: Vec<Series>,
     size: f32,
@@ -243,12 +269,18 @@ pub struct RadarChart {
 }
 
 impl RadarChart {
+    /// The glow ("shadow") under the lines: the theme's own, none, or a radius.
+    pub fn glow(mut self, g: crate::charts::ChartGlow) -> Self {
+        self.glow = g;
+        self
+    }
     /// Create a new [`RadarChart`].
     pub fn new<S: Into<SharedString>>(
         axes: impl IntoIterator<Item = S>,
         series: impl IntoIterator<Item = Series>,
     ) -> Self {
         Self {
+            glow: crate::charts::ChartGlow::Theme,
             axes: axes.into_iter().map(Into::into).collect(),
             series: series.into_iter().collect(),
             size: 220.0,
@@ -284,7 +316,7 @@ impl RadarChart {
                 .unwrap_or(&1.0)
         });
         let grid = hsla(t.palette.border);
-        let glow = glow_of(&t);
+        let glow = self.glow.resolve(&t);
         let size = self.size;
         let polys: Vec<(Hsla, Vec<f32>)> = self
             .series

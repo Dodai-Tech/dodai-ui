@@ -1,7 +1,7 @@
 //! Part-to-whole charts: treemap and radial bars.
 
 use crate::charts::{
-    chart_cfg, fmt_with, glow_of, glow_stroke, label_style, norm, stroke, titled, turn_arc, NumFmt,
+    chart_cfg, fmt_with, glow_stroke, label_style, norm, stroke, titled, turn_arc, NumFmt,
 };
 use crate::paint::{scale_alpha, shaped, ShapeStyle};
 use crate::panel::DodaiTooltip;
@@ -144,15 +144,22 @@ crate::entry_render!(Treemap);
 /// Concentric progress rings, one per `(name, value, max)`.
 #[derive(IntoElement)]
 pub struct RadialBar {
+    glow: crate::charts::ChartGlow,
     rings: Vec<(SharedString, f32, f32)>,
     size: f32,
     legend: bool,
 }
 
 impl RadialBar {
+    /// The glow ("shadow") under the lines: the theme's own, none, or a radius.
+    pub fn glow(mut self, g: crate::charts::ChartGlow) -> Self {
+        self.glow = g;
+        self
+    }
     /// Create a new [`RadialBar`].
     pub fn new<S: Into<SharedString>>(rings: impl IntoIterator<Item = (S, f32, f32)>) -> Self {
         Self {
+            glow: crate::charts::ChartGlow::Theme,
             rings: rings
                 .into_iter()
                 .map(|(a, b, c)| (a.into(), b, c))
@@ -182,7 +189,7 @@ impl RadialBar {
         let fr: Vec<f32> = self.rings.iter().map(|r| norm(r.1, 0.0, r.2) * g).collect();
         let cols: Vec<Hsla> = (0..n).map(|i| hsla(t.palette.series_at(i))).collect();
         let track = hsla(t.palette.border);
-        let glow = glow_of(&t);
+        let glow = self.glow.resolve(&t);
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {

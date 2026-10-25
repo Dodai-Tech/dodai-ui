@@ -255,7 +255,82 @@ impl Showcase {
                         .label("58%"),
                 );
             let bars = row().justify_around().flex_wrap().child(bars).child(more);
-            div().flex().flex_col().gap_6().child(dials).child(bars)
+            let extra = row()
+                .justify_around()
+                .flex_wrap()
+                .items_center()
+                .child(
+                    Gauge::new(64.0)
+                        .style(Ring)
+                        .size(120.0)
+                        .caption("Disk")
+                        .label("64%")
+                        .tone(Tone::Info),
+                )
+                .child(
+                    Gauge::new(78.0)
+                        .style(Smooth)
+                        .size(130.0)
+                        .zones(true)
+                        .caption("Speed")
+                        .label("78"),
+                )
+                .child(
+                    Gauge::new(55.0)
+                        .style(Dots)
+                        .size(130.0)
+                        .caption("Volume")
+                        .label("55")
+                        .target(80.0),
+                )
+                .child(
+                    Gauge::new(70.0)
+                        .style(Led)
+                        .size(150.0)
+                        .zones(true)
+                        .caption("Level")
+                        .label("70%"),
+                )
+                .child(
+                    Gauge::new(34.0)
+                        .style(Battery)
+                        .size(110.0)
+                        .caption("Battery")
+                        .label("34%")
+                        .tone(Tone::Success),
+                )
+                .child(
+                    Gauge::new(18.0)
+                        .style(Battery)
+                        .size(110.0)
+                        .caption("Low")
+                        .label("18%")
+                        .tone(Tone::Success),
+                )
+                .child(
+                    Gauge::new(62.0)
+                        .style(Thermometer)
+                        .size(120.0)
+                        .zones(true)
+                        .caption("Temp")
+                        .label("62°")
+                        .target(75.0),
+                )
+                .child(
+                    Gauge::new(60.0)
+                        .style(Signal)
+                        .size(100.0)
+                        .caption("Signal")
+                        .label("3/5")
+                        .tone(Tone::Info),
+                );
+            div()
+                .flex()
+                .flex_col()
+                .gap_6()
+                .child(dials)
+                .child(bars)
+                .child(extra)
         };
         let instruments = {
             let glow = match self.inst_glow {

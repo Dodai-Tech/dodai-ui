@@ -2,8 +2,8 @@
 //! linked panes. The maths lives in `dodai-charts-core`; this only paints.
 
 use crate::charts::{
-    chart_cfg, fill, fmt_with, framed, glow_of, glow_stroke, label_style, nice_ticks, norm, rect,
-    stroke, titled, NumFmt,
+    chart_cfg, fill, fmt_with, framed, glow_stroke, label_style, nice_ticks, norm, rect, stroke,
+    titled, NumFmt,
 };
 use crate::paint::scale_alpha;
 use crate::panel::DodaiTooltip;
@@ -124,6 +124,7 @@ crate::entry_render!(RenkoChart);
 /// Order-book depth: cumulative bid (green) and ask (red) step areas.
 #[derive(IntoElement)]
 pub struct DepthChart {
+    glow: crate::charts::ChartGlow,
     id: SharedString,
     bids: Vec<Level>,
     asks: Vec<Level>,
@@ -134,6 +135,11 @@ pub struct DepthChart {
 chart_cfg!(DepthChart);
 
 impl DepthChart {
+    /// The glow ("shadow") under the lines: the theme's own, none, or a radius.
+    pub fn glow(mut self, g: crate::charts::ChartGlow) -> Self {
+        self.glow = g;
+        self
+    }
     /// `(price, size)` levels in any order.
     pub fn new(
         id: impl Into<SharedString>,
@@ -141,6 +147,7 @@ impl DepthChart {
         asks: impl IntoIterator<Item = Level>,
     ) -> Self {
         Self {
+            glow: crate::charts::ChartGlow::Theme,
             id: id.into(),
             bids: bids.into_iter().collect(),
             asks: asks.into_iter().collect(),
@@ -167,7 +174,7 @@ impl DepthChart {
             hsla(t.palette.tone(dodai_core::Tone::Danger)),
             hsla(t.palette.border),
         );
-        let glow = glow_of(&t);
+        let glow = self.glow.resolve(&t);
         let tf: Vec<f32> = ticks.iter().map(|v| norm(*v, 0.0, top)).collect();
         let curves = [(bc.clone(), up), (ac.clone(), down)];
         let cv = canvas(

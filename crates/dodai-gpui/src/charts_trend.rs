@@ -34,6 +34,7 @@ pub fn stack_cumulative(series: &[Series]) -> Vec<Vec<f32>> {
 /// Stacked area chart: layers add up to the total.
 #[derive(IntoElement)]
 pub struct StackedAreaChart {
+    glow: crate::charts::ChartGlow,
     annotations: Vec<crate::charts_annotate::Annotation>,
     series: Vec<Series>,
     labels: Vec<SharedString>,
@@ -45,6 +46,11 @@ pub struct StackedAreaChart {
 chart_cfg!(StackedAreaChart);
 
 impl StackedAreaChart {
+    /// The glow ("shadow") under the lines: the theme's own, none, or a radius.
+    pub fn glow(mut self, g: crate::charts::ChartGlow) -> Self {
+        self.glow = g;
+        self
+    }
     /// Threshold lines and highlighted bands drawn over the plot.
     pub fn annotations(
         mut self,
@@ -56,6 +62,7 @@ impl StackedAreaChart {
     /// Create a new [`StackedAreaChart`].
     pub fn new(series: impl IntoIterator<Item = Series>) -> Self {
         Self {
+            glow: crate::charts::ChartGlow::Theme,
             annotations: Vec::new(),
             series: series.into_iter().collect(),
             labels: Vec::new(),
@@ -89,7 +96,7 @@ impl StackedAreaChart {
         let ticks = nice_ticks(0.0, top_v, 4);
         let top = *ticks.last().unwrap_or(&1.0);
         let grid = hsla(t.palette.border);
-        let glow = glow_of(&t);
+        let glow = self.glow.resolve(&t);
         let cols: Vec<Hsla> = self
             .series
             .iter()

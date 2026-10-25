@@ -26,11 +26,25 @@ pub enum GaugeStyle {
     Chevron,
     /// Vertical stack of chamfered cells, filling upwards.
     Level,
+    /// Full 360° ring from 12 o'clock with round caps.
+    Ring,
+    /// 270° arc that fades in towards a bright head (comet).
+    Smooth,
+    /// 270° sweep of round dots.
+    Dots,
+    /// Row of round LEDs, coloured by zone.
+    Led,
+    /// Battery outline with a charge fill; turns red when low.
+    Battery,
+    /// Thermometer: tube, bulb and tick marks.
+    Thermometer,
+    /// Five ascending signal-strength bars.
+    Signal,
 }
 
 impl GaugeStyle {
     /// Every gauge style, in showcase order.
-    pub const ALL: [GaugeStyle; 8] = [
+    pub const ALL: [GaugeStyle; 15] = [
         GaugeStyle::Arc,
         GaugeStyle::Segmented,
         GaugeStyle::Dial,
@@ -39,6 +53,13 @@ impl GaugeStyle {
         GaugeStyle::Bar,
         GaugeStyle::Chevron,
         GaugeStyle::Level,
+        GaugeStyle::Ring,
+        GaugeStyle::Smooth,
+        GaugeStyle::Dots,
+        GaugeStyle::Led,
+        GaugeStyle::Battery,
+        GaugeStyle::Thermometer,
+        GaugeStyle::Signal,
     ];
     /// Display name.
     pub fn name(self) -> &'static str {
@@ -51,6 +72,13 @@ impl GaugeStyle {
             GaugeStyle::Bar => "Bar",
             GaugeStyle::Chevron => "Chevron",
             GaugeStyle::Level => "Level",
+            GaugeStyle::Ring => "Ring",
+            GaugeStyle::Smooth => "Smooth",
+            GaugeStyle::Dots => "Dots",
+            GaugeStyle::Led => "LED",
+            GaugeStyle::Battery => "Battery",
+            GaugeStyle::Thermometer => "Thermometer",
+            GaugeStyle::Signal => "Signal",
         }
     }
     /// `(width, height)` for a gauge of nominal `size`.
@@ -59,6 +87,10 @@ impl GaugeStyle {
             GaugeStyle::Meter => (size, size * 0.62),
             GaugeStyle::Bar | GaugeStyle::Chevron => (size * 1.6, size * 0.2),
             GaugeStyle::Level => (size * 0.34, size),
+            GaugeStyle::Led => (size * 1.6, size * 0.14),
+            GaugeStyle::Battery => (size * 1.1, size * 0.5),
+            GaugeStyle::Thermometer => (size * 0.3, size),
+            GaugeStyle::Signal => (size * 0.6, size * 0.5),
             _ => (size, size),
         }
     }
@@ -207,17 +239,37 @@ pub(crate) struct Look {
     /// `Some([ok, warn, danger])` colours the value by zone.
     pub zones: Option<[Hsla; 3]>,
     pub glow: Option<f32>,
+    /// Colour for "bad" states (low battery).
+    pub alert: Hsla,
+    /// Target position `0..=1`, drawn as a marker.
+    pub target: Option<f32>,
     /// Rounded (Material-like) look: round caps, pills, no ticks or glow.
     pub soft: bool,
 }
 
 impl Look {
-    fn at(&self, frac: f32) -> Hsla {
+    pub(crate) fn at(&self, frac: f32) -> Hsla {
         self.zones.map_or(self.tone, |z| z[zone(frac)])
     }
 }
 
 pub(crate) fn paint(w: &mut Window, b: Bounds<Pixels>, k: Look) {
+    paint_style(w, b, k);
+    target_mark(w, b, k);
+}
+
+fn paint_style(w: &mut Window, b: Bounds<Pixels>, k: Look) {
+    use crate::gauges_extra as x;
+    match k.style {
+        GaugeStyle::Ring => return x::ring(w, b, k),
+        GaugeStyle::Smooth => return x::smooth(w, b, k),
+        GaugeStyle::Dots => return x::dots(w, b, k),
+        GaugeStyle::Led => return x::led(w, b, k),
+        GaugeStyle::Battery => return x::battery(w, b, k),
+        GaugeStyle::Thermometer => return x::thermometer(w, b, k),
+        GaugeStyle::Signal => return x::signal(w, b, k),
+        _ => {}
+    }
     if k.soft && k.style != GaugeStyle::Arc {
         return soft(w, b, k);
     }
@@ -229,6 +281,7 @@ pub(crate) fn paint(w: &mut Window, b: Bounds<Pixels>, k: Look) {
         GaugeStyle::Reticle => reticle(w, b, k),
         GaugeStyle::Bar | GaugeStyle::Chevron => bar(w, b, k),
         GaugeStyle::Level => level(w, b, k),
+        _ => {}
     }
 }
 
@@ -292,6 +345,44 @@ fn soft(w: &mut Window, b: Bounds<Pixels>, k: Look) {
                 fill(w, o, &pill(0.0, height - fh, width, fh), k.at(k.frac));
             }
         }
+        _ => {}
+    }
+}
+
+/// The target marker for `k.target`, placed per style family.
+fn target_mark(w: &mut Window, b: Bounds<Pixels>, k: Look) {
+    let Some(t) = k.target.map(|t| t.clamp(0.0, 1.0)) else {
+        return;
+    };
+    let (width, height) = k.style.dims(k.size);
+    let o = b.origin;
+    let col = k.text;
+    let radial = |s0: f32, span: f32, w: &mut Window| {
+        let c = k.size / 2.0;
+        let a = s0 + span * t;
+        let line = [
+            crate::charts::polar(c, c, c - 1.0, a),
+            crate::charts::polar(c, c, c - k.size * 0.16, a),
+        ];
+        stroke(w, o, &line, 2.5, col, false);
+    };
+    match k.style {
+        GaugeStyle::Arc
+        | GaugeStyle::Segmented
+        | GaugeStyle::Dial
+        | GaugeStyle::Smooth
+        | GaugeStyle::Dots => radial(SWEEP.0, SWEEP.1, w),
+        GaugeStyle::Meter => radial(0.75, 0.5, w),
+        GaugeStyle::Reticle | GaugeStyle::Ring => radial(0.0, 1.0, w),
+        GaugeStyle::Bar | GaugeStyle::Chevron | GaugeStyle::Led => {
+            let x = width * t;
+            stroke(w, o, &[(x, -2.0), (x, height + 2.0)], 2.5, col, false);
+        }
+        GaugeStyle::Level | GaugeStyle::Thermometer => {
+            let y = height * (1.0 - t);
+            stroke(w, o, &[(-2.0, y), (width + 2.0, y)], 2.5, col, false);
+        }
+        GaugeStyle::Battery | GaugeStyle::Signal => {}
     }
 }
 
@@ -547,7 +638,9 @@ mod tests {
         assert_eq!(GaugeStyle::Arc.dims(100.0), (100.0, 100.0));
         assert!(GaugeStyle::Bar.dims(100.0).0 > GaugeStyle::Bar.dims(100.0).1);
         assert!(GaugeStyle::Meter.dims(100.0).1 < 100.0);
-        assert_eq!(GaugeStyle::ALL.len(), 8);
+        assert_eq!(GaugeStyle::ALL.len(), 15);
+        assert!(GaugeStyle::Thermometer.dims(100.0).0 < 50.0);
+        assert!(GaugeStyle::Battery.dims(100.0).0 > GaugeStyle::Battery.dims(100.0).1);
         assert!(GaugeStyle::Level.dims(100.0).0 < GaugeStyle::Level.dims(100.0).1);
     }
 

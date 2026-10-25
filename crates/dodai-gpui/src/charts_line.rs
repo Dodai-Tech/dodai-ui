@@ -16,6 +16,7 @@ use std::rc::Rc;
 /// (with hover tooltips) and glow on glowing themes.
 #[derive(IntoElement)]
 pub struct LineChart {
+    glow: crate::charts::ChartGlow,
     annotations: Vec<crate::charts_annotate::Annotation>,
     id: SharedString,
     series: Vec<Series>,
@@ -36,6 +37,11 @@ pub struct LineChart {
 }
 
 impl LineChart {
+    /// The glow ("shadow") under the lines: the theme's own, none, or a radius.
+    pub fn glow(mut self, g: crate::charts::ChartGlow) -> Self {
+        self.glow = g;
+        self
+    }
     /// Threshold lines and highlighted bands drawn over the plot.
     pub fn annotations(
         mut self,
@@ -47,6 +53,7 @@ impl LineChart {
     /// Create a new [`LineChart`].
     pub fn new(id: impl Into<SharedString>, series: impl IntoIterator<Item = Series>) -> Self {
         Self {
+            glow: crate::charts::ChartGlow::Theme,
             annotations: Vec::new(),
             id: id.into(),
             secondary: Vec::new(),
@@ -161,7 +168,7 @@ impl LineChart {
         let range_of = move |i: usize| if i < np { (lo, hi) } else { (lo2, hi2) };
         let n = all.iter().map(|s| s.values.len()).max().unwrap_or(0);
         let grid = hsla(t.palette.border);
-        let glow = glow_of(&t);
+        let glow = self.glow.resolve(&t);
         let (area, smooth, stepped, sw, show_grid) = (
             self.area,
             self.smooth,

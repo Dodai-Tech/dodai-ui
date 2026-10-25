@@ -228,6 +228,8 @@ pub mod forms;
 pub mod frosted;
 #[cfg(feature = "charts")]
 pub mod gauges;
+#[cfg(feature = "charts")]
+pub(crate) mod gauges_extra;
 pub mod icons;
 #[cfg(all(feature = "charts", feature = "cyberpunk"))]
 pub mod instrument_charts;
