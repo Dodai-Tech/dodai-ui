@@ -37,6 +37,29 @@ pub(crate) fn glow_of(t: &Theme) -> Option<f32> {
     t.effects.glow_enabled().then(|| t.effects.glow_radius())
 }
 
+/// How much glow (the soft "shadow" under lines and lit cells) a chart draws.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub enum ChartGlow {
+    /// Follow the theme: its glow when the design has one, none otherwise.
+    #[default]
+    Theme,
+    /// No glow, whatever the theme.
+    Off,
+    /// A glow of this radius (px), even on a theme without one.
+    Radius(f32),
+}
+
+impl ChartGlow {
+    /// The radius to draw, or `None` for no glow.
+    pub(crate) fn resolve(self, t: &Theme) -> Option<f32> {
+        match self {
+            Self::Theme => glow_of(t),
+            Self::Off => None,
+            Self::Radius(r) => (r > 0.0).then_some(r),
+        }
+    }
+}
+
 /// Stroke with glow layers underneath.
 pub(crate) fn glow_stroke(
     w: &mut Window,

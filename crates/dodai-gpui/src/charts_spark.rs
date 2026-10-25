@@ -13,6 +13,7 @@ use gpui::{
 /// Tiny inline line, no axes.
 #[derive(IntoElement)]
 pub struct Sparkline {
+    glow: ChartGlow,
     style: SparkStyle,
     baseline: bool,
     values: Vec<f32>,
@@ -78,6 +79,11 @@ pub fn spark_columns(vals: &[f32], w: f32, h: f32, win_loss: bool) -> Vec<(f32, 
 }
 
 impl Sparkline {
+    /// The glow ("shadow") under the lines: the theme's own, none, or a radius.
+    pub fn glow(mut self, g: ChartGlow) -> Self {
+        self.glow = g;
+        self
+    }
     /// Drawing style (default [`SparkStyle::Line`]).
     pub fn style(mut self, s: SparkStyle) -> Self {
         self.style = s;
@@ -99,6 +105,7 @@ impl Sparkline {
     /// Create a new [`Sparkline`].
     pub fn new(values: impl IntoIterator<Item = f32>) -> Self {
         Self {
+            glow: ChartGlow::Theme,
             style: SparkStyle::Line,
             baseline: false,
             values: values.into_iter().collect(),
@@ -150,7 +157,7 @@ impl Sparkline {
     fn build(self, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let c = hsla(self.color.unwrap_or(t.palette.primary));
-        let glow = glow_of(&t).map(|r| r.min(4.0));
+        let glow = self.glow.resolve(&t).map(|r| r.min(4.0));
         let (vals, area, marker, all_points) =
             (self.values, self.area, self.marker, self.all_points);
         let (style, baseline) = (self.style, self.baseline);

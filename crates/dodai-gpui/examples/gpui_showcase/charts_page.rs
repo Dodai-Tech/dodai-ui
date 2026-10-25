@@ -248,6 +248,30 @@ impl Showcase {
             div().flex().flex_col().gap_6().child(dials).child(bars)
         };
         let instruments = {
+            let glow = match self.inst_glow {
+                1 => dodai_gpui::ChartGlow::Off,
+                2 => dodai_gpui::ChartGlow::Radius(4.0),
+                3 => dodai_gpui::ChartGlow::Radius(10.0),
+                _ => dodai_gpui::ChartGlow::Theme,
+            };
+            let glow_picker = {
+                let m = me.clone();
+                row()
+                    .child(Label::new("Glow"))
+                    .child(
+                        Segmented::new("inst-glow", ["Theme", "Off", "Soft", "Strong"])
+                            .selected(self.inst_glow)
+                            .on_select(move |i, _, cx| {
+                                m.update(cx, |s, cx| {
+                                    s.inst_glow = i;
+                                    cx.notify();
+                                })
+                            }),
+                    )
+                    .child(Muted::new(
+                        "The soft shadow under traces and lit cells. Theme uses the design's own.",
+                    ))
+            };
             let spec: Vec<f32> = (0..18)
                 .map(|i| 0.35 + 0.6 * ((i as f32 * 0.9).sin().abs()))
                 .collect();
@@ -269,12 +293,14 @@ impl Showcase {
                 .flex()
                 .flex_col()
                 .gap_6()
+                .child(glow_picker)
                 .child(
                     row()
                         .justify_around()
                         .flex_wrap()
                         .child(
                             Oscilloscope::ecg(2, 240)
+                                .glow(glow)
                                 .live(true)
                                 .size(320.0, 120.0)
                                 .caption("Pulse · 72 bpm"),
@@ -283,6 +309,7 @@ impl Showcase {
                             DotMatrix::new([
                                 0.3, 0.55, 0.8, 0.45, 0.95, 0.6, 0.35, 0.7, 0.5, 0.85, 0.4, 0.65,
                             ])
+                            .glow(glow)
                             .width(300.0)
                             .caption("Dot matrix"),
                         )
@@ -291,17 +318,19 @@ impl Showcase {
                                 .flex()
                                 .items_end()
                                 .gap_4()
-                                .child(SignalBars::new(2))
-                                .child(SignalBars::new(4).height(40.0))
-                                .child(SignalBars::new(5).height(52.0).bars(6)),
+                                .child(SignalBars::new(2).glow(glow))
+                                .child(SignalBars::new(4).height(40.0).glow(glow))
+                                .child(SignalBars::new(5).height(52.0).bars(6).glow(glow)),
                         )
                         .child(
                             Oscilloscope::wave(&[(3.0, 1.0), (7.0, 0.4)], 160)
+                                .glow(glow)
                                 .live(true)
                                 .caption("CH1 · 2 ms/div"),
                         )
                         .child(
                             Spectrum::new(spec)
+                                .glow(glow)
                                 .live(true)
                                 .size(300.0, 160.0)
                                 .caption("Audio · 18 band"),
@@ -311,9 +340,15 @@ impl Showcase {
                     row()
                         .justify_around()
                         .flex_wrap()
-                        .child(RadarScope::new(blips).size(220.0).caption("Proximity"))
+                        .child(
+                            RadarScope::new(blips)
+                                .glow(glow)
+                                .size(220.0)
+                                .caption("Proximity"),
+                        )
                         .child(
                             HexMap::new(12, hexes)
+                                .glow(glow)
                                 .width(340.0)
                                 .live(true)
                                 .caption("Grid load"),
@@ -325,6 +360,7 @@ impl Showcase {
                                 ("NET", 31.0),
                                 ("GPU", 90.0),
                             ])
+                            .glow(glow)
                             .size(160.0),
                         ),
                 )

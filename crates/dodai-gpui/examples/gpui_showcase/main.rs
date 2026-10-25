@@ -158,6 +158,8 @@ pub struct Showcase {
     clicks: u32,
     heat_res: usize,
     heat_grad: usize,
+    /// Glow of the instrument charts: 0 theme, 1 off, 2 soft, 3 strong.
+    inst_glow: usize,
     sh_gen: &'static str,
     sh_fx: Vec<&'static str>,
     sh_int: f32,

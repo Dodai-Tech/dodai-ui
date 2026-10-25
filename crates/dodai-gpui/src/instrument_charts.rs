@@ -3,7 +3,7 @@
 //! the theme does and take every colour from the palette. The `live` ones
 //! animate from a shared clock (and only then ask for frames).
 
-use crate::charts::{fmt_num, glow_of, glow_stroke, norm, polar, turn_arc};
+use crate::charts::{fmt_num, glow_stroke, norm, polar, turn_arc, ChartGlow};
 use crate::gauges::{chamfer_rect, disc, zone, SWEEP};
 use crate::paint::{fill, fill_batch, scale_alpha, shaped, stroke, stroke_batch};
 use crate::text::{first_family, format_label};
@@ -107,6 +107,7 @@ fn grid_color(t: &Theme) -> Hsla {
 /// Phosphor-style trace over a divided graticule. Samples are `-1..=1`.
 #[derive(IntoElement)]
 pub struct Oscilloscope {
+    glow: ChartGlow,
     samples: Vec<f32>,
     w: f32,
     h: f32,
@@ -116,9 +117,15 @@ pub struct Oscilloscope {
 }
 
 impl Oscilloscope {
+    /// The glow ("shadow") under the lines: the theme's own, none, or a radius.
+    pub fn glow(mut self, g: ChartGlow) -> Self {
+        self.glow = g;
+        self
+    }
     /// Create a new [`Oscilloscope`].
     pub fn new(samples: impl IntoIterator<Item = f32>) -> Self {
         Self {
+            glow: ChartGlow::Theme,
             samples: samples.into_iter().collect(),
             w: 320.0,
             h: 160.0,
@@ -174,7 +181,7 @@ impl RenderOnce for Oscilloscope {
         let (gw, gh) = (self.w, self.h);
         let samples = self.samples;
         let live = self.live;
-        let glow = glow_of(&t);
+        let glow = self.glow.resolve(&t);
         let grid = grid_color(&t);
         let bright = scale_alpha(hsla(t.palette.text_muted), 0.6);
         let cv = canvas(
@@ -249,6 +256,7 @@ impl RenderOnce for Oscilloscope {
 /// Equaliser-style bars built from stacked LED cells with peak caps.
 #[derive(IntoElement)]
 pub struct Spectrum {
+    glow: ChartGlow,
     values: Vec<f32>,
     w: f32,
     h: f32,
@@ -259,9 +267,15 @@ pub struct Spectrum {
 }
 
 impl Spectrum {
+    /// The glow ("shadow") under the lines: the theme's own, none, or a radius.
+    pub fn glow(mut self, g: ChartGlow) -> Self {
+        self.glow = g;
+        self
+    }
     /// Values are `0..=1`.
     pub fn new(values: impl IntoIterator<Item = f32>) -> Self {
         Self {
+            glow: ChartGlow::Theme,
             values: values.into_iter().collect(),
             w: 320.0,
             h: 160.0,
@@ -314,7 +328,7 @@ impl RenderOnce for Spectrum {
         });
         let primary = hsla(t.palette.primary);
         let dim = scale_alpha(hsla(t.palette.border), 0.7);
-        let glow = glow_of(&t);
+        let glow = self.glow.resolve(&t);
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
@@ -399,6 +413,7 @@ impl RenderOnce for Spectrum {
 /// Bar chart drawn as columns of LED dots (`0..=1` values).
 #[derive(IntoElement)]
 pub struct DotMatrix {
+    glow: ChartGlow,
     values: Vec<f32>,
     rows: usize,
     w: f32,
@@ -406,9 +421,15 @@ pub struct DotMatrix {
 }
 
 impl DotMatrix {
+    /// The glow ("shadow") under the lines: the theme's own, none, or a radius.
+    pub fn glow(mut self, g: ChartGlow) -> Self {
+        self.glow = g;
+        self
+    }
     /// Create a new [`DotMatrix`].
     pub fn new(values: impl IntoIterator<Item = f32>) -> Self {
         Self {
+            glow: ChartGlow::Theme,
             values: values.into_iter().collect(),
             rows: 8,
             w: 320.0,
@@ -442,7 +463,7 @@ impl RenderOnce for DotMatrix {
         let (rows, values) = (self.rows, self.values);
         let on = hsla(t.palette.primary);
         let dim = scale_alpha(hsla(t.palette.border), 0.7);
-        let glow = glow_of(&t);
+        let glow = self.glow.resolve(&t);
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
@@ -483,15 +504,22 @@ impl RenderOnce for DotMatrix {
 /// Ascending signal-strength bars; `level` of `bars` are lit.
 #[derive(IntoElement)]
 pub struct SignalBars {
+    glow: ChartGlow,
     level: usize,
     bars: usize,
     height: f32,
 }
 
 impl SignalBars {
+    /// The glow ("shadow") under the lines: the theme's own, none, or a radius.
+    pub fn glow(mut self, g: ChartGlow) -> Self {
+        self.glow = g;
+        self
+    }
     /// Create a new [`SignalBars`].
     pub fn new(level: usize) -> Self {
         Self {
+            glow: ChartGlow::Theme,
             level,
             bars: 5,
             height: 28.0,
@@ -519,7 +547,7 @@ impl RenderOnce for SignalBars {
         let w_total = n as f32 * bw + (n as f32 - 1.0) * gap;
         let on = hsla(t.palette.primary);
         let dim = scale_alpha(hsla(t.palette.border), 0.8);
-        let glow = glow_of(&t);
+        let glow = self.glow.resolve(&t);
         canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
@@ -573,6 +601,7 @@ impl Blip {
 /// Sweeping radar scope with range rings and fading contacts.
 #[derive(IntoElement)]
 pub struct RadarScope {
+    glow: ChartGlow,
     blips: Vec<Blip>,
     size: f32,
     live: bool,
@@ -581,9 +610,15 @@ pub struct RadarScope {
 }
 
 impl RadarScope {
+    /// The glow ("shadow") under the lines: the theme's own, none, or a radius.
+    pub fn glow(mut self, g: ChartGlow) -> Self {
+        self.glow = g;
+        self
+    }
     /// Create a new [`RadarScope`].
     pub fn new(blips: impl IntoIterator<Item = Blip>) -> Self {
         Self {
+            glow: ChartGlow::Theme,
             blips: blips.into_iter().collect(),
             size: 220.0,
             live: true,
@@ -621,7 +656,7 @@ impl RenderOnce for RadarScope {
         let col = hsla(t.palette.primary);
         let warn = hsla(t.palette.danger);
         let ring = grid_color(&t);
-        let glow = glow_of(&t);
+        let glow = self.glow.resolve(&t);
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
@@ -709,6 +744,7 @@ impl RenderOnce for RadarScope {
 /// Honeycomb heat map: values `0..=1`, row-major, `cols` per row.
 #[derive(IntoElement)]
 pub struct HexMap {
+    glow: ChartGlow,
     values: Vec<f32>,
     cols: usize,
     w: f32,
@@ -717,9 +753,15 @@ pub struct HexMap {
 }
 
 impl HexMap {
+    /// The glow ("shadow") under the lines: the theme's own, none, or a radius.
+    pub fn glow(mut self, g: ChartGlow) -> Self {
+        self.glow = g;
+        self
+    }
     /// Create a new [`HexMap`].
     pub fn new(cols: usize, values: impl IntoIterator<Item = f32>) -> Self {
         Self {
+            glow: ChartGlow::Theme,
             values: values.into_iter().collect(),
             cols: cols.max(1),
             w: 320.0,
@@ -756,7 +798,7 @@ impl RenderOnce for HexMap {
         let hot = t.palette.primary;
         let hi = t.palette.danger;
         let edge = scale_alpha(hsla(t.palette.border), 0.8);
-        let glow = glow_of(&t);
+        let glow = self.glow.resolve(&t);
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
@@ -809,14 +851,21 @@ impl RenderOnce for HexMap {
 /// Concentric 270° rings, one per `(label, percent)`, with a legend.
 #[derive(IntoElement)]
 pub struct RingStack {
+    glow: ChartGlow,
     items: Vec<(SharedString, f32)>,
     size: f32,
 }
 
 impl RingStack {
+    /// The glow ("shadow") under the lines: the theme's own, none, or a radius.
+    pub fn glow(mut self, g: ChartGlow) -> Self {
+        self.glow = g;
+        self
+    }
     /// Create a new [`RingStack`].
     pub fn new<S: Into<SharedString>>(items: impl IntoIterator<Item = (S, f32)>) -> Self {
         Self {
+            glow: ChartGlow::Theme,
             items: items.into_iter().map(|(l, v)| (l.into(), v)).collect(),
             size: 150.0,
         }
@@ -842,7 +891,10 @@ impl RenderOnce for RingStack {
             .map(|i| norm(i.1, 0.0, 100.0) * g)
             .collect();
         let cols: Vec<Hsla> = (0..n).map(|i| hsla(t.palette.series_at(i))).collect();
-        let (track, glow) = (scale_alpha(hsla(t.palette.border), 0.8), glow_of(&t));
+        let (track, glow) = (
+            scale_alpha(hsla(t.palette.border), 0.8),
+            self.glow.resolve(&t),
+        );
         let (fr2, cols2) = (fr.clone(), cols.clone());
         let cv = canvas(
             |_, _, _| (),
