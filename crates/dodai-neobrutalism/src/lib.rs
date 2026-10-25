@@ -155,7 +155,6 @@ pub const PRESETS: [Preset; 7] = [
 ];
 
 const BLACK: u32 = 0x000000;
-const WHITE: u32 = 0xffffff;
 
 /// Build one accent in one mode.
 pub fn build(p: &Preset, mode: Mode) -> Theme {
