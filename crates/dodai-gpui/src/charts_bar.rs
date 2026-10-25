@@ -141,7 +141,9 @@ impl BarChart {
         frac: f32,
     ) -> gpui::Stateful<gpui::Div> {
         let s = &self.series[si];
-        let style = ShapeStyle::from_tokens(t, Some(series_color(t, s, si)), None, false, false);
+        // Designs with a hard shadow outline their marks in ink.
+        let ink = (t.effects.hard_shadow > 0.0).then_some(t.palette.text);
+        let style = ShapeStyle::from_tokens(t, Some(series_color(t, s, si)), ink, false, false);
         let label = self.labels.get(i).cloned().unwrap_or_default();
         let el = div()
             .id((SharedString::from(format!("{}-{si}-{i}", self.id)), i))
