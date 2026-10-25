@@ -77,7 +77,21 @@ pub fn chain(pack: Pack) -> &'static PackChain {
 
 /// Resolve `id` for `pack`. `filled` picks the filled form where the pack has one.
 pub fn glyph(id: IconId, pack: Pack, filled: bool) -> Option<Glyph> {
-    chain(pack).glyph(id, filled)
+    // Resolving parses the SVG path (and facets it for angular designs); toolkits ask on every
+    // frame, so each icon is resolved once.
+    type Key = (IconId, usize, bool);
+    static CACHE: std::sync::LazyLock<
+        std::sync::Mutex<std::collections::HashMap<Key, Option<Glyph>>>,
+    > = std::sync::LazyLock::new(Default::default);
+    let key = (id, pack as usize, filled);
+    if let Some(hit) = CACHE.lock().ok().and_then(|c| c.get(&key).cloned()) {
+        return hit;
+    }
+    let out = chain(pack).glyph(id, filled);
+    if let Ok(mut c) = CACHE.lock() {
+        c.insert(key, out.clone());
+    }
+    out
 }
 
 /// Resolve `id` for a design's declared [`IconSet`](dodai_core::IconSet).
