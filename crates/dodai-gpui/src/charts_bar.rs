@@ -141,8 +141,8 @@ impl BarChart {
         frac: f32,
     ) -> gpui::Stateful<gpui::Div> {
         let s = &self.series[si];
-        // Designs with a hard shadow outline their marks in ink.
-        let ink = (t.effects.hard_shadow > 0.0).then_some(t.palette.text);
+        let cs = t.chart_style();
+        let ink = cs.mark_outline;
         let style = ShapeStyle::from_tokens(t, Some(series_color(t, s, si)), ink, false, false);
         let label = self.labels.get(i).cloned().unwrap_or_default();
         let el = div()
@@ -256,7 +256,8 @@ impl BarChart {
     /// The plot area: gridlines behind the bars.
     fn plot(&self, t: &dodai_core::Theme, ticks: &[f32], top: f32, cats: gpui::Div) -> gpui::Div {
         let h = self.horizontal;
-        let grid = hsla(t.palette.border);
+        let cs = t.chart_style();
+        let grid = hsla(cs.grid_color);
         // Gridlines behind the bars (vertical orientation: horizontal lines).
         let grid_fracs: Vec<f32> = ticks.iter().map(|v| norm(*v, 0.0, top)).collect();
         let mut plot = div().relative().w_full().h(px(self.height));
@@ -266,12 +267,12 @@ impl BarChart {
                 line.left(relative(*f))
                     .top_0()
                     .h_full()
-                    .w(px(t.sizes().hairline))
+                    .w(px(cs.grid_width))
             } else {
                 line.bottom(relative(*f))
                     .left_0()
                     .w_full()
-                    .h(px(t.sizes().hairline))
+                    .h(px(cs.grid_width))
             });
         }
         if !h {

@@ -54,6 +54,15 @@ impl DesignSpec for Cyberpunk {
         "Cyberpunk"
     }
 
+    /// Technical: dashed gridlines under thin neon lines.
+    fn chart_style(&self, t: &Theme) -> Option<dodai_core::ChartStyle> {
+        Some(dodai_core::ChartStyle {
+            grid_dashed: true,
+            grid_color: t.palette.border.with_alpha(0.7),
+            ..dodai_core::ChartStyle::from_theme(t)
+        })
+    }
+
     /// Smoked glass: the page-dark surface at 55% over a 16 px blur, with a one-pixel neon edge.
     fn frost(&self, t: &Theme) -> Option<dodai_core::Frost> {
         Some(dodai_core::Frost {

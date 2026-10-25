@@ -77,6 +77,39 @@ pub(crate) fn glow_stroke(
     stroke(w, o, p, width, c, false);
 }
 
+/// One gridline from `a` to `b` in the design's chart style (solid or dashed).
+pub(crate) fn grid_line(
+    w: &mut Window,
+    o: gpui::Point<Pixels>,
+    a: (f32, f32),
+    b: (f32, f32),
+    s: &dodai_core::ChartStyle,
+) {
+    let c = hsla(s.grid_color);
+    if !s.grid_dashed {
+        stroke(w, o, &[a, b], s.grid_width, c, false);
+        return;
+    }
+    let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+    let len = (dx * dx + dy * dy).sqrt();
+    let dash = (s.grid_width * 4.0).max(4.0);
+    let (ux, uy) = if len > 0.0 {
+        (dx / len, dy / len)
+    } else {
+        (0.0, 0.0)
+    };
+    let mut at = 0.0;
+    while at < len {
+        let end = (at + dash).min(len);
+        let seg = [
+            (a.0 + ux * at, a.1 + uy * at),
+            (a.0 + ux * end, a.1 + uy * end),
+        ];
+        stroke(w, o, &seg, s.grid_width, c, false);
+        at += dash * 2.0;
+    }
+}
+
 // ─────────────────────────────── data types ───────────────────────────────
 
 /// Named numeric series; colour defaults to `palette.series[index]`.

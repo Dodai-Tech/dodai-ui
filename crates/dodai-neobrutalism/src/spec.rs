@@ -73,6 +73,18 @@ impl DesignSpec for NeoBrutalism {
         "Neo-Brutalism"
     }
 
+    /// Heavy strokes, ink outlines on every mark, and a solid fill under areas.
+    fn chart_style(&self, t: &Theme) -> Option<dodai_core::ChartStyle> {
+        Some(dodai_core::ChartStyle {
+            line_width: 3.0,
+            mark_outline: Some(t.palette.border),
+            mark_outline_width: t.shape.border_width,
+            grid_color: t.palette.border.with_alpha(0.35),
+            area_alpha: 0.35,
+            ..dodai_core::ChartStyle::from_theme(t)
+        })
+    }
+
     /// Frosted glass, brutalist: an opaque-ish paper tint over a short, gritty 10 px blur. The
     /// hard border and shadow of the panel do the rest.
     fn frost(&self, t: &Theme) -> Option<dodai_core::Frost> {

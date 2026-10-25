@@ -215,6 +215,16 @@ impl DesignSpec for Aurora {
         "Aurora"
     }
 
+    /// Glassy: soft lines, faint gridlines, a luminous area fill.
+    fn chart_style(&self, t: &Theme) -> Option<dodai_core::ChartStyle> {
+        Some(dodai_core::ChartStyle {
+            line_width: 2.5,
+            grid_color: t.palette.border.with_alpha(0.5),
+            area_alpha: 0.28,
+            ..dodai_core::ChartStyle::from_theme(t)
+        })
+    }
+
     fn look(&self) -> Look {
         Look {
             soft_elevation: true,

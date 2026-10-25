@@ -200,6 +200,10 @@ pub trait DesignSpec: Send + Sync + std::fmt::Debug {
     fn input(&self, _t: &Theme, _focused: bool) -> Option<InputTokens> {
         None
     }
+    /// How charts draw lines, outlines, gridlines and fills (default: derived from the palette).
+    fn chart_style(&self, _t: &Theme) -> Option<crate::ChartStyle> {
+        None
+    }
     /// Colour of the hard offset shadow (default: the pressed primary).
     fn hard_shadow_color(&self, _t: &Theme) -> Option<Color> {
         None

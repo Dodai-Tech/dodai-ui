@@ -124,6 +124,16 @@ impl DesignSpec for Material3 {
         "Material 3"
     }
 
+    /// Soft: slightly heavier lines, quiet outline-variant gridlines, a light area tint.
+    fn chart_style(&self, t: &Theme) -> Option<dodai_core::ChartStyle> {
+        Some(dodai_core::ChartStyle {
+            line_width: 2.5,
+            grid_color: t.palette.border.with_alpha(0.5),
+            area_alpha: 0.12,
+            ..dodai_core::ChartStyle::from_theme(t)
+        })
+    }
+
     /// Glass for scrims, sheets and floating bars: the high surface container, a touch of
     /// primary, 70% opaque over a 28 px blur (M3 has no glass spec; this stays tonal).
     fn frost(&self, t: &Theme) -> Option<dodai_core::Frost> {

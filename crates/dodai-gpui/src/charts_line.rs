@@ -31,7 +31,7 @@ pub struct LineChart {
     y_bounds: Option<(f32, f32)>,
     fmt: Option<NumFmt>,
     grid: bool,
-    stroke_w: f32,
+    stroke_w: Option<f32>,
     stepped: bool,
     zero: bool,
     title: Option<SharedString>,
@@ -69,7 +69,7 @@ impl LineChart {
             y_bounds: None,
             fmt: None,
             grid: true,
-            stroke_w: 2.0,
+            stroke_w: None,
             stepped: false,
             zero: true,
             title: None,
@@ -90,9 +90,9 @@ impl LineChart {
         self.grid = g;
         self
     }
-    /// Line thickness in px (default 2).
+    /// Line thickness in px (default: the design's chart style).
     pub fn stroke_width(mut self, w: f32) -> Self {
-        self.stroke_w = w;
+        self.stroke_w = Some(w);
         self
     }
     /// Step (staircase) interpolation instead of straight segments.
@@ -175,13 +175,14 @@ impl LineChart {
             .collect();
         let range_of = move |i: usize| if i < np { (lo, hi) } else { (lo2, hi2) };
         let n = all.iter().map(|s| s.values.len()).max().unwrap_or(0);
-        let grid = hsla(t.palette.border);
+        let style = t.chart_style();
+        let grid = hsla(style.grid_color);
         let glow = self.glow.resolve(&t);
         let (area, smooth, stepped, sw, show_grid) = (
             self.area,
             self.smooth,
             self.stepped,
-            self.stroke_w,
+            self.stroke_w.unwrap_or(style.line_width),
             self.grid,
         );
         let lines: Vec<(Hsla, Vec<f32>, (f32, f32))> = all
@@ -204,7 +205,7 @@ impl LineChart {
                 let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
                 for f in tick_fracs.iter().filter(|_| show_grid) {
                     let y = bh - f * bh;
-                    stroke(w, b.origin, &[(0.0, y), (bw, y)], 1.0, grid, false);
+                    crate::charts::grid_line(w, b.origin, (0.0, y), (bw, y), &style);
                 }
                 for (c, vals, (lo, hi)) in &lines {
                     let (lo, hi) = (*lo, *hi);
@@ -231,7 +232,7 @@ impl LineChart {
                         let mut poly = p.clone();
                         poly.push((p.last().unwrap().0, bh));
                         poly.push((p[0].0, bh));
-                        fill(w, b.origin, &poly, scale_alpha(*c, 0.18));
+                        fill(w, b.origin, &poly, scale_alpha(*c, style.area_alpha));
                     }
                     glow_stroke(w, b.origin, &p, sw, *c, glow);
                 }

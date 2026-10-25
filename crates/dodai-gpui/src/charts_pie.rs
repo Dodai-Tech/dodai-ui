@@ -179,6 +179,8 @@ struct SliceLook {
     glow: Option<f32>,
     hud: bool,
     soft: bool,
+    /// Ink outline of the design's chart style: colour and width.
+    outline: Option<(Hsla, f32)>,
 }
 
 /// Outer tick scale and dashed inner reference ring of a HUD donut; only the part of the turn
@@ -291,6 +293,7 @@ fn wedge_slice(w: &mut Window, origin: gpui::Point<Pixels>, geo: &SliceGeo, look
         col,
         ring,
         selected,
+        outline,
         ..
     } = *look;
     let theta = (z - a) * std::f32::consts::TAU;
@@ -309,6 +312,11 @@ fn wedge_slice(w: &mut Window, origin: gpui::Point<Pixels>, geo: &SliceGeo, look
         let mut p = turn_arc(c, c, r, w0, if k + 1 == n { w1 } else { w1 + 0.0015 });
         p.push((ax, ay));
         fill(w, origin, &p, col);
+    }
+    if let Some((ink, width)) = outline {
+        let mut o = turn_arc(c, c, r, ao, zo);
+        o.push((ax, ay));
+        stroke(w, origin, &o, width, ink, true);
     }
     if selected {
         let mut o = turn_arc(c, c, r, ao, zo);
@@ -333,6 +341,7 @@ fn annular_slice(w: &mut Window, origin: gpui::Point<Pixels>, geo: &SliceGeo, lo
         selected,
         glow,
         hud,
+        outline,
         ..
     } = *look;
     let delta = |rad: f32| (half / rad).clamp(0.0, 1.0).asin() / std::f32::consts::TAU;
@@ -353,6 +362,13 @@ fn annular_slice(w: &mut Window, origin: gpui::Point<Pixels>, geo: &SliceGeo, lo
     }
     if hud {
         glow_stroke(w, origin, &turn_arc(c, c, r + 2.0, ao, zo), 1.5, col, glow);
+    }
+    if let Some((ink, width)) = outline {
+        let mut o = turn_arc(c, c, r, ao, zo);
+        let mut inner = turn_arc(c, c, r_in, ai, zi);
+        inner.reverse();
+        o.extend(inner);
+        stroke(w, origin, &o, width, ink, true);
     }
     if selected {
         let mut o = turn_arc(c, c, r, ao, zo);
@@ -504,6 +520,7 @@ struct PiePaint {
     sweep: f32,
     guide_col: Hsla,
     scale_col: Hsla,
+    outline: Option<(Hsla, f32)>,
 }
 
 impl PiePaint {
@@ -530,6 +547,7 @@ impl PiePaint {
             sweep,
             guide_col,
             scale_col,
+            outline,
         } = self;
         let (
             hover,
@@ -619,6 +637,7 @@ impl PiePaint {
                 glow,
                 hud,
                 soft,
+                outline: *outline,
             };
             match (style, hole <= 0.0) {
                 (PieStyle::Segmented, _) => segmented_slice(w, origin, &geo, &look),
@@ -730,6 +749,10 @@ impl PieChart {
             sweep,
             guide_col,
             scale_col,
+            outline: {
+                let cs = t.chart_style();
+                cs.mark_outline.map(|c| (hsla(c), cs.mark_outline_width))
+            },
         };
         let cvs = canvas(
             |_, _, _| (),
