@@ -194,6 +194,8 @@ pub mod charts_part_whole;
 #[cfg(feature = "charts")]
 pub mod charts_pie;
 #[cfg(feature = "charts")]
+pub mod charts_pulse;
+#[cfg(feature = "charts")]
 pub mod charts_radial;
 #[cfg(feature = "charts")]
 pub mod charts_spark;
@@ -320,6 +322,8 @@ pub use charts_flow::{waterfall_steps, Funnel, Waterfall};
 pub use charts_market::{ChartStack, DepthChart, Gantt, RenkoChart};
 #[cfg(feature = "charts")]
 pub use charts_part_whole::{treemap_layout, RadialBar, Treemap};
+#[cfg(feature = "charts")]
+pub use charts_pulse::{Pulse, PulseGrid, PulseKind, PulseMode, PulseRhythm};
 #[cfg(feature = "charts")]
 pub use charts_trend::{
     overlay_lines, stack_cumulative, Candle, CandleOverlay, CandlePane, CandleStyle, Candlestick,

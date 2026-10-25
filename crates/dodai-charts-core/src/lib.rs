@@ -17,6 +17,7 @@
 //! | [`calendar`] | civil-date helpers |
 //! | [`axis`] | secondary-axis tick alignment |
 //! | [`gradient`] | continuous colour scales |
+//! | [`pulse`] | ECG / vital-sign signal generators, beat detection |
 //! | [`sankey`] | flow diagram layout |
 //! | [`density`] | kernel density estimate |
 
@@ -30,6 +31,7 @@ pub mod gantt;
 pub mod gradient;
 pub mod indicators;
 pub mod math;
+pub mod pulse;
 pub mod renko;
 pub mod sankey;
 pub mod stack;

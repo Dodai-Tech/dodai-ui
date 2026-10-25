@@ -166,6 +166,8 @@ pub struct Showcase {
     inst_glow: usize,
     /// Oscilloscope afterimage: 0 off, 1 subtle, 2 default, 3 long.
     inst_trail: usize,
+    /// Pulse monitor options: rhythm, mode, grid, noise, rate, trail, gain.
+    pulse_cfg: [usize; 7],
     sh_gen: &'static str,
     sh_fx: Vec<&'static str>,
     sh_int: f32,
