@@ -171,7 +171,7 @@ impl BarChart {
             // Bars grow right; stacked bars lay segments left→right.
             cell = cell.items_center();
             if self.stacked {
-                let mut stack = div().h(px(t.sizes().chart_bar)).flex();
+                let mut stack = div().h_full().max_h(px(t.sizes().chart_bar)).flex();
                 for (si, s) in self.series.iter().enumerate() {
                     let v = s.values.get(i).copied().unwrap_or(0.0).max(0.0);
                     stack = stack.child(self.bar(t, si, i, v, v / bar_top.max(f32::EPSILON)));
@@ -189,13 +189,14 @@ impl BarChart {
                 cell = cell.flex_col().justify_center();
                 for (si, s) in self.series.iter().enumerate() {
                     let v = s.values.get(i).copied().unwrap_or(0.0).max(0.0);
-                    cell = cell.child(div().w_full().h(px(t.sizes().chart_cell)).child(self.bar(
-                        t,
-                        si,
-                        i,
-                        v,
-                        norm(v, 0.0, bar_top),
-                    )));
+                    cell = cell.child(
+                        div()
+                            .w_full()
+                            .flex_1()
+                            .min_h_0()
+                            .max_h(px(t.sizes().chart_cell))
+                            .child(self.bar(t, si, i, v, norm(v, 0.0, bar_top))),
+                    );
                 }
             }
         } else {
