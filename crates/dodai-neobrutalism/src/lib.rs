@@ -3,7 +3,8 @@
 //! a 2 px outline, a 4 px shadow, 5 px corners, black on bright, and controls that *sink*
 //! into their shadow on hover.
 //!
-//! Twelve themes: six accents ([`PRESETS`]), each light and dark.
+//! Fourteen themes: seven accents ([`PRESETS`]), each light and dark. `Paper` is the editorial
+//! variant: warm off-white stock, near-black ink, square corners.
 
 use dodai_core::themes::ThemeBuilder;
 use dodai_core::{Corners, Mode, Shape, Spacing, Theme, ThemeMeta, Typography};
@@ -73,10 +74,14 @@ pub struct Preset {
     pub third: u32,
     /// Light page tint.
     pub paper: u32,
+    /// Near-black ink for outlines and text in light mode.
+    pub ink: u32,
+    /// Square corners (no radius).
+    pub square: bool,
 }
 
-/// The six accents; the first is the default.
-pub const PRESETS: [Preset; 6] = [
+/// The seven accents; the first is the default.
+pub const PRESETS: [Preset; 7] = [
     Preset {
         key: "",
         name: "Blue",
@@ -84,6 +89,8 @@ pub const PRESETS: [Preset; 6] = [
         second: 0xfacc00,
         third: 0xff4d50,
         paper: 0xdcebfe,
+        ink: BLACK,
+        square: false,
     },
     Preset {
         key: "-yellow",
@@ -92,6 +99,8 @@ pub const PRESETS: [Preset; 6] = [
         second: 0x5294ff,
         third: 0xff90e8,
         paper: 0xfff3c4,
+        ink: BLACK,
+        square: false,
     },
     Preset {
         key: "-pink",
@@ -100,6 +109,8 @@ pub const PRESETS: [Preset; 6] = [
         second: 0xfacc00,
         third: 0x5294ff,
         paper: 0xffe6f8,
+        ink: BLACK,
+        square: false,
     },
     Preset {
         key: "-green",
@@ -108,6 +119,8 @@ pub const PRESETS: [Preset; 6] = [
         second: 0xff90e8,
         third: 0xfacc00,
         paper: 0xd7f8e7,
+        ink: BLACK,
+        square: false,
     },
     Preset {
         key: "-red",
@@ -116,6 +129,8 @@ pub const PRESETS: [Preset; 6] = [
         second: 0xfacc00,
         third: 0x5294ff,
         paper: 0xffe2e2,
+        ink: BLACK,
+        square: false,
     },
     Preset {
         key: "-violet",
@@ -124,6 +139,18 @@ pub const PRESETS: [Preset; 6] = [
         second: 0x05e17a,
         third: 0xfacc00,
         paper: 0xe5e7ff,
+        ink: BLACK,
+        square: false,
+    },
+    Preset {
+        key: "-paper",
+        name: "Paper",
+        main: 0x2d81ff,
+        second: 0xffb347,
+        third: 0xff7ab8,
+        paper: 0xf2f1ee,
+        ink: 0x101014,
+        square: true,
     },
 ];
 
@@ -149,7 +176,9 @@ pub fn build(p: &Preset, mode: Mode) -> Theme {
             0x272933, 0x1d1f27, 0x343746, 0xf4f4f0, 0xffffff, 0xcfd2dc, 0x7d8194,
         )
     } else {
-        (p.paper, WHITE, 0xf1f1ea, BLACK, BLACK, 0x3b3b3b, 0x8a8a8a)
+        (
+            p.paper, 0xfaf9f7, 0xe9e8e4, p.ink, p.ink, 0x3b3b3b, 0x8a8a8a,
+        )
     };
     let mut t = ThemeBuilder {
         meta: ThemeMeta {
@@ -170,9 +199,9 @@ pub fn build(p: &Preset, mode: Mode) -> Theme {
         disabled,
         primary: p.main,
         primary_hover: p.main,
-        on_primary: BLACK,
+        on_primary: if dark { BLACK } else { p.ink },
         secondary: p.second,
-        on_secondary: BLACK,
+        on_secondary: if dark { BLACK } else { p.ink },
         accent: p.third,
         info: 0x5294ff,
         success: 0x05e17a,
@@ -183,7 +212,14 @@ pub fn build(p: &Preset, mode: Mode) -> Theme {
         ],
         typography: typography(),
         spacing: spacing(),
-        shape: shape(),
+        shape: if p.square {
+            Shape {
+                radius: 0.0,
+                ..shape()
+            }
+        } else {
+            shape()
+        },
         glow: 0.0,
         glow_blur: 0.0,
         scanlines: false,
@@ -198,7 +234,11 @@ pub fn build(p: &Preset, mode: Mode) -> Theme {
     t.palette.primary_active = dodai_core::Color::hex(p.main);
     t.motion = motion();
     t.surface_style = surface::style(matches!(mode, Mode::Dark));
-    t.shape_system = Some(shape_system());
+    t.shape_system = Some(if p.square {
+        dodai_core::ShapeSystem::sharp()
+    } else {
+        shape_system()
+    });
     t.spec = dodai_core::SpecRef::new(&SPEC);
     t
 }

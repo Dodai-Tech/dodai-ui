@@ -436,11 +436,11 @@ mod tests {
     }
 
     #[test]
-    fn twelve_unique_themes() {
+    fn fourteen_unique_themes() {
         let v = crate::variants();
-        assert_eq!(v.len(), 12);
+        assert_eq!(v.len(), 14);
         let ids: std::collections::HashSet<_> = v.iter().map(|t| t.id()).collect();
-        assert_eq!(ids.len(), 12);
+        assert_eq!(ids.len(), 14);
         assert_eq!(v[0].id(), "neobrutalism");
     }
 
