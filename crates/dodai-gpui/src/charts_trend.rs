@@ -34,6 +34,7 @@ pub fn stack_cumulative(series: &[Series]) -> Vec<Vec<f32>> {
 /// Stacked area chart: layers add up to the total.
 #[derive(IntoElement)]
 pub struct StackedAreaChart {
+    follow: crate::instruments_motion::Follow,
     glow: crate::charts::ChartGlow,
     annotations: Vec<crate::charts_annotate::Annotation>,
     series: Vec<Series>,
@@ -46,6 +47,7 @@ pub struct StackedAreaChart {
 chart_cfg!(StackedAreaChart);
 
 impl StackedAreaChart {
+    crate::instruments_motion::follow_api!();
     /// The glow ("shadow") under the lines: the theme's own, none, or a radius.
     pub fn glow(mut self, g: crate::charts::ChartGlow) -> Self {
         self.glow = g;
@@ -59,9 +61,11 @@ impl StackedAreaChart {
         self.annotations = a.into_iter().collect();
         self
     }
+    #[track_caller]
     /// Create a new [`StackedAreaChart`].
     pub fn new(series: impl IntoIterator<Item = Series>) -> Self {
         Self {
+            follow: crate::instruments_motion::Follow::here(),
             glow: crate::charts::ChartGlow::Theme,
             annotations: Vec::new(),
             series: series.into_iter().collect(),
@@ -85,8 +89,10 @@ impl StackedAreaChart {
 }
 
 impl StackedAreaChart {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let g = crate::motion::grow(window, cx, "StackedAreaChart");
+        self.series =
+            crate::instruments_motion::follow_series(window, cx, &self.follow, &self.series);
         let t = theme_of(cx);
         let cum = stack_cumulative(&self.series);
         let n = cum.first().map_or(0, Vec::len);

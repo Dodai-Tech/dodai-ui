@@ -93,16 +93,32 @@ impl Showcase {
         self.range = (lo, lo + 0.2 + 0.3 * wave(0.45, 1.0));
         let lo = wave(0.37, 2.0) * 0.4;
         self.vrange = (lo, lo + 0.2 + 0.3 * wave(0.5, 0.0));
-        self.rating = ((t * 0.7).rem_euclid(5.5) * 2.0).floor() / 2.0;
-        self.stepper = (t * 0.8) as i32 % 11;
+        // Everything that counts goes up and back down, so nothing snaps at the end of a loop.
+        let tri = |speed: f32, max: f32| {
+            let p = (t * speed / max).rem_euclid(2.0);
+            max * if p < 1.0 { p } else { 2.0 - p }
+        };
+        self.rating = (tri(0.7, 5.0) * 2.0).round() / 2.0;
+        self.stepper = tri(0.8, 10.0).round() as i32;
         self.switch = (t / 2.2) as i64 % 2 == 0;
         self.check = (t / 3.1) as i64 % 2 == 0;
         self.radio = (t / 1.7) as usize % 3;
-        // Text types itself, pauses, then starts over.
+        // Text types itself, rests, deletes itself and rests again; it never jumps.
         let typed = |text: &str, speed: f32, offset: f32| -> String {
             let n = text.chars().count();
-            let at = ((t + offset) * speed) as usize % (n + 14);
-            text.chars().take(at.min(n)).collect()
+            let rest = 6;
+            let cycle = 2 * (n + rest);
+            let at = ((t + offset) * speed) as usize % cycle;
+            let shown = if at < n {
+                at
+            } else if at < n + rest {
+                n
+            } else if at < 2 * n + rest {
+                n - (at - n - rest)
+            } else {
+                0
+            };
+            text.chars().take(shown).collect()
         };
         for (input, text, off) in [
             (&self.in_name, "Ada Lovelace", 0.0),

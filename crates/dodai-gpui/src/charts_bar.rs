@@ -15,6 +15,7 @@ use std::rc::Rc;
 /// Bar chart: vertical or horizontal, grouped or stacked.
 #[derive(IntoElement)]
 pub struct BarChart {
+    follow: crate::instruments_motion::Follow,
     annotations: Vec<crate::charts_annotate::Annotation>,
     id: SharedString,
     series: Vec<Series>,
@@ -34,6 +35,7 @@ pub struct BarChart {
 crate::corners_setter!(BarChart);
 
 impl BarChart {
+    crate::instruments_motion::follow_api!();
     /// Threshold lines and highlighted bands drawn over the plot.
     pub fn annotations(
         mut self,
@@ -44,10 +46,12 @@ impl BarChart {
     }
     /// Create a new [`BarChart`].
     pub fn new(id: impl Into<SharedString>, series: impl IntoIterator<Item = Series>) -> Self {
+        let id: SharedString = id.into();
         Self {
+            follow: crate::instruments_motion::Follow::named(&id),
             annotations: Vec::new(),
             corners: None,
-            id: id.into(),
+            id,
             series: series.into_iter().collect(),
             labels: Vec::new(),
             height: 200.0,
@@ -293,10 +297,12 @@ impl BarChart {
         plot
     }
 
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
         let g = crate::motion::grow(window, cx, "BarChart");
+        self.series =
+            crate::instruments_motion::follow_series(window, cx, &self.follow, &self.series);
         let ticks = nice_ticks(
             0.0,
             self.y_max

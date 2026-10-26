@@ -30,6 +30,7 @@ pub fn waterfall_steps(deltas: &[f32]) -> Vec<(f32, f32)> {
 /// Funnel of decreasing stages, drawn as joined trapezoids.
 #[derive(IntoElement)]
 pub struct Funnel {
+    follow: crate::instruments_motion::Follow,
     stages: Vec<(SharedString, f32)>,
     height: f32,
     fmt: Option<NumFmt>,
@@ -38,9 +39,12 @@ pub struct Funnel {
 chart_cfg!(Funnel);
 
 impl Funnel {
+    crate::instruments_motion::follow_api!();
     /// Create a new [`Funnel`].
+    #[track_caller]
     pub fn new<S: Into<SharedString>>(stages: impl IntoIterator<Item = (S, f32)>) -> Self {
         Self {
+            follow: crate::instruments_motion::Follow::here(),
             stages: stages.into_iter().map(|(a, b)| (a.into(), b)).collect(),
             height: 220.0,
             fmt: None,
@@ -50,7 +54,8 @@ impl Funnel {
 }
 
 impl Funnel {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        crate::instruments_motion::follow_pairs(window, cx, &self.follow, &mut self.stages);
         let g = crate::motion::grow(window, cx, "Funnel");
         let t = theme_of(cx);
         let n = self.stages.len().max(1);
@@ -126,6 +131,7 @@ crate::entry_render!(Funnel);
 /// Waterfall of deltas; increases green, decreases red, optional total bar.
 #[derive(IntoElement)]
 pub struct Waterfall {
+    follow: crate::instruments_motion::Follow,
     annotations: Vec<crate::charts_annotate::Annotation>,
     id: SharedString,
     steps: Vec<(SharedString, f32)>,
@@ -140,6 +146,7 @@ crate::corners_setter!(Waterfall);
 chart_cfg!(Waterfall);
 
 impl Waterfall {
+    crate::instruments_motion::follow_api!();
     /// Threshold lines and highlighted bands drawn over the plot.
     pub fn annotations(
         mut self,
@@ -149,11 +156,13 @@ impl Waterfall {
         self
     }
     /// Create a new [`Waterfall`].
+    #[track_caller]
     pub fn new<S: Into<SharedString>>(
         id: impl Into<SharedString>,
         steps: impl IntoIterator<Item = (S, f32)>,
     ) -> Self {
         Self {
+            follow: crate::instruments_motion::Follow::here(),
             annotations: Vec::new(),
             corners: None,
             id: id.into(),
@@ -175,7 +184,8 @@ impl Waterfall {
 }
 
 impl Waterfall {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        crate::instruments_motion::follow_pairs(window, cx, &self.follow, &mut self.steps);
         let g = crate::motion::grow(window, cx, "Waterfall");
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);

@@ -76,6 +76,7 @@ pub(crate) fn next_frame(w: &Window) {
 pub struct Follow {
     id: ElementId,
     response: Option<NeedleResponse>,
+    animated: bool,
 }
 
 impl Follow {
@@ -92,7 +93,21 @@ impl Follow {
                 l.column()
             ))),
             response: None,
+            animated: true,
         }
+    }
+    /// An id from a name, for components that already have one.
+    pub fn named(id: &str) -> Self {
+        Self {
+            id: ElementId::from(SharedString::from(format!("follow-{id}"))),
+            response: None,
+            animated: true,
+        }
+    }
+    /// Turns following on or off for this component; off, it shows its value at once.
+    pub fn with_animated(mut self, on: bool) -> Self {
+        self.animated = on;
+        self
     }
     /// Replaces the id.
     pub fn with_id(mut self, id: impl Into<ElementId>) -> Self {
@@ -118,6 +133,12 @@ macro_rules! follow_api {
         /// How the needle follows a changing value; by default the design's own.
         pub fn response(mut self, r: dodai_core::NeedleResponse) -> Self {
             self.follow = self.follow.with_response(r);
+            self
+        }
+        /// Animates towards new values (the default) or shows them at once. The global
+        /// Animate switch still turns every component off.
+        pub fn animate(mut self, on: bool) -> Self {
+            self.follow = self.follow.with_animated(on);
             self
         }
         /// Like `response` for an optional override (`None` keeps the design's own).
@@ -148,7 +169,7 @@ fn state(
     let response = f
         .response
         .unwrap_or_else(|| theme_of(cx).chart_style().response);
-    if !instruments_animated() {
+    if !instruments_animated() || !f.animated {
         return None;
     }
     let (secs, bounce) = response.spring()?;
@@ -197,4 +218,118 @@ pub(crate) fn follow_angle(w: &mut Window, cx: &mut App, f: &Follow, part: u8, t
     state(w, cx, f, part, target, true)
         .unwrap_or(target)
         .rem_euclid(360.0)
+}
+
+struct Many {
+    response: NeedleResponse,
+    springs: Vec<SpringState>,
+    last: Vec<f32>,
+}
+
+/// Every value of `target` followed at once, for a chart's data. Values that appear start at
+/// their target; the rest ease with the component's response. Requests frames until settled.
+pub(crate) fn follow_all(w: &mut Window, cx: &mut App, f: &Follow, target: &[f32]) -> Vec<f32> {
+    let response = f
+        .response
+        .unwrap_or_else(|| theme_of(cx).chart_style().response);
+    let Some((secs, bounce)) = response
+        .spring()
+        .filter(|_| instruments_animated() && f.animated)
+    else {
+        return target.to_vec();
+    };
+    // Data does not overshoot: bars and areas keep a gentle settle at most.
+    let spring = Spring::from_response(secs / animation_speed(), bounce.min(0.15));
+    let st = w.with_id(f.id.clone(), |w| {
+        w.use_keyed_state(("many", 0u32), cx, |_, _| Many {
+            response,
+            springs: Vec::new(),
+            last: Vec::new(),
+        })
+    });
+    let t = now();
+    let eps = (target.iter().fold(0.0_f32, |m, v| m.max(v.abs())) * 0.002).max(1e-4);
+    let (out, settled) = st.update(cx, |m, _| {
+        if m.response != response {
+            m.response = response;
+            for (sp, v) in m.springs.iter_mut().zip(&m.last) {
+                *sp = SpringState::new(spring, *v);
+            }
+        }
+        m.springs.truncate(target.len());
+        m.last.truncate(target.len());
+        for (i, v) in target.iter().enumerate() {
+            if i >= m.springs.len() {
+                m.springs.push(SpringState::new(spring, *v));
+                m.last.push(*v);
+            } else if m.last[i] != *v {
+                m.last[i] = *v;
+                m.springs[i].retarget(*v, t);
+            }
+        }
+        (
+            m.springs.iter().map(|s| s.value(t)).collect::<Vec<_>>(),
+            m.springs.iter().all(|s| s.settled(t, eps)),
+        )
+    });
+    if !settled {
+        next_frame(w);
+    }
+    out
+}
+
+/// A chart's series with their values followed.
+pub(crate) fn follow_series(
+    w: &mut Window,
+    cx: &mut App,
+    f: &Follow,
+    series: &[crate::charts::Series],
+) -> Vec<crate::charts::Series> {
+    let flat: Vec<f32> = series
+        .iter()
+        .flat_map(|s| s.values.iter().copied())
+        .collect();
+    let mut shown = follow_all(w, cx, f, &flat).into_iter();
+    series
+        .iter()
+        .map(|s| {
+            let mut s = s.clone();
+            for v in &mut s.values {
+                *v = shown.next().unwrap_or(*v);
+            }
+            s
+        })
+        .collect()
+}
+
+/// The `f32` of each `(label, value)` pair followed, in place.
+pub(crate) fn follow_pairs<T>(w: &mut Window, cx: &mut App, f: &Follow, items: &mut [(T, f32)]) {
+    let flat: Vec<f32> = items.iter().map(|p| p.1).collect();
+    for (p, v) in items.iter_mut().zip(follow_all(w, cx, f, &flat)) {
+        p.1 = v;
+    }
+}
+
+/// The two numbers of each `(label, a, b)` row followed, in place.
+pub(crate) fn follow_triples<T>(
+    w: &mut Window,
+    cx: &mut App,
+    f: &Follow,
+    items: &mut [(T, f32, f32)],
+) {
+    let flat: Vec<f32> = items.iter().flat_map(|p| [p.1, p.2]).collect();
+    let mut shown = follow_all(w, cx, f, &flat).into_iter();
+    for p in items.iter_mut() {
+        p.1 = shown.next().unwrap_or(p.1);
+        p.2 = shown.next().unwrap_or(p.2);
+    }
+}
+
+/// A grid of values followed, in place.
+pub(crate) fn follow_rows(w: &mut Window, cx: &mut App, f: &Follow, rows: &mut [Vec<f32>]) {
+    let flat: Vec<f32> = rows.iter().flatten().copied().collect();
+    let mut shown = follow_all(w, cx, f, &flat).into_iter();
+    for v in rows.iter_mut().flatten() {
+        *v = shown.next().unwrap_or(*v);
+    }
 }

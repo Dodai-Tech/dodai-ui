@@ -260,6 +260,7 @@ crate::entry_render!(Gauge);
 /// Radar (spider) chart: one polygon per series over shared axes.
 #[derive(IntoElement)]
 pub struct RadarChart {
+    follow: crate::instruments_motion::Follow,
     glow: crate::charts::ChartGlow,
     axes: Vec<SharedString>,
     series: Vec<Series>,
@@ -269,17 +270,20 @@ pub struct RadarChart {
 }
 
 impl RadarChart {
+    crate::instruments_motion::follow_api!();
     /// The glow ("shadow") under the lines: the theme's own, none, or a radius.
     pub fn glow(mut self, g: crate::charts::ChartGlow) -> Self {
         self.glow = g;
         self
     }
+    #[track_caller]
     /// Create a new [`RadarChart`].
     pub fn new<S: Into<SharedString>>(
         axes: impl IntoIterator<Item = S>,
         series: impl IntoIterator<Item = Series>,
     ) -> Self {
         Self {
+            follow: crate::instruments_motion::Follow::here(),
             glow: crate::charts::ChartGlow::Theme,
             axes: axes.into_iter().map(Into::into).collect(),
             series: series.into_iter().collect(),
@@ -306,8 +310,10 @@ impl RadarChart {
 }
 
 impl RadarChart {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let g = crate::motion::grow(window, cx, "RadarChart");
+        self.series =
+            crate::instruments_motion::follow_series(window, cx, &self.follow, &self.series);
         let t = theme_of(cx);
         let n = self.axes.len().max(3);
         let max = self.max.unwrap_or_else(|| {

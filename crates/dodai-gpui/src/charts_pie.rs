@@ -56,6 +56,7 @@ pub enum PieStyle {
 /// Pie or donut chart; `center` is shown in the donut hole.
 #[derive(IntoElement)]
 pub struct PieChart {
+    follow: crate::instruments_motion::Follow,
     style: PieStyle,
     slices: Vec<(SharedString, f32)>,
     size: f32,
@@ -73,9 +74,12 @@ pub struct PieChart {
 }
 
 impl PieChart {
+    crate::instruments_motion::follow_api!();
     /// Create a new [`PieChart`].
+    #[track_caller]
     pub fn new<S: Into<SharedString>>(slices: impl IntoIterator<Item = (S, f32)>) -> Self {
         Self {
+            follow: crate::instruments_motion::Follow::here(),
             style: PieStyle::Solid,
             slices: slices.into_iter().map(|(n, v)| (n.into(), v)).collect(),
             size: 160.0,
@@ -649,8 +653,9 @@ impl PiePaint {
 }
 
 impl PieChart {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        crate::instruments_motion::follow_pairs(window, cx, &self.follow, &mut self.slices);
         let vals: Vec<f32> = self.slices.iter().map(|s| s.1).collect();
         let (start, sweep) = (self.start, self.sweep);
         let fr: Vec<(f32, f32)> = pie_fractions(&vals)

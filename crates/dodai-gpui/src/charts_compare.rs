@@ -167,6 +167,7 @@ crate::entry_render!(Bullet);
 /// measures in different units compare by change, not magnitude.
 #[derive(IntoElement)]
 pub struct PairedBars {
+    follow: crate::instruments_motion::Follow,
     rows: Vec<(SharedString, f32, f32)>,
     names: (SharedString, SharedString),
     shared: bool,
@@ -176,9 +177,12 @@ pub struct PairedBars {
 }
 
 impl PairedBars {
+    crate::instruments_motion::follow_api!();
     /// Create a new [`PairedBars`] from `(label, before, after)` rows.
+    #[track_caller]
     pub fn new<S: Into<SharedString>>(rows: impl IntoIterator<Item = (S, f32, f32)>) -> Self {
         Self {
+            follow: crate::instruments_motion::Follow::here(),
             rows: rows
                 .into_iter()
                 .map(|(l, a, b)| {
@@ -210,7 +214,8 @@ impl PairedBars {
 chart_cfg!(PairedBars);
 
 impl PairedBars {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        crate::instruments_motion::follow_triples(window, cx, &self.follow, &mut self.rows);
         let t = theme_of(cx);
         let g = crate::motion::grow(window, cx, "PairedBars");
         let (ca, cb) = (t.palette.series_at(0), t.palette.series_at(1));
@@ -295,6 +300,7 @@ crate::entry_render!(PairedBars);
 /// a bar) that shows change per category.
 #[derive(IntoElement)]
 pub struct Lollipop {
+    follow: crate::instruments_motion::Follow,
     id: SharedString,
     items: Vec<(SharedString, f32)>,
     other: Vec<f32>,
@@ -305,12 +311,15 @@ pub struct Lollipop {
 }
 
 impl Lollipop {
+    crate::instruments_motion::follow_api!();
     /// Create a new [`Lollipop`].
+    #[track_caller]
     pub fn new<S: Into<SharedString>>(
         id: impl Into<SharedString>,
         items: impl IntoIterator<Item = (S, f32)>,
     ) -> Self {
         Self {
+            follow: crate::instruments_motion::Follow::here(),
             id: id.into(),
             items: items
                 .into_iter()
@@ -340,7 +349,8 @@ impl Lollipop {
 chart_cfg!(Lollipop);
 
 impl Lollipop {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        crate::instruments_motion::follow_pairs(window, cx, &self.follow, &mut self.items);
         let t = theme_of(cx);
         let g = crate::motion::grow(window, cx, "Lollipop");
         let n = self.items.len().max(1);

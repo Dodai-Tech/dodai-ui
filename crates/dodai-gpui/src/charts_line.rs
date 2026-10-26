@@ -16,6 +16,7 @@ use std::rc::Rc;
 /// (with hover tooltips) and glow on glowing themes.
 #[derive(IntoElement)]
 pub struct LineChart {
+    follow: crate::instruments_motion::Follow,
     glow: crate::charts::ChartGlow,
     annotations: Vec<crate::charts_annotate::Annotation>,
     id: SharedString,
@@ -38,6 +39,7 @@ pub struct LineChart {
 }
 
 impl LineChart {
+    crate::instruments_motion::follow_api!();
     /// The glow ("shadow") under the lines: the theme's own, none, or a radius.
     pub fn glow(mut self, g: crate::charts::ChartGlow) -> Self {
         self.glow = g;
@@ -53,10 +55,12 @@ impl LineChart {
     }
     /// Create a new [`LineChart`].
     pub fn new(id: impl Into<SharedString>, series: impl IntoIterator<Item = Series>) -> Self {
+        let id: SharedString = id.into();
         Self {
+            follow: crate::instruments_motion::Follow::named(&id),
             glow: crate::charts::ChartGlow::Theme,
             annotations: Vec::new(),
-            id: id.into(),
+            id,
             secondary: Vec::new(),
             series: series.into_iter().collect(),
             labels: Vec::new(),
@@ -155,9 +159,22 @@ impl LineChart {
 }
 
 impl LineChart {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let g = crate::motion::grow(window, cx, "LineChart");
+        {
+            let np = self.series.len();
+            let all: Vec<Series> = self
+                .series
+                .iter()
+                .chain(self.secondary.iter())
+                .cloned()
+                .collect();
+            let mut shown =
+                crate::instruments_motion::follow_series(window, cx, &self.follow, &all);
+            self.secondary = shown.split_off(np);
+            self.series = shown;
+        }
         let (lo, hi, ticks) = y_range(&self.series, self.zero, self.y_bounds);
         let np = self.series.len();
         let (lo2, hi2, ticks2) = if self.secondary.is_empty() {

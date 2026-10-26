@@ -64,6 +64,7 @@ fn split(items: &[(usize, f32)], x: f32, y: f32, w: f32, h: f32, out: &mut [(f32
 /// Treemap: rectangle area ∝ value.
 #[derive(IntoElement)]
 pub struct Treemap {
+    follow: crate::instruments_motion::Follow,
     id: SharedString,
     items: Vec<(SharedString, f32)>,
     height: f32,
@@ -76,12 +77,15 @@ crate::corners_setter!(Treemap);
 chart_cfg!(Treemap);
 
 impl Treemap {
+    crate::instruments_motion::follow_api!();
     /// Create a new [`Treemap`].
+    #[track_caller]
     pub fn new<S: Into<SharedString>>(
         id: impl Into<SharedString>,
         items: impl IntoIterator<Item = (S, f32)>,
     ) -> Self {
         Self {
+            follow: crate::instruments_motion::Follow::here(),
             corners: None,
             id: id.into(),
             items: items
@@ -96,7 +100,8 @@ impl Treemap {
 }
 
 impl Treemap {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        crate::instruments_motion::follow_pairs(window, cx, &self.follow, &mut self.items);
         let g = crate::motion::grow(window, cx, "Treemap");
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
@@ -144,6 +149,7 @@ crate::entry_render!(Treemap);
 /// Concentric progress rings, one per `(name, value, max)`.
 #[derive(IntoElement)]
 pub struct RadialBar {
+    follow: crate::instruments_motion::Follow,
     glow: crate::charts::ChartGlow,
     rings: Vec<(SharedString, f32, f32)>,
     size: f32,
@@ -151,14 +157,17 @@ pub struct RadialBar {
 }
 
 impl RadialBar {
+    crate::instruments_motion::follow_api!();
     /// The glow ("shadow") under the lines: the theme's own, none, or a radius.
     pub fn glow(mut self, g: crate::charts::ChartGlow) -> Self {
         self.glow = g;
         self
     }
     /// Create a new [`RadialBar`].
+    #[track_caller]
     pub fn new<S: Into<SharedString>>(rings: impl IntoIterator<Item = (S, f32, f32)>) -> Self {
         Self {
+            follow: crate::instruments_motion::Follow::here(),
             glow: crate::charts::ChartGlow::Theme,
             rings: rings
                 .into_iter()
@@ -181,7 +190,8 @@ impl RadialBar {
 }
 
 impl RadialBar {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        crate::instruments_motion::follow_triples(window, cx, &self.follow, &mut self.rings);
         let t = theme_of(cx);
         let g = crate::motion::grow(window, cx, "RadialBar");
         let n = self.rings.len().max(1);

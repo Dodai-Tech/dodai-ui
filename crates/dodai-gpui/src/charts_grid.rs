@@ -179,6 +179,7 @@ pub fn heat_color_with(t: &Theme, g: dodai_charts_core::Gradient, v: f32) -> Col
 /// Grid of cells coloured by value, with hover tooltips.
 #[derive(IntoElement)]
 pub struct Heatmap {
+    follow: crate::instruments_motion::Follow,
     id: SharedString,
     rows: Vec<Vec<f32>>,
     row_labels: Vec<SharedString>,
@@ -189,10 +190,13 @@ pub struct Heatmap {
 }
 
 impl Heatmap {
+    crate::instruments_motion::follow_api!();
     /// Create a new [`Heatmap`].
     pub fn new(id: impl Into<SharedString>, rows: Vec<Vec<f32>>) -> Self {
+        let id: SharedString = id.into();
         Self {
-            id: id.into(),
+            follow: crate::instruments_motion::Follow::named(&id),
+            id,
             rows,
             row_labels: Vec::new(),
             col_labels: Vec::new(),
@@ -357,7 +361,8 @@ impl Heatmap {
             .into_any_element()
     }
 
-    fn build(self, window: &mut Window, cx: &mut App) -> gpui::AnyElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> gpui::AnyElement {
+        crate::instruments_motion::follow_rows(window, cx, &self.follow, &mut self.rows);
         let cells: usize = self.rows.iter().map(Vec::len).sum();
         if cells > 200 {
             return self.build_dense(window, cx);

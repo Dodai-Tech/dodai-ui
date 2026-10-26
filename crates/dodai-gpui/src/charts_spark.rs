@@ -13,6 +13,7 @@ use gpui::{
 /// Tiny inline line, no axes.
 #[derive(IntoElement)]
 pub struct Sparkline {
+    follow: crate::instruments_motion::Follow,
     glow: ChartGlow,
     style: SparkStyle,
     baseline: bool,
@@ -103,9 +104,12 @@ impl Sparkline {
 }
 
 impl Sparkline {
+    crate::instruments_motion::follow_api!();
     /// Create a new [`Sparkline`].
+    #[track_caller]
     pub fn new(values: impl IntoIterator<Item = f32>) -> Self {
         Self {
+            follow: crate::instruments_motion::Follow::here(),
             glow: ChartGlow::Theme,
             style: SparkStyle::Line,
             baseline: false,
@@ -154,7 +158,8 @@ impl Sparkline {
 }
 
 impl RenderOnce for Sparkline {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.values = crate::instruments_motion::follow_all(window, cx, &self.follow, &self.values);
         let motion = crate::motion::current(cx);
         crate::motion::entry(self.build(cx), "Sparkline", motion)
     }
