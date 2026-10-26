@@ -167,6 +167,30 @@ pub fn jitter(v: f32, i: usize, t: f32) -> f32 {
     (v * (0.65 + 0.35 * (t * f + i as f32).sin())).clamp(0.0, 1.0)
 }
 
+/// Roll position of every digit of a mechanical counter showing `value`, least significant
+/// digit first. Position `p` means the strip sits at digit `p`, so `3.5` is halfway between 3
+/// and 4. The ones digit follows the value; each higher digit waits until the digit below
+/// wraps (the last tenth of its turn) and then rolls one step, like an odometer.
+pub fn odometer_positions(value: f32, digits: usize) -> Vec<f32> {
+    let v = if value.is_finite() {
+        value.max(0.0)
+    } else {
+        0.0
+    };
+    (0..digits)
+        .map(|k| {
+            let scaled = v / 10f32.powi(k as i32);
+            let whole = scaled.floor();
+            let roll = if k == 0 {
+                scaled.fract()
+            } else {
+                ((scaled.fract() - 0.9) / 0.1).clamp(0.0, 1.0)
+            };
+            (whole + roll).rem_euclid(10.0)
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -298,5 +322,19 @@ mod tests {
                 assert!((0.0..=0.8 + 1e-6).contains(&v));
             }
         }
+    }
+
+    #[test]
+    fn odometer_higher_digits_wait_for_the_wrap() {
+        let at = |v: f32| odometer_positions(v, 3);
+        assert_eq!(at(0.0), vec![0.0, 0.0, 0.0]);
+        assert!((at(7.5)[0] - 7.5).abs() < 1e-4 && at(7.5)[1] == 0.0);
+        // 19.95: tens has started to roll from 1 towards 2
+        let p = at(19.95);
+        assert!(p[1] > 1.0 && p[1] < 2.0, "{p:?}");
+        // 20.0: settled
+        assert!((at(20.0)[1] - 2.0).abs() < 1e-4);
+        assert!(at(f32::NAN).iter().all(|x| *x == 0.0));
+        assert!(at(1e6).iter().all(|x| (0.0..10.0).contains(x)));
     }
 }

@@ -437,6 +437,8 @@ impl RenderOnce for Spectrum {
 /// Bar chart drawn as columns of LED dots (`0..=1` values).
 #[derive(IntoElement)]
 pub struct DotMatrix {
+    follow: crate::instruments_motion::Follow,
+    stream: Option<crate::live::Live>,
     glow: ChartGlow,
     values: Vec<f32>,
     rows: usize,
@@ -450,15 +452,27 @@ impl DotMatrix {
         self.glow = g;
         self
     }
-    /// Create a new [`DotMatrix`].
+    /// Create a new [`DotMatrix`]; changed values glide.
+    #[track_caller]
     pub fn new(values: impl IntoIterator<Item = f32>) -> Self {
         Self {
+            follow: crate::instruments_motion::Follow::here(),
+            stream: None,
             glow: ChartGlow::Theme,
             values: values.into_iter().collect(),
             rows: 8,
             w: 320.0,
             caption: None,
         }
+    }
+    crate::instruments_motion::follow_api!();
+    /// Shows the newest samples of a [`Live`](crate::live::Live) window, one column each, with
+    /// `max` as the full-height sample value.
+    pub fn stream(mut self, window: &crate::live::Live, max: f32) -> Self {
+        let max = if max > 0.0 { max } else { 1.0 };
+        self.values = window.values().into_iter().map(|v| v / max).collect();
+        self.stream = Some(window.clone());
+        self
     }
     /// Dots per column (default 8).
     pub fn rows(mut self, r: usize) -> Self {
@@ -481,10 +495,16 @@ impl RenderOnce for DotMatrix {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let g = crate::motion::grow(window, cx, "DotMatrix");
-        let n = self.values.len().max(1);
+        let values = if self.stream.is_some() {
+            crate::instruments_motion::next_frame(window);
+            self.values
+        } else {
+            crate::instruments_motion::follow_all(window, cx, &self.follow, &self.values)
+        };
+        let n = values.len().max(1);
         let pitch = self.w / n as f32;
         let h = pitch * self.rows as f32;
-        let (rows, values) = (self.rows, self.values);
+        let rows = self.rows;
         let on = hsla(t.palette.primary);
         let dim = scale_alpha(hsla(t.palette.border), 0.7);
         let glow = self.glow.resolve(&t);
@@ -769,6 +789,7 @@ impl RenderOnce for RadarScope {
 /// Honeycomb heat map: values `0..=1`, row-major, `cols` per row.
 #[derive(IntoElement)]
 pub struct HexMap {
+    follow: crate::instruments_motion::Follow,
     glow: ChartGlow,
     values: Vec<f32>,
     cols: usize,
@@ -783,9 +804,11 @@ impl HexMap {
         self.glow = g;
         self
     }
-    /// Create a new [`HexMap`].
+    /// Create a new [`HexMap`]; changed values glide.
+    #[track_caller]
     pub fn new(cols: usize, values: impl IntoIterator<Item = f32>) -> Self {
         Self {
+            follow: crate::instruments_motion::Follow::here(),
             glow: ChartGlow::Theme,
             values: values.into_iter().collect(),
             cols: cols.max(1),
@@ -794,6 +817,7 @@ impl HexMap {
             caption: None,
         }
     }
+    crate::instruments_motion::follow_api!();
     /// Total width in px; the hex size follows.
     pub fn width(mut self, w: f32) -> Self {
         self.w = w;
@@ -812,13 +836,14 @@ impl HexMap {
 }
 
 impl RenderOnce for HexMap {
-    fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let cols = self.cols;
-        let rows = self.values.len().div_ceil(cols);
+        let values = crate::instruments_motion::follow_all(window, cx, &self.follow, &self.values);
+        let rows = values.len().div_ceil(cols);
         let s = self.w / (3f32.sqrt() * (cols as f32 + 0.5));
         let (gw, gh) = hex_extent(rows.max(1), cols, s);
-        let (values, live) = (self.values, self.live);
+        let live = self.live;
         let base = t.palette.surface_raised;
         let hot = t.palette.primary;
         let hi = t.palette.danger;

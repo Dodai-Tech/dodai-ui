@@ -6,10 +6,11 @@
 
 use crate::charts::polar;
 use crate::instruments::severity_color;
-use crate::instruments_motion::{follow, follow_angle, follow_api, Follow};
+use crate::instruments_motion::{follow, follow_all, follow_angle, follow_api, Follow};
 use crate::paint::{fill, shaped, stroke, ShapeStyle};
 use crate::text::first_family;
 use crate::{hsla, theme_of};
+use dodai_charts_core::gauge::odometer_positions;
 use dodai_charts_core::instrument::{readout, Limits, Scale, Severity};
 use dodai_core::{Color, Theme};
 use gpui::{
@@ -332,9 +333,28 @@ impl RenderOnce for GearIndicator {
 
 // ───────────────────────────────── Odometer ─────────────────────────────────
 
+const CELL_H: f32 = 34.0;
+
+/// A column of digits 0–9 and a repeated 0, shifted so digit position `p` shows in the cell.
+fn digit_strip(p: f32) -> gpui::Div {
+    let mut col = div().absolute().left(px(0.0)).top(px(-p * CELL_H)).w_full();
+    for d in 0..=10 {
+        col = col.child(
+            div()
+                .h(px(CELL_H))
+                .flex()
+                .items_center()
+                .justify_center()
+                .child(format!("{}", d % 10)),
+        );
+    }
+    col
+}
+
 /// A row of digit cells: odometer, trip counter or any fixed-width number.
 #[derive(IntoElement)]
 pub struct Odometer {
+    follow: Follow,
     value: f32,
     digits: usize,
     decimals: usize,
@@ -342,15 +362,19 @@ pub struct Odometer {
 }
 
 impl Odometer {
-    /// A counter showing `value` in `digits` cells.
+    /// A counter showing `value` in `digits` cells. A changed value rolls the digits like a
+    /// mechanical counter: a digit moves one step when the one to its right wraps.
+    #[track_caller]
     pub fn new(value: f32, digits: usize) -> Self {
         Self {
+            follow: Follow::here(),
             value,
             digits: digits.max(1),
             decimals: 0,
             unit: SharedString::default(),
         }
     }
+    follow_api!();
     /// Decimal cells after the point (included in `digits`).
     pub fn decimals(mut self, d: usize) -> Self {
         self.decimals = d;
@@ -364,21 +388,18 @@ impl Odometer {
 }
 
 impl RenderOnce for Odometer {
-    fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        let scaled = (self.value.max(0.0) * 10f32.powi(self.decimals as i32)).round() as u64;
-        let text = format!("{scaled:0>width$}", width = self.digits);
-        let text: Vec<char> = text
-            .chars()
-            .rev()
-            .take(self.digits)
-            .collect::<Vec<_>>()
-            .into_iter()
-            .rev()
-            .collect();
+        let scaled = self.value.max(0.0) * 10f32.powi(self.decimals as i32);
+        let eased = follow_all(window, cx, &self.follow, &[scaled]);
+        let digits = self.digits;
+        // Most significant digit first.
+        let mut pos = odometer_positions(eased.first().copied().unwrap_or(0.0), digits);
+        pos.reverse();
+        let text = pos;
         let split = text.len().saturating_sub(self.decimals);
         let mut row = div().flex().items_end().gap(px(2.0));
-        for (i, ch) in text.iter().enumerate() {
+        for (i, p) in text.iter().enumerate() {
             if i == split && self.decimals > 0 {
                 row = row.child(
                     div()
@@ -400,15 +421,14 @@ impl RenderOnce for Odometer {
             );
             row = row.child(
                 shaped(&t.shape, style)
+                    .relative()
+                    .overflow_hidden()
                     .w(px(22.0))
-                    .h(px(34.0))
-                    .flex()
-                    .items_center()
-                    .justify_center()
+                    .h(px(CELL_H))
                     .font_family(first_family(t.typography.mono))
                     .text_size(px(t.typography.size_lg))
                     .text_color(hsla(t.palette.text))
-                    .child(ch.to_string()),
+                    .child(digit_strip(*p)),
             );
         }
         if !self.unit.is_empty() {

@@ -441,6 +441,12 @@ impl Showcase {
                         .caption("Dot matrix"),
                     )
                     .child(
+                        DotMatrix::new([])
+                            .stream(&self.live_b, 100.0)
+                            .width(300.0)
+                            .caption("Dot matrix · streamed"),
+                    )
+                    .child(
                         div()
                             .flex()
                             .items_end()
