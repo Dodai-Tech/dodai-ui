@@ -162,8 +162,6 @@ pub struct Showcase {
     clicks: u32,
     heat_res: usize,
     heat_grad: usize,
-    /// Glow of the instrument charts: 0 theme, 1 off, 2 soft, 3 strong.
-    inst_glow: usize,
     /// Oscilloscope afterimage: 0 off, 1 subtle, 2 default, 3 long.
     inst_trail: usize,
     /// Needle response of the instruments: 0 the design's own, then `NeedleResponse::ALL`.

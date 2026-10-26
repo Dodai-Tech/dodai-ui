@@ -179,7 +179,6 @@ impl Showcase {
             clicks: 0,
             heat_res: 3,
             heat_grad: 0,
-            inst_glow: 0,
             inst_trail: 2,
             inst_response: 0,
             inst_live: false,
