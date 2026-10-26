@@ -322,8 +322,24 @@ impl BarChart {
         let bar_top = top / g.max(1e-3);
         let mut cats = div().flex().size_full();
         cats = if h { cats.flex_col() } else { cats };
+        let fid = format!("{}-focus", self.id);
+        let focus = crate::charts_focus::Focus::new(
+            window,
+            cx,
+            &crate::instruments_motion::Follow::named(&fid),
+            n,
+        );
         for i in 0..n {
-            cats = cats.child(self.cell(&t, i, bar_top));
+            let f = focus.item(i);
+            let item = div()
+                .id((SharedString::from(fid.clone()), i))
+                .flex_1()
+                .size_full()
+                .relative()
+                .top(px(-4.0 * f.lift))
+                .opacity(f.alpha)
+                .child(self.cell(&t, i, bar_top));
+            cats = cats.child(focus.bind(item, i));
         }
 
         let plot = self.plot(&t, &ticks, top, cats);

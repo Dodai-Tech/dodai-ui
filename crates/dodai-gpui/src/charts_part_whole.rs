@@ -109,34 +109,42 @@ impl Treemap {
         // Layout in unit space, rendered with relative sizes.
         let rects = treemap_layout(&vals, 1.0, 1.0);
         let mut plot = div().relative().w_full().h(px(self.height));
+        let fid = format!("{}-focus", self.id);
+        let focus = crate::charts_focus::Focus::new(
+            window,
+            cx,
+            &crate::instruments_motion::Follow::named(&fid),
+            self.items.len(),
+        );
         for (i, ((x, y, w, h), (name, v))) in rects.iter().zip(&self.items).enumerate() {
+            let f = focus.item(i);
             let style =
                 ShapeStyle::from_tokens(&t, Some(t.palette.series_at(i)), None, false, false);
             let gi = crate::motion::reveal(g, i, self.items.len());
-            plot = plot.child(
-                div()
-                    .id((self.id.clone(), i))
-                    .absolute()
-                    .left(relative(*x + *w * (1.0 - gi) / 2.0))
-                    .top(relative(*y + *h * (1.0 - gi) / 2.0))
-                    .w(relative(*w * gi))
-                    .h(relative(*h * gi))
-                    .p(px(1.5))
-                    .tooltip(DodaiTooltip::text(format!(
-                        "{name}: {}",
-                        fmt_with(&self.fmt, *v)
-                    )))
-                    .child(
-                        shaped(&t.shape, style)
-                            .size_full()
-                            .overflow_hidden()
-                            .p(px(t.spacing.xs))
-                            .font_family(first_family(t.typography.mono))
-                            .text_size(px(t.typography.size_xs))
-                            .text_color(hsla(t.palette.on_primary))
-                            .child(format!("{name}\n{}", fmt_with(&self.fmt, *v))),
-                    ),
-            );
+            let tile = div()
+                .id((self.id.clone(), i))
+                .opacity(f.alpha)
+                .absolute()
+                .left(relative(*x + *w * (1.0 - gi) / 2.0))
+                .top(relative(*y + *h * (1.0 - gi) / 2.0))
+                .w(relative(*w * gi))
+                .h(relative(*h * gi))
+                .p(px(1.5 - 1.2 * f.lift))
+                .tooltip(DodaiTooltip::text(format!(
+                    "{name}: {}",
+                    fmt_with(&self.fmt, *v)
+                )))
+                .child(
+                    shaped(&t.shape, style)
+                        .size_full()
+                        .overflow_hidden()
+                        .p(px(t.spacing.xs))
+                        .font_family(first_family(t.typography.mono))
+                        .text_size(px(t.typography.size_xs))
+                        .text_color(hsla(t.palette.on_primary))
+                        .child(format!("{name}\n{}", fmt_with(&self.fmt, *v))),
+                );
+            plot = plot.child(focus.bind(tile, i));
         }
         titled(&t, self.title, div().w_full().child(plot))
     }

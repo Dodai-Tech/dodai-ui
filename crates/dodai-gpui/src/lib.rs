@@ -183,6 +183,7 @@ pub mod charts_distribution;
 pub mod charts_extra;
 #[cfg(feature = "charts")]
 pub mod charts_flow;
+pub(crate) mod charts_focus;
 #[cfg(feature = "charts")]
 pub mod charts_grid;
 #[cfg(feature = "charts")]

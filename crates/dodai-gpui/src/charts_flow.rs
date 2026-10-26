@@ -70,6 +70,8 @@ impl Funnel {
             .map(|s| (s.1 / maxv).clamp(0.0, 1.0))
             .collect();
         let cols: Vec<Hsla> = (0..n).map(|i| hsla(t.palette.series_at(i))).collect();
+        let focus = crate::charts_focus::Focus::new(window, cx, &self.follow, n);
+        let looks: Vec<_> = (0..n).map(|i| focus.item(i)).collect();
         let fr2 = fr.clone();
         let cv = canvas(
             |_, _, _| (),
@@ -80,7 +82,9 @@ impl Funnel {
                     let cur = fr2.get(i).copied().unwrap_or(0.0);
                     let next = fr2.get(i + 1).copied().unwrap_or(cur * 0.8);
                     let gi = crate::motion::reveal(g, i, n);
-                    let (w0, w1) = (cur * bw * gi, next * bw * gi);
+                    let lk = looks[i];
+                    let pop = 1.0 + 0.05 * lk.lift;
+                    let (w0, w1) = (cur * bw * gi * pop, next * bw * gi * pop);
                     let (y0, y1) = (i as f32 * sh + 1.0, (i + 1) as f32 * sh - 1.0);
                     let c = bw / 2.0;
                     fill(
@@ -92,7 +96,7 @@ impl Funnel {
                             (c + w1 / 2.0, y1),
                             (c - w1 / 2.0, y1),
                         ],
-                        *col,
+                        crate::paint::scale_alpha(*col, lk.alpha),
                     );
                 }
             },
@@ -103,15 +107,22 @@ impl Funnel {
         for (i, (name, v)) in self.stages.iter().enumerate() {
             let pct = fr[i] * 100.0;
             labels = labels.child(
-                div()
-                    .flex_1()
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .font_family(first_family(t.typography.mono))
-                    .text_size(px(t.typography.size_xs))
-                    .text_color(hsla(t.palette.on_primary))
-                    .child(format!("{name} · {} ({pct:.0}%)", fmt_with(&self.fmt, *v))),
+                focus.bind(
+                    div()
+                        .id(gpui::ElementId::from((
+                            self.follow.element_id(),
+                            SharedString::from(format!("row{i}")),
+                        )))
+                        .flex_1()
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .font_family(first_family(t.typography.mono))
+                        .text_size(px(t.typography.size_xs))
+                        .text_color(hsla(t.palette.on_primary))
+                        .child(format!("{name} · {} ({pct:.0}%)", fmt_with(&self.fmt, *v))),
+                    i,
+                ),
             );
         }
         let root = div()

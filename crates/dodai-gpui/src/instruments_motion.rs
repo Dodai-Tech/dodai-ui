@@ -109,6 +109,17 @@ impl Follow {
         self.animated = on;
         self
     }
+    /// A sibling identity for a second piece of state of the same component.
+    pub(crate) fn sub(&self, name: &str) -> Self {
+        Self {
+            id: ElementId::from((self.id.clone(), SharedString::from(name.to_string()))),
+            response: self.response,
+            animated: self.animated,
+        }
+    }
+    pub(crate) fn element_id(&self) -> ElementId {
+        self.id.clone()
+    }
     /// Replaces the id.
     pub fn with_id(mut self, id: impl Into<ElementId>) -> Self {
         self.id = id.into();
@@ -221,7 +232,7 @@ pub(crate) fn follow_angle(w: &mut Window, cx: &mut App, f: &Follow, part: u8, t
 }
 
 struct Many {
-    response: NeedleResponse,
+    sig: (u32, u32),
     springs: Vec<SpringState>,
     last: Vec<f32>,
 }
@@ -229,20 +240,42 @@ struct Many {
 /// Every value of `target` followed at once, for a chart's data. Values that appear start at
 /// their target; the rest ease with the component's response. Requests frames until settled.
 pub(crate) fn follow_all(w: &mut Window, cx: &mut App, f: &Follow, target: &[f32]) -> Vec<f32> {
-    let response = f
-        .response
-        .unwrap_or_else(|| theme_of(cx).chart_style().response);
-    let Some((secs, bounce)) = response
-        .spring()
-        .filter(|_| instruments_animated() && f.animated)
-    else {
+    if !instruments_animated() || !f.animated {
         return target.to_vec();
+    }
+    // Data follows the app's motion set (duration and personality), so the Motion controls
+    // steer charts too; a component's own `.response()` overrides it.
+    let (_, secs, bounce) = match f.response {
+        Some(r) => match r.spring() {
+            Some((s, b)) => (r, s, b),
+            None => return target.to_vec(),
+        },
+        None => {
+            let m = crate::motion::current(cx);
+            if m.duration.is_zero() {
+                return target.to_vec();
+            }
+            let bounce = match m.personality {
+                dodai_motion::Personality::Snappy => 0.0,
+                dodai_motion::Personality::Smooth => 0.05,
+                dodai_motion::Personality::Playful => 0.15,
+            };
+            (
+                theme_of(cx).chart_style().response,
+                m.duration.as_secs_f32() * 0.6,
+                bounce,
+            )
+        }
     };
     // Data does not overshoot: bars and areas keep a gentle settle at most.
     let spring = Spring::from_response(secs / animation_speed(), bounce.min(0.15));
+    let sig = (
+        (secs * 1000.0 / animation_speed()) as u32,
+        (bounce.min(0.15) * 1000.0) as u32,
+    );
     let st = w.with_id(f.id.clone(), |w| {
         w.use_keyed_state(("many", 0u32), cx, |_, _| Many {
-            response,
+            sig,
             springs: Vec::new(),
             last: Vec::new(),
         })
@@ -250,8 +283,8 @@ pub(crate) fn follow_all(w: &mut Window, cx: &mut App, f: &Follow, target: &[f32
     let t = now();
     let eps = (target.iter().fold(0.0_f32, |m, v| m.max(v.abs())) * 0.002).max(1e-4);
     let (out, settled) = st.update(cx, |m, _| {
-        if m.response != response {
-            m.response = response;
+        if m.sig != sig {
+            m.sig = sig;
             for (sp, v) in m.springs.iter_mut().zip(&m.last) {
                 *sp = SpringState::new(spring, *v);
             }
