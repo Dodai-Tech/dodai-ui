@@ -33,16 +33,22 @@ impl Showcase {
             dodai_gpui::animation_time(),
         );
         let wave = move |key: f32, i: f32| (time * 0.6 + key * 1.7 + i * 0.9).sin();
-        // A series drifting up to ±22 % per point.
+        // A live stream: the window slides left continuously (1.4 samples a second) over a
+        // smooth signal that stays inside the base data's range, so nothing ever restarts.
         let drift = move |vals: &[f32], key: f32| -> Vec<f32> {
-            vals.iter()
-                .enumerate()
-                .map(|(i, v)| {
-                    if live {
-                        v * (1.0 + 0.22 * wave(key, i as f32))
-                    } else {
-                        *v
-                    }
+            if !live {
+                return vals.to_vec();
+            }
+            let lo = vals.iter().copied().fold(f32::MAX, f32::min);
+            let hi = vals.iter().copied().fold(f32::MIN, f32::max);
+            let (mid, amp) = ((lo + hi) / 2.0, (hi - lo) / 2.0);
+            (0..vals.len())
+                .map(|i| {
+                    let s = i as f32 + time * 1.4 + key * 11.0;
+                    let n = 0.6 * (s * 0.62).sin()
+                        + 0.3 * (s * 1.37 + 1.1).sin()
+                        + 0.1 * (s * 2.9).sin();
+                    mid + amp * n
                 })
                 .collect()
         };

@@ -16,6 +16,8 @@ type SelectFn = Rc<dyn Fn(Option<usize>, &mut Window, &mut App)>;
 
 /// How far (px) a hovered pie slice pops out.
 const PIE_POP: f32 = 6.0;
+/// Opacity of the other slices while one is selected.
+const PIE_DIM: f32 = 0.35;
 
 #[derive(Default)]
 struct PieState {
@@ -23,6 +25,8 @@ struct PieState {
     hover: Option<usize>,
     sel: Option<usize>,
     pops: Vec<crate::motion::Tween>,
+    /// Opacity per slice: the others dim while one is selected.
+    fades: Vec<crate::motion::Tween>,
 }
 
 /// Slice index under a pointer `(dx, dy)` from the pie centre (y down), or
@@ -596,10 +600,10 @@ impl PiePaint {
             let r = r * rfac[i];
             // Hovered slice pops out along its bisector.
             let target = explode
-                + if hover == Some(i) {
+                + if sel == Some(i) {
                     PIE_POP
-                } else if sel == Some(i) {
-                    PIE_POP * 0.5
+                } else if hover == Some(i) {
+                    PIE_POP * 0.65
                 } else {
                     0.0
                 };
@@ -611,9 +615,24 @@ impl PiePaint {
                 let now = crate::motion::now();
                 (s.pops[i].value(now), !s.pops[i].is_done(now))
             });
-            if busy {
+            let want = if sel.is_some() && sel != Some(i) {
+                PIE_DIM
+            } else {
+                1.0
+            };
+            let (fade, fading) = st_paint.update(cx, |s, _| {
+                if s.fades.len() <= i {
+                    s.fades
+                        .resize(i + 1, crate::motion::Tween::new(1.0, motion));
+                }
+                let now = crate::motion::now();
+                s.fades[i].to(want, motion, now);
+                (s.fades[i].value(now), !s.fades[i].is_done(now))
+            });
+            if busy || fading {
                 crate::motion::next_frame(w);
             }
+            let col = &crate::paint::scale_alpha(*col, fade);
             let (dx, dy) = polar(0.0, 0.0, pop, (a + z) / 2.0);
             let origin = point(b.origin.x + px(dx), b.origin.y + px(dy));
             // Constant-width straight gap: each edge is offset by
