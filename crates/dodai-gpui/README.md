@@ -39,8 +39,8 @@ Each slice compiles on its own (CI checks it).
   samples with sub-sample scrolling. Geometry and logic live in `dodai-charts-core`.
 - The top-bar Animate switch and Speed apply to everything (`set_instruments_animated`,
   `set_animation_speed`).
-- Charts without an `id` key their animation state by call site, so two built on one line in a
-  loop need `.id(..)`.
+- Charts without an `id` key their animation state by call site plus their order in the frame, so
+  several built on one line in a loop work; give them `.id(..)` if that order can change.
 
 ## Try it
 

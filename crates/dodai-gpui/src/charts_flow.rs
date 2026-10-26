@@ -103,6 +103,7 @@ impl Funnel {
         )
         .absolute()
         .size_full();
+        let row_key = self.follow.element_id(window);
         let mut labels = div().absolute().size_full().flex().flex_col();
         for (i, (name, v)) in self.stages.iter().enumerate() {
             let pct = fr[i] * 100.0;
@@ -110,7 +111,7 @@ impl Funnel {
                 focus.bind(
                     div()
                         .id(gpui::ElementId::from((
-                            self.follow.element_id(),
+                            row_key.clone(),
                             SharedString::from(format!("row{i}")),
                         )))
                         .flex_1()

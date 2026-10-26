@@ -26,8 +26,8 @@ pub struct SegmentDisplay {
 
 impl SegmentDisplay {
     crate::instruments_motion::follow_api!();
-    /// Segments cross-fade when the text changes instead of switching. Each display needs its
-    /// own call site (or a distinct parent id), as the fade state is keyed by it.
+    /// Segments cross-fade when the text changes instead of switching. Displays built at one
+    /// call site are told apart by their order in the frame.
     pub fn fade(mut self, on: bool) -> Self {
         self.fade = on;
         self

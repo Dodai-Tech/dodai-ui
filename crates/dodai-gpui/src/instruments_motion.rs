@@ -7,7 +7,36 @@ use crate::motion::now;
 use crate::theme_of;
 use dodai_core::NeedleResponse;
 use dodai_motion::{Spring, SpringState};
-use gpui::{App, ElementId, SharedString, Window};
+use gpui::{App, ElementId, SharedString, Window, WindowId};
+use std::cell::{Cell, RefCell};
+use std::collections::HashMap;
+use std::rc::Rc;
+
+thread_local! {
+    /// Per window: how many components claimed each call-site id during the current frame.
+    static CLAIMS: RefCell<HashMap<WindowId, HashMap<ElementId, u32>>> = RefCell::default();
+}
+
+/// The next free instance number for `id` in this frame. The tally is cleared before the next
+/// frame is drawn, so the same component keeps the same number while the layout is stable.
+fn claim(w: &mut Window, id: &ElementId) -> u32 {
+    let win = w.window_handle().window_id();
+    let fresh = CLAIMS.with(|c| !c.borrow().contains_key(&win));
+    if fresh {
+        w.on_next_frame(move |_, _| {
+            CLAIMS.with(|c| {
+                c.borrow_mut().remove(&win);
+            });
+        });
+    }
+    CLAIMS.with(|c| {
+        let mut c = c.borrow_mut();
+        let n = c.entry(win).or_default().entry(id.clone()).or_insert(0);
+        let k = *n;
+        *n += 1;
+        k
+    })
+}
 
 thread_local! {
     static ANIMATED: std::cell::Cell<bool> = const { std::cell::Cell::new(true) };
@@ -75,13 +104,17 @@ pub(crate) fn next_frame(w: &Window) {
 #[derive(Clone)]
 pub struct Follow {
     id: ElementId,
+    /// Set for call-site ids: the instance number claimed this frame, so components built at
+    /// the same spot (in a loop) get separate state.
+    slot: Option<Rc<Cell<Option<u32>>>>,
     response: Option<NeedleResponse>,
     animated: bool,
 }
 
 impl Follow {
-    /// An id derived from the call site of the instrument's constructor. Two instruments built
-    /// on the same source line (in a loop) share it; give them an explicit `.id(..)`.
+    /// An id derived from the call site of the instrument's constructor. Instruments built on
+    /// the same source line (in a loop) are told apart by their order within the frame; give
+    /// them an explicit `.id(..)` if that order can change between frames.
     #[track_caller]
     pub fn here() -> Self {
         let l = std::panic::Location::caller();
@@ -92,6 +125,7 @@ impl Follow {
                 l.line(),
                 l.column()
             ))),
+            slot: Some(Rc::default()),
             response: None,
             animated: true,
         }
@@ -100,6 +134,7 @@ impl Follow {
     pub fn named(id: &str) -> Self {
         Self {
             id: ElementId::from(SharedString::from(format!("follow-{id}"))),
+            slot: None,
             response: None,
             animated: true,
         }
@@ -113,16 +148,33 @@ impl Follow {
     pub(crate) fn sub(&self, name: &str) -> Self {
         Self {
             id: ElementId::from((self.id.clone(), SharedString::from(name.to_string()))),
+            slot: self.slot.clone(),
             response: self.response,
             animated: self.animated,
         }
     }
-    pub(crate) fn element_id(&self) -> ElementId {
-        self.id.clone()
+    /// The state key of this component in the current frame: its id, plus the instance number
+    /// for call-site ids.
+    pub(crate) fn element_id(&self, w: &mut Window) -> ElementId {
+        match &self.slot {
+            Some(slot) => {
+                let n = match slot.get() {
+                    Some(n) => n,
+                    None => {
+                        let n = claim(w, &self.id);
+                        slot.set(Some(n));
+                        n
+                    }
+                };
+                ElementId::from((self.id.clone(), SharedString::from(format!("#{n}"))))
+            }
+            None => self.id.clone(),
+        }
     }
     /// Replaces the id.
     pub fn with_id(mut self, id: impl Into<ElementId>) -> Self {
         self.id = id.into();
+        self.slot = None;
         self
     }
     /// Overrides the design's response.
@@ -136,7 +188,7 @@ impl Follow {
 macro_rules! follow_api {
     () => {
         /// Stable id of this instrument's animation state. Needed only when several
-        /// instruments are built from one source line (in a loop).
+        /// instruments are built from one source line and their order can change.
         pub fn id(mut self, id: impl Into<gpui::ElementId>) -> Self {
             self.follow = self.follow.with_id(id);
             self
@@ -187,7 +239,8 @@ fn state(
     let spring = Spring::from_response(secs / animation_speed(), bounce);
     // A value starts at zero and sweeps up to its reading, like an instrument's self-test.
     let start = if angle { target } else { 0.0 };
-    let st = w.with_id(f.id.clone(), |w| {
+    let key = f.element_id(w);
+    let st = w.with_id(key, |w| {
         w.use_keyed_state(("needle", u32::from(part)), cx, move |_, _| Needle {
             response,
             spring: SpringState::new(spring, start),
@@ -275,7 +328,8 @@ pub(crate) fn follow_all(w: &mut Window, cx: &mut App, f: &Follow, target: &[f32
         (secs * 1000.0 / animation_speed()) as u32,
         (bounce.min(0.15) * 1000.0) as u32,
     );
-    let st = w.with_id(f.id.clone(), |w| {
+    let key = f.element_id(w);
+    let st = w.with_id(key, |w| {
         w.use_keyed_state(("many", 0u32), cx, |_, _| Many {
             sig,
             springs: Vec::new(),

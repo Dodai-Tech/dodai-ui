@@ -32,7 +32,8 @@ impl Focus {
     /// The eased focus of `n` items. `id` must be unique to the chart.
     pub fn new(w: &mut Window, cx: &mut App, follow: &Follow, n: usize) -> Self {
         let follow = &follow.sub("focus");
-        let state = w.with_id(follow.element_id(), |w| {
+        let key = follow.element_id(w);
+        let state = w.with_id(key, |w| {
             w.use_keyed_state("focus", cx, |_, _| FocusState::default())
         });
         let s = *state.read(cx);
