@@ -11,11 +11,13 @@ own crates; this crate only paints them.
 dodai-gpui = { version = "0.1", default-features = false, features = ["components", "charts", "aurora"] }
 ```
 
-```rust
-// In your app setup:
-dodai_gpui::install(cx, dodai_gpui::aurora::dark());
-// Then build with the prelude:
+```rust,no_run
 use dodai_gpui::prelude::*;
+
+// In your app setup:
+fn setup(cx: &mut gpui::App) {
+    dodai_gpui::install(cx, dodai_gpui::aurora::dark());
+}
 ```
 
 ## Features

@@ -889,3 +889,8 @@ pub use dodai_material as material;
 /// The Neo-Brutalism design (tokens and spec).
 #[cfg(feature = "neobrutalism")]
 pub use dodai_neobrutalism as neobrutalism;
+
+/// Compiles the README's example as a doctest so it cannot rot.
+#[cfg(all(doctest, feature = "aurora"))]
+#[doc = include_str!("../README.md")]
+struct ReadmeDoctests;
