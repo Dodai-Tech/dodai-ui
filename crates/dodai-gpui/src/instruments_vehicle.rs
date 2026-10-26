@@ -71,7 +71,7 @@ impl RenderOnce for LevelBar {
         let sev = self.scale.severity_at(self.value);
         let frac = self.scale.fraction(self.value);
         let h = self.height;
-        let bar_w = 30.0;
+        let bar_w = 24.0;
         let track = ShapeStyle::from_tokens(
             &t,
             Some(t.palette.surface),

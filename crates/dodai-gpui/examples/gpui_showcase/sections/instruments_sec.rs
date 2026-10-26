@@ -2,8 +2,8 @@
 
 use super::super::*;
 use dodai_gpui::{
-    Annunciator, Compass, DialGauge, DialLook, GearIndicator, LevelBar, Limits, Odometer,
-    PowerMeter, Scale, Severity, TirePressure, VitalsTile,
+    Annunciator, ClusterKind, Compass, DialGauge, DialLook, GearIndicator, InstrumentCluster,
+    LevelBar, Limits, Odometer, PowerMeter, Scale, Severity, TirePressure, VitalsTile,
 };
 
 impl Showcase {
@@ -20,6 +20,22 @@ impl Showcase {
             gauge_styles,
             ..
         } = self.chart_demos(&me, cx);
+
+        // Cluster sets: one coherent style per cluster, never mixed.
+        let mut clusters = div().flex().flex_col().gap(px(t.spacing.lg));
+        for kind in ClusterKind::ALL {
+            clusters = clusters
+                .child(Muted::new(kind.name()))
+                .child(InstrumentCluster::new(kind).width(700.0));
+        }
+        out.push((
+            "Instruments",
+            "Cluster",
+            self.section("Cluster", &t, &me, cx)
+                .child(clusters)
+                .into_any_element(),
+            "Cluster",
+        ));
 
         // Vehicle: a speedometer with a redline tachometer and a fuel/temperature pair.
         let speed = Scale::new(0.0, 240.0)

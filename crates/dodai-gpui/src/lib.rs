@@ -236,6 +236,8 @@ pub mod instrument_charts;
 #[cfg(feature = "charts")]
 pub mod instruments;
 #[cfg(feature = "charts")]
+pub mod instruments_cluster;
+#[cfg(feature = "charts")]
 pub mod instruments_vehicle;
 pub mod interact;
 #[cfg(feature = "components")]
@@ -392,6 +394,8 @@ pub use instrument_charts::{
 };
 #[cfg(feature = "charts")]
 pub use instruments::{severity_color, Annunciator, DialGauge, VitalsTile};
+#[cfg(feature = "charts")]
+pub use instruments_cluster::{ClusterKind, DigitalGauge, InstrumentCluster, PodGauge, Tachometer};
 #[cfg(feature = "charts")]
 pub use instruments_vehicle::{
     Compass, GearIndicator, LevelBar, Odometer, PowerMeter, TirePressure,

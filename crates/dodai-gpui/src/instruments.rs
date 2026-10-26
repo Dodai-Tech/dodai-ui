@@ -8,7 +8,7 @@
 //! requests frames while something actually flashes.
 
 use crate::charts::{polar, turn_arc};
-use crate::gauges::{disc, needle, SWEEP};
+use crate::gauges::{disc, SWEEP};
 use crate::paint::{fill, scale_alpha, shaped, stroke, ShapeStyle};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
@@ -134,31 +134,47 @@ impl RenderOnce for DialGauge {
         let analog = look == DialLook::Analog;
         let sev = scale.severity_at(value);
         let frac = scale.fraction(value);
+        // Tracks follow the design's progress/slider tokens, so a dial reads like its bars.
+        let sz = t.sizes();
         let (track, ink, muted) = (
-            hsla(t.palette.border),
+            hsla(t.progress(None).track),
             hsla(t.palette.text),
             hsla(t.palette.text_muted),
         );
-        let needle_col = if sev == Severity::Normal {
-            ink
-        } else {
-            severity_color(&t, sev)
-        };
-        let c = size / 2.0;
-        let r = c * 0.9;
-        let band = size * 0.05;
-        let spans = scale.zone_spans();
-        let zone_cols: Vec<(f32, f32, Hsla)> = spans
-            .iter()
-            .map(|(a, b, s)| (*a, *b, severity_color(&t, *s)))
-            .collect();
-        let ticks = scale.ticks();
-        let at = move |f: f32| start + span * f;
         let accent = if sev == Severity::Normal {
             hsla(t.palette.primary)
         } else {
             severity_color(&t, sev)
         };
+        let needle_col = accent;
+        let c = size / 2.0;
+        let bezel_w = t.shape.border_width.max(1.5);
+        let face = hsla(t.palette.surface);
+        let rim = hsla(t.palette.border);
+        let at = move |f: f32| start + span * f;
+        // Ticks coloured by the zone they sit in: a redline reads as a red run of ticks.
+        let ticks: Vec<(f32, bool, Hsla)> = scale
+            .ticks()
+            .into_iter()
+            .map(|k| {
+                let col = match scale.severity_at(k.value) {
+                    Severity::Normal => {
+                        if k.major {
+                            ink
+                        } else {
+                            muted
+                        }
+                    }
+                    s => severity_color(&t, s),
+                };
+                (k.frac, k.major, col)
+            })
+            .collect();
+        let zone_cols: Vec<(f32, f32, Hsla)> = scale
+            .zone_spans()
+            .iter()
+            .map(|(a, b, s)| (*a, *b, severity_color(&t, *s)))
+            .collect();
         const SEGMENTS: usize = 30;
         let seg_cols: Vec<Hsla> = (0..SEGMENTS)
             .map(|i| {
@@ -169,79 +185,121 @@ impl RenderOnce for DialGauge {
                 }
             })
             .collect();
+        let band = (sz.slider_track * 1.2).max(size * 0.03);
         let cv = canvas(
             |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| match look {
-                DialLook::Analog => {
-                    stroke(
-                        w,
-                        b.origin,
-                        &turn_arc(c, c, r, at(0.0), at(1.0)),
-                        band,
-                        track,
-                        false,
-                    );
-                    for (a, z, col) in &zone_cols {
+            move |b: Bounds<Pixels>, _, w, _| {
+                let o = b.origin;
+                // Bezel and face.
+                fill(w, o, &disc(c, c, c - bezel_w * 0.5, 72), face);
+                let rim_pts: Vec<(f32, f32)> = (0..=96)
+                    .map(|i| polar(c, c, c - bezel_w * 0.5, i as f32 / 96.0))
+                    .collect();
+                stroke(w, o, &rim_pts, bezel_w, rim, true);
+                let tick_ring = |w: &mut Window, r_out: f32, minor: f32, major: f32| {
+                    for (f, is_major, col) in &ticks {
+                        let len = if *is_major { major } else { minor };
+                        let seg = [polar(c, c, r_out, at(*f)), polar(c, c, r_out - len, at(*f))];
+                        stroke(w, o, &seg, if *is_major { 2.2 } else { 1.0 }, *col, false);
+                    }
+                };
+                match look {
+                    DialLook::Analog => {
+                        let r_z = c * 0.86;
+                        let thin = (band * 0.55).max(2.0);
                         stroke(
                             w,
-                            b.origin,
-                            &turn_arc(c, c, r, at(*a), at(*z)),
-                            band,
-                            *col,
+                            o,
+                            &turn_arc(c, c, r_z, at(0.0), at(1.0)),
+                            thin,
+                            track,
                             false,
                         );
+                        for (a, z, col) in &zone_cols {
+                            stroke(
+                                w,
+                                o,
+                                &turn_arc(c, c, r_z, at(*a), at(*z)),
+                                thin,
+                                *col,
+                                false,
+                            );
+                        }
+                        // Lit sweep behind the needle.
+                        if frac > 0.004 {
+                            let mut sector = vec![(c, c)];
+                            let n = ((frac * 48.0) as usize).max(2);
+                            sector
+                                .extend((0..=n).map(|i| {
+                                    polar(c, c, c * 0.78, at(frac * i as f32 / n as f32))
+                                }));
+                            fill(w, o, &sector, scale_alpha(accent, 0.11));
+                        }
+                        tick_ring(w, c * 0.78, size * 0.028, size * 0.06);
+                        // Needle: tapered, with a short tail behind the hub.
+                        let tip = polar(c, c, c * 0.84, at(frac));
+                        let tail = polar(c, c, size * 0.09, at(frac) + 0.5);
+                        let wing = size * 0.018;
+                        let l = polar(c, c, wing, at(frac) - 0.25);
+                        let r = polar(c, c, wing, at(frac) + 0.25);
+                        fill(w, o, &[l, tip, r, tail], needle_col);
+                        fill(w, o, &disc(c, c, size * 0.05, 24), face);
+                        let hub: Vec<(f32, f32)> = (0..=24)
+                            .map(|i| polar(c, c, size * 0.05, i as f32 / 24.0))
+                            .collect();
+                        stroke(w, o, &hub, 2.0, needle_col, true);
+                        fill(w, o, &disc(c, c, size * 0.018, 16), needle_col);
                     }
-                    for k in &ticks {
-                        let (len, wd) = if k.major { (0.16, 2.0) } else { (0.09, 1.0) };
-                        let seg = [
-                            polar(c, c, r - band, at(k.frac)),
-                            polar(c, c, r - band - size * len * 0.5, at(k.frac)),
-                        ];
-                        stroke(w, b.origin, &seg, wd, muted, false);
-                    }
-                    let n = needle(c, c, r - band * 1.2, size * 0.05, at(frac));
-                    fill(w, b.origin, &n, needle_col);
-                    fill(w, b.origin, &disc(c, c, size * 0.04, 20), needle_col);
-                }
-                DialLook::Arc => {
-                    let thick = band * 1.5;
-                    stroke(
-                        w,
-                        b.origin,
-                        &turn_arc(c, c, r, at(0.0), at(1.0)),
-                        thick,
-                        track,
-                        false,
-                    );
-                    if frac > 0.002 {
+                    DialLook::Arc => {
+                        let r_a = c * 0.84;
+                        let thick = band * 1.4;
                         stroke(
                             w,
-                            b.origin,
-                            &turn_arc(c, c, r, at(0.0), at(frac)),
+                            o,
+                            &turn_arc(c, c, r_a, at(0.0), at(1.0)),
                             thick,
-                            accent,
+                            track,
                             false,
                         );
+                        if frac > 0.002 {
+                            stroke(
+                                w,
+                                o,
+                                &turn_arc(c, c, r_a, at(0.0), at(frac)),
+                                thick,
+                                accent,
+                                false,
+                            );
+                            let (ex, ey) = polar(c, c, r_a, at(frac));
+                            fill(w, o, &disc(ex, ey, thick * 0.9, 20), face);
+                            let knob: Vec<(f32, f32)> = (0..=20)
+                                .map(|i| polar(ex, ey, thick * 0.9, i as f32 / 20.0))
+                                .collect();
+                            stroke(w, o, &knob, 2.0, accent, true);
+                        }
+                        tick_ring(w, r_a - thick * 1.3, size * 0.02, size * 0.04);
                     }
-                }
-                DialLook::Segmented => {
-                    let thick = band * 1.7;
-                    let step = 1.0 / SEGMENTS as f32;
-                    for (i, col) in seg_cols.iter().enumerate() {
-                        let (a0, a1) = (
-                            i as f32 * step + step * 0.12,
-                            (i + 1) as f32 * step - step * 0.12,
-                        );
-                        let lit = (i as f32 + 0.5) * step <= frac;
-                        let col = if lit { *col } else { scale_alpha(track, 0.7) };
-                        stroke(
-                            w,
-                            b.origin,
-                            &turn_arc(c, c, r, at(a0), at(a1)),
-                            thick,
-                            col,
-                            false,
-                        );
+                    DialLook::Segmented => {
+                        let r_a = c * 0.84;
+                        let thick = band * 1.7;
+                        let step = 1.0 / SEGMENTS as f32;
+                        for (i, col) in seg_cols.iter().enumerate() {
+                            let (a0, a1) = (
+                                i as f32 * step + step * 0.12,
+                                (i + 1) as f32 * step - step * 0.12,
+                            );
+                            let lit = (i as f32 + 0.5) * step <= frac;
+                            let col = if lit { *col } else { track };
+                            stroke(
+                                w,
+                                o,
+                                &turn_arc(c, c, r_a, at(a0), at(a1)),
+                                thick,
+                                col,
+                                false,
+                            );
+                        }
+                        tick_ring(w, r_a - thick * 1.1, size * 0.02, size * 0.04);
                     }
                 }
             },
@@ -258,7 +316,7 @@ impl RenderOnce for DialGauge {
                 .filter(|(i, _)| i % skip == 0)
                 .map(|(_, k)| k)
             {
-                let (x, y) = polar(c, c, r - band - size * 0.15, at(k.frac));
+                let (x, y) = polar(c, c, c * 0.6, at(k.frac));
                 dial = dial.child(
                     div()
                         .absolute()
@@ -268,7 +326,7 @@ impl RenderOnce for DialGauge {
                         .flex()
                         .justify_center()
                         .text_size(px(t.typography.size_xs))
-                        .text_color(muted)
+                        .text_color(ink)
                         .child(readout(k.value, 0, "")),
                 );
             }
@@ -277,7 +335,7 @@ impl RenderOnce for DialGauge {
             .absolute()
             .left_0()
             .w(px(size))
-            .top(px(c + size * 0.12))
+            .top(px(c + size * 0.16))
             .flex()
             .flex_col()
             .items_center()
