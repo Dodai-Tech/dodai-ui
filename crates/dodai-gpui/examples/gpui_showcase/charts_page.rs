@@ -395,17 +395,15 @@ impl Showcase {
                 (0.9, 0.6),
             ]
             .map(|(a, r)| Blip::new(a, r));
-            let shell = |body: Div| {
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap_6()
-                    .child(glow_picker())
-                    .child(trail_picker())
-                    .child(body)
+            // Trail only applies to the live traces of the signal lab.
+            let shell = |trail: bool, body: Div| {
+                let d = div().flex().flex_col().gap_6().child(glow_picker());
+                let d = if trail { d.child(trail_picker()) } else { d };
+                d.child(body)
             };
             let wrap = || row().justify_around().flex_wrap();
             let lab = shell(
+                true,
                 wrap()
                     .child(
                         Oscilloscope::ecg(2, 240)
@@ -448,6 +446,7 @@ impl Showcase {
                     ),
             );
             let hud = shell(
+                false,
                 wrap()
                     .child(
                         RadarScope::new(blips)

@@ -265,14 +265,14 @@ impl Showcase {
                 .into_any_element(),
             "Medical",
         ));
-        // Sci-fi HUD instruments (Cyberpunk only, see `catalog::owner`).
+        // Radar and telemetry instruments (Cyberpunk only, see `catalog::owner`).
         out.push((
             "Instruments",
-            "HUD",
-            self.section("Instruments", &t, &me, cx)
+            "Radar & telemetry",
+            self.section("Radar & telemetry", &t, &me, cx)
                 .child(hud)
                 .into_any_element(),
-            "Instruments",
+            "Radar & telemetry",
         ));
         out
     }

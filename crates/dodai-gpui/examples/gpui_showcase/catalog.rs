@@ -80,6 +80,8 @@ pub(crate) fn caps(title: &str) -> Caps {
                 "Vehicle",
                 "Industrial",
                 "Medical",
+                "Signal lab",
+                "Radar & telemetry",
                 "Area · histogram · waterfall",
                 "Funnel · treemap · radial bar",
                 "Candlestick · box plot · bubble",
@@ -198,7 +200,9 @@ pub(crate) fn owner(title: &str) -> Option<&'static [&'static str]> {
         "Button groups · Split button" | "Loading indicator" | "Material 3 shaders" => {
             Some(&["material"])
         }
-        "Instruments" | "Signal lab" | "Cyberpunk shaders" => Some(&["cyberpunk"]),
+        "Instruments" | "Signal lab" | "Radar & telemetry" | "Cyberpunk shaders" => {
+            Some(&["cyberpunk"])
+        }
         "Frosted glass" => Some(&["aurora", "material", "neobrutalism", "cyberpunk"]),
         _ => None,
     }
