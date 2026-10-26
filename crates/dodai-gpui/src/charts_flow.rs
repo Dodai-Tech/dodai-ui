@@ -251,18 +251,21 @@ impl Waterfall {
         }
         let mut row = div().flex().size_full();
         let names: Vec<SharedString> = bars.iter().map(|b| b.0.clone()).collect();
+        let focus = crate::charts_focus::Focus::new(window, cx, &self.follow, bars.len());
         for (i, (n, a, b, c, d)) in bars.into_iter().enumerate() {
+            let lf = focus.item(i);
             let style = ShapeStyle::from_tokens(&t, Some(c), None, false, false);
             let nb = names.len();
             let (fa, fb) = (norm(a, lo, hi), norm(b, lo, hi));
             let fb = fa + (fb - fa) * crate::motion::reveal(g, i, nb);
             row = row.child(
                 div().relative().flex_1().h_full().child(
-                    div()
-                        .id((self.id.clone(), i))
+                    focus
+                        .bind(div().id((self.id.clone(), i)), i)
+                        .opacity(lf.alpha)
                         .absolute()
-                        .left(relative(0.15))
-                        .w(relative(0.7))
+                        .left(relative(0.15 - 0.05 * lf.lift))
+                        .w(relative(0.7 + 0.1 * lf.lift))
                         .bottom(relative(fa))
                         .h(relative((fb - fa).max(0.004)))
                         .tooltip(DodaiTooltip::text(format!(

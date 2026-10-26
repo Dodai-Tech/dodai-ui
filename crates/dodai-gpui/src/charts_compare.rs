@@ -218,6 +218,7 @@ impl PairedBars {
         crate::instruments_motion::follow_triples(window, cx, &self.follow, &mut self.rows);
         let t = theme_of(cx);
         let g = crate::motion::grow(window, cx, "PairedBars");
+        let focus = crate::charts_focus::Focus::new(window, cx, &self.follow, self.rows.len());
         let (ca, cb) = (t.palette.series_at(0), t.palette.series_at(1));
         let global = self
             .rows
@@ -237,10 +238,11 @@ impl PairedBars {
                 0.0
             };
             let dc = if b >= a { up_color(&t) } else { down_color(&t) };
+            let lf = focus.item(i);
             let bar = |k: usize, v: f32, c: Color, who: &SharedString| {
                 div()
                     .id((SharedString::from(format!("pb-{i}")), k))
-                    .h(px(t.sizes().legend_swatch + 2.0))
+                    .h(px(t.sizes().legend_swatch + 2.0 + 3.0 * lf.lift))
                     .w(relative((v.abs() / m).clamp(0.0, 1.0) * g))
                     .bg(hsla(c))
                     .tooltip(DodaiTooltip::text(format!(
@@ -249,7 +251,9 @@ impl PairedBars {
                     )))
             };
             col = col.child(
-                div()
+                focus
+                    .bind(div().id(("pb-row", i)), i)
+                    .opacity(lf.alpha)
                     .flex()
                     .items_center()
                     .gap(px(t.spacing.md))

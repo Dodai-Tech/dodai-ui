@@ -5,8 +5,8 @@ use crate::paint::scale_alpha;
 use crate::text::first_family;
 use crate::{hsla, theme_of};
 use gpui::{
-    canvas, div, px, relative, App, Bounds, Hsla, IntoElement, ParentElement, Pixels, SharedString,
-    Styled, Window,
+    canvas, div, px, relative, App, Bounds, Hsla, InteractiveElement as _, IntoElement,
+    ParentElement, Pixels, SharedString, Styled, Window,
 };
 
 // ─────────────────────────────────── Gauge ───────────────────────────────────
@@ -324,6 +324,10 @@ impl RadarChart {
         let grid = hsla(t.palette.border);
         let glow = self.glow.resolve(&t);
         let size = self.size;
+        let focus = crate::charts_focus::Focus::new(window, cx, &self.follow, self.axes.len());
+        let foc: Vec<crate::charts_focus::ItemFocus> =
+            (0..self.axes.len()).map(|i| focus.item(i)).collect();
+        let foc_c = foc.clone();
         let polys: Vec<(Hsla, Vec<f32>)> = self
             .series
             .iter()
@@ -343,12 +347,19 @@ impl RadarChart {
                     stroke(w, b.origin, &p, 1.0, grid, true);
                 }
                 for i in 0..n {
+                    let lf = foc_c
+                        .get(i)
+                        .copied()
+                        .unwrap_or(crate::charts_focus::ItemFocus {
+                            alpha: 1.0,
+                            lift: 0.0,
+                        });
                     stroke(
                         w,
                         b.origin,
                         &[(c, c), polar(c, c, r, i as f32 / n as f32)],
-                        1.0,
-                        grid,
+                        1.0 + 1.5 * lf.lift,
+                        scale_alpha(grid, lf.alpha),
                         false,
                     );
                 }
@@ -367,6 +378,22 @@ impl RadarChart {
                     let mut closed = p.clone();
                     closed.push(p[0]);
                     glow_stroke(w, b.origin, &closed, 2.0, *col, glow);
+                    for (i, q) in p.iter().enumerate() {
+                        let lf = foc_c.get(i).map_or(0.0, |f| f.lift);
+                        if lf > 0.02 {
+                            fill(
+                                w,
+                                b.origin,
+                                &crate::charts::marker_points(
+                                    crate::charts::Marker::Dot,
+                                    q.0,
+                                    q.1,
+                                    2.0 + 2.5 * lf,
+                                ),
+                                *col,
+                            );
+                        }
+                    }
                 }
             },
         )
@@ -376,8 +403,11 @@ impl RadarChart {
         let mut web = div().relative().w(px(size)).h(px(size)).child(cvs);
         for (i, a) in self.axes.iter().enumerate() {
             let (x, y) = polar(0.5, 0.5, 0.5, i as f32 / n as f32);
+            let lf = foc[i];
             web = web.child(
-                label_style(&t, div())
+                focus
+                    .bind(label_style(&t, div()).id(("radar-axis", i)), i)
+                    .opacity(lf.alpha)
                     .absolute()
                     .left(relative(x))
                     .top(relative(y))
