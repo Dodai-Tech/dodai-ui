@@ -21,6 +21,7 @@
 //! | [`sankey`] | flow diagram layout |
 //! | [`density`] | kernel density estimate |
 //! | [`instrument`] | scales, zones, limits, alarms |
+//! | [`flight`] | attitude horizon, pitch ladder, tapes, sonar rows |
 //! | [`segments`] | seven-segment digit geometry |
 //! | [`tactical`] | contacts, map symbols, threat wedges, countdown |
 
@@ -30,6 +31,7 @@ pub mod calendar;
 pub mod candles;
 pub mod density;
 pub mod depth;
+pub mod flight;
 pub mod gantt;
 pub mod gradient;
 pub mod indicators;

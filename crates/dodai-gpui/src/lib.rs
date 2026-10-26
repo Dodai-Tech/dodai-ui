@@ -238,6 +238,8 @@ pub mod instruments;
 #[cfg(feature = "charts")]
 pub mod instruments_cluster;
 #[cfg(feature = "charts")]
+pub mod instruments_flight;
+#[cfg(feature = "charts")]
 pub mod instruments_hero;
 #[cfg(feature = "charts")]
 pub mod instruments_military;
@@ -404,6 +406,10 @@ pub use instrument_charts::{
 pub use instruments::{severity_color, Annunciator, DialGauge, VitalsTile};
 #[cfg(feature = "charts")]
 pub use instruments_cluster::{DigitalGauge, InstrumentCluster, PodGauge, Tachometer};
+#[cfg(feature = "charts")]
+pub use instruments_flight::{
+    AttitudeIndicator, Countermeasures, HeadingTape, SonarWaterfall, VerticalTape,
+};
 #[cfg(feature = "charts")]
 pub use instruments_hero::{CapsuleCluster, CutSpeedometer};
 #[cfg(feature = "charts")]

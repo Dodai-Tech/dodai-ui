@@ -2,10 +2,11 @@
 
 use super::super::*;
 use dodai_gpui::{
-    Affiliation, Annunciator, ClusterKind, Compass, Contact, DialGauge, DialLook, GearIndicator,
-    InstrumentCluster, LevelBar, Limits, MissionTimer, Odometer, PowerMeter, Scale, Severity,
-    Station, StationState, StoresPanel, TacticalPlot, Threat, ThreatRosette, TirePressure,
-    TrackList, VitalsTile,
+    Affiliation, Annunciator, AttitudeIndicator, ClusterKind, Compass, Contact, Countermeasures,
+    DialGauge, DialLook, GearIndicator, HeadingTape, InstrumentCluster, LevelBar, Limits,
+    MissionTimer, Odometer, PowerMeter, Scale, Severity, SonarWaterfall, Station, StationState,
+    StoresPanel, TacticalPlot, Threat, ThreatRosette, TirePressure, TrackList, VerticalTape,
+    VitalsTile,
 };
 
 impl Showcase {
@@ -322,8 +323,14 @@ impl Showcase {
                                         .flex_col()
                                         .gap_6()
                                         .child(MissionTimer::new(754))
-                                        .child(MissionTimer::new(48).label("Weapons release")),
+                                        .child(MissionTimer::new(48).label("Weapons release"))
+                                        .child(Countermeasures::new(24, 6)),
                                 ),
+                        )
+                        .child(
+                            SonarWaterfall::new(64, 36)
+                                .size(560.0, 220.0)
+                                .caption("Sonar waterfall"),
                         )
                         .child(StoresPanel::new([
                             Station::new("AAM", StationState::Armed),
@@ -336,6 +343,45 @@ impl Showcase {
                 )
                 .into_any_element(),
             "Military",
+        ));
+        // Aviation: the flight deck instruments.
+        out.push((
+            "Instruments",
+            "Aviation",
+            self.section("Aviation", &t, &me, cx)
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .gap_6()
+                        .child(
+                            div()
+                                .flex()
+                                .flex_wrap()
+                                .justify_around()
+                                .gap_6()
+                                .child(VerticalTape::new(312.0).scale(100.0, 10.0, 5).label("KT"))
+                                .child(
+                                    AttitudeIndicator::new(7.0, -14.0)
+                                        .size(300.0)
+                                        .caption("Attitude"),
+                                )
+                                .child(
+                                    VerticalTape::new(12460.0)
+                                        .scale(1000.0, 100.0, 5)
+                                        .label("FT")
+                                        .ticks_right(true),
+                                ),
+                        )
+                        .child(
+                            div()
+                                .flex()
+                                .justify_center()
+                                .child(HeadingTape::new(47.0).bug(75.0).width(480.0)),
+                        ),
+                )
+                .into_any_element(),
+            "Aviation",
         ));
         out.push((
             "Instruments",
