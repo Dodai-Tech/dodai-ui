@@ -225,7 +225,7 @@ fn setup(mut commands: Commands, theme: Res<DodaiTheme>) {
                     p.spawn(text("Caption", TextRole::Caption));
                 });
 
-                // dodai-surface through Bevy UI nodes: the design's own surface mix.
+                // dodai-fx through Bevy UI nodes: the design's own surface mix.
                 cols.spawn((
                     panel("Surface effects"),
                     Node {

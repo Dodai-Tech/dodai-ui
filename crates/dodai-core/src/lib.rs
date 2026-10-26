@@ -39,11 +39,11 @@ pub use component::{
     StepState, StepTokens, SurfaceTokens, TabTokens, TagTokens, ToggleKind, ToggleTokens, TypeRole,
     TypeStyle,
 };
-pub use dodai_motion;
-pub use dodai_motion::{Easing, EntryKind, EntrySet, Motion};
-pub use dodai_surface::{
+pub use dodai_fx::{
     EffectSet, PressStyle, Surface, SurfaceClass, SurfaceFx, SurfaceTargets, SurfaceTuning, Texture,
 };
+pub use dodai_motion;
+pub use dodai_motion::{Easing, EntryKind, EntrySet, Motion};
 pub use palette::{Mode, Palette, Roles, Tone};
 pub use shape_system::{
     Corner, CornerSpec, CornerStyle, DefaultShape, RoleShape, ShapePreset, ShapeRole, ShapeScale,

@@ -1,4 +1,4 @@
-//! Surface textures and effects, drawn by `dodai-surface` as absolutely placed UI nodes.
+//! Surface textures and effects, drawn by `dodai-fx` as absolutely placed UI nodes.
 //!
 //! Bevy UI has no immediate-mode canvas, so the [`Painter`] records primitives
 //! ([`Prim`]) and [`spawn_surface_fx`] turns them into child nodes: quads and dots become
@@ -7,7 +7,7 @@
 
 use bevy::prelude::*;
 use dodai_core::{Surface, SurfaceClass, SurfaceFx, Theme};
-use dodai_surface::{Frame, Painter, Rgba};
+use dodai_fx::{Frame, Painter, Rgba};
 
 use crate::theme::color;
 
@@ -68,7 +68,7 @@ pub fn record_surface_fx(theme: &Theme, fx: SurfaceFx, size: Vec2) -> Option<Rec
         presses: &[],
     };
     let mut rec = Recorder::default();
-    dodai_surface::paint(&mut rec, &frame, &paint);
+    dodai_fx::paint(&mut rec, &frame, &paint);
     Some(rec)
 }
 

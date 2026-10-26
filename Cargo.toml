@@ -8,8 +8,7 @@ members = [
     "crates/dodai-neobrutalism",
     "crates/dodai-aurora",
     "crates/dodai-charts-core",
-    "crates/dodai-frost",
-    "crates/dodai-surface",
+    "crates/dodai-fx",
     "crates/dodai-shaders",
     "crates/dodai-shaders-kernels",
     "crates/dodai-icon-id",
@@ -59,8 +58,7 @@ dodai-material = { path = "crates/dodai-material", version = "0.1.0", default-fe
 dodai-neobrutalism = { path = "crates/dodai-neobrutalism", version = "0.1.0", default-features = false }
 dodai-aurora = { path = "crates/dodai-aurora", version = "0.1.0", default-features = false }
 dodai-motion = { path = "crates/dodai-motion", version = "0.1.0" }
-dodai-frost = { path = "crates/dodai-frost", version = "0.1.0" }
-dodai-surface = { path = "crates/dodai-surface", version = "0.1.0" }
+dodai-fx = { path = "crates/dodai-fx", version = "0.1.0" }
 dodai-charts-core = { path = "crates/dodai-charts-core", version = "0.1.0" }
 dodai-shaders = { path = "crates/dodai-shaders", version = "0.1.0" }
 dodai-icon-id = { path = "crates/dodai-icon-id", version = "0.1.0" }

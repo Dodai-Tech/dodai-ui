@@ -1,7 +1,7 @@
 //! Resolving a theme into the colours and timing a surface effect is painted with.
 
 use crate::{Color, SurfaceClass, SurfaceFx, Texture, Theme};
-use dodai_surface::{Rgba, Surface, SurfacePaint};
+use dodai_fx::{Rgba, Surface, SurfacePaint};
 
 impl From<Color> for Rgba {
     fn from(c: Color) -> Self {

@@ -1,5 +1,5 @@
 //! Frosted glass on plain RGBA8 pixels (row-major, 4 bytes per pixel). No dependencies, no
-//! toolkit, no theme: see the README.
+//! toolkit, no theme: see the crate README.
 //!
 //! [`blur`], [`blurred`] and [`glass`] run on the CPU. With the `gpu` feature, a [`Blurrer`]
 //! runs the same blur on the GPU (`wgpu`) whenever a real adapter exists, and on the CPU

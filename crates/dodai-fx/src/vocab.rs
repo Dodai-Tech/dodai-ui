@@ -690,7 +690,7 @@ impl Default for SurfaceTuning {
 /// takes it out. A design still draws only the textures and effects it owns.
 ///
 /// ```
-/// use dodai_surface::{Surface, Texture};
+/// use dodai_fx::{Surface, Texture};
 /// let calm = Surface::new().texture(Texture::Grain).strength(0.3);
 /// let plain = Surface::NONE;
 /// assert!(calm.is_set() && plain.is_off());

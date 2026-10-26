@@ -1,6 +1,6 @@
 //! A design's own surface styling, carried by the theme.
 
-use dodai_surface::{EffectSet, SurfaceFx, SurfaceTuning, Texture};
+use dodai_fx::{EffectSet, SurfaceFx, SurfaceTuning, Texture};
 
 /// A design's own surface styling: the mix it suggests and which textures and animated
 /// effects it owns. Part of the theme, so it travels with it like colours and shapes.

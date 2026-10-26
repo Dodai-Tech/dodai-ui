@@ -75,7 +75,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        crate: [dodai-motion, dodai-core, dodai-cyberpunk-icons, dodai-material-icons, dodai-cyberpunk, dodai-material, dodai-neobrutalism, dodai, dodai-charts-core, dodai-frost, dodai-surface]
+        crate: [dodai-motion, dodai-core, dodai-cyberpunk-icons, dodai-material-icons, dodai-cyberpunk, dodai-material, dodai-neobrutalism, dodai, dodai-charts-core, dodai-fx]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -95,11 +95,11 @@ jobs:
           key: ${{ matrix.crate }}
       - run: cargo clippy -p ${{ matrix.crate }} --all-targets -- -D warnings
       - run: cargo test -p ${{ matrix.crate }}
-      - name: dodai-frost GPU feature (tests skip without an adapter)
-        if: matrix.crate == 'dodai-frost'
+      - name: dodai-fx GPU feature (tests skip without an adapter)
+        if: matrix.crate == 'dodai-fx'
         run: |
-          cargo clippy -p dodai-frost --all-targets --features gpu -- -D warnings
-          cargo test -p dodai-frost --features gpu
+          cargo clippy -p dodai-fx --all-targets --features gpu -- -D warnings
+          cargo test -p dodai-fx --features gpu
 
   # One job per dependent crate; runs only once the base crates are green.
   # `gui: true` crates need native libs on Linux and also run on macOS.
@@ -239,7 +239,7 @@ jobs:
         with:
           toolchain: ${{ steps.msrv.outputs.version }}
       - uses: Swatinem/rust-cache@v2
-      - run: cargo check --locked -p dodai-core -p dodai-motion -p dodai-charts-core -p dodai-frost -p dodai-cyberpunk -p dodai-material -p dodai-neobrutalism -p dodai-aurora --all-targets
+      - run: cargo check --locked -p dodai-core -p dodai-motion -p dodai-charts-core -p dodai-fx -p dodai-cyberpunk -p dodai-material -p dodai-neobrutalism -p dodai-aurora --all-targets
 
   nu-tests:
     name: nushell tests

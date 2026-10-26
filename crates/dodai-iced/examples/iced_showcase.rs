@@ -200,7 +200,7 @@ fn view(app: &App) -> Element<'_, Msg> {
         .spacing(sp.md),
     );
 
-    // The design's own surface mix (textures, tint, brackets...), drawn by dodai-surface.
+    // The design's own surface mix (textures, tint, brackets...), drawn by dodai-fx.
     let fx = lt.theme().surface_preset();
     let panels = section(
         lt,

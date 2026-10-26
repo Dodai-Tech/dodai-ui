@@ -26,7 +26,7 @@ impl GpuBlur {
         let (device, queue) =
             pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor::default())).ok()?;
         let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("dodai-frost"),
+            label: Some("dodai-fx"),
             source: wgpu::ShaderSource::Wgsl(include_str!("blur.wgsl").into()),
         });
         let entry = |binding, ty| wgpu::BindGroupLayoutEntry {
@@ -181,9 +181,9 @@ mod tests {
         let (w, h) = (37, 23);
         let src: Vec<u8> = (0..w * h * 4).map(|i| (i * 7 % 251) as u8).collect();
         for sigma in [1.0f32, 3.0, 8.0] {
-            let want = crate::blur(&src, w, h, sigma);
+            let want = crate::frost::blur(&src, w, h, sigma);
             let got = gpu
-                .blur(&src, w, h, crate::box_radius(sigma))
+                .blur(&src, w, h, crate::frost::box_radius(sigma))
                 .expect("gpu blur");
             assert_eq!(got, want, "sigma {sigma}");
         }

@@ -221,7 +221,7 @@ impl Default for Sizes {
     }
 }
 
-pub use dodai_surface::{Clip, Corners, ShapeKind};
+pub use dodai_fx::{Clip, Corners, ShapeKind};
 
 /// Shape tokens.
 #[derive(Debug, Clone, PartialEq)]
@@ -287,7 +287,7 @@ pub struct Effects {
 
 impl Effects {
     /// Neutral distance between scanline bars: 3 px.
-    pub const SCANLINE_PITCH: f32 = dodai_surface::SCANLINE_PITCH;
+    pub const SCANLINE_PITCH: f32 = dodai_fx::SCANLINE_PITCH;
     /// Neutral soft shadow: black at 16 %.
     pub const SHADOW: Color = Color::rgba(0, 0, 0, 41);
     /// Neutral scanline bar: black at 18 %.

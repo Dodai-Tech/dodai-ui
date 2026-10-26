@@ -186,8 +186,8 @@ version = "0.1.0"
 name = "dodai-core"
 version = "0.1.0"
 dependencies = [
+ "dodai-fx",
  "dodai-motion",
- "dodai-surface",
 ]
 
 [[package]]
@@ -215,6 +215,10 @@ dependencies = [
  "dodai-material-icons",
  "libfuzzer-sys",
 ]
+
+[[package]]
+name = "dodai-fx"
+version = "0.1.0"
 
 [[package]]
 name = "dodai-icon-id"
@@ -273,10 +277,6 @@ dependencies = [
  "pollster",
  "wgpu",
 ]
-
-[[package]]
-name = "dodai-surface"
-version = "0.1.0"
 
 [[package]]
 name = "equivalent"

@@ -38,8 +38,7 @@ symbols = ["dep:dodai-material-icons", "dodai-icons/material"]
 dodai-core = { workspace = true }
 dodai-motion = { workspace = true }
 dodai-charts-core = { workspace = true }
-dodai-frost = { workspace = true }
-dodai-surface = { workspace = true }
+dodai-fx = { workspace = true }
 dodai-cyberpunk-icons = { workspace = true }
 dodai-material-icons = { workspace = true, optional = true }
 dodai-cyberpunk = { workspace = true, optional = true }

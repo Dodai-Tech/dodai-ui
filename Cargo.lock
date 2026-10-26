@@ -4043,7 +4043,7 @@ dependencies = [
  "bevy",
  "dodai",
  "dodai-core",
- "dodai-surface",
+ "dodai-fx",
 ]
 
 [[package]]
@@ -4054,8 +4054,8 @@ version = "0.1.0"
 name = "dodai-core"
 version = "0.1.0"
 dependencies = [
+ "dodai-fx",
  "dodai-motion",
- "dodai-surface",
 ]
 
 [[package]]
@@ -4096,7 +4096,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai-frost"
+name = "dodai-fx"
 version = "0.1.0"
 dependencies = [
  "pollster 1.0.1",
@@ -4113,7 +4113,7 @@ dependencies = [
  "dodai-core",
  "dodai-cyberpunk",
  "dodai-cyberpunk-icons",
- "dodai-frost",
+ "dodai-fx",
  "dodai-icon-id",
  "dodai-icons",
  "dodai-material",
@@ -4121,7 +4121,6 @@ dependencies = [
  "dodai-motion",
  "dodai-neobrutalism",
  "dodai-shaders",
- "dodai-surface",
  "gpui",
  "image",
 ]
@@ -4133,7 +4132,7 @@ dependencies = [
  "dodai",
  "dodai-charts-core",
  "dodai-core",
- "dodai-surface",
+ "dodai-fx",
  "iced",
  "naga 27.0.3",
 ]
@@ -4240,10 +4239,6 @@ dependencies = [
  "dodai-core",
  "slint",
 ]
-
-[[package]]
-name = "dodai-surface"
-version = "0.1.0"
 
 [[package]]
 name = "dodai-topcoat"

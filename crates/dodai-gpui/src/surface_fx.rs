@@ -2,11 +2,11 @@
 //!
 //! [`set_surface_fx`] switches them for the whole app (like [`crate::set_scanlines`]); each
 //! shaped surface then paints them through [`paint_surface`]. The effects themselves live in
-//! `dodai-surface`; this file is the gpui [`Painter`], the app-wide state and the click ripples.
+//! `dodai-fx`; this file is the gpui [`Painter`], the app-wide state and the click ripples.
 
 use crate::paint::poly;
 use dodai_core::{Shape, SurfaceClass, SurfaceFx, Texture, Theme};
-use dodai_surface::{Painter, Rgba, Ripple};
+use dodai_fx::{Painter, Rgba, Ripple};
 use gpui::{point, px, size, App, Bounds, Hsla, PathBuilder, Pixels, Window};
 use std::cell::Cell;
 use std::sync::OnceLock;
@@ -36,7 +36,7 @@ pub fn apply_surface_preset(cx: &mut App) {
     set_surface_fx(cx, fx);
 }
 
-pub use dodai_surface::SurfacePaint;
+pub use dodai_fx::SurfacePaint;
 
 /// Resolve the surface paint of a `class` surface under the app-wide mix.
 pub fn surface_paint(theme: &Theme, class: SurfaceClass) -> Option<SurfacePaint> {
@@ -163,7 +163,7 @@ pub fn paint_surface(
     } else {
         Vec::new()
     };
-    let frame = dodai_surface::Frame {
+    let frame = dodai_fx::Frame {
         w,
         h,
         shape: &shape.clip(),
@@ -175,7 +175,7 @@ pub fn paint_surface(
         window,
         origin: bounds.origin,
     };
-    if dodai_surface::paint(&mut out, &frame, sp) {
+    if dodai_fx::paint(&mut out, &frame, sp) {
         crate::motion::next_frame(window);
     }
 }

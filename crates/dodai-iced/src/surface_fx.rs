@@ -1,7 +1,7 @@
-//! Surface textures and effects, drawn by `dodai-surface` through an iced canvas.
+//! Surface textures and effects, drawn by `dodai-fx` through an iced canvas.
 
 use dodai_core::{Surface, SurfaceClass, SurfaceFx};
-use dodai_surface::{Frame as FxFrame, Painter, Rgba, SurfacePaint};
+use dodai_fx::{Frame as FxFrame, Painter, Rgba, SurfacePaint};
 use iced::{
     mouse,
     widget::canvas::{self, Canvas, Geometry, Path, Stroke},
@@ -91,7 +91,7 @@ impl<Message> canvas::Program<Message> for SurfaceFxProgram {
             time: 0.0,
             presses: &[],
         };
-        dodai_surface::paint(&mut IcedPainter { frame: &mut frame }, &f, &self.paint);
+        dodai_fx::paint(&mut IcedPainter { frame: &mut frame }, &f, &self.paint);
         vec![frame.into_geometry()]
     }
 }
