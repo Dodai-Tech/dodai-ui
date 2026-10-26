@@ -23,7 +23,13 @@ impl Showcase {
 
         // Cluster sets: one coherent style per cluster, never mixed.
         let mut clusters = div().flex().flex_col().gap(px(t.spacing.lg));
-        for kind in ClusterKind::ALL {
+        clusters = clusters
+            .child(Muted::new("This design's own cluster"))
+            .child(InstrumentCluster::themed().width(700.0));
+        for kind in ClusterKind::ALL
+            .into_iter()
+            .filter(|k| *k != t.chart_style().cluster)
+        {
             clusters = clusters
                 .child(Muted::new(kind.name()))
                 .child(InstrumentCluster::new(kind).width(700.0));

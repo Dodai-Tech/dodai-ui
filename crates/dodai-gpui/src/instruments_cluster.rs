@@ -15,7 +15,7 @@ use crate::paint::{fill, shaped, stroke, ShapeStyle};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use dodai_charts_core::instrument::{readout, Scale, Severity};
-use dodai_core::{DialLook, Theme};
+use dodai_core::{ClusterKind, DialLook, Theme};
 use gpui::{
     canvas, div, px, App, Bounds, Hsla, IntoElement, ParentElement, Pixels, RenderOnce,
     SharedString, Styled, Window,
@@ -535,75 +535,19 @@ impl RenderOnce for DigitalGauge {
 
 // ───────────────────────────────── InstrumentCluster ─────────────────────────────────
 
-/// A cluster style. Every instrument of one cluster follows the same style, so a set never
-/// mixes looks.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ClusterKind {
-    /// Round pods around a big inverted tachometer.
-    Pods,
-    /// A cut-corner speedometer with radiating hairlines.
-    Cut,
-    /// A capsule with a gradient sweep, side arcs and a gear selector.
-    Capsule,
-    /// Five equal round pods.
-    Round,
-    /// Four inverted dials: bold ring, large numerals.
-    Bold,
-    /// Two large analog dials flanked by two small ones.
-    Classic,
-    /// The same layout with arc dials.
-    Arc,
-    /// The same layout with segmented LED dials.
-    Segmented,
-    /// Numeric tiles with segment bars.
-    Digital,
-}
-
-impl ClusterKind {
-    /// Every style, in showcase order.
-    pub const ALL: [ClusterKind; 9] = [
-        Self::Pods,
-        Self::Capsule,
-        Self::Cut,
-        Self::Round,
-        Self::Bold,
-        Self::Classic,
-        Self::Arc,
-        Self::Segmented,
-        Self::Digital,
-    ];
-
-    /// Display name.
-    pub fn name(self) -> &'static str {
-        match self {
-            Self::Pods => "Pods",
-            Self::Cut => "Cut",
-            Self::Capsule => "Capsule",
-            Self::Round => "Round",
-            Self::Bold => "Bold",
-            Self::Classic => "Classic",
-            Self::Arc => "Arc",
-            Self::Segmented => "Segmented",
-            Self::Digital => "Digital",
-        }
-    }
-
-    fn look(self) -> Option<DialLook> {
-        match self {
-            Self::Classic => Some(DialLook::Analog),
-            Self::Arc => Some(DialLook::Arc),
-            Self::Segmented => Some(DialLook::Segmented),
-            Self::Pods | Self::Cut | Self::Capsule | Self::Round | Self::Bold | Self::Digital => {
-                None
-            }
-        }
+fn dial_look(kind: ClusterKind) -> Option<DialLook> {
+    match kind {
+        ClusterKind::Classic => Some(DialLook::Analog),
+        ClusterKind::Arc => Some(DialLook::Arc),
+        ClusterKind::Segmented => Some(DialLook::Segmented),
+        _ => None,
     }
 }
 
 /// A complete cluster: speed, engine speed with gear and mode, fuel, oil pressure and coolant.
 #[derive(IntoElement)]
 pub struct InstrumentCluster {
-    kind: ClusterKind,
+    kind: Option<ClusterKind>,
     speed: f32,
     rpm: f32,
     gear: SharedString,
@@ -618,7 +562,7 @@ impl InstrumentCluster {
     /// A cluster of the given family with plausible cruising values.
     pub fn new(kind: ClusterKind) -> Self {
         Self {
-            kind,
+            kind: Some(kind),
             speed: 251.0,
             rpm: 6.9,
             gear: "6".into(),
@@ -627,6 +571,13 @@ impl InstrumentCluster {
             oil: 4.8,
             coolant: 96.0,
             width: 800.0,
+        }
+    }
+    /// A cluster in the current design's own style (`ChartStyle::cluster`).
+    pub fn themed() -> Self {
+        Self {
+            kind: None,
+            ..Self::new(ClusterKind::Pods)
         }
     }
     /// Speed in km/h.
@@ -696,12 +647,25 @@ impl RenderOnce for InstrumentCluster {
         let dash = Scale::new(0.0, 300.0)
             .ticks_per(10, 1)
             .zone(260.0, 300.0, Severity::Caution);
-        match self.kind {
+        let kind = self.kind.unwrap_or(t.chart_style().cluster);
+        match kind {
             ClusterKind::Cut => {
                 let d = Scale::new(0.0, 160.0).ticks_per(8, 1);
                 return CutSpeedometer::new(d, self.speed.min(160.0) * 0.28)
                     .unit("km/h")
                     .width(self.width.min(420.0))
+                    .into_any_element();
+            }
+            ClusterKind::Segment => {
+                return crate::instruments_segment::SegmentCluster::new()
+                    .speed(self.speed)
+                    .rpm(self.rpm)
+                    .gear(self.gear.clone())
+                    .mode(self.mode.clone())
+                    .fuel(self.fuel)
+                    .oil(self.oil)
+                    .coolant(self.coolant)
+                    .width(self.width)
                     .into_any_element();
             }
             ClusterKind::Capsule => {
@@ -722,7 +686,7 @@ impl RenderOnce for InstrumentCluster {
             false,
         );
         let row = div().flex().items_center().justify_center().gap(px(gap));
-        let body = match self.kind {
+        let body = match kind {
             ClusterKind::Pods => {
                 // 0.62 + 0.78 + 1 + 0.78 + 0.62 hero widths, four gaps.
                 let hero = ((inner - gap * 4.0) / 3.8).max(120.0);
@@ -760,7 +724,9 @@ impl RenderOnce for InstrumentCluster {
                 )
                 .into_any_element()
             }
-            ClusterKind::Cut | ClusterKind::Capsule => div().into_any_element(),
+            ClusterKind::Cut | ClusterKind::Capsule | ClusterKind::Segment => {
+                div().into_any_element()
+            }
             ClusterKind::Round => {
                 let d = ((inner - gap * 4.0) / 5.0).max(90.0);
                 row.child(
@@ -812,7 +778,7 @@ impl RenderOnce for InstrumentCluster {
                     .into_any_element()
             }
             ClusterKind::Classic | ClusterKind::Arc | ClusterKind::Segmented => {
-                let look = self.kind.look().unwrap_or(DialLook::Analog);
+                let look = dial_look(kind).unwrap_or(DialLook::Analog);
                 // 0.62 + 1 + 1 + 0.62 big-dial widths, three gaps.
                 let big = ((inner - gap * 3.0) / 3.24).max(120.0);
                 let small = big * 0.62;

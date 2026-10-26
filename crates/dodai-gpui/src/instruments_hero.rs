@@ -66,7 +66,7 @@ impl RenderOnce for CutSpeedometer {
             unit,
             width,
         } = self;
-        let h = width * 0.88;
+        let h = width * 0.9;
         let (cxp, cyp) = (width / 2.0, h / 2.0);
         let rh = width * 0.5 - 1.0;
         let rd = width * 0.33;
@@ -84,6 +84,7 @@ impl RenderOnce for CutSpeedometer {
             severity_color(&t, sev)
         };
         let bezel = t.shape.border_width.max(1.5);
+        let tail = hsla(t.palette.danger);
         let (start, span) = SWEEP;
         let at = move |f: f32| start + span * f;
         // The Cyberpunk shape: a rectangle with cut corners, `r` insets it.
@@ -139,6 +140,65 @@ impl RenderOnce for CutSpeedometer {
                         polar(cxp, cyp, rd * 1.1, at(*f)),
                     ];
                     stroke(w, o, &seg, 2.0, muted, false);
+                }
+                // Road scene: lane stripes in perspective and a car seen from behind.
+                let lane = |y: f32| width * (0.05 + 0.3 * (y - h * 0.58) / (h * 0.38)) / 2.0;
+                let (ytop, ybot) = (h * 0.58, h * 0.96);
+                fill(
+                    w,
+                    o,
+                    &[
+                        (cxp - lane(ytop), ytop),
+                        (cxp + lane(ytop), ytop),
+                        (cxp + lane(ybot), ybot),
+                        (cxp - lane(ybot), ybot),
+                    ],
+                    scale_alpha(ink, 0.05),
+                );
+                for i in 0..4 {
+                    let f = i as f32 / 4.0;
+                    let y0 = ytop + (ybot - ytop) * (0.22 + 0.78 * f * f);
+                    let y1 = y0 + (ybot - ytop) * (0.03 + 0.07 * f);
+                    let (w0, w1) = (lane(y0) * 0.5, lane(y1) * 0.5);
+                    fill(
+                        w,
+                        o,
+                        &[
+                            (cxp - w0, y0),
+                            (cxp + w0, y0),
+                            (cxp + w1, y1),
+                            (cxp - w1, y1),
+                        ],
+                        scale_alpha(ink, 0.2 + 0.5 * f),
+                    );
+                }
+                let u = width * 0.01;
+                let by = h * 0.8;
+                let body = [
+                    (cxp - 7.0 * u, by),
+                    (cxp - 7.0 * u, by - 5.0 * u),
+                    (cxp - 5.0 * u, by - 8.0 * u),
+                    (cxp + 5.0 * u, by - 8.0 * u),
+                    (cxp + 7.0 * u, by - 5.0 * u),
+                    (cxp + 7.0 * u, by),
+                ];
+                fill(w, o, &body, scale_alpha(ink, 0.55));
+                let glass = [
+                    (cxp - 4.5 * u, by - 5.5 * u),
+                    (cxp - 3.5 * u, by - 7.4 * u),
+                    (cxp + 3.5 * u, by - 7.4 * u),
+                    (cxp + 4.5 * u, by - 5.5 * u),
+                ];
+                fill(w, o, &glass, face);
+                for sx in [-1.0f32, 1.0] {
+                    let x = cxp + sx * 5.0 * u;
+                    let l = [
+                        (x - 1.8 * u, by - 3.5 * u),
+                        (x + 1.8 * u, by - 3.5 * u),
+                        (x + 1.8 * u, by - 2.2 * u),
+                        (x - 1.8 * u, by - 2.2 * u),
+                    ];
+                    fill(w, o, &l, tail);
                 }
                 let needle = [
                     polar(cxp, cyp, rd * 0.62, at(frac)),

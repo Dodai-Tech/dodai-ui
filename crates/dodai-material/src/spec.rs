@@ -131,6 +131,7 @@ impl DesignSpec for Material3 {
             grid_color: t.palette.border.with_alpha(0.5),
             area_alpha: 0.12,
             dial: dodai_core::DialLook::Arc,
+            cluster: dodai_core::ClusterKind::Arc,
             ..dodai_core::ChartStyle::from_theme(t)
         })
     }

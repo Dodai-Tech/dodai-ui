@@ -240,6 +240,8 @@ pub mod instruments_cluster;
 #[cfg(feature = "charts")]
 pub mod instruments_hero;
 #[cfg(feature = "charts")]
+pub mod instruments_segment;
+#[cfg(feature = "charts")]
 pub mod instruments_vehicle;
 pub mod interact;
 #[cfg(feature = "components")]
@@ -369,7 +371,7 @@ pub use dodai_charts_core::gantt::Task as GanttTask;
 pub use dodai_charts_core::instrument::{Alarm, Limits, Scale, Severity};
 #[cfg(feature = "charts")]
 pub use dodai_charts_core::Gradient;
-pub use dodai_core::DialLook;
+pub use dodai_core::{ClusterKind, DialLook};
 pub use dodai_motion;
 #[cfg(feature = "shaders")]
 pub use dodai_shaders;
@@ -397,9 +399,11 @@ pub use instrument_charts::{
 #[cfg(feature = "charts")]
 pub use instruments::{severity_color, Annunciator, DialGauge, VitalsTile};
 #[cfg(feature = "charts")]
-pub use instruments_cluster::{ClusterKind, DigitalGauge, InstrumentCluster, PodGauge, Tachometer};
+pub use instruments_cluster::{DigitalGauge, InstrumentCluster, PodGauge, Tachometer};
 #[cfg(feature = "charts")]
 pub use instruments_hero::{CapsuleCluster, CutSpeedometer};
+#[cfg(feature = "charts")]
+pub use instruments_segment::{SegmentCluster, SegmentDisplay};
 #[cfg(feature = "charts")]
 pub use instruments_vehicle::{
     Compass, GearIndicator, LevelBar, Odometer, PowerMeter, TirePressure,

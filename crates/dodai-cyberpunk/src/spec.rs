@@ -59,6 +59,7 @@ impl DesignSpec for Cyberpunk {
         Some(dodai_core::ChartStyle {
             grid_dashed: true,
             dial: dodai_core::DialLook::Segmented,
+            cluster: dodai_core::ClusterKind::Cut,
             grid_color: t.palette.border.with_alpha(0.7),
             ..dodai_core::ChartStyle::from_theme(t)
         })
