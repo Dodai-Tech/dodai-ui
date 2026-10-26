@@ -25,6 +25,7 @@ impl Showcase {
     }
 
     fn toggle_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         let gap = px(t.spacing.md);
@@ -82,6 +83,7 @@ impl Showcase {
     }
 
     fn variants_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         let gap = px(t.spacing.md);
@@ -143,6 +145,7 @@ impl Showcase {
     }
 
     fn slider_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         let gap = px(t.spacing.md);
@@ -178,6 +181,7 @@ impl Showcase {
     }
 
     fn stepped_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         let gap = px(t.spacing.md);
@@ -279,6 +283,7 @@ impl Showcase {
     }
 
     fn range_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         let mut out: Vec<Section> = Vec::new();
@@ -304,6 +309,7 @@ impl Showcase {
     }
 
     fn knob_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         let gap = px(t.spacing.md);
@@ -393,6 +399,7 @@ impl Showcase {
     }
 
     fn input_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         vec![(
@@ -420,6 +427,7 @@ impl Showcase {
     }
 
     fn search_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         let mut out: Vec<Section> = Vec::new();
@@ -468,6 +476,7 @@ impl Showcase {
     }
 
     fn tag_field_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         let mut out: Vec<Section> = Vec::new();
@@ -490,6 +499,7 @@ impl Showcase {
     }
 
     fn picker_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         let gap = px(t.spacing.md);
@@ -564,6 +574,7 @@ impl Showcase {
     }
 
     fn password_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         vec![(
@@ -579,11 +590,14 @@ impl Showcase {
                 .child(
                     dodai_gpui::FormField::new("Verification code")
                         .help("Type or paste 6 digits")
-                        .child(dodai_gpui::OtpInput::new("otp", 6)),
+                        .child(dodai_gpui::OtpInput::new("otp", 6).value(self.demo_otp.clone())),
                 )
                 .child(
-                    dodai_gpui::FormField::new("PIN (masked)")
-                        .child(dodai_gpui::OtpInput::new("pin", 4).masked(true)),
+                    dodai_gpui::FormField::new("PIN (masked)").child(
+                        dodai_gpui::OtpInput::new("pin", 4)
+                            .masked(true)
+                            .value(self.demo_pin.clone()),
+                    ),
                 )
                 .into_any_element(),
             "Password · OTP",
@@ -591,6 +605,7 @@ impl Showcase {
     }
 
     fn form_field_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         let gap = px(t.spacing.md);
@@ -610,13 +625,23 @@ impl Showcase {
                                     .child(InputBox::new().placeholder("Ada Lovelace")),
                             ),
                         )
-                        .child(
-                            div().flex_1().min_w(px(220.0)).child(
-                                dodai_gpui::FormField::new("Email")
-                                    .error("Enter a valid address")
-                                    .child(InputBox::new().placeholder("name@")),
-                            ),
-                        )
+                        .child(div().flex_1().min_w(px(220.0)).child({
+                            let mail = self.demo_email.clone();
+                            let ok = mail.contains('@')
+                                && mail
+                                    .rsplit('.')
+                                    .next()
+                                    .is_some_and(|d| mail.contains('.') && d.len() >= 2);
+                            let f = dodai_gpui::FormField::new("Email");
+                            let f = if ok {
+                                f.success("Looks good")
+                            } else if mail.is_empty() {
+                                f
+                            } else {
+                                f.error("Enter a valid address")
+                            };
+                            f.child(InputBox::new().placeholder("name@").child(Mono::new(mail)))
+                        }))
                         .child(
                             div().flex_1().min_w(px(220.0)).child(
                                 dodai_gpui::FormField::new("Username")
@@ -638,6 +663,7 @@ impl Showcase {
     }
 
     fn group_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         let gap = px(t.spacing.md);
@@ -683,6 +709,7 @@ impl Showcase {
     }
 
     fn date_range_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         let gap = px(t.spacing.md);

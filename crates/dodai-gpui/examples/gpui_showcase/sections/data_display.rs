@@ -21,6 +21,7 @@ impl Showcase {
     }
 
     fn tags_lists_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         let gap = px(t.spacing.md);
@@ -94,6 +95,7 @@ impl Showcase {
     }
 
     fn misc_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         let gap = px(t.spacing.md);
@@ -152,6 +154,7 @@ impl Showcase {
     }
 
     fn list_divider_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         let mut out: Vec<Section> = Vec::new();
@@ -185,6 +188,7 @@ impl Showcase {
     }
 
     fn tree_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         let gap = px(t.spacing.md);
@@ -231,6 +235,7 @@ impl Showcase {
     }
 
     fn tooltip_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         vec![(
@@ -258,6 +263,7 @@ impl Showcase {
     }
 
     fn table_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         let gap = px(t.spacing.md);
@@ -316,6 +322,7 @@ impl Showcase {
     }
 
     fn code_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         let mut out: Vec<Section> = Vec::new();
@@ -339,6 +346,7 @@ impl Showcase {
     }
 
     fn image_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         let gap = px(t.spacing.md);
@@ -392,6 +400,7 @@ impl Showcase {
     }
 
     fn progress_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         let gap = px(t.spacing.md);
@@ -444,6 +453,7 @@ impl Showcase {
     }
 
     fn clock_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         let gap = px(t.spacing.md);
@@ -477,6 +487,7 @@ impl Showcase {
     }
 
     fn scroll_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         let mut out: Vec<Section> = Vec::new();

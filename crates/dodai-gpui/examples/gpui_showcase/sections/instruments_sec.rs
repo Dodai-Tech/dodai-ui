@@ -12,6 +12,7 @@ use dodai_gpui::{
 impl Showcase {
     /// Vehicle, industrial and medical instruments, one section each.
     pub(crate) fn sections_instruments(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        self.inst_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let me = cx.entity();
         let gap = px(t.spacing.md);
@@ -22,16 +23,16 @@ impl Showcase {
         let response =
             (self.inst_response > 0).then(|| NeedleResponse::ALL[self.inst_response - 1]);
         let live = dodai_gpui::instruments_animated();
-        let phase = (dodai_gpui::motion::now() / 2.4).floor();
-        // A value that is `still` normally and wanders in `lo..=hi` while animated.
+        let time = dodai_gpui::motion::now();
+        // A value that is `still` normally and drifts smoothly through `lo..=hi` while
+        // animated: two slow waves of different speed, offset per `key`.
         let val = move |key: f32, still: f32, lo: f32, hi: f32| {
             if !live {
                 return still;
             }
-            let h = ((phase * 12.9898 + key * 78.233).sin() * 43_758.547)
-                .fract()
-                .abs();
-            lo + (hi - lo) * h
+            let w = 0.6 * (time * (0.35 + 0.05 * (key % 5.0)) + key * 1.7).sin()
+                + 0.4 * (time * (0.83 + 0.07 * (key % 3.0)) + key * 2.9).sin();
+            lo + (hi - lo) * (0.5 + 0.5 * w)
         };
         let (sel, glow_sel) = (self.inst_response, self.inst_glow);
         let option = |label: &'static str, seg: gpui::AnyElement| {
@@ -49,16 +50,6 @@ impl Showcase {
                 .items_center()
                 .gap_4()
                 .children(opts)
-        };
-        let animate_opt = || {
-            option(
-                "Animate",
-                Segmented::new("inst-animate", ["Off", "On"])
-                    .selected(usize::from(dodai_gpui::instruments_animated()))
-                    .on_select(|i, _, cx| dodai_gpui::set_instruments_animated(cx, i == 1))
-                    .into_any_element(),
-            )
-            .into_any_element()
         };
         let needle_opt = || {
             let m = me.clone();
@@ -203,7 +194,7 @@ impl Showcase {
             "Instruments",
             "Vehicle",
             self.section("Vehicle", &t, &me, cx)
-                .child(bar(vec![animate_opt(), needle_opt()]))
+                .child(bar(vec![needle_opt()]))
                 .child(Muted::new("Clusters: one coherent style per set."))
                 .child(clusters)
                 .child(Muted::new("Dials"))
@@ -278,7 +269,7 @@ impl Showcase {
             "Instruments",
             "Industrial",
             self.section("Industrial", &t, &me, cx)
-                .child(bar(vec![animate_opt(), needle_opt()]))
+                .child(bar(vec![needle_opt()]))
                 .child(
                     row()
                         .child(
@@ -354,7 +345,7 @@ impl Showcase {
             "Instruments",
             "Medical",
             self.section("Medical", &t, &me, cx)
-                .child(bar(vec![animate_opt(), glow_opt()]))
+                .child(bar(vec![glow_opt()]))
                 .child(
                     row()
                         .child(VitalsTile::new("HR", 72.0).unit("bpm").limits(vitals(50.0, 110.0)))
@@ -389,7 +380,7 @@ impl Showcase {
             "Instruments",
             "Radar & telemetry",
             self.section("Radar & telemetry", &t, &me, cx)
-                .child(bar(vec![animate_opt(), glow_opt()]))
+                .child(bar(vec![glow_opt()]))
                 .child(hud)
                 .into_any_element(),
             "Radar & telemetry",
@@ -428,7 +419,6 @@ impl Showcase {
             "Instruments",
             "Military",
             self.section("Military", &t, &me, cx)
-                .child(bar(vec![animate_opt()]))
                 .child(
                     div()
                         .flex()
@@ -475,7 +465,7 @@ impl Showcase {
             "Instruments",
             "Aviation",
             self.section("Aviation", &t, &me, cx)
-                .child(bar(vec![animate_opt(), needle_opt()]))
+                .child(bar(vec![needle_opt()]))
                 .child(
                     div()
                         .flex()
@@ -526,7 +516,7 @@ impl Showcase {
             "Instruments",
             "Signal lab",
             self.section("Signal lab", &t, &me, cx)
-                .child(bar(vec![animate_opt(), glow_opt()]))
+                .child(bar(vec![glow_opt()]))
                 .child(lab)
                 .into_any_element(),
             "Signal lab",

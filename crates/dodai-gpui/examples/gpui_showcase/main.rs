@@ -168,6 +168,13 @@ pub struct Showcase {
     inst_response: usize,
     /// Glow of every chart and instrument: 0 the theme's own, 1 off, 2 soft, 3 strong.
     inst_glow: usize,
+    /// When the Instruments page last rendered; it repaints every frame while it is showing.
+    inst_seen: Option<std::time::Instant>,
+    /// When an input demo page last rendered; its values play on their own while it shows.
+    demo_seen: Option<std::time::Instant>,
+    demo_email: String,
+    demo_pin: String,
+    demo_otp: String,
     /// Pulse monitor options: rhythm, mode, grid, noise, rate, trail, gain.
     pulse_cfg: [usize; 7],
     sh_gen: &'static str,
@@ -593,6 +600,16 @@ impl Render for Showcase {
                                     .py(px(t.spacing.sm))
                                     .border_b_1()
                                     .border_color(hsla(t.palette.border))
+                                    .child(Muted::new("Animate"))
+                                    .child(
+                                        dodai_gpui::Segmented::new("top-animate", ["Off", "On"])
+                                            .selected(usize::from(
+                                                dodai_gpui::instruments_animated(),
+                                            ))
+                                            .on_select(|i, _, cx| {
+                                                dodai_gpui::set_instruments_animated(cx, i == 1)
+                                            }),
+                                    )
                                     .child(Muted::new("Design"))
                                     .child(
                                         div().w(px(230.0)).child(

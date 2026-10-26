@@ -171,6 +171,7 @@ pub struct OtpInput {
     numeric: bool,
     masked: bool,
     disabled: bool,
+    value: Option<String>,
     on_change: Option<TextFn>,
     on_complete: Option<TextFn>,
 }
@@ -184,9 +185,15 @@ impl OtpInput {
             numeric: true,
             masked: false,
             disabled: false,
+            value: None,
             on_change: None,
             on_complete: None,
         }
+    }
+    /// Drive the cells from outside (a demo, or restoring a draft); typing still edits them.
+    pub fn value(mut self, v: impl Into<String>) -> Self {
+        self.value = Some(v.into());
+        self
     }
     /// Accept letters as well as digits.
     pub fn alphanumeric(mut self) -> Self {
@@ -220,6 +227,14 @@ impl RenderOnce for OtpInput {
             value: String::new(),
             focus: cx.focus_handle(),
         });
+        if let Some(v) = &self.value {
+            if st.read(cx).value != *v {
+                st.update(cx, |s, cx| {
+                    s.value = v.clone();
+                    cx.notify();
+                });
+            }
+        }
         let (value, focus) = {
             let s = st.read(cx);
             (s.value.clone(), s.focus.clone())
