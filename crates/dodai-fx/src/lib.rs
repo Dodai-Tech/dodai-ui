@@ -391,6 +391,39 @@ mod tests {
         assert!(anim, "a playing ripple needs the next frame");
     }
 
+    #[test]
+    fn a_huge_surface_costs_a_bounded_number_of_primitives() {
+        let t = Theme::default();
+        let big = |sp: &SurfacePaint| {
+            let mut rec = Rec::default();
+            let f = Frame {
+                w: 2000.0,
+                h: 1200.0,
+                shape: &t.shape,
+                seed: 3,
+                time: 1.7,
+                presses: &[],
+            };
+            paint(&mut rec, &f, sp);
+            rec.quads.len() + rec.dots + rec.paths.len()
+        };
+        for tex in Texture::ALL {
+            let n = big(&only(SurfaceFx {
+                texture: tex,
+                strength: 1.0,
+                scale: 1.0,
+                ..SurfaceFx::NONE
+            }));
+            assert!(n <= 2500, "{tex:?} drew {n} primitives");
+        }
+        for (name, set) in effects() {
+            let mut fx = SurfaceFx::NONE;
+            set(&mut fx);
+            let n = big(&only(fx));
+            assert!(n <= 2000, "{name} drew {n} primitives");
+        }
+    }
+
     fn finite(rec: &Rec, what: &str) {
         for (x, y, w, h, c) in &rec.quads {
             assert!(

@@ -23,9 +23,58 @@ pub(crate) fn scanlines(cv: &mut Canvas, c: Rgba, pitch: f32) {
     }
 }
 
+/// Counts primitives instead of drawing them, to size a texture before it is painted.
+struct Count(usize);
+
+impl crate::Painter for Count {
+    fn quad(&mut self, _: f32, _: f32, _: f32, _: f32, _: Rgba) {
+        self.0 += 1;
+    }
+    fn dot(&mut self, _: f32, _: f32, _: f32, _: Rgba) {
+        self.0 += 1;
+    }
+    fn stroke(&mut self, _: &[(f32, f32)], _: bool, _: f32, _: Rgba) {
+        self.0 += 1;
+    }
+    fn fill(&mut self, _: &[(f32, f32)], _: Rgba) {
+        self.0 += 1;
+    }
+}
+
+/// Draw the texture, with its cells coarsened on big surfaces so one surface never costs more
+/// than a few thousand primitives.
 pub(crate) fn texture(cv: &mut Canvas, sp: &SurfacePaint, seed: i32) {
+    let mut k = sp.fx.scale.max(0.25) * sp.tune.cell;
+    // Small surfaces cannot get near the budget: skip the dry runs.
+    if cv.w * cv.h > 150_000.0 {
+        for _ in 0..6 {
+            let mut count = Count(0);
+            let mut dry = Canvas {
+                out: &mut count,
+                shape: cv.shape,
+                pts: cv.pts.clone(),
+                w: cv.w,
+                h: cv.h,
+                inset: cv.inset,
+                neon: cv.neon,
+                neon_c: cv.neon_c,
+                halo: cv.halo,
+                clear: cv.clear,
+                time: cv.time,
+            };
+            draw_texture(&mut dry, sp, seed, k);
+            let n = count.0 as f32;
+            if n <= crate::geom::MAX_QUADS * 1.2 {
+                break;
+            }
+            k *= (n / crate::geom::MAX_QUADS).powf(0.75).max(1.1);
+        }
+    }
+    draw_texture(cv, sp, seed, k);
+}
+
+fn draw_texture(cv: &mut Canvas, sp: &SurfacePaint, seed: i32, k: f32) {
     let fx = sp.fx;
-    let k = fx.scale.max(0.25) * sp.tune.cell;
     let s = fx.strength.clamp(0.0, 1.0);
     match fx.texture {
         Texture::None => {}
@@ -125,8 +174,8 @@ fn dither(cv: &mut Canvas, sp: &SurfacePaint, k: f32, s: f32) {
 }
 
 fn crosshatch(cv: &mut Canvas, sp: &SurfacePaint, k: f32, s: f32) {
-    hatch(cv, sp, 9.0 * k, 1.0, 0.24 * s);
-    hatch(cv, sp, 9.0 * k, -1.0, 0.24 * s);
+    hatch_share(cv, sp, 9.0 * k, 1.0, 0.24 * s, 0.5);
+    hatch_share(cv, sp, 9.0 * k, -1.0, 0.24 * s, 0.5);
 }
 
 fn blueprint(cv: &mut Canvas, sp: &SurfacePaint, k: f32, s: f32) {
@@ -423,7 +472,8 @@ fn hazard(cv: &mut Canvas, sp: &SurfacePaint, k: f32, s: f32) {
     // Warning tape along the top and bottom edges only, so the middle stays clean.
     let band = (h * 0.2).max(4.0).min(9.0 * k);
     let p = (10.0 * k).max(5.0);
-    let step = fit(1.0, |st| (band * 2.0 / st) * (w / p));
+    // Count falls with the dash length alone here, so it grows linearly with the overshoot.
+    let step = ((band * 2.0) * (w / p) / crate::geom::MAX_QUADS).max(1.0);
     for (y0, flip) in [(cv.inset, false), (h - cv.inset - band, true)] {
         let mut y = 0.0;
         while y < band {
@@ -600,10 +650,15 @@ fn scanlines_texture(cv: &mut Canvas, sp: &SurfacePaint, k: f32, s: f32) {
 }
 
 pub(crate) fn hatch(cv: &mut Canvas, sp: &SurfacePaint, pitch: f32, dir: f32, alpha: f32) {
+    hatch_share(cv, sp, pitch, dir, alpha, 1.0);
+}
+
+/// [`hatch`] using only `share` of the primitive budget (two crossing hatches take half each).
+fn hatch_share(cv: &mut Canvas, sp: &SurfacePaint, pitch: f32, dir: f32, alpha: f32, share: f32) {
     let (w, h) = (cv.w, cv.h);
     // Both the line spacing and the dash length grow on huge surfaces to stay under the budget.
     let n = (h / 2.0) * (w / pitch.max(3.0));
-    let grow = (n / crate::geom::MAX_QUADS).max(1.0).sqrt();
+    let grow = (n / (crate::geom::MAX_QUADS * share)).max(1.0).sqrt();
     let p = pitch.max(3.0) * grow;
     let step = 2.0 * grow;
     let mut y = 0.0;
@@ -847,7 +902,7 @@ pub(crate) fn wash(cv: &mut Canvas, sp: &SurfacePaint) {
         let step = if y < corner || y >= h - corner {
             2.0
         } else {
-            6.0
+            (h / 80.0).max(6.0)
         };
         ys.push((y + step).min(h));
     }
