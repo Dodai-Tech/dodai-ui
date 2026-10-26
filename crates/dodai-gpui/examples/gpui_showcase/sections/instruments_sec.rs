@@ -404,10 +404,31 @@ impl Showcase {
                 .heading(0.1)
                 .id(202),
         ];
+        let pick_track = {
+            let m = me.clone();
+            move |i: usize, _: &mut gpui::Window, cx: &mut gpui::App| {
+                m.update(cx, |s, cx| {
+                    s.track_sel = i;
+                    cx.notify();
+                })
+            }
+        };
         let plot = TacticalPlot::new(tracks)
-            .selected(Some(0))
+            .selected(Some(self.track_sel))
+            .on_select(pick_track.clone())
             .caption("Tactical plot");
-        let track_list = TrackList::new(tracks).selected(Some(0));
+        let track_list = TrackList::new(tracks)
+            .selected(Some(self.track_sel))
+            .on_select(pick_track);
+        let pick_station = {
+            let m = me.clone();
+            move |i: usize, _: &mut gpui::Window, cx: &mut gpui::App| {
+                m.update(cx, |s, cx| {
+                    s.station_sel = i;
+                    cx.notify();
+                })
+            }
+        };
         let rosette = ThreatRosette::new([
             Threat::new(0.05, 0.9),
             Threat::new(0.31, 0.5),
@@ -448,14 +469,18 @@ impl Showcase {
                                 .size(560.0, 220.0)
                                 .caption("Sonar waterfall"),
                         )
-                        .child(StoresPanel::new([
-                            Station::new("AAM", StationState::Armed),
-                            Station::new("AAM", StationState::Ready),
-                            Station::new("ASM", StationState::Safe),
-                            Station::new("BOMB", StationState::Safe),
-                            Station::new("FUEL", StationState::Ready),
-                            Station::new("GUN", StationState::Empty),
-                        ])),
+                        .child(
+                            StoresPanel::new([
+                                Station::new("AAM", StationState::Armed),
+                                Station::new("AAM", StationState::Ready),
+                                Station::new("ASM", StationState::Safe),
+                                Station::new("BOMB", StationState::Safe),
+                                Station::new("FUEL", StationState::Ready),
+                                Station::new("GUN", StationState::Empty),
+                            ])
+                            .selected(Some(self.station_sel))
+                            .on_select(pick_station),
+                        ),
                 )
                 .into_any_element(),
             "Military",

@@ -14,9 +14,13 @@ use dodai_charts_core::instrument::Severity;
 use dodai_charts_core::math::turn_arc;
 use dodai_charts_core::tactical::{self, Affiliation, Contact};
 use gpui::{
-    canvas, div, prelude::FluentBuilder, px, App, Bounds, Hsla, IntoElement, ParentElement, Pixels,
-    RenderOnce, SharedString, Styled, Window,
+    canvas, div, prelude::FluentBuilder, px, App, Bounds, Hsla, InteractiveElement, IntoElement,
+    ParentElement, Pixels, RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window,
 };
+use std::rc::Rc;
+
+/// Called with the index of the contact, row or station the user picked.
+type OnSelect = Rc<dyn Fn(usize, &mut Window, &mut App)>;
 
 fn affiliation_color(t: &dodai_core::Theme, a: Affiliation) -> Hsla {
     hsla(match a {
@@ -31,6 +35,7 @@ fn affiliation_color(t: &dodai_core::Theme, a: Affiliation) -> Hsla {
 /// drawn with an affiliation symbol and a heading line.
 #[derive(IntoElement)]
 pub struct TacticalPlot {
+    on_select: Option<OnSelect>,
     contacts: Vec<Contact>,
     selected: Option<usize>,
     range: (f32, &'static str),
@@ -43,6 +48,7 @@ impl TacticalPlot {
     /// A plot of `contacts`.
     pub fn new(contacts: impl IntoIterator<Item = Contact>) -> Self {
         Self {
+            on_select: None,
             contacts: contacts.into_iter().collect(),
             selected: None,
             range: (100.0, "nm"),
@@ -50,6 +56,11 @@ impl TacticalPlot {
             size: 300.0,
             caption: None,
         }
+    }
+    /// Makes contacts clickable; called with the contact's index.
+    pub fn on_select(mut self, f: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
+        self.on_select = Some(Rc::new(f));
+        self
     }
     /// Highlights the contact at this index with a selection bracket.
     pub fn selected(mut self, i: Option<usize>) -> Self {
@@ -185,9 +196,32 @@ impl RenderOnce for TacticalPlot {
             let (x, y) = polar(c, c, r + 8.0, a);
             body = body.child(tag(x - 4.0, y - 7.0, txt.into(), muted));
         }
+        // Range labels sit on the diagonal that keeps farthest from every contact and its tag.
+        let spot = |i: usize, a: f32| {
+            let (lx, ly) = polar(c, c, r * i as f32 / 4.0, a);
+            (lx + 2.0, ly - 12.0)
+        };
+        let crowd = |a: f32| {
+            let mut worst = f32::MAX;
+            for i in 1..=4 {
+                let (lx, ly) = spot(i, a);
+                for k in &contacts {
+                    let (x, y) = k.position(c, c, r);
+                    for (tx, ty) in [(x, y), (x + size * 0.03 + 12.0, y - size * 0.045 + 6.0)] {
+                        worst =
+                            worst.min(((lx + 12.0 - tx).powi(2) + (ly + 6.0 - ty).powi(2)).sqrt());
+                    }
+                }
+            }
+            worst
+        };
+        let range_at = [0.125, 0.375, 0.625, 0.875]
+            .into_iter()
+            .max_by(|a, b| crowd(*a).total_cmp(&crowd(*b)))
+            .unwrap_or(0.125);
         for i in 1..=4 {
             let v = max * i as f32 / 4.0;
-            let (lx, ly) = polar(c, c, r * i as f32 / 4.0, 0.125);
+            let (lx, ly) = polar(c, c, r * i as f32 / 4.0, range_at);
             body = body.child(tag(
                 lx + 2.0,
                 ly - 12.0,
@@ -208,6 +242,22 @@ impl RenderOnce for TacticalPlot {
                 affiliation_color(&t, k.affiliation),
             ));
         }
+        if let Some(cb) = &self.on_select {
+            for (i, k) in contacts.iter().enumerate() {
+                let (x, y) = k.position(c, c, r);
+                let cb = cb.clone();
+                body = body.child(
+                    div()
+                        .id(("track-hit", i))
+                        .absolute()
+                        .left(px(x - 14.0))
+                        .top(px(y - 14.0))
+                        .size(px(28.0))
+                        .cursor_pointer()
+                        .on_click(move |_, w, cx| cb(i, w, cx)),
+                );
+            }
+        }
         frame(&t, size, size, self.caption, body)
     }
 }
@@ -215,6 +265,7 @@ impl RenderOnce for TacticalPlot {
 /// A table of the tracks a [`TacticalPlot`] shows: number, side, bearing and distance.
 #[derive(IntoElement)]
 pub struct TrackList {
+    on_select: Option<OnSelect>,
     contacts: Vec<Contact>,
     selected: Option<usize>,
     range: (f32, &'static str),
@@ -224,10 +275,16 @@ impl TrackList {
     /// A list of `contacts`.
     pub fn new(contacts: impl IntoIterator<Item = Contact>) -> Self {
         Self {
+            on_select: None,
             contacts: contacts.into_iter().collect(),
             selected: None,
             range: (100.0, "nm"),
         }
+    }
+    /// Makes rows clickable; called with the row's index.
+    pub fn on_select(mut self, f: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
+        self.on_select = Some(Rc::new(f));
+        self
     }
     /// Highlights a row.
     pub fn selected(mut self, i: Option<usize>) -> Self {
@@ -267,10 +324,15 @@ impl RenderOnce for TrackList {
         let rows = self.contacts.iter().enumerate().map(|(i, k)| {
             let col = affiliation_color(&t, k.affiliation);
             let sel = self.selected == Some(i);
+            let cb = self.on_select.clone();
             div()
+                .id(("track-row", i))
                 .flex()
                 .py(px(2.0))
                 .when(sel, |d| d.bg(scale_alpha(col, 0.18)))
+                .when_some(cb, |d, cb| {
+                    d.cursor_pointer().on_click(move |_, w, cx| cb(i, w, cx))
+                })
                 .child(cell(format!("{:03}", k.id), 48.0, hsla(t.palette.text)))
                 .child(cell(k.affiliation.name().into(), 84.0, col))
                 .child(cell(
@@ -472,6 +534,8 @@ impl Station {
 #[derive(IntoElement)]
 pub struct StoresPanel {
     stations: Vec<Station>,
+    selected: Option<usize>,
+    on_select: Option<OnSelect>,
 }
 
 impl StoresPanel {
@@ -479,7 +543,19 @@ impl StoresPanel {
     pub fn new(stations: impl IntoIterator<Item = Station>) -> Self {
         Self {
             stations: stations.into_iter().collect(),
+            selected: None,
+            on_select: None,
         }
+    }
+    /// Highlights a station.
+    pub fn selected(mut self, i: Option<usize>) -> Self {
+        self.selected = i;
+        self
+    }
+    /// Makes stations clickable; called with the station's index.
+    pub fn on_select(mut self, f: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
+        self.on_select = Some(Rc::new(f));
+        self
     }
 }
 
@@ -487,6 +563,7 @@ impl RenderOnce for StoresPanel {
     fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let row = div().flex().gap(px(t.spacing.sm));
+        let (selected, on_select) = (self.selected, self.on_select);
         row.children(self.stations.into_iter().enumerate().map(|(i, s)| {
             let (fg, bg) = match s.state {
                 StationState::Armed => (t.palette.danger, Some(t.palette.danger)),
@@ -502,7 +579,14 @@ impl RenderOnce for StoresPanel {
                 false,
             );
             let text = hsla(t.palette.text);
+            let picked = selected == Some(i);
+            let cb = on_select.clone();
             shaped(&t.shape, style)
+                .id(("station", i))
+                .when(picked, |d| d.border_2().border_color(hsla(t.palette.text)))
+                .when_some(cb, |d, cb| {
+                    d.cursor_pointer().on_click(move |_, w, cx| cb(i, w, cx))
+                })
                 .w(px(86.0))
                 .p(px(t.spacing.sm))
                 .flex()

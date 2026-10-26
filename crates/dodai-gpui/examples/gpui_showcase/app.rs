@@ -277,6 +277,8 @@ impl Showcase {
             live_a: dodai_gpui::Live::prefilled(48, |i| live_signal(i, 0.9)),
             live_b: dodai_gpui::Live::prefilled(60, |i| live_signal(i, 0.6)),
             live_c: dodai_gpui::Live::prefilled(120, live_ecg),
+            track_sel: 0,
+            station_sel: 0,
             pulse_cfg: [0, 0, 0, 1, 1, 2, 1],
             sh_gen: "neon_grid",
             sh_fx: vec!["crt"],
