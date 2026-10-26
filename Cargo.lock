@@ -4107,14 +4107,18 @@ name = "dodai-gpui"
 version = "0.1.0"
 dependencies = [
  "dodai",
+ "dodai-aurora",
  "dodai-charts-core",
  "dodai-core",
+ "dodai-cyberpunk",
  "dodai-cyberpunk-icons",
  "dodai-frost",
  "dodai-icon-id",
  "dodai-icons",
+ "dodai-material",
  "dodai-material-icons",
  "dodai-motion",
+ "dodai-neobrutalism",
  "dodai-shaders",
  "dodai-surface",
  "gpui",

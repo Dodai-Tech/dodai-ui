@@ -876,3 +876,16 @@ pub mod prelude {
     };
     pub use dodai_core::{ButtonVariant, ControlSize, ControlState, Theme, Tone};
 }
+
+/// The Aurora design (tokens and spec), re-exported so the feature alone is enough.
+#[cfg(feature = "aurora")]
+pub use dodai_aurora as aurora;
+/// The Cyberpunk design (tokens and spec).
+#[cfg(feature = "cyberpunk")]
+pub use dodai_cyberpunk as cyberpunk;
+/// The Material design (tokens and spec).
+#[cfg(feature = "material")]
+pub use dodai_material as material;
+/// The Neo-Brutalism design (tokens and spec).
+#[cfg(feature = "neobrutalism")]
+pub use dodai_neobrutalism as neobrutalism;

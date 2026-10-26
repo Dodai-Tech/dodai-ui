@@ -13,7 +13,7 @@ dodai-gpui = { version = "0.1", default-features = false, features = ["component
 
 ```rust
 // In your app setup:
-dodai_gpui::install(cx, dodai::aurora::dark());
+dodai_gpui::install(cx, dodai_gpui::aurora::dark());
 // Then build with the prelude:
 use dodai_gpui::prelude::*;
 ```
@@ -25,7 +25,8 @@ use dodai_gpui::prelude::*;
 | `components` | Buttons, inputs, tables, dialogs, pickers, navigation, … |
 | `charts` | Charts, gauges and instruments (clusters, scopes, flight, tactical); live streams (`Live`) |
 | `shaders` | GPU pixel shaders as `ShaderView` |
-| `cyberpunk` / `material` / `neobrutalism` / `aurora` | The design's icon pack and design-only widgets (see the crate docs) |
+| `cyberpunk` / `material` / `neobrutalism` / `aurora` | The design itself, re-exported as `dodai_gpui::<design>` (`light()`, `dark()`, …), plus its icon pack and design-only widgets |
+| `symbols` | Material Symbols glyphs (enabled by `material` and `aurora`) |
 
 Each slice compiles on its own (CI checks it).
 
