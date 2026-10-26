@@ -185,11 +185,13 @@ fn state(
     }
     let (secs, bounce) = response.spring()?;
     let spring = Spring::from_response(secs / animation_speed(), bounce);
+    // A value starts at zero and sweeps up to its reading, like an instrument's self-test.
+    let start = if angle { target } else { 0.0 };
     let st = w.with_id(f.id.clone(), |w| {
         w.use_keyed_state(("needle", u32::from(part)), cx, move |_, _| Needle {
             response,
-            spring: SpringState::new(spring, target),
-            last: target,
+            spring: SpringState::new(spring, start),
+            last: f32::NAN,
         })
     });
     let t = now();
@@ -198,7 +200,7 @@ fn state(
             n.spring = SpringState::new(spring, n.spring.value(t));
             n.response = response;
         }
-        if n.last != target {
+        if n.last.is_nan() || n.last != target {
             n.last = target;
             let aim = if angle {
                 let cur = n.spring.value(t);

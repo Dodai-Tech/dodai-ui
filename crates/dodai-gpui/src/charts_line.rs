@@ -233,7 +233,11 @@ impl LineChart {
                     let y = bh - f * bh;
                     crate::charts::grid_line(w, b.origin, (0.0, y), (bw, y), &style);
                 }
-                let mask = gpui::ContentMask { bounds: b };
+                let mut shown = b;
+                if scroll.is_none() {
+                    shown.size.width = b.size.width * g.clamp(0.0, 1.0);
+                }
+                let mask = gpui::ContentMask { bounds: shown };
                 w.with_content_mask(Some(mask), |w| {
                     for (c, vals, (lo, hi)) in &lines {
                         let (lo, hi) = (*lo, *hi);
@@ -248,7 +252,7 @@ impl LineChart {
                                     // Centre of category slot `i`, matching the x labels.
                                     None => (i as f32 + 0.5) / m as f32 * bw,
                                 };
-                                (x, bh - norm(*v, lo, hi) * bh * g)
+                                (x, bh - norm(*v, lo, hi) * bh)
                             })
                             .collect();
                         let raw = if stepped { step_points(&raw) } else { raw };
@@ -275,7 +279,7 @@ impl LineChart {
                         stroke(w, b.origin, &[(x, 0.0), (x, bh)], 1.0, hair, false);
                         for (c, vals, (lo, hi)) in &lines {
                             if let Some(v) = vals.get(i) {
-                                let y = bh - norm(*v, *lo, *hi) * bh * g;
+                                let y = bh - norm(*v, *lo, *hi) * bh;
                                 fill(w, b.origin, &marker_points(Marker::Dot, x, y, 4.0), *c);
                             }
                         }
