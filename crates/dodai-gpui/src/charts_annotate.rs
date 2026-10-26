@@ -76,6 +76,7 @@ pub(crate) fn layer(t: &Theme, anns: &[Annotation], y: (f32, f32), x: &dyn Fn(f3
         label_style(t, div())
             .absolute()
             .px(px(t.spacing.xs))
+            .bg(hsla(t.palette.surface).opacity(0.85))
             .text_color(c)
             .child(text.clone())
     };

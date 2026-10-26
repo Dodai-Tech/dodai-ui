@@ -110,7 +110,7 @@ pub fn pill(x: f32, y: f32, w: f32, h: f32) -> Vec<(f32, f32)> {
 
 /// Lit bars out of `n` for `frac` (at least one when any value is set). Pure.
 pub fn lit_bars(frac: f32, n: usize) -> usize {
-    if frac <= 0.0 {
+    if frac.is_nan() || frac <= 0.0 || n == 0 {
         0
     } else {
         ((frac.clamp(0.0, 1.0) * n as f32).ceil() as usize).clamp(1, n)
@@ -268,6 +268,8 @@ mod tests {
         assert_eq!(lit_bars(0.5, 5), 3);
         assert_eq!(lit_bars(1.0, 5), 5);
         assert_eq!(lit_bars(9.0, 5), 5);
+        assert_eq!(lit_bars(1.0, 0), 0);
+        assert_eq!(lit_bars(f32::NAN, 5), 0);
     }
 
     #[test]

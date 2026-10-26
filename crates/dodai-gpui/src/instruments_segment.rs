@@ -143,7 +143,7 @@ fn led_bar(
             },
         )
         .collect();
-    let ghost = 0.12;
+    let ghost = if t.is_dark() { 0.12 } else { 0.24 };
     canvas(
         |_, _, _| (),
         move |b: Bounds<Pixels>, _, w, _| {

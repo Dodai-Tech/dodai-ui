@@ -265,7 +265,29 @@ impl BarChart {
         // Gridlines behind the bars (vertical orientation: horizontal lines).
         let grid_fracs: Vec<f32> = ticks.iter().map(|v| norm(*v, 0.0, top)).collect();
         let mut plot = div().relative().w_full().h(px(self.height));
-        for f in &grid_fracs {
+        if cs.grid_dashed {
+            let (fr, style) = (grid_fracs.clone(), cs);
+            plot = plot.child(
+                gpui::canvas(
+                    |_, _, _| (),
+                    move |b: gpui::Bounds<gpui::Pixels>, _, w, _| {
+                        let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+                        for f in &fr {
+                            let (x, y) = (bw * f, bh * (1.0 - f));
+                            let (p, q) = if h {
+                                ((x, 0.0), (x, bh))
+                            } else {
+                                ((0.0, y), (bw, y))
+                            };
+                            crate::charts::grid_line(w, b.origin, p, q, &style);
+                        }
+                    },
+                )
+                .absolute()
+                .size_full(),
+            );
+        }
+        for f in grid_fracs.iter().filter(|_| !cs.grid_dashed) {
             let line = div().absolute().bg(grid);
             plot = plot.child(if h {
                 line.left(relative(*f))
