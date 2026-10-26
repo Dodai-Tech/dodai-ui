@@ -19,12 +19,9 @@ use gpui::{
     canvas, div, px, App, Bounds, Hsla, IntoElement, ParentElement, Pixels, RenderOnce,
     SharedString, Styled, Window,
 };
-use std::sync::OnceLock;
-use std::time::Instant;
 
 fn clock() -> f32 {
-    static START: OnceLock<Instant> = OnceLock::new();
-    START.get_or_init(Instant::now).elapsed().as_secs_f32()
+    crate::instruments_motion::clock()
 }
 
 /// The theme colour of a severity: success, info, warning, danger.
@@ -44,7 +41,7 @@ fn severity_token(t: &Theme, s: Severity) -> Color {
 /// A flashing alarm keeps the window redrawing; a steady one does not.
 fn flashing(window: &Window, live: bool, a: &Alarm) {
     if live && a.severity.flash_hz() > 0.0 && !a.acknowledged {
-        crate::motion::next_frame(window);
+        crate::instruments_motion::next_frame(window);
     }
 }
 

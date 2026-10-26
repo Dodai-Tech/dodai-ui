@@ -13,15 +13,12 @@ use gpui::{
     canvas, div, px, App, Bounds, Hsla, IntoElement, ParentElement, Pixels, RenderOnce,
     SharedString, Styled, Window,
 };
-use std::sync::OnceLock;
-use std::time::Instant;
 
 // ───────────────────────────── pure helpers ─────────────────────────────
 
 /// Seconds since the first call (shared clock for live charts).
 pub(crate) fn clock() -> f32 {
-    static START: OnceLock<Instant> = OnceLock::new();
-    START.get_or_init(Instant::now).elapsed().as_secs_f32()
+    crate::instruments_motion::clock()
 }
 
 /// One heartbeat-shaped period (`-1..=1`): P wave, QRS spike, T wave. Pure.
@@ -280,7 +277,7 @@ impl RenderOnce for Oscilloscope {
                             false,
                         );
                     }
-                    crate::motion::next_frame(w);
+                    crate::instruments_motion::next_frame(w);
                 }
                 let main = trace(0.0);
                 if lk.fill > 0.0 {
@@ -448,7 +445,7 @@ impl RenderOnce for Spectrum {
                     fill_batch(w, b.origin, &caps[z], col);
                 }
                 if live {
-                    crate::motion::next_frame(w);
+                    crate::instruments_motion::next_frame(w);
                 }
             },
         )
@@ -780,7 +777,7 @@ impl RenderOnce for RadarScope {
                 }
                 fill(w, o, &disc(c, c, 2.5, 8), col);
                 if live {
-                    crate::motion::next_frame(w);
+                    crate::instruments_motion::next_frame(w);
                 }
             },
         )
@@ -887,7 +884,7 @@ impl RenderOnce for HexMap {
                 }
                 stroke_batch(w, b.origin, &edges, 1.0, edge, true);
                 if live {
-                    crate::motion::next_frame(w);
+                    crate::instruments_motion::next_frame(w);
                 }
             },
         )

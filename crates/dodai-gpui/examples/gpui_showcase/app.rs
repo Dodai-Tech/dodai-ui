@@ -76,6 +76,23 @@ pub(crate) fn window_shortcuts(cx: &mut App) {
 impl Showcase {
     /// Initial state; the TextInput entities are created here.
     pub fn build(cx: &mut Context<Self>) -> Self {
+        // While instruments animate, their demo values change every 2.4 s.
+        cx.spawn(async move |this, cx| loop {
+            cx.background_executor()
+                .timer(std::time::Duration::from_millis(2400))
+                .await;
+            if this
+                .update(cx, |_, cx| {
+                    if dodai_gpui::instruments_animated() {
+                        cx.notify();
+                    }
+                })
+                .is_err()
+            {
+                break;
+            }
+        })
+        .detach();
         let search = cx.new(|cx| TextInput::new(cx).placeholder("Search…"));
         let search_full = cx.new(|cx| TextInput::new(cx).placeholder("Search…").value("a"));
         let filter = cx.new(|cx| TextInput::new(cx).placeholder("Filter components…"));
@@ -182,7 +199,6 @@ impl Showcase {
             inst_trail: 2,
             inst_response: 0,
             inst_glow: 0,
-            inst_live: false,
             pulse_cfg: [0, 0, 0, 1, 1, 2, 1],
             sh_gen: "neon_grid",
             sh_fx: vec!["crt"],

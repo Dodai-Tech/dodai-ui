@@ -17,13 +17,13 @@ impl Showcase {
         let gap = px(t.spacing.md);
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let mut out: Vec<Section> = Vec::new();
-        // Needle response and a live demo: instruments follow new values the way the design
-        // (or the picked response) moves.
+        // Options: each shows only in the sections it changes. Animate switches every
+        // instrument's motion (springs, sweeps, flashing); the demo values wander while it is on.
         let response =
             (self.inst_response > 0).then(|| NeedleResponse::ALL[self.inst_response - 1]);
-        let live = self.inst_live;
+        let live = dodai_gpui::instruments_animated();
         let phase = (dodai_gpui::motion::now() / 2.4).floor();
-        // A value that is `still` normally and wanders in `lo..=hi` in the live demo.
+        // A value that is `still` normally and wanders in `lo..=hi` while animated.
         let val = move |key: f32, still: f32, lo: f32, hi: f32| {
             if !live {
                 return still;
@@ -33,97 +33,76 @@ impl Showcase {
                 .abs();
             lo + (hi - lo) * h
         };
-        let sel = self.inst_response;
-        let glow_sel = self.inst_glow;
-        // One glow for all instruments and charts; "Theme" follows Surface effects.
-        let glow_bar = || {
-            let m = me.clone();
+        let (sel, glow_sel) = (self.inst_response, self.inst_glow);
+        let option = |label: &'static str, seg: gpui::AnyElement| {
             div()
                 .flex()
                 .items_center()
                 .gap_2()
-                .child(Label::new("Glow"))
-                .child(
-                    Segmented::new("inst-glow", ["Theme", "Off", "Soft", "Strong"])
-                        .selected(glow_sel)
-                        .on_select(move |i, _, cx| {
-                            m.update(cx, |s, cx| {
-                                s.inst_glow = i;
-                                dodai_gpui::set_chart_glow(
-                                    cx,
-                                    match i {
-                                        1 => dodai_gpui::ChartGlow::Off,
-                                        2 => dodai_gpui::ChartGlow::Radius(4.0),
-                                        3 => dodai_gpui::ChartGlow::Radius(10.0),
-                                        _ => dodai_gpui::ChartGlow::Theme,
-                                    },
-                                );
-                            })
-                        }),
-                )
+                .child(Label::new(label))
+                .child(seg)
         };
-        let motion_bar = || {
-            let (m1, m2) = (me.clone(), me.clone());
+        let bar = |opts: Vec<gpui::AnyElement>| {
             div()
                 .flex()
                 .flex_wrap()
                 .items_center()
                 .gap_4()
-                .child(
-                    div()
-                        .flex()
-                        .items_center()
-                        .gap_2()
-                        .child(Label::new("Needle"))
-                        .child(
-                            Segmented::new(
-                                "inst-response",
-                                ["Design", "Instant", "Snappy", "Smooth", "Heavy", "Bouncy"],
-                            )
-                            .selected(sel)
-                            .on_select(move |i, _, cx| {
-                                m1.update(cx, |s, cx| {
-                                    s.inst_response = i;
-                                    cx.notify();
-                                })
-                            }),
-                        ),
+                .children(opts)
+        };
+        let animate_opt = || {
+            option(
+                "Animate",
+                Segmented::new("inst-animate", ["Off", "On"])
+                    .selected(usize::from(dodai_gpui::instruments_animated()))
+                    .on_select(|i, _, cx| dodai_gpui::set_instruments_animated(cx, i == 1))
+                    .into_any_element(),
+            )
+            .into_any_element()
+        };
+        let needle_opt = || {
+            let m = me.clone();
+            option(
+                "Needle",
+                Segmented::new(
+                    "inst-response",
+                    ["Design", "Instant", "Snappy", "Smooth", "Heavy", "Bouncy"],
                 )
-                .child(
-                    div()
-                        .flex()
-                        .items_center()
-                        .gap_2()
-                        .child(glow_bar())
-                        .child(Label::new("Demo"))
-                        .child(
-                            Segmented::new("inst-live", ["Still", "Live"])
-                                .selected(usize::from(live))
-                                .on_select(move |i, _, cx| {
-                                    m2.update(cx, |s, cx| {
-                                        s.inst_live = i == 1;
-                                        cx.notify();
-                                        if s.inst_live {
-                                            cx.spawn(async move |this, cx| loop {
-                                                cx.background_executor()
-                                                    .timer(std::time::Duration::from_millis(2400))
-                                                    .await;
-                                                let on = this
-                                                    .update(cx, |s, cx| {
-                                                        cx.notify();
-                                                        s.inst_live
-                                                    })
-                                                    .unwrap_or(false);
-                                                if !on {
-                                                    break;
-                                                }
-                                            })
-                                            .detach();
-                                        }
-                                    })
-                                }),
-                        ),
-                )
+                .selected(sel)
+                .on_select(move |i, _, cx| {
+                    m.update(cx, |s, cx| {
+                        s.inst_response = i;
+                        cx.notify();
+                    })
+                })
+                .into_any_element(),
+            )
+            .into_any_element()
+        };
+        // "Theme" follows the glow set under Surface effects.
+        let glow_opt = || {
+            let m = me.clone();
+            option(
+                "Glow",
+                Segmented::new("inst-glow", ["Theme", "Off", "Soft", "Strong"])
+                    .selected(glow_sel)
+                    .on_select(move |i, _, cx| {
+                        m.update(cx, |s, cx| {
+                            s.inst_glow = i;
+                            dodai_gpui::set_chart_glow(
+                                cx,
+                                match i {
+                                    1 => dodai_gpui::ChartGlow::Off,
+                                    2 => dodai_gpui::ChartGlow::Radius(4.0),
+                                    3 => dodai_gpui::ChartGlow::Radius(10.0),
+                                    _ => dodai_gpui::ChartGlow::Theme,
+                                },
+                            );
+                        })
+                    })
+                    .into_any_element(),
+            )
+            .into_any_element()
         };
         let ChartDemos {
             instruments: (lab, hud),
@@ -136,14 +115,28 @@ impl Showcase {
         let mut clusters = div().flex().flex_col().gap(px(t.spacing.lg));
         clusters = clusters
             .child(Muted::new("This design's own cluster"))
-            .child(InstrumentCluster::themed().width(700.0));
+            .child(
+                InstrumentCluster::themed()
+                    .speed(val(20.0, 251.0, 0.0, 300.0))
+                    .rpm(val(21.0, 6.9, 0.8, 7.8))
+                    .fuel(val(22.0, 62.0, 10.0, 95.0))
+                    .coolant(val(23.0, 96.0, 70.0, 115.0))
+                    .oil(val(24.0, 4.8, 2.0, 6.0))
+                    .width(700.0),
+            );
         for kind in ClusterKind::ALL
             .into_iter()
             .filter(|k| *k != t.chart_style().cluster)
         {
-            clusters = clusters
-                .child(Muted::new(kind.name()))
-                .child(InstrumentCluster::new(kind).width(700.0));
+            clusters = clusters.child(Muted::new(kind.name())).child(
+                InstrumentCluster::new(kind)
+                    .speed(val(20.0, 251.0, 0.0, 300.0))
+                    .rpm(val(21.0, 6.9, 0.8, 7.8))
+                    .fuel(val(22.0, 62.0, 10.0, 95.0))
+                    .coolant(val(23.0, 96.0, 70.0, 115.0))
+                    .oil(val(24.0, 4.8, 2.0, 6.0))
+                    .width(700.0),
+            );
         }
         // Vehicle: a speedometer with a redline tachometer and a fuel/temperature pair.
         let speed = Scale::new(0.0, 240.0)
@@ -210,7 +203,7 @@ impl Showcase {
             "Instruments",
             "Vehicle",
             self.section("Vehicle", &t, &me, cx)
-                .child(motion_bar())
+                .child(bar(vec![animate_opt(), needle_opt()]))
                 .child(Muted::new("Clusters: one coherent style per set."))
                 .child(clusters)
                 .child(Muted::new("Dials"))
@@ -285,7 +278,7 @@ impl Showcase {
             "Instruments",
             "Industrial",
             self.section("Industrial", &t, &me, cx)
-                .child(motion_bar())
+                .child(bar(vec![animate_opt(), needle_opt()]))
                 .child(
                     row()
                         .child(
@@ -345,7 +338,7 @@ impl Showcase {
             "Instruments",
             "Gauges",
             self.section("Gauges", &t, &me, cx)
-                .child(glow_bar())
+                .child(bar(vec![glow_opt()]))
                 .child(gauge_styles)
                 .into_any_element(),
             "Gauges",
@@ -361,7 +354,7 @@ impl Showcase {
             "Instruments",
             "Medical",
             self.section("Medical", &t, &me, cx)
-                .child(glow_bar())
+                .child(bar(vec![animate_opt(), glow_opt()]))
                 .child(
                     row()
                         .child(VitalsTile::new("HR", 72.0).unit("bpm").limits(vitals(50.0, 110.0)))
@@ -396,7 +389,7 @@ impl Showcase {
             "Instruments",
             "Radar & telemetry",
             self.section("Radar & telemetry", &t, &me, cx)
-                .child(glow_bar())
+                .child(bar(vec![animate_opt(), glow_opt()]))
                 .child(hud)
                 .into_any_element(),
             "Radar & telemetry",
@@ -435,7 +428,7 @@ impl Showcase {
             "Instruments",
             "Military",
             self.section("Military", &t, &me, cx)
-                .child(glow_bar())
+                .child(bar(vec![animate_opt()]))
                 .child(
                     div()
                         .flex()
@@ -482,7 +475,7 @@ impl Showcase {
             "Instruments",
             "Aviation",
             self.section("Aviation", &t, &me, cx)
-                .child(motion_bar())
+                .child(bar(vec![animate_opt(), needle_opt()]))
                 .child(
                     div()
                         .flex()
@@ -533,7 +526,7 @@ impl Showcase {
             "Instruments",
             "Signal lab",
             self.section("Signal lab", &t, &me, cx)
-                .child(glow_bar())
+                .child(bar(vec![animate_opt(), glow_opt()]))
                 .child(lab)
                 .into_any_element(),
             "Signal lab",

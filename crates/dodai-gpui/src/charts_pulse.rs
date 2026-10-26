@@ -560,7 +560,7 @@ impl RenderOnce for Pulse {
                     }
                 }
                 if live {
-                    crate::motion::next_frame(w);
+                    crate::instruments_motion::next_frame(w);
                 }
             },
         )

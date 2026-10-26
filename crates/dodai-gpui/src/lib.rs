@@ -246,6 +246,8 @@ pub mod instruments_military;
 #[cfg(feature = "charts")]
 pub(crate) mod instruments_motion;
 #[cfg(feature = "charts")]
+pub use instruments_motion::{instruments_animated, set_instruments_animated};
+#[cfg(feature = "charts")]
 pub mod instruments_segment;
 #[cfg(feature = "charts")]
 pub mod instruments_vehicle;

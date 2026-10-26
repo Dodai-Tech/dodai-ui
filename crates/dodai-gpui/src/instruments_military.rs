@@ -124,7 +124,7 @@ impl RenderOnce for TacticalPlot {
                         scale_alpha(own, 0.8),
                         false,
                     );
-                    crate::motion::next_frame(w);
+                    crate::instruments_motion::next_frame(w);
                 }
                 for (i, k) in cs.iter().enumerate() {
                     let col = affiliation_color(&t2, k.affiliation);
@@ -388,7 +388,7 @@ impl RenderOnce for ThreatRosette {
                         0.85
                     };
                     if alarm {
-                        crate::motion::next_frame(w);
+                        crate::instruments_motion::next_frame(w);
                     }
                     fill(w, o, &p, scale_alpha(col, pulse));
                     stroke(w, o, &p, 1.0, col, true);

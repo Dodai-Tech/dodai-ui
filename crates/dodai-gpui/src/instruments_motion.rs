@@ -9,6 +9,39 @@ use dodai_core::NeedleResponse;
 use dodai_motion::{Spring, SpringState};
 use gpui::{App, ElementId, SharedString, Window};
 
+thread_local! {
+    static ANIMATED: std::cell::Cell<bool> = const { std::cell::Cell::new(true) };
+}
+
+/// Whether instruments animate: needles follow values with a spring, sweeps and flashes run.
+/// On by default.
+pub fn instruments_animated() -> bool {
+    ANIMATED.with(std::cell::Cell::get)
+}
+
+/// Switches every instrument's animation on or off and repaints. Off, needles jump to their
+/// value and sweeps, flashes and live traces stand still.
+pub fn set_instruments_animated(cx: &mut App, on: bool) {
+    ANIMATED.with(|c| c.set(on));
+    cx.refresh_windows();
+}
+
+/// Seconds on the instruments' clock: the real time, or a standstill when animation is off.
+pub(crate) fn clock() -> f32 {
+    if instruments_animated() {
+        now()
+    } else {
+        0.0
+    }
+}
+
+/// Asks for another frame, unless instruments are not animated.
+pub(crate) fn next_frame(w: &Window) {
+    if instruments_animated() {
+        crate::motion::next_frame(w);
+    }
+}
+
 /// Animation identity and feel of one instrument.
 #[derive(Clone)]
 pub struct Follow {
@@ -86,6 +119,9 @@ fn state(
     let response = f
         .response
         .unwrap_or_else(|| theme_of(cx).chart_style().response);
+    if !instruments_animated() {
+        return None;
+    }
     let (secs, bounce) = response.spring()?;
     let spring = Spring::from_response(secs, bounce);
     let st = w.with_id(f.id.clone(), |w| {
@@ -114,7 +150,7 @@ fn state(
         (n.spring.value(t), n.spring.settled(t, 0.01))
     });
     if !settled {
-        crate::motion::next_frame(w);
+        next_frame(w);
     }
     Some(v)
 }

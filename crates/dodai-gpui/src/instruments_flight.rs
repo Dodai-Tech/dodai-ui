@@ -472,7 +472,7 @@ impl RenderOnce for SonarWaterfall {
                         fill_batch(w, b.origin, polys, ramp(&stops, k as f32 / 5.0));
                     }
                 }
-                crate::motion::next_frame(w);
+                crate::instruments_motion::next_frame(w);
             },
         )
         .absolute()
