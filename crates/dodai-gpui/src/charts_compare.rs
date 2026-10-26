@@ -21,6 +21,7 @@ use std::rc::Rc;
 /// A compact KPI row; stack several for a dashboard.
 #[derive(IntoElement)]
 pub struct Bullet {
+    follow: crate::instruments_motion::Follow,
     label: SharedString,
     value: f32,
     target: Option<f32>,
@@ -33,9 +34,12 @@ pub struct Bullet {
 }
 
 impl Bullet {
+    crate::instruments_motion::follow_api!();
     /// Create a new [`Bullet`].
+    #[track_caller]
     pub fn new(label: impl Into<SharedString>, value: f32) -> Self {
         Self {
+            follow: crate::instruments_motion::Follow::here(),
             label: label.into(),
             value: crate::charts::finite_or_zero(value),
             target: None,
@@ -73,7 +77,17 @@ impl Bullet {
 chart_cfg!(Bullet);
 
 impl Bullet {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let shown = crate::instruments_motion::follow_all(
+            window,
+            cx,
+            &self.follow,
+            &[self.value, self.target.unwrap_or(0.0)],
+        );
+        self.value = shown[0];
+        if let Some(t) = &mut self.target {
+            *t = shown[1];
+        }
         let t = theme_of(cx);
         let g = crate::motion::grow(window, cx, "Bullet");
         let max = self
@@ -496,6 +510,7 @@ crate::entry_render!(Lollipop);
 /// coloured by direction. Good for rankings and before/after change.
 #[derive(IntoElement)]
 pub struct SlopeChart {
+    follow: crate::instruments_motion::Follow,
     items: Vec<(SharedString, f32, f32)>,
     headers: (SharedString, SharedString),
     height: f32,
@@ -504,9 +519,12 @@ pub struct SlopeChart {
 }
 
 impl SlopeChart {
+    crate::instruments_motion::follow_api!();
     /// Create a new [`SlopeChart`] from `(label, left, right)` items.
+    #[track_caller]
     pub fn new<S: Into<SharedString>>(items: impl IntoIterator<Item = (S, f32, f32)>) -> Self {
         Self {
+            follow: crate::instruments_motion::Follow::here(),
             items: items
                 .into_iter()
                 .map(|(l, a, b)| {
@@ -532,7 +550,8 @@ impl SlopeChart {
 chart_cfg!(SlopeChart);
 
 impl SlopeChart {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        crate::instruments_motion::follow_triples(window, cx, &self.follow, &mut self.items);
         let t = theme_of(cx);
         let g = crate::motion::grow(window, cx, "SlopeChart");
         let vals = self.items.iter().flat_map(|i| [i.1, i.2]);

@@ -269,6 +269,7 @@ fn notched_box(
 /// Box-and-whisker plot from raw samples per category.
 #[derive(IntoElement)]
 pub struct BoxPlot {
+    follow: crate::instruments_motion::Follow,
     notch: bool,
     mean: bool,
     points: bool,
@@ -280,9 +281,12 @@ pub struct BoxPlot {
 chart_cfg!(BoxPlot);
 
 impl BoxPlot {
+    crate::instruments_motion::follow_api!();
     /// Create a new [`BoxPlot`].
+    #[track_caller]
     pub fn new<S: Into<SharedString>>(groups: impl IntoIterator<Item = (S, Vec<f32>)>) -> Self {
         Self {
+            follow: crate::instruments_motion::Follow::here(),
             notch: false,
             mean: false,
             points: false,
@@ -313,7 +317,17 @@ impl BoxPlot {
 }
 
 impl BoxPlot {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let flat: Vec<f32> = self
+            .groups
+            .iter()
+            .flat_map(|g| g.1.iter().copied())
+            .collect();
+        let mut shown =
+            crate::instruments_motion::follow_all(window, cx, &self.follow, &flat).into_iter();
+        for v in self.groups.iter_mut().flat_map(|g| g.1.iter_mut()) {
+            *v = shown.next().unwrap_or(*v);
+        }
         let g = crate::motion::grow(window, cx, "BoxPlot");
         let t = theme_of(cx);
         let stats: Vec<Option<Stats>> = self.groups.iter().map(|g| quartiles(&g.1)).collect();
@@ -447,6 +461,7 @@ crate::entry_render!(BoxPlot);
 #[derive(IntoElement)]
 pub struct BubbleChart {
     id: SharedString,
+    follow: crate::instruments_motion::Follow,
     groups: Vec<(SharedString, Pts3)>,
     height: f32,
     max_radius: f32,
@@ -456,13 +471,16 @@ pub struct BubbleChart {
 chart_cfg!(BubbleChart);
 
 impl BubbleChart {
+    crate::instruments_motion::follow_api!();
     /// Create a new [`BubbleChart`].
     pub fn new<S: Into<SharedString>>(
         id: impl Into<SharedString>,
         groups: impl IntoIterator<Item = (S, Vec<(f32, f32, f32)>)>,
     ) -> Self {
+        let id: SharedString = id.into();
         Self {
-            id: id.into(),
+            follow: crate::instruments_motion::Follow::named(&id),
+            id,
             groups: groups.into_iter().map(|(a, b)| (a.into(), b)).collect(),
             height: 240.0,
             max_radius: 22.0,
@@ -478,7 +496,19 @@ impl BubbleChart {
 }
 
 impl BubbleChart {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let flat: Vec<f32> = self
+            .groups
+            .iter()
+            .flat_map(|g| g.1.iter().flat_map(|p| [p.0, p.1, p.2]))
+            .collect();
+        let mut shown =
+            crate::instruments_motion::follow_all(window, cx, &self.follow, &flat).into_iter();
+        for p in self.groups.iter_mut().flat_map(|g| g.1.iter_mut()) {
+            p.0 = shown.next().unwrap_or(p.0);
+            p.1 = shown.next().unwrap_or(p.1);
+            p.2 = shown.next().unwrap_or(p.2);
+        }
         let g = crate::motion::grow(window, cx, "BubbleChart");
         let t = theme_of(cx);
         let all = || self.groups.iter().flat_map(|g| g.1.iter());
