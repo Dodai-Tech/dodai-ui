@@ -22,6 +22,7 @@ use std::rc::Rc;
 /// order of first appearance.
 #[derive(IntoElement)]
 pub struct Sankey {
+    follow: crate::instruments_motion::Follow,
     names: Vec<SharedString>,
     links: Vec<sankey::Link>,
     height: f32,
@@ -31,7 +32,9 @@ pub struct Sankey {
 }
 
 impl Sankey {
+    crate::instruments_motion::follow_api!();
     /// Create a new [`Sankey`].
+    #[track_caller]
     pub fn new<S: Into<SharedString>>(links: impl IntoIterator<Item = (S, S, f32)>) -> Self {
         let mut names: Vec<SharedString> = Vec::new();
         let mut index = |n: SharedString| {
@@ -48,6 +51,7 @@ impl Sankey {
             })
             .collect();
         Self {
+            follow: crate::instruments_motion::Follow::here(),
             names,
             links,
             height: 280.0,
@@ -65,8 +69,21 @@ impl Sankey {
 chart_cfg!(Sankey);
 
 impl Sankey {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let flat: Vec<f32> = self.links.iter().map(|l| l.value).collect();
+        for (l, v) in self
+            .links
+            .iter_mut()
+            .zip(crate::instruments_motion::follow_all(
+                window,
+                cx,
+                &self.follow,
+                &flat,
+            ))
+        {
+            l.value = v;
+        }
         let g = crate::motion::grow(window, cx, "Sankey");
         let lay = sankey::layout(self.names.len(), &self.links, 0.04);
         let cols = lay.columns.max(1);

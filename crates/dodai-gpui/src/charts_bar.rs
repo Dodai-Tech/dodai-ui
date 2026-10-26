@@ -342,6 +342,27 @@ impl BarChart {
             cats = cats.child(focus.bind(item, i));
         }
 
+        // A live window slides left between samples: the cells sit in a clipped strip one slot
+        // wider than the plot, shifted by the scroll fraction.
+        let scroll = self.series.iter().find_map(crate::charts::Series::scroll);
+        if scroll.is_some() {
+            crate::instruments_motion::next_frame(window);
+        }
+        let cats = match scroll {
+            Some(sc) if !h && n > 1 => {
+                let visible = (n - 1) as f32;
+                div().absolute().size_full().overflow_hidden().child(
+                    div()
+                        .absolute()
+                        .top_0()
+                        .h_full()
+                        .w(relative(n as f32 / visible))
+                        .left(relative(-sc / visible))
+                        .child(cats),
+                )
+            }
+            _ => cats,
+        };
         let plot = self.plot(&t, &ticks, top, cats);
 
         let labels: Vec<SharedString> = (0..n)

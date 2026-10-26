@@ -58,6 +58,7 @@ type Pts3 = Vec<(f32, f32, f32)>;
 /// Histogram of raw values with equal-width bins.
 #[derive(IntoElement)]
 pub struct Histogram {
+    follow: crate::instruments_motion::Follow,
     annotations: Vec<crate::charts_annotate::Annotation>,
     kde: bool,
     stats: bool,
@@ -83,14 +84,17 @@ impl Histogram {
         self.annotations = a.into_iter().collect();
         self
     }
+    crate::instruments_motion::follow_api!();
     /// Create a new [`Histogram`].
     pub fn new(id: impl Into<SharedString>, values: impl IntoIterator<Item = f32>) -> Self {
+        let id: SharedString = id.into();
         Self {
+            follow: crate::instruments_motion::Follow::named(&id),
             annotations: Vec::new(),
             kde: false,
             stats: false,
             corners: None,
-            id: id.into(),
+            id,
             values: values.into_iter().collect(),
             bins: 10,
             height: 180.0,
@@ -127,6 +131,8 @@ impl Histogram {
         let t = crate::apply_corners(t, self.corners);
         let g = crate::motion::grow(window, cx, "Histogram");
         let bins = histogram_bins(&self.values, self.bins);
+        let counts: Vec<f32> = bins.iter().map(|b| b.2 as f32).collect();
+        let shown = crate::instruments_motion::follow_all(window, cx, &self.follow, &counts);
         let maxc = bins.iter().map(|b| b.2).max().unwrap_or(1) as f32;
         let ticks = nice_ticks(0.0, maxc, 4);
         let top = *ticks.last().unwrap_or(&1.0);
@@ -187,7 +193,9 @@ impl Histogram {
                     .child(
                         div()
                             .w_full()
-                            .h(relative(norm(*c as f32, 0.0, top) * g))
+                            .h(relative(
+                                norm(shown.get(i).copied().unwrap_or(*c as f32), 0.0, top) * g,
+                            ))
                             .child(shaped(&t.shape, style).size_full()),
                     ),
             );

@@ -126,6 +126,7 @@ crate::entry_render!(RenkoChart);
 pub struct DepthChart {
     glow: crate::charts::ChartGlow,
     id: SharedString,
+    follow: crate::instruments_motion::Follow,
     bids: Vec<Level>,
     asks: Vec<Level>,
     height: f32,
@@ -140,15 +141,18 @@ impl DepthChart {
         self.glow = g;
         self
     }
+    crate::instruments_motion::follow_api!();
     /// `(price, size)` levels in any order.
     pub fn new(
         id: impl Into<SharedString>,
         bids: impl IntoIterator<Item = Level>,
         asks: impl IntoIterator<Item = Level>,
     ) -> Self {
+        let id: SharedString = id.into();
         Self {
             glow: crate::charts::ChartGlow::Theme,
-            id: id.into(),
+            follow: crate::instruments_motion::Follow::named(&id),
+            id,
             bids: bids.into_iter().collect(),
             asks: asks.into_iter().collect(),
             height: 200.0,
@@ -157,8 +161,20 @@ impl DepthChart {
         }
     }
 
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let flat: Vec<f32> = self
+            .bids
+            .iter()
+            .chain(&self.asks)
+            .flat_map(|l| [l.0, l.1])
+            .collect();
+        let mut shown =
+            crate::instruments_motion::follow_all(window, cx, &self.follow, &flat).into_iter();
+        for l in self.bids.iter_mut().chain(self.asks.iter_mut()) {
+            l.0 = shown.next().unwrap_or(l.0);
+            l.1 = shown.next().unwrap_or(l.1);
+        }
         let g = crate::motion::grow(window, cx, "DepthChart");
         let (bc, ac) = depth_curves(&self.bids, &self.asks);
         let top = bc
@@ -254,6 +270,7 @@ const ROW_H: f32 = 26.0;
 #[derive(IntoElement)]
 pub struct Gantt {
     id: SharedString,
+    follow: crate::instruments_motion::Follow,
     tasks: Vec<Task>,
     fmt: Option<NumFmt>,
     title: Option<SharedString>,
@@ -261,10 +278,13 @@ pub struct Gantt {
 }
 
 impl Gantt {
+    crate::instruments_motion::follow_api!();
     /// Create a new [`Gantt`].
     pub fn new(id: impl Into<SharedString>, tasks: impl IntoIterator<Item = Task>) -> Self {
+        let id: SharedString = id.into();
         Self {
-            id: id.into(),
+            follow: crate::instruments_motion::Follow::named(&id),
+            id,
             tasks: tasks.into_iter().collect(),
             fmt: None,
             title: None,
@@ -287,8 +307,20 @@ impl Gantt {
         self
     }
 
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let flat: Vec<f32> = self
+            .tasks
+            .iter()
+            .flat_map(|k| [k.start, k.end, k.progress])
+            .collect();
+        let mut shown =
+            crate::instruments_motion::follow_all(window, cx, &self.follow, &flat).into_iter();
+        for k in &mut self.tasks {
+            k.start = shown.next().unwrap_or(k.start);
+            k.end = shown.next().unwrap_or(k.end);
+            k.progress = shown.next().unwrap_or(k.progress).clamp(0.0, 1.0);
+        }
         let g = crate::motion::grow(window, cx, "Gantt");
         let l = layout(&self.tasks);
         let n = l.bars.len();

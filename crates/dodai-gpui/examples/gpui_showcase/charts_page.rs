@@ -756,6 +756,14 @@ impl Showcase {
                     ))
                     .child(
                         div().flex_1().min_w(px(240.0)).child(
+                            BarChart::new("live-bar", [Series::live("Load", &self.live_a)])
+                                .max(100.0)
+                                .height(110.0)
+                                .legend(false),
+                        ),
+                    )
+                    .child(
+                        div().flex_1().min_w(px(240.0)).child(
                             LineChart::new("live-line", [Series::live("Load", &self.live_b)])
                                 .area(true)
                                 .smooth(true)
