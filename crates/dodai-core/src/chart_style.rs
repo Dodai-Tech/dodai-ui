@@ -32,6 +32,53 @@ pub enum ScopeLook {
     Ink,
 }
 
+/// How instrument needles, tapes and horizons follow a changing value: the feel of the movement.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum NeedleResponse {
+    /// Jumps straight to the value.
+    Instant,
+    /// Quick and exact, no overshoot.
+    #[default]
+    Snappy,
+    /// Gentle and unhurried.
+    Smooth,
+    /// A slow, damped needle with inertia.
+    Heavy,
+    /// Quick with a visible overshoot, like a spring.
+    Bouncy,
+}
+
+impl NeedleResponse {
+    /// Every response, in menu order.
+    pub const ALL: [NeedleResponse; 5] = [
+        Self::Instant,
+        Self::Snappy,
+        Self::Smooth,
+        Self::Heavy,
+        Self::Bouncy,
+    ];
+    /// Display name.
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Instant => "Instant",
+            Self::Snappy => "Snappy",
+            Self::Smooth => "Smooth",
+            Self::Heavy => "Heavy",
+            Self::Bouncy => "Bouncy",
+        }
+    }
+    /// Spring parameters `(response seconds, bounce)`, or `None` to jump. Pure.
+    pub fn spring(self) -> Option<(f32, f32)> {
+        match self {
+            Self::Instant => None,
+            Self::Snappy => Some((0.22, 0.0)),
+            Self::Smooth => Some((0.6, 0.0)),
+            Self::Heavy => Some((1.1, -0.2)),
+            Self::Bouncy => Some((0.45, 0.55)),
+        }
+    }
+}
+
 /// A whole instrument cluster style. Every instrument of one cluster follows the same style, so a
 /// set never mixes looks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -114,6 +161,8 @@ pub struct ChartStyle {
     pub cluster: ClusterKind,
     /// The look of scopes, spectra and radar.
     pub scope: ScopeLook,
+    /// How instruments follow a changing value.
+    pub response: NeedleResponse,
 }
 
 impl ChartStyle {
@@ -130,6 +179,7 @@ impl ChartStyle {
             dial: DialLook::Analog,
             cluster: ClusterKind::Pods,
             scope: ScopeLook::Neon,
+            response: NeedleResponse::Snappy,
         }
     }
 }

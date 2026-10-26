@@ -5,6 +5,7 @@
 use crate::charts::polar;
 use crate::instrument_charts::{clock, frame};
 use crate::instruments::severity_color;
+use crate::instruments_motion::{follow, follow_angle, follow_api, Follow};
 use crate::instruments_segment::SegmentDisplay;
 use crate::paint::{fill, fill_batch, scale_alpha, stroke, stroke_batch};
 use crate::text::{first_family, format_label};
@@ -20,6 +21,7 @@ use gpui::{
 /// An artificial horizon: sky and ground, pitch ladder, roll scale and a fixed aircraft symbol.
 #[derive(IntoElement)]
 pub struct AttitudeIndicator {
+    follow: Follow,
     pitch: f32,
     roll: f32,
     size: f32,
@@ -27,10 +29,13 @@ pub struct AttitudeIndicator {
 }
 
 impl AttitudeIndicator {
+    follow_api!();
     /// A horizon at `pitch` degrees (positive = nose up) and `roll` degrees (positive = right
     /// wing down).
+    #[track_caller]
     pub fn new(pitch: f32, roll: f32) -> Self {
         Self {
+            follow: Follow::here(),
             pitch,
             roll,
             size: 240.0,
@@ -50,7 +55,9 @@ impl AttitudeIndicator {
 }
 
 impl RenderOnce for AttitudeIndicator {
-    fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.pitch = follow(w, cx, &self.follow, 0, self.pitch);
+        self.roll = follow(w, cx, &self.follow, 1, self.roll);
         let t = theme_of(cx);
         let (size, pitch, roll) = (self.size, self.pitch, self.roll);
         let sky = scale_alpha(hsla(t.palette.info), 0.5);
@@ -156,6 +163,7 @@ impl RenderOnce for AttitudeIndicator {
 /// A heading tape: a scrolling compass strip with a fixed pointer and an optional target bug.
 #[derive(IntoElement)]
 pub struct HeadingTape {
+    follow: Follow,
     heading: f32,
     bug: Option<f32>,
     width: f32,
@@ -163,9 +171,12 @@ pub struct HeadingTape {
 }
 
 impl HeadingTape {
+    follow_api!();
     /// A tape centred on `heading` degrees.
+    #[track_caller]
     pub fn new(heading: f32) -> Self {
         Self {
+            follow: Follow::here(),
             heading,
             bug: None,
             width: 420.0,
@@ -185,7 +196,8 @@ impl HeadingTape {
 }
 
 impl RenderOnce for HeadingTape {
-    fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.heading = follow_angle(w, cx, &self.follow, 0, self.heading);
         let t = theme_of(cx);
         let (width, span, heading) = (self.width, self.span, flight::wrap_heading(self.heading));
         let h = 46.0;
@@ -262,6 +274,7 @@ impl RenderOnce for HeadingTape {
 /// A vertical scrolling tape with a boxed readout, for speed and altitude.
 #[derive(IntoElement)]
 pub struct VerticalTape {
+    follow: Follow,
     value: f32,
     span: f32,
     step: f32,
@@ -272,9 +285,12 @@ pub struct VerticalTape {
 }
 
 impl VerticalTape {
+    follow_api!();
     /// A tape centred on `value`.
+    #[track_caller]
     pub fn new(value: f32) -> Self {
         Self {
+            follow: Follow::here(),
             value,
             span: 120.0,
             step: 10.0,
@@ -309,7 +325,8 @@ impl VerticalTape {
 }
 
 impl RenderOnce for VerticalTape {
-    fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.value = follow(w, cx, &self.follow, 0, self.value);
         let t = theme_of(cx);
         let (width, height, right) = (84.0, self.height, self.right);
         let marks = flight::tape_marks(self.value, self.span, self.step, self.major_every);

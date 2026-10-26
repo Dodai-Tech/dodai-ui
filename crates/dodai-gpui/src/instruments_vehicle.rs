@@ -6,6 +6,7 @@
 
 use crate::charts::polar;
 use crate::instruments::severity_color;
+use crate::instruments_motion::{follow, follow_angle, follow_api, Follow};
 use crate::paint::{fill, shaped, stroke, ShapeStyle};
 use crate::text::first_family;
 use crate::{hsla, theme_of};
@@ -30,6 +31,7 @@ fn token(t: &Theme, s: Severity) -> Color {
 /// A vertical level bar (fuel, tank, battery) with a zone strip and numbered ticks.
 #[derive(IntoElement)]
 pub struct LevelBar {
+    follow: Follow,
     scale: Scale,
     value: f32,
     label: Option<SharedString>,
@@ -38,9 +40,12 @@ pub struct LevelBar {
 }
 
 impl LevelBar {
+    follow_api!();
     /// A bar showing `value` on `scale`.
+    #[track_caller]
     pub fn new(scale: Scale, value: f32) -> Self {
         Self {
+            follow: Follow::here(),
             scale,
             value,
             label: None,
@@ -66,7 +71,8 @@ impl LevelBar {
 }
 
 impl RenderOnce for LevelBar {
-    fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.value = follow(w, cx, &self.follow, 0, self.value);
         let t = theme_of(cx);
         let sev = self.scale.severity_at(self.value);
         let frac = self.scale.fraction(self.value);
@@ -423,6 +429,7 @@ impl RenderOnce for Odometer {
 /// A bipolar bar around zero: drive power to the right, regeneration to the left.
 #[derive(IntoElement)]
 pub struct PowerMeter {
+    follow: Follow,
     scale: Scale,
     value: f32,
     unit: SharedString,
@@ -430,9 +437,12 @@ pub struct PowerMeter {
 }
 
 impl PowerMeter {
+    follow_api!();
     /// `scale` should span negative to positive, e.g. `Scale::new(-60.0, 120.0)`.
+    #[track_caller]
     pub fn new(scale: Scale, value: f32) -> Self {
         Self {
+            follow: Follow::here(),
             scale,
             value,
             unit: "kW".into(),
@@ -452,7 +462,8 @@ impl PowerMeter {
 }
 
 impl RenderOnce for PowerMeter {
-    fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.value = follow(w, cx, &self.follow, 0, self.value);
         let t = theme_of(cx);
         let w = self.width;
         let h = 22.0;
@@ -529,14 +540,18 @@ impl RenderOnce for PowerMeter {
 /// A heading ring that turns under a fixed pointer, with the bearing and cardinal letter.
 #[derive(IntoElement)]
 pub struct Compass {
+    follow: Follow,
     heading: f32,
     size: f32,
 }
 
 impl Compass {
+    follow_api!();
     /// A compass at `heading` degrees (0 = north, clockwise).
+    #[track_caller]
     pub fn new(heading: f32) -> Self {
         Self {
+            follow: Follow::here(),
             heading: heading.rem_euclid(360.0),
             size: 170.0,
         }
@@ -549,7 +564,8 @@ impl Compass {
 }
 
 impl RenderOnce for Compass {
-    fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.heading = follow_angle(w, cx, &self.follow, 0, self.heading);
         let t = theme_of(cx);
         let (size, heading) = (self.size, self.heading);
         let c = size / 2.0;

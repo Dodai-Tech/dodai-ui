@@ -4,9 +4,9 @@ use super::super::*;
 use dodai_gpui::{
     Affiliation, Annunciator, AttitudeIndicator, ClusterKind, Compass, Contact, Countermeasures,
     DialGauge, DialLook, GearIndicator, HeadingTape, InstrumentCluster, LevelBar, Limits,
-    MissionTimer, Odometer, PowerMeter, Scale, Severity, SonarWaterfall, Station, StationState,
-    StoresPanel, TacticalPlot, Threat, ThreatRosette, TirePressure, TrackList, VerticalTape,
-    VitalsTile,
+    MissionTimer, NeedleResponse, Odometer, PowerMeter, Scale, Severity, SonarWaterfall, Station,
+    StationState, StoresPanel, TacticalPlot, Threat, ThreatRosette, TirePressure, TrackList,
+    VerticalTape, VitalsTile,
 };
 
 impl Showcase {
@@ -17,6 +17,85 @@ impl Showcase {
         let gap = px(t.spacing.md);
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let mut out: Vec<Section> = Vec::new();
+        // Needle response and a live demo: instruments follow new values the way the design
+        // (or the picked response) moves.
+        let response =
+            (self.inst_response > 0).then(|| NeedleResponse::ALL[self.inst_response - 1]);
+        let live = self.inst_live;
+        let phase = (dodai_gpui::motion::now() / 2.4).floor();
+        // A value that is `still` normally and wanders in `lo..=hi` in the live demo.
+        let val = move |key: f32, still: f32, lo: f32, hi: f32| {
+            if !live {
+                return still;
+            }
+            let h = ((phase * 12.9898 + key * 78.233).sin() * 43_758.547)
+                .fract()
+                .abs();
+            lo + (hi - lo) * h
+        };
+        let sel = self.inst_response;
+        let motion_bar = || {
+            let (m1, m2) = (me.clone(), me.clone());
+            div()
+                .flex()
+                .flex_wrap()
+                .items_center()
+                .gap_4()
+                .child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap_2()
+                        .child(Label::new("Needle"))
+                        .child(
+                            Segmented::new(
+                                "inst-response",
+                                ["Design", "Instant", "Snappy", "Smooth", "Heavy", "Bouncy"],
+                            )
+                            .selected(sel)
+                            .on_select(move |i, _, cx| {
+                                m1.update(cx, |s, cx| {
+                                    s.inst_response = i;
+                                    cx.notify();
+                                })
+                            }),
+                        ),
+                )
+                .child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap_2()
+                        .child(Label::new("Demo"))
+                        .child(
+                            Segmented::new("inst-live", ["Still", "Live"])
+                                .selected(usize::from(live))
+                                .on_select(move |i, _, cx| {
+                                    m2.update(cx, |s, cx| {
+                                        s.inst_live = i == 1;
+                                        cx.notify();
+                                        if s.inst_live {
+                                            cx.spawn(async move |this, cx| loop {
+                                                cx.background_executor()
+                                                    .timer(std::time::Duration::from_millis(2400))
+                                                    .await;
+                                                let on = this
+                                                    .update(cx, |s, cx| {
+                                                        cx.notify();
+                                                        s.inst_live
+                                                    })
+                                                    .unwrap_or(false);
+                                                if !on {
+                                                    break;
+                                                }
+                                            })
+                                            .detach();
+                                        }
+                                    })
+                                }),
+                        ),
+                )
+        };
         let ChartDemos {
             instruments: (lab, hud),
             pulse,
@@ -69,8 +148,18 @@ impl Showcase {
             .child(
                 row()
                     .items_start()
-                    .child(LevelBar::new(fuel, 18.0).label("Fuel").unit("%"))
-                    .child(LevelBar::new(coolant, 108.0).label("Coolant").unit("°C"))
+                    .child(
+                        LevelBar::new(fuel, val(3.0, 18.0, 5.0, 95.0))
+                            .response_opt(response)
+                            .label("Fuel")
+                            .unit("%"),
+                    )
+                    .child(
+                        LevelBar::new(coolant, val(4.0, 108.0, 60.0, 122.0))
+                            .response_opt(response)
+                            .label("Coolant")
+                            .unit("°C"),
+                    )
                     .child(TirePressure::new([2.4, 2.5, 1.8, 2.3], tyres)),
             )
             .child(
@@ -82,27 +171,32 @@ impl Showcase {
             .child(
                 row()
                     .items_start()
-                    .child(PowerMeter::new(power, 84.0))
-                    .child(Compass::new(42.0)),
+                    .child(
+                        PowerMeter::new(power, val(5.0, 84.0, -50.0, 110.0)).response_opt(response),
+                    )
+                    .child(Compass::new(val(6.0, 42.0, 0.0, 360.0)).response_opt(response)),
             );
 
         out.push((
             "Instruments",
             "Vehicle",
             self.section("Vehicle", &t, &me, cx)
+                .child(motion_bar())
                 .child(Muted::new("Clusters: one coherent style per set."))
                 .child(clusters)
                 .child(Muted::new("Dials"))
                 .child(
                     row()
                         .child(
-                            DialGauge::new(speed, 132.0)
+                            DialGauge::new(speed, val(1.0, 132.0, 0.0, 230.0))
+                                .response_opt(response)
                                 .label("Speed")
                                 .unit("km/h")
                                 .size(240.0),
                         )
                         .child(
-                            DialGauge::new(rpm, 7.1)
+                            DialGauge::new(rpm, val(2.0, 7.1, 0.8, 7.6))
+                                .response_opt(response)
                                 .label("Engine")
                                 .unit("×1000 rpm")
                                 .decimals(1)
@@ -162,34 +256,40 @@ impl Showcase {
             "Instruments",
             "Industrial",
             self.section("Industrial", &t, &me, cx)
+                .child(motion_bar())
                 .child(
                     row()
                         .child(
-                            DialGauge::new(pressure, 54.0)
+                            DialGauge::new(pressure, val(7.0, 54.0, 5.0, 95.0))
+                                .response_opt(response)
                                 .label("Header pressure")
                                 .unit("bar")
                                 .size(190.0),
                         )
                         .child(
-                            DialGauge::new(temp, 196.0)
+                            DialGauge::new(temp, val(8.0, 196.0, 40.0, 235.0))
+                                .response_opt(response)
                                 .label("Reactor temp")
                                 .unit("°C")
                                 .size(190.0),
                         )
                         .child(
-                            DialGauge::new(flow, 97.0)
+                            DialGauge::new(flow, val(9.0, 97.0, 10.0, 98.0))
+                                .response_opt(response)
                                 .label("Feed flow")
                                 .unit("m³/h")
                                 .size(190.0),
                         )
                         .child(
-                            LevelBar::new(tank_a, 72.0)
+                            LevelBar::new(tank_a, val(10.0, 72.0, 20.0, 95.0))
+                                .response_opt(response)
                                 .label("Tank A")
                                 .unit("%")
                                 .height(130.0),
                         )
                         .child(
-                            LevelBar::new(tank_b, 94.0)
+                            LevelBar::new(tank_b, val(11.0, 94.0, 30.0, 98.0))
+                                .response_opt(response)
                                 .label("Tank B")
                                 .unit("%")
                                 .height(130.0),
@@ -349,6 +449,7 @@ impl Showcase {
             "Instruments",
             "Aviation",
             self.section("Aviation", &t, &me, cx)
+                .child(motion_bar())
                 .child(
                     div()
                         .flex()
@@ -360,24 +461,36 @@ impl Showcase {
                                 .flex_wrap()
                                 .justify_around()
                                 .gap_6()
-                                .child(VerticalTape::new(312.0).scale(100.0, 10.0, 5).label("KT"))
                                 .child(
-                                    AttitudeIndicator::new(7.0, -14.0)
-                                        .size(300.0)
-                                        .caption("Attitude"),
+                                    VerticalTape::new(val(12.0, 312.0, 220.0, 420.0))
+                                        .response_opt(response)
+                                        .scale(100.0, 10.0, 5)
+                                        .label("KT"),
                                 )
                                 .child(
-                                    VerticalTape::new(12460.0)
+                                    AttitudeIndicator::new(
+                                        val(13.0, 7.0, -12.0, 14.0),
+                                        val(14.0, -14.0, -40.0, 40.0),
+                                    )
+                                    .response_opt(response)
+                                    .size(300.0)
+                                    .caption("Attitude"),
+                                )
+                                .child(
+                                    VerticalTape::new(val(15.0, 12460.0, 11000.0, 14000.0))
+                                        .response_opt(response)
                                         .scale(1000.0, 100.0, 5)
                                         .label("FT")
                                         .ticks_right(true),
                                 ),
                         )
                         .child(
-                            div()
-                                .flex()
-                                .justify_center()
-                                .child(HeadingTape::new(47.0).bug(75.0).width(480.0)),
+                            div().flex().justify_center().child(
+                                HeadingTape::new(val(16.0, 47.0, 0.0, 360.0))
+                                    .response_opt(response)
+                                    .bug(75.0)
+                                    .width(480.0),
+                            ),
                         ),
                 )
                 .into_any_element(),

@@ -9,6 +9,7 @@
 
 use crate::charts::{polar, turn_arc};
 use crate::gauges::{disc, SWEEP};
+use crate::instruments_motion::{follow, follow_api, Follow};
 use crate::paint::{fill, scale_alpha, shaped, stroke, ShapeStyle};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
@@ -53,6 +54,7 @@ fn flashing(window: &Window, live: bool, a: &Alarm) {
 /// readout. A speedometer, a tachometer or a process temperature dial.
 #[derive(IntoElement)]
 pub struct DialGauge {
+    follow: Follow,
     scale: Scale,
     value: f32,
     label: Option<SharedString>,
@@ -65,9 +67,12 @@ pub struct DialGauge {
 }
 
 impl DialGauge {
+    follow_api!();
     /// A dial showing `value` on `scale` (build the scale with [`Scale::new`] and zones).
+    #[track_caller]
     pub fn new(scale: Scale, value: f32) -> Self {
         Self {
+            follow: Follow::here(),
             scale,
             value,
             label: None,
@@ -117,9 +122,11 @@ impl DialGauge {
 }
 
 impl RenderOnce for DialGauge {
-    fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.value = follow(w, cx, &self.follow, 0, self.value);
         let t = theme_of(cx);
         let Self {
+            follow: _,
             scale,
             value,
             label,

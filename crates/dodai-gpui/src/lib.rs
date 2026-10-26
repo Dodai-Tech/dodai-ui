@@ -244,6 +244,8 @@ pub mod instruments_hero;
 #[cfg(feature = "charts")]
 pub mod instruments_military;
 #[cfg(feature = "charts")]
+pub(crate) mod instruments_motion;
+#[cfg(feature = "charts")]
 pub mod instruments_segment;
 #[cfg(feature = "charts")]
 pub mod instruments_vehicle;
@@ -377,7 +379,7 @@ pub use dodai_charts_core::instrument::{Alarm, Limits, Scale, Severity};
 pub use dodai_charts_core::tactical::{Affiliation, Contact};
 #[cfg(feature = "charts")]
 pub use dodai_charts_core::Gradient;
-pub use dodai_core::{ClusterKind, DialLook};
+pub use dodai_core::{ClusterKind, DialLook, NeedleResponse};
 pub use dodai_motion;
 #[cfg(feature = "shaders")]
 pub use dodai_shaders;

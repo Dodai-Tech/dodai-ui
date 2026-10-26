@@ -11,6 +11,7 @@ use crate::gauges::{disc, SWEEP};
 use crate::instruments::severity_color;
 use crate::instruments::DialGauge;
 use crate::instruments_hero::{CapsuleCluster, CutSpeedometer};
+use crate::instruments_motion::{follow, follow_api, Follow};
 use crate::paint::{fill, shaped, stroke, ShapeStyle};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
@@ -38,6 +39,7 @@ fn accent(t: &Theme, s: Severity) -> Hsla {
 /// A round pod: a thin tick ring, a marker at the value and the value itself in the middle.
 #[derive(IntoElement)]
 pub struct PodGauge {
+    follow: Follow,
     scale: Scale,
     value: f32,
     label: Option<SharedString>,
@@ -49,9 +51,12 @@ pub struct PodGauge {
 }
 
 impl PodGauge {
+    follow_api!();
     /// A pod showing `value` on `scale`.
+    #[track_caller]
     pub fn new(scale: Scale, value: f32) -> Self {
         Self {
+            follow: Follow::here(),
             scale,
             value,
             label: None,
@@ -95,9 +100,11 @@ impl PodGauge {
 }
 
 impl RenderOnce for PodGauge {
-    fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.value = follow(w, cx, &self.follow, 0, self.value);
         let t = theme_of(cx);
         let Self {
+            follow: _,
             scale,
             value,
             label,
@@ -222,6 +229,7 @@ impl RenderOnce for PodGauge {
 /// the engaged gear in a box and the drive mode in a pill.
 #[derive(IntoElement)]
 pub struct Tachometer {
+    follow: Follow,
     scale: Scale,
     value: f32,
     gear: Option<SharedString>,
@@ -230,9 +238,12 @@ pub struct Tachometer {
 }
 
 impl Tachometer {
+    follow_api!();
     /// A tachometer showing `value` on `scale` (rpm ×1000).
+    #[track_caller]
     pub fn new(scale: Scale, value: f32) -> Self {
         Self {
+            follow: Follow::here(),
             scale,
             value,
             gear: None,
@@ -258,9 +269,11 @@ impl Tachometer {
 }
 
 impl RenderOnce for Tachometer {
-    fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.value = follow(w, cx, &self.follow, 0, self.value);
         let t = theme_of(cx);
         let Self {
+            follow: _,
             scale,
             value,
             gear,
@@ -388,6 +401,7 @@ impl RenderOnce for Tachometer {
 /// A numeric tile: caption, a large value with its unit and a segment bar below.
 #[derive(IntoElement)]
 pub struct DigitalGauge {
+    follow: Follow,
     scale: Scale,
     value: f32,
     label: SharedString,
@@ -398,9 +412,12 @@ pub struct DigitalGauge {
 }
 
 impl DigitalGauge {
+    follow_api!();
     /// A tile for `value` on `scale`.
+    #[track_caller]
     pub fn new(label: impl Into<SharedString>, scale: Scale, value: f32) -> Self {
         Self {
+            follow: Follow::here(),
             scale,
             value,
             label: label.into(),
@@ -433,7 +450,8 @@ impl DigitalGauge {
 }
 
 impl RenderOnce for DigitalGauge {
-    fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.value = follow(w, cx, &self.follow, 0, self.value);
         let t = theme_of(cx);
         let sev = self.scale.severity_at(self.value);
         let frac = self.scale.fraction(self.value);

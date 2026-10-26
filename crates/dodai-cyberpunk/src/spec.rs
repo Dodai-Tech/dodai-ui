@@ -61,6 +61,7 @@ impl DesignSpec for Cyberpunk {
             dial: dodai_core::DialLook::Segmented,
             cluster: dodai_core::ClusterKind::Cut,
             scope: dodai_core::ScopeLook::Neon,
+            response: dodai_core::NeedleResponse::Snappy,
             grid_color: t.palette.border.with_alpha(0.7),
             ..dodai_core::ChartStyle::from_theme(t)
         })

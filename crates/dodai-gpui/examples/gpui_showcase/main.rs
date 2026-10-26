@@ -166,6 +166,10 @@ pub struct Showcase {
     inst_glow: usize,
     /// Oscilloscope afterimage: 0 off, 1 subtle, 2 default, 3 long.
     inst_trail: usize,
+    /// Needle response of the instruments: 0 the design's own, then `NeedleResponse::ALL`.
+    inst_response: usize,
+    /// Whether the instrument demos change their values on their own.
+    inst_live: bool,
     /// Pulse monitor options: rhythm, mode, grid, noise, rate, trail, gain.
     pulse_cfg: [usize; 7],
     sh_gen: &'static str,

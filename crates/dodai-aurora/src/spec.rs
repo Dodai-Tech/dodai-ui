@@ -224,6 +224,7 @@ impl DesignSpec for Aurora {
             dial: dodai_core::DialLook::Arc,
             cluster: dodai_core::ClusterKind::Capsule,
             scope: dodai_core::ScopeLook::Frosted,
+            response: dodai_core::NeedleResponse::Smooth,
             ..dodai_core::ChartStyle::from_theme(t)
         })
     }

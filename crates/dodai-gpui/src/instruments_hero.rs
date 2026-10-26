@@ -4,6 +4,7 @@
 use crate::charts::{polar, turn_arc};
 use crate::gauges::{disc, SWEEP};
 use crate::instruments::severity_color;
+use crate::instruments_motion::{follow, follow_api, Follow};
 use crate::paint::{fill, scale_alpha, stroke};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
@@ -29,6 +30,7 @@ fn num_box(x: f32, y: f32, w: f32) -> gpui::Div {
 /// follow the value, and a big thin number sits in the middle.
 #[derive(IntoElement)]
 pub struct CutSpeedometer {
+    follow: Follow,
     scale: Scale,
     value: f32,
     unit: SharedString,
@@ -36,9 +38,12 @@ pub struct CutSpeedometer {
 }
 
 impl CutSpeedometer {
+    follow_api!();
     /// A hex speedometer for `value` on `scale`.
+    #[track_caller]
     pub fn new(scale: Scale, value: f32) -> Self {
         Self {
+            follow: Follow::here(),
             scale,
             value,
             unit: SharedString::default(),
@@ -58,9 +63,11 @@ impl CutSpeedometer {
 }
 
 impl RenderOnce for CutSpeedometer {
-    fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.value = follow(w, cx, &self.follow, 0, self.value);
         let t = theme_of(cx);
         let Self {
+            follow: _,
             scale,
             value,
             unit,
@@ -201,6 +208,7 @@ fn majors_labels(scale: &Scale) -> Vec<(f32, f32)> {
 /// What a [`CapsuleCluster`] shows around its speed dial.
 #[derive(IntoElement)]
 pub struct CapsuleCluster {
+    follow: Follow,
     scale: Scale,
     value: f32,
     mode: SharedString,
@@ -213,9 +221,12 @@ pub struct CapsuleCluster {
 }
 
 impl CapsuleCluster {
+    follow_api!();
     /// A capsule cluster for speed `value` on `scale`.
+    #[track_caller]
     pub fn new(scale: Scale, value: f32) -> Self {
         Self {
+            follow: Follow::here(),
             scale,
             value,
             mode: SharedString::default(),
@@ -261,7 +272,8 @@ impl CapsuleCluster {
 }
 
 impl RenderOnce for CapsuleCluster {
-    fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.value = follow(w, cx, &self.follow, 0, self.value);
         let t = theme_of(cx);
         let width = self.width;
         let h = width * 0.4;

@@ -84,6 +84,7 @@ impl DesignSpec for NeoBrutalism {
             dial: dodai_core::DialLook::Analog,
             cluster: dodai_core::ClusterKind::Bold,
             scope: dodai_core::ScopeLook::Ink,
+            response: dodai_core::NeedleResponse::Bouncy,
             ..dodai_core::ChartStyle::from_theme(t)
         })
     }

@@ -133,6 +133,7 @@ impl DesignSpec for Material3 {
             dial: dodai_core::DialLook::Arc,
             cluster: dodai_core::ClusterKind::Arc,
             scope: dodai_core::ScopeLook::Clean,
+            response: dodai_core::NeedleResponse::Snappy,
             ..dodai_core::ChartStyle::from_theme(t)
         })
     }
