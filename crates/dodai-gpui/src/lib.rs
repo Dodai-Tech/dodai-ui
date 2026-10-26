@@ -31,7 +31,7 @@
 //! | Feature | Components |
 //! |---|---|
 //! | `material` | [`expressive`]: `ButtonGroup`, `SplitButton`, `LoadingIndicator`; `overscroll` |
-//! | `cyberpunk` | `instrument_charts` (oscilloscope, spectrum, radar scope, hex map, ring stack), `scanlines` |
+//! | `cyberpunk` | `scanlines` |
 //! | `aurora` | `frosted` (`FrostedScene`), `page_grid` (`PageGrid`) |
 //! | `neobrutalism` | none; its look is tokens and spec only |
 //!
@@ -183,8 +183,11 @@ pub mod charts_distribution;
 pub mod charts_extra;
 #[cfg(feature = "charts")]
 pub mod charts_flow;
+#[cfg(feature = "charts")]
 pub(crate) mod charts_focus;
+#[cfg(feature = "charts")]
 pub mod live;
+#[cfg(feature = "charts")]
 pub use live::Live;
 #[cfg(feature = "charts")]
 pub mod charts_grid;
@@ -234,7 +237,7 @@ pub mod gauges;
 #[cfg(feature = "charts")]
 pub(crate) mod gauges_extra;
 pub mod icons;
-#[cfg(all(feature = "charts", feature = "cyberpunk"))]
+#[cfg(feature = "charts")]
 pub mod instrument_charts;
 #[cfg(feature = "charts")]
 pub mod instruments;
@@ -409,7 +412,7 @@ pub use gauges::GaugeStyle;
 #[cfg(feature = "cyberpunk")]
 pub use icons::Modifier;
 pub use icons::{Icon, IconId, IconName, IconPack};
-#[cfg(all(feature = "charts", feature = "cyberpunk"))]
+#[cfg(feature = "charts")]
 pub use instrument_charts::{
     Blip, DotMatrix, HexMap, Oscilloscope, RadarScope, RingStack, SignalBars, Spectrum,
 };

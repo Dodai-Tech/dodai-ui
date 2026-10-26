@@ -1,1 +1,51 @@
 # dodai-gpui
+
+GPUI adapter for Dodai UI: themed components, charts and instruments for four designs
+(Aurora, Cyberpunk, Material, Neo-Brutalism). The designs are plain tokens and specs in their
+own crates; this crate only paints them.
+
+## Use it
+
+```toml
+[dependencies]
+dodai-gpui = { version = "0.1", default-features = false, features = ["components", "charts", "aurora"] }
+```
+
+```rust
+// In your app setup:
+dodai_gpui::install(cx, dodai::aurora::dark());
+// Then build with the prelude:
+use dodai_gpui::prelude::*;
+```
+
+## Features
+
+| Feature | Adds |
+|---|---|
+| `components` | Buttons, inputs, tables, dialogs, pickers, navigation, … |
+| `charts` | Charts, gauges and instruments (clusters, scopes, flight, tactical); live streams (`Live`) |
+| `shaders` | GPU pixel shaders as `ShaderView` |
+| `cyberpunk` / `material` / `neobrutalism` / `aurora` | The design's icon pack and design-only widgets (see the crate docs) |
+
+Each slice compiles on its own (CI checks it).
+
+## Charts and instruments
+
+- Every chart follows new data with springs that obey the app Motion set; `.animate(false)` or
+  `.response(..)` override it per chart.
+- Items pop and dim on hover and select (bar, pie, funnel, treemap, lollipop, radar, …).
+- `Live` + `Series::live(..)` / `Sparkline::live(..)` / `Oscilloscope::stream(..)` stream
+  samples with sub-sample scrolling. Geometry and logic live in `dodai-charts-core`.
+- The top-bar Animate switch and Speed apply to everything (`set_instruments_animated`,
+  `set_animation_speed`).
+- Charts without an `id` key their animation state by call site, so two built on one line in a
+  loop need `.id(..)`.
+
+## Try it
+
+```sh
+cargo run -p dodai-gpui --example gpui_showcase
+```
+
+`DODAI_CAT`, `DODAI_THEME`, `DODAI_ONLY` and `DODAI_SIZE` preselect a category, theme, section
+and window size.

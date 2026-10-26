@@ -155,6 +155,8 @@ jobs:
           cargo check -p dodai-gpui --no-default-features --features material
           cargo check -p dodai-gpui --no-default-features --features components,charts,cyberpunk
           cargo check -p dodai-gpui --no-default-features --features components,charts,material
+          cargo check -p dodai-gpui --no-default-features --features components,charts,aurora
+          cargo check -p dodai-gpui --no-default-features --features components,charts,neobrutalism
           cargo check -p dodai-cyberpunk-icons --no-default-features
 
   # macOS runners exist only on GitHub; on self-hosted Gitea they would queue forever.
