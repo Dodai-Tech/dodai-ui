@@ -80,6 +80,7 @@ pub(crate) fn caps(title: &str) -> Caps {
                 "Vehicle",
                 "Industrial",
                 "Medical",
+                "Military",
                 "Signal lab",
                 "Radar & telemetry",
                 "Area · histogram · waterfall",

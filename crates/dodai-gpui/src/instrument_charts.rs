@@ -74,7 +74,7 @@ pub fn jitter(v: f32, i: usize, t: f32) -> f32 {
     (v * (0.65 + 0.35 * (t * f + i as f32).sin())).clamp(0.0, 1.0)
 }
 
-fn frame(
+pub(crate) fn frame(
     t: &Theme,
     w: f32,
     h: f32,

@@ -20,6 +20,9 @@
 //! | [`pulse`] | ECG / vital-sign signal generators, beat detection |
 //! | [`sankey`] | flow diagram layout |
 //! | [`density`] | kernel density estimate |
+//! | [`instrument`] | scales, zones, limits, alarms |
+//! | [`segments`] | seven-segment digit geometry |
+//! | [`tactical`] | contacts, map symbols, threat wedges, countdown |
 
 pub mod axis;
 pub mod bins;
@@ -35,7 +38,9 @@ pub mod math;
 pub mod pulse;
 pub mod renko;
 pub mod sankey;
+pub mod segments;
 pub mod stack;
+pub mod tactical;
 
 pub use candles::{heikin_ashi, price_range, Candle};
 pub use gradient::Gradient;

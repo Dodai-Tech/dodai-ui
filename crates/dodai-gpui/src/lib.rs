@@ -240,6 +240,8 @@ pub mod instruments_cluster;
 #[cfg(feature = "charts")]
 pub mod instruments_hero;
 #[cfg(feature = "charts")]
+pub mod instruments_military;
+#[cfg(feature = "charts")]
 pub mod instruments_segment;
 #[cfg(feature = "charts")]
 pub mod instruments_vehicle;
@@ -370,6 +372,8 @@ pub use dodai_charts_core::gantt::Task as GanttTask;
 #[cfg(feature = "charts")]
 pub use dodai_charts_core::instrument::{Alarm, Limits, Scale, Severity};
 #[cfg(feature = "charts")]
+pub use dodai_charts_core::tactical::{Affiliation, Contact};
+#[cfg(feature = "charts")]
 pub use dodai_charts_core::Gradient;
 pub use dodai_core::{ClusterKind, DialLook};
 pub use dodai_motion;
@@ -402,6 +406,10 @@ pub use instruments::{severity_color, Annunciator, DialGauge, VitalsTile};
 pub use instruments_cluster::{DigitalGauge, InstrumentCluster, PodGauge, Tachometer};
 #[cfg(feature = "charts")]
 pub use instruments_hero::{CapsuleCluster, CutSpeedometer};
+#[cfg(feature = "charts")]
+pub use instruments_military::{
+    MissionTimer, Station, StationState, StoresPanel, TacticalPlot, Threat, ThreatRosette,
+};
 #[cfg(feature = "charts")]
 pub use instruments_segment::{SegmentCluster, SegmentDisplay};
 #[cfg(feature = "charts")]

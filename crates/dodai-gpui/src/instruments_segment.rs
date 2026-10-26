@@ -7,48 +7,11 @@ use crate::paint::{fill, scale_alpha, shaped, ShapeStyle};
 use crate::text::format_label;
 use crate::{hsla, theme_of};
 use dodai_charts_core::instrument::{Scale, Severity};
+use dodai_charts_core::segments;
 use gpui::{
     canvas, div, px, App, Bounds, Hsla, IntoElement, ParentElement, Pixels, RenderOnce,
     SharedString, Styled, Window,
 };
-
-/// Segment bits: a top, b top-right, c bottom-right, d bottom, e bottom-left, f top-left, g middle.
-const MASKS: [u8; 10] = [
-    0b0111111, 0b0000110, 0b1011011, 0b1001111, 0b1100110, 0b1101101, 0b1111101, 0b0000111,
-    0b1111111, 0b1101111,
-];
-
-fn mask(c: char) -> u8 {
-    match c {
-        '0'..='9' => MASKS[c as usize - '0' as usize],
-        '-' => 0b1000000,
-        _ => 0,
-    }
-}
-
-fn hbar(x0: f32, x1: f32, y: f32, th: f32) -> [(f32, f32); 6] {
-    let h = th / 2.0;
-    [
-        (x0, y),
-        (x0 + h, y - h),
-        (x1 - h, y - h),
-        (x1, y),
-        (x1 - h, y + h),
-        (x0 + h, y + h),
-    ]
-}
-
-fn vbar(x: f32, y0: f32, y1: f32, th: f32) -> [(f32, f32); 6] {
-    let h = th / 2.0;
-    [
-        (x, y0),
-        (x + h, y0 + h),
-        (x + h, y1 - h),
-        (x, y1),
-        (x - h, y1 - h),
-        (x - h, y0 + h),
-    ]
-}
 
 /// A row of seven-segment digits. `:` and `.` are drawn as dots, other characters as blanks.
 #[derive(IntoElement)]
@@ -86,13 +49,6 @@ impl SegmentDisplay {
     }
 }
 
-fn advance(c: char, h: f32) -> f32 {
-    match c {
-        ':' | '.' => h * 0.22,
-        _ => h * 0.56 + h * 0.14,
-    }
-}
-
 impl RenderOnce for SegmentDisplay {
     fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
@@ -100,13 +56,12 @@ impl RenderOnce for SegmentDisplay {
         let on = self.color.unwrap_or_else(|| hsla(t.palette.primary));
         let off = scale_alpha(on, if self.ghost { 0.09 } else { 0.0 });
         let chars: Vec<char> = self.text.chars().collect();
-        let width: f32 = chars.iter().map(|c| advance(*c, h)).sum();
+        let width: f32 = chars.iter().map(|c| segments::advance(*c, h)).sum();
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
                 let o = b.origin;
-                let (dw, th) = (h * 0.56, h * 0.12);
-                let slant = |p: (f32, f32), x0: f32| (x0 + p.0 + (h - p.1) * 0.1, p.1);
+                let th = segments::thickness(h);
                 let mut x0 = 0.0;
                 for c in &chars {
                     match c {
@@ -120,32 +75,20 @@ impl RenderOnce for SegmentDisplay {
                             };
                             for y in ys {
                                 let sq = [(xs, *y), (xs + s, *y), (xs + s, *y + s), (xs, *y + s)]
-                                    .map(|p| slant(p, 0.0));
+                                    .map(|p| segments::slant(p, 0.0, h));
                                 fill(w, o, &sq, on);
                             }
                         }
                         _ => {
-                            let m = mask(*c);
-                            let (xl, xr) = (th / 2.0, dw - th / 2.0);
-                            let (yt, ym, yb) = (th / 2.0, h / 2.0, h - th / 2.0);
-                            let p = th * 0.55;
-                            let segs: [Vec<(f32, f32)>; 7] = [
-                                hbar(xl + p, xr - p, yt, th).to_vec(),
-                                vbar(xr, yt + p, ym - p, th).to_vec(),
-                                vbar(xr, ym + p, yb - p, th).to_vec(),
-                                hbar(xl + p, xr - p, yb, th).to_vec(),
-                                vbar(xl, ym + p, yb - p, th).to_vec(),
-                                vbar(xl, yt + p, ym - p, th).to_vec(),
-                                hbar(xl + p, xr - p, ym, th).to_vec(),
-                            ];
-                            for (i, seg) in segs.iter().enumerate() {
+                            let m = segments::mask(*c);
+                            for (i, seg) in segments::digit_segments(h).iter().enumerate() {
                                 let pts: Vec<(f32, f32)> =
-                                    seg.iter().map(|p| slant(*p, x0)).collect();
+                                    seg.iter().map(|p| segments::slant(*p, x0, h)).collect();
                                 fill(w, o, &pts, if m >> i & 1 == 1 { on } else { off });
                             }
                         }
                     }
-                    x0 += advance(*c, h);
+                    x0 += segments::advance(*c, h);
                 }
             },
         )

@@ -2,8 +2,10 @@
 
 use super::super::*;
 use dodai_gpui::{
-    Annunciator, ClusterKind, Compass, DialGauge, DialLook, GearIndicator, InstrumentCluster,
-    LevelBar, Limits, Odometer, PowerMeter, Scale, Severity, TirePressure, VitalsTile,
+    Affiliation, Annunciator, ClusterKind, Compass, Contact, DialGauge, DialLook, GearIndicator,
+    InstrumentCluster, LevelBar, Limits, MissionTimer, Odometer, PowerMeter, Scale, Severity,
+    Station, StationState, StoresPanel, TacticalPlot, Threat, ThreatRosette, TirePressure,
+    VitalsTile,
 };
 
 impl Showcase {
@@ -265,6 +267,61 @@ impl Showcase {
                 .child(hud)
                 .into_any_element(),
             "Radar & telemetry",
+        ));
+        // Military: tactical plot, threat warning, weapon stations and the mission clock.
+        let plot = TacticalPlot::new([
+            Contact::new(0.06, 0.55, Affiliation::Hostile).heading(0.55),
+            Contact::new(0.12, 0.8, Affiliation::Hostile).heading(0.6),
+            Contact::new(0.33, 0.4, Affiliation::Friendly).heading(0.25),
+            Contact::new(0.46, 0.7, Affiliation::Unknown),
+            Contact::new(0.7, 0.5, Affiliation::Neutral).heading(0.9),
+            Contact::new(0.85, 0.85, Affiliation::Friendly).heading(0.1),
+        ])
+        .caption("Tactical plot");
+        let rosette = ThreatRosette::new([
+            Threat::new(0.05, 0.9),
+            Threat::new(0.31, 0.5),
+            Threat::new(0.62, 0.2),
+            Threat::new(0.84, 0.65),
+        ])
+        .caption("Threat warning");
+        out.push((
+            "Instruments",
+            "Military",
+            self.section("Military", &t, &me, cx)
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .gap_6()
+                        .child(
+                            div()
+                                .flex()
+                                .flex_wrap()
+                                .justify_around()
+                                .gap_6()
+                                .child(plot)
+                                .child(rosette)
+                                .child(
+                                    div()
+                                        .flex()
+                                        .flex_col()
+                                        .gap_6()
+                                        .child(MissionTimer::new(754))
+                                        .child(MissionTimer::new(48).label("Weapons release")),
+                                ),
+                        )
+                        .child(StoresPanel::new([
+                            Station::new("AAM", StationState::Armed),
+                            Station::new("AAM", StationState::Ready),
+                            Station::new("ASM", StationState::Safe),
+                            Station::new("BOMB", StationState::Safe),
+                            Station::new("FUEL", StationState::Ready),
+                            Station::new("GUN", StationState::Empty),
+                        ])),
+                )
+                .into_any_element(),
+            "Military",
         ));
         out.push((
             "Instruments",
