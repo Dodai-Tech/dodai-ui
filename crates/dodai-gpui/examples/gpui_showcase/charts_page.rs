@@ -416,6 +416,11 @@ impl Showcase {
                 (0.9, 0.6),
             ]
             .map(|(a, r)| Blip::new(a, r));
+            // Contacts drift on their own; the beam is pointed at the first one.
+            let now = dodai_gpui::animation_time();
+            let tracked = [(0.08, 0.7), (0.31, 0.45), (0.52, 0.85), (0.77, 0.3)]
+                .map(|(a, r)| Blip::new(a + 0.06 * (now * 0.4 + a * 9.0).sin(), r));
+            let tracked_beam = tracked[0].bearing;
             // Trail only applies to the live traces of the signal lab.
             let shell = |trail: bool, body: Div| {
                 let d = div().flex().flex_col().gap_6();
@@ -477,6 +482,12 @@ impl Showcase {
                 false,
                 wrap()
                     .child(RadarScope::new(blips).size(220.0).caption("Proximity"))
+                    .child(
+                        RadarScope::new(tracked)
+                            .sweep(tracked_beam)
+                            .size(220.0)
+                            .caption("Tracked · data-driven"),
+                    )
                     .child(
                         HexMap::new(12, hexes)
                             .width(340.0)

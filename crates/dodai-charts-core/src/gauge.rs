@@ -191,6 +191,25 @@ pub fn odometer_positions(value: f32, digits: usize) -> Vec<f32> {
         .collect()
 }
 
+/// 270° dial sweep with the gap at the bottom, as `(start, span)` in turns: starts at 7:30 going
+/// clockwise.
+pub const SWEEP: (f32, f32) = (0.625, 0.75);
+
+/// A closed circle of radius `r` around `(c, c)` as 96 segments.
+pub fn ring_points(c: f32, r: f32) -> Vec<(f32, f32)> {
+    (0..=96).map(|i| polar(c, c, r, i as f32 / 96.0)).collect()
+}
+
+/// `(fraction, value)` of every major tick of a scale, for numbering a dial.
+pub fn major_labels(scale: &crate::instrument::Scale) -> Vec<(f32, f32)> {
+    scale
+        .ticks()
+        .into_iter()
+        .filter(|k| k.major)
+        .map(|k| (k.frac, k.value))
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -338,5 +357,17 @@ mod tests {
         assert!((at(20.0)[1] - 2.0).abs() < 1e-4);
         assert!(at(f32::NAN).iter().all(|x| *x == 0.0));
         assert!(at(1e6).iter().all(|x| (0.0..10.0).contains(x)));
+    }
+
+    #[test]
+    fn ring_closes_and_labels_are_the_majors() {
+        let r = ring_points(50.0, 40.0);
+        assert_eq!(r.len(), 97);
+        assert!((r[0].0 - r[96].0).abs() < 1e-3 && (r[0].1 - r[96].1).abs() < 1e-3);
+        let s = crate::instrument::Scale::new(0.0, 100.0);
+        let l = major_labels(&s);
+        assert!(l.first().is_some_and(|m| m.0 == 0.0));
+        assert!(l.iter().all(|m| (0.0..=1.0).contains(&m.0)));
+        assert!((SWEEP.0 + SWEEP.1 - 1.375).abs() < 1e-6);
     }
 }

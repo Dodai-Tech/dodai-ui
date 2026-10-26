@@ -626,11 +626,11 @@ impl RenderOnce for SignalBars {
 
 // ────────────────────────────── RadarScope ──────────────────────────────
 
-/// A contact on a [`RadarScope`]: `bearing` in turns (0 = up, clockwise) and
+/// A contact on a [`RadarScope`]: `bearing` in turns (0 = up, clockwise, `0.25` = east) and
 /// `range` as `0..=1` of the radius.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Blip {
-    /// Angle in degrees clockwise from north.
+    /// Angle in turns clockwise from north (`0.25` is east).
     pub bearing: f32,
     /// Distance from the centre, 0 to 1.
     pub range: f32,
@@ -646,6 +646,8 @@ impl Blip {
 /// Sweeping radar scope with range rings and fading contacts.
 #[derive(IntoElement)]
 pub struct RadarScope {
+    follow: crate::instruments_motion::Follow,
+    sweep: Option<f32>,
     glow: ChartGlow,
     blips: Vec<Blip>,
     size: f32,
@@ -660,9 +662,13 @@ impl RadarScope {
         self.glow = g;
         self
     }
-    /// Create a new [`RadarScope`].
+    /// Create a new [`RadarScope`]. Contacts that move glide to their new position in a straight
+    /// line (also across north), and new ones appear in place.
+    #[track_caller]
     pub fn new(blips: impl IntoIterator<Item = Blip>) -> Self {
         Self {
+            follow: crate::instruments_motion::Follow::here(),
+            sweep: None,
             glow: ChartGlow::Theme,
             blips: blips.into_iter().collect(),
             size: 220.0,
@@ -681,6 +687,13 @@ impl RadarScope {
         self.live = on;
         self
     }
+    crate::instruments_motion::follow_api!();
+    /// Points the beam at this bearing (turns, clockwise from north) instead of rotating on the
+    /// clock, e.g. an antenna or a tracked heading. All contacts stay lit, and the beam turns the short way to a new value.
+    pub fn sweep(mut self, bearing: f32) -> Self {
+        self.sweep = Some(bearing);
+        self
+    }
     /// Seconds per revolution (default 4).
     pub fn period(mut self, s: f32) -> Self {
         self.period = s.max(0.5);
@@ -694,10 +707,38 @@ impl RadarScope {
 }
 
 impl RenderOnce for RadarScope {
-    fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let (size, live, period) = (self.size, self.live, self.period);
-        let blips = self.blips;
+        // Ease each contact as a point so a move across north does not swing the long way round.
+        let flat: Vec<f32> = self
+            .blips
+            .iter()
+            .flat_map(|b| {
+                let (s, c) = (b.bearing * std::f32::consts::TAU).sin_cos();
+                [b.range * s, b.range * c]
+            })
+            .collect();
+        let eased = crate::instruments_motion::follow_all(window, cx, &self.follow, &flat);
+        let blips: Vec<Blip> = eased
+            .chunks_exact(2)
+            .map(|p| {
+                Blip::new(
+                    p[0].atan2(p[1]).rem_euclid(std::f32::consts::TAU) / std::f32::consts::TAU,
+                    p[0].hypot(p[1]),
+                )
+            })
+            .collect();
+        let pointed = self.sweep.map(|b| {
+            crate::instruments_motion::follow_angle(
+                window,
+                cx,
+                &self.follow.sub("sweep"),
+                0,
+                b.rem_euclid(1.0) * 360.0,
+            ) / 360.0
+        });
+        let live = live && pointed.is_none();
         let col = hsla(t.palette.primary);
         let warn = hsla(t.palette.danger);
         let ring = grid_color(&t);
@@ -733,10 +774,10 @@ impl RenderOnce for RadarScope {
                 }
                 stroke_batch(w, o, &long, 1.0, scale_alpha(col, 0.55), false);
                 stroke_batch(w, o, &short, 1.0, scale_alpha(col, 0.55), false);
-                let sweep = if live {
-                    (clock() / period).fract()
-                } else {
-                    0.12
+                let sweep = match pointed {
+                    Some(a) => a,
+                    None if live => (clock() / period).fract(),
+                    None => 0.12,
                 };
                 // fading fan behind the beam: 7 alpha bands of 4 wedges each
                 let (bands, per) = (7, 4);

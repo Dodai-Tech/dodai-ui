@@ -22,9 +22,7 @@ use gpui::{
     SharedString, Styled, Window,
 };
 
-fn ring(c: f32, r: f32) -> Vec<(f32, f32)> {
-    (0..=96).map(|i| polar(c, c, r, i as f32 / 96.0)).collect()
-}
+use dodai_charts_core::gauge::ring_points as ring;
 
 fn accent(t: &Theme, s: Severity) -> Hsla {
     if s == Severity::Normal {

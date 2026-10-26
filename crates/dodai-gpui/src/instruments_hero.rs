@@ -194,14 +194,7 @@ impl RenderOnce for CutSpeedometer {
     }
 }
 
-fn majors_labels(scale: &Scale) -> Vec<(f32, f32)> {
-    scale
-        .ticks()
-        .into_iter()
-        .filter(|k| k.major)
-        .map(|k| (k.frac, k.value))
-        .collect()
-}
+use dodai_charts_core::gauge::major_labels as majors_labels;
 
 // ───────────────────────────────── CapsuleCluster ─────────────────────────────────
 

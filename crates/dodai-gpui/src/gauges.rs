@@ -96,8 +96,7 @@ impl GaugeStyle {
     }
 }
 
-/// 270° sweep with the gap at the bottom: starts at 7:30 going clockwise.
-pub(crate) const SWEEP: (f32, f32) = (0.625, 0.75);
+pub(crate) use dodai_charts_core::gauge::SWEEP;
 
 // ───────────────────────────── pure helpers ─────────────────────────────
 
