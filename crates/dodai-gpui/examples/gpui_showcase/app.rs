@@ -78,6 +78,9 @@ impl Showcase {
     fn demo_step(&mut self, cx: &mut Context<Self>) {
         let t = dodai_gpui::animation_time();
         let wave = |speed: f32, phase: f32| 0.5 + 0.5 * (t * speed + phase).sin();
+        // Live streams: a new sample every 0.2 s / 0.35 s; the charts slide between them.
+        self.live_a.advance(0.2, |i| live_signal(i, 0.9));
+        self.live_b.advance(0.35, |i| live_signal(i, 0.6));
         self.slider = wave(0.55, 0.0);
         self.stepped = (wave(0.4, 1.0) * 10.0).round();
         self.db = -24.0 + (wave(0.35, 2.0) * 10.0).round() * 3.0;
@@ -148,7 +151,8 @@ impl Showcase {
             if this
                 .update(cx, |s, cx| {
                     if dodai_gpui::instruments_animated()
-                        && s.demo_seen.is_some_and(|t| t.elapsed().as_millis() < 200)
+                        && (s.demo_seen.is_some_and(|t| t.elapsed().as_millis() < 200)
+                            || s.inst_seen.is_some_and(|t| t.elapsed().as_millis() < 100))
                     {
                         s.demo_step(cx);
                     }
@@ -269,6 +273,8 @@ impl Showcase {
             demo_email: String::new(),
             demo_pin: String::new(),
             demo_otp: String::new(),
+            live_a: dodai_gpui::Live::prefilled(48, |i| live_signal(i, 0.9)),
+            live_b: dodai_gpui::Live::prefilled(60, |i| live_signal(i, 0.6)),
             pulse_cfg: [0, 0, 0, 1, 1, 2, 1],
             sh_gen: "neon_grid",
             sh_fx: vec!["crt"],
@@ -290,4 +296,10 @@ impl Showcase {
     pub fn set_cat(&mut self, cat: usize) {
         self.cat = cat;
     }
+}
+
+/// The demo signal for live charts: sample `i` of a stream with pace `k`.
+fn live_signal(i: u64, k: f32) -> f32 {
+    let x = i as f32 * k;
+    50.0 + 30.0 * (x * 0.21).sin() + 14.0 * (x * 0.67 + 1.0).sin() + 6.0 * (x * 1.9).sin()
 }

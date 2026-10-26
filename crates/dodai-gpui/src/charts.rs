@@ -140,6 +140,8 @@ pub struct Series {
     pub values: Vec<f32>,
     /// Explicit colour; `None` takes the next palette colour.
     pub color: Option<Color>,
+    /// A live window: its samples replace `values` every frame.
+    pub(crate) live: Option<crate::live::Live>,
 }
 
 /// NaN / ±inf become 0: hostile data must never reach the tessellator.
@@ -158,7 +160,19 @@ impl Series {
             name: name.into(),
             values: values.into_iter().map(finite_or_zero).collect(),
             color: None,
+            live: None,
         }
+    }
+    /// A series fed by a [`crate::Live`] window: it shows the newest samples and, in a
+    /// [`crate::charts_line::LineChart`], slides left between them.
+    pub fn live(name: impl Into<SharedString>, window: &crate::live::Live) -> Self {
+        let mut s = Self::new(name, window.values());
+        s.live = Some(window.clone());
+        s
+    }
+    /// The scroll fraction of this series' live window, if it has one.
+    pub(crate) fn scroll(&self) -> Option<f32> {
+        self.live.as_ref().map(crate::live::Live::scroll)
     }
     /// Colour (default: the theme's).
     pub fn color(mut self, c: Color) -> Self {

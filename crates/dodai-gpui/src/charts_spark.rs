@@ -13,6 +13,7 @@ use gpui::{
 /// Tiny inline line, no axes.
 #[derive(IntoElement)]
 pub struct Sparkline {
+    live: Option<crate::live::Live>,
     follow: crate::instruments_motion::Follow,
     glow: ChartGlow,
     style: SparkStyle,
@@ -105,10 +106,17 @@ impl Sparkline {
 
 impl Sparkline {
     crate::instruments_motion::follow_api!();
+    /// Draws a [`crate::Live`] window instead of fixed values, sliding left between samples.
+    pub fn live(mut self, window: &crate::live::Live) -> Self {
+        self.values = window.values();
+        self.live = Some(window.clone());
+        self
+    }
     /// Create a new [`Sparkline`].
     #[track_caller]
     pub fn new(values: impl IntoIterator<Item = f32>) -> Self {
         Self {
+            live: None,
             follow: crate::instruments_motion::Follow::here(),
             glow: ChartGlow::Theme,
             style: SparkStyle::Line,
@@ -159,14 +167,21 @@ impl Sparkline {
 
 impl RenderOnce for Sparkline {
     fn render(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        self.values = crate::instruments_motion::follow_all(window, cx, &self.follow, &self.values);
+        if let Some(l) = &self.live {
+            self.values = l.values();
+            crate::instruments_motion::next_frame(window);
+        } else {
+            self.values =
+                crate::instruments_motion::follow_all(window, cx, &self.follow, &self.values);
+        }
         let motion = crate::motion::current(cx);
-        crate::motion::entry(self.build(cx), "Sparkline", motion)
+        let scroll = self.live.as_ref().map(crate::live::Live::scroll);
+        crate::motion::entry(self.build(cx, scroll), "Sparkline", motion)
     }
 }
 
 impl Sparkline {
-    fn build(self, cx: &mut App) -> impl IntoElement {
+    fn build(self, cx: &mut App, scroll: Option<f32>) -> impl IntoElement {
         let t = theme_of(cx);
         let c = hsla(self.color.unwrap_or(t.palette.primary));
         let glow = self.glow.resolve(&t).map(|r| r.min(4.0));
@@ -200,7 +215,7 @@ impl Sparkline {
                         .enumerate()
                         .map(|(i, v)| {
                             (
-                                i as f32 / (m - 1) as f32 * bw,
+                                (i as f32 - scroll.unwrap_or(0.0)) / (m - 1) as f32 * bw,
                                 pad + (1.0 - norm(*v, lo, hi)) * (bh - 2.0 * pad),
                             )
                         })
@@ -264,13 +279,15 @@ impl Sparkline {
                     } else {
                         p.clone()
                     };
-                    if area {
-                        let mut poly = curve.clone();
-                        poly.push((bw, bh));
-                        poly.push((0.0, bh));
-                        fill(w, b.origin, &poly, scale_alpha(c, 0.16));
-                    }
-                    glow_stroke(w, b.origin, &curve, 1.5, c, glow);
+                    w.with_content_mask(Some(gpui::ContentMask { bounds: b }), |w| {
+                        if area {
+                            let mut poly = curve.clone();
+                            poly.push((curve.last().map_or(bw, |q| q.0), bh));
+                            poly.push((curve.first().map_or(0.0, |q| q.0), bh));
+                            fill(w, b.origin, &poly, scale_alpha(c, 0.16));
+                        }
+                        glow_stroke(w, b.origin, &curve, 1.5, c, glow);
+                    });
                     let tips = if all_points { &p[..] } else { &p[m - 1..] };
                     for &(x, y) in tips {
                         let x = x.clamp(3.0, bw - 3.0);

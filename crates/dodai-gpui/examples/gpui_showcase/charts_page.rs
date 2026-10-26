@@ -744,6 +744,24 @@ impl Showcase {
             )
             .child(
                 row()
+                    .gap_6()
+                    .child(spark(
+                        "Live stream",
+                        Sparkline::new([]).live(&self.live_a).smooth(4),
+                    ))
+                    .child(
+                        div().flex_1().min_w(px(240.0)).child(
+                            LineChart::new("live-line", [Series::live("Load", &self.live_b)])
+                                .area(true)
+                                .smooth(true)
+                                .y_range(0.0, 100.0)
+                                .height(110.0)
+                                .legend(false),
+                        ),
+                    ),
+            )
+            .child(
+                row()
                     .justify_around()
                     .child(CountUp::new("cu1", 12840.0).prefix("$ ").size(28.0))
                     .child(

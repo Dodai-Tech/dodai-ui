@@ -311,24 +311,37 @@ pub(crate) fn follow_all(w: &mut Window, cx: &mut App, f: &Follow, target: &[f32
     out
 }
 
-/// A chart's series with their values followed.
+/// A chart's series with their values followed. Live series take their window's newest samples
+/// and are not eased: they already move continuously.
 pub(crate) fn follow_series(
     w: &mut Window,
     cx: &mut App,
     f: &Follow,
     series: &[crate::charts::Series],
 ) -> Vec<crate::charts::Series> {
+    let series: Vec<crate::charts::Series> = series
+        .iter()
+        .map(|s| {
+            let mut s = s.clone();
+            if let Some(l) = &s.live {
+                s.values = l.values();
+            }
+            s
+        })
+        .collect();
     let flat: Vec<f32> = series
         .iter()
+        .filter(|s| s.live.is_none())
         .flat_map(|s| s.values.iter().copied())
         .collect();
     let mut shown = follow_all(w, cx, f, &flat).into_iter();
     series
-        .iter()
-        .map(|s| {
-            let mut s = s.clone();
-            for v in &mut s.values {
-                *v = shown.next().unwrap_or(*v);
+        .into_iter()
+        .map(|mut s| {
+            if s.live.is_none() {
+                for v in &mut s.values {
+                    *v = shown.next().unwrap_or(*v);
+                }
             }
             s
         })

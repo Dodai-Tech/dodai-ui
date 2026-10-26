@@ -175,6 +175,15 @@ impl LineChart {
             self.secondary = shown.split_off(np);
             self.series = shown;
         }
+        // A live window slides left between samples.
+        let scroll = self
+            .series
+            .iter()
+            .chain(self.secondary.iter())
+            .find_map(Series::scroll);
+        if scroll.is_some() {
+            crate::instruments_motion::next_frame(window);
+        }
         let (lo, hi, ticks) = y_range(&self.series, self.zero, self.y_bounds);
         let np = self.series.len();
         let (lo2, hi2, ticks2) = if self.secondary.is_empty() {
@@ -224,35 +233,42 @@ impl LineChart {
                     let y = bh - f * bh;
                     crate::charts::grid_line(w, b.origin, (0.0, y), (bw, y), &style);
                 }
-                for (c, vals, (lo, hi)) in &lines {
-                    let (lo, hi) = (*lo, *hi);
-                    let m = vals.len();
-                    let raw: Vec<(f32, f32)> = vals
-                        .iter()
-                        .enumerate()
-                        .map(|(i, v)| {
-                            // Centre of category slot `i`, matching the x labels.
-                            let x = (i as f32 + 0.5) / m as f32 * bw;
-                            (x, bh - norm(*v, lo, hi) * bh * g)
-                        })
-                        .collect();
-                    let raw = if stepped { step_points(&raw) } else { raw };
-                    let p = if smooth && !stepped {
-                        smooth_points(&raw, 8)
-                    } else {
-                        raw
-                    };
-                    if p.len() < 2 {
-                        continue;
+                let mask = gpui::ContentMask { bounds: b };
+                w.with_content_mask(Some(mask), |w| {
+                    for (c, vals, (lo, hi)) in &lines {
+                        let (lo, hi) = (*lo, *hi);
+                        let m = vals.len();
+                        let raw: Vec<(f32, f32)> = vals
+                            .iter()
+                            .enumerate()
+                            .map(|(i, v)| {
+                                let x = match scroll {
+                                    // The newest sample sits at the right edge, sliding left.
+                                    Some(s) => (i as f32 - s) / (m.max(2) - 1) as f32 * bw,
+                                    // Centre of category slot `i`, matching the x labels.
+                                    None => (i as f32 + 0.5) / m as f32 * bw,
+                                };
+                                (x, bh - norm(*v, lo, hi) * bh * g)
+                            })
+                            .collect();
+                        let raw = if stepped { step_points(&raw) } else { raw };
+                        let p = if smooth && !stepped {
+                            smooth_points(&raw, 8)
+                        } else {
+                            raw
+                        };
+                        if p.len() < 2 {
+                            continue;
+                        }
+                        if area {
+                            let mut poly = p.clone();
+                            poly.push((p.last().unwrap().0, bh));
+                            poly.push((p[0].0, bh));
+                            fill(w, b.origin, &poly, scale_alpha(*c, style.area_alpha));
+                        }
+                        glow_stroke(w, b.origin, &p, sw, *c, glow);
                     }
-                    if area {
-                        let mut poly = p.clone();
-                        poly.push((p.last().unwrap().0, bh));
-                        poly.push((p[0].0, bh));
-                        fill(w, b.origin, &poly, scale_alpha(*c, style.area_alpha));
-                    }
-                    glow_stroke(w, b.origin, &p, sw, *c, glow);
-                }
+                });
                 if let Some(st) = xh.clone() {
                     if let Some(i) = cur {
                         let x = (i as f32 + 0.5) / n as f32 * bw;
@@ -323,7 +339,7 @@ impl LineChart {
             };
             plot = plot.child(tip);
         }
-        if self.points {
+        if self.points && scroll.is_none() {
             for (si, s) in all.iter().enumerate() {
                 let (lo, hi) = range_of(si);
                 let c = hsla(series_color(&t, s, si));
