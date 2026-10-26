@@ -335,7 +335,7 @@ impl RenderOnce for Tachometer {
                     .flex()
                     .justify_center()
                     .font_family(first_family(t.typography.display))
-                    .text_size(px(size * 0.085))
+                    .text_size(px(size * if k.value.abs() >= 100.0 { 0.065 } else { 0.085 }))
                     .text_color(paper)
                     .child(readout(k.value, 0, "")),
             );
@@ -540,6 +540,10 @@ impl RenderOnce for DigitalGauge {
 pub enum ClusterKind {
     /// Round pods around a big inverted tachometer.
     Pods,
+    /// Five equal round pods.
+    Round,
+    /// Four inverted dials: bold ring, large numerals.
+    Bold,
     /// Two large analog dials flanked by two small ones.
     Classic,
     /// The same layout with arc dials.
@@ -552,8 +556,10 @@ pub enum ClusterKind {
 
 impl ClusterKind {
     /// Every style, in showcase order.
-    pub const ALL: [ClusterKind; 5] = [
+    pub const ALL: [ClusterKind; 7] = [
         Self::Pods,
+        Self::Round,
+        Self::Bold,
         Self::Classic,
         Self::Arc,
         Self::Segmented,
@@ -564,6 +570,8 @@ impl ClusterKind {
     pub fn name(self) -> &'static str {
         match self {
             Self::Pods => "Pods",
+            Self::Round => "Round",
+            Self::Bold => "Bold",
             Self::Classic => "Classic",
             Self::Arc => "Arc",
             Self::Segmented => "Segmented",
@@ -576,7 +584,7 @@ impl ClusterKind {
             Self::Classic => Some(DialLook::Analog),
             Self::Arc => Some(DialLook::Arc),
             Self::Segmented => Some(DialLook::Segmented),
-            Self::Pods | Self::Digital => None,
+            Self::Pods | Self::Round | Self::Bold | Self::Digital => None,
         }
     }
 }
@@ -719,6 +727,56 @@ impl RenderOnce for InstrumentCluster {
                         .size(small),
                 )
                 .into_any_element()
+            }
+            ClusterKind::Round => {
+                let d = ((inner - gap * 4.0) / 5.0).max(90.0);
+                row.child(
+                    PodGauge::new(fuel, self.fuel)
+                        .label("FUEL")
+                        .unit("%")
+                        .size(d),
+                )
+                .child(
+                    PodGauge::new(speed, self.speed)
+                        .label("SPEED")
+                        .unit("km/h")
+                        .size(d),
+                )
+                .child(
+                    PodGauge::new(rpm, self.rpm)
+                        .label(format!("GEAR {} · {}", self.gear, self.mode))
+                        .unit("×1000 rpm")
+                        .decimals(1)
+                        .size(d),
+                )
+                .child(
+                    PodGauge::new(oil, self.oil)
+                        .label("OIL")
+                        .unit("bar")
+                        .decimals(1)
+                        .size(d),
+                )
+                .child(
+                    PodGauge::new(coolant, self.coolant)
+                        .label("COOLANT")
+                        .unit("°C")
+                        .size(d),
+                )
+                .into_any_element()
+            }
+            ClusterKind::Bold => {
+                let big = ((inner - gap * 3.0) / 3.24).max(120.0);
+                let small = big * 0.62;
+                row.child(Tachometer::new(fuel, self.fuel).size(small))
+                    .child(Tachometer::new(speed, self.speed).size(big))
+                    .child(
+                        Tachometer::new(rpm, self.rpm)
+                            .gear(self.gear)
+                            .mode(self.mode)
+                            .size(big),
+                    )
+                    .child(Tachometer::new(coolant, self.coolant).size(small))
+                    .into_any_element()
             }
             ClusterKind::Classic | ClusterKind::Arc | ClusterKind::Segmented => {
                 let look = self.kind.look().unwrap_or(DialLook::Analog);

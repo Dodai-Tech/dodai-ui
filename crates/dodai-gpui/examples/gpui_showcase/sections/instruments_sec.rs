@@ -28,15 +28,6 @@ impl Showcase {
                 .child(Muted::new(kind.name()))
                 .child(InstrumentCluster::new(kind).width(700.0));
         }
-        out.push((
-            "Instruments",
-            "Cluster",
-            self.section("Cluster", &t, &me, cx)
-                .child(clusters)
-                .into_any_element(),
-            "Cluster",
-        ));
-
         // Vehicle: a speedometer with a redline tachometer and a fuel/temperature pair.
         let speed = Scale::new(0.0, 240.0)
             .ticks_per(12, 2)
@@ -53,10 +44,46 @@ impl Showcase {
             .ticks_per(3, 3)
             .zone(105.0, 115.0, Severity::Caution)
             .zone(115.0, 130.0, Severity::Alarm);
+        let tyres = Limits {
+            low: Some(2.0),
+            high: Some(3.0),
+            low_low: Some(1.6),
+            ..Limits::default()
+        };
+        let power = Scale::new(-60.0, 120.0)
+            .ticks_per(6, 1)
+            .zone(100.0, 120.0, Severity::Caution);
+        let status = div()
+            .flex()
+            .flex_col()
+            .gap(px(t.spacing.lg))
+            .child(
+                row()
+                    .items_start()
+                    .child(LevelBar::new(fuel, 18.0).label("Fuel").unit("%"))
+                    .child(LevelBar::new(coolant, 108.0).label("Coolant").unit("°C"))
+                    .child(TirePressure::new([2.4, 2.5, 1.8, 2.3], tyres)),
+            )
+            .child(
+                row()
+                    .child(GearIndicator::automatic(3))
+                    .child(Odometer::new(48213.0, 6).unit("km"))
+                    .child(Odometer::new(126.4, 4).decimals(1).unit("km trip")),
+            )
+            .child(
+                row()
+                    .items_start()
+                    .child(PowerMeter::new(power, 84.0))
+                    .child(Compass::new(42.0)),
+            );
+
         out.push((
             "Instruments",
             "Vehicle",
             self.section("Vehicle", &t, &me, cx)
+                .child(Muted::new("Clusters: one coherent style per set."))
+                .child(clusters)
+                .child(Muted::new("Dials"))
                 .child(
                     row()
                         .child(
@@ -101,45 +128,11 @@ impl Showcase {
                                 .size(170.0),
                         ),
                 )
+                .child(Muted::new("Status"))
+                .child(status)
                 .into_any_element(),
             "Vehicle",
         ));
-        let tyres = Limits {
-            low: Some(2.0),
-            high: Some(3.0),
-            low_low: Some(1.6),
-            ..Limits::default()
-        };
-        let power = Scale::new(-60.0, 120.0)
-            .ticks_per(6, 1)
-            .zone(100.0, 120.0, Severity::Caution);
-        out.push((
-            "Instruments",
-            "Vehicle status",
-            self.section("Vehicle status", &t, &me, cx)
-                .child(
-                    row()
-                        .items_start()
-                        .child(LevelBar::new(fuel, 18.0).label("Fuel").unit("%"))
-                        .child(LevelBar::new(coolant, 108.0).label("Coolant").unit("°C"))
-                        .child(TirePressure::new([2.4, 2.5, 1.8, 2.3], tyres)),
-                )
-                .child(
-                    row()
-                        .child(GearIndicator::automatic(3))
-                        .child(Odometer::new(48213.0, 6).unit("km"))
-                        .child(Odometer::new(126.4, 4).decimals(1).unit("km trip")),
-                )
-                .child(
-                    row()
-                        .items_start()
-                        .child(PowerMeter::new(power, 84.0))
-                        .child(Compass::new(42.0)),
-                )
-                .into_any_element(),
-            "Vehicle status",
-        ));
-
         // Industrial: process dials with alarm bands and an annunciator panel.
         let limits = |lo: f32, hi: f32, hh: f32| Limits {
             low: Some(lo),
