@@ -30,9 +30,7 @@ use dodai_gpui::{
     CandleOverlay, CandlePane, CandleStyle, ChartStack, DepthChart, Gantt, GanttTask, RenkoChart,
     TradeMarker,
 };
-use dodai_gpui::{
-    CountUp, Easing, EntryKind, EntrySet, IndeterminateBar, Motion, Skeleton, Spinner,
-};
+use dodai_gpui::{CountUp, Easing, EntryKind, IndeterminateBar, Motion, Skeleton, Spinner};
 use gpui::{actions, AnimationExt, SharedString};
 use gpui::{
     div, prelude::*, px, size, App, Application, Bounds, Context, Entity, FocusHandle,
@@ -62,20 +60,15 @@ use foundations::{
     frosted_view, layout_view, modifier_variants_view, motion_tokens_view, palette_view,
     shape_tokens_view, spacing_elevation_view, type_scale_view, type_view,
 };
-use player::Player;
 pub(crate) use shaders_page::{Group, Section};
 
 pub struct Showcase {
     replay: usize,
     sec_replay: std::collections::HashMap<&'static str, u32>,
-    /// Sections whose one-shot Play run is still in progress.
-    sec_playing: std::collections::HashMap<&'static str, u32>,
-    sec_mode: std::collections::HashMap<&'static str, Player>,
     /// Sections whose "</> Code" panel is open.
     code_open: std::collections::HashSet<&'static str>,
     /// Which component's implementation (or the usage snippet) each open code panel shows.
     code_pick: std::collections::HashMap<&'static str, usize>,
-    loop_gen: u32,
     ld_pb: dodai_gpui::Playback,
     ld_ms: u16,
     scroll: gpui::ScrollHandle,
@@ -89,9 +82,6 @@ pub struct Showcase {
     width: f32,
     /// Section title to scroll to (plus frames to wait for a new category to lay out).
     jump: Option<(&'static str, u8)>,
-    sec_kind: std::collections::HashMap<&'static str, EntrySet>,
-    pill_hover: Option<(&'static str, u8)>,
-    pop_hover: Option<(&'static str, u8)>,
     filter: Entity<TextInput>,
     search: Entity<TextInput>,
     search_full: Entity<TextInput>,
@@ -609,6 +599,30 @@ impl Render for Showcase {
                                             .on_select(|i, _, cx| {
                                                 dodai_gpui::set_instruments_animated(cx, i == 1)
                                             }),
+                                    )
+                                    .child(Muted::new("Speed"))
+                                    .child(
+                                        dodai_gpui::Segmented::new(
+                                            "top-speed",
+                                            ["0.5×", "1×", "2×", "4×"],
+                                        )
+                                        .selected(
+                                            [0.5, 1.0, 2.0, 4.0]
+                                                .iter()
+                                                .position(|v| {
+                                                    (*v - dodai_gpui::animation_speed()).abs()
+                                                        < 0.01
+                                                })
+                                                .unwrap_or(1),
+                                        )
+                                        .on_select(
+                                            |i, _, cx| {
+                                                dodai_gpui::set_animation_speed(
+                                                    cx,
+                                                    [0.5, 1.0, 2.0, 4.0][i],
+                                                )
+                                            },
+                                        ),
                                     )
                                     .child(Muted::new("Design"))
                                     .child(

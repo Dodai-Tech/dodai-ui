@@ -26,13 +26,42 @@ pub fn set_instruments_animated(cx: &mut App, on: bool) {
     cx.refresh_windows();
 }
 
-/// Seconds on the instruments' clock: the real time, or a standstill when animation is off.
+thread_local! {
+    static SPEED: std::cell::Cell<f32> = const { std::cell::Cell::new(1.0) };
+    /// `(virtual seconds, real seconds at the last read)`.
+    static CLOCK: std::cell::Cell<(f32, f32)> = const { std::cell::Cell::new((0.0, 0.0)) };
+}
+
+/// How fast instrument motion runs: 1 is real time, 2 twice as fast.
+pub fn animation_speed() -> f32 {
+    SPEED.with(std::cell::Cell::get)
+}
+
+/// Sets the animation speed (clamped to 0.1..=4) and repaints. It scales sweeps, flashes, live
+/// traces, the showcase demo values and how quickly needles follow.
+pub fn set_animation_speed(cx: &mut App, speed: f32) {
+    SPEED.with(|c| c.set(speed.clamp(0.1, 4.0)));
+    cx.refresh_windows();
+}
+
+/// Seconds on the animation clock: it runs at [`animation_speed`] and stands still when
+/// animation is off. Changing the speed never makes it jump.
+pub fn animation_time() -> f32 {
+    let real = now();
+    CLOCK.with(|c| {
+        let (virt, last) = c.get();
+        let virt = if instruments_animated() {
+            virt + (real - last).max(0.0) * animation_speed()
+        } else {
+            virt
+        };
+        c.set((virt, real));
+        virt
+    })
+}
+
 pub(crate) fn clock() -> f32 {
-    if instruments_animated() {
-        now()
-    } else {
-        0.0
-    }
+    animation_time()
 }
 
 /// Asks for another frame, unless instruments are not animated.
@@ -123,7 +152,7 @@ fn state(
         return None;
     }
     let (secs, bounce) = response.spring()?;
-    let spring = Spring::from_response(secs, bounce);
+    let spring = Spring::from_response(secs / animation_speed(), bounce);
     let st = w.with_id(f.id.clone(), |w| {
         w.use_keyed_state(("needle", u32::from(part)), cx, move |_, _| Needle {
             response,

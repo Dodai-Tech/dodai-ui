@@ -11,11 +11,10 @@ impl Showcase {
 
     fn token_sections(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
-        let me = cx.entity();
         vec![(
             "Foundations",
             "Text · Heading · Label · Mono",
-            self.section("Text", &t, &me, cx)
+            self.section("Text", cx)
                 .child(Heading::new("Heading 1").level(1))
                 .child(Heading::new("Heading 2"))
                 .child(Heading::new("Heading 3").level(3))
@@ -28,7 +27,7 @@ impl Showcase {
         (
             "Foundations",
             "Colour palette",
-            self.section("Colour palette", &t, &me, cx)
+            self.section("Colour palette", cx)
                 .child(Muted::new(
                     "Every Palette token of the active design system.",
                 ))
@@ -39,7 +38,7 @@ impl Showcase {
         (
             "Foundations",
             "Type scale",
-            self.section("Type scale", &t, &me, cx)
+            self.section("Type scale", cx)
                 .child(Muted::new(
                     "Sizes and families from the theme's Typography.",
                 ))
@@ -54,7 +53,7 @@ impl Showcase {
         (
             "Foundations",
             "Motion tokens",
-            self.section("Motion tokens", &t, &me, cx)
+            self.section("Motion tokens", cx)
                 .child(Muted::new(
                     "Material 3 duration scale (bar = duration) and named easing curves.",
                 ))
@@ -65,7 +64,7 @@ impl Showcase {
         (
             "Foundations",
             "Spacing · Elevation",
-            self.section("Spacing · Elevation", &t, &me, cx)
+            self.section("Spacing · Elevation", cx)
                 .child(Muted::new(
                     "Spacing scale (bars are 8x the value) and surface layers.",
                 ))
@@ -76,7 +75,7 @@ impl Showcase {
         (
             "Foundations",
             "Layout · Fluid scales",
-            self.section("Layout · Fluid scales", &t, &me, cx)
+            self.section("Layout · Fluid scales", cx)
                 .child(Muted::new(
                     "Type and spacing resolved at five viewport widths, the page grid at 800 px, and the media fade.",
                 ))
@@ -87,7 +86,7 @@ impl Showcase {
         (
             "Foundations",
             "Frosted glass",
-            self.section("Frosted glass", &t, &me, cx)
+            self.section("Frosted glass", cx)
                 .child(Muted::new(
                     "Panels over a picture: a blurred copy of it under the design's frosted tint.",
                 ))
@@ -98,7 +97,7 @@ impl Showcase {
         (
             "Foundations",
             "Shape tokens",
-            self.section("Shape tokens", &t, &me, cx)
+            self.section("Shape tokens", cx)
                 .child(Muted::new(
                     "Read-only summary of the theme's shape and effect tokens.",
                 ))
@@ -117,15 +116,12 @@ impl Showcase {
         let intro = format!(
             "{count} icons, the same names in every design system; each draws them in its own style. Write one as `Icon::Heart`. Click an icon for its SVG and code."
         );
-        let mut section = self
-            .section("Icons", &t, &me, cx)
-            .child(Muted::new(intro))
-            .child(
-                div()
-                    .w(px(360.0))
-                    .max_w_full()
-                    .child(self.icon_search.clone()),
-            );
+        let mut section = self.section("Icons", cx).child(Muted::new(intro)).child(
+            div()
+                .w(px(360.0))
+                .max_w_full()
+                .child(self.icon_search.clone()),
+        );
         if let Some(panel) = self.icon_detail(&t, cx) {
             // Fades and rises in; a new selection replays it (the id carries the icon).
             let key = self.icon_sel.map_or(0, |i| i as u32);

@@ -73,7 +73,7 @@ impl Showcase {
         out.push((
             "Inputs",
             "Toggle · Checkbox · Radio",
-            self.section("Toggle · Checkbox · Radio", &t, &me, cx)
+            self.section("Toggle · Checkbox · Radio", cx)
                 .child(controls)
                 .child(radios)
                 .into_any_element(),
@@ -85,7 +85,6 @@ impl Showcase {
     fn variants_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let col = || div().flex().flex_col().gap(gap);
@@ -135,7 +134,7 @@ impl Showcase {
             out.push((
                 "Inputs",
                 "Checkbox variants",
-                self.section("Checkbox variants", &t, &me, cx)
+                self.section("Checkbox variants", cx)
                     .child(variants)
                     .into_any_element(),
                 "Checkbox variants",
@@ -172,7 +171,7 @@ impl Showcase {
         out.push((
             "Inputs",
             "Slider · Progress",
-            self.section("Slider · Progress", &t, &me, cx)
+            self.section("Slider · Progress", cx)
                 .child(sliders)
                 .into_any_element(),
             "Slider · Progress",
@@ -274,7 +273,7 @@ impl Showcase {
         out.push((
             "Inputs",
             "Stepped slider · ticks · formatted value",
-            self.section("Slider (stepped, ticks, value readout)", &t, &me, cx)
+            self.section("Slider (stepped, ticks, value readout)", cx)
                 .child(stepped)
                 .into_any_element(),
             "Slider (stepped, ticks, value readout)",
@@ -284,7 +283,6 @@ impl Showcase {
 
     fn range_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         self.demo_seen = Some(std::time::Instant::now());
-        let t = theme_of(cx);
         let me = cx.entity();
         let mut out: Vec<Section> = Vec::new();
         let m3 = me.clone();
@@ -299,7 +297,7 @@ impl Showcase {
         out.push((
             "Inputs",
             "Range slider",
-            self.section("Range slider", &t, &me, cx)
+            self.section("Range slider", cx)
                 .child(w_range)
                 .child(w_range_txt)
                 .into_any_element(),
@@ -390,7 +388,7 @@ impl Showcase {
         out.push((
             "Inputs",
             "Knob · Vertical slider · Vertical range slider",
-            self.section("Knob · Vertical sliders", &t, &me, cx)
+            self.section("Knob · Vertical sliders", cx)
                 .child(dials)
                 .into_any_element(),
             "Knob · Vertical sliders",
@@ -400,12 +398,10 @@ impl Showcase {
 
     fn input_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         self.demo_seen = Some(std::time::Instant::now());
-        let t = theme_of(cx);
-        let me = cx.entity();
         vec![(
             "Inputs",
             "Input field",
-            self.section("Input", &t, &me, cx)
+            self.section("Input", cx)
                 .child(div().flex_1().min_w(px(260.0)).child(self.in_name.clone()))
                 .child(div().flex_1().min_w(px(260.0)).child(self.in_notes.clone()))
                 .child(InputBox::new().placeholder("static placeholder box"))
@@ -428,7 +424,6 @@ impl Showcase {
 
     fn search_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         self.demo_seen = Some(std::time::Instant::now());
-        let t = theme_of(cx);
         let me = cx.entity();
         let mut out: Vec<Section> = Vec::new();
         let open = !self.search.read(cx).text().is_empty();
@@ -458,7 +453,7 @@ impl Showcase {
         out.push((
             "Inputs",
             "Search view · SearchBar",
-            self.section("Search view", &t, &me, cx)
+            self.section("Search view", cx)
                 .child(w_search)
                 .child(Muted::new("Full screen (Material)"))
                 .child(
@@ -477,7 +472,6 @@ impl Showcase {
 
     fn tag_field_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         self.demo_seen = Some(std::time::Instant::now());
-        let t = theme_of(cx);
         let me = cx.entity();
         let mut out: Vec<Section> = Vec::new();
         let m4 = me.clone();
@@ -490,7 +484,7 @@ impl Showcase {
         out.push((
             "Inputs",
             "Tag field · chips",
-            self.section("Tag field", &t, &me, cx)
+            self.section("Tag field", cx)
                 .child(w_tags)
                 .into_any_element(),
             "Tag field",
@@ -563,7 +557,7 @@ impl Showcase {
         out.push((
             "Inputs",
             "Date picker · Time picker",
-            self.section("Date / time pickers", &t, &me, cx)
+            self.section("Date / time pickers", cx)
                 .child(pickers)
                 .child(Muted::new("Text input mode"))
                 .child(typed)
@@ -575,12 +569,10 @@ impl Showcase {
 
     fn password_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         self.demo_seen = Some(std::time::Instant::now());
-        let t = theme_of(cx);
-        let me = cx.entity();
         vec![(
             "Inputs",
             "Password · One-time code",
-            self.section("Password · OTP", &t, &me, cx)
+            self.section("Password · OTP", cx)
                 .child(
                     dodai_gpui::FormField::new("Password")
                         .required(true)
@@ -607,13 +599,12 @@ impl Showcase {
     fn form_field_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         vec![(
             "Inputs",
             "Form field · label help error validation",
-            self.section("Form field", &t, &me, cx)
+            self.section("Form field", cx)
                 .child(
                     row()
                         .items_start()
@@ -665,13 +656,12 @@ impl Showcase {
     fn group_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         vec![(
             "Inputs",
             "Toggle group · Checkbox group · select all · switches",
-            self.section("Toggle group · Checkbox group", &t, &me, cx)
+            self.section("Toggle group · Checkbox group", cx)
                 .child(
                     row()
                         .child(
@@ -754,7 +744,7 @@ impl Showcase {
         out.push((
             "Inputs",
             "Date range picker",
-            self.section("Date range", &t, &me, cx)
+            self.section("Date range", cx)
                 .child(range_picker)
                 .into_any_element(),
             "Date range",

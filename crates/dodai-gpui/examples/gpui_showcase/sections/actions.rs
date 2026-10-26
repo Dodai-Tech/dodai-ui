@@ -14,7 +14,6 @@ impl Showcase {
 
     fn buttons_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let mut out: Vec<Section> = Vec::new();
@@ -136,7 +135,7 @@ impl Showcase {
         out.push((
             "Actions",
             "Buttons · IconButton · FAB",
-            self.section("Buttons", &t, &me, cx)
+            self.section("Buttons", cx)
                 .child(buttons)
                 .child(sizes)
                 .child(sizes_square)
@@ -195,7 +194,7 @@ impl Showcase {
         out.push((
             "Actions",
             "Button groups · Split button",
-            self.section("Button groups · Split button", &t, &me, cx)
+            self.section("Button groups · Split button", cx)
                 .child(groups)
                 .into_any_element(),
             "Button groups · Split button",
@@ -205,7 +204,6 @@ impl Showcase {
 
     fn toolbar_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let mut out: Vec<Section> = Vec::new();
@@ -226,7 +224,7 @@ impl Showcase {
         out.push((
             "Actions",
             "Toolbar · Snackbar",
-            self.section("Toolbar · Snackbar", &t, &me, cx)
+            self.section("Toolbar · Snackbar", cx)
                 .child(w_toolbar)
                 .child(row().child(w_toolbar_float).child(w_toolbar_vibrant))
                 .child(w_snack)

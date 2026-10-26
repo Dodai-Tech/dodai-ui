@@ -23,13 +23,12 @@ impl Showcase {
 
     fn gallery_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         // Every design: its own corner radius, border and shadow on real components.
         vec![(
             "Shape",
             "Shape gallery",
-            self.section("Shape gallery", &t, &me, cx)
+            self.section("Shape gallery", cx)
                 .child(Muted::new(
                     "The design system's own corners, borders and shadows on real components, with the tokens behind them.",
                 ))
@@ -42,7 +41,6 @@ impl Showcase {
 
     fn presets_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let mut out: Vec<Section> = Vec::new();
@@ -138,7 +136,7 @@ impl Showcase {
                 )
         };
         let section = self
-            .section("Presets · Apply to", &t, &me, cx)
+            .section("Presets · Apply to", cx)
             .child(Label::new("Mode"))
             .child(div().w_1_2().child(presets))
             .child(Muted::new(status))
@@ -198,7 +196,6 @@ impl Showcase {
 
     fn component_textures_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let mut out: Vec<Section> = Vec::new();
         if t.surface_textures().is_empty() {
@@ -210,7 +207,7 @@ impl Showcase {
         out.push((
                 "Surface effects",
                 "Component textures",
-                self.section("Component textures", &t, &me, cx)
+                self.section("Component textures", cx)
                     .child(Muted::new(
                         "A pattern on UI components: buttons, inputs and tags. The buttons below wear it. Keep it fine and subtle so labels stay readable.",
                     ))
@@ -245,7 +242,6 @@ impl Showcase {
 
     fn container_textures_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let mut out: Vec<Section> = Vec::new();
         if t.surface_textures().is_empty() {
@@ -257,7 +253,7 @@ impl Showcase {
         out.push((
                 "Surface effects",
                 "Container textures",
-                self.section("Container textures", &t, &me, cx)
+                self.section("Container textures", cx)
                     .child(Muted::new(
                         "A pattern on containers: cards, panels and bars. This panel is a container, so it shows the chosen pattern behind these controls.",
                     ))
@@ -295,14 +291,13 @@ impl Showcase {
 
     fn light_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let mut out: Vec<Section> = Vec::new();
         if t.surface_textures().is_empty() {
             return out;
         }
         let fx = dodai_gpui::surface_fx();
-        let mut light = self.section("Light FX", &t, &me, cx).child(Muted::new(
+        let mut light = self.section("Light FX", cx).child(Muted::new(
             "Glow and animated accents on components and containers. 0 turns an effect off.",
         ));
         if t.look().luminous {
@@ -346,7 +341,6 @@ impl Showcase {
 
     fn edges_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let mut out: Vec<Section> = Vec::new();
         if t.surface_textures().is_empty() {
@@ -358,7 +352,7 @@ impl Showcase {
             out.push((
                     "Surface effects",
                     "Edges · Depth",
-                    self.section("Edges · Depth", &t, &me, cx)
+                    self.section("Edges · Depth", cx)
                         .child(Muted::new(
                             "How the edges look: light falling inward, corner brackets and an inner shadow. Clear centre (under textures) keeps text clean.",
                         ))
@@ -381,7 +375,6 @@ impl Showcase {
 
     fn ripple_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let mut out: Vec<Section> = Vec::new();
@@ -395,7 +388,7 @@ impl Showcase {
             out.push((
                     "Surface effects",
                     "Click ripple",
-                    self.section("Click ripple", &t, &me, cx)
+                    self.section("Click ripple", cx)
                         .child(Muted::new(
                             "Press any control below: the ripple plays from the touch point. Pick how it plays and how strong it is.",
                         ))
@@ -430,7 +423,6 @@ impl Showcase {
 
     fn signature_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let mut out: Vec<Section> = Vec::new();
         if t.surface_textures().is_empty() {
@@ -442,7 +434,7 @@ impl Showcase {
             out.push((
                     "Surface effects",
                     "Signature",
-                    self.section("Signature", &t, &me, cx)
+                    self.section("Signature", cx)
                         .child(Muted::new(
                             "Effects that belong to this design only: tonal wash, a hard pop block and tape, a clear-coat gloss, a light strip and a gradient wash.",
                         ))
@@ -475,10 +467,9 @@ impl Showcase {
     fn roundness_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         use dodai_core::{BorderTint, CornerStyle, RoundnessGroup, ShadowDir, ShapeKind};
         let t = theme_of(cx);
-        let me = cx.entity();
         let tune = dodai_gpui::shape_tune();
         let percent: fn(f32) -> String = |v| format!("{:.0}%", v * 100.0);
-        let mut sec = self.section("Roundness · Borders", &t, &me, cx).child(Muted::new(
+        let mut sec = self.section("Roundness · Borders", cx).child(Muted::new(
             "Applies to every component in every design, immediately. \"Default\" is each design's own.",
         ));
         if t.shape.kind() != ShapeKind::Chamfered {
@@ -608,14 +599,13 @@ impl Showcase {
 
     fn corner_shape_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let mut out: Vec<Section> = Vec::new();
         if t.look().cut_corners {
             out.push((
                 "Shape",
                 "Corner shape",
-                self.section("Corner shape", &t, &me, cx)
+                self.section("Corner shape", cx)
                     .child(Muted::new(
                         "The corner cut applies to every component in every theme, immediately. Pick \"Default\" to restore each design's own shape.",
                     ))
@@ -630,7 +620,6 @@ impl Showcase {
 
     fn crop_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let mut out: Vec<Section> = Vec::new();
@@ -685,7 +674,7 @@ impl Showcase {
             out.push((
                 "Shape",
                 "Button crop",
-                self.section("Button crop", &t, &me, cx)
+                self.section("Button crop", cx)
                     .child(Muted::new(
                         "Settings apply to every button below and across the showcase. Ready-made cropped buttons are under Actions.",
                     ))
@@ -701,7 +690,6 @@ impl Showcase {
 
     fn border_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let col = || div().flex().flex_col().gap(gap);
@@ -746,7 +734,7 @@ impl Showcase {
             out.push((
                 "Shape",
                 "Border",
-                self.section("Border", &t, &me, cx)
+                self.section("Border", cx)
                     .child(Muted::new(
                         "Every section frame is a grey contour plus an accent line on the opposite corner. These settings change all sections at once; a single panel can use `.border(..)`.",
                     ))

@@ -29,16 +29,9 @@ pub(crate) const CATEGORIES: [&str; 12] = [
 
 impl Showcase {
     /// The panel every section starts from: title, design chips, replay scope.
-    pub(crate) fn section(
-        &self,
-        title: &'static str,
-        t: &dodai_core::Theme,
-        me: &gpui::Entity<Self>,
-        cx: &mut Context<Self>,
-    ) -> Panel {
+    pub(crate) fn section(&self, title: &'static str, cx: &mut Context<Self>) -> Panel {
         Panel::new()
             .title(title.to_string())
-            .subheader(self.chips(title, t, me, cx))
             .scope(Some(self.scope_of(title, cx)))
             .scope_key(self.sec_replay.get(title).copied().unwrap_or(0))
     }

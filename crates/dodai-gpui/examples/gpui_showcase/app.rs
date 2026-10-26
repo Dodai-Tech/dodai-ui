@@ -76,7 +76,7 @@ pub(crate) fn window_shortcuts(cx: &mut App) {
 impl Showcase {
     /// Plays the input demos on their own: values glide, boxes tick, text types itself.
     fn demo_step(&mut self, cx: &mut Context<Self>) {
-        let t = dodai_gpui::motion::now();
+        let t = dodai_gpui::animation_time();
         let wave = |speed: f32, phase: f32| 0.5 + 0.5 * (t * speed + phase).sin();
         self.slider = wave(0.55, 0.0);
         self.stepped = (wave(0.4, 1.0) * 10.0).round();
@@ -193,11 +193,8 @@ impl Showcase {
                 .unwrap_or(0),
             replay: 0,
             sec_replay: Default::default(),
-            sec_playing: Default::default(),
-            sec_mode: Default::default(),
             code_open: Default::default(),
             code_pick: Default::default(),
-            loop_gen: 0,
             ld_pb: dodai_gpui::Playback::Loop,
             ld_ms: 0,
             scroll: gpui::ScrollHandle::new(),
@@ -209,9 +206,6 @@ impl Showcase {
             jump: std::env::var("DODAI_JUMP")
                 .ok()
                 .map(|j| (&*Box::leak(j.into_boxed_str()), 1)),
-            sec_kind: Default::default(),
-            pill_hover: None,
-            pop_hover: None,
             cat_count: 1,
             meta: Vec::new(),
             meta_family: "",

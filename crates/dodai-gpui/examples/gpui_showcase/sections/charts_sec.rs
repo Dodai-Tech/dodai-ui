@@ -23,7 +23,7 @@ impl Showcase {
         out.push((
             "Charts",
             "Line · Bar · Area · Stacked charts",
-            self.section("Line & bar charts", &t, &me, cx)
+            self.section("Line & bar charts", cx)
                 .child({
                     let m = me.clone();
                     div().flex().flex_wrap().items_center().gap(px(t.spacing.md))
@@ -47,23 +47,19 @@ impl Showcase {
         out.push((
             "Charts",
             "Pie",
-            self.section("Pie", &t, &me, cx)
-                .child(pies)
-                .into_any_element(),
+            self.section("Pie", cx).child(pies).into_any_element(),
             "Pie",
         ));
         out.push((
             "Charts",
             "Donut",
-            self.section("Donut", &t, &me, cx)
-                .child(donuts)
-                .into_any_element(),
+            self.section("Donut", cx).child(donuts).into_any_element(),
             "Donut",
         ));
         out.push((
             "Charts",
             "Sparkline",
-            self.section("Sparkline", &t, &me, cx)
+            self.section("Sparkline", cx)
                 .child(sparks)
                 .into_any_element(),
             "Sparkline",
@@ -71,7 +67,7 @@ impl Showcase {
         out.push((
             "Charts",
             "Stacked area · Histogram · Waterfall",
-            self.section("Area · histogram · waterfall", &t, &me, cx)
+            self.section("Area · histogram · waterfall", cx)
                 .child(charts_more1)
                 .into_any_element(),
             "Area · histogram · waterfall",
@@ -79,7 +75,7 @@ impl Showcase {
         out.push((
             "Charts",
             "Funnel · Treemap · Radial bar",
-            self.section("Funnel · treemap · radial bar", &t, &me, cx)
+            self.section("Funnel · treemap · radial bar", cx)
                 .child(charts_more2)
                 .into_any_element(),
             "Funnel · treemap · radial bar",
@@ -87,7 +83,7 @@ impl Showcase {
         out.push((
             "Charts",
             "Candlestick · Box plot · Bubble",
-            self.section("Candlestick · box plot · bubble", &t, &me, cx)
+            self.section("Candlestick · box plot · bubble", cx)
                 .child(charts_more3)
                 .into_any_element(),
             "Candlestick · box plot · bubble",
@@ -95,7 +91,7 @@ impl Showcase {
         out.push((
             "Charts",
             "Bullet · Paired · Lollipop · Slope",
-            self.section("Bullet · paired · lollipop · slope", &t, &me, cx)
+            self.section("Bullet · paired · lollipop · slope", cx)
                 .child(charts_new.0)
                 .into_any_element(),
             "Bullet · paired · lollipop · slope",
@@ -103,7 +99,7 @@ impl Showcase {
         out.push((
             "Charts",
             "Sankey · Calendar · Violin · Rose",
-            self.section("Sankey · calendar · violin · rose", &t, &me, cx)
+            self.section("Sankey · calendar · violin · rose", cx)
                 .child(charts_new.1)
                 .into_any_element(),
             "Sankey · calendar · violin · rose",
@@ -111,7 +107,7 @@ impl Showcase {
         out.push((
             "Charts",
             "Market · Planning",
-            self.section("Market · planning charts", &t, &me, cx)
+            self.section("Market · planning charts", cx)
                 .child(charts_market)
                 .into_any_element(),
             "Market · planning charts",
@@ -119,7 +115,7 @@ impl Showcase {
         out.push((
             "Charts",
             "Radar · Scatter · Heatmap",
-            self.section("Radar · scatter · heatmap", &t, &me, cx)
+            self.section("Radar · scatter · heatmap", cx)
                 .child(charts_misc)
                 .into_any_element(),
             "Radar · scatter · heatmap",

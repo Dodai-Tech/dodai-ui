@@ -23,7 +23,6 @@ impl Showcase {
             ($t:expr) => {
                 Panel::new()
                     .title($t)
-                    .subheader(self.chips($t, &t, &me, cx))
                     .scope(Some(self.scope_of($t, cx)))
                     .scope_key(self.sec_replay.get($t).copied().unwrap_or(0))
             };

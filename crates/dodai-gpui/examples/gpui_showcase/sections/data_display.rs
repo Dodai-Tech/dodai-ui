@@ -23,7 +23,6 @@ impl Showcase {
     fn tags_lists_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let mut out: Vec<Section> = Vec::new();
@@ -77,15 +76,13 @@ impl Showcase {
         out.push((
             "Data display",
             "Tags · Chips · Badges",
-            self.section("Tags", &t, &me, cx)
-                .child(tags)
-                .into_any_element(),
+            self.section("Tags", cx).child(tags).into_any_element(),
             "Tags",
         ));
         out.push((
             "Data display",
             "List items · Chips",
-            self.section("List items · Chips", &t, &me, cx)
+            self.section("List items · Chips", cx)
                 .child(lists)
                 .child(chips)
                 .into_any_element(),
@@ -145,7 +142,7 @@ impl Showcase {
         out.push((
             "Data display",
             "Badges · Rating · Tooltips",
-            self.section("Rating · Stepper · Badges · Tooltips", &t, &me, cx)
+            self.section("Rating · Stepper · Badges · Tooltips", cx)
                 .child(w_misc)
                 .into_any_element(),
             "Rating · Stepper · Badges · Tooltips",
@@ -178,7 +175,7 @@ impl Showcase {
         out.push((
             "Data display",
             "List · Divider",
-            self.section("List · Divider", &t, &me, cx)
+            self.section("List · Divider", cx)
                 .child(list)
                 .child(Divider::new())
                 .into_any_element(),
@@ -190,7 +187,6 @@ impl Showcase {
     fn tree_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let mut out: Vec<Section> = Vec::new();
@@ -218,7 +214,7 @@ impl Showcase {
         out.push((
             "Data display",
             "Tree · Timeline · Empty state",
-            self.section("Tree · timeline · empty state", &t, &me, cx)
+            self.section("Tree · timeline · empty state", cx)
                 .child(
                     row()
                         .child(div().flex_1().min_w(px(200.0)).child(tree))
@@ -237,11 +233,10 @@ impl Showcase {
     fn tooltip_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
-        let me = cx.entity();
         vec![(
             "Data display",
             "Tooltip · Rich tooltip",
-            self.section("Tooltip", &t, &me, cx)
+            self.section("Tooltip", cx)
                 .child(
                     div()
                         .id("tip")
@@ -265,7 +260,6 @@ impl Showcase {
     fn table_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let col = || div().flex().flex_col().gap(gap);
@@ -313,7 +307,7 @@ impl Showcase {
         out.push((
             "Data display",
             "Data table · sort filter select resize virtual scroll",
-            self.section("Data table", &t, &me, cx)
+            self.section("Data table", cx)
                 .child(data_table)
                 .into_any_element(),
             "Data table",
@@ -323,14 +317,12 @@ impl Showcase {
 
     fn code_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         self.demo_seen = Some(std::time::Instant::now());
-        let t = theme_of(cx);
-        let me = cx.entity();
         let mut out: Vec<Section> = Vec::new();
         let md_src = "# Markdown\n\nSupports **bold**, *italic*, `inline code` and [links](https://example.com).\n\n- headings and paragraphs\n- nested lists\n  - indent two spaces\n    1. numbered inside\n    2. restarts per level\n- fenced code and tables\n\n| Token | Value | Note |\n|:--|--:|:-:|\n| radius | 12 | rounded |\n| chamfer | 0 | none |\n\n> quotes read muted\n\n```rust\nfn main() {\n    let n: u32 = 42; // answer\n    println!(\"{n}\");\n}\n```";
         out.push((
                 "Data display",
                 "Code block · Markdown · rich text",
-                self.section("Code block · Markdown", &t, &me, cx)
+                self.section("Code block · Markdown", cx)
                     .child(
                         dodai_gpui::CodeBlock::new(
                             "code",
@@ -348,7 +340,6 @@ impl Showcase {
     fn image_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let mut out: Vec<Section> = Vec::new();
@@ -356,7 +347,7 @@ impl Showcase {
         out.push((
             "Data display",
             "Image · media · Avatar group",
-            self.section("Image · Avatar group", &t, &me, cx)
+            self.section("Image · Avatar group", cx)
                 .child(
                     row()
                         .items_start()
@@ -402,14 +393,13 @@ impl Showcase {
     fn progress_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let mut out: Vec<Section> = Vec::new();
         out.push((
             "Data display",
             "Circular progress · Banner",
-            self.section("Circular progress · Banner", &t, &me, cx)
+            self.section("Circular progress · Banner", cx)
                 .child(
                     row()
                         .child(dodai_gpui::CircularProgress::new(0.25))
@@ -455,14 +445,13 @@ impl Showcase {
     fn clock_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         vec![
             (
                 "Data display",
                 "Clock · Timer",
-                self.section("Clock · Timer", &t, &me, cx)
+                self.section("Clock · Timer", cx)
                     .child(
                         row()
                             .child(dodai_gpui::Clock::new().local())
@@ -474,7 +463,7 @@ impl Showcase {
             (
                 "Data display",
                 "Stopwatch · Tap tempo",
-                self.section("Stopwatch · Tap tempo", &t, &me, cx)
+                self.section("Stopwatch · Tap tempo", cx)
                     .child(
                         row()
                             .child(dodai_gpui::Stopwatch::new("sw"))
@@ -488,13 +477,11 @@ impl Showcase {
 
     fn scroll_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         self.demo_seen = Some(std::time::Instant::now());
-        let t = theme_of(cx);
-        let me = cx.entity();
         let mut out: Vec<Section> = Vec::new();
         out.push((
             "Data display",
             "Scroll area · styled scrollbar",
-            self.section("Scroll area", &t, &me, cx)
+            self.section("Scroll area", cx)
                 .child(dodai_gpui::ScrollArea::new("sa").height(200.0).child(
                     div().flex().flex_col().gap(px(8.0)).children(
                         (1..=40).map(|i| {

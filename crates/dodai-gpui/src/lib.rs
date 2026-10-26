@@ -246,7 +246,10 @@ pub mod instruments_military;
 #[cfg(feature = "charts")]
 pub(crate) mod instruments_motion;
 #[cfg(feature = "charts")]
-pub use instruments_motion::{instruments_animated, set_instruments_animated};
+pub use instruments_motion::{
+    animation_speed, animation_time, instruments_animated, set_animation_speed,
+    set_instruments_animated,
+};
 #[cfg(feature = "charts")]
 pub mod instruments_segment;
 #[cfg(feature = "charts")]

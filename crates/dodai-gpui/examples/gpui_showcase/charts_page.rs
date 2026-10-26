@@ -30,7 +30,7 @@ impl Showcase {
         // Live demo data: while animated, every value drifts smoothly around its base.
         let (live, time) = (
             dodai_gpui::instruments_animated(),
-            dodai_gpui::motion::now(),
+            dodai_gpui::animation_time(),
         );
         let wave = move |key: f32, i: f32| (time * 0.6 + key * 1.7 + i * 0.9).sin();
         // A series drifting up to ±22 % per point.

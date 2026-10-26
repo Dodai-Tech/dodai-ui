@@ -55,7 +55,6 @@ impl Showcase {
 
     fn popovers_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let col = || div().flex().flex_col().gap(gap);
@@ -117,26 +116,19 @@ impl Showcase {
         out.push((
             "Navigation",
             "Popover · Hover card · Context menu · Dropdown menu",
-            self.section(
-                "Popover · Hover card · Context menu · Dropdown",
-                &t,
-                &me,
-                cx,
-            )
-            .child(popovers)
-            .into_any_element(),
+            self.section("Popover · Hover card · Context menu · Dropdown", cx)
+                .child(popovers)
+                .into_any_element(),
             "Popover · Hover card · Context menu · Dropdown",
         ));
         out
     }
 
     fn menu_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
-        let t = theme_of(cx);
-        let me = cx.entity();
         vec![(
             "Navigation",
             "Menu · Sub-menu",
-            self.section("Menu · Sub-menu", &t, &me, cx)
+            self.section("Menu · Sub-menu", cx)
                 .child(Muted::new(
                     "Leading icons, shortcuts, and a sub-menu (hover \"Share\").",
                 ))
@@ -165,7 +157,6 @@ impl Showcase {
     }
 
     fn tabs_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
-        let t = theme_of(cx);
         let me = cx.entity();
         let mut out: Vec<Section> = Vec::new();
         let me_tab = me.clone();
@@ -181,7 +172,7 @@ impl Showcase {
         out.push((
             "Navigation",
             "Tabs",
-            self.section("Tabs", &t, &me, cx)
+            self.section("Tabs", cx)
                 .child(tabs)
                 .child(Muted::new("Secondary"))
                 .child(
@@ -218,13 +209,12 @@ impl Showcase {
 
     fn nav_tree_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         vec![(
                 "Navigation",
                 "Design system tree",
-                self.section("Design system tree", &t, &me, cx)
+                self.section("Design system tree", cx)
                     .child(Muted::new(
                         "Click the active system to hide / show its themes. Selecting a theme applies it live.",
                     ))
@@ -278,7 +268,7 @@ impl Showcase {
         out.push((
                 "Navigation",
                 "Collapsible sidebar",
-                self.section("Collapsible sidebar", &t, &me, cx)
+                self.section("Collapsible sidebar", cx)
                     .child(Muted::new(
                         "ResponsiveShell: drag the edge handle (spring + fling snap), click it, or use the button. Below the breakpoint it becomes a drawer.",
                     ))
@@ -385,7 +375,7 @@ impl Showcase {
         out.push((
             "Navigation",
             "Segmented · Breadcrumb · Pagination · Stepper",
-            self.section("Segmented · Breadcrumb · Pagination · Stepper", &t, &me, cx)
+            self.section("Segmented · Breadcrumb · Pagination · Stepper", cx)
                 .child(strips)
                 .into_any_element(),
             "Segmented · Breadcrumb · Pagination · Stepper",
@@ -395,7 +385,6 @@ impl Showcase {
 
     fn carousel_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let mut out: Vec<Section> = Vec::new();
         let tile = |c: dodai::Color, label: &'static str| {
@@ -448,7 +437,7 @@ impl Showcase {
         out.push((
             "Navigation",
             "Carousel",
-            self.section("Carousel", &t, &me, cx)
+            self.section("Carousel", cx)
                 .child(layouts)
                 .into_any_element(),
             "Carousel",
@@ -501,7 +490,7 @@ impl Showcase {
         out.push((
             "Navigation",
             "Modal navigation drawer",
-            self.section("Modal navigation drawer", &t, &me, cx)
+            self.section("Modal navigation drawer", cx)
                 .child(Muted::new(
                     "Scrim + drawer from the edge; picking an item dismisses.",
                 ))
@@ -512,7 +501,7 @@ impl Showcase {
         out.push((
             "Navigation",
             "Dialog · Bottom sheet · Side sheet",
-            self.section("Dialog · Bottom sheet · Side sheet", &t, &me, cx)
+            self.section("Dialog · Bottom sheet · Side sheet", cx)
                 .child(
                     div()
                         .flex()
@@ -530,7 +519,6 @@ impl Showcase {
 
     fn app_bar_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
-        let me = cx.entity();
         let gap = px(t.spacing.md);
         let col = || div().flex().flex_col().gap(gap);
         let mut out: Vec<Section> = Vec::new();
@@ -546,7 +534,7 @@ impl Showcase {
         out.push((
             "Navigation",
             "App bars",
-            self.section("App bars", &t, &me, cx)
+            self.section("App bars", cx)
                 .child(
                     col()
                         .child(labelled(
@@ -711,7 +699,7 @@ impl Showcase {
         out.push((
             "Navigation",
             "App bar · Cards · FAB · Navigation",
-            self.section("App bar · Cards · FAB · Navigation", &t, &me, cx)
+            self.section("App bar · Cards · FAB · Navigation", cx)
                 .child(structure)
                 .into_any_element(),
             "App bar · Cards · FAB · Navigation",
