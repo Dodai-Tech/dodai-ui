@@ -81,6 +81,7 @@ impl DesignSpec for NeoBrutalism {
             mark_outline_width: t.shape.border_width,
             grid_color: t.palette.border.with_alpha(0.35),
             area_alpha: 0.35,
+            dial: dodai_core::DialLook::Analog,
             ..dodai_core::ChartStyle::from_theme(t)
         })
     }

@@ -221,6 +221,7 @@ impl DesignSpec for Aurora {
             line_width: 2.5,
             grid_color: t.palette.border.with_alpha(0.5),
             area_alpha: 0.28,
+            dial: dodai_core::DialLook::Arc,
             ..dodai_core::ChartStyle::from_theme(t)
         })
     }

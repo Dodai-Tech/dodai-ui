@@ -235,6 +235,8 @@ pub mod icons;
 pub mod instrument_charts;
 #[cfg(feature = "charts")]
 pub mod instruments;
+#[cfg(feature = "charts")]
+pub mod instruments_vehicle;
 pub mod interact;
 #[cfg(feature = "components")]
 pub mod knob;
@@ -363,6 +365,7 @@ pub use dodai_charts_core::gantt::Task as GanttTask;
 pub use dodai_charts_core::instrument::{Alarm, Limits, Scale, Severity};
 #[cfg(feature = "charts")]
 pub use dodai_charts_core::Gradient;
+pub use dodai_core::DialLook;
 pub use dodai_motion;
 #[cfg(feature = "shaders")]
 pub use dodai_shaders;
@@ -389,6 +392,10 @@ pub use instrument_charts::{
 };
 #[cfg(feature = "charts")]
 pub use instruments::{severity_color, Annunciator, DialGauge, VitalsTile};
+#[cfg(feature = "charts")]
+pub use instruments_vehicle::{
+    Compass, GearIndicator, LevelBar, Odometer, PowerMeter, TirePressure,
+};
 mod icon_names;
 #[cfg(any(feature = "shaders", feature = "aurora"))]
 pub use backdrop::backdrop;

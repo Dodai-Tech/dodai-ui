@@ -6,6 +6,18 @@
 
 use crate::{Color, Theme};
 
+/// How a design draws dials and level bars.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum DialLook {
+    /// Zone band, tick marks and a needle: a classic analogue instrument.
+    #[default]
+    Analog,
+    /// A single arc filled up to the value, no needle.
+    Arc,
+    /// A ring of lit segments, like an LED bar.
+    Segmented,
+}
+
 /// Chart drawing tokens of one theme.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ChartStyle {
@@ -23,6 +35,8 @@ pub struct ChartStyle {
     pub grid_dashed: bool,
     /// Opacity of the fill under area series, `0..=1`.
     pub area_alpha: f32,
+    /// The default look of dial instruments.
+    pub dial: DialLook,
 }
 
 impl ChartStyle {
@@ -36,6 +50,7 @@ impl ChartStyle {
             grid_width: 1.0,
             grid_dashed: false,
             area_alpha: 0.18,
+            dial: DialLook::Analog,
         }
     }
 }

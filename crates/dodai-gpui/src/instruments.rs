@@ -9,11 +9,11 @@
 
 use crate::charts::{polar, turn_arc};
 use crate::gauges::{disc, needle, SWEEP};
-use crate::paint::{fill, shaped, stroke, ShapeStyle};
+use crate::paint::{fill, scale_alpha, shaped, stroke, ShapeStyle};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use dodai_charts_core::instrument::{readout, Alarm, Limits, Scale, Severity};
-use dodai_core::{Color, Theme};
+use dodai_core::{Color, DialLook, Theme};
 use gpui::{
     canvas, div, px, App, Bounds, Hsla, IntoElement, ParentElement, Pixels, RenderOnce,
     SharedString, Styled, Window,
@@ -61,6 +61,7 @@ pub struct DialGauge {
     size: f32,
     sweep: (f32, f32),
     tick_labels: bool,
+    look: Option<DialLook>,
 }
 
 impl DialGauge {
@@ -75,6 +76,7 @@ impl DialGauge {
             size: 200.0,
             sweep: SWEEP,
             tick_labels: true,
+            look: None,
         }
     }
     /// Caption under the readout.
@@ -102,6 +104,11 @@ impl DialGauge {
         self.sweep = (start, sweep.clamp(0.1, 1.0));
         self
     }
+    /// Force a look; by default the design's own (`Theme::chart_style().dial`).
+    pub fn look(mut self, l: DialLook) -> Self {
+        self.look = Some(l);
+        self
+    }
     /// Show the numbers at the major ticks (default on).
     pub fn tick_labels(mut self, on: bool) -> Self {
         self.tick_labels = on;
@@ -121,7 +128,10 @@ impl RenderOnce for DialGauge {
             size,
             sweep: (start, span),
             tick_labels,
+            look,
         } = self;
+        let look = look.unwrap_or(t.chart_style().dial);
+        let analog = look == DialLook::Analog;
         let sev = scale.severity_at(value);
         let frac = scale.fraction(value);
         let (track, ink, muted) = (
@@ -144,48 +154,102 @@ impl RenderOnce for DialGauge {
             .collect();
         let ticks = scale.ticks();
         let at = move |f: f32| start + span * f;
+        let accent = if sev == Severity::Normal {
+            hsla(t.palette.primary)
+        } else {
+            severity_color(&t, sev)
+        };
+        const SEGMENTS: usize = 30;
+        let seg_cols: Vec<Hsla> = (0..SEGMENTS)
+            .map(|i| {
+                let f = (i as f32 + 0.5) / SEGMENTS as f32;
+                match scale.severity_at(scale.value_at(f)) {
+                    Severity::Normal => hsla(t.palette.primary),
+                    s => severity_color(&t, s),
+                }
+            })
+            .collect();
         let cv = canvas(
             |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                stroke(
-                    w,
-                    b.origin,
-                    &turn_arc(c, c, r, at(0.0), at(1.0)),
-                    band,
-                    track,
-                    false,
-                );
-                for (a, z, col) in &zone_cols {
+            move |b: Bounds<Pixels>, _, w, _| match look {
+                DialLook::Analog => {
                     stroke(
                         w,
                         b.origin,
-                        &turn_arc(c, c, r, at(*a), at(*z)),
+                        &turn_arc(c, c, r, at(0.0), at(1.0)),
                         band,
-                        *col,
+                        track,
                         false,
                     );
+                    for (a, z, col) in &zone_cols {
+                        stroke(
+                            w,
+                            b.origin,
+                            &turn_arc(c, c, r, at(*a), at(*z)),
+                            band,
+                            *col,
+                            false,
+                        );
+                    }
+                    for k in &ticks {
+                        let (len, wd) = if k.major { (0.16, 2.0) } else { (0.09, 1.0) };
+                        let seg = [
+                            polar(c, c, r - band, at(k.frac)),
+                            polar(c, c, r - band - size * len * 0.5, at(k.frac)),
+                        ];
+                        stroke(w, b.origin, &seg, wd, muted, false);
+                    }
+                    let n = needle(c, c, r - band * 1.2, size * 0.05, at(frac));
+                    fill(w, b.origin, &n, needle_col);
+                    fill(w, b.origin, &disc(c, c, size * 0.04, 20), needle_col);
                 }
-                for k in &ticks {
-                    let (len, wd) = if k.major { (0.16, 2.0) } else { (0.09, 1.0) };
-                    let seg = [
-                        polar(c, c, r - band, at(k.frac)),
-                        polar(c, c, r - band - size * len * 0.5, at(k.frac)),
-                    ];
-                    stroke(w, b.origin, &seg, wd, muted, false);
+                DialLook::Arc => {
+                    let thick = band * 1.5;
+                    stroke(
+                        w,
+                        b.origin,
+                        &turn_arc(c, c, r, at(0.0), at(1.0)),
+                        thick,
+                        track,
+                        false,
+                    );
+                    if frac > 0.002 {
+                        stroke(
+                            w,
+                            b.origin,
+                            &turn_arc(c, c, r, at(0.0), at(frac)),
+                            thick,
+                            accent,
+                            false,
+                        );
+                    }
                 }
-                fill(
-                    w,
-                    b.origin,
-                    &needle(c, c, r - band * 1.2, size * 0.05, at(frac)),
-                    needle_col,
-                );
-                fill(w, b.origin, &disc(c, c, size * 0.04, 20), needle_col);
+                DialLook::Segmented => {
+                    let thick = band * 1.7;
+                    let step = 1.0 / SEGMENTS as f32;
+                    for (i, col) in seg_cols.iter().enumerate() {
+                        let (a0, a1) = (
+                            i as f32 * step + step * 0.12,
+                            (i + 1) as f32 * step - step * 0.12,
+                        );
+                        let lit = (i as f32 + 0.5) * step <= frac;
+                        let col = if lit { *col } else { scale_alpha(track, 0.7) };
+                        stroke(
+                            w,
+                            b.origin,
+                            &turn_arc(c, c, r, at(a0), at(a1)),
+                            thick,
+                            col,
+                            false,
+                        );
+                    }
+                }
             },
         )
         .absolute()
         .size_full();
         let mut dial = div().relative().w(px(size)).h(px(size)).child(cv);
-        if tick_labels {
+        if tick_labels && analog {
             // Dense scales label every other major tick.
             let skip = if scale.majors > 8 { 2 } else { 1 };
             let majors = scale.ticks().into_iter().filter(|k| k.major);

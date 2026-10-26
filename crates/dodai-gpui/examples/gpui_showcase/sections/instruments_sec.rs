@@ -1,7 +1,10 @@
 //! The "Instruments" category: vehicle, industrial and medical readouts.
 
 use super::super::*;
-use dodai_gpui::{Annunciator, DialGauge, Limits, Scale, Severity, VitalsTile};
+use dodai_gpui::{
+    Annunciator, Compass, DialGauge, DialLook, GearIndicator, LevelBar, Limits, Odometer,
+    PowerMeter, Scale, Severity, TirePressure, VitalsTile,
+};
 
 impl Showcase {
     /// Vehicle, industrial and medical instruments, one section each.
@@ -25,6 +28,7 @@ impl Showcase {
         let rpm = Scale::new(0.0, 8.0)
             .ticks_per(8, 2)
             .zone(6.5, 8.0, Severity::Alarm);
+        let speed2 = speed.clone();
         let fuel = Scale::new(0.0, 100.0)
             .ticks_per(4, 1)
             .zone(0.0, 12.0, Severity::Alarm)
@@ -53,23 +57,71 @@ impl Showcase {
                                 .size(240.0),
                         ),
                 )
+                .child(Muted::new(
+                    "The same dial in each look. A design picks its own by default.",
+                ))
                 .child(
                     row()
                         .child(
-                            DialGauge::new(fuel, 18.0)
-                                .label("Fuel")
-                                .unit("%")
-                                .size(150.0),
+                            DialGauge::new(speed2.clone(), 96.0)
+                                .look(DialLook::Analog)
+                                .label("Analog")
+                                .unit("km/h")
+                                .tick_labels(false)
+                                .size(170.0),
                         )
                         .child(
-                            DialGauge::new(coolant, 108.0)
-                                .label("Coolant")
-                                .unit("°C")
-                                .size(150.0),
+                            DialGauge::new(speed2.clone(), 96.0)
+                                .look(DialLook::Arc)
+                                .label("Arc")
+                                .unit("km/h")
+                                .size(170.0),
+                        )
+                        .child(
+                            DialGauge::new(speed2, 96.0)
+                                .look(DialLook::Segmented)
+                                .label("Segmented")
+                                .unit("km/h")
+                                .size(170.0),
                         ),
                 )
                 .into_any_element(),
             "Vehicle",
+        ));
+        let tyres = Limits {
+            low: Some(2.0),
+            high: Some(3.0),
+            low_low: Some(1.6),
+            ..Limits::default()
+        };
+        let power = Scale::new(-60.0, 120.0)
+            .ticks_per(6, 1)
+            .zone(100.0, 120.0, Severity::Caution);
+        out.push((
+            "Instruments",
+            "Vehicle status",
+            self.section("Vehicle status", &t, &me, cx)
+                .child(
+                    row()
+                        .items_start()
+                        .child(LevelBar::new(fuel, 18.0).label("Fuel").unit("%"))
+                        .child(LevelBar::new(coolant, 108.0).label("Coolant").unit("°C"))
+                        .child(TirePressure::new([2.4, 2.5, 1.8, 2.3], tyres)),
+                )
+                .child(
+                    row()
+                        .child(GearIndicator::automatic(3))
+                        .child(Odometer::new(48213.0, 6).unit("km"))
+                        .child(Odometer::new(126.4, 4).decimals(1).unit("km trip")),
+                )
+                .child(
+                    row()
+                        .items_start()
+                        .child(PowerMeter::new(power, 84.0))
+                        .child(Compass::new(42.0)),
+                )
+                .into_any_element(),
+            "Vehicle status",
         ));
 
         // Industrial: process dials with alarm bands and an annunciator panel.
@@ -82,6 +134,12 @@ impl Showcase {
         let pressure = limits(10.0, 70.0, 90.0).zones_on(Scale::new(0.0, 100.0).ticks_per(5, 2));
         let temp = limits(20.0, 180.0, 220.0).zones_on(Scale::new(0.0, 250.0).ticks_per(5, 2));
         let flow = limits(15.0, 80.0, 95.0).zones_on(Scale::new(0.0, 100.0).ticks_per(5, 2));
+        let tank_a = Scale::new(0.0, 100.0)
+            .ticks_per(4, 1)
+            .zone(90.0, 100.0, Severity::Caution);
+        let tank_b = Scale::new(0.0, 100.0)
+            .ticks_per(4, 1)
+            .zone(90.0, 100.0, Severity::Alarm);
         out.push((
             "Instruments",
             "Industrial",
@@ -105,6 +163,18 @@ impl Showcase {
                                 .label("Feed flow")
                                 .unit("m³/h")
                                 .size(190.0),
+                        )
+                        .child(
+                            LevelBar::new(tank_a, 72.0)
+                                .label("Tank A")
+                                .unit("%")
+                                .height(130.0),
+                        )
+                        .child(
+                            LevelBar::new(tank_b, 94.0)
+                                .label("Tank B")
+                                .unit("%")
+                                .height(130.0),
                         ),
                 )
                 .child(Annunciator::new([
