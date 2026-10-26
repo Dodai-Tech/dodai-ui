@@ -30,7 +30,7 @@ mod tune;
 
 pub mod themes;
 
-pub use chart_style::{ChartStyle, ClusterKind, DialLook};
+pub use chart_style::{ChartStyle, ClusterKind, DialLook, ScopeLook};
 pub use color::Color;
 pub use component::{
     AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, ControlSize, ControlState,

@@ -132,6 +132,7 @@ impl DesignSpec for Material3 {
             area_alpha: 0.12,
             dial: dodai_core::DialLook::Arc,
             cluster: dodai_core::ClusterKind::Arc,
+            scope: dodai_core::ScopeLook::Clean,
             ..dodai_core::ChartStyle::from_theme(t)
         })
     }

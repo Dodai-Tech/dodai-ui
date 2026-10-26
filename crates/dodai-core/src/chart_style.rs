@@ -18,6 +18,20 @@ pub enum DialLook {
     Segmented,
 }
 
+/// How a design draws scopes, spectra and radar: line weight, grid, fills and cell shape.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ScopeLook {
+    /// Thin glowing traces, a full graticule and a fading trail.
+    #[default]
+    Neon,
+    /// Soft traces with a translucent fill underneath and a faint graticule.
+    Frosted,
+    /// Plain medium traces with a light fill and solid bars.
+    Clean,
+    /// Heavy ink traces, an opaque minimal grid and solid blocks.
+    Ink,
+}
+
 /// A whole instrument cluster style. Every instrument of one cluster follows the same style, so a
 /// set never mixes looks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -98,6 +112,8 @@ pub struct ChartStyle {
     pub dial: DialLook,
     /// The default instrument cluster.
     pub cluster: ClusterKind,
+    /// The look of scopes, spectra and radar.
+    pub scope: ScopeLook,
 }
 
 impl ChartStyle {
@@ -113,6 +129,7 @@ impl ChartStyle {
             area_alpha: 0.18,
             dial: DialLook::Analog,
             cluster: ClusterKind::Pods,
+            scope: ScopeLook::Neon,
         }
     }
 }

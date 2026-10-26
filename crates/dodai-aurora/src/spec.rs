@@ -223,6 +223,7 @@ impl DesignSpec for Aurora {
             area_alpha: 0.28,
             dial: dodai_core::DialLook::Arc,
             cluster: dodai_core::ClusterKind::Capsule,
+            scope: dodai_core::ScopeLook::Frosted,
             ..dodai_core::ChartStyle::from_theme(t)
         })
     }

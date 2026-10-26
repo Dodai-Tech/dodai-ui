@@ -98,8 +98,38 @@ fn frame(
     f.child(div().relative().w(px(w)).h(px(h)).child(body))
 }
 
+/// Per-design drawing parameters of the scope family.
+struct Look {
+    line: f32,
+    grid: f32,
+    minor: bool,
+    fill: f32,
+    trail: f32,
+    solid: bool,
+    ring: f32,
+}
+
+fn look(t: &Theme) -> Look {
+    use dodai_core::ScopeLook;
+    let (line, grid, minor, fill, trail, solid, ring) = match t.chart_style().scope {
+        ScopeLook::Neon => (2.0, 0.55, true, 0.0, 1.0, false, 1.0),
+        ScopeLook::Frosted => (2.5, 0.3, false, 0.16, 0.6, false, 1.0),
+        ScopeLook::Clean => (2.5, 0.35, true, 0.1, 0.0, true, 1.0),
+        ScopeLook::Ink => (4.0, 1.0, false, 0.0, 0.0, true, 2.0),
+    };
+    Look {
+        line,
+        grid,
+        minor,
+        fill,
+        trail,
+        solid,
+        ring,
+    }
+}
+
 fn grid_color(t: &Theme) -> Hsla {
-    scale_alpha(hsla(t.palette.border), 0.55)
+    scale_alpha(hsla(t.palette.border), look(t).grid)
 }
 
 // ────────────────────────────── Oscilloscope ──────────────────────────────
@@ -189,7 +219,8 @@ impl RenderOnce for Oscilloscope {
         let (gw, gh) = (self.w, self.h);
         let samples = self.samples;
         let live = self.live;
-        let trail = self.trail;
+        let lk = look(&t);
+        let trail = self.trail * lk.trail;
         let glow = self.glow.resolve(&t);
         let grid = grid_color(&t);
         let bright = scale_alpha(hsla(t.palette.text_muted), 0.6);
@@ -203,7 +234,7 @@ impl RenderOnce for Oscilloscope {
                     let l = vec![(x, 0.0), (x, gh)];
                     if i == 5 {
                         major.push(l)
-                    } else {
+                    } else if lk.minor {
                         minor.push(l)
                     }
                 }
@@ -212,12 +243,12 @@ impl RenderOnce for Oscilloscope {
                     let l = vec![(0.0, y), (gw, y)];
                     if i == 4 {
                         major.push(l)
-                    } else {
+                    } else if lk.minor {
                         minor.push(l)
                     }
                 }
                 stroke_batch(w, o, &minor, 1.0, grid, false);
-                stroke_batch(w, o, &major, 1.0, bright, false);
+                stroke_batch(w, o, &major, lk.ring, bright, false);
                 let n = samples.len();
                 if n < 2 {
                     return;
@@ -251,7 +282,14 @@ impl RenderOnce for Oscilloscope {
                     }
                     crate::motion::next_frame(w);
                 }
-                glow_stroke(w, o, &trace(0.0), 2.0, col, glow);
+                let main = trace(0.0);
+                if lk.fill > 0.0 {
+                    let mut area = main.clone();
+                    area.push((gw, gh));
+                    area.push((0.0, gh));
+                    fill(w, o, &area, scale_alpha(col, lk.fill));
+                }
+                glow_stroke(w, o, &main, lk.line, col, glow);
             },
         )
         .absolute()
@@ -338,6 +376,7 @@ impl RenderOnce for Spectrum {
         let primary = hsla(t.palette.primary);
         let dim = scale_alpha(hsla(t.palette.border), 0.7);
         let glow = self.glow.resolve(&t);
+        let solid = look(&t).solid;
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
@@ -347,7 +386,7 @@ impl RenderOnce for Spectrum {
                 }
                 let gap = 3.0;
                 let bw = ((gw - gap * (n as f32 - 1.0)) / n as f32).max(2.0);
-                let cg = 2.0;
+                let cg = if solid { 0.0 } else { 2.0 };
                 let ch = (gh - cg * (cells as f32 - 1.0)) / cells as f32;
                 let cut = if chamfered {
                     (ch * 0.5).min(bw * 0.4)
@@ -389,7 +428,9 @@ impl RenderOnce for Spectrum {
                         }
                     }
                 }
-                fill_batch(w, b.origin, &off, scale_alpha(dim, 0.5));
+                if !solid {
+                    fill_batch(w, b.origin, &off, scale_alpha(dim, 0.5));
+                }
                 for z in 0..3 {
                     let col = zc.map_or(primary, |c| c[z]);
                     if glow.is_some() && !lit[z].is_empty() {
@@ -666,6 +707,7 @@ impl RenderOnce for RadarScope {
         let warn = hsla(t.palette.danger);
         let ring = grid_color(&t);
         let glow = self.glow.resolve(&t);
+        let ring_w = look(&t).ring;
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
@@ -675,11 +717,11 @@ impl RenderOnce for RadarScope {
                 let rings: Vec<_> = (1..=4)
                     .map(|i| turn_arc(c, c, r * i as f32 / 4.0, 0.0, 1.0))
                     .collect();
-                stroke_batch(w, o, &rings, 1.0, ring, true);
+                stroke_batch(w, o, &rings, ring_w, ring, true);
                 let cross: Vec<_> = (0..4)
                     .map(|q| vec![(c, c), polar(c, c, r, q as f32 / 4.0)])
                     .collect();
-                stroke_batch(w, o, &cross, 1.0, ring, false);
+                stroke_batch(w, o, &cross, ring_w, ring, false);
                 let (mut long, mut short) = (Vec::new(), Vec::new());
                 for i in 0..36 {
                     let a = i as f32 / 36.0;

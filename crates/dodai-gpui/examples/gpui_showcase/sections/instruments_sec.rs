@@ -217,14 +217,6 @@ impl Showcase {
                 .into_any_element(),
             "Gauges",
         ));
-        out.push((
-            "Instruments",
-            "Signal lab",
-            self.section("Signal lab", &t, &me, cx)
-                .child(lab)
-                .into_any_element(),
-            "Signal lab",
-        ));
 
         // Medical: vital-sign tiles and waveforms.
         let vitals = |lo: f32, hi: f32| Limits {
@@ -273,6 +265,14 @@ impl Showcase {
                 .child(hud)
                 .into_any_element(),
             "Radar & telemetry",
+        ));
+        out.push((
+            "Instruments",
+            "Signal lab",
+            self.section("Signal lab", &t, &me, cx)
+                .child(lab)
+                .into_any_element(),
+            "Signal lab",
         ));
         out
     }

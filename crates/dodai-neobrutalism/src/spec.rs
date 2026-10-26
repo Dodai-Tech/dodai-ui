@@ -83,6 +83,7 @@ impl DesignSpec for NeoBrutalism {
             area_alpha: 0.35,
             dial: dodai_core::DialLook::Analog,
             cluster: dodai_core::ClusterKind::Bold,
+            scope: dodai_core::ScopeLook::Ink,
             ..dodai_core::ChartStyle::from_theme(t)
         })
     }
