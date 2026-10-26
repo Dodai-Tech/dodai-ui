@@ -30,6 +30,7 @@ pub mod depth;
 pub mod gantt;
 pub mod gradient;
 pub mod indicators;
+pub mod instrument;
 pub mod math;
 pub mod pulse;
 pub mod renko;

@@ -5,13 +5,14 @@ mod charts_sec;
 mod data_display;
 mod foundations_sec;
 mod inputs;
+mod instruments_sec;
 mod navigation;
 pub(crate) mod shape;
 
 use super::*;
 
 /// Every category, in sidebar order (Shaders last: it is the biggest).
-pub(crate) const CATEGORIES: [&str; 11] = [
+pub(crate) const CATEGORIES: [&str; 12] = [
     "Foundations",
     "Shape",
     "Surface effects",
@@ -20,6 +21,7 @@ pub(crate) const CATEGORIES: [&str; 11] = [
     "Navigation",
     "Inputs",
     "Charts",
+    "Instruments",
     "Loading",
     "Animation",
     "Shaders",
@@ -52,6 +54,7 @@ impl Showcase {
             "Navigation" => Self::groups_navigation(),
             "Inputs" => Self::groups_inputs(),
             "Charts" => vec![Self::sections_charts_sec],
+            "Instruments" => vec![Self::sections_instruments],
             "Loading" => vec![Self::loading_group],
             "Animation" => vec![Self::animation_group],
             _ => vec![Self::shaders_group],

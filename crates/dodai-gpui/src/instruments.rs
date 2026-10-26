@@ -1,0 +1,494 @@
+//! Instruments for vehicles, process plants and patient monitors: [`DialGauge`], [`VitalsTile`]
+//! and [`Annunciator`].
+//!
+//! Scales, zones, alarm limits and flashing come from `dodai_charts_core::instrument`; this
+//! module only paints. Severity colours come from the theme (`success`, `info`, `warning`,
+//! `danger`), outlines and shapes from the design, so every design reads the same way at a glance
+//! while still looking like itself. Flashing stops when the alarm is acknowledged and only
+//! requests frames while something actually flashes.
+
+use crate::charts::{polar, turn_arc};
+use crate::gauges::{disc, needle, SWEEP};
+use crate::paint::{fill, shaped, stroke, ShapeStyle};
+use crate::text::{first_family, format_label};
+use crate::{hsla, theme_of};
+use dodai_charts_core::instrument::{readout, Alarm, Limits, Scale, Severity};
+use dodai_core::{Color, Theme};
+use gpui::{
+    canvas, div, px, App, Bounds, Hsla, IntoElement, ParentElement, Pixels, RenderOnce,
+    SharedString, Styled, Window,
+};
+use std::sync::OnceLock;
+use std::time::Instant;
+
+fn clock() -> f32 {
+    static START: OnceLock<Instant> = OnceLock::new();
+    START.get_or_init(Instant::now).elapsed().as_secs_f32()
+}
+
+/// The theme colour of a severity: success, info, warning, danger.
+pub fn severity_color(t: &Theme, s: Severity) -> Hsla {
+    hsla(severity_token(t, s))
+}
+
+fn severity_token(t: &Theme, s: Severity) -> Color {
+    match s {
+        Severity::Normal => t.palette.success,
+        Severity::Advisory => t.palette.info,
+        Severity::Caution => t.palette.warning,
+        Severity::Alarm => t.palette.danger,
+    }
+}
+
+/// A flashing alarm keeps the window redrawing; a steady one does not.
+fn flashing(window: &Window, live: bool, a: &Alarm) {
+    if live && a.severity.flash_hz() > 0.0 && !a.acknowledged {
+        crate::motion::next_frame(window);
+    }
+}
+
+// ───────────────────────────────── DialGauge ─────────────────────────────────
+
+/// An analogue dial: a scale with coloured zones, tick marks with labels, a needle and a digital
+/// readout. A speedometer, a tachometer or a process temperature dial.
+#[derive(IntoElement)]
+pub struct DialGauge {
+    scale: Scale,
+    value: f32,
+    label: Option<SharedString>,
+    unit: SharedString,
+    decimals: usize,
+    size: f32,
+    sweep: (f32, f32),
+    tick_labels: bool,
+}
+
+impl DialGauge {
+    /// A dial showing `value` on `scale` (build the scale with [`Scale::new`] and zones).
+    pub fn new(scale: Scale, value: f32) -> Self {
+        Self {
+            scale,
+            value,
+            label: None,
+            unit: SharedString::default(),
+            decimals: 0,
+            size: 200.0,
+            sweep: SWEEP,
+            tick_labels: true,
+        }
+    }
+    /// Caption under the readout.
+    pub fn label(mut self, l: impl Into<SharedString>) -> Self {
+        self.label = Some(l.into());
+        self
+    }
+    /// Unit shown after the value.
+    pub fn unit(mut self, u: impl Into<SharedString>) -> Self {
+        self.unit = u.into();
+        self
+    }
+    /// Decimals of the readout.
+    pub fn decimals(mut self, d: usize) -> Self {
+        self.decimals = d;
+        self
+    }
+    /// Diameter in px.
+    pub fn size(mut self, s: f32) -> Self {
+        self.size = s.max(80.0);
+        self
+    }
+    /// Start and sweep in turns (0 = 12 o'clock, clockwise); default 270° with the gap below.
+    pub fn sweep(mut self, start: f32, sweep: f32) -> Self {
+        self.sweep = (start, sweep.clamp(0.1, 1.0));
+        self
+    }
+    /// Show the numbers at the major ticks (default on).
+    pub fn tick_labels(mut self, on: bool) -> Self {
+        self.tick_labels = on;
+        self
+    }
+}
+
+impl RenderOnce for DialGauge {
+    fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let Self {
+            scale,
+            value,
+            label,
+            unit,
+            decimals,
+            size,
+            sweep: (start, span),
+            tick_labels,
+        } = self;
+        let sev = scale.severity_at(value);
+        let frac = scale.fraction(value);
+        let (track, ink, muted) = (
+            hsla(t.palette.border),
+            hsla(t.palette.text),
+            hsla(t.palette.text_muted),
+        );
+        let needle_col = if sev == Severity::Normal {
+            ink
+        } else {
+            severity_color(&t, sev)
+        };
+        let c = size / 2.0;
+        let r = c * 0.9;
+        let band = size * 0.05;
+        let spans = scale.zone_spans();
+        let zone_cols: Vec<(f32, f32, Hsla)> = spans
+            .iter()
+            .map(|(a, b, s)| (*a, *b, severity_color(&t, *s)))
+            .collect();
+        let ticks = scale.ticks();
+        let at = move |f: f32| start + span * f;
+        let cv = canvas(
+            |_, _, _| (),
+            move |b: Bounds<Pixels>, _, w, _| {
+                stroke(
+                    w,
+                    b.origin,
+                    &turn_arc(c, c, r, at(0.0), at(1.0)),
+                    band,
+                    track,
+                    false,
+                );
+                for (a, z, col) in &zone_cols {
+                    stroke(
+                        w,
+                        b.origin,
+                        &turn_arc(c, c, r, at(*a), at(*z)),
+                        band,
+                        *col,
+                        false,
+                    );
+                }
+                for k in &ticks {
+                    let (len, wd) = if k.major { (0.16, 2.0) } else { (0.09, 1.0) };
+                    let seg = [
+                        polar(c, c, r - band, at(k.frac)),
+                        polar(c, c, r - band - size * len * 0.5, at(k.frac)),
+                    ];
+                    stroke(w, b.origin, &seg, wd, muted, false);
+                }
+                fill(
+                    w,
+                    b.origin,
+                    &needle(c, c, r - band * 1.2, size * 0.05, at(frac)),
+                    needle_col,
+                );
+                fill(w, b.origin, &disc(c, c, size * 0.04, 20), needle_col);
+            },
+        )
+        .absolute()
+        .size_full();
+        let mut dial = div().relative().w(px(size)).h(px(size)).child(cv);
+        if tick_labels {
+            // Dense scales label every other major tick.
+            let skip = if scale.majors > 8 { 2 } else { 1 };
+            let majors = scale.ticks().into_iter().filter(|k| k.major);
+            for k in majors
+                .enumerate()
+                .filter(|(i, _)| i % skip == 0)
+                .map(|(_, k)| k)
+            {
+                let (x, y) = polar(c, c, r - band - size * 0.15, at(k.frac));
+                dial = dial.child(
+                    div()
+                        .absolute()
+                        .left(px(x - 20.0))
+                        .top(px(y - 8.0))
+                        .w(px(40.0))
+                        .flex()
+                        .justify_center()
+                        .text_size(px(t.typography.size_xs))
+                        .text_color(muted)
+                        .child(readout(k.value, 0, "")),
+                );
+            }
+        }
+        let mut read = div()
+            .absolute()
+            .left_0()
+            .w(px(size))
+            .top(px(c + size * 0.12))
+            .flex()
+            .flex_col()
+            .items_center()
+            .child(
+                div()
+                    .text_size(px(t.typography.size_xl))
+                    .font_family(first_family(t.typography.mono))
+                    .text_color(if sev == Severity::Normal {
+                        ink
+                    } else {
+                        needle_col
+                    })
+                    .child(readout(value, decimals, "")),
+            );
+        if !unit.is_empty() {
+            read = read.child(
+                div()
+                    .text_size(px(t.typography.size_xs))
+                    .text_color(muted)
+                    .child(unit),
+            );
+        }
+        if let Some(l) = label {
+            read = read.child(
+                div()
+                    .text_size(px(t.typography.size_sm))
+                    .text_color(muted)
+                    .child(format_label(&t.typography, &l)),
+            );
+        }
+        dial.child(read)
+    }
+}
+
+// ───────────────────────────────── VitalsTile ─────────────────────────────────
+
+/// A patient-monitor numeric: label, large value, unit and alarm limits. The border and value
+/// take the severity colour; an unacknowledged alarm flashes its background.
+#[derive(IntoElement)]
+pub struct VitalsTile {
+    label: SharedString,
+    value: f32,
+    unit: SharedString,
+    decimals: usize,
+    limits: Limits,
+    acknowledged: bool,
+    live: bool,
+    width: f32,
+}
+
+impl VitalsTile {
+    /// A tile for `value`, e.g. `VitalsTile::new("HR", 72.0).unit("bpm")`.
+    pub fn new(label: impl Into<SharedString>, value: f32) -> Self {
+        Self {
+            label: label.into(),
+            value,
+            unit: SharedString::default(),
+            decimals: 0,
+            limits: Limits::default(),
+            acknowledged: false,
+            live: true,
+            width: 180.0,
+        }
+    }
+    /// Unit shown beside the label.
+    pub fn unit(mut self, u: impl Into<SharedString>) -> Self {
+        self.unit = u.into();
+        self
+    }
+    /// Decimals of the value.
+    pub fn decimals(mut self, d: usize) -> Self {
+        self.decimals = d;
+        self
+    }
+    /// Alarm limits; the tile shows them and rates the value against them.
+    pub fn limits(mut self, l: Limits) -> Self {
+        self.limits = l;
+        self
+    }
+    /// The operator has acknowledged the alarm: it stops flashing and stays lit.
+    pub fn acknowledged(mut self, a: bool) -> Self {
+        self.acknowledged = a;
+        self
+    }
+    /// Let an unacknowledged alarm flash (default on). Off keeps it steady.
+    pub fn flash(mut self, on: bool) -> Self {
+        self.live = on;
+        self
+    }
+    /// Width in px.
+    pub fn width(mut self, w: f32) -> Self {
+        self.width = w.max(100.0);
+        self
+    }
+}
+
+impl RenderOnce for VitalsTile {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let sev = self.limits.severity(self.value);
+        let mut alarm = Alarm::default();
+        alarm.update(sev);
+        alarm.acknowledged = self.acknowledged;
+        flashing(window, self.live, &alarm);
+        let col = severity_color(&t, sev);
+        let lit = !self.live || alarm.lit(clock());
+        let alarmed = sev != Severity::Normal;
+        let fill_col = if alarmed && lit {
+            severity_token(&t, sev).with_alpha(0.22)
+        } else {
+            t.palette.surface
+        };
+        // A pale severity colour on a pale tile would not read: fall back to the text colour.
+        let readable = severity_token(&t, sev).contrast(t.palette.surface) >= 3.0;
+        let ink = if alarmed && readable {
+            col
+        } else {
+            hsla(t.palette.text)
+        };
+        let edge = if alarmed {
+            severity_token(&t, sev)
+        } else {
+            t.palette.border
+        };
+        let style = ShapeStyle::from_tokens(&t, Some(fill_col), Some(edge), false, false);
+        let range = {
+            let (lo, hi) = (self.limits.low, self.limits.high);
+            match (lo, hi) {
+                (Some(a), Some(b)) => format!("{}–{}", readout(a, 0, ""), readout(b, 0, "")),
+                (None, Some(b)) => format!("< {}", readout(b, 0, "")),
+                (Some(a), None) => format!("> {}", readout(a, 0, "")),
+                _ => String::new(),
+            }
+        };
+        let muted = hsla(t.palette.text_muted);
+        shaped(&t.shape, style)
+            .w(px(self.width))
+            .p(px(t.spacing.sm))
+            .flex()
+            .flex_col()
+            .gap(px(t.spacing.xs))
+            .child(
+                div()
+                    .flex()
+                    .justify_between()
+                    .text_size(px(t.typography.size_sm))
+                    .text_color(muted)
+                    .child(div().child(format_label(&t.typography, &self.label)))
+                    .child(div().child(self.unit)),
+            )
+            .child(
+                div()
+                    .text_size(px(t.typography.size_xl * 1.8))
+                    .font_family(first_family(t.typography.mono))
+                    .text_color(ink)
+                    .child(readout(self.value, self.decimals, "")),
+            )
+            .child(
+                div()
+                    .text_size(px(t.typography.size_xs))
+                    .text_color(muted)
+                    .child(range),
+            )
+    }
+}
+
+// ───────────────────────────────── Annunciator ─────────────────────────────────
+
+/// A panel of alarm windows. A window is dark when normal, lit in its severity colour when
+/// active, and flashes until acknowledged.
+#[derive(IntoElement)]
+pub struct Annunciator {
+    tiles: Vec<(SharedString, Severity, bool)>,
+    columns: usize,
+    tile_w: f32,
+    live: bool,
+}
+
+impl Annunciator {
+    /// Windows as `(legend, severity, acknowledged)`.
+    pub fn new<S: Into<SharedString>>(
+        tiles: impl IntoIterator<Item = (S, Severity, bool)>,
+    ) -> Self {
+        Self {
+            tiles: tiles
+                .into_iter()
+                .map(|(l, s, a)| (l.into(), s, a))
+                .collect(),
+            columns: 4,
+            tile_w: 120.0,
+            live: true,
+        }
+    }
+    /// Windows per row.
+    pub fn columns(mut self, n: usize) -> Self {
+        self.columns = n.max(1);
+        self
+    }
+    /// Width of one window in px.
+    pub fn tile_width(mut self, w: f32) -> Self {
+        self.tile_w = w.max(60.0);
+        self
+    }
+    /// Let unacknowledged alarms flash (default on).
+    pub fn flash(mut self, on: bool) -> Self {
+        self.live = on;
+        self
+    }
+}
+
+impl RenderOnce for Annunciator {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let now = clock();
+        let alarms: Vec<Alarm> = self
+            .tiles
+            .iter()
+            .map(|(_, s, a)| Alarm {
+                severity: *s,
+                acknowledged: *a,
+            })
+            .collect();
+        if alarms
+            .iter()
+            .any(|a| a.severity.flash_hz() > 0.0 && !a.acknowledged)
+        {
+            flashing(
+                window,
+                self.live,
+                &Alarm {
+                    severity: Severity::Alarm,
+                    acknowledged: false,
+                },
+            );
+        }
+        let mut grid = div().flex().flex_wrap().gap(px(t.spacing.xs));
+        for ((label, sev, _), alarm) in self.tiles.iter().zip(&alarms) {
+            let on = *sev != Severity::Normal && (!self.live || alarm.lit(now));
+            let tok = severity_token(&t, *sev);
+            let style = ShapeStyle::from_tokens(
+                &t,
+                Some(if on {
+                    tok
+                } else {
+                    t.palette.border.with_alpha(0.35)
+                }),
+                Some(if *sev == Severity::Normal {
+                    t.palette.border
+                } else {
+                    tok
+                }),
+                false,
+                false,
+            );
+            let text = if on {
+                hsla(t.palette.background)
+            } else {
+                hsla(t.palette.text_muted)
+            };
+            grid = grid.child(
+                shaped(&t.shape, style)
+                    .w(px(self.tile_w))
+                    .h(px(t.shape.control_height * 1.2))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .text_size(px(t.typography.size_sm))
+                    .text_color(text)
+                    .child(format_label(&t.typography, label)),
+            );
+        }
+        div()
+            .w(px(
+                self.tile_w * self.columns as f32 + t.spacing.xs * (self.columns as f32 - 1.0)
+            ))
+            .child(grid)
+    }
+}

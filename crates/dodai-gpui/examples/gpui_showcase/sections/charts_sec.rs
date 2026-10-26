@@ -10,7 +10,6 @@ impl Showcase {
         let ChartDemos {
             charts_xy,
             gauge_styles,
-            instruments,
             pies,
             donuts,
             sparks,
@@ -20,7 +19,7 @@ impl Showcase {
             charts_more2,
             charts_more3,
             charts_new,
-            pulse,
+            ..
         } = self.chart_demos(&me, cx);
         out.push((
             "Charts",
@@ -80,14 +79,6 @@ impl Showcase {
         ));
         out.push((
             "Charts",
-            "Instruments",
-            self.section("Instruments", &t, &me, cx)
-                .child(instruments)
-                .into_any_element(),
-            "Instruments",
-        ));
-        out.push((
-            "Charts",
             "Stacked area · Histogram · Waterfall",
             self.section("Area · histogram · waterfall", &t, &me, cx)
                 .child(charts_more1)
@@ -125,14 +116,6 @@ impl Showcase {
                 .child(charts_new.1)
                 .into_any_element(),
             "Sankey · calendar · violin · rose",
-        ));
-        out.push((
-            "Charts",
-            "Pulse monitor",
-            self.section("Pulse monitor", &t, &me, cx)
-                .child(pulse)
-                .into_any_element(),
-            "Pulse monitor",
         ));
         out.push((
             "Charts",

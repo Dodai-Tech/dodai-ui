@@ -45,7 +45,7 @@ fn every_category_has_unique_sections(cx: &mut TestAppContext) {
     vcx.run_until_parked();
     let meta = vcx.update(|_, cx| view.read(cx).section_titles().to_vec());
     let cats: std::collections::BTreeSet<_> = meta.iter().map(|(c, _)| *c).collect();
-    assert!((10..=11).contains(&cats.len()), "categories: {cats:?}");
+    assert!((10..=12).contains(&cats.len()), "categories: {cats:?}");
     let mut seen = std::collections::HashSet::new();
     for m in &meta {
         assert!(seen.insert(*m), "duplicate section {m:?}");

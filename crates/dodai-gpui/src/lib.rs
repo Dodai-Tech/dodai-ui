@@ -233,6 +233,8 @@ pub(crate) mod gauges_extra;
 pub mod icons;
 #[cfg(all(feature = "charts", feature = "cyberpunk"))]
 pub mod instrument_charts;
+#[cfg(feature = "charts")]
+pub mod instruments;
 pub mod interact;
 #[cfg(feature = "components")]
 pub mod knob;
@@ -358,6 +360,8 @@ pub use display::{
 #[cfg(feature = "charts")]
 pub use dodai_charts_core::gantt::Task as GanttTask;
 #[cfg(feature = "charts")]
+pub use dodai_charts_core::instrument::{Alarm, Limits, Scale, Severity};
+#[cfg(feature = "charts")]
 pub use dodai_charts_core::Gradient;
 pub use dodai_motion;
 #[cfg(feature = "shaders")]
@@ -383,6 +387,8 @@ pub use icons::{Icon, IconId, IconName, IconPack};
 pub use instrument_charts::{
     Blip, DotMatrix, HexMap, Oscilloscope, RadarScope, RingStack, SignalBars, Spectrum,
 };
+#[cfg(feature = "charts")]
+pub use instruments::{severity_color, Annunciator, DialGauge, VitalsTile};
 mod icon_names;
 #[cfg(any(feature = "shaders", feature = "aurora"))]
 pub use backdrop::backdrop;

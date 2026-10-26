@@ -1,0 +1,174 @@
+//! The "Instruments" category: vehicle, industrial and medical readouts.
+
+use super::super::*;
+use dodai_gpui::{Annunciator, DialGauge, Limits, Scale, Severity, VitalsTile};
+
+impl Showcase {
+    /// Vehicle, industrial and medical instruments, one section each.
+    pub(crate) fn sections_instruments(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let me = cx.entity();
+        let gap = px(t.spacing.md);
+        let row = || div().flex().flex_wrap().items_center().gap(gap);
+        let mut out: Vec<Section> = Vec::new();
+        let ChartDemos {
+            instruments, pulse, ..
+        } = self.chart_demos(&me, cx);
+
+        // Vehicle: a speedometer with a redline tachometer and a fuel/temperature pair.
+        let speed = Scale::new(0.0, 240.0)
+            .ticks_per(12, 2)
+            .zone(200.0, 240.0, Severity::Caution);
+        let rpm = Scale::new(0.0, 8.0)
+            .ticks_per(8, 2)
+            .zone(6.5, 8.0, Severity::Alarm);
+        let fuel = Scale::new(0.0, 100.0)
+            .ticks_per(4, 1)
+            .zone(0.0, 12.0, Severity::Alarm)
+            .zone(12.0, 25.0, Severity::Caution);
+        let coolant = Scale::new(40.0, 130.0)
+            .ticks_per(3, 3)
+            .zone(105.0, 115.0, Severity::Caution)
+            .zone(115.0, 130.0, Severity::Alarm);
+        out.push((
+            "Instruments",
+            "Vehicle",
+            self.section("Vehicle", &t, &me, cx)
+                .child(
+                    row()
+                        .child(
+                            DialGauge::new(speed, 132.0)
+                                .label("Speed")
+                                .unit("km/h")
+                                .size(240.0),
+                        )
+                        .child(
+                            DialGauge::new(rpm, 7.1)
+                                .label("Engine")
+                                .unit("×1000 rpm")
+                                .decimals(1)
+                                .size(240.0),
+                        ),
+                )
+                .child(
+                    row()
+                        .child(
+                            DialGauge::new(fuel, 18.0)
+                                .label("Fuel")
+                                .unit("%")
+                                .size(150.0),
+                        )
+                        .child(
+                            DialGauge::new(coolant, 108.0)
+                                .label("Coolant")
+                                .unit("°C")
+                                .size(150.0),
+                        ),
+                )
+                .into_any_element(),
+            "Vehicle",
+        ));
+
+        // Industrial: process dials with alarm bands and an annunciator panel.
+        let limits = |lo: f32, hi: f32, hh: f32| Limits {
+            low: Some(lo),
+            high: Some(hi),
+            high_high: Some(hh),
+            ..Limits::default()
+        };
+        let pressure = limits(10.0, 70.0, 90.0).zones_on(Scale::new(0.0, 100.0).ticks_per(5, 2));
+        let temp = limits(20.0, 180.0, 220.0).zones_on(Scale::new(0.0, 250.0).ticks_per(5, 2));
+        let flow = limits(15.0, 80.0, 95.0).zones_on(Scale::new(0.0, 100.0).ticks_per(5, 2));
+        out.push((
+            "Instruments",
+            "Industrial",
+            self.section("Industrial", &t, &me, cx)
+                .child(
+                    row()
+                        .child(
+                            DialGauge::new(pressure, 54.0)
+                                .label("Header pressure")
+                                .unit("bar")
+                                .size(190.0),
+                        )
+                        .child(
+                            DialGauge::new(temp, 196.0)
+                                .label("Reactor temp")
+                                .unit("°C")
+                                .size(190.0),
+                        )
+                        .child(
+                            DialGauge::new(flow, 97.0)
+                                .label("Feed flow")
+                                .unit("m³/h")
+                                .size(190.0),
+                        ),
+                )
+                .child(Annunciator::new([
+                    ("Pump 1 run", Severity::Normal, false),
+                    ("Pump 2 trip", Severity::Alarm, false),
+                    ("Tank high", Severity::Caution, false),
+                    ("Door open", Severity::Advisory, false),
+                    ("Vibration", Severity::Caution, true),
+                    ("Power fail", Severity::Alarm, true),
+                    ("Valve closed", Severity::Normal, false),
+                    ("Comms", Severity::Normal, false),
+                ]))
+                .child(Muted::new(
+                    "Flashing = unacknowledged, steady = acknowledged. Caution 1 Hz, alarm 2 Hz.",
+                ))
+                .into_any_element(),
+            "Industrial",
+        ));
+
+        // Medical: vital-sign tiles and waveforms.
+        let vitals = |lo: f32, hi: f32| Limits {
+            low: Some(lo),
+            high: Some(hi),
+            ..Limits::default()
+        };
+        out.push((
+            "Instruments",
+            "Medical",
+            self.section("Medical", &t, &me, cx)
+                .child(
+                    row()
+                        .child(VitalsTile::new("HR", 72.0).unit("bpm").limits(vitals(50.0, 110.0)))
+                        .child(VitalsTile::new("SpO₂", 91.0).unit("%").limits(vitals(94.0, 100.0)))
+                        .child(
+                            VitalsTile::new("Temp", 38.9)
+                                .unit("°C")
+                                .decimals(1)
+                                .limits(Limits {
+                                    high: Some(38.0),
+                                    high_high: Some(38.5),
+                                    low: Some(36.0),
+                                    ..Limits::default()
+                                }),
+                        )
+                        .child(
+                            VitalsTile::new("RR", 28.0)
+                                .unit("/min")
+                                .limits(vitals(10.0, 24.0))
+                                .acknowledged(true),
+                        ),
+                )
+                .child(pulse)
+                .child(Muted::new(
+                    "Alarm colours come from the theme (warning, danger). An unacknowledged alarm flashes its tile.",
+                ))
+                .into_any_element(),
+            "Medical",
+        ));
+        // Sci-fi HUD instruments (Cyberpunk only, see `catalog::owner`).
+        out.push((
+            "Instruments",
+            "HUD",
+            self.section("Instruments", &t, &me, cx)
+                .child(instruments)
+                .into_any_element(),
+            "Instruments",
+        ));
+        out
+    }
+}
