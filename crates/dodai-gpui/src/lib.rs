@@ -409,6 +409,7 @@ pub use instruments_hero::{CapsuleCluster, CutSpeedometer};
 #[cfg(feature = "charts")]
 pub use instruments_military::{
     MissionTimer, Station, StationState, StoresPanel, TacticalPlot, Threat, ThreatRosette,
+    TrackList,
 };
 #[cfg(feature = "charts")]
 pub use instruments_segment::{SegmentCluster, SegmentDisplay};

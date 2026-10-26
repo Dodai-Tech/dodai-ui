@@ -5,7 +5,7 @@ use dodai_gpui::{
     Affiliation, Annunciator, ClusterKind, Compass, Contact, DialGauge, DialLook, GearIndicator,
     InstrumentCluster, LevelBar, Limits, MissionTimer, Odometer, PowerMeter, Scale, Severity,
     Station, StationState, StoresPanel, TacticalPlot, Threat, ThreatRosette, TirePressure,
-    VitalsTile,
+    TrackList, VitalsTile,
 };
 
 impl Showcase {
@@ -269,15 +269,28 @@ impl Showcase {
             "Radar & telemetry",
         ));
         // Military: tactical plot, threat warning, weapon stations and the mission clock.
-        let plot = TacticalPlot::new([
-            Contact::new(0.06, 0.55, Affiliation::Hostile).heading(0.55),
-            Contact::new(0.12, 0.8, Affiliation::Hostile).heading(0.6),
-            Contact::new(0.33, 0.4, Affiliation::Friendly).heading(0.25),
-            Contact::new(0.46, 0.7, Affiliation::Unknown),
-            Contact::new(0.7, 0.5, Affiliation::Neutral).heading(0.9),
-            Contact::new(0.85, 0.85, Affiliation::Friendly).heading(0.1),
-        ])
-        .caption("Tactical plot");
+        let tracks = [
+            Contact::new(0.06, 0.55, Affiliation::Hostile)
+                .heading(0.55)
+                .id(101),
+            Contact::new(0.12, 0.8, Affiliation::Hostile)
+                .heading(0.6)
+                .id(102),
+            Contact::new(0.33, 0.4, Affiliation::Friendly)
+                .heading(0.25)
+                .id(201),
+            Contact::new(0.46, 0.7, Affiliation::Unknown).id(301),
+            Contact::new(0.7, 0.5, Affiliation::Neutral)
+                .heading(0.9)
+                .id(401),
+            Contact::new(0.85, 0.85, Affiliation::Friendly)
+                .heading(0.1)
+                .id(202),
+        ];
+        let plot = TacticalPlot::new(tracks)
+            .selected(Some(0))
+            .caption("Tactical plot");
+        let track_list = TrackList::new(tracks).selected(Some(0));
         let rosette = ThreatRosette::new([
             Threat::new(0.05, 0.9),
             Threat::new(0.31, 0.5),
@@ -301,6 +314,7 @@ impl Showcase {
                                 .justify_around()
                                 .gap_6()
                                 .child(plot)
+                                .child(track_list)
                                 .child(rosette)
                                 .child(
                                     div()

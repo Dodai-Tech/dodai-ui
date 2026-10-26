@@ -17,6 +17,18 @@ pub enum Affiliation {
     Unknown,
 }
 
+impl Affiliation {
+    /// Short name for track lists.
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Friendly => "FRIEND",
+            Self::Hostile => "HOSTILE",
+            Self::Neutral => "NEUTRAL",
+            Self::Unknown => "UNKNOWN",
+        }
+    }
+}
+
 /// A tracked contact: `bearing` and `heading` in turns (0 = up, clockwise), `range` in `0..=1`.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Contact {
@@ -28,6 +40,8 @@ pub struct Contact {
     pub affiliation: Affiliation,
     /// Direction of travel, in turns, when known.
     pub heading: Option<f32>,
+    /// Track number shown next to the symbol.
+    pub id: u32,
 }
 
 impl Contact {
@@ -38,12 +52,26 @@ impl Contact {
             range: range.clamp(0.0, 1.0),
             affiliation,
             heading: None,
+            id: 0,
         }
     }
     /// Sets the direction of travel.
     pub fn heading(mut self, turns: f32) -> Self {
         self.heading = Some(turns);
         self
+    }
+    /// Sets the track number.
+    pub fn id(mut self, id: u32) -> Self {
+        self.id = id;
+        self
+    }
+    /// Bearing in whole degrees, `0..360`. Pure.
+    pub fn bearing_deg(&self) -> u32 {
+        (self.bearing.rem_euclid(1.0) * 360.0).round() as u32 % 360
+    }
+    /// Distance in the plot's own unit when the outer ring is `max`. Pure.
+    pub fn distance(&self, max: f32) -> f32 {
+        self.range * max
     }
     /// Position on a plot centred at `(cx, cy)` with radius `r`. Pure.
     pub fn position(&self, cx: f32, cy: f32, r: f32) -> (f32, f32) {
@@ -111,6 +139,13 @@ pub fn timer_severity(secs: i64) -> Severity {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bearing_and_distance_read_in_plot_units() {
+        let c = Contact::new(0.25, 0.5, Affiliation::Hostile);
+        assert_eq!(c.bearing_deg(), 90);
+        assert!((c.distance(80.0) - 40.0).abs() < 1e-4);
+    }
 
     #[test]
     fn countdown_formats_both_directions() {

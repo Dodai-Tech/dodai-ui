@@ -2,18 +2,20 @@
 //! [`StoresPanel`] and a [`MissionTimer`]. Geometry and severity come from
 //! `dodai_charts_core::tactical`; this file only paints it with the theme's tokens.
 
-use crate::charts::polar;
+use crate::charts::{fmt_num, polar};
 use crate::instrument_charts::frame;
+use crate::instrument_charts::{blip_alpha, clock};
 use crate::instruments::severity_color;
 use crate::instruments_segment::SegmentDisplay;
 use crate::paint::{fill, scale_alpha, shaped, stroke, stroke_batch, ShapeStyle};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
+use dodai_charts_core::instrument::Severity;
 use dodai_charts_core::math::turn_arc;
 use dodai_charts_core::tactical::{self, Affiliation, Contact};
 use gpui::{
-    canvas, div, px, App, Bounds, Hsla, IntoElement, ParentElement, Pixels, RenderOnce,
-    SharedString, Styled, Window,
+    canvas, div, prelude::FluentBuilder, px, App, Bounds, Hsla, IntoElement, ParentElement, Pixels,
+    RenderOnce, SharedString, Styled, Window,
 };
 
 fn affiliation_color(t: &dodai_core::Theme, a: Affiliation) -> Hsla {
@@ -30,6 +32,9 @@ fn affiliation_color(t: &dodai_core::Theme, a: Affiliation) -> Hsla {
 #[derive(IntoElement)]
 pub struct TacticalPlot {
     contacts: Vec<Contact>,
+    selected: Option<usize>,
+    range: (f32, &'static str),
+    live: bool,
     size: f32,
     caption: Option<SharedString>,
 }
@@ -39,9 +44,27 @@ impl TacticalPlot {
     pub fn new(contacts: impl IntoIterator<Item = Contact>) -> Self {
         Self {
             contacts: contacts.into_iter().collect(),
-            size: 280.0,
+            selected: None,
+            range: (100.0, "nm"),
+            live: true,
+            size: 300.0,
             caption: None,
         }
+    }
+    /// Highlights the contact at this index with a selection bracket.
+    pub fn selected(mut self, i: Option<usize>) -> Self {
+        self.selected = i;
+        self
+    }
+    /// Distance of the outer ring and its unit, e.g. `(100.0, "nm")`.
+    pub fn range(mut self, max: f32, unit: &'static str) -> Self {
+        self.range = (max, unit);
+        self
+    }
+    /// Sweep a beam round the plot and let contacts brighten as it passes (default on).
+    pub fn live(mut self, on: bool) -> Self {
+        self.live = on;
+        self
     }
     /// Size in px.
     pub fn size(mut self, s: f32) -> Self {
@@ -58,49 +81,82 @@ impl TacticalPlot {
 impl RenderOnce for TacticalPlot {
     fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        let size = self.size;
+        let (size, live, selected) = (self.size, self.live, self.selected);
+        let (max, unit) = self.range;
         let contacts = self.contacts;
         let grid = scale_alpha(hsla(t.palette.border), 0.8);
         let own = hsla(t.palette.primary);
+        let (c, r) = (size / 2.0, size / 2.0 - 14.0);
         let t2 = t.clone();
+        let cs = contacts.clone();
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
                 let o = b.origin;
-                let c = size / 2.0;
-                let r = c - 4.0;
                 let rings: Vec<_> = (1..=4)
                     .map(|i| turn_arc(c, c, r * i as f32 / 4.0, 0.0, 1.0))
                     .collect();
                 stroke_batch(w, o, &rings, 1.0, grid, true);
-                let spokes: Vec<_> = (0..12)
+                let spokes: Vec<_> = (0..36)
                     .map(|i| {
-                        let a = i as f32 / 12.0;
-                        vec![polar(c, c, r * 0.9, a), polar(c, c, r, a)]
+                        let a = i as f32 / 36.0;
+                        let len = if i % 3 == 0 { 0.08 } else { 0.04 };
+                        vec![polar(c, c, r * (1.0 - len), a), polar(c, c, r, a)]
                     })
                     .collect();
                 stroke_batch(w, o, &spokes, 1.0, grid, false);
-                let axes = [
-                    vec![(c, 4.0), (c, size - 4.0)],
-                    vec![(4.0, c), (size - 4.0, c)],
-                ];
+                let axes = [vec![(c, c - r), (c, c + r)], vec![(c - r, c), (c + r, c)]];
                 stroke_batch(w, o, &axes, 1.0, scale_alpha(grid, 0.5), false);
-                for k in &contacts {
+                let sweep = if live { (clock() / 5.0).fract() } else { 0.0 };
+                if live {
+                    for i in 0..12 {
+                        let a1 = sweep - i as f32 * 0.012;
+                        let a0 = a1 - 0.012;
+                        let mut p = turn_arc(c, c, r, a0, a1);
+                        p.push((c, c));
+                        fill(w, o, &p, scale_alpha(own, 0.16 * (1.0 - i as f32 / 12.0)));
+                    }
+                    stroke(
+                        w,
+                        o,
+                        &[(c, c), polar(c, c, r, sweep)],
+                        1.5,
+                        scale_alpha(own, 0.8),
+                        false,
+                    );
+                    crate::motion::next_frame(w);
+                }
+                for (i, k) in cs.iter().enumerate() {
                     let col = affiliation_color(&t2, k.affiliation);
                     let (x, y) = k.position(c, c, r);
+                    let glow = if live {
+                        0.45 + 0.55 * blip_alpha(sweep, k.bearing.rem_euclid(1.0))
+                    } else {
+                        1.0
+                    };
                     if let Some(h) = k.heading {
                         stroke(
                             w,
                             o,
                             &[(x, y), polar(x, y, size * 0.07, h)],
                             2.0,
-                            col,
+                            scale_alpha(col, glow),
                             false,
                         );
                     }
-                    let sym = tactical::symbol(k.affiliation, x, y, size * 0.025);
-                    fill(w, o, &sym, scale_alpha(col, 0.35));
-                    stroke(w, o, &sym, 2.0, col, true);
+                    let sym = tactical::symbol(k.affiliation, x, y, size * 0.022);
+                    fill(w, o, &sym, scale_alpha(col, 0.35 * glow));
+                    stroke(w, o, &sym, 2.0, scale_alpha(col, glow), true);
+                    if selected == Some(i) {
+                        let e = size * 0.045;
+                        let br = [
+                            vec![(x - e, y - e + 5.0), (x - e, y - e), (x - e + 5.0, y - e)],
+                            vec![(x + e - 5.0, y - e), (x + e, y - e), (x + e, y - e + 5.0)],
+                            vec![(x + e, y + e - 5.0), (x + e, y + e), (x + e - 5.0, y + e)],
+                            vec![(x - e + 5.0, y + e), (x - e, y + e), (x - e, y + e - 5.0)],
+                        ];
+                        stroke_batch(w, o, &br, 1.5, hsla(t2.palette.text), false);
+                    }
                 }
                 let ship = [
                     (c, c - 7.0),
@@ -113,7 +169,127 @@ impl RenderOnce for TacticalPlot {
         )
         .absolute()
         .size_full();
-        frame(&t, size, size, self.caption, cv)
+        let muted = hsla(t.palette.text_muted);
+        let small = px(t.typography.size_xs);
+        let tag = |x: f32, y: f32, text: String, col: Hsla| {
+            div()
+                .absolute()
+                .left(px(x))
+                .top(px(y))
+                .text_size(small)
+                .text_color(col)
+                .child(text)
+        };
+        let mut body = div().relative().size_full().child(cv);
+        for (txt, a) in [("N", 0.0), ("E", 0.25), ("S", 0.5), ("W", 0.75)] {
+            let (x, y) = polar(c, c, r + 8.0, a);
+            body = body.child(tag(x - 4.0, y - 7.0, txt.into(), muted));
+        }
+        for i in 1..=4 {
+            let v = max * i as f32 / 4.0;
+            let (lx, ly) = polar(c, c, r * i as f32 / 4.0, 0.125);
+            body = body.child(tag(
+                lx + 2.0,
+                ly - 12.0,
+                if i == 4 {
+                    format!("{} {unit}", fmt_num(v))
+                } else {
+                    fmt_num(v)
+                },
+                muted,
+            ));
+        }
+        for k in &contacts {
+            let (x, y) = k.position(c, c, r);
+            body = body.child(tag(
+                x + size * 0.03,
+                y - size * 0.045,
+                format!("{:03}", k.id),
+                affiliation_color(&t, k.affiliation),
+            ));
+        }
+        frame(&t, size, size, self.caption, body)
+    }
+}
+
+/// A table of the tracks a [`TacticalPlot`] shows: number, side, bearing and distance.
+#[derive(IntoElement)]
+pub struct TrackList {
+    contacts: Vec<Contact>,
+    selected: Option<usize>,
+    range: (f32, &'static str),
+}
+
+impl TrackList {
+    /// A list of `contacts`.
+    pub fn new(contacts: impl IntoIterator<Item = Contact>) -> Self {
+        Self {
+            contacts: contacts.into_iter().collect(),
+            selected: None,
+            range: (100.0, "nm"),
+        }
+    }
+    /// Highlights a row.
+    pub fn selected(mut self, i: Option<usize>) -> Self {
+        self.selected = i;
+        self
+    }
+    /// Distance of the plot's outer ring and its unit.
+    pub fn range(mut self, max: f32, unit: &'static str) -> Self {
+        self.range = (max, unit);
+        self
+    }
+}
+
+impl RenderOnce for TrackList {
+    fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let (max, unit) = self.range;
+        let mono = first_family(t.typography.mono);
+        let cell = |text: String, w: f32, col: Hsla| {
+            div()
+                .w(px(w))
+                .text_size(px(t.typography.size_sm))
+                .font_family(mono.clone())
+                .text_color(col)
+                .child(text)
+        };
+        let muted = hsla(t.palette.text_muted);
+        let head = div()
+            .flex()
+            .pb(px(t.spacing.xs))
+            .border_b_1()
+            .border_color(hsla(t.palette.border))
+            .child(cell("TRK".into(), 48.0, muted))
+            .child(cell("SIDE".into(), 84.0, muted))
+            .child(cell("BRG".into(), 52.0, muted))
+            .child(cell(format!("RNG {unit}"), 76.0, muted));
+        let rows = self.contacts.iter().enumerate().map(|(i, k)| {
+            let col = affiliation_color(&t, k.affiliation);
+            let sel = self.selected == Some(i);
+            div()
+                .flex()
+                .py(px(2.0))
+                .when(sel, |d| d.bg(scale_alpha(col, 0.18)))
+                .child(cell(format!("{:03}", k.id), 48.0, hsla(t.palette.text)))
+                .child(cell(k.affiliation.name().into(), 84.0, col))
+                .child(cell(
+                    format!("{:03}°", k.bearing_deg()),
+                    52.0,
+                    hsla(t.palette.text),
+                ))
+                .child(cell(
+                    fmt_num(k.distance(max).round()),
+                    76.0,
+                    hsla(t.palette.text),
+                ))
+        });
+        shaped(&t.shape, crate::panel::panel_style(&t, false))
+            .p(px(t.spacing.sm))
+            .flex()
+            .flex_col()
+            .child(head)
+            .children(rows)
     }
 }
 
@@ -170,7 +346,8 @@ impl RenderOnce for ThreatRosette {
     fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let size = self.size;
-        let threats = self.threats;
+        let threats = self.threats.clone();
+        let labels = self.threats.clone();
         let grid = scale_alpha(hsla(t.palette.border), 0.8);
         let own = hsla(t.palette.primary);
         let t2 = t.clone();
@@ -179,7 +356,7 @@ impl RenderOnce for ThreatRosette {
             move |b: Bounds<Pixels>, _, w, _| {
                 let o = b.origin;
                 let c = size / 2.0;
-                let r = c - 4.0;
+                let r = c - 14.0;
                 let rings: Vec<_> = [0.25, 0.6, 1.0]
                     .iter()
                     .map(|k| turn_arc(c, c, r * k, 0.0, 1.0))
@@ -204,7 +381,16 @@ impl RenderOnce for ThreatRosette {
                         th.bearing,
                         0.07,
                     );
-                    fill(w, o, &p, scale_alpha(col, 0.85));
+                    let alarm = tactical::threat_severity(th.level) == Severity::Alarm;
+                    let pulse = if alarm {
+                        0.6 + 0.4 * (clock() * 6.0).sin().abs()
+                    } else {
+                        0.85
+                    };
+                    if alarm {
+                        crate::motion::next_frame(w);
+                    }
+                    fill(w, o, &p, scale_alpha(col, pulse));
                     stroke(w, o, &p, 1.0, col, true);
                 }
                 let ship = [
@@ -218,7 +404,26 @@ impl RenderOnce for ThreatRosette {
         )
         .absolute()
         .size_full();
-        frame(&t, size, size, self.caption, cv)
+        let mut body = div().relative().size_full().child(cv);
+        for th in &labels {
+            let (x, y) = polar(size / 2.0, size / 2.0, size / 2.0 - 14.0 + 9.0, th.bearing);
+            body = body.child(
+                div()
+                    .absolute()
+                    .left(px(x - 12.0))
+                    .top(px(y - 7.0))
+                    .w(px(24.0))
+                    .flex()
+                    .justify_center()
+                    .text_size(px(t.typography.size_xs))
+                    .text_color(severity_color(&t, tactical::threat_severity(th.level)))
+                    .child(format!(
+                        "{:03}",
+                        (th.bearing.rem_euclid(1.0) * 360.0).round() as u32 % 360
+                    )),
+            );
+        }
+        frame(&t, size, size, self.caption, body)
     }
 }
 
@@ -360,7 +565,7 @@ impl RenderOnce for MissionTimer {
     fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let col = match tactical::timer_severity(self.secs) {
-            dodai_charts_core::instrument::Severity::Normal => hsla(t.palette.primary),
+            Severity::Normal => hsla(t.palette.primary),
             s => severity_color(&t, s),
         };
         // `T-` is a label, the digits show the time itself.
