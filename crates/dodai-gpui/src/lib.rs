@@ -322,9 +322,10 @@ pub use button::{
 pub use carousel::{layout_widths, window_start, Carousel, CarouselLayout, SMALL_ITEM};
 #[cfg(feature = "charts")]
 pub use charts::{
-    bar_max, fmt_num, heat_color, heat_color_with, marker_points, nice_ticks, norm, pie_fractions,
-    pie_hit, polar, smooth_points, spark_columns, BarChart, ChartGlow, Gauge, Heatmap, Legend,
-    LineChart, Marker, PieChart, PieStyle, RadarChart, ScatterPlot, Series, SparkStyle, Sparkline,
+    bar_max, chart_glow, fmt_num, heat_color, heat_color_with, marker_points, nice_ticks, norm,
+    pie_fractions, pie_hit, polar, set_chart_glow, smooth_points, spark_columns, BarChart,
+    ChartGlow, Gauge, Heatmap, Legend, LineChart, Marker, PieChart, PieStyle, RadarChart,
+    ScatterPlot, Series, SparkStyle, Sparkline,
 };
 #[cfg(feature = "charts")]
 pub use charts_annotate::Annotation;

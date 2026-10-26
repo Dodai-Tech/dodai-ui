@@ -166,6 +166,8 @@ pub struct Showcase {
     inst_trail: usize,
     /// Needle response of the instruments: 0 the design's own, then `NeedleResponse::ALL`.
     inst_response: usize,
+    /// Glow of every chart and instrument: 0 the theme's own, 1 off, 2 soft, 3 strong.
+    inst_glow: usize,
     /// Whether the instrument demos change their values on their own.
     inst_live: bool,
     /// Pulse monitor options: rhythm, mode, grid, noise, rate, trail, gain.

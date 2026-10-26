@@ -49,11 +49,30 @@ pub enum ChartGlow {
     Radius(f32),
 }
 
+thread_local! {
+    static GLOW: std::cell::Cell<ChartGlow> = const { std::cell::Cell::new(ChartGlow::Theme) };
+}
+
+/// The glow every chart and instrument uses unless it sets its own. Starts as
+/// [`ChartGlow::Theme`].
+pub fn chart_glow() -> ChartGlow {
+    GLOW.with(std::cell::Cell::get)
+}
+
+/// Sets the glow for all charts and instruments at once, and repaints.
+pub fn set_chart_glow(cx: &mut gpui::App, glow: ChartGlow) {
+    GLOW.with(|c| c.set(glow));
+    cx.refresh_windows();
+}
+
 impl ChartGlow {
     /// The radius to draw, or `None` for no glow.
     pub(crate) fn resolve(self, t: &Theme) -> Option<f32> {
         match self {
-            Self::Theme => glow_of(t),
+            Self::Theme => match chart_glow() {
+                Self::Theme => glow_of(t),
+                other => other.resolve(t),
+            },
             Self::Off => None,
             Self::Radius(r) => (r > 0.0).then_some(r),
         }

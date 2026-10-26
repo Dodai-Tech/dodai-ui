@@ -34,6 +34,34 @@ impl Showcase {
             lo + (hi - lo) * h
         };
         let sel = self.inst_response;
+        let glow_sel = self.inst_glow;
+        // One glow for all instruments and charts; "Theme" follows Surface effects.
+        let glow_bar = || {
+            let m = me.clone();
+            div()
+                .flex()
+                .items_center()
+                .gap_2()
+                .child(Label::new("Glow"))
+                .child(
+                    Segmented::new("inst-glow", ["Theme", "Off", "Soft", "Strong"])
+                        .selected(glow_sel)
+                        .on_select(move |i, _, cx| {
+                            m.update(cx, |s, cx| {
+                                s.inst_glow = i;
+                                dodai_gpui::set_chart_glow(
+                                    cx,
+                                    match i {
+                                        1 => dodai_gpui::ChartGlow::Off,
+                                        2 => dodai_gpui::ChartGlow::Radius(4.0),
+                                        3 => dodai_gpui::ChartGlow::Radius(10.0),
+                                        _ => dodai_gpui::ChartGlow::Theme,
+                                    },
+                                );
+                            })
+                        }),
+                )
+        };
         let motion_bar = || {
             let (m1, m2) = (me.clone(), me.clone());
             div()
@@ -66,6 +94,7 @@ impl Showcase {
                         .flex()
                         .items_center()
                         .gap_2()
+                        .child(glow_bar())
                         .child(Label::new("Demo"))
                         .child(
                             Segmented::new("inst-live", ["Still", "Live"])
@@ -316,6 +345,7 @@ impl Showcase {
             "Instruments",
             "Gauges",
             self.section("Gauges", &t, &me, cx)
+                .child(glow_bar())
                 .child(gauge_styles)
                 .into_any_element(),
             "Gauges",
@@ -331,6 +361,7 @@ impl Showcase {
             "Instruments",
             "Medical",
             self.section("Medical", &t, &me, cx)
+                .child(glow_bar())
                 .child(
                     row()
                         .child(VitalsTile::new("HR", 72.0).unit("bpm").limits(vitals(50.0, 110.0)))
@@ -365,6 +396,7 @@ impl Showcase {
             "Instruments",
             "Radar & telemetry",
             self.section("Radar & telemetry", &t, &me, cx)
+                .child(glow_bar())
                 .child(hud)
                 .into_any_element(),
             "Radar & telemetry",
@@ -403,6 +435,7 @@ impl Showcase {
             "Instruments",
             "Military",
             self.section("Military", &t, &me, cx)
+                .child(glow_bar())
                 .child(
                     div()
                         .flex()
@@ -500,6 +533,7 @@ impl Showcase {
             "Instruments",
             "Signal lab",
             self.section("Signal lab", &t, &me, cx)
+                .child(glow_bar())
                 .child(lab)
                 .into_any_element(),
             "Signal lab",
