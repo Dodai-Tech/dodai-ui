@@ -9,7 +9,6 @@ impl Showcase {
         let mut out: Vec<Section> = Vec::new();
         let ChartDemos {
             charts_xy,
-            gauge_styles,
             pies,
             donuts,
             sparks,
@@ -60,14 +59,6 @@ impl Showcase {
                 .child(donuts)
                 .into_any_element(),
             "Donut",
-        ));
-        out.push((
-            "Charts",
-            "Gauges",
-            self.section("Gauges", &t, &me, cx)
-                .child(gauge_styles)
-                .into_any_element(),
-            "Gauges",
         ));
         out.push((
             "Charts",

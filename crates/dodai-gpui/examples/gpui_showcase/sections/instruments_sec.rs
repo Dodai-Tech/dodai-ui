@@ -12,7 +12,10 @@ impl Showcase {
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let mut out: Vec<Section> = Vec::new();
         let ChartDemos {
-            instruments, pulse, ..
+            instruments: (lab, hud),
+            pulse,
+            gauge_styles,
+            ..
         } = self.chart_demos(&me, cx);
 
         // Vehicle: a speedometer with a redline tachometer and a fuel/temperature pair.
@@ -121,6 +124,23 @@ impl Showcase {
             "Industrial",
         ));
 
+        out.push((
+            "Instruments",
+            "Gauges",
+            self.section("Gauges", &t, &me, cx)
+                .child(gauge_styles)
+                .into_any_element(),
+            "Gauges",
+        ));
+        out.push((
+            "Instruments",
+            "Signal lab",
+            self.section("Signal lab", &t, &me, cx)
+                .child(lab)
+                .into_any_element(),
+            "Signal lab",
+        ));
+
         // Medical: vital-sign tiles and waveforms.
         let vitals = |lo: f32, hi: f32| Limits {
             low: Some(lo),
@@ -165,7 +185,7 @@ impl Showcase {
             "Instruments",
             "HUD",
             self.section("Instruments", &t, &me, cx)
-                .child(instruments)
+                .child(hud)
                 .into_any_element(),
             "Instruments",
         ));

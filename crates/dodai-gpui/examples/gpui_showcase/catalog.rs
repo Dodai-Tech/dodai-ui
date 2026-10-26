@@ -198,7 +198,7 @@ pub(crate) fn owner(title: &str) -> Option<&'static [&'static str]> {
         "Button groups · Split button" | "Loading indicator" | "Material 3 shaders" => {
             Some(&["material"])
         }
-        "Instruments" | "Cyberpunk shaders" => Some(&["cyberpunk"]),
+        "Instruments" | "Signal lab" | "Cyberpunk shaders" => Some(&["cyberpunk"]),
         "Frosted glass" => Some(&["aurora", "material", "neobrutalism", "cyberpunk"]),
         _ => None,
     }

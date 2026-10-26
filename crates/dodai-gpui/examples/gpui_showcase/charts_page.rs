@@ -7,7 +7,8 @@ use gpui::Div;
 pub(crate) struct ChartDemos {
     pub charts_xy: Div,
     pub gauge_styles: Div,
-    pub instruments: Div,
+    /// Instrument demos: (signal lab, sci-fi HUD).
+    pub instruments: (Div, Div),
     pub pies: Div,
     pub donuts: Div,
     pub sparks: Div,
@@ -340,7 +341,7 @@ impl Showcase {
                 3 => dodai_gpui::ChartGlow::Radius(10.0),
                 _ => dodai_gpui::ChartGlow::Theme,
             };
-            let trail_picker = {
+            let trail_picker = || {
                 let m = me.clone();
                 row()
                     .child(Label::new("Trail"))
@@ -359,7 +360,7 @@ impl Showcase {
                     ))
             };
             let trail = [0.0, 0.5, 1.0, 2.0][self.inst_trail.min(3)];
-            let glow_picker = {
+            let glow_picker = || {
                 let m = me.clone();
                 row()
                     .child(Label::new("Glow"))
@@ -394,84 +395,85 @@ impl Showcase {
                 (0.9, 0.6),
             ]
             .map(|(a, r)| Blip::new(a, r));
-            div()
-                .flex()
-                .flex_col()
-                .gap_6()
-                .child(glow_picker)
-                .child(trail_picker)
-                .child(
-                    row()
-                        .justify_around()
-                        .flex_wrap()
-                        .child(
-                            Oscilloscope::ecg(2, 240)
-                                .glow(glow)
-                                .trail(trail)
-                                .live(true)
-                                .size(320.0, 120.0)
-                                .caption("Pulse · 72 bpm"),
-                        )
-                        .child(
-                            DotMatrix::new([
-                                0.3, 0.55, 0.8, 0.45, 0.95, 0.6, 0.35, 0.7, 0.5, 0.85, 0.4, 0.65,
-                            ])
+            let shell = |body: Div| {
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap_6()
+                    .child(glow_picker())
+                    .child(trail_picker())
+                    .child(body)
+            };
+            let wrap = || row().justify_around().flex_wrap();
+            let lab = shell(
+                wrap()
+                    .child(
+                        Oscilloscope::ecg(2, 240)
                             .glow(glow)
-                            .width(300.0)
-                            .caption("Dot matrix"),
-                        )
-                        .child(
-                            div()
-                                .flex()
-                                .items_end()
-                                .gap_4()
-                                .child(SignalBars::new(2).glow(glow))
-                                .child(SignalBars::new(4).height(40.0).glow(glow))
-                                .child(SignalBars::new(5).height(52.0).bars(6).glow(glow)),
-                        )
-                        .child(
-                            Oscilloscope::wave(&[(3.0, 1.0), (7.0, 0.4)], 160)
-                                .glow(glow)
-                                .trail(trail)
-                                .live(true)
-                                .caption("CH1 · 2 ms/div"),
-                        )
-                        .child(
-                            Spectrum::new(spec)
-                                .glow(glow)
-                                .live(true)
-                                .size(300.0, 160.0)
-                                .caption("Audio · 18 band"),
-                        ),
-                )
-                .child(
-                    row()
-                        .justify_around()
-                        .flex_wrap()
-                        .child(
-                            RadarScope::new(blips)
-                                .glow(glow)
-                                .size(220.0)
-                                .caption("Proximity"),
-                        )
-                        .child(
-                            HexMap::new(12, hexes)
-                                .glow(glow)
-                                .width(340.0)
-                                .live(true)
-                                .caption("Grid load"),
-                        )
-                        .child(
-                            RingStack::new([
-                                ("CPU", 78.0),
-                                ("MEM", 54.0),
-                                ("NET", 31.0),
-                                ("GPU", 90.0),
-                            ])
+                            .trail(trail)
+                            .live(true)
+                            .size(320.0, 120.0)
+                            .caption("Pulse · 72 bpm"),
+                    )
+                    .child(
+                        DotMatrix::new([
+                            0.3, 0.55, 0.8, 0.45, 0.95, 0.6, 0.35, 0.7, 0.5, 0.85, 0.4, 0.65,
+                        ])
+                        .glow(glow)
+                        .width(300.0)
+                        .caption("Dot matrix"),
+                    )
+                    .child(
+                        div()
+                            .flex()
+                            .items_end()
+                            .gap_4()
+                            .child(SignalBars::new(2).glow(glow))
+                            .child(SignalBars::new(4).height(40.0).glow(glow))
+                            .child(SignalBars::new(5).height(52.0).bars(6).glow(glow)),
+                    )
+                    .child(
+                        Oscilloscope::wave(&[(3.0, 1.0), (7.0, 0.4)], 160)
                             .glow(glow)
-                            .size(160.0),
-                        ),
-                )
+                            .trail(trail)
+                            .live(true)
+                            .caption("CH1 · 2 ms/div"),
+                    )
+                    .child(
+                        Spectrum::new(spec)
+                            .glow(glow)
+                            .live(true)
+                            .size(300.0, 160.0)
+                            .caption("Audio · 18 band"),
+                    ),
+            );
+            let hud = shell(
+                wrap()
+                    .child(
+                        RadarScope::new(blips)
+                            .glow(glow)
+                            .size(220.0)
+                            .caption("Proximity"),
+                    )
+                    .child(
+                        HexMap::new(12, hexes)
+                            .glow(glow)
+                            .width(340.0)
+                            .live(true)
+                            .caption("Grid load"),
+                    )
+                    .child(
+                        RingStack::new([
+                            ("CPU", 78.0),
+                            ("MEM", 54.0),
+                            ("NET", 31.0),
+                            ("GPU", 90.0),
+                        ])
+                        .glow(glow)
+                        .size(160.0),
+                    ),
+            );
+            (lab, hud)
         };
         let tile = |title: &'static str, el: gpui::AnyElement| {
             div()
