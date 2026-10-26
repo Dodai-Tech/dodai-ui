@@ -25,7 +25,7 @@ pub enum ClusterKind {
     /// Round pods around a big inverted tachometer.
     #[default]
     Pods,
-    /// A cut-corner speedometer with radiating hairlines and a road scene.
+    /// A cut-corner speedometer with radiating hairlines.
     Cut,
     /// A capsule with a gradient sweep, side arcs and a gear selector.
     Capsule,
