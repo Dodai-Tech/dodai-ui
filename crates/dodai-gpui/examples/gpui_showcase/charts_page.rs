@@ -456,6 +456,11 @@ impl Showcase {
                             .caption("CH1 · 2 ms/div"),
                     )
                     .child(
+                        Oscilloscope::new([])
+                            .stream(&self.live_c)
+                            .caption("Live ECG · streamed"),
+                    )
+                    .child(
                         Spectrum::new(spec)
                             .live(true)
                             .size(300.0, 160.0)

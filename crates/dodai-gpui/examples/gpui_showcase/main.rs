@@ -167,6 +167,7 @@ pub struct Showcase {
     demo_otp: String,
     live_a: dodai_gpui::Live,
     live_b: dodai_gpui::Live,
+    live_c: dodai_gpui::Live,
     /// Pulse monitor options: rhythm, mode, grid, noise, rate, trail, gain.
     pulse_cfg: [usize; 7],
     sh_gen: &'static str,

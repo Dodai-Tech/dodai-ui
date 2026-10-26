@@ -134,6 +134,7 @@ fn grid_color(t: &Theme) -> Hsla {
 /// Phosphor-style trace over a divided graticule. Samples are `-1..=1`.
 #[derive(IntoElement)]
 pub struct Oscilloscope {
+    stream: Option<crate::live::Live>,
     trail: f32,
     glow: ChartGlow,
     samples: Vec<f32>,
@@ -159,6 +160,7 @@ impl Oscilloscope {
     /// Create a new [`Oscilloscope`].
     pub fn new(samples: impl IntoIterator<Item = f32>) -> Self {
         Self {
+            stream: None,
             trail: 1.0,
             glow: ChartGlow::Theme,
             samples: samples.into_iter().collect(),
@@ -192,6 +194,13 @@ impl Oscilloscope {
         self.h = h;
         self
     }
+    /// Draws a [`crate::Live`] window (samples `-1..=1`) that slides left between samples,
+    /// newest at the right edge.
+    pub fn stream(mut self, window: &crate::live::Live) -> Self {
+        self.samples = window.values();
+        self.stream = Some(window.clone());
+        self
+    }
     /// Scroll the (periodic) trace and leave a fading phosphor trail.
     pub fn live(mut self, on: bool) -> Self {
         self.live = on;
@@ -210,8 +219,12 @@ impl Oscilloscope {
 }
 
 impl RenderOnce for Oscilloscope {
-    fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let scroll = self.stream.as_ref().map(crate::live::Live::scroll);
+        if scroll.is_some() {
+            crate::instruments_motion::next_frame(window);
+        }
         let col = hsla(self.color.unwrap_or(t.palette.primary));
         let (gw, gh) = (self.w, self.h);
         let samples = self.samples;
@@ -260,7 +273,7 @@ impl RenderOnce for Oscilloscope {
                         .map(|i| {
                             let j = ((i as f32 + shift).rem_euclid(n as f32)) as usize % n;
                             (
-                                gw * i as f32 / (n - 1) as f32,
+                                gw * (i as f32 - scroll.unwrap_or(0.0)) / (n - 1) as f32,
                                 gh / 2.0 - samples[j].clamp(-1.0, 1.0) * gh * 0.45,
                             )
                         })
@@ -280,13 +293,15 @@ impl RenderOnce for Oscilloscope {
                     crate::instruments_motion::next_frame(w);
                 }
                 let main = trace(0.0);
-                if lk.fill > 0.0 {
-                    let mut area = main.clone();
-                    area.push((gw, gh));
-                    area.push((0.0, gh));
-                    fill(w, o, &area, scale_alpha(col, lk.fill));
-                }
-                glow_stroke(w, o, &main, lk.line, col, glow);
+                w.with_content_mask(Some(gpui::ContentMask { bounds: b }), |w| {
+                    if lk.fill > 0.0 {
+                        let mut area = main.clone();
+                        area.push((main.last().map_or(gw, |q| q.0), gh));
+                        area.push((main.first().map_or(0.0, |q| q.0), gh));
+                        fill(w, o, &area, scale_alpha(col, lk.fill));
+                    }
+                    glow_stroke(w, o, &main, lk.line, col, glow);
+                });
             },
         )
         .absolute()
