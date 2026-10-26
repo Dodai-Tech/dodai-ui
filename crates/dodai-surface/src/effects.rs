@@ -259,7 +259,7 @@ fn led_matrix(cv: &mut Canvas, sp: &SurfacePaint, k: f32, s: f32, seed: i32) {
 
 fn barcode(cv: &mut Canvas, sp: &SurfacePaint, k: f32, s: f32, seed: i32) {
     let (w, h) = (cv.w, cv.h);
-    let bar_h = (10.0 * k).clamp(6.0, h * 0.3);
+    let bar_h = (10.0 * k).max(6.0).min(h * 0.3);
     let y = h - cv.inset - bar_h - 6.0;
     let mut x = 8.0;
     let end = (w * 0.45).min(w - 16.0);
@@ -421,7 +421,7 @@ fn houndstooth(cv: &mut Canvas, sp: &SurfacePaint, k: f32, s: f32) {
 fn hazard(cv: &mut Canvas, sp: &SurfacePaint, k: f32, s: f32) {
     let (w, h) = (cv.w, cv.h);
     // Warning tape along the top and bottom edges only, so the middle stays clean.
-    let band = (h * 0.2).clamp(4.0, 9.0 * k);
+    let band = (h * 0.2).max(4.0).min(9.0 * k);
     let p = (10.0 * k).max(5.0);
     let step = fit(1.0, |st| (band * 2.0 / st) * (w / p));
     for (y0, flip) in [(cv.inset, false), (h - cv.inset - band, true)] {
@@ -601,8 +601,11 @@ fn scanlines_texture(cv: &mut Canvas, sp: &SurfacePaint, k: f32, s: f32) {
 
 pub(crate) fn hatch(cv: &mut Canvas, sp: &SurfacePaint, pitch: f32, dir: f32, alpha: f32) {
     let (w, h) = (cv.w, cv.h);
-    let p = pitch.max(3.0);
-    let step = fit(2.0, |st| (h / st) * (w / p));
+    // Both the line spacing and the dash length grow on huge surfaces to stay under the budget.
+    let n = (h / 2.0) * (w / pitch.max(3.0));
+    let grow = (n / crate::geom::MAX_QUADS).max(1.0).sqrt();
+    let p = pitch.max(3.0) * grow;
+    let step = 2.0 * grow;
     let mut y = 0.0;
     while y < h {
         let base = if dir > 0.0 { -y } else { y };

@@ -390,6 +390,143 @@ mod tests {
         assert!(anim, "a playing ripple needs the next frame");
     }
 
+    fn finite(rec: &Rec, what: &str) {
+        for (x, y, w, h, c) in &rec.quads {
+            assert!(
+                [x, y, w, h, &c.r, &c.g, &c.b, &c.a]
+                    .iter()
+                    .all(|v| v.is_finite()),
+                "{what}: non-finite quad"
+            );
+        }
+        for p in &rec.paths {
+            assert!(
+                p.iter().all(|(x, y)| x.is_finite() && y.is_finite()),
+                "{what}: non-finite path"
+            );
+        }
+    }
+
+    type Setter = fn(&mut SurfaceFx);
+
+    /// Every animated effect, switched on alone.
+    fn effects() -> Vec<(&'static str, Setter)> {
+        vec![
+            ("glitch", |f| f.glitch = 1.0),
+            ("sheen", |f| f.sheen = 1.0),
+            ("flicker", |f| f.flicker = 1.0),
+            ("bloom", |f| f.bloom = 1.0),
+            ("pulse", |f| f.pulse = 1.0),
+            ("chase", |f| f.chase = 1.0),
+            ("edge", |f| f.edge = 1.0),
+            ("brackets", |f| f.brackets = 1.0),
+            ("depth", |f| f.depth = 1.0),
+            ("tape", |f| f.tape = 1.0),
+            ("gloss", |f| f.gloss = 1.0),
+            ("strip", |f| f.strip = 1.0),
+            ("wash", |f| f.wash = 1.0),
+            ("tint", |f| f.tint = 1.0),
+            ("pop", |f| f.pop = 1.0),
+        ]
+    }
+
+    fn at(t: &Theme, sp: &SurfacePaint, time: f32) -> (Rec, bool) {
+        let mut rec = Rec::default();
+        let f = Frame {
+            w: 160.0,
+            h: 64.0,
+            shape: &t.shape,
+            seed: 7,
+            time,
+            presses: &[],
+        };
+        let anim = paint(&mut rec, &f, sp);
+        (rec, anim)
+    }
+
+    #[test]
+    fn every_effect_draws_at_some_moment_and_stays_finite() {
+        let t = Theme::default();
+        for (name, set) in effects() {
+            let mut fx = SurfaceFx::NONE;
+            set(&mut fx);
+            let sp = only(fx);
+            let mut drew = false;
+            for step in 0..60 {
+                let (rec, _) = at(&t, &sp, step as f32 * 0.137);
+                finite(&rec, name);
+                drew |= rec.quads.len() + rec.dots + rec.paths.len() > 0;
+            }
+            assert!(drew, "{name} never drew");
+        }
+    }
+
+    #[test]
+    fn animated_effects_ask_for_the_next_frame() {
+        let t = Theme::default();
+        for (name, set) in effects() {
+            // Only the moving ones; the rest are static looks.
+            if !matches!(name, "glitch" | "sheen" | "flicker" | "pulse" | "chase") {
+                continue;
+            }
+            let mut fx = SurfaceFx::NONE;
+            set(&mut fx);
+            let (_, anim) = at(&t, &only(fx), 0.5);
+            assert!(anim, "{name} is animated but did not ask for a frame");
+        }
+    }
+
+    #[test]
+    fn every_texture_and_effect_survives_every_outline_and_size() {
+        let outlines = [
+            Clip::default(),
+            Clip {
+                radius: 12.0,
+                border_width: 1.0,
+                ..Clip::default()
+            },
+            Clip {
+                chamfer: 10.0,
+                corners: Corners::ALL,
+                border_width: 2.0,
+                ..Clip::default()
+            },
+            Clip {
+                chamfer: 10.0,
+                corners: Corners::TOP_LEFT,
+                scoop: true,
+                ..Clip::default()
+            },
+        ];
+        for clip in &outlines {
+            for (w, h) in [(16.0, 16.0), (17.0, 400.0), (900.0, 20.0), (2000.0, 1200.0)] {
+                for tex in Texture::ALL {
+                    let mut fx = SurfaceFx {
+                        texture: tex,
+                        strength: 1.0,
+                        scale: 1.0,
+                        ..SurfaceFx::NONE
+                    };
+                    for (_, set) in effects() {
+                        set(&mut fx);
+                    }
+                    let sp = only(fx);
+                    let mut rec = Rec::default();
+                    let f = Frame {
+                        w,
+                        h,
+                        shape: clip,
+                        seed: 3,
+                        time: 1.7,
+                        presses: &[],
+                    };
+                    paint(&mut rec, &f, &sp);
+                    finite(&rec, &format!("{tex:?} {w}x{h}"));
+                }
+            }
+        }
+    }
+
     #[test]
     fn contrasting_swaps_ink_and_hole_to_stay_visible() {
         let sp = only(SurfaceFx::NONE);
