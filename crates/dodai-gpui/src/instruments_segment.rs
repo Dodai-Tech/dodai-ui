@@ -16,6 +16,8 @@ use gpui::{
 /// A row of seven-segment digits. `:` and `.` are drawn as dots, other characters as blanks.
 #[derive(IntoElement)]
 pub struct SegmentDisplay {
+    follow: crate::instruments_motion::Follow,
+    fade: bool,
     text: SharedString,
     height: f32,
     color: Option<Hsla>,
@@ -23,9 +25,19 @@ pub struct SegmentDisplay {
 }
 
 impl SegmentDisplay {
+    crate::instruments_motion::follow_api!();
+    /// Segments cross-fade when the text changes instead of switching. Each display needs its
+    /// own call site (or a distinct parent id), as the fade state is keyed by it.
+    pub fn fade(mut self, on: bool) -> Self {
+        self.fade = on;
+        self
+    }
     /// Shows `text` (digits, `-`, `:`, `.` and spaces).
+    #[track_caller]
     pub fn new(text: impl Into<SharedString>) -> Self {
         Self {
+            follow: crate::instruments_motion::Follow::here(),
+            fade: false,
             text: text.into(),
             height: 48.0,
             color: None,
@@ -50,20 +62,30 @@ impl SegmentDisplay {
 }
 
 impl RenderOnce for SegmentDisplay {
-    fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let h = self.height;
         let on = self.color.unwrap_or_else(|| hsla(t.palette.primary));
         let off = scale_alpha(on, if self.ghost { 0.09 } else { 0.0 });
         let chars: Vec<char> = self.text.chars().collect();
         let width: f32 = chars.iter().map(|c| segments::advance(*c, h)).sum();
+        // Lit amount of every segment, eased so a changed digit cross-fades.
+        let flags: Vec<f32> = chars
+            .iter()
+            .flat_map(|c| (0..7).map(move |i| f32::from(segments::mask(*c) >> i & 1 == 1)))
+            .collect();
+        let flags = if self.fade {
+            crate::instruments_motion::follow_all(window, cx, &self.follow, &flags)
+        } else {
+            flags
+        };
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
                 let o = b.origin;
                 let th = segments::thickness(h);
                 let mut x0 = 0.0;
-                for c in &chars {
+                for (ci, c) in chars.iter().enumerate() {
                     match c {
                         ':' | '.' => {
                             let s = th * 0.9;
@@ -80,11 +102,15 @@ impl RenderOnce for SegmentDisplay {
                             }
                         }
                         _ => {
-                            let m = segments::mask(*c);
                             for (i, seg) in segments::digit_segments(h).iter().enumerate() {
                                 let pts: Vec<(f32, f32)> =
                                     seg.iter().map(|p| segments::slant(*p, x0, h)).collect();
-                                fill(w, o, &pts, if m >> i & 1 == 1 { on } else { off });
+                                let k = flags
+                                    .get(ci * 7 + i)
+                                    .copied()
+                                    .unwrap_or(0.0)
+                                    .clamp(0.0, 1.0);
+                                fill(w, o, &pts, crate::motion::mix(off, on, k));
                             }
                         }
                     }

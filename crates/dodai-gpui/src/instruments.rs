@@ -512,6 +512,7 @@ impl RenderOnce for VitalsTile {
 /// active, and flashes until acknowledged.
 #[derive(IntoElement)]
 pub struct Annunciator {
+    follow: crate::instruments_motion::Follow,
     tiles: Vec<(SharedString, Severity, bool)>,
     columns: usize,
     tile_w: f32,
@@ -519,11 +520,14 @@ pub struct Annunciator {
 }
 
 impl Annunciator {
-    /// Windows as `(legend, severity, acknowledged)`.
+    crate::instruments_motion::follow_api!();
+    /// Windows as `(legend, severity, acknowledged)`; they light and go dark with a soft fade.
+    #[track_caller]
     pub fn new<S: Into<SharedString>>(
         tiles: impl IntoIterator<Item = (S, Severity, bool)>,
     ) -> Self {
         Self {
+            follow: crate::instruments_motion::Follow::here(),
             tiles: tiles
                 .into_iter()
                 .map(|(l, s, a)| (l.into(), s, a))
@@ -575,17 +579,23 @@ impl RenderOnce for Annunciator {
                 },
             );
         }
+        let targets: Vec<f32> = self
+            .tiles
+            .iter()
+            .zip(&alarms)
+            .map(|((_, sev, _), alarm)| {
+                f32::from(*sev != Severity::Normal && (!self.live || alarm.lit(now)))
+            })
+            .collect();
+        let levels = crate::instruments_motion::follow_all(window, cx, &self.follow, &targets);
         let mut grid = div().flex().flex_wrap().gap(px(t.spacing.xs));
-        for ((label, sev, _), alarm) in self.tiles.iter().zip(&alarms) {
-            let on = *sev != Severity::Normal && (!self.live || alarm.lit(now));
+        for (((label, sev, _), lvl), _) in self.tiles.iter().zip(&levels).zip(&alarms) {
+            let lvl = lvl.clamp(0.0, 1.0);
             let tok = severity_token(&t, *sev);
+            let dark = t.palette.border.with_alpha(0.35);
             let style = ShapeStyle::from_tokens(
                 &t,
-                Some(if on {
-                    tok
-                } else {
-                    t.palette.border.with_alpha(0.35)
-                }),
+                Some(dark.mix(tok, lvl)),
                 Some(if *sev == Severity::Normal {
                     t.palette.border
                 } else {
@@ -594,11 +604,8 @@ impl RenderOnce for Annunciator {
                 false,
                 false,
             );
-            let text = if on {
-                hsla(t.palette.background)
-            } else {
-                hsla(t.palette.text_muted)
-            };
+            let text =
+                crate::motion::mix(hsla(t.palette.text_muted), hsla(t.palette.background), lvl);
             grid = grid.child(
                 shaped(&t.shape, style)
                     .w(px(self.tile_w))

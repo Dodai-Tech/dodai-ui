@@ -284,6 +284,7 @@ fn runs(v: &[Option<f32>], pt: impl Fn(usize, f32) -> (f32, f32)) -> Vec<Vec<(f3
 #[derive(IntoElement)]
 pub struct Candlestick {
     id: SharedString,
+    follow: crate::instruments_motion::Follow,
     candles: Vec<Candle>,
     labels: Vec<SharedString>,
     height: f32,
@@ -442,10 +443,13 @@ impl CandlePaint {
 }
 
 impl Candlestick {
+    crate::instruments_motion::follow_api!();
     /// Create a new [`Candlestick`].
     pub fn new(id: impl Into<SharedString>, candles: impl IntoIterator<Item = Candle>) -> Self {
+        let id: SharedString = id.into();
         Self {
-            id: id.into(),
+            follow: crate::instruments_motion::Follow::named(&id),
+            id,
             candles: candles.into_iter().collect(),
             labels: Vec::new(),
             height: 220.0,
@@ -587,7 +591,20 @@ impl Candlestick {
         framed(t, labels, Vec::new(), plot)
     }
 
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let flat: Vec<f32> = self
+            .candles
+            .iter()
+            .flat_map(|c| [c.open, c.high, c.low, c.close])
+            .collect();
+        let mut shown =
+            crate::instruments_motion::follow_all(window, cx, &self.follow, &flat).into_iter();
+        for c in &mut self.candles {
+            c.open = shown.next().unwrap_or(c.open);
+            c.high = shown.next().unwrap_or(c.high);
+            c.low = shown.next().unwrap_or(c.low);
+            c.close = shown.next().unwrap_or(c.close);
+        }
         let g = crate::motion::grow(window, cx, "Candlestick");
         let t = theme_of(cx);
         let shown: Vec<Candle> = match self.style {

@@ -315,6 +315,7 @@ impl RenderOnce for Oscilloscope {
 /// Equaliser-style bars built from stacked LED cells with peak caps.
 #[derive(IntoElement)]
 pub struct Spectrum {
+    follow: crate::instruments_motion::Follow,
     glow: ChartGlow,
     values: Vec<f32>,
     w: f32,
@@ -331,9 +332,12 @@ impl Spectrum {
         self.glow = g;
         self
     }
-    /// Values are `0..=1`.
+    crate::instruments_motion::follow_api!();
+    /// Values are `0..=1`; a changed value glides when `live` is off.
+    #[track_caller]
     pub fn new(values: impl IntoIterator<Item = f32>) -> Self {
         Self {
+            follow: crate::instruments_motion::Follow::here(),
             glow: ChartGlow::Theme,
             values: values.into_iter().collect(),
             w: 320.0,
@@ -373,11 +377,15 @@ impl Spectrum {
 }
 
 impl RenderOnce for Spectrum {
-    fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let chamfered = t.shape.kind() == dodai_core::ShapeKind::Chamfered;
         let (gw, gh, cells, live) = (self.w, self.h, self.cells, self.live);
-        let values = self.values;
+        let values = if self.live {
+            self.values
+        } else {
+            crate::instruments_motion::follow_all(window, cx, &self.follow, &self.values)
+        };
         let zc = self.zones.then(|| {
             [
                 hsla(t.palette.success),

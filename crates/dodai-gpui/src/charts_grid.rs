@@ -16,6 +16,7 @@ use std::rc::Rc;
 /// Scatter plot of `(x, y)` points per series, with hover tooltips.
 #[derive(IntoElement)]
 pub struct ScatterPlot {
+    follow: crate::instruments_motion::Follow,
     annotations: Vec<crate::charts_annotate::Annotation>,
     id: SharedString,
     series: Vec<(SharedString, Vec<(f32, f32)>)>,
@@ -32,14 +33,17 @@ impl ScatterPlot {
         self.annotations = a.into_iter().collect();
         self
     }
+    crate::instruments_motion::follow_api!();
     /// Create a new [`ScatterPlot`].
     pub fn new<S: Into<SharedString>>(
         id: impl Into<SharedString>,
         series: impl IntoIterator<Item = (S, Vec<(f32, f32)>)>,
     ) -> Self {
+        let id: SharedString = id.into();
         Self {
+            follow: crate::instruments_motion::Follow::named(&id),
             annotations: Vec::new(),
-            id: id.into(),
+            id,
             series: series.into_iter().map(|(n, p)| (n.into(), p)).collect(),
             height: 200.0,
             legend: true,
@@ -58,7 +62,18 @@ impl ScatterPlot {
 }
 
 impl ScatterPlot {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let flat: Vec<f32> = self
+            .series
+            .iter()
+            .flat_map(|s| s.1.iter().flat_map(|p| [p.0, p.1]))
+            .collect();
+        let mut shown =
+            crate::instruments_motion::follow_all(window, cx, &self.follow, &flat).into_iter();
+        for p in self.series.iter_mut().flat_map(|s| s.1.iter_mut()) {
+            p.0 = shown.next().unwrap_or(p.0);
+            p.1 = shown.next().unwrap_or(p.1);
+        }
         let g = crate::motion::grow(window, cx, "ScatterPlot");
         let t = theme_of(cx);
         let all = || self.series.iter().flat_map(|s| s.1.iter());
