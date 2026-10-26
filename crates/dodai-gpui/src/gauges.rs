@@ -101,109 +101,9 @@ pub(crate) const SWEEP: (f32, f32) = (0.625, 0.75);
 
 // ───────────────────────────── pure helpers ─────────────────────────────
 
-/// Fill coverage `0..=1` of cell `i` of `n` when `frac` of the range is lit.
-pub fn cell_lit(i: usize, n: usize, frac: f32) -> f32 {
-    if n == 0 {
-        return 0.0;
-    }
-    (frac.clamp(0.0, 1.0) * n as f32 - i as f32).clamp(0.0, 1.0)
-}
-
-/// Tick positions along a sweep: `(frac, is_major)`. `major` spans, each split
-/// into `minor` sub-spans.
-pub fn tick_fracs(major: usize, minor: usize) -> Vec<(f32, bool)> {
-    let major = major.max(1);
-    let minor = minor.max(1);
-    let total = major * minor;
-    (0..=total)
-        .map(|i| (i as f32 / total as f32, i % minor == 0))
-        .collect()
-}
-
-/// Which colour zone `frac` falls in: 0 = ok, 1 = warn, 2 = danger.
-pub fn zone(frac: f32) -> usize {
-    if frac < 0.6 {
-        0
-    } else if frac < 0.85 {
-        1
-    } else {
-        2
-    }
-}
-
-/// Tapered needle (triangle) from the hub at `(cx, cy)` towards turn-fraction
-/// `at`, `len` long with a `base`-wide root.
-pub fn needle(cx: f32, cy: f32, len: f32, base: f32, at: f32) -> [(f32, f32); 3] {
-    let tip = crate::charts::polar(cx, cy, len, at);
-    let l = crate::charts::polar(cx, cy, base / 2.0, at - 0.25);
-    let r = crate::charts::polar(cx, cy, base / 2.0, at + 0.25);
-    [l, tip, r]
-}
-
-/// Parallelogram slanted by `skew` px: `(x, y)` is the bottom-left corner.
-pub fn slanted_cell(x: f32, y: f32, w: f32, h: f32, skew: f32) -> [(f32, f32); 4] {
-    [(x, y + h), (x + skew, y), (x + skew + w, y), (x + w, y + h)]
-}
-
-/// Arrow-head cell pointing right: a `>` with `pt` px point depth.
-pub fn chevron_cell(x: f32, y: f32, w: f32, h: f32, pt: f32) -> [(f32, f32); 6] {
-    [
-        (x, y),
-        (x + w, y),
-        (x + w + pt, y + h / 2.0),
-        (x + w, y + h),
-        (x, y + h),
-        (x + pt, y + h / 2.0),
-    ]
-}
-
-/// Rectangle with the top-right corner cut by `c` px.
-pub fn chamfer_rect(x: f32, y: f32, w: f32, h: f32, c: f32) -> [(f32, f32); 5] {
-    [
-        (x, y),
-        (x + w - c, y),
-        (x + w, y + c),
-        (x + w, y + h),
-        (x, y + h),
-    ]
-}
-
-/// Regular polygon approximating a circle. Pure.
-pub fn disc(cx: f32, cy: f32, r: f32, n: usize) -> Vec<(f32, f32)> {
-    let n = n.max(3);
-    (0..n)
-        .map(|i| crate::charts::polar(cx, cy, r, i as f32 / n as f32))
-        .collect()
-}
-
-/// Stadium (pill) outline: a `w`×`h` rectangle with fully round short ends.
-pub fn pill(x: f32, y: f32, w: f32, h: f32) -> Vec<(f32, f32)> {
-    let r = (w.min(h) / 2.0).max(0.0);
-    let n = 8;
-    let mut out = Vec::with_capacity(n * 2 + 2);
-    if w >= h {
-        // right cap (top → bottom), then left cap (bottom → top)
-        for i in 0..=n {
-            let a = -std::f32::consts::FRAC_PI_2 + std::f32::consts::PI * i as f32 / n as f32;
-            out.push((x + w - r + r * a.cos(), y + r + r * a.sin()));
-        }
-        for i in 0..=n {
-            let a = std::f32::consts::FRAC_PI_2 + std::f32::consts::PI * i as f32 / n as f32;
-            out.push((x + r + r * a.cos(), y + r + r * a.sin()));
-        }
-    } else {
-        // bottom cap (right → left), then top cap (left → right)
-        for i in 0..=n {
-            let a = std::f32::consts::PI * i as f32 / n as f32;
-            out.push((x + r + r * a.cos(), y + h - r + r * a.sin()));
-        }
-        for i in 0..=n {
-            let a = std::f32::consts::PI + std::f32::consts::PI * i as f32 / n as f32;
-            out.push((x + r + r * a.cos(), y + r + r * a.sin()));
-        }
-    }
-    out
-}
+pub use dodai_charts_core::gauge::{
+    cell_lit, chamfer_rect, chevron_cell, disc, needle, pill, slanted_cell, tick_fracs, zone,
+};
 
 #[allow(clippy::too_many_arguments)]
 /// Stroke an arc with round caps (butt-capped paths plus a disc at each end).
@@ -597,43 +497,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn cells_fill_in_order_with_a_partial_tip() {
-        assert_eq!(cell_lit(0, 10, 0.0), 0.0);
-        assert_eq!(cell_lit(9, 10, 1.0), 1.0);
-        assert_eq!(cell_lit(2, 10, 0.25), 0.5);
-        assert_eq!(cell_lit(3, 10, 0.25), 0.0);
-        assert_eq!(cell_lit(0, 0, 0.5), 0.0);
-    }
-
-    #[test]
-    fn ticks_span_the_sweep_with_majors_every_minor_step() {
-        let t = tick_fracs(10, 4);
-        assert_eq!(t.len(), 41);
-        assert_eq!((t[0].0, t[40].0), (0.0, 1.0));
-        assert_eq!(t.iter().filter(|x| x.1).count(), 11);
-        assert!(t[4].1 && !t[5].1);
-    }
-
-    #[test]
-    fn zones_escalate() {
-        assert_eq!((zone(0.1), zone(0.7), zone(0.95)), (0, 1, 2));
-    }
-
-    #[test]
-    fn needle_tip_is_on_the_radius() {
-        let [l, tip, r] = needle(50.0, 50.0, 40.0, 6.0, 0.25);
-        // 0.25 turn = pointing right
-        assert!((tip.0 - 90.0).abs() < 1e-3 && (tip.1 - 50.0).abs() < 1e-3);
-        assert!(l.1 != r.1, "base is perpendicular to the tip");
-    }
-
-    #[test]
-    fn slanted_cell_leans_right_at_the_top() {
-        let c = slanted_cell(0.0, 0.0, 10.0, 20.0, 5.0);
-        assert!(c[1].0 > c[0].0 && c[1].1 < c[0].1);
-    }
-
-    #[test]
     fn dims_per_style() {
         assert_eq!(GaugeStyle::Arc.dims(100.0), (100.0, 100.0));
         assert!(GaugeStyle::Bar.dims(100.0).0 > GaugeStyle::Bar.dims(100.0).1);
@@ -642,35 +505,6 @@ mod tests {
         assert!(GaugeStyle::Thermometer.dims(100.0).0 < 50.0);
         assert!(GaugeStyle::Battery.dims(100.0).0 > GaugeStyle::Battery.dims(100.0).1);
         assert!(GaugeStyle::Level.dims(100.0).0 < GaugeStyle::Level.dims(100.0).1);
-    }
-
-    #[test]
-    fn chevron_points_right_and_chamfer_cuts_one_corner() {
-        let c = chevron_cell(0.0, 0.0, 10.0, 10.0, 4.0);
-        assert!(c[2].0 > c[1].0 && c[5].0 > c[0].0);
-        let r = chamfer_rect(0.0, 0.0, 10.0, 10.0, 3.0);
-        assert_eq!((r[1], r[2]), ((7.0, 0.0), (10.0, 3.0)));
-    }
-
-    #[test]
-    fn disc_is_a_closed_ring_of_equal_radius() {
-        let d = disc(5.0, 5.0, 2.0, 12);
-        assert_eq!(d.len(), 12);
-        for (x, y) in d {
-            assert!((((x - 5.0).powi(2) + (y - 5.0).powi(2)).sqrt() - 2.0).abs() < 1e-4);
-        }
-    }
-
-    #[test]
-    fn pill_stays_inside_its_box_and_is_round_ended() {
-        for (w, h) in [(40.0, 10.0), (10.0, 40.0), (12.0, 12.0)] {
-            let p = pill(2.0, 3.0, w, h);
-            assert!(p.len() >= 16);
-            for (x, y) in p {
-                assert!(x >= 2.0 - 1e-3 && x <= 2.0 + w + 1e-3, "x {x}");
-                assert!(y >= 3.0 - 1e-3 && y <= 3.0 + h + 1e-3, "y {y}");
-            }
-        }
     }
 
     #[test]

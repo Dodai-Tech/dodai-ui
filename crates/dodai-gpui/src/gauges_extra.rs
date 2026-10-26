@@ -4,16 +4,8 @@
 use crate::charts::{glow_stroke, polar, turn_arc};
 use crate::gauges::{cell_lit, disc, pill, round_arc, Look, SWEEP};
 use crate::paint::{fill, scale_alpha, stroke};
+pub use dodai_charts_core::gauge::lit_bars;
 use gpui::{Bounds, Pixels, Window};
-
-/// Lit bars out of `n` for `frac` (at least one when any value is set). Pure.
-pub fn lit_bars(frac: f32, n: usize) -> usize {
-    if frac <= 0.0 {
-        0
-    } else {
-        ((frac.clamp(0.0, 1.0) * n as f32).ceil() as usize).clamp(1, n)
-    }
-}
 
 /// Full ring from 12 o'clock.
 pub(crate) fn ring(w: &mut Window, b: Bounds<Pixels>, k: Look) {
@@ -215,19 +207,5 @@ pub(crate) fn signal(w: &mut Window, b: Bounds<Pixels>, k: Look) {
             scale_alpha(k.track, 0.6)
         };
         fill(w, b.origin, &pill(x, h - bh, bw, bh), col);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn signal_bars_light_up_in_steps() {
-        assert_eq!(lit_bars(0.0, 5), 0);
-        assert_eq!(lit_bars(0.01, 5), 1);
-        assert_eq!(lit_bars(0.5, 5), 3);
-        assert_eq!(lit_bars(1.0, 5), 5);
-        assert_eq!(lit_bars(9.0, 5), 5);
     }
 }

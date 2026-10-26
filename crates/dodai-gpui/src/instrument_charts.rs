@@ -17,58 +17,12 @@ use gpui::{
 // ───────────────────────────── pure helpers ─────────────────────────────
 
 /// Seconds since the first call (shared clock for live charts).
+pub use dodai_charts_core::gauge::{
+    blip_alpha, ecg_beat, hex_center, hex_extent, hex_points, jitter, ring_radius,
+};
+
 pub(crate) fn clock() -> f32 {
     crate::instruments_motion::clock()
-}
-
-/// One heartbeat-shaped period (`-1..=1`): P wave, QRS spike, T wave. Pure.
-pub fn ecg_beat(x: f32) -> f32 {
-    let g = |c: f32, w: f32, a: f32| a * (-((x - c) / w).powi(2)).exp();
-    g(0.18, 0.04, 0.18)
-        + g(0.36, 0.012, -0.22)
-        + g(0.39, 0.012, 1.0)
-        + g(0.42, 0.012, -0.35)
-        + g(0.62, 0.06, 0.28)
-}
-
-/// Brightness `0..=1` of a radar blip at turn-fraction `blip` when the sweep is
-/// at `sweep`: full as the beam passes, fading over one revolution.
-pub fn blip_alpha(sweep: f32, blip: f32) -> f32 {
-    let since = (sweep - blip).rem_euclid(1.0);
-    (1.0 - since).powi(2)
-}
-
-/// Centre of hex `(row, col)` for a pointy-top grid with circumradius `s`.
-pub fn hex_center(row: usize, col: usize, s: f32) -> (f32, f32) {
-    let w = 3f32.sqrt() * s;
-    let off = if row % 2 == 1 { w / 2.0 } else { 0.0 };
-    (w / 2.0 + col as f32 * w + off, s + row as f32 * 1.5 * s)
-}
-
-/// Six corners of a pointy-top hex of circumradius `r` around `(cx, cy)`.
-pub fn hex_points(cx: f32, cy: f32, r: f32) -> [(f32, f32); 6] {
-    let mut p = [(0.0, 0.0); 6];
-    for (i, q) in p.iter_mut().enumerate() {
-        *q = polar(cx, cy, r, i as f32 / 6.0);
-    }
-    p
-}
-
-/// Grid size `(width, height)` of `rows × cols` hexes of circumradius `s`.
-pub fn hex_extent(rows: usize, cols: usize, s: f32) -> (f32, f32) {
-    let w = 3f32.sqrt() * s;
-    (w * (cols as f32 + 0.5), s * (1.5 * rows as f32 + 0.5))
-}
-
-/// Radius of ring `i` of `n` concentric rings, outermost first. Pure.
-pub fn ring_radius(i: usize, outer: f32, thickness: f32, gap: f32) -> f32 {
-    outer - thickness / 2.0 - i as f32 * (thickness + gap)
-}
-
-/// Animated bar value: `v` modulated by a per-bar sine at time `t`.
-pub fn jitter(v: f32, i: usize, t: f32) -> f32 {
-    let f = 1.7 + i as f32 * 0.37;
-    (v * (0.65 + 0.35 * (t * f + i as f32).sin())).clamp(0.0, 1.0)
 }
 
 pub(crate) fn frame(
@@ -1030,60 +984,6 @@ impl RenderOnce for RingStack {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn blip_is_brightest_at_the_beam_and_fades_after() {
-        assert!((blip_alpha(0.3, 0.3) - 1.0).abs() < 1e-6);
-        assert!(blip_alpha(0.5, 0.3) < blip_alpha(0.4, 0.3));
-        // a blip just *ahead* of the beam has had a whole revolution to fade
-        assert!(blip_alpha(0.3, 0.31) < 0.01);
-    }
-
-    #[test]
-    fn hex_rows_interlock() {
-        let s = 10.0;
-        let (x0, y0) = hex_center(0, 0, s);
-        let (x1, y1) = hex_center(1, 0, s);
-        assert!((x1 - x0 - 3f32.sqrt() * s / 2.0).abs() < 1e-4);
-        assert!((y1 - y0 - 1.5 * s).abs() < 1e-4);
-    }
-
-    #[test]
-    fn hex_has_six_equal_corners() {
-        let p = hex_points(0.0, 0.0, 5.0);
-        for (x, y) in p {
-            assert!(((x * x + y * y).sqrt() - 5.0).abs() < 1e-4);
-        }
-    }
-
-    #[test]
-    fn hex_extent_covers_every_centre() {
-        let (w, h) = hex_extent(3, 4, 10.0);
-        for r in 0..3 {
-            for c in 0..4 {
-                let (x, y) = hex_center(r, c, 10.0);
-                assert!(x + 3f32.sqrt() * 5.0 <= w + 1e-3 && y + 10.0 <= h + 1e-3);
-            }
-        }
-    }
-
-    #[test]
-    fn rings_shrink_inward_without_overlap() {
-        let a = ring_radius(0, 50.0, 8.0, 3.0);
-        let b = ring_radius(1, 50.0, 8.0, 3.0);
-        assert!((a - b - 11.0).abs() < 1e-4);
-        assert!(a + 4.0 <= 50.0);
-    }
-
-    #[test]
-    fn jitter_stays_in_range_and_below_the_value() {
-        for i in 0..8 {
-            for k in 0..50 {
-                let v = jitter(0.8, i, k as f32 * 0.1);
-                assert!((0.0..=0.8 + 1e-6).contains(&v));
-            }
-        }
-    }
 
     #[test]
     fn ecg_beat_has_one_dominant_spike_per_period() {

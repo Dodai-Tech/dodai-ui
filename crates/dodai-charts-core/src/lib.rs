@@ -22,6 +22,7 @@
 //! | [`density`] | kernel density estimate |
 //! | [`instrument`] | scales, zones, limits, alarms |
 //! | [`flight`] | attitude horizon, pitch ladder, tapes, sonar rows |
+//! | [`gauge`] | lit cells, ticks, zones, needle and cell polygons, hex grids, ring radii |
 //! | [`segments`] | seven-segment digit geometry |
 //! | [`tactical`] | contacts, map symbols, threat wedges, countdown |
 //! | [`stream`] | fixed-size sample window for live charts |
@@ -34,6 +35,7 @@ pub mod density;
 pub mod depth;
 pub mod flight;
 pub mod gantt;
+pub mod gauge;
 pub mod gradient;
 pub mod indicators;
 pub mod instrument;
