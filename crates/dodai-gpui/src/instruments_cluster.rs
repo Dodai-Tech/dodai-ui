@@ -10,6 +10,7 @@ use crate::charts::{polar, turn_arc};
 use crate::gauges::{disc, SWEEP};
 use crate::instruments::severity_color;
 use crate::instruments::DialGauge;
+use crate::instruments_hero::{CapsuleCluster, CutSpeedometer};
 use crate::paint::{fill, shaped, stroke, ShapeStyle};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
@@ -540,6 +541,10 @@ impl RenderOnce for DigitalGauge {
 pub enum ClusterKind {
     /// Round pods around a big inverted tachometer.
     Pods,
+    /// A cut-corner speedometer with radiating hairlines.
+    Cut,
+    /// A capsule with a gradient sweep, side arcs and a gear selector.
+    Capsule,
     /// Five equal round pods.
     Round,
     /// Four inverted dials: bold ring, large numerals.
@@ -556,8 +561,10 @@ pub enum ClusterKind {
 
 impl ClusterKind {
     /// Every style, in showcase order.
-    pub const ALL: [ClusterKind; 7] = [
+    pub const ALL: [ClusterKind; 9] = [
         Self::Pods,
+        Self::Capsule,
+        Self::Cut,
         Self::Round,
         Self::Bold,
         Self::Classic,
@@ -570,6 +577,8 @@ impl ClusterKind {
     pub fn name(self) -> &'static str {
         match self {
             Self::Pods => "Pods",
+            Self::Cut => "Cut",
+            Self::Capsule => "Capsule",
             Self::Round => "Round",
             Self::Bold => "Bold",
             Self::Classic => "Classic",
@@ -584,7 +593,9 @@ impl ClusterKind {
             Self::Classic => Some(DialLook::Analog),
             Self::Arc => Some(DialLook::Arc),
             Self::Segmented => Some(DialLook::Segmented),
-            Self::Pods | Self::Round | Self::Bold | Self::Digital => None,
+            Self::Pods | Self::Cut | Self::Capsule | Self::Round | Self::Bold | Self::Digital => {
+                None
+            }
         }
     }
 }
@@ -682,6 +693,27 @@ impl RenderOnce for InstrumentCluster {
         let coolant = Scale::new(40.0, 140.0)
             .ticks_per(5, 1)
             .zone(115.0, 140.0, Severity::Alarm);
+        let dash = Scale::new(0.0, 300.0)
+            .ticks_per(10, 1)
+            .zone(260.0, 300.0, Severity::Caution);
+        match self.kind {
+            ClusterKind::Cut => {
+                let d = Scale::new(0.0, 160.0).ticks_per(8, 1);
+                return CutSpeedometer::new(d, self.speed.min(160.0) * 0.28)
+                    .unit("km/h")
+                    .width(self.width.min(420.0))
+                    .into_any_element();
+            }
+            ClusterKind::Capsule => {
+                return CapsuleCluster::new(dash, self.speed.min(300.0) * 0.84)
+                    .mode(self.mode.clone())
+                    .battery(self.fuel, 460.0)
+                    .temp(self.coolant * 0.23)
+                    .width(self.width)
+                    .into_any_element();
+            }
+            _ => {}
+        }
         let housing = ShapeStyle::from_tokens(
             &t,
             Some(t.palette.background),
@@ -728,6 +760,7 @@ impl RenderOnce for InstrumentCluster {
                 )
                 .into_any_element()
             }
+            ClusterKind::Cut | ClusterKind::Capsule => div().into_any_element(),
             ClusterKind::Round => {
                 let d = ((inner - gap * 4.0) / 5.0).max(90.0);
                 row.child(
@@ -886,5 +919,6 @@ impl RenderOnce for InstrumentCluster {
             .w(px(self.width))
             .p(px(pad))
             .child(body)
+            .into_any_element()
     }
 }
