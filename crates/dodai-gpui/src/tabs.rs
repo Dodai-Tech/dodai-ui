@@ -1,7 +1,7 @@
 //! [`Tabs`]: a row of selectable tabs driven by `theme.tab` tokens.
 
 use crate::interact::{track, use_interact};
-use crate::paint::{bottom_band_canvas, shaped_id, ShapeStyle};
+use crate::paint::{bottom_band_canvas, bottom_band_slide, shaped_id, ShapeStyle};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use dodai_core::Theme;
@@ -9,7 +9,7 @@ use gpui::{
     div, px, App, ElementId, Hsla, IntoElement, ParentElement, SharedString,
     StatefulInteractiveElement, Styled, Window,
 };
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 /// Resolved tab paint: shape style, text colour, optional indicator colour.
@@ -33,6 +33,7 @@ type SelectHandler = Rc<dyn Fn(usize, &mut Window, &mut App)>;
 /// Tab strip. Controlled: pass `selected` and update it in `on_select`.
 #[derive(IntoElement)]
 pub struct Tabs {
+    follow: crate::instruments_motion::Follow,
     id: ElementId,
     labels: Vec<SharedString>,
     active: usize,
@@ -46,9 +47,11 @@ pub struct Tabs {
 crate::corners_setter!(Tabs);
 
 impl Tabs {
-    /// Create a new [`Tabs`].
+    /// Create a new [`Tabs`]. The active indicator slides from tab to tab.
+    #[track_caller]
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
+            follow: crate::instruments_motion::Follow::here(),
             corners: None,
             id: id.into(),
             labels: Vec::new(),
@@ -98,6 +101,7 @@ impl Tabs {
         t: &dodai_core::Theme,
         i: usize,
         pan: Option<Rc<Cell<Pan>>>,
+        slide: Option<&Rc<Slide>>,
         window: &mut Window,
         cx: &mut App,
     ) -> impl IntoElement {
@@ -116,9 +120,13 @@ impl Tabs {
         } else {
             fg
         };
-        let indicator = indicator
-            .or_else(|| tab_style(t, true, hovered).2.filter(|_| p > 0.01))
-            .map(|c| c.opacity(p));
+        let indicator = if slide.is_some() {
+            None
+        } else {
+            indicator
+                .or_else(|| tab_style(t, true, hovered).2.filter(|_| p > 0.01))
+                .map(|c| c.opacity(p))
+        };
         let fg = if self.secondary && active {
             hsla(t.palette.roles.on_surface)
         } else {
@@ -159,6 +167,24 @@ impl Tabs {
         }
         if let Some(c) = indicator {
             tab = tab.child(bottom_band_canvas(&t.shape, t.shape.border_width, c));
+        }
+        if let Some(s) = slide {
+            // Report where this tab sits so the shared indicator can slide to it.
+            let s = s.clone();
+            tab = tab.child(
+                gpui::canvas(
+                    move |b, _, _| {
+                        let mut r = s.rects.borrow_mut();
+                        if r.len() <= i {
+                            r.resize(i + 1, (0.0, 0.0));
+                        }
+                        r[i] = (f32::from(b.origin.x), f32::from(b.size.width));
+                    },
+                    |_, _, _, _| (),
+                )
+                .absolute()
+                .size_full(),
+            );
         }
         if let Some(f) = self.on_select.clone() {
             tab = tab.on_click(move |_, w, cx| {
@@ -271,7 +297,18 @@ impl Tabs {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
-        let mut row = div().flex().gap(px(t.spacing.xs));
+        let mut row = div().relative().flex().gap(px(t.spacing.xs));
+        // One indicator slides between tabs when the design underlines the active tab.
+        let slide =
+            (!t.tab(true, false).outline && tab_style(&t, true, false).2.is_some()).then(|| {
+                window
+                    .use_keyed_state((self.id.clone(), "slide"), cx, |_, _| {
+                        SlideState(Rc::default())
+                    })
+                    .read(cx)
+                    .0
+                    .clone()
+            });
         // Scrollable strips pan with the pointer too: a swipe or drag moves them sideways.
         let scroll = self.scrollable.then(|| {
             window.use_keyed_state((self.id.clone(), "scroll"), cx, |_, _| ScrollState {
@@ -284,7 +321,31 @@ impl Tabs {
         let count = self.labels.len().max(self.icons.len());
         for i in 0..count {
             let pan = scroll.as_ref().map(|s| s.read(cx).pan.clone());
-            row = row.child(self.tab(&t, i, pan, window, cx));
+            row = row.child(self.tab(&t, i, pan, slide.as_ref(), window, cx));
+        }
+        if let Some(s) = &slide {
+            let at = s.rects.borrow().get(self.active).copied();
+            let first = s.rects.borrow().first().map_or(0.0, |r| r.0);
+            match at {
+                Some((x, w)) if w > 0.0 => {
+                    let v = crate::instruments_motion::follow_all(
+                        window,
+                        cx,
+                        &self.follow,
+                        &[x - first, w],
+                    );
+                    let c = tab_style(&t, true, false).2.unwrap_or_default();
+                    row = row.child(bottom_band_slide(
+                        &t.shape,
+                        t.shape.border_width,
+                        c,
+                        v[0],
+                        v[1],
+                    ));
+                }
+                // Tabs have not been measured yet: paint once more after layout.
+                _ => crate::motion::next_frame(window),
+            }
         }
         if let Some(state) = scroll {
             return self.scroll_strip(row, &state, window, cx);
@@ -292,6 +353,15 @@ impl Tabs {
         row.into_any_element()
     }
 }
+
+/// Where each tab sat in the last frame (window x and width), shared with the tabs' measuring
+/// canvases.
+#[derive(Default)]
+struct Slide {
+    rects: RefCell<Vec<(f32, f32)>>,
+}
+
+struct SlideState(Rc<Slide>);
 
 /// Pointer pan state of a scrollable strip.
 #[derive(Clone, Copy, Default)]

@@ -270,6 +270,35 @@ pub fn bottom_band_canvas(shape: &Shape, band: f32, color: Hsla) -> impl gpui::I
     .size_full()
 }
 
+/// The bottom band of a tab, drawn at horizontal offset `x` with width `w` inside the element it
+/// is a child of (so one indicator can slide between tabs).
+pub fn bottom_band_slide(
+    shape: &Shape,
+    band: f32,
+    color: Hsla,
+    x: f32,
+    w: f32,
+) -> impl gpui::IntoElement {
+    let shape = shape.clone();
+    canvas(
+        |_, _, _| (),
+        move |b, _, window, _| {
+            let h: f32 = b.size.height.into();
+            let origin = gpui::point(b.origin.x + px(x), b.origin.y);
+            let pts = poly(origin, &bottom_band(&shape, w, h, band), (0.0, 0.0));
+            let mut pb = PathBuilder::fill();
+            pb.add_polygon(&pts, true);
+            if let Ok(p) = pb.build() {
+                window.paint_path(p, color);
+            }
+        },
+    )
+    .absolute()
+    .top_0()
+    .left_0()
+    .size_full()
+}
+
 /// Paint scanline rows inside `bounds`, clipped to `shape`.
 pub fn paint_scanlines(
     window: &mut Window,
