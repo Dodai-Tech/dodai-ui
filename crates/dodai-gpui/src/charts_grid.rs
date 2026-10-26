@@ -367,10 +367,11 @@ impl Heatmap {
         if cells > 200 {
             return self.build_dense(window, cx);
         }
-        self.build_grid(cx).into_any_element()
+        let g = crate::motion::grow(window, cx, "HeatmapGrid");
+        self.build_grid(cx, g).into_any_element()
     }
 
-    fn build_grid(self, cx: &mut App) -> impl IntoElement {
+    fn build_grid(self, cx: &mut App, g: f32) -> impl IntoElement {
         let t = theme_of(cx);
         let (lo, hi) = self
             .rows
@@ -395,6 +396,7 @@ impl Heatmap {
                     .child(l.clone())
             })));
         }
+        let waves = self.rows.len() + self.rows.first().map_or(0, Vec::len);
         for (r, row) in self.rows.iter().enumerate() {
             let mut line = div().flex().gap(px(t.spacing.xs / 2.0)).items_center();
             if let Some(l) = self.row_labels.get(r) {
@@ -416,6 +418,7 @@ impl Heatmap {
                         .min_w_0()
                         .max_w(px(max_w))
                         .h(px(cell))
+                        .opacity(crate::motion::reveal(g, r + c, waves))
                         .tooltip(DodaiTooltip::text(fmt_num(*v)))
                         .child(shaped(&t.shape, style).size_full()),
                 );

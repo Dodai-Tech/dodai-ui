@@ -352,6 +352,14 @@ impl Lollipop {
     fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         crate::instruments_motion::follow_pairs(window, cx, &self.follow, &mut self.items);
         let t = theme_of(cx);
+        let focus = crate::charts_focus::Focus::new(
+            window,
+            cx,
+            &crate::instruments_motion::Follow::named(&format!("{}-focus", self.id)),
+            self.items.len(),
+        );
+        let foc: Vec<crate::charts_focus::ItemFocus> =
+            (0..self.items.len()).map(|i| focus.item(i)).collect();
         let g = crate::motion::grow(window, cx, "Lollipop");
         let n = self.items.len().max(1);
         let all: Vec<f32> = self
@@ -371,6 +379,7 @@ impl Lollipop {
         let b_vals = self.other.clone();
         let tick_fracs: Vec<f32> = ticks.iter().map(|v| norm(*v, lo, hi)).collect();
         let zero = norm(0.0, lo, hi);
+        let foc_c = foc.clone();
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
@@ -380,6 +389,14 @@ impl Lollipop {
                     stroke(w, b.origin, &[(0.0, y), (bw, y)], 1.0, grid, false);
                 }
                 for (i, a) in a_vals.iter().enumerate() {
+                    let lf = foc_c
+                        .get(i)
+                        .copied()
+                        .unwrap_or(crate::charts_focus::ItemFocus {
+                            alpha: 1.0,
+                            lift: 0.0,
+                        });
+                    let (ca, sw) = (scale_alpha(ca, lf.alpha), 1.0 + lf.lift);
                     let x = (i as f32 + 0.5) / n as f32 * bw;
                     let ya = bh - (zero + (norm(*a, lo, hi) - zero) * g) * bh;
                     if dumbbell {
@@ -389,12 +406,19 @@ impl Lollipop {
                             w,
                             b.origin,
                             &[(x, ya), (x, yb)],
-                            3.0,
+                            2.0 + sw,
                             scale_alpha(ca, 0.55),
                             false,
                         );
                     } else {
-                        stroke(w, b.origin, &[(x, bh - zero * bh), (x, ya)], 2.0, ca, false);
+                        stroke(
+                            w,
+                            b.origin,
+                            &[(x, bh - zero * bh), (x, ya)],
+                            1.0 + sw,
+                            ca,
+                            false,
+                        );
                     }
                 }
             },
@@ -405,11 +429,17 @@ impl Lollipop {
         let mut plot = div().relative().w_full().h(px(self.height)).child(cv);
         let dot =
             |plot: gpui::Div, k: usize, i: usize, v: f32, c: gpui::Hsla, who: &SharedString| {
+                let lf = foc[i];
+                let d = d * (1.0 + 0.45 * lf.lift);
                 let fx = (i as f32 + 0.5) / n as f32;
                 let fy = 1.0 - (zero + (norm(v, lo, hi) - zero) * g);
                 plot.child(
-                    div()
-                        .id((SharedString::from(format!("{}-{k}", self.id)), i))
+                    focus
+                        .bind(
+                            div().id((SharedString::from(format!("{}-{k}", self.id)), i)),
+                            i,
+                        )
+                        .opacity(lf.alpha)
                         .absolute()
                         .left(relative(fx))
                         .top(relative(fy))
