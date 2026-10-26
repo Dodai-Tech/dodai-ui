@@ -4055,6 +4055,7 @@ name = "dodai-core"
 version = "0.1.0"
 dependencies = [
  "dodai-motion",
+ "dodai-surface",
 ]
 
 [[package]]
@@ -4243,9 +4244,6 @@ dependencies = [
 [[package]]
 name = "dodai-surface"
 version = "0.1.0"
-dependencies = [
- "dodai-core",
-]
 
 [[package]]
 name = "dodai-topcoat"

@@ -2,12 +2,12 @@
 //! inside its border) before it reaches the [`Painter`].
 
 use crate::geom::{outline_of, poly_span, row_span};
+use crate::Clip;
 use crate::{scale_alpha, Painter, Rgba};
-use dodai_core::Shape;
 
 pub(crate) struct Canvas<'a> {
     pub out: &'a mut dyn Painter,
-    pub shape: &'a Shape,
+    pub shape: &'a Clip,
     pub pts: Option<Vec<(f32, f32)>>,
     pub w: f32,
     pub h: f32,

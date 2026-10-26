@@ -2,8 +2,8 @@
 
 use crate::canvas::Canvas;
 use crate::geom::{fit, noise, outline_of, MAX_QUADS};
+use crate::Texture;
 use crate::{scale_alpha, Rgba, SurfacePaint};
-use dodai_core::Texture;
 
 /// Horizontal scanline rows every `pitch` px, kept inside the shape and its border.
 pub(crate) fn scanlines(cv: &mut Canvas, c: Rgba, pitch: f32) {
@@ -596,11 +596,7 @@ fn radar(cv: &mut Canvas, sp: &SurfacePaint, _k: f32, s: f32) {
 }
 
 fn scanlines_texture(cv: &mut Canvas, sp: &SurfacePaint, k: f32, s: f32) {
-    scanlines(
-        cv,
-        scale_alpha(sp.ink, 0.22 * s),
-        dodai_core::Effects::SCANLINE_PITCH * k,
-    );
+    scanlines(cv, scale_alpha(sp.ink, 0.22 * s), crate::SCANLINE_PITCH * k);
 }
 
 pub(crate) fn hatch(cv: &mut Canvas, sp: &SurfacePaint, pitch: f32, dir: f32, alpha: f32) {
@@ -700,14 +696,14 @@ pub(crate) fn tint(cv: &mut Canvas, sp: &SurfacePaint) {
 /// Draw one frame (`t` in `0..1`) of a click ripple of the given style.
 pub(crate) fn press_frame(
     cv: &mut Canvas,
-    style: dodai_core::PressStyle,
+    style: crate::PressStyle,
     accent: Rgba,
     ink: Rgba,
     k: f32,
     at: (f32, f32),
     t: f32,
 ) {
-    use dodai_core::PressStyle as P;
+    use crate::PressStyle as P;
     let (w, h) = (cv.w, cv.h);
     // Ease-out spread, and a fade that holds for the first third.
     let spread = 1.0 - (1.0 - t).powi(3);

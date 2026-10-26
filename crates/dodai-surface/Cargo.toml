@@ -10,6 +10,3 @@ description            = "Toolkit-independent surface textures and effects: the 
 readme                 = "README.md"
 keywords               = ["design-system", "texture", "effects", "ui", "painter"]
 categories             = ["graphics", "gui"]
-
-[dependencies]
-dodai-core = { workspace = true }

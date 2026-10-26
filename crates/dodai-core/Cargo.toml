@@ -13,3 +13,4 @@ categories   = ["gui", "command-line-interface", "rendering"]
 
 [dependencies]
 dodai-motion = { workspace = true }
+dodai-surface = { workspace = true }

@@ -49,14 +49,14 @@ pub fn surface_paint_with(
     class: SurfaceClass,
     over: &dodai_core::Surface,
 ) -> Option<SurfacePaint> {
-    SurfacePaint::resolve(theme, class, over, surface_fx())
+    dodai_core::surface_paint(theme, class, over, surface_fx())
 }
 
 /// An overlay that paints `texture` over its parent (which must be `relative`), in the
 /// theme's shape: a live preview of the texture for pickers.
 pub fn texture_swatch(theme: &Theme, texture: Texture) -> gpui::Canvas<()> {
     use gpui::{canvas, Styled};
-    let sp = SurfacePaint::swatch(theme, texture, surface_fx().neon);
+    let sp = dodai_core::swatch_paint(theme, texture, surface_fx().neon);
     let shape = theme.shape.clone();
     canvas(
         |_, _, _| (),
@@ -166,7 +166,7 @@ pub fn paint_surface(
     let frame = dodai_surface::Frame {
         w,
         h,
-        shape,
+        shape: &shape.clip(),
         seed,
         time: clock(),
         presses: &presses,

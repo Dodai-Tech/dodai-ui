@@ -1,13 +1,13 @@
-//! Shape geometry and noise shared by the effects.
+//! Clip geometry and noise shared by the effects.
 
-use dodai_core::{Shape, ShapeKind};
+use crate::{Clip, ShapeKind};
 
 /// Upper bound on quads one surface may paint per frame.
 pub(crate) const MAX_QUADS: f32 = 1800.0;
 
 /// Horizontal extent `(x0, x1)` of `shape` at row `y` in a `w`×`h` box, or
 /// `None` when the row is outside. Follows chamfers and rounded corners.
-pub fn row_span(shape: &Shape, w: f32, h: f32, y: f32) -> Option<(f32, f32)> {
+pub fn row_span(shape: &Clip, w: f32, h: f32, y: f32) -> Option<(f32, f32)> {
     if y < 0.0 || y > h || w <= 0.0 {
         return None;
     }
@@ -77,7 +77,7 @@ pub(crate) fn fit(pitch: f32, count: impl Fn(f32) -> f32) -> f32 {
 }
 
 /// The shape's outline polygon; rounded shapes get their corner arcs flattened too.
-pub(crate) fn outline_of(shape: &Shape, w: f32, h: f32) -> Vec<(f32, f32)> {
+pub(crate) fn outline_of(shape: &Clip, w: f32, h: f32) -> Vec<(f32, f32)> {
     if shape.kind() != ShapeKind::Rounded {
         return shape.outline(w, h);
     }

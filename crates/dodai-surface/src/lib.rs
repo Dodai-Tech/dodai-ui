@@ -7,17 +7,25 @@
 //! never look at a theme id: they read a [`SurfaceFx`] and the colours of a [`SurfacePaint`].
 
 mod canvas;
+mod clip;
 mod effects;
 mod geom;
+mod vocab;
+
+/// Neutral distance in px between scanline bars.
+pub const SCANLINE_PITCH: f32 = 3.0;
 
 use canvas::Canvas;
-use dodai_core::{Color, Shape, ShapeKind, SurfaceClass, SurfaceFx, Texture, Theme};
+pub use clip::{Clip, Corners, ShapeKind};
 use effects::{
     brackets, chase, depth, edge_light, glitch, gloss, pop, press_frame, pulse, sheen, strip, tape,
     texture, tint, wash,
 };
 use geom::noise;
 pub use geom::{poly_span, row_span};
+pub use vocab::{
+    EffectSet, PressStyle, Surface, SurfaceClass, SurfaceFx, SurfaceTargets, SurfaceTuning, Texture,
+};
 
 /// Smallest side (px) of a surface that gets a texture or effect.
 const MIN_SIDE: f32 = 16.0;
@@ -49,18 +57,6 @@ impl Rgba {
     /// HSL lightness, `0..=1`.
     pub fn lightness(self) -> f32 {
         (self.r.max(self.g).max(self.b) + self.r.min(self.g).min(self.b)) / 2.0
-    }
-}
-
-impl From<Color> for Rgba {
-    fn from(c: Color) -> Self {
-        let f = |v: u8| v as f32 / 255.0;
-        Self {
-            r: f(c.r),
-            g: f(c.g),
-            b: f(c.b),
-            a: f(c.a),
-        }
     }
 }
 
@@ -107,7 +103,7 @@ pub struct SurfacePaint {
     /// The gradient of the `wash` effect, start to end.
     pub wash: [Rgba; 3],
     /// Timing and sizes from the theme.
-    pub tune: dodai_core::SurfaceTuning,
+    pub tune: SurfaceTuning,
     /// Whether a press on this surface plays the click ripple.
     pub pressable: bool,
     /// Lightness (0..1) of the fill underneath, when known (see [`Self::contrasting`]).
@@ -115,48 +111,6 @@ pub struct SurfacePaint {
 }
 
 impl SurfacePaint {
-    fn colours(theme: &Theme, fx: SurfaceFx, pressable: bool) -> Self {
-        let p = &theme.palette;
-        Self {
-            fx,
-            ink: p.text.into(),
-            hole: p.background.into(),
-            a: p.link.into(),
-            b: p.danger.into(),
-            light: p.text.into(),
-            neon: p.accent.into(),
-            shade: p.roles.shadow.into(),
-            wash: theme.surface_style.wash.map(Rgba::from),
-            tune: theme.surface_style.tuning,
-            pressable,
-            fill_lightness: 0.0,
-        }
-    }
-
-    /// Resolve the paint for a `class` surface: `active` is the app-wide mix, `over` the
-    /// component's own [`Surface`](dodai_core::Surface) on top. `None` when nothing would be drawn.
-    pub fn resolve(
-        theme: &Theme,
-        class: SurfaceClass,
-        over: &dodai_core::Surface,
-        active: SurfaceFx,
-    ) -> Option<Self> {
-        if over.is_off() {
-            return None;
-        }
-        let owned = (theme.surface_textures(), theme.surface_effects());
-        let base = active.limited(owned.0, owned.1).for_class(class);
-        let fx = over.over(base).limited(owned.0, owned.1);
-        if fx.is_none() || !(fx.targets.contains(class) || over.forces_on()) {
-            return None;
-        }
-        Some(Self::colours(
-            theme,
-            fx,
-            matches!(class, SurfaceClass::Button | SurfaceClass::Tag),
-        ))
-    }
-
     /// Draw the pattern in whichever of text and background contrasts with a fill of lightness
     /// `fill_lightness`, so it stays visible on bright fills (a primary button) as well as dark ones.
     #[must_use]
@@ -168,18 +122,6 @@ impl SurfacePaint {
             self.hole = text;
         }
         self
-    }
-
-    /// A preview of one `texture` (for pickers); `neon` is the app-wide lit-line amount.
-    pub fn swatch(theme: &Theme, texture: Texture, neon: f32) -> Self {
-        let fx = SurfaceFx {
-            texture,
-            strength: 0.8,
-            scale: 1.0,
-            neon,
-            ..SurfaceFx::NONE
-        };
-        Self::colours(theme, fx, false)
     }
 }
 
@@ -200,7 +142,7 @@ pub struct Frame<'a> {
     /// Surface height, px.
     pub h: f32,
     /// The surface's shape.
-    pub shape: &'a Shape,
+    pub shape: &'a Clip,
     /// Varies the random-looking details between surfaces (any stable per-surface number).
     pub seed: i32,
     /// Seconds on the animation clock.
@@ -325,6 +267,23 @@ mod tests {
         }
     }
 
+    /// Stand-in for a design: just the outline the effects clip to.
+    struct Theme {
+        shape: Clip,
+    }
+
+    impl Default for Theme {
+        fn default() -> Self {
+            Self {
+                shape: Clip {
+                    radius: 6.0,
+                    border_width: 1.0,
+                    ..Clip::default()
+                },
+            }
+        }
+    }
+
     fn run(sp: &SurfacePaint, theme: &Theme, presses: &[Ripple]) -> (Rec, bool) {
         let mut rec = Rec::default();
         let f = Frame {
@@ -340,7 +299,26 @@ mod tests {
     }
 
     fn only(fx: SurfaceFx) -> SurfacePaint {
-        SurfacePaint::colours(&Theme::default(), fx, true)
+        let ink = Rgba {
+            r: 0.1,
+            g: 0.1,
+            b: 0.1,
+            a: 1.0,
+        };
+        SurfacePaint {
+            fx,
+            ink,
+            hole: Rgba::WHITE,
+            a: Rgba { r: 0.0, ..ink },
+            b: Rgba { g: 0.0, ..ink },
+            light: Rgba::WHITE,
+            neon: Rgba { b: 0.9, ..ink },
+            shade: ink,
+            wash: [ink; 3],
+            tune: SurfaceTuning::DEFAULT,
+            pressable: true,
+            fill_lightness: 0.0,
+        }
     }
 
     #[test]
@@ -453,3 +431,7 @@ mod tests {
         assert!(last.b > last.r, "ends blue");
     }
 }
+
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeDoctests;

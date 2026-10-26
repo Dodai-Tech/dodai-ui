@@ -86,7 +86,7 @@ impl<Message> canvas::Program<Message> for SurfaceFxProgram {
         let f = FxFrame {
             w: bounds.width,
             h: bounds.height,
-            shape: &self.shape,
+            shape: &self.shape.clip(),
             seed: 1,
             time: 0.0,
             presses: &[],
@@ -99,7 +99,8 @@ impl<Message> canvas::Program<Message> for SurfaceFxProgram {
 impl IcedTheme {
     /// The canvas program for `fx` on a panel, or `None` when this design draws nothing of it.
     pub fn surface_fx_program(&self, fx: SurfaceFx) -> Option<SurfaceFxProgram> {
-        let paint = SurfacePaint::resolve(&self.theme, SurfaceClass::Panel, &Surface::INHERIT, fx)?;
+        let paint =
+            dodai_core::surface_paint(&self.theme, SurfaceClass::Panel, &Surface::INHERIT, fx)?;
         Some(SurfaceFxProgram {
             paint,
             shape: self.theme.shape.clone(),

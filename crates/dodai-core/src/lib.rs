@@ -21,7 +21,8 @@ pub mod export;
 mod palette;
 mod shape_system;
 mod spec;
-mod surface;
+mod surface_paint;
+mod surface_style;
 mod switcher;
 mod theme;
 mod tokens;
@@ -40,20 +41,21 @@ pub use component::{
 };
 pub use dodai_motion;
 pub use dodai_motion::{Easing, EntryKind, EntrySet, Motion};
+pub use dodai_surface::{
+    EffectSet, PressStyle, Surface, SurfaceClass, SurfaceFx, SurfaceTargets, SurfaceTuning, Texture,
+};
 pub use palette::{Mode, Palette, Roles, Tone};
 pub use shape_system::{
     Corner, CornerSpec, CornerStyle, DefaultShape, RoleShape, ShapePreset, ShapeRole, ShapeScale,
     ShapeSize, ShapeSystem, FULL,
 };
 pub use spec::{DesignSpec, FadeStop, Fluid, Frost, GridSpec, IconSet, Look, ShadowLayer, SpecRef};
-pub use surface::{
-    EffectSet, PressStyle, Surface, SurfaceClass, SurfaceFx, SurfaceStyle, SurfaceTargets,
-    SurfaceTuning, Texture,
-};
+pub use surface_paint::{surface_paint, swatch_paint};
+pub use surface_style::SurfaceStyle;
 pub use switcher::ThemeSwitcher;
 pub use theme::{Theme, ThemeMeta};
 pub use tokens::{
-    Corners, Effects, Scale, Shape, ShapeKind, Sizes, Spacing, StateLayer, Typography,
+    Clip, Corners, Effects, Scale, Shape, ShapeKind, Sizes, Spacing, StateLayer, Typography,
 };
 pub use tonal::TonalPalette;
 pub use tune::{BorderTint, RoundnessGroup, ShadowDir, ShapeTune};

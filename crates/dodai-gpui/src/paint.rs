@@ -238,7 +238,12 @@ impl ShapeStyle {
     }
 }
 
-pub use dodai_surface::{poly_span, row_span};
+pub use dodai_surface::poly_span;
+
+/// Horizontal extent of `shape` at row `y` in a `w`×`h` box (follows chamfers and rounded corners).
+pub fn row_span(shape: &Shape, w: f32, h: f32, y: f32) -> Option<(f32, f32)> {
+    dodai_surface::row_span(&shape.clip(), w, h, y)
+}
 
 /// Polygon of the bottom `band` px of `shape` in a `w`×`h` box (follows cut corners).
 pub fn bottom_band(shape: &Shape, w: f32, h: f32, band: f32) -> Vec<(f32, f32)> {

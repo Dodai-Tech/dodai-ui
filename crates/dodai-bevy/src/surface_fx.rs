@@ -6,8 +6,8 @@
 //! Static only (no click ripples, no animation).
 
 use bevy::prelude::*;
-use dodai_core::{Shape, Surface, SurfaceClass, SurfaceFx, Theme};
-use dodai_surface::{Frame, Painter, Rgba, SurfacePaint};
+use dodai_core::{Surface, SurfaceClass, SurfaceFx, Theme};
+use dodai_surface::{Frame, Painter, Rgba};
 
 use crate::theme::color;
 
@@ -57,8 +57,8 @@ impl Painter for Recorder {
 
 /// Record what `fx` draws on a `size` panel of `theme`'s shape; `None` when nothing is drawn.
 pub fn record_surface_fx(theme: &Theme, fx: SurfaceFx, size: Vec2) -> Option<Recorder> {
-    let paint = SurfacePaint::resolve(theme, SurfaceClass::Panel, &Surface::INHERIT, fx)?;
-    let shape: &Shape = &theme.shape;
+    let paint = dodai_core::surface_paint(theme, SurfaceClass::Panel, &Surface::INHERIT, fx)?;
+    let shape = &theme.shape.clip();
     let frame = Frame {
         w: size.x,
         h: size.y,
