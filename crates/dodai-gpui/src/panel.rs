@@ -208,6 +208,7 @@ pub struct Panel {
     corners: Option<dodai_core::Corners>,
     surface: dodai_core::Surface,
     border: Option<BorderStyle>,
+    accent: bool,
 }
 
 crate::surface_setter!(Panel);
@@ -216,6 +217,7 @@ impl Panel {
     /// Create a new [`Panel`].
     pub fn new() -> Self {
         Self {
+            accent: false,
             border: None,
             title: None,
             corners: None,
@@ -261,6 +263,12 @@ impl Panel {
         self.border = Some(b);
         self
     }
+    /// Fills the whole panel with the accent colour (primary) instead of the grey surface; text
+    /// switches to the on-accent colour. Follows the theme: yellow or cyan in Cyberpunk.
+    pub fn accent(mut self, on: bool) -> Self {
+        self.accent = on;
+        self
+    }
     /// Highlight border (and glow when enabled).
     pub fn focused(mut self, f: bool) -> Self {
         self.focused = f;
@@ -294,17 +302,25 @@ impl Panel {
             shape.corners = c;
         }
         let border = self.border.unwrap_or_else(|| section_border(cx));
-        let style = border.apply(panel_style(&t, self.focused).with_own_surface(
-            &t,
-            dodai_core::SurfaceClass::Panel,
-            &self.surface,
-        ));
+        let base = if self.accent {
+            let a = t.palette.primary;
+            ShapeStyle::from_tokens(&t, Some(a), Some(a), self.focused, true)
+        } else {
+            panel_style(&t, self.focused)
+        };
+        let style =
+            border.apply(base.with_own_surface(&t, dodai_core::SurfaceClass::Panel, &self.surface));
+        let (ink, title_ink) = if self.accent {
+            (t.palette.on_primary, t.palette.on_primary)
+        } else {
+            (t.palette.text, p.title)
+        };
         let d = shaped(&shape, style);
         let mut d = d
             .flex()
             .flex_col()
             .min_w_0()
-            .text_color(hsla(t.palette.text))
+            .text_color(hsla(ink))
             .text_size(px(t.typography.size_md))
             .font_family(first_family(t.typography.body));
         let mut items: Vec<AnyElement> = Vec::new();
@@ -313,7 +329,7 @@ impl Panel {
                 div()
                     .font_family(first_family(t.typography.display))
                     .text_size(px(t.typography.size_sm))
-                    .text_color(hsla(p.title))
+                    .text_color(hsla(title_ink))
                     .child(format_label(&t.typography, &title))
                     .into_any_element(),
             );

@@ -43,6 +43,7 @@ pub struct Card {
     width: Option<f32>,
     corners: Option<dodai_core::Corners>,
     surface: dodai_core::Surface,
+    accent: bool,
     children: Vec<AnyElement>,
 }
 
@@ -53,6 +54,7 @@ impl Card {
     pub fn new(variant: CardVariant) -> Self {
         Self {
             variant,
+            accent: false,
             headline: None,
             supporting: None,
             width: None,
@@ -60,6 +62,11 @@ impl Card {
             surface: dodai_core::Surface::INHERIT,
             children: Vec::new(),
         }
+    }
+    /// Fills the card with the accent colour (primary) and switches text to the on-accent colour.
+    pub fn accent(mut self, on: bool) -> Self {
+        self.accent = on;
+        self
     }
     /// Headline text.
     pub fn headline(mut self, t: impl Into<SharedString>) -> Self {
@@ -97,13 +104,21 @@ impl Card {
         if let Some(c) = self.corners {
             shape.corners = c;
         }
+        let (ink, head_ink, sub_ink) = if self.accent {
+            let a = t.palette.on_primary;
+            (a, a, a)
+        } else {
+            (t.palette.text, p.title, t.palette.text_muted)
+        };
+        let base = if self.accent {
+            let a = t.palette.primary;
+            ShapeStyle::from_tokens(&t, Some(a), Some(a), false, true)
+        } else {
+            card_style(&t, self.variant)
+        };
         let mut el = shaped(
             &shape,
-            card_style(&t, self.variant).with_own_surface(
-                &t,
-                dodai_core::SurfaceClass::Card,
-                &self.surface,
-            ),
+            base.with_own_surface(&t, dodai_core::SurfaceClass::Card, &self.surface),
         )
         .flex()
         .flex_col()
@@ -111,7 +126,7 @@ impl Card {
         .p(px(t.spacing.lg))
         .font_family(first_family(t.typography.body))
         .text_size(px(t.typography.size_md))
-        .text_color(hsla(t.palette.text));
+        .text_color(hsla(ink));
         if let Some(w) = self.width {
             el = el.w(px(w));
         }
@@ -119,7 +134,7 @@ impl Card {
             el = el.child(
                 div()
                     .text_size(px(t.typography.size_lg))
-                    .text_color(hsla(p.title))
+                    .text_color(hsla(head_ink))
                     .child(format_label(&t.typography, &h)),
             );
         }
@@ -127,7 +142,7 @@ impl Card {
             el = el.child(
                 div()
                     .text_size(px(t.typography.size_sm))
-                    .text_color(hsla(t.palette.text_muted))
+                    .text_color(hsla(sub_ink))
                     .child(s),
             );
         }
