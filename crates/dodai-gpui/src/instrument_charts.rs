@@ -46,7 +46,8 @@ pub(crate) fn frame(
                 .child(format_label(&t.typography, &c)),
         );
     }
-    f.child(div().relative().w(px(w)).h(px(h)).child(body))
+    f.max_w_full()
+        .child(div().relative().w(px(w)).max_w_full().h(px(h)).child(body))
 }
 
 /// Per-design drawing parameters of the scope family.

@@ -123,7 +123,7 @@ impl Carousel {
 }
 
 impl Carousel {
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let n = self.items.len();
         let gap = if t.look().tonal { 8.0 } else { t.spacing.md };
@@ -151,12 +151,22 @@ impl Carousel {
             0.0
         };
         let height = self.item_height;
+        // Uncontained rows slide to the new window; contained layouts step (slot widths differ).
+        let slide = if widths.is_empty() {
+            crate::motion::smooth(window, cx, self.id.clone(), start as f32)
+                .clamp(0.0, max_start as f32)
+        } else {
+            start as f32
+        };
+        let first = slide.floor() as usize;
+        let frac = slide - first as f32;
+        let take = if frac > 0.001 { visible + 1 } else { visible };
         let shown = self
             .items
             .into_iter()
             .enumerate()
-            .skip(start)
-            .take(visible)
+            .skip(first)
+            .take(take)
             .enumerate()
             .map(|(k, (_, e))| match widths.get(k) {
                 // Contained layouts: clipped, rounded slots of computed width.
@@ -192,7 +202,22 @@ impl Carousel {
                     .items_center()
                     .gap(px(t.spacing.sm))
                     .child(prev)
-                    .child(div().flex().gap(px(gap)).children(shown))
+                    .child(if widths.is_empty() {
+                        div()
+                            .w(px(
+                                visible as f32 * w + (visible as f32 - 1.0).max(0.0) * gap
+                            ))
+                            .overflow_hidden()
+                            .child(
+                                div()
+                                    .flex()
+                                    .gap(px(gap))
+                                    .ml(px(-frac * (w + gap)))
+                                    .children(shown),
+                            )
+                    } else {
+                        div().flex().gap(px(gap)).children(shown)
+                    })
                     .child(next),
             )
             .child(

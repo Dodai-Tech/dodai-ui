@@ -450,7 +450,8 @@ impl RenderOnce for SonarWaterfall {
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
-                let (cw, ch) = (w_ / bins as f32, h_ / rows as f32);
+                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+                let (cw, ch) = (bw / bins as f32, bh / rows as f32);
                 let now = clock();
                 // Quantise to the row rate so the picture scrolls in whole rows.
                 let tick = (now * 8.0).floor() / 8.0;

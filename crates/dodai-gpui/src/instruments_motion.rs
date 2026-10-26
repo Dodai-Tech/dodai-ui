@@ -89,6 +89,7 @@ pub fn animation_time() -> f32 {
     })
 }
 
+#[cfg(feature = "charts")]
 pub(crate) fn clock() -> f32 {
     animation_time()
 }
@@ -131,6 +132,7 @@ impl Follow {
         }
     }
     /// An id from a name, for components that already have one.
+    #[cfg(feature = "charts")]
     pub fn named(id: &str) -> Self {
         Self {
             id: ElementId::from(SharedString::from(format!("follow-{id}"))),
@@ -145,6 +147,7 @@ impl Follow {
         self
     }
     /// A sibling identity for a second piece of state of the same component.
+    #[cfg(feature = "charts")]
     pub(crate) fn sub(&self, name: &str) -> Self {
         Self {
             id: ElementId::from((self.id.clone(), SharedString::from(name.to_string()))),
@@ -277,6 +280,7 @@ pub(crate) fn follow(w: &mut Window, cx: &mut App, f: &Follow, part: u8, target:
     state(w, cx, f, part, target, false).unwrap_or(target)
 }
 
+#[cfg(feature = "charts")]
 /// Like [`follow`] for a heading in degrees: turns the short way round and returns the angle
 /// wrapped to `0..360`.
 pub(crate) fn follow_angle(w: &mut Window, cx: &mut App, f: &Follow, part: u8, target: f32) -> f32 {
@@ -286,6 +290,7 @@ pub(crate) fn follow_angle(w: &mut Window, cx: &mut App, f: &Follow, part: u8, t
         .rem_euclid(360.0)
 }
 
+#[cfg(feature = "charts")]
 struct Many {
     sig: (u32, u32),
     springs: Vec<SpringState>,
@@ -294,6 +299,7 @@ struct Many {
 
 /// Every value of `target` followed at once, for a chart's data. Values that appear start at
 /// their target; the rest ease with the component's response. Requests frames until settled.
+#[cfg(feature = "charts")]
 pub(crate) fn follow_all(w: &mut Window, cx: &mut App, f: &Follow, target: &[f32]) -> Vec<f32> {
     if !instruments_animated() || !f.animated {
         return target.to_vec();
@@ -369,6 +375,7 @@ pub(crate) fn follow_all(w: &mut Window, cx: &mut App, f: &Follow, target: &[f32
 
 /// A chart's series with their values followed. Live series take their window's newest samples
 /// and are not eased: they already move continuously.
+#[cfg(feature = "charts")]
 pub(crate) fn follow_series(
     w: &mut Window,
     cx: &mut App,
@@ -405,6 +412,7 @@ pub(crate) fn follow_series(
 }
 
 /// The `f32` of each `(label, value)` pair followed, in place.
+#[cfg(feature = "charts")]
 pub(crate) fn follow_pairs<T>(w: &mut Window, cx: &mut App, f: &Follow, items: &mut [(T, f32)]) {
     let flat: Vec<f32> = items.iter().map(|p| p.1).collect();
     for (p, v) in items.iter_mut().zip(follow_all(w, cx, f, &flat)) {
@@ -413,6 +421,7 @@ pub(crate) fn follow_pairs<T>(w: &mut Window, cx: &mut App, f: &Follow, items: &
 }
 
 /// The two numbers of each `(label, a, b)` row followed, in place.
+#[cfg(feature = "charts")]
 pub(crate) fn follow_triples<T>(
     w: &mut Window,
     cx: &mut App,
@@ -428,6 +437,7 @@ pub(crate) fn follow_triples<T>(
 }
 
 /// A grid of values followed, in place.
+#[cfg(feature = "charts")]
 pub(crate) fn follow_rows(w: &mut Window, cx: &mut App, f: &Follow, rows: &mut [Vec<f32>]) {
     let flat: Vec<f32> = rows.iter().flatten().copied().collect();
     let mut shown = follow_all(w, cx, f, &flat).into_iter();

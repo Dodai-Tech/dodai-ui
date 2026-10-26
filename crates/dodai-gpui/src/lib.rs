@@ -249,9 +249,9 @@ pub mod instruments_flight;
 pub mod instruments_hero;
 #[cfg(feature = "charts")]
 pub mod instruments_military;
-#[cfg(feature = "charts")]
+#[cfg(any(feature = "components", feature = "charts"))]
 pub(crate) mod instruments_motion;
-#[cfg(feature = "charts")]
+#[cfg(any(feature = "components", feature = "charts"))]
 pub use instruments_motion::{
     animation_speed, animation_time, instruments_animated, set_animation_speed,
     set_instruments_animated,

@@ -216,6 +216,7 @@ crate::entry_render!(Pagination);
 /// Multi-step progress: numbered nodes joined by lines. Done steps show ✓.
 #[derive(IntoElement)]
 pub struct Stepper {
+    follow: crate::instruments_motion::Follow,
     steps: Vec<SharedString>,
     current: usize,
     corners: Option<dodai_core::Corners>,
@@ -224,18 +225,21 @@ pub struct Stepper {
 crate::corners_setter!(Stepper);
 
 impl Stepper {
-    /// Create a new [`Stepper`].
+    /// Create a new [`Stepper`]; the joining lines fill as the current step advances.
+    #[track_caller]
     pub fn new<S: Into<SharedString>>(steps: impl IntoIterator<Item = S>, current: usize) -> Self {
         Self {
+            follow: crate::instruments_motion::Follow::here(),
             corners: None,
             steps: steps.into_iter().map(Into::into).collect(),
             current,
         }
     }
+    crate::instruments_motion::follow_api!();
 }
 
 impl Stepper {
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
         let p = &t.palette;
@@ -248,6 +252,8 @@ impl Stepper {
             .font_family(first_family(t.typography.body))
             .text_size(px(t.typography.size_sm));
         let n = self.steps.len();
+        let eased =
+            crate::instruments_motion::follow(window, cx, &self.follow, 0, self.current as f32);
         for (i, label) in self.steps.iter().enumerate() {
             let status = step_status(i, self.current);
             let k = t.step(status);
@@ -286,11 +292,13 @@ impl Stepper {
                         .min_w(px(t.spacing.md))
                         .mx(px(t.spacing.sm))
                         .h(px(2.0))
-                        .bg(hsla(if i < self.current {
-                            p.primary
-                        } else {
-                            p.border
-                        })),
+                        .bg(hsla(p.border))
+                        .child(
+                            div()
+                                .h_full()
+                                .w(gpui::relative((eased - i as f32).clamp(0.0, 1.0)))
+                                .bg(hsla(p.primary)),
+                        ),
                 );
             }
         }
