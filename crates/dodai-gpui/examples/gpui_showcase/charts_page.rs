@@ -26,6 +26,42 @@ impl Showcase {
         let t = theme_of(cx);
         let gap = px(t.spacing.md);
         let me = me.clone();
+        self.inst_seen = Some(std::time::Instant::now());
+        // Live demo data: while animated, every value drifts smoothly around its base.
+        let (live, time) = (
+            dodai_gpui::instruments_animated(),
+            dodai_gpui::motion::now(),
+        );
+        let wave = move |key: f32, i: f32| (time * 0.6 + key * 1.7 + i * 0.9).sin();
+        // A series drifting up to ±22 % per point.
+        let drift = move |vals: &[f32], key: f32| -> Vec<f32> {
+            vals.iter()
+                .enumerate()
+                .map(|(i, v)| {
+                    if live {
+                        v * (1.0 + 0.22 * wave(key, i as f32))
+                    } else {
+                        *v
+                    }
+                })
+                .collect()
+        };
+        // One positive value drifting up to ±25 %.
+        let dv = move |v: f32, key: f32| {
+            if live {
+                v * (1.0 + 0.25 * wave(key, 0.0))
+            } else {
+                v
+            }
+        };
+        // A percentage, kept within 0..=100.
+        let dg = move |v: f32, key: f32| {
+            if live {
+                (v + 14.0 * wave(key, 0.0)).clamp(0.0, 100.0)
+            } else {
+                v
+            }
+        };
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let col = || div().flex().flex_col().gap(gap);
         let hres = self.heat_res.clamp(1, 8);
@@ -96,7 +132,10 @@ impl Showcase {
                                     let (x, y) = (c as f32 / hres as f32, r as f32 / hres as f32);
                                     ((x * 0.21 * 2.0).sin()
                                         + (y * 0.45).cos()
-                                        + ((x * 2.0 + y) * 0.13).sin() * 1.5)
+                                        + ((x * 2.0 + y) * 0.13
+                                            + if live { time * 0.8 } else { 0.0 })
+                                        .sin()
+                                            * 1.5)
                                         + ((x - 16.0).hypot((y - 6.0) * 2.0) * -0.16).exp() * 3.0
                                 })
                                 .collect()
@@ -124,8 +163,8 @@ impl Showcase {
             );
 
         let months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
-        let a = Series::new("Revenue", [12.0, 18.0, 14.0, 26.0, 22.0, 31.0]);
-        let b = Series::new("Cost", [8.0, 11.0, 13.0, 15.0, 17.0, 16.0]);
+        let a = Series::new("Revenue", drift(&[12.0, 18.0, 14.0, 26.0, 22.0, 31.0], 1.0));
+        let b = Series::new("Cost", drift(&[8.0, 11.0, 13.0, 15.0, 17.0, 16.0], 2.0));
         let charts_xy = col()
             .child(
                 row()
@@ -175,17 +214,17 @@ impl Showcase {
             let dials = row()
                 .justify_around()
                 .flex_wrap()
-                .child(Gauge::new(72.0).label("72%").tone(Tone::Success))
-                .child(Gauge::new(31.0).tone(Tone::Warning))
+                .child(Gauge::new(dg(72.0, 41.0)).label("72%").tone(Tone::Success))
+                .child(Gauge::new(dg(31.0, 42.0)).tone(Tone::Warning))
                 .child(
-                    Gauge::new(68.0)
+                    Gauge::new(dg(68.0, 43.0))
                         .style(Segmented)
                         .size(130.0)
                         .caption("Core temp")
                         .label("68°"),
                 )
                 .child(
-                    Gauge::new(72.0)
+                    Gauge::new(dg(72.0, 44.0))
                         .style(Dial)
                         .zones(true)
                         .size(150.0)
@@ -193,7 +232,7 @@ impl Showcase {
                         .label("72"),
                 )
                 .child(
-                    Gauge::new(88.0)
+                    Gauge::new(dg(88.0, 45.0))
                         .style(Meter)
                         .zones(true)
                         .size(150.0)
@@ -201,7 +240,7 @@ impl Showcase {
                         .label("88%"),
                 )
                 .child(
-                    Gauge::new(45.0)
+                    Gauge::new(dg(45.0, 46.0))
                         .style(Reticle)
                         .size(130.0)
                         .tone(Tone::Info)
@@ -213,7 +252,7 @@ impl Showcase {
                 .flex_col()
                 .gap_3()
                 .child(
-                    Gauge::new(82.0)
+                    Gauge::new(dg(82.0, 47.0))
                         .style(Bar)
                         .size(150.0)
                         .zones(true)
@@ -221,7 +260,7 @@ impl Showcase {
                         .label("82%"),
                 )
                 .child(
-                    Gauge::new(35.0)
+                    Gauge::new(dg(35.0, 48.0))
                         .style(Bar)
                         .size(150.0)
                         .tone(Tone::Info)
@@ -229,7 +268,7 @@ impl Showcase {
                         .label("35%"),
                 )
                 .child(
-                    Gauge::new(14.0)
+                    Gauge::new(dg(14.0, 49.0))
                         .style(Bar)
                         .size(150.0)
                         .tone(Tone::Danger)
@@ -241,7 +280,7 @@ impl Showcase {
                 .flex_col()
                 .gap_3()
                 .child(
-                    Gauge::new(64.0)
+                    Gauge::new(dg(64.0, 50.0))
                         .style(Chevron)
                         .size(150.0)
                         .zones(true)
@@ -249,7 +288,7 @@ impl Showcase {
                         .label("64%"),
                 )
                 .child(
-                    Gauge::new(58.0)
+                    Gauge::new(dg(58.0, 51.0))
                         .style(Level)
                         .size(110.0)
                         .zones(true)
@@ -262,7 +301,7 @@ impl Showcase {
                 .flex_wrap()
                 .items_center()
                 .child(
-                    Gauge::new(64.0)
+                    Gauge::new(dg(64.0, 52.0))
                         .style(Ring)
                         .size(120.0)
                         .caption("Disk")
@@ -270,7 +309,7 @@ impl Showcase {
                         .tone(Tone::Info),
                 )
                 .child(
-                    Gauge::new(78.0)
+                    Gauge::new(dg(78.0, 53.0))
                         .style(Smooth)
                         .size(130.0)
                         .zones(true)
@@ -278,7 +317,7 @@ impl Showcase {
                         .label("78"),
                 )
                 .child(
-                    Gauge::new(55.0)
+                    Gauge::new(dg(55.0, 54.0))
                         .style(Dots)
                         .size(130.0)
                         .caption("Volume")
@@ -286,7 +325,7 @@ impl Showcase {
                         .target(80.0),
                 )
                 .child(
-                    Gauge::new(70.0)
+                    Gauge::new(dg(70.0, 55.0))
                         .style(Led)
                         .size(150.0)
                         .zones(true)
@@ -294,7 +333,7 @@ impl Showcase {
                         .label("70%"),
                 )
                 .child(
-                    Gauge::new(34.0)
+                    Gauge::new(dg(34.0, 56.0))
                         .style(Battery)
                         .size(110.0)
                         .caption("Battery")
@@ -302,7 +341,7 @@ impl Showcase {
                         .tone(Tone::Success),
                 )
                 .child(
-                    Gauge::new(18.0)
+                    Gauge::new(dg(18.0, 57.0))
                         .style(Battery)
                         .size(110.0)
                         .caption("Low")
@@ -310,7 +349,7 @@ impl Showcase {
                         .tone(Tone::Success),
                 )
                 .child(
-                    Gauge::new(62.0)
+                    Gauge::new(dg(62.0, 58.0))
                         .style(Thermometer)
                         .size(120.0)
                         .zones(true)
@@ -319,7 +358,7 @@ impl Showcase {
                         .target(75.0),
                 )
                 .child(
-                    Gauge::new(60.0)
+                    Gauge::new(dg(60.0, 59.0))
                         .style(Signal)
                         .size(100.0)
                         .caption("Signal")
@@ -454,8 +493,21 @@ impl Showcase {
                 .map(|i| c.mix(t.palette.background, i as f32 * 0.17))
                 .collect()
         };
-        let langs = || [("Rust", 52.0), ("Kotlin", 28.0), ("Other", 20.0)];
-        let quarters = || [("Q1", 30.0), ("Q2", 24.0), ("Q3", 26.0), ("Q4", 20.0)];
+        let langs = || {
+            [
+                ("Rust", dv(52.0, 61.0)),
+                ("Kotlin", dv(28.0, 62.0)),
+                ("Other", dv(20.0, 63.0)),
+            ]
+        };
+        let quarters = || {
+            [
+                ("Q1", dv(30.0, 64.0)),
+                ("Q2", dv(24.0, 65.0)),
+                ("Q3", dv(26.0, 66.0)),
+                ("Q4", dv(20.0, 67.0)),
+            ]
+        };
         let pies = row()
             .justify_around()
             .flex_wrap()
@@ -482,11 +534,11 @@ impl Showcase {
             .child(tile(
                 "Monochrome",
                 PieChart::new([
-                    ("A", 40.0),
-                    ("B", 25.0),
-                    ("C", 18.0),
-                    ("D", 11.0),
-                    ("E", 6.0),
+                    ("A", dv(40.0, 68.0)),
+                    ("B", dv(25.0, 69.0)),
+                    ("C", dv(18.0, 70.0)),
+                    ("D", dv(11.0, 71.0)),
+                    ("E", dv(6.0, 72.0)),
                 ])
                 .colors(mono(t.palette.primary))
                 .legend(false)
@@ -495,12 +547,12 @@ impl Showcase {
             .child(tile(
                 "Rose",
                 PieChart::new([
-                    ("N", 9.0),
-                    ("NE", 5.0),
-                    ("E", 7.0),
-                    ("SE", 3.0),
-                    ("S", 8.0),
-                    ("SW", 4.0),
+                    ("N", dv(9.0, 73.0)),
+                    ("NE", dv(5.0, 74.0)),
+                    ("E", dv(7.0, 75.0)),
+                    ("SE", dv(3.0, 76.0)),
+                    ("S", dv(8.0, 77.0)),
+                    ("SW", dv(4.0, 78.0)),
                 ])
                 .style(PieStyle::Rose)
                 .gap(1.0)
@@ -522,10 +574,14 @@ impl Showcase {
             .gap_6()
             .child(tile(
                 "Centre value",
-                PieChart::new([("A", 3.0), ("B", 2.0), ("C", 1.0)])
-                    .donut(0.62)
-                    .center("6")
-                    .into_any_element(),
+                PieChart::new([
+                    ("A", dv(3.0, 79.0)),
+                    ("B", dv(2.0, 80.0)),
+                    ("C", dv(1.0, 81.0)),
+                ])
+                .donut(0.62)
+                .center("6")
+                .into_any_element(),
             ))
             .child(tile(
                 "Thin ring",
@@ -562,7 +618,7 @@ impl Showcase {
             ))
             .child(tile(
                 "Segmented half",
-                PieChart::new([("Used", 68.0), ("Free", 32.0)])
+                PieChart::new([("Used", dv(68.0, 82.0)), ("Free", dv(32.0, 83.0))])
                     .style(PieStyle::Segmented)
                     .arc(0.75, 0.5)
                     .size(200.0)
@@ -572,17 +628,21 @@ impl Showcase {
             ))
             .child(tile(
                 "HUD arc",
-                PieChart::new([("A", 45.0), ("B", 30.0), ("C", 25.0)])
-                    .style(PieStyle::Hud)
-                    .arc(0.625, 0.75)
-                    .size(190.0)
-                    .center("A·B·C")
-                    .legend(false)
-                    .into_any_element(),
+                PieChart::new([
+                    ("A", dv(45.0, 84.0)),
+                    ("B", dv(30.0, 85.0)),
+                    ("C", dv(25.0, 86.0)),
+                ])
+                .style(PieStyle::Hud)
+                .arc(0.625, 0.75)
+                .size(190.0)
+                .center("A·B·C")
+                .legend(false)
+                .into_any_element(),
             ))
             .child(tile(
                 "Half donut",
-                PieChart::new([("Used", 68.0), ("Free", 32.0)])
+                PieChart::new([("Used", dv(68.0, 87.0)), ("Free", dv(32.0, 88.0))])
                     .donut(0.7)
                     .arc(0.75, 0.5)
                     .size(200.0)
@@ -592,7 +652,7 @@ impl Showcase {
             ))
             .child(tile(
                 "Three-quarter",
-                PieChart::new([("Done", 72.0), ("Left", 28.0)])
+                PieChart::new([("Done", dv(72.0, 89.0)), ("Left", dv(28.0, 90.0))])
                     .donut(0.78)
                     .arc(0.625, 0.75)
                     .colors([t.palette.success, t.palette.border])
@@ -603,21 +663,24 @@ impl Showcase {
             .child(tile(
                 "Monochrome",
                 PieChart::new([
-                    ("A", 40.0),
-                    ("B", 25.0),
-                    ("C", 18.0),
-                    ("D", 11.0),
-                    ("E", 6.0),
+                    ("A", dv(40.0, 91.0)),
+                    ("B", dv(25.0, 92.0)),
+                    ("C", dv(18.0, 93.0)),
+                    ("D", dv(11.0, 94.0)),
+                    ("E", dv(6.0, 95.0)),
                 ])
                 .donut(0.6)
                 .colors(mono(t.palette.secondary))
                 .legend(false)
                 .into_any_element(),
             ));
-        let series = || {
-            [
-                3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0, 10.0, 14.0, 9.0, 13.0,
-            ]
+        let series = move || {
+            drift(
+                &[
+                    3.0, 5.0, 4.0, 8.0, 6.0, 9.0, 7.0, 12.0, 10.0, 14.0, 9.0, 13.0,
+                ],
+                90.0,
+            )
         };
         let spark = |name: &'static str, sp: Sparkline| {
             div()
@@ -758,9 +821,15 @@ impl Showcase {
             .child(w(
                 LineChart::new(
                     "dual",
-                    [Series::new("Revenue", [12.0, 18.0, 15.0, 26.0, 22.0, 31.0])],
+                    [Series::new(
+                        "Revenue",
+                        drift(&[12.0, 18.0, 15.0, 26.0, 22.0, 31.0], 3.0),
+                    )],
                 )
-                .secondary([Series::new("Margin %", [0.21, 0.24, 0.2, 0.3, 0.28, 0.33])])
+                .secondary([Series::new(
+                    "Margin %",
+                    drift(&[0.21, 0.24, 0.2, 0.3, 0.28, 0.33], 4.0),
+                )])
                 .labels(months)
                 .title("Secondary y axis")
                 .into_any_element(),
@@ -769,20 +838,29 @@ impl Showcase {
             .child(w(
                 ChartStack::new()
                     .height(300.0)
-                    .pane(3.0, |h| {
+                    .pane(3.0, move |h| {
                         LineChart::new(
                             "st1",
-                            [Series::new("Price", [3.0, 4.0, 3.5, 5.0, 6.0, 5.5])],
+                            [Series::new(
+                                "Price",
+                                drift(&[3.0, 4.0, 3.5, 5.0, 6.0, 5.5], 5.0),
+                            )],
                         )
                         .height(h - 24.0)
                         .legend(false)
                         .into_any_element()
                     })
-                    .pane(1.0, |h| {
-                        BarChart::new("st2", [Series::new("Vol", [2.0, 3.0, 1.0, 4.0, 5.0, 3.0])])
-                            .height(h - 24.0)
-                            .legend(false)
-                            .into_any_element()
+                    .pane(1.0, move |h| {
+                        BarChart::new(
+                            "st2",
+                            [Series::new(
+                                "Vol",
+                                drift(&[2.0, 3.0, 1.0, 4.0, 5.0, 3.0], 6.0),
+                            )],
+                        )
+                        .height(h - 24.0)
+                        .legend(false)
+                        .into_any_element()
                     })
                     .into_any_element(),
                 420.0,
@@ -792,8 +870,8 @@ impl Showcase {
             .child(RadarChart::new(
                 ["Speed", "Power", "Range", "Armor", "Stealth"],
                 [
-                    Series::new("Unit A", [8.0, 6.0, 7.0, 4.0, 9.0]),
-                    Series::new("Unit B", [5.0, 9.0, 4.0, 8.0, 3.0]),
+                    Series::new("Unit A", drift(&[8.0, 6.0, 7.0, 4.0, 9.0], 7.0)),
+                    Series::new("Unit B", drift(&[5.0, 9.0, 4.0, 8.0, 3.0], 8.0)),
                 ],
             ))
             .child(
@@ -820,9 +898,9 @@ impl Showcase {
         let charts_more1 = row()
             .child(w(
                 StackedAreaChart::new([
-                    Series::new("Web", [12.0, 18.0, 14.0, 26.0, 22.0, 31.0]),
-                    Series::new("App", [8.0, 11.0, 13.0, 15.0, 17.0, 16.0]),
-                    Series::new("API", [4.0, 6.0, 9.0, 8.0, 12.0, 15.0]),
+                    Series::new("Web", drift(&[12.0, 18.0, 14.0, 26.0, 22.0, 31.0], 9.0)),
+                    Series::new("App", drift(&[8.0, 11.0, 13.0, 15.0, 17.0, 16.0], 10.0)),
+                    Series::new("API", drift(&[4.0, 6.0, 9.0, 8.0, 12.0, 15.0], 11.0)),
                 ])
                 .labels(months)
                 .title("Traffic by source")
