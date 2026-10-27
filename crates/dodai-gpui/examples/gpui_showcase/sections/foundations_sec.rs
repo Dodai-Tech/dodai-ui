@@ -275,7 +275,7 @@ impl Showcase {
         let pick = self.icon_sel?;
         let name = pick.name().to_string();
         let filled = self.icon_filled;
-        let svg = dodai::icons::glyph(pick, t, filled)
+        let svg = dodai_icons::glyph_for_theme(pick, t, filled)
             .map(|g| g.svg(24, "currentColor"))
             .unwrap_or_default();
         let svg = pretty_svg(&svg);

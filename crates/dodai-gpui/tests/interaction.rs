@@ -691,7 +691,7 @@ fn wheel_past_the_top_stretches_and_mid_page_does_not(cx: &mut TestAppContext) {
 #[gpui::test]
 fn icons_paint_in_every_pack_and_theme(cx: &mut TestAppContext) {
     use dodai_gpui::{Icon, IconPack};
-    for theme in dodai::themes::all() {
+    for theme in dodai_core::themes::all() {
         cx.update(|cx| install(cx, theme));
         let (_, vcx) = cx.add_window_view(|_, _| Host {
             build: Box::new(|_, _| {
@@ -769,7 +769,7 @@ fn clicking_a_button_plays_the_click_ripple(cx: &mut TestAppContext) {
 }
 
 fn press_plays_ripple(cx: &mut TestAppContext, variant: dodai_core::ButtonVariant) {
-    cx.update(|cx| install(cx, dodai::material::light()));
+    cx.update(|cx| install(cx, dodai_core::material::light()));
     let (_, vcx) = cx.add_window_view(move |_, _| Host {
         build: Box::new(move |_, _| {
             Button::new("rip", "Press")

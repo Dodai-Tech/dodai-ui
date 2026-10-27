@@ -782,6 +782,7 @@ fn shimmer_overlay(shape: &Shape, sh: Shimmer) -> impl gpui::IntoElement {
         })
 }
 
+#[cfg(any(feature = "charts", feature = "components"))]
 pub(crate) fn pts(o: gpui::Point<Pixels>, p: &[(f32, f32)]) -> Vec<gpui::Point<Pixels>> {
     p.iter()
         .map(|&(x, y)| point(o.x + px(x), o.y + px(y)))
@@ -790,10 +791,12 @@ pub(crate) fn pts(o: gpui::Point<Pixels>, p: &[(f32, f32)]) -> Vec<gpui::Point<P
 
 /// True when every coordinate is a real number. The tessellator asserts on
 /// NaN / ±inf, so hostile chart data must never reach it.
+#[cfg(any(feature = "charts", feature = "components"))]
 pub(crate) fn finite(p: &[(f32, f32)]) -> bool {
     p.iter().all(|&(x, y)| x.is_finite() && y.is_finite())
 }
 
+#[cfg(any(feature = "charts", feature = "components"))]
 pub(crate) fn stroke(
     w: &mut Window,
     o: gpui::Point<Pixels>,
@@ -826,6 +829,7 @@ pub(crate) fn fill(w: &mut Window, o: gpui::Point<Pixels>, p: &[(f32, f32)], c: 
 
 /// Fill many polygons with one colour in a single path (one tessellation and
 /// one draw call instead of one per polygon).
+#[cfg(any(feature = "charts", feature = "components"))]
 pub(crate) fn fill_batch(
     w: &mut Window,
     o: gpui::Point<Pixels>,
@@ -932,7 +936,7 @@ mod tests {
 
     #[test]
     fn bottom_band_stops_at_cut_corner() {
-        let mut sh = dodai::themes::cyberpunk::yellow().shape;
+        let mut sh = dodai_core::themes::cyberpunk::yellow().shape;
         sh.chamfer = 10.0;
         sh.corners = dodai_core::Corners::BOTTOM_RIGHT;
         let b = bottom_band(&sh, 100.0, 40.0, 2.0);
@@ -942,7 +946,7 @@ mod tests {
     }
 
     use crate::testing::{light_rounded, square};
-    use dodai::themes;
+    use dodai_core::themes;
 
     #[test]
     fn glow_layers_are_ordered_and_bounded() {
@@ -1014,7 +1018,7 @@ mod tests {
 
     #[test]
     fn row_span_follows_shape() {
-        let mut sh = dodai::themes::cyberpunk::yellow().shape;
+        let mut sh = dodai_core::themes::cyberpunk::yellow().shape;
         sh.chamfer = 10.0;
         sh.radius = 0.0;
         sh.corners = dodai_core::Corners::BOTTOM_RIGHT;

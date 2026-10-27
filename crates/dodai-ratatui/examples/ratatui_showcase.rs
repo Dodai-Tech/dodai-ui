@@ -34,7 +34,7 @@ struct App {
 }
 
 fn main() -> io::Result<()> {
-    let sw = dodai::switcher();
+    let sw = dodai_core::switcher();
     let tui = TuiTheme::new(sw.current().clone());
     let mut app = App {
         sw,

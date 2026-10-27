@@ -7,5 +7,5 @@ fuzz_target!(|name: &str| {
     let _ = dodai_icons::cyberpunk::lookup(name);
     let _ = dodai_icons::material::alias_of(name);
     let _ = dodai_icons::material::find(dodai_icons::material::outlined::ALL, name);
-    let _ = dodai::icons::IconId::from_key(name);
+    let _ = dodai_icons::IconId::from_key(name);
 });

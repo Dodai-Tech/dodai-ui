@@ -181,7 +181,7 @@ mod tests {
 
     #[test]
     fn iced_theme_uses_primary() {
-        let lt = IcedTheme::new(dodai::themes::cyberpunk::yellow());
+        let lt = IcedTheme::new(dodai_core::themes::cyberpunk::yellow());
         assert_eq!(
             lt.iced_theme().palette().primary,
             color(LColor::hex(0xfcee0a))

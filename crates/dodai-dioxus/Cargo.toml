@@ -14,19 +14,19 @@ categories   = ["gui"]
 [features]
 default   = ["cyberpunk", "material", "icons"]
 # Design systems to bundle (each is its own crate; see `dodai`).
-cyberpunk = ["dodai/cyberpunk"]
-material  = ["dodai/material"]
+cyberpunk = ["dodai-core/cyberpunk"]
+material  = ["dodai-core/material"]
 ## `Icon` component (Material Symbols + Cyberpunk pack, chosen by the theme shape).
-icons     = ["dodai/icons"]
+icons     = ["dep:dodai-icons"]
 
 [dependencies]
 dodai-core = { workspace = true }
-dodai = { workspace = true }
+dodai-icons = { workspace = true, optional = true }
 dodai-topcoat = { workspace = true }
 dioxus = { version = "0.7", default-features = false, features = ["macro", "html", "signals", "hooks"] }
 
 [dev-dependencies]
-dodai = { workspace = true, features = ["cyberpunk", "material"] }
+dodai-core = { workspace = true, features = ["cyberpunk", "material"] }
 dioxus-ssr = "0.7"
 
 [[example]]

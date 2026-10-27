@@ -387,11 +387,11 @@ impl Showcase {
         let t = theme_of(cx);
         let gap = px(t.spacing.md);
         let mut out: Vec<Section> = Vec::new();
-        let tile = |c: dodai::Color, label: &'static str| {
+        let tile = |c: dodai_core::Color, label: &'static str| {
             div()
                 .h(px(120.0))
                 .w_full()
-                .rounded(px(t.role_shape(dodai::ShapeRole::Carousel).radius))
+                .rounded(px(t.role_shape(dodai_core::ShapeRole::Carousel).radius))
                 .bg(hsla(c))
                 .p(px(t.spacing.md))
                 .whitespace_nowrap()

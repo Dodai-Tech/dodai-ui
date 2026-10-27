@@ -23,5 +23,5 @@ tui-slider = { version = "0.4", features = ["theme"] }
 tui-checkbox = { version = "0.5", features = ["theme"] }
 
 [dev-dependencies]
-dodai = { workspace = true, features = ["cyberpunk", "material"] }
+dodai-core = { workspace = true, features = ["cyberpunk", "material"] }
 crossterm = { workspace = true }

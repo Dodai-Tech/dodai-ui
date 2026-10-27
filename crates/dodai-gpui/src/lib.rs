@@ -236,6 +236,7 @@ pub mod frosted;
 pub mod gauges;
 #[cfg(feature = "charts")]
 pub(crate) mod gauges_extra;
+#[cfg(feature = "components")]
 pub mod icons;
 #[cfg(feature = "charts")]
 pub mod instrument_charts;
@@ -409,8 +410,9 @@ pub use forms::{
 };
 #[cfg(feature = "charts")]
 pub use gauges::GaugeStyle;
-#[cfg(feature = "cyberpunk")]
+#[cfg(all(feature = "components", feature = "cyberpunk"))]
 pub use icons::Modifier;
+#[cfg(feature = "components")]
 pub use icons::{Icon, IconId, IconName, IconPack};
 #[cfg(feature = "charts")]
 pub use instrument_charts::{
@@ -437,6 +439,7 @@ pub use instruments_segment::{SegmentCluster, SegmentDisplay};
 pub use instruments_vehicle::{
     Compass, GearIndicator, LevelBar, Odometer, PowerMeter, TirePressure,
 };
+#[cfg(feature = "components")]
 mod icon_names;
 #[cfg(any(feature = "shaders", feature = "aurora"))]
 pub use backdrop::backdrop;
@@ -563,7 +566,7 @@ impl DodaiTheme {
 }
 
 /// Install the global theme with `initial` as the only theme. Use
-/// [`install_switcher`] to offer several (e.g. `dodai::switcher()`).
+/// [`install_switcher`] to offer several (e.g. `dodai_core::switcher()`).
 pub fn install(cx: &mut App, initial: Theme) {
     install_switcher(cx, ThemeSwitcher::with_themes(vec![initial]));
 }
@@ -845,7 +848,7 @@ mod tests {
 
     #[test]
     fn glow_intensity_applies_to_all_themes() {
-        let mut sw = dodai::switcher();
+        let mut sw = dodai_core::switcher();
         let themes: Vec<Theme> = sw
             .themes()
             .iter()
@@ -879,16 +882,16 @@ pub mod prelude {
 
 /// The Aurora design (tokens and spec), re-exported so the feature alone is enough.
 #[cfg(feature = "aurora")]
-pub use dodai_aurora as aurora;
+pub use dodai_core::aurora;
 /// The Cyberpunk design (tokens and spec).
 #[cfg(feature = "cyberpunk")]
-pub use dodai_cyberpunk as cyberpunk;
+pub use dodai_core::cyberpunk;
 /// The Material design (tokens and spec).
 #[cfg(feature = "material")]
-pub use dodai_material as material;
+pub use dodai_core::material;
 /// The Neo-Brutalism design (tokens and spec).
 #[cfg(feature = "neobrutalism")]
-pub use dodai_neobrutalism as neobrutalism;
+pub use dodai_core::neobrutalism;
 
 /// Compiles the README's example as a doctest so it cannot rot.
 #[cfg(all(doctest, feature = "aurora"))]

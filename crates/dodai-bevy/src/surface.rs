@@ -238,7 +238,7 @@ fn set(slot: &mut Color, v: Color) {
 mod tests {
     use super::*;
     use crate::testing::{rounded_light, square_theme};
-    use dodai::themes;
+    use dodai_core::themes;
 
     fn point_in_poly(poly: &[(f32, f32)], x: f32, y: f32) -> bool {
         let mut inside = false;

@@ -2,7 +2,7 @@
 fn main() {
     let t = std::env::args()
         .nth(1)
-        .and_then(|id| dodai::themes::by_id(&id))
-        .unwrap_or_else(dodai::themes::cyberpunk::yellow);
+        .and_then(|id| dodai_core::themes::by_id(&id))
+        .unwrap_or_else(dodai_core::themes::cyberpunk::yellow);
     print!("{}", dodai_slint::generate_theme_slint(&t));
 }

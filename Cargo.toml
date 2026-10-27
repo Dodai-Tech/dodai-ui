@@ -2,11 +2,6 @@
 members = [
     "crates/dodai-motion",
     "crates/dodai-core",
-    "crates/dodai",
-    "crates/dodai-cyberpunk",
-    "crates/dodai-material",
-    "crates/dodai-neobrutalism",
-    "crates/dodai-aurora",
     "crates/dodai-charts-core",
     "crates/dodai-fx",
     "crates/dodai-shaders",
@@ -47,11 +42,6 @@ gpui      = "0.2.2"
 
 # Internal crates
 dodai-core    = { path = "crates/dodai-core",    version = "0.1.0" }
-dodai         = { path = "crates/dodai",         version = "0.1.0", default-features = false }
-dodai-cyberpunk = { path = "crates/dodai-cyberpunk", version = "0.1.0", default-features = false }
-dodai-material = { path = "crates/dodai-material", version = "0.1.0", default-features = false }
-dodai-neobrutalism = { path = "crates/dodai-neobrutalism", version = "0.1.0", default-features = false }
-dodai-aurora = { path = "crates/dodai-aurora", version = "0.1.0", default-features = false }
 dodai-motion = { path = "crates/dodai-motion", version = "0.1.0" }
 dodai-fx = { path = "crates/dodai-fx", version = "0.1.0" }
 dodai-charts-core = { path = "crates/dodai-charts-core", version = "0.1.0" }

@@ -14,7 +14,7 @@ categories   = ["gui"]
 [features]
 default    = ["components", "charts", "shaders", "cyberpunk", "material", "neobrutalism", "aurora"]
 # Buttons, tables, dialogs, pickers, navigation, ...
-components = []
+components = ["dep:dodai-icons"]
 # Charts only (always includes the theme, painting and motion core).
 charts     = []
 # GPU pixel shaders (cyberpunk, Material 3, Matrix, CRT, pixel art, ...) as `ShaderView`.
@@ -22,28 +22,24 @@ shaders    = ["dep:dodai-shaders", "dep:image"]
 # The Cyberpunk stroked icon pack: curve-free polylines (`Icon` on chamfered/square themes,
 # and its modifier variants). Off: `IconName` is still there, but is drawn by the
 # Material pack, so enable `material` too or icons draw nothing.
-cyberpunk = ["dep:dodai-cyberpunk"]
+cyberpunk = ["dodai-core/cyberpunk"]
 # Material Symbols glyphs: `Icon` follows the theme (rounded themes draw Material icons)
 # (every design draws the same names).
-material = ["dep:dodai-material", "symbols"]
+material = ["dodai-core/material", "symbols"]
 # The bold Neo-Brutalism icon pack (`Icon` on themes that declare `IconSet::Bold`).
-neobrutalism = ["dep:dodai-neobrutalism", "dodai-icons/neobrutalism"]
+neobrutalism = ["dodai-core/neobrutalism", "components", "dodai-icons/neobrutalism"]
 # Aurora: draws Material Symbols icons (no Material components), and ships
 # the frosted-glass scene and page grid.
-aurora = ["dep:dodai-aurora", "symbols", "dep:image"]
+aurora = ["dodai-core/aurora", "symbols", "dep:image"]
 # Material Symbols glyphs, drawn by Material and Aurora.
-symbols = ["dodai-icons/material"]
+symbols = ["components", "dodai-icons/material"]
 
 [dependencies]
 dodai-core = { workspace = true }
 dodai-motion = { workspace = true }
 dodai-charts-core = { workspace = true }
 dodai-fx = { workspace = true }
-dodai-cyberpunk = { workspace = true, optional = true }
-dodai-material = { workspace = true, optional = true }
-dodai-neobrutalism = { workspace = true, optional = true }
-dodai-aurora = { workspace = true, optional = true }
-dodai-icons = { workspace = true, features = ["cyberpunk"] }
+dodai-icons = { workspace = true, features = ["cyberpunk"], optional = true }
 gpui = { workspace = true }
 dodai-shaders = { workspace = true, optional = true }
 image = { version = "0.25", default-features = false, optional = true }
@@ -53,7 +49,7 @@ name = "gpui_showcase"
 required-features = ["components", "charts", "shaders", "cyberpunk", "material", "neobrutalism", "aurora"]
 
 [dev-dependencies]
-dodai = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "aurora", "icons"] }
+dodai-core = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "aurora"] }
 gpui = { workspace = true, features = ["test-support"] }
 
 [[test]]

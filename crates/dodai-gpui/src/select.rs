@@ -511,7 +511,7 @@ impl RenderOnce for DesignSystemSelector {
 mod tests {
     use super::*;
     use crate::testing::{light_rounded, square};
-    use dodai::themes;
+    use dodai_core::themes;
 
     #[test]
     fn theme_options_cover_registry() {

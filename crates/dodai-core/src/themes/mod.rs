@@ -1,5 +1,5 @@
-//! Theme building blocks. Concrete design systems live in their own crates
-//! (`dodai-cyberpunk`, `dodai-material`); [`neutral`] is the fallback.
+//! Theme building blocks and the registry of the enabled design systems
+//! (features `cyberpunk`, `material`, `neobrutalism`, `aurora`); [`neutral`] is the fallback.
 //!
 //! **Adding a theme:** return a [`crate::Theme`] — the
 //! easiest way is [`ThemeBuilder`], which derives hover/active/selection roles from a
@@ -8,6 +8,15 @@
 //! Adapters never branch on theme ids.
 
 use crate::Theme;
+
+#[cfg(feature = "aurora")]
+pub use crate::aurora;
+#[cfg(feature = "cyberpunk")]
+pub use crate::cyberpunk;
+#[cfg(feature = "material")]
+pub use crate::material;
+#[cfg(feature = "neobrutalism")]
+pub use crate::neobrutalism;
 
 /// Compact description of a theme; [`ThemeBuilder::build`] derives the full token set.
 /// Use this to add new themes without filling every palette role by hand.
@@ -200,4 +209,63 @@ mod tests {
         assert_eq!(Theme::default().id(), "default");
         assert_eq!(t.shape.outline(100.0, 50.0).len(), 4);
     }
+}
+
+/// A registered design system: its family id, display name and themes.
+#[derive(Clone, Copy)]
+pub struct DesignSystem {
+    /// Family id shared by its themes (`Theme::meta.family`).
+    pub family: &'static str,
+    /// Display name.
+    pub name: &'static str,
+    /// Builds its themes (light/dark/accent variants).
+    pub themes: fn() -> Vec<crate::Theme>,
+}
+
+/// The enabled design systems, in switcher order. **The one place a new design system is
+/// registered**: add a feature-gated entry here; the switcher, `all()`, `by_id()` and the
+/// `dist` export pick it up.
+pub fn systems() -> Vec<DesignSystem> {
+    let all: Vec<Option<DesignSystem>> = Vec::from([
+        #[cfg(feature = "aurora")]
+        Some(DesignSystem {
+            family: "aurora",
+            name: "Aurora",
+            themes: crate::aurora::variants,
+        }),
+        #[cfg(feature = "cyberpunk")]
+        Some(DesignSystem {
+            family: "cyberpunk",
+            name: "Cyberpunk",
+            themes: crate::cyberpunk::variants,
+        }),
+        #[cfg(feature = "material")]
+        Some(DesignSystem {
+            family: "material",
+            name: "Material 3",
+            themes: crate::material::variants,
+        }),
+        #[cfg(feature = "neobrutalism")]
+        Some(DesignSystem {
+            family: "neobrutalism",
+            name: "Neo-Brutalism",
+            themes: crate::neobrutalism::variants,
+        }),
+    ]);
+    all.into_iter().flatten().collect()
+}
+
+/// Every theme of the enabled design systems, in switcher order.
+/// Falls back to [`neutral`] if none is enabled.
+pub fn all() -> Vec<crate::Theme> {
+    let mut v: Vec<crate::Theme> = systems().iter().flat_map(|s| (s.themes)()).collect();
+    if v.is_empty() {
+        v.push(neutral());
+    }
+    v
+}
+
+/// Look up a built-in theme by id.
+pub fn by_id(id: &str) -> Option<crate::Theme> {
+    all().into_iter().find(|t| t.id() == id)
 }

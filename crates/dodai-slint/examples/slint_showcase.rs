@@ -115,7 +115,7 @@ slint::slint! {
 
 fn main() {
     let ui = Showcase::new().unwrap();
-    let sw = Rc::new(RefCell::new(dodai::switcher()));
+    let sw = Rc::new(RefCell::new(dodai_core::switcher()));
     let glow = Rc::new(RefCell::new(1.0f32));
     let names: Vec<SharedString> = sw
         .borrow()

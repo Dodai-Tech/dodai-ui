@@ -5,7 +5,7 @@ use dodai_core::{
 };
 
 pub fn cyberpunk() -> Theme {
-    dodai::themes::cyberpunk::yellow()
+    dodai_core::themes::cyberpunk::yellow()
 }
 
 fn spec(id: &'static str, shape: Shape, glow: f32, glow_blur: f32, hard_shadow: f32) -> Theme {

@@ -286,14 +286,14 @@ pub fn body(raw: impl Into<String>) -> impl Bundle {
 #[cfg(feature = "icons")]
 #[derive(Component, Debug, Clone, PartialEq)]
 pub struct UiIcon {
-    pub icon: dodai::icons::IconId,
+    pub icon: dodai_icons::IconId,
     pub size: u32,
     pub filled: bool,
 }
 
 /// Icon `icon` at `size` px.
 #[cfg(feature = "icons")]
-pub fn icon(icon: dodai::icons::IconId, size: u32) -> impl Bundle {
+pub fn icon(icon: dodai_icons::IconId, size: u32) -> impl Bundle {
     (
         UiIcon {
             icon,

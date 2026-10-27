@@ -31,6 +31,19 @@ mod tune;
 
 pub mod themes;
 
+/// Aurora: frosted glass and gradients (feature `aurora`).
+#[cfg(feature = "aurora")]
+pub mod aurora;
+/// Cyberpunk: six chamfered themes (feature `cyberpunk`).
+#[cfg(feature = "cyberpunk")]
+pub mod cyberpunk;
+/// Material 3: a light/dark pair (feature `material`).
+#[cfg(feature = "material")]
+pub mod material;
+/// Neo-Brutalism: seven accents, light and dark (feature `neobrutalism`).
+#[cfg(feature = "neobrutalism")]
+pub mod neobrutalism;
+
 pub use chart_style::{ChartStyle, ClusterKind, DialLook, NeedleResponse, ScopeLook};
 pub use color::Color;
 pub use component::{
@@ -79,6 +92,11 @@ pub fn intern(s: String) -> &'static str {
     let leaked: &'static str = Box::leak(s.into_boxed_str());
     table.insert(leaked);
     leaked
+}
+
+/// A [`ThemeSwitcher`] over [`themes::all`].
+pub fn switcher() -> ThemeSwitcher {
+    ThemeSwitcher::with_themes(themes::all())
 }
 
 #[cfg(test)]

@@ -13,8 +13,8 @@
 //!
 //! `cargo run -p dodai-topcoat --example export -- dist`
 
-use dodai::themes;
 use dodai_core::export::{design_tokens_json, theme_tokens_json};
+use dodai_core::themes;
 use std::{fs, path::PathBuf};
 
 fn write(path: PathBuf, body: String) {

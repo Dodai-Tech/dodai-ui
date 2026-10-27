@@ -1,6 +1,6 @@
 //! `cargo run -p dodai-topcoat --example html > showcase.html` then open it.
 //! Every component plus a pure-CSS-attribute theme switcher (`data-theme`).
-use dodai::themes;
+use dodai_core::themes;
 use dodai_topcoat::{multi_theme_stylesheet, switcher_script, GOOGLE_FONTS_URL};
 
 const BODY: &str = r##"<main>

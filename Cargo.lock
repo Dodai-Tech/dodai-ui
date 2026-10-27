@@ -4017,33 +4017,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai"
-version = "0.1.0"
-dependencies = [
- "dodai-aurora",
- "dodai-core",
- "dodai-cyberpunk",
- "dodai-icons",
- "dodai-material",
- "dodai-neobrutalism",
- "dodai-shaders",
-]
-
-[[package]]
-name = "dodai-aurora"
-version = "0.1.0"
-dependencies = [
- "dodai-core",
-]
-
-[[package]]
 name = "dodai-bevy"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "dodai",
  "dodai-core",
  "dodai-fx",
+ "dodai-icons",
 ]
 
 [[package]]
@@ -4059,21 +4039,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai-cyberpunk"
-version = "0.1.0"
-dependencies = [
- "dodai-core",
- "dodai-icons",
-]
-
-[[package]]
 name = "dodai-dioxus"
 version = "0.1.0"
 dependencies = [
  "dioxus",
  "dioxus-ssr",
- "dodai",
  "dodai-core",
+ "dodai-icons",
  "dodai-topcoat",
 ]
 
@@ -4081,7 +4053,6 @@ dependencies = [
 name = "dodai-egui"
 version = "0.1.0"
 dependencies = [
- "dodai",
  "dodai-core",
  "dodai-icons",
  "eframe",
@@ -4100,16 +4071,11 @@ dependencies = [
 name = "dodai-gpui"
 version = "0.1.0"
 dependencies = [
- "dodai",
- "dodai-aurora",
  "dodai-charts-core",
  "dodai-core",
- "dodai-cyberpunk",
  "dodai-fx",
  "dodai-icons",
- "dodai-material",
  "dodai-motion",
- "dodai-neobrutalism",
  "dodai-shaders",
  "gpui",
  "image",
@@ -4119,7 +4085,6 @@ dependencies = [
 name = "dodai-iced"
 version = "0.1.0"
 dependencies = [
- "dodai",
  "dodai-charts-core",
  "dodai-core",
  "dodai-fx",
@@ -4138,18 +4103,9 @@ dependencies = [
 name = "dodai-leptos"
 version = "0.1.0"
 dependencies = [
- "dodai",
  "dodai-core",
  "dodai-topcoat",
  "leptos",
-]
-
-[[package]]
-name = "dodai-material"
-version = "0.1.0"
-dependencies = [
- "dodai-core",
- "dodai-icons",
 ]
 
 [[package]]
@@ -4157,18 +4113,10 @@ name = "dodai-motion"
 version = "0.1.0"
 
 [[package]]
-name = "dodai-neobrutalism"
-version = "0.1.0"
-dependencies = [
- "dodai-core",
-]
-
-[[package]]
 name = "dodai-ratatui"
 version = "0.1.0"
 dependencies = [
  "crossterm",
- "dodai",
  "dodai-core",
  "ratatui",
  "tui-chart",
@@ -4191,19 +4139,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai-shaders-kernels"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "glam 0.34.1",
- "spirv-std",
-]
-
-[[package]]
 name = "dodai-slint"
 version = "0.1.0"
 dependencies = [
- "dodai",
  "dodai-core",
  "slint",
 ]
@@ -4212,7 +4150,6 @@ dependencies = [
 name = "dodai-topcoat"
 version = "0.1.0"
 dependencies = [
- "dodai",
  "dodai-core",
  "dodai-icons",
 ]
@@ -4221,7 +4158,6 @@ dependencies = [
 name = "dodai-yew"
 version = "0.1.0"
 dependencies = [
- "dodai",
  "dodai-core",
  "dodai-topcoat",
  "tokio",
@@ -5371,16 +5307,6 @@ dependencies = [
  "libm",
  "rand 0.10.3",
  "serde_core",
-]
-
-[[package]]
-name = "glam"
-version = "0.34.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc148d4ddd3930c52f9e5ae79b89805c6f07e9ff417e7b083e0348cea60a5aba"
-dependencies = [
- "bytemuck",
- "libm",
 ]
 
 [[package]]
@@ -11856,38 +11782,6 @@ checksum = "d9571ea910ebd84c86af4b3ed27f9dbdc6ad06f17c5f96146b2b671e2976744f"
 dependencies = [
  "bitflags 2.13.2",
 ]
-
-[[package]]
-name = "spirv-std"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dfc9588ef2583f006a87af3f6fccda3a425bbc35ef9665a0cca5b1778c38b2d7"
-dependencies = [
- "bitflags 2.13.2",
- "glam 0.34.1",
- "libm",
- "num-traits",
- "spirv-std-macros",
- "spirv-std-types",
-]
-
-[[package]]
-name = "spirv-std-macros"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a22441c9289917af52f3062dbd8abc443c757ba3e84f5fe5d42685846fdc11f4"
-dependencies = [
- "proc-macro2",
- "quote",
- "spirv-std-types",
- "syn 3.0.9",
-]
-
-[[package]]
-name = "spirv-std-types"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02a52487ced352ef71eadfa854e30ca3f3e6e3dde5ba57b14c78dd9c0fb995aa"
 
 [[package]]
 name = "stable_deref_trait"

@@ -679,7 +679,7 @@ fn main() {
             .unwrap_or(60);
         dodai_gpui::set_max_fps(Some(fps));
         // Debug: DODAI_THEME=<theme id> starts on that theme (e.g. material-dark).
-        let mut switcher = dodai::switcher();
+        let mut switcher = dodai_core::switcher();
         if let Ok(id) = std::env::var("DODAI_THEME") {
             switcher.select(&id);
         }

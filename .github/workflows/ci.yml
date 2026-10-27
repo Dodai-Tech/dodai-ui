@@ -75,7 +75,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        crate: [dodai-motion, dodai-core, dodai-icons, dodai-cyberpunk, dodai-material, dodai-neobrutalism, dodai, dodai-charts-core, dodai-fx]
+        crate: [dodai-motion, dodai-core, dodai-icons, dodai-charts-core, dodai-fx]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -93,8 +93,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.crate }}
-      - run: cargo clippy -p ${{ matrix.crate }} --all-targets -- -D warnings
-      - run: cargo test -p ${{ matrix.crate }}
+      - run: cargo clippy -p ${{ matrix.crate }} --all-targets ${{ matrix.crate == 'dodai-core' && '--all-features' || '' }} -- -D warnings
+      - run: cargo test -p ${{ matrix.crate }} ${{ matrix.crate == 'dodai-core' && '--all-features' || '' }}
       - name: dodai-fx GPU feature (tests skip without an adapter)
         if: matrix.crate == 'dodai-fx'
         run: |
@@ -140,8 +140,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.crate }}
-      - run: cargo clippy -p ${{ matrix.crate }} --all-targets -- -D warnings
-      - run: cargo test -p ${{ matrix.crate }}
+      - run: cargo clippy -p ${{ matrix.crate }} --all-targets ${{ matrix.crate == 'dodai-core' && '--all-features' || '' }} -- -D warnings
+      - run: cargo test -p ${{ matrix.crate }} ${{ matrix.crate == 'dodai-core' && '--all-features' || '' }}
       # Slices must compile alone: charts-only users get no components.
       - name: gpui feature slices
         if: matrix.crate == 'dodai-gpui'
@@ -185,8 +185,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.crate }}
-      - run: cargo clippy -p ${{ matrix.crate }} --all-targets -- -D warnings
-      - run: cargo test -p ${{ matrix.crate }}
+      - run: cargo clippy -p ${{ matrix.crate }} --all-targets ${{ matrix.crate == 'dodai-core' && '--all-features' || '' }} -- -D warnings
+      - run: cargo test -p ${{ matrix.crate }} ${{ matrix.crate == 'dodai-core' && '--all-features' || '' }}
       # Slices must compile alone: charts-only users get no components.
       - name: gpui feature slices
         if: matrix.crate == 'dodai-gpui'

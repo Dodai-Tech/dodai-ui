@@ -9,7 +9,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-dodai = { path = "../crates/dodai", features = ["cyberpunk", "material", "neobrutalism", "aurora", "icons"] }
+dodai-core = { path = "../crates/dodai-core", features = ["cyberpunk", "material", "neobrutalism", "aurora"] }
 dodai-charts-core = { path = "../crates/dodai-charts-core" }
 dodai-icons = { path = "../crates/dodai-icons", features = ["cyberpunk", "material"] }
 

@@ -417,7 +417,7 @@ pub(crate) mod testing {
 mod tests {
     use super::testing::*;
     use super::*;
-    use dodai::themes;
+    use dodai_core::themes;
 
     #[test]
     fn rounded_theme_uses_radius_no_effects() {

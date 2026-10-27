@@ -53,12 +53,12 @@ impl Render for Page {
 
 #[gpui::test]
 fn renders_under_every_theme(cx: &mut TestAppContext) {
-    for theme in dodai::switcher().themes().to_vec() {
+    for theme in dodai_core::switcher().themes().to_vec() {
         cx.update(|cx| install(cx, theme.clone()));
         let (_, vcx) = cx.add_window_view(|_, _| Page);
         vcx.simulate_resize(size(px(900.0), px(1400.0)));
         vcx.run_until_parked();
     }
     // Not vacuous: the page was really rendered for each theme.
-    assert!(DRAWS.load(Ordering::SeqCst) >= dodai::switcher().themes().len());
+    assert!(DRAWS.load(Ordering::SeqCst) >= dodai_core::switcher().themes().len());
 }

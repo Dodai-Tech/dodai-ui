@@ -1,6 +1,6 @@
 //! Theme install + [`ThemeSwitcher`] integration via a Freya context state.
 
-use dodai::themes;
+use dodai_core::themes;
 
 use dodai_core::{Theme, ThemeSwitcher};
 use freya::prelude::*;

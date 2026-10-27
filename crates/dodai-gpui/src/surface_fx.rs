@@ -264,20 +264,28 @@ mod tests {
     #[test]
     fn nothing_is_drawn_for_the_default_mix() {
         set_surface_fx_for_test(SurfaceFx::NONE);
-        assert!(surface_paint(&dodai::themes::cyberpunk::yellow(), SurfaceClass::Button).is_none());
+        assert!(surface_paint(
+            &dodai_core::themes::cyberpunk::yellow(),
+            SurfaceClass::Button
+        )
+        .is_none());
         set_surface_fx_for_test(SurfaceFx {
             glitch: 0.5,
             ..SurfaceFx::NONE
         });
-        assert!(surface_paint(&dodai::themes::cyberpunk::yellow(), SurfaceClass::Button).is_some());
+        assert!(surface_paint(
+            &dodai_core::themes::cyberpunk::yellow(),
+            SurfaceClass::Button
+        )
+        .is_some());
         set_surface_fx_for_test(SurfaceFx::NONE);
     }
 
     #[test]
     fn a_component_surface_overrides_the_app_wide_mix() {
         use dodai_core::Surface;
-        let t = dodai::themes::cyberpunk::yellow();
-        let m = dodai::themes::material::light();
+        let t = dodai_core::themes::cyberpunk::yellow();
+        let m = dodai_core::themes::material::light();
         set_surface_fx_for_test(SurfaceFx::NONE);
         let own = Surface::new().texture(Texture::Circuit);
         // Nothing app-wide, but this component asks for a texture (even on a Tag, which is

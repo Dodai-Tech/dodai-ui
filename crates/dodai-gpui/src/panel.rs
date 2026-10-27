@@ -547,7 +547,7 @@ mod tests {
     }
 
     use crate::testing::light_rounded;
-    use dodai::themes;
+    use dodai_core::themes;
 
     #[test]
     fn panel_focus_changes_border_and_glow() {

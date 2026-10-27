@@ -91,7 +91,7 @@ impl ThemeController {
     /// All built-in themes, glow as designed.
     pub fn new() -> Self {
         Self {
-            switcher: dodai::switcher(),
+            switcher: dodai_core::switcher(),
             glow: 1.0,
             tune: dodai_core::ShapeTune::DEFAULT,
             surface: dodai_core::SurfaceFx::NONE,

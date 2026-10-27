@@ -48,10 +48,10 @@ dodai-ratatui = "0.1"   # or -iced / -gpui / -topcoat
 ```
 
 ```rust
-use dodai::{ThemeSwitcher, ButtonVariant, ControlState};
+use dodai_core::{ThemeSwitcher, ButtonVariant, ControlState};
 use dodai_ratatui::TuiTheme;
 
-let mut sw = dodai::switcher();              // all built-in themes
+let mut sw = dodai_core::switcher();              // all built-in themes
 let mut tui = TuiTheme::new(sw.current().clone());
 tui.set_theme(sw.cycle_next().clone());      // switch at runtime — shape, type and glow change too
 let btn = tui.button("Continue", ButtonVariant::Primary, ControlState::Idle);
@@ -61,50 +61,36 @@ Persist `theme.id()` (e.g. `"cyberpunk-cyan"`) in your config and restore with `
 
 ## Pick only what you need
 
-Every design system and icon pack is its own crate; `dodai` is the one-stop
-umbrella (features `cyberpunk`, `material`, `icons`, `shaders`, all on by default).
+`dodai-core` carries the engine and the four design systems behind Cargo features
+(`cyberpunk`, `material`, `neobrutalism`, `aurora`; all off by default). Icons and
+shaders are their own crates.
 
 | Crate | What it is |
 |---|---|
-| [`dodai-core`](crates/dodai-core) | Tokens, `Theme`, `ThemeSwitcher`, `ThemeBuilder` builder, DTCG export. No concrete themes. |
-| [`dodai-cyberpunk`](crates/dodai-cyberpunk) | The 6 Cyberpunk themes (dark + light) + `icons` feature |
-| [`dodai-material`](crates/dodai-material) | The Material 3 light/dark pair + `icons` feature |
-| [`dodai-neobrutalism`](crates/dodai-neobrutalism) | Neo-Brutalism: seven accents (incl. editorial Paper), light and dark |
+| [`dodai-core`](crates/dodai-core) | Tokens, `Theme`, `ThemeSwitcher`, `ThemeBuilder`, DTCG export. Designs by feature: 6 Cyberpunk themes, the Material 3 pair, Neo-Brutalism (seven accents, light and dark) and Aurora (frosted glass) |
 | [`dodai-icons`](crates/dodai-icons) | Every icon in one crate, packs chosen by feature: the typed `IconId`, the Cyberpunk pack (378 hand-drawn, curve-free icons), the full Material Symbols catalogue (3,900+ icons, outlined/rounded/sharp + fill) and Phosphor-derived sets |
 | [`dodai-fx`](crates/dodai-fx) | Surface textures and effects, plus frosted-glass blur. No dependencies |
 | [`dodai-shaders`](crates/dodai-shaders) | Pixel shaders |
-| [`dodai`](crates/dodai) | All of the above behind features |
 
 ```toml
-dodai-core     = "0.1"    # just the engine
-dodai-material = "0.1"    # + the Material 3 themes and icons (features: rounded, sharp)
+dodai-core  = { version = "0.1", features = ["material"] }    # the engine + Material 3
+dodai-icons = { version = "0.1", default-features = false, features = ["material"] }
 ```
 
-Icons are typed: `Icon::Heart` (autocomplete, no name strings) draws in the style of the active design system. Every one of the ~1,770 `IconId`s draws in every design: Cyberpunk's hand-drawn straight segments, Material 3's Material Symbols and Neo-Brutalism's bold set; names a design has no art for fall back to a shared set inside `dodai-icons` (not a public API). Force a pack with `.pack(IconPack::…)`.
-
-## Showcases
-
-```sh
-just run-ratatui   # t / T cycle themes
-just run-iced
-just run-gpui
-just run-topcoat   # writes showcase.html and opens it
-```
-
-### Where a design system lives
+All crates share one version, bumped together by `nu scripts/bump_version.nu <version>`.
 
 `dodai-core` is infrastructure: tokens, the shape-system engine, the `DesignSpec` trait and a generic baseline for component
-tokens. A design-system crate owns everything specific to it: palettes, shape language and presets, and a `DesignSpec`
+tokens. A design module owns everything specific to it: palettes, shape language and presets, and a `DesignSpec`
 (component tokens, row heights, focus ring, tooltip colours, …) attached with `Theme::with_spec`. Every hook is optional, so a
-new design system overrides only what differs. `dodai-material` is the reference (`Material3`, `shape_system()`);
-Cyberpunk has its own `DesignSpec` (glow, accent bar, outline-to-solid hover, solid active tab) and its shape presets in `dodai_cyberpunk::shape`; core's baseline is a plain, neutral design for custom themes.
+new design system overrides only what differs. `dodai_core::material` is the reference (`Material3`, `shape_system()`);
+Cyberpunk has its own `DesignSpec` (glow, accent bar, outline-to-solid hover, solid active tab) and its shape presets in `dodai_core::cyberpunk::shape`; core's baseline is a plain, neutral design for custom themes.
 
 ## Material 3 conformance
 
 The Material themes follow the M3 component specs: shape per component (`ShapeRole`: pill buttons,
 16 px FAB, 12 px cards, 28 px dialogs, 4 px menus and fields, 8 px chips, ...), tonal containers
 (`surface-container-*`), 8 % hover / 10 % press state layers, elevation as soft two-layer shadows,
-and the 80 px navigation bar, rail and drawer with pill indicators. `crates/dodai/tests/material_spec.rs`
+and the 80 px navigation bar, rail and drawer with pill indicators. `crates/dodai-core/tests/material_spec.rs`
 pins these numbers against the spec; other design systems keep their own geometry (also tested).
 Material-only components: `ButtonGroup`, `SplitButton`, `LoadingIndicator`.
 Also: 56 px list rows and 48 px menu rows, plain / rich tooltips, docked and full-screen
@@ -177,7 +163,7 @@ and `Oscilloscope`, `Spectrum`, `RadarScope`, `HexMap`, `RingStack`, `DotMatrix`
 ## Adding a theme
 
 1. Copy `crates/dodai-material` to `crates/dodai-<name>`: themes via `dodai_core::themes::ThemeBuilder`, a `DesignSpec` for the component tokens that differ (each hook is optional; set `Look` flags for tonal surfaces, soft elevation, floating labels, symbol icons), optionally a shape system and an icon crate. Attach the spec with `Theme::with_spec`.
-2. Register it in one place: a feature plus an entry in `dodai::themes::systems()`. The switcher, `themes::all()`, `by_id()` and the `dist` export pick it up; adapters need no change.
+2. Register it in one place: a feature plus an entry in `dodai_core::themes::systems()`. The switcher, `themes::all()`, `by_id()` and the `dist` export pick it up; adapters need no change.
 3. `just test`: the shared contrast/uniqueness tests in `crates/dodai/tests` run on it. Add the design's own conformance tests next to its spec.
 
 ## Development

@@ -6,10 +6,17 @@ authors.workspace      = true
 license.workspace      = true
 repository.workspace   = true
 rust-version.workspace = true
-description  = "Framework-agnostic design tokens, themes and theme switcher for the Dodai UI design system"
+description  = "Framework-agnostic design tokens, themes and theme switcher for Dodai UI, with the Cyberpunk, Material 3, Neo-Brutalism and Aurora designs behind features"
 readme       = "README.md"
 keywords     = ["theme", "design-system", "tokens", "cyberpunk", "ui"]
 categories   = ["gui", "command-line-interface", "rendering"]
+
+[features]
+## The design systems, off by default: the engine alone is the lightweight dependency.
+cyberpunk = []
+material = []
+neobrutalism = []
+aurora = []
 
 [dependencies]
 dodai-motion = { workspace = true }

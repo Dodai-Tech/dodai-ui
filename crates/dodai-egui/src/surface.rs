@@ -595,13 +595,13 @@ mod tests {
     #[test]
     fn nothing_is_drawn_by_default() {
         set_surface_fx(SurfaceFx::NONE);
-        let t = dodai::themes::cyberpunk::yellow();
+        let t = dodai_core::themes::cyberpunk::yellow();
         assert!(surface_shapes(&t, rect(), SurfaceClass::Button, None).is_empty());
     }
 
     #[test]
     fn a_texture_stays_inside_the_rect_and_within_the_budget() {
-        let t = dodai::themes::cyberpunk::yellow();
+        let t = dodai_core::themes::cyberpunk::yellow();
         for tex in [
             Texture::Grain,
             Texture::Halftone,
@@ -637,7 +637,7 @@ mod tests {
 
     #[test]
     fn a_design_draws_only_what_it_owns() {
-        let m = dodai::themes::material::light();
+        let m = dodai_core::themes::material::light();
         set_surface_fx(SurfaceFx {
             texture: Texture::Circuit,
             glitch: 1.0,
@@ -650,7 +650,7 @@ mod tests {
 
     #[test]
     fn animated_effects_ask_for_frames() {
-        let t = dodai::themes::cyberpunk::yellow();
+        let t = dodai_core::themes::cyberpunk::yellow();
         set_surface_fx(SurfaceFx {
             pulse: 0.8,
             targets: dodai_core::SurfaceTargets::ALL,

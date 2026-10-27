@@ -290,7 +290,7 @@ pub(crate) fn follow_angle(w: &mut Window, cx: &mut App, f: &Follow, part: u8, t
         .rem_euclid(360.0)
 }
 
-#[cfg(feature = "charts")]
+#[cfg(any(feature = "charts", feature = "components"))]
 struct Many {
     sig: (u32, u32),
     springs: Vec<SpringState>,
@@ -299,7 +299,7 @@ struct Many {
 
 /// Every value of `target` followed at once, for a chart's data. Values that appear start at
 /// their target; the rest ease with the component's response. Requests frames until settled.
-#[cfg(feature = "charts")]
+#[cfg(any(feature = "charts", feature = "components"))]
 pub(crate) fn follow_all(w: &mut Window, cx: &mut App, f: &Follow, target: &[f32]) -> Vec<f32> {
     if !instruments_animated() || !f.animated {
         return target.to_vec();

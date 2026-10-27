@@ -12,7 +12,7 @@ fn checkbox_variants_have_sane_geometry() {
 use super::*;
 use crate::hsla;
 use crate::testing::{light_rounded, square};
-use dodai::themes;
+use dodai_core::themes;
 
 #[test]
 fn clamp_and_fraction() {

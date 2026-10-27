@@ -375,7 +375,7 @@ pub fn Mono(children: Element) -> Element {
 #[derive(Props, Clone, PartialEq)]
 pub struct IconProps {
     /// The icon, from the shared typed vocabulary (`IconId::Home`).
-    pub icon: dodai::icons::IconId,
+    pub icon: dodai_icons::IconId,
     #[props(default = 24)]
     pub size: u32,
     /// Use the filled form where the pack has one.
@@ -388,7 +388,7 @@ pub struct IconProps {
 #[component]
 pub fn Icon(props: IconProps) -> Element {
     let theme = crate::use_theme().theme();
-    match dodai::icons::glyph(props.icon, &theme, props.filled) {
+    match dodai_icons::glyph_for_theme(props.icon, &theme, props.filled) {
         Some(g) => {
             let svg = g.svg(props.size, "currentColor");
             rsx! { span { class: "dodai-icon", style: "display:inline-flex;line-height:0", dangerous_inner_html: "{svg}" } }

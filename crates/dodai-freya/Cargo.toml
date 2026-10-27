@@ -17,15 +17,15 @@ keywords     = ["theme", "design-system", "freya", "cyberpunk"]
 categories   = ["gui"]
 
 [dependencies]
-dodai-core = { path = "../dodai-core", version = "0.1.0" }
-dodai = { path = "../dodai", version = "0.1.0", default-features = false }
+dodai-core = { path = "../dodai-core", version = "0.1.0", default-features = false }
+dodai-icons = { path = "../dodai-icons", version = "0.1.0", default-features = false, optional = true }
 freya = { version = "0.5.0-rc.10", optional = true }
 
 [features]
-cyberpunk = ["dodai/cyberpunk"]
-material  = ["dodai/material"]
+cyberpunk = ["dodai-core/cyberpunk"]
+material  = ["dodai-core/material"]
 ## `icon_svg` / `DodaiIcon` (Material Symbols + Cyberpunk pack, chosen by the theme shape).
-icons     = ["dodai/icons"]
+icons     = ["dep:dodai-icons"]
 default = ["ui", "cyberpunk", "material", "icons"]
 # Freya components + showcase. Disable for the pure token->style mapping layer.
 ui = ["dep:freya"]
@@ -35,4 +35,4 @@ name = "freya_showcase"
 required-features = ["ui"]
 
 [dev-dependencies]
-dodai = { path = "../dodai", version = "0.1.0", default-features = false, features = ["cyberpunk", "material"] }
+dodai-core = { path = "../dodai-core", version = "0.1.0", default-features = false, features = ["cyberpunk", "material"] }

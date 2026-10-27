@@ -107,6 +107,11 @@ pub fn glyph_for(id: IconId, set: dodai_core::IconSet, filled: bool) -> Option<G
     glyph(id, set.into(), filled)
 }
 
+/// Resolve `id` for `theme`'s design system (its `Look::icons`).
+pub fn glyph_for_theme(id: IconId, theme: &dodai_core::Theme, filled: bool) -> Option<Glyph> {
+    glyph_for(id, theme.look().icons, filled)
+}
+
 fn filled_glyph(icon: &crate::material::Icon) -> Glyph {
     Glyph::Filled(icon.polygons())
 }

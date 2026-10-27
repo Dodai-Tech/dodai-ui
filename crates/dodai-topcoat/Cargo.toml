@@ -15,5 +15,5 @@ categories   = ["gui"]
 dodai-core = { workspace = true }
 
 [dev-dependencies]
-dodai = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "aurora"] }
+dodai-core = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "aurora"] }
 dodai-icons = { workspace = true, features = ["cyberpunk"] }

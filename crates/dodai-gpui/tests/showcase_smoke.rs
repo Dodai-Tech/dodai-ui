@@ -12,10 +12,10 @@ use gpui::{px, size, TestAppContext};
 
 #[gpui::test]
 fn every_category_renders_under_every_theme(cx: &mut TestAppContext) {
-    for theme in dodai::switcher().themes().to_vec() {
+    for theme in dodai_core::switcher().themes().to_vec() {
         cx.update(|cx| {
             dodai_gpui::install_switcher(cx, {
-                let mut s = dodai::switcher();
+                let mut s = dodai_core::switcher();
                 s.select(theme.id());
                 s
             })
@@ -39,7 +39,7 @@ fn every_category_renders_under_every_theme(cx: &mut TestAppContext) {
 
 #[gpui::test]
 fn every_category_has_unique_sections(cx: &mut TestAppContext) {
-    cx.update(|cx| dodai_gpui::install_switcher(cx, dodai::switcher()));
+    cx.update(|cx| dodai_gpui::install_switcher(cx, dodai_core::switcher()));
     let (view, vcx) = cx.add_window_view(|_, cx| showcase::Showcase::build(cx));
     vcx.simulate_resize(size(px(1400.0), px(900.0)));
     vcx.run_until_parked();
@@ -112,7 +112,7 @@ fn frame_cost_probe(cx: &mut TestAppContext) {
         "Radar · scatter · heatmap",
         "Shader playground",
     ];
-    cx.update(|cx| dodai_gpui::install_switcher(cx, dodai::switcher()));
+    cx.update(|cx| dodai_gpui::install_switcher(cx, dodai_core::switcher()));
     let (view, vcx) = cx.add_window_view(|_, cx| showcase::Showcase::build(cx));
     vcx.simulate_resize(size(px(1400.0), px(900.0)));
     vcx.run_until_parked();
@@ -136,7 +136,7 @@ fn every_surface_texture_and_effect_renders(cx: &mut TestAppContext) {
     for theme in ["cyberpunk", "material", "neobrutalism"] {
         cx.update(|cx| {
             dodai_gpui::install_switcher(cx, {
-                let mut s = dodai::switcher();
+                let mut s = dodai_core::switcher();
                 s.select(theme);
                 s
             })

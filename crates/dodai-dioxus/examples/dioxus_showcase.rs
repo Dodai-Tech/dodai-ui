@@ -7,10 +7,10 @@
 //! The same `App` works unchanged in any Dioxus renderer (desktop/web) where signals are live.
 
 use dioxus::prelude::*;
-use dodai::icons::IconId;
-use dodai::themes;
+use dodai_core::themes;
 use dodai_core::{ButtonVariant, Tone};
 use dodai_dioxus::*;
+use dodai_icons::IconId;
 
 #[derive(Props, Clone, PartialEq)]
 struct AppProps {

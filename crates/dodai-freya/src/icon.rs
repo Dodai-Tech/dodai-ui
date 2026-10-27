@@ -5,12 +5,12 @@ use dodai_core::{Color, Theme};
 /// SVG for `icon` in `theme`, painted `color` (default: the theme text colour).
 pub fn icon_svg(
     theme: &Theme,
-    icon: dodai::icons::IconId,
+    icon: dodai_icons::IconId,
     size: u32,
     filled: bool,
     color: Option<Color>,
 ) -> Option<String> {
-    let g = dodai::icons::glyph(icon, theme, filled)?;
+    let g = dodai_icons::glyph_for_theme(icon, theme, filled)?;
     Some(g.svg(size, &color.unwrap_or(theme.palette.text).to_hex()))
 }
 
@@ -26,7 +26,7 @@ mod component {
     /// Theme-aware icon (the pack follows the theme's shape).
     #[derive(PartialEq)]
     pub struct DodaiIcon {
-        icon: dodai::icons::IconId,
+        icon: dodai_icons::IconId,
         size: u32,
         filled: bool,
         color: Option<dodai_core::Color>,
@@ -34,7 +34,7 @@ mod component {
 
     impl DodaiIcon {
         /// 24 px outline icon in the theme text colour.
-        pub fn new(icon: dodai::icons::IconId) -> Self {
+        pub fn new(icon: dodai_icons::IconId) -> Self {
             Self {
                 icon,
                 size: 24,
@@ -81,8 +81,8 @@ mod tests {
 
     #[test]
     fn svg_is_painted_with_the_given_or_theme_colour() {
-        let t = dodai::themes::material::light();
-        use dodai::icons::IconId;
+        let t = dodai_core::themes::material::light();
+        use dodai_icons::IconId;
         let s = icon_svg(&t, IconId::Home, 20, false, None).unwrap();
         assert!(s.contains(&t.palette.text.to_hex()) && s.contains("width=\"20\""));
         let red = icon_svg(&t, IconId::Home, 20, false, Some(Color::hex(0xff0000))).unwrap();

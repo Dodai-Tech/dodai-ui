@@ -65,7 +65,7 @@ fn base(id: &'static str, shape: Shape, glow: f32, scan: bool, hard: f32, upper:
 
 /// The Material 3 light theme (rounded corners, tonal surfaces, its own spec).
 pub fn light_rounded() -> Theme {
-    dodai::themes::material::light()
+    dodai_core::themes::material::light()
 }
 
 /// Square theme with scanlines, uppercase labels, a hard shadow and the Cyberpunk spec.
@@ -85,5 +85,5 @@ pub fn square() -> Theme {
         3.0,
         true,
     );
-    t.with_spec(&dodai::cyberpunk::SPEC)
+    t.with_spec(&dodai_core::cyberpunk::SPEC)
 }

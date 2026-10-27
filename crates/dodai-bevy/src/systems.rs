@@ -720,7 +720,7 @@ pub(crate) fn update_tooltip(
 #[cfg(feature = "icons")]
 #[derive(Resource, Default)]
 pub struct IconCache(
-    std::collections::HashMap<(dodai::icons::IconId, u32, bool, bool), Handle<Image>>,
+    std::collections::HashMap<(dodai_icons::IconId, u32, bool, bool), Handle<Image>>,
 );
 
 /// `UiIcon` → `ImageNode` (rasterised on change / theme switch), tinted with
@@ -756,7 +756,7 @@ pub(crate) fn style_icons(
             let handle = match cache.0.get(&key) {
                 Some(h) => h.clone(),
                 None => {
-                    let Some(g) = dodai::icons::glyph(u.icon, &theme, u.filled) else {
+                    let Some(g) = dodai_icons::glyph_for_theme(u.icon, &theme, u.filled) else {
                         continue;
                     };
                     let px = u.size.max(1);
@@ -802,7 +802,7 @@ mod icon_tests {
             .add_systems(Update, style_icons);
         let e = app
             .world_mut()
-            .spawn(icon(dodai::icons::IconId::Home, 24))
+            .spawn(icon(dodai_icons::IconId::Home, 24))
             .id();
         app.update();
         let handle = {

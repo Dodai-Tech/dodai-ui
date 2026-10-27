@@ -16,4 +16,4 @@ dodai-core = { workspace = true }
 slint = "1"
 
 [dev-dependencies]
-dodai = { workspace = true, features = ["cyberpunk", "material"] }
+dodai-core = { workspace = true, features = ["cyberpunk", "material"] }

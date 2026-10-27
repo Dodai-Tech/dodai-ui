@@ -18,7 +18,7 @@ dodai-charts-core = { workspace = true }
 iced = { workspace = true }
 
 [dev-dependencies]
-dodai = { workspace = true, features = ["cyberpunk", "material"] }
+dodai-core = { workspace = true, features = ["cyberpunk", "material"] }
 # Workspace-only workaround: gpui pulls naga 25 which enables codespan-reporting's
 # `termcolor`; naga 27 (iced/wgpu) then fails to build unless its own `termcolor`
 # feature is on too. Lets `cargo test/clippy --workspace` unify both GUI stacks.

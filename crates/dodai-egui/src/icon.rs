@@ -81,7 +81,7 @@ mod tests {
 
     #[test]
     fn every_design_draws_a_common_icon() {
-        for t in dodai::themes::all() {
+        for t in dodai_core::themes::all() {
             assert!(
                 glyph_for(IconId::Home, t.look().icons, false).is_some(),
                 "{}",

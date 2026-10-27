@@ -3,9 +3,9 @@
 //! (when no text input has focus). Pass `--frames N` to exit after N frames.
 
 use bevy::prelude::*;
-use dodai::icons::IconId;
 use dodai_bevy::prelude::*;
 use dodai_bevy::surface_fx::spawn_surface_fx;
+use dodai_icons::IconId;
 
 #[derive(Component)]
 struct ThemeButton(usize);

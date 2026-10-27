@@ -59,10 +59,9 @@ def "test publish-order: leaves first, no duplicates, leaves after their deps" [
     assert equal ($o | first) "dodai-motion"
     assert (($o | enumerate | where item == "dodai-motion" | get index.0) < ($o | enumerate | where item == "dodai-core" | get index.0))
     assert equal ($o | uniq | length) ($o | length)
-    # the umbrella and the adapters come after the design systems they depend on
-    assert (($o | enumerate | where item == "dodai-cyberpunk" | get index.0) < ($o | enumerate | where item == "dodai" | get index.0))
-    assert (($o | enumerate | where item == "dodai-material" | get index.0) < ($o | enumerate | where item == "dodai" | get index.0))
-    assert (($o | enumerate | where item == "dodai" | get index.0) < ($o | enumerate | where item == "dodai-gpui" | get index.0))
+    # the adapters come after the crates they depend on
+    assert (($o | enumerate | where item == "dodai-core" | get index.0) < ($o | enumerate | where item == "dodai-gpui" | get index.0))
+    assert (($o | enumerate | where item == "dodai-icons" | get index.0) < ($o | enumerate | where item == "dodai-gpui" | get index.0))
 }
 
 def "test real Cargo.toml: version is semver and bump round-trips" [] {

@@ -139,7 +139,7 @@ mod tests {
 
     #[test]
     fn a_grid_records_primitives_and_nothing_records_nothing() {
-        let t = dodai::themes::cyberpunk::yellow();
+        let t = dodai_core::themes::cyberpunk::yellow();
         let fx = SurfaceFx {
             texture: Texture::Circuit,
             container_texture: Texture::Circuit,

@@ -58,7 +58,7 @@ pub fn clamp_pct(v: f32) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dodai::themes;
+    use dodai_core::themes;
     use dodai_core::ShapeKind;
 
     #[test]
