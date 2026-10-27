@@ -942,48 +942,24 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai"
-version = "0.1.0"
-dependencies = [
- "dodai-core",
- "dodai-cyberpunk",
- "dodai-icons",
- "dodai-material",
-]
-
-[[package]]
 name = "dodai-core"
 version = "0.1.0"
 dependencies = [
+ "dodai-fx",
  "dodai-motion",
-]
-
-[[package]]
-name = "dodai-cyberpunk"
-version = "0.1.0"
-dependencies = [
- "dodai-core",
- "dodai-cyberpunk-icons",
-]
-
-[[package]]
-name = "dodai-cyberpunk-icons"
-version = "0.1.0"
-dependencies = [
- "dodai-icon-id",
 ]
 
 [[package]]
 name = "dodai-freya"
 version = "0.1.0"
 dependencies = [
- "dodai",
  "dodai-core",
+ "dodai-icons",
  "freya",
 ]
 
 [[package]]
-name = "dodai-icon-id"
+name = "dodai-fx"
 version = "0.1.0"
 
 [[package]]
@@ -991,32 +967,6 @@ name = "dodai-icons"
 version = "0.1.0"
 dependencies = [
  "dodai-core",
- "dodai-cyberpunk-icons",
- "dodai-icon-id",
- "dodai-icons-core",
- "dodai-material-icons",
-]
-
-[[package]]
-name = "dodai-icons-core"
-version = "0.1.0"
-dependencies = [
- "dodai-icon-id",
-]
-
-[[package]]
-name = "dodai-material"
-version = "0.1.0"
-dependencies = [
- "dodai-core",
- "dodai-material-icons",
-]
-
-[[package]]
-name = "dodai-material-icons"
-version = "0.1.0"
-dependencies = [
- "dodai-icon-id",
 ]
 
 [[package]]
