@@ -345,6 +345,9 @@ pub struct SurfaceFx {
     pub strip: f32,
     /// A frosted gradient wash: the design's own three-colour gradient laid over the surface.
     pub wash: f32,
+    /// A gradient rim: the outline lit by the design's gradient, brightest where the light falls
+    /// in (top left).
+    pub rim: f32,
     /// How much the texture fades towards the centre, keeping text clean (`0.0` = even).
     pub clear: f32,
     /// Texture for containers (cards, panels, bars); `texture` is for UI components.
@@ -387,6 +390,7 @@ impl SurfaceFx {
         gloss: 0.0,
         strip: 0.0,
         wash: 0.0,
+        rim: 0.0,
         clear: 0.0,
         container_texture: Texture::None,
         container_strength: 0.5,
@@ -421,6 +425,7 @@ impl SurfaceFx {
         self.gloss = keep(effects.gloss, self.gloss);
         self.strip = keep(effects.strip, self.strip);
         self.wash = keep(effects.wash, self.wash);
+        self.rim = keep(effects.rim, self.rim);
         self
     }
 
@@ -467,6 +472,7 @@ impl SurfaceFx {
             && self.tape <= 0.0
             && self.gloss <= 0.0
             && self.wash <= 0.0
+            && self.rim <= 0.0
     }
 }
 
@@ -569,6 +575,8 @@ pub struct EffectSet {
     pub strip: bool,
     /// Gradient wash.
     pub wash: bool,
+    /// Gradient rim.
+    pub rim: bool,
 }
 
 impl EffectSet {
@@ -591,6 +599,7 @@ impl EffectSet {
         gloss: false,
         strip: false,
         wash: false,
+        rim: false,
     };
     /// Every effect.
     pub const ALL: Self = Self {
@@ -611,6 +620,7 @@ impl EffectSet {
         gloss: true,
         strip: true,
         wash: true,
+        rim: true,
     };
     /// Whether any effect is owned.
     pub const fn any(&self) -> bool {
@@ -631,6 +641,7 @@ impl EffectSet {
             || self.gloss
             || self.strip
             || self.wash
+            || self.rim
     }
 }
 
@@ -719,6 +730,7 @@ pub struct Surface {
     gloss: Option<f32>,
     strip: Option<f32>,
     wash: Option<f32>,
+    rim: Option<f32>,
     clear: Option<f32>,
     glow: Option<f32>,
 }
@@ -748,6 +760,7 @@ impl Surface {
         gloss: None,
         strip: None,
         wash: None,
+        rim: None,
         clear: None,
         glow: None,
     };
@@ -857,6 +870,11 @@ impl Surface {
         self.wash = Some(v);
         self
     }
+    /// Gradient rim, `0.0..=1.0`.
+    pub const fn rim(mut self, v: f32) -> Self {
+        self.rim = Some(v);
+        self
+    }
 
     /// Gliding light strip, `0.0..=1.0`.
     pub const fn strip(mut self, v: f32) -> Self {
@@ -924,6 +942,7 @@ impl Surface {
             || self.gloss.is_some()
             || self.strip.is_some()
             || self.wash.is_some()
+            || self.rim.is_some()
     }
 
     /// `fx` (already resolved for the component's class) with this override on top.
@@ -990,6 +1009,9 @@ impl Surface {
         }
         if let Some(v) = self.wash {
             fx.wash = v;
+        }
+        if let Some(v) = self.rim {
+            fx.rim = v;
         }
         if let Some(v) = self.clear {
             fx.clear = v;

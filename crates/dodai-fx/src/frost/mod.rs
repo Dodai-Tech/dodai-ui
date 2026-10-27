@@ -130,6 +130,8 @@ pub struct Glass {
     pub blur: f32,
     /// Hard outline `(RGBA, width px)` drawn inside the pane's border.
     pub edge: Option<([u8; 4], f32)>,
+    /// Colour saturation of the blurred backdrop before the tint (1 = unchanged, above 1 richer).
+    pub saturation: f32,
 }
 
 /// Blurs on the GPU when it can, else on the CPU, reusing GPU resources between calls.
@@ -196,6 +198,22 @@ impl Blurrer {
     }
 }
 
+/// Scale the colour saturation of RGBA pixels in place: 1 leaves them, 0 turns them grey,
+/// above 1 makes them richer (frosted glass over a vivid backdrop looks more saturated than the
+/// backdrop itself). Alpha is untouched. Pure.
+pub fn saturate(px: &mut [u8], s: f32) {
+    if (s - 1.0).abs() < 1e-3 || !s.is_finite() {
+        return;
+    }
+    let s = s.max(0.0);
+    for p in px.chunks_exact_mut(4) {
+        let l = 0.2126 * f32::from(p[0]) + 0.7152 * f32::from(p[1]) + 0.0722 * f32::from(p[2]);
+        for c in &mut p[..3] {
+            *c = (l + (f32::from(*c) - l) * s).round().clamp(0.0, 255.0) as u8;
+        }
+    }
+}
+
 /// The finished pane for a whole backdrop: blur, then tint, then edge. The result is opaque
 /// where the backdrop is.
 pub fn glass(backdrop: &[u8], w: usize, h: usize, g: &Glass) -> Vec<u8> {
@@ -203,6 +221,7 @@ pub fn glass(backdrop: &[u8], w: usize, h: usize, g: &Glass) -> Vec<u8> {
 }
 
 fn tint_and_edge(mut out: Vec<u8>, w: usize, h: usize, g: &Glass) -> Vec<u8> {
+    saturate(&mut out, g.saturation);
     let a = g.tint[3] as u32;
     for px in out.chunks_exact_mut(4) {
         for (p, &t) in px.iter_mut().zip(&g.tint).take(3) {
@@ -305,6 +324,7 @@ mod tests {
             tint: [200, 200, 200, 255],
             blur: 2.0,
             edge: Some(([1, 2, 3, 255], 1.0)),
+            saturation: 1.0,
         };
         let out = glass(&src, 8, 8, &g);
         assert_eq!(
@@ -317,8 +337,24 @@ mod tests {
             tint: [0, 0, 0, 0],
             blur: 2.0,
             edge: None,
+            saturation: 1.0,
         };
         assert_eq!(glass(&src, 8, 8, &clear), src, "clear tint leaves the blur");
+    }
+
+    #[test]
+    fn saturate_scales_chroma_and_keeps_grey_and_alpha() {
+        let mut px = [200u8, 100, 50, 77, 90, 90, 90, 255];
+        saturate(&mut px, 1.5);
+        assert!(px[0] > 200 && px[2] < 50, "richer: {px:?}");
+        assert_eq!(px[3], 77);
+        assert_eq!(&px[4..], &[90, 90, 90, 255], "grey stays grey");
+        let mut g = [200u8, 100, 50, 255];
+        saturate(&mut g, 0.0);
+        assert!(g[0].abs_diff(g[1]) <= 1 && g[1].abs_diff(g[2]) <= 1);
+        let before = g;
+        saturate(&mut g, f32::NAN);
+        assert_eq!(g, before);
     }
 
     #[test]
@@ -329,6 +365,7 @@ mod tests {
             tint: [10, 20, 30, 120],
             blur: 6.0,
             edge: None,
+            saturation: 1.0,
         };
         {
             let mut b = Blurrer::new();

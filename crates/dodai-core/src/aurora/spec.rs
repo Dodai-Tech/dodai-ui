@@ -600,6 +600,7 @@ impl DesignSpec for Aurora {
             tint: mode_tokens(t).frosted.color(),
             blur: crate::aurora::tokens::BLUR_FROSTED,
             edge: None,
+            saturation: crate::aurora::tokens::FROST_SATURATION,
         })
     }
 

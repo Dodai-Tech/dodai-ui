@@ -877,6 +877,48 @@ pub(crate) fn tape(cv: &mut Canvas, sp: &SurfacePaint) {
     band(cv, (w - i - l, h - i), (w - i, h - i - l), (0.0, -t));
 }
 
+/// The colour of a three-stop gradient at `t` (0 = first stop, 1 = last), opaque.
+pub(crate) fn wash_colour(stops: &[Rgba; 3], t: f32) -> Rgba {
+    let t = t.clamp(0.0, 1.0);
+    let (a, b, t) = if t < 0.5 {
+        (stops[0], stops[1], t * 2.0)
+    } else {
+        (stops[1], stops[2], t * 2.0 - 1.0)
+    };
+    Rgba {
+        r: a.r + (b.r - a.r) * t,
+        g: a.g + (b.g - a.g) * t,
+        b: a.b + (b.b - a.b) * t,
+        a: 1.0,
+    }
+}
+
+/// A hairline rim along the whole outline, coloured by the design's gradient at 135° and
+/// brightest at the top left, where the light falls in; a softer second line sits just inside.
+pub(crate) fn rim(cv: &mut Canvas, sp: &SurfacePaint) {
+    let k = sp.fx.rim.clamp(0.0, 1.0);
+    let d = cv.inset * 0.5 + 0.5;
+    let (w, h) = (cv.w - 2.0 * d, cv.h - 2.0 * d);
+    if w < 4.0 || h < 4.0 {
+        return;
+    }
+    let pts: Vec<(f32, f32)> = cv
+        .shape
+        .outline(w, h)
+        .into_iter()
+        .map(|(x, y)| (x + d, y + d))
+        .collect();
+    let n = pts.len();
+    for i in 0..n {
+        let (a, b) = (pts[i], pts[(i + 1) % n]);
+        let t = (((a.0 + b.0) / 2.0) / cv.w + ((a.1 + b.1) / 2.0) / cv.h) / 2.0;
+        let c = wash_colour(&sp.wash, t);
+        let lit = (1.0 - t).powf(1.4);
+        cv.polyline(&[a, b], 1.25, scale_alpha(c, k * (0.25 + 0.75 * lit)));
+        cv.polyline(&[a, b], 3.0, scale_alpha(c, k * 0.12 * lit));
+    }
+}
+
 /// A three-colour gradient laid over the surface at 135°, in coarse cells so it stays cheap.
 /// It is faint on purpose: frosted glass is tinted by it, not covered.
 pub(crate) fn wash(cv: &mut Canvas, sp: &SurfacePaint) {
@@ -908,26 +950,15 @@ pub(crate) fn wash(cv: &mut Canvas, sp: &SurfacePaint) {
     }
     let rows = ys.len() - 1;
     let edge = |n: usize, len: f32, of: usize| (len * n as f32 / of as f32).round();
-    let at = |t: f32| {
-        let s = &sp.wash;
-        let (a, b, t) = if t < 0.5 {
-            (s[0], s[1], t * 2.0)
-        } else {
-            (s[1], s[2], t * 2.0 - 1.0)
-        };
-        Rgba {
-            r: a.r + (b.r - a.r) * t,
-            g: a.g + (b.g - a.g) * t,
-            b: a.b + (b.b - a.b) * t,
-            a: 1.0,
-        }
-    };
+    let at = |t: f32| wash_colour(&sp.wash, t);
     for j in 0..rows {
         for i in 0..cols {
             let t = ((i as f32 + 0.5) / cols as f32 + ((ys[j] + ys[j + 1]) / 2.0) / h) / 2.0;
             let (x0, x1) = (edge(i, w, cols), edge(i + 1, w, cols));
             let (y0, y1) = (ys[j], ys[j + 1]);
-            cv.quad(x0, y0, x1 - x0, y1 - y0, scale_alpha(at(t), 0.24 * k));
+            // Lit from the top left: the wash is a little stronger where the light comes in.
+            let lit = 1.3 - 0.6 * t;
+            cv.quad(x0, y0, x1 - x0, y1 - y0, scale_alpha(at(t), 0.24 * k * lit));
         }
     }
 }

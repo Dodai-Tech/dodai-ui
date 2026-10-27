@@ -73,6 +73,7 @@ impl DesignSpec for Cyberpunk {
             tint: t.palette.surface.with_alpha(FROST_ALPHA),
             blur: FROST_BLUR,
             edge: Some((t.palette.primary, FROST_EDGE)),
+            saturation: 1.0,
         })
     }
 

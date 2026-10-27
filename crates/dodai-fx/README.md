@@ -48,7 +48,7 @@ Frosted glass on plain RGBA8 pixels, with no dependencies: it knows nothing abou
 use dodai_fx::frost::{glass, Glass};
 
 let backdrop = vec![200u8; 64 * 32 * 4];
-let pane = glass(&backdrop, 64, 32, &Glass { tint: [20, 20, 30, 140], blur: 12.0, edge: Some(([255, 0, 128, 255], 1.0)) });
+let pane = glass(&backdrop, 64, 32, &Glass { tint: [20, 20, 30, 140], blur: 12.0, edge: Some(([255, 0, 128, 255], 1.0)), saturation: 1.0 });
 assert_eq!(pane.len(), backdrop.len());
 ```
 

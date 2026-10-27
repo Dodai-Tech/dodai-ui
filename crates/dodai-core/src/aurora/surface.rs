@@ -17,6 +17,7 @@ pub const TEXTURES: &[Texture] = &[
 pub const EFFECTS: EffectSet = EffectSet {
     gloss: true,
     wash: true,
+    rim: true,
     strip: true,
     edge: true,
     ..EffectSet::NONE
@@ -32,6 +33,7 @@ pub fn style(dark: bool) -> SurfaceStyle {
             container_strength: 0.0,
             gloss: 0.0,
             wash: 0.8,
+            rim: 0.6,
             edge: 0.2,
             clear: 0.45,
             ..SurfaceFx::NONE
@@ -44,6 +46,7 @@ pub fn style(dark: bool) -> SurfaceStyle {
             ..SurfaceTuning::DEFAULT
         },
         backdrop: if dark { 0.55 } else { 0.38 },
+        gradient: 1.0,
         wash: {
             let g = if dark {
                 crate::aurora::tokens::AURORA_DARK

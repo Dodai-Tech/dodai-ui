@@ -19,8 +19,8 @@ pub const SCANLINE_PITCH: f32 = 3.0;
 use canvas::Canvas;
 pub use clip::{Clip, Corners, ShapeKind};
 use effects::{
-    brackets, chase, depth, edge_light, glitch, gloss, pop, press_frame, pulse, sheen, strip, tape,
-    texture, tint, wash,
+    brackets, chase, depth, edge_light, glitch, gloss, pop, press_frame, pulse, rim, sheen, strip,
+    tape, texture, tint, wash,
 };
 use geom::noise;
 pub use geom::{poly_span, row_span};
@@ -195,6 +195,9 @@ pub fn paint(out: &mut dyn Painter, f: &Frame, sp: &SurfacePaint) -> bool {
     }
     if fx.wash > 0.0 {
         wash(&mut cv, sp);
+    }
+    if fx.rim > 0.0 {
+        rim(&mut cv, sp);
     }
     if fx.gloss > 0.0 {
         gloss(&mut cv, sp);
@@ -459,6 +462,7 @@ mod tests {
             ("gloss", |f| f.gloss = 1.0),
             ("strip", |f| f.strip = 1.0),
             ("wash", |f| f.wash = 1.0),
+            ("rim", |f| f.rim = 1.0),
             ("tint", |f| f.tint = 1.0),
             ("pop", |f| f.pop = 1.0),
         ]
@@ -594,12 +598,46 @@ mod tests {
         assert!(!anim && !rec.quads.is_empty());
         for (x, y, w, h, c) in &rec.quads {
             assert!(*x >= -0.5 && *y >= -0.5 && x + w <= 160.5 && y + h <= 64.5);
-            assert!(c.a > 0.0 && c.a <= 0.24 + 1e-4);
+            assert!(c.a > 0.0 && c.a <= 0.24 * 1.3 + 1e-4);
         }
         let first = rec.quads.first().unwrap().4;
         let last = rec.quads.last().unwrap().4;
         assert!(first.r > first.b, "starts red");
         assert!(last.b > last.r, "ends blue");
+    }
+
+    #[test]
+    fn rim_follows_the_outline_in_gradient_colours_and_is_lit_top_left() {
+        let t = Theme::default();
+        let mut sp = only(SurfaceFx {
+            rim: 1.0,
+            ..SurfaceFx::NONE
+        });
+        let red = Rgba {
+            r: 1.0,
+            g: 0.0,
+            b: 0.0,
+            a: 1.0,
+        };
+        let blue = Rgba {
+            r: 0.0,
+            g: 0.0,
+            b: 1.0,
+            a: 1.0,
+        };
+        sp.wash = [red, red, blue];
+        let (rec, anim) = run(&sp, &t, &[]);
+        assert!(!anim && rec.paths.len() >= 8, "an outline of segments");
+        for p in &rec.paths {
+            assert!(p
+                .iter()
+                .all(|(x, y)| (-1.0..=161.0).contains(x) && (-1.0..=65.0).contains(y)));
+        }
+        let none = only(SurfaceFx::NONE);
+        assert!(
+            run(&none, &t, &[]).0.paths.is_empty(),
+            "nothing without rim"
+        );
     }
 }
 

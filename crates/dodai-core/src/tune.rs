@@ -73,6 +73,48 @@ impl ShadowDir {
     }
 }
 
+/// How strongly a design's gradient shows: the canvas mesh, the `wash` over surfaces and the
+/// `rim` along outlines. Only designs that have a gradient (Aurora) react to it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum GradientMode {
+    /// No gradient anywhere: a flat canvas and plain surfaces.
+    Off,
+    /// As designed.
+    #[default]
+    Subtle,
+    /// A stronger mesh, wash and rim.
+    Bold,
+}
+
+impl GradientMode {
+    /// Every mode, in picker order.
+    pub const ALL: [Self; 3] = [Self::Off, Self::Subtle, Self::Bold];
+    /// Picker label.
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::Off => "Off",
+            Self::Subtle => "Subtle",
+            Self::Bold => "Bold",
+        }
+    }
+    /// Multiplier on the wash and rim effects.
+    pub const fn effect_gain(self) -> f32 {
+        match self {
+            Self::Off => 0.0,
+            Self::Subtle => 1.0,
+            Self::Bold => 1.25,
+        }
+    }
+    /// Multiplier on the canvas mesh.
+    pub const fn mesh_gain(self) -> f32 {
+        match self {
+            Self::Off => 0.0,
+            Self::Subtle => 1.0,
+            Self::Bold => 1.9,
+        }
+    }
+}
+
 /// A family of components that can be rounded on its own.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RoundnessGroup {
@@ -138,6 +180,8 @@ pub struct ShapeTune {
     pub corner_style: Option<CornerStyle>,
     /// Control height and spacing multiplier (see [`Theme::with_density`]); 1 as designed.
     pub density: f32,
+    /// How strongly the design's gradient shows (see [`GradientMode`]).
+    pub gradient: GradientMode,
 }
 
 impl ShapeTune {
@@ -152,6 +196,7 @@ impl ShapeTune {
         shadow_dir: ShadowDir::BottomRight,
         corner_style: None,
         density: 1.0,
+        gradient: GradientMode::Subtle,
     };
 
     /// Corner multiplier for one role: the global roundness times its group's.
@@ -260,6 +305,10 @@ impl Theme {
         if (tune.density - 1.0).abs() > f32::EPSILON {
             t = t.with_density(tune.density);
         }
+        if tune.gradient != GradientMode::Subtle {
+            t.surface_style.backdrop *= tune.gradient.mesh_gain();
+            t.surface_style.gradient = tune.gradient.effect_gain();
+        }
         t
     }
 }
@@ -289,6 +338,26 @@ mod tests {
         assert_eq!(touch.clone().with_min_target(Theme::TOUCH_TARGET), touch);
         let small = t.with_min_target(10.0);
         assert!(small.shape.control_height >= 24.0);
+    }
+
+    #[test]
+    fn gradient_mode_scales_the_mesh_and_the_effects() {
+        let base = Theme::default();
+        assert_eq!(base.tuned(&ShapeTune::DEFAULT), base);
+        let mut with = base.clone();
+        with.surface_style.backdrop = 0.4;
+        let off = with.tuned(&ShapeTune {
+            gradient: GradientMode::Off,
+            ..ShapeTune::DEFAULT
+        });
+        assert_eq!(off.surface_style.backdrop, 0.0);
+        assert_eq!(off.surface_style.gradient, 0.0);
+        let bold = with.tuned(&ShapeTune {
+            gradient: GradientMode::Bold,
+            ..ShapeTune::DEFAULT
+        });
+        assert!(bold.surface_style.backdrop > 0.4 && bold.surface_style.gradient > 1.0);
+        assert_eq!(GradientMode::ALL.len(), 3);
     }
 
     #[test]

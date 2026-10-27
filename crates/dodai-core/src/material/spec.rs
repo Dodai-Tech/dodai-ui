@@ -149,6 +149,7 @@ impl DesignSpec for Material3 {
                 .with_alpha(FROST_ALPHA),
             blur: FROST_BLUR,
             edge: None,
+            saturation: 1.0,
         })
     }
 

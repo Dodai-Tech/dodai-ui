@@ -38,21 +38,27 @@ fn cache() -> &'static Mutex<HashMap<u64, Arc<RenderImage>>> {
 
 /// The mesh pixels: the canvas with the three wash colours (and the second again, fainter)
 /// blended in with a smooth falloff of `strength`.
-fn pixels(canvas: Color, wash: [Color; 3], strength: f32) -> Vec<u8> {
+pub(crate) fn pixels(
+    canvas: Color,
+    wash: [Color; 3],
+    strength: f32,
+    w: usize,
+    h: usize,
+) -> Vec<u8> {
     let colours = [wash[0], wash[1], wash[2], wash[1]];
-    let mut out = vec![0u8; W * H * 4];
-    for y in 0..H {
-        for x in 0..W {
-            let (u, v) = (x as f32 / W as f32, y as f32 / H as f32);
+    let mut out = vec![0u8; w * h * 4];
+    for y in 0..h {
+        for x in 0..w {
+            let (u, v) = (x as f32 / w as f32, y as f32 / h as f32);
             let mut c = canvas;
             for (i, (cx, cy, r)) in BLOBS.iter().enumerate() {
                 // The picture is wider than tall: keep the blobs round.
-                let d = ((u - cx) * (W as f32 / H as f32)).hypot(v - cy) / r;
+                let d = ((u - cx) * (w as f32 / h as f32)).hypot(v - cy) / r;
                 let f = (1.0 - d).clamp(0.0, 1.0);
                 let k = f * f * (3.0 - 2.0 * f) * strength * if i == 3 { 0.5 } else { 1.0 };
                 c = c.mix(colours[i], k.min(1.0));
             }
-            let o = (y * W + x) * 4;
+            let o = (y * w + x) * 4;
             out[o..o + 4].copy_from_slice(&[c.r, c.g, c.b, 255]);
         }
     }
@@ -72,7 +78,7 @@ pub fn backdrop(t: &Theme) -> Option<impl IntoElement> {
     let key = hs.finish();
     let cached = cache().lock().ok().and_then(|c| c.get(&key).cloned());
     let image = cached.or_else(|| {
-        let i = render_image(pixels(t.palette.background, wash, strength), W, H)?;
+        let i = render_image(pixels(t.palette.background, wash, strength, W, H), W, H)?;
         if let Ok(mut c) = cache().lock() {
             if c.len() >= CACHE_LIMIT {
                 c.clear();
@@ -103,10 +109,10 @@ mod tests {
             Color::rgba(40, 80, 230, 255),
             Color::rgba(20, 190, 190, 255),
         ];
-        let px = pixels(canvas, wash, 0.5);
+        let px = pixels(canvas, wash, 0.5, W, H);
         let o = (2 * W + 2) * 4;
         assert_ne!(px[o..o + 3], [250, 250, 252]);
-        let flat = pixels(canvas, wash, 0.0);
+        let flat = pixels(canvas, wash, 0.0, W, H);
         assert!(flat.chunks_exact(4).all(|p| p[..3] == [250, 250, 252]));
     }
 }

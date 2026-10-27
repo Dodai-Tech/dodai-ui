@@ -19,6 +19,9 @@ pub struct SurfaceStyle {
     /// How strongly the same three colours light the canvas as a soft mesh behind everything
     /// (0 = a flat canvas). Panels that are translucent let it show through.
     pub backdrop: f32,
+    /// Multiplier on the gradient effects (`wash`, `rim`) when painting; 1 as designed. Set by
+    /// [`ShapeTune::gradient`](crate::ShapeTune::gradient).
+    pub gradient: f32,
 }
 
 impl SurfaceStyle {
@@ -30,6 +33,7 @@ impl SurfaceStyle {
         tuning: SurfaceTuning::DEFAULT,
         wash: [crate::Color::rgba(0, 0, 0, 0); 3],
         backdrop: 0.0,
+        gradient: 1.0,
     };
 }
 

@@ -430,7 +430,7 @@ impl Showcase {
         }
         let fx = dodai_gpui::surface_fx();
         let ef = t.surface_effects();
-        if ef.tint || ef.pop || ef.tape || ef.gloss || ef.strip || ef.wash {
+        if ef.tint || ef.pop || ef.tape || ef.gloss || ef.strip || ef.wash || ef.rim {
             out.push((
                     "Surface effects",
                     "Signature",
@@ -456,6 +456,9 @@ impl Showcase {
                         .children(ef.wash.then(|| {
                             fx_amount(gap, "sfx-wash", "Gradient wash", fx.wash, 1.0, |f, v| f.wash = v)
                         }))
+                        .children(ef.rim.then(|| {
+                            fx_amount(gap, "sfx-rim", "Gradient rim", fx.rim, 1.0, |f, v| f.rim = v)
+                        }))
                         .child(fx_preview(gap, "sfx-sig"))
                         .into_any_element(),
                     "Signature",
@@ -465,7 +468,9 @@ impl Showcase {
     }
 
     fn roundness_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
-        use dodai_core::{BorderTint, CornerStyle, RoundnessGroup, ShadowDir, ShapeKind};
+        use dodai_core::{
+            BorderTint, CornerStyle, GradientMode, RoundnessGroup, ShadowDir, ShapeKind,
+        };
         let t = theme_of(cx);
         let tune = dodai_gpui::shape_tune();
         let percent: fn(f32) -> String = |v| format!("{:.0}%", v * 100.0);
@@ -558,6 +563,22 @@ impl Showcase {
                 ),
                 |tn, i| tn.density = DENSITIES[i].1,
             ));
+        if t.surface_effects().wash {
+            sec = sec.child(tune_choice(
+                &t,
+                "Gradient",
+                "How strongly the design's gradient shows: the canvas mesh, the wash and the rim.",
+                "rb-gradient",
+                (
+                    GradientMode::ALL.map(|g| g.label()).to_vec(),
+                    GradientMode::ALL
+                        .iter()
+                        .position(|g| *g == tune.gradient)
+                        .unwrap_or(1),
+                ),
+                |tn, i| tn.gradient = GradientMode::ALL[i],
+            ));
+        }
         if t.effects.hard_shadow > 0.0 {
             let cur = tune.hard_shadow.unwrap_or(t.effects.hard_shadow);
             let dir = ShadowDir::ALL.iter().position(|d| *d == tune.shadow_dir);
@@ -1100,6 +1121,7 @@ fn fx_hint(id: &str) -> &'static str {
         "gloss" => "A clear-coat reflection across the top.",
         "strip" => "A thin strip of light.",
         "wash" => "The design's gradient tinting the surface.",
+        "rim" => "The outline lit by the gradient, brightest top left.",
         _ => "",
     }
 }

@@ -391,6 +391,10 @@ pub const BORDER_WIDTH_THIN: f32 = 0.5;
 /// Frosted glass blur radius in px. Rendered by `dodai_gpui::FrostedScene` (a blurred copy
 /// of the scene's own picture under each panel); `gpui` cannot blur arbitrary UI behind a layer.
 pub const BLUR_FROSTED: f32 = 28.0;
+
+/// Saturation of the blurred backdrop under a frosted pane: glass over colour reads richer
+/// than the colour itself.
+pub const FROST_SATURATION: f32 = 1.5;
 /// The thin blur used under small floating parts (chips, tooltips).
 pub const BLUR_THIN: f32 = 12.0;
 

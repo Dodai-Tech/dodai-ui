@@ -96,6 +96,7 @@ impl DesignSpec for NeoBrutalism {
             tint: t.palette.surface.with_alpha(FROST_ALPHA),
             blur: FROST_BLUR,
             edge: Some((t.palette.border_strong, FROST_EDGE)),
+            saturation: 1.0,
         })
     }
 

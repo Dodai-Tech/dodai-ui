@@ -741,6 +741,7 @@ fn main() {
                     "gloss" => fx.gloss = 0.8,
                     "strip" => fx.strip = 0.8,
                     "wash" => fx.wash = 0.8,
+                    "rim" => fx.rim = 0.8,
                     "clear" => fx.clear = 0.7,
                     "preset" => fx = theme_of(cx).surface_preset(),
                     name => {
@@ -784,6 +785,22 @@ fn main() {
                 cx,
                 dodai_core::ShapeTune {
                     density,
+                    ..dodai_gpui::shape_tune()
+                },
+            );
+        }
+        // Debug: DODAI_GRADIENT=off|subtle|bold sets how strongly a gradient design shows it.
+        if let Ok(v) = std::env::var("DODAI_GRADIENT") {
+            use dodai_core::GradientMode;
+            let gradient = match v.as_str() {
+                "off" => GradientMode::Off,
+                "bold" => GradientMode::Bold,
+                _ => GradientMode::Subtle,
+            };
+            dodai_gpui::set_shape_tune(
+                cx,
+                dodai_core::ShapeTune {
+                    gradient,
                     ..dodai_gpui::shape_tune()
                 },
             );

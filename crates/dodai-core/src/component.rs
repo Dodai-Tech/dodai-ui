@@ -879,6 +879,7 @@ impl Theme {
                 tint: self.palette.surface.with_alpha(0.6),
                 blur: 24.0,
                 edge: None,
+                saturation: 1.0,
             })
     }
 

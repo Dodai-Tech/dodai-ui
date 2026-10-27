@@ -20,13 +20,23 @@ use std::sync::{Arc, Mutex, OnceLock};
 /// A showcase picture with hard edges (so the blur is visible), in the theme's colours.
 fn mesh_pixels(t: &Theme, w: usize, h: usize) -> Vec<u8> {
     let p = &t.palette;
+    // A design with a gradient lights the picture with its own mesh; others get a flat tone.
+    let base: Vec<dodai_core::Color> = if t.surface_style.backdrop > 0.0 {
+        let strength = t.surface_style.backdrop.max(0.7);
+        crate::backdrop::pixels(p.background, t.surface_style.wash, strength, w, h)
+            .chunks_exact(4)
+            .map(|c| dodai_core::Color::rgba(c[0], c[1], c[2], 255))
+            .collect()
+    } else {
+        vec![p.background.mix(p.surface_raised, 0.5); w * h]
+    };
     let colours = [p.primary, p.info, p.success, p.warning, p.danger];
     let mut out = vec![0u8; w * h * 4];
     let (fw, fh) = (w as f32, h as f32);
     for y in 0..h {
         for x in 0..w {
             let (u, v) = (x as f32 / fw, y as f32 / fh);
-            let mut c = p.background.mix(p.surface_raised, 0.5);
+            let mut c = base[y * w + x];
             // Diagonal stripes.
             if ((u + v) * 14.0).fract() < 0.22 {
                 c = c.mix(p.text, 0.18);
@@ -135,6 +145,7 @@ impl RenderOnce for FrostedScene {
             sw.to_bits(),
             sh.to_bits(),
             frost.blur.to_bits(),
+            frost.saturation.to_bits(),
         )
             .hash(&mut hs);
         match &self.source {
@@ -151,6 +162,7 @@ impl RenderOnce for FrostedScene {
                     p.text,
                 ]
                 .hash(&mut hs);
+                (t.surface_style.wash, t.surface_style.backdrop.to_bits()).hash(&mut hs);
             }
             Source::Pixels(b) => (b.len(), b.first(), b.last()).hash(&mut hs),
         }
@@ -196,7 +208,8 @@ impl RenderOnce for FrostedScene {
             let cached = crops().lock().ok().and_then(|c| c.get(&ck).cloned());
             let crop = cached.or_else(|| {
                 let (cw, ch) = (w as usize, h as usize);
-                let pixels = entry.soft.crop(x as usize, y as usize, cw, ch);
+                let mut pixels = entry.soft.crop(x as usize, y as usize, cw, ch);
+                dodai_fx::frost::saturate(&mut pixels, frost.saturation);
                 let i = render_image(pixels, cw, ch)?;
                 if let Ok(mut c) = crops().lock() {
                     if c.len() >= CACHE_LIMIT {

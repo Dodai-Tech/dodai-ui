@@ -15,8 +15,10 @@ impl From<Color> for Rgba {
     }
 }
 
-fn paint_with(theme: &Theme, fx: SurfaceFx, pressable: bool) -> SurfacePaint {
+fn paint_with(theme: &Theme, mut fx: SurfaceFx, pressable: bool) -> SurfacePaint {
     let p = &theme.palette;
+    fx.wash = (fx.wash * theme.surface_style.gradient).min(1.0);
+    fx.rim = (fx.rim * theme.surface_style.gradient).min(1.0);
     SurfacePaint {
         fx,
         ink: p.text.into(),
