@@ -1138,7 +1138,7 @@ fn fx_preview(gap: gpui::Pixels, p: &'static str) -> gpui::Div {
 
 /// The pinned strip above the Shape and Surface-effects pages: real components that restyle the
 /// moment any control below changes, so nothing has to be scrolled to see its effect.
-pub(crate) fn live_preview(t: &dodai_core::Theme) -> gpui::Div {
+pub(crate) fn live_preview(t: &dodai_core::Theme, narrow: bool) -> gpui::Div {
     let gap = px(t.spacing.md);
     let row = || div().flex().flex_wrap().items_center().gap(gap);
     let card = |k: &'static str, v: CardVariant, h: &'static str| {
@@ -1152,13 +1152,15 @@ pub(crate) fn live_preview(t: &dodai_core::Theme) -> gpui::Div {
         .flex_none()
         .flex_col()
         .gap(px(t.spacing.sm))
-        .px(px(t.spacing.lg))
-        .py(px(t.spacing.md))
+        .px(px(if narrow { t.spacing.md } else { t.spacing.lg }))
+        .py(px(if narrow { t.spacing.sm } else { t.spacing.md }))
         .border_b_1()
         .border_color(hsla(t.palette.border))
-        .child(Muted::new(
-            "Live preview: every shape and effect setting below is applied here at once.",
-        ))
+        .children((!narrow).then(|| {
+            Muted::new(
+                "Live preview: every shape and effect setting below is applied here at once.",
+            )
+        }))
         .child(
             row()
                 .child(Button::new("pv-p", "Primary"))
@@ -1168,7 +1170,8 @@ pub(crate) fn live_preview(t: &dodai_core::Theme) -> gpui::Div {
                 .child(Tag::new("online", Tone::Success).solid(true))
                 .child(Tag::new("warn", Tone::Warning)),
         )
-        .child(
+        // The cards row is dropped on narrow screens: the pinned strip must not eat the page.
+        .children((!narrow).then(|| {
             row()
                 .child(card("c", CardVariant::Outlined, "Card"))
                 .child(card("e", CardVariant::Elevated, "Elevated"))
@@ -1176,6 +1179,6 @@ pub(crate) fn live_preview(t: &dodai_core::Theme) -> gpui::Div {
                     div()
                         .w(px(150.0))
                         .child(Panel::new().title("Panel").child(Muted::new("body"))),
-                ),
-        )
+                )
+        }))
 }

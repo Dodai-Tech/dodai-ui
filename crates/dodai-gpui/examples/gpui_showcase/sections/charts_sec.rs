@@ -36,9 +36,9 @@ impl Showcase {
                                     m.update(cx, |_, cx| cx.notify());
                                 }),
                         )
-                        .child(Muted::new(
+                        .child(div().w_full().child(Muted::new(
                             "Monochrome reads by lightness alone, for print or colour-blind viewing. Applies to every chart.",
-                        ))
+                        )))
                 })
                 .child(charts_xy)
                 .into_any_element(),

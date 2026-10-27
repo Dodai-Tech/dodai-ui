@@ -185,6 +185,8 @@ impl Render for Showcase {
         self.quiet = false;
         self.built.clear();
         let narrow = window.viewport_size().width < px(760.0);
+        // Medium widths keep the rail but still need a compact top bar and preview strip.
+        let compact = window.viewport_size().width < px(1100.0);
         let t = theme_of(cx);
         let me = cx.entity();
 
@@ -584,67 +586,98 @@ impl Render for Showcase {
                             .flex_col()
                             .size_full()
                             .child(
-                                // Top bar: the theme picker, always in reach.
-                                div()
-                                    .flex()
-                                    .flex_none()
-                                    .items_center()
-                                    .justify_end()
-                                    .gap(px(t.spacing.sm))
-                                    .px(px(t.spacing.lg))
-                                    .py(px(t.spacing.sm))
-                                    .border_b_1()
-                                    .border_color(hsla(t.palette.border))
-                                    .child(Muted::new("Animate"))
-                                    .child(
-                                        dodai_gpui::Segmented::new("top-animate", ["Off", "On"])
+                                // Top bar: the theme picker, always in reach. Label + control
+                                // pairs wrap onto further rows instead of overflowing.
+                                {
+                                    let pair = |label: &'static str, control: gpui::AnyElement| {
+                                        div()
+                                            .flex()
+                                            .flex_none()
+                                            .items_center()
+                                            .gap(px(t.spacing.sm))
+                                            .children(
+                                                (!(compact && matches!(label, "Design" | "Theme")))
+                                                    .then(|| Muted::new(label)),
+                                            )
+                                            .child(control)
+                                    };
+                                    let (dw, tw) = if narrow {
+                                        (170.0, 210.0)
+                                    } else if compact {
+                                        (190.0, 230.0)
+                                    } else {
+                                        (230.0, 360.0)
+                                    };
+                                    div()
+                                        .flex()
+                                        .flex_none()
+                                        .flex_wrap()
+                                        .items_center()
+                                        .when(!compact, |d| d.justify_end())
+                                        .gap_x(px(t.spacing.md))
+                                        .gap_y(px(t.spacing.sm))
+                                        .px(px(if narrow { t.spacing.md } else { t.spacing.lg }))
+                                        .py(px(t.spacing.sm))
+                                        .border_b_1()
+                                        .border_color(hsla(t.palette.border))
+                                        .child(pair(
+                                            "Animate",
+                                            dodai_gpui::Segmented::new(
+                                                "top-animate",
+                                                ["Off", "On"],
+                                            )
                                             .selected(usize::from(
                                                 dodai_gpui::instruments_animated(),
                                             ))
                                             .on_select(|i, _, cx| {
                                                 dodai_gpui::set_instruments_animated(cx, i == 1)
-                                            }),
-                                    )
-                                    .child(Muted::new("Speed"))
-                                    .child(
-                                        dodai_gpui::Segmented::new(
-                                            "top-speed",
-                                            ["0.5×", "1×", "2×", "4×"],
-                                        )
-                                        .selected(
-                                            [0.5, 1.0, 2.0, 4.0]
-                                                .iter()
-                                                .position(|v| {
-                                                    (*v - dodai_gpui::animation_speed()).abs()
-                                                        < 0.01
-                                                })
-                                                .unwrap_or(1),
-                                        )
-                                        .on_select(
-                                            |i, _, cx| {
+                                            })
+                                            .into_any_element(),
+                                        ))
+                                        .child(pair(
+                                            "Speed",
+                                            dodai_gpui::Segmented::new(
+                                                "top-speed",
+                                                ["0.5×", "1×", "2×", "4×"],
+                                            )
+                                            .selected(
+                                                [0.5, 1.0, 2.0, 4.0]
+                                                    .iter()
+                                                    .position(|v| {
+                                                        (*v - dodai_gpui::animation_speed()).abs()
+                                                            < 0.01
+                                                    })
+                                                    .unwrap_or(1),
+                                            )
+                                            .on_select(|i, _, cx| {
                                                 dodai_gpui::set_animation_speed(
                                                     cx,
                                                     [0.5, 1.0, 2.0, 4.0][i],
                                                 )
-                                            },
-                                        ),
-                                    )
-                                    .child(Muted::new("Design"))
-                                    .child(
-                                        div().w(px(230.0)).child(
-                                            dodai_gpui::DesignSystemSelector::new("top-design"),
-                                        ),
-                                    )
-                                    .child(Muted::new("Theme"))
-                                    .child(
-                                        div()
-                                            .w(px(360.0))
-                                            .child(dodai_gpui::ThemeSelector::new("top-theme")),
-                                    ),
+                                            })
+                                            .into_any_element(),
+                                        ))
+                                        .child(pair(
+                                            "Design",
+                                            div()
+                                                .w(px(dw))
+                                                .child(dodai_gpui::DesignSystemSelector::new(
+                                                    "top-design",
+                                                ))
+                                                .into_any_element(),
+                                        ))
+                                        .child(pair(
+                                            "Theme",
+                                            div()
+                                                .w(px(tw))
+                                                .child(dodai_gpui::ThemeSelector::new("top-theme"))
+                                                .into_any_element(),
+                                        ))
+                                },
                             )
                             .children(
                                 matches!(selected_cat, Some("Shape" | "Surface effects"))
-                                    .then(|| sections::shape::live_preview(&t)),
+                                    .then(|| sections::shape::live_preview(&t, compact)),
                             )
                             .child(body.min_h_0()),
                     ),

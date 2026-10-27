@@ -86,7 +86,6 @@ impl Showcase {
         self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let gap = px(t.spacing.md);
-        let row = || div().flex().flex_wrap().items_center().gap(gap);
         let col = || div().flex().flex_col().gap(gap);
         let mut out: Vec<Section> = Vec::new();
         let mut variants = col();
@@ -95,15 +94,20 @@ impl Showcase {
             let id = |k: &str| SharedString::from(format!("cv-{name}-{k}"));
             let cell = |e: gpui::AnyElement| {
                 div()
-                    .w(px(56.0))
+                    .w(px(44.0))
+                    .flex_none()
                     .flex()
                     .justify_center()
                     .child(e)
                     .into_any_element()
             };
+            // One non-wrapping row: the label column gives way before the cells wrap.
             variants = variants.child(
-                row()
-                    .child(div().w(px(110.0)).child(Label::new(name)))
+                div()
+                    .flex()
+                    .items_center()
+                    .gap(px(t.spacing.xs))
+                    .child(div().flex_1().min_w(px(64.0)).child(Label::new(name)))
                     .child(cell(
                         Checkbox::new(id("off"), false)
                             .variant(v)
