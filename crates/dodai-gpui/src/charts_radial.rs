@@ -21,6 +21,7 @@ pub struct Gauge {
     max: f32,
     size: f32,
     label: Option<SharedString>,
+    unit: &'static str,
     caption: Option<SharedString>,
     tone: Option<dodai_core::Tone>,
     style: crate::gauges::GaugeStyle,
@@ -43,6 +44,7 @@ impl Gauge {
             max: 100.0,
             size: 120.0,
             label: None,
+            unit: "",
             caption: None,
             tone: None,
             style: crate::gauges::GaugeStyle::Arc,
@@ -64,6 +66,11 @@ impl Gauge {
     /// Centre label (default: the rounded value).
     pub fn label(mut self, l: impl Into<SharedString>) -> Self {
         self.label = Some(l.into());
+        self
+    }
+    /// Unit appended to the default label (the rounded value), so it follows a changing value.
+    pub fn unit(mut self, u: &'static str) -> Self {
+        self.unit = u;
         self
     }
     /// Small caption under the label (uppercased when the theme does).
@@ -106,9 +113,9 @@ impl Gauge {
         let style = self.style;
         let (bw, bh) = style.dims(size);
         let ring = (size * 0.1).clamp(4.0, 12.0);
-        let label = self
-            .label
-            .unwrap_or_else(|| fmt_num((self.value * g).round()).into());
+        let label = self.label.unwrap_or_else(|| {
+            format!("{}{}", fmt_num((self.value * g).round()), self.unit).into()
+        });
         let look = Look {
             style,
             frac,

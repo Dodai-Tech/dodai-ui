@@ -259,22 +259,21 @@ impl Showcase {
             let dials = row()
                 .justify_around()
                 .flex_wrap()
-                .child(Gauge::new(dg(72.0, 41.0)).label("72%").tone(Tone::Success))
+                .child(Gauge::new(dg(72.0, 41.0)).unit("%").tone(Tone::Success))
                 .child(Gauge::new(dg(31.0, 42.0)).tone(Tone::Warning))
                 .child(
                     Gauge::new(dg(68.0, 43.0))
                         .style(Segmented)
                         .size(130.0)
                         .caption("Core temp")
-                        .label("68°"),
+                        .unit("°"),
                 )
                 .child(
                     Gauge::new(dg(72.0, 44.0))
                         .style(Dial)
                         .zones(true)
                         .size(150.0)
-                        .caption("Load")
-                        .label("72"),
+                        .caption("Load"),
                 )
                 .child(
                     Gauge::new(dg(88.0, 45.0))
@@ -282,7 +281,7 @@ impl Showcase {
                         .zones(true)
                         .size(150.0)
                         .caption("Shield")
-                        .label("88%"),
+                        .unit("%"),
                 )
                 .child(
                     Gauge::new(dg(45.0, 46.0))
@@ -290,7 +289,7 @@ impl Showcase {
                         .size(130.0)
                         .tone(Tone::Info)
                         .caption("Sync")
-                        .label("45%"),
+                        .unit("%"),
                 );
             let bars = div()
                 .flex()
@@ -302,7 +301,7 @@ impl Showcase {
                         .size(150.0)
                         .zones(true)
                         .caption("Power")
-                        .label("82%"),
+                        .unit("%"),
                 )
                 .child(
                     Gauge::new(dg(35.0, 48.0))
@@ -310,7 +309,7 @@ impl Showcase {
                         .size(150.0)
                         .tone(Tone::Info)
                         .caption("Link")
-                        .label("35%"),
+                        .unit("%"),
                 )
                 .child(
                     Gauge::new(dg(14.0, 49.0))
@@ -318,7 +317,7 @@ impl Showcase {
                         .size(150.0)
                         .tone(Tone::Danger)
                         .caption("Hull")
-                        .label("14%"),
+                        .unit("%"),
                 );
             let more = div()
                 .flex()
@@ -330,7 +329,7 @@ impl Showcase {
                         .size(150.0)
                         .zones(true)
                         .caption("Thrust")
-                        .label("64%"),
+                        .unit("%"),
                 )
                 .child(
                     Gauge::new(dg(58.0, 51.0))
@@ -338,7 +337,7 @@ impl Showcase {
                         .size(110.0)
                         .zones(true)
                         .caption("Fuel")
-                        .label("58%"),
+                        .unit("%"),
                 );
             let bars = row().justify_around().flex_wrap().child(bars).child(more);
             let extra = row()
@@ -350,7 +349,7 @@ impl Showcase {
                         .style(Ring)
                         .size(120.0)
                         .caption("Disk")
-                        .label("64%")
+                        .unit("%")
                         .tone(Tone::Info),
                 )
                 .child(
@@ -358,15 +357,13 @@ impl Showcase {
                         .style(Smooth)
                         .size(130.0)
                         .zones(true)
-                        .caption("Speed")
-                        .label("78"),
+                        .caption("Speed"),
                 )
                 .child(
                     Gauge::new(dg(55.0, 54.0))
                         .style(Dots)
                         .size(130.0)
                         .caption("Volume")
-                        .label("55")
                         .target(80.0),
                 )
                 .child(
@@ -375,14 +372,14 @@ impl Showcase {
                         .size(150.0)
                         .zones(true)
                         .caption("Level")
-                        .label("70%"),
+                        .unit("%"),
                 )
                 .child(
                     Gauge::new(dg(34.0, 56.0))
                         .style(Battery)
                         .size(110.0)
                         .caption("Battery")
-                        .label("34%")
+                        .unit("%")
                         .tone(Tone::Success),
                 )
                 .child(
@@ -390,7 +387,7 @@ impl Showcase {
                         .style(Battery)
                         .size(110.0)
                         .caption("Low")
-                        .label("18%")
+                        .unit("%")
                         .tone(Tone::Success),
                 )
                 .child(
@@ -399,7 +396,7 @@ impl Showcase {
                         .size(120.0)
                         .zones(true)
                         .caption("Temp")
-                        .label("62°")
+                        .unit("°")
                         .target(75.0),
                 )
                 .child(
