@@ -663,8 +663,12 @@ impl Theme {
 
     /// The size scale; the design's own, or the shared defaults.
     pub fn sizes(&self) -> Sizes {
-        hook!(self.sizes());
-        Sizes::default()
+        let base = self
+            .spec
+            .get()
+            .and_then(|s| s.sizes(self))
+            .unwrap_or_default();
+        base.scaled(self.density)
     }
 
     /// Drawer and rail geometry; derived from spacing and the control height unless the design

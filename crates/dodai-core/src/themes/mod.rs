@@ -105,6 +105,7 @@ impl ThemeBuilder {
             shape_system: None,
             spec: Default::default(),
             surface_style: Default::default(),
+            density: 1.0,
             meta: self.meta,
             palette,
             typography: self.typography,

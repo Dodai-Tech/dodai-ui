@@ -180,8 +180,9 @@ pub(super) fn choice(c: Choice, window: &mut Window, cx: &mut App) -> gpui::AnyE
         }
         Kind::Radio => {
             if p > 0.01 {
-                let tshape = round_shape(&t.shape, 8.0);
-                el.child(shaped(&tshape, mark).w(px(8.0 * p)).h(px(8.0 * p)))
+                let dot = (h * 0.4).round();
+                let tshape = round_shape(&t.shape, dot);
+                el.child(shaped(&tshape, mark).w(px(dot * p)).h(px(dot * p)))
             } else {
                 el
             }

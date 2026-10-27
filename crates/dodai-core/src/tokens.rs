@@ -186,6 +186,29 @@ pub struct Sizes {
     pub dialog_width: f32,
 }
 
+impl Sizes {
+    /// Control-sized dimensions scaled by `density`, snapped to half pixels. Icons, the touch
+    /// target, hairlines, ticks and chart geometry keep their size.
+    pub fn scaled(mut self, density: f32) -> Self {
+        if (density - 1.0).abs() < f32::EPSILON {
+            return self;
+        }
+        let s = |v: f32| (v * density * 2.0).round() / 2.0;
+        let s2 = |v: (f32, f32)| (s(v.0), s(v.1));
+        self.state_layer = s(self.state_layer);
+        self.switch_track = s2(self.switch_track);
+        self.switch_handle = s2(self.switch_handle);
+        self.selection_box = s(self.selection_box);
+        self.slider_thumb = s(self.slider_thumb);
+        self.segmented_height = s(self.segmented_height);
+        self.badge_min = s(self.badge_min);
+        self.chip_height = s(self.chip_height);
+        self.chip_pad = s(self.chip_pad);
+        self.status_dot = s(self.status_dot);
+        self
+    }
+}
+
 impl Default for Sizes {
     fn default() -> Self {
         Self {

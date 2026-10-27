@@ -32,6 +32,8 @@ pub struct Theme {
     pub spec: crate::SpecRef,
     /// Textures and effects this design owns, and the mix it suggests.
     pub surface_style: crate::SurfaceStyle,
+    /// Density applied by [`Theme::with_density`] (1 = as designed); also scales [`crate::Sizes`].
+    pub density: f32,
 }
 
 impl Theme {
@@ -121,6 +123,7 @@ impl Theme {
             1.0
         };
         let snap = |v: f32| (v * d * 2.0).round() / 2.0;
+        self.density = (self.density * d).clamp(0.5, 2.0);
         self.shape.control_height = snap(self.shape.control_height);
         let sp = &mut self.spacing;
         (sp.xs, sp.sm, sp.md, sp.lg, sp.xl) = (
@@ -203,6 +206,17 @@ mod density_tests {
             dense.shape.control_height * 2.0,
             (dense.shape.control_height * 2.0).round()
         );
+    }
+
+    #[test]
+    fn density_scales_control_sizes_not_icons() {
+        let t = Theme::default();
+        let dense = t.clone().with_density(0.8);
+        assert!(dense.sizes().selection_box < t.sizes().selection_box);
+        assert!(dense.sizes().switch_track.0 < t.sizes().switch_track.0);
+        assert_eq!(dense.sizes().icon, t.sizes().icon);
+        assert_eq!(dense.sizes().touch_target, t.sizes().touch_target);
+        assert_eq!(t.clone().with_density(1.0).sizes(), t.sizes());
     }
 
     #[test]
