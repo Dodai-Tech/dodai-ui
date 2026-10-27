@@ -46,6 +46,14 @@ fn charts(name: &'static str, v: Vec<f32>) -> Vec<AnyElement> {
         )
         .into_any_element(),
         StackedAreaChart::new([s(), s()]).into_any_element(),
+        LineChart::new(format!("tx-{name}"), [s()])
+            .time_axis(v.iter().map(|x| f64::from(*x) * 1e9))
+            .crosshair(true)
+            .into_any_element(),
+        LineChart::new(format!("ty-{name}"), [s()])
+            .time_axis([f64::NAN, 1.0])
+            .utc_offset(-12_345)
+            .into_any_element(),
         RadialBar::new(
             v.iter()
                 .enumerate()

@@ -216,6 +216,43 @@ impl Showcase {
                                 .horizontal(true),
                         ),
                     ),
+            )
+            .child(
+                row()
+                    .child(
+                        div().flex_1().min_w(px(300.0)).child(
+                            LineChart::new(
+                                "time-day",
+                                [Series::new(
+                                    "Requests",
+                                    drift(&[4.0, 9.0, 7.0, 15.0, 22.0, 18.0, 25.0, 12.0], 5.0),
+                                )],
+                            )
+                            .time_axis(
+                                // Uneven sampling, 2024-03-04 06:00 UTC onwards: gaps show as gaps.
+                                [0.0, 1.0, 1.5, 4.0, 5.0, 9.0, 11.0, 15.0]
+                                    .map(|h| 1_709_532_000.0 + h * 3600.0),
+                            )
+                            .crosshair(true)
+                            .area(true),
+                        ),
+                    )
+                    .child(
+                        div().flex_1().min_w(px(300.0)).child(
+                            LineChart::new(
+                                "time-year",
+                                [Series::new(
+                                    "Visits",
+                                    drift(&[3.0, 4.0, 6.0, 5.0, 9.0, 12.0, 11.0, 14.0], 6.0),
+                                )],
+                            )
+                            .time_axis(
+                                [0.0, 31.0, 90.0, 140.0, 200.0, 280.0, 340.0, 420.0]
+                                    .map(|d| 1_704_067_200.0 + d * 86_400.0),
+                            )
+                            .smooth(true),
+                        ),
+                    ),
             );
         let gauge_styles = {
             use GaugeStyle::*;

@@ -26,6 +26,7 @@
 //! | [`segments`] | seven-segment digit geometry |
 //! | [`tactical`] | contacts, map symbols, threat wedges, countdown |
 //! | [`stream`] | fixed-size sample window for live charts |
+//! | [`timeaxis`] | calendar-aware time ticks, unix ↔ civil date, UTC-offset labels |
 
 pub mod axis;
 pub mod bins;
@@ -47,6 +48,7 @@ pub mod segments;
 pub mod stack;
 pub mod stream;
 pub mod tactical;
+pub mod timeaxis;
 
 pub use candles::{heikin_ashi, price_range, Candle};
 pub use gradient::Gradient;

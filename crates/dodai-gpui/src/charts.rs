@@ -355,6 +355,23 @@ pub(crate) fn framed(
     x_labels: Vec<SharedString>,
     plot: gpui::Div,
 ) -> gpui::Div {
+    let row = (!x_labels.is_empty()).then(|| {
+        label_style(t, div()).flex().children(
+            x_labels
+                .into_iter()
+                .map(|l| div().flex_1().flex().justify_center().child(l)),
+        )
+    });
+    framed_row(t, y_labels, row, plot)
+}
+
+/// [`framed`] with a caller-built x-axis row (e.g. labels placed at arbitrary positions).
+pub(crate) fn framed_row(
+    t: &Theme,
+    y_labels: Vec<String>,
+    x_row: Option<gpui::Div>,
+    plot: gpui::Div,
+) -> gpui::Div {
     let ycol = label_style(t, div())
         .w(px(t.sizes().axis_gutter))
         .flex()
@@ -369,14 +386,8 @@ pub(crate) fn framed(
         .flex_col()
         .gap(px(t.spacing.xs))
         .child(plot);
-    if !x_labels.is_empty() {
-        right = right.child(
-            label_style(t, div()).flex().children(
-                x_labels
-                    .into_iter()
-                    .map(|l| div().flex_1().flex().justify_center().child(l)),
-            ),
-        );
+    if let Some(row) = x_row {
+        right = right.child(row);
     }
     div().flex().w_full().child(ycol).child(right)
 }

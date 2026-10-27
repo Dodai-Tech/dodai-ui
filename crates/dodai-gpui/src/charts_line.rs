@@ -31,6 +31,7 @@ pub struct LineChart {
     legend: bool,
     toggleable: bool,
     patterns: bool,
+    time: Option<(Vec<f64>, i32)>,
     y_bounds: Option<(f32, f32)>,
     fmt: Option<NumFmt>,
     grid: bool,
@@ -74,6 +75,7 @@ impl LineChart {
             legend: true,
             toggleable: false,
             patterns: false,
+            time: None,
             y_bounds: None,
             fmt: None,
             grid: true,
@@ -160,6 +162,23 @@ impl LineChart {
         self.legend = l;
         self
     }
+    /// Place the points by timestamp (unix seconds, UTC) instead of equal slots, and label the
+    /// x axis with calendar-aligned ticks (seconds … years, chosen from the span). Sample `i`
+    /// of every series sits at `stamps[i]`. Use [`LineChart::utc_offset`] for a local zone.
+    pub fn time_axis(mut self, stamps: impl IntoIterator<Item = f64>) -> Self {
+        let off = self.time.as_ref().map_or(0, |t| t.1);
+        self.time = Some((stamps.into_iter().collect(), off));
+        self
+    }
+    /// Fixed UTC offset in seconds for the time axis labels (default 0 = UTC).
+    pub fn utc_offset(mut self, secs: i32) -> Self {
+        if let Some(t) = self.time.as_mut() {
+            t.1 = secs;
+        } else {
+            self.time = Some((Vec::new(), secs));
+        }
+        self
+    }
     /// Draw each series with its own dash pattern (solid, dashed, dotted, dash-dot), so the
     /// lines stay apart without relying on colour (colour-blind and print safe).
     pub fn patterns(mut self, on: bool) -> Self {
@@ -231,6 +250,7 @@ impl LineChart {
         let grid = hsla(style.grid_color);
         let glow = self.glow.resolve(&t);
         let patterns = self.patterns;
+        let xs: Option<Vec<f32>> = self.time.as_ref().and_then(|(s, _)| time_fracs(s));
         let (area, smooth, stepped, sw, show_grid) = (
             self.area,
             self.smooth,
@@ -250,6 +270,7 @@ impl LineChart {
         });
         let cur: Option<usize> = xh.as_ref().and_then(|s| *s.read(cx)).filter(|i| *i < n);
         let hair = hsla(t.palette.text_muted);
+        let xs_hover = xs.clone();
         let tick_fracs: Vec<f32> = ticks.iter().map(|v| norm(*v, lo, hi)).collect();
 
         let cv = canvas(
@@ -277,7 +298,7 @@ impl LineChart {
                                     // The newest sample sits at the right edge, sliding left.
                                     Some(s) => (i as f32 - s) / (m.max(2) - 1) as f32 * bw,
                                     // Centre of category slot `i`, matching the x labels.
-                                    None => (i as f32 + 0.5) / m as f32 * bw,
+                                    None => slot_frac(&xs, i, m) * bw,
                                 };
                                 (x, bh - norm(*v, lo, hi) * bh)
                             })
@@ -309,7 +330,7 @@ impl LineChart {
                 });
                 if let Some(st) = xh.clone() {
                     if let Some(i) = cur {
-                        let x = (i as f32 + 0.5) / n as f32 * bw;
+                        let x = slot_frac(&xs, i, n) * bw;
                         stroke(w, b.origin, &[(x, 0.0), (x, bh)], 1.0, hair, false);
                         for (c, vals, (lo, hi)) in &lines {
                             if let Some(v) = vals.get(i) {
@@ -321,7 +342,7 @@ impl LineChart {
                     w.on_mouse_event(move |e: &gpui::MouseMoveEvent, _, w, cx| {
                         let next = b.contains(&e.position).then(|| {
                             let fx = f32::from(e.position.x - b.origin.x) / f32::from(b.size.width);
-                            ((fx * n as f32) as usize).min(n.saturating_sub(1))
+                            nearest_slot(&xs, fx, n)
                         });
                         if *st.read(cx) != next {
                             st.update(cx, |v, _| *v = next);
@@ -343,11 +364,18 @@ impl LineChart {
         ));
 
         if let Some(i) = cur {
-            let label = self
-                .labels
-                .get(i)
-                .map(|l| l.to_string())
-                .unwrap_or_default();
+            let label = match self
+                .time
+                .as_ref()
+                .and_then(|(s, o)| s.get(i).map(|t| (*t, *o)))
+            {
+                Some((t, o)) => dodai_charts_core::timeaxis::format_datetime(t, o),
+                None => self
+                    .labels
+                    .get(i)
+                    .map(|l| l.to_string())
+                    .unwrap_or_default(),
+            };
             let mut tip = label_style(&t, div())
                 .absolute()
                 .top(px(t.spacing.xs))
@@ -383,9 +411,17 @@ impl LineChart {
                 let c = hsla(series_color(&t, s, si));
                 let m = s.values.len();
                 for (i, v) in s.values.iter().enumerate() {
-                    let fx = (i as f32 + 0.5) / m as f32;
+                    let fx = slot_frac(&xs_hover, i, m);
                     let fy = 1.0 - norm(*v, lo, hi);
                     let label = self.labels.get(i).cloned().unwrap_or_default();
+                    let label = match self
+                        .time
+                        .as_ref()
+                        .and_then(|(s, o)| s.get(i).map(|t| (*t, *o)))
+                    {
+                        Some((t, o)) => dodai_charts_core::timeaxis::format_datetime(t, o).into(),
+                        None => label,
+                    };
                     plot = plot.child(
                         div()
                             .id((SharedString::from(format!("{}-{si}-{i}", self.id)), i))
@@ -407,18 +443,20 @@ impl LineChart {
                 }
             }
         }
-        let x_labels: Vec<SharedString> = if self.labels.len() == n {
+        let time_row = self.time.as_ref().and_then(|(s, o)| time_row(&t, s, *o));
+        let x_labels: Vec<SharedString> = if time_row.is_some() {
+            Vec::new()
+        } else if self.labels.len() == n {
             self.labels.clone()
         } else {
             Vec::new()
         };
         let mut root = div().flex().flex_col().gap(px(t.spacing.sm)).w_full();
-        let left = framed(
-            &t,
-            ticks.iter().map(|v| fmt_with(&self.fmt, *v)).collect(),
-            x_labels,
-            plot,
-        );
+        let ylab: Vec<String> = ticks.iter().map(|v| fmt_with(&self.fmt, *v)).collect();
+        let left = match time_row {
+            Some(row) => crate::charts::framed_row(&t, ylab, Some(row), plot),
+            None => framed(&t, ylab, x_labels, plot),
+        };
         if ticks2.is_empty() {
             root = root.child(left);
         } else {
@@ -523,5 +561,108 @@ mod dash_tests {
     #[test]
     fn first_series_stays_solid() {
         assert!(dash_pattern(0).is_none() && dash_pattern(1).is_some());
+    }
+}
+
+/// Inset so end markers are not clipped by the plot edge.
+const TIME_PAD: f32 = 0.03;
+
+/// Horizontal fractions (0..1) of each timestamp, or `None` if fewer than two distinct finite
+/// times (the chart then falls back to equal slots). Pure.
+pub(crate) fn time_fracs(stamps: &[f64]) -> Option<Vec<f32>> {
+    let fin = || stamps.iter().copied().filter(|t| t.is_finite());
+    let lo = fin().fold(f64::INFINITY, f64::min);
+    let hi = fin().fold(f64::NEG_INFINITY, f64::max);
+    if hi.partial_cmp(&lo) != Some(std::cmp::Ordering::Greater) {
+        return None;
+    }
+    Some(
+        stamps
+            .iter()
+            .map(|t| {
+                let f = dodai_charts_core::timeaxis::frac(*t, lo, hi);
+                TIME_PAD + f * (1.0 - 2.0 * TIME_PAD)
+            })
+            .collect(),
+    )
+}
+
+/// Fraction of sample `i` of `m`: by timestamp when set, else the centre of equal slot `i`.
+pub(crate) fn slot_frac(xs: &Option<Vec<f32>>, i: usize, m: usize) -> f32 {
+    xs.as_ref()
+        .and_then(|x| x.get(i).copied())
+        .unwrap_or((i as f32 + 0.5) / m.max(1) as f32)
+}
+
+/// Index of the sample nearest to pointer fraction `fx`.
+pub(crate) fn nearest_slot(xs: &Option<Vec<f32>>, fx: f32, n: usize) -> usize {
+    match xs {
+        Some(x) if !x.is_empty() => x
+            .iter()
+            .enumerate()
+            .min_by(|a, b| (a.1 - fx).abs().total_cmp(&(b.1 - fx).abs()))
+            .map_or(0, |(i, _)| i),
+        _ => ((fx * n as f32) as usize).min(n.saturating_sub(1)),
+    }
+}
+
+/// The x-axis label row for a time axis: calendar ticks placed by position.
+fn time_row(t: &dodai_core::Theme, stamps: &[f64], offset: i32) -> Option<gpui::Div> {
+    time_fracs(stamps)?;
+    let fin = || stamps.iter().copied().filter(|v| v.is_finite());
+    let lo = fin().fold(f64::INFINITY, f64::min);
+    let hi = fin().fold(f64::NEG_INFINITY, f64::max);
+    let cell = 72.0;
+    let ticks = dodai_charts_core::timeaxis::ticks(lo, hi, 6, offset);
+    let line = (t.typography.size_xs * 1.5).ceil();
+    let mut row = label_style(t, div()).relative().h(px(line)).w_full();
+    for k in ticks {
+        let f = TIME_PAD + dodai_charts_core::timeaxis::frac(k.t, lo, hi) * (1.0 - 2.0 * TIME_PAD);
+        // Skip a label whose box would spill over the y-axis gutter or the right edge.
+        if !(0.07..=0.93).contains(&f) {
+            continue;
+        }
+        row = row.child(
+            div()
+                .absolute()
+                .left(relative(f))
+                .ml(px(-cell / 2.0))
+                .w(px(cell))
+                .flex()
+                .justify_center()
+                .child(k.label),
+        );
+    }
+    Some(row)
+}
+
+#[cfg(test)]
+mod time_tests {
+    use super::*;
+
+    #[test]
+    fn fractions_follow_the_clock_not_the_index() {
+        let f = time_fracs(&[0.0, 10.0, 100.0]).unwrap();
+        assert!((f[0] - TIME_PAD).abs() < 1e-6 && (f[2] - (1.0 - TIME_PAD)).abs() < 1e-6);
+        assert!(
+            f[1] - f[0] < f[2] - f[1],
+            "a 10 s gap is narrower than a 90 s gap"
+        );
+    }
+
+    #[test]
+    fn degenerate_stamps_fall_back_to_slots() {
+        assert!(time_fracs(&[]).is_none());
+        assert!(time_fracs(&[5.0, 5.0]).is_none());
+        assert!(time_fracs(&[f64::NAN, 1.0]).is_none());
+        assert_eq!(slot_frac(&None, 1, 4), 0.375);
+    }
+
+    #[test]
+    fn pointer_snaps_to_the_nearest_timestamp() {
+        let xs = time_fracs(&[0.0, 10.0, 100.0]);
+        assert_eq!(nearest_slot(&xs, 0.2, 3), 1);
+        assert_eq!(nearest_slot(&xs, 0.9, 3), 2);
+        assert_eq!(nearest_slot(&None, 0.9, 4), 3);
     }
 }
