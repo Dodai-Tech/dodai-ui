@@ -25,7 +25,12 @@ fn mesh_pixels(t: &Theme, w: usize, h: usize) -> Vec<u8> {
         let strength = t.surface_style.backdrop.max(0.7);
         crate::backdrop::pixels(p.background, t.surface_style.wash, strength, w, h)
             .chunks_exact(4)
-            .map(|c| dodai_core::Color::rgba(c[0], c[1], c[2], 255))
+            .map(|c| dodai_core::Color {
+                r: c[0],
+                g: c[1],
+                b: c[2],
+                a: 255,
+            })
             .collect()
     } else {
         vec![p.background.mix(p.surface_raised, 0.5); w * h]
