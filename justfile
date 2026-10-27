@@ -140,9 +140,11 @@ check:
 
 fmt:
     cargo fmt --all
+    cd crates/dodai-freya && cargo fmt
 
 fmt-check:
     cargo fmt --all -- --check
+    cd crates/dodai-freya && cargo fmt --check
 
 clippy:
     cargo clippy --workspace --all-targets -- -D warnings
@@ -154,6 +156,7 @@ check-all: fmt clippy test test-nu
 
 # freya is its own workspace (own Skia, own lock): not covered by the workspace recipes
 check-freya:
+    cd crates/dodai-freya && cargo fmt --check
     cd crates/dodai-freya && cargo clippy --locked --all-targets -- -D warnings
     cd crates/dodai-freya && cargo test --locked
 
