@@ -196,13 +196,16 @@ pub fn cyber_shapes(id: IconId, modifier: Option<Modifier>) -> Option<Vec<(Point
 mod tests {
     use super::*;
 
+    #[cfg(feature = "material")]
     fn ink(g: &Glyph, px: u32) -> usize {
         g.coverage(px).iter().filter(|&&a| a > 127).count()
     }
 
+    #[cfg(all(feature = "cyberpunk", feature = "material", feature = "neobrutalism"))]
     const PACKS: [Pack; 3] = [Pack::Stroked, Pack::Material, Pack::Bold];
 
     /// Every id of the shared vocabulary draws in every pack: that is what the type promises.
+    #[cfg(all(feature = "cyberpunk", feature = "material", feature = "neobrutalism"))]
     #[test]
     fn every_id_draws_in_every_pack() {
         for pack in PACKS {
@@ -214,6 +217,7 @@ mod tests {
         }
     }
 
+    #[cfg(all(feature = "cyberpunk", feature = "material", feature = "neobrutalism"))]
     #[test]
     fn chains_end_in_a_pack_that_covers_everything() {
         for pack in PACKS {
@@ -230,6 +234,7 @@ mod tests {
         }
     }
 
+    #[cfg(all(feature = "cyberpunk", feature = "material", feature = "neobrutalism"))]
     #[test]
     fn every_pack_draws_ink() {
         for pack in PACKS {

@@ -3,12 +3,15 @@
 //! in the three official styles (feature-gated so you only compile what you use).
 //!
 //! ```
+//! # #[cfg(feature = "material")]
+//! # {
 //! use dodai_icons::material::{outlined, MaterialSymbol};
 //! let home = outlined::get(MaterialSymbol::Home).unwrap();
 //! assert!(home.svg().starts_with("<svg"));
 //! // Flattened to polygons on a 24×24 grid, for renderers without an SVG parser.
 //! assert!(!home.polygons().is_empty());
 //! assert!(outlined::get_fill(MaterialSymbol::Home).is_some());
+//! # }
 //! ```
 //!
 //! Icon artwork © Google, [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0).
