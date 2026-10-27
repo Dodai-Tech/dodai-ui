@@ -17,13 +17,15 @@ thread_local! {
     static CLAIMS: RefCell<HashMap<WindowId, HashMap<ElementId, u32>>> = RefCell::default();
 }
 
-/// The next free instance number for `id` in this frame. The tally is cleared before the next
-/// frame is drawn, so the same component keeps the same number while the layout is stable.
-fn claim(w: &mut Window, id: &ElementId) -> u32 {
+/// The next free instance number for `id` in this draw. The tally is cleared as soon as the draw
+/// that started it ends, so the same component keeps the same number while the layout is stable.
+/// (Clearing "before the next frame" is not enough: input events can draw several times between
+/// two frames, and every extra draw would hand out new numbers, restarting every instrument.)
+fn claim(w: &mut Window, cx: &mut App, id: &ElementId) -> u32 {
     let win = w.window_handle().window_id();
     let fresh = CLAIMS.with(|c| !c.borrow().contains_key(&win));
     if fresh {
-        w.on_next_frame(move |_, _| {
+        w.defer(cx, move |_, _| {
             CLAIMS.with(|c| {
                 c.borrow_mut().remove(&win);
             });
@@ -158,13 +160,13 @@ impl Follow {
     }
     /// The state key of this component in the current frame: its id, plus the instance number
     /// for call-site ids.
-    pub(crate) fn element_id(&self, w: &mut Window) -> ElementId {
+    pub(crate) fn element_id(&self, w: &mut Window, cx: &mut App) -> ElementId {
         match &self.slot {
             Some(slot) => {
                 let n = match slot.get() {
                     Some(n) => n,
                     None => {
-                        let n = claim(w, &self.id);
+                        let n = claim(w, cx, &self.id);
                         slot.set(Some(n));
                         n
                     }
@@ -242,7 +244,7 @@ fn state(
     let spring = Spring::from_response(secs / animation_speed(), bounce);
     // A value starts at zero and sweeps up to its reading, like an instrument's self-test.
     let start = if angle { target } else { 0.0 };
-    let key = f.element_id(w);
+    let key = f.element_id(w, cx);
     let st = w.with_id(key, |w| {
         w.use_keyed_state(("needle", u32::from(part)), cx, move |_, _| Needle {
             response,
@@ -334,7 +336,7 @@ pub(crate) fn follow_all(w: &mut Window, cx: &mut App, f: &Follow, target: &[f32
         (secs * 1000.0 / animation_speed()) as u32,
         (bounce.min(0.15) * 1000.0) as u32,
     );
-    let key = f.element_id(w);
+    let key = f.element_id(w, cx);
     let st = w.with_id(key, |w| {
         w.use_keyed_state(("many", 0u32), cx, |_, _| Many {
             sig,
@@ -443,5 +445,47 @@ pub(crate) fn follow_rows(w: &mut Window, cx: &mut App, f: &Follow, rows: &mut [
     let mut shown = follow_all(w, cx, f, &flat).into_iter();
     for v in rows.iter_mut().flatten() {
         *v = shown.next().unwrap_or(*v);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use gpui::{div, prelude::*, px, size, Context, Render, TestAppContext};
+
+    thread_local! {
+        static KEYS: RefCell<Vec<Vec<String>>> = const { RefCell::new(Vec::new()) };
+    }
+
+    /// Builds three instruments from one source line each draw, like a loop in a showcase.
+    struct Host;
+
+    impl Render for Host {
+        fn render(&mut self, w: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+            let keys = (0..3)
+                .map(|_| Follow::here().element_id(w, cx).to_string())
+                .collect();
+            KEYS.with(|k| k.borrow_mut().push(keys));
+            div()
+        }
+    }
+
+    /// Input events can draw several times between two frames. Every draw must hand the same
+    /// instance numbers to the same instruments, or each one restarts from zero.
+    #[gpui::test]
+    fn instance_numbers_survive_extra_draws(cx: &mut TestAppContext) {
+        KEYS.with(|k| k.borrow_mut().clear());
+        let (_, vcx) = cx.add_window_view(|_, _| Host);
+        vcx.simulate_resize(size(px(100.0), px(100.0)));
+        vcx.run_until_parked();
+        for _ in 0..3 {
+            vcx.update(|w, cx| w.draw(cx).clear());
+            vcx.run_until_parked();
+        }
+        let all = KEYS.with(|k| k.borrow().clone());
+        assert!(all.len() >= 4, "drew {} times", all.len());
+        for k in &all {
+            assert_eq!(k, &all[0], "instance numbers changed between draws");
+        }
     }
 }

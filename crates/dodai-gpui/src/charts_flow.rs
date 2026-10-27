@@ -103,7 +103,7 @@ impl Funnel {
         )
         .absolute()
         .size_full();
-        let row_key = self.follow.element_id(window);
+        let row_key = self.follow.element_id(window, cx);
         let mut labels = div().absolute().size_full().flex().flex_col();
         for (i, (name, v)) in self.stages.iter().enumerate() {
             let pct = fr[i] * 100.0;
