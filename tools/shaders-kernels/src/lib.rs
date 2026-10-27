@@ -17,10 +17,10 @@ extern crate core as std;
 use glam::{UVec3, Vec2 as GVec2, Vec4};
 use spirv_std::spirv;
 
-#[path = "../../dodai-shaders/src/ctx.rs"]
+#[path = "../../../crates/dodai-shaders/src/ctx.rs"]
 pub mod ctx;
 pub mod frame;
-#[path = "../../dodai-shaders/src/math.rs"]
+#[path = "../../../crates/dodai-shaders/src/math.rs"]
 pub mod math;
 pub use ctx::ShaderPalette;
 pub mod prelude {
@@ -52,35 +52,35 @@ impl ShaderInfo {
     }
 }
 
-#[path = "../../dodai-shaders/src/shaders/blade.rs"]
+#[path = "../../../crates/dodai-shaders/src/shaders/blade.rs"]
 pub mod blade;
-#[path = "../../dodai-shaders/src/shaders/cyberpunk.rs"]
+#[path = "../../../crates/dodai-shaders/src/shaders/cyberpunk.rs"]
 pub mod cyberpunk;
-#[path = "../../dodai-shaders/src/shaders/dmt.rs"]
+#[path = "../../../crates/dodai-shaders/src/shaders/dmt.rs"]
 pub mod dmt;
-#[path = "../../dodai-shaders/src/shaders/extra.rs"]
+#[path = "../../../crates/dodai-shaders/src/shaders/extra.rs"]
 pub mod extra;
-#[path = "../../dodai-shaders/src/shaders/fx.rs"]
+#[path = "../../../crates/dodai-shaders/src/shaders/fx.rs"]
 pub mod fx;
-#[path = "../../dodai-shaders/src/shaders/ghibli.rs"]
+#[path = "../../../crates/dodai-shaders/src/shaders/ghibli.rs"]
 pub mod ghibli;
-#[path = "../../dodai-shaders/src/shaders/ghibli2.rs"]
+#[path = "../../../crates/dodai-shaders/src/shaders/ghibli2.rs"]
 pub mod ghibli2;
-#[path = "../../dodai-shaders/src/shaders/ghostty.rs"]
+#[path = "../../../crates/dodai-shaders/src/shaders/ghostty.rs"]
 pub mod ghostty;
-#[path = "../../dodai-shaders/src/shaders/material.rs"]
+#[path = "../../../crates/dodai-shaders/src/shaders/material.rs"]
 pub mod material;
-#[path = "../../dodai-shaders/src/shaders/matrix.rs"]
+#[path = "../../../crates/dodai-shaders/src/shaders/matrix.rs"]
 pub mod matrix;
-#[path = "../../dodai-shaders/src/shaders/nature.rs"]
+#[path = "../../../crates/dodai-shaders/src/shaders/nature.rs"]
 pub mod nature;
-#[path = "../../dodai-shaders/src/shaders/pixel.rs"]
+#[path = "../../../crates/dodai-shaders/src/shaders/pixel.rs"]
 pub mod pixel;
-#[path = "../../dodai-shaders/src/shaders/pixel2.rs"]
+#[path = "../../../crates/dodai-shaders/src/shaders/pixel2.rs"]
 pub mod pixel2;
-#[path = "../../dodai-shaders/src/shaders/retro.rs"]
+#[path = "../../../crates/dodai-shaders/src/shaders/retro.rs"]
 pub mod retro;
-#[path = "../../dodai-shaders/src/shaders/retro2.rs"]
+#[path = "../../../crates/dodai-shaders/src/shaders/retro2.rs"]
 pub mod retro2;
 
 /// Per-dispatch constants. Mirrored byte for byte by the host.

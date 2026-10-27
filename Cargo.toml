@@ -10,7 +10,6 @@ members = [
     "crates/dodai-charts-core",
     "crates/dodai-fx",
     "crates/dodai-shaders",
-    "crates/dodai-shaders-kernels",
     "crates/dodai-icons",
     "crates/dodai-ratatui",
     "crates/dodai-iced",
@@ -25,7 +24,7 @@ members = [
 ]
 resolver = "2"
 # Own workspace (own Skia, own lockfile): see crates/dodai-freya/Cargo.toml.
-exclude = ["crates/dodai-freya"]
+exclude = ["crates/dodai-freya", "tools/shaders-kernels"]
 
 [workspace.package]
 version      = "0.1.0"

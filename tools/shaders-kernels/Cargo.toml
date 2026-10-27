@@ -1,12 +1,13 @@
 [package]
 name         = "dodai-shaders-kernels"
-version.workspace      = true
+version      = "0.1.0"
 edition      = "2024"
-authors.workspace      = true
-license.workspace      = true
-repository.workspace   = true
+license      = "MIT"
 description  = "GPU kernels for dodai-shaders: the same Rust shader sources, compiled to WGSL with rust-gpu"
 publish      = false
+
+# Built by cargo-gpu (rust-gpu, its own nightly), never with the main workspace.
+[workspace]
 
 [lints.rust]
 unexpected_cfgs = { level = "allow", check-cfg = ['cfg(target_arch, values("spirv"))'] }

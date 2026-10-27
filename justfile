@@ -39,7 +39,7 @@ build-shaders:
 # nightly and builds the codegen backend (~5 min): `cargo install cargo-gpu`.
 build-kernels:
     nu scripts/gen-kernels.nu
-    cd crates/dodai-shaders-kernels && cargo gpu build --shader-crate . --output-dir ../../target/kernels --auto-install-rust-toolchain --target spirv-unknown-naga-wgsl
+    cd tools/shaders-kernels && cargo gpu build --shader-crate . --output-dir ../../target/kernels --auto-install-rust-toolchain --target spirv-unknown-naga-wgsl
     cp target/kernels/dodai_shaders_kernels.wgsl crates/dodai-shaders/kernels.wgsl
 
 # Render every shader to PPM files (GPU): just dump-shaders /tmp/dump 2.0

@@ -1,5 +1,5 @@
 #!/usr/bin/env nu
-# Regenerates crates/dodai-shaders-kernels/src/entries.rs (one GPU entry point per shader) from
+# Regenerates tools/shaders-kernels/src/entries.rs (one GPU entry point per shader) from
 # the ShaderInfo tables in crates/dodai-shaders/src/shaders (the host catalogue reads the same
 # tables at run time, so there is nothing else to generate).
 
@@ -31,7 +31,7 @@ def main [] {
         + ($gens | each {|r| $"gen_kernel!\(($r.id), ($r.mod)::($r.func)\);\n" } | str join)
         + ($posts | each {|r| $"post_kernel!\(($r.id), ($r.mod)::($r.func)\);\n" } | str join)
     )
-    $entries | save --force ($root | path join crates dodai-shaders-kernels src entries.rs)
+    $entries | save --force ($root | path join tools shaders-kernels src entries.rs)
 
     print $"($gens | length) generators, ($posts | length) post effects"
 }

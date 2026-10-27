@@ -8,7 +8,7 @@ on:
     branches: [main]
     paths:
       - "crates/dodai-shaders/src/shaders/**"
-      - "crates/dodai-shaders-kernels/**"
+      - "tools/shaders-kernels/**"
       - "crates/dodai-shaders/kernels.wgsl"
       - "scripts/gen-kernels.nu"
       - ".github/workflows/kernels.yml"
@@ -36,8 +36,8 @@ jobs:
           version: "*"
       - run: |
           nu scripts/gen-kernels.nu
-          cd crates/dodai-shaders-kernels
+          cd tools/shaders-kernels
           cargo gpu build --shader-crate . --output-dir ../../target/kernels --auto-install-rust-toolchain --target spirv-unknown-naga-wgsl
-          cp ../../target/kernels/dodai_shaders_kernels.wgsl ../dodai-shaders/kernels.wgsl
+          cp ../../target/kernels/dodai_shaders_kernels.wgsl ../../crates/dodai-shaders/kernels.wgsl
       - name: Fail if kernels.wgsl changed
-        run: git diff --exit-code -- crates/dodai-shaders/kernels.wgsl crates/dodai-shaders-kernels/src/entries.rs
+        run: git diff --exit-code -- crates/dodai-shaders/kernels.wgsl tools/shaders-kernels/src/entries.rs
