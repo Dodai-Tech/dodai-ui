@@ -46,6 +46,18 @@ fn charts(name: &'static str, v: Vec<f32>) -> Vec<AnyElement> {
         )
         .into_any_element(),
         StackedAreaChart::new([s(), s()]).into_any_element(),
+        RadialBar::new(
+            v.iter()
+                .enumerate()
+                .map(|(i, x)| (format!("r{i}"), *x, 10.0)),
+        )
+        .into_any_element(),
+        Candlestick::new(
+            format!("c-{name}"),
+            v.windows(2)
+                .map(|w| dodai_charts_core::candles::Candle::new(w[0], w[1], w[0], w[1])),
+        )
+        .into_any_element(),
     ];
     for st in GaugeStyle::ALL {
         out.push(

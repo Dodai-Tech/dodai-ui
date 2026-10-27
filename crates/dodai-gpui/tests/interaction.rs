@@ -860,3 +860,54 @@ fn scroll_area_thumb_drag_scrolls_the_content(cx: &mut TestAppContext) {
         "dragging the thumb scrolled the content: {top_before} -> {top_after}"
     );
 }
+
+#[gpui::test]
+fn accordion_header_click_toggles_the_body(cx: &mut TestAppContext) {
+    let vcx = mount(cx, |_, _| {
+        Accordion::new("acc")
+            .item("First", "body one")
+            .item("Second", "body two")
+            .into_any_element()
+    });
+    let (x, y, w, h0) = target(vcx);
+    click(vcx, x + w / 2.0, y + h0 / 4.0);
+    // let the open transition settle
+    settle(vcx);
+    let (_, _, _, h1) = target(vcx);
+    assert!(
+        h1 > h0,
+        "opening a section grows the accordion ({h0} -> {h1})"
+    );
+    click(vcx, x + w / 2.0, y + 8.0);
+    settle(vcx);
+    let (_, _, _, h2) = target(vcx);
+    assert!(h2 < h1, "closing shrinks it again ({h1} -> {h2})");
+}
+
+#[gpui::test]
+fn submenu_item_reports_parent_and_child(cx: &mut TestAppContext) {
+    let l = log();
+    let l2 = l.clone();
+    let vcx = mount(cx, move |_, _| {
+        let l = l2.clone();
+        Menu::new("sm")
+            .items([
+                MenuItem::new("Open"),
+                MenuItem::new("Share").submenu([MenuItem::new("Mail"), MenuItem::new("Link")]),
+            ])
+            .on_select(move |i, _, _| l.borrow_mut().push(i))
+            .into_any_element()
+    });
+    let (x, y, w, h) = target(vcx);
+    click(vcx, x + w / 2.0, y + h * 0.25);
+    assert_eq!(*l.borrow(), vec![0], "plain item selects by index");
+}
+
+/// Motion runs on the wall clock: wait it out, redrawing as we go.
+fn settle(vcx: &mut VisualTestContext) {
+    for _ in 0..12 {
+        std::thread::sleep(std::time::Duration::from_millis(80));
+        vcx.update(|_, cx| cx.refresh_windows());
+        vcx.run_until_parked();
+    }
+}

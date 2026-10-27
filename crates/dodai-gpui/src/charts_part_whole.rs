@@ -213,7 +213,7 @@ impl RadialBar {
             move |b: Bounds<Pixels>, _, w, _| {
                 let c = size / 2.0;
                 let ring = (size / 2.0 / (n as f32 + 1.0)).min(14.0);
-                for i in 0..n {
+                for i in 0..fr.len() {
                     let r = c - ring * (i as f32 + 0.5) - 2.0 * i as f32 - 1.0;
                     if r <= 1.0 {
                         break;
