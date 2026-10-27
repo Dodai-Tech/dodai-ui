@@ -256,6 +256,20 @@ jobs:
       - run: cargo install cargo-machete --locked
       - run: cargo machete
 
+  # Line-coverage floor for the engine crate (measured 82.7%; the gpui UI is covered by
+  # tests/interaction.rs and screenshots, so it is not gated).
+  coverage:
+    name: coverage floor
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-llvm-cov --locked
+      - run: cargo llvm-cov -p dodai-core --all-features --fail-under-lines 78
+
   nu-tests:
     name: nushell tests
     runs-on: ubuntu-latest
