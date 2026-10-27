@@ -29,6 +29,8 @@ pub struct LineChart {
     points: bool,
     crosshair: bool,
     legend: bool,
+    toggleable: bool,
+    patterns: bool,
     y_bounds: Option<(f32, f32)>,
     fmt: Option<NumFmt>,
     grid: bool,
@@ -70,6 +72,8 @@ impl LineChart {
             points: true,
             crosshair: false,
             legend: true,
+            toggleable: false,
+            patterns: false,
             y_bounds: None,
             fmt: None,
             grid: true,
@@ -156,12 +160,24 @@ impl LineChart {
         self.legend = l;
         self
     }
+    /// Draw each series with its own dash pattern (solid, dashed, dotted, dash-dot), so the
+    /// lines stay apart without relying on colour (colour-blind and print safe).
+    pub fn patterns(mut self, on: bool) -> Self {
+        self.patterns = on;
+        self
+    }
+    /// Clicking a legend entry hides or shows that series; the axis refits to what is left.
+    pub fn toggleable(mut self, on: bool) -> Self {
+        self.toggleable = on;
+        self
+    }
 }
 
 impl LineChart {
     fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let g = crate::motion::grow(window, cx, "LineChart");
+        let mut legend_all: Option<(Vec<Series>, crate::charts::Hidden)> = None;
         {
             let np = self.series.len();
             let all: Vec<Series> = self
@@ -172,8 +188,18 @@ impl LineChart {
                 .collect();
             let mut shown =
                 crate::instruments_motion::follow_series(window, cx, &self.follow, &all);
-            self.secondary = shown.split_off(np);
-            self.series = shown;
+            if self.toggleable {
+                let (visible, h, pinned) = crate::charts::toggled(window, cx, &self.id, shown);
+                let off = h.read(cx).clone();
+                let hid = |i: usize| off.get(i).copied().unwrap_or(false);
+                let ns = (0..np).filter(|i| !hid(*i)).count();
+                self.secondary = visible[ns..].to_vec();
+                self.series = visible[..ns].to_vec();
+                legend_all = Some((pinned, h));
+            } else {
+                self.secondary = shown.split_off(np);
+                self.series = shown;
+            }
         }
         // A live window slides left between samples.
         let scroll = self
@@ -204,6 +230,7 @@ impl LineChart {
         let style = t.chart_style();
         let grid = hsla(style.grid_color);
         let glow = self.glow.resolve(&t);
+        let patterns = self.patterns;
         let (area, smooth, stepped, sw, show_grid) = (
             self.area,
             self.smooth,
@@ -239,7 +266,7 @@ impl LineChart {
                 }
                 let mask = gpui::ContentMask { bounds: shown };
                 w.with_content_mask(Some(mask), |w| {
-                    for (c, vals, (lo, hi)) in &lines {
+                    for (li, (c, vals, (lo, hi))) in lines.iter().enumerate() {
                         let (lo, hi) = (*lo, *hi);
                         let m = vals.len();
                         let raw: Vec<(f32, f32)> = vals
@@ -270,7 +297,14 @@ impl LineChart {
                             poly.push((p[0].0, bh));
                             fill(w, b.origin, &poly, scale_alpha(*c, style.area_alpha));
                         }
-                        glow_stroke(w, b.origin, &p, sw, *c, glow);
+                        match dash_pattern(li).filter(|_| patterns) {
+                            Some((on, off)) => {
+                                for seg in dashed(&p, on * sw.max(1.0), off * sw.max(1.0)) {
+                                    glow_stroke(w, b.origin, &seg, sw, *c, glow);
+                                }
+                            }
+                            None => glow_stroke(w, b.origin, &p, sw, *c, glow),
+                        }
                     }
                 });
                 if let Some(st) = xh.clone() {
@@ -398,7 +432,12 @@ impl LineChart {
                 .children(ticks2.iter().rev().map(|v| div().child(fmt_num(*v))));
             root = root.child(div().flex().w_full().child(left.flex_1()).child(right));
         }
-        if self.legend && all.len() > 1 {
+        if let (true, Some((pinned, h))) = (self.legend, legend_all) {
+            if pinned.len() > 1 {
+                root =
+                    root.child(Legend::of_series(&t, &pinned).toggle(format!("{}-lg", self.id), h));
+            }
+        } else if self.legend && all.len() > 1 {
             root = root.child(Legend::of_series(&t, &all));
         }
         titled(&t, self.title.clone(), root)
@@ -406,3 +445,83 @@ impl LineChart {
 }
 
 crate::entry_render!(LineChart);
+
+/// Dash pattern `(on, off)` in stroke widths for series `i`; `None` = solid.
+pub(crate) fn dash_pattern(i: usize) -> Option<(f32, f32)> {
+    match i % 4 {
+        0 => None,
+        1 => Some((4.0, 3.0)),
+        2 => Some((1.0, 2.5)),
+        _ => Some((5.0, 2.0)),
+    }
+}
+
+/// Split a polyline into dashes `on` long separated by `off` gaps (px). Pure.
+pub(crate) fn dashed(p: &[(f32, f32)], on: f32, off: f32) -> Vec<Vec<(f32, f32)>> {
+    let (on, off) = (on.max(0.5), off.max(0.5));
+    let mut out = Vec::new();
+    let mut cur: Vec<(f32, f32)> = Vec::new();
+    let (mut drawing, mut left) = (true, on);
+    for pair in p.windows(2) {
+        let (a, b) = (pair[0], pair[1]);
+        let len = ((b.0 - a.0).powi(2) + (b.1 - a.1).powi(2)).sqrt();
+        if len <= f32::EPSILON {
+            continue;
+        }
+        let mut at = 0.0;
+        if drawing && cur.is_empty() {
+            cur.push(a);
+        }
+        while at < len {
+            let step = (len - at).min(left);
+            at += step;
+            left -= step;
+            let q = (a.0 + (b.0 - a.0) * at / len, a.1 + (b.1 - a.1) * at / len);
+            if drawing {
+                cur.push(q);
+            }
+            if left <= f32::EPSILON {
+                if drawing {
+                    out.push(std::mem::take(&mut cur));
+                } else {
+                    cur.push(q);
+                }
+                drawing = !drawing;
+                left = if drawing { on } else { off };
+            }
+        }
+    }
+    if cur.len() > 1 {
+        out.push(cur);
+    }
+    out
+}
+
+#[cfg(test)]
+mod dash_tests {
+    use super::*;
+
+    #[test]
+    fn dashes_cover_the_on_fraction_of_a_straight_line() {
+        let d = dashed(&[(0.0, 0.0), (100.0, 0.0)], 4.0, 6.0);
+        assert_eq!(d.len(), 10);
+        let covered: f32 = d.iter().map(|s| s.last().unwrap().0 - s[0].0).sum();
+        assert!((covered - 40.0).abs() < 0.5, "{covered}");
+    }
+
+    #[test]
+    fn dashes_follow_corners_and_survive_degenerate_input() {
+        let d = dashed(&[(0.0, 0.0), (5.0, 0.0), (5.0, 50.0)], 20.0, 5.0);
+        assert!(
+            d.iter().any(|s| s.len() > 2),
+            "a dash bends round the corner"
+        );
+        assert!(dashed(&[], 3.0, 3.0).is_empty());
+        assert!(dashed(&[(1.0, 1.0), (1.0, 1.0)], 3.0, 3.0).is_empty());
+    }
+
+    #[test]
+    fn first_series_stays_solid() {
+        assert!(dash_pattern(0).is_none() && dash_pattern(1).is_some());
+    }
+}

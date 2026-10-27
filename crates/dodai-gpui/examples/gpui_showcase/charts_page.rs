@@ -178,6 +178,8 @@ impl Showcase {
                         div().flex_1().min_w(px(300.0)).child(
                             LineChart::new("line", [a.clone(), b.clone()])
                                 .labels(months)
+                                .toggleable(true)
+                                .patterns(true)
                                 .area(true)
                                 .smooth(true)
                                 .crosshair(true)

@@ -24,6 +24,7 @@ pub struct BarChart {
     horizontal: bool,
     stacked: bool,
     legend: bool,
+    toggleable: bool,
     y_max: Option<f32>,
     fmt: Option<NumFmt>,
     value_labels: bool,
@@ -58,6 +59,7 @@ impl BarChart {
             horizontal: false,
             stacked: false,
             legend: true,
+            toggleable: false,
             y_max: None,
             fmt: None,
             value_labels: false,
@@ -113,6 +115,11 @@ impl BarChart {
     /// Show or hide the legend.
     pub fn legend(mut self, l: bool) -> Self {
         self.legend = l;
+        self
+    }
+    /// Clicking a legend entry hides or shows that series; the axis refits to what is left.
+    pub fn toggleable(mut self, on: bool) -> Self {
+        self.toggleable = on;
         self
     }
 }
@@ -325,6 +332,13 @@ impl BarChart {
         let g = crate::motion::grow(window, cx, "BarChart");
         self.series =
             crate::instruments_motion::follow_series(window, cx, &self.follow, &self.series);
+        let mut legend_all = None;
+        if self.toggleable {
+            let all = std::mem::take(&mut self.series);
+            let (visible, h, pinned) = crate::charts::toggled(window, cx, &self.id, all);
+            self.series = visible;
+            legend_all = Some((pinned, h));
+        }
         let ticks = nice_ticks(
             0.0,
             self.y_max
@@ -430,7 +444,12 @@ impl BarChart {
             .gap(px(t.spacing.sm))
             .w_full()
             .child(body);
-        if self.legend && self.series.len() > 1 {
+        if let (true, Some((pinned, h))) = (self.legend, legend_all) {
+            if pinned.len() > 1 {
+                root =
+                    root.child(Legend::of_series(&t, &pinned).toggle(format!("{}-lg", self.id), h));
+            }
+        } else if self.legend && self.series.len() > 1 {
             root = root.child(Legend::of_series(&t, &self.series));
         }
         titled(&t, self.title.clone(), root)

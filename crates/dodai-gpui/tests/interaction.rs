@@ -911,3 +911,44 @@ fn settle(vcx: &mut VisualTestContext) {
         vcx.run_until_parked();
     }
 }
+
+#[gpui::test]
+fn legend_click_hides_series_and_all_hidden_survives(cx: &mut TestAppContext) {
+    let vcx = mount(cx, |_, _| {
+        div()
+            .w(px(400.0))
+            .flex()
+            .flex_col()
+            .child(
+                LineChart::new(
+                    "tl",
+                    [
+                        Series::new("Alpha", [1.0, 5.0, 2.0]),
+                        Series::new("Beta", [9.0, 3.0, 4.0]),
+                    ],
+                )
+                .toggleable(true),
+            )
+            .child(
+                BarChart::new(
+                    "tb",
+                    [
+                        Series::new("Gamma", [1.0, 5.0]),
+                        Series::new("Delta", [9.0, 3.0]),
+                    ],
+                )
+                .toggleable(true),
+            )
+            .into_any_element()
+    });
+    let (x, y, w, h) = target(vcx);
+    // legends are the last row of each chart: click the left entries from the bottom up
+    for yy in [y + h - 6.0, y + h / 2.0 - 8.0] {
+        for xx in [x + 8.0, x + 70.0, x + 8.0, x + 70.0, x + 8.0] {
+            click(vcx, xx, yy);
+        }
+    }
+    settle(vcx);
+    let (_, _, w2, _) = target(vcx);
+    assert_eq!(w, w2, "toggling never changes the chart width");
+}

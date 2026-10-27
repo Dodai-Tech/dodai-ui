@@ -216,10 +216,45 @@ pub(crate) fn y_range(
 
 // ─────────────────────────────── Legend ───────────────────────────────
 
+/// Which series of a chart the user switched off by clicking its legend entry.
+pub(crate) type Hidden = gpui::Entity<Vec<bool>>;
+
+/// Pin every series to its palette colour (so hiding one does not recolour the rest), then drop
+/// the hidden ones. Returns the visible series, the legend state and the full pinned list.
+pub(crate) fn toggled(
+    window: &mut Window,
+    cx: &mut App,
+    id: &str,
+    all: Vec<Series>,
+) -> (Vec<Series>, Hidden, Vec<Series>) {
+    let t = theme_of(cx);
+    let hidden: Hidden =
+        window.use_keyed_state(SharedString::from(format!("{id}-hidden")), cx, |_, _| {
+            Vec::new()
+        });
+    let pinned: Vec<Series> = all
+        .into_iter()
+        .enumerate()
+        .map(|(i, mut s)| {
+            s.color = Some(series_color(&t, &s, i));
+            s
+        })
+        .collect();
+    let off = hidden.read(cx).clone();
+    let shown = pinned
+        .iter()
+        .enumerate()
+        .filter(|(i, _)| !off.get(*i).copied().unwrap_or(false))
+        .map(|(_, s)| s.clone())
+        .collect();
+    (shown, hidden, pinned)
+}
+
 /// Colour swatch + name row, shared by all multi-series charts.
 #[derive(IntoElement)]
 pub struct Legend {
     items: Vec<(SharedString, Color)>,
+    toggle: Option<(SharedString, Hidden)>,
 }
 
 impl Legend {
@@ -227,7 +262,13 @@ impl Legend {
     pub fn new(items: impl IntoIterator<Item = (SharedString, Color)>) -> Self {
         Self {
             items: items.into_iter().collect(),
+            toggle: None,
         }
+    }
+    /// Make the entries clickable: a click hides or shows that series (state in `hidden`).
+    pub(crate) fn toggle(mut self, id: impl Into<SharedString>, hidden: Hidden) -> Self {
+        self.toggle = Some((id.into(), hidden));
+        self
     }
     /// Legend for `series` using palette colours.
     pub fn of_series(t: &Theme, series: &[Series]) -> Self {
@@ -250,6 +291,12 @@ impl RenderOnce for Legend {
 impl Legend {
     fn build(self, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        use gpui::{InteractiveElement as _, StatefulInteractiveElement as _};
+        let toggle = self.toggle;
+        let off: Vec<bool> = toggle
+            .as_ref()
+            .map(|(_, h)| h.read(cx).clone())
+            .unwrap_or_default();
         div()
             .flex()
             .flex_wrap()
@@ -257,18 +304,38 @@ impl Legend {
             .font_family(first_family(t.typography.body))
             .text_size(px(t.typography.size_xs))
             .text_color(hsla(t.palette.text_muted))
-            .children(self.items.into_iter().map(|(n, c)| {
-                div()
+            .children(self.items.into_iter().enumerate().map(|(i, (n, c))| {
+                let hidden = off.get(i).copied().unwrap_or(false);
+                let mut row = div()
+                    .id((
+                        toggle
+                            .as_ref()
+                            .map(|(id, _)| id.clone())
+                            .unwrap_or_else(|| "legend".into()),
+                        i,
+                    ))
                     .flex()
                     .items_center()
                     .gap(px(t.spacing.xs))
-                    .child(
-                        div()
-                            .w(px(t.sizes().legend_swatch))
-                            .h(px(t.sizes().legend_swatch))
-                            .bg(hsla(c)),
-                    )
-                    .child(n)
+                    .opacity(if hidden { 0.4 } else { 1.0 });
+                if let Some((_, h)) = toggle.clone() {
+                    row = row.cursor_pointer().on_click(move |_, _, cx| {
+                        h.update(cx, |v, cx| {
+                            if v.len() <= i {
+                                v.resize(i + 1, false);
+                            }
+                            v[i] = !v[i];
+                            cx.notify();
+                        })
+                    });
+                }
+                row.child(
+                    div()
+                        .w(px(t.sizes().legend_swatch))
+                        .h(px(t.sizes().legend_swatch))
+                        .bg(hsla(c)),
+                )
+                .child(n)
             }))
     }
 }
