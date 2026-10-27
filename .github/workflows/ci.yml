@@ -246,6 +246,16 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --locked -p dodai-core --all-features -p dodai-charts-core -p dodai-fx -p dodai-icons --all-targets
 
+  # Unused dependencies (cargo-machete scans every manifest, including freya and tools/).
+  machete:
+    name: unused dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo install cargo-machete --locked
+      - run: cargo machete
+
   nu-tests:
     name: nushell tests
     runs-on: ubuntu-latest

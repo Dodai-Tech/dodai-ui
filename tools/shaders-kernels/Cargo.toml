@@ -16,3 +16,7 @@ unexpected_cfgs = { level = "allow", check-cfg = ['cfg(target_arch, values("spir
 spirv-std = "0.11.0"
 glam      = { version = "0.34", default-features = false, features = ["bytemuck"] }
 bytemuck  = { version = "1.24.0", features = ["derive"] }
+
+# bytemuck is used by the files included with #[path] from dodai-shaders.
+[package.metadata.cargo-machete]
+ignored = ["bytemuck"]

@@ -20,6 +20,7 @@ install-tools:
     @command -v nu >/dev/null 2>&1 || cargo install nu --locked
     @command -v cargo-deny >/dev/null 2>&1 || cargo install cargo-deny --locked
     @command -v cargo-audit >/dev/null 2>&1 || cargo install cargo-audit --locked
+    @command -v cargo-machete >/dev/null 2>&1 || cargo install cargo-machete --locked
     @echo "✅ All tools installed!"
 
 # ── Build ─────────────────────────────────────────────────────────────────────
@@ -165,7 +166,7 @@ check-fuzz:
     cd fuzz && cargo check --bins
 
 # Every toolkit, every test: workspace (incl. bevy) + Nu scripts + freya + fuzz. Stops on the first failure.
-gate: check-all check-freya check-fuzz
+gate: check-all machete check-freya check-fuzz
     @echo "✅ Full gate passed (all toolkits)!"
 
 # Full pre-release gate: check-all + release build
@@ -463,6 +464,10 @@ deny:
 
 audit:
     cargo audit
+
+# Unused dependencies in every manifest (workspace, freya, tools, fuzz)
+machete:
+    cargo machete
 
 # Fuzz a target (needs nightly + cargo-fuzz): just fuzz svg_path
 fuzz target="svg_path" secs="60":
