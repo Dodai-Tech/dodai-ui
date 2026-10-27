@@ -210,6 +210,28 @@ publish: check-all
     cargo publish -p dodai-gpui
     cargo publish -p dodai-topcoat
 
+# Dry-run publish of every crate in dependency order (dependents only verify once their
+# dependencies are on crates.io; the first two catch metadata and size problems early)
+publish-dry: check-all
+    cargo publish --dry-run -p dodai-fx
+    cargo publish --dry-run -p dodai-core
+    cargo publish --dry-run -p dodai-icons
+    cargo publish --dry-run -p dodai-charts-core
+    cargo publish --dry-run -p dodai-shaders
+    cargo publish --dry-run -p dodai-ratatui
+    cargo publish --dry-run -p dodai-iced
+    cargo publish --dry-run -p dodai-gpui
+    cargo publish --dry-run -p dodai-topcoat
+
+# Line coverage (needs cargo-llvm-cov); writes target/llvm-cov/html
+coverage:
+    cargo llvm-cov --workspace --exclude dodai-bevy --html
+    @echo "→ target/llvm-cov/html/index.html"
+
+# Run the dependency update workflow on GitHub on demand (needs gh)
+deps-update-now:
+    gh workflow run deps-update.yml
+
 # Bump, then push commit + tag to GitHub (CI publishes and creates the GitHub release)
 release version: (bump version)
     git push --follow-tags origin "$(git branch --show-current)"
@@ -447,3 +469,101 @@ fuzz-smoke secs="10":
 # Regenerate dist/: W3C design tokens (JSON), CSS custom properties and the SVG icon pack.
 export:
     cargo run -q -p dodai-topcoat --example export -- dist
+
+# ── More remote recipes: tags per remote, force pulls, Gitea setup, first release ─────────
+
+# Push all tags to Gitea Starscream
+push-tags-gitea-starscream:
+    git push gitea-starscream --tags
+
+# Push all tags to Gitea Microlab
+push-tags-gitea-microlab:
+    git push gitea-microlab --tags
+
+# Force-push all tags to Gitea Starscream (moves existing tags)
+push-tags-gitea-starscream-force:
+    git push --force gitea-starscream --tags
+
+# Force-push all tags to Gitea Microlab (moves existing tags)
+push-tags-gitea-microlab-force:
+    git push --force gitea-microlab --tags
+
+# Make the local branch equal GitHub (origin): fetch, then hard reset. DISCARDS local commits!
+pull-force:
+    git fetch origin
+    git reset --hard "origin/$(git branch --show-current)"
+
+# Make the local branch equal Gitea Starscream. DISCARDS local commits!
+pull-gitea-starscream-force:
+    git fetch gitea-starscream
+    git reset --hard "gitea-starscream/$(git branch --show-current)"
+
+# Make the local branch equal Gitea Microlab. DISCARDS local commits!
+pull-gitea-microlab-force:
+    git fetch gitea-microlab
+    git reset --hard "gitea-microlab/$(git branch --show-current)"
+
+# Fetch every remote and make the local branch equal GitHub (origin is the source of truth). DISCARDS local commits!
+pull-all-force:
+    #!/usr/bin/env sh
+    for r in {{REMOTES}}; do
+        git remote get-url "$r" >/dev/null 2>&1 || { echo "↷ skipping $r (not configured)"; continue; }
+        git fetch "$r" || echo "⚠️  could not fetch $r"
+    done
+    git reset --hard "origin/$(git branch --show-current)"
+
+# Force-sync every Gitea instance with the local branch + tags (continues on failure)
+sync-all-gitea:
+    #!/usr/bin/env sh
+    {{PUSHFN}}
+    failed=""
+    for r in gitea-starscream gitea-microlab; do
+        git remote get-url "$r" >/dev/null 2>&1 || { echo "↷ skipping $r (not configured)"; continue; }
+        gpush --force "$r" "$(git branch --show-current)" || failed="$failed $r"
+        gpush --force "$r" --tags || failed="$failed $r-tags"
+    done
+    [ -n "$failed" ] && { echo "⚠️  Failed to sync:$failed"; exit 1; }
+    echo "✅ Every Gitea instance force-synced"
+
+# Add a Gitea remote and optionally push — interactive (nu script)
+setup-gitea url: _check-nu
+    nu scripts/setup_gitea.nu {{ url }}
+
+# Migrate this project to dual GitHub + Gitea hosting (interactive)
+migrate-gitea: _check-nu
+    nu scripts/migrate_to_gitea.nu
+
+# First release of the version already in Cargo.toml: gate, changelog, tag, push to GitHub only
+release-initial: check-release _check-git-cliff _check-nu (_release-initial "origin")
+
+# Same as release-initial, but pushes to every remote
+release-initial-all: check-release _check-git-cliff _check-nu (_release-initial REMOTES)
+
+[private]
+_release-initial remotes:
+    #!/usr/bin/env sh
+    remotes="{{ remotes }}"
+    set -e
+    version=$(nu scripts/version.nu)
+    tag="v$version"
+    nu scripts/ci/validate_tag.nu "$tag" >/dev/null
+    if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+        echo "❌ Tag $tag already exists. Use 'just release <new-version>' to bump."; exit 1
+    fi
+    if [ -n "$(git status --porcelain)" ]; then
+        echo "❌ Working tree is dirty — commit or stash first."; exit 1
+    fi
+    git-cliff --output CHANGELOG.md --tag "$tag"
+    git add CHANGELOG.md
+    git diff --cached --quiet || git commit -m "chore: release $tag"
+    git tag -a "$tag" -m "Release $tag"
+    echo "🏷️  Tagged $tag — pushing to: $remotes"
+    failed=""; skipped=""
+    for r in $remotes; do
+        git remote get-url "$r" >/dev/null 2>&1 || { echo "↷ skipping $r (not configured; see: just setup-remotes)"; skipped="$skipped $r"; continue; }
+        git push "$r" "$(git branch --show-current)" || failed="$failed $r"
+        git push "$r" "$tag" || failed="$failed $r"
+    done
+    [ -n "$skipped" ] && echo "ℹ️  Skipped:$skipped"
+    [ -n "$failed" ] && { echo "⚠️  Release $tag failed to push to:$failed"; exit 1; }
+    echo "✅ Release $tag pushed to: $remotes — Release workflows will start."
