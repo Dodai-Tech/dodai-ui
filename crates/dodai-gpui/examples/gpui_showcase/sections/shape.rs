@@ -739,7 +739,7 @@ impl Showcase {
                           hi: f32,
                           unit: &'static str,
                           f: fn(B, f32) -> B| {
-                div().w(px(280.0)).child(
+                div().w_full().max_w(px(280.0)).child(
                     Slider::new(id, v)
                         .range(lo, hi)
                         .step(0.25)
@@ -890,7 +890,11 @@ fn tune_slider(
         t,
         label,
         hint,
-        div().w(px(280.0)).child(slider).into_any_element(),
+        div()
+            .w_full()
+            .max_w(px(280.0))
+            .child(slider)
+            .into_any_element(),
     )
 }
 
@@ -917,13 +921,18 @@ fn setting(
     hint: &'static str,
     control: gpui::AnyElement,
 ) -> gpui::Div {
+    // Label column and control wrap onto two lines when the page is narrow; the control column
+    // may shrink to the page width so its hint wraps instead of overflowing.
     div()
         .flex()
+        .flex_wrap()
         .items_start()
-        .gap(px(t.spacing.lg))
+        .gap_x(px(t.spacing.lg))
+        .gap_y(px(t.spacing.xs))
         .child(
             div()
                 .w(px(120.0))
+                .flex_none()
                 .pt(px(t.spacing.sm))
                 .child(Label::new(label)),
         )
@@ -931,6 +940,10 @@ fn setting(
             div()
                 .flex()
                 .flex_col()
+                .flex_grow()
+                .flex_shrink()
+                .flex_basis(px(340.0))
+                .max_w_full()
                 .gap(px(t.spacing.xs))
                 .child(control)
                 .child(Muted::new(hint)),
@@ -1047,7 +1060,7 @@ fn shape_props(t: &dodai_core::Theme, glow: f32) -> gpui::Div {
     };
     div().flex().flex_col().gap(px(t.spacing.sm)).child(
         row().child(Label::new("Glow")).child(
-            div().w(px(200.0)).child(
+            div().w_full().max_w(px(200.0)).child(
                 Slider::new("glow-slider", glow)
                     .range(0.0, 2.0)
                     .step(0.05)
@@ -1080,15 +1093,26 @@ fn fx_amount(
         });
     div()
         .flex()
+        .flex_wrap()
         .items_start()
         .gap(gap)
-        .child(div().w(px(120.0)).pt(px(4.0)).child(Label::new(name)))
+        .child(
+            div()
+                .w(px(120.0))
+                .flex_none()
+                .pt(px(4.0))
+                .child(Label::new(name)),
+        )
         .child(
             div()
                 .flex()
                 .flex_col()
+                .flex_grow()
+                .flex_shrink()
+                .flex_basis(px(260.0))
+                .max_w_full()
                 .gap(px(2.0))
-                .child(div().w(px(260.0)).child(slider))
+                .child(div().w_full().max_w(px(260.0)).child(slider))
                 .child(Muted::new(fx_hint(id))),
         )
 }

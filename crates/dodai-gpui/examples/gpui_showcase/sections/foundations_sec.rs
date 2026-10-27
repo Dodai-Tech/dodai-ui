@@ -118,7 +118,8 @@ impl Showcase {
         );
         let mut section = self.section("Icons", cx).child(Muted::new(intro)).child(
             div()
-                .w(px(360.0))
+                .w_full()
+                .max_w(px(360.0))
                 .max_w_full()
                 .child(self.icon_search.clone()),
         );

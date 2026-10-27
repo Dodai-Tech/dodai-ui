@@ -183,7 +183,7 @@ impl Showcase {
                 )
                 .child(Muted::new("Scrollable"))
                 .child(
-                    div().w(px(360.0)).child(
+                    div().w_full().max_w(px(360.0)).child(
                         Tabs::new("tabs-scroll")
                             .labels([
                                 "Overview", "Activity", "Billing", "Settings", "Contacts", "Gigs",
@@ -689,7 +689,7 @@ impl Showcase {
                         ),
                     )
                     .child(
-                        div().w(px(320.0)).child(
+                        div().w_full().max_w(px(320.0)).child(
                             self.nav_items(&me, "nav-drawer")
                                 .into_iter()
                                 .fold(dodai_gpui::NavigationDrawer::new(), |d, it| d.item(it)),
