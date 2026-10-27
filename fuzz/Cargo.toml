@@ -11,8 +11,7 @@ cargo-fuzz = true
 libfuzzer-sys = "0.4"
 dodai = { path = "../crates/dodai", features = ["cyberpunk", "material", "neobrutalism", "aurora", "icons"] }
 dodai-charts-core = { path = "../crates/dodai-charts-core" }
-dodai-cyberpunk-icons = { path = "../crates/dodai-cyberpunk-icons" }
-dodai-material-icons = { path = "../crates/dodai-material-icons" }
+dodai-icons = { path = "../crates/dodai-icons", features = ["cyberpunk", "material"] }
 
 # Not part of the main workspace (needs nightly).
 [workspace]

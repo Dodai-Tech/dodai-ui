@@ -5,10 +5,6 @@
 //! with a uniform stroke. Adapters stroke the polylines in the theme colour;
 //! [`svg`] / [`sprite`] export the same geometry as SVG for non-Rust consumers.
 
-// Without the `shapes` feature only the names and groups are compiled; the geometry (and
-// the helpers that build it) is not used.
-#![cfg_attr(not(feature = "shapes"), allow(dead_code, unused_macros))]
-
 /// One stroked polyline: `(points, closed)`.
 pub type Shape = (Vec<(f32, f32)>, bool);
 
@@ -76,8 +72,7 @@ macro_rules! icons {
 
         impl IconName {
             /// Polylines `(points, closed)` on the 24×24 grid. Pure.
-            #[cfg(feature = "shapes")]
-            pub fn shapes(self) -> Vec<Shape> {
+                        pub fn shapes(self) -> Vec<Shape> {
                 match self { $(IconName::$v => $body),+ }
             }
             /// Stable kebab-case identifier (used for SVG ids and file names).
@@ -98,11 +93,11 @@ macro_rules! icons {
     };
 }
 
-impl From<IconName> for dodai_icon_id::IconId {
+impl From<IconName> for crate::IconId {
     /// The shared-vocabulary id of a hand-drawn icon, so `Icon::new(IconName::Heart)` and
     /// `Icon::new(IconId::Heart)` are the same icon.
     fn from(n: IconName) -> Self {
-        dodai_icon_id::IconId::from_key(&n.name().replace('-', "_"))
+        crate::IconId::from_key(&n.name().replace('-', "_"))
             .expect("every hand-drawn icon is in the shared vocabulary")
     }
 }
@@ -950,7 +945,6 @@ icons! {
 }
 
 // Everything below needs the geometry.
-#[cfg(feature = "shapes")]
 mod render {
     use super::*;
 
@@ -1374,13 +1368,12 @@ mod render {
         }
     }
 }
-#[cfg(feature = "shapes")]
 pub use render::*;
 
 #[cfg(test)]
 mod id_tests {
     use super::*;
-    use dodai_icon_id::IconId;
+    use crate::IconId;
 
     #[test]
     fn every_hand_drawn_icon_has_an_id() {

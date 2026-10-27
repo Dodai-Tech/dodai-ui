@@ -257,4 +257,4 @@ pub fn variants() -> Vec<Theme> {
 
 /// The Material Symbols catalogue (`icons` feature).
 #[cfg(feature = "icons")]
-pub use dodai_material_icons as icons;
+pub use dodai_icons::material as icons;

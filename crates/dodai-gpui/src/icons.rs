@@ -7,7 +7,7 @@
 //! with [`Icon::pack`].
 
 use crate::paint::stroke;
-pub use dodai_cyberpunk_icons::IconName;
+pub use dodai_icons::cyberpunk::IconName;
 pub use dodai_icons::IconId;
 #[cfg(feature = "cyberpunk")]
 pub use dodai_icons::Modifier;

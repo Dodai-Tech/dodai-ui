@@ -1,6 +1,6 @@
 //! `cargo run -p dodai-material-icons --example facets > facets.html`
 //! Smooth vs faceted, side by side, for design review.
-use dodai_material_icons::{outlined, MaterialSymbol};
+use dodai_icons::material::{outlined, MaterialSymbol};
 
 fn path(polys: &[Vec<(f32, f32)>]) -> String {
     let mut d = String::new();

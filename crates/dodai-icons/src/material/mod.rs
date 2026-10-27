@@ -3,7 +3,7 @@
 //! in the three official styles (feature-gated so you only compile what you use).
 //!
 //! ```
-//! use dodai_material_icons::{outlined, MaterialSymbol};
+//! use dodai_icons::material::{outlined, MaterialSymbol};
 //! let home = outlined::get(MaterialSymbol::Home).unwrap();
 //! assert!(home.svg().starts_with("<svg"));
 //! // Flattened to polygons on a 24×24 grid, for renderers without an SVG parser.
@@ -14,7 +14,7 @@
 //! Icon artwork © Google, [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0).
 //! The crate carries only path data (viewBox `0 -960 960 960`); there is no
 //! font and no I/O. Icons are named by the typed [`MaterialSymbol`] enum (autocomplete, no
-//! strings); the shared cross-design vocabulary is [`IconId`](dodai_icon_id::IconId).
+//! strings); the shared cross-design vocabulary is [`IconId`](crate::IconId).
 
 mod aliases;
 mod symbol;
@@ -22,15 +22,15 @@ mod symbol;
 pub use aliases::alias_of;
 pub use symbol::MaterialSymbol;
 
-#[cfg(feature = "outlined")]
+#[cfg(feature = "material")]
 mod categories;
-#[cfg(feature = "outlined")]
+#[cfg(feature = "material")]
 pub use categories::CATEGORIES;
-#[cfg(feature = "outlined")]
+#[cfg(feature = "material")]
 pub mod outlined;
-#[cfg(feature = "rounded")]
+#[cfg(feature = "material-rounded")]
 pub mod rounded;
-#[cfg(feature = "sharp")]
+#[cfg(feature = "material-sharp")]
 pub mod sharp;
 
 /// Side of the viewBox, in source units (`0 -960 960 960`).
@@ -360,11 +360,7 @@ fn find_fill(all: &'static [Icon], name: &str) -> Option<&'static Icon> {
 /// Material's drawing of a shared-vocabulary icon: the Material icon a Dodai name is an alias of
 /// (`arrow-left` is `arrow_back`), else the Material icon of the same name. `None` when
 /// Material has neither.
-pub fn lookup(
-    all: &'static [Icon],
-    id: dodai_icon_id::IconId,
-    filled: bool,
-) -> Option<&'static Icon> {
+pub fn lookup(all: &'static [Icon], id: crate::IconId, filled: bool) -> Option<&'static Icon> {
     let key = id.name();
     let kebab = key.replace('_', "-");
     let target = aliases::resolve(&kebab);
@@ -541,7 +537,7 @@ mod tests {
 
     #[test]
     fn faceted_is_simpler_and_stays_close() {
-        #[cfg(feature = "outlined")]
+        #[cfg(feature = "material")]
         for n in [
             MaterialSymbol::Circle,
             MaterialSymbol::Settings,
@@ -549,7 +545,7 @@ mod tests {
             MaterialSymbol::Favorite,
             MaterialSymbol::Search,
         ] {
-            let i = crate::outlined::get(n).unwrap();
+            let i = crate::material::outlined::get(n).unwrap();
             let smooth: usize = i.polygons().iter().map(Vec::len).sum();
             let facet = i.faceted();
             let pts: usize = facet.iter().map(Vec::len).sum();
@@ -565,11 +561,11 @@ mod tests {
 
     /// Whole catalogue: valid geometry and, overall, an angular (octilinear)
     /// look rather than arbitrary angles.
-    #[cfg(feature = "outlined")]
+    #[cfg(feature = "material")]
     #[test]
     fn faceted_catalogue_is_valid_and_mostly_octilinear() {
         let (mut edges, mut octi, mut empty) = (0usize, 0usize, 0usize);
-        for i in crate::outlined::ALL {
+        for i in crate::material::outlined::ALL {
             let f = i.faceted();
             if f.is_empty() && !i.polygons().is_empty() {
                 empty += 1;
@@ -595,7 +591,7 @@ mod tests {
             }
         }
         assert!(
-            empty * 100 <= crate::outlined::ALL.len(),
+            empty * 100 <= crate::material::outlined::ALL.len(),
             "{empty} icons vanished"
         );
         let share = octi as f32 / edges as f32;
@@ -615,6 +611,11 @@ mod tests {
         );
     }
 
+    #[cfg(any(
+        feature = "material",
+        feature = "material-rounded",
+        feature = "material-sharp"
+    ))]
     fn check(all: &[Icon]) {
         assert!(all.len() > 7000);
         assert!(
@@ -636,25 +637,25 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "outlined")]
+    #[cfg(feature = "material")]
     #[test]
     fn outlined_catalogue_is_well_formed() {
         check(outlined::ALL);
     }
 
-    #[cfg(feature = "rounded")]
+    #[cfg(feature = "material-rounded")]
     #[test]
     fn rounded_catalogue_is_well_formed() {
         check(rounded::ALL);
     }
 
-    #[cfg(feature = "sharp")]
+    #[cfg(feature = "material-sharp")]
     #[test]
     fn sharp_catalogue_is_well_formed() {
         check(sharp::ALL);
     }
 
-    #[cfg(feature = "outlined")]
+    #[cfg(feature = "material")]
     #[test]
     fn lookup_finds_known_icons_and_fill_variants() {
         use MaterialSymbol as M;
@@ -674,7 +675,7 @@ mod tests {
     }
 
     /// Every catalogue symbol has its outline form in the table.
-    #[cfg(feature = "outlined")]
+    #[cfg(feature = "material")]
     #[test]
     fn every_symbol_is_in_the_catalogue() {
         for &m in MaterialSymbol::ALL {
@@ -683,10 +684,10 @@ mod tests {
     }
 
     /// A Dodai name resolves to Material's own icon for it (`arrow-left` is `arrow_back`).
-    #[cfg(feature = "outlined")]
+    #[cfg(feature = "material")]
     #[test]
     fn shared_vocabulary_resolves_through_aliases() {
-        use dodai_icon_id::IconId;
+        use crate::IconId;
         let back = outlined::get(MaterialSymbol::ArrowBack).unwrap();
         assert_eq!(outlined::get_id(IconId::ArrowLeft, false), Some(back));
         assert!(outlined::get_id(IconId::Home, true).unwrap().is_filled());
@@ -702,7 +703,7 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "outlined")]
+    #[cfg(feature = "material")]
     #[test]
     fn every_icon_is_in_exactly_one_category() {
         let mut seen = std::collections::HashMap::new();

@@ -9,7 +9,7 @@
 //!   guarantee every design draws every [`IconId`].
 //!
 //! ```
-//! use dodai_icons_core::{Glyph, IconId, IconPack, PackChain};
+//! use dodai_icons::{Glyph, IconId, IconPack, PackChain};
 //! struct Square;
 //! impl IconPack for Square {
 //!     fn name(&self) -> &'static str { "square" }
@@ -22,7 +22,7 @@
 //! assert!(chain.glyph(IconId::Heart, false).unwrap().svg(24, "red").starts_with("<svg"));
 //! ```
 
-pub use dodai_icon_id::IconId;
+use crate::IconId;
 
 /// Points on the 24×24 design grid.
 pub type Points = Vec<(f32, f32)>;

@@ -697,7 +697,7 @@ fn icons_paint_in_every_pack_and_theme(cx: &mut TestAppContext) {
             build: Box::new(|_, _| {
                 div()
                     .flex()
-                    .children(dodai_cyberpunk_icons::ALL.iter().flat_map(|&n| {
+                    .children(dodai_icons::cyberpunk::ALL.iter().flat_map(|&n| {
                         [
                             Icon::new(n).size(20.0).into_any_element(),
                             Icon::new(n)

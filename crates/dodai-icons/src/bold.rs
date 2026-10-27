@@ -1,7 +1,7 @@
 //! Neo-Brutalism's bold drawings (private data module).
 
-use dodai_icon_id::IconId;
-use dodai_material_icons::Icon;
+use crate::material::Icon;
+use crate::IconId;
 
 #[path = "bold_data.rs"]
 mod data;
@@ -15,9 +15,9 @@ pub(crate) fn get(id: IconId, filled: bool) -> Option<&'static Icon> {
     let kebab = key.replace('_', "-");
     let pick = |n: &str| {
         filled
-            .then(|| dodai_material_icons::find(ALL, &format!("{n}-fill")))
+            .then(|| crate::material::find(ALL, &format!("{n}-fill")))
             .flatten()
-            .or_else(|| dodai_material_icons::find(ALL, n))
+            .or_else(|| crate::material::find(ALL, n))
     };
     pick(key).or_else(|| pick(&kebab))
 }

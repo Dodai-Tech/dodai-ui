@@ -4063,14 +4063,7 @@ name = "dodai-cyberpunk"
 version = "0.1.0"
 dependencies = [
  "dodai-core",
- "dodai-cyberpunk-icons",
-]
-
-[[package]]
-name = "dodai-cyberpunk-icons"
-version = "0.1.0"
-dependencies = [
- "dodai-icon-id",
+ "dodai-icons",
 ]
 
 [[package]]
@@ -4112,12 +4105,9 @@ dependencies = [
  "dodai-charts-core",
  "dodai-core",
  "dodai-cyberpunk",
- "dodai-cyberpunk-icons",
  "dodai-fx",
- "dodai-icon-id",
  "dodai-icons",
  "dodai-material",
- "dodai-material-icons",
  "dodai-motion",
  "dodai-neobrutalism",
  "dodai-shaders",
@@ -4138,25 +4128,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai-icon-id"
-version = "0.1.0"
-
-[[package]]
 name = "dodai-icons"
 version = "0.1.0"
 dependencies = [
  "dodai-core",
- "dodai-cyberpunk-icons",
- "dodai-icon-id",
- "dodai-icons-core",
- "dodai-material-icons",
-]
-
-[[package]]
-name = "dodai-icons-core"
-version = "0.1.0"
-dependencies = [
- "dodai-icon-id",
 ]
 
 [[package]]
@@ -4174,14 +4149,7 @@ name = "dodai-material"
 version = "0.1.0"
 dependencies = [
  "dodai-core",
- "dodai-material-icons",
-]
-
-[[package]]
-name = "dodai-material-icons"
-version = "0.1.0"
-dependencies = [
- "dodai-icon-id",
+ "dodai-icons",
 ]
 
 [[package]]
@@ -4246,7 +4214,7 @@ version = "0.1.0"
 dependencies = [
  "dodai",
  "dodai-core",
- "dodai-cyberpunk-icons",
+ "dodai-icons",
 ]
 
 [[package]]

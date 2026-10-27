@@ -14,8 +14,8 @@ categories   = ["gui", "rendering"]
 [features]
 default = ["icons"]
 ## Re-export the Cyberpunk icon pack as `dodai_cyberpunk::icons`.
-icons = ["dep:dodai-cyberpunk-icons", "dodai-cyberpunk-icons?/shapes"]
+icons = ["dep:dodai-icons", "dodai-icons/cyberpunk"]
 
 [dependencies]
 dodai-core = { workspace = true }
-dodai-cyberpunk-icons = { workspace = true, optional = true }
+dodai-icons = { workspace = true, optional = true }

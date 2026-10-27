@@ -9,4 +9,4 @@ let themes = m3::variants();              // [light, dark]
 let home = m3::icons::outlined::get(m3::icons::MaterialSymbol::Home);
 ```
 
-Features: `icons` (default, outlined), `rounded`, `sharp` select the Material Symbols style. Depends only on `dodai-core` (and optionally `dodai-material-icons`).
+Features: `icons` (default, outlined), `rounded`, `sharp` select the Material Symbols style. Depends only on `dodai-core` (and optionally `dodai-icons` for the Material Symbols).

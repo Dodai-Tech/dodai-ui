@@ -3,16 +3,16 @@
 mod categories;
 mod regular;
 
+use crate::material::Icon;
+use crate::IconId;
 pub use categories::CATEGORIES;
-use dodai_icon_id::IconId;
-use dodai_material_icons::Icon;
 use regular::ALL;
 
 /// Phosphor's drawing of `id`; `filled` picks the filled form, falling back to the outline.
 /// `None` when the id is a Dodai name Phosphor has no icon of that name for.
 pub(crate) fn get(id: IconId, filled: bool) -> Option<&'static Icon> {
     let name = id.name().replace('_', "-");
-    let pick = |n: &str| dodai_material_icons::find(ALL, n);
+    let pick = |n: &str| crate::material::find(ALL, n);
     filled
         .then(|| pick(&format!("{name}-fill")))
         .flatten()

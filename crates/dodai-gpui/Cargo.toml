@@ -22,7 +22,7 @@ shaders    = ["dep:dodai-shaders", "dep:image"]
 # The Cyberpunk stroked icon pack: curve-free polylines (`Icon` on chamfered/square themes,
 # and its modifier variants). Off: `IconName` is still there, but is drawn by the
 # Material pack, so enable `material` too or icons draw nothing.
-cyberpunk = ["dep:dodai-cyberpunk", "dodai-cyberpunk-icons/shapes", "dodai-icons/cyberpunk"]
+cyberpunk = ["dep:dodai-cyberpunk"]
 # Material Symbols glyphs: `Icon` follows the theme (rounded themes draw Material icons)
 # (every design draws the same names).
 material = ["dep:dodai-material", "symbols"]
@@ -32,21 +32,18 @@ neobrutalism = ["dep:dodai-neobrutalism", "dodai-icons/neobrutalism"]
 # the frosted-glass scene and page grid.
 aurora = ["dep:dodai-aurora", "symbols", "dep:image"]
 # Material Symbols glyphs, drawn by Material and Aurora.
-symbols = ["dep:dodai-material-icons", "dodai-icons/material"]
+symbols = ["dodai-icons/material"]
 
 [dependencies]
 dodai-core = { workspace = true }
 dodai-motion = { workspace = true }
 dodai-charts-core = { workspace = true }
 dodai-fx = { workspace = true }
-dodai-cyberpunk-icons = { workspace = true }
-dodai-material-icons = { workspace = true, optional = true }
 dodai-cyberpunk = { workspace = true, optional = true }
 dodai-material = { workspace = true, optional = true }
 dodai-neobrutalism = { workspace = true, optional = true }
 dodai-aurora = { workspace = true, optional = true }
-dodai-icon-id = { workspace = true }
-dodai-icons = { workspace = true }
+dodai-icons = { workspace = true, features = ["cyberpunk"] }
 gpui = { workspace = true }
 dodai-shaders = { workspace = true, optional = true }
 image = { version = "0.25", default-features = false, optional = true }
@@ -57,7 +54,6 @@ required-features = ["components", "charts", "shaders", "cyberpunk", "material",
 
 [dev-dependencies]
 dodai = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "aurora", "icons"] }
-dodai-cyberpunk-icons = { workspace = true, features = ["shapes"] }
 gpui = { workspace = true, features = ["test-support"] }
 
 [[test]]

@@ -105,7 +105,7 @@ check-gpui-features:
     cargo check -p dodai-gpui --no-default-features --features material
     cargo check -p dodai-gpui --no-default-features --features components,charts,cyberpunk
     cargo check -p dodai-gpui --no-default-features --features components,charts,material
-    cargo check -p dodai-cyberpunk-icons --no-default-features
+    cargo check -p dodai-icons --no-default-features
 
 test-ratatui:
     cargo test -p dodai-ratatui
@@ -199,9 +199,9 @@ check-publish: _check-nu
 
 # Publish all crates in dependency order (core first)
 publish: check-all
+    cargo publish -p dodai-fx
     cargo publish -p dodai-core
-    cargo publish -p dodai-cyberpunk-icons
-    cargo publish -p dodai-material-icons
+    cargo publish -p dodai-icons
     cargo publish -p dodai-charts-core
     cargo publish -p dodai-shaders
     cargo publish -p dodai-cyberpunk

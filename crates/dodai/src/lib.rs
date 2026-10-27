@@ -7,8 +7,8 @@
 //!
 //! | feature | crate |
 //! |---|---|
-//! | `cyberpunk` | [`dodai-cyberpunk`](https://docs.rs/dodai-cyberpunk) (+ `dodai-cyberpunk-icons`) |
-//! | `material` | [`dodai-material`](https://docs.rs/dodai-material) (+ `dodai-material-icons`) |
+//! | `cyberpunk` | [`dodai-cyberpunk`](https://docs.rs/dodai-cyberpunk) (+ the `dodai-icons` Cyberpunk pack) |
+//! | `material` | [`dodai-material`](https://docs.rs/dodai-material) (+ the `dodai-icons` Material Symbols) |
 //! | `neobrutalism` | [`dodai-neobrutalism`](https://docs.rs/dodai-neobrutalism) |
 //! | `aurora` | [`dodai-aurora`](https://docs.rs/dodai-aurora) |
 //! | `shaders` | [`dodai-shaders`](https://docs.rs/dodai-shaders) |

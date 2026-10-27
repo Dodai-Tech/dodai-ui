@@ -363,7 +363,7 @@ pub fn variants() -> Vec<Theme> {
 
 /// The Cyberpunk icon pack (`icons` feature).
 #[cfg(feature = "icons")]
-pub use dodai_cyberpunk_icons as icons;
+pub use dodai_icons::cyberpunk as icons;
 
 /// Cyberpunk owns every texture and the animated effects. The dark variants suggest grain on
 /// components, circuit traces on containers with lit lines, a glitch burst and a bloom;

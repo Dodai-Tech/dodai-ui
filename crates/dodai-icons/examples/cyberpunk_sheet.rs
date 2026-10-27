@@ -1,7 +1,7 @@
 //! `cargo run -p dodai-cyberpunk-icons --example sheet > sheet.html`
 //! Contact sheet of every icon, large with the 24-grid, for design review.
 
-use dodai_cyberpunk_icons::{lookup, svg, IconName, Modifier, ALL};
+use dodai_icons::cyberpunk::{lookup, svg, IconName, Modifier, ALL};
 
 fn main() {
     println!("<body style='background:#0b0b10;color:#fcee0a;font:11px monospace;margin:12px'>");

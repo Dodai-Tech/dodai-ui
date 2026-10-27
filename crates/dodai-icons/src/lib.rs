@@ -18,15 +18,23 @@
 
 #[cfg(feature = "neobrutalism")]
 mod bold;
+#[cfg(feature = "cyberpunk")]
+pub mod cyberpunk;
+mod id;
+#[cfg(test)]
+mod id_tests;
+pub mod material;
+mod pack;
 mod phosphor;
 
-pub use dodai_icons_core::{Glyph, IconId, IconPack, PackChain, Points, STROKE};
+pub use id::IconId;
+pub use pack::{Glyph, IconPack, PackChain, Points, STROKE};
 /// The icon set grouped into categories (for browsers and pickers).
 pub use phosphor::CATEGORIES;
 
 /// Cyberpunk's polyline modifiers (`Off`, `Add`, `Circle`, ...), derived from a drawn icon.
 #[cfg(feature = "cyberpunk")]
-pub use dodai_cyberpunk_icons::Modifier;
+pub use cyberpunk::Modifier;
 
 /// Which design's pack draws the icon.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -99,7 +107,7 @@ pub fn glyph_for(id: IconId, set: dodai_core::IconSet, filled: bool) -> Option<G
     glyph(id, set.into(), filled)
 }
 
-fn filled_glyph(icon: &dodai_material_icons::Icon) -> Glyph {
+fn filled_glyph(icon: &crate::material::Icon) -> Glyph {
     Glyph::Filled(icon.polygons())
 }
 
@@ -151,7 +159,7 @@ impl IconPack for MaterialPack {
         "material-symbols"
     }
     fn glyph(&self, id: IconId, filled: bool) -> Option<Glyph> {
-        dodai_material_icons::outlined::get_id(id, filled).map(filled_glyph)
+        crate::material::outlined::get_id(id, filled).map(filled_glyph)
     }
 }
 
@@ -173,10 +181,10 @@ impl IconPack for BoldPack {
 /// with an optional derived [`Modifier`].
 #[cfg(feature = "cyberpunk")]
 pub fn cyber_shapes(id: IconId, modifier: Option<Modifier>) -> Option<Vec<(Points, bool)>> {
-    use dodai_cyberpunk_icons as c;
+    use crate::cyberpunk as c;
     let key = id.name();
     let kebab = key.replace('_', "-");
-    let alias = &dodai_material_icons::alias_of;
+    let alias = &crate::material::alias_of;
     let shapes = c::lookup_with(&kebab, alias).or_else(|| c::lookup_with(key, alias))?;
     Some(match modifier {
         Some(m) => m.apply(shapes),

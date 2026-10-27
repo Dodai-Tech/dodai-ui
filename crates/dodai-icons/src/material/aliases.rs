@@ -172,13 +172,17 @@ mod tests {
         assert_eq!(resolve("not-an-alias"), "not-an-alias");
     }
 
-    #[cfg(feature = "outlined")]
+    #[cfg(feature = "material")]
     #[test]
     fn every_alias_target_exists_in_the_catalogue() {
         for (a, m) in ALIASES {
-            assert!(crate::find(crate::outlined::ALL, m).is_some(), "{a} -> {m}");
             assert!(
-                crate::find(crate::outlined::ALL, &format!("{m}-fill")).is_some(),
+                crate::material::find(crate::material::outlined::ALL, m).is_some(),
+                "{a} -> {m}"
+            );
+            assert!(
+                crate::material::find(crate::material::outlined::ALL, &format!("{m}-fill"))
+                    .is_some(),
                 "{a} -> {m}-fill"
             );
         }

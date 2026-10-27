@@ -10,4 +10,4 @@ let t = cp::yellow();                 // or cyan(), red(), *_light()
 let n = cp::icons::ALL.len();
 ```
 
-Depends only on `dodai-core` (and optionally `dodai-cyberpunk-icons`). Combine with other design systems through the `dodai` umbrella crate.
+Depends only on `dodai-core` (and optionally `dodai-icons` for the pack). Combine with other design systems through the `dodai` umbrella crate.
