@@ -19,5 +19,4 @@ neobrutalism = []
 aurora = []
 
 [dependencies]
-dodai-motion = { workspace = true }
 dodai-fx = { workspace = true }

@@ -5,8 +5,8 @@
 
 use crate::motion::now;
 use crate::theme_of;
+use dodai_core::motion::{Spring, SpringState};
 use dodai_core::NeedleResponse;
-use dodai_motion::{Spring, SpringState};
 use gpui::{App, ElementId, SharedString, Window, WindowId};
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
@@ -317,9 +317,9 @@ pub(crate) fn follow_all(w: &mut Window, cx: &mut App, f: &Follow, target: &[f32
                 return target.to_vec();
             }
             let bounce = match m.personality {
-                dodai_motion::Personality::Snappy => 0.0,
-                dodai_motion::Personality::Smooth => 0.05,
-                dodai_motion::Personality::Playful => 0.15,
+                dodai_core::motion::Personality::Snappy => 0.0,
+                dodai_core::motion::Personality::Smooth => 0.05,
+                dodai_core::motion::Personality::Playful => 0.15,
             };
             (
                 theme_of(cx).chart_style().response,

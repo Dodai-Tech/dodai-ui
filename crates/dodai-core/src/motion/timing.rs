@@ -1,6 +1,6 @@
 //! [`Motion`] (duration + easing + entry) and the entry effects.
 
-use crate::Easing;
+use crate::motion::Easing;
 use std::time::Duration;
 
 /// Duration + easing, with a speed multiplier.
@@ -13,7 +13,7 @@ pub struct Motion {
     /// How components enter (see [`EntryKind`]).
     pub entry: EntrySet,
     /// How lively the design system is: drives springs and gesture sizes in mixins.
-    pub personality: crate::Personality,
+    pub personality: crate::motion::Personality,
 }
 
 /// How a component animates in when it first appears.
@@ -185,7 +185,7 @@ impl Default for Motion {
             easing: Easing::EaseOut,
             delay: Duration::ZERO,
             entry: EntrySet::of(EntryKind::Fade),
-            personality: crate::Personality::Smooth,
+            personality: crate::motion::Personality::Smooth,
         }
     }
 }
@@ -197,7 +197,7 @@ impl Motion {
             easing,
             delay: Duration::ZERO,
             entry: EntrySet::of(EntryKind::Fade),
-            personality: crate::Personality::Smooth,
+            personality: crate::motion::Personality::Smooth,
         }
     }
     pub fn duration(mut self, d: Duration) -> Self {
@@ -207,7 +207,7 @@ impl Motion {
     pub fn millis(self, ms: u64) -> Self {
         self.duration(Duration::from_millis(ms))
     }
-    pub fn personality(mut self, p: crate::Personality) -> Self {
+    pub fn personality(mut self, p: crate::motion::Personality) -> Self {
         self.personality = p;
         self
     }

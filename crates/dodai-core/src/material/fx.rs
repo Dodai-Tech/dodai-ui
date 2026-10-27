@@ -1,7 +1,7 @@
 //! Material-only motion mixins: state layers, ripple, container transform, fade-through and
 //! shared axis, following the M3 motion spec. Pure and toolkit-independent.
 
-use crate::dodai_motion::{Clip, Easing, Pose};
+use crate::motion::{Clip, Easing, Pose};
 
 /// M3 emphasized easing.
 const EMPHASIZED: Easing = Easing::CubicBezier(0.2, 0.0, 0.0, 1.0);

@@ -4035,7 +4035,6 @@ name = "dodai-core"
 version = "0.1.0"
 dependencies = [
  "dodai-fx",
- "dodai-motion",
 ]
 
 [[package]]
@@ -4075,7 +4074,6 @@ dependencies = [
  "dodai-core",
  "dodai-fx",
  "dodai-icons",
- "dodai-motion",
  "dodai-shaders",
  "gpui",
  "image",
@@ -4107,10 +4105,6 @@ dependencies = [
  "dodai-topcoat",
  "leptos",
 ]
-
-[[package]]
-name = "dodai-motion"
-version = "0.1.0"
 
 [[package]]
 name = "dodai-ratatui"

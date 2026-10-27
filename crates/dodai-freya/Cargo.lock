@@ -946,7 +946,6 @@ name = "dodai-core"
 version = "0.1.0"
 dependencies = [
  "dodai-fx",
- "dodai-motion",
 ]
 
 [[package]]
@@ -968,10 +967,6 @@ version = "0.1.0"
 dependencies = [
  "dodai-core",
 ]
-
-[[package]]
-name = "dodai-motion"
-version = "0.1.0"
 
 [[package]]
 name = "downcast-rs"

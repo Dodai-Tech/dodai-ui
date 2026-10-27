@@ -392,8 +392,8 @@ pub use dodai_charts_core::instrument::{Alarm, Limits, Scale, Severity};
 pub use dodai_charts_core::tactical::{Affiliation, Contact};
 #[cfg(feature = "charts")]
 pub use dodai_charts_core::Gradient;
+pub use dodai_core::motion as dodai_motion;
 pub use dodai_core::{ClusterKind, DialLook, NeedleResponse};
-pub use dodai_motion;
 #[cfg(feature = "shaders")]
 pub use dodai_shaders;
 #[cfg(feature = "components")]

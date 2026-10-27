@@ -2,7 +2,7 @@
 //! decrypt and hologram. Pure and deterministic (a seed and a time give the same frame
 //! everywhere), toolkit-independent: an adapter paints what these describe.
 
-use crate::dodai_motion::{Clip, Easing, Pose};
+use crate::motion::{Clip, Easing, Pose};
 
 /// Small integer hash: the same `(seed, n)` always gives the same bits.
 fn hash(seed: u32, n: u32) -> u32 {

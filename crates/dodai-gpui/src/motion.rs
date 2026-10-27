@@ -8,7 +8,7 @@ use gpui::{
 };
 use std::time::Duration;
 
-pub use dodai_motion::{
+pub use dodai_core::motion::{
     lerp, reveal, stagger_window, Curve, Easing, EntryKind, EntrySet, Motion, Tween,
 };
 
@@ -275,23 +275,25 @@ pub fn smooth_with(
     v
 }
 
-/// Drive reactive mixins from interaction state and return the layered [`dodai_motion::Pose`]
+/// Drive reactive mixins from interaction state and return the layered [`dodai_core::motion::Pose`]
 /// for this frame. Keyed under `id`; keeps requesting frames until the springs settle. The
 /// personality comes from the active theme's motion, so each design system moves its own way.
 pub fn react(
     window: &mut gpui::Window,
     cx: &mut App,
     id: gpui::ElementId,
-    mixins: &[dodai_motion::Reactive],
-    states: &[(dodai_motion::Trigger, bool)],
-) -> dodai_motion::Pose {
+    mixins: &[dodai_core::motion::Reactive],
+    states: &[(dodai_core::motion::Trigger, bool)],
+) -> dodai_core::motion::Pose {
     let personality = crate::motion::current(cx).personality;
     let mixins = mixins.to_vec();
     let st = window.with_id(id, |w| {
         w.use_keyed_state(("react", 0u32), cx, move |_, _| {
             mixins
                 .into_iter()
-                .fold(dodai_motion::Reactions::new(personality), |r, m| r.with(m))
+                .fold(dodai_core::motion::Reactions::new(personality), |r, m| {
+                    r.with(m)
+                })
         })
     });
     let t = now();
@@ -318,7 +320,7 @@ pub fn hover_lift(
     id: gpui::ElementId,
     hovered: bool,
 ) -> f32 {
-    use dodai_motion::{Reactive, Trigger};
+    use dodai_core::motion::{Reactive, Trigger};
     react(
         window,
         cx,

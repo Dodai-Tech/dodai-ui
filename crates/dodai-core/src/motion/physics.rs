@@ -2,7 +2,7 @@
 //!
 //! Every model here is an exact function of time (no per-frame integration), so it is
 //! deterministic, stable at any frame rate and can be sampled, composed as a
-//! [`Clip`](crate::Clip) or driven by the host's clock.
+//! [`Clip`](crate::motion::Clip) or driven by the host's clock.
 
 /// A damped spring (`mass * x'' + damping * x' + stiffness * x = 0`).
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -81,7 +81,7 @@ impl Spring {
 }
 
 /// A spring heading for a target, retargetable mid-flight without losing velocity.
-/// Like [`Tween`](crate::Tween) it takes the time as a parameter.
+/// Like [`Tween`](crate::motion::Tween) it takes the time as a parameter.
 #[derive(Clone, Copy, Debug)]
 pub struct SpringState {
     spring: Spring,

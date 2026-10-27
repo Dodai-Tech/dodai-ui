@@ -36,7 +36,6 @@ symbols = ["components", "dodai-icons/material"]
 
 [dependencies]
 dodai-core = { workspace = true }
-dodai-motion = { workspace = true }
 dodai-charts-core = { workspace = true }
 dodai-fx = { workspace = true }
 dodai-icons = { workspace = true, features = ["cyberpunk"], optional = true }

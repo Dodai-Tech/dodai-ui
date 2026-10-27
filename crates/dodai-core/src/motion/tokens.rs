@@ -3,7 +3,7 @@
 //! Toolkit-agnostic: durations are plain seconds, easings are [`Easing`] values. Other design
 //! systems can ship their own scale; this one is what `md.sys.motion` defines.
 
-use crate::Easing;
+use crate::motion::Easing;
 
 /// The `md.sys.motion.duration.*` scale.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -99,7 +99,7 @@ impl DurationToken {
 
 /// The `md.sys.motion.easing.*` curves.
 pub mod material_easing {
-    use crate::Easing;
+    use crate::motion::Easing;
     pub const EMPHASIZED: Easing = Easing::CubicBezier(0.2, 0.0, 0.0, 1.0);
     pub const EMPHASIZED_DECELERATE: Easing = Easing::CubicBezier(0.05, 0.7, 0.1, 1.0);
     pub const EMPHASIZED_ACCELERATE: Easing = Easing::CubicBezier(0.3, 0.0, 0.8, 0.15);
@@ -110,8 +110,8 @@ pub mod material_easing {
 }
 
 /// A duration paired with a curve.
-pub fn token_motion(d: DurationToken, easing: Easing) -> crate::Motion {
-    crate::Motion::new(std::time::Duration::from_millis(d.millis() as u64), easing)
+pub fn token_motion(d: DurationToken, easing: Easing) -> crate::motion::Motion {
+    crate::motion::Motion::new(std::time::Duration::from_millis(d.millis() as u64), easing)
 }
 
 #[cfg(test)]

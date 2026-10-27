@@ -1,6 +1,6 @@
 //! Tests for the physics, clip composition and mixins.
 
-use crate::*;
+use super::*;
 
 fn near(a: f32, b: f32, e: f32) -> bool {
     (a - b).abs() <= e

@@ -1,6 +1,6 @@
 //! Behaviour tests for the motion primitives.
 
-use crate::*;
+use super::*;
 use std::time::Duration;
 #[test]
 fn entry_set_per_effect_duration() {

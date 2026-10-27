@@ -1,6 +1,6 @@
 //! Composable progress curves, stagger and interpolation.
 
-use crate::Easing;
+use crate::motion::Easing;
 use std::sync::Arc;
 
 /// Composable progress curve `0..1 -> 0..1`. Cheap to clone; build from an

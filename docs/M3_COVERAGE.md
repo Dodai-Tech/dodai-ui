@@ -42,7 +42,7 @@ items are unverified. ✓ = implemented and spec-tested, ◐ = partly, ✗ = mis
 | Shape scale and role mapping | ✓ | |
 | Elevation (soft shadows), state layers | ✓ | |
 | Typography: M3 type scale | ✓ | `TypeRole`, `Text`; list items, chips, tabs, menus and dialogs use it; buttons use the control-size text; text fields keep their fixed line height |
-| Motion: easing curves, 16 duration tokens | ✓ | `dodai_motion::{DurationToken, material_easing}`; showcase "Motion tokens" |
+| Motion: easing curves, 16 duration tokens | ✓ | `dodai_core::motion::{DurationToken, material_easing}`; showcase "Motion tokens" |
 
 # Cyberpunk coverage
 

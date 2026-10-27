@@ -21,7 +21,7 @@ fn motion() -> crate::Motion {
         std::time::Duration::from_millis(160),
         crate::Easing::CubicBezier(0.1, 0.9, 0.2, 1.0),
     )
-    .personality(crate::dodai_motion::Personality::Snappy)
+    .personality(crate::motion::Personality::Snappy)
 }
 
 pub mod fx;

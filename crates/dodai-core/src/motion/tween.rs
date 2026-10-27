@@ -1,6 +1,6 @@
 //! A scalar that eases towards a target.
 
-use crate::{lerp, Motion};
+use crate::motion::{lerp, Motion};
 
 /// Animated scalar that eases from its current value to a new target.
 ///

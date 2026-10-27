@@ -152,7 +152,7 @@ impl fmt::Display for Color {
     }
 }
 
-impl dodai_motion::Lerp for Color {
+impl crate::motion::Lerp for Color {
     fn lerp(&self, other: &Self, t: f32) -> Self {
         self.mix(*other, t)
     }

@@ -1,6 +1,6 @@
 //! [`Pose`]: the one thing an adapter has to apply.
 
-use crate::Lerp;
+use crate::motion::Lerp;
 
 /// How a widget is drawn right now, relative to its resting state.
 ///

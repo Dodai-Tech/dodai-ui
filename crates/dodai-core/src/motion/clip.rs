@@ -1,6 +1,6 @@
 //! [`Clip`]: a value over time, composable.
 
-use crate::{Bounce, Decay, Easing, Lerp, Motion, Shake, Spring};
+use crate::motion::{Bounce, Decay, Easing, Lerp, Motion, Shake, Spring};
 use std::sync::Arc;
 
 /// A value of type `T` as a function of seconds, with a duration. After the end it holds its
@@ -187,9 +187,9 @@ impl Clip<f32> {
     }
 }
 
-impl Clip<crate::Pose> {
-    /// This clip for reduced-motion users (see [`Pose::reduced`](crate::Pose::reduced)).
-    pub fn reduced(self) -> Clip<crate::Pose> {
+impl Clip<crate::motion::Pose> {
+    /// This clip for reduced-motion users (see [`Pose::reduced`](crate::motion::Pose::reduced)).
+    pub fn reduced(self) -> Clip<crate::motion::Pose> {
         self.map(|p| p.reduced())
     }
 }

@@ -6,8 +6,7 @@ component styles) feeds four native adapters:
 
 | Crate | Framework | What you get |
 |---|---|---|
-| [`dodai-core`](crates/dodai-core) | — | `Theme`, `Palette`, tokens, `ThemeSwitcher`, WCAG contrast, ANSI-256 fallback |
-| [`dodai-motion`](crates/dodai-motion) | — | Toolkit-agnostic motion: easing, springs, curves, stagger, entry effects, tweens |
+| [`dodai-core`](crates/dodai-core) | — | `Theme`, `Palette`, tokens, `ThemeSwitcher`, WCAG contrast, ANSI-256 fallback, the four design systems (features) and `motion` (easing, springs, curves, stagger, entry effects, tweens) |
 | [`dodai-charts-core`](crates/dodai-charts-core) | — | Renderer-agnostic chart maths: ticks, Heikin-Ashi, indicators, Renko, depth, Gantt, binning, gradients |
 | [`dodai-shaders`](crates/dodai-shaders) | wgpu | 196 pixel shaders written in Rust (rust-gpu → WGSL, run on the GPU): Ghibli-style painted and cel-shaded 3D scenes, cyberpunk (rainy megacities, Blade Runner-inspired scenes), Material 3, Matrix, CRT/VHS/retro monitors, Ghostty ports, DMT hyperspace sacred geometry, pixel-art platformer/metroidvania, cosmic; follows the theme palette |
 | [`dodai-ratatui`](crates/dodai-ratatui) | Ratatui 0.30 | `TuiTheme`: chamfered `╱ ╲` blocks, `◢ BUTTON ◤`, tabs, badges, inputs, status bar, `Scanlines`, `ThemeBadge` |
@@ -130,7 +129,7 @@ Components never look at a theme id: soft, tonal Material rendering is chosen by
 
 ## Motion
 
-`dodai-motion` is dependency-free and toolkit-independent: you pass it the clock (seconds) and apply
+`dodai_core::motion` is dependency-free and toolkit-independent: you pass it the clock (seconds) and apply
 what it returns.
 
 - **Easing / curves / tweens**: `Easing` (cubic-bezier, spring, bounce, elastic, back), `Curve`, `Tween`, stagger.

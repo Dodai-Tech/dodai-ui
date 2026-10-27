@@ -1,6 +1,6 @@
 //! Playing a clip against the host's clock.
 
-use crate::{Clip, Motion, Pose};
+use crate::motion::{Clip, Motion, Pose};
 
 /// A [`Clip`] started at some moment. Pass the host's current time (seconds) to read it.
 #[derive(Clone)]
@@ -34,7 +34,7 @@ impl<T: 'static> Player<T> {
 /// [`restart`](Animator::restart) to replay.
 ///
 /// ```
-/// use dodai_motion::{Animator, Motion};
+/// use dodai_core::motion::{Animator, Motion};
 /// let a = Animator::new(Motion::default(), 0.0);
 /// let pose = a.frame(0.05);          // paint with pose.opacity / pose.dy
 /// let again = !a.done(0.05);         // if so, request a redraw

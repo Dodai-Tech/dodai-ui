@@ -18,7 +18,7 @@ fn motion() -> crate::Motion {
         std::time::Duration::from_millis(tokens::DURATION_SM),
         crate::Easing::CubicBezier(a, b, c, d),
     )
-    .personality(crate::dodai_motion::Personality::Smooth)
+    .personality(crate::motion::Personality::Smooth)
 }
 
 fn typography() -> Typography {

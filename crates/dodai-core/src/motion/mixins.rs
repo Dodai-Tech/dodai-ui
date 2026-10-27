@@ -9,7 +9,7 @@
 //! Everything yields [`Pose`]s (or plain numbers) and reads time from the host, so an adapter
 //! only applies the result. Strength and feel come from a [`Personality`].
 
-use crate::{
+use crate::motion::{
     nearest, rubber_band, Bounce, Clip, Decay, Easing, Lerp, Pose, Shake, Spring, SpringState,
 };
 
@@ -136,7 +136,7 @@ impl Reaction {
 /// Several reactive mixins stacked on one widget. Poses layer, so the adapter applies one.
 ///
 /// ```
-/// use dodai_motion::{Personality, Reactive, Reactions, Trigger};
+/// use dodai_core::motion::{Personality, Reactive, Reactions, Trigger};
 /// let mut r = Reactions::new(Personality::Snappy)
 ///     .with(Reactive::HoverLift)
 ///     .with(Reactive::PressSquash);
