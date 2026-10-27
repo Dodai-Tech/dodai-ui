@@ -8,7 +8,7 @@
 //!
 //! ```
 //! use dodai_core::{ThemeSwitcher, ButtonVariant, ControlState};
-//! let sw = ThemeSwitcher::default(); // neutral fallback; real themes: `dodai-cyberpunk`, `dodai-material`
+//! let sw = ThemeSwitcher::default(); // neutral fallback; real themes: the `cyberpunk`, `material`, `neobrutalism` and `aurora` features
 //! let t = sw.current().clone();
 //! let b = t.button(ButtonVariant::Primary, ControlState::Idle);
 //! assert!(b.background.is_some());

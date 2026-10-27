@@ -140,8 +140,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.crate }}
-      - run: cargo clippy -p ${{ matrix.crate }} --all-targets ${{ matrix.crate == 'dodai-core' && '--all-features' || '' }} -- -D warnings
-      - run: cargo test -p ${{ matrix.crate }} ${{ matrix.crate == 'dodai-core' && '--all-features' || '' }}
+      - run: cargo clippy -p ${{ matrix.crate }} --all-targets -- -D warnings
+      - run: cargo test -p ${{ matrix.crate }}
       # Slices must compile alone: charts-only users get no components.
       - name: gpui feature slices
         if: matrix.crate == 'dodai-gpui'
@@ -157,6 +157,13 @@ jobs:
           cargo check -p dodai-gpui --no-default-features --features components,charts,aurora
           cargo check -p dodai-gpui --no-default-features --features components,charts,neobrutalism
           cargo check -p dodai-icons --no-default-features
+          cargo check -p dodai-icons --no-default-features --features cyberpunk
+          cargo check -p dodai-icons --no-default-features --features material
+          cargo check -p dodai-icons --no-default-features --features cyberpunk,neobrutalism
+          cargo check -p dodai-core --features cyberpunk
+          cargo check -p dodai-core --features material
+          cargo check -p dodai-core --features neobrutalism
+          cargo check -p dodai-core --features aurora
 
   # macOS runners exist only on GitHub; on self-hosted Gitea they would queue forever.
   crate-macos:
@@ -185,8 +192,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.crate }}
-      - run: cargo clippy -p ${{ matrix.crate }} --all-targets ${{ matrix.crate == 'dodai-core' && '--all-features' || '' }} -- -D warnings
-      - run: cargo test -p ${{ matrix.crate }} ${{ matrix.crate == 'dodai-core' && '--all-features' || '' }}
+      - run: cargo clippy -p ${{ matrix.crate }} --all-targets -- -D warnings
+      - run: cargo test -p ${{ matrix.crate }}
       # Slices must compile alone: charts-only users get no components.
       - name: gpui feature slices
         if: matrix.crate == 'dodai-gpui'
@@ -238,7 +245,7 @@ jobs:
         with:
           toolchain: ${{ steps.msrv.outputs.version }}
       - uses: Swatinem/rust-cache@v2
-      - run: cargo check --locked -p dodai-core -p dodai-motion -p dodai-charts-core -p dodai-fx -p dodai-cyberpunk -p dodai-material -p dodai-neobrutalism -p dodai-aurora --all-targets
+      - run: cargo check --locked -p dodai-core --all-features -p dodai-motion -p dodai-charts-core -p dodai-fx -p dodai-icons --all-targets
 
   nu-tests:
     name: nushell tests

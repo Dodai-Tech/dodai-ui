@@ -9,5 +9,5 @@ rendering: everything is a pure function of progress `0..1` (or of elapsed time 
 - `Motion`: duration + easing + delay + entry — what a design system hands to its components.
 - `Tween`: a scalar that eases from where it is to a new target.
 
-Design systems (`dodai-cyberpunk`, `dodai-material`) pick their own `Motion`; toolkit adapters
+Design systems (the `dodai-core` design modules) pick their own `Motion`; toolkit adapters
 (`dodai-gpui`, …) turn it into their native animation API.

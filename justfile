@@ -106,6 +106,13 @@ check-gpui-features:
     cargo check -p dodai-gpui --no-default-features --features components,charts,cyberpunk
     cargo check -p dodai-gpui --no-default-features --features components,charts,material
     cargo check -p dodai-icons --no-default-features
+    cargo check -p dodai-icons --no-default-features --features cyberpunk
+    cargo check -p dodai-icons --no-default-features --features material
+    cargo check -p dodai-icons --no-default-features --features cyberpunk,neobrutalism
+    cargo check -p dodai-core --features cyberpunk
+    cargo check -p dodai-core --features material
+    cargo check -p dodai-core --features neobrutalism
+    cargo check -p dodai-core --features aurora
 
 test-ratatui:
     cargo test -p dodai-ratatui

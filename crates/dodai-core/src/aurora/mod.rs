@@ -1,7 +1,7 @@
 //! **Aurora**: frosted glass and gradients. Deep indigo ink on a pearl canvas (or lavender-white
 //! on deep night), 16 px controls, 30 px containers, hairline borders, tinted soft shadows and a
 //! violet-through-blue-to-teal gradient as the signature accent. Token values are Aurora's own
-//! (see [`tokens`]).
+//! (see [`tokens`](crate::aurora::tokens)).
 
 use crate::themes::ThemeBuilder;
 use crate::{Corners, Mode, Shape, Spacing, Theme, ThemeMeta, Typography};

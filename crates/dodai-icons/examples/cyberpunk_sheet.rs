@@ -1,4 +1,4 @@
-//! `cargo run -p dodai-cyberpunk-icons --example sheet > sheet.html`
+//! `cargo run -p dodai-icons --features cyberpunk --example cyberpunk_sheet > sheet.html`
 //! Contact sheet of every icon, large with the 24-grid, for design review.
 
 use dodai_icons::cyberpunk::{lookup, svg, IconName, Modifier, ALL};

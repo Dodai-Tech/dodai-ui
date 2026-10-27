@@ -1,7 +1,7 @@
 //! **Design-system spec**: how one design system resolves component tokens and geometry.
 //!
 //! Core only knows the *vocabulary* (token structs, [`Theme`] methods). A design system crate
-//! (`dodai-material`, …) implements [`DesignSpec`] and attaches it to its themes with
+//! (the `material`, `cyberpunk`, … modules) implements [`DesignSpec`] and attaches it to its themes with
 //! [`Theme::with_spec`]. Every hook returns `None` by default, which falls back to the generic
 //! baseline in [`Theme`]'s resolvers, so a spec only lists what it does differently.
 

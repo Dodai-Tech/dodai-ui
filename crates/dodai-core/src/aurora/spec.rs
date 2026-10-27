@@ -11,7 +11,7 @@ use crate::{
 
 const ALL: Corners = Corners::ALL;
 
-/// The Aurora spec (attach with [`dodai_core::Theme::with_spec`]).
+/// The Aurora spec (attach with [`crate::Theme::with_spec`]).
 #[derive(Debug)]
 pub struct Aurora;
 

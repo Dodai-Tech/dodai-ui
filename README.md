@@ -142,8 +142,8 @@ what it returns.
   gestures (swipe release, page snap, overscroll, pull to refresh, magnetic, tilt). They return a `Pose`
   (opacity, offset, scale, rotation, glow); an adapter applies one layered pose per widget.
 - **Per design system**: each `Theme` carries a `Motion` (duration, easing, `Personality`), and
-  `dodai_cyberpunk::fx` (glitch, flicker, decrypt, hologram, scan sweep, chamfer wipe) and
-  `dodai_material::fx` (state layers, ripple, container transform, fade through, shared axis) add the
+  `dodai_core::cyberpunk::fx` (glitch, flicker, decrypt, hologram, scan sweep, chamfer wipe) and
+  `dodai_core::material::fx` (state layers, ripple, container transform, fade through, shared axis) add the
   system-specific ones. `.reduced()` degrades any pose to fades.
 - **Web / slint**: no Rust needed; the exporter writes `--dodai-motion-duration|delay|easing` and a DTCG `motion` group.
 
@@ -162,9 +162,9 @@ and `Oscilloscope`, `Spectrum`, `RadarScope`, `HexMap`, `RingStack`, `DotMatrix`
 
 ## Adding a theme
 
-1. Copy `crates/dodai-material` to `crates/dodai-<name>`: themes via `dodai_core::themes::ThemeBuilder`, a `DesignSpec` for the component tokens that differ (each hook is optional; set `Look` flags for tonal surfaces, soft elevation, floating labels, symbol icons), optionally a shape system and an icon crate. Attach the spec with `Theme::with_spec`.
+1. Copy `crates/dodai-core/src/material` to `crates/dodai-core/src/<name>` (and add a feature): themes via `dodai_core::themes::ThemeBuilder`, a `DesignSpec` for the component tokens that differ (each hook is optional; set `Look` flags for tonal surfaces, soft elevation, floating labels, symbol icons), optionally a shape system and an icon crate. Attach the spec with `Theme::with_spec`.
 2. Register it in one place: a feature plus an entry in `dodai_core::themes::systems()`. The switcher, `themes::all()`, `by_id()` and the `dist` export pick it up; adapters need no change.
-3. `just test`: the shared contrast/uniqueness tests in `crates/dodai/tests` run on it. Add the design's own conformance tests next to its spec.
+3. `just test`: the shared contrast/uniqueness tests in `crates/dodai-core/tests` run on it. Add the design's own conformance tests next to its spec.
 
 ## Development
 

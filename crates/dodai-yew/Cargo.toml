@@ -13,7 +13,7 @@ categories   = ["gui"]
 
 [features]
 default   = ["cyberpunk", "material"]
-# Design systems to bundle (each is its own crate; see `dodai`).
+# Design systems to bundle (features of `dodai-core`).
 cyberpunk = ["dodai-core/cyberpunk"]
 material  = ["dodai-core/material"]
 

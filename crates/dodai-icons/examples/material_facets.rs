@@ -1,4 +1,4 @@
-//! `cargo run -p dodai-material-icons --example facets > facets.html`
+//! `cargo run -p dodai-icons --features material --example material_facets > facets.html`
 //! Smooth vs faceted, side by side, for design review.
 use dodai_icons::material::{outlined, MaterialSymbol};
 

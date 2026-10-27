@@ -9,7 +9,7 @@ use crate::{
 };
 use crate::{Corners, IconSet, Look, Sizes};
 
-/// The neo-brutalism spec (attach with [`dodai_core::Theme::with_spec`]).
+/// The neo-brutalism spec (attach with [`crate::Theme::with_spec`]).
 #[derive(Debug)]
 pub struct NeoBrutalism;
 

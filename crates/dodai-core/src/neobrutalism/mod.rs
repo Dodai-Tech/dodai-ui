@@ -3,7 +3,7 @@
 //! a 2 px outline, a 4 px shadow, 5 px corners, black on bright, and controls that *sink*
 //! into their shadow on hover.
 //!
-//! Fourteen themes: seven accents ([`PRESETS`]), each light and dark. `Paper` is the editorial
+//! Fourteen themes: seven accents ([`PRESETS`](crate::neobrutalism::PRESETS)), each light and dark. `Paper` is the editorial
 //! variant: warm off-white stock, near-black ink, square corners.
 
 use crate::themes::ThemeBuilder;

@@ -17,7 +17,7 @@ const FROST_ALPHA: f32 = 0.55;
 /// Hairline neon edge of a frosted panel, px.
 const FROST_EDGE: f32 = 1.0;
 
-/// The Cyberpunk spec (attach with [`dodai_core::Theme::with_spec`]).
+/// The Cyberpunk spec (attach with [`crate::Theme::with_spec`]).
 #[derive(Debug)]
 pub struct Cyberpunk;
 

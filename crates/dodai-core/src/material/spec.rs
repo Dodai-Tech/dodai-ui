@@ -1,7 +1,7 @@
 //! The Material 3 **design-system spec**: component tokens, geometry and shape language.
 //!
 //! Core only defines the vocabulary; everything Material-specific lives here and is attached to
-//! the themes with [`dodai_core::Theme::with_spec`]. Values follow the `material-web` component
+//! the themes with [`crate::Theme::with_spec`]. Values follow the `material-web` component
 //! tokens (state layers 8 % hover / 10 % focus and press, disabled 12 % / 38 %).
 
 use crate::{
@@ -14,7 +14,7 @@ use crate::{
 
 const ALL: Corners = Corners::ALL;
 
-/// The Material 3 spec (attach with [`dodai_core::Theme::with_spec`]).
+/// The Material 3 spec (attach with [`crate::Theme::with_spec`]).
 #[derive(Debug)]
 pub struct Material3;
 
