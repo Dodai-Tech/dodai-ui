@@ -63,6 +63,7 @@ pub struct Carousel {
     layout: CarouselLayout,
     width: f32,
     item_height: f32,
+    fill: bool,
     on_select: Option<IndexFn>,
 }
 
@@ -78,6 +79,7 @@ impl Carousel {
             layout: CarouselLayout::Uncontained,
             width: 560.0,
             item_height: 160.0,
+            fill: false,
             on_select: None,
         }
     }
@@ -111,6 +113,12 @@ impl Carousel {
         self.width = w;
         self
     }
+    /// Fill the parent's width: items (uncontained) or the item row (contained layouts) are
+    /// sized from the measured space between the arrows, ignoring `item_width` and `width`.
+    pub fn fill(mut self, on: bool) -> Self {
+        self.fill = on;
+        self
+    }
     /// Item height for the contained layouts.
     pub fn item_height(mut self, h: f32) -> Self {
         self.item_height = h;
@@ -127,7 +135,23 @@ impl Carousel {
         let t = theme_of(cx);
         let n = self.items.len();
         let gap = if t.look().tonal { 8.0 } else { t.spacing.md };
-        let widths = layout_widths(self.layout, self.width, gap);
+        // The parent's width, as painted last frame; the row is laid out again once it is known.
+        let measured = self.fill.then(|| {
+            window
+                .use_keyed_state((self.id.clone(), "fit"), cx, |_, _| {
+                    Rc::new(std::cell::Cell::new(0.0f32))
+                })
+                .read(cx)
+                .clone()
+        });
+        let avail = measured.as_ref().map_or(0.0, |m| m.get());
+        let arrows = 2.0 * (t.shape.control_height + t.spacing.sm);
+        let row_w = if self.fill && avail > arrows + 1.0 {
+            avail - arrows
+        } else {
+            self.width
+        };
+        let widths = layout_widths(self.layout, row_w, gap);
         let visible = if widths.is_empty() {
             self.visible
         } else {
@@ -144,7 +168,11 @@ impl Carousel {
         };
         let prev = mk("prev", "‹", start.saturating_sub(1), start > 0);
         let next = mk("next", "›", (start + 1).min(max_start), start < max_start);
-        let w = self.item_width;
+        let w = if self.fill && avail > arrows + 1.0 {
+            ((row_w - (visible as f32 - 1.0).max(0.0) * gap) / visible as f32).max(1.0)
+        } else {
+            self.item_width
+        };
         let radius = if t.look().tonal {
             t.role_shape(dodai_core::ShapeRole::Carousel).radius
         } else {
@@ -192,41 +220,61 @@ impl Carousel {
                     t.palette.border_strong
                 }))
         });
-        div()
-            .flex()
-            .flex_col()
-            .gap(px(t.spacing.sm))
-            .child(
-                div()
-                    .flex()
-                    .items_center()
-                    .gap(px(t.spacing.sm))
-                    .child(prev)
-                    .child(if widths.is_empty() {
-                        div()
-                            .w(px(
-                                visible as f32 * w + (visible as f32 - 1.0).max(0.0) * gap
-                            ))
-                            .overflow_hidden()
-                            .child(
-                                div()
-                                    .flex()
-                                    .gap(px(gap))
-                                    .ml(px(-frac * (w + gap)))
-                                    .children(shown),
-                            )
-                    } else {
-                        div().flex().gap(px(gap)).children(shown)
-                    })
-                    .child(next),
-            )
-            .child(
-                div()
-                    .flex()
-                    .justify_center()
-                    .gap(px(t.spacing.xs))
-                    .children(dots),
-            )
+        let mut root = div().relative().flex().flex_col().gap(px(t.spacing.sm));
+        if let Some(m) = measured {
+            let wide = avail;
+            root = root.w_full().child(
+                gpui::canvas(
+                    move |b, w, _| {
+                        let now: f32 = b.size.width.into();
+                        if (now - m.get()).abs() > 0.5 {
+                            m.set(now);
+                            w.refresh();
+                        }
+                    },
+                    |_, _, _, _| (),
+                )
+                .absolute()
+                .top_0()
+                .left_0()
+                .w_full()
+                .h(px(0.0)),
+            );
+            if wide <= 0.0 {
+                crate::motion::next_frame(window);
+            }
+        }
+        root.child(
+            div()
+                .flex()
+                .items_center()
+                .gap(px(t.spacing.sm))
+                .child(prev)
+                .child(if widths.is_empty() {
+                    div()
+                        .w(px(
+                            visible as f32 * w + (visible as f32 - 1.0).max(0.0) * gap
+                        ))
+                        .overflow_hidden()
+                        .child(
+                            div()
+                                .flex()
+                                .gap(px(gap))
+                                .ml(px(-frac * (w + gap)))
+                                .children(shown),
+                        )
+                } else {
+                    div().flex().gap(px(gap)).children(shown)
+                })
+                .child(next),
+        )
+        .child(
+            div()
+                .flex()
+                .justify_center()
+                .gap(px(t.spacing.xs))
+                .children(dots),
+        )
     }
 }
 

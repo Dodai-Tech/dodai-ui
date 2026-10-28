@@ -402,7 +402,7 @@ impl Showcase {
         let r = &t.palette.roles;
         let carousel = Carousel::new("car")
             .visible(3)
-            .item_width(220.0)
+            .fill(true)
             .selected(self.group_sel)
             .item(tile(r.primary_container, "Primary"))
             .item(tile(r.secondary_container, "Secondary"))
@@ -420,7 +420,7 @@ impl Showcase {
         ] {
             let mut c = Carousel::new(name)
                 .layout(l)
-                .width(560.0)
+                .fill(true)
                 .item_height(140.0)
                 .selected(self.group_sel);
             for (col, label) in [
