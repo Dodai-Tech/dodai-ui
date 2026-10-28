@@ -3,7 +3,7 @@
     feature = "cyberpunk",
     feature = "material",
     feature = "neobrutalism",
-    feature = "aurora"
+    feature = "dodai"
 ))]
 use dodai_core::{themes, ButtonVariant, ControlState, Tone};
 

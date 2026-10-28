@@ -8,7 +8,7 @@
 //!
 //! ```
 //! use dodai_core::{ThemeSwitcher, ButtonVariant, ControlState};
-//! let sw = ThemeSwitcher::default(); // neutral fallback; real themes: the `cyberpunk`, `material`, `neobrutalism` and `aurora` features
+//! let sw = ThemeSwitcher::default(); // neutral fallback; real themes: the `cyberpunk`, `material`, `neobrutalism` and `dodai` features
 //! let t = sw.current().clone();
 //! let b = t.button(ButtonVariant::Primary, ControlState::Idle);
 //! assert!(b.background.is_some());
@@ -31,12 +31,12 @@ mod tune;
 
 pub mod themes;
 
-/// Aurora: frosted glass and gradients (feature `aurora`).
-#[cfg(feature = "aurora")]
-pub mod aurora;
 /// Cyberpunk: six chamfered themes (feature `cyberpunk`).
 #[cfg(feature = "cyberpunk")]
 pub mod cyberpunk;
+/// Dodai: frosted glass and gradients (feature `dodai`).
+#[cfg(feature = "dodai")]
+pub mod dodai;
 /// Material 3: a light/dark pair (feature `material`).
 #[cfg(feature = "material")]
 pub mod material;

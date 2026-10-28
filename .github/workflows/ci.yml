@@ -153,7 +153,7 @@ jobs:
           cargo check -p dodai-gpui --no-default-features --features material
           cargo check -p dodai-gpui --no-default-features --features components,charts,cyberpunk
           cargo check -p dodai-gpui --no-default-features --features components,charts,material
-          cargo check -p dodai-gpui --no-default-features --features components,charts,aurora
+          cargo check -p dodai-gpui --no-default-features --features components,charts,dodai
           cargo check -p dodai-gpui --no-default-features --features components,charts,neobrutalism
           cargo check -p dodai-icons --no-default-features
           cargo check -p dodai-icons --no-default-features --features cyberpunk
@@ -162,7 +162,7 @@ jobs:
           cargo check -p dodai-core --features cyberpunk
           cargo check -p dodai-core --features material
           cargo check -p dodai-core --features neobrutalism
-          cargo check -p dodai-core --features aurora
+          cargo check -p dodai-core --features dodai
 
   # macOS runners exist only on GitHub; on self-hosted Gitea they would queue forever.
   crate-macos:

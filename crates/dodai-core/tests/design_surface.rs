@@ -4,10 +4,10 @@
     feature = "cyberpunk",
     feature = "material",
     feature = "neobrutalism",
-    feature = "aurora"
+    feature = "dodai"
 ))]
 
-use dodai_core::themes::{aurora, cyberpunk, material, neobrutalism};
+use dodai_core::themes::{cyberpunk, dodai, material, neobrutalism};
 use dodai_core::Mode;
 
 #[test]
@@ -35,11 +35,11 @@ fn every_design_has_the_common_surface() {
             neobrutalism::shape_presets().len(),
         ),
         (
-            "aurora",
-            aurora::light(),
-            aurora::dark(),
-            aurora::variants().len(),
-            aurora::shape_presets().len(),
+            "dodai",
+            dodai::light(),
+            dodai::dark(),
+            dodai::variants().len(),
+            dodai::shape_presets().len(),
         ),
     ];
     for (family, light, dark, variants, shapes) in designs {

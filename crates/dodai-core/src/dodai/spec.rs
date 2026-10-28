@@ -1,4 +1,4 @@
-//! The Aurora **design-system spec**: glassy filled and outlined controls, frosted tone fills,
+//! The Dodai **design-system spec**: glassy filled and outlined controls, frosted tone fills,
 //! tinted soft shadows, 16 px controls and 30 px containers.
 
 use crate::{
@@ -11,14 +11,14 @@ use crate::{
 
 const ALL: Corners = Corners::ALL;
 
-/// The Aurora spec (attach with [`crate::Theme::with_spec`]).
+/// The Dodai spec (attach with [`crate::Theme::with_spec`]).
 #[derive(Debug)]
-pub struct Aurora;
+pub struct Dodai;
 
 /// Shared instance for `Theme::with_spec`.
-pub static SPEC: Aurora = Aurora;
+pub static SPEC: Dodai = Dodai;
 
-/// Aurora radii (the `sm … 3xl` tokens): 6 / 10 / 16 / 22 / 30. Generous corners.
+/// Dodai radii (the `sm … 3xl` tokens): 6 / 10 / 16 / 22 / 30. Generous corners.
 pub const SHAPE_SCALE: ShapeScale = ShapeScale {
     xs: 6.0,
     sm: 10.0,
@@ -61,11 +61,11 @@ const ROLES: &[RoleShape] = &[
     r(ShapeRole::AppBar, ShapeSize::None, ALL),
 ];
 
-/// The Aurora shape language: 16 px controls, 30 px containers, pill indicators.
+/// The Dodai shape language: 16 px controls, 30 px containers, pill indicators.
 pub fn shape_system() -> ShapeSystem {
     ShapeSystem {
         pill: ShapeSystem::PILL_OF_CONTROL,
-        name: "Aurora",
+        name: "Dodai",
         scale: SHAPE_SCALE,
         roles: std::borrow::Cow::Borrowed(ROLES),
         default: DefaultShape {
@@ -80,9 +80,9 @@ pub fn shape_system() -> ShapeSystem {
 pub fn shape_system_compact() -> ShapeSystem {
     ShapeSystem {
         pill: ShapeSystem::PILL_OF_CONTROL,
-        name: "Aurora compact",
+        name: "Dodai compact",
         scale: ShapeScale {
-            md: crate::aurora::tokens::radius("lg").unwrap_or(12.0),
+            md: crate::dodai::tokens::radius("lg").unwrap_or(12.0),
             ..SHAPE_SCALE
         },
         ..shape_system()
@@ -92,8 +92,8 @@ pub fn shape_system_compact() -> ShapeSystem {
 /// Shape presets: the default, its compact mode and a squarer take.
 pub fn shape_presets() -> Vec<ShapePreset> {
     vec![
-        ShapePreset::new("aurora", "Aurora", shape_system()),
-        ShapePreset::new("compact", "Aurora compact", shape_system_compact()),
+        ShapePreset::new("dodai", "Dodai", shape_system()),
+        ShapePreset::new("compact", "Dodai compact", shape_system_compact()),
         ShapePreset::new("sharp", "Sharp", ShapeSystem::sharp()),
     ]
 }
@@ -127,16 +127,16 @@ fn lit(state: ControlState) -> bool {
 }
 
 /// The colour tokens of the theme's mode.
-fn mode_tokens(t: &Theme) -> &'static crate::aurora::tokens::ColorTokens {
+fn mode_tokens(t: &Theme) -> &'static crate::dodai::tokens::ColorTokens {
     if t.meta.mode == Mode::Dark {
-        &crate::aurora::tokens::DARK
+        &crate::dodai::tokens::DARK
     } else {
-        &crate::aurora::tokens::LIGHT
+        &crate::dodai::tokens::LIGHT
     }
 }
 
 /// The status token set of a tone in the theme's mode.
-fn status_tokens(t: &Theme, tone: Tone) -> &'static crate::aurora::tokens::StatusTokens {
+fn status_tokens(t: &Theme, tone: Tone) -> &'static crate::dodai::tokens::StatusTokens {
     let m = mode_tokens(t);
     match tone {
         Tone::Info => &m.info,
@@ -210,9 +210,9 @@ fn selection(t: &Theme, kind: ToggleKind, on: bool, state: ControlState) -> Togg
     }
 }
 
-impl DesignSpec for Aurora {
+impl DesignSpec for Dodai {
     fn name(&self) -> &'static str {
-        "Aurora"
+        "Dodai"
     }
 
     /// Glassy: soft lines, faint gridlines, a luminous area fill.
@@ -292,9 +292,9 @@ impl DesignSpec for Aurora {
         let p = &t.palette;
         // The toast is inverted, so its action uses the other mode's info colour.
         let other = if t.meta.mode == Mode::Dark {
-            &crate::aurora::tokens::LIGHT
+            &crate::dodai::tokens::LIGHT
         } else {
-            &crate::aurora::tokens::DARK
+            &crate::dodai::tokens::DARK
         };
         let action = other.info.base.color();
         Some((surface(Some(p.primary), None, p.on_primary, true), action))
@@ -564,14 +564,14 @@ impl DesignSpec for Aurora {
     /// The focus colour, 2 px.
     fn focus_ring(&self, _t: &Theme) -> Option<(Color, f32)> {
         Some((
-            crate::aurora::tokens::LIGHT.focus,
-            crate::aurora::tokens::FOCUS_WIDTH,
+            crate::dodai::tokens::LIGHT.focus,
+            crate::dodai::tokens::FOCUS_WIDTH,
         ))
     }
 
     /// The page grid: outer margins, fluid gap, 4 or 12 columns, 2560 px at most.
     fn page_grid(&self, _t: &Theme, viewport: f32) -> Option<crate::GridSpec> {
-        use crate::aurora::tokens as k;
+        use crate::dodai::tokens as k;
         Some(crate::GridSpec {
             columns: k::grid_columns(viewport),
             gap: k::grid_gap(viewport),
@@ -582,7 +582,7 @@ impl DesignSpec for Aurora {
 
     /// The fluid type scale (2xs … xl) and fluid spacing (xs … xl) at the viewport width.
     fn fluid(&self, t: &Theme, viewport: f32) -> Option<crate::Fluid> {
-        use crate::aurora::tokens as k;
+        use crate::dodai::tokens as k;
         let ty = |n| k::type_size(n, viewport).unwrap_or(16.0);
         let sp = |n| k::spacing_fluid(n, viewport).unwrap_or(16.0);
         let mut typography = t.typography.clone();
@@ -608,16 +608,16 @@ impl DesignSpec for Aurora {
     fn frost(&self, t: &Theme) -> Option<crate::Frost> {
         Some(crate::Frost {
             tint: mode_tokens(t).frosted.color(),
-            blur: crate::aurora::tokens::BLUR_FROSTED,
+            blur: crate::dodai::tokens::BLUR_FROSTED,
             edge: None,
-            saturation: crate::aurora::tokens::FROST_SATURATION,
+            saturation: crate::dodai::tokens::FROST_SATURATION,
         })
     }
 
     /// `$gradient-stops-fade-dark`.
     fn fade_stops(&self, _t: &Theme) -> Option<Vec<crate::FadeStop>> {
         Some(
-            crate::aurora::tokens::GRADIENT_FADE_DARK
+            crate::dodai::tokens::GRADIENT_FADE_DARK
                 .iter()
                 .map(|(a, p)| crate::FadeStop {
                     alpha: *a,
@@ -629,7 +629,7 @@ impl DesignSpec for Aurora {
 
     /// The shadow tiers `sm / md / lg`: levels 1 → sm, 2-3 → md, 4-5 → lg.
     fn elevation_layers(&self, _t: &Theme, level: u8) -> Option<Vec<crate::ShadowLayer>> {
-        use crate::aurora::tokens::{SHADOW_LG, SHADOW_MD, SHADOW_SM};
+        use crate::dodai::tokens::{SHADOW_LG, SHADOW_MD, SHADOW_SM};
         let s = match level {
             0 => return Some(Vec::new()),
             1 => SHADOW_SM,
@@ -655,7 +655,7 @@ mod tests {
 
     #[test]
     fn shape_scale_is_the_radius_tokens() {
-        use crate::aurora::tokens::radius;
+        use crate::dodai::tokens::radius;
         let sc = SHAPE_SCALE;
         assert_eq!(Some(sc.xs), radius("sm"));
         assert_eq!(Some(sc.sm), radius("md"));
@@ -667,7 +667,7 @@ mod tests {
 
     #[test]
     fn responsive_theme_follows_the_viewport() {
-        let t = crate::aurora::light();
+        let t = crate::dodai::light();
         let (narrow, wide) = (t.responsive(480.0), t.responsive(1920.0));
         assert!(narrow.typography.size_lg < wide.typography.size_lg);
         assert!(narrow.spacing.lg < wide.spacing.lg);
@@ -687,7 +687,7 @@ mod tests {
 
     #[test]
     fn shadows_use_the_tiers() {
-        let t = crate::aurora::light();
+        let t = crate::dodai::light();
         let l = |n| SPEC.elevation_layers(&t, n).unwrap();
         let at = |n| {
             let l = &l(n)[0];
@@ -701,7 +701,7 @@ mod tests {
 
     #[test]
     fn typography_and_spacing_come_from_the_tokens() {
-        let t = crate::aurora::light();
+        let t = crate::dodai::light();
         assert_eq!(t.typography.size_md, 15.0);
         assert_eq!(t.typography.size_sm, 14.0);
         assert_eq!(t.typography.size_xs, 12.0);
@@ -711,20 +711,20 @@ mod tests {
 
     #[test]
     fn two_unique_themes() {
-        let v = crate::aurora::variants();
+        let v = crate::dodai::variants();
         assert_eq!(v.len(), 2);
-        assert_eq!(v[0].id(), "aurora");
-        assert_eq!(v[1].id(), "aurora-dark");
+        assert_eq!(v[0].id(), "dodai");
+        assert_eq!(v[1].id(), "dodai-dark");
         for t in &v {
-            assert_eq!(t.spec.name(), "Aurora");
-            assert_eq!(t.meta.family, "aurora");
+            assert_eq!(t.spec.name(), "Dodai");
+            assert_eq!(t.meta.family, "dodai");
             assert!(!t.effects.glow_enabled() && t.effects.hard_shadow == 0.0);
         }
     }
 
     #[test]
     fn text_is_legible_on_its_surfaces() {
-        for t in crate::aurora::variants() {
+        for t in crate::dodai::variants() {
             let p = &t.palette;
             for (bg, fg) in [
                 (p.background, p.text),
@@ -739,7 +739,7 @@ mod tests {
 
     #[test]
     fn look_is_soft_and_flat() {
-        for t in crate::aurora::variants() {
+        for t in crate::dodai::variants() {
             let l = t.look();
             assert!(
                 l.soft_elevation && !l.tonal && !l.sink && !l.luminous,
@@ -752,7 +752,7 @@ mod tests {
 
     #[test]
     fn controls_are_sixteen_and_cards_thirty() {
-        let t = crate::aurora::light();
+        let t = crate::dodai::light();
         let ss = t.shape_system.as_ref().unwrap();
         assert_eq!(ss.scale.md, 16.0);
         assert_eq!(ss.scale.xl, 30.0);
@@ -760,7 +760,7 @@ mod tests {
 
     #[test]
     fn primary_is_filled_and_secondary_outlined() {
-        for t in crate::aurora::variants() {
+        for t in crate::dodai::variants() {
             let pr = t.button(ButtonVariant::Primary, ControlState::Idle);
             assert_eq!(pr.background, Some(t.palette.primary));
             assert_eq!(pr.border, None);

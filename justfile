@@ -113,7 +113,7 @@ check-gpui-features:
     cargo check -p dodai-core --features cyberpunk
     cargo check -p dodai-core --features material
     cargo check -p dodai-core --features neobrutalism
-    cargo check -p dodai-core --features aurora
+    cargo check -p dodai-core --features dodai
 
 test-ratatui:
     cargo test -p dodai-ratatui

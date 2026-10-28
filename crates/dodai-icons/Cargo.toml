@@ -36,4 +36,4 @@ name = "cyberpunk_sheet"
 required-features = ["cyberpunk"]
 
 [dev-dependencies]
-dodai-core = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "aurora"] }
+dodai-core = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "dodai"] }

@@ -1,7 +1,7 @@
-//! **Aurora**: frosted glass and gradients. Deep indigo ink on a pearl canvas (or lavender-white
+//! **Dodai**: frosted glass and gradients. Deep indigo ink on a pearl canvas (or lavender-white
 //! on deep night), 16 px controls, 30 px containers, hairline borders, tinted soft shadows and a
-//! violet-through-blue-to-teal gradient as the signature accent. Token values are Aurora's own
-//! (see [`tokens`](crate::aurora::tokens)).
+//! violet-through-blue-to-teal gradient as the signature accent. Token values are Dodai's own
+//! (see [`tokens`](crate::dodai::tokens)).
 
 use crate::themes::ThemeBuilder;
 use crate::{Corners, Mode, Shape, Spacing, Theme, ThemeMeta, Typography};
@@ -9,7 +9,7 @@ use crate::{Corners, Mode, Shape, Spacing, Theme, ThemeMeta, Typography};
 mod spec;
 pub mod surface;
 pub mod tokens;
-pub use spec::{shape_presets, shape_system, shape_system_compact, Aurora, SHAPE_SCALE, SPEC};
+pub use spec::{shape_presets, shape_system, shape_system_compact, Dodai, SHAPE_SCALE, SPEC};
 
 /// The `sm` duration on the soft in-out easing.
 fn motion() -> crate::Motion {
@@ -117,13 +117,13 @@ fn build(mode: Mode) -> Theme {
     let c = &ink(if dark { &tokens::DARK } else { &tokens::LIGHT });
     let mut t = ThemeBuilder {
         meta: ThemeMeta {
-            id: if dark { "aurora-dark" } else { "aurora" },
+            id: if dark { "dodai-dark" } else { "dodai" },
             name: if dark {
-                "Aurora · Dark"
+                "Dodai · Dark"
             } else {
-                "Aurora · Light"
+                "Dodai · Light"
             },
-            family: "aurora",
+            family: "dodai",
             description:
                 "Frosted glass and gradients: indigo ink, pearl canvas, soft tinted shadows",
             mode,

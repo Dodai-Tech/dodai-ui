@@ -1,5 +1,5 @@
 //! Theme building blocks and the registry of the enabled design systems
-//! (features `cyberpunk`, `material`, `neobrutalism`, `aurora`); [`neutral`] is the fallback.
+//! (features `cyberpunk`, `material`, `neobrutalism`, `dodai`); [`neutral`] is the fallback.
 //!
 //! **Adding a theme:** return a [`crate::Theme`] — the
 //! easiest way is [`ThemeBuilder`], which derives hover/active/selection roles from a
@@ -9,10 +9,10 @@
 
 use crate::Theme;
 
-#[cfg(feature = "aurora")]
-pub use crate::aurora;
 #[cfg(feature = "cyberpunk")]
 pub use crate::cyberpunk;
+#[cfg(feature = "dodai")]
+pub use crate::dodai;
 #[cfg(feature = "material")]
 pub use crate::material;
 #[cfg(feature = "neobrutalism")]
@@ -228,11 +228,11 @@ pub struct DesignSystem {
 /// `dist` export pick it up.
 pub fn systems() -> Vec<DesignSystem> {
     let all: Vec<Option<DesignSystem>> = Vec::from([
-        #[cfg(feature = "aurora")]
+        #[cfg(feature = "dodai")]
         Some(DesignSystem {
-            family: "aurora",
-            name: "Aurora",
-            themes: crate::aurora::variants,
+            family: "dodai",
+            name: "Dodai",
+            themes: crate::dodai::variants,
         }),
         #[cfg(feature = "cyberpunk")]
         Some(DesignSystem {

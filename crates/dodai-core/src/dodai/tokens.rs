@@ -1,7 +1,7 @@
-//! Every Aurora design token as a typed value: colour (light and dark, with the alpha ramps,
+//! Every Dodai design token as a typed value: colour (light and dark, with the alpha ramps,
 //! frosted-glass fills and status tones), typography, spacing (static and fluid), radii, blur,
 //! shadows, durations, easings, borders, focus, breakpoints, the page grid, the media fade and
-//! the aurora gradient. The theme in this crate is built from these; they are public so a layout
+//! the dodai gradient. The theme in this crate is built from these; they are public so a layout
 //! can use the ones the generic token set has no slot for (shadows, blur, fluid scales, grid).
 
 use crate::Color;
@@ -512,10 +512,10 @@ pub struct Stop {
     pub color: Hsla,
 }
 
-/// The signature aurora gradient of one mode, violet through blue to teal, at
+/// The signature dodai gradient of one mode, violet through blue to teal, at
 /// [`GRADIENT_ANGLE`] degrees (0 = towards the top, clockwise).
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Aurora {
+pub struct Dodai {
     pub stops: [Stop; 3],
 }
 
@@ -527,7 +527,7 @@ const fn stop(at: f32, h: f32, s: f32, l: f32) -> Stop {
 }
 
 /// Light mode: saturated enough to read on white glass.
-pub const AURORA_LIGHT: Aurora = Aurora {
+pub const DODAI_LIGHT: Dodai = Dodai {
     stops: [
         stop(0.0, 268.0, 82.0, 62.0),
         stop(0.55, 226.0, 90.0, 60.0),
@@ -536,7 +536,7 @@ pub const AURORA_LIGHT: Aurora = Aurora {
 };
 
 /// Dark mode: the same hues, lit from within.
-pub const AURORA_DARK: Aurora = Aurora {
+pub const DODAI_DARK: Dodai = Dodai {
     stops: [
         stop(0.0, 268.0, 90.0, 68.0),
         stop(0.55, 226.0, 100.0, 66.0),
@@ -547,7 +547,7 @@ pub const AURORA_DARK: Aurora = Aurora {
 /// The gradient direction in degrees, 0 = towards the top, clockwise: a 135° diagonal.
 pub const GRADIENT_ANGLE: f32 = 135.0;
 
-impl Aurora {
+impl Dodai {
     /// The colour at `t` (`0.0..=1.0`), blended between the stops.
     pub fn at(self, t: f32) -> Color {
         let t = t.clamp(0.0, 1.0);
@@ -635,8 +635,8 @@ mod tests {
     }
 
     #[test]
-    fn the_aurora_runs_from_violet_to_teal() {
-        for g in [AURORA_LIGHT, AURORA_DARK] {
+    fn the_dodai_runs_from_violet_to_teal() {
+        for g in [DODAI_LIGHT, DODAI_DARK] {
             let (a, b) = (g.at(0.0), g.at(1.0));
             assert!(a.b > a.g && b.g > b.r, "{a:?} {b:?}");
             assert_eq!(g.at(0.55), g.stops[1].color.color());

@@ -61,12 +61,12 @@ Persist `theme.id()` (e.g. `"cyberpunk-cyan"`) in your config and restore with `
 ## Pick only what you need
 
 `dodai-core` carries the engine and the four design systems behind Cargo features
-(`cyberpunk`, `material`, `neobrutalism`, `aurora`; all off by default). Icons and
+(`cyberpunk`, `material`, `neobrutalism`, `dodai`; all off by default). Icons and
 shaders are their own crates.
 
 | Crate | What it is |
 |---|---|
-| [`dodai-core`](crates/dodai-core) | Tokens, `Theme`, `ThemeSwitcher`, `ThemeBuilder`, DTCG export. Designs by feature: 6 Cyberpunk themes, the Material 3 pair, Neo-Brutalism (seven accents, light and dark) and Aurora (frosted glass) |
+| [`dodai-core`](crates/dodai-core) | Tokens, `Theme`, `ThemeSwitcher`, `ThemeBuilder`, DTCG export. Designs by feature: 6 Cyberpunk themes, the Material 3 pair, Neo-Brutalism (seven accents, light and dark) and Dodai (frosted glass) |
 | [`dodai-icons`](crates/dodai-icons) | Every icon in one crate, packs chosen by feature: the typed `IconId`, the Cyberpunk pack (378 hand-drawn, curve-free icons), the full Material Symbols catalogue (3,900+ icons, outlined/rounded/sharp + fill) and Phosphor-derived sets |
 | [`dodai-fx`](crates/dodai-fx) | Surface textures and effects, plus frosted-glass blur. No dependencies |
 | [`dodai-shaders`](crates/dodai-shaders) | Pixel shaders |

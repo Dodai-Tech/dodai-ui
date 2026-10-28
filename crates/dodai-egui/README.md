@@ -17,7 +17,7 @@ ctl.install(ctx);          // every frame; no-op if unchanged
 ctl.handle_keys(ctx);
 ```
 
-Every design system is bundled (`cyberpunk`, `material`, `neobrutalism`, `aurora` features). Also:
+Every design system is bundled (`cyberpunk`, `material`, `neobrutalism`, `dodai` features). Also:
 
 - **Shape tuning**: `ThemeController::tune` (`dodai_core::ShapeTune`): roundness, border width and
   colour, outline-all, hard shadow offset and direction.

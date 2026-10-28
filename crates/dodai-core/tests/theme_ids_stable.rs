@@ -4,7 +4,7 @@
     feature = "cyberpunk",
     feature = "material",
     feature = "neobrutalism",
-    feature = "aurora"
+    feature = "dodai"
 ))]
 
 #[test]

@@ -139,7 +139,7 @@ impl Theme {
     /// Builder for touch screens: every control is at least `min_target` px tall (use
     /// [`Theme::TOUCH_TARGET`], 48 px) and neighbouring targets are at least
     /// [`Theme::TOUCH_GAP`] px apart. Larger controls and gaps are left alone, so a design that
-    /// is already roomy (Cyberpunk, Aurora at 48) does not change. Type and icons keep their size.
+    /// is already roomy (Cyberpunk, Dodai at 48) does not change. Type and icons keep their size.
     pub fn with_min_target(mut self, min_target: f32) -> Self {
         if min_target.is_finite() {
             let h = (min_target.clamp(24.0, 96.0) * 2.0).round() / 2.0;

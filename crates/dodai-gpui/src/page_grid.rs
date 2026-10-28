@@ -1,5 +1,5 @@
 //! [`PageGrid`]: the page grid of the active design (columns, gap and outer margins at the
-//! viewport width). Compiled with the `aurora` feature, which is the design that defines one.
+//! viewport width). Compiled with the `dodai` feature, which is the design that defines one.
 
 use crate::theme_of;
 use gpui::{div, px, AnyElement, App, IntoElement, ParentElement, Styled, Window};

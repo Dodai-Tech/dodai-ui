@@ -17,8 +17,8 @@ const OWNED: &[(&str, &str, &[&str])] = &[
         &["Overscroll", "OverscrollFeel"],
     ),
     ("cyberpunk", "scanlines.rs", &["Scanlines"]),
-    ("aurora", "frosted.rs", &["FrostedScene"]),
-    ("aurora", "page_grid.rs", &["PageGrid"]),
+    ("dodai", "frosted.rs", &["FrostedScene"]),
+    ("dodai", "page_grid.rs", &["PageGrid"]),
 ];
 
 fn words(s: &str) -> impl Iterator<Item = &str> {

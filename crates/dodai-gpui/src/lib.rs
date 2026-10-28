@@ -32,7 +32,7 @@
 //! |---|---|
 //! | `material` | [`expressive`]: `ButtonGroup`, `SplitButton`, `LoadingIndicator`; `overscroll` |
 //! | `cyberpunk` | `scanlines` |
-//! | `aurora` | `frosted` (`FrostedScene`), `page_grid` (`PageGrid`) |
+//! | `dodai` | `frosted` (`FrostedScene`), `page_grid` (`PageGrid`) |
 //! | `neobrutalism` | none; its look is tokens and spec only |
 //!
 //! Everything else is shared by all designs and looks different only through tokens.
@@ -163,7 +163,7 @@ macro_rules! callback {
 #[cfg(any(feature = "components", feature = "charts"))]
 pub(crate) use callback;
 
-#[cfg(any(feature = "shaders", feature = "aurora"))]
+#[cfg(any(feature = "shaders", feature = "dodai"))]
 pub mod backdrop;
 #[cfg(feature = "components")]
 pub mod button;
@@ -230,7 +230,7 @@ pub mod extras;
 pub mod feedback;
 #[cfg(feature = "components")]
 pub mod forms;
-#[cfg(feature = "aurora")]
+#[cfg(feature = "dodai")]
 pub mod frosted;
 #[cfg(feature = "charts")]
 pub mod gauges;
@@ -283,7 +283,7 @@ pub mod navigation;
 pub mod overlay;
 #[cfg(all(feature = "components", feature = "material"))]
 pub mod overscroll;
-#[cfg(feature = "aurora")]
+#[cfg(feature = "dodai")]
 pub mod page_grid;
 pub mod paint;
 pub mod panel;
@@ -441,13 +441,13 @@ pub use instruments_vehicle::{
 };
 #[cfg(feature = "components")]
 mod icon_names;
-#[cfg(any(feature = "shaders", feature = "aurora"))]
+#[cfg(any(feature = "shaders", feature = "dodai"))]
 pub use backdrop::backdrop;
 #[cfg(feature = "components")]
 #[cfg(all(feature = "components", feature = "material"))]
 pub use expressive::{ButtonGroup, LoadingIndicator, SplitButton};
 #[cfg(feature = "shaders")]
-#[cfg(feature = "aurora")]
+#[cfg(feature = "dodai")]
 pub use frosted::FrostedScene;
 #[cfg(feature = "components")]
 pub use knob::Knob;
@@ -470,7 +470,7 @@ pub use navigation::{NavigationBar, NavigationDrawer, NavigationItem, Navigation
 pub use overlay::{Dialog, DialogCard};
 #[cfg(all(feature = "components", feature = "material"))]
 pub use overscroll::{Overscroll, OverscrollFeel};
-#[cfg(feature = "aurora")]
+#[cfg(feature = "dodai")]
 pub use page_grid::PageGrid;
 pub use paint::Playback;
 pub use paint::{shaped, ShapeEdge, ShapeStyle};
@@ -880,12 +880,12 @@ pub mod prelude {
     pub use dodai_core::{ButtonVariant, ControlSize, ControlState, Theme, Tone};
 }
 
-/// The Aurora design (tokens and spec), re-exported so the feature alone is enough.
-#[cfg(feature = "aurora")]
-pub use dodai_core::aurora;
 /// The Cyberpunk design (tokens and spec).
 #[cfg(feature = "cyberpunk")]
 pub use dodai_core::cyberpunk;
+/// The Dodai design (tokens and spec), re-exported so the feature alone is enough.
+#[cfg(feature = "dodai")]
+pub use dodai_core::dodai;
 /// The Material design (tokens and spec).
 #[cfg(feature = "material")]
 pub use dodai_core::material;
@@ -894,6 +894,6 @@ pub use dodai_core::material;
 pub use dodai_core::neobrutalism;
 
 /// Compiles the README's example as a doctest so it cannot rot.
-#[cfg(all(doctest, feature = "aurora"))]
+#[cfg(all(doctest, feature = "dodai"))]
 #[doc = include_str!("../README.md")]
 struct ReadmeDoctests;

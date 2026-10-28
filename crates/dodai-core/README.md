@@ -4,7 +4,7 @@ Framework-agnostic design tokens (colour roles, typography, spacing, shape, effe
 resolved component styles, `ThemeSwitcher` and the four design systems of Dodai UI.
 
 ```toml
-dodai-core = { version = "0.1", features = ["material"] }   # cyberpunk, material, neobrutalism, aurora
+dodai-core = { version = "0.1", features = ["material"] }   # cyberpunk, material, neobrutalism, dodai
 ```
 
 ```rust

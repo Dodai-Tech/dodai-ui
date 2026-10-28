@@ -74,7 +74,7 @@ impl ShadowDir {
 }
 
 /// How strongly a design's gradient shows: the canvas mesh, the `wash` over surfaces and the
-/// `rim` along outlines. Only designs that have a gradient (Aurora) react to it.
+/// `rim` along outlines. Only designs that have a gradient (Dodai) react to it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum GradientMode {
     /// No gradient anywhere: a flat canvas and plain surfaces.
