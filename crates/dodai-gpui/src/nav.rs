@@ -10,6 +10,8 @@ use gpui::{
     div, px, App, ElementId, InteractiveElement, IntoElement, ParentElement, SharedString,
     StatefulInteractiveElement, Styled, Window,
 };
+use std::cell::RefCell;
+use std::rc::Rc;
 
 /// Path trail; the last crumb is the current page. Earlier crumbs are clickable.
 #[derive(IntoElement)]
@@ -349,11 +351,11 @@ impl Segmented {
             motion: None,
         }
     }
-    /// How the selection moves between segments. Defaults to the design's own
+    /// How the selection moves between segments. `None` (the default) is the design's own
     /// ([`Look::selection`](dodai_core::Look::selection)). Material segmented buttons switch in
     /// place, as their spec says.
-    pub fn animation(mut self, a: crate::motion::SelectionMotion) -> Self {
-        self.animation = Some(a);
+    pub fn animation(mut self, a: impl Into<Option<crate::motion::SelectionMotion>>) -> Self {
+        self.animation = a.into();
         self
     }
     /// Pace, easing and travel of the selection. Defaults to the design's motion.
@@ -565,6 +567,8 @@ crate::entry_render!(Segmented);
 
 struct AccState {
     open: Vec<bool>,
+    /// Each body's natural height, measured as it draws.
+    heights: Rc<RefCell<Vec<f32>>>,
 }
 
 /// Collapsible sections `(title, body)`. Each toggles independently; sections
@@ -575,6 +579,7 @@ pub struct Accordion {
     items: Vec<(SharedString, SharedString)>,
     open: Vec<usize>,
     corners: Option<dodai_core::Corners>,
+    motion: Option<crate::motion::Motion>,
 }
 
 crate::corners_setter!(Accordion);
@@ -587,7 +592,14 @@ impl Accordion {
             id: id.into(),
             items: Vec::new(),
             open: Vec::new(),
+            motion: None,
         }
+    }
+    /// Pace, easing and travel of opening and closing (a spring overshoots a little). Defaults
+    /// to the design's motion.
+    pub fn motion(mut self, m: crate::motion::Motion) -> Self {
+        self.motion = Some(m);
+        self
     }
     /// Add an item.
     pub fn item(mut self, title: impl Into<SharedString>, body: impl Into<SharedString>) -> Self {
@@ -609,8 +621,14 @@ impl Accordion {
         let initial = self.open.clone();
         let st = window.use_keyed_state(self.id.clone(), cx, move |_, _| AccState {
             open: (0..n).map(|i| initial.contains(&i)).collect(),
+            heights: Rc::default(),
         });
         let open = st.read(cx).open.clone();
+        let heights = st.read(cx).heights.clone();
+        let motion = {
+            use crate::motion::MotionExt;
+            self.motion.unwrap_or_else(|| crate::motion::Motion::of(cx))
+        };
         let outer = ShapeStyle::from_tokens(&t, None, Some(t.palette.border), false, false);
         let mut col = shaped(&t.shape, outer)
             .w_full()
@@ -659,25 +677,52 @@ impl Accordion {
                 col = col.child(div().h(px(1.0)).w_full().bg(hsla(t.palette.border)));
             }
             col = col.child(head);
-            let p = crate::motion::transition(
+            let p = crate::motion::smooth_with(
                 window,
                 cx,
                 (self.id.clone(), format!("b{i}")).into(),
-                is_open,
+                if is_open { 1.0 } else { 0.0 },
+                motion,
             );
             if p > 0.001 {
-                let lines = (body.len() as f32 / 60.0).ceil().max(1.0);
-                let full = lines * (t.typography.size_sm * 1.5) + t.spacing.md;
-                let mut b = div()
+                let hs = heights.clone();
+                let measure = gpui::canvas(
+                    move |b, w, _| {
+                        let now: f32 = b.size.height.into();
+                        let mut hs = hs.borrow_mut();
+                        if hs.len() <= i {
+                            hs.resize(i + 1, 0.0);
+                        }
+                        if (now - hs[i]).abs() > 0.5 {
+                            hs[i] = now;
+                            w.refresh();
+                        }
+                    },
+                    |_, _, _, _| (),
+                )
+                .absolute()
+                .top_0()
+                .left_0()
+                .size_full();
+                let b = div()
+                    .relative()
                     .px(px(t.spacing.lg + 4.0))
                     .pb(px(t.spacing.md))
                     .text_size(px(t.typography.size_sm))
                     .text_color(hsla(t.palette.text_muted))
-                    .child(body.clone());
-                if p < 0.999 {
-                    b = b.overflow_hidden().h(px(full * p)).opacity(p);
-                }
-                col = col.child(b);
+                    .child(body.clone())
+                    .child(measure);
+                // Open and settled: natural height. Moving: the measured height, scaled.
+                col = col.child(if p < 0.999 {
+                    let full = heights.borrow().get(i).copied().unwrap_or(0.0);
+                    div()
+                        .overflow_hidden()
+                        .h(px(full * p))
+                        .opacity(p.min(1.0))
+                        .child(b)
+                } else {
+                    div().child(b)
+                });
             }
         }
         col

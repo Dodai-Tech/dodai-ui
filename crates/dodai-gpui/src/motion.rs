@@ -10,7 +10,7 @@ use std::time::Duration;
 
 pub use dodai_core::motion::{
     lerp, reveal, stagger_window, Clip, Curve, Easing, EntryKind, EntrySet, Glide, Glitch, Motion,
-    SelectionMotion, Spring, Stretch, Travel, Tween,
+    Pose, SelectionMotion, Spring, Stretch, Travel, Tween,
 };
 
 /// The app-wide motion override installed by [`MotionExt::set_default`].
@@ -417,8 +417,8 @@ pub fn stretch(
 }
 
 /// Plays a one-shot clip each time `key` changes (not on first sight), keyed under `id`.
-/// `Some(frame)` while it runs, `None` at rest. Build the clip from a paced motion so speed and
-/// the on/off switch apply (a zero-length clip never shows).
+/// `Some(frame)` while it runs, `None` at rest. The clip plays at the app's speed and is skipped
+/// while animation is off or motion is reduced (a zero-length clip never shows).
 pub fn play_on_change<K, T>(
     window: &mut gpui::Window,
     cx: &mut App,
@@ -440,8 +440,11 @@ where
     if st.read(cx).0 != key {
         st.update(cx, |s, _| *s = (key, t));
     }
+    if !enabled() || reduce_motion() {
+        return None;
+    }
     let clip = clip();
-    let elapsed = t - st.read(cx).1;
+    let elapsed = (t - st.read(cx).1) * speed();
     if clip.done(elapsed) {
         return None;
     }

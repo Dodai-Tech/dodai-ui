@@ -143,8 +143,9 @@ pub struct Showcase {
     tags: Vec<&'static str>,
     focus: FocusHandle,
     tab: usize,
-    /// The tabs' animation: 0 follows the design, then each `SelectionMotion` in order.
-    tab_animation: usize,
+    /// The selection animation shown on tabs, segmented controls and toggles: `None` follows
+    /// the design.
+    animation: Option<dodai_gpui::motion::SelectionMotion>,
     switch: bool,
     check: bool,
     radio: usize,

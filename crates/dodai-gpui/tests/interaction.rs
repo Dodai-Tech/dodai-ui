@@ -1102,3 +1102,74 @@ fn the_playback_switches_pace_every_motion(cx: &mut TestAppContext) {
         assert_eq!(pace(m).duration, m.duration);
     });
 }
+
+/// Every selection animation, on a classic and a Material design, toggles switches,
+/// checkboxes and radios on click.
+#[gpui::test]
+fn every_selection_animation_toggles_the_choice_controls(cx: &mut TestAppContext) {
+    use dodai_gpui::motion::SelectionMotion;
+    for theme in [dodai_core::dodai::light(), dodai_core::material::light()] {
+        for kind in SelectionMotion::ALL {
+            for control in 0..3 {
+                let seen = Rc::new(RefCell::new(Vec::<bool>::new()));
+                let s = seen.clone();
+                let vcx = mount(cx, move |_, _| {
+                    let s = s.clone();
+                    let f =
+                        move |v: bool, _: &mut Window, _: &mut gpui::App| s.borrow_mut().push(v);
+                    match control {
+                        0 => Toggle::new("c", false)
+                            .animation(kind)
+                            .on_change(f)
+                            .into_any_element(),
+                        1 => Checkbox::new("c", false)
+                            .animation(kind)
+                            .on_change(f)
+                            .into_any_element(),
+                        _ => Radio::new("c", false)
+                            .animation(kind)
+                            .on_change(f)
+                            .into_any_element(),
+                    }
+                });
+                vcx.update(|_, cx| install(cx, theme.clone()));
+                vcx.run_until_parked();
+                let (x, y, w, h) = target(vcx);
+                click(vcx, x + w / 2.0, y + h / 2.0);
+                click(vcx, x + w / 2.0, y + h / 2.0);
+                let want = if control == 2 {
+                    vec![true, true]
+                } else {
+                    vec![true, false]
+                };
+                assert_eq!(*seen.borrow(), want, "{kind:?}, control {control}");
+            }
+        }
+    }
+}
+
+/// An accordion section opens to its body's measured height and closes again.
+#[gpui::test]
+fn accordion_opens_to_the_measured_body(cx: &mut TestAppContext) {
+    let vcx = mount(cx, |_, _| {
+        div()
+            .w(px(320.0))
+            .child(Accordion::new("acc").item(
+                "Shipping",
+                "Orders ship within two days. Tracking arrives by email once the parcel leaves.",
+            ))
+            .into_any_element()
+    });
+    let (x, y, _, closed) = target(vcx);
+    click(vcx, x + 40.0, y + 10.0);
+    settle(vcx);
+    let (_, _, _, open) = target(vcx);
+    assert!(open > closed + 20.0, "opened from {closed} to {open}");
+    click(vcx, x + 40.0, y + 10.0);
+    settle(vcx);
+    let (_, _, _, shut) = target(vcx);
+    assert!(
+        (shut - closed).abs() < 1.0,
+        "closed back to {shut}, was {closed}"
+    );
+}

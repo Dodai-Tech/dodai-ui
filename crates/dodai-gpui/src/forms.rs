@@ -31,7 +31,8 @@ pub enum FieldState {
     Success(SharedString),
 }
 
-/// Label + control + help or validation message.
+/// Label + control + help or validation message. When an error appears (or changes) the
+/// control shakes, in the design's personality; fields are told apart by their label.
 ///
 /// ```ignore
 /// FormField::new("Email").required(true).help("We never share it").child(input)
@@ -94,8 +95,23 @@ impl FormField {
 }
 
 impl RenderOnce for FormField {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        use crate::motion::{Clip, MotionExt, Pose};
         let t = theme_of(cx);
+        let error = match &self.state {
+            FieldState::Error(m) => Some(m.clone()),
+            _ => None,
+        };
+        let personality = crate::motion::Motion::of(cx).personality;
+        let id = ElementId::Name(format!("field-{}", self.label).into());
+        let shaking = error.is_some();
+        let pose = crate::motion::play_on_change(window, cx, id, error, || {
+            if shaking {
+                dodai_core::motion::shake(personality)
+            } else {
+                Clip::constant(Pose::IDENTITY)
+            }
+        });
         let p = &t.palette;
         let (msg, color, glyph) = match &self.state {
             FieldState::Error(m) => (Some(m.clone()), p.danger, "✕"),
@@ -123,7 +139,15 @@ impl RenderOnce for FormField {
             .w_full()
             .font_family(first_family(t.typography.body))
             .child(label)
-            .children(self.children);
+            .child(
+                div()
+                    .relative()
+                    .left(px(pose.map_or(0.0, |p| p.dx)))
+                    .flex()
+                    .flex_col()
+                    .gap(px(t.spacing.xs))
+                    .children(self.children),
+            );
         if let Some(m) = msg {
             col = col.child(
                 div()

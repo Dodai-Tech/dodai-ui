@@ -36,6 +36,28 @@ impl Showcase {
             .scope_key(self.sec_replay.get(title).copied().unwrap_or(0))
     }
 
+    /// Picks the selection animation the demo components are given ("Design's own" passes
+    /// `None`); only the value travels, the components do the animating.
+    pub(crate) fn animation_picker(&self, id: &'static str, cx: &mut Context<Self>) -> Segmented {
+        use dodai_gpui::motion::SelectionMotion;
+        let me = cx.entity();
+        let at = self
+            .animation
+            .and_then(|a| SelectionMotion::ALL.iter().position(|&b| b == a))
+            .map_or(0, |i| i + 1);
+        Segmented::new(
+            id,
+            std::iter::once("Design's own").chain(SelectionMotion::ALL.map(|a| a.label())),
+        )
+        .selected(at)
+        .on_select(move |i, _, cx| {
+            me.update(cx, |s, cx| {
+                s.animation = i.checked_sub(1).map(|i| SelectionMotion::ALL[i]);
+                cx.notify();
+            })
+        })
+    }
+
     /// The group builders of a category. Each builds a few related sections; they are called
     /// only when one of their sections is on screen.
     pub(crate) fn groups_of(cat: &str) -> Vec<Group> {

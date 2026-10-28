@@ -14,8 +14,9 @@ Nothing here was verified with live clicks or keys; it comes from code and the u
   `Carousel`, `List`, `Chip`-like rows, `Stepper`.
 - **Focus ring** is drawn through one path (`interact.rs`) and every design supplies
   `focus_ring`. Good; but components that never take focus never show it (see keyboard).
-- **Reduced motion**: only the showcase "Animate" switch. No OS "reduce motion" setting is read,
-  and `Motion` has no reduced variant. `animation_time()` stops, but tabs, tweens and glitch run.
+- **Reduced motion**: `motion::set_reduce_motion`, `set_enabled` and `set_speed` pace every
+  component animation (`motion::pace`, `play_on_change`). The OS "reduce motion" setting is not
+  read yet.
 - **Frame requests** rely on `Window::on_next_frame` plus a notify. In an unfocused window with no
   input a lone tween (no 16 ms loop on that page) may not redraw; worth a regression test.
 
@@ -38,14 +39,17 @@ Trait `DesignSpec` has ~25 component tokens. Overrides per design:
 looks generic. Cyberpunk and Neo-Brutalism have no type-role overrides, so their headings are the
 shared scale.
 
-## 3. Tab-switch motion per design (done this session)
+## 3. Selection motion per design (done)
 
-- Dodai: a pill that stretches (leading edge first).
-- Material: sliding underline.
+`Look::selection` (a `SelectionMotion`) picks each design's own; `.animation()` / `.motion()`
+override it on `Tabs`, `Segmented`, `Toggle`, `Checkbox` and `Radio` (`SelectionTrack` for rows).
+- Dodai: stretch (leading edge first, on a spring); the tick pops in.
+- Material: slide/underline, eased.
 - Cyberpunk: glitch-in (jittering slices, colour-split ghosts), keeps the cut corners.
-- Neo-Brutalism: the chosen block rises.
-Other components (segmented control, nav items, toggles) still use one shared transition; the same
-per-design treatment (`Look` flag or token) would carry over.
+- Neo-Brutalism: the chosen block rises; a switch thumb jumps and nudges.
+`Accordion` opens to its measured height on the design's travel; `FormField` shakes on a new
+error. Still on the shared transition: nav bar/rail items, menus, popovers; carousel has no
+drag/flick yet (core `page_snap` is ready for it).
 
 ## 4. Themes and appearance
 

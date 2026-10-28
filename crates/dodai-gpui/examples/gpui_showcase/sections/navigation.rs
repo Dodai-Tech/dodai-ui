@@ -160,27 +160,9 @@ impl Showcase {
         let me = cx.entity();
         let mut out: Vec<Section> = Vec::new();
         let me_tab = me.clone();
-        let animation = self
-            .tab_animation
-            .checked_sub(1)
-            .and_then(|i| dodai_gpui::motion::SelectionMotion::ALL.get(i).copied());
-        let with_animation = move |tabs: Tabs| match animation {
-            Some(a) => tabs.animation(a),
-            None => tabs,
-        };
-        let me_anim = me.clone();
-        let picker = dodai_gpui::Segmented::new(
-            "tabs-animation",
-            std::iter::once("Design's own")
-                .chain(dodai_gpui::motion::SelectionMotion::ALL.map(|a| a.label())),
-        )
-        .selected(self.tab_animation)
-        .on_select(move |i, _, cx| {
-            me_anim.update(cx, |s, cx| {
-                s.tab_animation = i;
-                cx.notify();
-            })
-        });
+        let animation = self.animation;
+        let with_animation = move |tabs: Tabs| tabs.animation(animation);
+        let picker = self.animation_picker("tabs-animation", cx);
         let tabs = with_animation(Tabs::new("tabs"))
             .labels(["Overview", "Activity", "Billing", "Settings"])
             .selected(self.tab)

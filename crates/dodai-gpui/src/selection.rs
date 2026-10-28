@@ -150,7 +150,7 @@ impl SelectionTrack {
         let body = match kind {
             SelectionMotion::Glitch => {
                 // Twice the design's duration: long enough to read as a glitch.
-                let clip = || Glitch::clip(&crate::motion::pace(motion).speed(0.5));
+                let clip = || Glitch::clip(&motion.speed(0.5));
                 let old = self.rect(from).map(|r| (r[0], r[2]));
                 match crate::motion::play_on_change(window, cx, key("glitch"), active, clip) {
                     Some(g) => glitch(&t, &self.id, &marker, g, (x, w), old, colour),

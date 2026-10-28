@@ -33,24 +33,33 @@ impl Showcase {
         let mut out: Vec<Section> = Vec::new();
         let me_sw = me.clone();
         let me_ck = me.clone();
+        let a = self.animation;
         let controls = row()
-            .child(Toggle::new("sw", self.switch).on_change(move |v, _, cx| {
-                me_sw.update(cx, |s, cx| {
-                    s.switch = v;
-                    cx.notify();
-                })
-            }))
+            .child(
+                Toggle::new("sw", self.switch)
+                    .animation(a)
+                    .on_change(move |v, _, cx| {
+                        me_sw.update(cx, |s, cx| {
+                            s.switch = v;
+                            cx.notify();
+                        })
+                    }),
+            )
             .child(Label::new("Switch"))
             .child(Toggle::new("sw-icons", true).icons(true))
             .child(Toggle::new("sw-icons-off", false).icons(true))
             .child(Label::new("With icons"))
             .child(Toggle::new("sw-dis", true).disabled(true))
-            .child(Checkbox::new("ck", self.check).on_change(move |v, _, cx| {
-                me_ck.update(cx, |s, cx| {
-                    s.check = v;
-                    cx.notify();
-                })
-            }))
+            .child(
+                Checkbox::new("ck", self.check)
+                    .animation(a)
+                    .on_change(move |v, _, cx| {
+                        me_ck.update(cx, |s, cx| {
+                            s.check = v;
+                            cx.notify();
+                        })
+                    }),
+            )
             .child(Label::new("Checkbox"))
             .child(Checkbox::new("ck-dis", false).disabled(true));
         let mut radios = row();
@@ -61,12 +70,14 @@ impl Showcase {
             let m = me.clone();
             radios = radios
                 .child(
-                    Radio::new(("radio", i), self.radio == i).on_change(move |_, _, cx| {
-                        m.update(cx, |s, cx| {
-                            s.radio = i;
-                            cx.notify();
-                        })
-                    }),
+                    Radio::new(("radio", i), self.radio == i)
+                        .animation(a)
+                        .on_change(move |_, _, cx| {
+                            m.update(cx, |s, cx| {
+                                s.radio = i;
+                                cx.notify();
+                            })
+                        }),
                 )
                 .child(Label::new(name));
         }
@@ -74,6 +85,8 @@ impl Showcase {
             "Inputs",
             "Toggle · Checkbox · Radio",
             self.section("Toggle · Checkbox · Radio", cx)
+                .child(Muted::new("Animation"))
+                .child(self.animation_picker("choice-animation", cx))
                 .child(controls)
                 .child(radios)
                 .into_any_element(),

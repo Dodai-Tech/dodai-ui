@@ -66,10 +66,10 @@ impl Tabs {
             motion: None,
         }
     }
-    /// How the selection moves between tabs. Defaults to the design's own
+    /// How the selection moves between tabs. `None` (the default) is the design's own
     /// ([`Look::selection`](dodai_core::Look::selection)).
-    pub fn animation(mut self, a: SelectionMotion) -> Self {
-        self.animation = Some(a);
+    pub fn animation(mut self, a: impl Into<Option<SelectionMotion>>) -> Self {
+        self.animation = a.into();
         self
     }
     /// Pace, easing and travel of the tab animations. Defaults to the design's motion.

@@ -258,7 +258,7 @@ impl Showcase {
             tags: vec!["rust", "gpui", "charts"],
             focus: cx.focus_handle(),
             tab: 0,
-            tab_animation: 0,
+            animation: None,
             switch: true,
             check: true,
             radio: 0,

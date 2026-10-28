@@ -2,12 +2,14 @@
 
 use super::*;
 use crate::interact::{track, use_interact};
+use crate::motion::{play_on_change, Clip, Glitch, Motion, MotionExt, Pose, SelectionMotion};
 use crate::paint::{round_shape, scaled_shape, shaped, shaped_id, ShapeStyle};
 use crate::{hsla, theme_of};
+use dodai_core::motion::{nudge, pop_in};
 use dodai_core::ControlState;
 use gpui::{
-    px, App, ElementId, IntoElement, ParentElement, RenderOnce, StatefulInteractiveElement, Styled,
-    Window,
+    div, px, App, ElementId, IntoElement, ParentElement, RenderOnce, StatefulInteractiveElement,
+    Styled, Window,
 };
 
 pub(super) type BoolHandler = Rc<dyn Fn(bool, &mut Window, &mut App)>;
@@ -84,6 +86,100 @@ pub(super) struct Choice {
     pub variant: CheckboxVariant,
     /// Icons in the switch handle.
     pub icons: bool,
+    pub animation: Option<SelectionMotion>,
+    pub motion: Option<Motion>,
+}
+
+/// How the switch thumb, tick or dot moves, resolved against the theme.
+#[derive(Clone, Copy)]
+struct Moves {
+    kind: SelectionMotion,
+    motion: Motion,
+}
+
+impl Moves {
+    fn of(c: &Choice, t: &dodai_core::Theme, cx: &App) -> Self {
+        Self {
+            kind: c.animation.unwrap_or(t.look().selection),
+            motion: c.motion.unwrap_or_else(|| Motion::of(cx)),
+        }
+    }
+
+    /// The `0..=1` on-ness that colours follow.
+    fn progress(self, window: &mut Window, cx: &mut App, id: &ElementId, on: bool) -> f32 {
+        let to = if on { 1.0 } else { 0.0 };
+        match self.kind {
+            // A hard switch: colours change with the mark, at once.
+            SelectionMotion::Lift | SelectionMotion::Glitch => to,
+            _ => crate::motion::smooth_with(window, cx, id.clone(), to, self.motion),
+        }
+    }
+
+    /// `(left, width)` of a switch thumb `d` wide that rests at `x0` off and `x1` on.
+    fn thumb(
+        self,
+        window: &mut Window,
+        cx: &mut App,
+        id: &ElementId,
+        on: bool,
+        (x0, x1, d): (f32, f32, f32),
+    ) -> (f32, f32) {
+        let x = if on { x1 } else { x0 };
+        let key = ElementId::from((id.clone(), "thumb"));
+        let m = self.motion;
+        match self.kind {
+            SelectionMotion::Slide => {
+                let k = crate::motion::smooth_with(window, cx, key, if on { 1.0 } else { 0.0 }, m);
+                (crate::motion::lerp(x0, x1, k), d)
+            }
+            SelectionMotion::Stretch => crate::motion::stretch(window, cx, key, (x, d), m),
+            SelectionMotion::Glitch => {
+                let g = play_on_change(window, cx, key, on, || Glitch::clip(&m.speed(0.5)));
+                (x + g.map_or(0.0, |g| g.slice_dx(0, d * 0.6)), d)
+            }
+            SelectionMotion::Lift => {
+                // Jumps across, then a little push that springs back.
+                let push = play_on_change(window, cx, key, on, || nudge(m.personality));
+                let dx = push.map_or(0.0, |p| p.dx);
+                (x + if on { dx } else { -dx }, d)
+            }
+        }
+    }
+
+    /// How the tick or dot shows: faded and grown with `p`, popped in on a spring (Stretch),
+    /// glitched in (Glitch) or there at once (Lift).
+    fn mark(self, window: &mut Window, cx: &mut App, id: &ElementId, on: bool, p: f32) -> Pose {
+        let key = ElementId::from((id.clone(), "mark"));
+        let m = self.motion;
+        let shown = Pose {
+            scale: p,
+            ..Pose::opacity(p)
+        };
+        match self.kind {
+            SelectionMotion::Slide => shown,
+            SelectionMotion::Stretch => {
+                let pop = play_on_change(window, cx, key, on, || {
+                    if on {
+                        pop_in(m.personality)
+                    } else {
+                        Clip::constant(Pose::IDENTITY)
+                    }
+                });
+                pop.filter(|_| on).unwrap_or(shown)
+            }
+            SelectionMotion::Glitch => {
+                let g = play_on_change(window, cx, key, on, || Glitch::clip(&m.speed(0.5)));
+                match (on, g) {
+                    (true, Some(g)) => Pose {
+                        dx: g.slice_dx(0, 6.0),
+                        ..Pose::opacity(if g.slice_hidden(0) { 0.0 } else { 1.0 })
+                    },
+                    _ => Pose::opacity(if on { 1.0 } else { 0.0 }),
+                }
+            }
+            SelectionMotion::Lift => Pose::opacity(if on { 1.0 } else { 0.0 }),
+        }
+    }
 }
 
 pub(super) fn choice(mut c: Choice, window: &mut Window, cx: &mut App) -> gpui::AnyElement {
@@ -98,8 +194,9 @@ pub(super) fn choice(mut c: Choice, window: &mut Window, cx: &mut App) -> gpui::
         }
     }));
     let t = theme_of(cx);
+    let moves = Moves::of(&c, &t, cx);
     if t.look().tonal {
-        return m3_choice(c, window, cx);
+        return m3_choice(c, moves, window, cx);
     }
     let Choice {
         kind,
@@ -116,7 +213,7 @@ pub(super) fn choice(mut c: Choice, window: &mut Window, cx: &mut App) -> gpui::
     let st = use_interact(&id, window, cx);
     let state = st.read(cx).control_state(disabled);
     let k = t.toggle(on, state);
-    let p = crate::motion::transition(window, cx, id.clone(), on);
+    let p = moves.progress(window, cx, &id, on);
     let mut style = toggle_style(&t, on, state);
     {
         let (a, b) = (
@@ -126,21 +223,6 @@ pub(super) fn choice(mut c: Choice, window: &mut Window, cx: &mut App) -> gpui::
         style.fill = crate::motion::mix_opt(a.fill, b.fill, p);
         style.stroke = crate::motion::mix_opt(a.stroke, b.stroke, p);
     }
-    // Physical feel: the thumb is a damped spring, so it overshoots slightly.
-    let thumb = if kind == Kind::Switch {
-        crate::motion::smooth_with(
-            window,
-            cx,
-            (id.clone(), "thumb").into(),
-            if on { 1.0 } else { 0.0 },
-            crate::motion::Motion::new(
-                std::time::Duration::from_millis(450),
-                crate::motion::Easing::SPRING_STIFF,
-            ),
-        )
-    } else {
-        p
-    };
     let (w, h) = match kind {
         Kind::Switch => {
             let h = t.sizes().selection_box + 2.0;
@@ -153,6 +235,7 @@ pub(super) fn choice(mut c: Choice, window: &mut Window, cx: &mut App) -> gpui::
         Kind::Checkbox if t.look().tonal => t.role_shape(dodai_core::ShapeRole::Checkbox),
         Kind::Checkbox => scaled_shape(&t.shape, h),
     };
+    let id_mark = id.clone();
     let mut el = track(shaped_id(id, &shape, style), &st)
         .w(px(w))
         .h(px(h))
@@ -161,42 +244,50 @@ pub(super) fn choice(mut c: Choice, window: &mut Window, cx: &mut App) -> gpui::
         .items_center()
         .justify_center();
     let mark = ShapeStyle::from_tokens(&t, Some(k.thumb), None, false, false);
+    let shown = (kind != Kind::Switch).then(|| moves.mark(window, cx, &id_mark, on, p));
     el = match kind {
         Kind::Switch => {
             let thumb_d = (h * 0.64).round();
             let inset = (h - thumb_d) / 2.0 - 1.0;
+            let ends = (inset, w - thumb_d - inset - 1.0, thumb_d);
+            let (left, width) = moves.thumb(window, cx, &id_mark, on, ends);
             let tshape = round_shape(&t.shape, thumb_d);
             el.child(
                 shaped(&tshape, mark)
                     .absolute()
                     .top(px(inset))
-                    .left(px(crate::motion::lerp(
-                        inset,
-                        w - thumb_d - inset - 1.0,
-                        thumb,
-                    )))
-                    .w(px(thumb_d))
+                    .left(px(left))
+                    .w(px(width))
                     .h(px(thumb_d)),
             )
         }
-        Kind::Checkbox => {
-            if p > 0.01 {
-                el.text_color(hsla(k.thumb).opacity(p))
-                    .text_size(px(h - 6.0))
-                    .child(if mixed { "−" } else { "✓" })
-            } else {
-                el
-            }
-        }
-        Kind::Radio => {
-            if p > 0.01 {
+        Kind::Checkbox => match shown {
+            Some(m) if m.opacity > 0.01 => el.child(
+                div()
+                    .relative()
+                    .left(px(m.dx))
+                    .text_color(hsla(k.thumb).opacity(m.opacity.min(1.0)))
+                    .text_size(px((h - 6.0) * m.scale.max(0.0)))
+                    .child(if mixed { "−" } else { "✓" }),
+            ),
+            _ => el,
+        },
+        Kind::Radio => match shown {
+            Some(m) if m.opacity > 0.01 => {
                 let dot = (h * 0.4).round();
                 let tshape = round_shape(&t.shape, dot);
-                el.child(shaped(&tshape, mark).w(px(dot * p)).h(px(dot * p)))
-            } else {
-                el
+                let d = dot * m.scale.max(0.0);
+                el.child(
+                    shaped(&tshape, mark)
+                        .relative()
+                        .left(px(m.dx))
+                        .opacity(m.opacity.min(1.0))
+                        .w(px(d))
+                        .h(px(d)),
+                )
             }
-        }
+            _ => el,
+        },
     };
     if !disabled {
         el = el.cursor_pointer();
@@ -212,6 +303,9 @@ pub(super) fn choice(mut c: Choice, window: &mut Window, cx: &mut App) -> gpui::
 struct M3Look<'a> {
     t: &'a dodai_core::Theme,
     p: f32,
+    moves: Moves,
+    /// How the tick or dot shows.
+    mark: Pose,
     on: bool,
     mixed: bool,
     icons: bool,
@@ -240,10 +334,11 @@ impl M3Look<'_> {
         window: &mut Window,
         cx: &mut App,
     ) -> gpui::Stateful<gpui::Div> {
-        use crate::motion::{lerp, smooth_with, Easing, Motion};
+        use crate::motion::lerp;
         let Self {
             t,
             p,
+            moves,
             on,
             icons,
             track_c,
@@ -253,20 +348,15 @@ impl M3Look<'_> {
         } = *self;
         let sz = t.sizes();
         let r = &t.palette.roles;
-        let thumb = smooth_with(
-            window,
-            cx,
-            (id.clone(), "thumb").into(),
-            if on { 1.0 } else { 0.0 },
-            Motion::new(std::time::Duration::from_millis(450), Easing::SPRING_STIFF),
-        );
         let ((tw, th), (off_d, on_d)) = (sz.switch_track, sz.switch_handle);
         let size = if icons {
             on_d
         } else {
             lerp(off_d, on_d, p.clamp(0.0, 1.0))
         };
-        let centre = lerp(th / 2.0, tw - th / 2.0, thumb);
+        let ends = (th / 2.0 - size / 2.0, tw - th / 2.0 - size / 2.0, size);
+        let (left, width) = moves.thumb(window, cx, &id, on, ends);
+        let centre = left + width / 2.0;
         // Absolute children sit inside the 2 px outline.
         let (ls, lst) = self.layer_style(sz.state_layer);
         let mut track_style = ShapeStyle::from_tokens(t, None, None, false, false);
@@ -290,9 +380,9 @@ impl M3Look<'_> {
             .child({
                 let mut h = shaped(&round_shape(&t.shape, size), handle)
                     .absolute()
-                    .left(px(centre - size / 2.0 - 2.0))
+                    .left(px(left - 2.0))
                     .top(px((th - size) / 2.0 - 2.0))
-                    .w(px(size))
+                    .w(px(width))
                     .h(px(size));
                 if icons {
                     // M3 switch with icons: a check when on, a cross when off.
@@ -322,6 +412,7 @@ impl M3Look<'_> {
         let Self {
             t,
             p,
+            mark,
             mixed,
             variant,
             track_c,
@@ -359,10 +450,14 @@ impl M3Look<'_> {
                 .flex()
                 .items_center()
                 .justify_center()
-                .text_color(thumb_c)
-                .text_size(px(bx * 0.78));
-            if p > 0.01 {
-                b = b.child(if mixed { "−" } else { "✓" });
+                .text_color(thumb_c.opacity(mark.opacity.min(1.0)))
+                .text_size(px(bx * 0.78 * mark.scale.max(0.0)));
+            if mark.opacity > 0.01 {
+                b = b.child(div().relative().left(px(mark.dx)).child(if mixed {
+                    "−"
+                } else {
+                    "✓"
+                }));
             }
             outer.child(b)
         } else {
@@ -373,13 +468,17 @@ impl M3Look<'_> {
                 .flex()
                 .items_center()
                 .justify_center();
-            if p > 0.01 {
+            if mark.opacity > 0.01 {
                 let mut dot = ShapeStyle::from_tokens(t, None, None, false, false);
                 dot.fill = Some(thumb_c);
+                let size = d / 2.0 * mark.scale.max(0.0);
                 b = b.child(
                     shaped(&round_shape(&t.shape, d / 2.0), dot)
-                        .w(px(d / 2.0 * p))
-                        .h(px(d / 2.0 * p)),
+                        .relative()
+                        .left(px(mark.dx))
+                        .opacity(mark.opacity.min(1.0))
+                        .w(px(size))
+                        .h(px(size)),
                 );
             }
             outer.child(b)
@@ -389,7 +488,7 @@ impl M3Look<'_> {
 
 /// Material 3 switch (52×32), checkbox (18 px box) and radio (20 px ring), each with the 40 px
 /// state layer; colours from [`Theme::choice_toggle`].
-pub(super) fn m3_choice(c: Choice, window: &mut Window, cx: &mut App) -> gpui::AnyElement {
+fn m3_choice(c: Choice, moves: Moves, window: &mut Window, cx: &mut App) -> gpui::AnyElement {
     let Choice {
         kind,
         id,
@@ -400,8 +499,9 @@ pub(super) fn m3_choice(c: Choice, window: &mut Window, cx: &mut App) -> gpui::A
         mixed,
         variant,
         icons,
+        ..
     } = c;
-    use crate::motion::{mix, transition};
+    use crate::motion::mix;
     use dodai_core::ToggleKind;
     let t = theme_of(cx);
     let r = t.palette.roles.clone();
@@ -413,7 +513,8 @@ pub(super) fn m3_choice(c: Choice, window: &mut Window, cx: &mut App) -> gpui::A
     };
     let st = use_interact(&id, window, cx);
     let state = st.read(cx).control_state(disabled);
-    let p = transition(window, cx, id.clone(), on);
+    let p = moves.progress(window, cx, &id, on);
+    let mark = moves.mark(window, cx, &id, on, p);
     let (off_k, mut on_k) = (
         t.choice_toggle(tk, false, state),
         t.choice_toggle(tk, true, state),
@@ -446,6 +547,8 @@ pub(super) fn m3_choice(c: Choice, window: &mut Window, cx: &mut App) -> gpui::A
     let look = M3Look {
         t: &t,
         p,
+        moves,
+        mark,
         on,
         mixed,
         icons,
@@ -483,12 +586,14 @@ macro_rules! choice_component {
             variant: CheckboxVariant,
             icons: bool,
             on_change: Option<BoolHandler>,
+            animation: Option<SelectionMotion>,
+            motion: Option<Motion>,
         }
 
         impl $name {
             /// `on` is the current (controlled) value.
             pub fn new(id: impl Into<ElementId>, on: bool) -> Self {
-                Self { id: id.into(), on, disabled: false, mixed: false, variant: CheckboxVariant::Standard, icons: false, on_change: None }
+                Self { id: id.into(), on, disabled: false, mixed: false, variant: CheckboxVariant::Standard, icons: false, on_change: None, animation: None, motion: None }
             }
             /// Disable interaction.
             pub fn disabled(mut self, d: bool) -> Self {
@@ -512,6 +617,17 @@ macro_rules! choice_component {
                 self.icons = on;
                 self
             }
+            /// How the switch thumb travels and the tick or dot appears; `None` (the default) is the
+            /// design's own ([`Look::selection`](dodai_core::Look::selection)).
+            pub fn animation(mut self, a: impl Into<Option<SelectionMotion>>) -> Self {
+                self.animation = a.into();
+                self
+            }
+            /// Pace, easing and travel (eased or spring); defaults to the design's motion.
+            pub fn motion(mut self, m: Motion) -> Self {
+                self.motion = Some(m);
+                self
+            }
             /// Called with the requested new value on click.
             pub fn on_change(mut self, f: impl Fn(bool, &mut Window, &mut App) + 'static) -> Self {
                 self.on_change = Some(Rc::new(f));
@@ -521,7 +637,7 @@ macro_rules! choice_component {
 
         impl RenderOnce for $name {
             fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-                choice(Choice { kind: $kind, id: self.id, on: self.on, disabled: self.disabled, handler: self.on_change, radio: $radio, mixed: self.mixed, variant: self.variant, icons: self.icons }, window, cx)
+                choice(Choice { kind: $kind, id: self.id, on: self.on, disabled: self.disabled, handler: self.on_change, radio: $radio, mixed: self.mixed, variant: self.variant, icons: self.icons, animation: self.animation, motion: self.motion }, window, cx)
             }
         }
     };
