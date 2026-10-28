@@ -9,7 +9,6 @@ impl Showcase {
             Self::popovers_section,
             Self::menu_section,
             Self::tabs_section,
-            Self::nav_tree_section,
             Self::sidebar_section,
             Self::strips_section,
             Self::carousel_section,
@@ -205,60 +204,6 @@ impl Showcase {
             "Tabs",
         ));
         out
-    }
-
-    fn nav_tree_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
-        let t = theme_of(cx);
-        let gap = px(t.spacing.md);
-        let row = || div().flex().flex_wrap().items_center().gap(gap);
-        vec![(
-                "Navigation",
-                "Design system tree",
-                self.section("Design system tree", cx)
-                    .child(Muted::new(
-                        "Click the active system to hide / show its themes. Selecting a theme applies it live.",
-                    ))
-                    .child(
-                        row()
-                            .items_start()
-                            .gap(px(24.0))
-                            .child(
-                                div()
-.flex()
-.flex_col()
-.gap(gap)
-.flex_1()
-.min_w(px(220.0))
-                                    .child(Label::new("Tree (default)"))
-                                    .child(DesignSystemTree::new("dst-default")),
-                            )
-                            .child(
-                                div()
-.flex()
-.flex_col()
-.gap(gap)
-.flex_1()
-.min_w(px(220.0))
-                                    .child(Label::new("With properties"))
-                                    .child(DesignSystemTree::new("dst-props").properties(
-                                        "cyberpunk",
-                                        Muted::new("Family-specific controls go here."),
-                                    )),
-                            )
-                            .child(
-                                div()
-.flex()
-.flex_col()
-.gap(gap)
-.flex_1()
-.min_w(px(220.0))
-                                    .child(Label::new("Dropdown (dropdown_over 0)"))
-                                    .child(DesignSystemTree::new("dst-dd").dropdown_over(0)),
-                            ),
-                    )
-                    .into_any_element(),
-                "Design system tree",
-            )]
     }
 
     fn sidebar_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {

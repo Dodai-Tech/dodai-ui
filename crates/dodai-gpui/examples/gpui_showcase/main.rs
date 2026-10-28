@@ -8,11 +8,10 @@ use dodai_core::{ButtonVariant, Tone};
 use dodai_gpui::{
     cycle_next, cycle_prev, fuzzy_filter, glow_intensity, hsla, set_glow_intensity, set_scanlines,
     theme_of, Accordion, BottomSheet, Breadcrumb, BubblePlacement, Button, ButtonGroup, Card,
-    CardVariant, Carousel, Checkbox, DesignSystemTree, Dialog, DialogCard, Divider, DodaiStyled,
-    DodaiTooltip, Fab, FabSize, Heading, IconButton, InputBox, Knob, Label, ListItem,
-    LoadingIndicator, Mono, Muted, Orientation, Pagination, Panel, ProgressBar, Radio,
-    ResponsiveShell, SearchBar, Segmented, SideSheet, Slider, SplitButton, Stepper, Tabs, Tag,
-    Toggle, TopAppBar,
+    CardVariant, Carousel, Checkbox, Dialog, DialogCard, Divider, DodaiStyled, DodaiTooltip, Fab,
+    FabSize, Heading, IconButton, InputBox, Knob, Label, ListItem, LoadingIndicator, Mono, Muted,
+    Orientation, Pagination, Panel, ProgressBar, Radio, ResponsiveShell, SearchBar, Segmented,
+    SideSheet, Slider, SplitButton, Stepper, Tabs, Tag, Toggle, TopAppBar,
 };
 use dodai_gpui::{
     Annotation, Bullet, CalendarHeatmap, Lollipop, PairedBars, RoseChart, Sankey, SlopeChart,

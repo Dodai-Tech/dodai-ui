@@ -98,7 +98,6 @@ fn frame_cost_probe(cx: &mut TestAppContext) {
         "Toggle group · Checkbox group",
         "Date range",
         "Tabs",
-        "Design system tree",
         "Collapsible sidebar",
         "App bar · Cards · FAB · Navigation",
         "Line & bar charts",
