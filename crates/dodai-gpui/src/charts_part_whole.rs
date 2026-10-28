@@ -102,7 +102,7 @@ impl Treemap {
 impl Treemap {
     fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         crate::instruments_motion::follow_pairs(window, cx, &self.follow, &mut self.items);
-        let g = crate::motion::grow(window, cx, "Treemap");
+        let g = crate::motion::grow_for(window, cx, &self.follow, "Treemap");
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
         let vals: Vec<f32> = self.items.iter().map(|i| i.1).collect();
@@ -197,32 +197,55 @@ impl RadialBar {
     }
 }
 
+/// Which ring of a [`RadialBar`] lies under a pointer `d` px from its centre, if any. Rings are
+/// laid out exactly as painted: outermost first, each `ring` px thick with a 2 px step.
+fn ring_hit(d: f32, size: f32, n: usize) -> Option<usize> {
+    let (c, ring) = ring_metrics(size, n);
+    (0..n).find(|i| {
+        let r = c - ring * (*i as f32 + 0.5) - 2.0 * *i as f32 - 1.0;
+        r > 1.0 && (d - r).abs() <= ring / 2.0
+    })
+}
+
+/// Centre and ring thickness for `n` rings in a box of `size` px.
+fn ring_metrics(size: f32, n: usize) -> (f32, f32) {
+    (size / 2.0, (size / 2.0 / (n as f32 + 1.0)).min(14.0))
+}
+
 impl RadialBar {
     fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         crate::instruments_motion::follow_triples(window, cx, &self.follow, &mut self.rings);
         let t = theme_of(cx);
-        let g = crate::motion::grow(window, cx, "RadialBar");
+        let g = crate::motion::grow_for(window, cx, &self.follow, "RadialBar");
+        let focus = crate::charts_focus::Focus::new(window, cx, &self.follow, self.rings.len());
         let n = self.rings.len().max(1);
         let size = self.size;
         let fr: Vec<f32> = self.rings.iter().map(|r| norm(r.1, 0.0, r.2) * g).collect();
         let cols: Vec<Hsla> = (0..n).map(|i| hsla(t.palette.series_at(i))).collect();
         let track = hsla(t.palette.border);
         let glow = self.glow.resolve(&t);
+        let looks: Vec<(f32, f32)> = (0..self.rings.len())
+            .map(|i| (focus.item(i).alpha, focus.item(i).lift))
+            .collect();
+        let bounds: std::rc::Rc<std::cell::Cell<Bounds<Pixels>>> = Default::default();
+        let paint_bounds = bounds.clone();
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
-                let c = size / 2.0;
-                let ring = (size / 2.0 / (n as f32 + 1.0)).min(14.0);
+                paint_bounds.set(b);
+                let (c, ring) = ring_metrics(size, n);
                 for i in 0..fr.len() {
                     let r = c - ring * (i as f32 + 0.5) - 2.0 * i as f32 - 1.0;
                     if r <= 1.0 {
                         break;
                     }
+                    let (alpha, lift) = looks.get(i).copied().unwrap_or((1.0, 0.0));
+                    let thick = ring - 2.0 + lift * 2.0;
                     stroke(
                         w,
                         b.origin,
                         &turn_arc(c, c, r, 0.0, 0.999),
-                        ring - 2.0,
+                        thick,
                         scale_alpha(track, 0.6),
                         false,
                     );
@@ -231,8 +254,8 @@ impl RadialBar {
                             w,
                             b.origin,
                             &turn_arc(c, c, r, 0.0, fr[i].min(0.999)),
-                            ring - 2.0,
-                            cols[i],
+                            thick,
+                            scale_alpha(cols[i], alpha),
                             glow,
                         );
                     }
@@ -241,20 +264,82 @@ impl RadialBar {
         )
         .absolute()
         .size_full();
+        let count = self.rings.len();
+        let (st_move, st_click, st_leave) = (focus.state(), focus.state(), focus.state());
+        let (b_move, b_click) = (bounds.clone(), bounds);
+        let at = move |b: &std::rc::Rc<std::cell::Cell<Bounds<Pixels>>>,
+                       p: gpui::Point<Pixels>|
+              -> Option<usize> {
+            let b = b.get();
+            let (dx, dy): (f32, f32) = ((p.x - b.origin.x).into(), (p.y - b.origin.y).into());
+            ring_hit(
+                ((dx - size / 2.0).powi(2) + (dy - size / 2.0).powi(2)).sqrt(),
+                size,
+                count,
+            )
+        };
+        let sid = self.follow.sub("rb").element_id(window, cx).to_string();
+        // The ring under the pointer (or the selected one) is read out in the middle.
+        let s = focus.state().read(cx).to_owned();
+        let shown = s.hover.or(s.sel).filter(|i| *i < self.rings.len());
+        let mut disc = div()
+            .id(SharedString::from(format!("{sid}-disc")))
+            .relative()
+            .w(px(size))
+            .h(px(size))
+            .child(cv)
+            .on_mouse_move(move |e, w, cx| {
+                crate::charts_focus::Focus::set_hover(&st_move, at(&b_move, e.position), w, cx)
+            })
+            .on_hover(move |over, w, cx| {
+                if !*over {
+                    crate::charts_focus::Focus::set_hover(&st_leave, None, w, cx);
+                }
+            })
+            .on_click(move |e, w, cx| {
+                crate::charts_focus::Focus::toggle(&st_click, at(&b_click, e.position()), w, cx)
+            });
+        if let Some(i) = shown {
+            let (name, v, m) = &self.rings[i];
+            disc = disc.child(
+                div()
+                    .absolute()
+                    .size_full()
+                    .flex()
+                    .flex_col()
+                    .items_center()
+                    .justify_center()
+                    .font_family(first_family(t.typography.display))
+                    .text_color(hsla(t.palette.text))
+                    .child(
+                        div()
+                            .text_size(px(t.typography.size_lg))
+                            .child(format!("{:.0}%", norm(*v, 0.0, *m) * 100.0)),
+                    )
+                    .child(
+                        div()
+                            .text_size(px(t.typography.size_sm))
+                            .text_color(hsla(t.palette.text_muted))
+                            .child(name.clone()),
+                    ),
+            );
+        }
         let mut root = div()
             .flex()
             .items_center()
             .gap(px(t.spacing.lg))
-            .child(div().relative().w(px(size)).h(px(size)).child(cv));
+            .child(disc);
         if self.legend {
             root = root.child(div().flex().flex_col().gap(px(t.spacing.xs)).children(
                 self.rings.iter().enumerate().map(|(i, (n, v, m))| {
-                    label_style(&t, div())
+                    let row = label_style(&t, div())
+                        .id(SharedString::from(format!("{sid}-leg-{i}")))
                         .flex()
                         .items_center()
                         .gap(px(t.spacing.xs))
                         .child(div().w(px(10.0)).h(px(10.0)).bg(cols_at(&t, i)))
-                        .child(format!("{n} · {:.0}%", norm(*v, 0.0, *m) * 100.0))
+                        .child(format!("{n} · {:.0}%", norm(*v, 0.0, *m) * 100.0));
+                    focus.bind(row, i)
                 }),
             ));
         }
@@ -271,6 +356,18 @@ fn cols_at(t: &Theme, i: usize) -> Hsla {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn ring_hit_finds_the_painted_ring() {
+        let (c, ring) = ring_metrics(160.0, 3);
+        for i in 0..3 {
+            let r = c - ring * (i as f32 + 0.5) - 2.0 * i as f32 - 1.0;
+            assert_eq!(ring_hit(r, 160.0, 3), Some(i));
+        }
+        assert_eq!(ring_hit(0.0, 160.0, 3), None);
+        assert_eq!(ring_hit(500.0, 160.0, 3), None);
+        assert_eq!(ring_hit(10.0, 160.0, 0), None);
+    }
 
     #[test]
     fn treemap_areas_proportional_and_tile() {

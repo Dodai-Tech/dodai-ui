@@ -129,7 +129,7 @@ impl Histogram {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
-        let g = crate::motion::grow(window, cx, "Histogram");
+        let g = crate::motion::grow_for(window, cx, &self.follow, "Histogram");
         let bins = histogram_bins(&self.values, self.bins);
         let counts: Vec<f32> = bins.iter().map(|b| b.2 as f32).collect();
         let shown = crate::instruments_motion::follow_all(window, cx, &self.follow, &counts);
@@ -336,7 +336,7 @@ impl BoxPlot {
         for v in self.groups.iter_mut().flat_map(|g| g.1.iter_mut()) {
             *v = shown.next().unwrap_or(*v);
         }
-        let g = crate::motion::grow(window, cx, "BoxPlot");
+        let g = crate::motion::grow_for(window, cx, &self.follow, "BoxPlot");
         let t = theme_of(cx);
         let stats: Vec<Option<Stats>> = self.groups.iter().map(|g| quartiles(&g.1)).collect();
         let lo = stats.iter().flatten().map(|s| s.0).fold(f32::MAX, f32::min);
@@ -517,7 +517,7 @@ impl BubbleChart {
             p.1 = shown.next().unwrap_or(p.1);
             p.2 = shown.next().unwrap_or(p.2);
         }
-        let g = crate::motion::grow(window, cx, "BubbleChart");
+        let g = crate::motion::grow_for(window, cx, &self.follow, "BubbleChart");
         let t = theme_of(cx);
         let all = || self.groups.iter().flat_map(|g| g.1.iter());
         let rng = |f: fn(&(f32, f32, f32)) -> f32| {

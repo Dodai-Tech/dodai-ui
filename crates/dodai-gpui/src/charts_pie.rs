@@ -681,24 +681,12 @@ impl PieChart {
             .iter()
             .map(|(a, z)| (start + a * sweep, start + z * sweep))
             .collect();
-        // Pies that differ in look must not share state: their pop targets
-        // would fight and the tween would never settle (a redraw every frame).
-        let key: SharedString = format!(
-            "pie-{}-{:?}-{}-{}-{}-{}-{}",
-            self.slices
-                .iter()
-                .map(|s| s.0.as_ref())
-                .collect::<Vec<_>>()
-                .join("|"),
-            self.style,
-            self.explode,
-            self.hole,
-            self.start,
-            self.sweep,
-            self.size,
-        )
-        .into();
-        let st = window.use_keyed_state(key.clone(), cx, |_, _| PieState::default());
+        // The state (hover, selection, pop tweens) belongs to this instance, so editing the data
+        // or the look keeps it; keyed by the slice names it reset on every rename.
+        let sid = self.follow.sub("pie").element_id(window, cx);
+        let st = window.with_id(sid.clone(), |w| {
+            w.use_keyed_state("pie", cx, |_, _| PieState::default())
+        });
         let hover = st.read(cx).hover;
         let sel = self.selected.unwrap_or(st.read(cx).sel);
         let ring = hsla(self.select_color.unwrap_or(t.palette.primary));
@@ -706,7 +694,7 @@ impl PieChart {
         let (st_paint, st_move) = (st.clone(), st.clone());
         let (controlled, on_select) = (self.selected.is_some(), self.on_select.clone());
         let fr_hit = fr.clone();
-        let g = crate::motion::grow(window, cx, "PieChart");
+        let g = crate::motion::grow_for(window, cx, &self.follow, "PieChart");
         let fr: Vec<(f32, f32)> = fr
             .iter()
             .map(|(a, z)| (start + (a - start) * g, start + (z - start) * g))
@@ -798,7 +786,7 @@ impl PieChart {
         let top_half = self.sweep <= 0.5 && (self.start - 0.75).abs() < 0.01;
         let disc_h = if top_half { size / 2.0 + 2.0 } else { size };
         let mut disc = div()
-            .id(key)
+            .id(sid)
             .relative()
             .w(px(size))
             .h(px(disc_h))

@@ -67,6 +67,35 @@ impl Focus {
         })
     }
 
+    /// Sets the hovered item (for charts that hit-test the pointer themselves).
+    pub fn set_hover(state: &Entity<FocusState>, i: Option<usize>, w: &mut Window, cx: &mut App) {
+        let moved = state.update(cx, |s, cx| {
+            let moved = s.hover != i;
+            s.hover = i;
+            if moved {
+                cx.notify();
+            }
+            moved
+        });
+        if moved {
+            w.refresh();
+        }
+    }
+
+    /// Selects item `i`, or clears the selection when it already is.
+    pub fn toggle(state: &Entity<FocusState>, i: Option<usize>, w: &mut Window, cx: &mut App) {
+        state.update(cx, |s, cx| {
+            s.sel = i.filter(|i| s.sel != Some(*i));
+            cx.notify();
+        });
+        w.refresh();
+    }
+
+    /// The shared state, for handlers that outlive the build.
+    pub fn state(&self) -> Entity<FocusState> {
+        self.state.clone()
+    }
+
     /// Hover and click handlers for item `i`'s element.
     pub fn bind<E: gpui::InteractiveElement + gpui::StatefulInteractiveElement>(
         &self,

@@ -74,7 +74,7 @@ impl ScatterPlot {
             p.0 = shown.next().unwrap_or(p.0);
             p.1 = shown.next().unwrap_or(p.1);
         }
-        let g = crate::motion::grow(window, cx, "ScatterPlot");
+        let g = crate::motion::grow_for(window, cx, &self.follow, "ScatterPlot");
         let t = theme_of(cx);
         let all = || self.series.iter().flat_map(|s| s.1.iter());
         let fold = |f: fn(&(f32, f32)) -> f32| {
@@ -251,7 +251,7 @@ impl Heatmap {
     /// Dense grid (many cells): painted on one canvas with a hover readout
     /// instead of one element per cell.
     fn build_dense(self, window: &mut Window, cx: &mut App) -> gpui::AnyElement {
-        let g = crate::motion::grow(window, cx, "Heatmap");
+        let g = crate::motion::grow_for(window, cx, &self.follow, "Heatmap");
         let t = theme_of(cx);
         let (lo, hi) = self
             .rows
@@ -382,7 +382,7 @@ impl Heatmap {
         if cells > 200 {
             return self.build_dense(window, cx);
         }
-        let g = crate::motion::grow(window, cx, "HeatmapGrid");
+        let g = crate::motion::grow_for(window, cx, &self.follow, "HeatmapGrid");
         self.build_grid(cx, g).into_any_element()
     }
 

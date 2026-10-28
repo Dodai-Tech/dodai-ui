@@ -270,7 +270,11 @@ impl BarChart {
         let cs = t.chart_style();
         let grid = hsla(cs.grid_color);
         // Gridlines behind the bars (vertical orientation: horizontal lines).
-        let grid_fracs: Vec<f32> = ticks.iter().map(|v| norm(*v, 0.0, top)).collect();
+        let grid_fracs: Vec<f32> = ticks
+            .iter()
+            .map(|v| norm(*v, 0.0, top))
+            .filter(|f| *f <= 1.0)
+            .collect();
         let mut plot = div().relative().w_full().h(px(self.height));
         if cs.grid_dashed {
             let (fr, style) = (grid_fracs.clone(), cs);
@@ -329,7 +333,7 @@ impl BarChart {
     fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
-        let g = crate::motion::grow(window, cx, "BarChart");
+        let g = crate::motion::grow_for(window, cx, &self.follow, "BarChart");
         self.series =
             crate::instruments_motion::follow_series(window, cx, &self.follow, &self.series);
         let mut legend_all = None;
@@ -346,6 +350,8 @@ impl BarChart {
             4,
         );
         let top = *ticks.last().unwrap_or(&1.0);
+        let (_, top) =
+            crate::instruments_motion::follow_range(window, cx, &self.follow, "top", (0.0, top));
         let n = self
             .series
             .iter()

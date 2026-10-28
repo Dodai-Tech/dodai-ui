@@ -144,14 +144,43 @@ fn animate(
 /// Eased `0..1` progress since this component first appeared; components
 /// multiply their displayed value by it so progress, sliders, gauges and
 /// charts animate in. `1.0` when entry animation is [`EntryKind::None`].
-/// Replays whenever the surrounding keyed subtree is rebuilt.
+/// Each instance has its own start; it replays only if the instance is rebuilt from scratch.
+#[track_caller]
 pub fn grow(window: &mut gpui::Window, cx: &mut App, name: &'static str) -> f32 {
+    // One state per instance: the call site plus the instance's order in this draw. Keyed by the
+    // type name alone, every chart of a kind would share one start time and only the first to
+    // appear would animate in.
+    let key = crate::instruments_motion::Follow::here().element_id(window, cx);
+    grow_keyed(window, cx, key, name)
+}
+
+/// [`grow`] for a component that already has a [`Follow`](crate::instruments_motion::Follow):
+/// the state belongs to that instance, however the page above it is arranged.
+#[cfg(feature = "charts")]
+pub(crate) fn grow_for(
+    window: &mut gpui::Window,
+    cx: &mut App,
+    follow: &crate::instruments_motion::Follow,
+    name: &'static str,
+) -> f32 {
+    let key = follow.sub("grow").element_id(window, cx);
+    grow_keyed(window, cx, key, name)
+}
+
+fn grow_keyed(
+    window: &mut gpui::Window,
+    cx: &mut App,
+    key: gpui::ElementId,
+    name: &'static str,
+) -> f32 {
     let m = crate::motion::current(cx);
     // A set fill duration enables value-in even with no entry effect on.
     if m.entry.is_empty() && m.entry.grow_ms() == 0 {
         return 1.0;
     }
-    let st = window.use_keyed_state((name, 2u32), cx, |_, _| std::time::Instant::now());
+    let st = window.with_id(key, |w| {
+        w.use_keyed_state((name, 2u32), cx, |_, _| std::time::Instant::now())
+    });
     let start = *st.read(cx);
     let dur = match m.entry.grow_ms() {
         0 => m.duration.as_secs_f32(),

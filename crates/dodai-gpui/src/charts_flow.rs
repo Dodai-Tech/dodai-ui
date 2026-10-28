@@ -56,7 +56,7 @@ impl Funnel {
 impl Funnel {
     fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         crate::instruments_motion::follow_pairs(window, cx, &self.follow, &mut self.stages);
-        let g = crate::motion::grow(window, cx, "Funnel");
+        let g = crate::motion::grow_for(window, cx, &self.follow, "Funnel");
         let t = theme_of(cx);
         let n = self.stages.len().max(1);
         let maxv = self
@@ -198,7 +198,7 @@ impl Waterfall {
 impl Waterfall {
     fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         crate::instruments_motion::follow_pairs(window, cx, &self.follow, &mut self.steps);
-        let g = crate::motion::grow(window, cx, "Waterfall");
+        let g = crate::motion::grow_for(window, cx, &self.follow, "Waterfall");
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
         let deltas: Vec<f32> = self.steps.iter().map(|s| s.1).collect();

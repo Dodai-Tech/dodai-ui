@@ -175,7 +175,7 @@ impl DepthChart {
             l.0 = shown.next().unwrap_or(l.0);
             l.1 = shown.next().unwrap_or(l.1);
         }
-        let g = crate::motion::grow(window, cx, "DepthChart");
+        let g = crate::motion::grow_for(window, cx, &self.follow, "DepthChart");
         let (bc, ac) = depth_curves(&self.bids, &self.asks);
         let top = bc
             .last()
@@ -321,7 +321,7 @@ impl Gantt {
             k.end = shown.next().unwrap_or(k.end);
             k.progress = shown.next().unwrap_or(k.progress).clamp(0.0, 1.0);
         }
-        let g = crate::motion::grow(window, cx, "Gantt");
+        let g = crate::motion::grow_for(window, cx, &self.follow, "Gantt");
         let l = layout(&self.tasks);
         let n = l.bars.len();
         let (grid, text) = (hsla(t.palette.border), hsla(t.palette.text));

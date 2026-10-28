@@ -394,23 +394,35 @@ pub(crate) fn follow_series(
             s
         })
         .collect();
-    let flat: Vec<f32> = series
-        .iter()
-        .filter(|s| s.live.is_none())
-        .flat_map(|s| s.values.iter().copied())
-        .collect();
-    let mut shown = follow_all(w, cx, f, &flat).into_iter();
+    // Each series has its own springs: with one flat list, adding a point or a series moved every
+    // later value onto the wrong spring and the whole chart jumped.
     series
         .into_iter()
-        .map(|mut s| {
+        .enumerate()
+        .map(|(i, mut s)| {
             if s.live.is_none() {
-                for v in &mut s.values {
-                    *v = shown.next().unwrap_or(*v);
-                }
+                s.values = follow_all(w, cx, &f.sub(&format!("s{i}")), &s.values);
             }
             s
         })
         .collect()
+}
+
+/// An axis range followed. A chart's nice-rounded range changes in steps as its data moves; easing
+/// it keeps the whole plot from jumping when the data crosses a step.
+#[cfg(feature = "charts")]
+pub(crate) fn follow_range(
+    w: &mut Window,
+    cx: &mut App,
+    f: &Follow,
+    name: &str,
+    (lo, hi): (f32, f32),
+) -> (f32, f32) {
+    let v = follow_all(w, cx, &f.sub(name), &[lo, hi]);
+    match v.as_slice() {
+        [a, b] if (b - a).abs() > 1e-9 => (*a, *b),
+        _ => (lo, hi),
+    }
 }
 
 /// The `f32` of each `(label, value)` pair followed, in place.

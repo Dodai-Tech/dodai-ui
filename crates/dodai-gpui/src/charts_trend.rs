@@ -90,7 +90,7 @@ impl StackedAreaChart {
 
 impl StackedAreaChart {
     fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let g = crate::motion::grow(window, cx, "StackedAreaChart");
+        let g = crate::motion::grow_for(window, cx, &self.follow, "StackedAreaChart");
         self.series =
             crate::instruments_motion::follow_series(window, cx, &self.follow, &self.series);
         let t = theme_of(cx);
@@ -605,7 +605,7 @@ impl Candlestick {
             c.low = shown.next().unwrap_or(c.low);
             c.close = shown.next().unwrap_or(c.close);
         }
-        let g = crate::motion::grow(window, cx, "Candlestick");
+        let g = crate::motion::grow_for(window, cx, &self.follow, "Candlestick");
         let t = theme_of(cx);
         let shown: Vec<Candle> = match self.style {
             CandleStyle::HeikinAshi => dodai_charts_core::heikin_ashi(&self.candles),

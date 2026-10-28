@@ -84,7 +84,7 @@ impl Sankey {
         {
             l.value = v;
         }
-        let g = crate::motion::grow(window, cx, "Sankey");
+        let g = crate::motion::grow_for(window, cx, &self.follow, "Sankey");
         let lay = sankey::layout(self.names.len(), &self.links, 0.04);
         let cols = lay.columns.max(1);
         let nw = self.node_w;

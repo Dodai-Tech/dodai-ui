@@ -318,7 +318,7 @@ impl RadarChart {
 
 impl RadarChart {
     fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let g = crate::motion::grow(window, cx, "RadarChart");
+        let g = crate::motion::grow_for(window, cx, &self.follow, "RadarChart");
         self.series =
             crate::instruments_motion::follow_series(window, cx, &self.follow, &self.series);
         let t = theme_of(cx);

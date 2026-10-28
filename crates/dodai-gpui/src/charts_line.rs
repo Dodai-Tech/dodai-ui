@@ -195,7 +195,7 @@ impl LineChart {
 impl LineChart {
     fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        let g = crate::motion::grow(window, cx, "LineChart");
+        let g = crate::motion::grow_for(window, cx, &self.follow, "LineChart");
         let mut legend_all: Option<(Vec<Series>, crate::charts::Hidden)> = None;
         {
             let np = self.series.len();
@@ -230,13 +230,18 @@ impl LineChart {
             crate::instruments_motion::next_frame(window);
         }
         let (lo, hi, ticks) = y_range(&self.series, self.zero, self.y_bounds);
+        let (lo, hi) =
+            crate::instruments_motion::follow_range(window, cx, &self.follow, "y", (lo, hi));
         let np = self.series.len();
         let (lo2, hi2, ticks2) = if self.secondary.is_empty() {
             (lo, hi, Vec::new())
         } else {
             let (a, b, _) = y_range(&self.secondary, self.zero, None);
             let (_, t2) = dodai_charts_core::axis::aligned_ticks((lo, hi), (a, b), 4);
-            (*t2.first().unwrap_or(&a), *t2.last().unwrap_or(&b), t2)
+            let (a, b) = (*t2.first().unwrap_or(&a), *t2.last().unwrap_or(&b));
+            let (a, b) =
+                crate::instruments_motion::follow_range(window, cx, &self.follow, "y2", (a, b));
+            (a, b, t2)
         };
         let all: Vec<Series> = self
             .series
@@ -271,7 +276,11 @@ impl LineChart {
         let cur: Option<usize> = xh.as_ref().and_then(|s| *s.read(cx)).filter(|i| *i < n);
         let hair = hsla(t.palette.text_muted);
         let xs_hover = xs.clone();
-        let tick_fracs: Vec<f32> = ticks.iter().map(|v| norm(*v, lo, hi)).collect();
+        let tick_fracs: Vec<f32> = ticks
+            .iter()
+            .map(|v| norm(*v, lo, hi))
+            .filter(|f| (0.0..=1.0).contains(f))
+            .collect();
 
         let cv = canvas(
             |_, _, _| (),

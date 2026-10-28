@@ -89,7 +89,7 @@ impl Bullet {
             *t = shown[1];
         }
         let t = theme_of(cx);
-        let g = crate::motion::grow(window, cx, "Bullet");
+        let g = crate::motion::grow_for(window, cx, &self.follow, "Bullet");
         let max = self
             .max
             .unwrap_or_else(|| {
@@ -231,7 +231,7 @@ impl PairedBars {
     fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         crate::instruments_motion::follow_triples(window, cx, &self.follow, &mut self.rows);
         let t = theme_of(cx);
-        let g = crate::motion::grow(window, cx, "PairedBars");
+        let g = crate::motion::grow_for(window, cx, &self.follow, "PairedBars");
         let focus = crate::charts_focus::Focus::new(window, cx, &self.follow, self.rows.len());
         let (ca, cb) = (t.palette.series_at(0), t.palette.series_at(1));
         let global = self
@@ -378,7 +378,7 @@ impl Lollipop {
         );
         let foc: Vec<crate::charts_focus::ItemFocus> =
             (0..self.items.len()).map(|i| focus.item(i)).collect();
-        let g = crate::motion::grow(window, cx, "Lollipop");
+        let g = crate::motion::grow_for(window, cx, &self.follow, "Lollipop");
         let n = self.items.len().max(1);
         let all: Vec<f32> = self
             .items
@@ -553,7 +553,7 @@ impl SlopeChart {
     fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         crate::instruments_motion::follow_triples(window, cx, &self.follow, &mut self.items);
         let t = theme_of(cx);
-        let g = crate::motion::grow(window, cx, "SlopeChart");
+        let g = crate::motion::grow_for(window, cx, &self.follow, "SlopeChart");
         let vals = self.items.iter().flat_map(|i| [i.1, i.2]);
         let lo = vals.clone().fold(f32::INFINITY, f32::min);
         let hi = vals.fold(f32::NEG_INFINITY, f32::max);
