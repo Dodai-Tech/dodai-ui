@@ -25,9 +25,36 @@ pub fn now() -> f32 {
         .as_secs_f32()
 }
 
-/// The motion in force (see [`MotionExt::of`]).
+static REDUCED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Ask every transition, glide and entry to land at once (the user's "reduce motion"). Components
+/// repaint on the next frame; call it again with `false` to bring the motion back.
+pub fn set_reduce_motion(cx: &mut App, on: bool) {
+    REDUCED.store(on, std::sync::atomic::Ordering::Relaxed);
+    cx.refresh_windows();
+}
+
+/// Whether motion is reduced (see [`set_reduce_motion`]).
+pub fn reduce_motion() -> bool {
+    REDUCED.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// The motion in force (see [`MotionExt::of`]); with reduced motion, an instant one.
 pub fn current(cx: &App) -> Motion {
-    Motion::of(cx)
+    let m = Motion::of(cx);
+    if reduce_motion() {
+        return instant(m);
+    }
+    m
+}
+
+fn instant(m: Motion) -> Motion {
+    Motion {
+        duration: Duration::ZERO,
+        delay: Duration::ZERO,
+        entry: Default::default(),
+        ..m
+    }
 }
 
 /// gpui glue for [`Motion`]: native animations and the app-wide default. Import it
@@ -298,6 +325,7 @@ pub fn smooth_with(
     target: f32,
     m: Motion,
 ) -> f32 {
+    let m = if reduce_motion() { instant(m) } else { m };
     let st = window.with_id(id, |w| {
         w.use_keyed_state(("smooth", 0u32), cx, move |_, _| Tween::new(target, m))
     });

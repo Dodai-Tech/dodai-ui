@@ -359,7 +359,7 @@ impl Tabs {
                 } else {
                     t.shape.clone()
                 };
-                if t.look().glitch_tabs {
+                if t.look().glitch_tabs && !crate::motion::reduce_motion() {
                     let old = s.rects.borrow().get(self.last_active(window, cx)).copied();
                     row = row.child(glitch_pill(
                         &self,
