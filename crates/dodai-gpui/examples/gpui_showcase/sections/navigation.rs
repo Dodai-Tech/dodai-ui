@@ -9,6 +9,7 @@ impl Showcase {
             Self::popovers_section,
             Self::menu_section,
             Self::tabs_section,
+            Self::tree_section,
             Self::sidebar_section,
             Self::strips_section,
             Self::carousel_section,
@@ -204,6 +205,41 @@ impl Showcase {
             "Tabs",
         ));
         out
+    }
+
+    fn tree_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let tree = TreeView::new(
+            "tree",
+            vec![
+                TreeItem::new("crates")
+                    .expanded(true)
+                    .child(
+                        TreeItem::new("dodai-core")
+                            .expanded(true)
+                            .child(TreeItem::new("spec.rs"))
+                            .child(TreeItem::new("themes")),
+                    )
+                    .child(
+                        TreeItem::new("dodai-gpui")
+                            .child(TreeItem::new("tabs.rs"))
+                            .child(TreeItem::new("tree.rs")),
+                    ),
+                TreeItem::new("examples").child(TreeItem::new("gpui_showcase.rs")),
+                TreeItem::new("README.md"),
+            ],
+        );
+        vec![(
+            "Navigation",
+            "Tree",
+            self.section("Tree", cx)
+                .child(Muted::new(
+                    "Nested items that expand and collapse; the design's own row, indent and guide styling.",
+                ))
+                .child(div().w_full().max_w(px(t.spacing.lg * 16.0)).child(tree))
+                .into_any_element(),
+            "Tree",
+        )]
     }
 
     fn sidebar_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {

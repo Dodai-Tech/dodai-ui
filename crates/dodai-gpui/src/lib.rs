@@ -512,7 +512,7 @@ pub use surfaces::{
     SearchBar, TopAppBar,
 };
 #[cfg(feature = "components")]
-pub use switcher::{set_tree_expanded, tree_expanded, DesignSystemTree, ThemeSwitcherBar};
+pub use switcher::{set_tree_expanded, tree_expanded, ThemeSwitcherBar, ThemeTree};
 #[cfg(feature = "components")]
 pub use tabs::Tabs;
 #[cfg(feature = "components")]

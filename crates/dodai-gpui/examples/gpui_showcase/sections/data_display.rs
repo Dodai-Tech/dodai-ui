@@ -9,7 +9,7 @@ impl Showcase {
             Self::tags_lists_section,
             Self::misc_section,
             Self::list_divider_section,
-            Self::tree_section,
+            Self::timeline_section,
             Self::tooltip_section,
             Self::table_section,
             Self::code_section,
@@ -184,22 +184,12 @@ impl Showcase {
         out
     }
 
-    fn tree_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+    fn timeline_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         self.demo_seen = Some(std::time::Instant::now());
         let t = theme_of(cx);
         let gap = px(t.spacing.md);
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let mut out: Vec<Section> = Vec::new();
-        let tree = TreeView::new(
-            "tree",
-            vec![
-                TreeItem::new("src")
-                    .expanded(true)
-                    .child(TreeItem::new("lib.rs"))
-                    .child(TreeItem::new("charts.rs")),
-                TreeItem::new("examples").child(TreeItem::new("gpui_showcase.rs")),
-            ],
-        );
         let timeline = Timeline::new([
             TimelineEvent::new("Charts added")
                 .time("today")
@@ -213,11 +203,10 @@ impl Showcase {
         ]);
         out.push((
             "Data display",
-            "Tree · Timeline · Empty state",
-            self.section("Tree · timeline · empty state", cx)
+            "Timeline · Empty state",
+            self.section("Timeline · empty state", cx)
                 .child(
                     row()
-                        .child(div().flex_1().min_w(px(200.0)).child(tree))
                         .child(div().flex_1().min_w(px(220.0)).child(timeline))
                         .child(
                             EmptyState::new("∅", "Nothing here")
@@ -225,7 +214,7 @@ impl Showcase {
                         ),
                 )
                 .into_any_element(),
-            "Tree · timeline · empty state",
+            "Timeline · empty state",
         ));
         out
     }

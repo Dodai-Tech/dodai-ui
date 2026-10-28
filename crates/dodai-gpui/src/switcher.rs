@@ -1,4 +1,4 @@
-//! [`ThemeSwitcherBar`] (one button per theme) and [`DesignSystemTree`].
+//! [`ThemeSwitcherBar`] (one button per theme) and [`ThemeTree`].
 
 use crate::button::Button;
 use crate::hsla;
@@ -55,7 +55,7 @@ pub fn tree_expanded(cx: &App) -> bool {
 }
 
 /// Show / hide the active design system's children in every
-/// [`DesignSystemTree`]. Call with `true` to re-open it from elsewhere
+/// [`ThemeTree`]. Call with `true` to re-open it from elsewhere
 /// (e.g. when a section is picked); the caller must notify its view.
 pub fn set_tree_expanded(cx: &mut App, open: bool) {
     cx.set_global(TreeExpanded(open));
@@ -64,14 +64,14 @@ pub fn set_tree_expanded(cx: &mut App, open: bool) {
 
 /// Tree of design systems and their themes for picking a theme.
 #[derive(IntoElement)]
-pub struct DesignSystemTree {
+pub struct ThemeTree {
     id: ElementId,
     dropdown_over: usize,
     props: Vec<(&'static str, gpui::AnyElement)>,
 }
 
-impl DesignSystemTree {
-    /// Create a new [`DesignSystemTree`].
+impl ThemeTree {
+    /// Create a new [`ThemeTree`].
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
             id: id.into(),
@@ -92,7 +92,7 @@ impl DesignSystemTree {
     }
 }
 
-impl RenderOnce for DesignSystemTree {
+impl RenderOnce for ThemeTree {
     fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = crate::theme_of(cx);
         // Expanded state of the active family's children (collapsible).
