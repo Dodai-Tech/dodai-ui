@@ -1221,3 +1221,62 @@ fn carousel_follows_a_drag_and_a_flick(cx: &mut TestAppContext) {
         picked.borrow()
     );
 }
+
+/// Two fingers sideways swipe the carousel a page; up-and-down is left to the page; a
+/// sideways wheel notch turns one page.
+#[gpui::test]
+fn carousel_follows_a_trackpad_swipe(cx: &mut TestAppContext) {
+    let picked = log();
+    let p = picked.clone();
+    let vcx = mount(cx, move |_, _| {
+        let p = p.clone();
+        let mut c = Carousel::new("car")
+            .visible(2)
+            .item_width(80.0)
+            .on_select(move |i, _, _| p.borrow_mut().push(i));
+        for name in ["a", "b", "c", "d", "e", "f"] {
+            c = c.item(name);
+        }
+        c.into_any_element()
+    });
+    let (x, y, w, _) = target(vcx);
+    let at = point(px(x + w / 2.0), px(y + 14.0));
+    let send = |vcx: &mut VisualTestContext, delta: gpui::ScrollDelta, phase: gpui::TouchPhase| {
+        vcx.simulate_event(gpui::ScrollWheelEvent {
+            position: at,
+            delta,
+            modifiers: Modifiers::none(),
+            touch_phase: phase,
+        });
+        vcx.run_until_parked();
+    };
+    let swipe = |vcx: &mut VisualTestContext, (dx, dy): (f32, f32)| {
+        use gpui::{ScrollDelta::Pixels, TouchPhase::*};
+        send(vcx, Pixels(point(px(0.0), px(0.0))), Started);
+        for _ in 0..4 {
+            send(vcx, Pixels(point(px(dx / 4.0), px(dy / 4.0))), Moved);
+        }
+        std::thread::sleep(std::time::Duration::from_millis(150));
+        send(vcx, Pixels(point(px(0.0), px(0.0))), Ended);
+        // The trackpad's momentum after lifting is not ours.
+        send(vcx, Pixels(point(px(dx / 4.0), px(0.0))), Moved);
+        settle(vcx);
+    };
+    swipe(vcx, (0.0, -190.0));
+    assert!(
+        picked.borrow().is_empty(),
+        "scrolling up and down leaves the row"
+    );
+    swipe(vcx, (-190.0, 10.0));
+    assert_eq!(*picked.borrow(), vec![2], "two pages under the fingers");
+    send(
+        vcx,
+        gpui::ScrollDelta::Lines(point(1.0, 0.0)),
+        gpui::TouchPhase::Moved,
+    );
+    assert_eq!(
+        *picked.borrow(),
+        vec![2, 1],
+        "a wheel notch turns one page back"
+    );
+}

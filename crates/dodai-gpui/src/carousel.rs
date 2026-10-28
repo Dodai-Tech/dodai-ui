@@ -6,7 +6,8 @@ use crate::{hsla, theme_of};
 use dodai_core::motion::{fling_to, overscroll};
 use gpui::{
     div, px, AnyElement, App, CursorStyle, DispatchPhase, ElementId, Entity, InteractiveElement,
-    IntoElement, MouseButton, MouseMoveEvent, MouseUpEvent, ParentElement, Styled, Window,
+    IntoElement, MouseButton, MouseMoveEvent, MouseUpEvent, ParentElement, ScrollDelta,
+    ScrollWheelEvent, Styled, TouchPhase, Window,
 };
 use std::rc::Rc;
 
@@ -61,10 +62,14 @@ type IndexFn = Rc<dyn Fn(usize, &mut Window, &mut App)>;
 struct Pager {
     glide: Glide,
     hand: Option<Hand>,
+    /// Fingers just landed on the trackpad: the first move says whether they swipe the row
+    /// (sideways) or scroll the page.
+    armed: bool,
 }
 
-/// A drag in progress: pointer x at press and now, the row's page then, and the pointer's
-/// speed in px/s (with the time of its last move, so a drag that stopped throws nothing).
+/// A drag in progress: pointer x at press and now (for a trackpad swipe, the distance
+/// swiped from 0), the row's page then, and the speed in px/s with the time of the last
+/// move, so a hand that stopped throws nothing.
 #[derive(Clone, Copy)]
 struct Hand {
     down_x: f32,
@@ -72,6 +77,28 @@ struct Hand {
     x: f32,
     at: f32,
     speed: f32,
+    /// Two fingers on a trackpad rather than a pressed button.
+    swipe: bool,
+}
+
+impl Hand {
+    fn new(down_x: f32, from: f32, at: f32, swipe: bool) -> Self {
+        Self {
+            down_x,
+            from,
+            x: down_x,
+            at,
+            speed: 0.0,
+            swipe,
+        }
+    }
+
+    /// Moved to `x` at `t`.
+    fn follow(&mut self, x: f32, t: f32) {
+        let dt = (t - self.at).max(1e-3);
+        self.speed = 0.7 * (x - self.x) / dt + 0.3 * self.speed;
+        (self.x, self.at) = (x, t);
+    }
 }
 
 /// The pages `0..=last` the row may rest on, and how one page is `step` px wide.
@@ -268,6 +295,7 @@ impl Carousel {
         let pager = window.use_keyed_state((self.id.clone(), "pager"), cx, |_, _| Pager {
             glide: Glide::new(start as f32, &m),
             hand: None,
+            armed: false,
         });
         let step = match widths.first() {
             Some(&cw) => cw + gap,
@@ -335,8 +363,8 @@ impl Carousel {
                 }))
         });
         let mut root = div().relative().flex().flex_col().gap(px(t.spacing.sm));
-        if hand.is_some() {
-            // While a hand is down the whole window reports to the row, so a drag that leaves
+        if hand.is_some_and(|h| !h.swipe) {
+            // While a button is down the whole window reports to the row, so a drag that leaves
             // it keeps going and is let go wherever the button comes up.
             let (moved, up, select) = (pager.clone(), pager.clone(), self.on_select.clone());
             root = root.child(gpui::canvas(
@@ -349,9 +377,7 @@ impl Carousel {
                         let (x, t) = (f32::from(e.position.x), crate::motion::now());
                         moved.update(cx, |p, _| {
                             if let Some(h) = &mut p.hand {
-                                let dt = (t - h.at).max(1e-3);
-                                h.speed = 0.7 * (x - h.x) / dt + 0.3 * h.speed;
-                                (h.x, h.at) = (x, t);
+                                h.follow(x, t);
                             }
                         });
                         w.refresh();
@@ -369,8 +395,59 @@ impl Carousel {
                 },
             ));
         }
-        let grab = pager.clone();
+        let (grab, wheel, select) = (pager.clone(), pager.clone(), self.on_select.clone());
         let from = slide;
+        // Two fingers sideways drag the row like a hand and throw it when lifted; the
+        // trackpad's own momentum afterwards is ignored (the throw coasts instead). A wheel
+        // notch sideways turns one page. Up-and-down scrolling passes to the page.
+        let on_wheel = move |e: &ScrollWheelEvent, w: &mut Window, cx: &mut App| {
+            let t = crate::motion::now();
+            let chosen = match e.delta {
+                ScrollDelta::Lines(d) if d.x.abs() > d.y.abs() => Some(if d.x < 0.0 {
+                    (start + 1).min(track.last)
+                } else {
+                    start.saturating_sub(1)
+                }),
+                ScrollDelta::Lines(_) => return,
+                ScrollDelta::Pixels(d) => {
+                    let (dx, dy) = (f32::from(d.x), f32::from(d.y));
+                    let mut ours = false;
+                    let lifted = wheel.update(cx, |p, _| {
+                        match (e.touch_phase, &mut p.hand) {
+                            (TouchPhase::Started, _) => p.armed = true,
+                            (TouchPhase::Moved, Some(h)) if h.swipe => {
+                                h.follow(h.x + dx, t);
+                                ours = true;
+                            }
+                            (TouchPhase::Moved, None) if p.armed && (dx != 0.0 || dy != 0.0) => {
+                                p.armed = false;
+                                if dx.abs() > dy.abs() {
+                                    let mut h = Hand::new(0.0, from, t, true);
+                                    h.follow(dx, t);
+                                    p.hand = Some(h);
+                                    ours = true;
+                                }
+                            }
+                            (TouchPhase::Ended, h) => {
+                                p.armed = false;
+                                return h.is_some_and(|h| h.swipe);
+                            }
+                            _ => {}
+                        }
+                        false
+                    });
+                    if !(ours || lifted) {
+                        return;
+                    }
+                    lifted.then(|| track.release(&wheel, m, cx))
+                }
+            };
+            cx.stop_propagation();
+            if let (Some(to), Some(f)) = (chosen.filter(|&to| to != start), &select) {
+                f(to, w, cx);
+            }
+            w.refresh();
+        };
         if let Some(m) = measured {
             let wide = avail;
             root = root.w_full().child(
@@ -402,24 +479,17 @@ impl Carousel {
                 .child(prev)
                 .child(
                     div()
-                        .cursor(if hand.is_some() {
+                        .cursor(if hand.is_some_and(|h| !h.swipe) {
                             CursorStyle::ClosedHand
                         } else {
                             CursorStyle::OpenHand
                         })
                         .on_mouse_down(MouseButton::Left, move |e, w, cx| {
                             let (x, at) = (f32::from(e.position.x), crate::motion::now());
-                            grab.update(cx, |p, _| {
-                                p.hand = Some(Hand {
-                                    down_x: x,
-                                    from,
-                                    x,
-                                    at,
-                                    speed: 0.0,
-                                })
-                            });
+                            grab.update(cx, |p, _| p.hand = Some(Hand::new(x, from, at, false)));
                             w.refresh();
                         })
+                        .on_scroll_wheel(on_wheel)
                         .child(if widths.is_empty() {
                             div()
                                 .w(px(
