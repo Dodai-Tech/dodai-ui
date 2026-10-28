@@ -96,19 +96,19 @@ fn ink(t: &tokens::ColorTokens) -> Ink {
     Ink {
         canvas: rgb(canvas),
         surface: rgb(t.surface.color()),
-        primary: rgb(t.primary.color()),
+        primary: rgb(t.ink.color()),
         // Hover: the primary eased 22 % towards the canvas.
-        primary_hover: rgb(t.primary.color().mix(canvas, 0.22)),
+        primary_hover: rgb(t.ink.color().mix(canvas, 0.22)),
         on_primary: rgb(canvas),
-        higher: over(t.contrast_higher),
-        high: over(t.contrast_high),
-        medium: over(t.contrast_medium),
-        low: over(t.contrast_low),
-        lower: over(t.contrast_lower),
-        info: rgb(t.info.base.color()),
-        success: rgb(t.success.base.color()),
-        warning: rgb(t.warning.base.color()),
-        error: rgb(t.error.base.color()),
+        higher: over(t.ink_90),
+        high: over(t.ink_75),
+        medium: over(t.ink_60),
+        low: over(t.ink_45),
+        lower: over(t.ink_25),
+        info: rgb(t.info.solid.color()),
+        success: rgb(t.success.solid.color()),
+        warning: rgb(t.warning.solid.color()),
+        error: rgb(t.danger.solid.color()),
     }
 }
 

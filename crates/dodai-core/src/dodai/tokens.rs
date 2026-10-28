@@ -68,14 +68,14 @@ const fn hsla(h: f32, s: f32, l: f32, a: f32) -> Hsla {
     Hsla::new(h, s, l, a)
 }
 
-/// One status colour with its four companions: `medium`, `low`, `frosted` and `frosted_soft`.
+/// One status colour with its four companions: `medium`, `low`, `glass` and `glass_soft`.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct StatusTokens {
-    pub base: Hsla,
-    pub medium: Hsla,
-    pub low: Hsla,
-    pub frosted: Hsla,
-    pub frosted_soft: Hsla,
+    pub solid: Hsla,
+    pub muted: Hsla,
+    pub tint: Hsla,
+    pub glass: Hsla,
+    pub glass_soft: Hsla,
 }
 
 /// Every colour token of one mode.
@@ -83,35 +83,35 @@ pub struct StatusTokens {
 pub struct ColorTokens {
     pub canvas: Hsla,
     pub surface: Hsla,
-    pub frosted: Hsla,
-    pub frosted_soft: Hsla,
-    pub frosted_strong: Hsla,
-    pub backdrop: Hsla,
-    pub primary: Hsla,
-    pub contrast_higher: Hsla,
-    pub contrast_high: Hsla,
-    pub contrast_medium: Hsla,
-    pub contrast_low: Hsla,
-    pub contrast_lower: Hsla,
+    pub glass: Hsla,
+    pub glass_soft: Hsla,
+    pub glass_strong: Hsla,
+    pub veil: Hsla,
+    pub ink: Hsla,
+    pub ink_90: Hsla,
+    pub ink_75: Hsla,
+    pub ink_60: Hsla,
+    pub ink_45: Hsla,
+    pub ink_25: Hsla,
     pub info: StatusTokens,
     pub success: StatusTokens,
     pub warning: StatusTokens,
-    pub error: StatusTokens,
+    pub danger: StatusTokens,
     /// The focus ring colour (the same in both modes).
     pub focus: Color,
 }
 
 const fn status(
     b: (f32, f32, f32),
-    frosted: (f32, f32, f32, f32),
+    glass: (f32, f32, f32, f32),
     soft: (f32, f32, f32, f32),
 ) -> StatusTokens {
     StatusTokens {
-        base: hsl(b.0, b.1, b.2),
-        medium: hsla(b.0, b.1, b.2, 0.6),
-        low: hsla(b.0, b.1, b.2, 0.18),
-        frosted: hsla(frosted.0, frosted.1, frosted.2, frosted.3),
-        frosted_soft: hsla(soft.0, soft.1, soft.2, soft.3),
+        solid: hsl(b.0, b.1, b.2),
+        muted: hsla(b.0, b.1, b.2, 0.6),
+        tint: hsla(b.0, b.1, b.2, 0.18),
+        glass: hsla(glass.0, glass.1, glass.2, glass.3),
+        glass_soft: hsla(soft.0, soft.1, soft.2, soft.3),
     }
 }
 
@@ -119,16 +119,16 @@ const fn status(
 pub const LIGHT: ColorTokens = ColorTokens {
     canvas: hsl(248.0, 40.0, 98.0),
     surface: hsl(250.0, 36.0, 95.0),
-    frosted: hsla(252.0, 100.0, 99.0, 0.58),
-    frosted_soft: hsla(252.0, 100.0, 99.0, 0.34),
-    frosted_strong: hsla(252.0, 100.0, 99.0, 0.78),
-    backdrop: hsla(246.0, 55.0, 10.0, 0.45),
-    primary: hsl(246.0, 45.0, 14.0),
-    contrast_higher: hsla(246.0, 30.0, 18.0, 0.84),
-    contrast_high: hsla(246.0, 28.0, 22.0, 0.72),
-    contrast_medium: hsla(246.0, 26.0, 26.0, 0.6),
-    contrast_low: hsla(248.0, 24.0, 32.0, 0.46),
-    contrast_lower: hsla(250.0, 24.0, 40.0, 0.22),
+    glass: hsla(252.0, 100.0, 99.0, 0.58),
+    glass_soft: hsla(252.0, 100.0, 99.0, 0.34),
+    glass_strong: hsla(252.0, 100.0, 99.0, 0.78),
+    veil: hsla(246.0, 55.0, 10.0, 0.45),
+    ink: hsl(246.0, 45.0, 14.0),
+    ink_90: hsla(246.0, 30.0, 18.0, 0.84),
+    ink_75: hsla(246.0, 28.0, 22.0, 0.72),
+    ink_60: hsla(246.0, 26.0, 26.0, 0.6),
+    ink_45: hsla(248.0, 24.0, 32.0, 0.46),
+    ink_25: hsla(250.0, 24.0, 40.0, 0.22),
     info: status(
         (238.0, 82.0, 56.0),
         (232.0, 100.0, 93.0, 0.6),
@@ -144,7 +144,7 @@ pub const LIGHT: ColorTokens = ColorTokens {
         (42.0, 100.0, 90.0, 0.6),
         (42.0, 90.0, 95.0, 0.6),
     ),
-    error: status(
+    danger: status(
         (346.0, 80.0, 36.0),
         (350.0, 100.0, 92.0, 0.6),
         (350.0, 90.0, 96.0, 0.6),
@@ -156,16 +156,16 @@ pub const LIGHT: ColorTokens = ColorTokens {
 pub const DARK: ColorTokens = ColorTokens {
     canvas: hsl(246.0, 50.0, 5.0),
     surface: hsl(246.0, 32.0, 11.0),
-    frosted: hsla(250.0, 60.0, 82.0, 0.11),
-    frosted_soft: hsla(250.0, 60.0, 82.0, 0.06),
-    frosted_strong: hsla(250.0, 60.0, 82.0, 0.19),
-    backdrop: hsla(246.0, 60.0, 3.0, 0.6),
-    primary: hsl(250.0, 60.0, 97.0),
-    contrast_higher: hsla(250.0, 40.0, 96.0, 0.82),
-    contrast_high: hsla(250.0, 40.0, 96.0, 0.7),
-    contrast_medium: hsla(250.0, 40.0, 96.0, 0.58),
-    contrast_low: hsla(250.0, 40.0, 96.0, 0.44),
-    contrast_lower: hsla(250.0, 30.0, 70.0, 0.26),
+    glass: hsla(250.0, 60.0, 82.0, 0.11),
+    glass_soft: hsla(250.0, 60.0, 82.0, 0.06),
+    glass_strong: hsla(250.0, 60.0, 82.0, 0.19),
+    veil: hsla(246.0, 60.0, 3.0, 0.6),
+    ink: hsl(250.0, 60.0, 97.0),
+    ink_90: hsla(250.0, 40.0, 96.0, 0.82),
+    ink_75: hsla(250.0, 40.0, 96.0, 0.7),
+    ink_60: hsla(250.0, 40.0, 96.0, 0.58),
+    ink_45: hsla(250.0, 40.0, 96.0, 0.44),
+    ink_25: hsla(250.0, 30.0, 70.0, 0.26),
     info: status(
         (224.0, 100.0, 70.0),
         (224.0, 70.0, 22.0, 0.68),
@@ -181,7 +181,7 @@ pub const DARK: ColorTokens = ColorTokens {
         (38.0, 70.0, 20.0, 0.68),
         (38.0, 55.0, 15.0, 0.68),
     ),
-    error: status(
+    danger: status(
         (350.0, 90.0, 66.0),
         (350.0, 70.0, 22.0, 0.68),
         (350.0, 55.0, 16.0, 0.68),
@@ -235,16 +235,16 @@ const fn fluid_rem(min: f32, vw: f32, base: f32, max: f32) -> FluidRem {
 
 /// The type scale, `2xs … 5xl`.
 pub const TYPESCALE: [(&str, FluidRem); 10] = [
-    ("2xs", fixed_rem(0.75)),
-    ("xs", fixed_rem(0.875)),
-    ("sm", fixed_rem(0.9375)),
-    ("md", fluid_rem(1.1, 0.18, 1.0, 1.3)),
-    ("lg", fluid_rem(1.25, 0.45, 1.1, 1.7)),
-    ("xl", fluid_rem(1.4, 0.85, 1.15, 2.2)),
-    ("2xl", fluid_rem(1.55, 1.4, 1.2, 3.0)),
-    ("3xl", fluid_rem(1.75, 2.2, 1.25, 4.0)),
-    ("4xl", fluid_rem(2.0, 3.3, 1.25, 5.2)),
-    ("5xl", fluid_rem(2.2, 4.8, 1.2, 7.0)),
+    ("2xs", fixed_rem(0.70)),
+    ("xs", fixed_rem(0.84)),
+    ("sm", fixed_rem(0.92)),
+    ("md", fluid_rem(1.05, 0.14, 0.98, 1.25)),
+    ("lg", fluid_rem(1.2, 0.38, 1.05, 1.6)),
+    ("xl", fluid_rem(1.35, 0.7, 1.1, 2.0)),
+    ("2xl", fluid_rem(1.5, 1.2, 1.15, 2.7)),
+    ("3xl", fluid_rem(1.7, 1.9, 1.2, 3.6)),
+    ("4xl", fluid_rem(1.9, 2.8, 1.2, 4.7)),
+    ("5xl", fluid_rem(2.1, 4.0, 1.15, 6.2)),
 ];
 
 /// The viewport width the UI scale in the theme is resolved at.
@@ -260,15 +260,15 @@ pub fn type_size(step: &str, viewport_px: f32) -> Option<f32> {
 
 // --------------------------------------------------------------------------------- spacing
 
-/// Static spacing, `2xs … 2xl` (2, 6, 10, 16, 24, 40, 64 px).
+/// Static spacing, `2xs … 2xl` (4, 8, 12, 16, 24, 32, 48 px).
 pub const SPACING_STATIC: [(&str, f32); 7] = [
-    ("2xs", 2.0),
-    ("xs", 6.0),
-    ("sm", 10.0),
+    ("2xs", 4.0),
+    ("xs", 8.0),
+    ("sm", 12.0),
     ("md", 16.0),
     ("lg", 24.0),
-    ("xl", 40.0),
-    ("2xl", 64.0),
+    ("xl", 32.0),
+    ("2xl", 48.0),
 ];
 
 /// A `clamp(min px, vw·x + base px, max px)` spacing step.
@@ -366,12 +366,12 @@ pub fn spacing_fluid(step: &str, viewport_px: f32) -> Option<f32> {
 pub const RADIUS: [(&str, f32); 8] = [
     ("xs", 4.0),
     ("sm", 6.0),
-    ("md", 10.0),
+    ("md", 8.0),
     ("lg", 12.0),
     ("xl", 16.0),
-    ("2xl", 22.0),
-    ("3xl", 30.0),
-    ("4xl", 44.0),
+    ("2xl", 20.0),
+    ("3xl", 28.0),
+    ("4xl", 40.0),
 ];
 
 /// A pill. Finite stand-in for an infinite radius.
@@ -390,13 +390,13 @@ pub const BORDER_WIDTH_THIN: f32 = 0.5;
 
 /// Frosted glass blur radius in px. Rendered by `dodai_gpui::FrostedScene` (a blurred copy
 /// of the scene's own picture under each panel); `gpui` cannot blur arbitrary UI behind a layer.
-pub const BLUR_FROSTED: f32 = 28.0;
+pub const BLUR_FROSTED: f32 = 24.0;
 
 /// Saturation of the blurred backdrop under a frosted pane: glass over colour reads richer
 /// than the colour itself.
-pub const FROST_SATURATION: f32 = 1.5;
+pub const FROST_SATURATION: f32 = 1.4;
 /// The thin blur used under small floating parts (chips, tooltips).
-pub const BLUR_THIN: f32 = 12.0;
+pub const BLUR_THIN: f32 = 10.0;
 
 /// A drop shadow tinted with the ink colour: offset y, blur radius and alpha.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -448,10 +448,10 @@ pub const GRADIENT_FADE_DARK: [(f32, f32); 16] = [
 // ---------------------------------------------------------------------------------- motion
 
 /// Durations `sm / md / lg / xl` in milliseconds.
-pub const DURATION_SM: u64 = 200;
-pub const DURATION_MD: u64 = 320;
-pub const DURATION_LG: u64 = 520;
-pub const DURATION_XL: u64 = 900;
+pub const DURATION_SM: u64 = 180;
+pub const DURATION_MD: u64 = 280;
+pub const DURATION_LG: u64 = 460;
+pub const DURATION_XL: u64 = 800;
 
 /// Easings as cubic-bezier control points: a soft start and a long, gentle settle.
 pub const EASE_IN_OUT: (f32, f32, f32, f32) = (0.22, 0.8, 0.2, 1.0);
@@ -575,14 +575,14 @@ mod tests {
         assert_eq!(hex(LIGHT.canvas.color()), 0xf8f8fc);
         assert_eq!(hex(DARK.canvas.color()), 0x080613);
         assert_eq!(hex(LIGHT.focus), 0x7c5cff);
-        assert_ne!(hex(LIGHT.primary.color()), hex(DARK.primary.color()));
+        assert_ne!(hex(LIGHT.ink.color()), hex(DARK.ink.color()));
     }
 
     #[test]
     fn alpha_tokens_keep_their_alpha() {
-        assert_eq!(LIGHT.backdrop.color().a, 115);
-        assert_eq!(DARK.contrast_lower.color().a, 66);
-        assert!(LIGHT.frosted.color().a > LIGHT.frosted_soft.color().a);
+        assert_eq!(LIGHT.veil.color().a, 115);
+        assert_eq!(DARK.ink_25.color().a, 66);
+        assert!(LIGHT.glass.color().a > LIGHT.glass_soft.color().a);
     }
 
     #[test]
@@ -592,14 +592,7 @@ mod tests {
                 let c = t.over(c);
                 u32::from(c.r) + u32::from(c.g) + u32::from(c.b)
             };
-            let ramp = [
-                m.contrast_higher,
-                m.contrast_high,
-                m.contrast_medium,
-                m.contrast_low,
-                m.contrast_lower,
-            ]
-            .map(l);
+            let ramp = [m.ink_90, m.ink_75, m.ink_60, m.ink_45, m.ink_25].map(l);
             let light = m.canvas.l > 50.0;
             assert!(
                 ramp.windows(2)
@@ -614,15 +607,15 @@ mod tests {
         assert_eq!(spacing_fluid("md", 100.0), Some(16.0));
         assert_eq!(spacing_fluid("md", 4000.0), Some(36.0));
         assert_eq!(spacing_fluid("2xl", 4000.0), Some(200.0));
-        assert_eq!(type_size("sm", 1440.0), Some(15.0));
-        assert!((type_size("5xl", 4000.0).unwrap() - 7.0 * 16.0).abs() < 0.01);
+        assert_eq!(type_size("sm", 1440.0), Some(14.72));
+        assert!((type_size("5xl", 4000.0).unwrap() - 6.2 * 16.0).abs() < 0.01);
     }
 
     #[test]
     fn static_scales_match_the_tables() {
         assert_eq!(spacing_static("lg"), Some(24.0));
         assert_eq!(radius("xl"), Some(16.0));
-        assert_eq!(radius("4xl"), Some(44.0));
+        assert_eq!(radius("4xl"), Some(40.0));
         assert!(radius("nope").is_none());
     }
 

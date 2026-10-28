@@ -21,10 +21,10 @@ pub static SPEC: Dodai = Dodai;
 /// Dodai radii (the `sm … 3xl` tokens): 6 / 10 / 16 / 22 / 30. Generous corners.
 pub const SHAPE_SCALE: ShapeScale = ShapeScale {
     xs: 6.0,
-    sm: 10.0,
+    sm: 8.0,
     md: 16.0,
-    lg: 22.0,
-    xl: 30.0,
+    lg: 20.0,
+    xl: 28.0,
 };
 
 const fn r(role: ShapeRole, size: ShapeSize, sides: Corners) -> RoleShape {
@@ -142,24 +142,24 @@ fn status_tokens(t: &Theme, tone: Tone) -> &'static crate::dodai::tokens::Status
         Tone::Info => &m.info,
         Tone::Success => &m.success,
         Tone::Warning => &m.warning,
-        Tone::Danger => &m.error,
+        Tone::Danger => &m.danger,
     }
 }
 
-/// The tone's `frosted` (banner) or `frosted_soft` (inline) fill, composited over the canvas
+/// The tone's `glass` (banner) or `glass_soft` (inline) fill, composited over the canvas
 /// so ink on it stays legible.
 fn tone_fill(t: &Theme, tone: Tone, banner: bool) -> Color {
     let s = status_tokens(t, tone);
-    (if banner { s.frosted } else { s.frosted_soft }).over(t.palette.background)
+    (if banner { s.glass } else { s.glass_soft }).over(t.palette.background)
 }
 
-/// The `frosted_soft`, `frosted` or `frosted_strong` glass fill, over the canvas.
+/// The `glass_soft`, `glass` or `glass_strong` glass fill, over the canvas.
 fn frosted(t: &Theme, strength: u8) -> Color {
     let m = mode_tokens(t);
     let f = match strength {
-        0 => m.frosted_soft,
-        1 => m.frosted,
-        _ => m.frosted_strong,
+        0 => m.glass_soft,
+        1 => m.glass,
+        _ => m.glass_strong,
     };
     f.over(t.palette.background)
 }
@@ -296,7 +296,7 @@ impl DesignSpec for Dodai {
         } else {
             &crate::dodai::tokens::DARK
         };
-        let action = other.info.base.color();
+        let action = other.info.solid.color();
         Some((surface(Some(p.primary), None, p.on_primary, true), action))
     }
 
@@ -314,7 +314,7 @@ impl DesignSpec for Dodai {
 
     /// The backdrop colour.
     fn scrim(&self, t: &Theme) -> Option<Color> {
-        Some(mode_tokens(t).backdrop.color())
+        Some(mode_tokens(t).veil.color())
     }
 
     fn step(&self, t: &Theme, state: StepState) -> Option<StepTokens> {
@@ -381,7 +381,7 @@ impl DesignSpec for Dodai {
     /// Tags: frosted tone fill, tone-coloured label, pill.
     fn badge(&self, t: &Theme, tone: Tone) -> Option<SurfaceTokens> {
         let c = t.palette.tone(tone);
-        let low = status_tokens(t, tone).low.over(t.palette.background);
+        let low = status_tokens(t, tone).tint.over(t.palette.background);
         Some(surface(Some(low), None, t.legible(c), false))
     }
 
@@ -557,7 +557,7 @@ impl DesignSpec for Dodai {
             border: if focused { p.text } else { p.border_strong },
             text: p.text,
             placeholder: p.text_muted,
-            selection: status_tokens(t, Tone::Info).low.color(),
+            selection: status_tokens(t, Tone::Info).tint.color(),
         })
     }
 
@@ -607,7 +607,7 @@ impl DesignSpec for Dodai {
     /// The frosted glass fill over the frosted blur (28 px).
     fn frost(&self, t: &Theme) -> Option<crate::Frost> {
         Some(crate::Frost {
-            tint: mode_tokens(t).frosted.color(),
+            tint: mode_tokens(t).glass.color(),
             blur: crate::dodai::tokens::BLUR_FROSTED,
             edge: None,
             saturation: crate::dodai::tokens::FROST_SATURATION,
@@ -671,12 +671,12 @@ mod tests {
         let (narrow, wide) = (t.responsive(480.0), t.responsive(1920.0));
         assert!(narrow.typography.size_lg < wide.typography.size_lg);
         assert!(narrow.spacing.lg < wide.spacing.lg);
-        assert_eq!(narrow.typography.size_md, 15.0);
+        assert!((narrow.typography.size_md - 14.72).abs() < 0.01);
         assert_eq!(t.page_grid(1440.0).columns, 12);
         assert_eq!(t.page_grid(600.0).columns, 4);
         assert_eq!(
             t.frost().blur,
-            28.0,
+            24.0,
             "the design's own frost, not the default"
         );
         let f = t.fade_stops();
@@ -703,10 +703,10 @@ mod tests {
     fn typography_and_spacing_come_from_the_tokens() {
         let t = crate::dodai::light();
         assert_eq!(t.typography.size_md, 15.0);
-        assert_eq!(t.typography.size_sm, 14.0);
-        assert_eq!(t.typography.size_xs, 12.0);
+        assert_eq!(t.typography.size_sm, 13.0);
+        assert_eq!(t.typography.size_xs, 11.0);
         assert_eq!(t.spacing.lg, 24.0);
-        assert_eq!(t.motion.duration.as_millis(), 200);
+        assert_eq!(t.motion.duration.as_millis(), 180);
     }
 
     #[test]
@@ -751,11 +751,11 @@ mod tests {
     }
 
     #[test]
-    fn controls_are_sixteen_and_cards_thirty() {
+    fn controls_are_sixteen_and_cards_twenty_eight() {
         let t = crate::dodai::light();
         let ss = t.shape_system.as_ref().unwrap();
         assert_eq!(ss.scale.md, 16.0);
-        assert_eq!(ss.scale.xl, 30.0);
+        assert_eq!(ss.scale.xl, 28.0);
     }
 
     #[test]
