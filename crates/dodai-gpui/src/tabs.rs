@@ -212,6 +212,11 @@ impl Tabs {
         if self.scrollable {
             tab = tab.flex_none().whitespace_nowrap();
         }
+        if t.tab(true, false).outline {
+            // Outlined blocks have nothing to slide: the chosen one rises off the page, the old
+            // one drops back, at the design's own pace.
+            tab = tab.relative().top(px(-t.shape.border_width * 2.0 * p));
+        }
         tab
     }
 
