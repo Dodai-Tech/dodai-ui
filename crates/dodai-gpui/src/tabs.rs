@@ -544,44 +544,56 @@ fn glitch_pill(
     crate::motion::next_frame(window);
     let step = (k * 18.0) as u32;
     let amp = 14.0 * (1.0 - k);
+    let fill = style.fill.unwrap_or_else(|| hsla(t.palette.primary));
+    // The whole contour (cut corners included) in `colour`, `dx` px sideways.
+    let contour = |colour, dx: f32, x: f32, w: f32, tag: &'static str| {
+        let mut st = style;
+        st.fill = Some(colour);
+        shaped_id((id.clone(), tag), &shape, st)
+            .absolute()
+            .top_0()
+            .left(px(x + dx))
+            .w(px(w))
+            .h_full()
+    };
     let mut layer = div().absolute().top_0().left_0().size_full();
     // Colour-split ghosts behind the slices.
-    for (n, (c, dx)) in [(t.palette.info, -amp * 0.5), (t.palette.danger, amp * 0.5)]
-        .into_iter()
-        .enumerate()
+    for (n, (c, dx, tag)) in [
+        (t.palette.info, -amp * 0.5, "ghost-a"),
+        (t.palette.danger, amp * 0.5, "ghost-b"),
+    ]
+    .into_iter()
+    .enumerate()
     {
-        layer = layer.child(
-            div()
-                .absolute()
-                .top_0()
-                .left(px(x + dx))
-                .w(px(w))
-                .h_full()
-                .bg(hsla(c).opacity(
-                    0.45 * (1.0 - k) * if (step + n as u32) % 3 == 0 { 0.4 } else { 1.0 },
-                )),
-        );
+        let dim = if (step + n as u32) % 3 == 0 { 0.4 } else { 1.0 };
+        layer = layer.child(contour(
+            hsla(c).opacity(0.45 * (1.0 - k) * dim),
+            dx,
+            x,
+            w,
+            tag,
+        ));
     }
     // The tab it left, flickering out.
     if let (Some((ox, ow)), true) = (old, step % 2 == 0 && k < 0.7) {
-        layer = layer.child(
-            div()
-                .absolute()
-                .top_0()
-                .left(px(ox))
-                .w(px(ow))
-                .h_full()
-                .bg(style
-                    .fill
-                    .unwrap_or(hsla(t.palette.primary))
-                    .opacity(0.35 * (1.0 - k))),
-        );
+        layer = layer.child(contour(
+            fill.opacity(0.35 * (1.0 - k)),
+            0.0,
+            ox,
+            ow,
+            "trace",
+        ));
     }
-    // The new fill in three slices; the outer two lag then snap into place.
-    let fill = style.fill.unwrap_or_else(|| hsla(t.palette.primary));
+    // The new tab in three slices that jitter sideways and settle. Each slice clips the full
+    // contour, so the cut corners stay cut.
     for i in 0..3u32 {
         let dx = jitter(i, step) * amp;
-        let on = !(k < 0.15 && i == 1);
+        if k < 0.15 && i == 1 {
+            continue;
+        }
+        let tag: &'static str = ["slice-0", "slice-1", "slice-2"][i as usize];
+        let mut st = style;
+        st.fill = Some(fill);
         layer = layer.child(
             div()
                 .absolute()
@@ -589,7 +601,15 @@ fn glitch_pill(
                 .h(gpui::relative(1.0 / 3.0))
                 .left(px(x + dx))
                 .w(px(w))
-                .bg(fill.opacity(if on { 1.0 } else { 0.0 })),
+                .overflow_hidden()
+                .child(
+                    shaped_id((id.clone(), tag), &shape, st)
+                        .absolute()
+                        .top(gpui::relative(-(i as f32)))
+                        .left_0()
+                        .w_full()
+                        .h(gpui::relative(3.0)),
+                ),
         );
     }
     layer.into_any_element()
