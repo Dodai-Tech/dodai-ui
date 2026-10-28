@@ -640,6 +640,16 @@ pub fn select_theme(cx: &mut App, index: usize) {
     cx.refresh_windows();
 }
 
+/// Switch to the opposite light/dark mode of the active theme (same design, same accent) and
+/// repaint. `false` when the theme has no counterpart.
+pub fn toggle_theme_mode(cx: &mut App) -> bool {
+    let done = cx.global_mut::<DodaiTheme>().switcher.toggle_mode();
+    if done {
+        cx.refresh_windows();
+    }
+    done
+}
+
 /// Current glow intensity of the active theme.
 pub fn glow_intensity(cx: &App) -> f32 {
     cx.dodai().theme().effects.glow_intensity

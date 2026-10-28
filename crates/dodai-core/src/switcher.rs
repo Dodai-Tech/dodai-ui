@@ -86,6 +86,41 @@ impl ThemeSwitcher {
         }
     }
 
+    /// Index of the same theme in the opposite light/dark mode: same family, and the id
+    /// (minus a `-dark` / `-light` suffix) matches when there is one, else the family's first
+    /// theme of that mode.
+    pub fn counterpart(&self) -> Option<usize> {
+        let cur = self.current();
+        let base = |id: &str| {
+            id.strip_suffix("-dark")
+                .or_else(|| id.strip_suffix("-light"))
+                .unwrap_or(id)
+                .to_owned()
+        };
+        let want = base(cur.meta.id);
+        let others: Vec<usize> = self
+            .family_indices(cur.meta.family)
+            .into_iter()
+            .filter(|&i| self.themes[i].meta.mode != cur.meta.mode)
+            .collect();
+        others
+            .iter()
+            .copied()
+            .find(|&i| base(self.themes[i].meta.id) == want)
+            .or_else(|| others.first().copied())
+    }
+
+    /// Switch to the opposite light/dark mode of the current theme; `false` if it has none.
+    pub fn toggle_mode(&mut self) -> bool {
+        match self.counterpart() {
+            Some(i) => {
+                self.index = i;
+                true
+            }
+            None => false,
+        }
+    }
+
     /// Select by index, clamped.
     pub fn select_index(&mut self, i: usize) {
         self.index = i.min(self.themes.len() - 1);
@@ -111,6 +146,29 @@ mod tests {
 
     fn sample() -> ThemeSwitcher {
         ThemeSwitcher::with_themes(vec![fam("a1", "a"), fam("a2", "a"), fam("b1", "b")])
+    }
+
+    #[test]
+    fn toggle_mode_finds_the_matching_sibling() {
+        let mut s = crate::switcher();
+        for i in 0..s.themes().len() {
+            s.select_index(i);
+            let (id, mode, family) = (
+                s.current().meta.id,
+                s.current().meta.mode,
+                s.current_family(),
+            );
+            if s.toggle_mode() {
+                assert_ne!(s.current().meta.mode, mode, "{id}");
+                assert_eq!(s.current_family(), family, "{id}");
+                assert!(s.toggle_mode());
+                assert_eq!(s.current().meta.mode, mode, "{id} comes back to its mode");
+            }
+        }
+        if s.select("dodai-forest") {
+            s.toggle_mode();
+            assert_eq!(s.current().meta.id, "dodai-forest-dark");
+        }
     }
 
     #[test]

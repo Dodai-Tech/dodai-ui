@@ -550,6 +550,9 @@ impl Render for Showcase {
                 if !s.focus.is_focused(w) {
                     return;
                 }
+                if e.keystroke.key == "m" {
+                    dodai_gpui::toggle_theme_mode(cx);
+                }
                 if e.keystroke.key == "t" {
                     if e.keystroke.modifiers.shift {
                         cycle_prev(cx)
