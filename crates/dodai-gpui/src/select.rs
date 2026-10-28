@@ -182,7 +182,16 @@ fn key_down(
 }
 
 impl Select {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let own = crate::own::Own::new(window, cx, self.id.clone(), self.selected);
+        self.selected = own.get();
+        let (state, inner) = (own.setter(), self.on_select.take());
+        self.on_select = Some(std::rc::Rc::new(move |i, w, cx| {
+            crate::own::choose(&state, cx, Some(i));
+            if let Some(f) = &inner {
+                f(i, w, cx);
+            }
+        }));
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
         let sel0 = self.selected;

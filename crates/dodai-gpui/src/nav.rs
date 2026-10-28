@@ -137,7 +137,16 @@ impl Pagination {
 }
 
 impl Pagination {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let own = crate::own::Own::new(window, cx, self.id.clone(), self.page);
+        self.page = own.get();
+        let (state, inner) = (own.setter(), self.on_change.take());
+        self.on_change = Some(std::rc::Rc::new(move |i, w, cx| {
+            crate::own::choose(&state, cx, i);
+            if let Some(f) = &inner {
+                f(i, w, cx);
+            }
+        }));
         let t = theme_of(cx);
         let mut row = div().flex().items_center().gap(px(t.spacing.xs));
         let (page, total) = (self.page.clamp(1, self.total.max(1)), self.total);
@@ -353,7 +362,16 @@ impl Segmented {
 }
 
 impl Segmented {
-    fn build(self, window: &mut Window, cx: &mut App) -> gpui::AnyElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> gpui::AnyElement {
+        let own = crate::own::Own::new(window, cx, self.id.clone(), self.selected);
+        self.selected = own.get();
+        let (state, inner) = (own.setter(), self.on_select.take());
+        self.on_select = Some(std::rc::Rc::new(move |i, w, cx| {
+            crate::own::choose(&state, cx, i);
+            if let Some(f) = &inner {
+                f(i, w, cx);
+            }
+        }));
         let t = theme_of(cx);
         if t.look().tonal {
             return self.build_m3(t, window, cx).into_any_element();

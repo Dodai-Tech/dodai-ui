@@ -187,6 +187,8 @@ pub mod charts_flow;
 pub(crate) mod charts_focus;
 #[cfg(feature = "charts")]
 pub mod live;
+#[cfg(feature = "components")]
+mod own;
 #[cfg(feature = "charts")]
 pub use live::Live;
 #[cfg(feature = "charts")]

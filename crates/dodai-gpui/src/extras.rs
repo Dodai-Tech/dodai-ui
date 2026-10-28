@@ -322,7 +322,16 @@ impl Rating {
 }
 
 impl Rating {
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let own = crate::own::Own::new(window, cx, self.id.clone(), self.value);
+        self.value = own.get();
+        let (state, inner) = (own.setter(), self.on_change.take());
+        self.on_change = Some(std::rc::Rc::new(move |v, w, cx| {
+            crate::own::choose(&state, cx, v);
+            if let Some(f) = &inner {
+                f(v, w, cx);
+            }
+        }));
         let t = theme_of(cx);
         let value = if self.half {
             (self.value * 2.0).round() / 2.0
@@ -666,7 +675,16 @@ impl ColorPicker {
 }
 
 impl ColorPicker {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let own = crate::own::Own::new(window, cx, self.id.clone(), self.selected);
+        self.selected = own.get();
+        let (state, inner) = (own.setter(), self.on_select.take());
+        self.on_select = Some(std::rc::Rc::new(move |i, w, cx| {
+            crate::own::choose(&state, cx, Some(i));
+            if let Some(f) = &inner {
+                f(i, w, cx);
+            }
+        }));
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
         let side = t.scale(dodai_core::Scale::Compact);

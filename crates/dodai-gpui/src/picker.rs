@@ -196,7 +196,16 @@ impl DatePicker {
 }
 
 impl DatePicker {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let own = crate::own::Own::new(window, cx, self.id.clone(), self.selected);
+        self.selected = own.get();
+        let (state, inner) = (own.setter(), self.on_select.take());
+        self.on_select = Some(std::rc::Rc::new(move |d, w, cx| {
+            crate::own::choose(&state, cx, Some(d));
+            if let Some(f) = &inner {
+                f(d, w, cx);
+            }
+        }));
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
         let p = t.panel(false);
@@ -366,7 +375,16 @@ impl TimePicker {
 }
 
 impl TimePicker {
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let own = crate::own::Own::new(window, cx, self.id.clone(), (self.hour, self.minute));
+        (self.hour, self.minute) = own.get();
+        let (state, inner) = (own.setter(), self.on_change.take());
+        self.on_change = Some(std::rc::Rc::new(move |h, m, w, cx| {
+            crate::own::choose(&state, cx, (h, m));
+            if let Some(f) = &inner {
+                f(h, m, w, cx);
+            }
+        }));
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
         let p = t.panel(false);

@@ -131,7 +131,16 @@ impl Carousel {
 }
 
 impl Carousel {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let own = crate::own::Own::new(window, cx, self.id.clone(), self.active);
+        self.active = own.get();
+        let (state, inner) = (own.setter(), self.on_select.take());
+        self.on_select = Some(std::rc::Rc::new(move |i, w, cx| {
+            crate::own::choose(&state, cx, i);
+            if let Some(f) = &inner {
+                f(i, w, cx);
+            }
+        }));
         let t = theme_of(cx);
         let n = self.items.len();
         let gap = if t.look().tonal { 8.0 } else { t.spacing.md };

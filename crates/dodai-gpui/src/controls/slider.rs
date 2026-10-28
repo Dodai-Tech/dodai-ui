@@ -129,7 +129,16 @@ impl Slider {
 }
 
 impl Slider {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let own = crate::own::Own::new(window, cx, self.id.clone(), self.value);
+        self.value = own.get();
+        let (state, inner) = (own.setter(), self.on_change.take());
+        self.on_change = Some(Rc::new(move |v, w, cx| {
+            crate::own::choose(&state, cx, v);
+            if let Some(f) = &inner {
+                f(v, w, cx);
+            }
+        }));
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
         let tonal = t.look().tonal;

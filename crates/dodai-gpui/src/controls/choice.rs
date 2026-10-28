@@ -87,19 +87,12 @@ pub(super) struct Choice {
 }
 
 pub(super) fn choice(mut c: Choice, window: &mut Window, cx: &mut App) -> gpui::AnyElement {
-    // Works controlled or not: the choice remembers its last click, and follows `on` again as
-    // soon as the caller passes a different value. Without this a control given a fixed value
-    // (or no `on_change`) would ignore every click.
-    let own = window.use_keyed_state((c.id.clone(), "own"), cx, |_, _| (c.on, c.on));
-    let (given, shown) = *own.read(cx);
-    if c.on != given {
-        own.update(cx, |s, _| *s = (c.on, c.on));
-    } else {
-        c.on = shown;
-    }
-    let inner = c.handler.take();
+    // Works controlled or not (see `own`).
+    let own = crate::own::Own::new(window, cx, c.id.clone(), c.on);
+    c.on = own.get();
+    let (state, inner) = (own.setter(), c.handler.take());
     c.handler = Some(Rc::new(move |v, w, cx| {
-        own.update(cx, |s, _| s.1 = v);
+        crate::own::choose(&state, cx, v);
         if let Some(f) = &inner {
             f(v, w, cx);
         }

@@ -72,7 +72,11 @@ fn carousel_arrows_select_neighbouring_pages(cx: &mut TestAppContext) {
     // arrows sit at both ends of the first row
     click(vcx, r - 14.0, t + 14.0);
     click(vcx, l + 14.0, t + 14.0);
-    assert_eq!(*picked.borrow(), vec![2, 0], "next then prev");
+    assert_eq!(
+        *picked.borrow(),
+        vec![2, 1],
+        "next, then prev from where it moved to"
+    );
 }
 
 type Log = Rc<RefCell<Vec<usize>>>;
@@ -144,7 +148,11 @@ fn pagination_next_and_prev_stay_in_range(cx: &mut TestAppContext) {
     click(vcx, x + 14.0, y + h / 2.0);
     let got = l.borrow().clone();
     assert_eq!(got.len(), 2, "both arrows fire: {got:?}");
-    assert_eq!((got[0], got[1]), (4, 2));
+    assert_eq!(
+        (got[0], got[1]),
+        (4, 3),
+        "prev goes back from the page it moved to"
+    );
 }
 
 #[gpui::test]
@@ -990,4 +998,24 @@ fn controls_toggle_without_a_controlling_parent(cx: &mut TestAppContext) {
         vec![true, false],
         "second click turns it back off"
     );
+}
+
+#[gpui::test]
+fn tabs_switch_without_a_controlling_parent(cx: &mut TestAppContext) {
+    let seen = Rc::new(RefCell::new(Vec::<usize>::new()));
+    let s = seen.clone();
+    let vcx = mount(cx, move |_, _| {
+        let s = s.clone();
+        Tabs::new("tabs")
+            .labels(["One", "Two", "Three"])
+            .selected(0)
+            .on_select(move |i, _, _| s.borrow_mut().push(i))
+            .into_any_element()
+    });
+    let b = vcx.debug_bounds("target").expect("tabs were laid out");
+    let y = f32::from(b.top() + b.size.height / 2.0);
+    // the last tab sits at the right edge, the first at the left
+    click(vcx, f32::from(b.right()) - 20.0, y);
+    click(vcx, f32::from(b.left()) + 20.0, y);
+    assert_eq!(*seen.borrow(), vec![2, 0]);
 }
