@@ -126,8 +126,10 @@ pub(crate) fn type_scale_view(t: &dodai_core::Theme) -> gpui::Div {
         out = out.child(
             div()
                 .flex()
+                .flex_wrap()
                 .items_baseline()
-                .gap(px(t.spacing.md))
+                .gap_x(px(t.spacing.md))
+                .gap_y(px(2.0))
                 .child(
                     div()
                         .w(px(190.0))
@@ -143,7 +145,12 @@ pub(crate) fn type_scale_view(t: &dodai_core::Theme) -> gpui::Div {
                             s.weight
                         )),
                 )
-                .child(dodai_gpui::Text::new(role, "Sphinx of black quartz")),
+                .child(
+                    div()
+                        .min_w_0()
+                        .max_w_full()
+                        .child(dodai_gpui::Text::new(role, "Sphinx of black quartz")),
+                ),
         );
     }
     out
@@ -163,8 +170,10 @@ pub(crate) fn type_view(t: &dodai_core::Theme) -> gpui::Div {
         out = out.child(
             div()
                 .flex()
+                .flex_wrap()
                 .items_baseline()
-                .gap(px(t.spacing.md))
+                .gap_x(px(t.spacing.md))
+                .gap_y(px(2.0))
                 .child(
                     div()
                         .w(px(84.0))
@@ -176,6 +185,8 @@ pub(crate) fn type_view(t: &dodai_core::Theme) -> gpui::Div {
                 )
                 .child(
                     div()
+                        .min_w_0()
+                        .max_w_full()
                         .font_family(dodai_gpui::text::first_family(ty.display))
                         .text_size(px(sz))
                         .text_color(hsla(t.palette.text))
