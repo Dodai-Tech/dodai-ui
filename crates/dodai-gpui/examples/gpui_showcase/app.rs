@@ -272,6 +272,15 @@ impl Showcase {
             inst_seen: None,
             demo_seen: None,
             demo_email: String::new(),
+            tree_items: vec![
+                dodai_gpui::TreeItem::new("src")
+                    .expanded(true)
+                    .child(dodai_gpui::TreeItem::new("lib.rs"))
+                    .child(dodai_gpui::TreeItem::new("charts.rs")),
+                dodai_gpui::TreeItem::new("examples")
+                    .child(dodai_gpui::TreeItem::new("gpui_showcase.rs")),
+            ],
+            tree_sel: None,
             demo_pin: String::new(),
             demo_otp: String::new(),
             live_a: dodai_gpui::Live::prefilled(48, |i| live_signal(i, 0.9)),

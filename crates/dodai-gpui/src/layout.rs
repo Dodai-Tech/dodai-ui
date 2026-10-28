@@ -1,4 +1,4 @@
-//! [`TreeView`] and [`SplitPane`].
+//! [`TreeView`], [`TreeNavigation`] and [`SplitPane`].
 
 use crate::interact::{track, use_interact};
 use crate::list::list_style;
@@ -9,6 +9,7 @@ use gpui::{
     canvas, div, px, relative, AnyElement, App, Bounds, ElementId, InteractiveElement, IntoElement,
     MouseButton, ParentElement, Pixels, SharedString, StatefulInteractiveElement, Styled, Window,
 };
+use std::collections::HashMap;
 use std::rc::Rc;
 
 // ─────────────────────────────── TreeView ───────────────────────────────
@@ -201,6 +202,142 @@ impl TreeView {
 
 crate::entry_render!(TreeView);
 
+// ───────────────────────────── TreeNavigation ─────────────────────────────
+
+/// The node at `path`, if any.
+pub fn item_at<'a>(items: &'a [TreeItem], path: &[usize]) -> Option<&'a TreeItem> {
+    let (first, rest) = path.split_first()?;
+    let it = items.get(*first)?;
+    if rest.is_empty() {
+        Some(it)
+    } else {
+        item_at(&it.children, rest)
+    }
+}
+
+/// `items` with the `expanded` overrides applied by path.
+fn with_expanded(items: &[TreeItem], over: &HashMap<Vec<usize>, bool>) -> Vec<TreeItem> {
+    fn walk(
+        items: &[TreeItem],
+        over: &HashMap<Vec<usize>, bool>,
+        path: &mut Vec<usize>,
+    ) -> Vec<TreeItem> {
+        items
+            .iter()
+            .enumerate()
+            .map(|(i, it)| {
+                path.push(i);
+                let mut n = it.clone();
+                if let Some(e) = over.get(path.as_slice()) {
+                    n.expanded = *e;
+                }
+                n.children = walk(&it.children, over, path);
+                path.pop();
+                n
+            })
+            .collect()
+    }
+    walk(items, over, &mut Vec::new())
+}
+
+#[derive(Default)]
+struct NavState {
+    expanded: HashMap<Vec<usize>, bool>,
+    selected: Option<Vec<usize>>,
+}
+
+/// Navigation tree that keeps its own expansion and selection: a click on a branch folds or
+/// unfolds it, a click on a leaf selects it and calls `on_select`. Built on [`TreeView`].
+/// It never touches global state, so it can show any hierarchy (design systems and their
+/// themes, files, settings) without side effects.
+#[derive(IntoElement)]
+pub struct TreeNavigation {
+    id: ElementId,
+    items: Vec<TreeItem>,
+    selected: Option<Vec<usize>>,
+    on_select: Option<PathFn>,
+    corners: Option<dodai_core::Corners>,
+}
+
+crate::corners_setter!(TreeNavigation);
+
+impl TreeNavigation {
+    /// Create a new [`TreeNavigation`]; each item's `expanded` is its initial state.
+    pub fn new(id: impl Into<ElementId>, items: Vec<TreeItem>) -> Self {
+        Self {
+            id: id.into(),
+            items,
+            selected: None,
+            on_select: None,
+            corners: None,
+        }
+    }
+    /// The leaf selected at first.
+    pub fn selected(mut self, path: Vec<usize>) -> Self {
+        self.selected = Some(path);
+        self
+    }
+    crate::callback!(
+        /// Called with the path of a leaf when it is chosen.
+        on_select, &[usize]
+    );
+}
+
+impl TreeNavigation {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let initial = self.selected.clone();
+        let st = window.use_keyed_state((self.id.clone(), "nav"), cx, |_, _| NavState {
+            expanded: HashMap::new(),
+            selected: initial,
+        });
+        let (over, selected) = {
+            let s = st.read(cx);
+            (s.expanded.clone(), s.selected.clone())
+        };
+        let items = with_expanded(&self.items, &over);
+        let toggle = {
+            let st = st.clone();
+            let items = items.clone();
+            move |path: &[usize], _: &mut Window, cx: &mut App| {
+                let now = item_at(&items, path).is_some_and(|i| i.expanded);
+                st.update(cx, |s, cx| {
+                    s.expanded.insert(path.to_vec(), !now);
+                    cx.notify();
+                });
+            }
+        };
+        let choose = {
+            let st = st.clone();
+            let items = items.clone();
+            let on_select = self.on_select.clone();
+            let toggle = toggle.clone();
+            move |path: &[usize], w: &mut Window, cx: &mut App| {
+                if item_at(&items, path).is_some_and(|i| !i.children.is_empty()) {
+                    toggle(path, w, cx);
+                    return;
+                }
+                st.update(cx, |s, cx| {
+                    s.selected = Some(path.to_vec());
+                    cx.notify();
+                });
+                if let Some(f) = &on_select {
+                    f(path, w, cx);
+                }
+            }
+        };
+        let mut tree = TreeView::new(self.id.clone(), items)
+            .selected(selected)
+            .on_toggle(toggle)
+            .on_select(choose);
+        if let Some(c) = self.corners {
+            tree = tree.corners(c);
+        }
+        tree
+    }
+}
+
+crate::entry_render!(TreeNavigation);
+
 // ─────────────────────────────── SplitPane ───────────────────────────────
 
 /// Clamp a split ratio so both panes keep at least `min` of the space.
@@ -366,5 +503,31 @@ mod tests {
         assert_eq!(clamp_ratio(0.0, 0.1), 0.1);
         assert_eq!(clamp_ratio(2.0, 0.1), 0.9);
         assert_eq!(clamp_ratio(0.4, 0.1), 0.4);
+    }
+}
+
+#[cfg(test)]
+mod nav_tests {
+    use super::*;
+
+    #[test]
+    fn finds_items_by_path_and_applies_overrides() {
+        let items = vec![
+            TreeItem::new("a").child(TreeItem::new("a0")),
+            TreeItem::new("b"),
+        ];
+        assert_eq!(item_at(&items, &[0, 0]).unwrap().label, "a0");
+        assert_eq!(item_at(&items, &[1]).unwrap().label, "b");
+        assert!(item_at(&items, &[2]).is_none());
+        assert!(item_at(&items, &[]).is_none());
+        let mut over = HashMap::new();
+        over.insert(vec![0], true);
+        let open = with_expanded(&items, &over);
+        assert!(open[0].expanded && !open[1].expanded);
+        assert_eq!(visible_rows(&open).len(), 3);
+        assert_eq!(
+            visible_rows(&with_expanded(&items, &HashMap::new())).len(),
+            2
+        );
     }
 }

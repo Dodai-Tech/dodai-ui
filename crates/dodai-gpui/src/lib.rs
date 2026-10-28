@@ -452,7 +452,9 @@ pub use frosted::FrostedScene;
 #[cfg(feature = "components")]
 pub use knob::Knob;
 #[cfg(feature = "components")]
-pub use layout::{clamp_ratio, visible_rows, SplitPane, TreeItem, TreeRow, TreeView};
+pub use layout::{
+    clamp_ratio, item_at, visible_rows, SplitPane, TreeItem, TreeNavigation, TreeRow, TreeView,
+};
 pub use lazy::lazy;
 #[cfg(feature = "components")]
 pub use list::{Divider, ListItem};
@@ -512,7 +514,7 @@ pub use surfaces::{
     SearchBar, TopAppBar,
 };
 #[cfg(feature = "components")]
-pub use switcher::{set_tree_expanded, tree_expanded, ThemeSwitcherBar, ThemeTree};
+pub use switcher::ThemeSwitcherBar;
 #[cfg(feature = "components")]
 pub use tabs::Tabs;
 #[cfg(feature = "components")]

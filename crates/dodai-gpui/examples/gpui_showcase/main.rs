@@ -23,7 +23,8 @@ use dodai_gpui::{
     LineChart, Marker, NumberStepper, Oscilloscope, PieChart, PieStyle, RadarChart, RadarScope,
     RadialBar, RangeSlider, Rating, RichTooltip, RingStack, ScatterPlot, SearchView, Series,
     SignalBars, Snackbar, SparkStyle, Sparkline, Spectrum, StackedAreaChart, TagField, TextInput,
-    TimePicker, Timeline, TimelineEvent, Toolbar, TreeItem, TreeView, Treemap, Waterfall,
+    TimePicker, Timeline, TimelineEvent, Toolbar, TreeItem, TreeNavigation, TreeView, Treemap,
+    Waterfall,
 };
 use dodai_gpui::{
     CandleOverlay, CandlePane, CandleStyle, ChartStack, DepthChart, Gantt, GanttTask, RenkoChart,
@@ -162,6 +163,9 @@ pub struct Showcase {
     /// When an input demo page last rendered; its values play on their own while it shows.
     demo_seen: Option<std::time::Instant>,
     demo_email: String,
+    /// The controlled `TreeView` demo: its nodes (with their folded state) and selection.
+    tree_items: Vec<TreeItem>,
+    tree_sel: Option<Vec<usize>>,
     demo_pin: String,
     demo_otp: String,
     live_a: dodai_gpui::Live,
@@ -716,8 +720,7 @@ fn main() {
             switcher.select(&id);
         }
         dodai_gpui::install_switcher(cx, switcher);
-        dodai_gpui::set_tree_expanded(cx, false); // theme tree starts contracted
-                                                  // Debug: DODAI_MONO=1 starts with monochrome series colours.
+        // Debug: DODAI_MONO=1 starts with monochrome series colours.
         if std::env::var_os("DODAI_MONO").is_some() {
             dodai_gpui::set_chart_monochrome(cx, true);
         }

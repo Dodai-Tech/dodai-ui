@@ -209,34 +209,85 @@ impl Showcase {
 
     fn tree_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
-        let tree = TreeView::new(
-            "tree",
-            vec![
-                TreeItem::new("crates")
+        let gap = px(t.spacing.lg);
+        let col = || {
+            div()
+                .flex()
+                .flex_col()
+                .gap(px(t.spacing.sm))
+                .flex_1()
+                .min_w(px(220.0))
+        };
+        // Design systems and their themes, as plain data: picking one only selects it here.
+        let systems = vec![
+            TreeItem::new("Dodai")
+                .expanded(true)
+                .child(TreeItem::new("Light"))
+                .child(TreeItem::new("Dark"))
+                .child(TreeItem::new("Ocean"))
+                .child(TreeItem::new("Forest")),
+            TreeItem::new("Material")
+                .child(TreeItem::new("Light"))
+                .child(TreeItem::new("Dark")),
+            TreeItem::new("Cyberpunk")
+                .child(TreeItem::new("Yellow"))
+                .child(TreeItem::new("Cyan")),
+        ];
+        let me = cx.entity();
+        let (me_toggle, me_pick) = (me.clone(), me);
+        let controlled = TreeView::new("tv", self.tree_items.clone())
+            .selected(self.tree_sel.clone())
+            .on_toggle(move |path, _, cx| {
+                me_toggle.update(cx, |s, cx| {
+                    if let Some(n) = tree_node_mut(&mut s.tree_items, path) {
+                        n.expanded = !n.expanded;
+                    }
+                    cx.notify();
+                })
+            })
+            .on_select(move |path, _, cx| {
+                me_pick.update(cx, |s, cx| {
+                    s.tree_sel = Some(path.to_vec());
+                    cx.notify();
+                })
+            });
+        let files = vec![
+            TreeItem::new("crates").expanded(true).child(
+                TreeItem::new("dodai-gpui")
                     .expanded(true)
-                    .child(
-                        TreeItem::new("dodai-core")
-                            .expanded(true)
-                            .child(TreeItem::new("spec.rs"))
-                            .child(TreeItem::new("themes")),
-                    )
-                    .child(
-                        TreeItem::new("dodai-gpui")
-                            .child(TreeItem::new("tabs.rs"))
-                            .child(TreeItem::new("tree.rs")),
-                    ),
-                TreeItem::new("examples").child(TreeItem::new("gpui_showcase.rs")),
-                TreeItem::new("README.md"),
-            ],
-        );
+                    .child(TreeItem::new("tabs.rs"))
+                    .child(TreeItem::new("layout.rs")),
+            ),
+            TreeItem::new("README.md"),
+        ];
         vec![(
             "Navigation",
             "Tree",
             self.section("Tree", cx)
                 .child(Muted::new(
-                    "Nested items that expand and collapse; the design's own row, indent and guide styling.",
+                    "TreeNavigation keeps its own state: a branch folds on click, a leaf is selected. It changes nothing outside itself.",
                 ))
-                .child(div().w_full().max_w(px(t.spacing.lg * 16.0)).child(tree))
+                .child(
+                    div()
+                        .flex()
+                        .flex_wrap()
+                        .gap(gap)
+                        .child(
+                            col()
+                                .child(Label::new("Design systems and themes"))
+                                .child(TreeNavigation::new("tn-systems", systems).selected(vec![0, 0])),
+                        )
+                        .child(
+                            col()
+                                .child(Label::new("Files"))
+                                .child(TreeNavigation::new("tn-files", files)),
+                        )
+                        .child(
+                            col()
+                                .child(Label::new("TreeView (controlled: you own the state)"))
+                                .child(controlled),
+                        ),
+                )
                 .into_any_element(),
             "Tree",
         )]
@@ -686,5 +737,16 @@ impl Showcase {
             "App bar · Cards · FAB · Navigation",
         ));
         out
+    }
+}
+
+/// The node at `path`, mutably.
+fn tree_node_mut<'a>(items: &'a mut [TreeItem], path: &[usize]) -> Option<&'a mut TreeItem> {
+    let (first, rest) = path.split_first()?;
+    let it = items.get_mut(*first)?;
+    if rest.is_empty() {
+        Some(it)
+    } else {
+        tree_node_mut(&mut it.children, rest)
     }
 }
