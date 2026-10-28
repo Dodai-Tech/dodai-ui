@@ -592,10 +592,21 @@ impl gpui::Element for EntryScope {
         window: &mut gpui::Window,
         cx: &mut App,
     ) -> (gpui::LayoutId, ()) {
-        let prev = crate::motion::current(cx);
-        prev.entry(self.kind).delay(self.delay).set_default(cx);
+        // The unpaced motion (pacing is applied where it plays), and exactly the override that
+        // was installed before, if any: restoring anything else would compound the speed every
+        // frame or pin the theme's motion.
+        let saved = cx.try_global::<DefaultMotion>().map(|m| m.0);
+        Motion::of(cx)
+            .entry(self.kind)
+            .delay(self.delay)
+            .set_default(cx);
         let id = self.child.request_layout(window, cx);
-        prev.set_default(cx);
+        match saved {
+            Some(m) => m.set_default(cx),
+            None => {
+                cx.remove_global::<DefaultMotion>();
+            }
+        }
         (id, ())
     }
     fn prepaint(

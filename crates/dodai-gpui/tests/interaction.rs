@@ -1280,3 +1280,28 @@ fn carousel_follows_a_trackpad_swipe(cx: &mut TestAppContext) {
         "a wheel notch turns one page back"
     );
 }
+
+/// An entry scope leaves the app's motion as it found it, frame after frame, at any speed
+/// (it once restored the paced motion, compounding the speed until the duration overflowed).
+#[gpui::test]
+fn entry_scopes_leave_the_motion_as_they_found_it(cx: &mut TestAppContext) {
+    use dodai_gpui::motion::{EntryKind, EntryScope, Motion, MotionExt};
+    let vcx = mount(cx, |_, _| {
+        EntryScope::new(EntryKind::Fade, Muted::new("inside"))
+            .delay(std::time::Duration::from_millis(40))
+            .into_any_element()
+    });
+    let theme = vcx.update(|_, cx| dodai_gpui::theme_of(cx).motion);
+    vcx.update(|_, cx| dodai_gpui::motion::set_speed(cx, 0.5));
+    settle(vcx);
+    let after = vcx.update(|_, cx| Motion::of(cx));
+    vcx.update(|_, cx| dodai_gpui::motion::set_speed(cx, 1.0));
+    assert_eq!(
+        after.duration, theme.duration,
+        "the theme's motion, unpaced"
+    );
+    assert_eq!(
+        after.delay, theme.delay,
+        "the scope's delay stays inside it"
+    );
+}
