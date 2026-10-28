@@ -312,8 +312,13 @@ pub fn swipe_release(x: f32, v: f32, width: f32, p: Personality) -> Release {
 /// Land a drag released at `x` with velocity `v` on the nearest of `points` (pages, snap
 /// stops), springing there with the throw's momentum.
 pub fn page_snap(points: &[f32], x: f32, v: f32, p: Personality) -> Clip<f32> {
-    let target = nearest(points, Decay::new(x, v, 4.0).rest());
-    Clip::spring(p.spring(), x, target, v)
+    Clip::spring(p.spring(), x, fling_to(points, x, v), v)
+}
+
+/// Which of `points` a throw released at `x` with velocity `v` coasts to (scroll-view
+/// friction, then the nearest point).
+pub fn fling_to(points: &[f32], x: f32, v: f32) -> f32 {
+    nearest(points, Decay::new(x, v, 4.0).rest())
 }
 
 /// Overscroll resistance: how far content actually moves for `offset` px of drag past the

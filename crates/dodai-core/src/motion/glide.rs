@@ -97,6 +97,18 @@ impl Glide {
             }
         }
     }
+    /// Let go at `x` moving `v` units per second, heading for `target`: a spring keeps the
+    /// throw's momentum, an eased glide starts from rest at `x`.
+    pub fn throw(&mut self, x: f32, v: f32, target: f32, m: &Motion, now: f32) {
+        self.drive = match m.travel {
+            Travel::Spring => Drive::Spring(SpringState::moving(m.spring(), x, v, target, now)),
+            Travel::Eased => {
+                let mut t = Tween::new(x, *m);
+                t.to(target, *m, now);
+                Drive::Eased(t)
+            }
+        };
+    }
     /// The value at `now`.
     pub fn value(&self, now: f32) -> f32 {
         match &self.drive {

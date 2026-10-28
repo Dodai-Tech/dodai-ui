@@ -1,8 +1,13 @@
 //! [`Carousel`]: horizontally paged items with arrows and dot indicators.
 
+use crate::motion::{Glide, Motion, MotionExt};
 use crate::surfaces::IconButton;
 use crate::{hsla, theme_of};
-use gpui::{div, px, AnyElement, App, ElementId, IntoElement, ParentElement, Styled, Window};
+use dodai_core::motion::{fling_to, overscroll};
+use gpui::{
+    div, px, AnyElement, App, CursorStyle, DispatchPhase, ElementId, Entity, InteractiveElement,
+    IntoElement, MouseButton, MouseMoveEvent, MouseUpEvent, ParentElement, Styled, Window,
+};
 use std::rc::Rc;
 
 /// First visible index when `active` is selected out of `count` items showing
@@ -52,6 +57,67 @@ pub fn layout_widths(layout: CarouselLayout, total: f32, gap: f32) -> Vec<f32> {
 
 type IndexFn = Rc<dyn Fn(usize, &mut Window, &mut App)>;
 
+/// Where the row is, in pages, and the hand dragging it.
+struct Pager {
+    glide: Glide,
+    hand: Option<Hand>,
+}
+
+/// A drag in progress: pointer x at press and now, the row's page then, and the pointer's
+/// speed in px/s (with the time of its last move, so a drag that stopped throws nothing).
+#[derive(Clone, Copy)]
+struct Hand {
+    down_x: f32,
+    from: f32,
+    x: f32,
+    at: f32,
+    speed: f32,
+}
+
+/// The pages `0..=last` the row may rest on, and how one page is `step` px wide.
+#[derive(Clone, Copy)]
+struct Track {
+    last: usize,
+    step: f32,
+}
+
+impl Track {
+    /// The page under a hand: follows the pointer, resisting past either end.
+    fn under(self, h: Hand) -> f32 {
+        let raw = h.from - (h.x - h.down_x) / self.step;
+        let (lo, hi) = (0.0, self.last as f32);
+        let band = |past: f32| overscroll(past * self.step, self.step * 0.5) / self.step;
+        if raw < lo {
+            lo - band(lo - raw)
+        } else if raw > hi {
+            hi + band(raw - hi)
+        } else {
+            raw
+        }
+    }
+
+    /// Let go: coast to the page the throw reaches, keeping its momentum. The page it lands on.
+    fn release(self, pager: &Entity<Pager>, m: Motion, cx: &mut App) -> usize {
+        let t = crate::motion::now();
+        pager.update(cx, |p, _| {
+            let Some(h) = p.hand.take() else {
+                return p.glide.target().round() as usize;
+            };
+            let at = self.under(h);
+            // Pages per second; a hand that stopped before letting go throws nothing.
+            let v = if t - h.at > 0.1 {
+                0.0
+            } else {
+                -h.speed / self.step
+            };
+            let pages: Vec<f32> = (0..=self.last).map(|i| i as f32).collect();
+            let to = fling_to(&pages, at, v);
+            p.glide.throw(at, v, to, &m, t);
+            to as usize
+        })
+    }
+}
+
 /// Controlled carousel; each item gets a fixed `item_width`.
 #[derive(IntoElement)]
 pub struct Carousel {
@@ -64,6 +130,7 @@ pub struct Carousel {
     width: f32,
     item_height: f32,
     fill: bool,
+    motion: Option<Motion>,
     on_select: Option<IndexFn>,
 }
 
@@ -80,6 +147,7 @@ impl Carousel {
             width: 560.0,
             item_height: 160.0,
             fill: false,
+            motion: None,
             on_select: None,
         }
     }
@@ -117,6 +185,12 @@ impl Carousel {
     /// sized from the measured space between the arrows, ignoring `item_width` and `width`.
     pub fn fill(mut self, on: bool) -> Self {
         self.fill = on;
+        self
+    }
+    /// Pace, easing and travel of paging and of a throw landing (a spring keeps the throw's
+    /// momentum). Defaults to the design's motion.
+    pub fn motion(mut self, m: Motion) -> Self {
+        self.motion = Some(m);
         self
     }
     /// Item height for the contained layouts.
@@ -188,16 +262,47 @@ impl Carousel {
             0.0
         };
         let height = self.item_height;
-        // Uncontained rows slide to the new window; contained layouts step (slot widths differ).
-        let slide = if widths.is_empty() {
-            crate::motion::smooth(window, cx, self.id.clone(), start as f32)
-                .clamp(0.0, max_start as f32)
-        } else {
-            start as f32
+        // The row follows a dragging hand; let go, it is thrown to a page (paced, on the
+        // design's travel). Arrows and dots glide to the chosen page.
+        let m = crate::motion::pace(self.motion.unwrap_or_else(|| Motion::of(cx)));
+        let pager = window.use_keyed_state((self.id.clone(), "pager"), cx, |_, _| Pager {
+            glide: Glide::new(start as f32, &m),
+            hand: None,
+        });
+        let step = match widths.first() {
+            Some(&cw) => cw + gap,
+            None => w + gap,
         };
-        let first = slide.floor() as usize;
+        let track = Track {
+            last: max_start,
+            step: step.max(1.0),
+        };
+        let now = crate::motion::now();
+        let hand = pager.read(cx).hand;
+        let slide = match hand {
+            Some(h) => track.under(h),
+            None => {
+                pager.update(cx, |p, _| p.glide.to(start as f32, &m, now));
+                let g = &pager.read(cx).glide;
+                if !g.settled(now) {
+                    crate::motion::next_frame(window);
+                }
+                g.value(now)
+            }
+        };
+        // Contained layouts step between pages (their slots differ); a hand only nudges them.
+        let (slide, nudge) = if widths.is_empty() {
+            (slide, 0.0)
+        } else {
+            (start as f32, (start as f32 - slide) * track.step)
+        };
+        let first = (slide.floor().max(0.0) as usize).min(max_start);
         let frac = slide - first as f32;
-        let take = if frac > 0.001 { visible + 1 } else { visible };
+        let take = if frac.abs() > 0.001 {
+            visible + 1
+        } else {
+            visible
+        };
         let shown = self
             .items
             .into_iter()
@@ -230,6 +335,42 @@ impl Carousel {
                 }))
         });
         let mut root = div().relative().flex().flex_col().gap(px(t.spacing.sm));
+        if hand.is_some() {
+            // While a hand is down the whole window reports to the row, so a drag that leaves
+            // it keeps going and is let go wherever the button comes up.
+            let (moved, up, select) = (pager.clone(), pager.clone(), self.on_select.clone());
+            root = root.child(gpui::canvas(
+                |_, _, _| (),
+                move |_, _, window, _| {
+                    window.on_mouse_event(move |e: &MouseMoveEvent, phase, w, cx| {
+                        if phase != DispatchPhase::Bubble {
+                            return;
+                        }
+                        let (x, t) = (f32::from(e.position.x), crate::motion::now());
+                        moved.update(cx, |p, _| {
+                            if let Some(h) = &mut p.hand {
+                                let dt = (t - h.at).max(1e-3);
+                                h.speed = 0.7 * (x - h.x) / dt + 0.3 * h.speed;
+                                (h.x, h.at) = (x, t);
+                            }
+                        });
+                        w.refresh();
+                    });
+                    window.on_mouse_event(move |_: &MouseUpEvent, phase, w, cx| {
+                        if phase != DispatchPhase::Bubble {
+                            return;
+                        }
+                        let to = track.release(&up, m, cx);
+                        if let (true, Some(f)) = (to != start, &select) {
+                            f(to, w, cx);
+                        }
+                        w.refresh();
+                    });
+                },
+            ));
+        }
+        let grab = pager.clone();
+        let from = slide;
         if let Some(m) = measured {
             let wide = avail;
             root = root.w_full().child(
@@ -259,22 +400,43 @@ impl Carousel {
                 .items_center()
                 .gap(px(t.spacing.sm))
                 .child(prev)
-                .child(if widths.is_empty() {
+                .child(
                     div()
-                        .w(px(
-                            visible as f32 * w + (visible as f32 - 1.0).max(0.0) * gap
-                        ))
-                        .overflow_hidden()
-                        .child(
+                        .cursor(if hand.is_some() {
+                            CursorStyle::ClosedHand
+                        } else {
+                            CursorStyle::OpenHand
+                        })
+                        .on_mouse_down(MouseButton::Left, move |e, w, cx| {
+                            let (x, at) = (f32::from(e.position.x), crate::motion::now());
+                            grab.update(cx, |p, _| {
+                                p.hand = Some(Hand {
+                                    down_x: x,
+                                    from,
+                                    x,
+                                    at,
+                                    speed: 0.0,
+                                })
+                            });
+                            w.refresh();
+                        })
+                        .child(if widths.is_empty() {
                             div()
-                                .flex()
-                                .gap(px(gap))
-                                .ml(px(-frac * (w + gap)))
-                                .children(shown),
-                        )
-                } else {
-                    div().flex().gap(px(gap)).children(shown)
-                })
+                                .w(px(
+                                    visible as f32 * w + (visible as f32 - 1.0).max(0.0) * gap
+                                ))
+                                .overflow_hidden()
+                                .child(
+                                    div()
+                                        .flex()
+                                        .gap(px(gap))
+                                        .ml(px(-frac * (w + gap)))
+                                        .children(shown),
+                                )
+                        } else {
+                            div().flex().gap(px(gap)).ml(px(nudge)).children(shown)
+                        }),
+                )
                 .child(next),
         )
         .child(

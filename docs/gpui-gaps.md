@@ -48,8 +48,9 @@ override it on `Tabs`, `Segmented`, `Toggle`, `Checkbox` and `Radio` (`Selection
 - Cyberpunk: glitch-in (jittering slices, colour-split ghosts), keeps the cut corners.
 - Neo-Brutalism: the chosen block rises; a switch thumb jumps and nudges.
 `Accordion` opens to its measured height on the design's travel; `FormField` shakes on a new
-error. Still on the shared transition: nav bar/rail items, menus, popovers; carousel has no
-drag/flick yet (core `page_snap` is ready for it).
+error. Still on the shared transition: nav bar/rail items, menus, popovers.
+`Carousel` follows a drag (rubber band past the ends) and throws to the page it
+coasts to (`Glide::throw`, `fling_to`).
 
 ## 4. Themes and appearance
 

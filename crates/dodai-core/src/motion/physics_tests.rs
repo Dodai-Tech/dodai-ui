@@ -393,3 +393,27 @@ fn pointer_mixins() {
     assert!(t.rotate == 8.0 && t.dy < 0.0);
     assert_eq!(tilt(5.0, 0.0, 8.0).rotate, 8.0, "clamped");
 }
+
+#[test]
+fn a_flick_coasts_to_a_page_and_a_throw_keeps_its_momentum() {
+    let pages = [0.0, 1.0, 2.0, 3.0];
+    assert_eq!(fling_to(&pages, 0.2, 0.0), 0.0, "a nudge settles back");
+    assert_eq!(fling_to(&pages, 0.2, 2.0), 1.0, "a flick turns one page");
+    assert_eq!(
+        fling_to(&pages, 1.0, -40.0),
+        0.0,
+        "a hard throw stops at the end"
+    );
+    let spring = Motion::default().travel(Travel::Spring);
+    let mut g = Glide::new(0.0, &spring);
+    g.throw(0.3, 4.0, 1.0, &spring, 0.0);
+    assert!(
+        near(g.value(0.0), 0.3, 1e-4) && g.velocity(0.0) > 3.9,
+        "starts mid-throw"
+    );
+    assert!(g.settled(5.0) && near(g.value(5.0), 1.0, 0.01));
+    let eased = Motion::default();
+    let mut e = Glide::new(0.0, &eased);
+    e.throw(0.3, 4.0, 1.0, &eased, 0.0);
+    assert!(near(e.value(0.0), 0.3, 1e-4) && near(e.value(5.0), 1.0, 1e-3));
+}

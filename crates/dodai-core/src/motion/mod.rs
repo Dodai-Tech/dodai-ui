@@ -27,8 +27,8 @@ pub use easing::Easing;
 pub use glide::{Glide, Glitch, SelectionMotion, Stretch, Travel};
 pub use lerp::Lerp;
 pub use mixins::{
-    attention_bounce, check_draw, collapse, count_up, flash_on_change, flip, indeterminate,
-    magnetic, marquee, nudge, overscroll, page_snap, pop_in, pull_to_refresh, shake,
+    attention_bounce, check_draw, collapse, count_up, flash_on_change, fling_to, flip,
+    indeterminate, magnetic, marquee, nudge, overscroll, page_snap, pop_in, pull_to_refresh, shake,
     skeleton_shimmer, swipe_release, tilt, typewriter, wobble, Personality, Reaction, Reactions,
     Reactive, Release, Trigger,
 };

@@ -1173,3 +1173,51 @@ fn accordion_opens_to_the_measured_body(cx: &mut TestAppContext) {
         "closed back to {shut}, was {closed}"
     );
 }
+
+/// Dragging the row pages it: a slow drag lands on the page under the hand, a quick flick
+/// coasts on, and dragging past the first page springs back without choosing.
+#[gpui::test]
+fn carousel_follows_a_drag_and_a_flick(cx: &mut TestAppContext) {
+    let picked = log();
+    let p = picked.clone();
+    let vcx = mount(cx, move |_, _| {
+        let p = p.clone();
+        let mut c = Carousel::new("car")
+            .visible(2)
+            .item_width(80.0)
+            .on_select(move |i, _, _| p.borrow_mut().push(i));
+        for name in ["a", "b", "c", "d", "e", "f"] {
+            c = c.item(name);
+        }
+        c.into_any_element()
+    });
+    let (x, y, w, _) = target(vcx);
+    let (cx0, cy) = (x + w / 2.0, y + 14.0);
+    let at = |px_x: f32| point(px(px_x), px(cy));
+    let drag = |vcx: &mut VisualTestContext, by: f32, pause: bool| {
+        vcx.simulate_mouse_down(at(cx0), gpui::MouseButton::Left, Modifiers::none());
+        vcx.run_until_parked();
+        vcx.simulate_mouse_move(at(cx0 + by), gpui::MouseButton::Left, Modifiers::none());
+        vcx.run_until_parked();
+        if pause {
+            std::thread::sleep(std::time::Duration::from_millis(150));
+        }
+        vcx.simulate_mouse_up(at(cx0 + by), gpui::MouseButton::Left, Modifiers::none());
+        vcx.run_until_parked();
+        settle(vcx);
+    };
+    drag(vcx, 60.0, true);
+    assert!(
+        picked.borrow().is_empty(),
+        "past the first page: springs back"
+    );
+    drag(vcx, -190.0, true);
+    assert_eq!(*picked.borrow(), vec![2], "two pages under the hand");
+    drag(vcx, -20.0, false);
+    let last = *picked.borrow().last().unwrap();
+    assert!(
+        picked.borrow().len() == 2 && last > 2,
+        "a flick coasts on: {:?}",
+        picked.borrow()
+    );
+}
