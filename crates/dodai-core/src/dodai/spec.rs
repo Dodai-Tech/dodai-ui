@@ -710,9 +710,9 @@ mod tests {
     }
 
     #[test]
-    fn two_unique_themes() {
+    fn light_and_dark_in_every_accent() {
         let v = crate::dodai::variants();
-        assert_eq!(v.len(), 2);
+        assert_eq!(v.len(), 10);
         assert_eq!(v[0].id(), "dodai");
         assert_eq!(v[1].id(), "dodai-dark");
         for t in &v {

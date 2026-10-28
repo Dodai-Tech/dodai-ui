@@ -33,7 +33,6 @@ type SelectHandler = Rc<dyn Fn(usize, &mut Window, &mut App)>;
 /// Tab strip. Controlled: pass `selected` and update it in `on_select`.
 #[derive(IntoElement)]
 pub struct Tabs {
-    follow: crate::instruments_motion::Follow,
     id: ElementId,
     labels: Vec<SharedString>,
     active: usize,
@@ -51,7 +50,6 @@ impl Tabs {
     #[track_caller]
     pub fn new(id: impl Into<ElementId>) -> Self {
         Self {
-            follow: crate::instruments_motion::Follow::here(),
             corners: None,
             id: id.into(),
             labels: Vec::new(),
@@ -114,7 +112,16 @@ impl Tabs {
         let (mut style, fg, indicator) = tab_style(t, active, hovered);
         let (on_s, on_fg, _) = tab_style(t, true, hovered);
         let (off_s, off_fg, _) = tab_style(t, false, hovered);
-        style.fill = crate::motion::mix_opt(off_s.fill, on_s.fill, p);
+        style.fill = if slide.is_some() && t.tab(true, false).background.is_some() {
+            // The active pill is one shared element that slides between tabs.
+            if active {
+                None
+            } else {
+                off_s.fill
+            }
+        } else {
+            crate::motion::mix_opt(off_s.fill, on_s.fill, p)
+        };
         let fg = if p > 0.0 && p < 1.0 {
             crate::motion::mix(off_fg, on_fg, p)
         } else {
@@ -307,16 +314,17 @@ impl Tabs {
         let strip = t.look().segmented_tabs;
         let mut row = div().relative().flex().gap(px(t.spacing.xs));
         // One indicator slides between tabs when the design underlines the active tab.
-        let slide =
-            (!t.tab(true, false).outline && tab_style(&t, true, false).2.is_some()).then(|| {
-                window
-                    .use_keyed_state((self.id.clone(), "slide"), cx, |_, _| {
-                        SlideState(Rc::default())
-                    })
-                    .read(cx)
-                    .0
-                    .clone()
-            });
+        let tokens = t.tab(true, false);
+        let pill = tokens.background.is_some() && !tokens.outline;
+        let slide = (pill || (!tokens.outline && tokens.indicator.is_some())).then(|| {
+            window
+                .use_keyed_state((self.id.clone(), "slide"), cx, |_, _| {
+                    SlideState(Rc::default())
+                })
+                .read(cx)
+                .0
+                .clone()
+        });
         // Scrollable strips pan with the pointer too: a swipe or drag moves them sideways.
         let scroll = self.scrollable.then(|| {
             window.use_keyed_state((self.id.clone(), "scroll"), cx, |_, _| ScrollState {
@@ -326,22 +334,55 @@ impl Tabs {
                 pan: Rc::new(Cell::new(Pan::default())),
             })
         });
+        if let (true, Some(s)) = (pill, &slide) {
+            // The filled tab glides to the active one (measured last frame), at the design's pace.
+            let at = s.rects.borrow().get(self.active).copied();
+            let first = s.rects.borrow().first().map_or(0.0, |r| r.0);
+            if let Some((x, w)) = at.filter(|r| r.1 > 0.0) {
+                let x = crate::motion::smooth(
+                    window,
+                    cx,
+                    (self.id.clone(), "pill-x").into(),
+                    x - first,
+                );
+                let w = crate::motion::smooth(window, cx, (self.id.clone(), "pill-w").into(), w);
+                let (style, _, _) = tab_style(&t, true, false);
+                let shape = if strip {
+                    crate::paint::scaled_shape(&t.shape, t.shape.control_height)
+                } else {
+                    t.shape.clone()
+                };
+                row = row.child(
+                    shaped_id((self.id.clone(), "pill"), &shape, style)
+                        .absolute()
+                        .top_0()
+                        .left(px(x))
+                        .w(px(w.max(0.0)))
+                        .h_full(),
+                );
+            } else {
+                crate::motion::next_frame(window);
+            }
+        }
         let count = self.labels.len().max(self.icons.len());
         for i in 0..count {
             let pan = scroll.as_ref().map(|s| s.read(cx).pan.clone());
             row = row.child(self.tab(&t, i, pan, slide.as_ref(), window, cx));
         }
-        if let Some(s) = &slide {
+        if let (false, Some(s)) = (pill, &slide) {
             let at = s.rects.borrow().get(self.active).copied();
             let first = s.rects.borrow().first().map_or(0.0, |r| r.0);
             match at {
                 Some((x, w)) if w > 0.0 => {
-                    let v = crate::instruments_motion::follow_all(
-                        window,
-                        cx,
-                        &self.follow,
-                        &[x - first, w],
-                    );
+                    let v = [
+                        crate::motion::smooth(
+                            window,
+                            cx,
+                            (self.id.clone(), "bar-x").into(),
+                            x - first,
+                        ),
+                        crate::motion::smooth(window, cx, (self.id.clone(), "bar-w").into(), w),
+                    ];
                     let c = tab_style(&t, true, false).2.unwrap_or_default();
                     row = row.child(bottom_band_slide(
                         &t.shape,

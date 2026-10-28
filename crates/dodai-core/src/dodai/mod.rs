@@ -112,16 +112,143 @@ fn ink(t: &tokens::ColorTokens) -> Ink {
     }
 }
 
+/// Rotates the hue of `c` by `deg` degrees, keeping saturation and lightness (so contrast holds).
+pub(crate) fn rotate_hue(c: crate::Color, deg: f32) -> crate::Color {
+    if deg == 0.0 {
+        return c;
+    }
+    let (r, g, b) = (
+        f32::from(c.r) / 255.0,
+        f32::from(c.g) / 255.0,
+        f32::from(c.b) / 255.0,
+    );
+    let (mx, mn) = (r.max(g).max(b), r.min(g).min(b));
+    let l = (mx + mn) / 2.0;
+    let d = mx - mn;
+    if d < 1e-6 {
+        return c;
+    }
+    let s = d / (1.0 - (2.0 * l - 1.0).abs());
+    let h = if mx == r {
+        ((g - b) / d).rem_euclid(6.0)
+    } else if mx == g {
+        (b - r) / d + 2.0
+    } else {
+        (r - g) / d + 4.0
+    } * 60.0;
+    let h = (h + deg).rem_euclid(360.0);
+    let at = |l: f32| hsl_to_color(h, s, l.clamp(0.0, 1.0), c.a);
+    // Equal lightness is not equal brightness across hues (green is brighter than blue), so
+    // search the lightness that keeps the original luminance and with it the text contrast.
+    let target = c.luminance();
+    let (mut lo, mut hi) = (0.0f32, 1.0f32);
+    for _ in 0..14 {
+        let mid = (lo + hi) / 2.0;
+        if at(mid).luminance() < target {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    at((lo + hi) / 2.0)
+}
+
+fn hsl_to_color(h: f32, s: f32, l: f32, a: u8) -> crate::Color {
+    let k = (1.0 - (2.0 * l - 1.0).abs()) * s;
+    let x = k * (1.0 - ((h / 60.0) % 2.0 - 1.0).abs());
+    let m = l - k / 2.0;
+    let (r, g, b) = match (h / 60.0) as u32 {
+        0 => (k, x, 0.0),
+        1 => (x, k, 0.0),
+        2 => (0.0, k, x),
+        3 => (0.0, x, k),
+        4 => (x, 0.0, k),
+        _ => (k, 0.0, x),
+    };
+    let to = |v: f32| ((v + m) * 255.0).round().clamp(0.0, 255.0) as u8;
+    crate::Color {
+        r: to(r),
+        g: to(g),
+        b: to(b),
+        a,
+    }
+}
+
+/// An accent variant: the whole ink, canvas and gradient turned to another hue. Status colours
+/// (info, success, warning, error) keep their meaning.
+struct Accent {
+    id: &'static str,
+    dark_id: &'static str,
+    name: &'static str,
+    dark_name: &'static str,
+    /// Degrees added to every hue of the signature violet.
+    hue: f32,
+}
+
+const ACCENTS: [Accent; 4] = [
+    Accent {
+        id: "dodai-ocean",
+        dark_id: "dodai-ocean-dark",
+        name: "Dodai Ocean · Light",
+        dark_name: "Dodai Ocean · Dark",
+        hue: -48.0,
+    },
+    Accent {
+        id: "dodai-forest",
+        dark_id: "dodai-forest-dark",
+        name: "Dodai Forest · Light",
+        dark_name: "Dodai Forest · Dark",
+        hue: -105.0,
+    },
+    Accent {
+        id: "dodai-rose",
+        dark_id: "dodai-rose-dark",
+        name: "Dodai Rose · Light",
+        dark_name: "Dodai Rose · Dark",
+        hue: 78.0,
+    },
+    Accent {
+        id: "dodai-sunset",
+        dark_id: "dodai-sunset-dark",
+        name: "Dodai Sunset · Light",
+        dark_name: "Dodai Sunset · Dark",
+        hue: 145.0,
+    },
+];
+
 fn build(mode: Mode) -> Theme {
+    build_hue(mode, None)
+}
+
+fn build_hue(mode: Mode, accent: Option<&Accent>) -> Theme {
     let dark = mode == Mode::Dark;
+    let hue = accent.map_or(0.0, |a| a.hue);
     let c = &ink(if dark { &tokens::DARK } else { &tokens::LIGHT });
+    let h = |v: u32| {
+        let c = rotate_hue(
+            crate::Color {
+                r: (v >> 16) as u8,
+                g: (v >> 8) as u8,
+                b: v as u8,
+                a: 255,
+            },
+            hue,
+        );
+        rgb(c)
+    };
     let mut t = ThemeBuilder {
         meta: ThemeMeta {
-            id: if dark { "dodai-dark" } else { "dodai" },
-            name: if dark {
-                "Dodai · Dark"
-            } else {
-                "Dodai · Light"
+            id: match (accent, dark) {
+                (Some(a), true) => a.dark_id,
+                (Some(a), false) => a.id,
+                (None, true) => "dodai-dark",
+                (None, false) => "dodai",
+            },
+            name: match (accent, dark) {
+                (Some(a), true) => a.dark_name,
+                (Some(a), false) => a.name,
+                (None, true) => "Dodai · Dark",
+                (None, false) => "Dodai · Light",
             },
             family: "dodai",
             description:
@@ -129,26 +256,33 @@ fn build(mode: Mode) -> Theme {
             mode,
         },
         mode,
-        background: c.canvas,
-        surface: c.surface,
-        raised: if dark { 0x1b1840 } else { 0xe9e6f8 },
-        border: c.lower,
-        border_strong: c.medium,
-        text: c.primary,
-        muted: c.high,
-        disabled: c.low,
-        primary: c.primary,
-        primary_hover: c.primary_hover,
-        on_primary: c.on_primary,
-        secondary: if dark { 0xb9a6ff } else { 0x5b3fd6 },
-        on_secondary: if dark { c.canvas } else { 0xffffff },
-        accent: c.info,
+        background: h(c.canvas),
+        surface: h(c.surface),
+        raised: h(if dark { 0x1b1840 } else { 0xe9e6f8 }),
+        border: h(c.lower),
+        border_strong: h(c.medium),
+        text: h(c.primary),
+        muted: h(c.high),
+        disabled: h(c.low),
+        primary: h(c.primary),
+        primary_hover: h(c.primary_hover),
+        on_primary: h(c.on_primary),
+        secondary: h(if dark { 0xb9a6ff } else { 0x5b3fd6 }),
+        on_secondary: h(if dark { c.canvas } else { 0xffffff }),
+        accent: h(c.info),
         info: c.info,
         success: c.success,
         warning: c.warning,
         danger: c.error,
         series: [
-            c.info, c.success, c.warning, c.error, c.higher, 0x14b8c4, 0x9b6bff, c.low,
+            c.info,
+            c.success,
+            c.warning,
+            c.error,
+            h(c.higher),
+            h(0x14b8c4),
+            h(0x9b6bff),
+            h(c.low),
         ],
         typography: typography(),
         spacing: spacing(),
@@ -161,7 +295,7 @@ fn build(mode: Mode) -> Theme {
     .build();
     t.palette.link = t.palette.text;
     t.motion = motion();
-    t.surface_style = surface::style(matches!(mode, Mode::Dark));
+    t.surface_style = surface::style(matches!(mode, Mode::Dark), hue);
     // Glass: the panels are translucent so the canvas mesh (`surface_style.backdrop`) shows
     // through; text keeps its contrast because the mesh stays pale (light) or deep (dark).
     t.palette.surface = t.palette.surface.with_alpha(if dark { 0.66 } else { 0.58 });
@@ -184,7 +318,12 @@ pub fn dark() -> Theme {
     build(Mode::Dark)
 }
 
-/// Both themes.
+/// Light and dark, in the signature violet and in each accent.
 pub fn variants() -> Vec<Theme> {
-    vec![light(), dark()]
+    let mut v = vec![light(), dark()];
+    for a in &ACCENTS {
+        v.push(build_hue(Mode::Light, Some(a)));
+        v.push(build_hue(Mode::Dark, Some(a)));
+    }
+    v
 }

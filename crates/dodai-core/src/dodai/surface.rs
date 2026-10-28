@@ -24,7 +24,8 @@ pub const EFFECTS: EffectSet = EffectSet {
 };
 
 /// The Dodai surface style.
-pub fn style(dark: bool) -> SurfaceStyle {
+/// `hue` rotates the gradient wash (degrees; 0 is the signature violet).
+pub fn style(dark: bool, hue: f32) -> SurfaceStyle {
     SurfaceStyle {
         preset: SurfaceFx {
             texture: Texture::None,
@@ -53,7 +54,8 @@ pub fn style(dark: bool) -> SurfaceStyle {
             } else {
                 crate::dodai::tokens::DODAI_LIGHT
             };
-            g.stops.map(|s| s.color.color())
+            g.stops
+                .map(|s| crate::dodai::rotate_hue(s.color.color(), hue))
         },
     }
 }
