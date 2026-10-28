@@ -317,6 +317,7 @@ impl Tabs {
         let own = crate::own::Own::new(window, cx, self.id.clone(), self.active);
         self.active = own.get();
         let (state, inner) = (own.setter(), self.on_select.take());
+        let current = state.clone();
         self.on_select = Some(Rc::new(move |i, w, cx| {
             crate::own::choose(&state, cx, i);
             if let Some(f) = &inner {
@@ -326,7 +327,39 @@ impl Tabs {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
         let strip = t.look().segmented_tabs;
-        let mut row = div().relative().flex().gap(px(t.spacing.xs));
+        // Arrow keys, Home and End move the selection once the strip has focus.
+        let focus = window
+            .use_keyed_state((self.id.clone(), "focus"), cx, |_, cx| {
+                cx.focus_handle().tab_stop(true)
+            })
+            .read(cx)
+            .clone();
+        let keys = {
+            let (n, f) = (self.labels.len(), self.on_select.clone());
+            move |e: &gpui::KeyDownEvent, w: &mut Window, cx: &mut App| {
+                // The live selection: several keys can land before the next render.
+                let at = current.read(cx).1;
+                let to = match e.keystroke.key.as_str() {
+                    "right" => (at + 1).min(n.saturating_sub(1)),
+                    "left" => at.saturating_sub(1),
+                    "home" => 0,
+                    "end" => n.saturating_sub(1),
+                    _ => return,
+                };
+                if let (true, Some(f)) = (to != at, &f) {
+                    f(to, w, cx);
+                }
+            }
+        };
+        let row = div().relative().flex().gap(px(t.spacing.xs));
+        let mut row = gpui::InteractiveElement::on_key_down(
+            gpui::InteractiveElement::track_focus(row, &focus),
+            keys,
+        );
+        row = gpui::InteractiveElement::on_mouse_down(row, gpui::MouseButton::Left, {
+            let focus = focus.clone();
+            move |_, w, _| w.focus(&focus)
+        });
         // One indicator slides between tabs when the design underlines the active tab.
         let tokens = t.tab(true, false);
         let pill = tokens.background.is_some() && !tokens.outline;

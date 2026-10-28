@@ -1019,3 +1019,26 @@ fn tabs_switch_without_a_controlling_parent(cx: &mut TestAppContext) {
     click(vcx, f32::from(b.left()) + 20.0, y);
     assert_eq!(*seen.borrow(), vec![2, 0]);
 }
+
+#[gpui::test]
+fn tabs_move_with_the_arrow_keys(cx: &mut TestAppContext) {
+    let seen = Rc::new(RefCell::new(Vec::<usize>::new()));
+    let s = seen.clone();
+    let vcx = mount(cx, move |_, _| {
+        let s = s.clone();
+        Tabs::new("tabs")
+            .labels(["One", "Two", "Three"])
+            .selected(0)
+            .on_select(move |i, _, _| s.borrow_mut().push(i))
+            .into_any_element()
+    });
+    let b = vcx.debug_bounds("target").expect("tabs were laid out");
+    // a click on the first tab focuses the strip
+    click(
+        vcx,
+        f32::from(b.left()) + 20.0,
+        f32::from(b.top() + b.size.height / 2.0),
+    );
+    vcx.simulate_keystrokes("right right left");
+    assert_eq!(*seen.borrow(), vec![0, 1, 2, 1]);
+}
