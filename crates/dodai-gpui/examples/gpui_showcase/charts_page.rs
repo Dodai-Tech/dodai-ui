@@ -737,6 +737,23 @@ impl Showcase {
                 .colors(mono(t.palette.secondary))
                 .legend(false)
                 .into_any_element(),
+            ))
+            .child(tile(
+                "Rose (area scale)",
+                RoseChart::new([
+                    ("N", dv(8.0, 96.0)),
+                    ("NE", dv(14.0, 97.0)),
+                    ("E", dv(22.0, 98.0)),
+                    ("SE", dv(11.0, 99.0)),
+                    ("S", dv(17.0, 100.0)),
+                    ("SW", dv(25.0, 101.0)),
+                    ("W", dv(9.0, 102.0)),
+                    ("NW", dv(12.0, 103.0)),
+                ])
+                .size(200.0)
+                .hole(0.15)
+                .legend(false)
+                .into_any_element(),
             ));
         let series = move || {
             drift(
@@ -850,6 +867,8 @@ impl Showcase {
                 Some(*p)
             })
             .collect();
+        // Live: the price series slides, so candles, bricks and the stack all move.
+        let walk = drift(&walk, 6.0);
         let ohlc: Vec<Candle> = walk
             .windows(2)
             .enumerate()
@@ -886,8 +905,18 @@ impl Showcase {
             .child(w(
                 DepthChart::new(
                     "depth",
-                    (1..12).map(|i| (100.0 - i as f32 * 0.5, 4.0 + (i * 7 % 5) as f32)),
-                    (1..12).map(|i| (100.5 + i as f32 * 0.5, 3.0 + (i * 5 % 6) as f32)),
+                    (1..12).map(|i| {
+                        (
+                            100.0 - i as f32 * 0.5,
+                            dv(4.0 + (i * 7 % 5) as f32, i as f32 * 0.7),
+                        )
+                    }),
+                    (1..12).map(|i| {
+                        (
+                            100.5 + i as f32 * 0.5,
+                            dv(3.0 + (i * 5 % 6) as f32, 4.0 + i as f32 * 0.7),
+                        )
+                    }),
                 )
                 .title("Order book depth")
                 .into_any_element(),
@@ -898,8 +927,12 @@ impl Showcase {
                     "gantt",
                     [
                         GanttTask::new("Design", 0.0, 10.0).progress(1.0),
-                        GanttTask::new("Build", 8.0, 24.0).progress(0.6).after(0),
-                        GanttTask::new("Test", 20.0, 30.0).progress(0.25).after(1),
+                        GanttTask::new("Build", 8.0, 24.0)
+                            .progress(dv(0.6, 1.0).min(1.0))
+                            .after(0),
+                        GanttTask::new("Test", 20.0, 30.0)
+                            .progress(dv(0.25, 2.0).min(1.0))
+                            .after(1),
                         GanttTask::new("Ship", 30.0, 34.0).after(2),
                     ],
                 )
@@ -1199,33 +1232,16 @@ impl Showcase {
                         )),
                 )
                 .child(
-                    row()
-                        .child(w(
-                            ViolinChart::new([
-                                ("A", samples(1.0, 10.0, 8.0)),
-                                ("B", samples(2.0, 14.0, 4.0)),
-                                ("C", samples(3.0, 8.0, 10.0)),
-                            ])
-                            .title("Violin")
-                            .into_any_element(),
-                            420.0,
-                        ))
-                        .child(w(
-                            RoseChart::new([
-                                ("N", 8.0),
-                                ("NE", 14.0),
-                                ("E", 22.0),
-                                ("SE", 11.0),
-                                ("S", 17.0),
-                                ("SW", 25.0),
-                                ("W", 9.0),
-                                ("NW", 12.0),
-                            ])
-                            .hole(0.15)
-                            .title("Rose (area scale)")
-                            .into_any_element(),
-                            340.0,
-                        )),
+                    row().child(w(
+                        ViolinChart::new([
+                            ("A", samples(1.0, 10.0, 8.0)),
+                            ("B", samples(2.0, 14.0, 4.0)),
+                            ("C", samples(3.0, 8.0, 10.0)),
+                        ])
+                        .title("Violin")
+                        .into_any_element(),
+                        420.0,
+                    )),
                 );
             (a, b)
         };

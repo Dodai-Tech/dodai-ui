@@ -99,10 +99,10 @@ impl Showcase {
         out.push((
             "Charts",
             "Sankey · Calendar · Violin · Rose",
-            self.section("Sankey · calendar · violin · rose", cx)
+            self.section("Sankey · calendar · violin", cx)
                 .child(charts_new.1)
                 .into_any_element(),
-            "Sankey · calendar · violin · rose",
+            "Sankey · calendar · violin",
         ));
         out.push((
             "Charts",

@@ -137,7 +137,8 @@ pub(crate) fn battery(w: &mut Window, b: Bounds<Pixels>, k: Look) {
     );
     if k.frac > 0.0 {
         let pad = 5.0;
-        let fw = ((body - pad * 2.0) * k.frac).max(h * 0.2);
+        // At least as wide as it is tall: a narrower pill flips to a vertical capsule.
+        let fw = ((body - pad * 2.0) * k.frac).max(h - pad * 2.0);
         let col = if k.frac < 0.2 { k.alert } else { k.at(0.0) };
         let col = if k.zones.is_some() && k.frac >= 0.2 {
             k.zones.map_or(col, |z| z[0])
