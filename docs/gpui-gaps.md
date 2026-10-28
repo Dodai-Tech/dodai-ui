@@ -82,3 +82,15 @@ would stop new ones.
 No shared value tooltip on line/bar; hover/select via `Focus` only on RadialBar, Line, Bar and
 legends; no bar dash patterns; no zoom/pan/brush; no log scale or second axis on bars; grow-in
 of Violin, Rose, Renko and Gauge shares one start time per type.
+
+## Status
+
+Done: controls that run without a controlling parent (`Toggle`, `Checkbox`, `Radio`, `Tabs`,
+`Segmented`, `ButtonGroup`, `Carousel`, `Select`, `Table`, `Slider`, `Rating`, `Pagination`,
+`ColorPicker`, `DatePicker`, `TimePicker`; helper `own.rs`); `Tabs` arrow/Home/End keys;
+`set_reduce_motion` (showcase key `r`); `ThemeSwitcher::toggle_mode` + `toggle_theme_mode`
+(showcase key `m`).
+
+Still open: keyboard for the rest (`TreeView`, `Menu`, `Slider`, `Stepper`, `List`), per-tab
+`disabled`, OS appearance / reduce-motion detection, the per-design token gaps in section 2,
+RTL, tests for `menu` / `popover`, the hard-coded literals, the chart items in section 8.
