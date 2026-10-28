@@ -358,20 +358,13 @@ impl Tabs {
                         cx,
                     ));
                 } else {
-                    let x = crate::motion::smooth(
-                        window,
-                        cx,
-                        (self.id.clone(), "pill-x").into(),
-                        x - first,
-                    );
-                    let w =
-                        crate::motion::smooth(window, cx, (self.id.clone(), "pill-w").into(), w);
+                    let (x, w) = stretch(self.id.clone(), (x - first, w), window, cx);
                     row = row.child(
                         shaped_id((self.id.clone(), "pill"), &shape, style)
                             .absolute()
                             .top_0()
                             .left(px(x))
-                            .w(px(w.max(0.0)))
+                            .w(px(w))
                             .h_full(),
                     );
                 }
@@ -459,6 +452,32 @@ struct ScrollState {
 }
 
 crate::entry_render!(Tabs);
+
+/// The sliding pill's edges `(x, w)`, eased towards `(x, w)` of the active tab. The edge in the
+/// direction of travel leads and the other trails, so the pill stretches across the gap and
+/// then catches up instead of sliding as a rigid block. Pace and easing are the design's own.
+fn stretch(id: ElementId, (x, w): (f32, f32), window: &mut Window, cx: &mut App) -> (f32, f32) {
+    let m = crate::motion::current(cx);
+    let last = window.use_keyed_state((id.clone(), "pill-dir"), cx, |_, _| (x + w, 1.0f32));
+    let (prev_right, mut dir) = *last.read(cx);
+    if (x + w - prev_right).abs() > 0.5 {
+        dir = (x + w - prev_right).signum();
+        last.update(cx, |l, _| *l = (x + w, dir));
+    }
+    let scaled = |k: f32| dodai_core::Motion {
+        duration: m.duration.mul_f32(k),
+        ..m
+    };
+    let (lead, trail) = (scaled(1.4), scaled(2.2));
+    let (lm, rm) = if dir > 0.0 {
+        (trail, lead)
+    } else {
+        (lead, trail)
+    };
+    let left = crate::motion::smooth_with(window, cx, (id.clone(), "pill-l").into(), x, lm);
+    let right = crate::motion::smooth_with(window, cx, (id, "pill-r").into(), x + w, rm);
+    (left, (right - left).max(0.0))
+}
 
 /// When the active tab last changed: the tab it left and the time of the switch.
 #[derive(Clone, Copy)]
