@@ -134,7 +134,7 @@ impl Tabs {
                 .or_else(|| tab_style(t, true, hovered).2.filter(|_| p > 0.01))
                 .map(|c| c.opacity(p))
         };
-        let fg = if self.secondary && active && !t.look().segmented_tabs {
+        let fg = if self.secondary && active && t.tab(true, false).background.is_none() {
             hsla(t.palette.roles.on_surface)
         } else {
             fg
@@ -339,27 +339,42 @@ impl Tabs {
             let at = s.rects.borrow().get(self.active).copied();
             let first = s.rects.borrow().first().map_or(0.0, |r| r.0);
             if let Some((x, w)) = at.filter(|r| r.1 > 0.0) {
-                let x = crate::motion::smooth(
-                    window,
-                    cx,
-                    (self.id.clone(), "pill-x").into(),
-                    x - first,
-                );
-                let w = crate::motion::smooth(window, cx, (self.id.clone(), "pill-w").into(), w);
                 let (style, _, _) = tab_style(&t, true, false);
                 let shape = if strip {
                     crate::paint::scaled_shape(&t.shape, t.shape.control_height)
                 } else {
                     t.shape.clone()
                 };
-                row = row.child(
-                    shaped_id((self.id.clone(), "pill"), &shape, style)
-                        .absolute()
-                        .top_0()
-                        .left(px(x))
-                        .w(px(w.max(0.0)))
-                        .h_full(),
-                );
+                if t.look().glitch_tabs {
+                    let old = s.rects.borrow().get(self.last_active(window, cx)).copied();
+                    row = row.child(glitch_pill(
+                        &self,
+                        &t,
+                        (x - first, w),
+                        old.map(|o| (o.0 - first, o.1)),
+                        style,
+                        shape,
+                        window,
+                        cx,
+                    ));
+                } else {
+                    let x = crate::motion::smooth(
+                        window,
+                        cx,
+                        (self.id.clone(), "pill-x").into(),
+                        x - first,
+                    );
+                    let w =
+                        crate::motion::smooth(window, cx, (self.id.clone(), "pill-w").into(), w);
+                    row = row.child(
+                        shaped_id((self.id.clone(), "pill"), &shape, style)
+                            .absolute()
+                            .top_0()
+                            .left(px(x))
+                            .w(px(w.max(0.0)))
+                            .h_full(),
+                    );
+                }
             } else {
                 crate::motion::next_frame(window);
             }
@@ -445,8 +460,158 @@ struct ScrollState {
 
 crate::entry_render!(Tabs);
 
+/// When the active tab last changed: the tab it left and the time of the switch.
+#[derive(Clone, Copy)]
+struct Switch {
+    active: usize,
+    from: usize,
+    at: f32,
+}
+
+impl Tabs {
+    /// Notes a change of the active tab and returns the tab it came from.
+    fn last_active(&self, window: &mut Window, cx: &mut App) -> usize {
+        let st = window.use_keyed_state((self.id.clone(), "switch"), cx, |_, _| Switch {
+            active: self.active,
+            from: self.active,
+            at: -10.0,
+        });
+        let cur = *st.read(cx);
+        if cur.active != self.active {
+            st.update(cx, |s, _| {
+                *s = Switch {
+                    active: self.active,
+                    from: cur.active,
+                    at: crate::motion::now(),
+                }
+            });
+        }
+        st.read(cx).from
+    }
+}
+
+/// Deterministic jitter in `-1.0..=1.0` for slice `i` at glitch step `step`.
+fn jitter(i: u32, step: u32) -> f32 {
+    let mut h = i.wrapping_mul(0x9E37_79B1) ^ step.wrapping_mul(0x85EB_CA6B);
+    h ^= h >> 15;
+    h = h.wrapping_mul(0x2C1B_3C6D);
+    h ^= h >> 12;
+    (h % 2001) as f32 / 1000.0 - 1.0
+}
+
+/// How far the glitch has run, `0.0..1.0`, or `None` once settled.
+fn glitch_progress(since: f32, now: f32) -> Option<f32> {
+    let k = (now - since) / GLITCH_SECS;
+    (0.0..1.0).contains(&k).then_some(k)
+}
+
+const GLITCH_SECS: f32 = 0.32;
+
+/// The active fill of a glitching design: the new tab appears in horizontal slices that jitter
+/// sideways and settle, with colour-split ghosts and a flickering trace of the tab it left.
+#[allow(clippy::too_many_arguments)]
+fn glitch_pill(
+    tabs: &Tabs,
+    t: &Theme,
+    (x, w): (f32, f32),
+    old: Option<(f32, f32)>,
+    style: ShapeStyle,
+    shape: dodai_core::Shape,
+    window: &mut Window,
+    cx: &mut App,
+) -> gpui::AnyElement {
+    let id = tabs.id.clone();
+    let k = glitch_progress(
+        window
+            .use_keyed_state((tabs.id.clone(), "switch"), cx, |_, _| Switch {
+                active: tabs.active,
+                from: tabs.active,
+                at: -10.0,
+            })
+            .read(cx)
+            .at,
+        crate::motion::now(),
+    );
+    let Some(k) = k else {
+        return shaped_id((id, "pill"), &shape, style)
+            .absolute()
+            .top_0()
+            .left(px(x))
+            .w(px(w))
+            .h_full()
+            .into_any_element();
+    };
+    crate::motion::next_frame(window);
+    let step = (k * 18.0) as u32;
+    let amp = 14.0 * (1.0 - k);
+    let mut layer = div().absolute().top_0().left_0().size_full();
+    // Colour-split ghosts behind the slices.
+    for (n, (c, dx)) in [(t.palette.info, -amp * 0.5), (t.palette.danger, amp * 0.5)]
+        .into_iter()
+        .enumerate()
+    {
+        layer = layer.child(
+            div()
+                .absolute()
+                .top_0()
+                .left(px(x + dx))
+                .w(px(w))
+                .h_full()
+                .bg(hsla(c).opacity(
+                    0.45 * (1.0 - k) * if (step + n as u32) % 3 == 0 { 0.4 } else { 1.0 },
+                )),
+        );
+    }
+    // The tab it left, flickering out.
+    if let (Some((ox, ow)), true) = (old, step % 2 == 0 && k < 0.7) {
+        layer = layer.child(
+            div()
+                .absolute()
+                .top_0()
+                .left(px(ox))
+                .w(px(ow))
+                .h_full()
+                .bg(style
+                    .fill
+                    .unwrap_or(hsla(t.palette.primary))
+                    .opacity(0.35 * (1.0 - k))),
+        );
+    }
+    // The new fill in three slices; the outer two lag then snap into place.
+    let fill = style.fill.unwrap_or_else(|| hsla(t.palette.primary));
+    for i in 0..3u32 {
+        let dx = jitter(i, step) * amp;
+        let on = !(k < 0.15 && i == 1);
+        layer = layer.child(
+            div()
+                .absolute()
+                .top(gpui::relative(i as f32 / 3.0))
+                .h(gpui::relative(1.0 / 3.0))
+                .left(px(x + dx))
+                .w(px(w))
+                .bg(fill.opacity(if on { 1.0 } else { 0.0 })),
+        );
+    }
+    layer.into_any_element()
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn glitch_runs_then_settles() {
+        assert_eq!(glitch_progress(1.0, 1.0), Some(0.0));
+        assert!(glitch_progress(1.0, 1.1).is_some());
+        assert_eq!(glitch_progress(1.0, 1.0 + GLITCH_SECS + 0.01), None);
+        assert_eq!(glitch_progress(-10.0, 0.5), None);
+        for i in 0..3 {
+            for step in 0..20 {
+                assert!(jitter(i, step).abs() <= 1.0);
+            }
+        }
+        // The slices do not all move together.
+        assert!(jitter(0, 3) != jitter(1, 3) || jitter(1, 3) != jitter(2, 3));
+    }
+
     use super::*;
     use crate::testing::light_rounded;
 

@@ -49,6 +49,9 @@ pub struct Look {
     /// Tabs sit in a bordered strip with a filled pill on the active one (like a segmented
     /// control) instead of an underline.
     pub segmented_tabs: bool,
+    /// Switching tabs glitches the active fill in (slices jitter, colour-split ghosts) instead
+    /// of gliding.
+    pub glitch_tabs: bool,
 }
 
 /// The page grid of a design at a viewport width: columns between two outer margins.
