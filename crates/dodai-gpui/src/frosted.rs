@@ -17,41 +17,40 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Mutex, OnceLock};
 
-/// A showcase picture with hard edges (so the blur is visible), in the theme's colours.
+/// A showcase picture with hard edges (so the blur is visible), in the theme's colours: a dusk
+/// sky with a low sun, stars and three ridges of mountains, each layer darker than the last.
 fn mesh_pixels(t: &Theme, w: usize, h: usize) -> Vec<u8> {
     let p = &t.palette;
-    // A design with a gradient lights the picture with its own mesh; others get a flat tone.
-    let base: Vec<dodai_core::Color> = if t.surface_style.backdrop > 0.0 {
-        let strength = t.surface_style.backdrop.max(0.7);
-        crate::backdrop::pixels(p.background, t.surface_style.wash, strength, w, h)
-            .chunks_exact(4)
-            .map(|c| dodai_core::Color {
-                r: c[0],
-                g: c[1],
-                b: c[2],
-                a: 255,
-            })
-            .collect()
-    } else {
-        vec![p.background.mix(p.surface_raised, 0.5); w * h]
-    };
-    let colours = [p.primary, p.info, p.success, p.warning, p.danger];
+    let (top, horizon) = (p.primary.mix(p.text, 0.25), p.warning.mix(p.danger, 0.3));
+    let sun = p.warning.mix(p.surface_raised, 0.6);
+    // Far to near: lighter and cooler first, darkest last.
+    let ridges = [
+        (0.56, 0.12, 1.7, 0.4, p.info.mix(p.primary, 0.4)),
+        (0.68, 0.14, 2.6, 2.1, p.primary.mix(p.success, 0.35)),
+        (0.84, 0.12, 3.9, 4.0, p.success.mix(p.text, 0.55)),
+    ];
     let mut out = vec![0u8; w * h * 4];
     let (fw, fh) = (w as f32, h as f32);
     for y in 0..h {
         for x in 0..w {
             let (u, v) = (x as f32 / fw, y as f32 / fh);
-            let mut c = base[y * w + x];
-            // Diagonal stripes.
-            if ((u + v) * 14.0).fract() < 0.22 {
-                c = c.mix(p.text, 0.18);
+            // Sky: a vertical blend, pulled toward the horizon.
+            let mut c = top.mix(horizon, v.powf(1.4));
+            // Hard-edged sun and a few stars (a hash picks the cells that hold one).
+            if ((u - 0.5) * fw / fh).hypot(v - 0.42) < 0.13 {
+                c = sun;
             }
-            // Hard-edged discs.
-            for (i, col) in colours.iter().enumerate() {
-                let (cx, cy) = (0.12 + 0.19 * i as f32, if i % 2 == 0 { 0.35 } else { 0.7 });
-                let d = ((u - cx) * fw / fh).hypot(v - cy);
-                if d < 0.17 {
-                    c = *col;
+            let (cx, cy) = (x / 14, y / 14);
+            let hash = (cx * 73_856_093) ^ (cy * 19_349_663);
+            if v < 0.4 && hash % 17 == 0 && (x % 14).abs_diff(7) < 2 && (y % 14).abs_diff(7) < 2 {
+                c = p.surface_raised;
+            }
+            // Ridges: sharp peaks from folded sines.
+            for (base, amp, freq, phase, col) in ridges {
+                let peak = 1.0 - (u * freq * std::f32::consts::TAU + phase).sin().abs();
+                let wobble = (u * freq * 3.1 + phase).sin() * 0.25 + 0.75;
+                if v > base - amp * peak * wobble {
+                    c = col;
                 }
             }
             let o = (y * w + x) * 4;
