@@ -160,7 +160,28 @@ impl Showcase {
         let me = cx.entity();
         let mut out: Vec<Section> = Vec::new();
         let me_tab = me.clone();
-        let tabs = Tabs::new("tabs")
+        let animation = self
+            .tab_animation
+            .checked_sub(1)
+            .and_then(|i| dodai_gpui::motion::SelectionMotion::ALL.get(i).copied());
+        let with_animation = move |tabs: Tabs| match animation {
+            Some(a) => tabs.animation(a),
+            None => tabs,
+        };
+        let me_anim = me.clone();
+        let picker = dodai_gpui::Segmented::new(
+            "tabs-animation",
+            std::iter::once("Design's own")
+                .chain(dodai_gpui::motion::SelectionMotion::ALL.map(|a| a.label())),
+        )
+        .selected(self.tab_animation)
+        .on_select(move |i, _, cx| {
+            me_anim.update(cx, |s, cx| {
+                s.tab_animation = i;
+                cx.notify();
+            })
+        });
+        let tabs = with_animation(Tabs::new("tabs"))
             .labels(["Overview", "Activity", "Billing", "Settings"])
             .selected(self.tab)
             .on_select(move |i, _, cx| {
@@ -173,10 +194,12 @@ impl Showcase {
             "Navigation",
             "Tabs",
             self.section("Tabs", cx)
+                .child(Muted::new("Animation"))
+                .child(picker)
                 .child(tabs)
                 .child(Muted::new("Secondary"))
                 .child(
-                    Tabs::new("tabs-secondary")
+                    with_animation(Tabs::new("tabs-secondary"))
                         .labels(["Overview", "Activity", "Billing", "Settings"])
                         .selected(self.tab)
                         .secondary(true),
@@ -184,7 +207,7 @@ impl Showcase {
                 .child(Muted::new("Scrollable"))
                 .child(
                     div().w_full().max_w(px(360.0)).child(
-                        Tabs::new("tabs-scroll")
+                        with_animation(Tabs::new("tabs-scroll"))
                             .labels([
                                 "Overview", "Activity", "Billing", "Settings", "Contacts", "Gigs",
                                 "Archive", "Help",
@@ -195,7 +218,7 @@ impl Showcase {
                 )
                 .child(Muted::new("With icons"))
                 .child(
-                    Tabs::new("tabs-icons")
+                    with_animation(Tabs::new("tabs-icons"))
                         .labels(["Home", "Saved", "Search"])
                         .icons([IconName::Home, IconName::Heart, IconName::Search])
                         .selected(self.tab % 3),

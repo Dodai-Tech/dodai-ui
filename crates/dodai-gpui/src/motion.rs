@@ -9,7 +9,8 @@ use gpui::{
 use std::time::Duration;
 
 pub use dodai_core::motion::{
-    lerp, reveal, stagger_window, Curve, Easing, EntryKind, EntrySet, Motion, Tween,
+    lerp, reveal, stagger_window, Clip, Curve, Easing, EntryKind, EntrySet, Glide, Glitch, Motion,
+    SelectionMotion, Spring, Stretch, Travel, Tween,
 };
 
 /// The app-wide motion override installed by [`MotionExt::set_default`].
@@ -25,7 +26,19 @@ pub fn now() -> f32 {
         .as_secs_f32()
 }
 
+// ─────────────────────────────── playback ───────────────────────────────
+//
+// App-wide switches every animation goes through: on/off, speed and reduced motion. Components
+// read them via [`pace`]; nothing animates around them.
+
 static REDUCED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+thread_local! {
+    static ENABLED: std::cell::Cell<bool> = const { std::cell::Cell::new(true) };
+    static SPEED: std::cell::Cell<f32> = const { std::cell::Cell::new(1.0) };
+    /// `(animation seconds, real seconds at the last read)`.
+    static CLOCK: std::cell::Cell<(f32, f32)> = const { std::cell::Cell::new((0.0, 0.0)) };
+}
 
 /// Ask every transition, glide and entry to land at once (the user's "reduce motion"). Components
 /// repaint on the next frame; call it again with `false` to bring the motion back.
@@ -39,22 +52,58 @@ pub fn reduce_motion() -> bool {
     REDUCED.load(std::sync::atomic::Ordering::Relaxed)
 }
 
-/// The motion in force (see [`MotionExt::of`]); with reduced motion, an instant one.
-pub fn current(cx: &App) -> Motion {
-    let m = Motion::of(cx);
-    if reduce_motion() {
-        return instant(m);
-    }
-    m
+/// Switch every animation on or off and repaint. Off, values land at once and running effects
+/// (sweeps, flashes, live traces) stand still on [`time`].
+pub fn set_enabled(cx: &mut App, on: bool) {
+    ENABLED.with(|c| c.set(on));
+    cx.refresh_windows();
 }
 
-fn instant(m: Motion) -> Motion {
-    Motion {
-        duration: Duration::ZERO,
-        delay: Duration::ZERO,
-        entry: Default::default(),
-        ..m
+/// Whether animations run (see [`set_enabled`]). On by default.
+pub fn enabled() -> bool {
+    ENABLED.with(std::cell::Cell::get)
+}
+
+/// How fast every animation runs (clamped to `0.1..=4`; `2` is twice as fast) and repaint.
+pub fn set_speed(cx: &mut App, speed: f32) {
+    SPEED.with(|c| c.set(speed.clamp(0.1, 4.0)));
+    cx.refresh_windows();
+}
+
+/// The animation speed (see [`set_speed`]).
+pub fn speed() -> f32 {
+    SPEED.with(std::cell::Cell::get)
+}
+
+/// Seconds on the animation clock: it runs at [`speed`] and stands still while animations are
+/// off. Changing the speed never makes it jump. Drive looping effects from it.
+pub fn time() -> f32 {
+    let real = now();
+    CLOCK.with(|c| {
+        let (virt, last) = c.get();
+        let virt = if enabled() {
+            virt + (real - last).max(0.0) * speed()
+        } else {
+            virt
+        };
+        c.set((virt, real));
+        virt
+    })
+}
+
+/// `m` as it plays right now: instant while animations are off or motion is reduced, otherwise
+/// at the app's [`speed`].
+pub fn pace(m: Motion) -> Motion {
+    if reduce_motion() || !enabled() {
+        m.instant()
+    } else {
+        m.speed(speed())
     }
+}
+
+/// The motion in force (see [`MotionExt::of`]), paced (see [`pace`]).
+pub fn current(cx: &App) -> Motion {
+    pace(Motion::of(cx))
 }
 
 /// gpui glue for [`Motion`]: native animations and the app-wide default. Import it
@@ -317,7 +366,8 @@ pub fn smooth(window: &mut gpui::Window, cx: &mut App, id: gpui::ElementId, targ
     smooth_with(window, cx, id, target, m)
 }
 
-/// Like [`smooth`] with an explicit [`Motion`] (e.g. a spring for physical feel).
+/// Like [`smooth`] with an explicit [`Motion`]: eased or on a spring as its
+/// [`travel`](Motion::travel) says, paced (see [`pace`]).
 pub fn smooth_with(
     window: &mut gpui::Window,
     cx: &mut App,
@@ -325,19 +375,78 @@ pub fn smooth_with(
     target: f32,
     m: Motion,
 ) -> f32 {
-    let m = if reduce_motion() { instant(m) } else { m };
+    let m = pace(m);
     let st = window.with_id(id, |w| {
-        w.use_keyed_state(("smooth", 0u32), cx, move |_, _| Tween::new(target, m))
+        w.use_keyed_state(("smooth", 0u32), cx, move |_, _| Glide::new(target, &m))
     });
-    st.update(cx, |t, _| t.to(target, m, now()));
+    let t = now();
+    st.update(cx, |g, _| g.to(target, &m, t));
     let (v, done) = {
-        let t = st.read(cx);
-        (t.value(now()), t.is_done(now()))
+        let g = st.read(cx);
+        (g.value(t), g.settled(t))
     };
     if !done {
         crate::motion::next_frame(window);
     }
     v
+}
+
+/// A span `(x, width)` following `to` with its leading edge first (see [`Stretch`]), keyed
+/// under `id`, paced.
+pub fn stretch(
+    window: &mut gpui::Window,
+    cx: &mut App,
+    id: gpui::ElementId,
+    to: (f32, f32),
+    m: Motion,
+) -> (f32, f32) {
+    let m = pace(m);
+    let st = window.with_id(id, |w| {
+        w.use_keyed_state(("stretch", 0u32), cx, move |_, _| Stretch::new(to, &m))
+    });
+    let t = now();
+    st.update(cx, |s, _| s.to(to, &m, t));
+    let (v, done) = {
+        let s = st.read(cx);
+        (s.value(t), s.settled(t))
+    };
+    if !done {
+        crate::motion::next_frame(window);
+    }
+    v
+}
+
+/// Plays a one-shot clip each time `key` changes (not on first sight), keyed under `id`.
+/// `Some(frame)` while it runs, `None` at rest. Build the clip from a paced motion so speed and
+/// the on/off switch apply (a zero-length clip never shows).
+pub fn play_on_change<K, T>(
+    window: &mut gpui::Window,
+    cx: &mut App,
+    id: gpui::ElementId,
+    key: K,
+    clip: impl FnOnce() -> Clip<T>,
+) -> Option<T>
+where
+    K: PartialEq + Clone + 'static,
+    T: 'static,
+{
+    let st = window.with_id(id, |w| {
+        w.use_keyed_state(("play", 0u32), cx, {
+            let key = key.clone();
+            move |_, _| (key, f32::NEG_INFINITY)
+        })
+    });
+    let t = now();
+    if st.read(cx).0 != key {
+        st.update(cx, |s, _| *s = (key, t));
+    }
+    let clip = clip();
+    let elapsed = t - st.read(cx).1;
+    if clip.done(elapsed) {
+        return None;
+    }
+    crate::motion::next_frame(window);
+    Some(clip.at(elapsed))
 }
 
 /// Drive reactive mixins from interaction state and return the layered [`dodai_core::motion::Pose`]
@@ -352,6 +461,7 @@ pub fn react(
 ) -> dodai_core::motion::Pose {
     let personality = crate::motion::current(cx).personality;
     let mixins = mixins.to_vec();
+    let still = reduce_motion() || !enabled();
     let st = window.with_id(id, |w| {
         w.use_keyed_state(("react", 0u32), cx, move |_, _| {
             mixins
@@ -361,6 +471,7 @@ pub fn react(
                 })
         })
     });
+    st.update(cx, |r, _| r.set_reduced(still));
     let t = now();
     st.update(cx, |r, _| {
         for &(trigger, on) in states {

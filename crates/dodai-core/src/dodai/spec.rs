@@ -233,6 +233,7 @@ impl DesignSpec for Dodai {
         Look {
             soft_elevation: true,
             segmented_tabs: true,
+            selection: crate::motion::SelectionMotion::Stretch,
             icons: IconSet::Symbols,
             ..Look::default()
         }

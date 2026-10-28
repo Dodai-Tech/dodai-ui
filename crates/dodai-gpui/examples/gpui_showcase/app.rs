@@ -76,8 +76,10 @@ pub(crate) fn window_shortcuts(cx: &mut App) {
 impl Showcase {
     /// Plays the input demos on their own: values glide, boxes tick, text types itself.
     fn demo_step(&mut self, cx: &mut Context<Self>) {
-        let t = dodai_gpui::animation_time();
-        let wave = |speed: f32, phase: f32| 0.5 + 0.5 * (t * speed + phase).sin();
+        let t = dodai_gpui::motion::time();
+        // `0..=1` demo positions drifting on the animation clock.
+        let wave =
+            |key: f32, phase: f32| dodai_gpui::live::wander_between(key * 10.0 + phase, 0.0, 1.0);
         // Live streams: a new sample every 0.2 s / 0.35 s; the charts slide between them.
         self.live_a.advance(0.2, |i| live_signal(i, 0.9));
         self.live_b.advance(0.35, |i| live_signal(i, 0.6));
@@ -151,14 +153,14 @@ impl Showcase {
                 .await;
             if this
                 .update(cx, |s, cx| {
-                    if dodai_gpui::instruments_animated()
+                    if dodai_gpui::motion::enabled()
                         && (s.demo_seen.is_some_and(|t| t.elapsed().as_millis() < 200)
                             || s.inst_seen.is_some_and(|t| t.elapsed().as_millis() < 100))
                     {
                         s.demo_step(cx);
                     }
                     if s.inst_seen.is_some_and(|t| t.elapsed().as_millis() < 100)
-                        && dodai_gpui::instruments_animated()
+                        && dodai_gpui::motion::enabled()
                     {
                         cx.notify();
                     }
@@ -256,6 +258,7 @@ impl Showcase {
             tags: vec!["rust", "gpui", "charts"],
             focus: cx.focus_handle(),
             tab: 0,
+            tab_animation: 0,
             switch: true,
             check: true,
             radio: 0,

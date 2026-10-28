@@ -40,65 +40,14 @@ fn claim(w: &mut Window, cx: &mut App, id: &ElementId) -> u32 {
     })
 }
 
-thread_local! {
-    static ANIMATED: std::cell::Cell<bool> = const { std::cell::Cell::new(true) };
-}
-
-/// Whether instruments animate: needles follow values with a spring, sweeps and flashes run.
-/// On by default.
-pub fn instruments_animated() -> bool {
-    ANIMATED.with(std::cell::Cell::get)
-}
-
-/// Switches every instrument's animation on or off and repaints. Off, needles jump to their
-/// value and sweeps, flashes and live traces stand still.
-pub fn set_instruments_animated(cx: &mut App, on: bool) {
-    ANIMATED.with(|c| c.set(on));
-    cx.refresh_windows();
-}
-
-thread_local! {
-    static SPEED: std::cell::Cell<f32> = const { std::cell::Cell::new(1.0) };
-    /// `(virtual seconds, real seconds at the last read)`.
-    static CLOCK: std::cell::Cell<(f32, f32)> = const { std::cell::Cell::new((0.0, 0.0)) };
-}
-
-/// How fast instrument motion runs: 1 is real time, 2 twice as fast.
-pub fn animation_speed() -> f32 {
-    SPEED.with(std::cell::Cell::get)
-}
-
-/// Sets the animation speed (clamped to 0.1..=4) and repaints. It scales sweeps, flashes, live
-/// traces, the showcase demo values and how quickly needles follow.
-pub fn set_animation_speed(cx: &mut App, speed: f32) {
-    SPEED.with(|c| c.set(speed.clamp(0.1, 4.0)));
-    cx.refresh_windows();
-}
-
-/// Seconds on the animation clock: it runs at [`animation_speed`] and stands still when
-/// animation is off. Changing the speed never makes it jump.
-pub fn animation_time() -> f32 {
-    let real = now();
-    CLOCK.with(|c| {
-        let (virt, last) = c.get();
-        let virt = if instruments_animated() {
-            virt + (real - last).max(0.0) * animation_speed()
-        } else {
-            virt
-        };
-        c.set((virt, real));
-        virt
-    })
-}
-
 #[cfg(feature = "charts")]
 pub(crate) fn clock() -> f32 {
-    animation_time()
+    crate::motion::time()
 }
 
 /// Asks for another frame, unless instruments are not animated.
 pub(crate) fn next_frame(w: &Window) {
-    if instruments_animated() {
+    if crate::motion::enabled() {
         crate::motion::next_frame(w);
     }
 }
@@ -237,11 +186,11 @@ fn state(
     let response = f
         .response
         .unwrap_or_else(|| theme_of(cx).chart_style().response);
-    if !instruments_animated() || !f.animated {
+    if !crate::motion::enabled() || !f.animated {
         return None;
     }
     let (secs, bounce) = response.spring()?;
-    let spring = Spring::from_response(secs / animation_speed(), bounce);
+    let spring = Spring::from_response(secs / crate::motion::speed(), bounce);
     // A value starts at zero and sweeps up to its reading, like an instrument's self-test.
     let start = if angle { target } else { 0.0 };
     let key = f.element_id(w, cx);
@@ -292,7 +241,7 @@ pub(crate) fn follow_angle(w: &mut Window, cx: &mut App, f: &Follow, part: u8, t
         .rem_euclid(360.0)
 }
 
-#[cfg(any(feature = "charts", feature = "components"))]
+#[cfg(feature = "charts")]
 struct Many {
     sig: (u32, u32),
     springs: Vec<SpringState>,
@@ -301,9 +250,9 @@ struct Many {
 
 /// Every value of `target` followed at once, for a chart's data. Values that appear start at
 /// their target; the rest ease with the component's response. Requests frames until settled.
-#[cfg(any(feature = "charts", feature = "components"))]
+#[cfg(feature = "charts")]
 pub(crate) fn follow_all(w: &mut Window, cx: &mut App, f: &Follow, target: &[f32]) -> Vec<f32> {
-    if !instruments_animated() || !f.animated {
+    if !crate::motion::enabled() || !f.animated {
         return target.to_vec();
     }
     // Data follows the app's motion set (duration and personality), so the Motion controls
@@ -331,9 +280,9 @@ pub(crate) fn follow_all(w: &mut Window, cx: &mut App, f: &Follow, target: &[f32
         }
     };
     // Data does not overshoot: bars and areas keep a gentle settle at most.
-    let spring = Spring::from_response(secs / animation_speed(), bounce.min(0.15));
+    let spring = Spring::from_response(secs / crate::motion::speed(), bounce.min(0.15));
     let sig = (
-        (secs * 1000.0 / animation_speed()) as u32,
+        (secs * 1000.0 / crate::motion::speed()) as u32,
         (bounce.min(0.15) * 1000.0) as u32,
     );
     let key = f.element_id(w, cx);

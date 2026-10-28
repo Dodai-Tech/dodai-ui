@@ -1042,3 +1042,63 @@ fn tabs_move_with_the_arrow_keys(cx: &mut TestAppContext) {
     vcx.simulate_keystrokes("right right left");
     assert_eq!(*seen.borrow(), vec![0, 1, 2, 1]);
 }
+
+/// Every selection animation, on a pill design and an underline design, lands on the clicked
+/// item for tabs and segmented controls alike.
+#[gpui::test]
+fn every_selection_animation_lands_on_the_chosen_item(cx: &mut TestAppContext) {
+    use dodai_gpui::motion::SelectionMotion;
+    for theme in [dodai_core::dodai::light(), dodai_core::Theme::default()] {
+        for kind in SelectionMotion::ALL {
+            for segmented in [false, true] {
+                let seen = Rc::new(RefCell::new(Vec::<usize>::new()));
+                let s = seen.clone();
+                let vcx = mount(cx, move |_, _| {
+                    let s = s.clone();
+                    let pick =
+                        move |i: usize, _: &mut Window, _: &mut gpui::App| s.borrow_mut().push(i);
+                    if segmented {
+                        Segmented::new("seg", ["One", "Two", "Three"])
+                            .animation(kind)
+                            .on_select(pick)
+                            .into_any_element()
+                    } else {
+                        Tabs::new("tabs")
+                            .labels(["One", "Two", "Three"])
+                            .animation(kind)
+                            .on_select(pick)
+                            .into_any_element()
+                    }
+                });
+                vcx.update(|_, cx| install(cx, theme.clone()));
+                vcx.run_until_parked();
+                let (x, y, w, h) = target(vcx);
+                click(vcx, x + w - 20.0, y + h / 2.0);
+                click(vcx, x + 20.0, y + h / 2.0);
+                assert_eq!(
+                    *seen.borrow(),
+                    vec![2, 0],
+                    "{kind:?}, segmented {segmented}"
+                );
+            }
+        }
+    }
+}
+
+/// Off, every animation lands at once; faster, it takes less time.
+#[gpui::test]
+fn the_playback_switches_pace_every_motion(cx: &mut TestAppContext) {
+    use dodai_gpui::motion::{pace, set_enabled, set_speed, Motion};
+    use std::time::Duration;
+    let m = Motion::default().duration(Duration::from_millis(400));
+    cx.update(|cx| {
+        set_speed(cx, 2.0);
+        assert_eq!(pace(m).duration, Duration::from_millis(200));
+        assert_eq!(pace(m).pace, 2.0);
+        set_enabled(cx, false);
+        assert_eq!(pace(m).duration, Duration::ZERO);
+        set_enabled(cx, true);
+        set_speed(cx, 1.0);
+        assert_eq!(pace(m).duration, m.duration);
+    });
+}

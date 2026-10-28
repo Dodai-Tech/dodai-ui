@@ -20,6 +20,7 @@ fn motion() -> crate::Motion {
         crate::Easing::CubicBezier(0.3, 1.4, 0.5, 1.0),
     )
     .personality(crate::motion::Personality::Playful)
+    .travel(crate::motion::Travel::Spring)
 }
 
 fn typography() -> Typography {

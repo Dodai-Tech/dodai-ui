@@ -19,6 +19,7 @@ fn motion() -> crate::Motion {
         crate::Easing::CubicBezier(a, b, c, d),
     )
     .personality(crate::motion::Personality::Smooth)
+    .travel(crate::motion::Travel::Spring)
 }
 
 fn typography() -> Typography {

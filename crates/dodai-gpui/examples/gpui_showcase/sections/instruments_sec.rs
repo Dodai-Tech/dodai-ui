@@ -22,18 +22,8 @@ impl Showcase {
         // instrument's motion (springs, sweeps, flashing); the demo values wander while it is on.
         let response =
             (self.inst_response > 0).then(|| NeedleResponse::ALL[self.inst_response - 1]);
-        let live = dodai_gpui::instruments_animated();
-        let time = dodai_gpui::animation_time();
-        // A value that is `still` normally and drifts smoothly through `lo..=hi` while
-        // animated: two slow waves of different speed, offset per `key`.
-        let val = move |key: f32, still: f32, lo: f32, hi: f32| {
-            if !live {
-                return still;
-            }
-            let w = 0.6 * (time * (0.35 + 0.05 * (key % 5.0)) + key * 1.7).sin()
-                + 0.4 * (time * (0.83 + 0.07 * (key % 3.0)) + key * 2.9).sin();
-            lo + (hi - lo) * (0.5 + 0.5 * w)
-        };
+        // A demo value drifting through `lo..=hi` on the animation clock.
+        let val = dodai_gpui::live::wander_between;
         let (sel, glow_sel) = (self.inst_response, self.inst_glow);
         let option = |label: &'static str, seg: gpui::AnyElement| {
             div()
@@ -108,11 +98,11 @@ impl Showcase {
             .child(Muted::new("This design's own cluster"))
             .child(
                 InstrumentCluster::themed()
-                    .speed(val(20.0, 251.0, 0.0, 300.0))
-                    .rpm(val(21.0, 6.9, 0.8, 7.8))
-                    .fuel(val(22.0, 62.0, 10.0, 95.0))
-                    .coolant(val(23.0, 96.0, 70.0, 115.0))
-                    .oil(val(24.0, 4.8, 2.0, 6.0))
+                    .speed(val(20.0, 0.0, 300.0))
+                    .rpm(val(21.0, 0.8, 7.8))
+                    .fuel(val(22.0, 10.0, 95.0))
+                    .coolant(val(23.0, 70.0, 115.0))
+                    .oil(val(24.0, 2.0, 6.0))
                     .width(700.0),
             );
         for kind in ClusterKind::ALL
@@ -121,11 +111,11 @@ impl Showcase {
         {
             clusters = clusters.child(Muted::new(kind.name())).child(
                 InstrumentCluster::new(kind)
-                    .speed(val(20.0, 251.0, 0.0, 300.0))
-                    .rpm(val(21.0, 6.9, 0.8, 7.8))
-                    .fuel(val(22.0, 62.0, 10.0, 95.0))
-                    .coolant(val(23.0, 96.0, 70.0, 115.0))
-                    .oil(val(24.0, 4.8, 2.0, 6.0))
+                    .speed(val(20.0, 0.0, 300.0))
+                    .rpm(val(21.0, 0.8, 7.8))
+                    .fuel(val(22.0, 10.0, 95.0))
+                    .coolant(val(23.0, 70.0, 115.0))
+                    .oil(val(24.0, 2.0, 6.0))
                     .width(700.0),
             );
         }
@@ -162,13 +152,13 @@ impl Showcase {
                 row()
                     .items_start()
                     .child(
-                        LevelBar::new(fuel, val(3.0, 18.0, 5.0, 95.0))
+                        LevelBar::new(fuel, val(3.0, 5.0, 95.0))
                             .response_opt(response)
                             .label("Fuel")
                             .unit("%"),
                     )
                     .child(
-                        LevelBar::new(coolant, val(4.0, 108.0, 60.0, 122.0))
+                        LevelBar::new(coolant, val(4.0, 60.0, 122.0))
                             .response_opt(response)
                             .label("Coolant")
                             .unit("°C"),
@@ -184,10 +174,8 @@ impl Showcase {
             .child(
                 row()
                     .items_start()
-                    .child(
-                        PowerMeter::new(power, val(5.0, 84.0, -50.0, 110.0)).response_opt(response),
-                    )
-                    .child(Compass::new(val(6.0, 42.0, 0.0, 360.0)).response_opt(response)),
+                    .child(PowerMeter::new(power, val(5.0, -50.0, 110.0)).response_opt(response))
+                    .child(Compass::new(val(6.0, 0.0, 360.0)).response_opt(response)),
             );
 
         out.push((
@@ -201,14 +189,14 @@ impl Showcase {
                 .child(
                     row()
                         .child(
-                            DialGauge::new(speed, val(1.0, 132.0, 0.0, 230.0))
+                            DialGauge::new(speed, val(1.0, 0.0, 230.0))
                                 .response_opt(response)
                                 .label("Speed")
                                 .unit("km/h")
                                 .size(240.0),
                         )
                         .child(
-                            DialGauge::new(rpm, val(2.0, 7.1, 0.8, 7.6))
+                            DialGauge::new(rpm, val(2.0, 0.8, 7.6))
                                 .response_opt(response)
                                 .label("Engine")
                                 .unit("×1000 rpm")
@@ -273,35 +261,35 @@ impl Showcase {
                 .child(
                     row()
                         .child(
-                            DialGauge::new(pressure, val(7.0, 54.0, 5.0, 95.0))
+                            DialGauge::new(pressure, val(7.0, 5.0, 95.0))
                                 .response_opt(response)
                                 .label("Header pressure")
                                 .unit("bar")
                                 .size(190.0),
                         )
                         .child(
-                            DialGauge::new(temp, val(8.0, 196.0, 40.0, 235.0))
+                            DialGauge::new(temp, val(8.0, 40.0, 235.0))
                                 .response_opt(response)
                                 .label("Reactor temp")
                                 .unit("°C")
                                 .size(190.0),
                         )
                         .child(
-                            DialGauge::new(flow, val(9.0, 97.0, 10.0, 98.0))
+                            DialGauge::new(flow, val(9.0, 10.0, 98.0))
                                 .response_opt(response)
                                 .label("Feed flow")
                                 .unit("m³/h")
                                 .size(190.0),
                         )
                         .child(
-                            LevelBar::new(tank_a, val(10.0, 72.0, 20.0, 95.0))
+                            LevelBar::new(tank_a, val(10.0, 20.0, 95.0))
                                 .response_opt(response)
                                 .label("Tank A")
                                 .unit("%")
                                 .height(130.0),
                         )
                         .child(
-                            LevelBar::new(tank_b, val(11.0, 94.0, 30.0, 98.0))
+                            LevelBar::new(tank_b, val(11.0, 30.0, 98.0))
                                 .response_opt(response)
                                 .label("Tank B")
                                 .unit("%")
@@ -503,22 +491,22 @@ impl Showcase {
                                 .justify_around()
                                 .gap_6()
                                 .child(
-                                    VerticalTape::new(val(12.0, 312.0, 220.0, 420.0))
+                                    VerticalTape::new(val(12.0, 220.0, 420.0))
                                         .response_opt(response)
                                         .scale(100.0, 10.0, 5)
                                         .label("KT"),
                                 )
                                 .child(
                                     AttitudeIndicator::new(
-                                        val(13.0, 7.0, -12.0, 14.0),
-                                        val(14.0, -14.0, -40.0, 40.0),
+                                        val(13.0, -12.0, 14.0),
+                                        val(14.0, -40.0, 40.0),
                                     )
                                     .response_opt(response)
                                     .size(300.0)
                                     .caption("Attitude"),
                                 )
                                 .child(
-                                    VerticalTape::new(val(15.0, 12460.0, 11000.0, 14000.0))
+                                    VerticalTape::new(val(15.0, 11000.0, 14000.0))
                                         .response_opt(response)
                                         .scale(1000.0, 100.0, 5)
                                         .label("FT")
@@ -527,7 +515,7 @@ impl Showcase {
                         )
                         .child(
                             div().flex().justify_center().child(
-                                HeadingTape::new(val(16.0, 47.0, 0.0, 360.0))
+                                HeadingTape::new(val(16.0, 0.0, 360.0))
                                     .response_opt(response)
                                     .bug(75.0)
                                     .width(480.0),

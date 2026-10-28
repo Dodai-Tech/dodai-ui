@@ -7,8 +7,6 @@ use std::rc::Rc;
 
 use dodai_charts_core::stream::RingBuffer;
 
-use crate::instruments_motion::{animation_time, instruments_animated};
-
 struct Inner {
     buf: RingBuffer,
     /// Animation time of the last push.
@@ -27,7 +25,7 @@ impl Live {
     pub fn new(capacity: usize) -> Self {
         Self(Rc::new(RefCell::new(Inner {
             buf: RingBuffer::filled(capacity, 0.0),
-            last: animation_time(),
+            last: crate::motion::time(),
             interval: 1.0,
             next_due: 0.0,
         })))
@@ -48,7 +46,7 @@ impl Live {
 
     /// Adds a sample now.
     pub fn push(&self, v: f32) {
-        let now = animation_time();
+        let now = crate::motion::time();
         let mut s = self.0.borrow_mut();
         let dt = (now - s.last).clamp(0.02, 10.0);
         s.interval = 0.8 * s.interval + 0.2 * dt;
@@ -59,7 +57,7 @@ impl Live {
     /// Calls `sample(index)` and pushes the result once every `every` seconds of animation time
     /// (up to three catch-up samples after a stall). Call it every frame.
     pub fn advance(&self, every: f32, mut sample: impl FnMut(u64) -> f32) {
-        let now = animation_time();
+        let now = crate::motion::time();
         let every = every.max(0.01);
         let mut due = self.0.borrow().next_due;
         if due == 0.0 || now - due > 3.0 * every {
@@ -84,12 +82,29 @@ impl Live {
     /// How far through the current sample interval the window is, in 0..1: how much a chart
     /// slides left. Zero when animation is off.
     pub fn scroll(&self) -> f32 {
-        if !instruments_animated() {
+        if !crate::motion::enabled() {
             return 0.0;
         }
         let s = self.0.borrow();
-        ((animation_time() - s.last) / s.interval.max(0.02)).clamp(0.0, 1.0)
+        ((crate::motion::time() - s.last) / s.interval.max(0.02)).clamp(0.0, 1.0)
     }
+}
+
+/// A smooth wander in `-1..=1` on the animation clock; each `key` takes its own path. It
+/// pauses with the animations and runs at their speed.
+pub fn wander(key: f32) -> f32 {
+    dodai_core::motion::wander(crate::motion::time(), key)
+}
+
+/// [`wander`] mapped onto `lo..=hi`: a demo value that drifts while animations run.
+pub fn wander_between(key: f32, lo: f32, hi: f32) -> f32 {
+    dodai_core::motion::wander_between(crate::motion::time(), key, lo, hi)
+}
+
+/// A live stream shaped like `base`, sliding left on the animation clock (see
+/// [`dodai_core::motion::drift`]).
+pub fn drift(base: &[f32], key: f32) -> Vec<f32> {
+    dodai_core::motion::drift(base, crate::motion::time(), key)
 }
 
 #[cfg(test)]

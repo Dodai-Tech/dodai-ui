@@ -28,6 +28,11 @@ impl Spring {
         let zeta = (1.0 - bounce).clamp(0.02, 4.0);
         Self::new(w * w, 2.0 * zeta * w, 1.0)
     }
+    /// The same spring running `k` times as fast (same bounce, `1/k` the settling time).
+    pub fn faster(self, k: f32) -> Self {
+        let k = k.max(1e-3);
+        Self::new(self.stiffness * k * k, self.damping * k, self.mass)
+    }
     /// Natural angular frequency.
     pub fn omega(&self) -> f32 {
         (self.stiffness / self.mass.max(1e-6)).sqrt()
@@ -100,6 +105,20 @@ impl SpringState {
             target: value,
             t0: 0.0,
         }
+    }
+    /// Already moving: at `value` with `velocity` at `now`, heading for `target`.
+    pub fn moving(spring: Spring, value: f32, velocity: f32, target: f32, now: f32) -> Self {
+        Self {
+            spring,
+            x0: value,
+            v0: velocity,
+            target,
+            t0: now,
+        }
+    }
+    /// The spring it runs on.
+    pub fn spring(&self) -> Spring {
+        self.spring
     }
     pub fn value(&self, now: f32) -> f32 {
         self.spring

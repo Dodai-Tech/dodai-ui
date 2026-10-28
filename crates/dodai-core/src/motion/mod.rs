@@ -6,6 +6,7 @@
 mod clip;
 mod curve;
 mod easing;
+mod glide;
 mod lerp;
 mod mixins;
 mod physics;
@@ -18,10 +19,12 @@ mod tests;
 mod timing;
 mod tokens;
 mod tween;
+mod wander;
 
 pub use clip::Clip;
 pub use curve::{lerp, reveal, stagger_window, Curve};
 pub use easing::Easing;
+pub use glide::{Glide, Glitch, SelectionMotion, Stretch, Travel};
 pub use lerp::Lerp;
 pub use mixins::{
     attention_bounce, check_draw, collapse, count_up, flash_on_change, flip, indeterminate,
@@ -35,3 +38,4 @@ pub use pose::Pose;
 pub use timing::{EntryKind, EntrySet, Motion};
 pub use tokens::{material_easing, token_motion, DurationToken};
 pub use tween::Tween;
+pub use wander::{drift, wander, wander_between};

@@ -14,6 +14,11 @@ pub struct Motion {
     pub entry: EntrySet,
     /// How lively the design system is: drives springs and gesture sizes in mixins.
     pub personality: crate::motion::Personality,
+    /// How values travel to a new target: eased over `duration`, or on the personality's spring.
+    pub travel: crate::motion::Travel,
+    /// How fast springs run (`2` settles in half the time). [`Motion::speed`] scales it with
+    /// the duration.
+    pub pace: f32,
 }
 
 /// How a component animates in when it first appears.
@@ -186,6 +191,8 @@ impl Default for Motion {
             delay: Duration::ZERO,
             entry: EntrySet::of(EntryKind::Fade),
             personality: crate::motion::Personality::Smooth,
+            travel: crate::motion::Travel::Eased,
+            pace: 1.0,
         }
     }
 }
@@ -198,6 +205,8 @@ impl Motion {
             delay: Duration::ZERO,
             entry: EntrySet::of(EntryKind::Fade),
             personality: crate::motion::Personality::Smooth,
+            travel: crate::motion::Travel::Eased,
+            pace: 1.0,
         }
     }
     pub fn duration(mut self, d: Duration) -> Self {
@@ -224,10 +233,33 @@ impl Motion {
         self.easing = e;
         self
     }
-    /// Scale speed: `2.0` halves the duration, `0.5` doubles it.
+    /// Scale speed: `2.0` halves the duration and delay and runs springs twice as fast.
     pub fn speed(mut self, factor: f32) -> Self {
-        self.duration = self.duration.div_f32(factor.max(0.01));
+        let k = factor.max(0.01);
+        self.duration = self.duration.div_f32(k);
+        self.delay = self.delay.div_f32(k);
+        self.pace *= k;
         self
+    }
+    /// How values travel to a new target (see [`Travel`](crate::motion::Travel)).
+    pub fn travel(mut self, t: crate::motion::Travel) -> Self {
+        self.travel = t;
+        self
+    }
+    /// The spring values travel on with [`Travel::Spring`](crate::motion::Travel::Spring): the
+    /// personality's, at this motion's pace.
+    pub fn spring(&self) -> crate::motion::Spring {
+        self.personality.spring().faster(self.pace)
+    }
+    /// The same motion landing at once: no duration, delay or entry, eased travel.
+    pub fn instant(self) -> Self {
+        Self {
+            duration: Duration::ZERO,
+            delay: Duration::ZERO,
+            entry: EntrySet::NONE,
+            travel: crate::motion::Travel::Eased,
+            ..self
+        }
     }
     /// Linear progress `0..=1` after `elapsed` seconds (past `delay`).
     pub fn progress(&self, elapsed: f32) -> f32 {

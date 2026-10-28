@@ -1,7 +1,9 @@
 //! [`Tabs`]: a row of selectable tabs driven by `theme.tab` tokens.
 
 use crate::interact::{track, use_interact};
-use crate::paint::{bottom_band_canvas, bottom_band_slide, shaped_id, ShapeStyle};
+use crate::motion::{Motion, MotionExt, SelectionMotion};
+use crate::paint::{bottom_band_canvas, shaped_id, ShapeStyle};
+use crate::selection::{SelectionMarker, SelectionTrack};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use dodai_core::Theme;
@@ -9,7 +11,7 @@ use gpui::{
     div, px, App, ElementId, Hsla, IntoElement, ParentElement, SharedString,
     StatefulInteractiveElement, Styled, Window,
 };
-use std::cell::{Cell, RefCell};
+use std::cell::Cell;
 use std::rc::Rc;
 
 /// Resolved tab paint: shape style, text colour, optional indicator colour.
@@ -41,6 +43,8 @@ pub struct Tabs {
     icons: Vec<crate::icons::IconName>,
     secondary: bool,
     scrollable: bool,
+    animation: Option<SelectionMotion>,
+    motion: Option<Motion>,
 }
 
 crate::corners_setter!(Tabs);
@@ -58,7 +62,20 @@ impl Tabs {
             icons: Vec::new(),
             secondary: false,
             scrollable: false,
+            animation: None,
+            motion: None,
         }
+    }
+    /// How the selection moves between tabs. Defaults to the design's own
+    /// ([`Look::selection`](dodai_core::Look::selection)).
+    pub fn animation(mut self, a: SelectionMotion) -> Self {
+        self.animation = Some(a);
+        self
+    }
+    /// Pace, easing and travel of the tab animations. Defaults to the design's motion.
+    pub fn motion(mut self, m: Motion) -> Self {
+        self.motion = Some(m);
+        self
     }
     /// Scrollable tabs: keep every tab at its natural width and scroll the strip sideways when
     /// it overflows (instead of squeezing the labels).
@@ -99,7 +116,7 @@ impl Tabs {
         t: &dodai_core::Theme,
         i: usize,
         pan: Option<Rc<Cell<Pan>>>,
-        slide: Option<&Rc<Slide>>,
+        measure: Option<&SelectionTrack>,
         window: &mut Window,
         cx: &mut App,
     ) -> impl IntoElement {
@@ -108,11 +125,17 @@ impl Tabs {
         let st = use_interact(&id, window, cx);
         let hovered = st.read(cx).hovered;
         let active = i == self.active;
-        let p = crate::motion::transition(window, cx, id.clone(), active);
+        let p = crate::motion::smooth_with(
+            window,
+            cx,
+            id.clone(),
+            if active { 1.0 } else { 0.0 },
+            self.motion_of(cx),
+        );
         let (mut style, fg, indicator) = tab_style(t, active, hovered);
         let (on_s, on_fg, _) = tab_style(t, true, hovered);
         let (off_s, off_fg, _) = tab_style(t, false, hovered);
-        style.fill = if slide.is_some() && t.tab(true, false).background.is_some() {
+        style.fill = if measure.is_some() && t.tab(true, false).background.is_some() {
             // The active pill is one shared element that slides between tabs.
             if active {
                 None
@@ -127,7 +150,7 @@ impl Tabs {
         } else {
             fg
         };
-        let indicator = if slide.is_some() {
+        let indicator = if measure.is_some() {
             None
         } else {
             indicator
@@ -182,23 +205,9 @@ impl Tabs {
         if let Some(c) = indicator {
             tab = tab.child(bottom_band_canvas(&t.shape, t.shape.border_width, c));
         }
-        if let Some(s) = slide {
-            // Report where this tab sits so the shared indicator can slide to it.
-            let s = s.clone();
-            tab = tab.child(
-                gpui::canvas(
-                    move |b, _, _| {
-                        let mut r = s.rects.borrow_mut();
-                        if r.len() <= i {
-                            r.resize(i + 1, (0.0, 0.0));
-                        }
-                        r[i] = (f32::from(b.origin.x), f32::from(b.size.width));
-                    },
-                    |_, _, _, _| (),
-                )
-                .absolute()
-                .size_full(),
-            );
+        if let Some(m) = measure {
+            // Report where this tab sits so the shared indicator can travel to it.
+            tab = tab.relative().child(m.item(i));
         }
         if let Some(f) = self.on_select.clone() {
             tab = tab.on_click(move |_, w, cx| {
@@ -212,10 +221,11 @@ impl Tabs {
         if self.scrollable {
             tab = tab.flex_none().whitespace_nowrap();
         }
-        if t.tab(true, false).outline {
-            // Outlined blocks have nothing to slide: the chosen one rises off the page, the old
-            // one drops back, at the design's own pace.
-            tab = tab.relative().top(px(-t.shape.border_width * 2.0 * p));
+        if self.animation_of(t) == SelectionMotion::Lift {
+            // Nothing slides: the chosen tab rises off the page and the old one drops back.
+            tab = tab
+                .relative()
+                .top(px(-(t.shape.border_width * 2.0).max(2.0) * p));
         }
         tab
     }
@@ -363,15 +373,10 @@ impl Tabs {
         // One indicator slides between tabs when the design underlines the active tab.
         let tokens = t.tab(true, false);
         let pill = tokens.background.is_some() && !tokens.outline;
-        let slide = (pill || (!tokens.outline && tokens.indicator.is_some())).then(|| {
-            window
-                .use_keyed_state((self.id.clone(), "slide"), cx, |_, _| {
-                    SlideState(Rc::default())
-                })
-                .read(cx)
-                .0
-                .clone()
-        });
+        let kind = self.animation_of(&t);
+        let travels = kind != SelectionMotion::Lift;
+        let track = (travels && (pill || (!tokens.outline && tokens.indicator.is_some())))
+            .then(|| SelectionTrack::new(self.id.clone(), window, cx));
         // Scrollable strips pan with the pointer too: a swipe or drag moves them sideways.
         let scroll = self.scrollable.then(|| {
             window.use_keyed_state((self.id.clone(), "scroll"), cx, |_, _| ScrollState {
@@ -381,75 +386,30 @@ impl Tabs {
                 pan: Rc::new(Cell::new(Pan::default())),
             })
         });
-        if let (true, Some(s)) = (pill, &slide) {
-            // The filled tab glides to the active one (measured last frame), at the design's pace.
-            let at = s.rects.borrow().get(self.active).copied();
-            let first = s.rects.borrow().first().map_or(0.0, |r| r.0);
-            if let Some((x, w)) = at.filter(|r| r.1 > 0.0) {
-                let (style, _, _) = tab_style(&t, true, false);
-                let shape = if strip {
-                    crate::paint::scaled_shape(&t.shape, t.shape.control_height)
-                } else {
-                    t.shape.clone()
-                };
-                if t.look().glitch_tabs && !crate::motion::reduce_motion() {
-                    let old = s.rects.borrow().get(self.last_active(window, cx)).copied();
-                    row = row.child(glitch_pill(
-                        &self,
-                        &t,
-                        (x - first, w),
-                        old.map(|o| (o.0 - first, o.1)),
-                        style,
-                        shape,
-                        window,
-                        cx,
-                    ));
-                } else {
-                    let (x, w) = stretch(self.id.clone(), (x - first, w), window, cx);
-                    row = row.child(
-                        shaped_id((self.id.clone(), "pill"), &shape, style)
-                            .absolute()
-                            .top_0()
-                            .left(px(x))
-                            .w(px(w))
-                            .h_full(),
-                    );
-                }
+        let motion = self.motion_of(cx);
+        if let Some(track) = &track {
+            row = row.child(track.container());
+        }
+        if let (true, Some(track)) = (pill, &track) {
+            // The filled tab travels to the active one, the design's way.
+            let (style, _, _) = tab_style(&t, true, false);
+            let shape = if strip {
+                crate::paint::scaled_shape(&t.shape, t.shape.control_height)
             } else {
-                crate::motion::next_frame(window);
-            }
+                t.shape.clone()
+            };
+            let marker = SelectionMarker::fill(shape, style);
+            row = row.child(track.indicator(self.active, kind, motion, marker, window, cx));
         }
         let count = self.labels.len().max(self.icons.len());
         for i in 0..count {
             let pan = scroll.as_ref().map(|s| s.read(cx).pan.clone());
-            row = row.child(self.tab(&t, i, pan, slide.as_ref(), window, cx));
+            row = row.child(self.tab(&t, i, pan, track.as_ref(), window, cx));
         }
-        if let (false, Some(s)) = (pill, &slide) {
-            let at = s.rects.borrow().get(self.active).copied();
-            let first = s.rects.borrow().first().map_or(0.0, |r| r.0);
-            match at {
-                Some((x, w)) if w > 0.0 => {
-                    let v = [
-                        crate::motion::smooth(
-                            window,
-                            cx,
-                            (self.id.clone(), "bar-x").into(),
-                            x - first,
-                        ),
-                        crate::motion::smooth(window, cx, (self.id.clone(), "bar-w").into(), w),
-                    ];
-                    let c = tab_style(&t, true, false).2.unwrap_or_default();
-                    row = row.child(bottom_band_slide(
-                        &t.shape,
-                        t.shape.border_width,
-                        c,
-                        v[0],
-                        v[1],
-                    ));
-                }
-                // Tabs have not been measured yet: paint once more after layout.
-                _ => crate::motion::next_frame(window),
-            }
+        if let (false, Some(track)) = (pill, &track) {
+            let colour = tab_style(&t, true, false).2.unwrap_or_default();
+            let marker = SelectionMarker::underline(colour);
+            row = row.child(track.indicator(self.active, kind, motion, marker, window, cx));
         }
         let inner = match scroll {
             Some(state) => self.scroll_strip(row, &state, window, cx),
@@ -473,15 +433,6 @@ impl Tabs {
     }
 }
 
-/// Where each tab sat in the last frame (window x and width), shared with the tabs' measuring
-/// canvases.
-#[derive(Default)]
-struct Slide {
-    rects: RefCell<Vec<(f32, f32)>>,
-}
-
-struct SlideState(Rc<Slide>);
-
 /// Pointer pan state of a scrollable strip.
 #[derive(Clone, Copy, Default)]
 struct Pan {
@@ -500,204 +451,17 @@ struct ScrollState {
 
 crate::entry_render!(Tabs);
 
-/// The sliding pill's edges `(x, w)`, eased towards `(x, w)` of the active tab. The edge in the
-/// direction of travel leads and the other trails, so the pill stretches across the gap and
-/// then catches up instead of sliding as a rigid block. Pace and easing are the design's own.
-fn stretch(id: ElementId, (x, w): (f32, f32), window: &mut Window, cx: &mut App) -> (f32, f32) {
-    let m = crate::motion::current(cx);
-    let last = window.use_keyed_state((id.clone(), "pill-dir"), cx, |_, _| (x + w, 1.0f32));
-    let (prev_right, mut dir) = *last.read(cx);
-    if (x + w - prev_right).abs() > 0.5 {
-        dir = (x + w - prev_right).signum();
-        last.update(cx, |l, _| *l = (x + w, dir));
-    }
-    let scaled = |k: f32| dodai_core::Motion {
-        duration: m.duration.mul_f32(k),
-        ..m
-    };
-    let (lead, trail) = (scaled(1.4), scaled(2.2));
-    let (lm, rm) = if dir > 0.0 {
-        (trail, lead)
-    } else {
-        (lead, trail)
-    };
-    let left = crate::motion::smooth_with(window, cx, (id.clone(), "pill-l").into(), x, lm);
-    let right = crate::motion::smooth_with(window, cx, (id, "pill-r").into(), x + w, rm);
-    (left, (right - left).max(0.0))
-}
-
-/// When the active tab last changed: the tab it left and the time of the switch.
-#[derive(Clone, Copy)]
-struct Switch {
-    active: usize,
-    from: usize,
-    at: f32,
-}
-
 impl Tabs {
-    /// Notes a change of the active tab and returns the tab it came from.
-    fn last_active(&self, window: &mut Window, cx: &mut App) -> usize {
-        let st = window.use_keyed_state((self.id.clone(), "switch"), cx, |_, _| Switch {
-            active: self.active,
-            from: self.active,
-            at: -10.0,
-        });
-        let cur = *st.read(cx);
-        if cur.active != self.active {
-            st.update(cx, |s, _| {
-                *s = Switch {
-                    active: self.active,
-                    from: cur.active,
-                    at: crate::motion::now(),
-                }
-            });
-        }
-        st.read(cx).from
+    fn animation_of(&self, t: &Theme) -> SelectionMotion {
+        self.animation.unwrap_or(t.look().selection)
     }
-}
-
-/// Deterministic jitter in `-1.0..=1.0` for slice `i` at glitch step `step`.
-fn jitter(i: u32, step: u32) -> f32 {
-    let mut h = i.wrapping_mul(0x9E37_79B1) ^ step.wrapping_mul(0x85EB_CA6B);
-    h ^= h >> 15;
-    h = h.wrapping_mul(0x2C1B_3C6D);
-    h ^= h >> 12;
-    (h % 2001) as f32 / 1000.0 - 1.0
-}
-
-/// How far the glitch has run, `0.0..1.0`, or `None` once settled.
-fn glitch_progress(since: f32, now: f32) -> Option<f32> {
-    let k = (now - since) / GLITCH_SECS;
-    (0.0..1.0).contains(&k).then_some(k)
-}
-
-const GLITCH_SECS: f32 = 0.32;
-
-/// The active fill of a glitching design: the new tab appears in horizontal slices that jitter
-/// sideways and settle, with colour-split ghosts and a flickering trace of the tab it left.
-#[allow(clippy::too_many_arguments)]
-fn glitch_pill(
-    tabs: &Tabs,
-    t: &Theme,
-    (x, w): (f32, f32),
-    old: Option<(f32, f32)>,
-    style: ShapeStyle,
-    shape: dodai_core::Shape,
-    window: &mut Window,
-    cx: &mut App,
-) -> gpui::AnyElement {
-    let id = tabs.id.clone();
-    let k = glitch_progress(
-        window
-            .use_keyed_state((tabs.id.clone(), "switch"), cx, |_, _| Switch {
-                active: tabs.active,
-                from: tabs.active,
-                at: -10.0,
-            })
-            .read(cx)
-            .at,
-        crate::motion::now(),
-    );
-    let Some(k) = k else {
-        return shaped_id((id, "pill"), &shape, style)
-            .absolute()
-            .top_0()
-            .left(px(x))
-            .w(px(w))
-            .h_full()
-            .into_any_element();
-    };
-    crate::motion::next_frame(window);
-    let step = (k * 18.0) as u32;
-    let amp = 14.0 * (1.0 - k);
-    let fill = style.fill.unwrap_or_else(|| hsla(t.palette.primary));
-    // The whole contour (cut corners included) in `colour`, `dx` px sideways.
-    let contour = |colour, dx: f32, x: f32, w: f32, tag: &'static str| {
-        let mut st = style;
-        st.fill = Some(colour);
-        shaped_id((id.clone(), tag), &shape, st)
-            .absolute()
-            .top_0()
-            .left(px(x + dx))
-            .w(px(w))
-            .h_full()
-    };
-    let mut layer = div().absolute().top_0().left_0().size_full();
-    // Colour-split ghosts behind the slices.
-    for (n, (c, dx, tag)) in [
-        (t.palette.info, -amp * 0.5, "ghost-a"),
-        (t.palette.danger, amp * 0.5, "ghost-b"),
-    ]
-    .into_iter()
-    .enumerate()
-    {
-        let dim = if (step + n as u32) % 3 == 0 { 0.4 } else { 1.0 };
-        layer = layer.child(contour(
-            hsla(c).opacity(0.45 * (1.0 - k) * dim),
-            dx,
-            x,
-            w,
-            tag,
-        ));
+    fn motion_of(&self, cx: &App) -> Motion {
+        self.motion.unwrap_or_else(|| Motion::of(cx))
     }
-    // The tab it left, flickering out.
-    if let (Some((ox, ow)), true) = (old, step % 2 == 0 && k < 0.7) {
-        layer = layer.child(contour(
-            fill.opacity(0.35 * (1.0 - k)),
-            0.0,
-            ox,
-            ow,
-            "trace",
-        ));
-    }
-    // The new tab in three slices that jitter sideways and settle. Each slice clips the full
-    // contour, so the cut corners stay cut.
-    for i in 0..3u32 {
-        let dx = jitter(i, step) * amp;
-        if k < 0.15 && i == 1 {
-            continue;
-        }
-        let tag: &'static str = ["slice-0", "slice-1", "slice-2"][i as usize];
-        let mut st = style;
-        st.fill = Some(fill);
-        layer = layer.child(
-            div()
-                .absolute()
-                .top(gpui::relative(i as f32 / 3.0))
-                .h(gpui::relative(1.0 / 3.0))
-                .left(px(x + dx))
-                .w(px(w))
-                .overflow_hidden()
-                .child(
-                    shaped_id((id.clone(), tag), &shape, st)
-                        .absolute()
-                        .top(gpui::relative(-(i as f32)))
-                        .left_0()
-                        .w_full()
-                        .h(gpui::relative(3.0)),
-                ),
-        );
-    }
-    layer.into_any_element()
 }
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn glitch_runs_then_settles() {
-        assert_eq!(glitch_progress(1.0, 1.0), Some(0.0));
-        assert!(glitch_progress(1.0, 1.1).is_some());
-        assert_eq!(glitch_progress(1.0, 1.0 + GLITCH_SECS + 0.01), None);
-        assert_eq!(glitch_progress(-10.0, 0.5), None);
-        for i in 0..3 {
-            for step in 0..20 {
-                assert!(jitter(i, step).abs() <= 1.0);
-            }
-        }
-        // The slices do not all move together.
-        assert!(jitter(0, 3) != jitter(1, 3) || jitter(1, 3) != jitter(2, 3));
-    }
-
     use super::*;
     use crate::testing::light_rounded;
 

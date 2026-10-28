@@ -254,11 +254,6 @@ pub mod instruments_hero;
 pub mod instruments_military;
 #[cfg(any(feature = "components", feature = "charts"))]
 pub(crate) mod instruments_motion;
-#[cfg(any(feature = "components", feature = "charts"))]
-pub use instruments_motion::{
-    animation_speed, animation_time, instruments_animated, set_animation_speed,
-    set_instruments_animated,
-};
 #[cfg(feature = "charts")]
 pub mod instruments_segment;
 #[cfg(feature = "charts")]
@@ -301,6 +296,8 @@ pub mod scanlines;
 pub mod search;
 #[cfg(feature = "components")]
 pub mod select;
+#[cfg(feature = "components")]
+pub mod selection;
 #[cfg(feature = "shaders")]
 pub mod shader_view;
 #[cfg(feature = "components")]
@@ -497,6 +494,8 @@ pub use scanlines::Scanlines;
 pub use search::{count_label, highlight_runs, IconBadge, RichTooltip, SearchMode, SearchView};
 #[cfg(feature = "components")]
 pub use select::{family_title, DesignSystemSelector, Select, SelectOption, ThemeSelector};
+#[cfg(feature = "components")]
+pub use selection::{SelectionMarker, SelectionTrack};
 #[cfg(feature = "shaders")]
 pub use shader_view::{shader_backend, PaletteSource, ShaderView};
 #[cfg(feature = "components")]

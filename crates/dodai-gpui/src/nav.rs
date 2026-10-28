@@ -326,6 +326,8 @@ pub struct Segmented {
     disabled: bool,
     on_select: Option<IndexHandler>,
     corners: Option<dodai_core::Corners>,
+    animation: Option<crate::motion::SelectionMotion>,
+    motion: Option<crate::motion::Motion>,
 }
 
 crate::corners_setter!(Segmented);
@@ -343,7 +345,21 @@ impl Segmented {
             selected: 0,
             disabled: false,
             on_select: None,
+            animation: None,
+            motion: None,
         }
+    }
+    /// How the selection moves between segments. Defaults to the design's own
+    /// ([`Look::selection`](dodai_core::Look::selection)). Material segmented buttons switch in
+    /// place, as their spec says.
+    pub fn animation(mut self, a: crate::motion::SelectionMotion) -> Self {
+        self.animation = Some(a);
+        self
+    }
+    /// Pace, easing and travel of the selection. Defaults to the design's motion.
+    pub fn motion(mut self, m: crate::motion::Motion) -> Self {
+        self.motion = Some(m);
+        self
     }
     /// The selected item (controlled).
     pub fn selected(mut self, i: usize) -> Self {
@@ -453,47 +469,85 @@ impl Segmented {
     }
 
     fn build_classic(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        use crate::motion::{MotionExt, SelectionMotion};
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
         let p = &t.palette;
         let strip =
             ShapeStyle::from_tokens(&t, Some(p.background), Some(p.border_strong), false, false);
         let inner = scaled_shape(&t.shape, t.shape.control_height);
+        let kind = self.animation.unwrap_or(t.look().selection);
+        let motion = self.motion.unwrap_or_else(|| crate::motion::Motion::of(cx));
+        let (on_fill, on_fg) = if t.look().tonal {
+            (p.roles.secondary_container, p.roles.on_secondary_container)
+        } else {
+            (p.primary, p.on_primary)
+        };
+        // One fill travels between the segments, unless the design lifts them in place.
+        let track = (kind != SelectionMotion::Lift && !self.disabled)
+            .then(|| crate::selection::SelectionTrack::new(self.id.clone(), window, cx));
         let mut row = shaped(&t.shape, strip)
+            .relative()
             .flex()
             .p(px(2.0))
             .gap(px(2.0))
             .font_family(first_family(t.typography.body))
             .text_size(px(t.typography.size_md));
+        if let Some(track) = &track {
+            let style = ShapeStyle::from_tokens(&t, Some(on_fill), None, true, false);
+            let marker = crate::selection::SelectionMarker::fill(inner.clone(), style);
+            row = row.child(track.container()).child(track.indicator(
+                self.selected,
+                kind,
+                motion,
+                marker,
+                window,
+                cx,
+            ));
+        }
         for (i, label) in self.options.iter().enumerate() {
             let id: ElementId = (self.id.clone(), i.to_string()).into();
             let st = use_interact(&id, window, cx);
             let hovered = st.read(cx).hovered && !self.disabled;
             let on = i == self.selected;
+            let k = crate::motion::smooth_with(
+                window,
+                cx,
+                id.clone(),
+                if on { 1.0 } else { 0.0 },
+                motion,
+            );
             let (fill, fg) = if self.disabled {
-                (on.then_some(p.surface_raised), p.text_disabled)
-            } else if on {
-                if t.look().tonal {
-                    (
-                        Some(p.roles.secondary_container),
-                        p.roles.on_secondary_container,
-                    )
-                } else {
-                    (Some(p.primary), p.on_primary)
-                }
-            } else if hovered {
-                (Some(p.surface_raised), p.text)
+                (on.then_some(p.surface_raised), hsla(p.text_disabled))
             } else {
-                (None, p.text_muted)
+                let rest = if hovered && !on {
+                    Some(p.surface_raised)
+                } else {
+                    None
+                };
+                // With a travelling fill the segment itself only shows hover.
+                let fill = match (&track, on) {
+                    (None, true) => Some(on_fill),
+                    _ => rest,
+                };
+                let off = if hovered { p.text } else { p.text_muted };
+                (fill, crate::motion::mix(hsla(off), hsla(on_fg), k))
             };
             let style = ShapeStyle::from_tokens(&t, fill, None, on && !self.disabled, false);
-            let mut seg = track(shaped_id(id, &inner, style), &st)
+            let mut seg = crate::interact::track(shaped_id(id, &inner, style), &st)
+                .relative()
                 .h(px(t.shape.control_height - 6.0))
                 .px(px(t.spacing.md))
                 .flex()
                 .items_center()
-                .text_color(hsla(fg))
+                .text_color(fg)
                 .child(format_label(&t.typography, label));
+            if let Some(track) = &track {
+                seg = seg.child(track.item(i));
+            }
+            if kind == SelectionMotion::Lift {
+                seg = seg.top(px(-(t.shape.border_width * 2.0).max(2.0) * k));
+            }
             if !self.disabled {
                 seg = seg.cursor_pointer();
                 if let Some(f) = self.on_select.clone() {
@@ -502,7 +556,8 @@ impl Segmented {
             }
             row = row.child(seg);
         }
-        row
+        // Hug the segments, like the Material strip.
+        div().flex().child(row.flex_none())
     }
 }
 

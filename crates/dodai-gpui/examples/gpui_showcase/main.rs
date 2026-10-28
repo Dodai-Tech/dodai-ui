@@ -143,6 +143,8 @@ pub struct Showcase {
     tags: Vec<&'static str>,
     focus: FocusHandle,
     tab: usize,
+    /// The tabs' animation: 0 follows the design, then each `SelectionMotion` in order.
+    tab_animation: usize,
     switch: bool,
     check: bool,
     radio: usize,
@@ -638,11 +640,9 @@ impl Render for Showcase {
                                                 "top-animate",
                                                 ["Off", "On"],
                                             )
-                                            .selected(usize::from(
-                                                dodai_gpui::instruments_animated(),
-                                            ))
+                                            .selected(usize::from(dodai_gpui::motion::enabled()))
                                             .on_select(|i, _, cx| {
-                                                dodai_gpui::set_instruments_animated(cx, i == 1)
+                                                dodai_gpui::motion::set_enabled(cx, i == 1)
                                             })
                                             .into_any_element(),
                                         ))
@@ -656,13 +656,13 @@ impl Render for Showcase {
                                                 [0.5, 1.0, 2.0, 4.0]
                                                     .iter()
                                                     .position(|v| {
-                                                        (*v - dodai_gpui::animation_speed()).abs()
+                                                        (*v - dodai_gpui::motion::speed()).abs()
                                                             < 0.01
                                                     })
                                                     .unwrap_or(1),
                                             )
                                             .on_select(|i, _, cx| {
-                                                dodai_gpui::set_animation_speed(
+                                                dodai_gpui::motion::set_speed(
                                                     cx,
                                                     [0.5, 1.0, 2.0, 4.0][i],
                                                 )

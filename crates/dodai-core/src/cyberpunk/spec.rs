@@ -46,7 +46,7 @@ impl DesignSpec for Cyberpunk {
             luminous: true,
             cut_corners: true,
             accent_border: true,
-            glitch_tabs: true,
+            selection: crate::motion::SelectionMotion::Glitch,
             ..Look::default()
         }
     }
@@ -567,7 +567,7 @@ mod tests {
                     luminous: true,
                     cut_corners: true,
                     accent_border: true,
-                    glitch_tabs: true,
+                    selection: crate::motion::SelectionMotion::Glitch,
                     ..Look::default()
                 },
                 "{}",

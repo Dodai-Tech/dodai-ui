@@ -167,6 +167,10 @@ impl Reactions {
         self.reduced = on;
         self
     }
+    /// Switch the reduced-motion preference on a live set.
+    pub fn set_reduced(&mut self, on: bool) {
+        self.reduced = on;
+    }
     pub fn set(&mut self, trigger: Trigger, on: bool, now: f32) {
         for r in self.items.iter_mut() {
             if r.mixin.trigger() == trigger {

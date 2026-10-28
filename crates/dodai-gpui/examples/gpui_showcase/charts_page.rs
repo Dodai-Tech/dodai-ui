@@ -27,46 +27,15 @@ impl Showcase {
         let gap = px(t.spacing.md);
         let me = me.clone();
         self.inst_seen = Some(std::time::Instant::now());
-        // Live demo data: while animated, every value drifts smoothly around its base.
-        let (live, time) = (
-            dodai_gpui::instruments_animated(),
-            dodai_gpui::animation_time(),
-        );
-        let wave = move |key: f32, i: f32| (time * 0.6 + key * 1.7 + i * 0.9).sin();
-        // A live stream: the window slides left continuously (1.4 samples a second) over a
-        // smooth signal that stays inside the base data's range, so nothing ever restarts.
-        let drift = move |vals: &[f32], key: f32| -> Vec<f32> {
-            if !live {
-                return vals.to_vec();
-            }
-            let lo = vals.iter().copied().fold(f32::MAX, f32::min);
-            let hi = vals.iter().copied().fold(f32::MIN, f32::max);
-            let (mid, amp) = ((lo + hi) / 2.0, (hi - lo) / 2.0);
-            (0..vals.len())
-                .map(|i| {
-                    let s = i as f32 + time * 1.4 + key * 11.0;
-                    let n = 0.6 * (s * 0.62).sin()
-                        + 0.3 * (s * 1.37 + 1.1).sin()
-                        + 0.1 * (s * 2.9).sin();
-                    mid + amp * n
-                })
-                .collect()
-        };
+        // Live demo data: values wander and streams slide on the animation clock (they pause
+        // with it and follow its speed).
+        let time = dodai_gpui::motion::time();
+        let drift = dodai_gpui::live::drift;
         // One positive value drifting up to ±25 %.
-        let dv = move |v: f32, key: f32| {
-            if live {
-                v * (1.0 + 0.25 * wave(key, 0.0))
-            } else {
-                v
-            }
-        };
+        let dv = |v: f32, key: f32| dodai_gpui::live::wander_between(key, v * 0.75, v * 1.25);
         // A percentage, kept within 0..=100.
-        let dg = move |v: f32, key: f32| {
-            if live {
-                (v + 14.0 * wave(key, 0.0)).clamp(0.0, 100.0)
-            } else {
-                v
-            }
+        let dg = |v: f32, key: f32| {
+            dodai_gpui::live::wander_between(key, (v - 14.0).max(0.0), (v + 14.0).min(100.0))
         };
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let col = || div().flex().flex_col().gap(gap);
@@ -138,10 +107,7 @@ impl Showcase {
                                     let (x, y) = (c as f32 / hres as f32, r as f32 / hres as f32);
                                     ((x * 0.21 * 2.0).sin()
                                         + (y * 0.45).cos()
-                                        + ((x * 2.0 + y) * 0.13
-                                            + if live { time * 0.8 } else { 0.0 })
-                                        .sin()
-                                            * 1.5)
+                                        + ((x * 2.0 + y) * 0.13 + time * 0.8).sin() * 1.5)
                                         + ((x - 16.0).hypot((y - 6.0) * 2.0) * -0.16).exp() * 3.0
                                 })
                                 .collect()
@@ -453,7 +419,7 @@ impl Showcase {
             ]
             .map(|(a, r)| Blip::new(a, r));
             // Contacts drift on their own; the beam is pointed at the first one.
-            let now = dodai_gpui::animation_time();
+            let now = dodai_gpui::motion::time();
             let tracked = [(0.08, 0.7), (0.31, 0.45), (0.52, 0.85), (0.77, 0.3)]
                 .map(|(a, r)| Blip::new(a + 0.06 * (now * 0.4 + a * 9.0).sin(), r));
             let tracked_beam = tracked[0].bearing;
