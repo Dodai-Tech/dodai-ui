@@ -479,9 +479,9 @@ pub use panel::{
 };
 #[cfg(feature = "components")]
 pub use picker::{
-    days_in_month, format_date, format_time, month_grid, parse_date, parse_time, range_pick,
-    shift_month, step_hour, step_minute, to_12h, weekday, Date, DateInput, DatePicker, DateRange,
-    TimeInput, TimePicker,
+    days_in_month, format_date, format_date_time, format_time, month_grid, parse_date, parse_time,
+    range_pick, shift_month, step_hour, step_minute, to_12h, weekday, Date, DateInput, DatePicker,
+    DateRange, DateTimePicker, TimeInput, TimePicker,
 };
 #[cfg(feature = "components")]
 pub use popover::{ContextMenu, DropdownMenu, HoverCard, Popover, PopoverPlacement};

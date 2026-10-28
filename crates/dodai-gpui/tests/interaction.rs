@@ -757,6 +757,20 @@ fn lazy_blocks_far_from_the_window_are_not_laid_out(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
+fn date_time_picker_lays_out_calendar_and_time(cx: &mut TestAppContext) {
+    let vcx = mount(cx, |_, _| {
+        dodai_gpui::DateTimePicker::new("dt", 2025, 6)
+            .selected(Some(dodai_gpui::Date::new(2025, 6, 12)))
+            .time(14, 30)
+            .twelve_hour(true)
+            .on_date(|_, _, _| {})
+            .on_time(|_, _, _, _| {})
+            .into_any_element()
+    });
+    vcx.run_until_parked();
+}
+
+#[gpui::test]
 fn clicking_a_button_plays_the_click_ripple(cx: &mut TestAppContext) {
     for variant in [
         dodai_core::ButtonVariant::Primary,

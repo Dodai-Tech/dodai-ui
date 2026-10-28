@@ -533,7 +533,41 @@ impl Showcase {
                         cx.notify()
                     })
                 },
-            ));
+            ))
+            .child(
+                dodai_gpui::DateTimePicker::new("datetime", y, mo)
+                    .selected(sel)
+                    .time(self.time.0, self.time.1)
+                    .twelve_hour(true)
+                    .on_date({
+                        let m = me.clone();
+                        move |d, _, cx| {
+                            m.update(cx, |s, cx| {
+                                s.date = (d.year, d.month, Some(d));
+                                cx.notify()
+                            })
+                        }
+                    })
+                    .on_month({
+                        let m = me.clone();
+                        move |y, mo, _, cx| {
+                            m.update(cx, |s, cx| {
+                                s.date.0 = y;
+                                s.date.1 = mo;
+                                cx.notify()
+                            })
+                        }
+                    })
+                    .on_time({
+                        let m = me.clone();
+                        move |h, mi, _, cx| {
+                            m.update(cx, |s, cx| {
+                                s.time = (h, mi);
+                                cx.notify()
+                            })
+                        }
+                    }),
+            );
         let typed = row()
             .items_start()
             .child(dodai_gpui::DateInput::new("date-in").value(sel).on_change({

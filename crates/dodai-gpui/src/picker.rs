@@ -443,6 +443,126 @@ impl TimePicker {
 
 crate::entry_render!(TimePicker);
 
+// ───────────────────────────── date + time ─────────────────────────────
+
+/// `YYYY-MM-DD HH:MM` for a date and time of day, or just the time when no date is chosen.
+pub fn format_date_time(d: Option<Date>, hour: u32, minute: u32) -> String {
+    let time = format!("{:02}:{:02}", hour % 24, minute % 60);
+    match d {
+        Some(d) => format!("{:04}-{:02}-{:02} {time}", d.year, d.month, d.day),
+        None => time,
+    }
+}
+
+/// Controlled calendar and time of day in one panel, with the chosen moment read out below.
+#[derive(IntoElement)]
+pub struct DateTimePicker {
+    id: ElementId,
+    year: i32,
+    month: u32,
+    selected: Option<Date>,
+    hour: u32,
+    minute: u32,
+    twelve: bool,
+    minute_step: i32,
+    on_date: Option<DateFn>,
+    on_month: Option<MonthFn>,
+    on_time: Option<TimeFn>,
+    corners: Option<dodai_core::Corners>,
+}
+
+crate::corners_setter!(DateTimePicker);
+
+impl DateTimePicker {
+    /// `year`/`month` (1-12) is the visible month; the time starts at 00:00.
+    pub fn new(id: impl Into<ElementId>, year: i32, month: u32) -> Self {
+        Self {
+            corners: None,
+            id: id.into(),
+            year,
+            month: month.clamp(1, 12),
+            selected: None,
+            hour: 0,
+            minute: 0,
+            twelve: false,
+            minute_step: 5,
+            on_date: None,
+            on_month: None,
+            on_time: None,
+        }
+    }
+    /// The selected day (controlled).
+    pub fn selected(mut self, d: Option<Date>) -> Self {
+        self.selected = d;
+        self
+    }
+    /// The time of day (controlled).
+    pub fn time(mut self, hour: u32, minute: u32) -> Self {
+        self.hour = hour % 24;
+        self.minute = minute % 60;
+        self
+    }
+    /// 12-hour display with AM/PM toggle.
+    pub fn twelve_hour(mut self, on: bool) -> Self {
+        self.twelve = on;
+        self
+    }
+    /// Minute step of the time stepper.
+    pub fn minute_step(mut self, s: i32) -> Self {
+        self.minute_step = s.max(1);
+        self
+    }
+    crate::callback!(
+        /// Called when a day is chosen.
+        on_date, Date
+    );
+    crate::callback!(
+        /// Called with the new visible `(year, month)` when the arrows are used.
+        on_month, i32, u32
+    );
+    crate::callback!(
+        /// Called when the time changes, with hour and minute.
+        on_time, u32, u32
+    );
+}
+
+impl DateTimePicker {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
+        let p = t.panel(false);
+        let mut cal = DatePicker::new((self.id.clone(), "date"), self.year, self.month)
+            .selected(self.selected);
+        cal.corners = self.corners;
+        cal.on_select = self.on_date.clone();
+        cal.on_month = self.on_month.clone();
+        let mut time = TimePicker::new((self.id.clone(), "time"), self.hour, self.minute)
+            .twelve_hour(self.twelve)
+            .minute_step(self.minute_step);
+        time.corners = self.corners;
+        time.on_change = self.on_time.clone();
+        let style = ShapeStyle::from_tokens(&t, Some(p.background), Some(p.border), false, true);
+        shaped(&t.shape, style)
+            .p(px(t.spacing.sm))
+            .flex()
+            .flex_col()
+            .items_start()
+            .gap(px(t.spacing.sm))
+            .font_family(first_family(t.typography.body))
+            .text_color(hsla(t.palette.text))
+            .child(cal)
+            .child(time)
+            .child(
+                div()
+                    .text_size(px(t.typography.size_sm))
+                    .text_color(hsla(t.palette.text_muted))
+                    .child(format_date_time(self.selected, self.hour, self.minute)),
+            )
+    }
+}
+
+crate::entry_render!(DateTimePicker);
+
 // ───────────────────────────── text input mode ─────────────────────────────
 
 /// Parse a typed date: `YYYY-MM-DD`, `YYYY/MM/DD` or `MM/DD/YYYY`; `None` when it is not a real
@@ -674,6 +794,16 @@ fn text_mode(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn date_time_reads_out_both_parts() {
+        use super::*;
+        assert_eq!(
+            format_date_time(Some(Date::new(2025, 3, 4)), 9, 5),
+            "2025-03-04 09:05"
+        );
+        assert_eq!(format_date_time(None, 25, 61), "01:01");
+    }
+
     #[test]
     fn typed_dates_and_times() {
         use super::*;
