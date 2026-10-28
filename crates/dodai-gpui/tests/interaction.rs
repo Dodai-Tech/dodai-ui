@@ -966,3 +966,28 @@ fn legend_click_hides_series_and_all_hidden_survives(cx: &mut TestAppContext) {
     let (_, _, w2, _) = target(vcx);
     assert_eq!(w, w2, "toggling never changes the chart width");
 }
+
+#[gpui::test]
+fn controls_toggle_without_a_controlling_parent(cx: &mut TestAppContext) {
+    let seen = Rc::new(RefCell::new(Vec::<bool>::new()));
+    let s = seen.clone();
+    // A fixed value and no state in the parent: the click must still flip it.
+    let vcx = mount(cx, move |_, _| {
+        let s = s.clone();
+        Toggle::new("t", false)
+            .on_change(move |v, _, _| s.borrow_mut().push(v))
+            .into_any_element()
+    });
+    let b = vcx.debug_bounds("target").expect("toggle was laid out");
+    let (x, y) = (
+        f32::from(b.left() + b.size.width / 2.0),
+        f32::from(b.top() + b.size.height / 2.0),
+    );
+    click(vcx, x, y);
+    click(vcx, x, y);
+    assert_eq!(
+        *seen.borrow(),
+        vec![true, false],
+        "second click turns it back off"
+    );
+}
