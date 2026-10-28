@@ -232,6 +232,7 @@ impl DesignSpec for Aurora {
     fn look(&self) -> Look {
         Look {
             soft_elevation: true,
+            segmented_tabs: true,
             icons: IconSet::Symbols,
             ..Look::default()
         }
@@ -343,13 +344,22 @@ impl DesignSpec for Aurora {
         })
     }
 
-    /// Ink label with a 2 px underline when active; frosted on hover.
+    /// Segmented strip: the active tab is a filled primary pill, the others are muted, hover is
+    /// a raised fill.
     fn tab(&self, t: &Theme, active: bool, hovered: bool) -> Option<TabTokens> {
         let p = &t.palette;
         Some(TabTokens {
-            background: hovered.then_some(p.surface),
-            foreground: if active { p.text } else { p.text_muted },
-            indicator: active.then_some(p.primary),
+            background: if active {
+                Some(p.primary)
+            } else {
+                hovered.then_some(p.surface_raised)
+            },
+            foreground: match (active, hovered) {
+                (true, _) => p.on_primary,
+                (false, true) => p.text,
+                (false, false) => p.text_muted,
+            },
+            indicator: None,
             outline: false,
         })
     }

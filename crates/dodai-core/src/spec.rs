@@ -46,6 +46,9 @@ pub struct Look {
     pub cut_corners: bool,
     /// Panels carry an accent border segment alongside the contour.
     pub accent_border: bool,
+    /// Tabs sit in a bordered strip with a filled pill on the active one (like a segmented
+    /// control) instead of an underline.
+    pub segmented_tabs: bool,
 }
 
 /// The page grid of a design at a viewport width: columns between two outer margins.

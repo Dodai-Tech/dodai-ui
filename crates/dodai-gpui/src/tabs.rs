@@ -127,7 +127,7 @@ impl Tabs {
                 .or_else(|| tab_style(t, true, hovered).2.filter(|_| p > 0.01))
                 .map(|c| c.opacity(p))
         };
-        let fg = if self.secondary && active {
+        let fg = if self.secondary && active && !t.look().segmented_tabs {
             hsla(t.palette.roles.on_surface)
         } else {
             fg
@@ -135,10 +135,17 @@ impl Tabs {
         let stacked = label.is_some() && self.icons.get(i).is_some();
         let height = if stacked && !self.secondary {
             t.scale(dodai_core::Scale::Wide)
+        } else if t.look().segmented_tabs {
+            t.shape.control_height - 6.0
         } else {
             t.shape.control_height
         };
-        let mut tab = track(shaped_id(id, &t.shape, style), &st)
+        let shape = if t.look().segmented_tabs {
+            crate::paint::scaled_shape(&t.shape, t.shape.control_height)
+        } else {
+            t.shape.clone()
+        };
+        let mut tab = track(shaped_id(id, &shape, style), &st)
             .min_h(px(height))
             .px(px(t.spacing.md))
             .flex()
@@ -297,6 +304,7 @@ impl Tabs {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
+        let strip = t.look().segmented_tabs;
         let mut row = div().relative().flex().gap(px(t.spacing.xs));
         // One indicator slides between tabs when the design underlines the active tab.
         let slide =
@@ -347,10 +355,25 @@ impl Tabs {
                 _ => crate::motion::next_frame(window),
             }
         }
-        if let Some(state) = scroll {
-            return self.scroll_strip(row, &state, window, cx);
+        let inner = match scroll {
+            Some(state) => self.scroll_strip(row, &state, window, cx),
+            None => row.into_any_element(),
+        };
+        if !strip {
+            return inner;
         }
-        row.into_any_element()
+        // The same bordered capsule as a segmented control; a row parent keeps it as wide as its
+        // tabs, and a scrolling strip pans inside it.
+        let p = &t.palette;
+        let style =
+            ShapeStyle::from_tokens(&t, Some(p.background), Some(p.border_strong), false, false);
+        let capsule = crate::paint::shaped(&t.shape, style)
+            .flex()
+            .min_w_0()
+            .max_w_full()
+            .p(px(2.0))
+            .child(inner);
+        div().flex().child(capsule).into_any_element()
     }
 }
 

@@ -50,7 +50,12 @@ fn component_tokens_resolve_for_every_theme() {
             "{}",
             t.id()
         );
-        assert!(t.tab(true, false).indicator.is_some());
+        let on = t.tab(true, false);
+        assert!(
+            on.indicator.is_some() || on.background.is_some(),
+            "{}",
+            t.id()
+        );
         assert_ne!(
             t.toggle(true, ControlState::Idle).track,
             t.toggle(false, ControlState::Idle).track
