@@ -187,6 +187,7 @@ impl Showcase {
                 .placeholder("notes (multi-line)…")
         });
         Showcase {
+            viewport_w: 1100.0,
             filter,
             search,
             search_full,

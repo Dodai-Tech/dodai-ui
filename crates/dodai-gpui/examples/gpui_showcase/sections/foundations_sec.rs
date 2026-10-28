@@ -90,7 +90,7 @@ impl Showcase {
                 .child(Muted::new(
                     "Panels over a picture: a blurred copy of it under the design's frosted tint.",
                 ))
-                .child(frosted_view(&t))
+                .child(frosted_view(&t, self.viewport_w))
                 .into_any_element(),
             "Frosted glass",
         ),

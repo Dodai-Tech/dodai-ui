@@ -63,6 +63,8 @@ use foundations::{
 pub(crate) use shaders_page::{Group, Section};
 
 pub struct Showcase {
+    /// Window width in px, as of the last render (sections size pictures from it).
+    viewport_w: f32,
     replay: usize,
     sec_replay: std::collections::HashMap<&'static str, u32>,
     /// Sections whose "</> Code" panel is open.
@@ -187,6 +189,7 @@ impl Render for Showcase {
         let _prof = Prof::start();
         self.quiet = false;
         self.built.clear();
+        self.viewport_w = window.viewport_size().width.into();
         let narrow = window.viewport_size().width < px(760.0);
         // Medium widths keep the rail but still need a compact top bar and preview strip.
         let compact = window.viewport_size().width < px(1100.0);

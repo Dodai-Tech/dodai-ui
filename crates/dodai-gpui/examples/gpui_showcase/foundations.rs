@@ -491,7 +491,17 @@ pub(crate) fn layout_view(t: &dodai_core::Theme) -> gpui::Div {
 }
 
 /// Frosted glass panels over a picture, blurred with the design's blur and tint.
-pub(crate) fn frosted_view(t: &dodai_core::Theme) -> gpui::Div {
+pub(crate) fn frosted_view(t: &dodai_core::Theme, viewport_w: f32) -> gpui::Div {
+    // The picture is pixels, so it is sized to the room the page has: the rail and the page
+    // padding take about 360 px at full width, less when the rail collapses.
+    let room = viewport_w - if viewport_w < 760.0 { 310.0 } else { 400.0 };
+    let w = room.clamp(260.0, 720.0).floor();
+    let narrow = w < 520.0;
+    let (pw, h) = if narrow {
+        (w * 0.62, 340.0)
+    } else {
+        (w * 0.42, 300.0)
+    };
     let f = t.frost();
     let text = |s: String, c: dodai_core::Color, size: f32| {
         div().text_size(px(size)).text_color(hsla(c)).child(s)
@@ -509,10 +519,10 @@ pub(crate) fn frosted_view(t: &dodai_core::Theme) -> gpui::Div {
             .child(text(body, t.palette.text, t.typography.size_sm))
     };
     div().child(
-        dodai_gpui::FrostedScene::mesh("showcase", 720.0, 300.0)
+        dodai_gpui::FrostedScene::mesh("showcase", w, h)
             .panel(
-                (40.0, 40.0),
-                (300.0, 120.0),
+                (w * 0.05, 30.0),
+                (pw, 120.0),
                 panel(
                     "Frosted",
                     format!(
@@ -523,8 +533,11 @@ pub(crate) fn frosted_view(t: &dodai_core::Theme) -> gpui::Div {
                 ),
             )
             .panel(
-                (380.0, 110.0),
-                (300.0, 150.0),
+                (
+                    if narrow { w * 0.33 } else { w * 0.53 },
+                    if narrow { 170.0 } else { 110.0 },
+                ),
+                (pw, 150.0),
                 panel(
                     "Over hard edges",
                     "The picture behind is sharp; each panel shows a blurred copy of it.".into(),
