@@ -2,7 +2,9 @@
 //! forward while, once one is selected, the others dim. Both ease with the component's
 //! response, like the pie's slices.
 
-use gpui::{App, Entity, Window};
+use gpui::{App, Bounds, Entity, Pixels, Window};
+use std::cell::Cell;
+use std::rc::Rc;
 
 use crate::instruments_motion::{follow_all, Follow};
 
@@ -96,6 +98,47 @@ impl Focus {
         self.state.clone()
     }
 
+    /// The item under the pointer, else the selected one.
+    pub fn shown(&self, cx: &App) -> Option<usize> {
+        let s = self.state.read(cx);
+        s.hover.or(s.sel)
+    }
+
+    /// Makes `el` (which holds the chart's canvas) hit-test the pointer: `hit(x, y, w, h)`
+    /// gets the pointer in the canvas's own pixels and names the item there. Hover follows the
+    /// pointer, a click selects (again to clear), leaving clears the hover. The canvas must
+    /// store its bounds in `bounds` while painting.
+    pub fn pointer(
+        &self,
+        el: gpui::Stateful<gpui::Div>,
+        bounds: &Rc<Cell<Bounds<Pixels>>>,
+        hit: impl Fn(f32, f32, f32, f32) -> Option<usize> + 'static,
+    ) -> gpui::Stateful<gpui::Div> {
+        use gpui::{InteractiveElement as _, StatefulInteractiveElement as _};
+        let hit = Rc::new(hit);
+        let at = {
+            let b = bounds.clone();
+            move |p: gpui::Point<Pixels>| {
+                let b = b.get();
+                hit(
+                    (p.x - b.origin.x).into(),
+                    (p.y - b.origin.y).into(),
+                    b.size.width.into(),
+                    b.size.height.into(),
+                )
+            }
+        };
+        let (at_move, at_click) = (at.clone(), at);
+        let (st_move, st_click, st_leave) = (self.state(), self.state(), self.state());
+        el.on_mouse_move(move |e, w, cx| Focus::set_hover(&st_move, at_move(e.position), w, cx))
+            .on_hover(move |over, w, cx| {
+                if !*over {
+                    Focus::set_hover(&st_leave, None, w, cx);
+                }
+            })
+            .on_click(move |e, w, cx| Focus::toggle(&st_click, at_click(e.position()), w, cx))
+    }
+
     /// Hover and click handlers for item `i`'s element.
     pub fn bind<E: gpui::InteractiveElement + gpui::StatefulInteractiveElement>(
         &self,
@@ -127,4 +170,22 @@ impl Focus {
             w.refresh();
         })
     }
+}
+
+/// A one-line readout under a chart: the focused item's text, else `hint`. Always one line
+/// tall, so hovering never moves the layout.
+pub(crate) fn readout(t: &dodai_core::Theme, text: Option<String>, hint: &str) -> gpui::Div {
+    use gpui::{div, px, ParentElement as _, Styled as _};
+    let line = (t.typography.size_xs * 1.5).ceil();
+    let (text, col) = match text {
+        Some(s) => (s, t.palette.text),
+        None => (hint.to_string(), t.palette.text_muted),
+    };
+    crate::charts::label_style(t, div())
+        .h(px(line))
+        .overflow_hidden()
+        .whitespace_nowrap()
+        .text_ellipsis()
+        .text_color(crate::hsla(col))
+        .child(text)
 }

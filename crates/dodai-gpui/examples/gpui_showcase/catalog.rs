@@ -2,7 +2,7 @@
 
 /// The chart families (sidebar subsections of "Charts") and their sections, in sidebar order.
 /// Every chart section is listed here exactly once; each is also its panel title.
-pub(crate) const CHART_FAMILIES: [(&str, &[&str]); 8] = [
+pub(crate) const CHART_FAMILIES: [(&str, &[&str]); 9] = [
     (
         "Trends",
         &[
@@ -15,6 +15,8 @@ pub(crate) const CHART_FAMILIES: [(&str, &[&str]); 8] = [
             "Sparkline",
             "Live throughput",
             "Calendar heatmap",
+            "Control chart",
+            "Event timeline",
         ],
     ),
     (
@@ -27,18 +29,51 @@ pub(crate) const CHART_FAMILIES: [(&str, &[&str]); 8] = [
             "Slope",
             "Bump",
             "Radar",
+            "Pareto",
+            "Diverging bars",
         ],
     ),
     (
         "Part of a whole",
-        &["Pie", "Donut", "Treemap", "Radial bar", "100% stacked"],
+        &[
+            "Pie",
+            "Donut",
+            "Treemap",
+            "Sunburst",
+            "Icicle",
+            "Waffle",
+            "Marimekko",
+            "Radial bar",
+            "100% stacked",
+        ],
     ),
     (
         "Distribution",
-        &["Histogram", "Box plot", "Violin", "Ridgeline"],
+        &[
+            "Histogram",
+            "Box plot",
+            "Violin",
+            "Ridgeline",
+            "Beeswarm",
+            "ECDF",
+            "Error bars",
+        ],
     ),
-    ("Relationship", &["Scatter", "Bubble", "Heatmap"]),
-    ("Flow", &["Sankey", "Funnel", "Waterfall"]),
+    (
+        "Relationship",
+        &[
+            "Scatter",
+            "Bubble",
+            "Heatmap",
+            "Hexbin",
+            "Parallel coordinates",
+            "Network graph",
+        ],
+    ),
+    (
+        "Flow",
+        &["Sankey", "Chord", "Arc diagram", "Funnel", "Waterfall"],
+    ),
     (
         "Finance",
         &[
@@ -50,6 +85,7 @@ pub(crate) const CHART_FAMILIES: [(&str, &[&str]); 8] = [
         ],
     ),
     ("Planning", &["Gantt"]),
+    ("Single value", &["KPI tile"]),
 ];
 
 /// The chart family a chart section belongs to.
@@ -163,6 +199,7 @@ pub(crate) fn subs(cat: &str) -> &'static [&'static str] {
             "Flow",
             "Finance",
             "Planning",
+            "Single value",
         ],
         "Shaders" => &[
             "Playground",

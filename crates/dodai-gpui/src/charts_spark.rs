@@ -257,7 +257,7 @@ impl Sparkline {
                         } else {
                             pad + (1.0 - norm(v, lo, hi)) * (bh - 2.0 * pad)
                         }
-                        .clamp(0.5, bh - 0.5);
+                        .clamp(0.5, (bh - 0.5).max(0.5));
                         let mut x = 0.0;
                         while x < bw {
                             stroke(
@@ -297,7 +297,7 @@ impl Sparkline {
                         }
                         SparkStyle::Dots => {
                             for &(x, y) in &p {
-                                let x = x.clamp(3.0, bw - 3.0);
+                                let x = x.clamp(3.0, (bw - 3.0).max(3.0));
                                 fill(w, b.origin, &marker_points(marker, x, y, 2.6), c);
                             }
                             return;
@@ -331,7 +331,7 @@ impl Sparkline {
                     });
                     let tips = if all_points { &p[..] } else { &p[m - 1..] };
                     for &(x, y) in tips {
-                        let x = x.clamp(3.0, bw - 3.0);
+                        let x = x.clamp(3.0, (bw - 3.0).max(3.0));
                         fill(w, b.origin, &marker_points(marker, x, y, 2.6), c);
                     }
                 },

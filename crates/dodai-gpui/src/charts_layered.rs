@@ -2,8 +2,8 @@
 //! (overlapping distributions) and [`HorizonChart`] (folded bands in short strips).
 
 use crate::charts::{
-    chart_cfg, down_color, fill, fmt_with, label_style, labels_of, nice_ticks, norm, series_color,
-    smooth_points, stroke, titled, up_color, NumFmt, Series,
+    chart_cfg, down_color, fill, fmt_with, label_column, label_style, labels_of, nice_ticks, norm,
+    series_color, smooth_points, stroke, tick_row, titled, up_color, NumFmt, Series,
 };
 use crate::paint::scale_alpha;
 use crate::panel::DodaiTooltip;
@@ -174,7 +174,7 @@ impl BumpChart {
                     .tooltip(DodaiTooltip::text(format!("{head}{tip}"))),
             );
         }
-        let gutter = t.sizes().axis_gutter_lg * 1.4;
+        let gutter = label_column(&t, self.series.iter().map(|s| s.name.as_ref()));
         let ends = |at: usize| {
             ranks
                 .iter()
@@ -320,17 +320,14 @@ impl RidgelineChart {
         .absolute()
         .size_full();
         let plot = div().relative().w_full().h(px(self.height)).child(cv);
-        let gutter = t.sizes().axis_gutter_lg * 1.4;
+        let gutter = label_column(&t, self.groups.iter().map(|g| g.0.as_ref()));
         let row_frac = 1.0 / (m as f32 - 1.0 + overlap);
         let labels = self
             .groups
             .iter()
             .enumerate()
             .map(|(k, (l, _))| (l.clone(), (k as f32 + overlap) * row_frac - row_frac * 0.3));
-        let x_row = label_style(&t, div())
-            .flex()
-            .justify_between()
-            .children(ticks.iter().map(|v| div().child(fmt_with(&self.fmt, *v))));
+        let x_row = tick_row(&t, &ticks, &self.fmt);
         let body = div()
             .flex()
             .w_full()
@@ -457,7 +454,7 @@ impl HorizonChart {
             .iter()
             .enumerate()
             .map(|(i, s)| (s.name.clone(), (i as f32 + 0.5) / m as f32));
-        let gutter = t.sizes().axis_gutter_lg * 1.4;
+        let gutter = label_column(&t, self.series.iter().map(|s| s.name.as_ref()));
         let legend = label_style(&t, div())
             .flex()
             .gap(px(t.spacing.md))

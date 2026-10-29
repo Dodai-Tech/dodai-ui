@@ -44,6 +44,23 @@ pub fn kde(values: &[f32], points: usize) -> Density {
     Density { lo, hi, y }
 }
 
+/// Empirical cumulative distribution: the sorted finite values, each with the share of values
+/// at or below it (ties collapse to their last step). Pure.
+pub fn ecdf(values: &[f32]) -> Vec<(f32, f32)> {
+    let mut v: Vec<f32> = values.iter().copied().filter(|v| v.is_finite()).collect();
+    v.sort_by(f32::total_cmp);
+    let n = v.len() as f32;
+    let mut out: Vec<(f32, f32)> = Vec::new();
+    for (i, x) in v.iter().enumerate() {
+        let f = (i + 1) as f32 / n;
+        match out.last_mut() {
+            Some(last) if last.0 == *x => last.1 = f,
+            _ => out.push((*x, f)),
+        }
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -71,5 +88,14 @@ mod tests {
         assert_eq!(kde(&[f32::NAN, 1.0], 10), Density::default());
         let flat = kde(&[2.0, 2.0, 2.0], 10);
         assert!(flat.y.iter().all(|v| v.is_finite()));
+    }
+
+    #[test]
+    fn ecdf_steps_up_to_one_and_merges_ties() {
+        assert_eq!(
+            ecdf(&[3.0, 1.0, f32::NAN, 3.0]),
+            vec![(1.0, 1.0 / 3.0), (3.0, 1.0)]
+        );
+        assert!(ecdf(&[]).is_empty());
     }
 }

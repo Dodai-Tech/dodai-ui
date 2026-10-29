@@ -93,6 +93,34 @@ pub fn layers_extent(layers: &[Vec<(f32, f32)>]) -> (f32, f32) {
     }
 }
 
+/// Diverging stack of one row: segment spans relative to a centre at 0, the first `split`
+/// segments to the left (negative) and the rest to the right. A fractional `split` puts that
+/// segment across the centre (2.5 of 5 = a neutral middle answer, half each side). Values are
+/// used as magnitudes; non-finite counts as 0. Pure.
+pub fn diverging(row: &[f32], split: f32) -> Vec<(f32, f32)> {
+    let v: Vec<f32> = row
+        .iter()
+        .map(|v| if v.is_finite() { v.abs() } else { 0.0 })
+        .collect();
+    let split = if split.is_finite() {
+        split.clamp(0.0, v.len() as f32)
+    } else {
+        0.0
+    };
+    let whole = split.floor() as usize;
+    // Everything left of the centre, measured from the centre outwards.
+    let left: f32 =
+        v[..whole].iter().sum::<f32>() + v.get(whole).map_or(0.0, |x| x * (split - whole as f32));
+    let mut at = -left;
+    v.iter()
+        .map(|x| {
+            let s = (at, at + x);
+            at += x;
+            s
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -168,5 +196,19 @@ mod tests {
         }
         assert!(stack_layers(&[], StackOffset::Wiggle).is_empty());
         assert_eq!(layers_extent(&[]), (0.0, 1.0));
+    }
+
+    #[test]
+    fn diverging_splits_left_and_right_of_the_centre() {
+        assert_eq!(
+            diverging(&[1.0, 2.0, 4.0], 2.0),
+            vec![(-3.0, -2.0), (-2.0, 0.0), (0.0, 4.0)]
+        );
+        // A neutral middle answer straddles the centre.
+        assert_eq!(
+            diverging(&[2.0, 2.0, 2.0], 1.5),
+            vec![(-3.0, -1.0), (-1.0, 1.0), (1.0, 3.0)]
+        );
+        assert_eq!(diverging(&[f32::NAN], f32::NAN), vec![(0.0, 0.0)]);
     }
 }

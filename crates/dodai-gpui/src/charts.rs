@@ -373,6 +373,27 @@ pub(crate) fn label_style(t: &Theme, d: gpui::Div) -> gpui::Div {
         .text_color(hsla(t.palette.text_muted))
 }
 
+/// Width of a column of row labels: room for the longest one (estimated from the label
+/// font's average advance), never narrower than the large axis gutter nor wider than 220 px.
+pub(crate) fn label_column<S: AsRef<str>>(t: &Theme, labels: impl IntoIterator<Item = S>) -> f32 {
+    let chars = labels
+        .into_iter()
+        .map(|l| l.as_ref().chars().count())
+        .max()
+        .unwrap_or(0);
+    (chars as f32 * t.typography.size_xs * 0.62 + t.spacing.xs)
+        .clamp(t.sizes().axis_gutter_lg, 220.0)
+}
+
+/// Value labels spread evenly under (or beside) a plot whose axis runs from the first tick to
+/// the last, as `nice_ticks` returns them.
+pub(crate) fn tick_row(t: &Theme, ticks: &[f32], fmt: &Option<NumFmt>) -> gpui::Div {
+    label_style(t, div())
+        .flex()
+        .justify_between()
+        .children(ticks.iter().map(|v| div().child(fmt_with(fmt, *v))))
+}
+
 /// Y-axis labels (top = max) + plot + optional X labels underneath.
 pub(crate) fn framed(
     t: &Theme,
@@ -397,8 +418,11 @@ pub(crate) fn framed_row(
     x_row: Option<gpui::Div>,
     plot: gpui::Div,
 ) -> gpui::Div {
+    // At least the gutter, wider when a label needs it: labels never wrap.
     let ycol = label_style(t, div())
-        .w(px(t.sizes().axis_gutter))
+        .min_w(px(t.sizes().axis_gutter))
+        .flex_none()
+        .whitespace_nowrap()
         .flex()
         .flex_col()
         .justify_between()

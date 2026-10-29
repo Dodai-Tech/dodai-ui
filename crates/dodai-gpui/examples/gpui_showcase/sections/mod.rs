@@ -2,6 +2,7 @@
 
 mod actions;
 mod charts_layered;
+mod charts_more;
 mod charts_sec;
 mod data_display;
 mod foundations_sec;

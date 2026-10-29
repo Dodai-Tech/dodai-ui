@@ -129,6 +129,70 @@ fn charts(name: &'static str, v: Vec<f32>) -> Vec<AnyElement> {
             );
         }
     }
+    // A fluid sparkline squeezed to nothing (a content-sized parent) must still paint.
+    out.push(
+        div()
+            .w(px(0.0))
+            .child(
+                Sparkline::new(v.clone())
+                    .fluid(true)
+                    .guide(SparkGuide::Peak),
+            )
+            .into_any_element(),
+    );
+    out.push(
+        KpiTile::new(name, v.first().copied().unwrap_or(f32::NAN))
+            .previous(v.last().copied().unwrap_or(0.0))
+            .trend(v.clone())
+            .into_any_element(),
+    );
+    let pairs = || v.iter().enumerate().map(|(i, x)| (format!("p{i}"), *x));
+    let tree = ChartNode::branch(
+        "root",
+        [
+            ChartNode::branch("a", pairs().map(|(l, x)| ChartNode::leaf(l, x))),
+            ChartNode::leaf("b", v.first().copied().unwrap_or(f32::NAN)),
+        ],
+    );
+    let rows = || -> Vec<Vec<f32>> { vec![v.clone(), v.iter().rev().copied().collect(), vec![]] };
+    out.extend([
+        Sunburst::new(tree.clone()).into_any_element(),
+        Icicle::new(tree).into_any_element(),
+        Waffle::new(pairs()).grid(7, 3).into_any_element(),
+        Marimekko::new(["x", "y"], pairs().map(|(l, x)| (l, vec![x, -x]))).into_any_element(),
+        Beeswarm::new([(name, v.clone()), ("r", vec![])]).into_any_element(),
+        Ecdf::new([s(), Series::new("e", Vec::<f32>::new())]).into_any_element(),
+        ErrorBars::new(v.iter().map(|x| ("e", *x, x - 1.0, f32::NAN)))
+            .reference(*v.first().unwrap_or(&0.0))
+            .into_any_element(),
+        ParallelCoordinates::new(["a", "b", "c"], [(name, v.clone()), ("z", vec![])])
+            .into_any_element(),
+        Hexbin::new(v.iter().map(|x| (*x, -x))).into_any_element(),
+        NetworkGraph::new(
+            ["a", "b", "c"],
+            v.iter().enumerate().map(|(i, x)| (i % 4, (i + 1) % 3, *x)),
+        )
+        .into_any_element(),
+        ChordDiagram::new(["a", "b", "c"], rows()).into_any_element(),
+        ArcDiagram::new(["a", "b"], v.iter().map(|x| (0, 1, *x))).into_any_element(),
+        ParetoChart::new(pairs())
+            .cutoff(f32::NAN)
+            .into_any_element(),
+        DivergingBars::new(["l", "m", "r"], [(name, v.clone()), ("z", vec![])])
+            .split(f32::INFINITY)
+            .into_any_element(),
+        ControlChart::new(v.clone())
+            .sigma(f32::NAN)
+            .into_any_element(),
+        ControlChart::new(v.clone()).baseline(3).into_any_element(),
+        EventTimeline::new([(
+            name,
+            v.windows(2)
+                .map(|w| StateSpan::new(w[0], w[1], "s"))
+                .collect(),
+        )])
+        .into_any_element(),
+    ]);
     out.push(Sparkline::new(v).into_any_element());
     out
 }

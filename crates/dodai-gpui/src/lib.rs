@@ -186,6 +186,10 @@ pub mod charts_flow;
 #[cfg(feature = "charts")]
 pub(crate) mod charts_focus;
 #[cfg(feature = "charts")]
+pub mod charts_hierarchy;
+#[cfg(feature = "charts")]
+pub mod charts_kpi;
+#[cfg(feature = "charts")]
 pub mod charts_layered;
 #[cfg(feature = "charts")]
 pub mod live;
@@ -200,15 +204,23 @@ pub mod charts_line;
 #[cfg(feature = "charts")]
 pub mod charts_market;
 #[cfg(feature = "charts")]
+pub mod charts_network;
+#[cfg(feature = "charts")]
 pub mod charts_part_whole;
 #[cfg(feature = "charts")]
 pub mod charts_pie;
+#[cfg(feature = "charts")]
+pub mod charts_process;
 #[cfg(feature = "charts")]
 pub mod charts_pulse;
 #[cfg(feature = "charts")]
 pub mod charts_radial;
 #[cfg(feature = "charts")]
 pub mod charts_spark;
+#[cfg(feature = "charts")]
+pub mod charts_spread;
+#[cfg(feature = "charts")]
+pub mod charts_survey;
 #[cfg(feature = "charts")]
 pub mod charts_trend;
 #[cfg(feature = "components")]
@@ -351,13 +363,25 @@ pub use charts_extra::{CalendarHeatmap, RoseChart, RoseScale, Sankey, ViolinChar
 #[cfg(feature = "charts")]
 pub use charts_flow::{waterfall_steps, Funnel, Waterfall};
 #[cfg(feature = "charts")]
+pub use charts_hierarchy::{ChartNode, Icicle, Marimekko, Sunburst, Waffle};
+#[cfg(feature = "charts")]
+pub use charts_kpi::KpiTile;
+#[cfg(feature = "charts")]
 pub use charts_layered::{BumpChart, HorizonChart, RidgelineChart};
 #[cfg(feature = "charts")]
 pub use charts_market::{ChartStack, DepthChart, Gantt, RenkoChart};
 #[cfg(feature = "charts")]
+pub use charts_network::{ArcDiagram, ChordDiagram, Hexbin, NetworkGraph, ParallelCoordinates};
+#[cfg(feature = "charts")]
 pub use charts_part_whole::{treemap_layout, RadialBar, Treemap};
 #[cfg(feature = "charts")]
+pub use charts_process::{ControlChart, EventTimeline, StateSpan};
+#[cfg(feature = "charts")]
 pub use charts_pulse::{Pulse, PulseGrid, PulseKind, PulseMode, PulseRhythm};
+#[cfg(feature = "charts")]
+pub use charts_spread::{Beeswarm, Ecdf, ErrorBars};
+#[cfg(feature = "charts")]
+pub use charts_survey::{DivergingBars, ParetoChart};
 #[cfg(feature = "charts")]
 pub use charts_trend::{
     overlay_lines, Candle, CandleOverlay, CandlePane, CandleStyle, Candlestick, StackOffset,

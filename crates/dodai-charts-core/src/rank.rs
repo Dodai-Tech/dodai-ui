@@ -28,6 +28,29 @@ pub fn ranks(rows: &[Vec<f32>]) -> Vec<Vec<usize>> {
         .collect()
 }
 
+/// Pareto order: indices sorted by value, largest first (ties keep input order), with the
+/// running share of the total after each (`0..=1`). Non-finite or negative values count as 0.
+/// Pure.
+pub fn pareto(values: &[f32]) -> (Vec<usize>, Vec<f32>) {
+    let clean = |v: f32| if v.is_finite() { v.max(0.0) } else { 0.0 };
+    let mut order: Vec<usize> = (0..values.len()).collect();
+    order.sort_by(|a, b| clean(values[*b]).total_cmp(&clean(values[*a])));
+    let total: f32 = values.iter().map(|v| clean(*v)).sum();
+    let mut acc = 0.0;
+    let cum = order
+        .iter()
+        .map(|i| {
+            acc += clean(values[*i]);
+            if total > 0.0 {
+                acc / total
+            } else {
+                0.0
+            }
+        })
+        .collect();
+    (order, cum)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -43,5 +66,13 @@ mod tests {
         let r = ranks(&[vec![2.0, f32::NAN], vec![2.0], vec![1.0, 0.0]]);
         assert_eq!(r, vec![vec![0, 1], vec![1, 2], vec![2, 0]]);
         assert!(ranks(&[]).is_empty());
+    }
+
+    #[test]
+    fn pareto_sorts_largest_first_with_a_running_share() {
+        let (o, c) = pareto(&[1.0, 6.0, f32::NAN, 3.0]);
+        assert_eq!(o, vec![1, 3, 0, 2]);
+        assert_eq!(c, vec![0.6, 0.9, 1.0, 1.0]);
+        assert_eq!(pareto(&[0.0]).1, vec![0.0]);
     }
 }

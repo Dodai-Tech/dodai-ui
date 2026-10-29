@@ -84,13 +84,13 @@ would stop new ones.
 
 ## 8. Charts (from earlier work)
 
-No shared value tooltip on line/bar; hover/select via `Focus` only on RadialBar, Line, Bar and
-legends; no bar dash patterns; no zoom/pan/brush; no log scale or second axis on bars; grow-in
+No shared value tooltip on line/bar; hover/select via `Focus` on RadialBar, Line, Bar, legends and
+the newer charts (`Focus::pointer`), not yet on Treemap, Heatmap, Sankey or Violin; no bar dash patterns; no zoom/pan/brush; no log scale or second axis on bars; grow-in
 of Violin, Rose, Renko and Gauge shares one start time per type.
 
-Not built yet (chart types): sunburst, icicle, chord, parallel coordinates, beeswarm, waffle,
-Pareto; then hexbin/contour, force graph, marimekko, polar line. Bump, ridgeline and horizon
-have no hover highlight of one series yet (Bump has a per-step tooltip).
+Not built yet (chart types): circle packing, alluvial, 2D density contour, Q-Q plot, polar /
+cyclical line, spiral, point & figure, tile-grid map, streaming heat strip. The newer charts
+(sunburst to KPI tile) read out the hovered item under the chart; none has a floating tooltip.
 
 ## Status
 
