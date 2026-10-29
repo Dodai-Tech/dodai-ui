@@ -469,10 +469,8 @@ impl Showcase {
 
     fn roundness_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         use dodai_core::{
-            BorderTint, ControlColour, CornerStyle, GradientMode, RoundnessGroup, ShadowDir,
-            ShapeKind,
+            BorderTint, CornerStyle, GradientMode, RoundnessGroup, ShadowDir, ShapeKind,
         };
-        use dodai_gpui::ActiveDodai as _;
         let t = theme_of(cx);
         let tune = dodai_gpui::shape_tune();
         let percent: fn(f32) -> String = |v| format!("{:.0}%", v * 100.0);
@@ -543,21 +541,15 @@ impl Showcase {
                 (BorderTint::ALL.map(|b| b.label()).to_vec(), tint_sel.unwrap_or(0)),
                 |tn, i| tn.tint = BorderTint::ALL[i],
             ))
-            .child({
-                // The choices come from the active theme as designed, so each design, accent
-                // and mode offers its own; ones that look the same as the default are left out.
-                let offered = ControlColour::offered(cx.dodai().theme());
-                let sel = offered.iter().position(|c| *c == tune.control_colour);
-                let labels = offered.iter().map(|c| c.label()).collect();
-                tune_choice(
-                    &t,
-                    "Control colour",
-                    "Which colour filled controls take: buttons, checked boxes, on switches, slider fills, the selected tab. Taken from the current theme and kept at 3:1 on the page.",
-                    "rb-fill",
-                    (labels, sel.unwrap_or(0)),
-                    move |tn, i| tn.control_colour = offered[i],
-                )
-            })
+            .child(setting(
+                &t,
+                "Control colour",
+                "Which colour filled controls take: buttons, checked boxes, on switches, slider fills, the selected tab. Taken from the current theme and kept at 3:1 on the page. Also in the top bar.",
+                div()
+                    .flex()
+                    .child(control_colour_picker("rb-fill", cx))
+                    .into_any_element(),
+            ))
             .child(tune_choice(
                 &t,
                 "Outline all",
@@ -880,6 +872,20 @@ impl Showcase {
 }
 
 /// Apply `edit` to the current global shape tune.
+/// The control colour choices of the active theme as designed (each design, accent and mode
+/// offers its own; look-alikes of the default are left out), writing into the shape tune.
+pub(crate) fn control_colour_picker(id: &'static str, cx: &App) -> Segmented {
+    use dodai_core::ControlColour;
+    use dodai_gpui::ActiveDodai as _;
+    let offered = ControlColour::offered(cx.dodai().theme());
+    let current = dodai_gpui::shape_tune().control_colour;
+    let sel = offered.iter().position(|c| *c == current).unwrap_or(0);
+    let labels: Vec<&'static str> = offered.iter().map(|c| c.label()).collect();
+    Segmented::new(id, labels)
+        .selected(sel)
+        .on_select(move |i, _, cx| edit_tune(cx, |tune| tune.control_colour = offered[i]))
+}
+
 fn edit_tune(cx: &mut App, edit: impl FnOnce(&mut dodai_core::ShapeTune)) {
     let mut tune = dodai_gpui::shape_tune();
     edit(&mut tune);

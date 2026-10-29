@@ -689,6 +689,11 @@ impl Render for Showcase {
                                                 .child(dodai_gpui::ThemeSelector::new("top-theme"))
                                                 .into_any_element(),
                                         ))
+                                        .child(pair(
+                                            "Colour",
+                                            sections::shape::control_colour_picker("top-fill", cx)
+                                                .into_any_element(),
+                                        ))
                                 },
                             )
                             .children(
