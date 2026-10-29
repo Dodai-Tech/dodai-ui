@@ -400,10 +400,22 @@ impl HorizonChart {
         let band = horizon::band_for(&all, bands);
         let rows: Vec<Vec<f32>> = self.series.iter().map(|s| s.values.clone()).collect();
         let m = rows.len().max(1);
-        let (up, down, grid) = (up_color(&t), down_color(&t), hsla(t.palette.border));
-        // Deeper bands more opaque, so the eye reads depth as colour.
-        let shade =
-            move |c: Hsla, k: usize| scale_alpha(c, 0.25 + 0.75 * (k + 1) as f32 / bands as f32);
+        let grid = hsla(t.palette.border);
+        // Deeper bands closer to the full colour, so the eye reads depth as colour. Opaque
+        // blends with the surface: translucent columns would show seams where they meet.
+        let shades = |tone: dodai_core::Tone| -> Vec<Hsla> {
+            let c = t.palette.tone(tone);
+            (0..bands)
+                .map(|k| {
+                    let depth = 0.3 + 0.7 * (k + 1) as f32 / bands as f32;
+                    hsla(t.palette.surface.mix(c, depth))
+                })
+                .collect()
+        };
+        let (up, down) = (
+            shades(dodai_core::Tone::Success),
+            shades(dodai_core::Tone::Danger),
+        );
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
@@ -419,7 +431,7 @@ impl HorizonChart {
                     for (i, v) in vals.iter().enumerate() {
                         let x0 = i as f32 * cw;
                         let x1 = x0 + cw + 0.5;
-                        let c = if *v < 0.0 { down } else { up };
+                        let c = if *v < 0.0 { &down } else { &up };
                         for (k, f) in horizon::fold(*v * g, band, bands).into_iter().enumerate() {
                             if f <= 0.0 {
                                 break;
@@ -431,12 +443,7 @@ impl HorizonChart {
                             } else {
                                 (top + strip - h, top + strip)
                             };
-                            fill(
-                                w,
-                                b.origin,
-                                &[(x0, y0), (x1, y0), (x1, y1), (x0, y1)],
-                                shade(c, k),
-                            );
+                            fill(w, b.origin, &[(x0, y0), (x1, y0), (x1, y1), (x0, y1)], c[k]);
                         }
                     }
                 }
@@ -456,8 +463,8 @@ impl HorizonChart {
             .gap(px(t.spacing.md))
             .ml(px(gutter + t.spacing.sm))
             .child(format!("Each band {}", fmt_with(&self.fmt, band)))
-            .child(div().text_color(up).child("▲ above zero"))
-            .child(div().text_color(down).child("▼ below zero"));
+            .child(div().text_color(up_color(&t)).child("▲ above zero"))
+            .child(div().text_color(down_color(&t)).child("▼ below zero"));
         let body = div()
             .flex()
             .w_full()

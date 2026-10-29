@@ -5,19 +5,12 @@ use gpui::Div;
 
 /// The chart sections' bodies, built once per render.
 pub(crate) struct ChartDemos {
-    pub charts_xy: Div,
+    /// Every chart demo as `(section, body)`, in build order; a section may get several
+    /// bodies. `catalog::CHART_FAMILIES` decides where each section is listed.
+    pub charts: Vec<(&'static str, gpui::AnyElement)>,
     pub gauge_styles: Div,
     /// Instrument demos: (signal lab, sci-fi HUD).
     pub instruments: (Div, Div),
-    pub pies: Div,
-    pub donuts: Div,
-    pub sparks: Div,
-    pub charts_market: Div,
-    pub charts_misc: Div,
-    pub charts_more1: Div,
-    pub charts_more2: Div,
-    pub charts_more3: Div,
-    pub charts_new: (Div, Div),
     pub pulse: Div,
 }
 
@@ -137,89 +130,6 @@ impl Showcase {
         let months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
         let a = Series::new("Revenue", drift(&[12.0, 18.0, 14.0, 26.0, 22.0, 31.0], 1.0));
         let b = Series::new("Cost", drift(&[8.0, 11.0, 13.0, 15.0, 17.0, 16.0], 2.0));
-        let charts_xy = col()
-            .child(
-                row()
-                    .child(
-                        div().flex_1().min_w(px(300.0)).child(
-                            LineChart::new("line", [a.clone(), b.clone()])
-                                .labels(months)
-                                .toggleable(true)
-                                .patterns(true)
-                                .area(true)
-                                .smooth(true)
-                                .crosshair(true)
-                                .annotations([
-                                    Annotation::hline(20.0).label("Target"),
-                                    Annotation::x_band(2.0, 3.0).label("Launch"),
-                                ]),
-                        ),
-                    )
-                    .child(
-                        div().flex_1().min_w(px(300.0)).child(
-                            BarChart::new("bars", [a.clone(), b.clone()])
-                                .labels(months)
-                                .annotations([
-                                    Annotation::y_band(10.0, 20.0).label("Plan"),
-                                    Annotation::hline(25.0).label("Cap"),
-                                ]),
-                        ),
-                    ),
-            )
-            .child(
-                row()
-                    .child(
-                        div().flex_1().min_w(px(300.0)).child(
-                            BarChart::new("stack", [a.clone(), b.clone()])
-                                .labels(months)
-                                .stacked(true),
-                        ),
-                    )
-                    .child(
-                        div().flex_1().min_w(px(300.0)).child(
-                            BarChart::new("hbars", [a, b])
-                                .labels(months)
-                                .horizontal(true),
-                        ),
-                    ),
-            )
-            .child(
-                row()
-                    .child(
-                        div().flex_1().min_w(px(300.0)).child(
-                            LineChart::new(
-                                "time-day",
-                                [Series::new(
-                                    "Requests",
-                                    drift(&[4.0, 9.0, 7.0, 15.0, 22.0, 18.0, 25.0, 12.0], 5.0),
-                                )],
-                            )
-                            .time_axis(
-                                // Uneven sampling, 2024-03-04 06:00 UTC onwards: gaps show as gaps.
-                                [0.0, 1.0, 1.5, 4.0, 5.0, 9.0, 11.0, 15.0]
-                                    .map(|h| 1_709_532_000.0 + h * 3600.0),
-                            )
-                            .crosshair(true)
-                            .area(true),
-                        ),
-                    )
-                    .child(
-                        div().flex_1().min_w(px(300.0)).child(
-                            LineChart::new(
-                                "time-year",
-                                [Series::new(
-                                    "Visits",
-                                    drift(&[3.0, 4.0, 6.0, 5.0, 9.0, 12.0, 11.0, 14.0], 6.0),
-                                )],
-                            )
-                            .time_axis(
-                                [0.0, 31.0, 90.0, 140.0, 200.0, 280.0, 340.0, 420.0]
-                                    .map(|d| 1_704_067_200.0 + d * 86_400.0),
-                            )
-                            .smooth(true),
-                        ),
-                    ),
-            );
         let gauge_styles = {
             use GaugeStyle::*;
             let dials = row()
@@ -820,13 +730,6 @@ impl Showcase {
                             .size(28.0),
                     ),
             );
-        let w = |e: gpui::AnyElement, px_w: f32| {
-            div()
-                .flex_1()
-                .min_w(px(px_w * 0.7))
-                .child(e)
-                .into_any_element()
-        };
         let walk: Vec<f32> = (0..70)
             .scan(100.0f32, |p, i| {
                 *p += ((i * 53 % 17) as f32 - 7.5) * 0.45;
@@ -844,372 +747,29 @@ impl Showcase {
                     .volume(50.0 + (i * 37 % 60) as f32)
             })
             .collect();
-        let charts_market = row()
-            .child(w(
-                Candlestick::new("ext", ohlc.clone())
-                    .style(CandleStyle::HeikinAshi)
-                    .volume(true)
-                    .overlay(CandleOverlay::Sma(10))
-                    .overlay(CandleOverlay::Bollinger(20, 2.0))
-                    .pane(CandlePane::Rsi(14))
-                    .pane(CandlePane::Macd(12, 26, 9))
-                    .markers([
-                        TradeMarker::buy(20, ohlc[20].low),
-                        TradeMarker::sell(45, ohlc[45].high),
-                    ])
-                    .height(240.0)
-                    .title("Heikin-Ashi · volume · SMA · Bollinger · RSI · MACD")
-                    .into_any_element(),
-                520.0,
-            ))
-            .child(w(
-                RenkoChart::new("renko", walk.clone(), 2.0)
-                    .title("Renko · 2.0 bricks")
-                    .into_any_element(),
-                420.0,
-            ))
-            .child(w(
-                DepthChart::new(
-                    "depth",
-                    (1..12).map(|i| {
-                        (
-                            100.0 - i as f32 * 0.5,
-                            dv(4.0 + (i * 7 % 5) as f32, i as f32 * 0.7),
-                        )
-                    }),
-                    (1..12).map(|i| {
-                        (
-                            100.5 + i as f32 * 0.5,
-                            dv(3.0 + (i * 5 % 6) as f32, 4.0 + i as f32 * 0.7),
-                        )
-                    }),
-                )
-                .title("Order book depth")
-                .into_any_element(),
-                420.0,
-            ))
-            .child(w(
-                Gantt::new(
-                    "gantt",
-                    [
-                        GanttTask::new("Design", 0.0, 10.0).progress(1.0),
-                        GanttTask::new("Build", 8.0, 24.0)
-                            .progress(dv(0.6, 1.0).min(1.0))
-                            .after(0),
-                        GanttTask::new("Test", 20.0, 30.0)
-                            .progress(dv(0.25, 2.0).min(1.0))
-                            .after(1),
-                        GanttTask::new("Ship", 30.0, 34.0).after(2),
-                    ],
-                )
-                .title("Release plan")
-                .format(|v| format!("d{v:.0}"))
-                .into_any_element(),
-                420.0,
-            ))
-            .child(w(
-                LineChart::new(
-                    "dual",
-                    [Series::new(
-                        "Revenue",
-                        drift(&[12.0, 18.0, 15.0, 26.0, 22.0, 31.0], 3.0),
-                    )],
-                )
-                .secondary([Series::new(
-                    "Margin %",
-                    drift(&[0.21, 0.24, 0.2, 0.3, 0.28, 0.33], 4.0),
-                )])
-                .labels(months)
-                .title("Secondary y axis")
-                .into_any_element(),
-                420.0,
-            ))
-            .child(w(
-                ChartStack::new()
-                    .height(300.0)
-                    .pane(3.0, move |h| {
-                        LineChart::new(
-                            "st1",
-                            [Series::new(
-                                "Price",
-                                drift(&[3.0, 4.0, 3.5, 5.0, 6.0, 5.5], 5.0),
-                            )],
-                        )
-                        .height(h - 24.0)
-                        .legend(false)
-                        .into_any_element()
-                    })
-                    .pane(1.0, move |h| {
-                        BarChart::new(
-                            "st2",
-                            [Series::new(
-                                "Vol",
-                                drift(&[2.0, 3.0, 1.0, 4.0, 5.0, 3.0], 6.0),
-                            )],
-                        )
-                        .height(h - 24.0)
-                        .legend(false)
-                        .into_any_element()
-                    })
-                    .into_any_element(),
-                420.0,
-            ));
-        let charts_misc = row()
-            .justify_around()
-            .child(RadarChart::new(
-                ["Speed", "Power", "Range", "Armor", "Stealth"],
-                [
-                    Series::new("Unit A", drift(&[8.0, 6.0, 7.0, 4.0, 9.0], 7.0)),
-                    Series::new("Unit B", drift(&[5.0, 9.0, 4.0, 8.0, 3.0], 8.0)),
-                ],
-            ))
-            .child(
-                div().flex_1().min_w(px(300.0)).child(ScatterPlot::new(
-                    "sc",
-                    [
-                        (
-                            "Group 1",
-                            (0..12)
-                                .map(|i| (i as f32, (i * i % 7) as f32 + 1.0))
-                                .collect(),
-                        ),
-                        (
-                            "Group 2",
-                            (0..12)
-                                .map(|i| (i as f32 + 0.5, (i * 3 % 8) as f32))
-                                .collect(),
-                        ),
-                    ],
-                )),
-            )
-            .child(heat_block);
 
-        let charts_more1 = row()
-            .child(w(
-                StackedAreaChart::new([
-                    Series::new("Web", drift(&[12.0, 18.0, 14.0, 26.0, 22.0, 31.0], 9.0)),
-                    Series::new("App", drift(&[8.0, 11.0, 13.0, 15.0, 17.0, 16.0], 10.0)),
-                    Series::new("API", drift(&[4.0, 6.0, 9.0, 8.0, 12.0, 15.0], 11.0)),
-                ])
-                .labels(months)
-                .title("Traffic by source")
-                .into_any_element(),
-                420.0,
-            ))
-            .child(w(
-                Histogram::new(
-                    "hist",
-                    (0..120).map(|i| ((i * 37 % 100) as f32 / 10.0 + (i % 7) as f32).min(18.0)),
-                )
-                .bins(9)
-                .kde(true)
-                .stats(true)
-                .annotations([Annotation::hline(20.0).label("Alert")])
-                .title("Latency distribution")
-                .format(|v| format!("{v:.0}ms"))
-                .into_any_element(),
-                420.0,
-            ))
-            .child(w(
-                Waterfall::new(
-                    "wf",
-                    [
-                        ("Start", 40.0),
-                        ("Sales", 25.0),
-                        ("Refunds", -12.0),
-                        ("Ads", -8.0),
-                        ("Upsell", 15.0),
-                    ],
-                )
-                .title("Revenue bridge")
-                .format(|v| format!("${v:.0}k"))
-                .into_any_element(),
-                420.0,
-            ));
-        let charts_more2 = row()
-            .child(w(
-                Funnel::new([
-                    ("Visits", 1000.0),
-                    ("Signups", 620.0),
-                    ("Trials", 340.0),
-                    ("Paid", 120.0),
-                ])
-                .title("Conversion funnel")
-                .into_any_element(),
-                380.0,
-            ))
-            .child(w(
-                Treemap::new(
-                    "tm",
-                    [
-                        ("Rust", 52.0),
-                        ("Kotlin", 28.0),
-                        ("TS", 18.0),
-                        ("Go", 12.0),
-                        ("C", 9.0),
-                        ("Other", 5.0),
-                    ],
-                )
-                .title("Code by language")
-                .into_any_element(),
-                380.0,
-            ))
-            .child(
-                RadialBar::new([
-                    ("CPU", 72.0, 100.0),
-                    ("RAM", 48.0, 100.0),
-                    ("Disk", 31.0, 100.0),
-                ])
-                .into_any_element(),
-            );
-        let charts_new = {
-            let days: Vec<f32> = (0..182)
+        let days: Vec<f32> = (0..182)
+            .map(|i| {
+                let x = (i as f32 * 0.37).sin() * (i as f32 * 0.11).cos();
+                if i % 9 == 4 {
+                    0.0
+                } else {
+                    (x * 0.5 + 0.5) * 12.0
+                }
+            })
+            .collect();
+        let samples = |seed: f32, mean: f32, spread: f32| -> Vec<f32> {
+            (0..60)
                 .map(|i| {
-                    let x = (i as f32 * 0.37).sin() * (i as f32 * 0.11).cos();
-                    if i % 9 == 4 {
-                        0.0
-                    } else {
-                        (x * 0.5 + 0.5) * 12.0
-                    }
+                    let u = ((i as f32 * 12.9898 + seed * 78.233).sin() * 43758.545)
+                        .fract()
+                        .abs();
+                    let v = ((i as f32 * 4.1414 + seed * 9.31).sin() * 24634.63)
+                        .fract()
+                        .abs();
+                    mean + (u + v - 1.0) * spread
                 })
-                .collect();
-            let samples = |seed: f32, mean: f32, spread: f32| -> Vec<f32> {
-                (0..60)
-                    .map(|i| {
-                        let u = ((i as f32 * 12.9898 + seed * 78.233).sin() * 43758.545)
-                            .fract()
-                            .abs();
-                        let v = ((i as f32 * 4.1414 + seed * 9.31).sin() * 24634.63)
-                            .fract()
-                            .abs();
-                        mean + (u + v - 1.0) * spread
-                    })
-                    .collect()
-            };
-            let a = col()
-                .child(
-                    row()
-                        .child(w(
-                            div()
-                                .flex()
-                                .flex_col()
-                                .gap_3()
-                                .child(
-                                    Bullet::new("Revenue", 270.0)
-                                        .target(300.0)
-                                        .ranges([150.0, 225.0, 300.0]),
-                                )
-                                .child(
-                                    Bullet::new("Profit", 22.0)
-                                        .target(26.0)
-                                        .ranges([15.0, 20.0, 30.0]),
-                                )
-                                .child(
-                                    Bullet::new("Orders", 1520.0)
-                                        .target(1400.0)
-                                        .ranges([800.0, 1200.0, 1800.0]),
-                                )
-                                .into_any_element(),
-                            440.0,
-                        ))
-                        .child(w(
-                            PairedBars::new([
-                                ("Latency ms", 120.0, 84.0),
-                                ("Errors", 42.0, 51.0),
-                                ("Users k", 8.0, 11.5),
-                            ])
-                            .names("Q1", "Q2")
-                            .title("Paired bars")
-                            .into_any_element(),
-                            440.0,
-                        )),
-                )
-                .child(
-                    row()
-                        .child(w(
-                            Lollipop::new(
-                                "lolli",
-                                [
-                                    ("Mon", 12.0),
-                                    ("Tue", 18.0),
-                                    ("Wed", 9.0),
-                                    ("Thu", 24.0),
-                                    ("Fri", 15.0),
-                                ],
-                            )
-                            .title("Lollipop")
-                            .into_any_element(),
-                            300.0,
-                        ))
-                        .child(w(
-                            Lollipop::new(
-                                "dumb",
-                                [
-                                    ("North", 12.0),
-                                    ("South", 18.0),
-                                    ("East", 9.0),
-                                    ("West", 24.0),
-                                ],
-                            )
-                            .compare([17.0, 14.0, 16.0, 21.0])
-                            .names("2023", "2024")
-                            .title("Dumbbell")
-                            .into_any_element(),
-                            300.0,
-                        ))
-                        .child(w(
-                            SlopeChart::new([
-                                ("Alpha", 12.0, 18.0),
-                                ("Beta", 20.0, 15.0),
-                                ("Gamma", 9.0, 9.0),
-                                ("Delta", 14.0, 22.0),
-                            ])
-                            .headers("2023", "2024")
-                            .title("Slope")
-                            .into_any_element(),
-                            340.0,
-                        )),
-                );
-            let b = col()
-                .child(
-                    row()
-                        .child(w(
-                            Sankey::new([
-                                ("Wages", "Budget", 50.0),
-                                ("Grants", "Budget", 20.0),
-                                ("Sales", "Budget", 30.0),
-                                ("Budget", "Staff", 45.0),
-                                ("Budget", "Ops", 35.0),
-                                ("Budget", "R&D", 20.0),
-                                ("Staff", "Payroll", 45.0),
-                                ("Ops", "Rent", 15.0),
-                                ("Ops", "Tools", 20.0),
-                            ])
-                            .title("Sankey")
-                            .into_any_element(),
-                            560.0,
-                        ))
-                        .child(w(
-                            CalendarHeatmap::new(days)
-                                .from_date(2024, 1, 1)
-                                .title("Calendar heatmap")
-                                .into_any_element(),
-                            560.0,
-                        )),
-                )
-                .child(
-                    row().child(w(
-                        ViolinChart::new([
-                            ("A", samples(1.0, 10.0, 8.0)),
-                            ("B", samples(2.0, 14.0, 4.0)),
-                            ("C", samples(3.0, 8.0, 10.0)),
-                        ])
-                        .title("Violin")
-                        .into_any_element(),
-                        420.0,
-                    )),
-                );
-            (a, b)
+                .collect()
         };
         let pulse = {
             use dodai_gpui::{Pulse, PulseGrid, PulseMode, PulseRhythm};
@@ -1323,8 +883,448 @@ impl Showcase {
                     ),
             )
         };
-        let charts_more3 = row()
-            .child(w(
+
+        let charts: Vec<(&'static str, gpui::AnyElement)> = vec![
+            ("Pie", pies.into_any_element()),
+            ("Donut", donuts.into_any_element()),
+            ("Sparkline", sparks.into_any_element()),
+            (
+                "Line · area",
+                div()
+                    .flex_1()
+                    .min_w(px(300.0))
+                    .child(
+                        LineChart::new("line", [a.clone(), b.clone()])
+                            .labels(months)
+                            .toggleable(true)
+                            .patterns(true)
+                            .area(true)
+                            .smooth(true)
+                            .crosshair(true)
+                            .annotations([
+                                Annotation::hline(20.0).label("Target"),
+                                Annotation::x_band(2.0, 3.0).label("Launch"),
+                            ]),
+                    )
+                    .into_any_element(),
+            ),
+            (
+                "Bar",
+                div()
+                    .flex_1()
+                    .min_w(px(300.0))
+                    .child(
+                        BarChart::new("bars", [a.clone(), b.clone()])
+                            .labels(months)
+                            .annotations([
+                                Annotation::y_band(10.0, 20.0).label("Plan"),
+                                Annotation::hline(25.0).label("Cap"),
+                            ]),
+                    )
+                    .into_any_element(),
+            ),
+            (
+                "Bar",
+                div()
+                    .flex_1()
+                    .min_w(px(300.0))
+                    .child(
+                        BarChart::new("stack", [a.clone(), b.clone()])
+                            .labels(months)
+                            .stacked(true),
+                    )
+                    .into_any_element(),
+            ),
+            (
+                "Bar",
+                div()
+                    .flex_1()
+                    .min_w(px(300.0))
+                    .child(
+                        BarChart::new("hbars", [a, b])
+                            .labels(months)
+                            .horizontal(true),
+                    )
+                    .into_any_element(),
+            ),
+            (
+                "Time axis",
+                div()
+                    .flex_1()
+                    .min_w(px(300.0))
+                    .child(
+                        LineChart::new(
+                            "time-day",
+                            [Series::new(
+                                "Requests",
+                                drift(&[4.0, 9.0, 7.0, 15.0, 22.0, 18.0, 25.0, 12.0], 5.0),
+                            )],
+                        )
+                        .time_axis(
+                            // Uneven sampling, 2024-03-04 06:00 UTC onwards: gaps show as gaps.
+                            [0.0, 1.0, 1.5, 4.0, 5.0, 9.0, 11.0, 15.0]
+                                .map(|h| 1_709_532_000.0 + h * 3600.0),
+                        )
+                        .crosshair(true)
+                        .area(true),
+                    )
+                    .into_any_element(),
+            ),
+            (
+                "Time axis",
+                div()
+                    .flex_1()
+                    .min_w(px(300.0))
+                    .child(
+                        LineChart::new(
+                            "time-year",
+                            [Series::new(
+                                "Visits",
+                                drift(&[3.0, 4.0, 6.0, 5.0, 9.0, 12.0, 11.0, 14.0], 6.0),
+                            )],
+                        )
+                        .time_axis(
+                            [0.0, 31.0, 90.0, 140.0, 200.0, 280.0, 340.0, 420.0]
+                                .map(|d| 1_704_067_200.0 + d * 86_400.0),
+                        )
+                        .smooth(true),
+                    )
+                    .into_any_element(),
+            ),
+            (
+                "Candlestick",
+                Candlestick::new("ext", ohlc.clone())
+                    .style(CandleStyle::HeikinAshi)
+                    .volume(true)
+                    .overlay(CandleOverlay::Sma(10))
+                    .overlay(CandleOverlay::Bollinger(20, 2.0))
+                    .pane(CandlePane::Rsi(14))
+                    .pane(CandlePane::Macd(12, 26, 9))
+                    .markers([
+                        TradeMarker::buy(20, ohlc[20].low),
+                        TradeMarker::sell(45, ohlc[45].high),
+                    ])
+                    .height(240.0)
+                    .title("Heikin-Ashi · volume · SMA · Bollinger · RSI · MACD")
+                    .into_any_element(),
+            ),
+            (
+                "Renko",
+                RenkoChart::new("renko", walk.clone(), 2.0)
+                    .title("Renko · 2.0 bricks")
+                    .into_any_element(),
+            ),
+            (
+                "Order book depth",
+                DepthChart::new(
+                    "depth",
+                    (1..12).map(|i| {
+                        (
+                            100.0 - i as f32 * 0.5,
+                            dv(4.0 + (i * 7 % 5) as f32, i as f32 * 0.7),
+                        )
+                    }),
+                    (1..12).map(|i| {
+                        (
+                            100.5 + i as f32 * 0.5,
+                            dv(3.0 + (i * 5 % 6) as f32, 4.0 + i as f32 * 0.7),
+                        )
+                    }),
+                )
+                .title("Order book depth")
+                .into_any_element(),
+            ),
+            (
+                "Gantt",
+                Gantt::new(
+                    "gantt",
+                    [
+                        GanttTask::new("Design", 0.0, 10.0).progress(1.0),
+                        GanttTask::new("Build", 8.0, 24.0)
+                            .progress(dv(0.6, 1.0).min(1.0))
+                            .after(0),
+                        GanttTask::new("Test", 20.0, 30.0)
+                            .progress(dv(0.25, 2.0).min(1.0))
+                            .after(1),
+                        GanttTask::new("Ship", 30.0, 34.0).after(2),
+                    ],
+                )
+                .title("Release plan")
+                .format(|v| format!("d{v:.0}"))
+                .into_any_element(),
+            ),
+            (
+                "Secondary axis",
+                LineChart::new(
+                    "dual",
+                    [Series::new(
+                        "Revenue",
+                        drift(&[12.0, 18.0, 15.0, 26.0, 22.0, 31.0], 3.0),
+                    )],
+                )
+                .secondary([Series::new(
+                    "Margin %",
+                    drift(&[0.21, 0.24, 0.2, 0.3, 0.28, 0.33], 4.0),
+                )])
+                .labels(months)
+                .title("Secondary y axis")
+                .into_any_element(),
+            ),
+            (
+                "Chart stack",
+                ChartStack::new()
+                    .height(300.0)
+                    .pane(3.0, move |h| {
+                        LineChart::new(
+                            "st1",
+                            [Series::new(
+                                "Price",
+                                drift(&[3.0, 4.0, 3.5, 5.0, 6.0, 5.5], 5.0),
+                            )],
+                        )
+                        .height(h - 24.0)
+                        .legend(false)
+                        .into_any_element()
+                    })
+                    .pane(1.0, move |h| {
+                        BarChart::new(
+                            "st2",
+                            [Series::new(
+                                "Vol",
+                                drift(&[2.0, 3.0, 1.0, 4.0, 5.0, 3.0], 6.0),
+                            )],
+                        )
+                        .height(h - 24.0)
+                        .legend(false)
+                        .into_any_element()
+                    })
+                    .into_any_element(),
+            ),
+            (
+                "Radar",
+                RadarChart::new(
+                    ["Speed", "Power", "Range", "Armor", "Stealth"],
+                    [
+                        Series::new("Unit A", drift(&[8.0, 6.0, 7.0, 4.0, 9.0], 7.0)),
+                        Series::new("Unit B", drift(&[5.0, 9.0, 4.0, 8.0, 3.0], 8.0)),
+                    ],
+                )
+                .into_any_element(),
+            ),
+            (
+                "Scatter",
+                div()
+                    .flex_1()
+                    .min_w(px(300.0))
+                    .child(ScatterPlot::new(
+                        "sc",
+                        [
+                            (
+                                "Group 1",
+                                (0..12)
+                                    .map(|i| (i as f32, (i * i % 7) as f32 + 1.0))
+                                    .collect(),
+                            ),
+                            (
+                                "Group 2",
+                                (0..12)
+                                    .map(|i| (i as f32 + 0.5, (i * 3 % 8) as f32))
+                                    .collect(),
+                            ),
+                        ],
+                    ))
+                    .into_any_element(),
+            ),
+            ("Heatmap", heat_block.into_any_element()),
+            (
+                "Stacked area",
+                StackedAreaChart::new([
+                    Series::new("Web", drift(&[12.0, 18.0, 14.0, 26.0, 22.0, 31.0], 9.0)),
+                    Series::new("App", drift(&[8.0, 11.0, 13.0, 15.0, 17.0, 16.0], 10.0)),
+                    Series::new("API", drift(&[4.0, 6.0, 9.0, 8.0, 12.0, 15.0], 11.0)),
+                ])
+                .labels(months)
+                .title("Traffic by source")
+                .into_any_element(),
+            ),
+            (
+                "Histogram",
+                Histogram::new(
+                    "hist",
+                    (0..120).map(|i| ((i * 37 % 100) as f32 / 10.0 + (i % 7) as f32).min(18.0)),
+                )
+                .bins(9)
+                .kde(true)
+                .stats(true)
+                .annotations([Annotation::hline(20.0).label("Alert")])
+                .title("Latency distribution")
+                .format(|v| format!("{v:.0}ms"))
+                .into_any_element(),
+            ),
+            (
+                "Waterfall",
+                Waterfall::new(
+                    "wf",
+                    [
+                        ("Start", 40.0),
+                        ("Sales", 25.0),
+                        ("Refunds", -12.0),
+                        ("Ads", -8.0),
+                        ("Upsell", 15.0),
+                    ],
+                )
+                .title("Revenue bridge")
+                .format(|v| format!("${v:.0}k"))
+                .into_any_element(),
+            ),
+            (
+                "Funnel",
+                Funnel::new([
+                    ("Visits", 1000.0),
+                    ("Signups", 620.0),
+                    ("Trials", 340.0),
+                    ("Paid", 120.0),
+                ])
+                .title("Conversion funnel")
+                .into_any_element(),
+            ),
+            (
+                "Treemap",
+                Treemap::new(
+                    "tm",
+                    [
+                        ("Rust", 52.0),
+                        ("Kotlin", 28.0),
+                        ("TS", 18.0),
+                        ("Go", 12.0),
+                        ("C", 9.0),
+                        ("Other", 5.0),
+                    ],
+                )
+                .title("Code by language")
+                .into_any_element(),
+            ),
+            (
+                "Radial bar",
+                RadialBar::new([
+                    ("CPU", 72.0, 100.0),
+                    ("RAM", 48.0, 100.0),
+                    ("Disk", 31.0, 100.0),
+                ])
+                .into_any_element(),
+            ),
+            (
+                "Bullet",
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap_3()
+                    .child(
+                        Bullet::new("Revenue", 270.0)
+                            .target(300.0)
+                            .ranges([150.0, 225.0, 300.0]),
+                    )
+                    .child(
+                        Bullet::new("Profit", 22.0)
+                            .target(26.0)
+                            .ranges([15.0, 20.0, 30.0]),
+                    )
+                    .child(
+                        Bullet::new("Orders", 1520.0)
+                            .target(1400.0)
+                            .ranges([800.0, 1200.0, 1800.0]),
+                    )
+                    .into_any_element(),
+            ),
+            (
+                "Paired bars",
+                PairedBars::new([
+                    ("Latency ms", 120.0, 84.0),
+                    ("Errors", 42.0, 51.0),
+                    ("Users k", 8.0, 11.5),
+                ])
+                .names("Q1", "Q2")
+                .title("Paired bars")
+                .into_any_element(),
+            ),
+            (
+                "Lollipop · Dumbbell",
+                Lollipop::new(
+                    "lolli",
+                    [
+                        ("Mon", 12.0),
+                        ("Tue", 18.0),
+                        ("Wed", 9.0),
+                        ("Thu", 24.0),
+                        ("Fri", 15.0),
+                    ],
+                )
+                .title("Lollipop")
+                .into_any_element(),
+            ),
+            (
+                "Lollipop · Dumbbell",
+                Lollipop::new(
+                    "dumb",
+                    [
+                        ("North", 12.0),
+                        ("South", 18.0),
+                        ("East", 9.0),
+                        ("West", 24.0),
+                    ],
+                )
+                .compare([17.0, 14.0, 16.0, 21.0])
+                .names("2023", "2024")
+                .title("Dumbbell")
+                .into_any_element(),
+            ),
+            (
+                "Slope",
+                SlopeChart::new([
+                    ("Alpha", 12.0, 18.0),
+                    ("Beta", 20.0, 15.0),
+                    ("Gamma", 9.0, 9.0),
+                    ("Delta", 14.0, 22.0),
+                ])
+                .headers("2023", "2024")
+                .title("Slope")
+                .into_any_element(),
+            ),
+            (
+                "Sankey",
+                Sankey::new([
+                    ("Wages", "Budget", 50.0),
+                    ("Grants", "Budget", 20.0),
+                    ("Sales", "Budget", 30.0),
+                    ("Budget", "Staff", 45.0),
+                    ("Budget", "Ops", 35.0),
+                    ("Budget", "R&D", 20.0),
+                    ("Staff", "Payroll", 45.0),
+                    ("Ops", "Rent", 15.0),
+                    ("Ops", "Tools", 20.0),
+                ])
+                .title("Sankey")
+                .into_any_element(),
+            ),
+            (
+                "Calendar heatmap",
+                CalendarHeatmap::new(days)
+                    .from_date(2024, 1, 1)
+                    .title("Calendar heatmap")
+                    .into_any_element(),
+            ),
+            (
+                "Violin",
+                ViolinChart::new([
+                    ("A", samples(1.0, 10.0, 8.0)),
+                    ("B", samples(2.0, 14.0, 4.0)),
+                    ("C", samples(3.0, 8.0, 10.0)),
+                ])
+                .title("Violin")
+                .into_any_element(),
+            ),
+            (
+                "Candlestick",
                 Candlestick::new(
                     "ohlc",
                     [
@@ -1339,9 +1339,9 @@ impl Showcase {
                 .labels(months)
                 .title("OHLC")
                 .into_any_element(),
-                380.0,
-            ))
-            .child(w(
+            ),
+            (
+                "Box plot",
                 BoxPlot::new([
                     ("A", vec![2.0, 3.0, 3.5, 4.0, 5.0, 6.0, 9.0]),
                     ("B", vec![4.0, 5.0, 6.0, 6.5, 7.0, 8.0, 12.0]),
@@ -1352,9 +1352,9 @@ impl Showcase {
                 .points(true)
                 .title("Box plot")
                 .into_any_element(),
-                380.0,
-            ))
-            .child(w(
+            ),
+            (
+                "Bubble",
                 BubbleChart::new(
                     "bub",
                     [
@@ -1370,22 +1370,12 @@ impl Showcase {
                 )
                 .title("Bubble chart")
                 .into_any_element(),
-                380.0,
-            ));
-
+            ),
+        ];
         ChartDemos {
-            charts_xy,
+            charts,
             gauge_styles,
             instruments,
-            pies,
-            donuts,
-            sparks,
-            charts_market,
-            charts_misc,
-            charts_more1,
-            charts_more2,
-            charts_more3,
-            charts_new,
             pulse,
         }
     }

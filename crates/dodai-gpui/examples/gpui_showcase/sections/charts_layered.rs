@@ -17,17 +17,9 @@ fn samples(centre: f32, spread: f32, n: usize, seed: usize) -> Vec<f32> {
 }
 
 impl Showcase {
-    pub(crate) fn layered_demo(&self, cx: &mut Context<Self>) -> gpui::Div {
-        let t = theme_of(cx);
+    /// The layered chart demos as `(section, body)`.
+    pub(crate) fn layered_demos(&self) -> Vec<(&'static str, gpui::AnyElement)> {
         let weeks = ["W1", "W2", "W3", "W4", "W5", "W6", "W7", "W8"];
-        let panel = |title: &'static str, note: &'static str, body: gpui::AnyElement| {
-            Panel::new()
-                .title(title)
-                .refine(|d| d.flex_1().min_w(px(340.0)))
-                .child(Muted::new(note))
-                .child(body)
-        };
-
         // Forecast with its uncertainty widening into the future.
         let actual: Vec<f32> = (0..12).map(|i| 40.0 + 6.0 * wave(1, i * 3)).collect();
         let forecast: Vec<f32> = (0..12).map(|i| 42.0 + 0.8 * i as f32).collect();
@@ -97,57 +89,59 @@ impl Showcase {
         .bands(3)
         .format(|v| format!("{v:.0} ms"));
 
-        div()
-            .flex()
-            .flex_col()
-            .gap(px(t.spacing.md))
-            .child(
-                div()
-                    .flex()
-                    .flex_wrap()
-                    .gap(px(t.spacing.md))
-                    .child(panel(
-                        "Band",
-                        "Series::band: a forecast and its widening range, under the line.",
-                        band.into_any_element(),
-                    ))
-                    .child(panel(
-                        "Bump",
-                        "Standings by week: who overtook whom. Hover a week for the table.",
-                        bump.into_any_element(),
-                    )),
-            )
-            .child(
-                div()
-                    .flex()
-                    .flex_wrap()
-                    .gap(px(t.spacing.md))
-                    .child(panel(
-                        "Stream",
-                        "StackOffset::Wiggle: the stack floats so the layers bend least.",
-                        stream.into_any_element(),
-                    ))
-                    .child(panel(
-                        "Share",
-                        "StackOffset::Expand: every step stretched to 100%.",
-                        share.into_any_element(),
-                    )),
-            )
-            .child(
-                div()
-                    .flex()
-                    .flex_wrap()
-                    .gap(px(t.spacing.md))
-                    .child(panel(
-                        "Ridgeline",
-                        "One distribution per month on a shared axis.",
-                        ridge.into_any_element(),
-                    ))
-                    .child(panel(
-                        "Horizon",
-                        "Latency off its baseline per host, folded into 3 bands.",
-                        horizon.into_any_element(),
-                    )),
-            )
+        let note = |n: &'static str, el: gpui::AnyElement| {
+            div()
+                .flex()
+                .flex_col()
+                .gap_2()
+                .w_full()
+                .child(Muted::new(n))
+                .child(el)
+                .into_any_element()
+        };
+        vec![
+            (
+                "Band",
+                note(
+                    "Series::band: a forecast and its widening range, under the line.",
+                    band.into_any_element(),
+                ),
+            ),
+            (
+                "Bump",
+                note(
+                    "Standings by week: who overtook whom. Hover a week for the table.",
+                    bump.into_any_element(),
+                ),
+            ),
+            (
+                "Stream",
+                note(
+                    "StackOffset::Wiggle: the stack floats so the layers bend least.",
+                    stream.into_any_element(),
+                ),
+            ),
+            (
+                "100% stacked",
+                note(
+                    "StackOffset::Expand: every step stretched to 100%.",
+                    share.into_any_element(),
+                ),
+            ),
+            (
+                "Ridgeline",
+                note(
+                    "One distribution per month on a shared axis.",
+                    ridge.into_any_element(),
+                ),
+            ),
+            (
+                "Horizon",
+                note(
+                    "Latency off its baseline per host, folded into 3 bands.",
+                    horizon.into_any_element(),
+                ),
+            ),
+        ]
     }
 }

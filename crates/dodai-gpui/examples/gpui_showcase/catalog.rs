@@ -1,5 +1,65 @@
 //! Section metadata: which animation controls apply, subsections, category blurbs/icons.
 
+/// The chart families (sidebar subsections of "Charts") and their sections, in sidebar order.
+/// Every chart section is listed here exactly once; each is also its panel title.
+pub(crate) const CHART_FAMILIES: [(&str, &[&str]); 8] = [
+    (
+        "Trends",
+        &[
+            "Line · area",
+            "Time axis",
+            "Band",
+            "Stacked area",
+            "Stream",
+            "Horizon",
+            "Sparkline",
+            "Live throughput",
+            "Calendar heatmap",
+        ],
+    ),
+    (
+        "Comparison",
+        &[
+            "Bar",
+            "Bullet",
+            "Paired bars",
+            "Lollipop · Dumbbell",
+            "Slope",
+            "Bump",
+            "Radar",
+        ],
+    ),
+    (
+        "Part of a whole",
+        &["Pie", "Donut", "Treemap", "Radial bar", "100% stacked"],
+    ),
+    (
+        "Distribution",
+        &["Histogram", "Box plot", "Violin", "Ridgeline"],
+    ),
+    ("Relationship", &["Scatter", "Bubble", "Heatmap"]),
+    ("Flow", &["Sankey", "Funnel", "Waterfall"]),
+    (
+        "Finance",
+        &[
+            "Candlestick",
+            "Renko",
+            "Order book depth",
+            "Secondary axis",
+            "Chart stack",
+        ],
+    ),
+    ("Planning", &["Gantt"]),
+];
+
+/// The chart family a chart section belongs to.
+pub(crate) fn chart_family(title: &str) -> Option<&'static str> {
+    CHART_FAMILIES
+        .iter()
+        .find(|(_, s)| s.contains(&title))
+        .map(|(f, _)| *f)
+}
+
 /// Which animation controls apply to a section (derived from the components it shows).
 #[derive(Clone, Copy)]
 pub(crate) struct Caps {
@@ -70,12 +130,9 @@ pub(crate) fn caps(title: &str) -> Caps {
             c(true, true, true)
         }
         "Knob · Vertical sliders" => c(true, true, true),
-        t if t.contains("chart")
+        t if chart_family(t).is_some()
             || [
-                "Pie",
-                "Donut",
                 "Gauges",
-                "Sparkline",
                 "Instruments",
                 "Vehicle",
                 "Industrial",
@@ -84,10 +141,6 @@ pub(crate) fn caps(title: &str) -> Caps {
                 "Aviation",
                 "Signal lab",
                 "Radar & telemetry",
-                "Area · histogram · waterfall",
-                "Funnel · treemap · radial bar",
-                "Candlestick · box plot · bubble",
-                "Radar · scatter · heatmap",
             ]
             .contains(&t) =>
         {
@@ -101,6 +154,16 @@ pub(crate) fn caps(title: &str) -> Caps {
 pub(crate) fn subs(cat: &str) -> &'static [&'static str] {
     match cat {
         "Animation" => &["Entry", "Physics", "Dynamics"],
+        "Charts" => &[
+            "Trends",
+            "Comparison",
+            "Part of a whole",
+            "Distribution",
+            "Relationship",
+            "Flow",
+            "Finance",
+            "Planning",
+        ],
         "Shaders" => &[
             "Playground",
             "Cyberpunk",
@@ -130,6 +193,7 @@ pub(crate) fn sub_of(cat: &str, label: &str) -> Option<&'static str> {
         } else {
             "Entry"
         }),
+        "Charts" => chart_family(label),
         "Shaders" => Some(
             dodai_gpui::dodai_shaders::Family::ALL
                 .iter()
