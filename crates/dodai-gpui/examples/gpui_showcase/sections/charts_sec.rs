@@ -109,6 +109,14 @@ impl Showcase {
         ));
         out.push((
             "Charts",
+            "Band · Stream · Bump · Ridgeline · Horizon",
+            self.section("Layered charts", cx)
+                .child(self.layered_demo(cx))
+                .into_any_element(),
+            "Layered charts",
+        ));
+        out.push((
+            "Charts",
             "Sankey · Calendar · Violin · Rose",
             self.section("Sankey · calendar · violin", cx)
                 .child(charts_new.1)

@@ -142,6 +142,8 @@ pub struct Series {
     pub color: Option<Color>,
     /// A live window: its samples replace `values` every frame.
     pub(crate) live: Option<crate::live::Live>,
+    /// Lower and upper edge per value (see [`Series::band`]).
+    pub(crate) band: Option<(Vec<f32>, Vec<f32>)>,
 }
 
 /// NaN / ±inf become 0: hostile data must never reach the tessellator.
@@ -161,7 +163,27 @@ impl Series {
             values: values.into_iter().map(finite_or_zero).collect(),
             color: None,
             live: None,
+            band: None,
         }
+    }
+    /// A band around the line, one `lo`/`hi` pair per value: a confidence interval, the
+    /// min..max of a period or an error range. A [`crate::charts_line::LineChart`] shades it
+    /// under the line and fits its axis to it. Pairs given the wrong way round are swapped.
+    pub fn band(
+        mut self,
+        lo: impl IntoIterator<Item = f32>,
+        hi: impl IntoIterator<Item = f32>,
+    ) -> Self {
+        let (lo, hi): (Vec<f32>, Vec<f32>) = lo
+            .into_iter()
+            .zip(hi)
+            .map(|(a, b)| {
+                let (a, b) = (finite_or_zero(a), finite_or_zero(b));
+                (a.min(b), a.max(b))
+            })
+            .unzip();
+        self.band = Some((lo, hi));
+        self
     }
     /// A series fed by a [`crate::Live`] window: it shows the newest samples and, in a
     /// [`crate::charts_line::LineChart`], slides left between them.
@@ -198,7 +220,10 @@ pub(crate) fn y_range(
             ticks.into_iter().filter(|v| *v >= lo && *v <= hi).collect(),
         );
     }
-    let vals = series.iter().flat_map(|s| s.values.iter().copied());
+    let vals = series.iter().flat_map(|s| {
+        let band = s.band.iter().flat_map(|(lo, hi)| lo.iter().chain(hi));
+        s.values.iter().chain(band).copied()
+    });
     let (mut lo, mut hi) = vals.fold((f32::MAX, f32::MIN), |(l, h), v| (l.min(v), h.max(v)));
     if lo > hi {
         (lo, hi) = (0.0, 1.0);

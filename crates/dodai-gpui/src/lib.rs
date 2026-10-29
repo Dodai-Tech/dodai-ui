@@ -186,6 +186,8 @@ pub mod charts_flow;
 #[cfg(feature = "charts")]
 pub(crate) mod charts_focus;
 #[cfg(feature = "charts")]
+pub mod charts_layered;
+#[cfg(feature = "charts")]
 pub mod live;
 #[cfg(feature = "components")]
 mod own;
@@ -349,6 +351,8 @@ pub use charts_extra::{CalendarHeatmap, RoseChart, RoseScale, Sankey, ViolinChar
 #[cfg(feature = "charts")]
 pub use charts_flow::{waterfall_steps, Funnel, Waterfall};
 #[cfg(feature = "charts")]
+pub use charts_layered::{BumpChart, HorizonChart, RidgelineChart};
+#[cfg(feature = "charts")]
 pub use charts_market::{ChartStack, DepthChart, Gantt, RenkoChart};
 #[cfg(feature = "charts")]
 pub use charts_part_whole::{treemap_layout, RadialBar, Treemap};
@@ -356,7 +360,7 @@ pub use charts_part_whole::{treemap_layout, RadialBar, Treemap};
 pub use charts_pulse::{Pulse, PulseGrid, PulseKind, PulseMode, PulseRhythm};
 #[cfg(feature = "charts")]
 pub use charts_trend::{
-    overlay_lines, stack_cumulative, Candle, CandleOverlay, CandlePane, CandleStyle, Candlestick,
+    overlay_lines, Candle, CandleOverlay, CandlePane, CandleStyle, Candlestick, StackOffset,
     StackedAreaChart, TradeMarker,
 };
 #[cfg(feature = "components")]

@@ -280,6 +280,7 @@ impl LineChart {
             .enumerate()
             .map(|(i, s)| (hsla(series_color(&t, s, i)), s.values.clone(), range_of(i)))
             .collect();
+        let bands: Vec<Option<(Vec<f32>, Vec<f32>)>> = all.iter().map(|s| s.band.clone()).collect();
         let xh = self.crosshair.then(|| {
             window.use_keyed_state(SharedString::from(format!("{}-xh", self.id)), cx, |_, _| {
                 None::<usize>
@@ -311,25 +312,35 @@ impl LineChart {
                     for (li, (c, vals, (lo, hi))) in lines.iter().enumerate() {
                         let (lo, hi) = (*lo, *hi);
                         let m = vals.len();
-                        let raw: Vec<(f32, f32)> = vals
-                            .iter()
-                            .enumerate()
-                            .map(|(i, v)| {
-                                let x = match scroll {
-                                    // The newest sample sits at the right edge, sliding left.
-                                    Some(s) => (i as f32 - s) / (m.max(2) - 1) as f32 * bw,
-                                    // Centre of category slot `i`, matching the x labels.
-                                    None => slot_frac(&xs, i, m) * bw,
-                                };
-                                (x, bh - norm(*v, lo, hi) * bh)
-                            })
-                            .collect();
-                        let raw = if stepped { step_points(&raw) } else { raw };
-                        let p = if smooth && !stepped {
-                            smooth_points(&raw, 8)
-                        } else {
-                            raw
+                        let x_of = |i: usize| match scroll {
+                            // The newest sample sits at the right edge, sliding left.
+                            Some(s) => (i as f32 - s) / (m.max(2) - 1) as f32 * bw,
+                            // Centre of category slot `i`, matching the x labels.
+                            None => slot_frac(&xs, i, m) * bw,
                         };
+                        // The same path rule as the line, so a band hugs it.
+                        let path = |vs: &[f32]| {
+                            let raw: Vec<(f32, f32)> = vs
+                                .iter()
+                                .enumerate()
+                                .map(|(i, v)| (x_of(i), bh - norm(*v, lo, hi) * bh))
+                                .collect();
+                            let raw = if stepped { step_points(&raw) } else { raw };
+                            if smooth && !stepped {
+                                smooth_points(&raw, 8)
+                            } else {
+                                raw
+                            }
+                        };
+                        if let Some((blo, bhi)) = &bands[li] {
+                            let (top, bottom) = (path(bhi), path(blo));
+                            if top.len() > 1 && bottom.len() > 1 {
+                                let mut poly = top;
+                                poly.extend(bottom.into_iter().rev());
+                                fill(w, b.origin, &poly, scale_alpha(*c, style.area_alpha));
+                            }
+                        }
+                        let p = path(vals);
                         if p.len() < 2 {
                             continue;
                         }

@@ -87,6 +87,48 @@ fn charts(name: &'static str, v: Vec<f32>) -> Vec<AnyElement> {
                 .into_any_element(),
         );
     }
+    for o in [
+        StackOffset::Zero,
+        StackOffset::Expand,
+        StackOffset::Silhouette,
+        StackOffset::Wiggle,
+    ] {
+        out.push(
+            StackedAreaChart::new([s(), s()])
+                .offset(o)
+                .into_any_element(),
+        );
+    }
+    let rev: Vec<f32> = v.iter().rev().copied().collect();
+    out.push(
+        LineChart::new(format!("band-{name}"), [s().band(v.clone(), rev.clone())])
+            .x_title("x")
+            .y_title("y")
+            .into_any_element(),
+    );
+    out.push(
+        BumpChart::new([s(), Series::new("r", rev.clone())])
+            .labels(["only"])
+            .into_any_element(),
+    );
+    out.push(RidgelineChart::new([(name, v.clone()), ("r", rev)]).into_any_element());
+    out.push(HorizonChart::new([s(), s()]).bands(4).into_any_element());
+    out.push(
+        Bullet::new("", v.first().copied().unwrap_or(0.0))
+            .target(v.last().copied().unwrap_or(0.0))
+            .nice_scale(true)
+            .into_any_element(),
+    );
+    for g in [SparkGuide::Mean, SparkGuide::Peak, SparkGuide::At(f32::NAN)] {
+        for st in [SparkStyle::Line, SparkStyle::Bars] {
+            out.push(
+                Sparkline::new(v.clone())
+                    .guide(g)
+                    .style(st)
+                    .into_any_element(),
+            );
+        }
+    }
     out.push(Sparkline::new(v).into_any_element());
     out
 }

@@ -13,21 +13,7 @@ use gpui::{
 };
 use std::rc::Rc;
 
-/// Cumulative stack boundaries: `out[k][i]` = sum of series `0..=k` at `i`
-/// (negatives clamp to 0). Pure.
-pub fn stack_cumulative(series: &[Series]) -> Vec<Vec<f32>> {
-    let n = series.iter().map(|s| s.values.len()).max().unwrap_or(0);
-    let mut acc = vec![0.0f32; n];
-    series
-        .iter()
-        .map(|s| {
-            for (i, a) in acc.iter_mut().enumerate() {
-                *a += s.values.get(i).copied().unwrap_or(0.0).max(0.0);
-            }
-            acc.clone()
-        })
-        .collect()
-}
+pub use dodai_charts_core::layers::StackOffset;
 
 // ─────────────────────────────── StackedAreaChart ───────────────────────────────
 
@@ -43,6 +29,7 @@ pub struct StackedAreaChart {
     fmt: Option<NumFmt>,
     title: Option<SharedString>,
     legend: bool,
+    offset: StackOffset,
 }
 chart_cfg!(StackedAreaChart);
 
@@ -74,7 +61,14 @@ impl StackedAreaChart {
             fmt: None,
             title: None,
             legend: true,
+            offset: StackOffset::Zero,
         }
+    }
+    /// Where the stack sits: on zero (default), stretched to 100%, or floating as a stream
+    /// graph ([`StackOffset::Silhouette`], [`StackOffset::Wiggle`]; no value axis then).
+    pub fn offset(mut self, o: StackOffset) -> Self {
+        self.offset = o;
+        self
     }
     /// Labels, one per item.
     pub fn labels<S: Into<SharedString>>(mut self, l: impl IntoIterator<Item = S>) -> Self {
@@ -94,13 +88,22 @@ impl StackedAreaChart {
         self.series =
             crate::instruments_motion::follow_series(window, cx, &self.follow, &self.series);
         let t = theme_of(cx);
-        let cum = stack_cumulative(&self.series);
-        let n = cum.first().map_or(0, Vec::len);
-        let top_v = cum
-            .last()
-            .map_or(1.0, |l| l.iter().copied().fold(0.0, f32::max));
-        let ticks = nice_ticks(0.0, top_v, 4);
+        let rows: Vec<Vec<f32>> = self.series.iter().map(|s| s.values.clone()).collect();
+        let layers = dodai_charts_core::layers::stack_layers(&rows, self.offset);
+        let n = layers.first().map_or(0, Vec::len);
+        let (lo_v, hi_v) = dodai_charts_core::layers::layers_extent(&layers);
+        // A stream floats: no ticks, a little air above and below.
+        let (bottom, ticks) = match self.offset {
+            StackOffset::Expand => (0.0, vec![0.0, 0.25, 0.5, 0.75, 1.0]),
+            o if o.floats() => {
+                let pad = (hi_v - lo_v).max(f32::MIN_POSITIVE) * 0.05;
+                (lo_v - pad, vec![lo_v - pad, hi_v + pad])
+            }
+            _ => (0.0, nice_ticks(0.0, hi_v, 4)),
+        };
         let top = *ticks.last().unwrap_or(&1.0);
+        let floats = self.offset.floats();
+        let expand = self.offset == StackOffset::Expand;
         let grid = hsla(t.palette.border);
         let glow = self.glow.resolve(&t);
         let cols: Vec<Hsla> = self
@@ -109,7 +112,11 @@ impl StackedAreaChart {
             .enumerate()
             .map(|(i, s)| hsla(series_color(&t, s, i)))
             .collect();
-        let tf: Vec<f32> = ticks.iter().map(|v| norm(*v, 0.0, top)).collect();
+        let tf: Vec<f32> = if floats {
+            Vec::new()
+        } else {
+            ticks.iter().map(|v| norm(*v, bottom, top)).collect()
+        };
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
@@ -119,17 +126,13 @@ impl StackedAreaChart {
                     stroke(w, b.origin, &[(0.0, y), (bw, y)], 1.0, grid, false);
                 }
                 let x = |i: usize| (i as f32 + 0.5) / n.max(1) as f32 * bw;
-                for (k, layer) in cum.iter().enumerate() {
-                    let upper: Vec<(f32, f32)> = (0..n)
-                        .map(|i| (x(i), bh - norm(layer[i], 0.0, top) * bh * g))
-                        .collect();
-                    let lower: Vec<(f32, f32)> = (0..n)
-                        .rev()
-                        .map(|i| {
-                            let v = if k == 0 { 0.0 } else { cum[k - 1][i] };
-                            (x(i), bh - norm(v, 0.0, top) * bh * g)
-                        })
-                        .collect();
+                // Grow from the stack's own floor: zero, or the stream's centre line.
+                let floor = if floats { norm(0.0, bottom, top) } else { 0.0 };
+                let y = |v: f32| bh - (floor + (norm(v, bottom, top) - floor) * g) * bh;
+                for (k, layer) in layers.iter().enumerate() {
+                    let upper: Vec<(f32, f32)> = (0..n).map(|i| (x(i), y(layer[i].1))).collect();
+                    let lower: Vec<(f32, f32)> =
+                        (0..n).rev().map(|i| (x(i), y(layer[i].0))).collect();
                     if upper.len() < 2 {
                         continue;
                     }
@@ -148,7 +151,7 @@ impl StackedAreaChart {
         plot = plot.child(crate::charts_annotate::layer(
             &t,
             &self.annotations,
-            (0.0, top),
+            (bottom, top),
             &crate::charts_annotate::category_x(n),
         ));
 
@@ -164,7 +167,14 @@ impl StackedAreaChart {
             .w_full()
             .child(framed(
                 &t,
-                ticks.iter().map(|v| fmt_with(&self.fmt, *v)).collect(),
+                ticks
+                    .iter()
+                    .map(|v| match (floats, expand, &self.fmt) {
+                        (true, _, _) => String::new(),
+                        (_, true, None) => format!("{:.0}%", v * 100.0),
+                        _ => fmt_with(&self.fmt, *v),
+                    })
+                    .collect(),
                 x_labels,
                 plot,
             ));
@@ -697,17 +707,6 @@ impl Candlestick {
 }
 
 crate::entry_render!(Candlestick);
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn stack_is_cumulative() {
-        let s = [Series::new("a", [1.0, 2.0]), Series::new("b", [3.0, -1.0])];
-        assert_eq!(stack_cumulative(&s), vec![vec![1.0, 2.0], vec![4.0, 2.0]]);
-    }
-}
 
 #[cfg(test)]
 mod candle_tests {

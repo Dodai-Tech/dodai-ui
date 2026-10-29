@@ -351,6 +351,10 @@ pub(crate) fn follow_series(
         .map(|(i, mut s)| {
             if s.live.is_none() {
                 s.values = follow_all(w, cx, &f.sub(&format!("s{i}")), &s.values);
+                if let Some((lo, hi)) = &mut s.band {
+                    *lo = follow_all(w, cx, &f.sub(&format!("s{i}-lo")), lo);
+                    *hi = follow_all(w, cx, &f.sub(&format!("s{i}-hi")), hi);
+                }
             }
             s
         })

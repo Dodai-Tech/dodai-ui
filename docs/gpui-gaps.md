@@ -88,6 +88,10 @@ No shared value tooltip on line/bar; hover/select via `Focus` only on RadialBar,
 legends; no bar dash patterns; no zoom/pan/brush; no log scale or second axis on bars; grow-in
 of Violin, Rose, Renko and Gauge shares one start time per type.
 
+Not built yet (chart types): sunburst, icicle, chord, parallel coordinates, beeswarm, waffle,
+Pareto; then hexbin/contour, force graph, marimekko, polar line. Bump, ridgeline and horizon
+have no hover highlight of one series yet (Bump has a per-step tooltip).
+
 ## Status
 
 Done: controls that run without a controlling parent (`Toggle`, `Checkbox`, `Radio`, `Tabs`,
