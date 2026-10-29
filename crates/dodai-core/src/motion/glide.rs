@@ -152,9 +152,10 @@ pub struct Stretch {
 }
 
 impl Stretch {
-    /// How much quicker the leading edge is than the trailing one.
-    const LEAD: f32 = 1.0 / 1.4;
-    const TRAIL: f32 = 1.0 / 2.2;
+    /// The edges' speeds against the motion's own: the leading edge runs ahead, the trailing
+    /// one just behind, so the stretch shows without the span arriving late.
+    const LEAD: f32 = 1.6;
+    const TRAIL: f32 = 1.0 / 1.15;
 
     /// At rest on `(x, w)`.
     pub fn new((x, w): (f32, f32), m: &Motion) -> Self {
@@ -314,6 +315,21 @@ mod tests {
         assert!(x > 0.0);
         assert!(s.settled(1.0));
         assert_eq!(s.value(1.0), (100.0, 10.0));
+    }
+
+    #[test]
+    fn a_sprung_stretch_lands_promptly_at_speed_one() {
+        // A tab move on a smooth spring: within 1 px of the target in half a second.
+        let m = Motion::default().travel(Travel::Spring);
+        let mut s = Stretch::new((0.0, 80.0), &m);
+        s.to((200.0, 80.0), &m, 0.0);
+        let (x, w) = s.value(0.5);
+        assert!((x - 200.0).abs() < 1.0 && (w - 80.0).abs() < 1.0, "{x} {w}");
+        assert!(
+            s.value(0.08).1 > 85.0,
+            "still stretches: {:?}",
+            s.value(0.08)
+        );
     }
 
     #[test]
