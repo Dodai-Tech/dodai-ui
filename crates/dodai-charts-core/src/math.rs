@@ -1,5 +1,19 @@
 //! Pure numeric and geometry helpers shared by every chart renderer.
 
+/// `v` rounded up to a clean scale top (1, 1.5, 2, 2.5, 3, 4, 5, 6 or 8 times a power of
+/// ten; 420 → 500, 96 → 100). Not positive or not finite: `v` unchanged.
+pub fn nice_ceiling(v: f32) -> f32 {
+    if !(v > 0.0 && v.is_finite()) {
+        return v;
+    }
+    let m = 10f32.powf(v.log10().floor());
+    [1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0]
+        .into_iter()
+        .map(|f| f * m)
+        .find(|top| *top >= v * (1.0 - 1e-6))
+        .unwrap_or(10.0 * m)
+}
+
 /// "Nice" axis ticks covering `min..=max` with about `count` steps. Pure.
 pub fn nice_ticks(min: f32, max: f32, count: usize) -> Vec<f32> {
     let count = count.max(1) as f32;
@@ -235,5 +249,28 @@ mod tests {
         assert_eq!(norm(5.0, 0.0, 10.0), 0.5);
         assert_eq!(norm(20.0, 0.0, 10.0), 1.0);
         assert_eq!(norm(1.0, 3.0, 3.0), 0.0);
+    }
+}
+
+#[cfg(test)]
+mod nice_ceiling_tests {
+    use super::nice_ceiling;
+
+    #[test]
+    fn a_scale_rounds_up_to_a_clean_top() {
+        for (v, top) in [
+            (420.0, 500.0),
+            (96.0, 100.0),
+            (1.3, 1.5),
+            (500.0, 500.0),
+            (0.07, 0.08),
+        ] {
+            let got = nice_ceiling(v);
+            assert!(got >= v * 0.999_999, "{v} → {got}");
+            assert!((got - top).abs() < top * 1e-4, "{v} → {got}, want {top}");
+        }
+        assert_eq!(nice_ceiling(0.0), 0.0);
+        assert!(nice_ceiling(f32::NAN).is_nan());
+        assert_eq!(nice_ceiling(f32::INFINITY), f32::INFINITY);
     }
 }

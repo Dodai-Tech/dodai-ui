@@ -754,8 +754,8 @@ impl Showcase {
                         Sparkline::new(series()).marker(Marker::Diamond),
                     ))
                     .child(spark(
-                        "Mean baseline",
-                        Sparkline::new(series()).baseline(true),
+                        "Peak guide",
+                        Sparkline::new(series()).guide(SparkGuide::Peak),
                     )),
             )
             .child(

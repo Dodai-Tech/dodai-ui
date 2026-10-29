@@ -116,9 +116,18 @@ impl Showcase {
                         .text_size(px(t.typography.size_xxl))
                         .child(format!("{current:.1} Mbps")),
                 )
+                // The meter's scale rounds up from the peak, so it holds still while it fills.
+                .child(
+                    Bullet::new("", current)
+                        .target(peak)
+                        .nice_scale(true)
+                        .color(colours[k])
+                        .height(12.0),
+                )
                 .child(
                     Sparkline::new([])
                         .live(w)
+                        .guide(SparkGuide::Peak)
                         .style(SparkStyle::Bars)
                         .color(colours[k])
                         .fluid(true)
@@ -168,6 +177,8 @@ impl Showcase {
             )
             .area(true)
             .y_range(0.0, 500.0)
+            .y_title("Mbps")
+            .x_title(format!("Last {:.0} s", WINDOW as f32 * EVERY))
             .height(150.0),
         );
 
@@ -195,6 +206,7 @@ impl Showcase {
                 )
                 .child(
                     Sparkline::new(values)
+                        .guide(SparkGuide::Mean)
                         .style(SparkStyle::Bars)
                         .color(colours[k])
                         .fluid(true)

@@ -69,7 +69,7 @@ impl Showcase {
             "Speed test · live throughput",
             self.section("Throughput charts", cx)
                 .child(Muted::new(
-                    "A network speed test in the netrunner style: each transfer fills its own window during its phase. Stock Sparkline, LineChart, Stepper and Panel only.",
+                    "A network speed test in the netrunner style: each transfer fills its own window during its phase. Stock Sparkline (peak guide), Bullet (clean scale, peak tick), LineChart (axis titles), Stepper and Panel only.",
                 ))
                 .child(self.throughput_demo(cx))
                 .into_any_element(),

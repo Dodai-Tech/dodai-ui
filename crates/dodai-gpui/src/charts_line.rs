@@ -39,6 +39,7 @@ pub struct LineChart {
     stepped: bool,
     zero: bool,
     title: Option<SharedString>,
+    axes: crate::charts::AxisTitles,
 }
 
 impl LineChart {
@@ -83,6 +84,7 @@ impl LineChart {
             stepped: false,
             zero: true,
             title: None,
+            axes: crate::charts::AxisTitles::default(),
         }
     }
     /// Fix the Y axis to `lo..=hi` (default: fit data, including zero).
@@ -124,6 +126,16 @@ impl LineChart {
     /// Title above the chart.
     pub fn title(mut self, t: impl Into<SharedString>) -> Self {
         self.title = Some(t.into());
+        self
+    }
+    /// Name of the horizontal axis, centred under the plot (e.g. "Seconds").
+    pub fn x_title(mut self, t: impl Into<SharedString>) -> Self {
+        self.axes.x = Some(t.into());
+        self
+    }
+    /// Name of the vertical axis, over its value labels (e.g. a unit, "Mbps").
+    pub fn y_title(mut self, t: impl Into<SharedString>) -> Self {
+        self.axes.y = Some(t.into());
         self
     }
     /// X-axis category labels.
@@ -466,6 +478,7 @@ impl LineChart {
             Some(row) => crate::charts::framed_row(&t, ylab, Some(row), plot),
             None => framed(&t, ylab, x_labels, plot),
         };
+        let left = self.axes.around(&t, t.sizes().axis_gutter, left);
         if ticks2.is_empty() {
             root = root.child(left);
         } else {

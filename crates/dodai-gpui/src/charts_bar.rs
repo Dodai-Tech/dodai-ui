@@ -30,6 +30,7 @@ pub struct BarChart {
     value_labels: bool,
     bar_width: f32,
     title: Option<SharedString>,
+    axes: crate::charts::AxisTitles,
     corners: Option<dodai_core::Corners>,
 }
 
@@ -65,6 +66,7 @@ impl BarChart {
             value_labels: false,
             bar_width: 32.0,
             title: None,
+            axes: crate::charts::AxisTitles::default(),
         }
     }
     /// Fix the value-axis maximum (default: fit data).
@@ -90,6 +92,16 @@ impl BarChart {
     /// Title above the chart.
     pub fn title(mut self, t: impl Into<SharedString>) -> Self {
         self.title = Some(t.into());
+        self
+    }
+    /// Name of the horizontal axis, centred under the plot (e.g. "Seconds").
+    pub fn x_title(mut self, t: impl Into<SharedString>) -> Self {
+        self.axes.x = Some(t.into());
+        self
+    }
+    /// Name of the vertical axis, over its value labels (e.g. a unit, "Mbps").
+    pub fn y_title(mut self, t: impl Into<SharedString>) -> Self {
+        self.axes.y = Some(t.into());
         self
     }
     /// Labels, one per item.
@@ -444,12 +456,17 @@ impl BarChart {
                 plot,
             )
         };
+        let gutter = if self.horizontal {
+            t.sizes().axis_gutter_lg
+        } else {
+            t.sizes().axis_gutter
+        };
         let mut root = div()
             .flex()
             .flex_col()
             .gap(px(t.spacing.sm))
             .w_full()
-            .child(body);
+            .child(self.axes.around(&t, gutter, body));
         if let (true, Some((pinned, h))) = (self.legend, legend_all) {
             if pinned.len() > 1 {
                 root =

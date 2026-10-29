@@ -392,6 +392,43 @@ pub(crate) fn framed_row(
     div().flex().w_full().child(ycol).child(right)
 }
 
+/// Names for a chart's axes: the y title sits over the value labels (where a unit reads first),
+/// the x title centred under the plot.
+#[derive(Clone, Default)]
+pub(crate) struct AxisTitles {
+    pub(crate) x: Option<SharedString>,
+    pub(crate) y: Option<SharedString>,
+}
+
+impl AxisTitles {
+    /// `body` (a framed plot whose label gutter is `gutter` px wide) with the titles around it.
+    pub(crate) fn around(&self, t: &Theme, gutter: f32, body: gpui::Div) -> gpui::Div {
+        if self.x.is_none() && self.y.is_none() {
+            return body;
+        }
+        let caption = |s: SharedString| {
+            label_style(t, div())
+                .font_weight(gpui::FontWeight::MEDIUM)
+                .child(s)
+        };
+        let mut out = div().flex().flex_col().gap(px(t.spacing.xs)).w_full();
+        if let Some(y) = self.y.clone() {
+            out = out.child(caption(y));
+        }
+        out = out.child(body);
+        if let Some(x) = self.x.clone() {
+            out = out.child(
+                div()
+                    .flex()
+                    .justify_center()
+                    .pl(px(gutter))
+                    .child(caption(x)),
+            );
+        }
+        out
+    }
+}
+
 /// Number formatter shared by chart configuration.
 pub type NumFmt = Rc<dyn Fn(f32) -> String>;
 

@@ -17,7 +17,7 @@ pub struct Sparkline {
     follow: crate::instruments_motion::Follow,
     glow: ChartGlow,
     style: SparkStyle,
-    baseline: bool,
+    guide: Option<SparkGuide>,
     values: Vec<f32>,
     w: f32,
     fluid: bool,
@@ -43,6 +43,36 @@ pub enum SparkStyle {
     Dots,
     /// Up / down ticks around the mean: above it wins, below it loses.
     WinLoss,
+}
+
+/// A faint dashed reference line across a [`Sparkline`].
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum SparkGuide {
+    /// At the mean of the values shown.
+    Mean,
+    /// At the highest value shown (a live peak).
+    Peak,
+    /// At a fixed value, e.g. a target or limit (kept inside the box).
+    At(f32),
+}
+
+impl SparkGuide {
+    /// The value the line marks for `vals`, if it can be placed.
+    fn level(self, vals: &[f32]) -> Option<f32> {
+        let v = match self {
+            Self::Mean if !vals.is_empty() => vals.iter().sum::<f32>() / vals.len() as f32,
+            Self::Peak => vals.iter().copied().fold(f32::NAN, f32::max),
+            Self::At(v) => v,
+            Self::Mean => return None,
+        };
+        v.is_finite().then_some(v)
+    }
+}
+
+/// Height fraction (0 = bottom, 1 = top) of `v` in a [`SparkStyle::Bars`] column scaled over
+/// `lo..hi`: every column keeps a sliver so the smallest still shows. Pure.
+fn column_frac(v: f32, lo: f32, hi: f32) -> f32 {
+    0.12 + 0.88 * norm(v, lo, hi)
 }
 
 /// Column rectangles `(x0, y0, x1, y1)` for [`SparkStyle::Bars`] /
@@ -74,7 +104,7 @@ pub fn spark_columns(vals: &[f32], w: f32, h: f32, win_loss: bool) -> Vec<(f32, 
                     (x0, half + 0.5, x0 + bw, h - 1.0)
                 }
             } else {
-                let frac = 0.12 + 0.88 * norm(*v, lo, hi);
+                let frac = column_frac(*v, lo, hi);
                 (x0, h - frac * h, x0 + bw, h)
             }
         })
@@ -92,9 +122,9 @@ impl Sparkline {
         self.style = s;
         self
     }
-    /// Faint dashed reference line at the mean.
-    pub fn baseline(mut self, b: bool) -> Self {
-        self.baseline = b;
+    /// Faint dashed reference line at the mean, the peak or a fixed value.
+    pub fn guide(mut self, g: SparkGuide) -> Self {
+        self.guide = Some(g);
         self
     }
     /// Stretch to the available width instead of the fixed `w`.
@@ -120,7 +150,7 @@ impl Sparkline {
             follow: crate::instruments_motion::Follow::here(),
             glow: ChartGlow::Theme,
             style: SparkStyle::Line,
-            baseline: false,
+            guide: None,
             values: values.into_iter().collect(),
             w: 96.0,
             fluid: false,
@@ -187,7 +217,7 @@ impl Sparkline {
         let glow = self.glow.resolve(&t).map(|r| r.min(4.0));
         let (vals, area, marker, all_points) =
             (self.values, self.area, self.marker, self.all_points);
-        let (style, baseline, smooth) = (self.style, self.baseline, self.smooth);
+        let (style, guide, smooth) = (self.style, self.guide, self.smooth);
         let up = hsla(t.palette.success);
         let down = hsla(t.palette.danger);
         let (lo, hi) = vals
@@ -220,9 +250,14 @@ impl Sparkline {
                             )
                         })
                         .collect();
-                    if baseline {
-                        let mean = vals.iter().sum::<f32>() / m as f32;
-                        let y = pad + (1.0 - norm(mean, lo, hi)) * (bh - 2.0 * pad);
+                    let bars = matches!(style, SparkStyle::Bars | SparkStyle::WinLoss);
+                    if let Some(v) = guide.and_then(|g| g.level(&vals)) {
+                        let y = if bars {
+                            bh - column_frac(v, lo, hi) * bh
+                        } else {
+                            pad + (1.0 - norm(v, lo, hi)) * (bh - 2.0 * pad)
+                        }
+                        .clamp(0.5, bh - 0.5);
                         let mut x = 0.0;
                         while x < bw {
                             stroke(
@@ -240,9 +275,15 @@ impl Sparkline {
                         SparkStyle::Bars | SparkStyle::WinLoss => {
                             let win = style == SparkStyle::WinLoss;
                             let mean = vals.iter().sum::<f32>() / m as f32;
-                            for (i, (x0, y0, x1, y1)) in
-                                spark_columns(&vals, bw, bh, win).into_iter().enumerate()
-                            {
+                            let cols = spark_columns(&vals, bw, bh, win);
+                            // A live window slides left by a column pitch between samples.
+                            let pitch = cols.get(1).map_or(0.0, |c| c.0 - cols[0].0);
+                            let dx = -scroll.unwrap_or(0.0) * pitch;
+                            for (i, (x0, y0, x1, y1)) in cols.into_iter().enumerate() {
+                                let (x0, x1) = ((x0 + dx).max(0.0), x1 + dx);
+                                if x1 <= x0 {
+                                    continue;
+                                }
                                 let col = if win && vals[i] < mean {
                                     down
                                 } else if win {
@@ -297,5 +338,30 @@ impl Sparkline {
             )
             .size_full(),
         )
+    }
+}
+
+#[cfg(test)]
+mod guide_tests {
+    use super::*;
+
+    #[test]
+    fn a_guide_marks_the_mean_the_peak_or_a_value() {
+        let v = [1.0, 5.0, 3.0];
+        assert_eq!(SparkGuide::Mean.level(&v), Some(3.0));
+        assert_eq!(SparkGuide::Peak.level(&v), Some(5.0));
+        assert_eq!(SparkGuide::At(4.0).level(&v), Some(4.0));
+        assert_eq!(SparkGuide::Mean.level(&[]), None);
+        assert_eq!(SparkGuide::Peak.level(&[]), None);
+        assert_eq!(SparkGuide::At(f32::NAN).level(&v), None);
+    }
+
+    #[test]
+    fn the_peak_guide_sits_on_the_tallest_column() {
+        let v = [1.0, 5.0, 3.0];
+        let cols = spark_columns(&v, 90.0, 40.0, false);
+        let top = cols.iter().map(|c| c.1).fold(f32::MAX, f32::min);
+        let y = 40.0 - column_frac(5.0, 1.0, 5.0) * 40.0;
+        assert!((top - y).abs() < 1e-4, "{top} vs {y}");
     }
 }

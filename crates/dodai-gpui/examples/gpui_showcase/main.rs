@@ -22,9 +22,9 @@ use dodai_gpui::{
     EmptyState, Funnel, Gauge, GaugeStyle, Heatmap, HexMap, Histogram, IconBadge, IconName,
     LineChart, Marker, NumberStepper, Oscilloscope, PieChart, PieStyle, RadarChart, RadarScope,
     RadialBar, RangeSlider, Rating, RichTooltip, RingStack, ScatterPlot, SearchView, Series,
-    SignalBars, Snackbar, SparkStyle, Sparkline, Spectrum, StackedAreaChart, TagField, TextInput,
-    TimePicker, Timeline, TimelineEvent, Toolbar, TreeItem, TreeNavigation, TreeView, Treemap,
-    Waterfall,
+    SignalBars, Snackbar, SparkGuide, SparkStyle, Sparkline, Spectrum, StackedAreaChart, TagField,
+    TextInput, TimePicker, Timeline, TimelineEvent, Toolbar, TreeItem, TreeNavigation, TreeView,
+    Treemap, Waterfall,
 };
 use dodai_gpui::{
     CandleOverlay, CandlePane, CandleStyle, ChartStack, DepthChart, Gantt, GanttTask, RenkoChart,

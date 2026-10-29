@@ -27,6 +27,7 @@ pub struct Bullet {
     target: Option<f32>,
     ranges: Vec<f32>,
     max: Option<f32>,
+    nice: bool,
     color: Option<Color>,
     height: f32,
     fmt: Option<NumFmt>,
@@ -35,7 +36,8 @@ pub struct Bullet {
 
 impl Bullet {
     crate::instruments_motion::follow_api!();
-    /// Create a new [`Bullet`].
+    /// Create a new [`Bullet`]. An empty `label` drops the label column (the bar takes the
+    /// room, e.g. under a heading that already names it).
     #[track_caller]
     pub fn new(label: impl Into<SharedString>, value: f32) -> Self {
         Self {
@@ -45,6 +47,7 @@ impl Bullet {
             target: None,
             ranges: Vec::new(),
             max: None,
+            nice: false,
             color: None,
             height: 28.0,
             fmt: None,
@@ -66,6 +69,13 @@ impl Bullet {
     /// Scale maximum (default: the largest of value, target and ranges).
     pub fn max(mut self, m: f32) -> Self {
         self.max = Some(m);
+        self
+    }
+    /// Round the scale up to a clean number (420 → 500), so a live reading keeps a steady
+    /// scale and the end reads well. Pair with a [`target`](Self::target) at the peak seen so
+    /// far for a speed meter.
+    pub fn nice_scale(mut self, on: bool) -> Self {
+        self.nice = on;
         self
     }
     /// Value bar colour (default: the theme's primary).
@@ -100,6 +110,11 @@ impl Bullet {
                     .fold(0.0f32, f32::max)
             })
             .max(f32::MIN_POSITIVE);
+        let max = if self.nice {
+            dodai_charts_core::math::nice_ceiling(max)
+        } else {
+            max
+        };
         let band = hsla(t.palette.text_muted);
         let mut track = div().relative().flex_1().h(px(self.height));
         let mut prev = 0.0;
@@ -151,25 +166,22 @@ impl Bullet {
                     .bg(hsla(t.palette.text)),
             );
         }
-        let row = div()
-            .flex()
-            .items_center()
-            .gap(px(t.spacing.md))
-            .w_full()
-            .child(
+        let mut row = div().flex().items_center().gap(px(t.spacing.md)).w_full();
+        if !self.label.is_empty() {
+            row = row.child(
                 label_style(&t, div())
                     .w(px(t.sizes().axis_gutter_lg * 1.6))
                     .flex_none()
                     .text_color(hsla(t.palette.text))
                     .child(self.label.clone()),
-            )
-            .child(track)
-            .child(
-                label_style(&t, div())
-                    .w(px(t.sizes().axis_gutter_lg))
-                    .flex_none()
-                    .child(fmt_with(&self.fmt, self.value)),
             );
+        }
+        let row = row.child(track).child(
+            label_style(&t, div())
+                .w(px(t.sizes().axis_gutter_lg))
+                .flex_none()
+                .child(fmt_with(&self.fmt, self.value)),
+        );
         titled(&t, self.title.clone(), div().w_full().child(row))
     }
 }
