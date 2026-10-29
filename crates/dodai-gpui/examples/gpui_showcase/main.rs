@@ -176,6 +176,9 @@ pub struct Showcase {
     live_a: dodai_gpui::Live,
     live_b: dodai_gpui::Live,
     live_c: dodai_gpui::Live,
+    /// The speed-test demo's download and upload windows.
+    speed_down: dodai_gpui::Live,
+    speed_up: dodai_gpui::Live,
     track_sel: usize,
     station_sel: usize,
     /// Pulse monitor options: rhythm, mode, grid, noise, rate, trail, gain.

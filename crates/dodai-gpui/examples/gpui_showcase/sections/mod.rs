@@ -8,8 +8,11 @@ mod inputs;
 mod instruments_sec;
 mod navigation;
 pub(crate) mod shape;
+mod throughput;
 
 use super::*;
+
+pub(crate) use throughput::WINDOW as THROUGHPUT_WINDOW;
 
 /// Every category, in sidebar order (Shaders last: it is the biggest).
 pub(crate) const CATEGORIES: [&str; 12] = [

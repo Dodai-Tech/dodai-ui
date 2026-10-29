@@ -66,6 +66,17 @@ impl Showcase {
         ));
         out.push((
             "Charts",
+            "Speed test · live throughput",
+            self.section("Throughput charts", cx)
+                .child(Muted::new(
+                    "A network speed test in the netrunner style: each transfer fills its own window during its phase. Stock Sparkline, LineChart, Stepper and Panel only.",
+                ))
+                .child(self.throughput_demo(cx))
+                .into_any_element(),
+            "Throughput charts",
+        ));
+        out.push((
+            "Charts",
             "Stacked area · Histogram · Waterfall",
             self.section("Area · histogram · waterfall", cx)
                 .child(charts_more1)

@@ -6,6 +6,7 @@ use crate::paint::{round_shape, scaled_shape, shaped, shaped_id, ShapeStyle};
 use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use dodai_core::{ButtonVariant, ControlState, Theme};
+use gpui::prelude::FluentBuilder as _;
 use gpui::{
     div, px, App, ElementId, InteractiveElement, IntoElement, ParentElement, SharedString,
     StatefulInteractiveElement, Styled, Window,
@@ -275,9 +276,17 @@ impl Stepper {
                     .flex()
                     .items_center()
                     .gap(px(t.spacing.sm))
-                    .flex_none()
+                    // Steps give way when the row is short: the other labels truncate, the
+                    // current one and every node stay whole.
+                    .min_w(px(side))
+                    .when_else(
+                        status == StepStatus::Current,
+                        |d| d.flex_none(),
+                        |d| d.flex_shrink(),
+                    )
                     .child(
                         shaped(&node_shape, style)
+                            .flex_none()
                             .w(px(side))
                             .h(px(side))
                             .flex()
@@ -292,6 +301,10 @@ impl Stepper {
                     )
                     .child(
                         div()
+                            .min_w_0()
+                            .overflow_hidden()
+                            .whitespace_nowrap()
+                            .text_ellipsis()
                             .text_color(hsla(text))
                             .child(format_label(&t.typography, label)),
                     ),

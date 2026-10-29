@@ -475,7 +475,7 @@ dependencies = [
  "objc2-foundation 0.3.2",
  "parking_lot",
  "percent-encoding",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
  "wl-clipboard-rs",
  "x11rb",
 ]
@@ -1768,7 +1768,7 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-time",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -4623,7 +4623,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -8561,7 +8561,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -9283,7 +9283,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d8fae84b431384b68627d0f9b3b1245fcf9f46f6c0e3dc902e9dce64edd1967"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -10147,7 +10147,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -10908,7 +10908,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.12.1",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -12283,7 +12283,7 @@ dependencies = [
  "getrandom 0.4.3",
  "once_cell",
  "rustix 1.1.5",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -12917,20 +12917,21 @@ dependencies = [
 
 [[package]]
 name = "tui-chart"
-version = "0.1.5"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5780cf5ac18efe134f26febec8d99700354edbc68a0fcdcda219fd6e5de56689"
+checksum = "9616cd1452c5f76fe176dd78662ea9053c4eebdc10af9470f3c205db90c324ba"
 dependencies = [
  "ratatui",
  "tui-nuances",
+ "tui-piechart",
  "unicode-width",
 ]
 
 [[package]]
 name = "tui-checkbox"
-version = "0.5.1"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "814f8ff6c52d794ae22e41b134fee301cdda85e84c0f0c235fcec2efa49ba17a"
+checksum = "3ea61730259f12c34790e8ade8b6e32eabb02076c673f5d11e271be076fdd1b4"
 dependencies = [
  "ratatui",
  "tui-nuances",
@@ -12947,9 +12948,9 @@ dependencies = [
 
 [[package]]
 name = "tui-piechart"
-version = "1.1.1"
+version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21b490620b47679e83c392ba4dd0b0eb2e1feb57d50079cce0357bd40b2550e5"
+checksum = "a3b3d9dfaa69b001a51f98e35af00ad98ebe1a5d8ac4e2e98631704f61ac0536"
 dependencies = [
  "ratatui",
  "tui-nuances",
@@ -12957,9 +12958,9 @@ dependencies = [
 
 [[package]]
 name = "tui-rating"
-version = "0.4.1"
+version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c6883ceb5583ea08f6b74ade6c62c4f5abd0d8b0b6075718dd8ab5206cb028c"
+checksum = "dbb227230fc727caf873981618bf6af4bce7d7adb0e55169cb6073f305d1fd76"
 dependencies = [
  "ratatui",
  "tui-nuances",
@@ -12967,9 +12968,9 @@ dependencies = [
 
 [[package]]
 name = "tui-slider"
-version = "0.4.4"
+version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f092176a9e98b646f75f44f29c358a08e191328f8f60a01a82d6fb76c157a23e"
+checksum = "c774d1c55e55b681c778b20e52c1ec4c4832d61f51c87e26b851132669cc255f"
 dependencies = [
  "ratatui",
  "tui-nuances",
@@ -12978,9 +12979,9 @@ dependencies = [
 
 [[package]]
 name = "tui-spinner"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63f13ba57ce9f65f5b17b186a1ebb6d67bbebb8dbb5db2318aa7cad6f166eee8"
+checksum = "94adf69de1718fb5db406fa79e2a674c75ec8016ed04ab3bdf698e757c9856eb"
 dependencies = [
  "ratatui",
  "tui-nuances",
@@ -14370,7 +14371,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -15061,7 +15062,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d6f32a0ff4a9f6f01231eb2059cc85479330739333e0e58cadf03b6af2cca10"
 dependencies = [
  "cfg-if",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

@@ -84,6 +84,7 @@ impl Showcase {
         self.live_a.advance(0.2, |i| live_signal(i, 0.9));
         self.live_b.advance(0.35, |i| live_signal(i, 0.6));
         self.live_c.advance(0.035, live_ecg);
+        self.speed_step();
         self.slider = wave(0.55, 0.0);
         self.stepped = (wave(0.4, 1.0) * 10.0).round();
         self.db = -24.0 + (wave(0.35, 2.0) * 10.0).round() * 3.0;
@@ -290,6 +291,8 @@ impl Showcase {
             live_a: dodai_gpui::Live::prefilled(48, |i| live_signal(i, 0.9)),
             live_b: dodai_gpui::Live::prefilled(60, |i| live_signal(i, 0.6)),
             live_c: dodai_gpui::Live::prefilled(120, live_ecg),
+            speed_down: dodai_gpui::Live::new(sections::THROUGHPUT_WINDOW),
+            speed_up: dodai_gpui::Live::new(sections::THROUGHPUT_WINDOW),
             track_sel: 0,
             station_sel: 0,
             pulse_cfg: [0, 0, 0, 1, 1, 2, 1],
