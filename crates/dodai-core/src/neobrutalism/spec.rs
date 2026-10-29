@@ -347,9 +347,10 @@ impl DesignSpec for NeoBrutalism {
                 border: p.border,
             }
         } else {
+            // Off: the ink handle on the pale track, so the position reads at a glance.
             ToggleTokens {
                 track: p.surface_raised,
-                thumb: p.surface,
+                thumb: p.border,
                 border: p.border,
             }
         })

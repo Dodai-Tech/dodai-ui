@@ -125,7 +125,8 @@ impl Neon {
         p.surface_raised = raised;
         p.overlay = bg.with_alpha(0.88);
         p.border = border;
-        p.border_strong = strong;
+        // Control outlines: at least 3:1 on the panels they sit on.
+        p.border_strong = strong.with_contrast(surface, 3.2);
         p.on_primary = on(self.primary);
         p.on_secondary = on(secondary);
         let palette = t.palette.clone().with_derived_roles(true);

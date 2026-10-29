@@ -87,7 +87,8 @@ fn build(
         surface_raised: Color::hex(0x16161a),
         overlay: black.with_alpha(0.88),
         border: Color::hex(0x333333),
-        border_strong: Color::hex(0x4c4c4c),
+        // Control outlines: at least 3:1 on the panels they sit on.
+        border_strong: Color::hex(0x4c4c4c).with_contrast(Color::hex(0x0a0a0c), 3.2),
         text: Color::hex(0xffffff),
         text_muted: Color::hex(0xcbcbcb),
         text_disabled: Color::hex(0x7a7a7a),

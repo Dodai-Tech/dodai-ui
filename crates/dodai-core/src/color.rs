@@ -47,6 +47,20 @@ impl Color {
         }
     }
 
+    /// This colour blended towards white (against a dark colour) or black (against a light one),
+    /// just far enough to reach `min` contrast with `against`. Unchanged when it already does.
+    pub fn with_contrast(self, against: Self, min: f32) -> Self {
+        let end = if against.luminance() < 0.18 {
+            Self::hex(0xffffff)
+        } else {
+            Self::hex(0x000000)
+        };
+        (0..=40)
+            .map(|i| self.mix(end, i as f32 / 40.0))
+            .find(|c| c.contrast(against) >= min)
+            .unwrap_or(end)
+    }
+
     /// Blend towards white.
     pub fn lighten(self, t: f32) -> Self {
         self.mix(Self::hex(0xffffff), t)

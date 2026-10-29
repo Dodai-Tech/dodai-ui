@@ -608,7 +608,7 @@ impl Theme {
             ToggleTokens {
                 track: p.surface_raised,
                 thumb: if lit { p.text } else { p.text_muted },
-                border: if lit { p.border_strong } else { p.border },
+                border: if lit { p.text_muted } else { p.border_strong },
             }
         }
     }

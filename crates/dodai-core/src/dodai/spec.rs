@@ -175,7 +175,9 @@ fn selection(t: &Theme, kind: ToggleKind, on: bool, state: ControlState) -> Togg
             border: p.text_disabled,
         };
     }
-    let outline = if lit(state) { p.text } else { p.border_strong };
+    // Unchecked boxes and rings carry the control alone, so they take the muted ink, which
+    // still reads on glass over the backdrop's colour.
+    let outline = if lit(state) { p.text } else { p.text_muted };
     let fill = if lit(state) {
         p.primary_hover
     } else {
@@ -189,8 +191,8 @@ fn selection(t: &Theme, kind: ToggleKind, on: bool, state: ControlState) -> Togg
         },
         (ToggleKind::Switch, false) => ToggleTokens {
             track: p.surface_raised,
-            thumb: p.border_strong,
-            border: p.surface_raised,
+            thumb: outline,
+            border: p.border_strong,
         },
         (ToggleKind::Checkbox, true) => ToggleTokens {
             track: fill,
@@ -389,9 +391,9 @@ impl DesignSpec for Dodai {
     fn progress(&self, t: &Theme, tone: Option<Tone>) -> Option<ProgressTokens> {
         let p = &t.palette;
         Some(ProgressTokens {
-            track: frosted(t, 1),
+            track: p.border,
             fill: tone.map_or(p.primary, |x| p.tone(x)),
-            border: frosted(t, 1),
+            border: p.border,
             segments: 0,
         })
     }

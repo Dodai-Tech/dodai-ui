@@ -352,7 +352,12 @@ impl DesignSpec for Material3 {
             },
             (ToggleKind::Switch, false) => ToggleTokens {
                 track: r.surface_container_highest,
-                thumb: if lit { r.on_surface_variant } else { r.outline },
+                // Soft (pastel) outlines are pushed to 3:1 so the handle reads on its track.
+                thumb: if lit {
+                    r.on_surface_variant
+                } else {
+                    r.outline.with_contrast(r.surface_container_highest, 3.0)
+                },
                 border: r.outline,
             },
             (ToggleKind::Checkbox, true) => ToggleTokens {

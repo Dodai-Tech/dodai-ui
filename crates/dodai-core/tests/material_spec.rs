@@ -198,12 +198,17 @@ fn selection_controls_follow_the_spec() {
         let r = &t.palette.roles;
         let p = &t.palette;
         let k = |kind, on| t.choice_toggle(kind, on, ControlState::Idle);
-        // Switch: unselected track surface-container-highest + outline handle; selected primary.
+        // Switch: unselected track surface-container-highest + outline handle (a soft outline
+        // pushed to 3:1 on the track); selected primary.
         let off = k(ToggleKind::Switch, false);
+        let handle = r.outline.with_contrast(r.surface_container_highest, 3.0);
         assert_eq!(
             (off.track, off.border, off.thumb),
-            (r.surface_container_highest, r.outline, r.outline)
+            (r.surface_container_highest, r.outline, handle)
         );
+        if r.outline.contrast(r.surface_container_highest) >= 3.0 {
+            assert_eq!(handle, r.outline, "a strong outline is left alone");
+        }
         let on = k(ToggleKind::Switch, true);
         assert_eq!((on.track, on.thumb), (p.primary, p.on_primary));
         // Checkbox: unselected outline on-surface-variant, no fill; selected primary + on-primary mark.
