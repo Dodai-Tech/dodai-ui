@@ -417,3 +417,22 @@ fn a_flick_coasts_to_a_page_and_a_throw_keeps_its_momentum() {
     e.throw(0.3, 4.0, 1.0, &eased, 0.0);
     assert!(near(e.value(0.0), 0.3, 1e-4) && near(e.value(5.0), 1.0, 1e-3));
 }
+
+#[test]
+fn the_same_target_keeps_the_move_going_whatever_the_motion() {
+    use crate::motion::{Glide, Motion, Travel};
+    for travel in [Travel::Eased, Travel::Spring] {
+        let m = Motion::default().travel(travel);
+        let mut g = Glide::new(0.0, &m);
+        g.to(1.0, &m, 0.0);
+        let mid = g.value(0.05);
+        // Animation switched off mid-move: the same target with an instant motion.
+        g.to(1.0, &m.instant(), 0.05);
+        assert!(
+            (g.value(0.05) - mid).abs() < 1e-4,
+            "{travel:?} did not snap"
+        );
+        assert!(g.value(0.05) < 0.99, "{travel:?} is still on its way");
+        assert!(g.value(5.0) > 0.99, "{travel:?} lands");
+    }
+}

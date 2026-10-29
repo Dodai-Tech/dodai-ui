@@ -36,6 +36,8 @@ static REDUCED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::n
 thread_local! {
     static ENABLED: std::cell::Cell<bool> = const { std::cell::Cell::new(true) };
     static SPEED: std::cell::Cell<f32> = const { std::cell::Cell::new(1.0) };
+    /// Real seconds when animation was last switched off.
+    static OFF_AT: std::cell::Cell<f32> = const { std::cell::Cell::new(f32::NEG_INFINITY) };
     /// `(animation seconds, real seconds at the last read)`.
     static CLOCK: std::cell::Cell<(f32, f32)> = const { std::cell::Cell::new((0.0, 0.0)) };
 }
@@ -52,9 +54,14 @@ pub fn reduce_motion() -> bool {
     REDUCED.load(std::sync::atomic::Ordering::Relaxed)
 }
 
-/// Switch every animation on or off and repaint. Off, values land at once and running effects
-/// (sweeps, flashes, live traces) stand still on [`time`].
+/// Switch every animation on or off and repaint. Off, new changes land at once, ones already
+/// moving finish, and running effects (sweeps, flashes, live traces) stand still on [`time`].
+/// The input that switches it off is still answered: changes starting within [`LINGER`] of it
+/// play out (the Off button's own selection moves like the On one).
 pub fn set_enabled(cx: &mut App, on: bool) {
+    if !on && enabled() {
+        OFF_AT.with(|c| c.set(now()));
+    }
     ENABLED.with(|c| c.set(on));
     cx.refresh_windows();
 }
@@ -62,6 +69,16 @@ pub fn set_enabled(cx: &mut App, on: bool) {
 /// Whether animations run (see [`set_enabled`]). On by default.
 pub fn enabled() -> bool {
     ENABLED.with(std::cell::Cell::get)
+}
+
+/// How long after animation is switched off a change may still start moving: long enough for
+/// the repaint answering that click.
+pub const LINGER: f32 = 0.25;
+
+/// Whether a change starting at `t` (real seconds, see [`now`]) moves: motion is not reduced,
+/// and animation is on or was switched off at most [`LINGER`] before it.
+fn moves_from(t: f32) -> bool {
+    !reduce_motion() && (enabled() || t - OFF_AT.with(std::cell::Cell::get) <= LINGER)
 }
 
 /// How fast every animation runs (clamped to `0.1..=4`; `2` is twice as fast) and repaint.
@@ -91,10 +108,10 @@ pub fn time() -> f32 {
     })
 }
 
-/// `m` as it plays right now: instant while animations are off or motion is reduced, otherwise
-/// at the app's [`speed`].
+/// `m` as it plays right now: instant while motion is reduced or animation is off (past the
+/// [`LINGER`] after switching it off), otherwise at the app's [`speed`].
 pub fn pace(m: Motion) -> Motion {
-    if reduce_motion() || !enabled() {
+    if !moves_from(now()) {
         m.instant()
     } else {
         m.speed(speed())
@@ -418,7 +435,8 @@ pub fn stretch(
 
 /// Plays a one-shot clip each time `key` changes (not on first sight), keyed under `id`.
 /// `Some(frame)` while it runs, `None` at rest. The clip plays at the app's speed and is skipped
-/// while animation is off or motion is reduced (a zero-length clip never shows).
+/// when it starts while animation is off (see [`set_enabled`]) or while motion is reduced (a
+/// zero-length clip never shows).
 pub fn play_on_change<K, T>(
     window: &mut gpui::Window,
     cx: &mut App,
@@ -440,7 +458,7 @@ where
     if st.read(cx).0 != key {
         st.update(cx, |s, _| *s = (key, t));
     }
-    if !enabled() || reduce_motion() {
+    if !moves_from(st.read(cx).1) {
         return None;
     }
     let clip = clip();

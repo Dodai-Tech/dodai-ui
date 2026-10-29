@@ -78,9 +78,13 @@ impl Glide {
         };
         Self { drive }
     }
-    /// Head for `target` from wherever the value is at `now`. A change of motion (another
-    /// travel, pace or spring) takes over from the current position and velocity.
+    /// Head for `target` from wherever the value is at `now`, on `m` from the current position
+    /// and velocity. The same target again keeps the move already going, whatever `m` says (so
+    /// switching animation off mid-move does not snap it).
     pub fn to(&mut self, target: f32, m: &Motion, now: f32) {
+        if (target - self.target()).abs() <= f32::EPSILON {
+            return;
+        }
         let (x, v) = (self.value(now), self.velocity(now));
         match (&mut self.drive, m.travel) {
             (Drive::Eased(t), Travel::Eased) => t.to(target, *m, now),

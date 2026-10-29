@@ -1085,10 +1085,11 @@ fn every_selection_animation_lands_on_the_chosen_item(cx: &mut TestAppContext) {
     }
 }
 
-/// Off, every animation lands at once; faster, it takes less time.
+/// Off, every animation lands at once (after answering the input that switched it off);
+/// faster, it takes less time.
 #[gpui::test]
 fn the_playback_switches_pace_every_motion(cx: &mut TestAppContext) {
-    use dodai_gpui::motion::{pace, set_enabled, set_speed, Motion};
+    use dodai_gpui::motion::{pace, set_enabled, set_speed, Motion, LINGER};
     use std::time::Duration;
     let m = Motion::default().duration(Duration::from_millis(400));
     cx.update(|cx| {
@@ -1096,6 +1097,12 @@ fn the_playback_switches_pace_every_motion(cx: &mut TestAppContext) {
         assert_eq!(pace(m).duration, Duration::from_millis(200));
         assert_eq!(pace(m).pace, 2.0);
         set_enabled(cx, false);
+        assert_eq!(
+            pace(m).duration,
+            Duration::from_millis(200),
+            "the Off click's own change still moves"
+        );
+        std::thread::sleep(Duration::from_secs_f32(LINGER + 0.05));
         assert_eq!(pace(m).duration, Duration::ZERO);
         set_enabled(cx, true);
         set_speed(cx, 1.0);
