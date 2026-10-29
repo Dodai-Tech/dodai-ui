@@ -71,7 +71,7 @@ pub use tokens::{
     Clip, Corners, Effects, Scale, Shape, ShapeKind, Sizes, Spacing, StateLayer, Typography,
 };
 pub use tonal::TonalPalette;
-pub use tune::{BorderTint, GradientMode, RoundnessGroup, ShadowDir, ShapeTune};
+pub use tune::{BorderTint, ControlColour, GradientMode, RoundnessGroup, ShadowDir, ShapeTune};
 
 /// Turn a generated string into a `&'static str`, once per distinct value.
 ///

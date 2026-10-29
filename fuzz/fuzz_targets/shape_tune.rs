@@ -1,5 +1,5 @@
 #![no_main]
-use dodai_core::{BorderTint, CornerStyle, GradientMode, ShadowDir, ShapeTune};
+use dodai_core::{BorderTint, ControlColour, CornerStyle, GradientMode, ShadowDir, ShapeTune};
 use libfuzzer_sys::fuzz_target;
 
 // Any tuning (NaN, negative, huge) applied to every built-in theme must not panic.
@@ -15,6 +15,7 @@ fuzz_target!(|d: (f32, [f32; 3], Option<f32>, Option<f32>, u8, bool, u8, u8, [f3
         shadow_dir: [ShadowDir::BottomRight, ShadowDir::BottomLeft, ShadowDir::TopRight, ShadowDir::TopLeft][dir as usize % 4],
         corner_style: [None, Some(CornerStyle::Round), Some(CornerStyle::Cut), Some(CornerStyle::Scoop)][style as usize % 4],
         gradient: GradientMode::ALL[(style as usize / 4) % 3],
+        control_colour: ControlColour::ALL[(dir as usize / 4) % 4],
         density,
     };
     for t in dodai_core::themes::all() {

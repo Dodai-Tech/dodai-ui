@@ -469,8 +469,10 @@ impl Showcase {
 
     fn roundness_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         use dodai_core::{
-            BorderTint, CornerStyle, GradientMode, RoundnessGroup, ShadowDir, ShapeKind,
+            BorderTint, ControlColour, CornerStyle, GradientMode, RoundnessGroup, ShadowDir,
+            ShapeKind,
         };
+        use dodai_gpui::ActiveDodai as _;
         let t = theme_of(cx);
         let tune = dodai_gpui::shape_tune();
         let percent: fn(f32) -> String = |v| format!("{:.0}%", v * 100.0);
@@ -541,6 +543,21 @@ impl Showcase {
                 (BorderTint::ALL.map(|b| b.label()).to_vec(), tint_sel.unwrap_or(0)),
                 |tn, i| tn.tint = BorderTint::ALL[i],
             ))
+            .child({
+                // The choices come from the active theme as designed, so each design, accent
+                // and mode offers its own; ones that look the same as the default are left out.
+                let offered = ControlColour::offered(cx.dodai().theme());
+                let sel = offered.iter().position(|c| *c == tune.control_colour);
+                let labels = offered.iter().map(|c| c.label()).collect();
+                tune_choice(
+                    &t,
+                    "Control colour",
+                    "Which colour filled controls take: buttons, checked boxes, on switches, slider fills, the selected tab. Taken from the current theme and kept at 3:1 on the page.",
+                    "rb-fill",
+                    (labels, sel.unwrap_or(0)),
+                    move |tn, i| tn.control_colour = offered[i],
+                )
+            })
             .child(tune_choice(
                 &t,
                 "Outline all",

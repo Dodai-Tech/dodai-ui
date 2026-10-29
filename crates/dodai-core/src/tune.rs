@@ -1,7 +1,7 @@
 //! App-wide shape tuning: how round the corners are and how borders look, on top of whatever a
 //! design defines. Like the surface mix it is a runtime setting, not part of a design.
 
-use crate::{CornerStyle, RoleShape, ShapeKind, ShapeRole, ShapeSize, ShapeSystem, Theme};
+use crate::{Color, CornerStyle, RoleShape, ShapeKind, ShapeRole, ShapeSize, ShapeSystem, Theme};
 
 /// Which colour borders take.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -28,6 +28,102 @@ impl BorderTint {
             Self::Accent => "Accent",
             Self::Text => "Text",
         }
+    }
+}
+
+/// Which colour filled controls take: buttons, checked boxes, on switches, slider fills, the
+/// selected tab. Every choice comes from the current theme, so each design, accent and mode
+/// offers its own set; see [`ControlColour::offered`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ControlColour {
+    /// The design's own primary.
+    #[default]
+    Design,
+    /// The theme's accent.
+    Accent,
+    /// The theme's secondary colour.
+    Secondary,
+    /// The text colour: quiet, monochrome controls.
+    Ink,
+}
+
+impl ControlColour {
+    /// Every choice, in picker order.
+    pub const ALL: [Self; 4] = [Self::Design, Self::Accent, Self::Secondary, Self::Ink];
+
+    /// Picker label (`Design` reads "Default" in the UI).
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::Design => "Default",
+            Self::Accent => "Accent",
+            Self::Secondary => "Secondary",
+            Self::Ink => "Ink",
+        }
+    }
+
+    /// The fill this choice gives on `t`: the source colour pushed to 3:1 against both the
+    /// page and a card, so a filled control always stands out.
+    pub fn colour(self, t: &Theme) -> Color {
+        let p = &t.palette;
+        let base = match self {
+            Self::Design => return p.primary,
+            Self::Accent => p.accent,
+            Self::Secondary => p.secondary,
+            Self::Ink => p.text,
+        };
+        let (bg, card) = (p.background, p.surface);
+        let lower = if bg.contrast(base) < card.contrast(base) {
+            bg
+        } else {
+            card
+        };
+        base.with_contrast(lower, 3.0)
+    }
+
+    /// The choices that look different on `t`, `Design` first. A choice that lands on the
+    /// design's own colour (or an earlier choice) is left out, e.g. `Ink` where the primary
+    /// already is the text colour.
+    pub fn offered(t: &Theme) -> Vec<Self> {
+        let mut out: Vec<(Self, Color)> = Vec::new();
+        for c in Self::ALL {
+            let col = c.colour(t);
+            if out.iter().all(|(_, o)| !looks_alike(*o, col)) {
+                out.push((c, col));
+            }
+        }
+        out.into_iter().map(|(c, _)| c).collect()
+    }
+}
+
+/// Whether two colours read as the same at a glance.
+fn looks_alike(a: Color, b: Color) -> bool {
+    let d = |x: u8, y: u8| x.abs_diff(y);
+    d(a.r, b.r).max(d(a.g, b.g)).max(d(a.b, b.b)) < 28
+}
+
+impl Theme {
+    /// This theme with filled controls in `c` (see [`ControlColour`]): the primary, its hover
+    /// and pressed shades, a readable label colour and the primary-family roles follow.
+    pub fn with_control_colour(mut self, c: ControlColour) -> Self {
+        if c == ControlColour::Design {
+            return self;
+        }
+        let fill = c.colour(&self);
+        let on = self.on(fill);
+        let p = &mut self.palette;
+        p.primary = fill;
+        p.primary_hover = fill.mix(p.background, 0.18);
+        p.primary_active = fill.mix(p.background, 0.3);
+        p.on_primary = on;
+        let d = crate::palette::Roles::derive(p, self.meta.mode == crate::Mode::Dark);
+        let r = &mut p.roles;
+        r.primary_container = d.primary_container;
+        r.inverse_primary = d.inverse_primary;
+        r.primary_fixed = d.primary_fixed;
+        r.primary_fixed_dim = d.primary_fixed_dim;
+        r.on_primary_fixed = d.on_primary_fixed;
+        r.on_primary_fixed_variant = d.on_primary_fixed_variant;
+        self
     }
 }
 
@@ -182,6 +278,8 @@ pub struct ShapeTune {
     pub density: f32,
     /// How strongly the design's gradient shows (see [`GradientMode`]).
     pub gradient: GradientMode,
+    /// Which colour filled controls take (see [`ControlColour`]).
+    pub control_colour: ControlColour,
 }
 
 impl ShapeTune {
@@ -197,6 +295,7 @@ impl ShapeTune {
         corner_style: None,
         density: 1.0,
         gradient: GradientMode::Subtle,
+        control_colour: ControlColour::Design,
     };
 
     /// Corner multiplier for one role: the global roundness times its group's.
@@ -309,7 +408,7 @@ impl Theme {
             t.surface_style.backdrop *= tune.gradient.mesh_gain();
             t.surface_style.gradient = tune.gradient.effect_gain();
         }
-        t
+        t.with_control_colour(tune.control_colour)
     }
 }
 
@@ -358,6 +457,55 @@ mod tests {
         });
         assert!(bold.surface_style.backdrop > 0.4 && bold.surface_style.gradient > 1.0);
         assert_eq!(GradientMode::ALL.len(), 3);
+    }
+
+    #[test]
+    fn every_offered_control_colour_stands_out_and_reads() {
+        for base in crate::themes::all() {
+            let offered = ControlColour::offered(&base);
+            assert_eq!(offered[0], ControlColour::Design, "{}", base.id());
+            for (i, &c) in offered.iter().enumerate() {
+                let t = base.tuned(&ShapeTune {
+                    control_colour: c,
+                    ..ShapeTune::DEFAULT
+                });
+                let p = &t.palette;
+                if c != ControlColour::Design {
+                    for bg in [p.background, p.surface] {
+                        assert!(p.primary.contrast(bg) >= 3.0, "{} {c:?}", base.id());
+                    }
+                    assert!(
+                        p.on_primary.contrast(p.primary) >= 3.0,
+                        "{} {c:?}",
+                        base.id()
+                    );
+                }
+                for &other in &offered[..i] {
+                    assert!(
+                        !looks_alike(c.colour(&base), other.colour(&base)),
+                        "{} {c:?} repeats {other:?}",
+                        base.id()
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn control_colour_is_offered_per_theme_combination() {
+        let ink_led = crate::themes::all()
+            .into_iter()
+            .find(|t| looks_alike(t.palette.primary, t.palette.text))
+            .expect("a design whose primary is its ink");
+        assert!(!ControlColour::offered(&ink_led).contains(&ControlColour::Ink));
+        let t = Theme::default();
+        let accent = t.clone().with_control_colour(ControlColour::Accent);
+        assert_ne!(accent.palette.primary, t.palette.primary);
+        assert_eq!(
+            accent.palette.text, t.palette.text,
+            "only the fill family moves"
+        );
+        assert_eq!(t.clone().with_control_colour(ControlColour::Design), t);
     }
 
     #[test]
