@@ -5,6 +5,7 @@ use crate::charts::{
     chart_cfg, down_color, fmt_with, framed, label_style, nice_ticks, norm, titled, up_color,
     Legend, NumFmt,
 };
+use crate::charts_focus::{readout, Focus};
 use crate::paint::{scale_alpha, stroke};
 use crate::panel::DodaiTooltip;
 use crate::{hsla, theme_of};
@@ -13,6 +14,7 @@ use gpui::{
     canvas, div, px, relative, App, Bounds, InteractiveElement, IntoElement, ParentElement, Pixels,
     SharedString, StatefulInteractiveElement, Styled, Window,
 };
+use std::cell::Cell;
 use std::rc::Rc;
 
 // ─────────────────────────────── Bullet ───────────────────────────────
@@ -590,19 +592,66 @@ impl SlopeChart {
             .iter()
             .map(|(_, a, b)| (norm(*a, lo, hi), norm(*b, lo, hi), dir(*a, *b)))
             .collect();
+        let focus = Focus::new(window, cx, &self.follow, lines.len());
+        let looks: Vec<(f32, f32)> = (0..lines.len())
+            .map(|i| (focus.item(i).alpha, focus.item(i).lift))
+            .collect();
+        let shown = focus.shown(cx);
+        let readout_text = shown.and_then(|i| {
+            let (name, a, b) = self.items.get(i)?;
+            let f = |v: f32| fmt_with(&self.fmt, v);
+            let d = b - a;
+            Some(format!(
+                "{name} · {} → {} ({}{})",
+                f(*a),
+                f(*b),
+                if d >= 0.0 { "+" } else { "−" },
+                f(d.abs())
+            ))
+        });
+        let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
+        let pb = bounds.clone();
         let lines2 = lines.clone();
+        let hit_lines: Vec<(f32, f32)> = lines.iter().map(|l| (l.0, l.1)).collect();
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
+                pb.set(b);
                 let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                for (a, c, col) in &lines2 {
+                for (i, (a, c, col)) in lines2.iter().enumerate() {
+                    let (alpha, lift) = looks[i];
                     let (ya, yc) = (bh - a * bh, bh - (a + (c - a) * g) * bh);
-                    stroke(w, b.origin, &[(0.0, ya), (bw * g, yc)], 2.0, *col, false);
+                    stroke(
+                        w,
+                        b.origin,
+                        &[(0.0, ya), (bw * g, yc)],
+                        2.0 + 1.5 * lift,
+                        scale_alpha(*col, alpha),
+                        false,
+                    );
                 }
             },
         )
         .absolute()
         .size_full();
+        // The line nearest the pointer, within a finger's reach.
+        let hit = move |x: f32, y: f32, w: f32, h: f32| {
+            let f = (x / w.max(1.0)).clamp(0.0, 1.0);
+            hit_lines
+                .iter()
+                .map(|(a, c)| (h - (a + (c - a) * f) * h - y).abs())
+                .enumerate()
+                .filter(|(_, d)| *d <= 10.0)
+                .min_by(|p, q| p.1.total_cmp(&q.1))
+                .map(|(i, _)| i)
+        };
+        let plot = div()
+            .id(self.follow.sub("lines").element_id(window, cx))
+            .relative()
+            .flex_1()
+            .h(px(self.height))
+            .child(cv);
+        let plot = focus.pointer(plot, &bounds, hit);
         let gutter = px(t.sizes().axis_gutter_lg * 2.2);
         let side = |left: bool| {
             let mut c = label_style(&t, div())
@@ -644,7 +693,7 @@ impl SlopeChart {
             .flex()
             .w_full()
             .child(side(true).pr(px(t.spacing.sm)))
-            .child(div().relative().flex_1().h(px(self.height)).child(cv))
+            .child(plot)
             .child(side(false).pl(px(t.spacing.sm)));
         titled(
             &t,
@@ -655,7 +704,8 @@ impl SlopeChart {
                 .gap(px(t.spacing.sm))
                 .w_full()
                 .child(head)
-                .child(body),
+                .child(body)
+                .child(readout(&t, readout_text, "Hover a line")),
         )
     }
 }

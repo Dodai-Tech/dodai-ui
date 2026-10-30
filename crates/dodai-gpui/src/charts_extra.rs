@@ -5,14 +5,15 @@ use crate::charts::{
     Legend, NumFmt,
 };
 use crate::charts_distribution::quartiles;
+use crate::charts_focus::{readout, Focus};
 use crate::paint::{fill, fill_batch, scale_alpha, stroke};
-use crate::panel::DodaiTooltip;
 use crate::{hsla, theme_of};
 use dodai_charts_core::{calendar, density, sankey};
 use gpui::{
     canvas, div, px, relative, App, Bounds, InteractiveElement, IntoElement, ParentElement, Pixels,
-    SharedString, StatefulInteractiveElement, Styled, Window,
+    SharedString, Styled, Window,
 };
+use std::cell::Cell;
 use std::rc::Rc;
 
 // ─────────────────────────────── Sankey ───────────────────────────────
@@ -94,12 +95,87 @@ impl Sankey {
             .collect();
         let (nodes, ribbons) = (lay.nodes.clone(), lay.ribbons.clone());
         let cc = colors.clone();
+        // Items: the nodes, then the ribbons. A node lights its ribbons, a ribbon its nodes.
+        let nn = nodes.len();
+        let focus = Focus::new(window, cx, &self.follow, nn + ribbons.len());
+        let shown = focus.shown(cx);
+        let lit_ribbon = |k: usize, r: &sankey::Ribbon| match shown {
+            None => true,
+            Some(s) if s < nn => r.from == s || r.to == s,
+            Some(s) => s == nn + k,
+        };
+        let lit_node = |i: usize| match shown {
+            None => true,
+            Some(s) if s < nn => s == i,
+            Some(s) => ribbons
+                .get(s - nn)
+                .is_some_and(|r| r.from == i || r.to == i),
+        };
+        let ribbon_alpha: Vec<f32> = ribbons
+            .iter()
+            .enumerate()
+            .map(|(k, r)| {
+                if lit_ribbon(k, r) {
+                    0.4 + 0.2 * focus.item(nn + k).lift
+                } else {
+                    0.08
+                }
+            })
+            .collect();
+        let node_alpha: Vec<f32> = (0..nn)
+            .map(|i| if lit_node(i) { 1.0 } else { 0.35 })
+            .collect();
+        let readout_text = shown.and_then(|s| {
+            let name = |i: usize| self.names.get(i).map_or("", |n| n.as_ref());
+            if s < nn {
+                Some(format!(
+                    "{} · {}",
+                    name(s),
+                    fmt_with(&self.fmt, nodes[s].total)
+                ))
+            } else {
+                let r = ribbons.get(s - nn)?;
+                let v = self.links.get(r.link).map_or(0.0, |l| l.value);
+                Some(format!(
+                    "{} → {} · {}",
+                    name(r.from),
+                    name(r.to),
+                    fmt_with(&self.fmt, v)
+                ))
+            }
+        });
+        let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
+        let pb = bounds.clone();
+        let (hit_nodes, hit_ribbons) = (nodes.clone(), ribbons.clone());
+        let hit = move |x: f32, y: f32, bw: f32, bh: f32| {
+            let x_of = |c: usize| c as f32 / cols_f * (bw - nw);
+            let node = hit_nodes.iter().position(|n| {
+                let x0 = x_of(n.col);
+                (x0 - 4.0..x0 + nw + 4.0).contains(&x) && (n.y * bh..(n.y + n.h) * bh).contains(&y)
+            });
+            node.or_else(|| {
+                hit_ribbons
+                    .iter()
+                    .position(|r| {
+                        let (x0, x1) =
+                            (x_of(hit_nodes[r.from].col) + nw, x_of(hit_nodes[r.to].col));
+                        if !(x0..x1).contains(&x) {
+                            return false;
+                        }
+                        let t = (x - x0) / (x1 - x0);
+                        let top = (r.y_from + (r.y_to - r.y_from) * t * t * (3.0 - 2.0 * t)) * bh;
+                        (top..top + r.h * bh).contains(&y)
+                    })
+                    .map(|k| nn + k)
+            })
+        };
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
+                pb.set(b);
                 let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
                 let x_of = |c: usize| c as f32 / cols_f * (bw - nw);
-                for r in &ribbons {
+                for (k, r) in ribbons.iter().enumerate() {
                     let (x0, x1) = (x_of(nodes[r.from].col) + nw, x_of(nodes[r.to].col));
                     let steps = 24;
                     let polys: Vec<Vec<(f32, f32)>> = (0..steps)
@@ -117,7 +193,12 @@ impl Sankey {
                             ]
                         })
                         .collect();
-                    crate::paint::fill_batch(w, b.origin, &polys, scale_alpha(cc[r.from], 0.4));
+                    crate::paint::fill_batch(
+                        w,
+                        b.origin,
+                        &polys,
+                        scale_alpha(cc[r.from], ribbon_alpha[k]),
+                    );
                 }
                 for (i, n) in nodes.iter().enumerate() {
                     let x = x_of(n.col);
@@ -125,14 +206,23 @@ impl Sankey {
                         w,
                         b.origin,
                         &crate::charts::rect(x, n.y * bh, nw, (n.h * bh * g).max(1.0)),
-                        cc[i],
+                        scale_alpha(cc[i], node_alpha[i]),
                     );
                 }
             },
         )
         .absolute()
         .size_full();
-        let mut plot = div().relative().w_full().h(px(self.height)).child(cv);
+        let hits = div()
+            .id(self.follow.sub("flows").element_id(window, cx))
+            .absolute()
+            .size_full()
+            .child(cv);
+        let mut plot = div()
+            .relative()
+            .w_full()
+            .h(px(self.height))
+            .child(focus.pointer(hits, &bounds, hit));
         for (i, n) in lay.nodes.iter().enumerate() {
             if n.h <= 0.0 {
                 continue;
@@ -152,7 +242,14 @@ impl Sankey {
                 l.left(relative(f)).ml(px(nw + 4.0 - f * nw))
             });
         }
-        titled(&t, self.title.clone(), div().w_full().child(plot))
+        let body = div()
+            .flex()
+            .flex_col()
+            .gap(px(t.spacing.sm))
+            .w_full()
+            .child(plot)
+            .child(readout(&t, readout_text, "Hover a node or a flow"));
+        titled(&t, self.title.clone(), body)
     }
 }
 crate::entry_render!(Sankey);
@@ -163,6 +260,7 @@ crate::entry_render!(Sankey);
 /// discrete levels, with a legend. Give a start date for month labels.
 #[derive(IntoElement)]
 pub struct CalendarHeatmap {
+    follow: crate::instruments_motion::Follow,
     values: Vec<f32>,
     start: Option<(i32, u32, u32)>,
     start_weekday: u32,
@@ -174,9 +272,12 @@ pub struct CalendarHeatmap {
 }
 
 impl CalendarHeatmap {
+    crate::instruments_motion::follow_api!();
     /// Create a new [`CalendarHeatmap`] from one value per consecutive day.
+    #[track_caller]
     pub fn new(values: impl IntoIterator<Item = f32>) -> Self {
         Self {
+            follow: crate::instruments_motion::Follow::here(),
             values: values
                 .into_iter()
                 .map(crate::charts::finite_or_zero)
@@ -224,11 +325,25 @@ pub(crate) fn calendar_level(v: f32, max: f32, levels: usize) -> usize {
 }
 
 impl CalendarHeatmap {
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         const MONTHS: [&str; 12] = [
             "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
         ];
         let t = theme_of(cx);
+        // New data glides: each day's shade steps through the levels to its new one.
+        self.values = crate::instruments_motion::follow_all(window, cx, &self.follow, &self.values);
+        let focus = Focus::new(window, cx, &self.follow, self.values.len());
+        let readout_text = focus.shown(cx).and_then(|i| {
+            let v = self.values.get(i)?;
+            let day = match self.start {
+                Some((y, m, d)) => {
+                    let (yy, mm, dd) = calendar::add_days(y, m, d, i as u32);
+                    format!("{dd} {} {yy}", MONTHS[(mm - 1) as usize])
+                }
+                None => format!("Day {}", i + 1),
+            };
+            Some(format!("{day} · {}", fmt_with(&self.fmt, *v)))
+        });
         let max = self.values.iter().copied().fold(0.0f32, f32::max);
         let off = self.start_weekday as usize;
         let weeks = (off + self.values.len()).div_ceil(7).max(1);
@@ -250,7 +365,11 @@ impl CalendarHeatmap {
                 }
             }
         }
-        let mut grid = div().flex().gap(px(gap));
+        // The grid's id scopes the per-day ids, so two calendars never share hover state.
+        let mut grid = div()
+            .id(self.follow.sub("days").element_id(window, cx))
+            .flex()
+            .gap(px(gap));
         for wk in 0..weeks {
             let mut col = div().flex().flex_col().gap(px(gap));
             for d in 0..7 {
@@ -260,14 +379,14 @@ impl CalendarHeatmap {
                     match idx.and_then(|i| self.values.get(i).map(|v| (i, *v))) {
                         Some((i, v)) => {
                             let c = level_color(calendar_level(v, max, self.levels));
-                            cell.id(("cal", i))
-                                .bg(c)
-                                .tooltip(DodaiTooltip::text(format!(
-                                    "Day {}: {}",
-                                    i + 1,
-                                    fmt_with(&self.fmt, v)
-                                )))
-                                .into_any_element()
+                            let f = focus.item(i);
+                            let cell = cell.id(("cal", i)).bg(scale_alpha(c, f.alpha));
+                            let cell = if f.lift > 0.01 {
+                                cell.border_1().border_color(hsla(t.palette.text))
+                            } else {
+                                cell
+                            };
+                            focus.bind(cell, i).into_any_element()
                         }
                         None => cell.into_any_element(),
                     },
@@ -330,7 +449,8 @@ impl CalendarHeatmap {
                             .child(grid),
                     ),
                 )
-                .child(legend),
+                .child(legend)
+                .child(readout(&t, readout_text, "Hover a day")),
         )
     }
 }

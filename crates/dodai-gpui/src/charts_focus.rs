@@ -172,6 +172,17 @@ impl Focus {
     }
 }
 
+/// Hit test for `n` equal columns across a canvas: the column under the pointer.
+pub(crate) fn columns(n: usize) -> impl Fn(f32, f32, f32, f32) -> Option<usize> + 'static {
+    move |x, _, w, _| slot(x, w, n)
+}
+
+/// Which of `n` equal slots along `0..len` holds `at`.
+fn slot(at: f32, len: f32, n: usize) -> Option<usize> {
+    (n > 0 && len > 0.0 && (0.0..len).contains(&at))
+        .then(|| ((at / len * n as f32) as usize).min(n - 1))
+}
+
 /// A one-line readout under a chart: the focused item's text, else `hint`. Always one line
 /// tall, so hovering never moves the layout.
 pub(crate) fn readout(t: &dodai_core::Theme, text: Option<String>, hint: &str) -> gpui::Div {

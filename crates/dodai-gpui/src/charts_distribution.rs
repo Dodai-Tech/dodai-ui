@@ -3,6 +3,7 @@
 use crate::charts::{
     chart_cfg, fill, fmt_with, framed, nice_ticks, norm, stroke, titled, Legend, NumFmt,
 };
+use crate::charts_focus::{columns, readout, Focus};
 use crate::paint::{scale_alpha, shaped, ShapeStyle};
 use crate::panel::DodaiTooltip;
 use crate::{hsla, theme_of};
@@ -11,6 +12,7 @@ use gpui::{
     canvas, div, px, relative, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement,
     Pixels, SharedString, StatefulInteractiveElement, Styled, Window,
 };
+use std::cell::Cell;
 use std::rc::Rc;
 
 /// Equal-width histogram: `(lo, hi, count)` per bin. Pure.
@@ -350,12 +352,36 @@ impl BoxPlot {
             .map(|i| hsla(t.palette.series_at(i)))
             .collect();
         let n = stats.len();
+        let focus = Focus::new(window, cx, &self.follow, n);
+        let cols: Vec<Hsla> = cols
+            .iter()
+            .enumerate()
+            .map(|(i, c)| scale_alpha(*c, focus.item(i).alpha))
+            .collect();
+        let shown = focus.shown(cx);
+        let readout_text = shown.and_then(|i| {
+            let (mn, q1, md, q3, mx) = stats.get(i).copied().flatten()?;
+            let f = |v: f32| fmt_with(&self.fmt, v);
+            Some(format!(
+                "{} · median {} · middle half {}–{} · range {}–{} · {} samples",
+                self.groups[i].0,
+                f(md),
+                f(q1),
+                f(q3),
+                f(mn),
+                f(mx),
+                self.groups[i].1.len()
+            ))
+        });
+        let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
+        let pb = bounds.clone();
         let (notch, show_mean, show_pts) = (self.notch, self.mean, self.points);
         let raw: Vec<Vec<f32>> = self.groups.iter().map(|g| g.1.clone()).collect();
         let tf: Vec<f32> = ticks.iter().map(|v| norm(*v, lo, hi)).collect();
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
+                pb.set(b);
                 let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
                 for f in &tf {
                     let y = bh - f * bh;
@@ -449,14 +475,29 @@ impl BoxPlot {
         )
         .absolute()
         .size_full();
-        let plot = div().relative().w_full().h(px(self.height)).child(cv);
+        let hits = div()
+            .id(self.follow.sub("boxes").element_id(window, cx))
+            .absolute()
+            .size_full()
+            .child(cv);
+        let plot = div()
+            .relative()
+            .w_full()
+            .h(px(self.height))
+            .child(focus.pointer(hits, &bounds, columns(n)));
         let names: Vec<SharedString> = self.groups.iter().map(|g| g.0.clone()).collect();
-        let root = div().flex().flex_col().w_full().child(framed(
-            &t,
-            ticks.iter().map(|v| fmt_with(&self.fmt, *v)).collect(),
-            names,
-            plot,
-        ));
+        let root = div()
+            .flex()
+            .flex_col()
+            .gap(px(t.spacing.sm))
+            .w_full()
+            .child(framed(
+                &t,
+                ticks.iter().map(|v| fmt_with(&self.fmt, *v)).collect(),
+                names,
+                plot,
+            ))
+            .child(readout(&t, readout_text, "Hover a box"));
         titled(&t, self.title, root)
     }
 }
