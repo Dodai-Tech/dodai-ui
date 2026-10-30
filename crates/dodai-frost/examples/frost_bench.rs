@@ -1,6 +1,6 @@
-//! `cargo run --release -p dodai-fx --features gpu --example frost_bench`: CPU vs GPU blur timings.
+//! `cargo run --release -p dodai-frost --features gpu --example frost_bench`: CPU vs GPU blur timings.
 
-use dodai_fx::frost::{blur, Blurrer};
+use dodai_frost::{blur, Blurrer};
 use std::time::Instant;
 
 fn main() {

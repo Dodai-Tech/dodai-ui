@@ -68,7 +68,7 @@ const CACHE_LIMIT: usize = 32;
 #[derive(Clone)]
 struct Entry {
     sharp: Arc<RenderImage>,
-    soft: Arc<dodai_fx::frost::Reduced>,
+    soft: Arc<dodai_frost::Reduced>,
 }
 
 fn cache() -> &'static Mutex<HashMap<u64, Entry>> {
@@ -178,7 +178,7 @@ impl RenderOnce for FrostedScene {
                 Source::Mesh => mesh_pixels(&t, w, h),
                 Source::Pixels(b) => b.to_vec(),
             };
-            let soft = dodai_fx::frost::blurred(&rgba, w, h, frost.blur);
+            let soft = dodai_frost::blurred(&rgba, w, h, frost.blur);
             let e = Entry {
                 sharp: render_image(rgba, w, h)?,
                 soft: Arc::new(soft),
@@ -213,7 +213,7 @@ impl RenderOnce for FrostedScene {
             let crop = cached.or_else(|| {
                 let (cw, ch) = (w as usize, h as usize);
                 let mut pixels = entry.soft.crop(x as usize, y as usize, cw, ch);
-                dodai_fx::frost::saturate(&mut pixels, frost.saturation);
+                dodai_frost::saturate(&mut pixels, frost.saturation);
                 let i = render_image(pixels, cw, ch)?;
                 if let Ok(mut c) = crops().lock() {
                     if c.len() >= CACHE_LIMIT {

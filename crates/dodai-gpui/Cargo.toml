@@ -30,7 +30,9 @@ material = ["dodai-core/material", "symbols"]
 neobrutalism = ["dodai-core/neobrutalism", "components", "dodai-icons/neobrutalism"]
 # Dodai: draws Material Symbols icons (no Material components), and ships
 # the frosted-glass scene and page grid.
-dodai = ["dodai-core/dodai", "symbols", "dep:image"]
+dodai = ["dodai-core/dodai", "symbols", "frost"]
+# Frosted glass (`FrostedScene`): a blurred copy of a picture behind panels, via `dodai-frost`.
+frost = ["dep:dodai-frost", "dep:image"]
 # Material Symbols glyphs, drawn by Material and Dodai.
 symbols = ["components", "dodai-icons/material"]
 
@@ -38,6 +40,7 @@ symbols = ["components", "dodai-icons/material"]
 dodai-core = { workspace = true }
 dodai-charts-core = { workspace = true }
 dodai-fx = { workspace = true }
+dodai-frost = { workspace = true, optional = true }
 dodai-icons = { workspace = true, features = ["cyberpunk"], optional = true }
 gpui = { workspace = true }
 # Already in gpui's tree: tessellate icons once and replay the triangles each frame.

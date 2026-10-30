@@ -68,7 +68,8 @@ shaders are their own crates.
 |---|---|
 | [`dodai-core`](crates/dodai-core) | Tokens, `Theme`, `ThemeSwitcher`, `ThemeBuilder`, DTCG export. Designs by feature: 6 Cyberpunk themes, the Material 3 pair, Neo-Brutalism (seven accents, light and dark) and Dodai (frosted glass) |
 | [`dodai-icons`](crates/dodai-icons) | Every icon in one crate, packs chosen by feature: the typed `IconId`, the Cyberpunk pack (378 hand-drawn, curve-free icons), the full Material Symbols catalogue (3,900+ icons, outlined/rounded/sharp + fill) and Phosphor-derived sets |
-| [`dodai-fx`](crates/dodai-fx) | Surface textures and effects, plus frosted-glass blur. No dependencies |
+| [`dodai-fx`](crates/dodai-fx) | Surface textures and effects. No dependencies |
+| [`dodai-frost`](crates/dodai-frost) | Frosted glass on RGBA pixels: GPU first (`gpu`, wgpu), CPU fallback, byte-identical |
 | [`dodai-shaders`](crates/dodai-shaders) | Pixel shaders |
 
 ```toml

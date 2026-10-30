@@ -6,20 +6,7 @@ authors.workspace      = true
 license.workspace      = true
 repository.workspace   = true
 rust-version.workspace = true
-description            = "Self-contained visual effects, no dependencies: surface textures and animated effects drawn through a tiny Painter trait, plus frosted-glass blur on RGBA pixels (CPU, optional wgpu GPU)."
+description            = "Self-contained visual effects, no dependencies: surface textures and animated effects drawn through a tiny Painter trait."
 readme                 = "README.md"
-keywords               = ["effects", "texture", "blur", "frosted-glass", "ui"]
+keywords               = ["effects", "texture", "surface", "ui"]
 categories             = ["graphics", "gui"]
-
-[features]
-default = []
-# The frosted-glass blur on the GPU (wgpu); `frost::Blurrer` falls back to the CPU without a real adapter.
-gpu = ["dep:wgpu", "dep:pollster"]
-
-[dependencies]
-wgpu     = { version = "30.0.1", optional = true, default-features = false, features = ["std", "parking_lot", "wgsl", "metal", "vulkan", "dx12"] }
-pollster = { version = "1", optional = true }
-
-[[example]]
-name = "frost_bench"
-required-features = ["gpu"]

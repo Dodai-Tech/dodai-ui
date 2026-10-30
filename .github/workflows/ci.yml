@@ -67,14 +67,14 @@ jobs:
       - run: git diff --exit-code -- dist
       - run: test -z "$(git status --porcelain dist)"
 
-  # Base crates everything else depends on (dodai-core, dodai-icons, dodai-charts-core, dodai-fx).
+  # Base crates everything else depends on (dodai-core, dodai-icons, dodai-charts-core, dodai-fx, dodai-frost).
   base:
     name: ${{ matrix.crate }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        crate: [dodai-core, dodai-icons, dodai-charts-core, dodai-fx]
+        crate: [dodai-core, dodai-icons, dodai-charts-core, dodai-fx, dodai-frost]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -94,11 +94,11 @@ jobs:
           key: ${{ matrix.crate }}
       - run: cargo clippy -p ${{ matrix.crate }} --all-targets ${{ matrix.crate == 'dodai-core' && '--all-features' || '' }} -- -D warnings
       - run: cargo test -p ${{ matrix.crate }} ${{ matrix.crate == 'dodai-core' && '--all-features' || '' }}
-      - name: dodai-fx GPU feature (tests skip without an adapter)
-        if: matrix.crate == 'dodai-fx'
+      - name: dodai-frost GPU feature (tests skip without an adapter)
+        if: matrix.crate == 'dodai-frost'
         run: |
-          cargo clippy -p dodai-fx --all-targets --features gpu -- -D warnings
-          cargo test -p dodai-fx --features gpu
+          cargo clippy -p dodai-frost --all-targets --features gpu -- -D warnings
+          cargo test -p dodai-frost --features gpu
 
   # One job per dependent crate; runs only once the base crates are green.
   # `gui: true` crates need native libs on Linux and also run on macOS.
@@ -244,7 +244,7 @@ jobs:
         with:
           toolchain: ${{ steps.msrv.outputs.version }}
       - uses: Swatinem/rust-cache@v2
-      - run: cargo check --locked -p dodai-core --all-features -p dodai-charts-core -p dodai-fx -p dodai-icons --all-targets
+      - run: cargo check --locked -p dodai-core --all-features -p dodai-charts-core -p dodai-fx -p dodai-frost -p dodai-icons --all-targets
 
   # Unused dependencies (cargo-machete scans every manifest, including freya and tools/).
   machete:

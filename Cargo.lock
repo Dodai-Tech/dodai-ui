@@ -4059,7 +4059,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai-fx"
+name = "dodai-frost"
 version = "0.1.0"
 dependencies = [
  "pollster 1.0.1",
@@ -4067,11 +4067,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "dodai-fx"
+version = "0.1.0"
+
+[[package]]
 name = "dodai-gpui"
 version = "0.1.0"
 dependencies = [
  "dodai-charts-core",
  "dodai-core",
+ "dodai-frost",
  "dodai-fx",
  "dodai-icons",
  "dodai-shaders",

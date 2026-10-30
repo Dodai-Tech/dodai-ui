@@ -1,5 +1,5 @@
-//! Components that only one design system ships stay in that design's module: no shared
-//! module refers to them, and they are compiled only with that design's feature.
+//! Components that only one design system (or one optional feature) ships stay in their own
+//! module: no shared module refers to them, and they are compiled only with that feature.
 
 use std::fs;
 use std::path::Path;
@@ -17,7 +17,7 @@ const OWNED: &[(&str, &str, &[&str])] = &[
         &["Overscroll", "OverscrollFeel"],
     ),
     ("cyberpunk", "scanlines.rs", &["Scanlines"]),
-    ("dodai", "frosted.rs", &["FrostedScene"]),
+    ("frost", "frosted.rs", &["FrostedScene"]),
     ("dodai", "page_grid.rs", &["PageGrid"]),
 ];
 

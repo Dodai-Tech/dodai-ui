@@ -101,6 +101,7 @@ check-gpui-features:
     cargo check -p dodai-gpui --no-default-features --features charts
     cargo check -p dodai-gpui --no-default-features --features components
     cargo check -p dodai-gpui --no-default-features --features shaders
+    cargo check -p dodai-gpui --no-default-features --features frost
     cargo check -p dodai-gpui --no-default-features
     cargo check -p dodai-gpui --no-default-features --features cyberpunk
     cargo check -p dodai-gpui --no-default-features --features material
@@ -211,6 +212,7 @@ check-publish: _check-nu
 # Publish all crates in dependency order (core first)
 publish: check-all
     cargo publish -p dodai-fx
+    cargo publish -p dodai-frost
     cargo publish -p dodai-core
     cargo publish -p dodai-icons
     cargo publish -p dodai-charts-core
@@ -225,6 +227,7 @@ publish: check-all
 # dependencies are on crates.io; the first two catch metadata and size problems early)
 publish-dry: check-all
     cargo publish --dry-run -p dodai-fx
+    cargo publish --dry-run -p dodai-frost
     cargo publish --dry-run -p dodai-core
     cargo publish --dry-run -p dodai-icons
     cargo publish --dry-run -p dodai-charts-core

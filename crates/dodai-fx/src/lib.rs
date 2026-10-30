@@ -9,7 +9,6 @@
 mod canvas;
 mod clip;
 mod effects;
-pub mod frost;
 mod geom;
 mod vocab;
 
