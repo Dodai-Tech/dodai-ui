@@ -10,6 +10,7 @@ impl Showcase {
         let mut bodies: Vec<(&'static str, gpui::AnyElement)> = charts;
         bodies.extend(self.layered_demos());
         bodies.extend(self.more_chart_demos());
+        bodies.extend(self.status_demos(&me, cx));
         bodies.push((
             "Live throughput",
             div()

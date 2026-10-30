@@ -159,6 +159,22 @@ fn charts(name: &'static str, v: Vec<f32>) -> Vec<AnyElement> {
         Sunburst::new(tree.clone()).into_any_element(),
         Icicle::new(tree.clone()).into_any_element(),
         CirclePack::new(tree).into_any_element(),
+        SlotGrid::new("sg", Vec::<&str>::new())
+            .row(
+                "r",
+                v.iter().map(|x| Slot::new(*x, -x, SlotState::Restricted)),
+            )
+            .compact(true)
+            .into_any_element(),
+        StatusStrip::new(
+            1.0,
+            1.0,
+            v.iter().map(|x| (*x, x + 1.0, dodai_core::Tone::Danger)),
+        )
+        .into_any_element(),
+        BucketBar::new(Vec::<&str>::new(), []).into_any_element(),
+        StageBars::new(v.iter().map(|x| ("s", *x))).into_any_element(),
+        GradientScale::new(f32::NAN, 0.0, *v.first().unwrap_or(&f32::INFINITY)).into_any_element(),
         ProportionalSquares::new([("g", pairs().collect::<Vec<_>>()), ("e", vec![])])
             .into_any_element(),
         BubbleSwarm::new([

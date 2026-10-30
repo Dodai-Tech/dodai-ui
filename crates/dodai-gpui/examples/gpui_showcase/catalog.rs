@@ -1,8 +1,9 @@
 //! Section metadata: which animation controls apply, subsections, category blurbs/icons.
 
-/// The chart families (sidebar subsections of "Charts") and their sections, in sidebar order.
+/// The chart families (sidebar subsections of "Charts") and their sections, in sidebar order:
+/// one section per chart, then "Examples", whole dashboards composed from those charts.
 /// Every chart section is listed here exactly once; each is also its panel title.
-pub(crate) const CHART_FAMILIES: [(&str, &[&str]); 9] = [
+pub(crate) const CHART_FAMILIES: [(&str, &[&str]); 11] = [
     (
         "Trends",
         &[
@@ -13,7 +14,6 @@ pub(crate) const CHART_FAMILIES: [(&str, &[&str]); 9] = [
             "Stream",
             "Horizon",
             "Sparkline",
-            "Live throughput",
             "Calendar heatmap",
             "Control chart",
             "Event timeline",
@@ -88,8 +88,30 @@ pub(crate) const CHART_FAMILIES: [(&str, &[&str]); 9] = [
         ],
     ),
     ("Planning", &["Gantt"]),
+    (
+        "Status",
+        &[
+            "Slot grid",
+            "Status strip",
+            "Bucket bar",
+            "Stage bars",
+            "Gradient scale",
+        ],
+    ),
     ("Single value", &["KPI tile"]),
+    ("Examples", &["Live throughput", "Network overview"]),
 ];
+
+/// The chart family names, in sidebar order (from [`CHART_FAMILIES`]).
+const CHART_FAMILY_NAMES: [&str; CHART_FAMILIES.len()] = {
+    let mut out = [""; CHART_FAMILIES.len()];
+    let mut i = 0;
+    while i < out.len() {
+        out[i] = CHART_FAMILIES[i].0;
+        i += 1;
+    }
+    out
+};
 
 /// Widest a chart demo tile grows: past it, a chart of fixed height reads as stretched (a
 /// handful of points miles apart).
@@ -97,7 +119,9 @@ pub(crate) const CHART_TILE_MAX_W: f32 = 760.0;
 
 /// Chart sections whose demo is wide by nature (long time spans, many columns, rows of tiles):
 /// their tiles fill the card.
-pub(crate) const WIDE_CHARTS: [&str; 9] = [
+pub(crate) const WIDE_CHARTS: [&str; 11] = [
+    "Slot grid",
+    "Network overview",
     "Live throughput",
     "Calendar heatmap",
     "Horizon",
@@ -211,17 +235,7 @@ pub(crate) fn caps(title: &str) -> Caps {
 pub(crate) fn subs(cat: &str) -> &'static [&'static str] {
     match cat {
         "Animation" => &["Entry", "Physics", "Dynamics"],
-        "Charts" => &[
-            "Trends",
-            "Comparison",
-            "Part of a whole",
-            "Distribution",
-            "Relationship",
-            "Flow",
-            "Finance",
-            "Planning",
-            "Single value",
-        ],
+        "Charts" => &CHART_FAMILY_NAMES,
         "Shaders" => &[
             "Playground",
             "Cyberpunk",

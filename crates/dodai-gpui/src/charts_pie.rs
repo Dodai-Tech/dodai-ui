@@ -154,7 +154,8 @@ impl PieChart {
         self.hole = hole.clamp(0.0, 0.9);
         self
     }
-    /// Text shown in the centre.
+    /// Text shown in the centre: the first line as the headline (sized to the hole), any
+    /// further lines (after `\n`) as a caption ("76 GB\nTotal traffic").
     pub fn center(mut self, c: impl Into<SharedString>) -> Self {
         self.center = Some(c.into());
         self
@@ -393,10 +394,12 @@ fn next_selection(cur: Option<usize>, hit: Option<usize>) -> Option<usize> {
 }
 
 /// The value shown in the middle of the ring.
+/// The text in the hole: the first line as the headline, sized to fit the hole, any further
+/// lines (after a `\n`) as a small caption under it.
 fn center_overlay(
     t: &dodai_core::Theme,
     txt: SharedString,
-    size: f32,
+    (size, hole): (f32, f32),
     top_half: bool,
 ) -> gpui::Div {
     let overlay = div().absolute().left_0().w(px(size));
@@ -406,14 +409,36 @@ fn center_overlay(
     } else {
         overlay.top_0().h(px(size))
     };
+    let mut lines = txt.split('\n');
+    let head: SharedString = lines.next().unwrap_or_default().to_string().into();
+    let caption: Vec<String> = lines.map(str::to_string).collect();
+    // The headline fills at most 85 % of the hole (a glyph is about 0.6 em wide), never
+    // above the theme's largest size.
+    let room = size * hole;
+    let chars = head.chars().count().max(1) as f32;
+    let head_size = t
+        .typography
+        .size_xl
+        .min(room * 0.85 / (chars * 0.6))
+        .max(t.typography.size_xs);
     overlay
         .flex()
+        .flex_col()
         .items_center()
         .justify_center()
-        .font_family(first_family(t.typography.display))
-        .text_size(px(t.typography.size_xl))
-        .text_color(hsla(t.palette.text))
-        .child(txt)
+        .child(
+            div()
+                .font_family(first_family(t.typography.display))
+                .text_size(px(head_size))
+                .text_color(hsla(t.palette.text))
+                .child(head),
+        )
+        .children(caption.into_iter().map(|c| {
+            label_style(t, div())
+                .max_w(px(room * 0.85))
+                .text_center()
+                .child(c)
+        }))
 }
 
 /// The legend: a swatch, the name and its share per slice.
@@ -802,7 +827,7 @@ impl PieChart {
             })
             .on_hover(move |over, w, cx| input.hover_changed(*over, w, cx));
         if let (Some(txt), true) = (self.center.clone(), hole > 0.0) {
-            disc = disc.child(center_overlay(&t, txt, size, top_half));
+            disc = disc.child(center_overlay(&t, txt, (size, hole), top_half));
         }
         let total: f32 = vals.iter().sum();
         let mut root = div()

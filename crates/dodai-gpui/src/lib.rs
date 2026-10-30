@@ -222,6 +222,8 @@ pub mod charts_spark;
 #[cfg(feature = "charts")]
 pub mod charts_spread;
 #[cfg(feature = "charts")]
+pub mod charts_status;
+#[cfg(feature = "charts")]
 pub mod charts_survey;
 #[cfg(feature = "charts")]
 pub mod charts_trend;
@@ -384,6 +386,10 @@ pub use charts_process::{ControlChart, EventTimeline, StateSpan};
 pub use charts_pulse::{Pulse, PulseGrid, PulseKind, PulseMode, PulseRhythm};
 #[cfg(feature = "charts")]
 pub use charts_spread::{Beeswarm, Ecdf, ErrorBars};
+#[cfg(feature = "charts")]
+pub use charts_status::{
+    BucketBar, GradientScale, Slot, SlotGrid, SlotState, StageBars, StatusStrip,
+};
 #[cfg(feature = "charts")]
 pub use charts_survey::{DivergingBars, ParetoChart};
 #[cfg(feature = "charts")]

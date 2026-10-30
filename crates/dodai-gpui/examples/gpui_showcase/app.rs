@@ -275,6 +275,7 @@ impl Showcase {
             inst_response: 0,
             inst_glow: 0,
             inst_seen: None,
+            excluded_slots: Default::default(),
             demo_seen: None,
             demo_email: String::new(),
             tree_items: vec![

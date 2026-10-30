@@ -4,6 +4,7 @@ mod actions;
 mod charts_layered;
 mod charts_more;
 mod charts_sec;
+mod charts_status;
 mod data_display;
 mod foundations_sec;
 mod inputs;

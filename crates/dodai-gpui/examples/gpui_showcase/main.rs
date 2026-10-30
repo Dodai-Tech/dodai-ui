@@ -165,6 +165,8 @@ pub struct Showcase {
     inst_response: usize,
     /// Glow of every chart and instrument: 0 the theme's own, 1 off, 2 soft, 3 strong.
     inst_glow: usize,
+    /// Channel-plan blocks the user toggled: `(band, row, block)`.
+    excluded_slots: std::collections::BTreeSet<(usize, usize, usize)>,
     /// When the Instruments page last rendered; it repaints every frame while it is showing.
     inst_seen: Option<std::time::Instant>,
     /// When an input demo page last rendered; its values play on their own while it shows.
