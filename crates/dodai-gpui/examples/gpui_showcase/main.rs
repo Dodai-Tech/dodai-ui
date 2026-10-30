@@ -117,6 +117,11 @@ pub struct Showcase {
     real_h: std::collections::HashMap<&'static str, f32>,
     /// Set while a scroll notifies: the sections need no rebuild for it.
     quiet: bool,
+    /// The overview's last laid-out height, and whether it is realised (not a spacer).
+    overview_h: f32,
+    overview_real: bool,
+    /// When the page last scrolled: sections below are measured ahead only once it rests.
+    scrolled_at: Option<std::time::Instant>,
     /// Set while a demo step notifies: only the sections in `live_sections` rebuild.
     demo_only: bool,
     /// Sections whose build reads the playing demo values (it stamps `demo_seen`/`inst_seen`).
@@ -286,6 +291,7 @@ impl Render for Showcase {
             .on_scroll_wheel(cx.listener(|s, _: &gpui::ScrollWheelEvent, _, cx| {
                 s.pin.release();
                 s.quiet = true;
+                s.scrolled_at = Some(std::time::Instant::now());
                 cx.notify()
             }))
             .flex()
@@ -299,9 +305,38 @@ impl Render for Showcase {
         let mut jump_ix: Option<usize> = None;
         let jump_title = self.jump.map(|(j, _)| j);
         if overview {
-            let kids = self.overview(&me, &cats, sections_meta, cx);
-            n_children += kids.len();
-            body = body.children(kids);
+            // One child, virtualised like a section: scrolled away it is a spacer of its last
+            // height, so its cards and wrapped text leave the per-frame layout.
+            let vp = self.scroll.bounds();
+            let shift: f32 = self.scroll.offset().y.into();
+            let seen = self
+                .scroll
+                .bounds_for_item(0)
+                .filter(|_| self.overview_h > 0.0);
+            if let Some(b) = seen.filter(|_| self.overview_real) {
+                self.overview_h = b.size.height.into();
+            }
+            let near = seen.is_none_or(|b| {
+                f32::from(b.origin.y) + shift + self.overview_h
+                    > f32::from(vp.origin.y) - (f32::from(vp.size.height) * 0.2).max(200.0)
+            });
+            self.overview_real = near;
+            body = body.child(if near {
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(t.spacing.lg + 8.0))
+                    .flex_none()
+                    .children(self.overview(&me, &cats, sections_meta, cx))
+            } else {
+                div().flex_none().w_full().h(px(self.overview_h))
+            });
+            n_children += 1;
+            if self.overview_h == 0.0 {
+                // Measure it on the next frame.
+                self.overview_h = 1.0;
+                window.request_animation_frame();
+            }
         }
         if std::env::var_os("DODAI_LIST").is_some() {
             for (c, t) in sections_meta {
@@ -346,11 +381,14 @@ impl Render for Showcase {
         // Virtualisation: only sections near the viewport are laid out and painted;
         // the rest are fixed-height spacers (last measured height). Layout of the
         // whole page costs tens of ms, so this keeps scrolling and hovering cheap.
+        // A scroll moves every realised section, and gpui rebuilds a cached view whose
+        // bounds moved: the margin is all extra work per scroll frame, so keep it to what
+        // one fast frame can scroll.
         let vp = self.scroll.bounds();
         let vp_top: f32 = vp.origin.y.into();
         let vp_h: f32 = vp.size.height.into();
         let valid = vp_h > 0.0 && order == self.spy;
-        let margin = (vp_h * 0.5).max(300.0);
+        let margin = (vp_h * 0.2).max(200.0);
         // Child bounds are unscrolled layout positions; add the live offset.
         let shift: f32 = self.scroll.offset().y.into();
         let prev_real = std::mem::take(&mut self.realised);
@@ -365,9 +403,13 @@ impl Render for Showcase {
         } else {
             self.heights.values().sum::<f32>() / self.heights.len() as f32
         };
-        // Sections below the viewport get measured a few per frame, so spacer
+        // Sections below the viewport get measured one per frame once the page rests (a
+        // first build costs several ms: during a scroll it would drop frames), so spacer
         // heights become exact without one big hitch.
-        let mut budget = 3;
+        let resting = self
+            .scrolled_at
+            .is_none_or(|t| t.elapsed() > std::time::Duration::from_millis(200));
+        let mut budget = usize::from(resting);
         let mut unmeasured = false;
         // Heights that changed above the viewport shift everything: compensate.
         let mut delta_above = 0.0f32;
@@ -516,6 +558,7 @@ impl Render for Showcase {
             }
             let t = (T0.with(|t| t.elapsed().as_secs_f32()) * 0.25) % 2.0;
             let tri = if t < 1.0 { t } else { 2.0 - t };
+            self.scrolled_at = Some(std::time::Instant::now());
             self.scroll.set_offset(gpui::point(
                 px(0.0),
                 -self.scroll.max_offset().height.max(px(1.0)) * tri,

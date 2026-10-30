@@ -79,8 +79,12 @@ fn section_prof(title: &'static str, started: std::time::Instant) {
     }
     ACC.with(|a| {
         let mut a = a.borrow_mut();
+        let ms = started.elapsed().as_secs_f32() * 1000.0;
+        if ms > 3.0 {
+            eprintln!("slow section {title}: {ms:.1} ms");
+        }
         let e = a.1.entry(title).or_default();
-        *e = (e.0 + started.elapsed().as_secs_f32() * 1000.0, e.1 + 1);
+        *e = (e.0 + ms, e.1 + 1);
         let t0 = *a.0.get_or_insert_with(std::time::Instant::now);
         if t0.elapsed().as_secs_f32() >= 1.0 {
             let mut v: Vec<_> = a.1.drain().collect();

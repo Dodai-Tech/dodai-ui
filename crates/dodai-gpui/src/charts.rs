@@ -494,14 +494,41 @@ pub(crate) fn framed(
     x_labels: Vec<SharedString>,
     plot: gpui::Div,
 ) -> gpui::Div {
-    let row = (!x_labels.is_empty()).then(|| {
-        label_style(t, div()).flex().children(
-            x_labels
-                .into_iter()
-                .map(|l| div().flex_1().flex().justify_center().child(l)),
-        )
-    });
+    let row = (!x_labels.is_empty()).then(|| slot_labels(t, x_labels));
     framed_row(t, y_labels, row, plot)
+}
+
+/// Names under equal slots (one per bar, point or column), painted on one canvas: each centred
+/// in its slot, kept inside the row, skipped when it would touch the one before. Painting keeps
+/// dozens of labels out of layout, which a scrolling page redoes for every visible chart.
+fn slot_labels(t: &Theme, labels: Vec<SharedString>) -> gpui::Div {
+    let text = CanvasText::of(t);
+    let (color, gap) = (hsla(t.palette.text_muted), t.spacing.xs);
+    div().w_full().h(px(text.size_line())).child(
+        gpui::canvas(
+            |_, _, _| (),
+            move |b: gpui::Bounds<Pixels>, _, w, cx| {
+                let (width, n) = (f32::from(b.size.width), labels.len() as f32);
+                let mut free_from = f32::NEG_INFINITY;
+                for (i, l) in labels.iter().enumerate() {
+                    if l.is_empty() {
+                        continue;
+                    }
+                    let line = text.shape(w, l, color);
+                    let lw = f32::from(line.width);
+                    let centre = (i as f32 + 0.5) / n * width;
+                    let x = (centre - lw / 2.0).clamp(0.0, (width - lw).max(0.0));
+                    if x < free_from {
+                        continue;
+                    }
+                    free_from = x + lw + gap;
+                    let at = gpui::point(b.origin.x + px(x), b.origin.y);
+                    let _ = line.paint(at, px(text.size_line()), w, cx);
+                }
+            },
+        )
+        .size_full(),
+    )
 }
 
 /// [`framed`] with a caller-built x-axis row (e.g. labels placed at arbitrary positions).

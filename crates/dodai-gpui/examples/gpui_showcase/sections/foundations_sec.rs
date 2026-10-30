@@ -451,6 +451,20 @@ struct IconTile {
     on_click: std::rc::Rc<dyn Fn(&mut gpui::App)>,
 }
 
+/// How many characters of an icon name fit a tile (its label width over the average advance of
+/// the extra-small type).
+const TILE_NAME_CHARS: usize = 13;
+
+/// `name` cut to `max` characters with an ellipsis when longer.
+fn shortened(name: &str, max: usize) -> SharedString {
+    if name.chars().count() <= max {
+        return SharedString::new(name.to_string());
+    }
+    let mut s: String = name.chars().take(max.saturating_sub(1)).collect();
+    s.push('…');
+    s.into()
+}
+
 impl RenderOnce for IconTile {
     fn render(self, window: &mut gpui::Window, cx: &mut gpui::App) -> impl IntoElement {
         let t = dodai_gpui::theme_of(cx);
@@ -486,20 +500,18 @@ impl RenderOnce for IconTile {
                     .filled(self.filled)
                     .color(primary),
             )
-            .child({
-                // Centred when it fits; long names stay left-aligned so the ellipsis clips
-                // the end, not both sides.
-                let mut l = div()
+            .child(
+                // Shortened here, once: gpui's own truncation re-measures on every layout pass,
+                // and this grid holds hundreds of names.
+                div()
                     .w_full()
                     .px(px(4.0))
-                    .truncate()
+                    .whitespace_nowrap()
+                    .overflow_hidden()
+                    .text_center()
                     .text_size(px(t.typography.size_xs))
                     .text_color(label)
-                    .child(n);
-                if n.len() <= 12 {
-                    l = l.text_center();
-                }
-                l
-            })
+                    .child(shortened(n, TILE_NAME_CHARS)),
+            )
     }
 }

@@ -11,8 +11,7 @@ pub use dodai_icons::IconId;
 #[cfg(feature = "cyberpunk")]
 pub use dodai_icons::Modifier;
 use dodai_icons::{Glyph, Pack};
-use gpui::prelude::FluentBuilder as _;
-use gpui::{canvas, div, px, Bounds, Hsla, IntoElement, ParentElement, Pixels, RenderOnce, Styled};
+use gpui::{canvas, px, Bounds, Hsla, IntoElement, Pixels, RenderOnce, Styled};
 
 /// Which icon pack an [`Icon`] draws from.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -124,18 +123,17 @@ impl RenderOnce for Icon {
             weight: self.weight.to_bits(),
         };
         let mesh = Mesh::cached(key);
-        div()
-            .size(px(self.size))
-            .flex_none()
-            .when_some(mesh, |d, mesh| {
-                d.child(
-                    canvas(
-                        |_, _, _| (),
-                        move |b: Bounds<Pixels>, _, w, _| mesh.paint(w, b.origin, color),
-                    )
-                    .size_full(),
-                )
-            })
+        // One sized canvas: a single layout node per icon (pages hold hundreds).
+        canvas(
+            |_, _, _| (),
+            move |b: Bounds<Pixels>, _, w, _| {
+                if let Some(mesh) = &mesh {
+                    mesh.paint(w, b.origin, color);
+                }
+            },
+        )
+        .size(px(self.size))
+        .flex_none()
     }
 }
 
