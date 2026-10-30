@@ -17,8 +17,12 @@ impl IcedTheme {
         &self,
         selected: bool,
     ) -> impl Fn(&IcedBaseTheme, button::Status) -> button::Style + 'static {
-        let idle = self.theme.list_item(selected, false);
-        let hover = self.theme.list_item(selected, true);
+        let idle = self
+            .theme
+            .list_item(dodai_core::ItemState::of(selected, false));
+        let hover = self
+            .theme
+            .list_item(dodai_core::ItemState::of(selected, true));
         let radius = self.radius();
         move |_t, status| {
             let t = match status {
@@ -45,7 +49,11 @@ impl IcedTheme {
         on_press: Message,
     ) -> Element<'a, Message> {
         let sp = &self.theme.spacing;
-        let marker = self.theme.list_item(selected, false).marker.map(color);
+        let marker = self
+            .theme
+            .list_item(dodai_core::ItemState::of(selected, false))
+            .marker
+            .map(color);
         let bar = container("")
             .width(3)
             .height(Length::Fill)
@@ -163,7 +171,7 @@ mod tests {
     #[test]
     fn list_item_tokens() {
         let t = cyberpunk();
-        let want = t.list_item(true, false);
+        let want = t.list_item(dodai_core::ItemState::SELECTED);
         let s = li(t, true, button::Status::Active);
         assert_eq!(
             s.background,

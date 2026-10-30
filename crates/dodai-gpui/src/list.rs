@@ -16,7 +16,7 @@ pub fn list_style(
     selected: bool,
     hovered: bool,
 ) -> (ShapeStyle, Hsla, Option<Hsla>) {
-    let k = theme.list_item(selected, hovered);
+    let k = theme.list_item(dodai_core::ItemState::of(selected, hovered));
     (
         ShapeStyle::from_tokens(
             theme,

@@ -233,16 +233,22 @@ fn tabs_lists_inputs_and_progress_follow_the_spec() {
         let r = &t.palette.roles;
         let p = &t.palette;
         // Primary tab: active label + indicator primary, inactive on-surface-variant.
-        let on = t.tab(true, false);
+        let on = t.tab(dodai_core::ItemState::SELECTED);
         assert_eq!(
             (on.foreground, on.indicator),
             (t.legible(p.primary), Some(p.primary))
         );
-        assert_eq!(t.tab(false, false).foreground, r.on_surface_variant);
-        // Lists: on-surface text, selected is the secondary-container pill.
-        assert_eq!(t.list_item(false, false).foreground, r.on_surface);
         assert_eq!(
-            t.list_item(true, false).background,
+            t.tab(dodai_core::ItemState::IDLE).foreground,
+            r.on_surface_variant
+        );
+        // Lists: on-surface text, selected is the secondary-container pill.
+        assert_eq!(
+            t.list_item(dodai_core::ItemState::IDLE).foreground,
+            r.on_surface
+        );
+        assert_eq!(
+            t.list_item(dodai_core::ItemState::SELECTED).background,
             Some(r.secondary_container)
         );
         // Outlined text field: outline border, primary when focused.
@@ -251,8 +257,11 @@ fn tabs_lists_inputs_and_progress_follow_the_spec() {
         // Progress track: surface-container-highest.
         assert_eq!(t.progress(None).track, r.surface_container_highest);
         // Filter chip: unselected outline, selected secondary-container.
-        assert_eq!(t.chip(false, false).border, Some(r.outline));
-        assert_eq!(t.chip(true, false).background, Some(r.secondary_container));
+        assert_eq!(t.chip(dodai_core::ItemState::IDLE).border, Some(r.outline));
+        assert_eq!(
+            t.chip(dodai_core::ItemState::SELECTED).background,
+            Some(r.secondary_container)
+        );
     }
 }
 
@@ -580,9 +589,9 @@ fn navigation_follows_the_m3_drawer_and_rail_specs() {
         assert_eq!((k.item_height, k.drawer_max_width), (56.0, 360.0));
         assert_eq!((k.rail_width, k.indicator), (80.0, (56.0, 32.0)));
         assert!(k.pill && k.container.is_some());
-        let on = t.navigation_item(true, false);
+        let on = t.navigation_item(dodai_core::ItemState::SELECTED);
         assert_eq!(on.foreground, t.palette.roles.on_secondary_container);
-        let off = t.navigation_item(false, false);
+        let off = t.navigation_item(dodai_core::ItemState::IDLE);
         assert_eq!(off.foreground, t.palette.roles.on_surface_variant);
     }
 }

@@ -66,7 +66,7 @@ fn component_tokens_resolve_for_every_theme() {
             "{}",
             t.id()
         );
-        let on = t.tab(true, false);
+        let on = t.tab(dodai_core::ItemState::SELECTED);
         assert!(
             on.indicator.is_some() || on.background.is_some(),
             "{}",
@@ -242,7 +242,7 @@ fn surface_tokens_resolve_for_every_theme() {
         let surfaces = [
             ("card/elevated", t.card(CardVariant::Elevated)),
             ("card/filled", t.card(CardVariant::Filled)),
-            ("chip/selected", t.chip(true, false)),
+            ("chip/selected", t.chip(dodai_core::ItemState::SELECTED)),
             ("badge", t.badge(Tone::Danger)),
             ("alert/banner", t.alert(Tone::Warning, true)),
             ("alert/tinted", t.alert(Tone::Info, false)),

@@ -345,7 +345,10 @@ pub(crate) fn style_tabs(
     tabs: Query<(&UiTab, &ControlPointer)>,
 ) {
     for (t, i, mut s, mut n, mut fg) in &mut q {
-        let k = theme.tab(t.active, *i == ControlPointer::Hovered);
+        let k = theme.tab(dodai_core::ItemState::of(
+            t.active,
+            *i == ControlPointer::Hovered,
+        ));
         upd(
             &mut *s,
             Surface {
@@ -364,7 +367,10 @@ pub(crate) fn style_tabs(
     }
     for (p, mut bg) in &mut ind {
         if let Ok((t, i)) = tabs.get(p.parent()) {
-            let k = theme.tab(t.active, *i == ControlPointer::Hovered);
+            let k = theme.tab(dodai_core::ItemState::of(
+                t.active,
+                *i == ControlPointer::Hovered,
+            ));
             upd(&mut bg.0, k.indicator.map_or(Color::NONE, color));
         }
     }
@@ -599,7 +605,10 @@ pub(crate) fn style_list_items(
     rows: Query<(&UiListItem, &ControlPointer)>,
 ) {
     for (r, i, mut s, mut n, mut fg) in &mut q {
-        let k = theme.list_item(r.selected, *i == ControlPointer::Hovered);
+        let k = theme.list_item(dodai_core::ItemState::of(
+            r.selected,
+            *i == ControlPointer::Hovered,
+        ));
         upd(
             &mut *s,
             Surface {
@@ -618,7 +627,10 @@ pub(crate) fn style_list_items(
     }
     for (c, mut bg) in &mut markers {
         if let Ok((r, i)) = rows.get(c.parent()) {
-            let k = theme.list_item(r.selected, *i == ControlPointer::Hovered);
+            let k = theme.list_item(dodai_core::ItemState::of(
+                r.selected,
+                *i == ControlPointer::Hovered,
+            ));
             upd(&mut bg.0, k.marker.map_or(Color::NONE, color));
         }
     }

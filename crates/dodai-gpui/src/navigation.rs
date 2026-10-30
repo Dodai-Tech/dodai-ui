@@ -85,7 +85,7 @@ pub fn nav_colors(t: &Theme, selected: bool, hovered: bool) -> (Option<Hsla>, Hs
 
 /// [`nav_colors`] plus whether the destination is drawn outlined with a hard shadow.
 pub fn nav_paint(t: &Theme, selected: bool, hovered: bool) -> (Option<Hsla>, Hsla, bool) {
-    let k = t.navigation_item(selected, hovered);
+    let k = t.navigation_item(dodai_core::ItemState::of(selected, hovered));
     (k.background.map(hsla), hsla(k.foreground), k.outline)
 }
 

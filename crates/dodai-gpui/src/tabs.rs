@@ -16,7 +16,7 @@ use std::rc::Rc;
 
 /// Resolved tab paint: shape style, text colour, optional indicator colour.
 pub fn tab_style(theme: &Theme, active: bool, hovered: bool) -> (ShapeStyle, Hsla, Option<Hsla>) {
-    let k = theme.tab(active, hovered);
+    let k = theme.tab(dodai_core::ItemState::of(active, hovered));
     (
         ShapeStyle::from_tokens(
             theme,
@@ -135,16 +135,17 @@ impl Tabs {
         let (mut style, fg, indicator) = tab_style(t, active, hovered);
         let (on_s, on_fg, _) = tab_style(t, true, hovered);
         let (off_s, off_fg, _) = tab_style(t, false, hovered);
-        style.fill = if measure.is_some() && t.tab(true, false).background.is_some() {
-            // The active pill is one shared element that slides between tabs.
-            if active {
-                None
+        style.fill =
+            if measure.is_some() && t.tab(dodai_core::ItemState::SELECTED).background.is_some() {
+                // The active pill is one shared element that slides between tabs.
+                if active {
+                    None
+                } else {
+                    off_s.fill
+                }
             } else {
-                off_s.fill
-            }
-        } else {
-            crate::motion::mix_opt(off_s.fill, on_s.fill, p)
-        };
+                crate::motion::mix_opt(off_s.fill, on_s.fill, p)
+            };
         let fg = if p > 0.0 && p < 1.0 {
             crate::motion::mix(off_fg, on_fg, p)
         } else {
@@ -157,7 +158,10 @@ impl Tabs {
                 .or_else(|| tab_style(t, true, hovered).2.filter(|_| p > 0.01))
                 .map(|c| c.opacity(p))
         };
-        let fg = if self.secondary && active && t.tab(true, false).background.is_none() {
+        let fg = if self.secondary
+            && active
+            && t.tab(dodai_core::ItemState::SELECTED).background.is_none()
+        {
             hsla(t.palette.roles.on_surface)
         } else {
             fg
@@ -371,7 +375,7 @@ impl Tabs {
             move |_, w, _| w.focus(&focus)
         });
         // One indicator slides between tabs when the design underlines the active tab.
-        let tokens = t.tab(true, false);
+        let tokens = t.tab(dodai_core::ItemState::SELECTED);
         let pill = tokens.background.is_some() && !tokens.outline;
         let kind = self.animation_of(&t);
         let travels = kind != SelectionMotion::Lift;

@@ -1,6 +1,7 @@
 //! The Dodai **design-system spec**: glassy filled and outlined controls, frosted tone fills,
 //! tinted soft shadows, 16 px controls and 30 px containers.
 
+use crate::ItemState;
 use crate::{
     AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, Color, ControlState,
     CornerStyle, Corners, DefaultShape, DesignSpec, IconSet, InputTokens, ListItemTokens, Look,
@@ -266,7 +267,7 @@ impl DesignSpec for Dodai {
     }
 
     /// Chips are frosted; the selected one fills with the primary ink.
-    fn chip(&self, t: &Theme, selected: bool, hovered: bool) -> Option<SurfaceTokens> {
+    fn chip(&self, t: &Theme, ItemState { selected, hovered }: ItemState) -> Option<SurfaceTokens> {
         let p = &t.palette;
         Some(if selected {
             surface(Some(p.primary), None, p.on_primary, false)
@@ -349,7 +350,14 @@ impl DesignSpec for Dodai {
 
     /// Segmented strip: the active tab is a filled primary pill, the others are muted, hover is
     /// a raised fill.
-    fn tab(&self, t: &Theme, active: bool, hovered: bool) -> Option<TabTokens> {
+    fn tab(
+        &self,
+        t: &Theme,
+        ItemState {
+            selected: active,
+            hovered,
+        }: ItemState,
+    ) -> Option<TabTokens> {
         let p = &t.palette;
         Some(TabTokens {
             background: if active {
@@ -426,12 +434,20 @@ impl DesignSpec for Dodai {
         })
     }
 
-    fn navigation_item(&self, t: &Theme, selected: bool, hovered: bool) -> Option<ListItemTokens> {
-        self.list_item(t, selected, hovered)
+    fn navigation_item(
+        &self,
+        t: &Theme,
+        ItemState { selected, hovered }: ItemState,
+    ) -> Option<ListItemTokens> {
+        self.list_item(t, ItemState { selected, hovered })
     }
 
     /// Selected rows are a frosted block; hover is a lighter one.
-    fn list_item(&self, t: &Theme, selected: bool, hovered: bool) -> Option<ListItemTokens> {
+    fn list_item(
+        &self,
+        t: &Theme,
+        ItemState { selected, hovered }: ItemState,
+    ) -> Option<ListItemTokens> {
         let p = &t.palette;
         Some(ListItemTokens {
             background: if selected {

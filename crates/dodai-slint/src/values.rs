@@ -217,7 +217,7 @@ impl ThemeValues {
         }
         for active in [false, true] {
             for hov in [false, true] {
-                let g = t.tab(active, hov);
+                let g = t.tab(dodai_core::ItemState::of(active, hov));
                 v.tab_bg.push(o(g.background));
                 v.tab_fg.push(c(g.foreground));
                 v.tab_indicator.push(o(g.indicator));
@@ -239,7 +239,7 @@ impl ThemeValues {
         }
         for sel in [false, true] {
             for hov in [false, true] {
-                let g = t.list_item(sel, hov);
+                let g = t.list_item(dodai_core::ItemState::of(sel, hov));
                 v.list_bg.push(o(g.background));
                 v.list_fg.push(c(g.foreground));
                 v.list_marker.push(o(g.marker));

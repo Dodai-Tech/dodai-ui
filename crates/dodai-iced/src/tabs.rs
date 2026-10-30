@@ -8,13 +8,13 @@ use iced::{
 use crate::{color, IcedTheme};
 
 impl IcedTheme {
-    /// Button style for one tab (`theme.tab(active, hovered)` tokens).
+    /// Button style for one tab (`theme.tab(dodai_core::ItemState::of(active, hovered))` tokens).
     pub fn tab_style(
         &self,
         active: bool,
     ) -> impl Fn(&IcedBaseTheme, button::Status) -> button::Style + 'static {
-        let idle = self.theme.tab(active, false);
-        let hover = self.theme.tab(active, true);
+        let idle = self.theme.tab(dodai_core::ItemState::of(active, false));
+        let hover = self.theme.tab(dodai_core::ItemState::of(active, true));
         let radius = self.radius();
         move |_t, status| {
             let t = match status {
@@ -45,7 +45,7 @@ impl IcedTheme {
         let mut bar = row![].spacing(sp.xs);
         for (i, l) in labels.iter().enumerate() {
             let is_active = i == active;
-            let tok = self.theme.tab(is_active, false);
+            let tok = self.theme.tab(dodai_core::ItemState::of(is_active, false));
             let underline = tok.indicator.map(color);
             let btn = button(text(self.label(l)).size(self.theme.typography.size_sm))
                 .padding([sp.sm, sp.lg])
@@ -79,7 +79,7 @@ mod tests {
     #[test]
     fn active_highlighted_by_tokens() {
         let t = cyberpunk();
-        let want = t.tab(true, false);
+        let want = t.tab(dodai_core::ItemState::SELECTED);
         let a = st(t, true, button::Status::Active);
         assert_eq!(
             a.background,

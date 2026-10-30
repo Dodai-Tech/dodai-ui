@@ -5,6 +5,7 @@
 //! [`Theme::with_spec`]. Every hook returns `None` by default, which falls back to the generic
 //! baseline in [`Theme`]'s resolvers, so a spec only lists what it does differently.
 
+use crate::ItemState;
 use crate::{
     AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, Color, ControlSize,
     ControlState, InputTokens, ListItemTokens, NavigationTokens, ProgressTokens, SizeMetrics,
@@ -116,7 +117,7 @@ pub trait DesignSpec: Send + Sync + std::fmt::Debug {
     fn card(&self, _t: &Theme, _v: CardVariant) -> Option<SurfaceTokens> {
         None
     }
-    fn chip(&self, _t: &Theme, _selected: bool, _hovered: bool) -> Option<SurfaceTokens> {
+    fn chip(&self, _t: &Theme, _state: ItemState) -> Option<SurfaceTokens> {
         None
     }
     fn alert(&self, _t: &Theme, _tone: Tone, _banner: bool) -> Option<SurfaceTokens> {
@@ -143,7 +144,7 @@ pub trait DesignSpec: Send + Sync + std::fmt::Debug {
     fn step(&self, _t: &Theme, _state: StepState) -> Option<StepTokens> {
         None
     }
-    fn tab(&self, _t: &Theme, _active: bool, _hovered: bool) -> Option<TabTokens> {
+    fn tab(&self, _t: &Theme, _state: ItemState) -> Option<TabTokens> {
         None
     }
     fn toggle(&self, _t: &Theme, _on: bool, _state: ControlState) -> Option<ToggleTokens> {
@@ -164,7 +165,7 @@ pub trait DesignSpec: Send + Sync + std::fmt::Debug {
     fn progress(&self, _t: &Theme, _tone: Option<Tone>) -> Option<ProgressTokens> {
         None
     }
-    fn list_item(&self, _t: &Theme, _selected: bool, _hovered: bool) -> Option<ListItemTokens> {
+    fn list_item(&self, _t: &Theme, _state: ItemState) -> Option<ListItemTokens> {
         None
     }
     fn sizes(&self, _t: &Theme) -> Option<Sizes> {
@@ -173,12 +174,7 @@ pub trait DesignSpec: Send + Sync + std::fmt::Debug {
     fn navigation(&self, _t: &Theme) -> Option<NavigationTokens> {
         None
     }
-    fn navigation_item(
-        &self,
-        _t: &Theme,
-        _selected: bool,
-        _hovered: bool,
-    ) -> Option<ListItemTokens> {
+    fn navigation_item(&self, _t: &Theme, _state: ItemState) -> Option<ListItemTokens> {
         None
     }
     fn divider(&self, _t: &Theme) -> Option<Color> {
@@ -255,13 +251,14 @@ pub trait DesignSpec: Send + Sync + std::fmt::Debug {
     fn tooltip(&self, _t: &Theme, _rich: bool) -> Option<(Color, Color)> {
         None
     }
-    /// Horizontal padding of a button label.
+    /// Height, label padding, text and icon size of a control at `size`.
     fn control_metrics(&self, _t: &Theme, _size: ControlSize) -> Option<SizeMetrics> {
         None
     }
     fn type_style(&self, _t: &Theme, _role: TypeRole) -> Option<TypeStyle> {
         None
     }
+    /// Horizontal padding of a button label (default: the theme's `spacing.md`).
     fn button_padding(&self, _t: &Theme) -> Option<f32> {
         None
     }

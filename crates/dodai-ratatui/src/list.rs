@@ -42,7 +42,7 @@ impl Widget for SelectList<'_> {
                 break;
             }
             let sel = self.selected == Some(i);
-            let t = th.theme().list_item(sel, false);
+            let t = th.theme().list_item(dodai_core::ItemState::of(sel, false));
             let mut st = Style::new().fg(th.color(t.foreground));
             if let Some(bg) = t.background {
                 st = st.bg(th.color(bg));
