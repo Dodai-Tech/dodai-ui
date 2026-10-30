@@ -111,6 +111,7 @@ check-gpui-features:
     cargo check -p dodai-gpui --no-default-features --features components,cyberpunk
     cargo check -p dodai-gpui --no-default-features --features components,material
     cargo check -p dodai-icons --no-default-features
+    cargo check -p dodai-icons --no-default-features --features theme
     cargo check -p dodai-icons --no-default-features --features cyberpunk
     cargo check -p dodai-icons --no-default-features --features material
     cargo check -p dodai-icons --no-default-features --features cyberpunk,neobrutalism

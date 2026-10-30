@@ -12,7 +12,7 @@ keywords     = ["icons", "material-symbols", "svg", "ui", "design-system"]
 categories   = ["gui", "graphics"]
 
 [features]
-default = ["cyberpunk", "material", "neobrutalism"]
+default = ["theme", "cyberpunk", "material", "neobrutalism"]
 ## Cyberpunk's hand-drawn, curve-free pack: `dodai_icons::cyberpunk` (names, geometry, SVG) and
 ## the pack its design draws. Without it, that design draws the shared set, faceted.
 cyberpunk = []
@@ -23,9 +23,12 @@ material-rounded = []
 material-sharp = []
 ## Neo-Brutalism's bold pack.
 neobrutalism = []
+## Pick the pack from a Dodai theme (`glyph_for`, `glyph_for_theme`, `Pack: From<IconSet>`).
+## Without it the crate has no dependencies.
+theme = ["dep:dodai-core"]
 
 [dependencies]
-dodai-core = { workspace = true }
+dodai-core = { workspace = true, optional = true }
 
 [[example]]
 name = "material_facets"
