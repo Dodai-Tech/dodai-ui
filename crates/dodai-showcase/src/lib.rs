@@ -132,6 +132,8 @@ pub struct Showcase {
     overview_real: bool,
     /// When the page last scrolled: sections below are measured ahead only once it rests.
     scrolled_at: Option<std::time::Instant>,
+    /// Lay out every section, not only those near the viewport (`DODAI_NOCULL`, tests).
+    no_cull: bool,
     /// Set while a demo step notifies: only the sections in `live_sections` rebuild.
     demo_only: bool,
     /// Sections whose build reads the playing demo values (it stamps `demo_seen`/`inst_seen`).
@@ -500,7 +502,7 @@ impl Render for Showcase {
             };
             shown += 1;
             n_children += 1;
-            if realise || std::env::var_os("DODAI_NOCULL").is_some() {
+            if realise || self.no_cull {
                 self.realised.insert(title);
                 let view = self
                     .section_views
