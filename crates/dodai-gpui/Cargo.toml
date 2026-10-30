@@ -49,14 +49,6 @@ lyon_tessellation = "1"
 dodai-shaders = { workspace = true, optional = true }
 image = { version = "0.25", default-features = false, optional = true }
 
-[[example]]
-name = "gpui_showcase"
-required-features = ["components", "charts", "shaders", "cyberpunk", "material", "neobrutalism", "dodai"]
-
 [dev-dependencies]
 dodai-core = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "dodai"] }
 gpui = { workspace = true, features = ["test-support"] }
-
-[[test]]
-name = "showcase_smoke"
-required-features = ["components", "charts"]

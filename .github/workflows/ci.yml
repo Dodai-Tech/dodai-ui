@@ -114,6 +114,7 @@ jobs:
         include:
           - { crate: dodai-iced, os: ubuntu-latest, gui: true }
           - { crate: dodai-gpui, os: ubuntu-latest, gui: true }
+          - { crate: dodai-showcase, os: ubuntu-latest, gui: true }
           - { crate: dodai-bevy, os: ubuntu-latest, gui: true }
           - { crate: dodai-shaders, os: ubuntu-latest, gui: true }
     steps:

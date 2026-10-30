@@ -1,4 +1,4 @@
-//! `cargo run -p dodai-gpui --example gpui_showcase`
+//! The gpui showcase (`cargo run -p dodai-showcase`).
 //!
 //! Every dodai-gpui component in one scrollable window.
 //! Keys: `t` / `T` next / previous theme. Glow +/- buttons change
@@ -796,7 +796,8 @@ fn new_showcase(cx: &mut App) -> Entity<Showcase> {
     cx.new(Showcase::build)
 }
 
-fn main() {
+/// Opens the showcase window and runs until it is closed.
+pub fn run() {
     Application::new().run(|cx: &mut App| {
         // Running animations redraw at most 60 times a second (DODAI_FPS=0 lifts the cap).
         let fps = std::env::var("DODAI_FPS")

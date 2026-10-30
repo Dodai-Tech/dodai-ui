@@ -77,7 +77,7 @@ run-iced:
 
 # GPUI showcase
 run-gpui:
-    cargo run -p dodai-gpui --example gpui_showcase
+    cargo run -p dodai-showcase
 
 # Write the web showcase to showcase.html and open it (macOS `open`, Linux `xdg-open`)
 run-topcoat:

@@ -2,12 +2,8 @@
 //! component section) under every built-in theme. Catches panics, key
 //! collisions and bad geometry in components the small smoke page misses.
 
-#![allow(dead_code, unused_imports, clippy::all)]
+use dodai_showcase as showcase;
 
-#[path = "../examples/gpui_showcase/main.rs"]
-mod showcase;
-
-use dodai_core::ThemeSwitcher;
 use gpui::{px, size, TestAppContext};
 
 #[gpui::test]

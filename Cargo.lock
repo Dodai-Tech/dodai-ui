@@ -4139,6 +4139,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "dodai-showcase"
+version = "0.1.0"
+dependencies = [
+ "dodai-core",
+ "dodai-gpui",
+ "dodai-icons",
+ "dodai-shaders",
+ "gpui",
+]
+
+[[package]]
 name = "dodai-slint"
 version = "0.1.0"
 dependencies = [

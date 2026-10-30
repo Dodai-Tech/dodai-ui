@@ -47,7 +47,7 @@ Each slice compiles on its own (CI checks it).
 ## Try it
 
 ```sh
-cargo run -p dodai-gpui --example gpui_showcase
+cargo run -p dodai-showcase
 ```
 
 `DODAI_CAT`, `DODAI_THEME`, `DODAI_ONLY` and `DODAI_SIZE` preselect a category, theme, section
