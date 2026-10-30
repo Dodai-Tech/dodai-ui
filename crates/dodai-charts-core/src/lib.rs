@@ -12,6 +12,7 @@
 //! | [`renko`] | Renko bricks |
 //! | [`depth`] | order-book cumulative curves |
 //! | [`gantt`] | task timeline layout |
+//! | [`fan`] | span fan: lifespans as spokes round an arc |
 //! | [`stack`] | shared-gutter chart stacking |
 //! | [`bins`] | histogram binning |
 //! | [`calendar`] | civil-date helpers |
@@ -33,6 +34,7 @@ pub mod chord;
 pub mod control;
 pub mod density;
 pub mod depth;
+pub mod fan;
 pub mod force;
 pub mod gantt;
 pub mod gradient;

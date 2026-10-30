@@ -242,6 +242,18 @@ fn more_charts(name: &'static str, v: &[f32]) -> Vec<AnyElement> {
             .into_any_element(),
         ViolinChart::new([(name, v.to_vec()), ("e", vec![])]).into_any_element(),
         RoseChart::new(items()).into_any_element(),
+        SpanFan::new(v.iter().enumerate().map(|(i, x)| {
+            FanSpan::new(name, *x, i as f32)
+                .peak(*x, f32::NAN)
+                .magnitude(*x)
+                .group(name)
+        }))
+        .order(FanOrder::Length)
+        .into_any_element(),
+        SpanFan::new([])
+            .sweep(f32::NAN)
+            .hub(f32::INFINITY)
+            .into_any_element(),
         RenkoChart::new(format!("rk-{name}"), v.to_vec(), 1.0).into_any_element(),
         RenkoChart::new(format!("rk0-{name}"), v.to_vec(), 0.0).into_any_element(),
         RenkoChart::new(format!("rkn-{name}"), v.to_vec(), f32::NAN).into_any_element(),
