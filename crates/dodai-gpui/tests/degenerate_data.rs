@@ -157,7 +157,18 @@ fn charts(name: &'static str, v: Vec<f32>) -> Vec<AnyElement> {
     let rows = || -> Vec<Vec<f32>> { vec![v.clone(), v.iter().rev().copied().collect(), vec![]] };
     out.extend([
         Sunburst::new(tree.clone()).into_any_element(),
-        Icicle::new(tree).into_any_element(),
+        Icicle::new(tree.clone()).into_any_element(),
+        CirclePack::new(tree).into_any_element(),
+        ProportionalSquares::new([("g", pairs().collect::<Vec<_>>()), ("e", vec![])])
+            .into_any_element(),
+        BubbleSwarm::new([
+            (
+                "g",
+                pairs().map(|(l, x)| (l, (x, x.abs()))).collect::<Vec<_>>(),
+            ),
+            ("e", vec![]),
+        ])
+        .into_any_element(),
         Waffle::new(pairs()).grid(7, 3).into_any_element(),
         Marimekko::new(["x", "y"], pairs().map(|(l, x)| (l, vec![x, -x]))).into_any_element(),
         Beeswarm::new([(name, v.clone()), ("r", vec![])]).into_any_element(),

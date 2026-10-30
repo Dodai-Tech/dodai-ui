@@ -373,6 +373,71 @@ pub(crate) fn label_style(t: &Theme, d: gpui::Div) -> gpui::Div {
         .text_color(hsla(t.palette.text_muted))
 }
 
+/// Chart label text painted straight onto a canvas, for labels that sit on shapes laid out at
+/// paint time (inside a bubble, a square).
+#[derive(Clone)]
+pub(crate) struct CanvasText {
+    family: SharedString,
+    size: f32,
+}
+
+impl CanvasText {
+    /// The chart label font of `t`.
+    pub(crate) fn of(t: &Theme) -> Self {
+        Self {
+            family: first_family(t.typography.mono),
+            size: t.typography.size_xs,
+        }
+    }
+
+    /// Height of one line of label text.
+    pub(crate) fn size_line(&self) -> f32 {
+        self.size * 1.3
+    }
+
+    /// Paints `text` centred on `at` (a canvas origin and a point from it) when it is at most
+    /// `max_w` wide; returns whether it fit.
+    pub(crate) fn centred(
+        &self,
+        w: &mut Window,
+        cx: &mut gpui::App,
+        text: &str,
+        (o, at): (gpui::Point<Pixels>, (f32, f32)),
+        max_w: f32,
+        color: Hsla,
+    ) -> bool {
+        if text.is_empty() || max_w <= 0.0 {
+            return false;
+        }
+        let run = gpui::TextRun {
+            len: text.len(),
+            font: gpui::font(self.family.clone()),
+            color,
+            background_color: None,
+            underline: None,
+            strikethrough: None,
+        };
+        let line = w.text_system().shape_line(
+            SharedString::from(text.to_string()),
+            px(self.size),
+            &[run],
+            None,
+        );
+        let lw: f32 = line.width.into();
+        if lw > max_w {
+            return false;
+        }
+        let lh = self.size_line();
+        let _ = line.paint(
+            gpui::point(o.x + px(at.0 - lw / 2.0), o.y + px(at.1 - lh / 2.0)),
+            px(lh),
+            w,
+            cx,
+        );
+        true
+    }
+}
+
 /// Width of a column of row labels: room for the longest one (estimated from the label
 /// font's average advance), never narrower than the large axis gutter nor wider than 220 px.
 pub(crate) fn label_column<S: AsRef<str>>(t: &Theme, labels: impl IntoIterator<Item = S>) -> f32 {

@@ -206,6 +206,8 @@ pub mod charts_market;
 #[cfg(feature = "charts")]
 pub mod charts_network;
 #[cfg(feature = "charts")]
+pub mod charts_packed;
+#[cfg(feature = "charts")]
 pub mod charts_part_whole;
 #[cfg(feature = "charts")]
 pub mod charts_pie;
@@ -372,6 +374,8 @@ pub use charts_layered::{BumpChart, HorizonChart, RidgelineChart};
 pub use charts_market::{ChartStack, DepthChart, Gantt, RenkoChart};
 #[cfg(feature = "charts")]
 pub use charts_network::{ArcDiagram, ChordDiagram, Hexbin, NetworkGraph, ParallelCoordinates};
+#[cfg(feature = "charts")]
+pub use charts_packed::{BubbleSwarm, CirclePack, ProportionalSquares};
 #[cfg(feature = "charts")]
 pub use charts_part_whole::{treemap_layout, RadialBar, Treemap};
 #[cfg(feature = "charts")]

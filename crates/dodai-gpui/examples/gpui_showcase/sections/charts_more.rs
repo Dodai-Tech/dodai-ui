@@ -3,9 +3,10 @@
 
 use super::super::*;
 use dodai_gpui::{
-    ArcDiagram, Beeswarm, ChartNode, ChordDiagram, ControlChart, DivergingBars, Ecdf, ErrorBars,
-    EventTimeline, Hexbin, Icicle, KpiTile, Marimekko, NetworkGraph, ParallelCoordinates,
-    ParetoChart, StateSpan, Sunburst, Waffle,
+    ArcDiagram, Beeswarm, BubbleSwarm, ChartNode, ChordDiagram, CirclePack, ControlChart,
+    DivergingBars, Ecdf, ErrorBars, EventTimeline, Hexbin, Icicle, KpiTile, Marimekko,
+    NetworkGraph, ParallelCoordinates, ParetoChart, ProportionalSquares, StateSpan, Sunburst,
+    Waffle,
 };
 
 /// A repeatable pseudo-random number in `0..1` for sample `i` of stream `seed`.
@@ -103,7 +104,86 @@ impl Showcase {
                 "Icicle",
                 noted(
                     "The same budget as rows, top level first.",
-                    Icicle::new(budget).format(|v| format!("{v:.0}k")).into_any_element(),
+                    Icicle::new(budget.clone()).format(|v| format!("{v:.0}k")).into_any_element(),
+                ),
+            ),
+            (
+                "Circle packing",
+                noted(
+                    "The same budget as circles inside circles: each team by area, each area a ring around its teams.",
+                    CirclePack::new(budget).format(|v| format!("{v:.0}k")).into_any_element(),
+                ),
+            ),
+            (
+                "Proportional squares",
+                noted(
+                    "Yearly spend, one square per item: sizes three orders of magnitude apart stay comparable.",
+                    ProportionalSquares::new([
+                        (
+                            "Public",
+                            vec![
+                                ("Health", drift(&[1_840.0], 41.0)[0]),
+                                ("Pensions", 1_310.0),
+                                ("Schools", 760.0),
+                                ("Defence", 420.0),
+                                ("Transport", 260.0),
+                                ("Science", 95.0),
+                                ("Arts", 18.0),
+                            ],
+                        ),
+                        (
+                            "Private",
+                            vec![
+                                ("Cloud", 980.0),
+                                ("Phones", 640.0),
+                                ("Games", 210.0),
+                                ("Streaming", 130.0),
+                                ("Pet food", 72.0),
+                                ("Fonts", 4.0),
+                            ],
+                        ),
+                    ])
+                    .format(|v| format!("{v:.0}bn"))
+                    .into_any_element(),
+                ),
+            ),
+            (
+                "Bubble swarm",
+                noted(
+                    "Ventures by yearly growth, sized by revenue: the leaders and the giants at a glance.",
+                    BubbleSwarm::new([
+                        (
+                            "Energy",
+                            vec![
+                                ("Sol", (34.0, 820.0)),
+                                ("Gridly", (12.0, 2_400.0)),
+                                ("Tidal", (58.0, 140.0)),
+                                ("Volt", (21.0, 610.0)),
+                            ],
+                        ),
+                        (
+                            "Health",
+                            vec![
+                                ("Pulse", (44.0, 390.0)),
+                                ("Medi", (9.0, 3_100.0)),
+                                ("Gene", (71.0, 90.0)),
+                                ("Care", (26.0, 1_200.0)),
+                                ("Dose", (18.0, 220.0)),
+                            ],
+                        ),
+                        (
+                            "Money",
+                            vec![
+                                ("Ledger", (15.0, 1_800.0)),
+                                ("Coin", (63.0, 300.0)),
+                                ("Pay", (37.0, 950.0)),
+                                ("Fund", (29.0, 180.0)),
+                                ("Vault", (5.0, 2_700.0)),
+                            ],
+                        ),
+                    ])
+                    .format(|v| format!("{v:.0}"))
+                    .into_any_element(),
                 ),
             ),
             (

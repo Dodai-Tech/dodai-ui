@@ -179,9 +179,84 @@ pub fn marker_points(m: Marker, x: f32, y: f32, r: f32) -> Vec<(f32, f32)> {
     }
 }
 
+/// `poly` clipped to the rectangle `(x0, y0)..(x1, y1)` (Sutherland-Hodgman): what of a
+/// shape lies inside a plot. Empty when nothing does. Pure.
+pub fn clip_polygon(
+    poly: &[(f32, f32)],
+    (x0, y0): (f32, f32),
+    (x1, y1): (f32, f32),
+) -> Vec<(f32, f32)> {
+    type Edge = (
+        fn((f32, f32), f32) -> bool,
+        fn((f32, f32), (f32, f32), f32) -> (f32, f32),
+        f32,
+    );
+    let at_x = |a: (f32, f32), b: (f32, f32), x: f32| {
+        let t = (x - a.0) / (b.0 - a.0);
+        (x, a.1 + (b.1 - a.1) * t)
+    };
+    let at_y = |a: (f32, f32), b: (f32, f32), y: f32| {
+        let t = (y - a.1) / (b.1 - a.1);
+        (a.0 + (b.0 - a.0) * t, y)
+    };
+    let edges: [Edge; 4] = [
+        (|p, v| p.0 >= v, at_x, x0),
+        (|p, v| p.0 <= v, at_x, x1),
+        (|p, v| p.1 >= v, at_y, y0),
+        (|p, v| p.1 <= v, at_y, y1),
+    ];
+    let mut out: Vec<(f32, f32)> = poly.to_vec();
+    for (inside, cross, v) in edges {
+        let input = std::mem::take(&mut out);
+        for (i, &cur) in input.iter().enumerate() {
+            let prev = input[(i + input.len() - 1) % input.len()];
+            match (inside(cur, v), inside(prev, v)) {
+                (true, true) => out.push(cur),
+                (true, false) => out.extend([cross(prev, cur, v), cur]),
+                (false, true) => out.push(cross(prev, cur, v)),
+                (false, false) => {}
+            }
+        }
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn clipping_keeps_what_lies_inside_the_rectangle() {
+        let area = |p: &[(f32, f32)]| {
+            (0..p.len())
+                .map(|i| {
+                    let (a, b) = (p[i], p[(i + 1) % p.len()]);
+                    a.0 * b.1 - b.0 * a.1
+                })
+                .sum::<f32>()
+                .abs()
+                / 2.0
+        };
+        // A triangle over the corner of a 10×10 box: the part inside is half the box.
+        let tri = [(-5.0, -5.0), (15.0, -5.0), (-5.0, 15.0)];
+        let c = clip_polygon(&tri, (0.0, 0.0), (10.0, 10.0));
+        assert!((area(&c) - 50.0).abs() < 1e-3, "{}", area(&c));
+        assert!(c
+            .iter()
+            .all(|p| (0.0..=10.0).contains(&p.0) && (0.0..=10.0).contains(&p.1)));
+        let inside = [(1.0, 1.0), (2.0, 1.0), (2.0, 2.0)];
+        assert_eq!(
+            clip_polygon(&inside, (0.0, 0.0), (10.0, 10.0)),
+            inside.to_vec()
+        );
+        assert!(clip_polygon(
+            &[(20.0, 20.0), (30.0, 20.0), (30.0, 30.0)],
+            (0.0, 0.0),
+            (10.0, 10.0)
+        )
+        .is_empty());
+        assert!(clip_polygon(&[], (0.0, 0.0), (1.0, 1.0)).is_empty());
+    }
 
     #[test]
     fn marker_shapes() {
