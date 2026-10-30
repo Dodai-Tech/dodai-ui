@@ -395,6 +395,47 @@ impl CanvasText {
         self.size * 1.3
     }
 
+    /// `text` laid out in the label font and colour.
+    fn shape(&self, w: &mut Window, text: &str, color: Hsla) -> gpui::ShapedLine {
+        let run = gpui::TextRun {
+            len: text.len(),
+            font: gpui::font(self.family.clone()),
+            color,
+            background_color: None,
+            underline: None,
+            strikethrough: None,
+        };
+        w.text_system().shape_line(
+            SharedString::from(text.to_string()),
+            px(self.size),
+            &[run],
+            None,
+        )
+    }
+
+    /// Paints `text` just beyond `at` in the direction `(ux, uy)` (a unit vector): the label
+    /// grows away from the point, as names around a ring do.
+    pub(crate) fn beside(
+        &self,
+        w: &mut Window,
+        cx: &mut gpui::App,
+        text: &str,
+        (o, at): (gpui::Point<Pixels>, (f32, f32)),
+        (ux, uy): (f32, f32),
+        color: Hsla,
+    ) {
+        if text.is_empty() {
+            return;
+        }
+        let line = self.shape(w, text, color);
+        let (lw, lh): (f32, f32) = (line.width.into(), self.size_line());
+        let (x, y) = (
+            at.0 + ux * lw / 2.0 - lw / 2.0,
+            at.1 + uy * lh / 2.0 - lh / 2.0,
+        );
+        let _ = line.paint(gpui::point(o.x + px(x), o.y + px(y)), px(lh), w, cx);
+    }
+
     /// Paints `text` centred on `at` (a canvas origin and a point from it) when it is at most
     /// `max_w` wide; returns whether it fit.
     pub(crate) fn centred(
@@ -409,20 +450,7 @@ impl CanvasText {
         if text.is_empty() || max_w <= 0.0 {
             return false;
         }
-        let run = gpui::TextRun {
-            len: text.len(),
-            font: gpui::font(self.family.clone()),
-            color,
-            background_color: None,
-            underline: None,
-            strikethrough: None,
-        };
-        let line = w.text_system().shape_line(
-            SharedString::from(text.to_string()),
-            px(self.size),
-            &[run],
-            None,
-        );
+        let line = self.shape(w, text, color);
         let lw: f32 = line.width.into();
         if lw > max_w {
             return false;

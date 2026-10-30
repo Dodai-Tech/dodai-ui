@@ -2,8 +2,8 @@
 //! [`ChordDiagram`] and [`ArcDiagram`].
 
 use crate::charts::{
-    chart_cfg, fill, fmt_with, label_style, marker_points, nice_ticks, norm, polar, stroke,
-    tick_row, titled, turn_arc, Legend, Marker, NumFmt,
+    chart_cfg, fill, fmt_with, label_column, label_style, marker_points, nice_ticks, norm, polar,
+    stroke, tick_row, titled, turn_arc, CanvasText, Marker, NumFmt,
 };
 use crate::charts_focus::{readout, Focus};
 use crate::paint::scale_alpha;
@@ -699,17 +699,17 @@ impl ChordDiagram {
             follow: crate::instruments_motion::Follow::here(),
             names: names.into_iter().map(Into::into).collect(),
             matrix,
-            height: 280.0,
+            height: 300.0,
             fmt: None,
             title: None,
         }
     }
 }
 
-/// The group whose arc covers the pointer's angle (anywhere inside the outer ring).
+/// The group whose arc covers the pointer's angle (anywhere inside the ring and its names).
 fn chord_hit(groups: &[(f32, f32)], x: f32, y: f32, w: f32, h: f32) -> Option<usize> {
     let (dx, dy) = (x - w / 2.0, y - h / 2.0);
-    if (dx * dx + dy * dy).sqrt() > w.min(h) / 2.0 {
+    if (dx * dx + dy * dy).sqrt() > w.max(h) / 2.0 {
         return None;
     }
     let turn = (dy.atan2(dx) / std::f32::consts::TAU + 0.25).rem_euclid(1.0);
@@ -729,53 +729,91 @@ impl ChordDiagram {
         let paint = lay.clone();
         let hit_groups = lay.groups.clone();
         let size = self.height;
+        // Names sit around the ring: room for the longest beside it, a line above and below.
+        let text = CanvasText::of(&t);
+        let side = label_column(&t, &self.names) + t.spacing.sm;
+        let above = text.size_line() + t.spacing.sm;
+        let names = self.names.clone();
+        let (ink, muted) = (hsla(t.palette.text), hsla(t.palette.text_muted));
+        let gap = t.spacing.xs;
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
         let pb = bounds.clone();
         let cv = canvas(
             |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
+            move |b: Bounds<Pixels>, _, w, cx| {
                 pb.set(b);
                 let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
                 let (cx_, cy_) = (bw / 2.0, bh / 2.0);
-                let outer = bw.min(bh) / 2.0 - 2.0;
-                let inner = outer - 12.0;
+                let outer = ((bw / 2.0 - side).min(bh / 2.0 - above) - gap).max(8.0);
+                let band = (outer * 0.07).clamp(6.0, 14.0);
+                let inner = outer - band;
+                // Ribbons stop short of the arcs, so each arc reads as a clean band.
+                let reach = inner - gap;
                 let c = (cx_, cy_);
                 for r in &paint.ribbons {
                     let lit = shown.is_none_or(|s| s == r.from || s == r.to);
                     let (s0, s1) = (r.source.0 * g, r.source.1 * g);
                     let (t0, t1) = (r.target.0 * g, r.target.1 * g);
-                    let mut p = turn_arc(cx_, cy_, inner, s0, s1);
-                    p.extend(quad(
-                        polar(cx_, cy_, inner, s1),
-                        c,
-                        polar(cx_, cy_, inner, t0),
-                        24,
-                    ));
-                    if (t1 - t0).abs() > 1e-5 {
-                        p.extend(turn_arc(cx_, cy_, inner, t0, t1));
+                    let mut p = turn_arc(cx_, cy_, reach, s0, s1);
+                    if r.from == r.to {
+                        // Flow that stays: a short loop just inside its own arc.
+                        let tip = polar(cx_, cy_, reach * 0.55, (s0 + s1) / 2.0);
+                        p.extend(quad(
+                            polar(cx_, cy_, reach, s1),
+                            tip,
+                            polar(cx_, cy_, reach, s0),
+                            24,
+                        ));
+                    } else {
+                        p.extend(quad(
+                            polar(cx_, cy_, reach, s1),
+                            c,
+                            polar(cx_, cy_, reach, t0),
+                            32,
+                        ));
+                        p.extend(turn_arc(cx_, cy_, reach, t0, t1));
+                        p.extend(quad(
+                            polar(cx_, cy_, reach, t1),
+                            c,
+                            polar(cx_, cy_, reach, s0),
+                            32,
+                        ));
                     }
-                    p.extend(quad(
-                        polar(cx_, cy_, inner, t1),
-                        c,
-                        polar(cx_, cy_, inner, s0),
-                        24,
-                    ));
-                    fill(
-                        w,
-                        b.origin,
-                        &p,
-                        scale_alpha(cols[r.from], if lit { 0.55 } else { 0.07 }),
-                    );
+                    // A ribbon takes the colour of the side that sends more.
+                    let col = cols[if s1 - s0 >= t1 - t0 { r.from } else { r.to }];
+                    // Flow that stays is quieter than flow that moves.
+                    let calm = if r.from == r.to { 0.45 } else { 1.0 };
+                    let (body, edge) = if lit {
+                        (0.5 * calm, 0.85 * calm)
+                    } else {
+                        (0.06, 0.12)
+                    };
+                    fill(w, b.origin, &p, scale_alpha(col, body));
+                    stroke(w, b.origin, &p, 1.0, scale_alpha(col, edge), true);
                 }
                 for (i, (a, e)) in paint.groups.iter().enumerate() {
                     let (a, e) = (a * g, e * g);
                     if e - a < 1e-4 {
                         continue;
                     }
-                    let lift = if shown == Some(i) { 4.0 } else { 0.0 };
-                    let mut p = turn_arc(cx_, cy_, outer - 4.0 + lift, a, e);
-                    p.extend(turn_arc(cx_, cy_, inner + 2.0, e, a));
+                    let lift = if shown == Some(i) { gap } else { 0.0 };
+                    let mut p = turn_arc(cx_, cy_, outer + lift, a, e);
+                    p.extend(turn_arc(cx_, cy_, inner, e, a));
                     fill(w, b.origin, &p, cols[i]);
+                    if g < 1.0 {
+                        continue;
+                    }
+                    let mid = (a + e) / 2.0;
+                    let (px_, py_) = polar(0.0, 0.0, 1.0, mid);
+                    let at = polar(cx_, cy_, outer + lift + gap, mid);
+                    let col = if shown.is_none_or(|s| s == i) {
+                        ink
+                    } else {
+                        muted
+                    };
+                    if let Some(name) = names.get(i) {
+                        text.beside(w, cx, name, (b.origin, at), (px_, py_), col);
+                    }
                 }
             },
         )
@@ -785,8 +823,8 @@ impl ChordDiagram {
             .id(self.follow.sub("disc").element_id(window, cx))
             .relative()
             .flex_none()
-            .w(px(size))
-            .h(px(size))
+            .w(px(size + 2.0 * side))
+            .h(px(size + 2.0 * above))
             .child(cv);
         let disc = focus.pointer(disc, &bounds, move |x, y, w, h| {
             chord_hit(&hit_groups, x, y, w, h)
@@ -816,12 +854,6 @@ impl ChordDiagram {
                 fmt_with(&self.fmt, big)
             ))
         });
-        let legend = Legend::new(
-            self.names
-                .iter()
-                .enumerate()
-                .map(|(i, s)| (s.clone(), t.palette.series_at(i))),
-        );
         let body = div()
             .flex()
             .flex_col()
@@ -829,7 +861,6 @@ impl ChordDiagram {
             .gap(px(t.spacing.sm))
             .w_full()
             .child(disc)
-            .child(legend)
             .child(readout(&t, text, "Hover a group"));
         titled(&t, self.title, body)
     }

@@ -26,7 +26,9 @@ pub struct Chords {
 }
 
 /// Lays out a square flow matrix (`m[i][j]` = flow from `i` to `j`): each group's arc is as
-/// long as its outgoing total, split in target order; arcs are separated by `pad` turns.
+/// long as its outgoing total; arcs are separated by `pad` turns. Along an arc (clockwise) come
+/// the flow within the group, then the flows to the other groups from the one just before it
+/// round to the one just after it, so no two ribbons cross.
 /// Missing, non-finite or negative entries count as 0. Pure.
 pub fn chord(m: &[Vec<f32>], pad: f32) -> Chords {
     let n = m.len();
@@ -54,9 +56,11 @@ pub fn chord(m: &[Vec<f32>], pad: f32) -> Chords {
     let mut a = 0.0;
     for (i, row) in sub.iter_mut().enumerate() {
         let start = a;
-        for (j, s) in row.iter_mut().enumerate() {
+        // Self first, then i-1, i-2, … round to i+1.
+        for step in 0..n {
+            let j = (i + n - step) % n;
             let w = at(i, j) * k;
-            *s = (a, a + w);
+            row[j] = (a, a + w);
             a += w;
         }
         groups.push((start, a));
@@ -100,5 +104,29 @@ mod tests {
         assert!((c.groups[1].0 - c.groups[0].1 - 0.05).abs() < 1e-6);
         assert!(chord(&[], 0.1).ribbons.is_empty());
         assert!(chord(&[vec![0.0]], 0.1).ribbons.is_empty());
+    }
+
+    #[test]
+    fn ribbons_leave_towards_their_target_so_none_cross() {
+        let m = vec![vec![1.0; 4]; 4];
+        let c = chord(&m, 0.0);
+        let span = |i: usize, j: usize| {
+            c.ribbons
+                .iter()
+                .find_map(|r| match (r.from, r.to) {
+                    (f, t) if (f, t) == (i, j) => Some(r.source),
+                    (f, t) if (f, t) == (j, i) => Some(r.target),
+                    _ => None,
+                })
+                .unwrap()
+        };
+        for i in 0..4 {
+            let (prev, next, own) = ((i + 3) % 4, (i + 1) % 4, span(i, i));
+            // Own flow opens the arc, the next group clockwise closes it.
+            assert!((own.0 - c.groups[i].0).abs() < 1e-6);
+            assert!((span(i, next).1 - c.groups[i].1).abs() < 1e-6);
+            assert!(span(i, prev).0 < span(i, (i + 2) % 4).0);
+            assert!(span(i, (i + 2) % 4).0 < span(i, next).0);
+        }
     }
 }
