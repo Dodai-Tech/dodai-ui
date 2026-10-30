@@ -15,15 +15,25 @@ pub fn nice_ceiling(v: f32) -> f32 {
 }
 
 /// "Nice" axis ticks covering `min..=max` with about `count` steps. Pure.
+///
+/// Always at least two strictly increasing ticks. Worked out in `f64`, so a narrow range at a
+/// large magnitude (timestamps, `1e9..1e9 + 60`) gives a few distinct ticks instead of
+/// duplicates. `max <= min` covers `min..min + 1`; a non-finite end is replaced by the other
+/// one (both: `0..1`).
 pub fn nice_ticks(min: f32, max: f32, count: usize) -> Vec<f32> {
-    let count = count.max(1) as f32;
-    let (lo, hi) = if max > min {
-        (min, max)
-    } else {
-        (min, min + 1.0)
+    let (min, max) = match (min.is_finite(), max.is_finite()) {
+        (true, true) => (min, max),
+        (true, false) => (min, min),
+        (false, true) => (max, max),
+        (false, false) => (0.0, 1.0),
     };
-    let raw = (hi - lo) / count;
-    let mag = 10f32.powf(raw.log10().floor());
+    let (lo, hi) = if max > min {
+        (f64::from(min), f64::from(max))
+    } else {
+        (f64::from(min), f64::from(min) + 1.0)
+    };
+    let raw = (hi - lo) / count.max(1) as f64;
+    let mag = 10f64.powf(raw.log10().floor());
     let norm = raw / mag;
     let step = mag
         * if norm <= 1.0 {
@@ -35,17 +45,34 @@ pub fn nice_ticks(min: f32, max: f32, count: usize) -> Vec<f32> {
         } else {
             10.0
         };
-    let start = (lo / step).floor() * step;
-    let mut out = Vec::new();
-    let mut v = start;
-    while v < hi + step * 0.999 {
-        out.push((v / step).round() * step);
-        v += step;
-        if out.len() > 64 {
+    let start = (lo / step).floor();
+    let mut out: Vec<f32> = Vec::new();
+    for i in 0..=64 {
+        let v = (start + i as f64) * step;
+        if v >= hi + step * 0.999 {
             break;
         }
+        let v = v.clamp(f64::from(f32::MIN), f64::from(f32::MAX)) as f32;
+        if out.last().is_none_or(|l| v > *l) {
+            out.push(v);
+        }
     }
-    out
+    match out.as_slice() {
+        [] => vec![min, next_up(min)],
+        [only] => vec![*only, next_up(*only)],
+        _ => out,
+    }
+}
+
+/// The smallest `f32` above a finite `v`.
+fn next_up(v: f32) -> f32 {
+    if v == 0.0 {
+        f32::from_bits(1)
+    } else if v > 0.0 {
+        f32::from_bits(v.to_bits() + 1)
+    } else {
+        f32::from_bits(v.to_bits() - 1)
+    }
 }
 
 /// Compact number label: `1200` → `1.2k`, `3.0` → `3`.
@@ -299,6 +326,37 @@ mod tests {
         let t = nice_ticks(0.0, 1.0, 4);
         assert_eq!(*t.last().unwrap(), 1.0);
         assert!(nice_ticks(5.0, 5.0, 4).len() >= 2);
+    }
+
+    #[test]
+    fn ticks_are_never_empty_and_never_repeat() {
+        let cases = [
+            (f32::MIN, f32::MAX),
+            (f32::NAN, 1.0),
+            (5.0, f32::NAN),
+            (f32::NAN, f32::NAN),
+            (f32::NEG_INFINITY, f32::INFINITY),
+            (1e9, 1e9 + 64.0),
+            (1e10, 1e10 + 1024.0),
+            (16_777_216.0, 16_777_216.0),
+            (-3e38, 3e38),
+            (0.0, 1e-30),
+            (-5.0, -5.0),
+        ];
+        for (lo, hi) in cases {
+            let t = nice_ticks(lo, hi, 4);
+            assert!(t.len() >= 2, "{lo}..{hi}: {t:?}");
+            assert!(t.len() <= 66, "{lo}..{hi}: {} ticks", t.len());
+            assert!(t.windows(2).all(|w| w[1] > w[0]), "{lo}..{hi}: {t:?}");
+            assert!(t.iter().all(|v| v.is_finite()), "{lo}..{hi}: {t:?}");
+        }
+    }
+
+    #[test]
+    fn a_narrow_range_at_a_large_magnitude_gives_a_few_ticks() {
+        let t = nice_ticks(1e9, 1e9 + 60.0, 4);
+        assert!(t.len() <= 6, "{t:?}");
+        assert!(t[0] <= 1e9 && *t.last().unwrap() >= 1e9 + 60.0);
     }
 
     #[test]

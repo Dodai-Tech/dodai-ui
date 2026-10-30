@@ -77,17 +77,27 @@ impl ScatterPlot {
         let g = crate::motion::grow_for(window, cx, &self.follow, "ScatterPlot");
         let t = theme_of(cx);
         let all = || self.series.iter().flat_map(|s| s.1.iter());
+        // The finite extent; no points (or none finite) give a 0..1 axis.
         let fold = |f: fn(&(f32, f32)) -> f32| {
-            all()
+            let (l, h) = all()
                 .map(f)
-                .fold((f32::MAX, f32::MIN), |(l, h), v| (l.min(v), h.max(v)))
+                .filter(|v| v.is_finite())
+                .fold((f32::INFINITY, f32::NEG_INFINITY), |(l, h), v| {
+                    (l.min(v), h.max(v))
+                });
+            if l <= h {
+                (l, h)
+            } else {
+                (0.0, 1.0)
+            }
         };
         let (xl, xh) = fold(|p| p.0);
         let (yl, yh) = fold(|p| p.1);
-        let xt = nice_ticks(xl.min(xh), xh.max(xl), 4);
-        let yt = nice_ticks(yl.min(yh), yh.max(yl), 4);
-        let (x0, x1) = (*xt.first().unwrap(), *xt.last().unwrap());
-        let (y0, y1) = (*yt.first().unwrap(), *yt.last().unwrap());
+        let xt = nice_ticks(xl, xh, 4);
+        let yt = nice_ticks(yl, yh, 4);
+        // `nice_ticks` always gives at least two.
+        let (x0, x1) = (xt[0], xt[xt.len() - 1]);
+        let (y0, y1) = (yt[0], yt[yt.len() - 1]);
         let grid = hsla(t.palette.border);
         let yf: Vec<f32> = yt.iter().map(|v| norm(*v, y0, y1)).collect();
         let xf: Vec<f32> = xt.iter().map(|v| norm(*v, x0, x1)).collect();

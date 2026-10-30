@@ -220,8 +220,59 @@ fn charts(name: &'static str, v: Vec<f32>) -> Vec<AnyElement> {
         )])
         .into_any_element(),
     ]);
+    out.extend(more_charts(name, &v));
     out.push(Sparkline::new(v).into_any_element());
     out
+}
+
+/// Charts with point, range or flow data: built from the same hostile values.
+fn more_charts(name: &'static str, v: &[f32]) -> Vec<AnyElement> {
+    let pts: Vec<(f32, f32)> = v.iter().map(|x| (*x, -x)).collect();
+    let items = || v.iter().enumerate().map(|(i, x)| (format!("i{i}"), *x));
+    let pairs = || {
+        v.iter()
+            .enumerate()
+            .map(|(i, x)| (format!("i{i}"), *x, x * 0.5))
+    };
+    vec![
+        ScatterPlot::new(format!("sc-{name}"), [(name, pts.clone()), ("e", vec![])])
+            .into_any_element(),
+        BubbleChart::new(
+            format!("bu-{name}"),
+            [(
+                name,
+                v.iter().map(|x| (*x, -x, x.abs())).collect::<Vec<_>>(),
+            )],
+        )
+        .into_any_element(),
+        BoxPlot::new([(name, v.to_vec()), ("e", vec![])])
+            .notch(true)
+            .mean(true)
+            .points(true)
+            .into_any_element(),
+        ViolinChart::new([(name, v.to_vec()), ("e", vec![])]).into_any_element(),
+        RoseChart::new(items()).into_any_element(),
+        RenkoChart::new(format!("rk-{name}"), v.to_vec(), 1.0).into_any_element(),
+        RenkoChart::new(format!("rk0-{name}"), v.to_vec(), 0.0).into_any_element(),
+        RenkoChart::new(format!("rkn-{name}"), v.to_vec(), f32::NAN).into_any_element(),
+        Lollipop::new(format!("lo-{name}"), items()).into_any_element(),
+        PairedBars::new(pairs()).into_any_element(),
+        SlopeChart::new(pairs()).into_any_element(),
+        Sankey::new(v.iter().map(|x| ("a", "b", *x))).into_any_element(),
+        Sankey::new(v.iter().map(|x| ("a", "a", *x))).into_any_element(),
+        Gantt::new(
+            format!("ga-{name}"),
+            v.windows(2).map(|w| GanttTask::new("t", w[0], w[1])),
+        )
+        .into_any_element(),
+        DepthChart::new(
+            format!("de-{name}"),
+            pts.clone(),
+            pts.iter().map(|(a, b)| (*b, *a)),
+        )
+        .into_any_element(),
+        CalendarHeatmap::new(v.to_vec()).into_any_element(),
+    ]
 }
 
 struct Page;
