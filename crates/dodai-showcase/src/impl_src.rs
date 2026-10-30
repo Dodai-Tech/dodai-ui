@@ -39,6 +39,22 @@ const FILES: &[(&str, &str)] = &[
     ("bar.rs", include_str!("../../dodai-gpui-charts/src/bar.rs")),
     ("fan.rs", include_str!("../../dodai-gpui-charts/src/fan.rs")),
     (
+        "milestones.rs",
+        include_str!("../../dodai-gpui-charts/src/milestones.rs"),
+    ),
+    (
+        "peaks.rs",
+        include_str!("../../dodai-gpui-charts/src/peaks.rs"),
+    ),
+    (
+        "shards.rs",
+        include_str!("../../dodai-gpui-charts/src/shards.rs"),
+    ),
+    (
+        "cascade.rs",
+        include_str!("../../dodai-gpui-charts/src/cascade.rs"),
+    ),
+    (
         "line.rs",
         include_str!("../../dodai-gpui-charts/src/line.rs"),
     ),

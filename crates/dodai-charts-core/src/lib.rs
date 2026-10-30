@@ -13,6 +13,10 @@
 //! | [`depth`] | order-book cumulative curves |
 //! | [`gantt`] | task timeline layout |
 //! | [`fan`] | span fan: lifespans as spokes round an arc |
+//! | [`shards`] | shard map: an outline cut into value-sized convex cells |
+//! | [`cascade`] | split flow: a quantity splitting down through levels |
+//! | [`peaks`] | peak range: overlapping series as mountains |
+//! | [`milestones`] | time scatter: record frontier, trails, nearest point |
 //! | [`stack`] | shared-gutter chart stacking |
 //! | [`bins`] | histogram binning |
 //! | [`calendar`] | civil-date helpers |
@@ -30,6 +34,7 @@ pub mod axis;
 pub mod bins;
 pub mod calendar;
 pub mod candles;
+pub mod cascade;
 pub mod chord;
 pub mod control;
 pub mod density;
@@ -44,11 +49,14 @@ pub mod horizon;
 pub mod indicators;
 pub mod layers;
 pub mod math;
+pub mod milestones;
 pub mod pack;
+pub mod peaks;
 pub mod pulse;
 pub mod rank;
 pub mod renko;
 pub mod sankey;
+pub mod shards;
 pub mod share;
 pub mod stack;
 pub mod stream;

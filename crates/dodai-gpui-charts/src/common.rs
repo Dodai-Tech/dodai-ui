@@ -310,12 +310,16 @@ pub(crate) fn label_style(t: &Theme, d: gpui::Div) -> gpui::Div {
         .text_color(hsla(t.palette.text_muted))
 }
 
+/// Where a label may go: a point and the direction it grows in (a unit vector).
+pub(crate) type Spot = ((f32, f32), (f32, f32));
+
 /// Chart label text painted straight onto a canvas, for labels that sit on shapes laid out at
 /// paint time (inside a bubble, a square).
 #[derive(Clone)]
 pub(crate) struct CanvasText {
     family: SharedString,
     size: f32,
+    weight: gpui::FontWeight,
 }
 
 impl CanvasText {
@@ -324,6 +328,7 @@ impl CanvasText {
         Self {
             family: first_family(t.typography.mono),
             size: t.typography.size_xs,
+            weight: gpui::FontWeight::NORMAL,
         }
     }
 
@@ -332,7 +337,20 @@ impl CanvasText {
         Self {
             family: first_family(t.typography.display),
             size,
+            weight: gpui::FontWeight::NORMAL,
         }
+    }
+
+    /// The same font in bold.
+    pub(crate) fn bold(mut self) -> Self {
+        self.weight = gpui::FontWeight::BOLD;
+        self
+    }
+
+    /// Width and line height of `text`.
+    pub(crate) fn measure(&self, w: &mut Window, text: &str) -> (f32, f32) {
+        let line = self.shape(w, text, gpui::transparent_black());
+        (line.width.into(), self.size_line())
     }
 
     /// Height of one line of label text.
@@ -344,7 +362,10 @@ impl CanvasText {
     fn shape(&self, w: &mut Window, text: &str, color: Hsla) -> gpui::ShapedLine {
         let run = gpui::TextRun {
             len: text.len(),
-            font: gpui::font(self.family.clone()),
+            font: gpui::Font {
+                weight: self.weight,
+                ..gpui::font(self.family.clone())
+            },
             color,
             background_color: None,
             underline: None,
@@ -393,25 +414,45 @@ impl CanvasText {
         (ux, uy): (f32, f32),
         taken: &mut Vec<[f32; 4]>,
     ) -> bool {
+        self.place_free(w, cx, (text, color), o, &[(at, (ux, uy))], taken)
+            .is_some()
+    }
+
+    /// Paints `text` at the first of `spots` (each a point and a direction, as for
+    /// [`Self::beside`]) where its box misses every box in `taken`, adds the box and returns it.
+    pub(crate) fn place_free(
+        &self,
+        w: &mut Window,
+        cx: &mut gpui::App,
+        (text, color): (&str, Hsla),
+        o: gpui::Point<Pixels>,
+        spots: &[Spot],
+        taken: &mut Vec<[f32; 4]>,
+    ) -> Option<[f32; 4]> {
         if text.is_empty() {
-            return false;
+            return None;
         }
         let line = self.shape(w, text, color);
         let (lw, lh): (f32, f32) = (line.width.into(), self.size_line());
-        let (x, y) = (
-            at.0 + ux * lw / 2.0 - lw / 2.0,
-            at.1 + uy * lh / 2.0 - lh / 2.0,
-        );
-        let r = [x - 2.0, y, x + lw + 2.0, y + lh];
-        if taken
-            .iter()
-            .any(|t| r[0] < t[2] && t[0] < r[2] && r[1] < t[3] && t[1] < r[3])
-        {
-            return false;
-        }
+        let r = spots.iter().find_map(|&(at, (ux, uy))| {
+            let (x, y) = (
+                at.0 + ux * lw / 2.0 - lw / 2.0,
+                at.1 + uy * lh / 2.0 - lh / 2.0,
+            );
+            let r = [x - 2.0, y, x + lw + 2.0, y + lh];
+            let free = !taken
+                .iter()
+                .any(|t| r[0] < t[2] && t[0] < r[2] && r[1] < t[3] && t[1] < r[3]);
+            free.then_some(r)
+        })?;
         taken.push(r);
-        let _ = line.paint(gpui::point(o.x + px(x), o.y + px(y)), px(lh), w, cx);
-        true
+        let _ = line.paint(
+            gpui::point(o.x + px(r[0] + 2.0), o.y + px(r[1])),
+            px(lh),
+            w,
+            cx,
+        );
+        Some(r)
     }
 
     /// Paints `text` centred on `at` (a canvas origin and a point from it) when it is at most
@@ -441,6 +482,54 @@ impl CanvasText {
             cx,
         );
         true
+    }
+}
+
+/// Colour slots for items that may name a group: groups take slots in order of first
+/// appearance, ungrouped items one each after them. Also returns the group names.
+pub(crate) fn group_slots<'a>(
+    groups: impl IntoIterator<Item = Option<&'a SharedString>>,
+) -> (Vec<usize>, Vec<SharedString>) {
+    let groups: Vec<Option<&SharedString>> = groups.into_iter().collect();
+    let mut names: Vec<SharedString> = Vec::new();
+    for g in groups.iter().flatten() {
+        if !names.contains(g) {
+            names.push((*g).clone());
+        }
+    }
+    let mut lone = names.len();
+    let slots = groups
+        .iter()
+        .map(|g| match g {
+            Some(g) => names.iter().position(|n| n == *g).unwrap_or(0),
+            None => {
+                lone += 1;
+                lone - 1
+            }
+        })
+        .collect();
+    (slots, names)
+}
+
+/// Colour `i` of a long list: the palette's series, then lighter and darker turns of it, so
+/// more series than the palette holds stay apart.
+pub(crate) fn many_series(t: &Theme, i: usize) -> Color {
+    let n = t.palette.series.len().max(1);
+    let c = t.palette.series_at(i);
+    match (i / n) % 3 {
+        0 => c,
+        1 => c.lighten(0.3),
+        _ => c.darken(0.25),
+    }
+}
+
+/// The theme's text or background colour, whichever reads better on `fill`.
+pub(crate) fn ink_on(t: &Theme, fill: Color) -> Color {
+    let (a, b) = (t.palette.text, t.palette.background);
+    if fill.contrast(a) >= fill.contrast(b) {
+        a
+    } else {
+        b
     }
 }
 

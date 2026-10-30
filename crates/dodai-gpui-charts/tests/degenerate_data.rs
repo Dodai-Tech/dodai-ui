@@ -254,6 +254,42 @@ fn more_charts(name: &'static str, v: &[f32]) -> Vec<AnyElement> {
             .sweep(f32::NAN)
             .hub(f32::INFINITY)
             .into_any_element(),
+        TimeScatter::new(v.iter().enumerate().map(|(i, x)| {
+            Milestone::new(name, *x, i as f32 - *x)
+                .size(*x)
+                .group(if i % 2 == 0 { "a" } else { "b" })
+                .hollow(i % 3 == 0)
+        }))
+        .frontier(true)
+        .trails(true)
+        .reference(f32::NAN, "nan")
+        .reference(v.first().copied().unwrap_or(0.0), "first")
+        .into_any_element(),
+        TimeScatter::new([]).frontier(true).into_any_element(),
+        PeakRange::new([Series::new(name, v.to_vec()), Series::new("e", vec![])])
+            .x_labels(["a", "b"])
+            .cap(f32::NAN)
+            .into_any_element(),
+        ShardMap::new([
+            ShardGroup::new(name, v.iter().map(|x| ("x", *x))),
+            ShardGroup::new("e", Vec::<(&str, f32)>::new()),
+        ])
+        .outline(Outline::Circle)
+        .into_any_element(),
+        SplitFlow::new(
+            v.iter()
+                .enumerate()
+                .map(|(i, x)| {
+                    let s = FlowStep::new(format!("{name}{i}"), *x);
+                    if i == 0 {
+                        s
+                    } else {
+                        s.from(format!("{name}{}", i / 2))
+                    }
+                })
+                .chain([FlowStep::new("orphan", 1.0).from("nobody")]),
+        )
+        .into_any_element(),
         RenkoChart::new(format!("rk-{name}"), v.to_vec(), 1.0).into_any_element(),
         RenkoChart::new(format!("rk0-{name}"), v.to_vec(), 0.0).into_any_element(),
         RenkoChart::new(format!("rkn-{name}"), v.to_vec(), f32::NAN).into_any_element(),

@@ -4,9 +4,10 @@
 use super::super::*;
 use dodai_gpui_charts::{
     ArcDiagram, Beeswarm, BubbleSwarm, ChartNode, ChordDiagram, CirclePack, ControlChart,
-    DivergingBars, Ecdf, ErrorBars, EventTimeline, FanOrder, FanSpan, Hexbin, Icicle, KpiTile,
-    Marimekko, NetworkGraph, ParallelCoordinates, ParetoChart, ProportionalSquares, SpanFan,
-    StateSpan, Sunburst, Waffle,
+    DivergingBars, Ecdf, ErrorBars, EventTimeline, FanOrder, FanSpan, FlowStep, Hexbin, Icicle,
+    KpiTile, Marimekko, Milestone, NetworkGraph, Outline, ParallelCoordinates, ParetoChart,
+    PeakRange, ProportionalSquares, ShardGroup, ShardMap, SpanFan, SplitFlow, StateSpan, Sunburst,
+    TimeScatter, Waffle,
 };
 
 /// A repeatable pseudo-random number in `0..1` for sample `i` of stream `seed`.
@@ -450,6 +451,172 @@ impl Showcase {
                     .height(560.0)
                     .format(|v| if v < 0.0 { format!("{:.0} BCE", -v) } else { format!("{v:.0}") })
                     .magnitude_format(|v| format!("{v:.1}M km²"))
+                    .into_any_element(),
+                ),
+            ),
+            (
+                "Time scatter",
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap_8()
+                    .w_full()
+                    .child(noted(
+                        "Suspension bridges: main span by year opened, bubble area the bridge's length, rings carry rail too; the line is the trend. Approximate figures.",
+                        TimeScatter::new(
+                            [
+                            ("Menai", 1826.0, 176.0, 0.4, "Europe", false),
+                            ("Clifton", 1864.0, 214.0, 0.4, "Europe", false),
+                            ("Brooklyn", 1883.0, 486.0, 1.8, "Americas", false),
+                            ("Williamsburg", 1903.0, 488.0, 2.2, "Americas", true),
+                            ("Ambassador", 1929.0, 564.0, 2.3, "Americas", false),
+                            ("George Washington", 1931.0, 1067.0, 1.4, "Americas", false),
+                            ("Golden Gate", 1937.0, 1280.0, 2.7, "Americas", false),
+                            ("Lions Gate", 1938.0, 473.0, 1.8, "Americas", false),
+                            ("Tacoma Narrows", 1950.0, 853.0, 1.8, "Americas", false),
+                            ("Mackinac", 1957.0, 1158.0, 8.0, "Americas", false),
+                            ("Forth Road", 1964.0, 1006.0, 2.5, "Europe", false),
+                            ("Verrazzano-Narrows", 1964.0, 1298.0, 4.2, "Americas", false),
+                            ("25 de Abril", 1966.0, 1013.0, 2.3, "Europe", true),
+                            ("Severn", 1966.0, 988.0, 1.6, "Europe", false),
+                            ("Bosphorus", 1973.0, 1074.0, 1.6, "Asia", false),
+                            ("Humber", 1981.0, 1410.0, 2.2, "Europe", false),
+                            ("Tsing Ma", 1997.0, 1377.0, 2.2, "Asia", true),
+                            ("Great Belt East", 1998.0, 1624.0, 6.8, "Europe", false),
+                            ("Akashi Kaikyo", 1998.0, 1991.0, 3.9, "Asia", false),
+                            ("Runyang", 2005.0, 1490.0, 4.7, "Asia", false),
+                            ("Xihoumen", 2009.0, 1650.0, 2.6, "Asia", false),
+                            ("Hardanger", 2013.0, 1310.0, 1.4, "Europe", false),
+                            ("Yavuz Sultan Selim", 2016.0, 1408.0, 2.2, "Asia", true),
+                            ("Yangsigang", 2019.0, 1700.0, 4.1, "Asia", false),
+                            ("1915 Canakkale", 2022.0, 2023.0, 4.6, "Asia", false),
+                            ]
+                            .into_iter()
+                            .map(|(name, year, span, km, region, rail)| {
+                                Milestone::new(name, year, span).size(km).group(region).hollow(rail)
+                            }),
+                        )
+                        .trend(true)
+                        .reference(1000.0, "1 km span")
+                        .reference(2000.0, "2 km span")
+                        .height(440.0)
+                        .x_format(|v| format!("{v:.0}"))
+                        .format(|v| format!("{v:.0} m"))
+                        .size_format(|v| format!("{v:.1} km long"))
+                        .into_any_element(),
+                    ))
+                    .child(noted(
+                        "Cost overrun of the Summer and Winter Games by host city (real terms, approximate), each season's cities joined in time order.",
+                        TimeScatter::new(
+                            [
+                            ("Montreal", 1976.0, 720.0, "Summer"),
+                            ("Barcelona", 1992.0, 266.0, "Summer"),
+                            ("Atlanta", 1996.0, 151.0, "Summer"),
+                            ("Sydney", 2000.0, 90.0, "Summer"),
+                            ("Athens", 2004.0, 49.0, "Summer"),
+                            ("Beijing", 2008.0, 2.0, "Summer"),
+                            ("London", 2012.0, 76.0, "Summer"),
+                            ("Rio de Janeiro", 2016.0, 352.0, "Summer"),
+                            ("Lake Placid", 1980.0, 324.0, "Winter"),
+                            ("Sarajevo", 1984.0, 118.0, "Winter"),
+                            ("Calgary", 1988.0, 65.0, "Winter"),
+                            ("Albertville", 1992.0, 137.0, "Winter"),
+                            ("Lillehammer", 1994.0, 277.0, "Winter"),
+                            ("Nagano", 1998.0, 56.0, "Winter"),
+                            ("Salt Lake City", 2002.0, 24.0, "Winter"),
+                            ("Turin", 2006.0, 80.0, "Winter"),
+                            ("Vancouver", 2010.0, 13.0, "Winter"),
+                            ("Sochi", 2014.0, 289.0, "Winter"),
+                            ]
+                            .into_iter()
+                            .map(|(city, year, over, season)| Milestone::new(city, year, over).group(season)),
+                        )
+                        .trails(true)
+                        .reference(0.0, "on budget")
+                        .reference(100.0, "double the budget")
+                        .height(360.0)
+                        .x_format(|v| format!("{v:.0}"))
+                        .format(|v| format!("{v:+.0}%"))
+                        .into_any_element(),
+                    ))
+                    .into_any_element(),
+            ),
+            (
+                "Peak range",
+                noted(
+                    "Pollen season: a typical year's weekly airborne pollen by plant (illustrative, mid-latitude city).",
+                    PeakRange::new(
+                        [
+                        ("Hazel", 40.0, 7.0, 2.5),
+                        ("Alder", 70.0, 10.0, 2.5),
+                        ("Ash", 90.0, 15.0, 2.5),
+                        ("Birch", 180.0, 16.0, 2.0),
+                        ("Oak", 110.0, 19.0, 2.5),
+                        ("Grass", 220.0, 25.0, 4.0),
+                        ("Plantain", 60.0, 27.0, 4.0),
+                        ("Nettle", 120.0, 29.0, 5.0),
+                        ("Mugwort", 80.0, 32.0, 2.5),
+                        ("Ragweed", 140.0, 36.0, 2.5),
+                        ]
+                        .into_iter()
+                        .map(|(name, top, week, width): (&str, f32, f32, f32)| {
+                            Series::new(
+                                name,
+                                (0..52u32).map(|w| {
+                                    let d = (w as f32 - week) / width;
+                                    let wobble = 0.85 + 0.3 * noise(week as u32, w);
+                                    top * (-0.5 * d * d).exp() * wobble
+                                }),
+                            )
+                        }),
+                    )
+                    .x_labels(["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"])
+                    .lanes(3)
+                    .height(320.0)
+                    .format(|v| format!("{v:.0} grains/m³"))
+                    .into_any_element(),
+                ),
+            ),
+            (
+                "Shard map",
+                noted(
+                    "Languages by first-language speakers (millions, approximate), grouped by family.",
+                    ShardMap::new([
+                        ShardGroup::new("Indo-European", [("Spanish", 485.0), ("English", 380.0), ("Hindi", 345.0), ("Portuguese", 236.0), ("Bengali", 234.0), ("Russian", 148.0), ("Punjabi", 113.0), ("Marathi", 83.0), ("German", 75.0), ("French", 74.0), ("Urdu", 70.0), ("Italian", 64.0), ("Persian", 57.0), ("Gujarati", 57.0), ("Polish", 40.0), ("Ukrainian", 33.0)]),
+                        ShardGroup::new("Sino-Tibetan", [("Mandarin", 940.0), ("Cantonese", 86.0), ("Wu", 83.0), ("Min Nan", 50.0), ("Jin", 47.0), ("Burmese", 33.0)]),
+                        ShardGroup::new("Afro-Asiatic", [("Arabic", 380.0), ("Hausa", 50.0), ("Amharic", 33.0), ("Somali", 22.0)]),
+                        ShardGroup::new("Dravidian", [("Telugu", 83.0), ("Tamil", 79.0), ("Kannada", 44.0), ("Malayalam", 37.0)]),
+                        ShardGroup::new("Austronesian", [("Javanese", 68.0), ("Indonesian", 43.0), ("Sundanese", 32.0), ("Tagalog", 28.0), ("Malay", 19.0)]),
+                        ShardGroup::new("Turkic", [("Turkish", 85.0), ("Uzbek", 32.0), ("Azerbaijani", 24.0)]),
+                        ShardGroup::new("Japonic", [("Japanese", 123.0)]),
+                        ShardGroup::new("Koreanic", [("Korean", 81.0)]),
+                        ShardGroup::new("Austroasiatic", [("Vietnamese", 86.0), ("Khmer", 17.0)]),
+                        ShardGroup::new("Niger-Congo", [("Yoruba", 46.0), ("Igbo", 31.0), ("Swahili", 18.0), ("Zulu", 12.0)]),
+                    ])
+                    .outline(Outline::Circle)
+                    .height(600.0)
+                    .format(|v| format!("{v:.0}M"))
+                    .into_any_element(),
+                ),
+            ),
+            (
+                "Split flow",
+                noted(
+                    "Where 100 litres of rain falling on a paved city go (a typical urban water balance, rounded).",
+                    SplitFlow::new([
+                        FlowStep::new("Rainfall", 100.0),
+                        FlowStep::new("Runoff", 55.0).from("Rainfall").group("Over the ground"),
+                        FlowStep::new("Evaporation", 30.0).from("Rainfall").group("Back to the air"),
+                        FlowStep::new("Infiltration", 15.0).from("Rainfall").group("Into the ground"),
+                        FlowStep::new("Storm drains", 40.0).from("Runoff").group("Over the ground"),
+                        FlowStep::new("Streams", 15.0).from("Runoff").group("Over the ground"),
+                        FlowStep::new("Shallow groundwater", 10.0).from("Infiltration").group("Into the ground"),
+                        FlowStep::new("Deep aquifer", 5.0).from("Infiltration").group("Into the ground"),
+                        FlowStep::new("Straight to rivers", 28.0).from("Storm drains").group("Over the ground"),
+                        FlowStep::new("Treated", 12.0).from("Storm drains").group("Treated"),
+                    ])
+                    .height(520.0)
+                    .format(|v| format!("{v:.0} L"))
                     .into_any_element(),
                 ),
             ),
