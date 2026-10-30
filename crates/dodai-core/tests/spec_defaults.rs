@@ -67,5 +67,5 @@ fn item_state_constants_spell_out_the_flags() {
     assert_eq!(ItemState::IDLE, ItemState::default());
     assert_eq!(ItemState::SELECTED, ItemState::of(true, false));
     assert_eq!(ItemState::HOVERED, ItemState::of(false, true));
-    assert!(ItemState::SELECTED_HOVERED.selected && ItemState::SELECTED_HOVERED.hovered);
+    assert_eq!(ItemState::SELECTED_HOVERED, ItemState::of(true, true));
 }
