@@ -10,9 +10,14 @@ pub struct ThemeSwitcher {
 }
 
 impl ThemeSwitcher {
-    /// Switcher over a custom list. Panics if `themes` is empty.
+    /// Switcher over a custom list; an empty list gets the neutral theme, so there is always
+    /// a current one.
     pub fn with_themes(themes: Vec<Theme>) -> Self {
-        assert!(!themes.is_empty(), "ThemeSwitcher needs at least one theme");
+        let themes = if themes.is_empty() {
+            vec![crate::themes::neutral()]
+        } else {
+            themes
+        };
         Self { themes, index: 0 }
     }
 
@@ -135,6 +140,13 @@ impl Default for ThemeSwitcher {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn an_empty_list_falls_back_to_the_neutral_theme() {
+        let s = super::ThemeSwitcher::with_themes(Vec::new());
+        assert_eq!(s.themes().len(), 1);
+        assert_eq!(s.current().id(), crate::themes::neutral().id());
+    }
+
     use super::*;
 
     fn fam(id: &'static str, family: &'static str) -> Theme {
