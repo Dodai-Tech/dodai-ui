@@ -14,6 +14,22 @@ fn ids_unique() {
     assert_eq!(ids.len(), themes::all().len());
 }
 
+/// `SpecRef` equality is by name: one name per design system, never shared across them.
+#[test]
+fn every_design_system_has_its_own_spec_name() {
+    let mut owner = std::collections::HashMap::new();
+    for t in themes::all() {
+        let name = t.spec.name();
+        let family = t.meta.family;
+        let prev = owner.insert(name, family).unwrap_or(family);
+        assert_eq!(
+            prev, family,
+            "spec name {name:?} is used by {prev} and {family}"
+        );
+    }
+    assert!(owner.len() >= 4, "{owner:?}");
+}
+
 #[test]
 fn text_is_readable_everywhere() {
     for t in themes::all() {

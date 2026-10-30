@@ -292,6 +292,9 @@ impl std::fmt::Debug for SpecRef {
     }
 }
 
+/// Specs compare by [`DesignSpec::name`], so every spec needs its own name. (Not by address:
+/// specs are usually zero-sized `static`s, and distinct zero-sized statics may share one; nor
+/// by vtable, which the compiler may duplicate.)
 impl PartialEq for SpecRef {
     fn eq(&self, other: &Self) -> bool {
         self.name() == other.name()
