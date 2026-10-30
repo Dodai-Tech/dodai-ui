@@ -2,7 +2,7 @@
 //! survey, process and KPI charts.
 
 use super::super::*;
-use dodai_gpui::{
+use dodai_gpui_charts::{
     ArcDiagram, Beeswarm, BubbleSwarm, ChartNode, ChordDiagram, CirclePack, ControlChart,
     DivergingBars, Ecdf, ErrorBars, EventTimeline, Hexbin, Icicle, KpiTile, Marimekko,
     NetworkGraph, ParallelCoordinates, ParetoChart, ProportionalSquares, StateSpan, Sunburst,

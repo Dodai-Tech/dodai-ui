@@ -13,24 +13,29 @@ use dodai_gpui::{
     Orientation, Pagination, Panel, ProgressBar, Radio, ResponsiveShell, SearchBar, Segmented,
     SideSheet, Slider, SplitButton, Stepper, Tabs, Tag, Toggle, TopAppBar,
 };
+use dodai_gpui::{CountUp, Easing, EntryKind, IndeterminateBar, Motion, Skeleton, Spinner};
 use dodai_gpui::{
+    Date, DatePicker, EmptyState, IconBadge, IconName, NumberStepper, RangeSlider, Rating,
+    RichTooltip, SearchView, Snackbar, TagField, TextInput, TimePicker, Timeline, TimelineEvent,
+    Toolbar, TreeItem, TreeNavigation, TreeView,
+};
+use dodai_gpui_charts::{
     Annotation, Bullet, CalendarHeatmap, Lollipop, PairedBars, RoseChart, Sankey, SlopeChart,
     ViolinChart,
 };
-use dodai_gpui::{
-    BarChart, Blip, BoxPlot, BubbleChart, Candle, Candlestick, Date, DatePicker, DotMatrix,
-    EmptyState, Funnel, Gauge, GaugeStyle, Heatmap, HexMap, Histogram, IconBadge, IconName,
-    LineChart, Marker, NumberStepper, Oscilloscope, PieChart, PieStyle, RadarChart, RadarScope,
-    RadialBar, RangeSlider, Rating, RichTooltip, RingStack, ScatterPlot, SearchView, Series,
-    SignalBars, Snackbar, SparkGuide, SparkStyle, Sparkline, Spectrum, StackedAreaChart, TagField,
-    TextInput, TimePicker, Timeline, TimelineEvent, Toolbar, TreeItem, TreeNavigation, TreeView,
-    Treemap, Waterfall,
+use dodai_gpui_charts::{
+    BarChart, BoxPlot, BubbleChart, Candle, Candlestick, Funnel, Heatmap, Histogram, LineChart,
+    Marker, PieChart, PieStyle, RadarChart, RadialBar, ScatterPlot, Series, SparkGuide, SparkStyle,
+    Sparkline, StackedAreaChart, Treemap, Waterfall,
 };
-use dodai_gpui::{
+use dodai_gpui_charts::{
     CandleOverlay, CandlePane, CandleStyle, ChartStack, DepthChart, Gantt, GanttTask, RenkoChart,
     TradeMarker,
 };
-use dodai_gpui::{CountUp, Easing, EntryKind, IndeterminateBar, Motion, Skeleton, Spinner};
+use dodai_gpui_instruments::{
+    Blip, DotMatrix, Gauge, GaugeStyle, HexMap, Oscilloscope, RadarScope, RingStack, SignalBars,
+    Spectrum,
+};
 use gpui::{actions, AnimationExt, SharedString};
 use gpui::{
     div, prelude::*, px, size, App, Application, Bounds, Context, Entity, FocusHandle,

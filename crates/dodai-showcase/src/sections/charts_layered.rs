@@ -1,7 +1,7 @@
 //! "Bands · Stream · Bump · Ridgeline · Horizon": the layered chart family.
 
 use super::super::*;
-use dodai_gpui::{BumpChart, HorizonChart, RidgelineChart, StackOffset, StackedAreaChart};
+use dodai_gpui_charts::{BumpChart, HorizonChart, RidgelineChart, StackOffset, StackedAreaChart};
 
 /// A smooth, repeatable wobble for demo data: `k` picks the curve, `i` the step.
 fn wave(k: usize, i: usize) -> f32 {

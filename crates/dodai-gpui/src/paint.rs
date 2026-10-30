@@ -372,7 +372,8 @@ pub fn inset_outline(shape: &Shape, w: f32, h: f32, inset: f32) -> Vec<(f32, f32
         .collect()
 }
 
-pub(crate) fn scale_alpha(c: Hsla, k: f32) -> Hsla {
+/// `c` with its alpha multiplied by `k`.
+pub fn scale_alpha(c: Hsla, k: f32) -> Hsla {
     Hsla {
         a: (c.a * k).clamp(0.0, 1.0),
         ..c
@@ -782,8 +783,8 @@ fn shimmer_overlay(shape: &Shape, sh: Shimmer) -> impl gpui::IntoElement {
         })
 }
 
-#[cfg(feature = "charts")]
-pub(crate) fn pts(o: gpui::Point<Pixels>, p: &[(f32, f32)]) -> Vec<gpui::Point<Pixels>> {
+/// Local `(x, y)` points offset by the origin `o`, as gpui points.
+pub fn pts(o: gpui::Point<Pixels>, p: &[(f32, f32)]) -> Vec<gpui::Point<Pixels>> {
     p.iter()
         .map(|&(x, y)| point(o.x + px(x), o.y + px(y)))
         .collect()
@@ -791,13 +792,13 @@ pub(crate) fn pts(o: gpui::Point<Pixels>, p: &[(f32, f32)]) -> Vec<gpui::Point<P
 
 /// True when every coordinate is a real number. The tessellator asserts on
 /// NaN / ±inf, so hostile chart data must never reach it.
-#[cfg(any(feature = "charts", feature = "components"))]
-pub(crate) fn finite(p: &[(f32, f32)]) -> bool {
+pub fn finite(p: &[(f32, f32)]) -> bool {
     p.iter().all(|&(x, y)| x.is_finite() && y.is_finite())
 }
 
-#[cfg(feature = "charts")]
-pub(crate) fn stroke(
+/// Stroke the polyline `p` (closed when `closed`) at `width` px, offset by `o`. Skipped when a
+/// coordinate is not finite.
+pub fn stroke(
     w: &mut Window,
     o: gpui::Point<Pixels>,
     p: &[(f32, f32)],
@@ -815,8 +816,8 @@ pub(crate) fn stroke(
     }
 }
 
-#[cfg(feature = "charts")]
-pub(crate) fn fill(w: &mut Window, o: gpui::Point<Pixels>, p: &[(f32, f32)], c: Hsla) {
+/// Fill the polygon `p`, offset by `o`. Skipped when a coordinate is not finite.
+pub fn fill(w: &mut Window, o: gpui::Point<Pixels>, p: &[(f32, f32)], c: Hsla) {
     if !finite(p) {
         return;
     }
@@ -829,13 +830,7 @@ pub(crate) fn fill(w: &mut Window, o: gpui::Point<Pixels>, p: &[(f32, f32)], c: 
 
 /// Fill many polygons with one colour in a single path (one tessellation and
 /// one draw call instead of one per polygon).
-#[cfg(feature = "charts")]
-pub(crate) fn fill_batch(
-    w: &mut Window,
-    o: gpui::Point<Pixels>,
-    polys: &[Vec<(f32, f32)>],
-    c: Hsla,
-) {
+pub fn fill_batch(w: &mut Window, o: gpui::Point<Pixels>, polys: &[Vec<(f32, f32)>], c: Hsla) {
     if polys.is_empty() {
         return;
     }
@@ -849,8 +844,7 @@ pub(crate) fn fill_batch(
 }
 
 /// Stroke many polylines with one colour and width in a single path.
-#[cfg(feature = "charts")]
-pub(crate) fn stroke_batch(
+pub fn stroke_batch(
     w: &mut Window,
     o: gpui::Point<Pixels>,
     polys: &[Vec<(f32, f32)>],

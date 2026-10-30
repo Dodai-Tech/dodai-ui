@@ -1,16 +1,17 @@
 //! Regression guard: components take their colours from the theme, so a new theme reaches
-//! every widget. Raw colour literals in `src/` (outside `#[cfg(test)]` code) fail this test
+//! every widget. Raw colour literals in the sources of `dodai-gpui`, `dodai-gpui-charts` and
+//! `dodai-gpui-instruments` (outside `#[cfg(test)]` code) fail this test
 //! unless they are on the allow-list below, with the reason they are theme-neutral.
 //!
 //! `hsla(t.palette.x)` is fine: that is the converter from a theme colour, not a literal.
 
 use std::{fs, path::Path};
 
-/// `(file, text on the line, why a literal is right here)`.
+/// `(file under a crate's src, text on the line, why a literal is right here)`.
 const ALLOWED: &[(&str, &str, &str)] = &[
-    ("nav.rs", "gpui::transparent_black()", "no fill"),
+    ("dodai-gpui/src/nav.rs", "gpui::transparent_black()", "no fill"),
     (
-        "charts_grid.rs",
+        "dodai-gpui-charts/src/grid.rs",
         "Color::rgba(r, gr, b, 255)",
         "converts a gradient sample (data), not a design colour",
     ),
@@ -45,15 +46,35 @@ fn literal(line: &str) -> bool {
         || l.contains("opaque_grey")
 }
 
+/// Every `.rs` file under `dir`, recursively.
+fn rust_files(dir: &Path, out: &mut Vec<std::path::PathBuf>) {
+    for entry in fs::read_dir(dir).unwrap() {
+        let path = entry.unwrap().path();
+        if path.is_dir() {
+            rust_files(&path, out);
+        } else if path.extension().is_some_and(|e| e == "rs") {
+            out.push(path);
+        }
+    }
+}
+
 #[test]
 fn components_use_theme_colours_not_literals() {
-    let src = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let crates = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+    let mut files = Vec::new();
+    for c in ["dodai-gpui", "dodai-gpui-charts", "dodai-gpui-instruments"] {
+        rust_files(&crates.join(c).join("src"), &mut files);
+    }
+    assert!(files.len() > 100, "found only {} files", files.len());
     let mut bad = Vec::new();
     let mut used = vec![false; ALLOWED.len()];
-    for entry in fs::read_dir(&src).unwrap() {
-        let path = entry.unwrap().path();
-        let name = path.file_name().unwrap().to_string_lossy().to_string();
-        if path.extension().is_none_or(|e| e != "rs") || name == "testing.rs" {
+    for path in files {
+        let name = path
+            .strip_prefix(crates)
+            .unwrap()
+            .to_string_lossy()
+            .replace('\\', "/");
+        if name.ends_with("/testing.rs") {
             continue;
         }
         let text = fs::read_to_string(&path).unwrap();

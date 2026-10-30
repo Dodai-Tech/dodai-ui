@@ -228,7 +228,7 @@ crate::entry_render!(Pagination);
 /// Multi-step progress: numbered nodes joined by lines. Done steps show ✓.
 #[derive(IntoElement)]
 pub struct Stepper {
-    follow: crate::instruments_motion::Follow,
+    follow: crate::follow::Follow,
     steps: Vec<SharedString>,
     current: usize,
     corners: Option<dodai_core::Corners>,
@@ -241,13 +241,13 @@ impl Stepper {
     #[track_caller]
     pub fn new<S: Into<SharedString>>(steps: impl IntoIterator<Item = S>, current: usize) -> Self {
         Self {
-            follow: crate::instruments_motion::Follow::here(),
+            follow: crate::follow::Follow::here(),
             corners: None,
             steps: steps.into_iter().map(Into::into).collect(),
             current,
         }
     }
-    crate::instruments_motion::follow_api!();
+    crate::follow_api!();
 }
 
 impl Stepper {
@@ -264,8 +264,7 @@ impl Stepper {
             .font_family(first_family(t.typography.body))
             .text_size(px(t.typography.size_sm));
         let n = self.steps.len();
-        let eased =
-            crate::instruments_motion::follow(window, cx, &self.follow, 0, self.current as f32);
+        let eased = crate::follow::follow(window, cx, &self.follow, 0, self.current as f32);
         for (i, label) in self.steps.iter().enumerate() {
             let status = step_status(i, self.current);
             let k = t.step(status);

@@ -1,0 +1,72 @@
+//! # dodai-gpui-charts
+//!
+//! Interactive, animated charts for [gpui](https://gpui.rs), drawn in the active Dodai design
+//! (Cyberpunk, Material, Neo-Brutalism or Dodai) through `dodai-gpui`'s theme. Every chart
+//! eases to new data, lifts the hovered item, keeps a click selection and shows a readout
+//! line; the geometry comes from `dodai-charts-core`.
+//!
+//! Install the theme first (`dodai_gpui::install`), then place charts like any element:
+//!
+//! ```no_run
+//! use dodai_gpui_charts::{LineChart, Series};
+//! let chart = LineChart::new("sales", [Series::new("2025", [3.0, 5.0, 4.0, 8.0])]);
+//! ```
+#![warn(missing_docs)]
+
+pub mod annotate;
+pub mod bar;
+pub mod common;
+pub mod compare;
+pub mod distribution;
+pub mod extra;
+pub mod flow;
+pub(crate) mod focus;
+pub mod grid;
+pub mod hierarchy;
+pub mod kpi;
+pub mod layered;
+pub mod line;
+pub mod market;
+pub mod network;
+pub mod packed;
+pub mod part_whole;
+pub mod pie;
+pub mod process;
+pub mod pulse;
+pub mod radar;
+pub mod spark;
+pub mod spread;
+pub mod status;
+pub mod survey;
+pub mod trend;
+
+pub use annotate::Annotation;
+pub use common::{
+    bar_max, chart_glow, fmt_num, heat_color, heat_color_with, marker_points, nice_ticks, norm,
+    pie_fractions, pie_hit, polar, set_chart_glow, smooth_points, spark_columns, BarChart,
+    ChartGlow, Heatmap, Legend, LineChart, Marker, PieChart, PieStyle, RadarChart, ScatterPlot,
+    Series, SparkGuide, SparkStyle, Sparkline,
+};
+pub use compare::{Bullet, Lollipop, PairedBars, SlopeChart};
+pub use distribution::{histogram_bins, quartiles, BoxPlot, BubbleChart, Histogram};
+pub use dodai_charts_core::gantt::Task as GanttTask;
+pub use dodai_charts_core::Gradient;
+pub use dodai_gpui::Live;
+pub use extra::{CalendarHeatmap, RoseChart, RoseScale, Sankey, ViolinChart};
+pub use flow::{waterfall_steps, Funnel, Waterfall};
+pub use hierarchy::{ChartNode, Icicle, Marimekko, Sunburst, Waffle};
+pub use kpi::KpiTile;
+pub use layered::{BumpChart, HorizonChart, RidgelineChart};
+pub use market::{ChartStack, DepthChart, Gantt, RenkoChart};
+pub use network::{ArcDiagram, ChordDiagram, Hexbin, NetworkGraph, ParallelCoordinates};
+pub use packed::{BubbleSwarm, CirclePack, ProportionalSquares};
+pub use part_whole::{treemap_layout, RadialBar, Treemap};
+pub use process::{ControlChart, EventTimeline, StateSpan};
+pub use pulse::{Pulse, PulseGrid, PulseKind, PulseMode, PulseRhythm};
+pub use spread::{Beeswarm, Ecdf, ErrorBars};
+pub use status::{BucketBar, GradientScale, Slot, SlotGrid, SlotState, StageBars, StatusStrip};
+pub use survey::{DivergingBars, ParetoChart};
+pub use trend::{
+    overlay_lines, Candle, CandleOverlay, CandlePane, CandleStyle, Candlestick, StackOffset,
+    StackedAreaChart, TradeMarker,
+};

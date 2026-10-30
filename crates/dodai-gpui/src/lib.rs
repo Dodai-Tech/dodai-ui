@@ -18,10 +18,15 @@
 //! | Navigation | [`tabs`], [`nav`], [`navigation`], [`menu`], [`command`], [`search`] |
 //! | Data display | [`data`], [`datatable`], [`display`], [`content`], [`list`], [`layout`] (tree, split pane, page grid) |
 //! | Feedback | [`feedback`], [`overlay`], [`popover`], [`sheets`] |
-//! | Charts | [`charts`] and its `charts_*` / `instrument_charts` / [`gauges`] siblings |
 //! | Surface effects | [`mod@surface_fx`] (textures, glitch, sheen, flicker, bloom over any filled surface) |
 //! | Time | [`time`] (clock, timer, stopwatch, tap tempo) |
 //! | Look | [`paint`] (the shaped box), [`motion`], [`frosted`] (glass over a picture), [`mod@backdrop`] (the canvas mesh of a design that has one) |
+//!
+//! Charts and instruments are separate crates built on the same pieces: `dodai-gpui-charts` and
+//! `dodai-gpui-instruments`. The pieces they share are public here so other crates can build
+//! their own: [`paint`] (strokes, fills, shaped boxes), [`plot`] (chart glow), [`follow`] (values
+//! that ease to new data), [`motion`], [`live`] (streaming samples) and the [`entry_render!`],
+//! [`follow_api!`], [`callback!`] and [`corners_setter!`] macros.
 //!
 //! ## Design-exclusive components
 //!
@@ -32,7 +37,7 @@
 //! |---|---|
 //! | `material` | [`expressive`]: `ButtonGroup`, `SplitButton`, `LoadingIndicator`; `overscroll` |
 //! | `cyberpunk` | `scanlines` |
-//! | `dodai` | `frosted` (`FrostedScene`), `page_grid` (`PageGrid`) |
+//! | `dodai` | `page_grid` (`PageGrid`); turns on `frost` (`FrostedScene`) |
 //! | `neobrutalism` | none; its look is tokens and spec only |
 //!
 //! Everything else is shared by all designs and looks different only through tokens.
@@ -76,6 +81,7 @@
 /// Adds the standard `.corners(..)` per-component override (cut these
 /// corners instead of the theme's). The type needs a `corners` field of
 /// type `Option<dodai_core::Corners>`.
+#[macro_export]
 macro_rules! corners_setter {
     ($ty:ident) => {
         impl $ty {
@@ -87,7 +93,6 @@ macro_rules! corners_setter {
         }
     };
 }
-pub(crate) use corners_setter;
 
 /// Adds the standard `.surface(..)` per-component override of the texture and effects.
 /// The type needs a `surface` field of type `dodai_core::Surface`.
@@ -128,6 +133,7 @@ pub(crate) use crop_setters;
 
 /// `impl RenderOnce` that builds via `self.build(window, cx)` and wraps the
 /// result in the theme's entry animation, keyed by the type name.
+#[macro_export]
 macro_rules! entry_render {
     ($ty:ident) => {
         impl gpui::RenderOnce for $ty {
@@ -142,12 +148,11 @@ macro_rules! entry_render {
         }
     };
 }
-pub(crate) use entry_render;
 
 /// Builder setter that stores a callback: `callback!(on_change, usize)`
 /// expands to `pub fn on_change(self, f: impl Fn(usize, &mut Window, &mut App))`
 /// storing `Some(Rc::new(f))` in the field of the same name.
-#[cfg(any(feature = "components", feature = "charts"))]
+#[macro_export]
 macro_rules! callback {
     ($(#[$m:meta])* $name:ident $(, $arg:ty)*) => {
         $(#[$m])*
@@ -160,8 +165,6 @@ macro_rules! callback {
         }
     };
 }
-#[cfg(any(feature = "components", feature = "charts"))]
-pub(crate) use callback;
 
 #[cfg(any(feature = "shaders", feature = "dodai", feature = "frost"))]
 pub mod backdrop;
@@ -169,64 +172,6 @@ pub mod backdrop;
 pub mod button;
 #[cfg(feature = "components")]
 pub mod carousel;
-#[cfg(feature = "charts")]
-pub mod charts;
-#[cfg(feature = "charts")]
-pub mod charts_annotate;
-#[cfg(feature = "charts")]
-pub mod charts_bar;
-#[cfg(feature = "charts")]
-pub mod charts_compare;
-#[cfg(feature = "charts")]
-pub mod charts_distribution;
-#[cfg(feature = "charts")]
-pub mod charts_extra;
-#[cfg(feature = "charts")]
-pub mod charts_flow;
-#[cfg(feature = "charts")]
-pub(crate) mod charts_focus;
-#[cfg(feature = "charts")]
-pub mod charts_hierarchy;
-#[cfg(feature = "charts")]
-pub mod charts_kpi;
-#[cfg(feature = "charts")]
-pub mod charts_layered;
-#[cfg(feature = "charts")]
-pub mod live;
-#[cfg(feature = "components")]
-mod own;
-#[cfg(feature = "charts")]
-pub use live::Live;
-#[cfg(feature = "charts")]
-pub mod charts_grid;
-#[cfg(feature = "charts")]
-pub mod charts_line;
-#[cfg(feature = "charts")]
-pub mod charts_market;
-#[cfg(feature = "charts")]
-pub mod charts_network;
-#[cfg(feature = "charts")]
-pub mod charts_packed;
-#[cfg(feature = "charts")]
-pub mod charts_part_whole;
-#[cfg(feature = "charts")]
-pub mod charts_pie;
-#[cfg(feature = "charts")]
-pub mod charts_process;
-#[cfg(feature = "charts")]
-pub mod charts_pulse;
-#[cfg(feature = "charts")]
-pub mod charts_radial;
-#[cfg(feature = "charts")]
-pub mod charts_spark;
-#[cfg(feature = "charts")]
-pub mod charts_spread;
-#[cfg(feature = "charts")]
-pub mod charts_status;
-#[cfg(feature = "charts")]
-pub mod charts_survey;
-#[cfg(feature = "charts")]
-pub mod charts_trend;
 #[cfg(feature = "components")]
 pub mod command;
 #[cfg(feature = "components")]
@@ -248,34 +193,17 @@ pub mod expressive;
 pub mod extras;
 #[cfg(feature = "components")]
 pub mod feedback;
+pub mod follow;
 #[cfg(feature = "components")]
 pub mod forms;
 #[cfg(feature = "frost")]
 pub mod frosted;
-#[cfg(feature = "charts")]
-pub mod gauges;
-#[cfg(feature = "charts")]
-pub(crate) mod gauges_extra;
 #[cfg(feature = "components")]
 pub mod icons;
-#[cfg(feature = "charts")]
-pub mod instrument_charts;
-#[cfg(feature = "charts")]
-pub mod instruments;
-#[cfg(feature = "charts")]
-pub mod instruments_cluster;
-#[cfg(feature = "charts")]
-pub mod instruments_flight;
-#[cfg(feature = "charts")]
-pub mod instruments_hero;
-#[cfg(feature = "charts")]
-pub mod instruments_military;
-#[cfg(any(feature = "components", feature = "charts"))]
-pub(crate) mod instruments_motion;
-#[cfg(feature = "charts")]
-pub mod instruments_segment;
-#[cfg(feature = "charts")]
-pub mod instruments_vehicle;
+pub mod live;
+#[cfg(feature = "components")]
+mod own;
+pub use live::Live;
 pub mod interact;
 #[cfg(feature = "components")]
 pub mod knob;
@@ -306,6 +234,7 @@ pub mod paint;
 pub mod panel;
 #[cfg(feature = "components")]
 pub mod picker;
+pub mod plot;
 #[cfg(feature = "components")]
 pub mod popover;
 #[cfg(feature = "components")]
@@ -351,54 +280,6 @@ pub use button::{
 };
 #[cfg(feature = "components")]
 pub use carousel::{layout_widths, window_start, Carousel, CarouselLayout, SMALL_ITEM};
-#[cfg(feature = "charts")]
-pub use charts::{
-    bar_max, chart_glow, fmt_num, heat_color, heat_color_with, marker_points, nice_ticks, norm,
-    pie_fractions, pie_hit, polar, set_chart_glow, smooth_points, spark_columns, BarChart,
-    ChartGlow, Gauge, Heatmap, Legend, LineChart, Marker, PieChart, PieStyle, RadarChart,
-    ScatterPlot, Series, SparkGuide, SparkStyle, Sparkline,
-};
-#[cfg(feature = "charts")]
-pub use charts_annotate::Annotation;
-#[cfg(feature = "charts")]
-pub use charts_compare::{Bullet, Lollipop, PairedBars, SlopeChart};
-#[cfg(feature = "charts")]
-pub use charts_distribution::{histogram_bins, quartiles, BoxPlot, BubbleChart, Histogram};
-#[cfg(feature = "charts")]
-pub use charts_extra::{CalendarHeatmap, RoseChart, RoseScale, Sankey, ViolinChart};
-#[cfg(feature = "charts")]
-pub use charts_flow::{waterfall_steps, Funnel, Waterfall};
-#[cfg(feature = "charts")]
-pub use charts_hierarchy::{ChartNode, Icicle, Marimekko, Sunburst, Waffle};
-#[cfg(feature = "charts")]
-pub use charts_kpi::KpiTile;
-#[cfg(feature = "charts")]
-pub use charts_layered::{BumpChart, HorizonChart, RidgelineChart};
-#[cfg(feature = "charts")]
-pub use charts_market::{ChartStack, DepthChart, Gantt, RenkoChart};
-#[cfg(feature = "charts")]
-pub use charts_network::{ArcDiagram, ChordDiagram, Hexbin, NetworkGraph, ParallelCoordinates};
-#[cfg(feature = "charts")]
-pub use charts_packed::{BubbleSwarm, CirclePack, ProportionalSquares};
-#[cfg(feature = "charts")]
-pub use charts_part_whole::{treemap_layout, RadialBar, Treemap};
-#[cfg(feature = "charts")]
-pub use charts_process::{ControlChart, EventTimeline, StateSpan};
-#[cfg(feature = "charts")]
-pub use charts_pulse::{Pulse, PulseGrid, PulseKind, PulseMode, PulseRhythm};
-#[cfg(feature = "charts")]
-pub use charts_spread::{Beeswarm, Ecdf, ErrorBars};
-#[cfg(feature = "charts")]
-pub use charts_status::{
-    BucketBar, GradientScale, Slot, SlotGrid, SlotState, StageBars, StatusStrip,
-};
-#[cfg(feature = "charts")]
-pub use charts_survey::{DivergingBars, ParetoChart};
-#[cfg(feature = "charts")]
-pub use charts_trend::{
-    overlay_lines, Candle, CandleOverlay, CandlePane, CandleStyle, Candlestick, StackOffset,
-    StackedAreaChart, TradeMarker,
-};
 #[cfg(feature = "components")]
 pub use command::{fuzzy_filter, Combobox, Command, CommandPalette};
 #[cfg(feature = "components")]
@@ -423,14 +304,6 @@ pub use display::{
     arc_points, avatar_split, thumb_geometry, AvatarGroup, Banner, CircularProgress, Image,
     ImageFit, ScrollArea,
 };
-#[cfg(feature = "charts")]
-pub use dodai_charts_core::gantt::Task as GanttTask;
-#[cfg(feature = "charts")]
-pub use dodai_charts_core::instrument::{Alarm, Limits, Scale, Severity};
-#[cfg(feature = "charts")]
-pub use dodai_charts_core::tactical::{Affiliation, Contact};
-#[cfg(feature = "charts")]
-pub use dodai_charts_core::Gradient;
 pub use dodai_core::motion as dodai_motion;
 pub use dodai_core::{ClusterKind, DialLook, NeedleResponse};
 #[cfg(feature = "shaders")]
@@ -447,37 +320,10 @@ pub use forms::{
     otp_push, select_all_state, toggle_select, CheckboxGroup, FieldState, FormField, OtpInput,
     ToggleGroup,
 };
-#[cfg(feature = "charts")]
-pub use gauges::GaugeStyle;
 #[cfg(all(feature = "components", feature = "cyberpunk"))]
 pub use icons::Modifier;
 #[cfg(feature = "components")]
 pub use icons::{Icon, IconId, IconName, IconPack};
-#[cfg(feature = "charts")]
-pub use instrument_charts::{
-    Blip, DotMatrix, HexMap, Oscilloscope, RadarScope, RingStack, SignalBars, Spectrum,
-};
-#[cfg(feature = "charts")]
-pub use instruments::{severity_color, Annunciator, DialGauge, VitalsTile};
-#[cfg(feature = "charts")]
-pub use instruments_cluster::{DigitalGauge, InstrumentCluster, PodGauge, Tachometer};
-#[cfg(feature = "charts")]
-pub use instruments_flight::{
-    AttitudeIndicator, Countermeasures, HeadingTape, SonarWaterfall, VerticalTape,
-};
-#[cfg(feature = "charts")]
-pub use instruments_hero::{CapsuleCluster, CutSpeedometer};
-#[cfg(feature = "charts")]
-pub use instruments_military::{
-    MissionTimer, Station, StationState, StoresPanel, TacticalPlot, Threat, ThreatRosette,
-    TrackList,
-};
-#[cfg(feature = "charts")]
-pub use instruments_segment::{SegmentCluster, SegmentDisplay};
-#[cfg(feature = "charts")]
-pub use instruments_vehicle::{
-    Compass, GearIndicator, LevelBar, Odometer, PowerMeter, TirePressure,
-};
 #[cfg(feature = "components")]
 mod icon_names;
 #[cfg(any(feature = "shaders", feature = "dodai", feature = "frost"))]
@@ -722,7 +568,7 @@ fn map_themes(cx: &mut App, f: impl Fn(usize, Theme) -> Theme) {
 }
 
 /// Apply a per-component corner override to a theme clone (internal helper).
-pub(crate) fn apply_corners(mut t: Theme, c: Option<dodai_core::Corners>) -> Theme {
+pub fn apply_corners(mut t: Theme, c: Option<dodai_core::Corners>) -> Theme {
     if let Some(c) = c {
         t.shape.corners = c;
     }

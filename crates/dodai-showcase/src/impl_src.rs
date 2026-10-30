@@ -4,7 +4,8 @@
 //! Components are detected from the section's own source (`Name::new(` for every type that
 //! `dodai-gpui` defines), and a type's code is its definition plus every `impl` block for it.
 
-/// `(file name, source)` of every component file of `dodai-gpui`.
+/// `(file name, source)` of every component file of `dodai-gpui`, `dodai-gpui-charts` and
+/// `dodai-gpui-instruments`.
 const FILES: &[(&str, &str)] = &[
     ("button.rs", include_str!("../../dodai-gpui/src/button.rs")),
     (
@@ -12,49 +13,46 @@ const FILES: &[(&str, &str)] = &[
         include_str!("../../dodai-gpui/src/carousel.rs"),
     ),
     (
-        "charts_distribution.rs",
-        include_str!("../../dodai-gpui/src/charts_distribution.rs"),
+        "distribution.rs",
+        include_str!("../../dodai-gpui-charts/src/distribution.rs"),
     ),
     (
-        "charts_flow.rs",
-        include_str!("../../dodai-gpui/src/charts_flow.rs"),
+        "flow.rs",
+        include_str!("../../dodai-gpui-charts/src/flow.rs"),
     ),
     (
-        "charts_market.rs",
-        include_str!("../../dodai-gpui/src/charts_market.rs"),
+        "market.rs",
+        include_str!("../../dodai-gpui-charts/src/market.rs"),
     ),
     (
-        "charts_part_whole.rs",
-        include_str!("../../dodai-gpui/src/charts_part_whole.rs"),
+        "part_whole.rs",
+        include_str!("../../dodai-gpui-charts/src/part_whole.rs"),
     ),
     (
-        "charts_trend.rs",
-        include_str!("../../dodai-gpui/src/charts_trend.rs"),
-    ),
-    ("charts.rs", include_str!("../../dodai-gpui/src/charts.rs")),
-    (
-        "charts_bar.rs",
-        include_str!("../../dodai-gpui/src/charts_bar.rs"),
+        "trend.rs",
+        include_str!("../../dodai-gpui-charts/src/trend.rs"),
     ),
     (
-        "charts_line.rs",
-        include_str!("../../dodai-gpui/src/charts_line.rs"),
+        "common.rs",
+        include_str!("../../dodai-gpui-charts/src/common.rs"),
+    ),
+    ("bar.rs", include_str!("../../dodai-gpui-charts/src/bar.rs")),
+    (
+        "line.rs",
+        include_str!("../../dodai-gpui-charts/src/line.rs"),
     ),
     (
-        "charts_spark.rs",
-        include_str!("../../dodai-gpui/src/charts_spark.rs"),
+        "spark.rs",
+        include_str!("../../dodai-gpui-charts/src/spark.rs"),
+    ),
+    ("pie.rs", include_str!("../../dodai-gpui-charts/src/pie.rs")),
+    (
+        "radar.rs",
+        include_str!("../../dodai-gpui-charts/src/radar.rs"),
     ),
     (
-        "charts_pie.rs",
-        include_str!("../../dodai-gpui/src/charts_pie.rs"),
-    ),
-    (
-        "charts_radial.rs",
-        include_str!("../../dodai-gpui/src/charts_radial.rs"),
-    ),
-    (
-        "charts_grid.rs",
-        include_str!("../../dodai-gpui/src/charts_grid.rs"),
+        "grid.rs",
+        include_str!("../../dodai-gpui-charts/src/grid.rs"),
     ),
     (
         "command.rs",
@@ -82,8 +80,8 @@ const FILES: &[(&str, &str)] = &[
     ),
     ("count.rs", include_str!("../../dodai-gpui/src/count.rs")),
     (
-        "instrument_charts.rs",
-        include_str!("../../dodai-gpui/src/instrument_charts.rs"),
+        "scope.rs",
+        include_str!("../../dodai-gpui-instruments/src/scope.rs"),
     ),
     ("data.rs", include_str!("../../dodai-gpui/src/data.rs")),
     (
@@ -100,7 +98,14 @@ const FILES: &[(&str, &str)] = &[
         include_str!("../../dodai-gpui/src/feedback.rs"),
     ),
     ("forms.rs", include_str!("../../dodai-gpui/src/forms.rs")),
-    ("gauges.rs", include_str!("../../dodai-gpui/src/gauges.rs")),
+    (
+        "gauges.rs",
+        include_str!("../../dodai-gpui-instruments/src/gauges.rs"),
+    ),
+    (
+        "gauge.rs",
+        include_str!("../../dodai-gpui-instruments/src/gauge.rs"),
+    ),
     ("icons.rs", include_str!("../../dodai-gpui/src/icons.rs")),
     (
         "interact.rs",

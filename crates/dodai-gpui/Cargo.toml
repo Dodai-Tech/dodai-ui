@@ -12,11 +12,9 @@ keywords     = ["theme", "design-system", "gpui", "cyberpunk"]
 categories   = ["gui"]
 
 [features]
-default    = ["components", "charts", "shaders", "cyberpunk", "material", "neobrutalism", "dodai"]
+default    = ["components", "shaders", "cyberpunk", "material", "neobrutalism", "dodai"]
 # Buttons, tables, dialogs, pickers, navigation, ...
 components = ["dep:dodai-icons"]
-# Charts only (always includes the theme, painting and motion core).
-charts     = []
 # GPU pixel shaders (cyberpunk, Material 3, Matrix, CRT, pixel art, ...) as `ShaderView`.
 shaders    = ["dep:dodai-shaders", "dep:image"]
 # The Cyberpunk stroked icon pack: curve-free polylines (`Icon` on chamfered/square themes,

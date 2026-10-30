@@ -254,34 +254,25 @@ fn animate(
 /// multiply their displayed value by it so progress, sliders, gauges and
 /// charts animate in. `1.0` when entry animation is [`EntryKind::None`].
 /// Each instance has its own start; it replays only if the instance is rebuilt from scratch.
-#[cfg(any(feature = "components", feature = "charts"))]
 #[track_caller]
 pub fn grow(window: &mut gpui::Window, cx: &mut App, name: &'static str) -> f32 {
     // One state per instance: the call site plus the instance's order in this draw. Keyed by the
     // type name alone, every chart of a kind would share one start time and only the first to
     // appear would animate in.
-    let key = crate::instruments_motion::Follow::here().element_id(window, cx);
+    let key = crate::follow::Follow::here().element_id(window, cx);
     grow_keyed(window, cx, key, name)
 }
 
-/// [`grow`] for a component that already has a [`Follow`](crate::instruments_motion::Follow):
+/// [`grow`] for a component that already has a [`Follow`](crate::follow::Follow):
 /// the state belongs to that instance, however the page above it is arranged.
-#[cfg(feature = "charts")]
-pub(crate) fn grow_for(
+pub fn grow_for(
     window: &mut gpui::Window,
     cx: &mut App,
-    follow: &crate::instruments_motion::Follow,
+    follow: &crate::follow::Follow,
     name: &'static str,
 ) -> f32 {
     let key = follow.sub("grow").element_id(window, cx);
     grow_keyed(window, cx, key, name)
-}
-
-/// Without components or charts there is no instance numbering: one state per `name`.
-#[cfg(not(any(feature = "components", feature = "charts")))]
-#[track_caller]
-pub fn grow(window: &mut gpui::Window, cx: &mut App, name: &'static str) -> f32 {
-    grow_keyed(window, cx, gpui::ElementId::Name(name.into()), name)
 }
 
 fn grow_keyed(

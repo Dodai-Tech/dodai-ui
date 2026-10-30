@@ -1,0 +1,67 @@
+//! # dodai-gpui-instruments
+//!
+//! Animated instruments for [gpui](https://gpui.rs), drawn in the active Dodai design through
+//! `dodai-gpui`'s theme: needles ease to new values with the design's response, alarms flash,
+//! scopes sweep. Geometry comes from `dodai-charts-core`.
+//!
+//! Always included: dials and gauges ([`DialGauge`], [`Gauge`] in 15 [`GaugeStyle`]s), segment
+//! displays, annunciators, vitals tiles, and the scopes ([`Oscilloscope`], [`Spectrum`],
+//! [`DotMatrix`], [`SignalBars`], [`HexMap`], [`RingStack`]). By industry (all on by default):
+//!
+//! | Feature | Instruments |
+//! |---|---|
+//! | `automotive` | clusters, tachometer, speedometers, tire pressure, gear, odometer, power meter, level bar, compass |
+//! | `aviation` | attitude indicator, heading and vertical tapes, sonar waterfall, countermeasures |
+//! | `defense` | tactical plot, track list, threat rosette, stores panel, mission timer, radar scope |
+//!
+//! ```no_run
+//! use dodai_gpui_instruments::{DialGauge, Scale};
+//! let dial = DialGauge::new(Scale::new(0.0, 120.0), 72.0);
+//! ```
+#![warn(missing_docs)]
+
+pub mod dial;
+mod draw;
+pub mod gauge;
+pub mod gauges;
+pub(crate) mod gauges_extra;
+pub mod scope;
+pub mod segment;
+
+#[cfg(feature = "automotive")]
+pub mod cluster;
+#[cfg(feature = "aviation")]
+pub mod flight;
+#[cfg(feature = "automotive")]
+pub mod hero;
+#[cfg(feature = "defense")]
+pub mod tactical;
+#[cfg(feature = "automotive")]
+pub mod vehicle;
+
+pub use dial::{severity_color, Annunciator, DialGauge, VitalsTile};
+pub use dodai_charts_core::instrument::{Alarm, Limits, Scale, Severity};
+#[cfg(feature = "defense")]
+pub use dodai_charts_core::tactical::{Affiliation, Contact};
+pub use dodai_gpui::plot::{chart_glow, set_chart_glow, ChartGlow};
+pub use dodai_gpui::Live;
+pub use gauge::Gauge;
+pub use gauges::GaugeStyle;
+#[cfg(feature = "defense")]
+pub use scope::{Blip, RadarScope};
+pub use scope::{DotMatrix, HexMap, Oscilloscope, RingStack, SignalBars, Spectrum};
+pub use segment::{SegmentCluster, SegmentDisplay};
+
+#[cfg(feature = "automotive")]
+pub use cluster::{DigitalGauge, InstrumentCluster, PodGauge, Tachometer};
+#[cfg(feature = "aviation")]
+pub use flight::{AttitudeIndicator, Countermeasures, HeadingTape, SonarWaterfall, VerticalTape};
+#[cfg(feature = "automotive")]
+pub use hero::{CapsuleCluster, CutSpeedometer};
+#[cfg(feature = "defense")]
+pub use tactical::{
+    MissionTimer, Station, StationState, StoresPanel, TacticalPlot, Threat, ThreatRosette,
+    TrackList,
+};
+#[cfg(feature = "automotive")]
+pub use vehicle::{Compass, GearIndicator, LevelBar, Odometer, PowerMeter, TirePressure};

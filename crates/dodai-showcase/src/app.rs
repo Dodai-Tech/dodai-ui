@@ -333,5 +333,5 @@ fn live_signal(i: u64, k: f32) -> f32 {
 
 /// One ECG sample per index: a beat every 44 samples.
 fn live_ecg(i: u64) -> f32 {
-    dodai_gpui::instrument_charts::ecg_beat((i % 44) as f32 / 44.0)
+    dodai_gpui_instruments::scope::ecg_beat((i % 44) as f32 / 44.0)
 }

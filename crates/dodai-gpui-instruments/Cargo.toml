@@ -1,0 +1,31 @@
+[package]
+name                   = "dodai-gpui-instruments"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description            = "Animated instruments for gpui in the Dodai designs: dials, gauges, segment displays and scopes, plus automotive, aviation and defense instruments (features)"
+readme                 = "README.md"
+keywords               = ["gauge", "gpui", "instrument", "dashboard", "hmi"]
+categories             = ["gui", "visualization"]
+
+[features]
+default    = ["automotive", "aviation", "defense"]
+# Clusters, tachometers, speedometers, tire pressure, gear, odometer, power meter, level bar, compass.
+automotive = []
+# Attitude indicator, heading and vertical tapes, sonar waterfall, countermeasure counters.
+aviation   = []
+# Tactical plot, track list, threat rosette, stores panel, mission timer, radar scope.
+defense    = []
+
+[dependencies]
+dodai-core        = { workspace = true }
+dodai-charts-core = { workspace = true }
+dodai-gpui        = { workspace = true }
+gpui              = { workspace = true }
+
+[dev-dependencies]
+dodai-core = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "dodai"] }
+gpui       = { workspace = true, features = ["test-support"] }
