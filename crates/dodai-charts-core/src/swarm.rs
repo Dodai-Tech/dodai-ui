@@ -4,39 +4,7 @@
 /// `(xs[i], offset[i])` do not overlap, each as close to the axis as possible. Dots are placed
 /// in order of position; non-finite positions get offset 0. Pure.
 pub fn swarm(xs: &[f32], r: f32) -> Vec<f32> {
-    let d = (2.0 * r).max(0.0);
-    let mut out = vec![0.0; xs.len()];
-    if d <= 0.0 {
-        return out;
-    }
-    let mut order: Vec<usize> = (0..xs.len()).filter(|i| xs[*i].is_finite()).collect();
-    order.sort_by(|a, b| xs[*a].total_cmp(&xs[*b]));
-    let mut placed: Vec<(f32, f32)> = Vec::new();
-    for i in order {
-        let x = xs[i];
-        let near: Vec<(f32, f32)> = placed
-            .iter()
-            .copied()
-            .filter(|(px, _)| (x - px).abs() < d)
-            .collect();
-        let mut candidates = vec![0.0f32];
-        for (px, py) in &near {
-            let dy = (d * d - (x - px).powi(2)).max(0.0).sqrt();
-            candidates.push(py + dy);
-            candidates.push(py - dy);
-        }
-        candidates.sort_by(|a, b| a.abs().total_cmp(&b.abs()));
-        let y = candidates
-            .into_iter()
-            .find(|y| {
-                near.iter()
-                    .all(|(px, py)| (x - px).powi(2) + (y - py).powi(2) >= d * d - 1e-3)
-            })
-            .unwrap_or(0.0);
-        out[i] = y;
-        placed.push((x, y));
-    }
-    out
+    crate::pack::swarm_sized(xs, &vec![r; xs.len()])
 }
 
 #[cfg(test)]

@@ -48,6 +48,7 @@ pub mod indicators;
 pub mod instrument;
 pub mod layers;
 pub mod math;
+pub mod pack;
 pub mod pulse;
 pub mod rank;
 pub mod renko;
