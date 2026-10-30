@@ -17,7 +17,7 @@ default   = ["cyberpunk", "material", "icons"]
 cyberpunk = ["dodai-core/cyberpunk"]
 material  = ["dodai-core/material"]
 ## `Icon` component (Material Symbols + Cyberpunk pack, chosen by the theme shape).
-icons     = ["dep:dodai-icons", "dodai-icons/cyberpunk", "dodai-icons/material"]
+icons     = ["dep:dodai-icons", "dodai-icons/theme", "dodai-icons/cyberpunk", "dodai-icons/material"]
 
 [dependencies]
 dodai-core = { workspace = true }

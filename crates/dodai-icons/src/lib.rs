@@ -47,6 +47,7 @@ pub enum Pack {
     Bold,
 }
 
+#[cfg(feature = "theme")]
 impl From<dodai_core::IconSet> for Pack {
     fn from(s: dodai_core::IconSet) -> Self {
         match s {
@@ -102,11 +103,13 @@ pub fn glyph(id: IconId, pack: Pack, filled: bool) -> Option<Glyph> {
     out
 }
 
+#[cfg(feature = "theme")]
 /// Resolve `id` for a design's declared [`IconSet`](dodai_core::IconSet).
 pub fn glyph_for(id: IconId, set: dodai_core::IconSet, filled: bool) -> Option<Glyph> {
     glyph(id, set.into(), filled)
 }
 
+#[cfg(feature = "theme")]
 /// Resolve `id` for `theme`'s design system (its `Look::icons`).
 pub fn glyph_for_theme(id: IconId, theme: &dodai_core::Theme, filled: bool) -> Option<Glyph> {
     glyph_for(id, theme.look().icons, filled)

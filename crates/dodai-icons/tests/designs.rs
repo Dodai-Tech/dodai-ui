@@ -1,5 +1,10 @@
 //! The icon packs against the design systems that draw them.
-#![cfg(all(feature = "cyberpunk", feature = "material", feature = "neobrutalism"))]
+#![cfg(all(
+    feature = "theme",
+    feature = "cyberpunk",
+    feature = "material",
+    feature = "neobrutalism"
+))]
 
 use dodai_core::themes;
 use dodai_icons::{glyph_for_theme, IconId};

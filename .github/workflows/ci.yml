@@ -162,6 +162,7 @@ jobs:
           cargo check -p dodai-gpui --no-default-features --features components,dodai
           cargo check -p dodai-gpui --no-default-features --features components,neobrutalism
           cargo check -p dodai-icons --no-default-features
+          cargo check -p dodai-icons --no-default-features --features theme
           cargo check -p dodai-icons --no-default-features --features cyberpunk
           cargo check -p dodai-icons --no-default-features --features material
           cargo check -p dodai-icons --no-default-features --features cyberpunk,neobrutalism
@@ -215,6 +216,7 @@ jobs:
           cargo check -p dodai-gpui --no-default-features --features components,cyberpunk
           cargo check -p dodai-gpui --no-default-features --features components,material
           cargo check -p dodai-icons --no-default-features
+          cargo check -p dodai-icons --no-default-features --features theme
 
   # Freya has its own workspace + lockfile (own Skia), so it is not in the matrix above.
   freya:
