@@ -9,6 +9,7 @@ members = [
     "crates/dodai-ratatui",
     "crates/dodai-iced",
     "crates/dodai-gpui",
+    "crates/dodai-showcase",
     "crates/dodai-topcoat",
     "crates/dodai-egui",
     "crates/dodai-slint",

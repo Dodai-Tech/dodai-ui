@@ -48,7 +48,7 @@ More (`charts_trend.rs`, `charts_flow.rs`, `charts_distribution.rs`, `charts_par
 `Candlestick`, `BoxPlot`, `RadialBar`, `BubbleChart`, `Treemap`.
 Config: `.title()`, `.format()`, `.height()`; Line: `.y_range()`, `.stepped()`,
 `.stroke_width()`, `.grid()`; Bar: `.max()`, `.value_labels()`, `.bar_width()`.
-Showcase: `cargo run -p dodai-gpui --example gpui_showcase`.
+Showcase: `cargo run -p dodai-showcase`.
 
 Dodai extras: `Knob` (rotary), `Kbd`, `Avatar`, `Table`, `Accordion`,
 `Alert`, `Skeleton`, `ThemeSelector`, `Scanlines`.

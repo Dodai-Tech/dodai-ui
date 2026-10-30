@@ -1,0 +1,24 @@
+[package]
+name                   = "dodai-showcase"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description            = "The gpui showcase of the Dodai design system: every component, chart and instrument under every design."
+publish                = false
+
+[[bin]]
+name = "gpui_showcase"
+path = "src/main.rs"
+
+[dependencies]
+dodai-core = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "dodai"] }
+dodai-gpui = { workspace = true }
+dodai-icons = { workspace = true, features = ["cyberpunk", "material", "neobrutalism"] }
+dodai-shaders = { workspace = true }
+gpui = { workspace = true }
+
+[dev-dependencies]
+gpui = { workspace = true, features = ["test-support"] }

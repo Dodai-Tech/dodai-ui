@@ -332,7 +332,7 @@ impl Showcase {
         let gap = px(t.spacing.md);
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let mut out: Vec<Section> = Vec::new();
-        let sample = format!("{}/examples/assets/sample.png", env!("CARGO_MANIFEST_DIR"));
+        let sample = format!("{}/assets/sample.png", env!("CARGO_MANIFEST_DIR"));
         out.push((
             "Data display",
             "Image · media · Avatar group",
