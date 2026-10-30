@@ -630,7 +630,7 @@ pub fn set_scanlines(cx: &mut App, on: bool) {
     map_themes(cx, |_, t| t.with_scanlines(on));
 }
 
-/// Switch to the next theme; call `cx.refresh_windows()` afterwards to repaint.
+/// Switch to the next theme and repaint.
 pub fn cycle_next(cx: &mut App) {
     cx.global_mut::<DodaiTheme>().switcher.cycle_next();
     cx.refresh_windows();

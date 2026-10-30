@@ -256,7 +256,6 @@ fn build_hue(mode: Mode, accent: Option<&Accent>) -> Theme {
                 "Frosted glass and gradients: indigo ink, pearl canvas, soft tinted shadows",
             mode,
         },
-        mode,
         background: h(c.canvas),
         surface: h(c.surface),
         raised: h(if dark { 0x1b1840 } else { 0xe9e6f8 }),

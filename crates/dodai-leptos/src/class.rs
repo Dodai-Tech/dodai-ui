@@ -108,7 +108,7 @@ mod tests {
     use dodai_core::themes;
     use dodai_core::themes::ThemeBuilder;
     use dodai_core::Theme;
-    use dodai_core::{Corners, Mode, Shape, ShapeKind, Spacing, ThemeMeta, Typography};
+    use dodai_core::{Corners, Mode, Shape, ShapeKind, ThemeMeta, Typography};
     use dodai_topcoat::theme_vars;
 
     #[test]
@@ -153,43 +153,7 @@ mod tests {
             label_tracking: 0.0,
         };
         ThemeBuilder {
-            meta: ThemeMeta {
-                id: "t",
-                name: "T",
-                family: "t",
-                description: "",
-                mode: Mode::Light,
-            },
-            mode: Mode::Light,
-            background: 0xf6f7f9,
-            surface: 0xffffff,
-            raised: 0xeceef2,
-            border: 0xd5d9e0,
-            border_strong: 0xaab1bd,
-            text: 0x14171c,
-            muted: 0x4a5260,
-            disabled: 0x8a92a0,
-            primary: 0x1f5fd6,
-            primary_hover: 0x1a50b5,
-            on_primary: 0xffffff,
-            secondary: 0x0a7d6e,
-            on_secondary: 0xffffff,
-            accent: 0xb45309,
-            info: 0x1f6fd6,
-            success: 0x15803d,
-            warning: 0xb45309,
-            danger: 0xc81e3a,
-            series: [
-                0x1f5fd6, 0x0a7d6e, 0xb45309, 0xc81e3a, 0x7c3aed, 0x0e7490, 0xbe185d, 0x4a5260,
-            ],
             typography: ty,
-            spacing: Spacing {
-                xs: 4.0,
-                sm: 8.0,
-                md: 12.0,
-                lg: 20.0,
-                xl: 32.0,
-            },
             shape: Shape {
                 corners: Corners::NONE,
                 radius,
@@ -198,10 +162,13 @@ mod tests {
                 border_width: 1.0,
                 control_height: 40.0,
             },
-            glow: 0.0,
-            glow_blur: 0.0,
-            scanlines: false,
-            hard_shadow: 2.0,
+            ..ThemeBuilder::neutral(ThemeMeta {
+                id: "t",
+                name: "T",
+                family: "t",
+                description: "",
+                mode: Mode::Light,
+            })
         }
         .build()
     }

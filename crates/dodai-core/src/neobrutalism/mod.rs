@@ -188,7 +188,6 @@ pub fn build(p: &Preset, mode: Mode) -> Theme {
             description: "Thick outlines, hard shadows, flat colour",
             mode,
         },
-        mode,
         background: bg,
         surface,
         raised,

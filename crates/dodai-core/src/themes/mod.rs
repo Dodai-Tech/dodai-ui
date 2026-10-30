@@ -21,8 +21,8 @@ pub use crate::neobrutalism;
 /// Compact description of a theme; [`ThemeBuilder::build`] derives the full token set.
 /// Use this to add new themes without filling every palette role by hand.
 pub struct ThemeBuilder {
+    /// Id, name, family, description and light/dark mode.
     pub meta: crate::ThemeMeta,
-    pub mode: crate::Mode,
     // surfaces / lines / text (hex)
     pub background: u32,
     pub surface: u32,
@@ -61,7 +61,7 @@ impl ThemeBuilder {
         let primary = h(self.primary);
         let secondary = h(self.secondary);
         let bg = h(self.background);
-        let dark = self.mode == crate::Mode::Dark;
+        let dark = self.meta.mode == crate::Mode::Dark;
         let palette = Palette {
             background: bg,
             surface: h(self.surface),
@@ -126,73 +126,81 @@ impl ThemeBuilder {
     }
 }
 
+impl ThemeBuilder {
+    /// The neutral light builder (the colours, type and spacing of [`neutral`]) under `meta`:
+    /// a base for custom and test themes, e.g.
+    /// `ThemeBuilder { glow: 1.0, ..ThemeBuilder::neutral(meta) }.build()`.
+    pub fn neutral(meta: crate::ThemeMeta) -> Self {
+        use crate::{Corners, Shape, Spacing, Typography};
+        ThemeBuilder {
+            meta,
+            background: 0xf6f7f9,
+            surface: 0xffffff,
+            raised: 0xeceef2,
+            border: 0xd5d9e0,
+            border_strong: 0xaab1bd,
+            text: 0x14171c,
+            muted: 0x4a5260,
+            disabled: 0x8a92a0,
+            primary: 0x1f5fd6,
+            primary_hover: 0x1a50b5,
+            on_primary: 0xffffff,
+            secondary: 0x0a7d6e,
+            on_secondary: 0xffffff,
+            accent: 0xb45309,
+            info: 0x1f6fd6,
+            success: 0x15803d,
+            warning: 0xb45309,
+            danger: 0xc81e3a,
+            series: [
+                0x1f5fd6, 0x0a7d6e, 0xb45309, 0xc81e3a, 0x7c3aed, 0x0e7490, 0xbe185d, 0x4a5260,
+            ],
+            typography: Typography {
+                display: "Inter",
+                body: "Inter",
+                mono: "Menlo",
+                size_xs: 11.0,
+                size_sm: 13.0,
+                size_md: 15.0,
+                size_lg: 18.0,
+                size_xl: 24.0,
+                size_xxl: 36.0,
+                uppercase_labels: false,
+                label_tracking: 0.0,
+            },
+            spacing: Spacing {
+                xs: 4.0,
+                sm: 8.0,
+                md: 12.0,
+                lg: 20.0,
+                xl: 32.0,
+            },
+            shape: Shape {
+                corners: Corners::NONE,
+                radius: 8.0,
+                chamfer: 0.0,
+                scoop: false,
+                border_width: 1.0,
+                control_height: 40.0,
+            },
+            glow: 0.0,
+            glow_blur: 0.0,
+            scanlines: false,
+            hard_shadow: 2.0,
+        }
+    }
+}
+
 /// Neutral light theme: the fallback for [`Theme::default`]. Rounded, mixed-case,
 /// no glow. Real design systems live in their own crates.
 pub fn neutral() -> Theme {
-    use crate::{Corners, Mode, Shape, Spacing, ThemeMeta, Typography};
-    ThemeBuilder {
-        meta: ThemeMeta {
-            id: "default",
-            name: "Default",
-            family: "default",
-            description: "Neutral light fallback theme",
-            mode: Mode::Light,
-        },
-        mode: Mode::Light,
-        background: 0xf6f7f9,
-        surface: 0xffffff,
-        raised: 0xeceef2,
-        border: 0xd5d9e0,
-        border_strong: 0xaab1bd,
-        text: 0x14171c,
-        muted: 0x4a5260,
-        disabled: 0x8a92a0,
-        primary: 0x1f5fd6,
-        primary_hover: 0x1a50b5,
-        on_primary: 0xffffff,
-        secondary: 0x0a7d6e,
-        on_secondary: 0xffffff,
-        accent: 0xb45309,
-        info: 0x1f6fd6,
-        success: 0x15803d,
-        warning: 0xb45309,
-        danger: 0xc81e3a,
-        series: [
-            0x1f5fd6, 0x0a7d6e, 0xb45309, 0xc81e3a, 0x7c3aed, 0x0e7490, 0xbe185d, 0x4a5260,
-        ],
-        typography: Typography {
-            display: "Inter",
-            body: "Inter",
-            mono: "Menlo",
-            size_xs: 11.0,
-            size_sm: 13.0,
-            size_md: 15.0,
-            size_lg: 18.0,
-            size_xl: 24.0,
-            size_xxl: 36.0,
-            uppercase_labels: false,
-            label_tracking: 0.0,
-        },
-        spacing: Spacing {
-            xs: 4.0,
-            sm: 8.0,
-            md: 12.0,
-            lg: 20.0,
-            xl: 32.0,
-        },
-        shape: Shape {
-            corners: Corners::NONE,
-            radius: 8.0,
-            chamfer: 0.0,
-            scoop: false,
-            border_width: 1.0,
-            control_height: 40.0,
-        },
-        glow: 0.0,
-        glow_blur: 0.0,
-        scanlines: false,
-        hard_shadow: 2.0,
-    }
+    ThemeBuilder::neutral(crate::ThemeMeta {
+        id: "default",
+        name: "Default",
+        family: "default",
+        description: "Neutral light fallback theme",
+        mode: crate::Mode::Light,
+    })
     .build()
 }
 

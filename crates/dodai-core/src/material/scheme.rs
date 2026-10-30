@@ -302,8 +302,10 @@ impl Scheme {
         }
         let roles = self.roles();
         let mut th = ThemeBuilder {
-            meta,
-            mode: self.mode,
+            meta: ThemeMeta {
+                mode: self.mode,
+                ..meta
+            },
             background: x(p.neutral.tone(t.background)),
             surface: x(roles.surface_container_low),
             raised: x(roles.surface_container_high),
