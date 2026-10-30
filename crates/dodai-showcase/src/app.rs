@@ -236,6 +236,7 @@ impl Showcase {
             real_h: Default::default(),
             quiet: false,
             scrolled_at: None,
+            no_cull: std::env::var_os("DODAI_NOCULL").is_some(),
             sidebar_view: None,
             side_need: 0.0,
             side_spied: (None, true),
@@ -322,6 +323,21 @@ impl Showcase {
 
     pub fn set_cat(&mut self, cat: usize) {
         self.cat = cat;
+    }
+
+    /// Lay out every section of the page instead of only those near the viewport.
+    pub fn set_no_cull(&mut self, on: bool) {
+        self.no_cull = on;
+    }
+
+    /// Sections laid out in the last frame.
+    pub fn realised_count(&self) -> usize {
+        self.realised.len()
+    }
+
+    /// Sections of the page (every category).
+    pub fn section_count(&self) -> usize {
+        self.meta.len()
     }
 }
 

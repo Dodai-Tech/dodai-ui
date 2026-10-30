@@ -20,13 +20,27 @@ fn every_category_renders_under_every_theme(cx: &mut TestAppContext) {
         vcx.simulate_resize(size(px(1400.0), px(900.0)));
         let cats = vcx.update(|_, cx| view.read(cx).cat_count());
         assert!(cats >= 10, "showcase categories were not laid out: {cats}");
+        // The page only lays out sections near the viewport; render all of them here, and
+        // count them per category (category 0, "All", repeats the others).
+        view.update(vcx, |s, _| s.set_no_cull(true));
+        let mut laid_out = 0;
         for cat in 0..cats {
             view.update(vcx, |s, cx| {
                 s.set_cat(cat);
                 cx.notify();
             });
             vcx.run_until_parked();
+            if cat > 0 {
+                laid_out += vcx.update(|_, cx| view.read(cx).realised_count());
+            }
         }
+        let all = vcx.update(|_, cx| view.read(cx).section_count());
+        assert_eq!(
+            laid_out,
+            all,
+            "{}: {laid_out} of {all} sections were laid out",
+            theme.id()
+        );
         // Narrow window exercises the responsive paths.
         vcx.simulate_resize(size(px(500.0), px(800.0)));
         vcx.run_until_parked();
