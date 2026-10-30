@@ -1,6 +1,8 @@
 //! [`SpanFan`]: lifespans as spokes fanned round an arc.
 
-use crate::common::{chart_cfg, fmt_with, nice_ticks, titled, CanvasText, Legend, NumFmt};
+use crate::common::{
+    chart_cfg, fmt_with, group_slots, nice_ticks, titled, CanvasText, Legend, NumFmt,
+};
 use crate::focus::{readout, Focus};
 use dodai_charts_core::fan::{self, FanOrder, Spoke};
 use dodai_charts_core::math::{polar, turn_arc};
@@ -140,23 +142,6 @@ fn frame(w: f32, h: f32, sweep: f32, hub: f32) -> ((f32, f32), f32, f32) {
     ((w / 2.0, LABEL_ROOM + r), r * hub, r)
 }
 
-/// The colour index of each item: groups by first appearance; ungrouped items take their own.
-fn group_slots(items: &[FanSpan]) -> (Vec<usize>, Vec<SharedString>) {
-    let mut names: Vec<SharedString> = Vec::new();
-    let slots = items
-        .iter()
-        .enumerate()
-        .map(|(i, it)| match &it.group {
-            Some(g) => names.iter().position(|n| n == g).unwrap_or_else(|| {
-                names.push(g.clone());
-                names.len() - 1
-            }),
-            None => i,
-        })
-        .collect();
-    (slots, names)
-}
-
 impl SpanFan {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
@@ -165,7 +150,7 @@ impl SpanFan {
         let spokes: Vec<Spoke> = fan::layout(&spans, self.sweep, self.order);
         let focus = Focus::new(window, cx, &self.follow, spokes.len());
         let looks: Vec<_> = (0..spokes.len()).map(|k| focus.item(k)).collect();
-        let (slots, groups) = group_slots(&self.items);
+        let (slots, groups) = group_slots(self.items.iter().map(|i| i.group.as_ref()));
         let cols: Vec<Hsla> = slots
             .iter()
             .map(|s| hsla(t.palette.series_at(*s)))
@@ -378,7 +363,7 @@ mod tests {
             FanSpan::new("b", 0.0, 1.0).group("y"),
             FanSpan::new("c", 0.0, 1.0).group("x"),
         ];
-        let (slots, names) = group_slots(&items);
+        let (slots, names) = group_slots(items.iter().map(|i| i.group.as_ref()));
         assert_eq!(slots, [0, 1, 0]);
         assert_eq!(names, ["x", "y"]);
     }

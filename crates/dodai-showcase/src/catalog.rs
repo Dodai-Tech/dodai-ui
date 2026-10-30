@@ -18,6 +18,7 @@ pub(crate) const CHART_FAMILIES: [(&str, &[&str]); 11] = [
             "Control chart",
             "Event timeline",
             "Span fan",
+            "Peak range",
         ],
     ),
     (
@@ -48,6 +49,7 @@ pub(crate) const CHART_FAMILIES: [(&str, &[&str]); 11] = [
             "Marimekko",
             "Radial bar",
             "100% stacked",
+            "Shard map",
         ],
     ),
     (
@@ -72,11 +74,19 @@ pub(crate) const CHART_FAMILIES: [(&str, &[&str]); 11] = [
             "Hexbin",
             "Parallel coordinates",
             "Network graph",
+            "Time scatter",
         ],
     ),
     (
         "Flow",
-        &["Sankey", "Chord", "Arc diagram", "Funnel", "Waterfall"],
+        &[
+            "Sankey",
+            "Split flow",
+            "Chord",
+            "Arc diagram",
+            "Funnel",
+            "Waterfall",
+        ],
     ),
     (
         "Finance",
@@ -120,8 +130,12 @@ pub(crate) const CHART_TILE_MAX_W: f32 = 760.0;
 
 /// Chart sections whose demo is wide by nature (long time spans, many columns, rows of tiles):
 /// their tiles fill the card.
-pub(crate) const WIDE_CHARTS: [&str; 12] = [
+pub(crate) const WIDE_CHARTS: [&str; 16] = [
     "Span fan",
+    "Peak range",
+    "Shard map",
+    "Split flow",
+    "Time scatter",
     "Slot grid",
     "Network overview",
     "Live throughput",

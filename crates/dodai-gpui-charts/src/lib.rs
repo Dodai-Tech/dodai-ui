@@ -15,6 +15,7 @@
 
 pub mod annotate;
 pub mod bar;
+pub mod cascade;
 pub mod common;
 pub mod compare;
 pub mod distribution;
@@ -28,13 +29,16 @@ pub mod kpi;
 pub mod layered;
 pub mod line;
 pub mod market;
+pub mod milestones;
 pub mod network;
 pub mod packed;
 pub mod part_whole;
+pub mod peaks;
 pub mod pie;
 pub mod process;
 pub mod pulse;
 pub mod radar;
+pub mod shards;
 pub mod spark;
 pub mod spread;
 pub mod status;
@@ -42,6 +46,7 @@ pub mod survey;
 pub mod trend;
 
 pub use annotate::Annotation;
+pub use cascade::{FlowStep, SplitFlow};
 pub use common::{
     bar_max, chart_glow, fmt_num, heat_color, heat_color_with, marker_points, nice_ticks, norm,
     pie_fractions, pie_hit, polar, set_chart_glow, smooth_points, spark_columns, BarChart,
@@ -52,6 +57,7 @@ pub use compare::{Bullet, Lollipop, PairedBars, SlopeChart};
 pub use distribution::{histogram_bins, quartiles, BoxPlot, BubbleChart, Histogram};
 pub use dodai_charts_core::fan::FanOrder;
 pub use dodai_charts_core::gantt::Task as GanttTask;
+pub use dodai_charts_core::shards::Outline;
 pub use dodai_charts_core::Gradient;
 pub use dodai_gpui::Live;
 pub use extra::{CalendarHeatmap, RoseChart, RoseScale, Sankey, ViolinChart};
@@ -61,11 +67,14 @@ pub use hierarchy::{ChartNode, Icicle, Marimekko, Sunburst, Waffle};
 pub use kpi::KpiTile;
 pub use layered::{BumpChart, HorizonChart, RidgelineChart};
 pub use market::{ChartStack, DepthChart, Gantt, RenkoChart};
+pub use milestones::{Milestone, TimeScatter};
 pub use network::{ArcDiagram, ChordDiagram, Hexbin, NetworkGraph, ParallelCoordinates};
 pub use packed::{BubbleSwarm, CirclePack, ProportionalSquares};
 pub use part_whole::{treemap_layout, RadialBar, Treemap};
+pub use peaks::PeakRange;
 pub use process::{ControlChart, EventTimeline, StateSpan};
 pub use pulse::{Pulse, PulseGrid, PulseKind, PulseMode, PulseRhythm};
+pub use shards::{ShardGroup, ShardMap};
 pub use spread::{Beeswarm, Ecdf, ErrorBars};
 pub use status::{BucketBar, GradientScale, Slot, SlotGrid, SlotState, StageBars, StatusStrip};
 pub use survey::{DivergingBars, ParetoChart};
