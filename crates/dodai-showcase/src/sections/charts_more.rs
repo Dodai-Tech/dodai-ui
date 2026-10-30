@@ -4,9 +4,9 @@
 use super::super::*;
 use dodai_gpui_charts::{
     ArcDiagram, Beeswarm, BubbleSwarm, ChartNode, ChordDiagram, CirclePack, ControlChart,
-    DivergingBars, Ecdf, ErrorBars, EventTimeline, Hexbin, Icicle, KpiTile, Marimekko,
-    NetworkGraph, ParallelCoordinates, ParetoChart, ProportionalSquares, StateSpan, Sunburst,
-    Waffle,
+    DivergingBars, Ecdf, ErrorBars, EventTimeline, FanOrder, FanSpan, Hexbin, Icicle, KpiTile,
+    Marimekko, NetworkGraph, ParallelCoordinates, ParetoChart, ProportionalSquares, SpanFan,
+    StateSpan, Sunburst, Waffle,
 };
 
 /// A repeatable pseudo-random number in `0..1` for sample `i` of stream `seed`.
@@ -403,6 +403,53 @@ impl Showcase {
                         ("mail", vec![hours(0.0, 24.0, "Up")]),
                     ])
                     .format(|v| format!("{v:.1}h"))
+                    .into_any_element(),
+                ),
+            ),
+            (
+                "Span fan",
+                noted(
+                    "Empires: spoke length is how long each lasted (rings mark the centuries), the heavy stretch its peak, the dot and name its largest extent (million km², by area). Approximate figures.",
+                    SpanFan::new(
+                        [
+                        ("Akkadian", -2334.0, -2154.0, (-2250.0, -2200.0), 0.7, "Near East"),
+                        ("Egypt (New Kingdom)", -1550.0, -1077.0, (-1450.0, -1350.0), 1.0, "Africa"),
+                        ("Neo-Assyrian", -911.0, -609.0, (-670.0, -640.0), 1.4, "Near East"),
+                        ("Achaemenid", -550.0, -330.0, (-500.0, -480.0), 5.5, "Near East"),
+                        ("Maurya", -322.0, -185.0, (-260.0, -232.0), 3.4, "South Asia"),
+                        ("Seleucid", -312.0, -63.0, (-301.0, -240.0), 3.9, "Near East"),
+                        ("Han", -202.0, 220.0, (-100.0, 0.0), 6.0, "East Asia"),
+                        ("Parthian", -247.0, 224.0, (-50.0, 50.0), 2.8, "Near East"),
+                        ("Roman", -27.0, 476.0, (98.0, 180.0), 5.0, "Europe"),
+                        ("Sasanian", 224.0, 651.0, (580.0, 620.0), 3.5, "Near East"),
+                        ("Gupta", 320.0, 550.0, (375.0, 450.0), 3.5, "South Asia"),
+                        ("Byzantine", 330.0, 1453.0, (527.0, 565.0), 2.8, "Europe"),
+                        ("Tang", 618.0, 907.0, (660.0, 715.0), 5.4, "East Asia"),
+                        ("Umayyad", 661.0, 750.0, (720.0, 740.0), 11.1, "Near East"),
+                        ("Abbasid", 750.0, 1258.0, (786.0, 861.0), 11.1, "Near East"),
+                        ("Song", 960.0, 1279.0, (1000.0, 1100.0), 3.1, "East Asia"),
+                        ("Seljuk", 1037.0, 1194.0, (1072.0, 1092.0), 3.9, "Near East"),
+                        ("Mongol", 1206.0, 1368.0, (1260.0, 1294.0), 24.0, "Steppe"),
+                        ("Golden Horde", 1240.0, 1502.0, (1300.0, 1360.0), 6.0, "Steppe"),
+                        ("Ottoman", 1299.0, 1922.0, (1520.0, 1683.0), 5.2, "Near East"),
+                        ("Ming", 1368.0, 1644.0, (1400.0, 1450.0), 6.5, "East Asia"),
+                        ("Inca", 1438.0, 1533.0, (1493.0, 1527.0), 2.0, "Americas"),
+                        ("Portuguese", 1415.0, 1999.0, (1550.0, 1600.0), 10.4, "Europe"),
+                        ("Spanish", 1492.0, 1976.0, (1580.0, 1640.0), 13.7, "Europe"),
+                        ("Mughal", 1526.0, 1857.0, (1650.0, 1707.0), 4.0, "South Asia"),
+                        ("British", 1583.0, 1997.0, (1900.0, 1922.0), 35.5, "Europe"),
+                        ("Qing", 1636.0, 1912.0, (1735.0, 1796.0), 14.7, "East Asia"),
+                        ("Russian", 1721.0, 1917.0, (1866.0, 1895.0), 22.8, "Europe"),
+                        ]
+                        .into_iter()
+                        .map(|(name, from, to, (p, q), area, region)| {
+                            FanSpan::new(name, from, to).peak(p, q).magnitude(area).group(region)
+                        }),
+                    )
+                    .order(FanOrder::Start)
+                    .height(560.0)
+                    .format(|v| if v < 0.0 { format!("{:.0} BCE", -v) } else { format!("{v:.0}") })
+                    .magnitude_format(|v| format!("{v:.1}M km²"))
                     .into_any_element(),
                 ),
             ),

@@ -17,6 +17,7 @@ pub(crate) const CHART_FAMILIES: [(&str, &[&str]); 11] = [
             "Calendar heatmap",
             "Control chart",
             "Event timeline",
+            "Span fan",
         ],
     ),
     (
@@ -119,7 +120,8 @@ pub(crate) const CHART_TILE_MAX_W: f32 = 760.0;
 
 /// Chart sections whose demo is wide by nature (long time spans, many columns, rows of tiles):
 /// their tiles fill the card.
-pub(crate) const WIDE_CHARTS: [&str; 11] = [
+pub(crate) const WIDE_CHARTS: [&str; 12] = [
+    "Span fan",
     "Slot grid",
     "Network overview",
     "Live throughput",

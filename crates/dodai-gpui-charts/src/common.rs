@@ -327,6 +327,14 @@ impl CanvasText {
         }
     }
 
+    /// The display (heading) font of `t` at `size` px, for labels that carry a magnitude.
+    pub(crate) fn display(t: &Theme, size: f32) -> Self {
+        Self {
+            family: first_family(t.typography.display),
+            size,
+        }
+    }
+
     /// Height of one line of label text.
     pub(crate) fn size_line(&self) -> f32 {
         self.size * 1.3
@@ -371,6 +379,39 @@ impl CanvasText {
             at.1 + uy * lh / 2.0 - lh / 2.0,
         );
         let _ = line.paint(gpui::point(o.x + px(x), o.y + px(y)), px(lh), w, cx);
+    }
+
+    /// Like [`Self::beside`], but only where the label's box misses every box in `taken`
+    /// (then adds it): crowded labels drop out instead of overprinting. Returns whether it
+    /// was painted.
+    pub(crate) fn beside_free(
+        &self,
+        w: &mut Window,
+        cx: &mut gpui::App,
+        (text, color): (&str, Hsla),
+        (o, at): (gpui::Point<Pixels>, (f32, f32)),
+        (ux, uy): (f32, f32),
+        taken: &mut Vec<[f32; 4]>,
+    ) -> bool {
+        if text.is_empty() {
+            return false;
+        }
+        let line = self.shape(w, text, color);
+        let (lw, lh): (f32, f32) = (line.width.into(), self.size_line());
+        let (x, y) = (
+            at.0 + ux * lw / 2.0 - lw / 2.0,
+            at.1 + uy * lh / 2.0 - lh / 2.0,
+        );
+        let r = [x - 2.0, y, x + lw + 2.0, y + lh];
+        if taken
+            .iter()
+            .any(|t| r[0] < t[2] && t[0] < r[2] && r[1] < t[3] && t[1] < r[3])
+        {
+            return false;
+        }
+        taken.push(r);
+        let _ = line.paint(gpui::point(o.x + px(x), o.y + px(y)), px(lh), w, cx);
+        true
     }
 
     /// Paints `text` centred on `at` (a canvas origin and a point from it) when it is at most

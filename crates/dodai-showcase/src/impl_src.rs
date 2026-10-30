@@ -37,6 +37,7 @@ const FILES: &[(&str, &str)] = &[
         include_str!("../../dodai-gpui-charts/src/common.rs"),
     ),
     ("bar.rs", include_str!("../../dodai-gpui-charts/src/bar.rs")),
+    ("fan.rs", include_str!("../../dodai-gpui-charts/src/fan.rs")),
     (
         "line.rs",
         include_str!("../../dodai-gpui-charts/src/line.rs"),
