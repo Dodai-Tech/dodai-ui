@@ -6,12 +6,12 @@
 //! Material Symbols, Neo-Brutalism's bold Phosphor. Every icon draws in every design. Force a pack
 //! with [`Icon::pack`].
 
-use crate::paint::stroke;
 pub use dodai_icons::cyberpunk::IconName;
 pub use dodai_icons::IconId;
 #[cfg(feature = "cyberpunk")]
 pub use dodai_icons::Modifier;
 use dodai_icons::{Glyph, Pack};
+use gpui::prelude::FluentBuilder as _;
 use gpui::{canvas, div, px, Bounds, Hsla, IntoElement, ParentElement, Pixels, RenderOnce, Styled};
 
 /// Which icon pack an [`Icon`] draws from.
@@ -114,59 +114,141 @@ impl RenderOnce for Icon {
         let color = self
             .color
             .unwrap_or_else(|| crate::hsla(theme.palette.text));
-        let (size, weight) = (self.size, self.weight);
-        let pack = self.pack.resolve(theme.look().icons);
-        #[cfg(feature = "cyberpunk")]
-        let glyph = match self.modifier {
-            Some(m) => dodai_icons::cyber_shapes(self.id, Some(m)).map(Glyph::Stroked),
-            None => dodai_icons::glyph(self.id, pack, self.filled),
+        let key = MeshKey {
+            id: self.id,
+            pack: self.pack.resolve(theme.look().icons),
+            filled: self.filled,
+            #[cfg(feature = "cyberpunk")]
+            modifier: self.modifier,
+            size: self.size.to_bits(),
+            weight: self.weight.to_bits(),
         };
-        #[cfg(not(feature = "cyberpunk"))]
-        let glyph = dodai_icons::glyph(self.id, pack, self.filled);
-        draw(glyph, size, weight, color)
-    }
-}
-
-/// Draw a resolved glyph: strokes at `weight`, fills as one non-zero path batch.
-fn draw(glyph: Option<Glyph>, size: f32, weight: f32, color: Hsla) -> gpui::AnyElement {
-    let k = size / 24.0;
-    let blank = || div().size(px(size)).flex_none();
-    let Some(glyph) = glyph else {
-        return blank().into_any_element();
-    };
-    match glyph {
-        Glyph::Stroked(shapes) => blank()
-            .child(
-                canvas(
-                    |_, _, _| (),
-                    move |b: Bounds<Pixels>, _, w, _| {
-                        for (p, closed) in &shapes {
-                            let p: Vec<(f32, f32)> =
-                                p.iter().map(|&(x, y)| (x * k, y * k)).collect();
-                            stroke(w, b.origin, &p, (weight * k).max(1.0), color, *closed);
-                        }
-                    },
-                )
-                .size_full(),
-            )
-            .into_any_element(),
-        Glyph::Filled(polys) => {
-            let polys: Vec<Vec<(f32, f32)>> = polys
-                .into_iter()
-                .map(|p| p.into_iter().map(|(x, y)| (x * k, y * k)).collect())
-                .collect();
-            blank()
-                .child(
+        let mesh = Mesh::cached(key);
+        div()
+            .size(px(self.size))
+            .flex_none()
+            .when_some(mesh, |d, mesh| {
+                d.child(
                     canvas(
                         |_, _, _| (),
-                        move |b: Bounds<Pixels>, _, w, _| {
-                            crate::paint::fill_batch(w, b.origin, &polys, color);
-                        },
+                        move |b: Bounds<Pixels>, _, w, _| mesh.paint(w, b.origin, color),
                     )
                     .size_full(),
                 )
-                .into_any_element()
+            })
+    }
+}
+
+/// What an icon's triangles depend on: the drawing, its size and its stroke weight.
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+struct MeshKey {
+    id: IconId,
+    pack: Pack,
+    filled: bool,
+    #[cfg(feature = "cyberpunk")]
+    modifier: Option<Modifier>,
+    size: u32,
+    weight: u32,
+}
+
+/// An icon tessellated once, as triangles relative to its top-left corner. Painting only
+/// offsets them: a page of icons used to re-tessellate every one of them on every scroll frame.
+struct Mesh(Vec<[(f32, f32); 3]>);
+
+impl Mesh {
+    /// The mesh for `key`, built on first use; `None` when the pack has no such icon.
+    fn cached(key: MeshKey) -> Option<std::rc::Rc<Self>> {
+        thread_local! {
+            static MESHES: std::cell::RefCell<std::collections::HashMap<MeshKey, Option<std::rc::Rc<Mesh>>>> =
+                Default::default();
         }
+        MESHES.with(|m| {
+            m.borrow_mut()
+                .entry(key)
+                .or_insert_with(|| Self::build(key).map(std::rc::Rc::new))
+                .clone()
+        })
+    }
+
+    /// Resolve the glyph and tessellate it: strokes at the weight, fills as one even-odd path
+    /// (the options gpui's `PathBuilder` uses, so icons look as before).
+    fn build(key: MeshKey) -> Option<Self> {
+        use lyon_tessellation::math::point;
+        use lyon_tessellation::path::Path;
+        use lyon_tessellation::{
+            BuffersBuilder, FillOptions, FillTessellator, FillVertex, StrokeOptions,
+            StrokeTessellator, StrokeVertex, VertexBuffers,
+        };
+        #[cfg(feature = "cyberpunk")]
+        let glyph = match key.modifier {
+            Some(m) => dodai_icons::cyber_shapes(key.id, Some(m)).map(Glyph::Stroked),
+            None => dodai_icons::glyph(key.id, key.pack, key.filled),
+        };
+        #[cfg(not(feature = "cyberpunk"))]
+        let glyph = dodai_icons::glyph(key.id, key.pack, key.filled);
+        let k = f32::from_bits(key.size) / 24.0;
+        let weight = f32::from_bits(key.weight);
+        let outline = |polys: &mut dyn Iterator<Item = (&[(f32, f32)], bool)>| {
+            let mut b = Path::builder();
+            for (p, closed) in polys {
+                let Some(((x, y), rest)) = p.split_first() else {
+                    continue;
+                };
+                if !crate::paint::finite(p) {
+                    continue;
+                }
+                b.begin(point(x * k, y * k));
+                for (x, y) in rest {
+                    b.line_to(point(x * k, y * k));
+                }
+                b.end(closed);
+            }
+            b.build()
+        };
+        let mut buf: VertexBuffers<lyon_tessellation::math::Point, u32> = VertexBuffers::new();
+        match glyph? {
+            Glyph::Stroked(shapes) => {
+                let width = (weight * k).max(1.0);
+                let path = outline(&mut shapes.iter().map(|(p, c)| (p.as_slice(), *c)));
+                StrokeTessellator::new()
+                    .tessellate_path(
+                        &path,
+                        &StrokeOptions::default().with_line_width(width),
+                        &mut BuffersBuilder::new(&mut buf, |v: StrokeVertex| v.position()),
+                    )
+                    .ok()?;
+            }
+            Glyph::Filled(polys) => {
+                let path = outline(&mut polys.iter().map(|p| (p.as_slice(), true)));
+                FillTessellator::new()
+                    .tessellate_path(
+                        &path,
+                        &FillOptions::default(),
+                        &mut BuffersBuilder::new(&mut buf, |v: FillVertex| v.position()),
+                    )
+                    .ok()?;
+            }
+        }
+        let at = |i: u32| buf.vertices.get(i as usize).map(|p| (p.x, p.y));
+        Some(Self(
+            buf.indices
+                .chunks_exact(3)
+                .filter_map(|t| Some([at(t[0])?, at(t[1])?, at(t[2])?]))
+                .collect(),
+        ))
+    }
+
+    fn paint(&self, w: &mut gpui::Window, o: gpui::Point<Pixels>, color: Hsla) {
+        let Some(first) = self.0.first() else {
+            return;
+        };
+        let at = |(x, y): (f32, f32)| gpui::point(o.x + px(x), o.y + px(y));
+        let solid = gpui::point(0.0, 1.0);
+        let mut path = gpui::Path::new(at(first[0]));
+        for [a, b, c] in &self.0 {
+            path.push_triangle((at(*a), at(*b), at(*c)), (solid, solid, solid));
+        }
+        w.paint_path(path, color);
     }
 }
 
@@ -181,6 +263,32 @@ mod tests {
         assert_eq!(IconPack::Auto.resolve(Stroked), Pack::Stroked);
         assert_eq!(IconPack::Auto.resolve(Bold), Pack::Bold);
         assert_eq!(IconPack::Stroked.resolve(Symbols), Pack::Stroked);
+    }
+
+    #[test]
+    fn icon_meshes_are_triangles_inside_the_icon_box() {
+        for (pack, filled) in [(Pack::Material, true), (Pack::Stroked, false)] {
+            let size = 20.0f32;
+            let key = MeshKey {
+                id: IconId::CalendarHeart,
+                pack,
+                filled,
+                #[cfg(feature = "cyberpunk")]
+                modifier: None,
+                size: size.to_bits(),
+                weight: 1.5f32.to_bits(),
+            };
+            let mesh = Mesh::cached(key).expect("the icon exists in this pack");
+            assert!(!mesh.0.is_empty(), "{pack:?} drew nothing");
+            // Half a stroke may stick out past the drawing's box.
+            let slack = 1.5;
+            for (x, y) in mesh.0.iter().flatten() {
+                assert!((-slack..=size + slack).contains(x), "{pack:?} x {x}");
+                assert!((-slack..=size + slack).contains(y), "{pack:?} y {y}");
+            }
+            // Asked again, the same mesh comes back without tessellating.
+            assert!(std::rc::Rc::ptr_eq(&mesh, &Mesh::cached(key).unwrap()));
+        }
     }
 
     #[test]

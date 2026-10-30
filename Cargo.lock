@@ -4077,6 +4077,7 @@ dependencies = [
  "dodai-shaders",
  "gpui",
  "image",
+ "lyon_tessellation",
 ]
 
 [[package]]

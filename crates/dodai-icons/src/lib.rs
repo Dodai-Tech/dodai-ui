@@ -37,7 +37,7 @@ pub use phosphor::CATEGORIES;
 pub use cyberpunk::Modifier;
 
 /// Which design's pack draws the icon.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Pack {
     /// Cyberpunk: hand-drawn straight segments and chamfers.
     Stroked,

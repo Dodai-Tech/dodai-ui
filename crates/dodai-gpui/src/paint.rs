@@ -782,7 +782,7 @@ fn shimmer_overlay(shape: &Shape, sh: Shimmer) -> impl gpui::IntoElement {
         })
 }
 
-#[cfg(any(feature = "charts", feature = "components"))]
+#[cfg(feature = "charts")]
 pub(crate) fn pts(o: gpui::Point<Pixels>, p: &[(f32, f32)]) -> Vec<gpui::Point<Pixels>> {
     p.iter()
         .map(|&(x, y)| point(o.x + px(x), o.y + px(y)))
@@ -796,7 +796,7 @@ pub(crate) fn finite(p: &[(f32, f32)]) -> bool {
     p.iter().all(|&(x, y)| x.is_finite() && y.is_finite())
 }
 
-#[cfg(any(feature = "charts", feature = "components"))]
+#[cfg(feature = "charts")]
 pub(crate) fn stroke(
     w: &mut Window,
     o: gpui::Point<Pixels>,
@@ -829,7 +829,7 @@ pub(crate) fn fill(w: &mut Window, o: gpui::Point<Pixels>, p: &[(f32, f32)], c: 
 
 /// Fill many polygons with one colour in a single path (one tessellation and
 /// one draw call instead of one per polygon).
-#[cfg(any(feature = "charts", feature = "components"))]
+#[cfg(feature = "charts")]
 pub(crate) fn fill_batch(
     w: &mut Window,
     o: gpui::Point<Pixels>,

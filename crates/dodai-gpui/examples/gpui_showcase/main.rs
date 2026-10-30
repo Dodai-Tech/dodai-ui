@@ -117,6 +117,10 @@ pub struct Showcase {
     real_h: std::collections::HashMap<&'static str, f32>,
     /// Set while a scroll notifies: the sections need no rebuild for it.
     quiet: bool,
+    /// Set while a demo step notifies: only the sections in `live_sections` rebuild.
+    demo_only: bool,
+    /// Sections whose build reads the playing demo values (it stamps `demo_seen`/`inst_seen`).
+    live_sections: std::collections::HashSet<&'static str>,
     /// Per section title: its category, the index of the group that builds it, and its key.
     section_group: std::collections::HashMap<&'static str, (&'static str, usize, &'static str)>,
     spy: Vec<(&'static str, usize)>,
@@ -171,6 +175,8 @@ pub struct Showcase {
     inst_seen: Option<std::time::Instant>,
     /// When an input demo page last rendered; its values play on their own while it shows.
     demo_seen: Option<std::time::Instant>,
+    /// A demo step is already waiting for the next frame.
+    demo_tick_queued: bool,
     demo_email: String,
     /// The controlled `TreeView` demo: its nodes (with their folded state) and selection.
     tree_items: Vec<TreeItem>,
@@ -460,6 +466,7 @@ impl Render for Showcase {
         if unmeasured {
             window.request_animation_frame();
         }
+        self.tick_demos(window, cx);
         // Perf probe: redraw every frame so the cost of the visible sections shows up.
         if std::env::var_os("DODAI_BENCH").is_some() {
             window.request_animation_frame();

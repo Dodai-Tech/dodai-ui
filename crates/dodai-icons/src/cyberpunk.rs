@@ -1009,7 +1009,7 @@ mod render {
     }
 
     /// A modifier that derives a variant from any icon: `wifi-off`, `heart-add`.
-    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
     pub enum Modifier {
         /// Diagonal strike-through.
         Off,

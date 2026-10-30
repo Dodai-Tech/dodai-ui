@@ -141,37 +141,34 @@ impl Showcase {
         self.demo_email = typed("ada@dodai.dev", 5.0, 0.0);
         self.demo_pin = typed("4821", 1.6, 0.0);
         self.demo_otp = typed("381946", 2.2, 0.0);
+        // Only the sections showing these values rebuild; the flag is cleared once the
+        // observers have run, so a click in a later update still rebuilds everything.
+        self.demo_only = true;
         cx.notify();
+        let me = cx.entity();
+        cx.defer(move |cx| me.update(cx, |s, _| s.demo_only = false));
+    }
+
+    /// While a demo that plays on its own is showing, step it once per display frame. The
+    /// step rides the frame that is drawn anyway (a scroll, say) instead of a free-running
+    /// timer, whose extra draws fall between vsyncs and make scrolling stutter.
+    pub(crate) fn tick_demos(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let recent = |t: Option<std::time::Instant>, ms: u128| {
+            t.is_some_and(|t| t.elapsed().as_millis() < ms)
+        };
+        let playing = recent(self.demo_seen, 200) || recent(self.inst_seen, 100);
+        if self.demo_tick_queued || !playing || !dodai_gpui::motion::enabled() {
+            return;
+        }
+        self.demo_tick_queued = true;
+        cx.on_next_frame(window, |s, _, cx| {
+            s.demo_tick_queued = false;
+            s.demo_step(cx);
+        });
     }
 
     /// Initial state; the TextInput entities are created here.
     pub fn build(cx: &mut Context<Self>) -> Self {
-        // While instruments animate, the page repaints every frame so the demo values drift
-        // smoothly; elsewhere it stays idle.
-        cx.spawn(async move |this, cx| loop {
-            cx.background_executor()
-                .timer(std::time::Duration::from_millis(16))
-                .await;
-            if this
-                .update(cx, |s, cx| {
-                    if dodai_gpui::motion::enabled()
-                        && (s.demo_seen.is_some_and(|t| t.elapsed().as_millis() < 200)
-                            || s.inst_seen.is_some_and(|t| t.elapsed().as_millis() < 100))
-                    {
-                        s.demo_step(cx);
-                    }
-                    if s.inst_seen.is_some_and(|t| t.elapsed().as_millis() < 100)
-                        && dodai_gpui::motion::enabled()
-                    {
-                        cx.notify();
-                    }
-                })
-                .is_err()
-            {
-                break;
-            }
-        })
-        .detach();
         let search = cx.new(|cx| TextInput::new(cx).placeholder("Search…"));
         let search_full = cx.new(|cx| TextInput::new(cx).placeholder("Search…").value("a"));
         let filter = cx.new(|cx| TextInput::new(cx).placeholder("Filter components…"));
@@ -238,6 +235,8 @@ impl Showcase {
             built: Default::default(),
             real_h: Default::default(),
             quiet: false,
+            demo_only: false,
+            live_sections: Default::default(),
             section_group: Default::default(),
             spy: Vec::new(),
             pin: dodai_gpui::ScrollSpy::new(),
@@ -277,6 +276,7 @@ impl Showcase {
             inst_seen: None,
             excluded_slots: Default::default(),
             demo_seen: None,
+            demo_tick_queued: false,
             demo_email: String::new(),
             tree_items: vec![
                 dodai_gpui::TreeItem::new("src")
