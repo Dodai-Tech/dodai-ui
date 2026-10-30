@@ -30,6 +30,10 @@ pub use vocab::{
 /// Smallest side (px) of a surface that gets a texture or effect.
 const MIN_SIDE: f32 = 16.0;
 
+/// Largest side (px) of a surface that gets a texture or effect: beyond any real window, and
+/// a bound on the per-row and per-column loops of the painters.
+const MAX_SIDE: f32 = 16384.0;
+
 /// A straight (non-premultiplied) sRGB colour with `f32` channels in `0..=1`.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Rgba {
@@ -155,7 +159,9 @@ pub struct Frame<'a> {
 /// animated and wants another frame.
 pub fn paint(out: &mut dyn Painter, f: &Frame, sp: &SurfacePaint) -> bool {
     let (w, h, shape, seed) = (f.w, f.h, f.shape, f.seed);
-    if w.min(h) < MIN_SIDE {
+    // Too small, too big, or not a real size (NaN fails the range test): nothing to draw.
+    let side = MIN_SIDE..=MAX_SIDE;
+    if !(side.contains(&w) && side.contains(&h)) {
         return false;
     }
     let fx = sp.fx;
@@ -423,6 +429,43 @@ mod tests {
             set(&mut fx);
             let n = big(&only(fx));
             assert!(n <= 2000, "{name} drew {n} primitives");
+        }
+    }
+
+    #[test]
+    fn hostile_sizes_draw_nothing_or_a_bounded_amount() {
+        let t = Theme::default();
+        let mut all = SurfaceFx::NONE;
+        for (_, set) in effects() {
+            set(&mut all);
+        }
+        all.texture = Texture::Grid;
+        all.strength = 1.0;
+        let sp = only(all);
+        for (w, h) in [
+            (f32::NAN, 100.0),
+            (100.0, f32::NAN),
+            (f32::INFINITY, 100.0),
+            (100.0, f32::INFINITY),
+            (f32::NEG_INFINITY, 100.0),
+            (-50.0, -50.0),
+            (1e9, 1e9),
+        ] {
+            let mut rec = Rec::default();
+            let f = Frame {
+                w,
+                h,
+                shape: &t.shape,
+                seed: 1,
+                time: 0.5,
+                presses: &[],
+            };
+            paint(&mut rec, &f, &sp);
+            let n = rec.quads.len() + rec.dots + rec.paths.len();
+            assert!(n <= 20_000, "{w}x{h} drew {n} primitives");
+            if !(w.is_finite() && h.is_finite()) || w > 16384.0 {
+                assert_eq!(n, 0, "{w}x{h}");
+            }
         }
     }
 
