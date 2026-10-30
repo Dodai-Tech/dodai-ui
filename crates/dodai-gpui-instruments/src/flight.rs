@@ -1,19 +1,19 @@
 //! Flight and sensor instruments: an [`AttitudeIndicator`], a [`HeadingTape`], a
 //! [`VerticalTape`] for speed and altitude, a [`SonarWaterfall`] and a [`Countermeasures`]
-//! counter. Geometry comes from `dodai_charts_core::flight`; this file only paints it.
+//! counter. Geometry comes from `dodai_instruments_core::flight`; this file only paints it.
 
 use crate::dial::severity_color;
 use crate::draw::polar;
 use crate::scope::{clock, frame};
 use crate::segment::SegmentDisplay;
-use dodai_charts_core::flight;
-use dodai_charts_core::instrument::Severity;
 use dodai_core::Color;
 use dodai_gpui::follow::{follow, follow_angle, Follow};
 use dodai_gpui::follow_api;
 use dodai_gpui::paint::{fill, fill_batch, scale_alpha, stroke, stroke_batch};
 use dodai_gpui::text::{first_family, format_label};
 use dodai_gpui::{hsla, theme_of};
+use dodai_instruments_core::flight;
+use dodai_instruments_core::instrument::Severity;
 use gpui::{
     canvas, div, prelude::FluentBuilder, px, App, Bounds, Hsla, IntoElement, ParentElement, Pixels,
     RenderOnce, SharedString, Styled, Window,

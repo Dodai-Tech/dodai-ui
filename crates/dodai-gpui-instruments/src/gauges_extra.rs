@@ -3,8 +3,8 @@
 
 use crate::draw::{glow_stroke, polar, turn_arc};
 use crate::gauges::{cell_lit, disc, pill, round_arc, Look, SWEEP};
-pub use dodai_charts_core::gauge::lit_bars;
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
+pub use dodai_instruments_core::gauge::lit_bars;
 use gpui::{Bounds, Pixels, Window};
 
 /// Full ring from 12 o'clock.

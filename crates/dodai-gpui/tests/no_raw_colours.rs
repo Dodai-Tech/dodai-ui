@@ -9,7 +9,11 @@ use std::{fs, path::Path};
 
 /// `(file under a crate's src, text on the line, why a literal is right here)`.
 const ALLOWED: &[(&str, &str, &str)] = &[
-    ("dodai-gpui/src/nav.rs", "gpui::transparent_black()", "no fill"),
+    (
+        "dodai-gpui/src/nav.rs",
+        "gpui::transparent_black()",
+        "no fill",
+    ),
     (
         "dodai-gpui-charts/src/grid.rs",
         "Color::rgba(r, gr, b, 255)",

@@ -4,12 +4,12 @@
 use crate::dial::severity_color;
 use crate::draw::{polar, turn_arc};
 use crate::gauges::{disc, SWEEP};
-use dodai_charts_core::instrument::{readout, Scale, Severity};
 use dodai_gpui::follow::{follow, Follow};
 use dodai_gpui::follow_api;
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
 use dodai_gpui::text::{first_family, format_label};
 use dodai_gpui::{hsla, theme_of};
+use dodai_instruments_core::instrument::{readout, Scale, Severity};
 use gpui::{
     canvas, div, px, App, Bounds, IntoElement, ParentElement, Pixels, RenderOnce, SharedString,
     Styled, Window,
@@ -195,7 +195,7 @@ impl RenderOnce for CutSpeedometer {
     }
 }
 
-use dodai_charts_core::gauge::major_labels as majors_labels;
+use dodai_instruments_core::gauge::major_labels as majors_labels;
 
 // ───────────────────────────────── CapsuleCluster ─────────────────────────────────
 

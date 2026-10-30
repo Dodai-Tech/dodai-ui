@@ -20,13 +20,10 @@
 //! | [`pulse`] | ECG / vital-sign signal generators, beat detection |
 //! | [`sankey`] | flow diagram layout |
 //! | [`density`] | kernel density estimate |
-//! | [`instrument`] | scales, zones, limits, alarms |
-//! | [`flight`] | attitude horizon, pitch ladder, tapes, sonar rows |
-//! | [`gauge`] | lit cells, ticks, zones, needle and cell polygons, hex grids, ring radii |
-//! | [`segments`] | seven-segment digit geometry |
-//! | [`tactical`] | contacts, map symbols, threat wedges, countdown |
 //! | [`stream`] | fixed-size sample window for live charts |
 //! | [`timeaxis`] | calendar-aware time ticks, unix ↔ civil date, UTC-offset labels |
+//!
+//! Instrument geometry (gauges, flight, tactical, segment displays) is in `dodai-instruments-core`.
 
 pub mod axis;
 pub mod bins;
@@ -36,16 +33,13 @@ pub mod chord;
 pub mod control;
 pub mod density;
 pub mod depth;
-pub mod flight;
 pub mod force;
 pub mod gantt;
-pub mod gauge;
 pub mod gradient;
 pub mod hexbin;
 pub mod hierarchy;
 pub mod horizon;
 pub mod indicators;
-pub mod instrument;
 pub mod layers;
 pub mod math;
 pub mod pack;
@@ -53,12 +47,10 @@ pub mod pulse;
 pub mod rank;
 pub mod renko;
 pub mod sankey;
-pub mod segments;
 pub mod share;
 pub mod stack;
 pub mod stream;
 pub mod swarm;
-pub mod tactical;
 pub mod timeaxis;
 
 pub use candles::{heikin_ashi, price_range, Candle};

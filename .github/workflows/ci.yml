@@ -67,14 +67,14 @@ jobs:
       - run: git diff --exit-code -- dist
       - run: test -z "$(git status --porcelain dist)"
 
-  # Base crates everything else depends on (dodai-core, dodai-icons, dodai-charts-core, dodai-fx, dodai-frost).
+  # Base crates everything else depends on (dodai-core, dodai-icons, dodai-charts-core, dodai-instruments-core, dodai-fx, dodai-frost).
   base:
     name: ${{ matrix.crate }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        crate: [dodai-core, dodai-icons, dodai-charts-core, dodai-fx, dodai-frost]
+        crate: [dodai-core, dodai-icons, dodai-charts-core, dodai-instruments-core, dodai-fx, dodai-frost]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -253,7 +253,7 @@ jobs:
         with:
           toolchain: ${{ steps.msrv.outputs.version }}
       - uses: Swatinem/rust-cache@v2
-      - run: cargo check --locked -p dodai-core --all-features -p dodai-charts-core -p dodai-fx -p dodai-frost -p dodai-icons --all-targets
+      - run: cargo check --locked -p dodai-core --all-features -p dodai-charts-core -p dodai-instruments-core -p dodai-fx -p dodai-frost -p dodai-icons --all-targets
 
   # Unused dependencies (cargo-machete scans every manifest, including freya and tools/).
   machete:

@@ -1,7 +1,7 @@
 //! Flight-instrument geometry: attitude horizon and pitch ladder, scrolling tapes, heading
 //! labels and a synthetic sonar row. Pure, so every toolkit draws the same instruments.
 
-use crate::math::polar;
+use dodai_charts_core::math::polar;
 
 /// Wraps a heading in degrees to `0..360`. Pure.
 pub fn wrap_heading(deg: f32) -> f32 {

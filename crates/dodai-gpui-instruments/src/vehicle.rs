@@ -1,19 +1,19 @@
 //! Vehicle and machine instruments beside [`crate::DialGauge`]: [`LevelBar`], [`TirePressure`],
 //! [`GearIndicator`], [`Odometer`], [`PowerMeter`] and [`Compass`].
 //!
-//! Scales and severities come from `dodai_charts_core::instrument`; colours from the theme's
+//! Scales and severities come from `dodai_instruments_core::instrument`; colours from the theme's
 //! severity tokens; panels from the design's shape tokens.
 
 use crate::dial::severity_color;
 use crate::draw::polar;
-use dodai_charts_core::gauge::odometer_positions;
-use dodai_charts_core::instrument::{readout, Limits, Scale, Severity};
 use dodai_core::{Color, Theme};
 use dodai_gpui::follow::{follow, follow_all, follow_angle, Follow};
 use dodai_gpui::follow_api;
 use dodai_gpui::paint::{fill, shaped, stroke, ShapeStyle};
 use dodai_gpui::text::first_family;
 use dodai_gpui::{hsla, theme_of};
+use dodai_instruments_core::gauge::odometer_positions;
+use dodai_instruments_core::instrument::{readout, Limits, Scale, Severity};
 use gpui::{
     canvas, div, px, App, Bounds, IntoElement, ParentElement, Pixels, RenderOnce, SharedString,
     Styled, Window,

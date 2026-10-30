@@ -1,19 +1,20 @@
 #![no_main]
 use dodai_charts_core as c;
+use dodai_instruments_core as ic;
 use libfuzzer_sys::fuzz_target;
 
-// Chart maths takes caller data (NaN, infinities, empty, huge periods): never panic, never hang.
+// Chart and instrument maths take caller data (NaN, infinities, empty, huge periods): never panic, never hang.
 fuzz_target!(|d: (Vec<f32>, Vec<(f32, f32)>, Vec<(f32, f32, f32, f32, Vec<u8>)>, f32, f32, u8, u8)| {
     let (v, pts, tasks, a, b, count, period) = d;
     let (count, period) = (count as usize, period as usize);
     let _ = c::nice_ticks(a, b, count);
-    let _ = c::gauge::odometer_positions(a, count);
-    let _ = c::gauge::cell_lit(count, period, a);
-    let _ = c::gauge::tick_fracs(count, period);
-    let _ = c::gauge::zone(a);
-    let _ = c::gauge::pill(a, b, a, b);
-    let _ = c::gauge::lit_bars(a, count);
-    let _ = c::gauge::hex_extent(count, period, a);
+    let _ = ic::gauge::odometer_positions(a, count);
+    let _ = ic::gauge::cell_lit(count, period, a);
+    let _ = ic::gauge::tick_fracs(count, period);
+    let _ = ic::gauge::zone(a);
+    let _ = ic::gauge::pill(a, b, a, b);
+    let _ = ic::gauge::lit_bars(a, count);
+    let _ = ic::gauge::hex_extent(count, period, a);
     let _ = c::fmt_num(a);
     let _ = c::pie_fractions(&v);
     let _ = c::norm(a, b, a);

@@ -1,18 +1,18 @@
 //! Military instruments: a [`TacticalPlot`] of tracked contacts, a [`ThreatRosette`], a
 //! [`StoresPanel`] and a [`MissionTimer`]. Geometry and severity come from
-//! `dodai_charts_core::tactical`; this file only paints it with the theme's tokens.
+//! `dodai_instruments_core::tactical`; this file only paints it with the theme's tokens.
 
 use crate::dial::severity_color;
 use crate::draw::{fmt_num, polar};
 use crate::scope::frame;
 use crate::scope::{blip_alpha, clock};
 use crate::segment::SegmentDisplay;
-use dodai_charts_core::instrument::Severity;
 use dodai_charts_core::math::turn_arc;
-use dodai_charts_core::tactical::{self, Affiliation, Contact};
 use dodai_gpui::paint::{fill, scale_alpha, shaped, stroke, stroke_batch, ShapeStyle};
 use dodai_gpui::text::{first_family, format_label};
 use dodai_gpui::{hsla, theme_of};
+use dodai_instruments_core::instrument::Severity;
+use dodai_instruments_core::tactical::{self, Affiliation, Contact};
 use gpui::{
     canvas, div, prelude::FluentBuilder, px, App, Bounds, Hsla, InteractiveElement, IntoElement,
     ParentElement, Pixels, RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window,

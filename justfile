@@ -219,6 +219,7 @@ publish: check-all
     cargo publish -p dodai-core
     cargo publish -p dodai-icons
     cargo publish -p dodai-charts-core
+    cargo publish -p dodai-instruments-core
     cargo publish -p dodai-shaders
     @echo "⏳ waiting for crates.io index…" && sleep 30
     cargo publish -p dodai-ratatui
@@ -236,6 +237,7 @@ publish-dry: check-all
     cargo publish --dry-run -p dodai-core
     cargo publish --dry-run -p dodai-icons
     cargo publish --dry-run -p dodai-charts-core
+    cargo publish --dry-run -p dodai-instruments-core
     cargo publish --dry-run -p dodai-shaders
     cargo publish --dry-run -p dodai-ratatui
     cargo publish --dry-run -p dodai-iced

@@ -4102,6 +4102,7 @@ dependencies = [
  "dodai-charts-core",
  "dodai-core",
  "dodai-gpui",
+ "dodai-instruments-core",
  "gpui",
 ]
 
@@ -4121,6 +4122,13 @@ name = "dodai-icons"
 version = "0.1.0"
 dependencies = [
  "dodai-core",
+]
+
+[[package]]
+name = "dodai-instruments-core"
+version = "0.1.0"
+dependencies = [
+ "dodai-charts-core",
 ]
 
 [[package]]

@@ -3,11 +3,11 @@
 //! one clock-style panel. Unlit segments stay faintly visible like a real display.
 
 use crate::dial::severity_color;
-use dodai_charts_core::instrument::{Scale, Severity};
-use dodai_charts_core::segments;
 use dodai_gpui::paint::{fill, scale_alpha, shaped, ShapeStyle};
 use dodai_gpui::text::format_label;
 use dodai_gpui::{hsla, theme_of};
+use dodai_instruments_core::instrument::{Scale, Severity};
+use dodai_instruments_core::segments;
 use gpui::{
     canvas, div, px, App, Bounds, Hsla, IntoElement, ParentElement, Pixels, RenderOnce,
     SharedString, Styled, Window,

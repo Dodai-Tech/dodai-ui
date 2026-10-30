@@ -40,11 +40,11 @@ pub mod tactical;
 pub mod vehicle;
 
 pub use dial::{severity_color, Annunciator, DialGauge, VitalsTile};
-pub use dodai_charts_core::instrument::{Alarm, Limits, Scale, Severity};
-#[cfg(feature = "defense")]
-pub use dodai_charts_core::tactical::{Affiliation, Contact};
 pub use dodai_gpui::plot::{chart_glow, set_chart_glow, ChartGlow};
 pub use dodai_gpui::Live;
+pub use dodai_instruments_core::instrument::{Alarm, Limits, Scale, Severity};
+#[cfg(feature = "defense")]
+pub use dodai_instruments_core::tactical::{Affiliation, Contact};
 pub use gauge::Gauge;
 pub use gauges::GaugeStyle;
 #[cfg(feature = "defense")]

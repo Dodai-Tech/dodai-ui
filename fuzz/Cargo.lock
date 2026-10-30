@@ -44,6 +44,7 @@ dependencies = [
  "dodai-charts-core",
  "dodai-core",
  "dodai-icons",
+ "dodai-instruments-core",
  "libfuzzer-sys",
 ]
 
@@ -56,6 +57,13 @@ name = "dodai-icons"
 version = "0.1.0"
 dependencies = [
  "dodai-core",
+]
+
+[[package]]
+name = "dodai-instruments-core"
+version = "0.1.0"
+dependencies = [
+ "dodai-charts-core",
 ]
 
 [[package]]

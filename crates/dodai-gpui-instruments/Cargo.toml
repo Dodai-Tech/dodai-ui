@@ -23,6 +23,7 @@ defense    = []
 [dependencies]
 dodai-core        = { workspace = true }
 dodai-charts-core = { workspace = true }
+dodai-instruments-core = { workspace = true }
 dodai-gpui        = { workspace = true }
 gpui              = { workspace = true }
 
