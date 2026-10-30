@@ -153,16 +153,33 @@ pub enum Marker {
     Triangle,
 }
 
+/// A circle of radius `r` around `(x, y)` as a polygon that reads as round at any size: just
+/// enough sides that no side bows in more than [`CIRCLE_TOLERANCE`] px from the true circle.
+pub fn circle_points(x: f32, y: f32, r: f32) -> Vec<(f32, f32)> {
+    let r = if r.is_finite() { r.max(0.0) } else { 0.0 };
+    // A side spanning angle `a` misses the circle by `r (1 - cos(a / 2))`.
+    let n = if r <= CIRCLE_TOLERANCE {
+        12
+    } else {
+        let a = 2.0 * (1.0 - CIRCLE_TOLERANCE / r).acos();
+        ((std::f32::consts::TAU / a).ceil() as usize).clamp(12, 512)
+    };
+    (0..n)
+        .map(|i| {
+            let a = i as f32 / n as f32 * std::f32::consts::TAU;
+            (x + r * a.cos(), y + r * a.sin())
+        })
+        .collect()
+}
+
+/// How far (px) a side of a [`circle_points`] polygon may fall inside the circle.
+pub const CIRCLE_TOLERANCE: f32 = 0.15;
+
 /// Outline of a marker centred at `(x, y)` with radius `r`. Pure.
 pub fn marker_points(m: Marker, x: f32, y: f32, r: f32) -> Vec<(f32, f32)> {
     match m {
         Marker::None => vec![],
-        Marker::Dot => (0..16)
-            .map(|i| {
-                let a = i as f32 / 16.0 * std::f32::consts::TAU;
-                (x + r * a.cos(), y + r * a.sin())
-            })
-            .collect(),
+        Marker::Dot => circle_points(x, y, r),
         Marker::Square => vec![
             (x - r, y - r),
             (x + r, y - r),
@@ -329,7 +346,7 @@ mod tests {
 
 #[cfg(test)]
 mod nice_ceiling_tests {
-    use super::nice_ceiling;
+    use super::{circle_points, nice_ceiling, CIRCLE_TOLERANCE};
 
     #[test]
     fn a_scale_rounds_up_to_a_clean_top() {
@@ -347,5 +364,27 @@ mod nice_ceiling_tests {
         assert_eq!(nice_ceiling(0.0), 0.0);
         assert!(nice_ceiling(f32::NAN).is_nan());
         assert_eq!(nice_ceiling(f32::INFINITY), f32::INFINITY);
+    }
+
+    #[test]
+    fn circles_stay_round_at_any_size() {
+        for r in [0.0, 2.0, 4.0, 30.0, 150.0, 600.0] {
+            let p = circle_points(0.0, 0.0, r);
+            assert!(p.len() >= 12);
+            for (k, a) in p.iter().enumerate() {
+                let b = p[(k + 1) % p.len()];
+                let mid = (((a.0 + b.0) / 2.0).powi(2) + ((a.1 + b.1) / 2.0).powi(2)).sqrt();
+                assert!(
+                    r - mid <= CIRCLE_TOLERANCE + 1e-3,
+                    "r {r}: side bows {}",
+                    r - mid
+                );
+            }
+        }
+        assert!(
+            circle_points(0.0, 0.0, 4.0).len() < 24,
+            "small dots stay cheap"
+        );
+        assert!(circle_points(0.0, 0.0, f32::NAN).iter().all(|p| p.0 == 0.0));
     }
 }
