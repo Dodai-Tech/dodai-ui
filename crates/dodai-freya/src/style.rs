@@ -316,7 +316,7 @@ pub fn estimate_text_width(text: &str, size: f32, tracking: f32) -> f32 {
 pub(crate) mod testing {
     //! Test-only rounded light and square/uppercase themes built from `ThemeBuilder`.
     use dodai_core::themes::ThemeBuilder;
-    use dodai_core::{Corners, Mode, Shape, Spacing, Theme, ThemeMeta, Typography};
+    use dodai_core::{Corners, Mode, Shape, Theme, ThemeMeta, Typography};
 
     fn base(id: &'static str, shape: Shape, glow: f32, hard: f32, upper: bool) -> Theme {
         ThemeBuilder {
