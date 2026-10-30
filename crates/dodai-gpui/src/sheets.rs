@@ -503,7 +503,7 @@ impl Snackbar {
 impl RenderOnce for Snackbar {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let motion = crate::motion::current(cx);
-        crate::motion::entry(self.build(cx), "Snackbar", motion)
+        crate::motion::appear(self.build(cx), "Snackbar", motion)
     }
 }
 

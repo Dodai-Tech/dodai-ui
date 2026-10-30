@@ -132,7 +132,7 @@ impl Toast {
 impl RenderOnce for Toast {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let motion = crate::motion::current(cx);
-        crate::motion::entry(self.build(cx), "Toast", motion)
+        crate::motion::appear(self.build(cx), "Toast", motion)
     }
 }
 

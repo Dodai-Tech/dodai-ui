@@ -1085,26 +1085,32 @@ fn every_selection_animation_lands_on_the_chosen_item(cx: &mut TestAppContext) {
     }
 }
 
-/// Off, every animation lands at once (after answering the input that switched it off);
-/// faster, it takes less time.
+/// Faster, every animation takes less time. Animation off stills what moves on its own but
+/// answers to input still move; reduced motion stills both.
 #[gpui::test]
 fn the_playback_switches_pace_every_motion(cx: &mut TestAppContext) {
-    use dodai_gpui::motion::{pace, set_enabled, set_speed, Motion, LINGER};
+    use dodai_gpui::motion::{ambient, pace, set_enabled, set_reduce_motion, set_speed, Motion};
     use std::time::Duration;
     let m = Motion::default().duration(Duration::from_millis(400));
+    let half = Duration::from_millis(200);
     cx.update(|cx| {
         set_speed(cx, 2.0);
-        assert_eq!(pace(m).duration, Duration::from_millis(200));
+        assert_eq!((pace(m).duration, ambient(m).duration), (half, half));
         assert_eq!(pace(m).pace, 2.0);
         set_enabled(cx, false);
+        assert_eq!(pace(m).duration, half, "a click still animates");
         assert_eq!(
-            pace(m).duration,
-            Duration::from_millis(200),
-            "the Off click's own change still moves"
+            ambient(m).duration,
+            Duration::ZERO,
+            "entries and value-in land"
         );
-        std::thread::sleep(Duration::from_secs_f32(LINGER + 0.05));
-        assert_eq!(pace(m).duration, Duration::ZERO);
         set_enabled(cx, true);
+        set_reduce_motion(cx, true);
+        assert_eq!(
+            (pace(m).duration, ambient(m).duration),
+            (Duration::ZERO, Duration::ZERO)
+        );
+        set_reduce_motion(cx, false);
         set_speed(cx, 1.0);
         assert_eq!(pace(m).duration, m.duration);
     });

@@ -14,9 +14,10 @@ Nothing here was verified with live clicks or keys; it comes from code and the u
   `Carousel`, `List`, `Chip`-like rows, `Stepper`.
 - **Focus ring** is drawn through one path (`interact.rs`) and every design supplies
   `focus_ring`. Good; but components that never take focus never show it (see keyboard).
-- **Reduced motion**: `motion::set_reduce_motion`, `set_enabled` and `set_speed` pace every
-  component animation (`motion::pace`, `play_on_change`). The OS "reduce motion" setting is not
-  read yet.
+- **Reduced motion**: `set_speed` paces everything. `set_enabled(false)` stills what moves on
+  its own (entries, value-in, loops, live data: `motion::ambient`, `time`) while answers to
+  input (toggles, tabs, dialogs: `motion::pace`, `play_on_change`, `appear`) keep moving;
+  `set_reduce_motion` stills both. The OS "reduce motion" setting is not read yet.
 - **Frame requests** rely on `Window::on_next_frame` plus a notify. In an unfocused window with no
   input a lone tween (no 16 ms loop on that page) may not redraw; worth a regression test.
 

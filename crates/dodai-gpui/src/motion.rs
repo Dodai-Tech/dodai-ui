@@ -28,16 +28,17 @@ pub fn now() -> f32 {
 
 // ─────────────────────────────── playback ───────────────────────────────
 //
-// App-wide switches every animation goes through: on/off, speed and reduced motion. Components
-// read them via [`pace`]; nothing animates around them.
+// App-wide switches every animation goes through: on/off, speed and reduced motion. Answers to
+// input (a toggle sliding, a tab marker, a dialog opening) read them via [`pace`]: they move
+// unless motion is reduced. What moves on its own (entry reveals, loops, live data, the
+// animation clock) reads them via [`ambient`], [`time`] or [`enabled`]: it also stops while
+// animation is off.
 
 static REDUCED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 thread_local! {
     static ENABLED: std::cell::Cell<bool> = const { std::cell::Cell::new(true) };
     static SPEED: std::cell::Cell<f32> = const { std::cell::Cell::new(1.0) };
-    /// Real seconds when animation was last switched off.
-    static OFF_AT: std::cell::Cell<f32> = const { std::cell::Cell::new(f32::NEG_INFINITY) };
     /// `(animation seconds, real seconds at the last read)`.
     static CLOCK: std::cell::Cell<(f32, f32)> = const { std::cell::Cell::new((0.0, 0.0)) };
 }
@@ -54,31 +55,18 @@ pub fn reduce_motion() -> bool {
     REDUCED.load(std::sync::atomic::Ordering::Relaxed)
 }
 
-/// Switch every animation on or off and repaint. Off, new changes land at once, ones already
-/// moving finish, and running effects (sweeps, flashes, live traces) stand still on [`time`].
-/// The input that switches it off is still answered: changes starting within [`LINGER`] of it
-/// play out (the Off button's own selection moves like the On one).
+/// Switch animation of what moves on its own on or off and repaint. Off, entry reveals and
+/// value-in land at once, live data snaps, and running effects (sweeps, flashes, live traces)
+/// stand still on [`time`]. Answers to input still move (see [`pace`]); to stop those too,
+/// use [`set_reduce_motion`].
 pub fn set_enabled(cx: &mut App, on: bool) {
-    if !on && enabled() {
-        OFF_AT.with(|c| c.set(now()));
-    }
     ENABLED.with(|c| c.set(on));
     cx.refresh_windows();
 }
 
-/// Whether animations run (see [`set_enabled`]). On by default.
+/// Whether what moves on its own animates (see [`set_enabled`]). On by default.
 pub fn enabled() -> bool {
     ENABLED.with(std::cell::Cell::get)
-}
-
-/// How long after animation is switched off a change may still start moving: long enough for
-/// the repaint answering that click.
-pub const LINGER: f32 = 0.25;
-
-/// Whether a change starting at `t` (real seconds, see [`now`]) moves: motion is not reduced,
-/// and animation is on or was switched off at most [`LINGER`] before it.
-fn moves_from(t: f32) -> bool {
-    !reduce_motion() && (enabled() || t - OFF_AT.with(std::cell::Cell::get) <= LINGER)
 }
 
 /// How fast every animation runs (clamped to `0.1..=4`; `2` is twice as fast) and repaint.
@@ -108,14 +96,20 @@ pub fn time() -> f32 {
     })
 }
 
-/// `m` as it plays right now: instant while motion is reduced or animation is off (past the
-/// [`LINGER`] after switching it off), otherwise at the app's [`speed`].
+/// `m` as an answer to input plays right now: instant while motion is reduced, otherwise at
+/// the app's [`speed`] (also while animation is off, see [`set_enabled`]).
 pub fn pace(m: Motion) -> Motion {
-    if !moves_from(now()) {
+    if reduce_motion() {
         m.instant()
     } else {
         m.speed(speed())
     }
+}
+
+/// `m` for something that moves on its own (an entry reveal, a value growing in): like
+/// [`pace`], and also instant while animation is off.
+pub fn ambient(m: Motion) -> Motion {
+    still_while_off(pace(m))
 }
 
 /// The motion in force (see [`MotionExt::of`]), paced (see [`pace`]).
@@ -166,7 +160,28 @@ impl MotionExt for Motion {
 /// Fade `el` in the first time it appears (one-shot; replays after the
 /// element leaves and re-enters the tree). Shared by every chart so all
 /// components enter the same way; honours [`Motion::of`] unless overridden.
+/// `motion` is already paced (e.g. [`current`]). Moves on its own, so it lands at once while
+/// animation is off; for something opened by input use [`appear`].
 pub fn entry(
+    el: impl IntoElement,
+    name: &'static str,
+    motion: Motion,
+) -> AnimationElement<Stateful<Div>> {
+    appear(el, name, still_while_off(motion))
+}
+
+/// `m` (already paced), or instant while animation is off.
+fn still_while_off(m: Motion) -> Motion {
+    if enabled() {
+        m
+    } else {
+        m.instant()
+    }
+}
+
+/// Like [`entry`] (with `motion` already paced) for something the user opened (a dialog, a toast): it plays while animation
+/// is off too, as an answer to that input.
+pub fn appear(
     el: impl IntoElement,
     name: &'static str,
     motion: Motion,
@@ -199,6 +214,7 @@ pub fn entry_div(
     name: &'static str,
     motion: Motion,
 ) -> AnimationElement<Stateful<Div>> {
+    let motion = still_while_off(motion);
     let kind = motion.entry;
     let default = motion.duration;
     let delay = motion.delay.as_secs_f32();
@@ -274,7 +290,7 @@ fn grow_keyed(
     key: gpui::ElementId,
     name: &'static str,
 ) -> f32 {
-    let m = crate::motion::current(cx);
+    let m = ambient(Motion::of(cx));
     // A set fill duration enables value-in even with no entry effect on.
     if m.entry.is_empty() && m.entry.grow_ms() == 0 {
         return 1.0;
@@ -434,9 +450,8 @@ pub fn stretch(
 }
 
 /// Plays a one-shot clip each time `key` changes (not on first sight), keyed under `id`.
-/// `Some(frame)` while it runs, `None` at rest. The clip plays at the app's speed and is skipped
-/// when it starts while animation is off (see [`set_enabled`]) or while motion is reduced (a
-/// zero-length clip never shows).
+/// `Some(frame)` while it runs, `None` at rest. The clip plays at the app's speed (also while
+/// animation is off: it answers a change) and is skipped while motion is reduced.
 pub fn play_on_change<K, T>(
     window: &mut gpui::Window,
     cx: &mut App,
@@ -458,7 +473,7 @@ where
     if st.read(cx).0 != key {
         st.update(cx, |s, _| *s = (key, t));
     }
-    if !moves_from(st.read(cx).1) {
+    if reduce_motion() {
         return None;
     }
     let clip = clip();
@@ -482,7 +497,7 @@ pub fn react(
 ) -> dodai_core::motion::Pose {
     let personality = crate::motion::current(cx).personality;
     let mixins = mixins.to_vec();
-    let still = reduce_motion() || !enabled();
+    let still = reduce_motion();
     let st = window.with_id(id, |w| {
         w.use_keyed_state(("react", 0u32), cx, move |_, _| {
             mixins
