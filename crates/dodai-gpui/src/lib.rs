@@ -285,7 +285,7 @@ pub mod lazy;
 #[cfg(feature = "components")]
 pub mod list;
 pub mod logic;
-#[cfg(feature = "frost")]
+#[cfg(any(feature = "frost", feature = "components"))]
 mod lru;
 #[cfg(feature = "components")]
 pub mod markdown;
@@ -615,8 +615,13 @@ pub fn install(cx: &mut App, initial: Theme) {
 
 /// Install the global theme from a ready [`ThemeSwitcher`] (its current
 /// theme is the active one).
+///
+/// Overrides made with [`set_corners`] belong to the previous themes and are dropped.
 pub fn install_switcher(cx: &mut App, switcher: ThemeSwitcher) {
     cx.set_global(DodaiTheme { switcher });
+    if cx.has_global::<CornerBase>() {
+        cx.remove_global::<CornerBase>();
+    }
     // Text-input editing keys (backspace, arrows, enter, clipboard) are
     // actions: without bindings only plain typing would work.
     #[cfg(feature = "components")]
@@ -697,13 +702,19 @@ pub fn glow_intensity(cx: &App) -> f32 {
 
 /// Set glow intensity on **every** theme (so it survives switching) and repaint.
 pub fn set_glow_intensity(cx: &mut App, intensity: f32) {
+    map_themes(cx, |_, t| t.with_glow_intensity(intensity));
+}
+
+/// Rebuild every installed theme with `f(index, theme)`, keep the active one, and repaint.
+fn map_themes(cx: &mut App, f: impl Fn(usize, Theme) -> Theme) {
     let g = cx.global_mut::<DodaiTheme>();
     let idx = g.switcher.index();
     let themes = g
         .switcher
         .themes()
         .iter()
-        .map(|t| t.clone().with_glow_intensity(intensity))
+        .enumerate()
+        .map(|(i, t)| f(i, t.clone()))
         .collect();
     g.switcher = ThemeSwitcher::with_themes(themes);
     g.switcher.select_index(idx);
@@ -726,25 +737,23 @@ pub fn corners(cx: &App) -> dodai_core::Corners {
 /// Cut `corners` on **every** theme (so it survives switching) and repaint.
 /// Per-component `.corners()` overrides still win.
 pub fn set_corners(cx: &mut App, corners: dodai_core::Corners) {
-    // Remember the themes as installed, so `reset_corners` can restore them.
+    // Remember each theme's own corners (only those: glow, scanlines, ... set later must
+    // survive `reset_corners`).
     if cx.try_global::<CornerBase>().is_none() {
-        let base = cx.global::<DodaiTheme>().switcher.themes().to_vec();
+        let base = cx
+            .global::<DodaiTheme>()
+            .switcher
+            .themes()
+            .iter()
+            .map(|t| t.shape.corners)
+            .collect();
         cx.set_global(CornerBase(base));
     }
-    let g = cx.global_mut::<DodaiTheme>();
-    let idx = g.switcher.index();
-    let themes = g
-        .switcher
-        .themes()
-        .iter()
-        .map(|t| t.clone().with_corners(corners))
-        .collect();
-    g.switcher = ThemeSwitcher::with_themes(themes);
-    g.switcher.select_index(idx);
-    cx.refresh_windows();
+    map_themes(cx, |_, t| t.with_corners(corners));
 }
 
-struct CornerBase(Vec<Theme>);
+/// Each installed theme's own corners, while [`set_corners`] overrides them.
+struct CornerBase(Vec<dodai_core::Corners>);
 impl gpui::Global for CornerBase {}
 
 /// Whether [`set_corners`] has overridden the design systems' own corners.
@@ -757,12 +766,11 @@ pub fn reset_corners(cx: &mut App) {
     let Some(base) = cx.try_global::<CornerBase>().map(|b| b.0.clone()) else {
         return;
     };
-    let g = cx.global_mut::<DodaiTheme>();
-    let idx = g.switcher.index();
-    g.switcher = ThemeSwitcher::with_themes(base);
-    g.switcher.select_index(idx);
     cx.remove_global::<CornerBase>();
-    cx.refresh_windows();
+    map_themes(cx, |i, t| match base.get(i) {
+        Some(c) => t.with_corners(*c),
+        None => t,
+    });
 }
 
 /// Whether the fine scanline texture is on for the active theme.
@@ -773,17 +781,7 @@ pub fn scanlines_enabled(cx: &App) -> bool {
 /// Turn the scanline texture (component bodies + [`Scanlines`] overlay) on/off
 /// on **every** theme (so it survives switching) and repaint.
 pub fn set_scanlines(cx: &mut App, on: bool) {
-    let g = cx.global_mut::<DodaiTheme>();
-    let idx = g.switcher.index();
-    let themes = g
-        .switcher
-        .themes()
-        .iter()
-        .map(|t| t.clone().with_scanlines(on))
-        .collect();
-    g.switcher = ThemeSwitcher::with_themes(themes);
-    g.switcher.select_index(idx);
-    cx.refresh_windows();
+    map_themes(cx, |_, t| t.with_scanlines(on));
 }
 
 /// Switch to the next theme; call `cx.refresh_windows()` afterwards to repaint.
