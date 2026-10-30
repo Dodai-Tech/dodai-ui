@@ -10,15 +10,31 @@ impl Showcase {
     pub(crate) fn sidebar(
         &mut self,
         me: &Entity<Self>,
-        cats: &[&'static str],
-        sections_meta: &[(&'static str, &'static str)],
-        active: Option<&'static str>,
-        query: &str,
         narrow: bool,
-        count_in: impl Fn(Option<&'static str>) -> usize,
         cx: &mut Context<Self>,
     ) -> (gpui::Stateful<Div>, f32) {
         let t = theme_of(cx);
+        let meta = self.meta.clone();
+        let sections_meta = &meta;
+        let mut cats: Vec<&'static str> = Vec::new();
+        for (c, _) in sections_meta {
+            if !cats.contains(c) {
+                cats.push(c);
+            }
+        }
+        let query = self.filter.read(cx).text().to_string();
+        let query = query.as_str();
+        let active = self.pin.current(&self.scroll, &self.spy, SPY_SLACK);
+        let count_in = |c: Option<&'static str>| {
+            sections_meta
+                .iter()
+                .filter(|(sc, title)| {
+                    c.is_none_or(|c| c == *sc)
+                        && (query.is_empty()
+                            || !fuzzy_filter(query, &[format!("{sc} {title}")]).is_empty())
+                })
+                .count()
+        };
         let me = me.clone();
         let rail = self.rail;
         // Widest row (px estimate) so the sidebar grows with its labels up to a

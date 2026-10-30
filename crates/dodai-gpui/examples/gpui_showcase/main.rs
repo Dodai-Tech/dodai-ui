@@ -51,6 +51,7 @@ mod section_view;
 mod sections;
 mod shaders_page;
 mod sidebar;
+mod sidebar_view;
 mod snippets;
 use app::{window_shortcuts, DEFAULT_H, DEFAULT_W, SPY_SLACK};
 use catalog::{
@@ -117,6 +118,10 @@ pub struct Showcase {
     real_h: std::collections::HashMap<&'static str, f32>,
     /// Set while a scroll notifies: the sections need no rebuild for it.
     quiet: bool,
+    /// The sidebar view, the width it asked for, and the scroll-spy state it last showed.
+    sidebar_view: Option<Entity<sidebar_view::SidebarView>>,
+    side_need: f32,
+    side_spied: (Option<&'static str>, bool),
     /// The overview's last laid-out height, and whether it is realised (not a spacer).
     overview_h: f32,
     overview_real: bool,
@@ -205,6 +210,17 @@ pub struct Showcase {
     sh_px: f32,
 }
 
+impl Showcase {
+    /// Render the page again next frame as a scroll does: the cached sections and the sidebar
+    /// keep their last build (a plain frame request would rebuild every one of them).
+    fn next_frame_quiet(&self, window: &mut Window, cx: &mut Context<Self>) {
+        cx.on_next_frame(window, |s, _, cx| {
+            s.quiet = true;
+            cx.notify();
+        });
+    }
+}
+
 impl Render for Showcase {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let _prof = Prof::start();
@@ -242,30 +258,23 @@ impl Render for Showcase {
         let query = self.filter.read(cx).text().to_string();
         let selected_cat = self.cat.checked_sub(1).and_then(|i| cats.get(i).copied());
 
-        // Sidebar: filter + category list with counts.
-        let count_in = |c: Option<&'static str>| {
-            meta.iter()
-                .filter(|(sc, title)| {
-                    c.is_none_or(|c| c == *sc)
-                        && (query.is_empty()
-                            || !fuzzy_filter(&query, &[format!("{sc} {title}")]).is_empty())
-                })
-                .count()
-        };
         let sections_meta = &meta;
-        // Scroll-spy: the last section whose top has reached the viewport top
-        // (positions come from the previous frame's layout).
-        let active: Option<&'static str> = self.pin.current(&self.scroll, &self.spy, SPY_SLACK);
-        let (side, side_need) = self.sidebar(
-            &me,
-            &cats,
-            sections_meta,
-            active,
-            &query,
-            narrow,
-            count_in,
-            cx,
+        // Sidebar: its own cached view (filter + category list with counts). A scroll only
+        // reaches it when the scroll-spy (the section at the top, or being at the top) moves.
+        let spied = (
+            self.pin.current(&self.scroll, &self.spy, SPY_SLACK),
+            f32::from(self.scroll.offset().y) > -1.0,
         );
+        let side = self
+            .sidebar_view
+            .get_or_insert_with(|| cx.new(|cx| sidebar_view::SidebarView::new(me.clone(), cx)))
+            .clone();
+        if spied != self.side_spied {
+            self.side_spied = spied;
+            side.update(cx, |_, cx| cx.notify());
+        }
+        let side_need = self.side_need;
+        let side = gpui::AnyView::from(side).cached(gpui::StyleRefinement::default().size_full());
 
         let overview = self.cat == 0
             && self.sub.is_none()
@@ -410,6 +419,9 @@ impl Render for Showcase {
             .scrolled_at
             .is_none_or(|t| t.elapsed() > std::time::Duration::from_millis(200));
         let mut budget = usize::from(resting);
+        // A first build costs several ms: sections entering the margin (not yet on screen)
+        // come in one per frame, so two never land in the same frame.
+        let mut entering = 1usize;
         let mut unmeasured = false;
         // Heights that changed above the viewport shift everything: compensate.
         let mut delta_above = 0.0f32;
@@ -464,7 +476,13 @@ impl Render for Showcase {
                 Some(b) => {
                     let top = f32::from(b.origin.y) + shift;
                     let bottom = top + f32::from(b.size.height);
-                    let near = bottom > vp_top - margin && top < vp_top + vp_h + margin;
+                    let on_screen = bottom > vp_top && top < vp_top + vp_h;
+                    let mut near = bottom > vp_top - margin && top < vp_top + vp_h + margin;
+                    if near && !on_screen && !prev_real.contains(title) {
+                        near = entering > 0;
+                        unmeasured |= !near;
+                        entering = entering.saturating_sub(1);
+                    }
                     let ahead = !near && stale && top >= vp_top + vp_h && budget > 0;
                     if ahead {
                         budget -= 1;
@@ -506,7 +524,7 @@ impl Render for Showcase {
                 .set_offset(gpui::point(o.x, o.y - px(delta_above)));
         }
         if unmeasured {
-            window.request_animation_frame();
+            self.next_frame_quiet(window, cx);
         }
         self.tick_demos(window, cx);
         // Perf probe: redraw every frame so the cost of the visible sections shows up.
@@ -563,7 +581,7 @@ impl Render for Showcase {
                 px(0.0),
                 -self.scroll.max_offset().height.max(px(1.0)) * tri,
             ));
-            window.request_animation_frame();
+            self.next_frame_quiet(window, cx);
             // (window start, frames, last frame, slowest gap, frames over 12 ms)
             type Probe = (
                 Option<std::time::Instant>,

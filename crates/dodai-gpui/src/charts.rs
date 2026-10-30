@@ -501,7 +501,7 @@ pub(crate) fn framed(
 /// Names under equal slots (one per bar, point or column), painted on one canvas: each centred
 /// in its slot, kept inside the row, skipped when it would touch the one before. Painting keeps
 /// dozens of labels out of layout, which a scrolling page redoes for every visible chart.
-fn slot_labels(t: &Theme, labels: Vec<SharedString>) -> gpui::Div {
+pub(crate) fn slot_labels(t: &Theme, labels: Vec<SharedString>) -> gpui::Div {
     let text = CanvasText::of(t);
     let (color, gap) = (hsla(t.palette.text_muted), t.spacing.xs);
     div().w_full().h(px(text.size_line())).child(

@@ -341,18 +341,19 @@ impl Heatmap {
         };
         let mut cols = div().flex().flex_col();
         if !self.col_labels.is_empty() {
-            let mut hdr = label_style(&t, div()).flex().h(px(t.sizes().chart_cell));
+            let mut hdr = div().flex().items_center().h(px(t.sizes().chart_cell));
             if !self.row_labels.is_empty() {
                 hdr = hdr.child(div().w(px(t.sizes().axis_label)).flex_none());
             }
-            cols = cols.child(hdr.children(self.col_labels.iter().map(|l| {
-                div()
-                    .flex_1()
-                    .min_w_0()
-                    .overflow_hidden()
-                    .whitespace_nowrap()
-                    .child(l.clone())
-            })));
+            // Painted, so a label wider than its column shows whole (neighbours make room).
+            cols = cols.child(
+                hdr.child(
+                    div()
+                        .flex_1()
+                        .min_w_0()
+                        .child(slot_labels(&t, self.col_labels.clone())),
+                ),
+            );
         }
         let mut body = div().flex();
         if !self.row_labels.is_empty() {
