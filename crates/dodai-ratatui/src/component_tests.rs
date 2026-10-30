@@ -178,7 +178,7 @@ fn select_list_marks_selection() {
     let b = draw(SelectList::new(&t, &["a", "b"]).selected(Some(1)), 6, 2);
     assert_eq!(b[(0, 1)].symbol(), "▌");
     assert_eq!(b[(0, 0)].symbol(), " ");
-    let lt = t.theme().list_item(true, false);
+    let lt = t.theme().list_item(dodai_core::ItemState::SELECTED);
     assert_eq!(b[(0, 1)].fg, t.color(lt.marker.unwrap()));
     assert_eq!(b[(3, 1)].bg, t.color(lt.background.unwrap()));
 }

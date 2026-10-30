@@ -192,7 +192,7 @@ pub fn tag_style(theme: &Theme, tone: Tone, solid: bool) -> (ShapeStyle, Color) 
 
 /// Tab box (flat: tabs never round/chamfer) + label colour + indicator colour.
 pub fn tab_style(theme: &Theme, active: bool, hovered: bool) -> (ShapeStyle, Color, Option<Color>) {
-    let t = theme.tab(active, hovered);
+    let t = theme.tab(dodai_core::ItemState::of(active, hovered));
     let mut s = ShapeStyle::from_tokens(theme, t.background, None, false, false);
     s.kind = ShapeKind::Square;
     (s, t.foreground, t.indicator)
@@ -228,7 +228,7 @@ pub fn list_item_style(
     selected: bool,
     hovered: bool,
 ) -> (Option<Color>, Color, Option<Color>) {
-    let l = theme.list_item(selected, hovered);
+    let l = theme.list_item(dodai_core::ItemState::of(selected, hovered));
     (l.background, l.foreground, l.marker)
 }
 

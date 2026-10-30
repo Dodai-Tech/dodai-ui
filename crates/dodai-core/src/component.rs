@@ -32,6 +32,32 @@ pub enum ControlState {
     Disabled,
 }
 
+/// State of a pickable item (chip, tab, list row, navigation destination): whether it is the
+/// selected (active) one and whether the pointer is over it. Spelled out instead of two bools,
+/// so `t.tab(ItemState::SELECTED)` reads at the call site.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub struct ItemState {
+    /// The selected / active item.
+    pub selected: bool,
+    /// The pointer is over it.
+    pub hovered: bool,
+}
+
+impl ItemState {
+    /// Neither selected nor hovered.
+    pub const IDLE: Self = Self::of(false, false);
+    /// Hovered, not selected.
+    pub const HOVERED: Self = Self::of(false, true);
+    /// Selected, not hovered.
+    pub const SELECTED: Self = Self::of(true, false);
+    /// Selected and hovered.
+    pub const SELECTED_HOVERED: Self = Self::of(true, true);
+    /// From `selected` and `hovered` flags (e.g. widget state).
+    pub const fn of(selected: bool, hovered: bool) -> Self {
+        Self { selected, hovered }
+    }
+}
+
 /// Fully resolved colours for one button in one state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ButtonTokens {
@@ -419,8 +445,9 @@ impl Theme {
     }
 
     /// Filter chip.
-    pub fn chip(&self, selected: bool, hovered: bool) -> SurfaceTokens {
-        hook!(self.chip(selected, hovered));
+    pub fn chip(&self, state: ItemState) -> SurfaceTokens {
+        hook!(self.chip(state));
+        let ItemState { selected, hovered } = state;
         let p = &self.palette;
         if selected {
             Self::surface(Some(p.selection), Some(p.primary), p.text, false, false)
@@ -555,8 +582,12 @@ impl Theme {
     }
 
     /// Tab: the active tab is highlighted with an indicator.
-    pub fn tab(&self, active: bool, hovered: bool) -> TabTokens {
-        hook!(self.tab(active, hovered));
+    pub fn tab(&self, state: ItemState) -> TabTokens {
+        hook!(self.tab(state));
+        let ItemState {
+            selected: active,
+            hovered,
+        } = state;
         let p = &self.palette;
         if active {
             // Plain: brand-coloured label with an underline indicator.
@@ -634,8 +665,9 @@ impl Theme {
     }
 
     /// List / menu row.
-    pub fn list_item(&self, selected: bool, hovered: bool) -> ListItemTokens {
-        hook!(self.list_item(selected, hovered));
+    pub fn list_item(&self, state: ItemState) -> ListItemTokens {
+        hook!(self.list_item(state));
+        let ItemState { selected, hovered } = state;
         let p = &self.palette;
         if selected {
             ListItemTokens {
@@ -704,9 +736,9 @@ impl Theme {
     }
 
     /// Colours of a drawer row or rail destination (a list row unless the design overrides).
-    pub fn navigation_item(&self, selected: bool, hovered: bool) -> ListItemTokens {
-        hook!(self.navigation_item(selected, hovered));
-        self.list_item(selected, hovered)
+    pub fn navigation_item(&self, state: ItemState) -> ListItemTokens {
+        hook!(self.navigation_item(state));
+        self.list_item(state)
     }
 
     /// Divider / separator colour.

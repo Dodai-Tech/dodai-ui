@@ -1,6 +1,7 @@
 //! The Neo-Brutalism **design-system spec**: every surface is a flat block with an outline and
 //! a hard shadow; selected things fill with the main colour; nothing glows.
 
+use crate::ItemState;
 use crate::{
     AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, Color, ControlSize,
     ControlState, CornerStyle, DefaultShape, DesignSpec, InputTokens, ListItemTokens,
@@ -134,7 +135,7 @@ impl DesignSpec for NeoBrutalism {
     }
 
     /// Chips are small blocks; selected ones fill with the main colour.
-    fn chip(&self, t: &Theme, selected: bool, hovered: bool) -> Option<SurfaceTokens> {
+    fn chip(&self, t: &Theme, ItemState { selected, hovered }: ItemState) -> Option<SurfaceTokens> {
         let p = &t.palette;
         Some(if selected {
             block(Some(p.primary), p.on_primary, p.border, false)
@@ -196,7 +197,14 @@ impl DesignSpec for NeoBrutalism {
     }
 
     /// The active tab is a main-colour block.
-    fn tab(&self, t: &Theme, active: bool, hovered: bool) -> Option<TabTokens> {
+    fn tab(
+        &self,
+        t: &Theme,
+        ItemState {
+            selected: active,
+            hovered,
+        }: ItemState,
+    ) -> Option<TabTokens> {
         let p = &t.palette;
         Some(if active {
             TabTokens {
@@ -254,8 +262,12 @@ impl DesignSpec for NeoBrutalism {
         })
     }
 
-    fn navigation_item(&self, t: &Theme, selected: bool, hovered: bool) -> Option<ListItemTokens> {
-        self.list_item(t, selected, hovered)
+    fn navigation_item(
+        &self,
+        t: &Theme,
+        ItemState { selected, hovered }: ItemState,
+    ) -> Option<ListItemTokens> {
+        self.list_item(t, ItemState { selected, hovered })
     }
 
     fn divider(&self, t: &Theme) -> Option<Color> {
@@ -279,7 +291,11 @@ impl DesignSpec for NeoBrutalism {
         })
     }
 
-    fn list_item(&self, t: &Theme, selected: bool, hovered: bool) -> Option<ListItemTokens> {
+    fn list_item(
+        &self,
+        t: &Theme,
+        ItemState { selected, hovered }: ItemState,
+    ) -> Option<ListItemTokens> {
         let p = &t.palette;
         Some(if selected {
             ListItemTokens {

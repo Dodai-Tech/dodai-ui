@@ -31,7 +31,7 @@ impl Widget for ListItem {
         let size = vec2(ui.available_width(), t.shape.control_height);
         let (rect, resp) = ui.allocate_exact_size(size, Sense::click());
         if ui.is_rect_visible(rect) {
-            let tok = t.list_item(self.selected, resp.hovered());
+            let tok = t.list_item(dodai_core::ItemState::of(self.selected, resp.hovered()));
             if let Some(bg) = tok.background {
                 // Rows are flat strips: plain rect, not the chamfered control shape.
                 ui.painter().rect_filled(rect, 0.0, color32(bg));

@@ -64,7 +64,9 @@ impl IcedTheme {
     /// Drop-down menu (pick list / combo box overlay) style.
     pub fn menu(&self) -> impl Fn(&IcedBaseTheme) -> menu::Style + 'static {
         let p = self.theme.palette.clone();
-        let sel = self.theme.list_item(true, true);
+        let sel = self
+            .theme
+            .list_item(dodai_core::ItemState::SELECTED_HOVERED);
         let border = self.border(p.border_strong);
         let shadow = self.shadow(false, true);
         move |_| menu::Style {
@@ -136,7 +138,9 @@ mod tests {
             Background::Color(color(lt.theme().palette.surface))
         );
         assert_eq!(m.border.radius, 8.0.into());
-        let sel = lt.theme().list_item(true, true);
+        let sel = lt
+            .theme()
+            .list_item(dodai_core::ItemState::SELECTED_HOVERED);
         assert_eq!(m.selected_text_color, color(sel.foreground));
     }
 }

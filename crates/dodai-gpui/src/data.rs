@@ -363,7 +363,10 @@ crate::entry_render!(Avatar);
 
 /// Paint of a [`Chip`] (pure): `(style, text colour)`.
 pub fn chip_style(theme: &Theme, selected: bool, hovered: bool) -> (ShapeStyle, gpui::Hsla) {
-    ShapeStyle::from_surface(theme, theme.chip(selected, hovered))
+    ShapeStyle::from_surface(
+        theme,
+        theme.chip(dodai_core::ItemState::of(selected, hovered)),
+    )
 }
 
 type ClickFn = Rc<dyn Fn(&ClickEvent, &mut Window, &mut App)>;

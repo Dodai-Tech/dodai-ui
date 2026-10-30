@@ -4,6 +4,7 @@
 //! the themes with [`crate::Theme::with_spec`]. Values follow the `material-web` component
 //! tokens (state layers 8 % hover / 10 % focus and press, disabled 12 % / 38 %).
 
+use crate::ItemState;
 use crate::{
     AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, Color, ControlSize,
     ControlState, CornerStyle, Corners, DefaultShape, DesignSpec, IconSet, InputTokens,
@@ -185,7 +186,7 @@ impl DesignSpec for Material3 {
         })
     }
 
-    fn chip(&self, t: &Theme, selected: bool, hovered: bool) -> Option<SurfaceTokens> {
+    fn chip(&self, t: &Theme, ItemState { selected, hovered }: ItemState) -> Option<SurfaceTokens> {
         let r = &t.palette.roles;
         Some(if selected {
             surface(
@@ -255,7 +256,14 @@ impl DesignSpec for Material3 {
         Some(t.palette.roles.scrim.with_alpha(0.32))
     }
 
-    fn tab(&self, t: &Theme, active: bool, hovered: bool) -> Option<TabTokens> {
+    fn tab(
+        &self,
+        t: &Theme,
+        ItemState {
+            selected: active,
+            hovered,
+        }: ItemState,
+    ) -> Option<TabTokens> {
         // Primary tab: transparent, `primary` label + indicator when active.
         let p = &t.palette;
         let r = &p.roles;
@@ -419,7 +427,11 @@ impl DesignSpec for Material3 {
     }
 
     /// Inactive destinations use `on-surface-variant`; the active one a secondary-container pill.
-    fn navigation_item(&self, t: &Theme, selected: bool, hovered: bool) -> Option<ListItemTokens> {
+    fn navigation_item(
+        &self,
+        t: &Theme,
+        ItemState { selected, hovered }: ItemState,
+    ) -> Option<ListItemTokens> {
         let r = &t.palette.roles;
         Some(if selected {
             ListItemTokens {
@@ -438,7 +450,11 @@ impl DesignSpec for Material3 {
         })
     }
 
-    fn list_item(&self, t: &Theme, selected: bool, hovered: bool) -> Option<ListItemTokens> {
+    fn list_item(
+        &self,
+        t: &Theme,
+        ItemState { selected, hovered }: ItemState,
+    ) -> Option<ListItemTokens> {
         let r = &t.palette.roles;
         Some(if selected {
             // The secondary-container pill; no accent bar.

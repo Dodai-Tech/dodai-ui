@@ -39,7 +39,7 @@ impl Widget for Tabs<'_> {
                     }
                     if ui.is_rect_visible(rect) {
                         let active = changed.unwrap_or(*self.selected) == i;
-                        let tok = t.tab(active, r.hovered());
+                        let tok = t.tab(dodai_core::ItemState::of(active, r.hovered()));
                         add_all(ui, box_shapes(&t, rect, tok.background, None, false, false));
                         if let Some(c) = tok.indicator {
                             let bar =

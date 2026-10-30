@@ -3,6 +3,7 @@
 //!
 //! Core's baseline is deliberately plain; everything that gives Cyberpunk its character is here.
 
+use crate::ItemState;
 use crate::{
     AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, Color, ControlSize,
     ControlState, DesignSpec, InputTokens, ListItemTokens, Look, NavigationTokens, ProgressTokens,
@@ -91,7 +92,7 @@ impl DesignSpec for Cyberpunk {
     }
 
     /// Selected chips are outlined in the brand colour.
-    fn chip(&self, t: &Theme, selected: bool, hovered: bool) -> Option<SurfaceTokens> {
+    fn chip(&self, t: &Theme, ItemState { selected, hovered }: ItemState) -> Option<SurfaceTokens> {
         let p = &t.palette;
         Some(if selected {
             surface(Some(p.selection), Some(p.primary), p.text, false, false)
@@ -174,7 +175,14 @@ impl DesignSpec for Cyberpunk {
     }
 
     /// The active tab is a solid brand block.
-    fn tab(&self, t: &Theme, active: bool, hovered: bool) -> Option<TabTokens> {
+    fn tab(
+        &self,
+        t: &Theme,
+        ItemState {
+            selected: active,
+            hovered,
+        }: ItemState,
+    ) -> Option<TabTokens> {
         let p = &t.palette;
         Some(if active {
             TabTokens {
@@ -229,8 +237,12 @@ impl DesignSpec for Cyberpunk {
         })
     }
 
-    fn navigation_item(&self, t: &Theme, selected: bool, hovered: bool) -> Option<ListItemTokens> {
-        self.list_item(t, selected, hovered)
+    fn navigation_item(
+        &self,
+        t: &Theme,
+        ItemState { selected, hovered }: ItemState,
+    ) -> Option<ListItemTokens> {
+        self.list_item(t, ItemState { selected, hovered })
     }
 
     fn divider(&self, t: &Theme) -> Option<Color> {
@@ -255,7 +267,11 @@ impl DesignSpec for Cyberpunk {
     }
 
     /// The selected row carries an accent bar at its edge.
-    fn list_item(&self, t: &Theme, selected: bool, hovered: bool) -> Option<ListItemTokens> {
+    fn list_item(
+        &self,
+        t: &Theme,
+        ItemState { selected, hovered }: ItemState,
+    ) -> Option<ListItemTokens> {
         let p = &t.palette;
         Some(if selected {
             ListItemTokens {
@@ -518,10 +534,10 @@ mod tests {
     fn glow_accent_bar_and_inversion() {
         for t in crate::cyberpunk::variants() {
             assert!(t.dialog().glow && t.popup().glow);
-            assert!(t.list_item(true, false).marker.is_some());
+            assert!(t.list_item(ItemState::SELECTED).marker.is_some());
             assert!(t.step(StepState::Current).glow);
             assert_eq!(
-                t.tab(true, false).background,
+                t.tab(ItemState::SELECTED).background,
                 Some(t.palette.primary),
                 "{}",
                 t.id()
