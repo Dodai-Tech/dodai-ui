@@ -285,6 +285,8 @@ pub mod lazy;
 #[cfg(feature = "components")]
 pub mod list;
 pub mod logic;
+#[cfg(feature = "frost")]
+mod lru;
 #[cfg(feature = "components")]
 pub mod markdown;
 #[cfg(feature = "components")]

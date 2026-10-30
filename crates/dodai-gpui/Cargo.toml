@@ -31,8 +31,9 @@ neobrutalism = ["dodai-core/neobrutalism", "components", "dodai-icons/neobrutali
 # Dodai: draws Material Symbols icons (no Material components), and ships
 # the frosted-glass scene and page grid.
 dodai = ["dodai-core/dodai", "symbols", "frost"]
-# Frosted glass (`FrostedScene`): a blurred copy of a picture behind panels, via `dodai-frost`.
-frost = ["dep:dodai-frost", "dep:image"]
+# Frosted glass (`FrostedScene`): a blurred copy of a picture behind panels, via `dodai-frost`
+# (blurred off the UI thread, on the GPU when there is one).
+frost = ["dep:dodai-frost", "dodai-frost/gpu", "dep:image"]
 # Material Symbols glyphs, drawn by Material and Dodai.
 symbols = ["components", "dodai-icons/material"]
 

@@ -7,20 +7,19 @@
 //! cached.
 
 use crate::backdrop::render_image;
+use crate::lru::Lru;
 use crate::{hsla, theme_of};
-use dodai_core::Theme;
+use dodai_core::{Palette, Theme};
 use gpui::{
     div, img, px, App, IntoElement, ObjectFit, ParentElement, RenderImage, RenderOnce,
     SharedString, Styled, StyledImage, Window,
 };
-use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Mutex, OnceLock};
 
 /// A showcase picture with hard edges (so the blur is visible), in the theme's colours: a dusk
 /// sky with a low sun, stars and three ridges of mountains, each layer darker than the last.
-fn mesh_pixels(t: &Theme, w: usize, h: usize) -> Vec<u8> {
-    let p = &t.palette;
+fn mesh_pixels(p: &Palette, w: usize, h: usize) -> Vec<u8> {
     let (top, horizon) = (p.primary.mix(p.text, 0.25), p.warning.mix(p.danger, 0.3));
     let sun = p.warning.mix(p.surface_raised, 0.6);
     // Far to near: lighter and cooler first, darkest last.
@@ -60,25 +59,79 @@ fn mesh_pixels(t: &Theme, w: usize, h: usize) -> Vec<u8> {
     out
 }
 
-/// Cached pictures (and panel crops) kept before the cache is emptied, so switching themes
-/// does not grow it without bound.
+/// Scenes and panel crops kept; the least recently used is dropped (and its texture freed).
 const CACHE_LIMIT: usize = 32;
 
-/// A picture and its blurred, reduced copy.
+/// A picture and its blurred, reduced copy. `_pin` keeps caller pixels alive so the address
+/// they are keyed by cannot be reused by another picture while the entry exists.
 #[derive(Clone)]
 struct Entry {
     sharp: Arc<RenderImage>,
     soft: Arc<dodai_frost::Reduced>,
+    _pin: Option<Arc<Vec<u8>>>,
 }
 
-fn cache() -> &'static Mutex<HashMap<u64, Entry>> {
-    static C: OnceLock<Mutex<HashMap<u64, Entry>>> = OnceLock::new();
-    C.get_or_init(Default::default)
+/// A scene's picture: being blurred off the UI thread, ready, or impossible (bad size).
+#[derive(Clone)]
+enum Slot {
+    Pending,
+    Ready(Entry),
+    Failed,
 }
 
-fn crops() -> &'static Mutex<HashMap<u64, Arc<RenderImage>>> {
-    static C: OnceLock<Mutex<HashMap<u64, Arc<RenderImage>>>> = OnceLock::new();
-    C.get_or_init(Default::default)
+struct Store {
+    scenes: Lru<Slot>,
+    crops: Lru<Arc<RenderImage>>,
+    /// Evicted textures, freed on the next render (that is where a `Window` is at hand).
+    freed: Vec<Arc<RenderImage>>,
+}
+
+fn store() -> &'static Mutex<Store> {
+    static S: OnceLock<Mutex<Store>> = OnceLock::new();
+    S.get_or_init(|| {
+        Mutex::new(Store {
+            scenes: Lru::new(CACHE_LIMIT),
+            crops: Lru::new(CACHE_LIMIT),
+            freed: Vec::new(),
+        })
+    })
+}
+
+/// One blurrer for the app: GPU first, CPU without a real adapter. Opened lazily on the
+/// first background blur, never on the UI thread.
+fn blurrer() -> &'static Mutex<dodai_frost::Blurrer> {
+    static B: OnceLock<Mutex<dodai_frost::Blurrer>> = OnceLock::new();
+    B.get_or_init(|| Mutex::new(dodai_frost::Blurrer::new()))
+}
+
+fn sharp_images(slots: Vec<Slot>) -> impl Iterator<Item = Arc<RenderImage>> {
+    slots.into_iter().filter_map(|s| match s {
+        Slot::Ready(e) => Some(e.sharp),
+        _ => None,
+    })
+}
+
+/// The scene's picture and its blur; `None` when the pixels do not match the size.
+fn build(
+    palette: &Palette,
+    pixels: Option<Arc<Vec<u8>>>,
+    (w, h): (usize, usize),
+    blur: f32,
+) -> Option<Entry> {
+    let rgba = match &pixels {
+        None => mesh_pixels(palette, w, h),
+        Some(b) if b.len() == w * h * 4 => b.to_vec(),
+        Some(_) => return None,
+    };
+    let soft = blurrer()
+        .lock()
+        .map(|mut b| b.blurred(&rgba, w, h, blur))
+        .unwrap_or_else(|e| e.into_inner().blurred(&rgba, w, h, blur));
+    Some(Entry {
+        sharp: render_image(rgba, w, h)?,
+        soft: Arc::new(soft),
+        _pin: pixels,
+    })
 }
 
 enum Source {
@@ -138,89 +191,120 @@ impl FrostedScene {
     }
 }
 
+/// The cache key of a scene: its id, size, the frost it is blurred with, and its picture (the
+/// theme colours for the generated one; the pixels' address for caller pixels, which the cache
+/// keeps alive so the address stays unique).
+fn scene_key(
+    id: &str,
+    size: (f32, f32),
+    frost: &dodai_core::Frost,
+    source: &Source,
+    t: &Theme,
+) -> u64 {
+    let mut hs = std::collections::hash_map::DefaultHasher::new();
+    (
+        id,
+        size.0.to_bits(),
+        size.1.to_bits(),
+        frost.blur.to_bits(),
+        frost.saturation.to_bits(),
+    )
+        .hash(&mut hs);
+    match source {
+        Source::Mesh => {
+            let p = &t.palette;
+            [
+                p.background,
+                p.surface_raised,
+                p.primary,
+                p.info,
+                p.success,
+                p.warning,
+                p.danger,
+                p.text,
+            ]
+            .hash(&mut hs);
+        }
+        Source::Pixels(b) => (Arc::as_ptr(b) as usize, b.len()).hash(&mut hs),
+    }
+    hs.finish()
+}
+
 impl RenderOnce for FrostedScene {
-    fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let frost = t.frost();
         let (sw, sh) = self.size;
-        let mut hs = std::collections::hash_map::DefaultHasher::new();
-        (
-            self.id.as_ref(),
-            sw.to_bits(),
-            sh.to_bits(),
-            frost.blur.to_bits(),
-            frost.saturation.to_bits(),
-        )
-            .hash(&mut hs);
-        match &self.source {
-            Source::Mesh => {
-                let p = &t.palette;
-                [
-                    p.background,
-                    p.surface_raised,
-                    p.primary,
-                    p.info,
-                    p.success,
-                    p.warning,
-                    p.danger,
-                    p.text,
-                ]
-                .hash(&mut hs);
-                (t.surface_style.wash, t.surface_style.backdrop.to_bits()).hash(&mut hs);
+        let key = scene_key(self.id.as_ref(), self.size, &frost, &self.source, &t);
+        let (slot, freed) = {
+            let mut s = store().lock().unwrap_or_else(|e| e.into_inner());
+            let slot = s.scenes.get(key);
+            if slot.is_none() {
+                let out = s.scenes.insert(key, Slot::Pending);
+                s.freed.extend(sharp_images(out));
             }
-            Source::Pixels(b) => (b.len(), b.first(), b.last()).hash(&mut hs),
+            (slot, std::mem::take(&mut s.freed))
+        };
+        for image in freed {
+            cx.drop_image(image, Some(window));
         }
-        let key = hs.finish();
-        let cached = cache().lock().ok().and_then(|c| c.get(&key).cloned());
-        let pair = cached.or_else(|| {
-            let (w, h) = (sw as usize, sh as usize);
-            let rgba = match &self.source {
-                Source::Mesh => mesh_pixels(&t, w, h),
-                Source::Pixels(b) => b.to_vec(),
+        if slot.is_none() && sw >= 1.0 && sh >= 1.0 {
+            // Blur off the UI thread (on the GPU when there is one), then repaint this view.
+            let view = window.current_view();
+            let exec = cx.background_executor().clone();
+            let palette = t.palette.clone();
+            let pixels = match &self.source {
+                Source::Mesh => None,
+                Source::Pixels(b) => Some(b.clone()),
             };
-            let soft = dodai_frost::blurred(&rgba, w, h, frost.blur);
-            let e = Entry {
-                sharp: render_image(rgba, w, h)?,
-                soft: Arc::new(soft),
-            };
-            if let Ok(mut c) = cache().lock() {
-                if c.len() >= CACHE_LIMIT {
-                    c.clear();
-                }
-                c.insert(key, e.clone());
-            }
-            Some(e)
-        });
+            let (size, blur) = ((sw as usize, sh as usize), frost.blur);
+            window
+                .spawn(cx, async move |acx| {
+                    let built = exec
+                        .spawn(async move { build(&palette, pixels, size, blur) })
+                        .await;
+                    if let Ok(mut s) = store().lock() {
+                        let out = s
+                            .scenes
+                            .insert(key, built.map_or(Slot::Failed, Slot::Ready));
+                        s.freed.extend(sharp_images(out));
+                    }
+                    let _ = acx.update(|_, cx| cx.notify(view));
+                })
+                .detach();
+        }
         let r = self.radius.unwrap_or(t.spacing.md);
         let mut root = div().relative().w(px(sw)).h(px(sh)).overflow_hidden();
-        let Some(entry) = pair else {
-            return root;
+        let entry = match slot {
+            Some(Slot::Ready(e)) => Some(e),
+            _ => None,
         };
-        root = root.child(
-            img(entry.sharp.clone())
-                .object_fit(ObjectFit::Fill)
-                .absolute()
-                .left_0()
-                .top_0()
-                .w(px(sw))
-                .h(px(sh)),
-        );
+        if let Some(e) = &entry {
+            root = root.child(
+                img(e.sharp.clone())
+                    .object_fit(ObjectFit::Fill)
+                    .absolute()
+                    .left_0()
+                    .top_0()
+                    .w(px(sw))
+                    .h(px(sh)),
+            );
+        }
         for (x, y, w, h, content) in self.panels {
-            let mut hs = std::collections::hash_map::DefaultHasher::new();
-            (key, x.to_bits(), y.to_bits(), w.to_bits(), h.to_bits()).hash(&mut hs);
-            let ck = hs.finish();
-            let cached = crops().lock().ok().and_then(|c| c.get(&ck).cloned());
-            let crop = cached.or_else(|| {
+            let crop = entry.as_ref().and_then(|e| {
+                let mut hs = std::collections::hash_map::DefaultHasher::new();
+                (key, x.to_bits(), y.to_bits(), w.to_bits(), h.to_bits()).hash(&mut hs);
+                let ck = hs.finish();
+                let mut s = store().lock().unwrap_or_else(|e| e.into_inner());
+                if let Some(i) = s.crops.get(ck) {
+                    return Some(i);
+                }
                 let (cw, ch) = (w as usize, h as usize);
-                let mut pixels = entry.soft.crop(x as usize, y as usize, cw, ch);
+                let mut pixels = e.soft.crop(x as usize, y as usize, cw, ch);
                 dodai_frost::saturate(&mut pixels, frost.saturation);
                 let i = render_image(pixels, cw, ch)?;
-                if let Ok(mut c) = crops().lock() {
-                    if c.len() >= CACHE_LIMIT {
-                        c.clear();
-                    }
-                    c.insert(ck, i.clone());
-                }
+                let out = s.crops.insert(ck, i.clone());
+                s.freed.extend(out);
                 Some(i)
             });
             let mut glass = div()
@@ -266,5 +350,36 @@ impl RenderOnce for FrostedScene {
             );
         }
         root
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn caller_pixels_are_keyed_by_identity_not_by_their_edges() {
+        let t = Theme::default();
+        let frost = t.frost();
+        let a = Arc::new(vec![9u8; 16]);
+        let mut inner = vec![9u8; 16];
+        inner[5] = 200;
+        let b = Arc::new(inner);
+        let key = |s: &Source| scene_key("x", (2.0, 2.0), &frost, s, &t);
+        let (ka, kb) = (key(&Source::Pixels(a.clone())), key(&Source::Pixels(b)));
+        assert_ne!(
+            ka, kb,
+            "same length and same first/last byte must not collide"
+        );
+        assert_eq!(ka, key(&Source::Pixels(a)));
+    }
+
+    #[test]
+    fn pixels_of_the_wrong_size_fail_instead_of_panicking() {
+        let p = Theme::default().palette;
+        assert!(build(&p, Some(Arc::new(vec![0u8; 10])), (2, 2), 4.0).is_none());
+        let ok = build(&p, Some(Arc::new(vec![128u8; 16])), (2, 2), 4.0);
+        assert!(ok.is_some());
+        assert!(build(&p, None, (8, 4), 2.0).is_some());
     }
 }
