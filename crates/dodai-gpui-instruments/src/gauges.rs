@@ -96,11 +96,11 @@ impl GaugeStyle {
     }
 }
 
-pub(crate) use dodai_charts_core::gauge::SWEEP;
+pub(crate) use dodai_instruments_core::gauge::SWEEP;
 
 // ───────────────────────────── pure helpers ─────────────────────────────
 
-pub use dodai_charts_core::gauge::{
+pub use dodai_instruments_core::gauge::{
     cell_lit, chamfer_rect, chevron_cell, disc, needle, pill, slanted_cell, tick_fracs, zone,
 };
 

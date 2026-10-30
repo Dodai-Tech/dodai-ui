@@ -17,7 +17,7 @@ use gpui::{
 // ───────────────────────────── pure helpers ─────────────────────────────
 
 /// Seconds since the first call (shared clock for live charts).
-pub use dodai_charts_core::gauge::{
+pub use dodai_instruments_core::gauge::{
     blip_alpha, ecg_beat, hex_center, hex_extent, hex_points, jitter, ring_radius,
 };
 

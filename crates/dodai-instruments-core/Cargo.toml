@@ -1,0 +1,15 @@
+[package]
+name         = "dodai-instruments-core"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description  = "Renderer-agnostic instrument maths for the Dodai UI design system: scales, alarms, gauge, flight, tactical and seven-segment geometry"
+readme       = "README.md"
+keywords     = ["gauge", "instrument", "hmi", "design-system", "visualization"]
+categories   = ["visualization", "gui"]
+
+[dependencies]
+dodai-charts-core = { workspace = true }

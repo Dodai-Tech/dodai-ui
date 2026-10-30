@@ -1,7 +1,7 @@
 //! Instruments for vehicles, process plants and patient monitors: [`DialGauge`], [`VitalsTile`]
 //! and [`Annunciator`].
 //!
-//! Scales, zones, alarm limits and flashing come from `dodai_charts_core::instrument`; this
+//! Scales, zones, alarm limits and flashing come from `dodai_instruments_core::instrument`; this
 //! module only paints. Severity colours come from the theme (`success`, `info`, `warning`,
 //! `danger`), outlines and shapes from the design, so every design reads the same way at a glance
 //! while still looking like itself. Flashing stops when the alarm is acknowledged and only
@@ -9,13 +9,13 @@
 
 use crate::draw::{polar, turn_arc};
 use crate::gauges::{disc, SWEEP};
-use dodai_charts_core::instrument::{readout, Alarm, Limits, Scale, Severity};
 use dodai_core::{Color, DialLook, Theme};
 use dodai_gpui::follow::{follow, Follow};
 use dodai_gpui::follow_api;
 use dodai_gpui::paint::{fill, scale_alpha, shaped, stroke, ShapeStyle};
 use dodai_gpui::text::{first_family, format_label};
 use dodai_gpui::{hsla, theme_of};
+use dodai_instruments_core::instrument::{readout, Alarm, Limits, Scale, Severity};
 use gpui::{
     canvas, div, px, App, Bounds, Hsla, IntoElement, ParentElement, Pixels, RenderOnce,
     SharedString, Styled, Window,

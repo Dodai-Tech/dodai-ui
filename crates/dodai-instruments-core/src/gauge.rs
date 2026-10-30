@@ -2,7 +2,7 @@
 //! polygons, hex grids, ring radii and the demo signals (ECG beat, radar blip fade, bar jitter).
 //! Pure, so every toolkit draws the same shapes.
 
-use crate::math::polar;
+use dodai_charts_core::math::polar;
 
 /// Fill coverage `0..=1` of cell `i` of `n` when `frac` of the range is lit.
 pub fn cell_lit(i: usize, n: usize, frac: f32) -> f32 {
@@ -37,9 +37,9 @@ pub fn zone(frac: f32) -> usize {
 /// Tapered needle (triangle) from the hub at `(cx, cy)` towards turn-fraction
 /// `at`, `len` long with a `base`-wide root.
 pub fn needle(cx: f32, cy: f32, len: f32, base: f32, at: f32) -> [(f32, f32); 3] {
-    let tip = crate::math::polar(cx, cy, len, at);
-    let l = crate::math::polar(cx, cy, base / 2.0, at - 0.25);
-    let r = crate::math::polar(cx, cy, base / 2.0, at + 0.25);
+    let tip = dodai_charts_core::math::polar(cx, cy, len, at);
+    let l = dodai_charts_core::math::polar(cx, cy, base / 2.0, at - 0.25);
+    let r = dodai_charts_core::math::polar(cx, cy, base / 2.0, at + 0.25);
     [l, tip, r]
 }
 
@@ -75,7 +75,7 @@ pub fn chamfer_rect(x: f32, y: f32, w: f32, h: f32, c: f32) -> [(f32, f32); 5] {
 pub fn disc(cx: f32, cy: f32, r: f32, n: usize) -> Vec<(f32, f32)> {
     let n = n.max(3);
     (0..n)
-        .map(|i| crate::math::polar(cx, cy, r, i as f32 / n as f32))
+        .map(|i| dodai_charts_core::math::polar(cx, cy, r, i as f32 / n as f32))
         .collect()
 }
 

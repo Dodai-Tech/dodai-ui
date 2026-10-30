@@ -35,14 +35,18 @@ impl Severity {
 /// A band of a scale, `from..to` in value units.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Zone {
+    /// Start of the band.
     pub from: f32,
+    /// End of the band.
     pub to: f32,
+    /// How a reading inside the band is rated.
     pub severity: Severity,
 }
 
 /// One tick mark of a scale.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Tick {
+    /// The value the tick marks.
     pub value: f32,
     /// Position along the scale, `0..=1`.
     pub frac: f32,
@@ -53,12 +57,15 @@ pub struct Tick {
 /// A value range with tick marks and severity zones.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Scale {
+    /// Lowest value on the scale.
     pub min: f32,
+    /// Highest value on the scale.
     pub max: f32,
     /// Number of major intervals.
     pub majors: usize,
     /// Minor intervals per major interval (`1` = no minor ticks).
     pub minors: usize,
+    /// Severity bands, in value units.
     pub zones: Vec<Zone>,
 }
 
@@ -148,9 +155,13 @@ impl Scale {
 /// Alarm setpoints in value units; any may be unset.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Limits {
+    /// Below this the reading is an alarm.
     pub low_low: Option<f32>,
+    /// Below this the reading is a caution.
     pub low: Option<f32>,
+    /// Above this the reading is a caution.
     pub high: Option<f32>,
+    /// Above this the reading is an alarm.
     pub high_high: Option<f32>,
 }
 

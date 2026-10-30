@@ -2,7 +2,7 @@
 //! the mission countdown. Pure, so every toolkit draws the same picture.
 
 use crate::instrument::Severity;
-use crate::math::{polar, turn_arc};
+use dodai_charts_core::math::{polar, turn_arc};
 
 /// Whose side a contact is on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

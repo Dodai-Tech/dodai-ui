@@ -4,26 +4,26 @@
 //! [`PodGauge`] is a small round instrument with a digital value in the middle and a ring of
 //! ticks around it, [`Tachometer`] the big inverted hero dial with gear and drive mode,
 //! [`DigitalGauge`] a numeric tile with a segment bar, and [`InstrumentCluster`] arranges them
-//! into a complete set. Scales and severities come from `dodai_charts_core::instrument`.
+//! into a complete set. Scales and severities come from `dodai_instruments_core::instrument`.
 
 use crate::dial::severity_color;
 use crate::dial::DialGauge;
 use crate::draw::{polar, turn_arc};
 use crate::gauges::{disc, SWEEP};
 use crate::hero::{CapsuleCluster, CutSpeedometer};
-use dodai_charts_core::instrument::{readout, Scale, Severity};
 use dodai_core::{ClusterKind, DialLook, Theme};
 use dodai_gpui::follow::{follow, Follow};
 use dodai_gpui::follow_api;
 use dodai_gpui::paint::{fill, shaped, stroke, ShapeStyle};
 use dodai_gpui::text::{first_family, format_label};
 use dodai_gpui::{hsla, theme_of};
+use dodai_instruments_core::instrument::{readout, Scale, Severity};
 use gpui::{
     canvas, div, px, App, Bounds, Hsla, IntoElement, ParentElement, Pixels, RenderOnce,
     SharedString, Styled, Window,
 };
 
-use dodai_charts_core::gauge::ring_points as ring;
+use dodai_instruments_core::gauge::ring_points as ring;
 
 fn accent(t: &Theme, s: Severity) -> Hsla {
     if s == Severity::Normal {
