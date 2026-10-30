@@ -45,6 +45,12 @@ impl Showcase {
                     "Monochrome reads by lightness alone, for print or colour-blind viewing. Applies to every chart.",
                 )))
         });
+        debug_assert!(
+            WIDE_CHARTS
+                .iter()
+                .all(|w| CHART_FAMILIES.iter().any(|(_, s)| s.contains(w))),
+            "WIDE_CHARTS names a section not in CHART_FAMILIES"
+        );
         let mut out: Vec<Section> = Vec::new();
         for (_, sections) in CHART_FAMILIES {
             for &name in sections {
@@ -55,7 +61,13 @@ impl Showcase {
                 while i < bodies.len() {
                     if bodies[i].0 == name {
                         let (_, el) = bodies.remove(i);
-                        body = body.child(div().flex_1().min_w(px(320.0)).child(el));
+                        let tile = div().flex_1().min_w(px(320.0));
+                        let tile = if WIDE_CHARTS.contains(&name) {
+                            tile
+                        } else {
+                            tile.max_w(px(CHART_TILE_MAX_W))
+                        };
+                        body = body.child(tile.child(el));
                         any = true;
                     } else {
                         i += 1;

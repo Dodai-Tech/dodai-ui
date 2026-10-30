@@ -389,6 +389,10 @@ impl BarChart {
                 .id((SharedString::from(fid.clone()), i))
                 .flex_1()
                 .size_full()
+                // Without these the cells' automatic minimum (their full height) overflows the
+                // plot when categories stack (horizontal bars).
+                .min_h_0()
+                .min_w_0()
                 .relative()
                 .top(px(-4.0 * f.lift))
                 .opacity(f.alpha)

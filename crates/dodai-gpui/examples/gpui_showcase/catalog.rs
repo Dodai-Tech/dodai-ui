@@ -88,6 +88,24 @@ pub(crate) const CHART_FAMILIES: [(&str, &[&str]); 9] = [
     ("Single value", &["KPI tile"]),
 ];
 
+/// Widest a chart demo tile grows: past it, a chart of fixed height reads as stretched (a
+/// handful of points miles apart).
+pub(crate) const CHART_TILE_MAX_W: f32 = 760.0;
+
+/// Chart sections whose demo is wide by nature (long time spans, many columns, rows of tiles):
+/// their tiles fill the card.
+pub(crate) const WIDE_CHARTS: [&str; 9] = [
+    "Live throughput",
+    "Calendar heatmap",
+    "Horizon",
+    "Event timeline",
+    "Heatmap",
+    "Sankey",
+    "Gantt",
+    "Chart stack",
+    "KPI tile",
+];
+
 /// The chart family a chart section belongs to.
 pub(crate) fn chart_family(title: &str) -> Option<&'static str> {
     CHART_FAMILIES

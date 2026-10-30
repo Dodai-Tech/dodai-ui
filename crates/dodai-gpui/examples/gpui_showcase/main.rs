@@ -53,7 +53,9 @@ mod shaders_page;
 mod sidebar;
 mod snippets;
 use app::{window_shortcuts, DEFAULT_H, DEFAULT_W, SPY_SLACK};
-use catalog::{cat_blurb, cat_icon, section_id, sub_of, subs, CHART_FAMILIES};
+use catalog::{
+    cat_blurb, cat_icon, section_id, sub_of, subs, CHART_FAMILIES, CHART_TILE_MAX_W, WIDE_CHARTS,
+};
 use charts_page::ChartDemos;
 use code::code_toggle;
 use foundations::{
