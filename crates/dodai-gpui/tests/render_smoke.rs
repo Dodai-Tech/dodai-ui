@@ -46,8 +46,6 @@ impl Render for Page {
                     .rows([["1", "2"], ["3", "4"]])
                     .height(120.0),
             )
-            .child(LineChart::new("lc", [Series::new("s", [1.0, 3.0, 2.0])]))
-            .child(BarChart::new("bc2", [Series::new("s", [1.0, 3.0, 2.0])]))
     }
 }
 

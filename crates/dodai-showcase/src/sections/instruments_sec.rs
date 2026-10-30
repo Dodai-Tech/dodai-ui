@@ -1,12 +1,12 @@
 //! The "Instruments" category: vehicle, industrial and medical readouts.
 
 use super::super::*;
-use dodai_gpui::{
-    Affiliation, Annunciator, AttitudeIndicator, ClusterKind, Compass, Contact, Countermeasures,
-    DialGauge, DialLook, GearIndicator, HeadingTape, InstrumentCluster, LevelBar, Limits,
-    MissionTimer, NeedleResponse, Odometer, PowerMeter, Scale, Severity, SonarWaterfall, Station,
-    StationState, StoresPanel, TacticalPlot, Threat, ThreatRosette, TirePressure, TrackList,
-    VerticalTape, VitalsTile,
+use dodai_gpui::{ClusterKind, DialLook, NeedleResponse};
+use dodai_gpui_instruments::{
+    Affiliation, Annunciator, AttitudeIndicator, Compass, Contact, Countermeasures, DialGauge,
+    GearIndicator, HeadingTape, InstrumentCluster, LevelBar, Limits, MissionTimer, Odometer,
+    PowerMeter, Scale, Severity, SonarWaterfall, Station, StationState, StoresPanel, TacticalPlot,
+    Threat, ThreatRosette, TirePressure, TrackList, VerticalTape, VitalsTile,
 };
 
 impl Showcase {
@@ -70,13 +70,13 @@ impl Showcase {
                     .on_select(move |i, _, cx| {
                         m.update(cx, |s, cx| {
                             s.inst_glow = i;
-                            dodai_gpui::set_chart_glow(
+                            dodai_gpui::plot::set_chart_glow(
                                 cx,
                                 match i {
-                                    1 => dodai_gpui::ChartGlow::Off,
-                                    2 => dodai_gpui::ChartGlow::Radius(4.0),
-                                    3 => dodai_gpui::ChartGlow::Radius(10.0),
-                                    _ => dodai_gpui::ChartGlow::Theme,
+                                    1 => dodai_gpui::plot::ChartGlow::Off,
+                                    2 => dodai_gpui::plot::ChartGlow::Radius(4.0),
+                                    3 => dodai_gpui::plot::ChartGlow::Radius(10.0),
+                                    _ => dodai_gpui::plot::ChartGlow::Theme,
                                 },
                             );
                         })

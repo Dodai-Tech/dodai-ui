@@ -4,9 +4,10 @@
 use super::super::*;
 use dodai_core::Tone;
 use dodai_gpui::live::{drift, wander_between};
-use dodai_gpui::{
-    Avatar, BucketBar, GradientScale, LineChart, PieChart, Series, Slot, SlotGrid, SlotState,
-    StageBars, StatusStrip, Table,
+use dodai_gpui::{Avatar, Table};
+use dodai_gpui_charts::{
+    BucketBar, GradientScale, LineChart, PieChart, Series, Slot, SlotGrid, SlotState, StageBars,
+    StatusStrip,
 };
 
 /// Channel names of the two bands.

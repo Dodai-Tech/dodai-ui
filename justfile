@@ -98,15 +98,18 @@ test-charts-core:
 
 # gpui feature slices must each compile on their own
 check-gpui-features:
-    cargo check -p dodai-gpui --no-default-features --features charts
+    cargo check -p dodai-gpui-instruments --no-default-features
+    cargo check -p dodai-gpui-instruments --no-default-features --features automotive
+    cargo check -p dodai-gpui-instruments --no-default-features --features aviation
+    cargo check -p dodai-gpui-instruments --no-default-features --features defense
     cargo check -p dodai-gpui --no-default-features --features components
     cargo check -p dodai-gpui --no-default-features --features shaders
     cargo check -p dodai-gpui --no-default-features --features frost
     cargo check -p dodai-gpui --no-default-features
     cargo check -p dodai-gpui --no-default-features --features cyberpunk
     cargo check -p dodai-gpui --no-default-features --features material
-    cargo check -p dodai-gpui --no-default-features --features components,charts,cyberpunk
-    cargo check -p dodai-gpui --no-default-features --features components,charts,material
+    cargo check -p dodai-gpui --no-default-features --features components,cyberpunk
+    cargo check -p dodai-gpui --no-default-features --features components,material
     cargo check -p dodai-icons --no-default-features
     cargo check -p dodai-icons --no-default-features --features cyberpunk
     cargo check -p dodai-icons --no-default-features --features material
@@ -221,6 +224,8 @@ publish: check-all
     cargo publish -p dodai-ratatui
     cargo publish -p dodai-iced
     cargo publish -p dodai-gpui
+    cargo publish -p dodai-gpui-charts
+    cargo publish -p dodai-gpui-instruments
     cargo publish -p dodai-topcoat
 
 # Dry-run publish of every crate in dependency order (dependents only verify once their
@@ -235,6 +240,8 @@ publish-dry: check-all
     cargo publish --dry-run -p dodai-ratatui
     cargo publish --dry-run -p dodai-iced
     cargo publish --dry-run -p dodai-gpui
+    cargo publish --dry-run -p dodai-gpui-charts
+    cargo publish --dry-run -p dodai-gpui-instruments
     cargo publish --dry-run -p dodai-topcoat
 
 # Line coverage (needs cargo-llvm-cov); writes target/llvm-cov/html

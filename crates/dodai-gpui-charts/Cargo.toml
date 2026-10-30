@@ -1,0 +1,22 @@
+[package]
+name                   = "dodai-gpui-charts"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description            = "Interactive, animated charts for gpui in the Dodai designs: line, bar, pie, radar, heatmap, sankey, candlestick, treemap and 60 more"
+readme                 = "README.md"
+keywords               = ["charts", "gpui", "plot", "visualization", "dashboard"]
+categories             = ["gui", "visualization"]
+
+[dependencies]
+dodai-core        = { workspace = true }
+dodai-charts-core = { workspace = true }
+dodai-gpui        = { workspace = true }
+gpui              = { workspace = true }
+
+[dev-dependencies]
+dodai-core = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "dodai"] }
+gpui       = { workspace = true, features = ["test-support"] }

@@ -114,6 +114,8 @@ jobs:
         include:
           - { crate: dodai-iced, os: ubuntu-latest, gui: true }
           - { crate: dodai-gpui, os: ubuntu-latest, gui: true }
+          - { crate: dodai-gpui-charts, os: ubuntu-latest, gui: true }
+          - { crate: dodai-gpui-instruments, os: ubuntu-latest, gui: true }
           - { crate: dodai-showcase, os: ubuntu-latest, gui: true }
           - { crate: dodai-bevy, os: ubuntu-latest, gui: true }
           - { crate: dodai-shaders, os: ubuntu-latest, gui: true }
@@ -142,20 +144,23 @@ jobs:
           key: ${{ matrix.crate }}
       - run: cargo clippy -p ${{ matrix.crate }} --all-targets -- -D warnings
       - run: cargo test -p ${{ matrix.crate }}
-      # Slices must compile alone: charts-only users get no components.
+      # Slices must compile alone: the kit alone (what the chart and instrument crates use) has no components.
       - name: gpui feature slices
         if: matrix.crate == 'dodai-gpui'
         run: |
-          cargo check -p dodai-gpui --no-default-features --features charts
+          cargo check -p dodai-gpui-instruments --no-default-features
+          cargo check -p dodai-gpui-instruments --no-default-features --features automotive
+          cargo check -p dodai-gpui-instruments --no-default-features --features aviation
+          cargo check -p dodai-gpui-instruments --no-default-features --features defense
           cargo check -p dodai-gpui --no-default-features --features components
           cargo check -p dodai-gpui --no-default-features --features shaders
           cargo check -p dodai-gpui --no-default-features
           cargo check -p dodai-gpui --no-default-features --features cyberpunk
           cargo check -p dodai-gpui --no-default-features --features material
-          cargo check -p dodai-gpui --no-default-features --features components,charts,cyberpunk
-          cargo check -p dodai-gpui --no-default-features --features components,charts,material
-          cargo check -p dodai-gpui --no-default-features --features components,charts,dodai
-          cargo check -p dodai-gpui --no-default-features --features components,charts,neobrutalism
+          cargo check -p dodai-gpui --no-default-features --features components,cyberpunk
+          cargo check -p dodai-gpui --no-default-features --features components,material
+          cargo check -p dodai-gpui --no-default-features --features components,dodai
+          cargo check -p dodai-gpui --no-default-features --features components,neobrutalism
           cargo check -p dodai-icons --no-default-features
           cargo check -p dodai-icons --no-default-features --features cyberpunk
           cargo check -p dodai-icons --no-default-features --features material
@@ -194,18 +199,21 @@ jobs:
           key: ${{ matrix.crate }}
       - run: cargo clippy -p ${{ matrix.crate }} --all-targets -- -D warnings
       - run: cargo test -p ${{ matrix.crate }}
-      # Slices must compile alone: charts-only users get no components.
+      # Slices must compile alone: the kit alone (what the chart and instrument crates use) has no components.
       - name: gpui feature slices
         if: matrix.crate == 'dodai-gpui'
         run: |
-          cargo check -p dodai-gpui --no-default-features --features charts
+          cargo check -p dodai-gpui-instruments --no-default-features
+          cargo check -p dodai-gpui-instruments --no-default-features --features automotive
+          cargo check -p dodai-gpui-instruments --no-default-features --features aviation
+          cargo check -p dodai-gpui-instruments --no-default-features --features defense
           cargo check -p dodai-gpui --no-default-features --features components
           cargo check -p dodai-gpui --no-default-features --features shaders
           cargo check -p dodai-gpui --no-default-features
           cargo check -p dodai-gpui --no-default-features --features cyberpunk
           cargo check -p dodai-gpui --no-default-features --features material
-          cargo check -p dodai-gpui --no-default-features --features components,charts,cyberpunk
-          cargo check -p dodai-gpui --no-default-features --features components,charts,material
+          cargo check -p dodai-gpui --no-default-features --features components,cyberpunk
+          cargo check -p dodai-gpui --no-default-features --features components,material
           cargo check -p dodai-icons --no-default-features
 
   # Freya has its own workspace + lockfile (own Skia), so it is not in the matrix above.

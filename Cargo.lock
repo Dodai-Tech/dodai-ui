@@ -4086,6 +4086,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "dodai-gpui-charts"
+version = "0.1.0"
+dependencies = [
+ "dodai-charts-core",
+ "dodai-core",
+ "dodai-gpui",
+ "gpui",
+]
+
+[[package]]
+name = "dodai-gpui-instruments"
+version = "0.1.0"
+dependencies = [
+ "dodai-charts-core",
+ "dodai-core",
+ "dodai-gpui",
+ "gpui",
+]
+
+[[package]]
 name = "dodai-iced"
 version = "0.1.0"
 dependencies = [
@@ -4144,6 +4164,8 @@ version = "0.1.0"
 dependencies = [
  "dodai-core",
  "dodai-gpui",
+ "dodai-gpui-charts",
+ "dodai-gpui-instruments",
  "dodai-icons",
  "dodai-shaders",
  "gpui",

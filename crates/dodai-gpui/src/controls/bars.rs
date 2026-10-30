@@ -84,7 +84,7 @@ pub(super) fn vbar(t: &Theme, frac: f32, width: f32) -> gpui::Div {
 /// Horizontal progress bar (`0.0..=1.0`).
 #[derive(IntoElement)]
 pub struct ProgressBar {
-    follow: crate::instruments_motion::Follow,
+    follow: crate::follow::Follow,
     value: f32,
     tone: Option<Tone>,
     wavy: bool,
@@ -95,13 +95,13 @@ impl ProgressBar {
     #[track_caller]
     pub fn new(value: f32) -> Self {
         Self {
-            follow: crate::instruments_motion::Follow::here(),
+            follow: crate::follow::Follow::here(),
             value,
             tone: None,
             wavy: false,
         }
     }
-    crate::instruments_motion::follow_api!();
+    crate::follow_api!();
     /// Colour by status tone (default: brand colour).
     pub fn tone(mut self, tone: Tone) -> Self {
         self.tone = Some(tone);
@@ -170,7 +170,7 @@ impl ProgressBar {
     fn build(self, window: &mut Window, cx: &mut App) -> gpui::AnyElement {
         let t = theme_of(cx);
         let g = crate::motion::grow(window, cx, "ProgressBar");
-        let value = crate::instruments_motion::follow(window, cx, &self.follow, 0, self.value);
+        let value = crate::follow::follow(window, cx, &self.follow, 0, self.value);
         if self.wavy && t.look().tonal {
             return wavy_bar(&t, value * g, self.tone).into_any_element();
         }
