@@ -3,15 +3,16 @@
 //! (`App::drop_image`) instead of leaving it in the sprite atlas.
 
 use std::collections::HashMap;
+use std::hash::Hash;
 
-/// At most `limit` entries, keyed by a `u64` hash.
-pub(crate) struct Lru<V> {
-    map: HashMap<u64, (V, u64)>,
+/// At most `limit` entries.
+pub(crate) struct Lru<K, V> {
+    map: HashMap<K, (V, u64)>,
     tick: u64,
     limit: usize,
 }
 
-impl<V: Clone> Lru<V> {
+impl<K: Hash + Eq + Copy, V: Clone> Lru<K, V> {
     /// An empty map holding at most `limit` entries (at least one).
     pub(crate) fn new(limit: usize) -> Self {
         Self {
@@ -22,7 +23,7 @@ impl<V: Clone> Lru<V> {
     }
 
     /// The value under `key`, marked as just used.
-    pub(crate) fn get(&mut self, key: u64) -> Option<V> {
+    pub(crate) fn get(&mut self, key: K) -> Option<V> {
         self.tick += 1;
         let tick = self.tick;
         self.map.get_mut(&key).map(|(v, used)| {
@@ -33,7 +34,7 @@ impl<V: Clone> Lru<V> {
 
     /// Store `value` under `key`; returns the values pushed out (the replaced one and, when
     /// full, the least recently used).
-    pub(crate) fn insert(&mut self, key: u64, value: V) -> Vec<V> {
+    pub(crate) fn insert(&mut self, key: K, value: V) -> Vec<V> {
         self.tick += 1;
         let mut out: Vec<V> = self
             .map

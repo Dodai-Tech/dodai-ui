@@ -149,6 +149,9 @@ struct MeshKey {
     weight: u32,
 }
 
+/// Icon meshes kept per thread (a few screens of distinct icon, size and weight).
+const MESH_LIMIT: usize = 2048;
+
 /// An icon tessellated once, as triangles relative to its top-left corner. Painting only
 /// offsets them: a page of icons used to re-tessellate every one of them on every scroll frame.
 struct Mesh(Vec<[(f32, f32); 3]>);
@@ -156,15 +159,20 @@ struct Mesh(Vec<[(f32, f32); 3]>);
 impl Mesh {
     /// The mesh for `key`, built on first use; `None` when the pack has no such icon.
     fn cached(key: MeshKey) -> Option<std::rc::Rc<Self>> {
+        // Bounded: sizes can animate or follow density, so keys keep coming; the least
+        // recently drawn mesh goes first.
         thread_local! {
-            static MESHES: std::cell::RefCell<std::collections::HashMap<MeshKey, Option<std::rc::Rc<Mesh>>>> =
-                Default::default();
+            static MESHES: std::cell::RefCell<crate::lru::Lru<MeshKey, Option<std::rc::Rc<Mesh>>>> =
+                std::cell::RefCell::new(crate::lru::Lru::new(MESH_LIMIT));
         }
         MESHES.with(|m| {
-            m.borrow_mut()
-                .entry(key)
-                .or_insert_with(|| Self::build(key).map(std::rc::Rc::new))
-                .clone()
+            let mut m = m.borrow_mut();
+            if let Some(v) = m.get(key) {
+                return v;
+            }
+            let v = Self::build(key).map(std::rc::Rc::new);
+            m.insert(key, v.clone());
+            v
         })
     }
 

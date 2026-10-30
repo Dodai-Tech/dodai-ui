@@ -80,8 +80,8 @@ enum Slot {
 }
 
 struct Store {
-    scenes: Lru<Slot>,
-    crops: Lru<Arc<RenderImage>>,
+    scenes: Lru<u64, Slot>,
+    crops: Lru<u64, Arc<RenderImage>>,
     /// Evicted textures, freed on the next render (that is where a `Window` is at hand).
     freed: Vec<Arc<RenderImage>>,
 }
