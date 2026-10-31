@@ -276,6 +276,16 @@ fn more_charts(name: &'static str, v: &[f32]) -> Vec<AnyElement> {
         ])
         .outline(Outline::Circle)
         .into_any_element(),
+        BubbleTimeline::new(
+            v.iter().enumerate().map(|(i, x)| {
+                Bubble::new(format!("{name}{i}"), *x, x.abs() * i as f32).group(name)
+            }),
+        )
+        .into_any_element(),
+        BubbleTimeline::new(v.iter().map(|x| Bubble::new("same", 2000.0, *x)))
+            .max_radius(f32::INFINITY)
+            .height(0.0)
+            .into_any_element(),
         SplitFlow::new(
             v.iter()
                 .enumerate()

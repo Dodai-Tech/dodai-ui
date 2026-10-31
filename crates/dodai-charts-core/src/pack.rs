@@ -51,6 +51,51 @@ pub fn swarm_sized(xs: &[f32], rs: &[f32]) -> Vec<f32> {
     out
 }
 
+/// The height of each circle's centre above a floor so that circles of radius `rs[i]` at
+/// `xs[i]` pile up without overlapping: big ones first, each resting as low as it can (on the
+/// floor or on circles already placed), so small ones settle into the gaps above. Every
+/// height is at least the circle's radius. Non-finite positions or radii get height 0. Pure.
+pub fn pile_up(xs: &[f32], rs: &[f32]) -> Vec<f32> {
+    let n = xs.len().min(rs.len());
+    let mut out = vec![0.0; xs.len()];
+    let r = |i: usize| {
+        if rs[i].is_finite() {
+            rs[i].max(0.0)
+        } else {
+            0.0
+        }
+    };
+    let mut order: Vec<usize> = (0..n)
+        .filter(|i| xs[*i].is_finite() && r(*i) > 0.0)
+        .collect();
+    order.sort_by(|a, b| r(*b).total_cmp(&r(*a)).then(xs[*a].total_cmp(&xs[*b])));
+    let mut placed: Vec<(f32, f32, f32)> = Vec::new();
+    for i in order {
+        let (x, ri) = (xs[i], r(i));
+        let near: Vec<(f32, f32, f32)> = placed
+            .iter()
+            .copied()
+            .filter(|(px, _, pr)| (x - px).abs() < ri + pr)
+            .collect();
+        let mut candidates = vec![ri];
+        for (px, py, pr) in &near {
+            let d = ri + pr;
+            let dy = (d * d - (x - px).powi(2)).max(0.0).sqrt();
+            candidates.extend([py + dy, py - dy].into_iter().filter(|y| *y >= ri));
+        }
+        candidates.sort_by(f32::total_cmp);
+        let free = |y: f32| {
+            near.iter()
+                .all(|(px, py, pr)| (x - px).powi(2) + (y - py).powi(2) >= (ri + pr).powi(2) - 1e-3)
+        };
+        // The top of the pile always fits, so this finds a height.
+        let y = candidates.into_iter().find(|y| free(*y)).unwrap_or(ri);
+        out[i] = y;
+        placed.push((x, y, ri));
+    }
+    out
+}
+
 /// Centres for circles of radii `rs`, packed tightly around the origin without overlapping.
 /// The largest goes in the middle; each next one takes the free spot touching two placed
 /// circles that lies closest to the origin. Non-finite or negative radii count as 0. Meant
@@ -391,6 +436,23 @@ fn skyline(sides: &[f32]) -> Option<(Vec<Square>, f32)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn piles_rest_on_the_floor_and_never_overlap() {
+        let xs = [0.0, 1.0, 2.0, 30.0, 0.5, f32::NAN];
+        let rs = [5.0, 3.0, 2.0, 4.0, 1.0, 2.0];
+        let ys = pile_up(&xs, &rs);
+        assert_eq!(ys[0], 5.0, "the biggest sits on the floor");
+        assert_eq!(ys[3], 4.0, "a lone circle sits on the floor");
+        assert_eq!(ys[5], 0.0);
+        for i in 0..5 {
+            assert!(ys[i] >= rs[i] - 1e-3);
+            for j in 0..i {
+                let d = ((xs[i] - xs[j]).powi(2) + (ys[i] - ys[j]).powi(2)).sqrt();
+                assert!(d >= rs[i] + rs[j] - 1e-2, "{i} and {j} overlap");
+            }
+        }
+    }
 
     fn apart(a: (f32, f32, f32), b: (f32, f32, f32)) -> bool {
         (a.0 - b.0).powi(2) + (a.1 - b.1).powi(2) >= (a.2 + b.2).powi(2) * 0.998 - 1e-4

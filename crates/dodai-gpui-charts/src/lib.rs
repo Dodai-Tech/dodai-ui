@@ -15,6 +15,7 @@
 
 pub mod annotate;
 pub mod bar;
+pub mod bubble_timeline;
 pub mod cascade;
 pub mod common;
 pub mod compare;
@@ -46,6 +47,7 @@ pub mod survey;
 pub mod trend;
 
 pub use annotate::Annotation;
+pub use bubble_timeline::{Bubble, BubbleTimeline};
 pub use cascade::{FlowStep, SplitFlow};
 pub use common::{
     bar_max, chart_glow, fmt_num, heat_color, heat_color_with, marker_points, nice_ticks, norm,
