@@ -3,11 +3,11 @@
 
 use super::super::*;
 use dodai_gpui_charts::{
-    ArcDiagram, Beeswarm, BubbleSwarm, ChartNode, ChordDiagram, CirclePack, ControlChart,
-    DivergingBars, Ecdf, ErrorBars, EventTimeline, FanOrder, FanSpan, FlowStep, Hexbin, Icicle,
-    KpiTile, Marimekko, Milestone, NetworkGraph, Outline, ParallelCoordinates, ParetoChart,
-    PeakRange, ProportionalSquares, ShardGroup, ShardMap, SpanFan, SplitFlow, StateSpan, Sunburst,
-    TimeScatter, Waffle,
+    ArcDiagram, Beeswarm, Bubble, BubbleSwarm, BubbleTimeline, ChartNode, ChordDiagram, CirclePack,
+    ControlChart, DivergingBars, Ecdf, ErrorBars, EventTimeline, FanOrder, FanSpan, FlowStep,
+    Hexbin, Icicle, KpiTile, Marimekko, Milestone, NetworkGraph, Outline, ParallelCoordinates,
+    ParetoChart, PeakRange, ProportionalSquares, ShardGroup, ShardMap, SpanFan, SplitFlow,
+    StateSpan, Sunburst, TimeScatter, Waffle,
 };
 
 /// A repeatable pseudo-random number in `0..1` for sample `i` of stream `seed`.
@@ -542,6 +542,51 @@ impl Showcase {
                     .into_any_element(),
             ),
             (
+                "Bubble timeline",
+                noted(
+                    "Big volcanic eruptions since 1800: bubble area the volume thrown out (km³ of rock and ash, approximate), coloured by region. Click a region to hide it.",
+                    BubbleTimeline::new([
+                        Bubble::new("Tambora", 1815.3, 150.0).group("Indonesia").note("the year after went without a summer across much of the north"),
+                        Bubble::new("Galunggung", 1822.8, 1.0).group("Indonesia"),
+                        Bubble::new("Cosigüina", 1835.1, 5.0).group("Americas"),
+                        Bubble::new("Shiveluch", 1854.1, 1.0).group("Pacific & Asia"),
+                        Bubble::new("Askja", 1875.2, 2.0).group("Europe & Atlantic").note("drove a wave of emigration from Iceland"),
+                        Bubble::new("Krakatau", 1883.6, 20.0).group("Indonesia").note("heard thousands of kilometres away"),
+                        Bubble::new("Tarawera", 1886.4, 2.0).group("Pacific & Asia"),
+                        Bubble::new("Santa María", 1902.8, 8.5).group("Americas"),
+                        Bubble::new("Mont Pelée", 1902.3, 0.2).group("Americas").note("destroyed the town of Saint-Pierre"),
+                        Bubble::new("Ksudach", 1907.2, 2.4).group("Pacific & Asia"),
+                        Bubble::new("Novarupta", 1912.4, 13.5).group("Americas").note("the century's largest eruption"),
+                        Bubble::new("Sakurajima", 1914.0, 1.5).group("Pacific & Asia").note("joined the island to the mainland"),
+                        Bubble::new("Katla", 1918.8, 0.7).group("Europe & Atlantic"),
+                        Bubble::new("Kelud", 1919.4, 0.2).group("Indonesia"),
+                        Bubble::new("Quizapu", 1932.3, 9.5).group("Americas"),
+                        Bubble::new("Hekla", 1947.2, 0.2).group("Europe & Atlantic"),
+                        Bubble::new("Lamington", 1951.1, 1.0).group("Pacific & Asia"),
+                        Bubble::new("Bezymianny", 1956.2, 1.0).group("Pacific & Asia"),
+                        Bubble::new("Agung", 1963.2, 1.0).group("Indonesia"),
+                        Bubble::new("St Helens", 1980.4, 1.2).group("Americas").note("the side of the mountain collapsed first"),
+                        Bubble::new("El Chichón", 1982.3, 2.3).group("Americas"),
+                        Bubble::new("Pinatubo", 1991.5, 10.0).group("Pacific & Asia").note("cooled the globe by about half a degree for a year"),
+                        Bubble::new("Hudson", 1991.7, 4.3).group("Americas"),
+                        Bubble::new("Rabaul", 1994.7, 0.3).group("Pacific & Asia"),
+                        Bubble::new("Chaitén", 2008.3, 1.0).group("Americas"),
+                        Bubble::new("Eyjafjallajökull", 2010.3, 0.27).group("Europe & Atlantic").note("grounded flights across Europe for days"),
+                        Bubble::new("Merapi", 2010.8, 0.1).group("Indonesia"),
+                        Bubble::new("Cordón Caulle", 2011.4, 1.0).group("Americas"),
+                        Bubble::new("Kelud", 2014.1, 0.5).group("Indonesia"),
+                        Bubble::new("Calbuco", 2015.3, 0.3).group("Americas"),
+                        Bubble::new("Hunga Tonga", 2022.0, 6.5).group("Pacific & Asia").note("its blast wave circled the globe several times"),
+                    ])
+                    .size_label("km³ thrown out")
+                    .x_format(|y| format!("{y:.0}"))
+                    .format(|v| if v < 1.0 { format!("{v:.1} km³") } else { format!("{v:.0} km³") })
+                    .max_radius(110.0)
+                    .height(300.0)
+                    .into_any_element(),
+                ),
+            ),
+            (
                 "Peak range",
                 noted(
                     "Pollen season: a typical year's weekly airborne pollen by plant (illustrative, mid-latitude city).",
@@ -601,7 +646,12 @@ impl Showcase {
             ),
             (
                 "Split flow",
-                noted(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap_8()
+                    .w_full()
+                    .child(noted(
                     "Where 100 litres of rain falling on a paved city go (a typical urban water balance, rounded).",
                     SplitFlow::new([
                         FlowStep::new("Rainfall", 100.0),
@@ -618,7 +668,31 @@ impl Showcase {
                     .height(520.0)
                     .format(|v| format!("{v:.0} L"))
                     .into_any_element(),
-                ),
+                ))
+                .child(noted(
+                    "The tall form, .max_width(560.0) with .height(820.0): where 100 units of fresh water drawn from rivers and aquifers go (illustrative, rounded global shares).",
+                    SplitFlow::new([
+                        FlowStep::new("Fresh water drawn", 100.0),
+                        FlowStep::new("Farming", 70.0).from("Fresh water drawn").group("Farming"),
+                        FlowStep::new("Industry", 19.0).from("Fresh water drawn").group("Industry"),
+                        FlowStep::new("Homes", 11.0).from("Fresh water drawn").group("Homes"),
+                        FlowStep::new("Taken up by crops", 40.0).from("Farming").group("Farming"),
+                        FlowStep::new("Lost from canals", 15.0).from("Farming").group("Back to nature"),
+                        FlowStep::new("Field runoff", 15.0).from("Farming").group("Back to nature"),
+                        FlowStep::new("Cooling", 15.0).from("Industry").group("Industry"),
+                        FlowStep::new("Used up", 4.0).from("Industry").group("Industry"),
+                        FlowStep::new("Wastewater", 9.0).from("Homes").group("Homes"),
+                        FlowStep::new("Drunk & cooked", 2.0).from("Homes").group("Homes"),
+                        FlowStep::new("Returned warm", 15.0).from("Cooling").group("Back to nature"),
+                        FlowStep::new("Treated", 5.0).from("Wastewater").group("Back to nature"),
+                        FlowStep::new("Untreated", 4.0).from("Wastewater").group("Polluted"),
+                    ])
+                    .max_width(560.0)
+                    .height(820.0)
+                    .format(|v| format!("{v:.0} units"))
+                    .into_any_element(),
+                ))
+                .into_any_element(),
             ),
             (
                 "KPI tile",
