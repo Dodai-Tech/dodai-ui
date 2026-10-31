@@ -60,7 +60,8 @@ mod sidebar_view;
 mod snippets;
 use app::{window_shortcuts, DEFAULT_H, DEFAULT_W, SPY_SLACK};
 use catalog::{
-    cat_blurb, cat_icon, section_id, sub_of, subs, CHART_FAMILIES, CHART_TILE_MAX_W, WIDE_CHARTS,
+    cat_blurb, cat_icon, keywords, section_id, sub_of, subs, CHART_FAMILIES, CHART_TILE_MAX_W,
+    WIDE_CHARTS,
 };
 use charts_page::ChartDemos;
 use code::code_toggle;
@@ -367,8 +368,8 @@ impl Render for Showcase {
             if let Some((_, _, key)) = self.section_group.get(title) {
                 keys.insert(title, key);
             }
-            let hit =
-                query.is_empty() || !fuzzy_filter(&query, &[format!("{c} {title}")]).is_empty();
+            let hit = query.is_empty()
+                || !fuzzy_filter(&query, &[format!("{c} {title} {}", keywords(title))]).is_empty();
             let only = std::env::var("DODAI_ONLY").is_ok_and(|o| !title.contains(&o));
             let sub_ok = self.sub.is_none_or(|x| sub_of(c, title) == Some(x));
             if in_cat(c) && hit && sub_ok && !only {

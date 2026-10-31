@@ -19,6 +19,7 @@ pub(crate) const CHART_FAMILIES: [(&str, &[&str]); 11] = [
             "Event timeline",
             "Span fan",
             "Peak range",
+            "Bubble timeline",
         ],
     ),
     (
@@ -124,14 +125,47 @@ const CHART_FAMILY_NAMES: [&str; CHART_FAMILIES.len()] = {
     out
 };
 
+/// Extra words the component filter matches for a section, beyond its category and title: what
+/// its demo shows and what the chart is often called elsewhere.
+const KEYWORDS: [(&str, &str); 7] = [
+    (
+        "Span fan",
+        "empires history lifespan durations radial reigns",
+    ),
+    (
+        "Bubble timeline",
+        "breaches hacks events eruptions volcanoes bubbles over time packed",
+    ),
+    (
+        "Time scatter",
+        "milestones models releases bridges records frontier bubbles",
+    ),
+    (
+        "Split flow",
+        "plastic waste where it goes cascade tree flow",
+    ),
+    ("Shard map", "voronoi treemap population languages"),
+    ("Peak range", "mountains molehills peaks pollen seasons"),
+    ("Ridgeline", "joyplot distributions"),
+];
+
+/// The extra filter words of section `title` (empty if none).
+pub(crate) fn keywords(title: &str) -> &'static str {
+    KEYWORDS
+        .iter()
+        .find(|(t, _)| *t == title)
+        .map_or("", |(_, k)| k)
+}
+
 /// Widest a chart demo tile grows: past it, a chart of fixed height reads as stretched (a
 /// handful of points miles apart).
 pub(crate) const CHART_TILE_MAX_W: f32 = 760.0;
 
 /// Chart sections whose demo is wide by nature (long time spans, many columns, rows of tiles):
 /// their tiles fill the card.
-pub(crate) const WIDE_CHARTS: [&str; 16] = [
+pub(crate) const WIDE_CHARTS: [&str; 17] = [
     "Span fan",
+    "Bubble timeline",
     "Peak range",
     "Shard map",
     "Split flow",

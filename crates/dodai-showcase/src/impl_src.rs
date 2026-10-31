@@ -51,6 +51,10 @@ const FILES: &[(&str, &str)] = &[
         include_str!("../../dodai-gpui-charts/src/shards.rs"),
     ),
     (
+        "bubble_timeline.rs",
+        include_str!("../../dodai-gpui-charts/src/bubble_timeline.rs"),
+    ),
+    (
         "cascade.rs",
         include_str!("../../dodai-gpui-charts/src/cascade.rs"),
     ),
