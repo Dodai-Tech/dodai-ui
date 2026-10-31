@@ -53,6 +53,7 @@ impl FlowStep {
 pub struct SplitFlow {
     follow: dodai_gpui::follow::Follow,
     steps: Vec<FlowStep>,
+    max_width: Option<f32>,
     height: f32,
     fmt: Option<NumFmt>,
     title: Option<SharedString>,
@@ -67,10 +68,18 @@ impl SplitFlow {
         Self {
             follow: dodai_gpui::follow::Follow::here(),
             steps: steps.into_iter().collect(),
+            max_width: None,
             height: 460.0,
             fmt: None,
             title: None,
         }
+    }
+    /// Keep the flow at most `w` px wide, centred (default: the full width). With a tall
+    /// [`height`](Self::height) this gives the long, narrow poster form, where the ribbons
+    /// carry the eye down.
+    pub fn max_width(mut self, w: f32) -> Self {
+        self.max_width = (w.is_finite() && w > 0.0).then_some(w.max(120.0));
+        self
     }
 }
 
@@ -220,6 +229,7 @@ impl SplitFlow {
                     fill(w, b.origin, &rib, scale_alpha(cols[o], a * looks[o].alpha));
                 }
                 let mut taken = Vec::new();
+                let mut pills: Vec<[f32; 4]> = Vec::new();
                 for (i, bl) in blocks.iter().enumerate() {
                     let o = porigin[i];
                     let a = shown(bl.level) * looks[o].alpha;
@@ -253,13 +263,55 @@ impl SplitFlow {
                             wid,
                             ink,
                         );
-                        let share = if fits { &big } else { &head };
-                        let at = if fits {
-                            y + BLOCK * 0.66
+                        if fits {
+                            let at = (b.origin, (mid, y + BLOCK * 0.66));
+                            big.centred(w, cx, &shares[o], at, wid, ink);
                         } else {
-                            y + BLOCK / 2.0
-                        };
-                        share.centred(w, cx, &shares[o], (b.origin, (mid, at)), wid, ink);
+                            // Too narrow for its name: a pill on its ribbon, which may stick
+                            // out past it, as long as it misses the other pills.
+                            let next = top(bl.level + 1);
+                            let text = format!("{} {}", names[o], shares[o]);
+                            let (lw, lh) = head.measure(w, &text);
+                            // Try a few heights down the ribbon; keep the pill inside the chart.
+                            let half = lw / 2.0 + 6.0;
+                            let pill_x = mid.clamp(half, (bw - half).max(half));
+                            let free = [0.45, 0.7, 0.2].into_iter().find_map(|f| {
+                                let py = y + BLOCK + (next - y - BLOCK) * f;
+                                let bx = [
+                                    pill_x - half,
+                                    py - lh / 2.0 - 3.0,
+                                    pill_x + half,
+                                    py + lh / 2.0 + 3.0,
+                                ];
+                                pills
+                                    .iter()
+                                    .all(|p: &[f32; 4]| {
+                                        bx[2] < p[0] || bx[0] > p[2] || bx[3] < p[1] || bx[1] > p[3]
+                                    })
+                                    .then_some((py, bx))
+                            });
+                            if let Some((py, bx)) = free {
+                                let r = dodai_gpui::plot::rect(
+                                    bx[0],
+                                    bx[1],
+                                    bx[2] - bx[0],
+                                    bx[3] - bx[1],
+                                );
+                                fill(w, b.origin, &r, scale_alpha(cols[o], a));
+                                stroke(w, b.origin, &r, 1.5, scale_alpha(seam, a), true);
+                                head.centred(w, cx, &text, (b.origin, (pill_x, py)), lw + 2.0, ink);
+                                pills.push(bx);
+                            } else {
+                                head.centred(
+                                    w,
+                                    cx,
+                                    &shares[o],
+                                    (b.origin, (mid, y + BLOCK / 2.0)),
+                                    wid,
+                                    ink,
+                                );
+                            }
+                        }
                     }
                     if bottom {
                         // Outcomes: name, share and amount under the bottom row.
@@ -305,6 +357,10 @@ impl SplitFlow {
             .w_full()
             .h(px(self.height))
             .child(cv);
+        let plot = match self.max_width {
+            Some(mw) => plot.max_w(px(mw)).mx_auto(),
+            None => plot,
+        };
         let plot = focus.pointer(plot, &bounds, move |x, y, w, h| {
             let blocks = cascade::layout(&all, w, GAP);
             let (_, top) = rows(h, depth, foot);
