@@ -5,6 +5,7 @@ use crate::common::{
     chart_cfg, down_color, fill, fmt_with, label_column, label_style, labels_of, nice_ticks, norm,
     series_color, smooth_points, stroke, tick_row, titled, up_color, NumFmt, Series,
 };
+use crate::focus::{readout, Focus};
 use dodai_charts_core::{density, horizon, rank};
 use dodai_gpui::paint::scale_alpha;
 use dodai_gpui::panel::DodaiTooltip;
@@ -13,7 +14,44 @@ use gpui::{
     canvas, div, px, relative, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement,
     Pixels, SharedString, StatefulInteractiveElement, Styled, Window,
 };
+use std::cell::Cell;
 use std::rc::Rc;
+
+/// The height (0..=1) of density `d` at value `v`, linearly interpolated; 0 outside its range.
+fn density_at(d: &density::Density, v: f32) -> f32 {
+    if d.y.len() < 2
+        || d.hi.partial_cmp(&d.lo) != Some(std::cmp::Ordering::Greater)
+        || !(d.lo..=d.hi).contains(&v)
+    {
+        return 0.0;
+    }
+    let f = (v - d.lo) / (d.hi - d.lo) * (d.y.len() - 1) as f32;
+    let i = (f as usize).min(d.y.len() - 2);
+    let t = f - i as f32;
+    d.y[i] * (1.0 - t) + d.y[i + 1] * t
+}
+
+/// The ridge under `(x, y)` in a `w` x `h` ridgeline of `curves` over `lo..hi`, ridges
+/// `rise` rows tall: the front-most ridge whose shape covers the point, else the row the
+/// point is in.
+fn ridge_hit(
+    curves: &[density::Density],
+    (lo, hi): (f32, f32),
+    rise: f32,
+    (x, y, w, h): (f32, f32, f32, f32),
+) -> Option<usize> {
+    let m = curves.len();
+    if m == 0 || w <= 0.0 || h <= 0.0 || hi.partial_cmp(&lo) != Some(std::cmp::Ordering::Greater) {
+        return None;
+    }
+    let row = h / (m as f32 - 1.0 + rise);
+    let v = lo + x / w * (hi - lo);
+    let base = |k: usize| (k as f32 + rise) * row;
+    (0..m)
+        .rev()
+        .find(|&k| y <= base(k) && y >= base(k) - density_at(&curves[k], v) * row * rise)
+        .or_else(|| (0..m).find(|&k| y <= base(k) && y > base(k) - row))
+}
 
 /// A label column `w` px wide with one row label per `(text, y fraction from the top)`.
 fn row_labels(
@@ -285,9 +323,15 @@ impl RidgelineChart {
         let overlap = self.overlap;
         let cols: Vec<Hsla> = (0..m).map(|i| hsla(t.palette.series_at(i))).collect();
         let (bg, grid) = (hsla(t.palette.surface), hsla(t.palette.border));
+        let focus = Focus::new(window, cx, &self.follow, m);
+        let looks: Vec<_> = (0..m).map(|k| focus.item(k)).collect();
+        let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
+        let pb = bounds.clone();
+        let hit_curves = curves.clone();
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
+                pb.set(b);
                 let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
                 // Room on top for the first ridge to rise into.
                 let row = bh / (m as f32 - 1.0 + overlap);
@@ -310,15 +354,46 @@ impl RidgelineChart {
                     let mut poly = top.clone();
                     poly.push((top[top.len() - 1].0, base));
                     poly.push((top[0].0, base));
+                    let lk = looks[k];
                     fill(w, b.origin, &poly, bg);
-                    fill(w, b.origin, &poly, scale_alpha(cols[k], 0.55));
-                    stroke(w, b.origin, &top, 1.5, cols[k], false);
+                    fill(w, b.origin, &poly, scale_alpha(cols[k], 0.55 * lk.alpha));
+                    let c = scale_alpha(cols[k], lk.alpha.max(0.35));
+                    stroke(w, b.origin, &top, 1.5 + lk.lift * 1.5, c, false);
                 }
             },
         )
         .absolute()
         .size_full();
-        let plot = div().relative().w_full().h(px(self.height)).child(cv);
+        let plot = div()
+            .id(self.follow.sub("ridges").element_id(window, cx))
+            .relative()
+            .w_full()
+            .h(px(self.height))
+            .child(cv);
+        let plot = focus.pointer(plot, &bounds, move |x, y, w, h| {
+            ridge_hit(&hit_curves, (lo, hi), overlap, (x, y, w, h))
+        });
+        let text = focus.shown(cx).and_then(|k| {
+            let (name, v) = self.groups.get(k)?;
+            let mut v: Vec<f32> = v.iter().copied().filter(|x| x.is_finite()).collect();
+            if v.is_empty() {
+                return Some(format!("{name} · no data"));
+            }
+            v.sort_by(f32::total_cmp);
+            let f = |x: f32| fmt_with(&self.fmt, x);
+            let (n, mid) = (v.len(), v.len() / 2);
+            let median = if n % 2 == 0 {
+                (v[mid - 1] + v[mid]) / 2.0
+            } else {
+                v[mid]
+            };
+            Some(format!(
+                "{name} · median {} · range {} – {} · {n} values",
+                f(median),
+                f(v[0]),
+                f(v[n - 1])
+            ))
+        });
         let gutter = label_column(&t, self.groups.iter().map(|g| g.0.as_ref()));
         let row_frac = 1.0 / (m as f32 - 1.0 + overlap);
         let labels = self
@@ -341,7 +416,14 @@ impl RidgelineChart {
                     .child(plot)
                     .child(x_row),
             );
-        titled(&t, self.title.clone(), div().w_full().child(body))
+        let root = div()
+            .flex()
+            .flex_col()
+            .gap(px(t.spacing.sm))
+            .w_full()
+            .child(body)
+            .child(readout(&t, text, "Hover a ridge"));
+        titled(&t, self.title.clone(), root)
     }
 }
 
@@ -411,9 +493,15 @@ impl HorizonChart {
             shades(dodai_core::Tone::Success),
             shades(dodai_core::Tone::Danger),
         );
+        let strips = rows.len();
+        let focus = Focus::new(window, cx, &self.follow, strips);
+        let looks: Vec<_> = (0..strips).map(|k| focus.item(k)).collect();
+        let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
+        let pb = bounds.clone();
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
+                pb.set(b);
                 let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
                 let strip = bh / m as f32;
                 for (r, vals) in rows.iter().enumerate() {
@@ -438,7 +526,13 @@ impl HorizonChart {
                             } else {
                                 (top + strip - h, top + strip)
                             };
-                            fill(w, b.origin, &[(x0, y0), (x1, y0), (x1, y1), (x0, y1)], c[k]);
+                            let a = looks[r].alpha.max(0.3);
+                            fill(
+                                w,
+                                b.origin,
+                                &[(x0, y0), (x1, y0), (x1, y1), (x0, y1)],
+                                scale_alpha(c[k], a),
+                            );
                         }
                     }
                 }
@@ -446,7 +540,32 @@ impl HorizonChart {
         )
         .absolute()
         .size_full();
-        let plot = div().relative().w_full().h(px(self.height)).child(cv);
+        let plot = div()
+            .id(self.follow.sub("strips").element_id(window, cx))
+            .relative()
+            .w_full()
+            .h(px(self.height))
+            .child(cv);
+        let plot = focus.pointer(plot, &bounds, move |_, y, _, h| {
+            (h > 0.0 && (0.0..h).contains(&y))
+                .then(|| (y / h * m as f32) as usize)
+                .filter(|r| *r < strips)
+        });
+        let text = focus.shown(cx).and_then(|k| {
+            let s = self.series.get(k)?;
+            let v: Vec<f32> = s.values.iter().copied().filter(|x| x.is_finite()).collect();
+            let f = |x: f32| fmt_with(&self.fmt, x);
+            let last = *v.last()?;
+            let low = v.iter().copied().fold(f32::INFINITY, f32::min);
+            let high = v.iter().copied().fold(f32::NEG_INFINITY, f32::max);
+            Some(format!(
+                "{} · latest {} · low {} · high {}",
+                s.name,
+                f(last),
+                f(low),
+                f(high)
+            ))
+        });
         let names = self
             .series
             .iter()
@@ -475,7 +594,8 @@ impl HorizonChart {
                 .gap(px(t.spacing.sm))
                 .w_full()
                 .child(body)
-                .child(legend),
+                .child(legend)
+                .child(readout(&t, text, "Hover a strip")),
         )
     }
 }
@@ -493,5 +613,30 @@ mod tests {
         let r = RidgelineChart::new([("a", vec![1.0, 2.0])]).overlap(f32::NAN);
         assert_eq!(r.overlap, 1.8);
         assert_eq!(HorizonChart::new([]).bands(9).bands, 5);
+    }
+
+    #[test]
+    fn ridges_are_hit_front_first_then_by_row() {
+        let d = |lo: f32, hi: f32| density::Density {
+            lo,
+            hi,
+            y: vec![1.0, 1.0],
+        };
+        let curves = [d(0.0, 10.0), d(0.0, 5.0)];
+        // Two rows rising 2 rows tall in 100 px: row 33.3, bases at 66.7 and 100.
+        let at = |x, y| ridge_hit(&curves, (0.0, 10.0), 2.0, (x, y, 100.0, 100.0));
+        assert_eq!(
+            at(20.0, 60.0),
+            Some(1),
+            "the front ridge covers the back one"
+        );
+        assert_eq!(at(80.0, 60.0), Some(0), "only the back ridge reaches here");
+        assert_eq!(at(80.0, 90.0), Some(1), "no shape: the row the point is in");
+        assert_eq!(at(80.0, 10.0), Some(0));
+        assert_eq!(
+            ridge_hit(&[], (0.0, 1.0), 2.0, (1.0, 1.0, 10.0, 10.0)),
+            None
+        );
+        assert_eq!(density_at(&d(0.0, 1.0), 2.0), 0.0);
     }
 }
