@@ -401,7 +401,7 @@ impl Button {
         if let (true, Some(m), true) = (self.square, m, t.look().tonal) {
             shape.radius = m.square_radius;
         }
-        let mut el = track(shaped_id(self.id, &shape, style), &st)
+        let mut el = track(shaped_id(self.id, &shape, style), &st, cx)
             .h(px(m.map_or(t.shape.control_height, |m| m.height)))
             .px(px(
                 m.map_or(t.button_padding(), |m| m.padding) + crop.map_or(0.0, |c| c.inset(&t))

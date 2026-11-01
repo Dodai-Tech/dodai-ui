@@ -156,7 +156,7 @@ impl ListItem {
             style.fill = style.fill.map(|c| c.opacity(0.55));
         }
         let pad = t.spacing.md;
-        let mut el = track(shaped_id(self.id, &t.shape, style), &st)
+        let mut el = track(shaped_id(self.id, &t.shape, style), &st, cx)
             .min_h(px(if self.depth > 0 {
                 t.list_row_height(true)
             } else {

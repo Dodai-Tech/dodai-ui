@@ -472,7 +472,7 @@ impl RenderOnce for ToggleGroup {
                 self.multiple,
                 self.allow_empty,
             );
-            let mut b = track(shaped_id(id, &t.shape, style), &hs)
+            let mut b = track(shaped_id(id, &t.shape, style), &hs, cx)
                 .min_h(px(t.shape.control_height))
                 .px(px(t.spacing.md))
                 .flex()

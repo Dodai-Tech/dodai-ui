@@ -145,7 +145,7 @@ impl RenderOnce for CommandPalette {
             let st = use_interact(&id, window, cx);
             let hovered = st.read(cx).hovered;
             let (style, _, marker) = list_style(&t, n == 0, hovered);
-            let mut row = track(shaped_id(id, &t.shape, style), &st)
+            let mut row = track(shaped_id(id, &t.shape, style), &st, cx)
                 .relative()
                 .flex()
                 .items_center()
@@ -302,7 +302,7 @@ impl Combobox {
                 let st = use_interact(&id, window, cx);
                 let hovered = st.read(cx).hovered;
                 let (style, _, _) = list_style(&t, false, hovered);
-                let mut row = track(shaped_id(id, &t.shape, style), &st)
+                let mut row = track(shaped_id(id, &t.shape, style), &st, cx)
                     .min_h(px(t.scale(dodai_core::Scale::Row)))
                     .px(px(t.spacing.md))
                     .flex()

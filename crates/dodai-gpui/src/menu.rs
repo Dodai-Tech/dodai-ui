@@ -188,7 +188,7 @@ impl Menu {
                 fg = hsla(t.palette.danger);
             }
             let slot = t.sizes().icon_sm + t.spacing.half();
-            let mut row = track(shaped_id(id, &t.shape, style), &st)
+            let mut row = track(shaped_id(id, &t.shape, style), &st, cx)
                 .min_h(px(t.menu_row_height()))
                 .py(px(t.spacing.half()))
                 .px(px(t.spacing.md))

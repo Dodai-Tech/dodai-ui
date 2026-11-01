@@ -179,7 +179,7 @@ impl Tabs {
         } else {
             t.shape.clone()
         };
-        let mut tab = track(shaped_id(id, &shape, style), &st)
+        let mut tab = track(shaped_id(id, &shape, style), &st, cx)
             .min_h(px(height))
             .px(px(t.spacing.md))
             .flex()

@@ -705,7 +705,7 @@ impl ColorPicker {
                     Some(t.palette.border)
                 };
                 let style = ShapeStyle::from_tokens(&t, Some(*c), stroke, on, false);
-                let mut sw = track(shaped_id(id, &t.shape, style), &st)
+                let mut sw = track(shaped_id(id, &t.shape, style), &st, cx)
                     .w(px(side))
                     .h(px(side))
                     .cursor_pointer();
@@ -791,7 +791,7 @@ impl FileDropZone {
             t.palette.border_strong
         };
         let style = ShapeStyle::from_tokens(&t, None, Some(stroke), hov, false);
-        let mut el = track(shaped_id(self.id, &t.shape, style), &st)
+        let mut el = track(shaped_id(self.id, &t.shape, style), &st, cx)
             .flex()
             .flex_col()
             .items_center()

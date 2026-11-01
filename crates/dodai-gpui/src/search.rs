@@ -209,7 +209,7 @@ impl SearchView {
                 let id: ElementId = (self.id.clone(), format!("r{i}")).into();
                 let st = use_interact(&id, window, cx);
                 let hovered = st.read(cx).hovered;
-                let mut row = track(gpui::InteractiveElement::id(div(), id), &st)
+                let mut row = track(gpui::InteractiveElement::id(div(), id), &st, cx)
                     .min_h(px(t.list_row_height(false)))
                     .py(px(t.spacing.half()))
                     .px(px(t.spacing.md))
@@ -329,7 +329,7 @@ impl RenderOnce for SearchView {
                 let st = use_interact(&id, window, cx);
                 let hovered = st.read(cx).hovered;
                 let (style, _, _) = list_style(&t, false, hovered);
-                let mut row = track(shaped_id(id, &t.shape, style), &st)
+                let mut row = track(shaped_id(id, &t.shape, style), &st, cx)
                     .min_h(px(t.scale(dodai_core::Scale::Row)))
                     .px(px(t.spacing.md))
                     .flex()

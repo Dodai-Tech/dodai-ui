@@ -75,7 +75,7 @@ impl Breadcrumb {
                     c = c.on_click(move |_, w, cx| f(i, w, cx));
                 }
             }
-            row = row.child(crate::interact::track(c, &st));
+            row = row.child(crate::interact::track(c, &st, cx));
         }
         row
     }
@@ -96,7 +96,7 @@ fn page_button(
     let st = use_interact(&id, window, cx);
     let state = st.read(cx).control_state(disabled);
     let (style, fg) = crate::button::button_style(t, variant, state);
-    let el = track(shaped_id(id, &t.shape, style), &st)
+    let el = track(shaped_id(id, &t.shape, style), &st, cx)
         .min_h(px(t.shape.control_height))
         .min_w(px(t.shape.control_height))
         .px(px(t.spacing.sm))
@@ -445,7 +445,7 @@ impl Segmented {
             } else {
                 (None, r.on_surface)
             };
-            let mut seg = track(gpui::InteractiveElement::id(div(), id), &st)
+            let mut seg = track(gpui::InteractiveElement::id(div(), id), &st, cx)
                 .h_full()
                 .px(px(t.spacing.sm * 1.5))
                 .flex()
@@ -548,7 +548,7 @@ impl Segmented {
                 (fill, crate::motion::mix(hsla(off), hsla(on_fg), k))
             };
             let style = ShapeStyle::from_tokens(&t, fill, None, on && !self.disabled, false);
-            let mut seg = crate::interact::track(shaped_id(id, &inner, style), &st)
+            let mut seg = crate::interact::track(shaped_id(id, &inner, style), &st, cx)
                 .relative()
                 .h(px(t.shape.control_height - 6.0))
                 .px(px(t.spacing.md))
@@ -654,7 +654,7 @@ impl Accordion {
             let hovered = hv.read(cx).hovered;
             let is_open = open.get(i).copied().unwrap_or(false);
             let stc = st.clone();
-            let head = track(div().id(id), &hv)
+            let head = track(div().id(id), &hv, cx)
                 .min_h(px(t.shape.control_height))
                 .px(px(t.spacing.md))
                 .flex()

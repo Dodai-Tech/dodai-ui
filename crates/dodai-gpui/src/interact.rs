@@ -2,11 +2,10 @@
 
 use dodai_core::ControlState;
 use gpui::{
-    App, ClickEvent, ElementId, Entity, FocusHandle, Hsla, InteractiveElement, MouseButton,
-    Stateful, StatefulInteractiveElement, Styled, Window,
+    App, ClickEvent, ElementId, Entity, FocusHandle, InteractiveElement, MouseButton, Stateful,
+    StatefulInteractiveElement, Styled, Window,
 };
 use std::cell::{Cell, RefCell};
-use std::collections::VecDeque;
 use std::rc::Rc;
 
 /// Shape plus the edge gap (a cropped control) the focus ring has to follow.
@@ -14,9 +13,6 @@ type RingShape = (
     dodai_core::Shape,
     Option<(crate::paint::ShapeEdge, f32, f32)>,
 );
-
-/// A control's focus handle and its "focus came from the pointer" flag.
-type Handle = (gpui::EntityId, FocusHandle, Rc<Cell<bool>>);
 
 thread_local! {
     /// Shape of the most recently built shaped element (for the focus ring overlay).
@@ -29,15 +25,6 @@ pub(crate) fn set_ring_shape(
     edge_gap: Option<(crate::paint::ShapeEdge, f32, f32)>,
 ) {
     RING_SHAPE.with(|c| *c.borrow_mut() = Some((s.clone(), edge_gap)));
-}
-
-thread_local! {
-    /// The last few focus handles handed out by [`use_interact`], so [`track`] (which only gets
-    /// the state entity) can attach the right one. Bounded: tracking follows creation closely.
-    static HANDLES: RefCell<VecDeque<Handle>> = const { RefCell::new(VecDeque::new()) };
-    /// Focus ring of the theme in use, refreshed by every [`use_interact`] call (the ring is
-    /// theme-wide, so any recent value is right) and read by [`track`].
-    static RING: Cell<(Hsla, f32)> = const { Cell::new((Hsla { h: 0.0, s: 0.0, l: 0.0, a: 0.0 }, 0.0)) };
 }
 
 /// Pointer state of one control (kept in gpui keyed element state).
@@ -72,10 +59,7 @@ impl Interact {
 
 /// Get (or create) the pointer state entity for `id`.
 pub fn use_interact(id: &ElementId, window: &mut Window, cx: &mut App) -> Entity<Interact> {
-    let t = crate::theme_of(cx);
-    let (c, w) = t.focus_ring();
-    RING.with(|r| r.set((crate::hsla(c), w)));
-    let st = window.use_keyed_state(id.clone(), cx, |window, cx| {
+    window.use_keyed_state(id.clone(), cx, |window, cx| {
         let focus = cx.focus_handle().tab_stop(true);
         let me = Interact {
             focus: Some(focus.clone()),
@@ -85,40 +69,26 @@ pub fn use_interact(id: &ElementId, window: &mut Window, cx: &mut App) -> Entity
         cx.on_blur(&focus, window, move |_, _, _| flag.set(false))
             .detach();
         me
-    });
-    let flag = st.read(cx).pointer.clone();
-    if let Some(h) = st.read(cx).focus.clone() {
-        HANDLES.with(|q| {
-            let mut q = q.borrow_mut();
-            q.retain(|(e, _, _)| *e != st.entity_id());
-            if q.len() >= 64 {
-                q.pop_front();
-            }
-            q.push_back((st.entity_id(), h, flag));
-        });
-    }
-    st
+    })
 }
 
-/// Wire hover/press tracking onto an id'd element.
-pub fn track<E>(el: Stateful<E>, state: &Entity<Interact>) -> Stateful<E>
+/// Wire hover/press tracking, keyboard focus and the theme's focus ring onto an id'd element.
+pub fn track<E>(el: Stateful<E>, state: &Entity<Interact>, cx: &App) -> Stateful<E>
 where
     Stateful<E>: StatefulInteractiveElement + InteractiveElement + gpui::ParentElement,
 {
     let s1 = state.clone();
     let s2 = state.clone();
     let s3 = state.clone();
-    let (focus, pointer) = HANDLES
-        .with(|q| {
-            q.borrow()
-                .iter()
-                .find(|(e, _, _)| *e == state.entity_id())
-                .map(|(_, h, f)| (h.clone(), f.clone()))
-        })
-        .unzip();
-    let (ring, thick) = RING.with(Cell::get);
+    let (focus, pointer) = {
+        let s = state.read(cx);
+        (s.focus.clone(), s.pointer.clone())
+    };
+    let (ring, thick) = {
+        let (c, w) = crate::theme_of(cx).focus_ring();
+        (crate::hsla(c), w)
+    };
     let shape = RING_SHAPE.with(|c| c.borrow().clone());
-    let pointer: Rc<Cell<bool>> = pointer.unwrap_or_default();
     let (p1, p2, p3) = (pointer.clone(), pointer.clone(), pointer);
     let el = match focus {
         Some(h) => {
