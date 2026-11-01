@@ -107,13 +107,8 @@ impl Treemap {
         // Layout in unit space, rendered with relative sizes.
         let rects = treemap_layout(&vals, 1.0, 1.0);
         let mut plot = div().relative().w_full().h(px(self.height));
-        let fid = format!("{}-focus", self.id);
-        let focus = crate::focus::Focus::new(
-            window,
-            cx,
-            &dodai_gpui::follow::Follow::named(&fid),
-            self.items.len(),
-        );
+        let focus =
+            crate::focus::Focus::new(window, cx, &self.follow.sub("focus"), self.items.len());
         for (i, ((x, y, w, h), (name, v))) in rects.iter().zip(&self.items).enumerate() {
             let f = focus.item(i);
             let style =

@@ -170,11 +170,7 @@ impl SpanFan {
             .map(|s| hsla(t.palette.series_at(*s)))
             .collect();
         let labels: Vec<SharedString> = self.items.iter().map(|i| i.label.clone()).collect();
-        let longest = spans
-            .iter()
-            .map(|s| (s.end - s.start).abs())
-            .filter(|v| v.is_finite())
-            .fold(0.0f32, f32::max);
+        let longest = dodai_charts_core::peak(spans.iter().map(|s| (s.end - s.start).abs()));
         let ticks: Vec<f32> = if longest > 0.0 {
             nice_ticks(0.0, longest, 4)
                 .into_iter()

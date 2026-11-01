@@ -74,6 +74,33 @@ pub fn extent(v: impl IntoIterator<Item = f32>) -> Option<(f32, f32)> {
         })
 }
 
+/// The highest finite value of `v`, but at least `floor` (so `0.0` for a non-negative scale
+/// and an empty or all-negative `v`).
+pub fn peak_from(v: impl IntoIterator<Item = f32>, floor: f32) -> f32 {
+    extent(v).map_or(floor, |(_, hi)| hi.max(floor))
+}
+
+/// The highest finite value of `v`, never below zero: the top of a scale that starts at zero.
+pub fn peak(v: impl IntoIterator<Item = f32>) -> f32 {
+    peak_from(v, 0.0)
+}
+
+/// The lowest and highest finite value of `v` with zero always inside the range: the extent of
+/// a bar or waterfall scale that is anchored at zero.
+pub fn extent_with_zero(v: impl IntoIterator<Item = f32>) -> (f32, f32) {
+    extent(v).map_or((0.0, 0.0), |(lo, hi)| (lo.min(0.0), hi.max(0.0)))
+}
+
+/// [`extent`] of `v` as a drawable range: `0..1` when there is no finite value, and one unit
+/// either side of a single repeated value.
+pub fn padded_extent(v: impl IntoIterator<Item = f32>) -> (f32, f32) {
+    match extent(v) {
+        None => (0.0, 1.0),
+        Some((lo, hi)) if hi > lo => (lo, hi),
+        Some((lo, _)) => (lo - 1.0, lo + 1.0),
+    }
+}
+
 /// About `count` [`nice_ticks`] covering the finite values of `v` (`0..1` when there are
 /// none), with the first and last tick: the axis range most charts plot against.
 pub fn tick_span(v: impl IntoIterator<Item = f32>, count: usize) -> (f32, f32, Vec<f32>) {
@@ -184,6 +211,16 @@ pub fn norm(v: f32, lo: f32, hi: f32) -> f32 {
         ((v - lo) / (hi - lo)).clamp(0.0, 1.0)
     } else {
         0.0
+    }
+}
+
+/// Radius of a mark whose *area* follows `v` (`0` at `rmin`, `vmax` at `rmax`), so a value twice
+/// as big looks twice as big rather than four times. Not positive or `vmax <= 0`: `rmin`.
+pub fn area_radius(v: f32, vmax: f32, rmin: f32, rmax: f32) -> f32 {
+    if v > 0.0 && vmax > 0.0 {
+        rmin + (v / vmax).min(1.0).sqrt() * (rmax - rmin)
+    } else {
+        rmin
     }
 }
 
@@ -474,5 +511,31 @@ mod nice_ceiling_tests {
         assert_eq!(crate::tick_span([], 4).0, 0.0);
         let (lo, hi, t) = crate::tick_span([3.0, 3.0], 4);
         assert!(lo <= 3.0 && hi > lo && t.len() >= 2);
+    }
+
+    #[test]
+    fn peaks_and_zero_anchored_extents() {
+        assert_eq!(crate::math::peak([1.0, f32::NAN, 4.0, f32::INFINITY]), 4.0);
+        assert_eq!(crate::math::peak([-3.0]), 0.0);
+        assert_eq!(crate::math::peak([]), 0.0);
+        assert_eq!(crate::math::peak_from([0.0, -1.0], 1e-6), 1e-6);
+        assert_eq!(crate::math::extent_with_zero([2.0, 5.0]), (0.0, 5.0));
+        assert_eq!(crate::math::extent_with_zero([-2.0, f32::NAN]), (-2.0, 0.0));
+        assert_eq!(crate::math::extent_with_zero([]), (0.0, 0.0));
+    }
+
+    #[test]
+    fn padded_extent_always_has_width() {
+        assert_eq!(crate::padded_extent([]), (0.0, 1.0));
+        assert_eq!(crate::padded_extent([f32::NAN, 3.0]), (2.0, 4.0));
+        assert_eq!(crate::padded_extent([1.0, 5.0]), (1.0, 5.0));
+    }
+
+    #[test]
+    fn area_radius_grows_with_the_square_root() {
+        assert_eq!(crate::area_radius(4.0, 4.0, 2.0, 10.0), 10.0);
+        assert_eq!(crate::area_radius(1.0, 4.0, 2.0, 10.0), 6.0);
+        assert_eq!(crate::area_radius(0.0, 4.0, 2.0, 10.0), 2.0);
+        assert_eq!(crate::area_radius(5.0, 0.0, 2.0, 10.0), 2.0);
     }
 }

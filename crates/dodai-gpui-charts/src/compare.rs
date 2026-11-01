@@ -105,11 +105,12 @@ impl Bullet {
         let max = self
             .max
             .unwrap_or_else(|| {
-                self.ranges
-                    .iter()
-                    .copied()
-                    .chain([self.value, self.target.unwrap_or(0.0)])
-                    .fold(0.0f32, f32::max)
+                dodai_charts_core::peak(
+                    self.ranges
+                        .iter()
+                        .copied()
+                        .chain([self.value, self.target.unwrap_or(0.0)]),
+                )
             })
             .max(f32::MIN_POSITIVE);
         let max = if self.nice {
@@ -248,11 +249,10 @@ impl PairedBars {
         let g = dodai_gpui::motion::grow_for(window, cx, &self.follow, "PairedBars");
         let focus = crate::focus::Focus::new(window, cx, &self.follow, self.rows.len());
         let (ca, cb) = (t.palette.series_at(0), t.palette.series_at(1));
-        let global = self
-            .rows
-            .iter()
-            .flat_map(|r| [r.1.abs(), r.2.abs()])
-            .fold(f32::MIN_POSITIVE, f32::max);
+        let global = dodai_charts_core::peak_from(
+            self.rows.iter().flat_map(|r| [r.1.abs(), r.2.abs()]),
+            f32::MIN_POSITIVE,
+        );
         let mut col = div().flex().flex_col().gap(px(t.spacing.md)).w_full();
         for (i, (label, a, b)) in self.rows.iter().enumerate() {
             let m = if self.shared {
@@ -382,12 +382,8 @@ impl Lollipop {
         self.id = self.follow.element_id(window, cx).to_string().into();
         dodai_gpui::follow::follow_pairs(window, cx, &self.follow, &mut self.items);
         let t = theme_of(cx);
-        let focus = crate::focus::Focus::new(
-            window,
-            cx,
-            &dodai_gpui::follow::Follow::named(&format!("{}-focus", self.id)),
-            self.items.len(),
-        );
+        let focus =
+            crate::focus::Focus::new(window, cx, &self.follow.sub("focus"), self.items.len());
         let foc: Vec<crate::focus::ItemFocus> =
             (0..self.items.len()).map(|i| focus.item(i)).collect();
         let g = dodai_gpui::motion::grow_for(window, cx, &self.follow, "Lollipop");
@@ -398,8 +394,7 @@ impl Lollipop {
             .map(|i| i.1)
             .chain(self.other.iter().copied())
             .collect();
-        let lo = all.iter().copied().fold(0.0f32, f32::min);
-        let hi = all.iter().copied().fold(0.0f32, f32::max);
+        let (lo, hi) = dodai_charts_core::extent_with_zero(all.iter().copied());
         let ticks = nice_ticks(lo, hi.max(lo + f32::EPSILON), 4);
         let (lo, hi) = (*ticks.first().unwrap_or(&lo), *ticks.last().unwrap_or(&hi));
         let grid = hsla(t.palette.border);

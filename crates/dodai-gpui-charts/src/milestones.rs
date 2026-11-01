@@ -174,12 +174,7 @@ impl TimeScatter {
         let (x0, x1, xt) = tick_span(self.points.iter().map(|p| p.x), 5);
         let ys = self.points.iter().map(|p| p.y);
         let (y0, y1, yt) = tick_span(ys.chain(self.refs.iter().map(|r| r.y)), 5);
-        let biggest = self
-            .points
-            .iter()
-            .filter_map(|p| p.size)
-            .filter(|s| s.is_finite())
-            .fold(0.0f32, f32::max);
+        let biggest = dodai_charts_core::peak(self.points.iter().filter_map(|p| p.size));
         let (points, slots) = groups.keep(std::mem::take(&mut self.points));
         self.points = points;
         let n = self.points.len();
@@ -194,7 +189,7 @@ impl TimeScatter {
             .iter()
             .map(|p| match p.size {
                 Some(s) if biggest > 0.0 && s.is_finite() && s > 0.0 => {
-                    R_MIN + (s / biggest).sqrt() * (R_MAX - R_MIN)
+                    dodai_charts_core::area_radius(s, biggest, R_MIN, R_MAX)
                 }
                 Some(_) if biggest > 0.0 => R_MIN,
                 _ => R_DOT,

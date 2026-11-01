@@ -59,11 +59,7 @@ impl Funnel {
         let g = dodai_gpui::motion::grow_for(window, cx, &self.follow, "Funnel");
         let t = theme_of(cx);
         let n = self.stages.len().max(1);
-        let maxv = self
-            .stages
-            .iter()
-            .map(|s| s.1)
-            .fold(f32::MIN_POSITIVE, f32::max);
+        let maxv = dodai_charts_core::peak_from(self.stages.iter().map(|s| s.1), f32::MIN_POSITIVE);
         let fr: Vec<f32> = self
             .stages
             .iter()
@@ -199,8 +195,7 @@ impl Waterfall {
         let deltas: Vec<f32> = self.steps.iter().map(|s| s.1).collect();
         let st = waterfall_steps(&deltas);
         let end = st.last().map_or(0.0, |s| s.1);
-        let lo = st.iter().flat_map(|s| [s.0, s.1]).fold(0.0f32, f32::min);
-        let hi = st.iter().flat_map(|s| [s.0, s.1]).fold(0.0f32, f32::max);
+        let (lo, hi) = dodai_charts_core::extent_with_zero(st.iter().flat_map(|s| [s.0, s.1]));
         let ticks = nice_ticks(lo, hi, 4);
         let (lo, hi) = (*ticks.first().unwrap_or(&lo), *ticks.last().unwrap_or(&hi));
         let grid = hsla(t.palette.border);
