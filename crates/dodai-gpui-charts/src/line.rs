@@ -202,33 +202,142 @@ impl LineChart {
 }
 
 impl LineChart {
+    /// Follows the series' values and applies the legend's hidden set, leaving `series` and
+    /// `secondary` as drawn. Returns every series with the toggle state when the legend can
+    /// hide series.
+    fn settle_series(
+        &mut self,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Option<(Vec<Series>, crate::common::Hidden)> {
+        let mut legend_all: Option<(Vec<Series>, crate::common::Hidden)> = None;
+        let np = self.series.len();
+        let all: Vec<Series> = self
+            .series
+            .iter()
+            .chain(self.secondary.iter())
+            .cloned()
+            .collect();
+        let mut shown = crate::common::follow_series(window, cx, &self.follow, &all);
+        if self.toggleable {
+            let (visible, h, pinned) = crate::common::toggled(window, cx, &self.id, shown);
+            let off = h.read(cx).clone();
+            let hid = |i: usize| off.get(i).copied().unwrap_or(false);
+            let ns = (0..np).filter(|i| !hid(*i)).count();
+            self.secondary = visible[ns..].to_vec();
+            self.series = visible[..ns].to_vec();
+            legend_all = Some((pinned, h));
+        } else {
+            self.secondary = shown.split_off(np);
+            self.series = shown;
+        }
+        legend_all
+    }
+    /// The floating readout of the crosshair at column `i`: the label and every series' value,
+    /// parked on the side away from the pointer.
+    fn readout_tip(
+        &self,
+        t: &dodai_core::Theme,
+        all: &[Series],
+        i: usize,
+        n: usize,
+        edge: Hsla,
+    ) -> gpui::Div {
+        let label = match self
+            .time
+            .as_ref()
+            .and_then(|(s, o)| s.get(i).map(|t| (*t, *o)))
+        {
+            Some((t, o)) => dodai_charts_core::timeaxis::format_datetime(t, o),
+            None => self
+                .labels
+                .get(i)
+                .map(|l| l.to_string())
+                .unwrap_or_default(),
+        };
+        let mut tip = label_style(t, div())
+            .absolute()
+            .top(px(t.spacing.xs))
+            .px(px(t.spacing.sm))
+            .py(px(t.spacing.xs))
+            .rounded(px(t.spacing.xs))
+            .bg(hsla(t.palette.surface_raised))
+            .border_1()
+            .border_color(edge)
+            .flex()
+            .flex_col()
+            .child(div().child(label));
+        for (si, s) in all.iter().enumerate() {
+            if let Some(v) = s.values.get(i) {
+                tip = tip.child(
+                    div()
+                        .text_color(hsla(series_color(t, s, si)))
+                        .child(format!("{}: {}", s.name, fmt_with(&self.fmt, *v))),
+                );
+            }
+        }
+        // Park the readout on the side away from the pointer.
+        tip = if i * 2 < n {
+            tip.right(px(t.spacing.xs))
+        } else {
+            tip.left(px(t.spacing.xs))
+        };
+        tip
+    }
+
+    /// A tooltip dot over every value, for charts that show their points.
+    fn hover_points(
+        &self,
+        t: &dodai_core::Theme,
+        all: &[Series],
+        xs: &Option<Vec<f32>>,
+        range_of: &dyn Fn(usize) -> (f32, f32),
+        mut plot: gpui::Div,
+    ) -> gpui::Div {
+        for (si, s) in all.iter().enumerate() {
+            let (lo, hi) = range_of(si);
+            let c = hsla(series_color(t, s, si));
+            let m = s.values.len();
+            for (i, v) in s.values.iter().enumerate() {
+                let fx = slot_frac(xs, i, m);
+                let fy = 1.0 - norm(*v, lo, hi);
+                let label = self.labels.get(i).cloned().unwrap_or_default();
+                let label = match self
+                    .time
+                    .as_ref()
+                    .and_then(|(s, o)| s.get(i).map(|t| (*t, *o)))
+                {
+                    Some((t, o)) => dodai_charts_core::timeaxis::format_datetime(t, o).into(),
+                    None => label,
+                };
+                plot = plot.child(
+                    div()
+                        .id((SharedString::from(format!("{}-{si}-{i}", self.id)), i))
+                        .absolute()
+                        .left(relative(fx))
+                        .top(relative(fy))
+                        .ml(px(-t.sizes().legend_swatch / 2.0))
+                        .mt(px(-t.sizes().legend_swatch / 2.0))
+                        .w(px(t.sizes().legend_swatch))
+                        .h(px(t.sizes().legend_swatch))
+                        .rounded_full()
+                        .hover(move |d| d.bg(c))
+                        .tooltip(DodaiTooltip::text(format!(
+                            "{} {label}: {}",
+                            s.name,
+                            fmt_with(&self.fmt, *v)
+                        ))),
+                );
+            }
+        }
+        plot
+    }
+
     fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         self.id = self.follow.element_id(window, cx).to_string().into();
         let t = theme_of(cx);
         let g = dodai_gpui::motion::grow_for(window, cx, &self.follow, "LineChart");
-        let mut legend_all: Option<(Vec<Series>, crate::common::Hidden)> = None;
-        {
-            let np = self.series.len();
-            let all: Vec<Series> = self
-                .series
-                .iter()
-                .chain(self.secondary.iter())
-                .cloned()
-                .collect();
-            let mut shown = crate::common::follow_series(window, cx, &self.follow, &all);
-            if self.toggleable {
-                let (visible, h, pinned) = crate::common::toggled(window, cx, &self.id, shown);
-                let off = h.read(cx).clone();
-                let hid = |i: usize| off.get(i).copied().unwrap_or(false);
-                let ns = (0..np).filter(|i| !hid(*i)).count();
-                self.secondary = visible[ns..].to_vec();
-                self.series = visible[..ns].to_vec();
-                legend_all = Some((pinned, h));
-            } else {
-                self.secondary = shown.split_off(np);
-                self.series = shown;
-            }
-        }
+        let legend_all = self.settle_series(window, cx);
         // A live window slides left between samples.
         let scroll = self
             .series
@@ -391,84 +500,10 @@ impl LineChart {
         ));
 
         if let Some(i) = cur {
-            let label = match self
-                .time
-                .as_ref()
-                .and_then(|(s, o)| s.get(i).map(|t| (*t, *o)))
-            {
-                Some((t, o)) => dodai_charts_core::timeaxis::format_datetime(t, o),
-                None => self
-                    .labels
-                    .get(i)
-                    .map(|l| l.to_string())
-                    .unwrap_or_default(),
-            };
-            let mut tip = label_style(&t, div())
-                .absolute()
-                .top(px(t.spacing.xs))
-                .px(px(t.spacing.sm))
-                .py(px(t.spacing.xs))
-                .rounded(px(t.spacing.xs))
-                .bg(hsla(t.palette.surface_raised))
-                .border_1()
-                .border_color(grid)
-                .flex()
-                .flex_col()
-                .child(div().child(label));
-            for (si, s) in all.iter().enumerate() {
-                if let Some(v) = s.values.get(i) {
-                    tip = tip.child(
-                        div()
-                            .text_color(hsla(series_color(&t, s, si)))
-                            .child(format!("{}: {}", s.name, fmt_with(&self.fmt, *v))),
-                    );
-                }
-            }
-            // Park the readout on the side away from the pointer.
-            tip = if i * 2 < n {
-                tip.right(px(t.spacing.xs))
-            } else {
-                tip.left(px(t.spacing.xs))
-            };
-            plot = plot.child(tip);
+            plot = plot.child(self.readout_tip(&t, &all, i, n, grid));
         }
         if self.points && scroll.is_none() {
-            for (si, s) in all.iter().enumerate() {
-                let (lo, hi) = range_of(si);
-                let c = hsla(series_color(&t, s, si));
-                let m = s.values.len();
-                for (i, v) in s.values.iter().enumerate() {
-                    let fx = slot_frac(&xs_hover, i, m);
-                    let fy = 1.0 - norm(*v, lo, hi);
-                    let label = self.labels.get(i).cloned().unwrap_or_default();
-                    let label = match self
-                        .time
-                        .as_ref()
-                        .and_then(|(s, o)| s.get(i).map(|t| (*t, *o)))
-                    {
-                        Some((t, o)) => dodai_charts_core::timeaxis::format_datetime(t, o).into(),
-                        None => label,
-                    };
-                    plot = plot.child(
-                        div()
-                            .id((SharedString::from(format!("{}-{si}-{i}", self.id)), i))
-                            .absolute()
-                            .left(relative(fx))
-                            .top(relative(fy))
-                            .ml(px(-t.sizes().legend_swatch / 2.0))
-                            .mt(px(-t.sizes().legend_swatch / 2.0))
-                            .w(px(t.sizes().legend_swatch))
-                            .h(px(t.sizes().legend_swatch))
-                            .rounded_full()
-                            .hover(move |d| d.bg(c))
-                            .tooltip(DodaiTooltip::text(format!(
-                                "{} {label}: {}",
-                                s.name,
-                                fmt_with(&self.fmt, *v)
-                            ))),
-                    );
-                }
-            }
+            plot = self.hover_points(&t, &all, &xs_hover, &range_of, plot);
         }
         let time_row = self.time.as_ref().and_then(|(s, o)| time_row(&t, s, *o));
         let x_labels: Vec<SharedString> = if time_row.is_some() {
