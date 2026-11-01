@@ -404,7 +404,7 @@ impl Showcase {
 
     /// Plots of the closed-form physics models plus a live lane for each.
     fn dynamics_physics(&mut self, cx: &mut Context<Self>) -> gpui::AnyElement {
-        use dodai_gpui::dodai_motion::{rubber_band, Bounce, Decay, Shake, Spring};
+        use dodai_gpui::dodai_motion::{rubber_band, Bounce, Decay, Personality, Shake};
         type F = Arc<dyn Fn(f32) -> f32 + Send + Sync>;
         let t = theme_of(cx);
         let (border, accent, muted) = (
@@ -412,7 +412,7 @@ impl Showcase {
             hsla(t.palette.primary),
             hsla(t.palette.text_muted),
         );
-        let lane = |name: &'static str, note: &'static str, f: F, lo: f32, hi: f32| {
+        let lane = |name: &'static str, note: String, f: F, lo: f32, hi: f32| {
             let f2 = f.clone();
             let plot = gpui::canvas(
                 |_, _, _| (),
@@ -477,9 +477,20 @@ impl Showcase {
                         .child(Muted::new(note)),
                 )
         };
-        let sp = |bounce: f32| -> F {
-            let s = Spring::from_response(0.5, bounce);
+        // The spring each personality gives a design, so the lane marked "this design" is the
+        // one its components really use.
+        let spring_of = |p: Personality| -> F {
+            let s = p.spring();
             Arc::new(move |x| s.at(x * 1.6, 0.0, 0.0, 1.0).0)
+        };
+        let mine = t.motion.personality;
+        let feel = |p: Personality, what: &str| {
+            let tag = if p == mine {
+                " This design's feel."
+            } else {
+                ""
+            };
+            format!("{what}{tag}")
         };
         let decay = Decay::new(0.0, 4.0, 3.5);
         let ball = Bounce::new(100.0, 900.0, 0.6);
@@ -487,50 +498,51 @@ impl Showcase {
         let shake = Shake::new(5.0, 3.5);
         let rows = vec![
             lane(
-                "Spring · critical",
-                "bounce 0: fastest arrival with no overshoot. Cyberpunk's feel.",
-                sp(0.0),
+                "Spring · snappy",
+                feel(Personality::Snappy, "No overshoot: the fastest arrival."),
+                spring_of(Personality::Snappy),
                 0.0,
                 1.4,
             ),
             lane(
                 "Spring · smooth",
-                "bounce 0.1: a hair of overshoot. Material's feel.",
-                sp(0.1),
+                feel(Personality::Smooth, "A hair of overshoot, calm."),
+                spring_of(Personality::Smooth),
                 0.0,
                 1.4,
             ),
             lane(
                 "Spring · playful",
-                "bounce 0.5: clear overshoot and ring-down.",
-                sp(0.5),
+                feel(Personality::Playful, "Clear overshoot and ring-down."),
+                spring_of(Personality::Playful),
                 0.0,
                 1.4,
             ),
             lane(
                 "Fling (decay)",
-                "Exponential friction: coasts to rest at v0 / friction, then snap to a page.",
+                "Exponential friction: coasts to rest at v0 / friction, then snap to a page."
+                    .into(),
                 Arc::new(move |x| decay.position(x * 1.6)),
                 0.0,
                 1.4,
             ),
             lane(
                 "Dropped ball",
-                "Gravity with restitution: each bounce keeps 60 % of the speed.",
+                "Gravity with restitution: each bounce keeps 60 % of the speed.".into(),
                 Arc::new(move |x| 1.0 - ball.at(x * dur) / 100.0),
                 0.0,
                 1.05,
             ),
             lane(
                 "Shake",
-                "A decaying sine: invalid input, doorbell wobble.",
+                "A decaying sine: invalid input, doorbell wobble.".into(),
                 Arc::new(move |x| 0.5 + 0.5 * shake.at(x * 1.5)),
                 0.0,
                 1.0,
             ),
             lane(
                 "Rubber band",
-                "Drag past an edge with resistance: output never reaches the limit.",
+                "Drag past an edge with resistance: output never reaches the limit.".into(),
                 Arc::new(|x| rubber_band(x * 6.0, 1.0, 0.55)),
                 0.0,
                 1.0,
@@ -541,8 +553,16 @@ impl Showcase {
         for r in rows {
             col = col.child(r);
         }
+        let m = &t.motion;
+        let summary = format!(
+            "This design: {} springs, values travel {}, {} ms base duration.",
+            m.personality.label(),
+            format!("{:?}", m.travel).to_lowercase(),
+            m.duration.as_millis()
+        );
         Panel::new()
             .title("Dynamics · physics models")
+            .child(Muted::new(summary))
             .child(col)
             .into_any_element()
     }
