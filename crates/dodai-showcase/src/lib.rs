@@ -45,6 +45,8 @@ use std::time::Duration;
 
 mod app;
 mod catalog;
+mod charts_gauges;
+mod charts_instruments;
 mod charts_page;
 mod code;
 mod foundations;
