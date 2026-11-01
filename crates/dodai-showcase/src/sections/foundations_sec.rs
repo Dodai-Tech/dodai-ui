@@ -123,18 +123,6 @@ impl Showcase {
                 .max_w_full()
                 .child(self.icon_search.clone()),
         );
-        if let Some(panel) = self.icon_detail(&t, cx) {
-            // Fades and rises in; a new selection replays it (the id carries the icon).
-            let key = self.icon_sel.map_or(0, |i| i as u32);
-            section = section.child(
-                panel.id(("ico-panel", key)).with_animation(
-                    ("ico-panel-in", key),
-                    gpui::Animation::new(Duration::from_millis(180))
-                        .with_easing(gpui::ease_out_quint()),
-                    |el, p| el.opacity(p).mt(px((1.0 - p) * 6.0)),
-                ),
-            );
-        }
         let filled_toggle = {
             let me_f = me.clone();
             div()
@@ -271,6 +259,29 @@ impl Showcase {
 }
 
 impl Showcase {
+    /// The selected icon's panel, kept above the page (outside the scroll) while the Icons
+    /// section is the one being read, so its download and copy buttons stay in reach.
+    pub(crate) fn pinned_icon_panel(
+        &mut self,
+        t: &dodai_core::Theme,
+        cx: &mut Context<Self>,
+    ) -> Option<gpui::AnyElement> {
+        if self.side_spied.0 != Some("Icons") {
+            return None;
+        }
+        let panel = self.icon_detail(t, cx)?;
+        Some(
+            div()
+                .flex_none()
+                .px(px(t.spacing.lg))
+                .py(px(t.spacing.sm))
+                .border_b_1()
+                .border_color(hsla(t.palette.border))
+                .child(panel.id("ico-pinned").max_h(px(300.0)).overflow_y_scroll())
+                .into_any_element(),
+        )
+    }
+
     /// The selected icon: preview, a download, copy actions, and the SVG source on request.
     fn icon_detail(&mut self, t: &dodai_core::Theme, cx: &mut Context<Self>) -> Option<gpui::Div> {
         let pick = self.icon_sel?;
@@ -302,7 +313,7 @@ impl Showcase {
                     .gap(px(t.spacing.md))
                     .child(
                         div()
-                            .size(px(88.0))
+                            .size(px(64.0))
                             .flex()
                             .items_center()
                             .justify_center()
@@ -310,7 +321,7 @@ impl Showcase {
                             .border_color(hsla(t.palette.border))
                             .child(
                                 dodai_gpui::Icon::new(pick)
-                                    .size(56.0)
+                                    .size(40.0)
                                     .filled(filled)
                                     .color(hsla(t.palette.primary)),
                             ),
