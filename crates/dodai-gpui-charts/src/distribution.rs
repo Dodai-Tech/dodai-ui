@@ -335,11 +335,8 @@ impl BoxPlot {
         let g = dodai_gpui::motion::grow_for(window, cx, &self.follow, "BoxPlot");
         let t = theme_of(cx);
         let stats: Vec<Option<Stats>> = self.groups.iter().map(|g| quartiles(&g.1)).collect();
-        let lo = stats.iter().flatten().map(|s| s.0).fold(f32::MAX, f32::min);
-        let hi = stats.iter().flatten().map(|s| s.4).fold(f32::MIN, f32::max);
-        let (lo, hi) = if lo <= hi { (lo, hi) } else { (0.0, 1.0) };
-        let ticks = nice_ticks(lo, hi, 4);
-        let (lo, hi) = (*ticks.first().unwrap_or(&lo), *ticks.last().unwrap_or(&hi));
+        let (lo, hi, ticks) =
+            dodai_charts_core::tick_span(stats.iter().flatten().flat_map(|s| [s.0, s.4]), 4);
         let grid = hsla(t.palette.border);
         let text = hsla(t.palette.text);
         let cols: Vec<Hsla> = (0..stats.len())
@@ -554,16 +551,7 @@ impl BubbleChart {
         let g = dodai_gpui::motion::grow_for(window, cx, &self.follow, "BubbleChart");
         let t = theme_of(cx);
         let all = || self.groups.iter().flat_map(|g| g.1.iter());
-        let rng = |f: fn(&(f32, f32, f32)) -> f32| {
-            let lo = all().map(f).fold(f32::MAX, f32::min);
-            let hi = all().map(f).fold(f32::MIN, f32::max);
-            let tk = nice_ticks(
-                if lo <= hi { lo } else { 0.0 },
-                if lo <= hi { hi } else { 1.0 },
-                4,
-            );
-            (*tk.first().unwrap(), *tk.last().unwrap(), tk)
-        };
+        let rng = |f: fn(&(f32, f32, f32)) -> f32| dodai_charts_core::tick_span(all().map(f), 4);
         let (xl, xh, xt) = rng(|p| p.0);
         let (yl, yh, yt) = rng(|p| p.1);
         let smax = all().map(|p| p.2).fold(f32::MIN_POSITIVE, f32::max);

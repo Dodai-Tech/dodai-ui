@@ -1,8 +1,6 @@
 //! [`SpanFan`]: lifespans as spokes fanned round an arc.
 
-use crate::common::{
-    chart_cfg, fmt_with, group_slots, nice_ticks, titled, CanvasText, Legend, NumFmt,
-};
+use crate::common::{chart_cfg, fmt_with, nice_ticks, titled, CanvasText, Groups, NumFmt};
 use crate::focus::{readout, Focus};
 use dodai_charts_core::fan::{self, FanOrder, Spoke};
 use dodai_charts_core::math::{polar, turn_arc};
@@ -69,6 +67,7 @@ pub struct SpanFan {
     height: f32,
     fmt: Option<NumFmt>,
     magnitude_fmt: Option<NumFmt>,
+    filter: bool,
     title: Option<SharedString>,
 }
 chart_cfg!(SpanFan);
@@ -87,6 +86,7 @@ impl SpanFan {
             height: 520.0,
             fmt: None,
             magnitude_fmt: None,
+            filter: true,
             title: None,
         }
     }
@@ -111,6 +111,11 @@ impl SpanFan {
         } else {
             0.16
         };
+        self
+    }
+    /// Let the legend hide and show groups (default on; needs two groups or more).
+    pub fn filter(mut self, on: bool) -> Self {
+        self.filter = on;
         self
     }
     /// Formatter for magnitudes in the readout.
@@ -143,14 +148,22 @@ fn frame(w: f32, h: f32, sweep: f32, hub: f32) -> ((f32, f32), f32, f32) {
 }
 
 impl SpanFan {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let g = dodai_gpui::motion::grow_for(window, cx, &self.follow, "SpanFan");
+        let groups = Groups::new(
+            window,
+            cx,
+            &self.follow,
+            self.items.iter().map(|i| i.group.as_ref()),
+            self.filter,
+        );
+        let (items, slots) = groups.keep(std::mem::take(&mut self.items));
+        self.items = items;
         let spans: Vec<fan::Span> = self.items.iter().map(|i| i.span).collect();
         let spokes: Vec<Spoke> = fan::layout(&spans, self.sweep, self.order);
         let focus = Focus::new(window, cx, &self.follow, spokes.len());
         let looks: Vec<_> = (0..spokes.len()).map(|k| focus.item(k)).collect();
-        let (slots, groups) = group_slots(self.items.iter().map(|i| i.group.as_ref()));
         let cols: Vec<Hsla> = slots
             .iter()
             .map(|s| hsla(t.palette.series_at(*s)))
@@ -310,22 +323,15 @@ impl SpanFan {
             }
             line + " · " + &fmt_with(&self.magnitude_fmt, sp.magnitude)
         });
-        let mut body = div()
+        let body = div()
             .flex()
             .flex_col()
             .items_center()
             .gap(px(t.spacing.sm))
             .w_full()
             .child(fan_box)
-            .child(readout(&t, text, "Hover a spoke"));
-        if !groups.is_empty() {
-            body = body.child(Legend::new(
-                groups
-                    .iter()
-                    .enumerate()
-                    .map(|(i, n)| (n.clone(), t.palette.series_at(i))),
-            ));
-        }
+            .child(readout(&t, text, &groups.hint("Hover a spoke")))
+            .children(groups.legend(&t));
         titled(&t, self.title, body)
     }
 }
@@ -363,7 +369,7 @@ mod tests {
             FanSpan::new("b", 0.0, 1.0).group("y"),
             FanSpan::new("c", 0.0, 1.0).group("x"),
         ];
-        let (slots, names) = group_slots(items.iter().map(|i| i.group.as_ref()));
+        let (slots, names) = crate::common::group_slots(items.iter().map(|i| i.group.as_ref()));
         assert_eq!(slots, [0, 1, 0]);
         assert_eq!(names, ["x", "y"]);
     }

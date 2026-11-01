@@ -2,11 +2,11 @@
 //! trails, reference lines and bubble sizes.
 
 use crate::common::{
-    chart_cfg, fmt_with, framed_row, group_slots, nice_ticks, norm, tick_row, turn_arc, CanvasText,
-    Legend, NumFmt,
+    chart_cfg, fmt_with, framed_row, grid_line, norm, tick_row, turn_arc, CanvasText, Groups,
+    NumFmt,
 };
 use crate::focus::{readout, Focus};
-use dodai_charts_core::milestones;
+use dodai_charts_core::{milestones, tick_span};
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
 use dodai_gpui::{hsla, theme_of};
 use gpui::{
@@ -79,6 +79,7 @@ pub struct TimeScatter {
     fmt: Option<NumFmt>,
     x_fmt: Option<NumFmt>,
     size_fmt: Option<NumFmt>,
+    filter: bool,
     title: Option<SharedString>,
 }
 chart_cfg!(TimeScatter);
@@ -99,8 +100,14 @@ impl TimeScatter {
             fmt: None,
             x_fmt: None,
             size_fmt: None,
+            filter: true,
             title: None,
         }
+    }
+    /// Let the legend hide and show groups (default on; needs two groups or more).
+    pub fn filter(mut self, on: bool) -> Self {
+        self.filter = on;
+        self
     }
     /// Draw the record frontier: the best value so far, as a staircase.
     pub fn frontier(mut self, on: bool) -> Self {
@@ -142,20 +149,6 @@ const R_MIN: f32 = 3.5;
 const R_MAX: f32 = 18.0;
 const R_DOT: f32 = 4.5;
 
-/// The finite extent of `v`, widened by `also`; `0..1` when there is none.
-fn extent(v: impl Iterator<Item = f32>) -> (f32, f32) {
-    let (l, h) = v
-        .filter(|v| v.is_finite())
-        .fold((f32::INFINITY, f32::NEG_INFINITY), |(l, h), v| {
-            (l.min(v), h.max(v))
-        });
-    if l <= h {
-        (l, h)
-    } else {
-        (0.0, 1.0)
-    }
-}
-
 /// Dashes along the horizontal line `y` from `x0` to `x1`.
 fn dashes(x0: f32, x1: f32, y: f32) -> Vec<[(f32, f32); 2]> {
     let mut out = Vec::new();
@@ -168,33 +161,35 @@ fn dashes(x0: f32, x1: f32, y: f32) -> Vec<[(f32, f32); 2]> {
 }
 
 impl TimeScatter {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let g = dodai_gpui::motion::grow_for(window, cx, &self.follow, "TimeScatter");
-        let n = self.points.len();
-        let focus = Focus::new(window, cx, &self.follow, n);
-        let looks: Vec<_> = (0..n).map(|k| focus.item(k)).collect();
-        let (slots, groups) = group_slots(self.points.iter().map(|p| p.group.as_ref()));
-        let cols: Vec<Hsla> = slots
-            .iter()
-            .map(|s| hsla(t.palette.series_at(*s)))
-            .collect();
-        let (xl, xh) = extent(self.points.iter().map(|p| p.x));
-        let (yl, yh) = extent(
-            self.points
-                .iter()
-                .map(|p| p.y)
-                .chain(self.refs.iter().map(|r| r.y)),
+        let groups = Groups::new(
+            window,
+            cx,
+            &self.follow,
+            self.points.iter().map(|p| p.group.as_ref()),
+            self.filter,
         );
-        let (xt, yt) = (nice_ticks(xl, xh, 5), nice_ticks(yl, yh, 5));
-        let (x0, x1) = (xt[0], xt[xt.len() - 1]);
-        let (y0, y1) = (yt[0], yt[yt.len() - 1]);
+        // Axes and bubble scale from every point, so hiding a group keeps the others still.
+        let (x0, x1, xt) = tick_span(self.points.iter().map(|p| p.x), 5);
+        let ys = self.points.iter().map(|p| p.y);
+        let (y0, y1, yt) = tick_span(ys.chain(self.refs.iter().map(|r| r.y)), 5);
         let biggest = self
             .points
             .iter()
             .filter_map(|p| p.size)
             .filter(|s| s.is_finite())
             .fold(0.0f32, f32::max);
+        let (points, slots) = groups.keep(std::mem::take(&mut self.points));
+        self.points = points;
+        let n = self.points.len();
+        let focus = Focus::new(window, cx, &self.follow, n);
+        let looks: Vec<_> = (0..n).map(|k| focus.item(k)).collect();
+        let cols: Vec<Hsla> = slots
+            .iter()
+            .map(|s| hsla(t.palette.series_at(*s)))
+            .collect();
         let radius: Vec<f32> = self
             .points
             .iter()
@@ -243,11 +238,8 @@ impl TimeScatter {
             .collect();
         let labels: Vec<SharedString> = self.points.iter().map(|p| p.label.clone()).collect();
         let hollow: Vec<bool> = self.points.iter().map(|p| p.hollow).collect();
-        let (grid, muted, ink) = (
-            hsla(t.palette.border),
-            hsla(t.palette.text_muted),
-            hsla(t.palette.text),
-        );
+        let style = t.chart_style();
+        let (muted, ink) = (hsla(t.palette.text_muted), hsla(t.palette.text));
         let small = CanvasText::of(&t);
         let name = CanvasText::display(&t, t.typography.size_xs);
         let surface = hsla(t.palette.surface);
@@ -265,24 +257,10 @@ impl TimeScatter {
                 let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
                 let at = |(u, v): (f32, f32)| (u * bw, v * bh);
                 for f in &yf {
-                    stroke(
-                        w,
-                        b.origin,
-                        &[(0.0, f * bh), (bw, f * bh)],
-                        1.0,
-                        scale_alpha(grid, 0.6),
-                        false,
-                    );
+                    grid_line(w, b.origin, (0.0, f * bh), (bw, f * bh), &style);
                 }
                 for f in &xf {
-                    stroke(
-                        w,
-                        b.origin,
-                        &[(f * bw, 0.0), (f * bw, bh)],
-                        1.0,
-                        scale_alpha(grid, 0.35),
-                        false,
-                    );
+                    grid_line(w, b.origin, (f * bw, 0.0), (f * bw, bh), &style);
                 }
                 let mut taken: Vec<[f32; 4]> = Vec::new();
                 for (v, label) in &refs {
@@ -429,7 +407,7 @@ impl TimeScatter {
         });
         let x_row = tick_row(&t, &xt, &self.x_fmt);
         let y_labels = yt.iter().map(|v| fmt_with(&self.fmt, *v)).collect();
-        let mut body = div()
+        let body = div()
             .flex()
             .flex_col()
             .gap(px(t.spacing.sm))
@@ -440,15 +418,8 @@ impl TimeScatter {
                 Some(x_row),
                 div().w_full().child(plot),
             ))
-            .child(readout(&t, text, "Hover a point"));
-        if !groups.is_empty() {
-            body = body.child(Legend::new(
-                groups
-                    .iter()
-                    .enumerate()
-                    .map(|(i, n)| (n.clone(), t.palette.series_at(i))),
-            ));
-        }
+            .child(readout(&t, text, &groups.hint("Hover a point")))
+            .children(groups.legend(&t));
         crate::common::titled(&t, self.title, body)
     }
 }
@@ -465,9 +436,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn extent_and_dashes_are_bounded() {
-        assert_eq!(extent([f32::NAN, 2.0, -1.0].into_iter()), (-1.0, 2.0));
-        assert_eq!(extent(std::iter::empty()), (0.0, 1.0));
+    fn dashes_are_bounded() {
         assert_eq!(dashes(0.0, 25.0, 3.0).len(), 3);
         assert!(dashes(0.0, f32::INFINITY, 0.0).len() <= 600);
         assert!(dashes(0.0, f32::NAN, 0.0).is_empty());

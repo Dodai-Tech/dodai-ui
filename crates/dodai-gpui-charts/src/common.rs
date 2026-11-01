@@ -440,9 +440,7 @@ impl CanvasText {
                 at.1 + uy * lh / 2.0 - lh / 2.0,
             );
             let r = [x - 2.0, y, x + lw + 2.0, y + lh];
-            let free = !taken
-                .iter()
-                .any(|t| r[0] < t[2] && t[0] < r[2] && r[1] < t[3] && t[1] < r[3]);
+            let free = !taken.iter().any(|t| overlaps(&r, t));
             free.then_some(r)
         })?;
         taken.push(r);
@@ -511,6 +509,89 @@ pub(crate) fn group_slots<'a>(
     (slots, names)
 }
 
+/// The groups of a grouped chart: a colour slot per item (see [`group_slots`]) and, with the
+/// filter on, a legend whose entries hide and show their group.
+pub(crate) struct Groups {
+    pub(crate) slots: Vec<usize>,
+    pub(crate) names: Vec<SharedString>,
+    toggle: Option<(SharedString, Hidden)>,
+    off: Vec<bool>,
+}
+
+impl Groups {
+    pub(crate) fn new<'a>(
+        window: &mut Window,
+        cx: &mut App,
+        follow: &dodai_gpui::follow::Follow,
+        groups: impl IntoIterator<Item = Option<&'a SharedString>>,
+        filter: bool,
+    ) -> Self {
+        let (slots, names) = group_slots(groups);
+        let toggle = (filter && names.len() > 1).then(|| {
+            let id = follow.sub("groups").element_id(window, cx);
+            let hidden: Hidden = window.with_id(id.clone(), |w| {
+                w.use_keyed_state("hidden", cx, |_, _| Vec::<bool>::new())
+            });
+            (SharedString::from(format!("groups-{id:?}")), hidden)
+        });
+        let off = toggle
+            .as_ref()
+            .map(|(_, h)| h.read(cx).clone())
+            .unwrap_or_default();
+        Self {
+            slots,
+            names,
+            toggle,
+            off,
+        }
+    }
+
+    /// Whether item `i` is shown: its group isn't hidden.
+    pub(crate) fn shown(&self, i: usize) -> bool {
+        let slot = self.slots.get(i).copied().unwrap_or(usize::MAX);
+        !self.off.get(slot).copied().unwrap_or(false)
+    }
+
+    /// The shown items of `items`, with their colour slots.
+    pub(crate) fn keep<T>(&self, items: Vec<T>) -> (Vec<T>, Vec<usize>) {
+        items
+            .into_iter()
+            .enumerate()
+            .filter(|(i, _)| self.shown(*i))
+            .map(|(i, it)| (it, self.slots[i]))
+            .unzip()
+    }
+
+    /// The legend: nothing without groups, clickable with the filter on.
+    pub(crate) fn legend(&self, t: &Theme) -> Option<Legend> {
+        (!self.names.is_empty()).then(|| {
+            let lg = Legend::new(
+                self.names
+                    .iter()
+                    .enumerate()
+                    .map(|(i, n)| (n.clone(), t.palette.series_at(i))),
+            );
+            match &self.toggle {
+                Some((id, hidden)) => lg.toggle(id.clone(), hidden.clone()),
+                None => lg,
+            }
+        })
+    }
+
+    /// The readout's hint, `base` plus how to filter when the legend is clickable.
+    pub(crate) fn hint(&self, base: &str) -> String {
+        match self.toggle {
+            Some(_) => format!("{base} · click a group to hide it"),
+            None => base.to_string(),
+        }
+    }
+}
+
+/// Whether boxes `a` and `b` (`[left, top, right, bottom]`) overlap; touching edges don't.
+pub(crate) fn overlaps(a: &[f32; 4], b: &[f32; 4]) -> bool {
+    a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3]
+}
+
 /// Colour `i` of a long list: the palette's series, then lighter and darker turns of it, so
 /// more series than the palette holds stay apart.
 pub(crate) fn many_series(t: &Theme, i: usize) -> Color {
@@ -520,16 +601,6 @@ pub(crate) fn many_series(t: &Theme, i: usize) -> Color {
         0 => c,
         1 => c.lighten(0.3),
         _ => c.darken(0.25),
-    }
-}
-
-/// The theme's text or background colour, whichever reads better on `fill`.
-pub(crate) fn ink_on(t: &Theme, fill: Color) -> Color {
-    let (a, b) = (t.palette.text, t.palette.background);
-    if fill.contrast(a) >= fill.contrast(b) {
-        a
-    } else {
-        b
     }
 }
 

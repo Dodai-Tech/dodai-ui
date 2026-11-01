@@ -1,6 +1,6 @@
 //! [`ShardMap`]: an outline cut into one convex shard per item, sized by value and grouped.
 
-use crate::common::{chart_cfg, fmt_with, ink_on, CanvasText, Legend, NumFmt};
+use crate::common::{chart_cfg, fmt_with, CanvasText, Legend, NumFmt};
 use crate::focus::{readout, Focus};
 use dodai_charts_core::shards::{self, Outline, Poly, Shard};
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
@@ -82,9 +82,7 @@ fn chord(p: &[(f32, f32)], y: f32) -> Option<(f32, f32)> {
             (lo <= y && y <= hi && hi > lo).then(|| a.0 + (b.0 - a.0) * (y - a.1) / (b.1 - a.1))
         })
         .collect();
-    let l = xs.iter().copied().fold(f32::INFINITY, f32::min);
-    let r = xs.iter().copied().fold(f32::NEG_INFINITY, f32::max);
-    (l < r).then_some((l, r))
+    dodai_charts_core::extent(xs).filter(|(l, r)| l < r)
 }
 
 /// The layout for `values` in `outline`, kept between frames: the Voronoi relaxation is too
@@ -149,13 +147,10 @@ impl ShardMap {
             .iter()
             .map(|c| hsla(t.palette.series_at(c.group).lighten(0.2)))
             .collect();
-        let inks: Vec<Hsla> = cells
-            .iter()
-            .map(|c| hsla(ink_on(&t, pastel(c.group))))
-            .collect();
+        let inks: Vec<Hsla> = cells.iter().map(|c| hsla(t.on(pastel(c.group)))).collect();
         let lines = inks.clone();
         let region_lines: Vec<Hsla> = (0..self.groups.len())
-            .map(|gi| hsla(ink_on(&t, pastel(gi))))
+            .map(|gi| hsla(t.on(pastel(gi))))
             .collect();
         let total: f32 = values
             .iter()

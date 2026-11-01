@@ -1,8 +1,7 @@
 //! [`Sankey`], [`CalendarHeatmap`], [`ViolinChart`] and [`RoseChart`].
 
 use crate::common::{
-    chart_cfg, fmt_with, framed, heat_color, label_style, nice_ticks, norm, titled, turn_arc,
-    Legend, NumFmt,
+    chart_cfg, fmt_with, framed, heat_color, label_style, norm, titled, turn_arc, Legend, NumFmt,
 };
 use crate::distribution::quartiles;
 use crate::focus::{readout, Focus};
@@ -480,20 +479,8 @@ impl ViolinChart {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let g = dodai_gpui::motion::grow(window, cx, "ViolinChart");
-        let all = self
-            .groups
-            .iter()
-            .flat_map(|g| g.1.iter().copied())
-            .filter(|v| v.is_finite());
-        let lo = all.clone().fold(f32::INFINITY, f32::min);
-        let hi = all.fold(f32::NEG_INFINITY, f32::max);
-        let (lo, hi) = if lo.is_finite() && hi > lo {
-            (lo, hi)
-        } else {
-            (0.0, 1.0)
-        };
-        let ticks = nice_ticks(lo, hi, 4);
-        let (lo, hi) = (*ticks.first().unwrap_or(&lo), *ticks.last().unwrap_or(&hi));
+        let all = self.groups.iter().flat_map(|g| g.1.iter().copied());
+        let (lo, hi, ticks) = dodai_charts_core::tick_span(all, 4);
         let n = self.groups.len().max(1);
         struct Shape {
             curve: Vec<(f32, f32)>,
