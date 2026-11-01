@@ -6,7 +6,7 @@ use gpui::{App, Bounds, Entity, Pixels, Window};
 use std::cell::Cell;
 use std::rc::Rc;
 
-use dodai_gpui::follow::{follow_all, Follow};
+use dodai_gpui::follow::{follow_all, FocusFn, Follow};
 
 /// Opacity of the other items while one is selected.
 const DIM: f32 = 0.35;
@@ -27,10 +27,59 @@ pub(crate) struct ItemFocus {
     pub lift: f32,
 }
 
+/// The handlers' side of a chart's focus: changes the shared state and tells the chart's
+/// `on_focus` callback when the focused item (hovered, else selected) changes.
+#[derive(Clone)]
+pub(crate) struct Gate {
+    state: Entity<FocusState>,
+    on_focus: Option<FocusFn>,
+}
+
+impl Gate {
+    fn change(&self, w: &mut Window, cx: &mut App, f: impl FnOnce(&mut FocusState)) {
+        let (before, after) = self.state.update(cx, |s, cx| {
+            let before = s.hover.or(s.sel);
+            let old = *s;
+            f(s);
+            if s.hover != old.hover || s.sel != old.sel {
+                cx.notify();
+            }
+            (before, s.hover.or(s.sel))
+        });
+        w.refresh();
+        if before != after {
+            if let Some(cb) = &self.on_focus {
+                cb(after, w, cx);
+            }
+        }
+    }
+
+    /// Sets the hovered item.
+    pub fn hover(&self, i: Option<usize>, w: &mut Window, cx: &mut App) {
+        self.change(w, cx, |s| s.hover = i);
+    }
+
+    /// Selects item `i`, or clears the selection when it already is.
+    pub fn toggle(&self, i: Option<usize>, w: &mut Window, cx: &mut App) {
+        self.change(w, cx, |s| s.sel = i.filter(|i| s.sel != Some(*i)));
+    }
+
+    /// The pointer left item `i`: clears the hover only if it is still on `i`.
+    fn leave(&self, i: usize, w: &mut Window, cx: &mut App) {
+        self.change(w, cx, |s| {
+            if s.hover == Some(i) {
+                s.hover = None;
+            }
+        });
+    }
+}
+
 /// The state shared by the items of one chart.
 pub(crate) struct Focus {
     state: Entity<FocusState>,
     items: Vec<ItemFocus>,
+    /// `None` when the chart is not interactive: nothing is hit-tested or selected.
+    gate: Option<Gate>,
 }
 
 impl Focus {
@@ -62,7 +111,11 @@ impl Focus {
                 lift: shown.get(2 * i + 1).copied().unwrap_or(0.0).max(0.0),
             })
             .collect();
-        Self { state, items }
+        let gate = follow.interactive().then(|| Gate {
+            state: state.clone(),
+            on_focus: follow.on_focus(),
+        });
+        Self { state, items, gate }
     }
 
     pub fn item(&self, i: usize) -> ItemFocus {
@@ -79,28 +132,9 @@ impl Focus {
         self.item(i).alpha * if other { HOVER_DIM } else { 1.0 }
     }
 
-    /// Sets the hovered item (for charts that hit-test the pointer themselves).
-    pub fn set_hover(state: &Entity<FocusState>, i: Option<usize>, w: &mut Window, cx: &mut App) {
-        let moved = state.update(cx, |s, cx| {
-            let moved = s.hover != i;
-            s.hover = i;
-            if moved {
-                cx.notify();
-            }
-            moved
-        });
-        if moved {
-            w.refresh();
-        }
-    }
-
-    /// Selects item `i`, or clears the selection when it already is.
-    pub fn toggle(state: &Entity<FocusState>, i: Option<usize>, w: &mut Window, cx: &mut App) {
-        state.update(cx, |s, cx| {
-            s.sel = i.filter(|i| s.sel != Some(*i));
-            cx.notify();
-        });
-        w.refresh();
+    /// The handlers' side of the focus, or `None` when the chart is not interactive.
+    pub fn gate(&self) -> Option<Gate> {
+        self.gate.clone()
     }
 
     /// The shared state, for handlers that outlive the build.
@@ -125,6 +159,9 @@ impl Focus {
         hit: impl Fn(f32, f32, f32, f32) -> Option<usize> + 'static,
     ) -> gpui::Stateful<gpui::Div> {
         use gpui::{InteractiveElement as _, StatefulInteractiveElement as _};
+        let Some(gate) = self.gate() else {
+            return el;
+        };
         let hit = Rc::new(hit);
         let at = {
             let b = bounds.clone();
@@ -139,14 +176,14 @@ impl Focus {
             }
         };
         let (at_move, at_click) = (at.clone(), at);
-        let (st_move, st_click, st_leave) = (self.state(), self.state(), self.state());
-        el.on_mouse_move(move |e, w, cx| Focus::set_hover(&st_move, at_move(e.position), w, cx))
+        let (g_move, g_click, g_leave) = (gate.clone(), gate.clone(), gate);
+        el.on_mouse_move(move |e, w, cx| g_move.hover(at_move(e.position), w, cx))
             .on_hover(move |over, w, cx| {
                 if !*over {
-                    Focus::set_hover(&st_leave, None, w, cx);
+                    g_leave.hover(None, w, cx);
                 }
             })
-            .on_click(move |e, w, cx| Focus::toggle(&st_click, at_click(e.position()), w, cx))
+            .on_click(move |e, w, cx| g_click.toggle(at_click(e.position()), w, cx))
     }
 
     /// Hover and click handlers for item `i`'s element.
@@ -155,30 +192,18 @@ impl Focus {
         el: E,
         i: usize,
     ) -> E {
-        let (a, b) = (self.state.clone(), self.state.clone());
+        let Some(gate) = self.gate() else {
+            return el;
+        };
+        let (a, b) = (gate.clone(), gate);
         el.on_hover(move |on, w, cx| {
-            a.update(cx, |s, cx| {
-                let next = if *on {
-                    Some(i)
-                } else if s.hover == Some(i) {
-                    None
-                } else {
-                    s.hover
-                };
-                if s.hover != next {
-                    s.hover = next;
-                    cx.notify();
-                }
-            });
-            w.refresh();
+            if *on {
+                a.hover(Some(i), w, cx);
+            } else {
+                a.leave(i, w, cx);
+            }
         })
-        .on_click(move |_, w, cx| {
-            b.update(cx, |s, cx| {
-                s.sel = if s.sel == Some(i) { None } else { Some(i) };
-                cx.notify();
-            });
-            w.refresh();
-        })
+        .on_click(move |_, w, cx| b.toggle(Some(i), w, cx))
     }
 }
 

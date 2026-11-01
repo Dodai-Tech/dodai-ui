@@ -258,7 +258,6 @@ impl RadialBar {
         .absolute()
         .size_full();
         let count = self.rings.len();
-        let (st_move, st_click, st_leave) = (focus.state(), focus.state(), focus.state());
         let (b_move, b_click) = (bounds.clone(), bounds);
         let at = move |b: &std::rc::Rc<std::cell::Cell<Bounds<Pixels>>>,
                        p: gpui::Point<Pixels>|
@@ -280,18 +279,18 @@ impl RadialBar {
             .relative()
             .w(px(size))
             .h(px(size))
-            .child(cv)
-            .on_mouse_move(move |e, w, cx| {
-                crate::focus::Focus::set_hover(&st_move, at(&b_move, e.position), w, cx)
-            })
-            .on_hover(move |over, w, cx| {
-                if !*over {
-                    crate::focus::Focus::set_hover(&st_leave, None, w, cx);
-                }
-            })
-            .on_click(move |e, w, cx| {
-                crate::focus::Focus::toggle(&st_click, at(&b_click, e.position()), w, cx)
-            });
+            .child(cv);
+        if let Some(gate) = focus.gate() {
+            let (g_move, g_leave, g_click) = (gate.clone(), gate.clone(), gate);
+            disc = disc
+                .on_mouse_move(move |e, w, cx| g_move.hover(at(&b_move, e.position), w, cx))
+                .on_hover(move |over, w, cx| {
+                    if !*over {
+                        g_leave.hover(None, w, cx);
+                    }
+                })
+                .on_click(move |e, w, cx| g_click.toggle(at(&b_click, e.position()), w, cx));
+        }
         if let Some(i) = shown {
             let (name, v, m) = &self.rings[i];
             disc = disc.child(

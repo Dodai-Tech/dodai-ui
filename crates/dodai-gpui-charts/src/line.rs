@@ -385,7 +385,8 @@ impl LineChart {
             .map(|(i, s)| (hsla(series_color(&t, s, i)), s.values.clone(), range_of(i)))
             .collect();
         let bands: Vec<Option<(Vec<f32>, Vec<f32>)>> = all.iter().map(|s| s.band.clone()).collect();
-        let xh = self.crosshair.then(|| {
+        let on_focus = self.follow.on_focus();
+        let xh = (self.crosshair && self.follow.interactive()).then(|| {
             window.use_keyed_state(SharedString::from(format!("{}-xh", self.id)), cx, |_, _| {
                 None::<usize>
             })
@@ -483,6 +484,9 @@ impl LineChart {
                         if *st.read(cx) != next {
                             st.update(cx, |v, _| *v = next);
                             w.refresh();
+                            if let Some(f) = &on_focus {
+                                f(next, w, cx);
+                            }
                         }
                     });
                 }
@@ -502,7 +506,7 @@ impl LineChart {
         if let Some(i) = cur {
             plot = plot.child(self.readout_tip(&t, &all, i, n, grid));
         }
-        if self.points && scroll.is_none() {
+        if self.points && scroll.is_none() && self.follow.interactive() {
             plot = self.hover_points(&t, &all, &xs_hover, &range_of, plot);
         }
         let time_row = self.time.as_ref().and_then(|(s, o)| time_row(&t, s, *o));

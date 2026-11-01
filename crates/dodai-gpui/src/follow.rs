@@ -53,6 +53,10 @@ pub fn next_frame(w: &Window) {
     }
 }
 
+/// Called when the item under the pointer (else the selected one) changes: `Some(index)`, or
+/// `None` when nothing has the focus any more.
+pub type FocusFn = Rc<dyn Fn(Option<usize>, &mut Window, &mut App)>;
+
 /// Animation identity and feel of one instrument.
 #[derive(Clone)]
 pub struct Follow {
@@ -62,6 +66,8 @@ pub struct Follow {
     slot: Option<Rc<Cell<Option<u32>>>>,
     response: Option<NeedleResponse>,
     animated: bool,
+    interactive: bool,
+    on_focus: Option<FocusFn>,
 }
 
 impl Follow {
@@ -81,6 +87,8 @@ impl Follow {
             slot: Some(Rc::default()),
             response: None,
             animated: true,
+            interactive: true,
+            on_focus: None,
         }
     }
     /// An id from a name, for components that already have one.
@@ -90,12 +98,33 @@ impl Follow {
             slot: None,
             response: None,
             animated: true,
+            interactive: true,
+            on_focus: None,
         }
     }
     /// Turns following on or off for this component; off, it shows its value at once.
     pub fn with_animated(mut self, on: bool) -> Self {
         self.animated = on;
         self
+    }
+    /// Whether the component reacts to the pointer (hover readouts, click selection,
+    /// tooltips). Off, it is a plain picture.
+    pub fn with_interactive(mut self, on: bool) -> Self {
+        self.interactive = on;
+        self
+    }
+    /// Whether the component reacts to the pointer.
+    pub fn interactive(&self) -> bool {
+        self.interactive
+    }
+    /// Sets the callback told which item has the focus.
+    pub fn with_on_focus(mut self, f: FocusFn) -> Self {
+        self.on_focus = Some(f);
+        self
+    }
+    /// The callback told which item has the focus, if one is set.
+    pub fn on_focus(&self) -> Option<FocusFn> {
+        self.on_focus.clone()
     }
     /// A sibling identity for a second piece of state of the same component.
     pub fn sub(&self, name: &str) -> Self {
@@ -104,6 +133,8 @@ impl Follow {
             slot: self.slot.clone(),
             response: self.response,
             animated: self.animated,
+            interactive: self.interactive,
+            on_focus: self.on_focus.clone(),
         }
     }
     /// The state key of this component in the current frame: its id, plus the instance number
@@ -156,6 +187,21 @@ macro_rules! follow_api {
         /// Animate switch still turns every component off.
         pub fn animate(mut self, on: bool) -> Self {
             self.follow = self.follow.with_animated(on);
+            self
+        }
+        /// Whether the component reacts to the pointer: hover readouts, click selection and
+        /// tooltips. Off, it is a plain picture. On by default.
+        pub fn interactive(mut self, on: bool) -> Self {
+            self.follow = self.follow.with_interactive(on);
+            self
+        }
+        /// Called with the item that has the focus (hovered, else selected) each time it
+        /// changes; `None` when it is lost.
+        pub fn on_focus(
+            mut self,
+            f: impl Fn(Option<usize>, &mut Window, &mut App) + 'static,
+        ) -> Self {
+            self.follow = self.follow.with_on_focus(std::rc::Rc::new(f));
             self
         }
         /// Like `response` for an optional override (`None` keeps the design's own).
