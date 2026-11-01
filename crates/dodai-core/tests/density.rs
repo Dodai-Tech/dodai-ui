@@ -46,3 +46,24 @@ fn every_design_follows_density() {
         assert_eq!(t.clone().with_density(1.0).sizes(), base, "{id}: 1.0");
     }
 }
+
+#[test]
+fn every_design_scales_button_sizes_with_density() {
+    use dodai_core::ControlSize;
+    for t in all() {
+        let (dense, roomy) = (t.clone().with_density(0.8), t.clone().with_density(1.25));
+        for size in ControlSize::ALL {
+            let (a, b, c) = (
+                dense.control_metrics(size),
+                t.control_metrics(size),
+                roomy.control_metrics(size),
+            );
+            assert!(
+                a.height < b.height && b.height < c.height,
+                "{} {size:?}: height",
+                t.id()
+            );
+            assert!(a.padding < c.padding, "{} {size:?}: padding", t.id());
+        }
+    }
+}
