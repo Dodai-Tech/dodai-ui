@@ -15,6 +15,11 @@ const ALLOWED: &[(&str, &str, &str)] = &[
         "no fill",
     ),
     (
+        "dodai-gpui-charts/src/common.rs",
+        "gpui::transparent_black()",
+        "text shaped only to measure it, never painted",
+    ),
+    (
         "dodai-gpui-charts/src/grid.rs",
         "Color::rgba(r, gr, b, 255)",
         "converts a gradient sample (data), not a design colour",
