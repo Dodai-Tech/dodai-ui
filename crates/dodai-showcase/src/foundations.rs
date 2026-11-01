@@ -491,10 +491,10 @@ pub(crate) fn layout_view(t: &dodai_core::Theme) -> gpui::Div {
 }
 
 /// Frosted glass panels over a picture, blurred with the design's blur and tint.
-pub(crate) fn frosted_view(t: &dodai_core::Theme, viewport_w: f32) -> gpui::Div {
-    // The picture is pixels, so it is sized to the room the page has: the rail and the page
-    // padding take about 360 px at full width, less when the rail collapses.
-    let room = viewport_w - if viewport_w < 760.0 { 310.0 } else { 400.0 };
+pub(crate) fn frosted_view(t: &dodai_core::Theme, viewport_w: f32, side_w: f32) -> gpui::Div {
+    // The picture is pixels, so it is sized to the room the page has: what the window leaves
+    // beside the sidebar (or the collapsed rail), less the page and card padding.
+    let room = viewport_w - side_w - 150.0;
     let w = room.clamp(260.0, 720.0).floor();
     let narrow = w < 520.0;
     let (pw, h) = if narrow {

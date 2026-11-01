@@ -227,6 +227,17 @@ pub struct Showcase {
 const REST: std::time::Duration = std::time::Duration::from_millis(200);
 
 impl Showcase {
+    /// The width the shell gives the sidebar column (the collapsed rail when it is folded).
+    pub(crate) fn side_width(&self, t: &dodai_core::Theme) -> f32 {
+        if self.rail {
+            t.navigation().rail_width
+        } else if self.viewport_w < 760.0 {
+            self.side_need.clamp(170.0, 230.0)
+        } else {
+            self.side_need.clamp(240.0, 340.0)
+        }
+    }
+
     /// Render the page again next frame as a scroll does: the cached sections and the sidebar
     /// keep their last build (a plain frame request would rebuild every one of them).
     fn next_frame_quiet(&self, window: &mut Window, cx: &mut Context<Self>) {
