@@ -70,7 +70,6 @@ pub(crate) const CHART_FAMILIES: [(&str, &[&str]); 11] = [
         "Relationship",
         &[
             "Scatter",
-            "Bubble",
             "Heatmap",
             "Hexbin",
             "Parallel coordinates",

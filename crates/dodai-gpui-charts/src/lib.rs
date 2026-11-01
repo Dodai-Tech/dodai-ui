@@ -56,7 +56,7 @@ pub use common::{
     Series, SparkGuide, SparkStyle, Sparkline,
 };
 pub use compare::{Bullet, Lollipop, PairedBars, SlopeChart};
-pub use distribution::{histogram_bins, quartiles, BoxPlot, BubbleChart, Histogram};
+pub use distribution::{histogram_bins, quartiles, BoxPlot, Histogram};
 pub use dodai_charts_core::fan::FanOrder;
 pub use dodai_charts_core::gantt::Task as GanttTask;
 pub use dodai_charts_core::shards::Outline;
@@ -71,7 +71,7 @@ pub use layered::{BumpChart, HorizonChart, RidgelineChart};
 pub use market::{ChartStack, DepthChart, Gantt, RenkoChart};
 pub use milestones::{Milestone, TimeScatter};
 pub use network::{ArcDiagram, ChordDiagram, Hexbin, NetworkGraph, ParallelCoordinates};
-pub use packed::{BubbleSwarm, CirclePack, ProportionalSquares};
+pub use packed::{CirclePack, ProportionalSquares};
 pub use part_whole::{treemap_layout, RadialBar, Treemap};
 pub use peaks::PeakRange;
 pub use process::{ControlChart, EventTimeline, StateSpan};

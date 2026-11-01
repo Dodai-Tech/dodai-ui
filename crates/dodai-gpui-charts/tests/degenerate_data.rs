@@ -154,14 +154,9 @@ fn charts(name: &'static str, v: Vec<f32>) -> Vec<AnyElement> {
         GradientScale::new(f32::NAN, 0.0, *v.first().unwrap_or(&f32::INFINITY)).into_any_element(),
         ProportionalSquares::new([("g", pairs().collect::<Vec<_>>()), ("e", vec![])])
             .into_any_element(),
-        BubbleSwarm::new([
-            (
-                "g",
-                pairs().map(|(l, x)| (l, (x, x.abs()))).collect::<Vec<_>>(),
-            ),
-            ("e", vec![]),
-        ])
-        .into_any_element(),
+        BubbleTimeline::new(pairs().map(|(l, x)| Bubble::new(l, x, x.abs())))
+            .centred(true)
+            .into_any_element(),
         Waffle::new(pairs()).grid(7, 3).into_any_element(),
         Marimekko::new(["x", "y"], pairs().map(|(l, x)| (l, vec![x, -x]))).into_any_element(),
         Beeswarm::new([(name, v.clone()), ("r", vec![])]).into_any_element(),
@@ -213,11 +208,6 @@ fn more_charts(name: &'static str, v: &[f32]) -> Vec<AnyElement> {
     };
     vec![
         ScatterPlot::new([(name, pts.clone()), ("e", vec![])]).into_any_element(),
-        BubbleChart::new([(
-            name,
-            v.iter().map(|x| (*x, -x, x.abs())).collect::<Vec<_>>(),
-        )])
-        .into_any_element(),
         BoxPlot::new([(name, v.to_vec()), ("e", vec![])])
             .notch(true)
             .mean(true)

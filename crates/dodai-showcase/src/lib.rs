@@ -24,8 +24,8 @@ use dodai_gpui_charts::{
     ViolinChart,
 };
 use dodai_gpui_charts::{
-    BarChart, BoxPlot, BubbleChart, Candle, Candlestick, Funnel, Heatmap, Histogram, LineChart,
-    Marker, PieChart, PieStyle, RadarChart, RadialBar, ScatterPlot, Series, SparkGuide, SparkStyle,
+    BarChart, BoxPlot, Candle, Candlestick, Funnel, Heatmap, Histogram, LineChart, Marker,
+    PieChart, PieStyle, RadarChart, RadialBar, ScatterPlot, Series, SparkGuide, SparkStyle,
     Sparkline, StackedAreaChart, Treemap, Waterfall,
 };
 use dodai_gpui_charts::{
