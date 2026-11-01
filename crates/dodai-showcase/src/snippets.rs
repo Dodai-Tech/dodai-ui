@@ -5,9 +5,14 @@
 //! `// snippet: <section>` and `// end snippet` is what the showcase displays
 //! (read back from this very file with `include_str!`).
 
-#![allow(dead_code, clippy::unused_unit)]
-
 use super::*;
+
+// The snippets are only shown as text: naming them here keeps them compiled and checked.
+const _: () = {
+    let _ = (
+        buttons, toggles, sliders, range, tabs, tags, rating, progress, code,
+    );
+};
 
 // snippet: Buttons
 fn buttons() -> impl IntoElement {
@@ -129,14 +134,6 @@ fn scan_snippet(section: &str) -> Option<String> {
     extract(SOURCE, section)
 }
 
-/// Every section title that has a snippet.
-pub(crate) fn titles() -> Vec<&'static str> {
-    SOURCE
-        .lines()
-        .filter_map(|l| l.trim().strip_prefix("// snippet: "))
-        .collect()
-}
-
 fn extract(src: &str, section: &str) -> Option<String> {
     let marker = format!("// snippet: {section}");
     let mut lines = src.lines().skip_while(|l| l.trim() != marker).skip(1);
@@ -153,6 +150,14 @@ fn extract(src: &str, section: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Every section title that has a snippet.
+    fn titles() -> Vec<&'static str> {
+        SOURCE
+            .lines()
+            .filter_map(|l| l.trim().strip_prefix("// snippet: "))
+            .collect()
+    }
 
     #[test]
     fn every_snippet_is_well_formed() {
