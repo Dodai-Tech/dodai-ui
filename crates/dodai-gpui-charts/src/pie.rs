@@ -190,6 +190,8 @@ struct SliceLook {
     soft: bool,
     /// Ink outline of the design's chart style: colour and width.
     outline: Option<(Hsla, f32)>,
+    /// The slice's hatch and its ink when patterns are on.
+    hatch: Option<(crate::common::Hatch, Hsla)>,
 }
 
 /// Outer tick scale and dashed inner reference ring of a HUD donut; only the part of the turn
@@ -276,6 +278,11 @@ fn segmented_slice(w: &mut Window, origin: gpui::Point<Pixels>, geo: &SliceGeo, 
         cells.push(p);
     }
     fill_batch(w, origin, &cells, col);
+    if let Some((kind, ink)) = look.hatch {
+        for p in &cells {
+            crate::common::hatch_poly(w, origin, p, ink, kind);
+        }
+    }
     if selected {
         stroke(
             w,
@@ -321,6 +328,9 @@ fn wedge_slice(w: &mut Window, origin: gpui::Point<Pixels>, geo: &SliceGeo, look
         let mut p = turn_arc(c, c, r, w0, if k + 1 == n { w1 } else { w1 + 0.0015 });
         p.push((ax, ay));
         fill(w, origin, &p, col);
+        if let Some((kind, ink)) = look.hatch {
+            crate::common::hatch_poly(w, origin, &p, ink, kind);
+        }
     }
     if let Some((ink, width)) = outline {
         let mut o = turn_arc(c, c, r, ao, zo);
@@ -368,6 +378,9 @@ fn annular_slice(w: &mut Window, origin: gpui::Point<Pixels>, geo: &SliceGeo, lo
         inner.reverse();
         p.extend(inner);
         fill(w, origin, &p, col);
+        if let Some((kind, ink)) = look.hatch {
+            crate::common::hatch_poly(w, origin, &p, ink, kind);
+        }
     }
     if hud {
         glow_stroke(w, origin, &turn_arc(c, c, r + 2.0, ao, zo), 1.5, col, glow);
@@ -573,6 +586,7 @@ struct PiePaint {
     guide_col: Hsla,
     scale_col: Hsla,
     outline: Option<(Hsla, f32)>,
+    hatch_ink: Hsla,
 }
 
 impl PiePaint {
@@ -600,6 +614,7 @@ impl PiePaint {
             guide_col,
             scale_col,
             outline,
+            hatch_ink,
         } = self;
         let (
             hover,
@@ -706,6 +721,9 @@ impl PiePaint {
                 hud,
                 soft,
                 outline: *outline,
+                hatch: crate::common::hatch_of(i)
+                    .filter(|_| crate::common::patterns())
+                    .map(|k| (k, *hatch_ink)),
             };
             match (style, hole <= 0.0) {
                 (PieStyle::Segmented, _) => segmented_slice(w, origin, &geo, &look),
@@ -806,6 +824,7 @@ impl PieChart {
                 let cs = t.chart_style();
                 cs.mark_outline.map(|c| (hsla(c), cs.mark_outline_width))
             },
+            hatch_ink: crate::common::hatch_ink(&t),
         };
         let cvs = canvas(
             |_, _, _| (),

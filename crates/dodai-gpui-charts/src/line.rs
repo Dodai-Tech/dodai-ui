@@ -371,6 +371,7 @@ impl LineChart {
         let grid = hsla(style.grid_color);
         let glow = self.glow.resolve(&t);
         let patterns = self.patterns || crate::common::patterns();
+        let hatch_ink = crate::common::hatch_ink(&t);
         let xs: Option<Vec<f32>> = self.time.as_ref().and_then(|(s, _)| time_fracs(s));
         let (area, smooth, stepped, sw, show_grid) = (
             self.area,
@@ -454,6 +455,9 @@ impl LineChart {
                             poly.push((p.last().unwrap().0, bh));
                             poly.push((p[0].0, bh));
                             fill(w, b.origin, &poly, scale_alpha(*c, style.area_alpha));
+                            if let Some(kind) = crate::common::hatch_of(li).filter(|_| patterns) {
+                                crate::common::hatch_poly(w, b.origin, &poly, hatch_ink, kind);
+                            }
                         }
                         match dash_pattern(li).filter(|_| patterns) {
                             Some((on, off)) => {
