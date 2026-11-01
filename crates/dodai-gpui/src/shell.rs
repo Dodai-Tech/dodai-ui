@@ -279,14 +279,34 @@ impl RenderOnce for ResponsiveShell {
         } else {
             (None, self.sidebar)
         };
+        // The drawer carries its own close icon, so it can be folded away from inside as well
+        // as by tapping the backdrop or the menu bar.
+        let close_icon = {
+            let o = open.clone();
+            crate::IconButton::new((id.clone(), "close"), "«").on_click(move |_, _, cx| {
+                o.update(cx, |o, cx| {
+                    *o = false;
+                    cx.notify()
+                })
+            })
+        };
         let drawer_side = drawer_body.map(|s| {
             div()
                 .id((id.clone(), "side"))
+                .relative()
                 .flex_none()
                 .w(px(self.sidebar_width))
                 .h_full()
                 .overflow_y_scroll()
                 .child(s)
+                .child(
+                    div()
+                        .debug_selector(|| "shell-close".into())
+                        .absolute()
+                        .top(px(t.spacing.md))
+                        .right(px(t.spacing.md))
+                        .child(close_icon),
+                )
         });
         let collapsed = self.collapsed;
         let grip = self
