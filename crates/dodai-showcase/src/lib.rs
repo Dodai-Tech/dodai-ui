@@ -133,6 +133,8 @@ pub struct Showcase {
     overview_real: bool,
     /// When the page last scrolled: sections below are measured ahead only once it rests.
     scrolled_at: Option<std::time::Instant>,
+    /// A wake-up for when the page comes to rest is already scheduled.
+    rest_pending: bool,
     /// Lay out every section, not only those near the viewport (`DODAI_NOCULL`, tests).
     no_cull: bool,
     /// Set while a demo step notifies: only the sections in `live_sections` rebuild.
@@ -217,6 +219,10 @@ pub struct Showcase {
     sh_theme: bool,
     sh_px: f32,
 }
+
+/// How long after the last scroll the page counts as resting (and measures off-screen
+/// sections).
+const REST: std::time::Duration = std::time::Duration::from_millis(200);
 
 impl Showcase {
     /// Render the page again next frame as a scroll does: the cached sections and the sidebar
@@ -423,9 +429,7 @@ impl Render for Showcase {
         // Sections below the viewport get measured one per frame once the page rests (a
         // first build costs several ms: during a scroll it would drop frames), so spacer
         // heights become exact without one big hitch.
-        let resting = self
-            .scrolled_at
-            .is_none_or(|t| t.elapsed() > std::time::Duration::from_millis(200));
+        let resting = self.scrolled_at.is_none_or(|t| t.elapsed() > REST);
         let mut budget = usize::from(resting);
         // A first build costs several ms: sections entering the margin (not yet on screen)
         // come in one per frame, so two never land in the same frame.
@@ -532,7 +536,25 @@ impl Render for Showcase {
                 .set_offset(gpui::point(o.x, o.y - px(delta_above)));
         }
         if unmeasured {
-            self.next_frame_quiet(window, cx);
+            match self.scrolled_at.map(|t| REST.saturating_sub(t.elapsed())) {
+                // Still scrolling: wake once the page has rested instead of every frame.
+                // One pending wake-up at a time; it re-arms if the page scrolled since.
+                Some(wait) if !wait.is_zero() => {
+                    if !self.rest_pending {
+                        self.rest_pending = true;
+                        cx.spawn(async move |me, cx| {
+                            cx.background_executor().timer(wait).await;
+                            let _ = me.update(cx, |s, cx| {
+                                s.rest_pending = false;
+                                s.quiet = true;
+                                cx.notify();
+                            });
+                        })
+                        .detach();
+                    }
+                }
+                _ => self.next_frame_quiet(window, cx),
+            }
         }
         self.tick_demos(window, cx);
         // Perf probe: redraw every frame so the cost of the visible sections shows up.

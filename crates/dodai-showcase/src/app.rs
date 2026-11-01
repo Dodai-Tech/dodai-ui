@@ -236,6 +236,7 @@ impl Showcase {
             real_h: Default::default(),
             quiet: false,
             scrolled_at: None,
+            rest_pending: false,
             no_cull: std::env::var_os("DODAI_NOCULL").is_some(),
             sidebar_view: None,
             side_need: 0.0,
