@@ -125,25 +125,27 @@ impl ScatterPlot {
             let c = hsla(t.palette.series_at(si));
             for (i, (x, y)) in pts.iter().enumerate() {
                 let gi = dodai_gpui::motion::reveal(g, i, pts.len());
-                plot = plot.child(
-                    div()
-                        .id((SharedString::from(format!("{}-{si}-{i}", self.id)), i))
-                        .absolute()
-                        .left(relative(norm(*x, x0, x1)))
-                        .top(relative(1.0 - norm(*y, y0, y1)))
-                        .ml(px(-t.sizes().scatter_dot / 2.0 * gi))
-                        .mt(px(-t.sizes().scatter_dot / 2.0 * gi))
-                        .w(px(t.sizes().scatter_dot * gi))
-                        .h(px(t.sizes().scatter_dot * gi))
-                        .rounded_full()
-                        .bg(scale_alpha(c, 0.85))
+                let mut dot = div()
+                    .id((SharedString::from(format!("{}-{si}-{i}", self.id)), i))
+                    .absolute()
+                    .left(relative(norm(*x, x0, x1)))
+                    .top(relative(1.0 - norm(*y, y0, y1)))
+                    .ml(px(-t.sizes().scatter_dot / 2.0 * gi))
+                    .mt(px(-t.sizes().scatter_dot / 2.0 * gi))
+                    .w(px(t.sizes().scatter_dot * gi))
+                    .h(px(t.sizes().scatter_dot * gi))
+                    .rounded_full()
+                    .bg(scale_alpha(c, 0.85));
+                if self.follow.interactive() {
+                    dot = dot
                         .hover(move |d| d.bg(c))
                         .tooltip(DodaiTooltip::text(format!(
                             "{name}: ({}, {})",
                             fmt_num(*x),
                             fmt_num(*y)
-                        ))),
-                );
+                        )));
+                }
+                plot = plot.child(dot);
             }
         }
         let xl: Vec<SharedString> = xt.iter().map(|v| fmt_num(*v).into()).collect();
@@ -273,6 +275,7 @@ impl Heatmap {
         let lens: Rc<Vec<usize>> = Rc::new(self.rows.iter().map(Vec::len).collect());
         let outline = hsla(t.palette.text);
         let hov_w = hov.clone();
+        let (interactive, on_focus) = (self.follow.interactive(), self.follow.on_focus());
         let canvas = gpui::canvas(
             |_, _, _| (),
             move |b: gpui::Bounds<gpui::Pixels>, _, w, _| {
@@ -297,20 +300,26 @@ impl Heatmap {
                     ));
                 }
                 let st = hov_w.clone();
-                w.on_mouse_event(move |e: &gpui::MouseMoveEvent, _, w, cx| {
-                    let cw = f32::from(b.size.width) / nc.max(1) as f32;
-                    let next = b.contains(&e.position).then(|| {
-                        let d = e.position - b.origin;
-                        (
-                            ((f32::from(d.y) / cell) as usize).min(nr.saturating_sub(1)),
-                            ((f32::from(d.x) / cw) as usize).min(nc.saturating_sub(1)),
-                        )
+                let on_focus = on_focus.clone();
+                if interactive {
+                    w.on_mouse_event(move |e: &gpui::MouseMoveEvent, _, w, cx| {
+                        let cw = f32::from(b.size.width) / nc.max(1) as f32;
+                        let next = b.contains(&e.position).then(|| {
+                            let d = e.position - b.origin;
+                            (
+                                ((f32::from(d.y) / cell) as usize).min(nr.saturating_sub(1)),
+                                ((f32::from(d.x) / cw) as usize).min(nc.saturating_sub(1)),
+                            )
+                        });
+                        if *st.read(cx) != next {
+                            st.update(cx, |v, _| *v = next);
+                            w.refresh();
+                            if let Some(f) = &on_focus {
+                                f(next.map(|(r, c)| r * nc + c), w, cx);
+                            }
+                        }
                     });
-                    if *st.read(cx) != next {
-                        st.update(cx, |v, _| *v = next);
-                        w.refresh();
-                    }
-                });
+                }
             },
         )
         .flex_1()

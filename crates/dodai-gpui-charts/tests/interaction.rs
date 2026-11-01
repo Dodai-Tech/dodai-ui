@@ -300,3 +300,57 @@ fn hovering_round_and_grid_charts_never_moves_the_layout(cx: &mut TestAppContext
         }
     }
 }
+
+/// Mounts a pie and a heatmap with `interactive`, drives the pointer over both and returns
+/// what `on_focus` was told.
+fn focus_events(cx: &mut TestAppContext, interactive: bool) -> Vec<Option<usize>> {
+    let log = std::rc::Rc::new(std::cell::RefCell::new(Vec::<Option<usize>>::new()));
+    let (l1, l2) = (log.clone(), log.clone());
+    let vcx = mount(cx, move |_, _| {
+        let (l1, l2) = (l1.clone(), l2.clone());
+        div()
+            .w(px(480.0))
+            .flex()
+            .flex_col()
+            .child(
+                PieChart::new([("A", 3.0), ("B", 5.0), ("C", 2.0)])
+                    .size(180.0)
+                    .legend(false)
+                    .interactive(interactive)
+                    .on_focus(move |i, _, _| l1.borrow_mut().push(i)),
+            )
+            .child(
+                Heatmap::new(vec![vec![1.0, 4.0], vec![3.0, 0.0]])
+                    .interactive(interactive)
+                    .on_focus(move |i, _, _| l2.borrow_mut().push(i)),
+            )
+            .into_any_element()
+    });
+    let (x, y, _, _) = target(vcx);
+    // inside the pie's ring, then in the heatmap's first cell, then away from both
+    for (px_, py_) in [
+        (x + 130.0, y + 90.0),
+        (x + 20.0, y + 200.0),
+        (x + 470.0, y + 4.0),
+    ] {
+        vcx.simulate_mouse_move(point(px(px_), px(py_)), None, Modifiers::none());
+        vcx.run_until_parked();
+    }
+    let out = log.borrow().clone();
+    out
+}
+
+#[gpui::test]
+fn on_focus_reports_the_hovered_item_and_interactive_off_silences_it(cx: &mut TestAppContext) {
+    let on = focus_events(cx, true);
+    assert!(
+        on.iter().any(|e| e.is_some()),
+        "hovering items reports them: {on:?}"
+    );
+    assert_eq!(on.last(), Some(&None), "leaving reports no focus: {on:?}");
+    let off = focus_events(cx, false);
+    assert!(
+        off.is_empty(),
+        "a non-interactive chart reports nothing: {off:?}"
+    );
+}

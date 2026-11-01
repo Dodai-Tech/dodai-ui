@@ -480,9 +480,28 @@ struct PieInput {
     controlled: bool,
     sel: Option<usize>,
     on_select: Option<SelectFn>,
+    on_focus: Option<dodai_gpui::follow::FocusFn>,
 }
 
 impl PieInput {
+    /// The slice with the focus: hovered, else selected.
+    fn shown(&self, cx: &App) -> Option<usize> {
+        let st = self.st.read(cx);
+        st.hover.or(if self.controlled { self.sel } else { st.sel })
+    }
+
+    /// Runs `change`, then tells `on_focus` if the focused slice differs.
+    fn track(&self, w: &mut Window, cx: &mut App, change: impl FnOnce(&mut App)) {
+        let before = self.shown(cx);
+        change(cx);
+        let after = self.shown(cx);
+        if before != after {
+            if let Some(f) = &self.on_focus {
+                f(after, w, cx);
+            }
+        }
+    }
+
     /// The slice under `pos`, if any.
     fn hit(&self, pos: gpui::Point<Pixels>, cx: &App) -> Option<usize> {
         let b = self.st.read(cx).bounds;
@@ -500,7 +519,7 @@ impl PieInput {
     fn moved(&self, pos: gpui::Point<Pixels>, w: &mut Window, cx: &mut App) {
         let h = self.hit(pos, cx);
         if self.st.read(cx).hover != h {
-            self.st.update(cx, |s, _| s.hover = h);
+            self.track(w, cx, |cx| self.st.update(cx, |s, _| s.hover = h));
             w.refresh();
         }
     }
@@ -514,7 +533,7 @@ impl PieInput {
         };
         let next = next_selection(cur, h);
         if !self.controlled {
-            self.st.update(cx, |s, _| s.sel = next);
+            self.track(w, cx, |cx| self.st.update(cx, |s, _| s.sel = next));
             w.refresh();
         }
         if let Some(f) = &self.on_select {
@@ -524,7 +543,7 @@ impl PieInput {
 
     fn hover_changed(&self, over: bool, w: &mut Window, cx: &mut App) {
         if !over && self.st.read(cx).hover.is_some() {
-            self.st.update(cx, |s, _| s.hover = None);
+            self.track(w, cx, |cx| self.st.update(cx, |s, _| s.hover = None));
             w.refresh();
         }
     }
@@ -803,6 +822,7 @@ impl PieChart {
             controlled,
             sel,
             on_select,
+            on_focus: self.follow.on_focus(),
         });
         // A top half-ring (arc 0.75 + 0.5) only needs the upper half of the box.
         let top_half = self.sweep <= 0.5 && (self.start - 0.75).abs() < 0.01;
@@ -813,16 +833,19 @@ impl PieChart {
             .w(px(size))
             .h(px(disc_h))
             .overflow_hidden()
-            .child(cvs)
-            .on_mouse_move({
-                let input = input.clone();
-                move |e, w, cx| input.moved(e.position, w, cx)
-            })
-            .on_mouse_down(gpui::MouseButton::Left, {
-                let input = input.clone();
-                move |e, w, cx| input.clicked(e.position, w, cx)
-            })
-            .on_hover(move |over, w, cx| input.hover_changed(*over, w, cx));
+            .child(cvs);
+        if self.follow.interactive() {
+            disc = disc
+                .on_mouse_move({
+                    let input = input.clone();
+                    move |e, w, cx| input.moved(e.position, w, cx)
+                })
+                .on_mouse_down(gpui::MouseButton::Left, {
+                    let input = input.clone();
+                    move |e, w, cx| input.clicked(e.position, w, cx)
+                })
+                .on_hover(move |over, w, cx| input.hover_changed(*over, w, cx));
+        }
         if let (Some(txt), true) = (self.center.clone(), hole > 0.0) {
             disc = disc.child(center_overlay(&t, txt, (size, hole), top_half));
         }
