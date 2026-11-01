@@ -70,3 +70,99 @@ pub fn swatch_paint(theme: &Theme, texture: Texture, neon: f32) -> SurfacePaint 
     };
     paint_with(theme, fx, false)
 }
+
+/// One frame of the mix `active` (with a component's own `over` on top) for a `class` surface of
+/// `w`×`h` px, as an SVG document: for toolkits that show images or CSS backgrounds rather than
+/// draw (web, Slint). `seed` varies the random-looking details between surfaces, `time` picks
+/// the moment of an animated effect. `None` when the design draws nothing of it. The second
+/// value says the effect animates.
+pub fn surface_svg(
+    theme: &Theme,
+    class: SurfaceClass,
+    over: &Surface,
+    active: SurfaceFx,
+    (w, h): (f32, f32),
+    (seed, time): (i32, f32),
+) -> Option<(String, bool)> {
+    let paint = surface_paint(theme, class, over, active)?;
+    let shape = theme.shape.clip();
+    let frame = dodai_fx::Frame {
+        w,
+        h,
+        shape: &shape,
+        seed,
+        time,
+        presses: &[],
+    };
+    dodai_fx::surface_svg(&frame, &paint)
+}
+
+#[cfg(all(test, feature = "cyberpunk", feature = "material"))]
+mod tests {
+    use super::*;
+    use crate::SurfaceTargets;
+
+    /// The textures `t` draws (not the empty one).
+    fn textured(t: &Theme) -> Vec<Texture> {
+        t.surface_textures()
+            .iter()
+            .copied()
+            .filter(|x| *x != Texture::None)
+            .collect()
+    }
+
+    /// A mix of the first texture `t` owns.
+    fn owned(t: &Theme) -> SurfaceFx {
+        SurfaceFx {
+            texture: textured(t)[0],
+            strength: 0.8,
+            targets: SurfaceTargets::ALL,
+            ..SurfaceFx::NONE
+        }
+    }
+
+    #[test]
+    fn a_surface_becomes_an_svg_document() {
+        let t = crate::themes::cyberpunk::yellow();
+        let (svg, animated) = surface_svg(
+            &t,
+            SurfaceClass::Button,
+            &Surface::INHERIT,
+            owned(&t),
+            (160.0, 80.0),
+            (1, 0.0),
+        )
+        .expect("cyberpunk draws its own texture");
+        assert!(svg.contains("viewBox=\"0 0 160 80\"") && svg.contains("<rect "));
+        assert!(!animated);
+    }
+
+    #[test]
+    fn nothing_owned_or_nothing_set_is_none() {
+        let t = crate::themes::cyberpunk::yellow();
+        let size = (160.0, 80.0);
+        let none = |t: &Theme, fx| {
+            surface_svg(
+                t,
+                SurfaceClass::Button,
+                &Surface::INHERIT,
+                fx,
+                size,
+                (1, 0.0),
+            )
+            .is_none()
+        };
+        assert!(none(&t, SurfaceFx::NONE));
+        // A design draws only the textures it owns.
+        let m = crate::themes::material::light();
+        let foreign = textured(&t)
+            .into_iter()
+            .find(|x| !m.surface_textures().contains(x))
+            .expect("the designs own different textures");
+        let theirs = SurfaceFx {
+            texture: foreign,
+            ..owned(&t)
+        };
+        assert!(none(&m, theirs));
+    }
+}

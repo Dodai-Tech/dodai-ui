@@ -14,4 +14,6 @@ mod components;
 mod provider;
 
 pub use components::*;
+/// A surface mix as a CSS `background-image` (see [`dodai_topcoat::surface_background`]).
+pub use dodai_topcoat::surface_background;
 pub use provider::*;

@@ -10,6 +10,7 @@ mod canvas;
 mod clip;
 mod effects;
 mod geom;
+mod svg;
 mod vocab;
 
 /// Neutral distance in px between scanline bars.
@@ -23,6 +24,7 @@ use effects::{
 };
 use geom::noise;
 pub use geom::{poly_span, row_span};
+pub use svg::{surface_svg, SvgPainter};
 pub use vocab::{
     EffectSet, PressStyle, Surface, SurfaceClass, SurfaceFx, SurfaceTargets, SurfaceTuning, Texture,
 };

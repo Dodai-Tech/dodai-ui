@@ -13,4 +13,6 @@ mod dom;
 pub mod theme;
 
 pub use components::*;
+/// A surface mix as a CSS `background-image` (see [`dodai_topcoat::surface_background`]).
+pub use dodai_topcoat::surface_background;
 pub use theme::{theme_css, use_theme, ThemeContext, ThemeProvider, ThemeSwitcherBar};

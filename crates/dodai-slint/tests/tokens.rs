@@ -49,6 +49,17 @@ fn square() -> Theme {
 }
 
 #[test]
+fn a_tuned_theme_flows_into_the_values() {
+    let t = rounded();
+    let square = t.tuned(&dodai_core::ShapeTune {
+        roundness: 0.0,
+        ..dodai_core::ShapeTune::DEFAULT
+    });
+    assert_eq!(ThemeValues::from_theme(&t).radius, 8.0);
+    assert_eq!(ThemeValues::from_theme(&square).radius, 0.0);
+}
+
+#[test]
 fn scoop_follows_the_shape() {
     let mut t = dodai_core::themes::cyberpunk::yellow();
     assert!(!ThemeValues::from_theme(&t).scoop);
