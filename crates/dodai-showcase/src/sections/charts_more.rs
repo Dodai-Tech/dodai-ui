@@ -40,6 +40,16 @@ fn noted(n: &'static str, el: gpui::AnyElement) -> gpui::AnyElement {
 impl Showcase {
     /// The newer chart demos as `(section, body)`.
     pub(crate) fn more_chart_demos(&self) -> Vec<(&'static str, gpui::AnyElement)> {
+        let mut demos = self.hierarchy_demos();
+        demos.extend(self.spread_demos());
+        demos.extend(self.relationship_demos());
+        demos.extend(self.survey_demos());
+        demos.extend(self.time_demos());
+        demos
+    }
+
+    /// Hierarchy and share: sunburst, icicle, packing, squares, waffle, marimekko.
+    fn hierarchy_demos(&self) -> Vec<(&'static str, gpui::AnyElement)> {
         let drift = dodai_gpui::live::drift;
         let budget = ChartNode::branch(
             "Budget",
@@ -74,25 +84,6 @@ impl Showcase {
                 ),
             ],
         );
-        let crew = [
-            "Ada", "Bo", "Cy", "Dee", "Eli", "Fay", "Gus", "Hal", "Ivy", "Jo",
-        ];
-        let links = vec![
-            (0, 1, 3.0),
-            (0, 2, 2.0),
-            (1, 2, 2.0),
-            (2, 3, 1.0),
-            (3, 4, 3.0),
-            (4, 5, 2.0),
-            (3, 5, 2.0),
-            (5, 6, 1.0),
-            (6, 7, 3.0),
-            (7, 8, 2.0),
-            (6, 8, 2.0),
-            (8, 9, 1.0),
-            (0, 9, 1.0),
-        ];
-        let hours = |a: f32, b: f32, s: &'static str| StateSpan::new(a, b, s);
         vec![
             (
                 "Sunburst",
@@ -209,15 +200,27 @@ impl Showcase {
                     .into_any_element(),
                 ),
             ),
+        ]
+    }
+
+    /// Spread: beeswarm, ECDF, error bars, parallel coordinates, hexbin.
+    fn spread_demos(&self) -> Vec<(&'static str, gpui::AnyElement)> {
+        vec![
             (
                 "Beeswarm",
                 noted(
                     "Every response time, per endpoint.",
                     Beeswarm::new(
-                        [("/login", 140.0, 30.0), ("/search", 210.0, 70.0), ("/pay", 320.0, 45.0)]
-                            .into_iter()
-                            .enumerate()
-                            .map(|(k, (n, m, s))| (n, (0..40).map(|i| bell(k as u32 + 1, i, m, s)).collect())),
+                        [
+                            ("/login", 140.0, 30.0),
+                            ("/search", 210.0, 70.0),
+                            ("/pay", 320.0, 45.0),
+                        ]
+                        .into_iter()
+                        .enumerate()
+                        .map(|(k, (n, m, s))| {
+                            (n, (0..40).map(|i| bell(k as u32 + 1, i, m, s)).collect())
+                        }),
                     )
                     .format(|v| format!("{v:.0} ms"))
                     .into_any_element(),
@@ -228,8 +231,16 @@ impl Showcase {
                 noted(
                     "Share of requests at or under each latency; the lines mark 50 % and 90 %.",
                     Ecdf::new([
-                        Series::new("Before", (0..80).map(|i| bell(7, i, 220.0, 120.0)).collect::<Vec<_>>()),
-                        Series::new("After", (0..80).map(|i| bell(8, i, 160.0, 70.0)).collect::<Vec<_>>()),
+                        Series::new(
+                            "Before",
+                            (0..80)
+                                .map(|i| bell(7, i, 220.0, 120.0))
+                                .collect::<Vec<_>>(),
+                        ),
+                        Series::new(
+                            "After",
+                            (0..80).map(|i| bell(8, i, 160.0, 70.0)).collect::<Vec<_>>(),
+                        ),
                     ])
                     .format(|v| format!("{v:.0}"))
                     .into_any_element(),
@@ -281,6 +292,30 @@ impl Showcase {
                     .into_any_element(),
                 ),
             ),
+        ]
+    }
+
+    /// Relationships: networks, chords and arcs.
+    fn relationship_demos(&self) -> Vec<(&'static str, gpui::AnyElement)> {
+        let crew = [
+            "Ada", "Bo", "Cy", "Dee", "Eli", "Fay", "Gus", "Hal", "Ivy", "Jo",
+        ];
+        let links = vec![
+            (0, 1, 3.0),
+            (0, 2, 2.0),
+            (1, 2, 2.0),
+            (2, 3, 1.0),
+            (3, 4, 3.0),
+            (4, 5, 2.0),
+            (3, 5, 2.0),
+            (5, 6, 1.0),
+            (6, 7, 3.0),
+            (7, 8, 2.0),
+            (6, 8, 2.0),
+            (8, 9, 1.0),
+            (0, 9, 1.0),
+        ];
+        vec![
             (
                 "Network graph",
                 noted(
@@ -313,6 +348,13 @@ impl Showcase {
                     ArcDiagram::new(crew, links).into_any_element(),
                 ),
             ),
+        ]
+    }
+
+    /// Survey and process: Pareto, diverging bars, control chart, event timeline.
+    fn survey_demos(&self) -> Vec<(&'static str, gpui::AnyElement)> {
+        let hours = |a: f32, b: f32, s: &'static str| StateSpan::new(a, b, s);
+        vec![
             (
                 "Pareto",
                 noted(
@@ -399,6 +441,13 @@ impl Showcase {
                     .into_any_element(),
                 ),
             ),
+        ]
+    }
+
+    /// Events over time and flow: fans, scatters, peaks, shards, split flow, KPI tiles.
+    fn time_demos(&self) -> Vec<(&'static str, gpui::AnyElement)> {
+        let drift = dodai_gpui::live::drift;
+        vec![
             (
                 "Span fan",
                 noted(
