@@ -63,7 +63,7 @@ pub use shape_system::{
     ShapeSize, ShapeSystem, FULL,
 };
 pub use spec::{DesignSpec, FadeStop, Fluid, Frost, GridSpec, IconSet, Look, ShadowLayer, SpecRef};
-pub use surface_paint::{surface_paint, swatch_paint};
+pub use surface_paint::{surface_paint, surface_svg, swatch_paint};
 pub use surface_style::SurfaceStyle;
 pub use switcher::ThemeSwitcher;
 pub use theme::{Theme, ThemeMeta};

@@ -14,6 +14,9 @@ pub use slint;
 mod generate;
 mod values;
 
+/// One frame of a surface mix as an SVG document; show it with
+/// `slint::Image::load_from_svg_data` (see [`dodai_core::surface_svg`]).
+pub use dodai_core::surface_svg;
 pub use generate::{generate_theme_slint, property_names, COMPONENTS_SLINT, DODAI_SLINT};
 pub use values::{
     first_family, outline, Rgba, ThemeValues, BUTTON_VARIANTS, STATES, TONES, TRANSPARENT,

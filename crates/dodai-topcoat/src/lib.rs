@@ -110,6 +110,59 @@ fn clip_ring(shape: &Shape) -> String {
     format!("polygon(evenodd,{})", all.join(","))
 }
 
+/// `svg` as a CSS `url(...)` value (a percent-encoded `data:` URI), for `background-image`.
+pub fn svg_url(svg: &str) -> String {
+    let mut out = String::with_capacity(svg.len() + 32);
+    out.push_str("url(\"data:image/svg+xml,");
+    for b in svg.bytes() {
+        match b {
+            b'A'..=b'Z'
+            | b'a'..=b'z'
+            | b'0'..=b'9'
+            | b'-'
+            | b'_'
+            | b'.'
+            | b'~'
+            | b'/'
+            | b':'
+            | b'='
+            | b','
+            | b'\''
+            | b'('
+            | b')'
+            | b'!'
+            | b'*' => out.push(b as char),
+            _ => {
+                let _ = write!(out, "%{b:02X}");
+            }
+        }
+    }
+    out.push_str("\")");
+    out
+}
+
+/// The surface mix `fx` for a `class` surface of `size` px as a CSS `background-image` value (a
+/// data-URI SVG drawn by the same `dodai-fx` geometry as every native toolkit): textures,
+/// lit lines, wash, brackets and the rest, frozen at one moment. `None` when the theme draws
+/// nothing of it. Put it on an element of exactly that size, over the element's own fill.
+pub fn surface_background(
+    theme: &Theme,
+    fx: dodai_core::SurfaceFx,
+    class: dodai_core::SurfaceClass,
+    size: (f32, f32),
+) -> Option<String> {
+    let seed = (size.0 as i32).wrapping_mul(31) ^ size.1 as i32;
+    dodai_core::surface_svg(
+        theme,
+        class,
+        &dodai_core::Surface::INHERIT,
+        fx,
+        size,
+        (seed, 0.0),
+    )
+    .map(|(svg, _)| svg_url(&svg))
+}
+
 /// Stylesheet for one theme (alias of [`stylesheet`]).
 pub fn css(t: &Theme) -> String {
     stylesheet(t)
@@ -443,6 +496,44 @@ mod tests {
                 assert!(c.contains("--dodai-clip:none;"));
             }
         }
+    }
+
+    #[test]
+    fn a_tuned_theme_flows_into_the_stylesheet() {
+        let t = dodai_core::themes::material::light();
+        let square = t.tuned(&dodai_core::ShapeTune {
+            roundness: 0.0,
+            ..dodai_core::ShapeTune::DEFAULT
+        });
+        assert!(!theme_vars(&t).contains("--dodai-radius:0px;"));
+        assert!(theme_vars(&square).contains("--dodai-radius:0px;"));
+    }
+
+    #[test]
+    fn surface_background_is_a_css_url() {
+        let t = dodai_core::themes::cyberpunk::yellow();
+        let fx = dodai_core::SurfaceFx {
+            texture: t
+                .surface_textures()
+                .iter()
+                .copied()
+                .find(|x| *x != dodai_core::Texture::None)
+                .unwrap(),
+            strength: 0.8,
+            targets: dodai_core::SurfaceTargets::ALL,
+            ..dodai_core::SurfaceFx::NONE
+        };
+        let css = surface_background(&t, fx, dodai_core::SurfaceClass::Button, (160.0, 80.0))
+            .expect("the design's own texture");
+        assert!(css.starts_with("url(\"data:image/svg+xml,%3Csvg"));
+        assert!(css.ends_with("%3C/svg%3E\")") && !css.contains(' ') && !css.contains('#'));
+        assert!(surface_background(
+            &t,
+            dodai_core::SurfaceFx::NONE,
+            dodai_core::SurfaceClass::Button,
+            (160.0, 80.0)
+        )
+        .is_none());
     }
 
     #[test]
