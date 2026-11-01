@@ -55,7 +55,7 @@ pub fn set_reduce_motion(cx: &mut App, on: bool) {
 const INPUT_WINDOW: f32 = 2.0;
 
 /// Records that the user just acted (a click or a key). Charts and instruments whose data changes
-/// within [`INPUT_WINDOW`] seconds ease to it even while Animate is off: a change the user caused
+/// within two seconds ease to it even while Animate is off: a change the user caused
 /// is an answer to input, not motion on its own. [`input_tracker`] calls this for you.
 pub fn note_input() {
     INPUT_AT.with(|c| c.set(now()));
