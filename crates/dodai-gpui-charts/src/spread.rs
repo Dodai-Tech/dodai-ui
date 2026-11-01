@@ -19,18 +19,8 @@ use std::rc::Rc;
 
 /// Nice ticks covering every finite value (0..1 when there are none).
 fn ticks_of<'a>(values: impl Iterator<Item = &'a f32>) -> Vec<f32> {
-    let (lo, hi) = values
-        .filter(|v| v.is_finite())
-        .fold((f32::INFINITY, f32::NEG_INFINITY), |(a, b), v| {
-            (a.min(*v), b.max(*v))
-        });
-    if lo.is_finite() && hi > lo {
-        nice_ticks(lo, hi, 5)
-    } else if lo.is_finite() {
-        vec![lo - 1.0, lo + 1.0]
-    } else {
-        vec![0.0, 1.0]
-    }
+    let (lo, hi) = dodai_charts_core::padded_extent(values.copied());
+    nice_ticks(lo, hi, 5)
 }
 
 /// A row-label column beside a plot of `rows` equal rows.
@@ -526,8 +516,10 @@ mod tests {
     fn ticks_cover_the_data_and_survive_hostile_input() {
         let t = ticks_of([1.0, 9.0, f32::NAN].iter());
         assert!(t[0] <= 1.0 && *t.last().unwrap() >= 9.0);
-        assert_eq!(ticks_of([].iter()), vec![0.0, 1.0]);
-        assert_eq!(ticks_of([5.0].iter()), vec![4.0, 6.0]);
+        let empty = ticks_of([].iter());
+        assert!(empty[0] <= 0.0 && *empty.last().unwrap() >= 1.0);
+        let one = ticks_of([5.0].iter());
+        assert!(one[0] <= 4.0 && *one.last().unwrap() >= 6.0);
         let e = ErrorBars::new([("a", 1.0, 3.0, 0.0)]).reference(f32::NAN);
         assert_eq!((e.rows[0].2, e.rows[0].3, e.reference), (0.0, 3.0, None));
     }

@@ -328,10 +328,10 @@ impl DivergingBars {
             })
             .collect();
         let spans: Vec<Vec<(f32, f32)>> = scaled.iter().map(|r| diverging(r, self.split)).collect();
-        let reach = spans
-            .iter()
-            .flatten()
-            .fold(1e-6f32, |m, (a, b)| m.max(a.abs()).max(b.abs()));
+        let reach = dodai_charts_core::peak_from(
+            spans.iter().flatten().flat_map(|(a, b)| [a.abs(), b.abs()]),
+            1e-6,
+        );
         let ticks = nice_ticks(0.0, reach, 3);
         let m = *ticks.last().unwrap_or(&1.0);
         let sym: Vec<f32> = ticks

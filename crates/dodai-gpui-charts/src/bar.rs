@@ -136,18 +136,16 @@ impl BarChart {
 /// Max of per-category totals (stacked) or single values (grouped). Pure.
 pub fn bar_max(series: &[Series], stacked: bool) -> f32 {
     let n = series.iter().map(|s| s.values.len()).max().unwrap_or(0);
-    (0..n)
-        .map(|i| {
-            let it = series
-                .iter()
-                .map(|s| s.values.get(i).copied().unwrap_or(0.0).max(0.0));
-            if stacked {
-                it.sum::<f32>()
-            } else {
-                it.fold(0.0, f32::max)
-            }
-        })
-        .fold(0.0, f32::max)
+    dodai_charts_core::peak((0..n).map(|i| {
+        let it = series
+            .iter()
+            .map(|s| s.values.get(i).copied().unwrap_or(0.0).max(0.0));
+        if stacked {
+            it.sum::<f32>()
+        } else {
+            dodai_charts_core::peak(it)
+        }
+    }))
 }
 
 impl BarChart {
@@ -374,8 +372,7 @@ impl BarChart {
         let mut cats = div().flex().size_full();
         cats = if h { cats.flex_col() } else { cats };
         let fid = format!("{}-focus", self.id);
-        let focus =
-            crate::focus::Focus::new(window, cx, &dodai_gpui::follow::Follow::named(&fid), n);
+        let focus = crate::focus::Focus::new(window, cx, &self.follow.sub("focus"), n);
         for i in 0..n {
             let f = focus.item(i);
             let item = div()

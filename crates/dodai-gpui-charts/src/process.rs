@@ -96,20 +96,9 @@ impl ControlChart {
             .map_or(self.values.len(), |n| n.min(self.values.len()));
         let l = limits(&self.values[..base], self.sigma);
         let flags = signals(&self.values, &l);
-        let (lo, hi) = self
-            .values
-            .iter()
-            .copied()
-            .filter(|v| v.is_finite())
-            .chain([l.lower, l.upper])
-            .fold((f32::INFINITY, f32::NEG_INFINITY), |(a, b), v| {
-                (a.min(v), b.max(v))
-            });
-        let ticks = if hi > lo {
-            nice_ticks(lo, hi, 4)
-        } else {
-            vec![lo - 1.0, lo + 1.0]
-        };
+        let (lo, hi) =
+            dodai_charts_core::padded_extent(self.values.iter().copied().chain([l.lower, l.upper]));
+        let ticks = nice_ticks(lo, hi, 4);
         let (y0, y1) = (ticks[0], ticks[ticks.len() - 1]);
         let n = self.values.len();
         let focus = Focus::new(window, cx, &self.follow, n);
@@ -290,20 +279,13 @@ impl EventTimeline {
         let t = theme_of(cx);
         let g = dodai_gpui::motion::grow_for(window, cx, &self.follow, "EventTimeline");
         let states = states_of(&self.lanes);
-        let (lo, hi) = self
-            .lanes
-            .iter()
-            .flat_map(|l| &l.1)
-            .flat_map(|s| [s.start, s.end])
-            .filter(|v| v.is_finite())
-            .fold((f32::INFINITY, f32::NEG_INFINITY), |(a, b), v| {
-                (a.min(v), b.max(v))
-            });
-        let ticks = if hi > lo {
-            nice_ticks(lo, hi, 6)
-        } else {
-            vec![0.0, 1.0]
-        };
+        let (lo, hi) = dodai_charts_core::padded_extent(
+            self.lanes
+                .iter()
+                .flat_map(|l| &l.1)
+                .flat_map(|s| [s.start, s.end]),
+        );
+        let ticks = nice_ticks(lo, hi, 6);
         let (t0, t1) = (ticks[0], ticks[ticks.len() - 1]);
         // Flat spans: (lane, start, end, state index).
         let spans: Vec<(usize, f32, f32, usize)> = self

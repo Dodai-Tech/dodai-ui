@@ -746,11 +746,7 @@ impl PieChart {
         let soft = t.look().soft_elevation;
         let hud = style == PieStyle::Hud && !soft;
         let reserve = PIE_POP + explode + if hud { 12.0 } else { 0.0 };
-        let vmax = vals
-            .iter()
-            .cloned()
-            .fold(0.0_f32, f32::max)
-            .max(f32::EPSILON);
+        let vmax = dodai_charts_core::peak_from(vals.iter().copied(), f32::EPSILON);
         let rfac: Vec<f32> = vals
             .iter()
             .map(|v| {

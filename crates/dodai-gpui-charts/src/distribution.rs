@@ -22,8 +22,7 @@ pub fn histogram_bins(values: &[f32], bins: usize) -> Vec<(f32, f32, usize)> {
     if vals.is_empty() {
         return Vec::new();
     }
-    let lo = vals.iter().copied().fold(f32::MAX, f32::min);
-    let hi = vals.iter().copied().fold(f32::MIN, f32::max);
+    let (lo, hi) = dodai_charts_core::extent(vals.iter().copied()).unwrap_or((0.0, 0.0));
     let span = if hi > lo { hi - lo } else { 1.0 };
     let w = span / bins as f32;
     let mut out: Vec<(f32, f32, usize)> = (0..bins)

@@ -103,7 +103,7 @@ impl PeakRange {
         let looks: Vec<_> = (0..n).map(|k| focus.item(k)).collect();
         let values: Vec<Vec<f32>> = self.series.iter().map(|s| s.values.clone()).collect();
         let summits: Vec<Option<(usize, f32)>> = values.iter().map(|v| peaks::summit(v)).collect();
-        let top = summits.iter().flatten().map(|s| s.1).fold(0.0f32, f32::max);
+        let top = dodai_charts_core::peak(summits.iter().flatten().map(|s| s.1));
         let step = top * LANE_STEP;
         let base: Vec<f32> = (0..n).map(|i| (i % self.lanes) as f32 * step).collect();
         let order = peaks::lane_order(&values, &base);

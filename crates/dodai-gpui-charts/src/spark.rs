@@ -88,9 +88,7 @@ pub fn spark_columns(vals: &[f32], w: f32, h: f32, win_loss: bool) -> Vec<(f32, 
         0.0
     };
     let bw = ((w - gap * (n - 1) as f32) / n as f32).max(1.0);
-    let (lo, hi) = vals
-        .iter()
-        .fold((f32::MAX, f32::MIN), |(l, hh), v| (l.min(*v), hh.max(*v)));
+    let (lo, hi) = dodai_charts_core::extent(vals.iter().copied()).unwrap_or((0.0, 0.0));
     let mean = vals.iter().sum::<f32>() / n as f32;
     vals.iter()
         .enumerate()
@@ -219,9 +217,7 @@ impl Sparkline {
         let (style, guide, smooth) = (self.style, self.guide, self.smooth);
         let up = hsla(t.palette.success);
         let down = hsla(t.palette.danger);
-        let (lo, hi) = vals
-            .iter()
-            .fold((f32::MAX, f32::MIN), |(l, h), v| (l.min(*v), h.max(*v)));
+        let (lo, hi) = dodai_charts_core::extent(vals.iter().copied()).unwrap_or((0.0, 0.0));
         let fluid = self.fluid;
         let base = div();
         let base = if fluid {

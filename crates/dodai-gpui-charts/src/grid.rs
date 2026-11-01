@@ -74,19 +74,7 @@ impl ScatterPlot {
         let t = theme_of(cx);
         let all = || self.series.iter().flat_map(|s| s.1.iter());
         // The finite extent; no points (or none finite) give a 0..1 axis.
-        let fold = |f: fn(&(f32, f32)) -> f32| {
-            let (l, h) = all()
-                .map(f)
-                .filter(|v| v.is_finite())
-                .fold((f32::INFINITY, f32::NEG_INFINITY), |(l, h), v| {
-                    (l.min(v), h.max(v))
-                });
-            if l <= h {
-                (l, h)
-            } else {
-                (0.0, 1.0)
-            }
-        };
+        let fold = |f: fn(&(f32, f32)) -> f32| dodai_charts_core::padded_extent(all().map(f));
         let (xl, xh) = fold(|p| p.0);
         let (yl, yh) = fold(|p| p.1);
         let xt = nice_ticks(xl, xh, 4);
@@ -260,11 +248,8 @@ impl Heatmap {
         self.id = self.follow.element_id(window, cx).to_string().into();
         let g = dodai_gpui::motion::grow_for(window, cx, &self.follow, "Heatmap");
         let t = theme_of(cx);
-        let (lo, hi) = self
-            .rows
-            .iter()
-            .flatten()
-            .fold((f32::MAX, f32::MIN), |(l, h), v| (l.min(*v), h.max(*v)));
+        let (lo, hi) =
+            dodai_charts_core::extent(self.rows.iter().flatten().copied()).unwrap_or((0.0, 1.0));
         let cell = self.cell;
         let (nr, nc) = (
             self.rows.len(),
@@ -396,11 +381,8 @@ impl Heatmap {
 
     fn build_grid(self, cx: &mut App, g: f32) -> impl IntoElement {
         let t = theme_of(cx);
-        let (lo, hi) = self
-            .rows
-            .iter()
-            .flatten()
-            .fold((f32::MAX, f32::MIN), |(l, h), v| (l.min(*v), h.max(*v)));
+        let (lo, hi) =
+            dodai_charts_core::extent(self.rows.iter().flatten().copied()).unwrap_or((0.0, 1.0));
         let cell = self.cell;
         let max_w = if self.stretch { f32::MAX } else { cell * 4.0 };
         let mut root = div().flex().flex_col().gap(px(t.spacing.xs / 2.0));

@@ -74,6 +74,7 @@ impl RadarChart {
                 .unwrap_or(&1.0)
         });
         let grid = hsla(t.palette.border);
+        let style = t.chart_style();
         let glow = self.glow.resolve(&t);
         let size = self.size;
         let focus = crate::focus::Focus::new(window, cx, &self.follow, self.axes.len());
@@ -93,10 +94,15 @@ impl RadarChart {
                 let r = c - 4.0;
                 for ring in 1..=4 {
                     let rr = r * ring as f32 / 4.0;
-                    let p: Vec<_> = (0..n)
-                        .map(|i| polar(c, c, rr, i as f32 / n as f32))
-                        .collect();
-                    stroke(w, b.origin, &p, 1.0, grid, true);
+                    for i in 0..n {
+                        grid_line(
+                            w,
+                            b.origin,
+                            polar(c, c, rr, i as f32 / n as f32),
+                            polar(c, c, rr, (i + 1) as f32 / n as f32),
+                            &style,
+                        );
+                    }
                 }
                 for i in 0..n {
                     let lf = foc_c.get(i).copied().unwrap_or(crate::focus::ItemFocus {

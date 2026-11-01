@@ -370,7 +370,7 @@ impl Pulse {
     fn rate(&self) -> Option<f32> {
         match &self.data {
             Some((v, hz)) => {
-                let top = v.iter().copied().fold(0.0f32, f32::max);
+                let top = dodai_charts_core::peak(v.iter().copied());
                 let p = pulse::peaks(v, top * 0.6, (*hz * 0.25) as usize);
                 pulse::rate_from_peaks(&p, *hz)
             }
@@ -514,7 +514,7 @@ impl RenderOnce for Pulse {
                     }
                     if markers {
                         let vals: Vec<f32> = pts.iter().map(|p| p.v).collect();
-                        let top = vals.iter().copied().fold(0.0f32, f32::max);
+                        let top = dodai_charts_core::peak(vals.iter().copied());
                         if top > 0.25 {
                             let gap_n = (n as f32 * 0.08) as usize;
                             for i in pulse::peaks(&vals, top * 0.7, gap_n.max(3)) {

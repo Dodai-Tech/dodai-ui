@@ -161,10 +161,7 @@ pub(crate) fn y_range(
         let band = s.band.iter().flat_map(|(lo, hi)| lo.iter().chain(hi));
         s.values.iter().chain(band).copied()
     });
-    let (mut lo, mut hi) = vals.fold((f32::MAX, f32::MIN), |(l, h), v| (l.min(v), h.max(v)));
-    if lo > hi {
-        (lo, hi) = (0.0, 1.0);
-    }
+    let (mut lo, hi) = dodai_charts_core::extent(vals).unwrap_or((0.0, 1.0));
     if zero {
         lo = lo.min(0.0);
     }

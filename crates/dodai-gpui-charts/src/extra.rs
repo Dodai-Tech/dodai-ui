@@ -335,7 +335,7 @@ impl CalendarHeatmap {
             };
             Some(format!("{day} · {}", fmt_with(&self.fmt, *v)))
         });
-        let max = self.values.iter().copied().fold(0.0f32, f32::max);
+        let max = dodai_charts_core::peak(self.values.iter().copied());
         let off = self.start_weekday as usize;
         let weeks = (off + self.values.len()).div_ceil(7).max(1);
         let gap = 3.0;
@@ -675,7 +675,7 @@ pub(crate) fn rose_radius(v: f32, max: f32, scale: RoseScale) -> f32 {
     }
     let f = (v / max).clamp(0.0, 1.0);
     match scale {
-        RoseScale::Area => f.sqrt(),
+        RoseScale::Area => dodai_charts_core::area_radius(f, 1.0, 0.0, 1.0),
         RoseScale::Linear => f,
     }
 }
@@ -685,7 +685,7 @@ impl RoseChart {
         let t = theme_of(cx);
         let g = dodai_gpui::motion::grow(window, cx, "RoseChart");
         let n = self.items.len().max(1);
-        let max = self.items.iter().map(|i| i.1).fold(0.0f32, f32::max);
+        let max = dodai_charts_core::peak(self.items.iter().map(|i| i.1));
         let (hole, scale) = (self.hole, self.scale);
         let vals: Vec<f32> = self.items.iter().map(|i| i.1).collect();
         let cols: Vec<gpui::Hsla> = (0..n).map(|i| hsla(t.palette.series_at(i))).collect();

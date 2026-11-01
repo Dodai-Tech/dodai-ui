@@ -129,7 +129,7 @@ fn lay_out(
     (bw, bh): (f32, f32),
     (rmax, centred): (f32, bool),
 ) -> Vec<(f32, f32, f32)> {
-    let smax = items.iter().map(|i| i.1).fold(f32::MIN_POSITIVE, f32::max);
+    let smax = dodai_charts_core::peak_from(items.iter().map(|i| i.1), f32::MIN_POSITIVE);
     let mut rmax = rmax.min(bw / 4.0).max(1.0);
     let mut out = Vec::new();
     for _ in 0..4 {
@@ -141,7 +141,7 @@ fn lay_out(
         // Tiny events still get a dot you can find and hover.
         let rs: Vec<f32> = items
             .iter()
-            .map(|i| ((i.1 / smax).sqrt() * rmax).max(2.5))
+            .map(|i| dodai_charts_core::area_radius(i.1, smax, 0.0, rmax).max(2.5))
             .collect();
         let gap: Vec<f32> = rs.iter().map(|r| r + 1.0).collect();
         let (top, room) = if centred {

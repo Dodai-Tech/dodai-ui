@@ -129,20 +129,9 @@ impl ParallelCoordinates {
         // Each axis' own range.
         let ranges: Vec<(f32, f32)> = (0..na)
             .map(|k| {
-                let (lo, hi) = self
-                    .items
-                    .iter()
-                    .filter_map(|it| it.1.get(k).copied().filter(|v| v.is_finite()))
-                    .fold((f32::INFINITY, f32::NEG_INFINITY), |(a, b), v| {
-                        (a.min(v), b.max(v))
-                    });
-                if lo.is_finite() && hi > lo {
-                    (lo, hi)
-                } else if lo.is_finite() {
-                    (lo - 1.0, lo + 1.0)
-                } else {
-                    (0.0, 1.0)
-                }
+                dodai_charts_core::padded_extent(
+                    self.items.iter().filter_map(|it| it.1.get(k).copied()),
+                )
             })
             .collect();
         let n = self.items.len();
@@ -361,18 +350,8 @@ impl Hexbin {
             .filter(|(x, y)| x.is_finite() && y.is_finite())
             .collect();
         let span = |v: Vec<f32>| {
-            let (lo, hi) = v
-                .iter()
-                .fold((f32::INFINITY, f32::NEG_INFINITY), |(a, b), x| {
-                    (a.min(*x), b.max(*x))
-                });
-            if lo.is_finite() && hi > lo {
-                nice_ticks(lo, hi, 5)
-            } else if lo.is_finite() {
-                vec![lo - 1.0, lo + 1.0]
-            } else {
-                vec![0.0, 1.0]
-            }
+            let (lo, hi) = dodai_charts_core::padded_extent(v);
+            nice_ticks(lo, hi, 5)
         };
         let xt = span(fin.iter().map(|p| p.0).collect());
         let yt = span(fin.iter().map(|p| p.1).collect());
@@ -519,8 +498,11 @@ impl NetworkGraph {
         let n = self.nodes.len();
         let pos = force_layout(n, &self.links, 300);
         let deg = degrees(n, &self.links);
-        let top = deg.iter().copied().fold(0.0f32, f32::max).max(1e-6);
-        let size: Vec<f32> = deg.iter().map(|d| 4.0 + 8.0 * (d / top).sqrt()).collect();
+        let top = dodai_charts_core::peak_from(deg.iter().copied(), 1e-6);
+        let size: Vec<f32> = deg
+            .iter()
+            .map(|d| dodai_charts_core::area_radius(*d, top, 4.0, 12.0))
+            .collect();
         let focus = Focus::new(window, cx, &self.follow, n);
         let shown = focus.shown(cx);
         let cols: Vec<Hsla> = (0..n)
@@ -546,12 +528,7 @@ impl NetworkGraph {
         let link_col = hsla(t.palette.text_muted);
         let paint_near = near.clone();
         let links = self.links.clone();
-        let wmax = links
-            .iter()
-            .map(|l| l.2)
-            .filter(|w| w.is_finite())
-            .fold(0.0f32, f32::max)
-            .max(1e-6);
+        let wmax = dodai_charts_core::peak_from(links.iter().map(|l| l.2), 1e-6);
         let paint_pos = pos.clone();
         let paint_size = size.clone();
         let hit_pos = pos.clone();
@@ -889,15 +866,10 @@ impl ArcDiagram {
         let focus = Focus::new(window, cx, &self.follow, n);
         let shown = focus.shown(cx);
         let deg = degrees(n, &self.links);
-        let top = deg.iter().copied().fold(0.0f32, f32::max).max(1e-6);
+        let top = dodai_charts_core::peak_from(deg.iter().copied(), 1e-6);
         let cols: Vec<Hsla> = (0..n).map(|i| hsla(t.palette.series_at(i))).collect();
         let links = self.links.clone();
-        let wmax = links
-            .iter()
-            .map(|l| l.2)
-            .filter(|w| w.is_finite())
-            .fold(0.0f32, f32::max)
-            .max(1e-6);
+        let wmax = dodai_charts_core::peak_from(links.iter().map(|l| l.2), 1e-6);
         let x_of = move |i: usize, bw: f32| (i as f32 + 0.5) / n.max(1) as f32 * bw;
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
         let paint_deg = deg.clone();
@@ -935,8 +907,7 @@ impl ArcDiagram {
                 );
             }
             for i in 0..n {
-                let r = 3.0
-                    + 5.0 * (paint_deg[i] / top).sqrt()
+                let r = dodai_charts_core::area_radius(paint_deg[i], top, 3.0, 8.0)
                     + if shown == Some(i) { 2.0 } else { 0.0 };
                 fill(
                     w,
