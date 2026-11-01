@@ -275,7 +275,7 @@ impl DatePicker {
                 if inside && state == ControlState::Idle {
                     style.fill = Some(hsla(t.palette.selection));
                 }
-                let mut el = track(shaped_id(id, &t.shape, style), &st)
+                let mut el = track(shaped_id(id, &t.shape, style), &st, cx)
                     .w(px(cell))
                     .h(px(cell))
                     .flex()

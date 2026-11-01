@@ -225,7 +225,7 @@ fn drawer_item(
         outline,
     );
     let style = ShapeStyle { fill, ..style };
-    let mut el = track(shaped_id(it.id, &shape, style), &st)
+    let mut el = track(shaped_id(it.id, &shape, style), &st, cx)
         .min_h(px(h))
         .ml(px(it.depth as f32 * k.indent))
         // Nested rows never touch the row above, even when the design stacks items tight.
@@ -357,7 +357,7 @@ fn destination(
             .right(px(6.0))
             .child(crate::Badge::new(b, dodai_core::Tone::Danger))
     }));
-    let mut el = track(div().id(it.id.clone()), &st)
+    let mut el = track(div().id(it.id.clone()), &st, cx)
         .flex()
         .flex_col()
         .items_center()

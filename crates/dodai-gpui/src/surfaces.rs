@@ -349,7 +349,7 @@ impl IconButton {
                 state != ControlState::Idle,
             )
         };
-        let mut el = track(shaped_id(self.id, &shape, style), &st)
+        let mut el = track(shaped_id(self.id, &shape, style), &st, cx)
             .mt(px(lift))
             .mb(px(-lift))
             .w(px(
@@ -522,7 +522,7 @@ impl Fab {
         }
         let inset = crop.map_or(0.0, |c| c.inset(&t));
         let style_stroke = style.stroke.unwrap_or(fg);
-        let mut el = track(shaped_id(self.id, &shape, style), &st)
+        let mut el = track(shaped_id(self.id, &shape, style), &st, cx)
             .mt(px(lift))
             .mb(px(-lift))
             .h(px(side))
@@ -906,7 +906,7 @@ impl SearchBar {
         } else {
             i.text
         };
-        let mut el = track(shaped_id(self.id, &t.shape, style), &st)
+        let mut el = track(shaped_id(self.id, &t.shape, style), &st, cx)
             .h(px(t.shape.control_height))
             .flex()
             .items_center()

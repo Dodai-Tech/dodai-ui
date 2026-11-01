@@ -249,6 +249,7 @@ impl Select {
         let mut trigger = track(
             shaped_id(tid, &t.role_shape(dodai_core::ShapeRole::Input), style),
             &hov,
+            cx,
         )
         .min_h(px(t.shape.control_height))
         .w_full()

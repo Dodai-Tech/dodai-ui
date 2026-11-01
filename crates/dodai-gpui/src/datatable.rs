@@ -506,6 +506,7 @@ impl DataTable {
                     },
                 ),
                 &hs,
+                cx,
             )
             .flex()
             .items_center()

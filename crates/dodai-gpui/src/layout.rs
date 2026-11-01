@@ -168,7 +168,7 @@ impl TreeView {
                 });
             }
             let select_path = row.path.clone();
-            let mut r = track(shaped_id(id, &t.shape, style), &st)
+            let mut r = track(shaped_id(id, &t.shape, style), &st, cx)
                 .relative()
                 .flex()
                 .items_center()

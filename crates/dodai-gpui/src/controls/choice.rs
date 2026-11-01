@@ -236,7 +236,7 @@ pub(super) fn choice(mut c: Choice, window: &mut Window, cx: &mut App) -> gpui::
         Kind::Checkbox => scaled_shape(&t.shape, h),
     };
     let id_mark = id.clone();
-    let mut el = track(shaped_id(id, &shape, style), &st)
+    let mut el = track(shaped_id(id, &shape, style), &st, cx)
         .w(px(w))
         .h(px(h))
         .flex_none()
@@ -365,42 +365,46 @@ impl M3Look<'_> {
         track_style.stroke_width = 2.0;
         let mut handle = ShapeStyle::from_tokens(t, None, None, false, false);
         handle.fill = Some(thumb_c);
-        track(shaped_id(id, &round_shape(&t.shape, th), track_style), st)
-            .w(px(tw))
-            .h(px(th))
-            .flex_none()
-            .child(
-                shaped(&ls, lst)
-                    .absolute()
-                    .left(px(centre - sz.state_layer / 2.0 - 2.0))
-                    .top(px(-(sz.state_layer - th) / 2.0 - 2.0))
-                    .w(px(sz.state_layer))
-                    .h(px(sz.state_layer)),
-            )
-            .child({
-                let mut h = shaped(&round_shape(&t.shape, size), handle)
-                    .absolute()
-                    .left(px(left - 2.0))
-                    .top(px((th - size) / 2.0 - 2.0))
-                    .w(px(width))
-                    .h(px(size));
-                if icons {
-                    // M3 switch with icons: a check when on, a cross when off.
-                    let glyph_c = if on {
-                        r.on_primary_container
-                    } else {
-                        r.surface_container_highest
-                    };
-                    h = h
-                        .flex()
-                        .items_center()
-                        .justify_center()
-                        .text_size(px(t.typography.size_md))
-                        .text_color(hsla(glyph_c))
-                        .child(if on { "✓" } else { "✕" });
-                }
-                h
-            })
+        track(
+            shaped_id(id, &round_shape(&t.shape, th), track_style),
+            st,
+            cx,
+        )
+        .w(px(tw))
+        .h(px(th))
+        .flex_none()
+        .child(
+            shaped(&ls, lst)
+                .absolute()
+                .left(px(centre - sz.state_layer / 2.0 - 2.0))
+                .top(px(-(sz.state_layer - th) / 2.0 - 2.0))
+                .w(px(sz.state_layer))
+                .h(px(sz.state_layer)),
+        )
+        .child({
+            let mut h = shaped(&round_shape(&t.shape, size), handle)
+                .absolute()
+                .left(px(left - 2.0))
+                .top(px((th - size) / 2.0 - 2.0))
+                .w(px(width))
+                .h(px(size));
+            if icons {
+                // M3 switch with icons: a check when on, a cross when off.
+                let glyph_c = if on {
+                    r.on_primary_container
+                } else {
+                    r.surface_container_highest
+                };
+                h = h
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .text_size(px(t.typography.size_md))
+                    .text_color(hsla(glyph_c))
+                    .child(if on { "✓" } else { "✕" });
+            }
+            h
+        })
     }
 
     fn checkbox_or_radio(
@@ -408,6 +412,7 @@ impl M3Look<'_> {
         kind: Kind,
         id: ElementId,
         st: &gpui::Entity<crate::interact::Interact>,
+        cx: &App,
     ) -> gpui::Stateful<gpui::Div> {
         let Self {
             t,
@@ -423,7 +428,7 @@ impl M3Look<'_> {
             ..
         } = *self;
         let (ls, lst) = self.layer_style(target);
-        let outer = track(shaped_id(id, &ls, lst), st)
+        let outer = track(shaped_id(id, &ls, lst), st, cx)
             .w(px(target))
             .h(px(target))
             .flex_none()
@@ -562,7 +567,7 @@ fn m3_choice(c: Choice, moves: Moves, window: &mut Window, cx: &mut App) -> gpui
     };
     let mut el = match kind {
         Kind::Switch => look.switch(id, &st, window, cx),
-        Kind::Checkbox | Kind::Radio => look.checkbox_or_radio(kind, id, &st),
+        Kind::Checkbox | Kind::Radio => look.checkbox_or_radio(kind, id, &st, cx),
     };
     if !disabled {
         el = el.cursor_pointer();

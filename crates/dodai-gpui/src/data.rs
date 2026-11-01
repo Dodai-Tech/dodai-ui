@@ -157,6 +157,7 @@ impl Table {
                     },
                 ),
                 &st,
+                cx,
             )
             .flex()
             .items_center()
@@ -486,7 +487,7 @@ impl Chip {
             round_shape(&t.shape, h)
         };
         let rid: ElementId = (self.id.clone(), "x").into();
-        let mut el = track(shaped_id(self.id, &shape, style), &st)
+        let mut el = track(shaped_id(self.id, &shape, style), &st, cx)
             .h(px(h))
             .px(px(t.spacing.md))
             .flex()
