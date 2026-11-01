@@ -215,3 +215,88 @@ fn hovering_status_charts_never_moves_the_layout(cx: &mut TestAppContext) {
         }
     }
 }
+
+// ───────────────────────────── pie, radial and grid charts ─────────────────────────────
+
+#[gpui::test]
+fn round_charts_take_their_size_and_survive_empty_data(cx: &mut TestAppContext) {
+    let vcx = mount(cx, |_, _| {
+        div()
+            .w(px(480.0))
+            .flex()
+            .flex_col()
+            .child(
+                PieChart::new([("A", 3.0), ("B", 5.0), ("C", 2.0)])
+                    .size(180.0)
+                    .legend(false),
+            )
+            .into_any_element()
+    });
+    let (_, _, _, h) = target(vcx);
+    assert!(
+        (h - 180.0).abs() < 2.0,
+        "a legend-less pie is its size: {h}"
+    );
+
+    // Empty and all-zero inputs draw nothing and never panic.
+    let vcx = mount(cx, |_, _| {
+        div()
+            .w(px(480.0))
+            .flex()
+            .flex_col()
+            .child(PieChart::new(Vec::<(&str, f32)>::new()))
+            .child(PieChart::new([("A", 0.0), ("B", 0.0)]).donut(0.5))
+            .child(RadialBar::new(Vec::<(&str, f32, f32)>::new()))
+            .child(RadialBar::new([("Zero", 0.0, 0.0), ("Over", 9.0, 3.0)]))
+            .child(RadarChart::new(["a", "b", "c"], Vec::<Series>::new()))
+            .child(RadarChart::new(
+                ["a", "b", "c"],
+                [Series::new("S", [0.0, 0.0, 0.0])],
+            ))
+            .child(Heatmap::new(Vec::new()))
+            .child(Heatmap::new(vec![vec![1.0; 3]; 3]).row_labels(["x", "y", "z"]))
+            .child(ScatterPlot::new(Vec::<(&str, Vec<(f32, f32)>)>::new()))
+            .child(ScatterPlot::new([("one", vec![(1.0, 1.0)])]))
+            .into_any_element()
+    });
+    let (_, _, _, h) = target(vcx);
+    assert!(h.is_finite() && h > 0.0);
+}
+
+#[gpui::test]
+fn hovering_round_and_grid_charts_never_moves_the_layout(cx: &mut TestAppContext) {
+    let vcx = mount(cx, |_, _| {
+        div()
+            .w(px(480.0))
+            .flex()
+            .flex_col()
+            .gap_4()
+            .child(PieChart::new([("A", 3.0), ("B", 5.0), ("C", 2.0)]).donut(0.5))
+            .child(RadialBar::new([
+                ("CPU", 60.0, 100.0),
+                ("Disk", 30.0, 100.0),
+            ]))
+            .child(Heatmap::new(vec![vec![1.0, 4.0, 2.0], vec![3.0, 0.0, 5.0]]))
+            .child(ScatterPlot::new([(
+                "S",
+                vec![(1.0, 2.0), (3.0, 1.0), (5.0, 4.0)],
+            )]))
+            .into_any_element()
+    });
+    let (x, y, w, h0) = target(vcx);
+    for fy in [0.05, 0.25, 0.5, 0.75, 0.95] {
+        for fx in [0.1, 0.5, 0.9] {
+            vcx.simulate_mouse_move(
+                point(px(x + w * fx), px(y + h0 * fy)),
+                None,
+                Modifiers::none(),
+            );
+            vcx.run_until_parked();
+            let (_, _, _, h) = target(vcx);
+            assert!(
+                (h - h0).abs() < 0.5,
+                "hover at ({fx}, {fy}) moved the layout: {h0} -> {h}"
+            );
+        }
+    }
+}
