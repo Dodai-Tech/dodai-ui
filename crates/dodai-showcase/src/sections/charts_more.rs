@@ -3,7 +3,7 @@
 
 use super::super::*;
 use dodai_gpui_charts::{
-    ArcDiagram, Beeswarm, Bubble, BubbleSwarm, BubbleTimeline, ChartNode, ChordDiagram, CirclePack,
+    ArcDiagram, Beeswarm, Bubble, BubbleTimeline, ChartNode, ChordDiagram, CirclePack,
     ControlChart, DivergingBars, Ecdf, ErrorBars, EventTimeline, FanOrder, FanSpan, FlowStep,
     Hexbin, Icicle, KpiTile, Marimekko, Milestone, NetworkGraph, Outline, ParallelCoordinates,
     ParetoChart, PeakRange, ProportionalSquares, ShardGroup, ShardMap, SpanFan, SplitFlow,
@@ -152,38 +152,30 @@ impl Showcase {
                 "Bubble swarm",
                 noted(
                     "Ventures by yearly growth, sized by revenue: the leaders and the giants at a glance.",
-                    BubbleSwarm::new([
-                        (
-                            "Energy",
-                            vec![
-                                ("Sol", (34.0, 820.0)),
-                                ("Gridly", (12.0, 2_400.0)),
-                                ("Tidal", (58.0, 140.0)),
-                                ("Volt", (21.0, 610.0)),
-                            ],
-                        ),
-                        (
-                            "Health",
-                            vec![
-                                ("Pulse", (44.0, 390.0)),
-                                ("Medi", (9.0, 3_100.0)),
-                                ("Gene", (71.0, 90.0)),
-                                ("Care", (26.0, 1_200.0)),
-                                ("Dose", (18.0, 220.0)),
-                            ],
-                        ),
-                        (
-                            "Money",
-                            vec![
-                                ("Ledger", (15.0, 1_800.0)),
-                                ("Coin", (63.0, 300.0)),
-                                ("Pay", (37.0, 950.0)),
-                                ("Fund", (29.0, 180.0)),
-                                ("Vault", (5.0, 2_700.0)),
-                            ],
-                        ),
-                    ])
-                    .format(|v| format!("{v:.0}"))
+                    BubbleTimeline::new(
+                        [
+                            ("Energy", "Sol", 34.0, 820.0),
+                            ("Energy", "Gridly", 12.0, 2_400.0),
+                            ("Energy", "Tidal", 58.0, 140.0),
+                            ("Energy", "Volt", 21.0, 610.0),
+                            ("Health", "Pulse", 44.0, 390.0),
+                            ("Health", "Medi", 9.0, 3_100.0),
+                            ("Health", "Gene", 71.0, 90.0),
+                            ("Health", "Care", 26.0, 1_200.0),
+                            ("Health", "Dose", 18.0, 220.0),
+                            ("Money", "Ledger", 15.0, 1_800.0),
+                            ("Money", "Coin", 63.0, 300.0),
+                            ("Money", "Pay", 37.0, 950.0),
+                            ("Money", "Fund", 29.0, 180.0),
+                            ("Money", "Vault", 5.0, 2_700.0),
+                        ]
+                        .map(|(g, l, x, s)| Bubble::new(l, x, s).group(g)),
+                    )
+                    .centred(true)
+                    .max_radius(46.0)
+                    .height(260.0)
+                    .size_label("revenue")
+                    .x_format(|v| format!("{v:.0}%"))
                     .into_any_element(),
                 ),
             ),

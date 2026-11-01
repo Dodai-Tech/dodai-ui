@@ -1,8 +1,7 @@
 //! Histogram, box plot and bubble charts (distribution of values).
 
 use crate::common::{
-    chart_cfg, fill, fmt_with, framed, nice_ticks, norm, stroke, titled, tracked_canvas, Legend,
-    NumFmt,
+    chart_cfg, fill, fmt_with, framed, nice_ticks, norm, stroke, titled, tracked_canvas, NumFmt,
 };
 use crate::focus::{columns, readout, Focus};
 use dodai_core::Color;
@@ -54,7 +53,6 @@ pub fn quartiles(values: &[f32]) -> Option<(f32, f32, f32, f32, f32)> {
 }
 
 type Stats = (f32, f32, f32, f32, f32);
-type Pts3 = Vec<(f32, f32, f32)>;
 
 // ─────────────────────────────── Histogram ───────────────────────────────
 
@@ -491,149 +489,6 @@ impl BoxPlot {
 }
 
 dodai_gpui::entry_render!(BoxPlot);
-
-// ─────────────────────────────── BubbleChart ───────────────────────────────
-
-/// Scatter plot where the third value controls the bubble area.
-#[derive(IntoElement)]
-pub struct BubbleChart {
-    id: SharedString,
-    follow: dodai_gpui::follow::Follow,
-    groups: Vec<(SharedString, Pts3)>,
-    height: f32,
-    max_radius: f32,
-    fmt: Option<NumFmt>,
-    title: Option<SharedString>,
-}
-chart_cfg!(BubbleChart);
-
-impl BubbleChart {
-    dodai_gpui::follow_api!();
-    /// Create a new [`BubbleChart`].
-    #[track_caller]
-    pub fn new<S: Into<SharedString>>(
-        groups: impl IntoIterator<Item = (S, Vec<(f32, f32, f32)>)>,
-    ) -> Self {
-        Self {
-            follow: dodai_gpui::follow::Follow::here(),
-            id: SharedString::default(),
-            groups: groups.into_iter().map(|(a, b)| (a.into(), b)).collect(),
-            height: 240.0,
-            max_radius: 22.0,
-            fmt: None,
-            title: None,
-        }
-    }
-    /// Radius in px of the largest bubble (default 22).
-    pub fn max_radius(mut self, r: f32) -> Self {
-        self.max_radius = r;
-        self
-    }
-}
-
-impl BubbleChart {
-    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        self.id = self.follow.element_id(window, cx).to_string().into();
-        let flat: Vec<f32> = self
-            .groups
-            .iter()
-            .flat_map(|g| g.1.iter().flat_map(|p| [p.0, p.1, p.2]))
-            .collect();
-        let mut shown = dodai_gpui::follow::follow_all(window, cx, &self.follow, &flat).into_iter();
-        for p in self.groups.iter_mut().flat_map(|g| g.1.iter_mut()) {
-            p.0 = shown.next().unwrap_or(p.0);
-            p.1 = shown.next().unwrap_or(p.1);
-            p.2 = shown.next().unwrap_or(p.2);
-        }
-        let g = dodai_gpui::motion::grow_for(window, cx, &self.follow, "BubbleChart");
-        let t = theme_of(cx);
-        let all = || self.groups.iter().flat_map(|g| g.1.iter());
-        let rng = |f: fn(&(f32, f32, f32)) -> f32| dodai_charts_core::tick_span(all().map(f), 4);
-        let (xl, xh, xt) = rng(|p| p.0);
-        let (yl, yh, yt) = rng(|p| p.1);
-        let smax = all().map(|p| p.2).fold(f32::MIN_POSITIVE, f32::max);
-        let grid = hsla(t.palette.border);
-        let mut plot = div().relative().w_full().h(px(self.height));
-        for v in &yt {
-            plot = plot.child(
-                div()
-                    .absolute()
-                    .left_0()
-                    .w_full()
-                    .h(px(1.0))
-                    .bottom(relative(norm(*v, yl, yh)))
-                    .bg(grid),
-            );
-        }
-        for v in &xt {
-            plot = plot.child(
-                div()
-                    .absolute()
-                    .top_0()
-                    .h_full()
-                    .w(px(1.0))
-                    .left(relative(norm(*v, xl, xh)))
-                    .bg(grid),
-            );
-        }
-        for (gi, (name, pts)) in self.groups.iter().enumerate() {
-            let c = hsla(t.palette.series_at(gi));
-            for (i, (x, y, s)) in pts.iter().enumerate() {
-                let r = (s / smax).sqrt()
-                    * self.max_radius
-                    * dodai_gpui::motion::reveal(g, i, pts.len());
-                plot = plot.child(
-                    div()
-                        .id((SharedString::from(format!("{}-{gi}", self.id)), i))
-                        .absolute()
-                        .left(relative(norm(*x, xl, xh)))
-                        .top(relative(1.0 - norm(*y, yl, yh)))
-                        .ml(px(-r))
-                        .mt(px(-r))
-                        .w(px(r * 2.0))
-                        .h(px(r * 2.0))
-                        .rounded_full()
-                        .bg(scale_alpha(c, 0.45))
-                        .border_1()
-                        .border_color(c)
-                        .tooltip(DodaiTooltip::text(format!(
-                            "{name}: x {} · y {} · size {}",
-                            fmt_with(&self.fmt, *x),
-                            fmt_with(&self.fmt, *y),
-                            fmt_with(&self.fmt, *s)
-                        ))),
-                );
-            }
-        }
-        let xl_labels: Vec<SharedString> =
-            xt.iter().map(|v| fmt_with(&self.fmt, *v).into()).collect();
-        let framed_plot = div().flex().flex_col().w_full().child(framed(
-            &t,
-            yt.iter().map(|v| fmt_with(&self.fmt, *v)).collect(),
-            xl_labels,
-            plot,
-        ));
-        let legend = Legend::new(
-            self.groups
-                .iter()
-                .enumerate()
-                .map(|(i, g)| (g.0.clone(), t.palette.series_at(i))),
-        );
-        titled(
-            &t,
-            self.title,
-            div()
-                .flex()
-                .flex_col()
-                .gap(px(t.spacing.sm))
-                .w_full()
-                .child(framed_plot)
-                .child(legend),
-        )
-    }
-}
-
-dodai_gpui::entry_render!(BubbleChart);
 
 #[cfg(test)]
 mod tests {

@@ -1311,21 +1311,6 @@ impl Showcase {
                 .title("Box plot")
                 .into_any_element(),
             ),
-            (
-                "Bubble",
-                BubbleChart::new([
-                    (
-                        "EU",
-                        vec![(1.0, 2.0, 30.0), (3.0, 5.0, 80.0), (5.0, 3.0, 50.0)],
-                    ),
-                    (
-                        "US",
-                        vec![(2.0, 6.0, 100.0), (4.0, 2.0, 20.0), (6.0, 7.0, 60.0)],
-                    ),
-                ])
-                .title("Bubble chart")
-                .into_any_element(),
-            ),
         ];
         ChartDemos {
             charts,

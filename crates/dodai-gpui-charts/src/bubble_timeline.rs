@@ -6,7 +6,7 @@ use crate::common::{
     tracked_canvas, CanvasText, Groups, Marker, NumFmt,
 };
 use crate::focus::{readout, Focus};
-use dodai_charts_core::pack::pile_up;
+use dodai_charts_core::pack::{pile_up, swarm_sized};
 use dodai_gpui::paint::scale_alpha;
 use dodai_gpui::{hsla, theme_of};
 use gpui::{
@@ -62,6 +62,7 @@ pub struct BubbleTimeline {
     size_label: Option<SharedString>,
     x_fmt: Option<NumFmt>,
     filter: bool,
+    centred: bool,
     height: f32,
     fmt: Option<NumFmt>,
     title: Option<SharedString>,
@@ -80,6 +81,7 @@ impl BubbleTimeline {
             size_label: None,
             x_fmt: None,
             filter: true,
+            centred: false,
             height: 420.0,
             fmt: None,
             title: None,
@@ -105,6 +107,12 @@ impl BubbleTimeline {
         self.x_fmt = Some(Rc::new(f));
         self
     }
+    /// Spread the bubbles either side of the middle (a sized beeswarm) instead of piling them
+    /// up from the axis (default off).
+    pub fn centred(mut self, on: bool) -> Self {
+        self.centred = on;
+        self
+    }
     /// Whether clicking a legend entry hides its group (default on).
     pub fn filter(mut self, on: bool) -> Self {
         self.filter = on;
@@ -119,7 +127,7 @@ fn lay_out(
     items: &[(f32, f32)],
     (lo, hi): (f32, f32),
     (bw, bh): (f32, f32),
-    rmax: f32,
+    (rmax, centred): (f32, bool),
 ) -> Vec<(f32, f32, f32)> {
     let smax = items.iter().map(|i| i.1).fold(f32::MIN_POSITIVE, f32::max);
     let mut rmax = rmax.min(bw / 4.0).max(1.0);
@@ -136,16 +144,31 @@ fn lay_out(
             .map(|i| ((i.1 / smax).sqrt() * rmax).max(2.5))
             .collect();
         let gap: Vec<f32> = rs.iter().map(|r| r + 1.0).collect();
-        let ys = pile_up(&xs, &gap);
-        let top = ys.iter().zip(&rs).map(|(y, r)| y + r).fold(0.0, f32::max);
-        out = (0..items.len())
-            .map(|i| (xs[i], bh - ys[i], rs[i]))
-            .collect();
-        if top <= bh || bh <= 0.0 {
+        let (top, room) = if centred {
+            let ys = swarm_sized(&xs, &gap);
+            let top = ys
+                .iter()
+                .zip(&rs)
+                .map(|(y, r)| y.abs() + r)
+                .fold(0.0, f32::max);
+            let mid = bh / 2.0;
+            out = (0..items.len())
+                .map(|i| (xs[i], mid + ys[i], rs[i]))
+                .collect();
+            (top, mid)
+        } else {
+            let ys = pile_up(&xs, &gap);
+            let top = ys.iter().zip(&rs).map(|(y, r)| y + r).fold(0.0, f32::max);
+            out = (0..items.len())
+                .map(|i| (xs[i], bh - ys[i], rs[i]))
+                .collect();
+            (top, bh)
+        };
+        if top <= room || bh <= 0.0 {
             break;
         }
         // Areas scale with the square, so shrink the radii by the root of the overflow.
-        rmax *= (bh / top).sqrt().clamp(0.5, 0.97);
+        rmax *= (room / top).sqrt().clamp(0.5, 0.97);
     }
     out
 }
@@ -199,12 +222,13 @@ impl BubbleTimeline {
         let value = CanvasText::display(&t, t.typography.size_xs);
         let beside = CanvasText::display(&t, t.typography.size_xs);
         let rmax = self.max_radius;
+        let centred = self.centred;
         let placed: Rc<RefCell<Vec<(f32, f32, f32)>>> = Default::default();
         let painted = placed.clone();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
         let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, cx| {
             let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-            let at = lay_out(&data, (tlo, thi), (bw, bh), rmax);
+            let at = lay_out(&data, (tlo, thi), (bw, bh), (rmax, centred));
             stroke(
                 w,
                 b.origin,
@@ -333,13 +357,13 @@ mod tests {
         let items: Vec<(f32, f32)> = (0..40)
             .map(|i| (2000.0 + (i % 10) as f32, 1.0 + i as f32))
             .collect();
-        let at = lay_out(&items, (2000.0, 2010.0), (600.0, 200.0), 60.0);
+        let at = lay_out(&items, (2000.0, 2010.0), (600.0, 200.0), (60.0, false));
         for (i, (x, y, r)) in at.iter().enumerate() {
             assert!(*x >= 0.0 && *x <= 600.0, "bubble {i} off the side");
             assert!(*y + r <= 200.0 + 1e-2, "bubble {i} below the axis");
         }
         assert!(at[0].0 < at[9].0, "later events sit further right");
-        assert!(lay_out(&[], (0.0, 1.0), (10.0, 10.0), 5.0).is_empty());
+        assert!(lay_out(&[], (0.0, 1.0), (10.0, 10.0), (5.0, false)).is_empty());
     }
 
     #[test]

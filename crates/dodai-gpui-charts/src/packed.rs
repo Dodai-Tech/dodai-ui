@@ -1,14 +1,13 @@
-//! Packed charts in the infographic style: [`BubbleSwarm`] (sized bubbles along one axis),
-//! [`ProportionalSquares`] (one square per item, area by value) and [`CirclePack`] (a
+//! Packed charts in the infographic style: [`ProportionalSquares`] (one square per item, area by value) and [`CirclePack`] (a
 //! hierarchy as circles inside circles).
 
 use crate::common::{
-    chart_cfg, fill, fmt_with, marker_points, norm, plot_box, stroke, tick_row, titled,
-    tracked_canvas, CanvasText, Groups, Marker, NumFmt,
+    chart_cfg, fill, fmt_with, marker_points, plot_box, stroke, titled, tracked_canvas, CanvasText,
+    Groups, Marker, NumFmt,
 };
 use crate::focus::{readout, Focus};
 use crate::hierarchy::ChartNode;
-use dodai_charts_core::pack::{circle_pack, square_pack, swarm_sized, Disc};
+use dodai_charts_core::pack::{circle_pack, square_pack, Disc};
 use dodai_gpui::paint::scale_alpha;
 use dodai_gpui::{hsla, theme_of};
 use gpui::{
@@ -33,189 +32,6 @@ fn grouped<G: Into<SharedString>, L: Into<SharedString>, T>(
         })
         .collect()
 }
-
-// ─────────────────────────────── BubbleSwarm ───────────────────────────────
-
-/// Bubbles along one axis, each placed at its value and sized (by area) by a second number,
-/// packed so none overlap: which items lead, and how big each is, at a glance. Bubbles big
-/// enough to hold their label carry it; hover for the rest.
-#[derive(IntoElement)]
-pub struct BubbleSwarm {
-    follow: dodai_gpui::follow::Follow,
-    groups: Grouped<(f32, f32)>,
-    max_radius: f32,
-    filter: bool,
-    height: f32,
-    fmt: Option<NumFmt>,
-    title: Option<SharedString>,
-}
-chart_cfg!(BubbleSwarm);
-
-impl BubbleSwarm {
-    dodai_gpui::follow_api!();
-    /// Create a new [`BubbleSwarm`] from `(group, [(label, (position, size))])`; each group
-    /// takes a series colour.
-    #[track_caller]
-    pub fn new<G: Into<SharedString>, L: Into<SharedString>>(
-        groups: impl IntoIterator<Item = (G, Vec<(L, (f32, f32))>)>,
-    ) -> Self {
-        Self {
-            follow: dodai_gpui::follow::Follow::here(),
-            groups: grouped(groups),
-            max_radius: 28.0,
-            filter: true,
-            height: 220.0,
-            fmt: None,
-            title: None,
-        }
-    }
-    /// Let the legend hide and show groups (default on; needs two groups or more).
-    pub fn filter(mut self, on: bool) -> Self {
-        self.filter = on;
-        self
-    }
-    /// Radius in px of the biggest bubble (default 28, `4..=80`).
-    pub fn max_radius(mut self, r: f32) -> Self {
-        self.max_radius = if r.is_finite() {
-            r.clamp(4.0, 80.0)
-        } else {
-            28.0
-        };
-        self
-    }
-}
-
-impl BubbleSwarm {
-    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let flat: Vec<f32> = self
-            .groups
-            .iter()
-            .flat_map(|g| g.1.iter().flat_map(|(_, (x, s))| [*x, *s]))
-            .collect();
-        let mut shown = dodai_gpui::follow::follow_all(window, cx, &self.follow, &flat).into_iter();
-        for (_, (x, s)) in self.groups.iter_mut().flat_map(|g| g.1.iter_mut()) {
-            *x = shown.next().unwrap_or(*x);
-            *s = shown.next().unwrap_or(*s);
-        }
-        let t = theme_of(cx);
-        let g = dodai_gpui::motion::grow_for(window, cx, &self.follow, "BubbleSwarm");
-        let groups = Groups::new(
-            window,
-            cx,
-            &self.follow,
-            self.groups.iter().map(|g| Some(&g.0)),
-            self.filter,
-        );
-        // (group, label, position, size) of every drawable item.
-        let items: Vec<(usize, SharedString, f32, f32)> = self
-            .groups
-            .iter()
-            .enumerate()
-            .flat_map(|(k, (_, it))| {
-                it.iter()
-                    .filter(|(_, (x, s))| x.is_finite() && s.is_finite() && *s > 0.0)
-                    .map(move |(l, (x, s))| (k, l.clone(), *x, *s))
-            })
-            .collect();
-        // Axis and bubble scale from every item, so hiding a group keeps the others still.
-        let (tlo, thi, ticks) = dodai_charts_core::tick_span(items.iter().map(|i| i.2), 5);
-        let smax = items.iter().map(|i| i.3).fold(f32::MIN_POSITIVE, f32::max);
-        let items: Vec<_> = items.into_iter().filter(|i| groups.shown(i.0)).collect();
-        let focus = Focus::new(window, cx, &self.follow, items.len());
-        let looks: Vec<_> = (0..items.len()).map(|i| focus.item(i)).collect();
-        let cols: Vec<Hsla> = (0..self.groups.len().max(1))
-            .map(|i| hsla(t.palette.series_at(i)))
-            .collect();
-        let inks: Vec<Hsla> = (0..self.groups.len().max(1))
-            .map(|i| hsla(t.on(t.palette.series_at(i))))
-            .collect();
-        let rmax = self.max_radius;
-        let text = CanvasText::of(&t);
-        let placed: Rc<RefCell<Vec<(f32, f32, f32)>>> = Default::default();
-        let painted = placed.clone();
-        let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let paint_items = items.clone();
-        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, cx| {
-            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-            // Inset by the biggest radius so edge bubbles stay inside.
-            let span = (bw - 2.0 * rmax).max(1.0);
-            let xs: Vec<f32> = paint_items
-                .iter()
-                .map(|i| rmax + norm(i.2, tlo, thi) * span)
-                .collect();
-            let rs: Vec<f32> = paint_items
-                .iter()
-                .map(|i| (i.3 / smax).sqrt() * rmax)
-                .collect();
-            let gap: Vec<f32> = rs.iter().map(|r| r + 1.0).collect();
-            let dys = swarm_sized(&xs, &gap);
-            let mid = bh / 2.0;
-            let at: Vec<(f32, f32, f32)> = (0..paint_items.len())
-                .map(|i| {
-                    let room = (mid - rs[i]).max(0.0);
-                    (xs[i], mid + dys[i].clamp(-room, room), rs[i])
-                })
-                .collect();
-            for (i, &(x, y, r)) in at.iter().enumerate() {
-                let gi = dodai_core::motion::reveal(g, i, at.len());
-                if gi <= 0.0 {
-                    continue;
-                }
-                let lk = looks[i];
-                let k = paint_items[i].0;
-                let rr = (r + lk.lift * 2.0) * gi;
-                let dot = marker_points(Marker::Dot, x, y, rr);
-                fill(w, b.origin, &dot, scale_alpha(cols[k], 0.85 * lk.alpha));
-                if gi >= 1.0 {
-                    text.centred(
-                        w,
-                        cx,
-                        &paint_items[i].1,
-                        (b.origin, (x, y)),
-                        2.0 * r - 6.0,
-                        inks[k],
-                    );
-                }
-            }
-            *painted.borrow_mut() = at;
-        })
-        .absolute()
-        .size_full();
-        let plot = plot_box(
-            self.follow.sub("bubbles").element_id(window, cx),
-            self.height,
-            cv,
-        );
-        let plot = focus.pointer(plot, &bounds, move |x, y, _, _| {
-            placed
-                .borrow()
-                .iter()
-                .position(|(cx_, cy, r)| (cx_ - x).powi(2) + (cy - y).powi(2) <= r * r)
-        });
-        let names: Vec<SharedString> = self.groups.iter().map(|g| g.0.clone()).collect();
-        let shown = focus.shown(cx).and_then(|i| {
-            let (k, l, x, s) = items.get(i)?;
-            Some(format!(
-                "{l} ({}) · {} · size {}",
-                names.get(*k)?,
-                fmt_with(&self.fmt, *x),
-                fmt_with(&self.fmt, *s)
-            ))
-        });
-        let body = div()
-            .flex()
-            .flex_col()
-            .gap(px(t.spacing.xs))
-            .w_full()
-            .child(plot)
-            .child(div().px(px(rmax)).child(tick_row(&t, &ticks, &self.fmt)))
-            .children(groups.legend(&t).filter(|_| names.len() > 1))
-            .child(readout(&t, shown, &groups.hint("Hover a bubble")));
-        titled(&t, self.title, body)
-    }
-}
-
-dodai_gpui::entry_render!(BubbleSwarm);
 
 // ─────────────────────────────── ProportionalSquares ───────────────────────────────
 
