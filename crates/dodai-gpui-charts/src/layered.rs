@@ -3,7 +3,8 @@
 
 use crate::common::{
     chart_cfg, down_color, fill, fmt_with, label_column, label_style, labels_of, nice_ticks, norm,
-    series_color, smooth_points, stroke, tick_row, titled, up_color, NumFmt, Series,
+    plot_box, series_color, smooth_points, stroke, tick_row, titled, tracked_canvas, up_color,
+    NumFmt, Series,
 };
 use crate::focus::{readout, Focus};
 use dodai_charts_core::{density, horizon, rank};
@@ -323,50 +324,44 @@ impl RidgelineChart {
         let focus = Focus::new(window, cx, &self.follow, m);
         let looks: Vec<_> = (0..m).map(|k| focus.item(k)).collect();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
         let hit_curves = curves.clone();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                // Room on top for the first ridge to rise into.
-                let row = bh / (m as f32 - 1.0 + overlap);
-                // The top row first, so each lower ridge covers the one behind it.
-                for (k, d) in curves.iter().enumerate() {
-                    let base = (k as f32 + overlap) * row;
-                    stroke(w, b.origin, &[(0.0, base), (bw, base)], 1.0, grid, false);
-                    if d.y.len() < 2 {
-                        continue;
-                    }
-                    let span = (d.y.len() - 1) as f32;
-                    let top: Vec<(f32, f32)> =
-                        d.y.iter()
-                            .enumerate()
-                            .map(|(i, y)| {
-                                let v = d.lo + (d.hi - d.lo) * i as f32 / span;
-                                (norm(v, lo, hi) * bw, base - y * row * overlap * g)
-                            })
-                            .collect();
-                    let mut poly = top.clone();
-                    poly.push((top[top.len() - 1].0, base));
-                    poly.push((top[0].0, base));
-                    let lk = looks[k];
-                    fill(w, b.origin, &poly, bg);
-                    fill(w, b.origin, &poly, scale_alpha(cols[k], 0.55 * lk.alpha));
-                    let c = scale_alpha(cols[k], lk.alpha.max(0.35));
-                    stroke(w, b.origin, &top, 1.5 + lk.lift * 1.5, c, false);
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            // Room on top for the first ridge to rise into.
+            let row = bh / (m as f32 - 1.0 + overlap);
+            // The top row first, so each lower ridge covers the one behind it.
+            for (k, d) in curves.iter().enumerate() {
+                let base = (k as f32 + overlap) * row;
+                stroke(w, b.origin, &[(0.0, base), (bw, base)], 1.0, grid, false);
+                if d.y.len() < 2 {
+                    continue;
                 }
-            },
-        )
+                let span = (d.y.len() - 1) as f32;
+                let top: Vec<(f32, f32)> =
+                    d.y.iter()
+                        .enumerate()
+                        .map(|(i, y)| {
+                            let v = d.lo + (d.hi - d.lo) * i as f32 / span;
+                            (norm(v, lo, hi) * bw, base - y * row * overlap * g)
+                        })
+                        .collect();
+                let mut poly = top.clone();
+                poly.push((top[top.len() - 1].0, base));
+                poly.push((top[0].0, base));
+                let lk = looks[k];
+                fill(w, b.origin, &poly, bg);
+                fill(w, b.origin, &poly, scale_alpha(cols[k], 0.55 * lk.alpha));
+                let c = scale_alpha(cols[k], lk.alpha.max(0.35));
+                stroke(w, b.origin, &top, 1.5 + lk.lift * 1.5, c, false);
+            }
+        })
         .absolute()
         .size_full();
-        let plot = div()
-            .id(self.follow.sub("ridges").element_id(window, cx))
-            .relative()
-            .w_full()
-            .h(px(self.height))
-            .child(cv);
+        let plot = plot_box(
+            self.follow.sub("ridges").element_id(window, cx),
+            self.height,
+            cv,
+        );
         let plot = focus.pointer(plot, &bounds, move |x, y, w, h| {
             ridge_hit(&hit_curves, (lo, hi), overlap, (x, y, w, h))
         });
@@ -494,55 +489,49 @@ impl HorizonChart {
         let focus = Focus::new(window, cx, &self.follow, strips);
         let looks: Vec<_> = (0..strips).map(|k| focus.item(k)).collect();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                let strip = bh / m as f32;
-                for (r, vals) in rows.iter().enumerate() {
-                    let top = r as f32 * strip;
-                    if r > 0 {
-                        stroke(w, b.origin, &[(0.0, top), (bw, top)], 1.0, grid, false);
-                    }
-                    let n = vals.len().max(1);
-                    let cw = bw / n as f32;
-                    for (i, v) in vals.iter().enumerate() {
-                        let x0 = i as f32 * cw;
-                        let x1 = x0 + cw + 0.5;
-                        let c = if *v < 0.0 { &down } else { &up };
-                        for (k, f) in horizon::fold(*v * g, band, bands).into_iter().enumerate() {
-                            if f <= 0.0 {
-                                break;
-                            }
-                            let h = f * strip;
-                            // Above zero grows up from the strip's floor, below hangs from its top.
-                            let (y0, y1) = if *v < 0.0 {
-                                (top, top + h)
-                            } else {
-                                (top + strip - h, top + strip)
-                            };
-                            let a = looks[r].alpha.max(0.3);
-                            fill(
-                                w,
-                                b.origin,
-                                &[(x0, y0), (x1, y0), (x1, y1), (x0, y1)],
-                                scale_alpha(c[k], a),
-                            );
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            let strip = bh / m as f32;
+            for (r, vals) in rows.iter().enumerate() {
+                let top = r as f32 * strip;
+                if r > 0 {
+                    stroke(w, b.origin, &[(0.0, top), (bw, top)], 1.0, grid, false);
+                }
+                let n = vals.len().max(1);
+                let cw = bw / n as f32;
+                for (i, v) in vals.iter().enumerate() {
+                    let x0 = i as f32 * cw;
+                    let x1 = x0 + cw + 0.5;
+                    let c = if *v < 0.0 { &down } else { &up };
+                    for (k, f) in horizon::fold(*v * g, band, bands).into_iter().enumerate() {
+                        if f <= 0.0 {
+                            break;
                         }
+                        let h = f * strip;
+                        // Above zero grows up from the strip's floor, below hangs from its top.
+                        let (y0, y1) = if *v < 0.0 {
+                            (top, top + h)
+                        } else {
+                            (top + strip - h, top + strip)
+                        };
+                        let a = looks[r].alpha.max(0.3);
+                        fill(
+                            w,
+                            b.origin,
+                            &[(x0, y0), (x1, y0), (x1, y1), (x0, y1)],
+                            scale_alpha(c[k], a),
+                        );
                     }
                 }
-            },
-        )
+            }
+        })
         .absolute()
         .size_full();
-        let plot = div()
-            .id(self.follow.sub("strips").element_id(window, cx))
-            .relative()
-            .w_full()
-            .h(px(self.height))
-            .child(cv);
+        let plot = plot_box(
+            self.follow.sub("strips").element_id(window, cx),
+            self.height,
+            cv,
+        );
         let plot = focus.pointer(plot, &bounds, move |_, y, _, h| {
             (h > 0.0 && (0.0..h).contains(&y))
                 .then(|| (y / h * m as f32) as usize)

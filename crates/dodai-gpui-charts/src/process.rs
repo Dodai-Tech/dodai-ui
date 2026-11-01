@@ -3,15 +3,15 @@
 
 use crate::common::{
     chart_cfg, down_color, fill, fmt_with, label_column, label_style, labels_of, marker_points,
-    nice_ticks, norm, stroke, tick_row, titled, Legend, Marker, NumFmt,
+    nice_ticks, norm, plot_box, stroke, tick_row, titled, tracked_canvas, Legend, Marker, NumFmt,
 };
 use crate::focus::{readout, Focus};
 use dodai_charts_core::control::{limits, signals, RUN};
 use dodai_gpui::paint::scale_alpha;
 use dodai_gpui::{hsla, theme_of};
 use gpui::{
-    canvas, div, px, relative, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement,
-    Pixels, SharedString, Styled, Window,
+    div, px, relative, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels,
+    SharedString, Styled, Window,
 };
 use std::cell::Cell;
 use std::rc::Rc;
@@ -124,56 +124,50 @@ impl ControlChart {
         let vals = self.values.clone();
         let paint_flags = flags.clone();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                let y = |v: f32| bh * (1.0 - norm(v, y0, y1));
-                let x = |i: usize| (i as f32 + 0.5) / n.max(1) as f32 * bw;
-                let (yu, yl, ym) = (y(l.upper), y(l.lower), y(l.mean));
-                fill(
-                    w,
-                    b.origin,
-                    &[(0.0, yu), (bw, yu), (bw, yl), (0.0, yl)],
-                    scale_alpha(band, 0.08),
-                );
-                for v in [l.upper, l.lower] {
-                    crate::common::grid_line(w, b.origin, (0.0, y(v)), (bw, y(v)), &style);
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            let y = |v: f32| bh * (1.0 - norm(v, y0, y1));
+            let x = |i: usize| (i as f32 + 0.5) / n.max(1) as f32 * bw;
+            let (yu, yl, ym) = (y(l.upper), y(l.lower), y(l.mean));
+            fill(
+                w,
+                b.origin,
+                &[(0.0, yu), (bw, yu), (bw, yl), (0.0, yl)],
+                scale_alpha(band, 0.08),
+            );
+            for v in [l.upper, l.lower] {
+                crate::common::grid_line(w, b.origin, (0.0, y(v)), (bw, y(v)), &style);
+            }
+            stroke(w, b.origin, &[(0.0, ym), (bw, ym)], 1.5, mid, false);
+            let reach = ((n as f32 * g).ceil() as usize).min(n);
+            let p: Vec<(f32, f32)> = vals
+                .iter()
+                .take(reach)
+                .enumerate()
+                .filter(|(_, v)| v.is_finite())
+                .map(|(i, v)| (x(i), y(*v)))
+                .collect();
+            stroke(w, b.origin, &p, 1.5, scale_alpha(ink, 0.8), false);
+            for (i, v) in vals.iter().take(reach).enumerate() {
+                if !v.is_finite() {
+                    continue;
                 }
-                stroke(w, b.origin, &[(0.0, ym), (bw, ym)], 1.5, mid, false);
-                let reach = ((n as f32 * g).ceil() as usize).min(n);
-                let p: Vec<(f32, f32)> = vals
-                    .iter()
-                    .take(reach)
-                    .enumerate()
-                    .filter(|(_, v)| v.is_finite())
-                    .map(|(i, v)| (x(i), y(*v)))
-                    .collect();
-                stroke(w, b.origin, &p, 1.5, scale_alpha(ink, 0.8), false);
-                for (i, v) in vals.iter().take(reach).enumerate() {
-                    if !v.is_finite() {
-                        continue;
-                    }
-                    let (c, r) = if paint_flags[i] {
-                        (bad, 4.5)
-                    } else {
-                        (ink, 2.5)
-                    };
-                    let r = if shown == Some(i) { r + 2.0 } else { r };
-                    fill(w, b.origin, &marker_points(Marker::Dot, x(i), y(*v), r), c);
-                }
-            },
-        )
+                let (c, r) = if paint_flags[i] {
+                    (bad, 4.5)
+                } else {
+                    (ink, 2.5)
+                };
+                let r = if shown == Some(i) { r + 2.0 } else { r };
+                fill(w, b.origin, &marker_points(Marker::Dot, x(i), y(*v), r), c);
+            }
+        })
         .absolute()
         .size_full();
-        let plot = div()
-            .id(self.follow.sub("ctl").element_id(window, cx))
-            .relative()
-            .w_full()
-            .h(px(self.height))
-            .child(cv);
+        let plot = plot_box(
+            self.follow.sub("ctl").element_id(window, cx),
+            self.height,
+            cv,
+        );
         let plot = focus.pointer(plot, &bounds, move |x, _, w, _| {
             let i = (x / w.max(1.0) * n as f32) as usize;
             (i < n).then_some(i)
@@ -339,33 +333,28 @@ impl EventTimeline {
         let paint_spans = spans.clone();
         let hit_spans = spans.clone();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                let lane = bh / nl as f32;
-                // Time sweeps in from the left.
-                let edge = g * bw;
-                for (i, &(k, a, e, s)) in paint_spans.iter().enumerate() {
-                    let lk = looks[i];
-                    let x0 = norm(a, t0, t1) * bw;
-                    let x1 = (norm(e, t0, t1) * bw).min(edge);
-                    if x1 - x0 < 0.5 {
-                        continue;
-                    }
-                    let pad = lane * 0.15 - lk.lift * 2.0;
-                    let (y0, y1) = (k as f32 * lane + pad, (k + 1) as f32 * lane - pad);
-                    fill(
-                        w,
-                        b.origin,
-                        &[(x0, y0), (x1 - 1.0, y0), (x1 - 1.0, y1), (x0, y1)],
-                        scale_alpha(cols[s], lk.alpha),
-                    );
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            let lane = bh / nl as f32;
+            // Time sweeps in from the left.
+            let edge = g * bw;
+            for (i, &(k, a, e, s)) in paint_spans.iter().enumerate() {
+                let lk = looks[i];
+                let x0 = norm(a, t0, t1) * bw;
+                let x1 = (norm(e, t0, t1) * bw).min(edge);
+                if x1 - x0 < 0.5 {
+                    continue;
                 }
-            },
-        )
+                let pad = lane * 0.15 - lk.lift * 2.0;
+                let (y0, y1) = (k as f32 * lane + pad, (k + 1) as f32 * lane - pad);
+                fill(
+                    w,
+                    b.origin,
+                    &[(x0, y0), (x1 - 1.0, y0), (x1 - 1.0, y1), (x0, y1)],
+                    scale_alpha(cols[s], lk.alpha),
+                );
+            }
+        })
         .absolute()
         .size_full();
         let plot = div()

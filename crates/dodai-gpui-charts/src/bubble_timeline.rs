@@ -2,16 +2,15 @@
 //! from the axis so none overlap, coloured by group; the legend filters the groups.
 
 use crate::common::{
-    chart_cfg, fill, fmt_with, marker_points, norm, stroke, tick_row, titled, CanvasText, Groups,
-    Marker, NumFmt,
+    chart_cfg, fill, fmt_with, marker_points, norm, plot_box, stroke, tick_row, titled,
+    tracked_canvas, CanvasText, Groups, Marker, NumFmt,
 };
 use crate::focus::{readout, Focus};
 use dodai_charts_core::pack::pile_up;
 use dodai_gpui::paint::scale_alpha;
 use dodai_gpui::{hsla, theme_of};
 use gpui::{
-    canvas, div, px, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels,
-    SharedString, Styled, Window,
+    div, px, App, Bounds, Hsla, IntoElement, ParentElement, Pixels, SharedString, Styled, Window,
 };
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -203,100 +202,87 @@ impl BubbleTimeline {
         let placed: Rc<RefCell<Vec<(f32, f32, f32)>>> = Default::default();
         let painted = placed.clone();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, cx| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                let at = lay_out(&data, (tlo, thi), (bw, bh), rmax);
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, cx| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            let at = lay_out(&data, (tlo, thi), (bw, bh), rmax);
+            stroke(
+                w,
+                b.origin,
+                &[(0.0, bh - 0.5), (bw, bh - 0.5)],
+                1.0,
+                axis,
+                false,
+            );
+            // Paint big first so small bubbles stay visible on top.
+            let mut order: Vec<usize> = (0..at.len()).collect();
+            order.sort_by(|a, c| at[*c].2.total_cmp(&at[*a].2));
+            for &i in &order {
+                let (x, y, r) = at[i];
+                let gi = dodai_core::motion::reveal(g, i, at.len());
+                if gi <= 0.0 {
+                    continue;
+                }
+                let lk = looks[i];
+                let rr = (r + lk.lift * 2.0) * gi;
+                let dot = marker_points(Marker::Dot, x, y, rr);
+                fill(w, b.origin, &dot, scale_alpha(fills[i], 0.9 * lk.alpha));
                 stroke(
                     w,
                     b.origin,
-                    &[(0.0, bh - 0.5), (bw, bh - 0.5)],
+                    &dot,
                     1.0,
-                    axis,
-                    false,
+                    scale_alpha(surface, 0.7 * lk.alpha),
+                    true,
                 );
-                // Paint big first so small bubbles stay visible on top.
-                let mut order: Vec<usize> = (0..at.len()).collect();
-                order.sort_by(|a, c| at[*c].2.total_cmp(&at[*a].2));
-                for &i in &order {
-                    let (x, y, r) = at[i];
-                    let gi = dodai_core::motion::reveal(g, i, at.len());
-                    if gi <= 0.0 {
-                        continue;
-                    }
-                    let lk = looks[i];
-                    let rr = (r + lk.lift * 2.0) * gi;
-                    let dot = marker_points(Marker::Dot, x, y, rr);
-                    fill(w, b.origin, &dot, scale_alpha(fills[i], 0.9 * lk.alpha));
-                    stroke(
-                        w,
-                        b.origin,
-                        &dot,
-                        1.0,
-                        scale_alpha(surface, 0.7 * lk.alpha),
-                        true,
-                    );
+            }
+            *painted.borrow_mut() = at.clone();
+            if g < 1.0 {
+                return;
+            }
+            // Names: inside bubbles that hold them, else beside, the focused first then
+            // the biggest; every bubble keeps its own room. The canvas edges count as taken.
+            let mut taken: Vec<[f32; 4]> = vec![
+                [-1e5, -1e5, 0.0, 1e5],
+                [bw, -1e5, 1e5, 1e5],
+                [-1e5, -1e5, 1e5, 0.0],
+            ];
+            let mut outside = Vec::new();
+            for &i in &order {
+                let (x, y, r) = at[i];
+                let c = scale_alpha(inks[i], looks[i].alpha);
+                let lh = inside.size_line();
+                if r * 2.0 > lh * 2.4
+                    && inside.centred(w, cx, &names[i], (b.origin, (x, y - lh * 0.45)), r * 1.8, c)
+                {
+                    value.centred(w, cx, &sizes[i], (b.origin, (x, y + lh * 0.55)), r * 1.8, c);
+                } else if r * 2.0 > lh * 1.2
+                    && inside.centred(w, cx, &names[i], (b.origin, (x, y)), r * 1.8, c)
+                {
+                } else {
+                    outside.push(i);
                 }
-                *painted.borrow_mut() = at.clone();
-                if g < 1.0 {
-                    return;
-                }
-                // Names: inside bubbles that hold them, else beside, the focused first then
-                // the biggest; every bubble keeps its own room. The canvas edges count as taken.
-                let mut taken: Vec<[f32; 4]> = vec![
-                    [-1e5, -1e5, 0.0, 1e5],
-                    [bw, -1e5, 1e5, 1e5],
-                    [-1e5, -1e5, 1e5, 0.0],
+                taken.push([x - r, y - r, x + r, y + r]);
+            }
+            outside.sort_by(|a, c| looks[*c].lift.total_cmp(&looks[*a].lift));
+            for i in outside {
+                let (x, y, r) = at[i];
+                let c = scale_alpha(ink, looks[i].alpha.max(0.4));
+                let r = r + 2.0;
+                let spots = [
+                    ((x, y - r), (0.0, -1.0)),
+                    ((x + r, y), (1.0, 0.0)),
+                    ((x - r, y), (-1.0, 0.0)),
                 ];
-                let mut outside = Vec::new();
-                for &i in &order {
-                    let (x, y, r) = at[i];
-                    let c = scale_alpha(inks[i], looks[i].alpha);
-                    let lh = inside.size_line();
-                    if r * 2.0 > lh * 2.4
-                        && inside.centred(
-                            w,
-                            cx,
-                            &names[i],
-                            (b.origin, (x, y - lh * 0.45)),
-                            r * 1.8,
-                            c,
-                        )
-                    {
-                        value.centred(w, cx, &sizes[i], (b.origin, (x, y + lh * 0.55)), r * 1.8, c);
-                    } else if r * 2.0 > lh * 1.2
-                        && inside.centred(w, cx, &names[i], (b.origin, (x, y)), r * 1.8, c)
-                    {
-                    } else {
-                        outside.push(i);
-                    }
-                    taken.push([x - r, y - r, x + r, y + r]);
-                }
-                outside.sort_by(|a, c| looks[*c].lift.total_cmp(&looks[*a].lift));
-                for i in outside {
-                    let (x, y, r) = at[i];
-                    let c = scale_alpha(ink, looks[i].alpha.max(0.4));
-                    let r = r + 2.0;
-                    let spots = [
-                        ((x, y - r), (0.0, -1.0)),
-                        ((x + r, y), (1.0, 0.0)),
-                        ((x - r, y), (-1.0, 0.0)),
-                    ];
-                    beside.place_free(w, cx, (&names[i], c), b.origin, &spots, &mut taken);
-                }
-            },
-        )
+                beside.place_free(w, cx, (&names[i], c), b.origin, &spots, &mut taken);
+            }
+        })
         .absolute()
         .size_full();
-        let plot = div()
-            .id(self.follow.sub("bubbles").element_id(window, cx))
-            .relative()
-            .w_full()
-            .h(px(self.height))
-            .child(cv);
+        let plot = plot_box(
+            self.follow.sub("bubbles").element_id(window, cx),
+            self.height,
+            cv,
+        );
         let plot = focus.pointer(plot, &bounds, move |x, y, _, _| {
             // The smallest bubble under the pointer: small ones sit on top.
             let at = placed.borrow();

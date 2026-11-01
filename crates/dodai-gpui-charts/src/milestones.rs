@@ -2,16 +2,15 @@
 //! trails, reference lines and bubble sizes.
 
 use crate::common::{
-    chart_cfg, fmt_with, framed_row, grid_line, norm, tick_row, turn_arc, CanvasText, Groups,
-    NumFmt,
+    chart_cfg, fmt_with, framed_row, grid_line, norm, plot_box, tick_row, tracked_canvas, turn_arc,
+    CanvasText, Groups, NumFmt,
 };
 use crate::focus::{readout, Focus};
 use dodai_charts_core::{milestones, tick_span};
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
 use dodai_gpui::{hsla, theme_of};
 use gpui::{
-    canvas, div, px, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels,
-    SharedString, Styled, Window,
+    div, px, App, Bounds, Hsla, IntoElement, ParentElement, Pixels, SharedString, Styled, Window,
 };
 use std::cell::Cell;
 use std::rc::Rc;
@@ -248,143 +247,137 @@ impl TimeScatter {
             yt.iter().map(|v| 1.0 - norm(*v, y0, y1)).collect(),
         );
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
         let (paint_unit, paint_radius) = (unit.clone(), radius.clone());
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, cx| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                let at = |(u, v): (f32, f32)| (u * bw, v * bh);
-                for f in &yf {
-                    grid_line(w, b.origin, (0.0, f * bh), (bw, f * bh), &style);
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, cx| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            let at = |(u, v): (f32, f32)| (u * bw, v * bh);
+            for f in &yf {
+                grid_line(w, b.origin, (0.0, f * bh), (bw, f * bh), &style);
+            }
+            for f in &xf {
+                grid_line(w, b.origin, (f * bw, 0.0), (f * bw, bh), &style);
+            }
+            let mut taken: Vec<[f32; 4]> = Vec::new();
+            for (v, label) in &refs {
+                let y = v * bh;
+                for d in dashes(0.0, bw, y) {
+                    stroke(w, b.origin, &d, 1.0, muted, false);
                 }
-                for f in &xf {
-                    grid_line(w, b.origin, (f * bw, 0.0), (f * bw, bh), &style);
+                // A boxed label at the left end, over the line.
+                let (lw, lh) = small.measure(w, label);
+                let r = dodai_gpui::plot::rect(2.0, y - lh / 2.0 - 2.0, lw + 10.0, lh + 4.0);
+                fill(w, b.origin, &r, surface);
+                stroke(w, b.origin, &r, 1.0, muted, true);
+                small.beside_free(
+                    w,
+                    cx,
+                    (label, ink),
+                    (b.origin, (7.0, y)),
+                    (1.0, 0.0),
+                    &mut taken,
+                );
+            }
+            for trail in &trails {
+                let line: Vec<(f32, f32)> = trail.iter().map(|i| at(paint_unit[*i])).collect();
+                let c = cols[trail[0]];
+                stroke(
+                    w,
+                    b.origin,
+                    &line,
+                    1.5,
+                    scale_alpha(c, 0.5 * g.min(1.0)),
+                    false,
+                );
+            }
+            if trend.len() == 2 {
+                let line: Vec<(f32, f32)> = trend.iter().map(|p| at(*p)).collect();
+                stroke(
+                    w,
+                    b.origin,
+                    &line,
+                    1.0,
+                    scale_alpha(ink, 0.6 * g.min(1.0)),
+                    false,
+                );
+            }
+            if stairs.len() > 1 {
+                let line: Vec<(f32, f32)> = stairs.iter().map(|p| at(*p)).collect();
+                stroke(
+                    w,
+                    b.origin,
+                    &line,
+                    1.5,
+                    scale_alpha(ink, 0.55 * g.min(1.0)),
+                    false,
+                );
+            }
+            // Big bubbles first so small ones stay on top.
+            let mut order: Vec<usize> = (0..paint_unit.len()).collect();
+            order.sort_by(|a, c| paint_radius[*c].total_cmp(&paint_radius[*a]));
+            for &i in &order {
+                let lk = looks[i];
+                let c = scale_alpha(cols[i], lk.alpha);
+                let r = (paint_radius[i] + lk.lift * 3.0)
+                    * dodai_gpui::motion::reveal(g, i, paint_unit.len());
+                if r <= 0.0 {
+                    continue;
                 }
-                let mut taken: Vec<[f32; 4]> = Vec::new();
-                for (v, label) in &refs {
-                    let y = v * bh;
-                    for d in dashes(0.0, bw, y) {
-                        stroke(w, b.origin, &d, 1.0, muted, false);
-                    }
-                    // A boxed label at the left end, over the line.
-                    let (lw, lh) = small.measure(w, label);
-                    let r = dodai_gpui::plot::rect(2.0, y - lh / 2.0 - 2.0, lw + 10.0, lh + 4.0);
-                    fill(w, b.origin, &r, surface);
-                    stroke(w, b.origin, &r, 1.0, muted, true);
-                    small.beside_free(
-                        w,
-                        cx,
-                        (label, ink),
-                        (b.origin, (7.0, y)),
-                        (1.0, 0.0),
-                        &mut taken,
-                    );
-                }
-                for trail in &trails {
-                    let line: Vec<(f32, f32)> = trail.iter().map(|i| at(paint_unit[*i])).collect();
-                    let c = cols[trail[0]];
+                let (x, y) = at(paint_unit[i]);
+                let ring = turn_arc(x, y, r, 0.0, 1.0);
+                if hollow[i] {
+                    stroke(w, b.origin, &ring, 2.0, c, true);
+                } else {
+                    fill(w, b.origin, &ring, scale_alpha(c, 0.85));
                     stroke(
                         w,
                         b.origin,
-                        &line,
-                        1.5,
-                        scale_alpha(c, 0.5 * g.min(1.0)),
-                        false,
-                    );
-                }
-                if trend.len() == 2 {
-                    let line: Vec<(f32, f32)> = trend.iter().map(|p| at(*p)).collect();
-                    stroke(
-                        w,
-                        b.origin,
-                        &line,
+                        &ring,
                         1.0,
-                        scale_alpha(ink, 0.6 * g.min(1.0)),
-                        false,
+                        scale_alpha(surface, 0.8 * lk.alpha),
+                        true,
                     );
                 }
-                if stairs.len() > 1 {
-                    let line: Vec<(f32, f32)> = stairs.iter().map(|p| at(*p)).collect();
-                    stroke(
-                        w,
-                        b.origin,
-                        &line,
-                        1.5,
-                        scale_alpha(ink, 0.55 * g.min(1.0)),
-                        false,
-                    );
+            }
+            // Bubbles keep their own room, then labels go to the first free side: the
+            // focused point first, then the biggest.
+            for (i, u) in paint_unit.iter().enumerate() {
+                let (x, y) = at(*u);
+                let r = paint_radius[i] * g.min(1.0);
+                taken.push([x - r, y - r, x + r, y + r]);
+            }
+            let mut rank: Vec<usize> = (0..paint_unit.len()).collect();
+            rank.sort_by(|a, c| {
+                let key = |k: usize| looks[k].lift * 100.0 + paint_radius[k];
+                key(*c).total_cmp(&key(*a))
+            });
+            for i in rank {
+                let (x, y) = at(paint_unit[i]);
+                let r = paint_radius[i] * g.min(1.0) + 3.0;
+                let col = scale_alpha(ink, lk_alpha(looks[i].alpha));
+                let spots = [
+                    ((x + r, y), (1.0, 0.0)),
+                    ((x, y + r), (0.0, 1.0)),
+                    ((x - r, y), (-1.0, 0.0)),
+                    ((x, y - r), (0.0, -1.0)),
+                ];
+                // Bubbles' own boxes stand aside for their labels.
+                let own = taken
+                    .iter()
+                    .position(|t| *t == [x - r + 3.0, y - r + 3.0, x + r - 3.0, y + r - 3.0]);
+                let mine = own.map(|k| taken.remove(k));
+                name.place_free(w, cx, (&labels[i], col), b.origin, &spots, &mut taken);
+                if let Some(m) = mine {
+                    taken.push(m);
                 }
-                // Big bubbles first so small ones stay on top.
-                let mut order: Vec<usize> = (0..paint_unit.len()).collect();
-                order.sort_by(|a, c| paint_radius[*c].total_cmp(&paint_radius[*a]));
-                for &i in &order {
-                    let lk = looks[i];
-                    let c = scale_alpha(cols[i], lk.alpha);
-                    let r = (paint_radius[i] + lk.lift * 3.0)
-                        * dodai_gpui::motion::reveal(g, i, paint_unit.len());
-                    if r <= 0.0 {
-                        continue;
-                    }
-                    let (x, y) = at(paint_unit[i]);
-                    let ring = turn_arc(x, y, r, 0.0, 1.0);
-                    if hollow[i] {
-                        stroke(w, b.origin, &ring, 2.0, c, true);
-                    } else {
-                        fill(w, b.origin, &ring, scale_alpha(c, 0.85));
-                        stroke(
-                            w,
-                            b.origin,
-                            &ring,
-                            1.0,
-                            scale_alpha(surface, 0.8 * lk.alpha),
-                            true,
-                        );
-                    }
-                }
-                // Bubbles keep their own room, then labels go to the first free side: the
-                // focused point first, then the biggest.
-                for (i, u) in paint_unit.iter().enumerate() {
-                    let (x, y) = at(*u);
-                    let r = paint_radius[i] * g.min(1.0);
-                    taken.push([x - r, y - r, x + r, y + r]);
-                }
-                let mut rank: Vec<usize> = (0..paint_unit.len()).collect();
-                rank.sort_by(|a, c| {
-                    let key = |k: usize| looks[k].lift * 100.0 + paint_radius[k];
-                    key(*c).total_cmp(&key(*a))
-                });
-                for i in rank {
-                    let (x, y) = at(paint_unit[i]);
-                    let r = paint_radius[i] * g.min(1.0) + 3.0;
-                    let col = scale_alpha(ink, lk_alpha(looks[i].alpha));
-                    let spots = [
-                        ((x + r, y), (1.0, 0.0)),
-                        ((x, y + r), (0.0, 1.0)),
-                        ((x - r, y), (-1.0, 0.0)),
-                        ((x, y - r), (0.0, -1.0)),
-                    ];
-                    // Bubbles' own boxes stand aside for their labels.
-                    let own = taken
-                        .iter()
-                        .position(|t| *t == [x - r + 3.0, y - r + 3.0, x + r - 3.0, y + r - 3.0]);
-                    let mine = own.map(|k| taken.remove(k));
-                    name.place_free(w, cx, (&labels[i], col), b.origin, &spots, &mut taken);
-                    if let Some(m) = mine {
-                        taken.push(m);
-                    }
-                }
-            },
-        )
+            }
+        })
         .absolute()
         .size_full();
-        let plot = div()
-            .id(self.follow.sub("plot").element_id(window, cx))
-            .relative()
-            .w_full()
-            .h(px(self.height))
-            .child(cv);
+        let plot = plot_box(
+            self.follow.sub("plot").element_id(window, cx),
+            self.height,
+            cv,
+        );
         let hit_unit = unit.clone();
         let plot = focus.pointer(plot, &bounds, move |x, y, w, h| {
             let px: Vec<(f32, f32)> = hit_unit.iter().map(|(u, v)| (u * w, v * h)).collect();

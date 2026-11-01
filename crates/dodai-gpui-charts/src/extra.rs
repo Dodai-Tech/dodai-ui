@@ -1,7 +1,8 @@
 //! [`Sankey`], [`CalendarHeatmap`], [`ViolinChart`] and [`RoseChart`].
 
 use crate::common::{
-    chart_cfg, fmt_with, framed, heat_color, label_style, norm, titled, turn_arc, Legend, NumFmt,
+    chart_cfg, fmt_with, framed, heat_color, label_style, norm, titled, tracked_canvas, turn_arc,
+    Legend, NumFmt,
 };
 use crate::distribution::quartiles;
 use crate::focus::{readout, Focus};
@@ -140,7 +141,6 @@ impl Sankey {
             }
         });
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
         let (hit_nodes, hit_ribbons) = (nodes.clone(), ribbons.clone());
         let hit = move |x: f32, y: f32, bw: f32, bh: f32| {
             let x_of = |c: usize| c as f32 / cols_f * (bw - nw);
@@ -164,48 +164,44 @@ impl Sankey {
                     .map(|k| nn + k)
             })
         };
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                let x_of = |c: usize| c as f32 / cols_f * (bw - nw);
-                for (k, r) in ribbons.iter().enumerate() {
-                    let (x0, x1) = (x_of(nodes[r.from].col) + nw, x_of(nodes[r.to].col));
-                    let steps = 24;
-                    let polys: Vec<Vec<(f32, f32)>> = (0..steps)
-                        .map(|i| {
-                            let (a, c) = (i as f32 / steps as f32, (i + 1) as f32 / steps as f32);
-                            let s = |t: f32| t * t * (3.0 - 2.0 * t);
-                            let top = |t: f32| (r.y_from + (r.y_to - r.y_from) * s(t)) * bh;
-                            let h = r.h * bh * g;
-                            let (xa, xc) = (x0 + (x1 - x0) * a, x0 + (x1 - x0) * c);
-                            vec![
-                                (xa, top(a)),
-                                (xc, top(c)),
-                                (xc, top(c) + h),
-                                (xa, top(a) + h),
-                            ]
-                        })
-                        .collect();
-                    dodai_gpui::paint::fill_batch(
-                        w,
-                        b.origin,
-                        &polys,
-                        scale_alpha(cc[r.from], ribbon_alpha[k]),
-                    );
-                }
-                for (i, n) in nodes.iter().enumerate() {
-                    let x = x_of(n.col);
-                    fill(
-                        w,
-                        b.origin,
-                        &crate::common::rect(x, n.y * bh, nw, (n.h * bh * g).max(1.0)),
-                        scale_alpha(cc[i], node_alpha[i]),
-                    );
-                }
-            },
-        )
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            let x_of = |c: usize| c as f32 / cols_f * (bw - nw);
+            for (k, r) in ribbons.iter().enumerate() {
+                let (x0, x1) = (x_of(nodes[r.from].col) + nw, x_of(nodes[r.to].col));
+                let steps = 24;
+                let polys: Vec<Vec<(f32, f32)>> = (0..steps)
+                    .map(|i| {
+                        let (a, c) = (i as f32 / steps as f32, (i + 1) as f32 / steps as f32);
+                        let s = |t: f32| t * t * (3.0 - 2.0 * t);
+                        let top = |t: f32| (r.y_from + (r.y_to - r.y_from) * s(t)) * bh;
+                        let h = r.h * bh * g;
+                        let (xa, xc) = (x0 + (x1 - x0) * a, x0 + (x1 - x0) * c);
+                        vec![
+                            (xa, top(a)),
+                            (xc, top(c)),
+                            (xc, top(c) + h),
+                            (xa, top(a) + h),
+                        ]
+                    })
+                    .collect();
+                dodai_gpui::paint::fill_batch(
+                    w,
+                    b.origin,
+                    &polys,
+                    scale_alpha(cc[r.from], ribbon_alpha[k]),
+                );
+            }
+            for (i, n) in nodes.iter().enumerate() {
+                let x = x_of(n.col);
+                fill(
+                    w,
+                    b.origin,
+                    &crate::common::rect(x, n.y * bh, nw, (n.h * bh * g).max(1.0)),
+                    scale_alpha(cc[i], node_alpha[i]),
+                );
+            }
+        })
         .absolute()
         .size_full();
         let hits = div()

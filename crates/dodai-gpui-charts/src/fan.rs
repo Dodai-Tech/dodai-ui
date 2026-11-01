@@ -1,14 +1,15 @@
 //! [`SpanFan`]: lifespans as spokes fanned round an arc.
 
-use crate::common::{chart_cfg, fmt_with, nice_ticks, titled, CanvasText, Groups, NumFmt};
+use crate::common::{
+    chart_cfg, fmt_with, nice_ticks, plot_box, titled, tracked_canvas, CanvasText, Groups, NumFmt,
+};
 use crate::focus::{readout, Focus};
 use dodai_charts_core::fan::{self, FanOrder, Spoke};
 use dodai_charts_core::math::{polar, turn_arc};
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
 use dodai_gpui::{hsla, theme_of};
 use gpui::{
-    canvas, div, px, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels,
-    SharedString, Styled, Window,
+    div, px, App, Bounds, Hsla, IntoElement, ParentElement, Pixels, SharedString, Styled, Window,
 };
 use std::cell::Cell;
 use std::rc::Rc;
@@ -189,110 +190,104 @@ impl SpanFan {
         let base = t.typography.size_xs;
         let display = t.clone();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
         let paint_spokes = spokes.clone();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, cx| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                let ((ox, oy), r0, r1) = frame(bw, bh, sweep, hub);
-                let reach = r1 - r0;
-                let (a, e) = if sweep >= 1.0 {
-                    (0.0, 1.0)
-                } else {
-                    (-sweep / 2.0, sweep / 2.0)
-                };
-                // Guide rings on the length scale, labelled in the open part of the arc.
-                stroke(w, b.origin, &turn_arc(ox, oy, r0, a, e), 1.0, guide, false);
-                for (v, s) in ticks.iter().zip(&tick_text) {
-                    let r = r0 + reach * v / longest;
-                    stroke(
-                        w,
-                        b.origin,
-                        &turn_arc(ox, oy, r, a, e),
-                        1.0,
-                        scale_alpha(guide, 0.6),
-                        false,
-                    );
-                    if sweep < 1.0 {
-                        small.beside(w, cx, s, (b.origin, polar(ox, oy, r, e)), (0.0, 1.0), muted);
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, cx| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            let ((ox, oy), r0, r1) = frame(bw, bh, sweep, hub);
+            let reach = r1 - r0;
+            let (a, e) = if sweep >= 1.0 {
+                (0.0, 1.0)
+            } else {
+                (-sweep / 2.0, sweep / 2.0)
+            };
+            // Guide rings on the length scale, labelled in the open part of the arc.
+            stroke(w, b.origin, &turn_arc(ox, oy, r0, a, e), 1.0, guide, false);
+            for (v, s) in ticks.iter().zip(&tick_text) {
+                let r = r0 + reach * v / longest;
+                stroke(
+                    w,
+                    b.origin,
+                    &turn_arc(ox, oy, r, a, e),
+                    1.0,
+                    scale_alpha(guide, 0.6),
+                    false,
+                );
+                if sweep < 1.0 {
+                    small.beside(w, cx, s, (b.origin, polar(ox, oy, r, e)), (0.0, 1.0), muted);
+                }
+            }
+            // Spokes first, then labels by priority: the focused one, then by size.
+            let mut tips = Vec::with_capacity(paint_spokes.len());
+            for (k, s) in paint_spokes.iter().enumerate() {
+                let lk = looks[k];
+                let col = scale_alpha(cols[s.item], lk.alpha);
+                let len = s.len * g;
+                let at = |f: f32| polar(ox, oy, r0 + reach * f, s.turn);
+                let tip = at(len);
+                // The ruler: hub to rim, faint.
+                stroke(
+                    w,
+                    b.origin,
+                    &[at(0.0), at(1.0)],
+                    1.0,
+                    scale_alpha(guide, 0.35 * lk.alpha),
+                    false,
+                );
+                stroke(
+                    w,
+                    b.origin,
+                    &[at(0.0), tip],
+                    1.5 + lk.lift * 1.5,
+                    col,
+                    false,
+                );
+                if let Some((p, q)) = s.peak {
+                    let (p, q) = (p.min(len), q.min(len));
+                    if q > p {
+                        stroke(
+                            w,
+                            b.origin,
+                            &[at(p), at(q)],
+                            5.0 + lk.lift * 2.0,
+                            col,
+                            false,
+                        );
                     }
                 }
-                // Spokes first, then labels by priority: the focused one, then by size.
-                let mut tips = Vec::with_capacity(paint_spokes.len());
-                for (k, s) in paint_spokes.iter().enumerate() {
-                    let lk = looks[k];
-                    let col = scale_alpha(cols[s.item], lk.alpha);
-                    let len = s.len * g;
-                    let at = |f: f32| polar(ox, oy, r0 + reach * f, s.turn);
-                    let tip = at(len);
-                    // The ruler: hub to rim, faint.
-                    stroke(
-                        w,
-                        b.origin,
-                        &[at(0.0), at(1.0)],
-                        1.0,
-                        scale_alpha(guide, 0.35 * lk.alpha),
-                        false,
-                    );
-                    stroke(
-                        w,
-                        b.origin,
-                        &[at(0.0), tip],
-                        1.5 + lk.lift * 1.5,
-                        col,
-                        false,
-                    );
-                    if let Some((p, q)) = s.peak {
-                        let (p, q) = (p.min(len), q.min(len));
-                        if q > p {
-                            stroke(
-                                w,
-                                b.origin,
-                                &[at(p), at(q)],
-                                5.0 + lk.lift * 2.0,
-                                col,
-                                false,
-                            );
-                        }
-                    }
-                    // The magnitude dot (area scale).
-                    let dot = (2.5 + s.mark * 9.0 + lk.lift * 2.0) * g.min(1.0);
-                    fill(w, b.origin, &turn_arc(tip.0, tip.1, dot, 0.0, 1.0), col);
-                    tips.push((tip, dot, col));
-                }
-                let mut rank: Vec<usize> = (0..paint_spokes.len()).collect();
-                rank.sort_by(|a, b| {
-                    let key = |k: usize| looks[k].lift * 10.0 + paint_spokes[k].mark;
-                    key(*b).total_cmp(&key(*a))
-                });
-                let mut taken = Vec::with_capacity(rank.len());
-                for k in rank {
-                    let (s, (tip, dot, col)) = (&paint_spokes[k], tips[k]);
-                    let u = polar(0.0, 0.0, 1.0, s.turn);
-                    let at_label = (tip.0 + u.0 * (dot + 4.0), tip.1 + u.1 * (dot + 4.0));
-                    let size = base * (0.85 + 0.75 * s.mark) + looks[k].lift * 2.0;
-                    CanvasText::display(&display, size).beside_free(
-                        w,
-                        cx,
-                        (&labels[s.item], col),
-                        (b.origin, at_label),
-                        u,
-                        &mut taken,
-                    );
-                }
-            },
-        )
+                // The magnitude dot (area scale).
+                let dot = (2.5 + s.mark * 9.0 + lk.lift * 2.0) * g.min(1.0);
+                fill(w, b.origin, &turn_arc(tip.0, tip.1, dot, 0.0, 1.0), col);
+                tips.push((tip, dot, col));
+            }
+            let mut rank: Vec<usize> = (0..paint_spokes.len()).collect();
+            rank.sort_by(|a, b| {
+                let key = |k: usize| looks[k].lift * 10.0 + paint_spokes[k].mark;
+                key(*b).total_cmp(&key(*a))
+            });
+            let mut taken = Vec::with_capacity(rank.len());
+            for k in rank {
+                let (s, (tip, dot, col)) = (&paint_spokes[k], tips[k]);
+                let u = polar(0.0, 0.0, 1.0, s.turn);
+                let at_label = (tip.0 + u.0 * (dot + 4.0), tip.1 + u.1 * (dot + 4.0));
+                let size = base * (0.85 + 0.75 * s.mark) + looks[k].lift * 2.0;
+                CanvasText::display(&display, size).beside_free(
+                    w,
+                    cx,
+                    (&labels[s.item], col),
+                    (b.origin, at_label),
+                    u,
+                    &mut taken,
+                );
+            }
+        })
         .absolute()
         .size_full();
         let hit_spokes = spokes.clone();
-        let fan_box = div()
-            .id(self.follow.sub("fan").element_id(window, cx))
-            .relative()
-            .w_full()
-            .h(px(self.height))
-            .child(cv);
+        let fan_box = plot_box(
+            self.follow.sub("fan").element_id(window, cx),
+            self.height,
+            cv,
+        );
         let fan_box = focus.pointer(fan_box, &bounds, move |x, y, w, h| {
             let ((ox, oy), r0, r1) = frame(w, h, sweep, hub);
             let (dx, dy) = (x - ox, y - oy);

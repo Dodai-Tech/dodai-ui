@@ -1,13 +1,14 @@
 //! [`PeakRange`]: overlapping series as a range of mountains on one horizon.
 
-use crate::common::{chart_cfg, fmt_with, many_series, CanvasText, NumFmt, Series};
+use crate::common::{
+    chart_cfg, fmt_with, many_series, plot_box, tracked_canvas, CanvasText, NumFmt, Series,
+};
 use crate::focus::{readout, Focus};
 use dodai_charts_core::peaks;
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
 use dodai_gpui::{hsla, theme_of};
 use gpui::{
-    canvas, div, px, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels,
-    SharedString, Styled, Window,
+    div, px, App, Bounds, Hsla, IntoElement, ParentElement, Pixels, SharedString, Styled, Window,
 };
 use std::cell::Cell;
 use std::rc::Rc;
@@ -119,94 +120,88 @@ impl PeakRange {
         let label = CanvasText::display(&t, t.typography.size_xs).bold();
         let room = label.size_line() + 4.0;
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
         let (pv, po, ps, pbase) = (values.clone(), order.clone(), summits.clone(), base.clone());
         let lanes = self.lanes;
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, cx| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                let scale = (bh - room).max(0.0) / ymax;
-                for l in 0..lanes {
-                    let y = bh - l as f32 * step * scale;
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, cx| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            let scale = (bh - room).max(0.0) / ymax;
+            for l in 0..lanes {
+                let y = bh - l as f32 * step * scale;
+                stroke(
+                    w,
+                    b.origin,
+                    &[(0.0, y), (bw, y)],
+                    1.0,
+                    scale_alpha(axis, 0.5),
+                    false,
+                );
+            }
+            for &i in &po {
+                let v = &pv[i];
+                if v.len() < 2 {
+                    continue;
+                }
+                let lk = looks[i];
+                let floor = bh - pbase[i] * scale;
+                let line = ridge(v, bw, floor, scale * g, 0.0);
+                let mut body = line.clone();
+                body.push((bw, floor));
+                body.push((0.0, floor));
+                fill(w, b.origin, &body, scale_alpha(cols[i], lk.alpha));
+                if let Some((_, s)) = ps[i].filter(|s| s.1 > 0.0 && cap < 1.0) {
+                    let f = s * cap;
+                    let mut top = ridge(v, bw, floor, scale * g, f);
+                    top.extend(ridge(&[f, f], bw, floor, scale * g, f).into_iter().rev());
+                    fill(w, b.origin, &top, scale_alpha(lit(cols[i]), lk.alpha));
+                }
+                if lk.lift > 0.01 {
                     stroke(
                         w,
                         b.origin,
-                        &[(0.0, y), (bw, y)],
-                        1.0,
-                        scale_alpha(axis, 0.5),
+                        &line,
+                        1.0 + lk.lift,
+                        scale_alpha(ink, lk.lift),
                         false,
                     );
                 }
-                for &i in &po {
-                    let v = &pv[i];
-                    if v.len() < 2 {
-                        continue;
-                    }
-                    let lk = looks[i];
-                    let floor = bh - pbase[i] * scale;
-                    let line = ridge(v, bw, floor, scale * g, 0.0);
-                    let mut body = line.clone();
-                    body.push((bw, floor));
-                    body.push((0.0, floor));
-                    fill(w, b.origin, &body, scale_alpha(cols[i], lk.alpha));
-                    if let Some((_, s)) = ps[i].filter(|s| s.1 > 0.0 && cap < 1.0) {
-                        let f = s * cap;
-                        let mut top = ridge(v, bw, floor, scale * g, f);
-                        top.extend(ridge(&[f, f], bw, floor, scale * g, f).into_iter().rev());
-                        fill(w, b.origin, &top, scale_alpha(lit(cols[i]), lk.alpha));
-                    }
-                    if lk.lift > 0.01 {
-                        stroke(
-                            w,
-                            b.origin,
-                            &line,
-                            1.0 + lk.lift,
-                            scale_alpha(ink, lk.lift),
-                            false,
-                        );
-                    }
-                }
-                stroke(w, b.origin, &[(0.0, bh), (bw, bh)], 1.0, axis, false);
-                if g < 0.95 {
-                    return;
-                }
-                // Names on the summits: the focused first, then the tallest.
-                let mut rank = po.clone();
-                rank.sort_by(|a, c| {
-                    let key = |k: usize| looks[k].lift * 1e9 + ps[k].map_or(0.0, |s| s.1);
-                    key(*c).total_cmp(&key(*a))
-                });
-                let mut taken = Vec::new();
-                for i in rank {
-                    let Some((at, s)) = ps[i] else { continue };
-                    let nv = pv[i].len();
-                    let x = if nv > 1 {
-                        at as f32 / (nv - 1) as f32 * bw
-                    } else {
-                        bw / 2.0
-                    };
-                    let y = bh - (pbase[i] + s.max(0.0)) * scale - 2.0;
-                    let x = x.clamp(30.0, (bw - 30.0).max(30.0));
-                    let c = scale_alpha(ink, looks[i].alpha.max(0.5));
-                    let spots = [
-                        ((x, y), (0.0, -1.0)),
-                        ((x + 4.0, y + 8.0), (1.0, -1.0)),
-                        ((x - 4.0, y + 8.0), (-1.0, -1.0)),
-                    ];
-                    label.place_free(w, cx, (&names[i], c), b.origin, &spots, &mut taken);
-                }
-            },
-        )
+            }
+            stroke(w, b.origin, &[(0.0, bh), (bw, bh)], 1.0, axis, false);
+            if g < 0.95 {
+                return;
+            }
+            // Names on the summits: the focused first, then the tallest.
+            let mut rank = po.clone();
+            rank.sort_by(|a, c| {
+                let key = |k: usize| looks[k].lift * 1e9 + ps[k].map_or(0.0, |s| s.1);
+                key(*c).total_cmp(&key(*a))
+            });
+            let mut taken = Vec::new();
+            for i in rank {
+                let Some((at, s)) = ps[i] else { continue };
+                let nv = pv[i].len();
+                let x = if nv > 1 {
+                    at as f32 / (nv - 1) as f32 * bw
+                } else {
+                    bw / 2.0
+                };
+                let y = bh - (pbase[i] + s.max(0.0)) * scale - 2.0;
+                let x = x.clamp(30.0, (bw - 30.0).max(30.0));
+                let c = scale_alpha(ink, looks[i].alpha.max(0.5));
+                let spots = [
+                    ((x, y), (0.0, -1.0)),
+                    ((x + 4.0, y + 8.0), (1.0, -1.0)),
+                    ((x - 4.0, y + 8.0), (-1.0, -1.0)),
+                ];
+                label.place_free(w, cx, (&names[i], c), b.origin, &spots, &mut taken);
+            }
+        })
         .absolute()
         .size_full();
-        let plot = div()
-            .id(self.follow.sub("range").element_id(window, cx))
-            .relative()
-            .w_full()
-            .h(px(self.height))
-            .child(cv);
+        let plot = plot_box(
+            self.follow.sub("range").element_id(window, cx),
+            self.height,
+            cv,
+        );
         let plot = focus.pointer(plot, &bounds, move |x, y, w, h| {
             let span = h - room;
             if w <= 0.0 || span <= 0.0 {

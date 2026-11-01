@@ -1,13 +1,14 @@
 //! [`SplitFlow`]: a quantity flowing down through levels, splitting at each node.
 
-use crate::common::{chart_cfg, fmt_with, group_slots, overlaps, CanvasText, NumFmt};
+use crate::common::{
+    chart_cfg, fmt_with, group_slots, overlaps, plot_box, tracked_canvas, CanvasText, NumFmt,
+};
 use crate::focus::{readout, Focus};
 use dodai_charts_core::cascade::{self, Block, Node};
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
 use dodai_gpui::{hsla, theme_of};
 use gpui::{
-    canvas, div, px, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels,
-    SharedString, Styled, Window,
+    div, px, App, Bounds, Hsla, IntoElement, ParentElement, Pixels, SharedString, Styled, Window,
 };
 use std::cell::Cell;
 use std::rc::Rc;
@@ -205,153 +206,143 @@ impl SplitFlow {
         let (muted, seam) = (hsla(t.palette.text_muted), hsla(t.palette.background));
         let foot = head.size_line() + big.size_line() + small.size_line() + 6.0;
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
         let (pall, porigin, ppass) = (all.clone(), origin.clone(), pass.clone());
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, cx| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                let blocks = cascade::layout(&pall, bw, GAP);
-                let (_, top) = rows(bh, depth, foot);
-                // Rows pour in top down as the chart grows.
-                let shown = |l: usize| (g * depth as f32 - l as f32).clamp(0.0, 1.0);
-                for (i, bl) in blocks.iter().enumerate() {
-                    let (Some(src), a) = (bl.source, shown(bl.level)) else {
-                        continue;
-                    };
-                    let o = porigin[i];
-                    if a <= 0.0 {
-                        continue;
-                    }
-                    let y0 = top(bl.level - 1) + BLOCK;
-                    let rib = cascade::ribbon(src, (bl.x0, bl.x1), y0, top(bl.level), 20);
-                    fill(w, b.origin, &rib, scale_alpha(cols[o], a * looks[o].alpha));
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, cx| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            let blocks = cascade::layout(&pall, bw, GAP);
+            let (_, top) = rows(bh, depth, foot);
+            // Rows pour in top down as the chart grows.
+            let shown = |l: usize| (g * depth as f32 - l as f32).clamp(0.0, 1.0);
+            for (i, bl) in blocks.iter().enumerate() {
+                let (Some(src), a) = (bl.source, shown(bl.level)) else {
+                    continue;
+                };
+                let o = porigin[i];
+                if a <= 0.0 {
+                    continue;
                 }
-                let mut taken = Vec::new();
-                let mut pills: Vec<[f32; 4]> = Vec::new();
-                for (i, bl) in blocks.iter().enumerate() {
-                    let o = porigin[i];
-                    let a = shown(bl.level) * looks[o].alpha;
-                    if a <= 0.0 || bl.x1 <= bl.x0 {
-                        continue;
-                    }
-                    let y = top(bl.level);
-                    let r = dodai_gpui::plot::rect(bl.x0, y, bl.x1 - bl.x0, BLOCK);
-                    fill(w, b.origin, &r, scale_alpha(cols[o], a));
-                    if !ppass[i] {
-                        // A seam where the flow enters a new stage.
-                        let seam_line = [(bl.x0, y + 1.0), (bl.x1, y + 1.0)];
-                        stroke(
-                            w,
-                            b.origin,
-                            &seam_line,
-                            2.0,
-                            scale_alpha(seam, 0.7 * a),
-                            false,
-                        );
-                    }
-                    let (mid, wid) = ((bl.x0 + bl.x1) / 2.0, bl.x1 - bl.x0 - 8.0);
-                    let ink = scale_alpha(inks[o], a);
-                    let bottom = bl.level + 1 == depth;
-                    if !ppass[i] && !bottom {
-                        let fits = head.centred(
-                            w,
-                            cx,
-                            &names[o],
-                            (b.origin, (mid, y + BLOCK * 0.28)),
-                            wid,
-                            ink,
-                        );
-                        if fits {
-                            let at = (b.origin, (mid, y + BLOCK * 0.66));
-                            big.centred(w, cx, &shares[o], at, wid, ink);
+                let y0 = top(bl.level - 1) + BLOCK;
+                let rib = cascade::ribbon(src, (bl.x0, bl.x1), y0, top(bl.level), 20);
+                fill(w, b.origin, &rib, scale_alpha(cols[o], a * looks[o].alpha));
+            }
+            let mut taken = Vec::new();
+            let mut pills: Vec<[f32; 4]> = Vec::new();
+            for (i, bl) in blocks.iter().enumerate() {
+                let o = porigin[i];
+                let a = shown(bl.level) * looks[o].alpha;
+                if a <= 0.0 || bl.x1 <= bl.x0 {
+                    continue;
+                }
+                let y = top(bl.level);
+                let r = dodai_gpui::plot::rect(bl.x0, y, bl.x1 - bl.x0, BLOCK);
+                fill(w, b.origin, &r, scale_alpha(cols[o], a));
+                if !ppass[i] {
+                    // A seam where the flow enters a new stage.
+                    let seam_line = [(bl.x0, y + 1.0), (bl.x1, y + 1.0)];
+                    stroke(
+                        w,
+                        b.origin,
+                        &seam_line,
+                        2.0,
+                        scale_alpha(seam, 0.7 * a),
+                        false,
+                    );
+                }
+                let (mid, wid) = ((bl.x0 + bl.x1) / 2.0, bl.x1 - bl.x0 - 8.0);
+                let ink = scale_alpha(inks[o], a);
+                let bottom = bl.level + 1 == depth;
+                if !ppass[i] && !bottom {
+                    let fits = head.centred(
+                        w,
+                        cx,
+                        &names[o],
+                        (b.origin, (mid, y + BLOCK * 0.28)),
+                        wid,
+                        ink,
+                    );
+                    if fits {
+                        let at = (b.origin, (mid, y + BLOCK * 0.66));
+                        big.centred(w, cx, &shares[o], at, wid, ink);
+                    } else {
+                        // Too narrow for its name: a pill on its ribbon, which may stick
+                        // out past it, as long as it misses the other pills.
+                        let next = top(bl.level + 1);
+                        let text = format!("{} {}", names[o], shares[o]);
+                        let (lw, lh) = head.measure(w, &text);
+                        // Try a few heights down the ribbon; keep the pill inside the chart.
+                        let half = lw / 2.0 + 6.0;
+                        let pill_x = mid.clamp(half, (bw - half).max(half));
+                        let free = [0.45, 0.7, 0.2].into_iter().find_map(|f| {
+                            let py = y + BLOCK + (next - y - BLOCK) * f;
+                            let bx = [
+                                pill_x - half,
+                                py - lh / 2.0 - 3.0,
+                                pill_x + half,
+                                py + lh / 2.0 + 3.0,
+                            ];
+                            pills.iter().all(|p| !overlaps(&bx, p)).then_some((py, bx))
+                        });
+                        if let Some((py, bx)) = free {
+                            let r =
+                                dodai_gpui::plot::rect(bx[0], bx[1], bx[2] - bx[0], bx[3] - bx[1]);
+                            fill(w, b.origin, &r, scale_alpha(cols[o], a));
+                            stroke(w, b.origin, &r, 1.5, scale_alpha(seam, a), true);
+                            head.centred(w, cx, &text, (b.origin, (pill_x, py)), lw + 2.0, ink);
+                            pills.push(bx);
                         } else {
-                            // Too narrow for its name: a pill on its ribbon, which may stick
-                            // out past it, as long as it misses the other pills.
-                            let next = top(bl.level + 1);
-                            let text = format!("{} {}", names[o], shares[o]);
-                            let (lw, lh) = head.measure(w, &text);
-                            // Try a few heights down the ribbon; keep the pill inside the chart.
-                            let half = lw / 2.0 + 6.0;
-                            let pill_x = mid.clamp(half, (bw - half).max(half));
-                            let free = [0.45, 0.7, 0.2].into_iter().find_map(|f| {
-                                let py = y + BLOCK + (next - y - BLOCK) * f;
-                                let bx = [
-                                    pill_x - half,
-                                    py - lh / 2.0 - 3.0,
-                                    pill_x + half,
-                                    py + lh / 2.0 + 3.0,
-                                ];
-                                pills.iter().all(|p| !overlaps(&bx, p)).then_some((py, bx))
-                            });
-                            if let Some((py, bx)) = free {
-                                let r = dodai_gpui::plot::rect(
-                                    bx[0],
-                                    bx[1],
-                                    bx[2] - bx[0],
-                                    bx[3] - bx[1],
-                                );
-                                fill(w, b.origin, &r, scale_alpha(cols[o], a));
-                                stroke(w, b.origin, &r, 1.5, scale_alpha(seam, a), true);
-                                head.centred(w, cx, &text, (b.origin, (pill_x, py)), lw + 2.0, ink);
-                                pills.push(bx);
-                            } else {
-                                head.centred(
-                                    w,
-                                    cx,
-                                    &shares[o],
-                                    (b.origin, (mid, y + BLOCK / 2.0)),
-                                    wid,
-                                    ink,
-                                );
-                            }
-                        }
-                    }
-                    if bottom {
-                        // Outcomes: name, share and amount under the bottom row.
-                        let c = scale_alpha(cols[o], a);
-                        let y1 = y + BLOCK + 3.0;
-                        // The name when it fits, else just the share and amount.
-                        let named = head.place_free(
-                            w,
-                            cx,
-                            (&names[o], c),
-                            b.origin,
-                            &[((mid, y1), (0.0, 1.0))],
-                            &mut taken,
-                        );
-                        let y2 = named.map_or(y1, |r| r[3]);
-                        let r = big.place_free(
-                            w,
-                            cx,
-                            (&shares[o], c),
-                            b.origin,
-                            &[((mid, y2), (0.0, 1.0))],
-                            &mut taken,
-                        );
-                        if let Some(r) = r {
-                            small.place_free(
+                            head.centred(
                                 w,
                                 cx,
-                                (&amounts[o], scale_alpha(muted, a)),
-                                b.origin,
-                                &[((mid, r[3]), (0.0, 1.0))],
-                                &mut taken,
+                                &shares[o],
+                                (b.origin, (mid, y + BLOCK / 2.0)),
+                                wid,
+                                ink,
                             );
                         }
                     }
                 }
-            },
-        )
+                if bottom {
+                    // Outcomes: name, share and amount under the bottom row.
+                    let c = scale_alpha(cols[o], a);
+                    let y1 = y + BLOCK + 3.0;
+                    // The name when it fits, else just the share and amount.
+                    let named = head.place_free(
+                        w,
+                        cx,
+                        (&names[o], c),
+                        b.origin,
+                        &[((mid, y1), (0.0, 1.0))],
+                        &mut taken,
+                    );
+                    let y2 = named.map_or(y1, |r| r[3]);
+                    let r = big.place_free(
+                        w,
+                        cx,
+                        (&shares[o], c),
+                        b.origin,
+                        &[((mid, y2), (0.0, 1.0))],
+                        &mut taken,
+                    );
+                    if let Some(r) = r {
+                        small.place_free(
+                            w,
+                            cx,
+                            (&amounts[o], scale_alpha(muted, a)),
+                            b.origin,
+                            &[((mid, r[3]), (0.0, 1.0))],
+                            &mut taken,
+                        );
+                    }
+                }
+            }
+        })
         .absolute()
         .size_full();
-        let plot = div()
-            .id(self.follow.sub("flow").element_id(window, cx))
-            .relative()
-            .w_full()
-            .h(px(self.height))
-            .child(cv);
+        let plot = plot_box(
+            self.follow.sub("flow").element_id(window, cx),
+            self.height,
+            cv,
+        );
         let plot = match self.max_width {
             Some(mw) => plot.max_w(px(mw)).mx_auto(),
             None => plot,

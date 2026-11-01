@@ -1,13 +1,12 @@
 //! [`ShardMap`]: an outline cut into one convex shard per item, sized by value and grouped.
 
-use crate::common::{chart_cfg, fmt_with, CanvasText, Legend, NumFmt};
+use crate::common::{chart_cfg, fmt_with, plot_box, tracked_canvas, CanvasText, Legend, NumFmt};
 use crate::focus::{readout, Focus};
 use dodai_charts_core::shards::{self, Outline, Poly, Shard};
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
 use dodai_gpui::{hsla, theme_of};
 use gpui::{
-    canvas, div, px, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels,
-    SharedString, Styled, Window,
+    div, px, App, Bounds, Hsla, IntoElement, ParentElement, Pixels, SharedString, Styled, Window,
 };
 use std::cell::Cell;
 use std::rc::Rc;
@@ -168,73 +167,67 @@ impl ShardMap {
         let (big, small) = (t.typography.size_md, t.typography.size_xs);
         let display = t.clone();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
         let paint_cells: Vec<Shard> = cells.clone();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, cx| {
-                pb.set(b);
-                let (centre, r) = fit(b.size.width.into(), b.size.height.into());
-                let r = r * (0.85 + 0.15 * g.min(1.0));
-                let a = g.min(1.0);
-                for (k, c) in paint_cells.iter().enumerate() {
-                    if c.poly.len() < 3 {
-                        continue;
-                    }
-                    let lk = looks[k];
-                    let p = place(&c.poly, centre, r);
-                    let tone = if lk.lift > 0.01 {
-                        fills_hot[k]
-                    } else {
-                        fills[k]
-                    };
-                    fill(w, b.origin, &p, scale_alpha(tone, lk.alpha * a));
-                    stroke(w, b.origin, &p, 1.0, scale_alpha(lines[k], 0.55 * a), true);
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, cx| {
+            let (centre, r) = fit(b.size.width.into(), b.size.height.into());
+            let r = r * (0.85 + 0.15 * g.min(1.0));
+            let a = g.min(1.0);
+            for (k, c) in paint_cells.iter().enumerate() {
+                if c.poly.len() < 3 {
+                    continue;
                 }
-                for (gi, region) in regions.iter().enumerate().filter(|(_, p)| p.len() > 2) {
-                    let edge = region_lines.get(gi).copied().unwrap_or(gap);
-                    stroke(
-                        w,
-                        b.origin,
-                        &place(region, centre, r),
-                        3.0,
-                        scale_alpha(edge, a),
-                        true,
-                    );
+                let lk = looks[k];
+                let p = place(&c.poly, centre, r);
+                let tone = if lk.lift > 0.01 {
+                    fills_hot[k]
+                } else {
+                    fills[k]
+                };
+                fill(w, b.origin, &p, scale_alpha(tone, lk.alpha * a));
+                stroke(w, b.origin, &p, 1.0, scale_alpha(lines[k], 0.55 * a), true);
+            }
+            for (gi, region) in regions.iter().enumerate().filter(|(_, p)| p.len() > 2) {
+                let edge = region_lines.get(gi).copied().unwrap_or(gap);
+                stroke(
+                    w,
+                    b.origin,
+                    &place(region, centre, r),
+                    3.0,
+                    scale_alpha(edge, a),
+                    true,
+                );
+            }
+            if g < 0.9 {
+                return;
+            }
+            for (k, c) in paint_cells.iter().enumerate() {
+                if c.poly.len() < 3 {
+                    continue;
                 }
-                if g < 0.9 {
-                    return;
+                let p = place(&c.poly, centre, r);
+                let (x, y) = shards::centroid(&p);
+                let side = shards::area(&p).sqrt();
+                let room = chord(&p, y).map_or(0.0, |(l, r)| r - l) - 8.0;
+                let size = (side * 0.11).clamp(small * 0.8, big);
+                let name = CanvasText::display(&display, size);
+                let value = CanvasText::display(&display, size * 1.35).bold();
+                let ink = scale_alpha(inks[k], looks[k].alpha);
+                let (lh, vh) = (name.size_line(), value.size_line());
+                if side < (lh + vh) * 1.4 {
+                    continue;
                 }
-                for (k, c) in paint_cells.iter().enumerate() {
-                    if c.poly.len() < 3 {
-                        continue;
-                    }
-                    let p = place(&c.poly, centre, r);
-                    let (x, y) = shards::centroid(&p);
-                    let side = shards::area(&p).sqrt();
-                    let room = chord(&p, y).map_or(0.0, |(l, r)| r - l) - 8.0;
-                    let size = (side * 0.11).clamp(small * 0.8, big);
-                    let name = CanvasText::display(&display, size);
-                    let value = CanvasText::display(&display, size * 1.35).bold();
-                    let ink = scale_alpha(inks[k], looks[k].alpha);
-                    let (lh, vh) = (name.size_line(), value.size_line());
-                    if side < (lh + vh) * 1.4 {
-                        continue;
-                    }
-                    if name.centred(w, cx, &text[k].0, (b.origin, (x, y - vh * 0.45)), room, ink) {
-                        value.centred(w, cx, &text[k].1, (b.origin, (x, y + lh * 0.45)), room, ink);
-                    }
+                if name.centred(w, cx, &text[k].0, (b.origin, (x, y - vh * 0.45)), room, ink) {
+                    value.centred(w, cx, &text[k].1, (b.origin, (x, y + lh * 0.45)), room, ink);
                 }
-            },
-        )
+            }
+        })
         .absolute()
         .size_full();
-        let plot = div()
-            .id(self.follow.sub("map").element_id(window, cx))
-            .relative()
-            .w_full()
-            .h(px(self.height))
-            .child(cv);
+        let plot = plot_box(
+            self.follow.sub("map").element_id(window, cx),
+            self.height,
+            cv,
+        );
         let unit = cells.clone();
         let plot = focus.pointer(plot, &bounds, move |x, y, w, h| {
             let ((cx, cy), r) = fit(w, h);

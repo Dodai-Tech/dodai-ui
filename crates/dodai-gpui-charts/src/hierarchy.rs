@@ -2,7 +2,8 @@
 //! nested rings or rows), [`Waffle`] (a grid of cells) and [`Marimekko`] (a mosaic).
 
 use crate::common::{
-    chart_cfg, fill, fmt_with, label_style, stroke, titled, turn_arc, Legend, NumFmt,
+    chart_cfg, fill, fmt_with, label_style, plot_box, stroke, titled, tracked_canvas, turn_arc,
+    Legend, NumFmt,
 };
 use crate::focus::{readout, Focus};
 use dodai_charts_core::hierarchy::{partition, Span};
@@ -10,8 +11,8 @@ use dodai_charts_core::share::{marimekko, waffle_cells};
 use dodai_gpui::paint::scale_alpha;
 use dodai_gpui::{hsla, theme_of};
 use gpui::{
-    canvas, div, px, relative, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement,
-    Pixels, SharedString, Styled, Window,
+    div, px, relative, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels,
+    SharedString, Styled, Window,
 };
 use std::cell::Cell;
 use std::rc::Rc;
@@ -128,29 +129,24 @@ impl Sunburst {
         let (hole, size) = (self.hole, self.height);
         let edge = hsla(t.palette.surface);
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                let (cx_, cy_) = (bw / 2.0, bh / 2.0);
-                let (r0, ring) = rings(bw.min(bh), hole, levels);
-                for (i, &(d, a, e)) in geo.iter().enumerate() {
-                    let (a, e) = (a * g, e * g);
-                    if e - a < 1e-4 {
-                        continue;
-                    }
-                    let lk = looks[i];
-                    let r1 = r0 + ring * d as f32;
-                    let r2 = r1 + ring + lk.lift * 4.0;
-                    let mut p = turn_arc(cx_, cy_, r2, a, e);
-                    p.extend(turn_arc(cx_, cy_, r1, e, a));
-                    fill(w, b.origin, &p, scale_alpha(cols[i], lk.alpha));
-                    stroke(w, b.origin, &p, 1.0, edge, true);
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            let (cx_, cy_) = (bw / 2.0, bh / 2.0);
+            let (r0, ring) = rings(bw.min(bh), hole, levels);
+            for (i, &(d, a, e)) in geo.iter().enumerate() {
+                let (a, e) = (a * g, e * g);
+                if e - a < 1e-4 {
+                    continue;
                 }
-            },
-        )
+                let lk = looks[i];
+                let r1 = r0 + ring * d as f32;
+                let r2 = r1 + ring + lk.lift * 4.0;
+                let mut p = turn_arc(cx_, cy_, r2, a, e);
+                p.extend(turn_arc(cx_, cy_, r1, e, a));
+                fill(w, b.origin, &p, scale_alpha(cols[i], lk.alpha));
+                stroke(w, b.origin, &p, 1.0, edge, true);
+            }
+        })
         .absolute()
         .size_full();
         let disc = div()
@@ -242,41 +238,35 @@ impl Icicle {
         let geo: Vec<(usize, f32, f32)> = spans.iter().map(|s| (s.depth, s.start, s.end)).collect();
         let hit_geo = geo.clone();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                let row = bh / levels as f32;
-                for (i, &(d, a, e)) in geo.iter().enumerate() {
-                    // Rows drop in one after another.
-                    let gi = dodai_core::motion::reveal(g, d, levels);
-                    let (x0, x1) = (a * bw + 1.0, e * bw - 1.0);
-                    if x1 - x0 < 0.5 || gi <= 0.0 {
-                        continue;
-                    }
-                    let lk = looks[i];
-                    let y0 = d as f32 * row + 1.0;
-                    let y1 = y0 + (row - 2.0) * gi;
-                    fill(
-                        w,
-                        b.origin,
-                        &[(x0, y0), (x1, y0), (x1, y1), (x0, y1)],
-                        scale_alpha(cols[i], lk.alpha * (0.85 + 0.15 * lk.lift)),
-                    );
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            let row = bh / levels as f32;
+            for (i, &(d, a, e)) in geo.iter().enumerate() {
+                // Rows drop in one after another.
+                let gi = dodai_core::motion::reveal(g, d, levels);
+                let (x0, x1) = (a * bw + 1.0, e * bw - 1.0);
+                if x1 - x0 < 0.5 || gi <= 0.0 {
+                    continue;
                 }
-            },
-        )
+                let lk = looks[i];
+                let y0 = d as f32 * row + 1.0;
+                let y1 = y0 + (row - 2.0) * gi;
+                fill(
+                    w,
+                    b.origin,
+                    &[(x0, y0), (x1, y0), (x1, y1), (x0, y1)],
+                    scale_alpha(cols[i], lk.alpha * (0.85 + 0.15 * lk.lift)),
+                );
+            }
+        })
         .absolute()
         .size_full();
         // Labels on the cells wide enough to hold one.
-        let mut plot = div()
-            .id(self.follow.sub("rows").element_id(window, cx))
-            .relative()
-            .w_full()
-            .h(px(self.height))
-            .child(cv);
+        let mut plot = plot_box(
+            self.follow.sub("rows").element_id(window, cx),
+            self.height,
+            cv,
+        );
         for s in spans.iter().filter(|s| s.end - s.start > 0.08) {
             plot = plot.child(
                 label_style(&t, div())
@@ -377,39 +367,34 @@ impl Waffle {
         let empty = hsla(t.palette.border);
         let hit_owner = owner.clone();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
         let cell = move |bw: f32, bh: f32| (bw / gc as f32).min(bh / gr as f32);
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                let s = cell(bw, bh);
-                let gap = (s * 0.12).max(1.0);
-                let shown = (g * (gc * gr) as f32).ceil() as usize;
-                // Filled column by column from the bottom left, like a rising tally.
-                for (k, o) in owner.iter().enumerate() {
-                    let (c, r) = (k / gr, gr - 1 - k % gr);
-                    let (x, y) = (c as f32 * s, r as f32 * s);
-                    let col = match o {
-                        Some(i) if k < shown => scale_alpha(cols[*i], looks[*i].alpha),
-                        _ => scale_alpha(empty, 0.5),
-                    };
-                    let inset = gap / 2.0 - o.map_or(0.0, |i| looks[i].lift * gap * 0.4);
-                    fill(
-                        w,
-                        b.origin,
-                        &[
-                            (x + inset, y + inset),
-                            (x + s - inset, y + inset),
-                            (x + s - inset, y + s - inset),
-                            (x + inset, y + s - inset),
-                        ],
-                        col,
-                    );
-                }
-            },
-        )
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            let s = cell(bw, bh);
+            let gap = (s * 0.12).max(1.0);
+            let shown = (g * (gc * gr) as f32).ceil() as usize;
+            // Filled column by column from the bottom left, like a rising tally.
+            for (k, o) in owner.iter().enumerate() {
+                let (c, r) = (k / gr, gr - 1 - k % gr);
+                let (x, y) = (c as f32 * s, r as f32 * s);
+                let col = match o {
+                    Some(i) if k < shown => scale_alpha(cols[*i], looks[*i].alpha),
+                    _ => scale_alpha(empty, 0.5),
+                };
+                let inset = gap / 2.0 - o.map_or(0.0, |i| looks[i].lift * gap * 0.4);
+                fill(
+                    w,
+                    b.origin,
+                    &[
+                        (x + inset, y + inset),
+                        (x + s - inset, y + inset),
+                        (x + s - inset, y + s - inset),
+                        (x + inset, y + s - inset),
+                    ],
+                    col,
+                );
+            }
+        })
         .absolute()
         .size_full();
         let side = self.height / gr as f32;
@@ -523,40 +508,34 @@ impl Marimekko {
             .collect();
         let hit_flat = flat.clone();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                for &(k, tl) in &flat {
-                    let lk = looks[k];
-                    let (x0, x1) = (tl.x0 * bw + 1.0, tl.x1 * bw - 1.0);
-                    // Grows up from the floor.
-                    let (y0, y1) = (
-                        bh - (1.0 - tl.y0) * bh * g + 1.0,
-                        bh - (1.0 - tl.y1) * bh * g - 1.0,
-                    );
-                    if x1 - x0 < 0.5 || y1 - y0 < 0.5 {
-                        continue;
-                    }
-                    fill(
-                        w,
-                        b.origin,
-                        &[(x0, y0), (x1, y0), (x1, y1), (x0, y1)],
-                        scale_alpha(cols[k % ns.max(1)], lk.alpha * (0.85 + 0.15 * lk.lift)),
-                    );
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            for &(k, tl) in &flat {
+                let lk = looks[k];
+                let (x0, x1) = (tl.x0 * bw + 1.0, tl.x1 * bw - 1.0);
+                // Grows up from the floor.
+                let (y0, y1) = (
+                    bh - (1.0 - tl.y0) * bh * g + 1.0,
+                    bh - (1.0 - tl.y1) * bh * g - 1.0,
+                );
+                if x1 - x0 < 0.5 || y1 - y0 < 0.5 {
+                    continue;
                 }
-            },
-        )
+                fill(
+                    w,
+                    b.origin,
+                    &[(x0, y0), (x1, y0), (x1, y1), (x0, y1)],
+                    scale_alpha(cols[k % ns.max(1)], lk.alpha * (0.85 + 0.15 * lk.lift)),
+                );
+            }
+        })
         .absolute()
         .size_full();
-        let plot = div()
-            .id(self.follow.sub("tiles").element_id(window, cx))
-            .relative()
-            .w_full()
-            .h(px(self.height))
-            .child(cv);
+        let plot = plot_box(
+            self.follow.sub("tiles").element_id(window, cx),
+            self.height,
+            cv,
+        );
         let plot = focus.pointer(plot, &bounds, move |x, y, w, h| {
             let (fx, fy) = (x / w.max(1.0), y / h.max(1.0));
             hit_flat
