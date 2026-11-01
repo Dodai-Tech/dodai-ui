@@ -903,6 +903,35 @@ mod tests {
     use super::*;
 
     #[test]
+    fn hatch_lines_stay_inside_the_polygon() {
+        // An L shape: the notch must stay empty.
+        let l = [
+            (0.0, 0.0),
+            (30.0, 0.0),
+            (30.0, 10.0),
+            (10.0, 10.0),
+            (10.0, 30.0),
+            (0.0, 30.0),
+        ];
+        let segs = hatch_segments(&l, Hatch::Cross);
+        assert!(!segs.is_empty());
+        for [a, b] in &segs {
+            for p in [a, b] {
+                assert!(p.0 >= -0.01 && p.0 <= 30.01 && p.1 >= -0.01 && p.1 <= 30.01);
+            }
+            let mid = ((a.0 + b.0) / 2.0, (a.1 + b.1) / 2.0);
+            assert!(
+                !(mid.0 > 10.5 && mid.1 > 10.5),
+                "a stroke crosses the notch: {mid:?}"
+            );
+        }
+        assert!(hatch_segments(&l[..2], Hatch::Slash).is_empty());
+        let slash = hatch_segments(&l, Hatch::Slash).len();
+        let both = hatch_segments(&l, Hatch::Cross).len();
+        assert!(both > slash);
+    }
+
+    #[test]
     fn bar_max_stacked_vs_grouped() {
         let s = [Series::new("a", [1.0, 4.0]), Series::new("b", [3.0, 1.0])];
         assert_eq!(bar_max(&s, true), 5.0);
@@ -958,6 +987,62 @@ pub fn hatch_of(i: usize) -> Option<Hatch> {
     }
 }
 
+/// The colour hatch lines are drawn in over a series fill: the background, so they cut the fill.
+pub(crate) fn hatch_ink(t: &Theme) -> Hsla {
+    dodai_gpui::paint::scale_alpha(hsla(t.palette.background), 0.6)
+}
+
+/// The hatch segments of `kind` clipped to a polygon (any simple shape, even-odd). The lines sit
+/// on a grid fixed in the polygon's own coordinates, so neighbouring pieces of one shape line up.
+pub(crate) fn hatch_segments(poly: &[(f32, f32)], kind: Hatch) -> Vec<[(f32, f32); 2]> {
+    let mut out = Vec::new();
+    if poly.len() < 3 || poly.iter().any(|p| !(p.0.is_finite() && p.1.is_finite())) {
+        return out;
+    }
+    for (sign, on) in [
+        (1.0_f32, kind != Hatch::Backslash),
+        (-1.0, kind != Hatch::Slash),
+    ] {
+        if !on {
+            continue;
+        }
+        // Lines x + sign·y = k.
+        let ks: Vec<f32> = poly.iter().map(|p| p.0 + sign * p.1).collect();
+        let lo = ks.iter().copied().fold(f32::INFINITY, f32::min);
+        let hi = ks.iter().copied().fold(f32::NEG_INFINITY, f32::max);
+        let mut k = (lo / HATCH_STEP).ceil() * HATCH_STEP;
+        while k < hi {
+            let mut xs: Vec<(f32, f32)> = Vec::new();
+            for (i, p) in poly.iter().enumerate() {
+                let q = poly[(i + 1) % poly.len()];
+                let (fp, fq) = (p.0 + sign * p.1 - k, q.0 + sign * q.1 - k);
+                if (fp < 0.0) != (fq < 0.0) {
+                    let u = fp / (fp - fq);
+                    let x = p.0 + (q.0 - p.0) * u;
+                    xs.push((x, (k - x) * sign));
+                }
+            }
+            xs.sort_by(|a, b| a.0.total_cmp(&b.0));
+            out.extend(xs.chunks_exact(2).map(|pair| [pair[0], pair[1]]));
+            k += HATCH_STEP;
+        }
+    }
+    out
+}
+
+/// [`hatch_segments`] drawn at `o` in `c`.
+pub(crate) fn hatch_poly(
+    w: &mut Window,
+    o: gpui::Point<Pixels>,
+    poly: &[(f32, f32)],
+    c: Hsla,
+    kind: Hatch,
+) {
+    for seg in hatch_segments(poly, kind) {
+        dodai_gpui::paint::stroke(w, o, &seg, 1.0, c, false);
+    }
+}
+
 /// Hatching of `kind` over a `w × h` box at `o`, in `c`. Pure strokes: it needs no clipping.
 pub(crate) fn hatch(
     w: &mut Window,
@@ -1007,7 +1092,7 @@ const HATCH_STEP: f32 = 6.0;
 /// An overlay that hatches its parent for series `i` when patterns are on (else nothing).
 pub(crate) fn hatch_overlay(t: &Theme, i: usize) -> Option<gpui::AnyElement> {
     let kind = hatch_of(i).filter(|_| patterns())?;
-    let c = dodai_gpui::paint::scale_alpha(hsla(t.palette.background), 0.6);
+    let c = hatch_ink(t);
     Some(
         gpui::canvas(
             |_, _, _| (),

@@ -114,6 +114,7 @@ impl StackedAreaChart {
         } else {
             ticks.iter().map(|v| norm(*v, bottom, top)).collect()
         };
+        let (patterns, hatch_ink) = (crate::common::patterns(), crate::common::hatch_ink(&t));
         let focus = crate::focus::Focus::new(window, cx, &self.follow, layers.len());
         let looks: Vec<_> = (0..layers.len()).map(|k| focus.item(k)).collect();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
@@ -139,6 +140,11 @@ impl StackedAreaChart {
                     let quad = [upper[i], upper[i + 1], lower[n - 2 - i], lower[n - 1 - i]];
                     let a = (0.45 + 0.3 * looks[k].lift) * looks[k].alpha;
                     fill(w, b.origin, &quad, scale_alpha(cols[k], a));
+                }
+                if let Some(kind) = crate::common::hatch_of(k).filter(|_| patterns) {
+                    let mut poly = upper.clone();
+                    poly.extend(lower.iter().copied());
+                    crate::common::hatch_poly(w, b.origin, &poly, hatch_ink, kind);
                 }
                 glow_stroke(
                     w,
