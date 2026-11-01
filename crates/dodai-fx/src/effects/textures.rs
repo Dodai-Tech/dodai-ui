@@ -22,6 +22,19 @@ pub(crate) fn scanlines(cv: &mut Canvas, c: Rgba, pitch: f32) {
     }
 }
 
+/// Surfaces smaller than this (px²) cannot get near the primitive budget: no dry runs.
+const DRY_RUN_MIN_AREA: f32 = 150_000.0;
+/// How many times the cells are coarsened at most to fit the budget.
+const MAX_DRY_RUNS: usize = 6;
+/// A count this far over `MAX_QUADS` triggers coarsening.
+const BUDGET_SLACK: f32 = 1.2;
+/// Cells grow by `(count / budget)` to this power per dry run…
+const COARSEN_EXPONENT: f32 = 0.75;
+/// …and by at least this factor.
+const MIN_COARSEN: f32 = 1.1;
+/// The smallest texture scale (cells never shrink below a quarter).
+const MIN_SCALE: f32 = 0.25;
+
 /// Counts primitives instead of drawing them, to size a texture before it is painted.
 struct Count(usize);
 
@@ -43,10 +56,10 @@ impl crate::Painter for Count {
 /// Draw the texture, with its cells coarsened on big surfaces so one surface never costs more
 /// than a few thousand primitives.
 pub(crate) fn texture(cv: &mut Canvas, sp: &SurfacePaint, seed: i32) {
-    let mut k = sp.fx.scale.max(0.25) * sp.tune.cell;
+    let mut k = sp.fx.scale.max(MIN_SCALE) * sp.tune.cell;
     // Small surfaces cannot get near the budget: skip the dry runs.
-    if cv.w * cv.h > 150_000.0 {
-        for _ in 0..6 {
+    if cv.w * cv.h > DRY_RUN_MIN_AREA {
+        for _ in 0..MAX_DRY_RUNS {
             let mut count = Count(0);
             let mut dry = Canvas {
                 out: &mut count,
@@ -63,10 +76,12 @@ pub(crate) fn texture(cv: &mut Canvas, sp: &SurfacePaint, seed: i32) {
             };
             draw_texture(&mut dry, sp, seed, k);
             let n = count.0 as f32;
-            if n <= crate::geom::MAX_QUADS * 1.2 {
+            if n <= crate::geom::MAX_QUADS * BUDGET_SLACK {
                 break;
             }
-            k *= (n / crate::geom::MAX_QUADS).powf(0.75).max(1.1);
+            k *= (n / crate::geom::MAX_QUADS)
+                .powf(COARSEN_EXPONENT)
+                .max(MIN_COARSEN);
         }
     }
     draw_texture(cv, sp, seed, k);
