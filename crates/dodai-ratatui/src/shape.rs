@@ -1,5 +1,6 @@
 //! Shape-driven border glyphs: [`ShapeKind`] picks the border set, and for
-//! chamfered shapes only the corners the theme cuts get a diagonal glyph.
+//! chamfered shapes only the corners the theme cuts get a diagonal glyph. A scooped corner
+//! (`Shape::scoop`) is drawn like a straight cut: a terminal cell has no concave arc glyph.
 
 use dodai_core::{Shape, ShapeKind};
 use ratatui::symbols::border;

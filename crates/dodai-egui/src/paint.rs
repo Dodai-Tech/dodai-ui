@@ -31,6 +31,9 @@ pub fn corner_radius(shape: &ShapeTokens, rect: Rect) -> CornerRadius {
 /// One filled+stroked outline: polygon when chamfered, rect otherwise.
 pub fn outline_shape(shape: &ShapeTokens, rect: Rect, fill: Color32, stroke: Stroke) -> Shape {
     match shape.kind() {
+        ShapeKind::Chamfered if shape.scoop => {
+            scooped(outline_points(shape, rect), rect, fill, stroke)
+        }
         ShapeKind::Chamfered => {
             PathShape::convex_polygon(outline_points(shape, rect), fill, stroke).into()
         }
@@ -43,6 +46,29 @@ pub fn outline_shape(shape: &ShapeTokens, rect: Rect, fill: Color32, stroke: Str
         )
         .into(),
     }
+}
+
+/// A scooped outline is concave, which egui's convex fill cannot take: the body is a triangle
+/// fan from the centre (every point of a scooped outline is in view of it) and the edge a closed
+/// line on top.
+fn scooped(points: Vec<Pos2>, rect: Rect, fill: Color32, stroke: Stroke) -> Shape {
+    let mut parts = Vec::with_capacity(2);
+    if fill.a() > 0 && points.len() > 2 {
+        let mut mesh = egui::epaint::Mesh::default();
+        mesh.colored_vertex(rect.center(), fill);
+        for p in &points {
+            mesh.colored_vertex(*p, fill);
+        }
+        let n = points.len() as u32;
+        for i in 0..n {
+            mesh.add_triangle(0, 1 + i, 1 + (i + 1) % n);
+        }
+        parts.push(Shape::mesh(mesh));
+    }
+    if stroke.width > 0.0 && stroke.color.a() > 0 {
+        parts.push(PathShape::closed_line(points, stroke).into());
+    }
+    Shape::Vec(parts)
 }
 
 /// Soft glow: stacked, fading outlines around `rect`. Empty when the theme's
@@ -199,6 +225,27 @@ mod tests {
             }
             other => panic!("expected path, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn scooped_fills_a_fan_from_the_centre_and_strokes_the_outline() {
+        let mut t = chamfered();
+        t.shape.scoop = true;
+        let n = t.shape.outline(100.0, 40.0).len();
+        let stroke = Stroke::new(1.0, Color32::WHITE);
+        let Shape::Vec(parts) = outline_shape(&t.shape, rect(), Color32::RED, stroke) else {
+            panic!("a scooped outline is a fill and a line");
+        };
+        let [Shape::Mesh(m), Shape::Path(p)] = parts.as_slice() else {
+            panic!("expected a mesh then a path, got {parts:?}");
+        };
+        assert_eq!(m.indices.len(), 3 * n, "one triangle per outline edge");
+        assert!(p.closed && p.points.len() == n);
+        // Every vertex stays inside the box.
+        assert!(m
+            .vertices
+            .iter()
+            .all(|v| rect().expand(0.01).contains(v.pos)));
     }
 
     #[test]

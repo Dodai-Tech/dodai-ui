@@ -83,6 +83,7 @@ macro_rules! install_theme {
         g.set_cut_tr(v.cut_tr);
         g.set_cut_br(v.cut_br);
         g.set_cut_bl(v.cut_bl);
+        g.set_scoop(v.scoop);
         g.set_glow_enabled(v.glow_enabled);
         g.set_scanlines(v.scanlines);
         g.set_uppercase(v.uppercase);
