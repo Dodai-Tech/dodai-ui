@@ -1,7 +1,8 @@
 //! [`PeakRange`]: overlapping series as a range of mountains on one horizon.
 
 use crate::common::{
-    chart_cfg, fmt_with, many_series, plot_box, tracked_canvas, CanvasText, NumFmt, Series,
+    chart_cfg, fmt_with, many_series, overlaps, plot_box, tracked_canvas, CanvasText, NumFmt,
+    Series,
 };
 use crate::focus::{readout, Focus};
 use dodai_charts_core::peaks;
@@ -116,6 +117,7 @@ impl PeakRange {
             .collect();
         let names: Vec<SharedString> = self.series.iter().map(|s| s.name.clone()).collect();
         let (axis, ink) = (hsla(t.palette.border_strong), hsla(t.palette.text));
+        let chip_bg = hsla(t.palette.background);
         let cap = self.cap;
         let label = CanvasText::display(&t, t.typography.size_xs).bold();
         let room = label.size_line() + 4.0;
@@ -192,7 +194,26 @@ impl PeakRange {
                     ((x + 4.0, y + 8.0), (1.0, -1.0)),
                     ((x - 4.0, y + 8.0), (-1.0, -1.0)),
                 ];
-                label.place_free(w, cx, (&names[i], c), b.origin, &spots, &mut taken);
+                let (lw, lh) = label.measure(w, &names[i]);
+                let free = spots.iter().find(|&&((sx, sy), (ux, uy))| {
+                    let (x0, y0) = (sx + ux * lw / 2.0 - lw / 2.0, sy + uy * lh / 2.0 - lh / 2.0);
+                    let r = [x0 - 2.0, y0, x0 + lw + 2.0, y0 + lh];
+                    !taken.iter().any(|t| overlaps(&r, t))
+                });
+                if let Some(&((sx, sy), (ux, uy))) = free {
+                    // A chip behind the name keeps it readable over a neighbour's mountain.
+                    let (x0, y0) = (sx + ux * lw / 2.0 - lw / 2.0, sy + uy * lh / 2.0 - lh / 2.0);
+                    let chip = dodai_gpui::plot::rect(x0 - 3.0, y0 - 1.0, lw + 6.0, lh + 2.0);
+                    fill(w, b.origin, &chip, scale_alpha(chip_bg, 0.78));
+                    label.place_free(
+                        w,
+                        cx,
+                        (&names[i], c),
+                        b.origin,
+                        &[((sx, sy), (ux, uy))],
+                        &mut taken,
+                    );
+                }
             }
         })
         .absolute()
