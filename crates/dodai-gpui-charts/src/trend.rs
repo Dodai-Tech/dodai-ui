@@ -11,6 +11,7 @@ use gpui::{
     canvas, div, px, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels,
     SharedString, StatefulInteractiveElement, Styled, Window,
 };
+use std::cell::Cell;
 use std::rc::Rc;
 
 pub use dodai_charts_core::layers::StackOffset;
@@ -113,37 +114,60 @@ impl StackedAreaChart {
         } else {
             ticks.iter().map(|v| norm(*v, bottom, top)).collect()
         };
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                for f in &tf {
-                    let y = bh - f * bh;
-                    stroke(w, b.origin, &[(0.0, y), (bw, y)], 1.0, grid, false);
+        let focus = crate::focus::Focus::new(window, cx, &self.follow, layers.len());
+        let looks: Vec<_> = (0..layers.len()).map(|k| focus.item(k)).collect();
+        let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
+        let hit_layers = layers.clone();
+        let cv = crate::common::tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            for f in &tf {
+                let y = bh - f * bh;
+                stroke(w, b.origin, &[(0.0, y), (bw, y)], 1.0, grid, false);
+            }
+            let x = |i: usize| (i as f32 + 0.5) / n.max(1) as f32 * bw;
+            // Grow from the stack's own floor: zero, or the stream's centre line.
+            let floor = if floats { norm(0.0, bottom, top) } else { 0.0 };
+            let y = |v: f32| bh - (floor + (norm(v, bottom, top) - floor) * g) * bh;
+            for (k, layer) in layers.iter().enumerate() {
+                let upper: Vec<(f32, f32)> = (0..n).map(|i| (x(i), y(layer[i].1))).collect();
+                let lower: Vec<(f32, f32)> = (0..n).rev().map(|i| (x(i), y(layer[i].0))).collect();
+                if upper.len() < 2 {
+                    continue;
                 }
-                let x = |i: usize| (i as f32 + 0.5) / n.max(1) as f32 * bw;
-                // Grow from the stack's own floor: zero, or the stream's centre line.
-                let floor = if floats { norm(0.0, bottom, top) } else { 0.0 };
-                let y = |v: f32| bh - (floor + (norm(v, bottom, top) - floor) * g) * bh;
-                for (k, layer) in layers.iter().enumerate() {
-                    let upper: Vec<(f32, f32)> = (0..n).map(|i| (x(i), y(layer[i].1))).collect();
-                    let lower: Vec<(f32, f32)> =
-                        (0..n).rev().map(|i| (x(i), y(layer[i].0))).collect();
-                    if upper.len() < 2 {
-                        continue;
-                    }
-                    // Quads per segment stay convex.
-                    for i in 0..n - 1 {
-                        let quad = [upper[i], upper[i + 1], lower[n - 2 - i], lower[n - 1 - i]];
-                        fill(w, b.origin, &quad, scale_alpha(cols[k], 0.45));
-                    }
-                    glow_stroke(w, b.origin, &upper, 2.0, cols[k], glow);
+                // Quads per segment stay convex.
+                for i in 0..n - 1 {
+                    let quad = [upper[i], upper[i + 1], lower[n - 2 - i], lower[n - 1 - i]];
+                    let a = (0.45 + 0.3 * looks[k].lift) * looks[k].alpha;
+                    fill(w, b.origin, &quad, scale_alpha(cols[k], a));
                 }
-            },
-        )
+                glow_stroke(
+                    w,
+                    b.origin,
+                    &upper,
+                    2.0,
+                    scale_alpha(cols[k], looks[k].alpha),
+                    glow,
+                );
+            }
+        })
         .absolute()
         .size_full();
-        let mut plot = div().relative().w_full().h(px(self.height)).child(cv);
+        let hits = div()
+            .id(self.follow.sub("layers").element_id(window, cx))
+            .absolute()
+            .size_full()
+            .child(cv);
+        let hits = focus.pointer(hits, &bounds, move |x, y, w, h| {
+            if w <= 0.0 || h <= 0.0 || hit_layers.is_empty() {
+                return None;
+            }
+            let i = ((x / w * n as f32) as usize).min(n.saturating_sub(1));
+            let v = bottom + (1.0 - y / h) * (top - bottom);
+            hit_layers
+                .iter()
+                .position(|l| l.get(i).is_some_and(|(lo, hi)| (*lo..=*hi).contains(&v)))
+        });
+        let mut plot = div().relative().w_full().h(px(self.height)).child(hits);
         plot = plot.child(crate::annotate::layer(
             &t,
             &self.annotations,
@@ -156,6 +180,22 @@ impl StackedAreaChart {
         } else {
             Vec::new()
         };
+        let sums: Vec<f32> = rows.iter().map(|r| r.iter().sum()).collect();
+        let whole: f32 = sums.iter().sum();
+        let text = focus.shown(cx).and_then(|k| {
+            let s = self.series.get(k)?;
+            let peak = dodai_charts_core::peak(s.values.iter().copied());
+            let share = if whole > 0.0 {
+                sums[k] / whole * 100.0
+            } else {
+                0.0
+            };
+            Some(format!(
+                "{} · peak {} · {share:.0}% of the stack",
+                s.name,
+                fmt_with(&self.fmt, peak)
+            ))
+        });
         let mut root = div()
             .flex()
             .flex_col()
@@ -173,7 +213,8 @@ impl StackedAreaChart {
                     .collect(),
                 x_labels,
                 plot,
-            ));
+            ))
+            .child(crate::focus::readout(&t, text, "Hover a layer"));
         if self.legend && self.series.len() > 1 {
             root = root.child(Legend::of_series(&t, &self.series));
         }

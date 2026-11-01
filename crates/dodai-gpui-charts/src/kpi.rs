@@ -1,9 +1,12 @@
 //! [`KpiTile`]: one headline number, its change since last time and its recent trend.
 
 use crate::common::{down_color, fmt_with, up_color, NumFmt, Sparkline};
+use crate::focus::{readout, Focus};
 use dodai_gpui::text::first_family;
 use dodai_gpui::{hsla, theme_of};
-use gpui::{div, px, App, IntoElement, ParentElement, SharedString, Styled, Window};
+use gpui::{
+    div, px, App, InteractiveElement, IntoElement, ParentElement, SharedString, Styled, Window,
+};
 use std::rc::Rc;
 
 /// A key figure: the label, the value (counting to it as it changes), the change since the
@@ -117,10 +120,35 @@ impl KpiTile {
                     )
                     .children(chip),
             );
+        // Hovering the tile spells out the change and the range of the trend.
+        let focus = Focus::new(window, cx, &self.follow, 1);
+        let text = focus.shown(cx).map(|_| {
+            let mut parts = vec![format!("{} now", fmt_with(&self.fmt, self.value))];
+            if let Some(p) = self.previous {
+                parts.push(format!("{} before", fmt_with(&self.fmt, p)));
+            }
+            if let Some(d) = delta {
+                parts.push(format!("{d:+.1}%"));
+            }
+            if let Some((lo, hi)) = dodai_charts_core::extent(self.trend.iter().copied()) {
+                parts.push(format!(
+                    "trend {} to {}",
+                    fmt_with(&self.fmt, lo),
+                    fmt_with(&self.fmt, hi)
+                ));
+            }
+            parts.join(" · ")
+        });
         if self.trend.len() > 1 {
             root = root.child(Sparkline::new(self.trend).area(true).size(160.0, 32.0));
         }
-        root
+        let key = SharedString::from(format!(
+            "kpi-{:?}",
+            self.follow.sub("tile").element_id(window, cx)
+        ));
+        focus
+            .bind(root.id(key), 0)
+            .child(readout(&t, text, "Hover for the change"))
     }
 }
 
