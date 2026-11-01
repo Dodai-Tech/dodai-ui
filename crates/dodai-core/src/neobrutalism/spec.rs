@@ -229,6 +229,8 @@ impl DesignSpec for NeoBrutalism {
         Some(Sizes {
             selection_box: 22.0,
             slider_thumb: 20.0,
+            switch_track: (56.0, 32.0),
+            switch_handle: (22.0, 22.0),
             ..Sizes::default()
         })
     }
