@@ -19,7 +19,6 @@ dodai-gpui = { workspace = true, features = ["components", "shaders", "cyberpunk
 dodai-gpui-charts = { workspace = true }
 dodai-gpui-instruments = { workspace = true }
 dodai-icons = { workspace = true, features = ["theme", "cyberpunk", "material", "neobrutalism"] }
-dodai-shaders = { workspace = true }
 gpui = { workspace = true }
 
 [dev-dependencies]

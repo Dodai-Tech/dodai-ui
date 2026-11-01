@@ -4177,7 +4177,6 @@ dependencies = [
  "dodai-gpui-charts",
  "dodai-gpui-instruments",
  "dodai-icons",
- "dodai-shaders",
  "gpui",
 ]
 
