@@ -88,6 +88,9 @@ impl SplitFlow {
 const GAP: f32 = 6.0;
 const BLOCK: f32 = 46.0;
 const DROP: f32 = 28.0;
+/// Opacity of the ribbons and of the pass-through strips that carry an end branch down: lighter
+/// than the blocks, so blocks of one group stay apart instead of melting into one slab.
+const STREAM: f32 = 0.5;
 
 /// The `Node`s of `steps`: parents resolved by label among the earlier steps.
 fn nodes(steps: &[FlowStep]) -> Vec<Node> {
@@ -223,7 +226,12 @@ impl SplitFlow {
                 }
                 let y0 = top(bl.level - 1) + BLOCK;
                 let rib = cascade::ribbon(src, (bl.x0, bl.x1), y0, top(bl.level), 20);
-                fill(w, b.origin, &rib, scale_alpha(cols[o], a * looks[o].alpha));
+                fill(
+                    w,
+                    b.origin,
+                    &rib,
+                    scale_alpha(cols[o], STREAM * a * looks[o].alpha),
+                );
             }
             let mut taken = Vec::new();
             let mut pills: Vec<[f32; 4]> = Vec::new();
@@ -235,7 +243,13 @@ impl SplitFlow {
                 }
                 let y = top(bl.level);
                 let r = dodai_gpui::plot::rect(bl.x0, y, bl.x1 - bl.x0, BLOCK);
-                fill(w, b.origin, &r, scale_alpha(cols[o], a));
+                let carried = ppass[i] && bl.level + 1 < depth;
+                fill(
+                    w,
+                    b.origin,
+                    &r,
+                    scale_alpha(cols[o], if carried { STREAM * a } else { a }),
+                );
                 if !ppass[i] {
                     // A seam where the flow enters a new stage.
                     let seam_line = [(bl.x0, y + 1.0), (bl.x1, y + 1.0)];
@@ -306,7 +320,7 @@ impl SplitFlow {
                     let c = scale_alpha(cols[o], a);
                     let y1 = y + BLOCK + 3.0;
                     // The name when it fits, else just the share and amount.
-                    let named = head.place_free(
+                    head.place_free(
                         w,
                         cx,
                         (&names[o], c),
@@ -314,7 +328,9 @@ impl SplitFlow {
                         &[((mid, y1), (0.0, 1.0))],
                         &mut taken,
                     );
-                    let y2 = named.map_or(y1, |r| r[3]);
+                    // Shares and amounts keep their own rows, so a name that did not fit
+                    // does not push them into its neighbours' names.
+                    let y2 = y1 + head.size_line();
                     let r = big.place_free(
                         w,
                         cx,
@@ -323,13 +339,13 @@ impl SplitFlow {
                         &[((mid, y2), (0.0, 1.0))],
                         &mut taken,
                     );
-                    if let Some(r) = r {
+                    if r.is_some() {
                         small.place_free(
                             w,
                             cx,
                             (&amounts[o], scale_alpha(muted, a)),
                             b.origin,
-                            &[((mid, r[3]), (0.0, 1.0))],
+                            &[((mid, y2 + big.size_line()), (0.0, 1.0))],
                             &mut taken,
                         );
                     }
