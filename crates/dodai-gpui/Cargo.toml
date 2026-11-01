@@ -41,6 +41,8 @@ dodai-fx = { workspace = true }
 dodai-frost = { workspace = true, optional = true }
 dodai-icons = { workspace = true, features = ["theme", "cyberpunk"], optional = true }
 gpui = { workspace = true }
+# The machine's UTC offset, without FFI of our own.
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
 # Already in gpui's tree: tessellate icons once and replay the triangles each frame.
 lyon_tessellation = "1"
 dodai-shaders = { workspace = true, optional = true }

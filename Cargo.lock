@@ -4075,6 +4075,7 @@ version = "0.1.0"
 name = "dodai-gpui"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "dodai-charts-core",
  "dodai-core",
  "dodai-frost",

@@ -158,31 +158,7 @@ pub(super) fn unix_now() -> f64 {
         .unwrap_or(0.0)
 }
 
-/// The machine's current UTC offset in minutes (0 where it can't be read).
+/// The machine's current UTC offset in minutes.
 pub fn local_utc_offset_minutes() -> i32 {
-    #[cfg(unix)]
-    {
-        #[repr(C)]
-        struct Tm {
-            f: [i32; 9],
-            gmtoff: i64,
-            zone: *const u8,
-        }
-        extern "C" {
-            fn localtime_r(t: *const i64, out: *mut Tm) -> *mut Tm;
-        }
-        let t = unix_now() as i64;
-        let mut tm = Tm {
-            f: [0; 9],
-            gmtoff: 0,
-            zone: std::ptr::null(),
-        };
-        // SAFETY: `Tm` matches the C `struct tm` layout on glibc/musl/macOS/BSD;
-        // `localtime_r` only writes into it and is thread-safe.
-        let ok = unsafe { !localtime_r(&t, &mut tm).is_null() };
-        if ok {
-            return (tm.gmtoff / 60) as i32;
-        }
-    }
-    0
+    chrono::Local::now().offset().local_minus_utc() / 60
 }
