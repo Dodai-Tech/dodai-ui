@@ -169,6 +169,10 @@ impl Showcase {
 
     /// Initial state; the TextInput entities are created here.
     pub fn build(cx: &mut Context<Self>) -> Self {
+        // Test aid: start with series patterns on (`DODAI_PATTERNS=1`).
+        if std::env::var_os("DODAI_PATTERNS").is_some() {
+            dodai_gpui_charts::common::set_patterns(cx, true);
+        }
         let search = cx.new(|cx| TextInput::new(cx).placeholder("Search…"));
         let search_full = cx.new(|cx| TextInput::new(cx).placeholder("Search…").value("a"));
         let filter = cx.new(|cx| TextInput::new(cx).placeholder("Filter components…"));

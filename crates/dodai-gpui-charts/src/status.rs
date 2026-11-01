@@ -3,16 +3,14 @@
 //! graded buckets), [`StageBars`] (success per stage of a flow) and [`GradientScale`] (a
 //! reading on a bad-to-good scale).
 
-use crate::common::{
-    fmt_with, label_column, label_style, nice_ticks, norm, stroke, Legend, NumFmt,
-};
+use crate::common::{fmt_with, label_column, label_style, nice_ticks, norm, Legend, NumFmt};
 use crate::focus::{readout, Focus};
 use dodai_core::{Color, Theme, Tone};
 use dodai_gpui::paint::{shaped, ShapeStyle};
 use dodai_gpui::{hsla, theme_of};
 use gpui::{
-    canvas, div, px, relative, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement,
-    Pixels, SharedString, StatefulInteractiveElement, Styled, Window,
+    canvas, div, px, relative, App, Bounds, InteractiveElement, IntoElement, ParentElement, Pixels,
+    SharedString, StatefulInteractiveElement, Styled, Window,
 };
 use std::rc::Rc;
 
@@ -206,23 +204,6 @@ impl SlotGrid {
     );
 }
 
-/// Diagonal hatching over a `w × h` box at `o`, in `c`.
-fn hatch(w: &mut Window, o: gpui::Point<Pixels>, (bw, bh): (f32, f32), c: Hsla) {
-    if !(bw.is_finite() && bh.is_finite() && bw > 0.0 && bh > 0.0) {
-        return;
-    }
-    let step = 6.0;
-    let mut k = -bh;
-    while k < bw {
-        // The line x = k + s, y = bh - s, kept inside 0..bw.
-        let (s0, s1) = ((-k).max(0.0), bh.min(bw - k));
-        if s1 > s0 {
-            stroke(w, o, &[(k + s0, bh - s0), (k + s1, bh - s1)], 1.0, c, false);
-        }
-        k += step;
-    }
-}
-
 impl SlotGrid {
     fn block(&self, t: &Theme, r: usize, k: usize, b: Slot, h: f32) -> gpui::AnyElement {
         let n = self.slots.len().max(1) as f32;
@@ -260,11 +241,12 @@ impl SlotGrid {
                 canvas(
                     |_, _, _| (),
                     move |bb: Bounds<Pixels>, _, w, _| {
-                        hatch(
+                        crate::common::hatch(
                             w,
                             bb.origin,
                             (bb.size.width.into(), bb.size.height.into()),
                             c,
+                            crate::common::Hatch::Slash,
                         );
                     },
                 )

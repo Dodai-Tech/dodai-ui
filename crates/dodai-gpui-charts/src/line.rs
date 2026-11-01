@@ -370,7 +370,7 @@ impl LineChart {
         let style = t.chart_style();
         let grid = hsla(style.grid_color);
         let glow = self.glow.resolve(&t);
-        let patterns = self.patterns;
+        let patterns = self.patterns || crate::common::patterns();
         let xs: Option<Vec<f32>> = self.time.as_ref().and_then(|(s, _)| time_fracs(s));
         let (area, smooth, stepped, sw, show_grid) = (
             self.area,

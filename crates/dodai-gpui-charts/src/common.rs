@@ -290,9 +290,11 @@ impl Legend {
                 }
                 row.child(
                     div()
+                        .relative()
                         .w(px(t.sizes().legend_swatch))
                         .h(px(t.sizes().legend_swatch))
-                        .bg(hsla(c)),
+                        .bg(hsla(c))
+                        .children(hatch_overlay(&t, i)),
                 )
                 .child(n)
             }))
@@ -906,4 +908,123 @@ mod tests {
         assert_eq!(bar_max(&s, true), 5.0);
         assert_eq!(bar_max(&s, false), 4.0);
     }
+
+    #[test]
+    fn hatching_cycles_and_the_first_series_stays_solid() {
+        assert_eq!(hatch_of(0), None);
+        assert_eq!(hatch_of(1), Some(Hatch::Slash));
+        assert_eq!(hatch_of(2), Some(Hatch::Backslash));
+        assert_eq!(hatch_of(3), Some(Hatch::Cross));
+        assert_eq!(hatch_of(4), None);
+    }
+}
+
+thread_local! {
+    static PATTERNS: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Tell every chart to mark its series by pattern as well as colour (dashed lines, hatched
+/// bars and legend swatches) so they stay apart for colour-blind readers, and repaint. Off by
+/// default; a chart's own `.patterns(..)` (where it has one) turns it on for that chart only.
+pub fn set_patterns(cx: &mut App, on: bool) {
+    PATTERNS.with(|c| c.set(on));
+    cx.refresh_windows();
+}
+
+/// Whether charts mark series by pattern too (see [`set_patterns`]).
+pub fn patterns() -> bool {
+    PATTERNS.with(std::cell::Cell::get)
+}
+
+/// A hatching drawn over a mark to tell series apart without colour.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Hatch {
+    /// Rising diagonals.
+    Slash,
+    /// Falling diagonals.
+    Backslash,
+    /// Both.
+    Cross,
+}
+
+/// The hatching of series `i`: the first is solid, the rest cycle through [`Hatch`] (matching
+/// the line dashes of the same index).
+pub fn hatch_of(i: usize) -> Option<Hatch> {
+    match i % 4 {
+        0 => None,
+        1 => Some(Hatch::Slash),
+        2 => Some(Hatch::Backslash),
+        _ => Some(Hatch::Cross),
+    }
+}
+
+/// Hatching of `kind` over a `w × h` box at `o`, in `c`. Pure strokes: it needs no clipping.
+pub(crate) fn hatch(
+    w: &mut Window,
+    o: gpui::Point<Pixels>,
+    (bw, bh): (f32, f32),
+    c: Hsla,
+    kind: Hatch,
+) {
+    if !(bw.is_finite() && bh.is_finite() && bw > 0.0 && bh > 0.0) {
+        return;
+    }
+    let step = HATCH_STEP;
+    if kind != Hatch::Backslash {
+        let mut k = -bh;
+        while k < bw {
+            // The line x = k + s, y = bh - s, kept inside 0..bw.
+            let (s0, s1) = ((-k).max(0.0), bh.min(bw - k));
+            if s1 > s0 {
+                dodai_gpui::paint::stroke(
+                    w,
+                    o,
+                    &[(k + s0, bh - s0), (k + s1, bh - s1)],
+                    1.0,
+                    c,
+                    false,
+                );
+            }
+            k += step;
+        }
+    }
+    if kind != Hatch::Slash {
+        let mut k = -bh;
+        while k < bw {
+            // The line x = k + s, y = s, kept inside 0..bw.
+            let (s0, s1) = ((-k).max(0.0), bh.min(bw - k));
+            if s1 > s0 {
+                dodai_gpui::paint::stroke(w, o, &[(k + s0, s0), (k + s1, s1)], 1.0, c, false);
+            }
+            k += step;
+        }
+    }
+}
+
+/// Distance between hatch lines, px.
+const HATCH_STEP: f32 = 6.0;
+
+/// An overlay that hatches its parent for series `i` when patterns are on (else nothing).
+pub(crate) fn hatch_overlay(t: &Theme, i: usize) -> Option<gpui::AnyElement> {
+    let kind = hatch_of(i).filter(|_| patterns())?;
+    let c = dodai_gpui::paint::scale_alpha(hsla(t.palette.background), 0.6);
+    Some(
+        gpui::canvas(
+            |_, _, _| (),
+            move |b: gpui::Bounds<Pixels>, _, w, _| {
+                hatch(
+                    w,
+                    b.origin,
+                    (b.size.width.into(), b.size.height.into()),
+                    c,
+                    kind,
+                );
+            },
+        )
+        .absolute()
+        .top_0()
+        .left_0()
+        .size_full()
+        .into_any_element(),
+    )
 }
