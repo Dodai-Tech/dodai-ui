@@ -82,6 +82,8 @@ pub struct ThemeValues {
     pub cut_tr: bool,
     pub cut_br: bool,
     pub cut_bl: bool,
+    /// The cut corners are concave arcs (a scoop) instead of straight cuts.
+    pub scoop: bool,
     pub glow_enabled: bool,
     pub scanlines: bool,
     pub uppercase: bool,
@@ -167,6 +169,7 @@ impl ThemeValues {
             cut_tr: sh.corners.top_right,
             cut_br: sh.corners.bottom_right,
             cut_bl: sh.corners.bottom_left,
+            scoop: sh.scoop,
             glow_enabled: fx.glow_enabled(),
             scanlines: fx.scanlines,
             uppercase: ty.uppercase_labels,

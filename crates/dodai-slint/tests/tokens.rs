@@ -49,6 +49,14 @@ fn square() -> Theme {
 }
 
 #[test]
+fn scoop_follows_the_shape() {
+    let mut t = dodai_core::themes::cyberpunk::yellow();
+    assert!(!ThemeValues::from_theme(&t).scoop);
+    t.shape.scoop = true;
+    assert!(ThemeValues::from_theme(&t).scoop);
+}
+
+#[test]
 fn shape_flags_follow_kind() {
     let c = ThemeValues::from_theme(&dodai_core::themes::cyberpunk::yellow());
     assert!(c.chamfered && c.chamfer > 0.0 && (c.cut_tl || c.cut_tr || c.cut_br || c.cut_bl));

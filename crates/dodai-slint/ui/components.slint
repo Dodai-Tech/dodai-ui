@@ -12,11 +12,14 @@ export component LFrame inherits Rectangle {
     property <float> w: root.width / 1px;
     property <float> h: root.height / 1px;
     property <float> c: Math.min(Theme.chamfer / 1px, Math.min(w, h) / 3);
+    // A cut corner joins its two end points with a straight line, or with a concave arc about
+    // the box corner when the theme scoops (`A r r 0 0 0` runs anticlockwise round the corner).
+    property <string> cut: Theme.scoop ? "A " + c + " " + c + " 0 0 0 " : "L ";
     property <string> d:
-        (Theme.cut-tl ? "M 0 " + c + " L " + c + " 0 " : "M 0 0 ")
-        + (Theme.cut-tr ? "L " + (w - c) + " 0 L " + w + " " + c + " " : "L " + w + " 0 ")
-        + (Theme.cut-br ? "L " + w + " " + (h - c) + " L " + (w - c) + " " + h + " " : "L " + w + " " + h + " ")
-        + (Theme.cut-bl ? "L " + c + " " + h + " L 0 " + (h - c) + " " : "L 0 " + h + " ")
+        (Theme.cut-tl ? "M 0 " + c + " " + cut + c + " 0 " : "M 0 0 ")
+        + (Theme.cut-tr ? "L " + (w - c) + " 0 " + cut + w + " " + c + " " : "L " + w + " 0 ")
+        + (Theme.cut-br ? "L " + w + " " + (h - c) + " " + cut + (w - c) + " " + h + " " : "L " + w + " " + h + " ")
+        + (Theme.cut-bl ? "L " + c + " " + h + " " + cut + "0 " + (h - c) + " " : "L 0 " + h + " ")
         + "Z";
     if Theme.chamfered: Rectangle {
         width: parent.width;

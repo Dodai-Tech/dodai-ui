@@ -85,6 +85,7 @@ impl ThemeValues {
             p("cut-tr", Prop::Bool(self.cut_tr)),
             p("cut-br", Prop::Bool(self.cut_br)),
             p("cut-bl", Prop::Bool(self.cut_bl)),
+            p("scoop", Prop::Bool(self.scoop)),
             p("glow-enabled", Prop::Bool(self.glow_enabled)),
             p("scanlines", Prop::Bool(self.scanlines)),
             p("uppercase", Prop::Bool(self.uppercase)),
