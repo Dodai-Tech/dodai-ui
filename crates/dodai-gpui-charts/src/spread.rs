@@ -3,15 +3,16 @@
 
 use crate::common::{
     chart_cfg, fill, fmt_with, label_column, label_style, marker_points, nice_ticks, norm,
-    series_color, step_points, stroke, tick_row, titled, Legend, Marker, NumFmt, Series,
+    plot_box, series_color, step_points, stroke, tick_row, titled, tracked_canvas, Legend, Marker,
+    NumFmt, Series,
 };
 use crate::focus::{readout, Focus};
 use dodai_charts_core::{density::ecdf, swarm::swarm};
 use dodai_gpui::paint::scale_alpha;
 use dodai_gpui::{hsla, theme_of};
 use gpui::{
-    canvas, div, px, relative, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement,
-    Pixels, SharedString, Styled, Window,
+    div, px, relative, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels,
+    SharedString, Styled, Window,
 };
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -124,51 +125,46 @@ impl Beeswarm {
         let placed: Rc<RefCell<Vec<(f32, f32)>>> = Default::default();
         let painted = placed.clone();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
         let paint_samples = samples.clone();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                let lane = bh / lanes as f32;
-                for k in 1..lanes {
-                    let y = k as f32 * lane;
-                    crate::common::grid_line(w, b.origin, (0.0, y), (bw, y), &style);
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            let lane = bh / lanes as f32;
+            for k in 1..lanes {
+                let y = k as f32 * lane;
+                crate::common::grid_line(w, b.origin, (0.0, y), (bw, y), &style);
+            }
+            let mut at = vec![(0.0, 0.0); paint_samples.len()];
+            for k in 0..lanes {
+                let idx: Vec<usize> = (0..paint_samples.len())
+                    .filter(|i| paint_samples[*i].0 == k)
+                    .collect();
+                let xs: Vec<f32> = idx
+                    .iter()
+                    .map(|i| norm(paint_samples[*i].1, lo, hi) * bw)
+                    .collect();
+                let half = lane / 2.0 - r;
+                for (j, dy) in idx.iter().zip(swarm(&xs, r + 0.5)) {
+                    let x = norm(paint_samples[*j].1, lo, hi) * bw;
+                    // A swarm too tall for its lane is squeezed, never spilled.
+                    at[*j] = (x, (k as f32 + 0.5) * lane + dy.clamp(-half, half));
                 }
-                let mut at = vec![(0.0, 0.0); paint_samples.len()];
-                for k in 0..lanes {
-                    let idx: Vec<usize> = (0..paint_samples.len())
-                        .filter(|i| paint_samples[*i].0 == k)
-                        .collect();
-                    let xs: Vec<f32> = idx
-                        .iter()
-                        .map(|i| norm(paint_samples[*i].1, lo, hi) * bw)
-                        .collect();
-                    let half = lane / 2.0 - r;
-                    for (j, dy) in idx.iter().zip(swarm(&xs, r + 0.5)) {
-                        let x = norm(paint_samples[*j].1, lo, hi) * bw;
-                        // A swarm too tall for its lane is squeezed, never spilled.
-                        at[*j] = (x, (k as f32 + 0.5) * lane + dy.clamp(-half, half));
-                    }
+            }
+            for (i, &(x, y)) in at.iter().enumerate() {
+                let gi = dodai_core::motion::reveal(g, i, at.len());
+                if gi <= 0.0 {
+                    continue;
                 }
-                for (i, &(x, y)) in at.iter().enumerate() {
-                    let gi = dodai_core::motion::reveal(g, i, at.len());
-                    if gi <= 0.0 {
-                        continue;
-                    }
-                    let lk = looks[i];
-                    let dot = marker_points(Marker::Dot, x, y, (r + lk.lift * 2.0) * gi);
-                    fill(
-                        w,
-                        b.origin,
-                        &dot,
-                        scale_alpha(cols[paint_samples[i].0], lk.alpha),
-                    );
-                }
-                *painted.borrow_mut() = at;
-            },
-        )
+                let lk = looks[i];
+                let dot = marker_points(Marker::Dot, x, y, (r + lk.lift * 2.0) * gi);
+                fill(
+                    w,
+                    b.origin,
+                    &dot,
+                    scale_alpha(cols[paint_samples[i].0], lk.alpha),
+                );
+            }
+            *painted.borrow_mut() = at;
+        })
         .absolute()
         .size_full();
         let plot = div()
@@ -273,59 +269,53 @@ impl Ecdf {
         let paint_curves = curves.clone();
         let hit_curves = curves.clone();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                for f in [0.25, 0.5, 0.75] {
-                    let y = bh * (1.0 - f);
-                    crate::common::grid_line(w, b.origin, (0.0, y), (bw, y), &style);
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            for f in [0.25, 0.5, 0.75] {
+                let y = bh * (1.0 - f);
+                crate::common::grid_line(w, b.origin, (0.0, y), (bw, y), &style);
+            }
+            for q in [0.5, 0.9] {
+                let y = bh * (1.0 - q);
+                stroke(
+                    w,
+                    b.origin,
+                    &[(0.0, y), (bw, y)],
+                    1.0,
+                    scale_alpha(guide, 0.5),
+                    false,
+                );
+            }
+            for (i, c) in paint_curves.iter().enumerate() {
+                if c.is_empty() {
+                    continue;
                 }
-                for q in [0.5, 0.9] {
-                    let y = bh * (1.0 - q);
-                    stroke(
-                        w,
-                        b.origin,
-                        &[(0.0, y), (bw, y)],
-                        1.0,
-                        scale_alpha(guide, 0.5),
-                        false,
-                    );
-                }
-                for (i, c) in paint_curves.iter().enumerate() {
-                    if c.is_empty() {
-                        continue;
-                    }
-                    let lk = looks[i];
-                    // From 0 at the left edge, up the steps, flat to the right edge.
-                    let mut p = vec![(0.0, bh)];
-                    p.extend(
-                        c.iter()
-                            .map(|(v, f)| (norm(*v, lo, hi) * bw, bh * (1.0 - f * g))),
-                    );
-                    p.push((bw, bh * (1.0 - g)));
-                    let p = step_points(&p);
-                    stroke(
-                        w,
-                        b.origin,
-                        &p,
-                        2.0 + lk.lift * 1.5,
-                        scale_alpha(cols[i], lk.alpha),
-                        false,
-                    );
-                }
-            },
-        )
+                let lk = looks[i];
+                // From 0 at the left edge, up the steps, flat to the right edge.
+                let mut p = vec![(0.0, bh)];
+                p.extend(
+                    c.iter()
+                        .map(|(v, f)| (norm(*v, lo, hi) * bw, bh * (1.0 - f * g))),
+                );
+                p.push((bw, bh * (1.0 - g)));
+                let p = step_points(&p);
+                stroke(
+                    w,
+                    b.origin,
+                    &p,
+                    2.0 + lk.lift * 1.5,
+                    scale_alpha(cols[i], lk.alpha),
+                    false,
+                );
+            }
+        })
         .absolute()
         .size_full();
-        let plot = div()
-            .id(self.follow.sub("ecdf").element_id(window, cx))
-            .relative()
-            .w_full()
-            .h(px(self.height))
-            .child(cv);
+        let plot = plot_box(
+            self.follow.sub("ecdf").element_id(window, cx),
+            self.height,
+            cv,
+        );
         // The curve nearest the pointer, by its height at the pointer's value.
         let plot = focus.pointer(plot, &bounds, move |x, y, w, h| {
             let v = lo + (hi - lo) * x / w.max(1.0);
@@ -443,40 +433,35 @@ impl ErrorBars {
         let reference = self.reference;
         let grid_n = ticks.len();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                let row = bh / n as f32;
-                for k in 0..grid_n {
-                    let x = k as f32 / (grid_n - 1).max(1) as f32 * bw;
-                    crate::common::grid_line(w, b.origin, (x, 0.0), (x, bh), &style);
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            let row = bh / n as f32;
+            for k in 0..grid_n {
+                let x = k as f32 / (grid_n - 1).max(1) as f32 * bw;
+                crate::common::grid_line(w, b.origin, (x, 0.0), (x, bh), &style);
+            }
+            if let Some(r) = reference {
+                let x = norm(r, lo, hi) * bw;
+                stroke(w, b.origin, &[(x, 0.0), (x, bh)], 1.5, refc, false);
+            }
+            for (i, &(e, a, z)) in geo.iter().enumerate() {
+                let lk = looks[i];
+                let c = scale_alpha(ink, lk.alpha);
+                let y = (i as f32 + 0.5) * row;
+                let xe = norm(e, lo, hi) * bw;
+                // Whiskers open out from the estimate.
+                let gi = dodai_core::motion::reveal(g, i, n);
+                let xa = xe + (norm(a, lo, hi) * bw - xe) * gi;
+                let xz = xe + (norm(z, lo, hi) * bw - xe) * gi;
+                let cap = (row * 0.25).min(6.0);
+                stroke(w, b.origin, &[(xa, y), (xz, y)], 1.5 + lk.lift, c, false);
+                for x in [xa, xz] {
+                    stroke(w, b.origin, &[(x, y - cap), (x, y + cap)], 1.5, c, false);
                 }
-                if let Some(r) = reference {
-                    let x = norm(r, lo, hi) * bw;
-                    stroke(w, b.origin, &[(x, 0.0), (x, bh)], 1.5, refc, false);
-                }
-                for (i, &(e, a, z)) in geo.iter().enumerate() {
-                    let lk = looks[i];
-                    let c = scale_alpha(ink, lk.alpha);
-                    let y = (i as f32 + 0.5) * row;
-                    let xe = norm(e, lo, hi) * bw;
-                    // Whiskers open out from the estimate.
-                    let gi = dodai_core::motion::reveal(g, i, n);
-                    let xa = xe + (norm(a, lo, hi) * bw - xe) * gi;
-                    let xz = xe + (norm(z, lo, hi) * bw - xe) * gi;
-                    let cap = (row * 0.25).min(6.0);
-                    stroke(w, b.origin, &[(xa, y), (xz, y)], 1.5 + lk.lift, c, false);
-                    for x in [xa, xz] {
-                        stroke(w, b.origin, &[(x, y - cap), (x, y + cap)], 1.5, c, false);
-                    }
-                    let mark = marker_points(Marker::Square, xe, y, 4.0 + lk.lift * 2.0);
-                    fill(w, b.origin, &mark, c);
-                }
-            },
-        )
+                let mark = marker_points(Marker::Square, xe, y, 4.0 + lk.lift * 2.0);
+                fill(w, b.origin, &mark, c);
+            }
+        })
         .absolute()
         .size_full();
         let plot = div()

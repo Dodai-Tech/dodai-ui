@@ -1,7 +1,8 @@
 //! Histogram, box plot and bubble charts (distribution of values).
 
 use crate::common::{
-    chart_cfg, fill, fmt_with, framed, nice_ticks, norm, stroke, titled, Legend, NumFmt,
+    chart_cfg, fill, fmt_with, framed, nice_ticks, norm, stroke, titled, tracked_canvas, Legend,
+    NumFmt,
 };
 use crate::focus::{columns, readout, Focus};
 use dodai_core::Color;
@@ -365,105 +366,100 @@ impl BoxPlot {
             ))
         });
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
         let (notch, show_mean, show_pts) = (self.notch, self.mean, self.points);
         let raw: Vec<Vec<f32>> = self.groups.iter().map(|g| g.1.clone()).collect();
         let tf: Vec<f32> = ticks.iter().map(|v| norm(*v, lo, hi)).collect();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                for f in &tf {
-                    let y = bh - f * bh;
-                    stroke(w, b.origin, &[(0.0, y), (bw, y)], 1.0, grid, false);
-                }
-                let slot = bw / n.max(1) as f32;
-                let yr = |v: f32| bh - norm(v, lo, hi) * bh;
-                for (i, s) in stats.iter().enumerate() {
-                    let Some((mn, q1, md, q3, mx)) = s else {
-                        continue;
-                    };
-                    let x = (i as f32 + 0.5) * slot;
-                    let ym = yr(*md);
-                    let gi = dodai_gpui::motion::reveal(g, i, n);
-                    let y = |v: f32| ym + (yr(v) - ym) * gi;
-                    let half = (slot * 0.5).min(40.0) / 2.0;
-                    stroke(
-                        w,
-                        b.origin,
-                        &[(x, y(*mx)), (x, y(*q3))],
-                        1.5,
-                        cols[i],
-                        false,
-                    );
-                    stroke(
-                        w,
-                        b.origin,
-                        &[(x, y(*q1)), (x, y(*mn))],
-                        1.5,
-                        cols[i],
-                        false,
-                    );
-                    stroke(
-                        w,
-                        b.origin,
-                        &[(x - half / 2.0, y(*mx)), (x + half / 2.0, y(*mx))],
-                        1.5,
-                        cols[i],
-                        false,
-                    );
-                    stroke(
-                        w,
-                        b.origin,
-                        &[(x - half / 2.0, y(*mn)), (x + half / 2.0, y(*mn))],
-                        1.5,
-                        cols[i],
-                        false,
-                    );
-                    if show_pts {
-                        for (k, v) in raw[i].iter().enumerate() {
-                            let j = dodai_charts_core::pulse::hash((k + 977 * i) as f32);
-                            let dx = (j - 0.5) * half * 1.6;
-                            fill(
-                                w,
-                                b.origin,
-                                &crate::common::marker_points(
-                                    crate::common::Marker::Dot,
-                                    x + dx,
-                                    y(*v),
-                                    2.0,
-                                ),
-                                scale_alpha(cols[i], 0.55),
-                            );
-                        }
-                    }
-                    let outline = if notch {
-                        notched_box(x, half, (*q1, *md, *q3), raw[i].len(), &y)
-                    } else {
-                        let (t, bt) = (y(*q3), y(*q1));
-                        vec![(x - half, t), (x + half, t), (x + half, bt), (x - half, bt)]
-                    };
-                    fill(w, b.origin, &outline, scale_alpha(cols[i], 0.35));
-                    stroke(w, b.origin, &outline, 1.5, cols[i], true);
-                    stroke(
-                        w,
-                        b.origin,
-                        &[(x - half, y(*md)), (x + half, y(*md))],
-                        2.5,
-                        text,
-                        false,
-                    );
-                    if show_mean && !raw[i].is_empty() {
-                        let m = raw[i].iter().sum::<f32>() / raw[i].len() as f32;
-                        let (cx, cy) = (x, y(m));
-                        let d = 4.5;
-                        let dia = [(cx, cy - d), (cx + d, cy), (cx, cy + d), (cx - d, cy)];
-                        fill(w, b.origin, &dia, text);
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            for f in &tf {
+                let y = bh - f * bh;
+                stroke(w, b.origin, &[(0.0, y), (bw, y)], 1.0, grid, false);
+            }
+            let slot = bw / n.max(1) as f32;
+            let yr = |v: f32| bh - norm(v, lo, hi) * bh;
+            for (i, s) in stats.iter().enumerate() {
+                let Some((mn, q1, md, q3, mx)) = s else {
+                    continue;
+                };
+                let x = (i as f32 + 0.5) * slot;
+                let ym = yr(*md);
+                let gi = dodai_gpui::motion::reveal(g, i, n);
+                let y = |v: f32| ym + (yr(v) - ym) * gi;
+                let half = (slot * 0.5).min(40.0) / 2.0;
+                stroke(
+                    w,
+                    b.origin,
+                    &[(x, y(*mx)), (x, y(*q3))],
+                    1.5,
+                    cols[i],
+                    false,
+                );
+                stroke(
+                    w,
+                    b.origin,
+                    &[(x, y(*q1)), (x, y(*mn))],
+                    1.5,
+                    cols[i],
+                    false,
+                );
+                stroke(
+                    w,
+                    b.origin,
+                    &[(x - half / 2.0, y(*mx)), (x + half / 2.0, y(*mx))],
+                    1.5,
+                    cols[i],
+                    false,
+                );
+                stroke(
+                    w,
+                    b.origin,
+                    &[(x - half / 2.0, y(*mn)), (x + half / 2.0, y(*mn))],
+                    1.5,
+                    cols[i],
+                    false,
+                );
+                if show_pts {
+                    for (k, v) in raw[i].iter().enumerate() {
+                        let j = dodai_charts_core::pulse::hash((k + 977 * i) as f32);
+                        let dx = (j - 0.5) * half * 1.6;
+                        fill(
+                            w,
+                            b.origin,
+                            &crate::common::marker_points(
+                                crate::common::Marker::Dot,
+                                x + dx,
+                                y(*v),
+                                2.0,
+                            ),
+                            scale_alpha(cols[i], 0.55),
+                        );
                     }
                 }
-            },
-        )
+                let outline = if notch {
+                    notched_box(x, half, (*q1, *md, *q3), raw[i].len(), &y)
+                } else {
+                    let (t, bt) = (y(*q3), y(*q1));
+                    vec![(x - half, t), (x + half, t), (x + half, bt), (x - half, bt)]
+                };
+                fill(w, b.origin, &outline, scale_alpha(cols[i], 0.35));
+                stroke(w, b.origin, &outline, 1.5, cols[i], true);
+                stroke(
+                    w,
+                    b.origin,
+                    &[(x - half, y(*md)), (x + half, y(*md))],
+                    2.5,
+                    text,
+                    false,
+                );
+                if show_mean && !raw[i].is_empty() {
+                    let m = raw[i].iter().sum::<f32>() / raw[i].len() as f32;
+                    let (cx, cy) = (x, y(m));
+                    let d = 4.5;
+                    let dia = [(cx, cy - d), (cx + d, cy), (cx, cy + d), (cx - d, cy)];
+                    fill(w, b.origin, &dia, text);
+                }
+            }
+        })
         .absolute()
         .size_full();
         let hits = div()

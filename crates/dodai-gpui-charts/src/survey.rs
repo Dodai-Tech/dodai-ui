@@ -3,15 +3,15 @@
 
 use crate::common::{
     chart_cfg, fill, fmt_with, label_column, label_style, marker_points, nice_ticks, stroke,
-    titled, Legend, Marker, NumFmt,
+    titled, tracked_canvas, Legend, Marker, NumFmt,
 };
 use crate::focus::{readout, Focus};
 use dodai_charts_core::{layers::diverging, rank::pareto};
 use dodai_gpui::paint::scale_alpha;
 use dodai_gpui::{hsla, theme_of};
 use gpui::{
-    canvas, div, px, relative, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement,
-    Pixels, SharedString, Styled, Window,
+    div, px, relative, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels,
+    SharedString, Styled, Window,
 };
 use std::cell::Cell;
 use std::rc::Rc;
@@ -108,52 +108,47 @@ impl ParetoChart {
         let cutoff = self.cutoff;
         let style = t.chart_style();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                for k in 1..4 {
-                    let y = bh * k as f32 / 4.0;
-                    crate::common::grid_line(w, b.origin, (0.0, y), (bw, y), &style);
-                }
-                let col = bw / n.max(1) as f32;
-                for (i, h) in heights.iter().enumerate() {
-                    let lk = looks[i];
-                    let gi = dodai_core::motion::reveal(g, i, n);
-                    let x0 = i as f32 * col + col * 0.15;
-                    let x1 = (i + 1) as f32 * col - col * 0.15;
-                    let y0 = bh * (1.0 - h * gi);
-                    let alpha = if i < few { 1.0 } else { 0.4 };
-                    fill(
-                        w,
-                        b.origin,
-                        &[(x0, y0), (x1, y0), (x1, bh), (x0, bh)],
-                        scale_alpha(bar, alpha * lk.alpha * (0.85 + 0.15 * lk.lift)),
-                    );
-                }
-                let yc = bh * (1.0 - cutoff);
-                stroke(
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            for k in 1..4 {
+                let y = bh * k as f32 / 4.0;
+                crate::common::grid_line(w, b.origin, (0.0, y), (bw, y), &style);
+            }
+            let col = bw / n.max(1) as f32;
+            for (i, h) in heights.iter().enumerate() {
+                let lk = looks[i];
+                let gi = dodai_core::motion::reveal(g, i, n);
+                let x0 = i as f32 * col + col * 0.15;
+                let x1 = (i + 1) as f32 * col - col * 0.15;
+                let y0 = bh * (1.0 - h * gi);
+                let alpha = if i < few { 1.0 } else { 0.4 };
+                fill(
                     w,
                     b.origin,
-                    &[(0.0, yc), (bw, yc)],
-                    1.0,
-                    scale_alpha(guide, 0.7),
-                    false,
+                    &[(x0, y0), (x1, y0), (x1, bh), (x0, bh)],
+                    scale_alpha(bar, alpha * lk.alpha * (0.85 + 0.15 * lk.lift)),
                 );
-                let p: Vec<(f32, f32)> = paint_cum
-                    .iter()
-                    .enumerate()
-                    .take(((n as f32 * g).ceil() as usize).max(1))
-                    .map(|(i, c)| ((i as f32 + 0.5) * col, bh * (1.0 - c)))
-                    .collect();
-                stroke(w, b.origin, &p, 2.0, line, false);
-                for &(x, y) in &p {
-                    fill(w, b.origin, &marker_points(Marker::Dot, x, y, 3.0), line);
-                }
-            },
-        )
+            }
+            let yc = bh * (1.0 - cutoff);
+            stroke(
+                w,
+                b.origin,
+                &[(0.0, yc), (bw, yc)],
+                1.0,
+                scale_alpha(guide, 0.7),
+                false,
+            );
+            let p: Vec<(f32, f32)> = paint_cum
+                .iter()
+                .enumerate()
+                .take(((n as f32 * g).ceil() as usize).max(1))
+                .map(|(i, c)| ((i as f32 + 0.5) * col, bh * (1.0 - c)))
+                .collect();
+            stroke(w, b.origin, &p, 2.0, line, false);
+            for &(x, y) in &p {
+                fill(w, b.origin, &marker_points(Marker::Dot, x, y, 3.0), line);
+            }
+        })
         .absolute()
         .size_full();
         let plot = div()
@@ -357,54 +352,49 @@ impl DivergingBars {
         let hit_spans = spans.clone();
         let nt = sym.len();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                for k in 0..nt {
-                    let x = k as f32 / (nt - 1).max(1) as f32 * bw;
-                    crate::common::grid_line(w, b.origin, (x, 0.0), (x, bh), &style);
-                }
-                let row = bh / nr as f32;
-                let x_of = |v: f32| bw / 2.0 + v / m * bw / 2.0 * g;
-                for (r, segs) in paint_spans.iter().enumerate() {
-                    let (y0, y1) = (
-                        r as f32 * row + row * 0.18,
-                        (r + 1) as f32 * row - row * 0.18,
-                    );
-                    for (s, &(a, z)) in segs.iter().enumerate() {
-                        let k = r * np + s;
-                        let lk = looks[k];
-                        let (x0, x1) = (x_of(a), x_of(z));
-                        if x1 - x0 < 0.3 {
-                            continue;
-                        }
-                        let grow = lk.lift * 2.0;
-                        fill(
-                            w,
-                            b.origin,
-                            &[
-                                (x0, y0 - grow),
-                                (x1, y0 - grow),
-                                (x1, y1 + grow),
-                                (x0, y1 + grow),
-                            ],
-                            scale_alpha(cols[s], lk.alpha),
-                        );
-                    }
-                }
-                stroke(
-                    w,
-                    b.origin,
-                    &[(bw / 2.0, 0.0), (bw / 2.0, bh)],
-                    1.5,
-                    axis,
-                    false,
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            for k in 0..nt {
+                let x = k as f32 / (nt - 1).max(1) as f32 * bw;
+                crate::common::grid_line(w, b.origin, (x, 0.0), (x, bh), &style);
+            }
+            let row = bh / nr as f32;
+            let x_of = |v: f32| bw / 2.0 + v / m * bw / 2.0 * g;
+            for (r, segs) in paint_spans.iter().enumerate() {
+                let (y0, y1) = (
+                    r as f32 * row + row * 0.18,
+                    (r + 1) as f32 * row - row * 0.18,
                 );
-            },
-        )
+                for (s, &(a, z)) in segs.iter().enumerate() {
+                    let k = r * np + s;
+                    let lk = looks[k];
+                    let (x0, x1) = (x_of(a), x_of(z));
+                    if x1 - x0 < 0.3 {
+                        continue;
+                    }
+                    let grow = lk.lift * 2.0;
+                    fill(
+                        w,
+                        b.origin,
+                        &[
+                            (x0, y0 - grow),
+                            (x1, y0 - grow),
+                            (x1, y1 + grow),
+                            (x0, y1 + grow),
+                        ],
+                        scale_alpha(cols[s], lk.alpha),
+                    );
+                }
+            }
+            stroke(
+                w,
+                b.origin,
+                &[(bw / 2.0, 0.0), (bw / 2.0, bh)],
+                1.5,
+                axis,
+                false,
+            );
+        })
         .absolute()
         .size_full();
         let plot = div()

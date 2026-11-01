@@ -3,8 +3,8 @@
 //! hierarchy as circles inside circles).
 
 use crate::common::{
-    chart_cfg, fill, fmt_with, marker_points, norm, stroke, tick_row, titled, CanvasText, Groups,
-    Marker, NumFmt,
+    chart_cfg, fill, fmt_with, marker_points, norm, plot_box, stroke, tick_row, titled,
+    tracked_canvas, CanvasText, Groups, Marker, NumFmt,
 };
 use crate::focus::{readout, Focus};
 use crate::hierarchy::ChartNode;
@@ -12,8 +12,7 @@ use dodai_charts_core::pack::{circle_pack, square_pack, swarm_sized, Disc};
 use dodai_gpui::paint::scale_alpha;
 use dodai_gpui::{hsla, theme_of};
 use gpui::{
-    canvas, div, px, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels,
-    SharedString, Styled, Window,
+    div, px, App, Bounds, Hsla, IntoElement, ParentElement, Pixels, SharedString, Styled, Window,
 };
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -135,64 +134,58 @@ impl BubbleSwarm {
         let placed: Rc<RefCell<Vec<(f32, f32, f32)>>> = Default::default();
         let painted = placed.clone();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
         let paint_items = items.clone();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, cx| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                // Inset by the biggest radius so edge bubbles stay inside.
-                let span = (bw - 2.0 * rmax).max(1.0);
-                let xs: Vec<f32> = paint_items
-                    .iter()
-                    .map(|i| rmax + norm(i.2, tlo, thi) * span)
-                    .collect();
-                let rs: Vec<f32> = paint_items
-                    .iter()
-                    .map(|i| (i.3 / smax).sqrt() * rmax)
-                    .collect();
-                let gap: Vec<f32> = rs.iter().map(|r| r + 1.0).collect();
-                let dys = swarm_sized(&xs, &gap);
-                let mid = bh / 2.0;
-                let at: Vec<(f32, f32, f32)> = (0..paint_items.len())
-                    .map(|i| {
-                        let room = (mid - rs[i]).max(0.0);
-                        (xs[i], mid + dys[i].clamp(-room, room), rs[i])
-                    })
-                    .collect();
-                for (i, &(x, y, r)) in at.iter().enumerate() {
-                    let gi = dodai_core::motion::reveal(g, i, at.len());
-                    if gi <= 0.0 {
-                        continue;
-                    }
-                    let lk = looks[i];
-                    let k = paint_items[i].0;
-                    let rr = (r + lk.lift * 2.0) * gi;
-                    let dot = marker_points(Marker::Dot, x, y, rr);
-                    fill(w, b.origin, &dot, scale_alpha(cols[k], 0.85 * lk.alpha));
-                    if gi >= 1.0 {
-                        text.centred(
-                            w,
-                            cx,
-                            &paint_items[i].1,
-                            (b.origin, (x, y)),
-                            2.0 * r - 6.0,
-                            inks[k],
-                        );
-                    }
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, cx| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            // Inset by the biggest radius so edge bubbles stay inside.
+            let span = (bw - 2.0 * rmax).max(1.0);
+            let xs: Vec<f32> = paint_items
+                .iter()
+                .map(|i| rmax + norm(i.2, tlo, thi) * span)
+                .collect();
+            let rs: Vec<f32> = paint_items
+                .iter()
+                .map(|i| (i.3 / smax).sqrt() * rmax)
+                .collect();
+            let gap: Vec<f32> = rs.iter().map(|r| r + 1.0).collect();
+            let dys = swarm_sized(&xs, &gap);
+            let mid = bh / 2.0;
+            let at: Vec<(f32, f32, f32)> = (0..paint_items.len())
+                .map(|i| {
+                    let room = (mid - rs[i]).max(0.0);
+                    (xs[i], mid + dys[i].clamp(-room, room), rs[i])
+                })
+                .collect();
+            for (i, &(x, y, r)) in at.iter().enumerate() {
+                let gi = dodai_core::motion::reveal(g, i, at.len());
+                if gi <= 0.0 {
+                    continue;
                 }
-                *painted.borrow_mut() = at;
-            },
-        )
+                let lk = looks[i];
+                let k = paint_items[i].0;
+                let rr = (r + lk.lift * 2.0) * gi;
+                let dot = marker_points(Marker::Dot, x, y, rr);
+                fill(w, b.origin, &dot, scale_alpha(cols[k], 0.85 * lk.alpha));
+                if gi >= 1.0 {
+                    text.centred(
+                        w,
+                        cx,
+                        &paint_items[i].1,
+                        (b.origin, (x, y)),
+                        2.0 * r - 6.0,
+                        inks[k],
+                    );
+                }
+            }
+            *painted.borrow_mut() = at;
+        })
         .absolute()
         .size_full();
-        let plot = div()
-            .id(self.follow.sub("bubbles").element_id(window, cx))
-            .relative()
-            .w_full()
-            .h(px(self.height))
-            .child(cv);
+        let plot = plot_box(
+            self.follow.sub("bubbles").element_id(window, cx),
+            self.height,
+            cv,
+        );
         let plot = focus.pointer(plot, &bounds, move |x, y, _, _| {
             placed
                 .borrow()
@@ -310,80 +303,74 @@ impl ProportionalSquares {
         let rects: Rc<RefCell<Vec<(f32, f32, f32)>>> = Default::default();
         let painted = rects.clone();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
         let paint_items = items.clone();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, cx| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                let values: Vec<f32> = paint_items.iter().map(|i| i.2).collect();
-                let sq = square_pack(&values, bh / bw.max(1.0));
-                // Largest first, as packed.
-                let mut order: Vec<usize> = (0..sq.len()).collect();
-                order.sort_by(|a, b| sq[*b].side.total_cmp(&sq[*a].side));
-                let at: Vec<(f32, f32, f32)> = sq
-                    .iter()
-                    .map(|s| (s.x * bw, s.y * bw, s.side * bw))
-                    .collect();
-                for (rank, &i) in order.iter().enumerate() {
-                    let (x, y, side) = at[i];
-                    let gi = dodai_core::motion::reveal(g, rank, order.len());
-                    let s = (side - gap) * gi;
-                    if s <= 0.5 {
-                        continue;
-                    }
-                    let lk = looks[i];
-                    let k = paint_items[i].0;
-                    let (cx_, cy) = (x + side / 2.0, y + side / 2.0);
-                    let (x0, y0) = (cx_ - s / 2.0, cy - s / 2.0);
-                    fill(
-                        w,
-                        b.origin,
-                        &crate::common::rect(x0, y0, s, s),
-                        scale_alpha(cols[k], 0.9 * lk.alpha),
-                    );
-                    if gi < 1.0 {
-                        continue;
-                    }
-                    let room = s - 8.0;
-                    let label = &paint_items[i].1;
-                    let value = fmt_with(&fmt, paint_items[i].2);
-                    // Label and value when two lines fit, else the label alone.
-                    let line = text.size_line();
-                    if s >= line * 3.0
-                        && text.centred(
-                            w,
-                            cx,
-                            label,
-                            (b.origin, (cx_, cy - line / 2.0)),
-                            room,
-                            inks[k],
-                        )
-                    {
-                        text.centred(
-                            w,
-                            cx,
-                            &value,
-                            (b.origin, (cx_, cy + line / 2.0)),
-                            room,
-                            inks[k],
-                        );
-                    } else if s >= line * 1.6 {
-                        text.centred(w, cx, label, (b.origin, (cx_, cy)), room, inks[k]);
-                    }
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, cx| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            let values: Vec<f32> = paint_items.iter().map(|i| i.2).collect();
+            let sq = square_pack(&values, bh / bw.max(1.0));
+            // Largest first, as packed.
+            let mut order: Vec<usize> = (0..sq.len()).collect();
+            order.sort_by(|a, b| sq[*b].side.total_cmp(&sq[*a].side));
+            let at: Vec<(f32, f32, f32)> = sq
+                .iter()
+                .map(|s| (s.x * bw, s.y * bw, s.side * bw))
+                .collect();
+            for (rank, &i) in order.iter().enumerate() {
+                let (x, y, side) = at[i];
+                let gi = dodai_core::motion::reveal(g, rank, order.len());
+                let s = (side - gap) * gi;
+                if s <= 0.5 {
+                    continue;
                 }
-                *painted.borrow_mut() = at;
-            },
-        )
+                let lk = looks[i];
+                let k = paint_items[i].0;
+                let (cx_, cy) = (x + side / 2.0, y + side / 2.0);
+                let (x0, y0) = (cx_ - s / 2.0, cy - s / 2.0);
+                fill(
+                    w,
+                    b.origin,
+                    &crate::common::rect(x0, y0, s, s),
+                    scale_alpha(cols[k], 0.9 * lk.alpha),
+                );
+                if gi < 1.0 {
+                    continue;
+                }
+                let room = s - 8.0;
+                let label = &paint_items[i].1;
+                let value = fmt_with(&fmt, paint_items[i].2);
+                // Label and value when two lines fit, else the label alone.
+                let line = text.size_line();
+                if s >= line * 3.0
+                    && text.centred(
+                        w,
+                        cx,
+                        label,
+                        (b.origin, (cx_, cy - line / 2.0)),
+                        room,
+                        inks[k],
+                    )
+                {
+                    text.centred(
+                        w,
+                        cx,
+                        &value,
+                        (b.origin, (cx_, cy + line / 2.0)),
+                        room,
+                        inks[k],
+                    );
+                } else if s >= line * 1.6 {
+                    text.centred(w, cx, label, (b.origin, (cx_, cy)), room, inks[k]);
+                }
+            }
+            *painted.borrow_mut() = at;
+        })
         .absolute()
         .size_full();
-        let plot = div()
-            .id(self.follow.sub("squares").element_id(window, cx))
-            .relative()
-            .w_full()
-            .h(px(self.height))
-            .child(cv);
+        let plot = plot_box(
+            self.follow.sub("squares").element_id(window, cx),
+            self.height,
+            cv,
+        );
         let plot = focus.pointer(plot, &bounds, move |x, y, _, _| {
             rects.borrow().iter().position(|(rx, ry, s)| {
                 *s > 0.0 && (*rx..rx + s).contains(&x) && (*ry..ry + s).contains(&y)
@@ -520,59 +507,53 @@ impl CirclePack {
         let ph = hit.clone();
         let hit_geo: Vec<(f32, f32, f32)> = discs.iter().map(|d| (d.x, d.y, d.r)).collect();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, cx| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                let side = bw.min(bh);
-                let (ox, oy) = ((bw - side) / 2.0, (bh - side) / 2.0);
-                ph.set((ox, oy, side));
-                for (i, (x, y, r, depth, leaf, label)) in geo.iter().enumerate() {
-                    // Levels open outwards in: rings first, then what they hold.
-                    let gi = dodai_core::motion::reveal(g, *depth, levels);
-                    if gi <= 0.0 {
-                        continue;
-                    }
-                    let lk = looks[i];
-                    let (cx_, cy, rr) = (ox + x * side, oy + y * side, r * side * gi);
-                    let ring = marker_points(Marker::Dot, cx_, cy, rr);
-                    let (body, rim, ink) = style[i];
-                    let alpha = if *leaf { 0.9 } else { 1.0 } * lk.alpha;
-                    fill(w, b.origin, &ring, scale_alpha(body, alpha));
-                    if !leaf || lk.lift > 0.0 {
-                        let rim = if *leaf { ink } else { rim };
-                        stroke(
-                            w,
-                            b.origin,
-                            &ring,
-                            1.0 + lk.lift,
-                            scale_alpha(rim, lk.alpha),
-                            true,
-                        );
-                    }
-                    if gi < 1.0 {
-                        continue;
-                    }
-                    if *leaf {
-                        text.centred(w, cx, label, (b.origin, (cx_, cy)), 2.0 * rr - 6.0, ink);
-                    } else if *depth == 0 {
-                        // A branch's name sits just inside its top edge.
-                        let at = (cx_, cy - rr + text.size_line());
-                        text.centred(w, cx, label, (b.origin, at), rr * 1.2, ink);
-                    }
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, cx| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            let side = bw.min(bh);
+            let (ox, oy) = ((bw - side) / 2.0, (bh - side) / 2.0);
+            ph.set((ox, oy, side));
+            for (i, (x, y, r, depth, leaf, label)) in geo.iter().enumerate() {
+                // Levels open outwards in: rings first, then what they hold.
+                let gi = dodai_core::motion::reveal(g, *depth, levels);
+                if gi <= 0.0 {
+                    continue;
                 }
-            },
-        )
+                let lk = looks[i];
+                let (cx_, cy, rr) = (ox + x * side, oy + y * side, r * side * gi);
+                let ring = marker_points(Marker::Dot, cx_, cy, rr);
+                let (body, rim, ink) = style[i];
+                let alpha = if *leaf { 0.9 } else { 1.0 } * lk.alpha;
+                fill(w, b.origin, &ring, scale_alpha(body, alpha));
+                if !leaf || lk.lift > 0.0 {
+                    let rim = if *leaf { ink } else { rim };
+                    stroke(
+                        w,
+                        b.origin,
+                        &ring,
+                        1.0 + lk.lift,
+                        scale_alpha(rim, lk.alpha),
+                        true,
+                    );
+                }
+                if gi < 1.0 {
+                    continue;
+                }
+                if *leaf {
+                    text.centred(w, cx, label, (b.origin, (cx_, cy)), 2.0 * rr - 6.0, ink);
+                } else if *depth == 0 {
+                    // A branch's name sits just inside its top edge.
+                    let at = (cx_, cy - rr + text.size_line());
+                    text.centred(w, cx, label, (b.origin, at), rr * 1.2, ink);
+                }
+            }
+        })
         .absolute()
         .size_full();
-        let plot = div()
-            .id(self.follow.sub("pack").element_id(window, cx))
-            .relative()
-            .w_full()
-            .h(px(self.height))
-            .child(cv);
+        let plot = plot_box(
+            self.follow.sub("pack").element_id(window, cx),
+            self.height,
+            cv,
+        );
         let plot = focus.pointer(plot, &bounds, move |x, y, _, _| {
             let (ox, oy, side) = hit.get();
             let (u, v) = ((x - ox) / side.max(1.0), (y - oy) / side.max(1.0));

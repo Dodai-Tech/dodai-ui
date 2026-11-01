@@ -2,8 +2,9 @@
 //! [`ChordDiagram`] and [`ArcDiagram`].
 
 use crate::common::{
-    chart_cfg, fill, fmt_with, label_column, label_style, marker_points, nice_ticks, norm, polar,
-    stroke, tick_row, titled, turn_arc, CanvasText, Marker, NumFmt,
+    chart_cfg, fill, fmt_with, label_column, label_style, marker_points, nice_ticks, norm,
+    plot_box, polar, stroke, tick_row, titled, tracked_canvas, turn_arc, CanvasText, Marker,
+    NumFmt,
 };
 use crate::focus::{readout, Focus};
 use dodai_charts_core::{
@@ -14,8 +15,8 @@ use dodai_charts_core::{
 use dodai_gpui::paint::scale_alpha;
 use dodai_gpui::{hsla, theme_of};
 use gpui::{
-    canvas, div, px, relative, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement,
-    Pixels, SharedString, Styled, Window,
+    div, px, relative, App, Bounds, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels,
+    SharedString, Styled, Window,
 };
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -164,65 +165,59 @@ impl ParallelCoordinates {
             .collect();
         let hit_lines = lines.clone();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
         let x_of = move |k: usize, bw: f32| k as f32 / (na - 1) as f32 * bw;
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                for k in 0..na {
-                    let x = x_of(k, bw);
-                    stroke(w, b.origin, &[(x, 0.0), (x, bh)], 1.5, axis, false);
-                }
-                // Lines draw left to right as they grow; the focused one on top.
-                let mut order: Vec<usize> = (0..lines.len()).collect();
-                order.sort_by(|a, b| looks[*a].lift.total_cmp(&looks[*b].lift));
-                for i in order {
-                    let lk = looks[i];
-                    let p: Vec<(f32, f32)> = lines[i]
-                        .iter()
-                        .enumerate()
-                        .filter_map(|(k, f)| f.map(|f| (x_of(k, bw), bh * (1.0 - f))))
-                        .collect();
-                    let reach = g * bw;
-                    let mut shown: Vec<(f32, f32)> = Vec::new();
-                    for pair in p.windows(2) {
-                        let (a, z) = (pair[0], pair[1]);
-                        if a.0 > reach {
-                            break;
-                        }
-                        if shown.is_empty() {
-                            shown.push(a);
-                        }
-                        if z.0 <= reach {
-                            shown.push(z);
-                        } else {
-                            let f = (reach - a.0) / (z.0 - a.0).max(1e-3);
-                            shown.push((reach, a.1 + (z.1 - a.1) * f));
-                            break;
-                        }
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            for k in 0..na {
+                let x = x_of(k, bw);
+                stroke(w, b.origin, &[(x, 0.0), (x, bh)], 1.5, axis, false);
+            }
+            // Lines draw left to right as they grow; the focused one on top.
+            let mut order: Vec<usize> = (0..lines.len()).collect();
+            order.sort_by(|a, b| looks[*a].lift.total_cmp(&looks[*b].lift));
+            for i in order {
+                let lk = looks[i];
+                let p: Vec<(f32, f32)> = lines[i]
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(k, f)| f.map(|f| (x_of(k, bw), bh * (1.0 - f))))
+                    .collect();
+                let reach = g * bw;
+                let mut shown: Vec<(f32, f32)> = Vec::new();
+                for pair in p.windows(2) {
+                    let (a, z) = (pair[0], pair[1]);
+                    if a.0 > reach {
+                        break;
                     }
-                    let alpha = lk.alpha * (0.55 + 0.45 * lk.lift.min(1.0));
-                    stroke(
-                        w,
-                        b.origin,
-                        &shown,
-                        1.5 + lk.lift * 1.5,
-                        scale_alpha(cols[i], alpha),
-                        false,
-                    );
+                    if shown.is_empty() {
+                        shown.push(a);
+                    }
+                    if z.0 <= reach {
+                        shown.push(z);
+                    } else {
+                        let f = (reach - a.0) / (z.0 - a.0).max(1e-3);
+                        shown.push((reach, a.1 + (z.1 - a.1) * f));
+                        break;
+                    }
                 }
-            },
-        )
+                let alpha = lk.alpha * (0.55 + 0.45 * lk.lift.min(1.0));
+                stroke(
+                    w,
+                    b.origin,
+                    &shown,
+                    1.5 + lk.lift * 1.5,
+                    scale_alpha(cols[i], alpha),
+                    false,
+                );
+            }
+        })
         .absolute()
         .size_full();
-        let plot = div()
-            .id(self.follow.sub("lines").element_id(window, cx))
-            .relative()
-            .w_full()
-            .h(px(self.height))
-            .child(cv);
+        let plot = plot_box(
+            self.follow.sub("lines").element_id(window, cx),
+            self.height,
+            cv,
+        );
         let plot = focus.pointer(plot, &bounds, move |x, y, w, h| {
             hit_lines
                 .iter()
@@ -395,30 +390,25 @@ impl Hexbin {
         let focus = Focus::new(window, cx, &self.follow, 0);
         let hover = focus.shown(cx);
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                for k in 1..yt.len().saturating_sub(1) {
-                    let y = bh * (1.0 - k as f32 / (yt.len() - 1) as f32);
-                    crate::common::grid_line(w, b.origin, (0.0, y), (bw, y), &style);
-                }
-                let pts: Vec<(f32, f32)> = fin
-                    .iter()
-                    .map(|(x, y)| (norm(*x, x0, x1) * bw, bh * (1.0 - norm(*y, y0, y1))))
-                    .collect();
-                let hexes = hexbin(&pts, r);
-                let top = hexes.iter().map(|h| h.count).max().unwrap_or(1).max(1);
-                for (i, h) in hexes.iter().enumerate() {
-                    let f = h.count as f32 / top as f32;
-                    let size = (r - 0.75) * g * if hover == Some(i) { 1.15 } else { 1.0 };
-                    fill(w, b.origin, &hex_corners(h.x, h.y, size), shade(f.sqrt()));
-                }
-                *painted.borrow_mut() = hexes;
-            },
-        )
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            for k in 1..yt.len().saturating_sub(1) {
+                let y = bh * (1.0 - k as f32 / (yt.len() - 1) as f32);
+                crate::common::grid_line(w, b.origin, (0.0, y), (bw, y), &style);
+            }
+            let pts: Vec<(f32, f32)> = fin
+                .iter()
+                .map(|(x, y)| (norm(*x, x0, x1) * bw, bh * (1.0 - norm(*y, y0, y1))))
+                .collect();
+            let hexes = hexbin(&pts, r);
+            let top = hexes.iter().map(|h| h.count).max().unwrap_or(1).max(1);
+            for (i, h) in hexes.iter().enumerate() {
+                let f = h.count as f32 / top as f32;
+                let size = (r - 0.75) * g * if hover == Some(i) { 1.15 } else { 1.0 };
+                fill(w, b.origin, &hex_corners(h.x, h.y, size), shade(f.sqrt()));
+            }
+            *painted.borrow_mut() = hexes;
+        })
         .absolute()
         .size_full();
         let plot = div()
@@ -568,57 +558,51 @@ impl NetworkGraph {
         let hit_size = size.clone();
         let edge = hsla(t.palette.surface);
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
         let place = move |p: (f32, f32), bw: f32, bh: f32| {
             // Grows out of the middle.
             let (x, y) = (0.5 + (p.0 - 0.5) * g, 0.5 + (p.1 - 0.5) * g);
             (x * bw, y * bh)
         };
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                for &(a, z, wt) in &links {
-                    let (Some(pa), Some(pz)) = (paint_pos.get(a), paint_pos.get(z)) else {
-                        continue;
-                    };
-                    if !wt.is_finite() || a == z {
-                        continue;
-                    }
-                    let lit = shown.is_none_or(|s| s == a || s == z);
-                    let alpha = if lit { 0.35 + 0.4 * (wt / wmax) } else { 0.08 };
-                    stroke(
-                        w,
-                        b.origin,
-                        &[place(*pa, bw, bh), place(*pz, bw, bh)],
-                        1.0 + 2.0 * (wt / wmax).clamp(0.0, 1.0),
-                        scale_alpha(link_col, alpha),
-                        false,
-                    );
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            for &(a, z, wt) in &links {
+                let (Some(pa), Some(pz)) = (paint_pos.get(a), paint_pos.get(z)) else {
+                    continue;
+                };
+                if !wt.is_finite() || a == z {
+                    continue;
                 }
-                for (i, p) in paint_pos.iter().enumerate() {
-                    let (x, y) = place(*p, bw, bh);
-                    let r = paint_size[i] * if shown == Some(i) { 1.3 } else { 1.0 };
-                    let c = scale_alpha(cols[i], if paint_near[i] { 1.0 } else { 0.25 });
-                    fill(
-                        w,
-                        b.origin,
-                        &marker_points(Marker::Dot, x, y, r + 1.5),
-                        edge,
-                    );
-                    fill(w, b.origin, &marker_points(Marker::Dot, x, y, r), c);
-                }
-            },
-        )
+                let lit = shown.is_none_or(|s| s == a || s == z);
+                let alpha = if lit { 0.35 + 0.4 * (wt / wmax) } else { 0.08 };
+                stroke(
+                    w,
+                    b.origin,
+                    &[place(*pa, bw, bh), place(*pz, bw, bh)],
+                    1.0 + 2.0 * (wt / wmax).clamp(0.0, 1.0),
+                    scale_alpha(link_col, alpha),
+                    false,
+                );
+            }
+            for (i, p) in paint_pos.iter().enumerate() {
+                let (x, y) = place(*p, bw, bh);
+                let r = paint_size[i] * if shown == Some(i) { 1.3 } else { 1.0 };
+                let c = scale_alpha(cols[i], if paint_near[i] { 1.0 } else { 0.25 });
+                fill(
+                    w,
+                    b.origin,
+                    &marker_points(Marker::Dot, x, y, r + 1.5),
+                    edge,
+                );
+                fill(w, b.origin, &marker_points(Marker::Dot, x, y, r), c);
+            }
+        })
         .absolute()
         .size_full();
-        let mut plot = div()
-            .id(self.follow.sub("graph").element_id(window, cx))
-            .relative()
-            .w_full()
-            .h(px(self.height))
-            .child(cv);
+        let mut plot = plot_box(
+            self.follow.sub("graph").element_id(window, cx),
+            self.height,
+            cv,
+        );
         // Names beside the bigger nodes (and any focused one).
         let label_at = top * 0.35;
         for (i, name) in self.nodes.iter().enumerate() {
@@ -737,86 +721,81 @@ impl ChordDiagram {
         let (ink, muted) = (hsla(t.palette.text), hsla(t.palette.text_muted));
         let gap = t.spacing.xs;
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, cx| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                let (cx_, cy_) = (bw / 2.0, bh / 2.0);
-                let outer = ((bw / 2.0 - side).min(bh / 2.0 - above) - gap).max(8.0);
-                let band = (outer * 0.07).clamp(6.0, 14.0);
-                let inner = outer - band;
-                // Ribbons stop short of the arcs, so each arc reads as a clean band.
-                let reach = inner - gap;
-                let c = (cx_, cy_);
-                for r in &paint.ribbons {
-                    let lit = shown.is_none_or(|s| s == r.from || s == r.to);
-                    let (s0, s1) = (r.source.0 * g, r.source.1 * g);
-                    let (t0, t1) = (r.target.0 * g, r.target.1 * g);
-                    let mut p = turn_arc(cx_, cy_, reach, s0, s1);
-                    if r.from == r.to {
-                        // Flow that stays: a short loop just inside its own arc.
-                        let tip = polar(cx_, cy_, reach * 0.55, (s0 + s1) / 2.0);
-                        p.extend(quad(
-                            polar(cx_, cy_, reach, s1),
-                            tip,
-                            polar(cx_, cy_, reach, s0),
-                            24,
-                        ));
-                    } else {
-                        p.extend(quad(
-                            polar(cx_, cy_, reach, s1),
-                            c,
-                            polar(cx_, cy_, reach, t0),
-                            32,
-                        ));
-                        p.extend(turn_arc(cx_, cy_, reach, t0, t1));
-                        p.extend(quad(
-                            polar(cx_, cy_, reach, t1),
-                            c,
-                            polar(cx_, cy_, reach, s0),
-                            32,
-                        ));
-                    }
-                    // A ribbon takes the colour of the side that sends more.
-                    let col = cols[if s1 - s0 >= t1 - t0 { r.from } else { r.to }];
-                    // Flow that stays is quieter than flow that moves.
-                    let calm = if r.from == r.to { 0.45 } else { 1.0 };
-                    let (body, edge) = if lit {
-                        (0.5 * calm, 0.85 * calm)
-                    } else {
-                        (0.06, 0.12)
-                    };
-                    fill(w, b.origin, &p, scale_alpha(col, body));
-                    stroke(w, b.origin, &p, 1.0, scale_alpha(col, edge), true);
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, cx| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            let (cx_, cy_) = (bw / 2.0, bh / 2.0);
+            let outer = ((bw / 2.0 - side).min(bh / 2.0 - above) - gap).max(8.0);
+            let band = (outer * 0.07).clamp(6.0, 14.0);
+            let inner = outer - band;
+            // Ribbons stop short of the arcs, so each arc reads as a clean band.
+            let reach = inner - gap;
+            let c = (cx_, cy_);
+            for r in &paint.ribbons {
+                let lit = shown.is_none_or(|s| s == r.from || s == r.to);
+                let (s0, s1) = (r.source.0 * g, r.source.1 * g);
+                let (t0, t1) = (r.target.0 * g, r.target.1 * g);
+                let mut p = turn_arc(cx_, cy_, reach, s0, s1);
+                if r.from == r.to {
+                    // Flow that stays: a short loop just inside its own arc.
+                    let tip = polar(cx_, cy_, reach * 0.55, (s0 + s1) / 2.0);
+                    p.extend(quad(
+                        polar(cx_, cy_, reach, s1),
+                        tip,
+                        polar(cx_, cy_, reach, s0),
+                        24,
+                    ));
+                } else {
+                    p.extend(quad(
+                        polar(cx_, cy_, reach, s1),
+                        c,
+                        polar(cx_, cy_, reach, t0),
+                        32,
+                    ));
+                    p.extend(turn_arc(cx_, cy_, reach, t0, t1));
+                    p.extend(quad(
+                        polar(cx_, cy_, reach, t1),
+                        c,
+                        polar(cx_, cy_, reach, s0),
+                        32,
+                    ));
                 }
-                for (i, (a, e)) in paint.groups.iter().enumerate() {
-                    let (a, e) = (a * g, e * g);
-                    if e - a < 1e-4 {
-                        continue;
-                    }
-                    let lift = if shown == Some(i) { gap } else { 0.0 };
-                    let mut p = turn_arc(cx_, cy_, outer + lift, a, e);
-                    p.extend(turn_arc(cx_, cy_, inner, e, a));
-                    fill(w, b.origin, &p, cols[i]);
-                    if g < 1.0 {
-                        continue;
-                    }
-                    let mid = (a + e) / 2.0;
-                    let (px_, py_) = polar(0.0, 0.0, 1.0, mid);
-                    let at = polar(cx_, cy_, outer + lift + gap, mid);
-                    let col = if shown.is_none_or(|s| s == i) {
-                        ink
-                    } else {
-                        muted
-                    };
-                    if let Some(name) = names.get(i) {
-                        text.beside(w, cx, name, (b.origin, at), (px_, py_), col);
-                    }
+                // A ribbon takes the colour of the side that sends more.
+                let col = cols[if s1 - s0 >= t1 - t0 { r.from } else { r.to }];
+                // Flow that stays is quieter than flow that moves.
+                let calm = if r.from == r.to { 0.45 } else { 1.0 };
+                let (body, edge) = if lit {
+                    (0.5 * calm, 0.85 * calm)
+                } else {
+                    (0.06, 0.12)
+                };
+                fill(w, b.origin, &p, scale_alpha(col, body));
+                stroke(w, b.origin, &p, 1.0, scale_alpha(col, edge), true);
+            }
+            for (i, (a, e)) in paint.groups.iter().enumerate() {
+                let (a, e) = (a * g, e * g);
+                if e - a < 1e-4 {
+                    continue;
                 }
-            },
-        )
+                let lift = if shown == Some(i) { gap } else { 0.0 };
+                let mut p = turn_arc(cx_, cy_, outer + lift, a, e);
+                p.extend(turn_arc(cx_, cy_, inner, e, a));
+                fill(w, b.origin, &p, cols[i]);
+                if g < 1.0 {
+                    continue;
+                }
+                let mid = (a + e) / 2.0;
+                let (px_, py_) = polar(0.0, 0.0, 1.0, mid);
+                let at = polar(cx_, cy_, outer + lift + gap, mid);
+                let col = if shown.is_none_or(|s| s == i) {
+                    ink
+                } else {
+                    muted
+                };
+                if let Some(name) = names.get(i) {
+                    text.beside(w, cx, name, (b.origin, at), (px_, py_), col);
+                }
+            }
+        })
         .absolute()
         .size_full();
         let disc = div()
@@ -921,65 +900,59 @@ impl ArcDiagram {
             .max(1e-6);
         let x_of = move |i: usize, bw: f32| (i as f32 + 0.5) / n.max(1) as f32 * bw;
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
         let paint_deg = deg.clone();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                let base = bh - 10.0;
-                // The widest arc fits the height; the rest keep its proportions.
-                let widest = links
-                    .iter()
-                    .map(|l| (x_of(l.0, bw) - x_of(l.1, bw)).abs() / 2.0)
-                    .fold(1.0f32, f32::max);
-                let squash = ((base - 4.0) / widest).min(1.0);
-                for &(a, z, wt) in &links {
-                    if a >= n || z >= n || a == z || !wt.is_finite() {
-                        continue;
-                    }
-                    let (xa, xz) = (x_of(a, bw), x_of(z, bw));
-                    let (mid, r) = ((xa + xz) / 2.0, (xz - xa).abs() / 2.0);
-                    let steps = 32;
-                    let p: Vec<(f32, f32)> = (0..=((steps as f32 * g) as usize))
-                        .map(|k| {
-                            let th = std::f32::consts::PI * k as f32 / steps as f32;
-                            let from = if xa < xz { -1.0 } else { 1.0 };
-                            (mid + from * r * th.cos(), base - r * th.sin() * squash)
-                        })
-                        .collect();
-                    let lit = shown.is_none_or(|s| s == a || s == z);
-                    stroke(
-                        w,
-                        b.origin,
-                        &p,
-                        1.0 + 3.0 * (wt / wmax).clamp(0.0, 1.0),
-                        scale_alpha(cols[a.min(z)], if lit { 0.7 } else { 0.1 }),
-                        false,
-                    );
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            let base = bh - 10.0;
+            // The widest arc fits the height; the rest keep its proportions.
+            let widest = links
+                .iter()
+                .map(|l| (x_of(l.0, bw) - x_of(l.1, bw)).abs() / 2.0)
+                .fold(1.0f32, f32::max);
+            let squash = ((base - 4.0) / widest).min(1.0);
+            for &(a, z, wt) in &links {
+                if a >= n || z >= n || a == z || !wt.is_finite() {
+                    continue;
                 }
-                for i in 0..n {
-                    let r = 3.0
-                        + 5.0 * (paint_deg[i] / top).sqrt()
-                        + if shown == Some(i) { 2.0 } else { 0.0 };
-                    fill(
-                        w,
-                        b.origin,
-                        &marker_points(Marker::Dot, x_of(i, bw), base, r),
-                        cols[i],
-                    );
-                }
-            },
-        )
+                let (xa, xz) = (x_of(a, bw), x_of(z, bw));
+                let (mid, r) = ((xa + xz) / 2.0, (xz - xa).abs() / 2.0);
+                let steps = 32;
+                let p: Vec<(f32, f32)> = (0..=((steps as f32 * g) as usize))
+                    .map(|k| {
+                        let th = std::f32::consts::PI * k as f32 / steps as f32;
+                        let from = if xa < xz { -1.0 } else { 1.0 };
+                        (mid + from * r * th.cos(), base - r * th.sin() * squash)
+                    })
+                    .collect();
+                let lit = shown.is_none_or(|s| s == a || s == z);
+                stroke(
+                    w,
+                    b.origin,
+                    &p,
+                    1.0 + 3.0 * (wt / wmax).clamp(0.0, 1.0),
+                    scale_alpha(cols[a.min(z)], if lit { 0.7 } else { 0.1 }),
+                    false,
+                );
+            }
+            for i in 0..n {
+                let r = 3.0
+                    + 5.0 * (paint_deg[i] / top).sqrt()
+                    + if shown == Some(i) { 2.0 } else { 0.0 };
+                fill(
+                    w,
+                    b.origin,
+                    &marker_points(Marker::Dot, x_of(i, bw), base, r),
+                    cols[i],
+                );
+            }
+        })
         .absolute()
         .size_full();
-        let plot = div()
-            .id(self.follow.sub("arcs").element_id(window, cx))
-            .relative()
-            .w_full()
-            .h(px(self.height))
-            .child(cv);
+        let plot = plot_box(
+            self.follow.sub("arcs").element_id(window, cx),
+            self.height,
+            cv,
+        );
         let plot = focus.pointer(plot, &bounds, move |x, _, w, _| {
             let i = (x / w.max(1.0) * n as f32) as usize;
             (i < n).then_some(i)

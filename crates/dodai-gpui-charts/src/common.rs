@@ -587,6 +587,32 @@ impl Groups {
     }
 }
 
+/// A canvas that records its bounds into `bounds` (for [`Focus::pointer`](crate::focus::Focus::pointer))
+/// and then paints with `paint`.
+pub(crate) fn tracked_canvas(
+    bounds: &Rc<std::cell::Cell<gpui::Bounds<Pixels>>>,
+    paint: impl FnOnce(gpui::Bounds<Pixels>, &mut gpui::Window, &mut App) + 'static,
+) -> impl IntoElement + Styled {
+    let store = bounds.clone();
+    gpui::canvas(
+        |_, _, _| (),
+        move |b, _, w, cx| {
+            store.set(b);
+            paint(b, w, cx)
+        },
+    )
+}
+
+/// The positioned, full-width box of `height` px a chart's canvas sits in.
+pub(crate) fn plot_box(
+    id: impl Into<gpui::ElementId>,
+    height: f32,
+    child: impl IntoElement,
+) -> gpui::Stateful<gpui::Div> {
+    use gpui::InteractiveElement as _;
+    div().id(id).relative().w_full().h(px(height)).child(child)
+}
+
 /// Whether boxes `a` and `b` (`[left, top, right, bottom]`) overlap; touching edges don't.
 pub(crate) fn overlaps(a: &[f32; 4], b: &[f32; 4]) -> bool {
     a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3]

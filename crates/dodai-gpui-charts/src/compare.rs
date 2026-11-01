@@ -2,8 +2,8 @@
 //! dumbbell form) and [`SlopeChart`].
 
 use crate::common::{
-    chart_cfg, down_color, fmt_with, framed, label_style, nice_ticks, norm, titled, up_color,
-    Legend, NumFmt,
+    chart_cfg, down_color, fmt_with, framed, label_style, nice_ticks, norm, titled, tracked_canvas,
+    up_color, Legend, NumFmt,
 };
 use crate::focus::{readout, Focus};
 use dodai_core::Color;
@@ -606,28 +606,23 @@ impl SlopeChart {
             ))
         });
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
-        let pb = bounds.clone();
         let lines2 = lines.clone();
         let hit_lines: Vec<(f32, f32)> = lines.iter().map(|l| (l.0, l.1)).collect();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                pb.set(b);
-                let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
-                for (i, (a, c, col)) in lines2.iter().enumerate() {
-                    let (alpha, lift) = looks[i];
-                    let (ya, yc) = (bh - a * bh, bh - (a + (c - a) * g) * bh);
-                    stroke(
-                        w,
-                        b.origin,
-                        &[(0.0, ya), (bw * g, yc)],
-                        2.0 + 1.5 * lift,
-                        scale_alpha(*col, alpha),
-                        false,
-                    );
-                }
-            },
-        )
+        let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            for (i, (a, c, col)) in lines2.iter().enumerate() {
+                let (alpha, lift) = looks[i];
+                let (ya, yc) = (bh - a * bh, bh - (a + (c - a) * g) * bh);
+                stroke(
+                    w,
+                    b.origin,
+                    &[(0.0, ya), (bw * g, yc)],
+                    2.0 + 1.5 * lift,
+                    scale_alpha(*col, alpha),
+                    false,
+                );
+            }
+        })
         .absolute()
         .size_full();
         // The line nearest the pointer, within a finger's reach.
