@@ -182,6 +182,13 @@ impl Moves {
     }
 }
 
+/// Outline of the Material switch track, checkbox box and radio ring, px.
+const OUTLINE: f32 = 2.0;
+/// Size of the check / dash glyph in a classic checkbox, as a share of its box.
+const CHECK_MARK: f32 = 0.72;
+/// The same in a Material checkbox.
+const M3_CHECK_MARK: f32 = 0.78;
+
 pub(super) fn choice(mut c: Choice, window: &mut Window, cx: &mut App) -> gpui::AnyElement {
     // Works controlled or not (see `own`).
     let own = crate::own::Own::new(window, cx, c.id.clone(), c.on);
@@ -267,7 +274,7 @@ pub(super) fn choice(mut c: Choice, window: &mut Window, cx: &mut App) -> gpui::
                     .relative()
                     .left(px(m.dx))
                     .text_color(hsla(k.thumb).opacity(m.opacity.min(1.0)))
-                    .text_size(px((h - 6.0) * m.scale.max(0.0)))
+                    .text_size(px(h * CHECK_MARK * m.scale.max(0.0)))
                     .child(if mixed { "−" } else { "✓" }),
             ),
             _ => el,
@@ -357,12 +364,12 @@ impl M3Look<'_> {
         let ends = (th / 2.0 - size / 2.0, tw - th / 2.0 - size / 2.0, size);
         let (left, width) = moves.thumb(window, cx, &id, on, ends);
         let centre = left + width / 2.0;
-        // Absolute children sit inside the 2 px outline.
+        // Absolute children sit inside the outline.
         let (ls, lst) = self.layer_style(sz.state_layer);
         let mut track_style = ShapeStyle::from_tokens(t, None, None, false, false);
         track_style.fill = Some(track_c);
         track_style.stroke = Some(border_c);
-        track_style.stroke_width = 2.0;
+        track_style.stroke_width = OUTLINE;
         let mut handle = ShapeStyle::from_tokens(t, None, None, false, false);
         handle.fill = Some(thumb_c);
         track(
@@ -376,16 +383,16 @@ impl M3Look<'_> {
         .child(
             shaped(&ls, lst)
                 .absolute()
-                .left(px(centre - sz.state_layer / 2.0 - 2.0))
-                .top(px(-(sz.state_layer - th) / 2.0 - 2.0))
+                .left(px(centre - sz.state_layer / 2.0 - OUTLINE))
+                .top(px(-(sz.state_layer - th) / 2.0 - OUTLINE))
                 .w(px(sz.state_layer))
                 .h(px(sz.state_layer)),
         )
         .child({
             let mut h = shaped(&round_shape(&t.shape, size), handle)
                 .absolute()
-                .left(px(left - 2.0))
-                .top(px((th - size) / 2.0 - 2.0))
+                .left(px(left - OUTLINE))
+                .top(px((th - size) / 2.0 - OUTLINE))
                 .w(px(width))
                 .h(px(size));
             if icons {
@@ -438,7 +445,7 @@ impl M3Look<'_> {
         let mut ring = ShapeStyle::from_tokens(t, None, None, false, false);
         ring.fill = Some(track_c);
         ring.stroke = Some(border_c);
-        ring.stroke_width = 2.0;
+        ring.stroke_width = OUTLINE;
         if kind == Kind::Checkbox {
             // Selected: no outline (the container is filled).
             if p > 0.5 {
@@ -456,7 +463,7 @@ impl M3Look<'_> {
                 .items_center()
                 .justify_center()
                 .text_color(thumb_c.opacity(mark.opacity.min(1.0)))
-                .text_size(px(bx * 0.78 * mark.scale.max(0.0)));
+                .text_size(px(bx * M3_CHECK_MARK * mark.scale.max(0.0)));
             if mark.opacity > 0.01 {
                 b = b.child(div().relative().left(px(mark.dx)).child(if mixed {
                     "−"
@@ -466,7 +473,7 @@ impl M3Look<'_> {
             }
             outer.child(b)
         } else {
-            let d = bx + 2.0;
+            let d = bx + OUTLINE;
             let mut b = shaped(&round_shape(&t.shape, d), ring)
                 .w(px(d))
                 .h(px(d))

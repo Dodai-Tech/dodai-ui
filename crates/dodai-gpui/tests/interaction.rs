@@ -1431,3 +1431,94 @@ fn code_block_double_click_selects_a_word(cx: &mut TestAppContext) {
     vcx.run_until_parked();
     assert_eq!(copied(vcx).as_deref(), Some("alpha"));
 }
+
+// ───────────────────────────── navigation drawer, rail and bar ─────────────────────────────
+
+/// Clicks along `from..to` (a line of `along` px steps of `step`) and returns the order in
+/// which the destinations reported a click: each one once, first hit only.
+fn sweep(
+    vcx: &mut VisualTestContext,
+    log: &Log,
+    at: impl Fn(f32) -> (f32, f32),
+    range: std::ops::Range<f32>,
+    step: f32,
+) -> Vec<usize> {
+    let mut order = Vec::new();
+    let mut v = range.start;
+    while v < range.end {
+        log.borrow_mut().clear();
+        let (x, y) = at(v);
+        click(vcx, x, y);
+        for i in log.borrow().iter() {
+            if !order.contains(i) {
+                order.push(*i);
+            }
+        }
+        v += step;
+    }
+    order
+}
+
+fn destinations(log: &Log) -> Vec<NavigationItem> {
+    (0..3)
+        .map(|i| {
+            let l = log.clone();
+            NavigationItem::new(("nav-dest", i), ["Home", "Search", "Library"][i])
+                .selected(i == 1)
+                .on_click(move |_, _, _| l.borrow_mut().push(i))
+        })
+        .collect()
+}
+
+#[gpui::test]
+fn navigation_drawer_rows_click_in_order(cx: &mut TestAppContext) {
+    let l = log();
+    let l2 = l.clone();
+    let vcx = mount(cx, move |_, _| {
+        destinations(&l2)
+            .into_iter()
+            .fold(NavigationDrawer::new().width(240.0), |d, i| d.item(i))
+            .into_any_element()
+    });
+    let (x, y, w, h) = target(vcx);
+    let order = sweep(vcx, &l, |v| (x + w / 2.0, v), y..y + h, 2.0);
+    assert_eq!(
+        order,
+        vec![0, 1, 2],
+        "each row reports its own click, top to bottom"
+    );
+}
+
+#[gpui::test]
+fn navigation_rail_destinations_click_in_order(cx: &mut TestAppContext) {
+    let l = log();
+    let l2 = l.clone();
+    let vcx = mount(cx, move |_, _| {
+        destinations(&l2)
+            .into_iter()
+            .fold(NavigationRail::new(), |d, i| d.item(i))
+            .into_any_element()
+    });
+    let (x, y, w, h) = target(vcx);
+    let order = sweep(vcx, &l, |v| (x + w / 2.0, v), y..y + h, 2.0);
+    assert_eq!(order, vec![0, 1, 2], "rail destinations, top to bottom");
+}
+
+#[gpui::test]
+fn navigation_bar_destinations_click_in_order(cx: &mut TestAppContext) {
+    let l = log();
+    let l2 = l.clone();
+    let vcx = mount(cx, move |_, _| {
+        div()
+            .w(px(480.0))
+            .child(
+                destinations(&l2)
+                    .into_iter()
+                    .fold(NavigationBar::new(), |d, i| d.item(i)),
+            )
+            .into_any_element()
+    });
+    let (x, y, w, h) = target(vcx);
+    let order = sweep(vcx, &l, |v| (v, y + h / 2.0), x..x + w, 4.0);
+    assert_eq!(order, vec![0, 1, 2], "bar destinations, left to right");
+}
