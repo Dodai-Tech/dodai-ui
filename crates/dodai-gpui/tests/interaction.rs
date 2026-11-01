@@ -1568,3 +1568,20 @@ fn narrow_shell_drawer_closes_from_its_own_icon(cx: &mut TestAppContext) {
     vcx.run_until_parked();
     assert!(!shown.get(), "the icon closes it");
 }
+
+#[gpui::test]
+fn a_click_anywhere_marks_recent_input_for_the_motion_clock(cx: &mut TestAppContext) {
+    let vcx = mount(cx, |_, _| {
+        div()
+            .w(px(200.0))
+            .h(px(200.0))
+            .child(dodai_gpui::motion::input_tracker())
+            .into_any_element()
+    });
+    assert!(!dodai_gpui::motion::input_recent(), "nothing pressed yet");
+    click(vcx, 100.0, 100.0);
+    assert!(
+        dodai_gpui::motion::input_recent(),
+        "a click counts as input"
+    );
+}

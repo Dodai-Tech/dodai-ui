@@ -38,6 +38,7 @@ static REDUCED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::n
 
 thread_local! {
     static ENABLED: std::cell::Cell<bool> = const { std::cell::Cell::new(true) };
+    static INPUT_AT: std::cell::Cell<f32> = const { std::cell::Cell::new(f32::NEG_INFINITY) };
     static SPEED: std::cell::Cell<f32> = const { std::cell::Cell::new(1.0) };
     /// `(animation seconds, real seconds at the last read)`.
     static CLOCK: std::cell::Cell<(f32, f32)> = const { std::cell::Cell::new((0.0, 0.0)) };
@@ -48,6 +49,44 @@ thread_local! {
 pub fn set_reduce_motion(cx: &mut App, on: bool) {
     REDUCED.store(on, std::sync::atomic::Ordering::Relaxed);
     cx.refresh_windows();
+}
+
+/// How long after a click or key press a change of data still eases while Animate is off.
+const INPUT_WINDOW: f32 = 2.0;
+
+/// Records that the user just acted (a click or a key). Charts and instruments whose data changes
+/// within [`INPUT_WINDOW`] seconds ease to it even while Animate is off: a change the user caused
+/// is an answer to input, not motion on its own. [`input_tracker`] calls this for you.
+pub fn note_input() {
+    INPUT_AT.with(|c| c.set(now()));
+}
+
+/// Whether the user acted within the last couple of seconds (see [`note_input`]).
+pub fn input_recent() -> bool {
+    INPUT_AT.with(|c| now() - c.get() < INPUT_WINDOW)
+}
+
+/// An invisible element that calls [`note_input`] on every mouse press and key press anywhere
+/// in its window. [`ResponsiveShell`](crate::ResponsiveShell) includes one; add it once to a root
+/// that does not use the shell.
+pub fn input_tracker() -> impl IntoElement {
+    gpui::canvas(
+        |_, _, _| (),
+        |_, _, w, _| {
+            w.on_mouse_event(|_: &gpui::MouseDownEvent, phase, _, _| {
+                if phase == gpui::DispatchPhase::Capture {
+                    note_input();
+                }
+            });
+            w.on_key_event(|_: &gpui::KeyDownEvent, phase, _, _| {
+                if phase == gpui::DispatchPhase::Capture {
+                    note_input();
+                }
+            });
+        },
+    )
+    .absolute()
+    .size(px(1.0))
 }
 
 /// Whether motion is reduced (see [`set_reduce_motion`]).

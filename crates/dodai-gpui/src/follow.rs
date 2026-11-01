@@ -53,8 +53,9 @@ pub fn next_frame(w: &Window) {
     }
 }
 
-/// Whether a follow eases: ambient ones need Animate on; ones answering input also run with it
-/// off, and only "reduce motion" stops them.
+/// Whether a follow eases: ambient ones need Animate on; ones answering input (or running just
+/// after the user's own input, see [`crate::motion::input_recent`]) also run with it off, and
+/// only "reduce motion" stops them.
 fn eases(animated: bool, enabled: bool, answers_input: bool, reduced: bool) -> bool {
     animated && if answers_input { !reduced } else { enabled }
 }
@@ -62,6 +63,13 @@ fn eases(animated: bool, enabled: bool, answers_input: bool, reduced: bool) -> b
 #[cfg(test)]
 mod ease_tests {
     use super::eases;
+
+    #[test]
+    fn a_change_just_after_user_input_counts_as_an_answer() {
+        assert!(!crate::motion::input_recent(), "no input yet");
+        crate::motion::note_input();
+        assert!(crate::motion::input_recent());
+    }
 
     #[test]
     fn answers_to_input_ease_while_animate_is_off() {
@@ -153,7 +161,7 @@ impl Follow {
         eases(
             self.animated,
             crate::motion::enabled(),
-            self.answers_input,
+            self.answers_input || crate::motion::input_recent(),
             crate::motion::reduce_motion(),
         )
     }
