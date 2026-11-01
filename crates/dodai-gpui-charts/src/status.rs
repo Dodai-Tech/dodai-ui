@@ -135,6 +135,7 @@ type Pick = Rc<dyn Fn(usize, usize, &mut Window, &mut App)>;
 /// [`SlotGrid::compact`] draws thin rails with the slot names underneath.
 #[derive(IntoElement)]
 pub struct SlotGrid {
+    follow: dodai_gpui::follow::Follow,
     id: SharedString,
     caption: Option<(SharedString, SharedString)>,
     corner: Option<SharedString>,
@@ -146,13 +147,13 @@ pub struct SlotGrid {
 }
 
 impl SlotGrid {
+    dodai_gpui::follow_api!();
     /// A grid over the named `slots` (left to right).
-    pub fn new<S: Into<SharedString>>(
-        id: impl Into<SharedString>,
-        slots: impl IntoIterator<Item = S>,
-    ) -> Self {
+    #[track_caller]
+    pub fn new<S: Into<SharedString>>(slots: impl IntoIterator<Item = S>) -> Self {
         Self {
-            id: id.into(),
+            follow: dodai_gpui::follow::Follow::here(),
+            id: SharedString::default(),
             caption: None,
             corner: None,
             slots: slots.into_iter().map(Into::into).collect(),
@@ -290,7 +291,8 @@ impl SlotGrid {
             .into_any_element()
     }
 
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.id = self.follow.element_id(window, cx).to_string().into();
         let t = theme_of(cx);
         let gutter = if self.compact {
             0.0

@@ -4,7 +4,7 @@ Interactive, animated charts for gpui in the Dodai designs. Every chart eases to
 
 ```rust,no_run
 use dodai_gpui_charts::{LineChart, Series};
-let chart = LineChart::new("sales", [Series::new("2025", [3.0, 5.0, 4.0, 8.0])]);
+let chart = LineChart::new([Series::new("2025", [3.0, 5.0, 4.0, 8.0])]);
 ```
 
 See every chart in the showcase: `cargo run -p dodai-showcase`.

@@ -171,7 +171,9 @@ impl Showcase {
         } else {
             rows
         };
-        let mut grid = SlotGrid::new(id, slots.iter().copied()).compact(rail);
+        let mut grid = SlotGrid::new(slots.iter().copied())
+            .id(gpui::SharedString::from(id))
+            .compact(rail);
         grid = if rail {
             grid.caption(caption.0, "")
         } else {
@@ -337,13 +339,10 @@ impl Showcase {
             .child(
                 card()
                     .child(
-                        LineChart::new(
-                            "net-traffic",
-                            [Series::new("Download Mbps", traffic(n, 1.0))],
-                        )
-                        .secondary([Series::new("Clients", drift(&vec![14.0; n], 61.0))])
-                        .labels(labels)
-                        .height(200.0),
+                        LineChart::new([Series::new("Download Mbps", traffic(n, 1.0))])
+                            .secondary([Series::new("Clients", drift(&vec![14.0; n], 61.0))])
+                            .labels(labels)
+                            .height(200.0),
                     )
                     .child(StatusStrip::new(0.0, n as f32, HEALTH)),
             )

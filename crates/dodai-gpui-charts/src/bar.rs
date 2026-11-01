@@ -44,13 +44,13 @@ impl BarChart {
         self
     }
     /// Create a new [`BarChart`].
-    pub fn new(id: impl Into<SharedString>, series: impl IntoIterator<Item = Series>) -> Self {
-        let id: SharedString = id.into();
+    #[track_caller]
+    pub fn new(series: impl IntoIterator<Item = Series>) -> Self {
         Self {
-            follow: dodai_gpui::follow::Follow::named(&id),
+            follow: dodai_gpui::follow::Follow::here(),
             annotations: Vec::new(),
             corners: None,
-            id,
+            id: SharedString::default(),
             series: series.into_iter().collect(),
             labels: Vec::new(),
             height: 200.0,
@@ -340,6 +340,7 @@ impl BarChart {
     }
 
     fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.id = self.follow.element_id(window, cx).to_string().into();
         let t = theme_of(cx);
         let t = dodai_gpui::apply_corners(t, self.corners);
         let g = dodai_gpui::motion::grow_for(window, cx, &self.follow, "BarChart");

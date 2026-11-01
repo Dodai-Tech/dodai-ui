@@ -451,11 +451,11 @@ impl CandlePaint {
 impl Candlestick {
     dodai_gpui::follow_api!();
     /// Create a new [`Candlestick`].
-    pub fn new(id: impl Into<SharedString>, candles: impl IntoIterator<Item = Candle>) -> Self {
-        let id: SharedString = id.into();
+    #[track_caller]
+    pub fn new(candles: impl IntoIterator<Item = Candle>) -> Self {
         Self {
-            follow: dodai_gpui::follow::Follow::named(&id),
-            id,
+            follow: dodai_gpui::follow::Follow::here(),
+            id: SharedString::default(),
             candles: candles.into_iter().collect(),
             labels: Vec::new(),
             height: 220.0,
@@ -598,6 +598,7 @@ impl Candlestick {
     }
 
     fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.id = self.follow.element_id(window, cx).to_string().into();
         let flat: Vec<f32> = self
             .candles
             .iter()

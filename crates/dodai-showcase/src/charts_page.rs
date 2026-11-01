@@ -92,7 +92,6 @@ impl Showcase {
             )
             .child(
                 Heatmap::new(
-                    format!("heat-{hres}"),
                     (0..hr)
                         .map(|r| {
                             (0..hc)
@@ -703,7 +702,7 @@ impl Showcase {
                     ))
                     .child(
                         div().flex_1().min_w(px(240.0)).child(
-                            BarChart::new("live-bar", [Series::live("Load", &self.live_a)])
+                            BarChart::new([Series::live("Load", &self.live_a)])
                                 .max(100.0)
                                 .height(110.0)
                                 .legend(false),
@@ -711,7 +710,7 @@ impl Showcase {
                     )
                     .child(
                         div().flex_1().min_w(px(240.0)).child(
-                            LineChart::new("live-line", [Series::live("Load", &self.live_b)])
+                            LineChart::new([Series::live("Load", &self.live_b)])
                                 .area(true)
                                 .smooth(true)
                                 .y_range(0.0, 100.0)
@@ -895,7 +894,7 @@ impl Showcase {
                     .flex_1()
                     .min_w(px(300.0))
                     .child(
-                        LineChart::new("line", [a.clone(), b.clone()])
+                        LineChart::new([a.clone(), b.clone()])
                             .labels(months)
                             .toggleable(true)
                             .patterns(true)
@@ -915,7 +914,7 @@ impl Showcase {
                     .flex_1()
                     .min_w(px(300.0))
                     .child(
-                        BarChart::new("bars", [a.clone(), b.clone()])
+                        BarChart::new([a.clone(), b.clone()])
                             .labels(months)
                             .annotations([
                                 Annotation::y_band(10.0, 20.0).label("Plan"),
@@ -930,7 +929,7 @@ impl Showcase {
                     .flex_1()
                     .min_w(px(300.0))
                     .child(
-                        BarChart::new("stack", [a.clone(), b.clone()])
+                        BarChart::new([a.clone(), b.clone()])
                             .labels(months)
                             .stacked(true),
                     )
@@ -941,11 +940,7 @@ impl Showcase {
                 div()
                     .flex_1()
                     .min_w(px(300.0))
-                    .child(
-                        BarChart::new("hbars", [a, b])
-                            .labels(months)
-                            .horizontal(true),
-                    )
+                    .child(BarChart::new([a, b]).labels(months).horizontal(true))
                     .into_any_element(),
             ),
             (
@@ -954,13 +949,10 @@ impl Showcase {
                     .flex_1()
                     .min_w(px(300.0))
                     .child(
-                        LineChart::new(
-                            "time-day",
-                            [Series::new(
-                                "Requests",
-                                drift(&[4.0, 9.0, 7.0, 15.0, 22.0, 18.0, 25.0, 12.0], 5.0),
-                            )],
-                        )
+                        LineChart::new([Series::new(
+                            "Requests",
+                            drift(&[4.0, 9.0, 7.0, 15.0, 22.0, 18.0, 25.0, 12.0], 5.0),
+                        )])
                         .time_axis(
                             // Uneven sampling, 2024-03-04 06:00 UTC onwards: gaps show as gaps.
                             [0.0, 1.0, 1.5, 4.0, 5.0, 9.0, 11.0, 15.0]
@@ -977,13 +969,10 @@ impl Showcase {
                     .flex_1()
                     .min_w(px(300.0))
                     .child(
-                        LineChart::new(
-                            "time-year",
-                            [Series::new(
-                                "Visits",
-                                drift(&[3.0, 4.0, 6.0, 5.0, 9.0, 12.0, 11.0, 14.0], 6.0),
-                            )],
-                        )
+                        LineChart::new([Series::new(
+                            "Visits",
+                            drift(&[3.0, 4.0, 6.0, 5.0, 9.0, 12.0, 11.0, 14.0], 6.0),
+                        )])
                         .time_axis(
                             [0.0, 31.0, 90.0, 140.0, 200.0, 280.0, 340.0, 420.0]
                                 .map(|d| 1_704_067_200.0 + d * 86_400.0),
@@ -994,7 +983,7 @@ impl Showcase {
             ),
             (
                 "Candlestick",
-                Candlestick::new("ext", ohlc.clone())
+                Candlestick::new(ohlc.clone())
                     .style(CandleStyle::HeikinAshi)
                     .volume(true)
                     .overlay(CandleOverlay::Sma(10))
@@ -1011,14 +1000,13 @@ impl Showcase {
             ),
             (
                 "Renko",
-                RenkoChart::new("renko", walk.clone(), 2.0)
+                RenkoChart::new(walk.clone(), 2.0)
                     .title("Renko · 2.0 bricks")
                     .into_any_element(),
             ),
             (
                 "Order book depth",
                 DepthChart::new(
-                    "depth",
                     (1..12).map(|i| {
                         (
                             100.0 - i as f32 * 0.5,
@@ -1037,32 +1025,26 @@ impl Showcase {
             ),
             (
                 "Gantt",
-                Gantt::new(
-                    "gantt",
-                    [
-                        GanttTask::new("Design", 0.0, 10.0).progress(1.0),
-                        GanttTask::new("Build", 8.0, 24.0)
-                            .progress(dv(0.6, 1.0).min(1.0))
-                            .after(0),
-                        GanttTask::new("Test", 20.0, 30.0)
-                            .progress(dv(0.25, 2.0).min(1.0))
-                            .after(1),
-                        GanttTask::new("Ship", 30.0, 34.0).after(2),
-                    ],
-                )
+                Gantt::new([
+                    GanttTask::new("Design", 0.0, 10.0).progress(1.0),
+                    GanttTask::new("Build", 8.0, 24.0)
+                        .progress(dv(0.6, 1.0).min(1.0))
+                        .after(0),
+                    GanttTask::new("Test", 20.0, 30.0)
+                        .progress(dv(0.25, 2.0).min(1.0))
+                        .after(1),
+                    GanttTask::new("Ship", 30.0, 34.0).after(2),
+                ])
                 .title("Release plan")
                 .format(|v| format!("d{v:.0}"))
                 .into_any_element(),
             ),
             (
                 "Secondary axis",
-                LineChart::new(
-                    "dual",
-                    [Series::new(
-                        "Revenue",
-                        drift(&[12.0, 18.0, 15.0, 26.0, 22.0, 31.0], 3.0),
-                    )],
-                )
+                LineChart::new([Series::new(
+                    "Revenue",
+                    drift(&[12.0, 18.0, 15.0, 26.0, 22.0, 31.0], 3.0),
+                )])
                 .secondary([Series::new(
                     "Margin %",
                     drift(&[0.21, 0.24, 0.2, 0.3, 0.28, 0.33], 4.0),
@@ -1076,25 +1058,19 @@ impl Showcase {
                 ChartStack::new()
                     .height(300.0)
                     .pane(3.0, move |h| {
-                        LineChart::new(
-                            "st1",
-                            [Series::new(
-                                "Price",
-                                drift(&[3.0, 4.0, 3.5, 5.0, 6.0, 5.5], 5.0),
-                            )],
-                        )
+                        LineChart::new([Series::new(
+                            "Price",
+                            drift(&[3.0, 4.0, 3.5, 5.0, 6.0, 5.5], 5.0),
+                        )])
                         .height(h - 24.0)
                         .legend(false)
                         .into_any_element()
                     })
                     .pane(1.0, move |h| {
-                        BarChart::new(
-                            "st2",
-                            [Series::new(
-                                "Vol",
-                                drift(&[2.0, 3.0, 1.0, 4.0, 5.0, 3.0], 6.0),
-                            )],
-                        )
+                        BarChart::new([Series::new(
+                            "Vol",
+                            drift(&[2.0, 3.0, 1.0, 4.0, 5.0, 3.0], 6.0),
+                        )])
                         .height(h - 24.0)
                         .legend(false)
                         .into_any_element()
@@ -1117,23 +1093,20 @@ impl Showcase {
                 div()
                     .flex_1()
                     .min_w(px(300.0))
-                    .child(ScatterPlot::new(
-                        "sc",
-                        [
-                            (
-                                "Group 1",
-                                (0..12)
-                                    .map(|i| (i as f32, (i * i % 7) as f32 + 1.0))
-                                    .collect(),
-                            ),
-                            (
-                                "Group 2",
-                                (0..12)
-                                    .map(|i| (i as f32 + 0.5, (i * 3 % 8) as f32))
-                                    .collect(),
-                            ),
-                        ],
-                    ))
+                    .child(ScatterPlot::new([
+                        (
+                            "Group 1",
+                            (0..12)
+                                .map(|i| (i as f32, (i * i % 7) as f32 + 1.0))
+                                .collect(),
+                        ),
+                        (
+                            "Group 2",
+                            (0..12)
+                                .map(|i| (i as f32 + 0.5, (i * 3 % 8) as f32))
+                                .collect(),
+                        ),
+                    ]))
                     .into_any_element(),
             ),
             ("Heatmap", heat_block.into_any_element()),
@@ -1151,7 +1124,6 @@ impl Showcase {
             (
                 "Histogram",
                 Histogram::new(
-                    "hist",
                     (0..120).map(|i| ((i * 37 % 100) as f32 / 10.0 + (i % 7) as f32).min(18.0)),
                 )
                 .bins(9)
@@ -1164,16 +1136,13 @@ impl Showcase {
             ),
             (
                 "Waterfall",
-                Waterfall::new(
-                    "wf",
-                    [
-                        ("Start", 40.0),
-                        ("Sales", 25.0),
-                        ("Refunds", -12.0),
-                        ("Ads", -8.0),
-                        ("Upsell", 15.0),
-                    ],
-                )
+                Waterfall::new([
+                    ("Start", 40.0),
+                    ("Sales", 25.0),
+                    ("Refunds", -12.0),
+                    ("Ads", -8.0),
+                    ("Upsell", 15.0),
+                ])
                 .title("Revenue bridge")
                 .format(|v| format!("${v:.0}k"))
                 .into_any_element(),
@@ -1191,17 +1160,14 @@ impl Showcase {
             ),
             (
                 "Treemap",
-                Treemap::new(
-                    "tm",
-                    [
-                        ("Rust", 52.0),
-                        ("Kotlin", 28.0),
-                        ("TS", 18.0),
-                        ("Go", 12.0),
-                        ("C", 9.0),
-                        ("Other", 5.0),
-                    ],
-                )
+                Treemap::new([
+                    ("Rust", 52.0),
+                    ("Kotlin", 28.0),
+                    ("TS", 18.0),
+                    ("Go", 12.0),
+                    ("C", 9.0),
+                    ("Other", 5.0),
+                ])
                 .title("Code by language")
                 .into_any_element(),
             ),
@@ -1250,30 +1216,24 @@ impl Showcase {
             ),
             (
                 "Lollipop · Dumbbell",
-                Lollipop::new(
-                    "lolli",
-                    [
-                        ("Mon", 12.0),
-                        ("Tue", 18.0),
-                        ("Wed", 9.0),
-                        ("Thu", 24.0),
-                        ("Fri", 15.0),
-                    ],
-                )
+                Lollipop::new([
+                    ("Mon", 12.0),
+                    ("Tue", 18.0),
+                    ("Wed", 9.0),
+                    ("Thu", 24.0),
+                    ("Fri", 15.0),
+                ])
                 .title("Lollipop")
                 .into_any_element(),
             ),
             (
                 "Lollipop · Dumbbell",
-                Lollipop::new(
-                    "dumb",
-                    [
-                        ("North", 12.0),
-                        ("South", 18.0),
-                        ("East", 9.0),
-                        ("West", 24.0),
-                    ],
-                )
+                Lollipop::new([
+                    ("North", 12.0),
+                    ("South", 18.0),
+                    ("East", 9.0),
+                    ("West", 24.0),
+                ])
                 .compare([17.0, 14.0, 16.0, 21.0])
                 .names("2023", "2024")
                 .title("Dumbbell")
@@ -1326,17 +1286,14 @@ impl Showcase {
             ),
             (
                 "Candlestick",
-                Candlestick::new(
-                    "ohlc",
-                    [
-                        Candle::new(10.0, 14.0, 9.0, 13.0),
-                        Candle::new(13.0, 15.0, 11.0, 12.0),
-                        Candle::new(12.0, 16.0, 11.5, 15.5),
-                        Candle::new(15.5, 17.0, 13.0, 14.0),
-                        Candle::new(14.0, 18.0, 13.5, 17.5),
-                        Candle::new(17.5, 19.0, 15.0, 16.0),
-                    ],
-                )
+                Candlestick::new([
+                    Candle::new(10.0, 14.0, 9.0, 13.0),
+                    Candle::new(13.0, 15.0, 11.0, 12.0),
+                    Candle::new(12.0, 16.0, 11.5, 15.5),
+                    Candle::new(15.5, 17.0, 13.0, 14.0),
+                    Candle::new(14.0, 18.0, 13.5, 17.5),
+                    Candle::new(17.5, 19.0, 15.0, 16.0),
+                ])
                 .labels(months)
                 .title("OHLC")
                 .into_any_element(),
@@ -1356,19 +1313,16 @@ impl Showcase {
             ),
             (
                 "Bubble",
-                BubbleChart::new(
-                    "bub",
-                    [
-                        (
-                            "EU",
-                            vec![(1.0, 2.0, 30.0), (3.0, 5.0, 80.0), (5.0, 3.0, 50.0)],
-                        ),
-                        (
-                            "US",
-                            vec![(2.0, 6.0, 100.0), (4.0, 2.0, 20.0), (6.0, 7.0, 60.0)],
-                        ),
-                    ],
-                )
+                BubbleChart::new([
+                    (
+                        "EU",
+                        vec![(1.0, 2.0, 30.0), (3.0, 5.0, 80.0), (5.0, 3.0, 50.0)],
+                    ),
+                    (
+                        "US",
+                        vec![(2.0, 6.0, 100.0), (4.0, 2.0, 20.0), (6.0, 7.0, 60.0)],
+                    ),
+                ])
                 .title("Bubble chart")
                 .into_any_element(),
             ),
