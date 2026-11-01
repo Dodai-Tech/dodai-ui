@@ -301,6 +301,7 @@ impl Render for Showcase {
             side.update(cx, |_, cx| cx.notify());
         }
         let side_need = self.side_need;
+        let pinned_icons = self.pinned_icon_panel(&t, cx);
         let side = gpui::AnyView::from(side).cached(gpui::StyleRefinement::default().size_full());
 
         let overview = self.cat == 0
@@ -815,6 +816,7 @@ impl Render for Showcase {
                                 matches!(selected_cat, Some("Shape" | "Surface effects"))
                                     .then(|| sections::shape::live_preview(&t, compact)),
                             )
+                            .children(pinned_icons)
                             .child(body.min_h_0()),
                     ),
             )
