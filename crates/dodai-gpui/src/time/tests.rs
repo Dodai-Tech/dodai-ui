@@ -94,3 +94,11 @@ fn day_seconds() {
     assert_eq!(day_secs(10.0, -1), 86_400.0 - 50.0);
     assert_eq!(day_secs(0.0, 60), 3600.0);
 }
+
+#[test]
+fn the_local_offset_is_a_real_zone() {
+    let m = local_utc_offset_minutes();
+    // UTC-12 to UTC+14, and on whole quarter hours.
+    assert!((-12 * 60..=14 * 60).contains(&m), "{m}");
+    assert_eq!(m % 15, 0, "{m}");
+}
