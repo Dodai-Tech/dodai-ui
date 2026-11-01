@@ -27,31 +27,32 @@ pub const GOOGLE_FONTS_URL: &str =
 
 const PROBE: f32 = 4096.0;
 
-/// Symbolic CSS coordinate for a value measured on a `PROBE`-sized box.
-fn coord(v: f32, c: f32) -> String {
+/// `v` px, rounded to hundredths so scooped arcs stay short in the stylesheet.
+fn px(v: f32) -> String {
+    format!("{}px", (v * 100.0).round() / 100.0)
+}
+
+/// Symbolic CSS coordinate for a value measured on a `PROBE`-sized box: the box edges, else a
+/// distance from the nearer one (so straight cuts and scooped arcs both scale with the box).
+fn coord(v: f32) -> String {
     let near = |a: f32, b: f32| (a - b).abs() < 1e-3;
     if near(v, 0.0) {
         "0".into()
     } else if near(v, PROBE) {
         "100%".into()
-    } else if near(v, c) {
-        format!("{c}px")
+    } else if v < PROBE / 2.0 {
+        px(v)
     } else {
-        format!("calc(100% - {c}px)")
+        format!("calc(100% - {})", px(PROBE - v))
     }
 }
 
 /// Points of `shape`'s outline as CSS `x y` pairs (percent + px).
 fn clip_points(shape: &Shape) -> Vec<String> {
-    let c = if shape.kind() == ShapeKind::Chamfered {
-        shape.chamfer
-    } else {
-        0.0
-    };
     shape
         .outline(PROBE, PROBE)
         .into_iter()
-        .map(|(x, y)| format!("{} {}", coord(x, c), coord(y, c)))
+        .map(|(x, y)| format!("{} {}", coord(x), coord(y)))
         .collect()
 }
 
@@ -68,7 +69,6 @@ pub fn clip_path(shape: &Shape) -> String {
 fn with_chamfer(shape: &Shape, chamfer: f32) -> Shape {
     Shape {
         chamfer: chamfer.max(0.0),
-        scoop: false,
         ..shape.clone()
     }
 }
@@ -89,18 +89,18 @@ fn clip_ring(shape: &Shape) -> String {
     let bw = shape.border_width;
     let k = 2.0 - std::f32::consts::SQRT_2;
     let inner = with_chamfer(shape, shape.chamfer - k * bw);
-    let c = inner.chamfer;
     let pts = inner.outline(PROBE, PROBE).into_iter().map(|(x, y)| {
+        // The inner outline sits `bw` inside the box on every side.
         let f = |v: f32| {
             let near = |a: f32, b: f32| (a - b).abs() < 1e-3;
             if near(v, 0.0) {
-                format!("{bw}px")
+                px(bw)
             } else if near(v, PROBE) {
-                format!("calc(100% - {bw}px)")
-            } else if near(v, c) {
-                format!("{}px", c + bw)
+                format!("calc(100% - {})", px(bw))
+            } else if v < PROBE / 2.0 {
+                px(v + bw)
             } else {
-                format!("calc(100% - {}px)", c + bw)
+                format!("calc(100% - {})", px(PROBE - v + bw))
             }
         };
         format!("{} {}", f(x), f(y))
@@ -443,6 +443,30 @@ mod tests {
                 assert!(c.contains("--dodai-clip:none;"));
             }
         }
+    }
+
+    #[test]
+    fn scooped_clip_follows_the_arc_on_any_box() {
+        let mut t = dodai_core::themes::cyberpunk::yellow();
+        t.shape.scoop = true;
+        let clip = clip_path(&t.shape);
+        let pts = |w: f32, h: f32| eval_clip(&clip, w, h);
+        for (w, h) in [(240.0, 120.0), (90.0, 60.0)] {
+            let (got, want) = (pts(w, h), t.shape.outline(w, h));
+            assert_eq!(got.len(), want.len());
+            for (g, v) in got.iter().zip(&want) {
+                assert!(
+                    (g.0 - v.0).abs() < 0.05 && (g.1 - v.1).abs() < 0.05,
+                    "{g:?} {v:?}"
+                );
+            }
+        }
+        assert!(
+            clip.matches(',').count() > 8,
+            "arc points are in the polygon"
+        );
+        let ring = clip_ring(&t.shape);
+        assert!(ring.starts_with("polygon(evenodd,") && ring.matches(',').count() > 16);
     }
 
     #[test]
