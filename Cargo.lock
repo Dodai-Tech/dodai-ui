@@ -4053,6 +4053,7 @@ name = "dodai-egui"
 version = "0.1.0"
 dependencies = [
  "dodai-core",
+ "dodai-fx",
  "dodai-icons",
  "eframe",
  "egui",

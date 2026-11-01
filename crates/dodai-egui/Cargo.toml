@@ -23,6 +23,7 @@ icons     = ["dep:dodai-icons", "dodai-icons/theme", "dodai-icons/cyberpunk", "d
 
 [dependencies]
 dodai-core = { workspace = true }
+dodai-fx = { workspace = true }
 dodai-icons = { workspace = true, optional = true }
 egui = "0.37"
 
