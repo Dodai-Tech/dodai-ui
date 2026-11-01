@@ -7,7 +7,7 @@ use crate::ItemState;
 use crate::{
     AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, Color, ControlSize,
     ControlState, DesignSpec, InputTokens, ListItemTokens, Look, NavigationTokens, ProgressTokens,
-    SizeMetrics, StepState, StepTokens, SurfaceTokens, TabTokens, Theme, ToggleTokens, Tone,
+    SizeMetrics, Sizes, StepState, StepTokens, SurfaceTokens, TabTokens, Theme, ToggleTokens, Tone,
     TypeRole,
 };
 
@@ -251,6 +251,15 @@ impl DesignSpec for Cyberpunk {
 
     fn fab(&self, t: &Theme, v: ButtonVariant, s: ControlState) -> Option<ButtonTokens> {
         self.button(t, v, s)
+    }
+
+    /// A longer, flatter switch than the default; the rest of the size scale is the default.
+    fn sizes(&self, _t: &Theme) -> Option<Sizes> {
+        Some(Sizes {
+            switch_track: (56.0, 28.0),
+            switch_handle: (18.0, 18.0),
+            ..Sizes::default()
+        })
     }
 
     /// XS to XL control sizes, fixed in px.

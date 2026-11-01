@@ -207,14 +207,21 @@ impl Slider {
                 .h(px(self.length))
                 .justify_center()
         } else {
-            base.w_full()
-                .h(px(if inset { 48.0 } else { thumb_d + 4.0 }))
+            base.w_full().h(px(if inset {
+                t.sizes().touch_target
+            } else {
+                thumb_d + 4.0
+            }))
         };
         let track = self.track_el(&t, frac, track_h, inset, vertical);
         let thumb = shaped(&thumb_shape, thumb_style)
             .absolute()
             .w(px(thumb_d))
-            .h(px(if inset { 44.0 } else { thumb_d }));
+            .h(px(if inset {
+                t.sizes().touch_target - 4.0
+            } else {
+                thumb_d
+            }));
         let rail = self.rail_el(&t, frac, thumb, thumb_d, vertical, bubble_h);
         let readout = self.show_value.then(|| {
             let txt = self.value_text();
