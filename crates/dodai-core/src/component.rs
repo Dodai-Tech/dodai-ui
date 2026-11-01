@@ -968,7 +968,13 @@ impl Theme {
     /// Height, padding, text and icon size of a button at `size`. Baseline: multiples of the
     /// theme's control height, spacing and type scale.
     pub fn control_metrics(&self, size: ControlSize) -> SizeMetrics {
-        hook!(self.control_metrics(size));
+        // A design's fixed sizes follow the density too (the baseline below already does,
+        // through the control height and spacing it multiplies).
+        if let Some(mut m) = self.spec.get().and_then(|s| s.control_metrics(self, size)) {
+            m.height *= self.density;
+            m.padding *= self.density;
+            return m;
+        }
         let i = size.index();
         let h = self.shape.control_height;
         let ty = &self.typography;
