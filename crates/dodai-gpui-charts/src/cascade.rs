@@ -1,6 +1,6 @@
 //! [`SplitFlow`]: a quantity flowing down through levels, splitting at each node.
 
-use crate::common::{chart_cfg, fmt_with, group_slots, ink_on, CanvasText, NumFmt};
+use crate::common::{chart_cfg, fmt_with, group_slots, overlaps, CanvasText, NumFmt};
 use crate::focus::{readout, Focus};
 use dodai_charts_core::cascade::{self, Block, Node};
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
@@ -178,7 +178,7 @@ impl SplitFlow {
             .collect();
         let inks: Vec<Hsla> = slots
             .iter()
-            .map(|s| hsla(ink_on(&t, t.palette.series_at(*s))))
+            .map(|s| hsla(t.on(t.palette.series_at(*s))))
             .collect();
         let total: f32 = steps
             .iter()
@@ -283,12 +283,7 @@ impl SplitFlow {
                                     pill_x + half,
                                     py + lh / 2.0 + 3.0,
                                 ];
-                                pills
-                                    .iter()
-                                    .all(|p: &[f32; 4]| {
-                                        bx[2] < p[0] || bx[0] > p[2] || bx[3] < p[1] || bx[1] > p[3]
-                                    })
-                                    .then_some((py, bx))
+                                pills.iter().all(|p| !overlaps(&bx, p)).then_some((py, bx))
                             });
                             if let Some((py, bx)) = free {
                                 let r = dodai_gpui::plot::rect(

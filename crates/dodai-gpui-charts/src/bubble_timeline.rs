@@ -2,8 +2,8 @@
 //! from the axis so none overlap, coloured by group; the legend filters the groups.
 
 use crate::common::{
-    chart_cfg, fill, fmt_with, group_slots, ink_on, marker_points, nice_ticks, norm, stroke,
-    tick_row, titled, CanvasText, Hidden, Legend, Marker, NumFmt,
+    chart_cfg, fill, fmt_with, marker_points, norm, stroke, tick_row, titled, CanvasText, Groups,
+    Marker, NumFmt,
 };
 use crate::focus::{readout, Focus};
 use dodai_charts_core::pack::pile_up;
@@ -155,33 +155,22 @@ impl BubbleTimeline {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let g = dodai_gpui::motion::grow_for(window, cx, &self.follow, "BubbleTimeline");
-        let (slots, groups) = group_slots(self.items.iter().map(|b| b.group.as_ref()));
-        let hidden: Hidden = {
-            let id = self.follow.sub("filter").element_id(window, cx);
-            window.with_id(id, |w| {
-                w.use_keyed_state("hidden", cx, |_, _| Vec::<bool>::new())
-            })
-        };
-        let off = hidden.read(cx).clone();
-        let is_off = |slot: usize| self.filter && off.get(slot).copied().unwrap_or(false);
+        let groups = Groups::new(
+            window,
+            cx,
+            &self.follow,
+            self.items.iter().map(|b| b.group.as_ref()),
+            self.filter,
+        );
+        let slots = &groups.slots;
         // Indices of the shown, drawable events.
         let shown: Vec<usize> = (0..self.items.len())
             .filter(|&i| {
                 let b = &self.items[i];
-                b.at.is_finite() && b.size.is_finite() && b.size > 0.0 && !is_off(slots[i])
+                b.at.is_finite() && b.size.is_finite() && b.size > 0.0 && groups.shown(i)
             })
             .collect();
-        let all_at = self.items.iter().map(|b| b.at).filter(|v| v.is_finite());
-        let lo = all_at.clone().fold(f32::INFINITY, f32::min);
-        let hi = all_at.fold(f32::NEG_INFINITY, f32::max);
-        let ticks = if lo < hi {
-            nice_ticks(lo, hi, 8)
-        } else if lo.is_finite() {
-            vec![lo - 1.0, lo + 1.0]
-        } else {
-            vec![0.0, 1.0]
-        };
-        let (tlo, thi) = (ticks[0], ticks[ticks.len() - 1]);
+        let (tlo, thi, ticks) = dodai_charts_core::tick_span(self.items.iter().map(|b| b.at), 8);
         let n = shown.len();
         let focus = Focus::new(window, cx, &self.follow, n);
         let looks: Vec<_> = (0..n).map(|k| focus.item(k)).collect();
@@ -191,7 +180,7 @@ impl BubbleTimeline {
             .collect();
         let inks: Vec<Hsla> = shown
             .iter()
-            .map(|&i| hsla(ink_on(&t, t.palette.series_at(slots[i]))))
+            .map(|&i| hsla(t.on(t.palette.series_at(slots[i]))))
             .collect();
         let data: Vec<(f32, f32)> = shown
             .iter()
@@ -330,28 +319,6 @@ impl BubbleTimeline {
             }
             Some(line)
         });
-        let legend = (!groups.is_empty()).then(|| {
-            let lg = Legend::new(
-                groups
-                    .iter()
-                    .enumerate()
-                    .map(|(i, g)| (g.clone(), t.palette.series_at(i))),
-            );
-            if self.filter {
-                let id = format!(
-                    "bubble-timeline-{:?}",
-                    self.follow.sub("legend").element_id(window, cx)
-                );
-                lg.toggle(id, hidden)
-            } else {
-                lg
-            }
-        });
-        let hint = if self.filter {
-            "Hover a bubble · click a group to hide it"
-        } else {
-            "Hover a bubble"
-        };
         let body = div()
             .flex()
             .flex_col()
@@ -363,8 +330,8 @@ impl BubbleTimeline {
                     .px(px(rmax.min(48.0)))
                     .child(tick_row(&t, &ticks, &self.x_fmt)),
             )
-            .children(legend)
-            .child(readout(&t, text, hint));
+            .children(groups.legend(&t))
+            .child(readout(&t, text, &groups.hint("Hover a bubble")));
         titled(&t, self.title, body)
     }
 }

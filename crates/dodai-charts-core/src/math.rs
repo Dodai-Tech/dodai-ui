@@ -64,6 +64,24 @@ pub fn nice_ticks(min: f32, max: f32, count: usize) -> Vec<f32> {
     }
 }
 
+/// The lowest and highest finite value of `v`, or `None` when it has none.
+pub fn extent(v: impl IntoIterator<Item = f32>) -> Option<(f32, f32)> {
+    v.into_iter()
+        .filter(|v| v.is_finite())
+        .fold(None, |e, v| match e {
+            None => Some((v, v)),
+            Some((l, h)) => Some((v.min(l), v.max(h))),
+        })
+}
+
+/// About `count` [`nice_ticks`] covering the finite values of `v` (`0..1` when there are
+/// none), with the first and last tick: the axis range most charts plot against.
+pub fn tick_span(v: impl IntoIterator<Item = f32>, count: usize) -> (f32, f32, Vec<f32>) {
+    let (lo, hi) = extent(v).unwrap_or((0.0, 1.0));
+    let ticks = nice_ticks(lo, hi, count);
+    (ticks[0], ticks[ticks.len() - 1], ticks)
+}
+
 /// The smallest `f32` above a finite `v`.
 fn next_up(v: f32) -> f32 {
     if v == 0.0 {
@@ -444,5 +462,17 @@ mod nice_ceiling_tests {
             "small dots stay cheap"
         );
         assert!(circle_points(0.0, 0.0, f32::NAN).iter().all(|p| p.0 == 0.0));
+    }
+
+    #[test]
+    fn extent_skips_non_finite_values() {
+        assert_eq!(
+            crate::extent([f32::NAN, 2.0, f32::INFINITY, -1.0]),
+            Some((-1.0, 2.0))
+        );
+        assert_eq!(crate::extent([f32::NAN]), None);
+        assert_eq!(crate::tick_span([], 4).0, 0.0);
+        let (lo, hi, t) = crate::tick_span([3.0, 3.0], 4);
+        assert!(lo <= 3.0 && hi > lo && t.len() >= 2);
     }
 }

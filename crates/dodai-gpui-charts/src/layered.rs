@@ -308,12 +308,9 @@ impl RidgelineChart {
             .map(|(_, v)| density::kde(v, 96))
             .collect();
         let live = curves.iter().filter(|d| !d.y.is_empty());
-        let lo = live.clone().map(|d| d.lo).fold(f32::INFINITY, f32::min);
-        let hi = live.map(|d| d.hi).fold(f32::NEG_INFINITY, f32::max);
-        let ticks = if hi > lo {
-            nice_ticks(lo, hi, 5)
-        } else {
-            vec![0.0, 1.0]
+        let ticks = match dodai_charts_core::extent(live.flat_map(|d| [d.lo, d.hi])) {
+            Some((lo, hi)) if hi > lo => nice_ticks(lo, hi, 5),
+            _ => vec![0.0, 1.0],
         };
         let (lo, hi) = (
             *ticks.first().unwrap_or(&0.0),
@@ -556,8 +553,7 @@ impl HorizonChart {
             let v: Vec<f32> = s.values.iter().copied().filter(|x| x.is_finite()).collect();
             let f = |x: f32| fmt_with(&self.fmt, x);
             let last = *v.last()?;
-            let low = v.iter().copied().fold(f32::INFINITY, f32::min);
-            let high = v.iter().copied().fold(f32::NEG_INFINITY, f32::max);
+            let (low, high) = dodai_charts_core::extent(v.iter().copied())?;
             Some(format!(
                 "{} · latest {} · low {} · high {}",
                 s.name,

@@ -52,15 +52,8 @@ impl RenkoChart {
         let t = theme_of(cx);
         let g = dodai_gpui::motion::grow(window, cx, "RenkoChart");
         let bricks = renko(&self.closes, self.brick);
-        let n = bricks.len();
-        let lo = bricks.iter().map(|b| b.lo).fold(f32::INFINITY, f32::min);
-        let hi = bricks
-            .iter()
-            .map(|b| b.hi)
-            .fold(f32::NEG_INFINITY, f32::max);
-        let (lo, hi) = if n == 0 { (0.0, 1.0) } else { (lo, hi) };
-        let ticks = nice_ticks(lo, hi, 4);
-        let (lo, hi) = (*ticks.first().unwrap_or(&lo), *ticks.last().unwrap_or(&hi));
+        let (lo, hi, ticks) =
+            dodai_charts_core::tick_span(bricks.iter().flat_map(|b| [b.lo, b.hi]), 4);
         let (up, down, grid) = (
             hsla(t.palette.tone(dodai_core::Tone::Success)),
             hsla(t.palette.tone(dodai_core::Tone::Danger)),

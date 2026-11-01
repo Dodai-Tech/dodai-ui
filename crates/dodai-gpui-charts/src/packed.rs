@@ -3,8 +3,8 @@
 //! hierarchy as circles inside circles).
 
 use crate::common::{
-    chart_cfg, fill, fmt_with, marker_points, nice_ticks, norm, stroke, tick_row, titled,
-    CanvasText, Legend, Marker, NumFmt,
+    chart_cfg, fill, fmt_with, marker_points, norm, stroke, tick_row, titled, CanvasText, Groups,
+    Marker, NumFmt,
 };
 use crate::focus::{readout, Focus};
 use crate::hierarchy::ChartNode;
@@ -35,18 +35,6 @@ fn grouped<G: Into<SharedString>, L: Into<SharedString>, T>(
         .collect()
 }
 
-/// A legend for the groups, or nothing for a single group.
-fn group_legend(t: &dodai_core::Theme, names: &[SharedString]) -> Option<Legend> {
-    (names.len() > 1).then(|| {
-        Legend::new(
-            names
-                .iter()
-                .enumerate()
-                .map(|(i, n)| (n.clone(), t.palette.series_at(i))),
-        )
-    })
-}
-
 // ─────────────────────────────── BubbleSwarm ───────────────────────────────
 
 /// Bubbles along one axis, each placed at its value and sized (by area) by a second number,
@@ -57,6 +45,7 @@ pub struct BubbleSwarm {
     follow: dodai_gpui::follow::Follow,
     groups: Grouped<(f32, f32)>,
     max_radius: f32,
+    filter: bool,
     height: f32,
     fmt: Option<NumFmt>,
     title: Option<SharedString>,
@@ -75,10 +64,16 @@ impl BubbleSwarm {
             follow: dodai_gpui::follow::Follow::here(),
             groups: grouped(groups),
             max_radius: 28.0,
+            filter: true,
             height: 220.0,
             fmt: None,
             title: None,
         }
+    }
+    /// Let the legend hide and show groups (default on; needs two groups or more).
+    pub fn filter(mut self, on: bool) -> Self {
+        self.filter = on;
+        self
     }
     /// Radius in px of the biggest bubble (default 28, `4..=80`).
     pub fn max_radius(mut self, r: f32) -> Self {
@@ -105,6 +100,13 @@ impl BubbleSwarm {
         }
         let t = theme_of(cx);
         let g = dodai_gpui::motion::grow_for(window, cx, &self.follow, "BubbleSwarm");
+        let groups = Groups::new(
+            window,
+            cx,
+            &self.follow,
+            self.groups.iter().map(|g| Some(&g.0)),
+            self.filter,
+        );
         // (group, label, position, size) of every drawable item.
         let items: Vec<(usize, SharedString, f32, f32)> = self
             .groups
@@ -116,15 +118,10 @@ impl BubbleSwarm {
                     .map(move |(l, (x, s))| (k, l.clone(), *x, *s))
             })
             .collect();
-        let lo = items.iter().map(|i| i.2).fold(f32::MAX, f32::min);
-        let hi = items.iter().map(|i| i.2).fold(f32::MIN, f32::max);
-        let ticks = if lo <= hi {
-            nice_ticks(lo, hi, 5)
-        } else {
-            vec![0.0, 1.0]
-        };
-        let (tlo, thi) = (ticks[0], ticks[ticks.len() - 1]);
+        // Axis and bubble scale from every item, so hiding a group keeps the others still.
+        let (tlo, thi, ticks) = dodai_charts_core::tick_span(items.iter().map(|i| i.2), 5);
         let smax = items.iter().map(|i| i.3).fold(f32::MIN_POSITIVE, f32::max);
+        let items: Vec<_> = items.into_iter().filter(|i| groups.shown(i.0)).collect();
         let focus = Focus::new(window, cx, &self.follow, items.len());
         let looks: Vec<_> = (0..items.len()).map(|i| focus.item(i)).collect();
         let cols: Vec<Hsla> = (0..self.groups.len().max(1))
@@ -219,8 +216,8 @@ impl BubbleSwarm {
             .w_full()
             .child(plot)
             .child(div().px(px(rmax)).child(tick_row(&t, &ticks, &self.fmt)))
-            .children(group_legend(&t, &names))
-            .child(readout(&t, shown, "Hover a bubble"));
+            .children(groups.legend(&t).filter(|_| names.len() > 1))
+            .child(readout(&t, shown, &groups.hint("Hover a bubble")));
         titled(&t, self.title, body)
     }
 }
@@ -235,6 +232,7 @@ dodai_gpui::entry_render!(BubbleSwarm);
 pub struct ProportionalSquares {
     follow: dodai_gpui::follow::Follow,
     groups: Grouped<f32>,
+    filter: bool,
     height: f32,
     fmt: Option<NumFmt>,
     title: Option<SharedString>,
@@ -243,6 +241,11 @@ chart_cfg!(ProportionalSquares);
 
 impl ProportionalSquares {
     dodai_gpui::follow_api!();
+    /// Let the legend hide and show groups (default on; needs two groups or more).
+    pub fn filter(mut self, on: bool) -> Self {
+        self.filter = on;
+        self
+    }
     /// Create new [`ProportionalSquares`] from `(group, [(label, value)])`; each group takes a
     /// series colour.
     #[track_caller]
@@ -252,6 +255,7 @@ impl ProportionalSquares {
         Self {
             follow: dodai_gpui::follow::Follow::here(),
             groups: grouped(groups),
+            filter: true,
             height: 260.0,
             fmt: None,
             title: None,
@@ -272,6 +276,13 @@ impl ProportionalSquares {
         }
         let t = theme_of(cx);
         let g = dodai_gpui::motion::grow_for(window, cx, &self.follow, "ProportionalSquares");
+        let groups = Groups::new(
+            window,
+            cx,
+            &self.follow,
+            self.groups.iter().map(|g| Some(&g.0)),
+            self.filter,
+        );
         let items: Vec<(usize, SharedString, f32)> = self
             .groups
             .iter()
@@ -283,6 +294,8 @@ impl ProportionalSquares {
             .map(|i| i.2)
             .filter(|v| v.is_finite() && *v > 0.0)
             .sum();
+        // Shares stay of the whole, with groups hidden or not.
+        let items: Vec<_> = items.into_iter().filter(|i| groups.shown(i.0)).collect();
         let focus = Focus::new(window, cx, &self.follow, items.len());
         let looks: Vec<_> = (0..items.len()).map(|i| focus.item(i)).collect();
         let cols: Vec<Hsla> = (0..self.groups.len().max(1))
@@ -392,8 +405,8 @@ impl ProportionalSquares {
             .gap(px(t.spacing.xs))
             .w_full()
             .child(plot)
-            .children(group_legend(&t, &names))
-            .child(readout(&t, shown, "Hover a square"));
+            .children(groups.legend(&t).filter(|_| names.len() > 1))
+            .child(readout(&t, shown, &groups.hint("Hover a square")));
         titled(&t, self.title, body)
     }
 }

@@ -566,13 +566,12 @@ impl SlopeChart {
         let t = theme_of(cx);
         let g = dodai_gpui::motion::grow_for(window, cx, &self.follow, "SlopeChart");
         let vals = self.items.iter().flat_map(|i| [i.1, i.2]);
-        let lo = vals.clone().fold(f32::INFINITY, f32::min);
-        let hi = vals.fold(f32::NEG_INFINITY, f32::max);
-        let (lo, hi) = if lo.is_finite() && hi > lo {
-            let pad = (hi - lo) * 0.08;
-            (lo - pad, hi + pad)
-        } else {
-            (0.0, 1.0)
+        let (lo, hi) = match dodai_charts_core::extent(vals) {
+            Some((lo, hi)) if hi > lo => {
+                let pad = (hi - lo) * 0.08;
+                (lo - pad, hi + pad)
+            }
+            _ => (0.0, 1.0),
         };
         let muted = hsla(t.palette.text_muted);
         let dir = |a: f32, b: f32| {

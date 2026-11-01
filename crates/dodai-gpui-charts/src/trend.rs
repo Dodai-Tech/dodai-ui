@@ -627,15 +627,13 @@ impl Candlestick {
                     .map(move |(l, a)| (l, a, k))
             })
             .collect();
-        let mut lo = shown.iter().map(|c| c.low).fold(f32::MAX, f32::min);
-        let mut hi = shown.iter().map(|c| c.high).fold(f32::MIN, f32::max);
-        for v in lines.iter().flat_map(|l| l.0.iter().flatten()) {
-            lo = lo.min(*v);
-            hi = hi.max(*v);
-        }
-        let (lo, hi) = if lo <= hi { (lo, hi) } else { (0.0, 1.0) };
-        let ticks = nice_ticks(lo, hi, 4);
-        let (lo, hi) = (*ticks.first().unwrap_or(&lo), *ticks.last().unwrap_or(&hi));
+        let (lo, hi, ticks) = dodai_charts_core::tick_span(
+            shown
+                .iter()
+                .flat_map(|c| [c.low, c.high])
+                .chain(lines.iter().flat_map(|l| l.0.iter().flatten().copied())),
+            4,
+        );
         let (up, down, grid) = (up_color(&t), down_color(&t), hsla(t.palette.border));
         let n = shown.len();
         let line_cols: Vec<Hsla> = (0..self.overlays.len())
