@@ -11,6 +11,7 @@ impl Showcase {
         &mut self,
         me: &Entity<Self>,
         narrow: bool,
+        drawer: bool,
         cx: &mut Context<Self>,
     ) -> (gpui::Stateful<Div>, f32) {
         let t = theme_of(cx);
@@ -36,7 +37,8 @@ impl Showcase {
                 .count()
         };
         let me = me.clone();
-        let rail = self.rail;
+        // In the phone drawer there is no rail: the menu bar and the backdrop close it.
+        let rail = self.rail && !drawer;
         // Widest row (px estimate) so the sidebar grows with its labels up to a
         // cap, after which labels wrap.
         let mut side_need: f32 = 0.0;
@@ -123,7 +125,7 @@ impl Showcase {
                         .items_center()
                         .justify_between()
                         .child(Heading::new("Dodai UI").level(2))
-                        .child(toggle)
+                        .children((!drawer).then_some(toggle))
                 }
             });
         if !rail {
