@@ -28,9 +28,10 @@ impl SidebarView {
 impl Render for SidebarView {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let narrow = window.viewport_size().width < px(760.0);
+        let drawer = window.viewport_size().width < px(crate::SHELL_BREAKPOINT);
         self.showcase.update(cx, |s, cx| {
             let me = cx.entity();
-            let (side, need) = s.sidebar(&me, narrow, cx);
+            let (side, need) = s.sidebar(&me, narrow, drawer, cx);
             if (need - s.side_need).abs() > 0.5 {
                 // The page sizes the sidebar column: let it re-measure (no section rebuild).
                 s.side_need = need;

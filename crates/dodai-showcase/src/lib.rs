@@ -226,10 +226,13 @@ pub struct Showcase {
 /// sections).
 const REST: std::time::Duration = std::time::Duration::from_millis(200);
 
+/// Window width below which the sidebar becomes a drawer behind the menu bar.
+pub(crate) const SHELL_BREAKPOINT: f32 = 640.0;
+
 impl Showcase {
     /// The width the shell gives the sidebar column (the collapsed rail when it is folded).
     pub(crate) fn side_width(&self, t: &dodai_core::Theme) -> f32 {
-        if self.rail {
+        if self.rail && self.viewport_w >= SHELL_BREAKPOINT {
             t.navigation().rail_width
         } else if self.viewport_w < 760.0 {
             self.side_need.clamp(170.0, 230.0)
@@ -696,7 +699,7 @@ impl Render for Showcase {
             .children(dodai_gpui::backdrop(&t))
             .child(
                 ResponsiveShell::new("shell")
-                    .breakpoint(640.0)
+                    .breakpoint(SHELL_BREAKPOINT)
                     .sidebar_width(if narrow {
                         side_need.clamp(170.0, 230.0)
                     } else {
