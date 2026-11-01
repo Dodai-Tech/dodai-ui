@@ -53,6 +53,32 @@ pub fn next_frame(w: &Window) {
     }
 }
 
+/// Whether a follow eases: ambient ones need Animate on; ones answering input also run with it
+/// off, and only "reduce motion" stops them.
+fn eases(animated: bool, enabled: bool, answers_input: bool, reduced: bool) -> bool {
+    animated && if answers_input { !reduced } else { enabled }
+}
+
+#[cfg(test)]
+mod ease_tests {
+    use super::eases;
+
+    #[test]
+    fn answers_to_input_ease_while_animate_is_off() {
+        assert!(
+            !eases(true, false, false, false),
+            "ambient stops with Animate"
+        );
+        assert!(eases(true, false, true, false), "input answers keep easing");
+        assert!(!eases(true, true, true, true), "reduce motion stops them");
+        assert!(
+            !eases(false, true, true, false),
+            "animate(false) stops them"
+        );
+        assert!(eases(true, true, false, false));
+    }
+}
+
 /// Called when the item under the pointer (else the selected one) changes: `Some(index)`, or
 /// `None` when nothing has the focus any more.
 pub type FocusFn = Rc<dyn Fn(Option<usize>, &mut Window, &mut App)>;
@@ -68,6 +94,7 @@ pub struct Follow {
     animated: bool,
     interactive: bool,
     on_focus: Option<FocusFn>,
+    answers_input: bool,
 }
 
 impl Follow {
@@ -89,6 +116,7 @@ impl Follow {
             animated: true,
             interactive: true,
             on_focus: None,
+            answers_input: false,
         }
     }
     /// An id from a name, for components that already have one.
@@ -100,6 +128,7 @@ impl Follow {
             animated: true,
             interactive: true,
             on_focus: None,
+            answers_input: false,
         }
     }
     /// Turns following on or off for this component; off, it shows its value at once.
@@ -112,6 +141,21 @@ impl Follow {
     pub fn with_interactive(mut self, on: bool) -> Self {
         self.interactive = on;
         self
+    }
+    /// Marks this follow as the answer to input (a hover or selection easing) rather than
+    /// ambient motion: it keeps easing while the global Animate switch is off, and only
+    /// "reduce motion" makes it land at once.
+    pub fn answering_input(mut self) -> Self {
+        self.answers_input = true;
+        self
+    }
+    fn running(&self) -> bool {
+        eases(
+            self.animated,
+            crate::motion::enabled(),
+            self.answers_input,
+            crate::motion::reduce_motion(),
+        )
     }
     /// Whether the component reacts to the pointer.
     pub fn interactive(&self) -> bool {
@@ -135,6 +179,7 @@ impl Follow {
             animated: self.animated,
             interactive: self.interactive,
             on_focus: self.on_focus.clone(),
+            answers_input: self.answers_input,
         }
     }
     /// The state key of this component in the current frame: its id, plus the instance number
@@ -231,7 +276,7 @@ fn state(
     let response = f
         .response
         .unwrap_or_else(|| theme_of(cx).chart_style().response);
-    if !crate::motion::enabled() || !f.animated {
+    if !f.running() {
         return None;
     }
     let (secs, bounce) = response.spring()?;
@@ -294,7 +339,7 @@ struct Many {
 /// Every value of `target` followed at once, for a chart's data. Values that appear start at
 /// their target; the rest ease with the component's response. Requests frames until settled.
 pub fn follow_all(w: &mut Window, cx: &mut App, f: &Follow, target: &[f32]) -> Vec<f32> {
-    if !crate::motion::enabled() || !f.animated {
+    if !f.running() {
         return target.to_vec();
     }
     // Data follows the app's motion set (duration and personality), so the Motion controls

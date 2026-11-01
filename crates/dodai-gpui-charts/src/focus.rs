@@ -85,7 +85,8 @@ pub(crate) struct Focus {
 impl Focus {
     /// The eased focus of `n` items. `id` must be unique to the chart.
     pub fn new(w: &mut Window, cx: &mut App, follow: &Follow, n: usize) -> Self {
-        let follow = &follow.sub("focus");
+        // Hover and selection answer the pointer: they ease even while Animate is off.
+        let follow = &follow.sub("focus").answering_input();
         let key = follow.element_id(w, cx);
         let state = w.with_id(key, |w| {
             w.use_keyed_state("focus", cx, |_, _| FocusState::default())
