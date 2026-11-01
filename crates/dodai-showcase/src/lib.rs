@@ -793,6 +793,20 @@ impl Render for Showcase {
                                             .into_any_element(),
                                         ))
                                         .child(pair(
+                                            "Patterns",
+                                            dodai_gpui::Segmented::new(
+                                                "top-patterns",
+                                                ["Off", "On"],
+                                            )
+                                            .selected(usize::from(
+                                                dodai_gpui_charts::common::patterns(),
+                                            ))
+                                            .on_select(|i, _, cx| {
+                                                dodai_gpui_charts::common::set_patterns(cx, i == 1)
+                                            })
+                                            .into_any_element(),
+                                        ))
+                                        .child(pair(
                                             "Design",
                                             div()
                                                 .w(px(dw))

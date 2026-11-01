@@ -170,7 +170,9 @@ impl BarChart {
                 s.name,
                 fmt_with(&self.fmt, v)
             )))
-            .child(shaped(&t.shape, style).size_full());
+            .relative()
+            .child(shaped(&t.shape, style).size_full())
+            .children(crate::common::hatch_overlay(t, si));
         if self.horizontal {
             el.h_full().w(relative(frac))
         } else {
