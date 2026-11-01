@@ -1522,3 +1522,49 @@ fn navigation_bar_destinations_click_in_order(cx: &mut TestAppContext) {
     let order = sweep(vcx, &l, |v| (v, y + h / 2.0), x..x + w, 4.0);
     assert_eq!(order, vec![0, 1, 2], "bar destinations, left to right");
 }
+
+/// Sets a flag whenever it is rendered: a sidebar that is not in the tree never sets it.
+#[derive(IntoElement)]
+struct Probe(Rc<Cell<bool>>);
+
+impl RenderOnce for Probe {
+    fn render(self, _: &mut Window, _: &mut gpui::App) -> impl IntoElement {
+        self.0.set(true);
+        div().child("nav")
+    }
+}
+
+#[gpui::test]
+fn narrow_shell_drawer_closes_from_its_own_icon(cx: &mut TestAppContext) {
+    let shown = Rc::new(Cell::new(false));
+    let s2 = shown.clone();
+    let vcx = mount(cx, move |_, _| {
+        div()
+            .w(px(500.0))
+            .h(px(600.0))
+            .child(
+                ResponsiveShell::new("shell")
+                    .breakpoint(1000.0) // wider than the 900 px test window: narrow layout
+                    .sidebar_width(220.0)
+                    .sidebar(Probe(s2.clone()))
+                    .content(div().child("page")),
+            )
+            .into_any_element()
+    });
+    shown.set(false);
+    vcx.simulate_mouse_move(point(px(400.0), px(400.0)), None, Modifiers::none());
+    vcx.run_until_parked();
+    assert!(!shown.get(), "closed at first");
+    click(vcx, 20.0, 12.0); // the menu bar
+    assert!(shown.get(), "the bar opens it");
+    let b = vcx
+        .debug_bounds("shell-close")
+        .expect("the drawer's close icon");
+    vcx.simulate_mouse_move(b.center(), None, Modifiers::none());
+    vcx.run_until_parked();
+    click(vcx, f32::from(b.center().x), f32::from(b.center().y));
+    shown.set(false);
+    vcx.simulate_mouse_move(point(px(400.0), px(400.0)), None, Modifiers::none());
+    vcx.run_until_parked();
+    assert!(!shown.get(), "the icon closes it");
+}

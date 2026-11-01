@@ -37,7 +37,7 @@ impl Showcase {
                 .count()
         };
         let me = me.clone();
-        // In the phone drawer there is no rail: the menu bar and the backdrop close it.
+        // In the phone drawer there is no rail: the shell draws the drawer's own close icon.
         let rail = self.rail && !drawer;
         // Widest row (px estimate) so the sidebar grows with its labels up to a
         // cap, after which labels wrap.
