@@ -338,7 +338,11 @@ impl RenderOnce for ResponsiveShell {
             .flex()
             .flex_col()
             .children(self.content);
-        let mut root = div().relative().size_full().flex();
+        let mut root = div()
+            .relative()
+            .size_full()
+            .flex()
+            .child(crate::motion::input_tracker());
         if wide {
             if let Some(f) = self.on_collapse.clone() {
                 root = drag_handlers(root, &side_state, f, collapsed, (rail_w, full_w));
