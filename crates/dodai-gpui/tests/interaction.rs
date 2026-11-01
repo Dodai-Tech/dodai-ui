@@ -884,6 +884,50 @@ fn scroll_area_thumb_drag_scrolls_the_content(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
+fn scroll_area_horizontal_thumb_drag_scrolls_sideways(cx: &mut TestAppContext) {
+    let vcx = mount(cx, |_, _| {
+        div()
+            .w(px(200.0))
+            .child(
+                ScrollArea::new("sa-drag-x")
+                    .height(60.0)
+                    .horizontal(true)
+                    .child(
+                        div()
+                            .h(px(40.0))
+                            .w(px(800.0))
+                            .debug_selector(|| "content".into()),
+                    ),
+            )
+            .into_any_element()
+    });
+    vcx.update(|_, cx| cx.refresh_windows());
+    vcx.run_until_parked();
+    let left_before = f32::from(vcx.debug_bounds("content").expect("content").left());
+    let (x, y, _, h) = target(vcx);
+    // horizontal thumb: bottom edge, BAR_GAP up, starting at the left of the rail
+    let (tx, ty) = (x + 10.0, y + h - 5.0);
+    let at = |px_x: f32, px_y: f32| point(px(px_x), px(px_y));
+    vcx.simulate_mouse_down(at(tx, ty), gpui::MouseButton::Left, Modifiers::none());
+    vcx.simulate_mouse_move(
+        at(tx + 40.0, ty),
+        gpui::MouseButton::Left,
+        Modifiers::none(),
+    );
+    vcx.simulate_mouse_up(
+        at(tx + 40.0, ty),
+        gpui::MouseButton::Left,
+        Modifiers::none(),
+    );
+    vcx.run_until_parked();
+    let left_after = f32::from(vcx.debug_bounds("content").expect("content").left());
+    assert!(
+        left_after < left_before - 20.0,
+        "dragging the horizontal thumb scrolled the content: {left_before} -> {left_after}"
+    );
+}
+
+#[gpui::test]
 fn accordion_header_click_toggles_the_body(cx: &mut TestAppContext) {
     let vcx = mount(cx, |_, _| {
         Accordion::new("acc")
@@ -1276,4 +1320,114 @@ fn entry_scopes_leave_the_motion_as_they_found_it(cx: &mut TestAppContext) {
         after.delay, theme.delay,
         "the scope's delay stays inside it"
     );
+}
+
+// ───────────────────────────── code block ─────────────────────────────
+
+const CODE: &str = "alpha beta\ngamma delta\nepsilon";
+
+fn code_page(cx: &mut TestAppContext) -> &mut VisualTestContext {
+    mount(cx, |_, _| {
+        CodeBlock::new("code", CODE)
+            .copy_button(false)
+            .line_numbers(false)
+            .into_any_element()
+    })
+}
+
+/// What Cmd/Ctrl-C copied from the code block.
+fn copied(vcx: &mut VisualTestContext) -> Option<String> {
+    let key = if cfg!(target_os = "macos") {
+        "cmd-c"
+    } else {
+        "ctrl-c"
+    };
+    vcx.simulate_keystrokes(key);
+    vcx.update(|_, cx| cx.read_from_clipboard().and_then(|c| c.text()))
+}
+
+/// The y of the middle of code line `line`, found by probing: the first line is the one a
+/// triple-click selects as "alpha beta".
+fn line_y(vcx: &mut VisualTestContext, x: f32, line: usize) -> f32 {
+    let (_, top, _, h) = target(vcx);
+    let want = CODE.split('\n').nth(line).unwrap();
+    let mut y = top;
+    while y < top + h {
+        vcx.simulate_event(gpui::MouseDownEvent {
+            position: point(px(x), px(y)),
+            modifiers: Modifiers::none(),
+            button: gpui::MouseButton::Left,
+            click_count: 3,
+            first_mouse: false,
+        });
+        vcx.simulate_mouse_up(
+            point(px(x), px(y)),
+            gpui::MouseButton::Left,
+            Modifiers::none(),
+        );
+        vcx.run_until_parked();
+        if copied(vcx).as_deref() == Some(want) {
+            return y;
+        }
+        y += 2.0;
+    }
+    panic!("line {line} not found");
+}
+
+#[gpui::test]
+fn code_block_triple_click_selects_a_line_and_copies_it(cx: &mut TestAppContext) {
+    let vcx = code_page(cx);
+    let (x, ..) = target(vcx);
+    let y = line_y(vcx, x + 30.0, 1);
+    assert!(y > 0.0);
+    assert_eq!(copied(vcx).as_deref(), Some("gamma delta"));
+}
+
+#[gpui::test]
+fn code_block_drag_selects_across_lines(cx: &mut TestAppContext) {
+    let vcx = code_page(cx);
+    let (x, ..) = target(vcx);
+    let (y0, y1) = (line_y(vcx, x + 30.0, 0), line_y(vcx, x + 30.0, 1));
+    vcx.update(|_, cx| cx.write_to_clipboard(gpui::ClipboardItem::new_string(String::new())));
+    // Press at the start of the first line, drag to the end of the second.
+    let (from, to) = (point(px(x + 12.0), px(y0)), point(px(x + 100.0), px(y1)));
+    vcx.simulate_mouse_down(from, gpui::MouseButton::Left, Modifiers::none());
+    vcx.simulate_mouse_move(to, gpui::MouseButton::Left, Modifiers::none());
+    vcx.simulate_mouse_up(to, gpui::MouseButton::Left, Modifiers::none());
+    vcx.run_until_parked();
+    assert_eq!(copied(vcx).as_deref(), Some("alpha beta\ngamma delta"));
+}
+
+#[gpui::test]
+fn code_block_select_all_copies_everything(cx: &mut TestAppContext) {
+    let vcx = code_page(cx);
+    let (x, ..) = target(vcx);
+    line_y(vcx, x + 30.0, 0);
+    let all = if cfg!(target_os = "macos") {
+        "cmd-a"
+    } else {
+        "ctrl-a"
+    };
+    vcx.simulate_keystrokes(all);
+    assert_eq!(copied(vcx).as_deref(), Some(CODE));
+}
+
+#[gpui::test]
+fn code_block_double_click_selects_a_word(cx: &mut TestAppContext) {
+    let vcx = code_page(cx);
+    let (x, ..) = target(vcx);
+    let y = line_y(vcx, x + 30.0, 0);
+    let at = point(px(x + 30.0), px(y));
+    for count in [1, 2] {
+        vcx.simulate_event(gpui::MouseDownEvent {
+            position: at,
+            modifiers: Modifiers::none(),
+            button: gpui::MouseButton::Left,
+            click_count: count,
+            first_mouse: false,
+        });
+        vcx.simulate_mouse_up(at, gpui::MouseButton::Left, Modifiers::none());
+    }
+    vcx.run_until_parked();
+    assert_eq!(copied(vcx).as_deref(), Some("alpha"));
 }
