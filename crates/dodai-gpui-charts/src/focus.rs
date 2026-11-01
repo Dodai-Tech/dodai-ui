@@ -11,6 +11,9 @@ use dodai_gpui::follow::{follow_all, Follow};
 /// Opacity of the other items while one is selected.
 const DIM: f32 = 0.35;
 
+/// Opacity of the other items while the pointer rests on one.
+const HOVER_DIM: f32 = 0.6;
+
 #[derive(Default, Clone, Copy)]
 pub(crate) struct FocusState {
     pub hover: Option<usize>,
@@ -67,6 +70,13 @@ impl Focus {
             alpha: 1.0,
             lift: 0.0,
         })
+    }
+
+    /// Opacity for item `i` of a chart made of elements: its eased dimming, and fainter still
+    /// while the pointer rests on another item.
+    pub fn opacity(&self, i: usize, cx: &App) -> f32 {
+        let other = self.shown(cx).is_some_and(|k| k != i);
+        self.item(i).alpha * if other { HOVER_DIM } else { 1.0 }
     }
 
     /// Sets the hovered item (for charts that hit-test the pointer themselves).

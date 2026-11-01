@@ -5,7 +5,8 @@ use dodai_gpui::paint::stroke;
 use dodai_gpui::text::first_family;
 use dodai_gpui::{hsla, theme_of};
 use gpui::{
-    canvas, div, px, App, Bounds, IntoElement, ParentElement, Pixels, SharedString, Styled, Window,
+    canvas, div, px, App, Bounds, InteractiveElement, IntoElement, ParentElement, Pixels,
+    SharedString, StatefulInteractiveElement, Styled, Window,
 };
 
 // ─────────────────────────────────── Gauge ───────────────────────────────────
@@ -14,6 +15,7 @@ use gpui::{
 /// default 270° arc, segmented ring, dial, meter, reticle or slanted-cell bar.
 #[derive(IntoElement)]
 pub struct Gauge {
+    follow: dodai_gpui::follow::Follow,
     glow: crate::draw::ChartGlow,
     value: f32,
     min: f32,
@@ -35,8 +37,10 @@ impl Gauge {
         self
     }
     /// Create a new [`Gauge`].
+    #[track_caller]
     pub fn new(value: f32) -> Self {
         Self {
+            follow: dodai_gpui::follow::Follow::here(),
             glow: crate::draw::ChartGlow::Theme,
             value,
             min: 0.0,
@@ -208,7 +212,23 @@ impl Gauge {
                     .child(c)
             }));
         let frame = div().relative().w(px(bw)).h(px(bh)).child(canvas_el);
-        match style {
+        // Hovering spells out the reading against its range and target.
+        let detail = {
+            let (lo, hi) = (self.min.min(self.max), self.min.max(self.max));
+            let mut d = format!(
+                "{} of {}–{} · {:.0}%",
+                fmt_num(self.value),
+                fmt_num(lo),
+                fmt_num(hi),
+                norm(self.value, self.min, self.max) * 100.0
+            );
+            if let Some(tg) = self.target {
+                d += &format!(" · target {}", fmt_num(tg));
+            }
+            d
+        };
+        let key = SharedString::from(format!("gauge-{:?}", self.follow.element_id(window, cx)));
+        let inner = match style {
             GaugeStyle::Bar
             | GaugeStyle::Chevron
             | GaugeStyle::Level
@@ -255,7 +275,13 @@ impl Gauge {
                         .child(readout),
                 )
                 .into_any_element(),
-        }
+        };
+        div()
+            .id(key)
+            .flex()
+            .flex_none()
+            .tooltip(dodai_gpui::panel::DodaiTooltip::text(detail))
+            .child(inner)
     }
 }
 

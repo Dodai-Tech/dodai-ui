@@ -6,6 +6,7 @@
 use crate::common::{
     fmt_with, label_column, label_style, nice_ticks, norm, stroke, Legend, NumFmt,
 };
+use crate::focus::{readout, Focus};
 use dodai_core::{Color, Theme, Tone};
 use dodai_gpui::paint::{shaped, ShapeStyle};
 use dodai_gpui::{hsla, theme_of};
@@ -382,42 +383,84 @@ dodai_gpui::entry_render!(SlotGrid);
 /// Sits under a time chart sharing its range.
 #[derive(IntoElement)]
 pub struct StatusStrip {
+    follow: dodai_gpui::follow::Follow,
     range: (f32, f32),
     spans: Vec<(f32, f32, Tone)>,
+    fmt: Option<NumFmt>,
+}
+
+/// What a tone means on a status strip.
+fn tone_name(tone: Tone) -> &'static str {
+    match tone {
+        Tone::Info => "Info",
+        Tone::Success => "Healthy",
+        Tone::Warning => "Degraded",
+        Tone::Danger => "Failing",
+    }
 }
 
 impl StatusStrip {
+    dodai_gpui::follow_api!();
     /// A strip over `lo..hi` with `(start, end, tone)` spans.
+    #[track_caller]
     pub fn new(lo: f32, hi: f32, spans: impl IntoIterator<Item = (f32, f32, Tone)>) -> Self {
         Self {
+            follow: dodai_gpui::follow::Follow::here(),
             range: (lo, hi),
             spans: spans.into_iter().collect(),
+            fmt: None,
         }
     }
+    /// Custom formatter for the span bounds in the readout.
+    pub fn format(mut self, f: impl Fn(f32) -> String + 'static) -> Self {
+        self.fmt = Some(Rc::new(f));
+        self
+    }
 
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let (lo, hi) = self.range;
         let finite = lo.is_finite() && hi.is_finite() && hi > lo;
+        let focus = Focus::new(window, cx, &self.follow, self.spans.len());
+        let key = SharedString::from(format!(
+            "strip-{:?}",
+            self.follow.sub("spans").element_id(window, cx)
+        ));
         let mut strip = div()
             .relative()
             .w_full()
             .h(px(t.spacing.xs))
             .child(thin(&t, t.palette.border).absolute().size_full());
-        for (a, b, tone) in self.spans {
-            let (a, b) = (norm(a, lo, hi), norm(b, lo, hi));
-            if finite && a.is_finite() && b.is_finite() && b > a {
-                strip = strip.child(
-                    thin(&t, t.palette.tone(tone))
-                        .absolute()
-                        .top_0()
-                        .h_full()
-                        .left(relative(a))
-                        .w(relative(b - a)),
-                );
+        for (i, (a, b, tone)) in self.spans.iter().enumerate() {
+            let (fa, fb) = (norm(*a, lo, hi), norm(*b, lo, hi));
+            if finite && fa.is_finite() && fb.is_finite() && fb > fa {
+                let span = thin(&t, t.palette.tone(*tone))
+                    .id((key.clone(), i))
+                    .absolute()
+                    .top_0()
+                    .h_full()
+                    .left(relative(fa))
+                    .w(relative(fb - fa))
+                    .opacity(focus.opacity(i, cx));
+                strip = strip.child(focus.bind(span, i));
             }
         }
-        strip
+        let text = focus.shown(cx).and_then(|i| {
+            let (a, b, tone) = self.spans.get(i)?;
+            Some(format!(
+                "{} · {} to {}",
+                tone_name(*tone),
+                fmt_with(&self.fmt, *a),
+                fmt_with(&self.fmt, *b)
+            ))
+        });
+        div()
+            .flex()
+            .flex_col()
+            .gap(px(t.spacing.xs))
+            .w_full()
+            .child(strip)
+            .child(readout(&t, text, "Hover a span"))
     }
 }
 
@@ -429,26 +472,35 @@ dodai_gpui::entry_render!(StatusStrip);
 /// holding something in full colour with their count ("how many radios retry 5–10 %").
 #[derive(IntoElement)]
 pub struct BucketBar {
+    follow: dodai_gpui::follow::Follow,
     edges: Vec<SharedString>,
     counts: Vec<u32>,
 }
 
 impl BucketBar {
+    dodai_gpui::follow_api!();
     /// Buckets between `edges` (one more edge than counts), worst first.
+    #[track_caller]
     pub fn new<S: Into<SharedString>>(
         edges: impl IntoIterator<Item = S>,
         counts: impl IntoIterator<Item = u32>,
     ) -> Self {
         Self {
+            follow: dodai_gpui::follow::Follow::here(),
             edges: edges.into_iter().map(Into::into).collect(),
             counts: counts.into_iter().collect(),
         }
     }
 
-    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let n = self.counts.len();
         let h = t.sizes().chart_bar;
+        let focus = Focus::new(window, cx, &self.follow, n);
+        let key = SharedString::from(format!(
+            "buckets-{:?}",
+            self.follow.sub("cells").element_id(window, cx)
+        ));
         let cells = div().flex().gap(px(t.spacing.xs)).w_full().children(
             self.counts.iter().enumerate().map(|(i, c)| {
                 let tone = bad_to_good(
@@ -464,23 +516,33 @@ impl BucketBar {
                 } else {
                     (tone.mix(t.palette.surface, 0.8), t.palette.text_muted)
                 };
-                div()
-                    .flex_1()
-                    .h(px(h))
-                    .relative()
-                    .child(mark(&t, bg, None).absolute().size_full())
-                    .child(
-                        label_style(&t, div())
-                            .absolute()
-                            .size_full()
-                            .text_color(hsla(ink))
-                            .flex()
-                            .items_center()
-                            .justify_center()
-                            .children((*c > 0).then(|| c.to_string())),
-                    )
+                focus.bind(
+                    div()
+                        .id((key.clone(), i))
+                        .flex_1()
+                        .h(px(h))
+                        .relative()
+                        .opacity(focus.opacity(i, cx))
+                        .child(mark(&t, bg, None).absolute().size_full())
+                        .child(
+                            label_style(&t, div())
+                                .absolute()
+                                .size_full()
+                                .text_color(hsla(ink))
+                                .flex()
+                                .items_center()
+                                .justify_center()
+                                .children((*c > 0).then(|| c.to_string())),
+                        ),
+                    i,
+                )
             }),
         );
+        let text = focus.shown(cx).and_then(|i| {
+            let count = self.counts.get(i)?;
+            let (a, b) = (self.edges.get(i)?, self.edges.get(i + 1)?);
+            Some(format!("{a} to {b} · {count}"))
+        });
         let edges = label_style(&t, div())
             .flex()
             .justify_between()
@@ -492,6 +554,7 @@ impl BucketBar {
             .w_full()
             .child(cells)
             .child(edges)
+            .child(readout(&t, text, "Hover a bucket"))
     }
 }
 
@@ -536,61 +599,85 @@ impl StageBars {
             .fmt
             .clone()
             .unwrap_or_else(|| Rc::new(|v| format!("{v:.0}%")));
+        let focus = Focus::new(window, cx, &self.follow, self.stages.len());
+        let key = SharedString::from(format!(
+            "stages-{:?}",
+            self.follow.sub("bars").element_id(window, cx)
+        ));
+        let text = focus.shown(cx).and_then(|i| {
+            let (name, v) = self.stages.get(i)?;
+            Some(format!(
+                "{name} · {} succeeded",
+                fmt_with(&Some(fmt.clone()), *v)
+            ))
+        });
+        let row = div().flex().gap(px(t.spacing.xs)).w_full().children(
+            self.stages
+                .iter()
+                .zip(shown)
+                .enumerate()
+                .map(|(i, ((name, _), v))| {
+                    let v = if v.is_finite() {
+                        v.clamp(0.0, 100.0)
+                    } else {
+                        0.0
+                    };
+                    // Healthy from 95 %, worrying below 80 %.
+                    let tone = bad_to_good(&t, norm(v, 80.0, 95.0));
+                    let stage = div()
+                        .id((key.clone(), i))
+                        .flex_1()
+                        .min_w_0()
+                        .flex()
+                        .flex_col()
+                        .gap(px(t.spacing.xs))
+                        .opacity(focus.opacity(i, cx))
+                        .child(
+                            div()
+                                .relative()
+                                .h(px(h))
+                                .child(
+                                    mark(&t, tone.mix(t.palette.surface, 0.8), None)
+                                        .absolute()
+                                        .size_full(),
+                                )
+                                .child(
+                                    mark(&t, tone, None)
+                                        .absolute()
+                                        .top_0()
+                                        .left_0()
+                                        .h_full()
+                                        .w(relative(v / 100.0 * g)),
+                                )
+                                .child(
+                                    label_style(&t, div())
+                                        .absolute()
+                                        .size_full()
+                                        .px(px(t.spacing.xs))
+                                        .flex()
+                                        .items_center()
+                                        .overflow_hidden()
+                                        .whitespace_nowrap()
+                                        .text_ellipsis()
+                                        .text_color(hsla(t.on(tone)))
+                                        .child(name.clone()),
+                                ),
+                        )
+                        .child(
+                            label_style(&t, div())
+                                .text_color(hsla(tone))
+                                .child(fmt_with(&Some(fmt.clone()), v)),
+                        );
+                    focus.bind(stage, i)
+                }),
+        );
         div()
             .flex()
+            .flex_col()
             .gap(px(t.spacing.xs))
             .w_full()
-            .children(self.stages.iter().zip(shown).map(|((name, _), v)| {
-                let v = if v.is_finite() {
-                    v.clamp(0.0, 100.0)
-                } else {
-                    0.0
-                };
-                // Healthy from 95 %, worrying below 80 %.
-                let tone = bad_to_good(&t, norm(v, 80.0, 95.0));
-                div()
-                    .flex_1()
-                    .min_w_0()
-                    .flex()
-                    .flex_col()
-                    .gap(px(t.spacing.xs))
-                    .child(
-                        div()
-                            .relative()
-                            .h(px(h))
-                            .child(
-                                mark(&t, tone.mix(t.palette.surface, 0.8), None)
-                                    .absolute()
-                                    .size_full(),
-                            )
-                            .child(
-                                mark(&t, tone, None)
-                                    .absolute()
-                                    .top_0()
-                                    .left_0()
-                                    .h_full()
-                                    .w(relative(v / 100.0 * g)),
-                            )
-                            .child(
-                                label_style(&t, div())
-                                    .absolute()
-                                    .size_full()
-                                    .px(px(t.spacing.xs))
-                                    .flex()
-                                    .items_center()
-                                    .overflow_hidden()
-                                    .whitespace_nowrap()
-                                    .text_ellipsis()
-                                    .text_color(hsla(t.on(tone)))
-                                    .child(name.clone()),
-                            ),
-                    )
-                    .child(
-                        label_style(&t, div())
-                            .text_color(hsla(tone))
-                            .child(fmt_with(&Some(fmt.clone()), v)),
-                    )
-            }))
+            .child(row)
+            .child(readout(&t, text, "Hover a stage"))
     }
 }
 
@@ -706,14 +793,35 @@ impl GradientScale {
                     .whitespace_nowrap()
                     .child(fmt_with(&self.fmt, *tk))
             }));
-        div()
+        let focus = Focus::new(window, cx, &self.follow, 1);
+        let text = focus.shown(cx).map(|_| {
+            let along = norm(value, lo, hi) * 100.0;
+            let along = if self.good_high { along } else { 100.0 - along };
+            format!(
+                "{} · {along:.0}% of the way to good",
+                fmt_with(&self.fmt, value)
+            )
+        });
+        let key = SharedString::from(format!(
+            "scale-{:?}",
+            self.follow.sub("scale").element_id(window, cx)
+        ));
+        let body = div()
+            .id(key)
             .flex()
             .flex_col()
             .gap(px(t.spacing.xs))
             .w_full()
             .px(px(knob / 2.0))
             .child(track)
-            .child(labels)
+            .child(labels);
+        div()
+            .flex()
+            .flex_col()
+            .gap(px(t.spacing.xs))
+            .w_full()
+            .child(focus.bind(body, 0))
+            .child(readout(&t, text, "Hover the scale"))
     }
 }
 
