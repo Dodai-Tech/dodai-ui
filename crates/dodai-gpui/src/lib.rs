@@ -203,7 +203,7 @@ pub mod icons;
 pub mod live;
 #[cfg(feature = "components")]
 mod own;
-pub use live::Live;
+pub use live::{Feed, Live};
 pub mod interact;
 #[cfg(feature = "components")]
 pub mod knob;
