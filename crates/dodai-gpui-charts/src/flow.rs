@@ -166,15 +166,12 @@ impl Waterfall {
     }
     /// Create a new [`Waterfall`].
     #[track_caller]
-    pub fn new<S: Into<SharedString>>(
-        id: impl Into<SharedString>,
-        steps: impl IntoIterator<Item = (S, f32)>,
-    ) -> Self {
+    pub fn new<S: Into<SharedString>>(steps: impl IntoIterator<Item = (S, f32)>) -> Self {
         Self {
             follow: dodai_gpui::follow::Follow::here(),
             annotations: Vec::new(),
             corners: None,
-            id: id.into(),
+            id: SharedString::default(),
             steps: steps
                 .into_iter()
                 .map(|(a, b)| (a.into(), crate::common::finite_or_zero(b)))
@@ -194,6 +191,7 @@ impl Waterfall {
 
 impl Waterfall {
     fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.id = self.follow.element_id(window, cx).to_string().into();
         dodai_gpui::follow::follow_pairs(window, cx, &self.follow, &mut self.steps);
         let g = dodai_gpui::motion::grow_for(window, cx, &self.follow, "Waterfall");
         let t = theme_of(cx);

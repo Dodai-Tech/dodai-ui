@@ -24,16 +24,13 @@ impl Showcase {
         let actual: Vec<f32> = (0..12).map(|i| 40.0 + 6.0 * wave(1, i * 3)).collect();
         let forecast: Vec<f32> = (0..12).map(|i| 42.0 + 0.8 * i as f32).collect();
         let spread: Vec<f32> = (0..12).map(|i| 2.0 + 0.9 * i as f32).collect();
-        let band = LineChart::new(
-            "band-demo",
-            [
-                Series::new("Actual", actual),
-                Series::new("Forecast", forecast.clone()).band(
-                    forecast.iter().zip(&spread).map(|(f, s)| f - s),
-                    forecast.iter().zip(&spread).map(|(f, s)| f + s),
-                ),
-            ],
-        )
+        let band = LineChart::new([
+            Series::new("Actual", actual),
+            Series::new("Forecast", forecast.clone()).band(
+                forecast.iter().zip(&spread).map(|(f, s)| f - s),
+                forecast.iter().zip(&spread).map(|(f, s)| f + s),
+            ),
+        ])
         .include_zero(false)
         .points(false)
         .y_title("Orders / day")

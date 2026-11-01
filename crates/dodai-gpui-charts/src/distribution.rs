@@ -86,15 +86,15 @@ impl Histogram {
     }
     dodai_gpui::follow_api!();
     /// Create a new [`Histogram`].
-    pub fn new(id: impl Into<SharedString>, values: impl IntoIterator<Item = f32>) -> Self {
-        let id: SharedString = id.into();
+    #[track_caller]
+    pub fn new(values: impl IntoIterator<Item = f32>) -> Self {
         Self {
-            follow: dodai_gpui::follow::Follow::named(&id),
+            follow: dodai_gpui::follow::Follow::here(),
             annotations: Vec::new(),
             kde: false,
             stats: false,
             corners: None,
-            id,
+            id: SharedString::default(),
             values: values.into_iter().collect(),
             bins: 10,
             height: 180.0,
@@ -126,7 +126,8 @@ impl Histogram {
 }
 
 impl Histogram {
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.id = self.follow.element_id(window, cx).to_string().into();
         let t = theme_of(cx);
         let t = dodai_gpui::apply_corners(t, self.corners);
         let g = dodai_gpui::motion::grow_for(window, cx, &self.follow, "Histogram");
@@ -509,14 +510,13 @@ chart_cfg!(BubbleChart);
 impl BubbleChart {
     dodai_gpui::follow_api!();
     /// Create a new [`BubbleChart`].
+    #[track_caller]
     pub fn new<S: Into<SharedString>>(
-        id: impl Into<SharedString>,
         groups: impl IntoIterator<Item = (S, Vec<(f32, f32, f32)>)>,
     ) -> Self {
-        let id: SharedString = id.into();
         Self {
-            follow: dodai_gpui::follow::Follow::named(&id),
-            id,
+            follow: dodai_gpui::follow::Follow::here(),
+            id: SharedString::default(),
             groups: groups.into_iter().map(|(a, b)| (a.into(), b)).collect(),
             height: 240.0,
             max_radius: 22.0,
@@ -533,6 +533,7 @@ impl BubbleChart {
 
 impl BubbleChart {
     fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.id = self.follow.element_id(window, cx).to_string().into();
         let flat: Vec<f32> = self
             .groups
             .iter()

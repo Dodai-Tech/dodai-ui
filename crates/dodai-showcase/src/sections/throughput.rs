@@ -168,13 +168,10 @@ impl Showcase {
 
         // The same two windows as lines, the way a dashboard plots them.
         let lines = Panel::new().title("Throughput").child(
-            LineChart::new(
-                "speed-lines",
-                [
-                    Series::live("Download", windows[0]).color(colours[0]),
-                    Series::live("Upload", windows[1]).color(colours[1]),
-                ],
-            )
+            LineChart::new([
+                Series::live("Download", windows[0]).color(colours[0]),
+                Series::live("Upload", windows[1]).color(colours[1]),
+            ])
             .area(true)
             .y_range(0.0, 500.0)
             .y_title("Mbps")

@@ -22,33 +22,21 @@ fn datasets() -> Vec<(&'static str, Vec<f32>)> {
 fn charts(name: &'static str, v: Vec<f32>) -> Vec<AnyElement> {
     let s = || Series::new(name, v.clone());
     let mut out: Vec<AnyElement> = vec![
-        LineChart::new(format!("l-{name}"), [s()]).into_any_element(),
-        BarChart::new(format!("b-{name}"), [s(), s()]).into_any_element(),
-        Heatmap::new(
-            format!("h-{name}"),
-            vec![v.clone(), v.iter().take(2).copied().collect()],
-        )
-        .into_any_element(),
-        Histogram::new(format!("hi-{name}"), v.clone()).into_any_element(),
+        LineChart::new([s()]).into_any_element(),
+        BarChart::new([s(), s()]).into_any_element(),
+        Heatmap::new(vec![v.clone(), v.iter().take(2).copied().collect()]).into_any_element(),
+        Histogram::new(v.clone()).into_any_element(),
         RadarChart::new(["a", "b", "c"], [s()]).into_any_element(),
         PieChart::new(v.iter().enumerate().map(|(i, x)| (format!("s{i}"), *x))).into_any_element(),
         Funnel::new(v.iter().enumerate().map(|(i, x)| (format!("s{i}"), *x))).into_any_element(),
-        Waterfall::new(
-            format!("w-{name}"),
-            v.iter().enumerate().map(|(i, x)| (format!("s{i}"), *x)),
-        )
-        .into_any_element(),
-        Treemap::new(
-            format!("t-{name}"),
-            v.iter().enumerate().map(|(i, x)| (format!("s{i}"), *x)),
-        )
-        .into_any_element(),
+        Waterfall::new(v.iter().enumerate().map(|(i, x)| (format!("s{i}"), *x))).into_any_element(),
+        Treemap::new(v.iter().enumerate().map(|(i, x)| (format!("s{i}"), *x))).into_any_element(),
         StackedAreaChart::new([s(), s()]).into_any_element(),
-        LineChart::new(format!("tx-{name}"), [s()])
+        LineChart::new([s()])
             .time_axis(v.iter().map(|x| f64::from(*x) * 1e9))
             .crosshair(true)
             .into_any_element(),
-        LineChart::new(format!("ty-{name}"), [s()])
+        LineChart::new([s()])
             .time_axis([f64::NAN, 1.0])
             .utc_offset(-12_345)
             .into_any_element(),
@@ -59,7 +47,6 @@ fn charts(name: &'static str, v: Vec<f32>) -> Vec<AnyElement> {
         )
         .into_any_element(),
         Candlestick::new(
-            format!("c-{name}"),
             v.windows(2)
                 .map(|w| dodai_charts_core::candles::Candle::new(w[0], w[1], w[0], w[1])),
         )
@@ -91,7 +78,7 @@ fn charts(name: &'static str, v: Vec<f32>) -> Vec<AnyElement> {
     }
     let rev: Vec<f32> = v.iter().rev().copied().collect();
     out.push(
-        LineChart::new(format!("band-{name}"), [s().band(v.clone(), rev.clone())])
+        LineChart::new([s().band(v.clone(), rev.clone())])
             .x_title("x")
             .y_title("y")
             .into_any_element(),
@@ -149,7 +136,7 @@ fn charts(name: &'static str, v: Vec<f32>) -> Vec<AnyElement> {
         Sunburst::new(tree.clone()).into_any_element(),
         Icicle::new(tree.clone()).into_any_element(),
         CirclePack::new(tree).into_any_element(),
-        SlotGrid::new("sg", Vec::<&str>::new())
+        SlotGrid::new(Vec::<&str>::new())
             .row(
                 "r",
                 v.iter().map(|x| Slot::new(*x, -x, SlotState::Restricted)),
@@ -225,15 +212,11 @@ fn more_charts(name: &'static str, v: &[f32]) -> Vec<AnyElement> {
             .map(|(i, x)| (format!("i{i}"), *x, x * 0.5))
     };
     vec![
-        ScatterPlot::new(format!("sc-{name}"), [(name, pts.clone()), ("e", vec![])])
-            .into_any_element(),
-        BubbleChart::new(
-            format!("bu-{name}"),
-            [(
-                name,
-                v.iter().map(|x| (*x, -x, x.abs())).collect::<Vec<_>>(),
-            )],
-        )
+        ScatterPlot::new([(name, pts.clone()), ("e", vec![])]).into_any_element(),
+        BubbleChart::new([(
+            name,
+            v.iter().map(|x| (*x, -x, x.abs())).collect::<Vec<_>>(),
+        )])
         .into_any_element(),
         BoxPlot::new([(name, v.to_vec()), ("e", vec![])])
             .notch(true)
@@ -300,25 +283,16 @@ fn more_charts(name: &'static str, v: &[f32]) -> Vec<AnyElement> {
                 .chain([FlowStep::new("orphan", 1.0).from("nobody")]),
         )
         .into_any_element(),
-        RenkoChart::new(format!("rk-{name}"), v.to_vec(), 1.0).into_any_element(),
-        RenkoChart::new(format!("rk0-{name}"), v.to_vec(), 0.0).into_any_element(),
-        RenkoChart::new(format!("rkn-{name}"), v.to_vec(), f32::NAN).into_any_element(),
-        Lollipop::new(format!("lo-{name}"), items()).into_any_element(),
+        RenkoChart::new(v.to_vec(), 1.0).into_any_element(),
+        RenkoChart::new(v.to_vec(), 0.0).into_any_element(),
+        RenkoChart::new(v.to_vec(), f32::NAN).into_any_element(),
+        Lollipop::new(items()).into_any_element(),
         PairedBars::new(pairs()).into_any_element(),
         SlopeChart::new(pairs()).into_any_element(),
         Sankey::new(v.iter().map(|x| ("a", "b", *x))).into_any_element(),
         Sankey::new(v.iter().map(|x| ("a", "a", *x))).into_any_element(),
-        Gantt::new(
-            format!("ga-{name}"),
-            v.windows(2).map(|w| GanttTask::new("t", w[0], w[1])),
-        )
-        .into_any_element(),
-        DepthChart::new(
-            format!("de-{name}"),
-            pts.clone(),
-            pts.iter().map(|(a, b)| (*b, *a)),
-        )
-        .into_any_element(),
+        Gantt::new(v.windows(2).map(|w| GanttTask::new("t", w[0], w[1]))).into_any_element(),
+        DepthChart::new(pts.clone(), pts.iter().map(|(a, b)| (*b, *a))).into_any_element(),
         CalendarHeatmap::new(v.to_vec()).into_any_element(),
     ]
 }

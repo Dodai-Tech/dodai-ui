@@ -346,13 +346,10 @@ impl Lollipop {
     dodai_gpui::follow_api!();
     /// Create a new [`Lollipop`].
     #[track_caller]
-    pub fn new<S: Into<SharedString>>(
-        id: impl Into<SharedString>,
-        items: impl IntoIterator<Item = (S, f32)>,
-    ) -> Self {
+    pub fn new<S: Into<SharedString>>(items: impl IntoIterator<Item = (S, f32)>) -> Self {
         Self {
             follow: dodai_gpui::follow::Follow::here(),
-            id: id.into(),
+            id: SharedString::default(),
             items: items
                 .into_iter()
                 .map(|(l, v)| (l.into(), crate::common::finite_or_zero(v)))
@@ -382,6 +379,7 @@ chart_cfg!(Lollipop);
 
 impl Lollipop {
     fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.id = self.follow.element_id(window, cx).to_string().into();
         dodai_gpui::follow::follow_pairs(window, cx, &self.follow, &mut self.items);
         let t = theme_of(cx);
         let focus = crate::focus::Focus::new(

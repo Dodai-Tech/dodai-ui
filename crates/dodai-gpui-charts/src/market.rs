@@ -22,6 +22,7 @@ use std::rc::Rc;
 /// Renko chart: fixed-size price bricks, time ignored.
 #[derive(IntoElement)]
 pub struct RenkoChart {
+    follow: dodai_gpui::follow::Follow,
     id: SharedString,
     closes: Vec<f32>,
     brick: f32,
@@ -32,14 +33,13 @@ pub struct RenkoChart {
 chart_cfg!(RenkoChart);
 
 impl RenkoChart {
+    dodai_gpui::follow_api!();
     /// Create a new [`RenkoChart`].
-    pub fn new(
-        id: impl Into<SharedString>,
-        closes: impl IntoIterator<Item = f32>,
-        brick: f32,
-    ) -> Self {
+    #[track_caller]
+    pub fn new(closes: impl IntoIterator<Item = f32>, brick: f32) -> Self {
         Self {
-            id: id.into(),
+            follow: dodai_gpui::follow::Follow::here(),
+            id: SharedString::default(),
             closes: closes.into_iter().collect(),
             brick,
             height: 200.0,
@@ -48,7 +48,8 @@ impl RenkoChart {
         }
     }
 
-    fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.id = self.follow.element_id(window, cx).to_string().into();
         let t = theme_of(cx);
         let g = dodai_gpui::motion::grow(window, cx, "RenkoChart");
         let bricks = renko(&self.closes, self.brick);
@@ -136,16 +137,15 @@ impl DepthChart {
     }
     dodai_gpui::follow_api!();
     /// `(price, size)` levels in any order.
+    #[track_caller]
     pub fn new(
-        id: impl Into<SharedString>,
         bids: impl IntoIterator<Item = Level>,
         asks: impl IntoIterator<Item = Level>,
     ) -> Self {
-        let id: SharedString = id.into();
         Self {
             glow: crate::common::ChartGlow::Theme,
-            follow: dodai_gpui::follow::Follow::named(&id),
-            id,
+            follow: dodai_gpui::follow::Follow::here(),
+            id: SharedString::default(),
             bids: bids.into_iter().collect(),
             asks: asks.into_iter().collect(),
             height: 200.0,
@@ -155,6 +155,7 @@ impl DepthChart {
     }
 
     fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.id = self.follow.element_id(window, cx).to_string().into();
         let t = theme_of(cx);
         let flat: Vec<f32> = self
             .bids
@@ -272,11 +273,11 @@ pub struct Gantt {
 impl Gantt {
     dodai_gpui::follow_api!();
     /// Create a new [`Gantt`].
-    pub fn new(id: impl Into<SharedString>, tasks: impl IntoIterator<Item = Task>) -> Self {
-        let id: SharedString = id.into();
+    #[track_caller]
+    pub fn new(tasks: impl IntoIterator<Item = Task>) -> Self {
         Self {
-            follow: dodai_gpui::follow::Follow::named(&id),
-            id,
+            follow: dodai_gpui::follow::Follow::here(),
+            id: SharedString::default(),
             tasks: tasks.into_iter().collect(),
             fmt: None,
             title: None,
@@ -300,6 +301,7 @@ impl Gantt {
     }
 
     fn build(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.id = self.follow.element_id(window, cx).to_string().into();
         let t = theme_of(cx);
         let flat: Vec<f32> = self
             .tasks

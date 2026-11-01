@@ -72,23 +72,17 @@ fn legend_click_hides_series_and_all_hidden_survives(cx: &mut TestAppContext) {
             .flex()
             .flex_col()
             .child(
-                LineChart::new(
-                    "tl",
-                    [
-                        Series::new("Alpha", [1.0, 5.0, 2.0]),
-                        Series::new("Beta", [9.0, 3.0, 4.0]),
-                    ],
-                )
+                LineChart::new([
+                    Series::new("Alpha", [1.0, 5.0, 2.0]),
+                    Series::new("Beta", [9.0, 3.0, 4.0]),
+                ])
                 .toggleable(true),
             )
             .child(
-                BarChart::new(
-                    "tb",
-                    [
-                        Series::new("Gamma", [1.0, 5.0]),
-                        Series::new("Delta", [9.0, 3.0]),
-                    ],
-                )
+                BarChart::new([
+                    Series::new("Gamma", [1.0, 5.0]),
+                    Series::new("Delta", [9.0, 3.0]),
+                ])
                 .toggleable(true),
             )
             .into_any_element()
