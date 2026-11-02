@@ -170,6 +170,12 @@ pub(super) fn shapes(i: Symbol) -> Vec<Shape> {
                 (rot(&[(9.5, 8.0), (14.5, 8.0)]), false),
             ]
         }
+        #[cfg(any(
+            feature = "symbols-vehicle",
+            feature = "symbols-medical",
+            feature = "symbols-industrial",
+            feature = "symbols-aviation"
+        ))]
         _ => Vec::new(),
     }
 }

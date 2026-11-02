@@ -17,7 +17,7 @@ component styles) feeds four native adapters:
 | [`dodai-iced`](crates/dodai-iced) | Iced 0.14 | `IcedTheme`: native `iced::Theme`, button/container/text-input/text styles with neon glow, canvas `ChamferFrame` |
 | [`dodai-gpui`](crates/dodai-gpui) | GPUI 0.2 | The design system: `Global` theme store, `cx.dodai()`, `DodaiStyled`, 160+ components |
 | [`dodai-gpui-charts`](crates/dodai-gpui-charts) | GPUI 0.2 | 70 interactive, animated charts (line, bar, pie, sankey, candlestick, treemap, …) |
-| [`dodai-gpui-instruments`](crates/dodai-gpui-instruments) | GPUI 0.2 | Dials, gauges, segment displays, scopes; `automotive`, `aviation`, `defense` sets (features) |
+| [`dodai-gpui-instruments`](crates/dodai-gpui-instruments) | GPUI 0.2 | Dials, gauges, segment displays, scopes; `automotive`, `aviation`, `defense`, `industrial`, `medical` sets (features) |
 | [`dodai-topcoat`](crates/dodai-topcoat) | Topcoat / any SSR web | CSS custom properties, `.dodai-btn/.dodai-panel/.dodai-input/.dodai-tag/.dodai-tabs/.dodai-table`, `clip-path` chamfers, JS theme switcher |
 
 ## Themes

@@ -102,6 +102,8 @@ check-gpui-features:
     cargo check -p dodai-gpui-instruments --no-default-features --features automotive
     cargo check -p dodai-gpui-instruments --no-default-features --features aviation
     cargo check -p dodai-gpui-instruments --no-default-features --features defense
+    cargo check -p dodai-gpui-instruments --no-default-features --features industrial
+    cargo check -p dodai-gpui-instruments --no-default-features --features medical
     cargo check -p dodai-gpui --no-default-features --features components
     cargo check -p dodai-gpui --no-default-features --features shaders
     cargo check -p dodai-gpui --no-default-features --features frost
@@ -115,6 +117,13 @@ check-gpui-features:
     cargo check -p dodai-icons --no-default-features --features cyberpunk
     cargo check -p dodai-icons --no-default-features --features material
     cargo check -p dodai-icons --no-default-features --features cyberpunk,neobrutalism
+    cargo check -p dodai-icons --no-default-features --features symbols-vehicle
+    cargo check -p dodai-icons --no-default-features --features symbols-medical
+    cargo check -p dodai-icons --no-default-features --features symbols-military
+    cargo check -p dodai-icons --no-default-features --features symbols-industrial
+    cargo check -p dodai-icons --no-default-features --features symbols-aviation
+    cargo check -p dodai-icons --no-default-features --features symbols
+    cargo check -p dodai-gpui --no-default-features --features symbols-medical
     cargo check -p dodai-core --features cyberpunk
     cargo check -p dodai-core --features material
     cargo check -p dodai-core --features neobrutalism

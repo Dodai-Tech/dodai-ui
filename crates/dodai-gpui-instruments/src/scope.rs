@@ -16,9 +16,11 @@ use gpui::{
 
 // ───────────────────────────── pure helpers ─────────────────────────────
 
+#[cfg(feature = "medical")]
+pub use dodai_instruments_core::gauge::ecg_beat;
 /// Seconds since the first call (shared clock for live charts).
 pub use dodai_instruments_core::gauge::{
-    blip_alpha, ecg_beat, hex_center, hex_extent, hex_points, jitter, ring_radius,
+    blip_alpha, hex_center, hex_extent, hex_points, jitter, ring_radius,
 };
 
 pub(crate) fn clock() -> f32 {
@@ -127,6 +129,7 @@ impl Oscilloscope {
         }
     }
     /// Heartbeat trace: `beats` periods over `n` samples.
+    #[cfg(feature = "medical")]
     pub fn ecg(beats: usize, n: usize) -> Self {
         let beats = beats.max(1) as f32;
         Self::new((0..n.max(2)).map(|i| ecg_beat((i as f32 / n.max(2) as f32 * beats).fract())))
@@ -635,6 +638,7 @@ pub use radar::{Blip, RadarScope};
 mod tests {
     use super::*;
 
+    #[cfg(feature = "medical")]
     #[test]
     fn ecg_beat_has_one_dominant_spike_per_period() {
         let peak = (0..200)
