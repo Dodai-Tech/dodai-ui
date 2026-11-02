@@ -14,7 +14,7 @@ categories             = ["gui", "visualization"]
 [features]
 default    = ["automotive", "aviation", "defense"]
 # Clusters, tachometers, speedometers, tire pressure, gear, odometer, power meter, level bar, compass.
-automotive = []
+automotive = ["dodai-gpui/components"]
 # Attitude indicator, heading and vertical tapes, sonar waterfall, countermeasure counters.
 aviation   = []
 # Tactical plot, track list, threat rosette, stores panel, mission timer, radar scope.

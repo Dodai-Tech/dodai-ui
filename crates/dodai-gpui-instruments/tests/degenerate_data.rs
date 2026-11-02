@@ -36,6 +36,23 @@ fn instruments(v: f32) -> Vec<AnyElement> {
         HexMap::new(0, [v]).into_any_element(),
         HexMap::new(3, []).into_any_element(),
         RingStack::new([("a", v)]).into_any_element(),
+        RingTach::new(Scale::new(v, 8.0), v, v)
+            .marker(v)
+            .fuel(v, "x")
+            .into_any_element(),
+        SidePod::new(Scale::new(0.0, v), v)
+            .icon(dodai_gpui::icons::AutoIcon::Fuel)
+            .into_any_element(),
+        MenuRing::new(["a", "b"])
+            .selected(usize::MAX)
+            .into_any_element(),
+        LimitSign::new(u32::MAX).into_any_element(),
+        DashTriptych::new(
+            RingTach::new(Scale::new(0.0, 8.0), v, v),
+            SidePod::new(Scale::new(0.0, 8.0), v),
+            MenuRing::new(Vec::<&str>::new()),
+        )
+        .into_any_element(),
     ]);
     out
 }

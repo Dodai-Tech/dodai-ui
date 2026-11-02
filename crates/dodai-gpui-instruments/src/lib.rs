@@ -30,6 +30,8 @@ pub mod segment;
 
 #[cfg(feature = "automotive")]
 pub mod cluster;
+#[cfg(feature = "automotive")]
+pub mod dash;
 #[cfg(feature = "aviation")]
 pub mod flight;
 #[cfg(feature = "automotive")]
@@ -54,6 +56,8 @@ pub use segment::{SegmentCluster, SegmentDisplay};
 
 #[cfg(feature = "automotive")]
 pub use cluster::{DigitalGauge, InstrumentCluster, PodGauge, Tachometer};
+#[cfg(feature = "automotive")]
+pub use dash::{DashTriptych, LimitSign, MenuRing, Pod, RingTach, SidePod, Telltales, Tone};
 #[cfg(feature = "aviation")]
 pub use flight::{AttitudeIndicator, Countermeasures, HeadingTape, SonarWaterfall, VerticalTape};
 #[cfg(feature = "automotive")]
