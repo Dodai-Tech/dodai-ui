@@ -16,7 +16,6 @@
 //! assert_eq!(g.coverage(24).len(), 24 * 24);
 //! ```
 
-pub mod auto;
 #[cfg(feature = "neobrutalism")]
 mod bold;
 #[cfg(feature = "cyberpunk")]
@@ -27,6 +26,7 @@ mod id_tests;
 pub mod material;
 mod pack;
 mod phosphor;
+pub mod symbol;
 
 pub use id::IconId;
 pub use pack::{Glyph, IconPack, PackChain, Points, STROKE};

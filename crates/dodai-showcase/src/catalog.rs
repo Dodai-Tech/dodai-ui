@@ -266,7 +266,6 @@ pub(crate) fn caps(title: &str) -> Caps {
                 "Instruments",
                 "Vehicle",
                 "Dash",
-                "Symbols",
                 "Industrial",
                 "Medical",
                 "Military",

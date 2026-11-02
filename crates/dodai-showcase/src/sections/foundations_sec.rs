@@ -141,6 +141,7 @@ impl Showcase {
         };
         section = section
             .child(filled_toggle)
+            .child(symbol_groups(&t, &query))
             .child(self.icon_browser(&t, &query, cx));
         if t.look().icons == dodai_core::IconSet::Stroked && query.trim().is_empty() {
             section = section.child(modifier_variants_view(&t));
@@ -525,4 +526,76 @@ impl RenderOnce for IconTile {
                     .child(shortened(n, TILE_NAME_CHARS)),
             )
     }
+}
+
+/// Every symbol, by group, on a tile. Vehicle telltales are tinted by what they usually signal.
+fn symbol_groups(t: &dodai_core::Theme, query: &str) -> gpui::Div {
+    use dodai_gpui::icons::{Icon, Symbol};
+    let tone = |i: Symbol| match i {
+        Symbol::SeatBelt
+        | Symbol::BrakeFault
+        | Symbol::ParkingBrake
+        | Symbol::Airbag
+        | Symbol::Battery
+        | Symbol::OilCan
+        | Symbol::Sos => t.palette.danger,
+        Symbol::Coolant
+        | Symbol::Engine
+        | Symbol::Abs
+        | Symbol::TyrePressure
+        | Symbol::Glow
+        | Symbol::Service
+        | Symbol::Hazard
+        | Symbol::Stability
+        | Symbol::Steering => t.palette.warning,
+        Symbol::LowBeam
+        | Symbol::SideLights
+        | Symbol::FogFront
+        | Symbol::FogRear
+        | Symbol::TurnLeft
+        | Symbol::TurnRight
+        | Symbol::Eco
+        | Symbol::Hybrid
+        | Symbol::Recuperation
+        | Symbol::Plug
+        | Symbol::TractionBattery
+        | Symbol::Cruise
+        | Symbol::LaneKeep => t.palette.success,
+        Symbol::HighBeam | Symbol::Frost | Symbol::Washer | Symbol::Compass => t.palette.info,
+        _ => t.palette.text,
+    };
+    let mut all = div().flex().flex_col().gap(px(t.spacing.lg));
+    for &g in dodai_gpui::icons::SymbolGroup::ALL {
+        let mut grid = div().flex().flex_wrap().gap(px(t.spacing.md));
+        let mut n = 0;
+        let q = query.trim().to_lowercase().replace([' ', '_'], "-");
+        for &i in Symbol::ALL
+            .iter()
+            .filter(|i| i.group() == g && i.name().contains(q.as_str()))
+        {
+            n += 1;
+            grid = grid.child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .items_center()
+                    .gap(px(t.spacing.xs))
+                    .w(px(96.0))
+                    .child(Icon::symbol(i).size(36.0).weight(1.75).color(hsla(tone(i))))
+                    .child(Muted::new(i.name())),
+            );
+        }
+        if n == 0 {
+            continue;
+        }
+        all = all.child(
+            div()
+                .flex()
+                .flex_col()
+                .gap(px(t.spacing.md))
+                .child(Muted::new(format!("{} · {n}", g.name().to_uppercase())))
+                .child(grid),
+        );
+    }
+    all
 }

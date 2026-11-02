@@ -41,7 +41,7 @@ fn instruments(v: f32) -> Vec<AnyElement> {
             .fuel(v, "x")
             .into_any_element(),
         SidePod::new(Scale::new(0.0, v), v)
-            .icon(dodai_gpui::icons::AutoIcon::Fuel)
+            .icon(dodai_gpui::icons::Symbol::Fuel)
             .into_any_element(),
         MenuRing::new(["a", "b"])
             .selected(usize::MAX)
