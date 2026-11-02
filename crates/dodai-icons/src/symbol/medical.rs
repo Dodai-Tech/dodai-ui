@@ -208,6 +208,12 @@ pub(super) fn shapes(i: Symbol) -> Vec<Shape> {
             line(&[(7.0, 8.0), (11.0, 16.2)]),
             line(&[(17.0, 8.0), (13.0, 16.2)]),
         ],
+        #[cfg(any(
+            feature = "symbols-vehicle",
+            feature = "symbols-military",
+            feature = "symbols-industrial",
+            feature = "symbols-aviation"
+        ))]
         _ => Vec::new(),
     }
 }

@@ -12,13 +12,20 @@ keywords               = ["gauge", "gpui", "instrument", "dashboard", "hmi"]
 categories             = ["gui", "visualization"]
 
 [features]
-default    = ["automotive", "aviation", "defense"]
-# Clusters, tachometers, speedometers, tire pressure, gear, odometer, power meter, level bar, compass.
-automotive = ["dodai-gpui/components"]
-# Attitude indicator, heading and vertical tapes, sonar waterfall, countermeasure counters.
-aviation   = []
-# Tactical plot, track list, threat rosette, stores panel, mission timer, radar scope.
-defense    = []
+default    = ["automotive", "aviation", "defense", "industrial", "medical"]
+# Clusters, tachometers, speedometers, tire pressure, gear, odometer, power meter, level bar, compass;
+# the vehicle symbols.
+automotive = ["dodai-gpui/components", "dodai-gpui/symbols-vehicle"]
+# Attitude indicator, heading and vertical tapes, sonar waterfall, countermeasure counters;
+# the aviation symbols.
+aviation   = ["dodai-gpui/symbols-aviation"]
+# Tactical plot, track list, threat rosette, stores panel, mission timer, radar scope; the
+# military symbols.
+defense    = ["dodai-gpui/symbols-military"]
+# Process-plant and machine symbols; the dials and annunciators they pair with are always included.
+industrial = ["dodai-gpui/symbols-industrial"]
+# Patient-monitor pieces: vitals tiles and the ECG trace; the medical symbols.
+medical    = ["dodai-gpui/symbols-medical"]
 
 [dependencies]
 dodai-core        = { workspace = true }

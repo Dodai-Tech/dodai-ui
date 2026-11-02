@@ -24,6 +24,11 @@ const ALLOWED: &[(&str, &str, &str)] = &[
         "Color::rgba(r, gr, b, 255)",
         "converts a gradient sample (data), not a design colour",
     ),
+    (
+        "dodai-gpui-instruments/src/gradient.rs",
+        "Color::rgba(0, 0, 0, 0)",
+        "a ramp without stops has no colour at all (fully transparent), not a design colour",
+    ),
 ];
 
 /// Does `line` hold a raw colour literal? (`hsla(` followed by a digit is a literal; followed by

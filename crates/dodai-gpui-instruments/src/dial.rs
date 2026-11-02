@@ -1,5 +1,5 @@
-//! Instruments for vehicles, process plants and patient monitors: [`DialGauge`], [`VitalsTile`]
-//! and [`Annunciator`].
+//! Instruments for vehicles, process plants and patient monitors: [`DialGauge`], [`Annunciator`]
+//! and, with the `medical` feature, `VitalsTile`.
 //!
 //! Scales, zones, alarm limits and flashing come from `dodai_instruments_core::instrument`; this
 //! module only paints. Severity colours come from the theme (`success`, `info`, `warning`,
@@ -15,7 +15,9 @@ use dodai_gpui::follow_api;
 use dodai_gpui::paint::{fill, scale_alpha, shaped, stroke, ShapeStyle};
 use dodai_gpui::text::{first_family, format_label};
 use dodai_gpui::{hsla, theme_of};
-use dodai_instruments_core::instrument::{readout, Alarm, Limits, Scale, Severity};
+#[cfg(feature = "medical")]
+use dodai_instruments_core::instrument::Limits;
+use dodai_instruments_core::instrument::{readout, Alarm, Scale, Severity};
 use gpui::{
     canvas, div, px, App, Bounds, Hsla, IntoElement, ParentElement, Pixels, RenderOnce,
     SharedString, Styled, Window,
@@ -379,6 +381,7 @@ impl RenderOnce for DialGauge {
 
 /// A patient-monitor numeric: label, large value, unit and alarm limits. The border and value
 /// take the severity colour; an unacknowledged alarm flashes its background.
+#[cfg(feature = "medical")]
 #[derive(IntoElement)]
 pub struct VitalsTile {
     label: SharedString,
@@ -391,6 +394,7 @@ pub struct VitalsTile {
     width: f32,
 }
 
+#[cfg(feature = "medical")]
 impl VitalsTile {
     /// A tile for `value`, e.g. `VitalsTile::new("HR", 72.0).unit("bpm")`.
     pub fn new(label: impl Into<SharedString>, value: f32) -> Self {
@@ -437,6 +441,7 @@ impl VitalsTile {
     }
 }
 
+#[cfg(feature = "medical")]
 impl RenderOnce for VitalsTile {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);

@@ -12,7 +12,7 @@ keywords     = ["theme", "design-system", "gpui", "cyberpunk"]
 categories   = ["gui"]
 
 [features]
-default    = ["components", "shaders", "cyberpunk", "material", "neobrutalism", "dodai"]
+default    = ["components", "shaders", "cyberpunk", "material", "neobrutalism", "dodai", "symbol-groups"]
 # Buttons, tables, dialogs, pickers, navigation, ...
 components = ["dep:dodai-icons"]
 # GPU pixel shaders (cyberpunk, Material 3, Matrix, CRT, pixel art, ...) as `ShaderView`.
@@ -33,6 +33,14 @@ dodai = ["dodai-core/dodai", "symbols", "frost"]
 frost = ["dep:dodai-frost", "dodai-frost/gpu", "dep:image"]
 # Material Symbols glyphs, drawn by Material and Dodai.
 symbols = ["components", "dodai-icons/material"]
+
+# The original dashboard symbols (`Icon::symbol`), one feature per group; `symbol-groups` is all five.
+symbol-groups = ["symbols-vehicle", "symbols-medical", "symbols-military", "symbols-industrial", "symbols-aviation"]
+symbols-vehicle = ["components", "dodai-icons/symbols-vehicle"]
+symbols-medical = ["components", "dodai-icons/symbols-medical"]
+symbols-military = ["components", "dodai-icons/symbols-military"]
+symbols-industrial = ["components", "dodai-icons/symbols-industrial"]
+symbols-aviation = ["components", "dodai-icons/symbols-aviation"]
 
 [dependencies]
 dodai-core = { workspace = true }

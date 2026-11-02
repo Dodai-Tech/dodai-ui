@@ -5,30 +5,78 @@
 //! stroked, round-cornered, one weight, each built from a few arcs, circles and lines. They are
 //! not traced from, or meant to match, any manufacturer's artwork.
 //!
+//! Each group is a feature (`symbols-vehicle`, `symbols-medical`, `symbols-military`,
+//! `symbols-industrial`, `symbols-aviation`; `symbols` is all five), so a build carries only the
+//! groups it uses. [`Symbol::ALL`] and [`Group::ALL`] list what is compiled in.
+//!
 //! ```
+//! # #[cfg(feature = "symbols-vehicle")]
+//! # {
 //! use dodai_icons::symbol::Symbol;
 //! let g = Symbol::OilCan.glyph();
 //! assert!(g.svg(24, "currentColor").starts_with("<svg"));
 //! assert_eq!(Symbol::ALL.len(), Symbol::ALL.iter().map(|i| i.name()).collect::<std::collections::HashSet<_>>().len());
+//! # }
 //! ```
 
-use crate::pack::{Glyph, Points};
+use crate::pack::Glyph;
+#[cfg(any(
+    feature = "symbols-vehicle",
+    feature = "symbols-medical",
+    feature = "symbols-military",
+    feature = "symbols-industrial",
+    feature = "symbols-aviation"
+))]
+use crate::pack::Points;
+#[cfg(any(
+    feature = "symbols-vehicle",
+    feature = "symbols-medical",
+    feature = "symbols-military",
+    feature = "symbols-industrial",
+    feature = "symbols-aviation"
+))]
 use std::f32::consts::PI;
 
+#[cfg(feature = "symbols-aviation")]
 mod aviation;
+#[cfg(feature = "symbols-industrial")]
 mod industrial;
+#[cfg(feature = "symbols-medical")]
 mod medical;
+#[cfg(feature = "symbols-military")]
 mod military;
+#[cfg(feature = "symbols-vehicle")]
 mod vehicle;
 
+#[cfg(any(
+    feature = "symbols-vehicle",
+    feature = "symbols-medical",
+    feature = "symbols-military",
+    feature = "symbols-industrial",
+    feature = "symbols-aviation"
+))]
 type Shape = (Points, bool);
 
 /// Degrees to radians with 0° pointing right and angles growing clockwise on screen.
+#[cfg(any(
+    feature = "symbols-vehicle",
+    feature = "symbols-medical",
+    feature = "symbols-military",
+    feature = "symbols-industrial",
+    feature = "symbols-aviation"
+))]
 fn rad(d: f32) -> f32 {
     d * PI / 180.0
 }
 
 /// An open arc of radius `r` from `a0` to `a1` degrees, faceted every ~12°.
+#[cfg(any(
+    feature = "symbols-vehicle",
+    feature = "symbols-medical",
+    feature = "symbols-military",
+    feature = "symbols-industrial",
+    feature = "symbols-aviation"
+))]
 fn arc(cx: f32, cy: f32, r: f32, a0: f32, a1: f32) -> Shape {
     let n = (((a1 - a0).abs() / 12.0).ceil() as usize).max(2);
     let pts = (0..=n)
@@ -41,6 +89,13 @@ fn arc(cx: f32, cy: f32, r: f32, a0: f32, a1: f32) -> Shape {
 }
 
 /// A full circle.
+#[cfg(any(
+    feature = "symbols-vehicle",
+    feature = "symbols-medical",
+    feature = "symbols-military",
+    feature = "symbols-industrial",
+    feature = "symbols-aviation"
+))]
 fn circ(cx: f32, cy: f32, r: f32) -> Shape {
     let (mut pts, _) = arc(cx, cy, r, 0.0, 360.0);
     pts.pop();
@@ -48,16 +103,37 @@ fn circ(cx: f32, cy: f32, r: f32) -> Shape {
 }
 
 /// A polyline.
+#[cfg(any(
+    feature = "symbols-vehicle",
+    feature = "symbols-medical",
+    feature = "symbols-military",
+    feature = "symbols-industrial",
+    feature = "symbols-aviation"
+))]
 fn line(p: &[(f32, f32)]) -> Shape {
     (p.to_vec(), false)
 }
 
 /// A closed polygon.
+#[cfg(any(
+    feature = "symbols-vehicle",
+    feature = "symbols-medical",
+    feature = "symbols-military",
+    feature = "symbols-industrial",
+    feature = "symbols-aviation"
+))]
 fn poly(p: &[(f32, f32)]) -> Shape {
     (p.to_vec(), true)
 }
 
 /// A rectangle with rounded corners of radius `r`.
+#[cfg(any(
+    feature = "symbols-vehicle",
+    feature = "symbols-medical",
+    feature = "symbols-military",
+    feature = "symbols-industrial",
+    feature = "symbols-aviation"
+))]
 fn rrect(x0: f32, y0: f32, x1: f32, y1: f32, r: f32) -> Shape {
     let mut pts = Vec::new();
     for (cx, cy, a0) in [
@@ -72,11 +148,13 @@ fn rrect(x0: f32, y0: f32, x1: f32, y1: f32, r: f32) -> Shape {
 }
 
 /// A dot (a tiny closed diamond, so it survives as a stroke).
+#[cfg(any(feature = "symbols-military", feature = "symbols-vehicle"))]
 fn dot(x: f32, y: f32) -> Shape {
     poly(&[(x, y - 0.4), (x + 0.4, y), (x, y + 0.4), (x - 0.4, y)])
 }
 
 /// Light rays fanning out from `(x, y)` along `dir` degrees: the beam family's signature.
+#[cfg(feature = "symbols-vehicle")]
 fn rays(x: f32, y: f32, dir: f32, spread: f32, n: usize, from: f32, to: f32) -> Vec<Shape> {
     (0..n)
         .map(|i| {
@@ -95,6 +173,7 @@ fn rays(x: f32, y: f32, dir: f32, spread: f32, n: usize, from: f32, to: f32) -> 
 }
 
 /// A headlamp bulb: a D-shaped lens open to the right.
+#[cfg(feature = "symbols-vehicle")]
 fn lamp(cx: f32) -> Shape {
     let mut pts = vec![(cx + 2.0, 6.5)];
     pts.extend(
@@ -108,41 +187,42 @@ fn lamp(cx: f32) -> Shape {
 }
 
 macro_rules! symbols {
-    ($($(#[$gm:meta])* $grp:ident = $gname:literal { $($(#[$m:meta])* $v:ident = $name:literal;)+ })+) => {
+    ($(#[cfg($gc:meta)] $(#[$gm:meta])* $grp:ident = $gname:literal { $($(#[$m:meta])* $v:ident = $name:literal;)+ })+) => {
         /// A family of symbols, matching an instruments page.
         #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
         pub enum Group {
-            $($(#[$gm])* $grp,)+
+            $($(#[$gm])* #[cfg($gc)] $grp,)+
         }
         impl Group {
             /// Every group.
-            pub const ALL: &'static [Group] = &[$(Group::$grp),+];
+            pub const ALL: &'static [Group] = &[$(#[cfg($gc)] Group::$grp),+];
             /// A short lower-case label.
             pub fn name(self) -> &'static str {
-                match self { $(Group::$grp => $gname,)+ }
+                match self { $(#[cfg($gc)] Group::$grp => $gname,)+ }
             }
         }
         /// A symbol from any group.
         #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
         pub enum Symbol {
-            $($($(#[$m])* $v,)+)+
+            $($($(#[$m])* #[cfg($gc)] $v,)+)+
         }
         impl Symbol {
             /// Every symbol, in catalogue order (group by group).
-            pub const ALL: &'static [Symbol] = &[$($(Symbol::$v),+),+];
+            pub const ALL: &'static [Symbol] = &[$($(#[cfg($gc)] Symbol::$v),+),+];
             /// A short stable kebab-case name, unique across groups.
             pub fn name(self) -> &'static str {
-                match self { $($(Symbol::$v => $name,)+)+ }
+                match self { $($(#[cfg($gc)] Symbol::$v => $name,)+)+ }
             }
             /// The group this symbol belongs to.
             pub fn group(self) -> Group {
-                match self { $($(Symbol::$v => Group::$grp,)+)+ }
+                match self { $($(#[cfg($gc)] Symbol::$v => Group::$grp,)+)+ }
             }
         }
     };
 }
 
 symbols! {
+    #[cfg(feature = "symbols-vehicle")]
     /// Dashboard telltales and cluster symbols.
     Vehicle = "vehicle" {
 
@@ -413,6 +493,7 @@ symbols! {
     /// Odometer.
     Odometer = "odometer";
     }
+    #[cfg(feature = "symbols-medical")]
     /// Clinical and monitor symbols.
     Medical = "medical" {
         /// Heartbeat trace.
@@ -454,6 +535,7 @@ symbols! {
         /// Three electrode leads.
         EcgLeads = "ecg-leads";
     }
+    #[cfg(feature = "symbols-military")]
     /// Tactical and sensor symbols.
     Military = "military" {
         /// Sweep over a ring.
@@ -493,6 +575,7 @@ symbols! {
         /// Missile.
         Missile = "missile";
     }
+    #[cfg(feature = "symbols-industrial")]
     /// Plant and machinery symbols.
     Industrial = "industrial" {
         /// Cog.
@@ -534,6 +617,7 @@ symbols! {
         /// Funnel filter.
         Filter = "filter";
     }
+    #[cfg(feature = "symbols-aviation")]
     /// Flight and airfield symbols.
     Aviation = "aviation" {
         /// Airliner from above.
@@ -577,14 +661,37 @@ symbols! {
 
 impl Symbol {
     /// The drawing, as a stroked [`Glyph`] on the 24×24 grid.
+    #[cfg(any(
+        feature = "symbols-vehicle",
+        feature = "symbols-medical",
+        feature = "symbols-military",
+        feature = "symbols-industrial",
+        feature = "symbols-aviation"
+    ))]
     pub fn glyph(self) -> Glyph {
         Glyph::Stroked(match self.group() {
+            #[cfg(feature = "symbols-vehicle")]
             Group::Vehicle => vehicle::shapes(self),
+            #[cfg(feature = "symbols-medical")]
             Group::Medical => medical::shapes(self),
+            #[cfg(feature = "symbols-military")]
             Group::Military => military::shapes(self),
+            #[cfg(feature = "symbols-industrial")]
             Group::Industrial => industrial::shapes(self),
+            #[cfg(feature = "symbols-aviation")]
             Group::Aviation => aviation::shapes(self),
         })
+    }
+    /// The drawing (no symbol group is compiled in, so there is no symbol to draw).
+    #[cfg(not(any(
+        feature = "symbols-vehicle",
+        feature = "symbols-medical",
+        feature = "symbols-military",
+        feature = "symbols-industrial",
+        feature = "symbols-aviation"
+    )))]
+    pub fn glyph(self) -> Glyph {
+        match self {}
     }
 }
 

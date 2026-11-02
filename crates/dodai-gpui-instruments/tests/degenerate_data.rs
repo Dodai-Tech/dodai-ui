@@ -20,11 +20,12 @@ fn instruments(v: f32) -> Vec<AnyElement> {
     for st in GaugeStyle::ALL {
         out.push(Gauge::new(v).style(st).zones(true).into_any_element());
     }
+    #[cfg(feature = "medical")]
+    out.push(VitalsTile::new("HR", v).into_any_element());
     out.extend([
         Gauge::new(v).range(v, 0.0).into_any_element(),
         DialGauge::new(Scale::new(v, 10.0), v).into_any_element(),
         DialGauge::new(Scale::new(5.0, 5.0), v).into_any_element(),
-        VitalsTile::new("HR", v).into_any_element(),
         Annunciator::new([("A", Severity::Caution, false)]).into_any_element(),
         Annunciator::new(Vec::<(&str, Severity, bool)>::new()).into_any_element(),
         SegmentDisplay::new(format!("{v}")).into_any_element(),

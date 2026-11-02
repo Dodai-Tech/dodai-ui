@@ -5,7 +5,7 @@
 //! scopes sweep. Geometry comes from `dodai-charts-core`.
 //!
 //! Always included: dials and gauges ([`DialGauge`], [`Gauge`] in 15 [`GaugeStyle`]s), segment
-//! displays, annunciators, vitals tiles, and the scopes ([`Oscilloscope`], [`Spectrum`],
+//! displays, annunciators, and the scopes ([`Oscilloscope`], [`Spectrum`],
 //! [`DotMatrix`], [`SignalBars`], [`HexMap`], [`RingStack`]). By industry (all on by default):
 //!
 //! | Feature | Instruments |
@@ -13,6 +13,12 @@
 //! | `automotive` | clusters, tachometer, speedometers, tire pressure, gear, odometer, power meter, level bar, compass |
 //! | `aviation` | attitude indicator, heading and vertical tapes, sonar waterfall, countermeasures |
 //! | `defense` | tactical plot, track list, threat rosette, stores panel, mission timer, radar scope |
+//! | `industrial` | the process-plant and machine symbols (dials and annunciators are always included) |
+//! | `medical` | vitals tiles, the ECG trace (`Oscilloscope::ecg`) and the medical symbols |
+//!
+//! Each feature also turns on the matching symbol group of `dodai-icons`. The instruments are
+//! display components, not medical or flight-safety devices: do not rely on them to monitor a
+//! patient or to fly or operate anything.
 //!
 //! ```no_run
 //! use dodai_gpui_instruments::{DialGauge, Scale};
@@ -42,7 +48,9 @@ pub mod tactical;
 #[cfg(feature = "automotive")]
 pub mod vehicle;
 
-pub use dial::{severity_color, Annunciator, DialGauge, VitalsTile};
+#[cfg(feature = "medical")]
+pub use dial::VitalsTile;
+pub use dial::{severity_color, Annunciator, DialGauge};
 pub use dodai_gpui::plot::{chart_glow, set_chart_glow, ChartGlow};
 pub use dodai_gpui::Live;
 pub use dodai_instruments_core::instrument::{Alarm, Limits, Scale, Severity};
