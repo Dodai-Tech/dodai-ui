@@ -129,6 +129,7 @@ impl Sunburst {
         let (hole, size) = (self.hole, self.height);
         let edge = hsla(t.palette.surface);
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
+        let hatcher = crate::common::Hatcher::new(&t);
         let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
             let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
             let (cx_, cy_) = (bw / 2.0, bh / 2.0);
@@ -144,6 +145,7 @@ impl Sunburst {
                 let mut p = turn_arc(cx_, cy_, r2, a, e);
                 p.extend(turn_arc(cx_, cy_, r1, e, a));
                 fill(w, b.origin, &p, scale_alpha(cols[i], lk.alpha));
+                hatcher.over(w, b.origin, &p, i);
                 stroke(w, b.origin, &p, 1.0, edge, true);
             }
         })
@@ -238,6 +240,7 @@ impl Icicle {
         let geo: Vec<(usize, f32, f32)> = spans.iter().map(|s| (s.depth, s.start, s.end)).collect();
         let hit_geo = geo.clone();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
+        let hatcher = crate::common::Hatcher::new(&t);
         let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
             let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
             let row = bh / levels as f32;
@@ -251,12 +254,14 @@ impl Icicle {
                 let lk = looks[i];
                 let y0 = d as f32 * row + 1.0;
                 let y1 = y0 + (row - 2.0) * gi;
+                let cell = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)];
                 fill(
                     w,
                     b.origin,
-                    &[(x0, y0), (x1, y0), (x1, y1), (x0, y1)],
+                    &cell,
                     scale_alpha(cols[i], lk.alpha * (0.85 + 0.15 * lk.lift)),
                 );
+                hatcher.over(w, b.origin, &cell, i);
             }
         })
         .absolute()
@@ -368,6 +373,7 @@ impl Waffle {
         let hit_owner = owner.clone();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
         let cell = move |bw: f32, bh: f32| (bw / gc as f32).min(bh / gr as f32);
+        let hatcher = crate::common::Hatcher::new(&t);
         let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
             let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
             let s = cell(bw, bh);
@@ -382,17 +388,16 @@ impl Waffle {
                     _ => scale_alpha(empty, 0.5),
                 };
                 let inset = gap / 2.0 - o.map_or(0.0, |i| looks[i].lift * gap * 0.4);
-                fill(
-                    w,
-                    b.origin,
-                    &[
-                        (x + inset, y + inset),
-                        (x + s - inset, y + inset),
-                        (x + s - inset, y + s - inset),
-                        (x + inset, y + s - inset),
-                    ],
-                    col,
-                );
+                let cell = [
+                    (x + inset, y + inset),
+                    (x + s - inset, y + inset),
+                    (x + s - inset, y + s - inset),
+                    (x + inset, y + s - inset),
+                ];
+                fill(w, b.origin, &cell, col);
+                if let Some(i) = o.filter(|_| k < shown) {
+                    hatcher.over(w, b.origin, &cell, i);
+                }
             }
         })
         .absolute()
@@ -508,6 +513,7 @@ impl Marimekko {
             .collect();
         let hit_flat = flat.clone();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
+        let hatcher = crate::common::Hatcher::new(&t);
         let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, _| {
             let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
             for &(k, tl) in &flat {
@@ -521,12 +527,14 @@ impl Marimekko {
                 if x1 - x0 < 0.5 || y1 - y0 < 0.5 {
                     continue;
                 }
+                let tile = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)];
                 fill(
                     w,
                     b.origin,
-                    &[(x0, y0), (x1, y0), (x1, y1), (x0, y1)],
+                    &tile,
                     scale_alpha(cols[k % ns.max(1)], lk.alpha * (0.85 + 0.15 * lk.lift)),
                 );
+                hatcher.over(w, b.origin, &tile, k % ns.max(1));
             }
         })
         .absolute()

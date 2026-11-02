@@ -268,7 +268,8 @@ impl Waterfall {
                             },
                             fmt_with(&self.fmt, d)
                         )))
-                        .child(shaped(&t.shape, style).size_full()),
+                        .child(shaped(&t.shape, style).size_full())
+                        .children(crate::common::hatch_overlay(&t, usize::from(d < 0.0))),
                 ),
             );
         }

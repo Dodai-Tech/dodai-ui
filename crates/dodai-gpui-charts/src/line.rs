@@ -444,6 +444,10 @@ impl LineChart {
                                 let mut poly = top;
                                 poly.extend(bottom.into_iter().rev());
                                 fill(w, b.origin, &poly, scale_alpha(*c, style.area_alpha));
+                                if let Some(kind) = crate::common::hatch_of(li).filter(|_| patterns)
+                                {
+                                    crate::common::hatch_poly(w, b.origin, &poly, hatch_ink, kind);
+                                }
                             }
                         }
                         let p = path(vals);

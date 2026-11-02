@@ -130,12 +130,18 @@ impl Treemap {
                 .child(
                     shaped(&t.shape, style)
                         .size_full()
+                        .relative()
                         .overflow_hidden()
+                        .children(crate::common::hatch_overlay(&t, i))
                         .p(px(t.spacing.xs))
                         .font_family(first_family(t.typography.mono))
                         .text_size(px(t.typography.size_xs))
                         .text_color(hsla(t.palette.on_primary))
-                        .child(format!("{name}\n{}", fmt_with(&self.fmt, *v))),
+                        .child(
+                            div()
+                                .relative()
+                                .child(format!("{name}\n{}", fmt_with(&self.fmt, *v))),
+                        ),
                 );
             plot = plot.child(focus.bind(tile, i));
         }

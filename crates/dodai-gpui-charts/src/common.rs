@@ -992,6 +992,29 @@ pub(crate) fn hatch_ink(t: &Theme) -> Hsla {
     dodai_gpui::paint::scale_alpha(hsla(t.palette.background), 0.6)
 }
 
+/// Draws a series' hatch over its fill when patterns are on; build one outside the paint closure.
+#[derive(Clone, Copy)]
+pub(crate) struct Hatcher(Option<Hsla>);
+
+impl Hatcher {
+    pub(crate) fn new(t: &Theme) -> Self {
+        Self(patterns().then(|| hatch_ink(t)))
+    }
+
+    /// Hatches `poly` as series (or category) `i`; the first stays solid.
+    pub(crate) fn over(
+        &self,
+        w: &mut Window,
+        o: gpui::Point<Pixels>,
+        poly: &[(f32, f32)],
+        i: usize,
+    ) {
+        if let (Some(ink), Some(kind)) = (self.0, hatch_of(i)) {
+            hatch_poly(w, o, poly, ink, kind);
+        }
+    }
+}
+
 /// The hatch segments of `kind` clipped to a polygon (any simple shape, even-odd). The lines sit
 /// on a grid fixed in the polygon's own coordinates, so neighbouring pieces of one shape line up.
 pub(crate) fn hatch_segments(poly: &[(f32, f32)], kind: Hatch) -> Vec<[(f32, f32); 2]> {

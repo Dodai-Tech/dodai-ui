@@ -273,6 +273,8 @@ impl PairedBars {
                     .h(px(t.sizes().legend_swatch + 2.0 + 3.0 * lf.lift))
                     .w(relative((v.abs() / m).clamp(0.0, 1.0) * g))
                     .bg(hsla(c))
+                    .relative()
+                    .children(crate::common::hatch_overlay(&t, k))
                     .tooltip(DodaiTooltip::text(format!(
                         "{label} · {who}: {}",
                         fmt_with(&self.fmt, v)
