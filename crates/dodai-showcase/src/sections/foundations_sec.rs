@@ -112,9 +112,11 @@ impl Showcase {
         let me = cx.entity();
         let mut out: Vec<Section> = Vec::new();
         let query = self.icon_search.read(cx).text().to_string();
-        let count = dodai_gpui::IconId::ALL.len();
+        let (named, symbols) = (IconId::ALL.len(), dodai_icons::symbol::Symbol::ALL.len());
+        let total = icon_total();
         let intro = format!(
-            "{count} icons, the same names in every design system; each draws them in its own style. Write one as `Icon::Heart`. Click an icon for its SVG and code."
+            "{total} icons: {named} catalogue icons with the same names in every design system (each draws them in its own style; write one as `Icon::Heart`) and {symbols} original symbols in {} groups. Click an icon for its SVG and code.",
+            dodai_gpui::icons::SymbolGroup::ALL.len()
         );
         let mut section = self.section("Icons", cx).child(Muted::new(intro)).child(
             div()
@@ -141,9 +143,12 @@ impl Showcase {
         };
         section = section
             .child(filled_toggle)
-            .child(symbol_groups(&t, &query))
+            .child(symbol_groups(&t, &query, self.icon_pick))
             .child(self.icon_browser(&t, &query, cx));
-        if t.look().icons == dodai_core::IconSet::Stroked && query.trim().is_empty() {
+        if t.look().icons == dodai_core::IconSet::Stroked
+            && query.trim().is_empty()
+            && self.icon_pick == IconPick::All
+        {
             section = section.child(modifier_variants_view(&t));
         }
         out.push(("Foundations", "Icons", section.into_any_element(), "Icons"));
@@ -162,18 +167,7 @@ impl Showcase {
     ) -> gpui::Div {
         // Phosphor's categories, then whatever the shared names hold beyond them (the Dodai
         // names Phosphor does not have), so each icon is listed once.
-        let mut source: Vec<(&'static str, Vec<IconId>)> = dodai_icons::CATEGORIES
-            .iter()
-            .map(|&(c, ids)| (c, ids.to_vec()))
-            .collect();
-        let listed: std::collections::HashSet<IconId> =
-            source.iter().flat_map(|(_, v)| v.iter().copied()).collect();
-        let rest: Vec<IconId> = IconId::ALL
-            .iter()
-            .copied()
-            .filter(|i| !listed.contains(i))
-            .collect();
-        source.push(("other", rest));
+        let source = icon_sources();
         let tag = "ic";
         const PREVIEW: usize = 24;
         const MAX_HITS: usize = 480;
@@ -182,6 +176,10 @@ impl Showcase {
         let mut out = div().flex().flex_col().gap(px(t.spacing.lg));
         let mut total = 0usize;
         for (cat, picks) in source {
+            if !self.icon_pick.shows_category(cat) {
+                continue;
+            }
+            let forced = self.icon_pick == IconPick::Category(cat);
             let hits: Vec<IconId> = picks
                 .iter()
                 .copied()
@@ -190,7 +188,7 @@ impl Showcase {
             if hits.is_empty() {
                 continue;
             }
-            let open = self.icon_open.contains(cat);
+            let open = forced || self.icon_open.contains(cat);
             let cap = if searching {
                 MAX_HITS.saturating_sub(total)
             } else if open {
@@ -226,7 +224,7 @@ impl Showcase {
                     hits.len()
                 )))
                 .child(grid);
-            if !searching && hits.len() > PREVIEW {
+            if !searching && !forced && hits.len() > PREVIEW {
                 block = block.child(
                     div().flex().child(
                         Button::new(
@@ -529,7 +527,7 @@ impl RenderOnce for IconTile {
 }
 
 /// Every symbol, by group, on a tile. Vehicle telltales are tinted by what they usually signal.
-fn symbol_groups(t: &dodai_core::Theme, query: &str) -> gpui::Div {
+fn symbol_groups(t: &dodai_core::Theme, query: &str, pick: IconPick) -> gpui::Div {
     use dodai_gpui::icons::{Icon, Symbol};
     let tone = |i: Symbol| match i {
         Symbol::SeatBelt
@@ -581,7 +579,10 @@ fn symbol_groups(t: &dodai_core::Theme, query: &str) -> gpui::Div {
         _ => t.palette.text,
     };
     let mut all = div().flex().flex_col().gap(px(t.spacing.lg));
-    for &g in dodai_gpui::icons::SymbolGroup::ALL {
+    for g in sorted_groups() {
+        if !pick.shows_group(g.name()) {
+            continue;
+        }
         let mut grid = div().flex().flex_wrap().gap(px(t.spacing.md));
         let mut n = 0;
         let q = query.trim().to_lowercase().replace([' ', '_'], "-");
@@ -614,4 +615,187 @@ fn symbol_groups(t: &dodai_core::Theme, query: &str) -> gpui::Div {
         );
     }
     all
+}
+
+/// Every icon the Icons section lists: the shared catalogue plus the original symbols.
+pub(crate) fn icon_total() -> usize {
+    IconId::ALL.len() + dodai_icons::symbol::Symbol::ALL.len()
+}
+
+/// Symbol groups by name, so no group is privileged by its position in the source.
+fn sorted_groups() -> Vec<dodai_gpui::icons::SymbolGroup> {
+    let mut groups = dodai_gpui::icons::SymbolGroup::ALL.to_vec();
+    groups.sort_by_key(|g| g.name());
+    groups
+}
+
+/// The catalogue by category: Phosphor's categories, then whatever the shared names hold beyond
+/// them (the Dodai names Phosphor does not have), so each icon is listed once.
+fn icon_sources() -> Vec<(&'static str, Vec<IconId>)> {
+    let mut source: Vec<(&'static str, Vec<IconId>)> = dodai_icons::CATEGORIES
+        .iter()
+        .map(|&(c, ids)| (c, ids.to_vec()))
+        .collect();
+    let listed: std::collections::HashSet<IconId> =
+        source.iter().flat_map(|(_, v)| v.iter().copied()).collect();
+    let rest: Vec<IconId> = IconId::ALL
+        .iter()
+        .copied()
+        .filter(|i| !listed.contains(i))
+        .collect();
+    source.push(("other", rest));
+    source
+}
+
+/// The branch of the Icons tree the sidebar picked: what the Icons section shows.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) enum IconPick {
+    /// Everything.
+    #[default]
+    All,
+    /// All symbol groups.
+    Symbols,
+    /// One symbol group.
+    Group(&'static str),
+    /// The whole catalogue.
+    Catalogue,
+    /// One catalogue category.
+    Category(&'static str),
+}
+
+impl IconPick {
+    /// The parent branch.
+    pub(crate) fn up(self) -> Self {
+        match self {
+            Self::Group(_) => Self::Symbols,
+            Self::Category(_) => Self::Catalogue,
+            _ => Self::All,
+        }
+    }
+    fn shows_group(self, name: &str) -> bool {
+        match self {
+            Self::All | Self::Symbols => true,
+            Self::Group(g) => g == name,
+            Self::Catalogue | Self::Category(_) => false,
+        }
+    }
+    fn shows_category(self, name: &str) -> bool {
+        match self {
+            Self::All | Self::Catalogue => true,
+            Self::Category(c) => c == name,
+            Self::Symbols | Self::Group(_) => false,
+        }
+    }
+}
+
+/// One row of the Icons tree in the sidebar.
+pub(crate) struct IconRow {
+    /// Nesting level (3 and 4: below the section's own jump row).
+    pub(crate) depth: u8,
+    pub(crate) label: String,
+    pub(crate) count: usize,
+    pub(crate) pick: IconPick,
+}
+
+fn capitalised(s: &str) -> String {
+    let mut c = s.chars();
+    c.next()
+        .map(|f| f.to_uppercase().chain(c).collect())
+        .unwrap_or_default()
+}
+
+/// The rows under the Icons section: Symbols (by group) and Catalogue (by category). A branch
+/// opens its children when it, or one of them, is picked.
+pub(crate) fn icon_tree(pick: IconPick) -> Vec<IconRow> {
+    let mut rows = vec![IconRow {
+        depth: 3,
+        label: "Symbols".into(),
+        count: dodai_icons::symbol::Symbol::ALL.len(),
+        pick: IconPick::Symbols,
+    }];
+    if matches!(pick, IconPick::Symbols | IconPick::Group(_)) {
+        for g in sorted_groups() {
+            rows.push(IconRow {
+                depth: 4,
+                label: capitalised(g.name()),
+                count: dodai_icons::symbol::Symbol::ALL
+                    .iter()
+                    .filter(|s| s.group() == g)
+                    .count(),
+                pick: IconPick::Group(g.name()),
+            });
+        }
+    }
+    rows.push(IconRow {
+        depth: 3,
+        label: "Catalogue".into(),
+        count: IconId::ALL.len(),
+        pick: IconPick::Catalogue,
+    });
+    if matches!(pick, IconPick::Catalogue | IconPick::Category(_)) {
+        for (cat, ids) in icon_sources().into_iter().filter(|(_, v)| !v.is_empty()) {
+            rows.push(IconRow {
+                depth: 4,
+                label: capitalised(cat),
+                count: ids.len(),
+                pick: IconPick::Category(cat),
+            });
+        }
+    }
+    rows
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn total_is_catalogue_plus_symbols() {
+        assert_eq!(
+            icon_total(),
+            IconId::ALL.len() + dodai_icons::symbol::Symbol::ALL.len()
+        );
+    }
+
+    #[test]
+    fn tree_counts_add_up_to_the_totals() {
+        let sum = |pick, depth| -> usize {
+            icon_tree(pick)
+                .iter()
+                .filter(|r| r.depth == depth)
+                .map(|r| r.count)
+                .sum()
+        };
+        assert_eq!(
+            sum(IconPick::Symbols, 4),
+            dodai_icons::symbol::Symbol::ALL.len()
+        );
+        assert_eq!(sum(IconPick::Catalogue, 4), IconId::ALL.len());
+    }
+
+    #[test]
+    fn closed_branches_hide_their_children() {
+        assert!(icon_tree(IconPick::All).iter().all(|r| r.depth == 3));
+        assert!(icon_tree(IconPick::Group("medical"))
+            .iter()
+            .any(|r| r.pick == IconPick::Group("medical")));
+    }
+
+    #[test]
+    fn symbol_groups_are_sorted_not_vehicle_first() {
+        let names: Vec<_> = sorted_groups().iter().map(|g| g.name()).collect();
+        let mut sorted = names.clone();
+        sorted.sort();
+        assert_eq!(names, sorted);
+    }
+
+    #[test]
+    fn picking_filters_and_folds_up() {
+        assert!(IconPick::Group("medical").shows_group("medical"));
+        assert!(!IconPick::Group("medical").shows_group("vehicle"));
+        assert!(!IconPick::Catalogue.shows_group("medical"));
+        assert!(!IconPick::Symbols.shows_category("other"));
+        assert_eq!(IconPick::Category("x").up(), IconPick::Catalogue);
+        assert_eq!(IconPick::Symbols.up(), IconPick::All);
+    }
 }

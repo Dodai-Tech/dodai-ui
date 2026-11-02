@@ -112,6 +112,8 @@ pub struct Showcase {
     icon_msg: Option<String>,
     /// Material icon categories shown in full (the rest show a preview).
     icon_open: std::collections::HashSet<&'static str>,
+    /// The branch of the Icons tree the sidebar picked (what the section shows).
+    icon_pick: sections::IconPick,
     date_range: dodai_gpui::DateRange,
     cat: usize,
     cat_count: usize,
