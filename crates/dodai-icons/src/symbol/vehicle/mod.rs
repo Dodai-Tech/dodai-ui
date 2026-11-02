@@ -2,6 +2,111 @@
 
 use super::*;
 
+mod body;
+mod cabin;
+mod energy;
+
+/// Rear and front wheel centres of the full-size side profile ([`body`]).
+const WHEELS: [(f32, f32); 2] = [(6.5, 16.5), (17.5, 16.5)];
+
+/// A side profile facing right: `top` runs from the rear bottom corner over the roof to the
+/// front bottom corner (both at y = 16.5); the sill is cut by two wheel arches and the
+/// wheels sit inside them.
+fn body(top: &[(f32, f32)]) -> Vec<Shape> {
+    let mut pts = top.to_vec();
+    for (cx, cy) in WHEELS.iter().rev() {
+        pts.extend(arc(*cx, *cy, 3.0, 0.0, -180.0).0);
+    }
+    vec![
+        (pts, true),
+        circ(WHEELS[0].0, WHEELS[0].1, 2.0),
+        circ(WHEELS[1].0, WHEELS[1].1, 2.0),
+    ]
+}
+
+/// The everyday hatchback roofline, reused small by several symbols.
+const HATCH: &[(f32, f32)] = &[
+    (2.5, 16.5),
+    (2.5, 11.5),
+    (4.5, 8.5),
+    (13.5, 8.5),
+    (16.5, 11.5),
+    (20.5, 12.2),
+    (21.5, 13.5),
+    (21.5, 16.5),
+];
+
+/// Every point moved through `f` (scale, shift, turn).
+fn map(v: Vec<Shape>, f: impl Fn(f32, f32) -> (f32, f32)) -> Vec<Shape> {
+    v.into_iter()
+        .map(|(p, c)| (p.into_iter().map(|(x, y)| f(x, y)).collect(), c))
+        .collect()
+}
+
+/// `v` scaled by `s` about the origin, then moved by `(dx, dy)`.
+fn fit(v: Vec<Shape>, s: f32, dx: f32, dy: f32) -> Vec<Shape> {
+    map(v, |x, y| (x * s + dx, y * s + dy))
+}
+
+/// `v` turned by `deg` (clockwise on screen) about `(cx, cy)`.
+fn turn(v: Vec<Shape>, cx: f32, cy: f32, deg: f32) -> Vec<Shape> {
+    let (s, c) = rad(deg).sin_cos();
+    map(v, |x, y| {
+        let (dx, dy) = (x - cx, y - cy);
+        (cx + dx * c - dy * s, cy + dx * s + dy * c)
+    })
+}
+
+/// A lightning bolt centred on `(x, y)`, `h` tall.
+fn bolt(x: f32, y: f32, h: f32) -> Shape {
+    let k = h / 7.0;
+    line(&[
+        (x + 1.0 * k, y - 3.5 * k),
+        (x - 1.6 * k, y + 0.4 * k),
+        (x + 1.6 * k, y - 0.4 * k),
+        (x - 1.0 * k, y + 3.5 * k),
+    ])
+}
+
+/// A drop of radius `r` around `(cx, cy)`, its tip `2r` above the centre.
+fn drop(cx: f32, cy: f32, r: f32) -> Shape {
+    let mut pts = vec![(cx, cy - 2.0 * r)];
+    pts.extend(arc(cx, cy, r, -30.0, 210.0).0);
+    (pts, true)
+}
+
+/// A six-armed snowflake of radius `r`.
+fn flake(cx: f32, cy: f32, r: f32) -> Vec<Shape> {
+    [90.0, 30.0, 150.0]
+        .iter()
+        .map(|&a: &f32| {
+            let (s, c) = rad(a).sin_cos();
+            line(&[(cx - r * c, cy - r * s), (cx + r * c, cy + r * s)])
+        })
+        .collect()
+}
+
+/// `n` dashes along `a`..`b`, each half a step long.
+fn dashes(a: (f32, f32), b: (f32, f32), n: usize) -> Vec<Shape> {
+    (0..n)
+        .map(|i| {
+            let t0 = (i as f32 + 0.25) / n as f32;
+            let t1 = (i as f32 + 0.75) / n as f32;
+            let at = |t: f32| (a.0 + (b.0 - a.0) * t, a.1 + (b.1 - a.1) * t);
+            line(&[at(t0), at(t1)])
+        })
+        .collect()
+}
+
+/// An arrow head with its tip at `(x, y)` pointing along `deg`, arms `len` long.
+fn head(x: f32, y: f32, deg: f32, len: f32) -> Shape {
+    let arm = |d: f32| {
+        let a = rad(deg + 180.0 + d);
+        (x + len * a.cos(), y + len * a.sin())
+    };
+    line(&[arm(-40.0), (x, y), arm(40.0)])
+}
+
 /// A car seen from above-front, reused by several symbols: body outline from `x0` to `x1`.
 fn car_side(x0: f32, x1: f32, y: f32) -> Vec<Shape> {
     let w = x1 - x0;
@@ -617,6 +722,49 @@ pub(super) fn shapes(i: Symbol) -> Vec<Shape> {
             line(&[(14.0, 14.0), (17.0, 14.0)]),
             circ(20.0, 5.5, 1.2),
         ],
-        _ => Vec::new(),
+        _ => [body::shapes, energy::shapes, cabin::shapes]
+            .iter()
+            .map(|f| f(i))
+            .find(|v| !v.is_empty())
+            .unwrap_or_default(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn each_vehicle_symbol_is_drawn_by_one_module() {
+        for &s in Symbol::ALL.iter().filter(|s| s.group() == Group::Vehicle) {
+            let n = [body::shapes(s), energy::shapes(s), cabin::shapes(s)]
+                .iter()
+                .filter(|v| !v.is_empty())
+                .count();
+            assert!(n <= 1, "{} drawn twice", s.name());
+            assert!(!shapes(s).is_empty(), "{} is not drawn", s.name());
+        }
+    }
+
+    #[test]
+    fn body_styles_stand_on_the_same_wheels() {
+        for s in [
+            Symbol::Car,
+            Symbol::Coupe,
+            Symbol::Suv,
+            Symbol::Van,
+            Symbol::Pickup,
+        ] {
+            let v = shapes(s);
+            for (cx, cy) in WHEELS {
+                assert!(
+                    v.iter().any(|(p, closed)| *closed
+                        && p.iter()
+                            .all(|(x, y)| ((x - cx).hypot(y - cy) - 2.0).abs() < 1e-3)),
+                    "{} lacks the wheel at {cx}",
+                    s.name()
+                );
+            }
+        }
     }
 }

@@ -4,7 +4,6 @@
 use dodai_icons::symbol::Symbol;
 use dodai_icons::{Glyph, Points};
 
-const COLS: usize = 10;
 const CELL: f32 = 96.0;
 const ICON: f32 = 60.0;
 
@@ -25,14 +24,16 @@ fn main() {
         .copied()
         .filter(|s| group.as_deref().is_none_or(|g| s.group().name() == g))
         .collect();
-    let rows = list.len().div_ceil(COLS);
-    let (w, h) = (COLS as f32 * CELL, rows as f32 * CELL);
+    // Square sheet, so previews that crop to a square show everything.
+    let cols = (list.len() as f32).sqrt().ceil() as usize;
+    let rows = list.len().div_ceil(cols);
+    let (w, h) = (cols as f32 * CELL, rows as f32 * CELL);
     println!(
         "<svg xmlns='http://www.w3.org/2000/svg' width='{w}' height='{h}' viewBox='0 0 {w} {h}'>"
     );
     println!("<rect width='{w}' height='{h}' fill='#101014'/>");
     for (n, s) in list.iter().enumerate() {
-        let (x, y) = ((n % COLS) as f32 * CELL, (n / COLS) as f32 * CELL);
+        let (x, y) = ((n % cols) as f32 * CELL, (n / cols) as f32 * CELL);
         let Glyph::Stroked(lines) = s.glyph() else {
             continue;
         };
