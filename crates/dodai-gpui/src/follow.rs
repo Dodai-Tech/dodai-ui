@@ -56,6 +56,12 @@ pub fn next_frame(w: &Window) {
 /// Whether a follow eases: ambient ones need Animate on; ones answering input (or running just
 /// after the user's own input, see [`crate::motion::input_recent`]) also run with it off, and
 /// only "reduce motion" stops them.
+/// Whether a change counts as the answer to input: the follow says so, or the user just acted
+/// and the data is not moving on its own.
+fn answers(answering: bool, self_moving: bool, recent_input: bool) -> bool {
+    answering || (recent_input && !self_moving)
+}
+
 fn eases(animated: bool, enabled: bool, answers_input: bool, reduced: bool) -> bool {
     animated && if answers_input { !reduced } else { enabled }
 }
@@ -63,6 +69,20 @@ fn eases(animated: bool, enabled: bool, answers_input: bool, reduced: bool) -> b
 #[cfg(test)]
 mod ease_tests {
     use super::eases;
+
+    #[test]
+    fn self_moving_data_ignores_recent_input() {
+        assert!(
+            super::answers(false, false, true),
+            "user-driven data eases after a click"
+        );
+        assert!(!super::answers(false, true, true), "a feed does not");
+        assert!(
+            super::answers(true, true, false),
+            "a hover easing always does"
+        );
+        assert!(!super::answers(false, false, false));
+    }
 
     #[test]
     fn a_change_just_after_user_input_counts_as_an_answer() {
@@ -103,6 +123,7 @@ pub struct Follow {
     interactive: bool,
     on_focus: Option<FocusFn>,
     answers_input: bool,
+    self_moving: bool,
 }
 
 impl Follow {
@@ -125,6 +146,7 @@ impl Follow {
             interactive: true,
             on_focus: None,
             answers_input: false,
+            self_moving: false,
         }
     }
     /// An id from a name, for components that already have one.
@@ -137,6 +159,7 @@ impl Follow {
             interactive: true,
             on_focus: None,
             answers_input: false,
+            self_moving: false,
         }
     }
     /// Turns following on or off for this component; off, it shows its value at once.
@@ -157,11 +180,21 @@ impl Follow {
         self.answers_input = true;
         self
     }
+    /// Marks the data as moving on its own (a feed, a simulation) rather than because of the
+    /// user: it then eases only while the Animate switch is on, even right after a click.
+    pub fn with_self_moving(mut self, on: bool) -> Self {
+        self.self_moving = on;
+        self
+    }
     fn running(&self) -> bool {
         eases(
             self.animated,
             crate::motion::enabled(),
-            self.answers_input || crate::motion::input_recent(),
+            answers(
+                self.answers_input,
+                self.self_moving,
+                crate::motion::input_recent(),
+            ),
             crate::motion::reduce_motion(),
         )
     }
@@ -188,6 +221,7 @@ impl Follow {
             interactive: self.interactive,
             on_focus: self.on_focus.clone(),
             answers_input: self.answers_input,
+            self_moving: self.self_moving,
         }
     }
     /// The state key of this component in the current frame: its id, plus the instance number
@@ -246,6 +280,12 @@ macro_rules! follow_api {
         /// tooltips. Off, it is a plain picture. On by default.
         pub fn interactive(mut self, on: bool) -> Self {
             self.follow = self.follow.with_interactive(on);
+            self
+        }
+        /// Marks the data as moving on its own (a feed, a simulation), not because of the user:
+        /// it then eases only while the Animate switch is on, even just after a click.
+        pub fn self_moving(mut self, on: bool) -> Self {
+            self.follow = self.follow.with_self_moving(on);
             self
         }
         /// Called with the item that has the focus (hovered, else selected) each time it
