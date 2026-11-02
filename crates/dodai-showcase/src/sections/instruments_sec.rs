@@ -1,7 +1,7 @@
 //! The "Instruments" category: vehicle, industrial and medical readouts.
 
 use super::super::*;
-use dodai_gpui::icons::AutoIcon;
+use dodai_gpui::icons::Symbol;
 use dodai_gpui::{ClusterKind, DialLook, NeedleResponse};
 use dodai_gpui_instruments::{
     Affiliation, Annunciator, AttitudeIndicator, Compass, Contact, Countermeasures, DashTriptych,
@@ -540,12 +540,12 @@ impl Showcase {
         let dash_row = || div().flex().flex_wrap().items_center().gap(gap);
         let tells = || {
             Telltales::new()
-                .push(AutoIcon::SeatBelt, Tone::Danger)
-                .push(AutoIcon::SeatBelt, Tone::Danger)
-                .push(AutoIcon::SeatBelt, Tone::Danger)
-                .push(AutoIcon::LowBeam, Tone::Success)
-                .push(AutoIcon::ParkingBrake, Tone::Danger)
-                .push(AutoIcon::Engine, Tone::Warning)
+                .push(Symbol::SeatBelt, Tone::Danger)
+                .push(Symbol::SeatBelt, Tone::Danger)
+                .push(Symbol::SeatBelt, Tone::Danger)
+                .push(Symbol::LowBeam, Tone::Success)
+                .push(Symbol::ParkingBrake, Tone::Danger)
+                .push(Symbol::Engine, Tone::Warning)
         };
         out.push((
             "Instruments",
@@ -581,14 +581,14 @@ impl Showcase {
                     dash_row()
                         .child(
                             SidePod::new(oil_scale, val(33.0, 1.0, 6.5))
-                                .icon(AutoIcon::OilCan)
+                                .icon(Symbol::OilCan)
                                 .unit("bar")
                                 .ends(Some(Tone::Info), Some(Tone::Danger))
                                 .size(260.0),
                         )
                         .child(
                             SidePod::new(temp_scale, val(34.0, 75.0, 118.0))
-                                .icon(AutoIcon::Coolant)
+                                .icon(Symbol::Coolant)
                                 .unit("°C")
                                 .ends(Some(Tone::Info), Some(Tone::Danger))
                                 .size(260.0),
@@ -608,17 +608,6 @@ impl Showcase {
         ));
         out.push((
             "Instruments",
-            "Symbols",
-            self.section("Symbols", cx)
-                .child(Muted::new(
-                    "Dashboard telltales, one drawing in every design. Colour says what it means.",
-                ))
-                .child(symbol_grid(&t))
-                .into_any_element(),
-            "Symbols",
-        ));
-        out.push((
-            "Instruments",
             "Signal lab",
             self.section("Signal lab", cx)
                 .child(bar(vec![glow_opt()]))
@@ -628,58 +617,4 @@ impl Showcase {
         ));
         out
     }
-}
-
-/// Every dashboard symbol on a tile, tinted by what it usually signals.
-fn symbol_grid(t: &dodai_core::Theme) -> gpui::Div {
-    use dodai_gpui::icons::{AutoIcon, Icon};
-    let tone = |i: AutoIcon| match i {
-        AutoIcon::SeatBelt
-        | AutoIcon::BrakeFault
-        | AutoIcon::ParkingBrake
-        | AutoIcon::Airbag
-        | AutoIcon::Battery
-        | AutoIcon::OilCan
-        | AutoIcon::Sos => t.palette.danger,
-        AutoIcon::Coolant
-        | AutoIcon::Engine
-        | AutoIcon::Abs
-        | AutoIcon::TyrePressure
-        | AutoIcon::Glow
-        | AutoIcon::Service
-        | AutoIcon::Hazard
-        | AutoIcon::Stability
-        | AutoIcon::Steering => t.palette.warning,
-        AutoIcon::LowBeam
-        | AutoIcon::SideLights
-        | AutoIcon::FogFront
-        | AutoIcon::FogRear
-        | AutoIcon::TurnLeft
-        | AutoIcon::TurnRight
-        | AutoIcon::Eco
-        | AutoIcon::Hybrid
-        | AutoIcon::Recuperation
-        | AutoIcon::Plug
-        | AutoIcon::TractionBattery
-        | AutoIcon::Cruise
-        | AutoIcon::LaneKeep => t.palette.success,
-        AutoIcon::HighBeam | AutoIcon::Frost | AutoIcon::Washer | AutoIcon::Compass => {
-            t.palette.info
-        }
-        _ => t.palette.text,
-    };
-    let mut grid = div().flex().flex_wrap().gap(px(t.spacing.md));
-    for &i in AutoIcon::ALL {
-        grid = grid.child(
-            div()
-                .flex()
-                .flex_col()
-                .items_center()
-                .gap(px(t.spacing.xs))
-                .w(px(96.0))
-                .child(Icon::auto(i).size(36.0).weight(1.75).color(hsla(tone(i))))
-                .child(Muted::new(i.name())),
-        );
-    }
-    grid
 }

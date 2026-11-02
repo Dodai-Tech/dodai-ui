@@ -11,7 +11,7 @@ use crate::gauges::{disc, SWEEP};
 use dodai_core::Theme;
 use dodai_gpui::follow::{follow, Follow};
 use dodai_gpui::follow_api;
-use dodai_gpui::icons::{AutoIcon, Icon};
+use dodai_gpui::icons::{Icon, Symbol};
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
 use dodai_gpui::{hsla, theme_of};
 use dodai_instruments_core::instrument::{readout, Scale, Severity};
@@ -381,7 +381,7 @@ impl RenderOnce for RingTach {
                 .gap(px(size * 0.015))
                 .text_size(px(size * 0.052))
                 .text_color(ink)
-                .child(Icon::auto(AutoIcon::Fuel).size(size * 0.065).color(muted))
+                .child(Icon::symbol(Symbol::Fuel).size(size * 0.065).color(muted))
                 .child(self.reach.clone()),
         )
     }
@@ -396,7 +396,7 @@ pub struct SidePod {
     follow: Follow,
     scale: Scale,
     value: f32,
-    icon: Option<AutoIcon>,
+    icon: Option<Symbol>,
     unit: SharedString,
     reading: SharedString,
     ends: [Option<Tone>; 2],
@@ -422,7 +422,7 @@ impl SidePod {
         }
     }
     /// The symbol in the middle.
-    pub fn icon(mut self, i: AutoIcon) -> Self {
+    pub fn icon(mut self, i: Symbol) -> Self {
         self.icon = Some(i);
         self
     }
@@ -542,7 +542,7 @@ impl RenderOnce for SidePod {
             None => {
                 let mut col = div().flex().flex_col().items_center().gap(px(size * 0.012));
                 if let Some(i) = self.icon {
-                    col = col.child(Icon::auto(i).size(size * 0.1).color(ink));
+                    col = col.child(Icon::symbol(i).size(size * 0.1).color(ink));
                 }
                 if !self.reading.is_empty() {
                     col = col.child(
@@ -745,7 +745,7 @@ impl RenderOnce for LimitSign {
 /// A row of dashboard symbols, each lit in the colour of what it reports.
 #[derive(IntoElement)]
 pub struct Telltales {
-    items: Vec<(AutoIcon, Tone)>,
+    items: Vec<(Symbol, Tone)>,
     size: f32,
     columns: usize,
 }
@@ -760,7 +760,7 @@ impl Telltales {
         }
     }
     /// Add a symbol in a tone.
-    pub fn push(mut self, icon: AutoIcon, tone: Tone) -> Self {
+    pub fn push(mut self, icon: Symbol, tone: Tone) -> Self {
         self.items.push((icon, tone));
         self
     }
@@ -791,7 +791,7 @@ impl RenderOnce for Telltales {
         let mut n = 0;
         for (icon, tone) in &self.items {
             row = row.child(
-                Icon::auto(*icon)
+                Icon::symbol(*icon)
                     .size(self.size)
                     .weight(2.0)
                     .color(tone.color(&t)),
