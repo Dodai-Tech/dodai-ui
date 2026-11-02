@@ -268,6 +268,150 @@ symbols! {
     RideHeight = "ride-height";
     /// Outside temperature: thermometer.
     OutsideTemp = "outside-temp";
+    /// Hatchback, side view.
+    Car = "car";
+    /// Fastback coupé.
+    Coupe = "coupe";
+    /// Convertible with the hood folded.
+    Convertible = "convertible";
+    /// Three-box saloon.
+    Saloon = "saloon";
+    /// Estate with a long roof.
+    Estate = "estate";
+    /// Sport utility vehicle.
+    Suv = "suv";
+    /// Van.
+    Van = "van";
+    /// Pickup with an open bed.
+    Pickup = "pickup";
+    /// Box truck.
+    Truck = "truck";
+    /// Folding roof opening.
+    RoofOpen = "roof-open";
+    /// Folding roof closing.
+    RoofClosed = "roof-closed";
+    /// Surround view: car in a turning arrow.
+    View360 = "view-360";
+    /// Closed side door.
+    Door = "door";
+    /// Urban driving.
+    City = "city";
+    /// Winding road through hills.
+    CountryRoad = "country-road";
+    /// Multi-lane motorway.
+    Highway = "highway";
+    /// Garage.
+    Garage = "garage";
+    /// Hill descent control.
+    HillDescent = "hill-descent";
+    /// Off-road mode.
+    OffRoad = "off-road";
+    /// Race circuit.
+    Circuit = "circuit";
+    /// Workshop lift.
+    Lift = "lift";
+    /// Battery empty.
+    BatteryEmpty = "battery-empty";
+    /// Battery a quarter full.
+    BatteryQuarter = "battery-quarter";
+    /// Battery half full.
+    BatteryHalf = "battery-half";
+    /// Battery three quarters full.
+    BatteryThreeQuarters = "battery-three-quarters";
+    /// Battery full.
+    BatteryFull = "battery-full";
+    /// Battery empty, running on fuel.
+    BatteryEmptyFuel = "battery-empty-fuel";
+    /// Charging in progress.
+    Charging = "charging";
+    /// State of charge.
+    ChargeLevel = "charge-level";
+    /// Charging station.
+    ChargeStation = "charge-station";
+    /// Charging network.
+    ChargeNetwork = "charge-network";
+    /// Charging socket.
+    ChargeSocket = "charge-socket";
+    /// Car charging.
+    CarCharging = "car-charging";
+    /// Carbon dioxide.
+    Co2 = "co2";
+    /// Emission class bars.
+    Co2Class = "co2-class";
+    /// Exhaust emission.
+    Exhaust = "exhaust";
+    /// Particulate filter.
+    Particulate = "particulate";
+    /// Seat.
+    Seat = "seat";
+    /// Seat ventilation.
+    SeatCool = "seat-cool";
+    /// Steering wheel.
+    SteeringWheel = "steering-wheel";
+    /// Heated steering wheel.
+    SteeringHeat = "steering-heat";
+    /// Horn.
+    Horn = "horn";
+    /// Leather upholstery.
+    Leather = "leather";
+    /// Parking light.
+    ParkingLight = "parking-light";
+    /// Rev counter.
+    Tachometer = "tachometer";
+    /// Tyre.
+    Tyre = "tyre";
+    /// Weight.
+    Weight = "weight";
+    /// Two spanners.
+    Wrenches = "wrenches";
+    /// North arrow.
+    NorthArrow = "north-arrow";
+    /// Stopwatch.
+    Stopwatch = "stopwatch";
+    /// Engine displacement: piston in a cylinder.
+    Displacement = "displacement";
+    /// Spare parts box.
+    Parts = "parts";
+    /// Service technician.
+    Technician = "technician";
+    /// Climate: sun and snowflake.
+    Climate = "climate";
+    /// Air distribution.
+    AirFlow = "air-flow";
+    /// Cabin ventilation.
+    CabinVent = "cabin-vent";
+    /// Timed preconditioning.
+    Preheat = "preheat";
+    /// Windscreen wiper.
+    Wiper = "wiper";
+    /// Sunroof.
+    Sunroof = "sunroof";
+    /// Power window.
+    Window = "window";
+    /// Mirror fold.
+    MirrorFold = "mirror-fold";
+    /// Blind-spot monitor.
+    BlindSpot = "blind-spot";
+    /// Parking sensors.
+    ParkSensor = "park-sensor";
+    /// Camera.
+    Camera = "camera";
+    /// Adaptive cruise following distance.
+    FollowDistance = "follow-distance";
+    /// Brake pad wear.
+    BrakeWear = "brake-wear";
+    /// Rest break: a cup.
+    RestBreak = "rest-break";
+    /// Head-up display.
+    Hud = "hud";
+    /// Wireless phone charging.
+    PhoneCharge = "phone-charge";
+    /// Phone as key.
+    DigitalKey = "digital-key";
+    /// Automatic main beam.
+    AutoBeam = "auto-beam";
+    /// Odometer.
+    Odometer = "odometer";
     }
     /// Clinical and monitor symbols.
     Medical = "medical" {

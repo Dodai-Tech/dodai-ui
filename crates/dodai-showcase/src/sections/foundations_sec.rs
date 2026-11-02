@@ -547,7 +547,12 @@ fn symbol_groups(t: &dodai_core::Theme, query: &str) -> gpui::Div {
         | Symbol::Service
         | Symbol::Hazard
         | Symbol::Stability
-        | Symbol::Steering => t.palette.warning,
+        | Symbol::Steering
+        | Symbol::BrakeWear
+        | Symbol::BatteryEmpty
+        | Symbol::BatteryEmptyFuel
+        | Symbol::Particulate
+        | Symbol::RestBreak => t.palette.warning,
         Symbol::LowBeam
         | Symbol::SideLights
         | Symbol::FogFront
@@ -560,8 +565,19 @@ fn symbol_groups(t: &dodai_core::Theme, query: &str) -> gpui::Div {
         | Symbol::Plug
         | Symbol::TractionBattery
         | Symbol::Cruise
-        | Symbol::LaneKeep => t.palette.success,
-        Symbol::HighBeam | Symbol::Frost | Symbol::Washer | Symbol::Compass => t.palette.info,
+        | Symbol::LaneKeep
+        | Symbol::ParkingLight
+        | Symbol::Charging
+        | Symbol::CarCharging => t.palette.success,
+        Symbol::HighBeam
+        | Symbol::Frost
+        | Symbol::Washer
+        | Symbol::Compass
+        | Symbol::AutoBeam
+        | Symbol::FollowDistance
+        | Symbol::BlindSpot
+        | Symbol::HillDescent
+        | Symbol::SeatCool => t.palette.info,
         _ => t.palette.text,
     };
     let mut all = div().flex().flex_col().gap(px(t.spacing.lg));
