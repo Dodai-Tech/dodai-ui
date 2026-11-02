@@ -4,11 +4,12 @@ use super::super::*;
 use dodai_gpui::icons::Symbol;
 use dodai_gpui::{ClusterKind, DialLook, NeedleResponse};
 use dodai_gpui_instruments::{
-    Affiliation, Annunciator, AttitudeIndicator, Compass, Contact, Countermeasures, DashTriptych,
-    DialGauge, GearIndicator, HeadingTape, InstrumentCluster, LevelBar, LimitSign, Limits,
-    MenuRing, MissionTimer, Odometer, PowerMeter, RingTach, Scale, Severity, SidePod,
-    SonarWaterfall, Station, StationState, StoresPanel, TacticalPlot, Telltales, Threat,
-    ThreatRosette, TirePressure, Tone, TrackList, VerticalTape, VitalsTile,
+    Affiliation, Annunciator, AttitudeIndicator, CapsuleCluster, Compass, Contact, Countermeasures,
+    CutSpeedometer, DashTriptych, DialGauge, GearIndicator, GradientBar, GradientDial,
+    GradientRing, HeadingTape, InstrumentCluster, LevelBar, LimitSign, Limits, MenuRing,
+    MissionTimer, Odometer, PowerMeter, Ramp, RingTach, Scale, Severity, SidePod, SonarWaterfall,
+    Station, StationState, StoresPanel, TacticalPlot, Telltales, Threat, ThreatRosette,
+    TirePressure, Tone, TrackList, VerticalTape, VitalsTile,
 };
 
 impl Showcase {
@@ -176,17 +177,135 @@ impl Showcase {
             .child(
                 row()
                     .items_start()
-                    .child(PowerMeter::new(power, val(5.0, -50.0, 110.0)).response_opt(response))
+                    .child(
+                        PowerMeter::new(power.clone(), val(5.0, -50.0, 110.0))
+                            .response_opt(response),
+                    )
                     .child(Compass::new(val(6.0, 0.0, 360.0)).response_opt(response)),
             );
 
+        // Dash: a three-pod digital cluster and its parts.
+        let rpm_scale = Scale::new(0.0, 8.0)
+            .ticks_per(8, 2)
+            .zone(7.0, 8.0, Severity::Alarm);
+        let oil_scale = Scale::new(0.0, 8.0).ticks_per(4, 2);
+        let temp_scale =
+            Scale::new(60.0, 130.0)
+                .ticks_per(3, 3)
+                .zone(115.0, 130.0, Severity::Alarm);
+        let speed_scale = Scale::new(0.0, 270.0).ticks_per(9, 1);
+        let dash_row = || div().flex().flex_wrap().items_center().gap(gap);
+        let tells = || {
+            Telltales::new()
+                .push(Symbol::SeatBelt, Tone::Danger)
+                .push(Symbol::SeatBelt, Tone::Danger)
+                .push(Symbol::SeatBelt, Tone::Danger)
+                .push(Symbol::LowBeam, Tone::Success)
+                .push(Symbol::ParkingBrake, Tone::Danger)
+                .push(Symbol::Engine, Tone::Warning)
+        };
+        // Gradient instruments: every ramp is built from the active theme's palette, so these
+        // are the selected theme's own variations.
+        let ramp_speed =
+            Scale::new(0.0, 260.0)
+                .ticks_per(13, 1)
+                .zone(230.0, 260.0, Severity::Caution);
+        let mut gdials = row();
+        let mut grings = row();
+        let mut gbars = div().flex().flex_wrap().gap(px(t.spacing.lg));
+        for (i, ramp) in Ramp::ALL.into_iter().enumerate() {
+            let k = i as f32;
+            gdials = gdials.child(
+                GradientDial::new(ramp_speed.clone(), val(40.0 + k, 20.0, 250.0))
+                    .response_opt(response)
+                    .id(("grad-dial", i))
+                    .ramp(ramp)
+                    .label(ramp.name())
+                    .unit("km/h")
+                    .size(180.0),
+            );
+            grings = grings.child(
+                GradientRing::new(val(50.0 + k, 8.0, 100.0))
+                    .response_opt(response)
+                    .id(("grad-ring", i))
+                    .ramp(ramp)
+                    .label(ramp.name())
+                    .caption("charge")
+                    .size(130.0),
+            );
+            gbars = gbars.child(
+                GradientBar::new(power.clone(), val(60.0 + k, -50.0, 115.0))
+                    .response_opt(response)
+                    .id(("grad-bar", i))
+                    .ramp(ramp)
+                    .label(format!("Power · {}", ramp.name()))
+                    .unit(" kW")
+                    .width(300.0),
+            );
+        }
+        let gradients = div()
+            .flex()
+            .flex_col()
+            .gap(px(t.spacing.lg))
+            .child(gdials)
+            .child(grings)
+            .child(gbars);
         out.push((
             "Instruments",
             "Vehicle",
             self.section("Vehicle", cx)
                 .child(bar(vec![needle_opt()]))
+                .child(Muted::new(
+                    "Three pods: a ribbed ring for engine speed, an open-ring gauge and a menu ring.",
+                ))
+                .child(
+                    DashTriptych::new(
+                        RingTach::new(rpm_scale.clone(), val(30.0, 0.8, 6.6), val(31.0, 0.0, 180.0))
+                            .marker(4.0)
+                            .tab("--- km")
+                            .fuel(0.7, "542 km"),
+                        SidePod::new(speed_scale.clone(), val(32.0, 20.0, 230.0))
+                            .reading("")
+                            .unit("km/h")
+                            .ends(Some(Tone::Info), Some(Tone::Info))
+                            .centre(LimitSign::new(50).size(64.0)),
+                        MenuRing::new(["G-Force", "G-Force Max.", "Reset max."])
+                            .heading("Sport")
+                            .selected(1),
+                    )
+                    .telltales(tells())
+                    .limit(50)
+                    .mode("HYBRID AUTO")
+                    .trip("13.207 km", "6 °C", "19:06")
+                    .width(780.0),
+                )
                 .child(Muted::new("Clusters: one coherent style per set."))
                 .child(clusters)
+                .child(Muted::new("Single-piece clusters"))
+                .child(
+                    row()
+                        .items_start()
+                        .child(
+                            CapsuleCluster::new(speed_scale.clone(), val(35.0, 0.0, 220.0))
+                                .response_opt(response)
+                                .mode("Comfort")
+                                .power(val(36.0, 5.0, 90.0))
+                                .temp(21.5)
+                                .battery(72.0, 410.0)
+                                .width(700.0),
+                        )
+                        .child(
+                            CutSpeedometer::new(speed_scale.clone(), val(37.0, 0.0, 250.0))
+                                .response_opt(response)
+                                .unit("km/h")
+                                .width(380.0),
+                        ),
+                )
+                .child(Muted::new(format!(
+                    "Gradients from {}: each ramp blends this theme's palette, so every theme gets its own set.",
+                    t.meta.name
+                )))
+                .child(gradients)
                 .child(Muted::new("Dials"))
                 .child(
                     row()
@@ -234,8 +353,35 @@ impl Showcase {
                                 .size(170.0),
                         ),
                 )
+                .child(Muted::new("Pods"))
+                .child(
+                    dash_row()
+                        .child(
+                            SidePod::new(oil_scale, val(33.0, 1.0, 6.5))
+                                .icon(Symbol::OilCan)
+                                .unit("bar")
+                                .ends(Some(Tone::Info), Some(Tone::Danger))
+                                .size(260.0),
+                        )
+                        .child(
+                            SidePod::new(temp_scale, val(34.0, 75.0, 118.0))
+                                .icon(Symbol::Coolant)
+                                .unit("°C")
+                                .ends(Some(Tone::Info), Some(Tone::Danger))
+                                .size(260.0),
+                        )
+                        .child(
+                            MenuRing::new(["Information", "Vehicle", "Oil level"])
+                                .selected(1)
+                                .size(260.0),
+                        )
+                        .child(LimitSign::new(50).size(64.0))
+                        .child(LimitSign::new(120).size(64.0)),
+                )
                 .child(Muted::new("Status"))
                 .child(status)
+                .child(Muted::new("Telltales"))
+                .child(tells().size(28.0))
                 .into_any_element(),
             "Vehicle",
         ));
@@ -526,85 +672,6 @@ impl Showcase {
                 )
                 .into_any_element(),
             "Aviation",
-        ));
-        // Dash: a three-pod digital cluster and its parts.
-        let rpm_scale = Scale::new(0.0, 8.0)
-            .ticks_per(8, 2)
-            .zone(7.0, 8.0, Severity::Alarm);
-        let oil_scale = Scale::new(0.0, 8.0).ticks_per(4, 2);
-        let temp_scale =
-            Scale::new(60.0, 130.0)
-                .ticks_per(3, 3)
-                .zone(115.0, 130.0, Severity::Alarm);
-        let speed_scale = Scale::new(0.0, 270.0).ticks_per(9, 1);
-        let dash_row = || div().flex().flex_wrap().items_center().gap(gap);
-        let tells = || {
-            Telltales::new()
-                .push(Symbol::SeatBelt, Tone::Danger)
-                .push(Symbol::SeatBelt, Tone::Danger)
-                .push(Symbol::SeatBelt, Tone::Danger)
-                .push(Symbol::LowBeam, Tone::Success)
-                .push(Symbol::ParkingBrake, Tone::Danger)
-                .push(Symbol::Engine, Tone::Warning)
-        };
-        out.push((
-            "Instruments",
-            "Dash",
-            self.section("Dash", cx)
-                .child(bar(vec![needle_opt()]))
-                .child(Muted::new(
-                    "Three pods: a ribbed ring for engine speed, an open-ring gauge and a menu ring.",
-                ))
-                .child(
-                    DashTriptych::new(
-                        RingTach::new(rpm_scale.clone(), val(30.0, 0.8, 6.6), val(31.0, 0.0, 180.0))
-                            .marker(4.0)
-                            .tab("--- km")
-                            .fuel(0.7, "542 km"),
-                        SidePod::new(speed_scale.clone(), val(32.0, 20.0, 230.0))
-                            .reading("")
-                            .unit("km/h")
-                            .ends(Some(Tone::Info), Some(Tone::Info))
-                            .centre(LimitSign::new(50).size(64.0)),
-                        MenuRing::new(["G-Force", "G-Force Max.", "Reset max."])
-                            .heading("Sport")
-                            .selected(1),
-                    )
-                    .telltales(tells())
-                    .limit(50)
-                    .mode("HYBRID AUTO")
-                    .trip("13.207 km", "6 °C", "19:06")
-                    .width(780.0),
-                )
-                .child(Muted::new("Pods"))
-                .child(
-                    dash_row()
-                        .child(
-                            SidePod::new(oil_scale, val(33.0, 1.0, 6.5))
-                                .icon(Symbol::OilCan)
-                                .unit("bar")
-                                .ends(Some(Tone::Info), Some(Tone::Danger))
-                                .size(260.0),
-                        )
-                        .child(
-                            SidePod::new(temp_scale, val(34.0, 75.0, 118.0))
-                                .icon(Symbol::Coolant)
-                                .unit("°C")
-                                .ends(Some(Tone::Info), Some(Tone::Danger))
-                                .size(260.0),
-                        )
-                        .child(
-                            MenuRing::new(["Information", "Vehicle", "Oil level"])
-                                .selected(1)
-                                .size(260.0),
-                        )
-                        .child(LimitSign::new(50).size(64.0))
-                        .child(LimitSign::new(120).size(64.0)),
-                )
-                .child(Muted::new("Telltales"))
-                .child(tells().size(28.0))
-                .into_any_element(),
-            "Dash",
         ));
         out.push((
             "Instruments",

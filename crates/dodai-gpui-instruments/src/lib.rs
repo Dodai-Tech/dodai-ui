@@ -25,6 +25,7 @@ mod draw;
 pub mod gauge;
 pub mod gauges;
 pub(crate) mod gauges_extra;
+pub mod gradient;
 pub mod scope;
 pub mod segment;
 
@@ -49,6 +50,7 @@ pub use dodai_instruments_core::instrument::{Alarm, Limits, Scale, Severity};
 pub use dodai_instruments_core::tactical::{Affiliation, Contact};
 pub use gauge::Gauge;
 pub use gauges::GaugeStyle;
+pub use gradient::{GradientBar, GradientDial, GradientRing, Ramp};
 #[cfg(feature = "defense")]
 pub use scope::{Blip, RadarScope};
 pub use scope::{DotMatrix, HexMap, Oscilloscope, RingStack, SignalBars, Spectrum};

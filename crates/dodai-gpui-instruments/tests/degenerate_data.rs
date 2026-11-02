@@ -36,6 +36,21 @@ fn instruments(v: f32) -> Vec<AnyElement> {
         HexMap::new(0, [v]).into_any_element(),
         HexMap::new(3, []).into_any_element(),
         RingStack::new([("a", v)]).into_any_element(),
+        GradientDial::new(Scale::new(v, 10.0), v)
+            .ramp(Ramp::Spectrum)
+            .into_any_element(),
+        GradientDial::new(Scale::new(5.0, 5.0), v).into_any_element(),
+        GradientRing::new(v).ramp(Ramp::Heat).into_any_element(),
+        GradientBar::new(Scale::new(-v, v), v)
+            .cells(usize::MAX)
+            .into_any_element(),
+        GradientBar::new(Scale::new(0.0, 1.0), v)
+            .width(f32::NAN)
+            .into_any_element(),
+    ]);
+    // The dash pieces come with the `automotive` feature.
+    #[cfg(feature = "automotive")]
+    out.extend([
         RingTach::new(Scale::new(v, 8.0), v, v)
             .marker(v)
             .fuel(v, "x")
