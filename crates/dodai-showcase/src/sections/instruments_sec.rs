@@ -1,12 +1,14 @@
 //! The "Instruments" category: vehicle, industrial and medical readouts.
 
 use super::super::*;
+use dodai_gpui::icons::AutoIcon;
 use dodai_gpui::{ClusterKind, DialLook, NeedleResponse};
 use dodai_gpui_instruments::{
-    Affiliation, Annunciator, AttitudeIndicator, Compass, Contact, Countermeasures, DialGauge,
-    GearIndicator, HeadingTape, InstrumentCluster, LevelBar, Limits, MissionTimer, Odometer,
-    PowerMeter, Scale, Severity, SonarWaterfall, Station, StationState, StoresPanel, TacticalPlot,
-    Threat, ThreatRosette, TirePressure, TrackList, VerticalTape, VitalsTile,
+    Affiliation, Annunciator, AttitudeIndicator, Compass, Contact, Countermeasures, DashTriptych,
+    DialGauge, GearIndicator, HeadingTape, InstrumentCluster, LevelBar, LimitSign, Limits,
+    MenuRing, MissionTimer, Odometer, PowerMeter, RingTach, Scale, Severity, SidePod,
+    SonarWaterfall, Station, StationState, StoresPanel, TacticalPlot, Telltales, Threat,
+    ThreatRosette, TirePressure, Tone, TrackList, VerticalTape, VitalsTile,
 };
 
 impl Showcase {
@@ -525,6 +527,96 @@ impl Showcase {
                 .into_any_element(),
             "Aviation",
         ));
+        // Dash: a three-pod digital cluster and its parts.
+        let rpm_scale = Scale::new(0.0, 8.0)
+            .ticks_per(8, 2)
+            .zone(7.0, 8.0, Severity::Alarm);
+        let oil_scale = Scale::new(0.0, 8.0).ticks_per(4, 2);
+        let temp_scale =
+            Scale::new(60.0, 130.0)
+                .ticks_per(3, 3)
+                .zone(115.0, 130.0, Severity::Alarm);
+        let speed_scale = Scale::new(0.0, 270.0).ticks_per(9, 1);
+        let dash_row = || div().flex().flex_wrap().items_center().gap(gap);
+        let tells = || {
+            Telltales::new()
+                .push(AutoIcon::SeatBelt, Tone::Danger)
+                .push(AutoIcon::SeatBelt, Tone::Danger)
+                .push(AutoIcon::SeatBelt, Tone::Danger)
+                .push(AutoIcon::LowBeam, Tone::Success)
+                .push(AutoIcon::ParkingBrake, Tone::Danger)
+                .push(AutoIcon::Engine, Tone::Warning)
+        };
+        out.push((
+            "Instruments",
+            "Dash",
+            self.section("Dash", cx)
+                .child(bar(vec![needle_opt()]))
+                .child(Muted::new(
+                    "Three pods: a ribbed ring for engine speed, an open-ring gauge and a menu ring.",
+                ))
+                .child(
+                    DashTriptych::new(
+                        RingTach::new(rpm_scale.clone(), val(30.0, 0.8, 6.6), val(31.0, 0.0, 180.0))
+                            .marker(4.0)
+                            .tab("--- km")
+                            .fuel(0.7, "542 km"),
+                        SidePod::new(speed_scale.clone(), val(32.0, 20.0, 230.0))
+                            .reading("")
+                            .unit("km/h")
+                            .ends(Some(Tone::Info), Some(Tone::Info))
+                            .centre(LimitSign::new(50).size(64.0)),
+                        MenuRing::new(["G-Force", "G-Force Max.", "Reset max."])
+                            .heading("Sport")
+                            .selected(1),
+                    )
+                    .telltales(tells())
+                    .limit(50)
+                    .mode("HYBRID AUTO")
+                    .trip("13.207 km", "6 °C", "19:06")
+                    .width(780.0),
+                )
+                .child(Muted::new("Pods"))
+                .child(
+                    dash_row()
+                        .child(
+                            SidePod::new(oil_scale, val(33.0, 1.0, 6.5))
+                                .icon(AutoIcon::OilCan)
+                                .unit("bar")
+                                .ends(Some(Tone::Info), Some(Tone::Danger))
+                                .size(260.0),
+                        )
+                        .child(
+                            SidePod::new(temp_scale, val(34.0, 75.0, 118.0))
+                                .icon(AutoIcon::Coolant)
+                                .unit("°C")
+                                .ends(Some(Tone::Info), Some(Tone::Danger))
+                                .size(260.0),
+                        )
+                        .child(
+                            MenuRing::new(["Information", "Vehicle", "Oil level"])
+                                .selected(1)
+                                .size(260.0),
+                        )
+                        .child(LimitSign::new(50).size(64.0))
+                        .child(LimitSign::new(120).size(64.0)),
+                )
+                .child(Muted::new("Telltales"))
+                .child(tells().size(28.0))
+                .into_any_element(),
+            "Dash",
+        ));
+        out.push((
+            "Instruments",
+            "Symbols",
+            self.section("Symbols", cx)
+                .child(Muted::new(
+                    "Dashboard telltales, one drawing in every design. Colour says what it means.",
+                ))
+                .child(symbol_grid(&t))
+                .into_any_element(),
+            "Symbols",
+        ));
         out.push((
             "Instruments",
             "Signal lab",
@@ -536,4 +628,58 @@ impl Showcase {
         ));
         out
     }
+}
+
+/// Every dashboard symbol on a tile, tinted by what it usually signals.
+fn symbol_grid(t: &dodai_core::Theme) -> gpui::Div {
+    use dodai_gpui::icons::{AutoIcon, Icon};
+    let tone = |i: AutoIcon| match i {
+        AutoIcon::SeatBelt
+        | AutoIcon::BrakeFault
+        | AutoIcon::ParkingBrake
+        | AutoIcon::Airbag
+        | AutoIcon::Battery
+        | AutoIcon::OilCan
+        | AutoIcon::Sos => t.palette.danger,
+        AutoIcon::Coolant
+        | AutoIcon::Engine
+        | AutoIcon::Abs
+        | AutoIcon::TyrePressure
+        | AutoIcon::Glow
+        | AutoIcon::Service
+        | AutoIcon::Hazard
+        | AutoIcon::Stability
+        | AutoIcon::Steering => t.palette.warning,
+        AutoIcon::LowBeam
+        | AutoIcon::SideLights
+        | AutoIcon::FogFront
+        | AutoIcon::FogRear
+        | AutoIcon::TurnLeft
+        | AutoIcon::TurnRight
+        | AutoIcon::Eco
+        | AutoIcon::Hybrid
+        | AutoIcon::Recuperation
+        | AutoIcon::Plug
+        | AutoIcon::TractionBattery
+        | AutoIcon::Cruise
+        | AutoIcon::LaneKeep => t.palette.success,
+        AutoIcon::HighBeam | AutoIcon::Frost | AutoIcon::Washer | AutoIcon::Compass => {
+            t.palette.info
+        }
+        _ => t.palette.text,
+    };
+    let mut grid = div().flex().flex_wrap().gap(px(t.spacing.md));
+    for &i in AutoIcon::ALL {
+        grid = grid.child(
+            div()
+                .flex()
+                .flex_col()
+                .items_center()
+                .gap(px(t.spacing.xs))
+                .w(px(96.0))
+                .child(Icon::auto(i).size(36.0).weight(1.75).color(hsla(tone(i))))
+                .child(Muted::new(i.name())),
+        );
+    }
+    grid
 }
