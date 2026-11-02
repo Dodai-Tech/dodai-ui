@@ -16,14 +16,9 @@ ignore = [
     "RUSTSEC-2026-0173",
     "RUSTSEC-2026-0192",
     "RUSTSEC-2026-0206",
-    "RUSTSEC-2026-0319",
     "RUSTSEC-2026-0370",
     "RUSTSEC-2026-0371",
     "RUSTSEC-2026-0372",
-    # quick-xml 0.30 comes from slint 1.10 -> accesskit -> zbus_xml; it only parses the local
-    # D-Bus introspection XML. Revisit when dodai-slint moves to a newer slint.
-    "RUSTSEC-2026-0194",
-    "RUSTSEC-2026-0195",
 ]
 
 [licenses]
