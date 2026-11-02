@@ -87,6 +87,7 @@ impl RadarChart {
             .enumerate()
             .map(|(i, s)| (hsla(series_color(&t, s, i)), s.values.clone()))
             .collect();
+        let hatcher = crate::common::Hatcher::new(&t);
         let cvs = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
@@ -118,7 +119,7 @@ impl RadarChart {
                         false,
                     );
                 }
-                for (col, vals) in &polys {
+                for (si, (col, vals)) in polys.iter().enumerate() {
                     let p: Vec<_> = (0..n)
                         .map(|i| {
                             polar(
@@ -130,6 +131,7 @@ impl RadarChart {
                         })
                         .collect();
                     fill(w, b.origin, &p, scale_alpha(*col, 0.2));
+                    hatcher.over(w, b.origin, &p, si);
                     let mut closed = p.clone();
                     closed.push(p[0]);
                     glow_stroke(w, b.origin, &closed, 2.0, *col, glow);

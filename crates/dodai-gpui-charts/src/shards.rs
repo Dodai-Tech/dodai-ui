@@ -168,6 +168,7 @@ impl ShardMap {
         let display = t.clone();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
         let paint_cells: Vec<Shard> = cells.clone();
+        let hatcher = crate::common::Hatcher::new(&t);
         let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, cx| {
             let (centre, r) = fit(b.size.width.into(), b.size.height.into());
             let r = r * (0.85 + 0.15 * g.min(1.0));
@@ -184,6 +185,7 @@ impl ShardMap {
                     fills[k]
                 };
                 fill(w, b.origin, &p, scale_alpha(tone, lk.alpha * a));
+                hatcher.over(w, b.origin, &p, k);
                 stroke(w, b.origin, &p, 1.0, scale_alpha(lines[k], 0.55 * a), true);
             }
             for (gi, region) in regions.iter().enumerate().filter(|(_, p)| p.len() > 2) {

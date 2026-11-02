@@ -120,6 +120,7 @@ impl ProportionalSquares {
         let painted = rects.clone();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
         let paint_items = items.clone();
+        let hatcher = crate::common::Hatcher::new(&t);
         let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, cx| {
             let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
             let values: Vec<f32> = paint_items.iter().map(|i| i.2).collect();
@@ -142,12 +143,9 @@ impl ProportionalSquares {
                 let k = paint_items[i].0;
                 let (cx_, cy) = (x + side / 2.0, y + side / 2.0);
                 let (x0, y0) = (cx_ - s / 2.0, cy - s / 2.0);
-                fill(
-                    w,
-                    b.origin,
-                    &crate::common::rect(x0, y0, s, s),
-                    scale_alpha(cols[k], 0.9 * lk.alpha),
-                );
+                let square = crate::common::rect(x0, y0, s, s);
+                fill(w, b.origin, &square, scale_alpha(cols[k], 0.9 * lk.alpha));
+                hatcher.over(w, b.origin, &square, k);
                 if gi < 1.0 {
                     continue;
                 }
@@ -323,6 +321,7 @@ impl CirclePack {
         let ph = hit.clone();
         let hit_geo: Vec<(f32, f32, f32)> = discs.iter().map(|d| (d.x, d.y, d.r)).collect();
         let bounds: Rc<Cell<Bounds<Pixels>>> = Default::default();
+        let hatcher = crate::common::Hatcher::new(&t);
         let cv = tracked_canvas(&bounds, move |b: Bounds<Pixels>, w, cx| {
             let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
             let side = bw.min(bh);
@@ -340,6 +339,9 @@ impl CirclePack {
                 let (body, rim, ink) = style[i];
                 let alpha = if *leaf { 0.9 } else { 1.0 } * lk.alpha;
                 fill(w, b.origin, &ring, scale_alpha(body, alpha));
+                if *leaf {
+                    hatcher.over(w, b.origin, &ring, i);
+                }
                 if !leaf || lk.lift > 0.0 {
                     let rim = if *leaf { ink } else { rim };
                     stroke(
