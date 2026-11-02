@@ -6,6 +6,7 @@
 //! Material Symbols, Neo-Brutalism's bold Phosphor. Every icon draws in every design. Force a pack
 //! with [`Icon::pack`].
 
+pub use dodai_icons::auto::AutoIcon;
 pub use dodai_icons::cyberpunk::IconName;
 pub use dodai_icons::IconId;
 #[cfg(feature = "cyberpunk")]
@@ -43,6 +44,8 @@ impl IconPack {
 #[derive(IntoElement)]
 pub struct Icon {
     id: IconId,
+    /// A dashboard symbol; when set it replaces `id` and is the same in every design.
+    auto: Option<AutoIcon>,
     /// A derived Cyberpunk variant (`heart` + `Add`); always the stroked drawing.
     #[cfg(feature = "cyberpunk")]
     modifier: Option<Modifier>,
@@ -60,10 +63,18 @@ impl Icon {
         Self::of(id.into())
     }
 
+    /// A dashboard symbol (`Icon::auto(AutoIcon::OilCan)`): one drawing, the same in every design.
+    pub const fn auto(symbol: AutoIcon) -> Self {
+        let mut icon = Self::of(IconId::Heart);
+        icon.auto = Some(symbol);
+        icon
+    }
+
     /// `const` constructor behind the generated `Icon::House`-style constants.
     pub(crate) const fn of(id: IconId) -> Self {
         Self {
             id,
+            auto: None,
             #[cfg(feature = "cyberpunk")]
             modifier: None,
             size: 16.0,
@@ -115,6 +126,7 @@ impl RenderOnce for Icon {
             .unwrap_or_else(|| crate::hsla(theme.palette.text));
         let key = MeshKey {
             id: self.id,
+            auto: self.auto,
             pack: self.pack.resolve(theme.look().icons),
             filled: self.filled,
             #[cfg(feature = "cyberpunk")]
@@ -141,6 +153,7 @@ impl RenderOnce for Icon {
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 struct MeshKey {
     id: IconId,
+    auto: Option<AutoIcon>,
     pack: Pack,
     filled: bool,
     #[cfg(feature = "cyberpunk")]
@@ -187,11 +200,15 @@ impl Mesh {
         };
         #[cfg(feature = "cyberpunk")]
         let glyph = match key.modifier {
+            _ if key.auto.is_some() => key.auto.map(AutoIcon::glyph),
             Some(m) => dodai_icons::cyber_shapes(key.id, Some(m)).map(Glyph::Stroked),
             None => dodai_icons::glyph(key.id, key.pack, key.filled),
         };
         #[cfg(not(feature = "cyberpunk"))]
-        let glyph = dodai_icons::glyph(key.id, key.pack, key.filled);
+        let glyph = match key.auto {
+            Some(a) => Some(a.glyph()),
+            None => dodai_icons::glyph(key.id, key.pack, key.filled),
+        };
         let k = f32::from_bits(key.size) / 24.0;
         let weight = f32::from_bits(key.weight);
         let outline = |polys: &mut dyn Iterator<Item = (&[(f32, f32)], bool)>| {
@@ -277,6 +294,7 @@ mod tests {
             let size = 20.0f32;
             let key = MeshKey {
                 id: IconId::CalendarHeart,
+                auto: None,
                 pack,
                 filled,
                 #[cfg(feature = "cyberpunk")]
