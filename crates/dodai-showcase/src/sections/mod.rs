@@ -15,6 +15,7 @@ mod throughput;
 
 use super::*;
 
+pub(crate) use foundations_sec::{icon_total, icon_tree, IconPick};
 pub(crate) use throughput::WINDOW as THROUGHPUT_WINDOW;
 
 /// Every category, in sidebar order (Shaders last: it is the biggest).

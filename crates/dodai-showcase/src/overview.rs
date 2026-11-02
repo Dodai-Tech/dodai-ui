@@ -23,7 +23,7 @@ impl Showcase {
             (total.to_string(), "components"),
             (cats.len().to_string(), "categories"),
             (dodai_core::themes::all().len().to_string(), "themes"),
-            (dodai_gpui::IconId::ALL.len().to_string(), "icons"),
+            (crate::sections::icon_total().to_string(), "icons"),
             (n_shaders.to_string(), "shaders"),
         ];
         let line = hsla(t.palette.border);

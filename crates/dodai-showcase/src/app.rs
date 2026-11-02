@@ -212,6 +212,7 @@ impl Showcase {
             icon_code: std::env::var_os("DODAI_CODE").is_some(),
             icon_msg: None,
             icon_open: std::collections::HashSet::new(),
+            icon_pick: Default::default(),
             date_range: Default::default(),
             cat: std::env::var("DODAI_CAT")
                 .ok()

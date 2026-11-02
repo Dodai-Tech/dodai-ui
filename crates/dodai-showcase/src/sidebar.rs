@@ -231,17 +231,47 @@ impl Showcase {
                     let mut row = NavigationItem::new(("jump", idx * 1000 + k), title);
                     // The Icons section shows how many icons the active design ships.
                     if title == "Icons" {
-                        row = row.badge(group_thousands(dodai_gpui::IconId::ALL.len()));
+                        row = row.badge(group_thousands(crate::sections::icon_total()));
                     }
                     drawer = drawer.item(row.depth(2).selected(active == Some(title)).on_click(
                         move |_, _, cx| {
                             m.update(cx, |s, cx| {
                                 s.pin.pin(title);
                                 s.jump = Some((title, 1));
+                                if title == "Icons" {
+                                    s.icon_pick = Default::default();
+                                }
                                 cx.notify()
                             })
                         },
                     ));
+                    // The Icons section has its own tree: symbols by group, catalogue by category.
+                    if title == "Icons" {
+                        for (r, row) in crate::sections::icon_tree(self.icon_pick)
+                            .into_iter()
+                            .enumerate()
+                        {
+                            side_need = side_need.max(est(row.label.len() + 6, row.depth as f32));
+                            let m = me.clone();
+                            let pick = row.pick;
+                            drawer = drawer.item(
+                                NavigationItem::new(("icon-tree", idx * 1000 + r), row.label)
+                                    .depth(row.depth)
+                                    .badge(group_thousands(row.count))
+                                    .selected(self.icon_pick == pick)
+                                    .on_click(move |_, _, cx| {
+                                        m.update(cx, |s, cx| {
+                                            // A second click on the open branch folds it.
+                                            s.icon_pick =
+                                                if s.icon_pick == pick { pick.up() } else { pick };
+                                            s.pin.pin("Icons");
+                                            s.jump = Some(("Icons", 1));
+                                            cx.notify()
+                                        })
+                                    }),
+                            );
+                        }
+                    }
                     k += 1;
                 }
             }
