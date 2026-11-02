@@ -16,6 +16,7 @@
 //! assert_eq!(g.coverage(24).len(), 24 * 24);
 //! ```
 
+pub mod auto;
 #[cfg(feature = "neobrutalism")]
 mod bold;
 #[cfg(feature = "cyberpunk")]
