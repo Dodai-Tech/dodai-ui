@@ -4024,6 +4024,7 @@ dependencies = [
  "dodai-core",
  "dodai-fx",
  "dodai-icons",
+ "dodai-instruments-core",
 ]
 
 [[package]]
@@ -4081,6 +4082,7 @@ dependencies = [
  "dodai-frost",
  "dodai-fx",
  "dodai-icons",
+ "dodai-instruments-core",
  "dodai-shaders",
  "gpui",
  "image",

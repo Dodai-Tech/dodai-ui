@@ -44,8 +44,18 @@ fn main() {
             labels,
             animate_progress,
             slider_label,
+            gizmo_events,
         ),
     );
+    if let Ok(path) = std::env::var("DODAI_SHOT") {
+        app.add_systems(Update, move |mut c: Commands, mut n: Local<u32>| {
+            *n += 1;
+            if *n == 40 {
+                c.spawn(bevy::render::view::screenshot::Screenshot::primary_window())
+                    .observe(bevy::render::view::screenshot::save_to_disk(path.clone()));
+            }
+        });
+    }
     if let Some(n) = frames {
         app.add_systems(
             Update,
@@ -60,8 +70,57 @@ fn main() {
     app.run();
 }
 
+/// Orbit angles the demo gizmo shows.
+#[derive(Resource)]
+struct DemoOrbit {
+    yaw: f32,
+    pitch: f32,
+}
+
+/// Clicks on balls and the home button set the view, a drag orbits.
+fn gizmo_events(
+    mut ev: MessageReader<GizmoEvent>,
+    mut orbit_state: ResMut<DemoOrbit>,
+    mut gizmos: Query<&mut UiAxisGizmo>,
+) {
+    for e in ev.read() {
+        match e.kind {
+            GizmoKind::Select(axis) => {
+                let (yaw, pitch) = axis.view_angles();
+                orbit_state.yaw = yaw.unwrap_or(orbit_state.yaw);
+                orbit_state.pitch = pitch;
+            }
+            GizmoKind::Home => {
+                orbit_state.yaw = 0.6;
+                orbit_state.pitch = 0.45;
+            }
+            GizmoKind::Drag(d) => {
+                (orbit_state.yaw, orbit_state.pitch) =
+                    dodai_bevy::gizmo::orbit(orbit_state.yaw, orbit_state.pitch, d.x, d.y);
+            }
+        }
+    }
+    for mut g in &mut gizmos {
+        g.set_orbit(orbit_state.yaw, orbit_state.pitch);
+    }
+}
+
 fn setup(mut commands: Commands, theme: Res<DodaiTheme>) {
     commands.spawn(Camera2d);
+    commands.insert_resource(DemoOrbit {
+        yaw: 0.6,
+        pitch: 0.45,
+    });
+    commands.spawn((
+        axis_gizmo(130.0),
+        Node {
+            position_type: PositionType::Absolute,
+            right: px(16),
+            bottom: px(16),
+            ..default()
+        },
+        GlobalZIndex(50),
+    ));
     let names: Vec<String> = theme
         .switcher()
         .themes()
