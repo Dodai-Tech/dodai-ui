@@ -38,6 +38,9 @@ pub struct StrokeStyle {
     pub weight: f32,
     /// Round caps and joins (otherwise square caps and mitred joins).
     pub round: bool,
+    /// Sharp corners are cut by this much on the 24 grid (0 keeps them). Only corners that turn
+    /// by more than 40 degrees on long enough segments are cut, so faceted arcs stay smooth.
+    pub chamfer: f32,
 }
 
 impl StrokeStyle {
@@ -45,17 +48,64 @@ impl StrokeStyle {
     pub const ROUND: Self = Self {
         weight: 1.4,
         round: true,
+        chamfer: 0.0,
     };
     /// Hard-edged, as the classic stroked pack (Cyberpunk).
     pub const SQUARE: Self = Self {
         weight: 1.5,
         round: false,
+        chamfer: 0.9,
     };
     /// Heavy and soft (Neo-Brutalism).
     pub const BOLD: Self = Self {
         weight: 1.9,
         round: true,
+        chamfer: 0.0,
     };
+}
+
+impl StrokeStyle {
+    /// `lines` with this style's corner cuts applied.
+    pub fn cut(&self, lines: Vec<(Points, bool)>) -> Vec<(Points, bool)> {
+        if self.chamfer <= 0.0 {
+            return lines;
+        }
+        lines
+            .into_iter()
+            .map(|(p, c)| (self.cut_line(&p, c), c))
+            .collect()
+    }
+
+    fn cut_line(&self, pts: &[(f32, f32)], closed: bool) -> Points {
+        let d = self.chamfer;
+        let n = pts.len();
+        let mut out = Points::new();
+        for i in 0..n {
+            let p = pts[i];
+            let edge = !closed && (i == 0 || i + 1 == n);
+            let (a, b) = (pts[(i + n - 1) % n], pts[(i + 1) % n]);
+            let (u, v) = ((p.0 - a.0, p.1 - a.1), (b.0 - p.0, b.1 - p.1));
+            let (lu, lv) = (
+                (u.0 * u.0 + u.1 * u.1).sqrt(),
+                (v.0 * v.0 + v.1 * v.1).sqrt(),
+            );
+            let turn = if lu > 1e-4 && lv > 1e-4 {
+                ((u.0 * v.0 + u.1 * v.1) / (lu * lv))
+                    .clamp(-1.0, 1.0)
+                    .acos()
+                    .to_degrees()
+            } else {
+                0.0
+            };
+            if edge || turn <= 40.0 || lu < 2.5 * d || lv < 2.5 * d {
+                out.push(p);
+            } else {
+                out.push((p.0 - u.0 / lu * d, p.1 - u.1 / lu * d));
+                out.push((p.0 + v.0 / lv * d, p.1 + v.1 / lv * d));
+            }
+        }
+        out
+    }
 }
 
 impl Default for StrokeStyle {
