@@ -192,6 +192,7 @@ impl Mesh {
     /// Resolve the glyph and tessellate it: strokes at the weight, fills as one even-odd path
     /// (the options gpui's `PathBuilder` uses, so icons look as before).
     fn build(key: MeshKey) -> Option<Self> {
+        use dodai_icons::{ROUND_STROKE, STROKE};
         use lyon_tessellation::math::point;
         use lyon_tessellation::path::Path;
         use lyon_tessellation::{
@@ -237,6 +238,20 @@ impl Mesh {
                     .tessellate_path(
                         &path,
                         &StrokeOptions::default().with_line_width(width),
+                        &mut BuffersBuilder::new(&mut buf, |v: StrokeVertex| v.position()),
+                    )
+                    .ok()?;
+            }
+            Glyph::Round(shapes) => {
+                let width = (weight * k * (ROUND_STROKE / STROKE)).max(1.0);
+                let path = outline(&mut shapes.iter().map(|(p, c)| (p.as_slice(), *c)));
+                StrokeTessellator::new()
+                    .tessellate_path(
+                        &path,
+                        &StrokeOptions::default()
+                            .with_line_width(width)
+                            .with_line_cap(lyon_tessellation::LineCap::Round)
+                            .with_line_join(lyon_tessellation::LineJoin::Round),
                         &mut BuffersBuilder::new(&mut buf, |v: StrokeVertex| v.position()),
                     )
                     .ok()?;

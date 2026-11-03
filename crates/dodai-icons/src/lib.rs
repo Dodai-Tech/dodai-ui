@@ -29,7 +29,7 @@ mod phosphor;
 pub mod symbol;
 
 pub use id::IconId;
-pub use pack::{Glyph, IconPack, PackChain, Points, STROKE};
+pub use pack::{Glyph, IconPack, PackChain, Points, ROUND_STROKE, STROKE};
 /// The icon set grouped into categories (for browsers and pickers).
 pub use phosphor::CATEGORIES;
 

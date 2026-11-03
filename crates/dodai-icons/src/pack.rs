@@ -30,6 +30,9 @@ pub type Points = Vec<(f32, f32)>;
 /// Stroke width of [`Glyph::Stroked`] on the 24 grid.
 pub const STROKE: f32 = 1.75;
 
+/// Stroke width of [`Glyph::Round`] on the 24 grid: finer than [`STROKE`] so detail stays open.
+pub const ROUND_STROKE: f32 = 1.4;
+
 /// A source of icon drawings.
 pub trait IconPack: Send + Sync {
     /// Short stable name (for diagnostics and tests).
@@ -76,6 +79,61 @@ pub enum Glyph {
     Filled(Vec<Points>),
     /// Polylines `(points, closed)` drawn with a uniform stroke.
     Stroked(Vec<(Points, bool)>),
+    /// Polylines `(points, closed)` drawn with a fine uniform stroke, round caps and round joins.
+    Round(Vec<(Points, bool)>),
+}
+
+/// A stroke with round caps and joins as polygons: a quad per segment and a disc at every
+/// vertex that turns (or ends). All wound the same way so a non-zero fill unions them.
+fn round_polygons(lines: &[(Points, bool)]) -> Vec<Points> {
+    let h = ROUND_STROKE / 2.0;
+    let disc = |c: (f32, f32)| -> Points {
+        (0..12)
+            .map(|i| {
+                let a = i as f32 * std::f32::consts::TAU / 12.0;
+                (c.0 + h * a.cos(), c.1 + h * a.sin())
+            })
+            .collect()
+    };
+    let mut out = Vec::new();
+    for (pts, closed) in lines {
+        let n = pts.len();
+        let segs = if *closed { n } else { n.saturating_sub(1) };
+        let dir = |i: usize| {
+            let (a, b) = (pts[i % n], pts[(i + 1) % n]);
+            let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+            let l = (dx * dx + dy * dy).sqrt();
+            (l > 1e-4).then(|| (dx / l, dy / l))
+        };
+        for i in 0..segs {
+            let (a, b) = (pts[i], pts[(i + 1) % n]);
+            let Some((ux, uy)) = dir(i) else { continue };
+            let (nx, ny) = (-uy * h, ux * h);
+            out.push(vec![
+                (a.0 + nx, a.1 + ny),
+                (b.0 + nx, b.1 + ny),
+                (b.0 - nx, b.1 - ny),
+                (a.0 - nx, a.1 - ny),
+            ]);
+        }
+        for (i, &p) in pts.iter().enumerate() {
+            let before = if i > 0 || *closed {
+                dir((i + n - 1) % n)
+            } else {
+                None
+            };
+            let after = if i + 1 < n || *closed { dir(i) } else { None };
+            let smooth =
+                matches!((before, after), (Some(a), Some(b)) if a.0 * b.0 + a.1 * b.1 > 0.985);
+            if !smooth {
+                out.push(disc(p));
+            }
+        }
+        if n == 1 {
+            out.push(disc(pts[0]));
+        }
+    }
+    out
 }
 
 impl Glyph {
@@ -84,6 +142,7 @@ impl Glyph {
     pub fn polygons(&self) -> Vec<Points> {
         match self {
             Glyph::Filled(p) => p.clone(),
+            Glyph::Round(lines) => round_polygons(lines),
             Glyph::Stroked(lines) => {
                 let h = STROKE / 2.0;
                 let mut out = Vec::new();
@@ -123,6 +182,13 @@ impl Glyph {
             Glyph::Filled(polys) => {
                 let d: String = polys.iter().map(|p| path(p, true)).collect();
                 format!("{head} fill=\"{color}\"><path fill-rule=\"nonzero\" d=\"{d}\"/></svg>")
+            }
+            Glyph::Round(lines) => {
+                let d: String = lines.iter().map(|(p, c)| path(p, *c)).collect();
+                format!(
+                    "{head} fill=\"none\" stroke=\"{color}\" stroke-width=\"{ROUND_STROKE}\" \
+                     stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"{d}\"/></svg>"
+                )
             }
             Glyph::Stroked(lines) => {
                 let d: String = lines.iter().map(|(p, c)| path(p, *c)).collect();

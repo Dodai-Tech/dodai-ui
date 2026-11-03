@@ -69,7 +69,7 @@ fn rad(d: f32) -> f32 {
     d * PI / 180.0
 }
 
-/// An open arc of radius `r` from `a0` to `a1` degrees, faceted every ~12°.
+/// An open arc of radius `r` from `a0` to `a1` degrees, faceted every ~5°.
 #[cfg(any(
     feature = "symbols-vehicle",
     feature = "symbols-medical",
@@ -78,7 +78,7 @@ fn rad(d: f32) -> f32 {
     feature = "symbols-aviation"
 ))]
 fn arc(cx: f32, cy: f32, r: f32, a0: f32, a1: f32) -> Shape {
-    let n = (((a1 - a0).abs() / 12.0).ceil() as usize).max(2);
+    let n = (((a1 - a0).abs() / 5.0).ceil() as usize).max(2);
     let pts = (0..=n)
         .map(|i| {
             let a = rad(a0 + (a1 - a0) * i as f32 / n as f32);
@@ -669,7 +669,7 @@ impl Symbol {
         feature = "symbols-aviation"
     ))]
     pub fn glyph(self) -> Glyph {
-        Glyph::Stroked(match self.group() {
+        Glyph::Round(match self.group() {
             #[cfg(feature = "symbols-vehicle")]
             Group::Vehicle => vehicle::shapes(self),
             #[cfg(feature = "symbols-medical")]
@@ -702,7 +702,7 @@ mod tests {
     #[test]
     fn every_symbol_draws_inside_its_box() {
         for &i in Symbol::ALL {
-            let Glyph::Stroked(lines) = i.glyph() else {
+            let Glyph::Round(lines) = i.glyph() else {
                 panic!("{} is not stroked", i.name())
             };
             assert!(!lines.is_empty(), "{} is empty", i.name());

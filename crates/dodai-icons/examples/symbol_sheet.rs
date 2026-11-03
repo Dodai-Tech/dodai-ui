@@ -34,7 +34,7 @@ fn main() {
     println!("<rect width='{w}' height='{h}' fill='#101014'/>");
     for (n, s) in list.iter().enumerate() {
         let (x, y) = ((n % cols) as f32 * CELL, (n / cols) as f32 * CELL);
-        let Glyph::Stroked(lines) = s.glyph() else {
+        let Glyph::Round(lines) = s.glyph() else {
             continue;
         };
         let k = ICON / 24.0;
@@ -45,7 +45,7 @@ fn main() {
         );
         println!(
             "<path transform='translate({ox} {}) scale({k})' d='{}' fill='none' stroke='#e8e8f0' \
-             stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/>",
+             stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/>",
             y + 8.0,
             path(&lines)
         );
