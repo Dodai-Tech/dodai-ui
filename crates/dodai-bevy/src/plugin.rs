@@ -71,6 +71,18 @@ impl Plugin for DodaiUiPlugin {
         .add_observer(pointer_out)
         .add_observer(pointer_press)
         .add_observer(pointer_release)
+        .add_observer(crate::gizmo::gizmo_press)
+        .add_observer(crate::gizmo::gizmo_drag)
+        .add_observer(crate::gizmo::gizmo_click)
+        .add_message::<crate::gizmo::GizmoEvent>()
+        .add_systems(
+            Update,
+            (
+                crate::gizmo::style_gizmo_roots,
+                crate::gizmo::style_gizmo_parts,
+            )
+                .in_set(DodaiSet),
+        )
         .init_resource::<FocusedInput>()
         .add_message::<ControlEvent>()
         .add_systems(Startup, spawn_tooltip)

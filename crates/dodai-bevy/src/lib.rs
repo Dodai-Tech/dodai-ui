@@ -19,9 +19,10 @@
 //! ```
 //!
 //! Modules: [`theme`] (resource), [`surface`] (shape/glow painting),
-//! [`widgets`] (components + spawn helpers), [`style`] (pure token mapping),
+//! [`widgets`] (components + spawn helpers), [`gizmo`] (orientation axis gizmo), [`style`] (pure token mapping),
 //! [`material`] (shader materials), [`plugin`].
 
+pub mod gizmo;
 pub mod material;
 pub mod plugin;
 pub mod style;
@@ -40,6 +41,7 @@ pub use theme::{color, DodaiTheme};
 
 /// Everything needed to build a themed UI.
 pub mod prelude {
+    pub use crate::gizmo::{axis_gizmo, AxisId, Basis, GizmoEvent, GizmoKind, UiAxisGizmo};
     pub use crate::plugin::{theme_hotkeys, DodaiSet, DodaiUiPlugin, ScanlineOverlay};
     pub use crate::surface::Surface;
     pub use crate::systems::FocusedInput;
@@ -88,6 +90,7 @@ mod tests {
             ("style", include_str!("style.rs")),
             ("systems", include_str!("systems.rs")),
             ("widgets", include_str!("widgets.rs")),
+            ("gizmo", include_str!("gizmo.rs")),
             ("plugin", include_str!("plugin.rs")),
             ("material", include_str!("material.rs")),
         ] {
