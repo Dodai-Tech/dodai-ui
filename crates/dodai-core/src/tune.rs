@@ -123,6 +123,13 @@ impl Theme {
         r.primary_fixed_dim = d.primary_fixed_dim;
         r.on_primary_fixed = d.on_primary_fixed;
         r.on_primary_fixed_variant = d.on_primary_fixed_variant;
+        // Tonal secondary controls (Material) follow the chosen colour too.
+        let mut tinted = p.clone();
+        tinted.secondary = fill;
+        let ds = crate::palette::Roles::derive(&tinted, self.meta.mode == crate::Mode::Dark);
+        let r = &mut p.roles;
+        r.secondary_container = ds.secondary_container;
+        r.on_secondary_container = ds.on_secondary_container;
         self
     }
 }
@@ -513,6 +520,16 @@ mod tests {
             "only the fill family moves"
         );
         assert_eq!(t.clone().with_control_colour(ControlColour::Design), t);
+    }
+
+    #[test]
+    fn control_colour_retints_the_tonal_secondary_container() {
+        let t = Theme::default();
+        let accent = t.clone().with_control_colour(ControlColour::Accent);
+        assert_ne!(
+            accent.palette.roles.secondary_container,
+            t.palette.roles.secondary_container
+        );
     }
 
     #[test]
