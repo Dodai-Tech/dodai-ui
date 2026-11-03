@@ -115,7 +115,7 @@ impl Showcase {
         let (named, symbols) = (IconId::ALL.len(), dodai_icons::symbol::Symbol::ALL.len());
         let total = icon_total();
         let intro = format!(
-            "{total} icons in one catalogue: {named} named icons with the same names in every design system (each draws them in its own style; write one as `Icon::Heart`) and {symbols} original symbols in {} groups (one drawing, stroked in each design's own weight and corners). Click an icon for its SVG and code.",
+            "{total} icons: {named} named icons shared by every design, each drawn in that design's own style (write one as `Icon::Heart`), plus {symbols} dashboard icons in {} groups, one drawing stroked in each design's own weight and corners. Click an icon for its SVG and code.",
             dodai_gpui::icons::SymbolGroup::ALL.len()
         );
         let mut section = self.section("Icons", cx).child(Muted::new(intro)).child(
