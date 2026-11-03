@@ -165,6 +165,7 @@ post_kernel!(bloom, fx::bloom);
 post_kernel!(glitch, fx::glitch);
 post_kernel!(chromatic, fx::chromatic);
 post_kernel!(neon_edges, fx::neon_edges);
+post_kernel!(energy_rise, fx::energy_rise);
 post_kernel!(dither, fx::dither);
 post_kernel!(negative, fx::negative);
 post_kernel!(m3_scrim, fx::m3_scrim);

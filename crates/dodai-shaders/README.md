@@ -8,7 +8,7 @@ through WebGPU, the browser). There is no CPU renderer.
 
 | Family | Shaders |
 |---|---|
-| Cyberpunk | neon grid, rain city, hex pulse, circuit, HUD radar, data corruption, synthwave sunset, neon rain glass, neon signs · bloom, glitch, chromatic, neon edges, hologram |
+| Cyberpunk | neon grid, rain city, hex pulse, circuit, HUD radar, data corruption, synthwave sunset, neon rain glass, neon signs · bloom, glitch, chromatic, neon edges, energy rise, hologram |
 | Material 3 | dynamic colour, ripple, tonal waves, tonal elevation, shape morph, wavy progress, mesh gradient, dot wave, shape loader, tonal bars · tonal scrim, frosted blur |
 | Matrix | digital rain, code hallway, glyph wall, rain in depth · Matrix vision, green screen |
 | Retro terminals | terminal screen, test pattern, TV snow, oscilloscope, teletext · CRT, phosphor, VHS, TFT, static, 1-bit dither, negative, CRT power-on, vertical roll, halftone, ASCII art, CGA, vignette, film grain, sepia, amber monitor, green phosphor, paper-white, Trinitron, shadow mask, dot matrix, vector display, C64, Apple ][, ZX Spectrum, EGA, composite NTSC, tracking error, degauss · radar, DOS text, C64 READY., ZX loading, colour bars |
