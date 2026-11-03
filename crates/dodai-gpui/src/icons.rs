@@ -44,7 +44,7 @@ impl IconPack {
 #[derive(IntoElement)]
 pub struct Icon {
     id: IconId,
-    /// A dashboard symbol; when set it replaces `id` and is the same in every design.
+    /// A dashboard symbol; when set it replaces `id`; one drawing, stroked in each design's style.
     symbol: Option<Symbol>,
     /// A derived Cyberpunk variant (`heart` + `Add`); always the stroked drawing.
     #[cfg(feature = "cyberpunk")]
@@ -63,7 +63,7 @@ impl Icon {
         Self::of(id.into())
     }
 
-    /// A dashboard symbol (`Icon::symbol(Symbol::OilCan)`): one drawing, the same in every design.
+    /// A dashboard symbol (`Icon::symbol(Symbol::OilCan)`): one drawing, stroked in each design's style.
     pub const fn symbol(symbol: Symbol) -> Self {
         let mut icon = Self::of(IconId::Heart);
         icon.symbol = Some(symbol);
@@ -145,7 +145,7 @@ impl RenderOnce for Icon {
                     if glow {
                         for (dx, dy) in [(-1.2, 0.0), (1.2, 0.0), (0.0, -1.2), (0.0, 1.2)] {
                             let o = gpui::point(b.origin.x + px(dx), b.origin.y + px(dy));
-                            mesh.paint(w, o, color.opacity(0.22));
+                            mesh.paint(w, o, color.opacity(0.15));
                         }
                     }
                     mesh.paint(w, b.origin, color);
