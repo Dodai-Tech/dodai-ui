@@ -297,6 +297,8 @@ impl Showcase {
                     .child(dodai_gpui::TreeItem::new("gpui_showcase.rs")),
             ],
             tree_sel: None,
+            gizmo_yaw: 0.6,
+            gizmo_pitch: 0.45,
             demo_pin: String::new(),
             demo_otp: String::new(),
             live_a: dodai_gpui::Live::prefilled(48, |i| live_signal(i, 0.9)),

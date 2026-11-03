@@ -10,6 +10,7 @@ impl Showcase {
             Self::menu_section,
             Self::tabs_section,
             Self::tree_section,
+            Self::gizmo_section,
             Self::sidebar_section,
             Self::strips_section,
             Self::carousel_section,
@@ -347,6 +348,68 @@ impl Showcase {
                 )
                 .into_any_element(),
             "Tree",
+        )]
+    }
+
+    fn gizmo_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let (yaw, pitch) = (self.gizmo_yaw, self.gizmo_pitch);
+        let me = cx.entity();
+        let (m_select, m_drag, m_home) = (me.clone(), me.clone(), me);
+        let gizmo = dodai_gpui::AxisGizmo::new(
+            "gizmo",
+            dodai_gpui::orientation::Basis::from_orbit(yaw, pitch),
+        )
+        .on_select(move |axis, _, cx| {
+            m_select.update(cx, |s, cx| {
+                let (y, p) = axis.view_angles();
+                s.gizmo_yaw = y.unwrap_or(s.gizmo_yaw);
+                s.gizmo_pitch = p;
+                cx.notify();
+            })
+        })
+        .on_drag(move |dx, dy, _, cx| {
+            m_drag.update(cx, |s, cx| {
+                (s.gizmo_yaw, s.gizmo_pitch) =
+                    dodai_gpui::orientation::orbit(s.gizmo_yaw, s.gizmo_pitch, dx, dy);
+                cx.notify();
+            })
+        })
+        .on_home(move |_, cx| {
+            m_home.update(cx, |s, cx| {
+                s.gizmo_yaw = 0.6;
+                s.gizmo_pitch = 0.45;
+                cx.notify();
+            })
+        });
+        vec![(
+            "Navigation",
+            "Axis gizmo",
+            self.section("Axis gizmo", cx)
+                .child(Muted::new(
+                    "Orientation widget for a 3D view (Z up). Click a ball to look along that axis, the house to go home, or drag anywhere inside to orbit. Controlled: you give it the camera basis and move your camera in the callbacks.",
+                ))
+                .child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap(px(t.spacing.lg))
+                        .child(gizmo)
+                        .child(
+                            div()
+                                .flex()
+                                .flex_col()
+                                .gap(px(t.spacing.xs))
+                                .child(Label::new("Camera"))
+                                .child(Mono::new(format!("yaw   {:>7.1} deg", yaw.to_degrees())))
+                                .child(Mono::new(format!(
+                                    "pitch {:>7.1} deg",
+                                    pitch.to_degrees()
+                                ))),
+                        ),
+                )
+                .into_any_element(),
+            "Axis gizmo",
         )]
     }
 

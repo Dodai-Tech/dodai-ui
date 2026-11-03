@@ -11,11 +11,13 @@
 //! | [`gauge`] | lit cells, ticks, zones, needle and cell polygons, hex grids, ring radii |
 //! | [`flight`] | attitude horizon, pitch ladder, tapes, sonar rows |
 //! | [`segments`] | seven-segment digit geometry |
+//! | [`orientation`] | axis gizmo: placement, hit test, orbit drag, standard views |
 //! | [`tactical`] | contacts, map symbols, threat wedges, countdown |
 #![warn(missing_docs)]
 
 pub mod flight;
 pub mod gauge;
 pub mod instrument;
+pub mod orientation;
 pub mod segments;
 pub mod tactical;

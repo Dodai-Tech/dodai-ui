@@ -132,6 +132,10 @@ const FILES: &[(&str, &str)] = &[
         "interact.rs",
         include_str!("../../dodai-gpui/src/interact.rs"),
     ),
+    (
+        "orientation.rs",
+        include_str!("../../dodai-gpui/src/orientation.rs"),
+    ),
     ("knob.rs", include_str!("../../dodai-gpui/src/knob.rs")),
     ("layout.rs", include_str!("../../dodai-gpui/src/layout.rs")),
     ("lazy.rs", include_str!("../../dodai-gpui/src/lazy.rs")),

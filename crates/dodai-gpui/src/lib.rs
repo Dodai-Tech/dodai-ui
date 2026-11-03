@@ -225,6 +225,8 @@ pub mod nav;
 #[cfg(feature = "components")]
 pub mod navigation;
 #[cfg(feature = "components")]
+pub mod orientation;
+#[cfg(feature = "components")]
 pub mod overlay;
 #[cfg(all(feature = "components", feature = "material"))]
 pub mod overscroll;
@@ -352,6 +354,8 @@ pub use motion::{
 pub use nav::{Accordion, Breadcrumb, Pagination, Segmented, Stepper};
 #[cfg(feature = "components")]
 pub use navigation::{NavigationBar, NavigationDrawer, NavigationItem, NavigationRail};
+#[cfg(feature = "components")]
+pub use orientation::AxisGizmo;
 #[cfg(feature = "components")]
 pub use overlay::{Dialog, DialogCard};
 #[cfg(all(feature = "components", feature = "material"))]
