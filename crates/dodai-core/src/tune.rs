@@ -408,7 +408,14 @@ impl Theme {
             t.surface_style.backdrop *= tune.gradient.mesh_gain();
             t.surface_style.gradient = tune.gradient.effect_gain();
         }
-        t.with_control_colour(tune.control_colour)
+        // A choice this theme does not offer (it looks like another one) reads as the default,
+        // as the picker shows it.
+        let c = if ControlColour::offered(&t).contains(&tune.control_colour) {
+            tune.control_colour
+        } else {
+            ControlColour::Design
+        };
+        t.with_control_colour(c)
     }
 }
 
