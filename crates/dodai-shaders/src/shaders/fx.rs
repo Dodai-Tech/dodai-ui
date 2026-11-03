@@ -205,8 +205,8 @@ pub fn kaleidoscope(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
 }
 
 /// Two bands of light rise through the picture, half a cycle apart. Each gathers speed and
-/// settles at the top (smoothstep), glows like a bell half way up, and has a front that
-/// wanders sideways with noise. Bright areas take the light, dark ones barely do, so it reads as
+/// settles at the top (smoothstep) and glows like a bell half way up. The bands are level and
+/// soft, the same on every pass. Bright areas take the light, dark ones barely do, so it reads as
 /// energy flowing through whatever the picture is filled with (a gauge, a tank, a battery).
 pub fn energy_rise(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
     const CYCLE: f32 = 2.2;
@@ -217,18 +217,13 @@ pub fn energy_rise(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
     let mut light = 0.0;
     for i in 0..2 {
         let cycle = c.time / CYCLE + i as f32 * 0.5;
-        let (pass, u) = (cycle.floor(), cycle - cycle.floor());
+        let u = cycle - cycle.floor();
         let up = u * u * (3.0 - 2.0 * u);
-        // The band's front bends sideways and drifts, differently every pass.
-        let bend = (noise(vec2(uv.x * 4.0 + pass * 7.3, c.time * 0.6 + i as f32 * 3.1)) - 0.5) * 0.12;
-        let centre = -BAND * 0.5 + up * (1.0 + BAND) + bend;
+        let centre = -BAND * 0.5 + up * (1.0 + BAND);
         let d = (below - centre) / (BAND * 0.5);
         let shape = (1.0 - d * d).max(0.0);
         let bell = (3.14159 * u).sin().abs().powf(1.5);
-        let life = 0.85 + 0.3 * noise(vec2(pass * 3.7 + i as f32 * 11.0, 0.5));
-        // Fine streaks along the flow.
-        let streak = 0.75 + 0.25 * noise(vec2(uv.x * 38.0, below * 3.0 - c.time * 2.0));
-        light += shape * shape * bell * life * streak;
+        light += shape * shape * bell;
     }
     let lit = smoothstep(0.05, 0.6, s.luma());
     let k = (light * 0.9 * lit * c.intensity).clamp(0.0, 1.0);
