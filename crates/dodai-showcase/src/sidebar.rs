@@ -245,12 +245,9 @@ impl Showcase {
                             })
                         },
                     ));
-                    // The Icons section has its own tree: symbols by group, catalogue by category.
+                    // The Icons section has its own tree: every block of the single catalogue.
                     if title == "Icons" {
-                        for (r, row) in crate::sections::icon_tree(self.icon_pick)
-                            .into_iter()
-                            .enumerate()
-                        {
+                        for (r, row) in crate::sections::icon_tree().into_iter().enumerate() {
                             side_need = side_need.max(est(row.label.len() + 6, row.depth as f32));
                             let m = me.clone();
                             let pick = row.pick;

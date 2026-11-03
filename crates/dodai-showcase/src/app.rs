@@ -203,12 +203,9 @@ impl Showcase {
             dt_filter,
             icon_search,
             icon_filled: false,
-            icon_sel: std::env::var("DODAI_ICON_SEL").ok().and_then(|n| {
-                dodai_gpui::IconId::ALL
-                    .iter()
-                    .find(|i| i.name() == n)
-                    .copied()
-            }),
+            icon_sel: std::env::var("DODAI_ICON_SEL")
+                .ok()
+                .and_then(|n| crate::sections::IconEntry::find(&n)),
             icon_code: std::env::var_os("DODAI_CODE").is_some(),
             icon_msg: None,
             icon_open: std::collections::HashSet::new(),
