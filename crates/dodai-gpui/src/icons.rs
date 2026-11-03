@@ -192,7 +192,7 @@ impl Mesh {
     /// Resolve the glyph and tessellate it: strokes at the weight, fills as one even-odd path
     /// (the options gpui's `PathBuilder` uses, so icons look as before).
     fn build(key: MeshKey) -> Option<Self> {
-        use dodai_icons::{ROUND_STROKE, STROKE};
+        use dodai_icons::STROKE;
         use lyon_tessellation::math::point;
         use lyon_tessellation::path::Path;
         use lyon_tessellation::{
@@ -201,13 +201,15 @@ impl Mesh {
         };
         #[cfg(feature = "cyberpunk")]
         let glyph = match key.modifier {
-            _ if key.symbol.is_some() => key.symbol.map(Symbol::glyph),
+            _ if key.symbol.is_some() => {
+                key.symbol.map(|s| s.glyph_styled(key.pack.symbol_style()))
+            }
             Some(m) => dodai_icons::cyber_shapes(key.id, Some(m)).map(Glyph::Stroked),
             None => dodai_icons::glyph(key.id, key.pack, key.filled),
         };
         #[cfg(not(feature = "cyberpunk"))]
         let glyph = match key.symbol {
-            Some(a) => Some(a.glyph()),
+            Some(a) => Some(a.glyph_styled(key.pack.symbol_style())),
             None => dodai_icons::glyph(key.id, key.pack, key.filled),
         };
         let k = f32::from_bits(key.size) / 24.0;
@@ -242,16 +244,27 @@ impl Mesh {
                     )
                     .ok()?;
             }
-            Glyph::Round(shapes) => {
-                let width = (weight * k * (ROUND_STROKE / STROKE)).max(1.0);
+            Glyph::Lines(shapes, style) => {
+                let width = (weight * k * (style.weight / STROKE)).max(1.0);
+                let (cap, join) = if style.round {
+                    (
+                        lyon_tessellation::LineCap::Round,
+                        lyon_tessellation::LineJoin::Round,
+                    )
+                } else {
+                    (
+                        lyon_tessellation::LineCap::Square,
+                        lyon_tessellation::LineJoin::Miter,
+                    )
+                };
                 let path = outline(&mut shapes.iter().map(|(p, c)| (p.as_slice(), *c)));
                 StrokeTessellator::new()
                     .tessellate_path(
                         &path,
                         &StrokeOptions::default()
                             .with_line_width(width)
-                            .with_line_cap(lyon_tessellation::LineCap::Round)
-                            .with_line_join(lyon_tessellation::LineJoin::Round),
+                            .with_line_cap(cap)
+                            .with_line_join(join),
                         &mut BuffersBuilder::new(&mut buf, |v: StrokeVertex| v.position()),
                     )
                     .ok()?;

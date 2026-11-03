@@ -19,7 +19,6 @@
 //! # }
 //! ```
 
-use crate::pack::Glyph;
 #[cfg(any(
     feature = "symbols-vehicle",
     feature = "symbols-medical",
@@ -28,6 +27,7 @@ use crate::pack::Glyph;
     feature = "symbols-aviation"
 ))]
 use crate::pack::Points;
+use crate::pack::{Glyph, StrokeStyle};
 #[cfg(any(
     feature = "symbols-vehicle",
     feature = "symbols-medical",
@@ -740,18 +740,32 @@ impl Symbol {
         feature = "symbols-aviation"
     ))]
     pub fn glyph(self) -> Glyph {
-        Glyph::Round(match self.group() {
-            #[cfg(feature = "symbols-vehicle")]
-            Group::Vehicle => vehicle::shapes(self),
-            #[cfg(feature = "symbols-medical")]
-            Group::Medical => medical::shapes(self),
-            #[cfg(feature = "symbols-military")]
-            Group::Military => military::shapes(self),
-            #[cfg(feature = "symbols-industrial")]
-            Group::Industrial => industrial::shapes(self),
-            #[cfg(feature = "symbols-aviation")]
-            Group::Aviation => aviation::shapes(self),
-        })
+        self.glyph_styled(StrokeStyle::ROUND)
+    }
+    /// The drawing stroked in a design's [`StrokeStyle`].
+    #[cfg(any(
+        feature = "symbols-vehicle",
+        feature = "symbols-medical",
+        feature = "symbols-military",
+        feature = "symbols-industrial",
+        feature = "symbols-aviation"
+    ))]
+    pub fn glyph_styled(self, style: StrokeStyle) -> Glyph {
+        Glyph::Lines(
+            match self.group() {
+                #[cfg(feature = "symbols-vehicle")]
+                Group::Vehicle => vehicle::shapes(self),
+                #[cfg(feature = "symbols-medical")]
+                Group::Medical => medical::shapes(self),
+                #[cfg(feature = "symbols-military")]
+                Group::Military => military::shapes(self),
+                #[cfg(feature = "symbols-industrial")]
+                Group::Industrial => industrial::shapes(self),
+                #[cfg(feature = "symbols-aviation")]
+                Group::Aviation => aviation::shapes(self),
+            },
+            style,
+        )
     }
     /// The drawing (no symbol group is compiled in, so there is no symbol to draw).
     #[cfg(not(any(
@@ -764,6 +778,17 @@ impl Symbol {
     pub fn glyph(self) -> Glyph {
         match self {}
     }
+    /// The drawing stroked in a design's [`StrokeStyle`] (no symbol group is compiled in).
+    #[cfg(not(any(
+        feature = "symbols-vehicle",
+        feature = "symbols-medical",
+        feature = "symbols-military",
+        feature = "symbols-industrial",
+        feature = "symbols-aviation"
+    )))]
+    pub fn glyph_styled(self, _: StrokeStyle) -> Glyph {
+        match self {}
+    }
 }
 
 #[cfg(test)]
@@ -773,7 +798,7 @@ mod tests {
     #[test]
     fn every_symbol_draws_inside_its_box() {
         for &i in Symbol::ALL {
-            let Glyph::Round(lines) = i.glyph() else {
+            let Glyph::Lines(lines, _) = i.glyph() else {
                 panic!("{} is not stroked", i.name())
             };
             assert!(!lines.is_empty(), "{} is empty", i.name());
@@ -787,6 +812,21 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn a_design_strokes_the_same_drawing_in_its_own_style() {
+        let s = Symbol::ALL[0];
+        let soft = s.glyph_styled(StrokeStyle::ROUND).svg(24, "red");
+        let hard = s.glyph_styled(StrokeStyle::SQUARE).svg(24, "red");
+        assert!(soft.contains("linecap=\"round\""));
+        assert!(hard.contains("linecap=\"square\"") && hard.contains("linejoin=\"miter\""));
+        let bold = s.glyph_styled(StrokeStyle::BOLD);
+        let fine = s.glyph_styled(StrokeStyle::ROUND);
+        assert!(
+            bold.coverage(48).iter().map(|&b| b as u32).sum::<u32>()
+                > fine.coverage(48).iter().map(|&b| b as u32).sum::<u32>()
+        );
     }
 
     #[test]

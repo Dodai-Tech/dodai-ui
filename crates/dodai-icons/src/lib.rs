@@ -29,7 +29,7 @@ mod phosphor;
 pub mod symbol;
 
 pub use id::IconId;
-pub use pack::{Glyph, IconPack, PackChain, Points, ROUND_STROKE, STROKE};
+pub use pack::{Glyph, IconPack, PackChain, Points, StrokeStyle, STROKE};
 /// The icon set grouped into categories (for browsers and pickers).
 pub use phosphor::CATEGORIES;
 
@@ -46,6 +46,17 @@ pub enum Pack {
     Material,
     /// Neo-Brutalism: bold Phosphor.
     Bold,
+}
+
+impl Pack {
+    /// How this design's pack strokes the line symbols.
+    pub const fn symbol_style(self) -> StrokeStyle {
+        match self {
+            Pack::Stroked => StrokeStyle::SQUARE,
+            Pack::Material => StrokeStyle::ROUND,
+            Pack::Bold => StrokeStyle::BOLD,
+        }
+    }
 }
 
 #[cfg(feature = "theme")]

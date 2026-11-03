@@ -568,7 +568,9 @@ impl IconEntry {
     fn svg(self, t: &dodai_core::Theme, filled: bool) -> String {
         match self {
             Self::Named(i) => dodai_icons::glyph_for_theme(i, t, filled),
-            Self::Symbol(s) => Some(s.glyph()),
+            Self::Symbol(s) => {
+                Some(s.glyph_styled(dodai_icons::Pack::from(t.look().icons).symbol_style()))
+            }
         }
         .map(|g| g.svg(24, "currentColor"))
         .unwrap_or_default()

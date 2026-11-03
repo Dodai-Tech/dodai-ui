@@ -30,8 +30,39 @@ pub type Points = Vec<(f32, f32)>;
 /// Stroke width of [`Glyph::Stroked`] on the 24 grid.
 pub const STROKE: f32 = 1.75;
 
-/// Stroke width of [`Glyph::Round`] on the 24 grid: finer than [`STROKE`] so detail stays open.
-pub const ROUND_STROKE: f32 = 1.4;
+/// How a [`Glyph::Lines`] drawing is stroked: a design picks one so the same symbol takes on its
+/// look (fine and soft, hard-edged, heavy).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct StrokeStyle {
+    /// Line width on the 24 grid.
+    pub weight: f32,
+    /// Round caps and joins (otherwise square caps and mitred joins).
+    pub round: bool,
+}
+
+impl StrokeStyle {
+    /// Fine and soft: detail stays open (Material).
+    pub const ROUND: Self = Self {
+        weight: 1.4,
+        round: true,
+    };
+    /// Hard-edged, as the classic stroked pack (Cyberpunk).
+    pub const SQUARE: Self = Self {
+        weight: 1.5,
+        round: false,
+    };
+    /// Heavy and soft (Neo-Brutalism).
+    pub const BOLD: Self = Self {
+        weight: 1.9,
+        round: true,
+    };
+}
+
+impl Default for StrokeStyle {
+    fn default() -> Self {
+        Self::ROUND
+    }
+}
 
 /// A source of icon drawings.
 pub trait IconPack: Send + Sync {
@@ -79,14 +110,14 @@ pub enum Glyph {
     Filled(Vec<Points>),
     /// Polylines `(points, closed)` drawn with a uniform stroke.
     Stroked(Vec<(Points, bool)>),
-    /// Polylines `(points, closed)` drawn with a fine uniform stroke, round caps and round joins.
-    Round(Vec<(Points, bool)>),
+    /// Polylines `(points, closed)` drawn with a uniform stroke in the given [`StrokeStyle`].
+    Lines(Vec<(Points, bool)>, StrokeStyle),
 }
 
 /// A stroke with round caps and joins as polygons: a quad per segment and a disc at every
 /// vertex that turns (or ends). All wound the same way so a non-zero fill unions them.
-fn round_polygons(lines: &[(Points, bool)]) -> Vec<Points> {
-    let h = ROUND_STROKE / 2.0;
+fn round_polygons(lines: &[(Points, bool)], weight: f32) -> Vec<Points> {
+    let h = weight / 2.0;
     let disc = |c: (f32, f32)| -> Points {
         (0..12)
             .map(|i| {
@@ -136,40 +167,44 @@ fn round_polygons(lines: &[(Points, bool)]) -> Vec<Points> {
     out
 }
 
+/// A square-capped, mitre-joined stroke as one quad per segment, each extended by half the width
+/// so corners meet.
+fn square_polygons(lines: &[(Points, bool)], weight: f32) -> Vec<Points> {
+    let h = weight / 2.0;
+    let mut out = Vec::new();
+    for (pts, closed) in lines {
+        let n = pts.len();
+        let segs = if *closed { n } else { n.saturating_sub(1) };
+        for i in 0..segs {
+            let (a, b) = (pts[i], pts[(i + 1) % n]);
+            let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+            let l = (dx * dx + dy * dy).sqrt();
+            if l < 1e-4 {
+                continue;
+            }
+            let (ux, uy) = (dx / l * h, dy / l * h);
+            let (nx, ny) = (-uy, ux);
+            let (a, b) = ((a.0 - ux, a.1 - uy), (b.0 + ux, b.1 + uy));
+            out.push(vec![
+                (a.0 + nx, a.1 + ny),
+                (b.0 + nx, b.1 + ny),
+                (b.0 - nx, b.1 - ny),
+                (a.0 - nx, a.1 - ny),
+            ]);
+        }
+    }
+    out
+}
+
 impl Glyph {
     /// Polygons covering the glyph (strokes expanded to quads), all wound the
     /// same way so a non-zero fill unions them.
     pub fn polygons(&self) -> Vec<Points> {
         match self {
             Glyph::Filled(p) => p.clone(),
-            Glyph::Round(lines) => round_polygons(lines),
-            Glyph::Stroked(lines) => {
-                let h = STROKE / 2.0;
-                let mut out = Vec::new();
-                for (pts, closed) in lines {
-                    let n = pts.len();
-                    let segs = if *closed { n } else { n.saturating_sub(1) };
-                    for i in 0..segs {
-                        let (a, b) = (pts[i], pts[(i + 1) % n]);
-                        let (dx, dy) = (b.0 - a.0, b.1 - a.1);
-                        let l = (dx * dx + dy * dy).sqrt();
-                        if l < 1e-4 {
-                            continue;
-                        }
-                        let (ux, uy) = (dx / l * h, dy / l * h);
-                        let (nx, ny) = (-uy, ux);
-                        // Extend by h so corners join without gaps.
-                        let (a, b) = ((a.0 - ux, a.1 - uy), (b.0 + ux, b.1 + uy));
-                        out.push(vec![
-                            (a.0 + nx, a.1 + ny),
-                            (b.0 + nx, b.1 + ny),
-                            (b.0 - nx, b.1 - ny),
-                            (a.0 - nx, a.1 - ny),
-                        ]);
-                    }
-                }
-                out
-            }
+            Glyph::Stroked(lines) => square_polygons(lines, STROKE),
+            Glyph::Lines(lines, st) if st.round => round_polygons(lines, st.weight),
+            Glyph::Lines(lines, st) => square_polygons(lines, st.weight),
         }
     }
 
@@ -183,11 +218,16 @@ impl Glyph {
                 let d: String = polys.iter().map(|p| path(p, true)).collect();
                 format!("{head} fill=\"{color}\"><path fill-rule=\"nonzero\" d=\"{d}\"/></svg>")
             }
-            Glyph::Round(lines) => {
+            Glyph::Lines(lines, st) => {
                 let d: String = lines.iter().map(|(p, c)| path(p, *c)).collect();
+                let (w, cap, join) = if st.round {
+                    (st.weight, "round", "round")
+                } else {
+                    (st.weight, "square", "miter")
+                };
                 format!(
-                    "{head} fill=\"none\" stroke=\"{color}\" stroke-width=\"{ROUND_STROKE}\" \
-                     stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"{d}\"/></svg>"
+                    "{head} fill=\"none\" stroke=\"{color}\" stroke-width=\"{w}\" \
+                     stroke-linecap=\"{cap}\" stroke-linejoin=\"{join}\"><path d=\"{d}\"/></svg>"
                 )
             }
             Glyph::Stroked(lines) => {
