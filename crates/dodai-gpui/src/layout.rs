@@ -23,6 +23,8 @@ pub struct TreeItem {
     pub expanded: bool,
     /// Child nodes.
     pub children: Vec<TreeItem>,
+    /// Icon shown before the label.
+    pub icon: Option<crate::icons::IconName>,
 }
 
 impl TreeItem {
@@ -32,7 +34,13 @@ impl TreeItem {
             label: label.into(),
             expanded: false,
             children: Vec::new(),
+            icon: None,
         }
+    }
+    /// Show `icon` before the label.
+    pub fn icon(mut self, icon: crate::icons::IconName) -> Self {
+        self.icon = Some(icon);
+        self
     }
     /// Whether the item starts expanded.
     pub fn expanded(mut self, e: bool) -> Self {
@@ -59,6 +67,8 @@ pub struct TreeRow {
     pub expandable: bool,
     /// Whether its children are shown.
     pub expanded: bool,
+    /// Icon shown before the label.
+    pub icon: Option<crate::icons::IconName>,
 }
 
 /// Flatten the expanded parts of a tree depth-first.
@@ -72,6 +82,7 @@ pub fn visible_rows(items: &[TreeItem]) -> Vec<TreeRow> {
                 label: it.label.clone(),
                 expandable: !it.children.is_empty(),
                 expanded: it.expanded,
+                icon: it.icon,
             });
             if it.expanded {
                 walk(&it.children, path, out);
@@ -176,8 +187,15 @@ impl TreeView {
                 .min_h(px(t.scale(dodai_core::Scale::Compact)))
                 .pl(px(t.spacing.sm + row.depth as f32 * 16.0))
                 .text_color(hsla(t.palette.text))
-                .child(chevron)
-                .child(row.label.clone());
+                .child(chevron);
+            if let Some(g) = row.icon {
+                r = r.child(
+                    crate::icons::Icon::new(g)
+                        .size(t.typography.size_md * 1.1)
+                        .color(hsla(t.palette.text_muted)),
+                );
+            }
+            r = r.child(row.label.clone());
             if let Some(m) = marker {
                 r = r.child(
                     div()
