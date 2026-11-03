@@ -616,7 +616,7 @@ fn icon_sources() -> Vec<IconSource> {
     for g in dodai_gpui::icons::SymbolGroup::ALL {
         out.push(IconSource {
             pick: IconPick::Group(g.name()),
-            label: format!("{} symbols", capitalised(g.name())),
+            label: capitalised(g.name()),
             entries: dodai_icons::symbol::Symbol::ALL
                 .iter()
                 .filter(|s| s.group() == *g)
