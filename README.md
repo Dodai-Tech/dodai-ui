@@ -165,7 +165,7 @@ and `Oscilloscope`, `Spectrum`, `RadarScope`, `HexMap`, `RingStack`, `DotMatrix`
 `dodai-shaders` is a dependency-free set of per-pixel shaders written as plain Rust functions
 (generators like `neon_grid`, `digital_rain`, `platformer`, post effects like `crt`, `vhs`,
 `gameboy`), drawn from the active theme's palette. In gpui: `ShaderView::new("id", "neon_grid").fx("crt")`
-(feature `shaders`). Demo of everything: `just run-shaders`; also the *Shaders* category of the showcase.
+(feature `shaders`). Demo of everything: the *Shaders* category of the showcase (`just run-gpui`); `just dump-shaders` renders image files.
 
 ## Adding a theme
 
