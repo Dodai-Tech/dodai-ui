@@ -148,7 +148,11 @@ fn rrect(x0: f32, y0: f32, x1: f32, y1: f32, r: f32) -> Shape {
 }
 
 /// A dot (a tiny closed diamond, so it survives as a stroke).
-#[cfg(any(feature = "symbols-military", feature = "symbols-vehicle"))]
+#[cfg(any(
+    feature = "symbols-military",
+    feature = "symbols-vehicle",
+    feature = "symbols-medical"
+))]
 fn dot(x: f32, y: f32) -> Shape {
     poly(&[(x, y - 0.4), (x + 0.4, y), (x, y + 0.4), (x - 0.4, y)])
 }
@@ -183,6 +187,73 @@ fn lamp(cx: f32) -> Shape {
             .skip(1),
     );
     pts.push((cx + 2.0, 17.5));
+    (pts, true)
+}
+
+/// A smooth closed (or open) curve through `p` (Catmull-Rom), `per` points per span.
+#[cfg(any(
+    feature = "symbols-vehicle",
+    feature = "symbols-medical",
+    feature = "symbols-military",
+    feature = "symbols-industrial"
+))]
+fn curve(p: &[(f32, f32)], closed: bool, per: usize) -> Shape {
+    let n = p.len();
+    let at = |i: isize| -> (f32, f32) {
+        if closed {
+            p[i.rem_euclid(n as isize) as usize]
+        } else {
+            p[i.clamp(0, n as isize - 1) as usize]
+        }
+    };
+    let spans = if closed { n } else { n - 1 };
+    let mut pts = Vec::new();
+    for s in 0..spans as isize {
+        let (p0, p1, p2, p3) = (at(s - 1), at(s), at(s + 1), at(s + 2));
+        for k in 0..per {
+            let t = k as f32 / per as f32;
+            let (t2, t3) = (t * t, t * t * t);
+            let f = |a: f32, b: f32, c: f32, d: f32| {
+                0.5 * (2.0 * b
+                    + (c - a) * t
+                    + (2.0 * a - 5.0 * b + 4.0 * c - d) * t2
+                    + (3.0 * b - a - 3.0 * c + d) * t3)
+            };
+            pts.push((f(p0.0, p1.0, p2.0, p3.0), f(p0.1, p1.1, p2.1, p3.1)));
+        }
+    }
+    if !closed {
+        pts.push(p[n - 1]);
+    }
+    (pts, closed)
+}
+
+/// Every shape turned `deg` degrees clockwise about `(cx, cy)`.
+#[cfg(any(feature = "symbols-medical", feature = "symbols-military"))]
+fn spin(v: Vec<Shape>, cx: f32, cy: f32, deg: f32) -> Vec<Shape> {
+    let (s, c) = rad(deg).sin_cos();
+    v.into_iter()
+        .map(|(pts, closed)| {
+            let pts = pts
+                .into_iter()
+                .map(|(x, y)| {
+                    let (dx, dy) = (x - cx, y - cy);
+                    (cx + dx * c - dy * s, cy + dx * s + dy * c)
+                })
+                .collect();
+            (pts, closed)
+        })
+        .collect()
+}
+
+/// A drop of blood or water: tip at `(cx, cy - r*1.7)`, round belly of radius `r`.
+#[cfg(feature = "symbols-medical")]
+fn bead(cx: f32, cy: f32, r: f32) -> Shape {
+    let d = r * 1.7;
+    let t = (r / d).acos().to_degrees();
+    let (a0, a1) = (270.0 + t, 270.0 - t + 360.0);
+    let mut pts = vec![(cx, cy - d)];
+    pts.extend(arc(cx, cy, r, a0, a1).0);
     (pts, true)
 }
 
