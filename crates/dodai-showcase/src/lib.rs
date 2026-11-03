@@ -107,11 +107,11 @@ pub struct Showcase {
     icon_search: Entity<TextInput>,
     icon_filled: bool,
     /// The icon whose SVG and code the Icons section shows.
-    icon_sel: Option<dodai_gpui::IconId>,
+    icon_sel: Option<sections::IconEntry>,
     icon_code: bool,
     icon_msg: Option<String>,
     /// Material icon categories shown in full (the rest show a preview).
-    icon_open: std::collections::HashSet<&'static str>,
+    icon_open: std::collections::HashSet<sections::IconPick>,
     /// The branch of the Icons tree the sidebar picked (what the section shows).
     icon_pick: sections::IconPick,
     date_range: dodai_gpui::DateRange,
