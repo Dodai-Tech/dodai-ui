@@ -17,11 +17,46 @@ fn body(top: &[(f32, f32)]) -> Vec<Shape> {
     for (cx, cy) in WHEELS.iter().rev() {
         pts.extend(arc(*cx, *cy, 3.0, 0.0, -180.0).0);
     }
-    vec![
+    let mut v = vec![
         (pts, true),
         circ(WHEELS[0].0, WHEELS[0].1, 2.0),
         circ(WHEELS[1].0, WHEELS[1].1, 2.0),
-    ]
+    ];
+    v.extend(glass(top));
+    v
+}
+
+/// The side glass: the roofline above the waist, inset, closed along the waist, split by a
+/// pillar. Bodies without a roof above the waist (open tops) have none.
+fn glass(top: &[(f32, f32)]) -> Vec<Shape> {
+    const WAIST: f32 = 11.8;
+    let roof: Vec<(f32, f32)> = top.iter().copied().filter(|p| p.1 < WAIST - 0.6).collect();
+    let (Some(&first), Some(&last)) = (roof.first(), roof.last()) else {
+        return Vec::new();
+    };
+    if roof.len() < 2 {
+        return Vec::new();
+    }
+    let mut pts = vec![(first.0 + 0.9, WAIST)];
+    for (k, p) in roof.iter().enumerate() {
+        let x = if k == 0 {
+            p.0 + 0.9
+        } else if k + 1 == roof.len() {
+            p.0 - 0.9
+        } else {
+            p.0
+        };
+        pts.push((x, p.1 + 1.3));
+    }
+    pts.push((last.0 - 1.7, WAIST));
+    let mid = (first.0 + last.0) / 2.0;
+    let pillar_top = roof
+        .iter()
+        .map(|p| (p.0 - mid).abs())
+        .enumerate()
+        .min_by(|a, b| a.1.total_cmp(&b.1))
+        .map_or(first.1, |(k, _)| roof[k].1 + 1.3);
+    vec![(pts, true), line(&[(mid, pillar_top), (mid, WAIST)])]
 }
 
 /// The everyday hatchback roofline, reused small by several symbols.
