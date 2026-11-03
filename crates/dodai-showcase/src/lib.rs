@@ -205,6 +205,9 @@ pub struct Showcase {
     /// The controlled `TreeView` demo: its nodes (with their folded state) and selection.
     tree_items: Vec<TreeItem>,
     tree_sel: Option<Vec<usize>>,
+    /// The orientation gizmo demo: orbit yaw and pitch, radians.
+    gizmo_yaw: f32,
+    gizmo_pitch: f32,
     demo_pin: String,
     demo_otp: String,
     live_a: dodai_gpui::Live,
