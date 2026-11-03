@@ -135,11 +135,19 @@ impl RenderOnce for Icon {
             weight: self.weight.to_bits(),
         };
         let mesh = Mesh::cached(key);
+        // A luminous design (Cyberpunk) lights its symbols: a faint halo around the drawing.
+        let glow = self.symbol.is_some() && theme.look().luminous;
         // One sized canvas: a single layout node per icon (pages hold hundreds).
         canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
                 if let Some(mesh) = &mesh {
+                    if glow {
+                        for (dx, dy) in [(-1.2, 0.0), (1.2, 0.0), (0.0, -1.2), (0.0, 1.2)] {
+                            let o = gpui::point(b.origin.x + px(dx), b.origin.y + px(dy));
+                            mesh.paint(w, o, color.opacity(0.22));
+                        }
+                    }
                     mesh.paint(w, b.origin, color);
                 }
             },
