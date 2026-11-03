@@ -1,4 +1,4 @@
-//! Instrument-style charts: [`Oscilloscope`], [`Spectrum`], [`RadarScope`],
+//! Instrument-style charts: [`Oscilloscope`], [`Spectrum`], `RadarScope` (`defense`),
 //! [`HexMap`] and [`RingStack`]. They sit in a themed panel frame, glow when
 //! the theme does and take every colour from the palette. The `live` ones
 //! animate from a shared clock (and only then ask for frames).
