@@ -238,6 +238,49 @@ impl Showcase {
                 .child(TreeItem::new("Yellow"))
                 .child(TreeItem::new("Cyan")),
         ];
+        // Three levels of branches (section > group > page); the deepest are leaves.
+        let docs = vec![
+            TreeItem::new("Getting started")
+                .icon(IconName::Home)
+                .expanded(true)
+                .child(
+                    TreeItem::new("Install")
+                        .icon(IconName::Folder)
+                        .expanded(true)
+                        .child(TreeItem::new("Requirements").icon(IconName::Info))
+                        .child(TreeItem::new("Feature flags").icon(IconName::Settings)),
+                ),
+            TreeItem::new("Guides")
+                .icon(IconName::Layers)
+                .expanded(true)
+                .child(
+                    TreeItem::new("Theming")
+                        .icon(IconName::Folder)
+                        .expanded(true)
+                        .child(TreeItem::new("Pick a design"))
+                        .child(TreeItem::new("Tune shape"))
+                        .child(TreeItem::new("Control colour")),
+                )
+                .child(
+                    TreeItem::new("Components")
+                        .icon(IconName::Folder)
+                        .child(TreeItem::new("Tabs"))
+                        .child(TreeItem::new("Tree")),
+                ),
+            TreeItem::new("Reference").icon(IconName::Code).child(
+                TreeItem::new("Tokens")
+                    .icon(IconName::Folder)
+                    .child(TreeItem::new("Colour"))
+                    .child(TreeItem::new("Spacing")),
+            ),
+        ];
+        // One titled card per example: what it shows, then the tree.
+        let card = |title: &'static str, note: &'static str, tree: gpui::AnyElement| {
+            col()
+                .child(Label::new(title))
+                .child(Muted::new(note))
+                .child(tree)
+        };
         let me = cx.entity();
         let (me_toggle, me_pick) = (me.clone(), me);
         let controlled = TreeView::new("tv", self.tree_items.clone())
@@ -270,28 +313,37 @@ impl Showcase {
             "Tree",
             self.section("Tree", cx)
                 .child(Muted::new(
-                    "TreeNavigation keeps its own state: a branch folds on click, a leaf is selected. It changes nothing outside itself.",
+                    "TreeNavigation folds a branch on click and selects a leaf; it keeps its own state and changes nothing outside itself. Nesting is unlimited and each node can carry an icon.",
                 ))
                 .child(
                     div()
                         .flex()
                         .flex_wrap()
                         .gap(gap)
-                        .child(
-                            col()
-                                .child(Label::new("Design systems and themes"))
-                                .child(TreeNavigation::new("tn-systems", systems).selected(vec![0, 0])),
-                        )
-                        .child(
-                            col()
-                                .child(Label::new("Files"))
-                                .child(TreeNavigation::new("tn-files", files)),
-                        )
-                        .child(
-                            col()
-                                .child(Label::new("TreeView (controlled: you own the state)"))
-                                .child(controlled),
-                        ),
+                        .child(card(
+                            "Three levels, with icons",
+                            "Section > group > page.",
+                            TreeNavigation::new("tn-docs", docs)
+                                .selected(vec![1, 0, 1])
+                                .into_any_element(),
+                        ))
+                        .child(card(
+                            "Two levels",
+                            "Design systems and their themes.",
+                            TreeNavigation::new("tn-systems", systems)
+                                .selected(vec![0, 0])
+                                .into_any_element(),
+                        ))
+                        .child(card(
+                            "Files",
+                            "Folders and files, no icons.",
+                            TreeNavigation::new("tn-files", files).into_any_element(),
+                        ))
+                        .child(card(
+                            "TreeView (controlled)",
+                            "You own the folded state and the selection.",
+                            controlled.into_any_element(),
+                        )),
                 )
                 .into_any_element(),
             "Tree",
