@@ -52,7 +52,7 @@ impl StrokeStyle {
     };
     /// Hard-edged, as the classic stroked pack (Cyberpunk).
     pub const SQUARE: Self = Self {
-        weight: 1.5,
+        weight: 1.3,
         round: false,
         chamfer: 0.9,
     };
