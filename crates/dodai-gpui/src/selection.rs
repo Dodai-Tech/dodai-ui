@@ -180,6 +180,16 @@ impl SelectionTrack {
     }
 }
 
+/// Thickness of the underline marker: the design's border width, or the 3 px bar of a tonal
+/// (Material-style) design, where a hairline would hide the slide.
+pub(crate) fn underline_band(t: &Theme) -> f32 {
+    if t.look().tonal {
+        t.shape.border_width.max(3.0)
+    } else {
+        t.shape.border_width
+    }
+}
+
 /// The marker at `(x, w)` in `colour`; `tag` keeps the copies of a glitch apart.
 fn draw(
     t: &Theme,
@@ -201,8 +211,17 @@ fn draw(
                 .h_full()
                 .into_any_element()
         }
+        Look::Underline(_) if t.look().tonal => div()
+            .absolute()
+            .left(px(x))
+            .bottom_0()
+            .w(px(w))
+            .h(px(underline_band(t)))
+            .rounded_t(px(underline_band(t)))
+            .bg(colour)
+            .into_any_element(),
         Look::Underline(_) => {
-            bottom_band_slide(&t.shape, t.shape.border_width, colour, x, w).into_any_element()
+            bottom_band_slide(&t.shape, underline_band(t), colour, x, w).into_any_element()
         }
     }
 }
