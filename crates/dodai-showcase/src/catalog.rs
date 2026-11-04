@@ -359,28 +359,13 @@ pub(crate) fn cat_icon(name: &str) -> dodai_gpui::IconName {
     }
 }
 
-/// The titles of the Shaders sections, one pair per shader family: the sources it draws and the
-/// effects it filters with. Named for what they look like, not for the family; every one is
-/// shown on every design, since a shader does not belong to a design system.
-pub(crate) const SHADER_TITLES: [(&str, &str); 9] = [
-    ("Neon grids, circuits & HUDs", "Glitch & neon edges"),
-    ("Blobs, ripples & waves", "Scrim & blur"),
-    ("Digital rain & hallways", "Depth & tint"),
-    ("CRT screens & monitors", "CRT & phosphor looks"),
-    ("Pixel scenes", "Pixelate & dither"),
-    ("Skies, water & fire", "Heat, water & lens warp"),
-    ("Terminal backdrops", "Terminal CRT & glow"),
-    ("Painted skies & weather", "Painterly & cinematic grades"),
-    ("Sacred geometry & fractals", "Visionary overlays"),
-];
-
 /// Which Shaders sub-group a section title belongs to (`None`: not a shader section).
 pub(crate) fn shader_group(title: &str) -> Option<&'static str> {
     if title == "Shader playground" {
         Some("Playground")
-    } else if SHADER_TITLES.iter().any(|(g, _)| *g == title) {
+    } else if dodai_gpui::dodai_shaders::groups::SOURCE_GROUPS.contains(&title) {
         Some("Sources")
-    } else if SHADER_TITLES.iter().any(|(_, e)| *e == title) {
+    } else if dodai_gpui::dodai_shaders::groups::EFFECT_GROUPS.contains(&title) {
         Some("Effects")
     } else if title.ends_with(" presets") {
         Some("Presets")
@@ -406,24 +391,16 @@ mod owner_tests {
 
     #[test]
     fn every_shader_section_is_open_to_every_design() {
-        for (g, e) in super::SHADER_TITLES {
+        use dodai_gpui::dodai_shaders::groups::{EFFECT_GROUPS, SOURCE_GROUPS};
+        for g in SOURCE_GROUPS.iter().chain(&EFFECT_GROUPS) {
             assert_eq!(owner(g), None);
-            assert_eq!(owner(e), None);
         }
     }
 
     #[test]
-    fn shader_titles_are_unique_and_grouped() {
-        let mut all: Vec<_> = super::SHADER_TITLES
-            .iter()
-            .flat_map(|(g, e)| [*g, *e])
-            .collect();
-        let n = all.len();
-        all.sort_unstable();
-        all.dedup();
-        assert_eq!(all.len(), n);
-        assert_eq!(super::shader_group("Pixel scenes"), Some("Sources"));
-        assert_eq!(super::shader_group("Pixelate & dither"), Some("Effects"));
+    fn shader_groups_are_told_apart() {
+        assert_eq!(super::shader_group("Waves & flow"), Some("Sources"));
+        assert_eq!(super::shader_group("Glow & light"), Some("Effects"));
         assert_eq!(super::shader_group("Ghibli presets"), Some("Presets"));
         assert_eq!(super::shader_group("Buttons"), None);
     }
