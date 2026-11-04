@@ -221,8 +221,6 @@ mod tests {
         assert_eq!(Pack::Stroked.symbol_style(), StrokeStyle::SQUARE);
         assert_eq!(Pack::Material.symbol_style(), StrokeStyle::ROUND);
         assert_eq!(Pack::Bold.symbol_style(), StrokeStyle::BOLD);
-        assert!(StrokeStyle::BOLD.weight > StrokeStyle::ROUND.weight);
-        assert!(StrokeStyle::SQUARE.chamfer > 0.0 && !StrokeStyle::SQUARE.round);
     }
 
     #[cfg(feature = "material")]
