@@ -135,9 +135,17 @@ impl Signal {
             }
             Kind::Art => {
                 let x = beat_phase(tau, self.rate, self.variability, self.seed);
-                let rise = (x / 0.12).min(1.0);
-                let decay = (-(x - 0.12).max(0.0) * 2.6).exp();
-                (rise * decay + gauss(x, 0.42, 0.025, 0.12)) * 1.5 - 0.75
+                // Fast upstroke, systolic shoulder, dicrotic notch and wave, slow runoff.
+                let rise = (x / 0.1).clamp(0.0, 1.0);
+                let rise = rise * rise * (3.0 - 2.0 * rise);
+                let runoff = (-(x - 0.1).max(0.0) * 2.2).exp();
+                let beat = rise * runoff + gauss(x, 0.2, 0.05, 0.07) - gauss(x, 0.37, 0.014, 0.09)
+                    + gauss(x, 0.44, 0.035, 0.12);
+                // Breathing swells the pressure a little and lifts the baseline; every beat
+                // differs slightly.
+                let breath = (tau * 0.27 * TAU).sin();
+                let amp = 1.0 + 0.05 * breath + 0.03 * smooth_noise(tau * 0.8 + self.seed * 3.0);
+                (beat * amp) * 1.5 - 0.75 + 0.04 * breath
             }
             Kind::Resp => {
                 let x = cycles.fract();
