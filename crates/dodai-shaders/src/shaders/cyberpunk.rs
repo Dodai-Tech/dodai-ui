@@ -16,6 +16,13 @@ pub const SHADERS: &[ShaderInfo] = &[
         neon_grid,
     ),
     ShaderInfo::generator(
+        "glow_waves",
+        "Glow waves",
+        F,
+        "Ten stacked sine curves glowing over a blocky gradient",
+        glow_waves,
+    ),
+    ShaderInfo::generator(
         "hex_pulse",
         "Hex pulse",
         F,
@@ -58,6 +65,31 @@ pub const SHADERS: &[ShaderInfo] = &[
         phantom_liberty,
     ),
 ];
+
+/// Glowing waves over a checkerboard of two gradients. After a well-known Shadertoy: ten curves,
+/// each bent by a sine that runs with time and shifted a little more than the last, glowing as
+/// `1 / distance`. Here the colours come from the palette, the blocks are square at any aspect,
+/// and the waves are split into a warm and a cool ink so the stack shimmers.
+pub fn glow_waves(uv: Vec2, c: &Ctx) -> Vec3 {
+    let p = &c.pal;
+    // Checkerboard of square blocks, a gradient along x on one colour and along y on the other.
+    let block = 0.02;
+    let (bx, by) = (uv.x * c.aspect() / block, uv.y / block);
+    let check = step(1.0, fmod(bx.floor() + by.floor(), 2.0));
+    let bg = (p.a * uv.x * 0.35).mix(p.b * uv.y * 0.35, check) * 0.8 + p.bg * 0.2;
+    let mut y = uv.y * 2.0 - 1.0 + 0.1;
+    let x = (uv.x * 2.0 - 1.0) * c.aspect();
+    let mut warm = 0.0;
+    let mut cool = 0.0;
+    for i in 0..10 {
+        y += 0.07 * (x + i as f32 / 7.0 + c.time).sin();
+        let w = 1.0 / (150.0 * y.abs().max(0.004));
+        warm += w * (1.0 - i as f32 / 9.0);
+        cool += w * (i as f32 / 9.0);
+    }
+    (bg + p.c * (warm * 1.6) + p.fg * (cool * 0.9) + p.a.mix(p.fg, 0.5) * (cool * 0.3))
+        .clamp01()
+}
 
 /// Synthwave: striped sun, horizon haze and a scrolling perspective grid.
 pub fn neon_grid(uv: Vec2, c: &Ctx) -> Vec3 {
