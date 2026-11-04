@@ -325,17 +325,17 @@ symbols! {
     /// Airbag: figure with a round bag.
     Airbag = "airbag";
     /// 12 V battery.
-    Battery = "battery";
+    Battery = "vehicle-battery";
     /// Oil pressure: a can with a drop.
     OilCan = "oil-can";
     /// Coolant temperature: thermometer over two waves.
     Coolant = "coolant";
     /// Engine block.
-    Engine = "engine";
+    Engine = "vehicle-engine";
     /// Fuel pump.
     Fuel = "fuel";
     /// Charging plug.
-    Plug = "plug";
+    Plug = "vehicle-plug";
     /// Traction battery with a bolt.
     TractionBattery = "traction-battery";
     /// Tyre pressure: a tyre cut-away with an exclamation mark.
@@ -369,7 +369,7 @@ symbols! {
     /// Ice warning: a snowflake.
     Frost = "frost";
     /// Key.
-    Key = "key";
+    Key = "vehicle-key";
     /// Service due: a spanner.
     Service = "service";
     /// Gearbox: a shift gate.
@@ -381,7 +381,7 @@ symbols! {
     /// Sport mode: chequered flag.
     Sport = "sport";
     /// Eco mode: a leaf.
-    Eco = "eco";
+    Eco = "vehicle-eco";
     /// Hybrid: leaf and plug.
     Hybrid = "hybrid";
     /// Emergency call: SOS ring.
@@ -395,11 +395,11 @@ symbols! {
     /// Rear defrost.
     DefrostRear = "defrost-rear";
     /// Fan.
-    Fan = "fan";
+    Fan = "vehicle-fan";
     /// Air recirculation.
     Recirculate = "recirculate";
     /// Compass rose.
-    Compass = "compass";
+    Compass = "vehicle-compass";
     /// Altitude: two peaks.
     Altitude = "altitude";
     /// Lateral acceleration: car with a side arrow.
@@ -421,7 +421,7 @@ symbols! {
     /// Outside temperature: thermometer.
     OutsideTemp = "outside-temp";
     /// Hatchback, side view.
-    Car = "car";
+    Car = "vehicle-car";
     /// Fastback coupé.
     Coupe = "coupe";
     /// Convertible with the hood folded.
@@ -433,11 +433,11 @@ symbols! {
     /// Sport utility vehicle.
     Suv = "suv";
     /// Van.
-    Van = "van";
+    Van = "vehicle-van";
     /// Pickup with an open bed.
     Pickup = "pickup";
     /// Box truck.
-    Truck = "truck";
+    Truck = "vehicle-truck";
     /// Folding roof opening.
     RoofOpen = "roof-open";
     /// Folding roof closing.
@@ -445,15 +445,15 @@ symbols! {
     /// Surround view: car in a turning arrow.
     View360 = "view-360";
     /// Closed side door.
-    Door = "door";
+    Door = "vehicle-door";
     /// Urban driving.
-    City = "city";
+    City = "vehicle-city";
     /// Winding road through hills.
     CountryRoad = "country-road";
     /// Multi-lane motorway.
     Highway = "highway";
     /// Garage.
-    Garage = "garage";
+    Garage = "vehicle-garage";
     /// Hill descent control.
     HillDescent = "hill-descent";
     /// Off-road mode.
@@ -495,7 +495,7 @@ symbols! {
     /// Particulate filter.
     Particulate = "particulate";
     /// Seat.
-    Seat = "seat";
+    Seat = "vehicle-seat";
     /// Seat ventilation.
     SeatCool = "seat-cool";
     /// Steering wheel.
@@ -539,7 +539,7 @@ symbols! {
     /// Sunroof.
     Sunroof = "sunroof";
     /// Power window.
-    Window = "window";
+    Window = "vehicle-window";
     /// Mirror fold.
     MirrorFold = "mirror-fold";
     /// Blind-spot monitor.
@@ -547,7 +547,7 @@ symbols! {
     /// Parking sensors.
     ParkSensor = "park-sensor";
     /// Camera.
-    Camera = "camera";
+    Camera = "vehicle-camera";
     /// Adaptive cruise following distance.
     FollowDistance = "follow-distance";
     /// Brake pad wear.
@@ -569,7 +569,7 @@ symbols! {
     /// Clinical and monitor symbols.
     Medical = "medical" {
         /// Heartbeat trace.
-        Pulse = "pulse";
+        Pulse = "medical-pulse";
         /// A heart with a trace through it.
         HeartRate = "heart-rate";
         /// Blood oxygen: a drop with a ring.
@@ -577,29 +577,29 @@ symbols! {
         /// Two lungs on a windpipe.
         Lungs = "lungs";
         /// Clinical thermometer.
-        Thermometer = "thermometer";
+        Thermometer = "medical-thermometer";
         /// Cuff, tube and bulb.
         BloodPressure = "blood-pressure";
         /// Syringe.
-        Syringe = "syringe";
+        Syringe = "medical-syringe";
         /// Capsule.
-        Pill = "pill";
+        Pill = "medical-pill";
         /// Cross on a plate.
         MedCross = "med-cross";
         /// Stethoscope.
-        Stethoscope = "stethoscope";
+        Stethoscope = "medical-stethoscope";
         /// Defibrillator: heart and bolt.
         Defib = "defib";
         /// Infusion bag and line.
         IvDrip = "iv-drip";
         /// Lab flask.
-        Flask = "flask";
+        Flask = "medical-flask";
         /// Adhesive bandage.
         Bandage = "bandage";
         /// Patient bed.
-        Bed = "bed";
+        Bed = "medical-bed";
         /// Wheelchair.
-        Wheelchair = "wheelchair";
+        Wheelchair = "medical-wheelchair";
         /// Breathing wave.
         Respiration = "respiration";
         /// Blood glucose: a drop with a plus.
@@ -607,9 +607,9 @@ symbols! {
         /// Three electrode leads.
         EcgLeads = "ecg-leads";
         /// Microscope.
-        Microscope = "microscope";
+        Microscope = "medical-microscope";
         /// Ambulance.
-        Ambulance = "ambulance";
+        Ambulance = "medical-ambulance";
         /// Face mask.
         Mask = "mask";
     }
@@ -617,11 +617,11 @@ symbols! {
     /// Tactical and sensor symbols.
     Military = "military" {
         /// Sweep over a ring.
-        Radar = "radar";
+        Radar = "military-radar";
         /// Sight with a ring.
-        Crosshair = "crosshair";
+        Crosshair = "military-crosshair";
         /// Shield with a cross.
-        Shield = "shield";
+        Shield = "military-shield";
         /// Stacked chevrons.
         Chevrons = "chevrons";
         /// Five-point star.
@@ -633,11 +633,11 @@ symbols! {
         /// Helicopter.
         Rotorcraft = "rotorcraft";
         /// Four-rotor craft.
-        Drone = "drone";
+        Drone = "military-drone";
         /// Mast with waves.
         Antenna = "antenna";
         /// Binoculars.
-        Binoculars = "binoculars";
+        Binoculars = "military-binoculars";
         /// Flag on a pole.
         Waypoint = "waypoint";
         /// Friendly contact frame.
@@ -657,19 +657,19 @@ symbols! {
         /// Fighter jet.
         Fighter = "fighter";
         /// Field radio.
-        Radio = "radio";
+        Radio = "military-radio";
     }
     #[cfg(feature = "symbols-industrial")]
     /// Plant and machinery symbols.
     Industrial = "industrial" {
         /// Cog.
-        Gear = "gear";
+        Gear = "industrial-gear";
         /// Valve with a hand wheel.
         Valve = "valve";
         /// Pump.
         Pump = "pump";
         /// Pipework.
-        Pipe = "pipe";
+        Pipe = "industrial-pipe";
         /// Process vessel.
         Vessel = "vessel";
         /// Motor.
@@ -683,11 +683,11 @@ symbols! {
         /// Flow in a channel.
         Flow = "flow";
         /// Bolt.
-        Power = "power";
+        Power = "industrial-power";
         /// Two coils.
         Transformer = "transformer";
         /// Crane.
-        Crane = "crane";
+        Crane = "industrial-crane";
         /// Robot arm.
         RobotArm = "robot-arm";
         /// Circuit breaker.
@@ -697,9 +697,9 @@ symbols! {
         /// Hard hat.
         HardHat = "hard-hat";
         /// Beacon siren.
-        Siren = "siren";
+        Siren = "industrial-siren";
         /// Funnel filter.
-        Filter = "filter";
+        Filter = "industrial-filter";
         /// Smokestack.
         Smokestack = "smokestack";
         /// Solar panel.
@@ -745,7 +745,7 @@ symbols! {
         /// Autopilot: jet in a ring.
         Autopilot = "autopilot";
         /// Parachute.
-        Parachute = "parachute";
+        Parachute = "aviation-parachute";
         /// Route with waypoints.
         FlightPlan = "flight-plan";
         /// Crosswind streaks.
@@ -777,7 +777,7 @@ impl Symbol {
     ))]
     pub fn glyph_styled(self, style: StrokeStyle) -> Glyph {
         Glyph::Lines(
-            match self.group() {
+            style.shape(match self.group() {
                 #[cfg(feature = "symbols-vehicle")]
                 Group::Vehicle => vehicle::shapes(self),
                 #[cfg(feature = "symbols-medical")]
@@ -788,7 +788,7 @@ impl Symbol {
                 Group::Industrial => industrial::shapes(self),
                 #[cfg(feature = "symbols-aviation")]
                 Group::Aviation => aviation::shapes(self),
-            },
+            }),
             style,
         )
     }
@@ -947,5 +947,17 @@ mod tests {
                 .chars()
                 .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-'));
         }
+    }
+
+    #[test]
+    fn no_symbol_shares_a_name_with_a_named_icon() {
+        let named: std::collections::HashSet<_> =
+            crate::IconId::ALL.iter().map(|i| i.name()).collect();
+        let clash: Vec<_> = Symbol::ALL
+            .iter()
+            .filter(|s| named.contains(s.name()))
+            .map(|s| s.name())
+            .collect();
+        assert!(clash.is_empty(), "{clash:?}");
     }
 }
