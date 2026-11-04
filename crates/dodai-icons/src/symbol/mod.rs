@@ -248,7 +248,7 @@ fn spin(v: Vec<Shape>, cx: f32, cy: f32, deg: f32) -> Vec<Shape> {
 }
 
 /// A drop of blood or water: tip at `(cx, cy - r*1.7)`, round belly of radius `r`.
-#[cfg(feature = "symbols-medical")]
+#[cfg(any(feature = "symbols-medical", feature = "symbols-industrial"))]
 fn bead(cx: f32, cy: f32, r: f32) -> Shape {
     let d = r * 1.7;
     let t = (r / d).acos().to_degrees();
