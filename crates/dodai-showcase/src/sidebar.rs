@@ -171,73 +171,112 @@ impl Showcase {
                 );
                 continue;
             }
-            drawer = drawer.item(
-                NavigationItem::new(("cat", idx), name)
-                    .icon(cat_icon(name))
-                    .badge(n.to_string())
-                    .selected(cur_cat == idx)
-                    .on_click(go),
-            );
-            if cur_cat == idx && idx > 0 {
+            let has_kids = idx > 0 && cur_cat == idx;
+            let is_open = has_kids && !self.shut.contains(&name);
+            let mut cat_row = NavigationItem::new(("cat", idx), name)
+                .icon(cat_icon(name))
+                .badge(n.to_string())
+                .selected(cur_cat == idx);
+            if idx > 0 {
+                cat_row = cat_row.expanded(is_open);
+            }
+            drawer = drawer.item(cat_row.on_click({
+                let m = me.clone();
+                move |_, _, cx| {
+                    m.update(cx, |s, cx| {
+                        // Picking the open category again folds it; another one opens.
+                        if idx > 0 && s.cat == idx {
+                            if let Some(i) = s.shut.iter().position(|c| *c == name) {
+                                s.shut.remove(i);
+                            } else {
+                                s.shut.push(name);
+                            }
+                            cx.notify();
+                            return;
+                        }
+                        s.shut.retain(|c| *c != name);
+                        s.cat = idx;
+                        s.sub = None;
+                        s.pin.release();
+                        s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
+                        cx.notify()
+                    })
+                }
+            }));
+            if is_open {
                 // The sub-group the reader is in: the chosen filter, else the one scrolled to.
                 let cur_sub = self.sub.or_else(|| active.and_then(|a| sub_of(name, a)));
                 let shown_subs = if self.cat == idx { subs(name) } else { &[] };
-                // Jump list: every visible section of this category. It goes under the sub-group chosen
-                // ("All" when none), not after the last one.
-                let mut jump_rows: Vec<NavigationItem> = Vec::new();
-                let mut k = 0usize;
-                for (c, title) in sections_meta {
-                    if *c != name
-                        || self.sub.is_some_and(|x| sub_of(c, title) != Some(x))
-                        || !(query.is_empty()
-                            || !fuzzy_filter(query, &[format!("{c} {title}")]).is_empty())
-                    {
-                        continue;
-                    }
-                    side_need = side_need.max(est(title.len(), 2.0));
-                    let (m, title) = (me.clone(), *title);
-                    let mut row = NavigationItem::new(("jump", idx * 1000 + k), title);
-                    // The Icons section shows how many icons the active design ships.
-                    if title == "Icons" {
-                        row = row.badge(group_thousands(crate::sections::icon_total()));
-                    }
-                    jump_rows.push(row.depth(2).selected(active == Some(title)).on_click(
-                        move |_, _, cx| {
-                            m.update(cx, |s, cx| {
-                                s.pin.pin(title);
-                                s.jump = Some((title, 1));
-                                if title == "Icons" {
-                                    s.icon_pick = Default::default();
-                                }
-                                cx.notify()
-                            })
-                        },
-                    ));
-                    // The Icons section has its own tree: every block of the single catalogue.
-                    if title == "Icons" {
-                        for (r, row) in crate::sections::icon_tree().into_iter().enumerate() {
-                            side_need = side_need.max(est(row.label.len() + 6, row.depth as f32));
-                            let m = me.clone();
-                            let pick = row.pick;
-                            jump_rows.push(
-                                NavigationItem::new(("icon-tree", idx * 1000 + r), row.label)
-                                    .depth(row.depth)
-                                    .badge(group_thousands(row.count))
-                                    .selected(self.icon_pick == pick)
-                                    .on_click(move |_, _, cx| {
-                                        m.update(cx, |s, cx| {
-                                            // A second click on the open branch folds it.
-                                            s.icon_pick =
-                                                if s.icon_pick == pick { pick.up() } else { pick };
-                                            s.pin.pin("Icons");
-                                            s.jump = Some(("Icons", 1));
-                                            cx.notify()
-                                        })
-                                    }),
-                            );
+                // The rows that jump to a section of this category (those of one sub-group when
+                // given): visible sections only.
+                let jump_rows = |side_need: &mut f32, only: Option<&'static str>| {
+                    let mut rows: Vec<NavigationItem> = Vec::new();
+                    let mut k = 0usize;
+                    let depth = if only.is_some() { 2 } else { 1 };
+                    for (c, title) in sections_meta {
+                        if *c != name
+                            || only.is_some_and(|x| sub_of(c, title) != Some(x))
+                            || !(query.is_empty()
+                                || !fuzzy_filter(query, &[format!("{c} {title}")]).is_empty())
+                        {
+                            continue;
                         }
+                        *side_need = side_need.max(est(title.len(), depth as f32 + 1.0));
+                        let (m, title) = (me.clone(), *title);
+                        let mut row = NavigationItem::new(("jump", idx * 1000 + k), title);
+                        // The Icons section shows how many icons the active design ships.
+                        if title == "Icons" {
+                            row = row.badge(group_thousands(crate::sections::icon_total()));
+                        }
+                        rows.push(row.depth(depth).selected(active == Some(title)).on_click(
+                            move |_, _, cx| {
+                                m.update(cx, |s, cx| {
+                                    s.pin.pin(title);
+                                    s.jump = Some((title, 1));
+                                    if title == "Icons" {
+                                        s.icon_pick = Default::default();
+                                    }
+                                    cx.notify()
+                                })
+                            },
+                        ));
+                        // The Icons section has its own tree: every block of the single catalogue.
+                        if title == "Icons" {
+                            for (r, row) in crate::sections::icon_tree().into_iter().enumerate() {
+                                *side_need =
+                                    side_need.max(est(row.label.len() + 6, row.depth as f32));
+                                let m = me.clone();
+                                let pick = row.pick;
+                                rows.push(
+                                    NavigationItem::new(("icon-tree", idx * 1000 + r), row.label)
+                                        .depth(row.depth)
+                                        .badge(group_thousands(row.count))
+                                        .selected(self.icon_pick == pick)
+                                        .on_click(move |_, _, cx| {
+                                            m.update(cx, |s, cx| {
+                                                // A second click on the open branch folds it.
+                                                s.icon_pick = if s.icon_pick == pick {
+                                                    pick.up()
+                                                } else {
+                                                    pick
+                                                };
+                                                s.pin.pin("Icons");
+                                                s.jump = Some(("Icons", 1));
+                                                cx.notify()
+                                            })
+                                        }),
+                                );
+                            }
+                        }
+                        k += 1;
                     }
-                    k += 1;
+                    rows
+                };
+                if shown_subs.is_empty() {
+                    // A category without sub-groups: its sections right below it.
+                    for row in jump_rows(&mut side_need, None) {
+                        drawer = drawer.item(row);
+                    }
                 }
                 for sub in std::iter::once(None).chain(shown_subs.iter().copied().map(Some)) {
                     if sub.is_none() && shown_subs.is_empty() {
@@ -249,38 +288,54 @@ impl Showcase {
                         .iter()
                         .filter(|(c, l)| *c == name && sub.is_none_or(|x| sub_of(c, l) == Some(x)))
                         .count();
-                    drawer = drawer.item(
-                        NavigationItem::new(
-                            (
-                                "sub",
-                                idx * 100
-                                    + sub.map_or(0, |x| {
-                                        1 + subs(name).iter().position(|y| *y == x).unwrap_or(0)
-                                    }),
-                            ),
-                            sub.unwrap_or("All"),
-                        )
-                        .depth(1)
-                        .badge(cnt.to_string())
-                        .selected(cur_sub == sub)
-                        .on_click(move |_, _, cx| {
-                            m.update(cx, |s, cx| {
-                                s.sub = sub;
-                                s.pin.release();
-                                s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
-                                cx.notify()
-                            })
-                        }),
-                    );
-                    if sub == self.sub {
-                        for row in jump_rows.drain(..) {
+                    // A sub-group with several sections is a branch of the tree; its sections
+                    // show while it is open.
+                    let branch = sub.is_some() && cnt > 1;
+                    let open = branch && sub.is_some_and(|x| self.open_subs.contains(&x));
+                    let mut row = NavigationItem::new(
+                        (
+                            "sub",
+                            idx * 100
+                                + sub.map_or(0, |x| {
+                                    1 + subs(name).iter().position(|y| *y == x).unwrap_or(0)
+                                }),
+                        ),
+                        sub.unwrap_or("All"),
+                    )
+                    .depth(1)
+                    .badge(cnt.to_string())
+                    .selected(cur_sub == sub);
+                    if branch {
+                        row = row.expanded(open);
+                    }
+                    drawer = drawer.item(row.on_click(move |_, _, cx| {
+                        m.update(cx, |s, cx| {
+                            // The chosen branch again folds or opens it; another one opens.
+                            if let Some(x) = sub {
+                                if s.sub == sub {
+                                    if let Some(i) = s.open_subs.iter().position(|o| *o == x) {
+                                        s.open_subs.remove(i);
+                                    } else {
+                                        s.open_subs.push(x);
+                                    }
+                                    cx.notify();
+                                    return;
+                                }
+                                if !s.open_subs.contains(&x) {
+                                    s.open_subs.push(x);
+                                }
+                            }
+                            s.sub = sub;
+                            s.pin.release();
+                            s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
+                            cx.notify()
+                        })
+                    }));
+                    if open {
+                        for row in jump_rows(&mut side_need, sub) {
                             drawer = drawer.item(row);
                         }
                     }
-                }
-                // A category without sub-groups (or a choice not among them): right below it.
-                for row in jump_rows {
-                    drawer = drawer.item(row);
                 }
             }
         }

@@ -251,6 +251,8 @@ impl Showcase {
             spy: Vec::new(),
             pin: dodai_gpui::ScrollSpy::new(),
             sub: None,
+            shut: Vec::new(),
+            open_subs: Vec::new(),
             side_focus: cx.focus_handle(),
             side_scroll: gpui::ScrollHandle::new(),
             rail: std::env::var_os("DODAI_RAIL").is_some(),

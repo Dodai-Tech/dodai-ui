@@ -606,6 +606,12 @@ symbols! {
         Glucose = "glucose";
         /// Three electrode leads.
         EcgLeads = "ecg-leads";
+        /// Microscope.
+        Microscope = "microscope";
+        /// Ambulance.
+        Ambulance = "ambulance";
+        /// Face mask.
+        Mask = "mask";
     }
     #[cfg(feature = "symbols-military")]
     /// Tactical and sensor symbols.
@@ -646,6 +652,12 @@ symbols! {
         Jammer = "jammer";
         /// Missile.
         Missile = "missile";
+        /// Submarine.
+        Submarine = "submarine";
+        /// Fighter jet.
+        Fighter = "fighter";
+        /// Field radio.
+        Radio = "radio";
     }
     #[cfg(feature = "symbols-industrial")]
     /// Plant and machinery symbols.
@@ -688,6 +700,12 @@ symbols! {
         Siren = "siren";
         /// Funnel filter.
         Filter = "filter";
+        /// Smokestack.
+        Smokestack = "smokestack";
+        /// Solar panel.
+        SolarPanel = "solar-panel";
+        /// Wind turbine.
+        WindTurbine = "wind-turbine";
     }
     #[cfg(feature = "symbols-aviation")]
     /// Flight and airfield symbols.
@@ -728,6 +746,12 @@ symbols! {
         Autopilot = "autopilot";
         /// Parachute.
         Parachute = "parachute";
+        /// Route with waypoints.
+        FlightPlan = "flight-plan";
+        /// Crosswind streaks.
+        Crosswind = "crosswind";
+        /// Airport beacon.
+        Beacon = "beacon";
     }
 }
 
@@ -872,6 +896,29 @@ mod tests {
                     style.weight
                 );
             }
+        }
+    }
+
+    #[test]
+    fn symbols_are_sized_and_centred_on_the_grid() {
+        for &i in Symbol::ALL {
+            let Glyph::Lines(lines, _) = i.glyph() else {
+                continue;
+            };
+            let pts = lines.iter().flat_map(|(p, _)| p.iter().copied());
+            let (mut lo, mut hi) = ((f32::MAX, f32::MAX), (f32::MIN, f32::MIN));
+            for (x, y) in pts {
+                lo = (lo.0.min(x), lo.1.min(y));
+                hi = (hi.0.max(x), hi.1.max(y));
+            }
+            let extent = (hi.0 - lo.0).max(hi.1 - lo.1);
+            let centre = ((lo.0 + hi.0) / 2.0, (lo.1 + hi.1) / 2.0);
+            assert!(extent >= 13.5, "{} is only {extent:.1} wide", i.name());
+            assert!(
+                (centre.0 - 12.0).abs() <= 3.0 && (centre.1 - 12.0).abs() <= 3.0,
+                "{} sits off-centre at {centre:?}",
+                i.name()
+            );
         }
     }
 
