@@ -58,7 +58,7 @@ impl StrokeStyle {
     };
     /// Heavy and soft (Neo-Brutalism).
     pub const BOLD: Self = Self {
-        weight: 1.9,
+        weight: 1.65,
         round: true,
         chamfer: 0.0,
     };

@@ -216,6 +216,15 @@ pub fn cyber_shapes(id: IconId, modifier: Option<Modifier>) -> Option<Vec<(Point
 mod tests {
     use super::*;
 
+    #[test]
+    fn each_pack_strokes_symbols_in_its_own_style() {
+        assert_eq!(Pack::Stroked.symbol_style(), StrokeStyle::SQUARE);
+        assert_eq!(Pack::Material.symbol_style(), StrokeStyle::ROUND);
+        assert_eq!(Pack::Bold.symbol_style(), StrokeStyle::BOLD);
+        assert!(StrokeStyle::BOLD.weight > StrokeStyle::ROUND.weight);
+        assert!(StrokeStyle::SQUARE.chamfer > 0.0 && !StrokeStyle::SQUARE.round);
+    }
+
     #[cfg(feature = "material")]
     fn ink(g: &Glyph, px: u32) -> usize {
         g.coverage(px).iter().filter(|&&a| a > 127).count()

@@ -731,10 +731,14 @@ impl Render for Showcase {
                                 // Top bar: the theme picker, always in reach. Label + control
                                 // pairs wrap onto further rows instead of overflowing.
                                 {
+                                    // The pickers grow to fill the row, the small controls keep
+                                    // their size; the bar runs from the left edge to the right one.
                                     let pair = |label: &'static str, control: gpui::AnyElement| {
+                                        let grows = matches!(label, "Design" | "Theme");
                                         div()
                                             .flex()
-                                            .flex_none()
+                                            .when(grows, |d| d.flex_1())
+                                            .when(!grows, |d| d.flex_none())
                                             .items_center()
                                             .gap(px(t.spacing.sm))
                                             .children(
@@ -755,7 +759,6 @@ impl Render for Showcase {
                                         .flex_none()
                                         .flex_wrap()
                                         .items_center()
-                                        .when(!compact, |d| d.justify_end())
                                         .gap_x(px(t.spacing.md))
                                         .gap_y(px(t.spacing.sm))
                                         .px(px(if narrow { t.spacing.md } else { t.spacing.lg }))
@@ -814,7 +817,8 @@ impl Render for Showcase {
                                         .child(pair(
                                             "Design",
                                             div()
-                                                .w(px(dw))
+                                                .flex_1()
+                                                .min_w(px(dw))
                                                 .child(dodai_gpui::DesignSystemSelector::new(
                                                     "top-design",
                                                 ))
@@ -823,7 +827,8 @@ impl Render for Showcase {
                                         .child(pair(
                                             "Theme",
                                             div()
-                                                .w(px(tw))
+                                                .flex_1()
+                                                .min_w(px(tw))
                                                 .child(dodai_gpui::ThemeSelector::new("top-theme"))
                                                 .into_any_element(),
                                         ))

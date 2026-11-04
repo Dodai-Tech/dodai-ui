@@ -285,18 +285,8 @@ pub(crate) fn subs(cat: &str) -> &'static [&'static str] {
     match cat {
         "Animation" => &["Entry", "Physics", "Dynamics"],
         "Charts" => &CHART_FAMILY_NAMES,
-        "Shaders" => &[
-            "Playground",
-            "Cyberpunk",
-            "Material 3",
-            "Matrix",
-            "Retro terminals",
-            "Pixel art",
-            "Cosmic & nature",
-            "Ghostty",
-            "Ghibli",
-            "DMT Hyperspace",
-        ],
+        // By what a shader is for, not by whose look it has: the family stays in each title.
+        "Shaders" => &["Playground", "Sources", "Effects", "Presets"],
         _ => &[],
     }
 }
@@ -315,12 +305,15 @@ pub(crate) fn sub_of(cat: &str, label: &str) -> Option<&'static str> {
             "Entry"
         }),
         "Charts" => chart_family(label),
-        "Shaders" => Some(
-            dodai_gpui::dodai_shaders::Family::ALL
-                .iter()
-                .find(|f| label.starts_with(f.name()))
-                .map_or("Playground", |f| f.name()),
-        ),
+        "Shaders" => Some(if label.ends_with(" shaders") {
+            "Sources"
+        } else if label.ends_with(" effects") {
+            "Effects"
+        } else if label.ends_with(" presets") {
+            "Presets"
+        } else {
+            "Playground"
+        }),
         "Shape" => Some(if label == "Shape gallery" {
             "Overview"
         } else {
