@@ -359,6 +359,28 @@ pub(crate) fn cat_icon(name: &str) -> dodai_gpui::IconName {
     }
 }
 
+/// What the sidebar counts for a Shaders entry: shaders (or presets), not page sections.
+/// `None` for the playground, which is one tool and has no count.
+pub(crate) fn shader_count(sub: Option<&str>, group: Option<&str>) -> Option<usize> {
+    use dodai_gpui::dodai_shaders::{catalog, groups::in_group, presets as p};
+    if let Some(g) = group {
+        return Some(in_group(g).len()).filter(|n| *n > 0);
+    }
+    match sub {
+        None => Some(catalog().len()),
+        Some("Playground") => None,
+        Some("Sources") => Some(catalog().iter().filter(|s| s.is_generator()).count()),
+        Some("Effects") => Some(catalog().iter().filter(|s| !s.is_generator()).count()),
+        Some("Presets") => Some(
+            [p::RETRO, p::GHOSTTY, p::BLADE, p::GHIBLI, p::DMT, p::PIXEL]
+                .iter()
+                .map(|l| l.len())
+                .sum(),
+        ),
+        Some(_) => None,
+    }
+}
+
 /// Which Shaders sub-group a section title belongs to (`None`: not a shader section).
 pub(crate) fn shader_group(title: &str) -> Option<&'static str> {
     if title == "Shader playground" {
@@ -395,6 +417,21 @@ mod owner_tests {
         for g in SOURCE_GROUPS.iter().chain(&EFFECT_GROUPS) {
             assert_eq!(owner(g), None);
         }
+    }
+
+    #[test]
+    fn shader_counts_add_up_and_the_playground_has_none() {
+        let n = |sub| super::shader_count(sub, None);
+        assert_eq!(n(Some("Playground")), None);
+        assert_eq!(
+            n(None),
+            Some(n(Some("Sources")).unwrap() + n(Some("Effects")).unwrap())
+        );
+        let by_group: usize = dodai_gpui::dodai_shaders::groups::SOURCE_GROUPS
+            .iter()
+            .map(|g| super::shader_count(None, Some(g)).unwrap())
+            .sum();
+        assert_eq!(Some(by_group), n(Some("Sources")));
     }
 
     #[test]

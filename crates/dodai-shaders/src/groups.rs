@@ -325,7 +325,7 @@ pub fn is_featured(s: &ShaderInfo) -> bool {
 }
 
 /// The shaders of one group: the featured ones first, then the rest, each by name.
-pub fn in_group(name: &'static str) -> Vec<&'static ShaderInfo> {
+pub fn in_group(name: &str) -> Vec<&'static ShaderInfo> {
     let mut v: Vec<_> = crate::catalog()
         .iter()
         .filter(|s| group(s) == Some(name))
