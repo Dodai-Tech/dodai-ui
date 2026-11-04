@@ -195,7 +195,8 @@ fn lamp(cx: f32) -> Shape {
     feature = "symbols-vehicle",
     feature = "symbols-medical",
     feature = "symbols-military",
-    feature = "symbols-industrial"
+    feature = "symbols-industrial",
+    feature = "symbols-aviation"
 ))]
 fn curve(p: &[(f32, f32)], closed: bool, per: usize) -> Shape {
     let n = p.len();
