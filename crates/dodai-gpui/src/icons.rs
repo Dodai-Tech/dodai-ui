@@ -40,6 +40,33 @@ impl IconPack {
     }
 }
 
+/// What a dashboard symbol reports, shown as a theme colour (set with [`Icon::state`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SymbolState {
+    /// Not lit: the disabled text colour, no glow.
+    Off,
+    /// Active and fine.
+    On,
+    /// Informational.
+    Info,
+    /// Needs attention.
+    Warning,
+    /// Needs action now.
+    Danger,
+}
+
+impl SymbolState {
+    fn color(self, p: &dodai_core::Palette) -> dodai_core::Color {
+        match self {
+            Self::Off => p.text_disabled,
+            Self::On => p.success,
+            Self::Info => p.info,
+            Self::Warning => p.warning,
+            Self::Danger => p.danger,
+        }
+    }
+}
+
 /// Vector icon. Defaults: 16 px, the theme text colour; set `.color(..)` to override.
 #[derive(IntoElement)]
 pub struct Icon {
@@ -51,6 +78,7 @@ pub struct Icon {
     modifier: Option<Modifier>,
     size: f32,
     color: Option<Hsla>,
+    state: Option<SymbolState>,
     weight: f32,
     pack: IconPack,
     filled: bool,
@@ -79,6 +107,7 @@ impl Icon {
             modifier: None,
             size: 16.0,
             color: None,
+            state: None,
             weight: 1.75,
             pack: IconPack::Auto,
             filled: false,
@@ -92,6 +121,11 @@ impl Icon {
     /// Colour (default: the theme's).
     pub fn color(mut self, c: Hsla) -> Self {
         self.color = Some(c);
+        self
+    }
+    /// What the symbol reports, as a theme colour (an explicit `.color(..)` wins).
+    pub fn state(mut self, state: SymbolState) -> Self {
+        self.state = Some(state);
         self
     }
     /// Stroke width in px at 24 px size (scales with `size`; stroked drawings only).
@@ -121,9 +155,12 @@ impl Icon {
 impl RenderOnce for Icon {
     fn render(self, _: &mut gpui::Window, cx: &mut gpui::App) -> impl IntoElement {
         let theme = crate::theme_of(cx);
-        let color = self
-            .color
-            .unwrap_or_else(|| crate::hsla(theme.palette.text));
+        let color = self.color.unwrap_or_else(|| {
+            crate::hsla(match self.state {
+                Some(s) => s.color(&theme.palette),
+                None => theme.palette.text,
+            })
+        });
         let key = MeshKey {
             id: self.id,
             symbol: self.symbol,
@@ -136,7 +173,8 @@ impl RenderOnce for Icon {
         };
         let mesh = Mesh::cached(key);
         // A luminous design (Cyberpunk) lights its symbols: a faint halo around the drawing.
-        let glow = self.symbol.is_some() && theme.look().luminous;
+        let glow =
+            self.symbol.is_some() && theme.look().luminous && self.state != Some(SymbolState::Off);
         // One sized canvas: a single layout node per icon (pages hold hundreds).
         canvas(
             |_, _, _| (),
@@ -322,6 +360,24 @@ mod tests {
         assert_eq!(IconPack::Auto.resolve(Stroked), Pack::Stroked);
         assert_eq!(IconPack::Auto.resolve(Bold), Pack::Bold);
         assert_eq!(IconPack::Stroked.resolve(Symbols), Pack::Stroked);
+    }
+
+    #[test]
+    fn each_symbol_state_has_its_own_palette_colour() {
+        let p = dodai_core::Theme::default().palette;
+        let all = [
+            SymbolState::Off,
+            SymbolState::On,
+            SymbolState::Info,
+            SymbolState::Warning,
+            SymbolState::Danger,
+        ];
+        for (i, a) in all.iter().enumerate() {
+            for b in &all[i + 1..] {
+                assert_ne!(a.color(&p), b.color(&p), "{a:?} and {b:?} share a colour");
+            }
+        }
+        assert_eq!(SymbolState::Danger.color(&p), p.danger);
     }
 
     #[test]
