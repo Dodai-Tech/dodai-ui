@@ -37,30 +37,49 @@ impl Showcase {
             } else {
                 PaletteSource::Family
             };
-            let card =
-                |id: String, shader: &'static dodai_gpui::dodai_shaders::ShaderInfo, fx: bool| {
-                    let view = if fx {
-                        ShaderView::fx_over_default(id.clone(), shader.id)
-                    } else {
-                        ShaderView::new(id.clone(), shader.id)
-                    };
-                    col()
-                        .flex_1()
-                        .min_w(px(220.0))
-                        .max_w(px(340.0))
-                        .child(view.palette(pal_src).pixel(2.0).rounded(t.shape.radius))
-                        .child(
-                            row()
-                                .child(Mono::new(shader.name))
-                                .child(Muted::new(shader.family.name()))
-                                .children(
-                                    dodai_gpui::dodai_shaders::groups::is_featured(shader)
-                                        .then(|| Tag::new("featured", Tone::Success)),
-                                ),
-                        )
-                        .child(Muted::new(shader.desc))
-                        .into_any_element()
+            let card = |id: String,
+                        shader: &'static dodai_gpui::dodai_shaders::ShaderInfo,
+                        fx: bool,
+                        overlay: bool| {
+                let view = if fx {
+                    ShaderView::fx_over_default(id.clone(), shader.id)
+                } else {
+                    ShaderView::new(id.clone(), shader.id)
                 };
+                col()
+                    .flex_1()
+                    .min_w(px(220.0))
+                    .max_w(px(340.0))
+                    .child({
+                        let view = view
+                            .palette(pal_src)
+                            .pixel(2.0)
+                            .rounded(t.shape.radius)
+                            .transparent(overlay);
+                        if overlay {
+                            // An overlay has no picture of its own: show it on a dark tile.
+                            div()
+                                .rounded(px(t.shape.radius))
+                                .overflow_hidden()
+                                .bg(gpui::rgb(0x0b0b12))
+                                .child(view)
+                                .into_any_element()
+                        } else {
+                            view.into_any_element()
+                        }
+                    })
+                    .child(
+                        row()
+                            .child(Mono::new(shader.name))
+                            .child(Muted::new(shader.family.name()))
+                            .children(
+                                dodai_gpui::dodai_shaders::groups::is_featured(shader)
+                                    .then(|| Tag::new("featured", Tone::Success)),
+                            ),
+                    )
+                    .child(Muted::new(shader.desc))
+                    .into_any_element()
+            };
             // Playground: pick a generator, stack effects, tune.
             let me_p = me.clone();
             let gens: Vec<_> = catalog()
@@ -253,7 +272,12 @@ impl Showcase {
                 for name in names {
                     let mut grid = row().items_start();
                     for s in in_group(name) {
-                        grid = grid.child(card(format!("shc-{}", s.id), s, fx));
+                        grid = grid.child(card(
+                            format!("shc-{}", s.id),
+                            s,
+                            fx,
+                            *name == SOURCE_GROUPS[0],
+                        ));
                     }
                     sections.push((
                         "Shaders",
