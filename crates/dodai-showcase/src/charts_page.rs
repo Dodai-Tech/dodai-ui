@@ -570,6 +570,7 @@ impl Showcase {
                     )
                     .child(
                         Pulse::art(72.0)
+                            .color(t.palette.tone(Tone::Success))
                             .label("ABP")
                             .readout("120/80", "mmHg")
                             .grid(PulseGrid::Dots)
