@@ -41,6 +41,10 @@ pub struct StrokeStyle {
     /// Sharp corners are cut by this much on the 24 grid (0 keeps them). Only corners that turn
     /// by more than 40 degrees on long enough segments are cut, so faceted arcs stay smooth.
     pub chamfer: f32,
+    /// Curves are redrawn with fewer, longer segments: a point stays only if dropping it would
+    /// move the line by more than this on the 24 grid (0 keeps every point). A larger value
+    /// turns round arcs into angular facets.
+    pub facet: f32,
 }
 
 impl StrokeStyle {
@@ -49,30 +53,42 @@ impl StrokeStyle {
         weight: 1.4,
         round: true,
         chamfer: 0.0,
+        facet: 0.0,
     };
     /// Hard-edged, as the classic stroked pack (Cyberpunk).
     pub const SQUARE: Self = Self {
         weight: 1.3,
         round: false,
         chamfer: 0.9,
+        facet: 0.4,
     };
     /// Heavy and soft (Neo-Brutalism).
     pub const BOLD: Self = Self {
         weight: 1.65,
         round: true,
         chamfer: 0.0,
+        facet: 0.22,
     };
 }
 
 impl StrokeStyle {
-    /// `lines` with this style's corner cuts applied.
-    pub fn cut(&self, lines: Vec<(Points, bool)>) -> Vec<(Points, bool)> {
-        if self.chamfer <= 0.0 {
-            return lines;
-        }
+    /// `lines` redrawn in this style: curves faceted, then sharp corners cut.
+    pub fn shape(&self, lines: Vec<(Points, bool)>) -> Vec<(Points, bool)> {
         lines
             .into_iter()
-            .map(|(p, c)| (self.cut_line(&p, c), c))
+            .map(|(p, c)| {
+                let p = if self.facet > 0.0 && p.len() > 5 {
+                    facet(&p, c, self.facet)
+                } else {
+                    p
+                };
+                let p = if self.chamfer > 0.0 {
+                    self.cut_line(&p, c)
+                } else {
+                    p
+                };
+                (p, c)
+            })
             .collect()
     }
 
@@ -106,6 +122,59 @@ impl StrokeStyle {
         }
         out
     }
+}
+
+/// Douglas-Peucker: `pts` without the points that lie within `tol` of the line between their
+/// neighbours. A closed outline is split at its two farthest-apart anchors first.
+fn facet(pts: &[(f32, f32)], closed: bool, tol: f32) -> Points {
+    fn dist(p: (f32, f32), a: (f32, f32), b: (f32, f32)) -> f32 {
+        let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+        let l = dx * dx + dy * dy;
+        if l < 1e-9 {
+            return ((p.0 - a.0).powi(2) + (p.1 - a.1).powi(2)).sqrt();
+        }
+        ((p.0 - a.0) * dy - (p.1 - a.1) * dx).abs() / l.sqrt()
+    }
+    fn run(pts: &[(f32, f32)], tol: f32, out: &mut Points) {
+        let (a, b) = (pts[0], pts[pts.len() - 1]);
+        let far = (1..pts.len() - 1)
+            .map(|i| (i, dist(pts[i], a, b)))
+            .max_by(|x, y| x.1.total_cmp(&y.1));
+        match far {
+            Some((i, d)) if d > tol => {
+                run(&pts[..=i], tol, out);
+                out.pop();
+                run(&pts[i..], tol, out);
+            }
+            _ => {
+                out.push(a);
+                out.push(b);
+            }
+        }
+    }
+    let mut out = Points::new();
+    if closed {
+        let mut ring = pts.to_vec();
+        let first = ring[0];
+        ring.push(first);
+        let mid = (1..ring.len() - 1)
+            .max_by(|&i, &j| {
+                let d = |k: usize| (ring[k].0 - first.0).powi(2) + (ring[k].1 - first.1).powi(2);
+                d(i).total_cmp(&d(j))
+            })
+            .unwrap_or(1);
+        run(&ring[..=mid], tol, &mut out);
+        out.pop();
+        run(&ring[mid..], tol, &mut out);
+        out.pop();
+    } else {
+        run(pts, tol, &mut out);
+    }
+    out.dedup();
+    if out.len() < 2 {
+        return pts.to_vec();
+    }
+    out
 }
 
 impl Default for StrokeStyle {

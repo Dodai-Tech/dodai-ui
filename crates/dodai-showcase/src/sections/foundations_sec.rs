@@ -539,15 +539,7 @@ impl IconEntry {
         }
     }
     /// The entry called `name`, if any.
-    /// A name that is also a named icon (`ambulance`) finds the named icon; `symbol:ambulance`
-    /// finds the dashboard symbol.
     pub(crate) fn find(name: &str) -> Option<Self> {
-        if let Some(n) = name.strip_prefix("symbol:") {
-            return dodai_icons::symbol::Symbol::ALL
-                .iter()
-                .find(|s| s.name() == n)
-                .map(|&s| Self::Symbol(s));
-        }
         IconId::ALL
             .iter()
             .find(|i| i.name() == name)
