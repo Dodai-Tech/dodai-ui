@@ -410,12 +410,17 @@ pub(super) fn shapes(i: Symbol) -> Vec<Shape> {
         ],
         TrunkOpen => {
             let mut v = car_side(2.5, 21.5, 19.0);
-            v.push(line(&[(18.5, 13.0), (21.0, 4.5), (15.0, 3.5)]));
+            v.push(poly(&[
+                (18.0, 10.0),
+                (21.0, 4.0),
+                (23.0, 5.2),
+                (21.0, 11.0),
+            ]));
             v
         }
         HoodOpen => {
             let mut v = car_side(2.5, 21.5, 19.0);
-            v.push(line(&[(3.5, 16.2), (2.0, 7.0), (9.0, 5.0)]));
+            v.push(poly(&[(6.0, 10.0), (3.0, 4.0), (1.0, 5.2), (3.0, 11.0)]));
             v
         }
         Washer => vec![
@@ -568,19 +573,16 @@ pub(super) fn shapes(i: Symbol) -> Vec<Shape> {
             line(&[(18.0, 7.6), (18.0, 16.4)]),
         ],
         Boost => {
-            let mut v = vec![circ(12.0, 12.0, 2.0)];
-            for k in 0..4 {
-                let a = 90.0 * k as f32;
-                v.push(arc(12.0, 12.0, 8.0, a + 10.0, a + 70.0));
-                let e = rad(a + 70.0);
+            let mut v = vec![arc(11.0, 13.0, 8.0, 40.0, 360.0), circ(11.0, 13.0, 1.6)];
+            for a in [90.0_f32, 210.0, 330.0] {
+                let (s, c) = rad(a).sin_cos();
                 v.push(line(&[
-                    (12.0 + 8.0 * e.cos(), 12.0 + 8.0 * e.sin()),
-                    (
-                        12.0 + 2.0 * rad(a + 40.0).cos(),
-                        12.0 + 2.0 * rad(a + 40.0).sin(),
-                    ),
+                    (11.0 + 1.6 * c, 13.0 + 1.6 * s),
+                    (11.0 + 5.0 * c, 13.0 + 5.0 * s),
                 ]));
             }
+            v.push(line(&[(16.7, 7.3), (20.0, 4.0)]));
+            v.push(line(&[(17.6, 3.0), (21.0, 6.4)]));
             v
         }
         Recuperation => vec![
