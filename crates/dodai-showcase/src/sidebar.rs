@@ -175,8 +175,16 @@ impl Showcase {
             let is_open = has_kids && !self.shut.contains(&name);
             let mut cat_row = NavigationItem::new(("cat", idx), name)
                 .icon(cat_icon(name))
-                .badge(n.to_string())
                 .selected(cur_cat == idx);
+            if name == "Shaders" {
+                cat_row = cat_row.badge(
+                    crate::catalog::shader_count(None, None)
+                        .unwrap_or(n)
+                        .to_string(),
+                );
+            } else {
+                cat_row = cat_row.badge(n.to_string());
+            }
             if idx > 0 {
                 cat_row = cat_row.expanded(is_open);
             }
@@ -228,6 +236,12 @@ impl Showcase {
                         if title == "Icons" {
                             row = row.badge(group_thousands(crate::sections::icon_total()));
                         }
+                        if let Some(n) = (name == "Shaders")
+                            .then(|| crate::catalog::shader_count(None, Some(title)))
+                            .flatten()
+                        {
+                            row = row.badge(n.to_string());
+                        }
                         rows.push(row.depth(depth).selected(active == Some(title)).on_click(
                             move |_, _, cx| {
                                 m.update(cx, |s, cx| {
@@ -278,7 +292,14 @@ impl Showcase {
                         drawer = drawer.item(row);
                     }
                 }
-                for sub in std::iter::once(None).chain(shown_subs.iter().copied().map(Some)) {
+                // The Shaders playground is the way in: it goes above "All".
+                let mut order: Vec<Option<&'static str>> = std::iter::once(None)
+                    .chain(shown_subs.iter().copied().map(Some))
+                    .collect();
+                if name == "Shaders" && order.len() > 2 {
+                    order.swap(0, 1);
+                }
+                for sub in order {
                     if sub.is_none() && shown_subs.is_empty() {
                         break;
                     }
@@ -303,8 +324,14 @@ impl Showcase {
                         sub.unwrap_or("All"),
                     )
                     .depth(1)
-                    .badge(cnt.to_string())
                     .selected(cur_sub == sub);
+                    if name == "Shaders" {
+                        if let Some(n) = crate::catalog::shader_count(sub, None) {
+                            row = row.badge(n.to_string());
+                        }
+                    } else {
+                        row = row.badge(cnt.to_string());
+                    }
                     if branch {
                         row = row.expanded(open);
                     }
