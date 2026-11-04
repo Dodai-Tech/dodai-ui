@@ -87,8 +87,7 @@ pub fn glow_waves(uv: Vec2, c: &Ctx) -> Vec3 {
         warm += w * (1.0 - i as f32 / 9.0);
         cool += w * (i as f32 / 9.0);
     }
-    (bg + p.c * (warm * 1.6) + p.fg * (cool * 0.9) + p.a.mix(p.fg, 0.5) * (cool * 0.3))
-        .clamp01()
+    (bg + p.c * (warm * 1.6) + p.fg * (cool * 0.9) + p.a.mix(p.fg, 0.5) * (cool * 0.3)).clamp01()
 }
 
 /// Synthwave: striped sun, horizon haze and a scrolling perspective grid.

@@ -182,6 +182,63 @@ impl Showcase {
                 // The sub-group the reader is in: the chosen filter, else the one scrolled to.
                 let cur_sub = self.sub.or_else(|| active.and_then(|a| sub_of(name, a)));
                 let shown_subs = if self.cat == idx { subs(name) } else { &[] };
+                // Jump list: every visible section of this category. It goes under the sub-group chosen
+                // ("All" when none), not after the last one.
+                let mut jump_rows: Vec<NavigationItem> = Vec::new();
+                let mut k = 0usize;
+                for (c, title) in sections_meta {
+                    if *c != name
+                        || self.sub.is_some_and(|x| sub_of(c, title) != Some(x))
+                        || !(query.is_empty()
+                            || !fuzzy_filter(query, &[format!("{c} {title}")]).is_empty())
+                    {
+                        continue;
+                    }
+                    side_need = side_need.max(est(title.len(), 2.0));
+                    let (m, title) = (me.clone(), *title);
+                    let mut row = NavigationItem::new(("jump", idx * 1000 + k), title);
+                    // The Icons section shows how many icons the active design ships.
+                    if title == "Icons" {
+                        row = row.badge(group_thousands(crate::sections::icon_total()));
+                    }
+                    jump_rows.push(row.depth(2).selected(active == Some(title)).on_click(
+                        move |_, _, cx| {
+                            m.update(cx, |s, cx| {
+                                s.pin.pin(title);
+                                s.jump = Some((title, 1));
+                                if title == "Icons" {
+                                    s.icon_pick = Default::default();
+                                }
+                                cx.notify()
+                            })
+                        },
+                    ));
+                    // The Icons section has its own tree: every block of the single catalogue.
+                    if title == "Icons" {
+                        for (r, row) in crate::sections::icon_tree().into_iter().enumerate() {
+                            side_need = side_need.max(est(row.label.len() + 6, row.depth as f32));
+                            let m = me.clone();
+                            let pick = row.pick;
+                            jump_rows.push(
+                                NavigationItem::new(("icon-tree", idx * 1000 + r), row.label)
+                                    .depth(row.depth)
+                                    .badge(group_thousands(row.count))
+                                    .selected(self.icon_pick == pick)
+                                    .on_click(move |_, _, cx| {
+                                        m.update(cx, |s, cx| {
+                                            // A second click on the open branch folds it.
+                                            s.icon_pick =
+                                                if s.icon_pick == pick { pick.up() } else { pick };
+                                            s.pin.pin("Icons");
+                                            s.jump = Some(("Icons", 1));
+                                            cx.notify()
+                                        })
+                                    }),
+                            );
+                        }
+                    }
+                    k += 1;
+                }
                 for sub in std::iter::once(None).chain(shown_subs.iter().copied().map(Some)) {
                     if sub.is_none() && shown_subs.is_empty() {
                         break;
@@ -215,61 +272,15 @@ impl Showcase {
                             })
                         }),
                     );
-                }
-                // Jump list: every visible section of this category.
-                let mut k = 0usize;
-                for (c, title) in sections_meta {
-                    if *c != name
-                        || self.sub.is_some_and(|x| sub_of(c, title) != Some(x))
-                        || !(query.is_empty()
-                            || !fuzzy_filter(query, &[format!("{c} {title}")]).is_empty())
-                    {
-                        continue;
-                    }
-                    side_need = side_need.max(est(title.len(), 2.0));
-                    let (m, title) = (me.clone(), *title);
-                    let mut row = NavigationItem::new(("jump", idx * 1000 + k), title);
-                    // The Icons section shows how many icons the active design ships.
-                    if title == "Icons" {
-                        row = row.badge(group_thousands(crate::sections::icon_total()));
-                    }
-                    drawer = drawer.item(row.depth(2).selected(active == Some(title)).on_click(
-                        move |_, _, cx| {
-                            m.update(cx, |s, cx| {
-                                s.pin.pin(title);
-                                s.jump = Some((title, 1));
-                                if title == "Icons" {
-                                    s.icon_pick = Default::default();
-                                }
-                                cx.notify()
-                            })
-                        },
-                    ));
-                    // The Icons section has its own tree: every block of the single catalogue.
-                    if title == "Icons" {
-                        for (r, row) in crate::sections::icon_tree().into_iter().enumerate() {
-                            side_need = side_need.max(est(row.label.len() + 6, row.depth as f32));
-                            let m = me.clone();
-                            let pick = row.pick;
-                            drawer = drawer.item(
-                                NavigationItem::new(("icon-tree", idx * 1000 + r), row.label)
-                                    .depth(row.depth)
-                                    .badge(group_thousands(row.count))
-                                    .selected(self.icon_pick == pick)
-                                    .on_click(move |_, _, cx| {
-                                        m.update(cx, |s, cx| {
-                                            // A second click on the open branch folds it.
-                                            s.icon_pick =
-                                                if s.icon_pick == pick { pick.up() } else { pick };
-                                            s.pin.pin("Icons");
-                                            s.jump = Some(("Icons", 1));
-                                            cx.notify()
-                                        })
-                                    }),
-                            );
+                    if sub == self.sub {
+                        for row in jump_rows.drain(..) {
+                            drawer = drawer.item(row);
                         }
                     }
-                    k += 1;
+                }
+                // A category without sub-groups (or a choice not among them): right below it.
+                for row in jump_rows {
+                    drawer = drawer.item(row);
                 }
             }
         }
