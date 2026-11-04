@@ -8,7 +8,7 @@ Every Dodai icon in one crate. Packs are Cargo features, so you compile only wha
 | `cyberpunk` | `dodai_icons::cyberpunk` | Hand-drawn, curve-free icons on a 24×24 grid: `IconName::shapes()` polylines, `svg` / `sprite` export, name lookups. |
 | `material` | `dodai_icons::material` | The Material Symbols catalogue (3,900+ icons, each with a `-fill` form) as vector data: `outlined::get(MaterialSymbol::Home)`. `material-rounded` and `material-sharp` add the other two styles. |
 | `neobrutalism` | | Phosphor's bold weight, drawn by the Neo-Brutalism design. |
-| `symbols` | `dodai_icons::symbol` | Original stroked dashboard symbols in five groups, one drawing in every design. Each group is a feature: `symbols-vehicle`, `symbols-medical`, `symbols-military`, `symbols-industrial`, `symbols-aviation`; `symbols` is all five. |
+| `symbols` | `dodai_icons::symbol` | Original stroked dashboard symbols in five groups, one drawing, stroked in each design's own weight and corners (`Pack::symbol_style`: round for Material and Dodai, square with chamfered turns for Cyberpunk, bold for Neo-Brutalism; `Symbol::glyph_styled`). Each group is a feature: `symbols-vehicle`, `symbols-medical`, `symbols-military`, `symbols-industrial`, `symbols-aviation`; `symbols` is all five. |
 
 All features are on by default. For one pack: `dodai-icons = { version = "0.1", default-features = false, features = ["cyberpunk"] }`.
 

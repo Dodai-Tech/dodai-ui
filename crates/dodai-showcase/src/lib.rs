@@ -152,6 +152,10 @@ pub struct Showcase {
     pin: dodai_gpui::ScrollSpy<&'static str>,
     /// Selected subsection inside the current category (`None` = all).
     sub: Option<&'static str>,
+    /// Categories whose sub-group list is folded (the open one is the current category).
+    shut: Vec<&'static str>,
+    /// Sub-groups whose sections are listed in the sidebar.
+    open_subs: Vec<&'static str>,
     side_focus: FocusHandle,
     side_scroll: gpui::ScrollHandle,
     /// Material-style stretch past the ends of the page / sidebar.

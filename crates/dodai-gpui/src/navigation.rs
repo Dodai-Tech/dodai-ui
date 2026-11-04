@@ -23,6 +23,7 @@ pub struct NavigationItem {
     badge: Option<SharedString>,
     selected: bool,
     depth: u8,
+    expanded: Option<bool>,
     on_click: Option<Click>,
 }
 
@@ -36,12 +37,20 @@ impl NavigationItem {
             badge: None,
             selected: false,
             depth: 0,
+            expanded: None,
             on_click: None,
         }
     }
     /// Nest the row `levels` deep (drawer only): indented, shorter, no icon.
     pub fn depth(mut self, levels: u8) -> Self {
         self.depth = levels;
+        self
+    }
+    /// Make the row a branch of a tree (drawer only): a chevron at the end points down while it
+    /// is `open` and right while it is closed. The app owns the state and flips it in `on_click`;
+    /// show or hide the child rows (which are nested with [`depth`](Self::depth)) to match.
+    pub fn expanded(mut self, open: bool) -> Self {
+        self.expanded = Some(open);
         self
     }
     /// Leading icon.
@@ -255,7 +264,9 @@ fn drawer_item(
             };
             let badge = it.badge.as_ref().map_or(0.0, |b| {
                 b.len() as f32 * t.type_style(k.roles.0).size * 0.6 + k.item_content_gap
-            });
+            }) + it
+                .expanded
+                .map_or(0.0, |_| k.icon_size * 0.75 + k.item_content_gap);
             let room = w
                 - 2.0 * k.container_padding
                 - 2.0 * k.item_padding
@@ -277,6 +288,14 @@ fn drawer_item(
     );
     if let Some(b) = it.badge {
         el = el.child(typeset(div(), t, k.roles.0).child(b));
+    }
+    if let Some(open) = it.expanded {
+        let chevron = if open {
+            crate::icons::Icon::ChevronDown
+        } else {
+            crate::icons::Icon::ChevronRight
+        };
+        el = el.child(chevron.size(k.icon_size * 0.75).color(fg));
     }
     if let Some(h) = it.on_click {
         el = el.on_click(move |e, w, cx| h(e, w, cx));
