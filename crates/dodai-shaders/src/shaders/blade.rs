@@ -169,9 +169,9 @@ fn sky(x: f32, y: f32, t: f32, k: &Look) -> Vec3 {
     // searchlights
     if k.beams > 0.0 {
         let s = (t * 0.35).sin();
-        let b = beam(x, k.street, 0.45, k.street, -0.45 + 0.5 * s)
-            + beam(x, k.street, 1.3, k.street, 0.35 - 0.5 * s)
-            + beam(x, k.street, 0.9, k.street, 0.05 + 0.35 * (t * 0.23).sin());
+        let b = beam(x, y, 0.45, k.street, -0.45 + 0.5 * s)
+            + beam(x, y, 1.3, k.street, 0.35 - 0.5 * s)
+            + beam(x, y, 0.9, k.street, 0.05 + 0.35 * (t * 0.23).sin());
         col = col + (k.warm * 0.5 + k.fog) * b * k.beams * (0.5 + cl);
     }
     col
@@ -867,9 +867,9 @@ pub fn br_searchlights(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
     let y = uv.y;
     let hz = 0.8;
     let s = (t * 0.35).sin();
-    let b = beam(x, hz, 0.45 * a, hz, -0.45 + 0.5 * s)
-        + beam(x, hz, 0.8 * a, hz, 0.35 - 0.5 * s)
-        + beam(x, hz, 0.62 * a, hz, 0.05 + 0.35 * (t * 0.23).sin());
+    let b = beam(x, y, 0.45 * a, hz, -0.45 + 0.5 * s)
+        + beam(x, y, 0.8 * a, hz, 0.35 - 0.5 * s)
+        + beam(x, y, 0.62 * a, hz, 0.05 + 0.35 * (t * 0.23).sin());
     let base = src.sample(uv);
     base + (p.a * 0.6 + p.fg * 0.45)
         * b
