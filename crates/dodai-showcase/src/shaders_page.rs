@@ -30,7 +30,7 @@ impl Showcase {
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let col = || div().flex().flex_col().gap(gap);
         {
-            use dodai_gpui::dodai_shaders::{catalog, Family, Kind};
+            use dodai_gpui::dodai_shaders::{catalog, Kind};
             use dodai_gpui::{PaletteSource, ShaderView};
             let pal_src = if self.sh_theme {
                 PaletteSource::Theme
@@ -49,11 +49,11 @@ impl Showcase {
                         .min_w(px(220.0))
                         .max_w(px(340.0))
                         .child(view.palette(pal_src).pixel(2.0).rounded(t.shape.radius))
-                        .child(row().child(Mono::new(shader.name)).child(if fx {
-                            Tag::new("effect", Tone::Warning)
-                        } else {
-                            Tag::new("source", Tone::Info)
-                        }))
+                        .child(
+                            row()
+                                .child(Mono::new(shader.name))
+                                .child(Muted::new(shader.family.name())),
+                        )
                         .child(Muted::new(shader.desc))
                         .into_any_element()
                 };
@@ -68,7 +68,11 @@ impl Showcase {
                 .filter(|s| matches!(s.kind, Kind::PostFx))
                 .collect();
             let opt_label = |s: &dodai_gpui::dodai_shaders::ShaderInfo| {
-                format!("{} · {}", s.family.name(), s.name)
+                format!(
+                    "{} · {}",
+                    dodai_gpui::dodai_shaders::groups::group(s).unwrap_or_else(|| s.family.name()),
+                    s.name
+                )
             };
             let gen_ids: Vec<&'static str> = gens.iter().map(|g| g.id).collect();
             let gen_sel = gen_ids.iter().position(|i| *i == self.sh_gen);
@@ -239,30 +243,20 @@ impl Showcase {
                     .into_any_element(),
                 "Shader playground",
             ));
-            for (fi, fam) in Family::ALL.iter().enumerate() {
-                let gens: Vec<_> = catalog()
-                    .iter()
-                    .filter(|s| s.family == *fam && s.is_generator())
-                    .collect();
-                let effs: Vec<_> = catalog()
-                    .iter()
-                    .filter(|s| s.family == *fam && !s.is_generator())
-                    .collect();
-                let (gt, et) = crate::catalog::SHADER_TITLES[fi];
-                let cats: &[&'static str] = &["Shaders"];
-                for cat in cats {
-                    let mut g_row = row().items_start();
-                    for g in &gens {
-                        g_row = g_row.child(card(format!("shc-{cat}-{}", g.id), g, false));
+            // By what they look like: every source group, then every effect group.
+            use dodai_gpui::dodai_shaders::groups::{in_group, EFFECT_GROUPS, SOURCE_GROUPS};
+            for (names, fx) in [(&SOURCE_GROUPS[..], false), (&EFFECT_GROUPS[..], true)] {
+                for name in names {
+                    let mut grid = row().items_start();
+                    for s in in_group(name) {
+                        grid = grid.child(card(format!("shc-{}", s.id), s, fx));
                     }
-                    sections.push((*cat, gt, section!(gt).child(g_row).into_any_element(), gt));
-                    if !effs.is_empty() {
-                        let mut e_row = row().items_start();
-                        for e in &effs {
-                            e_row = e_row.child(card(format!("shc-{cat}-{}", e.id), e, true));
-                        }
-                        sections.push((*cat, et, section!(et).child(e_row).into_any_element(), et));
-                    }
+                    sections.push((
+                        "Shaders",
+                        *name,
+                        section!(*name).child(grid).into_any_element(),
+                        *name,
+                    ));
                 }
             }
             // Ready-made chains.
