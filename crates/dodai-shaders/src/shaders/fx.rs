@@ -222,7 +222,7 @@ pub fn energy_rise(src: &Frame, uv: Vec2, c: &Ctx) -> Vec3 {
         let centre = -BAND * 0.5 + up * (1.0 + BAND);
         let d = (below - centre) / (BAND * 0.5);
         let shape = (1.0 - d * d).max(0.0);
-        let bell = (3.14159 * u).sin().abs().powf(1.5);
+        let bell = (std::f32::consts::PI * u).sin().abs().powf(1.5);
         light += shape * shape * bell;
     }
     let lit = smoothstep(0.05, 0.6, s.luma());
