@@ -189,8 +189,8 @@ pub(super) fn shapes(i: Symbol) -> Vec<Shape> {
         Turbine => {
             let mut v = vec![circ(12.0, 12.0, 10.0), circ(12.0, 12.0, 2.2)];
             // Swept fan blades.
-            for k in 0..9 {
-                let a0 = k as f32 * 40.0;
+            for k in 0..7 {
+                let a0 = k as f32 * (360.0 / 7.0);
                 let pts = (0..=6)
                     .map(|j| {
                         let t = j as f32 / 6.0;
@@ -200,7 +200,6 @@ pub(super) fn shapes(i: Symbol) -> Vec<Shape> {
                     .collect::<Vec<_>>();
                 v.push((pts, false));
             }
-            v.push(circ(12.0, 12.0, 8.2));
             v
         }
         Propeller => {

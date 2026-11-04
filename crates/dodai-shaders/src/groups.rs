@@ -305,11 +305,33 @@ pub fn group(s: &ShaderInfo) -> Option<&'static str> {
         .map(|(g, _)| *g)
 }
 
-/// The shaders of one group, in catalogue order.
-pub fn in_group(name: &'static str) -> impl Iterator<Item = &'static ShaderInfo> {
-    crate::catalog()
+/// Shaders worth seeing first; a gallery lists them at the top of their group.
+pub const FEATURED: [&str; 10] = [
+    "glow_waves",
+    "energy_rise",
+    "br_searchlights",
+    "neon_city",
+    "aurora",
+    "gh_forest",
+    "dmt_flower_of_life",
+    "px_city",
+    "crt",
+    "vhs",
+];
+
+/// Whether a shader is one of the [`FEATURED`] ones.
+pub fn is_featured(s: &ShaderInfo) -> bool {
+    FEATURED.contains(&s.id)
+}
+
+/// The shaders of one group: the featured ones first, then the rest, each by name.
+pub fn in_group(name: &'static str) -> Vec<&'static ShaderInfo> {
+    let mut v: Vec<_> = crate::catalog()
         .iter()
-        .filter(move |s| group(s) == Some(name))
+        .filter(|s| group(s) == Some(name))
+        .collect();
+    v.sort_by_key(|s| (!is_featured(s), s.name));
+    v
 }
 
 #[cfg(test)]
@@ -328,7 +350,7 @@ mod tests {
     #[test]
     fn no_shader_is_listed_twice_and_no_group_is_empty() {
         for g in SOURCE_GROUPS.iter().chain(&EFFECT_GROUPS) {
-            assert!(in_group(g).count() > 0, "`{g}` is empty");
+            assert!(!in_group(g).is_empty(), "`{g}` is empty");
         }
         let mut seen = std::collections::HashSet::new();
         for g in SOURCE_GROUPS.iter().chain(&EFFECT_GROUPS) {
@@ -337,5 +359,17 @@ mod tests {
             }
         }
         assert_eq!(seen.len(), crate::catalog().len());
+    }
+
+    #[test]
+    fn featured_ones_exist_and_come_first_then_by_name() {
+        for id in FEATURED {
+            assert!(crate::by_id(id).is_some(), "`{id}` is not a shader");
+        }
+        let v = in_group("Glow & light");
+        let firsts = v.iter().take_while(|s| is_featured(s)).count();
+        assert!(firsts > 0);
+        assert!(v[firsts..].iter().all(|s| !is_featured(s)));
+        assert!(v[firsts..].windows(2).all(|w| w[0].name <= w[1].name));
     }
 }

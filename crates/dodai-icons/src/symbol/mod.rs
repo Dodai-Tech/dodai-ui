@@ -796,6 +796,10 @@ impl Symbol {
 mod tests {
     use super::*;
 
+    /// Ink bounds as a share of the box: below, a symbol vanishes; above, it clogs.
+    const MIN_INK: f32 = 0.07;
+    const MAX_INK: f32 = 0.42;
+
     #[test]
     fn every_symbol_draws_inside_its_box() {
         for &i in Symbol::ALL {
@@ -811,6 +815,62 @@ mod tests {
                         i.name()
                     );
                 }
+            }
+        }
+    }
+
+    /// Fraction of the 24x24 box covered by ink when stroked at `style.weight`.
+    fn ink(lines: &[Shape], weight: f32) -> f32 {
+        let segs: Vec<((f32, f32), (f32, f32))> = lines
+            .iter()
+            .flat_map(|(p, closed)| {
+                let n = p.len();
+                let last = if *closed { n } else { n.saturating_sub(1) };
+                (0..last).map(move |i| (p[i], p[(i + 1) % n]))
+            })
+            .collect();
+        let half = weight / 2.0;
+        let steps = 72;
+        let mut hit = 0;
+        for iy in 0..steps {
+            for ix in 0..steps {
+                let q = (
+                    (ix as f32 + 0.5) * 24.0 / steps as f32,
+                    (iy as f32 + 0.5) * 24.0 / steps as f32,
+                );
+                if segs.iter().any(|&(a, b)| dist(q, a, b) <= half) {
+                    hit += 1;
+                }
+            }
+        }
+        hit as f32 / (steps * steps) as f32
+    }
+
+    fn dist(q: (f32, f32), a: (f32, f32), b: (f32, f32)) -> f32 {
+        let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+        let len2 = dx * dx + dy * dy;
+        let t = if len2 == 0.0 {
+            0.0
+        } else {
+            (((q.0 - a.0) * dx + (q.1 - a.1) * dy) / len2).clamp(0.0, 1.0)
+        };
+        (q.0 - (a.0 + t * dx)).hypot(q.1 - (a.1 + t * dy))
+    }
+
+    #[test]
+    fn symbols_neither_clog_nor_vanish_in_any_style() {
+        for style in [StrokeStyle::ROUND, StrokeStyle::SQUARE, StrokeStyle::BOLD] {
+            for &i in Symbol::ALL {
+                let Glyph::Lines(lines, _) = i.glyph_styled(style) else {
+                    continue;
+                };
+                let cover = ink(&lines, style.weight);
+                assert!(
+                    (MIN_INK..=MAX_INK).contains(&cover),
+                    "{} covers {cover:.2} of its box at weight {}",
+                    i.name(),
+                    style.weight
+                );
             }
         }
     }
