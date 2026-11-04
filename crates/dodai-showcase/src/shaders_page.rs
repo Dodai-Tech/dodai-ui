@@ -56,17 +56,14 @@ impl Showcase {
                             .pixel(2.0)
                             .rounded(t.shape.radius)
                             .transparent(overlay);
-                        if overlay {
-                            // An overlay has no picture of its own: show it on a dark tile.
-                            div()
-                                .rounded(px(t.shape.radius))
-                                .overflow_hidden()
-                                .bg(gpui::rgb(0x0b0b12))
-                                .child(view)
-                                .into_any_element()
-                        } else {
-                            view.into_any_element()
-                        }
+                        // An overlay has no picture of its own: show it on a dark tile.
+                        div()
+                            .w_full()
+                            .flex_none()
+                            .rounded(px(t.shape.radius))
+                            .overflow_hidden()
+                            .when(overlay, |d| d.bg(gpui::rgb(0x0b0b12)))
+                            .child(view)
                     })
                     .child(
                         row()
