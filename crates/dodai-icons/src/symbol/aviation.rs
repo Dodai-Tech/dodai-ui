@@ -97,69 +97,51 @@ pub(super) fn shapes(i: Symbol) -> Vec<Shape> {
             v
         }
         Horizon => {
-            let mut v = vec![circ(12.0, 12.0, 10.0)];
-            // Horizon, tilted 10 degrees, and the pitch ladder either side of it.
             let (s, c) = rad(-10.0).sin_cos();
-            let at =
-                |along: f32, off: f32| (12.0 + along * c + off * s, 12.0 + along * s - off * c);
-            let reach = (100.0f32 - 0.0).sqrt() - 0.4;
-            v.push(line(&[at(-reach, 0.0), at(reach, 0.0)]));
-            v.push(line(&[at(-2.5, -3.2), at(2.5, -3.2)]));
-            v.push(line(&[at(-4.0, 3.2), at(4.0, 3.2)]));
-            v.push(line(&[at(-1.6, -6.0), at(1.6, -6.0)]));
-            // Bank pointer.
-            v.push(poly(&[(12.0, 4.0), (10.6, 6.4), (13.4, 6.4)]));
-            // Fixed aircraft symbol.
-            v.push(line(&[(5.2, 12.0), (8.8, 12.0), (9.8, 13.8)]));
-            v.push(line(&[(18.8, 12.0), (15.2, 12.0), (14.2, 13.8)]));
-            v.push(circ(12.0, 12.0, 0.9));
-            v
+            let at = |along: f32| (12.0 + along * c, 12.0 + along * s);
+            vec![
+                circ(12.0, 12.0, 10.0),
+                line(&[at(-9.6), at(9.6)]),
+                poly(&[(12.0, 4.2), (10.6, 6.8), (13.4, 6.8)]),
+                line(&[(5.5, 15.5), (9.5, 15.5), (11.0, 17.5)]),
+                line(&[(18.5, 15.5), (14.5, 15.5), (13.0, 17.5)]),
+            ]
         }
         Altimeter => {
             let mut v = vec![circ(12.0, 12.0, 10.0), circ(12.0, 12.0, 1.0)];
-            for k in 0..10 {
-                let a = rad(k as f32 * 36.0 - 90.0);
-                let r0 = if k % 5 == 0 { 7.0 } else { 7.9 };
+            for k in 0..12 {
+                let a = rad(k as f32 * 30.0 - 90.0);
+                let r0 = if k % 3 == 0 { 7.0 } else { 8.0 };
                 v.push(line(&[
                     (12.0 + r0 * a.cos(), 12.0 + r0 * a.sin()),
                     (12.0 + 8.8 * a.cos(), 12.0 + 8.8 * a.sin()),
                 ]));
             }
-            // Short hundreds hand with a tip, long thousands hand with a tail.
-            v.push(poly(&[(12.0, 12.0), (9.6, 8.6), (11.0, 7.4)]));
-            v.push(line(&[(12.0, 12.0), (15.6, 6.6)]));
-            v.push(line(&[(12.0, 12.0), (10.6, 14.4)]));
+            v.push(line(&[(12.0, 12.0), (9.0, 8.0)]));
+            v.push(line(&[(12.0, 12.0), (16.0, 6.8)]));
             v
         }
         Flaps => vec![
-            // Wing section with the trailing flap lowered.
             poly(&[
-                (2.5, 11.0),
-                (3.6, 8.8),
-                (6.5, 7.4),
-                (10.5, 7.0),
-                (14.5, 7.6),
-                (14.5, 11.8),
-                (8.0, 12.6),
-                (4.2, 12.4),
+                (2.5, 12.5),
+                (4.5, 9.0),
+                (8.0, 7.5),
+                (15.0, 8.0),
+                (15.0, 12.5),
             ]),
-            poly(&[(14.5, 7.8), (21.0, 12.4), (20.2, 14.2), (14.5, 11.8)]),
-            line(&[(12.0, 7.2), (12.0, 12.2)]),
-            // Downward arrow.
-            line(&[(18.5, 16.5), (18.5, 21.0)]),
-            line(&[(16.6, 19.0), (18.5, 21.0), (20.4, 19.0)]),
-            line(&[(5.0, 17.0), (10.0, 17.0)]),
-            line(&[(5.0, 20.0), (8.5, 20.0)]),
+            poly(&[(15.0, 8.0), (21.5, 13.5), (19.8, 15.5), (15.0, 12.5)]),
+            line(&[(5.0, 17.0), (12.0, 17.0)]),
+            line(&[(5.0, 20.5), (9.5, 20.5)]),
+            line(&[(18.0, 18.0), (18.0, 22.0)]),
+            line(&[(16.4, 20.4), (18.0, 22.0), (19.6, 20.4)]),
         ],
         LandingGear => vec![
             line(&[(5.0, 3.5), (19.0, 3.5)]),
-            // Oleo strut, drag brace, wheel and hub.
-            rrect(10.6, 3.5, 13.4, 12.5, 0.8),
-            line(&[(12.0, 12.5), (12.0, 14.5)]),
-            line(&[(10.6, 6.5), (6.5, 11.0), (6.5, 13.0)]),
+            line(&[(12.0, 3.5), (12.0, 14.0)]),
+            line(&[(12.0, 7.0), (6.5, 12.0)]),
             circ(12.0, 18.4, 4.2),
             circ(12.0, 18.4, 1.4),
-            line(&[(5.0, 22.6), (19.0, 22.6)]),
+            line(&[(5.0, 22.8), (19.0, 22.8)]),
         ],
         Tower => vec![
             poly(&[(6.0, 3.5), (18.0, 3.5), (20.5, 8.5), (3.5, 8.5)]),
@@ -222,43 +204,33 @@ pub(super) fn shapes(i: Symbol) -> Vec<Shape> {
             v
         }
         Propeller => {
-            let blade: Vec<(f32, f32)> = vec![
-                (0.0, -2.6),
-                (-1.4, -4.2),
-                (-2.3, -7.0),
-                (-1.9, -9.6),
-                (0.0, -10.4),
-                (1.9, -9.8),
-                (2.0, -6.6),
-                (1.2, -4.0),
+            let blade = [
+                (0.0, -2.4),
+                (-2.3, -5.6),
+                (-1.8, -9.4),
+                (0.4, -10.4),
+                (2.0, -8.0),
+                (1.6, -4.6),
             ];
             let mut v = Vec::new();
             for k in 0..3 {
                 let (s, c) = rad(k as f32 * 120.0).sin_cos();
-                let pts = blade
+                let pts: Vec<(f32, f32)> = blade
                     .iter()
-                    .map(|&(x, y)| (12.0 + 0.0 + x * c - y * s, 12.5 + x * s + y * c))
+                    .map(|&(x, y)| (12.0 + x * c - y * s, 12.5 + x * s + y * c))
                     .collect();
-                v.push((pts, true));
+                v.push(curve(&pts, true, 5));
             }
-            v.push(circ(12.0, 12.5, 2.0));
+            v.push(circ(12.0, 12.5, 1.6));
             v
         }
-        GlideSlope => {
-            let mut v = vec![line(&[(2.0, 21.0), (22.0, 21.0)])];
-            // Beam wedge from the runway end, centre line dotted, aircraft on the path.
-            v.push(line(&[(20.0, 20.0), (3.0, 7.0)]));
-            v.push(line(&[(20.0, 20.0), (3.0, 14.0)]));
-            for k in 0..3 {
-                let t0 = 0.2 + k as f32 * 0.27;
-                let t1 = t0 + 0.14;
-                let at = |t: f32| (20.0 - 17.0 * t, 20.0 - 11.0 * t);
-                v.push(line(&[at(t0), at(t1)]));
-            }
-            v.push(poly(&[(3.0, 9.0), (6.4, 8.6), (4.8, 11.6)]));
-            v.push(line(&[(18.0, 21.0), (18.0, 19.4)]));
-            v
-        }
+        GlideSlope => vec![
+            line(&[(2.0, 21.0), (22.0, 21.0)]),
+            line(&[(20.0, 20.0), (3.0, 7.0)]),
+            line(&[(20.0, 20.0), (3.0, 14.5)]),
+            line(&[(16.0, 18.4), (12.5, 16.4)]),
+            line(&[(9.5, 14.8), (6.5, 13.0)]),
+        ],
         Transponder => vec![
             rrect(3.0, 10.0, 21.0, 21.0, 2.0),
             rrect(5.0, 12.0, 14.0, 16.0, 0.8),
