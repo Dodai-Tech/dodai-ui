@@ -239,17 +239,6 @@ impl Showcase {
                     .into_any_element(),
                 "Shader playground",
             ));
-            const TITLES: [(&str, &str); 9] = [
-                ("Cyberpunk shaders", "Cyberpunk effects"),
-                ("Material 3 shaders", "Material 3 effects"),
-                ("Matrix shaders", "Matrix effects"),
-                ("Retro terminals shaders", "Retro terminals effects"),
-                ("Pixel art shaders", "Pixel art effects"),
-                ("Cosmic & nature shaders", "Cosmic & nature effects"),
-                ("Ghostty shaders", "Ghostty effects"),
-                ("Ghibli shaders", "Ghibli effects"),
-                ("DMT Hyperspace shaders", "DMT Hyperspace effects"),
-            ];
             for (fi, fam) in Family::ALL.iter().enumerate() {
                 let gens: Vec<_> = catalog()
                     .iter()
@@ -259,7 +248,7 @@ impl Showcase {
                     .iter()
                     .filter(|s| s.family == *fam && !s.is_generator())
                     .collect();
-                let (gt, et) = TITLES[fi];
+                let (gt, et) = crate::catalog::SHADER_TITLES[fi];
                 let cats: &[&'static str] = &["Shaders"];
                 for cat in cats {
                     let mut g_row = row().items_start();

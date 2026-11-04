@@ -209,13 +209,7 @@ pub(crate) fn caps(title: &str) -> Caps {
     };
     match title {
         // Shaders animate themselves; no entry/fill/stagger controls.
-        t if t == "Shader playground"
-            || t.ends_with(" shaders")
-            || t.ends_with(" effects")
-            || t.ends_with(" presets") =>
-        {
-            c(false, false, false)
-        }
+        t if shader_group(t).is_some() => c(false, false, false),
         // Raw / non-animated components only.
         "Tooltip"
         | "Loading indicator"
@@ -305,15 +299,7 @@ pub(crate) fn sub_of(cat: &str, label: &str) -> Option<&'static str> {
             "Entry"
         }),
         "Charts" => chart_family(label),
-        "Shaders" => Some(if label.ends_with(" shaders") {
-            "Sources"
-        } else if label.ends_with(" effects") {
-            "Effects"
-        } else if label.ends_with(" presets") {
-            "Presets"
-        } else {
-            "Playground"
-        }),
+        "Shaders" => Some(shader_group(label).unwrap_or("Playground")),
         "Shape" => Some(if label == "Shape gallery" {
             "Overview"
         } else {
@@ -373,14 +359,42 @@ pub(crate) fn cat_icon(name: &str) -> dodai_gpui::IconName {
     }
 }
 
+/// The titles of the Shaders sections, one pair per shader family: the sources it draws and the
+/// effects it filters with. Named for what they look like, not for the family; every one is
+/// shown on every design, since a shader does not belong to a design system.
+pub(crate) const SHADER_TITLES: [(&str, &str); 9] = [
+    ("Neon grids, circuits & HUDs", "Glitch & neon edges"),
+    ("Blobs, ripples & waves", "Scrim & blur"),
+    ("Digital rain & hallways", "Depth & tint"),
+    ("CRT screens & monitors", "CRT & phosphor looks"),
+    ("Pixel scenes", "Pixelate & dither"),
+    ("Skies, water & fire", "Heat, water & lens warp"),
+    ("Terminal backdrops", "Terminal CRT & glow"),
+    ("Painted skies & weather", "Painterly & cinematic grades"),
+    ("Sacred geometry & fractals", "Visionary overlays"),
+];
+
+/// Which Shaders sub-group a section title belongs to (`None`: not a shader section).
+pub(crate) fn shader_group(title: &str) -> Option<&'static str> {
+    if title == "Shader playground" {
+        Some("Playground")
+    } else if SHADER_TITLES.iter().any(|(g, _)| *g == title) {
+        Some("Sources")
+    } else if SHADER_TITLES.iter().any(|(_, e)| *e == title) {
+        Some("Effects")
+    } else if title.ends_with(" presets") {
+        Some("Presets")
+    } else {
+        None
+    }
+}
+
 /// The design family that owns a section, when it shows a component only that design ships.
 /// Other designs neither build nor list it. Everything not listed is shared by all designs.
 pub(crate) fn owner(title: &str) -> Option<&'static [&'static str]> {
     match title {
-        "Button groups · Split button" | "Loading indicator" | "Material 3 shaders" => {
-            Some(&["material"])
-        }
-        "Instruments" | "Cyberpunk shaders" => Some(&["cyberpunk"]),
+        "Button groups · Split button" | "Loading indicator" => Some(&["material"]),
+        "Instruments" => Some(&["cyberpunk"]),
         "Frosted glass" => Some(&["dodai", "material", "neobrutalism", "cyberpunk"]),
         _ => None,
     }
@@ -389,6 +403,30 @@ pub(crate) fn owner(title: &str) -> Option<&'static [&'static str]> {
 #[cfg(test)]
 mod owner_tests {
     use super::owner;
+
+    #[test]
+    fn every_shader_section_is_open_to_every_design() {
+        for (g, e) in super::SHADER_TITLES {
+            assert_eq!(owner(g), None);
+            assert_eq!(owner(e), None);
+        }
+    }
+
+    #[test]
+    fn shader_titles_are_unique_and_grouped() {
+        let mut all: Vec<_> = super::SHADER_TITLES
+            .iter()
+            .flat_map(|(g, e)| [*g, *e])
+            .collect();
+        let n = all.len();
+        all.sort_unstable();
+        all.dedup();
+        assert_eq!(all.len(), n);
+        assert_eq!(super::shader_group("Pixel scenes"), Some("Sources"));
+        assert_eq!(super::shader_group("Pixelate & dither"), Some("Effects"));
+        assert_eq!(super::shader_group("Ghibli presets"), Some("Presets"));
+        assert_eq!(super::shader_group("Buttons"), None);
+    }
 
     #[test]
     fn each_design_owns_its_own_sections() {
