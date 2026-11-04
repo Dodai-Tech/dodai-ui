@@ -68,6 +68,7 @@ pub struct ShaderView {
     animated: bool,
     rounded: f32,
     fps: f32,
+    transparent: bool,
 }
 
 impl ShaderView {
@@ -85,6 +86,7 @@ impl ShaderView {
             animated: true,
             rounded: 0.0,
             fps: 30.0,
+            transparent: false,
         }
     }
     /// A ready-made chain from [`dodai_shaders::presets`].
@@ -140,6 +142,12 @@ impl ShaderView {
     /// Max renders per second while animated (default 30).
     pub fn fps(mut self, f: f32) -> Self {
         self.fps = f.max(1.0);
+        self
+    }
+    /// Draw light on nothing: the darker a pixel, the more see-through it is, so a shader that is
+    /// light on black (waves, rain, sparks) lays over whatever is behind the view as an overlay.
+    pub fn transparent(mut self, on: bool) -> Self {
+        self.transparent = on;
         self
     }
     /// Corner radius in px.
@@ -202,6 +210,7 @@ fn gpu_frame(
     pal: &ShaderPalette,
     (bw, bh, scale): (f32, f32, f32),
     (pixel, intensity, t, fps, animated): (f32, f32, f32, f32, bool),
+    transparent: bool,
     cfg: u64,
     now: Instant,
 ) -> Option<Option<Arc<RenderImage>>> {
@@ -257,6 +266,14 @@ fn gpu_frame(
             .to_vec(),
     };
     pace_record(took.elapsed().as_secs_f32());
+    let mut bytes = bytes;
+    if transparent {
+        // Light on black: the brightest channel is the opacity, and the colour stays as it is,
+        // which is already premultiplied by it.
+        for px in bytes.chunks_exact_mut(4) {
+            px[3] = px[0].max(px[1]).max(px[2]);
+        }
+    }
     let buf = image::RgbaImage::from_raw(w, h, bytes)?;
     s.gpu_last = Some((now, cfg, (w, h)));
     Some(Some(Arc::new(RenderImage::new(vec![image::Frame::new(
@@ -321,6 +338,7 @@ impl RenderOnce for ShaderView {
             PaletteSource::Fixed(p) => p,
         };
         let chain = self.chain.clone();
+        let transparent = self.transparent;
         let (aspect, pixel, intensity, speed, animated, rounded, fps) = (
             self.aspect,
             self.pixel,
@@ -336,6 +354,7 @@ impl RenderOnce for ShaderView {
             .map(|f| f.to_bits() as u64)
             .collect();
         parts.push(intensity.to_bits() as u64);
+        parts.push(u64::from(transparent));
         for s in &chain {
             parts.extend(s.id.bytes().map(u64::from));
             parts.push(0);
@@ -362,6 +381,7 @@ impl RenderOnce for ShaderView {
                             &pal,
                             (bw, bh, scale),
                             (pixel, intensity, secs * speed, fps, animated),
+                            transparent,
                             cfg,
                             now,
                         ) {

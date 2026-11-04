@@ -175,6 +175,9 @@ impl RenderOnce for Icon {
         // A luminous design (Cyberpunk) lights its symbols: a faint halo around the drawing.
         let glow =
             self.symbol.is_some() && theme.look().luminous && self.state != Some(SymbolState::Off);
+        // Neo-Brutalism drops a hard offset shadow under its symbols, like its cards.
+        let shadow = self.symbol.is_some() && key.pack == Pack::Bold;
+        let shadow_color = crate::hsla(theme.palette.text).opacity(0.28);
         // One sized canvas: a single layout node per icon (pages hold hundreds).
         canvas(
             |_, _, _| (),
@@ -185,6 +188,10 @@ impl RenderOnce for Icon {
                             let o = gpui::point(b.origin.x + px(dx), b.origin.y + px(dy));
                             mesh.paint(w, o, color.opacity(0.15));
                         }
+                    }
+                    if shadow {
+                        let o = gpui::point(b.origin.x + px(1.4), b.origin.y + px(1.4));
+                        mesh.paint(w, o, shadow_color);
                     }
                     mesh.paint(w, b.origin, color);
                 }
