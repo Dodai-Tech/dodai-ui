@@ -325,7 +325,7 @@ pub use forms::{
 #[cfg(all(feature = "components", feature = "cyberpunk"))]
 pub use icons::Modifier;
 #[cfg(feature = "components")]
-pub use icons::{Icon, IconId, IconName, IconPack};
+pub use icons::{Icon, IconId, IconName, IconPack, SymbolState};
 #[cfg(feature = "components")]
 mod icon_names;
 #[cfg(any(feature = "shaders", feature = "dodai", feature = "frost"))]
