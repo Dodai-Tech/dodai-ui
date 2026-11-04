@@ -214,12 +214,6 @@ pub(super) fn shapes(i: Symbol) -> Vec<Shape> {
             ]),
             line(&[(6.5, 8.0), (17.5, 8.0)]),
         ],
-        #[cfg(any(
-            feature = "symbols-vehicle",
-            feature = "symbols-medical",
-            feature = "symbols-military",
-            feature = "symbols-aviation"
-        ))]
         Smokestack => vec![
             poly(&[(9.0, 21.0), (9.8, 9.0), (14.2, 9.0), (15.0, 21.0)]),
             line(&[(8.5, 9.0), (15.5, 9.0)]),
@@ -247,6 +241,12 @@ pub(super) fn shapes(i: Symbol) -> Vec<Shape> {
             line(&[(10.7, 9.8), (5.1, 13.0)]),
             line(&[(8.0, 22.0), (16.0, 22.0)]),
         ],
+        #[cfg(any(
+            feature = "symbols-vehicle",
+            feature = "symbols-medical",
+            feature = "symbols-military",
+            feature = "symbols-aviation"
+        ))]
         _ => Vec::new(),
     }
 }
