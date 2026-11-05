@@ -237,7 +237,7 @@ impl Showcase {
                         .low_below(2.3)
                         .size(240.0)
                         .into_any_element(),
-                    "The car from above with the pressure of each tyre beside its wheel, in bar. A tyre under the limit is written in the warning colour.",
+                    "The pressure of each tyre in bar: front left and right on top, rear left and right below. A tyre under the limit is written in the warning colour.",
                 ),
                 shown(
                     TyrePod::new()

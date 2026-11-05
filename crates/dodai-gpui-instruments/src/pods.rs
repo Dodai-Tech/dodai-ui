@@ -107,7 +107,7 @@ fn pod_size(s: f32) -> f32 {
 
 // ───────────────────────────────── TyrePod ─────────────────────────────────
 
-/// Tyre pressures around a car outline: front left and right, rear left and right.
+/// Tyre pressures, two rows of two: front left and right, rear left and right.
 #[derive(IntoElement)]
 pub struct TyrePod {
     heading: SharedString,
@@ -189,14 +189,6 @@ impl RenderOnce for TyrePod {
                     .child(self.heading.clone()),
             )
             .child(
-                slot(size, 0.5 - bh * 0.5 / size, top / size, bh / size).child(
-                    Icon::symbol(Symbol::CarTop)
-                        .size(bh)
-                        .weight(0.9)
-                        .color(scale_alpha(ink, 0.85)),
-                ),
-            )
-            .child(
                 text_box(c, top + bh * 0.46, size * 0.8)
                     .text_size(px(size * 0.05))
                     .text_color(ink)
@@ -210,8 +202,8 @@ impl RenderOnce for TyrePod {
             );
         for (i, bar) in self.bars.iter().enumerate() {
             let (side, row) = (i % 2, i / 2);
-            let x = c + if side == 0 { -1.0 } else { 1.0 } * size * 0.24;
-            let y = top + bh * if row == 0 { 0.08 } else { 0.8 };
+            let left = 0.5 + if side == 0 { -0.2 } else { 0.2 } - 0.11;
+            let y = top + bh * if row == 0 { -0.12 } else { 0.62 };
             let col = if pm::is_low(*bar, self.low) {
                 Tone::Warning.color(&t)
             } else if bar.is_some_and(f32::is_finite) {
@@ -220,10 +212,15 @@ impl RenderOnce for TyrePod {
                 muted
             };
             content = content.child(
-                text_box(x, y, size * 0.2)
-                    .text_size(px(size * 0.05))
-                    .text_color(col)
-                    .child(pm::pressure_text(*bar)),
+                slot(size, left, y / size, 0.22)
+                    .gap(px(size * 0.008))
+                    .child(Icon::symbol(Symbol::Tyre).size(size * 0.09).color(col))
+                    .child(
+                        div()
+                            .text_size(px(size * 0.055))
+                            .text_color(col)
+                            .child(pm::pressure_text(*bar)),
+                    ),
             );
         }
         ring(size, [None, None], &t, |_, _| (), content)
