@@ -233,7 +233,13 @@ impl Showcase {
                         let (m, title) = (me.clone(), *title);
                         let mut row = NavigationItem::new(
                             ("jump", idx * 1000 + k),
-                            title.strip_prefix("Vehicle · ").unwrap_or(title),
+                            title
+                                .split_once(" · ")
+                                .filter(|(g, _)| {
+                                    ["Vehicle", "Industrial", "Medical", "Military", "Aviation"]
+                                        .contains(g)
+                                })
+                                .map_or(title, |(_, rest)| rest),
                         );
                         // The Icons section shows how many icons the active design ships.
                         if title == "Icons" {

@@ -259,14 +259,19 @@ pub(crate) fn caps(title: &str) -> Caps {
                 "Gauges",
                 "Instruments",
                 "Vehicle · Dash cluster styles",
-                "Industrial",
-                "Medical",
-                "Military",
-                "Aviation",
                 "Signal lab",
                 "Radar & telemetry",
             ]
-            .contains(&t) =>
+            .contains(&t)
+            || [
+                "Vehicle · ",
+                "Industrial · ",
+                "Medical · ",
+                "Military · ",
+                "Aviation · ",
+            ]
+            .iter()
+            .any(|p| t.starts_with(p)) =>
         {
             c(true, true, true)
         }
@@ -309,10 +314,10 @@ pub(crate) fn sub_of(cat: &str, label: &str) -> Option<&'static str> {
         "Charts" => chart_family(label),
         "Instruments" => Some(match label {
             l if l.starts_with("Vehicle · ") => "Vehicle",
-            "Industrial" => "Industrial",
-            "Medical" => "Medical",
-            "Military" => "Military",
-            "Aviation" => "Aviation",
+            l if l.starts_with("Industrial · ") => "Industrial",
+            l if l.starts_with("Medical · ") => "Medical",
+            l if l.starts_with("Military · ") => "Military",
+            l if l.starts_with("Aviation · ") => "Aviation",
             _ => "Gauges & signals",
         }),
         "Shaders" => Some(shader_group(label).unwrap_or("Playground")),
