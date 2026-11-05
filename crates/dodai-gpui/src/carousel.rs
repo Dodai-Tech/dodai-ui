@@ -501,7 +501,7 @@ impl Carousel {
                 .top_0()
                 .left_0()
                 .w_full()
-                .h(px(0.0)),
+                .h(gpui::Pixels::ZERO),
             );
             if wide <= 0.0 {
                 crate::motion::next_frame(window);

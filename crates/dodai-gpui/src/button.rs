@@ -178,8 +178,8 @@ impl CropSpec {
             .child(div().h(px(bar)).bg(colour))
             .children((self.gap > 0.0).then(|| div().h(px(bar)).bg(colour)));
         Some(match self.end {
-            Crop::Left | Crop::Top | Crop::Bottom => tick.right(px(0.0)),
-            Crop::Right => tick.left(px(0.0)),
+            Crop::Left | Crop::Top | Crop::Bottom => tick.right(gpui::Pixels::ZERO),
+            Crop::Right => tick.left(gpui::Pixels::ZERO),
         })
     }
 }

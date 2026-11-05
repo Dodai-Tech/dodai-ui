@@ -608,7 +608,7 @@ impl EntityInputHandler for TextInput {
         let top = bounds.top() + l.line_height * li as f32;
         Some(Bounds::new(
             point(bounds.left() + x, top),
-            size(px(1.0), l.line_height),
+            size(crate::HAIRLINE, l.line_height),
         ))
     }
     fn character_index_for_point(
@@ -750,7 +750,7 @@ impl Element for TextElement {
             if sel.is_empty() {
                 let (li, col) = line_col(&input.content, sel.start);
                 let x = if empty {
-                    px(0.)
+                    gpui::Pixels::ZERO
                 } else {
                     let text = lines_of(&input.content).get(li).map_or("", |l| l.1);
                     lines[li].1.x_for_index(to_disp(input.masked, text, col))
@@ -886,7 +886,9 @@ impl Render for TextInput {
             t.shape.control_height
         };
         if filled {
-            d = d.rounded_bl(px(0.0)).rounded_br(px(0.0));
+            d = d
+                .rounded_bl(gpui::Pixels::ZERO)
+                .rounded_br(gpui::Pixels::ZERO);
         }
         d = match self.rows {
             Some(rows) => d.min_h(px(lh * rows as f32 + t.spacing.sm * 2.0 + 4.0)),

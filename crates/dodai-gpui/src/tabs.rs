@@ -206,7 +206,7 @@ impl Tabs {
             tab = crate::text::typeset(tab, t, dodai_core::TypeRole::TitleSmall);
         }
         if stacked && !self.secondary {
-            tab = tab.flex_col().justify_center().gap(px(2.0));
+            tab = tab.flex_col().justify_center().gap(px(t.spacing.half()));
         } else {
             tab = tab.gap(px(t.spacing.sm));
         }
@@ -290,9 +290,9 @@ impl Tabs {
         let el = gpui::InteractiveElement::on_scroll_wheel(el, move |ev, window, cx| {
             let d = ev.delta.pixel_delta(window.line_height());
             let max = wheel.max_offset().width;
-            if max > px(0.0) && d.y.abs() > d.x.abs() {
+            if max > gpui::Pixels::ZERO && d.y.abs() > d.x.abs() {
                 let mut o = wheel.offset();
-                o.x = (o.x - d.y).clamp(-max, px(0.0));
+                o.x = (o.x - d.y).clamp(-max, gpui::Pixels::ZERO);
                 wheel.set_offset(o);
                 window.refresh();
                 cx.stop_propagation();
@@ -446,7 +446,7 @@ impl Tabs {
             .flex()
             .min_w_0()
             .max_w_full()
-            .p(px(2.0))
+            .p(px(t.spacing.half()))
             .child(inner);
         div().flex().child(capsule).into_any_element()
     }

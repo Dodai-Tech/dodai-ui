@@ -303,9 +303,9 @@ impl RenderOnce for Divider {
         let t = theme_of(cx);
         let bg = hsla(t.divider());
         if self.vertical {
-            div().w(px(1.0)).h_full().bg(bg)
+            div().w(crate::HAIRLINE).h_full().bg(bg)
         } else {
-            div().h(px(1.0)).w_full().bg(bg)
+            div().h(crate::HAIRLINE).w_full().bg(bg)
         }
     }
 }

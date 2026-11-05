@@ -317,7 +317,7 @@ fn inline_text(t: &Theme, src: &str) -> StyledText {
                 MdInline::Link => HighlightStyle {
                     color: Some(hsla(p.link)),
                     underline: Some(UnderlineStyle {
-                        thickness: px(1.0),
+                        thickness: crate::HAIRLINE,
                         color: None,
                         wavy: false,
                     }),

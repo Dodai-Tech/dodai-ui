@@ -244,9 +244,9 @@ impl DatePicker {
                 .text_color(hsla(t.palette.text_muted))
                 .child(*d)
         }));
-        let mut grid = div().flex().flex_col().gap(px(2.0));
+        let mut grid = div().flex().flex_col().gap(px(t.spacing.half()));
         for (ri, row) in month_grid(y, m).into_iter().enumerate() {
-            let mut r = div().flex().gap(px(0.0));
+            let mut r = div().flex().gap(gpui::Pixels::ZERO);
             for (ci, c) in row.into_iter().enumerate() {
                 let Some(day) = c else {
                     r = r.child(div().w(px(cell)).h(px(cell)));

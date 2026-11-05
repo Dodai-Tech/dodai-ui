@@ -50,8 +50,8 @@ impl RenderOnce for Scanlines {
                         &[
                             point(x0, y0),
                             point(x0 + px(w), y0),
-                            point(x0 + px(w), y0 + px(1.0)),
-                            point(x0, y0 + px(1.0)),
+                            point(x0 + px(w), y0 + crate::HAIRLINE),
+                            point(x0, y0 + crate::HAIRLINE),
                         ],
                         true,
                     );

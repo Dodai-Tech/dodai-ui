@@ -192,7 +192,7 @@ impl SearchView {
         }
         if self.open || full {
             let hits = fuzzy_filter(&query, &self.items);
-            body = body.child(div().h(px(1.0)).w_full().bg(hsla(r.outline)));
+            body = body.child(div().h(crate::HAIRLINE).w_full().bg(hsla(r.outline)));
             if hits.is_empty() {
                 body = body.child(
                     div()

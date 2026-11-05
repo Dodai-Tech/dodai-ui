@@ -193,6 +193,9 @@ pub mod expressive;
 pub mod extras;
 #[cfg(feature = "components")]
 pub mod feedback;
+/// The width of a hairline: dividers, rules and thin borders.
+pub const HAIRLINE: gpui::Pixels = gpui::px(1.0);
+
 pub mod follow;
 #[cfg(feature = "components")]
 pub mod forms;
@@ -540,6 +543,7 @@ pub fn select_theme(cx: &mut App, index: usize) {
 /// Switch to the opposite light/dark mode of the active theme (same design, same accent) and
 /// repaint. `false` when the theme has no counterpart.
 pub fn toggle_theme_mode(cx: &mut App) -> bool {
+    FOLLOWING_SYSTEM.with(|f| f.set(false));
     let done = cx.global_mut::<DodaiTheme>().switcher.toggle_mode();
     if done {
         cx.refresh_windows();
@@ -559,9 +563,35 @@ pub fn system_mode(cx: &App) -> dodai_core::Mode {
     }
 }
 
+thread_local! {
+    /// Whether the theme follows the OS's light/dark mode, and whether the window observer that
+    /// does it is installed already.
+    static FOLLOWING_SYSTEM: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+    static SYSTEM_OBSERVER: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Whether the theme follows the OS's light/dark mode ([`follow_system_appearance`]); picking a
+/// mode with [`set_theme_mode`] or [`toggle_theme_mode`] ends it.
+pub fn following_system_appearance() -> bool {
+    FOLLOWING_SYSTEM.with(std::cell::Cell::get)
+}
+
+/// Use the active theme's `mode` counterpart (same design, same accent) and stop following the
+/// OS. `false` when the theme has no counterpart.
+pub fn set_theme_mode(cx: &mut App, mode: dodai_core::Mode) -> bool {
+    FOLLOWING_SYSTEM.with(|f| f.set(false));
+    let g = cx.global_mut::<DodaiTheme>();
+    let (before, ok) = (g.switcher.index(), g.switcher.select_mode(mode));
+    if g.switcher.index() != before {
+        cx.refresh_windows();
+    }
+    ok
+}
+
 /// Switch the active theme to its counterpart in the OS's light/dark mode, now and whenever the
-/// OS changes it. Call once per window; themes without a counterpart stay as they are. `true`
-/// when the active theme matches the OS mode right now.
+/// OS changes it, until [`set_theme_mode`] or [`toggle_theme_mode`] is used. Call once per window
+/// (calling it again only re-applies the OS mode); themes without a counterpart stay as they
+/// are. `true` when the active theme matches the OS mode right now.
 pub fn follow_system_appearance(window: &mut gpui::Window, cx: &mut App) -> bool {
     fn apply(cx: &mut App) -> bool {
         let mode = system_mode(cx);
@@ -572,11 +602,16 @@ pub fn follow_system_appearance(window: &mut gpui::Window, cx: &mut App) -> bool
         }
         ok
     }
-    window
-        .observe_window_appearance(|_, cx| {
-            apply(cx);
-        })
-        .detach();
+    FOLLOWING_SYSTEM.with(|f| f.set(true));
+    if !SYSTEM_OBSERVER.with(|o| o.replace(true)) {
+        window
+            .observe_window_appearance(|_, cx| {
+                if following_system_appearance() {
+                    apply(cx);
+                }
+            })
+            .detach();
+    }
     apply(cx)
 }
 

@@ -526,8 +526,8 @@ impl Segmented {
         let mut row = shaped(&t.shape, strip)
             .relative()
             .flex()
-            .p(px(2.0))
-            .gap(px(2.0))
+            .p(px(t.spacing.half()))
+            .gap(px(t.spacing.half()))
             .font_family(first_family(t.typography.body))
             .text_size(px(t.typography.size_md));
         if let Some(track) = &track {
@@ -709,7 +709,7 @@ impl Accordion {
                 )
                 .child(format_label(&t.typography, title));
             if i > 0 {
-                col = col.child(div().h(px(1.0)).w_full().bg(hsla(t.palette.border)));
+                col = col.child(div().h(crate::HAIRLINE).w_full().bg(hsla(t.palette.border)));
             }
             col = col.child(head);
             let p = crate::motion::smooth_with(

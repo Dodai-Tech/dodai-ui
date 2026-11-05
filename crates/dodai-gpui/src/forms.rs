@@ -121,7 +121,7 @@ impl RenderOnce for FormField {
         };
         let mut label = div()
             .flex()
-            .gap(px(2.0))
+            .gap(px(t.spacing.half()))
             .text_size(px(t.typography.size_sm))
             .text_color(hsla(if matches!(self.state, FieldState::Error(_)) {
                 p.danger

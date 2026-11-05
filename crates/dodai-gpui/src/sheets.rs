@@ -142,7 +142,9 @@ impl RenderOnce for BottomSheet {
         );
         if t.look().tonal {
             // Anchored to the bottom edge: only the top corners are rounded.
-            sheet = sheet.rounded_bl(px(0.0)).rounded_br(px(0.0));
+            sheet = sheet
+                .rounded_bl(gpui::Pixels::ZERO)
+                .rounded_br(gpui::Pixels::ZERO);
         }
         let mut sheet = sheet
             .w_full()
@@ -252,8 +254,12 @@ impl RenderOnce for SideSheet {
         if t.look().tonal {
             // Attached to an edge: only the corners facing the page are rounded.
             sheet = match self.edge {
-                SheetEdge::Right => sheet.rounded_tr(px(0.0)).rounded_br(px(0.0)),
-                SheetEdge::Left => sheet.rounded_tl(px(0.0)).rounded_bl(px(0.0)),
+                SheetEdge::Right => sheet
+                    .rounded_tr(gpui::Pixels::ZERO)
+                    .rounded_br(gpui::Pixels::ZERO),
+                SheetEdge::Left => sheet
+                    .rounded_tl(gpui::Pixels::ZERO)
+                    .rounded_bl(gpui::Pixels::ZERO),
             };
         }
         let sheet = sheet

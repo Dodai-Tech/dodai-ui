@@ -841,6 +841,40 @@ impl Render for Showcase {
                                             .into_any_element(),
                                         ))
                                         .child(pair(
+                                            "Mode",
+                                            dodai_gpui::Segmented::new(
+                                                "top-mode",
+                                                ["System", "Light", "Dark"],
+                                            )
+                                            .selected(
+                                                if dodai_gpui::following_system_appearance() {
+                                                    0
+                                                } else if t.meta.mode == dodai_core::Mode::Dark {
+                                                    2
+                                                } else {
+                                                    1
+                                                },
+                                            )
+                                            .on_select(|i, w, cx| match i {
+                                                0 => {
+                                                    dodai_gpui::follow_system_appearance(w, cx);
+                                                }
+                                                1 => {
+                                                    dodai_gpui::set_theme_mode(
+                                                        cx,
+                                                        dodai_core::Mode::Light,
+                                                    );
+                                                }
+                                                _ => {
+                                                    dodai_gpui::set_theme_mode(
+                                                        cx,
+                                                        dodai_core::Mode::Dark,
+                                                    );
+                                                }
+                                            })
+                                            .into_any_element(),
+                                        ))
+                                        .child(pair(
                                             "Patterns",
                                             dodai_gpui::Segmented::new(
                                                 "top-patterns",
@@ -923,7 +957,10 @@ pub fn run() {
         if let Ok(id) = std::env::var("DODAI_THEME") {
             switcher.select(&id);
         }
+        let pinned_theme = std::env::var_os("DODAI_THEME").is_some();
         dodai_gpui::install_switcher(cx, switcher);
+        // Honour the OS's reduced-motion setting.
+        dodai_gpui::follow_system_motion(cx);
         // Debug: DODAI_MONO=1 starts with monochrome series colours.
         if std::env::var_os("DODAI_MONO").is_some() {
             dodai_gpui::set_chart_monochrome(cx, true);
@@ -1094,8 +1131,12 @@ pub fn run() {
                 |_, cx| new_showcase(cx),
             )
             .expect("open window");
-        win.update(cx, |s, w, _| {
+        win.update(cx, |s, w, cx| {
             w.focus(&s.focus);
+            // Light or dark like the OS, unless a theme was asked for.
+            if !pinned_theme {
+                dodai_gpui::follow_system_appearance(w, cx);
+            }
             // Like GitKraft: open at the default size, and maximise at boot.
             if !windowed {
                 w.zoom_window();

@@ -234,7 +234,7 @@ fn grip(id: &ElementId, t: &Theme, side_state: &Entity<SideState>) -> gpui::Stat
         .child(
             div()
                 .h_full()
-                .w(px(1.0))
+                .w(crate::HAIRLINE)
                 .bg(hsla(t.palette.border))
                 .group_hover("shell-grip", |s| s.w(px(3.0)).bg(hsla(t.palette.primary))),
         )
