@@ -113,6 +113,8 @@ impl Plugin for DodaiUiPlugin {
                     update_tooltip,
                     #[cfg(feature = "icons")]
                     style_icons,
+                    #[cfg(feature = "symbols")]
+                    style_symbols,
                 ),
                 (style_text, apply_surfaces, sync_clear_color, sync_scanlines).chain(),
             )
@@ -121,6 +123,8 @@ impl Plugin for DodaiUiPlugin {
         );
         #[cfg(feature = "icons")]
         app.init_resource::<IconCache>();
+        #[cfg(feature = "symbols")]
+        app.init_resource::<SymbolCache>();
         if self.scanlines {
             app.add_systems(Startup, spawn_scanlines);
         }

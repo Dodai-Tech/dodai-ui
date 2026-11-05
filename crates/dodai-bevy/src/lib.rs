@@ -47,7 +47,7 @@ pub mod prelude {
     pub use crate::systems::FocusedInput;
     pub use crate::theme::{color, DodaiTheme};
     pub use crate::widgets::*;
-    pub use dodai_core::{themes, ButtonVariant, Theme, ThemeSwitcher, Tone};
+    pub use dodai_core::{themes, ButtonVariant, SymbolState, Theme, ThemeSwitcher, Tone};
 }
 
 #[cfg(test)]

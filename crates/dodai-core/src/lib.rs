@@ -57,7 +57,7 @@ pub use dodai_fx::{
 };
 pub mod motion;
 pub use motion::{Easing, EntryKind, EntrySet, Motion};
-pub use palette::{Mode, Palette, Roles, Tone};
+pub use palette::{Mode, Palette, Roles, SymbolState, Tone};
 pub use shape_system::{
     Corner, CornerSpec, CornerStyle, DefaultShape, RoleShape, ShapePreset, ShapeRole, ShapeScale,
     ShapeSize, ShapeSystem, FULL,

@@ -40,32 +40,7 @@ impl IconPack {
     }
 }
 
-/// What a dashboard symbol reports, shown as a theme colour (set with [`Icon::state`]).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum SymbolState {
-    /// Not lit: the disabled text colour, no glow.
-    Off,
-    /// Active and fine.
-    On,
-    /// Informational.
-    Info,
-    /// Needs attention.
-    Warning,
-    /// Needs action now.
-    Danger,
-}
-
-impl SymbolState {
-    fn color(self, p: &dodai_core::Palette) -> dodai_core::Color {
-        match self {
-            Self::Off => p.text_disabled,
-            Self::On => p.success,
-            Self::Info => p.info,
-            Self::Warning => p.warning,
-            Self::Danger => p.danger,
-        }
-    }
-}
+pub use dodai_core::SymbolState;
 
 /// Vector icon. Defaults: 16 px, the theme text colour; set `.color(..)` to override.
 #[derive(IntoElement)]

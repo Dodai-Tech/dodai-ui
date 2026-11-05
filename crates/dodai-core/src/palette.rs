@@ -264,3 +264,31 @@ mod mono_tests {
         assert_eq!(m.text, t.palette.text);
     }
 }
+
+/// What a dashboard symbol reports, shown as a theme colour.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum SymbolState {
+    /// Not lit: the disabled text colour, no glow.
+    Off,
+    /// Active and fine.
+    On,
+    /// Informational.
+    Info,
+    /// Needs attention.
+    Warning,
+    /// Needs action now.
+    Danger,
+}
+
+impl SymbolState {
+    /// The palette colour that says this state.
+    pub fn color(self, p: &Palette) -> Color {
+        match self {
+            Self::Off => p.text_disabled,
+            Self::On => p.success,
+            Self::Info => p.info,
+            Self::Warning => p.warning,
+            Self::Danger => p.danger,
+        }
+    }
+}
