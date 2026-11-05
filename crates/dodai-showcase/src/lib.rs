@@ -875,6 +875,25 @@ impl Render for Showcase {
                                             .into_any_element(),
                                         ))
                                         .child(pair(
+                                            "Direction",
+                                            dodai_gpui::Segmented::new(
+                                                "top-direction",
+                                                ["LTR", "RTL"],
+                                            )
+                                            .selected(usize::from(dodai_gpui::is_rtl()))
+                                            .on_select(|i, _, cx| {
+                                                dodai_gpui::set_direction(
+                                                    cx,
+                                                    if i == 1 {
+                                                        dodai_gpui::Direction::Rtl
+                                                    } else {
+                                                        dodai_gpui::Direction::Ltr
+                                                    },
+                                                )
+                                            })
+                                            .into_any_element(),
+                                        ))
+                                        .child(pair(
                                             "Patterns",
                                             dodai_gpui::Segmented::new(
                                                 "top-patterns",

@@ -1632,6 +1632,36 @@ fn tab_keys_skip_a_disabled_tab(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
+fn list_arrows_move_the_selection_and_skip_disabled_rows(cx: &mut TestAppContext) {
+    let l = log();
+    let l2 = l.clone();
+    let vcx = mount(cx, move |_, _| {
+        let l = l2.clone();
+        List::new(
+            "lk",
+            [
+                ListItem::new("a", "One"),
+                ListItem::new("b", "Two").disabled(true),
+                ListItem::new("c", "Three"),
+                ListItem::new("d", "Four"),
+            ],
+        )
+        .on_select(move |i, _, _| l.borrow_mut().push(i))
+        .into_any_element()
+    });
+    let (x, y, w, h) = target(vcx);
+    // Click the first row: focus and selection.
+    click(vcx, x + w * 0.5, y + h * 0.05);
+    assert_eq!(*l.borrow(), vec![0]);
+    vcx.simulate_keystrokes("down");
+    assert_eq!(*l.borrow(), vec![0, 2], "down jumps over the disabled row");
+    vcx.simulate_keystrokes("end up");
+    assert_eq!(*l.borrow(), vec![0, 2, 3, 2]);
+    vcx.simulate_keystrokes("home");
+    assert_eq!(l.borrow().last(), Some(&0));
+}
+
+#[gpui::test]
 fn slider_keys_step_a_focused_slider_and_disabled_ignores_them(cx: &mut TestAppContext) {
     let vals = Rc::new(RefCell::new(Vec::<f32>::new()));
     let v2 = vals.clone();
