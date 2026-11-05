@@ -24,22 +24,6 @@ fn tach() -> RingTach {
         .fuel(0.7, "542 km")
 }
 
-fn tach_plain() -> RingTach {
-    let rpm = Scale::new(0.0, 8.0)
-        .ticks_per(8, 2)
-        .zone(7.0, 8.0, Severity::Alarm);
-    RingTach::new(rpm, val(30.0, 0.8, 6.6), val(31.0, 0.0, 180.0))
-}
-
-fn tach_no_marker() -> RingTach {
-    let rpm = Scale::new(0.0, 8.0)
-        .ticks_per(8, 2)
-        .zone(7.0, 8.0, Severity::Alarm);
-    RingTach::new(rpm, val(30.0, 0.8, 6.6), val(31.0, 0.0, 180.0))
-        .tab("--- km")
-        .fuel(0.7, "542 km")
-}
-
 fn tells() -> Telltales {
     Telltales::new()
         .push(Symbol::SeatBelt, Tone::Danger)
@@ -357,20 +341,9 @@ impl Showcase {
         );
         add(
             self,
-            "Vehicle · Engine speed, ring variants",
-            vec![gallery(
-                "The ribbed ring with fewer parts: the revs and speed only, and without the sweet-spot marker.",
-                vec![
-                    ("Revs and speed", tach_plain().size(POD).into_any_element()),
-                    ("Without marker", tach_no_marker().size(POD).into_any_element()),
-                ],
-            )],
-        );
-        add(
-            self,
             "Vehicle · Speed",
             vec![gallery(
-                "The speed in five looks. Dial: the dash pod, 0 to 270 in steps of 30 with the speed limit in the middle and no needle. Arc: a thin arc that fills up to the speed. Segments: lit segments, amber above 220. Bar and Column: tiles with the figure and a zone track.",
+                "The speed, 0 to 270, amber above 220. Dial: the dash pod in steps of 30 with the speed limit in the middle and no needle. The others are the chronograph, heads-up, sweep, meter and tape faces.",
                 looks(speed().size(POD).into_any_element(), speed_face),
             )],
         );
@@ -378,7 +351,7 @@ impl Showcase {
             self,
             "Vehicle · Battery voltage",
             vec![gallery(
-                "The on-board voltage, 6 to 18 V, in five looks. Red under 11 V, amber over 15 V.",
+                "The on-board voltage, 6 to 18 V, in every look. Red under 11 V, amber over 15 V.",
                 looks(volt().size(POD).into_any_element(), volt_face),
             )],
         );
@@ -394,7 +367,7 @@ impl Showcase {
             self,
             "Vehicle · Coolant temperature",
             vec![gallery(
-                "Coolant temperature, 60 to 130 °C, in five looks. The last part of the scale is a red warning band; the figure turns red inside it.",
+                "Coolant temperature, 60 to 130 °C, in every look. The last part of the scale is a red warning band; the figure turns red inside it.",
                 looks(coolant().size(POD).into_any_element(), coolant_face),
             )],
         );

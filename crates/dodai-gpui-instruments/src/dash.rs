@@ -237,8 +237,8 @@ impl Frame {
 // ───────────────────────────────── RingTach ─────────────────────────────────
 
 /// The centre of the dash: a ribbed ring scale for engine speed with a red band, a sweet-spot
-/// marker and a rim needle, a big speed readout inside, a range tab under it and a fuel arc
-/// across the open bottom.
+/// marker and a rim needle, a big speed readout inside, and (when given) a range tab under it
+/// and a fuel arc across the open bottom.
 #[derive(IntoElement)]
 pub struct RingTach {
     follow: Follow,
@@ -248,7 +248,7 @@ pub struct RingTach {
     unit: SharedString,
     marker: Option<f32>,
     tab: SharedString,
-    fuel: f32,
+    fuel: Option<f32>,
     reach: SharedString,
     size: f32,
 }
@@ -266,7 +266,7 @@ impl RingTach {
             unit: SharedString::from("km/h"),
             marker: None,
             tab: SharedString::default(),
-            fuel: 0.5,
+            fuel: None,
             reach: SharedString::default(),
             size: 380.0,
         }
@@ -286,9 +286,9 @@ impl RingTach {
         self.tab = t.into();
         self
     }
-    /// Fuel as `0..=1` and the reach written beside the pump.
+    /// Fuel as `0..=1` and the reach written beside the pump. Without it the bottom stays empty.
     pub fn fuel(mut self, level: f32, reach: impl Into<SharedString>) -> Self {
-        self.fuel = level.clamp(0.0, 1.0);
+        self.fuel = Some(level.clamp(0.0, 1.0));
         self.reach = reach.into();
         self
     }
@@ -303,7 +303,7 @@ impl RenderOnce for RingTach {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
         self.rpm = follow(w, cx, &self.follow, 0, self.rpm);
         self.speed = follow(w, cx, &self.follow, 1, self.speed);
-        self.fuel = follow(w, cx, &self.follow, 2, self.fuel);
+        self.fuel = self.fuel.map(|f| follow(w, cx, &self.follow, 2, f));
         let t = theme_of(cx);
         let size = self.size;
         let c = size / 2.0;
@@ -435,24 +435,26 @@ impl RenderOnce for RingTach {
                 );
                 stroke(w, o, &[p0, p1], weight * 2.4, ink, false);
                 // Fuel arc across the open bottom, with its own end stops.
-                let (f0, f1) = (0.405, 0.595);
-                let rf = r_out - weight * 1.5;
-                stroke(
-                    w,
-                    o,
-                    &turn_arc(c, c, rf, f0, f1),
-                    weight * 3.0,
-                    scale_alpha(ink, 0.25),
-                    false,
-                );
-                stroke(
-                    w,
-                    o,
-                    &turn_arc(c, c, rf, f0, f0 + (f1 - f0) * fuel),
-                    weight * 3.0,
-                    ink,
-                    false,
-                );
+                if let Some(fuel) = fuel {
+                    let (f0, f1) = (0.405, 0.595);
+                    let rf = r_out - weight * 1.5;
+                    stroke(
+                        w,
+                        o,
+                        &turn_arc(c, c, rf, f0, f1),
+                        weight * 3.0,
+                        scale_alpha(ink, 0.25),
+                        false,
+                    );
+                    stroke(
+                        w,
+                        o,
+                        &turn_arc(c, c, rf, f0, f0 + (f1 - f0) * fuel),
+                        weight * 3.0,
+                        ink,
+                        false,
+                    );
+                }
             },
         )
         .absolute()
@@ -481,38 +483,42 @@ impl RenderOnce for RingTach {
                 .text_color(ink)
                 .child(self.unit.clone()),
         )
-        .child(
-            div()
-                .absolute()
-                .left(px(c - size * 0.15))
-                .top(px(c + size * 0.12))
-                .w(px(size * 0.3))
-                .h(px(size * 0.085))
-                .flex()
-                .items_center()
-                .justify_center()
-                .rounded(px(size * 0.012))
-                .bg(hsla(t.palette.background.mix(t.palette.text, 0.14)))
-                .text_size(px(size * 0.05))
-                .text_color(go)
-                .font_weight(FontWeight::MEDIUM)
-                .child(self.tab.clone()),
-        )
-        .child(
-            div()
-                .absolute()
-                .left(px(c - size * 0.2))
-                .top(px(c + size * 0.255))
-                .w(px(size * 0.4))
-                .flex()
-                .items_center()
-                .justify_center()
-                .gap(px(size * 0.015))
-                .text_size(px(size * 0.052))
-                .text_color(ink)
-                .child(Icon::symbol(Symbol::Fuel).size(size * 0.065).color(muted))
-                .child(self.reach.clone()),
-        )
+        .when(!self.tab.is_empty(), |d| {
+            d.child(
+                div()
+                    .absolute()
+                    .left(px(c - size * 0.15))
+                    .top(px(c + size * 0.12))
+                    .w(px(size * 0.3))
+                    .h(px(size * 0.085))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .rounded(px(size * 0.012))
+                    .bg(hsla(t.palette.background.mix(t.palette.text, 0.14)))
+                    .text_size(px(size * 0.05))
+                    .text_color(go)
+                    .font_weight(FontWeight::MEDIUM)
+                    .child(self.tab.clone()),
+            )
+        })
+        .when(self.fuel.is_some(), |d| {
+            d.child(
+                div()
+                    .absolute()
+                    .left(px(c - size * 0.2))
+                    .top(px(c + size * 0.255))
+                    .w(px(size * 0.4))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .gap(px(size * 0.015))
+                    .text_size(px(size * 0.052))
+                    .text_color(ink)
+                    .child(Icon::symbol(Symbol::Fuel).size(size * 0.065).color(muted))
+                    .child(self.reach.clone()),
+            )
+        })
     }
 }
 
