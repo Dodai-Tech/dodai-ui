@@ -20,7 +20,7 @@ pub(crate) use foundations_sec::{icon_total, icon_tree, IconEntry, IconPick};
 pub(crate) use throughput::WINDOW as THROUGHPUT_WINDOW;
 
 /// Every category, in sidebar order (Shaders last: it is the biggest).
-pub(crate) const CATEGORIES: [&str; 13] = [
+pub(crate) const CATEGORIES: [&str; 12] = [
     "Foundations",
     "Shape",
     "Surface effects",
@@ -30,7 +30,6 @@ pub(crate) const CATEGORIES: [&str; 13] = [
     "Inputs",
     "Charts",
     "Instruments",
-    "Vehicle",
     "Loading",
     "Animation",
     "Shaders",
@@ -78,8 +77,7 @@ impl Showcase {
             "Navigation" => Self::groups_navigation(),
             "Inputs" => Self::groups_inputs(),
             "Charts" => vec![Self::sections_charts_sec],
-            "Instruments" => vec![Self::sections_instruments],
-            "Vehicle" => vec![Self::sections_vehicle],
+            "Instruments" => vec![Self::sections_vehicle, Self::sections_instruments],
             "Loading" => vec![Self::loading_group],
             "Animation" => vec![Self::animation_group],
             _ => vec![Self::shaders_group],
