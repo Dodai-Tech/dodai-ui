@@ -230,7 +230,11 @@ fn curve(p: &[(f32, f32)], closed: bool, per: usize) -> Shape {
 }
 
 /// Every shape turned `deg` degrees clockwise about `(cx, cy)`.
-#[cfg(any(feature = "symbols-medical", feature = "symbols-military"))]
+#[cfg(any(
+    feature = "symbols-medical",
+    feature = "symbols-military",
+    feature = "symbols-industrial"
+))]
 fn spin(v: Vec<Shape>, cx: f32, cy: f32, deg: f32) -> Vec<Shape> {
     let (s, c) = rad(deg).sin_cos();
     v.into_iter()
@@ -612,6 +616,36 @@ symbols! {
         Ambulance = "medical-ambulance";
         /// Face mask.
         Mask = "mask";
+        /// Scalpel.
+        Scalpel = "scalpel";
+        /// Molar tooth.
+        Tooth = "medical-tooth";
+        /// Eye.
+        Eye = "medical-eye";
+        /// Bone.
+        Bone = "medical-bone";
+        /// Stretcher on wheels.
+        Stretcher = "stretcher";
+        /// Hospital building with a cross.
+        Hospital = "medical-hospital";
+        /// Bedside patient monitor.
+        Monitor = "patient-monitor";
+        /// Dropper.
+        Dropper = "dropper";
+        /// Test tube with a sample.
+        TestTube = "test-tube";
+        /// Inhaler with a mist.
+        Inhaler = "inhaler";
+        /// Underarm crutch.
+        Crutch = "crutch";
+        /// Double helix.
+        Dna = "medical-dna";
+        /// Pill bottle.
+        PillBottle = "pill-bottle";
+        /// Blood bag with a line.
+        BloodBag = "blood-bag";
+        /// Oxygen cylinder with a valve.
+        OxygenTank = "oxygen-tank";
     }
     #[cfg(feature = "symbols-military")]
     /// Tactical and sensor symbols.
@@ -658,6 +692,14 @@ symbols! {
         Fighter = "fighter";
         /// Field radio.
         Radio = "military-radio";
+        /// Combat helmet.
+        Helmet = "helmet";
+        /// Medal on a ribbon.
+        Medal = "military-medal";
+        /// Dome bunker with a firing slit.
+        Bunker = "bunker";
+        /// Identity tag on a chain.
+        Dogtag = "dog-tag";
     }
     #[cfg(feature = "symbols-industrial")]
     /// Plant and machinery symbols.
@@ -706,6 +748,32 @@ symbols! {
         SolarPanel = "solar-panel";
         /// Wind turbine.
         WindTurbine = "wind-turbine";
+        /// Forklift with a pallet.
+        Forklift = "forklift";
+        /// Open-end spanner.
+        Wrench = "industrial-wrench";
+        /// Hammer.
+        Hammer = "industrial-hammer";
+        /// Hex nut.
+        Nut = "hex-nut";
+        /// Ball bearing.
+        Bearing = "bearing";
+        /// Piston with a connecting rod.
+        Piston = "piston";
+        /// Power drill.
+        Drill = "power-drill";
+        /// Oil derrick.
+        Derrick = "derrick";
+        /// Material hopper.
+        Hopper = "hopper";
+        /// Padlock for lock-out tag-out.
+        Lockout = "lockout";
+        /// Cylindrical storage tank.
+        StorageTank = "storage-tank";
+        /// Crate on a pallet.
+        Pallet = "pallet";
+        /// Coil spring.
+        Spring = "spring";
     }
     #[cfg(feature = "symbols-aviation")]
     /// Flight and airfield symbols.
@@ -752,6 +820,30 @@ symbols! {
         Crosswind = "crosswind";
         /// Airport beacon.
         Beacon = "beacon";
+        /// Helicopter from the side.
+        Helicopter = "helicopter";
+        /// Hangar with a sliding door.
+        Hangar = "hangar";
+        /// Glider from above.
+        Glider = "glider";
+        /// Hot-air balloon.
+        Balloon = "hot-air-balloon";
+        /// Navigation beacon station.
+        Vor = "vor";
+        /// Suitcase.
+        Suitcase = "aviation-suitcase";
+        /// Boarding pass.
+        Ticket = "boarding-pass";
+        /// Rocket.
+        Rocket = "aviation-rocket";
+        /// Satellite with solar panels.
+        Satellite = "satellite";
+        /// Pitot tube with airflow.
+        Pitot = "pitot-tube";
+        /// Wing section with lift.
+        Airfoil = "airfoil";
+        /// Air-cargo container.
+        Cargo = "cargo-container";
     }
 }
 
