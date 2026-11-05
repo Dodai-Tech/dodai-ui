@@ -309,6 +309,56 @@ pub fn icon(icon: dodai_icons::IconId, size: u32) -> impl Bundle {
     )
 }
 
+/// A dashboard symbol (vehicle, aviation, medical, military, industrial), drawn in the active
+/// design's own style and coloured by what it reports (or the inherited [`Foreground`]).
+#[cfg(feature = "symbols")]
+#[derive(Component, Debug, Clone, Copy, PartialEq)]
+pub struct UiSymbol {
+    pub symbol: dodai_icons::symbol::Symbol,
+    pub size: u32,
+    pub state: Option<dodai_core::SymbolState>,
+}
+
+/// Symbol `symbol` at `size` px.
+#[cfg(feature = "symbols")]
+pub fn symbol(symbol: dodai_icons::symbol::Symbol, size: u32) -> impl Bundle {
+    (
+        UiSymbol {
+            symbol,
+            size,
+            state: None,
+        },
+        Node {
+            width: Val::Px(size as f32),
+            height: Val::Px(size as f32),
+            flex_shrink: 0.0,
+            ..default()
+        },
+    )
+}
+
+/// Symbol `symbol` at `size` px, lit in the colour of `state`.
+#[cfg(feature = "symbols")]
+pub fn symbol_state(
+    symbol: dodai_icons::symbol::Symbol,
+    size: u32,
+    state: dodai_core::SymbolState,
+) -> impl Bundle {
+    (
+        UiSymbol {
+            symbol,
+            size,
+            state: Some(state),
+        },
+        Node {
+            width: Val::Px(size as f32),
+            height: Val::Px(size as f32),
+            flex_shrink: 0.0,
+            ..default()
+        },
+    )
+}
+
 /// Button.
 pub fn button(label: impl Into<String>, variant: ButtonVariant) -> impl Bundle {
     (

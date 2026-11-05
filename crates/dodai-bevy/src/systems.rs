@@ -801,6 +801,113 @@ pub(crate) fn style_icons(
     }
 }
 
+/// Rasterised symbols, shared between entities.
+#[cfg(feature = "symbols")]
+#[derive(Resource, Default)]
+pub struct SymbolCache(
+    std::collections::HashMap<(dodai_icons::symbol::Symbol, u32, dodai_icons::Pack), Handle<Image>>,
+);
+
+/// `UiSymbol` → `ImageNode`, drawn in the active design's stroke style and tinted by its state
+/// (or the inherited foreground).
+#[cfg(feature = "symbols")]
+#[allow(clippy::type_complexity)]
+pub(crate) fn style_symbols(
+    mut commands: Commands,
+    theme: Res<DodaiTheme>,
+    mut cache: ResMut<SymbolCache>,
+    mut images: ResMut<Assets<Image>>,
+    mut q: Query<(
+        Entity,
+        Ref<UiSymbol>,
+        Option<&mut ImageNode>,
+        Option<&Foreground>,
+        Option<&ChildOf>,
+    )>,
+    fgs: Query<&Foreground>,
+) {
+    use bevy::asset::RenderAssetUsages;
+    use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
+    let pack = dodai_icons::Pack::from(theme.look().icons);
+    for (e, u, node, own, parent) in &mut q {
+        let fg = color(match u.state {
+            Some(s) => s.color(&theme.palette),
+            None => own
+                .map(|f| f.0)
+                .or_else(|| parent.and_then(|p| fgs.get(p.parent()).ok()).map(|f| f.0))
+                .unwrap_or(theme.palette.text),
+        });
+        let key = (u.symbol, u.size, pack);
+        if node.is_none() || u.is_changed() || theme.is_changed() {
+            let handle = match cache.0.get(&key) {
+                Some(h) => h.clone(),
+                None => {
+                    let g = u.symbol.glyph_styled(pack.symbol_style());
+                    let px = u.size.max(1);
+                    let data: Vec<u8> = g
+                        .coverage(px)
+                        .into_iter()
+                        .flat_map(|a| [255, 255, 255, a])
+                        .collect();
+                    let h = images.add(Image::new(
+                        Extent3d {
+                            width: px,
+                            height: px,
+                            depth_or_array_layers: 1,
+                        },
+                        TextureDimension::D2,
+                        data,
+                        TextureFormat::Rgba8UnormSrgb,
+                        RenderAssetUsages::default(),
+                    ));
+                    cache.0.insert(key, h.clone());
+                    h
+                }
+            };
+            commands
+                .entity(e)
+                .insert(ImageNode::new(handle).with_color(fg));
+        } else if let Some(mut n) = node {
+            upd(&mut n.color, fg);
+        }
+    }
+}
+
+#[cfg(all(test, feature = "symbols"))]
+mod symbol_tests {
+    use super::*;
+    use dodai_icons::symbol::Symbol;
+
+    #[test]
+    fn symbol_becomes_an_image_tinted_by_its_state() {
+        let mut app = App::new();
+        app.insert_resource(DodaiTheme::new())
+            .init_resource::<SymbolCache>()
+            .insert_resource(Assets::<Image>::default())
+            .add_systems(Update, style_symbols);
+        let e = app
+            .world_mut()
+            .spawn(symbol_state(
+                Symbol::OilCan,
+                32,
+                dodai_core::SymbolState::Danger,
+            ))
+            .id();
+        app.update();
+        let n = app.world().get::<ImageNode>(e).expect("ImageNode inserted");
+        let want = color(app.world().resource::<DodaiTheme>().palette.danger);
+        assert_eq!(n.color, want);
+        let img = app
+            .world()
+            .resource::<Assets<Image>>()
+            .get(&n.image)
+            .unwrap();
+        let data = img.data.as_ref().unwrap();
+        assert_eq!(data.len(), 32 * 32 * 4);
+        assert!(data.chunks(4).any(|p| p[3] > 200), "symbol drew nothing");
+    }
+}
+
 #[cfg(all(test, feature = "icons"))]
 mod icon_tests {
     use super::*;

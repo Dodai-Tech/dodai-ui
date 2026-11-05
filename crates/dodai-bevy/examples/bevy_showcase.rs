@@ -5,6 +5,7 @@
 use bevy::prelude::*;
 use dodai_bevy::prelude::*;
 use dodai_bevy::surface_fx::spawn_surface_fx;
+use dodai_icons::symbol::Symbol;
 use dodai_icons::IconId;
 
 #[derive(Component)]
@@ -154,6 +155,14 @@ fn setup(mut commands: Commands, theme: Res<DodaiTheme>) {
                     IconId::Heart,
                 ] {
                     h.spawn(icon(n, 24));
+                }
+                for (sym, st) in [
+                    (Symbol::OilCan, SymbolState::Warning),
+                    (Symbol::Battery, SymbolState::On),
+                    (Symbol::Hazard, SymbolState::Danger),
+                    (Symbol::Airliner, SymbolState::Info),
+                ] {
+                    h.spawn(symbol_state(sym, 28, st));
                 }
                 h.spawn(heading("Dodai UI - Bevy"));
                 h.spawn((ThemeName, muted("")));
