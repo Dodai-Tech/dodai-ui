@@ -104,6 +104,9 @@ check-gpui-features:
     cargo check -p dodai-gpui-instruments --no-default-features --features defense
     cargo check -p dodai-gpui-instruments --no-default-features --features industrial
     cargo check -p dodai-gpui-instruments --no-default-features --features medical
+    cargo check -p dodai-gpui-instruments --no-default-features --features automotive,dodai
+    cargo check -p dodai-gpui-instruments --no-default-features --features medical,cyberpunk
+    cargo check -p dodai-gpui-charts --features material
     cargo check -p dodai-gpui --no-default-features --features components
     cargo check -p dodai-gpui --no-default-features --features shaders
     cargo check -p dodai-gpui --no-default-features --features frost
