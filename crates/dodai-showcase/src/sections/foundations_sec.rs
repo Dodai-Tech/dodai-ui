@@ -150,9 +150,50 @@ impl Showcase {
         {
             section = section.child(modifier_variants_view(&t));
         }
+        if query.trim().is_empty() && self.icon_pick == IconPick::All {
+            section = section.child(symbol_states_view(&t));
+        }
         out.push(("Foundations", "Icons", section.into_any_element(), "Icons"));
         out
     }
+}
+
+/// One telltale in each [`SymbolState`]: the same drawing, coloured by what it reports.
+fn symbol_states_view(t: &dodai_core::Theme) -> gpui::Div {
+    use dodai_gpui::{Icon, SymbolState};
+    use dodai_icons::symbol::Symbol;
+    let states = [
+        ("Off", SymbolState::Off),
+        ("On", SymbolState::On),
+        ("Info", SymbolState::Info),
+        ("Warning", SymbolState::Warning),
+        ("Danger", SymbolState::Danger),
+    ];
+    let marks = [
+        Symbol::OilCan,
+        Symbol::Battery,
+        Symbol::Hazard,
+        Symbol::Airbag,
+    ];
+    let mut row = div().flex().gap(px(t.spacing.lg));
+    for (name, state) in states {
+        let mut col = div().flex().flex_col().items_center().gap(px(t.spacing.xs));
+        let mut icons = div().flex().gap(px(t.spacing.xs));
+        for m in marks {
+            icons = icons.child(Icon::symbol(m).size(28.0).state(state));
+        }
+        col = col.child(icons).child(Muted::new(name));
+        row = row.child(col);
+    }
+    div()
+        .flex()
+        .flex_col()
+        .gap(px(t.spacing.sm))
+        .child(Label::new("Symbol states"))
+        .child(Muted::new(
+            "Icon::symbol(..).state(SymbolState::..) colours a telltale by what it reports.",
+        ))
+        .child(row)
 }
 
 impl Showcase {
