@@ -102,3 +102,8 @@ pub use tactical::{
 };
 #[cfg(feature = "automotive")]
 pub use vehicle::{Compass, GearIndicator, LevelBar, Odometer, PowerMeter, TirePressure};
+
+/// Compiles the README's examples as doctests so they cannot rot.
+#[cfg(all(doctest, feature = "automotive"))]
+#[doc = include_str!("../README.md")]
+struct ReadmeDoctests;
