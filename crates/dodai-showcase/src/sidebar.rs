@@ -231,7 +231,10 @@ impl Showcase {
                         }
                         *side_need = side_need.max(est(title.len(), depth as f32 + 1.0));
                         let (m, title) = (me.clone(), *title);
-                        let mut row = NavigationItem::new(("jump", idx * 1000 + k), title);
+                        let mut row = NavigationItem::new(
+                            ("jump", idx * 1000 + k),
+                            title.strip_prefix("Vehicle · ").unwrap_or(title),
+                        );
                         // The Icons section shows how many icons the active design ships.
                         if title == "Icons" {
                             row = row.badge(group_thousands(crate::sections::icon_total()));
