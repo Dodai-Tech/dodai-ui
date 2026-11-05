@@ -32,6 +32,12 @@ impl Render for Page {
                     .trigger(Button::new("pb", "Open"))
                     .content("body"),
             )
+            .child(FrostedScene::mesh("fs", 200.0, 120.0).panel((10.0, 10.0), (80.0, 40.0), "hi"))
+            .child(ThemeSwitcherBar::new("tsb"))
+            .child(List::new(
+                "ls",
+                [ListItem::new("a", "One"), ListItem::new("b", "Two")],
+            ))
             .child(CircularProgress::new(0.4))
             .child(Banner::new("bn", dodai_core::Tone::Info, "hello"))
             .child(OtpInput::new("otp", 6))

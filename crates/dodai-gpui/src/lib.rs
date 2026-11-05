@@ -336,7 +336,6 @@ pub use icons::{Icon, IconId, IconName, IconPack, SymbolState};
 mod icon_names;
 #[cfg(any(feature = "shaders", feature = "dodai", feature = "frost"))]
 pub use backdrop::backdrop;
-#[cfg(feature = "components")]
 pub use direction::{direction, is_rtl, set_direction, Direction};
 #[cfg(feature = "components")]
 #[cfg(all(feature = "components", feature = "material"))]
@@ -350,6 +349,7 @@ pub use layout::{
     clamp_ratio, item_at, visible_rows, SplitPane, TreeItem, TreeNavigation, TreeRow, TreeView,
 };
 pub use lazy::lazy;
+#[cfg(feature = "components")]
 pub use list::{Divider, List, ListItem};
 #[cfg(feature = "components")]
 pub use menu::{Menu, MenuItem};

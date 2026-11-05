@@ -1709,3 +1709,79 @@ fn disabled_slider_never_reports(cx: &mut TestAppContext) {
     vcx.simulate_keystrokes("right end");
     assert!(vals.borrow().is_empty());
 }
+
+#[gpui::test]
+fn popover_opens_on_the_trigger_and_closes_on_escape(cx: &mut TestAppContext) {
+    let vcx = mount(cx, move |_, _| {
+        Popover::new("pv")
+            .trigger(div().w(px(80.0)).h(px(30.0)).child("Open"))
+            .content(div().debug_selector(|| "pv-body".into()).child("hello"))
+            .into_any_element()
+    });
+    assert!(vcx.debug_bounds("pv-body").is_none(), "closed at first");
+    let (x, y, w, h) = target(vcx);
+    click(vcx, x + w * 0.5, y + h * 0.5);
+    assert!(
+        vcx.debug_bounds("pv-body").is_some(),
+        "the trigger opens it"
+    );
+    vcx.simulate_keystrokes("escape");
+    assert!(vcx.debug_bounds("pv-body").is_none(), "escape closes it");
+}
+
+#[gpui::test]
+fn popover_closes_on_a_click_outside(cx: &mut TestAppContext) {
+    let vcx = mount(cx, move |_, _| {
+        Popover::new("pv2")
+            .trigger(div().w(px(80.0)).h(px(30.0)).child("Open"))
+            .content(div().debug_selector(|| "pv2-body".into()).child("hello"))
+            .into_any_element()
+    });
+    let (x, y, w, h) = target(vcx);
+    click(vcx, x + w * 0.5, y + h * 0.5);
+    assert!(vcx.debug_bounds("pv2-body").is_some());
+    click(vcx, 700.0, 600.0);
+    assert!(
+        vcx.debug_bounds("pv2-body").is_none(),
+        "outside click closes"
+    );
+}
+
+#[gpui::test]
+fn theme_switcher_bar_selects_the_clicked_theme(cx: &mut TestAppContext) {
+    let vcx = mount(cx, move |_, _| {
+        ThemeSwitcherBar::new("tsb").into_any_element()
+    });
+    vcx.update(|_, cx| {
+        install_switcher(cx, dodai_core::switcher());
+        cx.refresh_windows();
+    });
+    vcx.run_until_parked();
+    let before = vcx.update(|_, cx| cx.dodai().switcher().index());
+    let (x, y, w, h) = target(vcx);
+    // Sweep along the row until a click lands on a button of another theme.
+    let _ = w;
+    for k in 0..60 {
+        click(vcx, x + 20.0 + 40.0 * k as f32, y + h * 0.5);
+        if vcx.update(|_, cx| cx.dodai().switcher().index()) != before {
+            break;
+        }
+    }
+    let after = vcx.update(|_, cx| cx.dodai().switcher().index());
+    assert_ne!(before, after, "a click on another button picks that theme");
+}
+
+#[gpui::test]
+fn picking_a_mode_ends_following_the_system(cx: &mut TestAppContext) {
+    let vcx = mount(cx, |_, _| div().into_any_element());
+    vcx.update(|w, cx| {
+        install_switcher(cx, dodai_core::switcher());
+        follow_system_appearance(w, cx);
+        assert!(following_system_appearance());
+        set_theme_mode(cx, dodai_core::Mode::Dark);
+        assert!(!following_system_appearance(), "a chosen mode stops it");
+        assert_eq!(cx.dodai().theme().meta.mode, dodai_core::Mode::Dark);
+        toggle_theme_mode(cx);
+        assert_eq!(cx.dodai().theme().meta.mode, dodai_core::Mode::Light);
+    });
+}
