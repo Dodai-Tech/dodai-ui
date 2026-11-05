@@ -50,3 +50,16 @@ fn toggle_style_tokens() {
         assert!(off.glow.is_none());
     }
 }
+
+#[test]
+fn keys_move_a_slider_by_a_step_and_stop_at_the_ends() {
+    assert_eq!(key_value("right", 5.0, 0.0, 10.0, Some(1.0)), Some(6.0));
+    assert_eq!(key_value("left", 5.0, 0.0, 10.0, Some(1.0)), Some(4.0));
+    assert_eq!(key_value("pageup", 5.0, 0.0, 100.0, Some(1.0)), Some(15.0));
+    assert_eq!(key_value("end", 5.0, 0.0, 10.0, None), Some(10.0));
+    assert_eq!(key_value("home", 5.0, 0.0, 10.0, None), Some(0.0));
+    assert_eq!(key_value("right", 10.0, 0.0, 10.0, None), None);
+    assert_eq!(key_value("x", 5.0, 0.0, 10.0, None), None);
+    // No step: a twentieth of the range.
+    assert_eq!(key_value("up", 0.0, 0.0, 1.0, None), Some(0.05));
+}

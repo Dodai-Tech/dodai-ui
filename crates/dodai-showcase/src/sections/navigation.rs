@@ -187,6 +187,13 @@ impl Showcase {
                         .selected(self.tab)
                         .secondary(true),
                 )
+                .child(Muted::new("Disabled tab (skipped by the arrow keys)"))
+                .child(
+                    with_animation(Tabs::new("tabs-disabled"))
+                        .labels(["Overview", "Activity", "Billing", "Settings"])
+                        .selected(self.tab)
+                        .disabled([2]),
+                )
                 .child(Muted::new("Scrollable"))
                 .child(
                     div().w_full().max_w(px(360.0)).child(

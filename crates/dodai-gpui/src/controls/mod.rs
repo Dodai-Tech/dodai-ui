@@ -79,6 +79,25 @@ pub fn slider_value(
     v.clamp(min.min(max), max.max(min))
 }
 
+/// The value a key moves a slider to: arrows by one `step` (a twentieth of the range without
+/// one), Page Up/Down by ten, Home and End to the ends. `None` for any other key or when the
+/// value would not change. Pure.
+pub fn key_value(key: &str, v: f32, min: f32, max: f32, step: Option<f32>) -> Option<f32> {
+    let (lo, hi) = (min.min(max), max.max(min));
+    let one = step.filter(|s| *s > 0.0).unwrap_or((hi - lo) / 20.0);
+    let to = match key {
+        "right" | "up" => v + one,
+        "left" | "down" => v - one,
+        "pageup" => v + one * 10.0,
+        "pagedown" => v - one * 10.0,
+        "home" => lo,
+        "end" => hi,
+        _ => return None,
+    };
+    let to = to.clamp(lo, hi);
+    ((to - v).abs() > f32::EPSILON * hi.abs().max(1.0)).then_some(to)
+}
+
 type FloatHandler = Rc<dyn Fn(f32, &mut Window, &mut App)>;
 
 mod bars;

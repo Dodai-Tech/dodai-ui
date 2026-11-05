@@ -6,8 +6,8 @@ use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use dodai_core::Theme;
 use gpui::{
-    div, px, App, ClickEvent, ElementId, Hsla, IntoElement, ParentElement, RenderOnce,
-    SharedString, StatefulInteractiveElement, Styled, Window,
+    div, prelude::FluentBuilder, px, App, ClickEvent, ElementId, Hsla, IntoElement, ParentElement,
+    RenderOnce, SharedString, StatefulInteractiveElement, Styled, Window,
 };
 
 /// Row paint: shape style, text colour, marker colour (pure).
@@ -47,6 +47,7 @@ pub struct ListItem {
     leading: Option<gpui::AnyElement>,
     badge: Option<gpui::AnyElement>,
     collapsed: bool,
+    disabled: bool,
 }
 
 crate::surface_setter!(ListItem);
@@ -88,7 +89,13 @@ impl ListItem {
             leading: None,
             badge: None,
             collapsed: false,
+            disabled: false,
         }
+    }
+    /// Disable the row: dimmed, not clickable.
+    pub fn disabled(mut self, d: bool) -> Self {
+        self.disabled = d;
+        self
     }
     /// Small text above the headline (a three-line item when combined with supporting text).
     pub fn overline(mut self, t: impl Into<SharedString>) -> Self {
@@ -138,8 +145,11 @@ impl ListItem {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
         let st = use_interact(&self.id, window, cx);
-        let hovered = st.read(cx).hovered;
-        let (mut style, mut fg, marker) = list_style(&t, self.selected, hovered);
+        let hovered = st.read(cx).hovered && !self.disabled;
+        let (mut style, mut fg, marker) = list_style(&t, self.selected && !self.disabled, hovered);
+        if self.disabled {
+            fg = hsla(t.palette.text_disabled);
+        }
         style = style.with_own_surface(&t, dodai_core::SurfaceClass::Card, &self.surface);
         if self.depth > 0 && !self.selected && !hovered {
             fg = hsla(t.palette.text_muted);
@@ -171,7 +181,7 @@ impl ListItem {
             .overflow_hidden()
             .flex()
             .items_center()
-            .cursor_pointer()
+            .when(!self.disabled, |d| d.cursor_pointer())
             .font_family(first_family(t.typography.body))
             .text_size(px(size))
             .text_color(fg)
@@ -197,7 +207,7 @@ impl ListItem {
                     .collect();
                 el = el.child(div().font_weight(gpui::FontWeight::MEDIUM).child(letter));
             }
-            if let Some(h) = self.on_click {
+            if let (false, Some(h)) = (self.disabled, self.on_click) {
                 el = el.on_click(move |e, w, cx| h(e, w, cx));
             }
             return el;
@@ -255,7 +265,7 @@ impl ListItem {
                     .bg(c),
             );
         }
-        if let Some(h) = self.on_click {
+        if let (false, Some(h)) = (self.disabled, self.on_click) {
             el = el.on_click(move |e, w, cx| h(e, w, cx));
         }
         el

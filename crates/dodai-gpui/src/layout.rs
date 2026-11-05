@@ -25,6 +25,8 @@ pub struct TreeItem {
     pub children: Vec<TreeItem>,
     /// Icon shown before the label.
     pub icon: Option<crate::icons::IconName>,
+    /// Can't be chosen: dimmed, skipped by the arrow keys. Its children stay reachable.
+    pub disabled: bool,
 }
 
 impl TreeItem {
@@ -35,7 +37,13 @@ impl TreeItem {
             expanded: false,
             children: Vec::new(),
             icon: None,
+            disabled: false,
         }
+    }
+    /// Make the item unchoosable.
+    pub fn disabled(mut self, d: bool) -> Self {
+        self.disabled = d;
+        self
     }
     /// Show `icon` before the label.
     pub fn icon(mut self, icon: crate::icons::IconName) -> Self {
@@ -69,6 +77,60 @@ pub struct TreeRow {
     pub expanded: bool,
     /// Icon shown before the label.
     pub icon: Option<crate::icons::IconName>,
+    /// Can't be chosen.
+    pub disabled: bool,
+}
+
+/// What a key does to a tree.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum TreeKey {
+    /// Choose the node at this path.
+    Select(Vec<usize>),
+    /// Fold or unfold the node at this path.
+    Toggle(Vec<usize>),
+}
+
+/// The effect of `key` on a tree whose visible rows are `rows`, with the row at `at` selected.
+/// Up/down walk the enabled rows, Home/End jump to the first/last; Right unfolds a branch (or
+/// enters its first child), Left folds it (or goes to the parent); Enter and Space fold or
+/// unfold a branch. Pure.
+pub fn tree_key(rows: &[TreeRow], at: Option<usize>, key: &str) -> Option<TreeKey> {
+    let enabled = |i: usize| !rows[i].disabled;
+    let select = |i: usize| Some(TreeKey::Select(rows[i].path.clone()));
+    match (key, at) {
+        ("down" | "up" | "home" | "end", Some(a)) => {
+            let to =
+                crate::roving::next(key, crate::roving::Axis::Vertical, a, rows.len(), enabled)?;
+            select(to)
+        }
+        ("down" | "home", None) => (0..rows.len()).find(|i| enabled(*i)).and_then(select),
+        ("up" | "end", None) => (0..rows.len()).rev().find(|i| enabled(*i)).and_then(select),
+        ("right", Some(a)) => {
+            let r = &rows[a];
+            if r.expandable && !r.expanded {
+                Some(TreeKey::Toggle(r.path.clone()))
+            } else if r.expandable && a + 1 < rows.len() && enabled(a + 1) {
+                select(a + 1)
+            } else {
+                None
+            }
+        }
+        ("left", Some(a)) => {
+            let r = &rows[a];
+            if r.expandable && r.expanded {
+                Some(TreeKey::Toggle(r.path.clone()))
+            } else {
+                let parent = &r.path[..r.path.len() - 1];
+                rows.iter()
+                    .position(|p| p.path == parent && !p.disabled)
+                    .and_then(select)
+            }
+        }
+        ("enter" | "space", Some(a)) if rows[a].expandable => {
+            Some(TreeKey::Toggle(rows[a].path.clone()))
+        }
+        _ => None,
+    }
 }
 
 /// Flatten the expanded parts of a tree depth-first.
@@ -83,6 +145,7 @@ pub fn visible_rows(items: &[TreeItem]) -> Vec<TreeRow> {
                 expandable: !it.children.is_empty(),
                 expanded: it.expanded,
                 icon: it.icon,
+                disabled: it.disabled,
             });
             if it.expanded {
                 walk(&it.children, path, out);
@@ -141,12 +204,48 @@ impl TreeView {
     fn build(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let t = crate::apply_corners(t, self.corners);
+        let rows = visible_rows(&self.items);
+        let focus = window
+            .use_keyed_state((self.id.clone(), "focus"), cx, |_, cx| {
+                cx.focus_handle().tab_stop(true)
+            })
+            .read(cx)
+            .clone();
+        let keys = {
+            let at = self
+                .selected
+                .as_ref()
+                .and_then(|s| rows.iter().position(|r| &r.path == s));
+            let (rows, sel, tog) = (rows.clone(), self.on_select.clone(), self.on_toggle.clone());
+            move |e: &gpui::KeyDownEvent, w: &mut Window, cx: &mut App| match tree_key(
+                &rows,
+                at,
+                e.keystroke.key.as_str(),
+            ) {
+                Some(TreeKey::Select(p)) => {
+                    if let Some(f) = &sel {
+                        f(&p, w, cx);
+                    }
+                }
+                Some(TreeKey::Toggle(p)) => {
+                    if let Some(f) = &tog {
+                        f(&p, w, cx);
+                    }
+                }
+                None => {}
+            }
+        };
         let mut col = div()
             .flex()
             .flex_col()
             .font_family(first_family(t.typography.body))
             .text_size(px(t.typography.size_md));
-        for row in visible_rows(&self.items) {
+        col = InteractiveElement::on_key_down(InteractiveElement::track_focus(col, &focus), keys);
+        col = InteractiveElement::on_mouse_down(col, MouseButton::Left, {
+            let focus = focus.clone();
+            move |_, w, _| w.focus(&focus)
+        });
+        for row in rows {
             let key = row
                 .path
                 .iter()
@@ -155,9 +254,14 @@ impl TreeView {
                 .join("-");
             let id: ElementId = (self.id.clone(), key).into();
             let st = use_interact(&id, window, cx);
-            let hovered = st.read(cx).hovered;
+            let hovered = st.read(cx).hovered && !row.disabled;
             let sel = self.selected.as_deref() == Some(row.path.as_slice());
             let (style, _, marker) = list_style(&t, sel, hovered);
+            let fg = if row.disabled {
+                hsla(t.palette.text_disabled)
+            } else {
+                hsla(t.palette.text)
+            };
             let chev = if !row.expandable {
                 "  "
             } else if row.expanded {
@@ -186,7 +290,7 @@ impl TreeView {
                 .gap(px(t.spacing.xs))
                 .min_h(px(t.scale(dodai_core::Scale::Compact)))
                 .pl(px(t.spacing.sm + row.depth as f32 * 16.0))
-                .text_color(hsla(t.palette.text))
+                .text_color(fg)
                 .child(chevron);
             if let Some(g) = row.icon {
                 r = r.child(
@@ -207,7 +311,7 @@ impl TreeView {
                         .bg(m),
                 );
             }
-            if let Some(f) = self.on_select.clone() {
+            if let (false, Some(f)) = (row.disabled, self.on_select.clone()) {
                 r = r
                     .cursor_pointer()
                     .on_click(move |_, w, cx| f(&select_path, w, cx));
@@ -547,5 +651,72 @@ mod nav_tests {
             visible_rows(&with_expanded(&items, &HashMap::new())).len(),
             2
         );
+    }
+}
+
+#[cfg(test)]
+mod key_tests {
+    use super::*;
+
+    fn tree() -> Vec<TreeRow> {
+        let t = vec![
+            TreeItem::new("a")
+                .expanded(true)
+                .child(TreeItem::new("a0"))
+                .child(TreeItem::new("a1").disabled(true))
+                .child(TreeItem::new("a2")),
+            TreeItem::new("b").child(TreeItem::new("b0")),
+        ];
+        visible_rows(&t)
+    }
+
+    fn at(rows: &[TreeRow], p: &[usize]) -> Option<usize> {
+        rows.iter().position(|r| r.path == p)
+    }
+
+    #[test]
+    fn down_skips_a_disabled_row() {
+        let r = tree();
+        assert_eq!(
+            tree_key(&r, at(&r, &[0, 0]), "down"),
+            Some(TreeKey::Select(vec![0, 2]))
+        );
+        assert_eq!(
+            tree_key(&r, at(&r, &[0, 2]), "up"),
+            Some(TreeKey::Select(vec![0, 0]))
+        );
+    }
+
+    #[test]
+    fn right_unfolds_then_enters_and_left_folds_then_goes_up() {
+        let r = tree();
+        assert_eq!(
+            tree_key(&r, at(&r, &[1]), "right"),
+            Some(TreeKey::Toggle(vec![1]))
+        );
+        assert_eq!(
+            tree_key(&r, at(&r, &[0]), "right"),
+            Some(TreeKey::Select(vec![0, 0]))
+        );
+        assert_eq!(
+            tree_key(&r, at(&r, &[0]), "left"),
+            Some(TreeKey::Toggle(vec![0]))
+        );
+        assert_eq!(
+            tree_key(&r, at(&r, &[0, 2]), "left"),
+            Some(TreeKey::Select(vec![0]))
+        );
+        assert_eq!(
+            tree_key(&r, at(&r, &[0]), "enter"),
+            Some(TreeKey::Toggle(vec![0]))
+        );
+    }
+
+    #[test]
+    fn with_nothing_selected_down_picks_the_first_enabled_row() {
+        let r = tree();
+        assert_eq!(tree_key(&r, None, "down"), Some(TreeKey::Select(vec![0])));
+        assert_eq!(tree_key(&r, None, "end"), Some(TreeKey::Select(vec![1])));
+        assert_eq!(tree_key(&r, None, "left"), None);
     }
 }

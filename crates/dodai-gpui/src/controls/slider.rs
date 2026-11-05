@@ -44,6 +44,7 @@ pub struct Slider {
     format: Option<Rc<dyn Fn(f32) -> String>>,
     on_change: Option<FloatHandler>,
     corners: Option<dodai_core::Corners>,
+    disabled: bool,
 }
 
 crate::corners_setter!(Slider);
@@ -67,7 +68,13 @@ impl Slider {
             bubble: None,
             format: None,
             on_change: None,
+            disabled: false,
         }
+    }
+    /// Disable the slider: dimmed, no drag and no keys.
+    pub fn disabled(mut self, d: bool) -> Self {
+        self.disabled = d;
+        self
     }
     /// Draw a tick mark at every `step` (needs [`Slider::step`]).
     pub fn ticks(mut self, on: bool) -> Self {
@@ -231,6 +238,33 @@ impl Slider {
                 .text_color(hsla(t.palette.text_muted))
                 .child(txt)
         });
+        let focus = window
+            .use_keyed_state((self.id.clone(), "focus"), cx, |_, cx| {
+                cx.focus_handle().tab_stop(true)
+            })
+            .read(cx)
+            .clone();
+        let disabled = self.disabled;
+        let keys = {
+            let (f, v) = (self.on_change.clone(), self.value);
+            move |e: &gpui::KeyDownEvent, w: &mut Window, cx: &mut App| {
+                if let (Some(to), Some(f), false) = (
+                    key_value(e.keystroke.key.as_str(), v, min, max, step),
+                    &f,
+                    disabled,
+                ) {
+                    f(to, w, cx);
+                }
+            }
+        };
+        let base = if disabled {
+            base.opacity(crate::interact::DISABLED_OPACITY)
+        } else {
+            gpui::InteractiveElement::on_key_down(
+                gpui::InteractiveElement::track_focus(base, &focus),
+                keys,
+            )
+        };
         let slider = base
             .child(
                 canvas(
@@ -243,11 +277,15 @@ impl Slider {
             .child(track)
             .child(rail)
             .on_mouse_down(MouseButton::Left, move |e, w, cx| {
+                if disabled {
+                    return;
+                }
+                w.focus(&focus);
                 down.update(cx, |s, _| s.dragging = true);
                 apply_down(e.position, w, cx);
             })
             .on_mouse_move(move |e, w, cx| {
-                if mv.read(cx).dragging {
+                if !disabled && mv.read(cx).dragging {
                     apply_move(e.position, w, cx);
                 }
             })

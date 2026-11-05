@@ -193,6 +193,9 @@ where
     })
 }
 
+/// How much of a control shows when it is disabled and has no disabled tokens of its own.
+pub const DISABLED_OPACITY: f32 = 0.38;
+
 /// Shared index-selection callback type (tabs, select, pagination…).
 pub type IndexHandler = std::rc::Rc<dyn Fn(usize, &mut Window, &mut App)>;
 

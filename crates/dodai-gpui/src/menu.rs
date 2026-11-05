@@ -159,6 +159,86 @@ impl Menu {
             col = crate::text::typeset(col, &t, dodai_core::TypeRole::LabelLarge);
         }
         let open = window.use_keyed_state((self.id.clone(), "open"), cx, |_, _| None::<usize>);
+        // Keyboard: up/down walk the enabled rows, Enter or Space chooses, Right opens a
+        // sub-menu and Left closes it. The row the keys are on is `cursor`.
+        let cursor = window.use_keyed_state((self.id.clone(), "cursor"), cx, |_, _| None::<usize>);
+        let focus = window
+            .use_keyed_state((self.id.clone(), "focus"), cx, |_, cx| {
+                cx.focus_handle().tab_stop(true)
+            })
+            .read(cx)
+            .clone();
+        let keys = {
+            let rows: Vec<(bool, bool)> = self
+                .items
+                .iter()
+                .map(|m| (!m.separator && !m.disabled, !m.children.is_empty()))
+                .collect();
+            let (cursor, open, f) = (cursor.clone(), open.clone(), self.on_select.clone());
+            move |e: &gpui::KeyDownEvent, w: &mut Window, cx: &mut App| {
+                let key = e.keystroke.key.as_str();
+                let at = *cursor.read(cx);
+                let enabled = |i: usize| rows[i].0;
+                match key {
+                    "down" | "up" | "home" | "end" => {
+                        let to = match (at, key) {
+                            (Some(a), _) => crate::roving::next(
+                                key,
+                                crate::roving::Axis::Vertical,
+                                a,
+                                rows.len(),
+                                enabled,
+                            ),
+                            (None, "up" | "end") => (0..rows.len()).rev().find(|i| enabled(*i)),
+                            (None, _) => (0..rows.len()).find(|i| enabled(*i)),
+                        };
+                        if let Some(to) = to {
+                            cursor.update(cx, |c, cx| {
+                                *c = Some(to);
+                                cx.notify();
+                            });
+                            open.update(cx, |o, cx| {
+                                *o = None;
+                                cx.notify();
+                            });
+                        }
+                    }
+                    "right" => {
+                        if let Some(a) = at.filter(|a| rows[*a].1) {
+                            open.update(cx, |o, cx| {
+                                *o = Some(a);
+                                cx.notify();
+                            });
+                        }
+                    }
+                    "left" => open.update(cx, |o, cx| {
+                        *o = None;
+                        cx.notify();
+                    }),
+                    "enter" | "space" => {
+                        if let (Some(a), Some(f)) = (at.filter(|a| rows[*a].0), &f) {
+                            if rows[a].1 {
+                                open.update(cx, |o, cx| {
+                                    *o = Some(a);
+                                    cx.notify();
+                                });
+                            } else {
+                                f(a, w, cx);
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        };
+        col = gpui::InteractiveElement::on_key_down(
+            gpui::InteractiveElement::track_focus(col, &focus),
+            keys,
+        );
+        col = gpui::InteractiveElement::on_mouse_down(col, gpui::MouseButton::Left, {
+            let focus = focus.clone();
+            move |_, w, _| w.focus(&focus)
+        });
         for (i, item) in self.items.iter().enumerate() {
             if item.separator {
                 col = col.child(div().py(px(t.spacing.xs)).child(Divider::new()));
@@ -168,6 +248,12 @@ impl Menu {
             let st = use_interact(&id, window, cx);
             let hovered = st.read(cx).hovered && !item.disabled;
             if !item.disabled && st.read(cx).hovered {
+                if *cursor.read(cx) != Some(i) {
+                    cursor.update(cx, |c, cx| {
+                        *c = Some(i);
+                        cx.notify();
+                    });
+                }
                 let want = (!item.children.is_empty()).then_some(i);
                 if *open.read(cx) != want {
                     open.update(cx, |o, cx| {
@@ -176,7 +262,7 @@ impl Menu {
                     });
                 }
             }
-            let current = self.active == Some(i) && !item.disabled;
+            let current = (self.active == Some(i) || *cursor.read(cx) == Some(i)) && !item.disabled;
             let lit = hovered || current;
             let (style, _, marker) = list_style(&t, lit, false);
             let mut fg = if hovered || !item.disabled {

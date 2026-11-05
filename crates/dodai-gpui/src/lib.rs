@@ -203,6 +203,8 @@ pub mod icons;
 pub mod live;
 #[cfg(feature = "components")]
 mod own;
+#[cfg(feature = "components")]
+pub mod roving;
 pub use live::{Feed, Live};
 pub mod interact;
 #[cfg(feature = "components")]
