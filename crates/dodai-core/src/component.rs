@@ -990,6 +990,12 @@ impl Theme {
     /// Type-scale style of `role`. Baseline: derived from the theme's six sizes.
     pub fn type_style(&self, role: TypeRole) -> TypeStyle {
         hook!(self.type_style(role));
+        self.baseline_type_style(role)
+    }
+
+    /// The type scale derived from the theme's six sizes, before any design's override. Designs
+    /// that only retune weight and tracking start from this.
+    pub fn baseline_type_style(&self, role: TypeRole) -> TypeStyle {
         let ty = &self.typography;
         use TypeRole::*;
         let size = match role {

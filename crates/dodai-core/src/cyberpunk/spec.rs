@@ -253,6 +253,16 @@ impl DesignSpec for Cyberpunk {
         self.button(t, v, s)
     }
 
+    /// Cyberpunk type: the shared scale, set heavier (headings 600, titles and labels 600).
+    /// gpui has no letter-spacing, so only weight carries the character.
+    fn type_style(&self, t: &Theme, role: crate::TypeRole) -> Option<crate::TypeStyle> {
+        let mut s = t.baseline_type_style(role);
+        if role.is_heading() || s.weight >= 500 {
+            s.weight = 600;
+        }
+        Some(s)
+    }
+
     /// A longer, flatter switch than the default; the rest of the size scale is the default.
     fn sizes(&self, _t: &Theme) -> Option<Sizes> {
         Some(Sizes {
