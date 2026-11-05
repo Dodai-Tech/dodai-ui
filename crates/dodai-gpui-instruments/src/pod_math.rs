@@ -71,6 +71,33 @@ pub(crate) fn pod_diameter(s: f32) -> f32 {
     finite(s, 300.0).max(120.0)
 }
 
+/// The worst severity of the zones that contain fraction `f` (`Normal` when none does).
+pub(crate) fn severity_at(
+    spans: &[(f32, f32, dodai_instruments_core::instrument::Severity)],
+    f: f32,
+) -> dodai_instruments_core::instrument::Severity {
+    use dodai_instruments_core::instrument::Severity;
+    let f = unit(f);
+    spans
+        .iter()
+        .filter(|(a, z, _)| f >= *a && f <= *z)
+        .map(|s| s.2)
+        .fold(
+            Severity::Normal,
+            |worst, s| if s > worst { s } else { worst },
+        )
+}
+
+/// How many of `n` segments are lit for fraction `f`: any value above the minimum lights the first.
+pub(crate) fn segments_lit(f: f32, n: usize) -> usize {
+    let f = unit(f);
+    if f <= 0.0 {
+        0
+    } else {
+        ((f * n as f32).ceil() as usize).clamp(1, n)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -137,6 +164,21 @@ mod tests {
         assert_eq!(pressure_text(Some(2.34)), "2.3");
         assert_eq!(pressure_text(None), "---");
         assert_eq!(pressure_text(Some(f32::NAN)), "---");
+    }
+
+    #[test]
+    fn severity_and_segments() {
+        use dodai_instruments_core::instrument::Severity;
+        let spans = [(0.8, 1.0, Severity::Alarm), (0.6, 0.9, Severity::Caution)];
+        assert_eq!(severity_at(&spans, 0.1), Severity::Normal);
+        assert_eq!(severity_at(&spans, 0.7), Severity::Caution);
+        assert_eq!(severity_at(&spans, 0.85), Severity::Alarm);
+        assert_eq!(severity_at(&spans, f32::NAN), Severity::Normal);
+        assert_eq!(segments_lit(0.0, 20), 0);
+        assert_eq!(segments_lit(0.01, 20), 1);
+        assert_eq!(segments_lit(0.5, 20), 10);
+        assert_eq!(segments_lit(7.0, 20), 20);
+        assert_eq!(segments_lit(f32::NAN, 20), 0);
     }
 
     #[test]
