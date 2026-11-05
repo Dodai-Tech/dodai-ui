@@ -194,6 +194,14 @@ impl Showcase {
                     m.update(cx, |s, cx| {
                         // Picking the open category again folds it; another one opens.
                         if idx > 0 && s.cat == idx {
+                            // A chosen sub-group: the category row goes back to all of it.
+                            if s.sub.is_some() {
+                                s.sub = None;
+                                s.pin.release();
+                                s.scroll.set_offset(gpui::point(px(0.0), px(0.0)));
+                                cx.notify();
+                                return;
+                            }
                             if let Some(i) = s.shut.iter().position(|c| *c == name) {
                                 s.shut.remove(i);
                             } else {
@@ -308,6 +316,8 @@ impl Showcase {
                 if name == "Shaders" && order.len() > 2 {
                     order.swap(0, 1);
                 }
+                // No "All" row: the category row itself shows everything again.
+                order.retain(Option::is_some);
                 for sub in order {
                     if sub.is_none() && shown_subs.is_empty() {
                         break;
