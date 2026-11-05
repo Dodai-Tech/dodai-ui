@@ -547,6 +547,82 @@ pub fn toggle_theme_mode(cx: &mut App) -> bool {
     done
 }
 
+/// The light/dark mode the OS asks for.
+pub fn system_mode(cx: &App) -> dodai_core::Mode {
+    match cx.window_appearance() {
+        gpui::WindowAppearance::Light | gpui::WindowAppearance::VibrantLight => {
+            dodai_core::Mode::Light
+        }
+        gpui::WindowAppearance::Dark | gpui::WindowAppearance::VibrantDark => {
+            dodai_core::Mode::Dark
+        }
+    }
+}
+
+/// Switch the active theme to its counterpart in the OS's light/dark mode, now and whenever the
+/// OS changes it. Call once per window; themes without a counterpart stay as they are. `true`
+/// when the active theme matches the OS mode right now.
+pub fn follow_system_appearance(window: &mut gpui::Window, cx: &mut App) -> bool {
+    fn apply(cx: &mut App) -> bool {
+        let mode = system_mode(cx);
+        let g = cx.global_mut::<DodaiTheme>();
+        let (before, ok) = (g.switcher.index(), g.switcher.select_mode(mode));
+        if g.switcher.index() != before {
+            cx.refresh_windows();
+        }
+        ok
+    }
+    window
+        .observe_window_appearance(|_, cx| {
+            apply(cx);
+        })
+        .detach();
+    apply(cx)
+}
+
+/// Whether the OS asks for reduced motion. Best effort: macOS (Reduce motion), GNOME
+/// (animations off) and Windows (animation effects off) are read; elsewhere `false`.
+pub fn system_prefers_reduced_motion() -> bool {
+    fn out(cmd: &str, args: &[&str]) -> Option<String> {
+        let o = std::process::Command::new(cmd).args(args).output().ok()?;
+        o.status
+            .success()
+            .then(|| String::from_utf8_lossy(&o.stdout).trim().to_owned())
+    }
+    if cfg!(target_os = "macos") {
+        out(
+            "defaults",
+            &["read", "com.apple.universalaccess", "reduceMotion"],
+        )
+        .is_some_and(|v| v == "1")
+    } else if cfg!(target_os = "linux") {
+        out(
+            "gsettings",
+            &["get", "org.gnome.desktop.interface", "enable-animations"],
+        )
+        .is_some_and(|v| v == "false")
+    } else if cfg!(target_os = "windows") {
+        out(
+            "reg",
+            &[
+                "query",
+                r"HKCU\Control Panel\Desktop\WindowMetrics",
+                "/v",
+                "MinAnimate",
+            ],
+        )
+        .is_some_and(|v| v.trim_end().ends_with('0'))
+    } else {
+        false
+    }
+}
+
+/// Apply the OS's reduced-motion preference (see [`system_prefers_reduced_motion`]) with
+/// [`set_reduce_motion`].
+pub fn follow_system_motion(cx: &mut App) {
+    set_reduce_motion(cx, system_prefers_reduced_motion());
+}
+
 /// Current glow intensity of the active theme.
 pub fn glow_intensity(cx: &App) -> f32 {
     cx.dodai().theme().effects.glow_intensity

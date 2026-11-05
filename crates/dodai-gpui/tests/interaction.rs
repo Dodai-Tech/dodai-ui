@@ -1585,3 +1585,97 @@ fn a_click_anywhere_marks_recent_input_for_the_motion_clock(cx: &mut TestAppCont
         "a click counts as input"
     );
 }
+
+#[gpui::test]
+fn menu_keys_walk_the_enabled_rows_and_choose(cx: &mut TestAppContext) {
+    let l = log();
+    let l2 = l.clone();
+    let vcx = mount(cx, move |_, _| {
+        let l = l2.clone();
+        Menu::new("mk")
+            .items([
+                MenuItem::new("Cut"),
+                MenuItem::new("Copy").disabled(true),
+                MenuItem::new("Paste"),
+            ])
+            .on_select(move |i, _, _| l.borrow_mut().push(i))
+            .into_any_element()
+    });
+    let (x, y, w, h) = target(vcx);
+    // A click on the disabled row gives the menu focus without choosing anything.
+    click(vcx, x + w / 2.0, y + h * 0.5);
+    assert!(l.borrow().is_empty());
+    vcx.simulate_keystrokes("down down enter");
+    assert_eq!(*l.borrow(), vec![2], "down skips the disabled row");
+    vcx.simulate_keystrokes("up enter");
+    assert_eq!(*l.borrow(), vec![2, 0]);
+}
+
+#[gpui::test]
+fn tab_keys_skip_a_disabled_tab(cx: &mut TestAppContext) {
+    let l = log();
+    let l2 = l.clone();
+    let vcx = mount(cx, move |_, _| {
+        let l = l2.clone();
+        Tabs::new("tk")
+            .labels(["One", "Two", "Three"])
+            .disabled([1])
+            .on_select(move |i, _, _| l.borrow_mut().push(i))
+            .into_any_element()
+    });
+    let (x, y, w, h) = target(vcx);
+    // The disabled middle tab: focus, no selection.
+    click(vcx, x + w * 0.5, y + h * 0.5);
+    assert!(l.borrow().is_empty(), "a disabled tab is not chosen");
+    vcx.simulate_keystrokes("right");
+    assert_eq!(*l.borrow(), vec![2], "right jumps over the disabled tab");
+}
+
+#[gpui::test]
+fn slider_keys_step_a_focused_slider_and_disabled_ignores_them(cx: &mut TestAppContext) {
+    let vals = Rc::new(RefCell::new(Vec::<f32>::new()));
+    let v2 = vals.clone();
+    let vcx = mount(cx, move |_, _| {
+        let v = v2.clone();
+        div()
+            .w(px(300.0))
+            .child(
+                Slider::new("sk", 0.0)
+                    .step(0.1)
+                    .on_change(move |x, _, _| v.borrow_mut().push(x)),
+            )
+            .into_any_element()
+    });
+    let (x, y, _, h) = target(vcx);
+    click(vcx, x + 2.0, y + h * 0.5);
+    let start = *vals.borrow().last().expect("the click set a value");
+    vcx.simulate_keystrokes("right right");
+    let end = *vals.borrow().last().unwrap();
+    assert!(
+        (end - (start + 0.2)).abs() < 1e-3,
+        "two steps from {start}: {end}"
+    );
+    vcx.simulate_keystrokes("end");
+    assert!((*vals.borrow().last().unwrap() - 1.0).abs() < 1e-3);
+}
+
+#[gpui::test]
+fn disabled_slider_never_reports(cx: &mut TestAppContext) {
+    let vals = Rc::new(RefCell::new(Vec::<f32>::new()));
+    let v2 = vals.clone();
+    let vcx = mount(cx, move |_, _| {
+        let v = v2.clone();
+        div()
+            .w(px(300.0))
+            .child(
+                Slider::new("sd", 0.3)
+                    .disabled(true)
+                    .on_change(move |x, _, _| v.borrow_mut().push(x)),
+            )
+            .into_any_element()
+    });
+    let (x, y, w, h) = target(vcx);
+    click(vcx, x + w * 0.8, y + h * 0.5);
+    vcx.simulate_keystrokes("right end");
+    assert!(vals.borrow().is_empty());
+}

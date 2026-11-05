@@ -140,6 +140,7 @@ impl Slider {
         let own = crate::own::Own::new(window, cx, self.id.clone(), self.value);
         self.value = own.get();
         let (state, inner) = (own.setter(), self.on_change.take());
+        let live = state.clone();
         self.on_change = Some(Rc::new(move |v, w, cx| {
             crate::own::choose(&state, cx, v);
             if let Some(f) = &inner {
@@ -246,8 +247,10 @@ impl Slider {
             .clone();
         let disabled = self.disabled;
         let keys = {
-            let (f, v) = (self.on_change.clone(), self.value);
+            let f = self.on_change.clone();
             move |e: &gpui::KeyDownEvent, w: &mut Window, cx: &mut App| {
+                // The live value: several keys can land before the next render.
+                let v = live.read(cx).1;
                 if let (Some(to), Some(f), false) = (
                     key_value(e.keystroke.key.as_str(), v, min, max, step),
                     &f,

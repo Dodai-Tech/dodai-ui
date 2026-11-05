@@ -144,6 +144,7 @@ impl Pagination {
         let own = crate::own::Own::new(window, cx, self.id.clone(), self.page);
         self.page = own.get();
         let (state, inner) = (own.setter(), self.on_change.take());
+        let live = state.clone();
         self.on_change = Some(std::rc::Rc::new(move |i, w, cx| {
             crate::own::choose(&state, cx, i);
             if let Some(f) = &inner {
@@ -156,10 +157,12 @@ impl Pagination {
         let keys = {
             let f = self.on_change.clone();
             move |e: &gpui::KeyDownEvent, w: &mut Window, cx: &mut App| {
+                // The live page: several keys can land before the next render.
+                let at = live.read(cx).1.clamp(1, total.max(1));
                 let to = crate::roving::next(
                     e.keystroke.key.as_str(),
                     crate::roving::Axis::Horizontal,
-                    page - 1,
+                    at - 1,
                     total,
                     |_| true,
                 );
