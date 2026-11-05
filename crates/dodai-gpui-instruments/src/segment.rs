@@ -66,7 +66,7 @@ impl RenderOnce for SegmentDisplay {
         let t = theme_of(cx);
         let h = self.height;
         let on = self.color.unwrap_or_else(|| hsla(t.palette.primary));
-        let ghost = if t.is_dark() { 0.09 } else { 0.22 };
+        let ghost = if t.is_dark() { 0.09 } else { 0.12 };
         let off = scale_alpha(on, if self.ghost { ghost } else { 0.0 });
         let chars: Vec<char> = self.text.chars().collect();
         let width: f32 = chars.iter().map(|c| segments::advance(*c, h)).sum();

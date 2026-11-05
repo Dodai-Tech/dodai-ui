@@ -27,8 +27,8 @@ fn tach() -> RingTach {
 fn tells() -> Telltales {
     Telltales::new()
         .push(Symbol::SeatBelt, Tone::Danger)
-        .push(Symbol::SeatBelt, Tone::Danger)
-        .push(Symbol::SeatBelt, Tone::Danger)
+        .push(Symbol::Abs, Tone::Warning)
+        .push(Symbol::HighBeam, Tone::Off)
         .push(Symbol::LowBeam, Tone::Success)
         .push(Symbol::ParkingBrake, Tone::Danger)
 }
@@ -526,22 +526,23 @@ impl Showcase {
             vec![
                 gallery(
                     "The speed-limit sign: a heavy red ring round the limit. On the dash it sits above the ring where the limit applies.",
-                    [30, 50, 80, 120]
+                    Look::ALL
                         .into_iter()
-                        .map(|v| {
+                        .zip([30, 50, 80, 120, 60, 100])
+                        .map(|(look, v)| {
                             (
-                                "",
-                                centred(LimitSign::new(v).size(110.0)),
+                                look.name(),
+                                centred(LimitSign::new(v).look(look).size(110.0)),
                             )
                         })
                         .collect(),
                 ),
                 gallery(
-                    "Telltale lamps: red for danger, green for on, amber for a fault.",
-                    vec![
-                        ("Three columns", centred(tells().size(34.0).columns(3))),
-                        ("Five columns", centred(tells().size(34.0).columns(5))),
-                    ],
+                    "Telltale lamps: red for danger, green for on, amber for a fault, grey when off.",
+                    Look::ALL
+                        .into_iter()
+                        .map(|look| (look.name(), centred(tells().look(look).size(34.0).columns(3))))
+                        .collect(),
                 ),
             ],
         );
@@ -642,6 +643,25 @@ impl Showcase {
             )))
             .into_any_element();
         add(self, "Vehicle · Examples", vec![examples]);
+        let mut by_look = col();
+        for look in Look::ALL {
+            by_look = by_look.child(Muted::new(look.name())).child(
+                quad(
+                    [volt().into(), speed().into()],
+                    [oil().into(), coolant().into()],
+                )
+                .look(look),
+            );
+        }
+        add(
+            self,
+            "Vehicle · One look for the whole dash",
+            vec![
+                Muted::new("A dash's look reaches its ring, pods, lamps and limit sign.")
+                    .into_any_element(),
+                by_look.into_any_element(),
+            ],
+        );
         out
     }
 }

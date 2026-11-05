@@ -22,6 +22,7 @@ use gpui::{
     RenderOnce, SharedString, Styled, Window,
 };
 
+mod lamp_looks;
 mod menu_looks;
 mod menu_more;
 
@@ -226,6 +227,7 @@ pub struct RingTach {
     tab: SharedString,
     fuel: Option<f32>,
     reach: SharedString,
+    look: Look,
     size: f32,
 }
 
@@ -244,6 +246,7 @@ impl RingTach {
             tab: SharedString::default(),
             fuel: None,
             reach: SharedString::default(),
+            look: Look::Classic,
             size: 380.0,
         }
     }
@@ -260,6 +263,13 @@ impl RingTach {
     /// The text on the tab under the speed (a range, a mode).
     pub fn tab(mut self, t: impl Into<SharedString>) -> Self {
         self.tab = t.into();
+        self
+    }
+    /// The look (see [`Look`]). Every look but [`Look::Classic`] draws the engine speed as a
+    /// [`GaugeFace`](crate::faces::GaugeFace) captioned with the road speed; the tab and the fuel
+    /// are left out.
+    pub fn look(mut self, look: Look) -> Self {
+        self.look = look;
         self
     }
     /// Fuel as `0..=1` and the reach written beside the pump. Without it the bottom stays empty.
@@ -280,6 +290,16 @@ impl RenderOnce for RingTach {
         self.rpm = follow(w, cx, &self.follow, 0, self.rpm);
         self.speed = follow(w, cx, &self.follow, 1, self.speed);
         self.fuel = self.fuel.map(|f| follow(w, cx, &self.follow, 2, f));
+        if self.look != Look::Classic {
+            return crate::faces::GaugeFace::new(self.scale, self.rpm)
+                .animate(false)
+                .look(self.look)
+                .label(format!("{} {}", readout(self.speed, 0, ""), self.unit))
+                .unit("×1000 rpm")
+                .decimals(1)
+                .size(self.size)
+                .into_any_element();
+        }
         let t = theme_of(cx);
         let size = self.size;
         let c = size / 2.0;
@@ -495,6 +515,7 @@ impl RenderOnce for RingTach {
                     .child(self.reach.clone()),
             )
         })
+        .into_any_element()
     }
 }
 
@@ -513,6 +534,7 @@ pub struct SidePod {
     ends: [Option<Tone>; 2],
     centre: Option<AnyElement>,
     needle: bool,
+    look: Look,
     style: PodStyle,
     size: f32,
 }
@@ -532,6 +554,7 @@ impl SidePod {
             ends: [None, None],
             centre: None,
             needle: true,
+            look: Look::Classic,
             size: 300.0,
             style: PodStyle::Ring,
         }
@@ -561,6 +584,11 @@ impl SidePod {
         self.ends = [low, high];
         self
     }
+    /// The look (see [`Look`]); every look but [`Look::Classic`] draws it as a [`GaugeFace`]; the reading becomes its caption and a custom centre is left out.
+    pub fn look(mut self, look: Look) -> Self {
+        self.look = look;
+        self
+    }
     /// Replace the icon, unit and reading with your own content.
     pub fn centre(mut self, e: impl IntoElement) -> Self {
         self.centre = Some(e.into_any_element());
@@ -581,6 +609,19 @@ impl SidePod {
 impl RenderOnce for SidePod {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
         self.value = follow(w, cx, &self.follow, 0, self.value);
+        if self.look != Look::Classic {
+            let mut face = crate::faces::GaugeFace::new(self.scale, self.value)
+                .animate(false)
+                .look(self.look)
+                .unit(self.unit)
+                .label(self.reading)
+                .ends(self.ends[0], self.ends[1])
+                .size(self.size);
+            if let Some(i) = self.icon {
+                face = face.icon(i);
+            }
+            return face.into_any_element();
+        }
         let t = theme_of(cx);
         let size = self.size;
         let c = size / 2.0;
@@ -703,6 +744,7 @@ impl RenderOnce for SidePod {
                 .justify_center()
                 .child(middle),
         )
+        .into_any_element()
     }
 }
 
@@ -863,17 +905,27 @@ impl RenderOnce for MenuRing {
 #[derive(IntoElement)]
 pub struct LimitSign {
     limit: u32,
+    look: Look,
     size: f32,
 }
 
 impl LimitSign {
     /// A sign for `limit`.
     pub fn new(limit: u32) -> Self {
-        Self { limit, size: 40.0 }
+        Self {
+            limit,
+            look: Look::Classic,
+            size: 40.0,
+        }
+    }
+    /// The look (see [`Look`]).
+    pub fn look(mut self, look: Look) -> Self {
+        self.look = look;
+        self
     }
     /// Diameter in px.
     pub fn size(mut self, s: f32) -> Self {
-        self.size = s.max(16.0);
+        self.size = crate::pod_math::finite(s, 40.0).max(16.0);
         self
     }
 }
@@ -881,6 +933,9 @@ impl LimitSign {
 impl RenderOnce for LimitSign {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        if self.look != Look::Classic {
+            return lamp_looks::sign(self.limit, self.size, self.look, &t);
+        }
         let size = self.size;
         let c = size / 2.0;
         let (danger, face, ink) = (
@@ -913,6 +968,7 @@ impl RenderOnce for LimitSign {
                     .font_weight(FontWeight::BOLD)
                     .child(self.limit.to_string()),
             )
+            .into_any_element()
     }
 }
 
@@ -922,6 +978,7 @@ impl RenderOnce for LimitSign {
 #[derive(IntoElement)]
 pub struct Telltales {
     items: Vec<(Symbol, Tone)>,
+    look: Look,
     size: f32,
     columns: usize,
 }
@@ -931,6 +988,7 @@ impl Telltales {
     pub fn new() -> Self {
         Self {
             items: Vec::new(),
+            look: Look::Classic,
             size: 22.0,
             columns: usize::MAX,
         }
@@ -942,7 +1000,12 @@ impl Telltales {
     }
     /// Symbol size in px.
     pub fn size(mut self, s: f32) -> Self {
-        self.size = s.max(10.0);
+        self.size = crate::pod_math::finite(s, 22.0).max(10.0);
+        self
+    }
+    /// The look (see [`Look`]): every lamp gets the look's backing.
+    pub fn look(mut self, look: Look) -> Self {
+        self.look = look;
         self
     }
     /// Wrap into rows of this many symbols.
@@ -966,12 +1029,15 @@ impl RenderOnce for Telltales {
         let mut row = div().flex().gap(px(gap));
         let mut n = 0;
         for (icon, tone) in &self.items {
-            row = row.child(
+            row = row.child(if self.look == Look::Classic {
                 Icon::symbol(*icon)
                     .size(self.size)
                     .weight(2.0)
-                    .color(tone.color(&t)),
-            );
+                    .color(tone.color(&t))
+                    .into_any_element()
+            } else {
+                lamp_looks::lamp(*icon, *tone, self.size, self.look, &t)
+            });
             n += 1;
             if n == self.columns {
                 rows = rows.child(std::mem::replace(&mut row, div().flex().gap(px(gap))));
@@ -991,8 +1057,9 @@ pub enum Pod {
     Side(SidePod),
     /// A menu pod.
     Menu(MenuRing),
-    /// Any other pod (see [`crate::pods`]): built at the size the dash gives it.
-    Custom(Box<dyn FnOnce(f32) -> AnyElement>),
+    /// Any other pod (see [`crate::pods`]): built at the size the dash gives it, in the dash's
+    /// look when the dash has one.
+    Custom(Box<dyn FnOnce(f32, Option<Look>) -> AnyElement>),
 }
 
 impl From<SidePod> for Pod {
@@ -1008,11 +1075,14 @@ impl From<MenuRing> for Pod {
 }
 
 impl Pod {
-    pub(crate) fn sized(self, size: f32) -> AnyElement {
-        match self {
-            Pod::Side(p) => p.size(size).into_any_element(),
-            Pod::Menu(p) => p.size(size).into_any_element(),
-            Pod::Custom(f) => f(size),
+    /// The pod at `size`, in `look` when there is one (else in its own).
+    pub(crate) fn sized(self, size: f32, look: Option<Look>) -> AnyElement {
+        match (self, look) {
+            (Pod::Side(p), Some(l)) => p.look(l).size(size).into_any_element(),
+            (Pod::Side(p), None) => p.size(size).into_any_element(),
+            (Pod::Menu(p), Some(l)) => p.look(l).size(size).into_any_element(),
+            (Pod::Menu(p), None) => p.size(size).into_any_element(),
+            (Pod::Custom(f), l) => f(size, l),
         }
     }
 }
@@ -1033,6 +1103,7 @@ pub struct DashTriptych {
     odometer: SharedString,
     temp: SharedString,
     clock: SharedString,
+    look: Option<Look>,
     width: f32,
 }
 
@@ -1051,7 +1122,14 @@ impl DashTriptych {
             temp: SharedString::default(),
             clock: SharedString::default(),
             width: 1000.0,
+            look: None,
         }
+    }
+    /// One look for the whole dash (see [`Look`]): the ring, both pods, the lamps and the limit
+    /// sign. Without it every part keeps its own.
+    pub fn look(mut self, look: Look) -> Self {
+        self.look = Some(look);
+        self
     }
     /// The telltales shown between the centre and the pods.
     pub fn telltales(mut self, t: Telltales) -> Self {
@@ -1095,6 +1173,15 @@ impl DashTriptych {
 impl RenderOnce for DashTriptych {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let look = self.look;
+        let centre = match look {
+            Some(l) => self.centre.look(l),
+            None => self.centre,
+        };
+        let telltales = match look {
+            Some(l) => self.telltales.look(l),
+            None => self.telltales,
+        };
         let width = self.width;
         let h = width * 0.46;
         let ring = h * 0.94;
@@ -1155,7 +1242,7 @@ impl RenderOnce for DashTriptych {
                     .top(px(h * 0.12))
                     .w(px(pod))
                     .h(px(pod))
-                    .child(self.left.sized(pod)),
+                    .child(self.left.sized(pod, look)),
             )
             .child(
                 div()
@@ -1164,14 +1251,14 @@ impl RenderOnce for DashTriptych {
                     .top(px(h * 0.12))
                     .w(px(pod))
                     .h(px(pod))
-                    .child(self.right.sized(pod)),
+                    .child(self.right.sized(pod, look)),
             )
             .child(
                 div()
                     .absolute()
                     .left(px((width - ring) / 2.0))
                     .top(px(h * 0.015))
-                    .child(self.centre.size(ring)),
+                    .child(centre.size(ring)),
             );
         // Telltales under the ring's left shoulder.
         root = root.child(
@@ -1179,7 +1266,7 @@ impl RenderOnce for DashTriptych {
                 .absolute()
                 .left(px(width * 0.19))
                 .top(px(h * 0.7))
-                .child(self.telltales.size(h * 0.062).columns(3)),
+                .child(telltales.size(h * 0.062).columns(3)),
         );
         if let Some(l) = self.limit {
             root = root.child(
@@ -1187,7 +1274,11 @@ impl RenderOnce for DashTriptych {
                     .absolute()
                     .left(px(width * 0.245))
                     .top(px(h * 0.04))
-                    .child(LimitSign::new(l).size(h * 0.1)),
+                    .child(
+                        LimitSign::new(l)
+                            .look(look.unwrap_or_default())
+                            .size(h * 0.1),
+                    ),
             );
         }
         root.child(
