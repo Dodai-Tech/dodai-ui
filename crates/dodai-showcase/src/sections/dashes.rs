@@ -305,31 +305,16 @@ fn oil_faces(look: GaugeLook, size: f32) -> gpui::AnyElement {
         .unit("°C")
         .size(s)
     };
-    match look {
-        GaugeLook::Bar => div()
-            .flex()
-            .flex_col()
-            .gap_2()
-            .child(pressure(size * 0.7))
-            .child(temp(size * 0.7))
-            .into_any_element(),
-        GaugeLook::Column => div()
-            .flex()
-            .gap_2()
-            .child(pressure(size * 0.8))
-            .child(temp(size * 0.8))
-            .into_any_element(),
-        _ => div()
-            .flex()
-            .flex_col()
-            .items_center()
-            .child(pressure(size * 0.5))
-            .child(temp(size * 0.5))
-            .into_any_element(),
-    }
+    div()
+        .flex()
+        .flex_col()
+        .items_center()
+        .child(pressure(size * 0.5))
+        .child(temp(size * 0.5))
+        .into_any_element()
 }
 
-/// One pod in each look (round, card, strip), built by `make(look, size)`.
+/// One pod in each look (round, watch case, heads-up), built by `make(look, size)`.
 fn looked(
     make: impl Fn(PodLook, f32) -> gpui::AnyElement,
 ) -> Vec<(&'static str, gpui::AnyElement)> {
@@ -366,7 +351,7 @@ impl Showcase {
             self,
             "Vehicle · Engine speed",
             vec![gallery(
-                "The revs, 0 to 8 in thousands, with a red band from 7. Dial: the ribbed ring of the dash with the road speed in the middle, a trip tab and the fuel level. The others show the revs alone as an arc, lit segments, a bar or a column, amber to red near the limit.",
+                "The revs, 0 to 8 in thousands, with a red band from 7. Dial: the ribbed ring of the dash with the road speed in the middle, a trip tab and the fuel level. The others show the revs alone: a chronograph with a sub-dial, a heads-up ring, a sweep dial with a fading trail, a moving-coil meter and a scrolling tape, amber to red near the limit.",
                 looks(tach().size(POD).into_any_element(), rev_face),
             )],
         );
@@ -417,7 +402,7 @@ impl Showcase {
             self,
             "Vehicle · Boost",
             vec![gallery(
-                "The boost (or charge) level in percent. Dial: the cell stack inside a segmented band with a limit mark and the battery temperature. The others show the same level as an arc, lit segments, a bar or a column.",
+                "The boost (or charge) level in percent. Dial: the cell stack inside a segmented band with a limit mark and the battery temperature. The others show the same level as a chronograph, a heads-up ring, a sweep dial, a meter and a tape.",
                 looks(
                     BoostPod::new(val(48.0, 0.0, 100.0))
                         .temp("9 °C")

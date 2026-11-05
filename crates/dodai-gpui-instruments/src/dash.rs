@@ -21,6 +21,8 @@ use gpui::{
     RenderOnce, SharedString, Styled, Window,
 };
 
+mod menu_looks;
+
 /// What a telltale reports; the colour comes from the theme.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Tone {
@@ -134,92 +136,29 @@ impl PodStyle {
     }
 }
 
-/// The shape of a pod: the round pod of the dash, a rounded card or a wide strip.
+/// How a pod is drawn: the round pod of the dash, a watch case or a heads-up display.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum PodLook {
     /// The round pod, framed by its [`PodStyle`].
     #[default]
     Ring,
-    /// A rounded card with the content laid out top to bottom.
-    Tile,
-    /// A wide, low strip with the content laid out left to right.
-    Strip,
+    /// A watch case: a knurled bezel, fine scales, tapered needles and a glass.
+    Chrono,
+    /// A heads-up display: a ring of dashes with brackets, chamfered frames and segment bars.
+    Hud,
 }
 
 impl PodLook {
     /// Every look, in the order a gallery shows them.
-    pub const ALL: [Self; 3] = [Self::Ring, Self::Tile, Self::Strip];
+    pub const ALL: [Self; 3] = [Self::Ring, Self::Chrono, Self::Hud];
 
     /// A short name for a gallery caption.
     pub fn name(self) -> &'static str {
         match self {
             Self::Ring => "Ring",
-            Self::Tile => "Tile",
-            Self::Strip => "Strip",
+            Self::Chrono => "Chrono",
+            Self::Hud => "Heads-up",
         }
-    }
-
-    /// The width of the pod's box for a nominal `size`.
-    pub(crate) fn width(self, size: f32) -> f32 {
-        match self {
-            Self::Strip => size * 1.7,
-            _ => size,
-        }
-    }
-}
-
-/// The theme colours the card and strip looks share.
-#[derive(Clone, Copy)]
-pub(crate) struct Skin {
-    pub text: Hsla,
-    pub muted: Hsla,
-    pub info: Hsla,
-    pub primary: Hsla,
-    pub face: Hsla,
-    pub line: Hsla,
-    pub warn: Hsla,
-}
-
-impl Skin {
-    pub(crate) fn of(t: &Theme) -> Self {
-        Self {
-            text: hsla(t.palette.text),
-            muted: hsla(t.palette.text_muted),
-            info: hsla(t.palette.info),
-            primary: hsla(t.palette.primary),
-            face: hsla(t.palette.surface_raised),
-            line: hsla(t.palette.border),
-            warn: hsla(t.palette.warning),
-        }
-    }
-
-    /// A rounded card, content top to bottom.
-    pub(crate) fn card(&self, size: f32) -> gpui::Div {
-        div()
-            .flex()
-            .flex_col()
-            .w(px(size))
-            .rounded(px(size * 0.07))
-            .border_1()
-            .border_color(self.line)
-            .bg(self.face)
-            .p(px(size * 0.06))
-            .gap(px(size * 0.04))
-    }
-
-    /// A wide strip, content left to right.
-    pub(crate) fn strip(&self, size: f32) -> gpui::Div {
-        div()
-            .flex()
-            .items_center()
-            .w(px(PodLook::Strip.width(size)))
-            .rounded(px(size * 0.09))
-            .border_1()
-            .border_color(self.line)
-            .bg(self.face)
-            .px(px(size * 0.06))
-            .py(px(size * 0.045))
-            .gap(px(size * 0.05))
     }
 }
 
@@ -834,7 +773,7 @@ impl MenuRing {
         self.pressed = on;
         self
     }
-    /// The look: the round pod (default), a rounded card or a wide strip.
+    /// The look: the round pod (default), a watch case or a heads-up display.
     pub fn look(mut self, look: PodLook) -> Self {
         self.look = look;
         self
@@ -855,7 +794,7 @@ impl RenderOnce for MenuRing {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         if self.look != PodLook::Ring {
-            return self.rect(&t);
+            return self.detailed(&t);
         }
         let size = self.size;
         let c = size / 2.0;
@@ -865,19 +804,37 @@ impl RenderOnce for MenuRing {
         let width = (size * 0.014).max(2.0);
         let r_rim = c - size * 0.012;
         let frame = Frame::new(&t, self.style);
+        let row_h = size * 0.13;
+        let top = c - row_h * 1.6;
+        // The selected row's band, cut to the inside of the rim so it never pokes out.
+        let first = usize::from(!self.heading.is_empty());
+        let band = (self.selected < self.rows.len()).then(|| {
+            let y0 = top + row_h * (first + self.selected) as f32;
+            crate::shapes::chord_band(c, r_rim - width, y0, y0 + row_h)
+        });
+        let (pressed, primary) = (self.pressed, hsla(t.palette.primary));
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
-                frame.paint(w, b.origin, c, r_rim, width, [None, None]);
+                let o = b.origin;
+                if let Some((poly, left, right)) = &band {
+                    if pressed {
+                        fill(w, o, poly, scale_alpha(primary, 0.35));
+                        stroke(w, o, left, width, info, false);
+                        stroke(w, o, right, width, info, false);
+                    } else {
+                        fill(w, o, poly, bar);
+                    }
+                }
+                frame.paint(w, o, c, r_rim, width, [None, None]);
             },
         )
         .absolute()
         .size_full();
-        let row_h = size * 0.13;
         let mut list = div()
             .absolute()
             .left(px(size * 0.04))
-            .top(px(c - row_h * 1.6))
+            .top(px(top))
             .w(px(size * 0.92))
             .flex()
             .flex_col();
@@ -904,13 +861,7 @@ impl RenderOnce for MenuRing {
                     .px(px(size * 0.07))
                     .text_size(px(size * 0.062))
                     .text_color(if self.chosen == Some(i) { info } else { ink })
-                    .when(on && self.pressed, |d| {
-                        d.bg(scale_alpha(hsla(t.palette.primary), 0.35))
-                            .border_l_2()
-                            .border_r_2()
-                            .border_color(info)
-                    })
-                    .when(on && !self.pressed, |d| d.bg(bar))
+                    .when(on, |d| d.font_weight(FontWeight::MEDIUM))
                     .child(row.clone()),
             );
         }
@@ -921,78 +872,6 @@ impl RenderOnce for MenuRing {
             .child(cv)
             .child(list)
             .into_any_element()
-    }
-}
-
-impl MenuRing {
-    /// The card and strip looks: the rows as a list or as chips.
-    fn rect(self, t: &Theme) -> AnyElement {
-        let sk = Skin::of(t);
-        let s = self.size;
-        let bar = hsla(t.palette.surface_raised.mix(t.palette.text, 0.14));
-        let pressed = scale_alpha(sk.primary, 0.35);
-        let colour = |i: usize| {
-            if self.chosen == Some(i) {
-                sk.info
-            } else {
-                sk.text
-            }
-        };
-        if self.look == PodLook::Strip {
-            let mut row = sk.strip(s);
-            if !self.heading.is_empty() {
-                row = row.child(
-                    div()
-                        .text_size(px(s * 0.06))
-                        .text_color(sk.info)
-                        .child(self.heading.clone()),
-                );
-            }
-            for (i, r) in self.rows.iter().enumerate() {
-                let on = i == self.selected;
-                row = row.child(
-                    div()
-                        .px(px(s * 0.04))
-                        .py(px(s * 0.015))
-                        .rounded_full()
-                        .whitespace_nowrap()
-                        .text_size(px(s * 0.06))
-                        .text_color(colour(i))
-                        .when(on && self.pressed, |d| d.bg(pressed))
-                        .when(on && !self.pressed, |d| d.bg(bar))
-                        .child(r.clone()),
-                );
-            }
-            return row.into_any_element();
-        }
-        let mut card = sk.card(s).gap(px(s * 0.01));
-        if !self.heading.is_empty() {
-            card = card.child(
-                div()
-                    .text_size(px(s * 0.062))
-                    .text_color(sk.info)
-                    .font_weight(FontWeight::MEDIUM)
-                    .pb(px(s * 0.02))
-                    .child(self.heading.clone()),
-            );
-        }
-        for (i, r) in self.rows.iter().enumerate() {
-            let on = i == self.selected;
-            card = card.child(
-                div()
-                    .px(px(s * 0.04))
-                    .py(px(s * 0.03))
-                    .rounded(px(s * 0.03))
-                    .text_size(px(s * 0.065))
-                    .text_color(colour(i))
-                    .when(on && self.pressed, |d| {
-                        d.bg(pressed).border_l_2().border_color(sk.info)
-                    })
-                    .when(on && !self.pressed, |d| d.bg(bar))
-                    .child(r.clone()),
-            );
-        }
-        card.into_any_element()
     }
 }
 

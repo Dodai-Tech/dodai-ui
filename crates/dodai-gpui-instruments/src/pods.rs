@@ -3,9 +3,7 @@
 //! [`crate::dash::MenuRing`] are the first two) that a [`crate::dash::DashTriptych`] or a
 //! [`DashQuad`] can hold, and each stands alone. All colours come from the theme.
 
-use crate::dash::{
-    text_box, Frame, LimitSign, Pod, PodLook, PodStyle, RingTach, Skin, Telltales, Tone,
-};
+use crate::dash::{text_box, Frame, LimitSign, Pod, PodLook, PodStyle, RingTach, Telltales, Tone};
 use crate::dial::severity_color;
 use crate::draw::{polar, turn_arc};
 use crate::gauges::disc;
@@ -110,7 +108,7 @@ fn pod_size(s: f32) -> f32 {
     pm::pod_diameter(s)
 }
 
-mod looks;
+mod detailed;
 
 // ───────────────────────────────── TyrePod ─────────────────────────────────
 
@@ -166,7 +164,7 @@ impl TyrePod {
         self.low = v;
         self
     }
-    /// The look: the round pod (default), a rounded card or a wide strip.
+    /// The look: the round pod (default), a watch case or a heads-up display.
     pub fn look(mut self, look: PodLook) -> Self {
         self.look = look;
         self
@@ -193,7 +191,7 @@ impl RenderOnce for TyrePod {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         if self.look != PodLook::Ring {
-            return self.rect(&t);
+            return self.detailed(&t);
         }
         let size = self.size;
         let (ink, muted) = (hsla(t.palette.text), hsla(t.palette.text_muted));
@@ -310,7 +308,7 @@ impl RowsPod {
         self.heading = h.into();
         self
     }
-    /// The look: the round pod (default), a rounded card or a wide strip.
+    /// The look: the round pod (default), a watch case or a heads-up display.
     pub fn look(mut self, look: PodLook) -> Self {
         self.look = look;
         self
@@ -331,7 +329,7 @@ impl RenderOnce for RowsPod {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         if self.look != PodLook::Ring {
-            return self.rect(&t);
+            return self.detailed(&t);
         }
         let size = self.size;
         let (ink, muted) = (hsla(t.palette.text), hsla(t.palette.text_muted));
@@ -445,7 +443,7 @@ impl NoticePod {
         self.tone = t;
         self
     }
-    /// The look: the round pod (default), a rounded card or a wide strip.
+    /// The look: the round pod (default), a watch case or a heads-up display.
     pub fn look(mut self, look: PodLook) -> Self {
         self.look = look;
         self
@@ -466,7 +464,7 @@ impl RenderOnce for NoticePod {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         if self.look != PodLook::Ring {
-            return self.rect(&t);
+            return self.detailed(&t);
         }
         let size = self.size;
         let ink = hsla(t.palette.text);
@@ -556,7 +554,7 @@ impl GForcePod {
         self.limit = pm::finite(g, 1.5).max(0.1);
         self
     }
-    /// The look: the round pod (default), a rounded card or a wide strip.
+    /// The look: the round pod (default), a watch case or a heads-up display.
     pub fn look(mut self, look: PodLook) -> Self {
         self.look = look;
         self
@@ -579,7 +577,7 @@ impl RenderOnce for GForcePod {
         self.longitudinal = pm::finite(follow(w, cx, &self.follow, 1, self.longitudinal), 0.0);
         let t = theme_of(cx);
         if self.look != PodLook::Ring {
-            return self.rect(&t);
+            return self.detailed(&t);
         }
         let size = self.size;
         let c = size / 2.0;
@@ -857,7 +855,7 @@ impl MediaPod {
         self.cover = Some(e.into_any_element());
         self
     }
-    /// The look: the round pod (default), a rounded card or a wide strip.
+    /// The look: the round pod (default), a watch case or a heads-up display.
     pub fn look(mut self, look: PodLook) -> Self {
         self.look = look;
         self
@@ -878,7 +876,7 @@ impl RenderOnce for MediaPod {
     fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         if self.look != PodLook::Ring {
-            return self.rect(&t);
+            return self.detailed(&t);
         }
         let size = self.size;
         let (ink, muted, info) = (
@@ -974,7 +972,7 @@ impl CompassPod {
         self.height = h.into();
         self
     }
-    /// The look: the round pod (default), a rounded card or a wide strip.
+    /// The look: the round pod (default), a watch case or a heads-up display.
     pub fn look(mut self, look: PodLook) -> Self {
         self.look = look;
         self
@@ -996,7 +994,7 @@ impl RenderOnce for CompassPod {
         self.heading = pm::bearing(follow_angle(w, cx, &self.follow, 0, self.heading));
         let t = theme_of(cx);
         if self.look != PodLook::Ring {
-            return self.rect(&t);
+            return self.detailed(&t);
         }
         let (size, heading) = (self.size, self.heading);
         let c = size / 2.0;
