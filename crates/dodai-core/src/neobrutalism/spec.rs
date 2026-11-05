@@ -223,6 +223,20 @@ impl DesignSpec for NeoBrutalism {
         })
     }
 
+    /// Neo-Brutalism type: the shared scale, set heavier (headings 800, titles and labels 700).
+    /// gpui has no letter-spacing, so only weight carries the character.
+    fn type_style(&self, t: &Theme, role: crate::TypeRole) -> Option<crate::TypeStyle> {
+        let mut s = t.baseline_type_style(role);
+        s.weight = if role.is_heading() {
+            800
+        } else if s.weight >= 500 {
+            700
+        } else {
+            s.weight
+        };
+        Some(s)
+    }
+
     /// Hover and selection fill with the main colour (the kit's sidebar rows).
     /// Chunkier hit areas to match the thick outlines.
     fn sizes(&self, _: &Theme) -> Option<Sizes> {

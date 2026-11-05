@@ -95,12 +95,27 @@ cyclical line, spiral, point & figure, tile-grid map, streaming heat strip. The 
 
 ## Status
 
-Done: controls that run without a controlling parent (`Toggle`, `Checkbox`, `Radio`, `Tabs`,
-`Segmented`, `ButtonGroup`, `Carousel`, `Select`, `Table`, `Slider`, `Rating`, `Pagination`,
-`ColorPicker`, `DatePicker`, `TimePicker`; helper `own.rs`); `Tabs` arrow/Home/End keys;
-`set_reduce_motion` (showcase key `r`); `ThemeSwitcher::toggle_mode` + `toggle_theme_mode`
-(showcase key `m`).
+Done: controls that run without a controlling parent; `Tabs` keys; `set_reduce_motion` (showcase
+key `r`); `ThemeSwitcher::toggle_mode` + `toggle_theme_mode` (key `m`).
 
-Still open: keyboard for the rest (`TreeView`, `Menu`, `Slider`, `Stepper`, `List`), per-tab
-`disabled`, OS appearance / reduce-motion detection, the per-design token gaps in section 2,
-RTL, tests for `menu` / `popover`, the hard-coded literals, the chart items in section 8.
+Since the findings above were written:
+- **Keyboard** goes through one rule, `roving::next` (arrows, Home, End; skips disabled items):
+  `Tabs`, `Pagination`, `Carousel`, `Menu` (up/down/Enter/Right/Left), `TreeView` (`tree_key`) and
+  `Slider` (`key_value`: arrows, Page Up/Down, Home, End). `Stepper` is a display, not a control.
+  `ListItem` rows take Enter and Space like any focused click target; there is no `List`
+  container with arrow walking yet.
+- **`disabled`**: `Tabs::disabled([i..])`, `Slider`, `Carousel`, `ListItem`, `TreeItem`.
+- **OS settings**: `follow_system_appearance(window, cx)` (light/dark counterpart, live) and
+  `follow_system_motion(cx)` (macOS, GNOME, Windows; best effort, read once). Neither is wired
+  into the showcase.
+- **Tokens**: Cyberpunk and Neo-Brutalism set their own type weights (`type_style`). Overrides
+  that are still the shared default are a design choice, not a bug: Material `step` / `badge` /
+  `sizes`; Cyberpunk `choice_toggle` / `icon_button` / `elevated_button` / `page_grid` / `fluid` /
+  `elevation_layers`; Neo-Brutalism `choice_toggle` / `icon_button` / `fluid` / `elevation_layers`.
+- **Tests**: `Menu` has click and key tests (`tests/interaction.rs`); `popover`, `frosted`,
+  `switcher` and most charts and instruments have none. `tests/no_new_spacing_literals.rs` stops
+  new `px(<number>)` in components (77 lines are grandfathered; the `surface_fx.rs` geometry is
+  not `px(..)` and not covered).
+
+Still open: `List` container with arrow keys, RTL, tests for `popover`, the grandfathered
+literals, the chart items in section 8, the per-design token choices above.
