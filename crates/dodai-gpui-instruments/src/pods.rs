@@ -4,12 +4,15 @@
 //! [`DashQuad`] can hold, and each stands alone. All colours come from the theme.
 
 use crate::dash::{rim, text_box, LimitSign, Pod, RingTach, Telltales, Tone};
-use crate::draw::polar;
+use crate::dial::severity_color;
+use crate::draw::{polar, turn_arc};
 use crate::gauges::disc;
 use dodai_gpui::icons::IconId;
 use dodai_gpui::icons::{Icon, Symbol};
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
 use dodai_gpui::{hsla, theme_of};
+use dodai_instruments_core::instrument::{readout, Scale, Severity};
+use gpui::prelude::FluentBuilder;
 use gpui::{
     canvas, div, px, AnyElement, App, Bounds, FontWeight, Hsla, IntoElement, ParentElement, Pixels,
     RenderOnce, SharedString, Styled, Window,
@@ -170,64 +173,54 @@ impl RenderOnce for TyrePod {
         let size = self.size;
         let (ink, muted) = (hsla(t.palette.text), hsla(t.palette.text_muted));
         let c = size / 2.0;
-        let bh = size * 0.42;
-        let top = c - bh / 2.0 + size * 0.07;
+        let bh = size * 0.4;
+        let top = c - bh / 2.0 + size * 0.04;
         let mut content = div()
             .absolute()
             .left_0()
             .top_0()
             .size_full()
             .child(
-                text_box(c, size * 0.19, size * 0.6)
+                text_box(c, size * 0.17, size * 0.6)
                     .text_size(px(size * 0.058))
                     .text_color(ink)
                     .font_weight(FontWeight::MEDIUM)
                     .child(self.heading.clone()),
             )
             .child(
-                text_box(c, size * 0.27, size * 0.8)
-                    .text_size(px(size * 0.045))
-                    .text_color(muted)
-                    .child(self.note.clone()),
+                slot(size, 0.5 - bh * 0.5 / size, top / size, bh / size).child(
+                    Icon::symbol(Symbol::CarTop)
+                        .size(bh)
+                        .color(scale_alpha(ink, 0.75)),
+                ),
             )
             .child(
-                slot(size, 0.4, (top + bh * 0.3) / size, 0.2).child(
-                    Icon::symbol(Symbol::TyrePressure)
-                        .size(size * 0.2)
-                        .color(scale_alpha(ink, 0.85)),
-                ),
+                text_box(c, top + bh * 0.46, size * 0.8)
+                    .text_size(px(size * 0.05))
+                    .text_color(ink)
+                    .child(self.note.clone()),
             )
             .child(
                 text_box(c, top + bh + size * 0.03, size * 0.4)
                     .text_size(px(size * 0.05))
-                    .text_color(muted)
+                    .text_color(ink)
                     .child(self.unit.clone()),
             );
         for (i, bar) in self.bars.iter().enumerate() {
             let (side, row) = (i % 2, i / 2);
-            let x = c + if side == 0 { -1.0 } else { 1.0 } * size * 0.25;
-            let y = top + bh * if row == 0 { 0.12 } else { 0.72 };
+            let x = c + if side == 0 { -1.0 } else { 1.0 } * size * 0.24;
+            let y = top + bh * if row == 0 { 0.08 } else { 0.8 };
             let col = match bar {
                 Some(v) if *v < self.low => Tone::Warning.color(&t),
                 Some(_) => ink,
                 None => muted,
             };
-            content = content
-                .child(
-                    slot(
-                        size,
-                        (x - size * 0.1) / size,
-                        (y - size * 0.075) / size,
-                        0.2,
-                    )
-                    .child(Icon::symbol(Symbol::Tyre).size(size * 0.085).color(col)),
-                )
-                .child(
-                    text_box(x, y + size * 0.035, size * 0.2)
-                        .text_size(px(size * 0.05))
-                        .text_color(col)
-                        .child(bar.map_or("---".to_string(), |v| format!("{v:.1}"))),
-                );
+            content = content.child(
+                text_box(x, y, size * 0.2)
+                    .text_size(px(size * 0.05))
+                    .text_color(col)
+                    .child(bar.map_or("---".to_string(), |v| format!("{v:.1}"))),
+            );
         }
         ring(size, [None, None], &t, |_, _| (), content)
     }
@@ -241,6 +234,7 @@ pub struct PodRow {
     icon: PodIcon,
     value: SharedString,
     bar: Option<(f32, Tone)>,
+    span: bool,
 }
 
 impl PodRow {
@@ -250,7 +244,13 @@ impl PodRow {
             icon: icon.into(),
             value: value.into(),
             bar: None,
+            span: false,
         }
+    }
+    /// Mark the working range of the bar: a cold tick at the start, a hot one at the end.
+    pub fn span(mut self) -> Self {
+        self.span = true;
+        self
     }
     /// A level bar (`0..=1`) in a tone between the icon and the value.
     pub fn bar(mut self, frac: f32, tone: Tone) -> Self {
@@ -326,7 +326,28 @@ impl RenderOnce for RowsPod {
                         .flex_1()
                         .h(px(size * 0.022))
                         .bg(scale_alpha(ink, 0.2))
-                        .child(div().h_full().w(gpui::relative(f)).bg(tone.color(&t))),
+                        .relative()
+                        .child(div().h_full().w(gpui::relative(f)).bg(tone.color(&t)))
+                        .when(row.span, |d| {
+                            d.child(
+                                div()
+                                    .absolute()
+                                    .left_0()
+                                    .top(px(-size * 0.01))
+                                    .w(px(size * 0.008))
+                                    .h(px(size * 0.042))
+                                    .bg(Tone::Info.color(&t)),
+                            )
+                            .child(
+                                div()
+                                    .absolute()
+                                    .right_0()
+                                    .top(px(-size * 0.01))
+                                    .w(px(size * 0.008))
+                                    .h(px(size * 0.042))
+                                    .bg(Tone::Danger.color(&t)),
+                            )
+                        }),
                 );
             } else {
                 line = line.child(div().flex_1());
@@ -389,7 +410,7 @@ impl RenderOnce for NoticePod {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let size = self.size;
-        let (ink, muted) = (hsla(t.palette.text), hsla(t.palette.text_muted));
+        let ink = hsla(t.palette.text);
         let icon_col = if self.tone == Tone::Off {
             ink
         } else {
@@ -401,8 +422,16 @@ impl RenderOnce for NoticePod {
             .top_0()
             .size_full()
             .child(
-                slot(size, 0.4, 0.02, 0.2)
-                    .child(Icon::new(IconId::ArrowLeft).size(size * 0.06).color(muted)),
+                slot(size, 0.35, 0.025, 0.3).child(
+                    div()
+                        .flex()
+                        .justify_center()
+                        .w_full()
+                        .py(px(size * 0.012))
+                        .rounded_b(px(size * 0.03))
+                        .bg(hsla(t.palette.surface_raised.mix(t.palette.text, 0.14)))
+                        .child(Icon::new(IconId::ArrowLeft).size(size * 0.06).color(ink)),
+                ),
             )
             .child(
                 slot(size, 0.12, 0.3, 0.76)
@@ -878,7 +907,174 @@ impl RenderOnce for CompassPod {
     }
 }
 
-into_pod!(TyrePod, RowsPod, NoticePod, GForcePod, BoostPod, MediaPod, CompassPod);
+// ───────────────────────────────── DualGauge ─────────────────────────────────
+
+/// One scale of a [`DualGauge`]: its range, the value and the unit written in the middle.
+#[derive(Clone)]
+pub struct DualScale {
+    scale: Scale,
+    value: f32,
+    unit: SharedString,
+}
+
+impl DualScale {
+    /// `value` on `scale`, with `unit` written in the middle.
+    pub fn new(scale: Scale, value: f32, unit: impl Into<SharedString>) -> Self {
+        Self {
+            scale,
+            value,
+            unit: unit.into(),
+        }
+    }
+}
+
+/// A pod with two scales on one ring: the upper half for one reading, the lower arc inside for
+/// another, each with its own needle (oil pressure over oil temperature).
+#[derive(IntoElement)]
+pub struct DualGauge {
+    upper: DualScale,
+    lower: DualScale,
+    icon: Symbol,
+    size: f32,
+}
+
+impl DualGauge {
+    /// A ring with an `upper` and a `lower` scale and a symbol between them.
+    pub fn new(upper: DualScale, lower: DualScale, icon: Symbol) -> Self {
+        Self {
+            upper,
+            lower,
+            icon,
+            size: 300.0,
+        }
+    }
+    /// Diameter in px.
+    pub fn size(mut self, s: f32) -> Self {
+        self.size = pod_size(s);
+        self
+    }
+}
+
+impl RenderOnce for DualGauge {
+    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let size = self.size;
+        let c = size / 2.0;
+        let (ink, muted) = (hsla(t.palette.text), hsla(t.palette.text_muted));
+        let (r_rim, width) = (c - size * 0.012, (size * 0.014).max(2.0));
+        let r_up = r_rim - width * 3.0;
+        let r_lo = c * 0.64;
+        // The upper scale runs left over the top to the right; the lower one along the bottom,
+        // left to right as well (turn fractions: 0 is twelve o'clock, growing clockwise).
+        let up_at = move |f: f32| 0.75 + 0.5 * f;
+        let lo_at = move |f: f32| 0.63 - 0.26 * f;
+        let theme = t.clone();
+        let zone_col = move |s: Severity| severity_color(&theme, s);
+        let paint_scale = move |w: &mut Window,
+                                o: gpui::Point<Pixels>,
+                                d: &DualScale,
+                                r: f32,
+                                at: &dyn Fn(f32) -> f32| {
+            stroke(
+                w,
+                o,
+                &turn_arc(c, c, r, at(0.0), at(1.0)),
+                width * 1.2,
+                scale_alpha(ink, 0.18),
+                false,
+            );
+            for (a, z, sev) in d.scale.zone_spans() {
+                if sev != Severity::Normal {
+                    stroke(
+                        w,
+                        o,
+                        &turn_arc(c, c, r, at(a), at(z)),
+                        width * 1.2,
+                        zone_col(sev),
+                        false,
+                    );
+                }
+            }
+            for k in d.scale.ticks() {
+                let len = if k.major { size * 0.035 } else { size * 0.018 };
+                let seg = [
+                    polar(c, c, r - width, at(k.frac)),
+                    polar(c, c, r - width - len, at(k.frac)),
+                ];
+                stroke(w, o, &seg, width * 0.7, scale_alpha(ink, 0.85), false);
+            }
+            let f = d.scale.fraction(d.value);
+            stroke(
+                w,
+                o,
+                &[
+                    polar(c, c, r - size * 0.07, at(f)),
+                    polar(c, c, r + width, at(f)),
+                ],
+                width * 1.4,
+                ink,
+                false,
+            );
+        };
+        let (up, lo) = (self.upper.clone(), self.lower.clone());
+        let cv = canvas(
+            |_, _, _| (),
+            move |b: Bounds<Pixels>, _, w, _| {
+                let o = b.origin;
+                rim(w, o, c, r_rim, width, ink, [None, None]);
+                paint_scale(w, o, &up, r_up, &up_at);
+                paint_scale(w, o, &lo, r_lo, &lo_at);
+            },
+        )
+        .absolute()
+        .size_full();
+        let mut content = div().absolute().left_0().top_0().size_full().child(cv);
+        for (d, r, at, dy) in [
+            (
+                &self.upper,
+                r_up - size * 0.13,
+                &up_at as &dyn Fn(f32) -> f32,
+                -0.03,
+            ),
+            (
+                &self.lower,
+                r_lo - size * 0.1,
+                &lo_at as &dyn Fn(f32) -> f32,
+                -0.03,
+            ),
+        ] {
+            for k in d.scale.ticks().into_iter().filter(|k| k.major) {
+                let (x, y) = polar(c, c, r, at(k.frac));
+                content = content.child(
+                    text_box(x, y + size * dy, size * 0.14)
+                        .text_size(px(size * 0.05))
+                        .text_color(ink)
+                        .child(readout(k.value, 0, "")),
+                );
+            }
+        }
+        content = content
+            .child(
+                text_box(c, size * 0.38, size * 0.3)
+                    .text_size(px(size * 0.045))
+                    .text_color(muted)
+                    .child(self.upper.unit.clone()),
+            )
+            .child(
+                slot(size, 0.45, 0.45, 0.1)
+                    .child(Icon::symbol(self.icon).size(size * 0.1).color(ink)),
+            )
+            .child(
+                text_box(c, size * 0.6, size * 0.3)
+                    .text_size(px(size * 0.045))
+                    .text_color(muted)
+                    .child(self.lower.unit.clone()),
+            );
+        div().relative().w(px(size)).h(px(size)).child(content)
+    }
+}
+
+into_pod!(DualGauge, TyrePod, RowsPod, NoticePod, GForcePod, BoostPod, MediaPod, CompassPod);
 
 // ───────────────────────────────── DashQuad ─────────────────────────────────
 
@@ -930,7 +1126,7 @@ impl DashQuad {
         self.gear = g;
         self
     }
-    /// Width in px; the height follows (0.4 of it).
+    /// Width in px; the height follows (0.37 of it).
     pub fn width(mut self, w: f32) -> Self {
         self.width = w.max(700.0);
         self
@@ -941,9 +1137,9 @@ impl RenderOnce for DashQuad {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let width = self.width;
-        let h = width * 0.4;
-        let ring_d = h * 0.94;
-        let (outer, inner) = (h * 0.4, h * 0.58);
+        let h = width * 0.37;
+        let ring_d = h * 0.86;
+        let (outer, inner) = (h * 0.38, h * 0.6);
         let (ink, muted) = (hsla(t.palette.text), hsla(t.palette.text_muted));
         let small = (h * 0.045).max(11.0);
         let place = |e: AnyElement, left: f32, top: f32, d: f32| {
@@ -968,20 +1164,20 @@ impl RenderOnce for DashQuad {
             .bg(hsla(t.palette.background.mix(t.palette.text, 0.02)))
             .border_1()
             .border_color(hsla(t.palette.border))
-            .child(place(lo.sized(outer), 0.0, h * 0.32, outer))
-            .child(place(ro.sized(outer), width - outer, h * 0.32, outer))
-            .child(place(li.sized(inner), outer, h * 0.21, inner))
+            .child(place(lo.sized(outer), 0.0, h * 0.31, outer))
+            .child(place(ro.sized(outer), width - outer, h * 0.31, outer))
+            .child(place(li.sized(inner), outer, h * 0.2, inner))
             .child(place(
                 ri.sized(inner),
-                width - width * 0.075 - inner,
-                h * 0.17,
+                width - outer - inner,
+                h * 0.2,
                 inner,
             ))
             .child(
                 div()
                     .absolute()
                     .left(px((width - ring_d) / 2.0))
-                    .top(px(h * 0.015))
+                    .top(px((h - ring_d) / 2.0))
                     .child(self.centre.size(ring_d)),
             );
         root = root.child(

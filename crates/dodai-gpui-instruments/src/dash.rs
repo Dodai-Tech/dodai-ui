@@ -401,6 +401,7 @@ pub struct SidePod {
     reading: SharedString,
     ends: [Option<Tone>; 2],
     centre: Option<AnyElement>,
+    needle: bool,
     size: f32,
 }
 
@@ -418,8 +419,14 @@ impl SidePod {
             reading: SharedString::default(),
             ends: [None, None],
             centre: None,
+            needle: true,
             size: 300.0,
         }
+    }
+    /// Show or hide the needle (a speed scale with no needle only carries numbers).
+    pub fn needle(mut self, on: bool) -> Self {
+        self.needle = on;
+        self
     }
     /// The symbol in the middle.
     pub fn icon(mut self, i: Symbol) -> Self {
@@ -473,6 +480,7 @@ impl RenderOnce for SidePod {
             .filter(|z| z.2 != Severity::Normal)
             .map(|z| (z.0, z.1, severity_color(&t, z.2)))
             .collect();
+        let needle = self.needle;
         let ticks: Vec<(f32, bool)> = self
             .scale
             .ticks()
@@ -518,11 +526,13 @@ impl RenderOnce for SidePod {
                         false,
                     );
                 }
-                let (p0, p1) = (
-                    polar(c, c, rt - size * 0.1, at(frac)),
-                    polar(c, c, r_rim + width * 0.5, at(frac)),
-                );
-                stroke(w, o, &[p0, p1], width * 1.4, ink, false);
+                if needle {
+                    let (p0, p1) = (
+                        polar(c, c, rt - size * 0.1, at(frac)),
+                        polar(c, c, r_rim + width * 0.5, at(frac)),
+                    );
+                    stroke(w, o, &[p0, p1], width * 1.4, ink, false);
+                }
             },
         )
         .absolute()
@@ -585,6 +595,8 @@ pub struct MenuRing {
     heading: SharedString,
     rows: Vec<SharedString>,
     selected: usize,
+    chosen: Option<usize>,
+    pressed: bool,
     size: f32,
 }
 
@@ -595,6 +607,8 @@ impl MenuRing {
             heading: SharedString::default(),
             rows: rows.into_iter().map(Into::into).collect(),
             selected: 0,
+            chosen: None,
+            pressed: false,
             size: 300.0,
         }
     }
@@ -603,9 +617,19 @@ impl MenuRing {
         self.heading = h.into();
         self
     }
-    /// The selected row.
+    /// The row under the cursor, drawn as a bar.
     pub fn selected(mut self, i: usize) -> Self {
         self.selected = i;
+        self
+    }
+    /// The row that is switched on: its text takes the info colour.
+    pub fn chosen(mut self, i: usize) -> Self {
+        self.chosen = Some(i);
+        self
+    }
+    /// The cursor bar while the button is held: it fills with the primary colour.
+    pub fn pressed(mut self, on: bool) -> Self {
+        self.pressed = on;
         self
     }
     /// Diameter in px.
@@ -622,6 +646,7 @@ impl RenderOnce for MenuRing {
         let c = size / 2.0;
         let ink = hsla(t.palette.text);
         let info = hsla(t.palette.info);
+        let bar = hsla(t.palette.surface_raised.mix(t.palette.text, 0.14));
         let width = (size * 0.014).max(2.0);
         let r_rim = c - size * 0.012;
         let cv = canvas(
@@ -662,13 +687,14 @@ impl RenderOnce for MenuRing {
                     .items_center()
                     .px(px(size * 0.07))
                     .text_size(px(size * 0.062))
-                    .text_color(ink)
-                    .when(on, |d| {
+                    .text_color(if self.chosen == Some(i) { info } else { ink })
+                    .when(on && self.pressed, |d| {
                         d.bg(scale_alpha(hsla(t.palette.primary), 0.35))
                             .border_l_2()
                             .border_r_2()
                             .border_color(info)
                     })
+                    .when(on && !self.pressed, |d| d.bg(bar))
                     .child(row.clone()),
             );
         }

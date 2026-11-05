@@ -76,8 +76,8 @@ pub use flight::{AttitudeIndicator, Countermeasures, HeadingTape, SonarWaterfall
 pub use hero::{CapsuleCluster, CutSpeedometer};
 #[cfg(feature = "automotive")]
 pub use pods::{
-    BoostPod, CompassPod, DashQuad, GForcePod, MediaPod, NoticePod, PodIcon, PodRow, RowsPod,
-    TyrePod,
+    BoostPod, CompassPod, DashQuad, DualGauge, DualScale, GForcePod, MediaPod, NoticePod, PodIcon,
+    PodRow, RowsPod, TyrePod,
 };
 #[cfg(feature = "defense")]
 pub use tactical::{
