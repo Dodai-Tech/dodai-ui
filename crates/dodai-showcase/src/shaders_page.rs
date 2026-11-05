@@ -46,7 +46,41 @@ impl Showcase {
                 } else {
                     ShaderView::new(id.clone(), shader.id)
                 };
+                let chosen = if fx {
+                    self.sh_fx.contains(&shader.id)
+                } else {
+                    self.sh_gen == shader.id
+                };
+                let (m, sid) = (me.clone(), shader.id);
                 col()
+                    .id(gpui::SharedString::from(format!("pick-{id}")))
+                    .cursor_pointer()
+                    .p(px(4.0))
+                    .rounded(px(t.shape.radius))
+                    .border_2()
+                    .border_color(if chosen {
+                        dodai_gpui::hsla(t.palette.primary)
+                    } else {
+                        gpui::transparent_black()
+                    })
+                    .on_click(move |_, _, cx| {
+                        m.update(cx, |s, cx| {
+                            if fx {
+                                if let Some(i) = s.sh_fx.iter().position(|x| *x == sid) {
+                                    s.sh_fx.remove(i);
+                                } else {
+                                    s.sh_fx.push(sid);
+                                }
+                            } else {
+                                s.sh_gen = sid;
+                            }
+                            // Show the result: the playground.
+                            s.sub = Some("Playground");
+                            s.pin.pin("Shader playground");
+                            s.jump = Some(("Shader playground", 1));
+                            cx.notify();
+                        })
+                    })
                     .flex_1()
                     .min_w(px(220.0))
                     .max_w(px(340.0))
