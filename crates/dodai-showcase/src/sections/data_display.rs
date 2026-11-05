@@ -152,26 +152,23 @@ impl Showcase {
 
     fn list_divider_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         self.demo_seen = Some(std::time::Instant::now());
-        let t = theme_of(cx);
         let me = cx.entity();
         let mut out: Vec<Section> = Vec::new();
-        let mut list = div().flex().flex_col().gap(px(t.spacing.xs));
-        for (i, name) in ["Inbox", "Drafts", "Sent", "Archive"]
-            .into_iter()
-            .enumerate()
-        {
-            let m = me.clone();
-            list = list.child(
-                ListItem::new(("li", i), name)
-                    .selected(self.list == i)
-                    .on_click(move |_, _, cx| {
-                        m.update(cx, |s, cx| {
-                            s.list = i;
-                            cx.notify();
-                        })
-                    }),
-            );
-        }
+        let m = me.clone();
+        let list = dodai_gpui::List::new(
+            "li-list",
+            ["Inbox", "Drafts", "Sent", "Archive"]
+                .into_iter()
+                .enumerate()
+                .map(|(i, name)| ListItem::new(("li", i), name)),
+        )
+        .selected(self.list)
+        .on_select(move |i, _, cx| {
+            m.update(cx, |s, cx| {
+                s.list = i;
+                cx.notify();
+            })
+        });
         out.push((
             "Data display",
             "List · Divider",

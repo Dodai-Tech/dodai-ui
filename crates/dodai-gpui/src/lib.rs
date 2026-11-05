@@ -196,6 +196,7 @@ pub mod feedback;
 /// The width of a hairline: dividers, rules and thin borders.
 pub const HAIRLINE: gpui::Pixels = gpui::px(1.0);
 
+pub mod direction;
 pub mod follow;
 #[cfg(feature = "components")]
 pub mod forms;
@@ -336,6 +337,8 @@ mod icon_names;
 #[cfg(any(feature = "shaders", feature = "dodai", feature = "frost"))]
 pub use backdrop::backdrop;
 #[cfg(feature = "components")]
+pub use direction::{direction, is_rtl, set_direction, Direction};
+#[cfg(feature = "components")]
 #[cfg(all(feature = "components", feature = "material"))]
 pub use expressive::{ButtonGroup, LoadingIndicator, SplitButton};
 #[cfg(feature = "frost")]
@@ -347,8 +350,7 @@ pub use layout::{
     clamp_ratio, item_at, visible_rows, SplitPane, TreeItem, TreeNavigation, TreeRow, TreeView,
 };
 pub use lazy::lazy;
-#[cfg(feature = "components")]
-pub use list::{Divider, ListItem};
+pub use list::{Divider, List, ListItem};
 #[cfg(feature = "components")]
 pub use menu::{Menu, MenuItem};
 pub use motion::{

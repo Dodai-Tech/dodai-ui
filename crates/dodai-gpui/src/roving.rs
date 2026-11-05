@@ -24,6 +24,11 @@ pub fn next(
     if n == 0 {
         return None;
     }
+    // Right to left: "forward" along a row is the left arrow.
+    let key = match axis {
+        Axis::Horizontal => crate::direction::mirror_key(key, crate::direction::is_rtl()),
+        Axis::Vertical => key,
+    };
     let (back, fwd) = match axis {
         Axis::Horizontal => ("left", "right"),
         Axis::Vertical => ("up", "down"),
@@ -80,6 +85,16 @@ mod tests {
         assert_eq!(next("down", Axis::Vertical, 0, 2, |_| true), Some(1));
         assert_eq!(next("right", Axis::Vertical, 0, 2, |_| true), None);
         assert_eq!(next("down", H, 0, 2, |_| true), None);
+    }
+
+    #[test]
+    fn right_to_left_mirrors_the_row_arrows() {
+        let all = |_| true;
+        crate::direction::CURRENT.with(|c| c.set(crate::direction::Direction::Rtl));
+        assert_eq!(next("left", H, 0, 3, all), Some(1));
+        assert_eq!(next("right", H, 1, 3, all), Some(0));
+        assert_eq!(next("down", Axis::Vertical, 0, 2, all), Some(1));
+        crate::direction::CURRENT.with(|c| c.set(crate::direction::Direction::Ltr));
     }
 
     #[test]

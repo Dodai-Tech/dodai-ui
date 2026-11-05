@@ -166,6 +166,7 @@ impl ListItem {
             style.fill = style.fill.map(|c| c.opacity(0.55));
         }
         let pad = t.spacing.md;
+        let rtl = crate::is_rtl();
         let mut el = track(shaped_id(self.id, &t.shape, style), &st, cx)
             .min_h(px(if self.depth > 0 {
                 t.list_row_height(true)
@@ -175,11 +176,12 @@ impl ListItem {
                 )
             }))
             .py(px(t.spacing.half()))
-            .ml(px(indent))
-            .pl(px(pad))
-            .pr(px(t.spacing.md))
             .overflow_hidden()
             .flex()
+            .when(rtl, |d| {
+                d.flex_row_reverse().mr(px(indent)).pr(px(pad)).pl(px(pad))
+            })
+            .when(!rtl, |d| d.ml(px(indent)).pl(px(pad)).pr(px(pad)))
             .items_center()
             .when(!self.disabled, |d| d.cursor_pointer())
             .font_family(first_family(t.typography.body))
@@ -258,7 +260,8 @@ impl ListItem {
             el = el.child(
                 div()
                     .absolute()
-                    .left_0()
+                    .when(rtl, |d| d.right_0())
+                    .when(!rtl, |d| d.left_0())
                     .top_0()
                     .bottom_0()
                     .w(px(t.shape.border_width.max(2.0)))
@@ -273,6 +276,96 @@ impl ListItem {
 }
 
 crate::entry_render!(ListItem);
+
+/// A column of [`ListItem`]s with one selected row and the keyboard: once the list has focus
+/// (a click inside it, or Tab), Up and Down move the selection, Home and End jump to the ends,
+/// and disabled rows are skipped. The selection works without state in the parent
+/// (`.selected(i)` only sets the start, and a changed value wins again).
+#[derive(IntoElement)]
+pub struct List {
+    id: ElementId,
+    items: Vec<ListItem>,
+    selected: usize,
+    on_select: Option<crate::interact::IndexHandler>,
+}
+
+impl List {
+    /// A list of `items`; rows get their selection and click handling from the list.
+    pub fn new(id: impl Into<ElementId>, items: impl IntoIterator<Item = ListItem>) -> Self {
+        Self {
+            id: id.into(),
+            items: items.into_iter().collect(),
+            selected: 0,
+            on_select: None,
+        }
+    }
+    /// The selected row (default the first).
+    pub fn selected(mut self, i: usize) -> Self {
+        self.selected = i;
+        self
+    }
+    /// Called with the row index when the user picks one by click or key.
+    pub fn on_select(mut self, f: impl Fn(usize, &mut Window, &mut App) + 'static) -> Self {
+        self.on_select = Some(std::rc::Rc::new(f));
+        self
+    }
+}
+
+impl RenderOnce for List {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let own = crate::own::Own::new(window, cx, self.id.clone(), self.selected);
+        let shown = own.get();
+        let (state, inner) = (own.setter(), self.on_select);
+        let pick: crate::interact::IndexHandler = std::rc::Rc::new(move |i, w, cx| {
+            crate::own::choose(&state, cx, i);
+            if let Some(f) = &inner {
+                f(i, w, cx);
+            }
+        });
+        let current = own.setter();
+        let focus = window
+            .use_keyed_state((self.id.clone(), "focus"), cx, |_, cx| {
+                cx.focus_handle().tab_stop(true)
+            })
+            .read(cx)
+            .clone();
+        let disabled: Vec<bool> = self.items.iter().map(|i| i.disabled).collect();
+        let n = disabled.len();
+        let keys = {
+            let pick = pick.clone();
+            move |e: &gpui::KeyDownEvent, w: &mut Window, cx: &mut App| {
+                // The live selection: several keys can land before the next render.
+                let at = current.read(cx).1;
+                let to = crate::roving::next(
+                    e.keystroke.key.as_str(),
+                    crate::roving::Axis::Vertical,
+                    at,
+                    n,
+                    |i| !disabled[i],
+                );
+                if let Some(to) = to {
+                    pick(to, w, cx);
+                }
+            }
+        };
+        let t = theme_of(cx);
+        let mut col = div().flex().flex_col().gap(px(t.spacing.half()));
+        for (i, item) in self.items.into_iter().enumerate() {
+            let pick = pick.clone();
+            col = col.child(
+                item.selected(i == shown)
+                    .on_click(move |_, w, cx| pick(i, w, cx)),
+            );
+        }
+        let col = gpui::InteractiveElement::on_key_down(
+            gpui::InteractiveElement::track_focus(col, &focus),
+            keys,
+        );
+        gpui::InteractiveElement::on_mouse_down(col, gpui::MouseButton::Left, move |_, w, _| {
+            w.focus(&focus)
+        })
+    }
+}
 
 /// Thin separator line in the `divider` colour.
 #[derive(IntoElement)]
