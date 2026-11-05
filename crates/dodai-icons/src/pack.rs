@@ -45,6 +45,9 @@ pub struct StrokeStyle {
     /// move the line by more than this on the 24 grid (0 keeps every point). A larger value
     /// turns round arcs into angular facets.
     pub facet: f32,
+    /// Closed shapes no wider or taller than this (on the 24 grid) are filled solid, so small
+    /// bodies read as heavy blocks (0 fills none).
+    pub solid: f32,
 }
 
 impl StrokeStyle {
@@ -54,6 +57,7 @@ impl StrokeStyle {
         round: true,
         chamfer: 0.0,
         facet: 0.0,
+        solid: 0.0,
     };
     /// Hard-edged, as the classic stroked pack (Cyberpunk).
     pub const SQUARE: Self = Self {
@@ -61,6 +65,7 @@ impl StrokeStyle {
         round: false,
         chamfer: 0.9,
         facet: 0.4,
+        solid: 0.0,
     };
     /// Heavy and soft (Neo-Brutalism).
     pub const BOLD: Self = Self {
@@ -68,10 +73,33 @@ impl StrokeStyle {
         round: true,
         chamfer: 0.0,
         facet: 0.22,
+        solid: 4.5,
     };
 }
 
 impl StrokeStyle {
+    /// The closed shapes of `lines` this style fills solid.
+    pub fn solids(&self, lines: &[(Points, bool)]) -> Vec<Points> {
+        if self.solid <= 0.0 {
+            return Vec::new();
+        }
+        lines
+            .iter()
+            .filter(|(p, c)| *c && p.len() >= 3)
+            .filter(|(p, _)| {
+                let ext = |f: fn(&(f32, f32)) -> f32| {
+                    let (lo, hi) = p
+                        .iter()
+                        .map(f)
+                        .fold((f32::MAX, f32::MIN), |a, v| (a.0.min(v), a.1.max(v)));
+                    hi - lo
+                };
+                ext(|q| q.0) <= self.solid && ext(|q| q.1) <= self.solid
+            })
+            .map(|(p, _)| p.clone())
+            .collect()
+    }
+
     /// `lines` redrawn in this style: curves faceted, then sharp corners cut.
     pub fn shape(&self, lines: Vec<(Points, bool)>) -> Vec<(Points, bool)> {
         lines
@@ -322,8 +350,15 @@ impl Glyph {
         match self {
             Glyph::Filled(p) => p.clone(),
             Glyph::Stroked(lines) => square_polygons(lines, STROKE),
-            Glyph::Lines(lines, st) if st.round => round_polygons(lines, st.weight),
-            Glyph::Lines(lines, st) => square_polygons(lines, st.weight),
+            Glyph::Lines(lines, st) => {
+                let mut v = if st.round {
+                    round_polygons(lines, st.weight)
+                } else {
+                    square_polygons(lines, st.weight)
+                };
+                v.extend(st.solids(lines));
+                v
+            }
         }
     }
 
@@ -339,6 +374,7 @@ impl Glyph {
             }
             Glyph::Lines(lines, st) => {
                 let d: String = lines.iter().map(|(p, c)| path(p, *c)).collect();
+                let solid: String = st.solids(lines).iter().map(|p| path(p, true)).collect();
                 let (w, cap, join) = if st.round {
                     (st.weight, "round", "round")
                 } else {
@@ -346,7 +382,8 @@ impl Glyph {
                 };
                 format!(
                     "{head} fill=\"none\" stroke=\"{color}\" stroke-width=\"{w}\" \
-                     stroke-linecap=\"{cap}\" stroke-linejoin=\"{join}\"><path d=\"{d}\"/></svg>"
+                     stroke-linecap=\"{cap}\" stroke-linejoin=\"{join}\"><path d=\"{d}\"/>\
+                     <path fill=\"{color}\" stroke=\"none\" d=\"{solid}\"/></svg>"
                 )
             }
             Glyph::Stroked(lines) => {

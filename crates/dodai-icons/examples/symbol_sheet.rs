@@ -63,6 +63,16 @@ fn main() {
             path(&lines),
             style.weight
         );
+        let solid: String = style
+            .solids(&lines)
+            .iter()
+            .map(|p| path(&[(p.clone(), true)]))
+            .collect();
+        if !solid.is_empty() {
+            println!(
+                "<path transform='translate({ox} {oy}) scale({k})' d='{solid}' fill='#e8e8f0'/>"
+            );
+        }
         if small {
             continue;
         }

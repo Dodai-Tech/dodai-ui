@@ -66,12 +66,10 @@ impl Showcase {
                             .child(view)
                     })
                     .child(
-                        row()
-                            .child(Mono::new(shader.name))
-                            .children(
-                                dodai_gpui::dodai_shaders::groups::is_featured(shader)
-                                    .then(|| Tag::new("featured", Tone::Success)),
-                            ),
+                        row().child(Mono::new(shader.name)).children(
+                            dodai_gpui::dodai_shaders::groups::is_featured(shader)
+                                .then(|| Tag::new("featured", Tone::Success)),
+                        ),
                     )
                     .child(Muted::new(shader.desc))
                     .into_any_element()

@@ -321,6 +321,17 @@ impl Mesh {
                         &mut BuffersBuilder::new(&mut buf, |v: StrokeVertex| v.position()),
                     )
                     .ok()?;
+                let solids = style.solids(shapes);
+                if !solids.is_empty() {
+                    let fill = outline(&mut solids.iter().map(|p| (p.as_slice(), true)));
+                    FillTessellator::new()
+                        .tessellate_path(
+                            &fill,
+                            &FillOptions::default(),
+                            &mut BuffersBuilder::new(&mut buf, |v: FillVertex| v.position()),
+                        )
+                        .ok()?;
+                }
             }
             Glyph::Filled(polys) => {
                 let path = outline(&mut polys.iter().map(|p| (p.as_slice(), true)));
