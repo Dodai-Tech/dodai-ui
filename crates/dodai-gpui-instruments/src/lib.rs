@@ -49,6 +49,8 @@ pub mod hero;
 pub(crate) mod pod_math;
 #[cfg(feature = "automotive")]
 pub mod pods;
+#[cfg(feature = "automotive")]
+mod shapes;
 #[cfg(feature = "defense")]
 pub mod tactical;
 #[cfg(feature = "automotive")]

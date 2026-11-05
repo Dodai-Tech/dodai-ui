@@ -29,12 +29,8 @@ impl Render for Host {
 fn pods() -> Vec<(String, AnyElement, f32)> {
     let mut out: Vec<(String, AnyElement, f32)> = Vec::new();
     for look in PodLook::ALL {
-        let w = match look {
-            PodLook::Ring => SIZE,
-            PodLook::Strip => SIZE * 1.7,
-            // The card's width is the pod's own business: only non-empty is checked.
-            PodLook::Tile => f32::NAN,
-        };
+        // Every look is a square pod of the size asked for.
+        let w = SIZE;
         let n = |s: &str| format!("{s}-{}", look.name());
         out.push((
             n("tyre"),

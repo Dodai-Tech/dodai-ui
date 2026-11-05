@@ -98,9 +98,97 @@ pub(crate) fn segments_lit(f: f32, n: usize) -> usize {
     }
 }
 
+/// Seconds in a `m:ss` or `h:mm:ss` time; `None` when it does not parse.
+pub(crate) fn seconds(t: &str) -> Option<f32> {
+    let mut total = 0.0_f32;
+    let mut parts = 0;
+    for p in t.trim().split(':') {
+        let v: f32 = p.trim().parse().ok()?;
+        if !v.is_finite() || v < 0.0 {
+            return None;
+        }
+        total = total * 60.0 + v;
+        parts += 1;
+    }
+    (parts >= 2).then_some(total)
+}
+
+/// How far through a track an `elapsed | total` line is, `0..=1` (0 when it does not parse).
+pub(crate) fn played(time: &str) -> f32 {
+    let mut it = time.split('|');
+    match (it.next().and_then(seconds), it.next().and_then(seconds)) {
+        (Some(a), Some(b)) if b > 0.0 => (a / b).clamp(0.0, 1.0),
+        _ => 0.0,
+    }
+}
+
+/// Where a tyre pressure sits on a dial running from half to one and a half times `low` (a
+/// typical 2 bar when no limit is set).
+pub(crate) fn pressure_frac(bar: Option<f32>, low: f32) -> Option<f32> {
+    let low = if low.is_finite() && low > 0.0 {
+        low
+    } else {
+        2.0
+    };
+    let v = bar.filter(|v| v.is_finite())?;
+    Some(((v - low * 0.5) / low).clamp(0.0, 1.0))
+}
+
+/// `n` bar heights in `0.2..=1` that look like a spectrum, the same for the same `seed` text.
+pub(crate) fn spectrum(seed: &str, n: usize) -> Vec<f32> {
+    let mut h: u32 = 2_166_136_261;
+    for b in seed.bytes() {
+        h = (h ^ u32::from(b)).wrapping_mul(16_777_619);
+    }
+    (0..n)
+        .map(|i| {
+            h ^= h << 13;
+            h ^= h >> 17;
+            h ^= h << 5;
+            // Louder in the low bands, like music.
+            let tilt = 1.0 - 0.5 * i as f32 / n.max(1) as f32;
+            (0.2 + 0.8 * (h % 1000) as f32 / 1000.0 * tilt).clamp(0.2, 1.0)
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn times_parse_and_give_the_share_played() {
+        assert_eq!(seconds("1:30"), Some(90.0));
+        assert_eq!(seconds("1:00:05"), Some(3605.0));
+        assert_eq!(seconds("abc"), None);
+        assert_eq!(seconds("90"), None, "a bare number is not a time");
+        assert_eq!(played("1:30 | 3:00"), 0.5);
+        assert_eq!(played("0:00 | 0:00"), 0.0);
+        assert_eq!(played("9:00 | 3:00"), 1.0);
+        assert_eq!(played("live"), 0.0);
+    }
+
+    #[test]
+    fn pressure_dial_runs_around_the_limit() {
+        assert_eq!(pressure_frac(Some(2.0), 2.0), Some(0.5));
+        assert_eq!(pressure_frac(Some(0.0), 2.0), Some(0.0));
+        assert_eq!(pressure_frac(Some(9.0), 2.0), Some(1.0));
+        assert_eq!(pressure_frac(None, 2.0), None);
+        assert_eq!(
+            pressure_frac(Some(2.0), 0.0),
+            Some(0.5),
+            "no limit: around 2 bar"
+        );
+        assert_eq!(pressure_frac(Some(f32::NAN), 2.0), None);
+    }
+
+    #[test]
+    fn spectrum_is_stable_and_in_range() {
+        let a = spectrum("Song", 16);
+        assert_eq!(a, spectrum("Song", 16));
+        assert_ne!(a, spectrum("Other", 16));
+        assert!(a.iter().all(|v| (0.2..=1.0).contains(v)));
+    }
 
     #[test]
     fn unit_and_percent_clamp_and_survive_nan() {

@@ -3,12 +3,15 @@
 //! tape with a pointer box; a sweep dial with a fading trail; and a moving-coil meter with its
 //! pivot below the face. Every colour comes from the theme.
 
-use super::{GaugeFace, Ink};
+use super::GaugeFace;
 use crate::dash::text_box;
 use crate::dial::severity_color;
 use crate::draw::{polar, turn_arc};
 use crate::gauges::SWEEP;
 use crate::pod_math as pm;
+use crate::shapes::{
+    band, chamfered, chrono_case, chrono_glass, circle, dir, hud_ring, needle, Ink,
+};
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
 use dodai_gpui::theme_of;
 use dodai_instruments_core::instrument::{readout, Severity};
@@ -16,59 +19,6 @@ use gpui::{
     canvas, div, px, AnyElement, App, Bounds, FontWeight, Hsla, IntoElement, ParentElement, Pixels,
     Styled,
 };
-
-/// Unit vector of a turn (0 = up, clockwise), as `polar` measures it.
-fn dir(turn: f32) -> (f32, f32) {
-    let th = turn * std::f32::consts::TAU - std::f32::consts::FRAC_PI_2;
-    (th.cos(), th.sin())
-}
-
-/// A closed circle polygon.
-fn circle(cx: f32, cy: f32, r: f32) -> Vec<(f32, f32)> {
-    turn_arc(cx, cy, r, 0.0, 1.0)
-}
-
-/// A band between two radii over `a..b` turns, as a fillable polygon.
-fn band(cx: f32, cy: f32, r_in: f32, r_out: f32, a: f32, b: f32) -> Vec<(f32, f32)> {
-    let mut p = turn_arc(cx, cy, r_out, a, b);
-    let mut inner = turn_arc(cx, cy, r_in, a, b);
-    inner.reverse();
-    p.extend(inner);
-    p
-}
-
-/// A tapered needle from `tail` behind the pivot to `tip`, `half` wide at the pivot.
-fn needle(cx: f32, cy: f32, turn: f32, tip: f32, tail: f32, half: f32) -> Vec<(f32, f32)> {
-    let (dx, dy) = dir(turn);
-    let (nx, ny) = (-dy, dx);
-    vec![
-        (cx + dx * tip, cy + dy * tip),
-        (cx + nx * half, cy + ny * half),
-        (
-            cx - dx * tail + nx * half * 0.7,
-            cy - dy * tail + ny * half * 0.7,
-        ),
-        (
-            cx - dx * tail - nx * half * 0.7,
-            cy - dy * tail - ny * half * 0.7,
-        ),
-        (cx - nx * half, cy - ny * half),
-    ]
-}
-
-/// A rectangle with its four corners cut by `k`.
-fn chamfered(x: f32, y: f32, w: f32, h: f32, k: f32) -> Vec<(f32, f32)> {
-    vec![
-        (x + k, y),
-        (x + w - k, y),
-        (x + w, y + k),
-        (x + w, y + h - k),
-        (x + w - k, y + h),
-        (x + k, y + h),
-        (x, y + h - k),
-        (x, y + k),
-    ]
-}
 
 /// Zone spans with their theme colours.
 fn zone_colours(face: &GaugeFace, t: &dodai_core::Theme) -> Vec<(f32, f32, Hsla)> {
@@ -135,31 +85,15 @@ impl GaugeFace {
         let col = self.value_colour(&t, &ink);
         let zones = zone_colours(&self, &t);
         let marks = self.scale.majors * FINE;
-        let (r_bezel, r_face) = (c - s * 0.01, c - s * 0.06);
+        let r_face = c - s * 0.06;
         let r_scale = r_face - s * 0.03;
         let (text, muted, face, line) = (ink.text, ink.muted, ink.face, ink.line);
-        let bg = scale_alpha(ink.text, 0.04);
         let sub = (c, c - s * 0.17, s * 0.075);
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
                 let o = b.origin;
-                // Bezel: a ring with fine knurling.
-                fill(w, o, &circle(c, c, r_bezel), scale_alpha(text, 0.08));
-                for i in 0..120 {
-                    let a = i as f32 / 120.0;
-                    stroke(
-                        w,
-                        o,
-                        &[polar(c, c, r_face + s * 0.008, a), polar(c, c, r_bezel, a)],
-                        s * 0.004,
-                        scale_alpha(text, 0.22),
-                        false,
-                    );
-                }
-                fill(w, o, &circle(c, c, r_face), face);
-                fill(w, o, &circle(c, c, r_face), bg);
-                stroke(w, o, &circle(c, c, r_face), s * 0.006, line, true);
+                chrono_case(w, o, s, ink);
                 // Zones: an outlined band with diagonal hatching.
                 for (a, z, zc) in &zones {
                     let (r0, r1) = (r_scale - s * 0.05, r_scale - s * 0.015);
@@ -261,10 +195,7 @@ impl GaugeFace {
                 );
                 fill(w, o, &circle(c, c, s * 0.04), text);
                 fill(w, o, &circle(c, c, s * 0.016), face);
-                // Glass: a soft crescent of light over the top half.
-                let mut glass = turn_arc(c, c, r_face * 0.97, 0.8, 1.2);
-                glass.extend(turn_arc(c, c + r_face * 0.45, r_face * 0.9, 1.15, 0.85));
-                fill(w, o, &glass, scale_alpha(text, 0.035));
+                chrono_glass(w, o, s, r_face, ink);
             },
         )
         .absolute()
@@ -327,7 +258,7 @@ impl GaugeFace {
         let col = self.value_colour(&t, &ink);
         let accent = ink.primary;
         let zones = zone_colours(&self, &t);
-        let (r_out, r) = (c - s * 0.015, c - s * 0.11);
+        let r = c - s * 0.11;
         let r_in = r - s * 0.1;
         let (text, muted) = (ink.text, ink.muted);
         let (fw, fh) = (s * 0.46, s * 0.2);
@@ -336,41 +267,7 @@ impl GaugeFace {
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
                 let o = b.origin;
-                // Outer ring: fine dashes and four brackets on the diagonals.
-                for i in 0..96 {
-                    let a = i as f32 / 96.0;
-                    stroke(
-                        w,
-                        o,
-                        &turn_arc(c, c, r_out, a, a + 0.005),
-                        s * 0.006,
-                        scale_alpha(text, 0.35),
-                        false,
-                    );
-                }
-                for q in [0.125_f32, 0.375, 0.625, 0.875] {
-                    stroke(
-                        w,
-                        o,
-                        &turn_arc(c, c, r_out - s * 0.025, q - 0.035, q + 0.035),
-                        s * 0.012,
-                        accent,
-                        false,
-                    );
-                    for e in [q - 0.035, q + 0.035] {
-                        stroke(
-                            w,
-                            o,
-                            &[
-                                polar(c, c, r_out - s * 0.045, e),
-                                polar(c, c, r_out - s * 0.019, e),
-                            ],
-                            s * 0.012,
-                            accent,
-                            false,
-                        );
-                    }
-                }
+                hud_ring(w, o, s, ink, accent);
                 // Track and the dashed progress.
                 stroke(
                     w,
@@ -381,12 +278,9 @@ impl GaugeFace {
                     false,
                 );
                 let n = 90;
-                for i in 0..n {
+                for i in 0..pm::segments_lit(frac, n) {
                     let a0 = i as f32 / n as f32;
-                    if a0 >= frac {
-                        break;
-                    }
-                    let a1 = (a0 + 0.65 / n as f32).min(frac);
+                    let a1 = a0 + 0.65 / n as f32;
                     stroke(
                         w,
                         o,
@@ -1024,41 +918,5 @@ impl GaugeFace {
                     ),
             )
             .into_any_element()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn needle_points_along_its_turn() {
-        let p = needle(0.0, 0.0, 0.25, 10.0, 2.0, 1.0);
-        assert!(
-            (p[0].0 - 10.0).abs() < 1e-4 && p[0].1.abs() < 1e-4,
-            "a quarter turn is right"
-        );
-        assert!(p[2].0 < 0.0 && p[3].0 < 0.0, "the tail is behind the pivot");
-    }
-
-    #[test]
-    fn a_band_closes_back_along_the_inner_radius() {
-        let p = band(0.0, 0.0, 5.0, 10.0, 0.0, 0.25);
-        let (first, last) = (p[0], p[p.len() - 1]);
-        assert!(
-            (first.1 + 10.0).abs() < 1e-3,
-            "starts on the outer radius at the top"
-        );
-        assert!(
-            (last.1 + 5.0).abs() < 1e-3,
-            "ends on the inner radius at the top"
-        );
-    }
-
-    #[test]
-    fn chamfered_corners_are_cut() {
-        let p = chamfered(0.0, 0.0, 10.0, 6.0, 2.0);
-        assert_eq!(p.len(), 8);
-        assert!(!p.contains(&(0.0, 0.0)), "no square corner left");
     }
 }
