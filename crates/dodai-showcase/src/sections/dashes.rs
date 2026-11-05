@@ -79,9 +79,7 @@ fn coolant() -> SidePod {
 }
 
 fn tyres() -> TyrePod {
-    TyrePod::new()
-        .heading("Tyre pressure")
-        .note("Measured from 25 km/h")
+    TyrePod::new().heading("Tyre pressure")
 }
 
 fn vehicle_rows() -> RowsPod {
@@ -410,6 +408,24 @@ impl Showcase {
             )))
             .into_any_element();
         add(self, "Examples", vec![examples]);
+        let small: Vec<gpui::AnyElement> = vec![
+            volt().size(130.0).into_any_element(),
+            oil().size(130.0).into_any_element(),
+            tyres().size(130.0).into_any_element(),
+            vehicle_rows().size(130.0).into_any_element(),
+            notice().size(130.0).into_any_element(),
+            BoostPod::new(48.0).size(130.0).into_any_element(),
+            GForcePod::new(0.4, -0.3).size(130.0).into_any_element(),
+            media().size(130.0).into_any_element(),
+            CompassPod::new(45.0).size(130.0).into_any_element(),
+        ];
+        let strip = div()
+            .flex()
+            .flex_wrap()
+            .gap(px(t.spacing.md))
+            .children(small)
+            .into_any_element();
+        add(self, "Small sizes", vec![strip]);
         out
     }
 }

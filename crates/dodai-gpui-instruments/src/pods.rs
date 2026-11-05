@@ -7,6 +7,7 @@ use crate::dash::{rim, text_box, LimitSign, Pod, RingTach, Telltales, Tone};
 use crate::dial::severity_color;
 use crate::draw::{polar, turn_arc};
 use crate::gauges::disc;
+use crate::pod_math as pm;
 use dodai_gpui::icons::IconId;
 use dodai_gpui::icons::{Icon, Symbol};
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
@@ -101,7 +102,7 @@ macro_rules! into_pod {
 }
 
 fn pod_size(s: f32) -> f32 {
-    s.max(120.0)
+    pm::pod_diameter(s)
 }
 
 // ───────────────────────────────── TyrePod ─────────────────────────────────
@@ -191,7 +192,8 @@ impl RenderOnce for TyrePod {
                 slot(size, 0.5 - bh * 0.5 / size, top / size, bh / size).child(
                     Icon::symbol(Symbol::CarTop)
                         .size(bh)
-                        .color(scale_alpha(ink, 0.75)),
+                        .weight(0.9)
+                        .color(scale_alpha(ink, 0.85)),
                 ),
             )
             .child(
@@ -210,16 +212,18 @@ impl RenderOnce for TyrePod {
             let (side, row) = (i % 2, i / 2);
             let x = c + if side == 0 { -1.0 } else { 1.0 } * size * 0.24;
             let y = top + bh * if row == 0 { 0.08 } else { 0.8 };
-            let col = match bar {
-                Some(v) if *v < self.low => Tone::Warning.color(&t),
-                Some(_) => ink,
-                None => muted,
+            let col = if pm::is_low(*bar, self.low) {
+                Tone::Warning.color(&t)
+            } else if bar.is_some_and(f32::is_finite) {
+                ink
+            } else {
+                muted
             };
             content = content.child(
                 text_box(x, y, size * 0.2)
                     .text_size(px(size * 0.05))
                     .text_color(col)
-                    .child(bar.map_or("---".to_string(), |v| format!("{v:.1}"))),
+                    .child(pm::pressure_text(*bar)),
             );
         }
         ring(size, [None, None], &t, |_, _| (), content)
@@ -254,7 +258,7 @@ impl PodRow {
     }
     /// A level bar (`0..=1`) in a tone between the icon and the value.
     pub fn bar(mut self, frac: f32, tone: Tone) -> Self {
-        self.bar = Some((frac.clamp(0.0, 1.0), tone));
+        self.bar = Some((pm::unit(frac), tone));
         self
     }
 }
@@ -484,7 +488,7 @@ impl GForcePod {
     }
     /// The g at the edge of the cross (default 1.5).
     pub fn limit(mut self, g: f32) -> Self {
-        self.limit = g.max(0.1);
+        self.limit = pm::finite(g, 1.5).max(0.1);
         self
     }
     /// Diameter in px.
@@ -506,8 +510,8 @@ impl RenderOnce for GForcePod {
         );
         let reach = size * 0.27;
         let (gx, gy) = (
-            (self.lateral / self.limit).clamp(-1.0, 1.0),
-            (self.longitudinal / self.limit).clamp(-1.0, 1.0),
+            pm::g_offset(self.lateral, self.limit),
+            pm::g_offset(self.longitudinal, self.limit),
         );
         let paint = move |w: &mut Window, o: gpui::Point<Pixels>| {
             let r = size * 0.011;
@@ -526,7 +530,7 @@ impl RenderOnce for GForcePod {
                 info,
             );
         };
-        let g = |v: f32| format!("{:.1}", v.abs());
+        let g = pm::g_text;
         let label = |x: f32, y: f32, v: f32| {
             text_box(x, y, size * 0.2)
                 .text_size(px(size * 0.058))
@@ -583,7 +587,7 @@ impl BoostPod {
     /// A pod at `percent` (0 to 100).
     pub fn new(percent: f32) -> Self {
         Self {
-            percent: percent.clamp(0.0, 100.0),
+            percent: pm::percent(percent),
             label: "BOOST".into(),
             temp: SharedString::default(),
             size: 300.0,
@@ -616,9 +620,9 @@ impl RenderOnce for BoostPod {
             hsla(t.palette.text_muted),
             hsla(t.palette.success),
         );
-        let frac = self.percent / 100.0;
         let (bw, bh) = (size * 0.2, size * 0.3);
         let (bx, by) = (c - bw / 2.0, c - bh / 2.0 + size * 0.04);
+        let percent_now = self.percent;
         let danger = hsla(t.palette.danger);
         let band_w = (size * 0.03).max(3.0);
         let band_r = c - size * 0.012 - band_w * 1.3;
@@ -659,7 +663,7 @@ impl RenderOnce for BoostPod {
             let frame = [(bx, by), (bx + bw, by), (bx + bw, by + bh), (bx, by + bh)];
             stroke(w, o, &frame, 2.0, ink, true);
             let cells = 10;
-            let lit = (frac * cells as f32).round() as usize;
+            let lit = pm::lit_cells(percent_now, cells);
             for i in 0..cells {
                 let y = by + bh - (i as f32 + 1.0) * bh / cells as f32;
                 let on = i < lit;
@@ -832,7 +836,7 @@ impl CompassPod {
     /// A compass at `heading` degrees (0 = north, clockwise).
     pub fn new(heading: f32) -> Self {
         Self {
-            heading: heading.rem_euclid(360.0),
+            heading: pm::bearing(heading),
             height: SharedString::default(),
             size: 300.0,
         }
@@ -900,8 +904,7 @@ impl RenderOnce for CompassPod {
                     .child(name),
             );
         }
-        let names = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-        let card = names[((heading + 22.5) / 45.0) as usize % 8];
+        let card = pm::cardinal(heading);
         content = content.child(
             slot(size, 0.25, 0.34, 0.5)
                 .gap(px(size * 0.01))
@@ -958,7 +961,7 @@ impl DualScale {
     pub fn new(scale: Scale, value: f32, unit: impl Into<SharedString>) -> Self {
         Self {
             scale,
-            value,
+            value: pm::finite(value, 0.0),
             unit: unit.into(),
         }
     }
@@ -1164,7 +1167,7 @@ impl DashQuad {
     }
     /// Width in px; the height follows (0.37 of it).
     pub fn width(mut self, w: f32) -> Self {
-        self.width = w.max(700.0);
+        self.width = pm::finite(w, 1100.0).max(700.0);
         self
     }
 }
