@@ -7,4 +7,6 @@ use dodai_gpui_charts::{LineChart, Series};
 let chart = LineChart::new([Series::new("2025", [3.0, 5.0, 4.0, 8.0])]);
 ```
 
+Turn on a design with a feature (`dodai`, `cyberpunk`, `material` or `neobrutalism`) and install its themes once with `dodai_gpui::install_switcher(cx, dodai_core::switcher())`. Without a design the charts use a plain neutral theme.
+
 See every chart in the showcase: `cargo run -p dodai-showcase`.

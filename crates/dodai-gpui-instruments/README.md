@@ -1,15 +1,61 @@
 # dodai-gpui-instruments
 
-Animated instruments for gpui in the Dodai designs: dials and gauges (15 styles), segment displays, annunciators and scopes, plus industry sets behind features (all on by default):
+Animated instruments for gpui in the Dodai designs: dials and gauges, segment displays, annunciators and scopes, plus industry sets behind features. The colours come from the active theme, so every instrument follows the design and light or dark mode.
 
-| Feature | Instruments |
+## Setup
+
+Pick the industry sets you need and at least one design:
+
+```toml
+[dependencies]
+dodai-gpui-instruments = { version = "0.1", default-features = false, features = ["automotive", "dodai"] }
+```
+
+Install the themes once at start-up, then use the instruments like any gpui element:
+
+```rust,no_run
+use dodai_gpui_instruments::{DashTriptych, Look, MenuRing, RingTach, Scale, SidePod};
+
+fn setup(cx: &mut gpui::App) {
+    // Every theme of the enabled designs; `dodai_gpui::cycle_next` switches between them.
+    dodai_gpui::install_switcher(cx, dodai_core::switcher());
+}
+
+fn dash() -> DashTriptych {
+    DashTriptych::new(
+        RingTach::new(Scale::new(0.0, 8.0), 2.4, 96.0),
+        SidePod::new(Scale::new(0.0, 270.0), 96.0).unit("km/h"),
+        MenuRing::new(["Trip", "Media", "Tyres"]),
+    )
+    .look(Look::Chrono)
+}
+```
+
+Without an installed theme the instruments use the first theme of the enabled designs, or a plain neutral theme when no design is enabled. An app can also install its own `dodai_core::Theme` with `dodai_gpui::install`.
+
+## Features
+
+The default turns on every industry set and no design.
+
+| Feature | What it adds |
 |---|---|
-| `automotive` | clusters, tachometer, speedometers, tire pressure, gear, odometer, power meter, level bar, compass |
-| `aviation` | attitude indicator, heading and vertical tapes, sonar waterfall, countermeasures |
-| `defense` | tactical plot, track list, threat rosette, stores panel, mission timer, radar scope |
-| `industrial` | the process-plant and machine symbols (dials and annunciators are always included) |
-| `medical` | vitals tiles, the ECG trace (`Oscilloscope::ecg`), the medical symbols |
+| `automotive` | dashes, pods, gauge faces in six looks (`Look`), tachometer, speedometers, tyre pressure, gear, odometer, compass; the vehicle symbols |
+| `aviation` | attitude indicator, heading and vertical tapes, sonar waterfall, countermeasures; the aviation symbols |
+| `defense` | tactical plot, track list, threat rosette, stores panel, mission timer, radar scope; the military symbols |
+| `industrial` | the process-plant and machine symbols |
+| `medical` | vitals tiles, the ECG trace (`Oscilloscope::ecg`); the medical symbols |
+| `dodai`, `cyberpunk`, `material`, `neobrutalism` | the designs and their themes |
 
-Each feature also turns on the matching symbol group of `dodai-icons`. These are display components, not medical or flight-safety devices: do not rely on them to monitor a patient or to fly or operate anything.
+Dials, gauges, segment displays, annunciators and scopes are always included. Each industry set builds only its own instruments and symbol group, so a vehicle-only app compiles no medical or defence code:
+
+```toml
+dodai-gpui-instruments = { version = "0.1", default-features = false, features = ["medical", "material"] }
+```
+
+## Looks
+
+The vehicle instruments share one `Look`: Classic, Chrono, Vintage, Heads-up, Digital and Futuristic. Set it on a single instrument with `.look(..)`, or on a whole `DashTriptych` / `DashQuad` to restyle the ring, pods, lamps and limit sign together.
+
+These are display components, not medical or flight-safety devices: do not rely on them to monitor a patient or to fly or operate anything.
 
 See them in the showcase: `cargo run -p dodai-showcase`.
