@@ -69,3 +69,20 @@ fn overrides_keep_the_active_theme(cx: &mut TestAppContext) {
         assert_eq!(cx.dodai().theme().id(), id);
     });
 }
+
+#[gpui::test]
+fn without_an_installed_theme_the_default_one_is_used(cx: &mut TestAppContext) {
+    cx.update(|cx| {
+        let first = dodai_core::switcher().current().id();
+        // Reading works before anything is installed (and installs nothing).
+        assert_eq!(theme_of(cx).id(), first);
+        assert!(!cx.has_global::<DodaiTheme>());
+        // Changing the theme installs the default store first.
+        cycle_next(cx);
+        assert!(cx.has_global::<DodaiTheme>());
+        assert_eq!(
+            cx.dodai().switcher().themes().len(),
+            dodai_core::switcher().themes().len()
+        );
+    });
+}
