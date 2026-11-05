@@ -1,5 +1,5 @@
-//! The detailed looks of [`MenuRing`]: a rotary selector in a watch case, and a drum of rows on a
-//! heads-up display. Colours from the theme.
+//! The chronograph and heads-up looks of [`MenuRing`] (a rotary selector in a watch case and a
+//! drum of rows on a heads-up display) and the dispatch to the others. Colours from the theme.
 
 use super::*;
 use crate::shapes::{chamfered, chrono_case, chrono_glass, circle, hud_ring, Ink};
@@ -13,8 +13,11 @@ fn row_turn(i: usize, n: usize) -> f32 {
 impl MenuRing {
     pub(super) fn detailed(self, t: &Theme) -> AnyElement {
         match self.look {
-            PodLook::Hud => self.hud(t),
-            _ => self.chrono(t),
+            Look::HeadsUp => self.hud(t),
+            Look::Vintage => self.vintage(t),
+            Look::Digital => self.digital(t),
+            Look::Futuristic => self.futuristic(t),
+            Look::Classic | Look::Chrono => self.chrono(t),
         }
     }
 

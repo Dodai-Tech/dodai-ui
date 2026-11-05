@@ -106,7 +106,7 @@ fn instruments(v: f32) -> Vec<AnyElement> {
     #[cfg(feature = "automotive")]
     {
         use dodai_gpui::icons::Symbol;
-        for look in GaugeLook::ALL {
+        for look in Look::ALL {
             out.push(
                 GaugeFace::new(Scale::new(v, 10.0).zone(v, 9.0, Severity::Alarm), v)
                     .look(look)
@@ -120,7 +120,7 @@ fn instruments(v: f32) -> Vec<AnyElement> {
                     .into_any_element(),
             );
         }
-        for look in PodLook::ALL {
+        for look in Look::ALL {
             out.extend([
                 TyrePod::new()
                     .bars([Some(v), None, Some(-v), Some(2.0)])

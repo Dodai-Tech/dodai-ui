@@ -1,7 +1,7 @@
-//! The detailed looks of the pods. [`PodLook::Chrono`] puts the reading in a watch case: a
-//! knurled bezel, fine scales, tapered needles and a glass. [`PodLook::Hud`] draws it as a
-//! heads-up display: a ring of dashes with brackets, chamfered frames and segment bars. Both take
-//! every colour from the theme.
+//! The chronograph and heads-up looks of the pods, and the dispatch to the others.
+//! [`Look::Chrono`] puts the reading in a watch case: a knurled bezel, fine scales, tapered
+//! needles and a glass. [`Look::HeadsUp`] draws it as a heads-up display: a ring of dashes with
+//! brackets, chamfered frames and segment bars. Both take every colour from the theme.
 
 use super::*;
 use crate::shapes::{
@@ -9,7 +9,9 @@ use crate::shapes::{
 };
 
 /// A canvas over the whole pod.
-fn layer(paint: impl Fn(&mut Window, gpui::Point<Pixels>) + 'static) -> impl IntoElement {
+pub(super) fn layer(
+    paint: impl Fn(&mut Window, gpui::Point<Pixels>) + 'static,
+) -> impl IntoElement {
     canvas(
         |_, _, _| (),
         move |b: Bounds<Pixels>, _, w, _| paint(w, b.origin),
@@ -19,12 +21,19 @@ fn layer(paint: impl Fn(&mut Window, gpui::Point<Pixels>) + 'static) -> impl Int
 }
 
 /// The square box of a pod of `s`.
-fn case(s: f32) -> gpui::Div {
+pub(super) fn case(s: f32) -> gpui::Div {
     div().relative().w(px(s)).h(px(s))
 }
 
 /// A line of text centred on `x`, its top at `y`.
-fn label(x: f32, y: f32, w: f32, size: f32, col: Hsla, text: impl Into<SharedString>) -> gpui::Div {
+pub(super) fn label(
+    x: f32,
+    y: f32,
+    w: f32,
+    size: f32,
+    col: Hsla,
+    text: impl Into<SharedString>,
+) -> gpui::Div {
     text_box(x, y, w)
         .text_size(px(size))
         .text_color(col)
@@ -32,7 +41,7 @@ fn label(x: f32, y: f32, w: f32, size: f32, col: Hsla, text: impl Into<SharedStr
 }
 
 /// A tone's colour, the accent for [`Tone::Off`].
-fn tone_or(t: &dodai_core::Theme, tone: Tone, ink: Ink) -> Hsla {
+pub(super) fn tone_or(t: &dodai_core::Theme, tone: Tone, ink: Ink) -> Hsla {
     match tone {
         Tone::Off => ink.primary,
         other => other.color(t),
@@ -44,8 +53,11 @@ fn tone_or(t: &dodai_core::Theme, tone: Tone, ink: Ink) -> Hsla {
 impl TyrePod {
     pub(super) fn detailed(self, t: &dodai_core::Theme) -> AnyElement {
         match self.look {
-            PodLook::Hud => self.hud(t),
-            _ => self.chrono(t),
+            Look::HeadsUp => self.hud(t),
+            Look::Vintage => self.vintage(t),
+            Look::Digital => self.digital(t),
+            Look::Futuristic => self.futuristic(t),
+            Look::Classic | Look::Chrono => self.chrono(t),
         }
     }
 
@@ -276,8 +288,11 @@ impl TyrePod {
 impl RowsPod {
     pub(super) fn detailed(self, t: &dodai_core::Theme) -> AnyElement {
         match self.look {
-            PodLook::Hud => self.hud(t),
-            _ => self.chrono(t),
+            Look::HeadsUp => self.hud(t),
+            Look::Vintage => self.vintage(t),
+            Look::Digital => self.digital(t),
+            Look::Futuristic => self.futuristic(t),
+            Look::Classic | Look::Chrono => self.chrono(t),
         }
     }
 
@@ -554,8 +569,11 @@ impl RowsPod {
 impl NoticePod {
     pub(super) fn detailed(self, t: &dodai_core::Theme) -> AnyElement {
         match self.look {
-            PodLook::Hud => self.hud(t),
-            _ => self.chrono(t),
+            Look::HeadsUp => self.hud(t),
+            Look::Vintage => self.vintage(t),
+            Look::Digital => self.digital(t),
+            Look::Futuristic => self.futuristic(t),
+            Look::Classic | Look::Chrono => self.chrono(t),
         }
     }
 
@@ -719,8 +737,11 @@ impl NoticePod {
 impl GForcePod {
     pub(super) fn detailed(self, t: &dodai_core::Theme) -> AnyElement {
         match self.look {
-            PodLook::Hud => self.hud(t),
-            _ => self.chrono(t),
+            Look::HeadsUp => self.hud(t),
+            Look::Vintage => self.vintage(t),
+            Look::Digital => self.digital(t),
+            Look::Futuristic => self.futuristic(t),
+            Look::Classic | Look::Chrono => self.chrono(t),
         }
     }
 
@@ -978,8 +999,11 @@ impl MediaPod {
         let ink = Ink::of(t);
         let cover = self.cover.take();
         match self.look {
-            PodLook::Hud => self.hud(ink, cover),
-            _ => self.chrono(ink, cover),
+            Look::HeadsUp => self.hud(ink, cover),
+            Look::Vintage => self.vintage(ink),
+            Look::Digital => self.digital(ink, t.is_dark()),
+            Look::Futuristic => self.futuristic(ink, cover),
+            Look::Classic | Look::Chrono => self.chrono(ink, cover),
         }
     }
 
@@ -1226,8 +1250,11 @@ impl MediaPod {
 impl CompassPod {
     pub(super) fn detailed(self, t: &dodai_core::Theme) -> AnyElement {
         match self.look {
-            PodLook::Hud => self.hud(t),
-            _ => self.chrono(t),
+            Look::HeadsUp => self.hud(t),
+            Look::Vintage => self.vintage(t),
+            Look::Digital => self.digital(t),
+            Look::Futuristic => self.futuristic(t),
+            Look::Classic | Look::Chrono => self.chrono(t),
         }
     }
 

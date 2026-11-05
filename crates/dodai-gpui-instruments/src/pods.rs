@@ -3,10 +3,11 @@
 //! [`crate::dash::MenuRing`] are the first two) that a [`crate::dash::DashTriptych`] or a
 //! [`DashQuad`] can hold, and each stands alone. All colours come from the theme.
 
-use crate::dash::{text_box, Frame, LimitSign, Pod, PodLook, PodStyle, RingTach, Telltales, Tone};
+use crate::dash::{text_box, Frame, LimitSign, Pod, PodStyle, RingTach, Telltales, Tone};
 use crate::dial::severity_color;
 use crate::draw::{polar, turn_arc};
 use crate::gauges::disc;
+use crate::look::Look;
 use crate::pod_math as pm;
 use dodai_gpui::follow::{follow, follow_angle, Follow};
 use dodai_gpui::follow_api;
@@ -109,6 +110,9 @@ fn pod_size(s: f32) -> f32 {
 }
 
 mod detailed;
+mod digital;
+mod future;
+mod vintage;
 
 // ───────────────────────────────── TyrePod ─────────────────────────────────
 
@@ -120,7 +124,7 @@ pub struct TyrePod {
     unit: SharedString,
     bars: [Option<f32>; 4],
     low: f32,
-    look: PodLook,
+    look: Look,
     style: PodStyle,
     size: f32,
 }
@@ -135,7 +139,7 @@ impl TyrePod {
             bars: [None; 4],
             low: 0.0,
             size: 300.0,
-            look: PodLook::Ring,
+            look: Look::Classic,
             style: PodStyle::Ring,
         }
     }
@@ -165,7 +169,7 @@ impl TyrePod {
         self
     }
     /// The look: the round pod (default), a watch case or a heads-up display.
-    pub fn look(mut self, look: PodLook) -> Self {
+    pub fn look(mut self, look: Look) -> Self {
         self.look = look;
         self
     }
@@ -190,7 +194,7 @@ impl Default for TyrePod {
 impl RenderOnce for TyrePod {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        if self.look != PodLook::Ring {
+        if self.look != Look::Classic {
             return self.detailed(&t);
         }
         let size = self.size;
@@ -287,7 +291,7 @@ impl PodRow {
 pub struct RowsPod {
     heading: SharedString,
     rows: Vec<PodRow>,
-    look: PodLook,
+    look: Look,
     style: PodStyle,
     size: f32,
 }
@@ -299,7 +303,7 @@ impl RowsPod {
             heading: SharedString::default(),
             rows: rows.into_iter().collect(),
             size: 300.0,
-            look: PodLook::Ring,
+            look: Look::Classic,
             style: PodStyle::Ring,
         }
     }
@@ -309,7 +313,7 @@ impl RowsPod {
         self
     }
     /// The look: the round pod (default), a watch case or a heads-up display.
-    pub fn look(mut self, look: PodLook) -> Self {
+    pub fn look(mut self, look: Look) -> Self {
         self.look = look;
         self
     }
@@ -328,7 +332,7 @@ impl RowsPod {
 impl RenderOnce for RowsPod {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        if self.look != PodLook::Ring {
+        if self.look != Look::Classic {
             return self.detailed(&t);
         }
         let size = self.size;
@@ -415,7 +419,7 @@ pub struct NoticePod {
     title: SharedString,
     text: SharedString,
     tone: Tone,
-    look: PodLook,
+    look: Look,
     style: PodStyle,
     size: f32,
 }
@@ -429,7 +433,7 @@ impl NoticePod {
             text: SharedString::default(),
             tone: Tone::Off,
             size: 300.0,
-            look: PodLook::Ring,
+            look: Look::Classic,
             style: PodStyle::Ring,
         }
     }
@@ -444,7 +448,7 @@ impl NoticePod {
         self
     }
     /// The look: the round pod (default), a watch case or a heads-up display.
-    pub fn look(mut self, look: PodLook) -> Self {
+    pub fn look(mut self, look: Look) -> Self {
         self.look = look;
         self
     }
@@ -463,7 +467,7 @@ impl NoticePod {
 impl RenderOnce for NoticePod {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        if self.look != PodLook::Ring {
+        if self.look != Look::Classic {
             return self.detailed(&t);
         }
         let size = self.size;
@@ -529,7 +533,7 @@ pub struct GForcePod {
     lateral: f32,
     longitudinal: f32,
     limit: f32,
-    look: PodLook,
+    look: Look,
     style: PodStyle,
     size: f32,
 }
@@ -545,7 +549,7 @@ impl GForcePod {
             longitudinal,
             limit: 1.5,
             size: 300.0,
-            look: PodLook::Ring,
+            look: Look::Classic,
             style: PodStyle::Ring,
         }
     }
@@ -555,7 +559,7 @@ impl GForcePod {
         self
     }
     /// The look: the round pod (default), a watch case or a heads-up display.
-    pub fn look(mut self, look: PodLook) -> Self {
+    pub fn look(mut self, look: Look) -> Self {
         self.look = look;
         self
     }
@@ -576,7 +580,7 @@ impl RenderOnce for GForcePod {
         self.lateral = pm::finite(follow(w, cx, &self.follow, 0, self.lateral), 0.0);
         self.longitudinal = pm::finite(follow(w, cx, &self.follow, 1, self.longitudinal), 0.0);
         let t = theme_of(cx);
-        if self.look != PodLook::Ring {
+        if self.look != Look::Classic {
             return self.detailed(&t);
         }
         let size = self.size;
@@ -822,7 +826,7 @@ pub struct MediaPod {
     artist: SharedString,
     time: SharedString,
     cover: Option<AnyElement>,
-    look: PodLook,
+    look: Look,
     style: PodStyle,
     size: f32,
 }
@@ -836,7 +840,7 @@ impl MediaPod {
             time: "0:00 | 0:00".into(),
             cover: None,
             size: 300.0,
-            look: PodLook::Ring,
+            look: Look::Classic,
             style: PodStyle::Ring,
         }
     }
@@ -856,7 +860,7 @@ impl MediaPod {
         self
     }
     /// The look: the round pod (default), a watch case or a heads-up display.
-    pub fn look(mut self, look: PodLook) -> Self {
+    pub fn look(mut self, look: Look) -> Self {
         self.look = look;
         self
     }
@@ -875,7 +879,7 @@ impl MediaPod {
 impl RenderOnce for MediaPod {
     fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        if self.look != PodLook::Ring {
+        if self.look != Look::Classic {
             return self.detailed(&t);
         }
         let size = self.size;
@@ -948,7 +952,7 @@ pub struct CompassPod {
     follow: Follow,
     heading: f32,
     height: SharedString,
-    look: PodLook,
+    look: Look,
     style: PodStyle,
     size: f32,
 }
@@ -963,7 +967,7 @@ impl CompassPod {
             heading: pm::bearing(heading),
             height: SharedString::default(),
             size: 300.0,
-            look: PodLook::Ring,
+            look: Look::Classic,
             style: PodStyle::Ring,
         }
     }
@@ -973,7 +977,7 @@ impl CompassPod {
         self
     }
     /// The look: the round pod (default), a watch case or a heads-up display.
-    pub fn look(mut self, look: PodLook) -> Self {
+    pub fn look(mut self, look: Look) -> Self {
         self.look = look;
         self
     }
@@ -993,7 +997,7 @@ impl RenderOnce for CompassPod {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
         self.heading = pm::bearing(follow_angle(w, cx, &self.follow, 0, self.heading));
         let t = theme_of(cx);
-        if self.look != PodLook::Ring {
+        if self.look != Look::Classic {
             return self.detailed(&t);
         }
         let (size, heading) = (self.size, self.heading);

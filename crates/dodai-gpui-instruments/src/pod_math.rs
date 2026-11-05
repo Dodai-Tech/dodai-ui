@@ -152,6 +152,32 @@ pub(crate) fn spectrum(seed: &str, n: usize) -> Vec<f32> {
         .collect()
 }
 
+/// A reading split into its figure and the rest: `"12.4 l/100km"` → `("12.4", "l/100km")`. The
+/// figure is the leading run of digits, `.`, `:` and `-`; without a digit in it the whole text is
+/// the rest.
+pub(crate) fn split_figure(text: &str) -> (&str, &str) {
+    let end = text
+        .char_indices()
+        .find(|(_, c)| !(c.is_ascii_digit() || matches!(c, '.' | ':' | '-')))
+        .map_or(text.len(), |(i, _)| i);
+    let (fig, rest) = text.split_at(end);
+    if fig.chars().any(|c| c.is_ascii_digit()) {
+        (fig, rest.trim_start())
+    } else {
+        ("", text)
+    }
+}
+
+/// The elapsed part of a `"m:ss | m:ss"` time, trimmed; the whole text without a `|`.
+pub(crate) fn elapsed(time: &str) -> &str {
+    time.split('|').next().unwrap_or("").trim()
+}
+
+/// The total of two forces in g (NaN counts as 0).
+pub(crate) fn g_total(lateral: f32, longitudinal: f32) -> f32 {
+    finite(lateral, 0.0).hypot(finite(longitudinal, 0.0))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -274,5 +300,28 @@ mod tests {
         assert_eq!(pod_diameter(10.0), 120.0);
         assert_eq!(pod_diameter(240.0), 240.0);
         assert_eq!(pod_diameter(f32::NAN), 300.0);
+    }
+
+    #[test]
+    fn a_reading_splits_into_figure_and_unit() {
+        assert_eq!(split_figure("12.4 l/100km"), ("12.4", "l/100km"));
+        assert_eq!(split_figure("08:45"), ("08:45", ""));
+        assert_eq!(split_figure("523 km"), ("523", "km"));
+        assert_eq!(split_figure("--- km"), ("", "--- km"));
+        assert_eq!(split_figure("Eco"), ("", "Eco"));
+        assert_eq!(split_figure(""), ("", ""));
+    }
+
+    #[test]
+    fn elapsed_is_the_part_before_the_bar() {
+        assert_eq!(elapsed("1:05 | 3:40"), "1:05");
+        assert_eq!(elapsed(" 0:00 "), "0:00");
+        assert_eq!(elapsed(""), "");
+    }
+
+    #[test]
+    fn total_force_is_the_length_of_the_vector() {
+        assert!((g_total(0.3, 0.4) - 0.5).abs() < 1e-6);
+        assert_eq!(g_total(f32::NAN, 0.0), 0.0);
     }
 }
