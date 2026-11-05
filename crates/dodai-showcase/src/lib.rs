@@ -325,30 +325,31 @@ impl Render for Showcase {
                 })
                 .flatten(),
         );
-        let needle_bar = (in_instruments && self.sub == Some("Vehicle")).then(|| {
-            let m = me.clone();
-            div()
-                .flex()
-                .flex_wrap()
-                .items_center()
-                .gap_2()
-                .px_4()
-                .py_2()
-                .child(dodai_gpui::Label::new("Needle"))
-                .child(
-                    dodai_gpui::Segmented::new(
-                        "veh-response",
-                        ["Design", "Instant", "Snappy", "Smooth", "Heavy", "Bouncy"],
+        let needle_bar =
+            (in_instruments && matches!(self.sub, None | Some("Vehicle"))).then(|| {
+                let m = me.clone();
+                div()
+                    .flex()
+                    .flex_wrap()
+                    .items_center()
+                    .gap_2()
+                    .px_4()
+                    .py_2()
+                    .child(dodai_gpui::Label::new("Needle"))
+                    .child(
+                        dodai_gpui::Segmented::new(
+                            "veh-response",
+                            ["Design", "Instant", "Snappy", "Smooth", "Heavy", "Bouncy"],
+                        )
+                        .selected(self.inst_response)
+                        .on_select(move |i, _, cx| {
+                            m.update(cx, |s, cx| {
+                                s.inst_response = i;
+                                cx.notify();
+                            })
+                        }),
                     )
-                    .selected(self.inst_response)
-                    .on_select(move |i, _, cx| {
-                        m.update(cx, |s, cx| {
-                            s.inst_response = i;
-                            cx.notify();
-                        })
-                    }),
-                )
-        });
+            });
         let side = gpui::AnyView::from(side).cached(gpui::StyleRefinement::default().size_full());
 
         let overview = self.cat == 0
