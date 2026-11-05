@@ -64,6 +64,20 @@ def "test publish-order: leaves first, no duplicates, leaves after their deps" [
     assert (($o | enumerate | where item == "dodai-icons" | get index.0) < ($o | enumerate | where item == "dodai-gpui" | get index.0))
 }
 
+def "test publish-order: every crate comes after the workspace crates it depends on" [] {
+    let o = (publish-order)
+    let pkgs = (cargo metadata --no-deps --format-version 1 | from json | get packages)
+    for p in ($pkgs | where name in $o) {
+        let at = ($o | enumerate | where item == $p.name | get index.0)
+        let deps = ($p.dependencies | where kind == null and name starts-with "dodai" | get name)
+        for d in $deps {
+            assert ($d in $o) $"($p.name) depends on ($d), which is not published"
+            let dat = ($o | enumerate | where item == $d | get index.0)
+            assert ($dat < $at) $"($d) must come before ($p.name)"
+        }
+    }
+}
+
 def "test real Cargo.toml: version is semver and bump round-trips" [] {
     let raw = (open ($env.FILE_PWD | path join ".." ".." "Cargo.toml") --raw)
     let v = (read-version $raw)
