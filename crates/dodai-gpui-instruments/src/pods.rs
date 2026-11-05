@@ -1,0 +1,1038 @@
+//! More pods for the digital dash: tyre pressure, a list of readings, a notice, G-force, boost,
+//! media and a compass. Each is an open ring ([`crate::dash::SidePod`] and
+//! [`crate::dash::MenuRing`] are the first two) that a [`crate::dash::DashTriptych`] or a
+//! [`DashQuad`] can hold, and each stands alone. All colours come from the theme.
+
+use crate::dash::{rim, text_box, LimitSign, Pod, RingTach, Telltales, Tone};
+use crate::draw::polar;
+use crate::gauges::disc;
+use dodai_gpui::icons::IconId;
+use dodai_gpui::icons::{Icon, Symbol};
+use dodai_gpui::paint::{fill, scale_alpha, stroke};
+use dodai_gpui::{hsla, theme_of};
+use gpui::{
+    canvas, div, px, AnyElement, App, Bounds, FontWeight, Hsla, IntoElement, ParentElement, Pixels,
+    RenderOnce, SharedString, Styled, Window,
+};
+
+/// An icon in a pod row: a dashboard symbol or a named icon.
+#[derive(Clone, Copy, Debug)]
+pub enum PodIcon {
+    /// A dashboard symbol.
+    Symbol(Symbol),
+    /// A named icon.
+    Named(IconId),
+}
+
+impl From<Symbol> for PodIcon {
+    fn from(s: Symbol) -> Self {
+        Self::Symbol(s)
+    }
+}
+
+impl From<IconId> for PodIcon {
+    fn from(i: IconId) -> Self {
+        Self::Named(i)
+    }
+}
+
+impl PodIcon {
+    fn element(self, size: f32, color: Hsla) -> AnyElement {
+        match self {
+            Self::Symbol(s) => Icon::symbol(s).size(size).color(color).into_any_element(),
+            Self::Named(i) => Icon::new(i).size(size).color(color).into_any_element(),
+        }
+    }
+}
+
+/// The ring every pod shares, with `content` laid over it.
+fn ring(
+    size: f32,
+    ends: [Option<Tone>; 2],
+    t: &dodai_core::Theme,
+    paint: impl Fn(&mut Window, gpui::Point<Pixels>) + 'static,
+    content: impl IntoElement,
+) -> gpui::Div {
+    let c = size / 2.0;
+    let ink = hsla(t.palette.text);
+    let width = (size * 0.014).max(2.0);
+    let r = c - size * 0.012;
+    let ends = ends.map(|e| e.map(|tone| tone.color(t)));
+    let cv = canvas(
+        |_, _, _| (),
+        move |b: Bounds<Pixels>, _, w, _| {
+            rim(w, b.origin, c, r, width, ink, ends);
+            paint(w, b.origin);
+        },
+    )
+    .absolute()
+    .size_full();
+    div()
+        .relative()
+        .w(px(size))
+        .h(px(size))
+        .child(cv)
+        .child(content)
+}
+
+/// An absolutely placed box over the ring: `(left, top, width)` as fractions of `size`.
+fn slot(size: f32, left: f32, top: f32, width: f32) -> gpui::Div {
+    div()
+        .absolute()
+        .left(px(size * left))
+        .top(px(size * top))
+        .w(px(size * width))
+        .flex()
+        .flex_col()
+        .items_center()
+}
+
+macro_rules! into_pod {
+    ($($t:ty),*) => {$(
+        impl From<$t> for Pod {
+            fn from(p: $t) -> Self {
+                Pod::Custom(Box::new(move |s| p.size(s).into_any_element()))
+            }
+        }
+    )*};
+}
+
+fn pod_size(s: f32) -> f32 {
+    s.max(120.0)
+}
+
+// ───────────────────────────────── TyrePod ─────────────────────────────────
+
+/// Tyre pressures around a car outline: front left and right, rear left and right.
+#[derive(IntoElement)]
+pub struct TyrePod {
+    heading: SharedString,
+    note: SharedString,
+    unit: SharedString,
+    bars: [Option<f32>; 4],
+    low: f32,
+    size: f32,
+}
+
+impl TyrePod {
+    /// A tyre pod with no readings yet (`---`).
+    pub fn new() -> Self {
+        Self {
+            heading: "Tyre pressure".into(),
+            note: SharedString::default(),
+            unit: "bar".into(),
+            bars: [None; 4],
+            low: 0.0,
+            size: 300.0,
+        }
+    }
+    /// The heading above the car.
+    pub fn heading(mut self, h: impl Into<SharedString>) -> Self {
+        self.heading = h.into();
+        self
+    }
+    /// A line across the car, such as when readings start.
+    pub fn note(mut self, n: impl Into<SharedString>) -> Self {
+        self.note = n.into();
+        self
+    }
+    /// The unit under the car.
+    pub fn unit(mut self, u: impl Into<SharedString>) -> Self {
+        self.unit = u.into();
+        self
+    }
+    /// The four pressures: front left, front right, rear left, rear right.
+    pub fn bars(mut self, b: [Option<f32>; 4]) -> Self {
+        self.bars = b;
+        self
+    }
+    /// A pressure under this shows as a warning.
+    pub fn low_below(mut self, v: f32) -> Self {
+        self.low = v;
+        self
+    }
+    /// Diameter in px.
+    pub fn size(mut self, s: f32) -> Self {
+        self.size = pod_size(s);
+        self
+    }
+}
+
+impl Default for TyrePod {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl RenderOnce for TyrePod {
+    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let size = self.size;
+        let (ink, muted) = (hsla(t.palette.text), hsla(t.palette.text_muted));
+        let c = size / 2.0;
+        let bh = size * 0.42;
+        let top = c - bh / 2.0 + size * 0.07;
+        let mut content = div()
+            .absolute()
+            .left_0()
+            .top_0()
+            .size_full()
+            .child(
+                text_box(c, size * 0.19, size * 0.6)
+                    .text_size(px(size * 0.058))
+                    .text_color(ink)
+                    .font_weight(FontWeight::MEDIUM)
+                    .child(self.heading.clone()),
+            )
+            .child(
+                text_box(c, size * 0.27, size * 0.8)
+                    .text_size(px(size * 0.045))
+                    .text_color(muted)
+                    .child(self.note.clone()),
+            )
+            .child(
+                slot(size, 0.4, (top + bh * 0.3) / size, 0.2).child(
+                    Icon::symbol(Symbol::TyrePressure)
+                        .size(size * 0.2)
+                        .color(scale_alpha(ink, 0.85)),
+                ),
+            )
+            .child(
+                text_box(c, top + bh + size * 0.03, size * 0.4)
+                    .text_size(px(size * 0.05))
+                    .text_color(muted)
+                    .child(self.unit.clone()),
+            );
+        for (i, bar) in self.bars.iter().enumerate() {
+            let (side, row) = (i % 2, i / 2);
+            let x = c + if side == 0 { -1.0 } else { 1.0 } * size * 0.25;
+            let y = top + bh * if row == 0 { 0.12 } else { 0.72 };
+            let col = match bar {
+                Some(v) if *v < self.low => Tone::Warning.color(&t),
+                Some(_) => ink,
+                None => muted,
+            };
+            content = content
+                .child(
+                    slot(
+                        size,
+                        (x - size * 0.1) / size,
+                        (y - size * 0.075) / size,
+                        0.2,
+                    )
+                    .child(Icon::symbol(Symbol::Tyre).size(size * 0.085).color(col)),
+                )
+                .child(
+                    text_box(x, y + size * 0.035, size * 0.2)
+                        .text_size(px(size * 0.05))
+                        .text_color(col)
+                        .child(bar.map_or("---".to_string(), |v| format!("{v:.1}"))),
+                );
+        }
+        ring(size, [None, None], &t, |_, _| (), content)
+    }
+}
+
+// ───────────────────────────────── RowsPod ─────────────────────────────────
+
+/// One row of a [`RowsPod`]: an icon, an optional level bar and a value.
+#[derive(Clone)]
+pub struct PodRow {
+    icon: PodIcon,
+    value: SharedString,
+    bar: Option<(f32, Tone)>,
+}
+
+impl PodRow {
+    /// A row with `icon` and `value` text.
+    pub fn new(icon: impl Into<PodIcon>, value: impl Into<SharedString>) -> Self {
+        Self {
+            icon: icon.into(),
+            value: value.into(),
+            bar: None,
+        }
+    }
+    /// A level bar (`0..=1`) in a tone between the icon and the value.
+    pub fn bar(mut self, frac: f32, tone: Tone) -> Self {
+        self.bar = Some((frac.clamp(0.0, 1.0), tone));
+        self
+    }
+}
+
+/// A pod holding a short list of readings on dark tiles: vehicle levels, a trip, today's items.
+#[derive(IntoElement)]
+pub struct RowsPod {
+    heading: SharedString,
+    rows: Vec<PodRow>,
+    size: f32,
+}
+
+impl RowsPod {
+    /// A pod with these `rows`.
+    pub fn new(rows: impl IntoIterator<Item = PodRow>) -> Self {
+        Self {
+            heading: SharedString::default(),
+            rows: rows.into_iter().collect(),
+            size: 300.0,
+        }
+    }
+    /// A heading above the rows.
+    pub fn heading(mut self, h: impl Into<SharedString>) -> Self {
+        self.heading = h.into();
+        self
+    }
+    /// Diameter in px.
+    pub fn size(mut self, s: f32) -> Self {
+        self.size = pod_size(s);
+        self
+    }
+}
+
+impl RenderOnce for RowsPod {
+    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let size = self.size;
+        let (ink, muted) = (hsla(t.palette.text), hsla(t.palette.text_muted));
+        let tile = hsla(t.palette.surface_raised);
+        let row_h = size * 0.105;
+        let n = self.rows.len() as f32 + if self.heading.is_empty() { 0.0 } else { 1.0 };
+        let mut list =
+            slot(size, 0.13, 0.5 - (row_h * n) / size / 2.0 + 0.02, 0.74).gap(px(size * 0.01));
+        if !self.heading.is_empty() {
+            list = list.child(
+                div()
+                    .h(px(row_h))
+                    .flex()
+                    .items_center()
+                    .text_size(px(size * 0.06))
+                    .text_color(ink)
+                    .font_weight(FontWeight::MEDIUM)
+                    .child(self.heading.clone()),
+            );
+        }
+        for row in &self.rows {
+            let mut line = div()
+                .w_full()
+                .h(px(row_h))
+                .flex()
+                .items_center()
+                .gap(px(size * 0.03))
+                .px(px(size * 0.03))
+                .bg(tile)
+                .child(row.icon.element(size * 0.065, muted));
+            if let Some((f, tone)) = row.bar {
+                line = line.child(
+                    div()
+                        .flex_1()
+                        .h(px(size * 0.022))
+                        .bg(scale_alpha(ink, 0.2))
+                        .child(div().h_full().w(gpui::relative(f)).bg(tone.color(&t))),
+                );
+            } else {
+                line = line.child(div().flex_1());
+            }
+            list = list.child(
+                line.child(
+                    div()
+                        .text_size(px(size * 0.058))
+                        .text_color(ink)
+                        .whitespace_nowrap()
+                        .child(row.value.clone()),
+                ),
+            );
+        }
+        ring(size, [None, None], &t, |_, _| (), list)
+    }
+}
+
+// ───────────────────────────────── NoticePod ─────────────────────────────────
+
+/// A message in a pod: a back arrow, a symbol, a title and a line of advice.
+#[derive(IntoElement)]
+pub struct NoticePod {
+    icon: PodIcon,
+    title: SharedString,
+    text: SharedString,
+    tone: Tone,
+    size: f32,
+}
+
+impl NoticePod {
+    /// A notice with `icon` and `title`.
+    pub fn new(icon: impl Into<PodIcon>, title: impl Into<SharedString>) -> Self {
+        Self {
+            icon: icon.into(),
+            title: title.into(),
+            text: SharedString::default(),
+            tone: Tone::Off,
+            size: 300.0,
+        }
+    }
+    /// The advice under the title.
+    pub fn text(mut self, t: impl Into<SharedString>) -> Self {
+        self.text = t.into();
+        self
+    }
+    /// The colour of the symbol (default: the text colour).
+    pub fn tone(mut self, t: Tone) -> Self {
+        self.tone = t;
+        self
+    }
+    /// Diameter in px.
+    pub fn size(mut self, s: f32) -> Self {
+        self.size = pod_size(s);
+        self
+    }
+}
+
+impl RenderOnce for NoticePod {
+    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let size = self.size;
+        let (ink, muted) = (hsla(t.palette.text), hsla(t.palette.text_muted));
+        let icon_col = if self.tone == Tone::Off {
+            ink
+        } else {
+            self.tone.color(&t)
+        };
+        let content = div()
+            .absolute()
+            .left_0()
+            .top_0()
+            .size_full()
+            .child(
+                slot(size, 0.4, 0.02, 0.2)
+                    .child(Icon::new(IconId::ArrowLeft).size(size * 0.06).color(muted)),
+            )
+            .child(
+                slot(size, 0.12, 0.3, 0.76)
+                    .gap(px(size * 0.02))
+                    .child(self.icon.element(size * 0.14, icon_col))
+                    .child(
+                        div()
+                            .text_size(px(size * 0.06))
+                            .text_color(ink)
+                            .font_weight(FontWeight::MEDIUM)
+                            .child(self.title.clone()),
+                    )
+                    .child(
+                        div()
+                            .text_size(px(size * 0.05))
+                            .text_color(ink)
+                            .child(self.text.clone()),
+                    ),
+            );
+        ring(
+            size,
+            [Some(Tone::Info), Some(Tone::Info)],
+            &t,
+            |_, _| (),
+            content,
+        )
+    }
+}
+
+// ───────────────────────────────── GForcePod ─────────────────────────────────
+
+/// G-force: a dotted cross with a dot that moves with the acceleration, and the four readings.
+#[derive(IntoElement)]
+pub struct GForcePod {
+    lateral: f32,
+    longitudinal: f32,
+    limit: f32,
+    size: f32,
+}
+
+impl GForcePod {
+    /// A pod at `lateral` (right is positive) and `longitudinal` (forward is positive) g.
+    pub fn new(lateral: f32, longitudinal: f32) -> Self {
+        Self {
+            lateral,
+            longitudinal,
+            limit: 1.5,
+            size: 300.0,
+        }
+    }
+    /// The g at the edge of the cross (default 1.5).
+    pub fn limit(mut self, g: f32) -> Self {
+        self.limit = g.max(0.1);
+        self
+    }
+    /// Diameter in px.
+    pub fn size(mut self, s: f32) -> Self {
+        self.size = pod_size(s);
+        self
+    }
+}
+
+impl RenderOnce for GForcePod {
+    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let size = self.size;
+        let c = size / 2.0;
+        let (ink, muted, info) = (
+            hsla(t.palette.text),
+            hsla(t.palette.text_muted),
+            hsla(t.palette.info),
+        );
+        let reach = size * 0.27;
+        let (gx, gy) = (
+            (self.lateral / self.limit).clamp(-1.0, 1.0),
+            (self.longitudinal / self.limit).clamp(-1.0, 1.0),
+        );
+        let paint = move |w: &mut Window, o: gpui::Point<Pixels>| {
+            let r = size * 0.011;
+            for i in -4i32..=4 {
+                if i == 0 {
+                    continue;
+                }
+                let d = reach * i as f32 / 4.0;
+                fill(w, o, &disc(c + d, c, r, 10), scale_alpha(muted, 0.8));
+                fill(w, o, &disc(c, c + d, r, 10), scale_alpha(muted, 0.8));
+            }
+            fill(
+                w,
+                o,
+                &disc(c + gx * reach, c - gy * reach, size * 0.03, 24),
+                info,
+            );
+        };
+        let g = |v: f32| format!("{:.1}", v.abs());
+        let label = |x: f32, y: f32, v: f32| {
+            text_box(x, y, size * 0.2)
+                .text_size(px(size * 0.058))
+                .text_color(ink)
+                .child(g(v))
+        };
+        let content = div()
+            .absolute()
+            .left_0()
+            .top_0()
+            .size_full()
+            .child(label(
+                c,
+                c - reach - size * 0.12,
+                self.longitudinal.max(0.0),
+            ))
+            .child(label(
+                c,
+                c + reach + size * 0.04,
+                (-self.longitudinal).max(0.0),
+            ))
+            .child(label(
+                c - reach - size * 0.11,
+                c - size * 0.03,
+                (-self.lateral).max(0.0),
+            ))
+            .child(label(
+                c + reach + size * 0.11,
+                c - size * 0.03,
+                self.lateral.max(0.0),
+            ));
+        ring(
+            size,
+            [Some(Tone::Info), Some(Tone::Info)],
+            &t,
+            paint,
+            content,
+        )
+    }
+}
+
+// ───────────────────────────────── BoostPod ─────────────────────────────────
+
+/// Boost or charge: a percentage over a stack of cells, a label and a temperature.
+#[derive(IntoElement)]
+pub struct BoostPod {
+    percent: f32,
+    label: SharedString,
+    temp: SharedString,
+    size: f32,
+}
+
+impl BoostPod {
+    /// A pod at `percent` (0 to 100).
+    pub fn new(percent: f32) -> Self {
+        Self {
+            percent: percent.clamp(0.0, 100.0),
+            label: "BOOST".into(),
+            temp: SharedString::default(),
+            size: 300.0,
+        }
+    }
+    /// The label on the left.
+    pub fn label(mut self, l: impl Into<SharedString>) -> Self {
+        self.label = l.into();
+        self
+    }
+    /// The temperature on the right, e.g. `9 °C`.
+    pub fn temp(mut self, t: impl Into<SharedString>) -> Self {
+        self.temp = t.into();
+        self
+    }
+    /// Diameter in px.
+    pub fn size(mut self, s: f32) -> Self {
+        self.size = pod_size(s);
+        self
+    }
+}
+
+impl RenderOnce for BoostPod {
+    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let size = self.size;
+        let c = size / 2.0;
+        let (ink, muted, ok) = (
+            hsla(t.palette.text),
+            hsla(t.palette.text_muted),
+            hsla(t.palette.success),
+        );
+        let frac = self.percent / 100.0;
+        let (bw, bh) = (size * 0.2, size * 0.3);
+        let (bx, by) = (c - bw / 2.0, c - bh / 2.0 + size * 0.04);
+        let paint = move |w: &mut Window, o: gpui::Point<Pixels>| {
+            let frame = [(bx, by), (bx + bw, by), (bx + bw, by + bh), (bx, by + bh)];
+            stroke(w, o, &frame, 2.0, ink, true);
+            let cells = 10;
+            let lit = (frac * cells as f32).round() as usize;
+            for i in 0..cells {
+                let y = by + bh - (i as f32 + 1.0) * bh / cells as f32;
+                let on = i < lit;
+                stroke(
+                    w,
+                    o,
+                    &[
+                        (bx + bw * 0.08, y + bh / cells as f32 * 0.5),
+                        (bx + bw * 0.92, y + bh / cells as f32 * 0.5),
+                    ],
+                    if on { 3.0 } else { 1.0 },
+                    if on { ok } else { scale_alpha(ink, 0.45) },
+                    false,
+                );
+            }
+            stroke(w, o, &[(bx, by + bh), (bx + bw, by + bh)], 3.0, ok, false);
+        };
+        let content = div()
+            .absolute()
+            .left_0()
+            .top_0()
+            .size_full()
+            .child(
+                text_box(c, by - size * 0.09, size * 0.4)
+                    .text_size(px(size * 0.06))
+                    .text_color(ink)
+                    .child(format!("{:.0} %", self.percent)),
+            )
+            .child(
+                text_box(c - size * 0.3, c - size * 0.02, size * 0.2)
+                    .text_size(px(size * 0.05))
+                    .text_color(ink)
+                    .font_weight(FontWeight::MEDIUM)
+                    .child(self.label.clone()),
+            )
+            .child(
+                slot(size, 0.68, 0.43, 0.2)
+                    .gap(px(size * 0.01))
+                    .child(
+                        div()
+                            .text_size(px(size * 0.05))
+                            .text_color(ink)
+                            .child(self.temp.clone()),
+                    )
+                    .child(Icon::symbol(Symbol::Battery).size(size * 0.07).color(muted)),
+            );
+        ring(
+            size,
+            [Some(Tone::Info), Some(Tone::Danger)],
+            &t,
+            paint,
+            content,
+        )
+    }
+}
+
+// ───────────────────────────────── MediaPod ─────────────────────────────────
+
+/// What is playing: a cover, the title and artist, and the time.
+#[derive(IntoElement)]
+pub struct MediaPod {
+    title: SharedString,
+    artist: SharedString,
+    time: SharedString,
+    cover: Option<AnyElement>,
+    size: f32,
+}
+
+impl MediaPod {
+    /// A pod for `title`.
+    pub fn new(title: impl Into<SharedString>) -> Self {
+        Self {
+            title: title.into(),
+            artist: SharedString::default(),
+            time: "0:00 | 0:00".into(),
+            cover: None,
+            size: 300.0,
+        }
+    }
+    /// The artist or show under the title.
+    pub fn artist(mut self, a: impl Into<SharedString>) -> Self {
+        self.artist = a.into();
+        self
+    }
+    /// The elapsed and total time line.
+    pub fn time(mut self, t: impl Into<SharedString>) -> Self {
+        self.time = t.into();
+        self
+    }
+    /// Your own cover art (default: a framed note).
+    pub fn cover(mut self, e: impl IntoElement) -> Self {
+        self.cover = Some(e.into_any_element());
+        self
+    }
+    /// Diameter in px.
+    pub fn size(mut self, s: f32) -> Self {
+        self.size = pod_size(s);
+        self
+    }
+}
+
+impl RenderOnce for MediaPod {
+    fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let size = self.size;
+        let (ink, muted, info) = (
+            hsla(t.palette.text),
+            hsla(t.palette.text_muted),
+            hsla(t.palette.info),
+        );
+        let side = size * 0.3;
+        let cover = self.cover.take().unwrap_or_else(|| {
+            div()
+                .flex()
+                .items_center()
+                .justify_center()
+                .size_full()
+                .child(Icon::new(IconId::Music).size(side * 0.5).color(muted))
+                .into_any_element()
+        });
+        let content = div().absolute().left_0().top_0().size_full().child(
+            slot(size, 0.1, 0.2, 0.8)
+                .gap(px(size * 0.025))
+                .child(
+                    div()
+                        .w(px(side))
+                        .h(px(side))
+                        .overflow_hidden()
+                        .bg(hsla(t.palette.surface_raised))
+                        .border_1()
+                        .border_color(scale_alpha(ink, 0.5))
+                        .child(cover),
+                )
+                .child(
+                    div()
+                        .text_size(px(size * 0.065))
+                        .text_color(info)
+                        .whitespace_nowrap()
+                        .child(self.title.clone()),
+                )
+                .child(
+                    div()
+                        .text_size(px(size * 0.05))
+                        .text_color(ink)
+                        .child(self.artist.clone()),
+                )
+                .child(
+                    div()
+                        .text_size(px(size * 0.05))
+                        .text_color(info)
+                        .child(self.time.clone()),
+                ),
+        );
+        ring(size, [None, Some(Tone::Info)], &t, |_, _| (), content)
+    }
+}
+
+// ───────────────────────────────── CompassPod ─────────────────────────────────
+
+/// A compass in a pod: a turning card under a fixed pointer, the bearing, the cardinal point and
+/// the height.
+#[derive(IntoElement)]
+pub struct CompassPod {
+    heading: f32,
+    height: SharedString,
+    size: f32,
+}
+
+impl CompassPod {
+    /// A compass at `heading` degrees (0 = north, clockwise).
+    pub fn new(heading: f32) -> Self {
+        Self {
+            heading: heading.rem_euclid(360.0),
+            height: SharedString::default(),
+            size: 300.0,
+        }
+    }
+    /// The height line under the bearing, e.g. `460 m`.
+    pub fn height(mut self, h: impl Into<SharedString>) -> Self {
+        self.height = h.into();
+        self
+    }
+    /// Diameter in px.
+    pub fn size(mut self, s: f32) -> Self {
+        self.size = pod_size(s);
+        self
+    }
+}
+
+impl RenderOnce for CompassPod {
+    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let (size, heading) = (self.size, self.heading);
+        let c = size / 2.0;
+        let r = size * 0.35;
+        let (ink, muted, info, danger) = (
+            hsla(t.palette.text),
+            hsla(t.palette.text_muted),
+            hsla(t.palette.info),
+            hsla(t.palette.danger),
+        );
+        let turn = heading / 360.0;
+        let paint = move |w: &mut Window, o: gpui::Point<Pixels>| {
+            let circle: Vec<(f32, f32)> =
+                (0..=96).map(|i| polar(c, c, r, i as f32 / 96.0)).collect();
+            stroke(w, o, &circle, 1.5, scale_alpha(ink, 0.8), true);
+            for i in 0..72 {
+                let f = i as f32 / 72.0 - turn;
+                let len = if i % 6 == 0 { 0.05 } else { 0.02 };
+                stroke(
+                    w,
+                    o,
+                    &[polar(c, c, r, f), polar(c, c, r - size * len, f)],
+                    1.0,
+                    scale_alpha(muted, 0.9),
+                    false,
+                );
+            }
+            let tip = [
+                (c, c - r - size * 0.01),
+                (c - size * 0.03, c - r + size * 0.06),
+                (c + size * 0.03, c - r + size * 0.06),
+            ];
+            fill(w, o, &tip, info);
+        };
+        let mut content = div().absolute().left_0().top_0().size_full();
+        for (name, deg, north) in [
+            ("N", 0.0, true),
+            ("E", 90.0, false),
+            ("S", 180.0, false),
+            ("W", 270.0, false),
+        ] {
+            let (x, y) = polar(c, c, r + size * 0.065, deg / 360.0 - turn);
+            content = content.child(
+                text_box(x, y - size * 0.03, size * 0.1)
+                    .text_size(px(size * 0.05))
+                    .text_color(if north { danger } else { ink })
+                    .child(name),
+            );
+        }
+        let names = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+        let card = names[((heading + 22.5) / 45.0) as usize % 8];
+        content = content.child(
+            slot(size, 0.25, 0.34, 0.5)
+                .gap(px(size * 0.01))
+                .child(
+                    div()
+                        .text_size(px(size * 0.06))
+                        .text_color(ink)
+                        .child(format!("{heading:.0}°")),
+                )
+                .child(
+                    div()
+                        .text_size(px(size * 0.085))
+                        .text_color(info)
+                        .font_weight(FontWeight::BOLD)
+                        .child(card),
+                )
+                .child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap(px(size * 0.015))
+                        .text_size(px(size * 0.055))
+                        .text_color(ink)
+                        .child(
+                            Icon::symbol(Symbol::Altitude)
+                                .size(size * 0.06)
+                                .color(muted),
+                        )
+                        .child(self.height.clone()),
+                ),
+        );
+        ring(
+            size,
+            [Some(Tone::Info), Some(Tone::Info)],
+            &t,
+            paint,
+            content,
+        )
+    }
+}
+
+into_pod!(TyrePod, RowsPod, NoticePod, GForcePod, BoostPod, MediaPod, CompassPod);
+
+// ───────────────────────────────── DashQuad ─────────────────────────────────
+
+/// A dash of four pods around the ring: two on each side, the outer ones smaller and tucked
+/// behind the inner ones.
+#[derive(IntoElement)]
+pub struct DashQuad {
+    centre: RingTach,
+    left: [Pod; 2],
+    right: [Pod; 2],
+    telltales: Telltales,
+    limit: Option<u32>,
+    mode: SharedString,
+    gear: char,
+    width: f32,
+}
+
+impl DashQuad {
+    /// A dash around `centre`. `left` and `right` list the outer pod first, then the inner one.
+    pub fn new(centre: RingTach, left: [Pod; 2], right: [Pod; 2]) -> Self {
+        Self {
+            centre,
+            left,
+            right,
+            telltales: Telltales::new(),
+            limit: None,
+            mode: SharedString::default(),
+            gear: 'D',
+            width: 1100.0,
+        }
+    }
+    /// The telltales under the ring.
+    pub fn telltales(mut self, t: Telltales) -> Self {
+        self.telltales = t;
+        self
+    }
+    /// The speed limit sign above the left of the ring.
+    pub fn limit(mut self, l: u32) -> Self {
+        self.limit = Some(l);
+        self
+    }
+    /// The drive mode at the bottom right.
+    pub fn mode(mut self, m: impl Into<SharedString>) -> Self {
+        self.mode = m.into();
+        self
+    }
+    /// The engaged gear: `P`, `R`, `N` or `D`.
+    pub fn gear(mut self, g: char) -> Self {
+        self.gear = g;
+        self
+    }
+    /// Width in px; the height follows (0.4 of it).
+    pub fn width(mut self, w: f32) -> Self {
+        self.width = w.max(700.0);
+        self
+    }
+}
+
+impl RenderOnce for DashQuad {
+    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let width = self.width;
+        let h = width * 0.4;
+        let ring_d = h * 0.94;
+        let (outer, inner) = (h * 0.4, h * 0.58);
+        let (ink, muted) = (hsla(t.palette.text), hsla(t.palette.text_muted));
+        let small = (h * 0.045).max(11.0);
+        let place = |e: AnyElement, left: f32, top: f32, d: f32| {
+            div()
+                .absolute()
+                .left(px(left))
+                .top(px(top))
+                .w(px(d))
+                .h(px(d))
+                .child(e)
+        };
+        let [lo, li] = self.left;
+        let [ri, ro] = self.right;
+        // Right side mirrors the left: the inner pod is the first of the pair there.
+        let mut root = div()
+            .relative()
+            .flex_none()
+            .w(px(width))
+            .h(px(h))
+            .overflow_hidden()
+            .rounded(px(t.shape.radius))
+            .bg(hsla(t.palette.background.mix(t.palette.text, 0.02)))
+            .border_1()
+            .border_color(hsla(t.palette.border))
+            .child(place(lo.sized(outer), 0.0, h * 0.32, outer))
+            .child(place(ro.sized(outer), width - outer, h * 0.32, outer))
+            .child(place(li.sized(inner), outer, h * 0.21, inner))
+            .child(place(
+                ri.sized(inner),
+                width - width * 0.075 - inner,
+                h * 0.17,
+                inner,
+            ))
+            .child(
+                div()
+                    .absolute()
+                    .left(px((width - ring_d) / 2.0))
+                    .top(px(h * 0.015))
+                    .child(self.centre.size(ring_d)),
+            );
+        root = root.child(
+            div()
+                .absolute()
+                .left(px(width * 0.17))
+                .top(px(h * 0.8))
+                .child(self.telltales.size(h * 0.055).columns(6)),
+        );
+        if let Some(l) = self.limit {
+            root = root.child(
+                div()
+                    .absolute()
+                    .left(px(width * 0.34))
+                    .top(px(h * 0.04))
+                    .child(LimitSign::new(l).size(h * 0.1)),
+            );
+        }
+        let gears: Vec<AnyElement> = ['R', 'N', 'D']
+            .into_iter()
+            .map(|g| {
+                div()
+                    .text_color(if g == self.gear {
+                        hsla(t.palette.info)
+                    } else {
+                        muted
+                    })
+                    .font_weight(if g == self.gear {
+                        FontWeight::BOLD
+                    } else {
+                        FontWeight::NORMAL
+                    })
+                    .child(g.to_string())
+                    .into_any_element()
+            })
+            .collect();
+        root.child(
+            div()
+                .absolute()
+                .right(px(width * 0.04))
+                .top(px(h * 0.8))
+                .flex()
+                .gap(px(small * 0.6))
+                .text_size(px(small))
+                .child(
+                    div()
+                        .text_color(ink)
+                        .font_weight(FontWeight::MEDIUM)
+                        .child(self.mode.clone()),
+                )
+                .child(div().flex().flex_col().children(gears)),
+        )
+    }
+}

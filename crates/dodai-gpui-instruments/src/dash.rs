@@ -52,7 +52,7 @@ impl Tone {
 }
 
 /// A box of `w` px centred on `x`, for a line of text at `y`.
-fn text_box(x: f32, y: f32, w: f32) -> gpui::Div {
+pub(crate) fn text_box(x: f32, y: f32, w: f32) -> gpui::Div {
     div()
         .absolute()
         .left(px(x - w / 2.0))
@@ -64,7 +64,7 @@ fn text_box(x: f32, y: f32, w: f32) -> gpui::Div {
 }
 
 /// The open ring both kinds of pod share: a bright rim over [`SWEEP`] with optional coloured ends.
-fn rim(
+pub(crate) fn rim(
     w: &mut Window,
     o: gpui::Point<Pixels>,
     c: f32,
@@ -815,6 +815,8 @@ pub enum Pod {
     Side(SidePod),
     /// A menu pod.
     Menu(MenuRing),
+    /// Any other pod (see [`crate::pods`]): built at the size the dash gives it.
+    Custom(Box<dyn FnOnce(f32) -> AnyElement>),
 }
 
 impl From<SidePod> for Pod {
@@ -830,10 +832,11 @@ impl From<MenuRing> for Pod {
 }
 
 impl Pod {
-    fn sized(self, size: f32) -> AnyElement {
+    pub(crate) fn sized(self, size: f32) -> AnyElement {
         match self {
             Pod::Side(p) => p.size(size).into_any_element(),
             Pod::Menu(p) => p.size(size).into_any_element(),
+            Pod::Custom(f) => f(size),
         }
     }
 }
