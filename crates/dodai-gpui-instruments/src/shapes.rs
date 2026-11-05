@@ -215,12 +215,7 @@ pub(crate) type Points = Vec<(f32, f32)>;
 /// The part of a horizontal band `y0..y1` inside a circle of radius `r` centred on `(c, c)`:
 /// the fillable outline, then its left and right curved edges on their own. Empty when the band
 /// misses the circle.
-pub(crate) fn chord_band(
-    c: f32,
-    r: f32,
-    y0: f32,
-    y1: f32,
-) -> (Points, Points, Points) {
+pub(crate) fn chord_band(c: f32, r: f32, y0: f32, y1: f32) -> (Points, Points, Points) {
     let (a, b) = (y0.max(c - r), y1.min(c + r));
     if a.is_nan() || b.is_nan() || b <= a {
         return (Vec::new(), Vec::new(), Vec::new());
