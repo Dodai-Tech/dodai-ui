@@ -152,7 +152,7 @@ impl Menu {
         .p(px(t.spacing.xs + 2.0))
         .flex()
         .flex_col()
-        .gap(px(2.0))
+        .gap(px(t.spacing.half()))
         .font_family(first_family(t.typography.body))
         .text_size(px(t.typography.size_md));
         if t.look().tonal {

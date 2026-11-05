@@ -195,7 +195,7 @@ impl RenderOnce for NavigationDrawer {
                         div()
                             .my(px(k.item_content_gap * 0.67))
                             .mx(px(k.item_padding))
-                            .h(px(1.0))
+                            .h(crate::HAIRLINE)
                             .bg(hsla(t.palette.roles.outline_variant)),
                     );
                 }

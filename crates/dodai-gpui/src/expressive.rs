@@ -200,7 +200,7 @@ impl RenderOnce for SplitButton {
             .variant(self.variant)
             .radii([4.0, FULL, FULL, 4.0])
             .disabled(self.disabled)
-            .refine(|d| d.w(px(48.0)).px(px(0.0)));
+            .refine(|d| d.w(px(48.0)).px(gpui::Pixels::ZERO));
         if let Some(g) = self.cut_gap {
             menu = menu.cut_gap(g);
         }

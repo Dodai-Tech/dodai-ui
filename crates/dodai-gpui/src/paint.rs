@@ -325,7 +325,7 @@ pub fn paint_scanlines(
                     window.paint_quad(gpui::fill(
                         Bounds::new(
                             point(bounds.origin.x + px(x0), bounds.origin.y + px(y)),
-                            gpui::size(px(x1 - x0), px(1.0)),
+                            gpui::size(px(x1 - x0), crate::HAIRLINE),
                         ),
                         color,
                     ));
@@ -625,16 +625,16 @@ fn shaped_base(shape: &Shape, style: ShapeStyle) -> Div {
                 shadows.push(BoxShadow {
                     color: c,
                     offset: point(px(off * style.shadow_dir.0), px(off * style.shadow_dir.1)),
-                    blur_radius: px(0.0),
-                    spread_radius: px(0.0),
+                    blur_radius: gpui::Pixels::ZERO,
+                    spread_radius: gpui::Pixels::ZERO,
                 });
             }
             if let Some((c, r)) = style.glow {
                 shadows.push(BoxShadow {
                     color: c,
-                    offset: point(px(0.0), px(0.0)),
+                    offset: point(gpui::Pixels::ZERO, gpui::Pixels::ZERO),
                     blur_radius: px(r),
-                    spread_radius: px(0.0),
+                    spread_radius: gpui::Pixels::ZERO,
                 });
             }
             if let Some((level, c)) = style.elevation {
@@ -665,7 +665,7 @@ fn shaped_base(shape: &Shape, style: ShapeStyle) -> Div {
                             a: if own { a } else { c.a * a * 0.6 },
                             ..c
                         },
-                        offset: point(px(0.0), px(y)),
+                        offset: point(gpui::Pixels::ZERO, px(y)),
                         blur_radius: px(blur),
                         spread_radius: px(spread),
                     });

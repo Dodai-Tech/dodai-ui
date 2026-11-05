@@ -102,9 +102,9 @@ impl Table {
         let w = |i: usize| self.weights.get(i).copied().unwrap_or(1.0);
         let cell = |i: usize, text: SharedString| {
             div()
-                .flex_basis(px(0.0))
+                .flex_basis(gpui::Pixels::ZERO)
                 .flex_grow()
-                .min_w(px(0.0))
+                .min_w(gpui::Pixels::ZERO)
                 .overflow_hidden()
                 .whitespace_nowrap()
                 .px(px(t.spacing.xs))

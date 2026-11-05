@@ -446,7 +446,7 @@ impl DataTable {
                             .right(px(2.0))
                             .top(px(5.0))
                             .bottom(px(5.0))
-                            .w(px(1.0))
+                            .w(crate::HAIRLINE)
                             .bg(hsla(if resize.is_some_and(|r| r.0 == i) {
                                 p.primary
                             } else {

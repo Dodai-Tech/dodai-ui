@@ -102,7 +102,7 @@ impl RenderOnce for Stopwatch {
                 })
             });
         let splits = lap_splits(&laps);
-        let mut list = div().flex().flex_col().gap(px(2.0)).w_full();
+        let mut list = div().flex().flex_col().gap(px(t.spacing.half())).w_full();
         for i in (0..laps.len()).rev().take(self.max_laps) {
             list = list.child(
                 div()

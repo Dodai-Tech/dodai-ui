@@ -406,7 +406,7 @@ impl Rating {
             }
             s
         });
-        div().flex().gap(px(2.0)).children(stars)
+        div().flex().gap(px(t.spacing.half())).children(stars)
     }
 }
 

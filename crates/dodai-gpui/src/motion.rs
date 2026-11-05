@@ -86,7 +86,7 @@ pub fn input_tracker() -> impl IntoElement {
         },
     )
     .absolute()
-    .size(px(1.0))
+    .size(crate::HAIRLINE)
 }
 
 /// Whether motion is reduced (see [`set_reduce_motion`]).
