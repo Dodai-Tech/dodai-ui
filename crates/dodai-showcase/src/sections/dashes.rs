@@ -592,6 +592,7 @@ impl Showcase {
         let strip = div()
             .flex()
             .flex_wrap()
+            .max_w(px(900.0))
             .gap(px(t.spacing.md))
             .children(small)
             .into_any_element();
