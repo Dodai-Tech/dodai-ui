@@ -28,7 +28,7 @@ impl Render for Host {
 /// `(name, pod, expected width)` for every pod and look.
 fn pods() -> Vec<(String, AnyElement, f32)> {
     let mut out: Vec<(String, AnyElement, f32)> = Vec::new();
-    for look in PodLook::ALL {
+    for look in Look::ALL {
         // Every look is a square pod of the size asked for.
         let w = SIZE;
         let n = |s: &str| format!("{s}-{}", look.name());
@@ -105,7 +105,7 @@ fn pods() -> Vec<(String, AnyElement, f32)> {
             .into_any_element(),
         SIZE,
     ));
-    for look in GaugeLook::ALL {
+    for look in Look::ALL {
         out.push((
             format!("face-{}", look.name()),
             GaugeFace::new(Scale::new(0.0, 8.0), 3.2)

@@ -44,7 +44,11 @@ pub mod faces;
 #[cfg(feature = "aviation")]
 pub mod flight;
 #[cfg(feature = "automotive")]
+mod frames;
+#[cfg(feature = "automotive")]
 pub mod hero;
+#[cfg(feature = "automotive")]
+pub mod look;
 #[cfg(feature = "automotive")]
 pub(crate) mod pod_math;
 #[cfg(feature = "automotive")]
@@ -76,14 +80,16 @@ pub use segment::{SegmentCluster, SegmentDisplay};
 pub use cluster::{DigitalGauge, InstrumentCluster, PodGauge, Tachometer};
 #[cfg(feature = "automotive")]
 pub use dash::{
-    DashTriptych, LimitSign, MenuRing, Pod, PodLook, PodStyle, RingTach, SidePod, Telltales, Tone,
+    DashTriptych, LimitSign, MenuRing, Pod, PodStyle, RingTach, SidePod, Telltales, Tone,
 };
 #[cfg(feature = "automotive")]
-pub use faces::{GaugeFace, GaugeLook};
+pub use faces::GaugeFace;
 #[cfg(feature = "aviation")]
 pub use flight::{AttitudeIndicator, Countermeasures, HeadingTape, SonarWaterfall, VerticalTape};
 #[cfg(feature = "automotive")]
 pub use hero::{CapsuleCluster, CutSpeedometer};
+#[cfg(feature = "automotive")]
+pub use look::Look;
 #[cfg(feature = "automotive")]
 pub use pods::{
     BoostPod, CompassPod, DashQuad, DualGauge, DualScale, GForcePod, MediaPod, NoticePod, PodIcon,

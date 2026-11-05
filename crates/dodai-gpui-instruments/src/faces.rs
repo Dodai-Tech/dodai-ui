@@ -1,12 +1,15 @@
-//! Gauge faces: one scale and one value shown in really different looks. The ring dial of the
-//! dash, a chronograph, a heads-up ring, a sweep dial, a moving-coil meter and a scrolling tape.
+//! Gauge faces: one scale and one value in every [`Look`]: the ring dial of the dash, a
+//! chronograph, a vintage panel meter, a heads-up ring (or tape), a segment display and a halo of
+//! light.
 //! They take the same data, so a dash can swap one for another without touching its values.
 //! Every colour comes from the theme.
 
 mod rich;
+mod styles;
 
 use crate::dash::{SidePod, Tone};
 use crate::dial::severity_color;
+use crate::look::Look;
 use crate::pod_math as pm;
 use dodai_gpui::follow::{follow, Follow};
 use dodai_gpui::follow_api;
@@ -18,60 +21,19 @@ use gpui::{
     Window,
 };
 
-/// How a [`GaugeFace`] looks.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum GaugeLook {
-    /// The dash's ring dial: a bright rim, a scale with numbers and a needle.
-    #[default]
-    Dial,
-    /// A chronograph: knurled bezel, fine scale, hatched zones, sub-dial and a tapered needle.
-    Chrono,
-    /// A heads-up ring: dashes, brackets, a dashed arc, an outside pointer and a framed figure.
-    Hud,
-    /// A vertical tape scrolling under a pointer box, with an overview column.
-    Tape,
-    /// A graded scale with a grid and a needle trailing a fading wake.
-    Sweep,
-    /// A moving-coil meter: wide face, pivot below it, mirror strip and a name plate.
-    Meter,
-}
-
-impl GaugeLook {
-    /// Every look, in the order a gallery shows them.
-    pub const ALL: [Self; 6] = [
-        Self::Dial,
-        Self::Chrono,
-        Self::Hud,
-        Self::Sweep,
-        Self::Meter,
-        Self::Tape,
-    ];
-
-    /// A short name for a gallery caption.
-    pub fn name(self) -> &'static str {
-        match self {
-            Self::Dial => "Dial",
-            Self::Chrono => "Chrono",
-            Self::Hud => "Heads-up",
-            Self::Tape => "Tape",
-            Self::Sweep => "Sweep",
-            Self::Meter => "Meter",
-        }
-    }
-}
-
-/// One reading on a scale, drawn in the chosen [`GaugeLook`].
+/// One reading on a scale, drawn in the chosen [`Look`].
 #[derive(IntoElement)]
 pub struct GaugeFace {
     follow: Follow,
     scale: Scale,
     value: f32,
-    look: GaugeLook,
+    look: Look,
     icon: Option<Symbol>,
     label: SharedString,
     unit: SharedString,
     decimals: usize,
     ends: [Option<Tone>; 2],
+    alternate: bool,
     size: f32,
 }
 
@@ -85,17 +47,18 @@ impl GaugeFace {
             follow: Follow::here(),
             scale,
             value,
-            look: GaugeLook::Dial,
+            look: Look::Classic,
             icon: None,
             label: SharedString::default(),
             unit: SharedString::default(),
             decimals: 0,
             ends: [None, None],
+            alternate: false,
             size: 200.0,
         }
     }
     /// The look.
-    pub fn look(mut self, look: GaugeLook) -> Self {
+    pub fn look(mut self, look: Look) -> Self {
         self.look = look;
         self
     }
@@ -124,7 +87,14 @@ impl GaugeFace {
         self.ends = [low, high];
         self
     }
-    /// Width of the face in px; the tile looks are shorter or taller than that.
+    /// Use the look's alternative layout where it has one: [`Look::HeadsUp`] becomes a vertical
+    /// tape scrolling under a pointer box, [`Look::Vintage`] a panel meter with its pivot below
+    /// the window. The other looks ignore it.
+    pub fn alternate(mut self, on: bool) -> Self {
+        self.alternate = on;
+        self
+    }
+    /// Width of the face in px; every look is square but the heads-up tape, which is taller.
     pub fn size(mut self, s: f32) -> Self {
         self.size = pm::finite(s, 200.0).max(100.0);
         self
@@ -135,12 +105,13 @@ impl RenderOnce for GaugeFace {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
         self.value = pm::finite(follow(w, cx, &self.follow, 0, self.value), self.scale.min);
         match self.look {
-            GaugeLook::Dial => self.dial(),
-            GaugeLook::Chrono => self.chrono(cx),
-            GaugeLook::Hud => self.hud(cx),
-            GaugeLook::Tape => self.tape(cx),
-            GaugeLook::Sweep => self.sweep(cx),
-            GaugeLook::Meter => self.meter(cx),
+            Look::Classic => self.dial(),
+            Look::Chrono => self.chrono(cx),
+            Look::HeadsUp if self.alternate => self.tape_face(cx),
+            Look::HeadsUp => self.hud(cx),
+            Look::Vintage => self.vintage(cx),
+            Look::Digital => self.digital(cx),
+            Look::Futuristic => self.futuristic(cx),
         }
     }
 }

@@ -8,6 +8,7 @@
 use crate::dial::severity_color;
 use crate::draw::{polar, turn_arc};
 use crate::gauges::{disc, SWEEP};
+use crate::look::Look;
 use dodai_core::Theme;
 use dodai_gpui::follow::{follow, Follow};
 use dodai_gpui::follow_api;
@@ -22,6 +23,7 @@ use gpui::{
 };
 
 mod menu_looks;
+mod menu_more;
 
 /// What a telltale reports; the colour comes from the theme.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -132,32 +134,6 @@ impl PodStyle {
             Self::Disc => "Disc",
             Self::Glow => "Glow",
             Self::Bezel => "Bezel",
-        }
-    }
-}
-
-/// How a pod is drawn: the round pod of the dash, a watch case or a heads-up display.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum PodLook {
-    /// The round pod, framed by its [`PodStyle`].
-    #[default]
-    Ring,
-    /// A watch case: a knurled bezel, fine scales, tapered needles and a glass.
-    Chrono,
-    /// A heads-up display: a ring of dashes with brackets, chamfered frames and segment bars.
-    Hud,
-}
-
-impl PodLook {
-    /// Every look, in the order a gallery shows them.
-    pub const ALL: [Self; 3] = [Self::Ring, Self::Chrono, Self::Hud];
-
-    /// A short name for a gallery caption.
-    pub fn name(self) -> &'static str {
-        match self {
-            Self::Ring => "Ring",
-            Self::Chrono => "Chrono",
-            Self::Hud => "Heads-up",
         }
     }
 }
@@ -740,7 +716,7 @@ pub struct MenuRing {
     selected: usize,
     chosen: Option<usize>,
     pressed: bool,
-    look: PodLook,
+    look: Look,
     style: PodStyle,
     size: f32,
 }
@@ -755,7 +731,7 @@ impl MenuRing {
             chosen: None,
             pressed: false,
             size: 300.0,
-            look: PodLook::Ring,
+            look: Look::Classic,
             style: PodStyle::Ring,
         }
     }
@@ -780,7 +756,7 @@ impl MenuRing {
         self
     }
     /// The look: the round pod (default), a watch case or a heads-up display.
-    pub fn look(mut self, look: PodLook) -> Self {
+    pub fn look(mut self, look: Look) -> Self {
         self.look = look;
         self
     }
@@ -799,7 +775,7 @@ impl MenuRing {
 impl RenderOnce for MenuRing {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        if self.look != PodLook::Ring {
+        if self.look != Look::Classic {
             return self.detailed(&t);
         }
         let size = self.size;
