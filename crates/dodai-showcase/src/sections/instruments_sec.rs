@@ -279,6 +279,8 @@ impl Showcase {
                     .trip("13.207 km", "6 °C", "19:06")
                     .width(780.0),
                 )
+                .child(Muted::new("Digital dashes from the pods below"))
+                .child(super::dashes::dash_gallery(&t))
                 .child(Muted::new("Clusters: one coherent style per set."))
                 .child(clusters)
                 .child(Muted::new("Single-piece clusters"))

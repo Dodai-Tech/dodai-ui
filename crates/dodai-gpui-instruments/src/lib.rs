@@ -43,6 +43,8 @@ pub mod dash;
 pub mod flight;
 #[cfg(feature = "automotive")]
 pub mod hero;
+#[cfg(feature = "automotive")]
+pub mod pods;
 #[cfg(feature = "defense")]
 pub mod tactical;
 #[cfg(feature = "automotive")]
@@ -72,6 +74,11 @@ pub use dash::{DashTriptych, LimitSign, MenuRing, Pod, RingTach, SidePod, Tellta
 pub use flight::{AttitudeIndicator, Countermeasures, HeadingTape, SonarWaterfall, VerticalTape};
 #[cfg(feature = "automotive")]
 pub use hero::{CapsuleCluster, CutSpeedometer};
+#[cfg(feature = "automotive")]
+pub use pods::{
+    BoostPod, CompassPod, DashQuad, GForcePod, MediaPod, NoticePod, PodIcon, PodRow, RowsPod,
+    TyrePod,
+};
 #[cfg(feature = "defense")]
 pub use tactical::{
     MissionTimer, Station, StationState, StoresPanel, TacticalPlot, Threat, ThreatRosette,
