@@ -516,8 +516,6 @@ symbols! {
     Tachometer = "tachometer";
     /// Tyre.
     Tyre = "tyre";
-    /// The car seen from above, with its four wheels.
-    CarTop = "car-top";
     /// Weight.
     Weight = "weight";
     /// Two spanners.
