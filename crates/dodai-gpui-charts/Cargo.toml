@@ -11,6 +11,14 @@ readme                 = "README.md"
 keywords               = ["charts", "gpui", "plot", "visualization", "dashboard"]
 categories             = ["gui", "visualization"]
 
+[features]
+# The designs (their themes in `dodai_core::switcher()`), passed on to `dodai-gpui`, so one
+# dependency line picks them; without any, the plain `neutral` theme is used.
+dodai        = ["dodai-gpui/dodai"]
+cyberpunk    = ["dodai-gpui/cyberpunk"]
+material     = ["dodai-gpui/material"]
+neobrutalism = ["dodai-gpui/neobrutalism"]
+
 [dependencies]
 dodai-core        = { workspace = true }
 dodai-charts-core = { workspace = true }
