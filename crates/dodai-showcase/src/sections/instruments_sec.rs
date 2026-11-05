@@ -252,8 +252,8 @@ impl Showcase {
             .child(gbars);
         out.push((
             "Instruments",
-            "Vehicle",
-            self.section("Vehicle", cx)
+            "Vehicle · Dash cluster styles",
+            self.section("Vehicle · Dash cluster styles", cx)
                 .child(bar(vec![needle_opt()]))
                 .child(Muted::new(
                     "Three pods: a ribbed ring for engine speed, an open-ring gauge and a menu ring.",

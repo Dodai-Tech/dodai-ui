@@ -1,4 +1,4 @@
-//! The "Vehicle" category: each dash instrument alone with an explanation, then whole dashes.
+//! The vehicle part of the "Instruments" category: each dash instrument alone with an explanation, then whole dashes.
 
 use super::super::*;
 use dodai_gpui::icons::IconId;
@@ -155,7 +155,7 @@ fn centred(e: impl IntoElement) -> gpui::AnyElement {
 }
 
 impl Showcase {
-    /// The "Vehicle" category: one section per instrument, then whole dashes built from them.
+    /// The vehicle part of "Instruments": one section per instrument, then whole dashes built from them.
     pub(crate) fn sections_vehicle(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
         let mut out: Vec<Section> = Vec::new();
@@ -163,11 +163,11 @@ impl Showcase {
             let panel = parts
                 .into_iter()
                 .fold(me.section(title, cx), |p, e| p.child(e));
-            out.push(("Vehicle", title, panel.into_any_element(), "Vehicle"));
+            out.push(("Instruments", title, panel.into_any_element(), "Vehicle"));
         };
         add(
             self,
-            "Engine speed",
+            "Vehicle · Engine speed",
             vec![shown(
                 tach().size(240.0).into_any_element(),
                 "The middle of the dash. A ribbed ring carries the revs (0 to 8, in thousands) with a red band at the top and a green marker at the sweet spot; a thin needle crosses it. Inside: the road speed in big figures, a trip tab and, across the open bottom, the fuel level with the range.",
@@ -175,7 +175,7 @@ impl Showcase {
         );
         add(
             self,
-            "Speed",
+            "Vehicle · Speed",
             vec![shown(
                 speed().size(240.0).into_any_element(),
                 "A pod with the speed scale only: 0 to 270 in steps of 30 round an open ring, blue caps at both ends, and the current speed limit in the middle. No needle: the speed is the big figure on the engine-speed ring.",
@@ -183,7 +183,7 @@ impl Showcase {
         );
         add(
             self,
-            "Battery voltage",
+            "Vehicle · Battery voltage",
             vec![shown(
                 volt().size(240.0).into_any_element(),
                 "The on-board voltage, 6 to 18 V, with the battery symbol and the unit in the middle and a needle on the rim.",
@@ -191,7 +191,7 @@ impl Showcase {
         );
         add(
             self,
-            "Oil pressure and temperature",
+            "Vehicle · Oil pressure and temperature",
             vec![shown(
                 oil().size(240.0).into_any_element(),
                 "Two readings on one ring. Upper half: oil pressure in bar (0 to 6). Lower arc: oil temperature in °C (60 to 150). Each has its own needle; the oil can sits between the two units.",
@@ -199,7 +199,7 @@ impl Showcase {
         );
         add(
             self,
-            "Coolant temperature",
+            "Vehicle · Coolant temperature",
             vec![shown(
                 coolant().size(240.0).into_any_element(),
                 "Coolant temperature, 60 to 130 °C. The cold end is blue, the hot end red, and the last part of the scale is a red warning band.",
@@ -207,7 +207,7 @@ impl Showcase {
         );
         add(
             self,
-            "Menu",
+            "Vehicle · Menu",
             vec![
                 shown(
                     MenuRing::new(["Information", "Vehicle", "Oil level"])
@@ -229,7 +229,7 @@ impl Showcase {
         );
         add(
             self,
-            "Tyre pressure",
+            "Vehicle · Tyre pressure",
             vec![
                 shown(
                     tyres()
@@ -251,7 +251,7 @@ impl Showcase {
         );
         add(
             self,
-            "Vehicle info",
+            "Vehicle · Vehicle info",
             vec![shown(
                 vehicle_rows().size(240.0).into_any_element(),
                 "Four levels on dark tiles: oil temperature, coolant temperature, oil pressure and battery voltage. Each has a bar; the temperature bars carry a blue tick at the cold end and a red one at the hot end.",
@@ -259,7 +259,7 @@ impl Showcase {
         );
         add(
             self,
-            "Trip",
+            "Vehicle · Trip",
             vec![shown(
                 trip_rows().size(240.0).into_any_element(),
                 "The trip since a time: duration, distance, consumption and average speed, each with its own symbol.",
@@ -267,7 +267,7 @@ impl Showcase {
         );
         add(
             self,
-            "Today",
+            "Vehicle · Today",
             vec![shown(
                 today_rows().size(240.0).into_any_element(),
                 "Several things in one list: the date, the track playing, the battery charge and a heading strip with a marker for the direction.",
@@ -275,7 +275,7 @@ impl Showcase {
         );
         add(
             self,
-            "Message",
+            "Vehicle · Message",
             vec![shown(
                 notice().size(240.0).into_any_element(),
                 "A message: a tab with a back arrow at the top, a symbol, the title and one line of advice. The rim is blue at both ends.",
@@ -283,7 +283,7 @@ impl Showcase {
         );
         add(
             self,
-            "Boost",
+            "Vehicle · Boost",
             vec![shown(
                 BoostPod::new(val(48.0, 0.0, 100.0))
                     .temp("9 °C")
@@ -294,7 +294,7 @@ impl Showcase {
         );
         add(
             self,
-            "G-force",
+            "Vehicle · G-force",
             vec![shown(
                 GForcePod::new(val(46.0, -0.8, 0.8), val(47.0, -0.5, 0.9))
                     .size(240.0)
@@ -304,7 +304,7 @@ impl Showcase {
         );
         add(
             self,
-            "Media",
+            "Vehicle · Media",
             vec![shown(
                 media().size(240.0).into_any_element(),
                 "What is playing: the cover, the title in blue, the artist or show, and the elapsed and total time.",
@@ -312,7 +312,7 @@ impl Showcase {
         );
         add(
             self,
-            "Compass",
+            "Vehicle · Compass",
             vec![shown(
                 CompassPod::new(val(49.0, 0.0, 359.0))
                     .height("460 m")
@@ -323,7 +323,7 @@ impl Showcase {
         );
         add(
             self,
-            "Limit sign and lamps",
+            "Vehicle · Limit sign and lamps",
             vec![
                 shown(
                     centred(LimitSign::new(50).size(110.0)),
@@ -407,7 +407,7 @@ impl Showcase {
                 CompassPod::new(343.0).height("460 m"),
             )))
             .into_any_element();
-        add(self, "Examples", vec![examples]);
+        add(self, "Vehicle · Examples", vec![examples]);
         let small: Vec<gpui::AnyElement> = vec![
             volt().size(130.0).into_any_element(),
             oil().size(130.0).into_any_element(),
@@ -425,7 +425,7 @@ impl Showcase {
             .gap(px(t.spacing.md))
             .children(small)
             .into_any_element();
-        add(self, "Small sizes", vec![strip]);
+        add(self, "Vehicle · Small sizes", vec![strip]);
         out
     }
 }
