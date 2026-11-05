@@ -165,10 +165,21 @@ fn instruments(v: f32) -> Vec<AnyElement> {
                     .into_any_element(),
                 DualGauge::new(
                     DualScale::new(Scale::new(v, 6.0), v, "bar"),
+                    DualScale::new(Scale::new(5.0, 5.0), -v, "")
+                        .label("")
+                        .decimals(usize::MAX),
+                    Symbol::OilCan,
+                )
+                .look(look)
+                .size(v)
+                .into_any_element(),
+                DualGauge::new(
+                    DualScale::new(Scale::new(v, 6.0), v, "bar"),
                     DualScale::new(Scale::new(5.0, 5.0), -v, ""),
                     Symbol::OilCan,
                 )
                 .look(look)
+                .alternate(true)
                 .size(v)
                 .into_any_element(),
                 DashQuad::new(
