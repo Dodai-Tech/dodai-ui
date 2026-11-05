@@ -634,6 +634,25 @@ impl Render for Showcase {
             }
             window.request_animation_frame();
         }
+        // Debug: DODAI_SCROLL=<px> scrolls the page that far further down, two frames after the
+        // jump to the chosen sub-group has landed: for screenshots of sections taller than the
+        // screen.
+        static FRAMES: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+        if let Some(y) = std::env::var("DODAI_SCROLL")
+            .ok()
+            .and_then(|v| v.parse::<f32>().ok())
+            .filter(|_| self.jump.is_none())
+        {
+            match FRAMES.fetch_add(1, std::sync::atomic::Ordering::Relaxed) {
+                0 | 1 => cx.notify(),
+                2 => {
+                    let top = self.scroll.offset().y;
+                    self.scroll.set_offset(gpui::point(px(0.0), top - px(y)));
+                    cx.notify();
+                }
+                _ => {}
+            }
+        }
         if shown == 0 && !overview {
             body = body.child(
                 EmptyState::new("⌕", "No components match")
