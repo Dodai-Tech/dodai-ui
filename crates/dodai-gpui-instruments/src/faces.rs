@@ -3,6 +3,9 @@
 //! column. They take the same data, so a dash can swap one for another without touching its
 //! values. Every colour comes from the theme.
 
+mod more;
+mod rich;
+
 use crate::dash::{text_box, SidePod, Tone};
 use crate::dial::severity_color;
 use crate::draw::{polar, turn_arc};
@@ -34,16 +37,46 @@ pub enum GaugeLook {
     Bar,
     /// A tall tile with a vertical column that fills from the bottom, like a thermometer.
     Column,
+    /// A half circle with zoned rim and a needle.
+    Half,
+    /// A ring of fine radial ticks that light up.
+    Ticks,
+    /// A ring of round dots that light up.
+    Dots,
+    /// Bars of growing height, lit up to the value.
+    Ladder,
+    /// A big figure over a ruler, no frame.
+    Digital,
+    /// A chronograph: knurled bezel, fine scale, hatched zones, sub-dial and a tapered needle.
+    Chrono,
+    /// A heads-up ring: dashes, brackets, a dashed arc, an outside pointer and a framed figure.
+    Hud,
+    /// A vertical tape scrolling under a pointer box, with an overview column.
+    Tape,
+    /// A graded scale with a grid and a needle trailing a fading wake.
+    Sweep,
+    /// A moving-coil meter: wide face, pivot below it, mirror strip and a name plate.
+    Meter,
 }
 
 impl GaugeLook {
     /// Every look, in the order a gallery shows them.
-    pub const ALL: [Self; 5] = [
+    pub const ALL: [Self; 15] = [
         Self::Dial,
+        Self::Chrono,
+        Self::Hud,
+        Self::Sweep,
+        Self::Meter,
+        Self::Tape,
         Self::Arc,
         Self::Segments,
+        Self::Half,
+        Self::Ticks,
+        Self::Dots,
         Self::Bar,
         Self::Column,
+        Self::Ladder,
+        Self::Digital,
     ];
 
     /// A short name for a gallery caption.
@@ -54,6 +87,16 @@ impl GaugeLook {
             Self::Segments => "Segments",
             Self::Bar => "Bar",
             Self::Column => "Column",
+            Self::Half => "Half",
+            Self::Ticks => "Ticks",
+            Self::Dots => "Dots",
+            Self::Ladder => "Ladder",
+            Self::Digital => "Digital",
+            Self::Chrono => "Chrono",
+            Self::Hud => "Heads-up",
+            Self::Tape => "Tape",
+            Self::Sweep => "Sweep",
+            Self::Meter => "Meter",
         }
     }
 }
@@ -141,6 +184,16 @@ impl RenderOnce for GaugeFace {
             GaugeLook::Segments => self.segments(cx),
             GaugeLook::Bar => self.bar(cx),
             GaugeLook::Column => self.column(cx),
+            GaugeLook::Half => self.half(cx),
+            GaugeLook::Ticks => self.ticks(cx),
+            GaugeLook::Dots => self.dots(cx),
+            GaugeLook::Ladder => self.ladder(cx),
+            GaugeLook::Digital => self.digital(cx),
+            GaugeLook::Chrono => self.chrono(cx),
+            GaugeLook::Hud => self.hud(cx),
+            GaugeLook::Tape => self.tape(cx),
+            GaugeLook::Sweep => self.sweep(cx),
+            GaugeLook::Meter => self.meter(cx),
         }
     }
 }
@@ -239,10 +292,42 @@ impl GaugeFace {
         let r = c - size * 0.07;
         let weight = size * 0.07;
         let track = scale_alpha(ink.text, 0.14);
+        let zones: Vec<(f32, f32, Hsla)> = self
+            .spans()
+            .into_iter()
+            .map(|(a, z, sev)| (a, z, severity_color(&t, sev)))
+            .collect();
+        let tick = scale_alpha(ink.text, 0.45);
+        let thumb = ink.text;
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
                 let o = b.origin;
+                // Ticks inside the ring, the zones as a thin band between them and the arc.
+                let (r_t0, r_t1) = (r - weight * 1.25, r - weight * 0.85);
+                for i in 0..=10 {
+                    let a = start + span * i as f32 / 10.0;
+                    let long = i % 5 == 0;
+                    let r0 = if long { r_t0 - weight * 0.25 } else { r_t0 };
+                    stroke(
+                        w,
+                        o,
+                        &[polar(c, c, r0, a), polar(c, c, r_t1, a)],
+                        size * 0.008,
+                        tick,
+                        false,
+                    );
+                }
+                for (a, z, col) in &zones {
+                    stroke(
+                        w,
+                        o,
+                        &turn_arc(c, c, r - weight * 0.62, start + span * a, start + span * z),
+                        weight * 0.16,
+                        *col,
+                        false,
+                    );
+                }
                 stroke(
                     w,
                     o,
@@ -258,6 +343,18 @@ impl GaugeFace {
                         &turn_arc(c, c, r, start, start + span * frac),
                         weight,
                         col,
+                        false,
+                    );
+                    let a = start + span * frac;
+                    stroke(
+                        w,
+                        o,
+                        &[
+                            polar(c, c, r - weight * 0.75, a),
+                            polar(c, c, r + weight * 0.75, a),
+                        ],
+                        size * 0.02,
+                        thumb,
                         false,
                     );
                 }
@@ -312,7 +409,11 @@ impl GaugeFace {
                 if i < lit {
                     on_col((i as f32 + 0.5) / SEGMENTS as f32)
                 } else {
-                    scale_alpha(ink.text, 0.14)
+                    let f = (i as f32 + 0.5) / SEGMENTS as f32;
+                    match pm::severity_at(&spans, f) {
+                        Severity::Normal => scale_alpha(ink.text, 0.14),
+                        sev => scale_alpha(severity_color(&t, sev), 0.3),
+                    }
                 }
             })
             .collect();
