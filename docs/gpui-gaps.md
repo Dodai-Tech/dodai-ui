@@ -73,7 +73,7 @@ coasts to (`Glide::throw`, `fling_to`).
 ## 6. Accessibility and i18n
 
 - No accessibility tree: gpui 0.2 has no a11y API, so labels, roles and live regions are absent.
-- No RTL: layouts use left/right padding and chevrons are fixed; text input has no bidi handling.
+- RTL is partial: `set_direction(Direction::Rtl)` mirrors the row arrow keys (`roving::next`) and `ListItem` (marker side, indent, order). Not mirrored: text-input caret and selection, sliders, chevron icons, other layouts' left/right padding.
 - Number/date formatting is English-only (`format_date_time`, the time axis).
 
 ## 7. Hard-coded values still in components
@@ -112,10 +112,16 @@ Since the findings above were written:
   that are still the shared default are a design choice, not a bug: Material `step` / `badge` /
   `sizes`; Cyberpunk `choice_toggle` / `icon_button` / `elevated_button` / `page_grid` / `fluid` /
   `elevation_layers`; Neo-Brutalism `choice_toggle` / `icon_button` / `fluid` / `elevation_layers`.
-- **Tests**: `Menu` has click and key tests (`tests/interaction.rs`); `popover`, `frosted`,
-  `switcher` and most charts and instruments have none. `tests/no_new_spacing_literals.rs` stops
-  new `px(<number>)` in components (77 lines are grandfathered; the `surface_fx.rs` geometry is
-  not `px(..)` and not covered).
+- **Tests**: `tests/interaction.rs` covers `Menu`, `List`, `Popover` (open, Escape, outside click),
+  `ThemeSwitcherBar` and the light/dark mode switch; `tests/pods_render.rs` lays out every dash
+  pod and look under every theme, `dodai-gpui-charts/tests/layout_all_themes.rs` does the same
+  for the chart families, `render_smoke.rs` draws `FrostedScene`. Charts beyond the main families
+  and the other instruments have degenerate-data tests only. `tests/no_new_spacing_literals.rs`
+  stops new `px(<number>)` in components (38 lines remain: hairlines and zeros use
+  `HAIRLINE` / `Pixels::ZERO`, gaps use `spacing.half()`; the rest is component geometry; the
+  `surface_fx.rs` geometry is not `px(..)` and not covered).
+- **OS follow**: the showcase has a Mode switch (System, Light, Dark) on `follow_system_appearance`
+  / `set_theme_mode` and follows the OS's reduced motion at start.
 
-Still open: `List` container with arrow keys, RTL, tests for `popover`, the grandfathered
-literals, the chart items in section 8, the per-design token choices above.
+Still open: full RTL, hover and clock in interaction tests, the chart items in section 8, the
+per-design token choices above.
