@@ -126,6 +126,12 @@ impl ThemeSwitcher {
         }
     }
 
+    /// Switch to the active theme's counterpart in `mode` (see [`counterpart`](Self::counterpart)).
+    /// `true` when the active theme is in `mode` afterwards.
+    pub fn select_mode(&mut self, mode: crate::Mode) -> bool {
+        self.current().meta.mode == mode || (self.toggle_mode() && self.current().meta.mode == mode)
+    }
+
     /// Select by index, clamped.
     pub fn select_index(&mut self, i: usize) {
         self.index = i.min(self.themes.len() - 1);
@@ -148,6 +154,21 @@ mod tests {
     }
 
     use super::*;
+
+    #[test]
+    fn select_mode_keeps_a_matching_theme_and_flips_a_mismatched_one() {
+        let mut s = ThemeSwitcher::default();
+        let m = s.current().meta.mode;
+        assert!(s.select_mode(m));
+        let other = if m == crate::Mode::Dark {
+            crate::Mode::Light
+        } else {
+            crate::Mode::Dark
+        };
+        // The one-theme default has no counterpart.
+        assert!(!s.select_mode(other));
+        assert_eq!(s.current().meta.mode, m);
+    }
 
     fn fam(id: &'static str, family: &'static str) -> Theme {
         let mut t = crate::themes::neutral();
