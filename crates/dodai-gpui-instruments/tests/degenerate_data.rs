@@ -63,6 +63,39 @@ fn instruments(v: f32) -> Vec<AnyElement> {
             .selected(usize::MAX)
             .into_any_element(),
         LimitSign::new(u32::MAX).into_any_element(),
+        TyrePod::new()
+            .bars([Some(v), None, Some(-v), Some(2.0)])
+            .low_below(v)
+            .size(v)
+            .into_any_element(),
+        RowsPod::new([
+            PodRow::new(dodai_gpui::icons::Symbol::Fuel, "x").bar(v, Tone::Info),
+            PodRow::new(dodai_gpui::icons::Symbol::Fuel, "").span(),
+        ])
+        .size(v)
+        .into_any_element(),
+        RowsPod::new(Vec::<PodRow>::new()).into_any_element(),
+        NoticePod::new(dodai_gpui::icons::Symbol::Washer, "")
+            .size(v)
+            .into_any_element(),
+        GForcePod::new(v, -v).limit(v).size(v).into_any_element(),
+        BoostPod::new(v).size(v).into_any_element(),
+        MediaPod::new("").size(v).into_any_element(),
+        CompassPod::new(v).size(v).into_any_element(),
+        DualGauge::new(
+            DualScale::new(Scale::new(v, 6.0), v, "bar"),
+            DualScale::new(Scale::new(5.0, 5.0), -v, ""),
+            dodai_gpui::icons::Symbol::OilCan,
+        )
+        .size(v)
+        .into_any_element(),
+        DashQuad::new(
+            RingTach::new(Scale::new(0.0, 8.0), v, v),
+            [BoostPod::new(v).into(), GForcePod::new(v, v).into()],
+            [CompassPod::new(v).into(), TyrePod::new().into()],
+        )
+        .width(v)
+        .into_any_element(),
         DashTriptych::new(
             RingTach::new(Scale::new(0.0, 8.0), v, v),
             SidePod::new(Scale::new(0.0, 8.0), v),

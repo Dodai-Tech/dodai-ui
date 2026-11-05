@@ -44,6 +44,8 @@ pub mod flight;
 #[cfg(feature = "automotive")]
 pub mod hero;
 #[cfg(feature = "automotive")]
+pub(crate) mod pod_math;
+#[cfg(feature = "automotive")]
 pub mod pods;
 #[cfg(feature = "defense")]
 pub mod tactical;
