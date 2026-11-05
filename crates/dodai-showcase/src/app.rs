@@ -250,7 +250,10 @@ impl Showcase {
             section_group: Default::default(),
             spy: Vec::new(),
             pin: dodai_gpui::ScrollSpy::new(),
-            sub: None,
+            // DODAI_SUB=Vehicle opens a sub-group (screenshots); the name must match exactly.
+            sub: std::env::var("DODAI_SUB")
+                .ok()
+                .map(|v| &*Box::leak(v.into_boxed_str())),
             shut: Vec::new(),
             open_subs: Vec::new(),
             side_focus: cx.focus_handle(),

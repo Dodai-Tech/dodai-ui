@@ -15,6 +15,15 @@ use std::rc::Rc;
 thread_local! {
     /// Per window: how many components claimed each call-site id during the current frame.
     static CLAIMS: RefCell<HashMap<WindowId, HashMap<ElementId, u32>>> = RefCell::default();
+    /// Needle response for every instrument that has no `.response(..)` of its own.
+    static DEFAULT_RESPONSE: Cell<Option<NeedleResponse>> = const { Cell::new(None) };
+}
+
+/// Sets the needle response used by every instrument that has no `.response(..)` of its own
+/// (`None`: the design's own again). For a page that offers one switch for a whole set of
+/// instruments; set it each frame from the page's state.
+pub fn set_default_response(r: Option<NeedleResponse>) {
+    DEFAULT_RESPONSE.with(|c| c.set(r));
 }
 
 /// The next free instance number for `id` in this draw. The tally is cleared as soon as the draw
@@ -323,6 +332,7 @@ fn state(
 ) -> Option<f32> {
     let response = f
         .response
+        .or_else(|| DEFAULT_RESPONSE.with(Cell::get))
         .unwrap_or_else(|| theme_of(cx).chart_style().response);
     if !f.running() {
         return None;
