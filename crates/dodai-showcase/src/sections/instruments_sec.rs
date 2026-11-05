@@ -403,8 +403,8 @@ impl Showcase {
             .zone(90.0, 100.0, Severity::Alarm);
         out.push((
             "Instruments",
-            "Industrial",
-            self.section("Industrial", cx)
+            "Industrial · Process gauges",
+            self.section("Industrial · Process gauges", cx)
                 .child(bar(vec![needle_opt()]))
                 .child(
                     row()
@@ -444,6 +444,13 @@ impl Showcase {
                                 .height(130.0),
                         ),
                 )
+                .into_any_element(),
+            "Industrial · Process gauges",
+        ));
+        out.push((
+            "Instruments",
+            "Industrial · Annunciator",
+            self.section("Industrial · Annunciator", cx)
                 .child(Annunciator::new([
                     ("Pump 1 run", Severity::Normal, false),
                     ("Pump 2 trip", Severity::Alarm, false),
@@ -458,7 +465,7 @@ impl Showcase {
                     "Flashing = unacknowledged, steady = acknowledged. Caution 1 Hz, alarm 2 Hz.",
                 ))
                 .into_any_element(),
-            "Industrial",
+            "Industrial · Annunciator",
         ));
 
         out.push((
@@ -479,8 +486,8 @@ impl Showcase {
         };
         out.push((
             "Instruments",
-            "Medical",
-            self.section("Medical", cx)
+            "Medical · Vital signs",
+            self.section("Medical · Vital signs", cx)
                 .child(bar(vec![glow_opt()]))
                 .child(
                     row()
@@ -504,12 +511,20 @@ impl Showcase {
                                 .acknowledged(true),
                         ),
                 )
-                .child(pulse)
                 .child(Muted::new(
                     "Alarm colours come from the theme (warning, danger). An unacknowledged alarm flashes its tile.",
                 ))
                 .into_any_element(),
-            "Medical",
+            "Medical · Vital signs",
+        ));
+        out.push((
+            "Instruments",
+            "Medical · Waveform",
+            self.section("Medical · Waveform", cx)
+                .child(bar(vec![glow_opt()]))
+                .child(pulse)
+                .into_any_element(),
+            "Medical · Waveform",
         ));
         // Radar and telemetry instruments (Cyberpunk only, see `catalog::owner`).
         out.push((
@@ -572,106 +587,137 @@ impl Showcase {
             Threat::new(0.84, 0.65),
         ])
         .caption("Threat warning");
-        out.push((
-            "Instruments",
-            "Military",
-            self.section("Military", cx)
-                .child(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .gap_6()
-                        .child(
-                            div()
-                                .flex()
-                                .flex_wrap()
-                                .justify_around()
-                                .gap_6()
-                                .child(plot)
-                                .child(track_list)
-                                .child(rosette)
-                                .child(
-                                    div()
-                                        .flex()
-                                        .flex_col()
-                                        .gap_6()
-                                        .child(MissionTimer::new(754))
-                                        .child(MissionTimer::new(48).label("Weapons release"))
-                                        .child(Countermeasures::new(24, 6)),
-                                ),
-                        )
-                        .child(
-                            SonarWaterfall::new(64, 36)
-                                .size(560.0, 220.0)
-                                .caption("Sonar waterfall"),
-                        )
-                        .child(
-                            StoresPanel::new([
-                                Station::new("AAM", StationState::Armed),
-                                Station::new("AAM", StationState::Ready),
-                                Station::new("ASM", StationState::Safe),
-                                Station::new("BOMB", StationState::Safe),
-                                Station::new("FUEL", StationState::Ready),
-                                Station::new("GUN", StationState::Empty),
-                            ])
-                            .selected(Some(self.station_sel))
-                            .on_select(pick_station),
-                        ),
+        let mil =
+            |s: &mut Self, title: &'static str, el: gpui::AnyElement, cx: &mut Context<Self>| {
+                (
+                    "Instruments",
+                    title,
+                    s.section(title, cx).child(el).into_any_element(),
+                    title,
                 )
+            };
+        let wrap = |el: gpui::AnyElement| {
+            div()
+                .flex()
+                .flex_wrap()
+                .justify_around()
+                .gap_6()
+                .child(el)
+                .into_any_element()
+        };
+        out.push(mil(
+            self,
+            "Military · Tactical plot",
+            div()
+                .flex()
+                .flex_wrap()
+                .justify_around()
+                .gap_6()
+                .child(plot)
+                .child(track_list)
                 .into_any_element(),
-            "Military",
+            cx,
+        ));
+        out.push(mil(
+            self,
+            "Military · Threat warning",
+            wrap(rosette.into_any_element()),
+            cx,
+        ));
+        out.push(mil(
+            self,
+            "Military · Mission clock",
+            div()
+                .flex()
+                .flex_wrap()
+                .justify_around()
+                .gap_6()
+                .child(MissionTimer::new(754))
+                .child(MissionTimer::new(48).label("Weapons release"))
+                .child(Countermeasures::new(24, 6))
+                .into_any_element(),
+            cx,
+        ));
+        out.push(mil(
+            self,
+            "Military · Sonar waterfall",
+            SonarWaterfall::new(64, 36)
+                .size(560.0, 220.0)
+                .caption("Sonar waterfall")
+                .into_any_element(),
+            cx,
+        ));
+        out.push(mil(
+            self,
+            "Military · Weapon stations",
+            StoresPanel::new([
+                Station::new("AAM", StationState::Armed),
+                Station::new("AAM", StationState::Ready),
+                Station::new("ASM", StationState::Safe),
+                Station::new("BOMB", StationState::Safe),
+                Station::new("FUEL", StationState::Ready),
+                Station::new("GUN", StationState::Empty),
+            ])
+            .selected(Some(self.station_sel))
+            .on_select(pick_station)
+            .into_any_element(),
+            cx,
         ));
         // Aviation: the flight deck instruments.
         out.push((
             "Instruments",
-            "Aviation",
-            self.section("Aviation", cx)
+            "Aviation · Attitude and tapes",
+            self.section("Aviation · Attitude and tapes", cx)
                 .child(bar(vec![needle_opt()]))
                 .child(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .gap_6()
-                        .child(
-                            div()
-                                .flex()
-                                .flex_wrap()
-                                .justify_around()
-                                .gap_6()
-                                .child(
-                                    VerticalTape::new(val(12.0, 220.0, 420.0))
-                                        .response_opt(response)
-                                        .scale(100.0, 10.0, 5)
-                                        .label("KT"),
-                                )
-                                .child(
-                                    AttitudeIndicator::new(
-                                        val(13.0, -12.0, 14.0),
-                                        val(14.0, -40.0, 40.0),
-                                    )
+                    div().flex().flex_col().gap_6().child(
+                        div()
+                            .flex()
+                            .flex_wrap()
+                            .justify_around()
+                            .gap_6()
+                            .child(
+                                VerticalTape::new(val(12.0, 220.0, 420.0))
                                     .response_opt(response)
-                                    .size(300.0)
-                                    .caption("Attitude"),
+                                    .scale(100.0, 10.0, 5)
+                                    .label("KT"),
+                            )
+                            .child(
+                                AttitudeIndicator::new(
+                                    val(13.0, -12.0, 14.0),
+                                    val(14.0, -40.0, 40.0),
                                 )
-                                .child(
-                                    VerticalTape::new(val(15.0, 11000.0, 14000.0))
-                                        .response_opt(response)
-                                        .scale(1000.0, 100.0, 5)
-                                        .label("FT")
-                                        .ticks_right(true),
-                                ),
-                        )
-                        .child(
-                            div().flex().justify_center().child(
-                                HeadingTape::new(val(16.0, 0.0, 360.0))
+                                .response_opt(response)
+                                .size(300.0)
+                                .caption("Attitude"),
+                            )
+                            .child(
+                                VerticalTape::new(val(15.0, 11000.0, 14000.0))
                                     .response_opt(response)
-                                    .bug(75.0)
-                                    .width(480.0),
+                                    .scale(1000.0, 100.0, 5)
+                                    .label("FT")
+                                    .ticks_right(true),
                             ),
-                        ),
+                    ),
                 )
                 .into_any_element(),
-            "Aviation",
+            "Aviation · Attitude and tapes",
+        ));
+        out.push((
+            "Instruments",
+            "Aviation · Heading",
+            self.section("Aviation · Heading", cx)
+                .child(bar(vec![needle_opt()]))
+                .child(
+                    div().flex().justify_center().child(
+                        HeadingTape::new(val(16.0, 0.0, 360.0))
+                            .response_opt(response)
+                            .bug(75.0)
+                            .width(480.0),
+                    ),
+                )
+                .into_any_element(),
+            "Aviation · Heading",
         ));
         out.push((
             "Instruments",
