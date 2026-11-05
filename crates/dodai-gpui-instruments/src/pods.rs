@@ -1125,12 +1125,15 @@ impl RenderOnce for CompassPod {
 
 // ───────────────────────────────── DualGauge ─────────────────────────────────
 
-/// One scale of a [`DualGauge`]: its range, the value and the unit written in the middle.
+/// One scale of a [`DualGauge`]: its range, the value, the unit written in the middle and an
+/// optional caption.
 #[derive(Clone)]
 pub struct DualScale {
     scale: Scale,
     value: f32,
     unit: SharedString,
+    label: Option<SharedString>,
+    decimals: usize,
 }
 
 impl DualScale {
@@ -1140,7 +1143,21 @@ impl DualScale {
             scale,
             value: pm::finite(value, 0.0),
             unit: unit.into(),
+            label: None,
+            decimals: 0,
         }
+    }
+    /// Decimals of the written value (default 0), in every look but [`Look::Classic`], which
+    /// writes no value.
+    pub fn decimals(mut self, n: usize) -> Self {
+        self.decimals = n.min(3);
+        self
+    }
+    /// A caption ("Pressure"), written on the reading's own face in every look but
+    /// [`Look::Classic`], where the unit alone tells the two scales apart.
+    pub fn label(mut self, label: impl Into<SharedString>) -> Self {
+        self.label = Some(label.into());
+        self
     }
 }
 
@@ -1153,6 +1170,7 @@ pub struct DualGauge {
     lower: DualScale,
     icon: Symbol,
     look: Look,
+    alternate: bool,
     style: PodStyle,
     size: f32,
 }
@@ -1168,14 +1186,22 @@ impl DualGauge {
             lower,
             icon,
             look: Look::Classic,
+            alternate: false,
             size: 300.0,
             style: PodStyle::Ring,
         }
     }
     /// The look (see [`Look`]); every look but [`Look::Classic`] draws the two scales as two
-    /// [`GaugeFace`](crate::faces::GaugeFace)s of half the size, one above the other.
+    /// [`GaugeFace`](crate::faces::GaugeFace)s on the diagonal, upper left and lower right.
     pub fn look(mut self, look: Look) -> Self {
         self.look = look;
+        self
+    }
+    /// Draw both faces in the look's alternative layout (see
+    /// [`GaugeFace::alternate`](crate::faces::GaugeFace::alternate)): Vintage panel meters, or
+    /// Heads-up tapes, which stand side by side instead.
+    pub fn alternate(mut self, on: bool) -> Self {
+        self.alternate = on;
         self
     }
     /// How the frame is drawn (open ring, closed disc, glow or bezel).
@@ -1196,20 +1222,42 @@ impl RenderOnce for DualGauge {
         self.lower.value = pm::finite(follow(w, cx, &self.follow, 1, self.lower.value), 0.0);
         if self.look != Look::Classic {
             // Two faces on the diagonal, upper left and lower right, overlapping a little: a
-            // twin cluster that fits the pod's square at any size.
-            let (size, small) = (self.size, self.size * 0.6);
+            // twin cluster that fits the pod's square at any size. Tall tapes stand side by side.
+            let size = self.size;
+            // Panel meters keep their readout plate along the bottom edge, so they only touch.
+            let tapes = self.alternate && self.look == Look::HeadsUp;
+            let share = if self.alternate { 0.5 } else { 0.6 };
+            let small = (size * share).max(64.0);
+            let (look, alternate) = (self.look, self.alternate);
             let face = |d: DualScale, icon: Option<Symbol>| {
                 let f = crate::faces::GaugeFace::new(d.scale, d.value)
                     .animate(false)
-                    .look(self.look)
+                    .look(look)
+                    .alternate(alternate)
                     .unit(d.unit)
-                    .decimals(1)
+                    .decimals(d.decimals)
                     .size(small);
+                let f = match d.label {
+                    Some(l) => f.label(l),
+                    None => f,
+                };
                 match icon {
                     Some(i) => f.icon(i),
                     None => f,
                 }
             };
+            let (upper, lower) = (face(self.upper, Some(self.icon)), face(self.lower, None));
+            if tapes {
+                return div()
+                    .w(px(size))
+                    .h(px(size))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .child(upper)
+                    .child(lower)
+                    .into_any_element();
+            }
             let at = |x: f32, el: crate::faces::GaugeFace| {
                 div().absolute().left(px(x)).top(px(x)).child(el)
             };
@@ -1217,8 +1265,8 @@ impl RenderOnce for DualGauge {
                 .relative()
                 .w(px(size))
                 .h(px(size))
-                .child(at(0.0, face(self.upper, Some(self.icon))))
-                .child(at(size - small.max(64.0), face(self.lower, None)))
+                .child(at(0.0, upper))
+                .child(at(size - small, lower))
                 .into_any_element();
         }
         let t = theme_of(cx);

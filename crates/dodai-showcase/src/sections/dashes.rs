@@ -56,12 +56,17 @@ fn oil() -> DualGauge {
             Scale::new(0.0, 6.0).ticks_per(3, 3),
             val(33.0, 1.0, 5.0),
             "bar",
-        ),
+        )
+        .label("Pressure")
+        .decimals(1),
         DualScale::new(
-            Scale::new(60.0, 150.0).ticks_per(2, 3),
+            Scale::new(60.0, 150.0)
+                .ticks_per(2, 3)
+                .zone(130.0, 150.0, Severity::Caution),
             val(35.0, 70.0, 140.0),
             "°C",
-        ),
+        )
+        .label("Temperature"),
         Symbol::OilCan,
     )
 }
@@ -277,35 +282,10 @@ fn boost_face(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
 
 /// Oil pressure and temperature on two faces: side by side or stacked.
 fn oil_faces(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
-    let pressure = |s: f32| {
-        GaugeFace::new(Scale::new(0.0, 6.0).ticks_per(3, 3), val(33.0, 1.0, 5.0))
-            .look(look)
-            .alternate(alt)
-            .label("Pressure")
-            .icon(Symbol::OilCan)
-            .unit("bar")
-            .decimals(1)
-            .size(s)
-    };
-    let temp = |s: f32| {
-        GaugeFace::new(
-            Scale::new(60.0, 150.0)
-                .ticks_per(2, 3)
-                .zone(130.0, 150.0, Severity::Caution),
-            val(35.0, 70.0, 140.0),
-        )
+    oil()
         .look(look)
         .alternate(alt)
-        .label("Temperature")
-        .unit("°C")
-        .size(s)
-    };
-    div()
-        .flex()
-        .flex_col()
-        .items_center()
-        .child(pressure(size * 0.5))
-        .child(temp(size * 0.5))
+        .size(size)
         .into_any_element()
 }
 
@@ -368,7 +348,7 @@ impl Showcase {
             self,
             "Vehicle · Oil pressure and temperature",
             vec![gallery(
-                "Oil pressure (bar) and oil temperature (°C). Classic: two needles on one ring, pressure on the upper half and temperature on the lower arc. The other looks put the two readings on two faces.",
+                "Oil pressure (bar) and oil temperature (°C). Classic: two needles on one ring, pressure on the upper half and temperature on the lower arc. The other looks put the two readings on two faces on the diagonal; the heads-up tapes stand side by side.",
                 looks(oil().size(POD).into_any_element(), oil_faces),
             )],
         );
