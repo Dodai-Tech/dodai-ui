@@ -151,8 +151,28 @@ impl Pagination {
             }
         }));
         let t = theme_of(cx);
-        let mut row = div().flex().items_center().gap(px(t.spacing.xs));
         let (page, total) = (self.page.clamp(1, self.total.max(1)), self.total);
+        // Arrow keys turn the page, Home and End go to the ends, once a button has focus.
+        let keys = {
+            let f = self.on_change.clone();
+            move |e: &gpui::KeyDownEvent, w: &mut Window, cx: &mut App| {
+                let to = crate::roving::next(
+                    e.keystroke.key.as_str(),
+                    crate::roving::Axis::Horizontal,
+                    page - 1,
+                    total,
+                    |_| true,
+                );
+                if let (Some(to), Some(f)) = (to, &f) {
+                    f(to + 1, w, cx);
+                }
+            }
+        };
+        let mut row = div()
+            .flex()
+            .items_center()
+            .gap(px(t.spacing.xs))
+            .on_key_down(keys);
         let mk = |row: gpui::Div,
                   key: String,
                   label: &str,

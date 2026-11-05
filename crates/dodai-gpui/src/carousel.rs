@@ -159,6 +159,7 @@ pub struct Carousel {
     fill: bool,
     motion: Option<Motion>,
     on_select: Option<IndexFn>,
+    disabled: bool,
 }
 
 impl Carousel {
@@ -176,7 +177,13 @@ impl Carousel {
             fill: false,
             motion: None,
             on_select: None,
+            disabled: false,
         }
+    }
+    /// Disable paging: dimmed arrows, no drag, wheel or keys.
+    pub fn disabled(mut self, d: bool) -> Self {
+        self.disabled = d;
+        self
     }
     /// Add an item.
     pub fn item(mut self, e: impl IntoElement) -> Self {
@@ -269,7 +276,9 @@ impl Carousel {
         };
         let start = window_start(self.active, n, visible);
         let max_start = n.saturating_sub(visible);
+        let off = self.disabled;
         let mk = |suffix: &'static str, glyph: &'static str, to: usize, enabled: bool| {
+            let enabled = enabled && !off;
             let mut b = IconButton::new((self.id.clone(), suffix), glyph).disabled(!enabled);
             if let (true, Some(f)) = (enabled, self.on_select.clone()) {
                 b = b.on_click(move |_, w, cx| f(to, w, cx));
@@ -362,7 +371,31 @@ impl Carousel {
                     t.palette.border_strong
                 }))
         });
-        let mut root = div().relative().flex().flex_col().gap(px(t.spacing.sm));
+        // Arrow keys, Home and End turn the pages once an arrow button has focus.
+        let keys = {
+            let f = self.on_select.clone();
+            move |e: &gpui::KeyDownEvent, w: &mut Window, cx: &mut App| {
+                let to = crate::roving::next(
+                    e.keystroke.key.as_str(),
+                    crate::roving::Axis::Horizontal,
+                    start,
+                    max_start + 1,
+                    |_| true,
+                );
+                if let (Some(to), Some(f), false) = (to, &f, off) {
+                    f(to, w, cx);
+                }
+            }
+        };
+        let mut root = div()
+            .relative()
+            .flex()
+            .flex_col()
+            .gap(px(t.spacing.sm))
+            .on_key_down(keys);
+        if off {
+            root = root.opacity(crate::interact::DISABLED_OPACITY);
+        }
         if hand.is_some_and(|h| !h.swipe) {
             // While a button is down the whole window reports to the row, so a drag that leaves
             // it keeps going and is let go wherever the button comes up.
@@ -401,6 +434,9 @@ impl Carousel {
         // trackpad's own momentum afterwards is ignored (the throw coasts instead). A wheel
         // notch sideways turns one page. Up-and-down scrolling passes to the page.
         let on_wheel = move |e: &ScrollWheelEvent, w: &mut Window, cx: &mut App| {
+            if off {
+                return;
+            }
             let t = crate::motion::now();
             let chosen = match e.delta {
                 ScrollDelta::Lines(d) if d.x.abs() > d.y.abs() => Some(if d.x < 0.0 {
@@ -485,6 +521,9 @@ impl Carousel {
                             CursorStyle::OpenHand
                         })
                         .on_mouse_down(MouseButton::Left, move |e, w, cx| {
+                            if off {
+                                return;
+                            }
                             let (x, at) = (f32::from(e.position.x), crate::motion::now());
                             grab.update(cx, |p, _| p.hand = Some(Hand::new(x, from, at, false)));
                             w.refresh();

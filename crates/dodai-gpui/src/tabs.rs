@@ -8,8 +8,8 @@ use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use dodai_core::Theme;
 use gpui::{
-    div, px, App, ElementId, Hsla, IntoElement, ParentElement, SharedString,
-    StatefulInteractiveElement, Styled, Window,
+    div, prelude::FluentBuilder, px, App, ElementId, Hsla, IntoElement, ParentElement,
+    SharedString, StatefulInteractiveElement, Styled, Window,
 };
 use std::cell::Cell;
 use std::rc::Rc;
@@ -45,6 +45,7 @@ pub struct Tabs {
     scrollable: bool,
     animation: Option<SelectionMotion>,
     motion: Option<Motion>,
+    disabled: Vec<usize>,
 }
 
 crate::corners_setter!(Tabs);
@@ -64,7 +65,13 @@ impl Tabs {
             scrollable: false,
             animation: None,
             motion: None,
+            disabled: Vec::new(),
         }
+    }
+    /// Tabs (by index) that can't be picked: dimmed, skipped by the arrow keys.
+    pub fn disabled(mut self, tabs: impl IntoIterator<Item = usize>) -> Self {
+        self.disabled = tabs.into_iter().collect();
+        self
     }
     /// How the selection moves between tabs. `None` (the default) is the design's own
     /// ([`Look::selection`](dodai_core::Look::selection)).
@@ -132,7 +139,8 @@ impl Tabs {
             if active { 1.0 } else { 0.0 },
             self.motion_of(cx),
         );
-        let (mut style, fg, indicator) = tab_style(t, active, hovered);
+        let off = self.disabled.contains(&i);
+        let (mut style, fg, indicator) = tab_style(t, active, hovered && !off);
         let (on_s, on_fg, _) = tab_style(t, true, hovered);
         let (off_s, off_fg, _) = tab_style(t, false, hovered);
         style.fill =
@@ -158,8 +166,14 @@ impl Tabs {
                 .or_else(|| tab_style(t, true, hovered).2.filter(|_| p > 0.01))
                 .map(|c| c.opacity(p))
         };
+        let fg = if off {
+            hsla(t.palette.text_disabled)
+        } else {
+            fg
+        };
         let fg = if self.secondary
             && active
+            && !off
             && t.tab(dodai_core::ItemState::SELECTED).background.is_none()
         {
             hsla(t.palette.roles.on_surface)
@@ -184,7 +198,7 @@ impl Tabs {
             .px(px(t.spacing.md))
             .flex()
             .items_center()
-            .cursor_pointer()
+            .when(!off, |d| d.cursor_pointer())
             .font_family(first_family(t.typography.body))
             .text_size(px(t.typography.size_md))
             .text_color(fg);
@@ -213,7 +227,7 @@ impl Tabs {
             // Report where this tab sits so the shared indicator can travel to it.
             tab = tab.relative().child(m.item(i));
         }
-        if let Some(f) = self.on_select.clone() {
+        if let (false, Some(f)) = (off, self.on_select.clone()) {
             tab = tab.on_click(move |_, w, cx| {
                 // A drag that ends over a tab is a pan, not a click.
                 if pan.as_ref().is_some_and(|p| p.get().moved) {
@@ -350,17 +364,18 @@ impl Tabs {
             .clone();
         let keys = {
             let (n, f) = (self.labels.len(), self.on_select.clone());
+            let disabled = self.disabled.clone();
             move |e: &gpui::KeyDownEvent, w: &mut Window, cx: &mut App| {
                 // The live selection: several keys can land before the next render.
                 let at = current.read(cx).1;
-                let to = match e.keystroke.key.as_str() {
-                    "right" => (at + 1).min(n.saturating_sub(1)),
-                    "left" => at.saturating_sub(1),
-                    "home" => 0,
-                    "end" => n.saturating_sub(1),
-                    _ => return,
-                };
-                if let (true, Some(f)) = (to != at, &f) {
+                let to = crate::roving::next(
+                    e.keystroke.key.as_str(),
+                    crate::roving::Axis::Horizontal,
+                    at,
+                    n,
+                    |i| !disabled.contains(&i),
+                );
+                if let (Some(to), Some(f)) = (to, &f) {
                     f(to, w, cx);
                 }
             }

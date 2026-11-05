@@ -180,6 +180,8 @@ impl Showcase {
                 }),
             )
             .child(Mono::new(format!("value {:.2}", self.slider)))
+            .child(Muted::new("Disabled · arrow keys move a focused slider"))
+            .child(Slider::new("slider-off", 0.4).disabled(true))
             .child(ProgressBar::new(self.slider))
             .child(ProgressBar::new(0.7).tone(Tone::Success))
             .child(ProgressBar::new(0.4).tone(Tone::Warning))
