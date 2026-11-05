@@ -619,7 +619,43 @@ impl RenderOnce for BoostPod {
         let frac = self.percent / 100.0;
         let (bw, bh) = (size * 0.2, size * 0.3);
         let (bx, by) = (c - bw / 2.0, c - bh / 2.0 + size * 0.04);
+        let danger = hsla(t.palette.danger);
+        let band_w = (size * 0.03).max(3.0);
+        let band_r = c - size * 0.012 - band_w * 1.3;
         let paint = move |w: &mut Window, o: gpui::Point<Pixels>| {
+            // The segmented band: arcs split at fixed gaps, a red mark at the limit gap.
+            let (start, span) = crate::gauges::SWEEP;
+            let cuts = [0.0, 0.2, 0.5, 0.72, 0.87, 1.0];
+            let gap = 0.012;
+            for (k, pair) in cuts.windows(2).enumerate() {
+                let (u, v) = (
+                    start + span * (pair[0] + gap),
+                    start + span * (pair[1] - gap),
+                );
+                if k == 0 || k == cuts.len() - 2 {
+                    continue; // the end caps already carry the cold and hot colours
+                }
+                stroke(
+                    w,
+                    o,
+                    &turn_arc(c, c, band_r, u, v),
+                    band_w,
+                    scale_alpha(ink, 0.5),
+                    false,
+                );
+            }
+            let m = start + span * 0.5;
+            stroke(
+                w,
+                o,
+                &[
+                    polar(c, c, band_r - band_w * 0.8, m),
+                    polar(c, c, band_r + band_w * 0.8, m),
+                ],
+                band_w * 0.6,
+                danger,
+                false,
+            );
             let frame = [(bx, by), (bx + bw, by), (bx + bw, by + bh), (bx, by + bh)];
             stroke(w, o, &frame, 2.0, ink, true);
             let cells = 10;

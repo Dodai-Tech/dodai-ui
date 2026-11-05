@@ -34,7 +34,7 @@ fn tells() -> Telltales {
 }
 
 fn volt() -> SidePod {
-    SidePod::new(Scale::new(6.0, 18.0).ticks_per(4, 1), val(40.0, 12.0, 14.6))
+    SidePod::new(Scale::new(6.0, 18.0).ticks_per(2, 3), val(40.0, 12.0, 14.6))
         .icon(Symbol::Battery)
         .unit("V")
 }
