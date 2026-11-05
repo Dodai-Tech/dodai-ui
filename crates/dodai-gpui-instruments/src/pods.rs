@@ -10,6 +10,8 @@ use crate::dial::severity_color;
 use crate::draw::{polar, turn_arc};
 use crate::gauges::disc;
 use crate::pod_math as pm;
+use dodai_gpui::follow::{follow, follow_angle, Follow};
+use dodai_gpui::follow_api;
 use dodai_gpui::icons::IconId;
 use dodai_gpui::icons::{Icon, Symbol};
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
@@ -525,6 +527,7 @@ impl RenderOnce for NoticePod {
 /// G-force: a dotted cross with a dot that moves with the acceleration, and the four readings.
 #[derive(IntoElement)]
 pub struct GForcePod {
+    follow: Follow,
     lateral: f32,
     longitudinal: f32,
     limit: f32,
@@ -534,9 +537,12 @@ pub struct GForcePod {
 }
 
 impl GForcePod {
+    follow_api!();
     /// A pod at `lateral` (right is positive) and `longitudinal` (forward is positive) g.
+    #[track_caller]
     pub fn new(lateral: f32, longitudinal: f32) -> Self {
         Self {
+            follow: Follow::here(),
             lateral,
             longitudinal,
             limit: 1.5,
@@ -568,7 +574,9 @@ impl GForcePod {
 }
 
 impl RenderOnce for GForcePod {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.lateral = pm::finite(follow(w, cx, &self.follow, 0, self.lateral), 0.0);
+        self.longitudinal = pm::finite(follow(w, cx, &self.follow, 1, self.longitudinal), 0.0);
         let t = theme_of(cx);
         if self.look != PodLook::Ring {
             return self.rect(&t);
@@ -651,6 +659,7 @@ impl RenderOnce for GForcePod {
 /// Boost or charge: a percentage over a stack of cells, a label and a temperature.
 #[derive(IntoElement)]
 pub struct BoostPod {
+    follow: Follow,
     percent: f32,
     label: SharedString,
     temp: SharedString,
@@ -659,9 +668,12 @@ pub struct BoostPod {
 }
 
 impl BoostPod {
+    follow_api!();
     /// A pod at `percent` (0 to 100).
+    #[track_caller]
     pub fn new(percent: f32) -> Self {
         Self {
+            follow: Follow::here(),
             percent: pm::percent(percent),
             label: "BOOST".into(),
             temp: SharedString::default(),
@@ -692,7 +704,8 @@ impl BoostPod {
 }
 
 impl RenderOnce for BoostPod {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.percent = pm::percent(follow(w, cx, &self.follow, 0, self.percent));
         let t = theme_of(cx);
         let size = self.size;
         let c = size / 2.0;
@@ -934,6 +947,7 @@ impl RenderOnce for MediaPod {
 /// the height.
 #[derive(IntoElement)]
 pub struct CompassPod {
+    follow: Follow,
     heading: f32,
     height: SharedString,
     look: PodLook,
@@ -942,9 +956,12 @@ pub struct CompassPod {
 }
 
 impl CompassPod {
+    follow_api!();
     /// A compass at `heading` degrees (0 = north, clockwise).
+    #[track_caller]
     pub fn new(heading: f32) -> Self {
         Self {
+            follow: Follow::here(),
             heading: pm::bearing(heading),
             height: SharedString::default(),
             size: 300.0,
@@ -975,7 +992,8 @@ impl CompassPod {
 }
 
 impl RenderOnce for CompassPod {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.heading = pm::bearing(follow_angle(w, cx, &self.follow, 0, self.heading));
         let t = theme_of(cx);
         if self.look != PodLook::Ring {
             return self.rect(&t);
@@ -1097,6 +1115,7 @@ impl DualScale {
 /// another, each with its own needle (oil pressure over oil temperature).
 #[derive(IntoElement)]
 pub struct DualGauge {
+    follow: Follow,
     upper: DualScale,
     lower: DualScale,
     icon: Symbol,
@@ -1105,9 +1124,12 @@ pub struct DualGauge {
 }
 
 impl DualGauge {
+    follow_api!();
     /// A ring with an `upper` and a `lower` scale and a symbol between them.
+    #[track_caller]
     pub fn new(upper: DualScale, lower: DualScale, icon: Symbol) -> Self {
         Self {
+            follow: Follow::here(),
             upper,
             lower,
             icon,
@@ -1128,7 +1150,9 @@ impl DualGauge {
 }
 
 impl RenderOnce for DualGauge {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.upper.value = pm::finite(follow(w, cx, &self.follow, 0, self.upper.value), 0.0);
+        self.lower.value = pm::finite(follow(w, cx, &self.follow, 1, self.lower.value), 0.0);
         let t = theme_of(cx);
         let size = self.size;
         let c = size / 2.0;

@@ -314,6 +314,41 @@ impl Render for Showcase {
         }
         let side_need = self.side_need;
         let pinned_icons = self.pinned_icon_panel(&t, cx);
+        // One needle response for the instruments without their own; the Vehicle page shows the
+        // switch pinned above its sections.
+        let in_instruments = selected_cat == Some("Instruments");
+        dodai_gpui::follow::set_default_response(
+            in_instruments
+                .then(|| {
+                    (self.inst_response > 0)
+                        .then(|| dodai_gpui::NeedleResponse::ALL[self.inst_response - 1])
+                })
+                .flatten(),
+        );
+        let needle_bar = (in_instruments && self.sub == Some("Vehicle")).then(|| {
+            let m = me.clone();
+            div()
+                .flex()
+                .flex_wrap()
+                .items_center()
+                .gap_2()
+                .px_4()
+                .py_2()
+                .child(dodai_gpui::Label::new("Needle"))
+                .child(
+                    dodai_gpui::Segmented::new(
+                        "veh-response",
+                        ["Design", "Instant", "Snappy", "Smooth", "Heavy", "Bouncy"],
+                    )
+                    .selected(self.inst_response)
+                    .on_select(move |i, _, cx| {
+                        m.update(cx, |s, cx| {
+                            s.inst_response = i;
+                            cx.notify();
+                        })
+                    }),
+                )
+        });
         let side = gpui::AnyView::from(side).cached(gpui::StyleRefinement::default().size_full());
 
         let overview = self.cat == 0
@@ -848,6 +883,7 @@ impl Render for Showcase {
                                     .then(|| sections::shape::live_preview(&t, compact)),
                             )
                             .children(pinned_icons)
+                            .children(needle_bar)
                             .child(body.min_h_0()),
                     ),
             )
