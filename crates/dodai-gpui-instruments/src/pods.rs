@@ -1195,27 +1195,30 @@ impl RenderOnce for DualGauge {
         self.upper.value = pm::finite(follow(w, cx, &self.follow, 0, self.upper.value), 0.0);
         self.lower.value = pm::finite(follow(w, cx, &self.follow, 1, self.lower.value), 0.0);
         if self.look != Look::Classic {
-            let half = self.size / 2.0;
+            // Two faces on the diagonal, upper left and lower right, overlapping a little: a
+            // twin cluster that fits the pod's square at any size.
+            let (size, small) = (self.size, self.size * 0.6);
             let face = |d: DualScale, icon: Option<Symbol>| {
                 let f = crate::faces::GaugeFace::new(d.scale, d.value)
                     .animate(false)
                     .look(self.look)
                     .unit(d.unit)
                     .decimals(1)
-                    .size(half);
+                    .size(small);
                 match icon {
                     Some(i) => f.icon(i),
                     None => f,
                 }
             };
+            let at = |x: f32, el: crate::faces::GaugeFace| {
+                div().absolute().left(px(x)).top(px(x)).child(el)
+            };
             return div()
-                .w(px(self.size))
-                .h(px(self.size))
-                .flex()
-                .flex_col()
-                .items_center()
-                .child(face(self.upper, Some(self.icon)))
-                .child(face(self.lower, None))
+                .relative()
+                .w(px(size))
+                .h(px(size))
+                .child(at(0.0, face(self.upper, Some(self.icon))))
+                .child(at(size - small.max(64.0), face(self.lower, None)))
                 .into_any_element();
         }
         let t = theme_of(cx);

@@ -94,9 +94,10 @@ impl GaugeFace {
         self.alternate = on;
         self
     }
-    /// Width of the face in px; every look is square but the heads-up tape, which is taller.
+    /// Width of the face in px (at least 64); every look is square but the heads-up tape, which is
+    /// taller.
     pub fn size(mut self, s: f32) -> Self {
-        self.size = pm::finite(s, 200.0).max(100.0);
+        self.size = pm::finite(s, 200.0).max(64.0);
         self
     }
 }

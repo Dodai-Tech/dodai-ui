@@ -546,25 +546,48 @@ impl Showcase {
                 ),
             ],
         );
-        let small: Vec<gpui::AnyElement> = vec![
-            volt().size(130.0).into_any_element(),
-            oil().size(130.0).into_any_element(),
-            tyres().size(130.0).into_any_element(),
-            vehicle_rows().size(130.0).into_any_element(),
-            notice().size(130.0).into_any_element(),
-            BoostPod::new(48.0).size(130.0).into_any_element(),
-            GForcePod::new(0.4, -0.3).size(130.0).into_any_element(),
-            media().size(130.0).into_any_element(),
-            CompassPod::new(45.0).size(130.0).into_any_element(),
-        ];
-        let strip = div()
-            .flex()
-            .flex_wrap()
-            .max_w(px(900.0))
-            .gap(px(t.spacing.md))
-            .children(small)
-            .into_any_element();
-        add(self, "Vehicle · Small sizes", vec![strip]);
+        // Every pod at 130 px, once per look: the small end of each layout.
+        let small = |look: Look| -> gpui::AnyElement {
+            let pods: Vec<gpui::AnyElement> = vec![
+                volt().look(look).size(130.0).into_any_element(),
+                oil().look(look).size(130.0).into_any_element(),
+                tyres().look(look).size(130.0).into_any_element(),
+                vehicle_rows().look(look).size(130.0).into_any_element(),
+                notice().look(look).size(130.0).into_any_element(),
+                BoostPod::new(48.0)
+                    .look(look)
+                    .size(130.0)
+                    .into_any_element(),
+                GForcePod::new(0.4, -0.3)
+                    .look(look)
+                    .size(130.0)
+                    .into_any_element(),
+                media().look(look).size(130.0).into_any_element(),
+                CompassPod::new(45.0)
+                    .look(look)
+                    .size(130.0)
+                    .into_any_element(),
+            ];
+            div()
+                .flex()
+                .flex_col()
+                .gap(px(t.spacing.sm))
+                .child(Muted::new(look.name()))
+                .child(
+                    div()
+                        .flex()
+                        .flex_wrap()
+                        .max_w(px(1300.0))
+                        .gap(px(t.spacing.md))
+                        .children(pods),
+                )
+                .into_any_element()
+        };
+        add(
+            self,
+            "Vehicle · Small sizes",
+            Look::ALL.into_iter().map(small).collect(),
+        );
         let gap = px(t.spacing.lg);
         let col = || div().flex().flex_col().gap(gap);
         let quad = |l: [dodai_gpui_instruments::Pod; 2], r: [dodai_gpui_instruments::Pod; 2]| {
