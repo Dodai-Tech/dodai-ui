@@ -103,6 +103,60 @@ fn instruments(v: f32) -> Vec<AnyElement> {
         )
         .into_any_element(),
     ]);
+    #[cfg(feature = "automotive")]
+    {
+        use dodai_gpui::icons::Symbol;
+        for look in GaugeLook::ALL {
+            out.push(
+                GaugeFace::new(Scale::new(v, 10.0).zone(v, 9.0, Severity::Alarm), v)
+                    .look(look)
+                    .size(v)
+                    .into_any_element(),
+            );
+            out.push(
+                GaugeFace::new(Scale::new(5.0, 5.0), v)
+                    .look(look)
+                    .icon(Symbol::Fuel)
+                    .into_any_element(),
+            );
+        }
+        for look in PodLook::ALL {
+            out.extend([
+                TyrePod::new()
+                    .bars([Some(v), None, Some(-v), Some(2.0)])
+                    .low_below(v)
+                    .look(look)
+                    .size(v)
+                    .into_any_element(),
+                RowsPod::new([PodRow::new(Symbol::Fuel, "x").bar(v, Tone::Info)])
+                    .look(look)
+                    .size(v)
+                    .into_any_element(),
+                RowsPod::new(Vec::<PodRow>::new())
+                    .look(look)
+                    .into_any_element(),
+                NoticePod::new(Symbol::Washer, "")
+                    .look(look)
+                    .size(v)
+                    .into_any_element(),
+                GForcePod::new(v, -v)
+                    .limit(v)
+                    .look(look)
+                    .size(v)
+                    .into_any_element(),
+                MediaPod::new("").look(look).size(v).into_any_element(),
+                CompassPod::new(v).look(look).size(v).into_any_element(),
+                MenuRing::new(["a", "b"])
+                    .selected(usize::MAX)
+                    .look(look)
+                    .size(v)
+                    .into_any_element(),
+                MenuRing::new(Vec::<&str>::new())
+                    .look(look)
+                    .into_any_element(),
+            ]);
+        }
+    }
     out
 }
 

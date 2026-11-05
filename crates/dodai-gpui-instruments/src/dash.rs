@@ -105,6 +105,196 @@ pub(crate) fn rim(
     }
 }
 
+/// How a pod's frame is drawn. Every pod takes one with `.style(..)`; the contents are the same.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum PodStyle {
+    /// An open ring: a bright rim over the sweep, open at the bottom.
+    #[default]
+    Ring,
+    /// A closed face: a panel-coloured disc inside a fine full circle, the sweep in bright ink.
+    Disc,
+    /// The open ring in the accent colour with a soft glow round it.
+    Glow,
+    /// A heavy bezel with a fine inner line, like a real gauge.
+    Bezel,
+}
+
+impl PodStyle {
+    /// Every style, in the order a gallery shows them.
+    pub const ALL: [Self; 4] = [Self::Ring, Self::Disc, Self::Glow, Self::Bezel];
+
+    /// A short name for a gallery caption.
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Ring => "Ring",
+            Self::Disc => "Disc",
+            Self::Glow => "Glow",
+            Self::Bezel => "Bezel",
+        }
+    }
+}
+
+/// The shape of a pod: the round pod of the dash, a rounded card or a wide strip.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum PodLook {
+    /// The round pod, framed by its [`PodStyle`].
+    #[default]
+    Ring,
+    /// A rounded card with the content laid out top to bottom.
+    Tile,
+    /// A wide, low strip with the content laid out left to right.
+    Strip,
+}
+
+impl PodLook {
+    /// Every look, in the order a gallery shows them.
+    pub const ALL: [Self; 3] = [Self::Ring, Self::Tile, Self::Strip];
+
+    /// A short name for a gallery caption.
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Ring => "Ring",
+            Self::Tile => "Tile",
+            Self::Strip => "Strip",
+        }
+    }
+
+    /// The width of the pod's box for a nominal `size`.
+    pub(crate) fn width(self, size: f32) -> f32 {
+        match self {
+            Self::Strip => size * 1.7,
+            _ => size,
+        }
+    }
+}
+
+/// The theme colours the card and strip looks share.
+#[derive(Clone, Copy)]
+pub(crate) struct Skin {
+    pub text: Hsla,
+    pub muted: Hsla,
+    pub info: Hsla,
+    pub primary: Hsla,
+    pub face: Hsla,
+    pub line: Hsla,
+    pub warn: Hsla,
+}
+
+impl Skin {
+    pub(crate) fn of(t: &Theme) -> Self {
+        Self {
+            text: hsla(t.palette.text),
+            muted: hsla(t.palette.text_muted),
+            info: hsla(t.palette.info),
+            primary: hsla(t.palette.primary),
+            face: hsla(t.palette.surface_raised),
+            line: hsla(t.palette.border),
+            warn: hsla(t.palette.warning),
+        }
+    }
+
+    /// A rounded card, content top to bottom.
+    pub(crate) fn card(&self, size: f32) -> gpui::Div {
+        div()
+            .flex()
+            .flex_col()
+            .w(px(size))
+            .rounded(px(size * 0.07))
+            .border_1()
+            .border_color(self.line)
+            .bg(self.face)
+            .p(px(size * 0.06))
+            .gap(px(size * 0.04))
+    }
+
+    /// A wide strip, content left to right.
+    pub(crate) fn strip(&self, size: f32) -> gpui::Div {
+        div()
+            .flex()
+            .items_center()
+            .w(px(PodLook::Strip.width(size)))
+            .rounded(px(size * 0.09))
+            .border_1()
+            .border_color(self.line)
+            .bg(self.face)
+            .px(px(size * 0.06))
+            .py(px(size * 0.045))
+            .gap(px(size * 0.05))
+    }
+}
+
+/// A pod's frame with its colours resolved from the theme, ready to paint.
+#[derive(Clone, Copy)]
+pub(crate) struct Frame {
+    style: PodStyle,
+    ink: Hsla,
+    accent: Hsla,
+    face: Hsla,
+}
+
+impl Frame {
+    pub(crate) fn new(t: &Theme, style: PodStyle) -> Self {
+        Self {
+            style,
+            ink: hsla(t.palette.text),
+            accent: hsla(t.palette.primary),
+            face: hsla(t.palette.surface_raised),
+        }
+    }
+
+    /// Paints the frame of a pod of radius `c`: `r` is the rim radius, `width` its stroke.
+    pub(crate) fn paint(
+        self,
+        w: &mut Window,
+        o: gpui::Point<Pixels>,
+        c: f32,
+        r: f32,
+        width: f32,
+        ends: [Option<Hsla>; 2],
+    ) {
+        let (start, span) = SWEEP;
+        match self.style {
+            PodStyle::Ring => rim(w, o, c, r, width, self.ink, ends),
+            PodStyle::Disc => {
+                fill(w, o, &disc(c, c, r, 120), scale_alpha(self.face, 0.9));
+                stroke(
+                    w,
+                    o,
+                    &disc(c, c, r, 120),
+                    width * 0.6,
+                    scale_alpha(self.ink, 0.35),
+                    true,
+                );
+                rim(w, o, c, r, width, self.ink, ends);
+            }
+            PodStyle::Glow => {
+                for i in (1..=4).rev() {
+                    stroke(
+                        w,
+                        o,
+                        &turn_arc(c, c, r, start, start + span),
+                        width * (1.0 + i as f32 * 2.2),
+                        scale_alpha(self.accent, 0.07),
+                        false,
+                    );
+                }
+                rim(w, o, c, r, width, self.accent, ends);
+            }
+            PodStyle::Bezel => {
+                rim(w, o, c, r - width * 0.5, width * 2.0, self.ink, ends);
+                stroke(
+                    w,
+                    o,
+                    &turn_arc(c, c, r - width * 2.0, start, start + span),
+                    width * 0.4,
+                    scale_alpha(self.ink, 0.4),
+                    false,
+                );
+            }
+        }
+    }
+}
+
 // ───────────────────────────────── RingTach ─────────────────────────────────
 
 /// The centre of the dash: a ribbed ring scale for engine speed with a red band, a sweet-spot
@@ -402,6 +592,7 @@ pub struct SidePod {
     ends: [Option<Tone>; 2],
     centre: Option<AnyElement>,
     needle: bool,
+    style: PodStyle,
     size: f32,
 }
 
@@ -421,6 +612,7 @@ impl SidePod {
             centre: None,
             needle: true,
             size: 300.0,
+            style: PodStyle::Ring,
         }
     }
     /// Show or hide the needle (a speed scale with no needle only carries numbers).
@@ -453,6 +645,11 @@ impl SidePod {
         self.centre = Some(e.into_any_element());
         self
     }
+    /// How the frame is drawn (open ring, closed disc, glow or bezel).
+    pub fn style(mut self, style: PodStyle) -> Self {
+        self.style = style;
+        self
+    }
     /// Diameter in px.
     pub fn size(mut self, s: f32) -> Self {
         self.size = s.max(120.0);
@@ -473,6 +670,7 @@ impl RenderOnce for SidePod {
         let r_rim = c - size * 0.012;
         let width = (size * 0.014).max(2.0);
         let ends = self.ends.map(|e| e.map(|tone| tone.color(&t)));
+        let frame = Frame::new(&t, self.style);
         let zones: Vec<(f32, f32, Hsla)> = self
             .scale
             .zone_spans()
@@ -491,7 +689,7 @@ impl RenderOnce for SidePod {
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
                 let o = b.origin;
-                rim(w, o, c, r_rim, width, ink, ends);
+                frame.paint(w, o, c, r_rim, width, ends);
                 let rt = r_rim - width * 3.0;
                 stroke(
                     w,
@@ -597,6 +795,8 @@ pub struct MenuRing {
     selected: usize,
     chosen: Option<usize>,
     pressed: bool,
+    look: PodLook,
+    style: PodStyle,
     size: f32,
 }
 
@@ -610,6 +810,8 @@ impl MenuRing {
             chosen: None,
             pressed: false,
             size: 300.0,
+            look: PodLook::Ring,
+            style: PodStyle::Ring,
         }
     }
     /// A heading above the rows, in the info colour.
@@ -632,6 +834,16 @@ impl MenuRing {
         self.pressed = on;
         self
     }
+    /// The look: the round pod (default), a rounded card or a wide strip.
+    pub fn look(mut self, look: PodLook) -> Self {
+        self.look = look;
+        self
+    }
+    /// How the frame is drawn (open ring, closed disc, glow or bezel).
+    pub fn style(mut self, style: PodStyle) -> Self {
+        self.style = style;
+        self
+    }
     /// Diameter in px.
     pub fn size(mut self, s: f32) -> Self {
         self.size = s.max(120.0);
@@ -642,6 +854,9 @@ impl MenuRing {
 impl RenderOnce for MenuRing {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        if self.look != PodLook::Ring {
+            return self.rect(&t);
+        }
         let size = self.size;
         let c = size / 2.0;
         let ink = hsla(t.palette.text);
@@ -649,10 +864,11 @@ impl RenderOnce for MenuRing {
         let bar = hsla(t.palette.surface_raised.mix(t.palette.text, 0.14));
         let width = (size * 0.014).max(2.0);
         let r_rim = c - size * 0.012;
+        let frame = Frame::new(&t, self.style);
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
-                rim(w, b.origin, c, r_rim, width, ink, [None, None]);
+                frame.paint(w, b.origin, c, r_rim, width, [None, None]);
             },
         )
         .absolute()
@@ -704,6 +920,79 @@ impl RenderOnce for MenuRing {
             .h(px(size))
             .child(cv)
             .child(list)
+            .into_any_element()
+    }
+}
+
+impl MenuRing {
+    /// The card and strip looks: the rows as a list or as chips.
+    fn rect(self, t: &Theme) -> AnyElement {
+        let sk = Skin::of(t);
+        let s = self.size;
+        let bar = hsla(t.palette.surface_raised.mix(t.palette.text, 0.14));
+        let pressed = scale_alpha(sk.primary, 0.35);
+        let colour = |i: usize| {
+            if self.chosen == Some(i) {
+                sk.info
+            } else {
+                sk.text
+            }
+        };
+        if self.look == PodLook::Strip {
+            let mut row = sk.strip(s);
+            if !self.heading.is_empty() {
+                row = row.child(
+                    div()
+                        .text_size(px(s * 0.06))
+                        .text_color(sk.info)
+                        .child(self.heading.clone()),
+                );
+            }
+            for (i, r) in self.rows.iter().enumerate() {
+                let on = i == self.selected;
+                row = row.child(
+                    div()
+                        .px(px(s * 0.04))
+                        .py(px(s * 0.015))
+                        .rounded_full()
+                        .whitespace_nowrap()
+                        .text_size(px(s * 0.06))
+                        .text_color(colour(i))
+                        .when(on && self.pressed, |d| d.bg(pressed))
+                        .when(on && !self.pressed, |d| d.bg(bar))
+                        .child(r.clone()),
+                );
+            }
+            return row.into_any_element();
+        }
+        let mut card = sk.card(s).gap(px(s * 0.01));
+        if !self.heading.is_empty() {
+            card = card.child(
+                div()
+                    .text_size(px(s * 0.062))
+                    .text_color(sk.info)
+                    .font_weight(FontWeight::MEDIUM)
+                    .pb(px(s * 0.02))
+                    .child(self.heading.clone()),
+            );
+        }
+        for (i, r) in self.rows.iter().enumerate() {
+            let on = i == self.selected;
+            card = card.child(
+                div()
+                    .px(px(s * 0.04))
+                    .py(px(s * 0.03))
+                    .rounded(px(s * 0.03))
+                    .text_size(px(s * 0.065))
+                    .text_color(colour(i))
+                    .when(on && self.pressed, |d| {
+                        d.bg(pressed).border_l_2().border_color(sk.info)
+                    })
+                    .when(on && !self.pressed, |d| d.bg(bar))
+                    .child(r.clone()),
+            );
+        }
+        card.into_any_element()
     }
 }
 

@@ -4,9 +4,9 @@ use super::super::*;
 use dodai_gpui::icons::IconId;
 use dodai_gpui::icons::Symbol;
 use dodai_gpui_instruments::{
-    BoostPod, CompassPod, DashQuad, DashTriptych, DualGauge, DualScale, GForcePod, LimitSign,
-    MediaPod, MenuRing, NoticePod, PodIcon, PodRow, RingTach, RowsPod, Scale, Severity, SidePod,
-    Telltales, Tone, TyrePod,
+    BoostPod, CompassPod, DashQuad, DashTriptych, DualGauge, DualScale, GForcePod, GaugeFace,
+    GaugeLook, LimitSign, MediaPod, MenuRing, NoticePod, PodIcon, PodLook, PodRow, PodStyle,
+    RingTach, RowsPod, Scale, Severity, SidePod, Telltales, Tone, TyrePod,
 };
 
 /// A demo value drifting through `lo..=hi` on the animation clock.
@@ -20,6 +20,22 @@ fn tach() -> RingTach {
         .zone(7.0, 8.0, Severity::Alarm);
     RingTach::new(rpm, val(30.0, 0.8, 6.6), val(31.0, 0.0, 180.0))
         .marker(4.0)
+        .tab("--- km")
+        .fuel(0.7, "542 km")
+}
+
+fn tach_plain() -> RingTach {
+    let rpm = Scale::new(0.0, 8.0)
+        .ticks_per(8, 2)
+        .zone(7.0, 8.0, Severity::Alarm);
+    RingTach::new(rpm, val(30.0, 0.8, 6.6), val(31.0, 0.0, 180.0))
+}
+
+fn tach_no_marker() -> RingTach {
+    let rpm = Scale::new(0.0, 8.0)
+        .ticks_per(8, 2)
+        .zone(7.0, 8.0, Severity::Alarm);
+    RingTach::new(rpm, val(30.0, 0.8, 6.6), val(31.0, 0.0, 180.0))
         .tab("--- km")
         .fuel(0.7, "542 km")
 }
@@ -131,16 +147,196 @@ fn dash(d: DashTriptych) -> DashTriptych {
         .width(820.0)
 }
 
-/// An instrument at 240 px with what it shows beside it.
-fn shown(face: gpui::AnyElement, text: &str) -> gpui::AnyElement {
+/// Pod diameter in the galleries.
+const POD: f32 = 200.0;
+
+/// An explanation, then the instrument in several designs side by side, each with its name.
+fn gallery(text: &str, items: Vec<(&'static str, gpui::AnyElement)>) -> gpui::AnyElement {
     div()
         .flex()
-        .flex_wrap()
-        .items_center()
-        .gap_6()
-        .child(div().flex_none().w(px(240.0)).h(px(240.0)).child(face))
-        .child(div().w(px(380.0)).child(Muted::new(text.to_string())))
+        .flex_col()
+        .gap_4()
+        .child(div().max_w(px(780.0)).child(Muted::new(text.to_string())))
+        .child(
+            div()
+                .flex()
+                .flex_wrap()
+                .gap_6()
+                .children(items.into_iter().map(|(name, el)| {
+                    div()
+                        .flex()
+                        .flex_col()
+                        .items_center()
+                        .gap_2()
+                        .child(
+                            div()
+                                .flex_none()
+                                .w(px(POD))
+                                .h(px(POD))
+                                .flex()
+                                .items_center()
+                                .justify_center()
+                                .child(el),
+                        )
+                        .child(Muted::new(name))
+                })),
+        )
         .into_any_element()
+}
+
+/// A reading in every [`GaugeLook`]: the dash dial comes from `dial`, the rest from `face`.
+fn looks(
+    dial: gpui::AnyElement,
+    face: impl Fn(GaugeLook, f32) -> gpui::AnyElement,
+) -> Vec<(&'static str, gpui::AnyElement)> {
+    let mut dial = Some(dial);
+    GaugeLook::ALL
+        .into_iter()
+        .map(|l| {
+            let el = match (l, dial.take()) {
+                (GaugeLook::Dial, Some(d)) => d,
+                _ => face(l, POD),
+            };
+            (l.name(), el)
+        })
+        .collect()
+}
+
+fn speed_face(look: GaugeLook, size: f32) -> gpui::AnyElement {
+    GaugeFace::new(
+        Scale::new(0.0, 270.0)
+            .ticks_per(9, 1)
+            .zone(220.0, 270.0, Severity::Caution),
+        val(32.0, 20.0, 230.0),
+    )
+    .look(look)
+    .label("Speed")
+    .icon(Symbol::Tachometer)
+    .unit("km/h")
+    .size(size)
+    .into_any_element()
+}
+
+fn rev_face(look: GaugeLook, size: f32) -> gpui::AnyElement {
+    GaugeFace::new(
+        Scale::new(0.0, 8.0)
+            .ticks_per(8, 2)
+            .zone(6.0, 7.0, Severity::Caution)
+            .zone(7.0, 8.0, Severity::Alarm),
+        val(30.0, 0.8, 6.6),
+    )
+    .look(look)
+    .label("Engine speed")
+    .icon(Symbol::Tachometer)
+    .unit("×1000 rpm")
+    .decimals(1)
+    .size(size)
+    .into_any_element()
+}
+
+fn volt_face(look: GaugeLook, size: f32) -> gpui::AnyElement {
+    GaugeFace::new(
+        Scale::new(6.0, 18.0)
+            .ticks_per(2, 3)
+            .zone(6.0, 11.0, Severity::Alarm)
+            .zone(15.0, 18.0, Severity::Caution),
+        val(40.0, 12.0, 14.6),
+    )
+    .look(look)
+    .label("Battery")
+    .icon(Symbol::Battery)
+    .unit("V")
+    .decimals(1)
+    .size(size)
+    .into_any_element()
+}
+
+fn coolant_face(look: GaugeLook, size: f32) -> gpui::AnyElement {
+    GaugeFace::new(
+        Scale::new(60.0, 130.0)
+            .ticks_per(3, 3)
+            .zone(115.0, 130.0, Severity::Alarm),
+        val(34.0, 75.0, 118.0),
+    )
+    .look(look)
+    .label("Coolant")
+    .icon(Symbol::Coolant)
+    .unit("°C")
+    .ends(Some(Tone::Info), Some(Tone::Danger))
+    .size(size)
+    .into_any_element()
+}
+
+fn boost_face(look: GaugeLook, size: f32) -> gpui::AnyElement {
+    GaugeFace::new(
+        Scale::new(0.0, 100.0)
+            .ticks_per(5, 2)
+            .zone(80.0, 100.0, Severity::Caution),
+        val(48.0, 0.0, 100.0),
+    )
+    .look(look)
+    .label("Boost")
+    .icon(Symbol::Boost)
+    .unit("%")
+    .size(size)
+    .into_any_element()
+}
+
+/// Oil pressure and temperature on two faces: side by side or stacked.
+fn oil_faces(look: GaugeLook, size: f32) -> gpui::AnyElement {
+    let pressure = |s: f32| {
+        GaugeFace::new(Scale::new(0.0, 6.0).ticks_per(3, 3), val(33.0, 1.0, 5.0))
+            .look(look)
+            .label("Pressure")
+            .icon(Symbol::OilCan)
+            .unit("bar")
+            .decimals(1)
+            .size(s)
+    };
+    let temp = |s: f32| {
+        GaugeFace::new(
+            Scale::new(60.0, 150.0)
+                .ticks_per(2, 3)
+                .zone(130.0, 150.0, Severity::Caution),
+            val(35.0, 70.0, 140.0),
+        )
+        .look(look)
+        .label("Temperature")
+        .unit("°C")
+        .size(s)
+    };
+    match look {
+        GaugeLook::Bar => div()
+            .flex()
+            .flex_col()
+            .gap_2()
+            .child(pressure(size * 0.7))
+            .child(temp(size * 0.7))
+            .into_any_element(),
+        GaugeLook::Column => div()
+            .flex()
+            .gap_2()
+            .child(pressure(size * 0.8))
+            .child(temp(size * 0.8))
+            .into_any_element(),
+        _ => div()
+            .flex()
+            .flex_col()
+            .items_center()
+            .child(pressure(size * 0.5))
+            .child(temp(size * 0.5))
+            .into_any_element(),
+    }
+}
+
+/// One pod in each look (round, card, strip), built by `make(look, size)`.
+fn looked(
+    make: impl Fn(PodLook, f32) -> gpui::AnyElement,
+) -> Vec<(&'static str, gpui::AnyElement)> {
+    PodLook::ALL
+        .into_iter()
+        .map(|s| (s.name(), make(s, POD)))
+        .collect()
 }
 
 /// A lone small element, centred in the 240 px square.
@@ -165,249 +361,223 @@ impl Showcase {
                 .fold(me.section(title, cx), |p, e| p.child(e));
             out.push(("Instruments", title, panel.into_any_element(), "Vehicle"));
         };
+        // Dials: the scales round a ring.
         add(
             self,
             "Vehicle · Engine speed",
-            vec![shown(
-                tach().size(240.0).into_any_element(),
-                "The middle of the dash. A ribbed ring carries the revs (0 to 8, in thousands) with a red band at the top and a green marker at the sweet spot; a thin needle crosses it. Inside: the road speed in big figures, a trip tab and, across the open bottom, the fuel level with the range.",
+            vec![gallery(
+                "The revs, 0 to 8 in thousands, with a red band from 7. Dial: the ribbed ring of the dash with the road speed in the middle, a trip tab and the fuel level. The others show the revs alone as an arc, lit segments, a bar or a column, amber to red near the limit.",
+                looks(tach().size(POD).into_any_element(), rev_face),
+            )],
+        );
+        add(
+            self,
+            "Vehicle · Engine speed, ring variants",
+            vec![gallery(
+                "The ribbed ring with fewer parts: the revs and speed only, and without the sweet-spot marker.",
+                vec![
+                    ("Revs and speed", tach_plain().size(POD).into_any_element()),
+                    ("Without marker", tach_no_marker().size(POD).into_any_element()),
+                ],
             )],
         );
         add(
             self,
             "Vehicle · Speed",
-            vec![shown(
-                speed().size(240.0).into_any_element(),
-                "A pod with the speed scale only: 0 to 270 in steps of 30 round an open ring, blue caps at both ends, and the current speed limit in the middle. No needle: the speed is the big figure on the engine-speed ring.",
+            vec![gallery(
+                "The speed in five looks. Dial: the dash pod, 0 to 270 in steps of 30 with the speed limit in the middle and no needle. Arc: a thin arc that fills up to the speed. Segments: lit segments, amber above 220. Bar and Column: tiles with the figure and a zone track.",
+                looks(speed().size(POD).into_any_element(), speed_face),
             )],
         );
         add(
             self,
             "Vehicle · Battery voltage",
-            vec![shown(
-                volt().size(240.0).into_any_element(),
-                "The on-board voltage, 6 to 18 V, with the battery symbol and the unit in the middle and a needle on the rim.",
+            vec![gallery(
+                "The on-board voltage, 6 to 18 V, in five looks. Red under 11 V, amber over 15 V.",
+                looks(volt().size(POD).into_any_element(), volt_face),
             )],
         );
         add(
             self,
             "Vehicle · Oil pressure and temperature",
-            vec![shown(
-                oil().size(240.0).into_any_element(),
-                "Two readings on one ring. Upper half: oil pressure in bar (0 to 6). Lower arc: oil temperature in °C (60 to 150). Each has its own needle; the oil can sits between the two units.",
+            vec![gallery(
+                "Oil pressure (bar) and oil temperature (°C). Dial: two needles on one ring, pressure on the upper half and temperature on the lower arc. The other looks put the two readings on two faces.",
+                looks(oil().size(POD).into_any_element(), oil_faces),
             )],
         );
         add(
             self,
             "Vehicle · Coolant temperature",
-            vec![shown(
-                coolant().size(240.0).into_any_element(),
-                "Coolant temperature, 60 to 130 °C. The cold end is blue, the hot end red, and the last part of the scale is a red warning band.",
+            vec![gallery(
+                "Coolant temperature, 60 to 130 °C, in five looks. The last part of the scale is a red warning band; the figure turns red inside it.",
+                looks(coolant().size(POD).into_any_element(), coolant_face),
+            )],
+        );
+        add(
+            self,
+            "Vehicle · Boost",
+            vec![gallery(
+                "The boost (or charge) level in percent. Dial: the cell stack inside a segmented band with a limit mark and the battery temperature. The others show the same level as an arc, lit segments, a bar or a column.",
+                looks(
+                    BoostPod::new(val(48.0, 0.0, 100.0))
+                        .temp("9 °C")
+                        .size(POD)
+                        .into_any_element(),
+                    boost_face,
+                ),
+            )],
+        );
+        add(
+            self,
+            "Vehicle · Tyre pressure",
+            vec![
+                gallery(
+                    "The pressure of each tyre in bar: front left and right on top, rear left and right below. A tyre under the limit is written in the warning colour.",
+                    looked(|s, z| {
+                        tyres()
+                            .bars([Some(2.4), Some(2.4), Some(2.3), Some(2.2)])
+                            .low_below(2.3)
+                            .look(s)
+                            .size(z)
+                            .into_any_element()
+                    }),
+                ),
+                gallery(
+                    "Before the car is moving, or when no sensor answers, each tyre shows dashes and a note says from which speed it is measured.",
+                    looked(|s, z| {
+                        TyrePod::new()
+                            .heading("Pressure deviation")
+                            .note("Measured from 25 km/h")
+                            .look(s)
+                            .size(z)
+                            .into_any_element()
+                    }),
+                ),
+            ],
+        );
+        add(
+            self,
+            "Vehicle · G-force",
+            vec![gallery(
+                "A dot moves on a dotted cross inside a thin circle. The force sideways and the force forwards or back are written at its four ends.",
+                looked(|s, z| {
+                    GForcePod::new(val(46.0, -0.8, 0.8), val(47.0, -0.5, 0.9))
+                        .look(s)
+                        .size(z)
+                        .into_any_element()
+                }),
+            )],
+        );
+        add(
+            self,
+            "Vehicle · Compass",
+            vec![gallery(
+                "A card that turns with the heading: the four cardinal points on a thin circle, a blue arrow, the bearing in degrees, the cardinal point and the height.",
+                looked(|s, z| {
+                    CompassPod::new(val(49.0, 0.0, 359.0))
+                        .height("460 m")
+                        .look(s)
+                        .size(z)
+                        .into_any_element()
+                }),
+            )],
+        );
+        // Lists of readings.
+        add(
+            self,
+            "Vehicle · Vehicle info",
+            vec![gallery(
+                "Four levels on dark tiles: oil temperature, coolant temperature, oil pressure and battery voltage. Each has a bar; the temperature bars carry a blue tick at the cold end and a red one at the hot end.",
+                looked(|s, z| vehicle_rows().look(s).size(z).into_any_element()),
+            )],
+        );
+        add(
+            self,
+            "Vehicle · Trip",
+            vec![gallery(
+                "The trip since a time: duration, distance, consumption and average speed, each with its own symbol.",
+                looked(|s, z| trip_rows().look(s).size(z).into_any_element()),
+            )],
+        );
+        add(
+            self,
+            "Vehicle · Today",
+            vec![gallery(
+                "Several things in one list: the date, the track playing, the battery charge and a heading strip with a marker for the direction.",
+                looked(|s, z| today_rows().look(s).size(z).into_any_element()),
+            )],
+        );
+        // Messages, media and menus.
+        add(
+            self,
+            "Vehicle · Message",
+            vec![gallery(
+                "A message: a tab with a back arrow at the top, a symbol, the title and one line of advice. The rim is blue at both ends.",
+                looked(|s, z| notice().look(s).size(z).into_any_element()),
+            )],
+        );
+        add(
+            self,
+            "Vehicle · Media",
+            vec![gallery(
+                "What is playing: the cover, the title in blue, the artist or show, and the elapsed and total time.",
+                looked(|s, z| media().look(s).size(z).into_any_element()),
             )],
         );
         add(
             self,
             "Vehicle · Menu",
             vec![
-                shown(
-                    MenuRing::new(["Information", "Vehicle", "Oil level"])
-                        .selected(0)
-                        .chosen(1)
-                        .size(240.0)
-                        .into_any_element(),
+                gallery(
                     "A short list in a ring. A grey bar marks the row under the cursor; the row that is switched on is written in blue.",
+                    looked(|s, z| {
+                        MenuRing::new(["Information", "Vehicle", "Oil level"])
+                            .selected(0)
+                            .chosen(1)
+                            .look(s)
+                            .size(z)
+                            .into_any_element()
+                    }),
                 ),
-                shown(
-                    MenuRing::new(["G-Force", "G-Force Max.", "Reset max."])
-                        .selected(1)
-                        .pressed(true)
-                        .size(240.0)
-                        .into_any_element(),
+                gallery(
                     "While the button is held the bar fills with the accent colour and gets blue edges.",
+                    looked(|s, z| {
+                        MenuRing::new(["G-Force", "G-Force Max.", "Reset max."])
+                            .selected(1)
+                            .pressed(true)
+                            .look(s)
+                            .size(z)
+                            .into_any_element()
+                    }),
                 ),
             ],
         );
-        add(
-            self,
-            "Vehicle · Tyre pressure",
-            vec![
-                shown(
-                    tyres()
-                        .bars([Some(2.4), Some(2.4), Some(2.3), Some(2.2)])
-                        .low_below(2.3)
-                        .size(240.0)
-                        .into_any_element(),
-                    "The pressure of each tyre in bar: front left and right on top, rear left and right below. A tyre under the limit is written in the warning colour.",
-                ),
-                shown(
-                    TyrePod::new()
-                        .heading("Pressure deviation")
-                        .note("Measured from 25 km/h")
-                        .size(240.0)
-                        .into_any_element(),
-                    "Before the car is moving, or when no sensor answers, each tyre shows dashes and a note says from which speed it is measured.",
-                ),
-            ],
-        );
-        add(
-            self,
-            "Vehicle · Vehicle info",
-            vec![shown(
-                vehicle_rows().size(240.0).into_any_element(),
-                "Four levels on dark tiles: oil temperature, coolant temperature, oil pressure and battery voltage. Each has a bar; the temperature bars carry a blue tick at the cold end and a red one at the hot end.",
-            )],
-        );
-        add(
-            self,
-            "Vehicle · Trip",
-            vec![shown(
-                trip_rows().size(240.0).into_any_element(),
-                "The trip since a time: duration, distance, consumption and average speed, each with its own symbol.",
-            )],
-        );
-        add(
-            self,
-            "Vehicle · Today",
-            vec![shown(
-                today_rows().size(240.0).into_any_element(),
-                "Several things in one list: the date, the track playing, the battery charge and a heading strip with a marker for the direction.",
-            )],
-        );
-        add(
-            self,
-            "Vehicle · Message",
-            vec![shown(
-                notice().size(240.0).into_any_element(),
-                "A message: a tab with a back arrow at the top, a symbol, the title and one line of advice. The rim is blue at both ends.",
-            )],
-        );
-        add(
-            self,
-            "Vehicle · Boost",
-            vec![shown(
-                BoostPod::new(val(48.0, 0.0, 100.0))
-                    .temp("9 °C")
-                    .size(240.0)
-                    .into_any_element(),
-                "The boost (or charge) level as a percentage above a stack of cells that fill from the bottom, the label on the left and the battery temperature on the right.",
-            )],
-        );
-        add(
-            self,
-            "Vehicle · G-force",
-            vec![shown(
-                GForcePod::new(val(46.0, -0.8, 0.8), val(47.0, -0.5, 0.9))
-                    .size(240.0)
-                    .into_any_element(),
-                "A dot moves on a dotted cross inside a thin circle. The force sideways and the force forwards or back are written at its four ends.",
-            )],
-        );
-        add(
-            self,
-            "Vehicle · Media",
-            vec![shown(
-                media().size(240.0).into_any_element(),
-                "What is playing: the cover, the title in blue, the artist or show, and the elapsed and total time.",
-            )],
-        );
-        add(
-            self,
-            "Vehicle · Compass",
-            vec![shown(
-                CompassPod::new(val(49.0, 0.0, 359.0))
-                    .height("460 m")
-                    .size(240.0)
-                    .into_any_element(),
-                "A card that turns with the heading: the four cardinal points on a thin circle, a blue arrow, the bearing in degrees, the cardinal point and the height.",
-            )],
-        );
+        // Signs and lamps.
         add(
             self,
             "Vehicle · Limit sign and lamps",
             vec![
-                shown(
-                    centred(LimitSign::new(50).size(110.0)),
+                gallery(
                     "The speed-limit sign: a heavy red ring round the limit. On the dash it sits above the ring where the limit applies.",
+                    [30, 50, 80, 120]
+                        .into_iter()
+                        .map(|v| {
+                            (
+                                "",
+                                centred(LimitSign::new(v).size(110.0)),
+                            )
+                        })
+                        .collect(),
                 ),
-                shown(
-                    centred(tells().size(34.0).columns(3)),
+                gallery(
                     "Telltale lamps: red for danger, green for on, amber for a fault.",
+                    vec![
+                        ("Three columns", centred(tells().size(34.0).columns(3))),
+                        ("Five columns", centred(tells().size(34.0).columns(5))),
+                    ],
                 ),
             ],
         );
-        let gap = px(t.spacing.lg);
-        let col = || div().flex().flex_col().gap(gap);
-        let quad = |l: [dodai_gpui_instruments::Pod; 2], r: [dodai_gpui_instruments::Pod; 2]| {
-            DashQuad::new(tach(), l, r)
-                .telltales(tells())
-                .limit(50)
-                .mode("HYBRID AUTO")
-                .width(1000.0)
-        };
-        let examples = col()
-            .child(Muted::new(
-                "The classic five instruments: voltage, speed, engine speed, oil and coolant.",
-            ))
-            .child(quad(
-                [volt().into(), speed().into()],
-                [oil().into(), coolant().into()],
-            ))
-            .child(Muted::new(
-                "Four readings round the ring: boost, G-force, the trip and a compass.",
-            ))
-            .child(quad(
-                [
-                    BoostPod::new(0.0).temp("9 °C").into(),
-                    GForcePod::new(val(41.0, -0.9, 0.9), val(42.0, -0.6, 1.1)).into(),
-                ],
-                [
-                    trip_rows().into(),
-                    CompassPod::new(val(43.0, 300.0, 359.0))
-                        .height("460 m")
-                        .into(),
-                ],
-            ))
-            .child(Muted::new("Three instruments: a pair beside the ring."))
-            .child(dash(DashTriptych::new(
-                tach(),
-                tyres()
-                    .bars([Some(2.4), Some(2.4), Some(2.3), Some(2.2)])
-                    .low_below(2.3),
-                vehicle_rows(),
-            )))
-            .child(dash(DashTriptych::new(
-                tach(),
-                TyrePod::new()
-                    .heading("Pressure deviation")
-                    .note("Measured from 25 km/h"),
-                notice(),
-            )))
-            .child(dash(DashTriptych::new(
-                tach(),
-                BoostPod::new(0.0).temp("9 °C"),
-                MenuRing::new(["Information", "Vehicle", "Oil level"])
-                    .selected(0)
-                    .chosen(1),
-            )))
-            .child(dash(DashTriptych::new(
-                tach(),
-                MenuRing::new(["G-Force", "G-Force Max.", "Reset max."])
-                    .selected(0)
-                    .chosen(0),
-                media(),
-            )))
-            .child(dash(DashTriptych::new(
-                tach(),
-                MenuRing::new(["G-Force", "G-Force Max.", "Reset max."]).selected(0),
-                today_rows(),
-            )))
-            .child(dash(DashTriptych::new(
-                tach(),
-                GForcePod::new(val(44.0, -0.8, 0.8), val(45.0, -0.5, 0.9)),
-                CompassPod::new(343.0).height("460 m"),
-            )))
-            .into_any_element();
-        add(self, "Vehicle · Examples", vec![examples]);
         let small: Vec<gpui::AnyElement> = vec![
             volt().size(130.0).into_any_element(),
             oil().size(130.0).into_any_element(),
@@ -426,6 +596,84 @@ impl Showcase {
             .children(small)
             .into_any_element();
         add(self, "Vehicle · Small sizes", vec![strip]);
+        let gap = px(t.spacing.lg);
+        let col = || div().flex().flex_col().gap(gap);
+        let quad = |l: [dodai_gpui_instruments::Pod; 2], r: [dodai_gpui_instruments::Pod; 2]| {
+            DashQuad::new(tach(), l, r)
+                .telltales(tells())
+                .limit(50)
+                .mode("HYBRID AUTO")
+                .width(1000.0)
+        };
+        let examples = col()
+            .child(Muted::new(
+                "The classic five instruments: voltage, speed, engine speed, oil and coolant.",
+            ))
+            .child(quad(
+                [volt().into(), speed().into()],
+                [oil().into(), coolant().into()],
+            ))
+            .child(Muted::new(
+                "The same dash with closed faces: boost, G-force, the trip and a compass.",
+            ))
+            .child(quad(
+                [
+                    BoostPod::new(0.0).temp("9 °C").style(PodStyle::Disc).into(),
+                    GForcePod::new(val(41.0, -0.9, 0.9), val(42.0, -0.6, 1.1))
+                        .style(PodStyle::Disc)
+                        .into(),
+                ],
+                [
+                    trip_rows().style(PodStyle::Disc).into(),
+                    CompassPod::new(val(43.0, 300.0, 359.0))
+                        .height("460 m")
+                        .style(PodStyle::Disc)
+                        .into(),
+                ],
+            ))
+            .child(Muted::new("Three instruments: a pair beside the ring."))
+            .child(dash(DashTriptych::new(
+                tach(),
+                tyres()
+                    .bars([Some(2.4), Some(2.4), Some(2.3), Some(2.2)])
+                    .low_below(2.3),
+                vehicle_rows(),
+            )))
+            .child(dash(DashTriptych::new(
+                tach(),
+                TyrePod::new()
+                    .heading("Pressure deviation")
+                    .note("Measured from 25 km/h")
+                    .style(PodStyle::Glow),
+                notice().style(PodStyle::Glow),
+            )))
+            .child(dash(DashTriptych::new(
+                tach(),
+                BoostPod::new(0.0).temp("9 °C"),
+                MenuRing::new(["Information", "Vehicle", "Oil level"])
+                    .selected(0)
+                    .chosen(1),
+            )))
+            .child(dash(DashTriptych::new(
+                tach(),
+                MenuRing::new(["G-Force", "G-Force Max.", "Reset max."])
+                    .selected(0)
+                    .chosen(0)
+                    .style(PodStyle::Bezel),
+                media().style(PodStyle::Bezel),
+            )))
+            .child(dash(DashTriptych::new(
+                tach(),
+                MenuRing::new(["G-Force", "G-Force Max.", "Reset max."]).selected(0),
+                today_rows(),
+            )))
+            .child(dash(DashTriptych::new(
+                tach(),
+                GForcePod::new(val(44.0, -0.8, 0.8), val(45.0, -0.5, 0.9)),
+                CompassPod::new(343.0).height("460 m"),
+            )))
+            .into_any_element();
+        add(self, "Vehicle · Examples", vec![examples]);
         out
     }
 }

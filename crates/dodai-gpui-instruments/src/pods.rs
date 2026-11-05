@@ -3,7 +3,9 @@
 //! [`crate::dash::MenuRing`] are the first two) that a [`crate::dash::DashTriptych`] or a
 //! [`DashQuad`] can hold, and each stands alone. All colours come from the theme.
 
-use crate::dash::{rim, text_box, LimitSign, Pod, RingTach, Telltales, Tone};
+use crate::dash::{
+    text_box, Frame, LimitSign, Pod, PodLook, PodStyle, RingTach, Skin, Telltales, Tone,
+};
 use crate::dial::severity_color;
 use crate::draw::{polar, turn_arc};
 use crate::gauges::disc;
@@ -53,19 +55,20 @@ impl PodIcon {
 fn ring(
     size: f32,
     ends: [Option<Tone>; 2],
+    style: PodStyle,
     t: &dodai_core::Theme,
     paint: impl Fn(&mut Window, gpui::Point<Pixels>) + 'static,
     content: impl IntoElement,
 ) -> gpui::Div {
     let c = size / 2.0;
-    let ink = hsla(t.palette.text);
+    let frame = Frame::new(t, style);
     let width = (size * 0.014).max(2.0);
     let r = c - size * 0.012;
     let ends = ends.map(|e| e.map(|tone| tone.color(t)));
     let cv = canvas(
         |_, _, _| (),
         move |b: Bounds<Pixels>, _, w, _| {
-            rim(w, b.origin, c, r, width, ink, ends);
+            frame.paint(w, b.origin, c, r, width, ends);
             paint(w, b.origin);
         },
     )
@@ -105,6 +108,8 @@ fn pod_size(s: f32) -> f32 {
     pm::pod_diameter(s)
 }
 
+mod looks;
+
 // ───────────────────────────────── TyrePod ─────────────────────────────────
 
 /// Tyre pressures, two rows of two: front left and right, rear left and right.
@@ -115,6 +120,8 @@ pub struct TyrePod {
     unit: SharedString,
     bars: [Option<f32>; 4],
     low: f32,
+    look: PodLook,
+    style: PodStyle,
     size: f32,
 }
 
@@ -128,6 +135,8 @@ impl TyrePod {
             bars: [None; 4],
             low: 0.0,
             size: 300.0,
+            look: PodLook::Ring,
+            style: PodStyle::Ring,
         }
     }
     /// The heading above the car.
@@ -155,6 +164,16 @@ impl TyrePod {
         self.low = v;
         self
     }
+    /// The look: the round pod (default), a rounded card or a wide strip.
+    pub fn look(mut self, look: PodLook) -> Self {
+        self.look = look;
+        self
+    }
+    /// How the frame is drawn (open ring, closed disc, glow or bezel).
+    pub fn style(mut self, style: PodStyle) -> Self {
+        self.style = style;
+        self
+    }
     /// Diameter in px.
     pub fn size(mut self, s: f32) -> Self {
         self.size = pod_size(s);
@@ -171,6 +190,9 @@ impl Default for TyrePod {
 impl RenderOnce for TyrePod {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        if self.look != PodLook::Ring {
+            return self.rect(&t);
+        }
         let size = self.size;
         let (ink, muted) = (hsla(t.palette.text), hsla(t.palette.text_muted));
         let c = size / 2.0;
@@ -223,7 +245,7 @@ impl RenderOnce for TyrePod {
                     ),
             );
         }
-        ring(size, [None, None], &t, |_, _| (), content)
+        ring(size, [None, None], self.style, &t, |_, _| (), content).into_any_element()
     }
 }
 
@@ -265,6 +287,8 @@ impl PodRow {
 pub struct RowsPod {
     heading: SharedString,
     rows: Vec<PodRow>,
+    look: PodLook,
+    style: PodStyle,
     size: f32,
 }
 
@@ -275,11 +299,23 @@ impl RowsPod {
             heading: SharedString::default(),
             rows: rows.into_iter().collect(),
             size: 300.0,
+            look: PodLook::Ring,
+            style: PodStyle::Ring,
         }
     }
     /// A heading above the rows.
     pub fn heading(mut self, h: impl Into<SharedString>) -> Self {
         self.heading = h.into();
+        self
+    }
+    /// The look: the round pod (default), a rounded card or a wide strip.
+    pub fn look(mut self, look: PodLook) -> Self {
+        self.look = look;
+        self
+    }
+    /// How the frame is drawn (open ring, closed disc, glow or bezel).
+    pub fn style(mut self, style: PodStyle) -> Self {
+        self.style = style;
         self
     }
     /// Diameter in px.
@@ -292,6 +328,9 @@ impl RowsPod {
 impl RenderOnce for RowsPod {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        if self.look != PodLook::Ring {
+            return self.rect(&t);
+        }
         let size = self.size;
         let (ink, muted) = (hsla(t.palette.text), hsla(t.palette.text_muted));
         let tile = hsla(t.palette.surface_raised);
@@ -363,7 +402,7 @@ impl RenderOnce for RowsPod {
                 ),
             );
         }
-        ring(size, [None, None], &t, |_, _| (), list)
+        ring(size, [None, None], self.style, &t, |_, _| (), list).into_any_element()
     }
 }
 
@@ -376,6 +415,8 @@ pub struct NoticePod {
     title: SharedString,
     text: SharedString,
     tone: Tone,
+    look: PodLook,
+    style: PodStyle,
     size: f32,
 }
 
@@ -388,6 +429,8 @@ impl NoticePod {
             text: SharedString::default(),
             tone: Tone::Off,
             size: 300.0,
+            look: PodLook::Ring,
+            style: PodStyle::Ring,
         }
     }
     /// The advice under the title.
@@ -400,6 +443,16 @@ impl NoticePod {
         self.tone = t;
         self
     }
+    /// The look: the round pod (default), a rounded card or a wide strip.
+    pub fn look(mut self, look: PodLook) -> Self {
+        self.look = look;
+        self
+    }
+    /// How the frame is drawn (open ring, closed disc, glow or bezel).
+    pub fn style(mut self, style: PodStyle) -> Self {
+        self.style = style;
+        self
+    }
     /// Diameter in px.
     pub fn size(mut self, s: f32) -> Self {
         self.size = pod_size(s);
@@ -410,6 +463,9 @@ impl NoticePod {
 impl RenderOnce for NoticePod {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        if self.look != PodLook::Ring {
+            return self.rect(&t);
+        }
         let size = self.size;
         let ink = hsla(t.palette.text);
         let icon_col = if self.tone == Tone::Off {
@@ -455,10 +511,12 @@ impl RenderOnce for NoticePod {
         ring(
             size,
             [Some(Tone::Info), Some(Tone::Info)],
+            self.style,
             &t,
             |_, _| (),
             content,
         )
+        .into_any_element()
     }
 }
 
@@ -470,6 +528,8 @@ pub struct GForcePod {
     lateral: f32,
     longitudinal: f32,
     limit: f32,
+    look: PodLook,
+    style: PodStyle,
     size: f32,
 }
 
@@ -481,11 +541,23 @@ impl GForcePod {
             longitudinal,
             limit: 1.5,
             size: 300.0,
+            look: PodLook::Ring,
+            style: PodStyle::Ring,
         }
     }
     /// The g at the edge of the cross (default 1.5).
     pub fn limit(mut self, g: f32) -> Self {
         self.limit = pm::finite(g, 1.5).max(0.1);
+        self
+    }
+    /// The look: the round pod (default), a rounded card or a wide strip.
+    pub fn look(mut self, look: PodLook) -> Self {
+        self.look = look;
+        self
+    }
+    /// How the frame is drawn (open ring, closed disc, glow or bezel).
+    pub fn style(mut self, style: PodStyle) -> Self {
+        self.style = style;
         self
     }
     /// Diameter in px.
@@ -498,6 +570,9 @@ impl GForcePod {
 impl RenderOnce for GForcePod {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        if self.look != PodLook::Ring {
+            return self.rect(&t);
+        }
         let size = self.size;
         let c = size / 2.0;
         let (ink, muted, info) = (
@@ -562,10 +637,12 @@ impl RenderOnce for GForcePod {
         ring(
             size,
             [Some(Tone::Info), Some(Tone::Info)],
+            self.style,
             &t,
             paint,
             content,
         )
+        .into_any_element()
     }
 }
 
@@ -577,6 +654,7 @@ pub struct BoostPod {
     percent: f32,
     label: SharedString,
     temp: SharedString,
+    style: PodStyle,
     size: f32,
 }
 
@@ -588,6 +666,7 @@ impl BoostPod {
             label: "BOOST".into(),
             temp: SharedString::default(),
             size: 300.0,
+            style: PodStyle::Ring,
         }
     }
     /// The label on the left.
@@ -598,6 +677,11 @@ impl BoostPod {
     /// The temperature on the right, e.g. `9 °C`.
     pub fn temp(mut self, t: impl Into<SharedString>) -> Self {
         self.temp = t.into();
+        self
+    }
+    /// How the frame is drawn (open ring, closed disc, glow or bezel).
+    pub fn style(mut self, style: PodStyle) -> Self {
+        self.style = style;
         self
     }
     /// Diameter in px.
@@ -710,6 +794,7 @@ impl RenderOnce for BoostPod {
         ring(
             size,
             [Some(Tone::Info), Some(Tone::Danger)],
+            self.style,
             &t,
             paint,
             content,
@@ -726,6 +811,8 @@ pub struct MediaPod {
     artist: SharedString,
     time: SharedString,
     cover: Option<AnyElement>,
+    look: PodLook,
+    style: PodStyle,
     size: f32,
 }
 
@@ -738,6 +825,8 @@ impl MediaPod {
             time: "0:00 | 0:00".into(),
             cover: None,
             size: 300.0,
+            look: PodLook::Ring,
+            style: PodStyle::Ring,
         }
     }
     /// The artist or show under the title.
@@ -755,6 +844,16 @@ impl MediaPod {
         self.cover = Some(e.into_any_element());
         self
     }
+    /// The look: the round pod (default), a rounded card or a wide strip.
+    pub fn look(mut self, look: PodLook) -> Self {
+        self.look = look;
+        self
+    }
+    /// How the frame is drawn (open ring, closed disc, glow or bezel).
+    pub fn style(mut self, style: PodStyle) -> Self {
+        self.style = style;
+        self
+    }
     /// Diameter in px.
     pub fn size(mut self, s: f32) -> Self {
         self.size = pod_size(s);
@@ -765,6 +864,9 @@ impl MediaPod {
 impl RenderOnce for MediaPod {
     fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        if self.look != PodLook::Ring {
+            return self.rect(&t);
+        }
         let size = self.size;
         let (ink, muted, info) = (
             hsla(t.palette.text),
@@ -814,7 +916,15 @@ impl RenderOnce for MediaPod {
                         .child(self.time.clone()),
                 ),
         );
-        ring(size, [None, Some(Tone::Info)], &t, |_, _| (), content)
+        ring(
+            size,
+            [None, Some(Tone::Info)],
+            self.style,
+            &t,
+            |_, _| (),
+            content,
+        )
+        .into_any_element()
     }
 }
 
@@ -826,6 +936,8 @@ impl RenderOnce for MediaPod {
 pub struct CompassPod {
     heading: f32,
     height: SharedString,
+    look: PodLook,
+    style: PodStyle,
     size: f32,
 }
 
@@ -836,11 +948,23 @@ impl CompassPod {
             heading: pm::bearing(heading),
             height: SharedString::default(),
             size: 300.0,
+            look: PodLook::Ring,
+            style: PodStyle::Ring,
         }
     }
     /// The height line under the bearing, e.g. `460 m`.
     pub fn height(mut self, h: impl Into<SharedString>) -> Self {
         self.height = h.into();
+        self
+    }
+    /// The look: the round pod (default), a rounded card or a wide strip.
+    pub fn look(mut self, look: PodLook) -> Self {
+        self.look = look;
+        self
+    }
+    /// How the frame is drawn (open ring, closed disc, glow or bezel).
+    pub fn style(mut self, style: PodStyle) -> Self {
+        self.style = style;
         self
     }
     /// Diameter in px.
@@ -853,6 +977,9 @@ impl CompassPod {
 impl RenderOnce for CompassPod {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        if self.look != PodLook::Ring {
+            return self.rect(&t);
+        }
         let (size, heading) = (self.size, self.heading);
         let c = size / 2.0;
         let r = size * 0.35;
@@ -936,10 +1063,12 @@ impl RenderOnce for CompassPod {
         ring(
             size,
             [Some(Tone::Info), Some(Tone::Info)],
+            self.style,
             &t,
             paint,
             content,
         )
+        .into_any_element()
     }
 }
 
@@ -971,6 +1100,7 @@ pub struct DualGauge {
     upper: DualScale,
     lower: DualScale,
     icon: Symbol,
+    style: PodStyle,
     size: f32,
 }
 
@@ -982,7 +1112,13 @@ impl DualGauge {
             lower,
             icon,
             size: 300.0,
+            style: PodStyle::Ring,
         }
+    }
+    /// How the frame is drawn (open ring, closed disc, glow or bezel).
+    pub fn style(mut self, style: PodStyle) -> Self {
+        self.style = style;
+        self
     }
     /// Diameter in px.
     pub fn size(mut self, s: f32) -> Self {
@@ -1053,11 +1189,12 @@ impl RenderOnce for DualGauge {
             );
         };
         let (up, lo) = (self.upper.clone(), self.lower.clone());
+        let frame = Frame::new(&t, self.style);
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
                 let o = b.origin;
-                rim(w, o, c, r_rim, width, ink, [None, None]);
+                frame.paint(w, o, c, r_rim, width, [None, None]);
                 paint_scale(w, o, &up, r_up, &up_at);
                 paint_scale(w, o, &lo, r_lo, &lo_at);
             },
