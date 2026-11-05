@@ -233,7 +233,7 @@ pub(crate) fn engraved_scale(
 
 /// How faint an unlit segment is: brighter on light faces, where it would vanish otherwise.
 pub(crate) fn ghost(on: Hsla, dark: bool) -> Hsla {
-    scale_alpha(on, if dark { 0.1 } else { 0.2 })
+    scale_alpha(on, if dark { 0.1 } else { 0.14 })
 }
 
 /// Paint an LCD module filling `(x, y, wd, h)` of a pod of `s`: a dark bezel with corner cuts, a

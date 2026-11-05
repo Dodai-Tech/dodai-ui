@@ -99,7 +99,14 @@ macro_rules! into_pod {
     ($($t:ty),*) => {$(
         impl From<$t> for Pod {
             fn from(p: $t) -> Self {
-                Pod::Custom(Box::new(move |s| p.size(s).into_any_element()))
+                Pod::Custom(Box::new(move |s, look| {
+                    match look {
+                        Some(l) => p.look(l),
+                        None => p,
+                    }
+                    .size(s)
+                    .into_any_element()
+                }))
             }
         }
     )*};
@@ -665,6 +672,7 @@ pub struct BoostPod {
     percent: f32,
     label: SharedString,
     temp: SharedString,
+    look: Look,
     style: PodStyle,
     size: f32,
 }
@@ -679,6 +687,7 @@ impl BoostPod {
             percent: pm::percent(percent),
             label: "BOOST".into(),
             temp: SharedString::default(),
+            look: Look::Classic,
             size: 300.0,
             style: PodStyle::Ring,
         }
@@ -686,6 +695,12 @@ impl BoostPod {
     /// The label on the left.
     pub fn label(mut self, l: impl Into<SharedString>) -> Self {
         self.label = l.into();
+        self
+    }
+    /// The look (see [`Look`]); every look but [`Look::Classic`] draws the level as a
+    /// [`GaugeFace`](crate::faces::GaugeFace) from 0 to 100 %, amber over 80.
+    pub fn look(mut self, look: Look) -> Self {
+        self.look = look;
         self
     }
     /// The temperature on the right, e.g. `9 °C`.
@@ -708,6 +723,21 @@ impl BoostPod {
 impl RenderOnce for BoostPod {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
         self.percent = pm::percent(follow(w, cx, &self.follow, 0, self.percent));
+        if self.look != Look::Classic {
+            return crate::faces::GaugeFace::new(
+                Scale::new(0.0, 100.0)
+                    .ticks_per(5, 2)
+                    .zone(80.0, 100.0, Severity::Caution),
+                self.percent,
+            )
+            .animate(false)
+            .look(self.look)
+            .label(self.label)
+            .icon(Symbol::Boost)
+            .unit("%")
+            .size(self.size)
+            .into_any_element();
+        }
         let t = theme_of(cx);
         let size = self.size;
         let c = size / 2.0;
@@ -814,6 +844,7 @@ impl RenderOnce for BoostPod {
             paint,
             content,
         )
+        .into_any_element()
     }
 }
 
@@ -1121,6 +1152,7 @@ pub struct DualGauge {
     upper: DualScale,
     lower: DualScale,
     icon: Symbol,
+    look: Look,
     style: PodStyle,
     size: f32,
 }
@@ -1135,9 +1167,16 @@ impl DualGauge {
             upper,
             lower,
             icon,
+            look: Look::Classic,
             size: 300.0,
             style: PodStyle::Ring,
         }
+    }
+    /// The look (see [`Look`]); every look but [`Look::Classic`] draws the two scales as two
+    /// [`GaugeFace`](crate::faces::GaugeFace)s of half the size, one above the other.
+    pub fn look(mut self, look: Look) -> Self {
+        self.look = look;
+        self
     }
     /// How the frame is drawn (open ring, closed disc, glow or bezel).
     pub fn style(mut self, style: PodStyle) -> Self {
@@ -1155,6 +1194,30 @@ impl RenderOnce for DualGauge {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
         self.upper.value = pm::finite(follow(w, cx, &self.follow, 0, self.upper.value), 0.0);
         self.lower.value = pm::finite(follow(w, cx, &self.follow, 1, self.lower.value), 0.0);
+        if self.look != Look::Classic {
+            let half = self.size / 2.0;
+            let face = |d: DualScale, icon: Option<Symbol>| {
+                let f = crate::faces::GaugeFace::new(d.scale, d.value)
+                    .animate(false)
+                    .look(self.look)
+                    .unit(d.unit)
+                    .decimals(1)
+                    .size(half);
+                match icon {
+                    Some(i) => f.icon(i),
+                    None => f,
+                }
+            };
+            return div()
+                .w(px(self.size))
+                .h(px(self.size))
+                .flex()
+                .flex_col()
+                .items_center()
+                .child(face(self.upper, Some(self.icon)))
+                .child(face(self.lower, None))
+                .into_any_element();
+        }
         let t = theme_of(cx);
         let size = self.size;
         let c = size / 2.0;
@@ -1269,7 +1332,12 @@ impl RenderOnce for DualGauge {
                     .text_color(muted)
                     .child(self.lower.unit.clone()),
             );
-        div().relative().w(px(size)).h(px(size)).child(content)
+        div()
+            .relative()
+            .w(px(size))
+            .h(px(size))
+            .child(content)
+            .into_any_element()
     }
 }
 
@@ -1288,6 +1356,7 @@ pub struct DashQuad {
     limit: Option<u32>,
     mode: SharedString,
     gear: char,
+    look: Option<Look>,
     width: f32,
 }
 
@@ -1303,7 +1372,14 @@ impl DashQuad {
             mode: SharedString::default(),
             gear: 'D',
             width: 1100.0,
+            look: None,
         }
+    }
+    /// One look for the whole dash (see [`Look`]): the ring, the four pods, the lamps and the
+    /// limit sign. Without it every part keeps its own.
+    pub fn look(mut self, look: Look) -> Self {
+        self.look = Some(look);
+        self
     }
     /// The telltales under the ring.
     pub fn telltales(mut self, t: Telltales) -> Self {
@@ -1335,6 +1411,15 @@ impl DashQuad {
 impl RenderOnce for DashQuad {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        let look = self.look;
+        let centre = match look {
+            Some(l) => self.centre.look(l),
+            None => self.centre,
+        };
+        let telltales = match look {
+            Some(l) => self.telltales.look(l),
+            None => self.telltales,
+        };
         let width = self.width;
         let h = width * 0.37;
         let ring_d = h * 0.86;
@@ -1363,11 +1448,11 @@ impl RenderOnce for DashQuad {
             .bg(hsla(t.palette.background.mix(t.palette.text, 0.02)))
             .border_1()
             .border_color(hsla(t.palette.border))
-            .child(place(lo.sized(outer), 0.0, h * 0.31, outer))
-            .child(place(ro.sized(outer), width - outer, h * 0.31, outer))
-            .child(place(li.sized(inner), outer, h * 0.2, inner))
+            .child(place(lo.sized(outer, look), 0.0, h * 0.31, outer))
+            .child(place(ro.sized(outer, look), width - outer, h * 0.31, outer))
+            .child(place(li.sized(inner, look), outer, h * 0.2, inner))
             .child(place(
-                ri.sized(inner),
+                ri.sized(inner, look),
                 width - outer - inner,
                 h * 0.2,
                 inner,
@@ -1377,14 +1462,14 @@ impl RenderOnce for DashQuad {
                     .absolute()
                     .left(px((width - ring_d) / 2.0))
                     .top(px((h - ring_d) / 2.0))
-                    .child(self.centre.size(ring_d)),
+                    .child(centre.size(ring_d)),
             );
         root = root.child(
             div()
                 .absolute()
                 .left(px(width * 0.17))
                 .top(px(h * 0.8))
-                .child(self.telltales.size(h * 0.055).columns(6)),
+                .child(telltales.size(h * 0.055).columns(6)),
         );
         if let Some(l) = self.limit {
             root = root.child(
@@ -1392,7 +1477,11 @@ impl RenderOnce for DashQuad {
                     .absolute()
                     .left(px(width * 0.34))
                     .top(px(h * 0.04))
-                    .child(LimitSign::new(l).size(h * 0.1)),
+                    .child(
+                        LimitSign::new(l)
+                            .look(look.unwrap_or_default())
+                            .size(h * 0.1),
+                    ),
             );
         }
         let gears: Vec<AnyElement> = ['R', 'N', 'D']

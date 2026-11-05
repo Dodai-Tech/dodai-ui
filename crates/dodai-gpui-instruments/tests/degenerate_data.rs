@@ -154,6 +154,39 @@ fn instruments(v: f32) -> Vec<AnyElement> {
                 MenuRing::new(Vec::<&str>::new())
                     .look(look)
                     .into_any_element(),
+                LimitSign::new(u32::MAX)
+                    .look(look)
+                    .size(v)
+                    .into_any_element(),
+                Telltales::new()
+                    .push(Symbol::Abs, Tone::Off)
+                    .look(look)
+                    .size(v)
+                    .into_any_element(),
+                DualGauge::new(
+                    DualScale::new(Scale::new(v, 6.0), v, "bar"),
+                    DualScale::new(Scale::new(5.0, 5.0), -v, ""),
+                    Symbol::OilCan,
+                )
+                .look(look)
+                .size(v)
+                .into_any_element(),
+                DashQuad::new(
+                    RingTach::new(Scale::new(0.0, 8.0), v, v),
+                    [BoostPod::new(v).into(), GForcePod::new(v, v).into()],
+                    [CompassPod::new(v).into(), TyrePod::new().into()],
+                )
+                .look(look)
+                .limit(0)
+                .width(v)
+                .into_any_element(),
+                DashTriptych::new(
+                    RingTach::new(Scale::new(0.0, 8.0), v, v),
+                    SidePod::new(Scale::new(0.0, 8.0), v),
+                    MenuRing::new(Vec::<&str>::new()),
+                )
+                .look(look)
+                .into_any_element(),
             ]);
         }
     }
