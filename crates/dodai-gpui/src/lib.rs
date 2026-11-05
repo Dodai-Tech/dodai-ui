@@ -538,7 +538,7 @@ pub fn set_shape_tune(cx: &mut App, tune: dodai_core::ShapeTune) {
 
 /// Select theme by index (clamped) and repaint.
 pub fn select_theme(cx: &mut App, index: usize) {
-    cx.global_mut::<DodaiTheme>().switcher.select_index(index);
+    store(cx).switcher.select_index(index);
     cx.refresh_windows();
 }
 
@@ -546,7 +546,7 @@ pub fn select_theme(cx: &mut App, index: usize) {
 /// repaint. `false` when the theme has no counterpart.
 pub fn toggle_theme_mode(cx: &mut App) -> bool {
     FOLLOWING_SYSTEM.with(|f| f.set(false));
-    let done = cx.global_mut::<DodaiTheme>().switcher.toggle_mode();
+    let done = store(cx).switcher.toggle_mode();
     if done {
         cx.refresh_windows();
     }
@@ -582,7 +582,7 @@ pub fn following_system_appearance() -> bool {
 /// OS. `false` when the theme has no counterpart.
 pub fn set_theme_mode(cx: &mut App, mode: dodai_core::Mode) -> bool {
     FOLLOWING_SYSTEM.with(|f| f.set(false));
-    let g = cx.global_mut::<DodaiTheme>();
+    let g = store(cx);
     let (before, ok) = (g.switcher.index(), g.switcher.select_mode(mode));
     if g.switcher.index() != before {
         cx.refresh_windows();
@@ -597,7 +597,7 @@ pub fn set_theme_mode(cx: &mut App, mode: dodai_core::Mode) -> bool {
 pub fn follow_system_appearance(window: &mut gpui::Window, cx: &mut App) -> bool {
     fn apply(cx: &mut App) -> bool {
         let mode = system_mode(cx);
-        let g = cx.global_mut::<DodaiTheme>();
+        let g = store(cx);
         let (before, ok) = (g.switcher.index(), g.switcher.select_mode(mode));
         if g.switcher.index() != before {
             cx.refresh_windows();
@@ -672,7 +672,7 @@ pub fn set_glow_intensity(cx: &mut App, intensity: f32) {
 
 /// Rebuild every installed theme with `f(index, theme)`, keep the active one, and repaint.
 fn map_themes(cx: &mut App, f: impl Fn(usize, Theme) -> Theme) {
-    let g = cx.global_mut::<DodaiTheme>();
+    let g = store(cx);
     let idx = g.switcher.index();
     let themes = g
         .switcher
@@ -706,7 +706,7 @@ pub fn set_corners(cx: &mut App, corners: dodai_core::Corners) {
     // survive `reset_corners`).
     if cx.try_global::<CornerBase>().is_none() {
         let base = cx
-            .global::<DodaiTheme>()
+            .dodai()
             .switcher
             .themes()
             .iter()
@@ -751,13 +751,13 @@ pub fn set_scanlines(cx: &mut App, on: bool) {
 
 /// Switch to the next theme and repaint.
 pub fn cycle_next(cx: &mut App) {
-    cx.global_mut::<DodaiTheme>().switcher.cycle_next();
+    store(cx).switcher.cycle_next();
     cx.refresh_windows();
 }
 
 /// Switch to the previous theme and repaint.
 pub fn cycle_prev(cx: &mut App) {
-    cx.global_mut::<DodaiTheme>().switcher.cycle_prev();
+    store(cx).switcher.cycle_prev();
     cx.refresh_windows();
 }
 
@@ -768,9 +768,26 @@ pub trait ActiveDodai {
 }
 
 impl ActiveDodai for App {
+    /// The installed store; without one (no [`install`] / [`install_switcher`] yet), a shared
+    /// default over every built-in theme of the enabled designs ([`dodai_core::switcher`]), so
+    /// components still paint.
     fn dodai(&self) -> &DodaiTheme {
-        self.global::<DodaiTheme>()
+        static FALLBACK: std::sync::OnceLock<DodaiTheme> = std::sync::OnceLock::new();
+        self.try_global::<DodaiTheme>().unwrap_or_else(|| {
+            FALLBACK.get_or_init(|| DodaiTheme {
+                switcher: dodai_core::switcher(),
+            })
+        })
     }
+}
+
+/// The installed store, installing the default ([`dodai_core::switcher`]) first when there is
+/// none, so a theme change works before the app installed its own.
+fn store(cx: &mut App) -> &mut DodaiTheme {
+    if !cx.has_global::<DodaiTheme>() {
+        install_switcher(cx, dodai_core::switcher());
+    }
+    cx.global_mut::<DodaiTheme>()
 }
 
 /// Theme-aware styling for any GPUI [`Styled`] element.
