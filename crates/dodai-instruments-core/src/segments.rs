@@ -7,11 +7,13 @@ const MASKS: [u8; 10] = [
     0b1111111, 0b1101111,
 ];
 
-/// Lit-segment bit mask of a character (digits and `-`; everything else is blank). Pure.
+/// Lit-segment bit mask of a character (digits, `-` and `°` as a raised ring; everything else is
+/// blank). Pure.
 pub fn mask(c: char) -> u8 {
     match c {
         '0'..='9' => MASKS[c as usize - '0' as usize],
         '-' => 0b1000000,
+        '°' => 0b1100011,
         _ => 0,
     }
 }
@@ -84,6 +86,13 @@ pub fn digit_segments(h: f32) -> [Vec<(f32, f32)>; 7] {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_degree_sign_is_the_upper_ring() {
+        // a (top), b (top right), f (top left) and g (middle): the ring in the upper half.
+        let lit: Vec<u8> = (0..7).filter(|i| mask('°') >> i & 1 == 1).collect();
+        assert_eq!(lit, [0, 1, 5, 6]);
+    }
 
     #[test]
     fn eight_lights_everything_and_one_two_segments() {

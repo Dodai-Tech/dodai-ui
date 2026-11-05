@@ -119,6 +119,15 @@ pub fn speed() -> f32 {
     SPEED.with(std::cell::Cell::get)
 }
 
+/// Move the animation clock `seconds` forward (negative counts as 0), for a screenshot or a
+/// test that wants a later moment of the looping effects without waiting for it.
+pub fn skip_clock(seconds: f32) {
+    CLOCK.with(|c| {
+        let (virt, last) = c.get();
+        c.set((virt + seconds.max(0.0), last));
+    });
+}
+
 /// Seconds on the animation clock: it runs at [`speed`] and stands still while animations are
 /// off. Changing the speed never makes it jump. Drive looping effects from it.
 pub fn time() -> f32 {
@@ -703,6 +712,16 @@ mod tests {
 
     fn rgb(r: f32, g: f32, b: f32) -> gpui::Hsla {
         gpui::Rgba { r, g, b, a: 1.0 }.into()
+    }
+
+    #[test]
+    fn skipping_moves_the_clock_forward_only() {
+        let before = time();
+        skip_clock(30.0);
+        assert!(time() >= before + 30.0);
+        let now = time();
+        skip_clock(-5.0);
+        assert!(time() >= now);
     }
 
     #[test]

@@ -980,6 +980,16 @@ pub fn run() {
         dodai_gpui::install_switcher(cx, switcher);
         // Honour the OS's reduced-motion setting.
         dodai_gpui::follow_system_motion(cx);
+        // Debug: DODAI_STILL=<seconds> shows that moment of the demo values with motion reduced,
+        // for screenshots of a window that gets no frames (a locked screen, a hidden window).
+        if let Some(at) = std::env::var("DODAI_STILL")
+            .ok()
+            .and_then(|v| v.parse::<f32>().ok())
+        {
+            dodai_gpui::motion::set_reduce_motion(cx, true);
+            dodai_gpui::motion::set_enabled(cx, false);
+            dodai_gpui::motion::skip_clock(at);
+        }
         // Debug: DODAI_MONO=1 starts with monochrome series colours.
         if std::env::var_os("DODAI_MONO").is_some() {
             dodai_gpui::set_chart_monochrome(cx, true);
@@ -1145,6 +1155,13 @@ pub fn run() {
                 WindowOptions {
                     window_bounds: Some(WindowBounds::Windowed(bounds)),
                     window_min_size: Some(size(px(420.0), px(360.0))),
+                    // Debug: DODAI_FLOAT=1 keeps the window above the others, so a screenshot run
+                    // gets frames even when another app holds the focus.
+                    kind: if std::env::var_os("DODAI_FLOAT").is_some() {
+                        gpui::WindowKind::PopUp
+                    } else {
+                        gpui::WindowKind::Normal
+                    },
                     ..Default::default()
                 },
                 |_, cx| new_showcase(cx),
