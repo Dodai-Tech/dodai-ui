@@ -279,6 +279,14 @@ pub(crate) fn subs(cat: &str) -> &'static [&'static str] {
     match cat {
         "Animation" => &["Entry", "Physics", "Dynamics"],
         "Charts" => &CHART_FAMILY_NAMES,
+        "Instruments" => &[
+            "Vehicle",
+            "Gauges & signals",
+            "Industrial",
+            "Medical",
+            "Military",
+            "Aviation",
+        ],
         // By what a shader is for, not by whose look it has: the family stays in each title.
         "Shaders" => &["Playground", "Sources", "Effects", "Presets"],
         _ => &[],
@@ -299,6 +307,14 @@ pub(crate) fn sub_of(cat: &str, label: &str) -> Option<&'static str> {
             "Entry"
         }),
         "Charts" => chart_family(label),
+        "Instruments" => Some(match label {
+            l if l.starts_with("Vehicle · ") => "Vehicle",
+            "Industrial" => "Industrial",
+            "Medical" => "Medical",
+            "Military" => "Military",
+            "Aviation" => "Aviation",
+            _ => "Gauges & signals",
+        }),
         "Shaders" => Some(shader_group(label).unwrap_or("Playground")),
         "Shape" => Some(if label == "Shape gallery" {
             "Overview"
