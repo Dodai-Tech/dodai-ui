@@ -15,11 +15,11 @@ impl MenuRing {
         match self.look {
             Look::HeadsUp => self.hud(t),
             Look::Vintage => self.vintage(t),
-            Look::Digital => self.digital(t),
-            Look::Futuristic => self.futuristic(t),
-            Look::Cockpit => self.cockpit(t),
+            Look::Segment => self.digital(t),
+            Look::Halo => self.futuristic(t),
+            Look::GlassCockpit => self.cockpit(t),
             Look::Race => self.race(t),
-            Look::Classic | Look::Chrono => self.chrono(t),
+            Look::Classic | Look::Chronograph => self.chrono(t),
         }
     }
 

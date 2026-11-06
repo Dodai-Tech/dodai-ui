@@ -112,7 +112,7 @@ fn housing(w: &mut Window, o: gpui::Point<Pixels>, (wd, h): (f32, f32), look: Lo
     let k = h * 0.25;
     match look {
         Look::Classic => {}
-        Look::Chrono => {
+        Look::Chronograph => {
             let p = rounded(0.0, 0.0, wd, h, h / 2.0);
             fill(w, o, &p, scale_alpha(ink.text, 0.06));
             stroke(w, o, &p, h * 0.06, ink.line, true);
@@ -134,10 +134,10 @@ fn housing(w: &mut Window, o: gpui::Point<Pixels>, (wd, h): (f32, f32), look: Lo
                 );
             }
         }
-        Look::Digital => {
+        Look::Segment => {
             crate::frames::lcd(w, o, (0.0, 0.0, wd, h), h * 0.8, ink);
         }
-        Look::Futuristic => {
+        Look::Halo => {
             stroke(
                 w,
                 o,
@@ -147,7 +147,7 @@ fn housing(w: &mut Window, o: gpui::Point<Pixels>, (wd, h): (f32, f32), look: Lo
                 false,
             );
         }
-        Look::Cockpit => {
+        Look::GlassCockpit => {
             let p = rect(0.0, 0.0, wd, h);
             fill(w, o, &p, ink.ground);
             stroke(w, o, &p, h * 0.04, scale_alpha(ink.text, 0.35), true);
@@ -183,7 +183,7 @@ fn light(
     let off = scale_alpha(ink.text, 0.1);
     match look {
         Look::Classic => fill(w, o, &circle(cx, cy, r * 0.8), if lit { col } else { off }),
-        Look::Chrono => {
+        Look::Chronograph => {
             stroke(w, o, &circle(cx, cy, r * 0.92), d * 0.08, ink.line, true);
             fill(w, o, &circle(cx, cy, r * 0.62), if lit { col } else { off });
         }
@@ -220,11 +220,11 @@ fn light(
                 true,
             );
         }
-        Look::Digital => {
+        Look::Segment => {
             let block = chamfered(x + d * 0.06, y + d * 0.2, d * 0.88, d * 0.6, d * 0.1);
             fill(w, o, &block, if lit { col } else { ghost(col, dark) });
         }
-        Look::Futuristic => {
+        Look::Halo => {
             if lit {
                 glow_dot(w, o, (cx, cy), r * 0.4, col, scale_alpha(ink.text, 0.8));
             }
@@ -237,7 +237,7 @@ fn light(
                 true,
             );
         }
-        Look::Cockpit => {
+        Look::GlassCockpit => {
             let bar = rect(x + d * 0.08, y + d * 0.3, d * 0.84, d * 0.4);
             fill(w, o, &bar, if lit { col } else { ink.ground });
             stroke(
@@ -324,7 +324,7 @@ impl RenderOnce for ShiftLights {
                 ink.text
             };
             let gear = match look {
-                Look::Digital => div()
+                Look::Segment => div()
                     .relative()
                     .w(px(h))
                     .h(px(h))
@@ -357,7 +357,7 @@ impl RenderOnce for ShiftLights {
                         .child(div().relative().child(figure(g, h * 0.8, text_col)))
                         .into_any_element()
                 }
-                Look::Cockpit => div()
+                Look::GlassCockpit => div()
                     .relative()
                     .w(px(h * 0.9))
                     .h(px(h))
@@ -374,7 +374,7 @@ impl RenderOnce for ShiftLights {
                     .text_size(px(h))
                     .line_height(px(h))
                     .font_weight(match look {
-                        Look::Futuristic => FontWeight::LIGHT,
+                        Look::Halo => FontWeight::LIGHT,
                         Look::Classic => FontWeight::MEDIUM,
                         _ => FontWeight::BOLD,
                     })

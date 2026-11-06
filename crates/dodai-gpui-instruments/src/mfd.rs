@@ -1,8 +1,8 @@
-//! The parts of the [`Look::Cockpit`] instruments: a display page with soft keys on its bezel,
+//! The parts of the [`Look::GlassCockpit`] instruments: a display page with soft keys on its bezel,
 //! engine-indication arcs with a filled sweep, boxed readouts with a rolling-drum window, bugs and a heading arc. Pure
 //! geometry returns points; the painters take every colour from an [`Ink`].
 //!
-//! [`Look::Cockpit`]: crate::look::Look::Cockpit
+//! [`Look::GlassCockpit`]: crate::look::Look::GlassCockpit
 
 use crate::draw::{polar, turn_arc};
 use crate::shapes::{rounded, Ink};

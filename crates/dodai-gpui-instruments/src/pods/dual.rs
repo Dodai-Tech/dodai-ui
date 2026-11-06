@@ -84,7 +84,7 @@ pub(super) fn strip(
     let base = div().relative().w(px(wd)).h(px(h));
     match look {
         // A recessed window, like the date on a watch.
-        Look::Classic | Look::Chrono => base
+        Look::Classic | Look::Chronograph => base
             .rounded(px(h * 0.2))
             .bg(ink.face)
             .border_1()
@@ -113,7 +113,7 @@ pub(super) fn strip(
                 .child(row(col, text_fig(alarm.unwrap_or(ink.text)), col))
         }
         // A segment readout on the display glass.
-        Look::Digital => {
+        Look::Segment => {
             let col = alarm.unwrap_or(ink.primary);
             let seg = SegmentDisplay::new(figure.clone())
                 .height(fs)
@@ -126,7 +126,7 @@ pub(super) fn strip(
                 .child(row(ink.primary, seg, ink.muted))
         }
         // A pill of light.
-        Look::Futuristic => {
+        Look::Halo => {
             let col = alarm.unwrap_or(ink.primary);
             base.rounded(px(h / 2.0))
                 .bg(scale_alpha(col, 0.1))
@@ -135,7 +135,7 @@ pub(super) fn strip(
                 .child(row(col, text_fig(alarm.unwrap_or(ink.text)), ink.muted))
         }
         // A boxed readout on the glass: cyan caption, green figure, inverse past an alarm.
-        Look::Cockpit => {
+        Look::GlassCockpit => {
             let invert = sev == Severity::Alarm;
             let (bg, fig) = match (invert, alarm) {
                 (true, Some(c)) => (c, ink.ground),

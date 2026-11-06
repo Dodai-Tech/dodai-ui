@@ -1,4 +1,4 @@
-//! The futuristic look of the pods: a halo of light round a dark glass, gradient arcs, glowing
+//! The halo look of the pods: a halo of light round a dark glass, gradient arcs, glowing
 //! dots and blades, pills of glass and thin type. Every colour comes from the theme.
 
 use super::detailed::{case, label, layer, tone_or};
@@ -6,7 +6,7 @@ use super::*;
 use crate::frames::{glow_arc, glow_dot, halo, light_blade, pill};
 use crate::shapes::{circle, Ink};
 
-/// Thin large type for a futuristic figure.
+/// Thin large type for a halo figure.
 fn figure(
     x: f32,
     y: f32,
@@ -18,7 +18,7 @@ fn figure(
     label(x, y, w, size, col, text).font_weight(FontWeight::LIGHT)
 }
 
-/// The small spaced heading of a futuristic pod.
+/// The small spaced heading of a halo pod.
 fn heading(x: f32, y: f32, s: f32, ink: Ink, text: &str) -> gpui::Div {
     label(x, y, s * 0.6, s * 0.03, ink.primary, text.to_uppercase())
 }
