@@ -205,9 +205,13 @@ impl Default for TyrePod {
 }
 
 impl RenderOnce for TyrePod {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        if self.look != Look::Sport {
+        if self.look == Look::Line {
+            // The line look keeps the ring pod, drawn as a single hairline circle.
+            self.style = PodStyle::Line;
+        }
+        if !matches!(self.look, Look::Sport | Look::Line) {
             return self.detailed(&t);
         }
         let size = self.size;
@@ -343,9 +347,13 @@ impl RowsPod {
 }
 
 impl RenderOnce for RowsPod {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        if self.look != Look::Sport {
+        if self.look == Look::Line {
+            // The line look keeps the ring pod, drawn as a single hairline circle.
+            self.style = PodStyle::Line;
+        }
+        if !matches!(self.look, Look::Sport | Look::Line) {
             return self.detailed(&t);
         }
         let size = self.size;
@@ -478,9 +486,13 @@ impl NoticePod {
 }
 
 impl RenderOnce for NoticePod {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        if self.look != Look::Sport {
+        if self.look == Look::Line {
+            // The line look keeps the ring pod, drawn as a single hairline circle.
+            self.style = PodStyle::Line;
+        }
+        if !matches!(self.look, Look::Sport | Look::Line) {
             return self.detailed(&t);
         }
         let size = self.size;
@@ -593,7 +605,11 @@ impl RenderOnce for GForcePod {
         self.lateral = pm::finite(follow(w, cx, &self.follow, 0, self.lateral), 0.0);
         self.longitudinal = pm::finite(follow(w, cx, &self.follow, 1, self.longitudinal), 0.0);
         let t = theme_of(cx);
-        if self.look != Look::Sport {
+        if self.look == Look::Line {
+            // The line look keeps the ring pod, drawn as a single hairline circle.
+            self.style = PodStyle::Line;
+        }
+        if !matches!(self.look, Look::Sport | Look::Line) {
             return self.detailed(&t);
         }
         let size = self.size;
@@ -925,7 +941,11 @@ impl MediaPod {
 impl RenderOnce for MediaPod {
     fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        if self.look != Look::Sport {
+        if self.look == Look::Line {
+            // The line look keeps the ring pod, drawn as a single hairline circle.
+            self.style = PodStyle::Line;
+        }
+        if !matches!(self.look, Look::Sport | Look::Line) {
             return self.detailed(&t);
         }
         let size = self.size;
@@ -1043,7 +1063,11 @@ impl RenderOnce for CompassPod {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
         self.heading = pm::bearing(follow_angle(w, cx, &self.follow, 0, self.heading));
         let t = theme_of(cx);
-        if self.look != Look::Sport {
+        if self.look == Look::Line {
+            // The line look keeps the ring pod, drawn as a single hairline circle.
+            self.style = PodStyle::Line;
+        }
+        if !matches!(self.look, Look::Sport | Look::Line) {
             return self.detailed(&t);
         }
         let (size, heading) = (self.size, self.heading);

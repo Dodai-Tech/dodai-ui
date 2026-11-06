@@ -112,6 +112,14 @@ fn housing(w: &mut Window, o: gpui::Point<Pixels>, (wd, h): (f32, f32), look: Lo
     let k = h * 0.25;
     match look {
         Look::Sport => {}
+        Look::Line => stroke(
+            w,
+            o,
+            &[(0.0, h), (wd, h)],
+            (h * 0.03).max(0.6),
+            scale_alpha(ink.text, 0.3),
+            false,
+        ),
         Look::Chronograph => {
             let p = rounded(0.0, 0.0, wd, h, h / 2.0);
             fill(w, o, &p, scale_alpha(ink.text, 0.06));
@@ -183,6 +191,21 @@ fn light(
     let off = scale_alpha(ink.text, 0.1);
     match look {
         Look::Sport => fill(w, o, &circle(cx, cy, r * 0.8), if lit { col } else { off }),
+        // A small dot that fills when lit and is a hairline circle when not.
+        Look::Line => {
+            if lit {
+                fill(w, o, &circle(cx, cy, r * 0.45), col);
+            } else {
+                stroke(
+                    w,
+                    o,
+                    &circle(cx, cy, r * 0.45),
+                    (d * 0.03).max(0.6),
+                    scale_alpha(ink.text, 0.3),
+                    true,
+                );
+            }
+        }
         Look::Chronograph => {
             stroke(w, o, &circle(cx, cy, r * 0.92), d * 0.08, ink.line, true);
             fill(w, o, &circle(cx, cy, r * 0.62), if lit { col } else { off });

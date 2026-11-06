@@ -31,7 +31,7 @@ fn dash() -> DashTriptych {
 }
 ```
 
-A reading past a limit colours its value (pointer, sweep, bar or figure) in the limit's colour. Optionally, the looks drawn on a screen (heads-up, segment LCD, halo, glass cockpit) colour the whole display with it: `GaugeFace`, `SidePod`, `RingTach`, `BoostPod` and `DualGauge` take `.at_limit(AtLimit::Display)`; the default is `AtLimit::Value`.
+A reading past a limit colours its value (pointer, sweep, bar or figure) in the limit's colour. Optionally, the looks drawn on a screen (heads-up, segment LCD, halo, glass cockpit, line) colour the whole display with it: `GaugeFace`, `SidePod`, `RingTach`, `BoostPod` and `DualGauge` take `.at_limit(AtLimit::Display)`; the default is `AtLimit::Value`.
 
 Without an installed theme the instruments use the first theme of the enabled designs, or a plain neutral theme when no design is enabled. An app can also install its own `dodai_core::Theme` with `dodai_gpui::install`.
 
@@ -41,7 +41,7 @@ The default turns on every industry set and no design.
 
 | Feature | What it adds |
 |---|---|
-| `automotive` | dashes, pods, gauge faces in eight looks (`Look`), tachometer, speedometers, tyre pressure, gear, odometer, compass, EV energy, shift lights; the vehicle symbols |
+| `automotive` | dashes, pods, gauge faces in nine looks (`Look`), tachometer, speedometers, tyre pressure, gear, odometer, compass, EV energy, shift lights; the vehicle symbols |
 | `aviation` | attitude indicator, heading and vertical tapes, sonar waterfall, countermeasures; the aviation symbols |
 | `defense` | tactical plot, track list, threat rosette, stores panel, mission timer, radar scope; the military symbols |
 | `industrial` | the process-plant and machine symbols |
@@ -56,7 +56,7 @@ dodai-gpui-instruments = { version = "0.1", default-features = false, features =
 
 ## Looks
 
-The vehicle instruments share one `Look`: Sport, Chronograph, Vintage, Heads-up, Segment LCD, Halo, Glass cockpit and Race. Set it on a single instrument with `.look(..)`, or on a whole `DashTriptych` / `DashQuad` to restyle the ring, pods, lamps and limit sign together. A gauge face also takes a `Layout` within its look: `Look::layouts()` lists them (Sport: dial, sweep, needle, ribbed; Chronograph: dial, bezel, register; Vintage: dial, meter, ribbon; Heads-up: dial, tape; Segment LCD: dial, bar, column; Halo: dial, arc, bar; Glass cockpit: dial, tape, column; Race: dial), and a look draws its dial for a layout it lacks.
+The vehicle instruments share one `Look`: Sport, Chronograph, Vintage, Heads-up, Segment LCD, Halo, Glass cockpit, Race and Line. Set it on a single instrument with `.look(..)`, or on a whole `DashTriptych` / `DashQuad` to restyle the ring, pods, lamps and limit sign together. A gauge face also takes a `Layout` within its look: `Look::layouts()` lists them (Sport: dial, sweep, needle, ribbed; Chronograph: dial, bezel, register; Vintage: dial, meter, ribbon; Heads-up: dial, tape; Segment LCD: dial, bar, column; Halo: dial, arc, bar; Glass cockpit: dial, tape, column; Race: dial; Line: dial, bar), and a look draws its dial for a layout it lacks.
 
 ```rust,no_run
 use dodai_gpui_instruments::{EnergyPod, Look, ShiftLights};

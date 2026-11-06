@@ -19,6 +19,7 @@ impl MenuRing {
             Look::Halo => self.futuristic(t),
             Look::GlassCockpit => self.cockpit(t),
             Look::Race => self.race(t),
+            Look::Line => self.line(t),
             Look::Sport | Look::Chronograph => self.chrono(t),
         }
     }

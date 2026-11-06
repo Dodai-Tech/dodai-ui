@@ -292,6 +292,68 @@ impl MenuRing {
         }
         el.into_any_element()
     }
+
+    /// A line menu: a hairline ring round a plain list, the selected row in the text colour over
+    /// a hairline in the primary colour, the others fading away from it.
+    pub(super) fn line(self, t: &Theme) -> AnyElement {
+        let ink = Ink::of(t);
+        let s = self.size;
+        let c = s / 2.0;
+        let n = self.rows.len().max(1);
+        let sel = self.selected.min(n - 1);
+        let pitch = s * 0.11;
+        let pressed = self.pressed;
+        let hair = (s * 0.003).max(0.6);
+        let paint = move |w: &mut Window, o: gpui::Point<Pixels>| {
+            stroke(
+                w,
+                o,
+                &circle(c, c, s * 0.47),
+                hair,
+                scale_alpha(ink.text, 0.2),
+                true,
+            );
+            let y = c + s * 0.04;
+            stroke(
+                w,
+                o,
+                &[(c - s * 0.2, y), (c + s * 0.2, y)],
+                if pressed { hair * 3.0 } else { hair * 1.5 },
+                ink.primary,
+                false,
+            );
+        };
+        let mut el = div().relative().w(px(s)).h(px(s)).child(layer(paint));
+        if !self.heading.is_empty() {
+            el = el.child(
+                text_box(c, s * 0.17, s * 0.6)
+                    .text_size(px(s * 0.03))
+                    .text_color(ink.muted)
+                    .child(self.heading.to_uppercase()),
+            );
+        }
+        for (i, r) in self.rows.iter().enumerate() {
+            let d = i as f32 - sel as f32;
+            if d.abs() > 2.0 {
+                continue;
+            }
+            let size = s * if d == 0.0 { 0.058 } else { 0.044 };
+            let col = match (d == 0.0, self.chosen == Some(i)) {
+                (_, true) => ink.primary,
+                (true, false) => ink.text,
+                (false, false) => scale_alpha(ink.muted, 1.0 - d.abs() * 0.3),
+            };
+            el = el.child(
+                text_box(c, c + d * pitch - size * 0.55, s * 0.7)
+                    .text_size(px(size))
+                    .line_height(px(size))
+                    .font_weight(FontWeight::LIGHT)
+                    .text_color(col)
+                    .child(r.clone()),
+            );
+        }
+        el.into_any_element()
+    }
 }
 
 #[cfg(test)]

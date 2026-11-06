@@ -25,11 +25,14 @@ pub enum Look {
     /// A motorsport data display: a carbon plate with a cut corner and speed stripes, slanted
     /// segment bars that rise like a rev bar, slanted tags and big leaning figures.
     Race,
+    /// A minimal line display: one hairline ring or line per gauge, a dot riding on it, a thin
+    /// arc up to the value, scale end figures only and a large light figure in open space.
+    Line,
 }
 
 impl Look {
     /// Every look, in the order a gallery shows them.
-    pub const ALL: [Self; 8] = [
+    pub const ALL: [Self; 9] = [
         Self::Sport,
         Self::Chronograph,
         Self::Vintage,
@@ -38,6 +41,7 @@ impl Look {
         Self::Halo,
         Self::GlassCockpit,
         Self::Race,
+        Self::Line,
     ];
 
     /// A short name for a caption or a picker.
@@ -51,6 +55,7 @@ impl Look {
             Self::Halo => "Halo",
             Self::GlassCockpit => "Glass cockpit",
             Self::Race => "Race",
+            Self::Line => "Line",
         }
     }
 }
@@ -68,6 +73,7 @@ impl Look {
             Self::Halo => &[Layout::Dial, Layout::Arc, Layout::Bar],
             Self::GlassCockpit => &[Layout::Dial, Layout::Tape, Layout::Column],
             Self::Race => &[Layout::Dial],
+            Self::Line => &[Layout::Dial, Layout::Bar],
         }
     }
 
@@ -165,7 +171,7 @@ impl Layout {
 }
 
 /// What a reading past a limit colours in the looks drawn on a screen (heads-up, segment LCD,
-/// halo and glass cockpit); the others keep their own colours.
+/// halo, glass cockpit and line); the others keep their own colours.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum AtLimit {
     /// Only the value: its pointer, sweep, bar or figure take the limit's colour.
