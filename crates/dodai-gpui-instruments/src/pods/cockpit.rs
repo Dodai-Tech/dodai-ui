@@ -1,4 +1,5 @@
-//! The glass-cockpit look of the pods: display pages with a titled rule, a synoptic of the car,
+//! The glass-cockpit look of the pods: display pages with a titled rule, four pressure boxes split
+//! by a cross,
 //! dotted leaders to green values, an alert page with clear and recall keys, a cross of rings
 //! with a bug, a radio panel with active and standby lines, and a heading arc under a boxed
 //! readout. Every colour comes from the theme.
@@ -61,56 +62,46 @@ fn boxed(
 // ───────────────────────────────── TyrePod ─────────────────────────────────
 
 impl TyrePod {
-    /// A synoptic: the car from above with its four wheels, each pressure in a box beside its
-    /// wheel, cyan when good and amber when low.
+    /// Four pressure boxes in quadrants split by a faint cross, front on top: cyan when good,
+    /// the frame and figure amber when low.
     pub(super) fn cockpit(self, t: &dodai_core::Theme) -> AnyElement {
         let ink = Ink::of(t);
         let s = self.size;
         let c = s / 2.0;
-        let (cw, ch, cy) = (s * 0.2, s * 0.44, s * 0.2);
-        let (ww, wh) = (s * 0.05, s * 0.1);
-        let wheels = [
-            (c - cw / 2.0 - ww * 0.6, cy + ch * 0.12),
-            (c + cw / 2.0 - ww * 0.4, cy + ch * 0.12),
-            (c - cw / 2.0 - ww * 0.6, cy + ch * 0.66),
-            (c + cw / 2.0 - ww * 0.4, cy + ch * 0.66),
-        ];
         let lows: Vec<bool> = self.bars.iter().map(|b| pm::is_low(*b, self.low)).collect();
-        let (bw, bh) = (s * 0.22, s * 0.1);
-        let boxes: Vec<(f32, f32)> = wheels
-            .iter()
-            .enumerate()
-            .map(|(i, &(x, y))| {
-                let bx = if i % 2 == 0 {
-                    x - s * 0.04 - bw
-                } else {
-                    x + ww + s * 0.04
-                };
-                (bx, y + wh / 2.0 - bh / 2.0)
-            })
-            .collect();
+        let (bw, bh) = (s * 0.26, s * 0.12);
+        let (top, bottom, mid) = (s * 0.27, s * 0.56, s * 0.475);
+        let boxes: Vec<(f32, f32)> = [
+            (c - s * 0.2, top),
+            (c + s * 0.2, top),
+            (c - s * 0.2, bottom),
+            (c + s * 0.2, bottom),
+        ]
+        .iter()
+        .map(|&(x, y)| (x - bw / 2.0, y))
+        .collect();
         let (boxes_p, lows_p) = (boxes.clone(), lows.clone());
         let paint = move |w: &mut Window, o: gpui::Point<Pixels>| {
             page(w, o, s, ink);
             rule(w, o, s, ink);
-            let body = crate::tubes::rounded(c - cw / 2.0, cy, cw, ch, cw * 0.3);
-            stroke(w, o, &body, s * 0.005, ink.text, true);
-            for y in [cy + ch * 0.17, cy + ch * 0.71] {
-                stroke(
-                    w,
-                    o,
-                    &[(c - cw / 2.0, y), (c + cw / 2.0, y)],
-                    s * 0.003,
-                    scale_alpha(ink.text, 0.4),
-                    false,
-                );
-            }
-            for (i, &(x, y)) in wheels.iter().enumerate() {
-                let col = if lows_p[i] { ink.warn } else { ink.text };
-                let wheel = rect(x, y, ww, wh);
-                fill(w, o, &wheel, ink.face);
-                stroke(w, o, &wheel, s * 0.004, col, true);
-                let (bx, by) = boxes_p[i];
+            let faint = scale_alpha(ink.text, 0.25);
+            stroke(
+                w,
+                o,
+                &[(c, s * 0.2), (c, s * 0.76)],
+                s * 0.003,
+                faint,
+                false,
+            );
+            stroke(
+                w,
+                o,
+                &[(s * 0.12, mid), (s * 0.88, mid)],
+                s * 0.003,
+                faint,
+                false,
+            );
+            for (i, &(bx, by)) in boxes_p.iter().enumerate() {
                 let frame = if lows_p[i] {
                     ink.warn
                 } else {

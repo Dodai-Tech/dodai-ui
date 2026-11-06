@@ -155,17 +155,17 @@ impl TyrePod {
             style: PodStyle::Ring,
         }
     }
-    /// The heading above the car.
+    /// The heading above the pressures.
     pub fn heading(mut self, h: impl Into<SharedString>) -> Self {
         self.heading = h.into();
         self
     }
-    /// A line across the car, such as when readings start.
+    /// A line under the pressures, such as when readings start.
     pub fn note(mut self, n: impl Into<SharedString>) -> Self {
         self.note = n.into();
         self
     }
-    /// The unit under the car.
+    /// The unit of the pressures, such as `bar`.
     pub fn unit(mut self, u: impl Into<SharedString>) -> Self {
         self.unit = u.into();
         self
