@@ -8,7 +8,7 @@
 use crate::dial::severity_color;
 use crate::draw::{polar, turn_arc};
 use crate::gauges::{disc, SWEEP};
-use crate::look::Look;
+use crate::look::{AtLimit, Look};
 use dodai_core::Theme;
 use dodai_gpui::follow::{follow, Follow};
 use dodai_gpui::follow_api;
@@ -229,6 +229,7 @@ pub struct RingTach {
     fuel: Option<f32>,
     reach: SharedString,
     look: Look,
+    at_limit: AtLimit,
     size: f32,
 }
 
@@ -248,6 +249,7 @@ impl RingTach {
             fuel: None,
             reach: SharedString::default(),
             look: Look::Classic,
+            at_limit: AtLimit::Value,
             size: 380.0,
         }
     }
@@ -273,6 +275,12 @@ impl RingTach {
         self.look = look;
         self
     }
+    /// What a reading past a limit colours in the screen looks (see [`AtLimit`]): only the
+    /// value, the default, or the whole display.
+    pub fn at_limit(mut self, at: AtLimit) -> Self {
+        self.at_limit = at;
+        self
+    }
     /// Fuel as `0..=1` and the reach written beside the pump. Without it the bottom stays empty.
     pub fn fuel(mut self, level: f32, reach: impl Into<SharedString>) -> Self {
         self.fuel = Some(level.clamp(0.0, 1.0));
@@ -295,6 +303,7 @@ impl RenderOnce for RingTach {
             return crate::faces::GaugeFace::new(self.scale, self.rpm)
                 .animate(false)
                 .look(self.look)
+                .at_limit(self.at_limit)
                 .label(format!("{} {}", readout(self.speed, 0, ""), self.unit))
                 .unit("×1000 rpm")
                 .decimals(1)
@@ -536,6 +545,7 @@ pub struct SidePod {
     centre: Option<AnyElement>,
     needle: bool,
     look: Look,
+    at_limit: AtLimit,
     style: PodStyle,
     size: f32,
 }
@@ -556,6 +566,7 @@ impl SidePod {
             centre: None,
             needle: true,
             look: Look::Classic,
+            at_limit: AtLimit::Value,
             size: 300.0,
             style: PodStyle::Ring,
         }
@@ -590,6 +601,12 @@ impl SidePod {
         self.look = look;
         self
     }
+    /// What a reading past a limit colours in the screen looks (see [`AtLimit`]): only the
+    /// value, the default, or the whole display.
+    pub fn at_limit(mut self, at: AtLimit) -> Self {
+        self.at_limit = at;
+        self
+    }
     /// Replace the icon, unit and reading with your own content.
     pub fn centre(mut self, e: impl IntoElement) -> Self {
         self.centre = Some(e.into_any_element());
@@ -614,6 +631,7 @@ impl RenderOnce for SidePod {
             let mut face = crate::faces::GaugeFace::new(self.scale, self.value)
                 .animate(false)
                 .look(self.look)
+                .at_limit(self.at_limit)
                 .unit(self.unit)
                 .label(self.reading)
                 .ends(self.ends[0], self.ends[1])

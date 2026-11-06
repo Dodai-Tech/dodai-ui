@@ -37,7 +37,7 @@ impl GaugeFace {
     /// caption in cyan.
     pub(super) fn cockpit(self, cx: &mut App) -> AnyElement {
         let t = theme_of(cx);
-        let ink = Ink::of(&t);
+        let ink = self.lit_ink(&t);
         let s = self.size;
         let (ax, ay, r) = (s * 0.44, s * 0.5, s * 0.35);
         let frac = self.frac();

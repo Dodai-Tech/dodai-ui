@@ -7,7 +7,7 @@ use crate::dash::{text_box, Frame, LimitSign, Pod, PodStyle, RingTach, Telltales
 use crate::dial::severity_color;
 use crate::draw::{polar, turn_arc};
 use crate::gauges::disc;
-use crate::look::Look;
+use crate::look::{AtLimit, Look};
 use crate::pod_math as pm;
 use dodai_gpui::follow::{follow, follow_angle, Follow};
 use dodai_gpui::follow_api;
@@ -678,6 +678,7 @@ pub struct BoostPod {
     label: SharedString,
     temp: SharedString,
     look: Look,
+    at_limit: AtLimit,
     style: PodStyle,
     size: f32,
 }
@@ -693,6 +694,7 @@ impl BoostPod {
             label: "BOOST".into(),
             temp: SharedString::default(),
             look: Look::Classic,
+            at_limit: AtLimit::Value,
             size: 300.0,
             style: PodStyle::Ring,
         }
@@ -706,6 +708,12 @@ impl BoostPod {
     /// [`GaugeFace`](crate::faces::GaugeFace) from 0 to 100 %, amber over 80.
     pub fn look(mut self, look: Look) -> Self {
         self.look = look;
+        self
+    }
+    /// What a reading past a limit colours in the screen looks (see [`AtLimit`]): only the
+    /// value, the default, or the whole display.
+    pub fn at_limit(mut self, at: AtLimit) -> Self {
+        self.at_limit = at;
         self
     }
     /// The temperature on the right, e.g. `9 °C`.
@@ -737,6 +745,7 @@ impl RenderOnce for BoostPod {
             )
             .animate(false)
             .look(self.look)
+            .at_limit(self.at_limit)
             .label(self.label)
             .icon(Symbol::Boost)
             .unit("%")
@@ -1175,6 +1184,7 @@ pub struct DualGauge {
     lower: DualScale,
     icon: Symbol,
     look: Look,
+    at_limit: AtLimit,
     alternate: bool,
     style: PodStyle,
     size: f32,
@@ -1191,6 +1201,7 @@ impl DualGauge {
             lower,
             icon,
             look: Look::Classic,
+            at_limit: AtLimit::Value,
             alternate: false,
             size: 300.0,
             style: PodStyle::Ring,
@@ -1200,6 +1211,12 @@ impl DualGauge {
     /// [`GaugeFace`](crate::faces::GaugeFace)s on the diagonal, upper left and lower right.
     pub fn look(mut self, look: Look) -> Self {
         self.look = look;
+        self
+    }
+    /// What a reading past a limit colours in the screen looks (see [`AtLimit`]): only the
+    /// value, the default, or the whole display.
+    pub fn at_limit(mut self, at: AtLimit) -> Self {
+        self.at_limit = at;
         self
     }
     /// Draw both faces in the look's alternative layout (see
@@ -1233,11 +1250,12 @@ impl RenderOnce for DualGauge {
             let tapes = self.alternate && self.look == Look::HeadsUp;
             let share = if self.alternate { 0.5 } else { 0.6 };
             let small = (size * share).max(64.0);
-            let (look, alternate) = (self.look, self.alternate);
+            let (look, alternate, at_limit) = (self.look, self.alternate, self.at_limit);
             let face = |d: DualScale, icon: Option<Symbol>| {
                 let f = crate::faces::GaugeFace::new(d.scale, d.value)
                     .animate(false)
                     .look(look)
+                    .at_limit(at_limit)
                     .alternate(alternate)
                     .unit(d.unit)
                     .decimals(d.decimals)

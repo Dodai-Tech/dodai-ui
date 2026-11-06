@@ -31,6 +31,8 @@ fn dash() -> DashTriptych {
 }
 ```
 
+A reading past a limit colours its value (pointer, sweep, bar or figure) in the limit's colour. Optionally, the looks drawn on a screen (heads-up, digital, futuristic, glass cockpit) colour the whole display with it: `GaugeFace`, `SidePod`, `RingTach`, `BoostPod` and `DualGauge` take `.at_limit(AtLimit::Display)`; the default is `AtLimit::Value`.
+
 Without an installed theme the instruments use the first theme of the enabled designs, or a plain neutral theme when no design is enabled. An app can also install its own `dodai_core::Theme` with `dodai_gpui::install`.
 
 ## Features

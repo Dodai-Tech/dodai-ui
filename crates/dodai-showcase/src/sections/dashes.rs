@@ -4,9 +4,9 @@ use super::super::*;
 use dodai_gpui::icons::IconId;
 use dodai_gpui::icons::Symbol;
 use dodai_gpui_instruments::{
-    BoostPod, CompassPod, DashQuad, DashTriptych, DualGauge, DualScale, EnergyPod, GForcePod,
-    GaugeFace, LimitSign, Look, MediaPod, MenuRing, NoticePod, PodIcon, PodRow, PodStyle, RingTach,
-    RowsPod, Scale, Severity, ShiftLights, SidePod, Telltales, Tone, TyrePod,
+    AtLimit, BoostPod, CompassPod, DashQuad, DashTriptych, DualGauge, DualScale, EnergyPod,
+    GForcePod, GaugeFace, LimitSign, Look, MediaPod, MenuRing, NoticePod, PodIcon, PodRow,
+    PodStyle, RingTach, RowsPod, Scale, Severity, ShiftLights, SidePod, Telltales, Tone, TyrePod,
 };
 
 /// A demo value drifting through `lo..=hi` on the animation clock.
@@ -203,6 +203,7 @@ fn speed_face(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
         val(32.0, 20.0, 230.0),
     )
     .look(look)
+    .at_limit(AtLimit::Display)
     .alternate(alt)
     .label("Speed")
     .icon(Symbol::Tachometer)
@@ -220,6 +221,7 @@ fn rev_face(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
         val(30.0, 0.8, 6.6),
     )
     .look(look)
+    .at_limit(AtLimit::Display)
     .alternate(alt)
     .label("Engine speed")
     .icon(Symbol::Tachometer)
@@ -238,6 +240,7 @@ fn volt_face(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
         val(40.0, 12.0, 14.6),
     )
     .look(look)
+    .at_limit(AtLimit::Display)
     .alternate(alt)
     .label("Battery")
     .icon(Symbol::Battery)
@@ -255,6 +258,7 @@ fn coolant_face(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
         val(34.0, 75.0, 118.0),
     )
     .look(look)
+    .at_limit(AtLimit::Display)
     .alternate(alt)
     .label("Coolant")
     .icon(Symbol::Coolant)
@@ -272,6 +276,7 @@ fn boost_face(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
         val(48.0, 0.0, 100.0),
     )
     .look(look)
+    .at_limit(AtLimit::Display)
     .alternate(alt)
     .label("Boost")
     .icon(Symbol::Boost)
@@ -284,6 +289,7 @@ fn boost_face(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
 fn oil_faces(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
     oil()
         .look(look)
+        .at_limit(AtLimit::Display)
         .alternate(alt)
         .size(size)
         .into_any_element()
@@ -364,7 +370,7 @@ impl Showcase {
             self,
             "Vehicle · Boost",
             vec![gallery(
-                "The boost (or charge) level in percent. Classic: the cell stack inside a segmented band with a limit mark and the battery temperature. Then the same level in every other look and the two alternative layouts.",
+                "The boost (or charge) level in percent. Classic: the cell stack inside a segmented band with a limit mark and the battery temperature. Then the same level in every other look and the two alternative layouts. Past 80 % the screen looks here colour their whole display amber, an option (at_limit(AtLimit::Display)); by default only the value takes the limit's colour.",
                 looks(
                     BoostPod::new(val(48.0, 0.0, 100.0))
                         .temp("9 °C")

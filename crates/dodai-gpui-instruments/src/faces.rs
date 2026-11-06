@@ -10,7 +10,7 @@ mod styles;
 
 use crate::dash::{SidePod, Tone};
 use crate::dial::severity_color;
-use crate::look::Look;
+use crate::look::{AtLimit, Look};
 use crate::pod_math as pm;
 use dodai_gpui::follow::{follow, Follow};
 use dodai_gpui::follow_api;
@@ -29,6 +29,7 @@ pub struct GaugeFace {
     scale: Scale,
     value: f32,
     look: Look,
+    at_limit: AtLimit,
     icon: Option<Symbol>,
     label: SharedString,
     unit: SharedString,
@@ -49,6 +50,7 @@ impl GaugeFace {
             scale,
             value,
             look: Look::Classic,
+            at_limit: AtLimit::Value,
             icon: None,
             label: SharedString::default(),
             unit: SharedString::default(),
@@ -61,6 +63,12 @@ impl GaugeFace {
     /// The look.
     pub fn look(mut self, look: Look) -> Self {
         self.look = look;
+        self
+    }
+    /// What a reading past a limit colours in the screen looks (see [`AtLimit`]): only the
+    /// value, the default, or the whole display.
+    pub fn at_limit(mut self, at: AtLimit) -> Self {
+        self.at_limit = at;
         self
     }
     /// A symbol beside the label (or above the figure).
@@ -135,12 +143,35 @@ impl GaugeFace {
             .collect()
     }
 
+    /// The colour of the zone the value is in once it is past a limit; `None` in the normal
+    /// range.
+    fn limit(&self, t: &dodai_core::Theme) -> Option<Hsla> {
+        match pm::severity_at(&self.spans(), self.frac()) {
+            Severity::Normal => None,
+            sev => Some(severity_color(t, sev)),
+        }
+    }
+
     /// The colour of the value: the zone it is in, else the accent.
     fn value_colour(&self, t: &dodai_core::Theme, ink: &Ink) -> Hsla {
-        match pm::severity_at(&self.spans(), self.frac()) {
-            Severity::Normal => ink.primary,
-            sev => severity_color(t, sev),
+        self.limit(t).unwrap_or(ink.primary)
+    }
+
+    /// The limit's colour when the whole display is to take it ([`AtLimit::Display`]); `None`
+    /// in the normal range or when only the value is coloured.
+    fn display_limit(&self, t: &dodai_core::Theme) -> Option<Hsla> {
+        match self.at_limit {
+            AtLimit::Value => None,
+            AtLimit::Display => self.limit(t),
         }
+    }
+
+    /// The ink of a screen look: the theme's, lit in the limit's colour past a limit when the
+    /// whole display is to take it (see [`Ink::lit`]). The screen looks (heads-up, digital,
+    /// futuristic, glass cockpit) draw with it; the printed ones keep their colours.
+    fn lit_ink(&self, t: &dodai_core::Theme) -> Ink {
+        let ink = Ink::of(t);
+        self.display_limit(t).map_or(ink, |c| ink.lit(c))
     }
 
     fn figure(&self) -> String {
