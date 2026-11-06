@@ -350,6 +350,10 @@ pub struct SurfaceFx {
     pub rim: f32,
     /// How much the texture fades towards the centre, keeping text clean (`0.0` = even).
     pub clear: f32,
+    /// Frosted glass: the fill turns as see-through as the design's glass and a blurred copy
+    /// of the app's backdrop shows under it (`0.0` = an opaque fill). Every design has glass,
+    /// so no design limits it; it reaches containers only, unless a component sets it itself.
+    pub frost: f32,
     /// Texture for containers (cards, panels, bars); `texture` is for UI components.
     pub container_texture: Texture,
     /// Strength of the container texture.
@@ -392,6 +396,7 @@ impl SurfaceFx {
         wash: 0.0,
         rim: 0.0,
         clear: 0.0,
+        frost: 0.0,
         container_texture: Texture::None,
         container_strength: 0.5,
         container_scale: 1.0,
@@ -439,7 +444,7 @@ impl SurfaceFx {
                 ..self
             }
         } else {
-            self
+            Self { frost: 0.0, ..self }
         }
     }
 
@@ -473,6 +478,7 @@ impl SurfaceFx {
             && self.gloss <= 0.0
             && self.wash <= 0.0
             && self.rim <= 0.0
+            && self.frost <= 0.0
     }
 }
 
@@ -732,6 +738,7 @@ pub struct Surface {
     wash: Option<f32>,
     rim: Option<f32>,
     clear: Option<f32>,
+    frost: Option<f32>,
     glow: Option<f32>,
 }
 
@@ -762,6 +769,7 @@ impl Surface {
         wash: None,
         rim: None,
         clear: None,
+        frost: None,
         glow: None,
     };
     /// No texture or effect on this component, whatever the app-wide mix is.
@@ -891,6 +899,12 @@ impl Surface {
         self.clear = Some(v);
         self
     }
+    /// Frosted glass, `0.0..=1.0`: see-through fill over a blurred backdrop. Works on any
+    /// component, buttons and inputs included (the app-wide mix only frosts containers).
+    pub const fn frost(mut self, v: f32) -> Self {
+        self.frost = Some(v);
+        self
+    }
     /// Scale the design's glow on this component (`0.0` = none, `1.0` = as designed).
     pub const fn glow(mut self, v: f32) -> Self {
         self.glow = Some(v);
@@ -943,6 +957,7 @@ impl Surface {
             || self.strip.is_some()
             || self.wash.is_some()
             || self.rim.is_some()
+            || self.frost.is_some()
     }
 
     /// `fx` (already resolved for the component's class) with this override on top.
@@ -1016,6 +1031,9 @@ impl Surface {
         if let Some(v) = self.clear {
             fx.clear = v;
         }
+        if let Some(v) = self.frost {
+            fx.frost = v;
+        }
         fx
     }
 }
@@ -1051,5 +1069,21 @@ mod surface_override_tests {
         assert!(s.forces_on());
         // A glow-only override does not pull a component into the texture mix.
         assert!(!Surface::new().glow(0.0).forces_on());
+    }
+
+    #[test]
+    fn the_mix_frosts_containers_only_and_a_component_can_frost_itself() {
+        let fx = SurfaceFx {
+            frost: 1.0,
+            ..SurfaceFx::NONE
+        };
+        assert!(!fx.is_none(), "frost alone is something to draw");
+        assert_eq!(fx.for_class(SurfaceClass::Card).frost, 1.0);
+        assert_eq!(fx.for_class(SurfaceClass::Button).frost, 0.0);
+        let own = Surface::new().frost(0.5);
+        assert!(own.forces_on());
+        assert_eq!(own.over(fx.for_class(SurfaceClass::Button)).frost, 0.5);
+        // No design limits it.
+        assert_eq!(fx.limited(&[], EffectSet::NONE).frost, 1.0);
     }
 }

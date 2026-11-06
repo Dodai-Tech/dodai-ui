@@ -10,6 +10,7 @@ impl Showcase {
             Self::presets_section,
             Self::component_textures_section,
             Self::container_textures_section,
+            Self::frost_section,
             Self::light_section,
             Self::edges_section,
             Self::ripple_section,
@@ -287,6 +288,82 @@ impl Showcase {
                 "Container textures",
             ));
         out
+    }
+
+    fn frost_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
+        let t = theme_of(cx);
+        let gap = px(t.spacing.md);
+        let fx = dodai_gpui::surface_fx();
+        let own = dodai_core::Surface::new().frost(1.0);
+        let backdrop = Segmented::new("sfx-frost-bg", ["Canvas", "Picture"])
+            .selected(usize::from(dodai_gpui::has_wallpaper()))
+            .on_select(|i, _, cx| {
+                if i == 1 {
+                    let (w, h) = (1200, 750);
+                    let p = theme_of(cx).palette;
+                    dodai_gpui::set_wallpaper(cx, glass_picture(&p, w, h), w, h);
+                } else {
+                    dodai_gpui::clear_wallpaper(cx);
+                }
+            });
+        let labelled = |name: &'static str, control: gpui::AnyElement| {
+            div()
+                .flex()
+                .flex_wrap()
+                .items_center()
+                .gap(gap)
+                .child(div().w(px(120.0)).flex_none().child(Label::new(name)))
+                .child(control)
+        };
+        vec![(
+            "Surface effects",
+            "Frosted glass",
+            self.section("Frosted glass", cx)
+                .child(Muted::new(
+                    "Any surface can be frosted: its fill turns as see-through as the design's glass and a blurred copy of the backdrop shows under it. The slider frosts every container (cards, panels, bars, this panel too); a component can frost itself with Surface::new().frost(1.0), as the buttons and the card below do.",
+                ))
+                .child(fx_amount(gap, "sfx-frost", "Frost", fx.frost, 1.0, |f, v| f.frost = v))
+                .child(labelled("Backdrop", backdrop.into_any_element()))
+                .child(
+                    div()
+                        .flex()
+                        .flex_wrap()
+                        .items_center()
+                        .gap(gap)
+                        .child(Button::new("sfx-frost-p", "Primary").surface(own))
+                        .child(
+                            Button::new("sfx-frost-s", "Secondary")
+                                .variant(ButtonVariant::Secondary)
+                                .surface(own),
+                        )
+                        .child(
+                            Button::new("sfx-frost-o", "Outline")
+                                .variant(ButtonVariant::Outline)
+                                .surface(own),
+                        ),
+                )
+                .child(
+                    div()
+                        .flex()
+                        .flex_wrap()
+                        .gap(gap)
+                        .child(
+                            div().flex_1().min_w(px(220.0)).child(
+                                Card::new(CardVariant::Elevated)
+                                    .headline("Frosted card")
+                                    .surface(own),
+                            ),
+                        )
+                        .child(
+                            div()
+                                .flex_1()
+                                .min_w(px(220.0))
+                                .child(Card::new(CardVariant::Elevated).headline("Plain card").surface(dodai_core::Surface::new().frost(0.0))),
+                        ),
+                )
+                .into_any_element(),
+            "Frosted glass",
+        )]
     }
 
     fn light_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
@@ -1140,6 +1217,32 @@ fn fx_amount(
         )
 }
 
+/// A picture with hard edges in the theme's colours, so the frosted blur shows: bands of the
+/// accents across the canvas and a few discs.
+pub(crate) fn glass_picture(p: &dodai_core::Palette, w: usize, h: usize) -> Vec<u8> {
+    let bands = [p.primary, p.info, p.success, p.warning, p.danger];
+    let discs = [
+        (0.2, 0.3, 0.12, p.warning),
+        (0.7, 0.6, 0.18, p.primary),
+        (0.45, 0.85, 0.1, p.success),
+    ];
+    let mut out = Vec::with_capacity(w * h * 4);
+    for y in 0..h {
+        for x in 0..w {
+            let (u, v) = (x as f32 / w as f32, y as f32 / h as f32);
+            let band = ((u + v * 0.6) * 6.0) as usize % bands.len();
+            let mut c = bands[band].mix(p.background, 0.35);
+            for (cx, cy, r, colour) in discs {
+                if ((u - cx) * w as f32 / h as f32).hypot(v - cy) < r {
+                    c = colour;
+                }
+            }
+            out.extend([c.r, c.g, c.b, 255]);
+        }
+    }
+    out
+}
+
 /// What an effect slider does, keyed by its id (the `sfx-c…` twins share the text).
 fn fx_hint(id: &str) -> &'static str {
     let key = id.trim_start_matches("sfx-");
@@ -1169,6 +1272,7 @@ fn fx_hint(id: &str) -> &'static str {
         "strip" => "A thin strip of light.",
         "wash" => "The design's gradient tinting the surface.",
         "rim" => "The outline lit by the gradient, brightest top left.",
+        "frost" => "See-through fill over a blurred backdrop. 0 is an opaque fill.",
         _ => "",
     }
 }

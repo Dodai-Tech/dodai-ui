@@ -330,6 +330,7 @@ pub(crate) fn sub_of(cat: &str, label: &str) -> Option<&'static str> {
             "Presets · Apply to" => "Start here",
             "Component textures" | "Container textures" => "Textures",
             "Light FX" | "Click ripple" => "Light & motion",
+            "Frosted glass" => "Glass",
             _ => "Edges & signature",
         }),
         _ => None,

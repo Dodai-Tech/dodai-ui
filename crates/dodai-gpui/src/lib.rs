@@ -20,7 +20,7 @@
 //! | Feedback | [`feedback`], [`overlay`], [`popover`], [`sheets`] |
 //! | Surface effects | [`mod@surface_fx`] (textures, glitch, sheen, flicker, bloom over any filled surface) |
 //! | Time | [`time`] (clock, timer, stopwatch, tap tempo) |
-//! | Look | [`paint`] (the shaped box), [`motion`], [`frosted`] (glass over a picture), [`mod@backdrop`] (the canvas mesh of a design that has one) |
+//! | Look | [`paint`] (the shaped box), [`motion`], [`frosted`] (glass over a picture), [`glass`] (frosted glass on any component), [`mod@backdrop`] (the canvas mesh of a design that has one) |
 //!
 //! Charts and instruments are separate crates built on the same pieces: `dodai-gpui-charts` and
 //! `dodai-gpui-instruments`. The pieces they share are public here so other crates can build
@@ -202,6 +202,8 @@ pub mod follow;
 pub mod forms;
 #[cfg(feature = "frost")]
 pub mod frosted;
+#[cfg(feature = "frost")]
+pub mod glass;
 #[cfg(feature = "components")]
 pub mod icons;
 pub mod live;
@@ -342,6 +344,8 @@ pub use direction::{direction, is_rtl, set_direction, Direction};
 pub use expressive::{ButtonGroup, LoadingIndicator, SplitButton};
 #[cfg(feature = "frost")]
 pub use frosted::FrostedScene;
+#[cfg(feature = "frost")]
+pub use glass::{clear_wallpaper, has_wallpaper, set_wallpaper};
 #[cfg(feature = "components")]
 pub use knob::Knob;
 #[cfg(feature = "components")]

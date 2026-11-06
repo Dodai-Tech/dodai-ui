@@ -1075,6 +1075,7 @@ pub fn run() {
                     "wash" => fx.wash = 0.8,
                     "rim" => fx.rim = 0.8,
                     "clear" => fx.clear = 0.7,
+                    "frost" => fx.frost = 1.0,
                     "preset" => fx = theme_of(cx).surface_preset(),
                     name => {
                         if let Some(t) = dodai_core::Texture::ALL
@@ -1088,6 +1089,12 @@ pub fn run() {
                 }
             }
             dodai_gpui::set_surface_fx(cx, fx);
+        }
+        // Test aid: DODAI_WALLPAPER=1 puts the hard-edged picture behind the app (frost demo).
+        if std::env::var("DODAI_WALLPAPER").is_ok() {
+            let (w, h) = (1200, 750);
+            let p = theme_of(cx).palette;
+            dodai_gpui::set_wallpaper(cx, sections::shape::glass_picture(&p, w, h), w, h);
         }
         // Designs with cut corners start cropped on the left (the Shape page can change it, on any design).
         dodai_gpui::set_design_button_crop(cx, Some(dodai_gpui::Crop::Left));
