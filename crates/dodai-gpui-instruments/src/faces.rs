@@ -1,6 +1,6 @@
 //! Gauge faces: one scale and one value in every [`Look`]: the ring dial of the dash, a
 //! chronograph, a vintage panel meter, a heads-up ring (or tape), a segment display, a halo of
-//! light, an engine-indication arc and a row of glow tubes.
+//! light, an engine-indication arc and a race rev bar.
 //! They take the same data, so a dash can swap one for another without touching its values.
 //! Every colour comes from the theme.
 
@@ -115,7 +115,7 @@ impl RenderOnce for GaugeFace {
             Look::Digital => self.digital(cx),
             Look::Futuristic => self.futuristic(cx),
             Look::Cockpit => self.cockpit(cx),
-            Look::Nixie => self.nixie(cx),
+            Look::Race => self.race(cx),
         }
     }
 }

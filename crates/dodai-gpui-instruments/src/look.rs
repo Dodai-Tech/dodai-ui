@@ -22,9 +22,9 @@ pub enum Look {
     /// A glass cockpit: engine-indication arcs with a filled sweep and a boxed readout, soft-key
     /// pages, cyan selections and accent bugs on a dark display.
     Cockpit,
-    /// Glow tubes: stacked-digit tubes behind a wire mesh, bargraph tubes, neon bulbs and a
-    /// ring of glowing cathodes on a dark chassis.
-    Nixie,
+    /// A motorsport data display: a carbon plate with a cut corner and speed stripes, slanted
+    /// segment bars that rise like a rev bar, slanted tags and big leaning figures.
+    Race,
 }
 
 impl Look {
@@ -37,7 +37,7 @@ impl Look {
         Self::Digital,
         Self::Futuristic,
         Self::Cockpit,
-        Self::Nixie,
+        Self::Race,
     ];
 
     /// A short name for a caption or a picker.
@@ -50,7 +50,7 @@ impl Look {
             Self::Digital => "Digital",
             Self::Futuristic => "Futuristic",
             Self::Cockpit => "Glass cockpit",
-            Self::Nixie => "Nixie",
+            Self::Race => "Race",
         }
     }
 }

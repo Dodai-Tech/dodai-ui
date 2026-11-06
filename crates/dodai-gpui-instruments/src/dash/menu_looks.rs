@@ -18,7 +18,7 @@ impl MenuRing {
             Look::Digital => self.digital(t),
             Look::Futuristic => self.futuristic(t),
             Look::Cockpit => self.cockpit(t),
-            Look::Nixie => self.nixie(t),
+            Look::Race => self.race(t),
             Look::Classic | Look::Chrono => self.chrono(t),
         }
     }

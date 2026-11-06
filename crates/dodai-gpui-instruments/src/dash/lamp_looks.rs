@@ -1,12 +1,12 @@
 //! The telltale lamps and the speed-limit sign in every [`Look`] but the classic one: bezels,
-//! lamp lenses, chamfered frames, LCD blocks, halos, annunciator capsules and neon bulbs. Colours
-//! from the theme.
+//! lamp lenses, chamfered frames, LCD blocks, halos, annunciator capsules and slanted race
+//! lenses. Colours from the theme.
 
 use super::*;
 use crate::frames::{aged, ghost, glow_arc, glow_dot, seg_text};
 use crate::mfd::rect;
+use crate::race::skew;
 use crate::shapes::{chamfered, circle, Ink};
-use crate::tubes::{bulb, glow, tubes};
 use dodai_gpui::motion::mix;
 
 /// A canvas filling its parent.
@@ -32,8 +32,8 @@ pub(super) fn lamp(icon: Symbol, tone: Tone, sz: f32, look: Look, t: &Theme) -> 
         Look::Digital => ghost(ink.primary, dark),
         // A lit lens glows in the tone; the symbol on it reads in the text colour.
         Look::Vintage if lit => ink.text,
-        // A lit bulb glows in the tone; the symbol sits dark on it.
-        Look::Nixie if lit => ink.face,
+        // A lit race lens is filled with the tone; the symbol sits dark on it.
+        Look::Race if lit => ink.ground,
         _ => col,
     };
     let paint = move |w: &mut Window, o: gpui::Point<Pixels>| match look {
@@ -113,7 +113,7 @@ pub(super) fn lamp(icon: Symbol, tone: Tone, sz: f32, look: Look, t: &Theme) -> 
         }
         Look::Cockpit => {
             let frame = rect(d * 0.04, d * 0.14, d * 0.92, d * 0.72);
-            fill(w, o, &frame, ink.face);
+            fill(w, o, &frame, ink.ground);
             if lit {
                 fill(w, o, &frame, scale_alpha(col, 0.16));
             }
@@ -126,7 +126,15 @@ pub(super) fn lamp(icon: Symbol, tone: Tone, sz: f32, look: Look, t: &Theme) -> 
                 true,
             );
         }
-        Look::Nixie => bulb(w, o, (c, c), c * 0.92, col, lit, ink),
+        Look::Race => {
+            let lens = skew(d * 0.02, d * 0.2, d * 0.96, d * 0.6);
+            if lit {
+                fill(w, o, &lens, col);
+            } else {
+                fill(w, o, &lens, scale_alpha(ink.text, 0.05));
+                stroke(w, o, &lens, d * 0.03, scale_alpha(col, 0.35), true);
+            }
+        }
         Look::Classic => {}
     };
     div()
@@ -211,21 +219,22 @@ pub(super) fn sign(limit: u32, d: f32, look: Look, t: &Theme) -> AnyElement {
         }
         Look::Cockpit => {
             let frame = rect(d * 0.04, d * 0.04, d * 0.92, d * 0.92);
-            fill(w, o, &frame, ink.face);
+            fill(w, o, &frame, ink.ground);
             fill(w, o, &rect(d * 0.04, d * 0.04, d * 0.92, d * 0.16), red);
             stroke(w, o, &frame, d * 0.06, red, true);
         }
-        Look::Nixie => {
-            fill(w, o, &circle(c, c, c), ink.face);
-            glow_arc(w, o, (c, c), c * 0.86, (0.0, 1.0), d * 0.03, (red, red));
+        Look::Race => {
+            let frame = skew(d * 0.02, d * 0.16, d * 0.96, d * 0.68);
+            fill(w, o, &frame, ink.ground);
+            stroke(w, o, &frame, d * 0.06, red, true);
         }
         Look::Classic => {}
     };
     let figure: AnyElement = match look {
         Look::Digital => seg_text(&text, c, c - fs * 0.6, fs * 1.2, red).into_any_element(),
-        Look::Nixie => div()
+        Look::Race => div()
             .relative()
-            .child(tubes(&text, fs * 1.25, glow(ink), ink))
+            .child(crate::race::figure(text, fs * 0.95, ink.text))
             .into_any_element(),
         _ => div()
             .relative()

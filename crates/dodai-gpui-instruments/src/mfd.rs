@@ -14,32 +14,106 @@ pub(crate) fn rect(x: f32, y: f32, wd: f32, h: f32) -> Vec<(f32, f32)> {
     vec![(x, y), (x + wd, y), (x + wd, y + h), (x, y + h)]
 }
 
-/// Paint a display page filling a square of `s`: a bezel with a row of soft keys on each side and
-/// the dark glass. Returns the glass rectangle.
+/// Paint a display page filling a square of `s`: a bevelled bezel with a screw in each corner
+/// and a row of raised soft keys on each side, and the dark glass with a faint sheen across its
+/// top left. Returns the glass rectangle.
 pub(crate) fn page(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> (f32, f32, f32, f32) {
+    let lw = (s * 0.004).max(1.0);
     let bezel = rect(0.0, 0.0, s, s);
     fill(w, o, &bezel, ink.face);
-    fill(w, o, &bezel, scale_alpha(ink.text, 0.08));
-    stroke(w, o, &bezel, s * 0.004, ink.line, true);
-    let k = s * 0.045;
+    fill(w, o, &bezel, scale_alpha(ink.text, 0.06));
+    // The bevel: light along the top and left, dark along the bottom and right.
+    stroke(
+        w,
+        o,
+        &[(0.0, s), (0.0, 0.0), (s, 0.0)],
+        lw * 1.5,
+        scale_alpha(ink.text, 0.22),
+        false,
+    );
+    stroke(
+        w,
+        o,
+        &[(s, 0.0), (s, s), (0.0, s)],
+        lw * 1.5,
+        ink.ground,
+        false,
+    );
+    let k = s * 0.055;
+    for (x, y) in [
+        (k * 0.5, k * 0.5),
+        (s - k * 0.5, k * 0.5),
+        (k * 0.5, s - k * 0.5),
+        (s - k * 0.5, s - k * 0.5),
+    ] {
+        screw(w, o, (x, y), k * 0.22, ink);
+    }
     let glass = (k, k, s - 2.0 * k, s - 2.0 * k);
     let g = rect(glass.0, glass.1, glass.2, glass.3);
-    fill(w, o, &g, ink.face);
-    fill(w, o, &g, scale_alpha(ink.line, 0.25));
-    stroke(w, o, &g, s * 0.003, scale_alpha(ink.text, 0.25), true);
-    // Soft keys: short bars on the left and right bezel.
+    fill(w, o, &g, ink.ground);
+    fill(w, o, &sheen(glass), scale_alpha(ink.text, 0.035));
+    // The glass sits in the bezel: a dark rim with a light lip under it.
+    stroke(w, o, &g, lw * 1.5, scale_alpha(ink.ground, 0.9), true);
+    stroke(
+        w,
+        o,
+        &[
+            (glass.0, glass.1 + glass.3 + lw),
+            (glass.0 + glass.2, glass.1 + glass.3 + lw),
+        ],
+        lw,
+        scale_alpha(ink.text, 0.15),
+        false,
+    );
+    // Soft keys: raised buttons on the left and right bezel, each with a lit top edge.
     for i in 0..5 {
         let y = s * (0.2 + 0.15 * i as f32);
-        for x in [k * 0.25, s - k * 0.75] {
-            fill(
+        for x in [k * 0.2, s - k * 0.8] {
+            let key = rect(x, y - s * 0.024, k * 0.6, s * 0.048);
+            fill(w, o, &key, scale_alpha(ink.text, 0.12));
+            stroke(
                 w,
                 o,
-                &rect(x, y - s * 0.022, k * 0.5, s * 0.044),
-                scale_alpha(ink.text, 0.14),
+                &[(x, y - s * 0.024), (x + k * 0.6, y - s * 0.024)],
+                lw,
+                scale_alpha(ink.text, 0.3),
+                false,
             );
         }
     }
     glass
+}
+
+/// The sheen on a display's glass `(x, y, wd, h)`: a band from the top edge down the left side,
+/// as a polygon. Pure.
+pub(crate) fn sheen((x, y, wd, h): (f32, f32, f32, f32)) -> Vec<(f32, f32)> {
+    vec![(x, y), (x + wd * 0.55, y), (x, y + h * 0.55)]
+}
+
+/// Paint a slotted screw head at `(x, y)` of radius `r`.
+fn screw(w: &mut Window, o: Point<Pixels>, (x, y): (f32, f32), r: f32, ink: Ink) {
+    fill(
+        w,
+        o,
+        &crate::shapes::circle(x, y, r),
+        scale_alpha(ink.text, 0.18),
+    );
+    stroke(
+        w,
+        o,
+        &crate::shapes::circle(x, y, r),
+        (r * 0.2).max(0.5),
+        ink.ground,
+        true,
+    );
+    stroke(
+        w,
+        o,
+        &[(x - r * 0.6, y + r * 0.35), (x + r * 0.6, y - r * 0.35)],
+        (r * 0.3).max(0.5),
+        ink.ground,
+        false,
+    );
 }
 
 /// The turn of the engine-indication arc at `f` of the scale: it opens at nine o'clock and runs
@@ -146,7 +220,7 @@ pub(crate) fn readout_box(
             (x, y + h / 2.0 - k),
         ]);
     }
-    fill(w, o, &p, ink.face);
+    fill(w, o, &p, ink.ground);
     stroke(w, o, &p, (h * 0.05).max(1.0), frame, true);
 }
 
@@ -207,6 +281,14 @@ mod tests {
         let pie = sweep(0.0, 0.0, 10.0, 0.5);
         assert_eq!(pie[0], (0.0, 0.0), "the sweep starts at the centre");
         assert!(pie.len() > 3);
+    }
+
+    #[test]
+    fn the_sheen_stays_on_the_glass() {
+        let g = (10.0, 10.0, 80.0, 80.0);
+        assert!(sheen(g)
+            .iter()
+            .all(|p| p.0 >= 10.0 && p.0 <= 90.0 && p.1 >= 10.0 && p.1 <= 90.0));
     }
 
     #[test]

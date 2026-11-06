@@ -6,8 +6,8 @@ use crate::frames::{aged, ghost, glow_dot, seg_text};
 use crate::look::Look;
 use crate::mfd::rect;
 use crate::pod_math as pm;
-use crate::shapes::{chamfered, circle, Ink};
-use crate::tubes::{bulb, tubes};
+use crate::race::{figure, segments, skew};
+use crate::shapes::{chamfered, circle, rounded, Ink};
 use dodai_gpui::follow::{follow, Follow};
 use dodai_gpui::follow_api;
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
@@ -47,7 +47,7 @@ pub fn light_tone(i: usize, n: usize) -> Tone {
 ///
 /// Lights come on one by one from `start` (green, then amber, then red) and all turn blue at
 /// `shift`, the moment to change up. Each [`Look`] draws its own lights: dots, lenses, frames,
-/// segment blocks, glow, annunciator bars or neon bulbs.
+/// segment blocks, glow, annunciator bars or a rising rev bar.
 #[derive(IntoElement)]
 pub struct ShiftLights {
     follow: Follow,
@@ -107,13 +107,13 @@ impl ShiftLights {
 }
 
 /// Paint the strip the lights sit in, `wd` by `h`, as `look` builds it: none for the classic dash,
-/// a bezel, a plate, brackets, an LCD, a glow line, a display frame or a chassis.
+/// a bezel, a plate, brackets, an LCD, a glow line, a display frame or a race plate.
 fn housing(w: &mut Window, o: gpui::Point<Pixels>, (wd, h): (f32, f32), look: Look, ink: Ink) {
     let k = h * 0.25;
     match look {
         Look::Classic => {}
         Look::Chrono => {
-            let p = crate::tubes::rounded(0.0, 0.0, wd, h, h / 2.0);
+            let p = rounded(0.0, 0.0, wd, h, h / 2.0);
             fill(w, o, &p, scale_alpha(ink.text, 0.06));
             stroke(w, o, &p, h * 0.06, ink.line, true);
         }
@@ -149,14 +149,19 @@ fn housing(w: &mut Window, o: gpui::Point<Pixels>, (wd, h): (f32, f32), look: Lo
         }
         Look::Cockpit => {
             let p = rect(0.0, 0.0, wd, h);
-            fill(w, o, &p, ink.face);
+            fill(w, o, &p, ink.ground);
             stroke(w, o, &p, h * 0.04, scale_alpha(ink.text, 0.35), true);
         }
-        Look::Nixie => {
-            let p = crate::tubes::rounded(0.0, 0.0, wd, h, k);
-            fill(w, o, &p, ink.face);
-            fill(w, o, &p, scale_alpha(ink.text, 0.07));
+        Look::Race => {
+            let p = crate::race::plate_outline(wd, h, h * 0.35);
+            fill(w, o, &p, ink.ground);
             stroke(w, o, &p, h * 0.04, ink.line, true);
+            fill(
+                w,
+                o,
+                &skew(h * 0.3, h * 0.86, wd * 0.3, h * 0.06),
+                ink.primary,
+            );
         }
     }
 }
@@ -234,7 +239,7 @@ fn light(
         }
         Look::Cockpit => {
             let bar = rect(x + d * 0.08, y + d * 0.3, d * 0.84, d * 0.4);
-            fill(w, o, &bar, if lit { col } else { ink.face });
+            fill(w, o, &bar, if lit { col } else { ink.ground });
             stroke(
                 w,
                 o,
@@ -244,7 +249,8 @@ fn light(
                 true,
             );
         }
-        Look::Nixie => bulb(w, o, (cx, cy), r * 0.62, col, lit, ink),
+        // Race lights are drawn as one rising bar by the caller.
+        Look::Race => {}
     }
 }
 
@@ -274,6 +280,23 @@ impl RenderOnce for ShiftLights {
         let (hw, hh) = (wd + 2.0 * pad, d + 2.0 * pad);
         let paint = move |w: &mut Window, o: gpui::Point<Pixels>| {
             housing(w, o, (hw, hh), look, ink);
+            if look == Look::Race {
+                // A rev bar: slanted blocks rising to the shift point.
+                let segs = segments((pad, pad, wd, d), cols.len(), true);
+                for (i, (seg, col)) in segs.iter().zip(&cols).enumerate() {
+                    fill(
+                        w,
+                        o,
+                        seg,
+                        if i < lit {
+                            *col
+                        } else {
+                            scale_alpha(ink.text, 0.1)
+                        },
+                    );
+                }
+                return;
+            }
             for (i, col) in cols.iter().enumerate() {
                 let x = pad + pitch * i as f32 + (pitch - d) / 2.0;
                 light(w, o, (x, pad), d, *col, i < lit, look, ink, dark);
@@ -307,7 +330,33 @@ impl RenderOnce for ShiftLights {
                     .h(px(h))
                     .child(seg_text(&g, h / 2.0, 0.0, h * 0.9, col))
                     .into_any_element(),
-                Look::Nixie => tubes(&g, h, crate::tubes::glow(ink), ink).into_any_element(),
+                Look::Race => {
+                    let (fill_col, text_col) = if shift_now {
+                        (col, ink.ground)
+                    } else {
+                        (ink.primary, ink.on_primary)
+                    };
+                    let tw = h * 1.2;
+                    div()
+                        .relative()
+                        .w(px(tw))
+                        .h(px(h))
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .child(
+                            canvas(
+                                |_, _, _| (),
+                                move |b: Bounds<Pixels>, _, w, _| {
+                                    fill(w, b.origin, &skew(0.0, 0.0, tw, h), fill_col)
+                                },
+                            )
+                            .absolute()
+                            .size_full(),
+                        )
+                        .child(div().relative().child(figure(g, h * 0.8, text_col)))
+                        .into_any_element()
+                }
                 Look::Cockpit => div()
                     .relative()
                     .w(px(h * 0.9))

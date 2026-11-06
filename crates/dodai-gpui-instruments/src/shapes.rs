@@ -20,6 +20,10 @@ pub(crate) struct Ink {
     pub danger: Hsla,
     pub ok: Hsla,
     pub accent: Hsla,
+    /// The page background: the darkest panel in a dark theme.
+    pub ground: Hsla,
+    /// Text on the primary colour.
+    pub on_primary: Hsla,
 }
 
 impl Ink {
@@ -36,6 +40,8 @@ impl Ink {
             danger: hsla(p.danger),
             ok: hsla(p.success),
             accent: hsla(p.accent),
+            ground: hsla(p.background),
+            on_primary: hsla(p.on_primary),
         }
     }
 }
@@ -234,6 +240,16 @@ pub(crate) fn chord_band(c: f32, r: f32, y0: f32, y1: f32) -> (Points, Points, P
     let mut poly = left.clone();
     poly.extend(right.iter().rev());
     (poly, left, right)
+}
+
+/// A rectangle with corners rounded by `r`, as a polygon. Pure.
+pub(crate) fn rounded(x: f32, y: f32, wd: f32, h: f32, r: f32) -> Vec<(f32, f32)> {
+    let r = r.min(wd / 2.0).min(h / 2.0).max(0.0);
+    let mut p = turn_arc(x + wd - r, y + r, r, 0.0, 0.25);
+    p.extend(turn_arc(x + wd - r, y + h - r, r, 0.25, 0.5));
+    p.extend(turn_arc(x + r, y + h - r, r, 0.5, 0.75));
+    p.extend(turn_arc(x + r, y + r, r, 0.75, 1.0));
+    p
 }
 
 #[cfg(test)]
