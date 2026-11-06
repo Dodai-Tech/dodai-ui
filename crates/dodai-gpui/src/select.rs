@@ -288,16 +288,15 @@ impl Select {
                 trigger = trigger.child(swatch_row(&t, &o.swatches));
             }
         }
-        trigger = trigger.child(
-            div()
-                .flex_none()
-                .text_color(hsla(if open {
-                    t.palette.primary
-                } else {
-                    t.palette.text_muted
-                }))
-                .child(if open { "▴" } else { "▾" }),
-        );
+        trigger = trigger.child(div().flex_none().child(crate::surfaces::glyph_el(
+            if open { "▴" } else { "▾" }.into(),
+            t.sizes().icon_sm,
+            hsla(if open {
+                t.palette.primary
+            } else {
+                t.palette.text_muted
+            }),
+        )));
 
         if !self.disabled {
             trigger = trigger

@@ -515,9 +515,13 @@ impl Chip {
         if self.removable {
             let mut x = div()
                 .id(rid)
-                .text_color(hsla(t.palette.text_muted))
-                .hover(|s| s.text_color(hsla(t.palette.danger)))
-                .child("✕");
+                .flex()
+                .items_center()
+                .child(crate::surfaces::glyph_el(
+                    "✕".into(),
+                    t.sizes().icon_sm * 0.8,
+                    hsla(t.palette.text_muted),
+                ));
             if let (false, Some(f)) = (self.disabled, self.on_remove) {
                 x = x.cursor_pointer().on_click(move |e, w, cx| {
                     cx.stop_propagation();

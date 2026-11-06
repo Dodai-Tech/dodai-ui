@@ -407,8 +407,11 @@ impl M3Look<'_> {
                     .items_center()
                     .justify_center()
                     .text_size(px(t.typography.size_md))
-                    .text_color(hsla(glyph_c))
-                    .child(if on { "✓" } else { "✕" });
+                    .child(crate::surfaces::glyph_el(
+                        if on { "✓" } else { "✕" }.into(),
+                        t.typography.size_md,
+                        hsla(glyph_c),
+                    ));
             }
             h
         })

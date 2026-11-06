@@ -262,20 +262,25 @@ impl TreeView {
             } else {
                 hsla(t.palette.text)
             };
-            let chev = if !row.expandable {
-                "  "
-            } else if row.expanded {
-                "▾"
-            } else {
-                "▸"
-            };
+            let chev = row
+                .expandable
+                .then_some(if row.expanded { "▾" } else { "▸" })
+                .map(|g| {
+                    crate::surfaces::glyph_el(
+                        g.into(),
+                        t.sizes().icon_sm,
+                        hsla(t.palette.text_muted),
+                    )
+                });
             let toggle_path = row.path.clone();
             let toggle = self.on_toggle.clone();
             let mut chevron = div()
                 .id((id.clone(), "chev"))
-                .w(px(t.spacing.md))
-                .text_color(hsla(t.palette.text_muted))
-                .child(chev);
+                .w(px(t.sizes().icon_sm))
+                .flex_none()
+                .flex()
+                .items_center()
+                .children(chev);
             if let (Some(f), true) = (toggle, row.expandable) {
                 chevron = chevron.cursor_pointer().on_click(move |_, w, cx| {
                     cx.stop_propagation();

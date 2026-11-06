@@ -100,7 +100,11 @@ impl Alert {
                     .flex_none()
                     .w(px(t.sizes().icon_sm + t.spacing.half()))
                     .text_color(accent)
-                    .child(tone_glyph(self.tone)),
+                    .child(crate::surfaces::glyph_el(
+                        tone_glyph(self.tone).into(),
+                        t.sizes().icon_sm,
+                        accent,
+                    )),
             )
             .child(body)
     }
@@ -167,7 +171,11 @@ impl Toast {
                     .w(px(4.0))
                     .bg(hsla(c)),
             )
-            .child(div().text_color(hsla(c)).child(tone_glyph(self.tone)))
+            .child(div().text_color(hsla(c)).child(crate::surfaces::glyph_el(
+                tone_glyph(self.tone).into(),
+                t.sizes().icon_sm,
+                hsla(c),
+            )))
             .child(self.message)
     }
 }

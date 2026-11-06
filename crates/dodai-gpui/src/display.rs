@@ -326,7 +326,9 @@ impl RenderOnce for Banner {
                 div()
                     .id((self.id.clone(), "x"))
                     .cursor_pointer()
-                    .child("✕")
+                    .flex()
+                    .items_center()
+                    .child(crate::surfaces::glyph_el("✕".into(), t.sizes().icon_sm, fg))
                     .on_click(move |_, w, cx| {
                         gone.update(cx, |g, cx| {
                             *g = true;

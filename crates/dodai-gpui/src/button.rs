@@ -416,7 +416,16 @@ impl Button {
             .font_family(first_family(t.typography.body))
             .text_size(px(m.map_or(t.typography.size_md, |m| m.text_size)))
             .text_color(fg)
-            .child(div().child(format_label(&t.typography, &self.label)));
+            .child(match crate::surfaces::glyph_icon(&self.label) {
+                // A lone glyph label (`"▾"`, `"✕"`) is drawn as its icon, crisp in any font.
+                Some(i) => crate::icons::Icon::new(i)
+                    .size(t.sizes().icon_sm)
+                    .color(fg)
+                    .into_any_element(),
+                None => div()
+                    .child(format_label(&t.typography, &self.label))
+                    .into_any_element(),
+            });
         if let Some(c) = &crop {
             el = el.relative().children(c.tick(&t, tick_colour));
         }

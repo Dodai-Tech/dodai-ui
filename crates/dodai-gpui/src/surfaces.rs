@@ -163,8 +163,12 @@ pub fn glyph_icon(g: &str) -> Option<crate::icons::IconName> {
         "⌕" => I::Search,
         "‹" => I::ChevronLeft,
         "›" => I::ChevronRight,
-        "▲" => I::ChevronUp,
-        "▼" => I::ChevronDown,
+        "▲" | "▴" | "⌃" => I::ChevronUp,
+        "▼" | "▾" | "⌄" => I::ChevronDown,
+        "▸" => I::ChevronRight,
+        "◂" => I::ChevronLeft,
+        "«" => I::ChevronsLeft,
+        "»" => I::ChevronsRight,
         "⋮" => I::DotsVertical,
         "☰" | "≡" => I::Menu,
         "♥" => I::Heart,
@@ -180,7 +184,7 @@ pub fn glyph_icon(g: &str) -> Option<crate::icons::IconName> {
 }
 
 /// Render `glyph` as a drawn icon when it has one, else as text.
-fn glyph_el(glyph: SharedString, size: f32, color: gpui::Hsla) -> gpui::AnyElement {
+pub(crate) fn glyph_el(glyph: SharedString, size: f32, color: gpui::Hsla) -> gpui::AnyElement {
     match glyph_icon(&glyph) {
         Some(i) => crate::icons::Icon::new(i)
             .size(size)
