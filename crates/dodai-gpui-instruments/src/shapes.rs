@@ -224,23 +224,32 @@ pub(crate) fn chrono_glass(w: &mut Window, o: Point<Pixels>, s: f32, r_face: f32
 pub(crate) fn hud_ring(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink, accent: Hsla) -> f32 {
     let c = s / 2.0;
     let r_out = c - s * 0.015;
-    for i in 0..96 {
-        let a = i as f32 / 96.0;
+    let hair = (s * 0.003).max(0.6);
+    for i in 0..180 {
+        let a = i as f32 / 180.0;
         stroke(
             w,
             o,
-            &turn_arc(c, c, r_out, a, a + 0.005),
-            s * 0.006,
-            scale_alpha(ink.text, 0.35),
+            &turn_arc(c, c, r_out, a, a + 0.0025),
+            hair,
+            scale_alpha(ink.text, if i % 15 == 0 { 0.6 } else { 0.22 }),
             false,
         );
     }
+    stroke(
+        w,
+        o,
+        &circle(c, c, r_out - s * 0.012),
+        hair * 0.6,
+        scale_alpha(ink.text, 0.12),
+        true,
+    );
     for q in [0.125_f32, 0.375, 0.625, 0.875] {
         stroke(
             w,
             o,
             &turn_arc(c, c, r_out - s * 0.025, q - 0.035, q + 0.035),
-            s * 0.012,
+            s * 0.006,
             accent,
             false,
         );
@@ -249,10 +258,10 @@ pub(crate) fn hud_ring(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink, accen
                 w,
                 o,
                 &[
-                    polar(c, c, r_out - s * 0.045, e),
-                    polar(c, c, r_out - s * 0.019, e),
+                    polar(c, c, r_out - s * 0.04, e),
+                    polar(c, c, r_out - s * 0.022, e),
                 ],
-                s * 0.012,
+                s * 0.006,
                 accent,
                 false,
             );

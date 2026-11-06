@@ -273,19 +273,19 @@ impl GaugeFace {
                     w,
                     o,
                     &turn_arc(c, c, r, start, start + span),
-                    s * 0.006,
-                    scale_alpha(text, 0.25),
+                    s * 0.003,
+                    scale_alpha(text, 0.3),
                     false,
                 );
                 let n = 90;
                 for i in 0..pm::segments_lit(frac, n) {
                     let a0 = i as f32 / n as f32;
-                    let a1 = a0 + 0.65 / n as f32;
+                    let a1 = a0 + 0.55 / n as f32;
                     stroke(
                         w,
                         o,
                         &turn_arc(c, c, r, start + span * a0, start + span * a1),
-                        s * 0.04,
+                        s * 0.028,
                         col,
                         false,
                     );
@@ -294,8 +294,8 @@ impl GaugeFace {
                     stroke(
                         w,
                         o,
-                        &turn_arc(c, c, r + s * 0.032, start + span * a, start + span * z),
-                        s * 0.008,
+                        &turn_arc(c, c, r + s * 0.026, start + span * a, start + span * z),
+                        s * 0.005,
                         *zc,
                         false,
                     );
@@ -305,8 +305,8 @@ impl GaugeFace {
                     stroke(
                         w,
                         o,
-                        &[polar(c, c, r - s * 0.035, e), polar(c, c, r + s * 0.035, e)],
-                        s * 0.008,
+                        &[polar(c, c, r - s * 0.03, e), polar(c, c, r + s * 0.03, e)],
+                        s * 0.004,
                         text,
                         false,
                     );
@@ -350,8 +350,16 @@ impl GaugeFace {
                 }
                 // The readout frame and crosshair stubs.
                 let frame = chamfered(c - fw / 2.0, c - fh / 2.0, fw, fh, s * 0.03);
-                fill(w, o, &frame, scale_alpha(accent, 0.1));
-                stroke(w, o, &frame, s * 0.006, scale_alpha(accent, 0.8), true);
+                fill(w, o, &frame, scale_alpha(accent, 0.06));
+                stroke(w, o, &frame, s * 0.003, scale_alpha(accent, 0.7), true);
+                let inner = chamfered(
+                    c - fw / 2.0 + s * 0.012,
+                    c - fh / 2.0 + s * 0.012,
+                    fw - s * 0.024,
+                    fh - s * 0.024,
+                    s * 0.022,
+                );
+                stroke(w, o, &inner, s * 0.0015, scale_alpha(accent, 0.3), true);
             },
         )
         .absolute()
@@ -364,7 +372,7 @@ impl GaugeFace {
             .children(self.numerals((c, c), r - s * 0.048, SWEEP, s * 0.036, ink.muted))
             .child(
                 text_box(c, c - fh / 2.0 - s * 0.075, s * 0.5)
-                    .text_size(px(s * 0.035))
+                    .text_size(px(s * 0.03))
                     .text_color(ink.primary)
                     .child(self.caption().to_uppercase()),
             )
@@ -382,7 +390,7 @@ impl GaugeFace {
                         div()
                             .text_size(px(s * 0.13))
                             .text_color(figure_col)
-                            .font_weight(FontWeight::MEDIUM)
+                            .font_weight(FontWeight::LIGHT)
                             .child(self.figure()),
                     ),
             )

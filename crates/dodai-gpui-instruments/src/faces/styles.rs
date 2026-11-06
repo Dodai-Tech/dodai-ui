@@ -347,7 +347,7 @@ impl GaugeFace {
         let col = self.value_colour(&t, &ink);
         let spans = self.spans();
         let tt = t.clone();
-        let lit = lit_segments(40, frac, move |f| match pm::severity_at(&spans, f) {
+        let lit = lit_segments(64, frac, move |f| match pm::severity_at(&spans, f) {
             Severity::Normal => ink.primary,
             sev => severity_color(&tt, sev),
         });
@@ -356,14 +356,14 @@ impl GaugeFace {
         let majors = self.scale.majors.max(1);
         let paint = move |w: &mut gpui::Window, o: gpui::Point<Pixels>| {
             lcd(w, o, (0.0, 0.0, s, s), s, ink);
-            seg_arc(w, o, (c, cy), (s * 0.33, s * 0.4), (start, span), &lit, off);
+            seg_arc(w, o, (c, cy), (s * 0.35, s * 0.4), (start, span), &lit, off);
             // Zones as a thin printed line outside the arc.
             for (a, z, zc) in &zones {
                 stroke(
                     w,
                     o,
-                    &turn_arc(c, cy, s * 0.415, start + span * a, start + span * z),
-                    s * 0.006,
+                    &turn_arc(c, cy, s * 0.413, start + span * a, start + span * z),
+                    s * 0.004,
                     *zc,
                     false,
                 );
@@ -373,8 +373,8 @@ impl GaugeFace {
                 stroke(
                     w,
                     o,
-                    &[polar(c, cy, s * 0.305, a), polar(c, cy, s * 0.32, a)],
-                    s * 0.006,
+                    &[polar(c, cy, s * 0.315, a), polar(c, cy, s * 0.335, a)],
+                    s * 0.004,
                     scale_alpha(ink.text, 0.5),
                     false,
                 );
