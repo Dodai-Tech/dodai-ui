@@ -13,8 +13,8 @@ categories             = ["gui", "visualization"]
 
 [features]
 default    = ["automotive", "aviation", "defense", "industrial", "medical"]
-# Clusters, tachometers, speedometers, tire pressure, gear, odometer, power meter, level bar, compass;
-# the vehicle symbols.
+# Clusters, tachometers, speedometers, tire pressure, gear, odometer, power meter, level bar, compass,
+# EV energy, shift lights; the vehicle symbols.
 automotive = ["dodai-gpui/components", "dodai-gpui/symbols-vehicle"]
 # Attitude indicator, heading and vertical tapes, sonar waterfall, countermeasure counters;
 # the aviation symbols.

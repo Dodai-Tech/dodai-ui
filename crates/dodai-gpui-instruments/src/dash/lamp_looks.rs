@@ -1,9 +1,12 @@
 //! The telltale lamps and the speed-limit sign in every [`Look`] but the classic one: bezels,
-//! lamp lenses, chamfered frames, LCD blocks and halos. Colours from the theme.
+//! lamp lenses, chamfered frames, LCD blocks, halos, annunciator capsules and neon bulbs. Colours
+//! from the theme.
 
 use super::*;
 use crate::frames::{aged, ghost, glow_arc, glow_dot, seg_text};
+use crate::mfd::rect;
 use crate::shapes::{chamfered, circle, Ink};
+use crate::tubes::{bulb, glow, tubes};
 use dodai_gpui::motion::mix;
 
 /// A canvas filling its parent.
@@ -29,6 +32,8 @@ pub(super) fn lamp(icon: Symbol, tone: Tone, sz: f32, look: Look, t: &Theme) -> 
         Look::Digital => ghost(ink.primary, dark),
         // A lit lens glows in the tone; the symbol on it reads in the text colour.
         Look::Vintage if lit => ink.text,
+        // A lit bulb glows in the tone; the symbol sits dark on it.
+        Look::Nixie if lit => ink.face,
         _ => col,
     };
     let paint = move |w: &mut Window, o: gpui::Point<Pixels>| match look {
@@ -106,6 +111,22 @@ pub(super) fn lamp(icon: Symbol, tone: Tone, sz: f32, look: Look, t: &Theme) -> 
                 true,
             );
         }
+        Look::Cockpit => {
+            let frame = rect(d * 0.04, d * 0.14, d * 0.92, d * 0.72);
+            fill(w, o, &frame, ink.face);
+            if lit {
+                fill(w, o, &frame, scale_alpha(col, 0.16));
+            }
+            stroke(
+                w,
+                o,
+                &frame,
+                d * 0.04,
+                scale_alpha(col, if lit { 1.0 } else { 0.35 }),
+                true,
+            );
+        }
+        Look::Nixie => bulb(w, o, (c, c), c * 0.92, col, lit, ink),
         Look::Classic => {}
     };
     div()
@@ -188,10 +209,24 @@ pub(super) fn sign(limit: u32, d: f32, look: Look, t: &Theme) -> AnyElement {
                 true,
             );
         }
+        Look::Cockpit => {
+            let frame = rect(d * 0.04, d * 0.04, d * 0.92, d * 0.92);
+            fill(w, o, &frame, ink.face);
+            fill(w, o, &rect(d * 0.04, d * 0.04, d * 0.92, d * 0.16), red);
+            stroke(w, o, &frame, d * 0.06, red, true);
+        }
+        Look::Nixie => {
+            fill(w, o, &circle(c, c, c), ink.face);
+            glow_arc(w, o, (c, c), c * 0.86, (0.0, 1.0), d * 0.03, (red, red));
+        }
         Look::Classic => {}
     };
     let figure: AnyElement = match look {
         Look::Digital => seg_text(&text, c, c - fs * 0.6, fs * 1.2, red).into_any_element(),
+        Look::Nixie => div()
+            .relative()
+            .child(tubes(&text, fs * 1.25, glow(ink), ink))
+            .into_any_element(),
         _ => div()
             .relative()
             .text_size(px(fs))

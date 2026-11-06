@@ -19,17 +19,25 @@ pub enum Look {
     Digital,
     /// A modern light display: soft halos, gradient arcs of light, glowing tips and thin type.
     Futuristic,
+    /// A glass cockpit: engine-indication arcs with a filled sweep and a boxed readout, soft-key
+    /// pages, cyan selections and accent bugs on a dark display.
+    Cockpit,
+    /// Glow tubes: stacked-digit tubes behind a wire mesh, bargraph tubes, neon bulbs and a
+    /// ring of glowing cathodes on a dark chassis.
+    Nixie,
 }
 
 impl Look {
     /// Every look, in the order a gallery shows them.
-    pub const ALL: [Self; 6] = [
+    pub const ALL: [Self; 8] = [
         Self::Classic,
         Self::Chrono,
         Self::Vintage,
         Self::HeadsUp,
         Self::Digital,
         Self::Futuristic,
+        Self::Cockpit,
+        Self::Nixie,
     ];
 
     /// A short name for a caption or a picker.
@@ -41,6 +49,8 @@ impl Look {
             Self::HeadsUp => "Heads-up",
             Self::Digital => "Digital",
             Self::Futuristic => "Futuristic",
+            Self::Cockpit => "Glass cockpit",
+            Self::Nixie => "Nixie",
         }
     }
 }

@@ -10,7 +10,7 @@
 //!
 //! | Feature | Instruments |
 //! |---|---|
-//! | `automotive` | clusters, tachometer, speedometers, tire pressure, gear, odometer, power meter, level bar, compass |
+//! | `automotive` | clusters, tachometer, speedometers, tire pressure, gear, odometer, power meter, level bar, compass, EV energy, shift lights |
 //! | `aviation` | attitude indicator, heading and vertical tapes, sonar waterfall, countermeasures |
 //! | `defense` | tactical plot, track list, threat rosette, stores panel, mission timer, radar scope |
 //! | `industrial` | the process-plant and machine symbols (dials and annunciators are always included) |
@@ -50,13 +50,19 @@ pub mod hero;
 #[cfg(feature = "automotive")]
 pub mod look;
 #[cfg(feature = "automotive")]
+mod mfd;
+#[cfg(feature = "automotive")]
 pub(crate) mod pod_math;
 #[cfg(feature = "automotive")]
 pub mod pods;
 #[cfg(feature = "automotive")]
 mod shapes;
+#[cfg(feature = "automotive")]
+pub mod shift;
 #[cfg(feature = "defense")]
 pub mod tactical;
+#[cfg(feature = "automotive")]
+mod tubes;
 #[cfg(feature = "automotive")]
 pub mod vehicle;
 
@@ -92,9 +98,11 @@ pub use hero::{CapsuleCluster, CutSpeedometer};
 pub use look::Look;
 #[cfg(feature = "automotive")]
 pub use pods::{
-    BoostPod, CompassPod, DashQuad, DualGauge, DualScale, GForcePod, MediaPod, NoticePod, PodIcon,
-    PodRow, RowsPod, TyrePod,
+    BoostPod, CompassPod, DashQuad, DualGauge, DualScale, EnergyPod, GForcePod, MediaPod,
+    NoticePod, PodIcon, PodRow, RowsPod, TyrePod,
 };
+#[cfg(feature = "automotive")]
+pub use shift::ShiftLights;
 #[cfg(feature = "defense")]
 pub use tactical::{
     MissionTimer, Station, StationState, StoresPanel, TacticalPlot, Threat, ThreatRosette,

@@ -25,6 +25,7 @@ use gpui::{
 mod lamp_looks;
 mod menu_looks;
 mod menu_more;
+mod menu_panels;
 
 /// What a telltale reports; the colour comes from the theme.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -584,7 +585,7 @@ impl SidePod {
         self.ends = [low, high];
         self
     }
-    /// The look (see [`Look`]); every look but [`Look::Classic`] draws it as a [`GaugeFace`]; the reading becomes its caption and a custom centre is left out.
+    /// The look (see [`Look`]); every look but [`Look::Classic`] draws it as a [`GaugeFace`](crate::faces::GaugeFace); the reading becomes its caption and a custom centre is left out.
     pub fn look(mut self, look: Look) -> Self {
         self.look = look;
         self

@@ -135,6 +135,19 @@ fn instruments(v: f32) -> Vec<AnyElement> {
                 RowsPod::new(Vec::<PodRow>::new())
                     .look(look)
                     .into_any_element(),
+                EnergyPod::new(v)
+                    .power(v)
+                    .limits(v, v)
+                    .look(look)
+                    .size(v)
+                    .into_any_element(),
+                ShiftLights::new(v)
+                    .range(v, v)
+                    .count(0)
+                    .gear("")
+                    .look(look)
+                    .width(v)
+                    .into_any_element(),
                 NoticePod::new(Symbol::Washer, "")
                     .look(look)
                     .size(v)

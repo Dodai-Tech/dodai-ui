@@ -39,7 +39,7 @@ The default turns on every industry set and no design.
 
 | Feature | What it adds |
 |---|---|
-| `automotive` | dashes, pods, gauge faces in six looks (`Look`), tachometer, speedometers, tyre pressure, gear, odometer, compass; the vehicle symbols |
+| `automotive` | dashes, pods, gauge faces in eight looks (`Look`), tachometer, speedometers, tyre pressure, gear, odometer, compass, EV energy, shift lights; the vehicle symbols |
 | `aviation` | attitude indicator, heading and vertical tapes, sonar waterfall, countermeasures; the aviation symbols |
 | `defense` | tactical plot, track list, threat rosette, stores panel, mission timer, radar scope; the military symbols |
 | `industrial` | the process-plant and machine symbols |
@@ -54,7 +54,16 @@ dodai-gpui-instruments = { version = "0.1", default-features = false, features =
 
 ## Looks
 
-The vehicle instruments share one `Look`: Classic, Chrono, Vintage, Heads-up, Digital and Futuristic. Set it on a single instrument with `.look(..)`, or on a whole `DashTriptych` / `DashQuad` to restyle the ring, pods, lamps and limit sign together.
+The vehicle instruments share one `Look`: Classic, Chrono, Vintage, Heads-up, Digital, Futuristic, Glass cockpit and Nixie. Set it on a single instrument with `.look(..)`, or on a whole `DashTriptych` / `DashQuad` to restyle the ring, pods, lamps and limit sign together.
+
+```rust,no_run
+use dodai_gpui_instruments::{EnergyPod, Look, ShiftLights};
+
+// An electric car's battery, recovering 18 kW, in the glass-cockpit look.
+let energy = EnergyPod::new(64.0).power(-18.0).range("312 km").look(Look::Cockpit);
+// Shift lights between 5 000 and 7 000 rpm with the gear, in glow tubes.
+let lights = ShiftLights::new(6400.0).range(5000.0, 7000.0).gear("4").look(Look::Nixie);
+```
 
 These are display components, not medical or flight-safety devices: do not rely on them to monitor a patient or to fly or operate anything.
 

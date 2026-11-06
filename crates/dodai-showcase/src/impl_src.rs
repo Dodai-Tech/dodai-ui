@@ -440,6 +440,38 @@ const FILES: &[(&str, &str)] = &[
         include_str!("../../dodai-gpui-instruments/src/pods/digital.rs"),
     ),
     (
+        "dodai-gpui-instruments/src/mfd.rs",
+        include_str!("../../dodai-gpui-instruments/src/mfd.rs"),
+    ),
+    (
+        "dodai-gpui-instruments/src/tubes.rs",
+        include_str!("../../dodai-gpui-instruments/src/tubes.rs"),
+    ),
+    (
+        "dodai-gpui-instruments/src/shift.rs",
+        include_str!("../../dodai-gpui-instruments/src/shift.rs"),
+    ),
+    (
+        "dodai-gpui-instruments/src/faces/panels.rs",
+        include_str!("../../dodai-gpui-instruments/src/faces/panels.rs"),
+    ),
+    (
+        "dodai-gpui-instruments/src/pods/cockpit.rs",
+        include_str!("../../dodai-gpui-instruments/src/pods/cockpit.rs"),
+    ),
+    (
+        "dodai-gpui-instruments/src/pods/nixie.rs",
+        include_str!("../../dodai-gpui-instruments/src/pods/nixie.rs"),
+    ),
+    (
+        "dodai-gpui-instruments/src/pods/energy.rs",
+        include_str!("../../dodai-gpui-instruments/src/pods/energy.rs"),
+    ),
+    (
+        "dodai-gpui-instruments/src/dash/menu_panels.rs",
+        include_str!("../../dodai-gpui-instruments/src/dash/menu_panels.rs"),
+    ),
+    (
         "dodai-gpui-instruments/src/pods/future.rs",
         include_str!("../../dodai-gpui-instruments/src/pods/future.rs"),
     ),
