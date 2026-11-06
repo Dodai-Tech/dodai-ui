@@ -677,6 +677,11 @@ impl Accordion {
             let hovered = hv.read(cx).hovered;
             let is_open = open.get(i).copied().unwrap_or(false);
             let stc = st.clone();
+            let head_fg = hsla(if is_open || hovered {
+                t.palette.primary
+            } else {
+                t.palette.text
+            });
             let head = track(div().id(id), &hv, cx)
                 .min_h(px(t.shape.control_height))
                 .px(px(t.spacing.md))
@@ -689,11 +694,7 @@ impl Accordion {
                 } else {
                     gpui::transparent_black()
                 })
-                .text_color(hsla(if is_open || hovered {
-                    t.palette.primary
-                } else {
-                    t.palette.text
-                }))
+                .text_color(head_fg)
                 .on_click(move |_, _, cx| {
                     stc.update(cx, |s, cx| {
                         if let Some(o) = s.open.get_mut(i) {
@@ -702,11 +703,11 @@ impl Accordion {
                         cx.notify();
                     })
                 })
-                .child(
-                    div()
-                        .w(px(t.spacing.sm * 1.5))
-                        .child(if is_open { "▾" } else { "▸" }),
-                )
+                .child(div().flex_none().child(crate::surfaces::glyph_el(
+                    if is_open { "▾" } else { "▸" }.into(),
+                    t.sizes().icon_sm,
+                    head_fg,
+                )))
                 .child(format_label(&t.typography, title));
             if i > 0 {
                 col = col.child(div().h(crate::HAIRLINE).w_full().bg(hsla(t.palette.border)));

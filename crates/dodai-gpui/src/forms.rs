@@ -115,7 +115,7 @@ impl RenderOnce for FormField {
         let p = &t.palette;
         let (msg, color, glyph) = match &self.state {
             FieldState::Error(m) => (Some(m.clone()), p.danger, "✕"),
-            FieldState::Warning(m) => (Some(m.clone()), p.warning, "▲"),
+            FieldState::Warning(m) => (Some(m.clone()), p.warning, "!"),
             FieldState::Success(m) => (Some(m.clone()), p.success, "✓"),
             FieldState::Default => (self.help.clone(), p.text_muted, ""),
         };
@@ -152,10 +152,17 @@ impl RenderOnce for FormField {
             col = col.child(
                 div()
                     .flex()
+                    .items_center()
                     .gap(px(t.spacing.xs))
                     .text_size(px(t.typography.size_xs))
                     .text_color(hsla(color))
-                    .child(glyph)
+                    .children((!glyph.is_empty()).then(|| {
+                        crate::surfaces::glyph_el(
+                            glyph.into(),
+                            t.typography.size_xs * 1.2,
+                            hsla(color),
+                        )
+                    }))
                     .child(m),
             );
         }

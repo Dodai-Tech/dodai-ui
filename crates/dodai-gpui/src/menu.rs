@@ -317,7 +317,7 @@ impl Menu {
                 );
             }
             if !item.children.is_empty() {
-                row = row.child(div().text_size(px(t.typography.size_sm)).child("▸"));
+                row = row.child(crate::surfaces::glyph_el("▸".into(), t.sizes().icon_sm, fg));
                 if *open.read(cx) == Some(i) {
                     let parent = i;
                     let mut sub = Menu::new((self.id.clone(), format!("sub{i}")))
