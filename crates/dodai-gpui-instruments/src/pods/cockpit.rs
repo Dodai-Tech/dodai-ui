@@ -1,12 +1,12 @@
-//! The glass-cockpit look of the pods: display pages with a titled rule, four pressure boxes split
+//! The glass-cockpit look of the pods: display pages with a title band, four pressure boxes split
 //! by a cross,
-//! dotted leaders to green values, an alert page with clear and recall keys, a cross of rings
+//! dotted leaders to green values, an alert page with clear and recall legends led to the bezel keys, a cross of rings
 //! with a bug, a radio panel with active and standby lines, and a heading arc under a boxed
 //! readout. Every colour comes from the theme.
 
 use super::detailed::{case, label, layer, tone_or};
 use super::*;
-use crate::mfd::{bug, leader, page, pointer_scale, readout_box, rect};
+use crate::mfd::{bug, leader, page, pointer_scale, readout_box, rect, BEZEL, KEYS};
 use crate::shapes::{circle, Ink};
 
 /// The page title at the top left with its rule; the pod's text sits under it.
@@ -20,17 +20,52 @@ fn title(s: f32, ink: Ink, text: &str, right: &str) -> gpui::Div {
         .justify_between()
         .text_size(px(s * 0.04))
         .child(div().text_color(ink.text).child(text.to_uppercase()))
-        .child(div().text_color(ink.muted).child(right.to_uppercase()))
+        .child(div().text_color(ink.info).child(right.to_uppercase()))
 }
 
-/// Paint the rule under the page title.
+/// Paint the page's title band across the top of the glass, ruled off from the page under it.
 fn rule(w: &mut Window, o: gpui::Point<Pixels>, s: f32, ink: Ink) {
+    let (k, y) = (s * BEZEL, s * 0.14);
+    fill(
+        w,
+        o,
+        &rect(k, k, s - 2.0 * k, y - k),
+        scale_alpha(ink.text, 0.07),
+    );
     stroke(
         w,
         o,
-        &[(s * 0.09, s * 0.14), (s * 0.91, s * 0.14)],
+        &[(k, y), (s - k, y)],
         s * 0.003,
         scale_alpha(ink.text, 0.4),
+        false,
+    );
+}
+
+/// Paint a soft-key legend box `(x, y, wd, h)` on the glass with a lead to the bezel key level
+/// with it, on the left edge when `left`.
+fn legend_box(
+    w: &mut Window,
+    o: gpui::Point<Pixels>,
+    s: f32,
+    (x, y, wd, h): (f32, f32, f32, f32),
+    left: bool,
+    ink: Ink,
+) {
+    let col = scale_alpha(ink.text, 0.6);
+    let lw = s * 0.004;
+    stroke(w, o, &rect(x, y, wd, h), lw, col, true);
+    let (from, to) = if left {
+        (s * BEZEL, x)
+    } else {
+        (x + wd, s * (1.0 - BEZEL))
+    };
+    stroke(
+        w,
+        o,
+        &[(from, y + h / 2.0), (to, y + h / 2.0)],
+        lw,
+        col,
         false,
     );
 }
@@ -249,19 +284,15 @@ impl NoticePod {
         let s = self.size;
         let col = tone_or(t, self.tone, ink);
         let (hx, hy, hw, hh) = (s * 0.09, s * 0.1, s * 0.82, s * 0.11);
-        let keys = [(s * 0.09, "CLR"), (s * 0.69, "RCL")];
+        // The clear and recall legends sit level with the bottom keys of the bezel.
+        let (kw, kh) = (s * 0.2, s * 0.08);
+        let ky = s * KEYS[4] - kh / 2.0;
+        let keys = [(s * 0.1, "CLR"), (s * 0.7, "RCL")];
         let paint = move |w: &mut Window, o: gpui::Point<Pixels>| {
             page(w, o, s, ink);
             fill(w, o, &rect(hx, hy, hw, hh), col);
-            for (x, _) in keys {
-                stroke(
-                    w,
-                    o,
-                    &rect(x, s * 0.78, s * 0.22, s * 0.09),
-                    s * 0.004,
-                    scale_alpha(ink.text, 0.6),
-                    true,
-                );
+            for (i, (x, _)) in keys.into_iter().enumerate() {
+                legend_box(w, o, s, (x, ky, kw, kh), i == 0, ink);
             }
         };
         let mut el = case(s)
@@ -297,15 +328,7 @@ impl NoticePod {
                     ),
             );
         for (x, k) in keys {
-            el = el.child(boxed(
-                x,
-                s * 0.78,
-                s * 0.22,
-                s * 0.09,
-                s * 0.036,
-                ink.info,
-                k,
-            ));
+            el = el.child(boxed(x, ky, kw, kh, s * 0.036, ink.info, k));
         }
         el.into_any_element()
     }
