@@ -197,6 +197,8 @@ pub struct Showcase {
     inst_trail: usize,
     /// Needle response of the instruments: 0 the design's own, then `NeedleResponse::ALL`.
     inst_response: usize,
+    /// The look the vehicle sections show: 0 every look, then `Look::ALL`.
+    inst_look: usize,
     /// Glow of every chart and instrument: 0 the theme's own, 1 off, 2 soft, 3 strong.
     inst_glow: usize,
     /// Channel-plan blocks the user toggled: `(band, row, block)`.
@@ -351,6 +353,28 @@ impl Render for Showcase {
                             })
                         }),
                     )
+                    .child(div().w(px(16.0)))
+                    .child(dodai_gpui::Label::new("Look"))
+                    .child({
+                        let m = me.clone();
+                        div().w(px(220.0)).child(
+                            dodai_gpui::Select::new("veh-look")
+                                .options(
+                                    std::iter::once("Every look").chain(
+                                        dodai_gpui_instruments::Look::ALL
+                                            .into_iter()
+                                            .map(|l| l.name()),
+                                    ),
+                                )
+                                .selected(Some(self.inst_look))
+                                .on_select(move |i, _, cx| {
+                                    m.update(cx, |s, cx| {
+                                        s.inst_look = i;
+                                        cx.notify();
+                                    })
+                                }),
+                        )
+                    })
             });
         let side = gpui::AnyView::from(side).cached(gpui::StyleRefinement::default().size_full());
 
