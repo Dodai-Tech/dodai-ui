@@ -139,8 +139,21 @@ fn dash(d: DashTriptych) -> DashTriptych {
 /// Pod diameter in the galleries.
 const POD: f32 = 200.0;
 
+/// Pod diameter of an instrument alone on its row.
+const POD_ALONE: f32 = 320.0;
+
+/// The pod diameter for a row of `n` instruments: bigger when one is alone. Pure.
+fn cell(n: usize) -> f32 {
+    if n == 1 {
+        POD_ALONE
+    } else {
+        POD
+    }
+}
+
 /// An explanation, then the instrument in several designs side by side, each with its name.
 fn gallery(text: &str, items: Vec<(&'static str, gpui::AnyElement)>) -> gpui::AnyElement {
+    let pod = cell(items.len());
     div()
         .flex()
         .flex_col()
@@ -160,8 +173,8 @@ fn gallery(text: &str, items: Vec<(&'static str, gpui::AnyElement)>) -> gpui::An
                         .child(
                             div()
                                 .flex_none()
-                                .w(px(POD))
-                                .h(px(POD))
+                                .w(px(pod))
+                                .h(px(pod))
                                 .flex()
                                 .items_center()
                                 .justify_center()
@@ -179,30 +192,35 @@ fn shown(only: Option<Look>) -> Vec<Look> {
 }
 
 /// A reading in each shown [`Look`], then the alternative layouts of those looks (the vintage
-/// panel meter and the heads-up tape): the dash dial comes from `dial`, the rest from
+/// panel meter and the heads-up tape): the dash dial comes from `dial(size)`, the rest from
 /// `face(look, alternate, size)`.
 fn looks(
     only: Option<Look>,
-    dial: gpui::AnyElement,
+    dial: impl FnOnce(f32) -> gpui::AnyElement,
     face: impl Fn(Look, bool, f32) -> gpui::AnyElement,
 ) -> Vec<(&'static str, gpui::AnyElement)> {
     let mut dial = Some(dial);
     let looks = shown(only);
+    let alternates = looks
+        .iter()
+        .filter(|l| matches!(l, Look::Vintage | Look::HeadsUp))
+        .count();
+    let pod = cell(looks.len() + alternates);
     let mut out: Vec<(&'static str, gpui::AnyElement)> = looks
         .iter()
         .map(|&l| {
             let el = match (l, dial.take()) {
-                (Look::Classic, Some(d)) => d,
-                _ => face(l, false, POD),
+                (Look::Classic, Some(d)) => d(pod),
+                _ => face(l, false, pod),
             };
             (l.name(), el)
         })
         .collect();
     if looks.contains(&Look::Vintage) {
-        out.push(("Vintage meter", face(Look::Vintage, true, POD)));
+        out.push(("Vintage meter", face(Look::Vintage, true, pod)));
     }
     if looks.contains(&Look::HeadsUp) {
-        out.push(("Heads-up tape", face(Look::HeadsUp, true, POD)));
+        out.push(("Heads-up tape", face(Look::HeadsUp, true, pod)));
     }
     out
 }
@@ -312,9 +330,11 @@ fn looked(
     only: Option<Look>,
     make: impl Fn(Look, f32) -> gpui::AnyElement,
 ) -> Vec<(&'static str, gpui::AnyElement)> {
-    shown(only)
+    let looks = shown(only);
+    let pod = cell(looks.len());
+    looks
         .into_iter()
-        .map(|s| (s.name(), make(s, POD)))
+        .map(|s| (s.name(), make(s, pod)))
         .collect()
 }
 
@@ -339,6 +359,8 @@ impl Showcase {
             .checked_sub(1)
             .and_then(|i| Look::ALL.get(i).copied());
         let dash_look = only.unwrap_or_default();
+        // The cell of the galleries built here, one instrument per look.
+        let pod = cell(shown(only).len());
         let mut out: Vec<Section> = Vec::new();
         let mut add = |me: &mut Self, title: &'static str, parts: Vec<gpui::AnyElement>| {
             let panel = parts
@@ -370,7 +392,7 @@ impl Showcase {
             "Vehicle · Engine speed",
             vec![gallery(
                 "The revs, 0 to 8 in thousands, amber from 6 and red from 7. Classic: the ribbed ring of the dash with the road speed in the middle, a trip tab and the fuel level. The others show the revs alone: a chronograph with a sub-dial, a vintage dial with a spade hand and a drum counter, a heads-up ring, a segment display and a halo of light. Vintage and heads-up add an alternative layout: a panel meter and a tape.",
-                looks(only, tach().size(POD).into_any_element(), rev_face),
+                looks(only, |z| tach().size(z).into_any_element(), rev_face),
             )],
         );
         add(
@@ -378,7 +400,7 @@ impl Showcase {
             "Vehicle · Speed",
             vec![gallery(
                 "The speed, 0 to 270, amber above 220. Classic: the dash pod in steps of 30 with the speed limit in the middle and no needle. The other looks draw it as a gauge face; vintage and heads-up add a panel meter and a tape.",
-                looks(only, speed().size(POD).into_any_element(), speed_face),
+                looks(only, |z| speed().size(z).into_any_element(), speed_face),
             )],
         );
         add(
@@ -386,7 +408,7 @@ impl Showcase {
             "Vehicle · Battery voltage",
             vec![gallery(
                 "The on-board voltage, 6 to 18 V. Red under 11 V, amber over 15 V.",
-                looks(only, volt().size(POD).into_any_element(), volt_face),
+                looks(only, |z| volt().size(z).into_any_element(), volt_face),
             )],
         );
         add(
@@ -394,7 +416,7 @@ impl Showcase {
             "Vehicle · Oil pressure and temperature",
             vec![gallery(
                 "Oil pressure (bar) and oil temperature (°C). Classic: two needles on one ring, pressure on the upper half and temperature on the lower arc. The other looks draw the pressure on one face and the temperature on a strip under it in the look's style; the heads-up tapes stand side by side.",
-                looks(only, oil().size(POD).into_any_element(), oil_faces),
+                looks(only, |z| oil().size(z).into_any_element(), oil_faces),
             )],
         );
         add(
@@ -402,7 +424,7 @@ impl Showcase {
             "Vehicle · Coolant temperature",
             vec![gallery(
                 "Coolant temperature, 60 to 130 °C. The last part of the scale is a red warning band; the figure turns red inside it.",
-                looks(only, coolant().size(POD).into_any_element(), coolant_face),
+                looks(only, |z| coolant().size(z).into_any_element(), coolant_face),
             )],
         );
         add(
@@ -412,10 +434,12 @@ impl Showcase {
                 "The boost (or charge) level in percent. Classic: the cell stack inside a segmented band with a limit mark and the battery temperature. The other looks draw it as a gauge face; vintage and heads-up add a panel meter and a tape. Past 80 % the screen looks here colour their whole display amber, an option (at_limit(AtLimit::Display)); by default only the value takes the limit's colour.",
                 looks(
                     only,
-                    BoostPod::new(val(48.0, 0.0, 100.0))
-                        .temp("9 °C")
-                        .size(POD)
-                        .into_any_element(),
+                    |z| {
+                        BoostPod::new(val(48.0, 0.0, 100.0))
+                            .temp("9 °C")
+                            .size(z)
+                            .into_any_element()
+                    },
                     boost_face,
                 ),
             )],
@@ -464,7 +488,7 @@ impl Showcase {
                                     ShiftLights::new(val(63.0, 4800.0, 6950.0))
                                         .gear("4")
                                         .look(look)
-                                        .width(180.0),
+                                        .width(pod * 0.9),
                                 ),
                             )
                         })
@@ -481,7 +505,7 @@ impl Showcase {
                                     ShiftLights::new(7200.0)
                                         .gear("4")
                                         .look(look)
-                                        .width(180.0),
+                                        .width(pod * 0.9),
                                 ),
                             )
                         })
@@ -627,7 +651,7 @@ impl Showcase {
                         .map(|(look, v)| {
                             (
                                 look.name(),
-                                centred(LimitSign::new(v).look(look).size(110.0)),
+                                centred(LimitSign::new(v).look(look).size(pod * 0.55)),
                             )
                         })
                         .collect(),
@@ -636,7 +660,7 @@ impl Showcase {
                     "Telltale lamps: red for danger, green for on, amber for a fault, grey when off.",
                     shown(only)
                         .into_iter()
-                        .map(|look| (look.name(), centred(tells().look(look).size(34.0).columns(3))))
+                        .map(|look| (look.name(), centred(tells().look(look).size(pod * 0.17).columns(3))))
                         .collect(),
                 ),
             ],
@@ -741,5 +765,23 @@ impl Showcase {
             ],
         );
         out
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn an_instrument_alone_on_its_row_is_bigger() {
+        assert_eq!(cell(1), POD_ALONE);
+        assert_eq!(cell(2), POD);
+        assert_eq!(cell(Look::ALL.len()), POD);
+    }
+
+    #[test]
+    fn one_look_or_every_look_is_shown() {
+        assert_eq!(shown(Some(Look::Race)), vec![Look::Race]);
+        assert_eq!(shown(None), Look::ALL.to_vec());
     }
 }
