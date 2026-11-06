@@ -136,27 +136,79 @@ pub(crate) fn star(
         .collect()
 }
 
-/// Paint the chronograph case for a disc of `s`: a knurled bezel and the face. Returns the
-/// face radius.
+/// Paint the chronograph case for a disc of `s`: a polished bezel with a fine coin edge
+/// between two bright hairlines, a stepped flange and a sunburst face. Returns the face radius.
 pub(crate) fn chrono_case(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> f32 {
     let c = s / 2.0;
     let (r_bezel, r_face) = (c - s * 0.01, c - s * 0.06);
-    fill(w, o, &circle(c, c, r_bezel), scale_alpha(ink.text, 0.08));
-    for i in 0..120 {
-        let a = i as f32 / 120.0;
+    let hair = (s * 0.003).max(0.6);
+    fill(w, o, &circle(c, c, r_bezel), scale_alpha(ink.text, 0.07));
+    for i in 0..240 {
+        let a = i as f32 / 240.0;
         stroke(
             w,
             o,
-            &[polar(c, c, r_face + s * 0.008, a), polar(c, c, r_bezel, a)],
-            s * 0.004,
-            scale_alpha(ink.text, 0.22),
+            &[
+                polar(c, c, r_face + s * 0.018, a),
+                polar(c, c, r_bezel - s * 0.006, a),
+            ],
+            hair,
+            scale_alpha(ink.text, 0.13),
             false,
         );
     }
+    stroke(
+        w,
+        o,
+        &circle(c, c, r_bezel),
+        hair * 1.6,
+        scale_alpha(ink.text, 0.7),
+        true,
+    );
+    stroke(
+        w,
+        o,
+        &circle(c, c, r_face + s * 0.016),
+        hair,
+        scale_alpha(ink.text, 0.45),
+        true,
+    );
     fill(w, o, &circle(c, c, r_face), ink.face);
-    fill(w, o, &circle(c, c, r_face), scale_alpha(ink.text, 0.04));
-    stroke(w, o, &circle(c, c, r_face), s * 0.006, ink.line, true);
+    sunburst(w, o, (c, c), r_face, ink.text);
+    stroke(w, o, &circle(c, c, r_face), hair, ink.line, true);
     r_face
+}
+
+/// Paint a sunburst finish on a disc of radius `r` round `(cx, cy)`: faint rays from the
+/// centre, as on a brushed dial.
+pub(crate) fn sunburst(w: &mut Window, o: Point<Pixels>, (cx, cy): (f32, f32), r: f32, ink: Hsla) {
+    let hair = (r * 0.004).max(0.5);
+    for i in 0..180 {
+        let a = i as f32 / 180.0;
+        stroke(
+            w,
+            o,
+            &[polar(cx, cy, r * 0.08, a), polar(cx, cy, r * 0.98, a)],
+            hair,
+            scale_alpha(ink, 0.025),
+            false,
+        );
+    }
+}
+
+/// Paint a polished hub of radius `r` at `(cx, cy)`: a bright cap, a dark ring and a centre in
+/// the hand's colour.
+pub(crate) fn hub(
+    w: &mut Window,
+    o: Point<Pixels>,
+    (cx, cy): (f32, f32),
+    r: f32,
+    ink: Ink,
+    hand: Hsla,
+) {
+    fill(w, o, &circle(cx, cy, r), ink.text);
+    fill(w, o, &circle(cx, cy, r * 0.72), ink.face);
+    fill(w, o, &circle(cx, cy, r * 0.32), hand);
 }
 
 /// A soft crescent of light over the top of a chronograph face of radius `r_face`.
