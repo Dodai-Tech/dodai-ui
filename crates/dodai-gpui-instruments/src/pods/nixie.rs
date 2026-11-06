@@ -41,9 +41,6 @@ impl TyrePod {
         let warn = ink.warn;
         let paint = move |w: &mut Window, o: gpui::Point<Pixels>| {
             chassis(w, o, s, ink);
-            // The car between the tubes: a faint outline engraved on the panel.
-            let body = crate::tubes::rounded(c - s * 0.05, s * 0.2, s * 0.1, s * 0.46, s * 0.04);
-            stroke(w, o, &body, s * 0.004, scale_alpha(ink.text, 0.2), true);
             for (i, &(x, y)) in spots.iter().enumerate() {
                 let bx = if i % 2 == 0 {
                     x - s * 0.13
