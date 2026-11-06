@@ -4,10 +4,14 @@
 //! They take the same data, so a dash can swap one for another without touching its values.
 //! Every colour comes from the theme.
 
+mod glass;
 mod layouts;
+mod lcd;
 mod panels;
 mod rich;
+mod round;
 mod styles;
+mod watch;
 
 use crate::dash::{SidePod, Tone};
 use crate::dial::severity_color;
@@ -116,7 +120,12 @@ impl RenderOnce for GaugeFace {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
         self.value = pm::finite(follow(w, cx, &self.follow, 0, self.value), self.scale.min);
         match (self.look, self.look.fit(self.layout)) {
+            (Look::Sport, Layout::Sweep) => self.sport_sweep(cx),
+            (Look::Sport, Layout::Needle) => self.sport_needle(cx),
+            (Look::Sport, Layout::Ribbed) => self.sport_ribbed(cx),
             (Look::Sport, _) => self.dial(),
+            (Look::Chronograph, Layout::Bezel) => self.chrono_bezel(cx),
+            (Look::Chronograph, Layout::Register) => self.chrono_register(cx),
             (Look::Chronograph, _) => self.chrono(cx),
             (Look::HeadsUp, Layout::Tape) => self.tape_face(cx),
             (Look::HeadsUp, _) => self.hud(cx),
@@ -125,8 +134,12 @@ impl RenderOnce for GaugeFace {
             (Look::Vintage, _) => self.vintage(cx),
             (Look::Halo, Layout::Arc) => self.halo_arc(cx),
             (Look::Halo, Layout::Bar) => self.halo_bar(cx),
+            (Look::Segment, Layout::Bar) => self.segment_bar(cx),
+            (Look::Segment, Layout::Column) => self.segment_column(cx),
             (Look::Segment, _) => self.digital(cx),
             (Look::Halo, _) => self.futuristic(cx),
+            (Look::GlassCockpit, Layout::Tape) => self.cockpit_tape(cx),
+            (Look::GlassCockpit, Layout::Column) => self.cockpit_column(cx),
             (Look::GlassCockpit, _) => self.cockpit(cx),
             (Look::Race, _) => self.race(cx),
         }

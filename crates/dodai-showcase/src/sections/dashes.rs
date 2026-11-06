@@ -199,6 +199,15 @@ fn caption(look: Look, layout: Layout) -> &'static str {
         (Look::HeadsUp, Layout::Tape) => "Heads-up tape",
         (Look::Halo, Layout::Arc) => "Halo arc",
         (Look::Halo, Layout::Bar) => "Halo bar",
+        (Look::Sport, Layout::Sweep) => "Sport sweep",
+        (Look::Sport, Layout::Needle) => "Sport needle",
+        (Look::Sport, Layout::Ribbed) => "Sport ribbed",
+        (Look::Chronograph, Layout::Bezel) => "Chronograph bezel",
+        (Look::Chronograph, Layout::Register) => "Chronograph register",
+        (Look::Segment, Layout::Bar) => "Segment bar",
+        (Look::Segment, Layout::Column) => "Segment column",
+        (Look::GlassCockpit, Layout::Tape) => "Glass cockpit tape",
+        (Look::GlassCockpit, Layout::Column) => "Glass cockpit column",
         (l, _) => l.name(),
     }
 }
@@ -378,7 +387,7 @@ impl Showcase {
             self,
             "Vehicle · Looks",
             vec![gallery(
-                "Every vehicle instrument comes in eight looks: the same data, drawn as a sports dash ring, a chronograph, a vintage panel, a heads-up display, a segment LCD, a halo of light, a glass cockpit or a race display. Here the engine speed in each. Vintage also comes as a panel meter and a ribbon, heads-up as a tape and halo as an arc and a bar. Pick a look above to see every instrument and the example dashes in it.",
+                "Every vehicle instrument comes in eight looks: the same data, drawn as a sports dash ring, a chronograph, a vintage panel, a heads-up display, a segment LCD, a halo of light, a glass cockpit or a race display. Here the engine speed in each. Most looks come in more layouts: sport as a sweep, a needle and a ribbed ring, chronograph as a bezel and a register, vintage as a panel meter and a ribbon, heads-up as a tape, segment LCD as a bar and a column, halo as an arc and a bar, glass cockpit as a tape and a column. Pick a look above to see every instrument and the example dashes in it.",
                 Look::ALL
                     .into_iter()
                     .map(|l| {
@@ -404,7 +413,7 @@ impl Showcase {
             self,
             "Vehicle · Speed",
             vec![gallery(
-                "The speed, 0 to 270, amber above 220. Sport: the dash pod in steps of 30 with the speed limit in the middle and no needle. The other looks draw it as a gauge face; vintage adds a panel meter and a ribbon, heads-up a tape, halo an arc and a bar.",
+                "The speed, 0 to 270, amber above 220. Sport: the dash pod in steps of 30 with the speed limit in the middle and no needle. The other looks draw it as a gauge face; each look is followed by its other layouts.",
                 looks(only, |z| speed().size(z).into_any_element(), speed_face),
             )],
         );
@@ -436,7 +445,7 @@ impl Showcase {
             self,
             "Vehicle · Boost",
             vec![gallery(
-                "The boost (or charge) level in percent. Sport: the cell stack inside a segmented band with a limit mark and the battery temperature. The other looks draw it as a gauge face; vintage adds a panel meter and a ribbon, heads-up a tape, halo an arc and a bar. Past 80 % the screen looks here colour their whole display amber, an option (at_limit(AtLimit::Display)); by default only the value takes the limit's colour.",
+                "The boost (or charge) level in percent. Sport: the cell stack inside a segmented band with a limit mark and the battery temperature. The other looks draw it as a gauge face; each look is followed by its other layouts. Past 80 % the screen looks here colour their whole display amber, an option (at_limit(AtLimit::Display)); by default only the value takes the limit's colour.",
                 looks(
                     only,
                     |z| {

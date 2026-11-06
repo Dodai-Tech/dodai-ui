@@ -60,10 +60,14 @@ impl Look {
     /// Pure.
     pub fn layouts(self) -> &'static [Layout] {
         match self {
+            Self::Sport => &[Layout::Dial, Layout::Sweep, Layout::Needle, Layout::Ribbed],
+            Self::Chronograph => &[Layout::Dial, Layout::Bezel, Layout::Register],
             Self::HeadsUp => &[Layout::Dial, Layout::Tape],
             Self::Vintage => &[Layout::Dial, Layout::Meter, Layout::Ribbon],
+            Self::Segment => &[Layout::Dial, Layout::Bar, Layout::Column],
             Self::Halo => &[Layout::Dial, Layout::Arc, Layout::Bar],
-            _ => &[Layout::Dial],
+            Self::GlassCockpit => &[Layout::Dial, Layout::Tape, Layout::Column],
+            Self::Race => &[Layout::Dial],
         }
     }
 
@@ -75,6 +79,29 @@ impl Look {
             Layout::Dial
         }
     }
+
+    /// The proportions of this look's face in `layout` (after [`Look::fit`]). Pure.
+    pub(crate) fn shape(self, layout: Layout) -> Shape {
+        match (self, self.fit(layout)) {
+            (Self::HeadsUp, Layout::Tape)
+            | (_, Layout::Dial | Layout::Bezel | Layout::Sweep | Layout::Needle | Layout::Ribbed) => {
+                Shape::Square
+            }
+            (_, Layout::Tape | Layout::Column) => Shape::Tall,
+            _ => Shape::Wide,
+        }
+    }
+}
+
+/// The proportions of a face: square as a dial, wider than tall, or taller than wide.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Shape {
+    /// As wide as tall (heads-up tapes fill the square too).
+    Square,
+    /// As wide as the size, flatter than a dial.
+    Wide,
+    /// As tall as the size and under half as wide.
+    Tall,
 }
 
 /// How a gauge is laid out within its [`Look`]; a look draws only the layouts it lists in
@@ -84,7 +111,8 @@ pub enum Layout {
     /// A round dial: every look has one.
     #[default]
     Dial,
-    /// A vertical tape scrolling under a pointer box ([`Look::HeadsUp`]).
+    /// A vertical tape scrolling under a pointer box ([`Look::HeadsUp`], and a narrow
+    /// airspeed-style tape in [`Look::GlassCockpit`]).
     Tape,
     /// A panel meter: a wide window with a flat arc and a needle from a pivot below it
     /// ([`Look::Vintage`]).
@@ -94,8 +122,26 @@ pub enum Layout {
     Ribbon,
     /// A half ring of light over a large figure ([`Look::Halo`]).
     Arc,
-    /// A straight bar of light under a large figure ([`Look::Halo`]).
+    /// A straight bar under a large figure: of light in [`Look::Halo`], a row of segments in
+    /// [`Look::Segment`].
     Bar,
+    /// A round dial with a thick band filled to the value, cut into segments at the ticks
+    /// ([`Look::Sport`]).
+    Sweep,
+    /// A round dial with a long centre pointer and the figure in a tab below it
+    /// ([`Look::Sport`]).
+    Needle,
+    /// A round dial with concentric grooves crossed by a bright cursor ([`Look::Sport`]).
+    Ribbed,
+    /// A watch dial with the scale on a dark bezel round it and a long centre hand
+    /// ([`Look::Chronograph`]).
+    Bezel,
+    /// A wide watch case with two registers, the scale and its share, over a readout window
+    /// ([`Look::Chronograph`]).
+    Register,
+    /// A narrow upright bar: a stack of segments in [`Look::Segment`], an engine-indication bar
+    /// with a pointer in [`Look::GlassCockpit`].
+    Column,
 }
 
 impl Layout {
@@ -108,6 +154,12 @@ impl Layout {
             Self::Ribbon => "Ribbon",
             Self::Arc => "Arc",
             Self::Bar => "Bar",
+            Self::Sweep => "Sweep",
+            Self::Needle => "Needle",
+            Self::Ribbed => "Ribbed",
+            Self::Bezel => "Bezel",
+            Self::Register => "Register",
+            Self::Column => "Column",
         }
     }
 }
@@ -147,5 +199,21 @@ mod tests {
         assert_eq!(Look::Halo.fit(Layout::Tape), Layout::Dial);
         assert_eq!(Look::Sport.fit(Layout::Meter), Layout::Dial);
         assert_eq!(Look::Vintage.fit(Layout::Ribbon), Layout::Ribbon);
+    }
+
+    #[test]
+    fn tapes_and_columns_stand_upright_and_the_rest_lie_flat() {
+        assert_eq!(Look::HeadsUp.shape(Layout::Tape), Shape::Square);
+        assert_eq!(Look::GlassCockpit.shape(Layout::Tape), Shape::Tall);
+        assert_eq!(Look::Segment.shape(Layout::Column), Shape::Tall);
+        assert_eq!(Look::Chronograph.shape(Layout::Bezel), Shape::Square);
+        assert_eq!(Look::Chronograph.shape(Layout::Register), Shape::Wide);
+        assert_eq!(Look::Sport.shape(Layout::Needle), Shape::Square);
+        assert_eq!(Look::Halo.shape(Layout::Bar), Shape::Wide);
+        assert_eq!(
+            Look::Race.shape(Layout::Bar),
+            Shape::Square,
+            "falls back to the dial"
+        );
     }
 }
