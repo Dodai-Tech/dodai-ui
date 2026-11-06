@@ -1177,9 +1177,9 @@ impl DualScale {
 }
 
 /// A pod with two scales on one ring: the upper half for one reading, the lower arc inside for
-/// another, each with its own needle (oil pressure over oil temperature). The other looks draw
-/// the first reading on one face with the second on a strip under it in the look's style; the
-/// heads-up tapes stand side by side.
+/// another, each with its own needle (oil pressure over oil temperature). Sport's other layouts
+/// and the other looks draw the first reading on one face with the second on a strip under it
+/// in the look's style; the heads-up tapes stand side by side.
 #[derive(IntoElement)]
 pub struct DualGauge {
     follow: Follow,
@@ -1224,7 +1224,8 @@ impl DualGauge {
     }
     /// The face's layout within the look (see
     /// [`GaugeFace::layout`](crate::faces::GaugeFace::layout)); heads-up tapes draw both scales
-    /// as tapes side by side.
+    /// as tapes side by side. In [`Look::Sport`] only [`Layout::Dial`] keeps both scales on one
+    /// ring.
     pub fn layout(mut self, layout: Layout) -> Self {
         self.layout = layout;
         self
@@ -1245,7 +1246,9 @@ impl RenderOnce for DualGauge {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
         self.upper.value = pm::finite(follow(w, cx, &self.follow, 0, self.upper.value), 0.0);
         self.lower.value = pm::finite(follow(w, cx, &self.follow, 1, self.lower.value), 0.0);
-        if self.look != Look::Sport {
+        // Sport's own dial carries both scales on one ring; its other layouts and every other
+        // look draw a face for the upper reading with the lower one on a strip under it.
+        if self.look != Look::Sport || self.look.fit(self.layout) != Layout::Dial {
             // One face for the upper reading with the lower one on a strip under it, in the look's
             // style. Tall tapes have the room for two, so they stand side by side.
             let size = self.size;
