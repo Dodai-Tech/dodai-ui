@@ -8,7 +8,7 @@ pub enum Look {
     #[default]
     Classic,
     /// A watch case: knurled bezel, fine scales, tapered hands and a glass.
-    Chrono,
+    Chronograph,
     /// An instrument panel of old: a screwed plate, a round bezel, a warm face, spade hands and a
     /// name plate.
     Vintage,
@@ -16,12 +16,12 @@ pub enum Look {
     HeadsUp,
     /// A segment display: an LCD module with seven-segment figures, unlit ghost segments and
     /// segment bars.
-    Digital,
+    Segment,
     /// A modern light display: soft halos, gradient arcs of light, glowing tips and thin type.
-    Futuristic,
+    Halo,
     /// A glass cockpit: engine-indication arcs with a filled sweep and a boxed readout, soft-key
     /// pages, cyan selections and accent bugs on a dark display.
-    Cockpit,
+    GlassCockpit,
     /// A motorsport data display: a carbon plate with a cut corner and speed stripes, slanted
     /// segment bars that rise like a rev bar, slanted tags and big leaning figures.
     Race,
@@ -31,12 +31,12 @@ impl Look {
     /// Every look, in the order a gallery shows them.
     pub const ALL: [Self; 8] = [
         Self::Classic,
-        Self::Chrono,
+        Self::Chronograph,
         Self::Vintage,
         Self::HeadsUp,
-        Self::Digital,
-        Self::Futuristic,
-        Self::Cockpit,
+        Self::Segment,
+        Self::Halo,
+        Self::GlassCockpit,
         Self::Race,
     ];
 
@@ -44,19 +44,19 @@ impl Look {
     pub fn name(self) -> &'static str {
         match self {
             Self::Classic => "Classic",
-            Self::Chrono => "Chrono",
+            Self::Chronograph => "Chronograph",
             Self::Vintage => "Vintage",
             Self::HeadsUp => "Heads-up",
-            Self::Digital => "Digital",
-            Self::Futuristic => "Futuristic",
-            Self::Cockpit => "Glass cockpit",
+            Self::Segment => "Segment LCD",
+            Self::Halo => "Halo",
+            Self::GlassCockpit => "Glass cockpit",
             Self::Race => "Race",
         }
     }
 }
 
-/// What a reading past a limit colours in the looks drawn on a screen (heads-up, digital,
-/// futuristic and glass cockpit); the others keep their own colours.
+/// What a reading past a limit colours in the looks drawn on a screen (heads-up, segment LCD,
+/// halo and glass cockpit); the others keep their own colours.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum AtLimit {
     /// Only the value: its pointer, sweep, bar or figure take the limit's colour.

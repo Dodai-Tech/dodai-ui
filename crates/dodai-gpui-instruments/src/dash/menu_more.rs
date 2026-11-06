@@ -1,4 +1,4 @@
-//! The vintage, digital and futuristic looks of [`MenuRing`]: a bakelite rotary selector on a
+//! The vintage, segment-LCD and halo looks of [`MenuRing`]: a bakelite rotary selector on a
 //! plate, an LCD list with the row inverted, and a curved list of glass with a scroll arc of
 //! light. Colours from the theme.
 

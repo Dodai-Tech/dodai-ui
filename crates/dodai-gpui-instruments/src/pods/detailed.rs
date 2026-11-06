@@ -1,5 +1,5 @@
 //! The chronograph and heads-up looks of the pods, and the dispatch to the others.
-//! [`Look::Chrono`] puts the reading in a watch case: a knurled bezel, fine scales, tapered
+//! [`Look::Chronograph`] puts the reading in a watch case: a knurled bezel, fine scales, tapered
 //! needles and a glass. [`Look::HeadsUp`] draws it as a heads-up display: a ring of dashes with
 //! brackets, chamfered frames and segment bars. Both take every colour from the theme.
 
@@ -55,11 +55,11 @@ impl TyrePod {
         match self.look {
             Look::HeadsUp => self.hud(t),
             Look::Vintage => self.vintage(t),
-            Look::Digital => self.digital(t),
-            Look::Futuristic => self.futuristic(t),
-            Look::Cockpit => self.cockpit(t),
+            Look::Segment => self.digital(t),
+            Look::Halo => self.futuristic(t),
+            Look::GlassCockpit => self.cockpit(t),
             Look::Race => self.race(t),
-            Look::Classic | Look::Chrono => self.chrono(t),
+            Look::Classic | Look::Chronograph => self.chrono(t),
         }
     }
 
@@ -292,11 +292,11 @@ impl RowsPod {
         match self.look {
             Look::HeadsUp => self.hud(t),
             Look::Vintage => self.vintage(t),
-            Look::Digital => self.digital(t),
-            Look::Futuristic => self.futuristic(t),
-            Look::Cockpit => self.cockpit(t),
+            Look::Segment => self.digital(t),
+            Look::Halo => self.futuristic(t),
+            Look::GlassCockpit => self.cockpit(t),
             Look::Race => self.race(t),
-            Look::Classic | Look::Chrono => self.chrono(t),
+            Look::Classic | Look::Chronograph => self.chrono(t),
         }
     }
 
@@ -575,11 +575,11 @@ impl NoticePod {
         match self.look {
             Look::HeadsUp => self.hud(t),
             Look::Vintage => self.vintage(t),
-            Look::Digital => self.digital(t),
-            Look::Futuristic => self.futuristic(t),
-            Look::Cockpit => self.cockpit(t),
+            Look::Segment => self.digital(t),
+            Look::Halo => self.futuristic(t),
+            Look::GlassCockpit => self.cockpit(t),
             Look::Race => self.race(t),
-            Look::Classic | Look::Chrono => self.chrono(t),
+            Look::Classic | Look::Chronograph => self.chrono(t),
         }
     }
 
@@ -745,11 +745,11 @@ impl GForcePod {
         match self.look {
             Look::HeadsUp => self.hud(t),
             Look::Vintage => self.vintage(t),
-            Look::Digital => self.digital(t),
-            Look::Futuristic => self.futuristic(t),
-            Look::Cockpit => self.cockpit(t),
+            Look::Segment => self.digital(t),
+            Look::Halo => self.futuristic(t),
+            Look::GlassCockpit => self.cockpit(t),
             Look::Race => self.race(t),
-            Look::Classic | Look::Chrono => self.chrono(t),
+            Look::Classic | Look::Chronograph => self.chrono(t),
         }
     }
 
@@ -1009,11 +1009,11 @@ impl MediaPod {
         match self.look {
             Look::HeadsUp => self.hud(ink, cover),
             Look::Vintage => self.vintage(ink),
-            Look::Digital => self.digital(ink, t.is_dark()),
-            Look::Futuristic => self.futuristic(ink, cover),
-            Look::Cockpit => self.cockpit(ink),
+            Look::Segment => self.digital(ink, t.is_dark()),
+            Look::Halo => self.futuristic(ink, cover),
+            Look::GlassCockpit => self.cockpit(ink),
             Look::Race => self.race(ink),
-            Look::Classic | Look::Chrono => self.chrono(ink, cover),
+            Look::Classic | Look::Chronograph => self.chrono(ink, cover),
         }
     }
 
@@ -1262,11 +1262,11 @@ impl CompassPod {
         match self.look {
             Look::HeadsUp => self.hud(t),
             Look::Vintage => self.vintage(t),
-            Look::Digital => self.digital(t),
-            Look::Futuristic => self.futuristic(t),
-            Look::Cockpit => self.cockpit(t),
+            Look::Segment => self.digital(t),
+            Look::Halo => self.futuristic(t),
+            Look::GlassCockpit => self.cockpit(t),
             Look::Race => self.race(t),
-            Look::Classic | Look::Chrono => self.chrono(t),
+            Look::Classic | Look::Chronograph => self.chrono(t),
         }
     }
 

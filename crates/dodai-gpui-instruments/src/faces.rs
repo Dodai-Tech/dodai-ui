@@ -116,13 +116,13 @@ impl RenderOnce for GaugeFace {
         self.value = pm::finite(follow(w, cx, &self.follow, 0, self.value), self.scale.min);
         match self.look {
             Look::Classic => self.dial(),
-            Look::Chrono => self.chrono(cx),
+            Look::Chronograph => self.chrono(cx),
             Look::HeadsUp if self.alternate => self.tape_face(cx),
             Look::HeadsUp => self.hud(cx),
             Look::Vintage => self.vintage(cx),
-            Look::Digital => self.digital(cx),
-            Look::Futuristic => self.futuristic(cx),
-            Look::Cockpit => self.cockpit(cx),
+            Look::Segment => self.digital(cx),
+            Look::Halo => self.futuristic(cx),
+            Look::GlassCockpit => self.cockpit(cx),
             Look::Race => self.race(cx),
         }
     }
@@ -167,8 +167,8 @@ impl GaugeFace {
     }
 
     /// The ink of a screen look: the theme's, lit in the limit's colour past a limit when the
-    /// whole display is to take it (see [`Ink::lit`]). The screen looks (heads-up, digital,
-    /// futuristic, glass cockpit) draw with it; the printed ones keep their colours.
+    /// whole display is to take it (see [`Ink::lit`]). The screen looks (heads-up, segment LCD,
+    /// halo, glass cockpit) draw with it; the printed ones keep their colours.
     fn lit_ink(&self, t: &dodai_core::Theme) -> Ink {
         let ink = Ink::of(t);
         self.display_limit(t).map_or(ink, |c| ink.lit(c))

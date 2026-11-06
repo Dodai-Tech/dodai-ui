@@ -28,8 +28,8 @@ pub(super) fn lamp(icon: Symbol, tone: Tone, sz: f32, look: Look, t: &Theme) -> 
     let c = d / 2.0;
     let dark = t.is_dark();
     let icon_col = match look {
-        Look::Digital if lit => ink.face,
-        Look::Digital => ghost(ink.primary, dark),
+        Look::Segment if lit => ink.face,
+        Look::Segment => ghost(ink.primary, dark),
         // A lit lens glows in the tone; the symbol on it reads in the text colour.
         Look::Vintage if lit => ink.text,
         // A lit race lens is filled with the tone; the symbol sits dark on it.
@@ -37,7 +37,7 @@ pub(super) fn lamp(icon: Symbol, tone: Tone, sz: f32, look: Look, t: &Theme) -> 
         _ => col,
     };
     let paint = move |w: &mut Window, o: gpui::Point<Pixels>| match look {
-        Look::Chrono => {
+        Look::Chronograph => {
             fill(w, o, &circle(c, c, c * 0.96), scale_alpha(ink.text, 0.06));
             stroke(w, o, &circle(c, c, c * 0.96), d * 0.04, ink.line, true);
             stroke(
@@ -82,7 +82,7 @@ pub(super) fn lamp(icon: Symbol, tone: Tone, sz: f32, look: Look, t: &Theme) -> 
                 true,
             );
         }
-        Look::Digital => {
+        Look::Segment => {
             let block = chamfered(d * 0.04, d * 0.04, d * 0.92, d * 0.92, d * 0.08);
             fill(
                 w,
@@ -91,7 +91,7 @@ pub(super) fn lamp(icon: Symbol, tone: Tone, sz: f32, look: Look, t: &Theme) -> 
                 if lit { col } else { ghost(ink.primary, dark) },
             );
         }
-        Look::Futuristic => {
+        Look::Halo => {
             if lit {
                 glow_dot(
                     w,
@@ -111,7 +111,7 @@ pub(super) fn lamp(icon: Symbol, tone: Tone, sz: f32, look: Look, t: &Theme) -> 
                 true,
             );
         }
-        Look::Cockpit => {
+        Look::GlassCockpit => {
             let frame = rect(d * 0.04, d * 0.14, d * 0.92, d * 0.72);
             fill(w, o, &frame, ink.ground);
             if lit {
@@ -168,9 +168,9 @@ pub(super) fn sign(limit: u32, d: f32, look: Look, t: &Theme) -> AnyElement {
         Look::Vintage => mix(ink.text, ink.warn, 0.12),
         _ => ink.text,
     };
-    let printed = matches!(look, Look::Chrono | Look::Vintage);
+    let printed = matches!(look, Look::Chronograph | Look::Vintage);
     let paint = move |w: &mut Window, o: gpui::Point<Pixels>| match look {
-        Look::Chrono => {
+        Look::Chronograph => {
             fill(w, o, &circle(c, c, c), scale_alpha(ink.text, 0.1));
             for i in 0..48 {
                 let a = i as f32 / 48.0;
@@ -201,12 +201,12 @@ pub(super) fn sign(limit: u32, d: f32, look: Look, t: &Theme) -> AnyElement {
             let inner = chamfered(d * 0.16, d * 0.16, d * 0.68, d * 0.68, d * 0.2);
             stroke(w, o, &inner, d * 0.015, scale_alpha(red, 0.6), true);
         }
-        Look::Digital => {
+        Look::Segment => {
             let frame = chamfered(0.0, 0.0, d, d, d * 0.12);
             fill(w, o, &frame, ink.face);
             stroke(w, o, &frame, d * 0.06, red, true);
         }
-        Look::Futuristic => {
+        Look::Halo => {
             glow_arc(w, o, (c, c), c * 0.82, (0.0, 1.0), d * 0.05, (red, red));
             stroke(
                 w,
@@ -217,7 +217,7 @@ pub(super) fn sign(limit: u32, d: f32, look: Look, t: &Theme) -> AnyElement {
                 true,
             );
         }
-        Look::Cockpit => {
+        Look::GlassCockpit => {
             let frame = rect(d * 0.04, d * 0.04, d * 0.92, d * 0.92);
             fill(w, o, &frame, ink.ground);
             fill(w, o, &rect(d * 0.04, d * 0.04, d * 0.92, d * 0.16), red);
@@ -231,7 +231,7 @@ pub(super) fn sign(limit: u32, d: f32, look: Look, t: &Theme) -> AnyElement {
         Look::Classic => {}
     };
     let figure: AnyElement = match look {
-        Look::Digital => seg_text(&text, c, c - fs * 0.6, fs * 1.2, red).into_any_element(),
+        Look::Segment => seg_text(&text, c, c - fs * 0.6, fs * 1.2, red).into_any_element(),
         Look::Race => div()
             .relative()
             .child(crate::race::figure(text, fs * 0.95, ink.text))
@@ -244,7 +244,7 @@ pub(super) fn sign(limit: u32, d: f32, look: Look, t: &Theme) -> AnyElement {
             } else {
                 ink.text
             })
-            .font_weight(if look == Look::Futuristic {
+            .font_weight(if look == Look::Halo {
                 FontWeight::LIGHT
             } else {
                 FontWeight::BOLD

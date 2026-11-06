@@ -27,11 +27,11 @@ fn dash() -> DashTriptych {
         SidePod::new(Scale::new(0.0, 270.0), 96.0).unit("km/h"),
         MenuRing::new(["Trip", "Media", "Tyres"]),
     )
-    .look(Look::Chrono)
+    .look(Look::Chronograph)
 }
 ```
 
-A reading past a limit colours its value (pointer, sweep, bar or figure) in the limit's colour. Optionally, the looks drawn on a screen (heads-up, digital, futuristic, glass cockpit) colour the whole display with it: `GaugeFace`, `SidePod`, `RingTach`, `BoostPod` and `DualGauge` take `.at_limit(AtLimit::Display)`; the default is `AtLimit::Value`.
+A reading past a limit colours its value (pointer, sweep, bar or figure) in the limit's colour. Optionally, the looks drawn on a screen (heads-up, segment LCD, halo, glass cockpit) colour the whole display with it: `GaugeFace`, `SidePod`, `RingTach`, `BoostPod` and `DualGauge` take `.at_limit(AtLimit::Display)`; the default is `AtLimit::Value`.
 
 Without an installed theme the instruments use the first theme of the enabled designs, or a plain neutral theme when no design is enabled. An app can also install its own `dodai_core::Theme` with `dodai_gpui::install`.
 
@@ -56,13 +56,13 @@ dodai-gpui-instruments = { version = "0.1", default-features = false, features =
 
 ## Looks
 
-The vehicle instruments share one `Look`: Classic, Chrono, Vintage, Heads-up, Digital, Futuristic, Glass cockpit and Race. Set it on a single instrument with `.look(..)`, or on a whole `DashTriptych` / `DashQuad` to restyle the ring, pods, lamps and limit sign together.
+The vehicle instruments share one `Look`: Classic, Chronograph, Vintage, Heads-up, Segment LCD, Halo, Glass cockpit and Race. Set it on a single instrument with `.look(..)`, or on a whole `DashTriptych` / `DashQuad` to restyle the ring, pods, lamps and limit sign together.
 
 ```rust,no_run
 use dodai_gpui_instruments::{EnergyPod, Look, ShiftLights};
 
 // An electric car's battery, recovering 18 kW, in the glass-cockpit look.
-let energy = EnergyPod::new(64.0).power(-18.0).range("312 km").look(Look::Cockpit);
+let energy = EnergyPod::new(64.0).power(-18.0).range("312 km").look(Look::GlassCockpit);
 // Shift lights between 5 000 and 7 000 rpm with the gear, as a race rev bar.
 let lights = ShiftLights::new(6400.0).range(5000.0, 7000.0).gear("4").look(Look::Race);
 ```

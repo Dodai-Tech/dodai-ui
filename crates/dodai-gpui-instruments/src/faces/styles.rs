@@ -1,7 +1,7 @@
-//! The vintage, digital and futuristic gauge faces. Vintage: a round bezel on a screwed plate, an
+//! The vintage, segment-LCD and halo gauge faces. Vintage: a round bezel on a screwed plate, an
 //! engraved scale on a warm face, a spade hand and a drum counter; its alternative is a panel
-//! meter with the pivot below the face. Digital: an LCD module with a segment arc and a
-//! seven-segment figure. Futuristic: a halo with a gradient arc of light, a fading wake and a
+//! meter with the pivot below the face. Segment LCD: an LCD module with a segment arc and a
+//! seven-segment figure. Halo: a halo with a gradient arc of light, a fading wake and a
 //! glowing blade. Every colour comes from the theme.
 
 use super::rich::{major_labels, zone_colours, FINE};

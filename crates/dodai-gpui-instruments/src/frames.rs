@@ -1,11 +1,11 @@
-//! The frames and parts of the [`Look::Vintage`], [`Look::Digital`] and [`Look::Futuristic`]
+//! The frames and parts of the [`Look::Vintage`], [`Look::Segment`] and [`Look::Halo`]
 //! instruments: a screwed plate with a round bezel and spade hands, an LCD module with segment
 //! bars, and a halo of light with gradient arcs and glowing tips. Pure geometry returns points;
 //! the painters take every colour from an [`Ink`].
 //!
 //! [`Look::Vintage`]: crate::look::Look::Vintage
-//! [`Look::Digital`]: crate::look::Look::Digital
-//! [`Look::Futuristic`]: crate::look::Look::Futuristic
+//! [`Look::Segment`]: crate::look::Look::Segment
+//! [`Look::Halo`]: crate::look::Look::Halo
 
 use crate::draw::{polar, turn_arc};
 use crate::shapes::{band, chamfered, circle, dir, Ink};
@@ -229,7 +229,7 @@ pub(crate) fn engraved_scale(
     );
 }
 
-// ───────────────────────────────── Digital ─────────────────────────────────
+// ───────────────────────────────── Segment LCD ─────────────────────────────────
 
 /// How faint an unlit segment is: brighter on light faces, where it would vanish otherwise.
 pub(crate) fn ghost(on: Hsla, dark: bool) -> Hsla {
@@ -357,7 +357,7 @@ pub(crate) fn seg_bar(
     }
 }
 
-// ───────────────────────────────── Futuristic ─────────────────────────────────
+// ───────────────────────────────── Halo ─────────────────────────────────
 
 /// A pill (a rectangle with round ends) at `(x, y)`, `wd` by `h`, as a polygon. Pure.
 pub(crate) fn pill(x: f32, y: f32, wd: f32, h: f32) -> Vec<(f32, f32)> {
@@ -367,7 +367,7 @@ pub(crate) fn pill(x: f32, y: f32, wd: f32, h: f32) -> Vec<(f32, f32)> {
     p
 }
 
-/// Paint the futuristic halo for a square of `s`: a soft glow, a fine ring of ticks, two orbit
+/// Paint the halo for a square of `s`: a soft glow, a fine ring of ticks, two orbit
 /// arcs of light and a dark glass disc. Returns the radius inside the tick ring.
 pub(crate) fn halo(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> f32 {
     let c = s / 2.0;
