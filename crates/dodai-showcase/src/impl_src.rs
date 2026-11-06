@@ -404,6 +404,10 @@ const FILES: &[(&str, &str)] = &[
         include_str!("../../dodai-gpui-instruments/src/gauges_extra.rs"),
     ),
     (
+        "dodai-gpui-instruments/src/gear.rs",
+        include_str!("../../dodai-gpui-instruments/src/gear.rs"),
+    ),
+    (
         "dodai-gpui-instruments/src/gradient.rs",
         include_str!("../../dodai-gpui-instruments/src/gradient.rs"),
     ),

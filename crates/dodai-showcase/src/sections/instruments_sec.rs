@@ -4,10 +4,9 @@ use super::super::*;
 use dodai_gpui::{DialLook, NeedleResponse};
 use dodai_gpui_instruments::{
     Affiliation, Annunciator, AttitudeIndicator, Compass, Contact, Countermeasures, DialGauge,
-    GearIndicator, GradientBar, GradientDial, GradientRing, HeadingTape, LevelBar, Limits,
-    MissionTimer, Odometer, PowerMeter, Ramp, Scale, Severity, SonarWaterfall, Station,
-    StationState, StoresPanel, TacticalPlot, Threat, ThreatRosette, TrackList, VerticalTape,
-    VitalsTile,
+    GradientBar, GradientDial, GradientRing, HeadingTape, LevelBar, Limits, MissionTimer, Odometer,
+    PowerMeter, Ramp, Scale, Severity, SonarWaterfall, Station, StationState, StoresPanel,
+    TacticalPlot, Threat, ThreatRosette, TrackList, VerticalTape, VitalsTile,
 };
 
 impl Showcase {
@@ -130,7 +129,6 @@ impl Showcase {
             )
             .child(
                 row()
-                    .child(GearIndicator::automatic(3))
                     .child(Odometer::new(48213.0, 6).unit("km"))
                     .child(Odometer::new(126.4, 4).decimals(1).unit("km trip")),
             )
@@ -314,7 +312,7 @@ impl Showcase {
                 )))
                 .child(gradients)
                 .child(Muted::new(
-                    "Level bars, a power meter, a compass, a gear indicator and odometers in the theme's own style.",
+                    "Level bars, a power meter, a compass and odometers in the theme's own style.",
                 ))
                 .child(status)
                 .into_any_element(),

@@ -5,8 +5,9 @@ use dodai_gpui::icons::IconId;
 use dodai_gpui::icons::Symbol;
 use dodai_gpui_instruments::{
     AtLimit, BoostPod, CompassPod, DashQuad, DashTriptych, DualGauge, DualScale, EnergyPod,
-    GForcePod, GaugeFace, Layout, LimitSign, Look, MediaPod, MenuRing, NoticePod, PodIcon, PodRow,
-    PodStyle, RingTach, RowsPod, Scale, Severity, ShiftLights, SidePod, Telltales, Tone, TyrePod,
+    GForcePod, GaugeFace, Gear, GearLayout, GearSelector, Layout, LimitSign, Look, MediaPod,
+    MenuRing, NoticePod, PodIcon, PodRow, PodStyle, RingTach, RowsPod, Scale, Severity, ShiftHint,
+    ShiftLights, SidePod, Telltales, Tone, TyrePod,
 };
 
 /// A demo value drifting through `lo..=hi` on the animation clock.
@@ -492,6 +493,39 @@ impl Showcase {
                     }),
                 ),
             ],
+        );
+        add(
+            self,
+            "Vehicle · Gear",
+            vec![gallery(
+                "The gear selector in each look: P R N D as a row with drive lit, shifted by hand with a prompt to change up, then as a stack in reverse and the engaged gear alone with a prompt to change down. Shifted by hand the lit position reads M and the gear.",
+                shown(only)
+                    .into_iter()
+                    .map(|look| {
+                        let sel = |g: Gear| GearSelector::new(g).look(look).size(16.0);
+                        let col = div()
+                            .flex()
+                            .flex_col()
+                            .items_center()
+                            .gap(px(t.spacing.md))
+                            .child(sel(Gear::Drive))
+                            .child(sel(Gear::Manual(4)).hint(ShiftHint::Up))
+                            .child(
+                                div()
+                                    .flex()
+                                    .items_center()
+                                    .gap(px(t.spacing.lg))
+                                    .child(sel(Gear::Reverse).layout(GearLayout::Stack).size(12.0))
+                                    .child(
+                                        sel(Gear::Manual(3))
+                                            .layout(GearLayout::Single)
+                                            .hint(ShiftHint::Down),
+                                    ),
+                            );
+                        (look.name(), centred(col))
+                    })
+                    .collect(),
+            )],
         );
         add(
             self,

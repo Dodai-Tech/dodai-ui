@@ -45,6 +45,8 @@ pub mod flight;
 #[cfg(feature = "automotive")]
 mod frames;
 #[cfg(feature = "automotive")]
+pub mod gear;
+#[cfg(feature = "automotive")]
 #[cfg(feature = "automotive")]
 pub mod look;
 #[cfg(feature = "automotive")]
@@ -90,6 +92,8 @@ pub use faces::GaugeFace;
 #[cfg(feature = "aviation")]
 pub use flight::{AttitudeIndicator, Countermeasures, HeadingTape, SonarWaterfall, VerticalTape};
 #[cfg(feature = "automotive")]
+pub use gear::{chevron, Gear, GearLayout, GearSelector, ShiftHint};
+#[cfg(feature = "automotive")]
 #[cfg(feature = "automotive")]
 pub use look::{AtLimit, Layout, Look};
 #[cfg(feature = "automotive")]
@@ -105,7 +109,7 @@ pub use tactical::{
     TrackList,
 };
 #[cfg(feature = "automotive")]
-pub use vehicle::{Compass, GearIndicator, LevelBar, Odometer, PowerMeter, TirePressure};
+pub use vehicle::{Compass, LevelBar, Odometer, PowerMeter, TirePressure};
 
 /// Compiles the README's examples as doctests so they cannot rot.
 #[cfg(all(doctest, feature = "automotive"))]
