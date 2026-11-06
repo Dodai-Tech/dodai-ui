@@ -181,7 +181,8 @@ impl GaugeFace {
         let plate_h = s * 0.24;
         let pivot = (c, s * 0.96);
         let r = s * 0.64;
-        let (start, span) = (0.9_f32, 0.2_f32);
+        // Narrow enough that the end numerals stay inside the window.
+        let (start, span) = (0.915_f32, 0.17_f32);
         let frac = self.frac();
         let col = self.hand_colour(&t, &ink);
         let zones = zone_colours(&self, &t);
