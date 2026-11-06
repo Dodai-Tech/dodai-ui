@@ -11,12 +11,17 @@ use crate::dial::severity_color;
 use crate::draw::{polar, turn_arc};
 use crate::frames::{
     aged, engraved_scale, ghost, glow_arc, halo, lcd, light_blade, lit_segments, name_plate, plate,
-    screw, seg_arc, seg_text, spade, wake,
+    plate_inset, screw, seg_arc, seg_text, spade, wake,
 };
 use crate::gauges::SWEEP;
 use crate::pod_math as pm;
 use crate::shapes::{band, chrono_glass, circle, Ink};
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
+
+/// Width of the vintage dial's caption plate, as a share of the face.
+const CAPTION_W: f32 = 0.32;
+/// Height of the vintage dial's caption plate, as a share of the face.
+const CAPTION_H: f32 = 0.055;
 use dodai_gpui::theme_of;
 use dodai_instruments_core::instrument::Severity;
 use gpui::{
@@ -87,7 +92,12 @@ impl GaugeFace {
             name_plate(
                 w,
                 o,
-                (c - s * 0.12, c - s * 0.135, s * 0.24, s * 0.055),
+                (
+                    c - CAPTION_W / 2.0 * s,
+                    c - s * 0.135,
+                    CAPTION_W * s,
+                    CAPTION_H * s,
+                ),
                 ink,
             );
             spade(c, c, start + span * frac, r_scale - s * 0.01).paint(w, o, s * 0.008, hand, ink);
@@ -124,10 +134,14 @@ impl GaugeFace {
             .child(layer(paint))
             .children(self.numerals((c, c), r_scale - s * 0.11, SWEEP, num, ink.text))
             .child(
-                text_box(c, c - s * 0.13, s * 0.22)
-                    .text_size(px(s * 0.032))
-                    .text_color(ink.text)
-                    .child(self.caption().to_uppercase()),
+                text_box(
+                    c,
+                    c - s * 0.13,
+                    (CAPTION_W * s - 2.0 * plate_inset(CAPTION_H * s)).max(0.0),
+                )
+                .text_size(px(s * 0.032))
+                .text_color(ink.text)
+                .child(self.caption().to_uppercase()),
             )
             .child(
                 div()
@@ -173,6 +187,7 @@ impl GaugeFace {
         let zones = zone_colours(&self, &t);
         let marks = self.scale.majors.max(1) * FINE;
         let window = (s * 0.07, s * 0.07, s * 0.86, s - plate_h - s * 0.1);
+        let inset = plate_inset(plate_h * 0.62);
         let paint = move |w: &mut gpui::Window, o: gpui::Point<Pixels>| {
             let (px_, py_) = pivot;
             let panel = crate::shapes::chamfered(0.0, 0.0, s, s, s * 0.03);
@@ -285,9 +300,9 @@ impl GaugeFace {
             .child(
                 div()
                     .absolute()
-                    .left(px(s * 0.15))
+                    .left(px(s * 0.1 + inset))
                     .top(px(s - plate_h))
-                    .w(px(s * 0.7))
+                    .w(px((s * 0.8 - 2.0 * inset).max(0.0)))
                     .h(px(plate_h * 0.62))
                     .flex()
                     .items_center()
