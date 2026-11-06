@@ -1,4 +1,4 @@
-//! The extra layouts of a look (see [`Look::layouts`](crate::look::Look::layouts)): the vintage
+//! The vintage and halo looks' extra layouts (see [`Look::layouts`](crate::look::Look::layouts)): the vintage
 //! ribbon speedometer, and the halo's arc and bar. Each takes the same scale and value as the
 //! dial and is drawn as wide as the face's size, flatter than a dial. Every colour comes from the
 //! theme.
@@ -29,7 +29,9 @@ pub(crate) fn along(x0: f32, x1: f32, frac: f32) -> f32 {
     x0 + (x1 - x0) * frac.clamp(0.0, 1.0)
 }
 
-fn layer(paint: impl Fn(&mut gpui::Window, gpui::Point<Pixels>) + 'static) -> impl IntoElement {
+pub(super) fn layer(
+    paint: impl Fn(&mut gpui::Window, gpui::Point<Pixels>) + 'static,
+) -> impl IntoElement {
     canvas(
         |_, _, _| (),
         move |b: Bounds<Pixels>, _, w, _| paint(w, b.origin),

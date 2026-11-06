@@ -7,7 +7,7 @@ use crate::dash::{text_box, Frame, LimitSign, Pod, PodStyle, RingTach, Telltales
 use crate::dial::severity_color;
 use crate::draw::{polar, turn_arc};
 use crate::gauges::disc;
-use crate::look::{AtLimit, Layout, Look};
+use crate::look::{AtLimit, Layout, Look, Shape};
 use crate::pod_math as pm;
 use dodai_gpui::follow::{follow, follow_angle, Follow};
 use dodai_gpui::follow_api;
@@ -1250,12 +1250,13 @@ impl RenderOnce for DualGauge {
             // style. Tall tapes have the room for two, so they stand side by side.
             let size = self.size;
             let layout = self.look.fit(self.layout);
-            let tapes = layout == Layout::Tape;
-            // The flat layouts leave room for the strip at full width.
-            let small = match layout {
-                Layout::Tape => size * 0.5,
-                Layout::Ribbon | Layout::Arc | Layout::Bar => size,
-                Layout::Dial | Layout::Meter => size * (1.0 - dual::STRIP),
+            // Tapes and columns stand side by side; the flat layouts leave room for the strip
+            // at full width.
+            let (tapes, small) = match (layout, self.look.shape(layout)) {
+                (_, Shape::Tall) => (true, size),
+                (Layout::Tape, _) => (true, size * 0.5),
+                (_, Shape::Wide) => (false, size),
+                (_, Shape::Square) => (false, size * (1.0 - dual::STRIP)),
             };
             let (look, at_limit) = (self.look, self.at_limit);
             let face = |d: DualScale, icon: Option<Symbol>| {
@@ -1283,7 +1284,7 @@ impl RenderOnce for DualGauge {
                     .h(px(size))
                     .flex()
                     .items_center()
-                    .justify_center()
+                    .justify_around()
                     .child(upper)
                     .child(lower)
                     .into_any_element();

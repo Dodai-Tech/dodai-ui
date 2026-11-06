@@ -29,20 +29,32 @@ const DETAIL_FROM: f32 = 150.0;
 /// left.
 /// Returns the glass rectangle.
 pub(crate) fn page(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> (f32, f32, f32, f32) {
+    panel(w, o, (s, s), ink)
+}
+
+/// Paint a display page of `(wd, h)` as [`page`] does a square one; only a square page has
+/// soft keys down its sides. Returns the glass rectangle.
+pub(crate) fn panel(
+    w: &mut Window,
+    o: Point<Pixels>,
+    (wd, ht): (f32, f32),
+    ink: Ink,
+) -> (f32, f32, f32, f32) {
+    let s = wd.min(ht);
     let lw = (s * 0.004).max(1.0);
     let rr = s * 0.035;
-    let bezel = rounded(0.0, 0.0, s, s, rr);
+    let bezel = rounded(0.0, 0.0, wd, ht, rr);
     // A neutral charcoal: the glass colour lifted a little towards the text, so the bezel
     // takes no tint from the theme's surfaces.
     fill(w, o, &bezel, ink.ground);
     fill(w, o, &bezel, scale_alpha(ink.text, 0.09));
     // The bezel catches the light from above: lighter bands towards the top.
     for i in 1..=4 {
-        let h = s * (0.5 - 0.1 * i as f32);
+        let h = ht * (0.5 - 0.1 * i as f32);
         fill(
             w,
             o,
-            &rounded(0.0, 0.0, s, h, rr),
+            &rounded(0.0, 0.0, wd, h, rr),
             scale_alpha(ink.text, 0.012),
         );
     }
@@ -51,7 +63,7 @@ pub(crate) fn page(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> (f32, 
     stroke(
         w,
         o,
-        &[(rr, lw * 1.2), (s - rr, lw * 1.2)],
+        &[(rr, lw * 1.2), (wd - rr, lw * 1.2)],
         lw,
         scale_alpha(ink.text, 0.28),
         false,
@@ -64,22 +76,22 @@ pub(crate) fn page(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> (f32, 
         fill(
             w,
             o,
-            &crate::shapes::circle(s * 0.5, k * 0.5, k * 0.13),
+            &crate::shapes::circle(wd * 0.5, k * 0.5, k * 0.13),
             ink.ground,
         );
         let (rw, rh) = (s * 0.14, k * 0.42);
-        let ry = s - k * 0.5 - rh / 2.0;
-        key(w, o, (s * 0.5 - rw / 2.0, ry, rw, rh), ink);
+        let ry = ht - k * 0.5 - rh / 2.0;
+        key(w, o, (wd * 0.5 - rw / 2.0, ry, rw, rh), ink);
         stroke(
             w,
             o,
-            &[(s * 0.5, ry + rh * 0.2), (s * 0.5, ry + rh * 0.8)],
+            &[(wd * 0.5, ry + rh * 0.2), (wd * 0.5, ry + rh * 0.8)],
             lw,
             ink.ground,
             false,
         );
     }
-    let glass = (k, k, s - 2.0 * k, s - 2.0 * k);
+    let glass = (k, k, wd - 2.0 * k, ht - 2.0 * k);
     let g = rect(glass.0, glass.1, glass.2, glass.3);
     fill(w, o, &g, ink.ground);
     // The picture glows a little towards the middle, so the edges of the glass fall away. The
@@ -132,7 +144,7 @@ pub(crate) fn page(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> (f32, 
         scale_alpha(ink.text, 0.15),
         false,
     );
-    if detailed {
+    if detailed && wd == ht {
         for y in KEYS {
             for x in [k * 0.18, s - k * 0.78] {
                 key(w, o, (x, y * s - s * 0.024, k * 0.6, s * 0.048), ink);
