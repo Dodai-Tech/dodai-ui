@@ -29,8 +29,11 @@ impl Showcase {
             .child(Button::new("b-outline", "Outline").variant(ButtonVariant::Outline))
             .child(Button::new("b-outline2", "Outline 2").variant(ButtonVariant::OutlineSecondary))
             .child(Button::new("b-scrim", "Scrim").variant(ButtonVariant::Scrim))
-            .children(t.look().cut_corners.then(|| {
-                // Phantom Liberty: cropped left or right (edge tick) or slotted top/bottom.
+            .children((!t.button_crops().is_empty()).then(|| {
+                // Each design's own crop: cut corners with a tick, a leaf, connected ends, a
+                // ticket stub. Ends a design has no crop for are left out.
+                let has = |c: dodai_gpui::Crop| t.button_crop(c).is_some();
+                let cut = t.look().cut_corners;
                 row()
                     .child(
                         Button::new("b-scrim-l", "Buy now")
@@ -42,28 +45,28 @@ impl Showcase {
                             .variant(ButtonVariant::Scrim)
                             .crop(dodai_gpui::Crop::Right),
                     )
-                    .child(
-                        Button::new("b-crop-top", "Top slot")
+                    .children(has(dodai_gpui::Crop::Top).then(|| {
+                        Button::new("b-crop-top", "Top")
                             .variant(ButtonVariant::Outline)
-                            .crop(dodai_gpui::Crop::Top),
-                    )
-                    .child(
-                        Button::new("b-crop-bottom", "Bottom slot")
+                            .crop(dodai_gpui::Crop::Top)
+                    }))
+                    .children(has(dodai_gpui::Crop::Bottom).then(|| {
+                        Button::new("b-crop-bottom", "Bottom")
                             .variant(ButtonVariant::Primary)
-                            .crop(dodai_gpui::Crop::Bottom),
-                    )
-                    .child(
+                            .crop(dodai_gpui::Crop::Bottom)
+                    }))
+                    .children(cut.then(|| {
                         Button::new("b-crop-both", "Both cuts")
                             .variant(ButtonVariant::Outline)
                             .crop(dodai_gpui::Crop::Left)
-                            .corners(dodai_core::Corners::DIAGONAL),
-                    )
-                    .child(
+                            .corners(dodai_core::Corners::DIAGONAL)
+                    }))
+                    .children(cut.then(|| {
                         Button::new("b-crop-both-p", "Both cuts")
                             .variant(ButtonVariant::Primary)
                             .crop(dodai_gpui::Crop::Right)
-                            .corners(dodai_core::Corners::ANTI_DIAGONAL),
-                    )
+                            .corners(dodai_core::Corners::ANTI_DIAGONAL)
+                    }))
                     .children(
                         [
                             ("Primary", ButtonVariant::Primary),
@@ -188,8 +191,12 @@ impl Showcase {
                             .variant(ButtonVariant::Outline)
                             .open(true),
                     )
-                    .child(SplitButton::new("sb-crop-l", "Save").crop(dodai_gpui::Crop::Left))
-                    .child(SplitButton::new("sb-crop-r", "Save").crop(dodai_gpui::Crop::Right)),
+                    .children(t.look().cut_corners.then(|| {
+                        SplitButton::new("sb-crop-l", "Save").crop(dodai_gpui::Crop::Left)
+                    }))
+                    .children(t.look().cut_corners.then(|| {
+                        SplitButton::new("sb-crop-r", "Save").crop(dodai_gpui::Crop::Right)
+                    })),
             );
         out.push((
             "Actions",

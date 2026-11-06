@@ -73,6 +73,18 @@ impl DesignSpec for NeoBrutalism {
     fn name(&self) -> &'static str {
         "Neo-Brutalism"
     }
+    /// A ticket stub: concave bites out of both corners of one end.
+    fn button_crop(&self, t: &Theme, end: crate::Crop) -> Option<crate::ButtonCrop> {
+        let corners = match end {
+            crate::Crop::Left => Corners::LEFT,
+            crate::Crop::Right => Corners::RIGHT,
+            crate::Crop::Top | crate::Crop::Bottom => return None,
+        };
+        Some(crate::ButtonCrop::Scooped {
+            corners,
+            size: t.spacing.sm,
+        })
+    }
 
     /// Heavy strokes, ink outlines on every mark, and a solid fill under areas.
     fn chart_style(&self, t: &Theme) -> Option<crate::ChartStyle> {

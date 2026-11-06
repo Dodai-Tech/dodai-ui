@@ -367,6 +367,9 @@ impl IconButton {
             .text_color(fg);
         if let Some(c) = &crop {
             el = el.relative().children(c.tick(&t, style_stroke));
+            if let Some(r) = c.radii() {
+                el = crate::button::round_corners(el, r);
+            }
         }
         el = match self.icon {
             Some(i) => el.child(
@@ -551,6 +554,9 @@ impl Fab {
         };
         if let Some(c) = &crop {
             el = el.relative().children(c.tick(&t, style_stroke));
+            if let Some(r) = c.radii() {
+                el = crate::button::round_corners(el, r);
+            }
         }
         el = match self.icon {
             Some(i) => {

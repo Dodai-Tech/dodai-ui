@@ -43,19 +43,7 @@ pub fn button_style(
 
 type Refine = Box<dyn FnOnce(Stateful<gpui::Div>) -> Stateful<gpui::Div>>;
 
-/// Which end of a [`Button`] is cropped (the Phantom Liberty cut-corner buttons). The cut
-/// sits on one corner; a small tick mark on the opposite edge points at the neighbour.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Crop {
-    /// Top-left corner cut, tick on the right edge.
-    Left,
-    /// Bottom-right corner cut, tick on the left edge.
-    Right,
-    /// A shallow slot in the middle of the top edge; the corners stay as they are.
-    Top,
-    /// A shallow slot in the middle of the bottom edge; the corners stay as they are.
-    Bottom,
-}
+pub use dodai_core::Crop;
 
 #[derive(Default)]
 struct CropDefaults {
@@ -103,14 +91,15 @@ pub fn set_button_cut_gap(cx: &mut App, gap: Option<f32>) {
     cx.refresh_windows();
 }
 
-/// A resolved crop: which end, and the gap between the two bars of its edge tick.
+/// A resolved crop: the design's own look for the chosen end, and the tick gap.
 #[derive(Clone, Copy)]
 pub(crate) struct CropSpec {
-    end: Crop,
+    look: dodai_core::ButtonCrop,
     gap: f32,
 }
 
-/// The crop a control gets: its own, else the app's choice, else the design's.
+/// The crop a control gets: its own end, else the app's choice, else the design's; drawn the
+/// way the current design crops that end (`None` when it has no crop there).
 pub(crate) fn resolve_crop(
     t: &Theme,
     cx: &App,
@@ -122,50 +111,93 @@ pub(crate) fn resolve_crop(
         d.chosen
             .unwrap_or(if t.look().cut_corners { d.design } else { None })
     })?;
+    let look = t.button_crop(end)?;
     let gap = gap.or_else(|| button_cut_gap(cx)).unwrap_or(t.spacing.xs);
-    Some(CropSpec { end, gap })
+    Some(CropSpec { look, gap })
+}
+
+fn shape_edge(e: dodai_core::CropEdge) -> ShapeEdge {
+    match e {
+        dodai_core::CropEdge::Left => ShapeEdge::Left,
+        dodai_core::CropEdge::Right => ShapeEdge::Right,
+        dodai_core::CropEdge::Top => ShapeEdge::Top,
+        dodai_core::CropEdge::Bottom => ShapeEdge::Bottom,
+    }
 }
 
 impl CropSpec {
-    /// Cut the corner (or slot the edge), open the border, and drop the shadow.
+    /// Reshape the corners (or slot the edge) and, for cuts and slots, open the border and
+    /// drop the shadow.
     pub(crate) fn apply(&self, t: &Theme, shape: &mut dodai_core::Shape, style: &mut ShapeStyle) {
-        let (edge, half, depth) = match self.end {
-            Crop::Left => (ShapeEdge::Right, self.gap / 2.0, t.spacing.md),
-            Crop::Right => (ShapeEdge::Left, self.gap / 2.0, t.spacing.md),
-            // Superficial: a wide, shallow slot.
-            Crop::Top => (ShapeEdge::Top, t.spacing.md, t.spacing.xs),
-            Crop::Bottom => (ShapeEdge::Bottom, t.spacing.md, t.spacing.xs),
-        };
-        *style = style.with_edge_gap(edge, half, depth);
-        // Flat: an offset shadow would sit over the cut and hide it.
-        style.shadow = None;
-        match self.end {
-            Crop::Left => shape.corners = dodai_core::Corners::TOP_LEFT,
-            Crop::Right => shape.corners = dodai_core::Corners::BOTTOM_RIGHT,
-            Crop::Top | Crop::Bottom => return,
+        use dodai_core::ButtonCrop as B;
+        match self.look {
+            B::CutTicked { corners, tick } => {
+                *style = style.with_edge_gap(shape_edge(tick), self.gap / 2.0, t.spacing.md);
+                // Flat: an offset shadow would sit over the cut and hide it.
+                style.shadow = None;
+                shape.corners = corners;
+                // Steep 45° cut: the largest the shape allows.
+                shape.chamfer = shape.chamfer.max(t.shape.control_height);
+            }
+            B::Slot { edge, depth } => {
+                // Superficial: a wide, shallow slot.
+                *style = style.with_edge_gap(shape_edge(edge), t.spacing.md, depth);
+                style.shadow = None;
+            }
+            B::Scooped { corners, size } => {
+                shape.corners = corners;
+                shape.chamfer = size;
+                shape.scoop = true;
+            }
+            // Drawn through the element's corner radii (see `radii`).
+            B::Squared { .. } => {}
         }
-        // Steep 45° cut: the largest the shape allows (a third of the height).
-        shape.chamfer = shape.chamfer.max(t.shape.control_height);
+    }
+
+    /// Per-corner radii `[top-left, top-right, bottom-right, bottom-left]` for crops that only
+    /// reshape rounded corners.
+    pub(crate) fn radii(&self) -> Option<[f32; 4]> {
+        let dodai_core::ButtonCrop::Squared {
+            corners,
+            radius,
+            rest,
+        } = self.look
+        else {
+            return None;
+        };
+        let pick = |on: bool| if on { radius } else { rest };
+        Some([
+            pick(corners.top_left),
+            pick(corners.top_right),
+            pick(corners.bottom_right),
+            pick(corners.bottom_left),
+        ])
+    }
+
+    /// The edge the tick sits on, for crops that draw one.
+    fn tick_edge(&self) -> Option<dodai_core::CropEdge> {
+        match self.look {
+            dodai_core::ButtonCrop::CutTicked { tick, .. } => Some(tick),
+            _ => None,
+        }
     }
 
     /// Whether the tick sits on the leading (left) edge.
     pub(crate) fn tick_leads(&self) -> bool {
-        self.end == Crop::Right
+        self.tick_edge() == Some(dodai_core::CropEdge::Left)
     }
 
     /// Extra width the tick needs inside the control.
     pub(crate) fn inset(&self, t: &Theme) -> f32 {
-        match self.end {
-            Crop::Left | Crop::Right => t.spacing.md,
-            Crop::Top | Crop::Bottom => 0.0,
+        match self.tick_edge() {
+            Some(dodai_core::CropEdge::Left | dodai_core::CropEdge::Right) => t.spacing.md,
+            _ => 0.0,
         }
     }
 
     /// The two-bar tick on the end opposite the cut.
     pub(crate) fn tick(&self, t: &Theme, colour: Hsla) -> Option<gpui::Div> {
-        if matches!(self.end, Crop::Top | Crop::Bottom) {
-            return None;
-        }
+        let edge = self.tick_edge()?;
         let bar = t.shape.border_width.max(1.0);
         let tick = div()
             .absolute()
@@ -177,11 +209,19 @@ impl CropSpec {
             .gap(px(self.gap))
             .child(div().h(px(bar)).bg(colour))
             .children((self.gap > 0.0).then(|| div().h(px(bar)).bg(colour)));
-        Some(match self.end {
-            Crop::Left | Crop::Top | Crop::Bottom => tick.right(gpui::Pixels::ZERO),
-            Crop::Right => tick.left(gpui::Pixels::ZERO),
+        Some(match edge {
+            dodai_core::CropEdge::Left => tick.left(gpui::Pixels::ZERO),
+            _ => tick.right(gpui::Pixels::ZERO),
         })
     }
+}
+
+/// Apply per-corner radii to a control's element.
+pub(crate) fn round_corners<E: gpui::Styled>(el: E, r: [f32; 4]) -> E {
+    el.rounded_tl(px(r[0]))
+        .rounded_tr(px(r[1]))
+        .rounded_br(px(r[2]))
+        .rounded_bl(px(r[3]))
 }
 
 /// Themed button. Construct with an id so hover/press state can be tracked.
@@ -287,9 +327,8 @@ impl Button {
         self.square = on;
         self
     }
-    /// Crop the left or right end (cut corner plus an edge tick). Combine with
-    /// [`Button::corners`] to cut other corners instead. Only designs with cut
-    /// corners draw it; others ignore it.
+    /// Crop one end, drawn the way the current design crops it (a cut corner with a tick, a
+    /// leaf, a connected end, a ticket stub…). Designs without a crop for that end ignore it.
     pub fn crop(mut self, c: Crop) -> Self {
         self.crop = Some(c);
         self
@@ -429,12 +468,11 @@ impl Button {
         if let Some(c) = &crop {
             el = el.relative().children(c.tick(&t, tick_colour));
         }
+        if let Some(r) = crop.and_then(|c| c.radii()) {
+            el = round_corners(el, r);
+        }
         if let (Some(r), true) = (self.radii, t.look().tonal) {
-            el = el
-                .rounded_tl(px(r[0]))
-                .rounded_tr(px(r[1]))
-                .rounded_br(px(r[2]))
-                .rounded_bl(px(r[3]));
+            el = round_corners(el, r);
         }
         if !self.disabled {
             el = el.cursor_pointer();
