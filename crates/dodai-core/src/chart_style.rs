@@ -100,6 +100,8 @@ pub struct ChartStyle {
     pub dial: DialLook,
     /// The look of scopes, spectra and radar.
     pub scope: ScopeLook,
+    /// The look of vehicle instruments given none of their own.
+    pub vehicle: crate::vehicle_look::Look,
     /// How instruments follow a changing value.
     pub response: NeedleResponse,
 }
@@ -117,6 +119,7 @@ impl ChartStyle {
             area_alpha: 0.18,
             dial: DialLook::Analog,
             scope: ScopeLook::Neon,
+            vehicle: crate::vehicle_look::Look::Sport,
             response: NeedleResponse::Snappy,
         }
     }

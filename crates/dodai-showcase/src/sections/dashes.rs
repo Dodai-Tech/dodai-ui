@@ -370,12 +370,15 @@ impl Showcase {
     /// The vehicle part of "Instruments": one section per instrument, then whole dashes built from them.
     pub(crate) fn sections_vehicle(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
-        // The look picked above the sections; `None` shows every look.
-        let only = self
-            .inst_look
-            .checked_sub(1)
-            .and_then(|i| Look::ALL.get(i).copied());
-        let dash_look = only.unwrap_or_default();
+        // The look picked above the sections (the design's own by default); `None` shows every
+        // look.
+        let own = t.chart_style().vehicle;
+        let only = match self.inst_look {
+            0 => None,
+            1 => Some(own),
+            i => Look::ALL.get(i - 2).copied(),
+        };
+        let dash_look = only.unwrap_or(own);
         // The cell of the galleries built here, one instrument per look.
         let pod = cell(shown(only).len());
         let mut out: Vec<Section> = Vec::new();

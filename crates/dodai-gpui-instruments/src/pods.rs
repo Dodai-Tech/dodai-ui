@@ -137,7 +137,10 @@ pub struct TyrePod {
     unit: SharedString,
     bars: [Option<f32>; 4],
     low: f32,
+    /// The look drawn: the given one, else the design's, settled when rendered.
     look: Look,
+    /// The look given with `.look(..)`; without one, the design's own.
+    given_look: Option<Look>,
     style: PodStyle,
     size: f32,
 }
@@ -153,6 +156,7 @@ impl TyrePod {
             low: 0.0,
             size: 300.0,
             look: Look::Sport,
+            given_look: None,
             style: PodStyle::Ring,
         }
     }
@@ -183,7 +187,7 @@ impl TyrePod {
     }
     /// The look: the round pod (default), a watch case or a heads-up display.
     pub fn look(mut self, look: Look) -> Self {
-        self.look = look;
+        self.given_look = Some(look);
         self
     }
     /// How the frame is drawn (open ring, closed disc, glow or bezel).
@@ -206,6 +210,7 @@ impl Default for TyrePod {
 
 impl RenderOnce for TyrePod {
     fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.look = crate::look::resolve(self.given_look, cx);
         let t = theme_of(cx);
         if self.look == Look::Line {
             // The line look keeps the ring pod, drawn as a single hairline circle.
@@ -308,7 +313,10 @@ impl PodRow {
 pub struct RowsPod {
     heading: SharedString,
     rows: Vec<PodRow>,
+    /// The look drawn: the given one, else the design's, settled when rendered.
     look: Look,
+    /// The look given with `.look(..)`; without one, the design's own.
+    given_look: Option<Look>,
     style: PodStyle,
     size: f32,
 }
@@ -321,6 +329,7 @@ impl RowsPod {
             rows: rows.into_iter().collect(),
             size: 300.0,
             look: Look::Sport,
+            given_look: None,
             style: PodStyle::Ring,
         }
     }
@@ -331,7 +340,7 @@ impl RowsPod {
     }
     /// The look: the round pod (default), a watch case or a heads-up display.
     pub fn look(mut self, look: Look) -> Self {
-        self.look = look;
+        self.given_look = Some(look);
         self
     }
     /// How the frame is drawn (open ring, closed disc, glow or bezel).
@@ -348,6 +357,7 @@ impl RowsPod {
 
 impl RenderOnce for RowsPod {
     fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.look = crate::look::resolve(self.given_look, cx);
         let t = theme_of(cx);
         if self.look == Look::Line {
             // The line look keeps the ring pod, drawn as a single hairline circle.
@@ -440,7 +450,10 @@ pub struct NoticePod {
     title: SharedString,
     text: SharedString,
     tone: Tone,
+    /// The look drawn: the given one, else the design's, settled when rendered.
     look: Look,
+    /// The look given with `.look(..)`; without one, the design's own.
+    given_look: Option<Look>,
     style: PodStyle,
     size: f32,
 }
@@ -455,6 +468,7 @@ impl NoticePod {
             tone: Tone::Off,
             size: 300.0,
             look: Look::Sport,
+            given_look: None,
             style: PodStyle::Ring,
         }
     }
@@ -470,7 +484,7 @@ impl NoticePod {
     }
     /// The look: the round pod (default), a watch case or a heads-up display.
     pub fn look(mut self, look: Look) -> Self {
-        self.look = look;
+        self.given_look = Some(look);
         self
     }
     /// How the frame is drawn (open ring, closed disc, glow or bezel).
@@ -487,6 +501,7 @@ impl NoticePod {
 
 impl RenderOnce for NoticePod {
     fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.look = crate::look::resolve(self.given_look, cx);
         let t = theme_of(cx);
         if self.look == Look::Line {
             // The line look keeps the ring pod, drawn as a single hairline circle.
@@ -558,7 +573,10 @@ pub struct GForcePod {
     lateral: f32,
     longitudinal: f32,
     limit: f32,
+    /// The look drawn: the given one, else the design's, settled when rendered.
     look: Look,
+    /// The look given with `.look(..)`; without one, the design's own.
+    given_look: Option<Look>,
     style: PodStyle,
     size: f32,
 }
@@ -575,6 +593,7 @@ impl GForcePod {
             limit: 1.5,
             size: 300.0,
             look: Look::Sport,
+            given_look: None,
             style: PodStyle::Ring,
         }
     }
@@ -585,7 +604,7 @@ impl GForcePod {
     }
     /// The look: the round pod (default), a watch case or a heads-up display.
     pub fn look(mut self, look: Look) -> Self {
-        self.look = look;
+        self.given_look = Some(look);
         self
     }
     /// How the frame is drawn (open ring, closed disc, glow or bezel).
@@ -602,6 +621,7 @@ impl GForcePod {
 
 impl RenderOnce for GForcePod {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.look = crate::look::resolve(self.given_look, cx);
         self.lateral = pm::finite(follow(w, cx, &self.follow, 0, self.lateral), 0.0);
         self.longitudinal = pm::finite(follow(w, cx, &self.follow, 1, self.longitudinal), 0.0);
         let t = theme_of(cx);
@@ -694,7 +714,10 @@ pub struct BoostPod {
     percent: f32,
     label: SharedString,
     temp: SharedString,
+    /// The look drawn: the given one, else the design's, settled when rendered.
     look: Look,
+    /// The look given with `.look(..)`; without one, the design's own.
+    given_look: Option<Look>,
     at_limit: AtLimit,
     style: PodStyle,
     size: f32,
@@ -711,6 +734,7 @@ impl BoostPod {
             label: "BOOST".into(),
             temp: SharedString::default(),
             look: Look::Sport,
+            given_look: None,
             at_limit: AtLimit::Value,
             size: 300.0,
             style: PodStyle::Ring,
@@ -724,7 +748,7 @@ impl BoostPod {
     /// The look (see [`Look`]); every look but [`Look::Sport`] draws the level as a
     /// [`GaugeFace`](crate::faces::GaugeFace) from 0 to 100 %, amber over 80.
     pub fn look(mut self, look: Look) -> Self {
-        self.look = look;
+        self.given_look = Some(look);
         self
     }
     /// What a reading past a limit colours in the screen looks (see [`AtLimit`]): only the
@@ -752,6 +776,7 @@ impl BoostPod {
 
 impl RenderOnce for BoostPod {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.look = crate::look::resolve(self.given_look, cx);
         self.percent = pm::percent(follow(w, cx, &self.follow, 0, self.percent));
         if self.look != Look::Sport {
             return crate::faces::GaugeFace::new(
@@ -888,7 +913,10 @@ pub struct MediaPod {
     artist: SharedString,
     time: SharedString,
     cover: Option<AnyElement>,
+    /// The look drawn: the given one, else the design's, settled when rendered.
     look: Look,
+    /// The look given with `.look(..)`; without one, the design's own.
+    given_look: Option<Look>,
     style: PodStyle,
     size: f32,
 }
@@ -903,6 +931,7 @@ impl MediaPod {
             cover: None,
             size: 300.0,
             look: Look::Sport,
+            given_look: None,
             style: PodStyle::Ring,
         }
     }
@@ -923,7 +952,7 @@ impl MediaPod {
     }
     /// The look: the round pod (default), a watch case or a heads-up display.
     pub fn look(mut self, look: Look) -> Self {
-        self.look = look;
+        self.given_look = Some(look);
         self
     }
     /// How the frame is drawn (open ring, closed disc, glow or bezel).
@@ -940,6 +969,7 @@ impl MediaPod {
 
 impl RenderOnce for MediaPod {
     fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.look = crate::look::resolve(self.given_look, cx);
         let t = theme_of(cx);
         if self.look == Look::Line {
             // The line look keeps the ring pod, drawn as a single hairline circle.
@@ -1018,7 +1048,10 @@ pub struct CompassPod {
     follow: Follow,
     heading: f32,
     height: SharedString,
+    /// The look drawn: the given one, else the design's, settled when rendered.
     look: Look,
+    /// The look given with `.look(..)`; without one, the design's own.
+    given_look: Option<Look>,
     style: PodStyle,
     size: f32,
 }
@@ -1034,6 +1067,7 @@ impl CompassPod {
             height: SharedString::default(),
             size: 300.0,
             look: Look::Sport,
+            given_look: None,
             style: PodStyle::Ring,
         }
     }
@@ -1044,7 +1078,7 @@ impl CompassPod {
     }
     /// The look: the round pod (default), a watch case or a heads-up display.
     pub fn look(mut self, look: Look) -> Self {
-        self.look = look;
+        self.given_look = Some(look);
         self
     }
     /// How the frame is drawn (open ring, closed disc, glow or bezel).
@@ -1061,6 +1095,7 @@ impl CompassPod {
 
 impl RenderOnce for CompassPod {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.look = crate::look::resolve(self.given_look, cx);
         self.heading = pm::bearing(follow_angle(w, cx, &self.follow, 0, self.heading));
         let t = theme_of(cx);
         if self.look == Look::Line {
@@ -1210,7 +1245,10 @@ pub struct DualGauge {
     upper: DualScale,
     lower: DualScale,
     icon: Symbol,
+    /// The look drawn: the given one, else the design's, settled when rendered.
     look: Look,
+    /// The look given with `.look(..)`; without one, the design's own.
+    given_look: Option<Look>,
     at_limit: AtLimit,
     layout: Layout,
     style: PodStyle,
@@ -1228,6 +1266,7 @@ impl DualGauge {
             lower,
             icon,
             look: Look::Sport,
+            given_look: None,
             at_limit: AtLimit::Value,
             layout: Layout::Dial,
             size: 300.0,
@@ -1237,7 +1276,7 @@ impl DualGauge {
     /// The look (see [`Look`]); every look but [`Look::Sport`] draws the upper scale on a
     /// [`GaugeFace`](crate::faces::GaugeFace) with the lower one on a strip under it.
     pub fn look(mut self, look: Look) -> Self {
-        self.look = look;
+        self.given_look = Some(look);
         self
     }
     /// What a reading past a limit colours in the screen looks (see [`AtLimit`]): only the
@@ -1268,6 +1307,7 @@ impl DualGauge {
 
 impl RenderOnce for DualGauge {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.look = crate::look::resolve(self.given_look, cx);
         self.upper.value = pm::finite(follow(w, cx, &self.follow, 0, self.upper.value), 0.0);
         self.lower.value = pm::finite(follow(w, cx, &self.follow, 1, self.lower.value), 0.0);
         // Sport's own dial carries both scales on one ring; its other layouts and every other
@@ -1279,7 +1319,7 @@ impl RenderOnce for DualGauge {
             let layout = self.look.fit(self.layout);
             // Tapes and columns stand side by side; the flat layouts leave room for the strip
             // at full width.
-            let (tapes, small) = match (layout, self.look.shape(layout)) {
+            let (tapes, small) = match (layout, crate::look::shape(self.look, layout)) {
                 (_, Shape::Tall) => (true, size),
                 (Layout::Tape, _) => (true, size * 0.5),
                 (_, Shape::Wide) => (false, size),

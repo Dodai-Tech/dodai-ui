@@ -56,7 +56,10 @@ pub struct ShiftLights {
     shift: f32,
     count: usize,
     gear: Option<SharedString>,
+    /// The look drawn: the given one, else the design's, settled when rendered.
     look: Look,
+    /// The look given with `.look(..)`; without one, the design's own.
+    given_look: Option<Look>,
     width: f32,
 }
 
@@ -74,6 +77,7 @@ impl ShiftLights {
             count: 10,
             gear: None,
             look: Look::Sport,
+            given_look: None,
             width: 320.0,
         }
     }
@@ -95,7 +99,7 @@ impl ShiftLights {
     }
     /// The look (see [`Look`]).
     pub fn look(mut self, look: Look) -> Self {
-        self.look = look;
+        self.given_look = Some(look);
         self
     }
     /// Width of the row of lights in px (at least 120); the housing adds a margin and the
@@ -279,6 +283,7 @@ fn light(
 
 impl RenderOnce for ShiftLights {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.look = crate::look::resolve(self.given_look, cx);
         self.rpm = pm::finite(follow(w, cx, &self.follow, 0, self.rpm), 0.0);
         let t = theme_of(cx);
         let ink = Ink::of(&t);

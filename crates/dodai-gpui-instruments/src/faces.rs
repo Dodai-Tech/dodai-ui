@@ -35,7 +35,10 @@ pub struct GaugeFace {
     follow: Follow,
     scale: Scale,
     value: f32,
+    /// The look drawn: the given one, else the design's, settled when rendered.
     look: Look,
+    /// The look given with `.look(..)`; without one, the design's own.
+    given_look: Option<Look>,
     at_limit: AtLimit,
     icon: Option<Symbol>,
     label: SharedString,
@@ -57,6 +60,7 @@ impl GaugeFace {
             scale,
             value,
             look: Look::Sport,
+            given_look: None,
             at_limit: AtLimit::Value,
             icon: None,
             label: SharedString::default(),
@@ -69,7 +73,7 @@ impl GaugeFace {
     }
     /// The look.
     pub fn look(mut self, look: Look) -> Self {
-        self.look = look;
+        self.given_look = Some(look);
         self
     }
     /// What a reading past a limit colours in the screen looks (see [`AtLimit`]): only the
@@ -120,6 +124,7 @@ impl GaugeFace {
 
 impl RenderOnce for GaugeFace {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.look = crate::look::resolve(self.given_look, cx);
         self.value = pm::finite(follow(w, cx, &self.follow, 0, self.value), self.scale.min);
         match (self.look, self.look.fit(self.layout)) {
             (Look::Sport, Layout::Sweep) => self.sport_sweep(cx),

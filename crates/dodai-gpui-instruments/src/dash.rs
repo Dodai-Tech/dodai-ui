@@ -239,7 +239,10 @@ pub struct RingTach {
     tab: SharedString,
     fuel: Option<f32>,
     reach: SharedString,
+    /// The look drawn: the given one, else the design's, settled when rendered.
     look: Look,
+    /// The look given with `.look(..)`; without one, the design's own.
+    given_look: Option<Look>,
     at_limit: AtLimit,
     size: f32,
 }
@@ -260,6 +263,7 @@ impl RingTach {
             fuel: None,
             reach: SharedString::default(),
             look: Look::Sport,
+            given_look: None,
             at_limit: AtLimit::Value,
             size: 380.0,
         }
@@ -283,7 +287,7 @@ impl RingTach {
     /// [`GaugeFace`](crate::faces::GaugeFace) captioned with the road speed; the tab and the fuel
     /// are left out.
     pub fn look(mut self, look: Look) -> Self {
-        self.look = look;
+        self.given_look = Some(look);
         self
     }
     /// What a reading past a limit colours in the screen looks (see [`AtLimit`]): only the
@@ -307,6 +311,7 @@ impl RingTach {
 
 impl RenderOnce for RingTach {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.look = crate::look::resolve(self.given_look, cx);
         self.rpm = follow(w, cx, &self.follow, 0, self.rpm);
         self.speed = follow(w, cx, &self.follow, 1, self.speed);
         self.fuel = self.fuel.map(|f| follow(w, cx, &self.follow, 2, f));
@@ -555,7 +560,10 @@ pub struct SidePod {
     ends: [Option<Tone>; 2],
     centre: Option<AnyElement>,
     needle: bool,
+    /// The look drawn: the given one, else the design's, settled when rendered.
     look: Look,
+    /// The look given with `.look(..)`; without one, the design's own.
+    given_look: Option<Look>,
     at_limit: AtLimit,
     style: PodStyle,
     size: f32,
@@ -577,6 +585,7 @@ impl SidePod {
             centre: None,
             needle: true,
             look: Look::Sport,
+            given_look: None,
             at_limit: AtLimit::Value,
             size: 300.0,
             style: PodStyle::Ring,
@@ -609,7 +618,7 @@ impl SidePod {
     }
     /// The look (see [`Look`]); every look but [`Look::Sport`] draws it as a [`GaugeFace`](crate::faces::GaugeFace); the reading becomes its caption and a custom centre is left out.
     pub fn look(mut self, look: Look) -> Self {
-        self.look = look;
+        self.given_look = Some(look);
         self
     }
     /// What a reading past a limit colours in the screen looks (see [`AtLimit`]): only the
@@ -637,6 +646,7 @@ impl SidePod {
 
 impl RenderOnce for SidePod {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.look = crate::look::resolve(self.given_look, cx);
         self.value = follow(w, cx, &self.follow, 0, self.value);
         if self.look != Look::Sport {
             let mut face = crate::faces::GaugeFace::new(self.scale, self.value)
@@ -788,7 +798,10 @@ pub struct MenuRing {
     selected: usize,
     chosen: Option<usize>,
     pressed: bool,
+    /// The look drawn: the given one, else the design's, settled when rendered.
     look: Look,
+    /// The look given with `.look(..)`; without one, the design's own.
+    given_look: Option<Look>,
     style: PodStyle,
     size: f32,
 }
@@ -804,6 +817,7 @@ impl MenuRing {
             pressed: false,
             size: 300.0,
             look: Look::Sport,
+            given_look: None,
             style: PodStyle::Ring,
         }
     }
@@ -829,7 +843,7 @@ impl MenuRing {
     }
     /// The look: the round pod (default), a watch case or a heads-up display.
     pub fn look(mut self, look: Look) -> Self {
-        self.look = look;
+        self.given_look = Some(look);
         self
     }
     /// How the frame is drawn (open ring, closed disc, glow or bezel).
@@ -845,7 +859,8 @@ impl MenuRing {
 }
 
 impl RenderOnce for MenuRing {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.look = crate::look::resolve(self.given_look, cx);
         let t = theme_of(cx);
         if self.look != Look::Sport {
             return self.detailed(&t);
@@ -935,7 +950,10 @@ impl RenderOnce for MenuRing {
 #[derive(IntoElement)]
 pub struct LimitSign {
     limit: u32,
+    /// The look drawn: the given one, else the design's, settled when rendered.
     look: Look,
+    /// The look given with `.look(..)`; without one, the design's own.
+    given_look: Option<Look>,
     size: f32,
 }
 
@@ -945,12 +963,13 @@ impl LimitSign {
         Self {
             limit,
             look: Look::Sport,
+            given_look: None,
             size: 40.0,
         }
     }
     /// The look (see [`Look`]).
     pub fn look(mut self, look: Look) -> Self {
-        self.look = look;
+        self.given_look = Some(look);
         self
     }
     /// Diameter in px.
@@ -961,7 +980,8 @@ impl LimitSign {
 }
 
 impl RenderOnce for LimitSign {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.look = crate::look::resolve(self.given_look, cx);
         let t = theme_of(cx);
         if self.look != Look::Sport {
             return lamp_looks::sign(self.limit, self.size, self.look, &t);
@@ -1008,7 +1028,10 @@ impl RenderOnce for LimitSign {
 #[derive(IntoElement)]
 pub struct Telltales {
     items: Vec<(Symbol, Tone)>,
+    /// The look drawn: the given one, else the design's, settled when rendered.
     look: Look,
+    /// The look given with `.look(..)`; without one, the design's own.
+    given_look: Option<Look>,
     size: f32,
     columns: usize,
 }
@@ -1019,6 +1042,7 @@ impl Telltales {
         Self {
             items: Vec::new(),
             look: Look::Sport,
+            given_look: None,
             size: 22.0,
             columns: usize::MAX,
         }
@@ -1035,7 +1059,7 @@ impl Telltales {
     }
     /// The look (see [`Look`]): every lamp gets the look's backing.
     pub fn look(mut self, look: Look) -> Self {
-        self.look = look;
+        self.given_look = Some(look);
         self
     }
     /// Wrap into rows of this many symbols.
@@ -1052,7 +1076,8 @@ impl Default for Telltales {
 }
 
 impl RenderOnce for Telltales {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.look = crate::look::resolve(self.given_look, cx);
         let t = theme_of(cx);
         let gap = self.size * 0.3;
         let mut rows = div().flex().flex_col().gap(px(gap)).items_center();

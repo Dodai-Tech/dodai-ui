@@ -239,6 +239,7 @@ impl DesignSpec for Dodai {
             area_alpha: 0.28,
             dial: crate::DialLook::Arc,
             scope: crate::ScopeLook::Frosted,
+            vehicle: crate::vehicle_look::Look::Halo,
             response: crate::NeedleResponse::Smooth,
             ..crate::ChartStyle::from_theme(t)
         })

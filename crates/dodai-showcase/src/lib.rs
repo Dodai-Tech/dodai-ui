@@ -197,7 +197,7 @@ pub struct Showcase {
     inst_trail: usize,
     /// Needle response of the instruments: 0 the design's own, then `NeedleResponse::ALL`.
     inst_response: usize,
-    /// The look the vehicle sections show: 0 every look, then `Look::ALL`.
+    /// The look the vehicle sections show: 0 every look, 1 the design's own, then `Look::ALL`.
     inst_look: usize,
     /// Glow of every chart and instrument: 0 the theme's own, 1 off, 2 soft, 3 strong.
     inst_glow: usize,
@@ -360,7 +360,7 @@ impl Render for Showcase {
                         div().w(px(220.0)).child(
                             dodai_gpui::Select::new("veh-look")
                                 .options(
-                                    std::iter::once("Every look").chain(
+                                    ["Every look", "Design's own"].into_iter().chain(
                                         dodai_gpui_instruments::Look::ALL
                                             .into_iter()
                                             .map(|l| l.name()),

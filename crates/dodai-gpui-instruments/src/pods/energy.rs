@@ -17,7 +17,10 @@ pub struct EnergyPod {
     max_regen: f32,
     range: SharedString,
     charging: bool,
+    /// The look drawn: the given one, else the design's, settled when rendered.
     look: Look,
+    /// The look given with `.look(..)`; without one, the design's own.
+    given_look: Option<Look>,
     style: PodStyle,
     size: f32,
 }
@@ -70,6 +73,7 @@ impl EnergyPod {
             range: SharedString::default(),
             charging: false,
             look: Look::Sport,
+            given_look: None,
             style: PodStyle::Ring,
             size: 300.0,
         }
@@ -99,7 +103,7 @@ impl EnergyPod {
     /// The look (see [`Look`]); every look but [`Look::Sport`] draws the battery as three rows
     /// of a [`RowsPod`].
     pub fn look(mut self, look: Look) -> Self {
-        self.look = look;
+        self.given_look = Some(look);
         self
     }
     /// How the frame is drawn (open ring, closed disc, glow or bezel).
@@ -124,6 +128,7 @@ impl EnergyPod {
 
 impl RenderOnce for EnergyPod {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.look = crate::look::resolve(self.given_look, cx);
         self.charge = pm::percent(follow(w, cx, &self.follow, 0, self.charge));
         self.power = pm::finite(follow(w, cx, &self.follow, 1, self.power), 0.0);
         let flow = power_frac(self.power, self.max_power, self.max_regen);
