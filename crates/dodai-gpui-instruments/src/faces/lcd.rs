@@ -235,12 +235,6 @@ impl GaugeFace {
                     .text_color(ink.muted)
                     .child(self.lcd_unit()),
             )
-            .child(
-                text_box(bx + bw / 2.0, s * 0.915, wd * 0.5)
-                    .text_size(px(s * 0.026))
-                    .text_color(ink.muted)
-                    .child(format!("{:.0} %", self.frac() * 100.0)),
-            )
             .into_any_element()
     }
 }

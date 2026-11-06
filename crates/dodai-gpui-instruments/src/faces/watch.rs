@@ -199,7 +199,7 @@ impl GaugeFace {
             let (x, y) = polar(c, c, r_in + s * 0.075, start + span * f);
             text_box(x, y - s * 0.028, s * 0.14)
                 .text_size(px(s * 0.045))
-                .font_weight(FontWeight::MEDIUM)
+                .font_weight(FontWeight::LIGHT)
                 .text_color(ink.text)
                 .child(label)
                 .into_any_element()
@@ -232,7 +232,7 @@ impl GaugeFace {
                     .border_color(ink.line)
                     .bg(scale_alpha(ink.text, 0.06))
                     .text_size(px(s * 0.07))
-                    .font_weight(FontWeight::MEDIUM)
+                    .font_weight(FontWeight::LIGHT)
                     .text_color(col)
                     .child(self.figure()),
             )
@@ -330,7 +330,7 @@ impl GaugeFace {
                         div()
                             .text_size(px(s * 0.07))
                             .text_color(col)
-                            .font_weight(FontWeight::MEDIUM)
+                            .font_weight(FontWeight::LIGHT)
                             .child(self.figure()),
                     )
                     .child(

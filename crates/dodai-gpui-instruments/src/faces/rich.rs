@@ -10,7 +10,7 @@ use crate::draw::{polar, turn_arc};
 use crate::gauges::SWEEP;
 use crate::pod_math as pm;
 use crate::shapes::{
-    band, chamfered, chrono_case, chrono_glass, circle, dir, hud_ring, needle, Ink,
+    band, chamfered, chrono_case, chrono_glass, circle, dir, hub, hud_ring, needle, Ink,
 };
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
 use dodai_gpui::theme_of;
@@ -87,7 +87,7 @@ impl GaugeFace {
         let marks = self.scale.majors * FINE;
         let r_face = c - s * 0.06;
         let r_scale = r_face - s * 0.03;
-        let (text, muted, face, line) = (ink.text, ink.muted, ink.face, ink.line);
+        let (text, muted, line) = (ink.text, ink.muted, ink.line);
         let sub = (c, c - s * 0.17, s * 0.075);
         let cv = canvas(
             |_, _, _| (),
@@ -193,8 +193,7 @@ impl GaugeFace {
                     &circle(c - dx * s * 0.1, c - dy * s * 0.1, s * 0.022),
                     col,
                 );
-                fill(w, o, &circle(c, c, s * 0.04), text);
-                fill(w, o, &circle(c, c, s * 0.016), face);
+                hub(w, o, (c, c), s * 0.038, ink, col);
                 chrono_glass(w, o, s, r_face, ink);
             },
         )
@@ -231,9 +230,9 @@ impl GaugeFace {
                     .bg(scale_alpha(ink.text, 0.06))
                     .child(
                         div()
-                            .text_size(px(s * 0.075))
+                            .text_size(px(s * 0.07))
                             .text_color(col)
-                            .font_weight(FontWeight::MEDIUM)
+                            .font_weight(FontWeight::LIGHT)
                             .child(self.figure()),
                     )
                     .child(

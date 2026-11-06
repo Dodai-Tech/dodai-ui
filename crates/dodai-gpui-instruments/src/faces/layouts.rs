@@ -311,12 +311,6 @@ impl GaugeFace {
                     .text_color(ink.muted)
                     .child(self.unit.clone()),
             )
-            .child(
-                text_box(c, cy + s * 0.05, s * 0.3)
-                    .text_size(px(s * 0.03))
-                    .text_color(col)
-                    .child(format!("{:.0} %", frac * 100.0)),
-            )
             .into_any_element()
     }
 
