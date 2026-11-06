@@ -1238,18 +1238,31 @@ impl DualGauge {
     }
 }
 
+/// How much of a twin pod's side each of its two faces takes in `look`, so that the faces on
+/// the diagonal stay clear of each other: round faces may reach into the other's corner, square
+/// plates and panel meters (`alternate`) only take half less a gap. Pure.
+fn dual_share(look: Look, alternate: bool) -> f32 {
+    // Two discs of diameter k on the diagonal of a unit square just touch when
+    // (1 - k) * √2 = k, so k = √2 / (1 + √2); keep a little under it.
+    const ROUND: f32 = 0.57;
+    const SQUARE: f32 = 0.48;
+    match look {
+        Look::Chrono | Look::Futuristic => ROUND,
+        Look::HeadsUp if !alternate => ROUND,
+        _ => SQUARE,
+    }
+}
+
 impl RenderOnce for DualGauge {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
         self.upper.value = pm::finite(follow(w, cx, &self.follow, 0, self.upper.value), 0.0);
         self.lower.value = pm::finite(follow(w, cx, &self.follow, 1, self.lower.value), 0.0);
         if self.look != Look::Classic {
-            // Two faces on the diagonal, upper left and lower right, overlapping a little: a
-            // twin cluster that fits the pod's square at any size. Tall tapes stand side by side.
+            // Two faces on the diagonal, upper left and lower right, clear of each other: a twin
+            // cluster that fits the pod's square at any size. Tall tapes stand side by side.
             let size = self.size;
-            // Panel meters keep their readout plate along the bottom edge, so they only touch.
             let tapes = self.alternate && self.look == Look::HeadsUp;
-            let share = if self.alternate { 0.5 } else { 0.6 };
-            let small = (size * share).max(64.0);
+            let small = size * dual_share(self.look, self.alternate);
             let (look, alternate, at_limit) = (self.look, self.alternate, self.at_limit);
             let face = |d: DualScale, icon: Option<Symbol>| {
                 let f = crate::faces::GaugeFace::new(d.scale, d.value)
@@ -1594,5 +1607,26 @@ impl RenderOnce for DashQuad {
                 )
                 .child(div().flex().flex_col().children(gears)),
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn twin_faces_stay_clear_of_each_other() {
+        for look in Look::ALL {
+            for alternate in [false, true] {
+                let k = dual_share(look, alternate);
+                // Upper left at 0, lower right at 1 - k: discs on the diagonal keep apart…
+                let gap = (1.0 - k) * std::f32::consts::SQRT_2 - k;
+                assert!(gap > 0.0, "{look:?} discs keep apart");
+                // …and anything not round fits in half the side.
+                let round = matches!(look, Look::Chrono | Look::Futuristic)
+                    || (look == Look::HeadsUp && !alternate);
+                assert!(round || k < 0.5, "{look:?} plates keep apart");
+            }
+        }
     }
 }
