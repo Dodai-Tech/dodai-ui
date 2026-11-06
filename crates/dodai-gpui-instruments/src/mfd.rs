@@ -1,11 +1,11 @@
 //! The parts of the [`Look::Cockpit`] instruments: a display page with soft keys on its bezel,
-//! engine-indication arcs with a filled sweep, boxed readouts, bugs and a heading arc. Pure
+//! engine-indication arcs with a filled sweep, boxed readouts with a rolling-drum window, bugs and a heading arc. Pure
 //! geometry returns points; the painters take every colour from an [`Ink`].
 //!
 //! [`Look::Cockpit`]: crate::look::Look::Cockpit
 
 use crate::draw::{polar, turn_arc};
-use crate::shapes::Ink;
+use crate::shapes::{rounded, Ink};
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
 use gpui::{Hsla, Pixels, Point, Window};
 
@@ -14,44 +14,75 @@ pub(crate) fn rect(x: f32, y: f32, wd: f32, h: f32) -> Vec<(f32, f32)> {
     vec![(x, y), (x + wd, y), (x + wd, y + h), (x, y + h)]
 }
 
-/// Paint a display page filling a square of `s`: a bevelled bezel with a screw in each corner
-/// and a row of raised soft keys on each side, and the dark glass with a faint sheen across its
-/// top left. Returns the glass rectangle.
+/// Paint a display page filling a square of `s`: a rounded bezel shaded lighter at the top, a
+/// light sensor over the glass, a brightness rocker under it, a screw in each corner and a row of
+/// raised soft keys on each side, and the dark glass with a soft sheen across its top left.
+/// Returns the glass rectangle.
 pub(crate) fn page(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> (f32, f32, f32, f32) {
     let lw = (s * 0.004).max(1.0);
-    let bezel = rect(0.0, 0.0, s, s);
+    let rr = s * 0.035;
+    let bezel = rounded(0.0, 0.0, s, s, rr);
     fill(w, o, &bezel, ink.face);
-    fill(w, o, &bezel, scale_alpha(ink.text, 0.06));
-    // The bevel: light along the top and left, dark along the bottom and right.
+    fill(w, o, &bezel, scale_alpha(ink.text, 0.05));
+    // The bezel catches the light from above: lighter bands towards the top.
+    for i in 1..=4 {
+        let h = s * (0.5 - 0.1 * i as f32);
+        fill(
+            w,
+            o,
+            &rounded(0.0, 0.0, s, h, rr),
+            scale_alpha(ink.text, 0.012),
+        );
+    }
+    stroke(w, o, &bezel, lw * 1.5, ink.ground, true);
+    // The bevel: a lit edge along the top.
     stroke(
         w,
         o,
-        &[(0.0, s), (0.0, 0.0), (s, 0.0)],
-        lw * 1.5,
-        scale_alpha(ink.text, 0.22),
-        false,
-    );
-    stroke(
-        w,
-        o,
-        &[(s, 0.0), (s, s), (0.0, s)],
-        lw * 1.5,
-        ink.ground,
+        &[(rr, lw * 1.2), (s - rr, lw * 1.2)],
+        lw,
+        scale_alpha(ink.text, 0.28),
         false,
     );
     let k = s * 0.055;
     for (x, y) in [
-        (k * 0.5, k * 0.5),
-        (s - k * 0.5, k * 0.5),
-        (k * 0.5, s - k * 0.5),
-        (s - k * 0.5, s - k * 0.5),
+        (k * 0.55, k * 0.55),
+        (s - k * 0.55, k * 0.55),
+        (k * 0.55, s - k * 0.55),
+        (s - k * 0.55, s - k * 0.55),
     ] {
-        screw(w, o, (x, y), k * 0.22, ink);
+        screw(w, o, (x, y), k * 0.2, ink);
     }
+    // The light sensor over the glass and the brightness rocker under it.
+    fill(
+        w,
+        o,
+        &crate::shapes::circle(s * 0.5, k * 0.5, k * 0.13),
+        ink.ground,
+    );
+    let (rw, rh) = (s * 0.14, k * 0.42);
+    let ry = s - k * 0.5 - rh / 2.0;
+    key(w, o, (s * 0.5 - rw / 2.0, ry, rw, rh), ink);
+    stroke(
+        w,
+        o,
+        &[(s * 0.5, ry + rh * 0.2), (s * 0.5, ry + rh * 0.8)],
+        lw,
+        ink.ground,
+        false,
+    );
     let glass = (k, k, s - 2.0 * k, s - 2.0 * k);
     let g = rect(glass.0, glass.1, glass.2, glass.3);
     fill(w, o, &g, ink.ground);
-    fill(w, o, &sheen(glass), scale_alpha(ink.text, 0.035));
+    // A soft sheen: nested bands, each a little fainter than the glass under the last.
+    for i in 0..5 {
+        fill(
+            w,
+            o,
+            &sheen(glass, 0.3 + 0.1 * i as f32),
+            scale_alpha(ink.text, 0.008),
+        );
+    }
     // The glass sits in the bezel: a dark rim with a light lip under it.
     stroke(w, o, &g, lw * 1.5, scale_alpha(ink.ground, 0.9), true);
     stroke(
@@ -65,29 +96,33 @@ pub(crate) fn page(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> (f32, 
         scale_alpha(ink.text, 0.15),
         false,
     );
-    // Soft keys: raised buttons on the left and right bezel, each with a lit top edge.
     for i in 0..5 {
         let y = s * (0.2 + 0.15 * i as f32);
-        for x in [k * 0.2, s - k * 0.8] {
-            let key = rect(x, y - s * 0.024, k * 0.6, s * 0.048);
-            fill(w, o, &key, scale_alpha(ink.text, 0.12));
-            stroke(
-                w,
-                o,
-                &[(x, y - s * 0.024), (x + k * 0.6, y - s * 0.024)],
-                lw,
-                scale_alpha(ink.text, 0.3),
-                false,
-            );
+        for x in [k * 0.18, s - k * 0.78] {
+            key(w, o, (x, y - s * 0.024, k * 0.6, s * 0.048), ink);
         }
     }
     glass
 }
 
-/// The sheen on a display's glass `(x, y, wd, h)`: a band from the top edge down the left side,
-/// as a polygon. Pure.
-pub(crate) fn sheen((x, y, wd, h): (f32, f32, f32, f32)) -> Vec<(f32, f32)> {
-    vec![(x, y), (x + wd * 0.55, y), (x, y + h * 0.55)]
+/// Paint a raised key `(x, y, wd, h)` on the bezel: rounded, lit along the top, shadowed under.
+fn key(w: &mut Window, o: Point<Pixels>, (x, y, wd, h): (f32, f32, f32, f32), ink: Ink) {
+    let r = wd.min(h) * 0.25;
+    fill(w, o, &rounded(x, y + h * 0.12, wd, h, r), ink.ground);
+    fill(w, o, &rounded(x, y, wd, h, r), scale_alpha(ink.text, 0.14));
+    fill(
+        w,
+        o,
+        &rounded(x, y, wd, h * 0.45, r),
+        scale_alpha(ink.text, 0.06),
+    );
+}
+
+/// The sheen on a display's glass `(x, y, wd, h)`: a band from the top edge down the left side
+/// reaching `k` of the way along each, as a polygon. Pure.
+pub(crate) fn sheen((x, y, wd, h): (f32, f32, f32, f32), k: f32) -> Vec<(f32, f32)> {
+    let k = k.clamp(0.0, 1.0);
+    vec![(x, y), (x + wd * k, y), (x, y + h * k)]
 }
 
 /// Paint a slotted screw head at `(x, y)` of radius `r`.
@@ -132,7 +167,7 @@ pub(crate) fn sweep(cx: f32, cy: f32, r: f32, f: f32) -> Vec<(f32, f32)> {
     p
 }
 
-/// Paint an engine-indication arc around `(cx, cy)` of radius `r`: the sweep to `f` filled, the
+/// Paint an engine-indication arc around `(cx, cy)` of radius `r`: the sweep to `f` filled (in `col` once that is not the text colour), the
 /// white arc with its majors, the zones `(from, to, colour)` as wide bands with a radial limit
 /// line, and a thin needle in `col`.
 #[allow(clippy::too_many_arguments)]
@@ -149,7 +184,13 @@ pub(crate) fn engine_arc(
 ) {
     let lw = (r * 0.03).max(1.0);
     if f > 0.0 {
-        fill(w, o, &sweep(cx, cy, r, f), scale_alpha(ink.text, 0.16));
+        // The sweep takes the colour of the value once it is past a limit.
+        let tint = if col == ink.text {
+            scale_alpha(ink.text, 0.16)
+        } else {
+            scale_alpha(col, 0.3)
+        };
+        fill(w, o, &sweep(cx, cy, r, f), tint);
     }
     stroke(
         w,
@@ -220,8 +261,44 @@ pub(crate) fn readout_box(
             (x, y + h / 2.0 - k),
         ]);
     }
-    fill(w, o, &p, ink.ground);
-    stroke(w, o, &p, (h * 0.05).max(1.0), frame, true);
+    framed(w, o, &p, (h * 0.05).max(1.0), frame, ink);
+}
+
+/// Paint the polygon `p` as a readout: the glass colour inside a frame in `frame`.
+pub(crate) fn framed(
+    w: &mut Window,
+    o: Point<Pixels>,
+    p: &[(f32, f32)],
+    lw: f32,
+    frame: Hsla,
+    ink: Ink,
+) {
+    fill(w, o, p, ink.ground);
+    stroke(w, o, p, lw, frame, true);
+}
+
+/// A rolling-drum readout box `(x, y, wd, h)`: its last `cw` stands `e` taller above and below,
+/// a window on the drum that rolls the last digit. Pure.
+pub(crate) fn drum_box((x, y, wd, h): (f32, f32, f32, f32), cw: f32, e: f32) -> Vec<(f32, f32)> {
+    let cx = x + wd - cw.clamp(0.0, wd);
+    vec![
+        (x, y),
+        (cx, y),
+        (cx, y - e),
+        (x + wd, y - e),
+        (x + wd, y + h + e),
+        (cx, y + h + e),
+        (cx, y + h),
+        (x, y + h),
+    ]
+}
+
+/// The digits a rolling drum shows round `d`: the next one above, `d`, and the one before
+/// under it. `None` when `d` is not a digit. Pure.
+pub(crate) fn drum_digits(d: char) -> Option<[char; 3]> {
+    let n = d.to_digit(10)?;
+    let at = |k: u32| char::from_digit(k % 10, 10).unwrap_or(d);
+    Some([at(n + 1), d, at(n + 9)])
 }
 
 /// A bug (a target marker) at `(x, y)` pointing down at a scale: a notched block `k` wide. Pure.
@@ -286,9 +363,28 @@ mod tests {
     #[test]
     fn the_sheen_stays_on_the_glass() {
         let g = (10.0, 10.0, 80.0, 80.0);
-        assert!(sheen(g)
+        assert!(sheen(g, 0.7)
             .iter()
             .all(|p| p.0 >= 10.0 && p.0 <= 90.0 && p.1 >= 10.0 && p.1 <= 90.0));
+        assert!(sheen(g, 9.0).iter().all(|p| p.0 <= 90.0 && p.1 <= 90.0));
+    }
+
+    #[test]
+    fn the_drum_window_stands_taller_at_the_end() {
+        let p = drum_box((0.0, 10.0, 40.0, 10.0), 8.0, 3.0);
+        let top = p.iter().map(|q| q.1).fold(f32::MAX, f32::min);
+        let bottom = p.iter().map(|q| q.1).fold(f32::MIN, f32::max);
+        assert_eq!((top, bottom), (7.0, 23.0));
+        assert!(p.iter().all(|q| q.0 >= 0.0 && q.0 <= 40.0));
+        assert!(p.iter().filter(|q| q.1 < 10.0).all(|q| q.0 >= 32.0));
+    }
+
+    #[test]
+    fn the_drum_rolls_round_its_digit() {
+        assert_eq!(drum_digits('8'), Some(['9', '8', '7']));
+        assert_eq!(drum_digits('9'), Some(['0', '9', '8']));
+        assert_eq!(drum_digits('0'), Some(['1', '0', '9']));
+        assert_eq!(drum_digits('-'), None);
     }
 
     #[test]
