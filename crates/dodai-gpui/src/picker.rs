@@ -581,6 +581,174 @@ impl DateTimePicker {
 
 crate::entry_render!(DateTimePicker);
 
+// ───────────────────────────── date-time range ─────────────────────────────
+
+/// `YYYY-MM-DD HH:MM → YYYY-MM-DD HH:MM` for a picked span with a start and an end time.
+/// While the end day is pending only the start is read out; with no day, a prompt.
+pub fn format_date_time_range(r: DateRange, start: (u32, u32), end: (u32, u32)) -> String {
+    match (r.start, r.end) {
+        (Some(a), Some(b)) => format!(
+            "{} → {}",
+            format_date_time(Some(a), start.0, start.1),
+            format_date_time(Some(b), end.0, end.1)
+        ),
+        (Some(a), None) => format!(
+            "{} → pick the end day",
+            format_date_time(Some(a), start.0, start.1)
+        ),
+        _ => "pick the start day, then the end day".to_string(),
+    }
+}
+
+/// Controlled range calendar with a start and an end time of day in one panel, the chosen
+/// span read out below. Feed day clicks through [`range_pick`] in `on_select`.
+#[derive(IntoElement)]
+pub struct DateTimeRangePicker {
+    id: ElementId,
+    year: i32,
+    month: u32,
+    range: DateRange,
+    start: (u32, u32),
+    end: (u32, u32),
+    twelve: bool,
+    minute_step: i32,
+    on_select: Option<DateFn>,
+    on_month: Option<MonthFn>,
+    on_start_time: Option<TimeFn>,
+    on_end_time: Option<TimeFn>,
+    corners: Option<dodai_core::Corners>,
+}
+
+crate::corners_setter!(DateTimeRangePicker);
+
+impl DateTimeRangePicker {
+    /// `year`/`month` (1-12) is the visible month; both times start at 00:00.
+    pub fn new(id: impl Into<ElementId>, year: i32, month: u32) -> Self {
+        Self {
+            corners: None,
+            id: id.into(),
+            year,
+            month: month.clamp(1, 12),
+            range: DateRange::default(),
+            start: (0, 0),
+            end: (0, 0),
+            twelve: false,
+            minute_step: 5,
+            on_select: None,
+            on_month: None,
+            on_start_time: None,
+            on_end_time: None,
+        }
+    }
+    /// The picked span of days (controlled).
+    pub fn range(mut self, r: DateRange) -> Self {
+        self.range = r;
+        self
+    }
+    /// Time of day on the first day (controlled).
+    pub fn start_time(mut self, hour: u32, minute: u32) -> Self {
+        self.start = (hour % 24, minute % 60);
+        self
+    }
+    /// Time of day on the last day (controlled).
+    pub fn end_time(mut self, hour: u32, minute: u32) -> Self {
+        self.end = (hour % 24, minute % 60);
+        self
+    }
+    /// 12-hour display with AM/PM toggle.
+    pub fn twelve_hour(mut self, on: bool) -> Self {
+        self.twelve = on;
+        self
+    }
+    /// Minute step of both time steppers.
+    pub fn minute_step(mut self, s: i32) -> Self {
+        self.minute_step = s.max(1);
+        self
+    }
+    crate::callback!(
+        /// Called when a day is clicked; pass it to [`range_pick`].
+        on_select, Date
+    );
+    crate::callback!(
+        /// Called with the new visible `(year, month)` when the arrows are used.
+        on_month, i32, u32
+    );
+    crate::callback!(
+        /// Called when the start time changes, with hour and minute.
+        on_start_time, u32, u32
+    );
+    crate::callback!(
+        /// Called when the end time changes, with hour and minute.
+        on_end_time, u32, u32
+    );
+}
+
+impl DateTimeRangePicker {
+    fn build(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
+        let p = t.panel(false);
+        let mut cal =
+            DatePicker::new((self.id.clone(), "date"), self.year, self.month).range(self.range);
+        cal.corners = self.corners;
+        cal.on_select = self.on_select.clone();
+        cal.on_month = self.on_month.clone();
+        let clock = |key: &'static str, (h, m): (u32, u32), f: Option<TimeFn>| {
+            let mut tp = TimePicker::new((self.id.clone(), key), h, m)
+                .twelve_hour(self.twelve)
+                .minute_step(self.minute_step);
+            tp.corners = self.corners;
+            tp.on_change = f;
+            tp
+        };
+        let caption = |s: &'static str| {
+            div()
+                .text_size(px(t.typography.size_sm))
+                .text_color(hsla(t.palette.text_muted))
+                .child(s)
+        };
+        let times = div()
+            .flex()
+            .flex_wrap()
+            .gap(px(t.spacing.md))
+            .child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(t.spacing.xs))
+                    .child(caption("Start"))
+                    .child(clock("start", self.start, self.on_start_time.clone())),
+            )
+            .child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(t.spacing.xs))
+                    .child(caption("End"))
+                    .child(clock("end", self.end, self.on_end_time.clone())),
+            );
+        let style = ShapeStyle::from_tokens(&t, Some(p.background), Some(p.border), false, true);
+        shaped(&t.shape, style)
+            .p(px(t.spacing.sm))
+            .flex()
+            .flex_col()
+            .items_start()
+            .gap(px(t.spacing.sm))
+            .font_family(first_family(t.typography.body))
+            .text_color(hsla(t.palette.text))
+            .child(cal)
+            .child(times)
+            .child(
+                div()
+                    .text_size(px(t.typography.size_sm))
+                    .text_color(hsla(t.palette.text_muted))
+                    .child(format_date_time_range(self.range, self.start, self.end)),
+            )
+    }
+}
+
+crate::entry_render!(DateTimeRangePicker);
+
 // ───────────────────────────── text input mode ─────────────────────────────
 
 /// Parse a typed date: `YYYY-MM-DD`, `YYYY/MM/DD` or `MM/DD/YYYY`; `None` when it is not a real
@@ -820,6 +988,27 @@ mod tests {
             "2025-03-04 09:05"
         );
         assert_eq!(format_date_time(None, 25, 61), "01:01");
+    }
+
+    #[test]
+    fn date_time_range_reads_out_each_stage() {
+        use super::*;
+        let a = Date::new(2025, 3, 4);
+        let b = Date::new(2025, 3, 9);
+        let none = DateRange::default();
+        assert_eq!(
+            format_date_time_range(none, (9, 0), (17, 30)),
+            "pick the start day, then the end day"
+        );
+        let half = range_pick(none, a);
+        assert_eq!(
+            format_date_time_range(half, (9, 0), (17, 30)),
+            "2025-03-04 09:00 → pick the end day"
+        );
+        assert_eq!(
+            format_date_time_range(range_pick(half, b), (9, 0), (17, 30)),
+            "2025-03-04 09:00 → 2025-03-09 17:30"
+        );
     }
 
     #[test]

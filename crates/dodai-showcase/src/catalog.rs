@@ -239,6 +239,7 @@ pub(crate) fn caps(title: &str) -> Caps {
         | "Form field"
         | "Toggle group · Checkbox group"
         | "Date range"
+        | "Date-time range"
         | "Data table"
         | "Code block · Markdown"
         | "Image · Avatar group"
@@ -294,6 +295,7 @@ pub(crate) fn subs(cat: &str) -> &'static [&'static str] {
         ],
         // By what a shader is for, not by whose look it has: the family stays in each title.
         "Shaders" => &["Playground", "Sources", "Effects", "Presets"],
+        "Inputs" => &["Choice", "Sliders", "Text", "Date & time"],
         _ => &[],
     }
 }
@@ -321,6 +323,7 @@ pub(crate) fn sub_of(cat: &str, label: &str) -> Option<&'static str> {
             _ => "Gauges & signals",
         }),
         "Shaders" => Some(shader_group(label).unwrap_or("Playground")),
+        "Inputs" => Some(input_group(label)),
         "Shape" => Some(if label == "Shape gallery" {
             "Overview"
         } else {
@@ -334,6 +337,16 @@ pub(crate) fn sub_of(cat: &str, label: &str) -> Option<&'static str> {
             _ => "Edges & signature",
         }),
         _ => None,
+    }
+}
+
+/// Subsection of an Inputs section: what the control enters.
+fn input_group(label: &str) -> &'static str {
+    match label {
+        l if l.starts_with("Date") || l.contains("Time picker") => "Date & time",
+        l if l.contains("slider") || l.starts_with("Slider") || l.starts_with("Knob") => "Sliders",
+        l if l.starts_with("Toggle") => "Choice",
+        _ => "Text",
     }
 }
 

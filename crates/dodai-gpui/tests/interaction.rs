@@ -779,6 +779,25 @@ fn date_time_picker_lays_out_calendar_and_time(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
+fn date_time_range_picker_lays_out_calendar_and_both_times(cx: &mut TestAppContext) {
+    let vcx = mount(cx, |_, _| {
+        let r = dodai_gpui::range_pick(Default::default(), dodai_gpui::Date::new(2025, 6, 12));
+        dodai_gpui::DateTimeRangePicker::new("dtr", 2025, 6)
+            .range(dodai_gpui::range_pick(
+                r,
+                dodai_gpui::Date::new(2025, 6, 15),
+            ))
+            .start_time(9, 0)
+            .end_time(17, 30)
+            .on_select(|_, _, _| {})
+            .on_start_time(|_, _, _, _| {})
+            .on_end_time(|_, _, _, _| {})
+            .into_any_element()
+    });
+    vcx.run_until_parked();
+}
+
+#[gpui::test]
 fn clicking_a_button_plays_the_click_ripple(cx: &mut TestAppContext) {
     for variant in [
         dodai_core::ButtonVariant::Primary,

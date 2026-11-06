@@ -211,6 +211,7 @@ impl Showcase {
             icon_open: std::collections::HashSet::new(),
             icon_pick: Default::default(),
             date_range: Default::default(),
+            range_times: ((9, 0), (17, 30)),
             cat: std::env::var("DODAI_CAT")
                 .ok()
                 .and_then(|v| v.parse().ok())
