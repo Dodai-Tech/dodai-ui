@@ -99,7 +99,7 @@ fn store() -> &'static Mutex<Store> {
 
 /// One blurrer for the app: GPU first, CPU without a real adapter. Opened lazily on the
 /// first background blur, never on the UI thread.
-fn blurrer() -> &'static Mutex<dodai_frost::Blurrer> {
+pub(crate) fn blurrer() -> &'static Mutex<dodai_frost::Blurrer> {
     static B: OnceLock<Mutex<dodai_frost::Blurrer>> = OnceLock::new();
     B.get_or_init(|| Mutex::new(dodai_frost::Blurrer::new()))
 }

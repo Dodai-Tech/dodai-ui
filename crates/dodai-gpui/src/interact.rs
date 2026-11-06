@@ -119,6 +119,7 @@ where
                         elevation: None,
                         lift_layers: None,
                         edge_gap: gap,
+                        frost: None,
                     };
                     gpui::ParentElement::child(
                         base.invisible()

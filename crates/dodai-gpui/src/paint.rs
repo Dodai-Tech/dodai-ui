@@ -47,6 +47,23 @@ pub struct ShapeStyle {
     /// over a span of `2 * half` px (the empty space between a cropped button's tick bars); the
     /// fill is notched `depth` px inward there.
     pub edge_gap: Option<(ShapeEdge, f32, f32)>,
+    /// Frosted glass under the fill (set by the surface mix, see `SurfaceFx::frost`).
+    pub frost: Option<FrostLayer>,
+}
+
+/// Frosted glass under a fill: a blurred copy of the app's backdrop (feature `frost`; without
+/// it only the see-through fill is drawn).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct FrostLayer {
+    /// Opacity of the blurred backdrop, `0.0..=1.0`.
+    pub amount: f32,
+    /// Blur in px (the design's glass).
+    pub blur: f32,
+    /// Saturation of the blurred backdrop (1 = unchanged).
+    pub saturation: f32,
+    /// The design's canvas mesh `(canvas, wash, strength)`, blurred when the app set no
+    /// wallpaper; `None` for a flat canvas.
+    pub mesh: Option<(Color, [Color; 3], f32)>,
 }
 
 /// The two M3 shadow layers for an elevation level: `(offset_y, blur, spread, alpha)`.
@@ -91,6 +108,29 @@ impl ShapeStyle {
             // Contrast the pattern with this fill.
             Some(sp.contrasting(fill.l))
         });
+        let amount = self.surface.map_or(0.0, |sp| sp.fx.frost).clamp(0.0, 1.0);
+        self.frost = None;
+        if let Some(fill) = self.fill.as_mut().filter(|_| amount > 0.0) {
+            // The fill keeps its colour and turns as see-through as the design's glass;
+            // controls only halfway, so their labels keep the contrast of their fill.
+            let glass = theme.frost();
+            let mut clear = f32::from(glass.tint.a) / 255.0;
+            if !class.is_container() {
+                clear = (clear + fill.a) / 2.0;
+            }
+            fill.a += (clear.min(fill.a) - fill.a) * amount;
+            let style = &theme.surface_style;
+            self.frost = Some(FrostLayer {
+                amount,
+                blur: glass.blur,
+                saturation: glass.saturation,
+                mesh: (style.backdrop > 0.0).then_some((
+                    theme.palette.background,
+                    style.wash,
+                    style.backdrop,
+                )),
+            });
+        }
         if let Some(g) = over.glow_scale() {
             self.glow = self.glow.filter(|_| g > 0.0).map(|(c, r)| (c, r * g));
         }
@@ -217,6 +257,7 @@ impl ShapeStyle {
             elevation: None,
             lift_layers: None,
             edge_gap: None,
+            frost: None,
         }
     }
 
@@ -392,6 +433,17 @@ pub(crate) fn poly(
 
 /// Paint a [`ShapeStyle`] into `bounds` following `shape`'s outline polygon.
 pub fn paint_polygon(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape, s: &ShapeStyle) {
+    paint_polygon_over(window, bounds, shape, s, |_| ());
+}
+
+/// [`paint_polygon`], calling `under_fill` after the shadow and glow, right before the fill.
+fn paint_polygon_over(
+    window: &mut Window,
+    bounds: Bounds<Pixels>,
+    shape: &Shape,
+    s: &ShapeStyle,
+    under_fill: impl FnOnce(&mut Window),
+) {
     let w: f32 = bounds.size.width.into();
     let h: f32 = bounds.size.height.into();
     let full = shape.outline(w, h);
@@ -422,6 +474,7 @@ pub fn paint_polygon(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape,
             }
         }
     }
+    under_fill(window);
     if let Some(c) = s.fill {
         let notched = s.edge_gap.and_then(|(e, half, depth)| {
             on_edge(&full, e, w, h, |p, r, mid| {
@@ -568,8 +621,12 @@ fn shaped_base(shape: &Shape, style: ShapeStyle) -> Div {
             let shape = shape.clone();
             base.child(
                 canvas(
-                    |_, _, _| (),
-                    move |b, _, window, _| paint_polygon(window, b, &shape, &style),
+                    move |_, window, cx| free_glass(window, cx, &style),
+                    move |b, _, window, cx| {
+                        paint_polygon_over(window, b, &shape, &style, |window| {
+                            frost_under(window, cx, b, &shape, &style);
+                        })
+                    },
                 )
                 .absolute()
                 .top_0()
@@ -579,6 +636,33 @@ fn shaped_base(shape: &Shape, style: ShapeStyle) -> Div {
         }
         kind => {
             let mut d = base;
+            if style.frost.is_some() {
+                // The glass goes under the fill, so the fill is painted here too.
+                let sh = shape.clone();
+                d = d.child(
+                    canvas(
+                        move |_, window, cx| free_glass(window, cx, &style),
+                        move |b, _, window, cx| {
+                            frost_under(window, cx, b, &sh, &style);
+                            if let Some(f) = style.fill {
+                                let r = match kind {
+                                    ShapeKind::Rounded => sh.radius,
+                                    _ => 0.0,
+                                };
+                                let (w, h): (f32, f32) =
+                                    (b.size.width.into(), b.size.height.into());
+                                window.paint_quad(
+                                    gpui::fill(b, f).corner_radii(px(r.min(w.min(h) / 2.0))),
+                                );
+                            }
+                        },
+                    )
+                    .absolute()
+                    .top_0()
+                    .left_0()
+                    .size_full(),
+                );
+            }
             if style.scanlines || style.surface.is_some() {
                 let sh = shape.clone();
                 let (on, sc, pitch, sp) = (
@@ -608,7 +692,7 @@ fn shaped_base(shape: &Shape, style: ShapeStyle) -> Div {
             if kind == ShapeKind::Rounded {
                 d = d.rounded(px(shape.radius));
             }
-            if let Some(f) = style.fill {
+            if let Some(f) = style.fill.filter(|_| style.frost.is_none()) {
                 d = d.bg(f);
             }
             if let Some(c) = style.stroke {
@@ -678,6 +762,32 @@ fn shaped_base(shape: &Shape, style: ShapeStyle) -> Div {
             }
         }
     }
+}
+
+/// Paint the frosted glass of `style` under its fill, when it has one.
+fn frost_under(
+    window: &mut Window,
+    cx: &mut gpui::App,
+    bounds: Bounds<Pixels>,
+    shape: &Shape,
+    style: &ShapeStyle,
+) {
+    #[cfg(feature = "frost")]
+    if let Some(layer) = &style.frost {
+        crate::glass::paint_under(window, cx, bounds, shape, layer);
+    }
+    #[cfg(not(feature = "frost"))]
+    let _ = (window, cx, bounds, shape, style);
+}
+
+/// Free the glass textures of the last frame before this one paints.
+fn free_glass(window: &mut Window, cx: &mut gpui::App, style: &ShapeStyle) {
+    #[cfg(feature = "frost")]
+    if style.frost.is_some() {
+        crate::glass::free_unused(window, cx);
+    }
+    #[cfg(not(feature = "frost"))]
+    let _ = (window, cx, style);
 }
 
 /// Convenience: [`shaped`] with an element id so it can take click/hover listeners.

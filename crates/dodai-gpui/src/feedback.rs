@@ -260,6 +260,7 @@ impl RenderOnce for Spinner {
                             elevation: None,
                             lift_layers: None,
                             edge_gap: None,
+                            frost: None,
                         };
                         el = el.child(
                             shaped(&scaled_shape(&shape, 4.0), style)

@@ -10,6 +10,9 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 const W: usize = 96;
 const H: usize = 60;
+/// Width and height of the mesh picture.
+#[cfg(feature = "frost")]
+pub(crate) const MESH_SIZE: (usize, usize) = (W, H);
 const CACHE_LIMIT: usize = 16;
 
 /// Blob centres `(x, y, radius)` in unit coordinates, one per wash colour, plus a faint fourth.
@@ -66,8 +69,13 @@ pub(crate) fn pixels(
 }
 
 /// The canvas mesh of `t`, to place as the first child of the (relative) root; `None` for a
-/// design with a flat canvas.
+/// design with a flat canvas. With the `frost` feature, the wallpaper the app set with
+/// [`set_wallpaper`](crate::set_wallpaper) is drawn instead, for any design.
 pub fn backdrop(t: &Theme) -> Option<impl IntoElement> {
+    #[cfg(feature = "frost")]
+    if let Some(image) = crate::glass::wallpaper_image() {
+        return Some(cover(image));
+    }
     let strength = t.surface_style.backdrop;
     if strength <= 0.0 {
         return None;
@@ -87,14 +95,17 @@ pub fn backdrop(t: &Theme) -> Option<impl IntoElement> {
         }
         Some(i)
     })?;
-    Some(
-        gpui::div()
-            .absolute()
-            .top_0()
-            .left_0()
-            .size_full()
-            .child(img(image).object_fit(ObjectFit::Fill).w_full().h_full()),
-    )
+    Some(cover(image))
+}
+
+/// `image` stretched over its (relative) parent.
+fn cover(image: Arc<RenderImage>) -> gpui::Div {
+    gpui::div()
+        .absolute()
+        .top_0()
+        .left_0()
+        .size_full()
+        .child(img(image).object_fit(ObjectFit::Fill).w_full().h_full())
 }
 
 #[cfg(test)]

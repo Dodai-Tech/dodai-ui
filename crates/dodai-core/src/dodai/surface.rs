@@ -37,6 +37,7 @@ pub fn style(dark: bool, hue: f32) -> SurfaceStyle {
             rim: 0.6,
             edge: 0.2,
             clear: 0.45,
+            frost: 1.0,
             ..SurfaceFx::NONE
         },
         textures: TEXTURES,

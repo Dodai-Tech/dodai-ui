@@ -315,6 +315,7 @@ fn surface_tokens(t: &Theme) -> Vec<(String, String)> {
         ("wash".to_string(), tok("number", num(fx.wash))),
         ("rim".to_string(), tok("number", num(fx.rim))),
         ("clear".to_string(), tok("number", num(fx.clear))),
+        ("frost".to_string(), tok("number", num(fx.frost))),
     ];
     surface
 }
