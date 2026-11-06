@@ -133,7 +133,7 @@ fn led_bar(
     width: f32,
     height: f32,
 ) -> impl IntoElement {
-    let n = ((width / 8.0) as usize).clamp(10, 80);
+    let n = ((width / 6.0) as usize).clamp(10, 96);
     let frac = scale.fraction(value);
     let cols: Vec<Hsla> = (0..n)
         .map(
@@ -143,7 +143,7 @@ fn led_bar(
             },
         )
         .collect();
-    let ghost = if t.is_dark() { 0.12 } else { 0.24 };
+    let ghost = if t.is_dark() { 0.1 } else { 0.18 };
     canvas(
         |_, _, _| (),
         move |b: Bounds<Pixels>, _, w, _| {
@@ -153,8 +153,8 @@ fn led_bar(
                 let lit = (i as f32 + 0.5) / n as f32 <= frac;
                 let r = [
                     (x, 0.0),
-                    (x + step - 2.0, 0.0),
-                    (x + step - 2.0, height),
+                    (x + step * 0.7, 0.0),
+                    (x + step * 0.7, height),
                     (x, height),
                 ];
                 fill(
@@ -320,7 +320,7 @@ impl RenderOnce for SegmentCluster {
                                     .child(i.to_string())
                             })),
                     )
-                    .child(led_bar(&t, &rpm, self.rpm, bar_w, 18.0))
+                    .child(led_bar(&t, &rpm, self.rpm, bar_w, 12.0))
                     .child(label("RPM ×1000")),
             )
             .child(

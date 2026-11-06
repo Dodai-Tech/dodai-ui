@@ -110,7 +110,7 @@ pub(crate) fn plate(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> f32 {
         true,
     );
     fill(w, o, &circle(c, c, r_face), aged(ink));
-    crate::shapes::sunburst(w, o, (c, c), r_face, ink.text);
+    crate::draw::sunburst(w, o, (c, c), r_face, ink.text);
     stroke(
         w,
         o,

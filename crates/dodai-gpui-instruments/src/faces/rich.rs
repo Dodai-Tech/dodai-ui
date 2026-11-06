@@ -10,7 +10,7 @@ use crate::draw::{polar, turn_arc};
 use crate::gauges::SWEEP;
 use crate::pod_math as pm;
 use crate::shapes::{
-    band, chamfered, chrono_case, chrono_glass, circle, dir, hub, hud_ring, needle, Ink,
+    band, chamfered, chrono_case, chrono_glass, circle, dir, hud_ring, needle, Ink,
 };
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
 use dodai_gpui::theme_of;
@@ -193,7 +193,7 @@ impl GaugeFace {
                     &circle(c - dx * s * 0.1, c - dy * s * 0.1, s * 0.022),
                     col,
                 );
-                hub(w, o, (c, c), s * 0.038, ink, col);
+                crate::draw::hub(w, o, (c, c), s * 0.038, (ink.text, ink.face, col));
                 chrono_glass(w, o, s, r_face, ink);
             },
         )

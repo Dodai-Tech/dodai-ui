@@ -83,7 +83,7 @@ pub use scope::{DotMatrix, HexMap, Oscilloscope, RingStack, SignalBars, Spectrum
 pub use segment::{SegmentCluster, SegmentDisplay};
 
 #[cfg(feature = "automotive")]
-pub use cluster::{DigitalGauge, InstrumentCluster, PodGauge, Tachometer};
+pub use cluster::{DigitalGauge, InstrumentCluster};
 #[cfg(feature = "automotive")]
 pub use dash::{
     DashTriptych, LimitSign, MenuRing, Pod, PodStyle, RingTach, SidePod, Telltales, Tone,

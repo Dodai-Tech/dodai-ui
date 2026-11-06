@@ -182,7 +182,7 @@ impl RenderOnce for DialGauge {
             .iter()
             .map(|(a, b, s)| (*a, *b, severity_color(&t, *s)))
             .collect();
-        const SEGMENTS: usize = 30;
+        const SEGMENTS: usize = 48;
         let seg_cols: Vec<Hsla> = (0..SEGMENTS)
             .map(|i| {
                 let f = (i as f32 + 0.5) / SEGMENTS as f32;
@@ -199,21 +199,45 @@ impl RenderOnce for DialGauge {
                 let o = b.origin;
                 // Bezel and face.
                 fill(w, o, &disc(c, c, c - bezel_w * 0.5, 72), face);
-                let rim_pts: Vec<(f32, f32)> = (0..=96)
-                    .map(|i| polar(c, c, c - bezel_w * 0.5, i as f32 / 96.0))
-                    .collect();
-                stroke(w, o, &rim_pts, bezel_w, rim, true);
+                crate::draw::sunburst(w, o, (c, c), c - bezel_w, ink);
+                let ring = |r: f32| -> Vec<(f32, f32)> {
+                    (0..=96).map(|i| polar(c, c, r, i as f32 / 96.0)).collect()
+                };
+                stroke(
+                    w,
+                    o,
+                    &ring(c - bezel_w * 0.5),
+                    bezel_w * 0.6,
+                    scale_alpha(ink, 0.45),
+                    true,
+                );
+                stroke(
+                    w,
+                    o,
+                    &ring(c - size * 0.03),
+                    0.6,
+                    scale_alpha(ink, 0.15),
+                    true,
+                );
+                stroke(
+                    w,
+                    o,
+                    &ring(c - size * 0.034),
+                    0.6,
+                    scale_alpha(rim, 0.6),
+                    true,
+                );
                 let tick_ring = |w: &mut Window, r_out: f32, minor: f32, major: f32| {
                     for (f, is_major, col) in &ticks {
                         let len = if *is_major { major } else { minor };
                         let seg = [polar(c, c, r_out, at(*f)), polar(c, c, r_out - len, at(*f))];
-                        stroke(w, o, &seg, if *is_major { 2.2 } else { 1.0 }, *col, false);
+                        stroke(w, o, &seg, if *is_major { 1.4 } else { 0.6 }, *col, false);
                     }
                 };
                 match look {
                     DialLook::Analog => {
                         let r_z = c * 0.86;
-                        let thin = (band * 0.55).max(2.0);
+                        let thin = (band * 0.35).max(1.5);
                         stroke(
                             w,
                             o,
@@ -240,26 +264,21 @@ impl RenderOnce for DialGauge {
                                 .extend((0..=n).map(|i| {
                                     polar(c, c, c * 0.78, at(frac * i as f32 / n as f32))
                                 }));
-                            fill(w, o, &sector, scale_alpha(accent, 0.11));
+                            fill(w, o, &sector, scale_alpha(accent, 0.07));
                         }
                         tick_ring(w, c * 0.78, size * 0.028, size * 0.06);
                         // Needle: tapered, with a short tail behind the hub.
                         let tip = polar(c, c, c * 0.84, at(frac));
                         let tail = polar(c, c, size * 0.09, at(frac) + 0.5);
-                        let wing = size * 0.018;
+                        let wing = size * 0.011;
                         let l = polar(c, c, wing, at(frac) - 0.25);
                         let r = polar(c, c, wing, at(frac) + 0.25);
                         fill(w, o, &[l, tip, r, tail], needle_col);
-                        fill(w, o, &disc(c, c, size * 0.05, 24), face);
-                        let hub: Vec<(f32, f32)> = (0..=24)
-                            .map(|i| polar(c, c, size * 0.05, i as f32 / 24.0))
-                            .collect();
-                        stroke(w, o, &hub, 2.0, needle_col, true);
-                        fill(w, o, &disc(c, c, size * 0.018, 16), needle_col);
+                        crate::draw::hub(w, o, (c, c), size * 0.032, (ink, face, needle_col));
                     }
                     DialLook::Arc => {
                         let r_a = c * 0.84;
-                        let thick = band * 1.4;
+                        let thick = band * 0.8;
                         stroke(
                             w,
                             o,
@@ -282,18 +301,18 @@ impl RenderOnce for DialGauge {
                             let knob: Vec<(f32, f32)> = (0..=20)
                                 .map(|i| polar(ex, ey, thick * 0.9, i as f32 / 20.0))
                                 .collect();
-                            stroke(w, o, &knob, 2.0, accent, true);
+                            stroke(w, o, &knob, 1.4, accent, true);
                         }
                         tick_ring(w, r_a - thick * 1.3, size * 0.02, size * 0.04);
                     }
                     DialLook::Segmented => {
                         let r_a = c * 0.84;
-                        let thick = band * 1.7;
+                        let thick = band * 1.1;
                         let step = 1.0 / SEGMENTS as f32;
                         for (i, col) in seg_cols.iter().enumerate() {
                             let (a0, a1) = (
-                                i as f32 * step + step * 0.12,
-                                (i + 1) as f32 * step - step * 0.12,
+                                i as f32 * step + step * 0.15,
+                                (i + 1) as f32 * step - step * 0.15,
                             );
                             let lit = (i as f32 + 0.5) * step <= frac;
                             let col = if lit { *col } else { track };
@@ -348,8 +367,9 @@ impl RenderOnce for DialGauge {
             .items_center()
             .child(
                 div()
-                    .text_size(px(t.typography.size_xl))
-                    .font_family(first_family(t.typography.mono))
+                    .text_size(px(t.typography.size_xl * 1.15))
+                    .font_family(first_family(t.typography.display))
+                    .font_weight(gpui::FontWeight::LIGHT)
                     .text_color(if sev == Severity::Normal {
                         ink
                     } else {
@@ -368,9 +388,9 @@ impl RenderOnce for DialGauge {
         if let Some(l) = label {
             read = read.child(
                 div()
-                    .text_size(px(t.typography.size_sm))
+                    .text_size(px(t.typography.size_xs))
                     .text_color(muted)
-                    .child(format_label(&t.typography, &l)),
+                    .child(l.to_uppercase()),
             );
         }
         dial.child(read)

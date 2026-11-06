@@ -146,7 +146,7 @@ impl DesignSpec for Material3 {
             grid_color: t.palette.border.with_alpha(0.5),
             area_alpha: 0.12,
             dial: crate::DialLook::Arc,
-            cluster: crate::ClusterKind::Arc,
+            cluster: crate::ClusterKind::Dash,
             scope: crate::ScopeLook::Clean,
             response: crate::NeedleResponse::Snappy,
             ..crate::ChartStyle::from_theme(t)

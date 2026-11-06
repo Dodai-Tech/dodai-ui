@@ -149,6 +149,7 @@ fn centre(
                 .font_family(first_family(t.typography.display))
                 .text_size(px(big))
                 .line_height(px(big * 1.05))
+                .font_weight(gpui::FontWeight::LIGHT)
                 .text_color(color)
                 .child(value),
         )
@@ -161,9 +162,9 @@ fn centre(
         .child(
             div()
                 .mt(px(size * 0.03))
-                .text_size(px(t.typography.size_sm))
+                .text_size(px(t.typography.size_xs))
                 .text_color(hsla(t.palette.text))
-                .child(format_label(&t.typography, label)),
+                .child(label.to_uppercase()),
         )
 }
 
@@ -239,7 +240,7 @@ impl RenderOnce for GradientDial {
         let t = theme_of(cx);
         let s = self.size;
         let c = s / 2.0;
-        let band = (s * 0.07).max(t.sizes().slider_track);
+        let band = (s * 0.04).max(3.0);
         let r = c - band / 2.0 - 2.0;
         let frac = self.scale.fraction(self.value);
         let sev = self.scale.severity_at(self.value);
@@ -271,17 +272,17 @@ impl RenderOnce for GradientDial {
                 );
                 ramp_arc(w, o, (c, r, band), sweep, (0.0, frac), &cols, glow);
                 for &(f, major) in &ticks {
-                    let (r0, len) = (r - band * 1.1, if major { band * 0.9 } else { band * 0.45 });
+                    let (r0, len) = (r - band * 1.6, if major { s * 0.05 } else { s * 0.025 });
                     let col = if f <= frac { pick(&cols, f) } else { muted };
                     let seg = [
                         polar(c, c, r0, start + span * f),
                         polar(c, c, r0 - len, start + span * f),
                     ];
-                    stroke(w, o, &seg, if major { 2.0 } else { 1.0 }, col, false);
+                    stroke(w, o, &seg, if major { 1.2 } else { 0.6 }, col, false);
                 }
                 let (kx, ky) = polar(c, c, r, start + span * frac);
-                fill(w, o, &disc(kx, ky, band * 0.85, 24), face);
-                fill(w, o, &disc(kx, ky, band * 0.55, 24), tip);
+                fill(w, o, &disc(kx, ky, band * 1.3, 24), tip);
+                fill(w, o, &disc(kx, ky, band * 0.7, 24), face);
             },
         )
         .absolute()
@@ -365,7 +366,7 @@ impl RenderOnce for GradientRing {
         let t = theme_of(cx);
         let s = self.size;
         let c = s / 2.0;
-        let band = (s * 0.1).max(t.sizes().slider_track);
+        let band = (s * 0.055).max(3.0);
         let r = c - band / 2.0 - 2.0;
         let frac = self.percent / 100.0;
         let cols = sample(self.ramp, &t, 48);
@@ -487,7 +488,7 @@ impl RenderOnce for GradientBar {
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
                 let o = b.origin;
-                let gap = 2.0;
+                let gap = 1.5;
                 let cw = (width - gap * (n - 1) as f32) / n as f32;
                 for i in 0..n {
                     let (f0, f1) = (i as f32 / n as f32, (i + 1) as f32 / n as f32);
