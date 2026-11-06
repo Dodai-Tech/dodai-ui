@@ -815,142 +815,174 @@ impl Render for Showcase {
                                     } else {
                                         (230.0, 360.0)
                                     };
+                                    // First row: what the app looks like (design, theme, colour);
+                                    // second row: motion, mode, direction and patterns.
+                                    let row = || {
+                                        div()
+                                            .w_full()
+                                            .flex()
+                                            .flex_wrap()
+                                            .items_center()
+                                            .gap_x(px(t.spacing.md))
+                                            .gap_y(px(t.spacing.sm))
+                                    };
                                     div()
                                         .flex()
                                         .flex_none()
-                                        .flex_wrap()
-                                        .items_center()
-                                        .gap_x(px(t.spacing.md))
-                                        .gap_y(px(t.spacing.sm))
+                                        .flex_col()
+                                        .gap(px(t.spacing.sm))
                                         .px(px(if narrow { t.spacing.md } else { t.spacing.lg }))
                                         .py(px(t.spacing.sm))
                                         .border_b_1()
                                         .border_color(hsla(t.palette.border))
-                                        .child(pair(
-                                            "Animate",
-                                            dodai_gpui::Segmented::new(
-                                                "top-animate",
-                                                ["Off", "On"],
-                                            )
-                                            .selected(usize::from(dodai_gpui::motion::enabled()))
-                                            .on_select(|i, _, cx| {
-                                                dodai_gpui::motion::set_enabled(cx, i == 1)
-                                            })
-                                            .into_any_element(),
-                                        ))
-                                        .child(pair(
-                                            "Speed",
-                                            dodai_gpui::Segmented::new(
-                                                "top-speed",
-                                                ["0.5×", "1×", "2×", "4×"],
-                                            )
-                                            .selected(
-                                                [0.5, 1.0, 2.0, 4.0]
-                                                    .iter()
-                                                    .position(|v| {
-                                                        (*v - dodai_gpui::motion::speed()).abs()
-                                                            < 0.01
-                                                    })
-                                                    .unwrap_or(1),
-                                            )
-                                            .on_select(|i, _, cx| {
-                                                dodai_gpui::motion::set_speed(
-                                                    cx,
-                                                    [0.5, 1.0, 2.0, 4.0][i],
-                                                )
-                                            })
-                                            .into_any_element(),
-                                        ))
-                                        .child(pair(
-                                            "Mode",
-                                            dodai_gpui::Segmented::new(
-                                                "top-mode",
-                                                ["System", "Light", "Dark"],
-                                            )
-                                            .selected(
-                                                if dodai_gpui::following_system_appearance() {
-                                                    0
-                                                } else if t.meta.mode == dodai_core::Mode::Dark {
-                                                    2
-                                                } else {
-                                                    1
-                                                },
-                                            )
-                                            .on_select(|i, w, cx| match i {
-                                                0 => {
-                                                    dodai_gpui::follow_system_appearance(w, cx);
-                                                }
-                                                1 => {
-                                                    dodai_gpui::set_theme_mode(
-                                                        cx,
-                                                        dodai_core::Mode::Light,
-                                                    );
-                                                }
-                                                _ => {
-                                                    dodai_gpui::set_theme_mode(
-                                                        cx,
-                                                        dodai_core::Mode::Dark,
-                                                    );
-                                                }
-                                            })
-                                            .into_any_element(),
-                                        ))
-                                        .child(pair(
-                                            "Direction",
-                                            dodai_gpui::Segmented::new(
-                                                "top-direction",
-                                                ["LTR", "RTL"],
-                                            )
-                                            .selected(usize::from(dodai_gpui::is_rtl()))
-                                            .on_select(|i, _, cx| {
-                                                dodai_gpui::set_direction(
-                                                    cx,
-                                                    if i == 1 {
-                                                        dodai_gpui::Direction::Rtl
-                                                    } else {
-                                                        dodai_gpui::Direction::Ltr
-                                                    },
-                                                )
-                                            })
-                                            .into_any_element(),
-                                        ))
-                                        .child(pair(
-                                            "Patterns",
-                                            dodai_gpui::Segmented::new(
-                                                "top-patterns",
-                                                ["Off", "On"],
-                                            )
-                                            .selected(usize::from(
-                                                dodai_gpui_charts::common::patterns(),
-                                            ))
-                                            .on_select(|i, _, cx| {
-                                                dodai_gpui_charts::common::set_patterns(cx, i == 1)
-                                            })
-                                            .into_any_element(),
-                                        ))
-                                        .child(pair(
-                                            "Design",
-                                            div()
-                                                .flex_1()
-                                                .min_w(px(dw))
-                                                .child(dodai_gpui::DesignSystemSelector::new(
-                                                    "top-design",
+                                        .child(
+                                            row()
+                                                .child(pair(
+                                                    "Design",
+                                                    div()
+                                                        .flex_1()
+                                                        .min_w(px(dw))
+                                                        .child(
+                                                            dodai_gpui::DesignSystemSelector::new(
+                                                                "top-design",
+                                                            ),
+                                                        )
+                                                        .into_any_element(),
                                                 ))
-                                                .into_any_element(),
-                                        ))
-                                        .child(pair(
-                                            "Theme",
-                                            div()
-                                                .flex_1()
-                                                .min_w(px(tw))
-                                                .child(dodai_gpui::ThemeSelector::new("top-theme"))
-                                                .into_any_element(),
-                                        ))
-                                        .child(pair(
-                                            "Colour",
-                                            sections::shape::control_colour_picker("top-fill", cx)
-                                                .into_any_element(),
-                                        ))
+                                                .child(pair(
+                                                    "Theme",
+                                                    div()
+                                                        .flex_1()
+                                                        .min_w(px(tw))
+                                                        .child(dodai_gpui::ThemeSelector::new(
+                                                            "top-theme",
+                                                        ))
+                                                        .into_any_element(),
+                                                ))
+                                                .child(pair(
+                                                    "Colour",
+                                                    sections::shape::control_colour_picker(
+                                                        "top-fill", cx,
+                                                    )
+                                                    .into_any_element(),
+                                                )),
+                                        )
+                                        .child(
+                                            row()
+                                                .child(pair(
+                                                    "Animate",
+                                                    dodai_gpui::Segmented::new(
+                                                        "top-animate",
+                                                        ["Off", "On"],
+                                                    )
+                                                    .selected(usize::from(
+                                                        dodai_gpui::motion::enabled(),
+                                                    ))
+                                                    .on_select(|i, _, cx| {
+                                                        dodai_gpui::motion::set_enabled(cx, i == 1)
+                                                    })
+                                                    .into_any_element(),
+                                                ))
+                                                .child(pair(
+                                                    "Speed",
+                                                    dodai_gpui::Segmented::new(
+                                                        "top-speed",
+                                                        ["0.5×", "1×", "2×", "4×"],
+                                                    )
+                                                    .selected(
+                                                        [0.5, 1.0, 2.0, 4.0]
+                                                            .iter()
+                                                            .position(|v| {
+                                                                (*v - dodai_gpui::motion::speed())
+                                                                    .abs()
+                                                                    < 0.01
+                                                            })
+                                                            .unwrap_or(1),
+                                                    )
+                                                    .on_select(|i, _, cx| {
+                                                        dodai_gpui::motion::set_speed(
+                                                            cx,
+                                                            [0.5, 1.0, 2.0, 4.0][i],
+                                                        )
+                                                    })
+                                                    .into_any_element(),
+                                                ))
+                                                .child(pair(
+                                                    "Mode",
+                                                    dodai_gpui::Segmented::new(
+                                                        "top-mode",
+                                                        ["System", "Light", "Dark"],
+                                                    )
+                                                    .selected(
+                                                        if dodai_gpui::following_system_appearance()
+                                                        {
+                                                            0
+                                                        } else if t.meta.mode
+                                                            == dodai_core::Mode::Dark
+                                                        {
+                                                            2
+                                                        } else {
+                                                            1
+                                                        },
+                                                    )
+                                                    .on_select(|i, w, cx| match i {
+                                                        0 => {
+                                                            dodai_gpui::follow_system_appearance(
+                                                                w, cx,
+                                                            );
+                                                        }
+                                                        1 => {
+                                                            dodai_gpui::set_theme_mode(
+                                                                cx,
+                                                                dodai_core::Mode::Light,
+                                                            );
+                                                        }
+                                                        _ => {
+                                                            dodai_gpui::set_theme_mode(
+                                                                cx,
+                                                                dodai_core::Mode::Dark,
+                                                            );
+                                                        }
+                                                    })
+                                                    .into_any_element(),
+                                                ))
+                                                .child(pair(
+                                                    "Direction",
+                                                    dodai_gpui::Segmented::new(
+                                                        "top-direction",
+                                                        ["LTR", "RTL"],
+                                                    )
+                                                    .selected(usize::from(dodai_gpui::is_rtl()))
+                                                    .on_select(|i, _, cx| {
+                                                        dodai_gpui::set_direction(
+                                                            cx,
+                                                            if i == 1 {
+                                                                dodai_gpui::Direction::Rtl
+                                                            } else {
+                                                                dodai_gpui::Direction::Ltr
+                                                            },
+                                                        )
+                                                    })
+                                                    .into_any_element(),
+                                                ))
+                                                .child(pair(
+                                                    "Patterns",
+                                                    dodai_gpui::Segmented::new(
+                                                        "top-patterns",
+                                                        ["Off", "On"],
+                                                    )
+                                                    .selected(usize::from(
+                                                        dodai_gpui_charts::common::patterns(),
+                                                    ))
+                                                    .on_select(|i, _, cx| {
+                                                        dodai_gpui_charts::common::set_patterns(
+                                                            cx,
+                                                            i == 1,
+                                                        )
+                                                    })
+                                                    .into_any_element(),
+                                                )),
+                                        )
                                 },
                             )
                             .children(
