@@ -4,9 +4,9 @@ use super::super::*;
 use dodai_gpui::icons::IconId;
 use dodai_gpui::icons::Symbol;
 use dodai_gpui_instruments::{
-    BoostPod, CompassPod, DashQuad, DashTriptych, DualGauge, DualScale, GForcePod, GaugeFace,
-    LimitSign, Look, MediaPod, MenuRing, NoticePod, PodIcon, PodRow, PodStyle, RingTach, RowsPod,
-    Scale, Severity, SidePod, Telltales, Tone, TyrePod,
+    BoostPod, CompassPod, DashQuad, DashTriptych, DualGauge, DualScale, EnergyPod, GForcePod,
+    GaugeFace, LimitSign, Look, MediaPod, MenuRing, NoticePod, PodIcon, PodRow, PodStyle, RingTach,
+    RowsPod, Scale, Severity, ShiftLights, SidePod, Telltales, Tone, TyrePod,
 };
 
 /// A demo value drifting through `lo..=hi` on the animation clock.
@@ -376,6 +376,75 @@ impl Showcase {
         );
         add(
             self,
+            "Vehicle · Energy",
+            vec![
+                gallery(
+                    "The battery of an electric car: charge, power and range. Classic: a battery of cells under the charge, the power arc growing right from the top while driving. Every other look shows charge, power and range as rows.",
+                    looked(|s, z| {
+                        EnergyPod::new(val(60.0, 55.0, 80.0))
+                            .power(val(61.0, 10.0, 120.0))
+                            .range("312 km")
+                            .look(s)
+                            .size(z)
+                            .into_any_element()
+                    }),
+                ),
+                gallery(
+                    "Plugged in: the power flows back in, so the arc grows left in the success colour. Under a fifth of charge the cells turn amber, under a tenth red.",
+                    looked(|s, z| {
+                        EnergyPod::new(val(62.0, 12.0, 18.0))
+                            .power(-48.0)
+                            .charging(true)
+                            .range("54 km")
+                            .look(s)
+                            .size(z)
+                            .into_any_element()
+                    }),
+                ),
+            ],
+        );
+        add(
+            self,
+            "Vehicle · Shift lights",
+            vec![
+                gallery(
+                    "Lights over the engine speed: green, amber, then red towards the shift point, with the gear under them. Each look draws its own lights.",
+                    Look::ALL
+                        .into_iter()
+                        .map(|look| {
+                            (
+                                look.name(),
+                                centred(
+                                    ShiftLights::new(val(63.0, 4800.0, 6950.0))
+                                        .gear("4")
+                                        .look(look)
+                                        .width(180.0),
+                                ),
+                            )
+                        })
+                        .collect(),
+                ),
+                gallery(
+                    "At the shift point every light turns blue, and so does the gear: change up now.",
+                    Look::ALL
+                        .into_iter()
+                        .map(|look| {
+                            (
+                                look.name(),
+                                centred(
+                                    ShiftLights::new(7200.0)
+                                        .gear("4")
+                                        .look(look)
+                                        .width(180.0),
+                                ),
+                            )
+                        })
+                        .collect(),
+                ),
+            ],
+        );
+        add(
+            self,
             "Vehicle · Tyre pressure",
             vec![
                 gallery(
@@ -508,7 +577,7 @@ impl Showcase {
                     "The speed-limit sign: a heavy red ring round the limit. On the dash it sits above the ring where the limit applies.",
                     Look::ALL
                         .into_iter()
-                        .zip([30, 50, 80, 120, 60, 100])
+                        .zip([30, 50, 80, 120, 60, 100, 70, 90])
                         .map(|(look, v)| {
                             (
                                 look.name(),

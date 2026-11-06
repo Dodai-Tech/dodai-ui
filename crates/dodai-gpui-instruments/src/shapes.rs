@@ -18,6 +18,8 @@ pub(crate) struct Ink {
     pub info: Hsla,
     pub warn: Hsla,
     pub danger: Hsla,
+    pub ok: Hsla,
+    pub accent: Hsla,
 }
 
 impl Ink {
@@ -32,6 +34,8 @@ impl Ink {
             info: hsla(p.info),
             warn: hsla(p.warning),
             danger: hsla(p.danger),
+            ok: hsla(p.success),
+            accent: hsla(p.accent),
         }
     }
 }

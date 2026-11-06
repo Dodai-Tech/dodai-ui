@@ -116,10 +116,15 @@ fn pod_size(s: f32) -> f32 {
     pm::pod_diameter(s)
 }
 
+mod cockpit;
 mod detailed;
 mod digital;
+mod energy;
 mod future;
+mod nixie;
 mod vintage;
+
+pub use energy::{charge_tone, power_frac, power_text, EnergyPod};
 
 // ───────────────────────────────── TyrePod ─────────────────────────────────
 
@@ -1392,7 +1397,9 @@ impl RenderOnce for DualGauge {
     }
 }
 
-into_pod!(DualGauge, TyrePod, RowsPod, NoticePod, GForcePod, BoostPod, MediaPod, CompassPod);
+into_pod!(
+    DualGauge, TyrePod, RowsPod, NoticePod, GForcePod, BoostPod, MediaPod, CompassPod, EnergyPod
+);
 
 // ───────────────────────────────── DashQuad ─────────────────────────────────
 

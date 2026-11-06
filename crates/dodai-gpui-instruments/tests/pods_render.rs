@@ -74,6 +74,16 @@ fn pods() -> Vec<(String, AnyElement, f32)> {
             w,
         ));
         out.push((
+            n("energy"),
+            EnergyPod::new(64.0)
+                .power(-20.0)
+                .range("300 km")
+                .look(look)
+                .size(SIZE)
+                .into_any_element(),
+            w,
+        ));
+        out.push((
             n("rows"),
             RowsPod::new([PodRow::new(Symbol::Fuel, "40 l").bar(0.5, Tone::Info)])
                 .look(look)
