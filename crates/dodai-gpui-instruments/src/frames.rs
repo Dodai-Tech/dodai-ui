@@ -167,6 +167,12 @@ impl SpadeHand {
 }
 
 /// Paint a small name plate at `(x, y)`, `wd` by `h`, with two rivets.
+/// How far text on a [`name_plate`] of height `h` keeps from either end, clear of its rivets.
+/// Pure.
+pub(crate) fn plate_inset(h: f32) -> f32 {
+    h * 0.6
+}
+
 pub(crate) fn name_plate(
     w: &mut Window,
     o: Point<Pixels>,
@@ -176,6 +182,7 @@ pub(crate) fn name_plate(
     let p = chamfered(x, y, wd, h, h * 0.2);
     fill(w, o, &p, scale_alpha(ink.text, 0.1));
     stroke(w, o, &p, h * 0.04, scale_alpha(ink.text, 0.3), true);
+    // The rivets end before `plate_inset`, so the text never covers them.
     for rx in [x + h * 0.35, x + wd - h * 0.35] {
         fill(
             w,
@@ -528,6 +535,14 @@ pub(crate) fn wake(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn plate_text_keeps_clear_of_the_rivets() {
+        let h = 20.0;
+        // A rivet sits at 0.35 h with a radius of 0.09 h.
+        assert!(plate_inset(h) > h * (0.35 + 0.09));
+        assert!(plate_inset(h) < h);
+    }
 
     #[test]
     fn a_spade_hand_reaches_its_length_and_has_a_tail() {
