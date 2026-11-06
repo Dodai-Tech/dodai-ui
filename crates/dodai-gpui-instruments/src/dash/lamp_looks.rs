@@ -1,4 +1,4 @@
-//! The telltale lamps and the speed-limit sign in every [`Look`] but the classic one: bezels,
+//! The telltale lamps and the speed-limit sign in every [`Look`] but Sport: bezels,
 //! lamp lenses, chamfered frames, LCD blocks, halos, annunciator capsules and slanted race
 //! lenses. Colours from the theme.
 
@@ -135,7 +135,7 @@ pub(super) fn lamp(icon: Symbol, tone: Tone, sz: f32, look: Look, t: &Theme) -> 
                 stroke(w, o, &lens, d * 0.03, scale_alpha(col, 0.35), true);
             }
         }
-        Look::Classic => {}
+        Look::Sport => {}
     };
     div()
         .relative()
@@ -228,7 +228,7 @@ pub(super) fn sign(limit: u32, d: f32, look: Look, t: &Theme) -> AnyElement {
             fill(w, o, &frame, ink.ground);
             stroke(w, o, &frame, d * 0.06, red, true);
         }
-        Look::Classic => {}
+        Look::Sport => {}
     };
     let figure: AnyElement = match look {
         Look::Segment => seg_text(&text, c, c - fs * 0.6, fs * 1.2, red).into_any_element(),

@@ -95,7 +95,7 @@ pub use flight::{AttitudeIndicator, Countermeasures, HeadingTape, SonarWaterfall
 #[cfg(feature = "automotive")]
 pub use hero::{CapsuleCluster, CutSpeedometer};
 #[cfg(feature = "automotive")]
-pub use look::{AtLimit, Look};
+pub use look::{AtLimit, Layout, Look};
 #[cfg(feature = "automotive")]
 pub use pods::{
     BoostPod, CompassPod, DashQuad, DualGauge, DualScale, EnergyPod, GForcePod, MediaPod,

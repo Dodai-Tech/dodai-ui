@@ -4,13 +4,14 @@
 //! They take the same data, so a dash can swap one for another without touching its values.
 //! Every colour comes from the theme.
 
+mod layouts;
 mod panels;
 mod rich;
 mod styles;
 
 use crate::dash::{SidePod, Tone};
 use crate::dial::severity_color;
-use crate::look::{AtLimit, Look};
+use crate::look::{AtLimit, Layout, Look};
 use crate::pod_math as pm;
 use dodai_gpui::follow::{follow, Follow};
 use dodai_gpui::follow_api;
@@ -35,7 +36,7 @@ pub struct GaugeFace {
     unit: SharedString,
     decimals: usize,
     ends: [Option<Tone>; 2],
-    alternate: bool,
+    layout: Layout,
     size: f32,
 }
 
@@ -49,14 +50,14 @@ impl GaugeFace {
             follow: Follow::here(),
             scale,
             value,
-            look: Look::Classic,
+            look: Look::Sport,
             at_limit: AtLimit::Value,
             icon: None,
             label: SharedString::default(),
             unit: SharedString::default(),
             decimals: 0,
             ends: [None, None],
-            alternate: false,
+            layout: Layout::Dial,
             size: 200.0,
         }
     }
@@ -96,15 +97,15 @@ impl GaugeFace {
         self.ends = [low, high];
         self
     }
-    /// Use the look's alternative layout where it has one: [`Look::HeadsUp`] becomes a vertical
-    /// tape scrolling under a pointer box, [`Look::Vintage`] a panel meter with its pivot below
-    /// the window. The other looks ignore it.
-    pub fn alternate(mut self, on: bool) -> Self {
-        self.alternate = on;
+    /// The layout within the look (see [`Look::layouts`]): a tape for [`Look::HeadsUp`], a
+    /// meter or a ribbon for [`Look::Vintage`], an arc or a bar for [`Look::Halo`]. A look
+    /// without the layout draws its dial.
+    pub fn layout(mut self, layout: Layout) -> Self {
+        self.layout = layout;
         self
     }
-    /// Width of the face in px (at least 64); every look is square but the heads-up tape, which is
-    /// taller.
+    /// Width of the face in px (at least 64). Dials are square; the tape is taller, the ribbon,
+    /// arc and bar flatter.
     pub fn size(mut self, s: f32) -> Self {
         self.size = pm::finite(s, 200.0).max(64.0);
         self
@@ -114,16 +115,20 @@ impl GaugeFace {
 impl RenderOnce for GaugeFace {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
         self.value = pm::finite(follow(w, cx, &self.follow, 0, self.value), self.scale.min);
-        match self.look {
-            Look::Classic => self.dial(),
-            Look::Chronograph => self.chrono(cx),
-            Look::HeadsUp if self.alternate => self.tape_face(cx),
-            Look::HeadsUp => self.hud(cx),
-            Look::Vintage => self.vintage(cx),
-            Look::Segment => self.digital(cx),
-            Look::Halo => self.futuristic(cx),
-            Look::GlassCockpit => self.cockpit(cx),
-            Look::Race => self.race(cx),
+        match (self.look, self.look.fit(self.layout)) {
+            (Look::Sport, _) => self.dial(),
+            (Look::Chronograph, _) => self.chrono(cx),
+            (Look::HeadsUp, Layout::Tape) => self.tape_face(cx),
+            (Look::HeadsUp, _) => self.hud(cx),
+            (Look::Vintage, Layout::Meter) => self.panel_meter(cx),
+            (Look::Vintage, Layout::Ribbon) => self.ribbon(cx),
+            (Look::Vintage, _) => self.vintage(cx),
+            (Look::Halo, Layout::Arc) => self.halo_arc(cx),
+            (Look::Halo, Layout::Bar) => self.halo_bar(cx),
+            (Look::Segment, _) => self.digital(cx),
+            (Look::Halo, _) => self.futuristic(cx),
+            (Look::GlassCockpit, _) => self.cockpit(cx),
+            (Look::Race, _) => self.race(cx),
         }
     }
 }

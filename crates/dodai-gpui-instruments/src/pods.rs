@@ -7,7 +7,7 @@ use crate::dash::{text_box, Frame, LimitSign, Pod, PodStyle, RingTach, Telltales
 use crate::dial::severity_color;
 use crate::draw::{polar, turn_arc};
 use crate::gauges::disc;
-use crate::look::{AtLimit, Look};
+use crate::look::{AtLimit, Layout, Look};
 use crate::pod_math as pm;
 use dodai_gpui::follow::{follow, follow_angle, Follow};
 use dodai_gpui::follow_api;
@@ -152,7 +152,7 @@ impl TyrePod {
             bars: [None; 4],
             low: 0.0,
             size: 300.0,
-            look: Look::Classic,
+            look: Look::Sport,
             style: PodStyle::Ring,
         }
     }
@@ -207,7 +207,7 @@ impl Default for TyrePod {
 impl RenderOnce for TyrePod {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        if self.look != Look::Classic {
+        if self.look != Look::Sport {
             return self.detailed(&t);
         }
         let size = self.size;
@@ -316,7 +316,7 @@ impl RowsPod {
             heading: SharedString::default(),
             rows: rows.into_iter().collect(),
             size: 300.0,
-            look: Look::Classic,
+            look: Look::Sport,
             style: PodStyle::Ring,
         }
     }
@@ -345,7 +345,7 @@ impl RowsPod {
 impl RenderOnce for RowsPod {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        if self.look != Look::Classic {
+        if self.look != Look::Sport {
             return self.detailed(&t);
         }
         let size = self.size;
@@ -446,7 +446,7 @@ impl NoticePod {
             text: SharedString::default(),
             tone: Tone::Off,
             size: 300.0,
-            look: Look::Classic,
+            look: Look::Sport,
             style: PodStyle::Ring,
         }
     }
@@ -480,7 +480,7 @@ impl NoticePod {
 impl RenderOnce for NoticePod {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        if self.look != Look::Classic {
+        if self.look != Look::Sport {
             return self.detailed(&t);
         }
         let size = self.size;
@@ -562,7 +562,7 @@ impl GForcePod {
             longitudinal,
             limit: 1.5,
             size: 300.0,
-            look: Look::Classic,
+            look: Look::Sport,
             style: PodStyle::Ring,
         }
     }
@@ -593,7 +593,7 @@ impl RenderOnce for GForcePod {
         self.lateral = pm::finite(follow(w, cx, &self.follow, 0, self.lateral), 0.0);
         self.longitudinal = pm::finite(follow(w, cx, &self.follow, 1, self.longitudinal), 0.0);
         let t = theme_of(cx);
-        if self.look != Look::Classic {
+        if self.look != Look::Sport {
             return self.detailed(&t);
         }
         let size = self.size;
@@ -694,7 +694,7 @@ impl BoostPod {
             percent: pm::percent(percent),
             label: "BOOST".into(),
             temp: SharedString::default(),
-            look: Look::Classic,
+            look: Look::Sport,
             at_limit: AtLimit::Value,
             size: 300.0,
             style: PodStyle::Ring,
@@ -705,7 +705,7 @@ impl BoostPod {
         self.label = l.into();
         self
     }
-    /// The look (see [`Look`]); every look but [`Look::Classic`] draws the level as a
+    /// The look (see [`Look`]); every look but [`Look::Sport`] draws the level as a
     /// [`GaugeFace`](crate::faces::GaugeFace) from 0 to 100 %, amber over 80.
     pub fn look(mut self, look: Look) -> Self {
         self.look = look;
@@ -737,7 +737,7 @@ impl BoostPod {
 impl RenderOnce for BoostPod {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
         self.percent = pm::percent(follow(w, cx, &self.follow, 0, self.percent));
-        if self.look != Look::Classic {
+        if self.look != Look::Sport {
             return crate::faces::GaugeFace::new(
                 Scale::new(0.0, 100.0)
                     .ticks_per(5, 2)
@@ -886,7 +886,7 @@ impl MediaPod {
             time: "0:00 | 0:00".into(),
             cover: None,
             size: 300.0,
-            look: Look::Classic,
+            look: Look::Sport,
             style: PodStyle::Ring,
         }
     }
@@ -925,7 +925,7 @@ impl MediaPod {
 impl RenderOnce for MediaPod {
     fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        if self.look != Look::Classic {
+        if self.look != Look::Sport {
             return self.detailed(&t);
         }
         let size = self.size;
@@ -1013,7 +1013,7 @@ impl CompassPod {
             heading: pm::bearing(heading),
             height: SharedString::default(),
             size: 300.0,
-            look: Look::Classic,
+            look: Look::Sport,
             style: PodStyle::Ring,
         }
     }
@@ -1043,7 +1043,7 @@ impl RenderOnce for CompassPod {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
         self.heading = pm::bearing(follow_angle(w, cx, &self.follow, 0, self.heading));
         let t = theme_of(cx);
-        if self.look != Look::Classic {
+        if self.look != Look::Sport {
             return self.detailed(&t);
         }
         let (size, heading) = (self.size, self.heading);
@@ -1162,14 +1162,14 @@ impl DualScale {
             decimals: 0,
         }
     }
-    /// Decimals of the written value (default 0), in every look but [`Look::Classic`], which
+    /// Decimals of the written value (default 0), in every look but [`Look::Sport`], which
     /// writes no value.
     pub fn decimals(mut self, n: usize) -> Self {
         self.decimals = n.min(3);
         self
     }
     /// A caption ("Pressure"), written on the reading's own face in every look but
-    /// [`Look::Classic`], where the unit alone tells the two scales apart.
+    /// [`Look::Sport`], where the unit alone tells the two scales apart.
     pub fn label(mut self, label: impl Into<SharedString>) -> Self {
         self.label = Some(label.into());
         self
@@ -1188,7 +1188,7 @@ pub struct DualGauge {
     icon: Symbol,
     look: Look,
     at_limit: AtLimit,
-    alternate: bool,
+    layout: Layout,
     style: PodStyle,
     size: f32,
 }
@@ -1203,15 +1203,15 @@ impl DualGauge {
             upper,
             lower,
             icon,
-            look: Look::Classic,
+            look: Look::Sport,
             at_limit: AtLimit::Value,
-            alternate: false,
+            layout: Layout::Dial,
             size: 300.0,
             style: PodStyle::Ring,
         }
     }
-    /// The look (see [`Look`]); every look but [`Look::Classic`] draws the two scales as two
-    /// [`GaugeFace`](crate::faces::GaugeFace)s on the diagonal, upper left and lower right.
+    /// The look (see [`Look`]); every look but [`Look::Sport`] draws the upper scale on a
+    /// [`GaugeFace`](crate::faces::GaugeFace) with the lower one on a strip under it.
     pub fn look(mut self, look: Look) -> Self {
         self.look = look;
         self
@@ -1222,11 +1222,11 @@ impl DualGauge {
         self.at_limit = at;
         self
     }
-    /// Draw both faces in the look's alternative layout (see
-    /// [`GaugeFace::alternate`](crate::faces::GaugeFace::alternate)): Vintage panel meters, or
-    /// Heads-up tapes, which stand side by side instead.
-    pub fn alternate(mut self, on: bool) -> Self {
-        self.alternate = on;
+    /// The face's layout within the look (see
+    /// [`GaugeFace::layout`](crate::faces::GaugeFace::layout)); heads-up tapes draw both scales
+    /// as tapes side by side.
+    pub fn layout(mut self, layout: Layout) -> Self {
+        self.layout = layout;
         self
     }
     /// How the frame is drawn (open ring, closed disc, glow or bezel).
@@ -1245,23 +1245,25 @@ impl RenderOnce for DualGauge {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
         self.upper.value = pm::finite(follow(w, cx, &self.follow, 0, self.upper.value), 0.0);
         self.lower.value = pm::finite(follow(w, cx, &self.follow, 1, self.lower.value), 0.0);
-        if self.look != Look::Classic {
+        if self.look != Look::Sport {
             // One face for the upper reading with the lower one on a strip under it, in the look's
             // style. Tall tapes have the room for two, so they stand side by side.
             let size = self.size;
-            let tapes = self.alternate && self.look == Look::HeadsUp;
-            let small = if tapes {
-                size * 0.5
-            } else {
-                size * (1.0 - dual::STRIP)
+            let layout = self.look.fit(self.layout);
+            let tapes = layout == Layout::Tape;
+            // The flat layouts leave room for the strip at full width.
+            let small = match layout {
+                Layout::Tape => size * 0.5,
+                Layout::Ribbon | Layout::Arc | Layout::Bar => size,
+                Layout::Dial | Layout::Meter => size * (1.0 - dual::STRIP),
             };
-            let (look, alternate, at_limit) = (self.look, self.alternate, self.at_limit);
+            let (look, at_limit) = (self.look, self.at_limit);
             let face = |d: DualScale, icon: Option<Symbol>| {
                 let f = crate::faces::GaugeFace::new(d.scale, d.value)
                     .animate(false)
                     .look(look)
                     .at_limit(at_limit)
-                    .alternate(alternate)
+                    .layout(layout)
                     .unit(d.unit)
                     .decimals(d.decimals)
                     .size(small);

@@ -73,7 +73,7 @@ impl ShiftLights {
             shift: 7000.0,
             count: 10,
             gear: None,
-            look: Look::Classic,
+            look: Look::Sport,
             width: 320.0,
         }
     }
@@ -106,12 +106,12 @@ impl ShiftLights {
     }
 }
 
-/// Paint the strip the lights sit in, `wd` by `h`, as `look` builds it: none for the classic dash,
+/// Paint the strip the lights sit in, `wd` by `h`, as `look` builds it: none for the sport dash,
 /// a bezel, a plate, brackets, an LCD, a glow line, a display frame or a race plate.
 fn housing(w: &mut Window, o: gpui::Point<Pixels>, (wd, h): (f32, f32), look: Look, ink: Ink) {
     let k = h * 0.25;
     match look {
-        Look::Classic => {}
+        Look::Sport => {}
         Look::Chronograph => {
             let p = rounded(0.0, 0.0, wd, h, h / 2.0);
             fill(w, o, &p, scale_alpha(ink.text, 0.06));
@@ -182,7 +182,7 @@ fn light(
     let (cx, cy, r) = (x + d / 2.0, y + d / 2.0, d / 2.0);
     let off = scale_alpha(ink.text, 0.1);
     match look {
-        Look::Classic => fill(w, o, &circle(cx, cy, r * 0.8), if lit { col } else { off }),
+        Look::Sport => fill(w, o, &circle(cx, cy, r * 0.8), if lit { col } else { off }),
         Look::Chronograph => {
             stroke(w, o, &circle(cx, cy, r * 0.92), d * 0.08, ink.line, true);
             fill(w, o, &circle(cx, cy, r * 0.62), if lit { col } else { off });
@@ -375,7 +375,7 @@ impl RenderOnce for ShiftLights {
                     .line_height(px(h))
                     .font_weight(match look {
                         Look::Halo => FontWeight::LIGHT,
-                        Look::Classic => FontWeight::MEDIUM,
+                        Look::Sport => FontWeight::MEDIUM,
                         _ => FontWeight::BOLD,
                     })
                     .text_color(col)

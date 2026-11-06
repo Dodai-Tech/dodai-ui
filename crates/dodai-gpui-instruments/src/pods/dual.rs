@@ -1,4 +1,4 @@
-//! The second reading of a twin pod outside the classic look: one strip under the main face, its
+//! The second reading of a twin pod outside the sport look: one strip under the main face, its
 //! caption on the left and its figure on the right, drawn in the look's own style. Every colour
 //! comes from the theme.
 
@@ -84,7 +84,7 @@ pub(super) fn strip(
     let base = div().relative().w(px(wd)).h(px(h));
     match look {
         // A recessed window, like the date on a watch.
-        Look::Classic | Look::Chronograph => base
+        Look::Sport | Look::Chronograph => base
             .rounded(px(h * 0.2))
             .bg(ink.face)
             .border_1()

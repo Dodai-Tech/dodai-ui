@@ -107,18 +107,22 @@ fn instruments(v: f32) -> Vec<AnyElement> {
     {
         use dodai_gpui::icons::Symbol;
         for look in Look::ALL {
-            out.push(
-                GaugeFace::new(Scale::new(v, 10.0).zone(v, 9.0, Severity::Alarm), v)
-                    .look(look)
-                    .size(v)
-                    .into_any_element(),
-            );
-            out.push(
-                GaugeFace::new(Scale::new(5.0, 5.0), v)
-                    .look(look)
-                    .icon(Symbol::Fuel)
-                    .into_any_element(),
-            );
+            for &layout in look.layouts() {
+                out.push(
+                    GaugeFace::new(Scale::new(v, 10.0).zone(v, 9.0, Severity::Alarm), v)
+                        .look(look)
+                        .layout(layout)
+                        .size(v)
+                        .into_any_element(),
+                );
+                out.push(
+                    GaugeFace::new(Scale::new(5.0, 5.0), v)
+                        .look(look)
+                        .layout(layout)
+                        .icon(Symbol::Fuel)
+                        .into_any_element(),
+                );
+            }
         }
         for look in Look::ALL {
             out.extend([
@@ -192,7 +196,7 @@ fn instruments(v: f32) -> Vec<AnyElement> {
                     Symbol::OilCan,
                 )
                 .look(look)
-                .alternate(true)
+                .layout(look.layouts()[look.layouts().len() - 1])
                 .size(v)
                 .into_any_element(),
                 DashQuad::new(

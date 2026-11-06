@@ -248,7 +248,7 @@ impl RingTach {
             tab: SharedString::default(),
             fuel: None,
             reach: SharedString::default(),
-            look: Look::Classic,
+            look: Look::Sport,
             at_limit: AtLimit::Value,
             size: 380.0,
         }
@@ -268,7 +268,7 @@ impl RingTach {
         self.tab = t.into();
         self
     }
-    /// The look (see [`Look`]). Every look but [`Look::Classic`] draws the engine speed as a
+    /// The look (see [`Look`]). Every look but [`Look::Sport`] draws the engine speed as a
     /// [`GaugeFace`](crate::faces::GaugeFace) captioned with the road speed; the tab and the fuel
     /// are left out.
     pub fn look(mut self, look: Look) -> Self {
@@ -299,7 +299,7 @@ impl RenderOnce for RingTach {
         self.rpm = follow(w, cx, &self.follow, 0, self.rpm);
         self.speed = follow(w, cx, &self.follow, 1, self.speed);
         self.fuel = self.fuel.map(|f| follow(w, cx, &self.follow, 2, f));
-        if self.look != Look::Classic {
+        if self.look != Look::Sport {
             return crate::faces::GaugeFace::new(self.scale, self.rpm)
                 .animate(false)
                 .look(self.look)
@@ -565,7 +565,7 @@ impl SidePod {
             ends: [None, None],
             centre: None,
             needle: true,
-            look: Look::Classic,
+            look: Look::Sport,
             at_limit: AtLimit::Value,
             size: 300.0,
             style: PodStyle::Ring,
@@ -596,7 +596,7 @@ impl SidePod {
         self.ends = [low, high];
         self
     }
-    /// The look (see [`Look`]); every look but [`Look::Classic`] draws it as a [`GaugeFace`](crate::faces::GaugeFace); the reading becomes its caption and a custom centre is left out.
+    /// The look (see [`Look`]); every look but [`Look::Sport`] draws it as a [`GaugeFace`](crate::faces::GaugeFace); the reading becomes its caption and a custom centre is left out.
     pub fn look(mut self, look: Look) -> Self {
         self.look = look;
         self
@@ -627,7 +627,7 @@ impl SidePod {
 impl RenderOnce for SidePod {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
         self.value = follow(w, cx, &self.follow, 0, self.value);
-        if self.look != Look::Classic {
+        if self.look != Look::Sport {
             let mut face = crate::faces::GaugeFace::new(self.scale, self.value)
                 .animate(false)
                 .look(self.look)
@@ -792,7 +792,7 @@ impl MenuRing {
             chosen: None,
             pressed: false,
             size: 300.0,
-            look: Look::Classic,
+            look: Look::Sport,
             style: PodStyle::Ring,
         }
     }
@@ -836,7 +836,7 @@ impl MenuRing {
 impl RenderOnce for MenuRing {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        if self.look != Look::Classic {
+        if self.look != Look::Sport {
             return self.detailed(&t);
         }
         let size = self.size;
@@ -933,7 +933,7 @@ impl LimitSign {
     pub fn new(limit: u32) -> Self {
         Self {
             limit,
-            look: Look::Classic,
+            look: Look::Sport,
             size: 40.0,
         }
     }
@@ -952,7 +952,7 @@ impl LimitSign {
 impl RenderOnce for LimitSign {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
-        if self.look != Look::Classic {
+        if self.look != Look::Sport {
             return lamp_looks::sign(self.limit, self.size, self.look, &t);
         }
         let size = self.size;
@@ -1007,7 +1007,7 @@ impl Telltales {
     pub fn new() -> Self {
         Self {
             items: Vec::new(),
-            look: Look::Classic,
+            look: Look::Sport,
             size: 22.0,
             columns: usize::MAX,
         }
@@ -1048,7 +1048,7 @@ impl RenderOnce for Telltales {
         let mut row = div().flex().gap(px(gap));
         let mut n = 0;
         for (icon, tone) in &self.items {
-            row = row.child(if self.look == Look::Classic {
+            row = row.child(if self.look == Look::Sport {
                 Icon::symbol(*icon)
                     .size(self.size)
                     .weight(2.0)

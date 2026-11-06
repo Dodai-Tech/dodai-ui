@@ -116,14 +116,17 @@ fn pods() -> Vec<(String, AnyElement, f32)> {
         SIZE,
     ));
     for look in Look::ALL {
-        out.push((
-            format!("face-{}", look.name()),
-            GaugeFace::new(Scale::new(0.0, 8.0), 3.2)
-                .look(look)
-                .size(SIZE)
-                .into_any_element(),
-            f32::NAN,
-        ));
+        for &layout in look.layouts() {
+            out.push((
+                format!("face-{}-{}", look.name(), layout.name()),
+                GaugeFace::new(Scale::new(0.0, 8.0), 3.2)
+                    .look(look)
+                    .layout(layout)
+                    .size(SIZE)
+                    .into_any_element(),
+                f32::NAN,
+            ));
+        }
     }
     out
 }
