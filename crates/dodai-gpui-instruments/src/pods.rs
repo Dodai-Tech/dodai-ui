@@ -119,6 +119,7 @@ fn pod_size(s: f32) -> f32 {
 mod cockpit;
 mod detailed;
 mod digital;
+mod dual;
 mod energy;
 mod future;
 mod race;
@@ -1176,7 +1177,9 @@ impl DualScale {
 }
 
 /// A pod with two scales on one ring: the upper half for one reading, the lower arc inside for
-/// another, each with its own needle (oil pressure over oil temperature).
+/// another, each with its own needle (oil pressure over oil temperature). The other looks draw
+/// the first reading on one face with the second on a strip under it in the look's style; the
+/// heads-up tapes stand side by side.
 #[derive(IntoElement)]
 pub struct DualGauge {
     follow: Follow,
@@ -1238,31 +1241,20 @@ impl DualGauge {
     }
 }
 
-/// How much of a twin pod's side each of its two faces takes in `look`, so that the faces on
-/// the diagonal stay clear of each other: round faces may reach into the other's corner, square
-/// plates and panel meters (`alternate`) only take half less a gap. Pure.
-fn dual_share(look: Look, alternate: bool) -> f32 {
-    // Two discs of diameter k on the diagonal of a unit square just touch when
-    // (1 - k) * √2 = k, so k = √2 / (1 + √2); keep a little under it.
-    const ROUND: f32 = 0.57;
-    const SQUARE: f32 = 0.48;
-    match look {
-        Look::Chrono | Look::Futuristic => ROUND,
-        Look::HeadsUp if !alternate => ROUND,
-        _ => SQUARE,
-    }
-}
-
 impl RenderOnce for DualGauge {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
         self.upper.value = pm::finite(follow(w, cx, &self.follow, 0, self.upper.value), 0.0);
         self.lower.value = pm::finite(follow(w, cx, &self.follow, 1, self.lower.value), 0.0);
         if self.look != Look::Classic {
-            // Two faces on the diagonal, upper left and lower right, clear of each other: a twin
-            // cluster that fits the pod's square at any size. Tall tapes stand side by side.
+            // One face for the upper reading with the lower one on a strip under it, in the look's
+            // style. Tall tapes have the room for two, so they stand side by side.
             let size = self.size;
             let tapes = self.alternate && self.look == Look::HeadsUp;
-            let small = size * dual_share(self.look, self.alternate);
+            let small = if tapes {
+                size * 0.5
+            } else {
+                size * (1.0 - dual::STRIP)
+            };
             let (look, alternate, at_limit) = (self.look, self.alternate, self.at_limit);
             let face = |d: DualScale, icon: Option<Symbol>| {
                 let f = crate::faces::GaugeFace::new(d.scale, d.value)
@@ -1282,8 +1274,8 @@ impl RenderOnce for DualGauge {
                     None => f,
                 }
             };
-            let (upper, lower) = (face(self.upper, Some(self.icon)), face(self.lower, None));
             if tapes {
+                let (upper, lower) = (face(self.upper, Some(self.icon)), face(self.lower, None));
                 return div()
                     .w(px(size))
                     .h(px(size))
@@ -1294,15 +1286,23 @@ impl RenderOnce for DualGauge {
                     .child(lower)
                     .into_any_element();
             }
-            let at = |x: f32, el: crate::faces::GaugeFace| {
-                div().absolute().left(px(x)).top(px(x)).child(el)
-            };
+            let t = theme_of(cx);
+            let strip = dual::strip(
+                self.look,
+                &self.lower,
+                small,
+                size * (dual::STRIP - 0.03),
+                &t,
+            );
             return div()
-                .relative()
                 .w(px(size))
                 .h(px(size))
-                .child(at(0.0, upper))
-                .child(at(size - small, lower))
+                .flex()
+                .flex_col()
+                .items_center()
+                .justify_between()
+                .child(face(self.upper, Some(self.icon)))
+                .child(strip)
                 .into_any_element();
         }
         let t = theme_of(cx);
@@ -1607,26 +1607,5 @@ impl RenderOnce for DashQuad {
                 )
                 .child(div().flex().flex_col().children(gears)),
         )
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn twin_faces_stay_clear_of_each_other() {
-        for look in Look::ALL {
-            for alternate in [false, true] {
-                let k = dual_share(look, alternate);
-                // Upper left at 0, lower right at 1 - k: discs on the diagonal keep apart…
-                let gap = (1.0 - k) * std::f32::consts::SQRT_2 - k;
-                assert!(gap > 0.0, "{look:?} discs keep apart");
-                // …and anything not round fits in half the side.
-                let round = matches!(look, Look::Chrono | Look::Futuristic)
-                    || (look == Look::HeadsUp && !alternate);
-                assert!(round || k < 0.5, "{look:?} plates keep apart");
-            }
-        }
     }
 }
