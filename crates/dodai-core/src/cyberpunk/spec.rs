@@ -55,6 +55,28 @@ impl DesignSpec for Cyberpunk {
     fn name(&self) -> &'static str {
         "Cyberpunk"
     }
+    /// A 45° cut corner with a double edge tick on the far end, or a shallow edge slot.
+    fn button_crop(&self, t: &Theme, end: crate::Crop) -> Option<crate::ButtonCrop> {
+        use crate::{ButtonCrop as B, CropEdge as E};
+        Some(match end {
+            crate::Crop::Left => B::CutTicked {
+                corners: crate::Corners::TOP_LEFT,
+                tick: E::Right,
+            },
+            crate::Crop::Right => B::CutTicked {
+                corners: crate::Corners::BOTTOM_RIGHT,
+                tick: E::Left,
+            },
+            crate::Crop::Top => B::Slot {
+                edge: E::Top,
+                depth: t.spacing.xs,
+            },
+            crate::Crop::Bottom => B::Slot {
+                edge: E::Bottom,
+                depth: t.spacing.xs,
+            },
+        })
+    }
 
     /// Technical: dashed gridlines under thin neon lines.
     fn chart_style(&self, t: &Theme) -> Option<crate::ChartStyle> {

@@ -17,6 +17,7 @@
 pub mod chart_style;
 mod color;
 mod component;
+mod crop;
 pub mod export;
 mod palette;
 mod shape_system;
@@ -56,6 +57,7 @@ pub use dodai_fx::{
     EffectSet, PressStyle, Surface, SurfaceClass, SurfaceFx, SurfaceTargets, SurfaceTuning, Texture,
 };
 pub mod motion;
+pub use crop::{ButtonCrop, Crop, CropEdge};
 pub use motion::{Easing, EntryKind, EntrySet, Motion};
 pub use palette::{Mode, Palette, Roles, SymbolState, Tone};
 pub use shape_system::{

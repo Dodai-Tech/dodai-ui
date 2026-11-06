@@ -217,6 +217,19 @@ impl DesignSpec for Dodai {
     fn name(&self) -> &'static str {
         "Dodai"
     }
+    /// A leaf: two diagonal corners drawn tight, the other two left soft.
+    fn button_crop(&self, t: &Theme, end: crate::Crop) -> Option<crate::ButtonCrop> {
+        let corners = match end {
+            crate::Crop::Left => crate::Corners::DIAGONAL,
+            crate::Crop::Right => crate::Corners::ANTI_DIAGONAL,
+            crate::Crop::Top | crate::Crop::Bottom => return None,
+        };
+        Some(crate::ButtonCrop::Squared {
+            corners,
+            radius: t.spacing.xs / 2.0,
+            rest: crate::FULL,
+        })
+    }
 
     /// Glassy: soft lines, faint gridlines, a luminous area fill.
     fn chart_style(&self, t: &Theme) -> Option<crate::ChartStyle> {

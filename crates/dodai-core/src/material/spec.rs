@@ -124,6 +124,20 @@ impl DesignSpec for Material3 {
     fn name(&self) -> &'static str {
         "Material 3"
     }
+    /// A connected end: that side's corners drawn tight, as in split and connected buttons.
+    fn button_crop(&self, t: &Theme, end: crate::Crop) -> Option<crate::ButtonCrop> {
+        let corners = match end {
+            crate::Crop::Left => crate::Corners::LEFT,
+            crate::Crop::Right => crate::Corners::RIGHT,
+            crate::Crop::Top => crate::Corners::TOP,
+            crate::Crop::Bottom => crate::Corners::BOTTOM,
+        };
+        Some(crate::ButtonCrop::Squared {
+            corners,
+            radius: t.spacing.xs,
+            rest: crate::FULL,
+        })
+    }
 
     /// Soft: slightly heavier lines, quiet outline-variant gridlines, a light area tint.
     fn chart_style(&self, t: &Theme) -> Option<crate::ChartStyle> {

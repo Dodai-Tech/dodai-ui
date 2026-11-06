@@ -732,22 +732,41 @@ impl Showcase {
         let mut out: Vec<Section> = Vec::new();
         {
             use dodai_gpui::Crop;
-            // Segments: 0 hands the choice back to the design, 1 is "no crop", then these four.
-            let crops = [Crop::Left, Crop::Right, Crop::Top, Crop::Bottom];
+            // Segments: 0 hands the choice back to the design, 1 is "no crop", then the ends
+            // this design has a crop for (each design draws its own).
+            let crops: Vec<Crop> = t.button_crops();
+            if crops.is_empty() {
+                return out;
+            }
+            let looks: Vec<_> = crops.iter().filter_map(|c| t.button_crop(*c)).collect();
+            let ticked = looks.iter().any(|l| l.has_tick());
+            let mut kinds: Vec<&str> = looks.iter().map(|l| l.describe()).collect();
+            kinds.dedup();
             let gaps = [None, Some(0.0_f32), Some(2.0), Some(4.0), Some(8.0)];
             let crop_sel = match dodai_gpui::button_crop(cx) {
                 None => 0,
                 Some(None) => 1,
-                Some(Some(c)) => 2 + crops.iter().position(|x| *x == c).unwrap_or(0),
+                Some(Some(c)) => crops.iter().position(|x| *x == c).map_or(1, |i| i + 2),
             };
+            let labels: Vec<SharedString> = ["Design", "Off"]
+                .into_iter()
+                .chain(crops.iter().map(|c| c.name()))
+                .map(SharedString::from)
+                .collect();
+            let hint = format!(
+                "Crops one end of every button the {} way: {}.",
+                t.spec.get().map_or("design's", |s| s.name()),
+                kinds.join("; ")
+            );
             let gap_sel = gaps
                 .iter()
                 .position(|g| *g == dodai_gpui::button_cut_gap(cx))
                 .unwrap_or(0);
-            let crop_row = setting(&t,
+            let crop_row = setting(
+                &t,
                 "Crop end",
-                "Cuts one end of every button and adds a double tick on the other. Left cuts the top left, Right the bottom right.",
-                Segmented::new("bc-crop", ["Design", "Off", "Left", "Right", "Top", "Bottom"])
+                hint,
+                Segmented::new("bc-crop", labels)
                     .selected(crop_sel)
                     .on_select(move |i, _, cx| match i {
                         0 => dodai_gpui::reset_button_crop(cx),
@@ -786,7 +805,7 @@ impl Showcase {
                         "Settings apply to every button below and across the showcase. Ready-made cropped buttons are under Actions.",
                     ))
                     .child(crop_row)
-                    .child(gap_row)
+                    .children(ticked.then_some(gap_row))
                     .child(preview)
                     .into_any_element(),
                 "Button crop",
@@ -1018,7 +1037,7 @@ fn tune_choice(
 fn setting(
     t: &dodai_core::Theme,
     label: &'static str,
-    hint: &'static str,
+    hint: impl Into<SharedString>,
     control: gpui::AnyElement,
 ) -> gpui::Div {
     // Label column and control wrap onto two lines when the page is narrow; the control column
@@ -1046,7 +1065,7 @@ fn setting(
                 .max_w_full()
                 .gap(px(t.spacing.xs))
                 .child(control)
-                .child(Muted::new(hint)),
+                .child(Muted::new(hint.into())),
         )
 }
 

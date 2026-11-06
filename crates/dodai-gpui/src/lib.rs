@@ -115,7 +115,7 @@ pub(crate) use surface_setter;
 macro_rules! crop_setters {
     ($ty:ident) => {
         impl $ty {
-            /// Crop an end: cut corner plus edge tick (left/right) or a shallow slot (top/bottom); see `Button::crop`.
+            /// Crop an end, drawn the way the current design crops it; see `Button::crop`.
             pub fn crop(mut self, c: $crate::Crop) -> Self {
                 self.crop = Some(c);
                 self
@@ -380,9 +380,9 @@ pub use panel::{
 };
 #[cfg(feature = "components")]
 pub use picker::{
-    days_in_month, format_date, format_date_time, format_time, month_grid, parse_date, parse_time,
-    range_pick, shift_month, step_hour, step_minute, to_12h, weekday, Date, DateInput, DatePicker,
-    DateRange, DateTimePicker, TimeInput, TimePicker,
+    days_in_month, format_date, format_date_time, format_date_time_range, format_time, month_grid,
+    parse_date, parse_time, range_pick, shift_month, step_hour, step_minute, to_12h, weekday, Date,
+    DateInput, DatePicker, DateRange, DateTimePicker, DateTimeRangePicker, TimeInput, TimePicker,
 };
 #[cfg(feature = "components")]
 pub use popover::{ContextMenu, DropdownMenu, HoverCard, Popover, PopoverPlacement};

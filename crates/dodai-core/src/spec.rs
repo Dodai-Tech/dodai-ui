@@ -189,6 +189,11 @@ pub trait DesignSpec: Send + Sync + std::fmt::Debug {
     fn fab(&self, _t: &Theme, _v: ButtonVariant, _s: ControlState) -> Option<ButtonTokens> {
         None
     }
+    /// How this design crops `end` of a button, in its own shape language. `None` (the
+    /// default) leaves that end uncropped, so no design ever borrows another's crop.
+    fn button_crop(&self, _t: &Theme, _end: crate::Crop) -> Option<crate::ButtonCrop> {
+        None
+    }
     /// Adjust the icon-button tokens `base` (already resolved as a plain button).
     fn icon_button(
         &self,

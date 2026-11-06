@@ -115,6 +115,8 @@ pub struct Showcase {
     /// The branch of the Icons tree the sidebar picked (what the section shows).
     icon_pick: sections::IconPick,
     date_range: dodai_gpui::DateRange,
+    /// Start and end time of day of the date-time range demo.
+    range_times: ((u32, u32), (u32, u32)),
     cat: usize,
     cat_count: usize,
     /// `(category, title)` of every section, built once; drives the sidebar.
@@ -1096,7 +1098,8 @@ pub fn run() {
             let p = theme_of(cx).palette;
             dodai_gpui::set_wallpaper(cx, sections::shape::glass_picture(&p, w, h), w, h);
         }
-        // Designs with cut corners start cropped on the left (the Shape page can change it, on any design).
+        // Designs with cut corners start cropped on the left (the Shape page can change it; every
+        // design draws the crop its own way).
         dodai_gpui::set_design_button_crop(cx, Some(dodai_gpui::Crop::Left));
         // Debug: DODAI_STYLE=round|cut|scoop forces that corner style on every design.
         if let Ok(v) = std::env::var("DODAI_STYLE") {
