@@ -173,16 +173,24 @@ fn gallery(text: &str, items: Vec<(&'static str, gpui::AnyElement)>) -> gpui::An
         .into_any_element()
 }
 
-/// A reading in every [`Look`], then the alternative layouts (the vintage panel meter and the
-/// heads-up tape): the dash dial comes from `dial`, the rest from `face(look, alternate, size)`.
+/// The looks the sections show: the one picked, or every look. Pure.
+fn shown(only: Option<Look>) -> Vec<Look> {
+    only.map_or_else(|| Look::ALL.to_vec(), |l| vec![l])
+}
+
+/// A reading in each shown [`Look`], then the alternative layouts of those looks (the vintage
+/// panel meter and the heads-up tape): the dash dial comes from `dial`, the rest from
+/// `face(look, alternate, size)`.
 fn looks(
+    only: Option<Look>,
     dial: gpui::AnyElement,
     face: impl Fn(Look, bool, f32) -> gpui::AnyElement,
 ) -> Vec<(&'static str, gpui::AnyElement)> {
     let mut dial = Some(dial);
-    let mut out: Vec<(&'static str, gpui::AnyElement)> = Look::ALL
-        .into_iter()
-        .map(|l| {
+    let looks = shown(only);
+    let mut out: Vec<(&'static str, gpui::AnyElement)> = looks
+        .iter()
+        .map(|&l| {
             let el = match (l, dial.take()) {
                 (Look::Classic, Some(d)) => d,
                 _ => face(l, false, POD),
@@ -190,8 +198,12 @@ fn looks(
             (l.name(), el)
         })
         .collect();
-    out.push(("Vintage meter", face(Look::Vintage, true, POD)));
-    out.push(("Heads-up tape", face(Look::HeadsUp, true, POD)));
+    if looks.contains(&Look::Vintage) {
+        out.push(("Vintage meter", face(Look::Vintage, true, POD)));
+    }
+    if looks.contains(&Look::HeadsUp) {
+        out.push(("Heads-up tape", face(Look::HeadsUp, true, POD)));
+    }
     out
 }
 
@@ -295,9 +307,12 @@ fn oil_faces(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
         .into_any_element()
 }
 
-/// One pod in each [`Look`], built by `make(look, size)`.
-fn looked(make: impl Fn(Look, f32) -> gpui::AnyElement) -> Vec<(&'static str, gpui::AnyElement)> {
-    Look::ALL
+/// One pod in each shown [`Look`], built by `make(look, size)`.
+fn looked(
+    only: Option<Look>,
+    make: impl Fn(Look, f32) -> gpui::AnyElement,
+) -> Vec<(&'static str, gpui::AnyElement)> {
+    shown(only)
         .into_iter()
         .map(|s| (s.name(), make(s, POD)))
         .collect()
@@ -318,6 +333,12 @@ impl Showcase {
     /// The vehicle part of "Instruments": one section per instrument, then whole dashes built from them.
     pub(crate) fn sections_vehicle(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
+        // The look picked above the sections; `None` shows every look.
+        let only = self
+            .inst_look
+            .checked_sub(1)
+            .and_then(|i| Look::ALL.get(i).copied());
+        let dash_look = only.unwrap_or_default();
         let mut out: Vec<Section> = Vec::new();
         let mut add = |me: &mut Self, title: &'static str, parts: Vec<gpui::AnyElement>| {
             let panel = parts
@@ -325,29 +346,47 @@ impl Showcase {
                 .fold(me.section(title, cx), |p, e| p.child(e));
             out.push(("Instruments", title, panel.into_any_element(), "Vehicle"));
         };
+        // First every look side by side, whatever is picked: the one place that shows them all.
+        add(
+            self,
+            "Vehicle · Looks",
+            vec![gallery(
+                "Every vehicle instrument comes in eight looks: the same data, drawn as a classic dash ring, a chronograph, a vintage panel, a heads-up display, a segment LCD, a halo of light, a glass cockpit or a race display. Here the engine speed in each; pick a look above to see every instrument and the example dashes in it.",
+                Look::ALL
+                    .into_iter()
+                    .map(|l| {
+                        let el = match l {
+                            Look::Classic => tach().size(POD).into_any_element(),
+                            _ => rev_face(l, false, POD),
+                        };
+                        (l.name(), el)
+                    })
+                    .collect(),
+            )],
+        );
         // Dials: the scales round a ring.
         add(
             self,
             "Vehicle · Engine speed",
             vec![gallery(
-                "The revs, 0 to 8 in thousands, amber from 6 and red from 7. Classic: the ribbed ring of the dash with the road speed in the middle, a trip tab and the fuel level. The others show the revs alone: a chronograph with a sub-dial, a vintage dial with a spade hand and a drum counter, a heads-up ring, a segment display and a halo of light. Last come the two alternative layouts, a panel meter and a heads-up tape.",
-                looks(tach().size(POD).into_any_element(), rev_face),
+                "The revs, 0 to 8 in thousands, amber from 6 and red from 7. Classic: the ribbed ring of the dash with the road speed in the middle, a trip tab and the fuel level. The others show the revs alone: a chronograph with a sub-dial, a vintage dial with a spade hand and a drum counter, a heads-up ring, a segment display and a halo of light. Vintage and heads-up add an alternative layout: a panel meter and a tape.",
+                looks(only, tach().size(POD).into_any_element(), rev_face),
             )],
         );
         add(
             self,
             "Vehicle · Speed",
             vec![gallery(
-                "The speed, 0 to 270, amber above 220. Classic: the dash pod in steps of 30 with the speed limit in the middle and no needle. Then every other look and the two alternative layouts.",
-                looks(speed().size(POD).into_any_element(), speed_face),
+                "The speed, 0 to 270, amber above 220. Classic: the dash pod in steps of 30 with the speed limit in the middle and no needle. The other looks draw it as a gauge face; vintage and heads-up add a panel meter and a tape.",
+                looks(only, speed().size(POD).into_any_element(), speed_face),
             )],
         );
         add(
             self,
             "Vehicle · Battery voltage",
             vec![gallery(
-                "The on-board voltage, 6 to 18 V, in every look. Red under 11 V, amber over 15 V.",
-                looks(volt().size(POD).into_any_element(), volt_face),
+                "The on-board voltage, 6 to 18 V. Red under 11 V, amber over 15 V.",
+                looks(only, volt().size(POD).into_any_element(), volt_face),
             )],
         );
         add(
@@ -355,23 +394,24 @@ impl Showcase {
             "Vehicle · Oil pressure and temperature",
             vec![gallery(
                 "Oil pressure (bar) and oil temperature (°C). Classic: two needles on one ring, pressure on the upper half and temperature on the lower arc. The other looks draw the pressure on one face and the temperature on a strip under it in the look's style; the heads-up tapes stand side by side.",
-                looks(oil().size(POD).into_any_element(), oil_faces),
+                looks(only, oil().size(POD).into_any_element(), oil_faces),
             )],
         );
         add(
             self,
             "Vehicle · Coolant temperature",
             vec![gallery(
-                "Coolant temperature, 60 to 130 °C, in every look. The last part of the scale is a red warning band; the figure turns red inside it.",
-                looks(coolant().size(POD).into_any_element(), coolant_face),
+                "Coolant temperature, 60 to 130 °C. The last part of the scale is a red warning band; the figure turns red inside it.",
+                looks(only, coolant().size(POD).into_any_element(), coolant_face),
             )],
         );
         add(
             self,
             "Vehicle · Boost",
             vec![gallery(
-                "The boost (or charge) level in percent. Classic: the cell stack inside a segmented band with a limit mark and the battery temperature. Then the same level in every other look and the two alternative layouts. Past 80 % the screen looks here colour their whole display amber, an option (at_limit(AtLimit::Display)); by default only the value takes the limit's colour.",
+                "The boost (or charge) level in percent. Classic: the cell stack inside a segmented band with a limit mark and the battery temperature. The other looks draw it as a gauge face; vintage and heads-up add a panel meter and a tape. Past 80 % the screen looks here colour their whole display amber, an option (at_limit(AtLimit::Display)); by default only the value takes the limit's colour.",
                 looks(
+                    only,
                     BoostPod::new(val(48.0, 0.0, 100.0))
                         .temp("9 °C")
                         .size(POD)
@@ -386,7 +426,7 @@ impl Showcase {
             vec![
                 gallery(
                     "The battery of an electric car: charge, power and range. Classic: a battery of cells under the charge, the power arc growing right from the top while driving. Every other look shows charge, power and range as rows.",
-                    looked(|s, z| {
+                    looked(only, |s, z| {
                         EnergyPod::new(val(60.0, 55.0, 80.0))
                             .power(val(61.0, 10.0, 120.0))
                             .range("312 km")
@@ -397,7 +437,7 @@ impl Showcase {
                 ),
                 gallery(
                     "Plugged in: the power flows back in, so the arc grows left in the success colour. Under a fifth of charge the cells turn amber, under a tenth red.",
-                    looked(|s, z| {
+                    looked(only, |s, z| {
                         EnergyPod::new(val(62.0, 12.0, 18.0))
                             .power(-48.0)
                             .charging(true)
@@ -415,7 +455,7 @@ impl Showcase {
             vec![
                 gallery(
                     "Lights over the engine speed: green, amber, then red towards the shift point, with the gear under them. Each look draws its own lights.",
-                    Look::ALL
+                    shown(only)
                         .into_iter()
                         .map(|look| {
                             (
@@ -432,7 +472,7 @@ impl Showcase {
                 ),
                 gallery(
                     "At the shift point every light turns blue, and so does the gear: change up now.",
-                    Look::ALL
+                    shown(only)
                         .into_iter()
                         .map(|look| {
                             (
@@ -455,7 +495,7 @@ impl Showcase {
             vec![
                 gallery(
                     "The pressure of each tyre in bar: front left and right on top, rear left and right below. A tyre under the limit is written in the warning colour.",
-                    looked(|s, z| {
+                    looked(only, |s, z| {
                         tyres()
                             .bars([Some(2.4), Some(2.4), Some(2.3), Some(2.2)])
                             .low_below(2.3)
@@ -466,7 +506,7 @@ impl Showcase {
                 ),
                 gallery(
                     "Before the car is moving, or when no sensor answers, each tyre shows dashes and a note says from which speed it is measured.",
-                    looked(|s, z| {
+                    looked(only, |s, z| {
                         TyrePod::new()
                             .heading("Pressure deviation")
                             .note("Measured from 25 km/h")
@@ -482,7 +522,7 @@ impl Showcase {
             "Vehicle · G-force",
             vec![gallery(
                 "A dot moves on a dotted cross inside a thin circle. The force sideways and the force forwards or back are written at its four ends.",
-                looked(|s, z| {
+                looked(only, |s, z| {
                     GForcePod::new(val(46.0, -0.8, 0.8), val(47.0, -0.5, 0.9))
                         .look(s)
                         .size(z)
@@ -495,7 +535,7 @@ impl Showcase {
             "Vehicle · Compass",
             vec![gallery(
                 "A card that turns with the heading: the four cardinal points on a thin circle, a blue arrow, the bearing in degrees, the cardinal point and the height.",
-                looked(|s, z| {
+                looked(only, |s, z| {
                     CompassPod::new(val(49.0, 0.0, 359.0))
                         .height("460 m")
                         .look(s)
@@ -510,7 +550,7 @@ impl Showcase {
             "Vehicle · Vehicle info",
             vec![gallery(
                 "Four levels on dark tiles: oil temperature, coolant temperature, oil pressure and battery voltage. Each has a bar; the temperature bars carry a blue tick at the cold end and a red one at the hot end.",
-                looked(|s, z| vehicle_rows().look(s).size(z).into_any_element()),
+                looked(only, |s, z| vehicle_rows().look(s).size(z).into_any_element()),
             )],
         );
         add(
@@ -518,7 +558,7 @@ impl Showcase {
             "Vehicle · Trip",
             vec![gallery(
                 "The trip since a time: duration, distance, consumption and average speed, each with its own symbol.",
-                looked(|s, z| trip_rows().look(s).size(z).into_any_element()),
+                looked(only, |s, z| trip_rows().look(s).size(z).into_any_element()),
             )],
         );
         add(
@@ -526,7 +566,7 @@ impl Showcase {
             "Vehicle · Today",
             vec![gallery(
                 "Several things in one list: the date, the track playing, the battery charge and a heading strip with a marker for the direction.",
-                looked(|s, z| today_rows().look(s).size(z).into_any_element()),
+                looked(only, |s, z| today_rows().look(s).size(z).into_any_element()),
             )],
         );
         // Messages, media and menus.
@@ -535,7 +575,7 @@ impl Showcase {
             "Vehicle · Message",
             vec![gallery(
                 "A message: a tab with a back arrow at the top, a symbol, the title and one line of advice. The rim is blue at both ends.",
-                looked(|s, z| notice().look(s).size(z).into_any_element()),
+                looked(only, |s, z| notice().look(s).size(z).into_any_element()),
             )],
         );
         add(
@@ -543,7 +583,7 @@ impl Showcase {
             "Vehicle · Media",
             vec![gallery(
                 "What is playing: the cover, the title in blue, the artist or show, and the elapsed and total time.",
-                looked(|s, z| media().look(s).size(z).into_any_element()),
+                looked(only, |s, z| media().look(s).size(z).into_any_element()),
             )],
         );
         add(
@@ -552,7 +592,7 @@ impl Showcase {
             vec![
                 gallery(
                     "A short list in a ring. A grey bar marks the row under the cursor; the row that is switched on is written in blue.",
-                    looked(|s, z| {
+                    looked(only, |s, z| {
                         MenuRing::new(["Information", "Vehicle", "Oil level"])
                             .selected(0)
                             .chosen(1)
@@ -563,7 +603,7 @@ impl Showcase {
                 ),
                 gallery(
                     "While the button is held the bar fills with the accent colour and gets blue edges.",
-                    looked(|s, z| {
+                    looked(only, |s, z| {
                         MenuRing::new(["G-Force", "G-Force Max.", "Reset max."])
                             .selected(1)
                             .pressed(true)
@@ -581,7 +621,7 @@ impl Showcase {
             vec![
                 gallery(
                     "The speed-limit sign: a heavy red ring round the limit. On the dash it sits above the ring where the limit applies.",
-                    Look::ALL
+                    shown(only)
                         .into_iter()
                         .zip([30, 50, 80, 120, 60, 100, 70, 90])
                         .map(|(look, v)| {
@@ -594,7 +634,7 @@ impl Showcase {
                 ),
                 gallery(
                     "Telltale lamps: red for danger, green for on, amber for a fault, grey when off.",
-                    Look::ALL
+                    shown(only)
                         .into_iter()
                         .map(|look| (look.name(), centred(tells().look(look).size(34.0).columns(3))))
                         .collect(),
@@ -605,11 +645,13 @@ impl Showcase {
         let col = || div().flex().flex_col().gap(gap);
         let quad = |l: [dodai_gpui_instruments::Pod; 2], r: [dodai_gpui_instruments::Pod; 2]| {
             DashQuad::new(tach(), l, r)
+                .look(dash_look)
                 .telltales(tells())
                 .limit(50)
                 .mode("HYBRID AUTO")
                 .width(1000.0)
         };
+        let tri = |d: DashTriptych| dash(d).look(dash_look);
         let examples = col()
             .child(Muted::new(
                 "The classic five instruments: voltage, speed, engine speed, oil and coolant.",
@@ -637,14 +679,14 @@ impl Showcase {
                 ],
             ))
             .child(Muted::new("Three instruments: a pair beside the ring."))
-            .child(dash(DashTriptych::new(
+            .child(tri(DashTriptych::new(
                 tach(),
                 tyres()
                     .bars([Some(2.4), Some(2.4), Some(2.3), Some(2.2)])
                     .low_below(2.3),
                 vehicle_rows(),
             )))
-            .child(dash(DashTriptych::new(
+            .child(tri(DashTriptych::new(
                 tach(),
                 TyrePod::new()
                     .heading("Pressure deviation")
@@ -652,14 +694,14 @@ impl Showcase {
                     .style(PodStyle::Glow),
                 notice().style(PodStyle::Glow),
             )))
-            .child(dash(DashTriptych::new(
+            .child(tri(DashTriptych::new(
                 tach(),
                 BoostPod::new(0.0).temp("9 °C"),
                 MenuRing::new(["Information", "Vehicle", "Oil level"])
                     .selected(0)
                     .chosen(1),
             )))
-            .child(dash(DashTriptych::new(
+            .child(tri(DashTriptych::new(
                 tach(),
                 MenuRing::new(["G-Force", "G-Force Max.", "Reset max."])
                     .selected(0)
@@ -667,12 +709,12 @@ impl Showcase {
                     .style(PodStyle::Bezel),
                 media().style(PodStyle::Bezel),
             )))
-            .child(dash(DashTriptych::new(
+            .child(tri(DashTriptych::new(
                 tach(),
                 MenuRing::new(["G-Force", "G-Force Max.", "Reset max."]).selected(0),
                 today_rows(),
             )))
-            .child(dash(DashTriptych::new(
+            .child(tri(DashTriptych::new(
                 tach(),
                 GForcePod::new(val(44.0, -0.8, 0.8), val(45.0, -0.5, 0.9)),
                 CompassPod::new(343.0).height("460 m"),
@@ -680,7 +722,7 @@ impl Showcase {
             .into_any_element();
         add(self, "Vehicle · Examples", vec![examples]);
         let mut by_look = col();
-        for look in Look::ALL {
+        for look in shown(only) {
             by_look = by_look.child(Muted::new(look.name())).child(
                 quad(
                     [volt().into(), speed().into()],
