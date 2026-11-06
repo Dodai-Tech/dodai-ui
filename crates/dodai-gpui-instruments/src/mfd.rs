@@ -14,6 +14,23 @@ pub(crate) fn rect(x: f32, y: f32, wd: f32, h: f32) -> Vec<(f32, f32)> {
     vec![(x, y), (x + wd, y), (x + wd, y + h), (x, y + h)]
 }
 
+/// The bezel's width round the glass, as a fraction of the page.
+pub(crate) const BEZEL: f32 = 0.055;
+
+/// The heights of the soft keys down each side, as fractions of the page.
+pub(crate) const KEYS: [f32; 5] = [0.2, 0.35, 0.5, 0.65, 0.8];
+
+/// The page size from which the bezel shows its screws, keys, sensor and rocker.
+const DETAIL_FROM: f32 = 150.0;
+
+/// Where the corner screws sit, as fractions of the page.
+const CORNERS: [(f32, f32); 4] = [
+    (BEZEL * 0.55, BEZEL * 0.55),
+    (1.0 - BEZEL * 0.55, BEZEL * 0.55),
+    (BEZEL * 0.55, 1.0 - BEZEL * 0.55),
+    (1.0 - BEZEL * 0.55, 1.0 - BEZEL * 0.55),
+];
+
 /// Paint a display page filling a square of `s`: a rounded bezel shaded lighter at the top, a
 /// light sensor over the glass, a brightness rocker under it, a screw in each corner and a row of
 /// raised soft keys on each side, and the dark glass with a soft sheen across its top left.
@@ -44,43 +61,59 @@ pub(crate) fn page(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> (f32, 
         scale_alpha(ink.text, 0.28),
         false,
     );
-    let k = s * 0.055;
-    for (x, y) in [
-        (k * 0.55, k * 0.55),
-        (s - k * 0.55, k * 0.55),
-        (k * 0.55, s - k * 0.55),
-        (s - k * 0.55, s - k * 0.55),
-    ] {
-        screw(w, o, (x, y), k * 0.2, ink);
+    let k = BEZEL * s;
+    // On a small page the screws, sensor, rocker and keys would only be specks: leave them off.
+    let detailed = s >= DETAIL_FROM;
+    if detailed {
+        for (x, y) in CORNERS {
+            screw(w, o, (x * s, y * s), k * 0.2, ink);
+        }
+        // The light sensor over the glass and the brightness rocker under it.
+        fill(
+            w,
+            o,
+            &crate::shapes::circle(s * 0.5, k * 0.5, k * 0.13),
+            ink.ground,
+        );
+        let (rw, rh) = (s * 0.14, k * 0.42);
+        let ry = s - k * 0.5 - rh / 2.0;
+        key(w, o, (s * 0.5 - rw / 2.0, ry, rw, rh), ink);
+        stroke(
+            w,
+            o,
+            &[(s * 0.5, ry + rh * 0.2), (s * 0.5, ry + rh * 0.8)],
+            lw,
+            ink.ground,
+            false,
+        );
     }
-    // The light sensor over the glass and the brightness rocker under it.
-    fill(
-        w,
-        o,
-        &crate::shapes::circle(s * 0.5, k * 0.5, k * 0.13),
-        ink.ground,
-    );
-    let (rw, rh) = (s * 0.14, k * 0.42);
-    let ry = s - k * 0.5 - rh / 2.0;
-    key(w, o, (s * 0.5 - rw / 2.0, ry, rw, rh), ink);
-    stroke(
-        w,
-        o,
-        &[(s * 0.5, ry + rh * 0.2), (s * 0.5, ry + rh * 0.8)],
-        lw,
-        ink.ground,
-        false,
-    );
     let glass = (k, k, s - 2.0 * k, s - 2.0 * k);
     let g = rect(glass.0, glass.1, glass.2, glass.3);
     fill(w, o, &g, ink.ground);
+    // The picture glows a little towards the middle, so the edges of the glass fall away. The
+    // glow and the sheen are in the face colour, lighter than the glass in light and dark themes.
+    for i in 1..=4 {
+        let d = glass.2 * 0.06 * i as f32;
+        fill(
+            w,
+            o,
+            &rounded(
+                glass.0 + d,
+                glass.1 + d,
+                glass.2 - 2.0 * d,
+                glass.3 - 2.0 * d,
+                d * 2.0,
+            ),
+            scale_alpha(ink.face, 0.12),
+        );
+    }
     // A soft sheen: nested bands, each a little fainter than the glass under the last.
     for i in 0..5 {
         fill(
             w,
             o,
             &sheen(glass, 0.3 + 0.1 * i as f32),
-            scale_alpha(ink.text, 0.008),
+            scale_alpha(ink.face, 0.16),
         );
     }
     // The glass sits in the bezel: a dark rim with a light lip under it.
@@ -96,10 +129,11 @@ pub(crate) fn page(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> (f32, 
         scale_alpha(ink.text, 0.15),
         false,
     );
-    for i in 0..5 {
-        let y = s * (0.2 + 0.15 * i as f32);
-        for x in [k * 0.18, s - k * 0.78] {
-            key(w, o, (x, y - s * 0.024, k * 0.6, s * 0.048), ink);
+    if detailed {
+        for y in KEYS {
+            for x in [k * 0.18, s - k * 0.78] {
+                key(w, o, (x, y * s - s * 0.024, k * 0.6, s * 0.048), ink);
+            }
         }
     }
     glass
@@ -188,7 +222,7 @@ pub(crate) fn engine_arc(
         let tint = if col == ink.text {
             scale_alpha(ink.text, 0.16)
         } else {
-            scale_alpha(col, 0.3)
+            scale_alpha(col, 0.2)
         };
         fill(w, o, &sweep(cx, cy, r, f), tint);
     }

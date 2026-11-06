@@ -53,7 +53,7 @@ impl GaugeFace {
         // The box sits under the end of the arc, right of the centre; its last digit rolls on a
         // drum in a window that stands taller than the box.
         let bh = s * 0.12;
-        let (cw, e) = (bh * 0.7, bh * 0.34);
+        let (cw, e) = (bh * 0.6, bh * 0.34);
         let (bx, by, bw) = (ax, ay + r * 0.42 + e, s * 0.38);
         let figure = self.figure();
         let drum = figure.chars().last().and_then(drum_digits);
