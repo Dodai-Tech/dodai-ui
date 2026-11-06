@@ -105,6 +105,20 @@ pub(super) fn strip(
                 text_fig(alarm.unwrap_or(ink.text)),
                 ink.muted,
             )),
+        // Open space over a hairline, the figure in light type.
+        Look::Line => base
+            .border_t_1()
+            .border_color(scale_alpha(ink.text, 0.2))
+            .child(row(
+                ink.muted,
+                div()
+                    .text_size(px(fs))
+                    .font_weight(gpui::FontWeight::LIGHT)
+                    .text_color(alarm.unwrap_or(ink.text))
+                    .child(figure.clone())
+                    .into_any_element(),
+                ink.muted,
+            )),
         // An open box drawn in the projector's colour.
         Look::HeadsUp => {
             let col = alarm.unwrap_or(ink.primary);

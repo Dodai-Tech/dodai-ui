@@ -7,6 +7,7 @@
 mod glass;
 mod layouts;
 mod lcd;
+mod line;
 mod panels;
 mod rich;
 mod round;
@@ -142,6 +143,8 @@ impl RenderOnce for GaugeFace {
             (Look::GlassCockpit, Layout::Column) => self.cockpit_column(cx),
             (Look::GlassCockpit, _) => self.cockpit(cx),
             (Look::Race, _) => self.race(cx),
+            (Look::Line, Layout::Bar) => self.line_bar(cx),
+            (Look::Line, _) => self.line_dial(cx),
         }
     }
 }
@@ -186,7 +189,7 @@ impl GaugeFace {
 
     /// The ink of a screen look: the theme's, lit in the limit's colour past a limit when the
     /// whole display is to take it (see [`Ink::lit`]). The screen looks (heads-up, segment LCD,
-    /// halo, glass cockpit) draw with it; the printed ones keep their colours.
+    /// halo, glass cockpit, line) draw with it; the printed ones keep their colours.
     fn lit_ink(&self, t: &dodai_core::Theme) -> Ink {
         let ink = Ink::of(t);
         self.display_limit(t).map_or(ink, |c| ink.lit(c))

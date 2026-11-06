@@ -34,6 +34,8 @@ pub(super) fn lamp(icon: Symbol, tone: Tone, sz: f32, look: Look, t: &Theme) -> 
         Look::Vintage if lit => ink.text,
         // A lit race lens is filled with the tone; the symbol sits dark on it.
         Look::Race if lit => ink.ground,
+        // An unlit line lamp is a faint outline; a lit one is the symbol alone in its tone.
+        Look::Line if !lit => scale_alpha(ink.muted, 0.45),
         _ => col,
     };
     let paint = move |w: &mut Window, o: gpui::Point<Pixels>| match look {
@@ -135,7 +137,7 @@ pub(super) fn lamp(icon: Symbol, tone: Tone, sz: f32, look: Look, t: &Theme) -> 
                 stroke(w, o, &lens, d * 0.03, scale_alpha(col, 0.35), true);
             }
         }
-        Look::Sport => {}
+        Look::Sport | Look::Line => {}
     };
     div()
         .relative()
@@ -149,7 +151,7 @@ pub(super) fn lamp(icon: Symbol, tone: Tone, sz: f32, look: Look, t: &Theme) -> 
             div().relative().child(
                 Icon::symbol(icon)
                     .size(sz * 0.72)
-                    .weight(2.0)
+                    .weight(if look == Look::Line { 1.2 } else { 2.0 })
                     .color(icon_col),
             ),
         )
@@ -228,6 +230,16 @@ pub(super) fn sign(limit: u32, d: f32, look: Look, t: &Theme) -> AnyElement {
             fill(w, o, &frame, ink.ground);
             stroke(w, o, &frame, d * 0.06, red, true);
         }
+        Look::Line => {
+            stroke(
+                w,
+                o,
+                &circle(c, c, c * 0.94),
+                (d * 0.04).max(1.5),
+                red,
+                true,
+            );
+        }
         Look::Sport => {}
     };
     let figure: AnyElement = match look {
@@ -244,7 +256,7 @@ pub(super) fn sign(limit: u32, d: f32, look: Look, t: &Theme) -> AnyElement {
             } else {
                 ink.text
             })
-            .font_weight(if look == Look::Halo {
+            .font_weight(if matches!(look, Look::Halo | Look::Line) {
                 FontWeight::LIGHT
             } else {
                 FontWeight::BOLD

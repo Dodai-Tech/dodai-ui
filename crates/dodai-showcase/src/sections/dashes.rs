@@ -208,6 +208,7 @@ fn caption(look: Look, layout: Layout) -> &'static str {
         (Look::Segment, Layout::Column) => "Segment column",
         (Look::GlassCockpit, Layout::Tape) => "Glass cockpit tape",
         (Look::GlassCockpit, Layout::Column) => "Glass cockpit column",
+        (Look::Line, Layout::Bar) => "Line bar",
         (l, _) => l.name(),
     }
 }
@@ -387,7 +388,7 @@ impl Showcase {
             self,
             "Vehicle · Looks",
             vec![gallery(
-                "Every vehicle instrument comes in eight looks: the same data, drawn as a sports dash ring, a chronograph, a vintage panel, a heads-up display, a segment LCD, a halo of light, a glass cockpit or a race display. Here the engine speed in each. Most looks come in more layouts: sport as a sweep, a needle and a ribbed ring, chronograph as a bezel and a register, vintage as a panel meter and a ribbon, heads-up as a tape, segment LCD as a bar and a column, halo as an arc and a bar, glass cockpit as a tape and a column. Pick a look above to see every instrument and the example dashes in it.",
+                "Every vehicle instrument comes in nine looks: the same data, drawn as a sports dash ring, a chronograph, a vintage panel, a heads-up display, a segment LCD, a halo of light, a glass cockpit, a race display or a single line. Here the engine speed in each. Most looks come in more layouts: sport as a sweep, a needle and a ribbed ring, chronograph as a bezel and a register, vintage as a panel meter and a ribbon, heads-up as a tape, segment LCD as a bar and a column, halo as an arc and a bar, glass cockpit as a tape and a column, line as a bar. Pick a look above to see every instrument and the example dashes in it.",
                 Look::ALL
                     .into_iter()
                     .map(|l| {
@@ -661,7 +662,7 @@ impl Showcase {
                     "The speed-limit sign: a heavy red ring round the limit. On the dash it sits above the ring where the limit applies.",
                     shown(only)
                         .into_iter()
-                        .zip([30, 50, 80, 120, 60, 100, 70, 90])
+                        .zip([30, 50, 80, 120, 60, 100, 70, 90, 40])
                         .map(|(look, v)| {
                             (
                                 look.name(),

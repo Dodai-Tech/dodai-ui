@@ -123,11 +123,13 @@ pub enum PodStyle {
     Glow,
     /// A heavy bezel with a fine inner line, like a real gauge.
     Bezel,
+    /// A single hairline circle, closed all round (the line look's pods).
+    Line,
 }
 
 impl PodStyle {
     /// Every style, in the order a gallery shows them.
-    pub const ALL: [Self; 4] = [Self::Ring, Self::Disc, Self::Glow, Self::Bezel];
+    pub const ALL: [Self; 5] = [Self::Ring, Self::Disc, Self::Glow, Self::Bezel, Self::Line];
 
     /// A short name for a gallery caption.
     pub fn name(self) -> &'static str {
@@ -136,6 +138,7 @@ impl PodStyle {
             Self::Disc => "Disc",
             Self::Glow => "Glow",
             Self::Bezel => "Bezel",
+            Self::Line => "Line",
         }
     }
 }
@@ -171,6 +174,14 @@ impl Frame {
     ) {
         let (start, span) = SWEEP;
         match self.style {
+            PodStyle::Line => stroke(
+                w,
+                o,
+                &disc(c, c, r, 120),
+                (c * 0.006).max(0.6),
+                scale_alpha(self.ink, 0.35),
+                true,
+            ),
             PodStyle::Ring => rim(w, o, c, r, width, self.ink, ends),
             PodStyle::Disc => {
                 fill(w, o, &disc(c, c, r, 120), scale_alpha(self.face, 0.9));
