@@ -197,6 +197,8 @@ fn caption(look: Look, layout: Layout) -> &'static str {
         (Look::Vintage, Layout::Meter) => "Vintage meter",
         (Look::Vintage, Layout::Ribbon) => "Vintage ribbon",
         (Look::HeadsUp, Layout::Tape) => "Heads-up tape",
+        (Look::HeadsUp, Layout::Cut) => "Heads-up cut",
+        (Look::Halo, Layout::Capsule) => "Halo capsule",
         (Look::Halo, Layout::Arc) => "Halo arc",
         (Look::Halo, Layout::Bar) => "Halo bar",
         (Look::Sport, Layout::Sweep) => "Sport sweep",
@@ -388,7 +390,7 @@ impl Showcase {
             self,
             "Vehicle · Looks",
             vec![gallery(
-                "Every vehicle instrument comes in nine looks: the same data, drawn as a sports dash ring, a chronograph, a vintage panel, a heads-up display, a segment LCD, a halo of light, a glass cockpit, a race display or a single line. Here the engine speed in each. Most looks come in more layouts: sport as a sweep, a needle and a ribbed ring, chronograph as a bezel and a register, vintage as a panel meter and a ribbon, heads-up as a tape, segment LCD as a bar and a column, halo as an arc and a bar, glass cockpit as a tape and a column, line as a bar. Pick a look above to see every instrument and the example dashes in it.",
+                "Every vehicle instrument comes in nine looks: the same data, drawn as a sports dash ring, a chronograph, a vintage panel, a heads-up display, a segment LCD, a halo of light, a glass cockpit, a race display or a single line. Here the engine speed in each. Most looks come in more layouts: sport as a sweep, a needle and a ribbed ring, chronograph as a bezel and a register, vintage as a panel meter and a ribbon, heads-up as a cut and a tape, segment LCD as a bar and a column, halo as a capsule, an arc and a bar, glass cockpit as a tape and a column, line as a bar. Pick a look above to see every instrument and the example dashes in it.",
                 Look::ALL
                     .into_iter()
                     .map(|l| {

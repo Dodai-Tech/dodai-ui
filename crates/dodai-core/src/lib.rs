@@ -45,7 +45,7 @@ pub mod material;
 #[cfg(feature = "neobrutalism")]
 pub mod neobrutalism;
 
-pub use chart_style::{ChartStyle, ClusterKind, DialLook, NeedleResponse, ScopeLook};
+pub use chart_style::{ChartStyle, DialLook, NeedleResponse, ScopeLook};
 pub use color::Color;
 pub use component::{
     AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, ControlSize, ControlState,

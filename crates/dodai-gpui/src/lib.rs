@@ -315,7 +315,7 @@ pub use display::{
     ImageFit, ScrollArea,
 };
 pub use dodai_core::motion as dodai_motion;
-pub use dodai_core::{ClusterKind, DialLook, NeedleResponse};
+pub use dodai_core::{DialLook, NeedleResponse};
 #[cfg(feature = "shaders")]
 pub use dodai_shaders;
 #[cfg(feature = "components")]

@@ -5,6 +5,7 @@
 //! Every colour comes from the theme.
 
 mod glass;
+mod hero;
 mod layouts;
 mod lcd;
 mod line;
@@ -129,11 +130,13 @@ impl RenderOnce for GaugeFace {
             (Look::Chronograph, Layout::Register) => self.chrono_register(cx),
             (Look::Chronograph, _) => self.chrono(cx),
             (Look::HeadsUp, Layout::Tape) => self.tape_face(cx),
+            (Look::HeadsUp, Layout::Cut) => self.hud_cut(cx),
             (Look::HeadsUp, _) => self.hud(cx),
             (Look::Vintage, Layout::Meter) => self.panel_meter(cx),
             (Look::Vintage, Layout::Ribbon) => self.ribbon(cx),
             (Look::Vintage, _) => self.vintage(cx),
             (Look::Halo, Layout::Arc) => self.halo_arc(cx),
+            (Look::Halo, Layout::Capsule) => self.halo_capsule(cx),
             (Look::Halo, Layout::Bar) => self.halo_bar(cx),
             (Look::Segment, Layout::Bar) => self.segment_bar(cx),
             (Look::Segment, Layout::Column) => self.segment_column(cx),

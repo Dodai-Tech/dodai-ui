@@ -392,11 +392,6 @@ impl GaugeFace {
                         div()
                             .text_color(ink.primary)
                             .child(self.caption().to_uppercase()),
-                    )
-                    .child(
-                        div()
-                            .text_color(col)
-                            .child(format!("{:.0} %", frac * 100.0)),
                     ),
             )
             .child(

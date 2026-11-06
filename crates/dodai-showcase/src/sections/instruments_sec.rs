@@ -1,14 +1,12 @@
 //! The "Instruments" category: vehicle, industrial and medical readouts.
 
 use super::super::*;
-use dodai_gpui::icons::Symbol;
-use dodai_gpui::{ClusterKind, DialLook, NeedleResponse};
+use dodai_gpui::{DialLook, NeedleResponse};
 use dodai_gpui_instruments::{
-    Affiliation, Annunciator, AttitudeIndicator, Compass, Contact, Countermeasures, DashTriptych,
-    DialGauge, GearIndicator, GradientBar, GradientDial, GradientRing, HeadingTape,
-    InstrumentCluster, LevelBar, LimitSign, Limits, Look, MenuRing, MissionTimer, Odometer,
-    PowerMeter, Ramp, RingTach, Scale, Severity, SidePod, SonarWaterfall, Station, StationState,
-    StoresPanel, TacticalPlot, Telltales, Threat, ThreatRosette, Tone, TrackList, VerticalTape,
+    Affiliation, Annunciator, AttitudeIndicator, Compass, Contact, Countermeasures, DialGauge,
+    GearIndicator, GradientBar, GradientDial, GradientRing, HeadingTape, LevelBar, Limits,
+    MissionTimer, Odometer, PowerMeter, Ramp, Scale, Severity, SonarWaterfall, Station,
+    StationState, StoresPanel, TacticalPlot, Threat, ThreatRosette, TrackList, VerticalTape,
     VitalsTile,
 };
 
@@ -95,41 +93,6 @@ impl Showcase {
             ..
         } = self.chart_demos(&me, cx);
 
-        // Cluster sets: one coherent style per cluster, never mixed. A dash takes the look picked
-        // above the sections.
-        let look = self
-            .inst_look
-            .checked_sub(1)
-            .and_then(|i| Look::ALL.get(i).copied())
-            .unwrap_or_default();
-        let mut clusters = div().flex().flex_col().gap(px(t.spacing.lg));
-        clusters = clusters
-            .child(Muted::new("This design's own cluster"))
-            .child(
-                InstrumentCluster::themed()
-                    .look(look)
-                    .speed(val(20.0, 0.0, 300.0))
-                    .rpm(val(21.0, 0.8, 7.8))
-                    .fuel(val(22.0, 10.0, 95.0))
-                    .coolant(val(23.0, 70.0, 115.0))
-                    .oil(val(24.0, 2.0, 6.0))
-                    .width(700.0),
-            );
-        for kind in ClusterKind::ALL
-            .into_iter()
-            .filter(|k| *k != t.chart_style().cluster)
-        {
-            clusters = clusters.child(Muted::new(kind.name())).child(
-                InstrumentCluster::new(kind)
-                    .look(look)
-                    .speed(val(20.0, 0.0, 300.0))
-                    .rpm(val(21.0, 0.8, 7.8))
-                    .fuel(val(22.0, 10.0, 95.0))
-                    .coolant(val(23.0, 70.0, 115.0))
-                    .oil(val(24.0, 2.0, 6.0))
-                    .width(700.0),
-            );
-        }
         // Vehicle: a speed scale for the general-purpose dials and a fuel/temperature pair.
         let speed2 = Scale::new(0.0, 240.0)
             .ticks_per(12, 2)
@@ -181,20 +144,6 @@ impl Showcase {
                     .child(Compass::new(val(6.0, 0.0, 360.0)).response_opt(response)),
             );
 
-        // Dash: a three-pod digital cluster and its parts.
-        let rpm_scale = Scale::new(0.0, 8.0)
-            .ticks_per(8, 2)
-            .zone(7.0, 8.0, Severity::Alarm);
-        let speed_scale = Scale::new(0.0, 270.0).ticks_per(9, 1);
-        let tells = || {
-            Telltales::new()
-                .push(Symbol::SeatBelt, Tone::Danger)
-                .push(Symbol::SeatBelt, Tone::Danger)
-                .push(Symbol::SeatBelt, Tone::Danger)
-                .push(Symbol::LowBeam, Tone::Success)
-                .push(Symbol::ParkingBrake, Tone::Danger)
-                .push(Symbol::Engine, Tone::Warning)
-        };
         // Gradient instruments: every ramp is built from the active theme's palette, so these
         // are the selected theme's own variations.
         let ramp_speed =
@@ -241,79 +190,31 @@ impl Showcase {
             .child(gdials)
             .child(grings)
             .child(gbars);
-        out.push((
-            "Instruments",
-            "Vehicle · Dash cluster styles",
-            self.section("Vehicle · Dash cluster styles", cx)
-                .child(bar(vec![needle_opt()]))
-                .child(Muted::new(
-                    "Three pods: a ribbed ring for engine speed, an open-ring gauge and a menu ring.",
-                ))
-                .child(
-                    DashTriptych::new(
-                        RingTach::new(rpm_scale.clone(), val(30.0, 0.8, 6.6), val(31.0, 0.0, 180.0))
-                            .marker(4.0)
-                            .tab("--- km")
-                            .fuel(0.7, "542 km"),
-                        SidePod::new(speed_scale.clone(), val(32.0, 20.0, 230.0))
-                            .reading("")
-                            .unit("km/h")
-                            .ends(Some(Tone::Info), Some(Tone::Info))
-                            .centre(LimitSign::new(50).size(64.0)),
-                        MenuRing::new(["G-Force", "G-Force Max.", "Reset max."])
-                            .heading("Sport")
-                            .selected(1),
-                    )
-                    .telltales(tells())
-                    .limit(50)
-                    .mode("HYBRID AUTO")
-                    .trip("13.207 km", "6 °C", "19:06")
-                    .width(780.0),
-                )
-                .child(Muted::new(
-                    "Clusters: one coherent style per set. A dash draws its dials in the look picked above.",
-                ))
-                .child(clusters)
-                .child(Muted::new(format!(
-                    "Gradients from {}: each ramp blends this theme's palette, so every theme gets its own set.",
-                    t.meta.name
-                )))
-                .child(gradients)
-                .child(Muted::new(
-                    "The general-purpose dial in its three looks, as the industrial and medical gauges use it. A design picks its own by default.",
-                ))
-                .child(
-                    row()
-                        .child(
-                            DialGauge::new(speed2.clone(), 96.0)
-                                .look(DialLook::Analog)
-                                .label("Analog")
-                                .unit("km/h")
-                                .tick_labels(false)
-                                .size(170.0),
-                        )
-                        .child(
-                            DialGauge::new(speed2.clone(), 96.0)
-                                .look(DialLook::Arc)
-                                .label("Arc")
-                                .unit("km/h")
-                                .size(170.0),
-                        )
-                        .child(
-                            DialGauge::new(speed2, 96.0)
-                                .look(DialLook::Segmented)
-                                .label("Segmented")
-                                .unit("km/h")
-                                .size(170.0),
-                        ),
-                )
-                .child(Muted::new("Status"))
-                .child(status)
-                .child(Muted::new("Telltales"))
-                .child(tells().size(28.0))
-                .into_any_element(),
-            "Vehicle",
-        ));
+        // The dials write their label under the face, so the row leaves room for it.
+        let dials = row()
+            .pb(px(t.spacing.xl))
+            .child(
+                DialGauge::new(speed2.clone(), 96.0)
+                    .look(DialLook::Analog)
+                    .label("Analog")
+                    .unit("km/h")
+                    .tick_labels(false)
+                    .size(170.0),
+            )
+            .child(
+                DialGauge::new(speed2.clone(), 96.0)
+                    .look(DialLook::Arc)
+                    .label("Arc")
+                    .unit("km/h")
+                    .size(170.0),
+            )
+            .child(
+                DialGauge::new(speed2, 96.0)
+                    .look(DialLook::Segmented)
+                    .label("Segmented")
+                    .unit("km/h")
+                    .size(170.0),
+            );
         // Industrial: process dials with alarm bands and an annunciator panel.
         let limits = |lo: f32, hi: f32, hh: f32| Limits {
             low: Some(lo),
@@ -403,6 +304,19 @@ impl Showcase {
             self.section("Gauges", cx)
                 .child(bar(vec![glow_opt()]))
                 .child(gauge_styles)
+                .child(Muted::new(
+                    "The general-purpose dial in its three looks, as the industrial and medical gauges use it. A design picks its own by default.",
+                ))
+                .child(dials)
+                .child(Muted::new(format!(
+                    "Gradients from {}: each ramp blends this theme's palette, so every theme gets its own set.",
+                    t.meta.name
+                )))
+                .child(gradients)
+                .child(Muted::new(
+                    "Level bars, a power meter, a compass, a gear indicator and odometers in the theme's own style.",
+                ))
+                .child(status)
                 .into_any_element(),
             "Gauges",
         ));

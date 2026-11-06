@@ -83,7 +83,6 @@ impl DesignSpec for Cyberpunk {
         Some(crate::ChartStyle {
             grid_dashed: true,
             dial: crate::DialLook::Segmented,
-            cluster: crate::ClusterKind::Cut,
             scope: crate::ScopeLook::Neon,
             response: crate::NeedleResponse::Snappy,
             grid_color: t.palette.border.with_alpha(0.7),
