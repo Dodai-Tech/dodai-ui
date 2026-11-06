@@ -256,14 +256,7 @@ pub(crate) fn caps(title: &str) -> Caps {
         }
         "Knob · Vertical sliders" => c(true, true, true),
         t if chart_family(t).is_some()
-            || [
-                "Gauges",
-                "Instruments",
-                "Vehicle · Dash cluster styles",
-                "Signal lab",
-                "Radar & telemetry",
-            ]
-            .contains(&t)
+            || ["Gauges", "Instruments", "Signal lab", "Radar & telemetry"].contains(&t)
             || [
                 "Vehicle · ",
                 "Industrial · ",

@@ -238,7 +238,6 @@ impl DesignSpec for Dodai {
             grid_color: t.palette.border.with_alpha(0.5),
             area_alpha: 0.28,
             dial: crate::DialLook::Arc,
-            cluster: crate::ClusterKind::Capsule,
             scope: crate::ScopeLook::Frosted,
             response: crate::NeedleResponse::Smooth,
             ..crate::ChartStyle::from_theme(t)

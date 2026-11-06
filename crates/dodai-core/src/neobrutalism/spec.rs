@@ -95,7 +95,6 @@ impl DesignSpec for NeoBrutalism {
             grid_color: t.palette.border.with_alpha(0.35),
             area_alpha: 0.35,
             dial: crate::DialLook::Analog,
-            cluster: crate::ClusterKind::Dash,
             scope: crate::ScopeLook::Ink,
             response: crate::NeedleResponse::Bouncy,
             ..crate::ChartStyle::from_theme(t)

@@ -79,45 +79,6 @@ impl NeedleResponse {
     }
 }
 
-/// A whole instrument cluster style. Every instrument of one cluster follows the same style, so a
-/// set never mixes looks.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum ClusterKind {
-    /// Fuel, speed, engine speed and coolant dials, drawn in the cluster's instrument look.
-    #[default]
-    Dash,
-    /// A cut-corner speedometer with radiating hairlines.
-    Cut,
-    /// A capsule with a gradient sweep, side arcs and a gear selector.
-    Capsule,
-    /// A clock-style seven-segment panel with LED bars.
-    Segment,
-    /// Numeric tiles with segment bars.
-    Digital,
-}
-
-impl ClusterKind {
-    /// Every style, in showcase order.
-    pub const ALL: [ClusterKind; 5] = [
-        Self::Dash,
-        Self::Cut,
-        Self::Capsule,
-        Self::Segment,
-        Self::Digital,
-    ];
-
-    /// Display name.
-    pub fn name(self) -> &'static str {
-        match self {
-            Self::Dash => "Dash",
-            Self::Cut => "Cut",
-            Self::Capsule => "Capsule",
-            Self::Segment => "Segment",
-            Self::Digital => "Digital",
-        }
-    }
-}
-
 /// Chart drawing tokens of one theme.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ChartStyle {
@@ -137,8 +98,6 @@ pub struct ChartStyle {
     pub area_alpha: f32,
     /// The default look of dial instruments.
     pub dial: DialLook,
-    /// The default instrument cluster.
-    pub cluster: ClusterKind,
     /// The look of scopes, spectra and radar.
     pub scope: ScopeLook,
     /// How instruments follow a changing value.
@@ -157,7 +116,6 @@ impl ChartStyle {
             grid_dashed: false,
             area_alpha: 0.18,
             dial: DialLook::Analog,
-            cluster: ClusterKind::Dash,
             scope: ScopeLook::Neon,
             response: NeedleResponse::Snappy,
         }

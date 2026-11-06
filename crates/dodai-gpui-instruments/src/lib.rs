@@ -10,7 +10,7 @@
 //!
 //! | Feature | Instruments |
 //! |---|---|
-//! | `automotive` | clusters, tachometer, speedometers, tire pressure, gear, odometer, power meter, level bar, compass, EV energy, shift lights |
+//! | `automotive` | tachometer, speedometers, tire pressure, gear, odometer, power meter, level bar, compass, EV energy, shift lights |
 //! | `aviation` | attitude indicator, heading and vertical tapes, sonar waterfall, countermeasures |
 //! | `defense` | tactical plot, track list, threat rosette, stores panel, mission timer, radar scope |
 //! | `industrial` | the process-plant and machine symbols (dials and annunciators are always included) |
@@ -36,7 +36,6 @@ pub mod scope;
 pub mod segment;
 
 #[cfg(feature = "automotive")]
-pub mod cluster;
 #[cfg(feature = "automotive")]
 pub mod dash;
 #[cfg(feature = "automotive")]
@@ -46,7 +45,6 @@ pub mod flight;
 #[cfg(feature = "automotive")]
 mod frames;
 #[cfg(feature = "automotive")]
-pub mod hero;
 #[cfg(feature = "automotive")]
 pub mod look;
 #[cfg(feature = "automotive")]
@@ -80,10 +78,9 @@ pub use gradient::{GradientBar, GradientDial, GradientRing, Ramp};
 #[cfg(feature = "defense")]
 pub use scope::{Blip, RadarScope};
 pub use scope::{DotMatrix, HexMap, Oscilloscope, RingStack, SignalBars, Spectrum};
-pub use segment::{SegmentCluster, SegmentDisplay};
+pub use segment::SegmentDisplay;
 
 #[cfg(feature = "automotive")]
-pub use cluster::{DigitalGauge, InstrumentCluster};
 #[cfg(feature = "automotive")]
 pub use dash::{
     DashTriptych, LimitSign, MenuRing, Pod, PodStyle, RingTach, SidePod, Telltales, Tone,
@@ -93,7 +90,6 @@ pub use faces::GaugeFace;
 #[cfg(feature = "aviation")]
 pub use flight::{AttitudeIndicator, Countermeasures, HeadingTape, SonarWaterfall, VerticalTape};
 #[cfg(feature = "automotive")]
-pub use hero::{CapsuleCluster, CutSpeedometer};
 #[cfg(feature = "automotive")]
 pub use look::{AtLimit, Layout, Look};
 #[cfg(feature = "automotive")]

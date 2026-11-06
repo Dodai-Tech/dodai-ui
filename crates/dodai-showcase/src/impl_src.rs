@@ -348,10 +348,6 @@ const FILES: &[(&str, &str)] = &[
         include_str!("../../dodai-gpui-charts/src/trend.rs"),
     ),
     (
-        "dodai-gpui-instruments/src/cluster.rs",
-        include_str!("../../dodai-gpui-instruments/src/cluster.rs"),
-    ),
-    (
         "dodai-gpui-instruments/src/dash.rs",
         include_str!("../../dodai-gpui-instruments/src/dash.rs"),
     ),
@@ -410,10 +406,6 @@ const FILES: &[(&str, &str)] = &[
     (
         "dodai-gpui-instruments/src/gradient.rs",
         include_str!("../../dodai-gpui-instruments/src/gradient.rs"),
-    ),
-    (
-        "dodai-gpui-instruments/src/hero.rs",
-        include_str!("../../dodai-gpui-instruments/src/hero.rs"),
     ),
     (
         "dodai-gpui-instruments/src/lib.rs",

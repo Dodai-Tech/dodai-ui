@@ -67,10 +67,10 @@ impl Look {
         match self {
             Self::Sport => &[Layout::Dial, Layout::Sweep, Layout::Needle, Layout::Ribbed],
             Self::Chronograph => &[Layout::Dial, Layout::Bezel, Layout::Register],
-            Self::HeadsUp => &[Layout::Dial, Layout::Tape],
+            Self::HeadsUp => &[Layout::Dial, Layout::Cut, Layout::Tape],
             Self::Vintage => &[Layout::Dial, Layout::Meter, Layout::Ribbon],
             Self::Segment => &[Layout::Dial, Layout::Bar, Layout::Column],
-            Self::Halo => &[Layout::Dial, Layout::Arc, Layout::Bar],
+            Self::Halo => &[Layout::Dial, Layout::Capsule, Layout::Arc, Layout::Bar],
             Self::GlassCockpit => &[Layout::Dial, Layout::Tape, Layout::Column],
             Self::Race => &[Layout::Dial],
             Self::Line => &[Layout::Dial, Layout::Bar],
@@ -90,9 +90,15 @@ impl Look {
     pub(crate) fn shape(self, layout: Layout) -> Shape {
         match (self, self.fit(layout)) {
             (Self::HeadsUp, Layout::Tape)
-            | (_, Layout::Dial | Layout::Bezel | Layout::Sweep | Layout::Needle | Layout::Ribbed) => {
-                Shape::Square
-            }
+            | (
+                _,
+                Layout::Dial
+                | Layout::Bezel
+                | Layout::Sweep
+                | Layout::Needle
+                | Layout::Ribbed
+                | Layout::Cut,
+            ) => Shape::Square,
             (_, Layout::Tape | Layout::Column) => Shape::Tall,
             _ => Shape::Wide,
         }
@@ -148,6 +154,12 @@ pub enum Layout {
     /// A narrow upright bar: a stack of segments in [`Look::Segment`], an engine-indication bar
     /// with a pointer in [`Look::GlassCockpit`].
     Column,
+    /// A cut-corner frame with a fan of hairlines lit up to the value and a glowing needle
+    /// ([`Look::HeadsUp`]).
+    Cut,
+    /// A stadium frame with a band of light from the primary to the accent colour round the
+    /// figure ([`Look::Halo`]).
+    Capsule,
 }
 
 impl Layout {
@@ -166,6 +178,8 @@ impl Layout {
             Self::Bezel => "Bezel",
             Self::Register => "Register",
             Self::Column => "Column",
+            Self::Cut => "Cut",
+            Self::Capsule => "Capsule",
         }
     }
 }
