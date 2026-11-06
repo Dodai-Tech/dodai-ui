@@ -1,12 +1,11 @@
-//! The glass-cockpit look of the pods: display pages with a title band, four pressure boxes split
-//! by a cross,
+//! The glass-cockpit look of the pods: display pages with a title band, four lit pressure tiles,
 //! dotted leaders to green values, an alert page with clear and recall legends led to the bezel keys, a cross of rings
 //! with a bug, a radio panel with active and standby lines, and a heading arc under a boxed
 //! readout. Every colour comes from the theme.
 
 use super::detailed::{case, label, layer, tone_or};
 use super::*;
-use crate::mfd::{bug, leader, page, pointer_scale, readout_box, rect, BEZEL, KEYS};
+use crate::mfd::{bug, leader, page, pointer_scale, readout_box, rect, tile, BEZEL, KEYS};
 use crate::shapes::{circle, Ink};
 
 /// The page title at the top left with its rule; the pod's text sits under it.
@@ -97,91 +96,58 @@ fn boxed(
 // ───────────────────────────────── TyrePod ─────────────────────────────────
 
 impl TyrePod {
-    /// Four pressure boxes in quadrants split by a faint cross, front on top: cyan when good,
-    /// the frame and figure amber when low.
+    /// Four lit tiles, front on top: each a rounded pane of glass shading up from its foot in
+    /// green, its wheel in the top corner and the pressure big under it; a low tyre's tile turns
+    /// amber.
     pub(super) fn cockpit(self, t: &dodai_core::Theme) -> AnyElement {
         let ink = Ink::of(t);
         let s = self.size;
-        let c = s / 2.0;
         let lows: Vec<bool> = self.bars.iter().map(|b| pm::is_low(*b, self.low)).collect();
-        let (bw, bh) = (s * 0.26, s * 0.12);
-        let (top, bottom, mid) = (s * 0.27, s * 0.56, s * 0.475);
-        let boxes: Vec<(f32, f32)> = [
-            (c - s * 0.2, top),
-            (c + s * 0.2, top),
-            (c - s * 0.2, bottom),
-            (c + s * 0.2, bottom),
-        ]
-        .iter()
-        .map(|&(x, y)| (x - bw / 2.0, y))
-        .collect();
-        let (boxes_p, lows_p) = (boxes.clone(), lows.clone());
+        let tiles = tyre_tiles(s);
+        let lows_p = lows.clone();
         let paint = move |w: &mut Window, o: gpui::Point<Pixels>| {
             page(w, o, s, ink);
             rule(w, o, s, ink);
-            let faint = scale_alpha(ink.text, 0.25);
-            stroke(
-                w,
-                o,
-                &[(c, s * 0.2), (c, s * 0.76)],
-                s * 0.003,
-                faint,
-                false,
-            );
-            stroke(
-                w,
-                o,
-                &[(s * 0.12, mid), (s * 0.88, mid)],
-                s * 0.003,
-                faint,
-                false,
-            );
-            for (i, &(bx, by)) in boxes_p.iter().enumerate() {
-                let frame = if lows_p[i] {
-                    ink.warn
-                } else {
-                    scale_alpha(ink.text, 0.7)
-                };
-                readout_box(w, o, (bx, by, bw, bh), false, frame, ink);
+            for (i, &r) in tiles.iter().enumerate() {
+                let col = if lows_p[i] { ink.warn } else { ink.ok };
+                tile(w, o, r, s * 0.03, col, lows_p[i]);
             }
         };
         let mut el = case(s)
             .child(layer(paint))
             .child(title(s, ink, &self.heading, &self.unit));
         let names = ["FL", "FR", "RL", "RR"];
-        for (i, &(bx, by)) in boxes.iter().enumerate() {
+        for (i, &(x, y, wd, h)) in tiles.iter().enumerate() {
             let col = if lows[i] { ink.warn } else { ink.ok };
+            let name = if lows[i] {
+                format!("{} LOW", names[i])
+            } else {
+                names[i].to_string()
+            };
             el = el
+                .child(
+                    div()
+                        .absolute()
+                        .left(px(x + s * 0.025))
+                        .top(px(y + s * 0.018))
+                        .text_size(px(s * 0.032))
+                        .text_color(if lows[i] { ink.warn } else { ink.info })
+                        .child(name),
+                )
                 .child(boxed(
-                    bx,
-                    by,
-                    bw,
-                    bh,
-                    bh * 0.55,
+                    x,
+                    y + h * 0.3,
+                    wd,
+                    h * 0.62,
+                    h * 0.42,
                     col,
                     pm::pressure_text(self.bars[i]),
-                ))
-                .child(label(
-                    bx + bw / 2.0,
-                    if i < 2 {
-                        by - s * 0.045
-                    } else {
-                        by + bh + s * 0.01
-                    },
-                    bw,
-                    s * 0.03,
-                    if lows[i] { ink.warn } else { ink.info },
-                    if lows[i] {
-                        format!("{} LOW", names[i])
-                    } else {
-                        names[i].to_string()
-                    },
                 ));
         }
         if !self.note.is_empty() {
             el = el.child(label(
-                c,
-                s * 0.82,
+                s / 2.0,
+                s * 0.83,
                 s * 0.8,
                 s * 0.032,
                 ink.info,
@@ -190,6 +156,15 @@ impl TyrePod {
         }
         el.into_any_element()
     }
+}
+
+/// The four tyre tiles on a page of `s`, front left, front right, rear left, rear right, as
+/// `(x, y, width, height)`: two rows of two between the title band and the note. Pure.
+fn tyre_tiles(s: f32) -> [(f32, f32, f32, f32); 4] {
+    let (x0, y0, gap) = (s * 0.1, s * 0.18, s * 0.04);
+    let (wd, h) = ((s * 0.8 - gap) / 2.0, (s * 0.62 - gap) / 2.0);
+    let at = |col: f32, row: f32| (x0 + col * (wd + gap), y0 + row * (h + gap), wd, h);
+    [at(0.0, 0.0), at(1.0, 0.0), at(0.0, 1.0), at(1.0, 1.0)]
 }
 
 // ───────────────────────────────── RowsPod ─────────────────────────────────
@@ -626,6 +601,18 @@ impl CompassPod {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_tyre_tiles_sit_apart_on_the_glass() {
+        let s = 200.0;
+        let t = tyre_tiles(s);
+        for &(x, y, wd, h) in &t {
+            assert!(x >= s * BEZEL && x + wd <= s * (1.0 - BEZEL));
+            assert!(y >= s * 0.14 && y + h <= s * 0.82);
+        }
+        assert!(t[0].0 + t[0].2 < t[1].0, "the front tiles do not touch");
+        assert!(t[0].1 + t[0].3 < t[2].1, "the rows do not touch");
+    }
 
     #[test]
     fn the_heading_arc_shows_bearings_near_the_heading() {

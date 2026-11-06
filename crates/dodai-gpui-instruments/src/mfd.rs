@@ -20,27 +20,22 @@ pub(crate) const BEZEL: f32 = 0.055;
 /// The heights of the soft keys down each side, as fractions of the page.
 pub(crate) const KEYS: [f32; 5] = [0.2, 0.35, 0.5, 0.65, 0.8];
 
-/// The page size from which the bezel shows its screws, keys, sensor and rocker.
+/// The page size from which the bezel shows its keys, sensor and rocker.
 const DETAIL_FROM: f32 = 150.0;
 
-/// Where the corner screws sit, as fractions of the page.
-const CORNERS: [(f32, f32); 4] = [
-    (BEZEL * 0.55, BEZEL * 0.55),
-    (1.0 - BEZEL * 0.55, BEZEL * 0.55),
-    (BEZEL * 0.55, 1.0 - BEZEL * 0.55),
-    (1.0 - BEZEL * 0.55, 1.0 - BEZEL * 0.55),
-];
-
-/// Paint a display page filling a square of `s`: a rounded bezel shaded lighter at the top, a
-/// light sensor over the glass, a brightness rocker under it, a screw in each corner and a row of
-/// raised soft keys on each side, and the dark glass with a soft sheen across its top left.
+/// Paint a display page filling a square of `s`: a rounded charcoal bezel shaded lighter at the
+/// top, a light sensor over the glass, a brightness rocker under it and a row of raised soft keys
+/// on each side, and the dark glass glowing towards the middle with a soft sheen across its top
+/// left.
 /// Returns the glass rectangle.
 pub(crate) fn page(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> (f32, f32, f32, f32) {
     let lw = (s * 0.004).max(1.0);
     let rr = s * 0.035;
     let bezel = rounded(0.0, 0.0, s, s, rr);
-    fill(w, o, &bezel, ink.face);
-    fill(w, o, &bezel, scale_alpha(ink.text, 0.05));
+    // A neutral charcoal: the glass colour lifted a little towards the text, so the bezel
+    // takes no tint from the theme's surfaces.
+    fill(w, o, &bezel, ink.ground);
+    fill(w, o, &bezel, scale_alpha(ink.text, 0.09));
     // The bezel catches the light from above: lighter bands towards the top.
     for i in 1..=4 {
         let h = s * (0.5 - 0.1 * i as f32);
@@ -62,12 +57,9 @@ pub(crate) fn page(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> (f32, 
         false,
     );
     let k = BEZEL * s;
-    // On a small page the screws, sensor, rocker and keys would only be specks: leave them off.
+    // On a small page the sensor, rocker and keys would only be specks: leave them off.
     let detailed = s >= DETAIL_FROM;
     if detailed {
-        for (x, y) in CORNERS {
-            screw(w, o, (x * s, y * s), k * 0.2, ink);
-        }
         // The light sensor over the glass and the brightness rocker under it.
         fill(
             w,
@@ -92,8 +84,8 @@ pub(crate) fn page(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> (f32, 
     fill(w, o, &g, ink.ground);
     // The picture glows a little towards the middle, so the edges of the glass fall away. The
     // glow and the sheen are in the face colour, lighter than the glass in light and dark themes.
-    for i in 1..=4 {
-        let d = glass.2 * 0.06 * i as f32;
+    for i in 1..=8 {
+        let d = glass.2 * 0.035 * i as f32;
         fill(
             w,
             o,
@@ -104,7 +96,18 @@ pub(crate) fn page(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> (f32, 
                 glass.3 - 2.0 * d,
                 d * 2.0,
             ),
-            scale_alpha(ink.face, 0.12),
+            scale_alpha(ink.face, 0.07),
+        );
+    }
+    // The back-light falls from the top of the glass: bands growing down from the top edge,
+    // tinted towards the cyan of the page's legends.
+    for i in 1..=8 {
+        let h = glass.3 * 0.07 * i as f32;
+        fill(
+            w,
+            o,
+            &rect(glass.0, glass.1, glass.2, h),
+            scale_alpha(ink.info, 0.007),
         );
     }
     // A soft sheen: nested bands, each a little fainter than the glass under the last.
@@ -159,32 +162,6 @@ pub(crate) fn sheen((x, y, wd, h): (f32, f32, f32, f32), k: f32) -> Vec<(f32, f3
     vec![(x, y), (x + wd * k, y), (x, y + h * k)]
 }
 
-/// Paint a slotted screw head at `(x, y)` of radius `r`.
-fn screw(w: &mut Window, o: Point<Pixels>, (x, y): (f32, f32), r: f32, ink: Ink) {
-    fill(
-        w,
-        o,
-        &crate::shapes::circle(x, y, r),
-        scale_alpha(ink.text, 0.18),
-    );
-    stroke(
-        w,
-        o,
-        &crate::shapes::circle(x, y, r),
-        (r * 0.2).max(0.5),
-        ink.ground,
-        true,
-    );
-    stroke(
-        w,
-        o,
-        &[(x - r * 0.6, y + r * 0.35), (x + r * 0.6, y - r * 0.35)],
-        (r * 0.3).max(0.5),
-        ink.ground,
-        false,
-    );
-}
-
 /// The turn of the engine-indication arc at `f` of the scale: it opens at nine o'clock and runs
 /// clockwise over the top to just past three o'clock. Pure.
 pub(crate) fn arc_turn(f: f32) -> f32 {
@@ -194,16 +171,90 @@ pub(crate) fn arc_turn(f: f32) -> f32 {
 /// Start and span of the engine-indication arc, in turns.
 pub(crate) const ARC: (f32, f32) = (0.75, 0.55);
 
-/// The filled sweep of an engine-indication arc from the start to `f`: a pie slice. Pure.
-pub(crate) fn sweep(cx: f32, cy: f32, r: f32, f: f32) -> Vec<(f32, f32)> {
+/// Stroke `pts` in `col` as a lit line on the glass: two faint wider passes under it give it a
+/// glow.
+pub(crate) fn glow(
+    w: &mut Window,
+    o: Point<Pixels>,
+    pts: &[(f32, f32)],
+    lw: f32,
+    col: Hsla,
+    closed: bool,
+) {
+    stroke(w, o, pts, lw * 4.0, scale_alpha(col, 0.07), closed);
+    stroke(w, o, pts, lw * 2.2, scale_alpha(col, 0.14), closed);
+    stroke(w, o, pts, lw, col, closed);
+}
+
+/// How many slices build up the sweep's trail: enough that no step shows.
+const TRAIL: usize = 20;
+
+/// Where the `n` slices of a sweep to `f` start: from the arc's start, packed ever closer
+/// towards `f`, so the stacked slices brighten smoothly up to the needle. Pure.
+pub(crate) fn trail(f: f32, n: usize) -> impl Iterator<Item = f32> {
+    let f = f.clamp(0.0, 1.0);
+    (0..n).map(move |i| f * (i as f32 / n as f32).sqrt())
+}
+
+/// Paint a lit tile `(x, y, wd, h)` with corners of radius `r`: a pane of glass shading up from
+/// its foot in `col`, under a glowing frame, the frame full strength when `alert`.
+pub(crate) fn tile(
+    w: &mut Window,
+    o: Point<Pixels>,
+    (x, y, wd, h): (f32, f32, f32, f32),
+    r: f32,
+    col: Hsla,
+    alert: bool,
+) {
+    let pane = rounded(x, y, wd, h, r);
+    fill(
+        w,
+        o,
+        &pane,
+        scale_alpha(col, if alert { 0.08 } else { 0.04 }),
+    );
+    // Bands rising from the foot, each shorter, so the pane brightens downwards.
+    for i in 1..=6 {
+        let bh = h * (1.0 - i as f32 * 0.14);
+        fill(
+            w,
+            o,
+            &rounded(x, y + h - bh, wd, bh, r),
+            scale_alpha(col, 0.025),
+        );
+    }
+    let lw = (h * 0.025).max(1.0);
+    glow(
+        w,
+        o,
+        &pane,
+        lw,
+        scale_alpha(col, if alert { 1.0 } else { 0.55 }),
+        true,
+    );
+    // A light catch along the top edge of the pane.
+    stroke(
+        w,
+        o,
+        &[(x + r, y + lw * 1.5), (x + wd - r, y + lw * 1.5)],
+        lw * 0.8,
+        scale_alpha(col, 0.35),
+        false,
+    );
+}
+
+/// The slice of an engine-indication arc between the fractions `a` and `f`: a pie slice from
+/// the centre. Pure.
+pub(crate) fn sector(cx: f32, cy: f32, r: f32, a: f32, f: f32) -> Vec<(f32, f32)> {
     let mut p = vec![(cx, cy)];
-    p.extend(turn_arc(cx, cy, r, ARC.0, arc_turn(f)));
+    p.extend(turn_arc(cx, cy, r, arc_turn(a.min(f)), arc_turn(f)));
     p
 }
 
-/// Paint an engine-indication arc around `(cx, cy)` of radius `r`: the sweep to `f` filled (in `col` once that is not the text colour), the
+/// Paint an engine-indication arc around `(cx, cy)` of radius `r`: the sweep to `f` filled as a
+/// trail brightening towards the needle (cyan, or `col` once that is not the text colour), the
 /// white arc with its majors, the zones `(from, to, colour)` as wide bands with a radial limit
-/// line, and a thin needle in `col`.
+/// line, and a thin glowing needle in `col`.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn engine_arc(
     w: &mut Window,
@@ -219,12 +270,12 @@ pub(crate) fn engine_arc(
     let lw = (r * 0.03).max(1.0);
     if f > 0.0 {
         // The sweep takes the colour of the value once it is past a limit.
-        let tint = if col == ink.text {
-            scale_alpha(ink.text, 0.16)
-        } else {
-            scale_alpha(col, 0.2)
-        };
-        fill(w, o, &sweep(cx, cy, r, f), tint);
+        let tint = if col == ink.text { ink.info } else { col };
+        // Layered slices, each starting further along, so the sweep brightens towards the
+        // needle like a trail behind it.
+        for a in trail(f, TRAIL) {
+            fill(w, o, &sector(cx, cy, r, a, f), scale_alpha(tint, 0.03));
+        }
     }
     stroke(
         w,
@@ -235,7 +286,7 @@ pub(crate) fn engine_arc(
         false,
     );
     for &(a, z, zc) in zones {
-        stroke(
+        glow(
             w,
             o,
             &turn_arc(cx, cy, r + lw * 1.6, arc_turn(a), arc_turn(z)),
@@ -266,7 +317,7 @@ pub(crate) fn engine_arc(
         );
     }
     let t = arc_turn(f);
-    stroke(
+    glow(
         w,
         o,
         &[polar(cx, cy, r * 0.12, t), polar(cx, cy, r * 1.04, t)],
@@ -308,7 +359,7 @@ pub(crate) fn framed(
     ink: Ink,
 ) {
     fill(w, o, p, ink.ground);
-    stroke(w, o, p, lw, frame, true);
+    glow(w, o, p, lw, frame, true);
 }
 
 /// A rolling-drum readout box `(x, y, wd, h)`: its last `cw` stands `e` taller above and below,
@@ -389,9 +440,6 @@ mod tests {
         assert_eq!(arc_turn(0.0), 0.75);
         assert!((arc_turn(1.0) - 1.3).abs() < 1e-6);
         assert_eq!(arc_turn(2.0), arc_turn(1.0), "the arc stops at its end");
-        let pie = sweep(0.0, 0.0, 10.0, 0.5);
-        assert_eq!(pie[0], (0.0, 0.0), "the sweep starts at the centre");
-        assert!(pie.len() > 3);
     }
 
     #[test]
@@ -401,6 +449,37 @@ mod tests {
             .iter()
             .all(|p| p.0 >= 10.0 && p.0 <= 90.0 && p.1 >= 10.0 && p.1 <= 90.0));
         assert!(sheen(g, 9.0).iter().all(|p| p.0 <= 90.0 && p.1 <= 90.0));
+    }
+
+    #[test]
+    fn the_trail_packs_towards_the_needle() {
+        let a: Vec<f32> = trail(0.8, 10).collect();
+        assert_eq!(a.len(), 10);
+        assert_eq!(a[0], 0.0);
+        assert!(a.iter().all(|&x| (0.0..0.8).contains(&x)));
+        let gaps: Vec<f32> = a.windows(2).map(|p| p[1] - p[0]).collect();
+        assert!(
+            gaps.windows(2).all(|g| g[1] <= g[0]),
+            "the slices crowd towards the needle"
+        );
+        assert_eq!(trail(-1.0, 3).collect::<Vec<_>>(), vec![0.0; 3]);
+    }
+
+    #[test]
+    fn a_sector_runs_from_the_centre_between_its_fractions() {
+        let p = sector(50.0, 50.0, 40.0, 0.25, 0.75);
+        assert_eq!(p[0], (50.0, 50.0));
+        let first = polar(50.0, 50.0, 40.0, arc_turn(0.25));
+        let last = polar(50.0, 50.0, 40.0, arc_turn(0.75));
+        let near =
+            |a: (f32, f32), b: (f32, f32)| (a.0 - b.0).abs() < 1e-3 && (a.1 - b.1).abs() < 1e-3;
+        assert!(near(p[1], first));
+        assert!(near(p[p.len() - 1], last));
+        // A start past the end gives an empty slice, not one running backwards.
+        let q = sector(50.0, 50.0, 40.0, 0.9, 0.5);
+        assert!(q[1..]
+            .iter()
+            .all(|&pt| near(pt, last) || near(pt, polar(50.0, 50.0, 40.0, arc_turn(0.5)))));
     }
 
     #[test]
