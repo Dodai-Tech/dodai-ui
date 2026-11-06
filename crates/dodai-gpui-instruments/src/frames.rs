@@ -22,7 +22,7 @@ pub(crate) fn aged(ink: Ink) -> Hsla {
 }
 
 /// Paint the vintage plate for a square of `s`: a bevelled panel, four slotted screws, a round
-/// polished bezel and the aged face. Returns the face radius around the centre.
+/// polished bezel and the aged, brushed face. Returns the face radius around the centre.
 pub(crate) fn plate(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> f32 {
     let c = s / 2.0;
     let panel = chamfered(0.0, 0.0, s, s, s * 0.03);
@@ -80,25 +80,42 @@ pub(crate) fn plate(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> f32 {
         w,
         o,
         &turn_arc(c, c, r_bezel - s * 0.012, 0.72, 1.02),
-        s * 0.014,
-        scale_alpha(ink.text, 0.3),
+        s * 0.008,
+        scale_alpha(ink.text, 0.22),
         false,
     );
     stroke(
         w,
         o,
         &turn_arc(c, c, r_bezel - s * 0.012, 0.22, 0.52),
-        s * 0.014,
-        scale_alpha(ink.line, 0.8),
+        s * 0.008,
+        scale_alpha(ink.line, 0.6),
         false,
     );
-    stroke(w, o, &circle(c, c, r_bezel), s * 0.004, ink.line, true);
+    let hair = (s * 0.0025).max(0.5);
+    stroke(
+        w,
+        o,
+        &circle(c, c, r_bezel),
+        hair * 1.4,
+        scale_alpha(ink.text, 0.5),
+        true,
+    );
+    stroke(
+        w,
+        o,
+        &circle(c, c, r_bezel - s * 0.025),
+        hair,
+        scale_alpha(ink.text, 0.2),
+        true,
+    );
     fill(w, o, &circle(c, c, r_face), aged(ink));
+    crate::shapes::sunburst(w, o, (c, c), r_face, ink.text);
     stroke(
         w,
         o,
         &circle(c, c, r_face),
-        s * 0.006,
+        hair,
         scale_alpha(ink.text, 0.35),
         true,
     );
@@ -244,7 +261,7 @@ pub(crate) fn ghost(on: Hsla, dark: bool) -> Hsla {
 }
 
 /// Paint an LCD module filling `(x, y, wd, h)` of a pod of `s`: a dark bezel with corner cuts, a
-/// tinted glass with scan lines and a thin inner glow. Returns the glass rectangle.
+/// tinted glass with fine scan lines, a sheen and a thin inner glow. Returns the glass rectangle.
 pub(crate) fn lcd(
     w: &mut Window,
     o: Point<Pixels>,
@@ -252,10 +269,19 @@ pub(crate) fn lcd(
     s: f32,
     ink: Ink,
 ) -> (f32, f32, f32, f32) {
-    let outer = chamfered(x, y, wd, h, s * 0.05);
+    let hair = (s * 0.003).max(0.6);
+    let outer = chamfered(x, y, wd, h, s * 0.04);
     fill(w, o, &outer, ink.face);
     fill(w, o, &outer, scale_alpha(ink.text, 0.1));
-    stroke(w, o, &outer, s * 0.005, ink.line, true);
+    stroke(w, o, &outer, hair, scale_alpha(ink.text, 0.35), true);
+    let lip = chamfered(
+        x + s * 0.008,
+        y + s * 0.008,
+        wd - s * 0.016,
+        h - s * 0.016,
+        s * 0.034,
+    );
+    stroke(w, o, &lip, hair * 0.6, scale_alpha(ink.text, 0.12), true);
     let k = s * 0.035;
     let (gx, gy, gw, gh) = (x + k, y + k, wd - 2.0 * k, h - 2.0 * k);
     let glass = chamfered(gx, gy, gw, gh, s * 0.03);
@@ -267,13 +293,22 @@ pub(crate) fn lcd(
             w,
             o,
             &[(gx + s * 0.01, yy), (gx + gw - s * 0.01, yy)],
-            s * 0.002,
-            scale_alpha(ink.text, 0.035),
+            hair * 0.5,
+            scale_alpha(ink.text, 0.02),
             false,
         );
-        yy += s * 0.014;
+        yy += s * 0.01;
     }
-    stroke(w, o, &glass, s * 0.004, scale_alpha(ink.primary, 0.3), true);
+    // A sheen across the top left of the glass.
+    for i in 0..4 {
+        fill(
+            w,
+            o,
+            &crate::mfd::sheen((gx, gy, gw, gh), 0.25 + 0.1 * i as f32),
+            scale_alpha(ink.text, 0.012),
+        );
+    }
+    stroke(w, o, &glass, hair, scale_alpha(ink.primary, 0.35), true);
     (gx, gy, gw, gh)
 }
 
@@ -315,11 +350,11 @@ pub(crate) fn seg_arc(
     let n = lit.len().max(1) as f32;
     for (i, l) in lit.iter().enumerate() {
         let a = start + span * i as f32 / n;
-        let z = start + span * (i as f32 + 0.72) / n;
+        let z = start + span * (i as f32 + 0.78) / n;
         let p = band(cx, cy, r0, r1, a, z);
         match l {
             Some(col) => {
-                stroke(w, o, &p, (r1 - r0) * 0.22, scale_alpha(*col, 0.15), true);
+                stroke(w, o, &p, (r1 - r0) * 0.3, scale_alpha(*col, 0.08), true);
                 fill(w, o, &p, *col);
             }
             None => fill(w, o, &p, off),
@@ -374,8 +409,8 @@ pub(crate) fn pill(x: f32, y: f32, wd: f32, h: f32) -> Vec<(f32, f32)> {
     p
 }
 
-/// Paint the halo for a square of `s`: a soft glow, a fine ring of ticks, two orbit
-/// arcs of light and a dark glass disc. Returns the radius inside the tick ring.
+/// Paint the halo for a square of `s`: a soft glow, a fine ring of ticks, a hairline rim lit
+/// over the crown and a dark glass disc. Returns the radius inside the tick ring.
 pub(crate) fn halo(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> f32 {
     let c = s / 2.0;
     let r = c - s * 0.02;
@@ -404,9 +439,10 @@ pub(crate) fn halo(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> f32 {
         scale_alpha(ink.primary, 0.35),
         true,
     );
-    for i in 0..120 {
-        let a = i as f32 / 120.0;
-        let len = if i % 10 == 0 { s * 0.02 } else { s * 0.01 };
+    let hair = (s * 0.0025).max(0.5);
+    for i in 0..240 {
+        let a = i as f32 / 240.0;
+        let len = if i % 20 == 0 { s * 0.02 } else { s * 0.008 };
         stroke(
             w,
             o,
@@ -414,29 +450,37 @@ pub(crate) fn halo(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> f32 {
                 polar(c, c, r - s * 0.035 - len, a),
                 polar(c, c, r - s * 0.035, a),
             ],
-            s * 0.003,
-            scale_alpha(ink.text, if i % 10 == 0 { 0.4 } else { 0.18 }),
+            hair,
+            scale_alpha(ink.text, if i % 20 == 0 { 0.45 } else { 0.14 }),
             false,
         );
     }
-    // Orbit arcs: two sweeps of light on the rim.
-    glow_arc(
+    // The rim: a hairline of light, brightest over the crown.
+    stroke(
         w,
         o,
-        (c, c),
-        r,
-        (0.86, 1.04),
-        s * 0.006,
-        (ink.primary, ink.info),
+        &circle(c, c, r),
+        hair,
+        scale_alpha(ink.primary, 0.35),
+        true,
     );
     glow_arc(
         w,
         o,
         (c, c),
         r,
-        (0.36, 0.48),
-        s * 0.006,
-        (ink.info, ink.primary),
+        (0.88, 1.0),
+        hair,
+        (scale_alpha(ink.primary, 0.0), ink.info),
+    );
+    glow_arc(
+        w,
+        o,
+        (c, c),
+        r,
+        (1.0, 1.12),
+        hair,
+        (ink.info, scale_alpha(ink.primary, 0.0)),
     );
     r - s * 0.075
 }

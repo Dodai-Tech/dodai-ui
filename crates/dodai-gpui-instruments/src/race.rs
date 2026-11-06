@@ -92,12 +92,19 @@ pub(crate) fn plate(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) {
     stroke_batch(
         w,
         o,
-        &twill(s, cut, s * 0.035),
-        (s * 0.006).max(0.5),
-        scale_alpha(ink.text, 0.035),
+        &twill(s, cut, s * 0.016),
+        (s * 0.0025).max(0.5),
+        scale_alpha(ink.text, 0.03),
         false,
     );
-    stroke(w, o, &outline, (s * 0.006).max(1.0), ink.line, true);
+    stroke(
+        w,
+        o,
+        &outline,
+        (s * 0.003).max(0.6),
+        scale_alpha(ink.text, 0.3),
+        true,
+    );
     // The edge of the cut in the primary colour, as a painted livery line.
     stroke(
         w,
