@@ -325,7 +325,7 @@ impl GaugeFace {
     /// scale's numbers inside it and a seven-segment figure.
     pub(super) fn digital(self, cx: &mut App) -> AnyElement {
         let t = theme_of(cx);
-        let ink = Ink::of(&t);
+        let ink = self.lit_ink(&t);
         let s = self.size;
         let c = s / 2.0;
         let cy = c + s * 0.03;
@@ -405,10 +405,12 @@ impl GaugeFace {
     }
 
     /// A halo of light: a gradient arc to the value, a fading wake, a glowing blade and the figure
-    /// in thin type over a soft orb.
+    /// in thin type over a soft orb; with [`AtLimit::Display`](crate::look::AtLimit::Display)
+    /// the whole halo and the figure take a limit's colour.
     pub(super) fn futuristic(self, cx: &mut App) -> AnyElement {
         let t = theme_of(cx);
-        let ink = Ink::of(&t);
+        let ink = self.lit_ink(&t);
+        let figure_col = self.display_limit(&t).unwrap_or(ink.text);
         let s = self.size;
         let c = s / 2.0;
         let (start, span) = SWEEP;
@@ -474,7 +476,7 @@ impl GaugeFace {
             .child(
                 text_box(c, c - s * 0.11, s * 0.5)
                     .text_size(px(s * 0.17))
-                    .text_color(ink.text)
+                    .text_color(figure_col)
                     .font_weight(FontWeight::LIGHT)
                     .child(self.figure()),
             )

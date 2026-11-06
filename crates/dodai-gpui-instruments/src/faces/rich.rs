@@ -250,7 +250,8 @@ impl GaugeFace {
     /// pointer, an inner scale ring and the figure in a chamfered frame.
     pub(super) fn hud(self, cx: &mut App) -> AnyElement {
         let t = theme_of(cx);
-        let ink = Ink::of(&t);
+        let ink = self.lit_ink(&t);
+        let figure_col = self.display_limit(&t).unwrap_or(ink.text);
         let s = self.size;
         let c = s / 2.0;
         let (start, span) = SWEEP;
@@ -381,7 +382,7 @@ impl GaugeFace {
                     .child(
                         div()
                             .text_size(px(s * 0.13))
-                            .text_color(ink.text)
+                            .text_color(figure_col)
                             .font_weight(FontWeight::MEDIUM)
                             .child(self.figure()),
                     ),
@@ -399,7 +400,7 @@ impl GaugeFace {
     /// overview column of the whole scale beside it.
     pub(super) fn tape_face(self, cx: &mut App) -> AnyElement {
         let t = theme_of(cx);
-        let ink = Ink::of(&t);
+        let ink = self.lit_ink(&t);
         let s = self.size;
         let (min, max) = (self.scale.min, self.scale.max);
         let frac = self.frac();

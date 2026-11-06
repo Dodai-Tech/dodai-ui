@@ -44,6 +44,18 @@ impl Ink {
             on_primary: hsla(p.on_primary),
         }
     }
+
+    /// The ink a lit display draws with once its value is past a limit: its lighting colours
+    /// (primary, info and accent) all `col`, so every glow, accent and legend takes the limit's
+    /// colour while the text, the glass and the zones stay. Pure.
+    pub(crate) fn lit(self, col: Hsla) -> Self {
+        Self {
+            primary: col,
+            info: col,
+            accent: col,
+            ..self
+        }
+    }
 }
 
 /// Unit vector of a turn (0 = up, clockwise), as `polar` measures it.
@@ -255,6 +267,38 @@ pub(crate) fn rounded(x: f32, y: f32, wd: f32, h: f32, r: f32) -> Vec<(f32, f32)
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_lit_ink_changes_only_its_lighting() {
+        let c = |h: f32| gpui::hsla(h, 0.5, 0.5, 1.0);
+        let ink = Ink {
+            text: c(0.0),
+            muted: c(0.05),
+            primary: c(0.1),
+            face: c(0.15),
+            line: c(0.2),
+            info: c(0.25),
+            warn: c(0.3),
+            danger: c(0.35),
+            ok: c(0.4),
+            accent: c(0.45),
+            ground: c(0.5),
+            on_primary: c(0.55),
+        };
+        let lit = ink.lit(ink.danger);
+        assert_eq!(
+            (lit.primary, lit.info, lit.accent),
+            (ink.danger, ink.danger, ink.danger)
+        );
+        assert_eq!(
+            (lit.text, lit.muted, lit.face, lit.ground),
+            (ink.text, ink.muted, ink.face, ink.ground)
+        );
+        assert_eq!(
+            (lit.warn, lit.danger, lit.ok),
+            (ink.warn, ink.danger, ink.ok)
+        );
+    }
 
     #[test]
     fn needle_points_along_its_turn() {

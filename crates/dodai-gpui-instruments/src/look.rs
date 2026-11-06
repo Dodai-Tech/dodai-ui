@@ -55,6 +55,18 @@ impl Look {
     }
 }
 
+/// What a reading past a limit colours in the looks drawn on a screen (heads-up, digital,
+/// futuristic and glass cockpit); the others keep their own colours.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum AtLimit {
+    /// Only the value: its pointer, sweep, bar or figure take the limit's colour.
+    #[default]
+    Value,
+    /// The whole display: its glows, accents, rings and legends take the limit's colour too, so
+    /// the exceedance shows at a glance.
+    Display,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
