@@ -174,41 +174,9 @@ pub(crate) fn chrono_case(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) ->
         true,
     );
     fill(w, o, &circle(c, c, r_face), ink.face);
-    sunburst(w, o, (c, c), r_face, ink.text);
+    crate::draw::sunburst(w, o, (c, c), r_face, ink.text);
     stroke(w, o, &circle(c, c, r_face), hair, ink.line, true);
     r_face
-}
-
-/// Paint a sunburst finish on a disc of radius `r` round `(cx, cy)`: faint rays from the
-/// centre, as on a brushed dial.
-pub(crate) fn sunburst(w: &mut Window, o: Point<Pixels>, (cx, cy): (f32, f32), r: f32, ink: Hsla) {
-    let hair = (r * 0.004).max(0.5);
-    for i in 0..180 {
-        let a = i as f32 / 180.0;
-        stroke(
-            w,
-            o,
-            &[polar(cx, cy, r * 0.08, a), polar(cx, cy, r * 0.98, a)],
-            hair,
-            scale_alpha(ink, 0.025),
-            false,
-        );
-    }
-}
-
-/// Paint a polished hub of radius `r` at `(cx, cy)`: a bright cap, a dark ring and a centre in
-/// the hand's colour.
-pub(crate) fn hub(
-    w: &mut Window,
-    o: Point<Pixels>,
-    (cx, cy): (f32, f32),
-    r: f32,
-    ink: Ink,
-    hand: Hsla,
-) {
-    fill(w, o, &circle(cx, cy, r), ink.text);
-    fill(w, o, &circle(cx, cy, r * 0.72), ink.face);
-    fill(w, o, &circle(cx, cy, r * 0.32), hand);
 }
 
 /// A soft crescent of light over the top of a chronograph face of radius `r_face`.

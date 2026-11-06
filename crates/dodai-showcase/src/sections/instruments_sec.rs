@@ -4,12 +4,12 @@ use super::super::*;
 use dodai_gpui::icons::Symbol;
 use dodai_gpui::{ClusterKind, DialLook, NeedleResponse};
 use dodai_gpui_instruments::{
-    Affiliation, Annunciator, AttitudeIndicator, CapsuleCluster, Compass, Contact, Countermeasures,
-    CutSpeedometer, DashTriptych, DialGauge, GearIndicator, GradientBar, GradientDial,
-    GradientRing, HeadingTape, InstrumentCluster, LevelBar, LimitSign, Limits, MenuRing,
-    MissionTimer, Odometer, PowerMeter, Ramp, RingTach, Scale, Severity, SidePod, SonarWaterfall,
-    Station, StationState, StoresPanel, TacticalPlot, Telltales, Threat, ThreatRosette,
-    TirePressure, Tone, TrackList, VerticalTape, VitalsTile,
+    Affiliation, Annunciator, AttitudeIndicator, Compass, Contact, Countermeasures, DashTriptych,
+    DialGauge, GearIndicator, GradientBar, GradientDial, GradientRing, HeadingTape,
+    InstrumentCluster, LevelBar, LimitSign, Limits, Look, MenuRing, MissionTimer, Odometer,
+    PowerMeter, Ramp, RingTach, Scale, Severity, SidePod, SonarWaterfall, Station, StationState,
+    StoresPanel, TacticalPlot, Telltales, Threat, ThreatRosette, Tone, TrackList, VerticalTape,
+    VitalsTile,
 };
 
 impl Showcase {
@@ -95,12 +95,19 @@ impl Showcase {
             ..
         } = self.chart_demos(&me, cx);
 
-        // Cluster sets: one coherent style per cluster, never mixed.
+        // Cluster sets: one coherent style per cluster, never mixed. A dash takes the look picked
+        // above the sections.
+        let look = self
+            .inst_look
+            .checked_sub(1)
+            .and_then(|i| Look::ALL.get(i).copied())
+            .unwrap_or_default();
         let mut clusters = div().flex().flex_col().gap(px(t.spacing.lg));
         clusters = clusters
             .child(Muted::new("This design's own cluster"))
             .child(
                 InstrumentCluster::themed()
+                    .look(look)
                     .speed(val(20.0, 0.0, 300.0))
                     .rpm(val(21.0, 0.8, 7.8))
                     .fuel(val(22.0, 10.0, 95.0))
@@ -114,6 +121,7 @@ impl Showcase {
         {
             clusters = clusters.child(Muted::new(kind.name())).child(
                 InstrumentCluster::new(kind)
+                    .look(look)
                     .speed(val(20.0, 0.0, 300.0))
                     .rpm(val(21.0, 0.8, 7.8))
                     .fuel(val(22.0, 10.0, 95.0))
@@ -122,14 +130,10 @@ impl Showcase {
                     .width(700.0),
             );
         }
-        // Vehicle: a speedometer with a redline tachometer and a fuel/temperature pair.
-        let speed = Scale::new(0.0, 240.0)
+        // Vehicle: a speed scale for the general-purpose dials and a fuel/temperature pair.
+        let speed2 = Scale::new(0.0, 240.0)
             .ticks_per(12, 2)
             .zone(200.0, 240.0, Severity::Caution);
-        let rpm = Scale::new(0.0, 8.0)
-            .ticks_per(8, 2)
-            .zone(6.5, 8.0, Severity::Alarm);
-        let speed2 = speed.clone();
         let fuel = Scale::new(0.0, 100.0)
             .ticks_per(4, 1)
             .zone(0.0, 12.0, Severity::Alarm)
@@ -138,12 +142,6 @@ impl Showcase {
             .ticks_per(3, 3)
             .zone(105.0, 115.0, Severity::Caution)
             .zone(115.0, 130.0, Severity::Alarm);
-        let tyres = Limits {
-            low: Some(2.0),
-            high: Some(3.0),
-            low_low: Some(1.6),
-            ..Limits::default()
-        };
         let power = Scale::new(-60.0, 120.0)
             .ticks_per(6, 1)
             .zone(100.0, 120.0, Severity::Caution);
@@ -165,8 +163,7 @@ impl Showcase {
                             .response_opt(response)
                             .label("Coolant")
                             .unit("°C"),
-                    )
-                    .child(TirePressure::new([2.4, 2.5, 1.8, 2.3], tyres)),
+                    ),
             )
             .child(
                 row()
@@ -188,13 +185,7 @@ impl Showcase {
         let rpm_scale = Scale::new(0.0, 8.0)
             .ticks_per(8, 2)
             .zone(7.0, 8.0, Severity::Alarm);
-        let oil_scale = Scale::new(0.0, 8.0).ticks_per(4, 2);
-        let temp_scale =
-            Scale::new(60.0, 130.0)
-                .ticks_per(3, 3)
-                .zone(115.0, 130.0, Severity::Alarm);
         let speed_scale = Scale::new(0.0, 270.0).ticks_per(9, 1);
-        let dash_row = || div().flex().flex_wrap().items_center().gap(gap);
         let tells = || {
             Telltales::new()
                 .push(Symbol::SeatBelt, Tone::Danger)
@@ -279,54 +270,17 @@ impl Showcase {
                     .trip("13.207 km", "6 °C", "19:06")
                     .width(780.0),
                 )
-                .child(Muted::new("Clusters: one coherent style per set."))
+                .child(Muted::new(
+                    "Clusters: one coherent style per set. A dash draws its dials in the look picked above.",
+                ))
                 .child(clusters)
-                .child(Muted::new("Single-piece clusters"))
-                .child(
-                    row()
-                        .items_start()
-                        .child(
-                            CapsuleCluster::new(speed_scale.clone(), val(35.0, 0.0, 220.0))
-                                .response_opt(response)
-                                .mode("Comfort")
-                                .power(val(36.0, 5.0, 90.0))
-                                .temp(21.5)
-                                .battery(72.0, 410.0)
-                                .width(700.0),
-                        )
-                        .child(
-                            CutSpeedometer::new(speed_scale.clone(), val(37.0, 0.0, 250.0))
-                                .response_opt(response)
-                                .unit("km/h")
-                                .width(380.0),
-                        ),
-                )
                 .child(Muted::new(format!(
                     "Gradients from {}: each ramp blends this theme's palette, so every theme gets its own set.",
                     t.meta.name
                 )))
                 .child(gradients)
-                .child(Muted::new("Dials"))
-                .child(
-                    row()
-                        .child(
-                            DialGauge::new(speed, val(1.0, 0.0, 230.0))
-                                .response_opt(response)
-                                .label("Speed")
-                                .unit("km/h")
-                                .size(240.0),
-                        )
-                        .child(
-                            DialGauge::new(rpm, val(2.0, 0.8, 7.6))
-                                .response_opt(response)
-                                .label("Engine")
-                                .unit("×1000 rpm")
-                                .decimals(1)
-                                .size(240.0),
-                        ),
-                )
                 .child(Muted::new(
-                    "The same dial in each look. A design picks its own by default.",
+                    "The general-purpose dial in its three looks, as the industrial and medical gauges use it. A design picks its own by default.",
                 ))
                 .child(
                     row()
@@ -352,31 +306,6 @@ impl Showcase {
                                 .unit("km/h")
                                 .size(170.0),
                         ),
-                )
-                .child(Muted::new("Pods"))
-                .child(
-                    dash_row()
-                        .child(
-                            SidePod::new(oil_scale, val(33.0, 1.0, 6.5))
-                                .icon(Symbol::OilCan)
-                                .unit("bar")
-                                .ends(Some(Tone::Info), Some(Tone::Danger))
-                                .size(260.0),
-                        )
-                        .child(
-                            SidePod::new(temp_scale, val(34.0, 75.0, 118.0))
-                                .icon(Symbol::Coolant)
-                                .unit("°C")
-                                .ends(Some(Tone::Info), Some(Tone::Danger))
-                                .size(260.0),
-                        )
-                        .child(
-                            MenuRing::new(["Information", "Vehicle", "Oil level"])
-                                .selected(1)
-                                .size(260.0),
-                        )
-                        .child(LimitSign::new(50).size(64.0))
-                        .child(LimitSign::new(120).size(64.0)),
                 )
                 .child(Muted::new("Status"))
                 .child(status)

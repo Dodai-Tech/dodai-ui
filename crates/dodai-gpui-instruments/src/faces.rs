@@ -123,7 +123,7 @@ impl RenderOnce for GaugeFace {
             (Look::Sport, Layout::Sweep) => self.sport_sweep(cx),
             (Look::Sport, Layout::Needle) => self.sport_needle(cx),
             (Look::Sport, Layout::Ribbed) => self.sport_ribbed(cx),
-            (Look::Sport, _) => self.dial(),
+            (Look::Sport, _) => self.dial(cx),
             (Look::Chronograph, Layout::Bezel) => self.chrono_bezel(cx),
             (Look::Chronograph, Layout::Register) => self.chrono_register(cx),
             (Look::Chronograph, _) => self.chrono(cx),
@@ -196,16 +196,48 @@ impl GaugeFace {
         readout(self.value, self.decimals, "")
     }
 
-    fn dial(self) -> AnyElement {
-        let mut pod = SidePod::new(self.scale.clone(), self.value)
+    /// The sport dial: the dash's ring with the figure, its unit and the label in the middle.
+    fn dial(self, cx: &App) -> AnyElement {
+        let t = dodai_gpui::theme_of(cx);
+        let ink = Ink::of(&t);
+        let s = self.size;
+        let figure_col = self.limit(&t).unwrap_or(ink.text);
+        let middle = div()
+            .flex()
+            .flex_col()
+            .items_center()
+            .gap(px(s * 0.008))
+            .when_some(self.icon, |d, i| {
+                d.child(Icon::symbol(i).size(s * 0.075).color(ink.muted))
+            })
+            .child(
+                div()
+                    .text_size(px(s * 0.17))
+                    .line_height(px(s * 0.18))
+                    .font_weight(gpui::FontWeight::LIGHT)
+                    .text_color(figure_col)
+                    .child(self.figure()),
+            )
+            .child(
+                div()
+                    .text_size(px(s * 0.045))
+                    .text_color(ink.muted)
+                    .child(self.unit.clone()),
+            )
+            .when(!self.label.is_empty(), |d| {
+                d.child(
+                    div()
+                        .text_size(px(s * 0.036))
+                        .text_color(ink.muted)
+                        .child(self.label.to_uppercase()),
+                )
+            });
+        SidePod::new(self.scale.clone(), self.value)
             .animate(false)
-            .unit(self.unit.clone())
             .ends(self.ends[0], self.ends[1])
-            .size(self.size);
-        if let Some(i) = self.icon {
-            pod = pod.icon(i);
-        }
-        pod.into_any_element()
+            .centre(middle)
+            .size(s)
+            .into_any_element()
     }
 
     /// The label row of a tile: icon and label.

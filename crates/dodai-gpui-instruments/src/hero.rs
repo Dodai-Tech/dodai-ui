@@ -7,9 +7,10 @@ use crate::gauges::{disc, SWEEP};
 use dodai_gpui::follow::{follow, Follow};
 use dodai_gpui::follow_api;
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
-use dodai_gpui::text::{first_family, format_label};
+use dodai_gpui::text::first_family;
 use dodai_gpui::{hsla, theme_of};
 use dodai_instruments_core::instrument::{readout, Scale, Severity};
+use gpui::prelude::FluentBuilder;
 use gpui::{
     canvas, div, px, App, Bounds, IntoElement, ParentElement, Pixels, RenderOnce, SharedString,
     Styled, Window,
@@ -119,14 +120,15 @@ impl RenderOnce for CutSpeedometer {
             .filter(|k| k.major)
             .map(|k| (k.frac, k.value))
             .collect();
-        let fine = 100usize;
+        let fine = 180usize;
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
                 let o = b.origin;
                 fill(w, o, &hex(rh), face);
-                stroke(w, o, &hex(rh), bezel, rim, true);
-                stroke(w, o, &hex(rh * 0.95), 1.0, scale_alpha(rim, 0.5), true);
+                stroke(w, o, &hex(rh), bezel * 0.6, scale_alpha(ink, 0.4), true);
+                stroke(w, o, &hex(rh * 0.97), 0.6, scale_alpha(ink, 0.15), true);
+                stroke(w, o, &hex(rh * 0.93), 0.6, scale_alpha(rim, 0.5), true);
                 for i in 0..=fine {
                     let f = i as f32 / fine as f32;
                     let on = f <= frac;
@@ -138,21 +140,21 @@ impl RenderOnce for CutSpeedometer {
                         polar(cxp, cyp, mid, at(f)),
                     ];
                     let outer = [polar(cxp, cyp, mid, at(f)), polar(cxp, cyp, rd, at(f))];
-                    stroke(w, o, &inner, 1.0, scale_alpha(col, a_in), false);
-                    stroke(w, o, &outer, 1.0, scale_alpha(col, a_out), false);
+                    stroke(w, o, &inner, 0.6, scale_alpha(col, a_in), false);
+                    stroke(w, o, &outer, 0.6, scale_alpha(col, a_out), false);
                 }
                 for (f, _) in &majors {
                     let seg = [
                         polar(cxp, cyp, rd, at(*f)),
                         polar(cxp, cyp, rd * 1.1, at(*f)),
                     ];
-                    stroke(w, o, &seg, 2.0, muted, false);
+                    stroke(w, o, &seg, 1.2, muted, false);
                 }
                 let needle = [
                     polar(cxp, cyp, rd * 0.62, at(frac)),
                     polar(cxp, cyp, rd * 1.14, at(frac)),
                 ];
-                stroke(w, o, &needle, 3.5, lit, false);
+                crate::mfd::glow(w, o, &needle, 2.0, lit, false);
             },
         )
         .absolute()
@@ -179,15 +181,16 @@ impl RenderOnce for CutSpeedometer {
                 .items_center()
                 .child(
                     div()
-                        .text_size(px(t.typography.size_sm))
-                        .text_color(ink)
-                        .child(format_label(&t.typography, &unit)),
+                        .text_size(px(t.typography.size_xs))
+                        .text_color(muted)
+                        .child(unit.to_uppercase()),
                 )
                 .child(
                     div()
                         .font_family(first_family(t.typography.display))
                         .text_size(px(big))
                         .line_height(px(big * 1.1))
+                        .font_weight(gpui::FontWeight::LIGHT)
                         .text_color(ink)
                         .child(readout(value, 0, "")),
                 ),
@@ -281,12 +284,11 @@ impl RenderOnce for CapsuleCluster {
             hsla(t.palette.text_muted),
             hsla(t.progress(None).track),
         );
-        let rim = hsla(t.palette.border);
         let a0 = t.palette.primary;
         let a1 = t.palette.secondary;
         let (start, span) = SWEEP;
         let at = move |f: f32| start + span * f;
-        let band = (dia * 0.075).max(t.sizes().slider_track);
+        let band = (dia * 0.035).max(3.0);
         let r_band = c * 0.9;
         let (power, temp, battery) = (
             (self.power / 100.0).clamp(0.0, 1.0),
@@ -319,7 +321,7 @@ impl RenderOnce for CapsuleCluster {
                     let a = std::f32::consts::PI * (1.5 + i as f32 / 32.0);
                     pts.push((width - r + r * a.cos(), r - r * a.sin()));
                 }
-                stroke(w, o, &pts, 2.0, rim, true);
+                stroke(w, o, &pts, 1.0, scale_alpha(ink, 0.35), true);
                 // Gradient rim glow on the lower edge.
                 for i in 0..40 {
                     let f = i as f32 / 40.0;
@@ -330,8 +332,8 @@ impl RenderOnce for CapsuleCluster {
                         w,
                         o,
                         &[(x0, h - 1.5), (x1, h - 1.5)],
-                        2.0,
-                        scale_alpha(col, 0.8),
+                        1.2,
+                        scale_alpha(col, 0.9),
                         false,
                     );
                 }
@@ -343,7 +345,7 @@ impl RenderOnce for CapsuleCluster {
                     w,
                     o,
                     &turn_arc(r, r, ar, left(0.0), left(1.0)),
-                    3.0,
+                    1.0,
                     track,
                     false,
                 );
@@ -351,7 +353,7 @@ impl RenderOnce for CapsuleCluster {
                     w,
                     o,
                     &turn_arc(r, r, ar, left(0.0), left(power)),
-                    3.0,
+                    2.0,
                     hsla(a0),
                     false,
                 );
@@ -360,7 +362,7 @@ impl RenderOnce for CapsuleCluster {
                     w,
                     o,
                     &turn_arc(rx, ry, ar, right(1.0), right(0.0)),
-                    3.0,
+                    1.0,
                     track,
                     false,
                 );
@@ -368,7 +370,7 @@ impl RenderOnce for CapsuleCluster {
                     w,
                     o,
                     &turn_arc(rx, ry, ar, right(temp), right(0.0)),
-                    3.0,
+                    2.0,
                     hsla(a1),
                     false,
                 );
@@ -397,12 +399,14 @@ impl RenderOnce for CapsuleCluster {
                     );
                 }
                 let knob = polar(c, c, r_band, at(frac));
-                fill(w, o2, &disc(knob.0, knob.1, band * 0.7, 20), ink);
+                fill(w, o2, &disc(knob.0, knob.1, band * 1.3, 24), ink);
+                fill(w, o2, &disc(knob.0, knob.1, band * 0.6, 24), track);
                 for (f, major) in &ticks {
                     let len = if *major { dia * 0.04 } else { dia * 0.02 };
                     let ro = r_band - band * 0.5 - 3.0;
                     let seg = [polar(c, c, ro, at(*f)), polar(c, c, ro - len, at(*f))];
-                    stroke(w, o2, &seg, if *major { 1.8 } else { 1.0 }, ink, false);
+                    let col = if *major { ink } else { scale_alpha(ink, 0.5) };
+                    stroke(w, o2, &seg, if *major { 1.2 } else { 0.6 }, col, false);
                 }
             },
         )
@@ -433,6 +437,7 @@ impl RenderOnce for CapsuleCluster {
                         .font_family(first_family(t.typography.display))
                         .text_size(px(big))
                         .line_height(px(big * 1.05))
+                        .font_weight(gpui::FontWeight::LIGHT)
                         .text_color(alarm.unwrap_or(ink))
                         .child(readout(self.value, 0, "")),
                 )
@@ -445,9 +450,9 @@ impl RenderOnce for CapsuleCluster {
                 .child(
                     div()
                         .pt(px(t.spacing.xs))
-                        .text_size(px(t.typography.size_md))
+                        .text_size(px(t.typography.size_xs))
                         .text_color(hsla(a1))
-                        .child(format_label(&t.typography, &self.mode)),
+                        .child(self.mode.to_uppercase()),
                 ),
         );
         // Gear selector under the dial.
@@ -456,10 +461,19 @@ impl RenderOnce for CapsuleCluster {
             let on = g == self.gear;
             gears = gears.child(
                 div()
-                    .font_family(first_family(t.typography.display))
-                    .text_size(px(t.typography.size_lg))
-                    .text_color(if on { ink } else { muted })
-                    .child(g.to_string()),
+                    .flex()
+                    .flex_col()
+                    .items_center()
+                    .gap(px(2.0))
+                    .text_size(px(t.typography.size_md))
+                    .text_color(if on { ink } else { scale_alpha(muted, 0.6) })
+                    .child(g.to_string())
+                    .child(
+                        div()
+                            .w(px(t.typography.size_md * 0.8))
+                            .h(px(1.5))
+                            .when(on, |d| d.bg(hsla(a1))),
+                    ),
             );
         }
         cap = cap.child(

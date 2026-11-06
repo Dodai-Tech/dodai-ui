@@ -79,7 +79,7 @@ impl RenderOnce for LevelBar {
         let sev = self.scale.severity_at(self.value);
         let frac = self.scale.fraction(self.value);
         let h = self.height;
-        let bar_w = 24.0;
+        let bar_w = 12.0;
         let track = ShapeStyle::from_tokens(
             &t,
             Some(t.palette.surface),
@@ -96,14 +96,13 @@ impl RenderOnce for LevelBar {
             .child(
                 div()
                     .absolute()
-                    .left(px(3.0))
-                    .bottom(px(3.0))
-                    .w(px(bar_w - 6.0))
-                    .h(px(((h - 6.0) * frac).max(0.0)))
-                    .rounded_sm()
+                    .left(px(2.0))
+                    .bottom(px(2.0))
+                    .w(px(bar_w - 4.0))
+                    .h(px(((h - 4.0) * frac).max(0.0)))
                     .bg(hsla(fill_col)),
             );
-        let mut strip = div().relative().w(px(5.0)).h(px(h));
+        let mut strip = div().relative().w(px(2.0)).h(px(h));
         for (a, b, s) in self.scale.zone_spans() {
             strip = strip.child(
                 div()
@@ -143,7 +142,7 @@ impl RenderOnce for LevelBar {
             .child(
                 div()
                     .text_size(px(t.typography.size_lg))
-                    .font_family(first_family(t.typography.mono))
+                    .font_weight(gpui::FontWeight::LIGHT)
                     .text_color(if sev == Severity::Normal {
                         hsla(t.palette.text)
                     } else {
@@ -154,9 +153,9 @@ impl RenderOnce for LevelBar {
         if let Some(l) = self.label {
             col = col.child(
                 div()
-                    .text_size(px(t.typography.size_sm))
+                    .text_size(px(t.typography.size_xs))
                     .text_color(hsla(t.palette.text_muted))
-                    .child(l),
+                    .child(l.to_uppercase()),
             );
         }
         col
@@ -487,7 +486,7 @@ impl RenderOnce for PowerMeter {
         self.value = follow(w, cx, &self.follow, 0, self.value);
         let t = theme_of(cx);
         let w = self.width;
-        let h = 22.0;
+        let h = 10.0;
         let zero = self.scale.fraction(0.0);
         let f = self.scale.fraction(self.value);
         let (lo, hi) = (zero.min(f), zero.max(f));
@@ -521,7 +520,7 @@ impl RenderOnce for PowerMeter {
                     .child("REGEN")
                     .child(
                         div()
-                            .font_family(first_family(t.typography.mono))
+                            .font_weight(gpui::FontWeight::LIGHT)
                             .text_size(px(t.typography.size_md))
                             .text_color(hsla(t.palette.text))
                             .child(readout(self.value, 0, &self.unit)),
@@ -537,19 +536,19 @@ impl RenderOnce for PowerMeter {
                     .child(
                         div()
                             .absolute()
-                            .top(px(3.0))
-                            .left(px(3.0 + (w - 6.0) * lo))
-                            .w(px(((w - 6.0) * (hi - lo)).max(0.0)))
-                            .h(px(h - 6.0))
+                            .top(px(2.0))
+                            .left(px(2.0 + (w - 4.0) * lo))
+                            .w(px(((w - 4.0) * (hi - lo)).max(0.0)))
+                            .h(px(h - 4.0))
                             .bg(col),
                     )
                     .child(
                         div()
                             .absolute()
-                            .top(px(1.0))
-                            .left(px(3.0 + (w - 6.0) * zero))
-                            .w(px(2.0))
-                            .h(px(h - 2.0))
+                            .top(px(-2.0))
+                            .left(px(2.0 + (w - 4.0) * zero))
+                            .w(px(1.0))
+                            .h(px(h + 4.0))
                             .bg(hsla(t.palette.text)),
                     ),
             )
@@ -603,23 +602,39 @@ impl RenderOnce for Compass {
             move |b: Bounds<Pixels>, _, w, _| {
                 let circle: Vec<(f32, f32)> =
                     (0..=96).map(|i| polar(c, c, r, i as f32 / 96.0)).collect();
-                stroke(w, b.origin, &circle, 2.0, ring, true);
-                for i in 0..36 {
-                    let f = i as f32 / 36.0 - turn;
-                    let len = if i % 3 == 0 { 0.1 } else { 0.05 };
+                stroke(
+                    w,
+                    b.origin,
+                    &circle,
+                    1.0,
+                    dodai_gpui::paint::scale_alpha(ink, 0.45),
+                    true,
+                );
+                let inner: Vec<(f32, f32)> = (0..=96)
+                    .map(|i| polar(c, c, r - size * 0.11, i as f32 / 96.0))
+                    .collect();
+                stroke(w, b.origin, &inner, 0.6, ring, true);
+                for i in 0..72 {
+                    let f = i as f32 / 72.0 - turn;
+                    let len = match (i % 18 == 0, i % 6 == 0) {
+                        (true, _) => 0.08,
+                        (false, true) => 0.06,
+                        _ => 0.03,
+                    };
+                    let col = if i % 6 == 0 { ink } else { muted };
                     stroke(
                         w,
                         b.origin,
                         &[polar(c, c, r, f), polar(c, c, r - size * len, f)],
-                        if i % 9 == 0 { 2.0 } else { 1.0 },
-                        muted,
+                        if i % 18 == 0 { 1.4 } else { 0.6 },
+                        col,
                         false,
                     );
                 }
                 let tri = [
-                    (c, c - r + size * 0.17),
-                    (c - size * 0.04, c - r - size * 0.02),
-                    (c + size * 0.04, c - r - size * 0.02),
+                    (c, c - r + size * 0.09),
+                    (c - size * 0.022, c - r - size * 0.02),
+                    (c + size * 0.022, c - r - size * 0.02),
                 ];
                 fill(w, b.origin, &tri, accent);
             },
@@ -642,8 +657,8 @@ impl RenderOnce for Compass {
                     .w(px(20.0))
                     .flex()
                     .justify_center()
-                    .text_size(px(t.typography.size_md))
-                    .text_color(if hot { hsla(t.palette.danger) } else { ink })
+                    .text_size(px(t.typography.size_sm))
+                    .text_color(if hot { hsla(t.palette.danger) } else { muted })
                     .child(name),
             );
         }
@@ -660,8 +675,8 @@ impl RenderOnce for Compass {
                 .items_center()
                 .child(
                     div()
-                        .font_family(first_family(t.typography.mono))
-                        .text_size(px(t.typography.size_lg))
+                        .font_weight(gpui::FontWeight::LIGHT)
+                        .text_size(px(t.typography.size_xl))
                         .text_color(ink)
                         .child(format!("{:03.0}°", heading)),
                 )

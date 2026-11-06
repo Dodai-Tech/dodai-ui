@@ -83,56 +83,36 @@ impl NeedleResponse {
 /// set never mixes looks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ClusterKind {
-    /// Round pods around a big inverted tachometer.
+    /// Fuel, speed, engine speed and coolant dials, drawn in the cluster's instrument look.
     #[default]
-    Pods,
+    Dash,
     /// A cut-corner speedometer with radiating hairlines.
     Cut,
     /// A capsule with a gradient sweep, side arcs and a gear selector.
     Capsule,
     /// A clock-style seven-segment panel with LED bars.
     Segment,
-    /// Five equal round pods.
-    Round,
-    /// Four inverted dials: bold ring, large numerals.
-    Bold,
-    /// Two large analog dials flanked by two small ones.
-    Classic,
-    /// The same layout with arc dials.
-    Arc,
-    /// The same layout with segmented LED dials.
-    Segmented,
     /// Numeric tiles with segment bars.
     Digital,
 }
 
 impl ClusterKind {
     /// Every style, in showcase order.
-    pub const ALL: [ClusterKind; 10] = [
+    pub const ALL: [ClusterKind; 5] = [
+        Self::Dash,
         Self::Cut,
-        Self::Segment,
         Self::Capsule,
-        Self::Pods,
-        Self::Round,
-        Self::Bold,
-        Self::Classic,
-        Self::Arc,
-        Self::Segmented,
+        Self::Segment,
         Self::Digital,
     ];
 
     /// Display name.
     pub fn name(self) -> &'static str {
         match self {
-            Self::Pods => "Pods",
-            Self::Segment => "Segment",
+            Self::Dash => "Dash",
             Self::Cut => "Cut",
             Self::Capsule => "Capsule",
-            Self::Round => "Round",
-            Self::Bold => "Bold",
-            Self::Classic => "Classic",
-            Self::Arc => "Arc",
-            Self::Segmented => "Segmented",
+            Self::Segment => "Segment",
             Self::Digital => "Digital",
         }
     }
@@ -177,7 +157,7 @@ impl ChartStyle {
             grid_dashed: false,
             area_alpha: 0.18,
             dial: DialLook::Analog,
-            cluster: ClusterKind::Pods,
+            cluster: ClusterKind::Dash,
             scope: ScopeLook::Neon,
             response: NeedleResponse::Snappy,
         }

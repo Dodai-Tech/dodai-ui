@@ -1,399 +1,25 @@
-//! Instrument-cluster sets: round pods around a big tachometer (analog) or a digital panel with
-//! segment bars (digital).
+//! Instrument-cluster sets: a dash of dials in any [`Look`], a cut-corner speedometer, a capsule,
+//! a segment panel or numeric tiles.
 //!
-//! [`PodGauge`] is a small round instrument with a digital value in the middle and a ring of
-//! ticks around it, [`Tachometer`] the big inverted hero dial with gear and drive mode,
-//! [`DigitalGauge`] a numeric tile with a segment bar, and [`InstrumentCluster`] arranges them
-//! into a complete set. Scales and severities come from `dodai_instruments_core::instrument`.
+//! [`DigitalGauge`] is a numeric tile with a segment bar, and [`InstrumentCluster`] arranges a
+//! complete set. Scales and severities come from `dodai_instruments_core::instrument`.
 
 use crate::dial::severity_color;
-use crate::dial::DialGauge;
-use crate::draw::{polar, turn_arc};
-use crate::gauges::{disc, SWEEP};
+use crate::faces::GaugeFace;
 use crate::hero::{CapsuleCluster, CutSpeedometer};
-use dodai_core::{ClusterKind, DialLook, Theme};
+use crate::look::Look;
+use dodai_core::ClusterKind;
 use dodai_gpui::follow::{follow, Follow};
 use dodai_gpui::follow_api;
-use dodai_gpui::paint::{fill, shaped, stroke, ShapeStyle};
-use dodai_gpui::text::{first_family, format_label};
+use dodai_gpui::icons::Symbol;
+use dodai_gpui::paint::{fill, shaped, ShapeStyle};
+use dodai_gpui::text::first_family;
 use dodai_gpui::{hsla, theme_of};
 use dodai_instruments_core::instrument::{readout, Scale, Severity};
 use gpui::{
     canvas, div, px, App, Bounds, Hsla, IntoElement, ParentElement, Pixels, RenderOnce,
     SharedString, Styled, Window,
 };
-
-use dodai_instruments_core::gauge::ring_points as ring;
-
-fn accent(t: &Theme, s: Severity) -> Hsla {
-    if s == Severity::Normal {
-        hsla(t.palette.danger)
-    } else {
-        severity_color(t, s)
-    }
-}
-
-// ───────────────────────────────── PodGauge ─────────────────────────────────
-
-/// A round pod: a thin tick ring, a marker at the value and the value itself in the middle.
-#[derive(IntoElement)]
-pub struct PodGauge {
-    follow: Follow,
-    scale: Scale,
-    value: f32,
-    label: Option<SharedString>,
-    unit: SharedString,
-    decimals: usize,
-    size: f32,
-    sweep: (f32, f32),
-    text: Option<SharedString>,
-}
-
-impl PodGauge {
-    follow_api!();
-    /// A pod showing `value` on `scale`.
-    #[track_caller]
-    pub fn new(scale: Scale, value: f32) -> Self {
-        Self {
-            follow: Follow::here(),
-            scale,
-            value,
-            label: None,
-            unit: SharedString::default(),
-            decimals: 0,
-            size: 170.0,
-            sweep: SWEEP,
-            text: None,
-        }
-    }
-    /// Small caption above the value.
-    pub fn label(mut self, l: impl Into<SharedString>) -> Self {
-        self.label = Some(l.into());
-        self
-    }
-    /// Unit under the value.
-    pub fn unit(mut self, u: impl Into<SharedString>) -> Self {
-        self.unit = u.into();
-        self
-    }
-    /// Decimals of the value.
-    pub fn decimals(mut self, d: usize) -> Self {
-        self.decimals = d;
-        self
-    }
-    /// Diameter in px.
-    pub fn size(mut self, s: f32) -> Self {
-        self.size = s.max(90.0);
-        self
-    }
-    /// Start and sweep in turns (0 = 12 o'clock, clockwise).
-    pub fn sweep(mut self, start: f32, sweep: f32) -> Self {
-        self.sweep = (start, sweep.clamp(0.1, 1.0));
-        self
-    }
-    /// Replace the number in the middle (e.g. a distance).
-    pub fn text(mut self, t: impl Into<SharedString>) -> Self {
-        self.text = Some(t.into());
-        self
-    }
-}
-
-impl RenderOnce for PodGauge {
-    fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
-        self.value = follow(w, cx, &self.follow, 0, self.value);
-        let t = theme_of(cx);
-        let Self {
-            follow: _,
-            scale,
-            value,
-            label,
-            unit,
-            decimals,
-            size,
-            sweep: (start, span),
-            text,
-        } = self;
-        let sev = scale.severity_at(value);
-        let frac = scale.fraction(value);
-        let (ink, muted, face) = (
-            hsla(t.palette.text),
-            hsla(t.palette.text_muted),
-            hsla(t.palette.surface),
-        );
-        let rim = hsla(t.palette.border);
-        let mark = accent(&t, sev);
-        let bezel = t.shape.border_width.max(1.5);
-        let c = size / 2.0;
-        let r_a = c * 0.84;
-        let at = move |f: f32| start + span * f;
-        let ticks: Vec<(f32, bool, Hsla)> = scale
-            .ticks()
-            .into_iter()
-            .map(|k| {
-                let col = match scale.severity_at(k.value) {
-                    Severity::Normal => ink,
-                    s => severity_color(&t, s),
-                };
-                (k.frac, k.major, col)
-            })
-            .collect();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                let o = b.origin;
-                fill(w, o, &disc(c, c, c - bezel * 0.5, 72), face);
-                stroke(w, o, &ring(c, c - bezel * 0.5), bezel, rim, true);
-                stroke(
-                    w,
-                    o,
-                    &turn_arc(c, c, r_a, at(0.0), at(1.0)),
-                    1.5,
-                    ink,
-                    false,
-                );
-                for (f, major, col) in &ticks {
-                    let len = if *major { size * 0.06 } else { size * 0.03 };
-                    let seg = [polar(c, c, r_a, at(*f)), polar(c, c, r_a - len, at(*f))];
-                    stroke(w, o, &seg, if *major { 2.2 } else { 1.0 }, *col, false);
-                }
-                let m = [
-                    polar(c, c, r_a + size * 0.035, at(frac)),
-                    polar(c, c, r_a - size * 0.08, at(frac)),
-                ];
-                stroke(w, o, &m, 4.0, mark, false);
-            },
-        )
-        .absolute()
-        .size_full();
-        let mut pod = div().relative().w(px(size)).h(px(size)).child(cv);
-        for k in scale.ticks().into_iter().filter(|k| k.major) {
-            let (x, y) = polar(c, c, c * 0.62, at(k.frac));
-            pod = pod.child(
-                div()
-                    .absolute()
-                    .left(px(x - 18.0))
-                    .top(px(y - 8.0))
-                    .w(px(36.0))
-                    .flex()
-                    .justify_center()
-                    .text_size(px(t.typography.size_xs))
-                    .text_color(muted)
-                    .child(readout(k.value, 0, "")),
-            );
-        }
-        let mut mid = div()
-            .absolute()
-            .left_0()
-            .top(px(c - size * 0.12))
-            .w(px(size))
-            .flex()
-            .flex_col()
-            .items_center();
-        mid = mid.child(
-            div()
-                .font_family(first_family(t.typography.mono))
-                .text_size(px((size * 0.2).max(t.typography.size_lg)))
-                .text_color(ink)
-                .child(text.unwrap_or_else(|| readout(value, decimals, "").into())),
-        );
-        if !unit.is_empty() {
-            mid = mid.child(
-                div()
-                    .text_size(px(t.typography.size_xs))
-                    .text_color(muted)
-                    .child(unit),
-            );
-        }
-        let mut col = div()
-            .flex()
-            .flex_col()
-            .items_center()
-            .gap(px(t.spacing.xs))
-            .child(pod.child(mid));
-        if let Some(l) = label {
-            col = col.child(
-                div()
-                    .text_size(px(t.typography.size_xs))
-                    .text_color(muted)
-                    .child(format_label(&t.typography, &l)),
-            );
-        }
-        col
-    }
-}
-
-// ───────────────────────────────── Tachometer ─────────────────────────────────
-
-/// The big centre dial: a bold inverted ring with large numerals, a redline block, a thin needle,
-/// the engaged gear in a box and the drive mode in a pill.
-#[derive(IntoElement)]
-pub struct Tachometer {
-    follow: Follow,
-    scale: Scale,
-    value: f32,
-    gear: Option<SharedString>,
-    mode: Option<SharedString>,
-    size: f32,
-}
-
-impl Tachometer {
-    follow_api!();
-    /// A tachometer showing `value` on `scale` (rpm ×1000).
-    #[track_caller]
-    pub fn new(scale: Scale, value: f32) -> Self {
-        Self {
-            follow: Follow::here(),
-            scale,
-            value,
-            gear: None,
-            mode: None,
-            size: 260.0,
-        }
-    }
-    /// The engaged gear, e.g. `"6"` or `"D"`.
-    pub fn gear(mut self, g: impl Into<SharedString>) -> Self {
-        self.gear = Some(g.into());
-        self
-    }
-    /// The drive mode, e.g. `"NORMAL"`.
-    pub fn mode(mut self, m: impl Into<SharedString>) -> Self {
-        self.mode = Some(m.into());
-        self
-    }
-    /// Diameter in px.
-    pub fn size(mut self, s: f32) -> Self {
-        self.size = s.max(140.0);
-        self
-    }
-}
-
-impl RenderOnce for Tachometer {
-    fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
-        self.value = follow(w, cx, &self.follow, 0, self.value);
-        let t = theme_of(cx);
-        let Self {
-            follow: _,
-            scale,
-            value,
-            gear,
-            mode,
-            size,
-        } = self;
-        let sev = scale.severity_at(value);
-        let frac = scale.fraction(value);
-        let (ink, face_dark, paper) = (
-            hsla(t.palette.text),
-            hsla(t.palette.background),
-            hsla(t.palette.background),
-        );
-        let needle = accent(&t, sev);
-        let c = size / 2.0;
-        let (start, span) = SWEEP;
-        let at = move |f: f32| start + span * f;
-        let zones: Vec<(f32, f32, Hsla)> = scale
-            .zone_spans()
-            .iter()
-            .map(|(a, b, s)| (*a, *b, severity_color(&t, *s)))
-            .collect();
-        let ticks: Vec<(f32, bool)> = scale
-            .ticks()
-            .into_iter()
-            .map(|k| (k.frac, k.major))
-            .collect();
-        let cv = canvas(
-            |_, _, _| (),
-            move |b: Bounds<Pixels>, _, w, _| {
-                let o = b.origin;
-                fill(w, o, &disc(c, c, c - 1.0, 96), ink);
-                fill(w, o, &disc(c, c, c * 0.6, 72), face_dark);
-                for (f, major) in &ticks {
-                    let len = if *major { size * 0.05 } else { size * 0.025 };
-                    let seg = [
-                        polar(c, c, c * 0.97, at(*f)),
-                        polar(c, c, c * 0.97 - len, at(*f)),
-                    ];
-                    stroke(w, o, &seg, if *major { 2.4 } else { 1.0 }, paper, false);
-                }
-                for (a, z, col) in &zones {
-                    let r = c * 0.9;
-                    stroke(
-                        w,
-                        o,
-                        &turn_arc(c, c, r, at(*a), at(*z)),
-                        size * 0.04,
-                        *col,
-                        false,
-                    );
-                }
-                let line = [
-                    polar(c, c, c * 0.14, at(frac)),
-                    polar(c, c, c * 0.98, at(frac)),
-                ];
-                stroke(w, o, &line, 3.5, needle, false);
-                fill(w, o, &disc(c, c, size * 0.045, 24), face_dark);
-                stroke(w, o, &ring(c, size * 0.045), 2.0, ink, true);
-            },
-        )
-        .absolute()
-        .size_full();
-        let mut dial = div().relative().w(px(size)).h(px(size)).child(cv);
-        for k in scale.ticks().into_iter().filter(|k| k.major) {
-            let (x, y) = polar(c, c, c * 0.78, at(k.frac));
-            dial = dial.child(
-                div()
-                    .absolute()
-                    .left(px(x - 20.0))
-                    .top(px(y - size * 0.045))
-                    .w(px(40.0))
-                    .flex()
-                    .justify_center()
-                    .font_family(first_family(t.typography.display))
-                    .text_size(px(size * if k.value.abs() >= 100.0 { 0.065 } else { 0.085 }))
-                    .text_color(paper)
-                    .child(readout(k.value, 0, "")),
-            );
-        }
-        if let Some(g) = gear {
-            let style = ShapeStyle::from_tokens(&t, Some(t.palette.text), None, false, false);
-            dial = dial.child(
-                shaped(&t.shape, style)
-                    .absolute()
-                    .left(px(c + size * 0.1))
-                    .top(px(c - size * 0.08))
-                    .w(px(size * 0.15))
-                    .h(px(size * 0.16))
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .font_family(first_family(t.typography.display))
-                    .text_size(px(size * 0.11))
-                    .text_color(paper)
-                    .child(g),
-            );
-        }
-        if let Some(m) = mode {
-            let style = ShapeStyle::from_tokens(&t, Some(t.palette.text), None, false, false);
-            dial = dial.child(
-                div()
-                    .absolute()
-                    .left_0()
-                    .top(px(c + size * 0.26))
-                    .w(px(size))
-                    .flex()
-                    .justify_center()
-                    .child(
-                        shaped(&t.shape, style)
-                            .px(px(size * 0.05))
-                            .py(px(size * 0.012))
-                            .text_size(px(t.typography.size_xs))
-                            .text_color(paper)
-                            .child(format_label(&t.typography, &m)),
-                    ),
-            );
-        }
-        dial
-    }
-}
 
 // ───────────────────────────────── DigitalGauge ─────────────────────────────────
 
@@ -455,7 +81,7 @@ impl RenderOnce for DigitalGauge {
         let sev = self.scale.severity_at(self.value);
         let frac = self.scale.fraction(self.value);
         let width = self.width;
-        let seg_n = ((width / 9.0) as usize).clamp(12, 48);
+        let seg_n = ((width / 6.0) as usize).clamp(16, 64);
         let cols: Vec<Hsla> = (0..seg_n)
             .map(|i| {
                 match self
@@ -468,7 +94,7 @@ impl RenderOnce for DigitalGauge {
             })
             .collect();
         let off = hsla(t.progress(None).track);
-        let bar_h = 10.0;
+        let bar_h = 4.0;
         let inner = width - t.spacing.sm * 2.0;
         let bar = canvas(
             |_, _, _| (),
@@ -479,8 +105,8 @@ impl RenderOnce for DigitalGauge {
                     let lit = (i as f32 + 0.5) / seg_n as f32 <= frac;
                     let r = [
                         (x, 0.0),
-                        (x + step - 2.0, 0.0),
-                        (x + step - 2.0, bar_h),
+                        (x + step * 0.75, 0.0),
+                        (x + step * 0.75, bar_h),
                         (x, bar_h),
                     ];
                     fill(w, b.origin, &r, if lit { *col } else { off });
@@ -517,9 +143,9 @@ impl RenderOnce for DigitalGauge {
             .gap(px(t.spacing.xs))
             .child(
                 div()
-                    .text_size(px(t.typography.size_xs))
+                    .text_size(px(t.typography.size_xs * 0.9))
                     .text_color(hsla(t.palette.text_muted))
-                    .child(format_label(&t.typography, &self.label)),
+                    .child(self.label.to_uppercase()),
             )
             .child(
                 div()
@@ -531,6 +157,7 @@ impl RenderOnce for DigitalGauge {
                             .font_family(first_family(t.typography.mono))
                             .text_size(px(num))
                             .line_height(px(num * 1.05))
+                            .font_weight(gpui::FontWeight::LIGHT)
                             .text_color(if sev == Severity::Normal {
                                 hsla(t.palette.text)
                             } else {
@@ -552,19 +179,11 @@ impl RenderOnce for DigitalGauge {
 
 // ───────────────────────────────── InstrumentCluster ─────────────────────────────────
 
-fn dial_look(kind: ClusterKind) -> Option<DialLook> {
-    match kind {
-        ClusterKind::Classic => Some(DialLook::Analog),
-        ClusterKind::Arc => Some(DialLook::Arc),
-        ClusterKind::Segmented => Some(DialLook::Segmented),
-        _ => None,
-    }
-}
-
 /// A complete cluster: speed, engine speed with gear and mode, fuel, oil pressure and coolant.
 #[derive(IntoElement)]
 pub struct InstrumentCluster {
     kind: Option<ClusterKind>,
+    look: Look,
     speed: f32,
     rpm: f32,
     gear: SharedString,
@@ -580,6 +199,7 @@ impl InstrumentCluster {
     pub fn new(kind: ClusterKind) -> Self {
         Self {
             kind: Some(kind),
+            look: Look::Sport,
             speed: 251.0,
             rpm: 6.9,
             gear: "6".into(),
@@ -594,8 +214,14 @@ impl InstrumentCluster {
     pub fn themed() -> Self {
         Self {
             kind: None,
-            ..Self::new(ClusterKind::Pods)
+            ..Self::new(ClusterKind::Dash)
         }
+    }
+    /// The look of a [`ClusterKind::Dash`] cluster's dials (Sport by default); the other
+    /// clusters have their own.
+    pub fn look(mut self, look: Look) -> Self {
+        self.look = look;
+        self
     }
     /// Speed in km/h.
     pub fn speed(mut self, v: f32) -> Self {
@@ -704,131 +330,35 @@ impl RenderOnce for InstrumentCluster {
         );
         let row = div().flex().items_center().justify_center().gap(px(gap));
         let body = match kind {
-            ClusterKind::Pods => {
-                // 0.62 + 0.78 + 1 + 0.78 + 0.62 hero widths, four gaps.
-                let hero = ((inner - gap * 4.0) / 3.8).max(120.0);
-                let (mid, small) = (hero * 0.78, hero * 0.62);
-                row.child(
-                    PodGauge::new(fuel, self.fuel)
-                        .label("FUEL")
-                        .unit("%")
-                        .size(small),
-                )
-                .child(
-                    PodGauge::new(speed, self.speed)
-                        .label("SPEED")
-                        .unit("km/h")
-                        .size(mid),
-                )
-                .child(
-                    Tachometer::new(rpm, self.rpm)
-                        .gear(self.gear)
-                        .mode(self.mode)
-                        .size(hero),
-                )
-                .child(
-                    PodGauge::new(oil, self.oil)
-                        .label("OIL")
-                        .unit("bar")
-                        .decimals(1)
-                        .size(mid),
-                )
-                .child(
-                    PodGauge::new(coolant, self.coolant)
-                        .label("COOLANT")
-                        .unit("°C")
-                        .size(small),
-                )
-                .into_any_element()
-            }
             ClusterKind::Cut | ClusterKind::Capsule | ClusterKind::Segment => {
                 div().into_any_element()
             }
-            ClusterKind::Round => {
-                let d = ((inner - gap * 4.0) / 5.0).max(90.0);
-                row.child(
-                    PodGauge::new(fuel, self.fuel)
-                        .label("FUEL")
-                        .unit("%")
-                        .size(d),
-                )
-                .child(
-                    PodGauge::new(speed, self.speed)
-                        .label("SPEED")
-                        .unit("km/h")
-                        .size(d),
-                )
-                .child(
-                    PodGauge::new(rpm, self.rpm)
-                        .label(format!("GEAR {} · {}", self.gear, self.mode))
-                        .unit("×1000 rpm")
-                        .decimals(1)
-                        .size(d),
-                )
-                .child(
-                    PodGauge::new(oil, self.oil)
-                        .label("OIL")
-                        .unit("bar")
-                        .decimals(1)
-                        .size(d),
-                )
-                .child(
-                    PodGauge::new(coolant, self.coolant)
-                        .label("COOLANT")
-                        .unit("°C")
-                        .size(d),
-                )
-                .into_any_element()
-            }
-            ClusterKind::Bold => {
-                let big = ((inner - gap * 3.0) / 3.24).max(120.0);
-                let small = big * 0.62;
-                row.child(Tachometer::new(fuel, self.fuel).size(small))
-                    .child(Tachometer::new(speed, self.speed).size(big))
-                    .child(
-                        Tachometer::new(rpm, self.rpm)
-                            .gear(self.gear)
-                            .mode(self.mode)
-                            .size(big),
-                    )
-                    .child(Tachometer::new(coolant, self.coolant).size(small))
-                    .into_any_element()
-            }
-            ClusterKind::Classic | ClusterKind::Arc | ClusterKind::Segmented => {
-                let look = dial_look(kind).unwrap_or(DialLook::Analog);
+            ClusterKind::Dash => {
                 // 0.62 + 1 + 1 + 0.62 big-dial widths, three gaps.
                 let big = ((inner - gap * 3.0) / 3.24).max(120.0);
                 let small = big * 0.62;
+                let look = self.look;
+                let face = |scale: Scale, v: f32, size: f32| {
+                    GaugeFace::new(scale, v).look(look).size(size)
+                };
                 row.child(
-                    DialGauge::new(fuel, self.fuel)
-                        .look(look)
+                    face(fuel, self.fuel, small)
+                        .icon(Symbol::Fuel)
                         .label("Fuel")
-                        .unit("%")
-                        .tick_labels(false)
-                        .size(small),
+                        .unit("%"),
                 )
+                .child(face(speed, self.speed, big).label("Speed").unit("km/h"))
                 .child(
-                    DialGauge::new(speed, self.speed)
-                        .look(look)
-                        .label("Speed")
-                        .unit("km/h")
-                        .size(big),
-                )
-                .child(
-                    DialGauge::new(rpm, self.rpm)
-                        .look(look)
+                    face(rpm, self.rpm, big)
                         .label(format!("Gear {} · {}", self.gear, self.mode))
                         .unit("×1000 rpm")
-                        .decimals(1)
-                        .size(big),
+                        .decimals(1),
                 )
                 .child(
-                    DialGauge::new(coolant, self.coolant)
-                        .look(look)
+                    face(coolant, self.coolant, small)
+                        .icon(Symbol::Coolant)
                         .label("Coolant")
-                        .unit("°C")
-                        .tick_labels(false)
-                        .size(small),
+                        .unit("°C"),
                 )
                 .into_any_element()
             }

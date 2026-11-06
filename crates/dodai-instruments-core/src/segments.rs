@@ -34,7 +34,7 @@ pub fn digit_width(h: f32) -> f32 {
 
 /// Segment thickness at height `h`. Pure.
 pub fn thickness(h: f32) -> f32 {
-    h * 0.12
+    h * 0.095
 }
 
 /// Shear applied to a point so digits lean forward. Pure.
