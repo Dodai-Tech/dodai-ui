@@ -354,7 +354,7 @@ impl Showcase {
             self,
             "Vehicle · Oil pressure and temperature",
             vec![gallery(
-                "Oil pressure (bar) and oil temperature (°C). Classic: two needles on one ring, pressure on the upper half and temperature on the lower arc. The other looks put the two readings on two faces on the diagonal; the heads-up tapes stand side by side.",
+                "Oil pressure (bar) and oil temperature (°C). Classic: two needles on one ring, pressure on the upper half and temperature on the lower arc. The other looks draw the pressure on one face and the temperature on a strip under it in the look's style; the heads-up tapes stand side by side.",
                 looks(oil().size(POD).into_any_element(), oil_faces),
             )],
         );
