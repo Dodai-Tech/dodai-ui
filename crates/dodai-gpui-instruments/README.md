@@ -41,7 +41,7 @@ The default turns on every industry set and no design.
 
 | Feature | What it adds |
 |---|---|
-| `automotive` | dashes, pods, gauge faces in nine looks (`Look`), tachometer, speedometers, tyre pressure, gear, odometer, compass, EV energy, shift lights; the vehicle symbols |
+| `automotive` | dashes, pods, gauge faces in nine looks (`Look`), tachometer, speedometers, tyre pressure, gear selector (P R N D as a row, a stack or one large figure, manual gear, shift prompt), odometer, compass, EV energy, shift lights; the vehicle symbols |
 | `aviation` | attitude indicator, heading and vertical tapes, sonar waterfall, countermeasures; the aviation symbols |
 | `defense` | tactical plot, track list, threat rosette, stores panel, mission timer, radar scope; the military symbols |
 | `industrial` | the process-plant and machine symbols |
@@ -59,12 +59,14 @@ dodai-gpui-instruments = { version = "0.1", default-features = false, features =
 The vehicle instruments share one `Look`: Sport, Chronograph, Vintage, Heads-up, Segment LCD, Halo, Glass cockpit, Race and Line. Set it on a single instrument with `.look(..)`, or on a whole `DashTriptych` / `DashQuad` to restyle the ring, pods, lamps and limit sign together. An instrument given no look takes its design's own, `ChartStyle::vehicle` (Material: sport, Cyberpunk: heads-up, Dodai: halo, Neo-Brutalism: segment LCD). A gauge face also takes a `Layout` within its look: `Look::layouts()` lists them (Sport: dial, sweep, needle, ribbed; Chronograph: dial, bezel, register; Vintage: dial, meter, ribbon; Heads-up: dial, cut, tape; Segment LCD: dial, bar, column; Halo: dial, capsule, arc, bar; Glass cockpit: dial, tape, column; Race: dial; Line: dial, bar), and a look draws its dial for a layout it lacks.
 
 ```rust,no_run
-use dodai_gpui_instruments::{EnergyPod, Look, ShiftLights};
+use dodai_gpui_instruments::{EnergyPod, Gear, GearSelector, Look, ShiftHint, ShiftLights};
 
 // An electric car's battery, recovering 18 kW, in the glass-cockpit look.
 let energy = EnergyPod::new(64.0).power(-18.0).range("312 km").look(Look::GlassCockpit);
 // Shift lights between 5 000 and 7 000 rpm with the gear, as a race rev bar.
 let lights = ShiftLights::new(6400.0).range(5000.0, 7000.0).gear("4").look(Look::Race);
+// Fourth gear shifted by hand, prompting a change up, in the design's own look.
+let gear = GearSelector::new(Gear::Manual(4)).hint(ShiftHint::Up);
 ```
 
 These are display components, not medical or flight-safety devices: do not rely on them to monitor a patient or to fly or operate anything.

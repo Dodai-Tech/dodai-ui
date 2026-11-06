@@ -1,5 +1,5 @@
 //! Vehicle and machine instruments beside [`crate::DialGauge`]: [`LevelBar`], [`TirePressure`],
-//! [`GearIndicator`], [`Odometer`], [`PowerMeter`] and [`Compass`].
+//! [`Odometer`], [`PowerMeter`] and [`Compass`].
 //!
 //! Scales and severities come from `dodai_instruments_core::instrument`; colours from the theme's
 //! severity tokens; panels from the design's shape tokens.
@@ -263,71 +263,6 @@ impl RenderOnce for TirePressure {
                     .child(chip("FR", fr))
                     .child(chip("RR", rr)),
             )
-    }
-}
-
-// ───────────────────────────────── GearIndicator ─────────────────────────────────
-
-/// A gear selector strip: the engaged position is lit.
-#[derive(IntoElement)]
-pub struct GearIndicator {
-    gears: Vec<SharedString>,
-    selected: usize,
-}
-
-impl GearIndicator {
-    /// A selector over `gears` with `selected` engaged.
-    pub fn new<S: Into<SharedString>>(gears: impl IntoIterator<Item = S>, selected: usize) -> Self {
-        Self {
-            gears: gears.into_iter().map(Into::into).collect(),
-            selected,
-        }
-    }
-    /// The usual automatic: P R N D.
-    pub fn automatic(selected: usize) -> Self {
-        Self::new(["P", "R", "N", "D"], selected)
-    }
-}
-
-impl RenderOnce for GearIndicator {
-    fn render(self, _w: &mut Window, cx: &mut App) -> impl IntoElement {
-        let t = theme_of(cx);
-        let mut row = div().flex().gap(px(t.spacing.xs));
-        for (i, g) in self.gears.into_iter().enumerate() {
-            let on = i == self.selected;
-            let style = ShapeStyle::from_tokens(
-                &t,
-                Some(if on {
-                    t.palette.primary
-                } else {
-                    t.palette.surface
-                }),
-                Some(if on {
-                    t.palette.primary
-                } else {
-                    t.palette.border
-                }),
-                false,
-                false,
-            );
-            row = row.child(
-                shaped(&t.shape, style)
-                    .w(px(t.shape.control_height))
-                    .h(px(t.shape.control_height))
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .font_family(first_family(t.typography.mono))
-                    .text_size(px(t.typography.size_lg))
-                    .text_color(if on {
-                        hsla(t.palette.on_primary)
-                    } else {
-                        hsla(t.palette.text_muted)
-                    })
-                    .child(g),
-            );
-        }
-        row
     }
 }
 

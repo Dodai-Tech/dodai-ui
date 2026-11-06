@@ -7,12 +7,16 @@ const MASKS: [u8; 10] = [
     0b1111111, 0b1101111,
 ];
 
-/// Lit-segment bit mask of a character (digits, `-` and `°` as a raised ring; everything else is
-/// blank). Pure.
+/// Lit-segment bit mask of a character (digits, `-`, `°` as a raised ring and the gear letters
+/// P, R, N and D as `P r n d`; everything else is blank). Pure.
 pub fn mask(c: char) -> u8 {
     match c {
         '0'..='9' => MASKS[c as usize - '0' as usize],
         '-' => 0b1000000,
+        'P' | 'p' => 0b1110011,
+        'R' | 'r' => 0b1010000,
+        'N' | 'n' => 0b1010100,
+        'D' | 'd' => 0b1011110,
         '°' => 0b1100011,
         _ => 0,
     }
@@ -99,6 +103,15 @@ mod tests {
         assert_eq!(mask('8'), 0b1111111);
         assert_eq!(mask('1').count_ones(), 2);
         assert_eq!(mask('x'), 0);
+    }
+
+    #[test]
+    fn the_gear_letters_light_and_ignore_case() {
+        for (up, low) in [('P', 'p'), ('R', 'r'), ('N', 'n'), ('D', 'd')] {
+            assert_ne!(mask(up), 0);
+            assert_eq!(mask(up), mask(low));
+        }
+        assert_ne!(mask('D'), mask('0'), "d is open at the top, unlike 0");
     }
 
     #[test]
