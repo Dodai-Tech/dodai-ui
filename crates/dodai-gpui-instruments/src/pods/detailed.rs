@@ -58,7 +58,7 @@ impl TyrePod {
             Look::Digital => self.digital(t),
             Look::Futuristic => self.futuristic(t),
             Look::Cockpit => self.cockpit(t),
-            Look::Nixie => self.nixie(t),
+            Look::Race => self.race(t),
             Look::Classic | Look::Chrono => self.chrono(t),
         }
     }
@@ -295,7 +295,7 @@ impl RowsPod {
             Look::Digital => self.digital(t),
             Look::Futuristic => self.futuristic(t),
             Look::Cockpit => self.cockpit(t),
-            Look::Nixie => self.nixie(t),
+            Look::Race => self.race(t),
             Look::Classic | Look::Chrono => self.chrono(t),
         }
     }
@@ -578,7 +578,7 @@ impl NoticePod {
             Look::Digital => self.digital(t),
             Look::Futuristic => self.futuristic(t),
             Look::Cockpit => self.cockpit(t),
-            Look::Nixie => self.nixie(t),
+            Look::Race => self.race(t),
             Look::Classic | Look::Chrono => self.chrono(t),
         }
     }
@@ -748,7 +748,7 @@ impl GForcePod {
             Look::Digital => self.digital(t),
             Look::Futuristic => self.futuristic(t),
             Look::Cockpit => self.cockpit(t),
-            Look::Nixie => self.nixie(t),
+            Look::Race => self.race(t),
             Look::Classic | Look::Chrono => self.chrono(t),
         }
     }
@@ -1012,7 +1012,7 @@ impl MediaPod {
             Look::Digital => self.digital(ink, t.is_dark()),
             Look::Futuristic => self.futuristic(ink, cover),
             Look::Cockpit => self.cockpit(ink),
-            Look::Nixie => self.nixie(ink),
+            Look::Race => self.race(ink),
             Look::Classic | Look::Chrono => self.chrono(ink, cover),
         }
     }
@@ -1265,7 +1265,7 @@ impl CompassPod {
             Look::Digital => self.digital(t),
             Look::Futuristic => self.futuristic(t),
             Look::Cockpit => self.cockpit(t),
-            Look::Nixie => self.nixie(t),
+            Look::Race => self.race(t),
             Look::Classic | Look::Chrono => self.chrono(t),
         }
     }

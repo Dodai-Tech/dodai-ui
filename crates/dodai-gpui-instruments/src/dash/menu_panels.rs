@@ -1,11 +1,11 @@
-//! The glass-cockpit and nixie looks of [`MenuRing`]: a display page whose rows sit beside the
-//! soft keys, the selected one boxed in cyan; and a panel of neon bulbs beside engraved rows,
-//! the selected bulb lit. Colours from the theme.
+//! The glass-cockpit and race looks of [`MenuRing`]: a display page whose rows sit beside the
+//! soft keys, the selected one boxed in cyan; and a race plate of slanted tabs, the selected one
+//! filled in the primary colour. Colours from the theme.
 
 use super::*;
 use crate::mfd::{page, rect};
+use crate::race::{plate, skew, tag, tag_text};
 use crate::shapes::Ink;
-use crate::tubes::{bulb, chassis, glow};
 
 /// A canvas filling its parent.
 fn layer(paint: impl Fn(&mut Window, gpui::Point<Pixels>) + 'static) -> impl IntoElement {
@@ -105,62 +105,67 @@ impl MenuRing {
         el.into_any_element()
     }
 
-    /// A panel of neon bulbs: one per row beside its engraved name, the selected bulb lit, the
-    /// chosen row in the glow colour, the heading on a strip.
-    pub(super) fn nixie(self, t: &Theme) -> AnyElement {
+    /// A race plate: the heading on a slanted tag, each row a slanted tab, the selected one
+    /// filled in the primary colour (pushed in while pressed) and the chosen one with a green
+    /// edge.
+    pub(super) fn race(self, t: &Theme) -> AnyElement {
         let ink = Ink::of(t);
         let s = self.size;
         let n = self.rows.len().max(1);
         let sel = self.selected.min(n - 1);
         let has_heading = !self.heading.is_empty();
         let (top, pitch) = rows_layout(s, n, has_heading);
-        let neon = glow(ink);
+        let head = (s * 0.08, s * 0.1, s * 0.56, s * 0.075);
         let pressed = self.pressed;
-        let bx = s * 0.17;
+        let chosen = self.chosen;
+        let (x0, wd) = (s * 0.1, s * 0.8);
+        let tab = move |i: usize| {
+            let inset = if i == sel && pressed { s * 0.012 } else { 0.0 };
+            (
+                x0 + inset,
+                top + pitch * i as f32 + pitch * 0.1 + inset,
+                wd - 2.0 * inset,
+                pitch * 0.8 - 2.0 * inset,
+            )
+        };
         let paint = move |w: &mut Window, o: gpui::Point<Pixels>| {
-            chassis(w, o, s, ink);
+            plate(w, o, s, ink);
+            if has_heading {
+                tag(w, o, head, ink.primary);
+            }
             for i in 0..n {
-                let y = top + pitch * (i as f32 + 0.5);
-                let r = (pitch * 0.26).min(s * 0.04);
-                let lit = i == sel;
-                bulb(
-                    w,
-                    o,
-                    (bx, y),
-                    r * if lit && pressed { 1.15 } else { 1.0 },
-                    neon,
-                    lit,
-                    ink,
-                );
+                let (x, y, tw, th) = tab(i);
+                let p = skew(x, y, tw, th);
+                if i == sel {
+                    fill(w, o, &p, ink.primary);
+                } else {
+                    fill(w, o, &p, scale_alpha(ink.text, 0.05));
+                    stroke(w, o, &p, s * 0.004, ink.line, true);
+                }
+                if chosen == Some(i) {
+                    fill(w, o, &crate::race::lean_edge(x, y, s * 0.025, th), ink.ok);
+                }
             }
         };
         let mut el = div().relative().w(px(s)).h(px(s)).child(layer(paint));
         if has_heading {
-            el = el.child(
-                text_box(s / 2.0, s * 0.1, s * 0.7)
-                    .text_size(px(s * 0.036))
-                    .text_color(ink.muted)
-                    .child(self.heading.to_uppercase()),
-            );
+            el = el.child(tag_text(head, ink.on_primary, &self.heading));
         }
         for (i, r) in self.rows.iter().enumerate() {
-            let y = top + pitch * i as f32;
-            let col = if self.chosen == Some(i) {
-                neon
-            } else if i == sel {
-                ink.text
-            } else {
-                ink.muted
-            };
+            let (x, y, tw, th) = tab(i);
+            let col = if i == sel { ink.on_primary } else { ink.text };
             el = el.child(
                 div()
                     .absolute()
-                    .left(px(bx + s * 0.08))
+                    .left(px(x + th * 0.5))
                     .top(px(y))
-                    .h(px(pitch))
+                    .w(px(tw - th * 0.8))
+                    .h(px(th))
                     .flex()
                     .items_center()
-                    .text_size(px((pitch * 0.38).min(s * 0.048)))
+                    .text_size(px((th * 0.5).min(s * 0.05)))
+                    .font_weight(FontWeight::BOLD)
+                    .italic()
                     .text_color(col)
                     .child(r.to_uppercase()),
             );

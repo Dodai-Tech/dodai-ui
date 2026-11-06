@@ -444,8 +444,8 @@ const FILES: &[(&str, &str)] = &[
         include_str!("../../dodai-gpui-instruments/src/mfd.rs"),
     ),
     (
-        "dodai-gpui-instruments/src/tubes.rs",
-        include_str!("../../dodai-gpui-instruments/src/tubes.rs"),
+        "dodai-gpui-instruments/src/race.rs",
+        include_str!("../../dodai-gpui-instruments/src/race.rs"),
     ),
     (
         "dodai-gpui-instruments/src/shift.rs",
@@ -460,8 +460,8 @@ const FILES: &[(&str, &str)] = &[
         include_str!("../../dodai-gpui-instruments/src/pods/cockpit.rs"),
     ),
     (
-        "dodai-gpui-instruments/src/pods/nixie.rs",
-        include_str!("../../dodai-gpui-instruments/src/pods/nixie.rs"),
+        "dodai-gpui-instruments/src/pods/race.rs",
+        include_str!("../../dodai-gpui-instruments/src/pods/race.rs"),
     ),
     (
         "dodai-gpui-instruments/src/pods/energy.rs",

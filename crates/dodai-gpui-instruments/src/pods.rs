@@ -121,7 +121,7 @@ mod detailed;
 mod digital;
 mod energy;
 mod future;
-mod nixie;
+mod race;
 mod vintage;
 
 pub use energy::{charge_tone, power_frac, power_text, EnergyPod};

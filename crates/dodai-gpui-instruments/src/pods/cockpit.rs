@@ -115,7 +115,7 @@ impl TyrePod {
             .child(title(s, ink, &self.heading, &self.unit));
         let names = ["FL", "FR", "RL", "RR"];
         for (i, &(bx, by)) in boxes.iter().enumerate() {
-            let col = if lows[i] { ink.warn } else { ink.info };
+            let col = if lows[i] { ink.warn } else { ink.ok };
             el = el
                 .child(boxed(
                     bx,
@@ -135,7 +135,7 @@ impl TyrePod {
                     },
                     bw,
                     s * 0.03,
-                    if lows[i] { ink.warn } else { ink.muted },
+                    if lows[i] { ink.warn } else { ink.info },
                     if lows[i] {
                         format!("{} LOW", names[i])
                     } else {
@@ -276,7 +276,7 @@ impl NoticePod {
                     .items_center()
                     .text_size(px(s * 0.05))
                     .font_weight(FontWeight::MEDIUM)
-                    .text_color(ink.face)
+                    .text_color(ink.ground)
                     .child(self.title.to_uppercase()),
             )
             .child(

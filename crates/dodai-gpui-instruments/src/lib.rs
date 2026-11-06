@@ -56,13 +56,13 @@ pub(crate) mod pod_math;
 #[cfg(feature = "automotive")]
 pub mod pods;
 #[cfg(feature = "automotive")]
+mod race;
+#[cfg(feature = "automotive")]
 mod shapes;
 #[cfg(feature = "automotive")]
 pub mod shift;
 #[cfg(feature = "defense")]
 pub mod tactical;
-#[cfg(feature = "automotive")]
-mod tubes;
 #[cfg(feature = "automotive")]
 pub mod vehicle;
 
