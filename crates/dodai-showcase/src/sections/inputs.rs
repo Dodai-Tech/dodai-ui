@@ -9,6 +9,7 @@ impl Showcase {
         vec![
             Self::toggle_section,
             Self::variants_section,
+            Self::group_section,
             Self::slider_section,
             Self::stepped_section,
             Self::range_section,
@@ -16,10 +17,9 @@ impl Showcase {
             Self::input_section,
             Self::search_section,
             Self::tag_field_section,
-            Self::picker_section,
             Self::password_section,
             Self::form_field_section,
-            Self::group_section,
+            Self::picker_section,
             Self::date_range_section,
         ]
     }
@@ -801,6 +801,59 @@ impl Showcase {
                 .child(range_picker)
                 .into_any_element(),
             "Date range",
+        ));
+        let ((sh, sm), (eh, em)) = self.range_times;
+        let timed = dodai_gpui::DateTimeRangePicker::new("date-time-range", y, mo)
+            .range(self.date_range)
+            .start_time(sh, sm)
+            .end_time(eh, em)
+            .on_select({
+                let m = me.clone();
+                move |d, _, cx| {
+                    m.update(cx, |s, cx| {
+                        s.date_range = dodai_gpui::range_pick(s.date_range, d);
+                        cx.notify()
+                    })
+                }
+            })
+            .on_month({
+                let m = me.clone();
+                move |y, mo, _, cx| {
+                    m.update(cx, |s, cx| {
+                        s.date.0 = y;
+                        s.date.1 = mo;
+                        cx.notify()
+                    })
+                }
+            })
+            .on_start_time({
+                let m = me.clone();
+                move |h, mi, _, cx| {
+                    m.update(cx, |s, cx| {
+                        s.range_times.0 = (h, mi);
+                        cx.notify()
+                    })
+                }
+            })
+            .on_end_time({
+                let m = me.clone();
+                move |h, mi, _, cx| {
+                    m.update(cx, |s, cx| {
+                        s.range_times.1 = (h, mi);
+                        cx.notify()
+                    })
+                }
+            });
+        out.push((
+            "Inputs",
+            "Date-time range picker",
+            self.section("Date-time range", cx)
+                .child(row().items_start().child(timed))
+                .child(Muted::new(
+                    "Shares its span with the date range above; the start and end times are its own.",
+                ))
+                .into_any_element(),
+            "Date-time range",
         ));
         out
     }

@@ -107,6 +107,7 @@ fn frame_cost_probe(cx: &mut TestAppContext) {
         "Form field",
         "Toggle group · Checkbox group",
         "Date range",
+        "Date-time range",
         "Tabs",
         "Tree",
         "Collapsible sidebar",
