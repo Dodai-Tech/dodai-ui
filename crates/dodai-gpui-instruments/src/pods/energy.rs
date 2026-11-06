@@ -5,7 +5,7 @@ use super::*;
 
 /// The battery of an electric car: the charge, the power flowing out or back in, and the range.
 ///
-/// Classic draws a battery of cells under the charge, with a power arc that grows right from the
+/// Sport draws a battery of cells under the charge, with a power arc that grows right from the
 /// top while driving and left while recovering or charging. Every other look shows the same as
 /// three rows of a [`RowsPod`] in that look: charge, power and range.
 #[derive(IntoElement)]
@@ -69,7 +69,7 @@ impl EnergyPod {
             max_regen: 60.0,
             range: SharedString::default(),
             charging: false,
-            look: Look::Classic,
+            look: Look::Sport,
             style: PodStyle::Ring,
             size: 300.0,
         }
@@ -96,7 +96,7 @@ impl EnergyPod {
         self.charging = on;
         self
     }
-    /// The look (see [`Look`]); every look but [`Look::Classic`] draws the battery as three rows
+    /// The look (see [`Look`]); every look but [`Look::Sport`] draws the battery as three rows
     /// of a [`RowsPod`].
     pub fn look(mut self, look: Look) -> Self {
         self.look = look;
@@ -128,7 +128,7 @@ impl RenderOnce for EnergyPod {
         self.power = pm::finite(follow(w, cx, &self.follow, 1, self.power), 0.0);
         let flow = power_frac(self.power, self.max_power, self.max_regen);
         let tone = charge_tone(self.charge);
-        if self.look != Look::Classic {
+        if self.look != Look::Sport {
             let flow_tone = if flow < 0.0 {
                 Tone::Success
             } else {

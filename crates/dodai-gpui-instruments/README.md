@@ -56,7 +56,7 @@ dodai-gpui-instruments = { version = "0.1", default-features = false, features =
 
 ## Looks
 
-The vehicle instruments share one `Look`: Classic, Chronograph, Vintage, Heads-up, Segment LCD, Halo, Glass cockpit and Race. Set it on a single instrument with `.look(..)`, or on a whole `DashTriptych` / `DashQuad` to restyle the ring, pods, lamps and limit sign together.
+The vehicle instruments share one `Look`: Sport, Chronograph, Vintage, Heads-up, Segment LCD, Halo, Glass cockpit and Race. Set it on a single instrument with `.look(..)`, or on a whole `DashTriptych` / `DashQuad` to restyle the ring, pods, lamps and limit sign together. A gauge face also takes a `Layout` within its look: `Look::layouts()` lists them (Vintage: dial, meter, ribbon; Heads-up: dial, tape; Halo: dial, arc, bar), and a look draws its dial for a layout it lacks.
 
 ```rust,no_run
 use dodai_gpui_instruments::{EnergyPod, Look, ShiftLights};

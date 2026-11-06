@@ -4,9 +4,9 @@
 /// one; each look keeps the same data and only changes the drawing.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Look {
-    /// The dash's own ring pods and ring dial.
+    /// The sports dash: ribbed ring pods, a ring dial with the road speed in the middle.
     #[default]
-    Classic,
+    Sport,
     /// A watch case: knurled bezel, fine scales, tapered hands and a glass.
     Chronograph,
     /// An instrument panel of old: a screwed plate, a round bezel, a warm face, spade hands and a
@@ -30,7 +30,7 @@ pub enum Look {
 impl Look {
     /// Every look, in the order a gallery shows them.
     pub const ALL: [Self; 8] = [
-        Self::Classic,
+        Self::Sport,
         Self::Chronograph,
         Self::Vintage,
         Self::HeadsUp,
@@ -43,7 +43,7 @@ impl Look {
     /// A short name for a caption or a picker.
     pub fn name(self) -> &'static str {
         match self {
-            Self::Classic => "Classic",
+            Self::Sport => "Sport",
             Self::Chronograph => "Chronograph",
             Self::Vintage => "Vintage",
             Self::HeadsUp => "Heads-up",
@@ -51,6 +51,63 @@ impl Look {
             Self::Halo => "Halo",
             Self::GlassCockpit => "Glass cockpit",
             Self::Race => "Race",
+        }
+    }
+}
+
+impl Look {
+    /// The layouts this look draws a gauge in; the first, [`Layout::Dial`], is the default.
+    /// Pure.
+    pub fn layouts(self) -> &'static [Layout] {
+        match self {
+            Self::HeadsUp => &[Layout::Dial, Layout::Tape],
+            Self::Vintage => &[Layout::Dial, Layout::Meter, Layout::Ribbon],
+            Self::Halo => &[Layout::Dial, Layout::Arc, Layout::Bar],
+            _ => &[Layout::Dial],
+        }
+    }
+
+    /// `layout` if this look has it, else [`Layout::Dial`]. Pure.
+    pub fn fit(self, layout: Layout) -> Layout {
+        if self.layouts().contains(&layout) {
+            layout
+        } else {
+            Layout::Dial
+        }
+    }
+}
+
+/// How a gauge is laid out within its [`Look`]; a look draws only the layouts it lists in
+/// [`Look::layouts`] and falls back to the dial for the others.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Layout {
+    /// A round dial: every look has one.
+    #[default]
+    Dial,
+    /// A vertical tape scrolling under a pointer box ([`Look::HeadsUp`]).
+    Tape,
+    /// A panel meter: a wide window with a flat arc and a needle from a pivot below it
+    /// ([`Look::Vintage`]).
+    Meter,
+    /// A ribbon speedometer: a long window where a coloured ribbon runs out along a straight
+    /// scale ([`Look::Vintage`]).
+    Ribbon,
+    /// A half ring of light over a large figure ([`Look::Halo`]).
+    Arc,
+    /// A straight bar of light under a large figure ([`Look::Halo`]).
+    Bar,
+}
+
+impl Layout {
+    /// A short name for a caption or a picker.
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Dial => "Dial",
+            Self::Tape => "Tape",
+            Self::Meter => "Meter",
+            Self::Ribbon => "Ribbon",
+            Self::Arc => "Arc",
+            Self::Bar => "Bar",
         }
     }
 }
@@ -78,5 +135,17 @@ mod tests {
         names.dedup();
         assert_eq!(names.len(), Look::ALL.len());
         assert_eq!(Look::default(), Look::ALL[0]);
+    }
+
+    #[test]
+    fn every_look_has_a_dial_first_and_falls_back_to_it() {
+        for l in Look::ALL {
+            assert_eq!(l.layouts()[0], Layout::Dial);
+            assert_eq!(l.fit(Layout::Dial), Layout::Dial);
+        }
+        assert_eq!(Look::Halo.fit(Layout::Bar), Layout::Bar);
+        assert_eq!(Look::Halo.fit(Layout::Tape), Layout::Dial);
+        assert_eq!(Look::Sport.fit(Layout::Meter), Layout::Dial);
+        assert_eq!(Look::Vintage.fit(Layout::Ribbon), Layout::Ribbon);
     }
 }

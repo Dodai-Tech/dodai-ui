@@ -5,7 +5,7 @@ use dodai_gpui::icons::IconId;
 use dodai_gpui::icons::Symbol;
 use dodai_gpui_instruments::{
     AtLimit, BoostPod, CompassPod, DashQuad, DashTriptych, DualGauge, DualScale, EnergyPod,
-    GForcePod, GaugeFace, LimitSign, Look, MediaPod, MenuRing, NoticePod, PodIcon, PodRow,
+    GForcePod, GaugeFace, Layout, LimitSign, Look, MediaPod, MenuRing, NoticePod, PodIcon, PodRow,
     PodStyle, RingTach, RowsPod, Scale, Severity, ShiftLights, SidePod, Telltales, Tone, TyrePod,
 };
 
@@ -191,41 +191,46 @@ fn shown(only: Option<Look>) -> Vec<Look> {
     only.map_or_else(|| Look::ALL.to_vec(), |l| vec![l])
 }
 
-/// A reading in each shown [`Look`], then the alternative layouts of those looks (the vintage
-/// panel meter and the heads-up tape): the dash dial comes from `dial(size)`, the rest from
-/// `face(look, alternate, size)`.
+/// The caption of a look drawn in one of its layouts, e.g. "Vintage ribbon". Pure.
+fn caption(look: Look, layout: Layout) -> &'static str {
+    match (look, layout) {
+        (Look::Vintage, Layout::Meter) => "Vintage meter",
+        (Look::Vintage, Layout::Ribbon) => "Vintage ribbon",
+        (Look::HeadsUp, Layout::Tape) => "Heads-up tape",
+        (Look::Halo, Layout::Arc) => "Halo arc",
+        (Look::Halo, Layout::Bar) => "Halo bar",
+        (l, _) => l.name(),
+    }
+}
+
+/// A reading in each shown [`Look`], each followed by its other layouts (see
+/// [`Look::layouts`]): the sport dial comes from `dial(size)`, the rest from
+/// `face(look, layout, size)`.
 fn looks(
     only: Option<Look>,
     dial: impl FnOnce(f32) -> gpui::AnyElement,
-    face: impl Fn(Look, bool, f32) -> gpui::AnyElement,
+    face: impl Fn(Look, Layout, f32) -> gpui::AnyElement,
 ) -> Vec<(&'static str, gpui::AnyElement)> {
     let mut dial = Some(dial);
     let looks = shown(only);
-    let alternates = looks
-        .iter()
-        .filter(|l| matches!(l, Look::Vintage | Look::HeadsUp))
-        .count();
-    let pod = cell(looks.len() + alternates);
-    let mut out: Vec<(&'static str, gpui::AnyElement)> = looks
-        .iter()
-        .map(|&l| {
+    let pod = cell(looks.iter().map(|l| l.layouts().len()).sum());
+    let mut out: Vec<(&'static str, gpui::AnyElement)> = Vec::new();
+    for l in looks {
+        for &layout in l.layouts() {
             let el = match (l, dial.take()) {
-                (Look::Classic, Some(d)) => d(pod),
-                _ => face(l, false, pod),
+                (Look::Sport, Some(d)) => d(pod),
+                (_, d) => {
+                    dial = d;
+                    face(l, layout, pod)
+                }
             };
-            (l.name(), el)
-        })
-        .collect();
-    if looks.contains(&Look::Vintage) {
-        out.push(("Vintage meter", face(Look::Vintage, true, pod)));
-    }
-    if looks.contains(&Look::HeadsUp) {
-        out.push(("Heads-up tape", face(Look::HeadsUp, true, pod)));
+            out.push((caption(l, layout), el));
+        }
     }
     out
 }
 
-fn speed_face(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
+fn speed_face(look: Look, layout: Layout, size: f32) -> gpui::AnyElement {
     GaugeFace::new(
         Scale::new(0.0, 270.0)
             .ticks_per(9, 1)
@@ -234,7 +239,7 @@ fn speed_face(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
     )
     .look(look)
     .at_limit(AtLimit::Display)
-    .alternate(alt)
+    .layout(layout)
     .label("Speed")
     .icon(Symbol::Tachometer)
     .unit("km/h")
@@ -242,7 +247,7 @@ fn speed_face(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
     .into_any_element()
 }
 
-fn rev_face(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
+fn rev_face(look: Look, layout: Layout, size: f32) -> gpui::AnyElement {
     GaugeFace::new(
         Scale::new(0.0, 8.0)
             .ticks_per(8, 2)
@@ -252,7 +257,7 @@ fn rev_face(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
     )
     .look(look)
     .at_limit(AtLimit::Display)
-    .alternate(alt)
+    .layout(layout)
     .label("Engine speed")
     .icon(Symbol::Tachometer)
     .unit("×1000 rpm")
@@ -261,7 +266,7 @@ fn rev_face(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
     .into_any_element()
 }
 
-fn volt_face(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
+fn volt_face(look: Look, layout: Layout, size: f32) -> gpui::AnyElement {
     GaugeFace::new(
         Scale::new(6.0, 18.0)
             .ticks_per(2, 3)
@@ -271,7 +276,7 @@ fn volt_face(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
     )
     .look(look)
     .at_limit(AtLimit::Display)
-    .alternate(alt)
+    .layout(layout)
     .label("Battery")
     .icon(Symbol::Battery)
     .unit("V")
@@ -280,7 +285,7 @@ fn volt_face(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
     .into_any_element()
 }
 
-fn coolant_face(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
+fn coolant_face(look: Look, layout: Layout, size: f32) -> gpui::AnyElement {
     GaugeFace::new(
         Scale::new(60.0, 130.0)
             .ticks_per(3, 3)
@@ -289,7 +294,7 @@ fn coolant_face(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
     )
     .look(look)
     .at_limit(AtLimit::Display)
-    .alternate(alt)
+    .layout(layout)
     .label("Coolant")
     .icon(Symbol::Coolant)
     .unit("°C")
@@ -298,7 +303,7 @@ fn coolant_face(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
     .into_any_element()
 }
 
-fn boost_face(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
+fn boost_face(look: Look, layout: Layout, size: f32) -> gpui::AnyElement {
     GaugeFace::new(
         Scale::new(0.0, 100.0)
             .ticks_per(5, 2)
@@ -307,7 +312,7 @@ fn boost_face(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
     )
     .look(look)
     .at_limit(AtLimit::Display)
-    .alternate(alt)
+    .layout(layout)
     .label("Boost")
     .icon(Symbol::Boost)
     .unit("%")
@@ -316,11 +321,11 @@ fn boost_face(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
 }
 
 /// Oil pressure and temperature on two faces: side by side or stacked.
-fn oil_faces(look: Look, alt: bool, size: f32) -> gpui::AnyElement {
+fn oil_faces(look: Look, layout: Layout, size: f32) -> gpui::AnyElement {
     oil()
         .look(look)
         .at_limit(AtLimit::Display)
-        .alternate(alt)
+        .layout(layout)
         .size(size)
         .into_any_element()
 }
@@ -373,13 +378,13 @@ impl Showcase {
             self,
             "Vehicle · Looks",
             vec![gallery(
-                "Every vehicle instrument comes in eight looks: the same data, drawn as a classic dash ring, a chronograph, a vintage panel, a heads-up display, a segment LCD, a halo of light, a glass cockpit or a race display. Here the engine speed in each; pick a look above to see every instrument and the example dashes in it.",
+                "Every vehicle instrument comes in eight looks: the same data, drawn as a sports dash ring, a chronograph, a vintage panel, a heads-up display, a segment LCD, a halo of light, a glass cockpit or a race display. Here the engine speed in each. Vintage also comes as a panel meter and a ribbon, heads-up as a tape and halo as an arc and a bar. Pick a look above to see every instrument and the example dashes in it.",
                 Look::ALL
                     .into_iter()
                     .map(|l| {
                         let el = match l {
-                            Look::Classic => tach().size(POD).into_any_element(),
-                            _ => rev_face(l, false, POD),
+                            Look::Sport => tach().size(POD).into_any_element(),
+                            _ => rev_face(l, Layout::Dial, POD),
                         };
                         (l.name(), el)
                     })
@@ -391,7 +396,7 @@ impl Showcase {
             self,
             "Vehicle · Engine speed",
             vec![gallery(
-                "The revs, 0 to 8 in thousands, amber from 6 and red from 7. Classic: the ribbed ring of the dash with the road speed in the middle, a trip tab and the fuel level. The others show the revs alone: a chronograph with a sub-dial, a vintage dial with a spade hand and a drum counter, a heads-up ring, a segment display and a halo of light. Vintage and heads-up add an alternative layout: a panel meter and a tape.",
+                "The revs, 0 to 8 in thousands, amber from 6 and red from 7. Sport: the ribbed ring of the dash with the road speed in the middle, a trip tab and the fuel level. The others show the revs alone: a chronograph with a sub-dial, a vintage dial with a spade hand and a drum counter, a heads-up ring, a segment display and a halo of light. Vintage adds a panel meter and a ribbon, heads-up a tape, halo an arc and a bar.",
                 looks(only, |z| tach().size(z).into_any_element(), rev_face),
             )],
         );
@@ -399,7 +404,7 @@ impl Showcase {
             self,
             "Vehicle · Speed",
             vec![gallery(
-                "The speed, 0 to 270, amber above 220. Classic: the dash pod in steps of 30 with the speed limit in the middle and no needle. The other looks draw it as a gauge face; vintage and heads-up add a panel meter and a tape.",
+                "The speed, 0 to 270, amber above 220. Sport: the dash pod in steps of 30 with the speed limit in the middle and no needle. The other looks draw it as a gauge face; vintage adds a panel meter and a ribbon, heads-up a tape, halo an arc and a bar.",
                 looks(only, |z| speed().size(z).into_any_element(), speed_face),
             )],
         );
@@ -415,7 +420,7 @@ impl Showcase {
             self,
             "Vehicle · Oil pressure and temperature",
             vec![gallery(
-                "Oil pressure (bar) and oil temperature (°C). Classic: two needles on one ring, pressure on the upper half and temperature on the lower arc. The other looks draw the pressure on one face and the temperature on a strip under it in the look's style; the heads-up tapes stand side by side.",
+                "Oil pressure (bar) and oil temperature (°C). Sport: two needles on one ring, pressure on the upper half and temperature on the lower arc. The other looks draw the pressure on one face and the temperature on a strip under it in the look's style; the heads-up tapes stand side by side.",
                 looks(only, |z| oil().size(z).into_any_element(), oil_faces),
             )],
         );
@@ -431,7 +436,7 @@ impl Showcase {
             self,
             "Vehicle · Boost",
             vec![gallery(
-                "The boost (or charge) level in percent. Classic: the cell stack inside a segmented band with a limit mark and the battery temperature. The other looks draw it as a gauge face; vintage and heads-up add a panel meter and a tape. Past 80 % the screen looks here colour their whole display amber, an option (at_limit(AtLimit::Display)); by default only the value takes the limit's colour.",
+                "The boost (or charge) level in percent. Sport: the cell stack inside a segmented band with a limit mark and the battery temperature. The other looks draw it as a gauge face; vintage adds a panel meter and a ribbon, heads-up a tape, halo an arc and a bar. Past 80 % the screen looks here colour their whole display amber, an option (at_limit(AtLimit::Display)); by default only the value takes the limit's colour.",
                 looks(
                     only,
                     |z| {
@@ -449,7 +454,7 @@ impl Showcase {
             "Vehicle · Energy",
             vec![
                 gallery(
-                    "The battery of an electric car: charge, power and range. Classic: a battery of cells under the charge, the power arc growing right from the top while driving. Every other look shows charge, power and range as rows.",
+                    "The battery of an electric car: charge, power and range. Sport: a battery of cells under the charge, the power arc growing right from the top while driving. Every other look shows charge, power and range as rows.",
                     looked(only, |s, z| {
                         EnergyPod::new(val(60.0, 55.0, 80.0))
                             .power(val(61.0, 10.0, 120.0))
@@ -777,6 +782,19 @@ mod tests {
         assert_eq!(cell(1), POD_ALONE);
         assert_eq!(cell(2), POD);
         assert_eq!(cell(Look::ALL.len()), POD);
+    }
+
+    #[test]
+    fn every_layout_has_its_own_caption() {
+        let mut all: Vec<_> = Look::ALL
+            .into_iter()
+            .flat_map(|l| l.layouts().iter().map(move |&y| caption(l, y)))
+            .collect();
+        let n = all.len();
+        all.sort_unstable();
+        all.dedup();
+        assert_eq!(all.len(), n);
+        assert_eq!(caption(Look::Race, Layout::Bar), "Race");
     }
 
     #[test]

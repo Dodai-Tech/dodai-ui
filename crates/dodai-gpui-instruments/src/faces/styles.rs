@@ -1,6 +1,6 @@
 //! The vintage, segment-LCD and halo gauge faces. Vintage: a round bezel on a screwed plate, an
-//! engraved scale on a warm face, a spade hand and a drum counter; its alternative is a panel
-//! meter with the pivot below the face. Segment LCD: an LCD module with a segment arc and a
+//! engraved scale on a warm face, a spade hand and a drum counter; its panel
+//! meter has the pivot below the face (the ribbon is in `layouts`). Segment LCD: an LCD module with a segment arc and a
 //! seven-segment figure. Halo: a halo with a gradient arc of light, a fading wake and a
 //! glowing blade. Every colour comes from the theme.
 
@@ -17,17 +17,17 @@ use crate::gauges::SWEEP;
 use crate::pod_math as pm;
 use crate::shapes::{band, chrono_glass, circle, Ink};
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
-
-/// Width of the vintage dial's caption plate, as a share of the face.
-const CAPTION_W: f32 = 0.32;
-/// Height of the vintage dial's caption plate, as a share of the face.
-const CAPTION_H: f32 = 0.055;
 use dodai_gpui::theme_of;
 use dodai_instruments_core::instrument::Severity;
 use gpui::{
     canvas, div, px, AnyElement, App, Bounds, FontWeight, Hsla, IntoElement, ParentElement, Pixels,
     Styled,
 };
+
+/// Width of the vintage dial's caption plate, as a share of the face.
+const CAPTION_W: f32 = 0.32;
+/// Height of the vintage dial's caption plate, as a share of the face.
+const CAPTION_H: f32 = 0.055;
 
 /// A canvas over the whole face.
 fn layer(paint: impl Fn(&mut gpui::Window, gpui::Point<Pixels>) + 'static) -> impl IntoElement {
@@ -55,11 +55,8 @@ impl GaugeFace {
     }
 
     /// A vintage dial: plate, bezel, warm face, engraved scale, zone band, numerals, a spade
-    /// hand, a caption plate and a drum counter. With [`GaugeFace::alternate`] it is a panel meter.
+    /// hand, a caption plate and a drum counter.
     pub(super) fn vintage(self, cx: &mut gpui::App) -> AnyElement {
-        if self.alternate {
-            return self.panel_meter(cx);
-        }
         let t = theme_of(cx);
         let ink = Ink::of(&t);
         let s = self.size;
@@ -173,7 +170,7 @@ impl GaugeFace {
 
     /// A panel meter: a wide warm window with a flat scale arc, its zones as a thick band, a long
     /// needle from a pivot below the window, screws in the corners and a name plate.
-    fn panel_meter(self, cx: &mut App) -> AnyElement {
+    pub(super) fn panel_meter(self, cx: &mut App) -> AnyElement {
         let t = theme_of(cx);
         let ink = Ink::of(&t);
         let s = self.size;
