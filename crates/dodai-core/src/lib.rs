@@ -29,6 +29,7 @@ mod theme;
 mod tokens;
 pub mod tonal;
 mod tune;
+pub mod vehicle_look;
 
 pub mod themes;
 

@@ -56,7 +56,7 @@ dodai-gpui-instruments = { version = "0.1", default-features = false, features =
 
 ## Looks
 
-The vehicle instruments share one `Look`: Sport, Chronograph, Vintage, Heads-up, Segment LCD, Halo, Glass cockpit, Race and Line. Set it on a single instrument with `.look(..)`, or on a whole `DashTriptych` / `DashQuad` to restyle the ring, pods, lamps and limit sign together. A gauge face also takes a `Layout` within its look: `Look::layouts()` lists them (Sport: dial, sweep, needle, ribbed; Chronograph: dial, bezel, register; Vintage: dial, meter, ribbon; Heads-up: dial, cut, tape; Segment LCD: dial, bar, column; Halo: dial, capsule, arc, bar; Glass cockpit: dial, tape, column; Race: dial; Line: dial, bar), and a look draws its dial for a layout it lacks.
+The vehicle instruments share one `Look`: Sport, Chronograph, Vintage, Heads-up, Segment LCD, Halo, Glass cockpit, Race and Line. Set it on a single instrument with `.look(..)`, or on a whole `DashTriptych` / `DashQuad` to restyle the ring, pods, lamps and limit sign together. An instrument given no look takes its design's own, `ChartStyle::vehicle` (Material: sport, Cyberpunk: heads-up, Dodai: halo, Neo-Brutalism: segment LCD). A gauge face also takes a `Layout` within its look: `Look::layouts()` lists them (Sport: dial, sweep, needle, ribbed; Chronograph: dial, bezel, register; Vintage: dial, meter, ribbon; Heads-up: dial, cut, tape; Segment LCD: dial, bar, column; Halo: dial, capsule, arc, bar; Glass cockpit: dial, tape, column; Race: dial; Line: dial, bar), and a look draws its dial for a layout it lacks.
 
 ```rust,no_run
 use dodai_gpui_instruments::{EnergyPod, Look, ShiftLights};

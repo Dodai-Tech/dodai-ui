@@ -147,6 +147,7 @@ impl DesignSpec for Material3 {
             area_alpha: 0.12,
             dial: crate::DialLook::Arc,
             scope: crate::ScopeLook::Clean,
+            vehicle: crate::vehicle_look::Look::Sport,
             response: crate::NeedleResponse::Snappy,
             ..crate::ChartStyle::from_theme(t)
         })

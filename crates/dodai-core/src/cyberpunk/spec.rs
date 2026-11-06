@@ -84,6 +84,7 @@ impl DesignSpec for Cyberpunk {
             grid_dashed: true,
             dial: crate::DialLook::Segmented,
             scope: crate::ScopeLook::Neon,
+            vehicle: crate::vehicle_look::Look::HeadsUp,
             response: crate::NeedleResponse::Snappy,
             grid_color: t.palette.border.with_alpha(0.7),
             ..crate::ChartStyle::from_theme(t)

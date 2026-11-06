@@ -96,6 +96,7 @@ impl DesignSpec for NeoBrutalism {
             area_alpha: 0.35,
             dial: crate::DialLook::Analog,
             scope: crate::ScopeLook::Ink,
+            vehicle: crate::vehicle_look::Look::Segment,
             response: crate::NeedleResponse::Bouncy,
             ..crate::ChartStyle::from_theme(t)
         })
