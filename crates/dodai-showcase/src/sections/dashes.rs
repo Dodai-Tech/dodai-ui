@@ -413,7 +413,7 @@ impl Showcase {
             "Vehicle · Engine speed",
             vec![gallery(
                 "The revs, 0 to 8 in thousands, amber from 6 and red from 7. Sport: the ribbed ring of the dash with the road speed in the middle, a trip tab and the fuel level. The others show the revs alone: a chronograph with a sub-dial, a vintage dial with a spade hand and a drum counter, a heads-up ring, a segment display and a halo of light. Vintage adds a panel meter and a ribbon, heads-up a tape, halo an arc and a bar.",
-                looks(only, |z| tach().size(z).into_any_element(), rev_face),
+                looks(only, |z| tach().look(Look::Sport).size(z).into_any_element(), rev_face),
             )],
         );
         add(
@@ -421,7 +421,7 @@ impl Showcase {
             "Vehicle · Speed",
             vec![gallery(
                 "The speed, 0 to 270, amber above 220. Sport: the dash pod in steps of 30 with the speed limit in the middle and no needle. The other looks draw it as a gauge face; each look is followed by its other layouts.",
-                looks(only, |z| speed().size(z).into_any_element(), speed_face),
+                looks(only, |z| speed().look(Look::Sport).size(z).into_any_element(), speed_face),
             )],
         );
         add(
@@ -429,7 +429,11 @@ impl Showcase {
             "Vehicle · Battery voltage",
             vec![gallery(
                 "The on-board voltage, 6 to 18 V. Red under 11 V, amber over 15 V.",
-                looks(only, |z| volt().size(z).into_any_element(), volt_face),
+                looks(
+                    only,
+                    |z| volt().look(Look::Sport).size(z).into_any_element(),
+                    volt_face,
+                ),
             )],
         );
         add(
@@ -437,7 +441,7 @@ impl Showcase {
             "Vehicle · Oil pressure and temperature",
             vec![gallery(
                 "Oil pressure (bar) and oil temperature (°C). Sport: two needles on one ring, pressure on the upper half and temperature on the lower arc; its sweep, needle and ribbed layouts and the other looks draw the pressure on one face and the temperature on a strip under it in the look's style; the heads-up tapes stand side by side.",
-                looks(only, |z| oil().size(z).into_any_element(), oil_faces),
+                looks(only, |z| oil().look(Look::Sport).size(z).into_any_element(), oil_faces),
             )],
         );
         add(
@@ -445,7 +449,7 @@ impl Showcase {
             "Vehicle · Coolant temperature",
             vec![gallery(
                 "Coolant temperature, 60 to 130 °C. The last part of the scale is a red warning band; the figure turns red inside it.",
-                looks(only, |z| coolant().size(z).into_any_element(), coolant_face),
+                looks(only, |z| coolant().look(Look::Sport).size(z).into_any_element(), coolant_face),
             )],
         );
         add(

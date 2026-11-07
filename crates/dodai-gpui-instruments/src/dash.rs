@@ -1372,7 +1372,7 @@ impl RenderOnce for DashTriptych {
                     .top(px(h * 0.04))
                     .child(
                         LimitSign::new(l)
-                            .look(look.unwrap_or_default())
+                            .when_some(look, |s, l| s.look(l))
                             .size(h * 0.1),
                     ),
             );
