@@ -254,7 +254,17 @@ fn caption(look: Look, layout: Layout) -> &'static str {
         (Look::Halo, Layout::Arc) => "Halo arc",
         (Look::Halo, Layout::Bar) => "Halo bar",
         (Look::Sport, Layout::Sweep) => "Sport sweep",
-        (Look::Sport, Layout::Needle) => "Sport needle",
+        (Look::Sport, Layout::Track) => "Sport track",
+        (Look::Chronograph, Layout::Sector) => "Chronograph sector",
+        (Look::Vintage, Layout::Bezel) => "Vintage bezel",
+        (Look::HeadsUp, Layout::Arc) => "Heads-up arc",
+        (Look::Segment, Layout::Arc) => "Segment arc",
+        (Look::GlassCockpit, Layout::Bar) => "Glass cockpit bar",
+        (Look::Race, Layout::Arc) => "Race arc",
+        (Look::Race, Layout::Bar) => "Race bar",
+        (Look::Race, Layout::Column) => "Race column",
+        (Look::Line, Layout::Arc) => "Line arc",
+        (Look::Line, Layout::Column) => "Line column",
         (Look::Sport, Layout::Ribbed) => "Sport ribbed",
         (Look::Chronograph, Layout::Bezel) => "Chronograph bezel",
         (Look::Chronograph, Layout::Register) => "Chronograph register",
@@ -445,7 +455,7 @@ impl Showcase {
             self,
             "Vehicle · Engine speed",
             vec![gallery_rows(
-                "Every vehicle instrument comes in nine looks, in this order: a sports dash ring, a chronograph, a vintage panel, a heads-up display, a segment LCD, a halo of light, a glass cockpit, a race display and a single line. Pick one above to see every instrument and the dashes in it. Here the revs, 0 to 8 in thousands, amber from 6 and red from 7. Sport: the ribbed ring of the dash with the road speed in the middle, a trip tab and the fuel level. The others show the revs alone, many in more layouts: chronograph as a bezel and a register, vintage as a panel meter and a ribbon, heads-up as a cut and a tape, segment as a bar and a column, halo as a capsule, an arc and a bar, glass cockpit as a tape and a column, line as a bar.",
+                "Every vehicle instrument comes in nine looks, in this order: a sports dash ring, a chronograph, a vintage panel, a heads-up display, a segment LCD, a halo of light, a glass cockpit, a race display and a single line. Pick one above to see every instrument and the dashes in it. Each look comes in four layouts, one look per row. Here the revs, 0 to 8 in thousands, amber from 6 and red from 7. Sport: the ribbed ring of the dash with the road speed in the middle, a trip tab and the fuel level, then a sweep, a track of dots and grooves, none with a hand. The others show the revs alone: chronograph as a dial, a bezel, a sector dial and a register; vintage as a plate, a chrome bezel, a panel meter and a ribbon; heads-up as a ring, a cut, an arc and a tape; segment as a dial, an arc, a bar and a column; halo as a ring, a capsule, an arc and a bar; glass cockpit as an arc, a bar, a tape and a column; race as a plate, an arc, a bar and a column; line as a ring, an arc, a bar and a column.",
                 looks(only, |z| tach().look(Look::Sport).size(z).into_any_element(), rev_face),
             )],
         );
@@ -473,7 +483,7 @@ impl Showcase {
             self,
             "Vehicle · Oil pressure and temperature",
             vec![gallery_rows(
-                "Oil pressure (bar) and oil temperature (°C). Sport: two needles on one ring, pressure on the upper half and temperature on the lower arc; its sweep, needle and ribbed layouts and the other looks draw the pressure on one face and the temperature on a strip under it in the look's style; the heads-up tapes stand side by side.",
+                "Oil pressure (bar) and oil temperature (°C). Sport: two needles on one ring, pressure on the upper half and temperature on the lower arc; its sweep, track and ribbed layouts and the other looks draw the pressure on one face and the temperature on a strip under it in the look's style; the heads-up tapes stand side by side.",
                 looks(only, |z| oil().look(Look::Sport).size(z).into_any_element(), oil_faces),
             )],
         );
@@ -966,7 +976,7 @@ mod tests {
         all.sort_unstable();
         all.dedup();
         assert_eq!(all.len(), n);
-        assert_eq!(caption(Look::Race, Layout::Bar), "Race");
+        assert_eq!(caption(Look::Race, Layout::Tape), "Race", "a layout a look lacks is its dial");
     }
 
     #[test]

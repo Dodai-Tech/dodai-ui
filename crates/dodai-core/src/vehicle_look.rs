@@ -67,15 +67,20 @@ impl Look {
     /// Pure.
     pub fn layouts(self) -> &'static [Layout] {
         match self {
-            Self::Sport => &[Layout::Dial, Layout::Sweep, Layout::Needle, Layout::Ribbed],
-            Self::Chronograph => &[Layout::Dial, Layout::Bezel, Layout::Register],
-            Self::HeadsUp => &[Layout::Dial, Layout::Cut, Layout::Tape],
-            Self::Vintage => &[Layout::Dial, Layout::Meter, Layout::Ribbon],
-            Self::Segment => &[Layout::Dial, Layout::Bar, Layout::Column],
+            Self::Sport => &[Layout::Dial, Layout::Sweep, Layout::Track, Layout::Ribbed],
+            Self::Chronograph => &[
+                Layout::Dial,
+                Layout::Bezel,
+                Layout::Sector,
+                Layout::Register,
+            ],
+            Self::HeadsUp => &[Layout::Dial, Layout::Cut, Layout::Arc, Layout::Tape],
+            Self::Vintage => &[Layout::Dial, Layout::Bezel, Layout::Meter, Layout::Ribbon],
+            Self::Segment => &[Layout::Dial, Layout::Arc, Layout::Bar, Layout::Column],
             Self::Halo => &[Layout::Dial, Layout::Capsule, Layout::Arc, Layout::Bar],
-            Self::GlassCockpit => &[Layout::Dial, Layout::Tape, Layout::Column],
-            Self::Race => &[Layout::Dial],
-            Self::Line => &[Layout::Dial, Layout::Bar],
+            Self::GlassCockpit => &[Layout::Dial, Layout::Bar, Layout::Tape, Layout::Column],
+            Self::Race => &[Layout::Dial, Layout::Arc, Layout::Bar, Layout::Column],
+            Self::Line => &[Layout::Dial, Layout::Arc, Layout::Bar, Layout::Column],
         }
     }
 
@@ -105,27 +110,35 @@ pub enum Layout {
     /// A ribbon speedometer: a long window where a coloured ribbon runs out along a straight
     /// scale ([`Look::Vintage`]).
     Ribbon,
-    /// A half ring of light over a large figure ([`Look::Halo`]).
+    /// A half ring over a large figure: of light in [`Look::Halo`], of hairlines in
+    /// [`Look::HeadsUp`] and [`Look::Line`], of segments in [`Look::Segment`] and of blocks in
+    /// [`Look::Race`].
     Arc,
     /// A straight bar under a large figure: of light in [`Look::Halo`], a row of segments in
-    /// [`Look::Segment`].
+    /// [`Look::Segment`], a hairline in [`Look::Line`], blocks in [`Look::Race`] and an
+    /// engine-indication bar in [`Look::GlassCockpit`].
     Bar,
     /// A round dial with a thick band filled to the value, cut into segments at the ticks
     /// ([`Look::Sport`]).
     Sweep,
-    /// A round dial with a long centre pointer and the figure in a tab below it
-    /// ([`Look::Sport`]).
-    Needle,
+    /// A round dial with a track of dots lit up to the value, the last one larger, the figure
+    /// in the middle and no hand ([`Look::Sport`]).
+    Track,
     /// A round dial with concentric grooves crossed by a bright cursor ([`Look::Sport`]).
     Ribbed,
-    /// A watch dial with the scale on a dark bezel round it and a long centre hand
-    /// ([`Look::Chronograph`]).
+    /// A round dial in a bright bezel: the scale on a dark bezel round a watch dial with a long
+    /// centre hand in [`Look::Chronograph`], a chrome-ringed cream gauge without the panel in
+    /// [`Look::Vintage`].
     Bezel,
+    /// A sector dial: a watch face printed in concentric bands, the scale in the outer one, a
+    /// baton hand and the figure in a small window ([`Look::Chronograph`]).
+    Sector,
     /// A wide watch case with two registers, the scale and its share, over a readout window
     /// ([`Look::Chronograph`]).
     Register,
     /// A narrow upright bar: a stack of segments in [`Look::Segment`], an engine-indication bar
-    /// with a pointer in [`Look::GlassCockpit`].
+    /// with a pointer in [`Look::GlassCockpit`], a hairline in [`Look::Line`] and a stack of
+    /// blocks in [`Look::Race`].
     Column,
     /// A cut-corner frame with a fan of hairlines lit up to the value and a glowing needle
     /// ([`Look::HeadsUp`]).
@@ -146,7 +159,8 @@ impl Layout {
             Self::Arc => "Arc",
             Self::Bar => "Bar",
             Self::Sweep => "Sweep",
-            Self::Needle => "Needle",
+            Self::Track => "Track",
+            Self::Sector => "Sector",
             Self::Ribbed => "Ribbed",
             Self::Bezel => "Bezel",
             Self::Register => "Register",
@@ -192,5 +206,15 @@ mod tests {
         assert_eq!(Look::Halo.fit(Layout::Tape), Layout::Dial);
         assert_eq!(Look::Sport.fit(Layout::Meter), Layout::Dial);
         assert_eq!(Look::Vintage.fit(Layout::Ribbon), Layout::Ribbon);
+    }
+
+    #[test]
+    fn every_look_comes_in_four_layouts() {
+        for l in Look::ALL {
+            let mut ls = l.layouts().to_vec();
+            assert_eq!(ls.len(), 4, "{}", l.name());
+            ls.dedup();
+            assert_eq!(ls.len(), 4, "{} repeats a layout", l.name());
+        }
     }
 }

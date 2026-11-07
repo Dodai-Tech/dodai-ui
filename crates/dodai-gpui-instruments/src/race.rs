@@ -28,17 +28,17 @@ pub(crate) fn plate_outline(wd: f32, h: f32, cut: f32) -> Vec<(f32, f32)> {
     vec![(0.0, 0.0), (wd - cut, 0.0), (wd, cut), (wd, h), (0.0, h)]
 }
 
-/// The lines of a twill on a square plate of `s` with its top-right corner cut by `cut`: lines
+/// The lines of a twill on a plate `wd` by `h` with its top-right corner cut by `cut`: lines
 /// rising to the right every `step`, each kept inside the plate. Pure.
-pub(crate) fn twill(s: f32, cut: f32, step: f32) -> Vec<Vec<(f32, f32)>> {
+pub(crate) fn twill_in((wd, h): (f32, f32), cut: f32, step: f32) -> Vec<Vec<(f32, f32)>> {
     let step = step.max(1.0);
-    let n = (2.0 * s / step).ceil() as usize;
+    let n = ((wd + h) / step).ceil() as usize;
     (1..n)
         .filter_map(|i| {
-            // The line x + y = c, clipped to the square and to the cut (x - y <= s - cut).
+            // The line x + y = c, clipped to the plate and to the cut (x - y <= wd - cut).
             let c = step * i as f32;
-            let x0 = (c - s).max(0.0);
-            let x1 = s.min(c).min((s - cut + c) / 2.0);
+            let x0 = (c - h).max(0.0);
+            let x1 = wd.min(c).min((wd - cut + c) / 2.0);
             (x1 - x0 > step * 0.2).then(|| vec![(x0, c - x0), (x1, c - x1)])
         })
         .collect()
@@ -86,13 +86,18 @@ pub(crate) fn lit_count(f: f32, n: usize) -> usize {
 /// Paint a race plate filling a square of `s`: the ground colour with a faint carbon twill, the
 /// top-right corner cut, a frame, and three speed stripes in the primary colour at the top left.
 pub(crate) fn plate(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) {
-    let cut = s * CUT;
-    let outline = plate_outline(s, s, cut);
+    plate_in(w, o, (s, s), s, ink);
+}
+
+/// Paint a race plate `wd` by `h` for a gauge of size `s`, see [`plate`].
+pub(crate) fn plate_in(w: &mut Window, o: Point<Pixels>, (wd, h): (f32, f32), s: f32, ink: Ink) {
+    let cut = wd.min(h) * CUT;
+    let outline = plate_outline(wd, h, cut);
     fill(w, o, &outline, ink.ground);
     stroke_batch(
         w,
         o,
-        &twill(s, cut, s * 0.016),
+        &twill_in((wd, h), cut, s * 0.016),
         (s * 0.0025).max(0.5),
         scale_alpha(ink.text, 0.03),
         false,
@@ -109,7 +114,7 @@ pub(crate) fn plate(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) {
     stroke(
         w,
         o,
-        &[(s - cut, 0.0), (s, cut)],
+        &[(wd - cut, 0.0), (wd, cut)],
         (s * 0.012).max(1.0),
         ink.primary,
         false,
@@ -270,12 +275,23 @@ mod tests {
     #[test]
     fn the_twill_stays_inside_the_plate() {
         let (s, cut) = (100.0, 12.0);
-        let lines = twill(s, cut, 5.0);
+        let lines = twill_in((s, s), cut, 5.0);
         assert!(lines.len() > 20);
         for l in &lines {
             for &(x, y) in l {
                 assert!((-1e-3..=s + 1e-3).contains(&x) && (-1e-3..=s + 1e-3).contains(&y));
                 assert!(x - y <= s - cut + 1e-3, "no line crosses the cut corner");
+            }
+        }
+    }
+
+    #[test]
+    fn a_wide_plate_keeps_its_twill_inside() {
+        let (wd, h, cut) = (200.0, 80.0, 9.0);
+        for l in twill_in((wd, h), cut, 5.0) {
+            for (x, y) in l {
+                assert!((-1e-3..=wd + 1e-3).contains(&x) && (-1e-3..=h + 1e-3).contains(&y));
+                assert!(x - y <= wd - cut + 1e-3);
             }
         }
     }
