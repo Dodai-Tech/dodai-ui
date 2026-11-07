@@ -172,6 +172,10 @@ const FILES: &[(&str, &str)] = &[
         include_str!("../../dodai-gpui/src/shell.rs"),
     ),
     (
+        "dodai-gpui/src/snap_stack.rs",
+        include_str!("../../dodai-gpui/src/snap_stack.rs"),
+    ),
+    (
         "dodai-gpui/src/spy.rs",
         include_str!("../../dodai-gpui/src/spy.rs"),
     ),

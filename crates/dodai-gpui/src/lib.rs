@@ -193,6 +193,8 @@ pub mod expressive;
 pub mod extras;
 #[cfg(feature = "components")]
 pub mod feedback;
+#[cfg(feature = "components")]
+pub mod snap_stack;
 /// The width of a hairline: dividers, rules and thin borders.
 pub const HAIRLINE: gpui::Pixels = gpui::px(1.0);
 
@@ -334,6 +336,8 @@ pub use forms::{
 pub use icons::Modifier;
 #[cfg(feature = "components")]
 pub use icons::{Icon, IconId, IconName, IconPack, SymbolState};
+#[cfg(feature = "components")]
+pub use snap_stack::{can_turn, snap_page, SnapStack, TURN_AT};
 #[cfg(feature = "components")]
 mod icon_names;
 #[cfg(any(feature = "shaders", feature = "dodai", feature = "frost"))]

@@ -1243,6 +1243,40 @@ impl Pod {
     }
 }
 
+/// Several pods in one slot of a dash, stacked: scrolling snaps the next into place, like the
+/// roller on a steering wheel turning the pages of a side display. Each pod is built at the
+/// slot's size and in the dash's look.
+pub struct PodStack {
+    id: gpui::ElementId,
+    pods: Vec<Pod>,
+}
+
+impl PodStack {
+    /// An empty stack; `id` keeps the page shown between frames.
+    pub fn new(id: impl Into<gpui::ElementId>) -> Self {
+        Self {
+            id: id.into(),
+            pods: Vec::new(),
+        }
+    }
+    /// Add a pod.
+    pub fn pod(mut self, p: impl Into<Pod>) -> Self {
+        self.pods.push(p.into());
+        self
+    }
+}
+
+impl From<PodStack> for Pod {
+    fn from(s: PodStack) -> Self {
+        Pod::Custom(Box::new(move |size, look| {
+            dodai_gpui::SnapStack::new(s.id)
+                .height(size)
+                .items(s.pods.into_iter().map(|p| p.sized(size, look)))
+                .into_any_element()
+        }))
+    }
+}
+
 // ───────────────────────────────── DashTriptych ─────────────────────────────────
 
 /// A whole dash: [`RingTach`] in the middle, a pod on each side, telltales between, and the
