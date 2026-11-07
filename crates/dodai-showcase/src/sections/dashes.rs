@@ -199,13 +199,19 @@ fn cell(n: usize) -> f32 {
 
 /// An explanation, then the instrument in several designs side by side, each with its name.
 fn gallery(text: &str, items: Vec<(&'static str, gpui::AnyElement)>) -> gpui::AnyElement {
-    let pod = cell(items.len());
+    gallery_rows(text, vec![items])
+}
+
+/// A gallery whose rows start afresh: one look per row, each wrapping on its own when the
+/// width runs out.
+fn gallery_rows(text: &str, rows: Vec<Vec<(&'static str, gpui::AnyElement)>>) -> gpui::AnyElement {
+    let pod = cell(rows.iter().map(Vec::len).sum());
     div()
         .flex()
         .flex_col()
         .gap_4()
         .child(div().max_w(px(780.0)).child(Muted::new(text.to_string())))
-        .child(
+        .children(rows.into_iter().map(|items| {
             div()
                 .flex()
                 .flex_wrap()
@@ -227,8 +233,8 @@ fn gallery(text: &str, items: Vec<(&'static str, gpui::AnyElement)>) -> gpui::An
                                 .child(el),
                         )
                         .child(Muted::new(name))
-                })),
-        )
+                }))
+        }))
         .into_any_element()
 }
 
@@ -268,12 +274,13 @@ fn looks(
     only: Option<Look>,
     dial: impl FnOnce(f32) -> gpui::AnyElement,
     face: impl Fn(Look, Layout, f32) -> gpui::AnyElement,
-) -> Vec<(&'static str, gpui::AnyElement)> {
+) -> Vec<Vec<(&'static str, gpui::AnyElement)>> {
     let mut dial = Some(dial);
     let looks = shown(only);
     let pod = cell(looks.iter().map(|l| l.layouts().len()).sum());
-    let mut out: Vec<(&'static str, gpui::AnyElement)> = Vec::new();
+    let mut out = Vec::new();
     for l in looks {
+        let mut row: Vec<(&'static str, gpui::AnyElement)> = Vec::new();
         for &layout in l.layouts() {
             let el = match (l, dial.take()) {
                 (Look::Sport, Some(d)) => d(pod),
@@ -282,8 +289,9 @@ fn looks(
                     face(l, layout, pod)
                 }
             };
-            out.push((caption(l, layout), el));
+            row.push((caption(l, layout), el));
         }
+        out.push(row);
     }
     out
 }
@@ -416,15 +424,13 @@ impl Showcase {
     /// The vehicle part of "Instruments": one section per instrument, then whole dashes built from them.
     pub(crate) fn sections_vehicle(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
-        // The look picked above the sections (the design's own by default); `None` shows every
-        // look.
-        let own = t.chart_style().vehicle;
-        let only = match self.inst_look {
-            0 => None,
-            1 => Some(own),
-            i => Look::ALL.get(i - 2).copied(),
-        };
-        let dash_look = only.unwrap_or(own);
+        // The look picked above the sections; `None` ("All", the default) shows every look in
+        // order, and the whole dashes in the design's own.
+        let only = self
+            .inst_look
+            .checked_sub(1)
+            .and_then(|i| Look::ALL.get(i).copied());
+        let dash_look = only.unwrap_or(t.chart_style().vehicle);
         // The cell of the galleries built here, one instrument per look.
         let pod = cell(shown(only).len());
         let mut out: Vec<Section> = Vec::new();
@@ -434,37 +440,19 @@ impl Showcase {
                 .fold(me.section(title, cx), |p, e| p.child(e));
             out.push(("Instruments", title, panel.into_any_element(), "Vehicle"));
         };
-        // First every look side by side, whatever is picked: the one place that shows them all.
-        add(
-            self,
-            "Vehicle · Looks",
-            vec![gallery(
-                "Every vehicle instrument comes in nine looks: the same data, drawn as a sports dash ring, a chronograph, a vintage panel, a heads-up display, a segment LCD, a halo of light, a glass cockpit, a race display or a single line. Here the engine speed in each. Most looks come in more layouts: sport as a sweep, a needle and a ribbed ring, chronograph as a bezel and a register, vintage as a panel meter and a ribbon, heads-up as a cut and a tape, segment LCD as a bar and a column, halo as a capsule, an arc and a bar, glass cockpit as a tape and a column, line as a bar. Pick a look above to see every instrument and the example dashes in it.",
-                Look::ALL
-                    .into_iter()
-                    .map(|l| {
-                        let el = match l {
-                            Look::Sport => tach().size(POD).into_any_element(),
-                            _ => rev_face(l, Layout::Dial, POD),
-                        };
-                        (l.name(), el)
-                    })
-                    .collect(),
-            )],
-        );
         // Dials: the scales round a ring.
         add(
             self,
             "Vehicle · Engine speed",
-            vec![gallery(
-                "The revs, 0 to 8 in thousands, amber from 6 and red from 7. Sport: the ribbed ring of the dash with the road speed in the middle, a trip tab and the fuel level. The others show the revs alone: a chronograph with a sub-dial, a vintage dial with a spade hand and a drum counter, a heads-up ring, a segment display and a halo of light. Vintage adds a panel meter and a ribbon, heads-up a tape, halo an arc and a bar.",
+            vec![gallery_rows(
+                "Every vehicle instrument comes in nine looks, in this order: a sports dash ring, a chronograph, a vintage panel, a heads-up display, a segment LCD, a halo of light, a glass cockpit, a race display and a single line. Pick one above to see every instrument and the dashes in it. Here the revs, 0 to 8 in thousands, amber from 6 and red from 7. Sport: the ribbed ring of the dash with the road speed in the middle, a trip tab and the fuel level. The others show the revs alone, many in more layouts: chronograph as a bezel and a register, vintage as a panel meter and a ribbon, heads-up as a cut and a tape, segment as a bar and a column, halo as a capsule, an arc and a bar, glass cockpit as a tape and a column, line as a bar.",
                 looks(only, |z| tach().look(Look::Sport).size(z).into_any_element(), rev_face),
             )],
         );
         add(
             self,
             "Vehicle · Speed",
-            vec![gallery(
+            vec![gallery_rows(
                 "The speed, 0 to 270, amber above 220. Sport: the dash pod in steps of 30 with the speed limit in the middle and no needle. The other looks draw it as a gauge face; each look is followed by its other layouts.",
                 looks(only, |z| speed().look(Look::Sport).size(z).into_any_element(), speed_face),
             )],
@@ -472,7 +460,7 @@ impl Showcase {
         add(
             self,
             "Vehicle · Battery voltage",
-            vec![gallery(
+            vec![gallery_rows(
                 "The on-board voltage, 6 to 18 V. Red under 11 V, amber over 15 V.",
                 looks(
                     only,
@@ -484,7 +472,7 @@ impl Showcase {
         add(
             self,
             "Vehicle · Oil pressure and temperature",
-            vec![gallery(
+            vec![gallery_rows(
                 "Oil pressure (bar) and oil temperature (°C). Sport: two needles on one ring, pressure on the upper half and temperature on the lower arc; its sweep, needle and ribbed layouts and the other looks draw the pressure on one face and the temperature on a strip under it in the look's style; the heads-up tapes stand side by side.",
                 looks(only, |z| oil().look(Look::Sport).size(z).into_any_element(), oil_faces),
             )],
@@ -492,7 +480,7 @@ impl Showcase {
         add(
             self,
             "Vehicle · Coolant temperature",
-            vec![gallery(
+            vec![gallery_rows(
                 "Coolant temperature, 60 to 130 °C. The last part of the scale is a red warning band; the figure turns red inside it.",
                 looks(only, |z| coolant().look(Look::Sport).size(z).into_any_element(), coolant_face),
             )],
@@ -500,7 +488,7 @@ impl Showcase {
         add(
             self,
             "Vehicle · Boost",
-            vec![gallery(
+            vec![gallery_rows(
                 "The boost (or charge) level in percent. Sport: the cell stack inside a segmented band with a limit mark and the battery temperature. The other looks draw it as a gauge face; each look is followed by its other layouts. Past 80 % the screen looks here colour their whole display amber, an option (at_limit(AtLimit::Display)); by default only the value takes the limit's colour.",
                 looks(
                     only,

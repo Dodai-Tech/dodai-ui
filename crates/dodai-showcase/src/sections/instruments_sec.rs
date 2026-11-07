@@ -24,7 +24,7 @@ impl Showcase {
             (self.inst_response > 0).then(|| NeedleResponse::ALL[self.inst_response - 1]);
         // A demo value drifting through `lo..=hi` on the animation clock.
         let val = dodai_gpui::live::wander_between;
-        let (sel, glow_sel) = (self.inst_response, self.inst_glow);
+        let glow_sel = self.inst_glow;
         let option = |label: &'static str, seg: gpui::AnyElement| {
             div()
                 .flex()
@@ -40,25 +40,6 @@ impl Showcase {
                 .items_center()
                 .gap_4()
                 .children(opts)
-        };
-        let needle_opt = || {
-            let m = me.clone();
-            option(
-                "Needle",
-                Segmented::new(
-                    "inst-response",
-                    ["Design", "Instant", "Snappy", "Smooth", "Heavy", "Bouncy"],
-                )
-                .selected(sel)
-                .on_select(move |i, _, cx| {
-                    m.update(cx, |s, cx| {
-                        s.inst_response = i;
-                        cx.notify();
-                    })
-                })
-                .into_any_element(),
-            )
-            .into_any_element()
         };
         // "Theme" follows the glow set under Surface effects.
         let glow_opt = || {
@@ -233,7 +214,6 @@ impl Showcase {
             "Instruments",
             "Industrial · Process gauges",
             self.section("Industrial · Process gauges", cx)
-                .child(bar(vec![needle_opt()]))
                 .child(
                     row()
                         .child(
@@ -509,7 +489,6 @@ impl Showcase {
             "Instruments",
             "Aviation · Attitude and tapes",
             self.section("Aviation · Attitude and tapes", cx)
-                .child(bar(vec![needle_opt()]))
                 .child(
                     div().flex().flex_col().gap_6().child(
                         div()
@@ -548,7 +527,6 @@ impl Showcase {
             "Instruments",
             "Aviation · Heading",
             self.section("Aviation · Heading", cx)
-                .child(bar(vec![needle_opt()]))
                 .child(
                     div().flex().justify_center().child(
                         HeadingTape::new(val(16.0, 0.0, 360.0))
