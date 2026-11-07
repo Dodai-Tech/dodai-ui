@@ -5,6 +5,9 @@ use super::*;
 mod body;
 mod cabin;
 mod energy;
+mod lamp;
+
+pub use lamp::{Lamp, COMMON_TELLTALES};
 
 /// Rear and front wheel centres of the full-size side profile ([`body`]).
 const WHEELS: [(f32, f32); 2] = [(6.5, 16.5), (17.5, 16.5)];

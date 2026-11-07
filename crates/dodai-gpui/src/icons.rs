@@ -8,6 +8,8 @@
 
 pub use dodai_icons::cyberpunk::IconName;
 pub use dodai_icons::symbol::{Group as SymbolGroup, Symbol};
+#[cfg(feature = "symbols-vehicle")]
+pub use dodai_icons::symbol::{Lamp, COMMON_TELLTALES};
 pub use dodai_icons::IconId;
 #[cfg(feature = "cyberpunk")]
 pub use dodai_icons::Modifier;

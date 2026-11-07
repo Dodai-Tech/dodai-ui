@@ -12,7 +12,7 @@ use crate::look::{AtLimit, Look};
 use dodai_core::Theme;
 use dodai_gpui::follow::{follow, Follow};
 use dodai_gpui::follow_api;
-use dodai_gpui::icons::{Icon, Symbol};
+use dodai_gpui::icons::{Icon, Lamp, Symbol, COMMON_TELLTALES};
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
 use dodai_gpui::{hsla, theme_of};
 use dodai_instruments_core::instrument::{readout, Scale, Severity};
@@ -43,7 +43,25 @@ pub enum Tone {
     Info,
 }
 
+impl From<Lamp> for Tone {
+    /// The tone a telltale's standard colour lights in: red is danger, amber a warning, green
+    /// a working system and blue (main beam) information.
+    fn from(lamp: Lamp) -> Self {
+        match lamp {
+            Lamp::Red => Tone::Danger,
+            Lamp::Amber => Tone::Warning,
+            Lamp::Green => Tone::Success,
+            Lamp::Blue => Tone::Info,
+        }
+    }
+}
+
 impl Tone {
+    /// The tone `symbol` lights in as a telltale, or [`Tone::Off`] if it is not one. Pure.
+    pub fn standard(symbol: Symbol) -> Self {
+        symbol.lamp().map_or(Tone::Off, Tone::from)
+    }
+
     /// The theme colour of this tone.
     pub fn color(self, t: &Theme) -> Hsla {
         let p = &t.palette;
@@ -1047,6 +1065,29 @@ impl Telltales {
             columns: usize::MAX,
         }
     }
+    /// The common telltales ([`COMMON_TELLTALES`]: belt, airbag, brakes, engine, lights), all
+    /// off; light the ones that apply with [`Telltales::light`].
+    pub fn common() -> Self {
+        COMMON_TELLTALES
+            .iter()
+            .fold(Self::new(), |row, s| row.push(*s, Tone::Off))
+    }
+    /// Light `icon` in its standard colour (see [`Tone::standard`]), adding it if absent.
+    pub fn light(mut self, icon: Symbol) -> Self {
+        let tone = Tone::standard(icon);
+        match self.items.iter_mut().find(|(s, _)| *s == icon) {
+            Some(item) => item.1 = tone,
+            None => self.items.push((icon, tone)),
+        }
+        self
+    }
+    /// Light every symbol in its standard colour, as at a bulb check when the engine starts.
+    pub fn bulb_check(mut self) -> Self {
+        for item in &mut self.items {
+            item.1 = Tone::standard(item.0);
+        }
+        self
+    }
     /// Add a symbol in a tone.
     pub fn push(mut self, icon: Symbol, tone: Tone) -> Self {
         self.items.push((icon, tone));
@@ -1386,5 +1427,24 @@ impl RenderOnce for DashTriptych {
                 .top(px(h * 0.8))
                 .child(park),
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn telltales_light_in_their_standard_colour() {
+        assert_eq!(Tone::standard(Symbol::OilCan), Tone::Danger);
+        assert_eq!(Tone::standard(Symbol::HighBeam), Tone::Info);
+        assert_eq!(Tone::standard(Symbol::Compass), Tone::Off);
+        let row = Telltales::common().light(Symbol::Engine).light(Symbol::Eco);
+        assert_eq!(row.items.len(), COMMON_TELLTALES.len() + 1, "Eco is added");
+        let tone = |s| row.items.iter().find(|(i, _)| *i == s).map(|(_, t)| *t);
+        assert_eq!(tone(Symbol::Engine), Some(Tone::Warning));
+        assert_eq!(tone(Symbol::Airbag), Some(Tone::Off));
+        let all = Telltales::common().bulb_check();
+        assert!(all.items.iter().all(|(_, t)| *t != Tone::Off));
     }
 }
