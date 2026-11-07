@@ -58,7 +58,7 @@ impl Symbol {
             | Steering | DoorOpen | TrunkOpen | HoodOpen | Collision | Hazard | Sos => Lamp::Red,
             Abs | Engine | Fuel | TyrePressure | Washer | Stability | Glow | Frost | Service
             | LaneDeparture | FogRear | AllWheel | Gearbox | TractionBattery | ChildLock
-            | Levelling => Lamp::Amber,
+            | Levelling | Exhaust | Particulate | ExhaustFluid => Lamp::Amber,
             LowBeam | FogFront | SideLights | TurnLeft | TurnRight | Cruise | Limiter
             | LaneKeep | Plug | Recuperation | Eco | Hybrid | StopStart | Trailer => Lamp::Green,
             HighBeam => Lamp::Blue,

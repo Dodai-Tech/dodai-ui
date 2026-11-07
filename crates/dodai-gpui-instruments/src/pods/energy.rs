@@ -17,6 +17,8 @@ pub struct EnergyPod {
     max_regen: f32,
     range: SharedString,
     charging: bool,
+    limit: f32,
+    time_to_full: SharedString,
     /// The look drawn: the given one, else the design's, settled when rendered.
     look: Look,
     /// The look given with `.look(..)`; without one, the design's own.
@@ -72,6 +74,8 @@ impl EnergyPod {
             max_regen: 60.0,
             range: SharedString::default(),
             charging: false,
+            limit: 100.0,
+            time_to_full: SharedString::default(),
             look: Look::Sport,
             given_look: None,
             style: PodStyle::Ring,
@@ -99,6 +103,25 @@ impl EnergyPod {
     pub fn charging(mut self, on: bool) -> Self {
         self.charging = on;
         self
+    }
+    /// The charge limit in percent (default 100): Sport marks it on the battery, and charging
+    /// stops there.
+    pub fn limit(mut self, percent: f32) -> Self {
+        self.limit = pm::percent(percent);
+        self
+    }
+    /// The time left until the limit while charging, e.g. `42 min`.
+    pub fn time_to_full(mut self, t: impl Into<SharedString>) -> Self {
+        self.time_to_full = t.into();
+        self
+    }
+    /// What the foot says while charging: the time to the limit, or just that it charges.
+    fn charge_note(&self) -> SharedString {
+        if self.time_to_full.is_empty() {
+            "Charging".into()
+        } else {
+            format!("{} to {:.0} %", self.time_to_full, self.limit).into()
+        }
     }
     /// The look (see [`Look`]); every look but [`Look::Sport`] draws the battery as three rows
     /// of a [`RowsPod`].
@@ -154,6 +177,9 @@ impl RenderOnce for EnergyPod {
                 )
                 .bar(flow.abs(), flow_tone),
             ];
+            if self.charging && !self.time_to_full.is_empty() {
+                rows.push(PodRow::new(Symbol::Stopwatch, self.charge_note()));
+            }
             if !self.range.is_empty() {
                 rows.push(PodRow::new(Symbol::Range, self.range.clone()));
             }
@@ -180,6 +206,7 @@ impl RenderOnce for EnergyPod {
         let lit = pm::lit_cells(self.charge, cells);
         let arc_r = c - size * 0.12;
         let reach = 0.3;
+        let limit = (self.limit < 99.5).then_some(self.limit / 100.0);
         let paint = move |w: &mut Window, o: gpui::Point<Pixels>| {
             // The power arc: a track either side of twelve o'clock, lit from the top.
             stroke(
@@ -247,6 +274,12 @@ impl RenderOnce for EnergyPod {
                     },
                 );
             }
+            if let Some(l) = limit {
+                // The charge limit: a fine bar across the battery.
+                let x = bx + pad + (bw - pad * 2.0) * l;
+                let bar = [(x, by - size * 0.02), (x, by + bh + size * 0.02)];
+                stroke(w, o, &bar, (size * 0.006).max(1.0), ink, false);
+            }
         };
         let foot_icon = if self.charging {
             Symbol::Plug
@@ -254,7 +287,7 @@ impl RenderOnce for EnergyPod {
             Symbol::Range
         };
         let foot = if self.charging {
-            "Charging".into()
+            self.charge_note()
         } else {
             self.range.clone()
         };

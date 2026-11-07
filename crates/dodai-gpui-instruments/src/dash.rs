@@ -257,6 +257,9 @@ pub struct RingTach {
     tab: SharedString,
     fuel: Option<f32>,
     reach: SharedString,
+    charge: Option<f32>,
+    charge_reach: SharedString,
+    drive: crate::pods::Drivetrain,
     /// The look drawn: the given one, else the design's, settled when rendered.
     look: Look,
     /// The look given with `.look(..)`; without one, the design's own.
@@ -279,6 +282,9 @@ impl RingTach {
             marker: None,
             tab: SharedString::default(),
             fuel: None,
+            charge: None,
+            charge_reach: SharedString::default(),
+            drive: crate::pods::Drivetrain::Combustion,
             reach: SharedString::default(),
             look: Look::Sport,
             given_look: None,
@@ -314,6 +320,23 @@ impl RingTach {
         self.at_limit = at;
         self
     }
+    /// What drives the car (see [`Drivetrain`](crate::pods::Drivetrain)). For
+    /// [`Electric`](crate::pods::Drivetrain::Electric) the ring reads the motor's power in kW on
+    /// a scale from the most it recovers (below zero) to the most it gives, lit from zero:
+    /// right while driving, left in the success colour while recovering; the other looks write
+    /// kW under the reading. A hybrid keeps the revs and shows the fuel and the charge side by
+    /// side at the bottom.
+    pub fn drivetrain(mut self, drive: crate::pods::Drivetrain) -> Self {
+        self.drive = drive;
+        self
+    }
+    /// The traction battery's charge as `0..=1` and the electric range written beside it: the
+    /// bottom arc of an electric car, the right half of a hybrid's.
+    pub fn charge(mut self, level: f32, reach: impl Into<SharedString>) -> Self {
+        self.charge = Some(level.clamp(0.0, 1.0));
+        self.charge_reach = reach.into();
+        self
+    }
     /// Fuel as `0..=1` and the reach written beside the pump. Without it the bottom stays empty.
     pub fn fuel(mut self, level: f32, reach: impl Into<SharedString>) -> Self {
         self.fuel = Some(level.clamp(0.0, 1.0));
@@ -333,14 +356,16 @@ impl RenderOnce for RingTach {
         self.rpm = follow(w, cx, &self.follow, 0, self.rpm);
         self.speed = follow(w, cx, &self.follow, 1, self.speed);
         self.fuel = self.fuel.map(|f| follow(w, cx, &self.follow, 2, f));
+        self.charge = self.charge.map(|f| follow(w, cx, &self.follow, 3, f));
+        let electric = self.drive == crate::pods::Drivetrain::Electric;
         if self.look != Look::Sport {
             return crate::faces::GaugeFace::new(self.scale, self.rpm)
                 .animate(false)
                 .look(self.look)
                 .at_limit(self.at_limit)
                 .label(format!("{} {}", readout(self.speed, 0, ""), self.unit))
-                .unit("×1000 rpm")
-                .decimals(1)
+                .unit(if electric { "kW" } else { "×1000 rpm" })
+                .decimals(if electric { 0 } else { 1 })
                 .size(self.size)
                 .into_any_element();
         }
@@ -365,7 +390,15 @@ impl RenderOnce for RingTach {
             .map(|z| (z.0, z.1))
             .collect();
         let marker = self.marker.map(|m| self.scale.fraction(m));
-        let fuel = self.fuel;
+        // An electric ring is lit from zero; recovering lights it leftwards.
+        let zero = if electric {
+            self.scale.fraction(0.0)
+        } else {
+            0.0
+        };
+        let fill_col = if electric && frac < zero { go } else { ink };
+        let bottom = bottom_arcs(self.drive, self.fuel, self.charge);
+        let both = bottom.len() == 2;
         let ticks: Vec<(f32, bool)> = self
             .scale
             .ticks()
@@ -453,9 +486,9 @@ impl RenderOnce for RingTach {
                 stroke(
                     w,
                     o,
-                    &turn_arc(c, c, rt, at(0.0), at(frac)),
+                    &turn_arc(c, c, rt, at(zero.min(frac)), at(zero.max(frac))),
                     weight * 2.0,
-                    ink,
+                    fill_col,
                     false,
                 );
                 if let Some(m) = marker {
@@ -474,14 +507,13 @@ impl RenderOnce for RingTach {
                     polar(c, c, r_out, at(frac)),
                 );
                 stroke(w, o, &[p0, p1], weight * 2.4, ink, false);
-                // Fuel arc across the open bottom, with its own end stops.
-                if let Some(fuel) = fuel {
-                    let (f0, f1) = (0.405, 0.595);
-                    let rf = r_out - weight * 1.5;
+                // Fuel and charge arcs across the open bottom, each on its own track.
+                let rf = r_out - weight * 1.5;
+                for (f0, f1, level) in &bottom {
                     stroke(
                         w,
                         o,
-                        &turn_arc(c, c, rf, f0, f1),
+                        &turn_arc(c, c, rf, *f0, *f1),
                         weight * 3.0,
                         scale_alpha(ink, 0.25),
                         false,
@@ -489,7 +521,7 @@ impl RenderOnce for RingTach {
                     stroke(
                         w,
                         o,
-                        &turn_arc(c, c, rf, f0, f0 + (f1 - f0) * fuel),
+                        &turn_arc(c, c, rf, *f0, f0 + (f1 - f0) * level),
                         weight * 3.0,
                         ink,
                         false,
@@ -508,6 +540,15 @@ impl RenderOnce for RingTach {
                     .text_color(ink)
                     .font_weight(FontWeight::MEDIUM)
                     .child(readout(k.value, 0, "")),
+            );
+        }
+        if electric {
+            // The ring reads power: say so above the speed.
+            ring = ring.child(
+                text_box(c, c - size * 0.27, size * 0.2)
+                    .text_size(px(size * 0.04))
+                    .text_color(muted)
+                    .child("kW"),
             );
         }
         ring.child(
@@ -542,24 +583,51 @@ impl RenderOnce for RingTach {
                     .child(self.tab.clone()),
             )
         })
-        .when(self.fuel.is_some(), |d| {
-            d.child(
-                div()
-                    .absolute()
-                    .left(px(c - size * 0.2))
-                    .top(px(c + size * 0.255))
-                    .w(px(size * 0.4))
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .gap(px(size * 0.015))
-                    .text_size(px(size * 0.052))
-                    .text_color(ink)
-                    .child(Icon::symbol(Symbol::Fuel).size(size * 0.065).color(muted))
-                    .child(self.reach.clone()),
-            )
-        })
+        .child(
+            div()
+                .absolute()
+                .left(px(c - size * 0.3))
+                .top(px(c + size * 0.255))
+                .w(px(size * 0.6))
+                .flex()
+                .items_center()
+                .justify_center()
+                .gap(px(size * 0.012))
+                .text_size(px(if both { size * 0.044 } else { size * 0.052 }))
+                .text_color(ink)
+                .when(self.fuel.is_some() && self.drive.burns_fuel(), |d| {
+                    d.child(Icon::symbol(Symbol::Fuel).size(size * 0.065).color(muted))
+                        .child(self.reach.clone())
+                })
+                .when(self.charge.is_some() && self.drive.has_battery(), |d| {
+                    d.when(both, |d| d.child(div().w(px(size * 0.012))))
+                        .child(
+                            Icon::symbol(Symbol::TractionBattery)
+                                .size(size * 0.065)
+                                .color(muted),
+                        )
+                        .child(self.charge_reach.clone())
+                }),
+        )
         .into_any_element()
+    }
+}
+
+/// The arcs across a ring's open bottom as `(from, to, level)` in turns: the fuel across the
+/// whole gap, the charge across it for an electric car, or both side by side for a hybrid
+/// (fuel left). Pure.
+pub fn bottom_arcs(
+    drive: crate::pods::Drivetrain,
+    fuel: Option<f32>,
+    charge: Option<f32>,
+) -> Vec<(f32, f32, f32)> {
+    let (f0, f1, mid) = (0.405, 0.595, 0.5);
+    let fuel = fuel.filter(|_| drive.burns_fuel());
+    let charge = charge.filter(|_| drive.has_battery());
+    match (fuel, charge) {
+        (Some(f), Some(c)) => vec![(f0, mid - 0.006, f), (mid + 0.006, f1, c)],
+        (Some(l), None) | (None, Some(l)) => vec![(f0, f1, l)],
+        (None, None) => Vec::new(),
     }
 }
 
@@ -1433,6 +1501,17 @@ impl RenderOnce for DashTriptych {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_bottom_shows_what_the_drivetrain_carries() {
+        use crate::pods::Drivetrain::*;
+        assert_eq!(bottom_arcs(Combustion, Some(0.5), Some(0.9)).len(), 1);
+        assert_eq!(bottom_arcs(Electric, Some(0.5), Some(0.9))[0].2, 0.9);
+        let hybrid = bottom_arcs(Hybrid, Some(0.5), Some(0.9));
+        assert_eq!(hybrid.len(), 2);
+        assert!(hybrid[0].1 < hybrid[1].0, "fuel left of the charge");
+        assert!(bottom_arcs(Electric, Some(0.5), None).is_empty());
+    }
 
     #[test]
     fn telltales_light_in_their_standard_colour() {
