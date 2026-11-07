@@ -530,6 +530,7 @@ impl Showcase {
                     only,
                     |z| {
                         BoostPod::new(val(48.0, 0.0, 100.0))
+                            .look(Look::Sport)
                             .temp("9 °C")
                             .size(z)
                             .into_any_element()
