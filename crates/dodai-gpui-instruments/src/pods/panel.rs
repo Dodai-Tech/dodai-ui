@@ -1,4 +1,4 @@
-//! The card, strip and column layouts of a [`RowsPod`] (see [`PodLayout`]), in every look: the
+//! The rings, strip and column layouts of a [`RowsPod`] (see [`PodLayout`]), in every look: the
 //! look's own frame painted behind the readings, its type and its level bars. Sport and
 //! chronograph sit in a polished bezel, vintage on a screwed panel with an aged window, heads-up
 //! between corner brackets, segment in an LCD module, halo in a glowing capsule, glass cockpit on
@@ -12,6 +12,8 @@ use crate::mfd::{glow, panel};
 use crate::race::{plate_in, tag, tag_text};
 use crate::shapes::{chamfered, rounded, Ink};
 
+mod rings;
+
 /// Height of the strip, as a share of its width.
 pub(crate) const STRIP_H: f32 = 0.46;
 /// Width of the column, as a share of its height.
@@ -20,7 +22,7 @@ pub(crate) const COLUMN_W: f32 = 0.5;
 /// The box of `layout` for a pod of `s`: its width and height. Pure.
 pub(crate) fn pod_box(layout: PodLayout, s: f32) -> (f32, f32) {
     match layout {
-        PodLayout::Round | PodLayout::Card => (s, s),
+        PodLayout::Round | PodLayout::Rings => (s, s),
         PodLayout::Strip => (s, s * STRIP_H),
         PodLayout::Column => (s * COLUMN_W, s),
     }
@@ -293,8 +295,14 @@ fn level(look: Look, f: f32, col: Hsla, ty: Type, h: f32) -> gpui::Div {
 }
 
 impl RowsPod {
-    /// The pod as a card, a strip or a column (see [`PodLayout`]) in its look.
+    /// The pod as rings, a strip or a column (see [`PodLayout`]) in its look.
     pub(super) fn laid_out(self, t: &dodai_core::Theme, layout: PodLayout) -> AnyElement {
+        if layout == PodLayout::Rings {
+            return self.ringed(t);
+        }
+        if rings::round_look(self.look) {
+            return self.registers(t, layout);
+        }
         let look = self.look;
         let ink = Ink::of(t);
         let ty = type_of(look, ink);
@@ -342,37 +350,6 @@ impl RowsPod {
             Look::Sport | Look::Chronograph | Look::Line | Look::Vintage
         );
         let body = match layout {
-            PodLayout::Card | PodLayout::Round => {
-                let fs = (s * 0.3 / n).min(s * 0.075);
-                div().flex().flex_col().flex_1().justify_around().children(
-                    self.rows.iter().enumerate().map(|(i, r)| {
-                        let line = div()
-                            .flex()
-                            .items_center()
-                            .gap(px(s * 0.03))
-                            .child(r.icon.element(fs * 0.95, ty.muted))
-                            .child(match r.bar {
-                                Some((f, tn)) => {
-                                    div().flex_1().child(level(look, f, tone(tn), ty, bar_h))
-                                }
-                                None => div().flex_1(),
-                            })
-                            .child(
-                                div()
-                                    .text_size(px(fs))
-                                    .font_weight(ty.weight)
-                                    .text_color(ty.value)
-                                    .child(r.value.clone()),
-                            );
-                        div()
-                            .flex()
-                            .flex_col()
-                            .gap(px(s * 0.02))
-                            .child(line)
-                            .when(ruled && i + 1 < self.rows.len(), |d| d.child(rule(false)))
-                    }),
-                )
-            }
             PodLayout::Strip => {
                 let fs = (s * 0.32 / n).min(s * 0.06);
                 let cell_w = (wd - 2.0 * m) / n - s * 0.03;
@@ -417,7 +394,8 @@ impl RowsPod {
                 }
                 row
             }
-            PodLayout::Column => {
+            // The round pod and the rings never come here; they would read as the column.
+            PodLayout::Round | PodLayout::Rings | PodLayout::Column => {
                 let fs = (s * 0.42 / n).min(s * 0.085);
                 let inner = wd - 2.0 * m;
                 div().flex().flex_col().flex_1().justify_around().children(
@@ -485,7 +463,7 @@ mod tests {
     #[test]
     fn a_strip_is_wide_and_a_column_tall() {
         let s = 200.0;
-        assert_eq!(pod_box(PodLayout::Card, s), (s, s));
+        assert_eq!(pod_box(PodLayout::Round, s), (s, s));
         let (w, h) = pod_box(PodLayout::Strip, s);
         assert!(w > h);
         let (w, h) = pod_box(PodLayout::Column, s);

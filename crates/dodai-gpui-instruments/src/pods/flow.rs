@@ -153,7 +153,7 @@ impl PowerFlow {
             size: 300.0,
         }
     }
-    /// The layout: the round pod (default), a card, a strip or a column, each in the look's
+    /// The layout: the round pod (default), rings, a strip or a column, each in the look's
     /// style (see [`PodLayout`](crate::look::PodLayout)).
     pub fn layout(mut self, layout: crate::look::PodLayout) -> Self {
         self.layout = layout;

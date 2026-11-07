@@ -184,15 +184,15 @@ pub enum AtLimit {
 }
 
 /// How a pod of readings (energy, a trip, the tyres, the power flow) is laid out. Every
-/// [`Look`] draws all four, each in its own style: the round pod, a square card, a wide strip
-/// and a tall column.
+/// [`Look`] draws all four, each in its own style: the round pod, rings, a wide strip and a
+/// tall column. The round looks draw the strip and the column as round registers.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum PodLayout {
     /// The round pod, the readings inside a ring or the look's own face.
     #[default]
     Round,
-    /// A square card: a heading, then one reading per line with its level bar.
-    Card,
+    /// Rings: every level an open ring, one inside the other, around the readings.
+    Rings,
     /// A wide strip: the readings side by side, each over its level bar.
     Strip,
     /// A tall column: the readings stacked, each figure large over its level bar.
@@ -201,13 +201,13 @@ pub enum PodLayout {
 
 impl PodLayout {
     /// Every pod layout, in the order a gallery shows them.
-    pub const ALL: [Self; 4] = [Self::Round, Self::Card, Self::Strip, Self::Column];
+    pub const ALL: [Self; 4] = [Self::Round, Self::Rings, Self::Strip, Self::Column];
 
     /// A short name for a gallery caption.
     pub fn name(self) -> &'static str {
         match self {
             Self::Round => "Round",
-            Self::Card => "Card",
+            Self::Rings => "Rings",
             Self::Strip => "Strip",
             Self::Column => "Column",
         }
