@@ -363,6 +363,9 @@ impl Render for Showcase {
                         .child(dodai_gpui::Label::new("Look"))
                         .child({
                             let m = me.clone();
+                            // The section being read: a new look changes every height, so the
+                            // page jumps back to it instead of keeping a stale offset.
+                            let here = spied.0;
                             div().w(px(220.0)).child(
                                 dodai_gpui::Select::new("veh-look")
                                     .options(
@@ -376,6 +379,7 @@ impl Render for Showcase {
                                     .on_select(move |i, _, cx| {
                                         m.update(cx, |s, cx| {
                                             s.inst_look = i;
+                                            s.jump = here.map(|t| (t, 3));
                                             cx.notify();
                                         })
                                     }),
@@ -493,14 +497,16 @@ impl Render for Showcase {
         {
             let (mut n, mut lc, mut ls) = (n_children, "", None);
             for (c, title) in &shown_secs {
+                // Count the headings exactly as the body below adds them: a mismatch leaves the
+                // layout positions unusable and every section past the first few a blank spacer.
                 if *c != lc {
-                    n += 1;
+                    n += usize::from(headed(pin_title, c));
                     lc = c;
                     ls = None;
                 }
                 if let Some(sb) = sub_of(c, title) {
                     if ls != Some(sb) {
-                        n += 1;
+                        n += usize::from(headed(pin_title, c));
                         ls = Some(sb);
                     }
                 }
@@ -551,7 +557,7 @@ impl Render for Showcase {
         for (seq, (c, title)) in shown_secs.into_iter().enumerate() {
             if c != last_cat {
                 // Pinned titles are not repeated in the scrolling body.
-                if !(pin_title && c == "Instruments") {
+                if headed(pin_title, c) {
                     body = body.child(Heading::new(c).level(2));
                     n_children += 1;
                 }
@@ -559,7 +565,7 @@ impl Render for Showcase {
                 last_sub = None;
             }
             if let Some(sb) = sub_of(c, title) {
-                if last_sub != Some(sb) && !(pin_title && c == "Instruments") {
+                if last_sub != Some(sb) && headed(pin_title, c) {
                     body = body.child(Heading::new(sb).level(3));
                     n_children += 1;
                     last_sub = Some(sb);
@@ -640,6 +646,13 @@ impl Render for Showcase {
             }
         }
         self.spy = spy;
+        // A page that got shorter (a narrower filter, a look with fewer rows) must not stay
+        // scrolled past its new end, which shows an empty screen.
+        let max = self.scroll.max_offset().height;
+        if self.scroll.offset().y < -max {
+            let o = self.scroll.offset();
+            self.scroll.set_offset(gpui::point(o.x, -max));
+        }
         if delta_above != 0.0 {
             let o = self.scroll.offset();
             self.scroll
@@ -1057,6 +1070,12 @@ actions!(
     ]
 );
 
+/// Whether category `c` gets its headings in the scrolling body: not Instruments while its
+/// titles are pinned above the page. Pure.
+fn headed(pin_title: bool, c: &str) -> bool {
+    !(pin_title && c == "Instruments")
+}
+
 fn new_showcase(cx: &mut App) -> Entity<Showcase> {
     cx.new(Showcase::build)
 }
@@ -1331,5 +1350,17 @@ impl Drop for Prof {
                 c.set((Some(t0), sum, n));
             }
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::headed;
+
+    #[test]
+    fn pinned_instrument_titles_leave_the_body() {
+        assert!(!headed(true, "Instruments"));
+        assert!(headed(false, "Instruments"));
+        assert!(headed(true, "Charts"));
     }
 }
