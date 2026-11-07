@@ -6,8 +6,8 @@ use dodai_gpui::icons::Symbol;
 use dodai_gpui_instruments::{
     AtLimit, BoostPod, CompassPod, DashQuad, DashTriptych, Drivetrain, DualGauge, DualScale,
     EnergyPod, GForcePod, GaugeFace, Gear, GearLayout, GearSelector, Layout, LimitSign, Look,
-    MediaPod, MenuRing, NoticePod, PodIcon, PodRow, PodStyle, PowerFlow, RingTach, RowsPod, Scale,
-    Severity, ShiftHint, ShiftLights, SidePod, Telltales, Tone, TyrePod,
+    MediaPod, MenuRing, NoticePod, PodIcon, PodLayout, PodRow, PodStyle, PowerFlow, RingTach,
+    RowsPod, Scale, Severity, ShiftHint, ShiftLights, SidePod, Telltales, Tone, TyrePod,
 };
 
 /// A demo value drifting through `lo..=hi` on the animation clock.
@@ -406,6 +406,32 @@ fn oil_faces(look: Look, layout: Layout, size: f32) -> gpui::AnyElement {
         .into_any_element()
 }
 
+/// Each shown [`Look`] on its own row, in every [`PodLayout`]: the round pod captioned with the
+/// look, then the card, the strip and the column, built by `make(look, layout, size)`.
+fn pod_rows(
+    only: Option<Look>,
+    make: impl Fn(Look, PodLayout, f32) -> gpui::AnyElement,
+) -> Vec<Vec<(&'static str, gpui::AnyElement)>> {
+    let looks = shown(only);
+    let pod = cell(looks.len() * PodLayout::ALL.len());
+    looks
+        .into_iter()
+        .map(|l| {
+            PodLayout::ALL
+                .into_iter()
+                .map(|y| {
+                    let name = if y == PodLayout::Round {
+                        l.name()
+                    } else {
+                        y.name()
+                    };
+                    (name, make(l, y, pod))
+                })
+                .collect()
+        })
+        .collect()
+}
+
 /// One pod in each shown [`Look`], built by `make(look, size)`.
 fn looked(
     only: Option<Look>,
@@ -516,20 +542,21 @@ impl Showcase {
             self,
             "Vehicle · Energy",
             vec![
-                gallery(
-                    "The battery of an electric car: charge, power and range. Sport: a battery of cells under the charge, the power arc growing right from the top while driving. Every other look shows charge, power and range as rows.",
-                    looked(only, |s, z| {
+                gallery_rows(
+                    "The battery of an electric car: charge, power and range. Sport: a battery of cells under the charge, the power arc growing right from the top while driving. Every other look shows charge, power and range as rows. Each look draws the pod round, as a card, a strip and a column (PodLayout).",
+                    pod_rows(only, |s, y, z| {
                         EnergyPod::new(val(60.0, 55.0, 80.0))
                             .power(val(61.0, 10.0, 120.0))
                             .range("312 km")
                             .look(s)
+                            .layout(y)
                             .size(z)
                             .into_any_element()
                     }),
                 ),
-                gallery(
+                gallery_rows(
                     "Plugged in: the power flows back in, so the arc grows left in the success colour, and the foot counts down to the charge limit marked on the battery. Under a fifth of charge the cells turn amber, under a tenth red.",
-                    looked(only, |s, z| {
+                    pod_rows(only, |s, y, z| {
                         EnergyPod::new(val(62.0, 12.0, 18.0))
                             .power(-48.0)
                             .charging(true)
@@ -537,6 +564,7 @@ impl Showcase {
                             .time_to_full("42 min")
                             .range("54 km")
                             .look(s)
+                            .layout(y)
                             .size(z)
                             .into_any_element()
                     }),
@@ -579,22 +607,30 @@ impl Showcase {
         add(
             self,
             "Vehicle · Power flow",
-            vec![gallery(
-                "A hybrid's power between the engine, the battery and the wheels, the mode as the heading: electric, engine, boost with both, recovering into the battery, or the engine charging it. Sport draws the paths; the other looks list the engine, the motor and the charge.",
-                looked(only, |s, z| flow().look(s).size(z).into_any_element()),
+            vec![gallery_rows(
+                "A hybrid's power between the engine, the battery and the wheels, the mode as the heading: electric, engine, boost with both, recovering into the battery, or the engine charging it. Sport draws the paths; the other looks list the engine, the motor and the charge; every look also as a card, a strip and a column.",
+                pod_rows(only, |s, y, z| flow().look(s).layout(y).size(z).into_any_element()),
             )],
         );
         add(
             self,
             "Vehicle · Diesel",
             vec![
-                gallery(
-                    "The exhaust fluid a diesel needs to clean its exhaust, amber under a tenth.",
-                    looked(only, |s, z| fluid().look(s).size(z).into_any_element()),
+                gallery_rows(
+                    "The exhaust fluid a diesel needs to clean its exhaust, amber under a tenth; each look in its four layouts.",
+                    looks(
+                        only,
+                        |z| fluid().look(Look::Sport).size(z).into_any_element(),
+                        |l, y, z| fluid().look(l).layout(y).size(z).into_any_element(),
+                    ),
                 ),
-                gallery(
+                gallery_rows(
                     "The particulate filter's load, amber from 80 %: time for a long drive to burn it clean.",
-                    looked(only, |s, z| particulate().look(s).size(z).into_any_element()),
+                    looks(
+                        only,
+                        |z| particulate().look(Look::Sport).size(z).into_any_element(),
+                        |l, y, z| particulate().look(l).layout(y).size(z).into_any_element(),
+                    ),
                 ),
             ],
         );
@@ -642,13 +678,14 @@ impl Showcase {
             self,
             "Vehicle · Tyre pressure",
             vec![
-                gallery(
-                    "The pressure of each tyre in bar: front left and right on top, rear left and right below. A tyre under the limit is written in the warning colour.",
-                    looked(only, |s, z| {
+                gallery_rows(
+                    "The pressure of each tyre in bar: front left and right on top, rear left and right below. A tyre under the limit is written in the warning colour. As a card, a strip or a column each tyre is a row with a bar, short and amber when soft.",
+                    pod_rows(only, |s, y, z| {
                         tyres()
                             .bars([Some(2.4), Some(2.4), Some(2.3), Some(2.2)])
                             .low_below(2.3)
                             .look(s)
+                            .layout(y)
                             .size(z)
                             .into_any_element()
                     }),
@@ -697,25 +734,31 @@ impl Showcase {
         add(
             self,
             "Vehicle · Vehicle info",
-            vec![gallery(
+            vec![gallery_rows(
                 "Four levels on dark tiles: oil temperature, coolant temperature, oil pressure and battery voltage. Each has a bar; the temperature bars carry a blue tick at the cold end and a red one at the hot end.",
-                looked(only, |s, z| vehicle_rows().look(s).size(z).into_any_element()),
+                pod_rows(only, |s, y, z| {
+                    vehicle_rows().look(s).layout(y).size(z).into_any_element()
+                }),
             )],
         );
         add(
             self,
             "Vehicle · Trip",
-            vec![gallery(
+            vec![gallery_rows(
                 "The trip since a time: duration, distance, consumption and average speed, each with its own symbol.",
-                looked(only, |s, z| trip_rows().look(s).size(z).into_any_element()),
+                pod_rows(only, |s, y, z| {
+                    trip_rows().look(s).layout(y).size(z).into_any_element()
+                }),
             )],
         );
         add(
             self,
             "Vehicle · Today",
-            vec![gallery(
+            vec![gallery_rows(
                 "Several things in one list: the date, the track playing, the battery charge and a heading strip with a marker for the direction.",
-                looked(only, |s, z| today_rows().look(s).size(z).into_any_element()),
+                pod_rows(only, |s, y, z| {
+                    today_rows().look(s).layout(y).size(z).into_any_element()
+                }),
             )],
         );
         // Messages, media and menus.

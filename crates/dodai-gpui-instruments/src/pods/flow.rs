@@ -128,6 +128,7 @@ pub struct PowerFlow {
     /// The look given with `.look(..)`; without one, the design's own.
     given_look: Option<Look>,
     style: PodStyle,
+    layout: crate::look::PodLayout,
     size: f32,
 }
 
@@ -148,8 +149,15 @@ impl PowerFlow {
             look: Look::Sport,
             given_look: None,
             style: PodStyle::Ring,
+            layout: crate::look::PodLayout::Round,
             size: 300.0,
         }
+    }
+    /// The layout: the round pod (default), a card, a strip or a column, each in the look's
+    /// style (see [`PodLayout`](crate::look::PodLayout)).
+    pub fn layout(mut self, layout: crate::look::PodLayout) -> Self {
+        self.layout = layout;
+        self
     }
     /// The most the engine and the motor give in kW, for the bars (default 150 and 80).
     pub fn limits(mut self, engine_kw: f32, motor_kw: f32) -> Self {
@@ -183,7 +191,7 @@ impl RenderOnce for PowerFlow {
         let f = flows(self.engine, self.motor);
         let mode = HybridMode::of(f);
         let tone = charge_tone(self.charge);
-        if self.look != Look::Sport {
+        if self.look != Look::Sport || self.layout != crate::look::PodLayout::Round {
             let motor_tone = if self.motor < 0.0 {
                 Tone::Success
             } else {
@@ -206,6 +214,7 @@ impl RenderOnce for PowerFlow {
             ];
             return RowsPod::new(rows)
                 .heading(mode.name())
+                .layout(self.layout)
                 .look(self.look)
                 .style(self.style)
                 .size(self.size)

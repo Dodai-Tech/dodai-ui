@@ -24,6 +24,7 @@ pub struct EnergyPod {
     /// The look given with `.look(..)`; without one, the design's own.
     given_look: Option<Look>,
     style: PodStyle,
+    layout: crate::look::PodLayout,
     size: f32,
 }
 
@@ -79,8 +80,15 @@ impl EnergyPod {
             look: Look::Sport,
             given_look: None,
             style: PodStyle::Ring,
+            layout: crate::look::PodLayout::Round,
             size: 300.0,
         }
+    }
+    /// The layout: the round pod (default), a card, a strip or a column, each in the look's
+    /// style (see [`PodLayout`](crate::look::PodLayout)).
+    pub fn layout(mut self, layout: crate::look::PodLayout) -> Self {
+        self.layout = layout;
+        self
     }
     /// The power in kW: positive while driving, negative while recovering or charging.
     pub fn power(mut self, kw: f32) -> Self {
@@ -156,7 +164,7 @@ impl RenderOnce for EnergyPod {
         self.power = pm::finite(follow(w, cx, &self.follow, 1, self.power), 0.0);
         let flow = power_frac(self.power, self.max_power, self.max_regen);
         let tone = charge_tone(self.charge);
-        if self.look != Look::Sport {
+        if self.look != Look::Sport || self.layout != crate::look::PodLayout::Round {
             let flow_tone = if flow < 0.0 {
                 Tone::Success
             } else {
@@ -185,6 +193,7 @@ impl RenderOnce for EnergyPod {
             }
             return RowsPod::new(rows)
                 .heading(self.heading())
+                .layout(self.layout)
                 .look(self.look)
                 .style(self.style)
                 .size(self.size)

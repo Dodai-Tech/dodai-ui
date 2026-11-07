@@ -183,9 +183,48 @@ pub enum AtLimit {
     Display,
 }
 
+/// How a pod of readings (energy, a trip, the tyres, the power flow) is laid out. Every
+/// [`Look`] draws all four, each in its own style: the round pod, a square card, a wide strip
+/// and a tall column.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum PodLayout {
+    /// The round pod, the readings inside a ring or the look's own face.
+    #[default]
+    Round,
+    /// A square card: a heading, then one reading per line with its level bar.
+    Card,
+    /// A wide strip: the readings side by side, each over its level bar.
+    Strip,
+    /// A tall column: the readings stacked, each figure large over its level bar.
+    Column,
+}
+
+impl PodLayout {
+    /// Every pod layout, in the order a gallery shows them.
+    pub const ALL: [Self; 4] = [Self::Round, Self::Card, Self::Strip, Self::Column];
+
+    /// A short name for a gallery caption.
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Round => "Round",
+            Self::Card => "Card",
+            Self::Strip => "Strip",
+            Self::Column => "Column",
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn every_pod_layout_has_its_own_name() {
+        let mut names: Vec<_> = PodLayout::ALL.iter().map(|l| l.name()).collect();
+        names.dedup();
+        assert_eq!(names.len(), 4);
+        assert_eq!(PodLayout::default(), PodLayout::Round);
+    }
 
     #[test]
     fn every_look_has_its_own_name() {

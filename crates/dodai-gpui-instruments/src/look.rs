@@ -1,7 +1,7 @@
 //! The look every vehicle instrument shares ([`Look`], defined with the designs so each can name
 //! its own), and how big a face is drawn in each layout.
 
-pub use dodai_core::vehicle_look::{AtLimit, Layout, Look};
+pub use dodai_core::vehicle_look::{AtLimit, Layout, Look, PodLayout};
 
 /// The look an instrument draws in: the one it was given, else the design's own
 /// ([`ChartStyle::vehicle`](dodai_core::ChartStyle::vehicle)).

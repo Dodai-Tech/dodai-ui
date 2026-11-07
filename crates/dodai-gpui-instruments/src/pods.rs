@@ -123,6 +123,7 @@ mod dual;
 mod energy;
 mod flow;
 mod future;
+mod panel;
 mod race;
 mod vintage;
 
@@ -144,7 +145,25 @@ pub struct TyrePod {
     /// The look given with `.look(..)`; without one, the design's own.
     given_look: Option<Look>,
     style: PodStyle,
+    layout: crate::look::PodLayout,
     size: f32,
+}
+
+/// The positions of the four tyres, in the order of [`TyrePod::bars`].
+const TYRES: [&str; 4] = ["FL", "FR", "RL", "RR"];
+
+/// How full each tyre's level bar is: its pressure over a fifth above the highest reading, so
+/// a soft tyre shows short beside the others; no reading is empty. Pure.
+pub(crate) fn tyre_levels(bars: [Option<f32>; 4]) -> [f32; 4] {
+    let top = bars
+        .iter()
+        .flatten()
+        .filter(|v| v.is_finite())
+        .fold(0.0_f32, |a, &v| a.max(v));
+    bars.map(|b| match b {
+        Some(v) if v.is_finite() && top > 0.0 => pm::unit(v / (top * 1.2)),
+        _ => 0.0,
+    })
 }
 
 impl TyrePod {
@@ -160,7 +179,14 @@ impl TyrePod {
             look: Look::Sport,
             given_look: None,
             style: PodStyle::Ring,
+            layout: crate::look::PodLayout::Round,
         }
+    }
+    /// The layout: the round pod (default), a card, a strip or a column, each in the look's
+    /// style (see [`PodLayout`](crate::look::PodLayout)); the four tyres become rows there.
+    pub fn layout(mut self, layout: crate::look::PodLayout) -> Self {
+        self.layout = layout;
+        self
     }
     /// The heading above the pressures.
     pub fn heading(mut self, h: impl Into<SharedString>) -> Self {
@@ -214,6 +240,32 @@ impl RenderOnce for TyrePod {
     fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         self.look = crate::look::resolve(self.given_look, cx);
         let t = theme_of(cx);
+        if self.layout != crate::look::PodLayout::Round {
+            let levels = tyre_levels(self.bars);
+            let rows = (0..4).map(|i| {
+                let tone = if pm::is_low(self.bars[i], self.low) {
+                    Tone::Warning
+                } else {
+                    Tone::Off
+                };
+                PodRow::new(
+                    Symbol::Tyre,
+                    format!("{} {}", TYRES[i], pm::pressure_text(self.bars[i])),
+                )
+                .bar(levels[i], tone)
+            });
+            let heading = if self.unit.is_empty() {
+                self.heading.clone()
+            } else {
+                format!("{} · {}", self.heading, self.unit).into()
+            };
+            return RowsPod::new(rows)
+                .heading(heading)
+                .layout(self.layout)
+                .look(self.look)
+                .size(self.size)
+                .into_any_element();
+        }
         if self.look == Look::Line {
             // The line look keeps the ring pod, drawn as a single hairline circle.
             self.style = PodStyle::Line;
@@ -320,6 +372,7 @@ pub struct RowsPod {
     /// The look given with `.look(..)`; without one, the design's own.
     given_look: Option<Look>,
     style: PodStyle,
+    layout: crate::look::PodLayout,
     size: f32,
 }
 
@@ -333,7 +386,14 @@ impl RowsPod {
             look: Look::Sport,
             given_look: None,
             style: PodStyle::Ring,
+            layout: crate::look::PodLayout::Round,
         }
+    }
+    /// The layout: the round pod (default), a card, a strip or a column, each in the look's
+    /// style (see [`PodLayout`](crate::look::PodLayout)).
+    pub fn layout(mut self, layout: crate::look::PodLayout) -> Self {
+        self.layout = layout;
+        self
     }
     /// A heading above the rows.
     pub fn heading(mut self, h: impl Into<SharedString>) -> Self {
@@ -361,6 +421,10 @@ impl RenderOnce for RowsPod {
     fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         self.look = crate::look::resolve(self.given_look, cx);
         let t = theme_of(cx);
+        if self.layout != crate::look::PodLayout::Round {
+            let layout = self.layout;
+            return self.laid_out(&t, layout);
+        }
         if self.look == Look::Line {
             // The line look keeps the ring pod, drawn as a single hairline circle.
             self.style = PodStyle::Line;
@@ -722,6 +786,7 @@ pub struct BoostPod {
     given_look: Option<Look>,
     at_limit: AtLimit,
     style: PodStyle,
+    layout: Layout,
     size: f32,
 }
 
@@ -740,7 +805,14 @@ impl BoostPod {
             at_limit: AtLimit::Value,
             size: 300.0,
             style: PodStyle::Ring,
+            layout: Layout::Dial,
         }
+    }
+    /// The layout within the look (see [`Look::layouts`]); any but the dial draws the reading
+    /// as a [`GaugeFace`](crate::faces::GaugeFace) of that layout, in Sport too.
+    pub fn layout(mut self, layout: Layout) -> Self {
+        self.layout = layout;
+        self
     }
     /// The label on the left.
     pub fn label(mut self, l: impl Into<SharedString>) -> Self {
@@ -780,7 +852,8 @@ impl RenderOnce for BoostPod {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
         self.look = crate::look::resolve(self.given_look, cx);
         self.percent = pm::percent(follow(w, cx, &self.follow, 0, self.percent));
-        if self.look != Look::Sport {
+        let layout = self.look.fit(self.layout);
+        if self.look != Look::Sport || layout != Layout::Dial {
             return crate::faces::GaugeFace::new(
                 Scale::new(0.0, 100.0)
                     .ticks_per(5, 2)
@@ -789,6 +862,7 @@ impl RenderOnce for BoostPod {
             )
             .animate(false)
             .look(self.look)
+            .layout(layout)
             .at_limit(self.at_limit)
             .label(self.label)
             .icon(Symbol::Boost)
