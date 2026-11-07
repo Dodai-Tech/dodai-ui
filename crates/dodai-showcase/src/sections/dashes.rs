@@ -45,7 +45,7 @@ fn speed() -> SidePod {
         Scale::new(0.0, 270.0).ticks_per(9, 1),
         val(32.0, 20.0, 230.0),
     )
-    .needle(false)
+    .sweep(false)
     .unit("km/h")
     .centre(LimitSign::new(50).size(64.0))
     .ends(Some(Tone::Info), Some(Tone::Info))
