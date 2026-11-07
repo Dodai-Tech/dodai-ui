@@ -38,6 +38,26 @@ pub(crate) fn ring_radii(r: f32, n: usize, step: f32) -> Vec<f32> {
     (0..n).map(|i| r - step * (i as f32 + 0.5)).collect()
 }
 
+/// Centres (from the middle of the face) and the diameter of `n` round registers laid out
+/// inside a face of radius `r`: one in the middle, two side by side, three or more on a circle
+/// (four in a square), each as large as keeps them clear of each other and of the rim. Pure.
+pub(crate) fn register_spots(n: usize, r: f32) -> (Vec<(f32, f32)>, f32) {
+    if n <= 1 {
+        return (vec![(0.0, 0.0); n], r * 1.1);
+    }
+    let k = (std::f32::consts::PI / n as f32).sin() * 0.88;
+    let rho = r * 0.9 / (1.0 + k);
+    let start = match n {
+        2 => 0.25,
+        4 => 0.125,
+        _ => 0.0,
+    };
+    let spots = (0..n)
+        .map(|i| polar(0.0, 0.0, rho, start + i as f32 / n as f32))
+        .collect();
+    (spots, 2.0 * k * rho)
+}
+
 /// Paint `look`'s case for a disc `d` across with its top left at `at`.
 fn case(w: &mut Window, o: gpui::Point<Pixels>, look: Look, at: (f32, f32), d: f32, ink: Ink) {
     let o = o + gpui::point(px(at.0), px(at.1));
@@ -184,7 +204,17 @@ fn level_ring(
 
 impl RowsPod {
     /// The pod as rings: every level an open ring, one inside the other, around the readings.
+    /// With no levels to show, the readings are round registers inside the case instead.
     pub(super) fn ringed(self, t: &dodai_core::Theme) -> AnyElement {
+        if self.rows.iter().all(|r| r.bar.is_none()) {
+            let s = self.size;
+            let (spots, d) = register_spots(self.rows.len(), face_r(self.look, s) - s * 0.02);
+            let spots = spots
+                .into_iter()
+                .map(|(x, y)| (s / 2.0 + x - d / 2.0, s / 2.0 + y - d / 2.0))
+                .collect();
+            return self.dials(t, (s, s), spots, d, Heading::Middle);
+        }
         let look = self.look;
         let ink = Ink::of(t);
         let ty = type_of(look, ink);
@@ -275,9 +305,6 @@ impl RowsPod {
 
     /// The pod as a strip or a column of round registers, one per reading, for a round look.
     pub(super) fn registers(self, t: &dodai_core::Theme, layout: PodLayout) -> AnyElement {
-        let look = self.look;
-        let ink = Ink::of(t);
-        let ty = type_of(look, ink);
         let s = self.size;
         let (wd, h) = pod_box(layout, s);
         let head_h = if self.heading.is_empty() {
@@ -303,6 +330,23 @@ impl RowsPod {
                 (cx - d / 2.0, cy - d / 2.0)
             })
             .collect();
+        self.dials(t, (wd, h), spots, d, Heading::Top(head_h))
+    }
+
+    /// Paint one round register `d` across for every reading, top left at `spots`, in a box of
+    /// `wd` by `h`; a [`Heading::Middle`] box is the look's case itself.
+    fn dials(
+        self,
+        t: &dodai_core::Theme,
+        (wd, h): (f32, f32),
+        spots: Vec<(f32, f32)>,
+        d: f32,
+        head: Heading,
+    ) -> AnyElement {
+        let look = self.look;
+        let ink = Ink::of(t);
+        let ty = type_of(look, ink);
+        let s = self.size;
         let tone = |tn: Tone| super::super::detailed::tone_or(t, tn, ink);
         let bars: Vec<Option<(f32, Hsla)>> = self
             .rows
@@ -313,6 +357,9 @@ impl RowsPod {
         let bw = d * 0.055;
         let painted = spots.clone();
         let paint = move |w: &mut Window, o: gpui::Point<Pixels>| {
+            if head == Heading::Middle {
+                case(w, o, look, (0.0, 0.0), wd, ink);
+            }
             for (at, bar) in painted.iter().zip(&bars) {
                 case(w, o, look, *at, d, ink);
                 if let Some((f, col)) = bar {
@@ -323,17 +370,21 @@ impl RowsPod {
         };
         let inner = r_arc - bw;
         let fs = d * 0.17;
+        let (head_top, head_h, head_fs) = match head {
+            Heading::Top(hh) => (0.0, hh, s * 0.04),
+            Heading::Middle => (h / 2.0 - s * 0.03, s * 0.06, s * 0.03),
+        };
         let heading = (!self.heading.is_empty()).then(|| {
             div()
                 .absolute()
                 .left_0()
-                .top_0()
+                .top(px(head_top))
                 .w(px(wd))
                 .h(px(head_h))
                 .flex()
                 .items_center()
                 .justify_center()
-                .text_size(px(s * 0.04))
+                .text_size(px(head_fs))
                 .text_color(ty.heading)
                 .font_weight(FontWeight::MEDIUM)
                 .child(if ty.caps {
@@ -377,6 +428,15 @@ impl RowsPod {
     }
 }
 
+/// Where a register pod puts its heading.
+#[derive(Clone, Copy, PartialEq)]
+enum Heading {
+    /// Over the registers, in a band this tall.
+    Top(f32),
+    /// In the middle of the case the registers sit in.
+    Middle,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -394,5 +454,20 @@ mod tests {
         let radii = ring_radii(r, 3, 12.0);
         assert_eq!(radii, vec![r - 6.0, r - 18.0, r - 30.0]);
         assert!(ring_radii(r, 0, 12.0).is_empty());
+    }
+
+    #[test]
+    fn registers_stay_clear_of_each_other_and_the_rim() {
+        for n in 2..=6 {
+            let (spots, d) = register_spots(n, 100.0);
+            assert_eq!(spots.len(), n);
+            for (i, a) in spots.iter().enumerate() {
+                assert!(a.0.hypot(a.1) + d / 2.0 <= 90.01);
+                for b in &spots[i + 1..] {
+                    assert!((a.0 - b.0).hypot(a.1 - b.1) >= d);
+                }
+            }
+        }
+        assert_eq!(register_spots(1, 100.0).0, vec![(0.0, 0.0)]);
     }
 }
