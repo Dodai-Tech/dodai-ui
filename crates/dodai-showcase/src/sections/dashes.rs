@@ -407,7 +407,7 @@ fn oil_faces(look: Look, layout: Layout, size: f32) -> gpui::AnyElement {
 }
 
 /// Each shown [`Look`] on its own row, in every [`PodLayout`]: the round pod captioned with the
-/// look, then the card, the strip and the column, built by `make(look, layout, size)`.
+/// look, then the rings, the strip and the column, built by `make(look, layout, size)`.
 fn pod_rows(
     only: Option<Look>,
     make: impl Fn(Look, PodLayout, f32) -> gpui::AnyElement,
@@ -543,7 +543,7 @@ impl Showcase {
             "Vehicle · Energy",
             vec![
                 gallery_rows(
-                    "The battery of an electric car: charge, power and range. Sport: a battery of cells under the charge, the power arc growing right from the top while driving. Every other look shows charge, power and range as rows. Each look draws the pod round, as a card, a strip and a column (PodLayout).",
+                    "The battery of an electric car: charge, power and range. Sport: a battery of cells under the charge, the power arc growing right from the top while driving. Every other look shows charge, power and range as rows. Each look draws the pod round, as rings, as a strip and as a column (PodLayout); the round looks make the strip and the column round registers.",
                     pod_rows(only, |s, y, z| {
                         EnergyPod::new(val(60.0, 55.0, 80.0))
                             .power(val(61.0, 10.0, 120.0))
@@ -608,7 +608,7 @@ impl Showcase {
             self,
             "Vehicle · Power flow",
             vec![gallery_rows(
-                "A hybrid's power between the engine, the battery and the wheels, the mode as the heading: electric, engine, boost with both, recovering into the battery, or the engine charging it. Sport draws the paths; the other looks list the engine, the motor and the charge; every look also as a card, a strip and a column.",
+                "A hybrid's power between the engine, the battery and the wheels, the mode as the heading: electric, engine, boost with both, recovering into the battery, or the engine charging it. Sport draws the paths; the other looks list the engine, the motor and the charge; every look also as rings, a strip and a column.",
                 pod_rows(only, |s, y, z| flow().look(s).layout(y).size(z).into_any_element()),
             )],
         );
@@ -679,7 +679,7 @@ impl Showcase {
             "Vehicle · Tyre pressure",
             vec![
                 gallery_rows(
-                    "The pressure of each tyre in bar: front left and right on top, rear left and right below. A tyre under the limit is written in the warning colour. As a card, a strip or a column each tyre is a row with a bar, short and amber when soft.",
+                    "The pressure of each tyre in bar: front left and right on top, rear left and right below. A tyre under the limit is written in the warning colour. As rings, a strip or a column each tyre is a row with a bar, short and amber when soft.",
                     pod_rows(only, |s, y, z| {
                         tyres()
                             .bars([Some(2.4), Some(2.4), Some(2.3), Some(2.2)])
