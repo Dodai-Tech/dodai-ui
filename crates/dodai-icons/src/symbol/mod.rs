@@ -47,6 +47,8 @@ mod medical;
 mod military;
 #[cfg(feature = "symbols-vehicle")]
 mod vehicle;
+#[cfg(feature = "symbols-vehicle")]
+pub use vehicle::{Lamp, COMMON_TELLTALES};
 
 #[cfg(any(
     feature = "symbols-vehicle",

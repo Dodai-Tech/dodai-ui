@@ -27,11 +27,11 @@ fn tach() -> RingTach {
 
 fn tells() -> Telltales {
     Telltales::new()
-        .push(Symbol::SeatBelt, Tone::Danger)
-        .push(Symbol::Abs, Tone::Warning)
+        .light(Symbol::SeatBelt)
+        .light(Symbol::Abs)
         .push(Symbol::HighBeam, Tone::Off)
-        .push(Symbol::LowBeam, Tone::Success)
-        .push(Symbol::ParkingBrake, Tone::Danger)
+        .light(Symbol::LowBeam)
+        .light(Symbol::ParkingBrake)
 }
 
 fn volt() -> SidePod {
@@ -711,10 +711,19 @@ impl Showcase {
                         .collect(),
                 ),
                 gallery(
-                    "Telltale lamps: red for danger, green for on, amber for a fault, grey when off.",
+                    "The common telltales, each lit in its standard colour: red for danger, amber for a fault, green for a system on, blue for main beam, grey when off.",
                     shown(only)
                         .into_iter()
-                        .map(|look| (look.name(), centred(tells().look(look).size(pod * 0.17).columns(3))))
+                        .map(|look| {
+                            let row = Telltales::common()
+                                .light(Symbol::SeatBelt)
+                                .light(Symbol::Abs)
+                                .light(Symbol::Engine)
+                                .light(Symbol::LowBeam)
+                                .light(Symbol::HighBeam)
+                                .light(Symbol::TurnLeft);
+                            (look.name(), centred(row.look(look).size(pod * 0.12).columns(4)))
+                        })
                         .collect(),
                 ),
             ],
