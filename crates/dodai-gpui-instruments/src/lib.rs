@@ -95,7 +95,7 @@ pub use flight::{AttitudeIndicator, Countermeasures, HeadingTape, SonarWaterfall
 pub use gear::{chevron, Gear, GearLayout, GearSelector, ShiftHint};
 #[cfg(feature = "automotive")]
 #[cfg(feature = "automotive")]
-pub use look::{AtLimit, Layout, Look};
+pub use look::{AtLimit, Layout, Look, PodLayout};
 #[cfg(feature = "automotive")]
 pub use pods::{
     BoostPod, CompassPod, DashQuad, Drivetrain, DualGauge, DualScale, EnergyPod, GForcePod,

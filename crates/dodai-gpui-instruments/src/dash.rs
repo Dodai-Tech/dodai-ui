@@ -8,7 +8,7 @@
 use crate::dial::severity_color;
 use crate::draw::{polar, turn_arc};
 use crate::gauges::{disc, SWEEP};
-use crate::look::{AtLimit, Look};
+use crate::look::{AtLimit, Layout, Look};
 use dodai_core::Theme;
 use dodai_gpui::follow::{follow, Follow};
 use dodai_gpui::follow_api;
@@ -652,6 +652,7 @@ pub struct SidePod {
     given_look: Option<Look>,
     at_limit: AtLimit,
     style: PodStyle,
+    layout: Layout,
     size: f32,
 }
 
@@ -675,7 +676,14 @@ impl SidePod {
             at_limit: AtLimit::Value,
             size: 300.0,
             style: PodStyle::Ring,
+            layout: Layout::Dial,
         }
+    }
+    /// The layout within the look (see [`Look::layouts`]); any but the dial draws the reading
+    /// as a [`GaugeFace`](crate::faces::GaugeFace) of that layout, in Sport too.
+    pub fn layout(mut self, layout: Layout) -> Self {
+        self.layout = layout;
+        self
     }
     /// Show or hide the needle (a speed scale with no needle only carries numbers).
     pub fn needle(mut self, on: bool) -> Self {
@@ -734,10 +742,12 @@ impl RenderOnce for SidePod {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
         self.look = crate::look::resolve(self.given_look, cx);
         self.value = follow(w, cx, &self.follow, 0, self.value);
-        if self.look != Look::Sport {
+        let layout = self.look.fit(self.layout);
+        if self.look != Look::Sport || layout != Layout::Dial {
             let mut face = crate::faces::GaugeFace::new(self.scale, self.value)
                 .animate(false)
                 .look(self.look)
+                .layout(layout)
                 .at_limit(self.at_limit)
                 .unit(self.unit)
                 .label(self.reading)
