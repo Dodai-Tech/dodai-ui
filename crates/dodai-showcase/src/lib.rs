@@ -197,7 +197,7 @@ pub struct Showcase {
     inst_trail: usize,
     /// Needle response of the instruments: 0 the design's own, then `NeedleResponse::ALL`.
     inst_response: usize,
-    /// The look the vehicle sections show: 0 every look, 1 the design's own, then `Look::ALL`.
+    /// The look the vehicle sections show: 0 all of them, in order, then one of `Look::ALL`.
     inst_look: usize,
     /// Glow of every chart and instrument: 0 the theme's own, 1 off, 2 soft, 3 strong.
     inst_glow: usize,
@@ -329,53 +329,72 @@ impl Render for Showcase {
                 })
                 .flatten(),
         );
-        let needle_bar =
-            (in_instruments && matches!(self.sub, None | Some("Vehicle"))).then(|| {
-                let m = me.clone();
-                div()
-                    .flex()
-                    .flex_wrap()
-                    .items_center()
-                    .gap_2()
-                    .px_4()
-                    .py_2()
-                    .child(dodai_gpui::Label::new("Needle"))
-                    .child(
-                        dodai_gpui::Segmented::new(
-                            "veh-response",
-                            ["Design", "Instant", "Snappy", "Smooth", "Heavy", "Bouncy"],
-                        )
-                        .selected(self.inst_response)
-                        .on_select(move |i, _, cx| {
-                            m.update(cx, |s, cx| {
-                                s.inst_response = i;
-                                cx.notify();
-                            })
-                        }),
+        // The instrument group on screen (picked, or scrolled to): its title stays pinned, the
+        // needle under it, and the look too for Vehicle.
+        let cur_sub = self
+            .sub
+            .or_else(|| spied.0.and_then(|t| sub_of("Instruments", t)))
+            .filter(|_| in_instruments);
+        let on_vehicle = cur_sub == Some("Vehicle");
+        let needle_bar = cur_sub.map(|_| {
+            let m = me.clone();
+            div()
+                .flex()
+                .flex_wrap()
+                .items_center()
+                .gap_2()
+                .py_2()
+                .child(dodai_gpui::Label::new("Needle"))
+                .child(
+                    dodai_gpui::Segmented::new(
+                        "veh-response",
+                        ["Design", "Instant", "Snappy", "Smooth", "Heavy", "Bouncy"],
                     )
-                    .child(div().w(px(16.0)))
-                    .child(dodai_gpui::Label::new("Look"))
-                    .child({
-                        let m = me.clone();
-                        div().w(px(220.0)).child(
-                            dodai_gpui::Select::new("veh-look")
-                                .options(
-                                    ["Every look", "Design's own"].into_iter().chain(
-                                        dodai_gpui_instruments::Look::ALL
-                                            .into_iter()
-                                            .map(|l| l.name()),
-                                    ),
-                                )
-                                .selected(Some(self.inst_look))
-                                .on_select(move |i, _, cx| {
-                                    m.update(cx, |s, cx| {
-                                        s.inst_look = i;
-                                        cx.notify();
-                                    })
-                                }),
-                        )
-                    })
-            });
+                    .selected(self.inst_response)
+                    .on_select(move |i, _, cx| {
+                        m.update(cx, |s, cx| {
+                            s.inst_response = i;
+                            cx.notify();
+                        })
+                    }),
+                )
+                .when(on_vehicle, |d| {
+                    d.child(div().w(px(16.0)))
+                        .child(dodai_gpui::Label::new("Look"))
+                        .child({
+                            let m = me.clone();
+                            div().w(px(220.0)).child(
+                                dodai_gpui::Select::new("veh-look")
+                                    .options(
+                                        ["All"].into_iter().chain(
+                                            dodai_gpui_instruments::Look::ALL
+                                                .into_iter()
+                                                .map(|l| l.name()),
+                                        ),
+                                    )
+                                    .selected(Some(self.inst_look))
+                                    .on_select(move |i, _, cx| {
+                                        m.update(cx, |s, cx| {
+                                            s.inst_look = i;
+                                            cx.notify();
+                                        })
+                                    }),
+                            )
+                        })
+                })
+        });
+        let pin_title = needle_bar.is_some();
+        let needle_bar = needle_bar.map(|bar| {
+            div()
+                .flex()
+                .flex_col()
+                .gap_2()
+                .px(px(if narrow { t.spacing.md } else { t.spacing.xl }))
+                .pt(px(t.spacing.md))
+                .child(Heading::new("Instruments").level(2))
+                .child(Heading::new(cur_sub.unwrap_or_default()).level(3))
+                .child(bar)
+        });
         let side = gpui::AnyView::from(side).cached(gpui::StyleRefinement::default().size_full());
 
         let overview = self.cat == 0
@@ -531,13 +550,16 @@ impl Render for Showcase {
         let mut spy: Vec<(&'static str, usize)> = Vec::new();
         for (seq, (c, title)) in shown_secs.into_iter().enumerate() {
             if c != last_cat {
-                body = body.child(Heading::new(c).level(2));
-                n_children += 1;
+                // Pinned titles are not repeated in the scrolling body.
+                if !(pin_title && c == "Instruments") {
+                    body = body.child(Heading::new(c).level(2));
+                    n_children += 1;
+                }
                 last_cat = c;
                 last_sub = None;
             }
             if let Some(sb) = sub_of(c, title) {
-                if last_sub != Some(sb) {
+                if last_sub != Some(sb) && !(pin_title && c == "Instruments") {
                     body = body.child(Heading::new(sb).level(3));
                     n_children += 1;
                     last_sub = Some(sb);
