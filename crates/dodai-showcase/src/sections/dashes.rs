@@ -976,7 +976,11 @@ mod tests {
         all.sort_unstable();
         all.dedup();
         assert_eq!(all.len(), n);
-        assert_eq!(caption(Look::Race, Layout::Tape), "Race", "a layout a look lacks is its dial");
+        assert_eq!(
+            caption(Look::Race, Layout::Tape),
+            "Race",
+            "a layout a look lacks is its dial"
+        );
     }
 
     #[test]
