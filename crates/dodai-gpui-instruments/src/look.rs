@@ -18,7 +18,8 @@ pub(crate) fn shape(look: Look, layout: Layout) -> Shape {
             Layout::Dial
             | Layout::Bezel
             | Layout::Sweep
-            | Layout::Needle
+            | Layout::Track
+            | Layout::Sector
             | Layout::Ribbed
             | Layout::Cut,
         ) => Shape::Square,
@@ -49,10 +50,14 @@ mod tests {
         assert_eq!(shape(Look::Segment, Layout::Column), Shape::Tall);
         assert_eq!(shape(Look::Chronograph, Layout::Bezel), Shape::Square);
         assert_eq!(shape(Look::Chronograph, Layout::Register), Shape::Wide);
-        assert_eq!(shape(Look::Sport, Layout::Needle), Shape::Square);
+        assert_eq!(shape(Look::Sport, Layout::Track), Shape::Square);
+        assert_eq!(shape(Look::Chronograph, Layout::Sector), Shape::Square);
+        assert_eq!(shape(Look::Vintage, Layout::Bezel), Shape::Square);
         assert_eq!(shape(Look::Halo, Layout::Bar), Shape::Wide);
+        assert_eq!(shape(Look::Race, Layout::Arc), Shape::Wide);
+        assert_eq!(shape(Look::Line, Layout::Column), Shape::Tall);
         assert_eq!(
-            shape(Look::Race, Layout::Bar),
+            shape(Look::Race, Layout::Tape),
             Shape::Square,
             "falls back to the dial"
         );

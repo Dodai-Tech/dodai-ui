@@ -4,6 +4,9 @@
 //! They take the same data, so a dash can swap one for another without touching its values.
 //! Every colour comes from the theme.
 
+mod arcs;
+mod bars;
+mod dials;
 mod glass;
 mod hero;
 mod layouts;
@@ -107,9 +110,9 @@ impl GaugeFace {
         self.ends = [low, high];
         self
     }
-    /// The layout within the look (see [`Look::layouts`]): a tape for [`Look::HeadsUp`], a
-    /// meter or a ribbon for [`Look::Vintage`], an arc or a bar for [`Look::Halo`]. A look
-    /// without the layout draws its dial.
+    /// The layout within the look: every look has four (see [`Look::layouts`]), e.g. a tape
+    /// for [`Look::HeadsUp`], a meter or a ribbon for [`Look::Vintage`], an arc or a bar for
+    /// [`Look::Halo`]. A look without the layout draws its dial.
     pub fn layout(mut self, layout: Layout) -> Self {
         self.layout = layout;
         self
@@ -128,30 +131,40 @@ impl RenderOnce for GaugeFace {
         self.value = pm::finite(follow(w, cx, &self.follow, 0, self.value), self.scale.min);
         match (self.look, self.look.fit(self.layout)) {
             (Look::Sport, Layout::Sweep) => self.sport_sweep(cx),
-            (Look::Sport, Layout::Needle) => self.sport_needle(cx),
+            (Look::Sport, Layout::Track) => self.sport_track(cx),
             (Look::Sport, Layout::Ribbed) => self.sport_ribbed(cx),
             (Look::Sport, _) => self.dial(cx),
             (Look::Chronograph, Layout::Bezel) => self.chrono_bezel(cx),
             (Look::Chronograph, Layout::Register) => self.chrono_register(cx),
+            (Look::Chronograph, Layout::Sector) => self.chrono_sector(cx),
             (Look::Chronograph, _) => self.chrono(cx),
             (Look::HeadsUp, Layout::Tape) => self.tape_face(cx),
             (Look::HeadsUp, Layout::Cut) => self.hud_cut(cx),
+            (Look::HeadsUp, Layout::Arc) => self.hud_arc(cx),
             (Look::HeadsUp, _) => self.hud(cx),
             (Look::Vintage, Layout::Meter) => self.panel_meter(cx),
             (Look::Vintage, Layout::Ribbon) => self.ribbon(cx),
+            (Look::Vintage, Layout::Bezel) => self.vintage_bezel(cx),
             (Look::Vintage, _) => self.vintage(cx),
             (Look::Halo, Layout::Arc) => self.halo_arc(cx),
             (Look::Halo, Layout::Capsule) => self.halo_capsule(cx),
             (Look::Halo, Layout::Bar) => self.halo_bar(cx),
             (Look::Segment, Layout::Bar) => self.segment_bar(cx),
             (Look::Segment, Layout::Column) => self.segment_column(cx),
+            (Look::Segment, Layout::Arc) => self.segment_arc(cx),
             (Look::Segment, _) => self.digital(cx),
             (Look::Halo, _) => self.futuristic(cx),
             (Look::GlassCockpit, Layout::Tape) => self.cockpit_tape(cx),
             (Look::GlassCockpit, Layout::Column) => self.cockpit_column(cx),
+            (Look::GlassCockpit, Layout::Bar) => self.cockpit_bar(cx),
             (Look::GlassCockpit, _) => self.cockpit(cx),
+            (Look::Race, Layout::Arc) => self.race_arc(cx),
+            (Look::Race, Layout::Bar) => self.race_bar(cx),
+            (Look::Race, Layout::Column) => self.race_column(cx),
             (Look::Race, _) => self.race(cx),
             (Look::Line, Layout::Bar) => self.line_bar(cx),
+            (Look::Line, Layout::Arc) => self.line_arc(cx),
+            (Look::Line, Layout::Column) => self.line_column(cx),
             (Look::Line, _) => self.line_dial(cx),
         }
     }

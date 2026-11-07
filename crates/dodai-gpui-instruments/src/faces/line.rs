@@ -25,7 +25,7 @@ fn dot(w: &mut gpui::Window, o: gpui::Point<Pixels>, (x, y): (f32, f32), r: f32,
 }
 
 /// The hairline of a face `s` wide. Pure.
-fn hair(s: f32) -> f32 {
+pub(super) fn hair(s: f32) -> f32 {
     (s * 0.003).max(0.6)
 }
 
@@ -250,7 +250,7 @@ impl GaugeFace {
 
     /// The first and last major figures with their place on the scale: the only figures the
     /// line look writes.
-    fn end_figures(&self) -> impl Iterator<Item = (f32, String)> {
+    pub(super) fn end_figures(&self) -> impl Iterator<Item = (f32, String)> {
         let labels = major_labels(self);
         let n = labels.len();
         labels

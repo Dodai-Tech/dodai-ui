@@ -47,7 +47,7 @@ pub(crate) fn drums(figure: &str) -> Vec<(char, bool)> {
 
 impl GaugeFace {
     /// The colour of a hand: the ink, or the zone colour inside a zone.
-    fn hand_colour(&self, t: &dodai_core::Theme, ink: &Ink) -> Hsla {
+    pub(super) fn hand_colour(&self, t: &dodai_core::Theme, ink: &Ink) -> Hsla {
         match pm::severity_at(&self.spans(), self.frac()) {
             Severity::Normal => ink.text,
             sev => severity_color(t, sev),

@@ -11,7 +11,7 @@ use super::GaugeFace;
 use crate::dash::text_box;
 use crate::draw::{polar, turn_arc};
 use crate::mfd::glow;
-use crate::shapes::{band, circle, needle};
+use crate::shapes::{band, circle};
 use dodai_gpui::icons::Icon;
 use dodai_gpui::paint::{fill, scale_alpha, stroke};
 use dodai_gpui::{hsla, theme_of};
@@ -375,11 +375,11 @@ impl GaugeFace {
             .into_any_element()
     }
 
-    /// A sport needle: a railway track with applied indices under the bezel, the zones as a
-    /// fine band inside it and a hairline in the accent tracing the travel; a slim lance with a
-    /// counterweight from a polished hub over a guilloché centre, and the figure in an aperture
-    /// in the bottom quarter.
-    pub(super) fn sport_needle(self, cx: &mut App) -> AnyElement {
+    /// A sport track: a railway track with applied indices under the bezel and the zones as a
+    /// fine band inside it; inside that a ring of dots lights up to the value (in a zone's
+    /// colour past a limit), the last one larger with a halo, and the figure stands alone over a
+    /// guilloché centre. No hand.
+    pub(super) fn sport_track(self, cx: &mut App) -> AnyElement {
         let t = theme_of(cx);
         let p = Sport::of(&t);
         let s = self.size;
@@ -387,6 +387,7 @@ impl GaugeFace {
         let (start, span) = ROUND;
         let at = move |f: f32| start + span * f;
         let frac = self.frac();
+        let lit = self.limit(&t).unwrap_or(p.accent);
         let Parts {
             r_rim,
             width,
@@ -395,8 +396,11 @@ impl GaugeFace {
             ticks,
         } = self.sport_parts(&t);
         let rt = r_rim - width * 2.6;
+        let rl = rt - s * 0.075;
+        let lw = s * 0.016;
+        let dots = self.scale.majors.max(1) * 6;
         let paint = move |w: &mut gpui::Window, o: gpui::Point<Pixels>| {
-            guilloche(w, o, c, rt - s * 0.12, p.ink);
+            guilloche(w, o, c, rl - s * 0.04, p.ink);
             full_rim(w, o, (c, r_rim, width), p.ink, ends);
             railway(w, o, c, (rt, s * 0.022), &ticks, p.ink);
             for (f, major) in &ticks {
@@ -405,7 +409,7 @@ impl GaugeFace {
                         w,
                         o,
                         c,
-                        (rt - s * 0.028, s * 0.055, width * 1.2),
+                        (rt - s * 0.028, s * 0.04, width * 1.2),
                         at(*f),
                         p.ink,
                         p.ground,
@@ -420,64 +424,43 @@ impl GaugeFace {
                     *col,
                 );
             }
-            if frac > 0.0 {
-                let trace = turn_arc(c, c, rt - s * 0.1, at(0.0), at(frac));
-                stroke(w, o, &trace, s * 0.004, scale_alpha(p.accent, 0.7), false);
+            // The track: a ring of dots lit up to the value, each in its zone's colour past a
+            // limit, the last one larger with a soft halo.
+            let n = dots;
+            let lit_n = crate::pod_math::segments_lit(frac, n + 1);
+            for i in 0..=n {
+                let f = i as f32 / n as f32;
+                let (x, y) = polar(c, c, rl, at(f));
+                let on = i < lit_n;
+                let zc = zones
+                    .iter()
+                    .find(|(a, z, _)| f >= *a && f <= *z)
+                    .map(|z| z.2);
+                let col = match (on, zc) {
+                    (true, Some(z)) => z,
+                    (true, None) => lit,
+                    (false, _) => scale_alpha(p.ink, 0.14),
+                };
+                let last = on && i + 1 == lit_n;
+                if last {
+                    fill(w, o, &circle(x, y, lw * 1.6), scale_alpha(col, 0.18));
+                }
+                fill(
+                    w,
+                    o,
+                    &circle(x, y, if last { lw * 0.85 } else { lw * 0.5 }),
+                    col,
+                );
             }
-            let a = at(frac);
-            let tip = rt - s * 0.012;
-            let shadow = needle(c + s * 0.006, c + s * 0.009, a, tip, s * 0.1, s * 0.01);
-            fill(w, o, &shadow, scale_alpha(p.ground, 0.5));
-            fill(w, o, &needle(c, c, a, tip, s * 0.1, s * 0.01), p.accent);
-            let (bx, by) = polar(c, c, s * 0.075, a + 0.5);
-            fill(w, o, &circle(bx, by, s * 0.018), p.accent);
-            fill(w, o, &circle(c, c, s * 0.038), p.ink);
-            fill(w, o, &circle(c, c, s * 0.028), p.ground);
-            fill(w, o, &circle(c, c, s * 0.011), p.accent);
         };
-        let (aw, ah) = (s * 0.3, s * 0.09);
         div()
             .relative()
             .w(px(s))
             .h(px(s))
             .child(layer(paint))
-            .children(self.sport_numerals(rt - s * 0.13, s * 0.046, p.ink))
-            .child(
-                text_box(c, c - s * 0.2, s * 0.5)
-                    .text_size(px(s * 0.036))
-                    .text_color(p.muted)
-                    .child(self.caption().to_uppercase()),
-            )
-            .child(
-                div()
-                    .absolute()
-                    .left(px(c - aw / 2.0))
-                    .top(px(c + s * 0.26))
-                    .w(px(aw))
-                    .h(px(ah))
-                    .flex()
-                    .justify_center()
-                    .items_center()
-                    .gap(px(s * 0.012))
-                    .rounded(px(s * 0.012))
-                    .border_1()
-                    .border_color(scale_alpha(p.ink, 0.45))
-                    .bg(scale_alpha(p.ground, 0.6))
-                    .child(
-                        div()
-                            .text_size(px(s * 0.058))
-                            .line_height(px(s * 0.06))
-                            .font_weight(FontWeight::LIGHT)
-                            .text_color(p.ink)
-                            .child(self.figure()),
-                    )
-                    .child(
-                        div()
-                            .text_size(px(s * 0.032))
-                            .text_color(p.muted)
-                            .child(self.unit.clone()),
-                    ),
-            )
+            .children(self.sport_numerals(rl - s * 0.06, s * 0.042, p.ink))
+            .child(self.sport_middle(p, c - s * 0.15, s * 0.15))
+            .children(self.limit_chip(&t, p))
             .into_any_element()
     }
 

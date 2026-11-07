@@ -34,7 +34,7 @@ pub(crate) fn slanted((x, y, wd, h): (f32, f32, f32, f32), lean: f32) -> Vec<(f3
 
 impl GaugeFace {
     /// The colours of `n` segments lit to the value: the accent, a zone's colour past a limit.
-    fn lit(&self, t: &dodai_core::Theme, n: usize, on: Hsla) -> Vec<Option<Hsla>> {
+    pub(super) fn lit(&self, t: &dodai_core::Theme, n: usize, on: Hsla) -> Vec<Option<Hsla>> {
         let spans = self.spans();
         let tt = t.clone();
         lit_segments(n, self.frac(), move |f| match pm::severity_at(&spans, f) {
@@ -44,7 +44,7 @@ impl GaugeFace {
     }
 
     /// The unit in capitals, else the label.
-    fn lcd_unit(&self) -> String {
+    pub(super) fn lcd_unit(&self) -> String {
         if self.unit.is_empty() {
             self.label.to_uppercase()
         } else {

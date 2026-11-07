@@ -18,6 +18,9 @@ use gpui::{
     div, px, AnyElement, App, FontWeight, Hsla, IntoElement, ParentElement, Pixels, Styled,
 };
 
+/// Height of the wide cockpit bar page, as a share of its width.
+pub(crate) const BAR_H: f32 = 0.42;
+
 /// Width of the narrow cockpit pages, as a share of their height.
 pub(crate) const PAGE_W: f32 = 0.45;
 
@@ -284,6 +287,136 @@ impl GaugeFace {
                     .child(self.figure()),
             )
             .children(self.page_legends(&ink, wd, s))
+            .into_any_element()
+    }
+
+    /// An engine-indication bar on a wide page: the caption in cyan and the unit at the top
+    /// left, the figure boxed at the top right, and a bar filled to the value as a trail
+    /// brightening to the right over a white scale with its majors, the zones on the scale with
+    /// limit lines across the bar and a pointer under the scale at the value.
+    pub(super) fn cockpit_bar(self, cx: &mut App) -> AnyElement {
+        let t = theme_of(cx);
+        let ink = self.lit_ink(&t);
+        let s = self.size;
+        let h = s * BAR_H;
+        let (col, alarm) = self.page_colour(&t, &ink);
+        let frac = self.frac();
+        let zones = zone_colours(&self, &t);
+        let (x0, x1) = (s * 0.08, s * 0.92);
+        let x_of = move |f: f32| x0 + (x1 - x0) * f.clamp(0.0, 1.0);
+        let (bar_y, bar_h) = (h * 0.42, s * 0.055);
+        let y_s = bar_y + bar_h + s * 0.008;
+        let majors = self.scale.majors.max(1);
+        let (bw, bh) = (s * 0.26, s * 0.09);
+        let (bx, by) = (x1 - bw, s * 0.035);
+        let paint = move |w: &mut gpui::Window, o: gpui::Point<Pixels>| {
+            panel(w, o, (s, h), ink);
+            let lw = (s * 0.004).max(1.0);
+            let tint = if col == ink.text { ink.info } else { col };
+            for a in trail(frac, 20) {
+                let x = x_of(a);
+                fill(
+                    w,
+                    o,
+                    &rect(x, bar_y, x_of(frac) - x, bar_h),
+                    scale_alpha(tint, 0.03),
+                );
+            }
+            stroke(
+                w,
+                o,
+                &rect(x0, bar_y, x1 - x0, bar_h),
+                lw,
+                scale_alpha(ink.text, 0.3),
+                true,
+            );
+            stroke(w, o, &[(x0, y_s), (x1, y_s)], lw, ink.text, false);
+            for (a, z, zc) in &zones {
+                glow(
+                    w,
+                    o,
+                    &[(x_of(*a), y_s + lw * 1.6), (x_of(*z), y_s + lw * 1.6)],
+                    lw * 2.2,
+                    *zc,
+                    false,
+                );
+                stroke(
+                    w,
+                    o,
+                    &[(x_of(*a), bar_y - lw), (x_of(*a), y_s + lw * 3.0)],
+                    lw * 1.2,
+                    *zc,
+                    false,
+                );
+            }
+            for i in 0..=majors {
+                let x = x_of(i as f32 / majors as f32);
+                stroke(w, o, &[(x, y_s), (x, y_s + s * 0.02)], lw, ink.text, false);
+            }
+            let x = x_of(frac);
+            glow(w, o, &[(x, bar_y), (x, y_s)], lw * 1.4, col, false);
+            let k = s * 0.018;
+            let tip = y_s + lw * 3.5;
+            let p = [(x, tip), (x - k, tip + k * 2.0), (x + k, tip + k * 2.0)];
+            fill(w, o, &p, col);
+            glow(w, o, &p, lw * 0.6, col, true);
+            readout_box(w, o, (bx, by, bw, bh), false, col, ink);
+            if alarm {
+                fill(w, o, &rect(bx, by, bw, bh), col);
+            }
+        };
+        let numerals = super::rich::major_labels(&self)
+            .into_iter()
+            .map(move |(f, label)| {
+                text_box(x_of(f), y_s + s * 0.06, s * 0.12)
+                    .text_size(px(s * 0.03))
+                    .text_color(scale_alpha(ink.text, 0.8))
+                    .child(label)
+                    .into_any_element()
+            });
+        let fg = if alarm { ink.ground } else { col };
+        div()
+            .relative()
+            .w(px(s))
+            .h(px(h))
+            .child(layer(paint))
+            .children(numerals)
+            .child(
+                div()
+                    .absolute()
+                    .left(px(x0))
+                    .top(px(by))
+                    .flex()
+                    .flex_col()
+                    .gap(px(s * 0.006))
+                    .child(
+                        div()
+                            .text_size(px(s * 0.034))
+                            .text_color(ink.info)
+                            .child(self.caption().to_uppercase()),
+                    )
+                    .child(
+                        div()
+                            .text_size(px(s * 0.028))
+                            .text_color(ink.muted)
+                            .child(self.unit.to_uppercase()),
+                    ),
+            )
+            .child(
+                div()
+                    .absolute()
+                    .left(px(bx))
+                    .top(px(by))
+                    .w(px(bw - s * 0.02))
+                    .h(px(bh))
+                    .flex()
+                    .items_center()
+                    .justify_end()
+                    .text_size(px(bh * 0.62))
+                    .font_weight(FontWeight::MEDIUM)
+                    .text_color(fg)
+                    .child(self.figure()),
+            )
             .into_any_element()
     }
 }
