@@ -1497,18 +1497,18 @@ impl RenderOnce for DualGauge {
                 ];
                 stroke(w, o, &seg, width * 0.7, scale_alpha(ink, 0.85), false);
             }
+            // No hand: the value lights the track up to a bright bead.
             let f = d.scale.fraction(d.value);
             stroke(
                 w,
                 o,
-                &[
-                    polar(c, c, r - size * 0.07, at(f)),
-                    polar(c, c, r + width, at(f)),
-                ],
-                width * 1.4,
-                ink,
+                &turn_arc(c, c, r, at(0.0), at(f)),
+                width * 1.2,
+                scale_alpha(ink, 0.85),
                 false,
             );
+            let (x, y) = polar(c, c, r, at(f));
+            fill(w, o, &turn_arc(x, y, width * 1.2, 0.0, 1.0), ink);
         };
         let (up, lo) = (self.upper.clone(), self.lower.clone());
         let frame = Frame::new(&t, self.style);

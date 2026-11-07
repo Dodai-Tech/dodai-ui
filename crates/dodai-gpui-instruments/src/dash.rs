@@ -244,7 +244,7 @@ impl Frame {
 // ───────────────────────────────── RingTach ─────────────────────────────────
 
 /// The centre of the dash: a ribbed ring scale for engine speed with a red band, a sweet-spot
-/// marker and a rim needle, a big speed readout inside, and (when given) a range tab under it
+/// marker and a bright bead ending the value arc (no hand), a big speed readout inside, and (when given) a range tab under it
 /// and a fuel arc across the open bottom.
 #[derive(IntoElement)]
 pub struct RingTach {
@@ -501,12 +501,9 @@ impl RenderOnce for RingTach {
                         false,
                     );
                 }
-                // The needle: a short bar across the ring.
-                let (p0, p1) = (
-                    polar(c, c, r_in - weight * 2.0, at(frac)),
-                    polar(c, c, r_out, at(frac)),
-                );
-                stroke(w, o, &[p0, p1], weight * 2.4, ink, false);
+                // No hand: a bright bead ends the value arc.
+                let (x, y) = polar(c, c, rt, at(frac));
+                fill(w, o, &turn_arc(x, y, weight * 1.8, 0.0, 1.0), ink);
                 // Fuel and charge arcs across the open bottom, each on its own track.
                 let rf = r_out - weight * 1.5;
                 for (f0, f1, level) in &bottom {
@@ -633,8 +630,8 @@ pub fn bottom_arcs(
 
 // ───────────────────────────────── SidePod ─────────────────────────────────
 
-/// An open-ring pod: a bright rim with a scale and numbers inside it, a needle that crosses the
-/// rim, and room in the middle for an icon, a unit and a reading (or anything else).
+/// An open-ring pod: a bright rim with a scale and numbers inside it, the value lit along the
+/// track up to a bright bead (no hand), and room in the middle for an icon, a unit and a reading (or anything else).
 #[derive(IntoElement)]
 pub struct SidePod {
     follow: Follow,
@@ -645,7 +642,7 @@ pub struct SidePod {
     reading: SharedString,
     ends: [Option<Tone>; 2],
     centre: Option<AnyElement>,
-    needle: bool,
+    sweep: bool,
     /// The look drawn: the given one, else the design's, settled when rendered.
     look: Look,
     /// The look given with `.look(..)`; without one, the design's own.
@@ -670,7 +667,7 @@ impl SidePod {
             reading: SharedString::default(),
             ends: [None, None],
             centre: None,
-            needle: true,
+            sweep: true,
             look: Look::Sport,
             given_look: None,
             at_limit: AtLimit::Value,
@@ -685,9 +682,9 @@ impl SidePod {
         self.layout = layout;
         self
     }
-    /// Show or hide the needle (a speed scale with no needle only carries numbers).
-    pub fn needle(mut self, on: bool) -> Self {
-        self.needle = on;
+    /// Show or hide the lit value (a speed scale without it only carries numbers).
+    pub fn sweep(mut self, on: bool) -> Self {
+        self.sweep = on;
         self
     }
     /// The symbol in the middle.
@@ -776,7 +773,7 @@ impl RenderOnce for SidePod {
             .filter(|z| z.2 != Severity::Normal)
             .map(|z| (z.0, z.1, severity_color(&t, z.2)))
             .collect();
-        let needle = self.needle;
+        let sweep = self.sweep;
         let ticks: Vec<(f32, bool)> = self
             .scale
             .ticks()
@@ -822,12 +819,18 @@ impl RenderOnce for SidePod {
                         false,
                     );
                 }
-                if needle {
-                    let (p0, p1) = (
-                        polar(c, c, rt - size * 0.1, at(frac)),
-                        polar(c, c, r_rim + width * 0.5, at(frac)),
+                // No hand: the value lights the track up to a bright bead.
+                if sweep {
+                    stroke(
+                        w,
+                        o,
+                        &turn_arc(c, c, rt, at(0.0), at(frac)),
+                        width * 1.4,
+                        scale_alpha(ink, 0.85),
+                        false,
                     );
-                    stroke(w, o, &[p0, p1], width * 1.4, ink, false);
+                    let (x, y) = polar(c, c, rt, at(frac));
+                    fill(w, o, &turn_arc(x, y, width * 1.3, 0.0, 1.0), ink);
                 }
             },
         )
