@@ -10,7 +10,7 @@ use super::GaugeFace;
 use crate::dash::text_box;
 use crate::draw::{polar, turn_arc};
 use dodai_gpui::motion::mix;
-use dodai_gpui::paint::{fill, scale_alpha, stroke};
+use dodai_gpui::paint::{fill, fill_circle, scale_alpha, stroke};
 use dodai_gpui::theme_of;
 use gpui::{div, px, AnyElement, App, FontWeight, IntoElement, ParentElement, Pixels, Styled};
 
@@ -70,29 +70,25 @@ impl GaugeFace {
             let inner = cut(s * 0.025, s * 0.025, s * 0.95, s * 0.95, k * 0.9);
             stroke(w, o, &inner, hair, scale_alpha(ink.text, 0.12), true);
             let fine = 180usize;
+            let mut fine_lines = crate::draw::Strokes::default();
             for i in 0..=fine {
                 let f = i as f32 / fine as f32;
                 let on = f <= frac;
                 let c2 = if on { col } else { ink.text };
                 let (a_in, a_out) = if on { (0.25, 0.9) } else { (0.06, 0.25) };
                 let mid = rd * 0.78;
-                stroke(
-                    w,
-                    o,
-                    &[polar(c, c, rd * 0.5, at(f)), polar(c, c, mid, at(f))],
+                fine_lines.add(
+                    vec![polar(c, c, rd * 0.5, at(f)), polar(c, c, mid, at(f))],
                     hair,
                     scale_alpha(c2, a_in),
-                    false,
                 );
-                stroke(
-                    w,
-                    o,
-                    &[polar(c, c, mid, at(f)), polar(c, c, rd, at(f))],
+                fine_lines.add(
+                    vec![polar(c, c, mid, at(f)), polar(c, c, rd, at(f))],
                     hair,
                     scale_alpha(c2, a_out),
-                    false,
                 );
             }
+            fine_lines.paint(w, o);
             for f in &majors {
                 stroke(
                     w,
@@ -225,13 +221,8 @@ impl GaugeFace {
                 );
             }
             let knob = polar(mx, my, r_band, at(frac));
-            let disc = |r: f32| -> Vec<(f32, f32)> {
-                (0..=24)
-                    .map(|i| polar(knob.0, knob.1, r, i as f32 / 24.0))
-                    .collect()
-            };
-            fill(w, o, &disc(band * 1.3), alarm.unwrap_or(a1));
-            fill(w, o, &disc(band * 0.7), ink.ground);
+            fill_circle(w, o, knob, band * 1.3, alarm.unwrap_or(a1));
+            fill_circle(w, o, knob, band * 0.7, ink.ground);
             for (f, major) in &ticks {
                 let len = if *major { h * 0.04 } else { h * 0.02 };
                 let ro = r_band - band - h * 0.012;

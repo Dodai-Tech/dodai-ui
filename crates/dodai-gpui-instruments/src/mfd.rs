@@ -6,7 +6,7 @@
 
 use crate::draw::{polar, turn_arc};
 use crate::shapes::{rounded, Ink};
-use dodai_gpui::paint::{fill, scale_alpha, stroke};
+use dodai_gpui::paint::{fill, fill_rect, scale_alpha, stroke, stroke_rect};
 use gpui::{Hsla, Pixels, Point, Window};
 
 /// The rectangle `(x, y, wd, h)` as a polygon. Pure.
@@ -43,22 +43,17 @@ pub(crate) fn panel(
     let s = wd.min(ht);
     let lw = (s * 0.004).max(1.0);
     let rr = s * 0.035;
-    let bezel = rounded(0.0, 0.0, wd, ht, rr);
     // A neutral charcoal: the glass colour lifted a little towards the text, so the bezel
     // takes no tint from the theme's surfaces.
-    fill(w, o, &bezel, ink.ground);
-    fill(w, o, &bezel, scale_alpha(ink.text, 0.09));
+    let bezel = (0.0, 0.0, wd, ht);
+    fill_rect(w, o, bezel, rr, ink.ground);
+    fill_rect(w, o, bezel, rr, scale_alpha(ink.text, 0.09));
     // The bezel catches the light from above: lighter bands towards the top.
     for i in 1..=4 {
         let h = ht * (0.5 - 0.1 * i as f32);
-        fill(
-            w,
-            o,
-            &rounded(0.0, 0.0, wd, h, rr),
-            scale_alpha(ink.text, 0.012),
-        );
+        fill_rect(w, o, (0.0, 0.0, wd, h), rr, scale_alpha(ink.text, 0.012));
     }
-    stroke(w, o, &bezel, lw * 1.5, ink.ground, true);
+    stroke_rect(w, o, bezel, rr, lw * 1.5, ink.ground);
     // The bevel: a lit edge along the top.
     stroke(
         w,
@@ -76,7 +71,7 @@ pub(crate) fn panel(
         fill(
             w,
             o,
-            &crate::shapes::circle(wd * 0.5, k * 0.5, k * 0.13),
+            &crate::draw::circle_points(wd * 0.5, k * 0.5, k * 0.13),
             ink.ground,
         );
         let (rw, rh) = (s * 0.14, k * 0.42);
@@ -92,22 +87,21 @@ pub(crate) fn panel(
         );
     }
     let glass = (k, k, wd - 2.0 * k, ht - 2.0 * k);
-    let g = rect(glass.0, glass.1, glass.2, glass.3);
-    fill(w, o, &g, ink.ground);
+    fill_rect(w, o, glass, 0.0, ink.ground);
     // The picture glows a little towards the middle, so the edges of the glass fall away. The
     // glow and the sheen are in the face colour, lighter than the glass in light and dark themes.
     for i in 1..=8 {
         let d = glass.2 * 0.035 * i as f32;
-        fill(
+        fill_rect(
             w,
             o,
-            &rounded(
+            (
                 glass.0 + d,
                 glass.1 + d,
                 glass.2 - 2.0 * d,
                 glass.3 - 2.0 * d,
-                d * 2.0,
             ),
+            d * 2.0,
             scale_alpha(ink.face, 0.07),
         );
     }
@@ -115,10 +109,11 @@ pub(crate) fn panel(
     // tinted towards the cyan of the page's legends.
     for i in 1..=8 {
         let h = glass.3 * 0.07 * i as f32;
-        fill(
+        fill_rect(
             w,
             o,
-            &rect(glass.0, glass.1, glass.2, h),
+            (glass.0, glass.1, glass.2, h),
+            0.0,
             scale_alpha(ink.info, 0.007),
         );
     }
@@ -132,7 +127,7 @@ pub(crate) fn panel(
         );
     }
     // The glass sits in the bezel: a dark rim with a light lip under it.
-    stroke(w, o, &g, lw * 1.5, scale_alpha(ink.ground, 0.9), true);
+    stroke_rect(w, o, glass, 0.0, lw * 1.5, scale_alpha(ink.ground, 0.9));
     stroke(
         w,
         o,
@@ -157,14 +152,9 @@ pub(crate) fn panel(
 /// Paint a raised key `(x, y, wd, h)` on the bezel: rounded, lit along the top, shadowed under.
 fn key(w: &mut Window, o: Point<Pixels>, (x, y, wd, h): (f32, f32, f32, f32), ink: Ink) {
     let r = wd.min(h) * 0.25;
-    fill(w, o, &rounded(x, y + h * 0.12, wd, h, r), ink.ground);
-    fill(w, o, &rounded(x, y, wd, h, r), scale_alpha(ink.text, 0.14));
-    fill(
-        w,
-        o,
-        &rounded(x, y, wd, h * 0.45, r),
-        scale_alpha(ink.text, 0.06),
-    );
+    fill_rect(w, o, (x, y + h * 0.12, wd, h), r, ink.ground);
+    fill_rect(w, o, (x, y, wd, h), r, scale_alpha(ink.text, 0.14));
+    fill_rect(w, o, (x, y, wd, h * 0.45), r, scale_alpha(ink.text, 0.06));
 }
 
 /// The sheen on a display's glass `(x, y, wd, h)`: a band from the top edge down the left side
@@ -228,12 +218,7 @@ pub(crate) fn tile(
     // Bands rising from the foot, each shorter, so the pane brightens downwards.
     for i in 1..=6 {
         let bh = h * (1.0 - i as f32 * 0.14);
-        fill(
-            w,
-            o,
-            &rounded(x, y + h - bh, wd, bh, r),
-            scale_alpha(col, 0.025),
-        );
+        fill_rect(w, o, (x, y + h - bh, wd, bh), r, scale_alpha(col, 0.025));
     }
     let lw = (h * 0.025).max(1.0);
     glow(

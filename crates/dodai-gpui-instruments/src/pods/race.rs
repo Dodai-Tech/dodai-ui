@@ -8,7 +8,8 @@ use super::*;
 use crate::race::{
     figure, hazard, lean_edge, plate, seg_bar, skew, tag, tag_text, tape_marks, LEAN,
 };
-use crate::shapes::{circle, Ink};
+use crate::shapes::Ink;
+use dodai_gpui::paint::{fill_circle, stroke_circle};
 
 /// The heading tag of a race pod of `s`.
 fn head(s: f32) -> (f32, f32, f32, f32) {
@@ -262,13 +263,13 @@ impl GForcePod {
             tag(w, o, head(s), ink.primary);
             for k in 1..=3 {
                 let a = if k == 3 { 0.45 } else { 0.18 };
-                stroke(
+                stroke_circle(
                     w,
                     o,
-                    &circle(c, cy, r * k as f32 / 3.0),
+                    (c, cy),
+                    r * k as f32 / 3.0,
                     s * 0.004,
                     scale_alpha(ink.text, a),
-                    true,
                 );
             }
             let faint = scale_alpha(ink.text, 0.18);
@@ -284,13 +285,8 @@ impl GForcePod {
                 scale_alpha(ink.primary, 0.5),
                 false,
             );
-            fill(
-                w,
-                o,
-                &circle(dx, dy, s * 0.032),
-                scale_alpha(ink.primary, 0.25),
-            );
-            fill(w, o, &circle(dx, dy, s * 0.02), ink.primary);
+            fill_circle(w, o, (dx, dy), s * 0.032, scale_alpha(ink.primary, 0.25));
+            fill_circle(w, o, (dx, dy), s * 0.02, ink.primary);
         };
         let total = pm::g_text(pm::g_total(self.lateral, self.longitudinal));
         case(s)

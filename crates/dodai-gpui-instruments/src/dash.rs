@@ -7,13 +7,13 @@
 
 use crate::dial::severity_color;
 use crate::draw::{polar, turn_arc};
-use crate::gauges::{disc, SWEEP};
+use crate::gauges::SWEEP;
 use crate::look::{AtLimit, Layout, Look};
 use dodai_core::Theme;
 use dodai_gpui::follow::{follow, Follow};
 use dodai_gpui::follow_api;
 use dodai_gpui::icons::{Icon, Lamp, Symbol, COMMON_TELLTALES};
-use dodai_gpui::paint::{fill, scale_alpha, stroke};
+use dodai_gpui::paint::{fill, fill_circle, scale_alpha, stroke, stroke_circle};
 use dodai_gpui::{hsla, theme_of};
 use dodai_instruments_core::instrument::{readout, Scale, Severity};
 use gpui::prelude::FluentBuilder;
@@ -192,25 +192,18 @@ impl Frame {
     ) {
         let (start, span) = SWEEP;
         match self.style {
-            PodStyle::Line => stroke(
+            PodStyle::Line => stroke_circle(
                 w,
                 o,
-                &disc(c, c, r, 120),
+                (c, c),
+                r,
                 (c * 0.006).max(0.6),
                 scale_alpha(self.ink, 0.35),
-                true,
             ),
             PodStyle::Ring => rim(w, o, c, r, width, self.ink, ends),
             PodStyle::Disc => {
-                fill(w, o, &disc(c, c, r, 120), scale_alpha(self.face, 0.9));
-                stroke(
-                    w,
-                    o,
-                    &disc(c, c, r, 120),
-                    width * 0.6,
-                    scale_alpha(self.ink, 0.35),
-                    true,
-                );
+                fill_circle(w, o, (c, c), r, scale_alpha(self.face, 0.9));
+                stroke_circle(w, o, (c, c), r, width * 0.6, scale_alpha(self.ink, 0.35));
                 rim(w, o, c, r, width, self.ink, ends);
             }
             PodStyle::Glow => {
@@ -411,7 +404,7 @@ impl RenderOnce for RingTach {
             move |b: Bounds<Pixels>, _, w, _| {
                 let o = b.origin;
                 // The ribbed body: a disc, fine concentric grooves, then the dark face.
-                fill(w, o, &disc(c, c, r_out, 120), body);
+                fill_circle(w, o, (c, c), r_out, body);
                 let grooves = 9;
                 for i in 0..grooves {
                     let r = r_in + (r_out - r_in) * (i as f32 + 0.5) / grooves as f32;
@@ -425,23 +418,9 @@ impl RenderOnce for RingTach {
                     );
                 }
                 // The open bottom: nothing is printed there but the fuel arc.
-                stroke(
-                    w,
-                    o,
-                    &turn_arc(c, c, r_out, 0.0, 1.0),
-                    weight * 1.6,
-                    scale_alpha(ink, 0.85),
-                    true,
-                );
-                fill(w, o, &disc(c, c, r_in, 96), face);
-                stroke(
-                    w,
-                    o,
-                    &turn_arc(c, c, r_in, 0.0, 1.0),
-                    weight * 1.2,
-                    scale_alpha(ink, 0.7),
-                    true,
-                );
+                stroke_circle(w, o, (c, c), r_out, weight * 1.6, scale_alpha(ink, 0.85));
+                fill_circle(w, o, (c, c), r_in, face);
+                stroke_circle(w, o, (c, c), r_in, weight * 1.2, scale_alpha(ink, 0.7));
                 // Red band along the rim.
                 for (a, z) in &reds {
                     stroke(
@@ -503,7 +482,7 @@ impl RenderOnce for RingTach {
                 }
                 // No hand: a bright bead ends the value arc.
                 let (x, y) = polar(c, c, rt, at(frac));
-                fill(w, o, &turn_arc(x, y, weight * 1.8, 0.0, 1.0), ink);
+                fill_circle(w, o, (x, y), weight * 1.8, ink);
                 // Fuel and charge arcs across the open bottom, each on its own track.
                 let rf = r_out - weight * 1.5;
                 for (f0, f1, level) in &bottom {
@@ -830,7 +809,7 @@ impl RenderOnce for SidePod {
                         false,
                     );
                     let (x, y) = polar(c, c, rt, at(frac));
-                    fill(w, o, &turn_arc(x, y, width * 1.3, 0.0, 1.0), ink);
+                    fill_circle(w, o, (x, y), width * 1.3, ink);
                 }
             },
         )
@@ -940,7 +919,7 @@ impl MenuRing {
         self.pressed = on;
         self
     }
-    /// The look: the round pod (default), a watch case or a heads-up display.
+    /// The look (see [`Look`]); by default the design's own.
     pub fn look(mut self, look: Look) -> Self {
         self.given_look = Some(look);
         self
@@ -1095,8 +1074,8 @@ impl RenderOnce for LimitSign {
         let cv = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, _| {
-                fill(w, b.origin, &disc(c, c, c - 0.5, 64), danger);
-                fill(w, b.origin, &disc(c, c, c * 0.72, 64), face);
+                fill_circle(w, b.origin, (c, c), c - 0.5, danger);
+                fill_circle(w, b.origin, (c, c), c * 0.72, face);
             },
         )
         .absolute()

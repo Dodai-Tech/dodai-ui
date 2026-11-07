@@ -74,7 +74,7 @@ impl GaugeFace {
             size: 200.0,
         }
     }
-    /// The look.
+    /// The look (see [`Look`]); by default the design's own.
     pub fn look(mut self, look: Look) -> Self {
         self.given_look = Some(look);
         self

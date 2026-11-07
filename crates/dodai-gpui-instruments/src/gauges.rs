@@ -3,7 +3,7 @@
 //! glow and fonts all come from the theme.
 
 use crate::draw::{glow_stroke, turn_arc};
-use dodai_gpui::paint::{fill, scale_alpha, stroke};
+use dodai_gpui::paint::{fill, fill_circle, scale_alpha, stroke, stroke_circle};
 use gpui::{Bounds, Hsla, Pixels, Window};
 
 /// How a [`crate::Gauge`] draws its value.
@@ -101,7 +101,7 @@ pub(crate) use dodai_instruments_core::gauge::SWEEP;
 // ───────────────────────────── pure helpers ─────────────────────────────
 
 pub use dodai_instruments_core::gauge::{
-    cell_lit, chamfer_rect, chevron_cell, disc, needle, pill, slanted_cell, tick_fracs, zone,
+    cell_lit, chamfer_rect, chevron_cell, needle, pill, slanted_cell, tick_fracs, zone,
 };
 
 #[allow(clippy::too_many_arguments)]
@@ -119,7 +119,7 @@ pub(crate) fn round_arc(
     stroke(w, o, &turn_arc(c, c, r, a0, a1), width, col, false);
     for a in [a0, a1] {
         let (x, y) = crate::draw::polar(c, c, r, a);
-        fill(w, o, &disc(x, y, width / 2.0, 14), col);
+        fill_circle(w, o, (x, y), width / 2.0, col);
     }
 }
 
@@ -222,7 +222,7 @@ fn soft(w: &mut Window, b: Bounds<Pixels>, k: Look) {
                     // slim needle with a round hub
                     let tip = crate::draw::polar(c, c, r - cap, s0 + span * k.frac);
                     stroke(w, o, &[(c, c), tip], 2.5, k.text, false);
-                    fill(w, o, &disc(c, c, k.size * 0.045, 18), k.text);
+                    fill_circle(w, o, (c, c), k.size * 0.045, k.text);
                 }
             }
         }
@@ -354,15 +354,8 @@ fn dial(w: &mut Window, b: Bounds<Pixels>, k: Look, s0: f32, span: f32, with_nee
         let tip = s0 + span * k.frac;
         let tri = needle(c, c, r_arc - 6.0, k.size * 0.07, tip);
         fill(w, o, &tri, k.text);
-        fill(w, o, &disc(c, c, k.size * 0.055, 20), k.tone);
-        stroke(
-            w,
-            o,
-            &disc(c, c, k.size * 0.075, 20),
-            1.0,
-            scale_alpha(k.text, 0.6),
-            true,
-        );
+        fill_circle(w, o, (c, c), k.size * 0.055, k.tone);
+        stroke_circle(w, o, (c, c), k.size * 0.075, 1.0, scale_alpha(k.text, 0.6));
     }
 }
 
@@ -370,14 +363,7 @@ fn reticle(w: &mut Window, b: Bounds<Pixels>, k: Look) {
     let c = k.size / 2.0;
     let o = b.origin;
     let r_out = c - 2.0;
-    stroke(
-        w,
-        o,
-        &turn_arc(c, c, r_out, 0.0, 1.0),
-        1.0,
-        scale_alpha(k.track, 0.9),
-        true,
-    );
+    stroke_circle(w, o, (c, c), r_out, 1.0, scale_alpha(k.track, 0.9));
     for q in 0..4 {
         let a = q as f32 / 4.0;
         let line = [
@@ -396,14 +382,7 @@ fn reticle(w: &mut Window, b: Bounds<Pixels>, k: Look) {
     // value ring from the top
     let r_val = c * 0.76;
     let ring = (k.ring * 0.7).max(3.0);
-    stroke(
-        w,
-        o,
-        &turn_arc(c, c, r_val, 0.0, 1.0),
-        ring,
-        scale_alpha(k.track, 0.45),
-        true,
-    );
+    stroke_circle(w, o, (c, c), r_val, ring, scale_alpha(k.track, 0.45));
     if k.frac > 0.0 {
         let steps = ((k.frac * 36.0).ceil() as usize).max(1);
         for i in 0..steps {
@@ -413,7 +392,7 @@ fn reticle(w: &mut Window, b: Bounds<Pixels>, k: Look) {
             glow_stroke(w, o, &p, ring, k.at((f0 + f1) / 2.0), k.glow);
         }
         let head = crate::draw::polar(c, c, r_val, k.frac);
-        fill(w, o, &disc(head.0, head.1, ring * 0.9, 14), k.text);
+        fill_circle(w, o, (head.0, head.1), ring * 0.9, k.text);
     }
 }
 

@@ -8,10 +8,10 @@ use super::rich::{zone_colours, FINE};
 use super::GaugeFace;
 use crate::dash::text_box;
 use crate::dial::severity_color;
-use crate::mfd::{glow, panel, readout_box, rect, trail};
+use crate::mfd::{glow, panel, readout_box, trail};
 use crate::pod_math as pm;
 use crate::shapes::Ink;
-use dodai_gpui::paint::{fill, scale_alpha, stroke};
+use dodai_gpui::paint::{fill, fill_rect, scale_alpha, stroke, stroke_rect};
 use dodai_gpui::theme_of;
 use dodai_instruments_core::instrument::{readout, Severity};
 use gpui::{
@@ -93,15 +93,16 @@ impl GaugeFace {
         let ticks: Vec<(f32, bool)> = marks.iter().map(|m| (m.0, m.1)).collect();
         let paint = move |w: &mut gpui::Window, o: gpui::Point<Pixels>| {
             panel(w, o, (wd, s), ink);
-            fill(
+            fill_rect(
                 w,
                 o,
-                &rect(tx, top, tw, bottom - top),
+                (tx, top, tw, bottom - top),
+                0.0,
                 scale_alpha(ink.text, 0.05),
             );
             for (y0, y1, zc) in &zones {
                 if y1 > y0 {
-                    fill(w, o, &rect(tx, *y0, s * 0.018, y1 - y0), *zc);
+                    fill_rect(w, o, (tx, *y0, s * 0.018, y1 - y0), 0.0, *zc);
                 }
             }
             let lw = (s * 0.005).max(1.0);
@@ -130,7 +131,7 @@ impl GaugeFace {
             }
             readout_box(w, o, (bx, mid - bh / 2.0, bw, bh), true, col, ink);
             if alarm {
-                fill(w, o, &rect(bx, mid - bh / 2.0, bw, bh), col);
+                fill_rect(w, o, (bx, mid - bh / 2.0, bw, bh), 0.0, col);
             }
         };
         let numerals: Vec<AnyElement> = marks
@@ -199,20 +200,21 @@ impl GaugeFace {
             for a in trail(frac, 20) {
                 let y = y_of(frac);
                 let y0 = y_of(a);
-                fill(
+                fill_rect(
                     w,
                     o,
-                    &rect(bar_x, y, bar_w, y0 - y),
+                    (bar_x, y, bar_w, y0 - y),
+                    0.0,
                     scale_alpha(tint, 0.03),
                 );
             }
-            stroke(
+            stroke_rect(
                 w,
                 o,
-                &rect(bar_x, top, bar_w, bottom - top),
+                (bar_x, top, bar_w, bottom - top),
+                0.0,
                 lw,
                 scale_alpha(ink.text, 0.3),
-                true,
             );
             stroke(w, o, &[(x_s, top), (x_s, bottom)], lw, ink.text, false);
             for (a, z, zc) in &zones {
@@ -246,7 +248,7 @@ impl GaugeFace {
             glow(w, o, &p, lw * 0.6, col, true);
             readout_box(w, o, (bx, by, bw, bh), false, col, ink);
             if alarm {
-                fill(w, o, &rect(bx, by, bw, bh), col);
+                fill_rect(w, o, (bx, by, bw, bh), 0.0, col);
             }
         };
         let numerals = super::rich::major_labels(&self)
@@ -315,20 +317,21 @@ impl GaugeFace {
             let tint = if col == ink.text { ink.info } else { col };
             for a in trail(frac, 20) {
                 let x = x_of(a);
-                fill(
+                fill_rect(
                     w,
                     o,
-                    &rect(x, bar_y, x_of(frac) - x, bar_h),
+                    (x, bar_y, x_of(frac) - x, bar_h),
+                    0.0,
                     scale_alpha(tint, 0.03),
                 );
             }
-            stroke(
+            stroke_rect(
                 w,
                 o,
-                &rect(x0, bar_y, x1 - x0, bar_h),
+                (x0, bar_y, x1 - x0, bar_h),
+                0.0,
                 lw,
                 scale_alpha(ink.text, 0.3),
-                true,
             );
             stroke(w, o, &[(x0, y_s), (x1, y_s)], lw, ink.text, false);
             for (a, z, zc) in &zones {
@@ -362,7 +365,7 @@ impl GaugeFace {
             glow(w, o, &p, lw * 0.6, col, true);
             readout_box(w, o, (bx, by, bw, bh), false, col, ink);
             if alarm {
-                fill(w, o, &rect(bx, by, bw, bh), col);
+                fill_rect(w, o, (bx, by, bw, bh), 0.0, col);
             }
         };
         let numerals = super::rich::major_labels(&self)

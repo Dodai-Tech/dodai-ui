@@ -71,14 +71,6 @@ pub fn chamfer_rect(x: f32, y: f32, w: f32, h: f32, c: f32) -> [(f32, f32); 5] {
     ]
 }
 
-/// Regular polygon approximating a circle. Pure.
-pub fn disc(cx: f32, cy: f32, r: f32, n: usize) -> Vec<(f32, f32)> {
-    let n = n.max(3);
-    (0..n)
-        .map(|i| dodai_charts_core::math::polar(cx, cy, r, i as f32 / n as f32))
-        .collect()
-}
-
 /// Stadium (pill) outline: a `w`×`h` rectangle with fully round short ends.
 pub fn pill(x: f32, y: f32, w: f32, h: f32) -> Vec<(f32, f32)> {
     let r = (w.min(h) / 2.0).max(0.0);
@@ -257,15 +249,6 @@ mod tests {
         assert!(c[2].0 > c[1].0 && c[5].0 > c[0].0);
         let r = chamfer_rect(0.0, 0.0, 10.0, 10.0, 3.0);
         assert_eq!((r[1], r[2]), ((7.0, 0.0), (10.0, 3.0)));
-    }
-
-    #[test]
-    fn disc_is_a_closed_ring_of_equal_radius() {
-        let d = disc(5.0, 5.0, 2.0, 12);
-        assert_eq!(d.len(), 12);
-        for (x, y) in d {
-            assert!((((x - 5.0).powi(2) + (y - 5.0).powi(2)).sqrt() - 2.0).abs() < 1e-4);
-        }
     }
 
     #[test]

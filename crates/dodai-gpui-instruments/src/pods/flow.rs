@@ -2,6 +2,7 @@
 //! the engine, the battery and the wheels.
 
 use super::*;
+use dodai_gpui::paint::stroke_circle;
 
 /// What drives the car. A [`RingTach`](crate::dash::RingTach) reads it to show the revs and the
 /// fuel, the motor's power and the charge, or both.
@@ -262,14 +263,7 @@ impl RenderOnce for PowerFlow {
                 fill(w, o, &head, col);
             }
             for (x, y) in [eng, bat, whl] {
-                stroke(
-                    w,
-                    o,
-                    &disc(x, y, node, 48),
-                    lw * 0.8,
-                    scale_alpha(ink, 0.5),
-                    true,
-                );
+                stroke_circle(w, o, (x, y), node, lw * 0.8, scale_alpha(ink, 0.5));
             }
         };
         let icon = |s: Symbol, (x, y): (f32, f32), col: Hsla| {

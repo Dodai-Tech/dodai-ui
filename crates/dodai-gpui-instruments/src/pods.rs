@@ -6,14 +6,13 @@
 use crate::dash::{text_box, Frame, LimitSign, Pod, PodStyle, RingTach, Telltales, Tone};
 use crate::dial::severity_color;
 use crate::draw::{polar, turn_arc};
-use crate::gauges::disc;
 use crate::look::{AtLimit, Layout, Look, Shape};
 use crate::pod_math as pm;
 use dodai_gpui::follow::{follow, follow_angle, Follow};
 use dodai_gpui::follow_api;
 use dodai_gpui::icons::IconId;
 use dodai_gpui::icons::{Icon, Symbol};
-use dodai_gpui::paint::{fill, scale_alpha, stroke};
+use dodai_gpui::paint::{fill, fill_circle, scale_alpha, stroke};
 use dodai_gpui::{hsla, theme_of};
 use dodai_instruments_core::instrument::{readout, Scale, Severity};
 use gpui::prelude::FluentBuilder;
@@ -213,7 +212,7 @@ impl TyrePod {
         self.low = v;
         self
     }
-    /// The look: the round pod (default), a watch case or a heads-up display.
+    /// The look (see [`Look`]); by default the design's own.
     pub fn look(mut self, look: Look) -> Self {
         self.given_look = Some(look);
         self
@@ -400,7 +399,7 @@ impl RowsPod {
         self.heading = h.into();
         self
     }
-    /// The look: the round pod (default), a watch case or a heads-up display.
+    /// The look (see [`Look`]); by default the design's own.
     pub fn look(mut self, look: Look) -> Self {
         self.given_look = Some(look);
         self
@@ -548,7 +547,7 @@ impl NoticePod {
         self.tone = t;
         self
     }
-    /// The look: the round pod (default), a watch case or a heads-up display.
+    /// The look (see [`Look`]); by default the design's own.
     pub fn look(mut self, look: Look) -> Self {
         self.given_look = Some(look);
         self
@@ -668,7 +667,7 @@ impl GForcePod {
         self.limit = pm::finite(g, 1.5).max(0.1);
         self
     }
-    /// The look: the round pod (default), a watch case or a heads-up display.
+    /// The look (see [`Look`]); by default the design's own.
     pub fn look(mut self, look: Look) -> Self {
         self.given_look = Some(look);
         self
@@ -717,15 +716,10 @@ impl RenderOnce for GForcePod {
                     continue;
                 }
                 let d = reach * i as f32 / 4.0;
-                fill(w, o, &disc(c + d, c, r, 10), scale_alpha(muted, 0.8));
-                fill(w, o, &disc(c, c + d, r, 10), scale_alpha(muted, 0.8));
+                fill_circle(w, o, (c + d, c), r, scale_alpha(muted, 0.8));
+                fill_circle(w, o, (c, c + d), r, scale_alpha(muted, 0.8));
             }
-            fill(
-                w,
-                o,
-                &disc(c + gx * reach, c - gy * reach, size * 0.03, 24),
-                info,
-            );
+            fill_circle(w, o, (c + gx * reach, c - gy * reach), size * 0.03, info);
         };
         let g = pm::g_text;
         let label = |x: f32, y: f32, v: f32| {
@@ -1026,7 +1020,7 @@ impl MediaPod {
         self.cover = Some(e.into_any_element());
         self
     }
-    /// The look: the round pod (default), a watch case or a heads-up display.
+    /// The look (see [`Look`]); by default the design's own.
     pub fn look(mut self, look: Look) -> Self {
         self.given_look = Some(look);
         self
@@ -1152,7 +1146,7 @@ impl CompassPod {
         self.height = h.into();
         self
     }
-    /// The look: the round pod (default), a watch case or a heads-up display.
+    /// The look (see [`Look`]); by default the design's own.
     pub fn look(mut self, look: Look) -> Self {
         self.given_look = Some(look);
         self
@@ -1508,7 +1502,7 @@ impl RenderOnce for DualGauge {
                 false,
             );
             let (x, y) = polar(c, c, r, at(f));
-            fill(w, o, &turn_arc(x, y, width * 1.2, 0.0, 1.0), ink);
+            fill_circle(w, o, (x, y), width * 1.2, ink);
         };
         let (up, lo) = (self.upper.clone(), self.lower.clone());
         let frame = Frame::new(&t, self.style);

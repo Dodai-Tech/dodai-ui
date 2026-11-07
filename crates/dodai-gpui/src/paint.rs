@@ -926,6 +926,99 @@ pub fn stroke(
     }
 }
 
+/// The box of a disc of radius `r` round `(cx, cy)`, offset by `o`; `None` when it is
+/// empty or not finite. Pure.
+fn disc_box(o: gpui::Point<Pixels>, (cx, cy): (f32, f32), r: f32) -> Option<Bounds<Pixels>> {
+    (cx.is_finite() && cy.is_finite() && r.is_finite() && r > 0.0).then(|| {
+        Bounds::new(
+            gpui::point(o.x + px(cx - r), o.y + px(cy - r)),
+            gpui::size(px(r * 2.0), px(r * 2.0)),
+        )
+    })
+}
+
+/// Fill the disc of radius `r` round `(cx, cy)`, offset by `o`. Drawn as a rounded quad: the
+/// GPU shades it as a distance field instead of rasterising a path over its whole box, so a
+/// face full of discs stays cheap, and the edge is smooth at any size.
+pub fn fill_circle(w: &mut Window, o: gpui::Point<Pixels>, centre: (f32, f32), r: f32, c: Hsla) {
+    if let Some(b) = disc_box(o, centre, r) {
+        w.paint_quad(gpui::fill(b, c).corner_radii(px(r)));
+    }
+}
+
+/// Stroke the circle of radius `r` round `(cx, cy)`, offset by `o`, `width` wide and centred
+/// on the circle. A bordered quad, as cheap as [`fill_circle`].
+pub fn stroke_circle(
+    w: &mut Window,
+    o: gpui::Point<Pixels>,
+    centre: (f32, f32),
+    r: f32,
+    width: f32,
+    c: Hsla,
+) {
+    if !width.is_finite() || width <= 0.0 {
+        return;
+    }
+    let outer = r + width / 2.0;
+    if let Some(b) = disc_box(o, centre, outer) {
+        w.paint_quad(gpui::quad(
+            b,
+            px(outer),
+            scale_alpha(c, 0.0),
+            px(width.min(outer)),
+            c,
+            gpui::BorderStyle::Solid,
+        ));
+    }
+}
+
+/// The box `(x, y, w, h)` offset by `o`; `None` when it is empty or not finite. Pure.
+fn rect_box(o: gpui::Point<Pixels>, (x, y, wd, h): (f32, f32, f32, f32)) -> Option<Bounds<Pixels>> {
+    ([x, y, wd, h].iter().all(|v| v.is_finite()) && wd > 0.0 && h > 0.0).then(|| {
+        Bounds::new(
+            gpui::point(o.x + px(x), o.y + px(y)),
+            gpui::size(px(wd), px(h)),
+        )
+    })
+}
+
+/// Fill the box `(x, y, w, h)`, offset by `o`, with corners rounded to `r` (0 for square
+/// ones). A quad, like [`fill_circle`].
+pub fn fill_rect(w: &mut Window, o: gpui::Point<Pixels>, b: (f32, f32, f32, f32), r: f32, c: Hsla) {
+    if let Some(bounds) = rect_box(o, b) {
+        let r = r.clamp(0.0, b.2.min(b.3) / 2.0);
+        w.paint_quad(gpui::fill(bounds, c).corner_radii(px(r)));
+    }
+}
+
+/// Stroke the outline of the box `(x, y, w, h)`, offset by `o`, `width` wide and centred on
+/// it, with corners rounded to `r`. A bordered quad, like [`stroke_circle`].
+pub fn stroke_rect(
+    w: &mut Window,
+    o: gpui::Point<Pixels>,
+    (x, y, wd, h): (f32, f32, f32, f32),
+    r: f32,
+    width: f32,
+    c: Hsla,
+) {
+    if !width.is_finite() || width <= 0.0 {
+        return;
+    }
+    let half = width / 2.0;
+    let b = (x - half, y - half, wd + width, h + width);
+    if let Some(bounds) = rect_box(o, b) {
+        let r = r.clamp(0.0, wd.min(h) / 2.0) + half;
+        w.paint_quad(gpui::quad(
+            bounds,
+            px(r),
+            scale_alpha(c, 0.0),
+            px(width),
+            c,
+            gpui::BorderStyle::Solid,
+        ));
+    }
+}
+
 /// Fill the polygon `p`, offset by `o`. Skipped when a coordinate is not finite.
 pub fn fill(w: &mut Window, o: gpui::Point<Pixels>, p: &[(f32, f32)], c: Hsla) {
     if !finite(p) {
@@ -1021,6 +1114,22 @@ pub(crate) fn fade_overlay(theme: &Theme, height: f32) -> gpui::Div {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn circle_and_rect_boxes_are_offset_and_skip_empty_or_broken_shapes() {
+        let o = gpui::point(px(10.0), px(20.0));
+        let b = disc_box(o, (5.0, 5.0), 3.0).unwrap();
+        assert_eq!(
+            (b.origin.x, b.origin.y, b.size.width),
+            (px(12.0), px(22.0), px(6.0))
+        );
+        assert!(disc_box(o, (5.0, 5.0), 0.0).is_none());
+        assert!(disc_box(o, (f32::NAN, 5.0), 3.0).is_none());
+        let r = rect_box(o, (1.0, 2.0, 30.0, 40.0)).unwrap();
+        assert_eq!((r.origin.x, r.size.height), (px(11.0), px(40.0)));
+        assert!(rect_box(o, (1.0, 2.0, 0.0, 40.0)).is_none());
+        assert!(rect_box(o, (1.0, 2.0, f32::INFINITY, 40.0)).is_none());
+    }
 
     #[test]
     fn top_and_bottom_slots_cut_the_middle_of_the_edge() {

@@ -7,10 +7,10 @@ use super::rich::{major_labels, zone_colours, FINE};
 use super::GaugeFace;
 use crate::dash::text_box;
 use crate::draw::{polar, turn_arc};
-use crate::frames::{aged, glow_arc, glow_dot, light_blade, name_plate, plate_inset, screw, wake};
+use crate::frames::{aged, glow_arc, glow_dot, name_plate, plate_inset, screw, LightHand};
 use crate::shapes::{band, chamfered, rounded, Ink};
 use dodai_gpui::motion::mix;
-use dodai_gpui::paint::{fill, scale_alpha, stroke};
+use dodai_gpui::paint::{fill, fill_rect, scale_alpha, stroke};
 use dodai_gpui::theme_of;
 use gpui::{
     canvas, div, px, AnyElement, App, Bounds, FontWeight, IntoElement, ParentElement, Pixels,
@@ -116,12 +116,7 @@ impl GaugeFace {
             fill(w, o, &groove, scale_alpha(ink.text, 0.1));
             let end = along(x0, x1, frac);
             if end > x0 {
-                fill(
-                    w,
-                    o,
-                    &rounded(x0, ribbon_y, end - x0, s * 0.06, s * 0.008),
-                    col,
-                );
+                fill_rect(w, o, (x0, ribbon_y, end - x0, s * 0.06), s * 0.008, col);
                 stroke(
                     w,
                     o,
@@ -260,31 +255,21 @@ impl GaugeFace {
                 fill(
                     w,
                     o,
-                    &crate::shapes::circle(p.0, p.1, s * 0.004),
+                    &crate::draw::circle_points(p.0, p.1, s * 0.004),
                     scale_alpha(ink.text, 0.4),
                 );
             }
             let a = start + span * frac;
-            wake(
-                w,
-                o,
-                (c, cy),
-                (r * 0.82, r - s * 0.012),
-                a,
-                0.1_f32.min(span * frac),
-                col,
-            );
             glow_arc(w, o, (c, cy), r, (start, a), s * 0.012, (ink.info, col));
-            light_blade(
-                w,
-                o,
-                (c, cy),
-                (r * 0.7, r + s * 0.035),
-                a,
-                s * 0.006,
-                col,
-                ink.text,
-            );
+            LightHand {
+                centre: (c, cy),
+                reach: (r * 0.7, r),
+                turn: a,
+                trail: 0.1_f32.min(span * frac),
+                width: s * 0.006,
+                colours: (col, ink.text),
+            }
+            .paint(w, o);
         };
         div()
             .relative()
@@ -333,10 +318,11 @@ impl GaugeFace {
             // Light from below the bar, fading upwards.
             for k in 0..8 {
                 let top = y - s * 0.03 * k as f32;
-                fill(
+                fill_rect(
                     w,
                     o,
-                    &rounded(0.0, top.max(0.0), s, h - top.max(0.0), s * 0.06),
+                    (0.0, top.max(0.0), s, h - top.max(0.0)),
+                    s * 0.06,
                     scale_alpha(ink.info, 0.012),
                 );
             }

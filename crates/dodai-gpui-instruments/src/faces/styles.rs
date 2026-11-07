@@ -10,13 +10,13 @@ use crate::dash::text_box;
 use crate::dial::severity_color;
 use crate::draw::{polar, turn_arc};
 use crate::frames::{
-    aged, engraved_scale, ghost, glow_arc, halo, lcd, light_blade, lit_segments, name_plate, plate,
-    plate_inset, screw, seg_arc, seg_text, spade, wake,
+    aged, engraved_scale, ghost, glow_arc, halo, lcd, lit_segments, name_plate, plate, plate_inset,
+    screw, seg_arc, seg_text, spade, LightHand,
 };
 use crate::gauges::SWEEP;
 use crate::pod_math as pm;
-use crate::shapes::{band, chrono_glass, circle, Ink};
-use dodai_gpui::paint::{fill, scale_alpha, stroke};
+use crate::shapes::{band, chrono_glass, Ink};
+use dodai_gpui::paint::{fill, fill_circle, scale_alpha, stroke};
 use dodai_gpui::theme_of;
 use dodai_instruments_core::instrument::Severity;
 use gpui::{
@@ -98,8 +98,8 @@ impl GaugeFace {
                 ink,
             );
             spade(c, c, start + span * frac, r_scale - s * 0.01).paint(w, o, s * 0.008, hand, ink);
-            fill(w, o, &circle(c, c, s * 0.032), ink.text);
-            fill(w, o, &circle(c, c, s * 0.012), aged(ink));
+            fill_circle(w, o, (c, c), s * 0.032, ink.text);
+            fill_circle(w, o, (c, c), s * 0.012, aged(ink));
             chrono_glass(w, o, s, r_face, ink);
         };
         let num = s * 0.05;
@@ -446,26 +446,16 @@ impl GaugeFace {
                 );
             }
             let a = start + span * frac;
-            wake(
-                w,
-                o,
-                (c, c),
-                (r_t * 0.45, r_t - s * 0.012),
-                a,
-                0.1_f32.min(span * frac),
-                col,
-            );
             glow_arc(w, o, (c, c), r_t, (start, a), s * 0.012, (ink.info, col));
-            light_blade(
-                w,
-                o,
-                (c, c),
-                (r_t * 0.6, r_t + s * 0.035),
-                a,
-                s * 0.006,
-                col,
-                ink.text,
-            );
+            LightHand {
+                centre: (c, c),
+                reach: (r_t * 0.45, r_t),
+                turn: a,
+                trail: 0.1_f32.min(span * frac),
+                width: s * 0.006,
+                colours: (col, ink.text),
+            }
+            .paint(w, o);
         };
         div()
             .relative()

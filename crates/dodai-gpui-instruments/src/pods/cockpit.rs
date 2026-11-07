@@ -5,8 +5,9 @@
 
 use super::detailed::{case, label, layer, tone_or};
 use super::*;
-use crate::mfd::{bug, leader, page, pointer_scale, readout_box, rect, tile, BEZEL, KEYS};
-use crate::shapes::{circle, Ink};
+use crate::mfd::{bug, leader, page, pointer_scale, readout_box, tile, BEZEL, KEYS};
+use crate::shapes::Ink;
+use dodai_gpui::paint::{fill_circle, fill_rect, stroke_rect};
 
 /// The page title at the top left with its rule; the pod's text sits under it.
 fn title(s: f32, ink: Ink, text: &str, right: &str) -> gpui::Div {
@@ -25,10 +26,11 @@ fn title(s: f32, ink: Ink, text: &str, right: &str) -> gpui::Div {
 /// Paint the page's title band across the top of the glass, ruled off from the page under it.
 fn rule(w: &mut Window, o: gpui::Point<Pixels>, s: f32, ink: Ink) {
     let (k, y) = (s * BEZEL, s * 0.14);
-    fill(
+    fill_rect(
         w,
         o,
-        &rect(k, k, s - 2.0 * k, y - k),
+        (k, k, s - 2.0 * k, y - k),
+        0.0,
         scale_alpha(ink.text, 0.07),
     );
     stroke(
@@ -53,7 +55,7 @@ fn legend_box(
 ) {
     let col = scale_alpha(ink.text, 0.6);
     let lw = s * 0.004;
-    stroke(w, o, &rect(x, y, wd, h), lw, col, true);
+    stroke_rect(w, o, (x, y, wd, h), 0.0, lw, col);
     let (from, to) = if left {
         (s * BEZEL, x)
     } else {
@@ -198,12 +200,7 @@ impl RowsPod {
                 let y = top + pitch * i as f32;
                 let mid = y + pitch * if bar.is_some() { 0.32 } else { 0.5 };
                 for d in leader(x0 + s * 0.1, x1 - text_w, mid + s * 0.012, s * 0.02) {
-                    fill(
-                        w,
-                        o,
-                        &circle(d.0, d.1, s * 0.0035),
-                        scale_alpha(ink.text, 0.5),
-                    );
+                    fill_circle(w, o, (d.0, d.1), s * 0.0035, scale_alpha(ink.text, 0.5));
                 }
                 if let Some((f, col)) = bar {
                     pointer_scale(
@@ -265,7 +262,7 @@ impl NoticePod {
         let keys = [(s * 0.1, "CLR"), (s * 0.7, "RCL")];
         let paint = move |w: &mut Window, o: gpui::Point<Pixels>| {
             page(w, o, s, ink);
-            fill(w, o, &rect(hx, hy, hw, hh), col);
+            fill_rect(w, o, (hx, hy, hw, hh), 0.0, col);
             for (i, (x, _)) in keys.into_iter().enumerate() {
                 legend_box(w, o, s, (x, ky, kw, kh), i == 0, ink);
             }

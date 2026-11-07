@@ -7,10 +7,10 @@ use crate::look::Look;
 use crate::mfd::rect;
 use crate::pod_math as pm;
 use crate::race::{figure, segments, skew};
-use crate::shapes::{chamfered, circle, rounded, Ink};
+use crate::shapes::{chamfered, rounded, Ink};
 use dodai_gpui::follow::{follow, Follow};
 use dodai_gpui::follow_api;
-use dodai_gpui::paint::{fill, scale_alpha, stroke};
+use dodai_gpui::paint::{fill, fill_circle, scale_alpha, stroke, stroke_circle};
 use dodai_gpui::theme_of;
 use gpui::{
     canvas, div, px, App, Bounds, FontWeight, Hsla, IntoElement, ParentElement, Pixels, RenderOnce,
@@ -194,42 +194,44 @@ fn light(
     let (cx, cy, r) = (x + d / 2.0, y + d / 2.0, d / 2.0);
     let off = scale_alpha(ink.text, 0.1);
     match look {
-        Look::Sport => fill(w, o, &circle(cx, cy, r * 0.8), if lit { col } else { off }),
+        Look::Sport => fill_circle(w, o, (cx, cy), r * 0.8, if lit { col } else { off }),
         // A small dot that fills when lit and is a hairline circle when not.
         Look::Line => {
             if lit {
-                fill(w, o, &circle(cx, cy, r * 0.45), col);
+                fill_circle(w, o, (cx, cy), r * 0.45, col);
             } else {
-                stroke(
+                stroke_circle(
                     w,
                     o,
-                    &circle(cx, cy, r * 0.45),
+                    (cx, cy),
+                    r * 0.45,
                     (d * 0.03).max(0.6),
                     scale_alpha(ink.text, 0.3),
-                    true,
                 );
             }
         }
         Look::Chronograph => {
-            stroke(w, o, &circle(cx, cy, r * 0.92), d * 0.08, ink.line, true);
-            fill(w, o, &circle(cx, cy, r * 0.62), if lit { col } else { off });
+            stroke_circle(w, o, (cx, cy), r * 0.92, d * 0.08, ink.line);
+            fill_circle(w, o, (cx, cy), r * 0.62, if lit { col } else { off });
         }
         Look::Vintage => {
-            fill(w, o, &circle(cx, cy, r), scale_alpha(ink.text, 0.25));
-            fill(
+            fill_circle(w, o, (cx, cy), r, scale_alpha(ink.text, 0.25));
+            fill_circle(
                 w,
                 o,
-                &circle(cx, cy, r * 0.8),
+                (cx, cy),
+                r * 0.8,
                 if lit {
                     col
                 } else {
                     scale_alpha(aged(ink), 0.6)
                 },
             );
-            fill(
+            fill_circle(
                 w,
                 o,
-                &circle(cx - r * 0.25, cy - r * 0.25, r * 0.18),
+                (cx - r * 0.25, cy - r * 0.25),
+                r * 0.18,
                 scale_alpha(ink.text, 0.4),
             );
         }
@@ -255,13 +257,13 @@ fn light(
             if lit {
                 glow_dot(w, o, (cx, cy), r * 0.4, col, scale_alpha(ink.text, 0.8));
             }
-            stroke(
+            stroke_circle(
                 w,
                 o,
-                &circle(cx, cy, r * 0.75),
+                (cx, cy),
+                r * 0.75,
                 d * 0.04,
                 scale_alpha(col, if lit { 0.7 } else { 0.25 }),
-                true,
             );
         }
         Look::GlassCockpit => {
