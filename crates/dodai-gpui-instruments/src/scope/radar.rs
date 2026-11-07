@@ -2,6 +2,7 @@
 
 use super::*;
 use crate::draw::polar;
+use dodai_gpui::paint::{fill_circle, stroke_circle};
 
 /// A contact on a [`RadarScope`]: `bearing` in turns (0 = up, clockwise, `0.25` = east) and
 /// `range` as `0..=1` of the radius.
@@ -181,17 +182,17 @@ impl RenderOnce for RadarScope {
                         continue;
                     }
                     let p = polar(c, c, r * bl.range.clamp(0.0, 1.0), bl.bearing);
-                    fill(w, o, &disc(p.0, p.1, 4.0, 10), scale_alpha(warn, a));
-                    stroke(
+                    fill_circle(w, o, (p.0, p.1), 4.0, scale_alpha(warn, a));
+                    stroke_circle(
                         w,
                         o,
-                        &disc(p.0, p.1, 7.0 + 5.0 * (1.0 - a), 14),
+                        (p.0, p.1),
+                        7.0 + 5.0 * (1.0 - a),
                         1.0,
                         scale_alpha(warn, a * 0.7),
-                        true,
                     );
                 }
-                fill(w, o, &disc(c, c, 2.5, 8), col);
+                fill_circle(w, o, (c, c), 2.5, col);
                 if live {
                     dodai_gpui::follow::next_frame(w);
                 }

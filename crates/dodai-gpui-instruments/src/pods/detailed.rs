@@ -4,9 +4,8 @@
 //! brackets, chamfered frames and segment bars. Both take every colour from the theme.
 
 use super::*;
-use crate::shapes::{
-    band, cells, chamfered, chrono_case, chrono_glass, circle, hud_ring, needle, star, Ink,
-};
+use crate::shapes::{band, cells, chamfered, chrono_case, chrono_glass, hud_ring, star, Hand, Ink};
+use dodai_gpui::paint::{fill_circle, stroke_circle};
 
 /// A canvas over the whole pod.
 pub(super) fn layer(
@@ -86,8 +85,8 @@ impl TyrePod {
         let paint = move |w: &mut Window, o: gpui::Point<Pixels>| {
             let r_face = chrono_case(w, o, s, ink);
             for (&(x, y), (f, low)) in centres.iter().zip(&reads_paint) {
-                fill(w, o, &circle(x, y, r), scale_alpha(ink.text, 0.05));
-                stroke(w, o, &circle(x, y, r), s * 0.005, ink.line, true);
+                fill_circle(w, o, (x, y), r, scale_alpha(ink.text, 0.05));
+                stroke_circle(w, o, (x, y), r, s * 0.005, ink.line);
                 // The low band, hatched.
                 let (ta, tz) = (start, start + span * low_f);
                 fill(
@@ -125,14 +124,17 @@ impl TyrePod {
                 }
                 if let Some(f) = f {
                     let col = if *low { ink.warn } else { ink.primary };
-                    fill(
-                        w,
-                        o,
-                        &needle(x, y, start + span * f, r * 0.85, r * 0.2, s * 0.012),
-                        col,
-                    );
+                    Hand {
+                        centre: (x, y),
+                        turn: start + span * f,
+                        reach: (r * 0.2, r * 0.85),
+                        half: s * 0.012,
+                        colours: (col, ink.text),
+                        shadow: None,
+                    }
+                    .paint(w, o);
                 }
-                fill(w, o, &circle(x, y, s * 0.016), ink.text);
+                fill_circle(w, o, (x, y), s * 0.016, ink.text);
             }
             chrono_glass(w, o, s, r_face, ink);
         };
@@ -395,7 +397,7 @@ impl RowsPod {
                     None => {
                         let mut x = rx0;
                         while x < rx1 + s * 0.05 {
-                            fill(w, o, &circle(x, y + pitch * 0.08, s * 0.004), ink.muted);
+                            fill_circle(w, o, (x, y + pitch * 0.08), s * 0.004, ink.muted);
                             x += s * 0.022;
                         }
                     }
@@ -607,16 +609,9 @@ impl NoticePod {
                     false,
                 );
             }
-            fill(w, o, &circle(ix, iy, ir), scale_alpha(col, 0.12));
-            stroke(w, o, &circle(ix, iy, ir), s * 0.008, col, true);
-            stroke(
-                w,
-                o,
-                &circle(ix, iy, ir * 1.18),
-                s * 0.003,
-                scale_alpha(col, 0.6),
-                true,
-            );
+            fill_circle(w, o, (ix, iy), ir, scale_alpha(col, 0.12));
+            stroke_circle(w, o, (ix, iy), ir, s * 0.008, col);
+            stroke_circle(w, o, (ix, iy), ir * 1.18, s * 0.003, scale_alpha(col, 0.6));
             chrono_glass(w, o, s, r_face, ink);
         };
         case(s)
@@ -768,17 +763,17 @@ impl GForcePod {
         let paint = move |w: &mut Window, o: gpui::Point<Pixels>| {
             let r_face = chrono_case(w, o, s, ink);
             for k in 1..=3 {
-                stroke(
+                stroke_circle(
                     w,
                     o,
-                    &circle(c, c, reach * k as f32 / 3.0),
+                    (c, c),
+                    reach * k as f32 / 3.0,
                     if k == 3 { s * 0.006 } else { s * 0.003 },
                     if k == 3 {
                         ink.text
                     } else {
                         scale_alpha(ink.text, 0.3)
                     },
-                    true,
                 );
             }
             for (ax, ay) in [(1.0_f32, 0.0_f32), (0.0, 1.0)] {
@@ -819,16 +814,11 @@ impl GForcePod {
                 false,
             );
             for (k, a) in [(3.0_f32, 0.12_f32), (2.0, 0.25)] {
-                fill(
-                    w,
-                    o,
-                    &circle(dx, dy, s * 0.018 * k),
-                    scale_alpha(ink.primary, a),
-                );
+                fill_circle(w, o, (dx, dy), s * 0.018 * k, scale_alpha(ink.primary, a));
             }
-            fill(w, o, &circle(dx, dy, s * 0.02), ink.primary);
-            fill(w, o, &circle(dx, dy, s * 0.008), ink.text);
-            fill(w, o, &circle(c, c, s * 0.012), ink.text);
+            fill_circle(w, o, (dx, dy), s * 0.02, ink.primary);
+            fill_circle(w, o, (dx, dy), s * 0.008, ink.text);
+            fill_circle(w, o, (c, c), s * 0.012, ink.text);
             chrono_glass(w, o, s, r_face, ink);
         };
         let g = pm::g_text;
@@ -1055,16 +1045,16 @@ impl MediaPod {
                 polar(c, c, rp - s * 0.065, f + 0.012),
             );
             fill(w, o, &[tip, b1, b2], ink.primary);
-            fill(w, o, &circle(vx, vy, vr), scale_alpha(ink.text, 0.1));
-            fill(w, o, &circle(vx, vy, lr), scale_alpha(ink.primary, 0.35));
+            fill_circle(w, o, (vx, vy), vr, scale_alpha(ink.text, 0.1));
+            fill_circle(w, o, (vx, vy), lr, scale_alpha(ink.primary, 0.35));
             for k in 0..9 {
-                stroke(
+                stroke_circle(
                     w,
                     o,
-                    &circle(vx, vy, lr + (vr - lr) * (k as f32 + 0.5) / 9.0),
+                    (vx, vy),
+                    lr + (vr - lr) * (k as f32 + 0.5) / 9.0,
                     s * 0.002,
                     scale_alpha(ink.text, 0.18),
-                    true,
                 );
             }
             // A sheen across the grooves.
@@ -1296,13 +1286,13 @@ impl CompassPod {
                     false,
                 );
             }
-            stroke(
+            stroke_circle(
                 w,
                 o,
-                &circle(c, c, r_ring - s * 0.13),
+                (c, c),
+                r_ring - s * 0.13,
                 s * 0.003,
                 scale_alpha(ink.text, 0.3),
-                true,
             );
             // The rose: a long star and a short one between it, each point half lit.
             let (long, short) = (s * 0.17, s * 0.032);
@@ -1329,8 +1319,8 @@ impl CompassPod {
                     if q == 0 { ink.danger } else { ink.text },
                 );
             }
-            fill(w, o, &circle(c, c, s * 0.018), ink.face);
-            stroke(w, o, &circle(c, c, s * 0.018), s * 0.004, ink.text, true);
+            fill_circle(w, o, (c, c), s * 0.018, ink.face);
+            stroke_circle(w, o, (c, c), s * 0.018, s * 0.004, ink.text);
             // Lubber mark, fixed at the top.
             let y = c - r_face + s * 0.004;
             fill(

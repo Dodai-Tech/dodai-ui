@@ -4,7 +4,7 @@
 
 use crate::draw::{polar, turn_arc};
 use dodai_gpui::hsla;
-use dodai_gpui::paint::{fill, scale_alpha, stroke};
+use dodai_gpui::paint::{fill, fill_circle, scale_alpha, stroke, stroke_circle};
 use gpui::{Hsla, Pixels, Point, Window};
 
 /// The theme colours the detailed looks use.
@@ -64,11 +64,6 @@ pub(crate) fn dir(turn: f32) -> (f32, f32) {
     (th.cos(), th.sin())
 }
 
-/// A closed circle polygon.
-pub(crate) fn circle(cx: f32, cy: f32, r: f32) -> Vec<(f32, f32)> {
-    turn_arc(cx, cy, r, 0.0, 1.0)
-}
-
 /// A band between two radii over `a..b` turns, as a fillable polygon.
 pub(crate) fn band(cx: f32, cy: f32, r_in: f32, r_out: f32, a: f32, b: f32) -> Vec<(f32, f32)> {
     let mut p = turn_arc(cx, cy, r_out, a, b);
@@ -102,6 +97,72 @@ pub(crate) fn needle(
         ),
         (cx - nx * half, cy - ny * half),
     ]
+}
+
+/// Which side of a hand at `turn` faces the light from the upper left: `1.0` for the side the
+/// normal `(-dy, dx)` of its direction points to, `-1.0` for the other. Pure.
+pub(crate) fn lit_side(turn: f32) -> f32 {
+    let (dx, dy) = dir(turn);
+    // The normal (-dy, dx) faces up-left when -x - y > 0.
+    if dy - dx >= 0.0 {
+        1.0
+    } else {
+        -1.0
+    }
+}
+
+/// A polished hand: the [`needle`] outline with a soft shadow under it and a facet along its
+/// ridge, the half towards the light lifted, the other left in the hand's colour.
+#[derive(Clone, Copy)]
+pub(crate) struct Hand {
+    /// The pivot.
+    pub centre: (f32, f32),
+    /// The direction, in turns.
+    pub turn: f32,
+    /// How far the tail reaches behind the pivot, and the tip in front of it.
+    pub reach: (f32, f32),
+    /// Half the width at the pivot.
+    pub half: f32,
+    /// The hand's colour, and the colour of the light on its lit facet.
+    pub colours: (Hsla, Hsla),
+    /// The shadow's colour; `None` for a hand without one.
+    pub shadow: Option<Hsla>,
+}
+
+impl Hand {
+    /// Paint the shadow, the hand and its facet.
+    pub(crate) fn paint(self, w: &mut Window, o: Point<Pixels>) {
+        let (cx, cy) = self.centre;
+        let (tail, tip) = self.reach;
+        let (col, light) = self.colours;
+        let h = self.half;
+        if let Some(sh) = self.shadow {
+            let (sx, sy) = (h * 0.6, h * 0.8);
+            fill(w, o, &needle(cx + sx, cy + sy, self.turn, tip, tail, h), sh);
+        }
+        fill(w, o, &needle(cx, cy, self.turn, tip, tail, h), col);
+        let (dx, dy) = dir(self.turn);
+        let k = lit_side(self.turn);
+        let (nx, ny) = (-dy * k, dx * k);
+        let facet = [
+            (cx + dx * tip, cy + dy * tip),
+            (cx + nx * h, cy + ny * h),
+            (cx - dx * tail + nx * h * 0.7, cy - dy * tail + ny * h * 0.7),
+            (cx - dx * tail, cy - dy * tail),
+        ];
+        fill(w, o, &facet, scale_alpha(light, 0.2));
+        stroke(
+            w,
+            o,
+            &[
+                (cx + dx * tip, cy + dy * tip),
+                (cx - dx * tail, cy - dy * tail),
+            ],
+            (h * 0.12).max(0.5),
+            scale_alpha(light, 0.3),
+            false,
+        );
+    }
 }
 
 /// A rectangle with its four corners cut by `k`.
@@ -142,40 +203,36 @@ pub(crate) fn chrono_case(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) ->
     let c = s / 2.0;
     let (r_bezel, r_face) = (c - s * 0.01, c - s * 0.06);
     let hair = (s * 0.003).max(0.6);
-    fill(w, o, &circle(c, c, r_bezel), scale_alpha(ink.text, 0.07));
-    for i in 0..240 {
-        let a = i as f32 / 240.0;
-        stroke(
-            w,
-            o,
-            &[
+    fill_circle(w, o, (c, c), r_bezel, scale_alpha(ink.text, 0.07));
+    let coin: Vec<Vec<(f32, f32)>> = (0..240)
+        .map(|i| {
+            let a = i as f32 / 240.0;
+            vec![
                 polar(c, c, r_face + s * 0.018, a),
                 polar(c, c, r_bezel - s * 0.006, a),
-            ],
-            hair,
-            scale_alpha(ink.text, 0.13),
-            false,
-        );
-    }
-    stroke(
+            ]
+        })
+        .collect();
+    dodai_gpui::paint::stroke_batch(w, o, &coin, hair, scale_alpha(ink.text, 0.13), false);
+    stroke_circle(
         w,
         o,
-        &circle(c, c, r_bezel),
+        (c, c),
+        r_bezel,
         hair * 1.6,
         scale_alpha(ink.text, 0.7),
-        true,
     );
-    stroke(
+    stroke_circle(
         w,
         o,
-        &circle(c, c, r_face + s * 0.016),
+        (c, c),
+        r_face + s * 0.016,
         hair,
         scale_alpha(ink.text, 0.45),
-        true,
     );
-    fill(w, o, &circle(c, c, r_face), ink.face);
+    fill_circle(w, o, (c, c), r_face, ink.face);
     crate::draw::sunburst(w, o, (c, c), r_face, ink.text);
-    stroke(w, o, &circle(c, c, r_face), hair, ink.line, true);
+    stroke_circle(w, o, (c, c), r_face, hair, ink.line);
     r_face
 }
 
@@ -193,24 +250,24 @@ pub(crate) fn hud_ring(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink, accen
     let c = s / 2.0;
     let r_out = c - s * 0.015;
     let hair = (s * 0.003).max(0.6);
+    let mut dashes = crate::draw::Strokes::default();
     for i in 0..180 {
         let a = i as f32 / 180.0;
-        stroke(
-            w,
-            o,
-            &turn_arc(c, c, r_out, a, a + 0.0025),
+        let alpha = if i % 15 == 0 { 0.6 } else { 0.22 };
+        dashes.add(
+            turn_arc(c, c, r_out, a, a + 0.0025),
             hair,
-            scale_alpha(ink.text, if i % 15 == 0 { 0.6 } else { 0.22 }),
-            false,
+            scale_alpha(ink.text, alpha),
         );
     }
-    stroke(
+    dashes.paint(w, o);
+    stroke_circle(
         w,
         o,
-        &circle(c, c, r_out - s * 0.012),
+        (c, c),
+        r_out - s * 0.012,
         hair * 0.6,
         scale_alpha(ink.text, 0.12),
-        true,
     );
     for q in [0.125_f32, 0.375, 0.625, 0.875] {
         stroke(
@@ -327,6 +384,15 @@ mod tests {
             (lit.warn, lit.danger, lit.ok),
             (ink.warn, ink.danger, ink.ok)
         );
+    }
+
+    #[test]
+    fn the_lit_facet_faces_the_upper_left() {
+        // Pointing right the normal (-dy, dx) points down, so the other (upper) side is lit;
+        // pointing left it points up; pointing up it points right, so the left side is lit.
+        assert_eq!(lit_side(0.25), -1.0);
+        assert_eq!(lit_side(0.75), 1.0);
+        assert_eq!(lit_side(0.0), -1.0);
     }
 
     #[test]

@@ -14,8 +14,8 @@ use crate::dash::text_box;
 use crate::draw::{polar, turn_arc};
 use crate::frames::{ghost, lcd, seg_arc, seg_text};
 use crate::race::{figure, plate_in, tag, tag_text};
-use crate::shapes::{band, circle, Ink};
-use dodai_gpui::paint::{fill, scale_alpha, stroke};
+use crate::shapes::{band, Ink};
+use dodai_gpui::paint::{fill, fill_circle, scale_alpha, stroke};
 use dodai_gpui::theme_of;
 use gpui::prelude::FluentBuilder;
 use gpui::{div, px, AnyElement, App, FontWeight, IntoElement, ParentElement, Pixels, Styled};
@@ -89,6 +89,7 @@ impl GaugeFace {
                 );
             }
             let fine = 120usize;
+            let mut fine_lines = crate::draw::Strokes::default();
             for i in 0..=fine {
                 let f = i as f32 / fine as f32;
                 let on = f <= frac;
@@ -96,23 +97,18 @@ impl GaugeFace {
                 let (a_in, a_out) = if on { (0.25, 0.9) } else { (0.06, 0.22) };
                 let mid = r * 0.9;
                 let a = turn(f);
-                stroke(
-                    w,
-                    o,
-                    &[polar(ax, ay, r * 0.8, a), polar(ax, ay, mid, a)],
+                fine_lines.add(
+                    vec![polar(ax, ay, r * 0.8, a), polar(ax, ay, mid, a)],
                     hl,
                     scale_alpha(c2, a_in),
-                    false,
                 );
-                stroke(
-                    w,
-                    o,
-                    &[polar(ax, ay, mid, a), polar(ax, ay, r, a)],
+                fine_lines.add(
+                    vec![polar(ax, ay, mid, a), polar(ax, ay, r, a)],
                     hl,
                     scale_alpha(c2, a_out),
-                    false,
                 );
             }
+            fine_lines.paint(w, o);
             for f in &majors {
                 stroke(
                     w,
@@ -317,7 +313,7 @@ impl GaugeFace {
             }
             for f in &majors {
                 let (x, y) = polar(ax, ay, r - s * 0.02, turn(*f));
-                fill(w, o, &circle(x, y, hl * 1.3), ink.muted);
+                fill_circle(w, o, (x, y), hl * 1.3, ink.muted);
             }
             if frac > 0.0 {
                 stroke(
@@ -330,8 +326,8 @@ impl GaugeFace {
                 );
             }
             let (x, y) = polar(ax, ay, r, turn(frac));
-            fill(w, o, &circle(x, y, s * 0.02), ink.ground);
-            fill(w, o, &circle(x, y, s * 0.012), col);
+            fill_circle(w, o, (x, y), s * 0.02, ink.ground);
+            fill_circle(w, o, (x, y), s * 0.012, col);
         };
         let ends = self.end_figures().map(move |(f, txt)| {
             let (x, y) = polar(ax, ay, r, turn(f));

@@ -8,8 +8,8 @@ use super::GaugeFace;
 use crate::dash::text_box;
 use crate::draw::polar;
 use crate::gauges::SWEEP;
-use crate::shapes::{band, chrono_glass, circle, dir, needle, rounded, Ink};
-use dodai_gpui::paint::{fill, scale_alpha, stroke};
+use crate::shapes::{band, chrono_glass, dir, rounded, Hand, Ink};
+use dodai_gpui::paint::{fill, fill_circle, fill_rect, scale_alpha, stroke, stroke_circle};
 use dodai_gpui::theme_of;
 use gpui::{
     div, px, AnyElement, App, FontWeight, Hsla, IntoElement, ParentElement, Pixels, Styled,
@@ -35,17 +35,17 @@ fn register(
     col: Hsla,
     ink: Ink,
 ) {
-    fill(w, o, &circle(x, y, r), scale_alpha(ink.text, 0.05));
-    stroke(w, o, &circle(x, y, r), r * 0.025, ink.line, true);
+    fill_circle(w, o, (x, y), r, scale_alpha(ink.text, 0.05));
+    stroke_circle(w, o, (x, y), r, r * 0.025, ink.line);
     // Fine concentric grooves, like the snailed finish of a watch register.
     for k in 1..6 {
-        stroke(
+        stroke_circle(
             w,
             o,
-            &circle(x, y, r * (0.3 + 0.1 * k as f32)),
+            (x, y),
+            r * (0.3 + 0.1 * k as f32),
             r * 0.006,
             scale_alpha(ink.text, 0.04),
-            true,
         );
     }
     for (a, z, zc) in zones {
@@ -74,8 +74,16 @@ fn register(
         );
     }
     let a = start + span * frac.clamp(0.0, 1.0);
-    fill(w, o, &needle(x, y, a, r * 0.9, r * 0.2, r * 0.045), col);
-    fill(w, o, &circle(x, y, r * 0.07), ink.text);
+    Hand {
+        centre: (x, y),
+        turn: a,
+        reach: (r * 0.2, r * 0.9),
+        half: r * 0.045,
+        colours: (col, ink.text),
+        shadow: None,
+    }
+    .paint(w, o);
+    fill_circle(w, o, (x, y), r * 0.07, ink.text);
 }
 
 impl GaugeFace {
@@ -98,16 +106,9 @@ impl GaugeFace {
         let sub = (c - s * 0.19, c, s * 0.085);
         let paint = move |w: &mut gpui::Window, o: gpui::Point<Pixels>| {
             // The bezel: a dark ring with a bright outer lip.
-            fill(w, o, &circle(c, c, r_out), ink.ground);
-            fill(w, o, &circle(c, c, r_out), scale_alpha(ink.text, 0.07));
-            stroke(
-                w,
-                o,
-                &circle(c, c, r_out),
-                s * 0.008,
-                scale_alpha(ink.text, 0.3),
-                true,
-            );
+            fill_circle(w, o, (c, c), r_out, ink.ground);
+            fill_circle(w, o, (c, c), r_out, scale_alpha(ink.text, 0.07));
+            stroke_circle(w, o, (c, c), r_out, s * 0.008, scale_alpha(ink.text, 0.3));
             for (a, z, zc) in &zones {
                 fill(
                     w,
@@ -151,9 +152,9 @@ impl GaugeFace {
                 col,
             );
             // The face: plain, with a minute track.
-            fill(w, o, &circle(c, c, r_face), ink.face);
-            fill(w, o, &circle(c, c, r_face), scale_alpha(ink.text, 0.03));
-            stroke(w, o, &circle(c, c, r_in), s * 0.006, ink.line, true);
+            fill_circle(w, o, (c, c), r_face, ink.face);
+            fill_circle(w, o, (c, c), r_face, scale_alpha(ink.text, 0.03));
+            stroke_circle(w, o, (c, c), r_in, s * 0.006, ink.line);
             for i in 0..60 {
                 let a = i as f32 / 60.0;
                 let r0 = if i % 5 == 0 {
@@ -174,25 +175,22 @@ impl GaugeFace {
             // The hand: a shadow, the long blade with a lume tip, a counterweight and the hub.
             let a = start + span * frac;
             let tip = r_in + s * 0.05;
-            fill(
-                w,
-                o,
-                &needle(c + s * 0.006, c + s * 0.008, a, tip, s * 0.14, s * 0.01),
-                scale_alpha(ink.text, 0.12),
-            );
-            fill(w, o, &needle(c, c, a, tip, s * 0.14, s * 0.01), col);
+            Hand {
+                centre: (c, c),
+                turn: a,
+                reach: (s * 0.14, tip),
+                half: s * 0.01,
+                colours: (col, ink.text),
+                shadow: Some(scale_alpha(ink.text, 0.12)),
+            }
+            .paint(w, o);
             let (lx, ly) = polar(c, c, r_in - s * 0.035, a);
-            fill(w, o, &circle(lx, ly, s * 0.016), col);
-            stroke(w, o, &circle(lx, ly, s * 0.016), s * 0.004, ink.text, true);
+            fill_circle(w, o, (lx, ly), s * 0.016, col);
+            stroke_circle(w, o, (lx, ly), s * 0.016, s * 0.004, ink.text);
             let (dx, dy) = dir(a);
-            fill(
-                w,
-                o,
-                &circle(c - dx * s * 0.11, c - dy * s * 0.11, s * 0.02),
-                col,
-            );
-            fill(w, o, &circle(c, c, s * 0.03), ink.text);
-            fill(w, o, &circle(c, c, s * 0.012), ink.face);
+            fill_circle(w, o, (c - dx * s * 0.11, c - dy * s * 0.11), s * 0.02, col);
+            fill_circle(w, o, (c, c), s * 0.03, ink.text);
+            fill_circle(w, o, (c, c), s * 0.012, ink.face);
             chrono_glass(w, o, s, r_face, ink);
         };
         let numerals = major_labels(&self).into_iter().map(move |(f, label)| {
@@ -272,10 +270,11 @@ impl GaugeFace {
             register(w, o, left, SWEEP, (marks, FINE), &zones, frac, col, ink);
             register(w, o, right, (0.0, 1.0), (20, 5), &[], frac, col, ink);
             // A glint across the top of the crystal.
-            fill(
+            fill_rect(
                 w,
                 o,
-                &rounded(k * 2.0, k * 1.5, s - 4.0 * k, h * 0.18, h * 0.09),
+                (k * 2.0, k * 1.5, s - 4.0 * k, h * 0.18),
+                h * 0.09,
                 scale_alpha(ink.text, 0.025),
             );
         };

@@ -3,8 +3,9 @@
 //! the theme does and take every colour from the palette. The `live` ones
 //! animate from a shared clock (and only then ask for frames).
 
+use crate::draw::circle_points;
 use crate::draw::{fmt_num, glow_stroke, norm, turn_arc, ChartGlow};
-use crate::gauges::{chamfer_rect, disc, zone, SWEEP};
+use crate::gauges::{chamfer_rect, zone, SWEEP};
 use dodai_core::{Color, Theme};
 use dodai_gpui::paint::{fill, fill_batch, scale_alpha, shaped, stroke, stroke_batch};
 use dodai_gpui::text::{first_family, format_label};
@@ -525,13 +526,13 @@ impl RenderOnce for DotMatrix {
                         let (x, y) = (pitch * (i as f32 + 0.5), h - pitch * (row as f32 + 0.5));
                         if cov >= 0.99 {
                             if let Some(gr) = glow {
-                                halo.push(disc(x, y, r + gr * 0.25, 10));
+                                halo.push(circle_points(x, y, r + gr * 0.25));
                             }
-                            lit.push(disc(x, y, r, 10));
+                            lit.push(circle_points(x, y, r));
                         } else if cov > 0.0 {
-                            soft.push(disc(x, y, r, 10));
+                            soft.push(circle_points(x, y, r));
                         } else {
-                            off.push(disc(x, y, r * 0.7, 8));
+                            off.push(circle_points(x, y, r * 0.7));
                         }
                     }
                 }

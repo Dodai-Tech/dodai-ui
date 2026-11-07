@@ -8,9 +8,9 @@
 //! [`Look::Halo`]: crate::look::Look::Halo
 
 use crate::draw::{polar, turn_arc};
-use crate::shapes::{band, chamfered, circle, dir, Ink};
+use crate::shapes::{band, chamfered, dir, Ink};
 use dodai_gpui::motion::mix;
-use dodai_gpui::paint::{fill, scale_alpha, stroke};
+use dodai_gpui::paint::{fill, fill_circle, scale_alpha, stroke, stroke_circle};
 use gpui::{Hsla, ParentElement, Pixels, Point, Styled, Window};
 
 // ───────────────────────────────── Vintage ─────────────────────────────────
@@ -93,40 +93,33 @@ pub(crate) fn plate(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> f32 {
         false,
     );
     let hair = (s * 0.0025).max(0.5);
-    stroke(
+    stroke_circle(
         w,
         o,
-        &circle(c, c, r_bezel),
+        (c, c),
+        r_bezel,
         hair * 1.4,
         scale_alpha(ink.text, 0.5),
-        true,
     );
-    stroke(
+    stroke_circle(
         w,
         o,
-        &circle(c, c, r_bezel - s * 0.025),
+        (c, c),
+        r_bezel - s * 0.025,
         hair,
         scale_alpha(ink.text, 0.2),
-        true,
     );
-    fill(w, o, &circle(c, c, r_face), aged(ink));
+    fill_circle(w, o, (c, c), r_face, aged(ink));
     crate::draw::sunburst(w, o, (c, c), r_face, ink.text);
-    stroke(
-        w,
-        o,
-        &circle(c, c, r_face),
-        hair,
-        scale_alpha(ink.text, 0.35),
-        true,
-    );
+    stroke_circle(w, o, (c, c), r_face, hair, scale_alpha(ink.text, 0.35));
     r_face
 }
 
 /// A slotted screw head at `at`, radius `r`, its slot turned by `turn`.
 pub(crate) fn screw(w: &mut Window, o: Point<Pixels>, at: (f32, f32), r: f32, turn: f32, ink: Ink) {
     let (x, y) = at;
-    fill(w, o, &circle(x, y, r), scale_alpha(ink.text, 0.18));
-    stroke(w, o, &circle(x, y, r), r * 0.18, ink.line, true);
+    fill_circle(w, o, (x, y), r, scale_alpha(ink.text, 0.18));
+    stroke_circle(w, o, (x, y), r, r * 0.18, ink.line);
     let (dx, dy) = dir(turn);
     stroke(
         w,
@@ -178,7 +171,7 @@ impl SpadeHand {
         stroke(w, o, &shaft_s, width, shade, false);
         let (rx, ry, rr) = self.ring;
         stroke(w, o, &self.shaft, width, col, false);
-        stroke(w, o, &circle(rx, ry, rr), width, col, true);
+        stroke_circle(w, o, (rx, ry), rr, width, col);
         fill(w, o, &self.tip, col);
     }
 }
@@ -201,10 +194,11 @@ pub(crate) fn name_plate(
     stroke(w, o, &p, h * 0.04, scale_alpha(ink.text, 0.3), true);
     // The rivets end before `plate_inset`, so the text never covers them.
     for rx in [x + h * 0.35, x + wd - h * 0.35] {
-        fill(
+        fill_circle(
             w,
             o,
-            &circle(rx, y + h / 2.0, h * 0.09),
+            (rx, y + h / 2.0),
+            h * 0.09,
             scale_alpha(ink.text, 0.4),
         );
     }
@@ -225,6 +219,7 @@ pub(crate) fn engraved_scale(
 ) {
     let fine = 10;
     let n = majors.max(1) * fine;
+    let mut ticks = crate::draw::Strokes::default();
     for i in 0..=n {
         let a = start + span * i as f32 / n as f32;
         let (len, wd) = if i % fine == 0 {
@@ -234,15 +229,13 @@ pub(crate) fn engraved_scale(
         } else {
             (s * 0.018, s * 0.003)
         };
-        stroke(
-            w,
-            o,
-            &[polar(cx, cy, r - len, a), polar(cx, cy, r, a)],
+        ticks.add(
+            vec![polar(cx, cy, r - len, a), polar(cx, cy, r, a)],
             wd,
             ink.text,
-            false,
         );
     }
+    ticks.paint(w, o);
     stroke(
         w,
         o,
@@ -287,18 +280,13 @@ pub(crate) fn lcd(
     let glass = chamfered(gx, gy, gw, gh, s * 0.03);
     fill(w, o, &glass, ink.face);
     fill(w, o, &glass, scale_alpha(ink.primary, 0.05));
+    let mut lines = Vec::new();
     let mut yy = gy + s * 0.012;
     while yy < gy + gh - s * 0.01 {
-        stroke(
-            w,
-            o,
-            &[(gx + s * 0.01, yy), (gx + gw - s * 0.01, yy)],
-            hair * 0.5,
-            scale_alpha(ink.text, 0.02),
-            false,
-        );
+        lines.push(vec![(gx + s * 0.01, yy), (gx + gw - s * 0.01, yy)]);
         yy += s * 0.01;
     }
+    dodai_gpui::paint::stroke_batch(w, o, &lines, hair * 0.5, scale_alpha(ink.text, 0.02), false);
     // A sheen across the top left of the glass.
     for i in 0..4 {
         fill(
@@ -348,6 +336,7 @@ pub(crate) fn seg_arc(
     off: Hsla,
 ) {
     let n = lit.len().max(1) as f32;
+    let mut dark = Vec::new();
     for (i, l) in lit.iter().enumerate() {
         let a = start + span * i as f32 / n;
         let z = start + span * (i as f32 + 0.78) / n;
@@ -357,9 +346,11 @@ pub(crate) fn seg_arc(
                 stroke(w, o, &p, (r1 - r0) * 0.3, scale_alpha(*col, 0.08), true);
                 fill(w, o, &p, *col);
             }
-            None => fill(w, o, &p, off),
+            None => dark.push(p),
         }
     }
+    // The unlit segments share one colour: one path for all of them.
+    dodai_gpui::paint::fill_batch(w, o, &dark, off);
 }
 
 /// The colour of every one of `n` segments of a bar lit up to `frac`: lit ones from `colour`
@@ -417,53 +408,41 @@ pub(crate) fn halo(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> f32 {
     // Soft glow: layered discs, faint at the rim.
     for k in 0..8 {
         let rr = r - s * 0.012 * k as f32;
-        fill(w, o, &circle(c, c, rr), scale_alpha(ink.primary, 0.012));
+        fill_circle(w, o, (c, c), rr, scale_alpha(ink.primary, 0.012));
     }
-    fill(w, o, &circle(c, c, r - s * 0.07), ink.face);
-    fill(
-        w,
-        o,
-        &circle(c, c, r - s * 0.07),
-        scale_alpha(ink.primary, 0.04),
-    );
+    fill_circle(w, o, (c, c), r - s * 0.07, ink.face);
+    fill_circle(w, o, (c, c), r - s * 0.07, scale_alpha(ink.primary, 0.04));
     // The orb: brighter towards the middle.
     for k in 0..6 {
         let rr = (r - s * 0.07) * (1.0 - k as f32 * 0.15);
-        fill(w, o, &circle(c, c, rr), scale_alpha(ink.info, 0.012));
+        fill_circle(w, o, (c, c), rr, scale_alpha(ink.info, 0.012));
     }
-    stroke(
+    stroke_circle(
         w,
         o,
-        &circle(c, c, r - s * 0.07),
+        (c, c),
+        r - s * 0.07,
         s * 0.003,
         scale_alpha(ink.primary, 0.35),
-        true,
     );
     let hair = (s * 0.0025).max(0.5);
+    let mut ticks = crate::draw::Strokes::default();
     for i in 0..240 {
         let a = i as f32 / 240.0;
-        let len = if i % 20 == 0 { s * 0.02 } else { s * 0.008 };
-        stroke(
-            w,
-            o,
-            &[
-                polar(c, c, r - s * 0.035 - len, a),
-                polar(c, c, r - s * 0.035, a),
-            ],
-            hair,
-            scale_alpha(ink.text, if i % 20 == 0 { 0.45 } else { 0.14 }),
-            false,
-        );
+        let (len, alpha) = if i % 20 == 0 {
+            (s * 0.02, 0.45)
+        } else {
+            (s * 0.008, 0.14)
+        };
+        let line = vec![
+            polar(c, c, r - s * 0.035 - len, a),
+            polar(c, c, r - s * 0.035, a),
+        ];
+        ticks.add(line, hair, scale_alpha(ink.text, alpha));
     }
+    ticks.paint(w, o);
     // The rim: a hairline of light, brightest over the crown.
-    stroke(
-        w,
-        o,
-        &circle(c, c, r),
-        hair,
-        scale_alpha(ink.primary, 0.35),
-        true,
-    );
+    stroke_circle(w, o, (c, c), r, hair, scale_alpha(ink.primary, 0.35));
     glow_arc(
         w,
         o,
@@ -500,15 +479,27 @@ pub(crate) fn glow_arc(
     if a1 <= a0 {
         return;
     }
-    let n = ((a1 - a0) * 120.0).ceil().max(2.0) as usize;
-    for i in 0..n {
-        let u0 = a0 + (a1 - a0) * i as f32 / n as f32;
-        let u1 = a0 + (a1 - a0) * (i + 1) as f32 / n as f32;
-        let col = mix(from, to, (i as f32 + 0.5) / n as f32);
-        let arc = turn_arc(cx, cy, r, u0, u1 + 0.001);
+    // The soft glow blends in coarse steps (it is too blurred to show them), the line itself
+    // in fine ones: 60 a turn.
+    let at = |i: usize, n: usize| a0 + (a1 - a0) * i as f32 / n as f32;
+    let glow_n = ((a1 - a0) * 10.0).ceil().max(1.0) as usize;
+    for i in 0..glow_n {
+        let col = mix(from, to, (i as f32 + 0.5) / glow_n as f32);
+        let arc = turn_arc(cx, cy, r, at(i, glow_n), at(i + 1, glow_n) + 0.001);
         stroke(w, o, &arc, width * 4.0, scale_alpha(col, 0.08), false);
         stroke(w, o, &arc, width * 2.2, scale_alpha(col, 0.18), false);
-        stroke(w, o, &arc, width, col, false);
+    }
+    let n = ((a1 - a0) * 60.0).ceil().max(2.0) as usize;
+    for i in 0..n {
+        let col = mix(from, to, (i as f32 + 0.5) / n as f32);
+        stroke(
+            w,
+            o,
+            &turn_arc(cx, cy, r, at(i, n), at(i + 1, n) + 0.001),
+            width,
+            col,
+            false,
+        );
     }
 }
 
@@ -522,18 +513,34 @@ pub(crate) fn glow_dot(
     core: Hsla,
 ) {
     for k in (1..=5).rev() {
-        fill(
+        fill_circle(
             w,
             o,
-            &circle(x, y, r * (1.0 + k as f32 * 0.4)),
+            (x, y),
+            r * (1.0 + k as f32 * 0.4),
             scale_alpha(col, 0.07),
         );
     }
-    fill(w, o, &circle(x, y, r), col);
-    fill(w, o, &circle(x, y, r * 0.45), core);
+    fill_circle(w, o, (x, y), r, col);
+    fill_circle(w, o, (x, y), r * 0.45, core);
 }
 
-/// Paint a blade of light from radius `r0` to `r1` at `turn`, glowing, with a dot at the tip.
+/// The tapered outline of a blade from radius `r0` (half-width `h0`) to `r1` (half-width `h1`)
+/// at `turn` round `(cx, cy)`. Pure.
+pub(crate) fn blade_outline(
+    (cx, cy): (f32, f32),
+    (r0, r1): (f32, f32),
+    (h0, h1): (f32, f32),
+    turn: f32,
+) -> [(f32, f32); 4] {
+    let (dx, dy) = dir(turn);
+    let (nx, ny) = (-dy, dx);
+    let at = |r: f32, h: f32| (cx + dx * r + nx * h, cy + dy * r + ny * h);
+    [at(r0, h0), at(r1, h1), at(r1, -h1), at(r0, -h0)]
+}
+
+/// Paint a blade of light from radius `r0` to `r1` at `turn`: a soft glow, a body that
+/// tapers towards the centre, a white-hot core over its outer half and a dot at the tip.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn light_blade(
     w: &mut Window,
@@ -546,9 +553,19 @@ pub(crate) fn light_blade(
     core: Hsla,
 ) {
     let line = [polar(cx, cy, r0, turn), polar(cx, cy, r1, turn)];
-    stroke(w, o, &line, width * 5.0, scale_alpha(col, 0.08), false);
-    stroke(w, o, &line, width * 2.5, scale_alpha(col, 0.2), false);
-    stroke(w, o, &line, width, col, false);
+    stroke(w, o, &line, width * 5.0, scale_alpha(col, 0.06), false);
+    stroke(w, o, &line, width * 2.4, scale_alpha(col, 0.16), false);
+    let body = blade_outline((cx, cy), (r0, r1), (width * 0.2, width * 0.6), turn);
+    fill(w, o, &body, col);
+    let hot = [polar(cx, cy, r0 + (r1 - r0) * 0.5, turn), line[1]];
+    stroke(
+        w,
+        o,
+        &hot,
+        (width * 0.3).max(0.5),
+        scale_alpha(core, 0.85),
+        false,
+    );
     glow_dot(w, o, line[1], width * 1.4, col, core);
 }
 
@@ -576,9 +593,66 @@ pub(crate) fn wake(
     }
 }
 
+/// The hand of the halo look: a blade of light with a fading wake behind it, both over the
+/// same reach so the line is exactly as long as its glow.
+#[derive(Clone, Copy)]
+pub(crate) struct LightHand {
+    /// The centre the hand turns round.
+    pub centre: (f32, f32),
+    /// From the inner end of the blade and wake to the track the hand points at.
+    pub reach: (f32, f32),
+    /// The direction, in turns.
+    pub turn: f32,
+    /// How far the wake trails behind, in turns.
+    pub trail: f32,
+    /// The blade's width.
+    pub width: f32,
+    /// The value colour, and the white-hot core.
+    pub colours: (Hsla, Hsla),
+}
+
+impl LightHand {
+    /// Paint the wake, then the blade over it; the blade's tip passes the track by a little.
+    pub(crate) fn paint(self, w: &mut Window, o: Point<Pixels>) {
+        let (r0, r1) = self.reach;
+        let (col, core) = self.colours;
+        wake(
+            w,
+            o,
+            self.centre,
+            (r0, r1 - self.width * 2.0),
+            self.turn,
+            self.trail,
+            col,
+        );
+        let tip = r1 + self.width * 6.0;
+        light_blade(
+            w,
+            o,
+            self.centre,
+            (r0, tip),
+            self.turn,
+            self.width,
+            col,
+            core,
+        );
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_blade_tapers_towards_the_centre_along_its_turn() {
+        let b = blade_outline((0.0, 0.0), (10.0, 50.0), (1.0, 3.0), 0.0);
+        // Pointing up: the inner end is narrower and both ends sit on the axis.
+        let width =
+            |p: (f32, f32), q: (f32, f32)| ((p.0 - q.0).powi(2) + (p.1 - q.1).powi(2)).sqrt();
+        assert!((width(b[0], b[3]) - 2.0).abs() < 1e-4);
+        assert!((width(b[1], b[2]) - 6.0).abs() < 1e-4);
+        assert!((b[1].1 + 50.0).abs() < 1e-4 && (b[0].1 + 10.0).abs() < 1e-4);
+    }
 
     #[test]
     fn plate_text_keeps_clear_of_the_rivets() {

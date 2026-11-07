@@ -6,7 +6,8 @@
 
 use super::*;
 use crate::frames::{halo, lit_segments, seg_arc};
-use crate::shapes::{band, chrono_case, circle, hud_ring};
+use crate::shapes::{band, chrono_case, hud_ring};
+use dodai_gpui::paint::{fill_circle, stroke_circle};
 
 /// Whether `look` is drawn round, so its pod layouts keep to circles too. Pure.
 pub(crate) fn round_look(look: Look) -> bool {
@@ -65,49 +66,28 @@ fn case(w: &mut Window, o: gpui::Point<Pixels>, look: Look, at: (f32, f32), d: f
     let hair = (d * 0.004).max(0.6);
     match look {
         Look::Sport => {
-            fill(w, o, &circle(c, c, c), ink.ground);
-            fill(w, o, &circle(c, c, c), scale_alpha(ink.text, 0.05));
-            stroke(
+            fill_circle(w, o, (c, c), c, ink.ground);
+            fill_circle(w, o, (c, c), c, scale_alpha(ink.text, 0.05));
+            stroke_circle(w, o, (c, c), c, hair * 1.6, scale_alpha(ink.text, 0.5));
+            stroke_circle(
                 w,
                 o,
-                &circle(c, c, c),
-                hair * 1.6,
-                scale_alpha(ink.text, 0.5),
-                true,
-            );
-            stroke(
-                w,
-                o,
-                &circle(c, c, c - d * 0.018),
+                (c, c),
+                c - d * 0.018,
                 hair,
                 scale_alpha(ink.text, 0.16),
-                true,
             );
         }
         Look::Chronograph => {
             chrono_case(w, o, d, ink);
         }
         Look::Vintage => {
-            fill(w, o, &circle(c, c, c), ink.face);
-            fill(w, o, &circle(c, c, c), scale_alpha(ink.text, 0.1));
-            stroke(
-                w,
-                o,
-                &circle(c, c, c),
-                hair * 1.4,
-                scale_alpha(ink.text, 0.45),
-                true,
-            );
+            fill_circle(w, o, (c, c), c, ink.face);
+            fill_circle(w, o, (c, c), c, scale_alpha(ink.text, 0.1));
+            stroke_circle(w, o, (c, c), c, hair * 1.4, scale_alpha(ink.text, 0.45));
             let r = c - d * 0.04;
-            fill(w, o, &circle(c, c, r), aged(ink));
-            stroke(
-                w,
-                o,
-                &circle(c, c, r),
-                hair,
-                scale_alpha(ink.text, 0.3),
-                true,
-            );
+            fill_circle(w, o, (c, c), r, aged(ink));
+            stroke_circle(w, o, (c, c), r, hair, scale_alpha(ink.text, 0.3));
         }
         Look::HeadsUp => {
             hud_ring(w, o, d, ink, ink.primary);
@@ -115,7 +95,7 @@ fn case(w: &mut Window, o: gpui::Point<Pixels>, look: Look, at: (f32, f32), d: f
         Look::Halo => {
             halo(w, o, d, ink);
         }
-        Look::Line => stroke(w, o, &circle(c, c, c - hair), hair, ink.muted, true),
+        Look::Line => stroke_circle(w, o, (c, c), c - hair, hair, ink.muted),
         Look::Segment | Look::GlassCockpit | Look::Race => frame(w, o, look, (d, d), d, ink),
     }
 }
@@ -181,7 +161,7 @@ fn level_ring(
                     false,
                 );
                 let (x, y) = polar(c.0, c.1, r, a + span * f);
-                fill(w, o, &circle(x, y, hair * 3.0), col);
+                fill_circle(w, o, (x, y), hair * 3.0, col);
             }
         }
         Look::Sport | Look::Chronograph | Look::Vintage | Look::GlassCockpit => {
@@ -189,13 +169,13 @@ fn level_ring(
             fill(w, o, &band(c.0, c.1, r0, r1, a, a + span), ty.track);
             for end in [a, a + span] {
                 let (x, y) = polar(c.0, c.1, r, end);
-                fill(w, o, &circle(x, y, bw / 2.0), ty.track);
+                fill_circle(w, o, (x, y), bw / 2.0, ty.track);
             }
             if f > 0.0 {
                 fill(w, o, &band(c.0, c.1, r0, r1, a, a + span * f), col);
                 for end in [a, a + span * f] {
                     let (x, y) = polar(c.0, c.1, r, end);
-                    fill(w, o, &circle(x, y, bw / 2.0), col);
+                    fill_circle(w, o, (x, y), bw / 2.0, col);
                 }
             }
         }

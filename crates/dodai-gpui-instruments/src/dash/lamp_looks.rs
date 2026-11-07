@@ -6,8 +6,9 @@ use super::*;
 use crate::frames::{aged, ghost, glow_arc, glow_dot, seg_text};
 use crate::mfd::rect;
 use crate::race::skew;
-use crate::shapes::{chamfered, circle, Ink};
+use crate::shapes::{chamfered, Ink};
 use dodai_gpui::motion::mix;
+use dodai_gpui::paint::{fill_circle, fill_rect, stroke_circle};
 
 /// A canvas filling its parent.
 fn layer(paint: impl Fn(&mut Window, gpui::Point<Pixels>) + 'static) -> impl IntoElement {
@@ -40,31 +41,25 @@ pub(super) fn lamp(icon: Symbol, tone: Tone, sz: f32, look: Look, t: &Theme) -> 
     };
     let paint = move |w: &mut Window, o: gpui::Point<Pixels>| match look {
         Look::Chronograph => {
-            fill(w, o, &circle(c, c, c * 0.96), scale_alpha(ink.text, 0.06));
-            stroke(w, o, &circle(c, c, c * 0.96), d * 0.04, ink.line, true);
-            stroke(
-                w,
-                o,
-                &circle(c, c, c * 0.8),
-                d * 0.015,
-                scale_alpha(ink.text, 0.2),
-                true,
-            );
+            fill_circle(w, o, (c, c), c * 0.96, scale_alpha(ink.text, 0.06));
+            stroke_circle(w, o, (c, c), c * 0.96, d * 0.04, ink.line);
+            stroke_circle(w, o, (c, c), c * 0.8, d * 0.015, scale_alpha(ink.text, 0.2));
         }
         Look::Vintage => {
-            fill(w, o, &circle(c, c, c), scale_alpha(ink.text, 0.25));
-            fill(w, o, &circle(c, c, c * 0.82), ink.line);
+            fill_circle(w, o, (c, c), c, scale_alpha(ink.text, 0.25));
+            fill_circle(w, o, (c, c), c * 0.82, ink.line);
             if lit {
                 for k in 0..5 {
-                    fill(
+                    fill_circle(
                         w,
                         o,
-                        &circle(c, c, c * 0.82 * (1.0 - k as f32 * 0.15)),
+                        (c, c),
+                        c * 0.82 * (1.0 - k as f32 * 0.15),
                         scale_alpha(col, 0.2),
                     );
                 }
             } else {
-                fill(w, o, &circle(c, c, c * 0.82), scale_alpha(aged(ink), 0.5));
+                fill_circle(w, o, (c, c), c * 0.82, scale_alpha(aged(ink), 0.5));
             }
             let mut glint = turn_arc(c, c, c * 0.68, 0.8, 0.97);
             glint.extend(turn_arc(c, c, c * 0.5, 0.97, 0.8));
@@ -104,13 +99,13 @@ pub(super) fn lamp(icon: Symbol, tone: Tone, sz: f32, look: Look, t: &Theme) -> 
                     scale_alpha(col, 0.0),
                 );
             }
-            stroke(
+            stroke_circle(
                 w,
                 o,
-                &circle(c, c, c * 0.92),
+                (c, c),
+                c * 0.92,
                 d * 0.02,
                 scale_alpha(col, if lit { 0.6 } else { 0.25 }),
-                true,
             );
         }
         Look::GlassCockpit => {
@@ -173,7 +168,7 @@ pub(super) fn sign(limit: u32, d: f32, look: Look, t: &Theme) -> AnyElement {
     let printed = matches!(look, Look::Chronograph | Look::Vintage);
     let paint = move |w: &mut Window, o: gpui::Point<Pixels>| match look {
         Look::Chronograph => {
-            fill(w, o, &circle(c, c, c), scale_alpha(ink.text, 0.1));
+            fill_circle(w, o, (c, c), c, scale_alpha(ink.text, 0.1));
             for i in 0..48 {
                 let a = i as f32 / 48.0;
                 stroke(
@@ -185,14 +180,14 @@ pub(super) fn sign(limit: u32, d: f32, look: Look, t: &Theme) -> AnyElement {
                     false,
                 );
             }
-            fill(w, o, &circle(c, c, c * 0.86), red);
-            fill(w, o, &circle(c, c, c * 0.64), paper);
+            fill_circle(w, o, (c, c), c * 0.86, red);
+            fill_circle(w, o, (c, c), c * 0.64, paper);
         }
         Look::Vintage => {
-            fill(w, o, &circle(c, c, c), scale_alpha(ink.text, 0.3));
-            fill(w, o, &circle(c, c, c * 0.92), paper);
-            fill(w, o, &circle(c, c, c * 0.84), red);
-            fill(w, o, &circle(c, c, c * 0.62), paper);
+            fill_circle(w, o, (c, c), c, scale_alpha(ink.text, 0.3));
+            fill_circle(w, o, (c, c), c * 0.92, paper);
+            fill_circle(w, o, (c, c), c * 0.84, red);
+            fill_circle(w, o, (c, c), c * 0.62, paper);
             let mut glint = turn_arc(c, c, c * 0.88, 0.78, 0.98);
             glint.extend(turn_arc(c, c, c * 0.7, 0.98, 0.78));
             fill(w, o, &glint, scale_alpha(ink.text, 0.15));
@@ -210,19 +205,12 @@ pub(super) fn sign(limit: u32, d: f32, look: Look, t: &Theme) -> AnyElement {
         }
         Look::Halo => {
             glow_arc(w, o, (c, c), c * 0.82, (0.0, 1.0), d * 0.05, (red, red));
-            stroke(
-                w,
-                o,
-                &circle(c, c, c * 0.62),
-                d * 0.01,
-                scale_alpha(red, 0.4),
-                true,
-            );
+            stroke_circle(w, o, (c, c), c * 0.62, d * 0.01, scale_alpha(red, 0.4));
         }
         Look::GlassCockpit => {
             let frame = rect(d * 0.04, d * 0.04, d * 0.92, d * 0.92);
             fill(w, o, &frame, ink.ground);
-            fill(w, o, &rect(d * 0.04, d * 0.04, d * 0.92, d * 0.16), red);
+            fill_rect(w, o, (d * 0.04, d * 0.04, d * 0.92, d * 0.16), 0.0, red);
             stroke(w, o, &frame, d * 0.06, red, true);
         }
         Look::Race => {
@@ -231,14 +219,7 @@ pub(super) fn sign(limit: u32, d: f32, look: Look, t: &Theme) -> AnyElement {
             stroke(w, o, &frame, d * 0.06, red, true);
         }
         Look::Line => {
-            stroke(
-                w,
-                o,
-                &circle(c, c, c * 0.94),
-                (d * 0.04).max(1.5),
-                red,
-                true,
-            );
+            stroke_circle(w, o, (c, c), c * 0.94, (d * 0.04).max(1.5), red);
         }
         Look::Sport => {}
     };

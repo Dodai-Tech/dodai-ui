@@ -11,6 +11,7 @@ use crate::look::PodLayout;
 use crate::mfd::{glow, panel};
 use crate::race::{plate_in, tag, tag_text};
 use crate::shapes::{chamfered, rounded, Ink};
+use dodai_gpui::paint::{fill_rect, stroke_rect};
 
 mod rings;
 
@@ -184,10 +185,11 @@ fn frame(
                 let pts = [(x + dx * l, y), (x, y), (x, y + dy * l)];
                 glow(w, o, &pts, lw, ink.primary, false);
             }
-            fill(
+            fill_rect(
                 w,
                 o,
-                &rounded(0.0, 0.0, wd, h, s * 0.02),
+                (0.0, 0.0, wd, h),
+                s * 0.02,
                 scale_alpha(ink.primary, 0.03),
             );
         }
@@ -199,13 +201,13 @@ fn frame(
             let p = rounded(0.0, 0.0, wd, h, r);
             for i in 1..=3 {
                 let k = s * 0.01 * i as f32;
-                stroke(
+                stroke_rect(
                     w,
                     o,
-                    &rounded(-k, -k, wd + 2.0 * k, h + 2.0 * k, r + k),
+                    (-k, -k, wd + 2.0 * k, h + 2.0 * k),
+                    r + k,
                     hair,
                     scale_alpha(ink.primary, 0.05),
-                    true,
                 );
             }
             fill(w, o, &p, ink.ground);

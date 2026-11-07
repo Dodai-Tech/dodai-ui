@@ -9,7 +9,7 @@ use crate::segment::SegmentDisplay;
 use dodai_core::Color;
 use dodai_gpui::follow::{follow, follow_angle, Follow};
 use dodai_gpui::follow_api;
-use dodai_gpui::paint::{fill, fill_batch, scale_alpha, stroke, stroke_batch};
+use dodai_gpui::paint::{fill, fill_batch, scale_alpha, stroke, stroke_batch, stroke_circle};
 use dodai_gpui::text::{first_family, format_label};
 use dodai_gpui::{hsla, theme_of};
 use dodai_instruments_core::flight;
@@ -91,7 +91,7 @@ impl RenderOnce for AttitudeIndicator {
                     .map(|k| vec![k.a, k.b])
                     .collect();
                 stroke_batch(w, o, &rungs, 1.5, scale_alpha(ink, 0.9), false);
-                stroke(w, o, &crate::gauges::disc(c, c, r, 72), 2.0, rim, true);
+                stroke_circle(w, o, (c, c), r, 2.0, rim);
                 // Roll scale on the rim, fixed to the airframe, with a pointer for the roll.
                 let ticks: Vec<Vec<(f32, f32)>> = flight::roll_ticks()
                     .iter()

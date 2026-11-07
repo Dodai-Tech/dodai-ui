@@ -11,9 +11,9 @@ use super::GaugeFace;
 use crate::dash::text_box;
 use crate::draw::{polar, turn_arc};
 use crate::mfd::glow;
-use crate::shapes::{band, circle};
+use crate::shapes::band;
 use dodai_gpui::icons::Icon;
-use dodai_gpui::paint::{fill, scale_alpha, stroke};
+use dodai_gpui::paint::{fill, fill_circle, scale_alpha, stroke, stroke_circle};
 use dodai_gpui::{hsla, theme_of};
 use dodai_instruments_core::instrument::readout;
 use gpui::prelude::FluentBuilder;
@@ -69,21 +69,14 @@ fn full_rim(
     ends: [Option<Hsla>; 2],
 ) {
     let (start, span) = ROUND;
-    stroke(
+    stroke_circle(w, o, (c, c), r, width * 0.7, scale_alpha(ink, 0.95));
+    stroke_circle(
         w,
         o,
-        &circle(c, c, r),
-        width * 0.7,
-        scale_alpha(ink, 0.95),
-        true,
-    );
-    stroke(
-        w,
-        o,
-        &circle(c, c, r - width * 1.5),
+        (c, c),
+        r - width * 1.5,
         width * 0.25,
         scale_alpha(ink, 0.4),
-        true,
     );
     fill(
         w,
@@ -109,13 +102,13 @@ fn guilloche(w: &mut gpui::Window, o: gpui::Point<Pixels>, c: f32, r: f32, ink: 
     let n = 18;
     for k in 1..=n {
         let rk = r * k as f32 / n as f32;
-        stroke(
+        stroke_circle(
             w,
             o,
-            &circle(c, c, rk),
+            (c, c),
+            rk,
             (r * 0.004).max(0.5),
             scale_alpha(ink, 0.05),
-            true,
         );
     }
 }
@@ -443,14 +436,9 @@ impl GaugeFace {
                 };
                 let last = on && i + 1 == lit_n;
                 if last {
-                    fill(w, o, &circle(x, y, lw * 1.6), scale_alpha(col, 0.18));
+                    fill_circle(w, o, (x, y), lw * 1.6, scale_alpha(col, 0.18));
                 }
-                fill(
-                    w,
-                    o,
-                    &circle(x, y, if last { lw * 0.85 } else { lw * 0.5 }),
-                    col,
-                );
+                fill_circle(w, o, (x, y), if last { lw * 0.85 } else { lw * 0.5 }, col);
             }
         };
         div()

@@ -2,7 +2,8 @@
 //! drum of rows on a heads-up display) and the dispatch to the others. Colours from the theme.
 
 use super::*;
-use crate::shapes::{chamfered, chrono_case, chrono_glass, circle, hud_ring, Ink};
+use crate::shapes::{chamfered, chrono_case, chrono_glass, hud_ring, Ink};
+use dodai_gpui::paint::{fill_circle, stroke_circle};
 
 /// Turn of row `i` of `n` on the selector, fanned around three o'clock.
 fn row_turn(i: usize, n: usize) -> f32 {
@@ -73,12 +74,7 @@ impl MenuRing {
                 false,
             );
             // The knob: knurled rim, cap and pointer.
-            fill(
-                w,
-                o,
-                &circle(kx, ky, kr * 1.12),
-                scale_alpha(ink.text, 0.12),
-            );
+            fill_circle(w, o, (kx, ky), kr * 1.12, scale_alpha(ink.text, 0.12));
             for k in 0..40 {
                 let a = k as f32 / 40.0;
                 stroke(
@@ -90,14 +86,14 @@ impl MenuRing {
                     false,
                 );
             }
-            fill(w, o, &circle(kx, ky, kr), ink.face);
-            stroke(
+            fill_circle(w, o, (kx, ky), kr, ink.face);
+            stroke_circle(
                 w,
                 o,
-                &circle(kx, ky, kr),
+                (kx, ky),
+                kr,
                 if pressed { s * 0.012 } else { s * 0.005 },
                 if pressed { ink.primary } else { ink.line },
-                true,
             );
             let a = row_turn(sel, n);
             stroke(
@@ -108,7 +104,7 @@ impl MenuRing {
                 ink.primary,
                 false,
             );
-            fill(w, o, &circle(kx, ky, kr * 0.12), ink.text);
+            fill_circle(w, o, (kx, ky), kr * 0.12, ink.text);
             chrono_glass(w, o, s, r_face, ink);
         };
         let mut el = div().relative().w(px(s)).h(px(s)).child(

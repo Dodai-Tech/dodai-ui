@@ -5,7 +5,8 @@
 use super::detailed::{case, label, layer, tone_or};
 use super::*;
 use crate::frames::{aged, name_plate, plate};
-use crate::shapes::{band, chrono_glass, circle, star, Ink};
+use crate::shapes::{band, chrono_glass, star, Ink};
+use dodai_gpui::paint::{fill_circle, stroke_circle};
 
 /// A small engraved half dial at `(x, y)` of radius `r` over the top half: ticks, a band to
 /// `low` in the warning colour and a thin hand at `f`.
@@ -19,15 +20,8 @@ fn half_dial(
     ink: Ink,
 ) {
     let (start, span) = (0.75_f32, 0.5_f32);
-    fill(w, o, &circle(x, y, r), scale_alpha(ink.text, 0.05));
-    stroke(
-        w,
-        o,
-        &circle(x, y, r),
-        r * 0.04,
-        scale_alpha(ink.text, 0.35),
-        true,
-    );
+    fill_circle(w, o, (x, y), r, scale_alpha(ink.text, 0.05));
+    stroke_circle(w, o, (x, y), r, r * 0.04, scale_alpha(ink.text, 0.35));
     fill(
         w,
         o,
@@ -60,7 +54,7 @@ fn half_dial(
             false,
         );
     }
-    fill(w, o, &circle(x, y, r * 0.09), ink.text);
+    fill_circle(w, o, (x, y), r * 0.09, ink.text);
 }
 
 // ───────────────────────────────── TyrePod ─────────────────────────────────
@@ -205,8 +199,8 @@ impl RowsPod {
                         *col,
                     );
                     if *span {
-                        fill(w, o, &circle(rx0, base, s * 0.007), ink.info);
-                        fill(w, o, &circle(rx1, base, s * 0.007), ink.danger);
+                        fill_circle(w, o, (rx0, base), s * 0.007, ink.info);
+                        fill_circle(w, o, (rx1, base), s * 0.007, ink.danger);
                     }
                 }
             }
@@ -264,7 +258,7 @@ impl NoticePod {
         let paint = move |w: &mut Window, o: gpui::Point<Pixels>| {
             let r_face = plate(w, o, s, ink);
             // The lamp: a knurled ring, the lit lens and a glint.
-            fill(w, o, &circle(lx, ly, lr * 1.3), scale_alpha(ink.text, 0.2));
+            fill_circle(w, o, (lx, ly), lr * 1.3, scale_alpha(ink.text, 0.2));
             for i in 0..48 {
                 let a = i as f32 / 48.0;
                 stroke(
@@ -276,12 +270,12 @@ impl NoticePod {
                     false,
                 );
             }
-            fill(w, o, &circle(lx, ly, lr * 1.08), ink.line);
+            fill_circle(w, o, (lx, ly), lr * 1.08, ink.line);
             for k in 0..6 {
                 let rr = lr * (1.0 - k as f32 * 0.12);
-                fill(w, o, &circle(lx, ly, rr), scale_alpha(col, 0.22));
+                fill_circle(w, o, (lx, ly), rr, scale_alpha(col, 0.22));
             }
-            stroke(w, o, &circle(lx, ly, lr), s * 0.004, col, true);
+            stroke_circle(w, o, (lx, ly), lr, s * 0.004, col);
             let mut glint = turn_arc(lx, ly, lr * 0.85, 0.8, 0.97);
             glint.extend(turn_arc(lx, ly, lr * 0.65, 0.97, 0.8));
             fill(w, o, &glint, scale_alpha(ink.text, 0.35));
@@ -337,15 +331,15 @@ impl GForcePod {
         let (bx, by) = (c + gx * reach, cy - gy * reach);
         let paint = move |w: &mut Window, o: gpui::Point<Pixels>| {
             let r_face = plate(w, o, s, ink);
-            fill(w, o, &circle(c, cy, reach), scale_alpha(ink.text, 0.04));
+            fill_circle(w, o, (c, cy), reach, scale_alpha(ink.text, 0.04));
             for k in 1..=4 {
-                stroke(
+                stroke_circle(
                     w,
                     o,
-                    &circle(c, cy, reach * k as f32 / 4.0),
+                    (c, cy),
+                    reach * k as f32 / 4.0,
                     if k == 4 { s * 0.005 } else { s * 0.0025 },
                     scale_alpha(ink.text, if k == 4 { 0.8 } else { 0.4 }),
-                    true,
                 );
             }
             for (ax, ay) in [(1.0_f32, 0.0_f32), (0.0, 1.0)] {
@@ -376,19 +370,15 @@ impl GForcePod {
             }
             // The ball: a shadow, the body and a glint.
             let br = s * 0.04;
-            fill(
+            fill_circle(
                 w,
                 o,
-                &circle(bx + br * 0.25, by + br * 0.35, br),
+                (bx + br * 0.25, by + br * 0.35),
+                br,
                 scale_alpha(ink.text, 0.15),
             );
-            fill(w, o, &circle(bx, by, br), ink.text);
-            fill(
-                w,
-                o,
-                &circle(bx - br * 0.35, by - br * 0.35, br * 0.3),
-                aged(ink),
-            );
+            fill_circle(w, o, (bx, by), br, ink.text);
+            fill_circle(w, o, (bx - br * 0.35, by - br * 0.35), br * 0.3, aged(ink));
             name_plate(w, o, (c - s * 0.15, c + s * 0.25, s * 0.3, s * 0.065), ink);
             chrono_glass(w, o, s, r_face, ink);
         };
@@ -443,34 +433,27 @@ impl MediaPod {
             for (i, &(x, used)) in reels.iter().enumerate() {
                 // The pack shrinks on the feeding reel and grows on the other.
                 let pack = rr * (0.42 + 0.5 * (1.0 - used));
-                fill(w, o, &circle(x, ly, rr), scale_alpha(ink.text, 0.06));
-                stroke(
-                    w,
-                    o,
-                    &circle(x, ly, rr),
-                    s * 0.004,
-                    scale_alpha(ink.text, 0.5),
-                    true,
-                );
-                fill(w, o, &circle(x, ly, pack), scale_alpha(ink.text, 0.32));
+                fill_circle(w, o, (x, ly), rr, scale_alpha(ink.text, 0.06));
+                stroke_circle(w, o, (x, ly), rr, s * 0.004, scale_alpha(ink.text, 0.5));
+                fill_circle(w, o, (x, ly), pack, scale_alpha(ink.text, 0.32));
                 for g in 1..4 {
-                    stroke(
+                    stroke_circle(
                         w,
                         o,
-                        &circle(x, ly, pack * g as f32 / 4.0 + rr * 0.1),
+                        (x, ly),
+                        pack * g as f32 / 4.0 + rr * 0.1,
                         s * 0.0015,
                         scale_alpha(ink.text, 0.2),
-                        true,
                     );
                 }
                 // The hub: three windows and a centre.
-                fill(w, o, &circle(x, ly, rr * 0.36), aged(ink));
+                fill_circle(w, o, (x, ly), rr * 0.36, aged(ink));
                 for k in 0..3 {
                     let a = k as f32 / 3.0 + i as f32 * 0.1 + used * 2.0;
                     let (hx, hy) = polar(x, ly, rr * 0.2, a);
-                    fill(w, o, &circle(hx, hy, rr * 0.08), ink.text);
+                    fill_circle(w, o, (hx, hy), rr * 0.08, ink.text);
                 }
-                fill(w, o, &circle(x, ly, rr * 0.06), ink.text);
+                fill_circle(w, o, (x, ly), rr * 0.06, ink.text);
                 // Tape from the pack down to its guide.
                 let side = if i == 0 { -1.0 } else { 1.0 };
                 let (gx, gy) = guides[i];
@@ -484,7 +467,7 @@ impl MediaPod {
                 );
             }
             for &(gx, gy) in &guides {
-                fill(w, o, &circle(gx, gy, s * 0.012), ink.text);
+                fill_circle(w, o, (gx, gy), s * 0.012, ink.text);
             }
             stroke(
                 w,
@@ -556,15 +539,8 @@ impl CompassPod {
         let r_ring = c - s * 0.115;
         let paint = move |w: &mut Window, o: gpui::Point<Pixels>| {
             let r_face = plate(w, o, s, ink);
-            stroke(w, o, &circle(c, c, r_ring), s * 0.003, ink.text, true);
-            stroke(
-                w,
-                o,
-                &circle(c, c, r_ring - s * 0.06),
-                s * 0.003,
-                ink.text,
-                true,
-            );
+            stroke_circle(w, o, (c, c), r_ring, s * 0.003, ink.text);
+            stroke_circle(w, o, (c, c), r_ring - s * 0.06, s * 0.003, ink.text);
             for i in 0..72 {
                 let a = i as f32 / 72.0 - turn;
                 let len = if i % 18 == 0 {

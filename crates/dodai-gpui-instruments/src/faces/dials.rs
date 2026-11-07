@@ -11,8 +11,8 @@ use crate::dash::text_box;
 use crate::draw::{hub, polar, sunburst, turn_arc};
 use crate::frames::{aged, spade};
 use crate::gauges::SWEEP;
-use crate::shapes::{band, chrono_glass, circle, needle, Ink};
-use dodai_gpui::paint::{fill, scale_alpha, stroke};
+use crate::shapes::{band, chrono_glass, Hand, Ink};
+use dodai_gpui::paint::{fill, fill_circle, scale_alpha, stroke, stroke_circle};
 use dodai_gpui::theme_of;
 use gpui::{div, px, AnyElement, App, FontWeight, IntoElement, ParentElement, Pixels, Styled};
 
@@ -45,24 +45,17 @@ impl GaugeFace {
         let hl = hair(s);
         let paint = move |w: &mut gpui::Window, o: gpui::Point<Pixels>| {
             // The case: a polished ring with a bright lip.
-            fill(w, o, &circle(c, c, r_case), ink.ground);
-            fill(w, o, &circle(c, c, r_case), scale_alpha(ink.text, 0.14));
-            stroke(
-                w,
-                o,
-                &circle(c, c, r_case),
-                hl * 2.0,
-                scale_alpha(ink.text, 0.45),
-                true,
-            );
+            fill_circle(w, o, (c, c), r_case, ink.ground);
+            fill_circle(w, o, (c, c), r_case, scale_alpha(ink.text, 0.14));
+            stroke_circle(w, o, (c, c), r_case, hl * 2.0, scale_alpha(ink.text, 0.45));
             // The face: the outer band a shade darker than the middle, the centre brushed.
-            fill(w, o, &circle(c, c, ro), ink.face);
-            fill(w, o, &circle(c, c, ro), scale_alpha(ink.ground, 0.25));
-            fill(w, o, &circle(c, c, rm), ink.face);
-            fill(w, o, &circle(c, c, ri), scale_alpha(ink.ground, 0.18));
+            fill_circle(w, o, (c, c), ro, ink.face);
+            fill_circle(w, o, (c, c), ro, scale_alpha(ink.ground, 0.25));
+            fill_circle(w, o, (c, c), rm, ink.face);
+            fill_circle(w, o, (c, c), ri, scale_alpha(ink.ground, 0.18));
             sunburst(w, o, (c, c), ri, ink.text);
             for r in [ro, rm, ri] {
-                stroke(w, o, &circle(c, c, r), hl, scale_alpha(ink.text, 0.5), true);
+                stroke_circle(w, o, (c, c), r, hl, scale_alpha(ink.text, 0.5));
             }
             // The zones as a fine band at the inside edge of the scale band.
             for (a, z, zc) in &zones {
@@ -97,13 +90,15 @@ impl GaugeFace {
             // The hand: a shadow, a long baton with a lume tip, a short tail and the hub.
             let a = at(frac);
             let tip = ro - s * 0.02;
-            fill(
-                w,
-                o,
-                &needle(c + s * 0.006, c + s * 0.008, a, tip, s * 0.1, s * 0.008),
-                scale_alpha(ink.ground, 0.45),
-            );
-            fill(w, o, &needle(c, c, a, tip, s * 0.1, s * 0.008), hand);
+            Hand {
+                centre: (c, c),
+                turn: a,
+                reach: (s * 0.1, tip),
+                half: s * 0.008,
+                colours: (hand, ink.text),
+                shadow: Some(scale_alpha(ink.ground, 0.45)),
+            }
+            .paint(w, o);
             // The lume: a pale slip near the tip.
             stroke(
                 w,
@@ -186,32 +181,19 @@ impl GaugeFace {
             for k in 0..steps {
                 let r = r_out - (r_out - r_face) * k as f32 / steps as f32;
                 let shine = 1.0 - (k as f32 / (steps - 1) as f32 - 0.35).abs() * 1.6;
-                fill(w, o, &circle(c, c, r), ink.ground);
-                fill(
+                fill_circle(w, o, (c, c), r, ink.ground);
+                fill_circle(
                     w,
                     o,
-                    &circle(c, c, r),
+                    (c, c),
+                    r,
                     scale_alpha(ink.text, 0.12 + 0.3 * shine.max(0.0)),
                 );
             }
-            stroke(
-                w,
-                o,
-                &circle(c, c, r_out),
-                hl * 1.5,
-                scale_alpha(ink.text, 0.6),
-                true,
-            );
+            stroke_circle(w, o, (c, c), r_out, hl * 1.5, scale_alpha(ink.text, 0.6));
             // The cream face.
-            fill(w, o, &circle(c, c, r_face), aged(ink));
-            stroke(
-                w,
-                o,
-                &circle(c, c, r_face),
-                hl * 2.0,
-                scale_alpha(ink.ground, 0.5),
-                true,
-            );
+            fill_circle(w, o, (c, c), r_face, aged(ink));
+            stroke_circle(w, o, (c, c), r_face, hl * 2.0, scale_alpha(ink.ground, 0.5));
             for (a, z, zc) in &zones {
                 fill(
                     w,
@@ -254,12 +236,13 @@ impl GaugeFace {
                 false,
             );
             spade(c, c, at(frac), r_scale - s * 0.012).paint(w, o, s * 0.008, hand, ink);
-            fill(w, o, &circle(c, c, s * 0.036), ink.text);
-            fill(w, o, &circle(c, c, s * 0.03), scale_alpha(ink.ground, 0.9));
-            fill(
+            fill_circle(w, o, (c, c), s * 0.036, ink.text);
+            fill_circle(w, o, (c, c), s * 0.03, scale_alpha(ink.ground, 0.9));
+            fill_circle(
                 w,
                 o,
-                &circle(c - s * 0.008, c - s * 0.008, s * 0.008),
+                (c - s * 0.008, c - s * 0.008),
+                s * 0.008,
                 scale_alpha(ink.face, 0.5),
             );
             chrono_glass(w, o, s, r_face, ink);

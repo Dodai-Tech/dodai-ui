@@ -4,7 +4,8 @@
 use super::detailed::{case, label, layer, tone_or};
 use super::*;
 use crate::frames::{glow_arc, glow_dot, halo, light_blade, pill};
-use crate::shapes::{circle, Ink};
+use crate::shapes::Ink;
+use dodai_gpui::paint::stroke_circle;
 
 /// Thin large type for a halo figure.
 fn figure(
@@ -151,13 +152,13 @@ impl RowsPod {
                 fill(w, o, &p, scale_alpha(ink.text, 0.05));
                 stroke(w, o, &p, s * 0.003, scale_alpha(ink.primary, 0.3), true);
                 let (ix, iy) = (x0 + h / 2.0, y + h / 2.0);
-                stroke(
+                stroke_circle(
                     w,
                     o,
-                    &circle(ix, iy, h * 0.36),
+                    (ix, iy),
+                    h * 0.36,
                     s * 0.003,
                     scale_alpha(ink.info, 0.6),
-                    true,
                 );
                 if let Some((f, col)) = bar {
                     let (bx0, bx1) = (x0 + h * 1.1, x1 - h * 0.5);
@@ -231,13 +232,13 @@ impl NoticePod {
         let paint = move |w: &mut Window, o: gpui::Point<Pixels>| {
             halo(w, o, s, ink);
             for k in 1..=4 {
-                stroke(
+                stroke_circle(
                     w,
                     o,
-                    &circle(ox, oy, or * (1.0 + k as f32 * 0.38)),
+                    (ox, oy),
+                    or * (1.0 + k as f32 * 0.38),
                     s * 0.003,
                     scale_alpha(col, 0.5 / k as f32),
-                    true,
                 );
             }
             glow_dot(
@@ -311,13 +312,13 @@ impl GForcePod {
         let paint = move |w: &mut Window, o: gpui::Point<Pixels>| {
             let r_in = halo(w, o, s, ink);
             for k in 1..=3 {
-                stroke(
+                stroke_circle(
                     w,
                     o,
-                    &circle(c, c, reach * k as f32 / 3.0),
+                    (c, c),
+                    reach * k as f32 / 3.0,
                     s * 0.003,
                     scale_alpha(ink.primary, 0.12 + 0.1 * k as f32),
-                    true,
                 );
             }
             stroke(
@@ -407,13 +408,13 @@ impl MediaPod {
                     false,
                 );
             }
-            stroke(
+            stroke_circle(
                 w,
                 o,
-                &circle(vx, vy, r0 - s * 0.012),
+                (vx, vy),
+                r0 - s * 0.012,
                 s * 0.004,
                 scale_alpha(ink.text, 0.1),
-                true,
             );
             glow_arc(
                 w,
@@ -531,13 +532,13 @@ impl CompassPod {
                 ],
                 ink.primary,
             );
-            stroke(
+            stroke_circle(
                 w,
                 o,
-                &circle(c, c, s * 0.15),
+                (c, c),
+                s * 0.15,
                 s * 0.003,
                 scale_alpha(ink.primary, 0.3),
-                true,
             );
         };
         let mut el = case(s).child(layer(paint));

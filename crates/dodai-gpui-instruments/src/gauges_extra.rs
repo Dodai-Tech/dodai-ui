@@ -2,8 +2,8 @@
 //! LEDs, battery, thermometer and signal bars.
 
 use crate::draw::{glow_stroke, polar, turn_arc};
-use crate::gauges::{cell_lit, disc, pill, round_arc, Look, SWEEP};
-use dodai_gpui::paint::{fill, scale_alpha, stroke};
+use crate::gauges::{cell_lit, pill, round_arc, Look, SWEEP};
+use dodai_gpui::paint::{fill, fill_circle, scale_alpha, stroke, stroke_circle};
 pub use dodai_instruments_core::gauge::lit_bars;
 use gpui::{Bounds, Pixels, Window};
 
@@ -11,14 +11,7 @@ use gpui::{Bounds, Pixels, Window};
 pub(crate) fn ring(w: &mut Window, b: Bounds<Pixels>, k: Look) {
     let c = k.size / 2.0;
     let r = c - k.ring / 2.0 - 2.0;
-    stroke(
-        w,
-        b.origin,
-        &turn_arc(c, c, r, 0.0, 1.0),
-        k.ring,
-        scale_alpha(k.track, 0.8),
-        true,
-    );
+    stroke_circle(w, b.origin, (c, c), r, k.ring, scale_alpha(k.track, 0.8));
     if k.frac > 0.0 {
         let f = k.frac.min(0.9999);
         round_arc(w, b.origin, c, r, 0.0, f, k.ring, k.at(k.frac));
@@ -54,7 +47,7 @@ pub(crate) fn smooth(w: &mut Window, b: Bounds<Pixels>, k: Look) {
         glow_stroke(w, o, &p, k.ring, col, k.glow.filter(|_| i + 6 >= steps));
     }
     let head = polar(c, c, r, s0 + span * k.frac);
-    fill(w, o, &disc(head.0, head.1, k.ring * 0.7, 16), k.text);
+    fill_circle(w, o, (head.0, head.1), k.ring * 0.7, k.text);
 }
 
 /// 270° sweep of dots.
@@ -77,16 +70,17 @@ pub(crate) fn dots(w: &mut Window, b: Bounds<Pixels>, k: Look) {
         if cov > 0.0 {
             if let Some(g) = k.glow {
                 for l in dodai_gpui::paint::glow_layers(g * 0.5, 0.0) {
-                    fill(
+                    fill_circle(
                         w,
                         b.origin,
-                        &disc(x, y, rad + l.width / 2.0, 12),
+                        (x, y),
+                        rad + l.width / 2.0,
                         scale_alpha(col, l.alpha * 0.5),
                     );
                 }
             }
         }
-        fill(w, b.origin, &disc(x, y, rad, 14), col);
+        fill_circle(w, b.origin, (x, y), rad, col);
     }
 }
 
@@ -108,16 +102,17 @@ pub(crate) fn led(w: &mut Window, b: Bounds<Pixels>, k: Look) {
         if lit {
             if let Some(g) = k.glow {
                 for l in dodai_gpui::paint::glow_layers(g * 0.6, 0.0) {
-                    fill(
+                    fill_circle(
                         w,
                         b.origin,
-                        &disc(x, y, d * 0.4 + l.width / 2.0, 14),
+                        (x, y),
+                        d * 0.4 + l.width / 2.0,
                         scale_alpha(col, l.alpha * 0.5),
                     );
                 }
             }
         }
-        fill(w, b.origin, &disc(x, y, d * 0.4, 16), col);
+        fill_circle(w, b.origin, (x, y), d * 0.4, col);
     }
 }
 
@@ -155,9 +150,9 @@ pub(crate) fn thermometer(w: &mut Window, b: Bounds<Pixels>, k: Look) {
     let track = scale_alpha(k.track, 0.8);
     fill(w, o, &pill(tx, 0.0, tube_w, tube_h + tube_w), track);
     let (cx, cy) = (tx + tube_w / 2.0, height - bulb);
-    fill(w, o, &disc(cx, cy, bulb, 24), track);
+    fill_circle(w, o, (cx, cy), bulb, track);
     let col = k.at(k.frac);
-    fill(w, o, &disc(cx, cy, bulb * 0.78, 24), col);
+    fill_circle(w, o, (cx, cy), bulb * 0.78, col);
     if k.frac > 0.0 {
         let top = tube_w * 0.5 + (tube_h - tube_w) * (1.0 - k.frac);
         let inner = tube_w * 0.5;
@@ -167,7 +162,7 @@ pub(crate) fn thermometer(w: &mut Window, b: Bounds<Pixels>, k: Look) {
             &crate::draw::rect(cx - inner / 2.0, top, inner, cy - top),
             col,
         );
-        fill(w, o, &disc(cx, top, inner / 2.0, 12), col);
+        fill_circle(w, o, (cx, top), inner / 2.0, col);
     }
     for i in 0..=5 {
         let y = tube_w * 0.5 + (tube_h - tube_w) * i as f32 / 5.0;

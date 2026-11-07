@@ -9,10 +9,8 @@ use crate::dial::severity_color;
 use crate::draw::{polar, turn_arc};
 use crate::gauges::SWEEP;
 use crate::pod_math as pm;
-use crate::shapes::{
-    band, chamfered, chrono_case, chrono_glass, circle, dir, hud_ring, needle, Ink,
-};
-use dodai_gpui::paint::{fill, scale_alpha, stroke};
+use crate::shapes::{band, chamfered, chrono_case, chrono_glass, dir, hud_ring, Hand, Ink};
+use dodai_gpui::paint::{fill, fill_circle, scale_alpha, stroke, stroke_circle};
 use dodai_gpui::theme_of;
 use dodai_instruments_core::instrument::readout;
 use gpui::{
@@ -144,8 +142,8 @@ impl GaugeFace {
                 );
                 // Sub-dial: the share of the scale, with its own small hand.
                 let (sx, sy, sr) = sub;
-                fill(w, o, &circle(sx, sy, sr), scale_alpha(text, 0.05));
-                stroke(w, o, &circle(sx, sy, sr), s * 0.005, line, true);
+                fill_circle(w, o, (sx, sy), sr, scale_alpha(text, 0.05));
+                stroke_circle(w, o, (sx, sy), sr, s * 0.005, line);
                 for i in 0..20 {
                     let a = i as f32 / 20.0;
                     let r0 = if i % 5 == 0 { sr * 0.7 } else { sr * 0.84 };
@@ -158,41 +156,29 @@ impl GaugeFace {
                         false,
                     );
                 }
-                fill(
-                    w,
-                    o,
-                    &needle(sx, sy, frac, sr * 0.85, sr * 0.2, s * 0.008),
-                    col,
-                );
-                fill(w, o, &circle(sx, sy, s * 0.012), text);
+                Hand {
+                    centre: (sx, sy),
+                    turn: frac,
+                    reach: (sr * 0.2, sr * 0.85),
+                    half: s * 0.008,
+                    colours: (col, text),
+                    shadow: None,
+                }
+                .paint(w, o);
+                fill_circle(w, o, (sx, sy), s * 0.012, text);
                 // Needle: a shadow, the tapered hand, a counterweight and the hub.
                 let a = start + span * frac;
-                fill(
-                    w,
-                    o,
-                    &needle(
-                        c + s * 0.006,
-                        c + s * 0.008,
-                        a,
-                        r_scale - s * 0.01,
-                        s * 0.12,
-                        s * 0.02,
-                    ),
-                    scale_alpha(text, 0.12),
-                );
-                fill(
-                    w,
-                    o,
-                    &needle(c, c, a, r_scale - s * 0.01, s * 0.12, s * 0.02),
-                    col,
-                );
+                Hand {
+                    centre: (c, c),
+                    turn: a,
+                    reach: (s * 0.12, r_scale - s * 0.01),
+                    half: s * 0.02,
+                    colours: (col, text),
+                    shadow: Some(scale_alpha(text, 0.12)),
+                }
+                .paint(w, o);
                 let (dx, dy) = dir(a);
-                fill(
-                    w,
-                    o,
-                    &circle(c - dx * s * 0.1, c - dy * s * 0.1, s * 0.022),
-                    col,
-                );
+                fill_circle(w, o, (c - dx * s * 0.1, c - dy * s * 0.1), s * 0.022, col);
                 crate::draw::hub(w, o, (c, c), s * 0.038, (ink.text, ink.face, col));
                 chrono_glass(w, o, s, r_face, ink);
             },
@@ -328,14 +314,7 @@ impl GaugeFace {
                     false,
                 );
                 // Inner ring with major marks as small diamonds.
-                stroke(
-                    w,
-                    o,
-                    &circle(c, c, r_in),
-                    s * 0.004,
-                    scale_alpha(text, 0.2),
-                    true,
-                );
+                stroke_circle(w, o, (c, c), r_in, s * 0.004, scale_alpha(text, 0.2));
                 for i in 0..=majors {
                     let f = i as f32 / majors as f32;
                     let ang = start + span * f;

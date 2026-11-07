@@ -7,11 +7,11 @@ use crate::gauges::SWEEP;
 use dodai_core::{Color, Theme};
 use dodai_gpui::follow::{follow, Follow};
 use dodai_gpui::follow_api;
-use dodai_gpui::paint::{fill, scale_alpha, stroke};
+use dodai_gpui::paint::{fill, fill_circle, scale_alpha, stroke};
 use dodai_gpui::plot::{glow_stroke, ChartGlow};
 use dodai_gpui::text::{first_family, format_label};
 use dodai_gpui::{hsla, theme_of};
-use dodai_instruments_core::gauge::{chamfer_rect, disc};
+use dodai_instruments_core::gauge::chamfer_rect;
 use dodai_instruments_core::instrument::{readout, Scale, Severity};
 use gpui::{
     canvas, div, px, App, Bounds, Hsla, IntoElement, ParentElement, Pixels, RenderOnce,
@@ -281,8 +281,8 @@ impl RenderOnce for GradientDial {
                     stroke(w, o, &seg, if major { 1.2 } else { 0.6 }, col, false);
                 }
                 let (kx, ky) = polar(c, c, r, start + span * frac);
-                fill(w, o, &disc(kx, ky, band * 1.3, 24), tip);
-                fill(w, o, &disc(kx, ky, band * 0.7, 24), face);
+                fill_circle(w, o, (kx, ky), band * 1.3, tip);
+                fill_circle(w, o, (kx, ky), band * 0.7, face);
             },
         )
         .absolute()
@@ -382,7 +382,7 @@ impl RenderOnce for GradientRing {
                 // Round the ends with discs in the end colours.
                 for f in [0.0, frac] {
                     let (x, y) = polar(c, c, r, f);
-                    fill(w, o, &disc(x, y, band / 2.0, 20), pick(&cols, f));
+                    fill_circle(w, o, (x, y), band / 2.0, pick(&cols, f));
                 }
             },
         )

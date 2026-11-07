@@ -4,7 +4,8 @@
 
 use super::*;
 use crate::frames::{aged, ghost, glow_arc, halo, lcd, name_plate, pill, plate};
-use crate::shapes::{chamfered, chrono_glass, circle, Ink};
+use crate::shapes::{chamfered, chrono_glass, Ink};
+use dodai_gpui::paint::{fill_circle, stroke_circle};
 
 /// Turn of position `i` of `n` on the vintage selector, fanned over the top of the knob. Pure.
 pub(crate) fn dial_turn(i: usize, n: usize) -> f32 {
@@ -70,13 +71,14 @@ impl MenuRing {
                 false,
             );
             // The knob: a shadow, fluted rim, a dome and the pointer bar.
-            fill(
+            fill_circle(
                 w,
                 o,
-                &circle(kx + s * 0.006, ky + s * 0.01, kr),
+                (kx + s * 0.006, ky + s * 0.01),
+                kr,
                 scale_alpha(ink.text, 0.15),
             );
-            fill(w, o, &circle(kx, ky, kr), ink.text);
+            fill_circle(w, o, (kx, ky), kr, ink.text);
             for i in 0..24 {
                 let a = i as f32 / 24.0;
                 stroke(
@@ -88,11 +90,12 @@ impl MenuRing {
                     false,
                 );
             }
-            fill(w, o, &circle(kx, ky, kr * 0.78), ink.text);
-            fill(
+            fill_circle(w, o, (kx, ky), kr * 0.78, ink.text);
+            fill_circle(
                 w,
                 o,
-                &circle(kx - kr * 0.2, ky - kr * 0.25, kr * 0.3),
+                (kx - kr * 0.2, ky - kr * 0.25),
+                kr * 0.3,
                 scale_alpha(aged(ink), 0.12),
             );
             let a = dial_turn(sel, n);
@@ -305,14 +308,7 @@ impl MenuRing {
         let pressed = self.pressed;
         let hair = (s * 0.003).max(0.6);
         let paint = move |w: &mut Window, o: gpui::Point<Pixels>| {
-            stroke(
-                w,
-                o,
-                &circle(c, c, s * 0.47),
-                hair,
-                scale_alpha(ink.text, 0.2),
-                true,
-            );
+            stroke_circle(w, o, (c, c), s * 0.47, hair, scale_alpha(ink.text, 0.2));
             let y = c + s * 0.04;
             stroke(
                 w,

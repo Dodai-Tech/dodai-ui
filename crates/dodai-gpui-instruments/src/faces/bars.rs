@@ -10,8 +10,8 @@ use super::rich::{major_labels, zone_colours};
 use super::GaugeFace;
 use crate::dash::text_box;
 use crate::race::{figure, lit_count, plate_in, seg_bar, tag, tag_text, LEAN};
-use crate::shapes::{circle, Ink};
-use dodai_gpui::paint::{fill, scale_alpha, stroke};
+use crate::shapes::Ink;
+use dodai_gpui::paint::{fill, fill_circle, scale_alpha, stroke};
 use dodai_gpui::theme_of;
 use gpui::{
     div, px, AnyElement, App, FontWeight, Hsla, IntoElement, ParentElement, Pixels, Styled,
@@ -225,14 +225,14 @@ impl GaugeFace {
                 );
             }
             for f in &majors {
-                fill(w, o, &circle(x + s * 0.02, y_of(*f), hl * 1.3), ink.muted);
+                fill_circle(w, o, (x + s * 0.02, y_of(*f)), hl * 1.3, ink.muted);
             }
             let y = y_of(frac);
             if frac > 0.0 {
                 stroke(w, o, &[(x, foot), (x, y)], (s * 0.006).max(1.5), col, false);
             }
-            fill(w, o, &circle(x, y, s * 0.016), ink.ground);
-            fill(w, o, &circle(x, y, s * 0.01), col);
+            fill_circle(w, o, (x, y), s * 0.016, ink.ground);
+            fill_circle(w, o, (x, y), s * 0.01, col);
         };
         let ends = self.end_figures().map(move |(f, txt)| {
             div()

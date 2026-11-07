@@ -8,11 +8,11 @@
 //! requests frames while something actually flashes.
 
 use crate::draw::{polar, turn_arc};
-use crate::gauges::{disc, SWEEP};
+use crate::gauges::SWEEP;
 use dodai_core::{Color, DialLook, Theme};
 use dodai_gpui::follow::{follow, Follow};
 use dodai_gpui::follow_api;
-use dodai_gpui::paint::{fill, scale_alpha, shaped, stroke, ShapeStyle};
+use dodai_gpui::paint::{fill, fill_circle, scale_alpha, shaped, stroke, ShapeStyle};
 use dodai_gpui::text::{first_family, format_label};
 use dodai_gpui::{hsla, theme_of};
 #[cfg(feature = "medical")]
@@ -198,7 +198,7 @@ impl RenderOnce for DialGauge {
             move |b: Bounds<Pixels>, _, w, _| {
                 let o = b.origin;
                 // Bezel and face.
-                fill(w, o, &disc(c, c, c - bezel_w * 0.5, 72), face);
+                fill_circle(w, o, (c, c), c - bezel_w * 0.5, face);
                 crate::draw::sunburst(w, o, (c, c), c - bezel_w, ink);
                 let ring = |r: f32| -> Vec<(f32, f32)> {
                     (0..=96).map(|i| polar(c, c, r, i as f32 / 96.0)).collect()
@@ -297,7 +297,7 @@ impl RenderOnce for DialGauge {
                                 false,
                             );
                             let (ex, ey) = polar(c, c, r_a, at(frac));
-                            fill(w, o, &disc(ex, ey, thick * 0.9, 20), face);
+                            fill_circle(w, o, (ex, ey), thick * 0.9, face);
                             let knob: Vec<(f32, f32)> = (0..=20)
                                 .map(|i| polar(ex, ey, thick * 0.9, i as f32 / 20.0))
                                 .collect();
