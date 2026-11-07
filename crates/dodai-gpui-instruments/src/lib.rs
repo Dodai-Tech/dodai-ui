@@ -85,7 +85,7 @@ pub use segment::SegmentDisplay;
 #[cfg(feature = "automotive")]
 #[cfg(feature = "automotive")]
 pub use dash::{
-    DashTriptych, LimitSign, MenuRing, Pod, PodStyle, RingTach, SidePod, Telltales, Tone,
+    DashTriptych, LimitSign, MenuRing, Pod, PodStack, PodStyle, RingTach, SidePod, Telltales, Tone,
 };
 #[cfg(feature = "automotive")]
 pub use faces::GaugeFace;

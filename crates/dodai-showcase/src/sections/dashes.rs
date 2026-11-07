@@ -6,7 +6,7 @@ use dodai_gpui::icons::Symbol;
 use dodai_gpui_instruments::{
     AtLimit, BoostPod, CompassPod, DashQuad, DashTriptych, Drivetrain, DualGauge, DualScale,
     EnergyPod, GForcePod, GaugeFace, Gear, GearLayout, GearSelector, Layout, LimitSign, Look,
-    MediaPod, MenuRing, NoticePod, PodIcon, PodLayout, PodRow, PodStyle, PowerFlow, RingTach,
+    MediaPod, MenuRing, NoticePod, PodIcon, PodLayout, PodRow, PodStack, PowerFlow, RingTach,
     RowsPod, Scale, Severity, ShiftHint, ShiftLights, SidePod, Telltales, Tone, TyrePod,
 };
 
@@ -854,72 +854,65 @@ impl Showcase {
                 .width(1000.0)
         };
         let tri = |d: DashTriptych| dash(d).look(dash_look);
+        // One dash of each size; every side display is a stack of the look's pods, and
+        // scrolling over it snaps the next into place.
         let examples = col()
             .child(Muted::new(
-                "The classic five instruments: voltage, speed, engine speed, oil and coolant.",
+                "Five instruments round the ring. Scroll over a side display to turn its pages.",
             ))
             .child(quad(
-                [volt().into(), speed().into()],
-                [oil().into(), coolant().into()],
+                [
+                    PodStack::new("ex5-l0")
+                        .pod(volt())
+                        .pod(BoostPod::new(0.0).temp("9 °C"))
+                        .into(),
+                    PodStack::new("ex5-l1")
+                        .pod(speed())
+                        .pod(GForcePod::new(val(41.0, -0.9, 0.9), val(42.0, -0.6, 1.1)))
+                        .into(),
+                ],
+                [
+                    PodStack::new("ex5-r0").pod(oil()).pod(trip_rows()).into(),
+                    PodStack::new("ex5-r1")
+                        .pod(coolant())
+                        .pod(CompassPod::new(val(43.0, 300.0, 359.0)).height("460 m"))
+                        .into(),
+                ],
             ))
             .child(Muted::new(
-                "The same dash with closed faces: boost, G-force, the trip and a compass.",
+                "Three instruments: a stack of displays on each side of the ring.",
             ))
-            .child(quad(
-                [
-                    BoostPod::new(0.0).temp("9 °C").style(PodStyle::Disc).into(),
-                    GForcePod::new(val(41.0, -0.9, 0.9), val(42.0, -0.6, 1.1))
-                        .style(PodStyle::Disc)
-                        .into(),
-                ],
-                [
-                    trip_rows().style(PodStyle::Disc).into(),
-                    CompassPod::new(val(43.0, 300.0, 359.0))
-                        .height("460 m")
-                        .style(PodStyle::Disc)
-                        .into(),
-                ],
-            ))
-            .child(Muted::new("Three instruments: a pair beside the ring."))
             .child(tri(DashTriptych::new(
                 tach(),
-                tyres()
-                    .bars([Some(2.4), Some(2.4), Some(2.3), Some(2.2)])
-                    .low_below(2.3),
-                vehicle_rows(),
-            )))
-            .child(tri(DashTriptych::new(
-                tach(),
-                TyrePod::new()
-                    .heading("Pressure deviation")
-                    .note("Measured from 25 km/h")
-                    .style(PodStyle::Glow),
-                notice().style(PodStyle::Glow),
-            )))
-            .child(tri(DashTriptych::new(
-                tach(),
-                BoostPod::new(0.0).temp("9 °C"),
-                MenuRing::new(["Information", "Vehicle", "Oil level"])
-                    .selected(0)
-                    .chosen(1),
-            )))
-            .child(tri(DashTriptych::new(
-                tach(),
-                MenuRing::new(["G-Force", "G-Force Max.", "Reset max."])
-                    .selected(0)
-                    .chosen(0)
-                    .style(PodStyle::Bezel),
-                media().style(PodStyle::Bezel),
-            )))
-            .child(tri(DashTriptych::new(
-                tach(),
-                MenuRing::new(["G-Force", "G-Force Max.", "Reset max."]).selected(0),
-                today_rows(),
-            )))
-            .child(tri(DashTriptych::new(
-                tach(),
-                GForcePod::new(val(44.0, -0.8, 0.8), val(45.0, -0.5, 0.9)),
-                CompassPod::new(343.0).height("460 m"),
+                PodStack::new("ex3-l")
+                    .pod(
+                        tyres()
+                            .bars([Some(2.4), Some(2.4), Some(2.3), Some(2.2)])
+                            .low_below(2.3),
+                    )
+                    .pod(
+                        TyrePod::new()
+                            .heading("Pressure deviation")
+                            .note("Measured from 25 km/h"),
+                    )
+                    .pod(BoostPod::new(0.0).temp("9 °C"))
+                    .pod(GForcePod::new(val(44.0, -0.8, 0.8), val(45.0, -0.5, 0.9)))
+                    .pod(
+                        MenuRing::new(["G-Force", "G-Force Max.", "Reset max."])
+                            .selected(0)
+                            .chosen(0),
+                    ),
+                PodStack::new("ex3-r")
+                    .pod(vehicle_rows())
+                    .pod(notice())
+                    .pod(media())
+                    .pod(today_rows())
+                    .pod(CompassPod::new(343.0).height("460 m"))
+                    .pod(
+                        MenuRing::new(["Information", "Vehicle", "Oil level"])
+                            .selected(0)
+                            .chosen(1),
+                    ),
             )))
             .into_any_element();
         add(self, "Vehicle · Examples", vec![examples]);
