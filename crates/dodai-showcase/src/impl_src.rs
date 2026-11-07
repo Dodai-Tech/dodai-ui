@@ -460,6 +460,10 @@ const FILES: &[(&str, &str)] = &[
         include_str!("../../dodai-gpui-instruments/src/pods/race.rs"),
     ),
     (
+        "dodai-gpui-instruments/src/pods/flow.rs",
+        include_str!("../../dodai-gpui-instruments/src/pods/flow.rs"),
+    ),
+    (
         "dodai-gpui-instruments/src/pods/energy.rs",
         include_str!("../../dodai-gpui-instruments/src/pods/energy.rs"),
     ),

@@ -121,11 +121,13 @@ mod detailed;
 mod digital;
 mod dual;
 mod energy;
+mod flow;
 mod future;
 mod race;
 mod vintage;
 
 pub use energy::{charge_tone, power_frac, power_text, EnergyPod};
+pub use flow::{flows, Drivetrain, Flows, HybridMode, PowerFlow};
 
 // ───────────────────────────────── TyrePod ─────────────────────────────────
 
@@ -1499,7 +1501,8 @@ impl RenderOnce for DualGauge {
 }
 
 into_pod!(
-    DualGauge, TyrePod, RowsPod, NoticePod, GForcePod, BoostPod, MediaPod, CompassPod, EnergyPod
+    DualGauge, TyrePod, RowsPod, NoticePod, GForcePod, BoostPod, MediaPod, CompassPod, EnergyPod,
+    PowerFlow
 );
 
 // ───────────────────────────────── DashQuad ─────────────────────────────────

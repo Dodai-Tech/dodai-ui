@@ -30,7 +30,7 @@ App::new()
   `tag`, `tabs`/`tab`, `switch`, `checkbox`, `radio`, `toggle_disabled`, `progress`,
   `slider`, `text_input`, `list_item`, `divider`, `divider_vertical`, `text`,
   `heading`, `label`, `muted`, `mono`, `body`; `UiTooltip(String)` component.
-* `icon(IconId, px)` and `symbol(Symbol, px)` / `symbol_state(Symbol, px, SymbolState)`: vector icons and the 263 dashboard symbols, rasterised once per design and size and tinted by the foreground or the state (feature `symbols`). Each design strokes the symbols its own way.
+* `icon(IconId, px)` and `symbol(Symbol, px)` / `symbol_state(Symbol, px, SymbolState)`: vector icons and the 264 dashboard symbols, rasterised once per design and size and tinted by the foreground or the state (feature `symbols`). Each design strokes the symbols its own way.
 * `ControlEvent { entity, kind }` message (`Pressed`, `Toggled`, `TabSelected`,
   `Selected`, `Slid`, `TextChanged`); `FocusedInput` resource.
 * `Surface` — the themed box primitive; `surface::resolve` is the pure token →

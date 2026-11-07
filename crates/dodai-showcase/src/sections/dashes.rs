@@ -4,10 +4,10 @@ use super::super::*;
 use dodai_gpui::icons::IconId;
 use dodai_gpui::icons::Symbol;
 use dodai_gpui_instruments::{
-    AtLimit, BoostPod, CompassPod, DashQuad, DashTriptych, DualGauge, DualScale, EnergyPod,
-    GForcePod, GaugeFace, Gear, GearLayout, GearSelector, Layout, LimitSign, Look, MediaPod,
-    MenuRing, NoticePod, PodIcon, PodRow, PodStyle, RingTach, RowsPod, Scale, Severity, ShiftHint,
-    ShiftLights, SidePod, Telltales, Tone, TyrePod,
+    AtLimit, BoostPod, CompassPod, DashQuad, DashTriptych, Drivetrain, DualGauge, DualScale,
+    EnergyPod, GForcePod, GaugeFace, Gear, GearLayout, GearSelector, Layout, LimitSign, Look,
+    MediaPod, MenuRing, NoticePod, PodIcon, PodRow, PodStyle, PowerFlow, RingTach, RowsPod, Scale,
+    Severity, ShiftHint, ShiftLights, SidePod, Telltales, Tone, TyrePod,
 };
 
 /// A demo value drifting through `lo..=hi` on the animation clock.
@@ -119,6 +119,51 @@ fn today_rows() -> RowsPod {
         PodRow::new(PodIcon::from(Symbol::Battery), "0 %").bar(0.0, Tone::Off),
         PodRow::new(IconId::Compass, "NW     N"),
     ])
+}
+
+/// An electric car's power ring: 60 kW recovered to 150 kW given, lit from zero.
+fn ev_tach() -> RingTach {
+    RingTach::new(
+        Scale::new(-60.0, 150.0).ticks_per(7, 3),
+        val(44.0, -40.0, 120.0),
+        val(31.0, 0.0, 180.0),
+    )
+    .drivetrain(Drivetrain::Electric)
+    .charge(0.68, "312 km")
+    .tab("Range")
+}
+
+/// The diesel's exhaust fluid, amber when low.
+fn fluid() -> SidePod {
+    SidePod::new(
+        Scale::new(0.0, 100.0)
+            .ticks_per(4, 1)
+            .zone(0.0, 10.0, Severity::Caution),
+        val(45.0, 18.0, 64.0),
+    )
+    .icon(Symbol::ExhaustFluid)
+    .unit("%")
+}
+
+/// The diesel particulate filter's load, amber when it needs a long drive to clean.
+fn particulate() -> SidePod {
+    SidePod::new(
+        Scale::new(0.0, 100.0)
+            .ticks_per(4, 1)
+            .zone(80.0, 100.0, Severity::Caution),
+        val(46.0, 30.0, 88.0),
+    )
+    .icon(Symbol::Particulate)
+    .unit("%")
+}
+
+/// A hybrid's power flow, drifting through its modes.
+fn flow() -> PowerFlow {
+    PowerFlow::new(
+        val(47.0, -20.0, 60.0).max(0.0),
+        val(48.0, -30.0, 40.0),
+        62.0,
+    )
 }
 
 fn notice() -> NoticePod {
@@ -485,11 +530,13 @@ impl Showcase {
                     }),
                 ),
                 gallery(
-                    "Plugged in: the power flows back in, so the arc grows left in the success colour. Under a fifth of charge the cells turn amber, under a tenth red.",
+                    "Plugged in: the power flows back in, so the arc grows left in the success colour, and the foot counts down to the charge limit marked on the battery. Under a fifth of charge the cells turn amber, under a tenth red.",
                     looked(only, |s, z| {
                         EnergyPod::new(val(62.0, 12.0, 18.0))
                             .power(-48.0)
                             .charging(true)
+                            .limit(80.0)
+                            .time_to_full("42 min")
                             .range("54 km")
                             .look(s)
                             .size(z)
@@ -530,6 +577,28 @@ impl Showcase {
                     })
                     .collect(),
             )],
+        );
+        add(
+            self,
+            "Vehicle · Power flow",
+            vec![gallery(
+                "A hybrid's power between the engine, the battery and the wheels, the mode as the heading: electric, engine, boost with both, recovering into the battery, or the engine charging it. Sport draws the paths; the other looks list the engine, the motor and the charge.",
+                looked(only, |s, z| flow().look(s).size(z).into_any_element()),
+            )],
+        );
+        add(
+            self,
+            "Vehicle · Diesel",
+            vec![
+                gallery(
+                    "The exhaust fluid a diesel needs to clean its exhaust, amber under a tenth.",
+                    looked(only, |s, z| fluid().look(s).size(z).into_any_element()),
+                ),
+                gallery(
+                    "The particulate filter's load, amber from 80 %: time for a long drive to burn it clean.",
+                    looked(only, |s, z| particulate().look(s).size(z).into_any_element()),
+                ),
+            ],
         );
         add(
             self,
@@ -812,6 +881,59 @@ impl Showcase {
             )))
             .into_any_element();
         add(self, "Vehicle · Examples", vec![examples]);
+        let drives = col()
+            .child(Muted::new(
+                "Diesel: the revs with the fuel, the exhaust fluid and the particulate filter's load beside the oil.",
+            ))
+            .child(
+                DashQuad::new(tach(), [speed().into(), fluid().into()], [oil().into(), particulate().into()])
+                    .look(dash_look)
+                    .telltales(tells())
+                    .mode("DIESEL")
+                    .width(1000.0),
+            )
+            .child(Muted::new(
+                "Hybrid: the revs with the fuel and the charge side by side at the bottom, the power flow beside it.",
+            ))
+            .child(
+                DashQuad::new(
+                    tach()
+                        .drivetrain(Drivetrain::Hybrid)
+                        .charge(0.62, "38 km"),
+                    [speed().into(), coolant().into()],
+                    [flow().into(), trip_rows().into()],
+                )
+                .look(dash_look)
+                .telltales(tells())
+                .mode("HYBRID AUTO")
+                .width(1000.0),
+            )
+            .child(Muted::new(
+                "Electric: the motor's power where the revs were, lit from zero (left while recovering), the charge where the fuel was, and the battery beside it.",
+            ))
+            .child(
+                DashQuad::new(
+                    ev_tach(),
+                    [speed().into(), EnergyPod::new(68.0).power(val(44.0, -40.0, 120.0)).range("312 km").into()],
+                    [
+                        RowsPod::new([
+                            PodRow::new(Symbol::Stopwatch, "3 min"),
+                            PodRow::new(Symbol::Trip, "0.0 km"),
+                            PodRow::new(Symbol::Range, "--- kWh/100km"),
+                            PodRow::new(Symbol::Recuperation, "0.0 kWh"),
+                        ])
+                        .heading("Since 19:06")
+                        .into(),
+                        notice().into(),
+                    ],
+                )
+                .look(dash_look)
+                .telltales(tells())
+                .mode("RANGE")
+                .width(1000.0),
+            )
+            .into_any_element();
+        add(self, "Vehicle · Drivetrains", vec![drives]);
         let mut by_look = col();
         for look in shown(only) {
             by_look = by_look.child(Muted::new(look.name())).child(

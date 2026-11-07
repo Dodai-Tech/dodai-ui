@@ -500,6 +500,8 @@ symbols! {
     Exhaust = "exhaust";
     /// Particulate filter.
     Particulate = "particulate";
+    /// Exhaust fluid for a diesel's emission cleaning: a drop over the exhaust pipe.
+    ExhaustFluid = "exhaust-fluid";
     /// Seat.
     Seat = "vehicle-seat";
     /// Seat ventilation.

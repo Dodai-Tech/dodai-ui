@@ -41,7 +41,7 @@ The default turns on every industry set and no design.
 
 | Feature | What it adds |
 |---|---|
-| `automotive` | dashes, pods, gauge faces in nine looks (`Look`), tachometer, speedometers, tyre pressure, gear selector (P R N D as a row, a stack or one large figure, manual gear, shift prompt), odometer, compass, EV energy, shift lights; the vehicle symbols |
+| `automotive` | dashes, pods, gauge faces in nine looks (`Look`), tachometer, speedometers, tyre pressure, gear selector (P R N D as a row, a stack or one large figure, manual gear, shift prompt), every drivetrain (`RingTach::drivetrain`: the revs and the fuel, the revs with fuel and charge for a hybrid, or the motor's power from zero and the charge for an electric car), a hybrid's power flow (`PowerFlow`), EV charging with a limit and the time to it, odometer, compass, EV energy, shift lights; the vehicle symbols |
 | `aviation` | attitude indicator, heading and vertical tapes, sonar waterfall, countermeasures; the aviation symbols |
 | `defense` | tactical plot, track list, threat rosette, stores panel, mission timer, radar scope; the military symbols |
 | `industrial` | the process-plant and machine symbols |
@@ -61,8 +61,10 @@ The vehicle instruments share one `Look`: Sport, Chronograph, Vintage, Heads-up,
 ```rust,no_run
 use dodai_gpui::icons::Symbol;
 use dodai_gpui_instruments::{
-    EnergyPod, Gear, GearSelector, Look, ShiftHint, ShiftLights, Telltales,
+    Drivetrain, EnergyPod, Gear, GearSelector, Look, PowerFlow, RingTach, ShiftHint,
+    ShiftLights, Telltales,
 };
+use dodai_instruments_core::instrument::Scale;
 
 // An electric car's battery, recovering 18 kW, in the glass-cockpit look.
 let energy = EnergyPod::new(64.0).power(-18.0).range("312 km").look(Look::GlassCockpit);
@@ -70,6 +72,12 @@ let energy = EnergyPod::new(64.0).power(-18.0).range("312 km").look(Look::GlassC
 let lights = ShiftLights::new(6400.0).range(5000.0, 7000.0).gear("4").look(Look::Race);
 // The common telltales, the belt and main beam lit in their standard colours.
 let lamps = Telltales::common().light(Symbol::SeatBelt).light(Symbol::HighBeam);
+// An electric car: the motor's power from 60 kW recovered to 150 kW given, and the charge.
+let ev = RingTach::new(Scale::new(-60.0, 150.0), 42.0, 88.0)
+    .drivetrain(Drivetrain::Electric)
+    .charge(0.68, "312 km");
+// A hybrid's power flow: engine and motor driving together, the battery at 62 %.
+let flow = PowerFlow::new(22.0, 39.0, 62.0);
 // Fourth gear shifted by hand, prompting a change up, in the design's own look.
 let gear = GearSelector::new(Gear::Manual(4)).hint(ShiftHint::Up);
 ```

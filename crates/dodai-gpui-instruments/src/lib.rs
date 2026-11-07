@@ -10,7 +10,7 @@
 //!
 //! | Feature | Instruments |
 //! |---|---|
-//! | `automotive` | tachometer, speedometers, tire pressure, gear, odometer, power meter, level bar, compass, EV energy, shift lights |
+//! | `automotive` | tachometer, speedometers, tire pressure, gear, odometer, power meter, level bar, compass, every drivetrain (combustion, hybrid, electric), hybrid power flow, EV energy and charging, shift lights |
 //! | `aviation` | attitude indicator, heading and vertical tapes, sonar waterfall, countermeasures |
 //! | `defense` | tactical plot, track list, threat rosette, stores panel, mission timer, radar scope |
 //! | `industrial` | the process-plant and machine symbols (dials and annunciators are always included) |
@@ -98,8 +98,8 @@ pub use gear::{chevron, Gear, GearLayout, GearSelector, ShiftHint};
 pub use look::{AtLimit, Layout, Look};
 #[cfg(feature = "automotive")]
 pub use pods::{
-    BoostPod, CompassPod, DashQuad, DualGauge, DualScale, EnergyPod, GForcePod, MediaPod,
-    NoticePod, PodIcon, PodRow, RowsPod, TyrePod,
+    BoostPod, CompassPod, DashQuad, Drivetrain, DualGauge, DualScale, EnergyPod, GForcePod,
+    HybridMode, MediaPod, NoticePod, PodIcon, PodRow, PowerFlow, RowsPod, TyrePod,
 };
 #[cfg(feature = "automotive")]
 pub use shift::ShiftLights;
