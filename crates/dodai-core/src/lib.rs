@@ -72,7 +72,9 @@ pub use shape_system::{
     Corner, CornerSpec, CornerStyle, DefaultShape, RoleShape, ShapePreset, ShapeRole, ShapeScale,
     ShapeSize, ShapeSystem, FULL,
 };
-pub use spec::{DesignSpec, FadeStop, Fluid, Frost, GridSpec, IconSet, Look, ShadowLayer, SpecRef};
+pub use spec::{
+    DesignSpec, FadeStop, Fluid, Frost, GridSpec, IconSet, Look, ShadowLayer, SpecRef, SpinnerStyle,
+};
 pub use surface_paint::{surface_paint, surface_svg, swatch_paint};
 pub use surface_style::SurfaceStyle;
 pub use switcher::ThemeSwitcher;

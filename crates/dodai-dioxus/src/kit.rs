@@ -4,7 +4,7 @@
 //! `dodai-topcoat` ([`dodai_topcoat::kit_style`]), so every design restyles them.
 
 use dioxus::prelude::*;
-use dodai_core::{CardVariant, Kit, StepState, Tone};
+use dodai_core::{busy, CardVariant, Kit, SpinnerStyle, StepState, Tone};
 
 use crate::Icon;
 use dodai_icons::IconId;
@@ -382,10 +382,42 @@ pub fn Stepper(props: StepperProps) -> Element {
     }
 }
 
-/// Spinning ring of `size` px.
+/// CSS class suffix and the inline style of each cell of a spinner `size` px across; no cells
+/// for the ring.
+pub fn spinner_cells(style: SpinnerStyle, size: f32) -> (&'static str, Vec<String>) {
+    let kind = match style {
+        SpinnerStyle::Ring => "ring",
+        SpinnerStyle::Bars => "bars",
+        SpinnerStyle::Orbit => "orbit",
+        SpinnerStyle::Steps => "steps",
+    };
+    let cells = busy::cells(style, size)
+        .iter()
+        .map(|c| {
+            // A negative delay starts the cell part-way through its cycle, as the head left it.
+            let delay = -(-c.lag).rem_euclid(1.0) / busy::SPIN_RATE;
+            format!(
+                "left:{:.2}px;top:{:.2}px;width:{:.2}px;height:{:.2}px;animation-delay:{:.3}s",
+                c.x, c.y, c.w, c.h, delay
+            )
+        })
+        .collect();
+    (kind, cells)
+}
+
+/// Spinner of `size` px, in the shape the active design gives it (ring, bars, orbiting dots
+/// or stepping squares). Outside a [`crate::ThemeProvider`] it is a ring.
 #[component]
 pub fn Spinner(#[props(default = 24)] size: u32) -> Element {
-    rsx! { span { class: "dodai-spinner", role: "progressbar", style: "--s:{size}px" } }
+    let style = try_use_context::<crate::ThemeHandle>()
+        .map(|t| t.theme().look().spinner)
+        .unwrap_or_default();
+    let (kind, cells) = spinner_cells(style, size as f32);
+    rsx! {
+        span { class: "dodai-spinner dodai-spinner--{kind}", role: "progressbar", style: "--s:{size}px",
+            for c in cells { i { style: "{c}" } }
+        }
+    }
 }
 
 /// Indeterminate bar.
@@ -448,6 +480,28 @@ pub fn TooltipBubble(text: String, #[props(default)] rich: bool) -> Element {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn each_spinner_style_has_its_class_and_one_styled_cell_per_shape() {
+        let n = |st| spinner_cells(st, 24.0);
+        assert_eq!(n(SpinnerStyle::Ring), ("ring", vec![]));
+        assert_eq!(n(SpinnerStyle::Bars).1.len(), 8);
+        assert_eq!(n(SpinnerStyle::Orbit).1.len(), 8);
+        assert_eq!(n(SpinnerStyle::Steps).1.len(), 4);
+        let (kind, cells) = n(SpinnerStyle::Steps);
+        assert_eq!(kind, "steps");
+        // The head starts on the first cell: its cycle is at the start (no delay), the rest are
+        // part-way through.
+        assert!(cells[0].ends_with("animation-delay:0.000s"), "{}", cells[0]);
+        assert!(
+            cells[1].ends_with("animation-delay:-0.833s"),
+            "{}",
+            cells[1]
+        );
+        assert!(cells
+            .iter()
+            .all(|c| c.contains("left:") && c.contains("animation-delay:")));
+    }
 
     #[test]
     fn stepper_stays_inside_its_range() {

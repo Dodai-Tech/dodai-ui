@@ -114,6 +114,7 @@ impl Plugin for DodaiUiPlugin {
                     style_dividers,
                     crate::kit::style_kits,
                     crate::knob::style_knobs,
+                    crate::spinner::build_spinners,
                     crate::spinner::animate_spinners,
                     crate::spinner::animate_bars,
                     update_tooltip,

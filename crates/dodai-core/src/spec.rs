@@ -26,6 +26,20 @@ pub enum IconSet {
     Bold,
 }
 
+/// How a design draws its indeterminate spinner.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum SpinnerStyle {
+    /// A ring with one bright arc turning round it.
+    #[default]
+    Ring,
+    /// A row of bars of changing height with a bright head chasing a fading tail.
+    Bars,
+    /// Dots on a circle with a bright head chasing a fading tail.
+    Orbit,
+    /// Four hard squares in a grid, one lit at a time, stepping clockwise with no fade.
+    Steps,
+}
+
 /// Semantic capabilities a design system declares. Adapters ask these instead of guessing a
 /// look from the corner geometry, so a new rounded design never inherits another design's layout.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -52,6 +66,8 @@ pub struct Look {
     pub segmented_tabs: bool,
     /// How the selection moves between tabs and segments.
     pub selection: crate::motion::SelectionMotion,
+    /// The shape of the spinner.
+    pub spinner: SpinnerStyle,
 }
 
 /// The page grid of a design at a viewport width: columns between two outer margins.

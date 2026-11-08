@@ -305,6 +305,8 @@ impl Theme {
 
 /// Motion of the busy indicators, shared by every toolkit so they all turn at the same rate.
 pub mod busy {
+    use crate::SpinnerStyle;
+
     /// Revolutions per second of the ring.
     pub const SPIN_RATE: f32 = 0.9;
     /// Width of the sliding segment as a fraction of the track.
@@ -313,6 +315,109 @@ pub mod busy {
     /// Angle (radians) of the ring after `t` seconds.
     pub fn spin_angle(t: f32) -> f32 {
         (t * SPIN_RATE).fract() * std::f32::consts::TAU
+    }
+
+    /// Bars or dots in a [`SpinnerStyle::Bars`] / [`SpinnerStyle::Orbit`] spinner.
+    pub const TRAIL: usize = 8;
+    /// Opacity of a cell the head has not reached for a while.
+    pub const DIM: f32 = 0.15;
+
+    /// One bar, dot or square of a spinner, in a `size`×`size` box.
+    #[derive(Debug, Clone, Copy, PartialEq)]
+    pub struct Cell {
+        /// Left px.
+        pub x: f32,
+        /// Top px.
+        pub y: f32,
+        /// Width px.
+        pub w: f32,
+        /// Height px (a bar's full height).
+        pub h: f32,
+        /// A dot instead of a rectangle.
+        pub round: bool,
+        /// Fraction of the cycle at which the bright head reaches this cell.
+        pub lag: f32,
+    }
+
+    /// The cells of a spinner `size` px across; none for the ring, which is an arc.
+    pub fn cells(style: SpinnerStyle, size: f32) -> Vec<Cell> {
+        match style {
+            SpinnerStyle::Ring => vec![],
+            SpinnerStyle::Bars => {
+                let pitch = size / TRAIL as f32;
+                let w = pitch * 0.58;
+                (0..TRAIL)
+                    .map(|i| Cell {
+                        x: i as f32 * pitch + (pitch - w) / 2.0,
+                        y: 0.0,
+                        w,
+                        h: size,
+                        round: false,
+                        lag: i as f32 / TRAIL as f32,
+                    })
+                    .collect()
+            }
+            SpinnerStyle::Orbit => {
+                let d = size * 0.18;
+                (0..TRAIL)
+                    .map(|i| {
+                        let (cx, cy) = orbit_xy(i, TRAIL, size / 2.0, size / 2.0 - d / 2.0);
+                        Cell {
+                            x: cx - d / 2.0,
+                            y: cy - d / 2.0,
+                            w: d,
+                            h: d,
+                            round: true,
+                            lag: i as f32 / TRAIL as f32,
+                        }
+                    })
+                    .collect()
+            }
+            SpinnerStyle::Steps => {
+                let side = size * 0.42;
+                let far = size - side;
+                [(0.0, 0.0), (far, 0.0), (far, far), (0.0, far)]
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, (x, y))| Cell {
+                        x,
+                        y,
+                        w: side,
+                        h: side,
+                        round: false,
+                        lag: i as f32 / 4.0,
+                    })
+                    .collect()
+            }
+        }
+    }
+
+    /// Opacity of a cell with `lag` after `t` seconds: a bright head chasing a fading tail, or
+    /// for [`SpinnerStyle::Steps`] a hard on/off with no fade.
+    pub fn cell_alpha(style: SpinnerStyle, lag: f32, t: f32) -> f32 {
+        let since = ((t * SPIN_RATE).fract() - lag).rem_euclid(1.0);
+        match style {
+            SpinnerStyle::Steps => {
+                if since < 0.25 {
+                    1.0
+                } else {
+                    DIM
+                }
+            }
+            _ => 1.0 - since * (1.0 - DIM),
+        }
+    }
+
+    /// Height of a bar of a [`SpinnerStyle::Bars`] spinner as a fraction of its full height.
+    pub fn bar_scale(alpha: f32) -> f32 {
+        0.4 + 0.6 * alpha
+    }
+
+    /// Centre of dot `i` of `n` on a circle of radius `r` around `(c, c)`, starting at the top
+    /// and going clockwise.
+    pub fn orbit_xy(i: usize, n: usize, c: f32, r: f32) -> (f32, f32) {
+        let a = i as f32 / n.max(1) as f32 * std::f32::consts::TAU - std::f32::consts::FRAC_PI_2;
+        (c + r * a.cos(), c + r * a.sin())
     }
 
     /// Left edge of the sliding segment as a fraction of the track after `t` seconds. It sweeps from
@@ -373,6 +478,79 @@ mod tests {
             v.push(Kit::StepDot(s));
         }
         v
+    }
+
+    #[test]
+    fn every_style_but_the_ring_has_cells_inside_its_box() {
+        use super::busy::*;
+        use crate::SpinnerStyle::*;
+        assert!(cells(Ring, 24.0).is_empty());
+        for (st, n) in [(Bars, TRAIL), (Orbit, TRAIL), (Steps, 4)] {
+            let cs = cells(st, 40.0);
+            assert_eq!(cs.len(), n);
+            for c in cs {
+                assert!(c.x >= -1e-3 && c.y >= -1e-3, "{st:?}");
+                assert!(c.x + c.w <= 40.001 && c.y + c.h <= 40.001, "{st:?}");
+                assert!((0.0..1.0).contains(&c.lag));
+            }
+        }
+    }
+
+    #[test]
+    fn the_head_is_brightest_and_the_tail_fades_behind_it() {
+        use super::busy::*;
+        use crate::SpinnerStyle::Bars;
+        let t = 0.4;
+        let a: Vec<f32> = cells(Bars, 40.0)
+            .iter()
+            .map(|c| cell_alpha(Bars, c.lag, t))
+            .collect();
+        assert!(a.iter().all(|x| *x >= DIM - 1e-4 && *x <= 1.0));
+        let (hi, lo) = (
+            a.iter().cloned().fold(0.0, f32::max),
+            a.iter().cloned().fold(1.0, f32::min),
+        );
+        assert!(hi > 0.9 && lo < 0.3, "{a:?}");
+        assert!(bar_scale(1.0) == 1.0 && bar_scale(0.0) < bar_scale(1.0));
+    }
+
+    #[test]
+    fn steps_light_one_square_at_a_time_clockwise() {
+        use super::busy::*;
+        use crate::SpinnerStyle::Steps;
+        let cs = cells(Steps, 40.0);
+        let mut seen = vec![];
+        for k in 0..60 {
+            let t = k as f32 * 0.02;
+            let lit: Vec<usize> = (0..4)
+                .filter(|i| cell_alpha(Steps, cs[*i].lag, t) == 1.0)
+                .collect();
+            assert_eq!(lit.len(), 1, "t={t}");
+            if seen.last() != Some(&lit[0]) {
+                seen.push(lit[0]);
+            }
+        }
+        assert_eq!(&seen[..4], &[0, 1, 2, 3]);
+    }
+
+    #[test]
+    fn orbit_dots_lie_on_the_circle_starting_at_the_top() {
+        use super::busy::*;
+        let (x, y) = orbit_xy(0, 8, 10.0, 6.0);
+        assert!((x - 10.0).abs() < 1e-4 && (y - 4.0).abs() < 1e-4);
+        for i in 0..8 {
+            let (x, y) = orbit_xy(i, 8, 10.0, 6.0);
+            assert!((((x - 10.0).powi(2) + (y - 10.0).powi(2)).sqrt() - 6.0).abs() < 1e-4);
+        }
+    }
+
+    #[test]
+    fn each_design_names_its_own_spinner() {
+        use crate::SpinnerStyle::*;
+        assert_eq!(crate::material::light().look().spinner, Ring);
+        assert_eq!(crate::cyberpunk::variants()[0].look().spinner, Bars);
+        assert_eq!(crate::dodai::light().look().spinner, Orbit);
+        assert_eq!(crate::neobrutalism::variants()[0].look().spinner, Steps);
     }
 
     #[test]
