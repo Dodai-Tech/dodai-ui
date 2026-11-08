@@ -214,6 +214,11 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
             if let Some(i) = b.icon {
                 spec = spec.icon(i);
             }
+            // Cut-corner designs crop every button by default, the others only when asked.
+            let default = theme.look().cut_corners.then_some(dodai_core::Crop::Left);
+            if let Some(end) = b.crop.or(default) {
+                spec = spec.crop(end);
+            }
             let mut e = p.spawn(spec.bundle());
             if let Some(k) = &b.counter {
                 e.insert(Bound::Act(Action::Press(k.clone())));

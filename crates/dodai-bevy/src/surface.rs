@@ -28,6 +28,13 @@ pub struct Surface {
     pub pill: bool,
 }
 
+/// How a button is cropped on this surface (see [`dodai_core::Theme::button_crop`]).
+///
+/// A cut corner draws through the chamfer shader, a ticket stub as a concave bite, tight
+/// corners through per-corner radii. Ticks are drawn by the button's own children.
+#[derive(Component, Debug, Clone, Copy, PartialEq, Default)]
+pub struct SurfaceCrop(pub Option<dodai_core::ButtonCrop>);
+
 /// How the surface geometry is painted.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Paint {
@@ -36,12 +43,20 @@ pub enum Paint {
         /// Corner radius in px.
         radius: f32,
     },
+    /// Native UI node with its own radius per corner `[top-left, top-right, bottom-right,
+    /// bottom-left]` (px).
+    NativeRadii {
+        /// Corner radii in px.
+        radii: [f32; 4],
+    },
     /// Shader-drawn cut corners.
     Chamfer {
         /// Cut size in px.
         chamfer: f32,
         /// Which corners are cut.
         corners: Corners,
+        /// Concave bites instead of straight cuts.
+        scoop: bool,
     },
 }
 
@@ -72,9 +87,52 @@ pub struct ResolvedSurface {
 /// Resolve a surface against a theme. This is the only place shape tokens are
 /// interpreted; it never looks at theme ids.
 pub fn resolve(theme: &Theme, s: &Surface) -> ResolvedSurface {
-    let clear = Rgba::rgba(0, 0, 0, 0);
+    resolve_cropped(theme, s, None)
+}
+
+/// [`resolve`] for a surface whose end is cropped.
+pub fn resolve_cropped(
+    theme: &Theme,
+    s: &Surface,
+    crop: Option<dodai_core::ButtonCrop>,
+) -> ResolvedSurface {
+    use dodai_core::ButtonCrop as B;
     let sh = &theme.shape;
-    let paint = match sh.kind() {
+    let paint = match crop {
+        Some(B::CutTicked { corners, .. }) => Paint::Chamfer {
+            // Steep 45° cut: the largest the shape allows.
+            chamfer: sh.chamfer.max(sh.control_height),
+            corners,
+            scoop: false,
+        },
+        Some(B::Scooped { corners, size }) => Paint::Chamfer {
+            chamfer: size,
+            corners,
+            scoop: true,
+        },
+        Some(B::Squared {
+            corners,
+            radius,
+            rest,
+        }) => {
+            let pick = |on: bool| if on { radius } else { rest };
+            Paint::NativeRadii {
+                radii: [
+                    pick(corners.top_left),
+                    pick(corners.top_right),
+                    pick(corners.bottom_right),
+                    pick(corners.bottom_left),
+                ],
+            }
+        }
+        Some(B::Slot { .. }) | None => base_paint(theme, s),
+    };
+    finish(theme, s, paint)
+}
+
+fn base_paint(theme: &Theme, s: &Surface) -> Paint {
+    let sh = &theme.shape;
+    match sh.kind() {
         ShapeKind::Square => Paint::Native { radius: 0.0 },
         ShapeKind::Rounded => Paint::Native {
             radius: if s.pill { 9999.0 } else { sh.radius },
@@ -82,8 +140,14 @@ pub fn resolve(theme: &Theme, s: &Surface) -> ResolvedSurface {
         ShapeKind::Chamfered => Paint::Chamfer {
             chamfer: sh.chamfer,
             corners: sh.corners,
+            scoop: false,
         },
-    };
+    }
+}
+
+fn finish(theme: &Theme, s: &Surface, paint: Paint) -> ResolvedSurface {
+    let clear = Rgba::rgba(0, 0, 0, 0);
+    let sh = &theme.shape;
     let glow = (s.glow && theme.effects.glow_enabled()).then(|| GlowSpec {
         color: theme.effects.glow_color(),
         radius: theme.effects.glow_radius(),
@@ -106,9 +170,36 @@ pub fn resolve(theme: &Theme, s: &Surface) -> ResolvedSurface {
 /// `shaders/chamfer.wesl`; used to test the shader maths against
 /// `Shape::outline`.
 pub fn chamfer_distance(x: f32, y: f32, w: f32, h: f32, chamfer: f32, corners: Corners) -> f32 {
+    cut_distance(x, y, w, h, chamfer, corners, false)
+}
+
+/// [`chamfer_distance`] with the corners cut straight or, with `scoop`, bitten out concavely.
+pub fn cut_distance(
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+    chamfer: f32,
+    corners: Corners,
+    scoop: bool,
+) -> f32 {
     const K: f32 = std::f32::consts::FRAC_1_SQRT_2;
     let c = chamfer.min(w.min(h) / 3.0);
     let mut d = x.min(w - x).min(y).min(h - y);
+    if scoop {
+        let bite = |on: bool, cx: f32, cy: f32| {
+            if on {
+                (x - cx).hypot(y - cy) - c
+            } else {
+                f32::MAX
+            }
+        };
+        return d
+            .min(bite(corners.top_left, 0.0, 0.0))
+            .min(bite(corners.top_right, w, 0.0))
+            .min(bite(corners.bottom_right, w, h))
+            .min(bite(corners.bottom_left, 0.0, h));
+    }
     if corners.top_left {
         d = d.min((x + y - c) * K);
     }
@@ -144,14 +235,16 @@ pub(crate) fn apply_surfaces(
         &mut BorderColor,
         Option<&MaterialNode<ChamferMaterial>>,
         Option<&BoxShadow>,
+        Option<Ref<SurfaceCrop>>,
     )>,
 ) {
     let theme_changed = theme.is_changed();
-    for (e, s, mut node, mut bg, mut bc, mat, shadow) in &mut q {
-        if !theme_changed && !s.is_changed() {
+    for (e, s, mut node, mut bg, mut bc, mat, shadow, crop) in &mut q {
+        let crop_changed = crop.as_ref().is_some_and(|c| c.is_changed());
+        if !theme_changed && !s.is_changed() && !crop_changed {
             continue;
         }
-        let r = resolve(&theme, &s);
+        let r = resolve_cropped(&theme, &s, crop.and_then(|c| c.0));
         let bw = Val::Px(r.border_width);
         let border = UiRect::all(bw);
         if node.border != border {
@@ -172,7 +265,33 @@ pub(crate) fn apply_surfaces(
                         .try_remove::<MaterialNode<ChamferMaterial>>();
                 }
             }
-            Paint::Chamfer { chamfer, corners } => {
+            Paint::NativeRadii { radii } => {
+                set(&mut bg.0, color(r.fill));
+                let b = BorderColor::all(color(r.border));
+                if *bc != b {
+                    *bc = b;
+                }
+                let px = |i: usize| Val::Px(radii[i]);
+                upd(
+                    &mut node.border_radius,
+                    BorderRadius {
+                        top_left: px(0).into(),
+                        top_right: px(1).into(),
+                        bottom_right: px(2).into(),
+                        bottom_left: px(3).into(),
+                    },
+                );
+                if mat.is_some() {
+                    commands
+                        .entity(e)
+                        .try_remove::<MaterialNode<ChamferMaterial>>();
+                }
+            }
+            Paint::Chamfer {
+                chamfer,
+                corners,
+                scoop,
+            } => {
                 set(&mut bg.0, Color::NONE);
                 let b = BorderColor::all(Color::NONE);
                 if *bc != b {
@@ -182,7 +301,7 @@ pub(crate) fn apply_surfaces(
                 let m = ChamferMaterial {
                     fill: linear(r.fill),
                     border: linear(r.border),
-                    params: Vec4::new(r.border_width, chamfer, 0.0, 0.0),
+                    params: Vec4::new(r.border_width, chamfer, scoop as u8 as f32, 0.0),
                     corners: Vec4::new(
                         corners.top_left as u8 as f32,
                         corners.top_right as u8 as f32,
@@ -313,6 +432,66 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn a_scooped_corner_is_bitten_out_and_the_rest_stays() {
+        let (w, h, c) = (100.0, 40.0, 8.0);
+        let left = Corners::LEFT;
+        // Inside the bite at the top-left corner: outside the shape.
+        assert!(cut_distance(2.0, 2.0, w, h, c, left, true) < 0.0);
+        // Same spot on the uncut right end stays inside.
+        assert!(cut_distance(w - 2.0, 2.0, w, h, c, left, true) > 0.0);
+        // Just past the bite radius: inside.
+        assert!(cut_distance(9.0, 1.0, w, h, c, left, true) > 0.0);
+        // Centre stays at its distance to the nearest edge.
+        assert_eq!(cut_distance(50.0, 20.0, w, h, c, left, true), 20.0);
+    }
+
+    #[test]
+    fn crops_pick_their_paint() {
+        use dodai_core::{ButtonCrop as B, CropEdge};
+        let t = themes::all()
+            .into_iter()
+            .find(|t| t.shape.kind() == ShapeKind::Chamfered)
+            .unwrap();
+        let s = Surface::default();
+        let cut = B::CutTicked {
+            corners: Corners::TOP_LEFT,
+            tick: CropEdge::Right,
+        };
+        match resolve_cropped(&t, &s, Some(cut)).paint {
+            Paint::Chamfer {
+                corners,
+                scoop,
+                chamfer,
+            } => {
+                assert_eq!(corners, Corners::TOP_LEFT);
+                assert!(!scoop);
+                assert!(chamfer >= t.shape.control_height);
+            }
+            p => panic!("{p:?}"),
+        }
+        let stub = B::Scooped {
+            corners: Corners::RIGHT,
+            size: 6.0,
+        };
+        assert!(matches!(
+            resolve_cropped(&t, &s, Some(stub)).paint,
+            Paint::Chamfer { scoop: true, .. }
+        ));
+        let tight = B::Squared {
+            corners: Corners::LEFT,
+            radius: 4.0,
+            rest: 9999.0,
+        };
+        assert_eq!(
+            resolve_cropped(&t, &s, Some(tight)).paint,
+            Paint::NativeRadii {
+                radii: [4.0, 9999.0, 9999.0, 4.0]
+            }
+        );
+        assert_eq!(resolve_cropped(&t, &s, None), resolve(&t, &s));
     }
 
     #[test]

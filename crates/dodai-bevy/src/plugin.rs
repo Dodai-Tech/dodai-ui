@@ -103,6 +103,7 @@ impl Plugin for DodaiUiPlugin {
                 ),
                 (
                     style_buttons,
+                    style_ticks,
                     style_panels,
                     style_tags,
                     style_tabs,
