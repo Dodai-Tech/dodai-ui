@@ -77,7 +77,7 @@ run-iced:
 
 # Bevy showcase (the same pages as the gpui one)
 run-bevy:
-    CARGO_TARGET_DIR=target/bevy cargo run -p dodai-bevy --example bevy_showcase
+    cargo run -p dodai-bevy --example bevy_showcase
 
 # Dioxus showcase, served at http://127.0.0.1:3030
 run-dioxus:
