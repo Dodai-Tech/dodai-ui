@@ -450,12 +450,23 @@ pub fn family_title(id: &str) -> String {
 #[derive(IntoElement)]
 pub struct ThemeSelector {
     id: ElementId,
+    system: bool,
 }
 
 impl ThemeSelector {
     /// Create a new [`ThemeSelector`].
     pub fn new(id: impl Into<ElementId>) -> Self {
-        Self { id: id.into() }
+        Self {
+            id: id.into(),
+            system: false,
+        }
+    }
+
+    /// Offer "System" as the first option: follow the operating system's light or dark
+    /// ([`crate::follow_system_appearance`]) instead of a fixed theme.
+    pub fn system(mut self, on: bool) -> Self {
+        self.system = on;
+        self
     }
 }
 
@@ -466,10 +477,28 @@ impl RenderOnce for ThemeSelector {
         let idx = sw.family_indices(sw.current_family());
         let list: Vec<Theme> = idx.iter().map(|&i| sw.themes()[i].clone()).collect();
         let pos = idx.iter().position(|&i| i == sw.index());
+        let system = self.system;
+        let mut options = theme_options(&list);
+        let selected = if system {
+            options.insert(0, SelectOption::new("System"));
+            if crate::following_system_appearance() {
+                Some(0)
+            } else {
+                pos.map(|p| p + 1)
+            }
+        } else {
+            pos
+        };
         Select::new(self.id)
-            .options(theme_options(&list))
-            .selected(pos)
-            .on_select(move |i, _, cx| select_theme(cx, idx[i]))
+            .options(options)
+            .selected(selected)
+            .on_select(move |i, w, cx| {
+                if system && i == 0 {
+                    crate::follow_system_appearance(w, cx);
+                } else {
+                    select_theme(cx, idx[i - usize::from(system)])
+                }
+            })
     }
 }
 

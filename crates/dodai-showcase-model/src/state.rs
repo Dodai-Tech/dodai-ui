@@ -78,6 +78,9 @@ impl Values {
     }
 }
 
+/// First entry of the theme dropdown: follow the operating system's light or dark.
+pub const SYSTEM: &str = "System";
+
 /// Value key of the theme-wide glow strength (Surface effects).
 pub(crate) const GLOW_KEY: &str = "fx-glow";
 /// Value key of the theme-wide scanlines switch (Surface effects).
@@ -271,19 +274,28 @@ impl Showcase {
             .unwrap_or(0)
     }
 
-    /// Names of the active design's themes.
+    /// What the theme dropdown offers: [`SYSTEM`] first (follow the operating system's light or
+    /// dark), then the names of the active design's themes.
     pub fn variants(&self) -> Vec<&'static str> {
-        self.switcher
-            .family_indices(self.switcher.current_family())
-            .into_iter()
-            .map(|i| self.switcher.themes()[i].meta.name)
+        std::iter::once(SYSTEM)
+            .chain(
+                self.switcher
+                    .family_indices(self.switcher.current_family())
+                    .into_iter()
+                    .map(|i| self.switcher.themes()[i].meta.name),
+            )
             .collect()
     }
 
-    /// Index of the active theme among [`variants`](Self::variants).
+    /// Index of the active choice among [`variants`](Self::variants): 0 while following the
+    /// system, otherwise the theme picked.
     pub fn variant_index(&self) -> usize {
+        if self.mode == ModePref::System {
+            return 0;
+        }
         let at = self.switcher.index();
-        self.switcher
+        1 + self
+            .switcher
             .family_indices(self.switcher.current_family())
             .iter()
             .position(|&i| i == at)
@@ -409,9 +421,14 @@ impl Showcase {
                     }
                 }
             }
+            Action::Variant(0) => {
+                self.mode = ModePref::System;
+                self.apply_mode();
+                self.bump();
+            }
             Action::Variant(i) => {
                 let idx = self.switcher.family_indices(self.switcher.current_family());
-                if let Some(&at) = idx.get(i) {
+                if let Some(&at) = idx.get(i - 1) {
                     self.switcher.select_index(at);
                     self.mode = match self.switcher.current().meta.mode {
                         Mode::Light => ModePref::Light,
@@ -479,5 +496,36 @@ mod surface_tests {
         let rev = m.revision();
         m.update(Action::Set("sl-a".into(), Value::Num(3.0)));
         assert_eq!(m.revision(), rev);
+    }
+}
+
+#[cfg(test)]
+mod system_theme_tests {
+    use super::*;
+
+    #[test]
+    fn the_theme_dropdown_starts_with_system() {
+        let mut m = Showcase::default();
+        assert_eq!(m.variants()[0], SYSTEM);
+        assert_eq!(m.variant_index(), 0);
+        m.update(Action::Variant(1));
+        assert_eq!(m.variant_index(), 1);
+        assert_eq!(
+            m.variants().len(),
+            1 + m.switcher.family_indices(m.switcher.current_family()).len()
+        );
+        m.update(Action::Variant(0));
+        assert_eq!(m.mode(), ModePref::System);
+        assert_eq!(m.variant_index(), 0);
+    }
+
+    #[test]
+    fn system_follows_the_operating_system() {
+        let mut m = Showcase::default();
+        m.update(Action::Variant(0));
+        m.set_system_dark(true);
+        let dark = m.theme().meta.mode;
+        m.set_system_dark(false);
+        assert_ne!(m.theme().meta.mode, dark);
     }
 }

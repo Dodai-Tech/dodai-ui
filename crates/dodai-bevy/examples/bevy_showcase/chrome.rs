@@ -270,12 +270,6 @@ pub fn spawn_top(p: &mut ChildSpawnerCommands, m: &Showcase, open: Option<&'stat
         let labels: Vec<String> = SPEEDS.iter().map(|s| format!("{s}×")).collect();
         segmented(c, &labels, m.speed_index(), Action::Speed);
     });
-    field(p, "Mode", |c| {
-        let modes = dodai_showcase_model::ModePref::ALL;
-        let labels: Vec<String> = modes.iter().map(|x| x.label().to_string()).collect();
-        let at = modes.iter().position(|x| *x == m.mode()).unwrap_or(0);
-        segmented(c, &labels, at, |i| Action::Mode(modes[i]));
-    });
     field(p, "Direction", |c| {
         segmented(c, &owned(vec!["LTR", "RTL"]), usize::from(m.rtl), |i| {
             Action::Rtl(i == 1)
