@@ -164,9 +164,17 @@ pub struct UiSlider {
     pub min: f32,
     /// Maximum.
     pub max: f32,
+    /// Runs bottom to top instead of left to right.
+    pub vertical: bool,
 }
 
 impl UiSlider {
+    /// The value under a pointer at `n` (`-0.5..=0.5` from the centre of the slider, y down).
+    pub fn value_at(&self, n: Vec2) -> f32 {
+        let f = if self.vertical { 0.5 - n.y } else { n.x + 0.5 };
+        self.min + f.clamp(0.0, 1.0) * (self.max - self.min)
+    }
+
     /// Value as a fraction of the range, `0..=1`.
     pub fn fraction(&self) -> f32 {
         if self.max > self.min {
@@ -598,7 +606,12 @@ pub fn progress(value: f32, tone: Option<Tone>) -> impl Bundle {
 /// Slider, full width.
 pub fn slider(value: f32, min: f32, max: f32) -> impl Bundle {
     (
-        UiSlider { value, min, max },
+        UiSlider {
+            value,
+            min,
+            max,
+            vertical: false,
+        },
         Node {
             width: Val::Percent(100.0),
             align_items: AlignItems::Center,
@@ -609,6 +622,36 @@ pub fn slider(value: f32, min: f32, max: f32) -> impl Bundle {
                 SliderFill,
                 Node {
                     height: Val::Percent(100.0),
+                    ..default()
+                },
+                Surface::default(),
+            ),
+            (SliderThumb, abs_fill(), Surface::default()),
+        ],
+    )
+}
+
+/// Slider running bottom to top, `length` px tall.
+pub fn vertical_slider(value: f32, min: f32, max: f32, length: f32) -> impl Bundle {
+    (
+        UiSlider {
+            value,
+            min,
+            max,
+            vertical: true,
+        },
+        Node {
+            height: Val::Px(length),
+            flex_direction: FlexDirection::Column,
+            justify_content: JustifyContent::FlexEnd,
+            align_items: AlignItems::Stretch,
+            ..default()
+        },
+        children![
+            (
+                SliderFill,
+                Node {
+                    width: Val::Percent(100.0),
                     ..default()
                 },
                 Surface::default(),
@@ -704,4 +747,34 @@ pub fn divider_vertical() -> impl Bundle {
         },
         BackgroundColor::default(),
     )
+}
+
+#[cfg(test)]
+mod slider_tests {
+    use super::*;
+
+    fn s(vertical: bool) -> UiSlider {
+        UiSlider {
+            value: 0.0,
+            min: 0.0,
+            max: 10.0,
+            vertical,
+        }
+    }
+
+    #[test]
+    fn a_horizontal_slider_reads_left_to_right() {
+        assert_eq!(s(false).value_at(Vec2::new(-0.5, 0.0)), 0.0);
+        assert_eq!(s(false).value_at(Vec2::new(0.0, 0.3)), 5.0);
+        assert_eq!(s(false).value_at(Vec2::new(0.5, 0.0)), 10.0);
+        assert_eq!(s(false).value_at(Vec2::new(9.0, 0.0)), 10.0);
+    }
+
+    #[test]
+    fn a_vertical_slider_reads_bottom_to_top() {
+        assert_eq!(s(true).value_at(Vec2::new(0.0, 0.5)), 0.0);
+        assert_eq!(s(true).value_at(Vec2::new(0.4, 0.0)), 5.0);
+        assert_eq!(s(true).value_at(Vec2::new(0.0, -0.5)), 10.0);
+        assert_eq!(s(true).value_at(Vec2::new(0.0, -9.0)), 10.0);
+    }
 }

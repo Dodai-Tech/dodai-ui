@@ -144,6 +144,8 @@ pub struct Slider {
     pub step: Option<f32>,
     /// Shows the number next to the track.
     pub readout: bool,
+    /// Runs bottom to top instead of left to right.
+    pub vertical: bool,
 }
 
 /// A text field.
@@ -281,6 +283,26 @@ pub enum Node {
     Toggle(Toggle),
     /// A slider.
     Slider(Slider),
+    /// A rotary knob over `min..=max`.
+    Knob {
+        /// The value.
+        bind: Bind<f32>,
+        /// Lowest value.
+        min: f32,
+        /// Highest value.
+        max: f32,
+        /// Diameter in px.
+        size: f32,
+        /// Dimmed and not draggable.
+        disabled: bool,
+    },
+    /// A fixed-height area whose content scrolls.
+    Scroll {
+        /// Height in px.
+        height: f32,
+        /// The scrolling content.
+        body: Box<Node>,
+    },
     /// A progress bar (`0..=1`).
     Progress {
         /// Fraction.
@@ -428,6 +450,18 @@ pub mod b {
         stack(Axis::Row, true, Gap::Md, items)
     }
 
+    /// A column that is only as wide as its widest child, children centred (a dial and its
+    /// readout).
+    pub fn dial(items: Vec<Node>) -> Node {
+        Node::Stack(Stack {
+            axis: Axis::Column,
+            wrap: false,
+            gap: Gap::Xs,
+            centre: true,
+            items,
+        })
+    }
+
     /// Row that never wraps, small gaps.
     pub fn line(items: Vec<Node>) -> Node {
         stack(Axis::Row, false, Gap::Sm, items)
@@ -566,6 +600,26 @@ pub mod b {
             max,
             step: None,
             readout: true,
+            vertical: false,
+        }
+    }
+
+    /// A knob over `min..=max`, `size` px across.
+    pub fn knob(key: &str, value: f32, min: f32, max: f32, size: f32) -> Node {
+        Node::Knob {
+            bind: Bind::new(key, value),
+            min,
+            max,
+            size,
+            disabled: false,
+        }
+    }
+
+    /// `body` in a scroll area `height` px tall.
+    pub fn scroll(height: f32, body: Node) -> Node {
+        Node::Scroll {
+            height,
+            body: Box::new(body),
         }
     }
 
@@ -573,6 +627,16 @@ pub mod b {
         /// Snap to multiples of `step`.
         pub fn step(mut self, step: f32) -> Self {
             self.step = Some(step);
+            self
+        }
+        /// Show or hide the number.
+        pub fn readout(mut self, on: bool) -> Self {
+            self.readout = on;
+            self
+        }
+        /// Run bottom to top.
+        pub fn vertical(mut self) -> Self {
+            self.vertical = true;
             self
         }
         /// As a node.
@@ -695,7 +759,8 @@ impl Node {
         f(self);
         match self {
             Node::Stack(s) => s.items.iter().for_each(|n| n.walk(f)),
-            Node::Card { body, .. } => body.walk(f),
+            Node::Card { body, .. } | Node::Scroll { body, .. } => body.walk(f),
+            Node::Popup(body) => body.walk(f),
             _ => {}
         }
     }

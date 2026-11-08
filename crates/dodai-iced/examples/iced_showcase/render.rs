@@ -8,8 +8,8 @@ use dodai_icons::IconId;
 use dodai_showcase_model::node::{Axis, Gap, TextRole as Role, TreeNode};
 use dodai_showcase_model::{Action, Node as Demo, Showcase, Value};
 use iced::widget::{
-    checkbox, column, container, progress_bar, radio, row, slider, stack, text, text_input,
-    toggler, Space,
+    checkbox, column, container, progress_bar, radio, row, scrollable, slider, stack, text,
+    text_input, toggler, vertical_slider, Space,
 };
 use iced::{alignment, Element, Length};
 
@@ -110,6 +110,10 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
                 (Axis::Row, false) => row(items)
                     .spacing(g)
                     .align_y(alignment::Vertical::Center)
+                    .into(),
+                (Axis::Column, _) if s.centre => column(items)
+                    .spacing(g)
+                    .align_x(alignment::Horizontal::Center)
                     .into(),
                 (Axis::Column, _) => column(items).spacing(g).width(Length::Fill).into(),
             }
@@ -284,6 +288,44 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
                     .into()
                 }
             }
+        }
+        Demo::Knob {
+            bind,
+            min,
+            max,
+            size,
+            disabled,
+        } => {
+            let key = bind.key.clone();
+            let range = dodai_iced::KnobRange {
+                min: *min,
+                max: *max,
+                step: None,
+            };
+            lt.knob(vals.num(bind), range, *size, *disabled, move |x| {
+                Msg::Set(key.clone(), Value::Num(x))
+            })
+        }
+        Demo::Scroll { height, body } => {
+            scrollable(container(view(body, cx)).padding(sp.sm).width(Length::Fill))
+                .height(Length::Fixed(*height))
+                .width(Length::Fixed(520.0))
+                .style(lt.scrollable())
+                .into()
+        }
+        Demo::Slider(s) if s.vertical => {
+            let v = vals.num(&s.bind);
+            let key = s.bind.key.clone();
+            let (min, max, step) = (s.min, s.max, s.step);
+            let mut sl = vertical_slider(min..=max, v, move |x| {
+                Msg::Set(key.clone(), Value::Num(snap(x, min, max, step)))
+            })
+            .height(120)
+            .style(lt.slider());
+            if let Some(st) = s.step {
+                sl = sl.step(st);
+            }
+            sl.into()
         }
         Demo::Slider(s) => {
             let v = vals.num(&s.bind);

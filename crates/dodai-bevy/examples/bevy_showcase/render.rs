@@ -130,7 +130,7 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                 },
                 ..default()
             };
-            if s.axis == Axis::Column {
+            if s.axis == Axis::Column && !s.centre {
                 n.width = Val::Percent(100.0);
             }
             p.spawn(n).with_children(|c| {
@@ -328,6 +328,46 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                 e.insert(bound);
                 c.spawn(text(t.label.clone(), TextRole::Control));
             });
+        }
+        Demo::Knob {
+            bind,
+            min,
+            max,
+            size,
+            disabled,
+        } => {
+            let mut e = p.spawn(knob(vals.num(bind), *min, *max, *size));
+            e.insert(Bound::Slide {
+                key: bind.key.clone(),
+                step: None,
+            });
+            if *disabled {
+                e.entry::<UiKnob>().and_modify(|mut k| k.disabled = true);
+            }
+        }
+        Demo::Slider(s) if s.vertical => {
+            p.spawn((
+                vertical_slider(vals.num(&s.bind), s.min, s.max, 120.0),
+                Bound::Slide {
+                    key: s.bind.key.clone(),
+                    step: s.step,
+                },
+            ));
+        }
+        Demo::Scroll { height, body } => {
+            p.spawn((
+                Node {
+                    width: Val::Percent(100.0),
+                    max_width: Val::Px(520.0),
+                    height: Val::Px(*height),
+                    overflow: Overflow::scroll_y(),
+                    ..default()
+                },
+                ScrollPosition::default(),
+                bevy::ui::RelativeCursorPosition::default(),
+                crate::events::Scroller::Area,
+            ))
+            .with_children(|c| spawn(c, body, cx));
         }
         Demo::Slider(s) => {
             let v = vals.num(&s.bind);

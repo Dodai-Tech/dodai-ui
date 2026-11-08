@@ -302,6 +302,12 @@ pub struct SliderProps {
     pub step: f32,
     #[props(default)]
     pub disabled: bool,
+    /// Runs bottom to top, `length` px tall.
+    #[props(default)]
+    pub vertical: bool,
+    /// Height in px of a vertical slider.
+    #[props(default = 120)]
+    pub length: u32,
     #[props(default)]
     pub onchange: EventHandler<f32>,
 }
@@ -311,9 +317,17 @@ pub struct SliderProps {
 pub fn Slider(props: SliderProps) -> Element {
     let span = (props.max - props.min).max(f32::EPSILON);
     let pct = ((props.value - props.min) / span).clamp(0.0, 1.0) * 100.0;
+    let (class, style) = if props.vertical {
+        (
+            "dodai-slider dodai-slider--v",
+            format!("--v:{pct}%;height:{}px", props.length),
+        )
+    } else {
+        ("dodai-slider", format!("--v:{pct}%"))
+    };
     rsx! {
-        input { class: "dodai-slider", r#type: "range", min: "{props.min}", max: "{props.max}", step: "{props.step}",
-            value: "{props.value}", disabled: props.disabled, style: "--v:{pct}%",
+        input { class, r#type: "range", min: "{props.min}", max: "{props.max}", step: "{props.step}",
+            value: "{props.value}", disabled: props.disabled, style,
             oninput: move |e| if let Ok(v) = e.value().parse::<f32>() { props.onchange.call(v) } }
     }
 }

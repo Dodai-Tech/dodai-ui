@@ -12,38 +12,9 @@ use gpui::{
 };
 use std::rc::Rc;
 
-/// Start of the sweep, degrees clockwise from +x (screen space): bottom-left.
-pub const KNOB_START_DEG: f32 = 135.0;
-/// Total sweep in degrees.
-pub const KNOB_SWEEP_DEG: f32 = 270.0;
-/// Pixels of drag that cover the whole range.
-pub const KNOB_DRAG_PX: f32 = 160.0;
-
-/// Angle in radians (screen space, clockwise from +x) for a 0..1 fraction.
-pub fn knob_angle(frac: f32) -> f32 {
-    (KNOB_START_DEG + frac.clamp(0.0, 1.0) * KNOB_SWEEP_DEG).to_radians()
-}
-
-/// New value after dragging `dx`/`dy` px (screen space; up and right increase)
-/// from `start`. `step` snaps to multiples from `min`.
-pub fn knob_value(start: f32, dx: f32, dy: f32, min: f32, max: f32, step: Option<f32>) -> f32 {
-    let mut v = start + (dx - dy) / KNOB_DRAG_PX * (max - min);
-    if let Some(s) = step.filter(|s| *s > 0.0) {
-        v = min + ((v - min) / s).round() * s;
-    }
-    v.clamp(min.min(max), max.max(min))
-}
-
-/// Points of the arc from fraction `a` to `b` on a circle.
-pub fn arc_points(cx: f32, cy: f32, r: f32, a: f32, b: f32) -> Vec<(f32, f32)> {
-    let n = (((b - a).abs() * KNOB_SWEEP_DEG / 6.0).ceil() as usize).max(2);
-    (0..=n)
-        .map(|i| {
-            let th = knob_angle(a + (b - a) * i as f32 / n as f32);
-            (cx + r * th.cos(), cy + r * th.sin())
-        })
-        .collect()
-}
+pub use dodai_core::{
+    arc_points, knob_angle, knob_value, KNOB_DRAG_PX, KNOB_START_DEG, KNOB_SWEEP_DEG,
+};
 
 type FloatHandler = Rc<dyn Fn(f32, &mut Window, &mut App)>;
 

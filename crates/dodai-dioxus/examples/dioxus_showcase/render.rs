@@ -97,6 +97,8 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
             let wrap = if s.wrap { "dodai-stack--wrap" } else { "" };
             let align = if s.axis == Axis::Row && !s.centre {
                 "align-items:flex-start"
+            } else if s.axis == Axis::Column && s.centre {
+                "align-items:center;width:auto"
             } else {
                 ""
             };
@@ -219,6 +221,31 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
                             onselect: move |_| act(model, Action::Set(group.clone(), Value::Index(idx))) }
                     }
                 }
+            }
+        }
+        Demo::Knob {
+            bind,
+            min,
+            max,
+            size,
+            disabled,
+        } => {
+            let v = vals.num(bind);
+            let (key, min, max) = (bind.key.clone(), *min, *max);
+            rsx! {
+                Knob { value: v, min, max, size: *size, disabled: *disabled, theme: theme.clone(),
+                    onchange: move |x| act(model, Action::Set(key.clone(), Value::Num(x))) }
+            }
+        }
+        Demo::Scroll { height, body } => rsx! {
+            div { class: "dodai-scroll", style: "height:{height}px;overflow:auto;width:100%;max-width:520px", {view(body, cx)} }
+        },
+        Demo::Slider(s) if s.vertical => {
+            let v = vals.num(&s.bind);
+            let (key, min, max, step) = (s.bind.key.clone(), s.min, s.max, s.step);
+            rsx! {
+                Slider { value: v, min, max, step: step.unwrap_or((max - min) / 100.0), vertical: true,
+                    onchange: move |x| act(model, Action::Set(key.clone(), Value::Num(snap(x, min, max, step)))) }
             }
         }
         Demo::Slider(s) => {
