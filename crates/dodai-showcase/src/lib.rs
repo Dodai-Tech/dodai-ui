@@ -4,6 +4,19 @@
 //! Keys: `t` / `T` next / previous theme. Glow +/- buttons change
 //! `Theme::with_glow_intensity` live.
 
+use dodai_charts::gpui::{
+    Annotation, Bullet, CalendarHeatmap, Lollipop, PairedBars, RoseChart, Sankey, SlopeChart,
+    ViolinChart,
+};
+use dodai_charts::gpui::{
+    BarChart, BoxPlot, Candle, Candlestick, Funnel, Heatmap, Histogram, LineChart, Marker,
+    PieChart, PieStyle, RadarChart, RadialBar, ScatterPlot, Series, SparkGuide, SparkStyle,
+    Sparkline, StackedAreaChart, Treemap, Waterfall,
+};
+use dodai_charts::gpui::{
+    CandleOverlay, CandlePane, CandleStyle, ChartStack, DepthChart, Gantt, GanttTask, RenkoChart,
+    TradeMarker,
+};
 use dodai_core::{ButtonVariant, Tone};
 use dodai_gpui::{
     cycle_next, cycle_prev, fuzzy_filter, glow_intensity, hsla, set_glow_intensity, set_scanlines,
@@ -19,20 +32,7 @@ use dodai_gpui::{
     RichTooltip, SearchView, Snackbar, TagField, TextInput, TimePicker, Timeline, TimelineEvent,
     Toolbar, TreeItem, TreeNavigation, TreeView,
 };
-use dodai_gpui_charts::{
-    Annotation, Bullet, CalendarHeatmap, Lollipop, PairedBars, RoseChart, Sankey, SlopeChart,
-    ViolinChart,
-};
-use dodai_gpui_charts::{
-    BarChart, BoxPlot, Candle, Candlestick, Funnel, Heatmap, Histogram, LineChart, Marker,
-    PieChart, PieStyle, RadarChart, RadialBar, ScatterPlot, Series, SparkGuide, SparkStyle,
-    Sparkline, StackedAreaChart, Treemap, Waterfall,
-};
-use dodai_gpui_charts::{
-    CandleOverlay, CandlePane, CandleStyle, ChartStack, DepthChart, Gantt, GanttTask, RenkoChart,
-    TradeMarker,
-};
-use dodai_gpui_instruments::{
+use dodai_instruments::gpui::{
     Blip, DotMatrix, Gauge, GaugeStyle, HexMap, Oscilloscope, RadarScope, RingStack, SignalBars,
     Spectrum,
 };
@@ -388,7 +388,7 @@ impl Render for Showcase {
                                 dodai_gpui::Select::new("veh-look")
                                     .options(
                                         ["All"].into_iter().chain(
-                                            dodai_gpui_instruments::Look::ALL
+                                            dodai_instruments::gpui::Look::ALL
                                                 .into_iter()
                                                 .map(|l| l.name()),
                                         ),
@@ -1049,10 +1049,10 @@ impl Render for Showcase {
                                                         ["Off", "On"],
                                                     )
                                                     .selected(usize::from(
-                                                        dodai_gpui_charts::common::patterns(),
+                                                        dodai_charts::gpui::common::patterns(),
                                                     ))
                                                     .on_select(|i, _, cx| {
-                                                        dodai_gpui_charts::common::set_patterns(
+                                                        dodai_charts::gpui::common::set_patterns(
                                                             cx,
                                                             i == 1,
                                                         )

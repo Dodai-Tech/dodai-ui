@@ -2,13 +2,13 @@
 //! success, a gradient scale and a network overview composed from stock parts.
 
 use super::super::*;
-use dodai_core::Tone;
-use dodai_gpui::live::{drift, wander_between};
-use dodai_gpui::{Avatar, Table};
-use dodai_gpui_charts::{
+use dodai_charts::gpui::{
     BucketBar, GradientScale, LineChart, PieChart, Series, Slot, SlotGrid, SlotState, StageBars,
     StatusStrip,
 };
+use dodai_core::Tone;
+use dodai_gpui::live::{drift, wander_between};
+use dodai_gpui::{Avatar, Table};
 
 /// Channel names of the two bands.
 const LOW_BAND: [&str; 14] = [

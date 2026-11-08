@@ -1,4 +1,4 @@
-//! Charts for iced, drawn on a canvas from `dodai-charts-core` geometry.
+//! Charts for iced, drawn on a canvas from `dodai-charts` geometry.
 //!
 //! Layout is a pure function ([`ChartKind::layout`]) from data and size to a list of
 //! [`Prim`]s in pixel coordinates, so it is unit-tested without a renderer; the canvas

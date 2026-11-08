@@ -1,6 +1,6 @@
 #![no_main]
-use dodai_charts_core as c;
-use dodai_instruments_core as ic;
+use dodai_charts as c;
+use dodai_instruments as ic;
 use libfuzzer_sys::fuzz_target;
 
 // Chart and instrument maths take caller data (NaN, infinities, empty, huge periods): never panic, never hang.

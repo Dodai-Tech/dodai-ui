@@ -1,8 +1,8 @@
 [workspace]
 members = [
     "crates/dodai-core",
-    "crates/dodai-charts-core",
-    "crates/dodai-instruments-core",
+    "crates/dodai-charts",
+    "crates/dodai-instruments",
     "crates/dodai-fx",
     "crates/dodai-frost",
     "crates/dodai-shaders",
@@ -10,8 +10,6 @@ members = [
     "crates/dodai-ratatui",
     "crates/dodai-iced",
     "crates/dodai-gpui",
-    "crates/dodai-gpui-charts",
-    "crates/dodai-gpui-instruments",
     "crates/dodai-showcase",
     "crates/dodai-showcase-model",
     "crates/dodai-topcoat",
@@ -49,16 +47,14 @@ gpui      = "0.2.2"
 dodai-core    = { path = "crates/dodai-core",    version = "0.1.0" }
 dodai-fx = { path = "crates/dodai-fx", version = "0.1.0" }
 dodai-frost = { path = "crates/dodai-frost", version = "0.1.0" }
-dodai-charts-core = { path = "crates/dodai-charts-core", version = "0.1.0" }
-dodai-instruments-core = { path = "crates/dodai-instruments-core", version = "0.1.0" }
+dodai-charts      = { path = "crates/dodai-charts", version = "0.1.0" }
+dodai-instruments = { path = "crates/dodai-instruments", version = "0.1.0" }
 dodai-shaders = { path = "crates/dodai-shaders", version = "0.1.0" }
 dodai-icons = { path = "crates/dodai-icons", version = "0.1.0", default-features = false }
 dodai-showcase-model = { path = "crates/dodai-showcase-model" }
 dodai-ratatui = { path = "crates/dodai-ratatui", version = "0.1.0" }
 dodai-iced    = { path = "crates/dodai-iced",    version = "0.1.0" }
 dodai-gpui    = { path = "crates/dodai-gpui",    version = "0.1.0", default-features = false }
-dodai-gpui-charts      = { path = "crates/dodai-gpui-charts",      version = "0.1.0" }
-dodai-gpui-instruments = { path = "crates/dodai-gpui-instruments", version = "0.1.0" }
 dodai-topcoat = { path = "crates/dodai-topcoat", version = "0.1.0" }
 dodai-egui    = { path = "crates/dodai-egui", version = "0.1.0" }
 dodai-slint   = { path = "crates/dodai-slint", version = "0.1.0" }

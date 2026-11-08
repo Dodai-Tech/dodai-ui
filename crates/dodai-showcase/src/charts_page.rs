@@ -43,8 +43,8 @@ impl Showcase {
                             "heat-grad",
                             format!(
                                 "Gradient: {}",
-                                dodai_gpui_charts::Gradient::ALL
-                                    [self.heat_grad % dodai_gpui_charts::Gradient::ALL.len()]
+                                dodai_charts::gpui::Gradient::ALL
+                                    [self.heat_grad % dodai_charts::gpui::Gradient::ALL.len()]
                                 .name()
                             ),
                         )
@@ -104,8 +104,8 @@ impl Showcase {
                 )
                 .cell(heat_cell)
                 .gradient(
-                    dodai_gpui_charts::Gradient::ALL
-                        [self.heat_grad % dodai_gpui_charts::Gradient::ALL.len()],
+                    dodai_charts::gpui::Gradient::ALL
+                        [self.heat_grad % dodai_charts::gpui::Gradient::ALL.len()],
                 )
                 .row_labels((0..hr).map(|r| {
                     if r % (4 * hres) == 0 {
@@ -482,7 +482,7 @@ impl Showcase {
                 .collect()
         };
         let pulse = {
-            use dodai_gpui_charts::{Pulse, PulseGrid, PulseMode, PulseRhythm};
+            use dodai_charts::gpui::{Pulse, PulseGrid, PulseMode, PulseRhythm};
             let cfg = self.pulse_cfg;
             let pick =
                 |id: &'static str, k: usize, label: &'static str, opts: &'static [&'static str]| {

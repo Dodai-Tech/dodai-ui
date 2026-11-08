@@ -67,14 +67,14 @@ jobs:
       - run: git diff --exit-code -- dist
       - run: test -z "$(git status --porcelain dist)"
 
-  # Base crates everything else depends on (dodai-core, dodai-icons, dodai-charts-core, dodai-instruments-core, dodai-fx, dodai-frost).
+  # Base crates everything else depends on (dodai-core, dodai-icons, dodai-charts, dodai-instruments, dodai-fx, dodai-frost).
   base:
     name: ${{ matrix.crate }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        crate: [dodai-core, dodai-icons, dodai-charts-core, dodai-instruments-core, dodai-fx, dodai-frost]
+        crate: [dodai-core, dodai-icons, dodai-charts, dodai-instruments, dodai-fx, dodai-frost]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -114,8 +114,8 @@ jobs:
         include:
           - { crate: dodai-iced, os: ubuntu-latest, gui: true }
           - { crate: dodai-gpui, os: ubuntu-latest, gui: true }
-          - { crate: dodai-gpui-charts, os: ubuntu-latest, gui: true }
-          - { crate: dodai-gpui-instruments, os: ubuntu-latest, gui: true }
+          - { crate: dodai-charts, os: ubuntu-latest, gui: true }
+          - { crate: dodai-instruments, os: ubuntu-latest, gui: true }
           - { crate: dodai-showcase, os: ubuntu-latest, gui: true }
           - { crate: dodai-bevy, os: ubuntu-latest, gui: true }
           - { crate: dodai-shaders, os: ubuntu-latest, gui: true }
@@ -148,10 +148,10 @@ jobs:
       - name: gpui feature slices
         if: matrix.crate == 'dodai-gpui'
         run: |
-          cargo check -p dodai-gpui-instruments --no-default-features
-          cargo check -p dodai-gpui-instruments --no-default-features --features automotive
-          cargo check -p dodai-gpui-instruments --no-default-features --features aviation
-          cargo check -p dodai-gpui-instruments --no-default-features --features defense
+          cargo check -p dodai-instruments --no-default-features --features gpui
+          cargo check -p dodai-instruments --no-default-features --features gpui,automotive
+          cargo check -p dodai-instruments --no-default-features --features gpui,aviation
+          cargo check -p dodai-instruments --no-default-features --features gpui,defense
           cargo check -p dodai-gpui --no-default-features --features components
           cargo check -p dodai-gpui --no-default-features --features shaders
           cargo check -p dodai-gpui --no-default-features
@@ -204,10 +204,10 @@ jobs:
       - name: gpui feature slices
         if: matrix.crate == 'dodai-gpui'
         run: |
-          cargo check -p dodai-gpui-instruments --no-default-features
-          cargo check -p dodai-gpui-instruments --no-default-features --features automotive
-          cargo check -p dodai-gpui-instruments --no-default-features --features aviation
-          cargo check -p dodai-gpui-instruments --no-default-features --features defense
+          cargo check -p dodai-instruments --no-default-features --features gpui
+          cargo check -p dodai-instruments --no-default-features --features gpui,automotive
+          cargo check -p dodai-instruments --no-default-features --features gpui,aviation
+          cargo check -p dodai-instruments --no-default-features --features gpui,defense
           cargo check -p dodai-gpui --no-default-features --features components
           cargo check -p dodai-gpui --no-default-features --features shaders
           cargo check -p dodai-gpui --no-default-features
@@ -255,7 +255,7 @@ jobs:
         with:
           toolchain: ${{ steps.msrv.outputs.version }}
       - uses: Swatinem/rust-cache@v2
-      - run: cargo check --locked -p dodai-core --all-features -p dodai-charts-core -p dodai-instruments-core -p dodai-fx -p dodai-icons --all-targets
+      - run: cargo check --locked -p dodai-core --all-features -p dodai-charts -p dodai-instruments -p dodai-fx -p dodai-icons --all-targets
 
   # Unused dependencies (cargo-machete scans every manifest, including freya and tools/).
   machete:
@@ -282,7 +282,7 @@ jobs:
       - run: cargo install cargo-llvm-cov --locked
       - run: cargo llvm-cov -p dodai-core --all-features --fail-under-lines 85
       - run: cargo llvm-cov -p dodai-fx --all-features --fail-under-lines 85
-      - run: cargo llvm-cov -p dodai-charts-core --all-features --fail-under-lines 94
+      - run: cargo llvm-cov -p dodai-charts --fail-under-lines 94
 
   nu-tests:
     name: nushell tests

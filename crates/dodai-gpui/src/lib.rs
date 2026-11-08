@@ -22,8 +22,8 @@
 //! | Time | [`time`] (clock, timer, stopwatch, tap tempo) |
 //! | Look | [`paint`] (the shaped box), [`motion`], [`frosted`] (glass over a picture), [`glass`] (frosted glass on any component), [`mod@backdrop`] (the canvas mesh of a design that has one) |
 //!
-//! Charts and instruments are separate crates built on the same pieces: `dodai-gpui-charts` and
-//! `dodai-gpui-instruments`. The pieces they share are public here so other crates can build
+//! Charts and instruments are separate crates built on the same pieces: `dodai-charts` and
+//! `dodai-instruments`. The pieces they share are public here so other crates can build
 //! their own: [`paint`] (strokes, fills, shaped boxes), [`plot`] (chart glow), [`follow`] (values
 //! that ease to new data), [`motion`], [`live`] (streaming samples) and the [`entry_render!`],
 //! [`follow_api!`], [`callback!`] and [`corners_setter!`] macros.
