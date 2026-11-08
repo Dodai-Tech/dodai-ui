@@ -55,6 +55,7 @@ mod geometry;
 mod icon;
 mod inputs;
 mod kit;
+mod knob;
 mod list;
 mod panel;
 mod scanlines;
@@ -71,6 +72,7 @@ pub use charts::{ChartKind, Prim};
 pub use frame::{shaped_frame, BoxStyle, ShapedFrame};
 pub use geometry::ShapeGeom;
 pub use kit::segment;
+pub use knob::{wheel_value, KnobDrag, KnobRange};
 pub use shaped_button::{ButtonState, ShapedButton, ShapedColors};
 pub use surface_fx::SurfaceFxProgram;
 

@@ -92,6 +92,7 @@ impl Plugin for DodaiUiPlugin {
                 (
                     button_input,
                     crate::kit::press_input,
+                    crate::knob::knob_input,
                     toggle_input,
                     radio_exclusive,
                     tab_input,
@@ -112,6 +113,7 @@ impl Plugin for DodaiUiPlugin {
                     style_list_items,
                     style_dividers,
                     crate::kit::style_kits,
+                    crate::knob::style_knobs,
                     crate::spinner::animate_spinners,
                     crate::spinner::animate_bars,
                     update_tooltip,

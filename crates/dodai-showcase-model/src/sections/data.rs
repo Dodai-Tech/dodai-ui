@@ -9,7 +9,7 @@ use crate::node::{Bind, Node, TextRole, TimelineEvent};
 
 const CAT: &str = "Data display";
 
-pub(crate) const SECTIONS: [Section; 13] = [
+pub(crate) const SECTIONS: [Section; 14] = [
     Section {
         category: CAT,
         title: "Tags",
@@ -74,6 +74,11 @@ pub(crate) const SECTIONS: [Section; 13] = [
         category: CAT,
         title: "Stopwatch · Tap tempo",
         build: stopwatch,
+    },
+    Section {
+        category: CAT,
+        title: "Scroll area",
+        build: scroll_area,
     },
 ];
 
@@ -280,4 +285,13 @@ fn stopwatch(c: &Ctx) -> Node {
             .node(),
         muted(format!("{taps} taps")),
     ])
+}
+
+fn scroll_area(_: &Ctx) -> Node {
+    scroll(
+        200.0,
+        col((1..=40)
+            .map(|i| body(format!("Row {i} · drag the thumb or use the wheel")))
+            .collect()),
+    )
 }

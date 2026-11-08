@@ -186,7 +186,7 @@ pub(crate) fn slider_input(
             continue;
         }
         if let Some(n) = rel.normalized {
-            let v = s.min + (n.x + 0.5).clamp(0.0, 1.0) * (s.max - s.min);
+            let v = s.value_at(n);
             if (v - s.value).abs() > f32::EPSILON {
                 s.value = v;
                 out.write(ControlEvent {
@@ -507,7 +507,7 @@ pub(crate) fn style_sliders(
     let p = &theme.palette;
     let track_h = theme.spacing.sm + 2.0;
     let thumb_w = 10.0;
-    for (_, mut s, mut n) in &mut q {
+    for (sl, mut s, mut n) in &mut q {
         upd(
             &mut *s,
             Surface {
@@ -517,13 +517,21 @@ pub(crate) fn style_sliders(
                 pill: false,
             },
         );
-        upd(&mut n.height, Val::Px(track_h));
+        if sl.vertical {
+            upd(&mut n.width, Val::Px(track_h));
+        } else {
+            upd(&mut n.height, Val::Px(track_h));
+        }
     }
     for (c, mut n, mut s) in &mut fills {
         let Ok(sl) = owners.get(c.parent()) else {
             continue;
         };
-        upd(&mut n.width, Val::Percent(sl.fraction() * 100.0));
+        if sl.vertical {
+            upd(&mut n.height, Val::Percent(sl.fraction() * 100.0));
+        } else {
+            upd(&mut n.width, Val::Percent(sl.fraction() * 100.0));
+        }
         upd(
             &mut *s,
             Surface {
@@ -538,10 +546,19 @@ pub(crate) fn style_sliders(
         let Ok(sl) = owners.get(c.parent()) else {
             continue;
         };
-        upd(&mut n.width, Val::Px(thumb_w));
-        upd(&mut n.height, Val::Px(theme.shape.control_height * 0.5));
-        upd(&mut n.left, Val::Percent(sl.fraction() * 100.0));
-        upd(&mut n.margin.left, Val::Px(-thumb_w / 2.0));
+        let long = theme.shape.control_height * 0.5;
+        if sl.vertical {
+            upd(&mut n.width, Val::Px(long));
+            upd(&mut n.height, Val::Px(thumb_w));
+            upd(&mut n.bottom, Val::Percent(sl.fraction() * 100.0));
+            upd(&mut n.margin.bottom, Val::Px(-thumb_w / 2.0));
+            upd(&mut n.left, Val::Px(track_h / 2.0 - long / 2.0));
+        } else {
+            upd(&mut n.width, Val::Px(thumb_w));
+            upd(&mut n.height, Val::Px(long));
+            upd(&mut n.left, Val::Percent(sl.fraction() * 100.0));
+            upd(&mut n.margin.left, Val::Px(-thumb_w / 2.0));
+        }
         upd(
             &mut *s,
             Surface {
@@ -1030,5 +1047,52 @@ mod input_tests {
         assert_eq!(input_height(&t, 1), t.shape.control_height);
         assert_eq!(input_height(&t, 0), t.shape.control_height);
         assert!(input_height(&t, 4) > input_height(&t, 2));
+    }
+}
+
+#[cfg(test)]
+mod vertical_slider_tests {
+    use super::*;
+    use crate::widgets::{slider, vertical_slider, SliderThumb};
+
+    fn styled(bundle: impl Bundle) -> (App, Entity) {
+        let mut app = App::new();
+        app.insert_resource(DodaiTheme::new())
+            .add_systems(Update, style_sliders);
+        let e = app.world_mut().spawn(bundle).id();
+        app.update();
+        (app, e)
+    }
+
+    fn fill_and_thumb(app: &mut App) -> (Node, Node) {
+        let w = app.world_mut();
+        let fill = w
+            .query_filtered::<&Node, With<SliderFill>>()
+            .single(w)
+            .unwrap()
+            .clone();
+        let thumb = w
+            .query_filtered::<&Node, With<SliderThumb>>()
+            .single(w)
+            .unwrap()
+            .clone();
+        (fill, thumb)
+    }
+
+    #[test]
+    fn a_vertical_slider_fills_upwards_and_puts_its_thumb_on_the_fill_top() {
+        let (mut app, e) = styled(vertical_slider(2.5, 0.0, 10.0, 120.0));
+        let (fill, thumb) = fill_and_thumb(&mut app);
+        assert_eq!(fill.height, Val::Percent(25.0));
+        assert_eq!(thumb.bottom, Val::Percent(25.0));
+        assert!(matches!(app.world().get::<Node>(e).unwrap().width, Val::Px(w) if w > 0.0));
+    }
+
+    #[test]
+    fn a_horizontal_slider_still_fills_rightwards() {
+        let (mut app, _) = styled(slider(5.0, 0.0, 10.0));
+        let (fill, thumb) = fill_and_thumb(&mut app);
+        assert_eq!(fill.width, Val::Percent(50.0));
+        assert_eq!(thumb.left, Val::Percent(50.0));
     }
 }

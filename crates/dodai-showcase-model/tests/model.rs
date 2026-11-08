@@ -84,6 +84,7 @@ fn bind_keys_keep_one_type() {
             Node::Choice(c) | Node::Tabs(c) => note(&c.bind.key, "index"),
             Node::Toggle(t) => note(&t.bind.key, "bool"),
             Node::Slider(s) => note(&s.bind.key, "num"),
+            Node::Knob { bind, .. } => note(&bind.key, "num"),
             Node::Input(i) => note(&i.bind.key, "text"),
             Node::Chip { bind, .. } => note(&bind.key, "bool"),
             Node::Stepper(b) => note(&b.key, "int"),
@@ -351,4 +352,43 @@ fn configured_opens_on_the_given_page() {
     assert_eq!(sc.theme().meta.id, Showcase::new().theme().meta.id);
     let sc = Showcase::new().configured(None, Some(999), None);
     assert_eq!(sc.category(), None);
+}
+
+#[test]
+fn walk_reaches_through_scroll_areas_and_popups() {
+    let n = b::scroll(100.0, b::col(vec![b::body("inside")]));
+    let mut texts = 0;
+    n.walk(&mut |x| texts += matches!(x, Node::Text { .. }) as usize);
+    assert_eq!(texts, 1);
+    let p = Node::Popup(Box::new(b::body("pop")));
+    let mut seen = 0;
+    p.walk(&mut |_| seen += 1);
+    assert_eq!(seen, 2);
+}
+
+#[test]
+fn knobs_stay_inside_their_range_and_vertical_sliders_exist() {
+    let sc = Showcase::new();
+    let (mut knobs, mut vertical, mut scrolls) = (0, 0, 0);
+    for (_, node) in build_all(&sc) {
+        node.walk(&mut |n| match n {
+            Node::Knob {
+                bind,
+                min,
+                max,
+                size,
+                ..
+            } => {
+                knobs += 1;
+                assert!(min < max && *size > 0.0 && (*min..=*max).contains(&bind.default));
+            }
+            Node::Slider(s) if s.vertical => vertical += 1,
+            Node::Scroll { height, .. } => {
+                scrolls += 1;
+                assert!(*height > 0.0);
+            }
+            _ => {}
+        });
+    }
+    assert!(knobs >= 3 && vertical >= 3 && scrolls >= 1);
 }

@@ -9,7 +9,7 @@ use crate::node::Node;
 
 const CAT: &str = "Inputs";
 
-pub(crate) const SECTIONS: [Section; 14] = [
+pub(crate) const SECTIONS: [Section; 15] = [
     Section {
         category: CAT,
         title: "Toggle · Checkbox · Radio",
@@ -79,6 +79,11 @@ pub(crate) const SECTIONS: [Section; 14] = [
         category: CAT,
         title: "Date-time range",
         build: date_time_range,
+    },
+    Section {
+        category: CAT,
+        title: "Knob · Vertical slider",
+        build: dials,
     },
 ];
 
@@ -275,6 +280,36 @@ pub(crate) fn ordered(a: f32, b: f32) -> (f32, f32) {
     } else {
         (b, a)
     }
+}
+
+fn dials(c: &Ctx) -> Node {
+    let readout =
+        |key: &str, d: f32| body(format!("{:.2}", c.values.num(&crate::Bind::new(key, d))));
+    let dial = |n: Node, key: &str, d: f32| crate::b::dial(vec![n, readout(key, d)]);
+    let mut items = vec![
+        dial(knob("knob-0", 0.3, 0.0, 1.0, 72.0), "knob-0", 0.3),
+        dial(knob("knob-1", 0.65, 0.0, 1.0, 96.0), "knob-1", 0.65),
+        dial(
+            Node::Knob {
+                bind: crate::Bind::new("knob-2", 0.5),
+                min: 0.0,
+                max: 1.0,
+                size: 72.0,
+                disabled: true,
+            },
+            "knob-2",
+            0.5,
+        ),
+    ];
+    for (i, d) in [0.2_f32, 0.55, 0.9].into_iter().enumerate() {
+        let key = format!("vs-{i}");
+        items.push(dial(
+            slider(&key, d, 0.0, 1.0).vertical().readout(false).node(),
+            &key,
+            d,
+        ));
+    }
+    row(items)
 }
 
 fn range_slider(c: &Ctx) -> Node {

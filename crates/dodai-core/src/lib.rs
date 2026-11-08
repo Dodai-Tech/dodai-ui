@@ -20,6 +20,7 @@ mod component;
 mod crop;
 pub mod export;
 mod kit;
+mod knob;
 mod palette;
 mod shape_system;
 mod spec;
@@ -59,6 +60,10 @@ pub use dodai_fx::{
     EffectSet, PressStyle, Surface, SurfaceClass, SurfaceFx, SurfaceTargets, SurfaceTuning, Texture,
 };
 pub use kit::{busy, Kit, KitStyle};
+pub use knob::{
+    arc_points, knob_angle, knob_value, KnobGeometry, KnobStyle, KNOB_DRAG_PX, KNOB_START_DEG,
+    KNOB_SWEEP_DEG,
+};
 pub mod motion;
 pub use crop::{ButtonCrop, Crop, CropEdge};
 pub use motion::{Easing, EntryKind, EntrySet, Motion};

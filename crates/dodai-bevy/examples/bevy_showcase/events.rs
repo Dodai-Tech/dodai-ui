@@ -17,6 +17,8 @@ pub enum Scroller {
     Sidebar,
     Page,
     Menu,
+    /// A fixed-height scroll area inside the page.
+    Area,
 }
 
 /// Counter range of the number stepper demo.
@@ -36,12 +38,40 @@ pub fn hotkeys(
     dirty.all();
 }
 
+/// The sliders and knobs a [`Bound::Slide`] can write to.
+#[derive(bevy::ecs::system::SystemParam)]
+pub struct Dials<'w, 's> {
+    sliders: Query<'w, 's, &'static mut UiSlider>,
+    knobs: Query<'w, 's, &'static mut UiKnob>,
+}
+
+impl Dials<'_, '_> {
+    /// Moves the slider or knob `e` to `v` (snapped to `step`); the value it ended up at.
+    fn set(&mut self, e: Entity, v: f32, step: Option<f32>) -> Option<f32> {
+        if let Ok(mut s) = self.sliders.get_mut(e) {
+            let v = snap(v, s.min, s.max, step);
+            if s.value != v {
+                s.value = v;
+            }
+            Some(v)
+        } else if let Ok(mut k) = self.knobs.get_mut(e) {
+            let v = snap(v, k.min, k.max, step);
+            if k.value != v {
+                k.value = v;
+            }
+            Some(v)
+        } else {
+            None
+        }
+    }
+}
+
 #[allow(clippy::type_complexity)]
 pub fn handle(
     mut ev: MessageReader<ControlEvent>,
     bound: Query<&Bound>,
     inputs: Query<&UiTextInput>,
-    mut sliders: Query<&mut UiSlider>,
+    mut dials: Dials,
     mut model: ResMut<Model>,
     mut dirty: ResMut<Dirty>,
     mut open: ResMut<OpenMenu>,
@@ -77,11 +107,8 @@ pub fn handle(
                 model.0.update(Action::Set(g.clone(), Value::Index(*i)));
             }
             (Bound::Slide { key, step }, ControlKind::Slid(v)) => {
-                if let Ok(mut s) = sliders.get_mut(e.entity) {
-                    let v = snap(v, s.min, s.max, *step);
-                    if s.value != v {
-                        s.value = v;
-                    }
+                let v = dials.set(e.entity, v, *step);
+                if let Some(v) = v {
                     model.0.update(Action::Set(key.clone(), Value::Num(v)));
                     dirty.settle = crate::SETTLE_FRAMES;
                 }
@@ -199,11 +226,30 @@ pub fn readouts(model: Res<Model>, mut q: Query<(&Readout, &mut UiText)>) {
     }
 }
 
+/// The region the wheel moves: an open menu, then a scroll area under the cursor, then the
+/// sidebar or the page by the cursor's x.
+pub fn scroll_target(menu_over: bool, area_over: bool, x: f32) -> Scroller {
+    if menu_over {
+        Scroller::Menu
+    } else if area_over {
+        Scroller::Area
+    } else if x < SIDEBAR_W {
+        Scroller::Sidebar
+    } else {
+        Scroller::Page
+    }
+}
+
 /// Wheel scrolling: the region under the cursor moves.
 pub fn scroll(
     wheel: Res<AccumulatedMouseScroll>,
     windows: Query<&Window, With<PrimaryWindow>>,
-    mut q: Query<(&Scroller, &mut ScrollPosition, &ComputedNode)>,
+    mut q: Query<(
+        &Scroller,
+        &mut ScrollPosition,
+        &ComputedNode,
+        Option<&RelativeCursorPosition>,
+    )>,
     menus: Query<&RelativeCursorPosition, With<MenuList>>,
     mut first: Local<bool>,
 ) {
@@ -212,13 +258,14 @@ pub fn scroll(
         .ok()
         .and_then(Window::cursor_position)
         .map_or(f32::MAX, |p| p.x);
-    let target = if menus.iter().any(RelativeCursorPosition::cursor_over) {
-        Scroller::Menu
-    } else if x < SIDEBAR_W {
-        Scroller::Sidebar
-    } else {
-        Scroller::Page
-    };
+    let over_area = q
+        .iter()
+        .any(|(s, _, _, r)| *s == Scroller::Area && r.is_some_and(|r| r.cursor_over()));
+    let target = scroll_target(
+        menus.iter().any(RelativeCursorPosition::cursor_over),
+        over_area,
+        x,
+    );
     let dy = match wheel.unit {
         MouseScrollUnit::Line => wheel.delta.y * 40.0,
         MouseScrollUnit::Pixel => wheel.delta.y,
@@ -229,7 +276,7 @@ pub fn scroll(
             .ok()
             .and_then(|s| s.parse::<f32>().ok())
         {
-            for (s, mut pos, _) in &mut q {
+            for (s, mut pos, _, _) in &mut q {
                 if *s == Scroller::Page {
                     pos.y = px;
                 }
@@ -239,8 +286,10 @@ pub fn scroll(
     if dy == 0.0 {
         return;
     }
-    for (s, mut pos, node) in &mut q {
-        if *s == target {
+    for (s, mut pos, node, rel) in &mut q {
+        // Of the scroll areas only the one under the cursor moves.
+        let under = *s != Scroller::Area || rel.is_some_and(|r| r.cursor_over());
+        if *s == target && under {
             pos.y = (pos.y - dy).max(0.0);
             let scale = node.inverse_scale_factor();
             let max = (node.content_size().y - node.size().y).max(0.0) * scale;
@@ -251,6 +300,45 @@ pub fn scroll(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn turning_a_knob_stores_its_value_and_schedules_a_rebuild() {
+        let mut a = app();
+        let e = a
+            .world_mut()
+            .spawn((
+                Bound::Slide {
+                    key: "k".into(),
+                    step: None,
+                },
+                UiKnob {
+                    value: 0.0,
+                    min: 0.0,
+                    max: 1.0,
+                    step: None,
+                    size: 72.0,
+                    disabled: false,
+                },
+            ))
+            .id();
+        send(&mut a, e, ControlKind::Slid(0.4));
+        assert_eq!(model(&a).values.num(&Bind::new("k", 0.0)), 0.4);
+        assert_eq!(a.world().get::<UiKnob>(e).unwrap().value, 0.4);
+        assert_eq!(a.world().resource::<Dirty>().settle, crate::SETTLE_FRAMES);
+    }
+
+    #[test]
+    fn the_wheel_goes_to_the_menu_then_a_scroll_area_then_sidebar_or_page() {
+        use super::{scroll_target, Scroller};
+        use crate::chrome::SIDEBAR_W;
+        assert_eq!(scroll_target(true, true, 0.0), Scroller::Menu);
+        assert_eq!(scroll_target(false, true, 0.0), Scroller::Area);
+        assert_eq!(
+            scroll_target(false, false, SIDEBAR_W - 1.0),
+            Scroller::Sidebar
+        );
+        assert_eq!(scroll_target(false, false, SIDEBAR_W + 1.0), Scroller::Page);
+    }
+
     use super::*;
     use dodai_showcase_model::{Bind, Showcase};
 
@@ -319,6 +407,7 @@ mod tests {
                     value: 0.0,
                     min: 0.0,
                     max: 10.0,
+                    vertical: false,
                 },
             ))
             .id();
