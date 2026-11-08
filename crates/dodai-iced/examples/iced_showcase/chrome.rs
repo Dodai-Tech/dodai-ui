@@ -205,11 +205,16 @@ pub fn page<'a>(app: &App) -> Element<'a, Msg> {
     if sections.is_empty() {
         col = col.push(lt.muted_text("No components match"));
     }
+    // The app-wide surface mix of the Surface effects page paints every panel.
+    let fx = m.surface_fx();
     for s in sections {
         let node = (s.build)(&ctx);
         let body = render::view(&node, &cx);
         let panel = lt.panel_view(Some(s.heading), body, false);
-        col = col.push(container(panel).id(iced::widget::Id::from(format!("sec-{}", s.title))));
+        col = col.push(
+            container(iced::widget::stack![panel, lt.surface_fx(fx)])
+                .id(iced::widget::Id::from(format!("sec-{}", s.title))),
+        );
     }
     scrollable(container(col.padding(sp.xl).width(Length::Fill)).id(app.content_id.clone()))
         .on_scroll(|v| Msg::Scrolled(v.absolute_offset().y))

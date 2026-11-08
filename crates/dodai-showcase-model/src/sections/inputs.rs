@@ -11,24 +11,31 @@ const CAT: &str = "Inputs";
 
 pub(crate) const SECTIONS: [Section; 15] = [
     Section::new(CAT, "Toggle · Checkbox · Radio", toggles),
-    Section::new(CAT, "Slider · Progress", sliders),
-    Section::new(CAT, "Input", inputs),
-    Section::new(CAT, "Search view", search),
-    Section::new(CAT, "Password · OTP", password),
-    Section::new(CAT, "Checkbox variants", checkbox_variants),
+    Section::new(CAT, "Checkbox variants", checkbox_variants).when(|t| t.look().tonal),
     Section::new(
         CAT,
-        "Slider (stepped, ticks, value readout)",
+        "Toggle group · Checkbox group · select all · switches",
+        groups,
+    )
+    .heading("Toggle group · Checkbox group"),
+    Section::new(CAT, "Slider · Progress", sliders),
+    Section::new(
+        CAT,
+        "Stepped slider · ticks · formatted value",
         slider_stepped,
-    ),
-    Section::new(CAT, "Form field", form_field),
-    Section::new(CAT, "Toggle group · Checkbox group", groups),
-    Section::new(CAT, "Tag field", tag_field),
-    Section::new(CAT, "Date / time pickers", pickers),
+    )
+    .heading("Slider (stepped, ticks, value readout)"),
     Section::new(CAT, "Range slider", range_slider),
-    Section::new(CAT, "Date range", date_range),
-    Section::new(CAT, "Date-time range", date_time_range),
-    Section::new(CAT, "Knob · Vertical slider", dials),
+    Section::new(CAT, "Knob · Vertical slider · Vertical range slider", dials)
+        .heading("Knob · Vertical sliders"),
+    Section::new(CAT, "Input field", inputs).heading("Input"),
+    Section::new(CAT, "Search view · SearchBar", search).heading("Search view"),
+    Section::new(CAT, "Tag field · chips", tag_field).heading("Tag field"),
+    Section::new(CAT, "Password · One-time code", password).heading("Password · OTP"),
+    Section::new(CAT, "Form field · label help error validation", form_field).heading("Form field"),
+    Section::new(CAT, "Date picker · Time picker", pickers).heading("Date / time pickers"),
+    Section::new(CAT, "Date range picker", date_range).heading("Date range"),
+    Section::new(CAT, "Date-time range picker", date_time_range).heading("Date-time range"),
 ];
 
 fn toggles(_: &Ctx) -> Node {

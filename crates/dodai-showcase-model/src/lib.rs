@@ -19,6 +19,7 @@ pub mod plot;
 mod sections;
 pub mod shader_state;
 pub mod state;
+pub mod surface_state;
 pub mod widgets;
 
 pub use catalog::{sections, Ctx, Section, CATEGORIES};

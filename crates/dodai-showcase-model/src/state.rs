@@ -81,10 +81,10 @@ impl Values {
 /// First entry of the theme dropdown: follow the operating system's light or dark.
 pub const SYSTEM: &str = "System";
 
-/// Value key of the theme-wide glow strength (Surface effects).
+/// Value key of the theme-wide glow strength (Surface effects · Light FX).
 pub(crate) const GLOW_KEY: &str = "fx-glow";
-/// Value key of the theme-wide scanlines switch (Surface effects).
-pub(crate) const SCANLINES_KEY: &str = "fx-scanlines";
+/// Press-key prefix of the surface "apply to" shortcuts (`default`, `all`, `none`).
+pub(crate) const TARGETS: &str = "sfx:targets:";
 
 /// Which light/dark mode the page follows.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -242,7 +242,12 @@ impl Showcase {
         self.revision
     }
 
-    /// The active theme with the chosen control colour, glow and scanlines applied.
+    /// The app-wide surface mix (texture and effects) the Surface effects page set.
+    pub fn surface_fx(&self) -> dodai_core::SurfaceFx {
+        crate::surface_state::mix(&self.values, &self.theme())
+    }
+
+    /// The active theme with the chosen control colour and glow applied.
     pub fn theme(&self) -> Theme {
         let mut t = self
             .switcher
@@ -251,9 +256,6 @@ impl Showcase {
             .with_control_colour(self.colour);
         if let Some(Value::Num(g)) = self.values.0.get(GLOW_KEY) {
             t = t.with_glow_intensity(*g);
-        }
-        if let Some(Value::Bool(on)) = self.values.0.get(SCANLINES_KEY) {
-            t = t.with_scanlines(*on);
         }
         t
     }
@@ -500,14 +502,21 @@ impl Showcase {
             Action::Set(key, Value::Index(i)) if key == crate::shader_state::FX_ADD => {
                 self.values.add_effect_at(i);
             }
+            Action::Set(key, Value::Index(i)) if key == crate::surface_state::MODE => {
+                let theme = self.theme();
+                crate::surface_state::set_mode(&mut self.values, &theme, i);
+            }
             Action::Set(key, v) => {
-                let theme_wide = key == GLOW_KEY || key == SCANLINES_KEY;
+                let theme_wide = key == GLOW_KEY;
                 self.values.set(key, v);
                 if theme_wide {
                     self.bump();
                 }
             }
             Action::Press(key) if key.starts_with("sh:") => self.shader_press(&key[3..]),
+            Action::Press(key) if key.starts_with(TARGETS) => {
+                crate::surface_state::set_targets(&mut self.values, &key[TARGETS.len()..]);
+            }
             Action::Press(key) => {
                 let n = self.values.index_of(&key, 0);
                 self.values.set(key, Value::Index(n + 1));
@@ -521,16 +530,25 @@ mod surface_tests {
     use super::*;
 
     #[test]
-    fn glow_and_scanlines_values_reach_the_theme() {
+    fn the_glow_value_reaches_the_theme() {
         let mut m = Showcase::default();
         let rev = m.revision();
         m.update(Action::Set(GLOW_KEY.into(), Value::Num(1.5)));
-        m.update(Action::Set(SCANLINES_KEY.into(), Value::Bool(true)));
         assert_eq!(m.theme().effects.glow_intensity, 1.5);
-        assert!(m.theme().effects.scanlines);
         assert!(m.revision() > rev);
-        m.update(Action::Set(SCANLINES_KEY.into(), Value::Bool(false)));
-        assert!(!m.theme().effects.scanlines);
+    }
+
+    #[test]
+    fn the_surface_mix_starts_off_and_follows_the_mode_and_targets() {
+        let mut m = Showcase::default();
+        assert!(m.surface_fx().is_none());
+        m.update(Action::Set(
+            crate::surface_state::MODE.into(),
+            Value::Index(1),
+        ));
+        assert_eq!(m.surface_fx(), m.theme().surface_preset());
+        m.update(Action::Press(format!("{TARGETS}none")));
+        assert_eq!(m.surface_fx().targets, dodai_core::SurfaceTargets::NONE);
     }
 
     #[test]

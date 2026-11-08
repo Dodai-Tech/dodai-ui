@@ -9,10 +9,9 @@ use crate::node::Node;
 
 const CAT: &str = "Shape";
 
-pub(crate) const SECTIONS: [Section; 4] = [
+pub(crate) const SECTIONS: [Section; 3] = [
     Section::new(CAT, "Shape gallery", gallery),
     Section::new(CAT, "Roundness · Borders", roundness),
-    Section::new(CAT, "Edges · Depth", depth),
     Section::new(CAT, "Button crop", crop),
 ];
 
@@ -73,32 +72,6 @@ fn roundness(c: &Ctx) -> Node {
     ])
 }
 
-fn depth(c: &Ctx) -> Node {
-    let t = c.theme;
-    row(vec![
-        Node::Card {
-            title: "Elevated".into(),
-            body: Box::new(muted(format!(
-                "hard shadow {:.0} px",
-                t.effects.hard_shadow
-            ))),
-            variant: CardVariant::Elevated,
-        },
-        Node::Card {
-            title: "Filled".into(),
-            body: Box::new(muted("flat, raised")),
-            variant: CardVariant::Filled,
-        },
-        Node::Card {
-            title: "Outlined".into(),
-            body: Box::new(muted("border only")),
-            variant: CardVariant::Outlined,
-        },
-        Node::Popup(Box::new(col(vec![body("Popup"), muted("floating layer")]))),
-    ])
-}
-
-/// Pick which end of a button the design crops and see it on every variant.
 fn crop(c: &Ctx) -> Node {
     use dodai_core::Crop;
     let ends = c.theme.button_crops();
