@@ -224,6 +224,16 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
                 }
             }
         }
+        Demo::Button(b) if b.elevated => {
+            let key = b.counter.clone();
+            let size = theme.control_metrics(ControlSize::Medium).text_size;
+            rsx! {
+                KitBox { kit: dodai_core::Kit::Elevated, style: format!("flex:none;font-size:{size}px"),
+                    onclick: move |_| if let Some(k) = key.clone() { act(model, Action::Press(k)) },
+                    "{b.label}"
+                }
+            }
+        }
         Demo::Button(b) => {
             let (key, variant) = (b.counter.clone(), b.variant);
             // Cut-corner designs crop every button by default, the others only when asked.
@@ -242,13 +252,55 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
                 }
             }
         }
-        Demo::Split { label, variant } => rsx! {
-            span { class: "dodai-split",
-                Button { variant: *variant, size: Some(ControlSize::Medium), "{label}" }
-                Button { variant: *variant, size: Some(ControlSize::Medium), icon_only: true,
-                    Icon { icon: IconId::ChevronDown, size: 16, theme: theme.clone() } }
+        Demo::Split {
+            label,
+            variant,
+            open,
+            crop,
+        } => {
+            let arrow = if *open {
+                IconId::ChevronUp
+            } else {
+                IconId::ChevronDown
+            };
+            rsx! {
+                span { class: "dodai-split",
+                    Button { variant: *variant, size: Some(ControlSize::Medium), crop: *crop, "{label}" }
+                    Button { variant: *variant, size: Some(ControlSize::Medium), icon_only: true,
+                        Icon { icon: arrow, size: 16, theme: theme.clone() } }
+                }
             }
-        },
+        }
+        Demo::Fab { label, .. } => {
+            let kit = dodai_core::Kit::Fab {
+                extended: label.is_some(),
+            };
+            rsx! {
+                KitBox { kit, onclick: move |_| {}, style: "flex:none;font-size:var(--dodai-size-md)".to_string(),
+                    Icon { icon: IconId::Plus, size: 24, theme: theme.clone() }
+                    if let Some(l) = label { span { "{l}" } }
+                }
+            }
+        }
+        Demo::Toolbar {
+            floating,
+            vibrant,
+            icons,
+        } => {
+            let kit = dodai_core::Kit::Toolbar {
+                floating: *floating,
+                vibrant: *vibrant,
+            };
+            let width = if *floating { "fit-content" } else { "100%" };
+            rsx! {
+                KitBox { kit, style: format!("width:{width};gap:var(--dodai-space-xs);flex:none"),
+                    for (i, ic) in icons.iter().enumerate() {
+                        Button { key: "{i}", variant: dodai_core::ButtonVariant::Ghost, icon_only: true,
+                            Icon { icon: *ic, size: 18, theme: theme.clone() } }
+                    }
+                }
+            }
+        }
         Demo::Choice(ch) => {
             let at = vals.index(&ch.bind);
             let key = ch.bind.key.clone();

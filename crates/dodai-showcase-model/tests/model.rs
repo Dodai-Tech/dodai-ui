@@ -252,7 +252,9 @@ fn control_colour_retints_primary_and_falls_back_when_not_offered() {
 fn filter_narrows_sections_and_counts() {
     let mut sc = Showcase::new();
     let all = sc.visible().len();
-    assert_eq!(all, sections().len());
+    let theme = sc.theme();
+    let shown = sections().iter().filter(|s| (s.shown)(&theme)).count();
+    assert_eq!(all, shown);
     assert_eq!(sc.count(None), all);
     sc.update(Action::Filter("  BUTTON ".into()));
     let hits = sc.visible();
@@ -395,4 +397,18 @@ fn knobs_stay_inside_their_range_and_vertical_sliders_exist() {
         });
     }
     assert!(knobs >= 3 && vertical >= 3 && scrolls >= 1);
+}
+
+#[test]
+fn design_only_sections_show_for_their_design_alone() {
+    let mut sc = Showcase::new();
+    let owned = |sc: &Showcase| {
+        sc.visible()
+            .iter()
+            .any(|s| s.title == "Button groups · Split button")
+    };
+    for (i, d) in sc.designs().into_iter().enumerate() {
+        sc.update(Action::Design(i));
+        assert_eq!(owned(&sc), d == "material", "{d}");
+    }
 }

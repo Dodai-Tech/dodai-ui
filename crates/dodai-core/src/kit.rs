@@ -57,6 +57,21 @@ pub enum Kit {
     TableHead,
     /// Body row of a table (`true` = banded).
     TableRow(bool),
+    /// A bar of actions: docked, or a floating (lifted, pill on tonal designs) bar; `vibrant`
+    /// takes the primary container colours on tonal designs.
+    Toolbar {
+        /// Lifted and hugging its content.
+        floating: bool,
+        /// Primary container colours.
+        vibrant: bool,
+    },
+    /// A floating action button (`extended` = with a label).
+    Fab {
+        /// Carries a label next to the icon.
+        extended: bool,
+    },
+    /// A raised button: the design's elevated button colours, lifted.
+    Elevated,
 }
 
 impl Kit {
@@ -100,6 +115,13 @@ impl Kit {
                 "table-row"
             }
             .into(),
+            Kit::Toolbar { floating, vibrant } => format!(
+                "toolbar{}{}",
+                if floating { "-floating" } else { "" },
+                if vibrant { "-vibrant" } else { "" }
+            ),
+            Kit::Fab { extended } => if extended { "fab-extended" } else { "fab" }.into(),
+            Kit::Elevated => "elevated".into(),
         }
     }
 
@@ -125,7 +147,15 @@ impl Kit {
             Kit::TableHead,
             Kit::TableRow(false),
             Kit::TableRow(true),
+            Kit::Fab { extended: false },
+            Kit::Fab { extended: true },
+            Kit::Elevated,
         ];
+        for floating in [false, true] {
+            for vibrant in [false, true] {
+                v.push(Kit::Toolbar { floating, vibrant });
+            }
+        }
         for selected in [false, true] {
             v.extend([
                 Kit::Chip { selected },
@@ -166,6 +196,8 @@ pub struct KitStyle {
     pub pill: bool,
     /// Horizontal and vertical padding px.
     pub padding: (f32, f32),
+    /// Lifted off the page (the design's elevation shadow or hard shadow).
+    pub lift: bool,
 }
 
 impl Theme {
@@ -181,9 +213,27 @@ impl Theme {
             glow: t.glow,
             pill,
             padding,
+            lift: false,
+        };
+        let state = if hovered {
+            crate::ControlState::Hovered
+        } else {
+            crate::ControlState::Idle
+        };
+        let button = |b: crate::ButtonTokens, padding: (f32, f32)| KitStyle {
+            fill: b.background,
+            border: b.border,
+            fg: b.foreground,
+            glow: false,
+            pill: true,
+            padding,
+            lift: true,
         };
         match kit {
-            Kit::Card(v) => from(theme.card(v), (sp.md, sp.md), false),
+            Kit::Card(v) => KitStyle {
+                lift: v == CardVariant::Elevated,
+                ..from(theme.card(v), (sp.md, sp.md), false)
+            },
             Kit::Alert { tone, banner } => from(theme.alert(tone, banner), (sp.md, sp.sm), false),
             Kit::Snackbar => from(theme.snackbar().0, (sp.md, sp.sm), false),
             Kit::Chip { selected } => from(
@@ -198,6 +248,7 @@ impl Theme {
                 glow: false,
                 pill: true,
                 padding: (0.0, 0.0),
+                lift: false,
             },
             Kit::Code => KitStyle {
                 fill: Some(p.roles.surface_container_highest),
@@ -206,6 +257,7 @@ impl Theme {
                 glow: false,
                 pill: false,
                 padding: (sp.md, sp.md),
+                lift: false,
             },
             Kit::Tooltip { rich } => {
                 let (bg, fg) = theme.tooltip(rich);
@@ -216,6 +268,7 @@ impl Theme {
                     glow: false,
                     pill: false,
                     padding: (sp.md, sp.xs + 2.0),
+                    lift: false,
                 }
             }
             Kit::Row { selected } => {
@@ -227,6 +280,7 @@ impl Theme {
                     glow: false,
                     pill: false,
                     padding: (sp.md, sp.sm),
+                    lift: false,
                 }
             }
             Kit::StepDot(state) => {
@@ -238,6 +292,7 @@ impl Theme {
                     glow: t.glow,
                     pill: true,
                     padding: (0.0, 0.0),
+                    lift: false,
                 }
             }
             Kit::Dot(tone) => {
@@ -249,6 +304,7 @@ impl Theme {
                     glow: false,
                     pill: true,
                     padding: (0.0, 0.0),
+                    lift: false,
                 }
             }
             Kit::Count(tone) => from(theme.badge(tone), (sp.xs + 2.0, 0.0), true),
@@ -261,9 +317,45 @@ impl Theme {
                     glow: false,
                     pill: true,
                     padding: (sp.sm, 0.0),
+                    lift: false,
                 }
             }
-            Kit::Popup => from(theme.popup(), (sp.xs, sp.xs), false),
+            Kit::Popup => KitStyle {
+                lift: true,
+                ..from(theme.popup(), (sp.xs, sp.xs), false)
+            },
+            Kit::Toolbar { floating, vibrant } => {
+                let tonal = theme.look().tonal;
+                let panel = theme.panel(false);
+                let (fill, border, fg) = match (tonal, vibrant) {
+                    (true, true) => (
+                        p.roles.primary_container,
+                        None,
+                        p.roles.on_primary_container,
+                    ),
+                    (true, false) => (p.roles.surface_container, None, p.text),
+                    (false, _) => (panel.background, Some(panel.border), p.text),
+                };
+                KitStyle {
+                    fill: Some(fill),
+                    border,
+                    fg,
+                    glow: false,
+                    pill: tonal && floating,
+                    padding: (sp.sm, sp.xs),
+                    lift: tonal && floating,
+                }
+            }
+            Kit::Fab { extended } => button(
+                theme.fab(crate::ButtonVariant::Primary, state),
+                (if extended { sp.lg } else { sp.md }, sp.md),
+            ),
+            Kit::Elevated => {
+                // As tall as a medium button: the label line plus even padding.
+                let m = theme.control_metrics(crate::ControlSize::Medium);
+                let py = ((m.height - m.text_size * 1.3) / 2.0).max(0.0);
+                button(theme.elevated_button(state), (m.padding, py))
+            }
             Kit::Select => {
                 let i = theme.input(hovered);
                 KitStyle {
@@ -273,6 +365,7 @@ impl Theme {
                     glow: false,
                     pill: false,
                     padding: (sp.md, sp.sm),
+                    lift: false,
                 }
             }
             Kit::Skeleton => KitStyle {
@@ -282,6 +375,7 @@ impl Theme {
                 glow: false,
                 pill: false,
                 padding: (0.0, 0.0),
+                lift: false,
             },
             Kit::TableHead => KitStyle {
                 fill: Some(p.surface_raised),
@@ -290,6 +384,7 @@ impl Theme {
                 glow: false,
                 pill: false,
                 padding: (sp.md, sp.sm),
+                lift: false,
             },
             Kit::TableRow(banded) => KitStyle {
                 fill: banded.then_some(p.roles.surface_container_low),
@@ -298,6 +393,7 @@ impl Theme {
                 glow: false,
                 pill: false,
                 padding: (sp.md, sp.sm),
+                lift: false,
             },
         }
     }
@@ -597,8 +693,36 @@ mod tests {
         names.dedup();
         assert_eq!(names.len(), n, "duplicate kit names");
         // 3 cards + snackbar, avatar, code, 2 tooltips, 3 steps, dot, skeleton, popup, select,
-        // head, 2 rows of the table, 3 selectable kinds x 2, 4 tones x 4.
-        assert_eq!(n, 3 + 3 + 2 + 3 + 1 + 1 + 1 + 1 + 1 + 2 + 6 + 16);
+        // head, 2 rows of the table, 2 fabs, elevated, 4 toolbars, 3 selectable kinds x 2,
+        // 4 tones x 4.
+        assert_eq!(
+            n,
+            3 + 3 + 2 + 3 + 1 + 1 + 1 + 1 + 1 + 2 + 2 + 1 + 4 + 6 + 16
+        );
+    }
+
+    #[test]
+    fn floating_toolbars_and_buttons_lift_and_docked_bars_do_not() {
+        for t in themes::all() {
+            assert!(t.kit(Kit::Fab { extended: false }, false).lift);
+            assert!(t.kit(Kit::Elevated, false).lift);
+            let docked = t.kit(
+                Kit::Toolbar {
+                    floating: false,
+                    vibrant: false,
+                },
+                false,
+            );
+            assert!(!docked.lift && !docked.pill);
+            let floating = t.kit(
+                Kit::Toolbar {
+                    floating: true,
+                    vibrant: false,
+                },
+                false,
+            );
+            assert_eq!(floating.lift, t.look().tonal);
+        }
     }
 
     #[test]

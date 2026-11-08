@@ -157,11 +157,10 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;o
 
 /* Kit boxes: one generic box, pointed at a kit's variables by `kit_style()` (inline --kb, --kd, ...). */
 .dodai-kit{background:var(--kb,transparent);color:var(--kf,inherit);border:var(--dodai-border-width) solid var(--kd,transparent);padding:var(--ky,0) var(--kx,0);
-  border-radius:var(--kr,var(--dodai-radius));box-shadow:var(--kg,none);display:flex;align-items:center;gap:var(--dodai-space-sm);min-width:0}
+  border-radius:var(--kr,var(--dodai-radius));box-shadow:var(--kl,0 0 0 0 transparent),var(--kg,0 0 0 0 transparent);display:flex;align-items:center;gap:var(--dodai-space-sm);min-width:0}
 .dodai-kit--press{cursor:pointer;user-select:none;font:inherit;text-align:left;transition:background .12s,border-color .12s,color .12s}
 .dodai-kit--press:hover{background:var(--kbh,var(--kb));border-color:var(--kdh,var(--kd));color:var(--kfh,var(--kf))}
 .dodai-kit--card{flex-direction:column;align-items:stretch;gap:var(--dodai-space-sm);min-width:180px}
-.dodai-kit--card.dodai-kit--elevated{box-shadow:var(--dodai-hard-shadow) var(--dodai-hard-shadow) 0 var(--dodai-border-strong),var(--kg,none)}
 .dodai-kit--popup{box-shadow:var(--dodai-hard-shadow) var(--dodai-hard-shadow) 0 var(--dodai-border-strong),0 8px 24px rgba(0,0,0,.18)}
 .dodai-kit--block{display:flex}
 .dodai-kit--col{flex-direction:column;align-items:stretch}

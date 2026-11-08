@@ -315,6 +315,12 @@ pub struct Button {
     pub crop: Option<dodai_core::Crop>,
     /// Never crops, whatever the design's default.
     pub plain: bool,
+    /// The design's raised button (elevated colours, lifted) instead of `variant`.
+    pub elevated: bool,
+    /// A light band sweeps across it (busy without a spinner).
+    pub shimmer: bool,
+    /// Which corners a cropped button cuts (`None` = the design's own).
+    pub corners: Option<dodai_core::Corners>,
 }
 
 /// A row of options of which one is selected (button group, segmented control, tabs).
@@ -490,6 +496,26 @@ pub enum Node {
         label: String,
         /// Emphasis.
         variant: ButtonVariant,
+        /// The menu arrow shows its open state.
+        open: bool,
+        /// Which end the design crops.
+        crop: Option<dodai_core::Crop>,
+    },
+    /// A floating action button with the add icon; `label` makes it extended.
+    Fab {
+        /// Label of the extended form.
+        label: Option<String>,
+        /// Which end the design crops.
+        crop: Option<dodai_core::Crop>,
+    },
+    /// A bar of icon actions.
+    Toolbar {
+        /// Lifted and hugging its content.
+        floating: bool,
+        /// Primary container colours.
+        vibrant: bool,
+        /// The actions.
+        icons: Vec<IconId>,
     },
     /// A choice strip (button group or segmented control).
     Choice(Choice),
@@ -797,6 +823,9 @@ pub mod b {
             counter: None,
             crop: None,
             plain: false,
+            elevated: false,
+            shimmer: false,
+            corners: None,
         }
     }
 
@@ -814,6 +843,21 @@ pub mod b {
         /// Uncropped even on a design that crops its buttons by default.
         pub fn plain(mut self) -> Self {
             self.plain = true;
+            self
+        }
+        /// The design's raised button.
+        pub fn elevated(mut self) -> Self {
+            self.elevated = true;
+            self
+        }
+        /// A light band sweeps across it.
+        pub fn shimmer(mut self) -> Self {
+            self.shimmer = true;
+            self
+        }
+        /// Cut these corners when cropped.
+        pub fn corners(mut self, c: dodai_core::Corners) -> Self {
+            self.corners = Some(c);
             self
         }
         /// Square corners.

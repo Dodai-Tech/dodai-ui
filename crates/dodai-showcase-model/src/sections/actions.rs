@@ -10,72 +10,63 @@ use crate::node::Node;
 const CAT: &str = "Actions";
 
 pub(crate) const SECTIONS: [Section; 3] = [
-    Section::new(CAT, "Buttons", buttons),
-    Section::new(CAT, "Button groups · Split button", groups),
+    Section::new(CAT, "Buttons · IconButton · FAB", buttons).heading("Buttons"),
+    Section::new(CAT, "Button groups · Split button", groups).when(material_only),
     Section::new(CAT, "Toolbar · Snackbar", toolbar),
 ];
 
+/// Sections only Material ships (its button groups and split button).
+pub(crate) fn material_only(t: &dodai_core::Theme) -> bool {
+    t.meta.family == "material"
+}
+
+/// Counter key of the primary button.
+const CLICKS: &str = "btn-count";
+
 fn buttons(c: &Ctx) -> Node {
-    let variants = [
-        ("Primary", V::Primary),
-        ("Secondary", V::Secondary),
-        ("Outline", V::Outline),
-        ("Outline 2", V::OutlineSecondary),
-        ("Scrim", V::Scrim),
+    let mut first = vec![
+        button("Primary", V::Primary).counter(CLICKS).node(),
+        button("Secondary", V::Secondary).node(),
+        button("Elevated", V::Primary).elevated().node(),
+        button("Outline", V::Outline).node(),
+        button("Outline 2", V::OutlineSecondary).node(),
+        button("Scrim", V::Scrim).node(),
     ];
-    let mut first = vec![];
-    for (l, v) in variants {
-        first.push(button(l, v).node());
-    }
     let crops = crops(c);
-    let mut second = vec![
+    if !crops.is_empty() {
+        first.push(row(crops));
+    }
+    first.extend([
         button("Danger", V::Danger).node(),
         button("Ghost", V::Ghost).node(),
-        button("Disabled", V::Secondary).disabled().node(),
-        button("Loading…", V::Primary).loading().node(),
-        button("Outline…", V::Outline).loading().node(),
-    ];
-    let hits = c.values.index_of("btn-count", 0);
-    second.push(muted(format!("primary clicked {hits}×")));
-    let icons = vec![
-        button("Create", V::Primary).icon(IconId::Edit).node(),
-        button("", V::Secondary).icon(IconId::Edit).node(),
-        button("", V::Primary).icon(IconId::Heart).node(),
-        button("", V::Outline).icon(IconId::Copy).square().node(),
-    ];
-    let sizes = |v: V, square: bool| {
+        button("Disabled", V::Primary).disabled().node(),
+        button("Loading…", V::Primary).shimmer().node(),
+        button("Outline…", V::Outline).shimmer().node(),
+        muted(format!("primary clicked {}×", c.values.index_of(CLICKS, 0))),
+    ]);
+    let sizes = |square: bool| {
         row(ControlSize::ALL
             .iter()
             .map(|&z| {
-                let b = button(z.name(), v).size(z);
-                if square { b.square() } else { b }.node()
+                if square {
+                    button(z.name(), V::Secondary).size(z).square().node()
+                } else {
+                    button(z.name(), V::Primary).size(z).node()
+                }
             })
             .collect())
     };
-    let first = {
-        let mut f = first;
-        if let Some(Node::Button(b)) = f.first_mut() {
-            b.counter = Some("btn-count".into());
-        }
-        f
-    };
-    let mut rs = vec![row(first)];
-    if !crops.is_empty() {
-        rs.push(row(crops));
-    }
-    rs.extend([
-        row(second),
-        row(icons),
-        sizes(V::Primary, false),
-        sizes(V::Secondary, true),
-    ]);
-    rows(rs)
+    let icon_sizes = row(ControlSize::ALL
+        .iter()
+        .map(|&z| button("", V::Secondary).icon(IconId::Edit).size(z).node())
+        .collect());
+    col(vec![row(first), sizes(false), sizes(true), icon_sizes])
 }
 
 /// Each design's own crops: cut corners with a tick, a leaf, connected ends, a ticket stub.
-/// Ends the design has no crop for are left out; none at all gives an empty row.
+/// Ends the design has no crop for are left out; none at all gives no row.
 fn crops(c: &Ctx) -> Vec<Node> {
-    use dodai_core::Crop;
+    use dodai_core::{Corners, Crop};
     let t = c.theme;
     if t.button_crops().is_empty() {
         return vec![];
@@ -93,8 +84,18 @@ fn crops(c: &Ctx) -> Vec<Node> {
         out.push(button("Bottom", V::Primary).crop(Crop::Bottom).node());
     }
     if cut {
-        out.push(button("Both cuts", V::Outline).crop(Crop::Left).node());
-        out.push(button("Both cuts", V::Primary).crop(Crop::Right).node());
+        out.push(
+            button("Both cuts", V::Outline)
+                .crop(Crop::Left)
+                .corners(Corners::DIAGONAL)
+                .node(),
+        );
+        out.push(
+            button("Both cuts", V::Primary)
+                .crop(Crop::Right)
+                .corners(Corners::ANTI_DIAGONAL)
+                .node(),
+        );
     }
     for (i, (l, v)) in [
         ("Primary", V::Primary),
@@ -108,63 +109,75 @@ fn crops(c: &Ctx) -> Vec<Node> {
         let end = if i % 2 == 0 { Crop::Left } else { Crop::Right };
         out.push(button(l, v).crop(end).node());
     }
-    out.push(
+    out.extend([
         button("", V::Outline)
             .icon(IconId::Edit)
             .crop(Crop::Left)
             .node(),
-    );
-    out.push(
         button("", V::Primary)
             .icon(IconId::Heart)
             .crop(Crop::Right)
             .node(),
-    );
+        Node::Fab {
+            label: None,
+            crop: Some(Crop::Left),
+        },
+        Node::Fab {
+            label: Some("Create".into()),
+            crop: Some(Crop::Right),
+        },
+    ]);
     out
 }
 
-fn groups(_: &Ctx) -> Node {
+fn groups(c: &Ctx) -> Node {
+    use dodai_core::Crop;
+    let split = |variant: V, open: bool, crop: Option<Crop>| Node::Split {
+        label: "Save".into(),
+        variant,
+        open,
+        crop,
+    };
+    let mut splits = vec![
+        split(V::Primary, false, None),
+        split(V::Secondary, false, None),
+        split(V::Outline, true, None),
+    ];
+    if c.theme.look().cut_corners {
+        splits.push(split(V::Primary, false, Some(Crop::Left)));
+        splits.push(split(V::Primary, false, Some(Crop::Right)));
+    }
     col(vec![
         muted("Standard"),
-        Node::Choice(choice("grp-std", &["Day", "Week", "Month"], 0)),
+        Node::Choice(choice(GROUP, &["Day", "Week", "Month"], 0)),
         muted("Connected (the selected item is a pill)"),
-        Node::Choice(choice("grp-conn", &["Day", "Week", "Month", "Year"], 1).connected()),
+        Node::Choice(choice(GROUP, &["Day", "Week", "Month", "Year"], 0).connected()),
         muted("Split button"),
-        row(vec![
-            Node::Split {
-                label: "Save".into(),
-                variant: V::Primary,
-            },
-            Node::Split {
-                label: "Save".into(),
-                variant: V::Secondary,
-            },
-            Node::Split {
-                label: "Save".into(),
-                variant: V::Outline,
-            },
-        ]),
+        row(splits),
     ])
 }
 
+/// The button groups share one selection, as in the gpui showcase.
+const GROUP: &str = "grp-sel";
+
 fn toolbar(_: &Ctx) -> Node {
-    let icon = |i: IconId| button("", V::Ghost).icon(i).node();
+    use IconId::{Copy, Edit, Heart};
     col(vec![
-        line(vec![icon(IconId::Edit), icon(IconId::Copy)]),
+        Node::Toolbar {
+            floating: false,
+            vibrant: false,
+            icons: vec![Edit, Copy],
+        },
         row(vec![
-            Node::Card {
-                title: String::new(),
-                body: Box::new(line(vec![
-                    icon(IconId::Edit),
-                    icon(IconId::Copy),
-                    icon(IconId::Heart),
-                ])),
-                variant: dodai_core::CardVariant::Elevated,
+            Node::Toolbar {
+                floating: true,
+                vibrant: false,
+                icons: vec![Edit, Copy, Heart],
             },
-            Node::Card {
-                title: String::new(),
-                body: Box::new(line(vec![icon(IconId::Edit), icon(IconId::Copy)])),
-                variant: dodai_core::CardVariant::Filled,
+            Node::Toolbar {
+                floating: true,
+                vibrant: true,
+                icons: vec![Edit, Copy],
             },
         ]),
         Node::Snackbar {

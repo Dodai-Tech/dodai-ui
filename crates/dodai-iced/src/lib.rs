@@ -192,6 +192,21 @@ impl IcedTheme {
         }
     }
 
+    /// Shadow of a lifted box (a raised button, a floating bar): the design's hard shadow, or
+    /// a soft drop shadow on designs without one.
+    pub(crate) fn lift_shadow(&self) -> Shadow {
+        let e = &self.theme.effects;
+        if e.hard_shadow > 0.0 {
+            self.shadow(false, true)
+        } else {
+            Shadow {
+                color: Color::from_rgba(0.0, 0.0, 0.0, 0.28),
+                offset: Vector::new(0.0, 2.0),
+                blur_radius: 6.0,
+            }
+        }
+    }
+
     /// App background container.
     pub fn background(&self) -> impl Fn(&IcedBaseTheme) -> container::Style + 'static {
         let p = &self.theme.palette;
