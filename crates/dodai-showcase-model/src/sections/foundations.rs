@@ -9,7 +9,7 @@ use crate::node::{Node, TextRole};
 
 const CAT: &str = "Foundations";
 
-pub(crate) const SECTIONS: [Section; 7] = [
+pub(crate) const SECTIONS: [Section; 8] = [
     Section {
         category: CAT,
         title: "Text",
@@ -34,6 +34,11 @@ pub(crate) const SECTIONS: [Section; 7] = [
         category: CAT,
         title: "Spacing · Elevation",
         build: spacing,
+    },
+    Section {
+        category: CAT,
+        title: "Layout · Fluid scales",
+        build: layout,
     },
     Section {
         category: CAT,
@@ -234,4 +239,53 @@ fn icons(_: &Ctx) -> Node {
             tag("danger", Tone::Danger, false),
         ]),
     ])
+}
+
+/// Type and spacing resolved at five viewport widths, and the page grid at each.
+fn layout(c: &Ctx) -> Node {
+    let mut rows = vec![
+        muted("Type and spacing resolved at five viewport widths, and the page grid at each."),
+        text(
+            "viewport · type xs sm md lg xl xxl · spacing md lg · grid cols gap margin",
+            TextRole::Mono,
+        ),
+    ];
+    for w in [480.0, 760.0, 1000.0, 1440.0, 1920.0] {
+        rows.push(text(layout_line(c.theme, w), TextRole::Mono));
+    }
+    col(rows)
+}
+
+/// One row of the fluid-scale table.
+fn layout_line(t: &dodai_core::Theme, w: f32) -> String {
+    let r = t.responsive(w);
+    let g = t.page_grid(w);
+    let ty = &r.typography;
+    format!(
+        "{w:>5.0} · {:>4.1} {:>4.1} {:>4.1} {:>4.1} {:>4.1} {:>4.1} · {:>4.1} {:>4.1} · {:>2} {:>4.1} {:>5.1}",
+        ty.size_xs,
+        ty.size_sm,
+        ty.size_md,
+        ty.size_lg,
+        ty.size_xl,
+        ty.size_xxl,
+        r.spacing.md,
+        r.spacing.lg,
+        g.columns,
+        g.gap,
+        g.margin,
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_layout_table_has_a_row_per_width_with_all_columns() {
+        let t = dodai_core::themes::neutral();
+        let line = layout_line(&t, 1000.0);
+        assert!(line.trim_start().starts_with("1000 ·"));
+        assert_eq!(line.matches('·').count(), 3);
+    }
 }
