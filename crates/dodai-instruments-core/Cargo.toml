@@ -12,4 +12,5 @@ keywords     = ["gauge", "instrument", "hmi", "design-system", "visualization"]
 categories   = ["visualization", "gui"]
 
 [dependencies]
+dodai-core = { workspace = true }
 dodai-charts-core = { workspace = true }

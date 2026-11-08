@@ -44,8 +44,6 @@ symbols-aviation = ["components", "dodai-icons/symbols-aviation"]
 
 [dependencies]
 dodai-core = { workspace = true }
-dodai-charts-core = { workspace = true }
-dodai-instruments-core = { workspace = true }
 dodai-fx = { workspace = true }
 dodai-frost = { workspace = true, optional = true }
 dodai-icons = { workspace = true, features = ["theme", "cyberpunk"], optional = true }

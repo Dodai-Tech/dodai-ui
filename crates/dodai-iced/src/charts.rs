@@ -4,7 +4,7 @@
 //! [`Prim`]s in pixel coordinates, so it is unit-tested without a renderer; the canvas
 //! program only maps each primitive to a path and a theme colour.
 
-use dodai_charts_core::{nice_ticks, norm, smooth_points, turn_arc};
+use dodai_core::math::{nice_ticks, norm, smooth_points, turn_arc};
 use iced::{
     mouse,
     widget::canvas::{self, Canvas, Geometry, Path, Stroke},

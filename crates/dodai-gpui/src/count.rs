@@ -5,7 +5,7 @@
 use crate::motion::grow;
 use crate::text::first_family;
 use crate::{hsla, theme_of};
-use dodai_charts_core::fmt_num;
+use dodai_core::math::fmt_num;
 use gpui::{
     div, px, App, ElementId, IntoElement, ParentElement, RenderOnce, SharedString, Styled, Window,
 };

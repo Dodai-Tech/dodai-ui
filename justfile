@@ -239,15 +239,11 @@ publish: check-all
     cargo publish -p dodai-frost
     cargo publish -p dodai-core
     cargo publish -p dodai-icons
-    cargo publish -p dodai-charts-core
-    cargo publish -p dodai-instruments-core
     cargo publish -p dodai-shaders
     @echo "⏳ waiting for crates.io index…" && sleep 30
     cargo publish -p dodai-ratatui
     cargo publish -p dodai-iced
     cargo publish -p dodai-gpui
-    cargo publish -p dodai-gpui-charts
-    cargo publish -p dodai-gpui-instruments
     cargo publish -p dodai-topcoat
     cargo publish -p dodai-dioxus
     cargo publish -p dodai-bevy
@@ -259,14 +255,10 @@ publish-dry: check-all
     cargo publish --dry-run -p dodai-frost
     cargo publish --dry-run -p dodai-core
     cargo publish --dry-run -p dodai-icons
-    cargo publish --dry-run -p dodai-charts-core
-    cargo publish --dry-run -p dodai-instruments-core
     cargo publish --dry-run -p dodai-shaders
     cargo publish --dry-run -p dodai-ratatui
     cargo publish --dry-run -p dodai-iced
     cargo publish --dry-run -p dodai-gpui
-    cargo publish --dry-run -p dodai-gpui-charts
-    cargo publish --dry-run -p dodai-gpui-instruments
     cargo publish --dry-run -p dodai-topcoat
     cargo publish --dry-run -p dodai-dioxus
     cargo publish --dry-run -p dodai-bevy

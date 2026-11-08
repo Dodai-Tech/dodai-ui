@@ -48,7 +48,7 @@ pub mod hierarchy;
 pub mod horizon;
 pub mod indicators;
 pub mod layers;
-pub mod math;
+pub use dodai_core::math;
 pub mod milestones;
 pub mod pack;
 pub mod peaks;
@@ -59,7 +59,7 @@ pub mod sankey;
 pub mod shards;
 pub mod share;
 pub mod stack;
-pub mod stream;
+pub use dodai_core::stream;
 pub mod swarm;
 pub mod timeaxis;
 

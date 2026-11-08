@@ -18,6 +18,6 @@
 pub mod flight;
 pub mod gauge;
 pub mod instrument;
-pub mod orientation;
+pub use dodai_core::orientation;
 pub mod segments;
 pub mod tactical;

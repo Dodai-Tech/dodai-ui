@@ -2,15 +2,13 @@
 //! hollow rings the negative horizontal axes; click one to jump to that view, click the house
 //! to go home, drag anywhere inside to orbit.
 //!
-//! The geometry (placement, hit test, click-or-drag) is `dodai_instruments_core::orientation`;
+//! The geometry (placement, hit test, click-or-drag) is `dodai_core::orientation`;
 //! this file only paints it with theme colours and forwards the pointer. The gizmo is controlled:
 //! give it the camera [`Basis`] and change your camera in the callbacks.
 
 use crate::{hsla, motion::mix, paint::scale_alpha, theme_of};
+use dodai_core::orientation::{hit, place, AxisId, AxisTone, DragTracker, GizmoLayout, Hit};
 use dodai_core::{Color, Palette};
-use dodai_instruments_core::orientation::{
-    hit, place, AxisId, AxisTone, DragTracker, GizmoLayout, Hit,
-};
 use gpui::{
     canvas, div, point, px, App, Bounds, ElementId, FontWeight, InteractiveElement, IntoElement,
     MouseButton, ParentElement, PathBuilder, Pixels, Point, Styled, Window,
@@ -18,7 +16,7 @@ use gpui::{
 use std::cell::Cell;
 use std::rc::Rc;
 
-pub use dodai_instruments_core::orientation::{orbit, Basis};
+pub use dodai_core::orientation::{orbit, Basis};
 
 type AxisHandler = Rc<dyn Fn(AxisId, &mut Window, &mut App)>;
 type DragHandler = Rc<dyn Fn(f32, f32, &mut Window, &mut App)>;

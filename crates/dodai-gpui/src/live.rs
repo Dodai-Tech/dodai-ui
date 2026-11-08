@@ -6,7 +6,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
-use dodai_charts_core::stream::RingBuffer;
+use dodai_core::stream::RingBuffer;
 
 struct Inner {
     buf: RingBuffer,
