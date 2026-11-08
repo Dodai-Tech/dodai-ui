@@ -187,6 +187,10 @@ fn variant_picks_a_theme_of_the_design_and_follows_its_mode() {
         sc.update(Action::Variant(i));
         assert_eq!(sc.theme().meta.family, family);
         assert_eq!(sc.variant_index(), i);
+        if i == 0 {
+            assert_eq!(sc.mode(), ModePref::System);
+            continue;
+        }
         let want = match sc.theme().meta.mode {
             dodai_core::Mode::Light => ModePref::Light,
             dodai_core::Mode::Dark => ModePref::Dark,

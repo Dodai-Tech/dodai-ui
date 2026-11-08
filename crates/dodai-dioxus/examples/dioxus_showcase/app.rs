@@ -3,7 +3,7 @@
 use dioxus::prelude::*;
 use dodai_core::{ButtonVariant, ControlSize, Kit};
 use dodai_dioxus::*;
-use dodai_showcase_model::{Action, Ctx, ModePref, Showcase, CATEGORIES, SPEEDS};
+use dodai_showcase_model::{Action, Ctx, Showcase, CATEGORIES, SPEEDS};
 
 use crate::render::{self, Cx};
 
@@ -54,9 +54,6 @@ fn TopBar(model: Signal<Showcase>) -> Element {
     let colours = m.colours();
     let colour_at = colours.iter().position(|x| *x == m.colour()).unwrap_or(0);
     let colour_labels: Vec<String> = colours.iter().map(|x| x.label().to_string()).collect();
-    let modes = ModePref::ALL;
-    let mode_labels: Vec<String> = modes.iter().map(|x| x.label().to_string()).collect();
-    let mode_at = modes.iter().position(|x| *x == m.mode()).unwrap_or(0);
     let speeds: Vec<String> = SPEEDS.iter().map(|s| format!("{s}×")).collect();
     let (animate, speed, rtl, patterns) = (m.animate, m.speed_index(), m.rtl, m.patterns);
     let (designs, variants) = (owned(m.design_names()), owned(m.variants()));
@@ -70,7 +67,6 @@ fn TopBar(model: Signal<Showcase>) -> Element {
             Field { name: "Colour", Segmented { labels: colour_labels, selected: colour_at, onselect: { let c = colours.clone(); move |i| set(Action::Colour(c[i])) } } }
             Field { name: "Animate", Segmented { labels: off_on(), selected: usize::from(animate), onselect: move |i| set(Action::Animate(i == 1)) } }
             Field { name: "Speed", Segmented { labels: speeds, selected: speed, onselect: move |i| set(Action::Speed(i)) } }
-            Field { name: "Mode", Segmented { labels: mode_labels, selected: mode_at, onselect: move |i| set(Action::Mode(modes[i])) } }
             Field { name: "Direction", Segmented { labels: owned(vec!["LTR", "RTL"]), selected: usize::from(rtl), onselect: move |i| set(Action::Rtl(i == 1)) } }
             Field { name: "Patterns", Segmented { labels: off_on(), selected: usize::from(patterns), onselect: move |i| set(Action::Patterns(i == 1)) } }
         }

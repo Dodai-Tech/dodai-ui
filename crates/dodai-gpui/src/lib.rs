@@ -540,6 +540,7 @@ pub fn set_shape_tune(cx: &mut App, tune: dodai_core::ShapeTune) {
 
 /// Select theme by index (clamped) and repaint.
 pub fn select_theme(cx: &mut App, index: usize) {
+    FOLLOWING_SYSTEM.with(|f| f.set(false));
     store(cx).switcher.select_index(index);
     cx.refresh_windows();
 }

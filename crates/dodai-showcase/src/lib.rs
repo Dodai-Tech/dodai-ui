@@ -931,9 +931,12 @@ impl Render for Showcase {
                                                     div()
                                                         .flex_1()
                                                         .min_w(px(tw))
-                                                        .child(dodai_gpui::ThemeSelector::new(
-                                                            "top-theme",
-                                                        ))
+                                                        .child(
+                                                            dodai_gpui::ThemeSelector::new(
+                                                                "top-theme",
+                                                            )
+                                                            .system(true),
+                                                        )
                                                         .into_any_element(),
                                                 ))
                                                 .child(pair(
@@ -981,45 +984,6 @@ impl Render for Showcase {
                                                             cx,
                                                             [0.5, 1.0, 2.0, 4.0][i],
                                                         )
-                                                    })
-                                                    .into_any_element(),
-                                                ))
-                                                .child(pair(
-                                                    "Mode",
-                                                    dodai_gpui::Segmented::new(
-                                                        "top-mode",
-                                                        ["System", "Light", "Dark"],
-                                                    )
-                                                    .selected(
-                                                        if dodai_gpui::following_system_appearance()
-                                                        {
-                                                            0
-                                                        } else if t.meta.mode
-                                                            == dodai_core::Mode::Dark
-                                                        {
-                                                            2
-                                                        } else {
-                                                            1
-                                                        },
-                                                    )
-                                                    .on_select(|i, w, cx| match i {
-                                                        0 => {
-                                                            dodai_gpui::follow_system_appearance(
-                                                                w, cx,
-                                                            );
-                                                        }
-                                                        1 => {
-                                                            dodai_gpui::set_theme_mode(
-                                                                cx,
-                                                                dodai_core::Mode::Light,
-                                                            );
-                                                        }
-                                                        _ => {
-                                                            dodai_gpui::set_theme_mode(
-                                                                cx,
-                                                                dodai_core::Mode::Dark,
-                                                            );
-                                                        }
                                                     })
                                                     .into_any_element(),
                                                 ))

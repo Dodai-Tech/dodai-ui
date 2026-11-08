@@ -1,7 +1,7 @@
 //! The window around the sections: sidebar, control bar, scrolling page.
 
 use dodai_core::{ButtonVariant as V, ControlSize, Kit};
-use dodai_showcase_model::{Action, Ctx, ModePref, Showcase, CATEGORIES, SPEEDS};
+use dodai_showcase_model::{Action, Ctx, Showcase, CATEGORIES, SPEEDS};
 use iced::widget::{column, container, pick_list, row, scrollable, text, text_input, Space};
 use iced::{alignment, Element, Length};
 
@@ -63,9 +63,6 @@ pub fn top_bar<'a>(app: &App) -> Element<'a, Msg> {
     let colours = m.colours();
     let colour_at = colours.iter().position(|x| *x == m.colour()).unwrap_or(0);
     let colour_labels: Vec<String> = colours.iter().map(|x| x.label().to_string()).collect();
-    let modes = ModePref::ALL;
-    let mode_labels: Vec<String> = modes.iter().map(|x| x.label().to_string()).collect();
-    let mode_at = modes.iter().position(|x| *x == m.mode()).unwrap_or(0);
     let speeds: Vec<String> = SPEEDS.iter().map(|s| format!("{s}×")).collect();
     let on_off = || vec!["Off".to_string(), "On".to_string()];
     row![
@@ -90,9 +87,6 @@ pub fn top_bar<'a>(app: &App) -> Element<'a, Msg> {
             Action::Animate(i == 1)
         }),
         segmented(app, "Speed", speeds, m.speed_index(), Action::Speed),
-        segmented(app, "Mode", mode_labels, mode_at, move |i| Action::Mode(
-            modes[i]
-        )),
         segmented(
             app,
             "Direction",
