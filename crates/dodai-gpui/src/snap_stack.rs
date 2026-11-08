@@ -4,8 +4,9 @@ use crate::motion::{Glide, Motion, MotionExt};
 use crate::{hsla, theme_of};
 use dodai_core::motion::overscroll;
 use gpui::{
-    div, px, AnyElement, App, ElementId, InteractiveElement, IntoElement, ParentElement,
-    ScrollDelta, ScrollWheelEvent, Styled, TouchPhase, Window,
+    div, px, AnyElement, App, DispatchPhase, ElementId, InteractiveElement, IntoElement,
+    MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, ParentElement, ScrollDelta,
+    ScrollWheelEvent, Styled, TouchPhase, Window,
 };
 
 /// Share of a page a swipe must travel to turn it.
@@ -36,6 +37,22 @@ pub fn can_turn(at: usize, last: usize, onwards: bool) -> bool {
 /// Called with a page index.
 type IndexFn = std::rc::Rc<dyn Fn(usize, &mut Window, &mut App)>;
 
+/// Seconds after a gesture in which stray inertia is not read as a new notch.
+const QUIET: f32 = 0.6;
+
+/// Lets go of a swipe of `s` pixels: the page it lands on, with the glide thrown from where the
+/// fingers left it.
+fn settle(r: &mut Roller, at: usize, s: f32, h: f32, last: usize, m: &Motion) -> usize {
+    r.armed = false;
+    r.grab = None;
+    r.swipe = None;
+    r.quiet_until = crate::motion::now() + QUIET;
+    let to = snap_page(at, s / h, last);
+    let from = (at as f32 + s / h).clamp(-0.5, last as f32 + 0.5);
+    r.glide.throw(from, 0.0, to as f32, m, crate::motion::now());
+    to
+}
+
 /// Where the stack rests and the swipe in progress.
 struct Roller {
     glide: Glide,
@@ -43,6 +60,11 @@ struct Roller {
     swipe: Option<f32>,
     /// Fingers just landed: the first move says whether they turn the stack or scroll on.
     armed: bool,
+    /// Last pointer height while the button is down (a drag, as on a phone).
+    grab: Option<f32>,
+    /// Until this time (see [`crate::motion::now`]) a touch-less pixel scroll is not a new notch:
+    /// it is the tail of the last gesture. Held open while fingers are down.
+    quiet_until: f32,
 }
 
 /// Items stacked vertically, one shown at a time. The wheel turns one page a notch; two fingers
@@ -116,12 +138,12 @@ impl SnapStack {
         let last = self.items.len().saturating_sub(1);
         let at = own.get().min(last);
         let (state, inner) = (own.setter(), self.on_select.take());
-        let select = move |i: usize, w: &mut Window, cx: &mut App| {
+        let select = std::rc::Rc::new(move |i: usize, w: &mut Window, cx: &mut App| {
             crate::own::choose(&state, cx, i);
             if let Some(f) = &inner {
                 f(i, w, cx);
             }
-        };
+        });
         let t = theme_of(cx);
         let h = self.height.max(1.0);
         let m = crate::motion::pace(self.motion.unwrap_or_else(|| Motion::of(cx)));
@@ -129,6 +151,8 @@ impl SnapStack {
             glide: Glide::new(at as f32, &m),
             swipe: None,
             armed: false,
+            grab: None,
+            quiet_until: 0.0,
         });
         let now = crate::motion::now();
         // Under a swipe the stack follows the fingers, resisting past either end.
@@ -153,7 +177,7 @@ impl SnapStack {
                 g.value(now)
             }
         };
-        let wheel = roller.clone();
+        let (wheel, wheel_select) = (roller.clone(), select.clone());
         let on_wheel = move |e: &ScrollWheelEvent, w: &mut Window, cx: &mut App| {
             match e.delta {
                 // A notch turns one page; past either end it scrolls on.
@@ -162,13 +186,14 @@ impl SnapStack {
                     if d.y == 0.0 || !can_turn(at, last, onwards) {
                         return;
                     }
-                    select(if onwards { at + 1 } else { at - 1 }, w, cx);
+                    wheel_select(if onwards { at + 1 } else { at - 1 }, w, cx);
                 }
                 ScrollDelta::Pixels(d) => {
                     let (dx, dy) = (f32::from(d.x), f32::from(d.y));
                     let lifted = wheel.update(cx, |r, _| match (e.touch_phase, r.swipe) {
                         (TouchPhase::Started, _) => {
                             r.armed = true;
+                            r.quiet_until = f32::MAX;
                             None
                         }
                         (TouchPhase::Moved, Some(s)) => {
@@ -183,17 +208,20 @@ impl SnapStack {
                                 None
                             })
                         }
-                        (TouchPhase::Ended, Some(s)) => {
-                            r.armed = false;
-                            r.swipe = None;
-                            let to = snap_page(at, s / h, last);
-                            let from = (at as f32 + s / h).clamp(-0.5, last as f32 + 0.5);
-                            r.glide
-                                .throw(from, 0.0, to as f32, &m, crate::motion::now());
-                            Some(Some(to))
+                        // A pixel wheel without touch phases (a smooth mouse wheel): one
+                        // notch a flick, ignoring the rest of its inertia.
+                        (TouchPhase::Moved, None)
+                            if dy != 0.0 && crate::motion::now() > r.quiet_until =>
+                        {
+                            let onwards = dy < 0.0;
+                            r.quiet_until = crate::motion::now() + QUIET;
+                            can_turn(at, last, onwards)
+                                .then(|| Some(if onwards { at + 1 } else { at - 1 }))
                         }
+                        (TouchPhase::Ended, Some(s)) => Some(Some(settle(r, at, s, h, last, &m))),
                         (TouchPhase::Ended, None) => {
                             r.armed = false;
+                            r.quiet_until = crate::motion::now() + QUIET;
                             None
                         }
                         _ => None,
@@ -202,11 +230,23 @@ impl SnapStack {
                         return;
                     };
                     if let Some(to) = landed.filter(|&to| to != at) {
-                        select(to, w, cx);
+                        wheel_select(to, w, cx);
                     }
                 }
             }
             cx.stop_propagation();
+            w.refresh();
+        };
+        let (grab, moved, up) = (roller.clone(), roller.clone(), roller.clone());
+        let dragging = roller.read(cx).grab.is_some();
+        let on_down = move |e: &MouseDownEvent, w: &mut Window, cx: &mut App| {
+            if last == 0 {
+                return;
+            }
+            grab.update(cx, |r, _| {
+                r.grab = Some(f32::from(e.position.y));
+                r.swipe = Some(0.0);
+            });
             w.refresh();
         };
         let first = (slide.floor().max(0.0) as usize).min(last);
@@ -231,6 +271,7 @@ impl SnapStack {
             .relative()
             .h(px(h))
             .on_scroll_wheel(on_wheel)
+            .on_mouse_down(MouseButton::Left, on_down)
             .child(
                 div().h(px(h)).overflow_hidden().child(
                     div()
@@ -241,6 +282,39 @@ impl SnapStack {
                         .children(shown),
                 ),
             );
+        if dragging {
+            // While the button is down the whole window reports to the stack, so a drag that
+            // leaves it keeps going and is let go wherever the button comes up.
+            root = root.child(gpui::canvas(
+                |_, _, _| (),
+                move |_, _, window, _| {
+                    window.on_mouse_event(move |e: &MouseMoveEvent, phase, w, cx| {
+                        if phase != DispatchPhase::Bubble {
+                            return;
+                        }
+                        let y = f32::from(e.position.y);
+                        moved.update(cx, |r, _| {
+                            if let (Some(from), Some(s)) = (r.grab, r.swipe) {
+                                r.swipe = Some(s + from - y);
+                                r.grab = Some(y);
+                            }
+                        });
+                        w.refresh();
+                    });
+                    window.on_mouse_event(move |_: &MouseUpEvent, phase, w, cx| {
+                        if phase != DispatchPhase::Bubble {
+                            return;
+                        }
+                        let to =
+                            up.update(cx, |r, _| r.swipe.map(|s| settle(r, at, s, h, last, &m)));
+                        if let Some(to) = to.filter(|&to| to != at) {
+                            select(to, w, cx);
+                        }
+                        w.refresh();
+                    });
+                },
+            ));
+        }
         if self.dots && last > 0 {
             root = root.child(
                 div()
