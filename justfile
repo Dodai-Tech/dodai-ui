@@ -249,6 +249,8 @@ publish: check-all
     cargo publish -p dodai-gpui-charts
     cargo publish -p dodai-gpui-instruments
     cargo publish -p dodai-topcoat
+    cargo publish -p dodai-dioxus
+    cargo publish -p dodai-bevy
 
 # Dry-run publish of every crate in dependency order (dependents only verify once their
 # dependencies are on crates.io; the first two catch metadata and size problems early)
@@ -266,6 +268,8 @@ publish-dry: check-all
     cargo publish --dry-run -p dodai-gpui-charts
     cargo publish --dry-run -p dodai-gpui-instruments
     cargo publish --dry-run -p dodai-topcoat
+    cargo publish --dry-run -p dodai-dioxus
+    cargo publish --dry-run -p dodai-bevy
 
 # Line coverage (needs cargo-llvm-cov); writes target/llvm-cov/html
 coverage:
