@@ -11,8 +11,15 @@ readme       = "README.md"
 keywords     = ["shaders", "procedural", "crt", "retro", "design-system"]
 categories   = ["graphics", "gui"]
 
+[features]
+# `ShaderView` for gpui (`dodai_shaders::gpui`).
+gpui = ["dep:gpui", "dep:dodai-gpui", "dep:image"]
+
 [dependencies]
 dodai-core = { workspace = true }
+dodai-gpui = { workspace = true, optional = true }
+gpui     = { workspace = true, optional = true }
+image    = { version = "0.25", default-features = false, optional = true }
 wgpu     = { version = "30.0.1", default-features = false, features = ["std", "parking_lot", "wgsl", "metal", "vulkan", "dx12"] }
 pollster = "1"
 bytemuck = { version = "1.24", features = ["derive"] }

@@ -1,10 +1,10 @@
-//! `ShaderView`: shows a `dodai-shaders` chain as a live, fluid-width image.
+//! gpui (feature `gpui`): `ShaderView`: shows a `dodai-shaders` chain as a live, fluid-width image.
 
+use crate::player::{config_hash, Player, Poll, Request};
+use crate::{by_id, Family, ShaderInfo, ShaderPalette};
 use dodai_gpui::theme_of;
-use dodai_shaders::player::{config_hash, Player, Poll, Request};
-use dodai_shaders::{by_id, Family, ShaderInfo, ShaderPalette};
 
-pub use dodai_shaders::player::backend_label as shader_backend;
+pub use crate::player::backend_label as shader_backend;
 use gpui::{
     canvas, div, px, App, Bounds, Corners, InteractiveElement, IntoElement, ParentElement, Pixels,
     RenderImage, RenderOnce, SharedString, Styled, Window,
@@ -92,8 +92,8 @@ impl ShaderView {
             transparent: false,
         }
     }
-    /// A ready-made chain from [`dodai_shaders::presets`].
-    pub fn preset(id: impl Into<SharedString>, p: &dodai_shaders::Preset) -> Self {
+    /// A ready-made chain from [`crate::presets`].
+    pub fn preset(id: impl Into<SharedString>, p: &crate::Preset) -> Self {
         Self {
             chain: p.shaders(),
             palette: PaletteSource::Fixed((p.palette)()),
