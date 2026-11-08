@@ -35,14 +35,23 @@
 )]
 #![recursion_limit = "256"]
 
+/// `ShaderNode` for bevy.
+#[cfg(feature = "bevy")]
+pub mod bevy;
 pub mod cpu;
 mod ctx;
+/// `ShaderView` for dioxus.
+#[cfg(feature = "dioxus")]
+pub mod dioxus;
 mod frame;
 pub mod gpu;
 /// `ShaderView` for gpui.
 #[cfg(feature = "gpui")]
 pub mod gpui;
 pub mod groups;
+/// `ShaderView` for iced.
+#[cfg(feature = "iced")]
+pub mod iced;
 /// Shader maths, shared verbatim with the GPU kernels (vectors, hashes, noise, easing).
 pub mod math;
 pub mod player;

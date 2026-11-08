@@ -14,12 +14,23 @@ categories   = ["graphics", "gui"]
 [features]
 # `ShaderView` for gpui (`dodai_shaders::gpui`).
 gpui = ["dep:gpui", "dep:dodai-gpui", "dep:image"]
+# `ShaderView` for iced (`dodai_shaders::iced`); call `tick` from a timer subscription.
+iced = ["dep:iced"]
+# `ShaderNode` for bevy (`dodai_shaders::bevy`) and its `ShaderPlugin`.
+bevy = ["dep:bevy"]
+# `ShaderView` component for dioxus (`dodai_shaders::dioxus`); renders a PNG data URL, needs a tokio runtime.
+dioxus = ["dep:dioxus", "dep:image", "image?/png", "dep:base64", "dep:tokio"]
 
 [dependencies]
 dodai-core = { workspace = true }
 dodai-gpui = { workspace = true, optional = true }
 gpui     = { workspace = true, optional = true }
 image    = { version = "0.25", default-features = false, optional = true }
+iced     = { workspace = true, features = ["image"], optional = true }
+bevy     = { version = "0.20", default-features = false, features = ["std", "ui_api", "ui_bevy_render"], optional = true }
+dioxus   = { version = "0.7", default-features = false, features = ["macro", "html", "signals", "hooks"], optional = true }
+base64   = { version = "0.22", optional = true }
+tokio    = { version = "1", default-features = false, features = ["time"], optional = true }
 wgpu     = { version = "30.0.1", default-features = false, features = ["std", "parking_lot", "wgsl", "metal", "vulkan", "dx12"] }
 pollster = "1"
 bytemuck = { version = "1.24", features = ["derive"] }
