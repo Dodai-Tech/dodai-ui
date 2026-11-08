@@ -310,3 +310,31 @@ fn builders_compose() {
     n.walk(&mut |_| c += 1);
     assert_eq!(c, 2);
 }
+
+#[test]
+fn select_id_finds_a_theme_and_follows_its_mode() {
+    let mut sc = Showcase::new();
+    let rev = sc.revision();
+    assert!(sc.select_id("material-dark"));
+    assert_eq!(sc.theme().meta.id, "material-dark");
+    assert_eq!(sc.mode(), ModePref::Dark);
+    assert!(sc.revision() > rev);
+    let rev = sc.revision();
+    assert!(!sc.select_id("no-such-theme"));
+    assert_eq!(sc.theme().meta.id, "material-dark");
+    assert_eq!(sc.revision(), rev);
+}
+
+#[test]
+fn design_names_line_up_with_designs_and_read_like_names() {
+    let sc = Showcase::new();
+    let (ids, names) = (sc.designs(), sc.design_names());
+    assert_eq!(ids.len(), names.len());
+    for (id, name) in ids.iter().zip(&names) {
+        assert!(
+            name.chars().next().unwrap().is_uppercase(),
+            "{id} -> {name}"
+        );
+    }
+    assert!(names.contains(&"Material 3"));
+}

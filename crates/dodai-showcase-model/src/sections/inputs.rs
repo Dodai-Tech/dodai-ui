@@ -87,7 +87,10 @@ fn sliders(_: &Ctx) -> Node {
 fn inputs(_: &Ctx) -> Node {
     col(vec![
         input("in-name", "handle…").node(),
-        input("in-mail", "ada@example.com").label("Email").node(),
+        input("in-mail", "email")
+            .label("Email")
+            .value("ada@example.com")
+            .node(),
         input("in-notes", "notes (multi-line)…").lines(4).node(),
     ])
 }
