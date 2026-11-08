@@ -504,12 +504,12 @@ mod nice_ceiling_tests {
     #[test]
     fn extent_skips_non_finite_values() {
         assert_eq!(
-            crate::extent([f32::NAN, 2.0, f32::INFINITY, -1.0]),
+            crate::math::extent([f32::NAN, 2.0, f32::INFINITY, -1.0]),
             Some((-1.0, 2.0))
         );
-        assert_eq!(crate::extent([f32::NAN]), None);
-        assert_eq!(crate::tick_span([], 4).0, 0.0);
-        let (lo, hi, t) = crate::tick_span([3.0, 3.0], 4);
+        assert_eq!(crate::math::extent([f32::NAN]), None);
+        assert_eq!(crate::math::tick_span([], 4).0, 0.0);
+        let (lo, hi, t) = crate::math::tick_span([3.0, 3.0], 4);
         assert!(lo <= 3.0 && hi > lo && t.len() >= 2);
     }
 
@@ -526,16 +526,16 @@ mod nice_ceiling_tests {
 
     #[test]
     fn padded_extent_always_has_width() {
-        assert_eq!(crate::padded_extent([]), (0.0, 1.0));
-        assert_eq!(crate::padded_extent([f32::NAN, 3.0]), (2.0, 4.0));
-        assert_eq!(crate::padded_extent([1.0, 5.0]), (1.0, 5.0));
+        assert_eq!(crate::math::padded_extent([]), (0.0, 1.0));
+        assert_eq!(crate::math::padded_extent([f32::NAN, 3.0]), (2.0, 4.0));
+        assert_eq!(crate::math::padded_extent([1.0, 5.0]), (1.0, 5.0));
     }
 
     #[test]
     fn area_radius_grows_with_the_square_root() {
-        assert_eq!(crate::area_radius(4.0, 4.0, 2.0, 10.0), 10.0);
-        assert_eq!(crate::area_radius(1.0, 4.0, 2.0, 10.0), 6.0);
-        assert_eq!(crate::area_radius(0.0, 4.0, 2.0, 10.0), 2.0);
-        assert_eq!(crate::area_radius(5.0, 0.0, 2.0, 10.0), 2.0);
+        assert_eq!(crate::math::area_radius(4.0, 4.0, 2.0, 10.0), 10.0);
+        assert_eq!(crate::math::area_radius(1.0, 4.0, 2.0, 10.0), 6.0);
+        assert_eq!(crate::math::area_radius(0.0, 4.0, 2.0, 10.0), 2.0);
+        assert_eq!(crate::math::area_radius(5.0, 0.0, 2.0, 10.0), 2.0);
     }
 }

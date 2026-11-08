@@ -20,7 +20,6 @@ icons = ["dep:dodai-icons", "dodai-icons/theme", "dodai-icons/cyberpunk", "dodai
 dodai-core = { workspace = true }
 dodai-icons = { workspace = true, optional = true }
 dodai-fx = { workspace = true }
-dodai-charts-core = { workspace = true }
 iced = { workspace = true }
 
 [dev-dependencies]

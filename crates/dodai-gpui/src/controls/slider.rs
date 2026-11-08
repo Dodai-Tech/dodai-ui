@@ -335,7 +335,7 @@ impl Slider {
     fn value_text(&self) -> String {
         match &self.format {
             Some(f) => f(self.value),
-            None => dodai_charts_core::fmt_num((self.value * 100.0).round() / 100.0),
+            None => dodai_core::math::fmt_num((self.value * 100.0).round() / 100.0),
         }
     }
 

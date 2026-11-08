@@ -213,8 +213,8 @@ impl RangeSlider {
             .text_color(hsla(t.palette.text_muted))
             .child(format!(
                 "{} – {}",
-                dodai_charts_core::fmt_num((lo * 100.0).round() / 100.0),
-                dodai_charts_core::fmt_num((hi * 100.0).round() / 100.0)
+                dodai_core::math::fmt_num((lo * 100.0).round() / 100.0),
+                dodai_core::math::fmt_num((hi * 100.0).round() / 100.0)
             ));
         if vertical {
             div()

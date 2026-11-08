@@ -1,7 +1,7 @@
 //! Orientation axis gizmo: filled balls for +X, +Y and +Z, hollow rings for -X and -Y, a home
 //! button on the circle line, drag anywhere inside to orbit.
 //!
-//! Geometry (placement, hit test, click-or-drag) is `dodai_instruments_core::orientation`;
+//! Geometry (placement, hit test, click-or-drag) is `dodai_core::orientation`;
 //! this file spawns the nodes, colours them from the theme and turns picking into
 //! [`GizmoEvent`]s. It is controlled: write the camera [`Basis`] into [`UiAxisGizmo::basis`]
 //! each frame and move your camera when an event arrives.
@@ -22,10 +22,10 @@ use bevy::picking::events::{PointerClick, PointerDrag, PointerPress};
 use bevy::picking::pointer::PointerButton;
 use bevy::picking::Pickable;
 use bevy::prelude::*;
+use dodai_core::orientation::{place, DragTracker, GizmoLayout, Placed};
 use dodai_core::{Color as Rgba, Palette};
-use dodai_instruments_core::orientation::{place, DragTracker, GizmoLayout, Placed};
 
-pub use dodai_instruments_core::orientation::{orbit, AxisId, AxisTone, Basis};
+pub use dodai_core::orientation::{orbit, AxisId, AxisTone, Basis};
 
 use crate::theme::{color, DodaiTheme};
 use crate::widgets::ControlPointer;

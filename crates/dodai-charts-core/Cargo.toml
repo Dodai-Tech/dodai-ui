@@ -12,3 +12,4 @@ keywords     = ["charts", "plotting", "design-system", "visualization"]
 categories   = ["visualization", "gui"]
 
 [dependencies]
+dodai-core = { workspace = true }
