@@ -26,9 +26,10 @@ pub struct Section {
 
 /// The categories this port shows, in sidebar order. (Charts, Instruments and Shaders are
 /// not ported to the other toolkits yet.)
-pub const CATEGORIES: [&str; 8] = [
+pub const CATEGORIES: [&str; 9] = [
     "Foundations",
     "Shape",
+    "Surface effects",
     "Actions",
     "Data display",
     "Navigation",
@@ -43,6 +44,7 @@ pub fn sections() -> &'static [Section] {
         let mut all = Vec::new();
         all.extend(page::foundations::SECTIONS);
         all.extend(page::shape::SECTIONS);
+        all.extend(page::surface::SECTIONS);
         all.extend(page::actions::SECTIONS);
         all.extend(page::data::SECTIONS);
         all.extend(page::navigation::SECTIONS);

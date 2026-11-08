@@ -8,3 +8,4 @@ pub(crate) mod inputs;
 pub(crate) mod loading;
 pub(crate) mod navigation;
 pub(crate) mod shape;
+pub(crate) mod surface;
