@@ -9,7 +9,7 @@ use crate::node::Node;
 
 const CAT: &str = "Shape";
 
-pub(crate) const SECTIONS: [Section; 3] = [
+pub(crate) const SECTIONS: [Section; 4] = [
     Section {
         category: CAT,
         title: "Shape gallery",
@@ -24,6 +24,11 @@ pub(crate) const SECTIONS: [Section; 3] = [
         category: CAT,
         title: "Edges · Depth",
         build: depth,
+    },
+    Section {
+        category: CAT,
+        title: "Button crop",
+        build: crop,
     },
 ];
 
@@ -106,5 +111,43 @@ fn depth(c: &Ctx) -> Node {
             variant: CardVariant::Outlined,
         },
         Node::Popup(Box::new(col(vec![body("Popup"), muted("floating layer")]))),
+    ])
+}
+
+/// Pick which end of a button the design crops and see it on every variant.
+fn crop(c: &Ctx) -> Node {
+    use dodai_core::Crop;
+    let ends = c.theme.button_crops();
+    if ends.is_empty() {
+        return muted("This design does not crop buttons.");
+    }
+    let looks: Vec<_> = ends
+        .iter()
+        .filter_map(|e| c.theme.button_crop(*e))
+        .collect();
+    let mut kinds: Vec<&str> = looks.iter().map(|l| l.describe()).collect();
+    kinds.dedup();
+    let mut labels = vec!["Design", "Off"];
+    labels.extend(ends.iter().map(|e| e.name()));
+    let pick = choice("bc-crop", &labels, 0);
+    let sel = c.values.index(&pick.bind);
+    let styled = |b: crate::node::Button| match sel {
+        0 => b,
+        1 => b.plain(),
+        i => b.crop(*ends.get(i - 2).unwrap_or(&Crop::Left)),
+    };
+    col(vec![
+        muted(format!(
+            "Crops one end of every button the design's way: {}.",
+            kinds.join("; ")
+        )),
+        Node::Choice(pick),
+        row(vec![
+            styled(button("Primary", V::Primary)).node(),
+            styled(button("Secondary", V::Secondary)).node(),
+            styled(button("Outline", V::Outline)).node(),
+            styled(button("Scrim", V::Scrim)).node(),
+            styled(button("Danger", V::Danger)).node(),
+        ]),
     ])
 }

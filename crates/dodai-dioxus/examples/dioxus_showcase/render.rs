@@ -159,9 +159,12 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
         Demo::Button(b) => {
             let (key, variant) = (b.counter.clone(), b.variant);
             // Cut-corner designs crop every button by default, the others only when asked.
-            let crop = b
-                .crop
-                .or(theme.look().cut_corners.then_some(dodai_core::Crop::Left));
+            let crop = (!b.plain)
+                .then(|| {
+                    b.crop
+                        .or(theme.look().cut_corners.then_some(dodai_core::Crop::Left))
+                })
+                .flatten();
             rsx! {
                 Button { variant, size: Some(b.size), square: b.square, icon_only: b.label.is_empty(), crop,
                     disabled: b.disabled, loading: b.loading,
