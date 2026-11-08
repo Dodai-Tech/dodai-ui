@@ -10,21 +10,22 @@ use crate::node::{Bind, Node};
 const CAT: &str = "Navigation";
 
 pub(crate) const SECTIONS: [Section; 11] = [
-    Section::new(CAT, "Tabs", tabs),
-    Section::new(CAT, "Tree", tree_section),
-    Section::new(CAT, "Segmented · Breadcrumb · Pagination · Stepper", strips),
-    Section::new(CAT, "Menu · Sub-menu", menu),
     Section::new(
         CAT,
-        "Popover · Hover card · Context menu · Dropdown",
+        "Popover · Hover card · Context menu · Dropdown menu",
         popovers,
-    ),
+    )
+    .heading("Popover · Hover card · Context menu · Dropdown"),
+    Section::new(CAT, "Menu · Sub-menu", menu),
+    Section::new(CAT, "Tabs", tabs),
+    Section::new(CAT, "Tree", tree_section),
+    Section::new(CAT, "Collapsible sidebar", sidebar),
+    Section::new(CAT, "Segmented · Breadcrumb · Pagination · Stepper", strips),
+    Section::new(CAT, "Carousel", carousel),
+    Section::new(CAT, "Modal navigation drawer", drawer),
     Section::new(CAT, "Dialog · Bottom sheet · Side sheet", sheets),
     Section::new(CAT, "App bars", app_bars),
     Section::new(CAT, "App bar · Cards · FAB · Navigation", bars_cards),
-    Section::new(CAT, "Collapsible sidebar", sidebar),
-    Section::new(CAT, "Carousel", carousel),
-    Section::new(CAT, "Modal navigation drawer", drawer),
 ];
 
 fn tabs(c: &Ctx) -> Node {

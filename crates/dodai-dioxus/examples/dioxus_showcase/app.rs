@@ -154,6 +154,18 @@ fn Page(model: Signal<Showcase>) -> Element {
         .iter()
         .map(|s| (s.title, s.heading, (s.build)(&ctx)))
         .collect();
+    // The app-wide surface mix of the Surface effects page paints every panel (drawn for a
+    // nominal panel size and stretched over the real one).
+    let fx = m.surface_fx();
+    let bg = dodai_dioxus::surface_background(
+        &theme,
+        fx,
+        dodai_core::SurfaceClass::Panel,
+        (900.0, 420.0),
+    )
+    .map_or(String::new(), |b| {
+        format!("background-image:{b};background-size:100% 100%;border-radius:var(--dodai-radius)")
+    });
     drop(m);
     let cx = Cx { model };
     rsx! {
@@ -161,8 +173,9 @@ fn Page(model: Signal<Showcase>) -> Element {
             Heading { level: 1, "{title}" }
             if sections.is_empty() { Muted { "No components match" } }
             for (t, heading, node) in sections {
-                div { key: "{t}", id: "sec-{t}", "data-sec": "{t}",
+                div { key: "{t}", id: "sec-{t}", "data-sec": "{t}", style: "position:relative",
                     Panel { title: heading.to_string(), {render::view(&node, cx)} }
+                    if !bg.is_empty() { div { style: "position:absolute;inset:0;pointer-events:none;{bg}" } }
                 }
             }
         }
