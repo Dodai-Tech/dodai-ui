@@ -86,6 +86,15 @@ pub(crate) const GLOW_KEY: &str = "fx-glow";
 /// Press-key prefix of the surface "apply to" shortcuts (`default`, `all`, `none`).
 pub(crate) const TARGETS: &str = "sfx:targets:";
 
+/// Display title of a design family id, as the gpui picker shows it (`"material"` →
+/// `"Material"`).
+pub fn family_title(id: &str) -> String {
+    let mut c = id.chars();
+    c.next()
+        .map(|f| f.to_uppercase().collect::<String>() + c.as_str())
+        .unwrap_or_default()
+}
+
 /// Which light/dark mode the page follows.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ModePref {
@@ -268,10 +277,9 @@ impl Showcase {
     /// Display names of the designs, in the order of [`designs`](Self::designs) ("Material 3",
     /// not the family id `material`).
     pub fn design_names(&self) -> Vec<&'static str> {
-        let systems = dodai_core::themes::systems();
         self.designs()
             .into_iter()
-            .map(|f| systems.iter().find(|s| s.family == f).map_or(f, |s| s.name))
+            .map(|f| dodai_core::intern(family_title(f)))
             .collect()
     }
 

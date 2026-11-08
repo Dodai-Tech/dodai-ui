@@ -344,7 +344,8 @@ fn design_names_line_up_with_designs_and_read_like_names() {
             "{id} -> {name}"
         );
     }
-    assert!(names.contains(&"Material 3"));
+    // As the gpui picker titles them: the family id, capitalised.
+    assert!(names.contains(&"Material") && names.contains(&"Neobrutalism"));
 }
 
 #[test]
