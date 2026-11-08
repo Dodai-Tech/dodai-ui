@@ -40,19 +40,7 @@ pub enum Msg {
 }
 
 pub fn boot() -> App {
-    let mut model = Showcase::new();
-    if let Ok(id) = std::env::var("DODAI_THEME") {
-        model.select_id(&id);
-    }
-    if let Some(c) = std::env::var("DODAI_CAT")
-        .ok()
-        .and_then(|c| c.parse::<usize>().ok())
-    {
-        model.update(Action::Category(c.checked_sub(1)));
-    }
-    if let Ok(f) = std::env::var("DODAI_FILTER") {
-        model.update(Action::Filter(f));
-    }
+    let model = Showcase::from_env();
     let lt = IcedTheme::new(model.theme());
     App {
         seen_revision: model.revision(),

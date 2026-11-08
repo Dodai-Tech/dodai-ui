@@ -338,3 +338,17 @@ fn design_names_line_up_with_designs_and_read_like_names() {
     }
     assert!(names.contains(&"Material 3"));
 }
+
+#[test]
+fn configured_opens_on_the_given_page() {
+    let sc = Showcase::new().configured(Some("material-dark"), Some(2), Some("tab"));
+    assert_eq!(sc.theme().meta.id, "material-dark");
+    assert_eq!(sc.category(), Some(1));
+    assert_eq!(sc.filter(), "tab");
+    // Zero is "all"; unknown themes and out-of-range pages change nothing.
+    let sc = Showcase::new().configured(Some("nope"), Some(0), None);
+    assert_eq!(sc.category(), None);
+    assert_eq!(sc.theme().meta.id, Showcase::new().theme().meta.id);
+    let sc = Showcase::new().configured(None, Some(999), None);
+    assert_eq!(sc.category(), None);
+}

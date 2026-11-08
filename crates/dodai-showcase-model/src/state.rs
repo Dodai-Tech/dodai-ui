@@ -171,6 +171,38 @@ impl Showcase {
         Self::with_switcher(dodai_core::switcher())
     }
 
+    /// The showcase configured from the environment: `DODAI_THEME` (a theme id), `DODAI_CAT`
+    /// (`0` = all, `1..` = a category) and `DODAI_FILTER` (the sidebar filter). What a
+    /// screenshot script sets so every toolkit opens on the same page.
+    pub fn from_env() -> Self {
+        let var = |k: &str| std::env::var(k).ok();
+        Self::new().configured(
+            var("DODAI_THEME").as_deref(),
+            var("DODAI_CAT").and_then(|c| c.parse().ok()),
+            var("DODAI_FILTER").as_deref(),
+        )
+    }
+
+    /// This showcase opened on `theme` (a theme id), `category` (`0` = all, `1..` = a category)
+    /// and `filter`; what is `None` or unknown is left as it is.
+    pub fn configured(
+        mut self,
+        theme: Option<&str>,
+        category: Option<usize>,
+        filter: Option<&str>,
+    ) -> Self {
+        if let Some(id) = theme {
+            self.select_id(id);
+        }
+        if let Some(c) = category {
+            self.update(Action::Category(c.checked_sub(1)));
+        }
+        if let Some(f) = filter {
+            self.update(Action::Filter(f.to_string()));
+        }
+        self
+    }
+
     /// Over a given set of themes.
     pub fn with_switcher(switcher: ThemeSwitcher) -> Self {
         Self {
