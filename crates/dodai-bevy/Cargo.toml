@@ -12,7 +12,7 @@ keywords     = ["theme", "design-system", "bevy", "cyberpunk"]
 categories   = ["gui"]
 
 [features]
-default   = ["cyberpunk", "material", "neobrutalism", "dodai", "icons", "symbols"]
+default   = ["cyberpunk", "material", "neobrutalism", "dodai", "icons", "symbols", "system-fonts"]
 # Design systems to bundle (features of `dodai-core`).
 cyberpunk = ["dodai-core/cyberpunk"]
 material  = ["dodai-core/material"]
@@ -22,6 +22,9 @@ dodai     = ["dodai-core/dodai"]
 icons     = ["dep:dodai-icons", "dodai-icons/theme", "dodai-icons/cyberpunk", "dodai-icons/material", "dodai-icons/neobrutalism"]
 ## `symbol()` widget: the original dashboard symbols, drawn in the design's own style.
 symbols   = ["icons", "dodai-icons/symbols"]
+## Resolve the design's font stacks (`Typography::body` etc.) from the installed fonts instead of
+## the bundled ASCII-only face.
+system-fonts = ["bevy/system_font_discovery"]
 
 [dependencies]
 dodai-core = { workspace = true }
@@ -35,3 +38,6 @@ bevy = { version = "0.20", default-features = false, features = [
 
 [dev-dependencies]
 dodai-core = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "dodai"] }
+
+[dev-dependencies.dodai-showcase-model]
+workspace = true

@@ -57,7 +57,13 @@ pub enum TextRole {
     ControlSmall,
     /// Raw content (`size_md`), colour inherited, never re-cased.
     Content,
+    /// A role of the Material type scale (size from the theme's scale; colour inherited).
+    Type(dodai_core::TypeRole),
 }
+
+/// Marks a button's label so its size follows the button's [`dodai_core::ControlSize`].
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ButtonLabel(pub dodai_core::ControlSize);
 
 /// Themed text: `raw` is stored un-cased; the system derives the displayed
 /// string, size and colour from tokens (so theme changes re-case it).
@@ -77,6 +83,12 @@ pub struct UiButton {
     pub variant: ButtonVariant,
     /// Ignore input and show the disabled style.
     pub disabled: bool,
+    /// Size step (height, padding and label size).
+    pub size: dodai_core::ControlSize,
+    /// Square corners instead of the design's own button shape.
+    pub square: bool,
+    /// No label: the button is as wide as it is high.
+    pub icon_only: bool,
 }
 
 /// Panel / card.
@@ -173,6 +185,10 @@ pub struct UiTextInput {
     pub value: String,
     /// Shown while empty.
     pub placeholder: String,
+    /// Show bullets instead of the characters.
+    pub masked: bool,
+    /// Visible lines (`1` = single line).
+    pub lines: u8,
 }
 
 /// Selectable list row.
@@ -359,36 +375,101 @@ pub fn symbol_state(
     )
 }
 
+/// Everything a button can be, built up with chained setters and spawned with
+/// [`ButtonSpec::bundle`].
+#[derive(Debug, Clone)]
+pub struct ButtonSpec {
+    label: String,
+    variant: ButtonVariant,
+    size: dodai_core::ControlSize,
+    square: bool,
+    disabled: bool,
+    #[cfg(feature = "icons")]
+    icon: Option<dodai_icons::IconId>,
+}
+
+impl ButtonSpec {
+    /// A medium button.
+    pub fn new(label: impl Into<String>, variant: ButtonVariant) -> Self {
+        Self {
+            label: label.into(),
+            variant,
+            size: dodai_core::ControlSize::Medium,
+            square: false,
+            disabled: false,
+            #[cfg(feature = "icons")]
+            icon: None,
+        }
+    }
+
+    /// Size step.
+    pub fn size(mut self, size: dodai_core::ControlSize) -> Self {
+        self.size = size;
+        self
+    }
+
+    /// Square corners.
+    pub fn square(mut self, square: bool) -> Self {
+        self.square = square;
+        self
+    }
+
+    /// Ignore input.
+    pub fn disabled(mut self, disabled: bool) -> Self {
+        self.disabled = disabled;
+        self
+    }
+
+    /// A leading icon (the whole button when the label is empty).
+    #[cfg(feature = "icons")]
+    pub fn icon(mut self, icon: dodai_icons::IconId) -> Self {
+        self.icon = Some(icon);
+        self
+    }
+
+    /// The bundle to spawn.
+    pub fn bundle(self) -> impl Bundle {
+        let icon_only = self.label.is_empty();
+        let label = self.label.clone();
+        let size = self.size;
+        #[cfg(feature = "icons")]
+        let icon = self.icon;
+        (
+            UiButton {
+                variant: self.variant,
+                disabled: self.disabled,
+                size: self.size,
+                square: self.square,
+                icon_only,
+            },
+            Node {
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                column_gap: Val::Px(6.0),
+                flex_shrink: 0.0,
+                ..default()
+            },
+            Children::spawn(SpawnWith(move |parent: &mut ChildSpawner| {
+                #[cfg(feature = "icons")]
+                if let Some(i) = icon {
+                    parent.spawn(crate::widgets::icon(i, 18));
+                }
+                if !label.is_empty() {
+                    parent.spawn((text(label, TextRole::Control), ButtonLabel(size)));
+                }
+            })),
+        )
+    }
+}
+
 /// Button.
 pub fn button(label: impl Into<String>, variant: ButtonVariant) -> impl Bundle {
-    (
-        UiButton {
-            variant,
-            disabled: false,
-        },
-        Node {
-            align_items: AlignItems::Center,
-            justify_content: JustifyContent::Center,
-            ..default()
-        },
-        children![text(label, TextRole::Control)],
-    )
+    ButtonSpec::new(label, variant).bundle()
 }
 
 /// Disabled button.
 pub fn button_disabled(label: impl Into<String>, variant: ButtonVariant) -> impl Bundle {
-    (
-        UiButton {
-            variant,
-            disabled: true,
-        },
-        Node {
-            align_items: AlignItems::Center,
-            justify_content: JustifyContent::Center,
-            ..default()
-        },
-        children![text(label, TextRole::Control)],
-    )
+    ButtonSpec::new(label, variant).disabled(true).bundle()
 }
 
 /// Panel (card) with a title; add content with `.with_children`. Add your own
@@ -537,12 +618,28 @@ pub fn slider(value: f32, min: f32, max: f32) -> impl Bundle {
     )
 }
 
+/// Text input showing bullets instead of its characters.
+pub fn password_input(placeholder: impl Into<String>) -> impl Bundle {
+    text_field(placeholder, true, 1)
+}
+
+/// Multi-line text input showing `lines` lines.
+pub fn text_area(placeholder: impl Into<String>, lines: u8) -> impl Bundle {
+    text_field(placeholder, false, lines)
+}
+
 /// Text input.
 pub fn text_input(placeholder: impl Into<String>) -> impl Bundle {
+    text_field(placeholder, false, 1)
+}
+
+fn text_field(placeholder: impl Into<String>, masked: bool, lines: u8) -> impl Bundle {
     (
         UiTextInput {
             value: String::new(),
             placeholder: placeholder.into(),
+            masked,
+            lines,
         },
         Node {
             align_items: AlignItems::Center,

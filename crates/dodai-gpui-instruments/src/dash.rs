@@ -1249,6 +1249,7 @@ impl Pod {
 pub struct PodStack {
     id: gpui::ElementId,
     pods: Vec<Pod>,
+    autoplay: Option<f32>,
 }
 
 impl PodStack {
@@ -1257,7 +1258,13 @@ impl PodStack {
         Self {
             id: id.into(),
             pods: Vec::new(),
+            autoplay: None,
         }
+    }
+    /// Turn a page by itself every `secs` seconds, or not at all for `None` (see [`dodai_gpui::SnapStack::autoplay`]).
+    pub fn autoplay(mut self, secs: Option<f32>) -> Self {
+        self.autoplay = secs;
+        self
     }
     /// Add a pod.
     pub fn pod(mut self, p: impl Into<Pod>) -> Self {
@@ -1269,8 +1276,12 @@ impl PodStack {
 impl From<PodStack> for Pod {
     fn from(s: PodStack) -> Self {
         Pod::Custom(Box::new(move |size, look| {
-            dodai_gpui::SnapStack::new(s.id)
-                .height(size)
+            let stack = dodai_gpui::SnapStack::new(s.id).height(size);
+            let stack = match s.autoplay {
+                Some(p) => stack.autoplay(p),
+                None => stack,
+            };
+            stack
                 .items(s.pods.into_iter().map(|p| p.sized(size, look)))
                 .into_any_element()
         }))

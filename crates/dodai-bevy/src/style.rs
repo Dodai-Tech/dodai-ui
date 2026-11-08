@@ -31,8 +31,64 @@ pub fn text_style(theme: &Theme, role: TextRole) -> TextStyle {
         TextRole::Control => (ty.size_sm, None, up),
         TextRole::ControlSmall => (ty.size_xs, None, up),
         TextRole::Content => (ty.size_md, None, false),
+        TextRole::Type(r) => (theme.type_style(r).size, None, false),
     };
     TextStyle { size, color, upper }
+}
+
+/// The font stacks of a theme as Bevy font sources. Empty without the `system-fonts` feature
+/// (the bundled face is used).
+pub struct FontSources {
+    #[cfg(feature = "system-fonts")]
+    display: bevy::text::FontSource,
+    #[cfg(feature = "system-fonts")]
+    body: bevy::text::FontSource,
+    #[cfg(feature = "system-fonts")]
+    mono: bevy::text::FontSource,
+}
+
+/// A CSS family list with a generic fallback appended.
+pub fn font_stack(stack: &str, generic: &str) -> String {
+    format!("{stack}, {generic}")
+}
+
+impl FontSources {
+    /// Build the three sources from the theme's typography tokens.
+    pub fn of(theme: &Theme) -> Self {
+        #[cfg(feature = "system-fonts")]
+        {
+            let ty = &theme.typography;
+            use bevy::text::FontSource;
+            Self {
+                display: FontSource::families(font_stack(ty.display, "sans-serif")),
+                body: FontSource::families(font_stack(ty.body, "sans-serif")),
+                mono: FontSource::families(font_stack(ty.mono, "monospace")),
+            }
+        }
+        #[cfg(not(feature = "system-fonts"))]
+        {
+            let _ = theme;
+            Self {}
+        }
+    }
+
+    /// The source for a text role, if fonts are resolved from the system.
+    pub fn for_role(&self, role: TextRole) -> Option<&bevy::text::FontSource> {
+        #[cfg(feature = "system-fonts")]
+        {
+            Some(match role {
+                TextRole::Heading | TextRole::Subheading => &self.display,
+                TextRole::Mono => &self.mono,
+                TextRole::Type(r) if r.is_heading() => &self.display,
+                _ => &self.body,
+            })
+        }
+        #[cfg(not(feature = "system-fonts"))]
+        {
+            let _ = role;
+            None
+        }
+    }
 }
 
 /// The string to display for `raw` under this style.
@@ -53,11 +109,6 @@ pub fn toggle_size(theme: &Theme, kind: ToggleKind) -> (f32, f32) {
     }
 }
 
-/// Padding of a control: `(horizontal, vertical)`.
-pub fn control_padding(theme: &Theme) -> (f32, f32) {
-    (theme.spacing.lg, 0.0)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -76,6 +127,28 @@ mod tests {
         // body / content stay raw
         assert!(!text_style(&t, TextRole::Body).upper);
         assert!(!text_style(&t, TextRole::Content).upper);
+    }
+
+    #[test]
+    fn font_stack_appends_a_generic_family() {
+        assert_eq!(font_stack("Inter, Menlo", "sans-serif"), "Inter, Menlo, sans-serif");
+    }
+
+    #[cfg(feature = "system-fonts")]
+    #[test]
+    fn headings_use_the_display_stack_and_code_the_mono_stack() {
+        let f = FontSources::of(&rounded_light());
+        assert_eq!(f.for_role(TextRole::Heading), Some(&f.display));
+        assert_eq!(f.for_role(TextRole::Mono), Some(&f.mono));
+        assert_eq!(f.for_role(TextRole::Body), Some(&f.body));
+        assert_eq!(
+            f.for_role(TextRole::Type(dodai_core::TypeRole::DisplayLarge)),
+            Some(&f.display)
+        );
+        assert_eq!(
+            f.for_role(TextRole::Type(dodai_core::TypeRole::LabelSmall)),
+            Some(&f.body)
+        );
     }
 
     #[test]

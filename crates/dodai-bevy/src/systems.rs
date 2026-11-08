@@ -8,7 +8,7 @@ use bevy::ui::RelativeCursorPosition;
 use bevy::window::PrimaryWindow;
 use dodai_core::{ButtonVariant, ControlState, ShapeKind};
 
-use crate::style::{control_padding, display_text, text_style, toggle_size};
+use crate::style::{display_text, text_style, toggle_size};
 use crate::surface::Surface;
 use crate::theme::{color, DodaiTheme};
 use crate::widgets::*;
@@ -263,8 +263,6 @@ pub(crate) fn style_buttons(
         &mut Foreground,
     )>,
 ) {
-    let sh = &theme.shape;
-    let (px, _) = control_padding(&theme);
     for (b, i, mut s, mut n, mut fg) in &mut q {
         let state = cs(i, b.disabled, false);
         let t = theme.button(b.variant, state);
@@ -278,12 +276,19 @@ pub(crate) fn style_buttons(
                 fill: t.background,
                 border: t.border,
                 glow: !b.disabled && (lit || b.variant == ButtonVariant::Primary),
-                pill: false,
+                pill: !b.square && theme.look().tonal,
             },
         );
         upd(&mut fg.0, t.foreground);
-        upd(&mut n.height, Val::Px(sh.control_height));
-        upd(&mut n.padding, UiRect::horizontal(Val::Px(px)));
+        let m = theme.control_metrics(b.size);
+        upd(&mut n.height, Val::Px(m.height));
+        if b.icon_only {
+            upd(&mut n.width, Val::Px(m.height));
+            upd(&mut n.padding, UiRect::ZERO);
+        } else {
+            upd(&mut n.width, Val::Auto);
+            upd(&mut n.padding, UiRect::horizontal(Val::Px(m.padding)));
+        }
     }
 }
 
@@ -556,7 +561,7 @@ pub(crate) fn style_inputs(
     mut texts: Query<(&ChildOf, &mut UiText, &mut Foreground), With<InputText>>,
     owners: Query<(Entity, &UiTextInput), Without<InputText>>,
 ) {
-    for (e, _, mut s, mut n) in &mut q {
+    for (e, i, mut s, mut n) in &mut q {
         let focused = focus.0 == Some(e);
         let k = theme.input(focused);
         upd(
@@ -568,10 +573,14 @@ pub(crate) fn style_inputs(
                 pill: false,
             },
         );
-        upd(&mut n.height, Val::Px(theme.shape.control_height));
+        upd(&mut n.height, Val::Px(input_height(&theme, i.lines)));
         upd(
             &mut n.padding,
-            UiRect::horizontal(Val::Px(theme.spacing.md)),
+            UiRect::axes(Val::Px(theme.spacing.md), Val::Px(if i.lines > 1 { theme.spacing.sm } else { 0.0 })),
+        );
+        upd(
+            &mut n.align_items,
+            if i.lines > 1 { AlignItems::FlexStart } else { AlignItems::Center },
         );
     }
     for (c, mut t, mut fg) in &mut texts {
@@ -580,16 +589,32 @@ pub(crate) fn style_inputs(
         };
         let focused = focus.0 == Some(e);
         let k = theme.input(focused);
+        let shown = shown_value(i);
         let (raw, col) = if i.value.is_empty() && !focused {
             (i.placeholder.clone(), k.placeholder)
         } else if focused {
-            (format!("{}|", i.value), k.text)
+            (format!("{shown}|"), k.text)
         } else {
-            (i.value.clone(), k.text)
+            (shown, k.text)
         };
         upd(&mut t.raw, raw);
         upd(&mut fg.0, col);
     }
+}
+
+/// The text a field displays for its value: bullets when masked.
+pub(crate) fn shown_value(i: &UiTextInput) -> String {
+    if i.masked {
+        "\u{2022}".repeat(i.value.chars().count())
+    } else {
+        i.value.clone()
+    }
+}
+
+/// Height of an input of `lines` lines.
+pub(crate) fn input_height(theme: &dodai_core::Theme, lines: u8) -> f32 {
+    let h = theme.shape.control_height;
+    h + f32::from(lines.max(1) - 1) * theme.typography.size_md * 1.4
 }
 
 pub(crate) fn style_list_items(
@@ -656,14 +681,20 @@ pub(crate) fn style_text(
         &mut TextColor,
         Option<&Foreground>,
         Option<&ChildOf>,
+        Option<&ButtonLabel>,
     )>,
     fgs: Query<&Foreground>,
 ) {
-    for (u, mut text, mut font, mut col, own, parent) in &mut q {
+    let fonts = crate::style::FontSources::of(&theme);
+    for (u, mut text, mut font, mut col, own, parent, button) in &mut q {
         let st = text_style(&theme, u.role);
         let shown = display_text(&u.raw, &st);
         upd(&mut text.0, shown);
-        upd(&mut font.font_size, bevy::text::FontSize::Px(st.size));
+        let size = button.map_or(st.size, |b| theme.control_metrics(b.0).text_size);
+        upd(&mut font.font_size, bevy::text::FontSize::Px(size));
+        if let Some(f) = fonts.for_role(u.role) {
+            upd(&mut font.font, f.clone());
+        }
         let fg = st
             .color
             .or(own.map(|f| f.0))
@@ -941,5 +972,34 @@ mod icon_tests {
         app.update();
         assert!(app.world().get::<ImageNode>(e).is_some());
         let _ = first;
+    }
+}
+
+#[cfg(test)]
+mod input_tests {
+    use super::*;
+    use crate::testing::rounded_light;
+
+    #[test]
+    fn masked_values_show_one_bullet_per_character() {
+        let i = UiTextInput {
+            value: "héllo".into(),
+            masked: true,
+            ..default()
+        };
+        assert_eq!(shown_value(&i), "•••••");
+        let plain = UiTextInput {
+            value: "abc".into(),
+            ..default()
+        };
+        assert_eq!(shown_value(&plain), "abc");
+    }
+
+    #[test]
+    fn taller_inputs_grow_by_line_and_never_shrink() {
+        let t = rounded_light();
+        assert_eq!(input_height(&t, 1), t.shape.control_height);
+        assert_eq!(input_height(&t, 0), t.shape.control_height);
+        assert!(input_height(&t, 4) > input_height(&t, 2));
     }
 }

@@ -77,6 +77,15 @@ impl DodaiTheme {
         self.rebuild();
     }
 
+    /// Show `theme` as is (a theme built outside the switcher, e.g. with a control colour
+    /// applied). The glow override, if set, still wins.
+    pub fn set_theme(&mut self, theme: Theme) {
+        self.theme = theme;
+        if let Some(g) = self.glow {
+            self.theme = self.theme.clone().with_glow_intensity(g);
+        }
+    }
+
     /// Override glow intensity for every theme (0 = off, 1 = as designed).
     pub fn set_glow_intensity(&mut self, intensity: f32) {
         self.glow = Some(intensity.max(0.0));

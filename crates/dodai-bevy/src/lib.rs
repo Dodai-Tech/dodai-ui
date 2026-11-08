@@ -23,8 +23,10 @@
 //! [`material`] (shader materials), [`plugin`].
 
 pub mod gizmo;
+pub mod kit;
 pub mod material;
 pub mod plugin;
+pub mod spinner;
 pub mod style;
 pub mod surface;
 pub mod surface_fx;
@@ -42,7 +44,9 @@ pub use theme::{color, DodaiTheme};
 /// Everything needed to build a themed UI.
 pub mod prelude {
     pub use crate::gizmo::{axis_gizmo, AxisId, Basis, GizmoEvent, GizmoKind, UiAxisGizmo};
+    pub use crate::kit::{kit, kit_pressable, Kit, UiKit, UiPress};
     pub use crate::plugin::{theme_hotkeys, DodaiSet, DodaiUiPlugin, ScanlineOverlay};
+    pub use crate::spinner::{indeterminate, spinner, UiIndeterminate, UiSpinner};
     pub use crate::surface::Surface;
     pub use crate::systems::FocusedInput;
     pub use crate::theme::{color, DodaiTheme};
@@ -91,6 +95,7 @@ mod tests {
             ("systems", include_str!("systems.rs")),
             ("widgets", include_str!("widgets.rs")),
             ("gizmo", include_str!("gizmo.rs")),
+            ("kit", include_str!("kit.rs")),
             ("plugin", include_str!("plugin.rs")),
             ("material", include_str!("material.rs")),
         ] {
