@@ -2,12 +2,13 @@
 //! into place, like the roller on a steering wheel turning the pages of a dash display.
 use crate::motion::{Glide, Motion, MotionExt};
 use crate::{hsla, theme_of};
-use dodai_core::motion::overscroll;
+use dodai_core::motion::{overscroll, Easing, Travel};
 use gpui::{
     div, px, AnyElement, App, DispatchPhase, ElementId, InteractiveElement, IntoElement,
     MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, ParentElement, ScrollDelta,
     ScrollWheelEvent, Styled, TouchPhase, Window,
 };
+use std::time::Duration;
 
 /// Share of a page a swipe must travel to turn it.
 pub const TURN_AT: f32 = 0.15;
@@ -37,8 +38,26 @@ pub fn can_turn(at: usize, last: usize, onwards: bool) -> bool {
 /// Called with a page index.
 type IndexFn = std::rc::Rc<dyn Fn(usize, &mut Window, &mut App)>;
 
+/// The shortest time a page takes to settle.
+pub const PAGE_TURN: Duration = Duration::from_millis(520);
+
 /// Seconds after a gesture in which stray inertia is not read as a new notch.
 const QUIET: f32 = 0.6;
+
+/// The design's motion slowed to a page turn: a whole page is a long way to travel, so it
+/// takes at least [`PAGE_TURN`] and decelerates smoothly into place. An instant motion (animation
+/// off) stays instant. Pure.
+pub fn page_motion(m: Motion) -> Motion {
+    if m.duration.is_zero() {
+        return m;
+    }
+    Motion {
+        duration: m.duration.max(PAGE_TURN),
+        easing: Easing::CubicBezier(0.22, 1.0, 0.36, 1.0),
+        travel: Travel::Eased,
+        ..m
+    }
+}
 
 /// Lets go of a swipe of `s` pixels: the page it lands on, with the glide thrown from where the
 /// fingers left it.
@@ -78,6 +97,7 @@ pub struct SnapStack {
     active: usize,
     height: f32,
     dots: bool,
+    arrows: bool,
     motion: Option<Motion>,
     on_select: Option<IndexFn>,
 }
@@ -91,6 +111,7 @@ impl SnapStack {
             active: 0,
             height: 200.0,
             dots: true,
+            arrows: false,
             motion: None,
             on_select: None,
         }
@@ -121,6 +142,12 @@ impl SnapStack {
         self.dots = on;
         self
     }
+    /// Show chevron buttons at the top and bottom edges that turn a page (default off). Each
+    /// appears only while there is a page in its direction.
+    pub fn arrows(mut self, on: bool) -> Self {
+        self.arrows = on;
+        self
+    }
     /// Pace and easing of the snap. Defaults to the design's motion.
     pub fn motion(mut self, m: Motion) -> Self {
         self.motion = Some(m);
@@ -146,7 +173,10 @@ impl SnapStack {
         });
         let t = theme_of(cx);
         let h = self.height.max(1.0);
-        let m = crate::motion::pace(self.motion.unwrap_or_else(|| Motion::of(cx)));
+        let m = crate::motion::pace(match self.motion {
+            Some(m) => m,
+            None => page_motion(Motion::of(cx)),
+        });
         let roller = window.use_keyed_state((self.id.clone(), "roller"), cx, |_, _| Roller {
             glide: Glide::new(at as f32, &m),
             swipe: None,
@@ -282,6 +312,27 @@ impl SnapStack {
                         .children(shown),
                 ),
             );
+        if self.arrows {
+            for (onwards, glyph, name) in [(false, "⌃", "up"), (true, "⌄", "down")] {
+                if !can_turn(at, last, onwards) {
+                    continue;
+                }
+                let go = select.clone();
+                let to = if onwards {
+                    at + 1
+                } else {
+                    at.saturating_sub(1)
+                };
+                let button = crate::IconButton::new((self.id.clone(), name), glyph)
+                    .on_click(move |_, w, cx| go(to, w, cx));
+                let edge = div().absolute().left_0().right_0().flex().justify_center();
+                root = root.child(if onwards {
+                    edge.bottom_0().child(button)
+                } else {
+                    edge.top_0().child(button)
+                });
+            }
+        }
         if dragging {
             // While the button is down the whole window reports to the stack, so a drag that
             // leaves it keeps going and is let go wherever the button comes up.
@@ -338,6 +389,15 @@ crate::entry_render!(SnapStack);
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_page_turn_is_slow_and_never_wakes_a_still_design() {
+        assert!(page_motion(Motion::default()).duration >= PAGE_TURN);
+        assert_eq!(
+            page_motion(Motion::default().instant()).duration,
+            Duration::ZERO
+        );
+    }
 
     #[test]
     fn a_short_swipe_stays_and_a_long_one_turns_as_far_as_it_went() {

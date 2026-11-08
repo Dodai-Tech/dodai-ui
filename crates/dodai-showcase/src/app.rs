@@ -289,6 +289,7 @@ impl Showcase {
             inst_trail: 2,
             inst_response: 0,
             inst_look: 0,
+            inst_drive: 0,
             inst_glow: 0,
             inst_seen: None,
             excluded_slots: Default::default(),

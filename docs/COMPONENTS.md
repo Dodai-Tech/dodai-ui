@@ -15,7 +15,7 @@ Legend: ✅ done · 🟡 partial · ⬜ todo
 | FAB / Extended FAB | ✅ `Fab` | |
 | Cards | ✅ `Card` | elevated/filled/outlined |
 | Carousel | ✅ `Carousel` | |
-| Snap stack (vertical pages) | ✅ `SnapStack` | wheel notch or swipe snaps one page |
+| Snap stack (vertical pages) | ✅ `SnapStack` | wheel notch, swipe, mouse drag or `.arrows(true)` chevrons turn a page; the snap is slow and eased |
 | Checkbox | ✅ | |
 | Chips (assist/filter/input/suggestion) | 🟡 `Chip` | |
 | Date / Time pickers | ✅ `DatePicker`, `TimePicker` | |
