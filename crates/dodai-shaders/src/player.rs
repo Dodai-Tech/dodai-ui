@@ -244,6 +244,209 @@ pub fn config_hash(
     })
 }
 
+/// What a shader view shows and how: the same description for every toolkit.
+#[derive(Clone, Debug)]
+pub struct Spec {
+    /// A generator, then post effects.
+    pub chain: Vec<&'static ShaderInfo>,
+    /// Colours.
+    pub palette: ShaderPalette,
+    /// Width ÷ height.
+    pub aspect: f32,
+    /// Device pixels per shader pixel on a 2x display (bigger is chunkier and cheaper).
+    pub pixel: f32,
+    /// Post-effect strength `0..=1`.
+    pub intensity: f32,
+    /// Clock multiplier.
+    pub speed: f32,
+    /// Most pictures per second.
+    pub fps: f32,
+    /// Moves (false = one still frame).
+    pub animated: bool,
+    /// Light on black becomes opacity.
+    pub transparent: bool,
+}
+
+impl PartialEq for Spec {
+    fn eq(&self, o: &Self) -> bool {
+        self.chain.len() == o.chain.len()
+            && self.chain.iter().zip(&o.chain).all(|(a, b)| a.id == b.id)
+            && self.palette == o.palette
+            && self.aspect == o.aspect
+            && self.pixel == o.pixel
+            && self.intensity == o.intensity
+            && self.speed == o.speed
+            && self.fps == o.fps
+            && self.animated == o.animated
+            && self.transparent == o.transparent
+    }
+}
+
+impl Spec {
+    /// `shader` is a catalogue id such as `"neon_grid"` (unknown ids render nothing), drawn in
+    /// the shader family's own palette.
+    pub fn new(shader: &str) -> Self {
+        let chain: Vec<_> = crate::by_id(shader).into_iter().collect();
+        let palette = chain
+            .first()
+            .map_or(crate::Family::Cyberpunk, |s| s.family)
+            .palette();
+        Self {
+            chain,
+            palette,
+            aspect: 16.0 / 9.0,
+            pixel: 2.0,
+            intensity: 1.0,
+            speed: 1.0,
+            fps: 30.0,
+            animated: true,
+            transparent: false,
+        }
+    }
+
+    /// A ready-made chain from [`crate::presets`], in its own palette.
+    pub fn preset(p: &crate::Preset) -> Self {
+        Self {
+            chain: p.shaders(),
+            palette: (p.palette)(),
+            ..Self::new("")
+        }
+    }
+
+    /// Append a post effect by id.
+    pub fn fx(mut self, id: &str) -> Self {
+        self.chain.extend(crate::by_id(id));
+        self
+    }
+
+    /// Colours.
+    pub fn palette(mut self, p: ShaderPalette) -> Self {
+        self.palette = p;
+        self
+    }
+
+    /// Colours from a Dodai theme, so the shader follows the design system.
+    pub fn themed(self, theme: &dodai_core::Theme) -> Self {
+        self.palette(ShaderPalette::from_theme(theme))
+    }
+
+    /// Width ÷ height.
+    pub fn aspect(mut self, a: f32) -> Self {
+        self.aspect = a.max(0.1);
+        self
+    }
+
+    /// Device pixels per shader pixel.
+    pub fn pixel(mut self, p: f32) -> Self {
+        self.pixel = p.max(1.0);
+        self
+    }
+
+    /// Post-effect strength.
+    pub fn intensity(mut self, i: f32) -> Self {
+        self.intensity = i.clamp(0.0, 1.0);
+        self
+    }
+
+    /// Clock multiplier.
+    pub fn speed(mut self, s: f32) -> Self {
+        self.speed = s;
+        self
+    }
+
+    /// Most pictures per second.
+    pub fn fps(mut self, f: f32) -> Self {
+        self.fps = f.clamp(1.0, 120.0);
+        self
+    }
+
+    /// Moves, or one still frame.
+    pub fn animated(mut self, on: bool) -> Self {
+        self.animated = on;
+        self
+    }
+
+    /// Light on black becomes opacity.
+    pub fn transparent(mut self, on: bool) -> Self {
+        self.transparent = on;
+        self
+    }
+}
+
+/// A [`Spec`] being played: owns the clock and the [`Player`]. The toolkit views wrap this.
+pub struct Live {
+    spec: Spec,
+    player: Player,
+    start: Option<Instant>,
+}
+
+impl Live {
+    /// Starts the clock at the first [`tick`](Self::tick).
+    pub fn new(spec: Spec) -> Self {
+        Self {
+            spec,
+            player: Player::new(),
+            start: None,
+        }
+    }
+
+    /// What is playing.
+    pub fn spec(&self) -> &Spec {
+        &self.spec
+    }
+
+    /// Replace the spec; the next tick draws it (nothing happens if it is unchanged).
+    pub fn set_spec(&mut self, spec: Spec) {
+        if spec != self.spec {
+            self.spec = spec;
+        }
+    }
+
+    /// Time until the next picture is due: how long a toolkit may sleep before calling
+    /// [`tick`](Self::tick) again (`None` for a still shader).
+    pub fn next_in(&self) -> Option<std::time::Duration> {
+        self.spec
+            .animated
+            .then(|| std::time::Duration::from_secs_f32(1.0 / self.spec.fps))
+    }
+
+    /// Ask for a picture `width` logical px wide (the height follows the aspect) at `scale`
+    /// device pixels per logical px.
+    pub fn tick(&mut self, width: f32, scale: f32) -> Poll {
+        let now = Instant::now();
+        let start = *self.start.get_or_insert(now);
+        let sp = &self.spec;
+        if sp.chain.is_empty() || width < 1.0 {
+            return Poll::Keep;
+        }
+        let config = config_hash(&sp.chain, &sp.palette, sp.intensity, sp.transparent);
+        self.player.poll(&Request {
+            chain: &sp.chain,
+            palette: &sp.palette,
+            size: (width, width / sp.aspect),
+            scale,
+            pixel: sp.pixel,
+            intensity: sp.intensity,
+            time: (now - start).as_secs_f32() * sp.speed,
+            fps: sp.fps,
+            animated: sp.animated,
+            transparent: sp.transparent,
+            config,
+            now,
+        })
+    }
+}
+
+impl Frame {
+    /// The pixels as RGBA8 (blue and red swapped).
+    pub fn rgba(mut self) -> Vec<u8> {
+        for px in self.bgra.chunks_exact_mut(4) {
+            px.swap(0, 2);
+        }
+        self.bgra
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -304,5 +507,39 @@ mod tests {
         assert_eq!((frame.width, frame.height), (64, 36));
         // Not animated, same size and config: nothing new is due.
         assert!(matches!(player.poll(&req(Instant::now())), Poll::Keep));
+    }
+}
+
+#[cfg(test)]
+mod spec_tests {
+    use super::*;
+
+    #[test]
+    fn frames_swap_to_rgba() {
+        let f = Frame {
+            width: 1,
+            height: 1,
+            bgra: vec![1, 2, 3, 4],
+        };
+        assert_eq!(f.rgba(), vec![3, 2, 1, 4]);
+    }
+
+    #[test]
+    fn specs_compare_by_shader_id_and_settings() {
+        let a = Spec::new("neon_grid").fx("crt");
+        assert_eq!(a, Spec::new("neon_grid").fx("crt"));
+        assert_ne!(a, Spec::new("neon_grid"));
+        assert_ne!(a, a.clone().intensity(0.3));
+        assert!(Spec::new("nope").chain.is_empty());
+        assert_eq!(Spec::new("neon_grid").fps(500.0).fps, 120.0);
+    }
+
+    #[test]
+    fn a_still_shader_has_no_next_tick() {
+        let live = Live::new(Spec::new("neon_grid").animated(false));
+        assert!(live.next_in().is_none());
+        let live = Live::new(Spec::new("neon_grid").fps(10.0));
+        let wait = live.next_in().expect("animated");
+        assert!((wait.as_secs_f32() - 0.1).abs() < 1e-4);
     }
 }

@@ -75,3 +75,18 @@ Ideas from the Shadertoy retro-terminal CRT, Timothy Lottes' CRTS (public domain
 moni-dz, kalgynirae, Jan Mróz, FabriceNeyret2 and otaviogood, rymdlego, unkn0wncode,
 Alex Sherwin and pkazmier. Oklab maths by Björn Ottosson.
 
+
+## Toolkit views (features)
+
+The shader logic and the render loop (`dodai_shaders::player`: GPU first, CPU fallback, sizing,
+pacing, BGRA frames) are toolkit-agnostic. A view per toolkit is a feature, one small module each:
+
+| Feature | View |
+|---|---|
+| `gpui` | `dodai_shaders::gpui::ShaderView` (an element) |
+| `iced` | `dodai_shaders::iced::ShaderView` (call `tick` from a timer, show `view()`) |
+| `bevy` | `dodai_shaders::bevy::{ShaderPlugin, ShaderNode}` (a UI node) |
+| `dioxus` | `dodai_shaders::dioxus::ShaderView` (an `<img>` with a PNG data URL, needs tokio) |
+
+Describe what to show once with `player::Spec::new("neon_grid").fx("crt")`, the same in every
+toolkit. Enable one toolkit feature at a time (the GUI stacks pin different wgpu/naga versions).
