@@ -230,6 +230,14 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             }
             c.into()
         }
+        Demo::Button(b) if b.elevated => {
+            let msg = b
+                .counter
+                .clone()
+                .map_or(Msg::Noop, |k| Msg::Act(Action::Press(k)));
+            let size = th.control_metrics(ControlSize::Medium).text_size;
+            lt.kit_button(Kit::Elevated, text(lt.label(&b.label)).size(size), msg)
+        }
         Demo::Button(b) => {
             let icon_el = if b.loading {
                 Some(lt.spinner(14.0, cx.t))
@@ -259,18 +267,81 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
                 msg,
             )
         }
-        Demo::Split { label, variant } => row![
-            lt.button_sized(label, None, *variant, ControlSize::Medium, Some(Msg::Noop)),
-            lt.button_sized(
-                "",
-                Some(icon(cx, IconId::ChevronDown, 16.0)),
-                *variant,
-                ControlSize::Medium,
-                Some(Msg::Noop)
-            ),
-        ]
-        .spacing(2)
-        .into(),
+        Demo::Split {
+            label,
+            variant,
+            open,
+            crop,
+        } => {
+            let arrow = if *open {
+                IconId::ChevronUp
+            } else {
+                IconId::ChevronDown
+            };
+            row![
+                lt.button_cropped(
+                    label,
+                    None,
+                    *variant,
+                    ControlSize::Medium,
+                    *crop,
+                    Some(Msg::Noop)
+                ),
+                lt.button_sized(
+                    "",
+                    Some(icon(cx, arrow, 16.0)),
+                    *variant,
+                    ControlSize::Medium,
+                    Some(Msg::Noop)
+                ),
+            ]
+            .spacing(2)
+            .into()
+        }
+        Demo::Fab { label, .. } => {
+            let mut r = row![icon(cx, IconId::Plus, 24.0)]
+                .spacing(sp.sm)
+                .align_y(alignment::Vertical::Center);
+            if let Some(l) = label {
+                r = r.push(text(lt.label(l)).size(th.typography.size_md));
+            }
+            lt.kit_button(
+                Kit::Fab {
+                    extended: label.is_some(),
+                },
+                r,
+                Msg::Noop,
+            )
+        }
+        Demo::Toolbar {
+            floating,
+            vibrant,
+            icons,
+        } => {
+            let items = row(icons.iter().map(|&i| {
+                lt.button_sized(
+                    "",
+                    Some(icon(cx, i, 18.0)),
+                    V::Ghost,
+                    ControlSize::Medium,
+                    Some(Msg::Noop),
+                )
+            }))
+            .spacing(sp.xs)
+            .align_y(alignment::Vertical::Center);
+            let bar = lt.kit_box(
+                Kit::Toolbar {
+                    floating: *floating,
+                    vibrant: *vibrant,
+                },
+                items,
+            );
+            if *floating {
+                bar
+            } else {
+                container(bar).width(Length::Fill).into()
+            }
+        }
         Demo::Choice(ch) => {
             let at = vals.index(&ch.bind);
             row(ch.labels.iter().enumerate().map(|(i, l)| {

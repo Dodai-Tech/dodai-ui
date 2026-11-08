@@ -27,10 +27,7 @@ impl IcedTheme {
             fill: st.fill,
             stroke: st.border,
             glow: st.glow,
-            hard_shadow: matches!(
-                kit,
-                Kit::Card(dodai_core::CardVariant::Elevated) | Kit::Popup
-            ),
+            hard_shadow: st.lift,
             padding: Self::kit_padding(&st),
         }
     }
@@ -60,6 +57,11 @@ impl IcedTheme {
             // draws them square), so they never go through the canvas frame.
             let style = self.box_style(&self.kit_box_style(kit));
             let radius = self.kit_radius(&st);
+            let shadow = if st.lift {
+                self.lift_shadow()
+            } else {
+                style.shadow
+            };
             return container(inner)
                 .padding(Self::kit_padding(&st))
                 .style(move |_| container::Style {
@@ -67,6 +69,7 @@ impl IcedTheme {
                         radius: radius.into(),
                         ..style.border
                     },
+                    shadow,
                     ..style
                 })
                 .into();
@@ -85,6 +88,11 @@ impl IcedTheme {
         let hover = self.theme.kit(kit, true);
         let radius = self.kit_radius(&idle);
         let width = self.theme.shape.border_width;
+        let shadow = if idle.lift {
+            self.lift_shadow()
+        } else {
+            iced::Shadow::default()
+        };
         button(content)
             .padding(Self::kit_padding(&idle))
             .style(move |_t, status| {
@@ -100,6 +108,7 @@ impl IcedTheme {
                         width: if st.border.is_some() { width } else { 0.0 },
                         radius: radius.into(),
                     },
+                    shadow,
                     ..button::Style::default()
                 }
             })

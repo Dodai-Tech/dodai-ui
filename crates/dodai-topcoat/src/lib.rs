@@ -393,9 +393,21 @@ pub fn kit_vars(t: &Theme) -> String {
             "0 0 0 0 transparent".to_string()
         }
     };
+    let hard = t.effects.hard_shadow;
+    let lift = if hard > 0.0 {
+        format!("{hard}px {hard}px 0 {}", t.palette.border_strong.to_css())
+    } else {
+        "0 1px 3px rgba(0,0,0,.3),0 4px 8px 3px rgba(0,0,0,.15)".to_string()
+    };
     for kit in Kit::all() {
         let n = kit.name();
         let st = t.kit(kit, false);
+        let shadow = if st.lift {
+            lift.as_str()
+        } else {
+            "0 0 0 0 transparent"
+        };
+        let _ = write!(s, "--dodai-kit-{n}-lift:{shadow};");
         let _ = write!(
             s,
             "--dodai-kit-{n}-bg:{};--dodai-kit-{n}-bd:{};--dodai-kit-{n}-fg:{};\
@@ -432,7 +444,8 @@ pub fn kit_style(kit: Kit) -> String {
     let n = kit.name();
     let mut s = format!(
         "--kb:var(--dodai-kit-{n}-bg);--kd:var(--dodai-kit-{n}-bd);--kf:var(--dodai-kit-{n}-fg);\
---kx:var(--dodai-kit-{n}-px);--ky:var(--dodai-kit-{n}-py);--kg:var(--dodai-kit-{n}-glow);--kr:var(--dodai-kit-{n}-r);"
+--kx:var(--dodai-kit-{n}-px);--ky:var(--dodai-kit-{n}-py);--kg:var(--dodai-kit-{n}-glow);--kr:var(--dodai-kit-{n}-r);\
+--kl:var(--dodai-kit-{n}-lift);"
     );
     if kit_hovers(kit) {
         let _ = write!(

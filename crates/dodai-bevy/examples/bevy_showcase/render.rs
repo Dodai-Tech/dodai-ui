@@ -276,6 +276,18 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                 }
             });
         }
+        Demo::Button(b) if b.elevated => {
+            let mut e = p.spawn((kit_pressable(Kit::Elevated), Node::default()));
+            if let Some(sh) = lift(theme, Kit::Elevated) {
+                e.insert(sh);
+            }
+            if let Some(k) = &b.counter {
+                e.insert(Bound::Act(Action::Press(k.clone())));
+            }
+            e.with_children(|c| {
+                c.spawn(text(b.label.clone(), TextRole::Control));
+            });
+        }
         Demo::Button(b) => {
             let mut spec = ButtonSpec::new(b.label.clone(), b.variant)
                 .size(b.size)
@@ -299,18 +311,74 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                 });
             }
         }
-        Demo::Split { label, variant } => {
+        Demo::Split {
+            label,
+            variant,
+            open,
+            crop,
+        } => {
+            let arrow = if *open {
+                IconId::ChevronUp
+            } else {
+                IconId::ChevronDown
+            };
+            let mut main = ButtonSpec::new(label.clone(), *variant);
+            if let Some(end) = crop {
+                main = main.crop(*end);
+            }
             p.spawn(Node {
                 column_gap: Val::Px(2.0),
                 ..default()
             })
             .with_children(|c| {
-                c.spawn(ButtonSpec::new(label.clone(), *variant).bundle());
-                c.spawn(
-                    ButtonSpec::new("", *variant)
-                        .icon(IconId::ChevronDown)
-                        .bundle(),
-                );
+                c.spawn(main.bundle());
+                c.spawn(ButtonSpec::new("", *variant).icon(arrow).bundle());
+            });
+        }
+        Demo::Fab { label, .. } => {
+            let k = Kit::Fab {
+                extended: label.is_some(),
+            };
+            let mut e = p.spawn((kit_pressable(k), Node::default()));
+            if let Some(sh) = lift(theme, k) {
+                e.insert(sh);
+            }
+            e.with_children(|c| {
+                c.spawn(icon_node(IconId::Plus, 24));
+                if let Some(l) = label {
+                    c.spawn(text(l.clone(), TextRole::Control));
+                }
+            });
+        }
+        Demo::Toolbar {
+            floating,
+            vibrant,
+            icons,
+        } => {
+            let k = Kit::Toolbar {
+                floating: *floating,
+                vibrant: *vibrant,
+            };
+            let mut e = p.spawn((
+                kit(k),
+                Node {
+                    width: if *floating {
+                        Val::Auto
+                    } else {
+                        Val::Percent(100.0)
+                    },
+                    column_gap: Val::Px(theme.spacing.xs),
+                    align_self: AlignSelf::FlexStart,
+                    ..default()
+                },
+            ));
+            if let Some(sh) = lift(theme, k) {
+                e.insert(sh);
+            }
+            e.with_children(|c| {
+                for &i in icons {
+                    c.spawn(ButtonSpec::new("", ButtonVariant::Ghost).icon(i).bundle());
+                }
             });
         }
         Demo::Choice(ch) => {
@@ -1272,4 +1340,29 @@ fn fade_alpha(stops: &[dodai_core::FadeStop], at: f32) -> f32 {
         }
     }
     stops.last().map_or(0.0, |s| s.alpha)
+}
+
+/// The shadow of a lifted kit: the design's hard shadow, or a soft drop shadow.
+fn lift(theme: &Theme, k: Kit) -> Option<BoxShadow> {
+    if !theme.kit(k, false).lift {
+        return None;
+    }
+    let hard = theme.effects.hard_shadow;
+    Some(if hard > 0.0 {
+        BoxShadow::new(
+            color(theme.palette.border_strong),
+            Val::Px(hard),
+            Val::Px(hard),
+            Val::Px(0.0),
+            Val::Px(0.0),
+        )
+    } else {
+        BoxShadow::new(
+            Color::srgba(0.0, 0.0, 0.0, 0.28),
+            Val::Px(0.0),
+            Val::Px(2.0),
+            Val::Px(0.0),
+            Val::Px(6.0),
+        )
+    })
 }
