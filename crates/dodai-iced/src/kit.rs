@@ -159,9 +159,10 @@ impl IcedTheme {
     /// A spinning ring of `size` px; `t` is the time in seconds.
     pub fn spinner<'a, Message: 'a>(&self, size: f32, t: f32) -> Element<'a, Message> {
         Canvas::new(Spinner {
+            style: self.theme.look().spinner,
             lit: color(self.theme.palette.primary),
             dim: color(self.theme.palette.border),
-            angle: busy::spin_angle(t),
+            t,
         })
         .width(size)
         .height(size)
@@ -251,9 +252,10 @@ impl IcedTheme {
 }
 
 struct Spinner {
+    style: dodai_core::SpinnerStyle,
     lit: iced::Color,
     dim: iced::Color,
-    angle: f32,
+    t: f32,
 }
 
 impl<Message> canvas::Program<Message> for Spinner {
@@ -268,6 +270,34 @@ impl<Message> canvas::Program<Message> for Spinner {
         _cursor: mouse::Cursor,
     ) -> Vec<Geometry> {
         let mut frame = canvas::Frame::new(renderer, bounds.size());
+        let size = bounds.width.min(bounds.height);
+        let cells = busy::cells(self.style, size);
+        if !cells.is_empty() {
+            for c in cells {
+                let a = busy::cell_alpha(self.style, c.lag, self.t);
+                let (h, y) = match self.style {
+                    dodai_core::SpinnerStyle::Bars => {
+                        let h = c.h * busy::bar_scale(a);
+                        (h, c.y + c.h - h)
+                    }
+                    _ => (c.h, c.y),
+                };
+                let col = iced::Color {
+                    a: self.lit.a * a,
+                    ..self.lit
+                };
+                let p = iced::Point::new(c.x, y);
+                if c.round {
+                    frame.fill(
+                        &Path::circle(iced::Point::new(c.x + c.w / 2.0, y + h / 2.0), c.w / 2.0),
+                        col,
+                    );
+                } else {
+                    frame.fill_rectangle(p, iced::Size::new(c.w, h), col);
+                }
+            }
+            return vec![frame.into_geometry()];
+        }
         let w = (bounds.width / 8.0).max(2.0);
         let r = (bounds.width.min(bounds.height) - w) / 2.0;
         let centre = frame.center();
@@ -277,8 +307,8 @@ impl<Message> canvas::Program<Message> for Spinner {
             b.arc(Arc {
                 center: centre,
                 radius: r,
-                start_angle: Radians(self.angle),
-                end_angle: Radians(self.angle + std::f32::consts::PI * 0.75),
+                start_angle: Radians(busy::spin_angle(self.t)),
+                end_angle: Radians(busy::spin_angle(self.t) + std::f32::consts::PI * 0.75),
             });
         });
         frame.stroke(&arc, Stroke::default().with_color(self.lit).with_width(w));
