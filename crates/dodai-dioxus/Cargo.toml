@@ -28,7 +28,10 @@ dioxus = { version = "0.7", default-features = false, features = ["macro", "html
 [dev-dependencies]
 dodai-core = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "dodai"] }
 dodai-showcase-model = { workspace = true }
+dodai-shaders = { workspace = true, features = ["dioxus"] }
 dioxus-ssr = "0.7"
+# The showcase scrolls to sections and follows the scroll through `document::eval`.
+dioxus = { version = "0.7", default-features = false, features = ["document", "macro", "html", "signals", "hooks"] }
 # The showcase example serves the live app over a websocket to any browser (the desktop
 # renderer needs `cocoa` 0.26.1, which gpui pins below in the same workspace).
 dioxus-liveview = { version = "0.7", features = ["axum"] }

@@ -155,17 +155,29 @@ fn field(p: &mut ChildSpawnerCommands, name: &str, body: impl FnOnce(&mut ChildS
 /// Labels of the on/off pickers.
 pub const OFF_ON: [&str; 2] = ["Off", "On"];
 
+/// What a dropdown shows.
+#[derive(Clone, Copy)]
+pub struct Dropdown<'a> {
+    pub name: &'static str,
+    pub items: &'a [String],
+    pub selected: Option<usize>,
+    pub placeholder: &'a str,
+    pub width: f32,
+    pub open: bool,
+}
+
 /// A dropdown: the closed button (current choice) and, when open, the list below it.
-fn dropdown(
-    p: &mut ChildSpawnerCommands,
-    name: &'static str,
-    items: &[String],
-    selected: usize,
-    open: bool,
-    act: impl Fn(usize) -> Action,
-) {
+pub fn dropdown(p: &mut ChildSpawnerCommands, d: &Dropdown, act: impl Fn(usize) -> Action) {
+    let Dropdown {
+        name,
+        items,
+        selected,
+        placeholder,
+        width,
+        open,
+    } = *d;
     p.spawn(Node {
-        width: Val::Px(260.0),
+        width: Val::Px(width),
         ..default()
     })
     .with_children(|c| {
@@ -180,7 +192,9 @@ fn dropdown(
         ))
         .with_children(|b| {
             b.spawn(text(
-                items.get(selected).cloned().unwrap_or_default(),
+                selected
+                    .and_then(|i| items.get(i).cloned())
+                    .unwrap_or_else(|| placeholder.to_string()),
                 TextRole::Content,
             ));
             b.spawn(dodai_bevy::widgets::icon(
@@ -215,7 +229,7 @@ fn dropdown(
                 for (i, it) in items.iter().enumerate() {
                     l.spawn((
                         kit_pressable(Kit::Row {
-                            selected: i == selected,
+                            selected: Some(i) == selected,
                         }),
                         Node {
                             width: Val::Percent(100.0),
@@ -238,20 +252,28 @@ pub fn spawn_top(p: &mut ChildSpawnerCommands, m: &Showcase, open: Option<&'stat
     field(p, "Design", |c| {
         dropdown(
             c,
-            "design",
-            &owned(m.design_names()),
-            m.design_index(),
-            open == Some("design"),
+            &Dropdown {
+                name: "design",
+                items: &owned(m.design_names()),
+                selected: Some(m.design_index()),
+                placeholder: "",
+                width: 260.0,
+                open: open == Some("design"),
+            },
             Action::Design,
         );
     });
     field(p, "Theme", |c| {
         dropdown(
             c,
-            "theme",
-            &owned(m.variants()),
-            m.variant_index(),
-            open == Some("theme"),
+            &Dropdown {
+                name: "theme",
+                items: &owned(m.variants()),
+                selected: Some(m.variant_index()),
+                placeholder: "",
+                width: 260.0,
+                open: open == Some("theme"),
+            },
             Action::Variant,
         );
     });
@@ -317,7 +339,12 @@ pub fn spawn_nav(p: &mut ChildSpawnerCommands, m: &Showcase) {
     }
 }
 
-pub fn spawn_page(p: &mut ChildSpawnerCommands, m: &Showcase, theme: &dodai_core::Theme) {
+pub fn spawn_page(
+    p: &mut ChildSpawnerCommands,
+    m: &Showcase,
+    theme: &dodai_core::Theme,
+    open: Option<&'static str>,
+) {
     let title = m.category().map_or("All", |c| CATEGORIES[c]);
     p.spawn(text(title.to_string(), TextRole::Heading));
     let sections = m.visible();
@@ -328,7 +355,11 @@ pub fn spawn_page(p: &mut ChildSpawnerCommands, m: &Showcase, theme: &dodai_core
         theme,
         values: &m.values,
     };
-    let cx = Cx { theme, model: m };
+    let cx = Cx {
+        theme,
+        model: m,
+        open,
+    };
     for s in sections {
         let node = (s.build)(&ctx);
         p.spawn((
@@ -401,7 +432,7 @@ pub fn rebuild(
             commands
                 .entity(e)
                 .despawn_related::<Children>()
-                .with_children(|p| spawn_page(p, m, &t));
+                .with_children(|p| spawn_page(p, m, &t, open.0));
         }
     }
     *dirty = Dirty::default();

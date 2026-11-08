@@ -149,7 +149,10 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
                     .spacing(g)
                     .align_x(alignment::Horizontal::Center)
                     .into(),
-                (Axis::Column, _) => column(items).spacing(g).width(Length::Fill).into(),
+                (Axis::Column, _) => column(items)
+                    .spacing(g)
+                    .width(s.width.map_or(Length::Fill, Length::Fixed))
+                    .into(),
             }
         }
         Demo::Text(t, r) => txt(cx, t, *r),
@@ -353,6 +356,26 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
                 Msg::Set(key.clone(), Value::Num(x))
             })
         }
+        Demo::Select {
+            key,
+            labels,
+            selected,
+            placeholder,
+        } => {
+            let (list, key) = (labels.clone(), key.clone());
+            let chosen = selected.and_then(|i| labels.get(i).cloned());
+            iced::widget::pick_list(labels.clone(), chosen, move |s: String| {
+                let at = list.iter().position(|x| *x == s).unwrap_or(0);
+                Msg::Set(key.clone(), Value::Index(at))
+            })
+            .placeholder(placeholder.clone())
+            .padding(sp.sm)
+            .width(Length::Fixed(380.0))
+            .style(lt.pick_list())
+            .menu_style(lt.menu())
+            .into()
+        }
+        Demo::Shader(spec) => crate::shaders::view(spec, lt.theme()),
         Demo::Plot(p) => iced::widget::canvas(PlotView(p.clone()))
             .width(p.w)
             .height(p.h)

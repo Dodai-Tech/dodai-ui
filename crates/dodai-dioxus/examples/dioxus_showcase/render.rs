@@ -104,12 +104,14 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
                 "dodai-stack--col"
             };
             let wrap = if s.wrap { "dodai-stack--wrap" } else { "" };
-            let align = if s.axis == Axis::Row && !s.centre {
-                "align-items:flex-start"
+            let align = if let Some(w) = s.width {
+                format!("width:{w}px;flex:none")
+            } else if s.axis == Axis::Row && !s.centre {
+                "align-items:flex-start".to_string()
             } else if s.axis == Axis::Column && s.centre {
-                "align-items:center;width:auto"
+                "align-items:center;width:auto".to_string()
             } else {
-                ""
+                String::new()
             };
             rsx! {
                 div { class: "dodai-stack {axis} {wrap} {gap_class(s.gap)}", style: align,
@@ -251,6 +253,35 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
             rsx! {
                 Knob { value: v, min, max, size: *size, disabled: *disabled, theme: theme.clone(),
                     onchange: move |x| act(model, Action::Set(key.clone(), Value::Num(x))) }
+            }
+        }
+        Demo::Select {
+            key,
+            labels,
+            selected,
+            placeholder,
+        } => {
+            let key = key.clone();
+            rsx! {
+                select { class: "dodai-select", style: "min-width:320px",
+                    onchange: move |e| if let Ok(i) = e.value().parse::<usize>() {
+                        act(model, Action::Set(key.clone(), Value::Index(i)))
+                    },
+                    if selected.is_none() {
+                        option { value: "", selected: true, disabled: true, "{placeholder}" }
+                    }
+                    for (i, it) in labels.iter().enumerate() {
+                        option { key: "{i}", value: "{i}", selected: *selected == Some(i), "{it}" }
+                    }
+                }
+            }
+        }
+        Demo::Shader(spec) => {
+            let id = format!("{spec:?}{}", theme.name());
+            rsx! {
+                Fragment { key: "{id}",
+                    dodai_shaders::dioxus::ShaderView { spec: spec.to_spec(&theme), width: spec.width }
+                }
             }
         }
         Demo::Plot(p) => rsx! {

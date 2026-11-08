@@ -84,12 +84,34 @@ fn NavItem(label: String, count: usize, on: bool, onclick: EventHandler<()>) -> 
     }
 }
 
+/// A section entry under the open page: picking it scrolls the page to it.
+#[component]
+fn SubItem(label: String, on: bool, onclick: EventHandler<()>) -> Element {
+    rsx! {
+        div { style: "padding-left:16px;width:100%",
+            KitBox { kit: Kit::Row { selected: on }, style: "width:100%;".to_string(),
+                onclick: move |_| onclick.call(()),
+                span { class: "dodai-caption", style: "color:inherit", "{label}" }
+            }
+        }
+    }
+}
+
+/// Scroll the section named `title` to the top of the page.
+fn scroll_to(title: &str) {
+    let id = format!("sec-{title}");
+    let _ = document::eval(&format!(
+        "document.getElementById({id:?})?.scrollIntoView({{behavior:'smooth',block:'start'}})"
+    ));
+}
+
 #[component]
 fn Sidebar(model: Signal<Showcase>) -> Element {
     let m = model.read();
     let mut set = move |a: Action| model.write().update(a);
     let cat = m.category();
     let titles: Vec<&'static str> = m.visible().iter().map(|s| s.title).collect();
+    let active = m.active_section();
     let counts: Vec<usize> = std::iter::once(m.count(None))
         .chain((0..CATEGORIES.len()).map(|c| m.count(Some(c))))
         .collect();
@@ -106,8 +128,9 @@ fn Sidebar(model: Signal<Showcase>) -> Element {
                     NavItem { key: "{c}", label: c.to_string(), count: counts[i + 1], on: cat == Some(i),
                         onclick: move |_| set(Action::Category(Some(i))) }
                     if cat == Some(i) {
-                        for t in titles.iter() {
-                            div { key: "{t}", class: "dodai-navsub dodai-caption", "{t}" }
+                        for t in titles.iter().copied() {
+                            SubItem { key: "{t}", label: t.to_string(), on: active == Some(t),
+                                onclick: move |_| { set(Action::Section(t)); scroll_to(t) } }
                         }
                     }
                 }
@@ -138,7 +161,9 @@ fn Page(model: Signal<Showcase>) -> Element {
             Heading { level: 1, "{title}" }
             if sections.is_empty() { Muted { "No components match" } }
             for (t, node) in sections {
-                Panel { key: "{t}", title: t.to_string(), {render::view(&node, cx)} }
+                div { key: "{t}", id: "sec-{t}", "data-sec": "{t}",
+                    Panel { title: t.to_string(), {render::view(&node, cx)} }
+                }
             }
         }
     }
@@ -150,6 +175,31 @@ pub fn App() -> Element {
     let model = use_signal(Showcase::from_env);
     let theme = model.read().theme();
     let id = theme.id().to_string();
+    // Follow the page's scroll: the last section whose top has reached the top of the page.
+    use_future(move || async move {
+        let mut spy = document::eval(
+            r#"let last = null;
+            addEventListener('scroll', () => {
+                let cur = null;
+                for (const e of document.querySelectorAll('[data-sec]')) {
+                    if (e.getBoundingClientRect().top <= 140) cur = e.dataset.sec;
+                }
+                if (cur && cur !== last) { last = cur; dioxus.send(cur); }
+            }, true);"#,
+        );
+        let mut model = model;
+        while let Ok(title) = spy.recv::<String>().await {
+            let known = model
+                .read()
+                .visible()
+                .iter()
+                .find(|s| s.title == title)
+                .map(|s| s.title);
+            if let Some(t) = known {
+                model.write().update(Action::Visible(t));
+            }
+        }
+    });
     rsx! {
         ThemeProvider { themes: Some(vec![theme]), initial: Some(id),
             div { class: "dodai-app",

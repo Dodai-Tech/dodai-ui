@@ -86,6 +86,8 @@ pub fn handle(
                     Some(*name)
                 };
                 dirty.top = true;
+                // A select inside the page redraws the page too.
+                dirty.content |= name.starts_with("sel:");
             }
             (Bound::Act(a), ControlKind::Pressed | ControlKind::TabSelected) => {
                 let filter = matches!(a, Action::Filter(_));

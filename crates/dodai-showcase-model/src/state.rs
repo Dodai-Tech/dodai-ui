@@ -24,7 +24,7 @@ pub enum Value {
 
 /// Every interactive demo's value, by key.
 #[derive(Debug, Clone, Default, PartialEq)]
-pub struct Values(HashMap<String, Value>);
+pub struct Values(pub(crate) HashMap<String, Value>);
 
 impl Values {
     /// The bool under `bind`, or its default.
@@ -143,6 +143,10 @@ pub enum Action {
     Set(String, Value),
     /// A counting button was pressed.
     Press(String),
+    /// A section was picked in the sidebar: show it and scroll to it.
+    Section(&'static str),
+    /// The page was scrolled and this section is now at the top.
+    Visible(&'static str),
 }
 
 /// The showcase's whole state.
@@ -165,6 +169,8 @@ pub struct Showcase {
     /// The demos' values.
     pub values: Values,
     revision: u64,
+    active: Option<&'static str>,
+    jump: Option<&'static str>,
 }
 
 impl Default for Showcase {
@@ -226,6 +232,8 @@ impl Showcase {
             patterns: false,
             values: Values::default(),
             revision: 0,
+            active: None,
+            jump: None,
         }
     }
 
@@ -337,6 +345,20 @@ impl Showcase {
         self.category
     }
 
+    /// The section the page is at (the first shown one until the page is scrolled or one is
+    /// picked).
+    pub fn active_section(&self) -> Option<&'static str> {
+        let shown = self.visible();
+        self.active
+            .filter(|a| shown.iter().any(|s| s.title == *a))
+            .or_else(|| shown.first().map(|s| s.title))
+    }
+
+    /// The section the sidebar asked to scroll to, once.
+    pub fn take_jump(&mut self) -> Option<&'static str> {
+        self.jump.take()
+    }
+
     /// The sidebar filter.
     pub fn filter(&self) -> &str {
         &self.filter
@@ -411,7 +433,20 @@ impl Showcase {
     /// Apply what happened.
     pub fn update(&mut self, action: Action) {
         match action {
-            Action::Category(c) => self.category = c.filter(|&c| c < CATEGORIES.len()),
+            Action::Category(c) => {
+                self.category = c.filter(|&c| c < CATEGORIES.len());
+                self.active = None;
+            }
+            Action::Section(title) => {
+                if let Some(s) = catalog::sections().iter().find(|s| s.title == title) {
+                    if self.category.is_some() {
+                        self.category = CATEGORIES.iter().position(|c| *c == s.category);
+                    }
+                    self.active = Some(s.title);
+                    self.jump = Some(s.title);
+                }
+            }
+            Action::Visible(title) => self.active = Some(title),
             Action::Filter(f) => self.filter = f,
             Action::Design(i) => {
                 if let Some(d) = self.designs().get(i).copied() {
@@ -458,6 +493,9 @@ impl Showcase {
                 }
                 self.bump();
             }
+            Action::Set(key, Value::Index(i)) if key == crate::shader_state::FX_ADD => {
+                self.values.add_effect_at(i);
+            }
             Action::Set(key, v) => {
                 let theme_wide = key == GLOW_KEY || key == SCANLINES_KEY;
                 self.values.set(key, v);
@@ -465,6 +503,7 @@ impl Showcase {
                     self.bump();
                 }
             }
+            Action::Press(key) if key.starts_with("sh:") => self.shader_press(&key[3..]),
             Action::Press(key) => {
                 let n = self.values.index_of(&key, 0);
                 self.values.set(key, Value::Index(n + 1));
@@ -527,5 +566,27 @@ mod system_theme_tests {
         let dark = m.theme().meta.mode;
         m.set_system_dark(false);
         assert_ne!(m.theme().meta.mode, dark);
+    }
+}
+
+#[cfg(test)]
+mod section_nav_tests {
+    use super::*;
+
+    #[test]
+    fn picking_a_section_jumps_once_and_scrolling_moves_the_highlight() {
+        let mut m = Showcase::default();
+        m.update(Action::Category(Some(0)));
+        let titles: Vec<_> = m.visible().iter().map(|s| s.title).collect();
+        assert_eq!(m.active_section(), Some(titles[0]));
+        m.update(Action::Section(titles[2]));
+        assert_eq!(m.active_section(), Some(titles[2]));
+        assert_eq!(m.take_jump(), Some(titles[2]));
+        assert_eq!(m.take_jump(), None);
+        m.update(Action::Visible(titles[3]));
+        assert_eq!(m.active_section(), Some(titles[3]));
+        // Another page forgets it.
+        m.update(Action::Category(Some(1)));
+        assert_ne!(m.active_section(), Some(titles[3]));
     }
 }

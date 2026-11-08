@@ -56,7 +56,10 @@ fn update_shader_nodes(
         let inv = computed.inverse_scale_factor();
         let width = computed.size().x * inv;
         let scale = if inv > 0.0 { 1.0 / inv } else { 1.0 };
-        node.aspect_ratio = Some(shader.live.spec().aspect);
+        let aspect = Some(shader.live.spec().aspect);
+        if node.aspect_ratio != aspect {
+            node.aspect_ratio = aspect;
+        }
         if let Poll::New(f) = shader.live.tick(width, scale) {
             let img = Image::new(
                 Extent3d {

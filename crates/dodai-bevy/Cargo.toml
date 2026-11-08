@@ -40,3 +40,7 @@ dodai-core = { workspace = true, features = ["cyberpunk", "material", "neobrutal
 
 [dev-dependencies.dodai-showcase-model]
 workspace = true
+
+[dev-dependencies.dodai-shaders]
+workspace = true
+features = ["bevy"]
