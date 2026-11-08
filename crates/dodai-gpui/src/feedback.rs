@@ -240,45 +240,89 @@ impl RenderOnce for Spinner {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let c = hsla(t.palette.primary);
-        let shape = t.shape.clone();
+        let spin = t.look().spinner;
+        let cycle = cycle(self.motion, 900, self.playback);
+        if spin == dodai_core::SpinnerStyle::Ring {
+            return self
+                .render_bars(c, t.shape.clone(), cycle)
+                .into_any_element();
+        }
+        let size = 24.0;
+        let cells = dodai_core::busy::cells(spin, size);
+        div()
+            .relative()
+            .w(px(size))
+            .h(px(size))
+            .with_animation(self.id, cycle, move |el, delta| {
+                let secs = delta / dodai_core::busy::SPIN_RATE;
+                let mut el = el;
+                for cell in &cells {
+                    let a = dodai_core::busy::cell_alpha(spin, cell.lag, secs);
+                    let (h, top) = if spin == dodai_core::SpinnerStyle::Bars {
+                        let h = cell.h * dodai_core::busy::bar_scale(a);
+                        (h, cell.y + cell.h - h)
+                    } else {
+                        (cell.h, cell.y)
+                    };
+                    let mut d = div()
+                        .absolute()
+                        .left(px(cell.x))
+                        .top(px(top))
+                        .w(px(cell.w))
+                        .h(px(h))
+                        .bg(gpui::Hsla { a, ..c });
+                    if cell.round {
+                        d = d.rounded_full();
+                    }
+                    el = el.child(d);
+                }
+                el
+            })
+            .into_any_element()
+    }
+}
+
+impl Spinner {
+    fn render_bars(
+        self,
+        c: gpui::Hsla,
+        shape: dodai_core::Shape,
+        cycle: Animation,
+    ) -> impl IntoElement {
         div()
             .flex()
             .items_end()
             .gap(px(3.0))
             .h(px(20.0))
-            .with_animation(
-                self.id,
-                cycle(self.motion, 900, self.playback),
-                move |el, delta| {
-                    let mut el = el;
-                    for i in 0..SPINNER_BARS {
-                        let a = spinner_alpha(i, delta);
-                        let style = ShapeStyle {
-                            fill: Some(gpui::Hsla { a, ..c }),
-                            stroke: None,
-                            stroke_width: 0.0,
-                            glow: None,
-                            shadow: None,
-                            shadow_dir: (1.0, 1.0),
-                            scanlines: false,
-                            scanline: c,
-                            scanline_pitch: dodai_core::Effects::SCANLINE_PITCH,
-                            surface: None,
-                            shimmer: None,
-                            elevation: None,
-                            lift_layers: None,
-                            edge_gap: None,
-                            frost: None,
-                        };
-                        el = el.child(
-                            shaped(&scaled_shape(&shape, 4.0), style)
-                                .w(px(4.0))
-                                .h(px(8.0 + 12.0 * a)),
-                        );
-                    }
-                    el
-                },
-            )
+            .with_animation(self.id, cycle, move |el, delta| {
+                let mut el = el;
+                for i in 0..SPINNER_BARS {
+                    let a = spinner_alpha(i, delta);
+                    let style = ShapeStyle {
+                        fill: Some(gpui::Hsla { a, ..c }),
+                        stroke: None,
+                        stroke_width: 0.0,
+                        glow: None,
+                        shadow: None,
+                        shadow_dir: (1.0, 1.0),
+                        scanlines: false,
+                        scanline: c,
+                        scanline_pitch: dodai_core::Effects::SCANLINE_PITCH,
+                        surface: None,
+                        shimmer: None,
+                        elevation: None,
+                        lift_layers: None,
+                        edge_gap: None,
+                        frost: None,
+                    };
+                    el = el.child(
+                        shaped(&scaled_shape(&shape, 4.0), style)
+                            .w(px(4.0))
+                            .h(px(8.0 + 12.0 * a)),
+                    );
+                }
+                el
+            })
     }
 }
 
