@@ -11,6 +11,7 @@ members = [
     "crates/dodai-iced",
     "crates/dodai-gpui",
     "crates/dodai-gpui-charts",
+    "crates/dodai-gpui-shaders",
     "crates/dodai-gpui-instruments",
     "crates/dodai-showcase",
     "crates/dodai-showcase-model",
@@ -57,6 +58,7 @@ dodai-showcase-model = { path = "crates/dodai-showcase-model" }
 dodai-ratatui = { path = "crates/dodai-ratatui", version = "0.1.0" }
 dodai-iced    = { path = "crates/dodai-iced",    version = "0.1.0" }
 dodai-gpui    = { path = "crates/dodai-gpui",    version = "0.1.0", default-features = false }
+dodai-gpui-shaders     = { path = "crates/dodai-gpui-shaders",     version = "0.1.0" }
 dodai-gpui-charts      = { path = "crates/dodai-gpui-charts",      version = "0.1.0" }
 dodai-gpui-instruments = { path = "crates/dodai-gpui-instruments", version = "0.1.0" }
 dodai-topcoat = { path = "crates/dodai-topcoat", version = "0.1.0" }

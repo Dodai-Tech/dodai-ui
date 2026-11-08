@@ -166,7 +166,7 @@ macro_rules! callback {
     };
 }
 
-#[cfg(any(feature = "shaders", feature = "dodai", feature = "frost"))]
+#[cfg(any(feature = "dodai", feature = "frost"))]
 pub mod backdrop;
 #[cfg(feature = "components")]
 pub mod button;
@@ -259,8 +259,6 @@ pub mod search;
 pub mod select;
 #[cfg(feature = "components")]
 pub mod selection;
-#[cfg(feature = "shaders")]
-pub mod shader_view;
 #[cfg(feature = "components")]
 pub mod sheets;
 #[cfg(feature = "components")]
@@ -318,8 +316,6 @@ pub use display::{
 };
 pub use dodai_core::motion as dodai_motion;
 pub use dodai_core::{DialLook, NeedleResponse};
-#[cfg(feature = "shaders")]
-pub use dodai_shaders;
 #[cfg(feature = "components")]
 pub use extras::{
     step_value, BottomAppBar, ColorPicker, EmptyState, FileDropZone, NumberStepper, Rating,
@@ -340,7 +336,7 @@ pub use icons::{Icon, IconId, IconName, IconPack, SymbolState};
 pub use snap_stack::{can_turn, snap_page, SnapStack, TURN_AT};
 #[cfg(feature = "components")]
 mod icon_names;
-#[cfg(any(feature = "shaders", feature = "dodai", feature = "frost"))]
+#[cfg(any(feature = "dodai", feature = "frost"))]
 pub use backdrop::backdrop;
 pub use direction::{direction, is_rtl, set_direction, Direction};
 #[cfg(feature = "components")]
@@ -400,8 +396,6 @@ pub use search::{count_label, highlight_runs, IconBadge, RichTooltip, SearchMode
 pub use select::{family_title, DesignSystemSelector, Select, SelectOption, ThemeSelector};
 #[cfg(feature = "components")]
 pub use selection::{SelectionMarker, SelectionTrack};
-#[cfg(feature = "shaders")]
-pub use shader_view::{shader_backend, PaletteSource, ShaderView};
 #[cfg(feature = "components")]
 pub use sheets::{
     sheet_style, BottomSheet, FullScreenDialog, ModalDrawer, SheetEdge, SideSheet, Snackbar,
