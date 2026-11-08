@@ -207,6 +207,16 @@ impl Showcase {
         self.switcher.families()
     }
 
+    /// Display names of the designs, in the order of [`designs`](Self::designs) ("Material 3",
+    /// not the family id `material`).
+    pub fn design_names(&self) -> Vec<&'static str> {
+        let systems = dodai_core::themes::systems();
+        self.designs()
+            .into_iter()
+            .map(|f| systems.iter().find(|s| s.family == f).map_or(f, |s| s.name))
+            .collect()
+    }
+
     /// Index of the active design in [`designs`](Self::designs).
     pub fn design_index(&self) -> usize {
         let family = self.switcher.current_family();
@@ -325,6 +335,20 @@ impl Showcase {
                 self.bump();
             }
         }
+    }
+
+    /// Switch to the theme with this id (a built-in id such as `material-dark`); `false` when
+    /// there is none.
+    pub fn select_id(&mut self, id: &str) -> bool {
+        let found = self.switcher.select(id);
+        if found {
+            self.mode = match self.switcher.current().meta.mode {
+                Mode::Light => ModePref::Light,
+                Mode::Dark => ModePref::Dark,
+            };
+            self.bump();
+        }
+        found
     }
 
     /// Apply what happened.

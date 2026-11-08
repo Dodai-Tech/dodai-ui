@@ -131,7 +131,10 @@ mod tests {
 
     #[test]
     fn font_stack_appends_a_generic_family() {
-        assert_eq!(font_stack("Inter, Menlo", "sans-serif"), "Inter, Menlo, sans-serif");
+        assert_eq!(
+            font_stack("Inter, Menlo", "sans-serif"),
+            "Inter, Menlo, sans-serif"
+        );
     }
 
     #[cfg(feature = "system-fonts")]

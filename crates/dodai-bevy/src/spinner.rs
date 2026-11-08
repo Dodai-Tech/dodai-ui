@@ -97,14 +97,13 @@ pub(crate) fn animate_spinners(
     }
 }
 
+type SegmentFilter = (With<IndeterminateFill>, Without<UiIndeterminate>);
+
 pub(crate) fn animate_bars(
     theme: Res<DodaiTheme>,
     time: Res<Time>,
     mut tracks: Query<(&mut BackgroundColor, &Children), With<UiIndeterminate>>,
-    mut fills: Query<
-        (&mut Node, &mut BackgroundColor),
-        (With<IndeterminateFill>, Without<UiIndeterminate>),
-    >,
+    mut fills: Query<(&mut Node, &mut BackgroundColor), SegmentFilter>,
 ) {
     let t = time.elapsed_secs();
     let track = color(theme.progress(None).track);

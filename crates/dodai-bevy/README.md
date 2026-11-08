@@ -48,3 +48,12 @@ App::new()
 ```
 CARGO_TARGET_DIR=target/bevy cargo run -p dodai-bevy --example bevy_showcase
 ```
+
+The showcase draws the same pages and sections as the gpui one from `dodai-showcase-model`
+(Foundations, Actions, Data display, Navigation, Inputs, Loading; charts, instruments and
+shaders are not ported). Env: `DODAI_THEME`, `DODAI_CAT`, `DODAI_OPEN`, `DODAI_SCROLL`,
+`DODAI_SHOT`.
+
+Alongside the first widgets, `UiKit` boxes (`Kit::Card`, `Alert`, `Chip`, `Avatar`, `Code`,
+`Tooltip`, `Row`, `Popup`, `Select`, ...) and the busy indicators `spinner()` / `indeterminate()` are
+token-styled and re-skin with the theme; `ButtonSpec` builds sized, square, icon and icon-only buttons.

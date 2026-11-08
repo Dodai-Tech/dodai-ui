@@ -576,11 +576,18 @@ pub(crate) fn style_inputs(
         upd(&mut n.height, Val::Px(input_height(&theme, i.lines)));
         upd(
             &mut n.padding,
-            UiRect::axes(Val::Px(theme.spacing.md), Val::Px(if i.lines > 1 { theme.spacing.sm } else { 0.0 })),
+            UiRect::axes(
+                Val::Px(theme.spacing.md),
+                Val::Px(if i.lines > 1 { theme.spacing.sm } else { 0.0 }),
+            ),
         );
         upd(
             &mut n.align_items,
-            if i.lines > 1 { AlignItems::FlexStart } else { AlignItems::Center },
+            if i.lines > 1 {
+                AlignItems::FlexStart
+            } else {
+                AlignItems::Center
+            },
         );
     }
     for (c, mut t, mut fg) in &mut texts {

@@ -55,6 +55,10 @@ pub enum Kit {
     },
     /// A loading placeholder.
     Skeleton,
+    /// A floating menu or dropdown list.
+    Popup,
+    /// The closed dropdown button.
+    Select,
     /// Header row of a table.
     TableHead,
     /// Body row of a table (`true` = banded).
@@ -180,6 +184,18 @@ pub fn kit_style(theme: &Theme, kit: Kit, hovered: bool) -> KitStyle {
                 padding: (sp.sm, 0.0),
             }
         }
+        Kit::Popup => from(theme.popup(), (sp.xs, sp.xs), false),
+        Kit::Select => {
+            let i = theme.input(hovered);
+            KitStyle {
+                fill: Some(i.background),
+                border: Some(i.border),
+                fg: i.text,
+                glow: false,
+                pill: false,
+                padding: (sp.md, sp.sm),
+            }
+        }
         Kit::Skeleton => KitStyle {
             fill: Some(p.surface_raised),
             border: None,
@@ -235,11 +251,25 @@ pub(crate) fn style_kits(
         if n.padding != pad {
             n.padding = pad;
         }
+        let align = if matches!(k.0, Kit::Card(_)) {
+            AlignItems::Stretch
+        } else {
+            AlignItems::Center
+        };
+        if n.align_items != align {
+            n.align_items = align;
+        }
+        let gap = Val::Px(theme.spacing.sm);
+        if n.column_gap != gap {
+            n.column_gap = gap;
+        }
     }
 }
 
+type PointerChanged = (Changed<ControlPointer>, With<UiPress>);
+
 pub(crate) fn press_input(
-    q: Query<(Entity, &ControlPointer), (Changed<ControlPointer>, With<UiPress>)>,
+    q: Query<(Entity, &ControlPointer), PointerChanged>,
     mut out: MessageWriter<ControlEvent>,
 ) {
     for (entity, p) in &q {
@@ -252,21 +282,15 @@ pub(crate) fn press_input(
     }
 }
 
-/// Box of `kit` with the given content, sized by its content.
+/// A box of `kit`. Give it its own [`Node`] for size and direction; alignment (centred, cards
+/// stretch) and the gap between children come from the theme.
 pub fn kit(kit: Kit) -> impl Bundle {
-    (
-        UiKit(kit),
-        Node {
-            align_items: AlignItems::Center,
-            column_gap: Val::Px(8.0),
-            ..default()
-        },
-    )
+    UiKit(kit)
 }
 
 /// A clickable box of `kit`.
 pub fn kit_pressable(k: Kit) -> impl Bundle {
-    (kit(k), UiPress)
+    (UiKit(k), UiPress)
 }
 
 #[cfg(test)]
@@ -280,6 +304,8 @@ mod tests {
             Kit::Code,
             Kit::Snackbar,
             Kit::Skeleton,
+            Kit::Popup,
+            Kit::Select,
             Kit::TableHead,
             Kit::TableRow(true),
             Kit::TableRow(false),
