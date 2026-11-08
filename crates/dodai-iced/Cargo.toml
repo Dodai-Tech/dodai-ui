@@ -11,8 +11,14 @@ readme       = "README.md"
 keywords     = ["theme", "design-system", "iced", "cyberpunk"]
 categories   = ["gui"]
 
+[features]
+default = ["icons"]
+## `icon()`: the shared icon vocabulary drawn on a canvas in the design's own style.
+icons = ["dep:dodai-icons", "dodai-icons/theme", "dodai-icons/cyberpunk", "dodai-icons/material", "dodai-icons/neobrutalism"]
+
 [dependencies]
 dodai-core = { workspace = true }
+dodai-icons = { workspace = true, optional = true }
 dodai-fx = { workspace = true }
 dodai-charts-core = { workspace = true }
 iced = { workspace = true }
@@ -23,3 +29,4 @@ dodai-core = { workspace = true, features = ["cyberpunk", "material"] }
 # `termcolor`; naga 27 (iced/wgpu) then fails to build unless its own `termcolor`
 # feature is on too. Lets `cargo test/clippy --workspace` unify both GUI stacks.
 naga = { version = "27", default-features = false, features = ["termcolor"] }
+dodai-showcase-model = { workspace = true }
