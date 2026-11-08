@@ -30,7 +30,7 @@ impl Showcase {
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let col = || div().flex().flex_col().gap(gap);
         {
-            use dodai_gpui_shaders::{PaletteSource, ShaderView};
+            use dodai_shaders::gpui::{PaletteSource, ShaderView};
             use dodai_shaders::{catalog, Kind};
             let pal_src = if self.sh_theme {
                 PaletteSource::Theme
@@ -284,7 +284,7 @@ impl Showcase {
                 section!("Shader playground")
                     .child(Muted::new(format!(
                         "Shaders written in Rust (`dodai-shaders`), rendered on: {}. Pick a source, stack effects.",
-                        dodai_gpui_shaders::shader_backend()
+                        dodai_shaders::gpui::shader_backend()
                     )))
                     .child(gen_row)
                     .child(fx_row)

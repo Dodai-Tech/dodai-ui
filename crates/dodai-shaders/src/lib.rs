@@ -39,6 +39,9 @@ pub mod cpu;
 mod ctx;
 mod frame;
 pub mod gpu;
+/// `ShaderView` for gpui.
+#[cfg(feature = "gpui")]
+pub mod gpui;
 pub mod groups;
 /// Shader maths, shared verbatim with the GPU kernels (vectors, hashes, noise, easing).
 pub mod math;

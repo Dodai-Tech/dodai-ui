@@ -234,7 +234,7 @@ check-publish: _check-nu
 
 # Every crate group publishes on its own, in this order where they depend on each other:
 #   fx, frost, icons -> core -> adapters           (the first release: `publish`)
-#   shaders, charts, instruments                   (held back; each needs core, and gpui-* needs gpui)
+#   shaders, charts, instruments                   (held back; each needs core; shaders' `gpui` feature needs dodai-gpui, so publish it after the adapters)
 # A group's dependencies must already be on crates.io; wait ~30 s between groups for the index.
 
 # Publish fx
@@ -273,12 +273,10 @@ publish-core-dry: check-all
 # Publish shaders
 publish-shaders: check-all
     cargo publish -p dodai-shaders
-    cargo publish -p dodai-gpui-shaders
 
 # Dry-run shaders
 publish-shaders-dry: check-all
     cargo publish --dry-run -p dodai-shaders
-    cargo publish --dry-run -p dodai-gpui-shaders
 
 # Publish charts
 publish-charts: check-all
