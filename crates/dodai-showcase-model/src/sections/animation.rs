@@ -36,12 +36,12 @@ const EASINGS: [Ease; 12] = [
         text: "Fades in while dropping down 14 px. Ease-in-out accelerates, then decelerates; good for menus and toasts.",
     },
     Ease {
-        title: "Slide left",
+        title: "Slide from left",
         easing: Easing::CubicBezier(0.7, 0.0, 0.3, 1.0),
         text: "Fades in sliding from the left. A strong ease-in-out (.7,0,.3,1) feels deliberate; fits sidebars and drawers.",
     },
     Ease {
-        title: "Slide right",
+        title: "Slide from right",
         easing: Easing::EaseIn,
         text: "Fades in sliding from the right. Ease-in starts slowly and finishes fast; use for trailing panels.",
     },
@@ -88,7 +88,7 @@ macro_rules! ease_section {
     };
 }
 
-pub(crate) const SECTIONS: [Section; 13] = [
+pub(crate) const SECTIONS: [Section; 14] = [
     ease_section!(0),
     ease_section!(1),
     ease_section!(2),
@@ -102,7 +102,55 @@ pub(crate) const SECTIONS: [Section; 13] = [
     ease_section!(10),
     ease_section!(11),
     Section::new(CAT, "Dynamics · physics models", physics),
+    Section::new(CAT, "Dynamics · one-shot mixins", mixins),
 ];
+
+/// The one-shot mixins at rest: a card per clip with its note and a play button.
+fn mixins(c: &Ctx) -> Node {
+    let t = c.theme;
+    let p = &t.palette;
+    let card = |name: &str, note: &str| {
+        let spacer = Node::Block {
+            w: 170.0,
+            h: 90.0,
+            fill: dodai_core::Color::rgba(0, 0, 0, 0),
+            border: None,
+            radius: 0.0,
+            label: None,
+        };
+        let chip = Node::Block {
+            w: 0.0,
+            h: 0.0,
+            fill: p.surface_raised,
+            border: Some(p.border),
+            radius: t.shape.radius.min(10.0),
+            label: Some(name.into()),
+        };
+        tile(
+            170.0,
+            vec![
+                Node::Overlay(vec![spacer, chip]),
+                muted(note),
+                button("Play", dodai_core::ButtonVariant::Primary).node(),
+            ],
+        )
+        .gap(crate::node::Gap::Px(8.0))
+    };
+    col(vec![
+        muted(format!(
+            "Personality: {} (from the active theme's motion). Each mixin is a Clip<Pose>; the adapter only applies dx, dy, opacity and glow.",
+            t.motion.personality.label()
+        )),
+        row(vec![
+            card("Shake", "invalid input"),
+            card("Nudge", "gentle tap"),
+            card("Attention bounce", "look at me"),
+            card("Flash on change", "value changed"),
+            card("Pop in", "springy appear"),
+        ])
+        .start(),
+    ])
+}
 
 fn ease(c: &Ctx, i: usize) -> Node {
     let e = &EASINGS[i];
