@@ -15,6 +15,7 @@
 //! ```
 
 pub mod chart_style;
+pub mod clock_math;
 mod color;
 mod component;
 mod crop;

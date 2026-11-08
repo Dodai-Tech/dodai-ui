@@ -1,29 +1,34 @@
 //! Data display: tags, chips, lists, rating, timeline, tooltips, tables, code, progress.
 
-use dodai_core::{CardVariant, Tone};
+use dodai_core::Tone;
 use dodai_icons::IconId;
 
 use crate::b::*;
 use crate::catalog::{Ctx, Section};
-use crate::node::{Bind, Node, TextRole, TimelineEvent};
+use crate::node::{Align, Bind, Column, Font, Gap, Ink, Node, Table, TimelineEvent};
 
 const CAT: &str = "Data display";
 
-pub(crate) const SECTIONS: [Section; 14] = [
-    Section::new(CAT, "Tags", tags),
+pub(crate) const SECTIONS: [Section; 13] = [
+    Section::new(CAT, "Tags · Chips · Badges", tags).heading("Tags"),
     Section::new(CAT, "List items · Chips", lists_chips),
-    Section::new(CAT, "Rating · Stepper · Badges · Tooltips", misc),
+    Section::new(CAT, "Badges · Rating · Tooltips", misc)
+        .heading("Rating · Stepper · Badges · Tooltips"),
     Section::new(CAT, "List · Divider", list_divider),
-    Section::new(CAT, "Timeline · empty state", timeline),
-    Section::new(CAT, "Tooltip", tooltip),
-    Section::new(CAT, "Data table", table),
-    Section::new(CAT, "Code block · Markdown", code),
-    Section::new(CAT, "Image · Avatar group", avatars),
+    Section::new(CAT, "Timeline · Empty state", timeline).heading("Timeline · empty state"),
+    Section::new(CAT, "Tooltip · Rich tooltip", tooltip).heading("Tooltip"),
+    Section::new(
+        CAT,
+        "Data table · sort filter select resize virtual scroll",
+        table,
+    )
+    .heading("Data table"),
+    Section::new(CAT, "Code block · Markdown · rich text", code).heading("Code block · Markdown"),
+    Section::new(CAT, "Image · media · Avatar group", images).heading("Image · Avatar group"),
     Section::new(CAT, "Circular progress · Banner", progress_banner),
-    Section::new(CAT, "Cards", cards),
     Section::new(CAT, "Clock · Timer", clock),
     Section::new(CAT, "Stopwatch · Tap tempo", stopwatch),
-    Section::new(CAT, "Scroll area", scroll_area),
+    Section::new(CAT, "Scroll area · styled scrollbar", scroll_area).heading("Scroll area"),
 ];
 
 const TONES: [(&str, Tone); 4] = [
@@ -33,6 +38,12 @@ const TONES: [(&str, Tone); 4] = [
     ("info", Tone::Info),
 ];
 
+/// The picture the image demos show.
+pub(crate) const SAMPLE_IMAGE: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../dodai-showcase/assets/sample.png"
+);
+
 fn tags(_: &Ctx) -> Node {
     let mut v: Vec<Node> = TONES.iter().map(|(l, t)| tag(*l, *t, true)).collect();
     v.extend(TONES.iter().map(|(l, t)| tag(*l, *t, false)));
@@ -40,42 +51,51 @@ fn tags(_: &Ctx) -> Node {
 }
 
 fn lists_chips(_: &Ctx) -> Node {
-    let chip = |label: &str, key: &str, on: bool, icon: Option<IconId>| Node::Chip {
-        label: label.into(),
-        bind: Bind::new(key, on),
-        icon,
-    };
     col(vec![
-        muted("One line"),
-        Node::List(vec![list_row("Inbox").icon(IconId::Home)]),
-        muted("Two lines · trailing text"),
-        Node::List(vec![list_row("Weekly digest")
-            .detail("Everything that changed this week")
-            .trailing("10:24")
-            .avatar("WD")]),
-        muted("Three lines"),
-        Node::List(vec![list_row("Design review")
-            .overline("Tomorrow")
-            .detail("Bring the colour schemes and the new app bars")
-            .icon(IconId::Heart)]),
+        col(vec![
+            muted("One line"),
+            Node::List(vec![list_row("Inbox").icon(IconId::Home)]),
+            muted("Two lines · trailing text"),
+            Node::List(vec![list_row("Weekly digest")
+                .detail("Everything that changed this week")
+                .trailing("10:24")
+                .avatar("WD")]),
+            muted("Three lines"),
+            Node::List(vec![list_row("Design review")
+                .overline("Tomorrow")
+                .detail("Bring the colour schemes and the new app bars")
+                .icon(IconId::Heart)]),
+        ])
+        .gap(Gap::Px(0.0)),
         row(vec![
-            chip("Assist", "chip-assist", false, Some(IconId::Edit)),
-            chip("Filter", "chip-off", false, None),
-            chip("Filter", "chip-on", true, None),
-            chip("Input", "chip-input", false, Some(IconId::Heart)),
-            chip("Suggestion", "chip-sugg", false, None),
+            chip("Assist", "chip-assist", false)
+                .icon(IconId::Edit)
+                .node(),
+            chip("Elevated", "chip-elevated", false)
+                .icon(IconId::Edit)
+                .elevated()
+                .node(),
+            chip("Filter", "chip-off", false).filter().node(),
+            chip("Filter", "chip-on", true).filter().node(),
+            chip("Input", "chip-input", false)
+                .icon(IconId::Heart)
+                .removable()
+                .node(),
+            chip("Suggestion", "chip-sugg", false).node(),
         ]),
     ])
 }
 
-fn misc(_: &Ctx) -> Node {
+/// A link-coloured hover target.
+fn link(s: &str, size: f32) -> Node {
+    styled(s, size, Font::Body, Ink::Link)
+}
+
+fn misc(c: &Ctx) -> Node {
     row(vec![
         Node::Rating { value: 3.5, max: 5 },
-        Node::Stepper(Bind::new("stepper", 3)),
-        Node::Tooltip {
-            text: "Rich tooltip".into(),
-            rich: true,
-        },
+        Node::Stepper(Bind::new("stepper", 5)),
+        link("Hover (rich)", c.theme.typography.size_md),
         Node::Badged {
             icon: IconId::Bell,
             count: Some((12, Tone::Danger)),
@@ -91,14 +111,13 @@ fn misc(_: &Ctx) -> Node {
 
 fn list_divider(_: &Ctx) -> Node {
     col(vec![
-        Node::List(
-            ["Inbox", "Drafts", "Sent", "Archive"]
-                .into_iter()
-                .map(list_row)
-                .collect(),
-        ),
+        Node::Pick {
+            bind: Bind::new("list-pick", 0),
+            items: ["Inbox", "Drafts", "Sent", "Archive"]
+                .map(String::from)
+                .to_vec(),
+        },
         Node::Divider,
-        muted("Below the divider"),
     ])
 }
 
@@ -109,133 +128,214 @@ fn timeline(_: &Ctx) -> Node {
         detail: detail.map(str::to_string),
         tone,
     };
-    col(vec![
-        Node::Timeline(vec![
-            ev("Charts added", "today", None, Some(Tone::Success)),
-            ev("Search view", "today", Some("fuzzy + highlight"), None),
-            ev("Build failed", "earlier", None, Some(Tone::Danger)),
-        ]),
+    row(vec![
+        tile(
+            220.0,
+            vec![Node::Timeline(vec![
+                ev("Charts added", "today", None, Some(Tone::Success)),
+                ev("Search view", "today", Some("fuzzy + highlight"), None),
+                ev("Build failed", "earlier", None, Some(Tone::Danger)),
+            ])],
+        ),
         Node::Empty {
-            title: "Nothing here yet".into(),
-            detail: "Items you add will show up in this list.".into(),
+            icon: "∅".into(),
+            title: "Nothing here".into(),
+            detail: "Add something to get started.".into(),
         },
     ])
 }
 
-fn tooltip(_: &Ctx) -> Node {
-    row(vec![
+fn tooltip(c: &Ctx) -> Node {
+    col(vec![
+        link("Hover me", c.theme.typography.size_md),
         Node::Tooltip {
             text: "Plain tooltip".into(),
             rich: false,
+            title: None,
+            action: None,
         },
         Node::Tooltip {
-            text: "Title, body and an action.".into(),
+            text: "Supporting text, 12 px corners, elevation 2.".into(),
             rich: true,
+            title: Some("Rich tooltip".into()),
+            action: Some("Learn more".into()),
         },
     ])
 }
 
-fn table(_: &Ctx) -> Node {
-    let r = |a: &str, b: &str, c: &str, d: &str| vec![a.into(), b.into(), c.into(), d.into()];
-    Node::Table {
-        columns: ["Name", "Role", "Status", "Load"]
-            .map(String::from)
-            .to_vec(),
-        rows: vec![
-            r("Ada Lovelace", "Engineer", "Online", "72%"),
-            r("Grace Hopper", "Admiral", "Away", "41%"),
-            r("Alan Turing", "Researcher", "Online", "88%"),
-            r("Linus Torvalds", "Maintainer", "Offline", "13%"),
-            r("Margaret Hamilton", "Lead", "Online", "57%"),
-        ],
-    }
+/// Key of the data table's filter field.
+const TABLE_FILTER: &str = "dt-filter";
+
+/// The 300 demo rows of the data table (as the gpui showcase builds them).
+pub(crate) fn table_rows() -> Vec<Vec<String>> {
+    let roles = ["Engineer", "Designer", "Analyst", "Manager"];
+    let regions = ["EMEA", "APAC", "AMER"];
+    (0..300)
+        .map(|i| {
+            vec![
+                format!("User {:03}", (i * 37) % 300),
+                roles[i % 4].to_string(),
+                regions[(i / 3) % 3].to_string(),
+                format!("{}", (i * 7919) % 1000),
+            ]
+        })
+        .collect()
 }
 
-fn code(_: &Ctx) -> Node {
+/// The rows any of whose cells contain `query` (case-insensitive; empty keeps all).
+pub(crate) fn filter_rows(rows: Vec<Vec<String>>, query: &str) -> Vec<Vec<String>> {
+    let q = query.trim().to_lowercase();
+    if q.is_empty() {
+        return rows;
+    }
+    rows.into_iter()
+        .filter(|r| r.iter().any(|c| c.to_lowercase().contains(&q)))
+        .collect()
+}
+
+fn table(c: &Ctx) -> Node {
+    let filter = Bind::new(TABLE_FILTER, String::new());
+    let query = c.values.text(&filter).to_string();
+    let column = |title: &str, width: f32, align: Align| Column {
+        title: title.into(),
+        width: Some(width),
+        align,
+    };
     col(vec![
-        Node::Code("fn main() {\n    println!(\"hello, dodai\");\n}".into()),
-        text(
-            "Markdown renders **bold**, _italic_ and `code` inline.",
-            TextRole::Body,
-        ),
+        row(vec![
+            input(TABLE_FILTER, "Filter rows…").node(),
+            muted("click a header to sort · drag a column edge · click rows to select"),
+        ]),
+        Node::Table(Table {
+            columns: vec![
+                column("Name", 160.0, Align::Left),
+                column("Role", 140.0, Align::Left),
+                column("Region", 110.0, Align::Left),
+                column("Score", 100.0, Align::Right),
+            ],
+            rows: filter_rows(table_rows(), &query),
+            height: Some(260.0),
+        }),
     ])
 }
 
-fn avatars(_: &Ctx) -> Node {
-    row(["AL", "GH", "AT", "LT", "MH"]
-        .map(|s| Node::Avatar(s.into()))
-        .to_vec())
+const CODE: &str = "use std::collections::HashMap;\n\n/// Count words.\nfn count(text: &str) -> HashMap<String, usize> {\n    let mut m = HashMap::new();\n    for w in text.split_whitespace() {\n        *m.entry(w.to_lowercase()).or_insert(0) += 1;\n    }\n    m // 42 buckets max\n}";
+
+const MARKDOWN: &str = "# Markdown\n\nSupports **bold**, *italic*, `inline code` and [links](https://example.com).\n\n- headings and paragraphs\n- nested lists\n  - indent two spaces\n    1. numbered inside\n    2. restarts per level\n- fenced code and tables\n\n| Token | Value | Note |\n|:--|--:|:-:|\n| radius | 12 | rounded |\n| chamfer | 0 | none |\n\n> quotes read muted\n\n```rust\nfn main() {\n    let n: u32 = 42; // answer\n    println!(\"{n}\");\n}\n```";
+
+fn code(c: &Ctx) -> Node {
+    col(vec![
+        Node::Code {
+            text: CODE.into(),
+            lang: "rust".into(),
+        },
+        crate::md::document(c.theme, MARKDOWN),
+    ])
+}
+
+fn images(_: &Ctx) -> Node {
+    let image = |w: f32, h: f32, video: bool, contain: bool, caption: &str| Node::Image {
+        src: Some(SAMPLE_IMAGE.into()),
+        video,
+        contain,
+        w,
+        h,
+        caption: Some(caption.into()),
+        on_image: false,
+    };
+    let group = |names: &[&str], max: Option<usize>, size: f32| Node::AvatarGroup {
+        names: names.iter().map(|s| s.to_string()).collect(),
+        max,
+        size,
+    };
+    col(vec![
+        row(vec![
+            image(260.0, 160.0, false, false, "Image (cover)"),
+            image(260.0, 160.0, true, false, "Video poster"),
+            image(160.0, 160.0, false, true, "Contain"),
+        ])
+        .start(),
+        row(vec![
+            group(&["AL", "BK", "CM", "DN"], None, 40.0),
+            group(&["AL", "BK", "CM", "DN", "EO", "FP", "GQ"], Some(4), 40.0),
+            group(&["AL", "BK", "CM", "DN", "EO"], Some(3), 28.0),
+        ]),
+    ])
 }
 
 fn progress_banner(_: &Ctx) -> Node {
-    col(vec![
-        row(vec![Node::Spinner(32.0), Node::Spinner(48.0)]),
-        Node::Alert {
-            tone: Tone::Info,
-            text: "A new version is available.".into(),
-            banner: true,
-        },
-        Node::Alert {
-            tone: Tone::Danger,
-            text: "Could not reach the server.".into(),
-            banner: true,
-        },
-    ])
-}
-
-fn cards(_: &Ctx) -> Node {
-    let card = |title: &str, variant| Node::Card {
-        title: title.into(),
-        body: Box::new(muted("Supporting text of the card.")),
-        variant,
+    let ring = |value: Option<f32>, tone: Option<Tone>, size: f32, thickness: f32, wavy: bool| {
+        Node::Ring {
+            value,
+            tone,
+            size,
+            thickness,
+            wavy,
+        }
     };
-    row(vec![
-        card("Elevated", CardVariant::Elevated),
-        card("Filled", CardVariant::Filled),
-        card("Outlined", CardVariant::Outlined),
+    let banner = |tone, text: &str, action: Option<&str>, dismissible| Node::Alert {
+        tone,
+        text: text.into(),
+        banner: true,
+        action: action.map(str::to_string),
+        dismissible,
+    };
+    col(vec![
+        row(vec![
+            ring(Some(0.25), None, 48.0, 4.0, false),
+            ring(Some(0.72), Some(Tone::Success), 72.0, 7.0, false),
+            ring(Some(1.0), Some(Tone::Info), 40.0, 4.0, false),
+            ring(None, None, 48.0, 4.0, false),
+            ring(Some(0.6), None, 64.0, 4.0, true),
+            ring(None, None, 64.0, 4.0, true),
+        ]),
+        banner(
+            Tone::Info,
+            "A new version is available.",
+            Some("Update"),
+            true,
+        ),
+        banner(Tone::Warning, "Your trial ends in 3 days.", None, true),
+        banner(Tone::Danger, "Connection lost. Retrying…", None, false),
     ])
 }
 
 fn clock(_: &Ctx) -> Node {
-    row(vec![
-        text(
-            "14:32:07",
-            TextRole::Type(dodai_core::TypeRole::DisplaySmall),
-        ),
-        Node::Tag {
-            label: "UTC+1".into(),
-            tone: Tone::Info,
-            solid: false,
-        },
-        text(
-            "04:59",
-            TextRole::Type(dodai_core::TypeRole::HeadlineMedium),
-        ),
-        muted("timer"),
-    ])
+    row(vec![Node::Clock, Node::Timer { minutes: 1 }])
 }
 
-fn stopwatch(c: &Ctx) -> Node {
-    let taps = c.values.index_of("tap-tempo", 0);
-    row(vec![
-        text(
-            "00:12.4",
-            TextRole::Type(dodai_core::TypeRole::DisplaySmall),
-        ),
-        button("Start", dodai_core::ButtonVariant::Primary).node(),
-        button("Lap", dodai_core::ButtonVariant::Outline).node(),
-        button("Tap", dodai_core::ButtonVariant::Secondary)
-            .counter("tap-tempo")
-            .node(),
-        muted(format!("{taps} taps")),
-    ])
+fn stopwatch(_: &Ctx) -> Node {
+    row(vec![Node::Stopwatch, Node::TapTempo])
 }
 
 fn scroll_area(_: &Ctx) -> Node {
     scroll(
         200.0,
         col((1..=40)
-            .map(|i| body(format!("Row {i} · drag the thumb or use the wheel")))
-            .collect()),
+            .map(|i| label(format!("Row {i} · drag the thumb or use the wheel")))
+            .collect())
+        .gap(Gap::Px(8.0)),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_table_has_300_rows_and_the_filter_narrows_them() {
+        let rows = table_rows();
+        assert_eq!(rows.len(), 300);
+        assert_eq!(rows[1][0], "User 037");
+        let hits = filter_rows(rows.clone(), "  apac ");
+        assert!(!hits.is_empty() && hits.len() < 300);
+        assert!(hits.iter().all(|r| r[2] == "APAC"));
+        assert_eq!(filter_rows(rows.clone(), "").len(), 300);
+        assert!(filter_rows(rows, "nobody").is_empty());
+    }
+
+    #[test]
+    fn the_sample_picture_is_there() {
+        assert!(std::path::Path::new(SAMPLE_IMAGE).exists());
+    }
 }

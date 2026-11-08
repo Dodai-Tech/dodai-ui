@@ -12,6 +12,7 @@
 //! Nothing here depends on a toolkit.
 
 pub mod catalog;
+pub mod md;
 pub mod node;
 pub mod plot;
 mod sections;
