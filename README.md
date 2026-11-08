@@ -127,7 +127,7 @@ The pack (`dodai_icons::cyberpunk`, feature `cyberpunk`) has 378 icons in 7 grou
 
 ## gpui features
 
-`dodai-gpui` features (all default, all additive): `components`, `shaders`, `frost`, `cyberpunk`
+`dodai-gpui` features (all default, all additive): `components`, `frost`, `cyberpunk`
 (the stroked icon pack), `material` (the Material Symbols icons). Charts and instruments are their
 own crates (`dodai-gpui-charts`, `dodai-gpui-instruments`); they use `dodai-gpui` without
 components, so charts alone pull no buttons, tables or icons.
@@ -164,8 +164,8 @@ and `Oscilloscope`, `Spectrum`, `RadarScope`, `HexMap`, `RingStack`, `DotMatrix`
 
 `dodai-shaders` is a dependency-free set of per-pixel shaders written as plain Rust functions
 (generators like `neon_grid`, `glow_waves`, `digital_rain`, `platformer`, post effects like `crt`, `vhs`,
-`gameboy`), drawn from the active theme's palette. In gpui: `ShaderView::new("id", "neon_grid").fx("crt")`
-(feature `shaders`). Demo of everything: the *Shaders* category of the showcase (`just run-gpui`); `just dump-shaders` renders image files.
+`gameboy`), drawn from the active theme's palette. In gpui: `dodai_gpui_shaders::ShaderView::new("id", "neon_grid").fx("crt")`
+(crate `dodai-gpui-shaders`). Demo of everything: the *Shaders* category of the showcase (`just run-gpui`); `just dump-shaders` renders image files.
 
 ## Adding a theme
 

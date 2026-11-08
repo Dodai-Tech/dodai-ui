@@ -26,7 +26,6 @@ fn setup(cx: &mut gpui::App) {
 | Feature | Adds |
 |---|---|
 | `components` | Buttons, inputs, tables, dialogs, pickers, navigation, … |
-| `shaders` | GPU pixel shaders as `ShaderView` |
 | `frost` | Frosted glass: on any component (`SurfaceFx::frost` for every container, `Surface::new().frost(1.0)` per component) over the backdrop or a wallpaper (`set_wallpaper`), and `FrostedScene` over a picture; blurred off the UI thread via `dodai-frost` (GPU first); on with `dodai` |
 | `cyberpunk` / `material` / `neobrutalism` / `dodai` | The design itself, re-exported as `dodai_gpui::<design>` (`light()`, `dark()`, …), plus its icon pack and design-only widgets |
 | `symbols` | Material Symbols glyphs (enabled by `material` and `dodai`) |

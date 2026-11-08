@@ -30,15 +30,15 @@ impl Showcase {
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let col = || div().flex().flex_col().gap(gap);
         {
-            use dodai_gpui::dodai_shaders::{catalog, Kind};
-            use dodai_gpui::{PaletteSource, ShaderView};
+            use dodai_gpui_shaders::{PaletteSource, ShaderView};
+            use dodai_shaders::{catalog, Kind};
             let pal_src = if self.sh_theme {
                 PaletteSource::Theme
             } else {
                 PaletteSource::Family
             };
             let card = |id: String,
-                        shader: &'static dodai_gpui::dodai_shaders::ShaderInfo,
+                        shader: &'static dodai_shaders::ShaderInfo,
                         fx: bool,
                         overlay: bool| {
                 let view = if fx {
@@ -101,7 +101,7 @@ impl Showcase {
                     })
                     .child(
                         row().child(Mono::new(shader.name)).children(
-                            dodai_gpui::dodai_shaders::groups::is_featured(shader)
+                            dodai_shaders::groups::is_featured(shader)
                                 .then(|| Tag::new("featured", Tone::Success)),
                         ),
                     )
@@ -118,10 +118,10 @@ impl Showcase {
                 .iter()
                 .filter(|s| matches!(s.kind, Kind::PostFx))
                 .collect();
-            let opt_label = |s: &dodai_gpui::dodai_shaders::ShaderInfo| {
+            let opt_label = |s: &dodai_shaders::ShaderInfo| {
                 format!(
                     "{} · {}",
-                    dodai_gpui::dodai_shaders::groups::group(s).unwrap_or_else(|| s.family.name()),
+                    dodai_shaders::groups::group(s).unwrap_or_else(|| s.family.name()),
                     s.name
                 )
             };
@@ -183,7 +183,7 @@ impl Showcase {
             ));
             for (ci, id) in self.sh_fx.iter().enumerate() {
                 let (id, m) = (*id, me_p.clone());
-                let name = dodai_gpui::dodai_shaders::by_id(id).map_or(id, |s| s.name);
+                let name = dodai_shaders::by_id(id).map_or(id, |s| s.name);
                 chain_row = chain_row.child(Muted::new("→")).child(
                     Button::new(("shx", ci), format!("{name} ✕"))
                         .variant(ButtonVariant::Outline)
@@ -284,7 +284,7 @@ impl Showcase {
                 section!("Shader playground")
                     .child(Muted::new(format!(
                         "Shaders written in Rust (`dodai-shaders`), rendered on: {}. Pick a source, stack effects.",
-                        dodai_gpui::shader_backend()
+                        dodai_gpui_shaders::shader_backend()
                     )))
                     .child(gen_row)
                     .child(fx_row)
@@ -295,7 +295,7 @@ impl Showcase {
                 "Shader playground",
             ));
             // By what they look like: every source group, then every effect group.
-            use dodai_gpui::dodai_shaders::groups::{in_group, EFFECT_GROUPS, SOURCE_GROUPS};
+            use dodai_shaders::groups::{in_group, EFFECT_GROUPS, SOURCE_GROUPS};
             for (names, fx) in [(&SOURCE_GROUPS[..], false), (&EFFECT_GROUPS[..], true)] {
                 for name in names {
                     let mut grid = row().items_start();
@@ -317,27 +317,12 @@ impl Showcase {
             }
             // Ready-made chains.
             for (title, list) in [
-                (
-                    "Retro terminals presets",
-                    dodai_gpui::dodai_shaders::presets::RETRO,
-                ),
-                (
-                    "Ghostty presets",
-                    dodai_gpui::dodai_shaders::presets::GHOSTTY,
-                ),
-                (
-                    "Blade Runner presets",
-                    dodai_gpui::dodai_shaders::presets::BLADE,
-                ),
-                ("Ghibli presets", dodai_gpui::dodai_shaders::presets::GHIBLI),
-                (
-                    "DMT Hyperspace presets",
-                    dodai_gpui::dodai_shaders::presets::DMT,
-                ),
-                (
-                    "Pixel art presets",
-                    dodai_gpui::dodai_shaders::presets::PIXEL,
-                ),
+                ("Retro terminals presets", dodai_shaders::presets::RETRO),
+                ("Ghostty presets", dodai_shaders::presets::GHOSTTY),
+                ("Blade Runner presets", dodai_shaders::presets::BLADE),
+                ("Ghibli presets", dodai_shaders::presets::GHIBLI),
+                ("DMT Hyperspace presets", dodai_shaders::presets::DMT),
+                ("Pixel art presets", dodai_shaders::presets::PIXEL),
             ] {
                 let cats: &[&'static str] = &["Shaders"];
                 for cat in cats {

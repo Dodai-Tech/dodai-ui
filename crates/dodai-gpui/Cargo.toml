@@ -12,11 +12,9 @@ keywords     = ["theme", "design-system", "gpui", "cyberpunk"]
 categories   = ["gui"]
 
 [features]
-default    = ["components", "shaders", "cyberpunk", "material", "neobrutalism", "dodai", "symbol-groups"]
+default    = ["components", "cyberpunk", "material", "neobrutalism", "dodai", "symbol-groups"]
 # Buttons, tables, dialogs, pickers, navigation, ...
 components = ["dep:dodai-icons"]
-# GPU pixel shaders (cyberpunk, Material 3, Matrix, CRT, pixel art, ...) as `ShaderView`.
-shaders    = ["dep:dodai-shaders", "dep:image"]
 # The Cyberpunk design (its stroked icon pack ships with `components`, which needs the pack's
 # `IconName` list). Designs without their own pack draw the shared outline set.
 cyberpunk = ["dodai-core/cyberpunk"]
@@ -52,7 +50,6 @@ gpui = { workspace = true }
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 # Already in gpui's tree: tessellate icons once and replay the triangles each frame.
 lyon_tessellation = "1"
-dodai-shaders = { workspace = true, optional = true }
 image = { version = "0.25", default-features = false, optional = true }
 
 [dev-dependencies]

@@ -15,8 +15,10 @@ path = "src/main.rs"
 
 [dependencies]
 dodai-core = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "dodai"] }
-dodai-gpui = { workspace = true, features = ["components", "shaders", "cyberpunk", "material", "neobrutalism", "dodai", "symbol-groups"] }
+dodai-gpui = { workspace = true, features = ["components", "cyberpunk", "material", "neobrutalism", "dodai", "symbol-groups"] }
 dodai-gpui-charts = { workspace = true }
+dodai-gpui-shaders = { workspace = true }
+dodai-shaders = { workspace = true }
 dodai-gpui-instruments = { workspace = true }
 dodai-icons = { workspace = true, features = ["theme", "cyberpunk", "material", "neobrutalism", "symbols"] }
 gpui = { workspace = true }

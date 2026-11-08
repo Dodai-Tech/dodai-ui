@@ -160,8 +160,8 @@ const FILES: &[(&str, &str)] = &[
         include_str!("../../dodai-gpui/src/select.rs"),
     ),
     (
-        "dodai-gpui/src/shader_view.rs",
-        include_str!("../../dodai-gpui/src/shader_view.rs"),
+        "dodai-gpui-shaders/src/lib.rs",
+        include_str!("../../dodai-gpui-shaders/src/lib.rs"),
     ),
     (
         "dodai-gpui/src/sheets.rs",
