@@ -345,6 +345,18 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                 e.entry::<UiKnob>().and_modify(|mut k| k.disabled = true);
             }
         }
+        Demo::Plot(pl) => {
+            let lines = pl
+                .lines
+                .iter()
+                .map(|l| PlotLine {
+                    color: color(l.color),
+                    width: l.width,
+                    points: l.points.iter().map(|(x, y)| Vec2::new(*x, *y)).collect(),
+                })
+                .collect();
+            p.spawn(plot(pl.w, pl.h, lines));
+        }
         Demo::Slider(s) if s.vertical => {
             p.spawn((
                 vertical_slider(vals.num(&s.bind), s.min, s.max, 120.0),

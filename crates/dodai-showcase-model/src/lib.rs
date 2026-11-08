@@ -13,6 +13,7 @@
 
 pub mod catalog;
 pub mod node;
+pub mod plot;
 mod sections;
 pub mod state;
 

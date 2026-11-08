@@ -25,6 +25,40 @@ pub struct Cx<'a> {
     pub tree_toggled: &'a HashSet<String>,
 }
 
+/// A model plot drawn as stroked polylines.
+struct PlotView(dodai_showcase_model::plot::Plot);
+
+impl<M> iced::widget::canvas::Program<M> for PlotView {
+    type State = ();
+
+    fn draw(
+        &self,
+        _: &(),
+        renderer: &iced::Renderer,
+        _: &iced::Theme,
+        bounds: iced::Rectangle,
+        _: iced::mouse::Cursor,
+    ) -> Vec<iced::widget::canvas::Geometry> {
+        use iced::widget::canvas::{Frame, Path, Stroke};
+        let mut frame = Frame::new(renderer, bounds.size());
+        for l in &self.0.lines {
+            let mut pts = l.points.iter().map(|(x, y)| iced::Point::new(*x, *y));
+            let Some(first) = pts.next() else { continue };
+            let path = Path::new(|b| {
+                b.move_to(first);
+                pts.for_each(|p| b.line_to(p));
+            });
+            frame.stroke(
+                &path,
+                Stroke::default()
+                    .with_color(dodai_iced::color(l.color))
+                    .with_width(l.width),
+            );
+        }
+        vec![frame.into_geometry()]
+    }
+}
+
 /// Snap `v` to multiples of `step` within `min..=max`.
 pub fn snap(v: f32, min: f32, max: f32, step: Option<f32>) -> f32 {
     let v = v.clamp(min, max);
@@ -306,6 +340,10 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
                 Msg::Set(key.clone(), Value::Num(x))
             })
         }
+        Demo::Plot(p) => iced::widget::canvas(PlotView(p.clone()))
+            .width(p.w)
+            .height(p.h)
+            .into(),
         Demo::Scroll { height, body } => {
             scrollable(container(view(body, cx)).padding(sp.sm).width(Length::Fill))
                 .height(Length::Fixed(*height))
