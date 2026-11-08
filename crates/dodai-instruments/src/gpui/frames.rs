@@ -1,0 +1,702 @@
+//! The frames and parts of the [`Look::Vintage`], [`Look::Segment`] and [`Look::Halo`]
+//! instruments: a screwed plate with a round bezel and spade hands, an LCD module with segment
+//! bars, and a halo of light with gradient arcs and glowing tips. Pure geometry returns points;
+//! the painters take every colour from an [`Ink`].
+//!
+//! [`Look::Vintage`]: crate::gpui::look::Look::Vintage
+//! [`Look::Segment`]: crate::gpui::look::Look::Segment
+//! [`Look::Halo`]: crate::gpui::look::Look::Halo
+
+use crate::gpui::draw::{polar, turn_arc};
+use crate::gpui::shapes::{band, chamfered, dir, Ink};
+use dodai_gpui::motion::mix;
+use dodai_gpui::paint::{fill, fill_circle, scale_alpha, stroke, stroke_circle};
+use gpui::{Hsla, ParentElement, Pixels, Point, Styled, Window};
+
+// ───────────────────────────────── Vintage ─────────────────────────────────
+
+/// The warm face of a vintage dial: the theme's raised surface, aged slightly towards the
+/// warning colour.
+pub(crate) fn aged(ink: Ink) -> Hsla {
+    mix(ink.face, ink.warn, 0.06)
+}
+
+/// Paint the vintage plate for a square of `s`: a bevelled panel, four slotted screws, a round
+/// polished bezel and the aged, brushed face. Returns the face radius around the centre.
+pub(crate) fn plate(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> f32 {
+    let c = s / 2.0;
+    let panel = chamfered(0.0, 0.0, s, s, s * 0.03);
+    fill(w, o, &panel, ink.face);
+    fill(w, o, &panel, scale_alpha(ink.text, 0.06));
+    // Bevel: light on the top and left edge, shade on the bottom and right.
+    let e = s * 0.006;
+    stroke(
+        w,
+        o,
+        &[
+            (e, s - s * 0.03),
+            (e, s * 0.03),
+            (s * 0.03, e),
+            (s - s * 0.03, e),
+        ],
+        s * 0.008,
+        scale_alpha(ink.text, 0.22),
+        false,
+    );
+    stroke(
+        w,
+        o,
+        &[
+            (s - e, s * 0.03),
+            (s - e, s - s * 0.03),
+            (s - s * 0.03, s - e),
+            (s * 0.03, s - e),
+        ],
+        s * 0.008,
+        scale_alpha(ink.line, 0.9),
+        false,
+    );
+    for (i, (x, y)) in [
+        (s * 0.075, s * 0.075),
+        (s - s * 0.075, s * 0.075),
+        (s * 0.075, s - s * 0.075),
+        (s - s * 0.075, s - s * 0.075),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        screw(w, o, (x, y), s * 0.022, 0.1 + i as f32 * 0.17, ink);
+    }
+    let r_bezel = c - s * 0.06;
+    let r_face = r_bezel - s * 0.04;
+    // Polished bezel: a band with a highlight on the upper left and a shade on the lower right.
+    fill(
+        w,
+        o,
+        &band(c, c, r_face, r_bezel, 0.0, 1.0),
+        scale_alpha(ink.text, 0.14),
+    );
+    stroke(
+        w,
+        o,
+        &turn_arc(c, c, r_bezel - s * 0.012, 0.72, 1.02),
+        s * 0.008,
+        scale_alpha(ink.text, 0.22),
+        false,
+    );
+    stroke(
+        w,
+        o,
+        &turn_arc(c, c, r_bezel - s * 0.012, 0.22, 0.52),
+        s * 0.008,
+        scale_alpha(ink.line, 0.6),
+        false,
+    );
+    let hair = (s * 0.0025).max(0.5);
+    stroke_circle(
+        w,
+        o,
+        (c, c),
+        r_bezel,
+        hair * 1.4,
+        scale_alpha(ink.text, 0.5),
+    );
+    stroke_circle(
+        w,
+        o,
+        (c, c),
+        r_bezel - s * 0.025,
+        hair,
+        scale_alpha(ink.text, 0.2),
+    );
+    fill_circle(w, o, (c, c), r_face, aged(ink));
+    crate::gpui::draw::sunburst(w, o, (c, c), r_face, ink.text);
+    stroke_circle(w, o, (c, c), r_face, hair, scale_alpha(ink.text, 0.35));
+    r_face
+}
+
+/// A slotted screw head at `at`, radius `r`, its slot turned by `turn`.
+pub(crate) fn screw(w: &mut Window, o: Point<Pixels>, at: (f32, f32), r: f32, turn: f32, ink: Ink) {
+    let (x, y) = at;
+    fill_circle(w, o, (x, y), r, scale_alpha(ink.text, 0.18));
+    stroke_circle(w, o, (x, y), r, r * 0.18, ink.line);
+    let (dx, dy) = dir(turn);
+    stroke(
+        w,
+        o,
+        &[
+            (x - dx * r * 0.75, y - dy * r * 0.75),
+            (x + dx * r * 0.75, y + dy * r * 0.75),
+        ],
+        r * 0.28,
+        scale_alpha(ink.text, 0.55),
+        false,
+    );
+}
+
+/// The parts of a spade (Breguet-like) hand from `(cx, cy)` at `turn`, `len` long: the shaft as a
+/// polyline, the open ring near the tip as its centre and radius, and the spear tip polygon.
+pub(crate) fn spade(cx: f32, cy: f32, turn: f32, len: f32) -> SpadeHand {
+    let (dx, dy) = dir(turn);
+    let (nx, ny) = (-dy, dx);
+    let at = |d: f32| (cx + dx * d, cy + dy * d);
+    let ring_r = len * 0.07;
+    let ring = at(len * 0.7);
+    let base = at(len * 0.7 + ring_r);
+    let w = len * 0.045;
+    SpadeHand {
+        shaft: vec![at(-len * 0.16), at(len * 0.7 - ring_r)],
+        ring: (ring.0, ring.1, ring_r),
+        tip: vec![
+            (base.0 + nx * w, base.1 + ny * w),
+            at(len),
+            (base.0 - nx * w, base.1 - ny * w),
+        ],
+    }
+}
+
+/// A spade hand ready to paint, see [`spade`].
+pub(crate) struct SpadeHand {
+    pub shaft: Vec<(f32, f32)>,
+    pub ring: (f32, f32, f32),
+    pub tip: Vec<(f32, f32)>,
+}
+
+impl SpadeHand {
+    /// Paint the hand `width` thick in `col`, with a faint shadow.
+    pub(crate) fn paint(&self, w: &mut Window, o: Point<Pixels>, width: f32, col: Hsla, ink: Ink) {
+        let off = |p: &(f32, f32)| (p.0 + width * 0.8, p.1 + width * 1.1);
+        let shade = scale_alpha(ink.text, 0.14);
+        let shaft_s: Vec<_> = self.shaft.iter().map(off).collect();
+        stroke(w, o, &shaft_s, width, shade, false);
+        let (rx, ry, rr) = self.ring;
+        stroke(w, o, &self.shaft, width, col, false);
+        stroke_circle(w, o, (rx, ry), rr, width, col);
+        fill(w, o, &self.tip, col);
+    }
+}
+
+/// Paint a small name plate at `(x, y)`, `wd` by `h`, with two rivets.
+/// How far text on a [`name_plate`] of height `h` keeps from either end, clear of its rivets.
+/// Pure.
+pub(crate) fn plate_inset(h: f32) -> f32 {
+    h * 0.6
+}
+
+pub(crate) fn name_plate(
+    w: &mut Window,
+    o: Point<Pixels>,
+    (x, y, wd, h): (f32, f32, f32, f32),
+    ink: Ink,
+) {
+    let p = chamfered(x, y, wd, h, h * 0.2);
+    fill(w, o, &p, scale_alpha(ink.text, 0.1));
+    stroke(w, o, &p, h * 0.04, scale_alpha(ink.text, 0.3), true);
+    // The rivets end before `plate_inset`, so the text never covers them.
+    for rx in [x + h * 0.35, x + wd - h * 0.35] {
+        fill_circle(
+            w,
+            o,
+            (rx, y + h / 2.0),
+            h * 0.09,
+            scale_alpha(ink.text, 0.4),
+        );
+    }
+}
+
+/// Paint a vintage scale on a circle: fine and major marks between `r0` and `r1` across
+/// `start..start + span`, `majors` intervals of `fine` marks, the major ones `major_col`.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn engraved_scale(
+    w: &mut Window,
+    o: Point<Pixels>,
+    (cx, cy): (f32, f32),
+    r: f32,
+    (start, span): (f32, f32),
+    majors: usize,
+    s: f32,
+    ink: Ink,
+) {
+    let fine = 10;
+    let n = majors.max(1) * fine;
+    let mut ticks = crate::gpui::draw::Strokes::default();
+    for i in 0..=n {
+        let a = start + span * i as f32 / n as f32;
+        let (len, wd) = if i % fine == 0 {
+            (s * 0.05, s * 0.009)
+        } else if i % 5 == 0 {
+            (s * 0.032, s * 0.005)
+        } else {
+            (s * 0.018, s * 0.003)
+        };
+        ticks.add(
+            vec![polar(cx, cy, r - len, a), polar(cx, cy, r, a)],
+            wd,
+            ink.text,
+        );
+    }
+    ticks.paint(w, o);
+    stroke(
+        w,
+        o,
+        &turn_arc(cx, cy, r + s * 0.004, start, start + span),
+        s * 0.004,
+        ink.text,
+        false,
+    );
+}
+
+// ───────────────────────────────── Segment LCD ─────────────────────────────────
+
+/// How faint an unlit segment is: brighter on light faces, where it would vanish otherwise.
+pub(crate) fn ghost(on: Hsla, dark: bool) -> Hsla {
+    scale_alpha(on, if dark { 0.1 } else { 0.14 })
+}
+
+/// Paint an LCD module filling `(x, y, wd, h)` of a pod of `s`: a dark bezel with corner cuts, a
+/// tinted glass with fine scan lines, a sheen and a thin inner glow. Returns the glass rectangle.
+pub(crate) fn lcd(
+    w: &mut Window,
+    o: Point<Pixels>,
+    (x, y, wd, h): (f32, f32, f32, f32),
+    s: f32,
+    ink: Ink,
+) -> (f32, f32, f32, f32) {
+    let hair = (s * 0.003).max(0.6);
+    let outer = chamfered(x, y, wd, h, s * 0.04);
+    fill(w, o, &outer, ink.face);
+    fill(w, o, &outer, scale_alpha(ink.text, 0.1));
+    stroke(w, o, &outer, hair, scale_alpha(ink.text, 0.35), true);
+    let lip = chamfered(
+        x + s * 0.008,
+        y + s * 0.008,
+        wd - s * 0.016,
+        h - s * 0.016,
+        s * 0.034,
+    );
+    stroke(w, o, &lip, hair * 0.6, scale_alpha(ink.text, 0.12), true);
+    let k = s * 0.035;
+    let (gx, gy, gw, gh) = (x + k, y + k, wd - 2.0 * k, h - 2.0 * k);
+    let glass = chamfered(gx, gy, gw, gh, s * 0.03);
+    fill(w, o, &glass, ink.face);
+    fill(w, o, &glass, scale_alpha(ink.primary, 0.05));
+    let mut lines = Vec::new();
+    let mut yy = gy + s * 0.012;
+    while yy < gy + gh - s * 0.01 {
+        lines.push(vec![(gx + s * 0.01, yy), (gx + gw - s * 0.01, yy)]);
+        yy += s * 0.01;
+    }
+    dodai_gpui::paint::stroke_batch(w, o, &lines, hair * 0.5, scale_alpha(ink.text, 0.02), false);
+    // A sheen across the top left of the glass.
+    for i in 0..4 {
+        fill(
+            w,
+            o,
+            &crate::gpui::mfd::sheen((gx, gy, gw, gh), 0.25 + 0.1 * i as f32),
+            scale_alpha(ink.text, 0.012),
+        );
+    }
+    stroke(w, o, &glass, hair, scale_alpha(ink.primary, 0.35), true);
+    (gx, gy, gw, gh)
+}
+
+/// Seven-segment `text` in `col`, `h` tall, centred on `cx` with its top at `y`. Unlit segments
+/// stay faintly visible.
+pub(crate) fn seg_text(text: &str, cx: f32, y: f32, h: f32, col: Hsla) -> gpui::Div {
+    let wd = seg_width(text, h);
+    gpui::div()
+        .absolute()
+        .left(gpui::px(cx - wd / 2.0))
+        .top(gpui::px(y))
+        .child(
+            crate::gpui::segment::SegmentDisplay::new(text.to_string())
+                .height(h)
+                .color(col),
+        )
+}
+
+/// Width of seven-segment `text` at digit height `h`, as [`seg_text`] lays it out. Pure.
+pub(crate) fn seg_width(text: &str, h: f32) -> f32 {
+    text.chars()
+        .map(|c| crate::segments::advance(c, h))
+        .sum::<f32>()
+        + h * 0.1
+}
+
+/// Paint `n` segments of an arc between `r0` and `r1` over `start..start + span`, segment `i` in
+/// `lit[i]` if it is some and in `off` otherwise.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn seg_arc(
+    w: &mut Window,
+    o: Point<Pixels>,
+    (cx, cy): (f32, f32),
+    (r0, r1): (f32, f32),
+    (start, span): (f32, f32),
+    lit: &[Option<Hsla>],
+    off: Hsla,
+) {
+    let n = lit.len().max(1) as f32;
+    let mut dark = Vec::new();
+    for (i, l) in lit.iter().enumerate() {
+        let a = start + span * i as f32 / n;
+        let z = start + span * (i as f32 + 0.78) / n;
+        let p = band(cx, cy, r0, r1, a, z);
+        match l {
+            Some(col) => {
+                stroke(w, o, &p, (r1 - r0) * 0.3, scale_alpha(*col, 0.08), true);
+                fill(w, o, &p, *col);
+            }
+            None => dark.push(p),
+        }
+    }
+    // The unlit segments share one colour: one path for all of them.
+    dodai_gpui::paint::fill_batch(w, o, &dark, off);
+}
+
+/// The colour of every one of `n` segments of a bar lit up to `frac`: lit ones from `colour`
+/// (called with the segment's middle fraction), unlit ones `None`. Pure.
+pub(crate) fn lit_segments(n: usize, frac: f32, colour: impl Fn(f32) -> Hsla) -> Vec<Option<Hsla>> {
+    let lit = crate::gpui::pod_math::segments_lit(frac, n);
+    (0..n)
+        .map(|i| (i < lit).then(|| colour((i as f32 + 0.5) / n as f32)))
+        .collect()
+}
+
+/// Paint a horizontal bar of rectangular segments in `(x, y, wd, h)`, see [`seg_arc`].
+pub(crate) fn seg_bar(
+    w: &mut Window,
+    o: Point<Pixels>,
+    (x, y, wd, h): (f32, f32, f32, f32),
+    lit: &[Option<Hsla>],
+    off: Hsla,
+) {
+    let n = lit.len().max(1) as f32;
+    let step = wd / n;
+    for (i, l) in lit.iter().enumerate() {
+        let x0 = x + step * i as f32;
+        let p = [
+            (x0, y),
+            (x0 + step * 0.72, y),
+            (x0 + step * 0.72, y + h),
+            (x0, y + h),
+        ];
+        match l {
+            Some(col) => {
+                stroke(w, o, &p, h * 0.5, scale_alpha(*col, 0.18), true);
+                fill(w, o, &p, *col);
+            }
+            None => fill(w, o, &p, off),
+        }
+    }
+}
+
+// ───────────────────────────────── Halo ─────────────────────────────────
+
+/// A pill (a rectangle with round ends) at `(x, y)`, `wd` by `h`, as a polygon. Pure.
+pub(crate) fn pill(x: f32, y: f32, wd: f32, h: f32) -> Vec<(f32, f32)> {
+    let r = (h / 2.0).min(wd / 2.0);
+    let mut p = turn_arc(x + wd - r, y + r, r, 0.0, 0.5);
+    p.extend(turn_arc(x + r, y + r, r, 0.5, 1.0));
+    p
+}
+
+/// Paint the halo for a square of `s`: a soft glow, a fine ring of ticks, a hairline rim lit
+/// over the crown and a dark glass disc. Returns the radius inside the tick ring.
+pub(crate) fn halo(w: &mut Window, o: Point<Pixels>, s: f32, ink: Ink) -> f32 {
+    let c = s / 2.0;
+    let r = c - s * 0.02;
+    // Soft glow: layered discs, faint at the rim.
+    for k in 0..8 {
+        let rr = r - s * 0.012 * k as f32;
+        fill_circle(w, o, (c, c), rr, scale_alpha(ink.primary, 0.012));
+    }
+    fill_circle(w, o, (c, c), r - s * 0.07, ink.face);
+    fill_circle(w, o, (c, c), r - s * 0.07, scale_alpha(ink.primary, 0.04));
+    // The orb: brighter towards the middle.
+    for k in 0..6 {
+        let rr = (r - s * 0.07) * (1.0 - k as f32 * 0.15);
+        fill_circle(w, o, (c, c), rr, scale_alpha(ink.info, 0.012));
+    }
+    stroke_circle(
+        w,
+        o,
+        (c, c),
+        r - s * 0.07,
+        s * 0.003,
+        scale_alpha(ink.primary, 0.35),
+    );
+    let hair = (s * 0.0025).max(0.5);
+    let mut ticks = crate::gpui::draw::Strokes::default();
+    for i in 0..240 {
+        let a = i as f32 / 240.0;
+        let (len, alpha) = if i % 20 == 0 {
+            (s * 0.02, 0.45)
+        } else {
+            (s * 0.008, 0.14)
+        };
+        let line = vec![
+            polar(c, c, r - s * 0.035 - len, a),
+            polar(c, c, r - s * 0.035, a),
+        ];
+        ticks.add(line, hair, scale_alpha(ink.text, alpha));
+    }
+    ticks.paint(w, o);
+    // The rim: a hairline of light, brightest over the crown.
+    stroke_circle(w, o, (c, c), r, hair, scale_alpha(ink.primary, 0.35));
+    glow_arc(
+        w,
+        o,
+        (c, c),
+        r,
+        (0.88, 1.0),
+        hair,
+        (scale_alpha(ink.primary, 0.0), ink.info),
+    );
+    glow_arc(
+        w,
+        o,
+        (c, c),
+        r,
+        (1.0, 1.12),
+        hair,
+        (ink.info, scale_alpha(ink.primary, 0.0)),
+    );
+    r - s * 0.075
+}
+
+/// Paint an arc of light from `a0` to `a1` turns, its colour running `from` → `to`, with a wide
+/// soft glow under it.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn glow_arc(
+    w: &mut Window,
+    o: Point<Pixels>,
+    (cx, cy): (f32, f32),
+    r: f32,
+    (a0, a1): (f32, f32),
+    width: f32,
+    (from, to): (Hsla, Hsla),
+) {
+    if a1 <= a0 {
+        return;
+    }
+    // The soft glow blends in coarse steps (it is too blurred to show them), the line itself
+    // in fine ones: 60 a turn.
+    let at = |i: usize, n: usize| a0 + (a1 - a0) * i as f32 / n as f32;
+    let glow_n = ((a1 - a0) * 10.0).ceil().max(1.0) as usize;
+    for i in 0..glow_n {
+        let col = mix(from, to, (i as f32 + 0.5) / glow_n as f32);
+        let arc = turn_arc(cx, cy, r, at(i, glow_n), at(i + 1, glow_n) + 0.001);
+        stroke(w, o, &arc, width * 4.0, scale_alpha(col, 0.08), false);
+        stroke(w, o, &arc, width * 2.2, scale_alpha(col, 0.18), false);
+    }
+    let n = ((a1 - a0) * 60.0).ceil().max(2.0) as usize;
+    for i in 0..n {
+        let col = mix(from, to, (i as f32 + 0.5) / n as f32);
+        stroke(
+            w,
+            o,
+            &turn_arc(cx, cy, r, at(i, n), at(i + 1, n) + 0.001),
+            width,
+            col,
+            false,
+        );
+    }
+}
+
+/// Paint a glowing dot: layered discs fading out to `r * 3`.
+pub(crate) fn glow_dot(
+    w: &mut Window,
+    o: Point<Pixels>,
+    (x, y): (f32, f32),
+    r: f32,
+    col: Hsla,
+    core: Hsla,
+) {
+    for k in (1..=5).rev() {
+        fill_circle(
+            w,
+            o,
+            (x, y),
+            r * (1.0 + k as f32 * 0.4),
+            scale_alpha(col, 0.07),
+        );
+    }
+    fill_circle(w, o, (x, y), r, col);
+    fill_circle(w, o, (x, y), r * 0.45, core);
+}
+
+/// The tapered outline of a blade from radius `r0` (half-width `h0`) to `r1` (half-width `h1`)
+/// at `turn` round `(cx, cy)`. Pure.
+pub(crate) fn blade_outline(
+    (cx, cy): (f32, f32),
+    (r0, r1): (f32, f32),
+    (h0, h1): (f32, f32),
+    turn: f32,
+) -> [(f32, f32); 4] {
+    let (dx, dy) = dir(turn);
+    let (nx, ny) = (-dy, dx);
+    let at = |r: f32, h: f32| (cx + dx * r + nx * h, cy + dy * r + ny * h);
+    [at(r0, h0), at(r1, h1), at(r1, -h1), at(r0, -h0)]
+}
+
+/// Paint a blade of light from radius `r0` to `r1` at `turn`: a soft glow, a body that
+/// tapers towards the centre, a white-hot core over its outer half and a dot at the tip.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn light_blade(
+    w: &mut Window,
+    o: Point<Pixels>,
+    (cx, cy): (f32, f32),
+    (r0, r1): (f32, f32),
+    turn: f32,
+    width: f32,
+    col: Hsla,
+    core: Hsla,
+) {
+    let line = [polar(cx, cy, r0, turn), polar(cx, cy, r1, turn)];
+    stroke(w, o, &line, width * 5.0, scale_alpha(col, 0.06), false);
+    stroke(w, o, &line, width * 2.4, scale_alpha(col, 0.16), false);
+    let body = blade_outline((cx, cy), (r0, r1), (width * 0.2, width * 0.6), turn);
+    fill(w, o, &body, col);
+    let hot = [polar(cx, cy, r0 + (r1 - r0) * 0.5, turn), line[1]];
+    stroke(
+        w,
+        o,
+        &hot,
+        (width * 0.3).max(0.5),
+        scale_alpha(core, 0.85),
+        false,
+    );
+    glow_dot(w, o, line[1], width * 1.4, col, core);
+}
+
+/// Paint a fading wake behind `turn`: `len` turns of wedges between `r0` and `r1`.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn wake(
+    w: &mut Window,
+    o: Point<Pixels>,
+    (cx, cy): (f32, f32),
+    (r0, r1): (f32, f32),
+    turn: f32,
+    len: f32,
+    col: Hsla,
+) {
+    let steps = 14;
+    for k in 0..steps {
+        let t1 = turn - len * k as f32 / steps as f32;
+        let t0 = turn - len * (k + 1) as f32 / steps as f32;
+        fill(
+            w,
+            o,
+            &band(cx, cy, r0, r1, t0, t1),
+            scale_alpha(col, 0.22 * (1.0 - k as f32 / steps as f32)),
+        );
+    }
+}
+
+/// The hand of the halo look: a blade of light with a fading wake behind it, both over the
+/// same reach so the line is exactly as long as its glow.
+#[derive(Clone, Copy)]
+pub(crate) struct LightHand {
+    /// The centre the hand turns round.
+    pub centre: (f32, f32),
+    /// From the inner end of the blade and wake to the track the hand points at.
+    pub reach: (f32, f32),
+    /// The direction, in turns.
+    pub turn: f32,
+    /// How far the wake trails behind, in turns.
+    pub trail: f32,
+    /// The blade's width.
+    pub width: f32,
+    /// The value colour, and the white-hot core.
+    pub colours: (Hsla, Hsla),
+}
+
+impl LightHand {
+    /// Paint the wake, then the blade over it; the blade's tip passes the track by a little.
+    pub(crate) fn paint(self, w: &mut Window, o: Point<Pixels>) {
+        let (r0, r1) = self.reach;
+        let (col, core) = self.colours;
+        wake(
+            w,
+            o,
+            self.centre,
+            (r0, r1 - self.width * 2.0),
+            self.turn,
+            self.trail,
+            col,
+        );
+        let tip = r1 + self.width * 6.0;
+        light_blade(
+            w,
+            o,
+            self.centre,
+            (r0, tip),
+            self.turn,
+            self.width,
+            col,
+            core,
+        );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_blade_tapers_towards_the_centre_along_its_turn() {
+        let b = blade_outline((0.0, 0.0), (10.0, 50.0), (1.0, 3.0), 0.0);
+        // Pointing up: the inner end is narrower and both ends sit on the axis.
+        let width =
+            |p: (f32, f32), q: (f32, f32)| ((p.0 - q.0).powi(2) + (p.1 - q.1).powi(2)).sqrt();
+        assert!((width(b[0], b[3]) - 2.0).abs() < 1e-4);
+        assert!((width(b[1], b[2]) - 6.0).abs() < 1e-4);
+        assert!((b[1].1 + 50.0).abs() < 1e-4 && (b[0].1 + 10.0).abs() < 1e-4);
+    }
+
+    #[test]
+    fn plate_text_keeps_clear_of_the_rivets() {
+        let h = 20.0;
+        // A rivet sits at 0.35 h with a radius of 0.09 h.
+        assert!(plate_inset(h) > h * (0.35 + 0.09));
+        assert!(plate_inset(h) < h);
+    }
+
+    #[test]
+    fn a_spade_hand_reaches_its_length_and_has_a_tail() {
+        let h = spade(50.0, 50.0, 0.25, 40.0);
+        let tip = h.tip[1];
+        assert!((tip.0 - 90.0).abs() < 1e-3 && (tip.1 - 50.0).abs() < 1e-3);
+        assert!(h.shaft[0].0 < 50.0, "the tail sits behind the pivot");
+        assert!(h.ring.0 > 50.0 && h.ring.0 < 90.0);
+    }
+
+    #[test]
+    fn segment_text_widens_with_digits_more_than_dots() {
+        assert!(seg_width("888", 10.0) > seg_width("88", 10.0));
+        assert!(seg_width("8.8", 10.0) < seg_width("888", 10.0));
+        assert!(seg_width("8:8", 10.0) < seg_width("888", 10.0));
+    }
+
+    #[test]
+    fn a_pill_stays_in_its_box_and_reaches_its_ends() {
+        let p = pill(10.0, 20.0, 100.0, 30.0);
+        for (x, y) in &p {
+            assert!(*x >= 10.0 - 1e-3 && *x <= 110.0 + 1e-3);
+            assert!(*y >= 20.0 - 1e-3 && *y <= 50.0 + 1e-3);
+        }
+        let max_x = p.iter().map(|q| q.0).fold(f32::MIN, f32::max);
+        let min_x = p.iter().map(|q| q.0).fold(f32::MAX, f32::min);
+        assert!((max_x - 110.0).abs() < 0.05 && (min_x - 10.0).abs() < 0.05);
+    }
+
+    #[test]
+    fn segments_light_from_the_start() {
+        let red = gpui::red();
+        let segs = lit_segments(10, 0.35, |_| red);
+        assert_eq!(segs.iter().filter(|s| s.is_some()).count(), 4);
+        assert!(segs[0].is_some() && segs[9].is_none());
+        assert!(lit_segments(5, 0.0, |_| red).iter().all(Option::is_none));
+        assert!(lit_segments(5, 1.0, |_| red).iter().all(Option::is_some));
+    }
+}

@@ -28,7 +28,7 @@ install-tools:
 # Build the whole workspace (dev). Per-crate: `cargo build --workspace` cannot unify
 # iced's naga 27 with gpui's naga 25 (see dodai-iced dev-dependencies).
 build:
-    for c in dodai-core dodai-charts-core dodai-ratatui dodai-iced dodai-gpui dodai-topcoat; do cargo build -p $c || exit 1; done
+    for c in dodai-core dodai-charts dodai-ratatui dodai-iced dodai-gpui dodai-topcoat; do cargo build -p $c || exit 1; done
 
 build-core:
     cargo build -p dodai-core
@@ -47,8 +47,8 @@ build-kernels:
 dump-shaders dir="shader-dump" t="1.5":
     cargo run --release -p dodai-shaders --example dump -- {{dir}} {{t}}
 
-build-charts-core:
-    cargo build -p dodai-charts-core
+build-charts:
+    cargo build -p dodai-charts
 
 build-ratatui:
     cargo build -p dodai-ratatui
@@ -63,7 +63,7 @@ build-topcoat:
     cargo build -p dodai-topcoat
 
 build-release:
-    for c in dodai-core dodai-charts-core dodai-ratatui dodai-iced dodai-gpui dodai-topcoat; do cargo build --release -p $c || exit 1; done
+    for c in dodai-core dodai-charts dodai-ratatui dodai-iced dodai-gpui dodai-topcoat; do cargo build --release -p $c || exit 1; done
 
 # ── Run the showcases ─────────────────────────────────────────────────────────
 
@@ -101,20 +101,20 @@ test:
 test-core:
     cargo test -p dodai-core --all-features
 
-test-charts-core:
-    cargo test -p dodai-charts-core
+test-charts:
+    cargo test -p dodai-charts
 
 # gpui feature slices must each compile on their own
 check-gpui-features:
-    cargo check -p dodai-gpui-instruments --no-default-features
-    cargo check -p dodai-gpui-instruments --no-default-features --features automotive
-    cargo check -p dodai-gpui-instruments --no-default-features --features aviation
-    cargo check -p dodai-gpui-instruments --no-default-features --features defense
-    cargo check -p dodai-gpui-instruments --no-default-features --features industrial
-    cargo check -p dodai-gpui-instruments --no-default-features --features medical
-    cargo check -p dodai-gpui-instruments --no-default-features --features automotive,dodai
-    cargo check -p dodai-gpui-instruments --no-default-features --features medical,cyberpunk
-    cargo check -p dodai-gpui-charts --features material
+    cargo check -p dodai-instruments --no-default-features --features gpui
+    cargo check -p dodai-instruments --no-default-features --features gpui,automotive
+    cargo check -p dodai-instruments --no-default-features --features gpui,aviation
+    cargo check -p dodai-instruments --no-default-features --features gpui,defense
+    cargo check -p dodai-instruments --no-default-features --features gpui,industrial
+    cargo check -p dodai-instruments --no-default-features --features gpui,medical
+    cargo check -p dodai-instruments --no-default-features --features gpui,automotive,dodai
+    cargo check -p dodai-instruments --no-default-features --features gpui,medical,cyberpunk
+    cargo check -p dodai-charts --features gpui,material
     cargo check -p dodai-gpui --no-default-features --features components
     cargo check -p dodai-gpui --no-default-features --features frost
     cargo check -p dodai-gpui --no-default-features
@@ -280,23 +280,19 @@ publish-shaders-dry: check-all
 
 # Publish charts
 publish-charts: check-all
-    cargo publish -p dodai-charts-core
-    cargo publish -p dodai-gpui-charts
+    cargo publish -p dodai-charts
 
 # Dry-run charts
 publish-charts-dry: check-all
-    cargo publish --dry-run -p dodai-charts-core
-    cargo publish --dry-run -p dodai-gpui-charts
+    cargo publish --dry-run -p dodai-charts
 
 # Publish instruments
 publish-instruments: check-all
-    cargo publish -p dodai-instruments-core
-    cargo publish -p dodai-gpui-instruments
+    cargo publish -p dodai-instruments
 
 # Dry-run instruments
 publish-instruments-dry: check-all
-    cargo publish --dry-run -p dodai-instruments-core
-    cargo publish --dry-run -p dodai-gpui-instruments
+    cargo publish --dry-run -p dodai-instruments
 
 # Publish adapters
 publish-adapters: check-all

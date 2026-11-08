@@ -114,7 +114,7 @@ Since the findings above were written:
   `elevation_layers`; Neo-Brutalism `choice_toggle` / `icon_button` / `fluid` / `elevation_layers`.
 - **Tests**: `tests/interaction.rs` covers `Menu`, `List`, `Popover` (open, Escape, outside click),
   `ThemeSwitcherBar` and the light/dark mode switch; `tests/pods_render.rs` lays out every dash
-  pod and look under every theme, `dodai-gpui-charts/tests/layout_all_themes.rs` does the same
+  pod and look under every theme, `dodai-charts/tests/layout_all_themes.rs` does the same
   for the chart families, `render_smoke.rs` draws `FrostedScene`. Charts beyond the main families
   and the other instruments have degenerate-data tests only. `tests/no_new_spacing_literals.rs`
   stops new `px(<number>)` in components (38 lines remain: hairlines and zeros use

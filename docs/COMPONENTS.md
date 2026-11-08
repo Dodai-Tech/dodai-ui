@@ -40,7 +40,7 @@ Legend: ✅ done · 🟡 partial · ⬜ todo
 
 Beyond M3 (gpui): `TreeView`, `Table` (sort + select), `Combobox`, `NumberStepper`,
 `ColorPicker`, `FileDropZone`, `Timeline`, `Rating`, `TagField`, `SplitPane`,
-`CommandPalette`, `EmptyState`, `AxisGizmo` (3D orientation widget: axis balls, home, drag to orbit; also in `dodai-bevy` as `axis_gizmo`; geometry in `dodai_instruments_core::orientation`).
+`CommandPalette`, `EmptyState`, `AxisGizmo` (3D orientation widget: axis balls, home, drag to orbit; also in `dodai-bevy` as `axis_gizmo`; geometry in `dodai_instruments::orientation`).
 
 Charts (gpui, `charts.rs`, palette `series` colours, glow on lines, themed bar shape):
 `LineChart` (area/smooth), `BarChart` (grouped/stacked/horizontal), `PieChart`

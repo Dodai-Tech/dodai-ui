@@ -1,0 +1,48 @@
+[package]
+name                   = "dodai-instruments"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description            = "Instruments for the Dodai UI design system: renderer-agnostic scales, alarms and gauge, flight, tactical and seven-segment geometry, plus animated instruments per toolkit (feature gpui)"
+readme                 = "README.md"
+keywords               = ["gauge", "instrument", "hmi", "design-system", "gpui"]
+categories             = ["visualization", "gui"]
+
+[features]
+default    = ["automotive", "aviation", "defense", "industrial", "medical"]
+# The gpui instrument set (`dodai_instruments::gpui`).
+gpui       = ["dep:gpui", "dep:dodai-gpui"]
+# The industries below choose which gpui instruments (and symbol groups) are built; they do
+# nothing without `gpui`.
+# Clusters, tachometers, speedometers, tire pressure, gear, odometer, power meter, level bar, compass,
+# EV energy, shift lights; the vehicle symbols.
+automotive = ["dodai-gpui?/components", "dodai-gpui?/symbols-vehicle"]
+# Attitude indicator, heading and vertical tapes, sonar waterfall, countermeasure counters;
+# the aviation symbols.
+aviation   = ["dodai-gpui?/symbols-aviation"]
+# Tactical plot, track list, threat rosette, stores panel, mission timer, radar scope; the
+# military symbols.
+defense    = ["dodai-gpui?/symbols-military"]
+# Process-plant and machine symbols; the dials and annunciators they pair with are always included.
+industrial = ["dodai-gpui?/symbols-industrial"]
+# Patient-monitor pieces: vitals tiles and the ECG trace; the medical symbols.
+medical    = ["dodai-gpui?/symbols-medical"]
+
+# The designs (their themes in `dodai_core::switcher()`), passed on to `dodai-gpui`.
+dodai        = ["dodai-gpui?/dodai"]
+cyberpunk    = ["dodai-gpui?/cyberpunk"]
+material     = ["dodai-gpui?/material"]
+neobrutalism = ["dodai-gpui?/neobrutalism"]
+
+[dependencies]
+dodai-core   = { workspace = true }
+dodai-charts = { workspace = true }
+dodai-gpui   = { workspace = true, optional = true }
+gpui         = { workspace = true, optional = true }
+
+[dev-dependencies]
+dodai-core = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "dodai"] }
+gpui       = { workspace = true, features = ["test-support"] }

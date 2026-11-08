@@ -1,0 +1,1566 @@
+//! A three-pod digital dash: a ribbed ring speedometer in the middle, two open-ring pods beside it
+//! that carry a gauge or a menu, a row of telltales and the small print around them.
+//!
+//! The pieces stand alone ([`RingTach`], [`SidePod`], [`MenuRing`], [`LimitSign`], [`Telltales`])
+//! and [`DashTriptych`] arranges them. Everything is drawn from theme tokens, so the dash follows
+//! the design and the light or dark theme.
+
+use crate::gpui::dial::severity_color;
+use crate::gpui::draw::{polar, turn_arc};
+use crate::gpui::gauges::SWEEP;
+use crate::gpui::look::{AtLimit, Layout, Look};
+use crate::instrument::{readout, Scale, Severity};
+use dodai_core::Theme;
+use dodai_gpui::follow::{follow, Follow};
+use dodai_gpui::follow_api;
+use dodai_gpui::icons::{Icon, Lamp, Symbol, COMMON_TELLTALES};
+use dodai_gpui::paint::{fill, fill_circle, scale_alpha, stroke, stroke_circle};
+use dodai_gpui::{hsla, theme_of};
+use gpui::prelude::FluentBuilder;
+use gpui::{
+    canvas, div, px, AnyElement, App, Bounds, FontWeight, Hsla, IntoElement, ParentElement, Pixels,
+    RenderOnce, SharedString, Styled, Window,
+};
+
+mod lamp_looks;
+mod menu_looks;
+mod menu_more;
+mod menu_panels;
+
+/// What a telltale reports; the colour comes from the theme.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Tone {
+    /// Dim: present, not lit.
+    #[default]
+    Off,
+    /// Something is wrong now.
+    Danger,
+    /// Look at this soon.
+    Warning,
+    /// A system is working.
+    Success,
+    /// Information: lights, assists.
+    Info,
+}
+
+impl From<Lamp> for Tone {
+    /// The tone a telltale's standard colour lights in: red is danger, amber a warning, green
+    /// a working system and blue (main beam) information.
+    fn from(lamp: Lamp) -> Self {
+        match lamp {
+            Lamp::Red => Tone::Danger,
+            Lamp::Amber => Tone::Warning,
+            Lamp::Green => Tone::Success,
+            Lamp::Blue => Tone::Info,
+        }
+    }
+}
+
+impl Tone {
+    /// The tone `symbol` lights in as a telltale, or [`Tone::Off`] if it is not one. Pure.
+    pub fn standard(symbol: Symbol) -> Self {
+        symbol.lamp().map_or(Tone::Off, Tone::from)
+    }
+
+    /// The theme colour of this tone.
+    pub fn color(self, t: &Theme) -> Hsla {
+        let p = &t.palette;
+        hsla(match self {
+            Tone::Off => p.text_muted,
+            Tone::Danger => p.danger,
+            Tone::Warning => p.warning,
+            Tone::Success => p.success,
+            Tone::Info => p.info,
+        })
+    }
+}
+
+/// A box of `w` px centred on `x`, for a line of text at `y`.
+pub(crate) fn text_box(x: f32, y: f32, w: f32) -> gpui::Div {
+    div()
+        .absolute()
+        .left(px(x - w / 2.0))
+        .top(px(y))
+        .w(px(w))
+        .flex()
+        .justify_center()
+        .whitespace_nowrap()
+}
+
+/// The open ring both kinds of pod share: a bright rim over [`SWEEP`] with optional coloured ends.
+pub(crate) fn rim(
+    w: &mut Window,
+    o: gpui::Point<Pixels>,
+    c: f32,
+    r: f32,
+    width: f32,
+    ink: Hsla,
+    ends: [Option<Hsla>; 2],
+) {
+    let (start, span) = SWEEP;
+    stroke(
+        w,
+        o,
+        &turn_arc(c, c, r, start, start + span),
+        width,
+        scale_alpha(ink, 0.92),
+        false,
+    );
+    let cap = span * 0.07;
+    if let Some(col) = ends[0] {
+        stroke(
+            w,
+            o,
+            &turn_arc(c, c, r, start, start + cap),
+            width + 1.0,
+            col,
+            false,
+        );
+    }
+    if let Some(col) = ends[1] {
+        stroke(
+            w,
+            o,
+            &turn_arc(c, c, r, start + span - cap, start + span),
+            width + 1.0,
+            col,
+            false,
+        );
+    }
+}
+
+/// How a pod's frame is drawn. Every pod takes one with `.style(..)`; the contents are the same.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum PodStyle {
+    /// An open ring: a bright rim over the sweep, open at the bottom.
+    #[default]
+    Ring,
+    /// A closed face: a panel-coloured disc inside a fine full circle, the sweep in bright ink.
+    Disc,
+    /// The open ring in the accent colour with a soft glow round it.
+    Glow,
+    /// A heavy bezel with a fine inner line, like a real gauge.
+    Bezel,
+    /// A single hairline circle, closed all round (the line look's pods).
+    Line,
+}
+
+impl PodStyle {
+    /// Every style, in the order a gallery shows them.
+    pub const ALL: [Self; 5] = [Self::Ring, Self::Disc, Self::Glow, Self::Bezel, Self::Line];
+
+    /// A short name for a gallery caption.
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Ring => "Ring",
+            Self::Disc => "Disc",
+            Self::Glow => "Glow",
+            Self::Bezel => "Bezel",
+            Self::Line => "Line",
+        }
+    }
+}
+
+/// A pod's frame with its colours resolved from the theme, ready to paint.
+#[derive(Clone, Copy)]
+pub(crate) struct Frame {
+    style: PodStyle,
+    ink: Hsla,
+    accent: Hsla,
+    face: Hsla,
+}
+
+impl Frame {
+    pub(crate) fn new(t: &Theme, style: PodStyle) -> Self {
+        Self {
+            style,
+            ink: hsla(t.palette.text),
+            accent: hsla(t.palette.primary),
+            face: hsla(t.palette.surface_raised),
+        }
+    }
+
+    /// Paints the frame of a pod of radius `c`: `r` is the rim radius, `width` its stroke.
+    pub(crate) fn paint(
+        self,
+        w: &mut Window,
+        o: gpui::Point<Pixels>,
+        c: f32,
+        r: f32,
+        width: f32,
+        ends: [Option<Hsla>; 2],
+    ) {
+        let (start, span) = SWEEP;
+        match self.style {
+            PodStyle::Line => stroke_circle(
+                w,
+                o,
+                (c, c),
+                r,
+                (c * 0.006).max(0.6),
+                scale_alpha(self.ink, 0.35),
+            ),
+            PodStyle::Ring => rim(w, o, c, r, width, self.ink, ends),
+            PodStyle::Disc => {
+                fill_circle(w, o, (c, c), r, scale_alpha(self.face, 0.9));
+                stroke_circle(w, o, (c, c), r, width * 0.6, scale_alpha(self.ink, 0.35));
+                rim(w, o, c, r, width, self.ink, ends);
+            }
+            PodStyle::Glow => {
+                for i in (1..=4).rev() {
+                    stroke(
+                        w,
+                        o,
+                        &turn_arc(c, c, r, start, start + span),
+                        width * (1.0 + i as f32 * 2.2),
+                        scale_alpha(self.accent, 0.07),
+                        false,
+                    );
+                }
+                rim(w, o, c, r, width, self.accent, ends);
+            }
+            PodStyle::Bezel => {
+                rim(w, o, c, r - width * 0.5, width * 2.0, self.ink, ends);
+                stroke(
+                    w,
+                    o,
+                    &turn_arc(c, c, r - width * 2.0, start, start + span),
+                    width * 0.4,
+                    scale_alpha(self.ink, 0.4),
+                    false,
+                );
+            }
+        }
+    }
+}
+
+// ───────────────────────────────── RingTach ─────────────────────────────────
+
+/// The centre of the dash: a ribbed ring scale for engine speed with a red band, a sweet-spot
+/// marker and a bright bead ending the value arc (no hand), a big speed readout inside, and (when given) a range tab under it
+/// and a fuel arc across the open bottom.
+#[derive(IntoElement)]
+pub struct RingTach {
+    follow: Follow,
+    scale: Scale,
+    rpm: f32,
+    speed: f32,
+    unit: SharedString,
+    marker: Option<f32>,
+    tab: SharedString,
+    fuel: Option<f32>,
+    reach: SharedString,
+    charge: Option<f32>,
+    charge_reach: SharedString,
+    drive: crate::gpui::pods::Drivetrain,
+    /// The look drawn: the given one, else the design's, settled when rendered.
+    look: Look,
+    /// The look given with `.look(..)`; without one, the design's own.
+    given_look: Option<Look>,
+    at_limit: AtLimit,
+    size: f32,
+}
+
+impl RingTach {
+    follow_api!();
+    /// A ring tachometer for engine speed `rpm` on `scale`, reading `speed` in the middle.
+    #[track_caller]
+    pub fn new(scale: Scale, rpm: f32, speed: f32) -> Self {
+        Self {
+            follow: Follow::here(),
+            scale,
+            rpm,
+            speed,
+            unit: SharedString::from("km/h"),
+            marker: None,
+            tab: SharedString::default(),
+            fuel: None,
+            charge: None,
+            charge_reach: SharedString::default(),
+            drive: crate::gpui::pods::Drivetrain::Combustion,
+            reach: SharedString::default(),
+            look: Look::Sport,
+            given_look: None,
+            at_limit: AtLimit::Value,
+            size: 380.0,
+        }
+    }
+    /// Unit under the speed.
+    pub fn unit(mut self, u: impl Into<SharedString>) -> Self {
+        self.unit = u.into();
+        self
+    }
+    /// A green marker at this engine speed: where the engine is happiest.
+    pub fn marker(mut self, rpm: f32) -> Self {
+        self.marker = Some(rpm);
+        self
+    }
+    /// The text on the tab under the speed (a range, a mode).
+    pub fn tab(mut self, t: impl Into<SharedString>) -> Self {
+        self.tab = t.into();
+        self
+    }
+    /// The look (see [`Look`]). Every look but [`Look::Sport`] draws the engine speed as a
+    /// [`GaugeFace`](crate::gpui::faces::GaugeFace) captioned with the road speed; the tab and the fuel
+    /// are left out.
+    pub fn look(mut self, look: Look) -> Self {
+        self.given_look = Some(look);
+        self
+    }
+    /// What a reading past a limit colours in the screen looks (see [`AtLimit`]): only the
+    /// value, the default, or the whole display.
+    pub fn at_limit(mut self, at: AtLimit) -> Self {
+        self.at_limit = at;
+        self
+    }
+    /// What drives the car (see [`Drivetrain`](crate::gpui::pods::Drivetrain)). For
+    /// [`Electric`](crate::gpui::pods::Drivetrain::Electric) the ring reads the motor's power in kW on
+    /// a scale from the most it recovers (below zero) to the most it gives, lit from zero:
+    /// right while driving, left in the success colour while recovering; the other looks write
+    /// kW under the reading. A hybrid keeps the revs and shows the fuel and the charge side by
+    /// side at the bottom.
+    pub fn drivetrain(mut self, drive: crate::gpui::pods::Drivetrain) -> Self {
+        self.drive = drive;
+        self
+    }
+    /// The traction battery's charge as `0..=1` and the electric range written beside it: the
+    /// bottom arc of an electric car, the right half of a hybrid's.
+    pub fn charge(mut self, level: f32, reach: impl Into<SharedString>) -> Self {
+        self.charge = Some(level.clamp(0.0, 1.0));
+        self.charge_reach = reach.into();
+        self
+    }
+    /// Fuel as `0..=1` and the reach written beside the pump. Without it the bottom stays empty.
+    pub fn fuel(mut self, level: f32, reach: impl Into<SharedString>) -> Self {
+        self.fuel = Some(level.clamp(0.0, 1.0));
+        self.reach = reach.into();
+        self
+    }
+    /// Diameter in px.
+    pub fn size(mut self, s: f32) -> Self {
+        self.size = s.max(200.0);
+        self
+    }
+}
+
+impl RenderOnce for RingTach {
+    fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.look = crate::gpui::look::resolve(self.given_look, cx);
+        self.rpm = follow(w, cx, &self.follow, 0, self.rpm);
+        self.speed = follow(w, cx, &self.follow, 1, self.speed);
+        self.fuel = self.fuel.map(|f| follow(w, cx, &self.follow, 2, f));
+        self.charge = self.charge.map(|f| follow(w, cx, &self.follow, 3, f));
+        let electric = self.drive == crate::gpui::pods::Drivetrain::Electric;
+        if self.look != Look::Sport {
+            return crate::gpui::faces::GaugeFace::new(self.scale, self.rpm)
+                .animate(false)
+                .look(self.look)
+                .at_limit(self.at_limit)
+                .label(format!("{} {}", readout(self.speed, 0, ""), self.unit))
+                .unit(if electric { "kW" } else { "×1000 rpm" })
+                .decimals(if electric { 0 } else { 1 })
+                .size(self.size)
+                .into_any_element();
+        }
+        let t = theme_of(cx);
+        let size = self.size;
+        let c = size / 2.0;
+        let (r_out, r_in) = (c * 0.98, c * 0.72);
+        let frac = self.scale.fraction(self.rpm);
+        let (start, span) = SWEEP;
+        let at = move |f: f32| start + span * f;
+        let (ink, muted) = (hsla(t.palette.text), hsla(t.palette.text_muted));
+        let face = hsla(t.palette.background);
+        let body = hsla(t.palette.background.mix(t.palette.text, 0.07));
+        let groove = scale_alpha(ink, 0.10);
+        let danger = hsla(t.palette.danger);
+        let go = hsla(t.palette.success);
+        let reds: Vec<(f32, f32)> = self
+            .scale
+            .zone_spans()
+            .into_iter()
+            .filter(|z| z.2 == Severity::Alarm)
+            .map(|z| (z.0, z.1))
+            .collect();
+        let marker = self.marker.map(|m| self.scale.fraction(m));
+        // An electric ring is lit from zero; recovering lights it leftwards.
+        let zero = if electric {
+            self.scale.fraction(0.0)
+        } else {
+            0.0
+        };
+        let fill_col = if electric && frac < zero { go } else { ink };
+        let bottom = bottom_arcs(self.drive, self.fuel, self.charge);
+        let both = bottom.len() == 2;
+        let ticks: Vec<(f32, bool)> = self
+            .scale
+            .ticks()
+            .into_iter()
+            .map(|k| (k.frac, k.major))
+            .collect();
+        let weight = (size * 0.008).max(1.5);
+        let cv = canvas(
+            |_, _, _| (),
+            move |b: Bounds<Pixels>, _, w, _| {
+                let o = b.origin;
+                // The ribbed body: a disc, fine concentric grooves, then the dark face.
+                fill_circle(w, o, (c, c), r_out, body);
+                let grooves = 9;
+                for i in 0..grooves {
+                    let r = r_in + (r_out - r_in) * (i as f32 + 0.5) / grooves as f32;
+                    stroke(
+                        w,
+                        o,
+                        &turn_arc(c, c, r, 0.0, 1.0),
+                        weight * 0.7,
+                        groove,
+                        false,
+                    );
+                }
+                // The open bottom: nothing is printed there but the fuel arc.
+                stroke_circle(w, o, (c, c), r_out, weight * 1.6, scale_alpha(ink, 0.85));
+                fill_circle(w, o, (c, c), r_in, face);
+                stroke_circle(w, o, (c, c), r_in, weight * 1.2, scale_alpha(ink, 0.7));
+                // Red band along the rim.
+                for (a, z) in &reds {
+                    stroke(
+                        w,
+                        o,
+                        &turn_arc(c, c, r_out - (r_out - r_in) * 0.14, at(*a), at(*z)),
+                        (r_out - r_in) * 0.28,
+                        danger,
+                        false,
+                    );
+                }
+                // Fine ticks on the outer rim.
+                for (f, major) in &ticks {
+                    let len = if *major {
+                        (r_out - r_in) * 0.2
+                    } else {
+                        (r_out - r_in) * 0.11
+                    };
+                    let seg = [
+                        polar(c, c, r_out - weight * 1.4, at(*f)),
+                        polar(c, c, r_out - weight * 1.4 - len, at(*f)),
+                    ];
+                    stroke(
+                        w,
+                        o,
+                        &seg,
+                        if *major { weight } else { weight * 0.6 },
+                        scale_alpha(ink, 0.8),
+                        false,
+                    );
+                }
+                // Track and value inside the ring.
+                let rt = r_in - weight * 4.0;
+                stroke(
+                    w,
+                    o,
+                    &turn_arc(c, c, rt, at(0.0), at(1.0)),
+                    weight * 2.0,
+                    scale_alpha(ink, 0.22),
+                    false,
+                );
+                stroke(
+                    w,
+                    o,
+                    &turn_arc(c, c, rt, at(zero.min(frac)), at(zero.max(frac))),
+                    weight * 2.0,
+                    fill_col,
+                    false,
+                );
+                if let Some(m) = marker {
+                    stroke(
+                        w,
+                        o,
+                        &turn_arc(c, c, r_in + weight, at(m) - 0.006, at(m) + 0.006),
+                        weight * 3.5,
+                        go,
+                        false,
+                    );
+                }
+                // No hand: a bright bead ends the value arc.
+                let (x, y) = polar(c, c, rt, at(frac));
+                fill_circle(w, o, (x, y), weight * 1.8, ink);
+                // Fuel and charge arcs across the open bottom, each on its own track.
+                let rf = r_out - weight * 1.5;
+                for (f0, f1, level) in &bottom {
+                    stroke(
+                        w,
+                        o,
+                        &turn_arc(c, c, rf, *f0, *f1),
+                        weight * 3.0,
+                        scale_alpha(ink, 0.25),
+                        false,
+                    );
+                    stroke(
+                        w,
+                        o,
+                        &turn_arc(c, c, rf, *f0, f0 + (f1 - f0) * level),
+                        weight * 3.0,
+                        ink,
+                        false,
+                    );
+                }
+            },
+        )
+        .absolute()
+        .size_full();
+        let mut ring = div().relative().w(px(size)).h(px(size)).child(cv);
+        for k in self.scale.ticks().into_iter().filter(|k| k.major) {
+            let (x, y) = polar(c, c, (r_out + r_in) / 2.0 - size * 0.004, at(k.frac));
+            ring = ring.child(
+                text_box(x, y - size * 0.035, size * 0.12)
+                    .text_size(px(size * 0.062))
+                    .text_color(ink)
+                    .font_weight(FontWeight::MEDIUM)
+                    .child(readout(k.value, 0, "")),
+            );
+        }
+        if electric {
+            // The ring reads power: say so above the speed.
+            ring = ring.child(
+                text_box(c, c - size * 0.27, size * 0.2)
+                    .text_size(px(size * 0.04))
+                    .text_color(muted)
+                    .child("kW"),
+            );
+        }
+        ring.child(
+            text_box(c, c - size * 0.2, size * 0.5)
+                .text_size(px(size * 0.2))
+                .text_color(ink)
+                .font_weight(FontWeight::SEMIBOLD)
+                .child(readout(self.speed, 0, "")),
+        )
+        .child(
+            text_box(c, c + size * 0.045, size * 0.4)
+                .text_size(px(size * 0.05))
+                .text_color(ink)
+                .child(self.unit.clone()),
+        )
+        .when(!self.tab.is_empty(), |d| {
+            d.child(
+                div()
+                    .absolute()
+                    .left(px(c - size * 0.15))
+                    .top(px(c + size * 0.12))
+                    .w(px(size * 0.3))
+                    .h(px(size * 0.085))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .rounded(px(size * 0.012))
+                    .bg(hsla(t.palette.background.mix(t.palette.text, 0.14)))
+                    .text_size(px(size * 0.05))
+                    .text_color(go)
+                    .font_weight(FontWeight::MEDIUM)
+                    .child(self.tab.clone()),
+            )
+        })
+        .child(
+            div()
+                .absolute()
+                .left(px(c - size * 0.3))
+                .top(px(c + size * 0.255))
+                .w(px(size * 0.6))
+                .flex()
+                .items_center()
+                .justify_center()
+                .gap(px(size * 0.012))
+                .text_size(px(if both { size * 0.044 } else { size * 0.052 }))
+                .text_color(ink)
+                .when(self.fuel.is_some() && self.drive.burns_fuel(), |d| {
+                    d.child(Icon::symbol(Symbol::Fuel).size(size * 0.065).color(muted))
+                        .child(self.reach.clone())
+                })
+                .when(self.charge.is_some() && self.drive.has_battery(), |d| {
+                    d.when(both, |d| d.child(div().w(px(size * 0.012))))
+                        .child(
+                            Icon::symbol(Symbol::TractionBattery)
+                                .size(size * 0.065)
+                                .color(muted),
+                        )
+                        .child(self.charge_reach.clone())
+                }),
+        )
+        .into_any_element()
+    }
+}
+
+/// The arcs across a ring's open bottom as `(from, to, level)` in turns: the fuel across the
+/// whole gap, the charge across it for an electric car, or both side by side for a hybrid
+/// (fuel left). Pure.
+pub fn bottom_arcs(
+    drive: crate::gpui::pods::Drivetrain,
+    fuel: Option<f32>,
+    charge: Option<f32>,
+) -> Vec<(f32, f32, f32)> {
+    let (f0, f1, mid) = (0.405, 0.595, 0.5);
+    let fuel = fuel.filter(|_| drive.burns_fuel());
+    let charge = charge.filter(|_| drive.has_battery());
+    match (fuel, charge) {
+        (Some(f), Some(c)) => vec![(f0, mid - 0.006, f), (mid + 0.006, f1, c)],
+        (Some(l), None) | (None, Some(l)) => vec![(f0, f1, l)],
+        (None, None) => Vec::new(),
+    }
+}
+
+// ───────────────────────────────── SidePod ─────────────────────────────────
+
+/// An open-ring pod: a bright rim with a scale and numbers inside it, the value lit along the
+/// track up to a bright bead (no hand), and room in the middle for an icon, a unit and a reading (or anything else).
+#[derive(IntoElement)]
+pub struct SidePod {
+    follow: Follow,
+    scale: Scale,
+    value: f32,
+    icon: Option<Symbol>,
+    unit: SharedString,
+    reading: SharedString,
+    ends: [Option<Tone>; 2],
+    centre: Option<AnyElement>,
+    sweep: bool,
+    /// The look drawn: the given one, else the design's, settled when rendered.
+    look: Look,
+    /// The look given with `.look(..)`; without one, the design's own.
+    given_look: Option<Look>,
+    at_limit: AtLimit,
+    style: PodStyle,
+    layout: Layout,
+    size: f32,
+}
+
+impl SidePod {
+    follow_api!();
+    /// A pod for `value` on `scale`.
+    #[track_caller]
+    pub fn new(scale: Scale, value: f32) -> Self {
+        Self {
+            follow: Follow::here(),
+            scale,
+            value,
+            icon: None,
+            unit: SharedString::default(),
+            reading: SharedString::default(),
+            ends: [None, None],
+            centre: None,
+            sweep: true,
+            look: Look::Sport,
+            given_look: None,
+            at_limit: AtLimit::Value,
+            size: 300.0,
+            style: PodStyle::Ring,
+            layout: Layout::Dial,
+        }
+    }
+    /// The layout within the look (see [`Look::layouts`]); any but the dial draws the reading
+    /// as a [`GaugeFace`](crate::gpui::faces::GaugeFace) of that layout, in Sport too.
+    pub fn layout(mut self, layout: Layout) -> Self {
+        self.layout = layout;
+        self
+    }
+    /// Show or hide the lit value (a speed scale without it only carries numbers).
+    pub fn sweep(mut self, on: bool) -> Self {
+        self.sweep = on;
+        self
+    }
+    /// The symbol in the middle.
+    pub fn icon(mut self, i: Symbol) -> Self {
+        self.icon = Some(i);
+        self
+    }
+    /// The unit under the symbol.
+    pub fn unit(mut self, u: impl Into<SharedString>) -> Self {
+        self.unit = u.into();
+        self
+    }
+    /// A written reading in the middle.
+    pub fn reading(mut self, r: impl Into<SharedString>) -> Self {
+        self.reading = r.into();
+        self
+    }
+    /// Colour the two ends of the rim (a cold end, a hot end).
+    pub fn ends(mut self, low: Option<Tone>, high: Option<Tone>) -> Self {
+        self.ends = [low, high];
+        self
+    }
+    /// The look (see [`Look`]); every look but [`Look::Sport`] draws it as a [`GaugeFace`](crate::gpui::faces::GaugeFace); the reading becomes its caption and a custom centre is left out.
+    pub fn look(mut self, look: Look) -> Self {
+        self.given_look = Some(look);
+        self
+    }
+    /// What a reading past a limit colours in the screen looks (see [`AtLimit`]): only the
+    /// value, the default, or the whole display.
+    pub fn at_limit(mut self, at: AtLimit) -> Self {
+        self.at_limit = at;
+        self
+    }
+    /// Replace the icon, unit and reading with your own content.
+    pub fn centre(mut self, e: impl IntoElement) -> Self {
+        self.centre = Some(e.into_any_element());
+        self
+    }
+    /// How the frame is drawn (open ring, closed disc, glow or bezel).
+    pub fn style(mut self, style: PodStyle) -> Self {
+        self.style = style;
+        self
+    }
+    /// Diameter in px.
+    pub fn size(mut self, s: f32) -> Self {
+        self.size = s.max(120.0);
+        self
+    }
+}
+
+impl RenderOnce for SidePod {
+    fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.look = crate::gpui::look::resolve(self.given_look, cx);
+        self.value = follow(w, cx, &self.follow, 0, self.value);
+        let layout = self.look.fit(self.layout);
+        if self.look != Look::Sport || layout != Layout::Dial {
+            let mut face = crate::gpui::faces::GaugeFace::new(self.scale, self.value)
+                .animate(false)
+                .look(self.look)
+                .layout(layout)
+                .at_limit(self.at_limit)
+                .unit(self.unit)
+                .label(self.reading)
+                .ends(self.ends[0], self.ends[1])
+                .size(self.size);
+            if let Some(i) = self.icon {
+                face = face.icon(i);
+            }
+            return face.into_any_element();
+        }
+        let t = theme_of(cx);
+        let size = self.size;
+        let c = size / 2.0;
+        let (start, span) = SWEEP;
+        let at = move |f: f32| start + span * f;
+        let (ink, muted) = (hsla(t.palette.text), hsla(t.palette.text_muted));
+        let frac = self.scale.fraction(self.value);
+        let r_rim = c - size * 0.012;
+        let width = (size * 0.014).max(2.0);
+        let ends = self.ends.map(|e| e.map(|tone| tone.color(&t)));
+        let frame = Frame::new(&t, self.style);
+        let zones: Vec<(f32, f32, Hsla)> = self
+            .scale
+            .zone_spans()
+            .into_iter()
+            .filter(|z| z.2 != Severity::Normal)
+            .map(|z| (z.0, z.1, severity_color(&t, z.2)))
+            .collect();
+        let sweep = self.sweep;
+        let ticks: Vec<(f32, bool)> = self
+            .scale
+            .ticks()
+            .into_iter()
+            .map(|k| (k.frac, k.major))
+            .collect();
+        let cv = canvas(
+            |_, _, _| (),
+            move |b: Bounds<Pixels>, _, w, _| {
+                let o = b.origin;
+                frame.paint(w, o, c, r_rim, width, ends);
+                let rt = r_rim - width * 3.0;
+                stroke(
+                    w,
+                    o,
+                    &turn_arc(c, c, rt, at(0.0), at(1.0)),
+                    width * 1.4,
+                    scale_alpha(ink, 0.18),
+                    false,
+                );
+                for (a, z, col) in &zones {
+                    stroke(
+                        w,
+                        o,
+                        &turn_arc(c, c, rt, at(*a), at(*z)),
+                        width * 1.4,
+                        *col,
+                        false,
+                    );
+                }
+                for (f, major) in &ticks {
+                    let len = if *major { size * 0.035 } else { size * 0.018 };
+                    let seg = [
+                        polar(c, c, rt - width, at(*f)),
+                        polar(c, c, rt - width - len, at(*f)),
+                    ];
+                    stroke(
+                        w,
+                        o,
+                        &seg,
+                        if *major { width * 0.8 } else { width * 0.5 },
+                        scale_alpha(ink, 0.85),
+                        false,
+                    );
+                }
+                // No hand: the value lights the track up to a bright bead.
+                if sweep {
+                    stroke(
+                        w,
+                        o,
+                        &turn_arc(c, c, rt, at(0.0), at(frac)),
+                        width * 1.4,
+                        scale_alpha(ink, 0.85),
+                        false,
+                    );
+                    let (x, y) = polar(c, c, rt, at(frac));
+                    fill_circle(w, o, (x, y), width * 1.3, ink);
+                }
+            },
+        )
+        .absolute()
+        .size_full();
+        let mut pod = div().relative().w(px(size)).h(px(size)).child(cv);
+        for k in self.scale.ticks().into_iter().filter(|k| k.major) {
+            let (x, y) = polar(c, c, r_rim - size * 0.15, at(k.frac));
+            pod = pod.child(
+                text_box(x, y - size * 0.03, size * 0.14)
+                    .text_size(px(size * 0.052))
+                    .text_color(ink)
+                    .child(readout(k.value, 0, "")),
+            );
+        }
+        let middle = match self.centre.take() {
+            Some(e) => e,
+            None => {
+                let mut col = div().flex().flex_col().items_center().gap(px(size * 0.012));
+                if let Some(i) = self.icon {
+                    col = col.child(Icon::symbol(i).size(size * 0.1).color(ink));
+                }
+                if !self.reading.is_empty() {
+                    col = col.child(
+                        div()
+                            .text_size(px(size * 0.075))
+                            .text_color(ink)
+                            .font_weight(FontWeight::MEDIUM)
+                            .child(self.reading.clone()),
+                    );
+                }
+                col.child(
+                    div()
+                        .text_size(px(size * 0.05))
+                        .text_color(muted)
+                        .child(self.unit.clone()),
+                )
+                .into_any_element()
+            }
+        };
+        pod.child(
+            div()
+                .absolute()
+                .left(px(size * 0.2))
+                .top(px(size * 0.28))
+                .w(px(size * 0.6))
+                .h(px(size * 0.4))
+                .flex()
+                .items_center()
+                .justify_center()
+                .child(middle),
+        )
+        .into_any_element()
+    }
+}
+
+// ───────────────────────────────── MenuRing ─────────────────────────────────
+
+/// An open-ring pod holding a short menu: a heading, rows, and one row selected.
+#[derive(IntoElement)]
+pub struct MenuRing {
+    heading: SharedString,
+    rows: Vec<SharedString>,
+    selected: usize,
+    chosen: Option<usize>,
+    pressed: bool,
+    /// The look drawn: the given one, else the design's, settled when rendered.
+    look: Look,
+    /// The look given with `.look(..)`; without one, the design's own.
+    given_look: Option<Look>,
+    style: PodStyle,
+    size: f32,
+}
+
+impl MenuRing {
+    /// A menu with `rows`; the first row (index 0) is selected.
+    pub fn new(rows: impl IntoIterator<Item = impl Into<SharedString>>) -> Self {
+        Self {
+            heading: SharedString::default(),
+            rows: rows.into_iter().map(Into::into).collect(),
+            selected: 0,
+            chosen: None,
+            pressed: false,
+            size: 300.0,
+            look: Look::Sport,
+            given_look: None,
+            style: PodStyle::Ring,
+        }
+    }
+    /// A heading above the rows, in the info colour.
+    pub fn heading(mut self, h: impl Into<SharedString>) -> Self {
+        self.heading = h.into();
+        self
+    }
+    /// The row under the cursor, drawn as a bar.
+    pub fn selected(mut self, i: usize) -> Self {
+        self.selected = i;
+        self
+    }
+    /// The row that is switched on: its text takes the info colour.
+    pub fn chosen(mut self, i: usize) -> Self {
+        self.chosen = Some(i);
+        self
+    }
+    /// The cursor bar while the button is held: it fills with the primary colour.
+    pub fn pressed(mut self, on: bool) -> Self {
+        self.pressed = on;
+        self
+    }
+    /// The look (see [`Look`]); by default the design's own.
+    pub fn look(mut self, look: Look) -> Self {
+        self.given_look = Some(look);
+        self
+    }
+    /// How the frame is drawn (open ring, closed disc, glow or bezel).
+    pub fn style(mut self, style: PodStyle) -> Self {
+        self.style = style;
+        self
+    }
+    /// Diameter in px.
+    pub fn size(mut self, s: f32) -> Self {
+        self.size = s.max(120.0);
+        self
+    }
+}
+
+impl RenderOnce for MenuRing {
+    fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.look = crate::gpui::look::resolve(self.given_look, cx);
+        let t = theme_of(cx);
+        if self.look != Look::Sport {
+            return self.detailed(&t);
+        }
+        let size = self.size;
+        let c = size / 2.0;
+        let ink = hsla(t.palette.text);
+        let info = hsla(t.palette.info);
+        let bar = hsla(t.palette.surface_raised.mix(t.palette.text, 0.14));
+        let width = (size * 0.014).max(2.0);
+        let r_rim = c - size * 0.012;
+        let frame = Frame::new(&t, self.style);
+        let row_h = size * 0.13;
+        let top = c - row_h * 1.6;
+        // The selected row's band, cut to the inside of the rim so it never pokes out.
+        let first = usize::from(!self.heading.is_empty());
+        let band = (self.selected < self.rows.len()).then(|| {
+            let y0 = top + row_h * (first + self.selected) as f32;
+            crate::gpui::shapes::chord_band(c, r_rim - width, y0, y0 + row_h)
+        });
+        let (pressed, primary) = (self.pressed, hsla(t.palette.primary));
+        let cv = canvas(
+            |_, _, _| (),
+            move |b: Bounds<Pixels>, _, w, _| {
+                let o = b.origin;
+                if let Some((poly, left, right)) = &band {
+                    if pressed {
+                        fill(w, o, poly, scale_alpha(primary, 0.35));
+                        stroke(w, o, left, width, info, false);
+                        stroke(w, o, right, width, info, false);
+                    } else {
+                        fill(w, o, poly, bar);
+                    }
+                }
+                frame.paint(w, o, c, r_rim, width, [None, None]);
+            },
+        )
+        .absolute()
+        .size_full();
+        let mut list = div()
+            .absolute()
+            .left(px(size * 0.04))
+            .top(px(top))
+            .w(px(size * 0.92))
+            .flex()
+            .flex_col();
+        if !self.heading.is_empty() {
+            list = list.child(
+                div()
+                    .h(px(row_h))
+                    .flex()
+                    .items_center()
+                    .px(px(size * 0.07))
+                    .text_size(px(size * 0.062))
+                    .text_color(info)
+                    .font_weight(FontWeight::MEDIUM)
+                    .child(self.heading.clone()),
+            );
+        }
+        for (i, row) in self.rows.iter().enumerate() {
+            let on = i == self.selected;
+            list = list.child(
+                div()
+                    .h(px(row_h))
+                    .flex()
+                    .items_center()
+                    .px(px(size * 0.07))
+                    .text_size(px(size * 0.062))
+                    .text_color(if self.chosen == Some(i) { info } else { ink })
+                    .when(on, |d| d.font_weight(FontWeight::MEDIUM))
+                    .child(row.clone()),
+            );
+        }
+        div()
+            .relative()
+            .w(px(size))
+            .h(px(size))
+            .child(cv)
+            .child(list)
+            .into_any_element()
+    }
+}
+
+// ───────────────────────────────── LimitSign ─────────────────────────────────
+
+/// A round speed-limit sign: a heavy red ring around the limit.
+#[derive(IntoElement)]
+pub struct LimitSign {
+    limit: u32,
+    /// The look drawn: the given one, else the design's, settled when rendered.
+    look: Look,
+    /// The look given with `.look(..)`; without one, the design's own.
+    given_look: Option<Look>,
+    size: f32,
+}
+
+impl LimitSign {
+    /// A sign for `limit`.
+    pub fn new(limit: u32) -> Self {
+        Self {
+            limit,
+            look: Look::Sport,
+            given_look: None,
+            size: 40.0,
+        }
+    }
+    /// The look (see [`Look`]).
+    pub fn look(mut self, look: Look) -> Self {
+        self.given_look = Some(look);
+        self
+    }
+    /// Diameter in px.
+    pub fn size(mut self, s: f32) -> Self {
+        self.size = crate::gpui::pod_math::finite(s, 40.0).max(16.0);
+        self
+    }
+}
+
+impl RenderOnce for LimitSign {
+    fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.look = crate::gpui::look::resolve(self.given_look, cx);
+        let t = theme_of(cx);
+        if self.look != Look::Sport {
+            return lamp_looks::sign(self.limit, self.size, self.look, &t);
+        }
+        let size = self.size;
+        let c = size / 2.0;
+        let (danger, face, ink) = (
+            hsla(t.palette.danger),
+            hsla(t.palette.text),
+            hsla(t.palette.background),
+        );
+        let cv = canvas(
+            |_, _, _| (),
+            move |b: Bounds<Pixels>, _, w, _| {
+                fill_circle(w, b.origin, (c, c), c - 0.5, danger);
+                fill_circle(w, b.origin, (c, c), c * 0.72, face);
+            },
+        )
+        .absolute()
+        .size_full();
+        div()
+            .relative()
+            .w(px(size))
+            .h(px(size))
+            .flex()
+            .items_center()
+            .justify_center()
+            .child(cv)
+            .child(
+                div()
+                    .relative()
+                    .text_size(px(size * if self.limit >= 100 { 0.3 } else { 0.38 }))
+                    .text_color(ink)
+                    .font_weight(FontWeight::BOLD)
+                    .child(self.limit.to_string()),
+            )
+            .into_any_element()
+    }
+}
+
+// ───────────────────────────────── Telltales ─────────────────────────────────
+
+/// A row of dashboard symbols, each lit in the colour of what it reports.
+#[derive(IntoElement)]
+pub struct Telltales {
+    items: Vec<(Symbol, Tone)>,
+    /// The look drawn: the given one, else the design's, settled when rendered.
+    look: Look,
+    /// The look given with `.look(..)`; without one, the design's own.
+    given_look: Option<Look>,
+    size: f32,
+    columns: usize,
+}
+
+impl Telltales {
+    /// An empty row.
+    pub fn new() -> Self {
+        Self {
+            items: Vec::new(),
+            look: Look::Sport,
+            given_look: None,
+            size: 22.0,
+            columns: usize::MAX,
+        }
+    }
+    /// The common telltales ([`COMMON_TELLTALES`]: belt, airbag, brakes, engine, lights), all
+    /// off; light the ones that apply with [`Telltales::light`].
+    pub fn common() -> Self {
+        COMMON_TELLTALES
+            .iter()
+            .fold(Self::new(), |row, s| row.push(*s, Tone::Off))
+    }
+    /// Light `icon` in its standard colour (see [`Tone::standard`]), adding it if absent.
+    pub fn light(mut self, icon: Symbol) -> Self {
+        let tone = Tone::standard(icon);
+        match self.items.iter_mut().find(|(s, _)| *s == icon) {
+            Some(item) => item.1 = tone,
+            None => self.items.push((icon, tone)),
+        }
+        self
+    }
+    /// Light every symbol in its standard colour, as at a bulb check when the engine starts.
+    pub fn bulb_check(mut self) -> Self {
+        for item in &mut self.items {
+            item.1 = Tone::standard(item.0);
+        }
+        self
+    }
+    /// Add a symbol in a tone.
+    pub fn push(mut self, icon: Symbol, tone: Tone) -> Self {
+        self.items.push((icon, tone));
+        self
+    }
+    /// Symbol size in px.
+    pub fn size(mut self, s: f32) -> Self {
+        self.size = crate::gpui::pod_math::finite(s, 22.0).max(10.0);
+        self
+    }
+    /// The look (see [`Look`]): every lamp gets the look's backing.
+    pub fn look(mut self, look: Look) -> Self {
+        self.given_look = Some(look);
+        self
+    }
+    /// Wrap into rows of this many symbols.
+    pub fn columns(mut self, n: usize) -> Self {
+        self.columns = n.max(1);
+        self
+    }
+}
+
+impl Default for Telltales {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl RenderOnce for Telltales {
+    fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        self.look = crate::gpui::look::resolve(self.given_look, cx);
+        let t = theme_of(cx);
+        let gap = self.size * 0.3;
+        let mut rows = div().flex().flex_col().gap(px(gap)).items_center();
+        let mut row = div().flex().gap(px(gap));
+        let mut n = 0;
+        for (icon, tone) in &self.items {
+            row = row.child(if self.look == Look::Sport {
+                Icon::symbol(*icon)
+                    .size(self.size)
+                    .weight(2.0)
+                    .color(tone.color(&t))
+                    .into_any_element()
+            } else {
+                lamp_looks::lamp(*icon, *tone, self.size, self.look, &t)
+            });
+            n += 1;
+            if n == self.columns {
+                rows = rows.child(std::mem::replace(&mut row, div().flex().gap(px(gap))));
+                n = 0;
+            }
+        }
+        if n > 0 {
+            rows = rows.child(row);
+        }
+        rows
+    }
+}
+
+/// A pod a [`DashTriptych`] can hold.
+pub enum Pod {
+    /// A gauge pod.
+    Side(SidePod),
+    /// A menu pod.
+    Menu(MenuRing),
+    /// Any other pod (see [`crate::gpui::pods`]): built at the size the dash gives it, in the dash's
+    /// look when the dash has one.
+    Custom(Box<dyn FnOnce(f32, Option<Look>) -> AnyElement>),
+}
+
+impl From<SidePod> for Pod {
+    fn from(p: SidePod) -> Self {
+        Pod::Side(p)
+    }
+}
+
+impl From<MenuRing> for Pod {
+    fn from(p: MenuRing) -> Self {
+        Pod::Menu(p)
+    }
+}
+
+impl Pod {
+    /// The pod at `size`, in `look` when there is one (else in its own).
+    pub(crate) fn sized(self, size: f32, look: Option<Look>) -> AnyElement {
+        match (self, look) {
+            (Pod::Side(p), Some(l)) => p.look(l).size(size).into_any_element(),
+            (Pod::Side(p), None) => p.size(size).into_any_element(),
+            (Pod::Menu(p), Some(l)) => p.look(l).size(size).into_any_element(),
+            (Pod::Menu(p), None) => p.size(size).into_any_element(),
+            (Pod::Custom(f), l) => f(size, l),
+        }
+    }
+}
+
+/// Several pods in one slot of a dash, stacked: scrolling snaps the next into place, like the
+/// roller on a steering wheel turning the pages of a side display. Each pod is built at the
+/// slot's size and in the dash's look.
+pub struct PodStack {
+    id: gpui::ElementId,
+    pods: Vec<Pod>,
+    autoplay: Option<f32>,
+}
+
+impl PodStack {
+    /// An empty stack; `id` keeps the page shown between frames.
+    pub fn new(id: impl Into<gpui::ElementId>) -> Self {
+        Self {
+            id: id.into(),
+            pods: Vec::new(),
+            autoplay: None,
+        }
+    }
+    /// Turn a page by itself every `secs` seconds, or not at all for `None` (see [`dodai_gpui::SnapStack::autoplay`]).
+    pub fn autoplay(mut self, secs: Option<f32>) -> Self {
+        self.autoplay = secs;
+        self
+    }
+    /// Add a pod.
+    pub fn pod(mut self, p: impl Into<Pod>) -> Self {
+        self.pods.push(p.into());
+        self
+    }
+}
+
+impl From<PodStack> for Pod {
+    fn from(s: PodStack) -> Self {
+        Pod::Custom(Box::new(move |size, look| {
+            let stack = dodai_gpui::SnapStack::new(s.id).height(size);
+            let stack = match s.autoplay {
+                Some(p) => stack.autoplay(p),
+                None => stack,
+            };
+            stack
+                .items(s.pods.into_iter().map(|p| p.sized(size, look)))
+                .into_any_element()
+        }))
+    }
+}
+
+// ───────────────────────────────── DashTriptych ─────────────────────────────────
+
+/// A whole dash: [`RingTach`] in the middle, a pod on each side, telltales between, and the
+/// outside temperature, clock, odometer, drive mode and gear around the edges.
+#[derive(IntoElement)]
+pub struct DashTriptych {
+    centre: RingTach,
+    left: Pod,
+    right: Pod,
+    telltales: Telltales,
+    limit: Option<u32>,
+    mode: SharedString,
+    gear: char,
+    odometer: SharedString,
+    temp: SharedString,
+    clock: SharedString,
+    look: Option<Look>,
+    width: f32,
+}
+
+impl DashTriptych {
+    /// A dash around `centre`, with a [`SidePod`] or [`MenuRing`] on each side (the dash sizes them).
+    pub fn new(centre: RingTach, left: impl Into<Pod>, right: impl Into<Pod>) -> Self {
+        Self {
+            centre,
+            left: left.into(),
+            right: right.into(),
+            telltales: Telltales::new(),
+            limit: None,
+            mode: SharedString::default(),
+            gear: 'D',
+            odometer: SharedString::default(),
+            temp: SharedString::default(),
+            clock: SharedString::default(),
+            width: 1000.0,
+            look: None,
+        }
+    }
+    /// One look for the whole dash (see [`Look`]): the ring, both pods, the lamps and the limit
+    /// sign. Without it every part keeps its own.
+    pub fn look(mut self, look: Look) -> Self {
+        self.look = Some(look);
+        self
+    }
+    /// The telltales shown between the centre and the pods.
+    pub fn telltales(mut self, t: Telltales) -> Self {
+        self.telltales = t;
+        self
+    }
+    /// The speed limit sign beside the centre.
+    pub fn limit(mut self, l: u32) -> Self {
+        self.limit = Some(l);
+        self
+    }
+    /// The drive mode under the right pod.
+    pub fn mode(mut self, m: impl Into<SharedString>) -> Self {
+        self.mode = m.into();
+        self
+    }
+    /// The engaged gear: `P`, `R`, `N` or `D`.
+    pub fn gear(mut self, g: char) -> Self {
+        self.gear = g;
+        self
+    }
+    /// The small print under the left pod: odometer, outside temperature and clock.
+    pub fn trip(
+        mut self,
+        odometer: impl Into<SharedString>,
+        temp: impl Into<SharedString>,
+        clock: impl Into<SharedString>,
+    ) -> Self {
+        self.odometer = odometer.into();
+        self.temp = temp.into();
+        self.clock = clock.into();
+        self
+    }
+    /// Width in px; the height follows (0.46 of it).
+    pub fn width(mut self, w: f32) -> Self {
+        self.width = w.max(600.0);
+        self
+    }
+}
+
+impl RenderOnce for DashTriptych {
+    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let look = self.look;
+        let centre = match look {
+            Some(l) => self.centre.look(l),
+            None => self.centre,
+        };
+        let telltales = match look {
+            Some(l) => self.telltales.look(l),
+            None => self.telltales,
+        };
+        let width = self.width;
+        let h = width * 0.46;
+        let ring = h * 0.94;
+        let pod = h * 0.68;
+        let (ink, muted) = (hsla(t.palette.text), hsla(t.palette.text_muted));
+        let small = (h * 0.045).max(11.0);
+        let gears = ['R', 'N', 'D'];
+        let mut gear_col = div()
+            .flex()
+            .flex_col()
+            .items_center()
+            .text_size(px(small))
+            .text_color(muted);
+        for g in gears {
+            let on = g == self.gear;
+            gear_col = gear_col.child(
+                div()
+                    .text_color(if on { hsla(t.palette.info) } else { muted })
+                    .font_weight(if on {
+                        FontWeight::BOLD
+                    } else {
+                        FontWeight::NORMAL
+                    })
+                    .child(g.to_string()),
+            );
+        }
+        let park = div()
+            .flex()
+            .items_center()
+            .justify_center()
+            .w(px(small * 1.5))
+            .h(px(small * 1.5))
+            .rounded(px(small * 0.25))
+            .bg(if self.gear == 'P' {
+                hsla(t.palette.info)
+            } else {
+                scale_alpha(muted, 0.35)
+            })
+            .text_color(hsla(t.palette.background))
+            .text_size(px(small))
+            .font_weight(FontWeight::BOLD)
+            .child("P");
+        let mut root = div()
+            .relative()
+            .flex_none()
+            .w(px(width))
+            .h(px(h))
+            .overflow_hidden()
+            .rounded(px(t.shape.radius))
+            .bg(hsla(t.palette.background.mix(t.palette.text, 0.02)))
+            .border_1()
+            .border_color(hsla(t.palette.border))
+            // Pods first, so the ring overlaps them.
+            .child(
+                div()
+                    .absolute()
+                    .left(px(width * 0.008))
+                    .top(px(h * 0.12))
+                    .w(px(pod))
+                    .h(px(pod))
+                    .child(self.left.sized(pod, look)),
+            )
+            .child(
+                div()
+                    .absolute()
+                    .left(px(width - width * 0.008 - pod))
+                    .top(px(h * 0.12))
+                    .w(px(pod))
+                    .h(px(pod))
+                    .child(self.right.sized(pod, look)),
+            )
+            .child(
+                div()
+                    .absolute()
+                    .left(px((width - ring) / 2.0))
+                    .top(px(h * 0.015))
+                    .child(centre.size(ring)),
+            );
+        // Telltales under the ring's left shoulder.
+        root = root.child(
+            div()
+                .absolute()
+                .left(px(width * 0.19))
+                .top(px(h * 0.7))
+                .child(telltales.size(h * 0.062).columns(3)),
+        );
+        if let Some(l) = self.limit {
+            root = root.child(
+                div()
+                    .absolute()
+                    .left(px(width * 0.245))
+                    .top(px(h * 0.04))
+                    .child(
+                        LimitSign::new(l)
+                            .when_some(look, |s, l| s.look(l))
+                            .size(h * 0.1),
+                    ),
+            );
+        }
+        root.child(
+            div()
+                .absolute()
+                .left(px(width * 0.03))
+                .top(px(h * 0.82))
+                .w(px(pod))
+                .flex()
+                .flex_col()
+                .items_center()
+                .text_size(px(small))
+                .text_color(ink)
+                .child(
+                    div()
+                        .text_size(px(small * 0.8))
+                        .text_color(muted)
+                        .child(format!("{} {}", self.temp, self.clock)),
+                )
+                .child(
+                    div()
+                        .font_weight(FontWeight::MEDIUM)
+                        .child(self.odometer.clone()),
+                ),
+        )
+        .child(
+            div()
+                .absolute()
+                .left(px(width - width * 0.03 - pod))
+                .top(px(h * 0.85))
+                .w(px(pod))
+                .flex()
+                .justify_center()
+                .text_size(px(small * 0.9))
+                .text_color(ink)
+                .font_weight(FontWeight::MEDIUM)
+                .child(self.mode.clone()),
+        )
+        .child(
+            div()
+                .absolute()
+                .right(px(width * 0.03))
+                .top(px(h * 0.78))
+                .child(gear_col),
+        )
+        .child(
+            div()
+                .absolute()
+                .right(px(width * 0.065))
+                .top(px(h * 0.8))
+                .child(park),
+        )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_bottom_shows_what_the_drivetrain_carries() {
+        use crate::gpui::pods::Drivetrain::*;
+        assert_eq!(bottom_arcs(Combustion, Some(0.5), Some(0.9)).len(), 1);
+        assert_eq!(bottom_arcs(Electric, Some(0.5), Some(0.9))[0].2, 0.9);
+        let hybrid = bottom_arcs(Hybrid, Some(0.5), Some(0.9));
+        assert_eq!(hybrid.len(), 2);
+        assert!(hybrid[0].1 < hybrid[1].0, "fuel left of the charge");
+        assert!(bottom_arcs(Electric, Some(0.5), None).is_empty());
+    }
+
+    #[test]
+    fn telltales_light_in_their_standard_colour() {
+        assert_eq!(Tone::standard(Symbol::OilCan), Tone::Danger);
+        assert_eq!(Tone::standard(Symbol::HighBeam), Tone::Info);
+        assert_eq!(Tone::standard(Symbol::Compass), Tone::Off);
+        let row = Telltales::common().light(Symbol::Engine).light(Symbol::Eco);
+        assert_eq!(row.items.len(), COMMON_TELLTALES.len() + 1, "Eco is added");
+        let tone = |s| row.items.iter().find(|(i, _)| *i == s).map(|(_, t)| *t);
+        assert_eq!(tone(Symbol::Engine), Some(Tone::Warning));
+        assert_eq!(tone(Symbol::Airbag), Some(Tone::Off));
+        let all = Telltales::common().bulb_check();
+        assert!(all.items.iter().all(|(_, t)| *t != Tone::Off));
+    }
+}

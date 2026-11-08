@@ -3,7 +3,7 @@
 use super::super::*;
 use dodai_gpui::icons::IconId;
 use dodai_gpui::icons::Symbol;
-use dodai_gpui_instruments::{
+use dodai_instruments::gpui::{
     AtLimit, BoostPod, CompassPod, DashQuad, DashTriptych, Drivetrain, DualGauge, DualScale,
     EnergyPod, GForcePod, GaugeFace, Gear, GearLayout, GearSelector, Layout, LimitSign, Look,
     MediaPod, MenuRing, NoticePod, PodIcon, PodLayout, PodRow, PodStack, PowerFlow, RingTach,
@@ -916,15 +916,16 @@ impl Showcase {
         let drive_name = DRIVES[drive].0;
         let play = |secs: f32| auto.then_some(secs);
         let now = dodai_gpui::motion::now();
-        let quad =
-            |d: usize, l: [dodai_gpui_instruments::Pod; 2], r: [dodai_gpui_instruments::Pod; 2]| {
-                DashQuad::new(drive_tach(d), l, r)
-                    .look(dash_look)
-                    .telltales(tells())
-                    .limit(50)
-                    .mode(DRIVES[d].1)
-                    .width(1000.0)
-            };
+        let quad = |d: usize,
+                    l: [dodai_instruments::gpui::Pod; 2],
+                    r: [dodai_instruments::gpui::Pod; 2]| {
+            DashQuad::new(drive_tach(d), l, r)
+                .look(dash_look)
+                .telltales(tells())
+                .limit(50)
+                .mode(DRIVES[d].1)
+                .width(1000.0)
+        };
         let tri = |d: usize, t: DashTriptych| dash(t, DRIVES[d].1).look(dash_look);
         // One dash of each size; every side display is a stack of the look's pods (all of them
         // between the stacks), and scrolling, dragging or the chevrons snap the next into place.

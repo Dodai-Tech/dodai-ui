@@ -171,7 +171,7 @@ impl Showcase {
     pub fn build(cx: &mut Context<Self>) -> Self {
         // Test aid: start with series patterns on (`DODAI_PATTERNS=1`).
         if std::env::var_os("DODAI_PATTERNS").is_some() {
-            dodai_gpui_charts::common::set_patterns(cx, true);
+            dodai_charts::gpui::common::set_patterns(cx, true);
         }
         let search = cx.new(|cx| TextInput::new(cx).placeholder("Search…"));
         let search_full = cx.new(|cx| TextInput::new(cx).placeholder("Search…").value("a"));
@@ -362,5 +362,5 @@ fn live_signal(i: u64, k: f32) -> f32 {
 
 /// One ECG sample per index: a beat every 44 samples.
 fn live_ecg(i: u64) -> f32 {
-    dodai_gpui_instruments::scope::ecg_beat((i % 44) as f32 / 44.0)
+    dodai_instruments::gpui::scope::ecg_beat((i % 44) as f32 / 44.0)
 }

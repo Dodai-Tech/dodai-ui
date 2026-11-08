@@ -4202,10 +4202,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai-charts-core"
+name = "dodai-charts"
 version = "0.1.0"
 dependencies = [
  "dodai-core",
+ "dodai-gpui",
+ "gpui",
 ]
 
 [[package]]
@@ -4268,27 +4270,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai-gpui-charts"
-version = "0.1.0"
-dependencies = [
- "dodai-charts-core",
- "dodai-core",
- "dodai-gpui",
- "gpui",
-]
-
-[[package]]
-name = "dodai-gpui-instruments"
-version = "0.1.0"
-dependencies = [
- "dodai-charts-core",
- "dodai-core",
- "dodai-gpui",
- "dodai-instruments-core",
- "gpui",
-]
-
-[[package]]
 name = "dodai-iced"
 version = "0.1.0"
 dependencies = [
@@ -4308,11 +4289,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai-instruments-core"
+name = "dodai-instruments"
 version = "0.1.0"
 dependencies = [
- "dodai-charts-core",
+ "dodai-charts",
  "dodai-core",
+ "dodai-gpui",
+ "gpui",
 ]
 
 [[package]]
@@ -4357,11 +4340,11 @@ dependencies = [
 name = "dodai-showcase"
 version = "0.1.0"
 dependencies = [
+ "dodai-charts",
  "dodai-core",
  "dodai-gpui",
- "dodai-gpui-charts",
- "dodai-gpui-instruments",
  "dodai-icons",
+ "dodai-instruments",
  "dodai-shaders",
  "gpui",
 ]

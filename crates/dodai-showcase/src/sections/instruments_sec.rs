@@ -2,7 +2,7 @@
 
 use super::super::*;
 use dodai_gpui::{DialLook, NeedleResponse};
-use dodai_gpui_instruments::{
+use dodai_instruments::gpui::{
     Affiliation, Annunciator, AttitudeIndicator, Compass, Contact, Countermeasures, DialGauge,
     GradientBar, GradientDial, GradientRing, HeadingTape, LevelBar, Limits, MissionTimer, Odometer,
     PowerMeter, Ramp, Scale, Severity, SonarWaterfall, Station, StationState, StoresPanel,

@@ -2,8 +2,8 @@
 
 GPUI adapter for Dodai UI: the themed components of four designs (Dodai, Cyberpunk, Material,
 Neo-Brutalism). The designs are plain tokens and specs in `dodai-core`; this crate only paints
-them. Charts and instruments are separate crates on top of it: `dodai-gpui-charts` and
-`dodai-gpui-instruments`.
+them. Charts and instruments are separate crates on top of it: `dodai-charts` and
+`dodai-instruments`.
 
 ## Use it
 
@@ -35,13 +35,13 @@ instrument crates are built on: theme store, `paint` (strokes, fills, shaped box
 (chart glow), `follow` (values easing to new data), `motion`, `live` (`Live` sample windows) and
 the `entry_render!` / `follow_api!` / `callback!` / `corners_setter!` macros.
 
-## Charts and instruments (`dodai-gpui-charts`, `dodai-gpui-instruments`)
+## Charts and instruments (`dodai-charts`, `dodai-instruments`)
 
 - Every chart follows new data with springs that obey the app Motion set; `.animate(false)` or
   `.response(..)` override it per chart.
 - Items pop and dim on hover and select (bar, pie, funnel, treemap, lollipop, radar, …).
 - `Live` + `Series::live(..)` / `Sparkline::live(..)` / `Oscilloscope::stream(..)` stream
-  samples with sub-sample scrolling. Geometry and logic live in `dodai-charts-core`.
+  samples with sub-sample scrolling. Geometry and logic live in `dodai-charts`.
 - The top-bar Animate switch and Speed apply to everything (`motion::set_enabled`,
   `motion::set_speed`).
 - Charts without an `id` key their animation state by call site plus their order in the frame, so
