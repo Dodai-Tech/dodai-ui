@@ -13,11 +13,13 @@
 
 pub mod catalog;
 pub mod md;
+pub mod media;
 pub mod node;
 pub mod plot;
 mod sections;
 pub mod shader_state;
 pub mod state;
+pub mod widgets;
 
 pub use catalog::{sections, Ctx, Section, CATEGORIES};
 pub use node::{b, Axis, Bind, Gap, Node, ShaderSpec, Stack, TextRole};

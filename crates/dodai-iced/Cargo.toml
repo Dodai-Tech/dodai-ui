@@ -24,7 +24,7 @@ iced = { workspace = true }
 
 [dev-dependencies]
 # The showcase measures its sections to scroll to them and to follow the scroll.
-iced = { workspace = true, features = ["selector"] }
+iced = { workspace = true, features = ["selector", "image"] }
 dodai-core = { workspace = true, features = ["cyberpunk", "material"] }
 # Workspace-only workaround: gpui pulls naga 25 which enables codespan-reporting's
 # `termcolor`; naga 27 (iced/wgpu) then fails to build unless its own `termcolor`

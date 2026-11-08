@@ -93,6 +93,8 @@ fn role(r: Role, theme: &Theme) -> dodai_bevy::widgets::TextRole {
             Ink::Muted => I::Muted,
             Ink::Disabled => I::Disabled,
             Ink::Primary => I::Primary,
+            Ink::Link => I::Link,
+            Ink::Title => I::Title,
         },
         upper: st.caps,
     }
@@ -236,10 +238,27 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
             });
         }
         Demo::Image {
+            src: Some(src),
+            video,
+            contain,
+            w,
+            h,
+            caption,
+            ..
+        } => picture(
+            p,
+            theme,
+            src,
+            (*w, *h),
+            (*video, *contain),
+            caption.as_deref(),
+        ),
+        Demo::Image {
             w,
             h,
             caption,
             on_image,
+            ..
         } => image_placeholder(p, theme, (*w, *h), caption.as_deref(), *on_image),
         Demo::Block {
             w,
@@ -422,17 +441,33 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
         Demo::Tag { label, tone, solid } => {
             p.spawn(tag(label.clone(), *tone, *solid));
         }
-        Demo::Chip { label, bind, icon } => {
-            let on = vals.flag(bind);
-            p.spawn((
-                kit_pressable(Kit::Chip { selected: on }),
-                Bound::Act(Action::Set(bind.key.clone(), Value::Bool(!on))),
-            ))
-            .with_children(|c| {
-                if let Some(i) = icon {
-                    c.spawn(icon_node(*i, 16));
+        Demo::Chip(ch) => {
+            let on = vals.flag(&ch.bind);
+            let k = if ch.elevated {
+                Kit::Elevated
+            } else {
+                Kit::Chip { selected: on }
+            };
+            let mut e = p.spawn((
+                kit_pressable(k),
+                Bound::Act(Action::Set(ch.bind.key.clone(), Value::Bool(!on))),
+            ));
+            if let Some(sh) = lift(theme, k) {
+                e.insert(sh);
+            }
+            e.with_children(|c| {
+                let lead = if ch.filter && on {
+                    Some(IconId::Check)
+                } else {
+                    ch.icon
+                };
+                if let Some(i) = lead {
+                    c.spawn(icon_node(i, 16));
                 }
-                c.spawn(text(label.clone(), TextRole::Control));
+                c.spawn(text(ch.label.clone(), TextRole::Control));
+                if ch.removable {
+                    c.spawn(icon_node(IconId::Close, 14));
+                }
             });
         }
         Demo::Toggle(t) => {
@@ -710,6 +745,8 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
             tone,
             text: t,
             banner,
+            action,
+            dismissible,
         } => {
             p.spawn((
                 kit(Kit::Alert {
@@ -722,15 +759,29 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                 },
             ))
             .with_children(|c| {
-                c.spawn(icon_node(
-                    match tone {
-                        Tone::Danger | Tone::Warning => IconId::Warning,
-                        Tone::Success => IconId::CheckCircle,
-                        Tone::Info => IconId::Info,
+                if !*banner {
+                    c.spawn(icon_node(
+                        match tone {
+                            Tone::Danger | Tone::Warning => IconId::Warning,
+                            Tone::Success => IconId::CheckCircle,
+                            Tone::Info => IconId::Info,
+                        },
+                        18,
+                    ));
+                }
+                c.spawn((
+                    Node {
+                        flex_grow: 1.0,
+                        ..default()
                     },
-                    18,
+                    children![text(t.clone(), TextRole::Content)],
                 ));
-                c.spawn(text(t.clone(), TextRole::Content));
+                if let Some(a) = action {
+                    c.spawn((text(a.clone(), TextRole::Content), Underline));
+                }
+                if *dismissible {
+                    c.spawn(icon_node(IconId::Close, 18));
+                }
             });
         }
         Demo::Snackbar { text: t, action } => {
@@ -954,39 +1005,84 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                 }
             });
         }
-        Demo::Table { columns, rows } => {
+        Demo::Table(tb) => table(p, tb, theme),
+        Demo::Pick { bind, items } => {
+            let at = vals.index(bind);
             p.spawn(Node {
                 flex_direction: FlexDirection::Column,
                 width: Val::Percent(100.0),
                 ..default()
             })
             .with_children(|c| {
-                let cells = |r: &mut ChildSpawnerCommands, items: &[String], role: TextRole| {
-                    for it in items {
-                        r.spawn((
-                            Node {
-                                flex_grow: 1.0,
-                                flex_basis: Val::Px(0.0),
-                                ..default()
-                            },
-                            children![text(it.clone(), role)],
-                        ));
-                    }
-                };
-                let line = |k: Kit| {
-                    (
-                        kit(k),
+                for (i, title) in items.iter().enumerate() {
+                    c.spawn((
+                        kit_pressable(Kit::Row { selected: i == at }),
+                        Bound::Act(Action::Set(bind.key.clone(), Value::Index(i))),
                         Node {
                             width: Val::Percent(100.0),
                             ..default()
                         },
-                    )
-                };
-                c.spawn(line(Kit::TableHead))
-                    .with_children(|r| cells(r, columns, TextRole::ControlSmall));
-                for (i, row) in rows.iter().enumerate() {
-                    c.spawn(line(Kit::TableRow(i % 2 == 1)))
-                        .with_children(|r| cells(r, row, TextRole::Content));
+                    ))
+                    .with_children(|r| {
+                        r.spawn(text(title.clone(), role(Role::Body, theme)));
+                    });
+                }
+            });
+        }
+        Demo::Rich { spans, role: r } => {
+            rich(p, spans, *r, theme);
+        }
+        Demo::Quote(body) => {
+            p.spawn((
+                Node {
+                    padding: UiRect::left(Val::Px(theme.spacing.md)),
+                    border: UiRect::left(Val::Px(2.0)),
+                    ..default()
+                },
+                BorderColor::all(color(theme.palette.primary)),
+            ))
+            .with_children(|c| spawn(c, body, cx));
+        }
+        Demo::AvatarGroup { names, max, size } => {
+            let shown = max.unwrap_or(names.len()).min(names.len());
+            let mut all: Vec<String> = names[..shown].to_vec();
+            if names.len() > shown {
+                all.push(format!("+{}", names.len() - shown));
+            }
+            p.spawn(Node::default()).with_children(|c| {
+                for (i, n) in all.into_iter().enumerate() {
+                    c.spawn((
+                        kit(Kit::Avatar),
+                        Node {
+                            width: Val::Px(*size),
+                            height: Val::Px(*size),
+                            justify_content: JustifyContent::Center,
+                            margin: UiRect::left(Val::Px(if i == 0 { 0.0 } else { -size * 0.25 })),
+                            ..default()
+                        },
+                    ))
+                    .with_children(|a| {
+                        a.spawn(text(n, TextRole::ControlSmall));
+                    });
+                }
+            });
+        }
+        Demo::Overlay(items) => {
+            p.spawn(Node {
+                display: Display::Grid,
+                justify_items: JustifyItems::Center,
+                align_items: AlignItems::Center,
+                flex_shrink: 0.0,
+                ..default()
+            })
+            .with_children(|c| {
+                for n in items {
+                    c.spawn(Node {
+                        grid_row: GridPlacement::start(1),
+                        grid_column: GridPlacement::start(1),
+                        ..default()
+                    })
+                    .with_children(|l| spawn(l, n, cx));
                 }
             });
         }
@@ -1004,25 +1100,43 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                 c.spawn(text(s.clone(), TextRole::ControlSmall));
             });
         }
-        Demo::Tooltip { text: t, rich } => {
-            p.spawn(kit(Kit::Tooltip { rich: *rich }))
-                .with_children(|c| {
-                    c.spawn(text(t.clone(), TextRole::Content));
-                });
-        }
-        Demo::Code(s) => {
+        Demo::Tooltip {
+            text: t,
+            rich: r,
+            title,
+            action,
+        } => {
+            let ty = &theme.typography;
             p.spawn((
-                kit(Kit::Code),
+                kit(Kit::Tooltip { rich: *r }),
                 Node {
-                    width: Val::Percent(100.0),
-                    max_width: Val::Px(520.0),
+                    flex_direction: FlexDirection::Column,
+                    align_items: AlignItems::FlexStart,
+                    align_self: AlignSelf::FlexStart,
+                    row_gap: Val::Px(theme.spacing.sm),
                     ..default()
                 },
             ))
             .with_children(|c| {
-                c.spawn(text(s.clone(), TextRole::Mono));
+                if let Some(h) = title {
+                    c.spawn(text(
+                        h.clone(),
+                        role(styled(ty.size_md, Font::Body, Ink::Text), theme),
+                    ));
+                }
+                c.spawn(text(
+                    t.clone(),
+                    role(styled(ty.size_sm, Font::Body, Ink::Text), theme),
+                ));
+                if let Some(a) = action {
+                    c.spawn(text(
+                        a.clone(),
+                        role(styled(ty.size_sm, Font::Body, Ink::Primary), theme),
+                    ));
+                }
             });
         }
+        Demo::Code { text: code, lang } => code_block(p, code, lang, theme),
         Demo::Timeline(events) => {
             p.spawn(Node {
                 flex_direction: FlexDirection::Column,
@@ -1124,19 +1238,32 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                 },
             ));
         }
-        Demo::Empty { title, detail } => {
+        Demo::Empty {
+            icon: glyph,
+            title,
+            detail,
+        } => {
+            let ty = &theme.typography;
             p.spawn(Node {
                 flex_direction: FlexDirection::Column,
                 align_items: AlignItems::Center,
-                row_gap: Val::Px(theme.spacing.xs),
-                width: Val::Percent(100.0),
+                row_gap: Val::Px(theme.spacing.sm),
                 padding: UiRect::all(Val::Px(theme.spacing.lg)),
                 ..default()
             })
             .with_children(|c| {
-                c.spawn(icon_node(IconId::Folder, 32));
-                c.spawn(text(title.clone(), TextRole::Control));
-                c.spawn(text(detail.clone(), TextRole::Muted));
+                c.spawn(text(
+                    glyph.clone(),
+                    role(styled(ty.size_xxl, Font::Body, Ink::Muted), theme),
+                ));
+                c.spawn(text(
+                    title.clone(),
+                    role(styled(ty.size_lg, Font::Body, Ink::Text), theme),
+                ));
+                c.spawn(text(
+                    detail.clone(),
+                    role(styled(ty.size_sm, Font::Body, Ink::Muted), theme),
+                ));
             });
         }
     }
@@ -1365,4 +1492,344 @@ fn lift(theme: &Theme, k: Kit) -> Option<BoxShadow> {
             Val::Px(6.0),
         )
     })
+}
+
+/// A data table: header row, banded rows; fixed-width columns keep their width, the others
+/// share the rest; scrolls inside `height` when set.
+fn table(p: &mut ChildSpawnerCommands, tb: &dodai_showcase_model::node::Table, theme: &Theme) {
+    use dodai_showcase_model::node::Align;
+    let cell = |r: &mut ChildSpawnerCommands,
+                s: &str,
+                col: &dodai_showcase_model::node::Column,
+                rl: Role| {
+        let mut n = Node {
+            justify_content: match col.align {
+                Align::Left => JustifyContent::FlexStart,
+                Align::Center => JustifyContent::Center,
+                Align::Right => JustifyContent::FlexEnd,
+            },
+            ..default()
+        };
+        match col.width {
+            Some(w) => {
+                n.width = Val::Px(w);
+                n.flex_shrink = 0.0;
+            }
+            None => {
+                n.flex_grow = 1.0;
+                n.flex_basis = Val::Px(0.0);
+            }
+        }
+        r.spawn(n).with_children(|c| {
+            c.spawn(text(s.to_string(), role(rl, theme)));
+        });
+    };
+    let line = |k: Kit| {
+        (
+            kit(k),
+            Node {
+                width: Val::Percent(100.0),
+                flex_shrink: 0.0,
+                ..default()
+            },
+        )
+    };
+    p.spawn(Node {
+        flex_direction: FlexDirection::Column,
+        width: Val::Percent(100.0),
+        ..default()
+    })
+    .with_children(|c| {
+        c.spawn(line(Kit::TableHead)).with_children(|r| {
+            for col in &tb.columns {
+                cell(r, &col.title, col, Role::Label);
+            }
+        });
+        let mut body = Node {
+            flex_direction: FlexDirection::Column,
+            width: Val::Percent(100.0),
+            ..default()
+        };
+        if let Some(h) = tb.height {
+            body.height = Val::Px(h);
+            body.overflow = Overflow::scroll_y();
+        }
+        let mut b = c.spawn(body);
+        if tb.height.is_some() {
+            b.insert((
+                ScrollPosition::default(),
+                bevy::ui::RelativeCursorPosition::default(),
+                crate::events::Scroller::Area,
+            ));
+        }
+        b.with_children(|rows| {
+            for (i, row) in tb.rows.iter().enumerate() {
+                rows.spawn(line(Kit::TableRow(i % 2 == 1)))
+                    .with_children(|r| {
+                        for (s, col) in row.iter().zip(&tb.columns) {
+                            cell(r, s, col, Role::Body);
+                        }
+                    });
+            }
+        });
+    });
+}
+
+/// The font source of a model font, when fonts come from the system.
+fn font_source(theme: &Theme, f: Font) -> Option<bevy::text::FontSource> {
+    use dodai_bevy::widgets::{Family, Ink as I, TextRole as T};
+    let family = match f {
+        Font::Display => Family::Display,
+        Font::Body => Family::Body,
+        Font::Mono => Family::Mono,
+    };
+    dodai_bevy::style::FontSources::of(theme)
+        .for_role(T::Styled {
+            size: 0.0,
+            family,
+            ink: I::Text,
+            upper: false,
+        })
+        .cloned()
+}
+
+/// Runs of `(text, colour, bold, italic, mono)` as one text block.
+fn runs(
+    p: &mut ChildSpawnerCommands,
+    theme: &Theme,
+    size: f32,
+    base: Font,
+    parts: Vec<(String, dodai_core::Color, bool, bool, bool)>,
+) {
+    let font = |mono: bool, bold: bool, italic: bool| {
+        let mut f = TextFont {
+            font_size: bevy::text::FontSize::Px(size),
+            ..default()
+        };
+        if let Some(src) = font_source(theme, if mono { Font::Mono } else { base }) {
+            f.font = src;
+        }
+        if bold {
+            f.weight = bevy::text::FontWeight::BOLD;
+        }
+        if italic {
+            f.style = bevy::text::FontStyle::Italic;
+        }
+        f
+    };
+    p.spawn((Text::new(""), font(false, false, false)))
+        .with_children(|t| {
+            for (s, c, bold, italic, mono) in parts {
+                t.spawn((
+                    TextSpan::new(s),
+                    font(mono, bold, italic),
+                    TextColor(color(c)),
+                ));
+            }
+        });
+}
+
+/// Inline-styled runs as one paragraph.
+fn rich(
+    p: &mut ChildSpawnerCommands,
+    spans: &[dodai_showcase_model::node::Span],
+    r: Role,
+    theme: &Theme,
+) {
+    let st = r.resolve(theme);
+    let ink = st.ink.color(theme);
+    let pl = &theme.palette;
+    let parts = spans
+        .iter()
+        .map(|s| {
+            let c = if s.link {
+                pl.link
+            } else if s.code {
+                pl.primary
+            } else {
+                ink
+            };
+            (s.text.clone(), c, s.bold, s.italic, s.code)
+        })
+        .collect();
+    runs(p, theme, st.size, st.font, parts);
+}
+
+/// A code listing: the language over syntax-coloured lines.
+fn code_block(p: &mut ChildSpawnerCommands, code: &str, lang: &str, theme: &Theme) {
+    use dodai_core::syntax::{highlight_lines, CodeToken as K};
+    let pl = &theme.palette;
+    let colour = |k: K| match k {
+        K::Keyword => pl.primary,
+        K::Str => pl.success,
+        K::Comment => pl.text_muted,
+        K::Number => pl.warning,
+        K::Type => pl.info,
+    };
+    let size = theme.typography.size_sm;
+    p.spawn((
+        kit(Kit::Code),
+        Node {
+            width: Val::Percent(100.0),
+            flex_direction: FlexDirection::Column,
+            align_items: AlignItems::FlexStart,
+            ..default()
+        },
+    ))
+    .with_children(|outer| {
+        // The kit centres its children; the listing reads from the left.
+        let mut inner = outer.spawn(Node {
+            flex_direction: FlexDirection::Column,
+            align_items: AlignItems::FlexStart,
+            width: Val::Percent(100.0),
+            ..default()
+        });
+        inner.with_children(|c| {
+            if !lang.is_empty() {
+                c.spawn(text(lang.to_uppercase(), role(Role::Caption, theme)));
+            }
+            for (l, spans) in code.split('\n').zip(highlight_lines(code, lang)) {
+                let mut parts = Vec::new();
+                let mut at = 0;
+                for (r, k) in spans {
+                    if r.start > at {
+                        parts.push((l[at..r.start].to_string(), pl.text, false, false, true));
+                    }
+                    parts.push((l[r.clone()].to_string(), colour(k), false, false, true));
+                    at = r.end;
+                }
+                // An empty line keeps its height.
+                let rest = if l[at..].is_empty() && parts.is_empty() {
+                    " "
+                } else {
+                    &l[at..]
+                };
+                parts.push((rest.to_string(), pl.text, false, false, true));
+                runs(c, theme, size, Font::Mono, parts);
+            }
+        });
+    });
+}
+
+/// A picture file to show in this node; [`load_pictures`] turns it into an image.
+#[derive(Component, Debug, Clone, PartialEq)]
+pub struct PicturePath {
+    path: String,
+    contain: bool,
+}
+
+/// Gives every new [`PicturePath`] node its decoded image.
+pub fn load_pictures(
+    mut commands: Commands,
+    q: Query<(Entity, &PicturePath), Added<PicturePath>>,
+    mut images: ResMut<Assets<Image>>,
+) {
+    use bevy::asset::RenderAssetUsages;
+    use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
+    for (e, pp) in &q {
+        let Some(pic) = dodai_showcase_model::media::picture(&pp.path) else {
+            continue;
+        };
+        let img = Image::new(
+            Extent3d {
+                width: pic.width,
+                height: pic.height,
+                depth_or_array_layers: 1,
+            },
+            TextureDimension::D2,
+            pic.rgba.to_vec(),
+            TextureFormat::Rgba8UnormSrgb,
+            RenderAssetUsages::default(),
+        );
+        let mut node = ImageNode::new(images.add(img));
+        if !pp.contain {
+            node.image_mode = bevy::ui::widget::NodeImageMode::Stretch;
+        }
+        commands.entity(e).insert(node);
+    }
+}
+
+/// A picture file in the design's frame, a play badge for a video poster, the caption under it.
+fn picture(
+    p: &mut ChildSpawnerCommands,
+    theme: &Theme,
+    src: &str,
+    (w, h): (f32, f32),
+    (video, contain): (bool, bool),
+    caption: Option<&str>,
+) {
+    let fit = dodai_showcase_model::media::picture(src)
+        .map(|pic| {
+            // Cover or contain: the picture's size inside the frame.
+            let (pw, ph) = (pic.width as f32, pic.height as f32);
+            let s = if contain {
+                (w / pw).min(h / ph)
+            } else {
+                (w / pw).max(h / ph)
+            };
+            (pw * s, ph * s)
+        })
+        .unwrap_or((w, h));
+    p.spawn(Node {
+        flex_direction: FlexDirection::Column,
+        row_gap: Val::Px(theme.spacing.xs),
+        width: Val::Px(w),
+        flex_shrink: 0.0,
+        ..default()
+    })
+    .with_children(|col| {
+        col.spawn((
+            Node {
+                width: Val::Px(w),
+                height: Val::Px(h),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                border: UiRect::all(Val::Px(theme.shape.border_width)),
+                border_radius: BorderRadius::all(Val::Px(theme.shape.radius)),
+                overflow: Overflow::clip(),
+                ..default()
+            },
+            BackgroundColor(color(theme.palette.surface_raised)),
+            BorderColor::all(color(theme.palette.border)),
+        ))
+        .with_children(|f| {
+            f.spawn((
+                Node {
+                    position_type: PositionType::Absolute,
+                    width: Val::Px(fit.0),
+                    height: Val::Px(fit.1),
+                    ..default()
+                },
+                PicturePath {
+                    path: src.to_string(),
+                    contain,
+                },
+            ));
+            if video {
+                let d = (h * 0.28).clamp(28.0, 56.0);
+                f.spawn((
+                    Node {
+                        width: Val::Px(d),
+                        height: Val::Px(d),
+                        align_items: AlignItems::Center,
+                        justify_content: JustifyContent::Center,
+                        border: UiRect::all(Val::Px(1.0)),
+                        border_radius: BorderRadius::MAX,
+                        ..default()
+                    },
+                    BackgroundColor(color(theme.palette.background.with_alpha(0.75))),
+                    BorderColor::all(color(theme.palette.primary)),
+                ))
+                .with_children(|b| {
+                    b.spawn(text(
+                        "▶",
+                        role(styled(d * 0.45, Font::Body, Ink::Primary), theme),
+                    ));
+                });
+            }
+        });
+        if let Some(c) = caption {
+            col.spawn(text(c.to_string(), role(Role::Muted, theme)));
+        }
+    });
 }

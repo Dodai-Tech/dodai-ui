@@ -56,6 +56,10 @@ pub enum Ink {
     Disabled,
     /// `palette.primary`.
     Primary,
+    /// `palette.link`.
+    Link,
+    /// The panel title colour.
+    Title,
 }
 
 /// Typographic role of a [`UiText`].

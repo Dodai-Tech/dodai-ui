@@ -770,30 +770,8 @@ pub enum Node {
         /// Diameter px.
         size: f32,
     },
-    /// A circular progress ring.
-    Ring {
-        /// Fraction `0..=1`, or spinning when `None`.
-        value: Option<f32>,
-        /// Status tone (`None` = primary).
-        tone: Option<Tone>,
-        /// Diameter px.
-        size: f32,
-        /// Stroke px.
-        thickness: f32,
-        /// Wavy (expressive) track.
-        wavy: bool,
-    },
-    /// An analog clock with the digital time below (local time).
-    Clock,
-    /// A countdown ring with − / start / reset / + controls.
-    Timer {
-        /// Starting minutes.
-        minutes: u32,
-    },
-    /// A stopwatch with start / lap / reset.
-    Stopwatch,
-    /// A tap-tempo pad (BPM from taps).
-    TapTempo,
+    /// Children laid over each other, centred on the first (a ring and its label).
+    Overlay(Vec<Node>),
     /// Events down a line.
     Timeline(Vec<TimelineEvent>),
     /// An icon button with a count or dot badge.
@@ -1318,6 +1296,7 @@ impl Node {
             Node::Stack(s) => s.items.iter().for_each(|n| n.walk(f)),
             Node::Card { body, .. } | Node::Scroll { body, .. } => body.walk(f),
             Node::Popup(body) | Node::Quote(body) => body.walk(f),
+            Node::Overlay(items) => items.iter().for_each(|n| n.walk(f)),
             _ => {}
         }
     }

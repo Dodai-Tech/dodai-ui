@@ -4403,9 +4403,12 @@ dependencies = [
 name = "dodai-showcase-model"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
+ "chrono",
  "dodai-core",
  "dodai-icons",
  "dodai-shaders",
+ "png 0.18.1",
 ]
 
 [[package]]
