@@ -613,6 +613,7 @@ impl Showcase {
         };
         let stack = dodai_gpui::SnapStack::new("snap-stack")
             .height(140.0)
+            .arrows(true)
             .item(page(r.primary_container, "Page one"))
             .item(page(r.secondary_container, "Page two"))
             .item(page(r.tertiary_container, "Page three"))
@@ -622,7 +623,7 @@ impl Showcase {
             "Snap stack",
             self.section("Snap stack", cx)
                 .child(Muted::new(
-                    "Scroll the wheel or swipe vertically over the stack to turn a page; \
+                    "Scroll the wheel or swipe vertically over the stack to turn a page, or use the chevrons; \
                      at either end the scroll passes on to the page.",
                 ))
                 .child(div().w(px(320.0)).child(stack))

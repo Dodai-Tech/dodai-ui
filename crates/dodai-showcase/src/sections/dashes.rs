@@ -174,12 +174,30 @@ fn media() -> MediaPod {
     MediaPod::new("Full album").artist("Learn Linux TV")
 }
 
-fn dash(d: DashTriptych) -> DashTriptych {
+fn dash(d: DashTriptych, mode: &'static str) -> DashTriptych {
     d.telltales(tells())
         .limit(50)
-        .mode("HYBRID AUTO")
+        .mode(mode)
         .trip("13.207 km", "6 °C", "19:06")
         .width(820.0)
+}
+
+/// The drivetrains the example dashes can show: name and the mode text of the display.
+pub(crate) const DRIVES: [(&str, &str); 4] = [
+    ("Petrol", "SPORT"),
+    ("Diesel", "DIESEL"),
+    ("Hybrid", "HYBRID AUTO"),
+    ("Electric", "RANGE"),
+];
+
+/// The ring of drivetrain `i` of [`DRIVES`]: revs, the charge beside them for a hybrid, the
+/// motor's power for an electric car.
+fn drive_tach(i: usize) -> RingTach {
+    match i {
+        2 => tach().drivetrain(Drivetrain::Hybrid).charge(0.62, "38 km"),
+        3 => ev_tach(),
+        _ => tach(),
+    }
 }
 
 /// Pod diameter in the galleries.
@@ -845,37 +863,67 @@ impl Showcase {
         );
         let gap = px(t.spacing.lg);
         let col = || div().flex().flex_col().gap(gap);
+        let (drive_name, mode) = DRIVES[self.inst_drive.min(DRIVES.len() - 1)];
         let quad = |l: [dodai_gpui_instruments::Pod; 2], r: [dodai_gpui_instruments::Pod; 2]| {
-            DashQuad::new(tach(), l, r)
+            DashQuad::new(drive_tach(self.inst_drive), l, r)
                 .look(dash_look)
                 .telltales(tells())
                 .limit(50)
-                .mode("HYBRID AUTO")
+                .mode(mode)
                 .width(1000.0)
         };
-        let tri = |d: DashTriptych| dash(d).look(dash_look);
-        // One dash of each size; every side display is a stack of the look's pods, and
-        // scrolling over it snaps the next into place.
+        let tri = |d: DashTriptych| dash(d, mode).look(dash_look);
+        // One dash of each size; every side display is a stack of the look's pods (all of them
+        // between the stacks), and scrolling, dragging or the chevrons snap the next into place.
+        let energy = || {
+            EnergyPod::new(68.0)
+                .power(val(44.0, -40.0, 120.0))
+                .range("312 km")
+        };
+        let since = || {
+            RowsPod::new([
+                PodRow::new(Symbol::Stopwatch, "3 min"),
+                PodRow::new(Symbol::Trip, "0.0 km"),
+                PodRow::new(Symbol::Range, "--- kWh/100km"),
+                PodRow::new(Symbol::Recuperation, "0.0 kWh"),
+            ])
+            .heading("Since 19:06")
+        };
+        let gforce = |k: f32| GForcePod::new(val(k, -0.9, 0.9), val(k + 1.0, -0.6, 1.1));
+        let compass = || CompassPod::new(val(43.0, 300.0, 359.0)).height("460 m");
+        let boost = || BoostPod::new(0.0).temp("9 °C");
         let examples = col()
             .child(Muted::new(
-                "Five instruments round the ring. Scroll over a side display to turn its pages.",
+                format!("Five instruments round the ring, here with a {} drivetrain (the Drive picker above). Scroll, drag or use the chevrons on a side display to turn its pages.", drive_name.to_lowercase()),
             ))
             .child(quad(
                 [
                     PodStack::new("ex5-l0")
                         .pod(volt())
-                        .pod(BoostPod::new(0.0).temp("9 °C"))
+                        .pod(boost())
+                        .pod(fluid())
+                        .pod(energy())
+                        .pod(tyres())
                         .into(),
                     PodStack::new("ex5-l1")
                         .pod(speed())
-                        .pod(GForcePod::new(val(41.0, -0.9, 0.9), val(42.0, -0.6, 1.1)))
+                        .pod(gforce(41.0))
+                        .pod(flow())
+                        .pod(compass())
                         .into(),
                 ],
                 [
-                    PodStack::new("ex5-r0").pod(oil()).pod(trip_rows()).into(),
+                    PodStack::new("ex5-r0")
+                        .pod(oil())
+                        .pod(trip_rows())
+                        .pod(particulate())
+                        .pod(since())
+                        .into(),
                     PodStack::new("ex5-r1")
                         .pod(coolant())
-                        .pod(CompassPod::new(val(43.0, 300.0, 359.0)).height("460 m"))
+                        .pod(compass())
+                        .pod(notice())
+                        .pod(today_rows())
                         .into(),
                 ],
             ))
@@ -883,7 +931,7 @@ impl Showcase {
                 "Three instruments: a stack of displays on each side of the ring.",
             ))
             .child(tri(DashTriptych::new(
-                tach(),
+                drive_tach(self.inst_drive),
                 PodStack::new("ex3-l")
                     .pod(
                         tyres()
@@ -895,8 +943,10 @@ impl Showcase {
                             .heading("Pressure deviation")
                             .note("Measured from 25 km/h"),
                     )
-                    .pod(BoostPod::new(0.0).temp("9 °C"))
-                    .pod(GForcePod::new(val(44.0, -0.8, 0.8), val(45.0, -0.5, 0.9)))
+                    .pod(boost())
+                    .pod(gforce(44.0))
+                    .pod(energy())
+                    .pod(flow())
                     .pod(
                         MenuRing::new(["G-Force", "G-Force Max.", "Reset max."])
                             .selected(0)
@@ -907,7 +957,9 @@ impl Showcase {
                     .pod(notice())
                     .pod(media())
                     .pod(today_rows())
-                    .pod(CompassPod::new(343.0).height("460 m"))
+                    .pod(trip_rows())
+                    .pod(since())
+                    .pod(compass())
                     .pod(
                         MenuRing::new(["Information", "Vehicle", "Oil level"])
                             .selected(0)
@@ -916,78 +968,6 @@ impl Showcase {
             )))
             .into_any_element();
         add(self, "Vehicle · Examples", vec![examples]);
-        let drives = col()
-            .child(Muted::new(
-                "Diesel: the revs with the fuel, the exhaust fluid and the particulate filter's load beside the oil.",
-            ))
-            .child(
-                DashQuad::new(tach(), [speed().into(), fluid().into()], [oil().into(), particulate().into()])
-                    .look(dash_look)
-                    .telltales(tells())
-                    .mode("DIESEL")
-                    .width(1000.0),
-            )
-            .child(Muted::new(
-                "Hybrid: the revs with the fuel and the charge side by side at the bottom, the power flow beside it.",
-            ))
-            .child(
-                DashQuad::new(
-                    tach()
-                        .drivetrain(Drivetrain::Hybrid)
-                        .charge(0.62, "38 km"),
-                    [speed().into(), coolant().into()],
-                    [flow().into(), trip_rows().into()],
-                )
-                .look(dash_look)
-                .telltales(tells())
-                .mode("HYBRID AUTO")
-                .width(1000.0),
-            )
-            .child(Muted::new(
-                "Electric: the motor's power where the revs were, lit from zero (left while recovering), the charge where the fuel was, and the battery beside it.",
-            ))
-            .child(
-                DashQuad::new(
-                    ev_tach(),
-                    [speed().into(), EnergyPod::new(68.0).power(val(44.0, -40.0, 120.0)).range("312 km").into()],
-                    [
-                        RowsPod::new([
-                            PodRow::new(Symbol::Stopwatch, "3 min"),
-                            PodRow::new(Symbol::Trip, "0.0 km"),
-                            PodRow::new(Symbol::Range, "--- kWh/100km"),
-                            PodRow::new(Symbol::Recuperation, "0.0 kWh"),
-                        ])
-                        .heading("Since 19:06")
-                        .into(),
-                        notice().into(),
-                    ],
-                )
-                .look(dash_look)
-                .telltales(tells())
-                .mode("RANGE")
-                .width(1000.0),
-            )
-            .into_any_element();
-        add(self, "Vehicle · Drivetrains", vec![drives]);
-        let mut by_look = col();
-        for look in shown(only) {
-            by_look = by_look.child(Muted::new(look.name())).child(
-                quad(
-                    [volt().into(), speed().into()],
-                    [oil().into(), coolant().into()],
-                )
-                .look(look),
-            );
-        }
-        add(
-            self,
-            "Vehicle · One look for the whole dash",
-            vec![
-                Muted::new("A dash's look reaches its ring, pods, lamps and limit sign.")
-                    .into_any_element(),
-                by_look.into_any_element(),
-            ],
-        );
         out
     }
 }

@@ -6,6 +6,7 @@ mod charts_more;
 mod charts_sec;
 mod charts_status;
 mod dashes;
+pub(crate) use dashes::DRIVES;
 mod data_display;
 mod foundations_sec;
 mod inputs;

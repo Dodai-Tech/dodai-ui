@@ -1170,8 +1170,8 @@ mod tests {
         let heading = components("Aviation · Heading");
         assert!(heading.iter().any(|c| c == "HeadingTape"), "{heading:?}");
         assert!(!heading.iter().any(|c| c == "RadarScope"), "{heading:?}");
-        let look = components("Vehicle · One look for the whole dash");
-        assert!(look.iter().any(|c| c == "DualGauge"), "{look:?}");
+        let dashes = components("Vehicle · Examples");
+        assert!(dashes.iter().any(|c| c == "PodStack"), "{dashes:?}");
     }
 
     #[test]

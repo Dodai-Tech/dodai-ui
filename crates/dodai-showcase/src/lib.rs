@@ -199,6 +199,8 @@ pub struct Showcase {
     inst_response: usize,
     /// The look the vehicle sections show: 0 all of them, in order, then one of `Look::ALL`.
     inst_look: usize,
+    /// The drivetrain of the example dashes: an index into `sections::DRIVES`.
+    inst_drive: usize,
     /// Glow of every chart and instrument: 0 the theme's own, 1 off, 2 soft, 3 strong.
     inst_glow: usize,
     /// Channel-plan blocks the user toggled: `(band, row, block)`.
@@ -360,6 +362,22 @@ impl Render for Showcase {
                 )
                 .when(on_vehicle, |d| {
                     d.child(div().w(px(16.0)))
+                        .child(dodai_gpui::Label::new("Drive"))
+                        .child({
+                            let m = me.clone();
+                            dodai_gpui::Segmented::new(
+                                "veh-drive",
+                                crate::sections::DRIVES.iter().map(|d| d.0),
+                            )
+                            .selected(self.inst_drive)
+                            .on_select(move |i, _, cx| {
+                                m.update(cx, |s, cx| {
+                                    s.inst_drive = i;
+                                    cx.notify();
+                                })
+                            })
+                        })
+                        .child(div().w(px(16.0)))
                         .child(dodai_gpui::Label::new("Look"))
                         .child({
                             let m = me.clone();
