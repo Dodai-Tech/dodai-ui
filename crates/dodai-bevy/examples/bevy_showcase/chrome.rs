@@ -371,7 +371,13 @@ pub fn rebuild(
     open: Res<OpenMenu>,
     mut dirty: ResMut<Dirty>,
     mut regions: Regions,
+    mouse: Res<ButtonInput<MouseButton>>,
 ) {
+    let (left, fire) = crate::settle_step(dirty.settle, mouse.pressed(MouseButton::Left));
+    dirty.settle = left;
+    if fire {
+        dirty.content = true;
+    }
     if !(dirty.nav || dirty.content || dirty.top) {
         return;
     }

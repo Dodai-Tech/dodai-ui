@@ -75,6 +75,14 @@ run-ratatui:
 run-iced:
     cargo run -p dodai-iced --example iced_showcase
 
+# Bevy showcase (the same pages as the gpui one)
+run-bevy:
+    CARGO_TARGET_DIR=target/bevy cargo run -p dodai-bevy --example bevy_showcase
+
+# Dioxus showcase, served at http://127.0.0.1:3030
+run-dioxus:
+    cargo run -p dodai-dioxus --example dioxus_showcase
+
 # GPUI showcase
 run-gpui:
     cargo run -p dodai-showcase

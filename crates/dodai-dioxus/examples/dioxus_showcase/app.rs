@@ -152,13 +152,10 @@ fn Page(model: Signal<Showcase>) -> Element {
 #[component]
 pub fn App() -> Element {
     let model = use_signal(Showcase::from_env);
-    let (theme, rev) = {
-        let m = model.read();
-        (m.theme(), m.revision())
-    };
+    let theme = model.read().theme();
     let id = theme.id().to_string();
     rsx! {
-        ThemeProvider { key: "{rev}", themes: Some(vec![theme]), initial: Some(id),
+        ThemeProvider { themes: Some(vec![theme]), initial: Some(id),
             div { class: "dodai-app",
                 Sidebar { model }
                 div { class: "dodai-main", TopBar { model } Page { model } }

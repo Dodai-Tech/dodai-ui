@@ -83,6 +83,7 @@ pub fn handle(
                         s.value = v;
                     }
                     model.0.update(Action::Set(key.clone(), Value::Num(v)));
+                    dirty.settle = crate::SETTLE_FRAMES;
                 }
             }
             (Bound::Text(k), ControlKind::TextChanged) => {
@@ -324,8 +325,10 @@ mod tests {
         send(&mut a, e, ControlKind::Slid(6.6));
         assert_eq!(model(&a).values.num(&Bind::new("s", 0.0)), 7.0);
         assert_eq!(a.world().get::<UiSlider>(e).unwrap().value, 7.0);
-        // Sliding does not rebuild the page (a rebuild would drop the drag).
-        assert!(!a.world().resource::<Dirty>().content);
+        // Sliding does not rebuild the page at once (a rebuild would drop the drag); it is
+        // scheduled for when the slider rests.
+        let d = a.world().resource::<Dirty>();
+        assert!(!d.content && d.settle == crate::SETTLE_FRAMES);
     }
 
     #[test]

@@ -26,10 +26,26 @@ pub struct Dirty {
     pub nav: bool,
     pub content: bool,
     pub top: bool,
+    /// Frames left until the page is rebuilt after a slider moved (text built from slider values,
+    /// like a range readout, catches up once the pointer is up; a rebuild mid-drag would drop it).
+    pub settle: u32,
+}
+
+/// Frames a slider must rest before the page follows it.
+pub const SETTLE_FRAMES: u32 = 12;
+
+/// One frame of the settle countdown: `(frames left, rebuild now)`. It waits while the
+/// pointer is down and does nothing when idle.
+pub fn settle_step(left: u32, pointer_down: bool) -> (u32, bool) {
+    if left == 0 || pointer_down {
+        return (left, false);
+    }
+    (left - 1, left == 1)
 }
 
 impl Dirty {
     pub fn all(&mut self) {
+        self.settle = 0;
         self.nav = true;
         self.content = true;
         self.top = true;
@@ -62,6 +78,7 @@ fn main() {
         nav: true,
         content: true,
         top: true,
+        settle: 0,
     })
     .add_systems(Startup, chrome::setup)
     .add_systems(
@@ -102,4 +119,28 @@ fn main() {
         );
     }
     app.run();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_page_follows_a_slider_once_it_rests() {
+        let mut left = SETTLE_FRAMES;
+        let mut fired = false;
+        for _ in 0..SETTLE_FRAMES {
+            let (l, f) = settle_step(left, false);
+            left = l;
+            fired |= f;
+        }
+        assert!(fired && left == 0);
+    }
+
+    #[test]
+    fn it_waits_while_the_pointer_is_down_and_stays_quiet_when_idle() {
+        assert_eq!(settle_step(5, true), (5, false));
+        assert_eq!(settle_step(0, false), (0, false));
+        assert_eq!(settle_step(1, false), (0, true));
+    }
 }

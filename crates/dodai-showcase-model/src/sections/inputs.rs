@@ -9,7 +9,7 @@ use crate::node::Node;
 
 const CAT: &str = "Inputs";
 
-pub(crate) const SECTIONS: [Section; 11] = [
+pub(crate) const SECTIONS: [Section; 14] = [
     Section {
         category: CAT,
         title: "Toggle · Checkbox · Radio",
@@ -64,6 +64,21 @@ pub(crate) const SECTIONS: [Section; 11] = [
         category: CAT,
         title: "Date / time pickers",
         build: pickers,
+    },
+    Section {
+        category: CAT,
+        title: "Range slider",
+        build: range_slider,
+    },
+    Section {
+        category: CAT,
+        title: "Date range",
+        build: date_range,
+    },
+    Section {
+        category: CAT,
+        title: "Date-time range",
+        build: date_time_range,
     },
 ];
 
@@ -251,4 +266,77 @@ fn pickers(_: &Ctx) -> Node {
             .connected(),
         ),
     ])
+}
+
+/// The ordered `(low, high)` of a pair of range handles, whichever way round they were set.
+pub(crate) fn ordered(a: f32, b: f32) -> (f32, f32) {
+    if a <= b {
+        (a, b)
+    } else {
+        (b, a)
+    }
+}
+
+fn range_slider(c: &Ctx) -> Node {
+    let lo = crate::Bind::new("rs-lo", 20.0);
+    let hi = crate::Bind::new("rs-hi", 70.0);
+    let (a, b) = ordered(c.values.num(&lo), c.values.num(&hi));
+    col(vec![
+        muted("Two handles: the range is the lower and the higher of them."),
+        slider("rs-lo", 20.0, 0.0, 100.0).step(5.0).node(),
+        slider("rs-hi", 70.0, 0.0, 100.0).step(5.0).node(),
+        body(format!("Selected range: {a:.0} to {b:.0}")),
+    ])
+}
+
+fn date_range(_: &Ctx) -> Node {
+    row(vec![
+        input("dr-from", "YYYY-MM-DD")
+            .label("From")
+            .value("2026-11-01")
+            .icon(IconId::Calendar)
+            .node(),
+        input("dr-to", "YYYY-MM-DD")
+            .label("To")
+            .value("2026-11-30")
+            .icon(IconId::Calendar)
+            .node(),
+    ])
+}
+
+fn date_time_range(_: &Ctx) -> Node {
+    col(vec![
+        row(vec![
+            input("dtr-from", "YYYY-MM-DD")
+                .label("Start date")
+                .value("2026-11-08")
+                .node(),
+            input("dtr-from-t", "HH:MM")
+                .label("Start time")
+                .value("09:00")
+                .node(),
+        ]),
+        row(vec![
+            input("dtr-to", "YYYY-MM-DD")
+                .label("End date")
+                .value("2026-11-08")
+                .node(),
+            input("dtr-to-t", "HH:MM")
+                .label("End time")
+                .value("17:30")
+                .node(),
+        ]),
+    ])
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ordered;
+
+    #[test]
+    fn the_range_is_ordered_whichever_handle_is_higher() {
+        assert_eq!(ordered(20.0, 70.0), (20.0, 70.0));
+        assert_eq!(ordered(70.0, 20.0), (20.0, 70.0));
+        assert_eq!(ordered(5.0, 5.0), (5.0, 5.0));
+    }
 }
