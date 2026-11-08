@@ -25,6 +25,12 @@ code,pre,.dodai-mono{font-family:var(--dodai-font-mono)}
 .dodai-btn::before,.dodai-panel::before{inset:0;background:var(--f-bd);clip-path:var(--dodai-clip-ring)}
 .dodai-btn::after,.dodai-panel::after{inset:var(--dodai-border-width);background:var(--f-bg);border-radius:var(--dodai-inner-radius);clip-path:var(--dodai-clip-inner);transition:background .12s}
 
+/* Double tick a cut-corner crop draws on the far end of a button */
+.dodai-tick{position:absolute;top:50%;width:var(--dodai-space-md);box-sizing:content-box;
+  height:var(--dodai-space-xs);transform:translateY(-50%);pointer-events:none;
+  border-top:var(--dodai-border-width) solid var(--b-fg);border-bottom:var(--dodai-border-width) solid var(--b-fg)}
+.dodai-tick--left{left:0}.dodai-tick--right{right:0}
+
 /* Buttons */
 .dodai-btn{--f-bg:var(--dodai-primary);--f-bd:var(--dodai-primary);--b-fg:var(--dodai-on-primary);
   display:inline-flex;align-items:center;justify-content:center;gap:var(--dodai-space-sm);

@@ -71,6 +71,10 @@ pub struct ButtonProps {
     /// Shows the busy ring before the label and ignores clicks.
     #[props(default)]
     pub loading: bool,
+    /// Which end is cropped, drawn the way the design crops buttons (`None` = uncropped;
+    /// needs a [`crate::ThemeProvider`]).
+    #[props(default)]
+    pub crop: Option<dodai_core::Crop>,
     #[props(default)]
     pub onclick: EventHandler<MouseEvent>,
     pub children: Element,
@@ -107,10 +111,32 @@ pub fn button_classes(
 pub fn Button(props: ButtonProps) -> Element {
     let class = button_classes(props.variant, props.size, props.square, props.icon_only);
     let off = props.disabled || props.loading;
+    let cropped = props
+        .crop
+        .zip(try_use_context::<crate::ThemeHandle>())
+        .and_then(|(end, h)| h.theme().button_crop(end).map(|c| (c, h)));
+    let mut style = String::new();
+    let mut tick = None;
+    if let Some((crop, h)) = cropped {
+        style = dodai_topcoat::crop_style(&h.theme(), crop);
+        if let dodai_core::ButtonCrop::CutTicked { tick: edge, .. } = crop {
+            let (side, cls) = match edge {
+                dodai_core::CropEdge::Left => ("left", "dodai-tick dodai-tick--left"),
+                _ => ("right", "dodai-tick dodai-tick--right"),
+            };
+            if !props.icon_only {
+                style.push_str(&format!(
+                    "padding-{side}:calc(var(--dodai-space-lg) + var(--dodai-space-md));"
+                ));
+            }
+            tick = Some(cls);
+        }
+    }
     rsx! {
-        button { class, disabled: off, onclick: move |e| props.onclick.call(e),
+        button { class, style, disabled: off, onclick: move |e| props.onclick.call(e),
             if props.loading { span { class: "dodai-spinner", style: "--s:14px" } }
             {props.children}
+            if let Some(cls) = tick { i { class: cls } }
         }
     }
 }

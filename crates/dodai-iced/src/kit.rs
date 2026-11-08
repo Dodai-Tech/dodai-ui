@@ -201,6 +201,76 @@ impl IcedTheme {
         self.button_compact(label, icon, variant, size, on_press)
     }
 
+    /// [`button_sized`](Self::button_sized) with `end` cropped the way this design crops buttons
+    /// (`None`, or an end the design has no crop for, is a plain button). Cut corners and ticket
+    /// stubs are drawn on a canvas, so they carry no icon; tight corners stay a native button.
+    pub fn button_cropped<'a, Message: Clone + 'a>(
+        &self,
+        label: &str,
+        icon: Option<Element<'a, Message>>,
+        variant: ButtonVariant,
+        size: ControlSize,
+        end: Option<dodai_core::Crop>,
+        on_press: Option<Message>,
+    ) -> Element<'a, Message> {
+        use dodai_core::ButtonCrop as B;
+        let Some(crop) = end.and_then(|e| self.theme.button_crop(e)) else {
+            return self.button_sized(label, icon, variant, size, on_press);
+        };
+        match crop {
+            B::Squared {
+                corners,
+                radius,
+                rest,
+            } => {
+                let pick = |on: bool| if on { radius } else { rest };
+                let radii = [
+                    pick(corners.top_left),
+                    pick(corners.top_right),
+                    pick(corners.bottom_right),
+                    pick(corners.bottom_left),
+                ];
+                let style = self.button(variant);
+                self.button_compact_styled(label, icon, size, on_press, move |t, s| {
+                    let mut st = style(t, s);
+                    st.border.radius = iced::border::Radius {
+                        top_left: radii[0],
+                        top_right: radii[1],
+                        bottom_right: radii[2],
+                        bottom_left: radii[3],
+                    };
+                    st
+                })
+            }
+            B::CutTicked { .. } | B::Scooped { .. } if icon.is_none() => {
+                let mut b = self.shaped_button_sized(label, variant, size, on_press);
+                let sh = &self.theme.shape;
+                match crop {
+                    B::CutTicked { corners, tick } => {
+                        b.shape.corners = corners;
+                        b.shape.chamfer = sh.chamfer.max(sh.control_height);
+                        b.shape.scoop = false;
+                        b.tick = Some(crate::shaped_button::Tick {
+                            edge: tick,
+                            width: self.theme.spacing.md,
+                            bar: sh.border_width.max(1.0),
+                            gap: self.theme.spacing.xs,
+                        });
+                        b.padding_x += self.theme.spacing.md;
+                    }
+                    B::Scooped { corners, size } => {
+                        b.shape.corners = corners;
+                        b.shape.chamfer = size;
+                        b.shape.scoop = true;
+                    }
+                    _ => {}
+                }
+                b.into()
+            }
+            _ => self.button_sized(label, icon, variant, size, on_press),
+        }
+    }
+
     /// Like [`button_sized`](Self::button_sized), always a native button: tight (no space
     /// reserved for a glow), with square corners on chamfered designs. For dense strips such as
     /// segmented pickers.
@@ -211,6 +281,18 @@ impl IcedTheme {
         variant: ButtonVariant,
         size: ControlSize,
         on_press: Option<Message>,
+    ) -> Element<'a, Message> {
+        self.button_compact_styled(label, icon, size, on_press, self.button(variant))
+    }
+
+    /// [`button_compact`](Self::button_compact) with its own style function.
+    pub fn button_compact_styled<'a, Message: Clone + 'a>(
+        &self,
+        label: &str,
+        icon: Option<Element<'a, Message>>,
+        size: ControlSize,
+        on_press: Option<Message>,
+        style: impl Fn(&iced::Theme, iced::widget::button::Status) -> iced::widget::button::Style + 'a,
     ) -> Element<'a, Message> {
         let m = self.theme.control_metrics(size);
         let mut content = row![].spacing(6).align_y(alignment::Vertical::Center);
@@ -232,7 +314,7 @@ impl IcedTheme {
         )
         .padding([0.0, pad])
         .height(m.height)
-        .style(self.button(variant));
+        .style(style);
         let b = if label.is_empty() {
             b.width(m.height)
         } else {

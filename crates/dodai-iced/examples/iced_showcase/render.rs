@@ -231,7 +231,20 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
                     None => Msg::Noop,
                 })
             };
-            lt.button_sized(&b.label, icon_el, b.variant, b.size, msg)
+            // Cut-corner designs crop every button by default, the others only when asked.
+            let default = lt
+                .theme()
+                .look()
+                .cut_corners
+                .then_some(dodai_core::Crop::Left);
+            lt.button_cropped(
+                &b.label,
+                icon_el,
+                b.variant,
+                b.size,
+                b.crop.or(default),
+                msg,
+            )
         }
         Demo::Split { label, variant } => row![
             lt.button_sized(label, None, *variant, ControlSize::Medium, Some(Msg::Noop)),

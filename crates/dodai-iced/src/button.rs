@@ -99,6 +99,7 @@ impl IcedTheme {
             backdrop: iced::Color::from_rgba(0.0, 0.0, 0.0, 0.6),
             height: m.height,
             padding_x: m.padding,
+            tick: None,
         }
     }
 

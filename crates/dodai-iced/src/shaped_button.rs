@@ -26,6 +26,19 @@ pub struct ShapedColors {
     pub glow: Option<Color>,
 }
 
+/// The double tick a cut-corner crop draws on one end of a button.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Tick {
+    /// Which end it sits on (`Left` or `Right`).
+    pub edge: dodai_core::CropEdge,
+    /// Length of each bar in px.
+    pub width: f32,
+    /// Thickness of each bar in px.
+    pub bar: f32,
+    /// Space between the two bars in px.
+    pub gap: f32,
+}
+
 /// Canvas program for a shaped button. Build via `IcedTheme::shaped_button`.
 #[derive(Debug, Clone)]
 pub struct ShapedButton<Message> {
@@ -47,6 +60,8 @@ pub struct ShapedButton<Message> {
     pub height: f32,
     /// Horizontal padding in px each side of the label.
     pub padding_x: f32,
+    /// The tick a cut-corner crop draws, if any.
+    pub tick: Option<Tick>,
 }
 
 #[derive(Debug, Default, Clone, Copy)]
@@ -156,6 +171,16 @@ impl<Message: Clone> canvas::Program<Message> for ShapedButton<Message> {
                 shadow: 0.0,
             },
         );
+        if let Some(t) = self.tick {
+            let x = match t.edge {
+                dodai_core::CropEdge::Left => local.x,
+                _ => local.x + local.width - t.width,
+            };
+            let mid = local.y + local.height / 2.0;
+            for y in [mid - t.gap / 2.0 - t.bar, mid + t.gap / 2.0] {
+                frame.fill_rectangle(Point::new(x, y), iced::Size::new(t.width, t.bar), c.text);
+            }
+        }
         frame.fill_text(Text {
             content: self.label.clone(),
             position: Point::new(m + rect.width / 2.0, m + rect.height / 2.0),
