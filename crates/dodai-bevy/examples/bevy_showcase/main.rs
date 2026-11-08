@@ -2,7 +2,7 @@
 //! drawn from `dodai-showcase-model` with dodai-bevy widgets.
 //!
 //! Keys: `t` / `T` next / previous theme. Env: `DODAI_THEME` (theme id), `DODAI_CAT` (0 = all,
-//! 1.. = category), `DODAI_OPEN` (`design` or `theme`: start with that dropdown open), `DODAI_SCROLL` (px), `DODAI_SHOT` (screenshot path), `--frames N`.
+//! 1.. = category), `DODAI_OPEN` (`design` or `theme`: start with that dropdown open), `DODAI_SCROLL` (px), `DODAI_SHOT` (screenshot path), `DODAI_SHOT_FRAMES` (frames to wait, default 90), `--frames N`.
 
 mod chrome;
 mod events;
@@ -78,9 +78,13 @@ fn main() {
             .chain(),
     );
     if let Ok(path) = std::env::var("DODAI_SHOT") {
+        let shot_frame: u32 = std::env::var("DODAI_SHOT_FRAMES")
+            .ok()
+            .and_then(|n| n.parse().ok())
+            .unwrap_or(90);
         app.add_systems(Update, move |mut c: Commands, mut n: Local<u32>| {
             *n += 1;
-            if *n == 90 {
+            if *n == shot_frame {
                 c.spawn(bevy::render::view::screenshot::Screenshot::primary_window())
                     .observe(bevy::render::view::screenshot::save_to_disk(path.clone()));
             }

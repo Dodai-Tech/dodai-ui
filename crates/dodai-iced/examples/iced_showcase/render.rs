@@ -430,6 +430,9 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             .align_y(alignment::Vertical::Center);
             lt.kit_box(Kit::Snackbar, line)
         }
+        Demo::Popup(inner) => container(lt.kit_box(Kit::Popup, view(inner, cx)))
+            .width(Length::Shrink)
+            .into(),
         Demo::Icon(i, size) => icon(cx, *i, *size),
         Demo::Rating { value, max } => {
             let full = value.round() as u8;

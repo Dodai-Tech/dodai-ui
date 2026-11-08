@@ -522,6 +522,17 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                 c.spawn(button(action.clone(), ButtonVariant::Ghost));
             });
         }
+        Demo::Popup(inner) => {
+            p.spawn((
+                kit(Kit::Popup),
+                Node {
+                    flex_direction: FlexDirection::Column,
+                    min_width: Val::Px(200.0),
+                    ..default()
+                },
+            ))
+            .with_children(|c| spawn(c, inner, cx));
+        }
         Demo::Icon(i, size) => {
             p.spawn(icon_node(*i, *size as u32));
         }

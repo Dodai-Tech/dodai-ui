@@ -6,11 +6,18 @@ use crate::node::Node;
 
 const CAT: &str = "Loading";
 
-pub(crate) const SECTIONS: [Section; 1] = [Section {
-    category: CAT,
-    title: "Spinner · Indeterminate · Skeleton",
-    build: loading,
-}];
+pub(crate) const SECTIONS: [Section; 2] = [
+    Section {
+        category: CAT,
+        title: "Spinner · Indeterminate · Skeleton",
+        build: loading,
+    },
+    Section {
+        category: CAT,
+        title: "Loading indicator",
+        build: indicator,
+    },
+];
 
 fn loading(_: &Ctx) -> Node {
     col(vec![
@@ -20,5 +27,16 @@ fn loading(_: &Ctx) -> Node {
         Node::Skeleton { w: 0.0, h: 16.0 },
         Node::Skeleton { w: 240.0, h: 16.0 },
         Node::Skeleton { w: 160.0, h: 16.0 },
+    ])
+}
+
+fn indicator(_: &Ctx) -> Node {
+    row(vec![
+        Node::Spinner(40.0),
+        Node::Card {
+            title: String::new(),
+            body: Box::new(Node::Spinner(40.0)),
+            variant: dodai_core::CardVariant::Filled,
+        },
     ])
 }
