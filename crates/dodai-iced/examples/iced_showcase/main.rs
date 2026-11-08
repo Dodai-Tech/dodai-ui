@@ -7,6 +7,7 @@
 
 mod chrome;
 mod render;
+mod shaders;
 
 use std::collections::HashSet;
 use std::time::Instant;
@@ -25,6 +26,10 @@ pub struct App {
     pub seen_revision: u64,
     /// Which text input has the filter: the model keeps its text.
     pub scroll_id: iced::widget::Id,
+    /// The page content, measured to place sections.
+    pub content_id: iced::widget::Id,
+    /// Where the page is scrolled to, in px.
+    pub offset: f32,
     /// Frames drawn (for `DODAI_SHOT`).
     pub frames: u32,
 }
@@ -35,8 +40,21 @@ pub enum Msg {
     Set(String, Value),
     TreeToggle(String),
     Tick(Instant),
+    /// The page scrolled: find which section is at the top.
+    Scrolled(f32),
+    /// Section and content positions, measured for a jump (`true`) or the scroll-spy.
+    Measured(Vec<Hit>, bool),
     Shot(iced::window::Screenshot),
     Noop,
+}
+
+/// A measured widget of the page.
+#[derive(Debug, Clone)]
+pub enum Hit {
+    /// The scrollable's content box.
+    Content(f32),
+    /// A section by title and top edge.
+    Section(&'static str, f32),
 }
 
 pub fn boot() -> App {
@@ -50,6 +68,8 @@ pub fn boot() -> App {
         t: 0.0,
         tree_toggled: HashSet::new(),
         scroll_id: iced::widget::Id::unique(),
+        content_id: iced::widget::Id::unique(),
+        offset: 0.0,
         frames: 0,
     }
 }
@@ -76,12 +96,35 @@ pub fn write_ppm(path: &str, size: iced::Size<u32>, rgba: &[u8]) -> std::io::Res
 pub fn update(app: &mut App, msg: Msg) -> Task<Msg> {
     let mut task = Task::none();
     match msg {
-        Msg::Act(a) => app.model.update(a),
+        Msg::Act(a) => {
+            app.model.update(a);
+            if app.model.take_jump().is_some() {
+                task = measure(app, true);
+            }
+        }
+        Msg::Scrolled(y) => {
+            app.offset = y;
+            task = measure(app, false);
+        }
+        Msg::Measured(hits, jump) => task = placed(app, &hits, jump),
         Msg::Set(k, v) => app.model.update(Action::Set(k, v)),
         Msg::TreeToggle(k) => toggle(&mut app.tree_toggled, k),
         Msg::Tick(now) => {
             app.t = now.duration_since(app.t0).as_secs_f32();
+            shaders::tick();
             app.frames += 1;
+            if app.frames == 8 {
+                // `DODAI_SECTION=<title>`: pick that section, as a click in the sidebar would.
+                if let Some(t) = std::env::var("DODAI_SECTION").ok().and_then(|t| {
+                    app.model
+                        .visible()
+                        .iter()
+                        .find(|s| s.title == t)
+                        .map(|s| s.title)
+                }) {
+                    return update(app, Msg::Act(Action::Section(t)));
+                }
+            }
             if app.frames == shot_after() && std::env::var_os("DODAI_SHOT").is_some() {
                 task = iced::window::latest()
                     .and_then(iced::window::screenshot)
@@ -103,6 +146,77 @@ pub fn update(app: &mut App, msg: Msg) -> Task<Msg> {
         app.lt.set_theme(app.model.theme());
     }
     task
+}
+
+/// Ids of the sections on show, by title.
+pub fn section_ids(app: &App) -> Vec<(&'static str, iced::widget::Id)> {
+    app.model
+        .visible()
+        .iter()
+        .map(|s| (s.title, iced::widget::Id::from(format!("sec-{}", s.title))))
+        .collect()
+}
+
+/// Ask the widget tree where the page content and every section are.
+fn measure(app: &App, jump: bool) -> Task<Msg> {
+    let ids = section_ids(app);
+    let content = app.content_id.clone();
+    iced::widget::selector::find_all(move |c: iced::widget::selector::Candidate<'_>| {
+        let id = c.id()?;
+        if *id == content {
+            return Some(Hit::Content(c.bounds().y));
+        }
+        ids.iter()
+            .find(|(_, i)| i == id)
+            .map(|(t, _)| Hit::Section(t, c.bounds().y))
+    })
+    .map(move |hits| Msg::Measured(hits, jump))
+}
+
+/// Scroll to the picked section, or follow the scroll in the sidebar.
+fn placed(app: &mut App, hits: &[Hit], jump: bool) -> Task<Msg> {
+    let top = hits.iter().find_map(|h| match h {
+        Hit::Content(y) => Some(*y),
+        Hit::Section(..) => None,
+    });
+    let Some(top) = top else {
+        return Task::none();
+    };
+    let mut sections: Vec<(&'static str, f32)> = hits
+        .iter()
+        .filter_map(|h| match h {
+            Hit::Section(t, y) => Some((*t, y - top)),
+            Hit::Content(_) => None,
+        })
+        .collect();
+    sections.sort_by(|a, b| a.1.total_cmp(&b.1));
+    if jump {
+        let wanted = app.model.active_section();
+        let at = sections
+            .iter()
+            .find(|(t, _)| Some(*t) == wanted)
+            .map(|s| s.1);
+        return at.map_or_else(Task::none, |y| {
+            app.offset = y;
+            iced::widget::operation::scroll_to(
+                app.scroll_id.clone(),
+                iced::widget::scrollable::AbsoluteOffset { x: 0.0, y },
+            )
+        });
+    }
+    // The last section that has reached the top of the view.
+    let current = sections
+        .iter()
+        .rev()
+        .find(|(_, y)| *y <= app.offset + 24.0)
+        .or(sections.first())
+        .map(|s| s.0);
+    if let Some(t) = current {
+        if app.model.active_section() != Some(t) {
+            app.model.update(Action::Visible(t));
+        }
+    }
+    Task::none()
 }
 
 /// Flip membership of `key`.

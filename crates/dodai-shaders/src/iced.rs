@@ -56,7 +56,7 @@ impl ShaderView {
     }
 
     /// The picture, fluid width (empty until the first one).
-    pub fn view<'a, M: 'a>(&'a self) -> Element<'a, M> {
+    pub fn view<'a, M: 'a>(&self) -> Element<'a, M> {
         match &self.handle {
             Some(h) => iced::widget::image(h.clone()).width(Length::Fill).into(),
             None => iced::widget::Space::new().into(),

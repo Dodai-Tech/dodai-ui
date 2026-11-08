@@ -15,8 +15,9 @@ pub mod catalog;
 pub mod node;
 pub mod plot;
 mod sections;
+pub mod shader_state;
 pub mod state;
 
 pub use catalog::{sections, Ctx, Section, CATEGORIES};
-pub use node::{b, Axis, Bind, Gap, Node, Stack, TextRole};
+pub use node::{b, Axis, Bind, Gap, Node, ShaderSpec, Stack, TextRole};
 pub use state::{Action, ModePref, Showcase, Value, Values, SPEEDS};

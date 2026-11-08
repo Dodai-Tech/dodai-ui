@@ -68,6 +68,7 @@ fn main() {
         ..default()
     }))
     .add_plugins(DodaiUiPlugin::default().with_scanlines(false))
+    .add_plugins(dodai_shaders::bevy::ShaderPlugin)
     .insert_resource(Model(model))
     .insert_resource(OpenMenu(match std::env::var("DODAI_OPEN").as_deref() {
         Ok("design") => Some("design"),

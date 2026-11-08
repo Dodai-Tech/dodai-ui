@@ -12,3 +12,4 @@ publish                = false
 [dependencies]
 dodai-core  = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "dodai"] }
 dodai-icons = { workspace = true, features = ["theme", "cyberpunk", "material", "neobrutalism"] }
+dodai-shaders = { workspace = true }

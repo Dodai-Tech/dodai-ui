@@ -142,14 +142,18 @@ pub fn nav<'a>(app: &App) -> Element<'a, Msg> {
         let on = m.category() == Some(i);
         col = col.push(nav_item(app, c, m.count(Some(i)), on, Some(i)));
         if on {
+            let active = m.active_section();
             for s in m.visible() {
                 col = col.push(
-                    container(
-                        text(s.title.to_string())
-                            .size(lt.theme().typography.size_xs)
-                            .style(lt.muted()),
-                    )
-                    .padding(iced::Padding::from([4.0, 8.0]).left(36.0)),
+                    container(lt.kit_button(
+                        Kit::Row {
+                            selected: active == Some(s.title),
+                        },
+                        text(s.title.to_string()).size(lt.theme().typography.size_xs),
+                        Msg::Act(Action::Section(s.title)),
+                    ))
+                    .padding(iced::Padding::ZERO.left(16.0))
+                    .width(Length::Fill),
                 );
             }
         }
@@ -206,9 +210,13 @@ pub fn page<'a>(app: &App) -> Element<'a, Msg> {
         let node = (s.build)(&ctx);
         let body = render::view(&node, &cx);
         let panel = lt.panel_view(Some(s.title), body, false);
-        col = col.push(iced::widget::stack![panel, lt.surface_fx(fx)]);
+        col = col.push(
+            container(iced::widget::stack![panel, lt.surface_fx(fx)])
+                .id(iced::widget::Id::from(format!("sec-{}", s.title))),
+        );
     }
-    scrollable(col.padding(sp.xl).width(Length::Fill))
+    scrollable(container(col.padding(sp.xl).width(Length::Fill)).id(app.content_id.clone()))
+        .on_scroll(|v| Msg::Scrolled(v.absolute_offset().y))
         .id(app.scroll_id.clone())
         .style(lt.scrollable())
         .height(Length::Fill)

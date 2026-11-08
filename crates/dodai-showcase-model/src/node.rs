@@ -28,6 +28,86 @@ impl<T> Bind<T> {
     }
 }
 
+/// What a shader node shows; a toolkit turns it into `dodai_shaders::player::Spec`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ShaderSpec {
+    /// Catalogue ids: a generator, then post effects.
+    pub chain: Vec<&'static str>,
+    /// A preset id: its chain and its own palette win over `chain`.
+    pub preset: Option<&'static str>,
+    /// Colours from the active design instead of the shader's own.
+    pub themed: bool,
+    /// Width in px; the height follows `aspect`.
+    pub width: f32,
+    /// Width ÷ height.
+    pub aspect: f32,
+    /// Post-effect strength `0..=1`.
+    pub intensity: f32,
+    /// Device pixels per shader pixel.
+    pub pixel: f32,
+    /// Moves, or one still frame.
+    pub animated: bool,
+}
+
+impl ShaderSpec {
+    /// A chain at the default size, moving.
+    pub fn chain(ids: &[&'static str]) -> Self {
+        Self {
+            chain: ids.to_vec(),
+            preset: None,
+            themed: false,
+            width: 220.0,
+            aspect: 16.0 / 9.0,
+            intensity: 1.0,
+            pixel: 2.0,
+            animated: true,
+        }
+    }
+
+    /// A ready-made preset.
+    pub fn preset(id: &'static str) -> Self {
+        Self {
+            preset: Some(id),
+            ..Self::chain(&[])
+        }
+    }
+
+    /// One still frame.
+    pub fn still(mut self) -> Self {
+        self.animated = false;
+        self
+    }
+
+    /// Width in px.
+    pub fn width(mut self, w: f32) -> Self {
+        self.width = w;
+        self
+    }
+}
+
+impl ShaderSpec {
+    /// The player description a toolkit view takes.
+    pub fn to_spec(&self, theme: &dodai_core::Theme) -> dodai_shaders::player::Spec {
+        use dodai_shaders::player::Spec;
+        let mut spec = match self.preset {
+            Some(id) => dodai_shaders::presets::all()
+                .find(|p| p.id == id)
+                .map_or_else(|| Spec::new(""), Spec::preset),
+            None => self.chain.iter().skip(1).fold(
+                Spec::new(self.chain.first().copied().unwrap_or("")),
+                |s, id| s.fx(id),
+            ),
+        };
+        if self.themed {
+            spec = spec.themed(theme);
+        }
+        spec.aspect(self.aspect)
+            .intensity(self.intensity)
+            .pixel(self.pixel)
+            .animated(self.animated)
+    }
+}
+
 /// Layout direction of a [`Stack`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Axis {
@@ -61,6 +141,8 @@ pub struct Stack {
     pub gap: Gap,
     /// Centre children across the axis.
     pub centre: bool,
+    /// A fixed width in px (a gallery tile), or as wide as the layout gives.
+    pub width: Option<f32>,
     /// The children.
     pub items: Vec<Node>,
 }
@@ -309,6 +391,20 @@ pub enum Node {
     },
     /// Coloured polylines in a fixed box (easing curves, physics lanes).
     Plot(crate::plot::Plot),
+    /// A dropdown: a closed button showing the pick, a list when open. A pick arrives as
+    /// `Action::Set(key, Value::Index(i))`.
+    Select {
+        /// Value key.
+        key: String,
+        /// Options.
+        labels: Vec<String>,
+        /// Current pick (`None` shows the placeholder).
+        selected: Option<usize>,
+        /// Shown while nothing is picked.
+        placeholder: String,
+    },
+    /// A live shader picture (catalogue ids, so the model needs no GPU code).
+    Shader(ShaderSpec),
     /// A progress bar (`0..=1`).
     Progress {
         /// Fraction.
@@ -437,6 +533,7 @@ pub mod b {
             wrap,
             gap,
             centre: axis == Axis::Row,
+            width: None,
             items,
         })
     }
@@ -464,6 +561,34 @@ pub mod b {
             wrap: false,
             gap: Gap::Xs,
             centre: true,
+            width: None,
+            items,
+        })
+    }
+
+    /// A dropdown over `labels`.
+    pub fn select(
+        key: &str,
+        labels: Vec<String>,
+        selected: Option<usize>,
+        placeholder: &str,
+    ) -> Node {
+        Node::Select {
+            key: key.into(),
+            labels,
+            selected,
+            placeholder: placeholder.into(),
+        }
+    }
+
+    /// A column of fixed width, small gaps: one tile of a gallery.
+    pub fn tile(width: f32, items: Vec<Node>) -> Node {
+        Node::Stack(Stack {
+            axis: Axis::Column,
+            wrap: false,
+            gap: Gap::Xs,
+            centre: false,
+            width: Some(width),
             items,
         })
     }

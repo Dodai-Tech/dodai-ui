@@ -57,6 +57,19 @@ pub struct TreeChevron;
 pub struct Cx<'a> {
     pub theme: &'a Theme,
     pub model: &'a Showcase,
+    /// The dropdown that is open.
+    pub open: Option<&'static str>,
+}
+
+/// The dropdown's name: `Bound::Menu` wants a `'static` one, so each key's is made once.
+fn menu_name(key: &str) -> &'static str {
+    use std::collections::HashMap;
+    use std::sync::{Mutex, OnceLock};
+    static NAMES: OnceLock<Mutex<HashMap<String, &'static str>>> = OnceLock::new();
+    let mut names = NAMES.get_or_init(Default::default).lock().unwrap();
+    names
+        .entry(key.to_string())
+        .or_insert_with(|| Box::leak(format!("sel:{key}").into_boxed_str()))
 }
 
 fn gap_px(theme: &Theme, g: Gap) -> f32 {
@@ -130,7 +143,10 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                 },
                 ..default()
             };
-            if s.axis == Axis::Column && !s.centre {
+            if let Some(w) = s.width {
+                n.width = Val::Px(w);
+                n.flex_shrink = 0.0;
+            } else if s.axis == Axis::Column && !s.centre {
                 n.width = Val::Percent(100.0);
             }
             p.spawn(n).with_children(|c| {
@@ -349,6 +365,35 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
             if *disabled {
                 e.entry::<UiKnob>().and_modify(|mut k| k.disabled = true);
             }
+        }
+        Demo::Select {
+            key,
+            labels,
+            selected,
+            placeholder,
+        } => {
+            let name = menu_name(key);
+            let key = key.clone();
+            crate::chrome::dropdown(
+                p,
+                &crate::chrome::Dropdown {
+                    name,
+                    items: labels,
+                    selected: *selected,
+                    placeholder,
+                    width: 380.0,
+                    open: cx.open == Some(name),
+                },
+                move |i| Action::Set(key.clone(), Value::Index(i)),
+            );
+        }
+        Demo::Shader(spec) => {
+            let mut e = p.spawn(Node {
+                width: Val::Px(spec.width),
+                flex_shrink: 0.0,
+                ..default()
+            });
+            e.insert(dodai_shaders::bevy::ShaderNode::new(spec.to_spec(theme)));
         }
         Demo::Plot(pl) => {
             let lines = pl
