@@ -832,7 +832,7 @@ pub(crate) fn style_icons(
             };
             commands
                 .entity(e)
-                .insert(ImageNode::new(handle).with_color(fg));
+                .try_insert(ImageNode::new(handle).with_color(fg));
         } else if let Some(mut n) = node {
             upd(&mut n.color, fg);
         }
@@ -904,7 +904,7 @@ pub(crate) fn style_symbols(
             };
             commands
                 .entity(e)
-                .insert(ImageNode::new(handle).with_color(fg));
+                .try_insert(ImageNode::new(handle).with_color(fg));
         } else if let Some(mut n) = node {
             upd(&mut n.color, fg);
         }
@@ -949,6 +949,28 @@ mod symbol_tests {
 #[cfg(all(test, feature = "icons"))]
 mod icon_tests {
     use super::*;
+
+    /// A page rebuild queues the despawn of its old widgets before the style systems run; their
+    /// queued inserts then meet a dead entity, which must not panic (`try_insert`).
+    #[test]
+    fn styling_an_entity_despawned_in_the_same_frame_does_not_panic() {
+        fn kill(mut c: Commands, q: Query<Entity, With<Node>>) {
+            for e in &q {
+                c.entity(e).despawn();
+            }
+        }
+        let mut app = App::new();
+        app.insert_resource(DodaiTheme::new())
+            .init_resource::<IconCache>()
+            .insert_resource(Assets::<Image>::default())
+            .add_systems(Update, (kill, style_icons).chain_ignore_deferred());
+        let e = app
+            .world_mut()
+            .spawn(icon(dodai_icons::IconId::Home, 24))
+            .id();
+        app.update();
+        assert!(app.world().get_entity(e).is_err());
+    }
 
     #[test]
     fn icon_becomes_a_tinted_image_node_and_follows_theme() {
