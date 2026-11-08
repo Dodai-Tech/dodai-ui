@@ -78,6 +78,11 @@ impl Values {
     }
 }
 
+/// Value key of the theme-wide glow strength (Surface effects).
+pub(crate) const GLOW_KEY: &str = "fx-glow";
+/// Value key of the theme-wide scanlines switch (Surface effects).
+pub(crate) const SCANLINES_KEY: &str = "fx-scanlines";
+
 /// Which light/dark mode the page follows.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ModePref {
@@ -226,12 +231,20 @@ impl Showcase {
         self.revision
     }
 
-    /// The active theme with the chosen control colour applied.
+    /// The active theme with the chosen control colour, glow and scanlines applied.
     pub fn theme(&self) -> Theme {
-        self.switcher
+        let mut t = self
+            .switcher
             .current()
             .clone()
-            .with_control_colour(self.colour)
+            .with_control_colour(self.colour);
+        if let Some(Value::Num(g)) = self.values.0.get(GLOW_KEY) {
+            t = t.with_glow_intensity(*g);
+        }
+        if let Some(Value::Bool(on)) = self.values.0.get(SCANLINES_KEY) {
+            t = t.with_scanlines(*on);
+        }
+        t
     }
 
     /// The design families, in picker order.
@@ -428,11 +441,43 @@ impl Showcase {
                 }
                 self.bump();
             }
-            Action::Set(key, v) => self.values.set(key, v),
+            Action::Set(key, v) => {
+                let theme_wide = key == GLOW_KEY || key == SCANLINES_KEY;
+                self.values.set(key, v);
+                if theme_wide {
+                    self.bump();
+                }
+            }
             Action::Press(key) => {
                 let n = self.values.index_of(&key, 0);
                 self.values.set(key, Value::Index(n + 1));
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod surface_tests {
+    use super::*;
+
+    #[test]
+    fn glow_and_scanlines_values_reach_the_theme() {
+        let mut m = Showcase::default();
+        let rev = m.revision();
+        m.update(Action::Set(GLOW_KEY.into(), Value::Num(1.5)));
+        m.update(Action::Set(SCANLINES_KEY.into(), Value::Bool(true)));
+        assert_eq!(m.theme().effects.glow_intensity, 1.5);
+        assert!(m.theme().effects.scanlines);
+        assert!(m.revision() > rev);
+        m.update(Action::Set(SCANLINES_KEY.into(), Value::Bool(false)));
+        assert!(!m.theme().effects.scanlines);
+    }
+
+    #[test]
+    fn other_values_leave_the_revision_alone() {
+        let mut m = Showcase::default();
+        let rev = m.revision();
+        m.update(Action::Set("sl-a".into(), Value::Num(3.0)));
+        assert_eq!(m.revision(), rev);
     }
 }
