@@ -22,7 +22,7 @@ pub enum ControlPointer {
 }
 use dodai_core::{ButtonVariant, Color as Rgba, Tone};
 
-use crate::surface::Surface;
+use crate::surface::{Surface, SurfaceCrop};
 
 /// Colour a widget's text children inherit (written by the style systems).
 #[derive(Component, Debug, Clone, Copy, PartialEq)]
@@ -77,7 +77,7 @@ pub struct UiText {
 
 /// Themed button.
 #[derive(Component, Debug, Clone, Copy, PartialEq)]
-#[require(ControlPointer, FocusPolicy::Block, Surface, Foreground)]
+#[require(ControlPointer, FocusPolicy::Block, Surface, Foreground, SurfaceCrop)]
 pub struct UiButton {
     /// Emphasis.
     pub variant: ButtonVariant,
@@ -89,7 +89,16 @@ pub struct UiButton {
     pub square: bool,
     /// No label: the button is as wide as it is high.
     pub icon_only: bool,
+    /// Which end is cropped, drawn the way the design crops buttons (`None` = uncropped).
+    pub crop: Option<dodai_core::Crop>,
 }
+
+/// The double tick a cut-corner crop draws on the far end of a button.
+#[derive(Component)]
+pub(crate) struct CropTick;
+/// One bar of a [`CropTick`].
+#[derive(Component)]
+pub(crate) struct CropBar;
 
 /// Panel / card.
 #[derive(Component, Debug, Clone, Copy, PartialEq, Default)]
@@ -392,6 +401,7 @@ pub struct ButtonSpec {
     size: dodai_core::ControlSize,
     square: bool,
     disabled: bool,
+    crop: Option<dodai_core::Crop>,
     #[cfg(feature = "icons")]
     icon: Option<dodai_icons::IconId>,
 }
@@ -405,9 +415,16 @@ impl ButtonSpec {
             size: dodai_core::ControlSize::Medium,
             square: false,
             disabled: false,
+            crop: None,
             #[cfg(feature = "icons")]
             icon: None,
         }
+    }
+
+    /// Crop this end the way the design crops buttons.
+    pub fn crop(mut self, end: dodai_core::Crop) -> Self {
+        self.crop = Some(end);
+        self
     }
 
     /// Size step.
@@ -449,6 +466,7 @@ impl ButtonSpec {
                 size: self.size,
                 square: self.square,
                 icon_only,
+                crop: self.crop,
             },
             Node {
                 align_items: AlignItems::Center,
@@ -458,6 +476,21 @@ impl ButtonSpec {
                 ..default()
             },
             Children::spawn(SpawnWith(move |parent: &mut ChildSpawner| {
+                parent
+                    .spawn((
+                        CropTick,
+                        Node {
+                            position_type: PositionType::Absolute,
+                            display: Display::None,
+                            flex_direction: FlexDirection::Column,
+                            ..default()
+                        },
+                    ))
+                    .with_children(|t| {
+                        for _ in 0..2 {
+                            t.spawn((CropBar, Node::default(), BackgroundColor::default()));
+                        }
+                    });
                 #[cfg(feature = "icons")]
                 if let Some(i) = icon {
                     parent.spawn(crate::widgets::icon(i, 18));

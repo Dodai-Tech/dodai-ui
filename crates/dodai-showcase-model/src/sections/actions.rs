@@ -39,8 +39,8 @@ fn buttons(c: &Ctx) -> Node {
     for (l, v) in variants {
         first.push(button(l, v).node());
     }
+    let crops = crops(c);
     let mut second = vec![
-        button("Buy now", V::Outline).node(),
         button("Danger", V::Danger).node(),
         button("Ghost", V::Ghost).node(),
         button("Disabled", V::Secondary).disabled().node(),
@@ -71,13 +71,68 @@ fn buttons(c: &Ctx) -> Node {
         }
         f
     };
-    rows(vec![
-        row(first),
+    let mut rs = vec![row(first)];
+    if !crops.is_empty() {
+        rs.push(row(crops));
+    }
+    rs.extend([
         row(second),
         row(icons),
         sizes(V::Primary, false),
         sizes(V::Secondary, true),
-    ])
+    ]);
+    rows(rs)
+}
+
+/// Each design's own crops: cut corners with a tick, a leaf, connected ends, a ticket stub.
+/// Ends the design has no crop for are left out; none at all gives an empty row.
+fn crops(c: &Ctx) -> Vec<Node> {
+    use dodai_core::Crop;
+    let t = c.theme;
+    if t.button_crops().is_empty() {
+        return vec![];
+    }
+    let has = |e: Crop| t.button_crop(e).is_some();
+    let cut = t.look().cut_corners;
+    let mut out = vec![
+        button("Buy now", V::Scrim).crop(Crop::Left).node(),
+        button("Watch trailer", V::Scrim).crop(Crop::Right).node(),
+    ];
+    if has(Crop::Top) {
+        out.push(button("Top", V::Outline).crop(Crop::Top).node());
+    }
+    if has(Crop::Bottom) {
+        out.push(button("Bottom", V::Primary).crop(Crop::Bottom).node());
+    }
+    if cut {
+        out.push(button("Both cuts", V::Outline).crop(Crop::Left).node());
+        out.push(button("Both cuts", V::Primary).crop(Crop::Right).node());
+    }
+    for (i, (l, v)) in [
+        ("Primary", V::Primary),
+        ("Secondary", V::Secondary),
+        ("Outline", V::Outline),
+        ("Danger", V::Danger),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let end = if i % 2 == 0 { Crop::Left } else { Crop::Right };
+        out.push(button(l, v).crop(end).node());
+    }
+    out.push(
+        button("", V::Outline)
+            .icon(IconId::Edit)
+            .crop(Crop::Left)
+            .node(),
+    );
+    out.push(
+        button("", V::Primary)
+            .icon(IconId::Heart)
+            .crop(Crop::Right)
+            .node(),
+    );
+    out
 }
 
 fn groups(_: &Ctx) -> Node {

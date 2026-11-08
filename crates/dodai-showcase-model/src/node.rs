@@ -103,6 +103,8 @@ pub struct Button {
     pub disabled: bool,
     /// Counts presses under this key when set.
     pub counter: Option<String>,
+    /// Which end the design crops (`None` = the design's own default).
+    pub crop: Option<dodai_core::Crop>,
 }
 
 /// A row of options of which one is selected (button group, segmented control, tabs).
@@ -500,6 +502,7 @@ pub mod b {
             loading: false,
             disabled: false,
             counter: None,
+            crop: None,
         }
     }
 
@@ -507,6 +510,11 @@ pub mod b {
         /// Size step.
         pub fn size(mut self, size: ControlSize) -> Self {
             self.size = size;
+            self
+        }
+        /// Crop this end the way the design crops buttons.
+        pub fn crop(mut self, end: dodai_core::Crop) -> Self {
+            self.crop = Some(end);
             self
         }
         /// Square corners.

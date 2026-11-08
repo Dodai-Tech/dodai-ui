@@ -9,7 +9,7 @@ use bevy::window::PrimaryWindow;
 use dodai_core::{ButtonVariant, ControlState, ShapeKind};
 
 use crate::style::{display_text, text_style, toggle_size};
-use crate::surface::Surface;
+use crate::surface::{Surface, SurfaceCrop};
 use crate::theme::{color, DodaiTheme};
 use crate::widgets::*;
 
@@ -261,9 +261,14 @@ pub(crate) fn style_buttons(
         &mut Surface,
         &mut Node,
         &mut Foreground,
+        &mut SurfaceCrop,
     )>,
 ) {
-    for (b, i, mut s, mut n, mut fg) in &mut q {
+    for (b, i, mut s, mut n, mut fg, mut crop) in &mut q {
+        upd(
+            &mut *crop,
+            SurfaceCrop(b.crop.and_then(|e| theme.button_crop(e))),
+        );
         let state = cs(i, b.disabled, false);
         let t = theme.button(b.variant, state);
         let lit = matches!(
@@ -287,8 +292,79 @@ pub(crate) fn style_buttons(
             upd(&mut n.padding, UiRect::ZERO);
         } else {
             upd(&mut n.width, Val::Auto);
-            upd(&mut n.padding, UiRect::horizontal(Val::Px(m.padding)));
+            let inset = tick_edge(&crop).map_or(0.0, |_| theme.spacing.md);
+            let (l, r) = match tick_edge(&crop) {
+                Some(dodai_core::CropEdge::Left) => (inset, 0.0),
+                Some(dodai_core::CropEdge::Right) => (0.0, inset),
+                _ => (0.0, 0.0),
+            };
+            upd(
+                &mut n.padding,
+                UiRect {
+                    left: Val::Px(m.padding + l),
+                    right: Val::Px(m.padding + r),
+                    ..UiRect::ZERO
+                },
+            );
         }
+    }
+}
+
+/// The edge a button's tick sits on, when its crop draws one.
+fn tick_edge(c: &SurfaceCrop) -> Option<dodai_core::CropEdge> {
+    match c.0 {
+        Some(dodai_core::ButtonCrop::CutTicked { tick, .. }) => Some(tick),
+        _ => None,
+    }
+}
+
+/// Place and colour the double tick of every cut-corner button; hide it elsewhere.
+#[allow(clippy::type_complexity)]
+pub(crate) fn style_ticks(
+    theme: Res<DodaiTheme>,
+    buttons: Query<(&SurfaceCrop, &Foreground, &Children), With<UiButton>>,
+    mut ticks: Query<(&mut Node, &Children), (With<CropTick>, Without<CropBar>)>,
+    mut bars: Query<(&mut Node, &mut BackgroundColor), (With<CropBar>, Without<CropTick>)>,
+) {
+    let bar = theme.shape.border_width.max(1.0);
+    let gap = theme.spacing.xs;
+    for (crop, fg, kids) in &buttons {
+        for kid in kids.iter() {
+            let Ok((mut n, bar_ids)) = ticks.get_mut(kid) else {
+                continue;
+            };
+            let edge = tick_edge(crop);
+            upd(
+                &mut n.display,
+                if edge.is_some() {
+                    Display::Flex
+                } else {
+                    Display::None
+                },
+            );
+            let (l, r) = match edge {
+                Some(dodai_core::CropEdge::Left) => (Val::Px(0.0), Val::Auto),
+                _ => (Val::Auto, Val::Px(0.0)),
+            };
+            upd(&mut n.left, l);
+            upd(&mut n.right, r);
+            upd(&mut n.top, Val::Percent(50.0));
+            upd(&mut n.margin.top, Val::Px(-(bar + gap / 2.0)));
+            upd(&mut n.width, Val::Px(theme.spacing.md));
+            upd(&mut n.row_gap, Val::Px(gap));
+            for b in bar_ids.iter() {
+                if let Ok((mut bn, mut bg)) = bars.get_mut(b) {
+                    upd(&mut bn.height, Val::Px(bar));
+                    set_bg(&mut bg, color(fg.0));
+                }
+            }
+        }
+    }
+}
+
+fn set_bg(slot: &mut BackgroundColor, v: Color) {
+    if slot.0 != v {
+        slot.0 = v;
     }
 }
 
