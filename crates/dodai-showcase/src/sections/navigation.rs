@@ -601,6 +601,34 @@ impl Showcase {
                 .into_any_element(),
             "Carousel",
         ));
+        let page = |c: dodai_core::Color, label: &'static str| {
+            div()
+                .w(px(300.0))
+                .h(px(140.0))
+                .rounded(px(t.role_shape(dodai_core::ShapeRole::Carousel).radius))
+                .bg(hsla(c))
+                .p(px(t.spacing.md))
+                .text_color(hsla(t.on(c)))
+                .child(label)
+        };
+        let stack = dodai_gpui::SnapStack::new("snap-stack")
+            .height(140.0)
+            .item(page(r.primary_container, "Page one"))
+            .item(page(r.secondary_container, "Page two"))
+            .item(page(r.tertiary_container, "Page three"))
+            .item(page(r.error_container, "Page four"));
+        out.push((
+            "Navigation",
+            "Snap stack",
+            self.section("Snap stack", cx)
+                .child(Muted::new(
+                    "Scroll the wheel or swipe vertically over the stack to turn a page; \
+                     at either end the scroll passes on to the page.",
+                ))
+                .child(div().w(px(320.0)).child(stack))
+                .into_any_element(),
+            "Snap stack · Vertical pages · Scroll pages",
+        ));
         out
     }
 
