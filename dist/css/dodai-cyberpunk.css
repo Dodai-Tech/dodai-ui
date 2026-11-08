@@ -46,6 +46,12 @@ code,pre,.dodai-mono{font-family:var(--dodai-font-mono)}
 .dodai-btn::before,.dodai-panel::before{inset:0;background:var(--f-bd);clip-path:var(--dodai-clip-ring)}
 .dodai-btn::after,.dodai-panel::after{inset:var(--dodai-border-width);background:var(--f-bg);border-radius:var(--dodai-inner-radius);clip-path:var(--dodai-clip-inner);transition:background .12s}
 
+/* Double tick a cut-corner crop draws on the far end of a button */
+.dodai-tick{position:absolute;top:50%;width:var(--dodai-space-md);box-sizing:content-box;
+  height:var(--dodai-space-xs);transform:translateY(-50%);pointer-events:none;
+  border-top:var(--dodai-border-width) solid var(--b-fg);border-bottom:var(--dodai-border-width) solid var(--b-fg)}
+.dodai-tick--left{left:0}.dodai-tick--right{right:0}
+
 /* Buttons */
 .dodai-btn{--f-bg:var(--dodai-primary);--f-bd:var(--dodai-primary);--b-fg:var(--dodai-on-primary);
   display:inline-flex;align-items:center;justify-content:center;gap:var(--dodai-space-sm);
@@ -206,6 +212,15 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;o
 /* Busy indicators */
 @keyframes dodai-spin{to{transform:rotate(360deg)}}
 .dodai-spinner{display:inline-block;width:var(--s,24px);height:var(--s,24px);flex:none;border-radius:50%;border:max(2px,calc(var(--s,24px) / 8)) solid var(--dodai-border);border-top-color:var(--dodai-primary);animation:dodai-spin 1.1s linear infinite}
+/* Other shapes: cells are positioned inline, each starts part-way through the same 1.11 s cycle. */
+.dodai-spinner--bars,.dodai-spinner--orbit,.dodai-spinner--steps{position:relative;border:0;border-radius:0;animation:none}
+.dodai-spinner>i{position:absolute;background:var(--dodai-primary);animation:dodai-trail 1.111s linear infinite}
+.dodai-spinner--bars>i{transform-origin:50% 100%;animation-name:dodai-trail-bar}
+.dodai-spinner--orbit>i{border-radius:50%}
+.dodai-spinner--steps>i{animation-name:dodai-trail-step}
+@keyframes dodai-trail{from{opacity:1}to{opacity:.15}}
+@keyframes dodai-trail-bar{from{opacity:1;transform:scaleY(1)}to{opacity:.15;transform:scaleY(.4)}}
+@keyframes dodai-trail-step{0%,24.9%{opacity:1}25%,100%{opacity:.15}}
 @keyframes dodai-slide{from{left:-30%}to{left:100%}}
 .dodai-indeterminate{position:relative;height:4px;overflow:hidden;border-radius:9999px;background:var(--dodai-surface-raised);width:100%;max-width:420px}
 .dodai-indeterminate>span{position:absolute;top:0;bottom:0;width:30%;background:var(--dodai-primary);border-radius:9999px;animation:dodai-slide 1.4s linear infinite}

@@ -110,6 +110,60 @@ fn clip_ring(shape: &Shape) -> String {
     format!("polygon(evenodd,{})", all.join(","))
 }
 
+/// Custom properties (an inline `style`) that crop a `.dodai-btn` the way `t`'s design crops
+/// buttons: cut corners and ticket stubs through the clip paths, tight corners through the
+/// radii. Empty for a crop that only draws a tick or a slot.
+pub fn crop_style(t: &Theme, crop: dodai_core::ButtonCrop) -> String {
+    use dodai_core::ButtonCrop as B;
+    let sh = &t.shape;
+    let cut = |shape: Shape| {
+        format!(
+            "--dodai-clip:{};--dodai-clip-ring:{};--dodai-clip-inner:{};--dodai-ring-inset:0px;--dodai-radius:0;--dodai-inner-radius:0;",
+            clip_path(&shape),
+            clip_ring(&shape),
+            clip_inner(&shape)
+        )
+    };
+    match crop {
+        B::CutTicked { corners, .. } => cut(Shape {
+            corners,
+            // Steep 45° cut: the largest a control of the design's height allows (a third of it,
+            // as `Shape::outline` clamps).
+            chamfer: sh.chamfer.max(sh.control_height / 3.0),
+            scoop: false,
+            ..sh.clone()
+        }),
+        B::Scooped { corners, size } => cut(Shape {
+            corners,
+            chamfer: size,
+            scoop: true,
+            ..sh.clone()
+        }),
+        B::Squared {
+            corners,
+            radius,
+            rest,
+        } => {
+            let pick = |on: bool, inset: f32| px((if on { radius } else { rest } - inset).max(0.0));
+            let radii = |inset: f32| {
+                format!(
+                    "{} {} {} {}",
+                    pick(corners.top_left, inset),
+                    pick(corners.top_right, inset),
+                    pick(corners.bottom_right, inset),
+                    pick(corners.bottom_left, inset)
+                )
+            };
+            format!(
+                "--dodai-radius:{};--dodai-inner-radius:{};",
+                radii(0.0),
+                radii(sh.border_width)
+            )
+        }
+        B::Slot { .. } => String::new(),
+    }
+}
+
 /// `svg` as a CSS `url(...)` value (a percent-encoded `data:` URI), for `background-image`.
 pub fn svg_url(svg: &str) -> String {
     let mut out = String::with_capacity(svg.len() + 32);
@@ -436,6 +490,37 @@ mod tests {
     use super::*;
     use dodai_core::themes;
     use dodai_core::themes::ThemeBuilder;
+
+    /// Each design's crop turns into the custom properties its kind needs.
+    #[test]
+    fn crop_styles_follow_the_crop_kind() {
+        use dodai_core::{ButtonCrop as B, Crop};
+        let mut seen = 0;
+        for t in themes::all() {
+            for end in Crop::ALL {
+                let Some(crop) = t.button_crop(end) else {
+                    continue;
+                };
+                let style = crop_style(&t, crop);
+                match crop {
+                    B::CutTicked { .. } | B::Scooped { .. } => {
+                        assert!(
+                            style.contains("--dodai-clip-ring:polygon(evenodd"),
+                            "{style}"
+                        );
+                        assert!(style.contains("--dodai-radius:0"), "{style}");
+                    }
+                    B::Squared { .. } => {
+                        assert!(style.starts_with("--dodai-radius:"), "{style}");
+                        assert!(!style.contains("polygon"), "{style}");
+                    }
+                    B::Slot { .. } => assert!(style.is_empty()),
+                }
+                seen += 1;
+            }
+        }
+        assert!(seen > 0);
+    }
 
     /// Every `var(--dodai-kit-…)` a kit's inline style points at is declared for the theme.
     #[test]
