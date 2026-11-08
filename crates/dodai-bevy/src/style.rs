@@ -2,7 +2,7 @@
 
 use dodai_core::{Color as Rgba, Theme};
 
-use crate::widgets::{TextRole, ToggleKind};
+use crate::widgets::{Ink, TextRole, ToggleKind};
 
 /// Resolved text style. `color == None` means "inherit the owner's foreground".
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -32,6 +32,17 @@ pub fn text_style(theme: &Theme, role: TextRole) -> TextStyle {
         TextRole::ControlSmall => (ty.size_xs, None, up),
         TextRole::Content => (ty.size_md, None, false),
         TextRole::Type(r) => (theme.type_style(r).size, None, false),
+        TextRole::Styled {
+            size, ink, upper, ..
+        } => {
+            let c = match ink {
+                Ink::Text => p.text,
+                Ink::Muted => p.text_muted,
+                Ink::Disabled => p.text_disabled,
+                Ink::Primary => p.primary,
+            };
+            (size, Some(c), upper && up)
+        }
     };
     TextStyle { size, color, upper }
 }
@@ -80,6 +91,11 @@ impl FontSources {
                 TextRole::Heading | TextRole::Subheading => &self.display,
                 TextRole::Mono => &self.mono,
                 TextRole::Type(r) if r.is_heading() => &self.display,
+                TextRole::Styled { family, .. } => match family {
+                    crate::widgets::Family::Display => &self.display,
+                    crate::widgets::Family::Body => &self.body,
+                    crate::widgets::Family::Mono => &self.mono,
+                },
                 _ => &self.body,
             })
         }
@@ -112,6 +128,24 @@ pub fn toggle_size(theme: &Theme, kind: ToggleKind) -> (f32, f32) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn styled_text_takes_its_own_size_and_palette_colour() {
+        let t = dodai_core::themes::all().remove(0);
+        let s = text_style(
+            &t,
+            TextRole::Styled {
+                size: 11.0,
+                family: crate::widgets::Family::Mono,
+                ink: Ink::Muted,
+                upper: false,
+            },
+        );
+        assert_eq!(
+            (s.size, s.color, s.upper),
+            (11.0, Some(t.palette.text_muted), false)
+        );
+    }
     use crate::testing::{rounded_light, square_theme};
     use dodai_core::themes;
 

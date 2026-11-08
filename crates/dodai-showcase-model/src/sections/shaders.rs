@@ -28,11 +28,7 @@ const PRESETS: [(&str, &[presets::Preset]); 6] = [
 
 macro_rules! entry {
     ($title:expr, $build:expr) => {
-        Section {
-            category: CAT,
-            title: $title,
-            build: $build,
-        }
+        Section::new(CAT, $title, $build)
     };
 }
 

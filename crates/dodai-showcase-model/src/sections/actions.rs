@@ -10,21 +10,9 @@ use crate::node::Node;
 const CAT: &str = "Actions";
 
 pub(crate) const SECTIONS: [Section; 3] = [
-    Section {
-        category: CAT,
-        title: "Buttons",
-        build: buttons,
-    },
-    Section {
-        category: CAT,
-        title: "Button groups · Split button",
-        build: groups,
-    },
-    Section {
-        category: CAT,
-        title: "Toolbar · Snackbar",
-        build: toolbar,
-    },
+    Section::new(CAT, "Buttons", buttons),
+    Section::new(CAT, "Button groups · Split button", groups),
+    Section::new(CAT, "Toolbar · Snackbar", toolbar),
 ];
 
 fn buttons(c: &Ctx) -> Node {

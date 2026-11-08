@@ -18,10 +18,39 @@ pub struct Ctx<'a> {
 pub struct Section {
     /// The category (page) it belongs to; one of [`CATEGORIES`].
     pub category: &'static str,
-    /// Panel title and sidebar entry.
+    /// Sidebar entry (also what the filter and the scroll-spy match).
     pub title: &'static str,
+    /// Title on the panel itself (often shorter than the sidebar entry).
+    pub heading: &'static str,
+    /// Whether the active theme shows it (a design-only component or effect).
+    pub shown: fn(&Theme) -> bool,
     /// Builds the demo.
     pub build: fn(&Ctx) -> Node,
+}
+
+impl Section {
+    /// A section every design shows, its panel titled like its sidebar entry.
+    pub const fn new(category: &'static str, title: &'static str, build: fn(&Ctx) -> Node) -> Self {
+        Self {
+            category,
+            title,
+            heading: title,
+            shown: |_| true,
+            build,
+        }
+    }
+
+    /// A panel title other than the sidebar entry.
+    pub const fn heading(mut self, heading: &'static str) -> Self {
+        self.heading = heading;
+        self
+    }
+
+    /// Shown only for themes where `shown` holds.
+    pub const fn when(mut self, shown: fn(&Theme) -> bool) -> Self {
+        self.shown = shown;
+        self
+    }
 }
 
 /// The categories this port shows, in sidebar order. (Charts, Instruments and Shaders are

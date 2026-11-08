@@ -10,76 +10,20 @@ use crate::node::{Bind, Node, TextRole, TimelineEvent};
 const CAT: &str = "Data display";
 
 pub(crate) const SECTIONS: [Section; 14] = [
-    Section {
-        category: CAT,
-        title: "Tags",
-        build: tags,
-    },
-    Section {
-        category: CAT,
-        title: "List items · Chips",
-        build: lists_chips,
-    },
-    Section {
-        category: CAT,
-        title: "Rating · Stepper · Badges · Tooltips",
-        build: misc,
-    },
-    Section {
-        category: CAT,
-        title: "List · Divider",
-        build: list_divider,
-    },
-    Section {
-        category: CAT,
-        title: "Timeline · empty state",
-        build: timeline,
-    },
-    Section {
-        category: CAT,
-        title: "Tooltip",
-        build: tooltip,
-    },
-    Section {
-        category: CAT,
-        title: "Data table",
-        build: table,
-    },
-    Section {
-        category: CAT,
-        title: "Code block · Markdown",
-        build: code,
-    },
-    Section {
-        category: CAT,
-        title: "Image · Avatar group",
-        build: avatars,
-    },
-    Section {
-        category: CAT,
-        title: "Circular progress · Banner",
-        build: progress_banner,
-    },
-    Section {
-        category: CAT,
-        title: "Cards",
-        build: cards,
-    },
-    Section {
-        category: CAT,
-        title: "Clock · Timer",
-        build: clock,
-    },
-    Section {
-        category: CAT,
-        title: "Stopwatch · Tap tempo",
-        build: stopwatch,
-    },
-    Section {
-        category: CAT,
-        title: "Scroll area",
-        build: scroll_area,
-    },
+    Section::new(CAT, "Tags", tags),
+    Section::new(CAT, "List items · Chips", lists_chips),
+    Section::new(CAT, "Rating · Stepper · Badges · Tooltips", misc),
+    Section::new(CAT, "List · Divider", list_divider),
+    Section::new(CAT, "Timeline · empty state", timeline),
+    Section::new(CAT, "Tooltip", tooltip),
+    Section::new(CAT, "Data table", table),
+    Section::new(CAT, "Code block · Markdown", code),
+    Section::new(CAT, "Image · Avatar group", avatars),
+    Section::new(CAT, "Circular progress · Banner", progress_banner),
+    Section::new(CAT, "Cards", cards),
+    Section::new(CAT, "Clock · Timer", clock),
+    Section::new(CAT, "Stopwatch · Tap tempo", stopwatch),
+    Section::new(CAT, "Scroll area", scroll_area),
 ];
 
 const TONES: [(&str, Tone); 4] = [

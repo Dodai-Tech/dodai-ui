@@ -6,7 +6,7 @@ use dodai_bevy::prelude::*;
 use dodai_bevy::theme::color;
 use dodai_core::{ControlSize, StepState, Theme, Tone};
 use dodai_icons::IconId;
-use dodai_showcase_model::node::{Axis, Gap, TextRole as Role};
+use dodai_showcase_model::node::{Axis, Font, Gap, Ink, TextRole as Role, TextStyle};
 use dodai_showcase_model::{Action, Node as Demo, Showcase, Value};
 
 /// What a spawned widget does when the user touches it. The event system maps a
@@ -73,26 +73,39 @@ fn menu_name(key: &str) -> &'static str {
 }
 
 fn gap_px(theme: &Theme, g: Gap) -> f32 {
-    let s = &theme.spacing;
-    match g {
-        Gap::Xs => s.xs,
-        Gap::Sm => s.sm,
-        Gap::Md => s.md,
-        Gap::Lg => s.lg,
+    g.px(theme)
+}
+
+/// The library role that draws a model role: size, family, colour and casing resolved by the
+/// model, so text matches the gpui showcase.
+fn role(r: Role, theme: &Theme) -> dodai_bevy::widgets::TextRole {
+    use dodai_bevy::widgets::{Family, Ink as I, TextRole as T};
+    let st = r.resolve(theme);
+    T::Styled {
+        size: st.size,
+        family: match st.font {
+            Font::Display => Family::Display,
+            Font::Body => Family::Body,
+            Font::Mono => Family::Mono,
+        },
+        ink: match st.ink {
+            Ink::Text => I::Text,
+            Ink::Muted => I::Muted,
+            Ink::Disabled => I::Disabled,
+            Ink::Primary => I::Primary,
+        },
+        upper: st.caps,
     }
 }
 
-fn role(r: Role) -> dodai_bevy::widgets::TextRole {
-    use dodai_bevy::widgets::TextRole as T;
-    match r {
-        Role::Title => T::Heading,
-        Role::Label => T::Label,
-        Role::Body => T::Body,
-        Role::Muted => T::Muted,
-        Role::Caption => T::Caption,
-        Role::Mono => T::Mono,
-        Role::Type(t) => T::Type(t),
-    }
+/// A text role at `size` in `font` and `ink`.
+fn styled(size: f32, font: Font, ink: Ink) -> Role {
+    Role::Styled(TextStyle {
+        size,
+        font,
+        ink,
+        caps: false,
+    })
 }
 
 /// Snap `v` to multiples of `step` within `min..=max`.
@@ -138,6 +151,8 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                 column_gap: gap,
                 align_items: if s.centre {
                     AlignItems::Center
+                } else if s.axis == Axis::Row {
+                    AlignItems::FlexStart
                 } else {
                     AlignItems::Stretch
                 },
@@ -156,7 +171,7 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
             });
         }
         Demo::Text(t, r) => {
-            p.spawn(text(t.clone(), role(*r)));
+            p.spawn(text(t.clone(), role(*r, theme)));
         }
         Demo::Space(px) => {
             p.spawn(Node {
@@ -165,32 +180,67 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                 ..default()
             });
         }
-        Demo::Swatch { name, color: c } => {
+        Demo::Swatch {
+            name,
+            color: c,
+            detail,
+        } => {
+            let xs = theme.typography.size_xs;
             p.spawn(Node {
                 flex_direction: FlexDirection::Column,
                 row_gap: Val::Px(4.0),
-                width: Val::Px(104.0),
+                width: Val::Px(118.0),
+                flex_shrink: 0.0,
                 ..default()
             })
             .with_children(|c2| {
                 c2.spawn((
                     Node {
-                        width: Val::Px(104.0),
+                        width: Val::Percent(100.0),
                         height: Val::Px(44.0),
                         border: UiRect::all(Val::Px(1.0)),
-                        border_radius: BorderRadius::all(Val::Px(theme.shape.radius.min(10.0))),
                         ..default()
                     },
                     BackgroundColor(color(*c)),
                     BorderColor::all(color(theme.palette.border)),
                 ));
-                c2.spawn(text(name.clone(), TextRole::Caption));
                 c2.spawn(text(
-                    format!("#{:02x}{:02x}{:02x}", c.r, c.g, c.b),
-                    TextRole::Mono,
+                    name.clone(),
+                    role(styled(xs, Font::Body, Ink::Text), theme),
+                ));
+                c2.spawn(text(
+                    detail.clone(),
+                    role(styled(xs, Font::Mono, Ink::Muted), theme),
                 ));
             });
         }
+        Demo::Sample { w, h, label } => {
+            let sm = theme.typography.size_sm;
+            p.spawn((
+                panel_untitled(),
+                Node {
+                    width: Val::Px(*w),
+                    height: Val::Px(*h),
+                    padding: UiRect::ZERO,
+                    align_items: AlignItems::Center,
+                    justify_content: JustifyContent::Center,
+                    flex_shrink: 0.0,
+                    ..default()
+                },
+            ))
+            .with_children(|c| {
+                c.spawn(text(
+                    label.clone(),
+                    role(styled(sm, Font::Body, Ink::Text), theme),
+                ));
+            });
+        }
+        Demo::Image {
+            w,
+            h,
+            caption,
+            on_image,
+        } => image_placeholder(p, theme, (*w, *h), caption.as_deref(), *on_image),
         Demo::Block {
             w,
             h,
@@ -218,7 +268,11 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
             ))
             .with_children(|c| {
                 if let Some(l) = label {
-                    c.spawn(text(l.clone(), TextRole::Caption));
+                    let xs = theme.typography.size_xs;
+                    c.spawn(text(
+                        l.clone(),
+                        role(styled(xs, Font::Body, Ink::Text), theme),
+                    ));
                 }
             });
         }
@@ -1118,4 +1172,104 @@ mod tests {
         assert!(gap_px(&t, Gap::Sm) <= gap_px(&t, Gap::Md));
         assert!(gap_px(&t, Gap::Md) <= gap_px(&t, Gap::Lg));
     }
+}
+
+/// A framed picture slot (no picture loads: the frame says "image unavailable", as the gpui
+/// showcase's blank image does), its caption below or on the design's fade.
+fn image_placeholder(
+    p: &mut ChildSpawnerCommands,
+    theme: &Theme,
+    (w, h): (f32, f32),
+    caption: Option<&str>,
+    on_image: bool,
+) {
+    let ty = &theme.typography;
+    let over = on_image && caption.is_some();
+    p.spawn(Node {
+        flex_direction: FlexDirection::Column,
+        row_gap: Val::Px(theme.spacing.xs),
+        width: Val::Px(w),
+        flex_shrink: 0.0,
+        ..default()
+    })
+    .with_children(|col| {
+        col.spawn((
+            Node {
+                width: Val::Px(w),
+                height: Val::Px(h),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                border: UiRect::all(Val::Px(theme.shape.border_width)),
+                border_radius: BorderRadius::all(Val::Px(theme.shape.radius)),
+                overflow: Overflow::clip(),
+                ..default()
+            },
+            BackgroundColor(color(theme.palette.surface_raised)),
+            BorderColor::all(color(theme.palette.border)),
+        ))
+        .with_children(|f| {
+            f.spawn(text(
+                "image unavailable",
+                role(styled(ty.size_md, Font::Body, Ink::Muted), theme),
+            ));
+            if !over {
+                return;
+            }
+            let shadow = theme.palette.roles.shadow;
+            let fade_h = (h * 0.5).max(theme.sizes().touch_target);
+            let stops = theme.fade_stops();
+            let steps = 24;
+            for k in 0..steps {
+                // `at` 0 = bottom edge, 1 = top of the fade.
+                let at = 1.0 - (k as f32 + 0.5) / steps as f32;
+                let band = fade_h / steps as f32;
+                f.spawn((
+                    Node {
+                        position_type: PositionType::Absolute,
+                        left: Val::Px(0.0),
+                        right: Val::Px(0.0),
+                        top: Val::Px(h - fade_h + k as f32 * band),
+                        height: Val::Px(band + 0.5),
+                        ..default()
+                    },
+                    BackgroundColor(color(shadow.with_alpha(fade_alpha(&stops, at)))),
+                ));
+            }
+            let ink = theme.on(shadow.with_alpha(1.0));
+            f.spawn((
+                Node {
+                    position_type: PositionType::Absolute,
+                    left: Val::Px(theme.spacing.md),
+                    right: Val::Px(theme.spacing.md),
+                    bottom: Val::Px(theme.spacing.sm),
+                    ..default()
+                },
+                Text::new(caption.unwrap_or_default().to_string()),
+                TextFont {
+                    font_size: bevy::text::FontSize::Px(ty.size_sm),
+                    ..default()
+                },
+                TextColor(color(ink)),
+            ));
+        });
+        if let (false, Some(c)) = (over, caption) {
+            col.spawn(text(c.to_string(), role(Role::Muted, theme)));
+        }
+    });
+}
+
+/// Alpha of the fade at `at` (0 = bottom edge, 1 = top), linear between the design's stops.
+fn fade_alpha(stops: &[dodai_core::FadeStop], at: f32) -> f32 {
+    for w in stops.windows(2) {
+        let (lo, hi) = (w[0], w[1]);
+        if at >= lo.at && at <= hi.at {
+            let f = if hi.at > lo.at {
+                (at - lo.at) / (hi.at - lo.at)
+            } else {
+                0.0
+            };
+            return lo.alpha + (hi.alpha - lo.alpha) * f;
+        }
+    }
+    stops.last().map_or(0.0, |s| s.alpha)
 }

@@ -10,81 +10,25 @@ use crate::node::Node;
 const CAT: &str = "Inputs";
 
 pub(crate) const SECTIONS: [Section; 15] = [
-    Section {
-        category: CAT,
-        title: "Toggle · Checkbox · Radio",
-        build: toggles,
-    },
-    Section {
-        category: CAT,
-        title: "Slider · Progress",
-        build: sliders,
-    },
-    Section {
-        category: CAT,
-        title: "Input",
-        build: inputs,
-    },
-    Section {
-        category: CAT,
-        title: "Search view",
-        build: search,
-    },
-    Section {
-        category: CAT,
-        title: "Password · OTP",
-        build: password,
-    },
-    Section {
-        category: CAT,
-        title: "Checkbox variants",
-        build: checkbox_variants,
-    },
-    Section {
-        category: CAT,
-        title: "Slider (stepped, ticks, value readout)",
-        build: slider_stepped,
-    },
-    Section {
-        category: CAT,
-        title: "Form field",
-        build: form_field,
-    },
-    Section {
-        category: CAT,
-        title: "Toggle group · Checkbox group",
-        build: groups,
-    },
-    Section {
-        category: CAT,
-        title: "Tag field",
-        build: tag_field,
-    },
-    Section {
-        category: CAT,
-        title: "Date / time pickers",
-        build: pickers,
-    },
-    Section {
-        category: CAT,
-        title: "Range slider",
-        build: range_slider,
-    },
-    Section {
-        category: CAT,
-        title: "Date range",
-        build: date_range,
-    },
-    Section {
-        category: CAT,
-        title: "Date-time range",
-        build: date_time_range,
-    },
-    Section {
-        category: CAT,
-        title: "Knob · Vertical slider",
-        build: dials,
-    },
+    Section::new(CAT, "Toggle · Checkbox · Radio", toggles),
+    Section::new(CAT, "Slider · Progress", sliders),
+    Section::new(CAT, "Input", inputs),
+    Section::new(CAT, "Search view", search),
+    Section::new(CAT, "Password · OTP", password),
+    Section::new(CAT, "Checkbox variants", checkbox_variants),
+    Section::new(
+        CAT,
+        "Slider (stepped, ticks, value readout)",
+        slider_stepped,
+    ),
+    Section::new(CAT, "Form field", form_field),
+    Section::new(CAT, "Toggle group · Checkbox group", groups),
+    Section::new(CAT, "Tag field", tag_field),
+    Section::new(CAT, "Date / time pickers", pickers),
+    Section::new(CAT, "Range slider", range_slider),
+    Section::new(CAT, "Date range", date_range),
+    Section::new(CAT, "Date-time range", date_time_range),
+    Section::new(CAT, "Knob · Vertical slider", dials),
 ];
 
 fn toggles(_: &Ctx) -> Node {

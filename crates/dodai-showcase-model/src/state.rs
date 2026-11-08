@@ -367,8 +367,10 @@ impl Showcase {
     /// The sections on show: the chosen category's (or all), matching the filter.
     pub fn visible(&self) -> Vec<&'static Section> {
         let q = self.filter.trim().to_lowercase();
+        let theme = self.theme();
         catalog::sections()
             .iter()
+            .filter(|s| (s.shown)(&theme))
             .filter(|s| match self.category {
                 Some(c) => s.category == CATEGORIES[c],
                 None => true,
@@ -384,8 +386,10 @@ impl Showcase {
     /// Sections of category `c` that match the filter (the sidebar count).
     pub fn count(&self, c: Option<usize>) -> usize {
         let q = self.filter.trim().to_lowercase();
+        let theme = self.theme();
         catalog::sections()
             .iter()
+            .filter(|s| (s.shown)(&theme))
             .filter(|s| c.is_none_or(|c| s.category == CATEGORIES[c]))
             .filter(|s| q.is_empty() || s.title.to_lowercase().contains(&q))
             .count()

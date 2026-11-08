@@ -12,16 +12,8 @@ use crate::state::{GLOW_KEY, SCANLINES_KEY};
 const CAT: &str = "Surface effects";
 
 pub(crate) const SECTIONS: [Section; 2] = [
-    Section {
-        category: CAT,
-        title: "Glow",
-        build: glow,
-    },
-    Section {
-        category: CAT,
-        title: "Scanlines",
-        build: scanlines,
-    },
+    Section::new(CAT, "Glow", glow),
+    Section::new(CAT, "Scanlines", scanlines),
 ];
 
 fn sample(label: &str) -> Node {

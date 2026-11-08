@@ -10,61 +10,21 @@ use crate::node::{Bind, Node};
 const CAT: &str = "Navigation";
 
 pub(crate) const SECTIONS: [Section; 11] = [
-    Section {
-        category: CAT,
-        title: "Tabs",
-        build: tabs,
-    },
-    Section {
-        category: CAT,
-        title: "Tree",
-        build: tree_section,
-    },
-    Section {
-        category: CAT,
-        title: "Segmented · Breadcrumb · Pagination · Stepper",
-        build: strips,
-    },
-    Section {
-        category: CAT,
-        title: "Menu · Sub-menu",
-        build: menu,
-    },
-    Section {
-        category: CAT,
-        title: "Popover · Hover card · Context menu · Dropdown",
-        build: popovers,
-    },
-    Section {
-        category: CAT,
-        title: "Dialog · Bottom sheet · Side sheet",
-        build: sheets,
-    },
-    Section {
-        category: CAT,
-        title: "App bars",
-        build: app_bars,
-    },
-    Section {
-        category: CAT,
-        title: "App bar · Cards · FAB · Navigation",
-        build: bars_cards,
-    },
-    Section {
-        category: CAT,
-        title: "Collapsible sidebar",
-        build: sidebar,
-    },
-    Section {
-        category: CAT,
-        title: "Carousel",
-        build: carousel,
-    },
-    Section {
-        category: CAT,
-        title: "Modal navigation drawer",
-        build: drawer,
-    },
+    Section::new(CAT, "Tabs", tabs),
+    Section::new(CAT, "Tree", tree_section),
+    Section::new(CAT, "Segmented · Breadcrumb · Pagination · Stepper", strips),
+    Section::new(CAT, "Menu · Sub-menu", menu),
+    Section::new(
+        CAT,
+        "Popover · Hover card · Context menu · Dropdown",
+        popovers,
+    ),
+    Section::new(CAT, "Dialog · Bottom sheet · Side sheet", sheets),
+    Section::new(CAT, "App bars", app_bars),
+    Section::new(CAT, "App bar · Cards · FAB · Navigation", bars_cards),
+    Section::new(CAT, "Collapsible sidebar", sidebar),
+    Section::new(CAT, "Carousel", carousel),
+    Section::new(CAT, "Modal navigation drawer", drawer),
 ];
 
 fn tabs(c: &Ctx) -> Node {
