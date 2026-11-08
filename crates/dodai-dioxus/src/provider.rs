@@ -14,7 +14,8 @@ pub fn scoped_stylesheet(themes: &[Theme]) -> String {
         "{css}\n.dodai-root{{position:relative;min-height:100vh;background:var(--dodai-background);\
 color:var(--dodai-text);font-family:var(--dodai-font-body);font-size:var(--dodai-size-md);line-height:1.5}}\n\
 .dodai-root::after{{content:\"\";position:fixed;inset:0;pointer-events:none;z-index:9999;\
-opacity:var(--dodai-scanlines);background:repeating-linear-gradient(to bottom,transparent 0,transparent 2px,rgba(0,0,0,.28) 3px)}}\n"
+opacity:var(--dodai-scanlines);background:repeating-linear-gradient(to bottom,transparent 0,transparent 2px,rgba(0,0,0,.28) 3px)}}\n\
+body::after{{display:none}}\n"
     )
 }
 
@@ -103,19 +104,34 @@ pub struct ThemeProviderProps {
     pub children: Element,
 }
 
-/// Installs the stylesheet, a `data-theme` root element and the [`ThemeHandle`] context.
+/// The switcher a provider starts (or restarts) with.
+fn make_switcher(themes_prop: &Option<Vec<Theme>>, initial: &Option<String>) -> ThemeSwitcher {
+    let mut sw = ThemeSwitcher::with_themes(themes_prop.clone().unwrap_or_else(themes::all));
+    if let Some(id) = initial {
+        sw.select(id);
+    }
+    sw
+}
+
+/// The props that decide which theme is shown.
+type ThemeProps = (Option<Vec<Theme>>, Option<String>, f32);
+
+/// Installs the stylesheet, a `data-theme` root element and the [`ThemeHandle`] context. When the
+/// `themes`, `initial` or `glow` props change on a later render, the provider follows them.
 #[component]
 pub fn ThemeProvider(props: ThemeProviderProps) -> Element {
-    let handle = use_context_provider(|| {
-        let mut sw = ThemeSwitcher::with_themes(props.themes.clone().unwrap_or_else(themes::all));
-        if let Some(id) = &props.initial {
-            sw.select(id);
-        }
-        ThemeHandle {
-            switcher: Signal::new(sw),
-            glow: Signal::new(props.glow.max(0.0)),
-        }
+    let handle = use_context_provider(|| ThemeHandle {
+        switcher: Signal::new(make_switcher(&props.themes, &props.initial)),
+        glow: Signal::new(props.glow.max(0.0)),
     });
+    let now: ThemeProps = (props.themes.clone(), props.initial.clone(), props.glow);
+    let seen = use_hook(|| std::rc::Rc::new(std::cell::RefCell::new(now.clone())));
+    if *seen.borrow() != now {
+        let (mut switcher, mut glow) = (handle.switcher, handle.glow);
+        switcher.set(make_switcher(&now.0, &now.1));
+        glow.set(now.2.max(0.0));
+        *seen.borrow_mut() = now;
+    }
     let list = handle.switcher.read().themes().to_vec();
     let css = scoped_stylesheet(&themes_with_glow(&list, Some(handle.glow())));
     rsx! {
@@ -176,6 +192,43 @@ mod tests {
             Button { variant: ButtonVariant::OutlineSecondary } Button { variant: ButtonVariant::Danger }
             Button { variant: ButtonVariant::Ghost } Button { disabled: true }
         }
+    }
+
+    #[test]
+    fn the_scoped_stylesheet_hides_the_page_wide_scanlines() {
+        // `body::after` reads `--dodai-scanlines`, which only exists inside `.dodai-root`:
+        // outside it the property is invalid and the overlay would be fully opaque.
+        let css = scoped_stylesheet(&[light()]);
+        assert!(css.contains("body::after{display:none}"));
+        assert!(css.contains(".dodai-root::after"));
+    }
+
+    static SHOWN: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
+    #[test]
+    fn the_provider_follows_changed_theme_props() {
+        fn app() -> Element {
+            let t = if SHOWN.load(std::sync::atomic::Ordering::SeqCst) == 0 {
+                light()
+            } else {
+                square()
+            };
+            let id = t.id().to_string();
+            rsx! { ThemeProvider { themes: Some(vec![t]), initial: Some(id), Icon { icon: dodai_icons::IconId::Home } } }
+        }
+        let mut v = VirtualDom::new(app);
+        v.rebuild_in_place();
+        let first = dioxus_ssr::render(&v);
+        assert!(first.contains("data-theme=\"test-light\""), "{first}");
+        SHOWN.store(1, std::sync::atomic::Ordering::SeqCst);
+        v.mark_dirty(ScopeId::APP);
+        v.render_immediate(&mut dioxus_core::NoOpMutations);
+        let second = dioxus_ssr::render(&v);
+        assert!(second.contains("data-theme=\"test-square\""), "{second}");
+        assert!(
+            second.contains("test-square\"]{"),
+            "the new theme's variables are emitted"
+        );
     }
 
     #[test]
