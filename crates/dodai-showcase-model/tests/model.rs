@@ -86,7 +86,8 @@ fn bind_keys_keep_one_type() {
             Node::Slider(s) => note(&s.bind.key, "num"),
             Node::Knob { bind, .. } => note(&bind.key, "num"),
             Node::Input(i) => note(&i.bind.key, "text"),
-            Node::Chip { bind, .. } => note(&bind.key, "bool"),
+            Node::Chip(c) => note(&c.bind.key, "bool"),
+            Node::Pick { bind, .. } => note(&bind.key, "index"),
             Node::Stepper(b) => note(&b.key, "int"),
             Node::Pagination { bind, .. } => note(&bind.key, "index"),
             Node::Button(b) => {

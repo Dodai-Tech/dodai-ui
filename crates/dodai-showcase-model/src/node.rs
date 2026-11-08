@@ -188,6 +188,10 @@ pub enum Ink {
     Disabled,
     /// `palette.primary`.
     Primary,
+    /// `palette.link`.
+    Link,
+    /// The panel title colour.
+    Title,
 }
 
 impl Ink {
@@ -199,6 +203,8 @@ impl Ink {
             Ink::Muted => p.text_muted,
             Ink::Disabled => p.text_disabled,
             Ink::Primary => p.primary,
+            Ink::Link => p.link,
+            Ink::Title => theme.panel(false).title,
         }
     }
 }
@@ -383,6 +389,72 @@ pub struct Input {
     pub icon: Option<IconId>,
 }
 
+/// A filter / assist / input chip.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Chip {
+    /// Text.
+    pub label: String,
+    /// Selected state.
+    pub bind: Bind<bool>,
+    /// Leading icon.
+    pub icon: Option<IconId>,
+    /// Raised (the design's elevated chip).
+    pub elevated: bool,
+    /// A filter chip: a check mark leads it while selected.
+    pub filter: bool,
+    /// An input chip: a remove mark trails it.
+    pub removable: bool,
+}
+
+/// How a table column lines its cells up.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Align {
+    /// Start.
+    #[default]
+    Left,
+    /// Centre.
+    Center,
+    /// End (numbers).
+    Right,
+}
+
+/// A table column.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Column {
+    /// Heading.
+    pub title: String,
+    /// Fixed width px (`None` shares the row).
+    pub width: Option<f32>,
+    /// Cell alignment.
+    pub align: Align,
+}
+
+/// A data table.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Table {
+    /// Columns.
+    pub columns: Vec<Column>,
+    /// Rows of cells (already filtered).
+    pub rows: Vec<Vec<String>>,
+    /// Scrolls inside this height px when set.
+    pub height: Option<f32>,
+}
+
+/// A run of text inside [`Node::Rich`].
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct Span {
+    /// The text.
+    pub text: String,
+    /// Bold.
+    pub bold: bool,
+    /// Italic.
+    pub italic: bool,
+    /// Inline code (primary on the raised surface).
+    pub code: bool,
+    /// A link (link colour, underlined).
+    pub link: bool,
+}
+
 /// A row of a [`Node::List`].
 #[derive(Debug, Clone, PartialEq)]
 pub struct ListRow {
@@ -462,8 +534,14 @@ pub enum Node {
         /// Text inside.
         label: String,
     },
-    /// A framed picture placeholder with an optional caption.
+    /// A framed picture (or a placeholder) with an optional caption.
     Image {
+        /// Picture file (`None` = the "image unavailable" placeholder).
+        src: Option<String>,
+        /// A play badge over it (a video poster).
+        video: bool,
+        /// Fit inside the frame instead of covering it.
+        contain: bool,
         /// Width px.
         w: f32,
         /// Height px.
@@ -530,15 +608,8 @@ pub enum Node {
         /// Solid fill instead of outline.
         solid: bool,
     },
-    /// A filter chip.
-    Chip {
-        /// Text.
-        label: String,
-        /// Selected state.
-        bind: Bind<bool>,
-        /// Leading icon.
-        icon: Option<IconId>,
-    },
+    /// A chip.
+    Chip(Chip),
     /// A switch, checkbox or radio.
     Toggle(Toggle),
     /// A slider.
@@ -590,6 +661,13 @@ pub enum Node {
     Input(Input),
     /// Rows of a list with a divider between them.
     List(Vec<ListRow>),
+    /// A list whose rows are picked one at a time.
+    Pick {
+        /// The picked row.
+        bind: Bind<usize>,
+        /// Row titles.
+        items: Vec<String>,
+    },
     /// A separator line.
     Divider,
     /// A titled card.
@@ -609,6 +687,10 @@ pub enum Node {
         text: String,
         /// Full-width banner.
         banner: bool,
+        /// A text action at the end.
+        action: Option<String>,
+        /// A close mark at the end.
+        dismissible: bool,
     },
     /// A snackbar with an action.
     Snackbar {
@@ -649,23 +731,69 @@ pub enum Node {
     /// An expandable tree.
     Tree(Vec<TreeNode>),
     /// A data table.
-    Table {
-        /// Column headings.
-        columns: Vec<String>,
-        /// Rows of cells.
-        rows: Vec<Vec<String>>,
-    },
+    Table(Table),
     /// A round avatar with initials.
     Avatar(String),
     /// A tooltip shown on its own beside the trigger.
     Tooltip {
-        /// Tooltip text.
+        /// Tooltip text (the body of a rich one).
         text: String,
-        /// Rich variant (title and body).
+        /// Rich variant (title, body, action).
         rich: bool,
+        /// Title of a rich tooltip.
+        title: Option<String>,
+        /// Action of a rich tooltip.
+        action: Option<String>,
     },
-    /// A code listing.
-    Code(String),
+    /// A syntax-highlighted code listing.
+    Code {
+        /// The code.
+        text: String,
+        /// Language tag (`rust`, `js`, …; empty = plain).
+        lang: String,
+    },
+    /// Text runs with inline styles, wrapped as one paragraph.
+    Rich {
+        /// The runs.
+        spans: Vec<Span>,
+        /// Base style.
+        role: TextRole,
+    },
+    /// A block quote: a primary bar at the start, muted text.
+    Quote(Box<Node>),
+    /// Overlapping round avatars, the overflow as a count.
+    AvatarGroup {
+        /// Initials.
+        names: Vec<String>,
+        /// Avatars shown before the `+n` (`None` = all).
+        max: Option<usize>,
+        /// Diameter px.
+        size: f32,
+    },
+    /// A circular progress ring.
+    Ring {
+        /// Fraction `0..=1`, or spinning when `None`.
+        value: Option<f32>,
+        /// Status tone (`None` = primary).
+        tone: Option<Tone>,
+        /// Diameter px.
+        size: f32,
+        /// Stroke px.
+        thickness: f32,
+        /// Wavy (expressive) track.
+        wavy: bool,
+    },
+    /// An analog clock with the digital time below (local time).
+    Clock,
+    /// A countdown ring with − / start / reset / + controls.
+    Timer {
+        /// Starting minutes.
+        minutes: u32,
+    },
+    /// A stopwatch with start / lap / reset.
+    Stopwatch,
+    /// A tap-tempo pad (BPM from taps).
+    TapTempo,
     /// Events down a line.
     Timeline(Vec<TimelineEvent>),
     /// An icon button with a count or dot badge.
@@ -690,6 +818,8 @@ pub enum Node {
     },
     /// The empty state of a list.
     Empty {
+        /// Glyph above the title.
+        icon: String,
         /// Title.
         title: String,
         /// Hint.
@@ -1042,6 +1172,56 @@ pub mod b {
         }
     }
 
+    /// A chip under `key`, selected when `on`.
+    pub fn chip(label: impl Into<String>, key: &str, on: bool) -> Chip {
+        Chip {
+            label: label.into(),
+            bind: Bind::new(key, on),
+            icon: None,
+            elevated: false,
+            filter: false,
+            removable: false,
+        }
+    }
+
+    impl Chip {
+        /// Leading icon.
+        pub fn icon(mut self, i: IconId) -> Self {
+            self.icon = Some(i);
+            self
+        }
+        /// Raised.
+        pub fn elevated(mut self) -> Self {
+            self.elevated = true;
+            self
+        }
+        /// A filter chip.
+        pub fn filter(mut self) -> Self {
+            self.filter = true;
+            self
+        }
+        /// An input chip with a remove mark.
+        pub fn removable(mut self) -> Self {
+            self.removable = true;
+            self
+        }
+        /// As a node.
+        pub fn node(self) -> Node {
+            Node::Chip(self)
+        }
+    }
+
+    /// A message bar.
+    pub fn alert(tone: Tone, text: impl Into<String>, banner: bool) -> Node {
+        Node::Alert {
+            tone,
+            text: text.into(),
+            banner,
+            action: None,
+            dismissible: false,
+        }
+    }
+
     /// A list row.
     pub fn list_row(title: impl Into<String>) -> ListRow {
         ListRow {
@@ -1137,7 +1317,7 @@ impl Node {
         match self {
             Node::Stack(s) => s.items.iter().for_each(|n| n.walk(f)),
             Node::Card { body, .. } | Node::Scroll { body, .. } => body.walk(f),
-            Node::Popup(body) => body.walk(f),
+            Node::Popup(body) | Node::Quote(body) => body.walk(f),
             _ => {}
         }
     }

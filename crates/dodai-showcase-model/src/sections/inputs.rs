@@ -138,11 +138,7 @@ fn form_field(_: &Ctx) -> Node {
             .node(),
         muted("As it appears on your passport."),
         input("ff-mail", "you@example.com").label("Email").node(),
-        Node::Alert {
-            tone: dodai_core::Tone::Danger,
-            text: "Enter a valid address.".into(),
-            banner: false,
-        },
+        alert(dodai_core::Tone::Danger, "Enter a valid address.", false),
         row(vec![
             button("Cancel", dodai_core::ButtonVariant::Ghost).node(),
             button("Save", dodai_core::ButtonVariant::Primary).node(),
@@ -151,11 +147,7 @@ fn form_field(_: &Ctx) -> Node {
 }
 
 fn groups(_: &Ctx) -> Node {
-    let chip = |label: &str, key: &str, on: bool| Node::Chip {
-        label: label.into(),
-        bind: crate::Bind::new(key, on),
-        icon: None,
-    };
+    let chip = |label: &str, key: &str, on: bool| chip(label, key, on).node();
     col(vec![
         muted("Toggle group"),
         row(vec![
@@ -175,21 +167,9 @@ fn groups(_: &Ctx) -> Node {
 fn tag_field(_: &Ctx) -> Node {
     col(vec![
         row(vec![
-            Node::Chip {
-                label: "rust".into(),
-                bind: crate::Bind::new("tf-1", true),
-                icon: None,
-            },
-            Node::Chip {
-                label: "gpui".into(),
-                bind: crate::Bind::new("tf-2", true),
-                icon: None,
-            },
-            Node::Chip {
-                label: "design".into(),
-                bind: crate::Bind::new("tf-3", true),
-                icon: None,
-            },
+            chip("rust", "tf-1", true).node(),
+            chip("gpui", "tf-2", true).node(),
+            chip("design", "tf-3", true).node(),
         ]),
         input("tf-new", "Add a tag…").node(),
     ])

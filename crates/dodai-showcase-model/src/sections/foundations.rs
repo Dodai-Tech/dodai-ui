@@ -371,6 +371,9 @@ fn layout(c: &Ctx) -> Node {
             col(table).gap(Gap::Xs),
             page_grid(t, 800.0, &[(4, "4"), (4, "4"), (8, "8"), (16, "16 (clamped to the grid)")]),
             Node::Image {
+                src: None,
+                video: false,
+                contain: false,
                 w: 360.0,
                 h: 180.0,
                 caption: Some("Caption on the design's fade".into()),

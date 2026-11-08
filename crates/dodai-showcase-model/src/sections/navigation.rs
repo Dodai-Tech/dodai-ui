@@ -273,15 +273,13 @@ fn sidebar(c: &Ctx) -> Node {
     use IconId::*;
     let open = c.values.flag(&crate::Bind::new("sidebar-open", true));
     col(vec![
-        Node::Chip {
-            label: if open {
-                "Expanded".into()
-            } else {
-                "Collapsed".into()
-            },
-            bind: crate::Bind::new("sidebar-open", true),
-            icon: Some(Menu),
-        },
+        chip(
+            if open { "Expanded" } else { "Collapsed" },
+            "sidebar-open",
+            true,
+        )
+        .icon(Menu)
+        .node(),
         if open {
             Node::List(vec![
                 list_row("Home").icon(Home).trailing("12"),
