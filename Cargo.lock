@@ -4183,6 +4183,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "dodai-showcase-model"
+version = "0.1.0"
+dependencies = [
+ "dodai-core",
+ "dodai-icons",
+]
+
+[[package]]
 name = "dodai-slint"
 version = "0.1.0"
 dependencies = [

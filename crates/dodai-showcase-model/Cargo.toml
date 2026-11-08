@@ -1,0 +1,14 @@
+[package]
+name                   = "dodai-showcase-model"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description            = "Toolkit-neutral model of the Dodai showcase: pages, sections and demo widgets as data, so every toolkit renders the same showcase."
+publish                = false
+
+[dependencies]
+dodai-core  = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "dodai"] }
+dodai-icons = { workspace = true, features = ["theme", "cyberpunk", "material", "neobrutalism"] }
