@@ -51,7 +51,10 @@ mod charts;
 mod controls;
 mod frame;
 mod geometry;
+#[cfg(feature = "icons")]
+mod icon;
 mod inputs;
+mod kit;
 mod list;
 mod panel;
 mod scanlines;
@@ -67,6 +70,7 @@ mod testutil;
 pub use charts::{ChartKind, Prim};
 pub use frame::{shaped_frame, BoxStyle, ShapedFrame};
 pub use geometry::ShapeGeom;
+pub use kit::segment;
 pub use shaped_button::{ButtonState, ShapedButton, ShapedColors};
 pub use surface_fx::SurfaceFxProgram;
 
@@ -75,6 +79,21 @@ use iced::{
     border::Border, theme::Palette, widget::container, Background, Color, Font, Shadow,
     Theme as IcedBaseTheme, Vector,
 };
+
+/// The first family of a CSS font stack (`"DM Sans, Inter, sans-serif"` → `DM Sans`), without
+/// quotes; generic families (`sans-serif`, `monospace`, `system-ui`) are not names, so `""`.
+pub fn first_family(stack: &'static str) -> &'static str {
+    let first = stack
+        .split(',')
+        .next()
+        .unwrap_or("")
+        .trim()
+        .trim_matches(['"', '\'']);
+    match first {
+        "sans-serif" | "serif" | "monospace" | "system-ui" | "cursive" | "fantasy" => "",
+        f => f,
+    }
+}
 
 /// Token colour → Iced colour.
 pub fn color(c: LColor) -> Color {
@@ -116,14 +135,21 @@ impl IcedTheme {
         )
     }
 
-    /// Body font (iced default; token family names are not loaded).
+    /// Body font: the first family of the design's body stack, from the installed fonts
+    /// (iced falls back to its default when the family is missing).
     pub fn font(&self) -> Font {
-        Font::DEFAULT
+        match first_family(self.theme.typography.body) {
+            "" => Font::DEFAULT,
+            name => Font::with_name(name),
+        }
     }
 
-    /// Monospace font.
+    /// Monospace font: the first family of the design's mono stack.
     pub fn font_mono(&self) -> Font {
-        Font::MONOSPACE
+        match first_family(self.theme.typography.mono) {
+            "" => Font::MONOSPACE,
+            name => Font::with_name(name),
+        }
     }
 
     /// Border of `c` with the theme's width and (native) radius.
@@ -194,6 +220,15 @@ mod tests {
     }
 
     #[test]
+    fn the_first_family_of_a_stack_is_the_font_name() {
+        assert_eq!(first_family("DM Sans, Inter, sans-serif"), "DM Sans");
+        assert_eq!(first_family("'Space Mono', Menlo"), "Space Mono");
+        assert_eq!(first_family("Inter"), "Inter");
+        assert_eq!(first_family("sans-serif, Inter"), "");
+        assert_eq!(first_family(""), "");
+    }
+
+    #[test]
     fn radius_per_shape_kind() {
         assert_eq!(IcedTheme::new(cyberpunk()).radius(), 0.0);
         assert_eq!(IcedTheme::new(rounded_light()).radius(), 8.0);
@@ -203,7 +238,8 @@ mod tests {
     #[test]
     fn no_theme_id_branching() {
         for f in [
-            "button", "controls", "frame", "inputs", "list", "panel", "tabs", "tag", "text",
+            "button", "controls", "frame", "icon", "inputs", "kit", "list", "panel", "tabs", "tag",
+            "text",
         ] {
             let src = std::fs::read_to_string(format!("{}/src/{f}.rs", env!("CARGO_MANIFEST_DIR")))
                 .unwrap();

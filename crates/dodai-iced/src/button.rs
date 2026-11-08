@@ -55,6 +55,24 @@ impl IcedTheme {
         variant: ButtonVariant,
         on_press: Option<Message>,
     ) -> ShapedButton<Message> {
+        let mut b =
+            self.shaped_button_sized(label, variant, dodai_core::ControlSize::Medium, on_press);
+        // The classic button: the design's control height and large padding.
+        b.size = self.theme.typography.size_md;
+        b.height = self.theme.shape.control_height;
+        b.padding_x = self.theme.spacing.lg;
+        b
+    }
+
+    /// A [`ShapedButton`] at a [`dodai_core::ControlSize`] step.
+    pub fn shaped_button_sized<Message: Clone>(
+        &self,
+        label: &str,
+        variant: ButtonVariant,
+        size: dodai_core::ControlSize,
+        on_press: Option<Message>,
+    ) -> ShapedButton<Message> {
+        let m = self.theme.control_metrics(size);
         let e = &self.theme.effects;
         let colors = |st| {
             let t = self.theme.button(variant, st);
@@ -69,7 +87,7 @@ impl IcedTheme {
         ShapedButton {
             label: self.label(label),
             font: self.font(),
-            size: self.theme.typography.size_md,
+            size: m.text_size,
             shape: self.theme.shape.clone(),
             border_width: self.theme.shape.border_width,
             idle: colors(ControlState::Idle),
@@ -79,8 +97,8 @@ impl IcedTheme {
             glow_radius: e.glow_radius(),
             on_press,
             backdrop: iced::Color::from_rgba(0.0, 0.0, 0.0, 0.6),
-            height: self.theme.shape.control_height,
-            padding_x: self.theme.spacing.lg,
+            height: m.height,
+            padding_x: m.padding,
         }
     }
 

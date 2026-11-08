@@ -8,7 +8,7 @@ use iced::{
     mouse,
     widget::{
         canvas::{self, Canvas, Geometry},
-        container, stack,
+        container, Stack,
     },
     Background, Color, Element, Length, Padding, Rectangle, Renderer, Theme as IcedBase,
 };
@@ -158,7 +158,13 @@ impl IcedTheme {
                 bottom: s.padding.bottom + m,
                 left: s.padding.left + m,
             };
-            stack![shaped_frame(frame), container(content).padding(pad)].into()
+            // The content is the base layer: it sizes the stack, and the frame (which fills its
+            // parent) follows. With the frame as the base, the box collapsed to nothing wherever
+            // the height is unbounded (a scrollable page).
+            Stack::new()
+                .push(container(content).padding(pad))
+                .push_under(shaped_frame(frame))
+                .into()
         } else {
             let style = self.box_style(&s);
             container(content)

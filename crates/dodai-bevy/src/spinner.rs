@@ -16,22 +16,7 @@ pub struct UiIndeterminate;
 #[derive(Component)]
 pub(crate) struct IndeterminateFill;
 
-/// Revolutions per second of the ring.
-pub const SPIN_RATE: f32 = 0.9;
-/// Width of the sliding segment as a fraction of the track.
-pub const SEGMENT: f32 = 0.3;
-
-/// Angle (radians) of the ring after `t` seconds.
-pub fn spin_angle(t: f32) -> f32 {
-    (t * SPIN_RATE).fract() * std::f32::consts::TAU
-}
-
-/// Left edge of the sliding segment as a fraction of the track after `t` seconds. It sweeps from
-/// just off the left to just off the right, so the loop never jumps.
-pub fn slide_left(t: f32) -> f32 {
-    let p = (t * 0.7).fract();
-    -SEGMENT + p * (1.0 + SEGMENT)
-}
+pub use dodai_core::busy::{slide_left, spin_angle, SEGMENT, SPIN_RATE};
 
 /// A ring of `size` px.
 pub fn spinner(size: f32) -> impl Bundle {
@@ -119,31 +104,6 @@ pub(crate) fn animate_bars(
                     f.0 = fill;
                 }
             }
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn the_ring_turns_once_per_period_and_stays_in_range() {
-        for i in 0..200 {
-            let a = spin_angle(i as f32 * 0.037);
-            assert!((0.0..std::f32::consts::TAU).contains(&a));
-        }
-        assert!(spin_angle(1.0 / SPIN_RATE - 1e-3) > 6.0);
-    }
-
-    #[test]
-    fn the_segment_enters_from_the_left_and_leaves_on_the_right() {
-        assert!((slide_left(0.0) + SEGMENT).abs() < 1e-6);
-        let end = slide_left(1.0 / 0.7 - 1e-3);
-        assert!(end > 0.99, "{end}");
-        for i in 0..300 {
-            let l = slide_left(i as f32 * 0.013);
-            assert!((-SEGMENT..=1.0).contains(&l));
         }
     }
 }

@@ -19,6 +19,7 @@ mod color;
 mod component;
 mod crop;
 pub mod export;
+mod kit;
 mod palette;
 mod shape_system;
 mod spec;
@@ -57,6 +58,7 @@ pub use component::{
 pub use dodai_fx::{
     EffectSet, PressStyle, Surface, SurfaceClass, SurfaceFx, SurfaceTargets, SurfaceTuning, Texture,
 };
+pub use kit::{busy, Kit, KitStyle};
 pub mod motion;
 pub use crop::{ButtonCrop, Crop, CropEdge};
 pub use motion::{Easing, EntryKind, EntrySet, Motion};
