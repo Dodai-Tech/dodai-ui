@@ -8,8 +8,8 @@ use dodai_icons::IconId;
 use dodai_showcase_model::node::{Axis, Font, Gap, Ink, TextRole as Role, TextStyle, TreeNode};
 use dodai_showcase_model::{Action, Node as Demo, Showcase, Value};
 use iced::widget::{
-    checkbox, column, container, progress_bar, radio, row, scrollable, slider, stack, text,
-    text_input, toggler, vertical_slider, Space,
+    checkbox, column, container, progress_bar, radio, rich_text, row, scrollable, slider, span,
+    stack, text, text_input, toggler, vertical_slider, Space,
 };
 use iced::{alignment, Element, Length};
 
@@ -190,10 +190,20 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             lt.shaped_box(inner, s)
         }
         Demo::Image {
+            src: Some(src),
+            video,
+            contain,
+            w,
+            h,
+            caption,
+            ..
+        } => picture(cx, src, (*w, *h), (*video, *contain), caption.as_deref()),
+        Demo::Image {
             w,
             h,
             caption,
             on_image,
+            ..
         } => image_placeholder(cx, *w, *h, caption.as_deref(), *on_image),
         Demo::Block {
             w,
@@ -366,21 +376,27 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             })
         }
         Demo::Tag { label, tone, solid } => lt.tag(label, *tone, *solid),
-        Demo::Chip {
-            label,
-            bind,
-            icon: ic,
-        } => {
-            let on = vals.flag(bind);
+        Demo::Chip(ch) => {
+            let on = vals.flag(&ch.bind);
             let mut r = row![].spacing(6).align_y(alignment::Vertical::Center);
-            if let Some(i) = ic {
-                r = r.push(icon(cx, *i, 16.0));
+            if ch.filter && on {
+                r = r.push(icon(cx, IconId::Check, 16.0));
+            } else if let Some(i) = ch.icon {
+                r = r.push(icon(cx, i, 16.0));
             }
-            r = r.push(text(label.clone()).size(th.typography.size_sm));
+            r = r.push(text(ch.label.clone()).size(th.typography.size_sm));
+            if ch.removable {
+                r = r.push(icon(cx, IconId::Close, 14.0));
+            }
+            let kit = if ch.elevated {
+                Kit::Elevated
+            } else {
+                Kit::Chip { selected: on }
+            };
             lt.kit_button(
-                Kit::Chip { selected: on },
+                kit,
                 r,
-                Msg::Act(Action::Set(bind.key.clone(), Value::Bool(!on))),
+                Msg::Act(Action::Set(ch.bind.key.clone(), Value::Bool(!on))),
             )
         }
         Demo::Toggle(t) => {
@@ -566,6 +582,18 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             }
             col.into()
         }
+        Demo::Pick { bind, items } => {
+            let at = vals.index(bind);
+            column(items.iter().enumerate().map(|(i, title)| {
+                lt.kit_button(
+                    Kit::Row { selected: i == at },
+                    container(txt(cx, title, Role::Body)).width(Length::Fill),
+                    Msg::Act(Action::Set(bind.key.clone(), Value::Index(i))),
+                )
+            }))
+            .width(Length::Fill)
+            .into()
+        }
         Demo::Divider => lt.divider().into(),
         Demo::Card {
             title,
@@ -585,36 +613,35 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             tone,
             text: t,
             banner,
+            action,
+            dismissible,
         } => {
-            let ic = match tone {
-                Tone::Danger | Tone::Warning => IconId::Warning,
-                Tone::Success => IconId::CheckCircle,
-                Tone::Info => IconId::Info,
+            let kit = Kit::Alert {
+                tone: *tone,
+                banner: *banner,
             };
-            let ink = th
-                .kit(
-                    Kit::Alert {
-                        tone: *tone,
-                        banner: *banner,
-                    },
-                    false,
-                )
-                .fg;
-            let line = row![
-                lt.icon(ic, 18.0, Some(ink)),
-                text(t.clone()).size(th.typography.size_md)
-            ]
-            .spacing(sp.sm)
-            .align_y(alignment::Vertical::Center);
-            container(lt.kit_box(
-                Kit::Alert {
-                    tone: *tone,
-                    banner: *banner,
-                },
-                line,
-            ))
-            .width(Length::Fill)
-            .into()
+            let ink = th.kit(kit, false).fg;
+            let mut line = row![].spacing(sp.sm).align_y(alignment::Vertical::Center);
+            if !*banner {
+                let ic = match tone {
+                    Tone::Danger | Tone::Warning => IconId::Warning,
+                    Tone::Success => IconId::CheckCircle,
+                    Tone::Info => IconId::Info,
+                };
+                line = line.push(lt.icon(ic, 18.0, Some(ink)));
+            }
+            line = line
+                .push(container(text(t.clone()).size(th.typography.size_md)).width(Length::Fill));
+            if let Some(a) = action {
+                line = line.push(
+                    rich_text([span(a.clone()).underline(true).size(th.typography.size_md)])
+                        .on_link_click(|()| Msg::Noop),
+                );
+            }
+            if *dismissible {
+                line = line.push(lt.icon(IconId::Close, 18.0, Some(ink)));
+            }
+            container(lt.kit_box(kit, line)).width(Length::Fill).into()
         }
         Demo::Snackbar { text: t, action } => {
             let (_, action_colour) = th.snackbar();
@@ -756,32 +783,74 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             }
             col.into()
         }
-        Demo::Table { columns, rows } => {
-            let cells = |items: &[String], r: Role| -> Vec<Element<'a, Msg>> {
-                items
-                    .iter()
-                    .map(|c| {
-                        container(txt(cx, c, r))
-                            .width(Length::FillPortion(1))
-                            .into()
-                    })
-                    .collect()
-            };
-            let mut col = column![lt.kit_box(Kit::TableHead, row(cells(columns, Role::Label)))]
-                .width(Length::Fill);
-            for (i, r) in rows.iter().enumerate() {
-                col = col.push(lt.kit_box(Kit::TableRow(i % 2 == 1), row(cells(r, Role::Body))));
-            }
-            col.into()
-        }
+        Demo::Table(tb) => table(cx, tb),
         Demo::Avatar(s) => lt.avatar(s, 40.0),
-        Demo::Tooltip { text: t, rich } => lt.kit_box(
-            Kit::Tooltip { rich: *rich },
-            text(t.clone()).size(th.typography.size_md),
-        ),
-        Demo::Code(s) => container(lt.kit_box(Kit::Code, lt.mono_text(s)))
-            .width(Length::Fixed(520.0))
-            .into(),
+        Demo::Tooltip {
+            text: t,
+            rich,
+            title,
+            action,
+        } => {
+            let ty = &th.typography;
+            let mut body = column![].spacing(sp.sm);
+            if let Some(h) = title {
+                body = body.push(text(h.clone()).size(ty.size_md));
+            }
+            body = body.push(text(t.clone()).size(ty.size_sm));
+            if let Some(a) = action {
+                let c = dodai_iced::color(th.palette.primary);
+                body = body.push(text(lt.label(a)).size(ty.size_sm).color(c));
+            }
+            container(lt.kit_box(Kit::Tooltip { rich: *rich }, body))
+                .width(Length::Shrink)
+                .into()
+        }
+        Demo::Code { text: code, lang } => code_block(cx, code, lang),
+        Demo::Rich { spans, role } => rich(cx, spans, *role),
+        Demo::Quote(body) => {
+            let bar = dodai_iced::color(th.palette.primary);
+            row![
+                container("")
+                    .width(2)
+                    .height(Length::Fill)
+                    .style(move |_| container::Style {
+                        background: Some(iced::Background::Color(bar)),
+                        ..container::Style::default()
+                    }),
+                view(body, cx),
+            ]
+            .spacing(sp.md)
+            .height(Length::Shrink)
+            .into()
+        }
+        Demo::AvatarGroup { names, max, size } => {
+            let shown = max.unwrap_or(names.len()).min(names.len());
+            let mut r = row![].spacing(-size * 0.25);
+            for n in &names[..shown] {
+                r = r.push(lt.avatar(n, *size));
+            }
+            if names.len() > shown {
+                r = r.push(lt.avatar(&format!("+{}", names.len() - shown), *size));
+            }
+            r.into()
+        }
+        Demo::Overlay(items) => {
+            let mut layers = items.iter();
+            let base = layers
+                .next()
+                .map_or_else(|| Space::new().into(), |n| view(n, cx));
+            let mut st = stack![base];
+            for n in layers {
+                st = st.push(
+                    container(view(n, cx))
+                        .width(Length::Fill)
+                        .height(Length::Fill)
+                        .align_x(alignment::Horizontal::Center)
+                        .align_y(alignment::Vertical::Center),
+                );
+            }
+            st.into()
+        }
         Demo::Timeline(events) => {
             let mut col = column![].spacing(sp.md);
             for e in events {
@@ -862,19 +931,25 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             .width(Length::Fixed(420.0))
             .into(),
         Demo::Skeleton { w, h } => lt.skeleton(*w, *h),
-        Demo::Empty { title, detail } => container(
-            column![
-                icon(cx, IconId::Folder, 32.0),
-                txt(cx, title, Role::Label),
-                txt(cx, detail, Role::Muted),
-            ]
-            .spacing(sp.xs)
-            .align_x(alignment::Horizontal::Center),
-        )
-        .width(Length::Fill)
-        .padding(sp.lg)
-        .align_x(alignment::Horizontal::Center)
-        .into(),
+        Demo::Empty {
+            icon: glyph,
+            title,
+            detail,
+        } => {
+            let ty = &th.typography;
+            container(
+                column![
+                    txt(cx, glyph, styled(ty.size_xxl, Font::Body, Ink::Muted)),
+                    txt(cx, title, styled(ty.size_lg, Font::Body, Ink::Text)),
+                    txt(cx, detail, styled(ty.size_sm, Font::Body, Ink::Muted)),
+                ]
+                .spacing(sp.sm)
+                .align_x(alignment::Horizontal::Center),
+            )
+            .padding(sp.lg)
+            .align_x(alignment::Horizontal::Center)
+            .into()
+        }
     }
 }
 
@@ -1093,4 +1168,194 @@ fn fade_alpha(stops: &[dodai_core::FadeStop], at: f32) -> f32 {
         }
     }
     stops.last().map_or(0.0, |s| s.alpha)
+}
+
+/// A data table: a header row, then rows in alternating bands; fixed-width columns keep their
+/// width, the rest share the row; scrolls inside `height` when set.
+fn table<'a>(cx: &Cx, tb: &dodai_showcase_model::node::Table) -> Element<'a, Msg> {
+    use dodai_showcase_model::node::Align;
+    let lt = cx.lt;
+    let cells = |items: &[String], r: Role| -> Vec<Element<'a, Msg>> {
+        items
+            .iter()
+            .zip(&tb.columns)
+            .map(|(c, col)| {
+                let x = match col.align {
+                    Align::Left => alignment::Horizontal::Left,
+                    Align::Center => alignment::Horizontal::Center,
+                    Align::Right => alignment::Horizontal::Right,
+                };
+                container(txt(cx, c, r))
+                    .width(col.width.map_or(Length::FillPortion(1), Length::Fixed))
+                    .align_x(x)
+                    .into()
+            })
+            .collect()
+    };
+    let heads: Vec<String> = tb.columns.iter().map(|c| c.title.clone()).collect();
+    let head = lt.kit_box(Kit::TableHead, row(cells(&heads, Role::Label)));
+    let mut body = column![].width(Length::Fill);
+    for (i, r) in tb.rows.iter().enumerate() {
+        body = body.push(lt.kit_box(Kit::TableRow(i % 2 == 1), row(cells(r, Role::Body))));
+    }
+    match tb.height {
+        Some(h) => column![head, scrollable(body).height(h)].into(),
+        None => column![head, body].into(),
+    }
+}
+
+/// The palette colour of a syntax token.
+fn token_color(t: &dodai_core::Theme, k: dodai_core::syntax::CodeToken) -> dodai_core::Color {
+    use dodai_core::syntax::CodeToken as K;
+    let p = &t.palette;
+    match k {
+        K::Keyword => p.primary,
+        K::Str => p.success,
+        K::Comment => p.text_muted,
+        K::Number => p.warning,
+        K::Type => p.info,
+    }
+}
+
+/// A code listing: the language over syntax-coloured lines in the code box.
+fn code_block<'a>(cx: &Cx, code: &str, lang: &str) -> Element<'a, Msg> {
+    let lt = cx.lt;
+    let th = lt.theme();
+    let size = th.typography.size_sm;
+    let plain = dodai_iced::color(th.palette.text);
+    let mut lines = column![];
+    for (l, spans) in code
+        .split('\n')
+        .zip(dodai_core::syntax::highlight_lines(code, lang))
+    {
+        let mut at = 0;
+        let mut runs: Vec<iced::widget::text::Span<'a, (), iced::Font>> = Vec::new();
+        for (r, k) in spans {
+            if r.start > at {
+                runs.push(span(l[at..r.start].to_string()).color(plain));
+            }
+            runs.push(span(l[r.clone()].to_string()).color(dodai_iced::color(token_color(th, k))));
+            at = r.end;
+        }
+        if at < l.len() || runs.is_empty() {
+            runs.push(span(l[at..].to_string()).color(plain));
+        }
+        lines = lines.push(
+            rich_text(runs)
+                .size(size)
+                .font(lt.font_mono())
+                .on_link_click(|()| Msg::Noop),
+        );
+    }
+    let mut col = column![].spacing(th.spacing.xs);
+    if !lang.is_empty() {
+        col = col.push(txt(cx, &lang.to_uppercase(), Role::Caption));
+    }
+    container(lt.kit_box(Kit::Code, col.push(lines).width(Length::Fill)))
+        .width(Length::Fill)
+        .into()
+}
+
+/// Inline-styled runs as one wrapped paragraph.
+fn rich<'a>(cx: &Cx, spans: &[dodai_showcase_model::node::Span], role: Role) -> Element<'a, Msg> {
+    let lt = cx.lt;
+    let th = lt.theme();
+    let st = role.resolve(th);
+    let base = font(lt, st.font);
+    let ink = dodai_iced::color(st.ink.color(th));
+    let runs: Vec<iced::widget::text::Span<'a, (), iced::Font>> = spans
+        .iter()
+        .map(|s| {
+            let mut f = if s.code { lt.font_mono() } else { base };
+            if s.bold {
+                f.weight = iced::font::Weight::Bold;
+            }
+            if s.italic {
+                f.style = iced::font::Style::Italic;
+            }
+            let mut r = span(s.text.clone()).font(f).color(ink);
+            if s.code {
+                r = r
+                    .color(dodai_iced::color(th.palette.primary))
+                    .background(dodai_iced::color(th.palette.surface_raised));
+            }
+            if s.link {
+                r = r.color(dodai_iced::color(th.palette.link)).underline(true);
+            }
+            r
+        })
+        .collect();
+    rich_text(runs)
+        .size(st.size)
+        .on_link_click(|()| Msg::Noop)
+        .into()
+}
+
+/// A picture file in the design's frame: cover or contain, a play badge for a video poster, the
+/// caption under it.
+fn picture<'a>(
+    cx: &Cx,
+    src: &str,
+    (w, h): (f32, f32),
+    (video, contain): (bool, bool),
+    caption: Option<&str>,
+) -> Element<'a, Msg> {
+    let lt = cx.lt;
+    let th = lt.theme();
+    let Some(p) = dodai_showcase_model::media::picture(src) else {
+        return image_placeholder(cx, w, h, caption, false);
+    };
+    let handle = iced::widget::image::Handle::from_rgba(p.width, p.height, p.rgba.to_vec());
+    let fit = if contain {
+        iced::ContentFit::Contain
+    } else {
+        iced::ContentFit::Cover
+    };
+    let pic = iced::widget::image(handle)
+        .width(w)
+        .height(h)
+        .content_fit(fit);
+    let frame = dodai_iced::BoxStyle {
+        fill: Some(th.palette.surface_raised),
+        stroke: Some(th.palette.border),
+        glow: false,
+        hard_shadow: false,
+        padding: iced::Padding::ZERO,
+    };
+    let mut layers = stack![pic];
+    if video {
+        let d = (h * 0.28).clamp(28.0, 56.0);
+        let (bg, ring) = (
+            dodai_iced::color(th.palette.background.with_alpha(0.75)),
+            dodai_iced::color(th.palette.primary),
+        );
+        let badge = container(text("▶").size(d * 0.45).color(ring))
+            .width(d)
+            .height(d)
+            .align_x(alignment::Horizontal::Center)
+            .align_y(alignment::Vertical::Center)
+            .style(move |_| container::Style {
+                background: Some(iced::Background::Color(bg)),
+                border: iced::Border {
+                    color: ring,
+                    width: 1.0,
+                    radius: (d / 2.0).into(),
+                },
+                ..container::Style::default()
+            });
+        layers = layers.push(
+            container(badge)
+                .width(w)
+                .height(h)
+                .align_x(alignment::Horizontal::Center)
+                .align_y(alignment::Vertical::Center),
+        );
+    }
+    let mut col = column![lt.shaped_box(layers, frame)]
+        .spacing(th.spacing.xs)
+        .width(w);
+    if let Some(c) = caption {
+        col = col.push(txt(cx, c, Role::Muted));
+    }
+    col.into()
 }

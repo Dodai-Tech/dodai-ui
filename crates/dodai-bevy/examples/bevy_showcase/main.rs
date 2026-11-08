@@ -91,6 +91,7 @@ fn main() {
             events::sync_theme,
             events::readouts,
             chrome::rebuild,
+            render::load_pictures,
             events::scroll,
         )
             .chain(),

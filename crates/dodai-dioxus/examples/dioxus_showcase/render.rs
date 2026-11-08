@@ -148,10 +148,47 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
             }
         }
         Demo::Image {
+            src: Some(src),
+            video,
+            contain,
+            w,
+            h,
+            caption,
+            ..
+        } => {
+            let url = dodai_showcase_model::media::data_url(src).unwrap_or_default();
+            let fit = if *contain { "contain" } else { "cover" };
+            let d = (h * 0.28).clamp(28.0, 56.0);
+            let frame = format!(
+                "position:relative;overflow:hidden;width:{w}px;height:{h}px;background:{};border:{}px solid {};border-radius:{}px;display:grid;place-items:center",
+                theme.palette.surface_raised.to_css(),
+                theme.shape.border_width,
+                theme.palette.border.to_css(),
+                theme.shape.radius,
+            );
+            let badge = format!(
+                "position:absolute;width:{d}px;height:{d}px;border-radius:50%;display:grid;place-items:center;background:{};border:1px solid {};color:{};font-size:{}px",
+                theme.palette.background.with_alpha(0.75).to_css(),
+                theme.palette.primary.to_css(),
+                theme.palette.primary.to_css(),
+                d * 0.45
+            );
+            rsx! {
+                div { style: "display:flex;flex-direction:column;gap:{theme.spacing.xs}px;width:{w}px;flex:none",
+                    div { style: frame,
+                        img { src: url, style: "width:100%;height:100%;object-fit:{fit}" }
+                        if *video { div { style: badge, "▶" } }
+                    }
+                    if let Some(c) = caption { span { style: text_style(Role::Muted, &theme), "{c}" } }
+                }
+            }
+        }
+        Demo::Image {
             w,
             h,
             caption,
             on_image,
+            ..
         } => {
             let (sm, md) = (theme.typography.size_sm, theme.typography.size_md);
             let shadow = theme.palette.roles.shadow;
@@ -325,12 +362,27 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
         Demo::Tag { label, tone, solid } => {
             rsx! { Tag { kind: TagKind::from(*tone), soft: !*solid, "{label}" } }
         }
-        Demo::Chip { label, bind, icon } => {
-            let on = vals.flag(bind);
-            let key = bind.key.clone();
+        Demo::Chip(ch) => {
+            let on = vals.flag(&ch.bind);
+            let key = ch.bind.key.clone();
+            let kit = if ch.elevated {
+                dodai_core::Kit::Elevated
+            } else {
+                dodai_core::Kit::Chip { selected: on }
+            };
+            let lead = if ch.filter && on {
+                Some(IconId::Check)
+            } else {
+                ch.icon
+            };
+            let sm = theme.typography.size_sm;
             rsx! {
-                Chip { label: label.clone(), selected: on, icon: *icon,
-                    onclick: move |_| act(model, Action::Set(key.clone(), Value::Bool(!on))) }
+                KitBox { kit, style: format!("flex:none;font-size:{sm}px;gap:6px"),
+                    onclick: move |_| act(model, Action::Set(key.clone(), Value::Bool(!on))),
+                    if let Some(i) = lead { Icon { icon: i, size: 16, theme: theme.clone() } }
+                    span { "{ch.label}" }
+                    if ch.removable { Icon { icon: IconId::Close, size: 14, theme: theme.clone() } }
+                }
             }
         }
         Demo::Toggle(t) => {
@@ -483,8 +535,25 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
         } => rsx! {
             Card { variant: *variant, title: title.clone(), {view(body, cx)} }
         },
-        Demo::Alert { tone, text, banner } => {
-            rsx! { Alert { tone: *tone, banner: *banner, "{text}" } }
+        Demo::Alert {
+            tone,
+            text,
+            banner,
+            action,
+            dismissible,
+        } => {
+            let kit = dodai_core::Kit::Alert {
+                tone: *tone,
+                banner: *banner,
+            };
+            rsx! {
+                KitBox { kit, style: "width:100%;".to_string(),
+                    if !*banner { Icon { icon: alert_icon(*tone), size: 18, theme: theme.clone() } }
+                    span { style: "flex:1", "{text}" }
+                    if let Some(a) = action { span { style: "text-decoration:underline;cursor:pointer", "{a}" } }
+                    if *dismissible { Icon { icon: IconId::Close, size: 18, theme: theme.clone() } }
+                }
+            }
         }
         Demo::Snackbar { text, action } => {
             rsx! { Snackbar { text: text.clone(), action: action.clone() } }
@@ -515,12 +584,74 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
         Demo::Tree(nodes) => {
             rsx! { TreeView { items: nodes.iter().map(tree_item).collect::<Vec<_>>() } }
         }
-        Demo::Table { columns, rows } => {
-            rsx! { DataTable { columns: columns.clone(), rows: rows.clone() } }
+        Demo::Table(tb) => table(tb, &theme),
+        Demo::Pick { bind, items } => {
+            let at = vals.index(bind);
+            rsx! {
+                div { style: "display:flex;flex-direction:column;width:100%",
+                    for (i, title) in items.iter().enumerate() {
+                        {
+                            let key = bind.key.clone();
+                            rsx! {
+                                KitBox { key: "{i}", kit: dodai_core::Kit::Row { selected: i == at },
+                                    onclick: move |_| act(model, Action::Set(key.clone(), Value::Index(i))),
+                                    span { "{title}" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
+        Demo::Rich { spans, role } => rich(spans, *role, &theme),
+        Demo::Quote(body) => rsx! {
+            div { style: "padding-left:var(--dodai-space-md);border-left:2px solid {theme.palette.primary.to_css()}",
+                {view(body, cx)}
+            }
+        },
+        Demo::AvatarGroup { names, max, size } => {
+            let shown = max.unwrap_or(names.len()).min(names.len());
+            let extra = names.len() - shown;
+            let overlap = size * 0.25;
+            let px = *size as u32;
+            rsx! {
+                div { style: "display:flex;flex:none",
+                    for (i, n) in names[..shown].iter().enumerate() {
+                        div { key: "{i}", style: if i > 0 { format!("margin-left:-{overlap}px") } else { String::new() },
+                            Avatar { initials: n.clone(), size: px }
+                        }
+                    }
+                    if extra > 0 {
+                        div { style: "margin-left:-{overlap}px", Avatar { initials: format!("+{extra}"), size: px } }
+                    }
+                }
+            }
+        }
+        Demo::Overlay(items) => rsx! {
+            div { style: "display:grid;flex:none;place-items:center",
+                for (i, n) in items.iter().enumerate() {
+                    div { key: "{i}", style: "grid-area:1/1", {view(n, cx)} }
+                }
+            }
+        },
         Demo::Avatar(s) => rsx! { Avatar { initials: s.clone() } },
-        Demo::Tooltip { text, rich } => rsx! { TooltipBubble { text: text.clone(), rich: *rich } },
-        Demo::Code(s) => rsx! { CodeBlock { code: s.clone() } },
+        Demo::Tooltip {
+            text,
+            rich,
+            title,
+            action,
+        } => {
+            let ty = &theme.typography;
+            let primary = theme.palette.primary.to_css();
+            rsx! {
+                KitBox { kit: dodai_core::Kit::Tooltip { rich: *rich }, style: format!("flex-direction:column;align-items:flex-start;width:fit-content;font-size:{}px", ty.size_sm),
+                    if let Some(h) = title { span { style: "font-size:{ty.size_md}px", "{h}" } }
+                    span { "{text}" }
+                    if let Some(a) = action { span { style: "color:{primary}", "{a}" } }
+                }
+            }
+        }
+        Demo::Code { text, lang } => code_block(text, lang, &theme),
         Demo::Timeline(events) => rsx! {
             Timeline { events: events.iter().map(|e| TimelineItem { title: e.title.clone(), time: e.time.clone(), detail: e.detail.clone(), tone: e.tone }).collect::<Vec<_>>() }
         },
@@ -530,8 +661,19 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
         Demo::Spinner(size) => rsx! { Spinner { size: *size as u32 } },
         Demo::Indeterminate => rsx! { Indeterminate {} },
         Demo::Skeleton { w, h } => rsx! { Skeleton { width: *w as u32, height: *h as u32 } },
-        Demo::Empty { title, detail } => {
-            rsx! { EmptyState { title: title.clone(), detail: detail.clone() } }
+        Demo::Empty {
+            icon: glyph,
+            title,
+            detail,
+        } => {
+            let ty = &theme.typography;
+            rsx! {
+                div { style: "display:flex;flex-direction:column;align-items:center;gap:var(--dodai-space-sm);padding:var(--dodai-space-lg)",
+                    span { style: text_style(styled(ty.size_xxl, Font::Body, Ink::Muted), &theme), "{glyph}" }
+                    span { style: text_style(styled(ty.size_lg, Font::Body, Ink::Text), &theme), "{title}" }
+                    span { style: text_style(styled(ty.size_sm, Font::Body, Ink::Muted), &theme), "{detail}" }
+                }
+            }
         }
     }
 }
@@ -600,5 +742,117 @@ mod tests {
             ("src", true, 1)
         );
         assert_eq!(i.children[0].label, "a");
+    }
+}
+
+/// A data table: header row, banded rows; fixed-width columns keep their width, the others
+/// share the rest; scrolls inside `height` when set.
+fn table(tb: &dodai_showcase_model::node::Table, theme: &dodai_core::Theme) -> Element {
+    use dodai_showcase_model::node::Align;
+    let tracks = tb
+        .columns
+        .iter()
+        .map(|c| c.width.map_or("1fr".to_string(), |w| format!("{w}px")))
+        .collect::<Vec<_>>()
+        .join(" ");
+    let align = |a: Align| match a {
+        Align::Left => "left",
+        Align::Center => "center",
+        Align::Right => "right",
+    };
+    let aligns: Vec<&str> = tb.columns.iter().map(|c| align(c.align)).collect();
+    let scroll = tb.height.map_or(String::new(), |h| {
+        format!("max-height:{h}px;overflow:auto;")
+    });
+    let label = text_style(Role::Label, theme);
+    rsx! {
+        div { class: "dodai-datatable", role: "table", style: "width:100%",
+            KitBox { kit: dodai_core::Kit::TableHead, style: format!("display:grid;grid-template-columns:{tracks};"),
+                for (i, c) in tb.columns.iter().enumerate() { span { key: "{i}", style: "{label}text-align:{aligns[i]}", "{c.title}" } }
+            }
+            div { style: scroll,
+                for (i, r) in tb.rows.iter().enumerate() {
+                    KitBox { key: "{i}", kit: dodai_core::Kit::TableRow(i % 2 == 1), style: format!("display:grid;grid-template-columns:{tracks};"),
+                        for (j, c) in r.iter().enumerate() { span { key: "{j}", style: "text-align:{aligns.get(j).copied().unwrap_or(\"left\")}", "{c}" } }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// A code listing: the language over syntax-coloured lines.
+fn code_block(code: &str, lang: &str, theme: &dodai_core::Theme) -> Element {
+    use dodai_core::syntax::{highlight_lines, CodeToken as K};
+    let p = &theme.palette;
+    let colour = |k: K| match k {
+        K::Keyword => p.primary,
+        K::Str => p.success,
+        K::Comment => p.text_muted,
+        K::Number => p.warning,
+        K::Type => p.info,
+    };
+    let lines: Vec<Vec<(String, Option<String>)>> = code
+        .split('\n')
+        .zip(highlight_lines(code, lang))
+        .map(|(l, spans)| {
+            let mut out = Vec::new();
+            let mut at = 0;
+            for (r, k) in spans {
+                if r.start > at {
+                    out.push((l[at..r.start].to_string(), None));
+                }
+                out.push((l[r.clone()].to_string(), Some(colour(k).to_css())));
+                at = r.end;
+            }
+            out.push((l[at..].to_string(), None));
+            out
+        })
+        .collect();
+    let cap = text_style(Role::Caption, theme);
+    rsx! {
+        KitBox { kit: dodai_core::Kit::Code, style: "display:block;width:100%".to_string(),
+            if !lang.is_empty() { div { style: cap, "{lang.to_uppercase()}" } }
+            pre { class: "dodai-code", style: "margin:0",
+                for (i, l) in lines.into_iter().enumerate() {
+                    div { key: "{i}", style: "min-height:1.3em",
+                        for (j, (t, c)) in l.into_iter().enumerate() {
+                            span { key: "{j}", style: c.map_or(String::new(), |c| format!("color:{c}")), "{t}" }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Inline-styled runs as one paragraph.
+fn rich(
+    spans: &[dodai_showcase_model::node::Span],
+    role: Role,
+    theme: &dodai_core::Theme,
+) -> Element {
+    let base = text_style(role, theme);
+    let p = &theme.palette;
+    let (code_fg, code_bg, link) = (
+        p.primary.to_css(),
+        p.surface_raised.to_css(),
+        p.link.to_css(),
+    );
+    rsx! {
+        span { style: base,
+            for (i, s) in spans.iter().enumerate() {
+                span { key: "{i}",
+                    style: format!(
+                        "{}{}{}{}",
+                        if s.bold { "font-weight:700;" } else { "" },
+                        if s.italic { "font-style:italic;" } else { "" },
+                        if s.code { format!("font-family:var(--dodai-font-mono);color:{code_fg};background:{code_bg};") } else { String::new() },
+                        if s.link { format!("color:{link};text-decoration:underline;") } else { String::new() },
+                    ),
+                    "{s.text}"
+                }
+            }
+        }
     }
 }

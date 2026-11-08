@@ -40,6 +40,8 @@ pub fn text_style(theme: &Theme, role: TextRole) -> TextStyle {
                 Ink::Muted => p.text_muted,
                 Ink::Disabled => p.text_disabled,
                 Ink::Primary => p.primary,
+                Ink::Link => p.link,
+                Ink::Title => theme.panel(false).title,
             };
             (size, Some(c), upper && up)
         }

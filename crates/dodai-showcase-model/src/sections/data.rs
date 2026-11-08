@@ -39,7 +39,7 @@ const TONES: [(&str, Tone); 4] = [
 ];
 
 /// The picture the image demos show.
-pub(crate) const SAMPLE_IMAGE: &str = concat!(
+pub const SAMPLE_IMAGE: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../dodai-showcase/assets/sample.png"
 );
@@ -263,16 +263,9 @@ fn images(_: &Ctx) -> Node {
     ])
 }
 
-fn progress_banner(_: &Ctx) -> Node {
-    let ring = |value: Option<f32>, tone: Option<Tone>, size: f32, thickness: f32, wavy: bool| {
-        Node::Ring {
-            value,
-            tone,
-            size,
-            thickness,
-            wavy,
-        }
-    };
+fn progress_banner(c: &Ctx) -> Node {
+    use crate::widgets::{elapsed, Ring};
+    let (t, now) = (c.theme, elapsed());
     let banner = |tone, text: &str, action: Option<&str>, dismissible| Node::Alert {
         tone,
         text: text.into(),
@@ -282,12 +275,34 @@ fn progress_banner(_: &Ctx) -> Node {
     };
     col(vec![
         row(vec![
-            ring(Some(0.25), None, 48.0, 4.0, false),
-            ring(Some(0.72), Some(Tone::Success), 72.0, 7.0, false),
-            ring(Some(1.0), Some(Tone::Info), 40.0, 4.0, false),
-            ring(None, None, 48.0, 4.0, false),
-            ring(Some(0.6), None, 64.0, 4.0, true),
-            ring(None, None, 64.0, 4.0, true),
+            Ring::new(0.25).node(t, now),
+            Ring {
+                tone: Some(Tone::Success),
+                size: Some(72.0),
+                thickness: Some(7.0),
+                ..Ring::new(0.72)
+            }
+            .node(t, now),
+            Ring {
+                tone: Some(Tone::Info),
+                size: Some(40.0),
+                thickness: Some(4.0),
+                ..Ring::new(1.0)
+            }
+            .node(t, now),
+            Ring::spinning().node(t, now),
+            Ring {
+                wavy: true,
+                size: Some(64.0),
+                ..Ring::new(0.6)
+            }
+            .node(t, now),
+            Ring {
+                wavy: true,
+                size: Some(64.0),
+                ..Ring::spinning()
+            }
+            .node(t, now),
         ]),
         banner(
             Tone::Info,
@@ -300,12 +315,17 @@ fn progress_banner(_: &Ctx) -> Node {
     ])
 }
 
-fn clock(_: &Ctx) -> Node {
-    row(vec![Node::Clock, Node::Timer { minutes: 1 }])
+fn clock(c: &Ctx) -> Node {
+    use crate::widgets::{clock, elapsed, local_offset_minutes, timer};
+    row(vec![
+        clock(c.theme, 180.0, local_offset_minutes()),
+        timer(c.theme, 1, elapsed()),
+    ])
 }
 
-fn stopwatch(_: &Ctx) -> Node {
-    row(vec![Node::Stopwatch, Node::TapTempo])
+fn stopwatch(c: &Ctx) -> Node {
+    use crate::widgets::{stopwatch, tap_tempo};
+    row(vec![stopwatch(c.theme), tap_tempo(c.theme)])
 }
 
 fn scroll_area(_: &Ctx) -> Node {
