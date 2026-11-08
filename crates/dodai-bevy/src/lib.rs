@@ -26,6 +26,7 @@ pub mod gizmo;
 pub mod kit;
 pub mod knob;
 pub mod material;
+pub mod plot;
 pub mod plugin;
 pub mod spinner;
 pub mod style;
@@ -47,6 +48,7 @@ pub mod prelude {
     pub use crate::gizmo::{axis_gizmo, AxisId, Basis, GizmoEvent, GizmoKind, UiAxisGizmo};
     pub use crate::kit::{kit, kit_pressable, Kit, UiKit, UiPress};
     pub use crate::knob::{knob, UiKnob};
+    pub use crate::plot::{plot, PlotLine};
     pub use crate::plugin::{theme_hotkeys, DodaiSet, DodaiUiPlugin, ScanlineOverlay};
     pub use crate::spinner::{indeterminate, spinner, UiIndeterminate, UiSpinner};
     pub use crate::surface::Surface;

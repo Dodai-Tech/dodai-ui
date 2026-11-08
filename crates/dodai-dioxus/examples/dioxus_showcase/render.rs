@@ -10,6 +10,15 @@ use dodai_showcase_model::{Action, Node as Demo, Showcase, Value};
 /// Counter range of the number stepper demo.
 pub const STEPPER_RANGE: (i32, i32) = (0, 20);
 
+/// An SVG `points` attribute.
+fn svg_points(points: &[(f32, f32)]) -> String {
+    points
+        .iter()
+        .map(|(x, y)| format!("{x:.1},{y:.1}"))
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 /// Snap `v` to multiples of `step` within `min..=max`.
 pub fn snap(v: f32, min: f32, max: f32, step: Option<f32>) -> f32 {
     let v = v.clamp(min, max);
@@ -237,6 +246,19 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
                     onchange: move |x| act(model, Action::Set(key.clone(), Value::Num(x))) }
             }
         }
+        Demo::Plot(p) => rsx! {
+            svg { width: "{p.w}", height: "{p.h}", view_box: "0 0 {p.w} {p.h}", style: "flex:none",
+                for l in p.lines.iter() {
+                    polyline {
+                        fill: "none",
+                        stroke: "{l.color.to_css()}",
+                        stroke_width: "{l.width}",
+                        stroke_linejoin: "round",
+                        points: "{svg_points(&l.points)}",
+                    }
+                }
+            }
+        },
         Demo::Scroll { height, body } => rsx! {
             div { class: "dodai-scroll", style: "height:{height}px;overflow:auto;width:100%;max-width:520px", {view(body, cx)} }
         },

@@ -303,6 +303,8 @@ pub enum Node {
         /// The scrolling content.
         body: Box<Node>,
     },
+    /// Coloured polylines in a fixed box (easing curves, physics lanes).
+    Plot(crate::plot::Plot),
     /// A progress bar (`0..=1`).
     Progress {
         /// Fraction.

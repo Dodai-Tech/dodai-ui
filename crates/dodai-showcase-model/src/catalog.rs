@@ -26,7 +26,7 @@ pub struct Section {
 
 /// The categories this port shows, in sidebar order. (Charts, Instruments and Shaders are
 /// not ported to the other toolkits yet.)
-pub const CATEGORIES: [&str; 7] = [
+pub const CATEGORIES: [&str; 8] = [
     "Foundations",
     "Shape",
     "Actions",
@@ -34,6 +34,7 @@ pub const CATEGORIES: [&str; 7] = [
     "Navigation",
     "Inputs",
     "Loading",
+    "Animation",
 ];
 
 /// Every section, grouped by category in [`CATEGORIES`] order.
@@ -47,6 +48,7 @@ pub fn sections() -> &'static [Section] {
         all.extend(page::navigation::SECTIONS);
         all.extend(page::inputs::SECTIONS);
         all.extend(page::loading::SECTIONS);
+        all.extend(page::animation::SECTIONS);
         all
     });
     &ALL
