@@ -7,6 +7,12 @@ use iced::{
 
 use crate::{color, IcedTheme};
 
+/// Estimated width of a tab labelled `label` (no font metrics outside layout: ~0.62 em per
+/// character) with `pad` px of padding on each side.
+pub fn tab_width(label: &str, size: f32, pad: f32) -> f32 {
+    label.chars().count() as f32 * size * 0.62 + 2.0 * pad
+}
+
 impl IcedTheme {
     /// Button style for one tab (`theme.tab(dodai_core::ItemState::of(active, hovered))` tokens).
     pub fn tab_style(
@@ -51,14 +57,19 @@ impl IcedTheme {
                 .padding([sp.sm, sp.lg])
                 .style(self.tab_style(is_active))
                 .on_press(on_select(i));
-            let rule =
-                container("")
-                    .width(Length::Fill)
-                    .height(2)
-                    .style(move |_| container::Style {
-                        background: underline.map(Background::Color),
-                        ..container::Style::default()
-                    });
+            // A fixed width (the label's estimated width plus its padding): a `Fill` rule made
+            // every tab claim an equal share of the row.
+            let rule = container("")
+                .width(Length::Fixed(tab_width(
+                    l,
+                    self.theme.typography.size_sm,
+                    sp.lg,
+                )))
+                .height(2)
+                .style(move |_| container::Style {
+                    background: underline.map(Background::Color),
+                    ..container::Style::default()
+                });
             bar = bar.push(column![btn, rule]);
         }
         bar.into()
@@ -68,6 +79,13 @@ impl IcedTheme {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn tab_width_grows_with_the_label_and_the_padding() {
+        assert!(tab_width("Overview", 14.0, 8.0) > tab_width("Usage", 14.0, 8.0));
+        assert!(tab_width("Usage", 14.0, 16.0) > tab_width("Usage", 14.0, 8.0));
+        assert_eq!(tab_width("", 14.0, 8.0), 16.0);
+    }
     use crate::testutil::*;
     use dodai_core::Theme;
 

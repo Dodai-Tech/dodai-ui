@@ -26,8 +26,9 @@ pub struct Section {
 
 /// The categories this port shows, in sidebar order. (Charts, Instruments and Shaders are
 /// not ported to the other toolkits yet.)
-pub const CATEGORIES: [&str; 6] = [
+pub const CATEGORIES: [&str; 7] = [
     "Foundations",
+    "Shape",
     "Actions",
     "Data display",
     "Navigation",
@@ -40,6 +41,7 @@ pub fn sections() -> &'static [Section] {
     static ALL: std::sync::LazyLock<Vec<Section>> = std::sync::LazyLock::new(|| {
         let mut all = Vec::new();
         all.extend(page::foundations::SECTIONS);
+        all.extend(page::shape::SECTIONS);
         all.extend(page::actions::SECTIONS);
         all.extend(page::data::SECTIONS);
         all.extend(page::navigation::SECTIONS);

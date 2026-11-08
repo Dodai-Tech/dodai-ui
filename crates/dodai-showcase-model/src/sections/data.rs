@@ -9,7 +9,7 @@ use crate::node::{Bind, Node, TextRole, TimelineEvent};
 
 const CAT: &str = "Data display";
 
-pub(crate) const SECTIONS: [Section; 11] = [
+pub(crate) const SECTIONS: [Section; 13] = [
     Section {
         category: CAT,
         title: "Tags",
@@ -64,6 +64,16 @@ pub(crate) const SECTIONS: [Section; 11] = [
         category: CAT,
         title: "Cards",
         build: cards,
+    },
+    Section {
+        category: CAT,
+        title: "Clock · Timer",
+        build: clock,
+    },
+    Section {
+        category: CAT,
+        title: "Stopwatch · Tap tempo",
+        build: stopwatch,
     },
 ];
 
@@ -234,5 +244,40 @@ fn cards(_: &Ctx) -> Node {
         card("Elevated", CardVariant::Elevated),
         card("Filled", CardVariant::Filled),
         card("Outlined", CardVariant::Outlined),
+    ])
+}
+
+fn clock(_: &Ctx) -> Node {
+    row(vec![
+        text(
+            "14:32:07",
+            TextRole::Type(dodai_core::TypeRole::DisplaySmall),
+        ),
+        Node::Tag {
+            label: "UTC+1".into(),
+            tone: Tone::Info,
+            solid: false,
+        },
+        text(
+            "04:59",
+            TextRole::Type(dodai_core::TypeRole::HeadlineMedium),
+        ),
+        muted("timer"),
+    ])
+}
+
+fn stopwatch(c: &Ctx) -> Node {
+    let taps = c.values.index_of("tap-tempo", 0);
+    row(vec![
+        text(
+            "00:12.4",
+            TextRole::Type(dodai_core::TypeRole::DisplaySmall),
+        ),
+        button("Start", dodai_core::ButtonVariant::Primary).node(),
+        button("Lap", dodai_core::ButtonVariant::Outline).node(),
+        button("Tap", dodai_core::ButtonVariant::Secondary)
+            .counter("tap-tempo")
+            .node(),
+        muted(format!("{taps} taps")),
     ])
 }

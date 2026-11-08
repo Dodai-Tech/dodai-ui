@@ -6,3 +6,4 @@ pub(crate) mod foundations;
 pub(crate) mod inputs;
 pub(crate) mod loading;
 pub(crate) mod navigation;
+pub(crate) mod shape;

@@ -319,6 +319,8 @@ pub enum Node {
         /// Action label.
         action: String,
     },
+    /// A floating menu or dropdown list around its content.
+    Popup(Box<Node>),
     /// An icon.
     Icon(IconId, f32),
     /// Star rating.

@@ -284,6 +284,9 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
         Demo::Snackbar { text, action } => {
             rsx! { Snackbar { text: text.clone(), action: action.clone() } }
         }
+        Demo::Popup(inner) => rsx! {
+            KitBox { kit: dodai_core::Kit::Popup, style: "flex-direction:column;align-items:stretch;min-width:200px;width:fit-content;".to_string(), {view(inner, cx)} }
+        },
         Demo::Icon(i, size) => rsx! { Icon { icon: *i, size: *size as u32, theme: theme.clone() } },
         Demo::Rating { value, max } => rsx! { Rating { value: *value, max: *max } },
         Demo::Stepper(b) => {
