@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use dodai_core::{ButtonVariant as V, ControlSize, Kit, StepState, Tone};
 use dodai_iced::IcedTheme;
 use dodai_icons::IconId;
-use dodai_showcase_model::node::{Axis, Gap, TextRole as Role, TreeNode};
+use dodai_showcase_model::node::{Axis, Font, Gap, Ink, TextRole as Role, TextStyle, TreeNode};
 use dodai_showcase_model::{Action, Node as Demo, Showcase, Value};
 use iced::widget::{
     checkbox, column, container, progress_bar, radio, row, scrollable, slider, stack, text,
@@ -86,38 +86,27 @@ pub fn stepped(cur: i32, by: i32) -> i32 {
 }
 
 fn gap(lt: &IcedTheme, g: Gap) -> f32 {
-    let s = &lt.theme().spacing;
-    match g {
-        Gap::Xs => s.xs,
-        Gap::Sm => s.sm,
-        Gap::Md => s.md,
-        Gap::Lg => s.lg,
+    g.px(lt.theme())
+}
+
+/// The iced font of a model font.
+fn font(lt: &IcedTheme, f: Font) -> iced::Font {
+    match f {
+        Font::Mono => lt.font_mono(),
+        Font::Display => lt.font_display(),
+        Font::Body => lt.font(),
     }
 }
 
 fn txt<'a>(cx: &Cx, s: &str, r: Role) -> Element<'a, Msg> {
-    let lt = cx.lt;
-    let th = lt.theme();
-    match r {
-        Role::Title => lt.heading_text(s).into(),
-        Role::Label => lt.label_text(s).into(),
-        Role::Body => lt.body_text(s).into(),
-        Role::Muted => lt.muted_text(s).into(),
-        Role::Caption => text(s.to_string())
-            .size(th.typography.size_xs)
-            .style(lt.muted())
-            .into(),
-        Role::Mono => lt.mono_text(s).into(),
-        Role::Type(t) => {
-            let st = th.type_style(t);
-            let c = dodai_iced::color(th.palette.text);
-            text(s.to_string())
-                .size(st.size)
-                .font(lt.font())
-                .style(move |_| text::Style { color: Some(c) })
-                .into()
-        }
-    }
+    let th = cx.lt.theme();
+    let st = r.resolve(th);
+    let c = dodai_iced::color(st.ink.color(th));
+    text(st.cased(th, s))
+        .size(st.size)
+        .font(font(cx.lt, st.font))
+        .style(move |_| text::Style { color: Some(c) })
+        .into()
 }
 
 fn icon<'a>(cx: &Cx, i: IconId, size: f32) -> Element<'a, Msg> {
@@ -134,17 +123,21 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
         Demo::Stack(s) => {
             let g = gap(lt, s.gap);
             let items: Vec<Element<Msg>> = s.items.iter().map(|n| view(n, cx)).collect();
+            let across = if s.centre {
+                alignment::Vertical::Center
+            } else {
+                alignment::Vertical::Top
+            };
+            let w = s.width.map_or(Length::Shrink, Length::Fixed);
             match (s.axis, s.wrap) {
                 (Axis::Row, true) => row(items)
                     .spacing(g)
-                    .align_y(alignment::Vertical::Center)
+                    .align_y(across)
+                    .width(s.width.map_or(Length::Fill, Length::Fixed))
                     .wrap()
                     .vertical_spacing(g)
                     .into(),
-                (Axis::Row, false) => row(items)
-                    .spacing(g)
-                    .align_y(alignment::Vertical::Center)
-                    .into(),
+                (Axis::Row, false) => row(items).spacing(g).align_y(across).width(w).into(),
                 (Axis::Column, _) if s.centre => column(items)
                     .spacing(g)
                     .align_x(alignment::Horizontal::Center)
@@ -157,34 +150,51 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
         }
         Demo::Text(t, r) => txt(cx, t, *r),
         Demo::Space(px) => Space::new().width(*px).height(*px).into(),
-        Demo::Swatch { name, color: c } => {
+        Demo::Swatch {
+            name,
+            color: c,
+            detail,
+        } => {
             let fill = dodai_iced::color(*c);
             let border = dodai_iced::color(th.palette.border);
-            let radius = th.shape.radius.min(10.0);
+            let ty = &th.typography;
             column![
                 container("")
-                    .width(104)
+                    .width(Length::Fill)
                     .height(44)
                     .style(move |_| container::Style {
                         background: Some(iced::Background::Color(fill)),
                         border: iced::Border {
                             color: border,
                             width: 1.0,
-                            radius: radius.into(),
+                            radius: 0.0.into(),
                         },
                         ..container::Style::default()
                     }),
-                txt(cx, name, Role::Caption),
-                txt(
-                    cx,
-                    &format!("#{:02x}{:02x}{:02x}", c.r, c.g, c.b),
-                    Role::Mono
-                ),
+                txt(cx, name, styled(ty.size_xs, Font::Body, Ink::Text)),
+                txt(cx, detail, styled(ty.size_xs, Font::Mono, Ink::Muted)),
             ]
             .spacing(4)
-            .width(104)
+            .width(118)
             .into()
         }
+        Demo::Sample { w, h, label } => {
+            let mut s = lt.panel_box(false);
+            s.padding = iced::Padding::ZERO;
+            let ty = &th.typography;
+            let inner = container(txt(cx, label, styled(ty.size_sm, Font::Body, Ink::Text)))
+                .width(*w)
+                .height(*h)
+                .align_x(alignment::Horizontal::Center)
+                .align_y(alignment::Vertical::Center);
+            lt.shaped_box(inner, s)
+        }
+        Demo::Image {
+            w,
+            h,
+            caption,
+            on_image,
+        } => image_placeholder(cx, *w, *h, caption.as_deref(), *on_image),
         Demo::Block {
             w,
             h,
@@ -197,7 +207,7 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             let border = border.map(dodai_iced::color);
             let radius = *radius;
             let inner: Element<Msg> = match label {
-                Some(l) => txt(cx, l, Role::Caption),
+                Some(l) => txt(cx, l, styled(th.typography.size_xs, Font::Body, Ink::Text)),
                 None => Space::new().into(),
             };
             let mut c = container(inner)
@@ -904,4 +914,112 @@ mod tests {
         assert_eq!(path_key("2", 0), "2.0");
         assert_ne!(path_key("1", 12), path_key("11", 2));
     }
+}
+
+/// A text role at `size` in `font` and `ink`.
+fn styled(size: f32, font: Font, ink: Ink) -> Role {
+    Role::Styled(TextStyle {
+        size,
+        font,
+        ink,
+        caps: false,
+    })
+}
+
+/// A framed picture slot (no picture loads: the frame shows "image unavailable", as the gpui
+/// showcase's blank image does) with its caption below or on the design's fade.
+fn image_placeholder<'a>(
+    cx: &Cx,
+    w: f32,
+    h: f32,
+    caption: Option<&str>,
+    on_image: bool,
+) -> Element<'a, Msg> {
+    let lt = cx.lt;
+    let th = lt.theme();
+    let ty = &th.typography;
+    let frame_style = dodai_iced::BoxStyle {
+        fill: Some(th.palette.surface_raised),
+        stroke: Some(th.palette.border),
+        glow: false,
+        hard_shadow: false,
+        padding: iced::Padding::ZERO,
+    };
+    let fallback = container(txt(
+        cx,
+        "image unavailable",
+        styled(ty.size_md, Font::Body, Ink::Muted),
+    ))
+    .width(w)
+    .height(h)
+    .align_x(alignment::Horizontal::Center)
+    .align_y(alignment::Vertical::Center);
+    match (on_image, caption) {
+        (true, Some(c)) => {
+            let fade_h = (h * 0.5).max(th.sizes().touch_target);
+            let shadow = th.palette.roles.shadow;
+            let ink = dodai_iced::color(th.on(shadow.with_alpha(1.0)));
+            // The design's fade as stacked bands, strongest at the bottom edge.
+            let stops = th.fade_stops();
+            let mut bands = column![Space::new().height(Length::Fill)]
+                .width(w)
+                .height(h);
+            let steps = 24;
+            for k in 0..steps {
+                let at = 1.0 - (k as f32 + 0.5) / steps as f32;
+                let a = fade_alpha(&stops, at);
+                let c = dodai_iced::color(shadow.with_alpha(a));
+                bands = bands.push(
+                    container("")
+                        .width(Length::Fill)
+                        .height(fade_h / steps as f32)
+                        .style(move |_| container::Style {
+                            background: Some(iced::Background::Color(c)),
+                            ..container::Style::default()
+                        }),
+                );
+            }
+            let label = container(
+                text(c.to_string())
+                    .size(ty.size_sm)
+                    .font(lt.font())
+                    .style(move |_| text::Style { color: Some(ink) }),
+            )
+            .width(w)
+            .height(h)
+            .padding(iced::Padding {
+                left: th.spacing.md,
+                right: th.spacing.md,
+                bottom: th.spacing.sm,
+                top: 0.0,
+            })
+            .align_y(alignment::Vertical::Bottom);
+            lt.shaped_box(stack![fallback, bands, label], frame_style)
+        }
+        (_, c) => {
+            let mut col = column![lt.shaped_box(fallback, frame_style)]
+                .spacing(th.spacing.xs)
+                .width(w);
+            if let Some(c) = c {
+                col = col.push(txt(cx, c, Role::Muted));
+            }
+            col.into()
+        }
+    }
+}
+
+/// Alpha of the fade at `at` (0 = bottom edge, 1 = top), linear between the design's stops.
+fn fade_alpha(stops: &[dodai_core::FadeStop], at: f32) -> f32 {
+    for w in stops.windows(2) {
+        let (lo, hi) = (w[0], w[1]);
+        if at >= lo.at && at <= hi.at {
+            let f = if hi.at > lo.at {
+                (at - lo.at) / (hi.at - lo.at)
+            } else {
+                0.0
+            };
+            return lo.alpha + (hi.alpha - lo.alpha) * f;
+        }
+    }
+    stops.last().map_or(0.0, |s| s.alpha)
 }

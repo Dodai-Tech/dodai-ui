@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 use dodai_core::{ControlSize, ToggleKind};
 use dodai_dioxus::*;
 use dodai_icons::IconId;
-use dodai_showcase_model::node::{Axis, Gap, TextRole as Role};
+use dodai_showcase_model::node::{Axis, Font, Ink, TextRole as Role, TextStyle};
 use dodai_showcase_model::{Action, Node as Demo, Showcase, Value};
 
 /// Counter range of the number stepper demo.
@@ -37,48 +37,42 @@ pub fn num_text(v: f32, step: Option<f32>) -> String {
     }
 }
 
-/// CSS class of a stack gap.
-pub fn gap_class(g: Gap) -> &'static str {
-    match g {
-        Gap::Xs => "dodai-gap-xs",
-        Gap::Sm => "dodai-gap-sm",
-        Gap::Md => "dodai-gap-md",
-        Gap::Lg => "dodai-gap-lg",
-    }
-}
-
-/// The `class` of a text role.
-pub fn text_class(r: Role) -> &'static str {
-    match r {
-        Role::Title => "dodai-heading",
-        Role::Label => "dodai-label",
-        Role::Body => "",
-        Role::Muted => "dodai-muted",
-        Role::Caption => "dodai-caption",
-        Role::Mono => "dodai-mono",
-        Role::Type(_) => "",
-    }
-}
-
-/// The inline style of a text role (the type scale sets size and weight).
+/// The inline style of a text role: size, family, colour and casing resolved by the model, so
+/// text matches the gpui showcase.
 pub fn text_style(r: Role, theme: &dodai_core::Theme) -> String {
-    match r {
+    let st = r.resolve(theme);
+    let family = match st.font {
+        Font::Display => "var(--dodai-font-display)",
+        Font::Body => "var(--dodai-font-body)",
+        Font::Mono => "var(--dodai-font-mono)",
+    };
+    let caps = if st.caps && theme.typography.uppercase_labels {
+        "text-transform:uppercase;"
+    } else {
+        ""
+    };
+    let lh = match r {
         Role::Type(t) => {
             let s = theme.type_style(t);
-            format!(
-                "font-size:{}px;line-height:{}px;font-weight:{};{}",
-                s.size,
-                s.line_height,
-                s.weight,
-                if t.is_heading() {
-                    "font-family:var(--dodai-font-display)"
-                } else {
-                    ""
-                }
-            )
+            format!("line-height:{}px;font-weight:{};", s.line_height, s.weight)
         }
         _ => String::new(),
-    }
+    };
+    format!(
+        "font-size:{}px;font-family:{family};color:{};{caps}{lh}",
+        st.size,
+        st.ink.color(theme).to_css()
+    )
+}
+
+/// A text role at `size` in `font` and `ink`.
+fn styled(size: f32, font: Font, ink: Ink) -> Role {
+    Role::Styled(TextStyle {
+        size,
+        font,
+        ink,
+        caps: false,
+    })
 }
 
 /// Everything the builder reads.
@@ -104,8 +98,16 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
                 "dodai-stack--col"
             };
             let wrap = if s.wrap { "dodai-stack--wrap" } else { "" };
+            let gap = s.gap.px(&theme);
             let align = if let Some(w) = s.width {
-                format!("width:{w}px;flex:none")
+                format!(
+                    "width:{w}px;flex:none;align-items:{}",
+                    if s.centre && s.axis == Axis::Row {
+                        "center"
+                    } else {
+                        "flex-start"
+                    }
+                )
             } else if s.axis == Axis::Row && !s.centre {
                 "align-items:flex-start".to_string()
             } else if s.axis == Axis::Column && s.centre {
@@ -114,22 +116,86 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
                 String::new()
             };
             rsx! {
-                div { class: "dodai-stack {axis} {wrap} {gap_class(s.gap)}", style: align,
+                div { class: "dodai-stack {axis} {wrap}", style: "gap:{gap}px;{align}",
                     for (i, n) in s.items.iter().enumerate() { {rsx! { Fragment { key: "{i}", {view(n, cx)} } }} }
                 }
             }
         }
         Demo::Text(t, r) => {
-            rsx! { span { class: text_class(*r), style: text_style(*r, &theme), "{t}" } }
+            rsx! { span { style: text_style(*r, &theme), "{t}" } }
         }
         Demo::Space(px) => rsx! { div { style: "width:{px}px;height:{px}px" } },
-        Demo::Swatch { name, color } => rsx! {
-            div { class: "dodai-swatch",
-                div { class: "dodai-swatch__chip", style: "background:{color.to_css()}" }
-                span { class: "dodai-caption", "{name}" }
-                code { class: "dodai-mono dodai-caption", "#{color.r:02x}{color.g:02x}{color.b:02x}" }
+        Demo::Swatch {
+            name,
+            color,
+            detail,
+        } => {
+            let xs = theme.typography.size_xs;
+            rsx! {
+                div { style: "display:flex;flex-direction:column;gap:4px;width:118px;flex:none",
+                    div { style: "height:44px;background:{color.to_css()};border:1px solid {theme.palette.border.to_css()}" }
+                    span { style: text_style(styled(xs, Font::Body, Ink::Text), &theme), "{name}" }
+                    span { style: text_style(styled(xs, Font::Mono, Ink::Muted), &theme), "{detail}" }
+                }
             }
-        },
+        }
+        Demo::Sample { w, h, label } => {
+            let sm = theme.typography.size_sm;
+            rsx! {
+                div { class: "dodai-panel", style: "width:{w}px;height:{h}px;padding:0;display:grid;place-items:center;flex:none",
+                    span { style: text_style(styled(sm, Font::Body, Ink::Text), &theme), "{label}" }
+                }
+            }
+        }
+        Demo::Image {
+            w,
+            h,
+            caption,
+            on_image,
+        } => {
+            let (sm, md) = (theme.typography.size_sm, theme.typography.size_md);
+            let shadow = theme.palette.roles.shadow;
+            let ink = theme.on(shadow.with_alpha(1.0)).to_css();
+            let fade_h = (h * 0.5).max(theme.sizes().touch_target);
+            // The design's fade as a CSS gradient, strongest at the bottom edge.
+            let stops = theme
+                .fade_stops()
+                .iter()
+                .rev()
+                .map(|s| {
+                    format!(
+                        "{} {:.1}%",
+                        shadow.with_alpha(s.alpha).to_css(),
+                        100.0 - s.at * 100.0
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join(",");
+            let frame = format!(
+                "position:relative;overflow:hidden;width:{w}px;height:{h}px;background:{};border:{}px solid {};border-radius:{}px;display:grid;place-items:center",
+                theme.palette.surface_raised.to_css(),
+                theme.shape.border_width,
+                theme.palette.border.to_css(),
+                theme.shape.radius,
+            );
+            let over = *on_image && caption.is_some();
+            rsx! {
+                div { style: "display:flex;flex-direction:column;gap:{theme.spacing.xs}px;width:{w}px;flex:none",
+                    div { style: frame,
+                        span { style: text_style(styled(md, Font::Body, Ink::Muted), &theme), "image unavailable" }
+                        if over {
+                            div { style: "position:absolute;left:0;right:0;bottom:0;height:{fade_h}px;background:linear-gradient(to bottom,{stops})" }
+                            span { style: "position:absolute;left:{theme.spacing.md}px;right:{theme.spacing.md}px;bottom:{theme.spacing.sm}px;font-size:{sm}px;color:{ink};font-family:var(--dodai-font-body)",
+                                "{caption.clone().unwrap_or_default()}"
+                            }
+                        }
+                    }
+                    if !over {
+                        if let Some(c) = caption { span { style: text_style(Role::Muted, &theme), "{c}" } }
+                    }
+                }
+            }
+        }
         Demo::Block {
             w,
             h,
@@ -154,7 +220,7 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
             let bd = border.map_or("none".to_string(), |b| format!("1px solid {}", b.to_css()));
             rsx! {
                 div { style: "{size}background:{fill.to_css()};border:{bd};border-radius:{radius}px;display:grid;place-items:center;flex:none",
-                    if let Some(l) = label { span { class: "dodai-caption", "{l}" } }
+                    if let Some(l) = label { span { style: text_style(styled(theme.typography.size_xs, Font::Body, Ink::Text), &theme), "{l}" } }
                 }
             }
         }
@@ -451,24 +517,16 @@ mod tests {
     }
 
     #[test]
-    fn gap_and_text_classes_are_distinct() {
-        let gaps = [Gap::Xs, Gap::Sm, Gap::Md, Gap::Lg].map(gap_class);
-        for (i, a) in gaps.iter().enumerate() {
-            assert!(gaps.iter().skip(i + 1).all(|b| a != b));
-        }
-        assert_eq!(text_class(Role::Muted), "dodai-muted");
-    }
-
-    #[test]
-    fn the_type_scale_sets_size_weight_and_the_display_font() {
+    fn text_styles_carry_size_family_and_colour() {
         let t = dodai_core::themes::all().remove(0);
         let big = text_style(Role::Type(dodai_core::TypeRole::DisplayLarge), &t);
-        assert!(
-            big.contains("font-size:") && big.contains("font-family:var(--dodai-font-display)")
-        );
+        assert!(big.contains("font-family:var(--dodai-font-display)"));
+        assert!(big.contains("font-weight:"));
         let small = text_style(Role::Type(dodai_core::TypeRole::LabelSmall), &t);
-        assert!(!small.contains("font-family"));
-        assert_eq!(text_style(Role::Body, &t), "");
+        assert!(small.contains("font-family:var(--dodai-font-body)"));
+        let mono = text_style(Role::Mono, &t);
+        assert!(mono.contains("var(--dodai-font-mono)"));
+        assert!(mono.contains(&format!("color:{}", t.palette.text.to_css())));
     }
 
     #[test]

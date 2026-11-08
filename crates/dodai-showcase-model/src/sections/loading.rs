@@ -7,16 +7,8 @@ use crate::node::Node;
 const CAT: &str = "Loading";
 
 pub(crate) const SECTIONS: [Section; 2] = [
-    Section {
-        category: CAT,
-        title: "Spinner · Indeterminate · Skeleton",
-        build: loading,
-    },
-    Section {
-        category: CAT,
-        title: "Loading indicator",
-        build: indicator,
-    },
+    Section::new(CAT, "Spinner · Indeterminate · Skeleton", loading),
+    Section::new(CAT, "Loading indicator", indicator),
 ];
 
 fn loading(_: &Ctx) -> Node {

@@ -34,8 +34,32 @@ impl Default for Foreground {
     }
 }
 
-/// Typographic role of a [`UiText`].
+/// A font family of the theme's typography (for [`TextRole::Styled`]).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Family {
+    /// `typography.display`.
+    Display,
+    /// `typography.body`.
+    Body,
+    /// `typography.mono`.
+    Mono,
+}
+
+/// A palette text colour (for [`TextRole::Styled`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Ink {
+    /// `palette.text`.
+    Text,
+    /// `palette.text_muted`.
+    Muted,
+    /// `palette.text_disabled`.
+    Disabled,
+    /// `palette.primary`.
+    Primary,
+}
+
+/// Typographic role of a [`UiText`].
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TextRole {
     /// Large display heading (`size_xl`), uppercase per `uppercase_labels`.
     Heading,
@@ -59,6 +83,18 @@ pub enum TextRole {
     Content,
     /// A role of the Material type scale (size from the theme's scale; colour inherited).
     Type(dodai_core::TypeRole),
+    /// An explicit size, family and palette colour; uppercased with the theme's labels when
+    /// `upper`.
+    Styled {
+        /// Size px.
+        size: f32,
+        /// Family.
+        family: Family,
+        /// Colour.
+        ink: Ink,
+        /// Label casing.
+        upper: bool,
+    },
 }
 
 /// Marks a button's label so its size follows the button's [`dodai_core::ControlSize`].

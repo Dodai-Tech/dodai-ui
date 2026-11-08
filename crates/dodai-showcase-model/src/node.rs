@@ -118,7 +118,7 @@ pub enum Axis {
 }
 
 /// Gap between the children of a [`Stack`], in theme spacing steps.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Gap {
     /// `spacing.xs`.
     Xs,
@@ -128,6 +128,25 @@ pub enum Gap {
     Md,
     /// `spacing.lg`.
     Lg,
+    /// `spacing.xl`.
+    Xl,
+    /// Exactly this many px.
+    Px(f32),
+}
+
+impl Gap {
+    /// The gap in px under `theme`.
+    pub fn px(self, theme: &dodai_core::Theme) -> f32 {
+        let s = &theme.spacing;
+        match self {
+            Gap::Xs => s.xs,
+            Gap::Sm => s.sm,
+            Gap::Md => s.md,
+            Gap::Lg => s.lg,
+            Gap::Xl => s.xl,
+            Gap::Px(v) => v,
+        }
+    }
 }
 
 /// Children laid out in a row or a column.
@@ -147,8 +166,80 @@ pub struct Stack {
     pub items: Vec<Node>,
 }
 
-/// Text roles: the showcase's own plus the Material type scale.
+/// A font family of the theme's typography.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Font {
+    /// `typography.display`.
+    Display,
+    /// `typography.body`.
+    Body,
+    /// `typography.mono`.
+    Mono,
+}
+
+/// A text colour of the palette.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Ink {
+    /// `palette.text`.
+    Text,
+    /// `palette.text_muted`.
+    Muted,
+    /// `palette.text_disabled`.
+    Disabled,
+    /// `palette.primary`.
+    Primary,
+}
+
+impl Ink {
+    /// The colour under `theme`.
+    pub fn color(self, theme: &dodai_core::Theme) -> Color {
+        let p = &theme.palette;
+        match self {
+            Ink::Text => p.text,
+            Ink::Muted => p.text_muted,
+            Ink::Disabled => p.text_disabled,
+            Ink::Primary => p.primary,
+        }
+    }
+}
+
+/// How a run of text is drawn, resolved from a [`TextRole`] and the theme: every toolkit
+/// draws text from this, so sizes and colours match the gpui showcase.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct TextStyle {
+    /// Size in px.
+    pub size: f32,
+    /// Family.
+    pub font: Font,
+    /// Colour.
+    pub ink: Ink,
+    /// Label casing (uppercased when the theme's labels are).
+    pub caps: bool,
+}
+
+impl TextStyle {
+    /// `s` as this style shows it (label casing applied).
+    pub fn cased(&self, theme: &dodai_core::Theme, s: &str) -> String {
+        if self.caps && theme.typography.uppercase_labels {
+            s.to_uppercase()
+        } else {
+            s.to_string()
+        }
+    }
+}
+
+/// Heading size for a level (1 = largest … 4 = smallest), as the gpui `Heading`.
+pub fn heading_size(t: &dodai_core::Typography, level: u8) -> f32 {
+    match level {
+        0 | 1 => t.size_xxl,
+        2 => t.size_xl,
+        3 => t.size_lg,
+        _ => t.size_md,
+    }
+}
+
+/// Text roles: the showcase's own plus the Material type scale.
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TextRole {
     /// Page title.
     Title,
@@ -164,6 +255,41 @@ pub enum TextRole {
     Mono,
     /// A role of the type scale.
     Type(TypeRole),
+    /// A display-font heading of level 1..=4.
+    Heading(u8),
+    /// An explicit size, family and colour.
+    Styled(TextStyle),
+}
+
+impl TextRole {
+    /// Size, family, colour and casing under `theme` (the gpui showcase's text components).
+    pub fn resolve(self, theme: &dodai_core::Theme) -> TextStyle {
+        let ty = &theme.typography;
+        let st = |size, font, ink, caps| TextStyle {
+            size,
+            font,
+            ink,
+            caps,
+        };
+        match self {
+            TextRole::Title => st(ty.size_xl, Font::Display, Ink::Text, true),
+            TextRole::Heading(l) => st(heading_size(ty, l), Font::Display, Ink::Text, true),
+            TextRole::Label => st(ty.size_sm, Font::Body, Ink::Text, true),
+            TextRole::Body => st(ty.size_md, Font::Body, Ink::Text, false),
+            TextRole::Muted => st(ty.size_sm, Font::Body, Ink::Muted, false),
+            TextRole::Caption => st(ty.size_xs, Font::Body, Ink::Muted, false),
+            TextRole::Mono => st(ty.size_sm, Font::Mono, Ink::Text, false),
+            TextRole::Type(r) => {
+                let font = if r.is_heading() {
+                    Font::Display
+                } else {
+                    Font::Body
+                };
+                st(theme.type_style(r).size, font, Ink::Text, false)
+            }
+            TextRole::Styled(s) => s,
+        }
+    }
 }
 
 /// A button.
@@ -318,6 +444,28 @@ pub enum Node {
         name: String,
         /// The colour.
         color: Color,
+        /// The line under the name (hex and contrast).
+        detail: String,
+    },
+    /// A box in the design's panel style (shape, fill, border) with a centred label.
+    Sample {
+        /// Width px.
+        w: f32,
+        /// Height px.
+        h: f32,
+        /// Text inside.
+        label: String,
+    },
+    /// A framed picture placeholder with an optional caption.
+    Image {
+        /// Width px.
+        w: f32,
+        /// Height px.
+        h: f32,
+        /// Caption.
+        caption: Option<String>,
+        /// Caption laid over the picture on the design's fade instead of below it.
+        on_image: bool,
     },
     /// A plain rectangle of `w`×`h` px (spacing, radius and elevation demos).
     Block {
@@ -613,6 +761,24 @@ pub mod b {
         Node::Text(s.into(), TextRole::Label)
     }
 
+    /// A display-font heading of `level` (1 = largest).
+    pub fn heading(s: impl Into<String>, level: u8) -> Node {
+        Node::Text(s.into(), TextRole::Heading(level))
+    }
+
+    /// Text at `size` px in `font` and `ink`.
+    pub fn styled(s: impl Into<String>, size: f32, font: Font, ink: Ink) -> Node {
+        Node::Text(
+            s.into(),
+            TextRole::Styled(TextStyle {
+                size,
+                font,
+                ink,
+                caps: false,
+            }),
+        )
+    }
+
     /// Text in a role.
     pub fn text(s: impl Into<String>, role: TextRole) -> Node {
         Node::Text(s.into(), role)
@@ -897,6 +1063,30 @@ pub mod b {
 }
 
 impl Node {
+    /// A stack with `gap` between its children (other nodes are returned as they are).
+    pub fn gap(mut self, gap: Gap) -> Self {
+        if let Node::Stack(s) = &mut self {
+            s.gap = gap;
+        }
+        self
+    }
+
+    /// A stack `w` px wide.
+    pub fn width(mut self, w: f32) -> Self {
+        if let Node::Stack(s) = &mut self {
+            s.width = Some(w);
+        }
+        self
+    }
+
+    /// A stack whose children start at the top / left instead of centring across the axis.
+    pub fn start(mut self) -> Self {
+        if let Node::Stack(s) = &mut self {
+            s.centre = false;
+        }
+        self
+    }
+
     /// Visits this node and every descendant, parents first.
     pub fn walk(&self, f: &mut impl FnMut(&Node)) {
         f(self);

@@ -149,10 +149,10 @@ fn Page(model: Signal<Showcase>) -> Element {
         theme: &theme,
         values: &m.values,
     };
-    let sections: Vec<(&'static str, dodai_showcase_model::Node)> = m
+    let sections: Vec<(&'static str, &'static str, dodai_showcase_model::Node)> = m
         .visible()
         .iter()
-        .map(|s| (s.title, (s.build)(&ctx)))
+        .map(|s| (s.title, s.heading, (s.build)(&ctx)))
         .collect();
     drop(m);
     let cx = Cx { model };
@@ -160,9 +160,9 @@ fn Page(model: Signal<Showcase>) -> Element {
         main { class: "dodai-page",
             Heading { level: 1, "{title}" }
             if sections.is_empty() { Muted { "No components match" } }
-            for (t, node) in sections {
+            for (t, heading, node) in sections {
                 div { key: "{t}", id: "sec-{t}", "data-sec": "{t}",
-                    Panel { title: t.to_string(), {render::view(&node, cx)} }
+                    Panel { title: heading.to_string(), {render::view(&node, cx)} }
                 }
             }
         }

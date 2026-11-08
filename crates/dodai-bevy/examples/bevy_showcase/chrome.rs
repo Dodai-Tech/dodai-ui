@@ -363,7 +363,7 @@ pub fn spawn_page(
     for s in sections {
         let node = (s.build)(&ctx);
         p.spawn((
-            panel(s.title),
+            panel(s.heading),
             Node {
                 width: Val::Percent(100.0),
                 flex_shrink: 0.0,

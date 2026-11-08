@@ -10,26 +10,10 @@ use crate::node::Node;
 const CAT: &str = "Shape";
 
 pub(crate) const SECTIONS: [Section; 4] = [
-    Section {
-        category: CAT,
-        title: "Shape gallery",
-        build: gallery,
-    },
-    Section {
-        category: CAT,
-        title: "Roundness · Borders",
-        build: roundness,
-    },
-    Section {
-        category: CAT,
-        title: "Edges · Depth",
-        build: depth,
-    },
-    Section {
-        category: CAT,
-        title: "Button crop",
-        build: crop,
-    },
+    Section::new(CAT, "Shape gallery", gallery),
+    Section::new(CAT, "Roundness · Borders", roundness),
+    Section::new(CAT, "Edges · Depth", depth),
+    Section::new(CAT, "Button crop", crop),
 ];
 
 fn gallery(_: &Ctx) -> Node {

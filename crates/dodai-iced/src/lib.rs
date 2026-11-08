@@ -146,6 +146,14 @@ impl IcedTheme {
         }
     }
 
+    /// Display font (headings): the first family of the design's display stack.
+    pub fn font_display(&self) -> Font {
+        match first_family(self.theme.typography.display) {
+            "" => self.font(),
+            name => Font::with_name(name),
+        }
+    }
+
     /// Monospace font: the first family of the design's mono stack.
     pub fn font_mono(&self) -> Font {
         match first_family(self.theme.typography.mono) {

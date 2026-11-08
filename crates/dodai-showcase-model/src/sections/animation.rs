@@ -84,11 +84,7 @@ const EASINGS: [Ease; 12] = [
 
 macro_rules! ease_section {
     ($i:expr) => {
-        Section {
-            category: CAT,
-            title: EASINGS[$i].title,
-            build: |c| ease(c, $i),
-        }
+        Section::new(CAT, EASINGS[$i].title, |c| ease(c, $i))
     };
 }
 
@@ -105,11 +101,7 @@ pub(crate) const SECTIONS: [Section; 13] = [
     ease_section!(9),
     ease_section!(10),
     ease_section!(11),
-    Section {
-        category: CAT,
-        title: "Dynamics · physics models",
-        build: physics,
-    },
+    Section::new(CAT, "Dynamics · physics models", physics),
 ];
 
 fn ease(c: &Ctx, i: usize) -> Node {
