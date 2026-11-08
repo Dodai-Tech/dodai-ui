@@ -91,6 +91,7 @@ impl Plugin for DodaiUiPlugin {
             (
                 (
                     button_input,
+                    crate::kit::press_input,
                     toggle_input,
                     radio_exclusive,
                     tab_input,
@@ -110,6 +111,9 @@ impl Plugin for DodaiUiPlugin {
                     style_inputs,
                     style_list_items,
                     style_dividers,
+                    crate::kit::style_kits,
+                    crate::spinner::animate_spinners,
+                    crate::spinner::animate_bars,
                     update_tooltip,
                     #[cfg(feature = "icons")]
                     style_icons,

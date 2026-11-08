@@ -190,6 +190,54 @@ pub(crate) const DRIVES: [(&str, &str); 4] = [
     ("Electric", "RANGE"),
 ];
 
+/// Seconds each drivetrain is shown while the picker is on Auto.
+const DRIVE_SECS: f32 = 20.0;
+
+/// Seconds the old drivetrain takes to fade out over the new one.
+const FADE_SECS: f32 = 2.0;
+
+/// How opaque the outgoing drivetrain still is `now` seconds into an Auto tour, or `None` once
+/// the new one stands alone. Eases both ends. Pure.
+fn outgoing(now: f32) -> Option<f32> {
+    let k = (now.rem_euclid(DRIVE_SECS) / FADE_SECS).clamp(0.0, 1.0);
+    (k < 1.0).then_some(1.0 - k * k * (3.0 - 2.0 * k))
+}
+
+/// `make(drive)`; on an Auto tour, for the first moments of a new drivetrain the previous one
+/// is drawn over it and fades away, so the change is a dissolve and not a cut.
+fn crossfade(
+    drive: usize,
+    auto: bool,
+    now: f32,
+    make: &dyn Fn(usize) -> gpui::AnyElement,
+) -> gpui::AnyElement {
+    match outgoing(now).filter(|_| auto && now >= DRIVE_SECS) {
+        Some(o) => div()
+            .relative()
+            .child(make(drive))
+            .child(
+                div()
+                    .absolute()
+                    .top_0()
+                    .left_0()
+                    .opacity(o)
+                    .child(make((drive + DRIVES.len() - 1) % DRIVES.len())),
+            )
+            .into_any_element(),
+        None => make(drive),
+    }
+}
+
+/// The drivetrain to show: picker entry `sel` of [`DRIVES`], or for the entry past them (Auto)
+/// each in turn as `now` seconds pass. Pure.
+fn drive_index(sel: usize, now: f32) -> usize {
+    if sel < DRIVES.len() {
+        sel
+    } else {
+        (now / DRIVE_SECS) as usize % DRIVES.len()
+    }
+}
+
 /// The ring of drivetrain `i` of [`DRIVES`]: revs, the charge beside them for a hybrid, the
 /// motor's power for an electric car.
 fn drive_tach(i: usize) -> RingTach {
@@ -863,16 +911,21 @@ impl Showcase {
         );
         let gap = px(t.spacing.lg);
         let col = || div().flex().flex_col().gap(gap);
-        let (drive_name, mode) = DRIVES[self.inst_drive.min(DRIVES.len() - 1)];
-        let quad = |l: [dodai_gpui_instruments::Pod; 2], r: [dodai_gpui_instruments::Pod; 2]| {
-            DashQuad::new(drive_tach(self.inst_drive), l, r)
-                .look(dash_look)
-                .telltales(tells())
-                .limit(50)
-                .mode(mode)
-                .width(1000.0)
-        };
-        let tri = |d: DashTriptych| dash(d, mode).look(dash_look);
+        let auto = self.inst_drive >= DRIVES.len();
+        let drive = drive_index(self.inst_drive, dodai_gpui::motion::now());
+        let drive_name = DRIVES[drive].0;
+        let play = |secs: f32| auto.then_some(secs);
+        let now = dodai_gpui::motion::now();
+        let quad =
+            |d: usize, l: [dodai_gpui_instruments::Pod; 2], r: [dodai_gpui_instruments::Pod; 2]| {
+                DashQuad::new(drive_tach(d), l, r)
+                    .look(dash_look)
+                    .telltales(tells())
+                    .limit(50)
+                    .mode(DRIVES[d].1)
+                    .width(1000.0)
+            };
+        let tri = |d: usize, t: DashTriptych| dash(t, DRIVES[d].1).look(dash_look);
         // One dash of each size; every side display is a stack of the look's pods (all of them
         // between the stacks), and scrolling, dragging or the chevrons snap the next into place.
         let energy = || {
@@ -892,81 +945,101 @@ impl Showcase {
         let gforce = |k: f32| GForcePod::new(val(k, -0.9, 0.9), val(k + 1.0, -0.6, 1.1));
         let compass = || CompassPod::new(val(43.0, 300.0, 359.0)).height("460 m");
         let boost = || BoostPod::new(0.0).temp("9 °C");
-        let examples = col()
+        let examples = {
+            let five = |d: usize| {
+                quad(
+                    d,
+                    [
+                        PodStack::new("ex5-l0")
+                            .autoplay(play(8.0))
+                            .pod(volt())
+                            .pod(boost())
+                            .pod(fluid())
+                            .pod(energy())
+                            .pod(tyres())
+                            .into(),
+                        PodStack::new("ex5-l1")
+                            .autoplay(play(10.0))
+                            .pod(speed())
+                            .pod(gforce(41.0))
+                            .pod(flow())
+                            .pod(compass())
+                            .into(),
+                    ],
+                    [
+                        PodStack::new("ex5-r0")
+                            .autoplay(play(12.0))
+                            .pod(oil())
+                            .pod(trip_rows())
+                            .pod(particulate())
+                            .pod(since())
+                            .into(),
+                        PodStack::new("ex5-r1")
+                            .autoplay(play(14.0))
+                            .pod(coolant())
+                            .pod(compass())
+                            .pod(notice())
+                            .pod(today_rows())
+                            .into(),
+                    ],
+                )
+                .into_any_element()
+            };
+            let three = |d: usize| {
+                tri(
+                    d,
+                    DashTriptych::new(
+                        drive_tach(d),
+                        PodStack::new("ex3-l")
+                            .autoplay(play(10.0))
+                            .pod(
+                                tyres()
+                                    .bars([Some(2.4), Some(2.4), Some(2.3), Some(2.2)])
+                                    .low_below(2.3),
+                            )
+                            .pod(
+                                TyrePod::new()
+                                    .heading("Pressure deviation")
+                                    .note("Measured from 25 km/h"),
+                            )
+                            .pod(boost())
+                            .pod(gforce(44.0))
+                            .pod(energy())
+                            .pod(flow())
+                            .pod(
+                                MenuRing::new(["G-Force", "G-Force Max.", "Reset max."])
+                                    .selected(0)
+                                    .chosen(0),
+                            ),
+                        PodStack::new("ex3-r")
+                            .autoplay(play(13.0))
+                            .pod(vehicle_rows())
+                            .pod(notice())
+                            .pod(media())
+                            .pod(today_rows())
+                            .pod(trip_rows())
+                            .pod(since())
+                            .pod(compass())
+                            .pod(
+                                MenuRing::new(["Information", "Vehicle", "Oil level"])
+                                    .selected(0)
+                                    .chosen(1),
+                            ),
+                    ),
+                )
+                .into_any_element()
+            };
+            col()
             .child(Muted::new(
-                format!("Five instruments round the ring, here with a {} drivetrain (the Drive picker above). Scroll, drag or use the chevrons on a side display to turn its pages.", drive_name.to_lowercase()),
+                format!("Five instruments round the ring, here with a {} drivetrain (the Drive picker above; Auto cycles them, centre ring included, and turns the pages by itself). Scroll, drag or use the chevrons on a side display to turn its pages.", drive_name.to_lowercase()),
             ))
-            .child(quad(
-                [
-                    PodStack::new("ex5-l0")
-                        .pod(volt())
-                        .pod(boost())
-                        .pod(fluid())
-                        .pod(energy())
-                        .pod(tyres())
-                        .into(),
-                    PodStack::new("ex5-l1")
-                        .pod(speed())
-                        .pod(gforce(41.0))
-                        .pod(flow())
-                        .pod(compass())
-                        .into(),
-                ],
-                [
-                    PodStack::new("ex5-r0")
-                        .pod(oil())
-                        .pod(trip_rows())
-                        .pod(particulate())
-                        .pod(since())
-                        .into(),
-                    PodStack::new("ex5-r1")
-                        .pod(coolant())
-                        .pod(compass())
-                        .pod(notice())
-                        .pod(today_rows())
-                        .into(),
-                ],
-            ))
+            .child(crossfade(drive, auto, now, &five))
             .child(Muted::new(
                 "Three instruments: a stack of displays on each side of the ring.",
             ))
-            .child(tri(DashTriptych::new(
-                drive_tach(self.inst_drive),
-                PodStack::new("ex3-l")
-                    .pod(
-                        tyres()
-                            .bars([Some(2.4), Some(2.4), Some(2.3), Some(2.2)])
-                            .low_below(2.3),
-                    )
-                    .pod(
-                        TyrePod::new()
-                            .heading("Pressure deviation")
-                            .note("Measured from 25 km/h"),
-                    )
-                    .pod(boost())
-                    .pod(gforce(44.0))
-                    .pod(energy())
-                    .pod(flow())
-                    .pod(
-                        MenuRing::new(["G-Force", "G-Force Max.", "Reset max."])
-                            .selected(0)
-                            .chosen(0),
-                    ),
-                PodStack::new("ex3-r")
-                    .pod(vehicle_rows())
-                    .pod(notice())
-                    .pod(media())
-                    .pod(today_rows())
-                    .pod(trip_rows())
-                    .pod(since())
-                    .pod(compass())
-                    .pod(
-                        MenuRing::new(["Information", "Vehicle", "Oil level"])
-                            .selected(0)
-                            .chosen(1),
-                    ),
-            )))
-            .into_any_element();
+            .child(crossfade(drive, auto, now, &three))
+            .into_any_element()
+        };
         add(self, "Vehicle · Examples", vec![examples]);
         out
     }
@@ -998,6 +1071,25 @@ mod tests {
             "Race",
             "a layout a look lacks is its dial"
         );
+    }
+
+    #[test]
+    fn auto_drive_cycles_through_every_drivetrain() {
+        assert_eq!(drive_index(2, 999.0), 2);
+        let auto = DRIVES.len();
+        let seen: Vec<_> = (0..DRIVES.len())
+            .map(|k| drive_index(auto, k as f32 * DRIVE_SECS + 1.0))
+            .collect();
+        assert_eq!(seen, [0, 1, 2, 3]);
+        assert_eq!(drive_index(auto, DRIVES.len() as f32 * DRIVE_SECS), 0);
+    }
+
+    #[test]
+    fn a_new_drivetrain_dissolves_in() {
+        assert_eq!(outgoing(0.0), Some(1.0));
+        assert!(outgoing(FADE_SECS * 0.5).is_some_and(|o| (o - 0.5).abs() < 1e-3));
+        assert_eq!(outgoing(FADE_SECS), None);
+        assert_eq!(outgoing(DRIVE_SECS + 0.0), Some(1.0));
     }
 
     #[test]

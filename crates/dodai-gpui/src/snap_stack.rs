@@ -39,7 +39,7 @@ pub fn can_turn(at: usize, last: usize, onwards: bool) -> bool {
 type IndexFn = std::rc::Rc<dyn Fn(usize, &mut Window, &mut App)>;
 
 /// The shortest time a page takes to settle.
-pub const PAGE_TURN: Duration = Duration::from_millis(520);
+pub const PAGE_TURN: Duration = Duration::from_millis(700);
 
 /// Seconds after a gesture in which stray inertia is not read as a new notch.
 const QUIET: f32 = 0.6;
@@ -84,6 +84,10 @@ struct Roller {
     /// Until this time (see [`crate::motion::now`]) a touch-less pixel scroll is not a new notch:
     /// it is the tail of the last gesture. Held open while fingers are down.
     quiet_until: f32,
+    /// The page last seen, and when autoplay turns the next one (see [`SnapStack::autoplay`]).
+    seen: usize,
+    next_turn: f32,
+    forward: bool,
 }
 
 /// Items stacked vertically, one shown at a time. The wheel turns one page a notch; two fingers
@@ -98,6 +102,7 @@ pub struct SnapStack {
     height: f32,
     dots: bool,
     arrows: bool,
+    autoplay: Option<f32>,
     motion: Option<Motion>,
     on_select: Option<IndexFn>,
 }
@@ -112,6 +117,7 @@ impl SnapStack {
             height: 200.0,
             dots: true,
             arrows: false,
+            autoplay: None,
             motion: None,
             on_select: None,
         }
@@ -146,6 +152,12 @@ impl SnapStack {
     /// appears only while there is a page in its direction.
     pub fn arrows(mut self, on: bool) -> Self {
         self.arrows = on;
+        self
+    }
+    /// Turn a page by itself every `secs` seconds, back and forth through the stack, until the
+    /// user turns one (then it waits a full period again).
+    pub fn autoplay(mut self, secs: f32) -> Self {
+        self.autoplay = Some(secs.max(0.5));
         self
     }
     /// Pace and easing of the snap. Defaults to the design's motion.
@@ -183,6 +195,9 @@ impl SnapStack {
             armed: false,
             grab: None,
             quiet_until: 0.0,
+            seen: at,
+            next_turn: crate::motion::now() + self.autoplay.unwrap_or(0.0),
+            forward: true,
         });
         let now = crate::motion::now();
         // Under a swipe the stack follows the fingers, resisting past either end.
@@ -207,6 +222,31 @@ impl SnapStack {
                 g.value(now)
             }
         };
+        if let Some(period) = self.autoplay.filter(|_| last > 0) {
+            let idle = roller.read(cx).swipe.is_none();
+            let to = roller.update(cx, |r, _| {
+                if r.seen != at {
+                    r.seen = at;
+                    r.next_turn = now + period;
+                }
+                if !idle || now < r.next_turn {
+                    return None;
+                }
+                r.next_turn = now + period;
+                r.forward = if at == 0 {
+                    true
+                } else if at == last {
+                    false
+                } else {
+                    r.forward
+                };
+                Some(if r.forward { at + 1 } else { at - 1 })
+            });
+            if let Some(to) = to {
+                select(to, window, cx);
+            }
+            crate::motion::next_frame(window);
+        }
         let (wheel, wheel_select) = (roller.clone(), select.clone());
         let on_wheel = move |e: &ScrollWheelEvent, w: &mut Window, cx: &mut App| {
             match e.delta {

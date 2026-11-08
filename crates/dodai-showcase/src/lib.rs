@@ -367,7 +367,7 @@ impl Render for Showcase {
                             let m = me.clone();
                             dodai_gpui::Segmented::new(
                                 "veh-drive",
-                                crate::sections::DRIVES.iter().map(|d| d.0),
+                                crate::sections::DRIVES.iter().map(|d| d.0).chain(["Auto"]),
                             )
                             .selected(self.inst_drive)
                             .on_select(move |i, _, cx| {
