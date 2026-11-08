@@ -51,6 +51,17 @@ Config: `.title()`, `.format()`, `.height()`; Line: `.y_range()`, `.stepped()`,
 `.stroke_width()`, `.grid()`; Bar: `.max()`, `.value_labels()`, `.bar_width()`.
 Showcase: `cargo run -p dodai-showcase`.
 
+## Showcases in the other toolkits
+
+`dodai-showcase-model` describes the showcase as data (pages, sections, a demo widget tree and
+the state every control writes to); bevy, iced and dioxus each draw it with their own components
+(`just run-bevy`, `just run-iced`, `just run-dioxus`). It covers Foundations, Shape, Actions,
+Data display, Navigation, Inputs and Loading. Not ported yet: charts, instruments, shaders,
+Surface effects, Animation, the knob and vertical sliders, the scroll area, and the shape tuning
+controls. Shared token styles of the small boxes (cards, alerts, chips, avatars, code, tooltips,
+rows, steps, skeletons, popups) live in `dodai_core::Kit` (`Theme::kit`), so every toolkit and
+the CSS read the same numbers.
+
 Dodai extras: `Knob` (rotary), `Kbd`, `Avatar`, `Table`, `Accordion`,
 `Alert`, `Skeleton`, `ThemeSelector`, `Scanlines`.
 
