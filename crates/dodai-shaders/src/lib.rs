@@ -42,6 +42,7 @@ pub mod gpu;
 pub mod groups;
 /// Shader maths, shared verbatim with the GPU kernels (vectors, hashes, noise, easing).
 pub mod math;
+pub mod player;
 mod prelude;
 pub mod presets;
 mod renderer;

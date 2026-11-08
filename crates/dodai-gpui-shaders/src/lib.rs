@@ -1,7 +1,10 @@
 //! `ShaderView`: shows a `dodai-shaders` chain as a live, fluid-width image.
 
 use dodai_gpui::theme_of;
+use dodai_shaders::player::{config_hash, Player, Poll, Request};
 use dodai_shaders::{by_id, Family, ShaderInfo, ShaderPalette};
+
+pub use dodai_shaders::player::backend_label as shader_backend;
 use gpui::{
     canvas, div, px, App, Bounds, Corners, InteractiveElement, IntoElement, ParentElement, Pixels,
     RenderImage, RenderOnce, SharedString, Styled, Window,
@@ -23,7 +26,7 @@ pub enum PaletteSource {
 
 #[derive(Default)]
 struct Slot {
-    gpu_last: Option<(Instant, u64, (u32, u32))>,
+    player: Player,
     start: Option<Instant>,
     image: Option<Arc<RenderImage>>,
     /// When the picture last changed (paces the redraws).
@@ -157,173 +160,6 @@ impl ShaderView {
     }
 }
 
-/// Where shader views render.
-enum Backend {
-    /// The GPU is still opening (100-200 ms, on a background thread so the first frame does not
-    /// stall): views keep what they show.
-    Starting,
-    /// The shared GPU.
-    Gpu(&'static std::sync::Mutex<dodai_shaders::gpu::Gpu>),
-    /// No real adapter (or `DODAI_GPU=0`): the CPU renderer.
-    Cpu,
-}
-
-/// GPU first: opened once, off the UI thread. The CPU renders only when there is no adapter.
-fn backend() -> Backend {
-    static GPU: std::sync::OnceLock<Option<std::sync::Mutex<dodai_shaders::gpu::Gpu>>> =
-        std::sync::OnceLock::new();
-    static START: std::sync::Once = std::sync::Once::new();
-    START.call_once(|| {
-        let _ = std::thread::Builder::new()
-            .name("dodai-gpu-init".into())
-            .spawn(|| {
-                let g = dodai_shaders::gpu::Gpu::new();
-                if let Some(g) = &g {
-                    // Pipelines compile on demand (see `gpu_frame`); compiling
-                    // the whole catalogue up front would hog the CPU for
-                    // seconds for shaders nobody looks at.
-                    g.prewarm(["pack".to_string()]);
-                }
-                let _ = GPU.set(g.map(std::sync::Mutex::new));
-            });
-    });
-    match GPU.get() {
-        None => Backend::Starting,
-        Some(Some(g)) => Backend::Gpu(g),
-        Some(None) => Backend::Cpu,
-    }
-}
-
-/// The CPU renderer, shared by all views.
-fn cpu_renderer() -> &'static std::sync::Mutex<dodai_shaders::Renderer> {
-    static R: std::sync::OnceLock<std::sync::Mutex<dodai_shaders::Renderer>> =
-        std::sync::OnceLock::new();
-    R.get_or_init(|| std::sync::Mutex::new(dodai_shaders::Renderer::from_gpu(None)))
-}
-
-/// Renders on the GPU, or on the CPU without one: `None` while it is not ready, `Some(None)` to keep the
-/// current picture, `Some(Some(img))` for a new one.
-#[allow(clippy::too_many_arguments)]
-fn gpu_frame(
-    s: &mut Slot,
-    chain: &[&'static ShaderInfo],
-    pal: &ShaderPalette,
-    (bw, bh, scale): (f32, f32, f32),
-    (pixel, intensity, t, fps, animated): (f32, f32, f32, f32, bool),
-    transparent: bool,
-    cfg: u64,
-    now: Instant,
-) -> Option<Option<Arc<RenderImage>>> {
-    let backend = backend();
-    if matches!(backend, Backend::Starting) {
-        return None;
-    }
-    // `pixel` is device pixels per shader pixel on a 2x display, so the default
-    // 2 is one image pixel per CSS pixel: a quarter of the work of full retina
-    // resolution, and shaders are smooth enough that it does not show.
-    let dev_px = (pixel * scale / 2.0).max(1.0);
-    let (mut w, mut h) = ((bw * scale / dev_px) as u32, (bh * scale / dev_px) as u32);
-    // Keep very large views to about 1080p; the image is scaled up.
-    let big = (w as f32 / 1920.0).max(h as f32 / 1080.0).max(1.0);
-    w = ((w as f32 / big) as u32).max(16);
-    h = ((h as f32 / big) as u32).max(9);
-    let ids: Vec<&str> = chain.iter().map(|i| i.id).collect();
-    if let Backend::Gpu(g) = &backend {
-        // Never stall a frame compiling: show the old picture until it is ready.
-        let gpu = g.lock().ok()?;
-        if !gpu.is_ready(&ids) {
-            gpu.warm_chain(&ids);
-            return None;
-        }
-    }
-    let due = match s.gpu_last {
-        None => true,
-        Some((_, k, sz)) if k != cfg || sz != (w, h) || s.image.is_none() => true,
-        Some((at, _, _)) => animated && (now - at).as_secs_f32() >= 1.0 / fps,
-    };
-    // One GPU render at a time per frame, spaced by what the last one cost:
-    // each blocks while the picture is read back, so several in one frame
-    // would drop it. Views that miss out keep their picture a frame longer.
-    if !due || !pace_allows(now, s.image.is_none()) {
-        return Some(None);
-    }
-    let t = if animated { t } else { 1.5 };
-    let took = Instant::now();
-    let bytes = match &backend {
-        Backend::Gpu(g) => {
-            let mut gpu = g.lock().ok()?;
-            match gpu.render(&ids, w, h, t, intensity, pal) {
-                Ok(b) => b.to_vec(),
-                // A failed GPU render still shows a picture, from the CPU.
-                Err(_) => dodai_shaders::cpu::render(&ids, w, h, t, intensity, pal).ok()?,
-            }
-        }
-        _ => cpu_renderer()
-            .lock()
-            .ok()?
-            .render(&ids, w, h, t, intensity, pal)
-            .ok()?
-            .to_vec(),
-    };
-    pace_record(took.elapsed().as_secs_f32());
-    let mut bytes = bytes;
-    if transparent {
-        // Light on black: the brightest channel is the opacity, and the colour stays as it is,
-        // which is already premultiplied by it.
-        for px in bytes.chunks_exact_mut(4) {
-            px[3] = px[0].max(px[1]).max(px[2]);
-        }
-    }
-    let buf = image::RgbaImage::from_raw(w, h, bytes)?;
-    s.gpu_last = Some((now, cfg, (w, h)));
-    Some(Some(Arc::new(RenderImage::new(vec![image::Frame::new(
-        buf,
-    )]))))
-}
-
-/// Earliest time the next GPU render may start, and the cost of the last one.
-fn pace() -> &'static std::sync::Mutex<(Option<Instant>, f32)> {
-    static P: std::sync::Mutex<(Option<Instant>, f32)> = std::sync::Mutex::new((None, 0.0));
-    &P
-}
-
-/// May a GPU render start now? A view with no picture yet always may.
-fn pace_allows(now: Instant, first: bool) -> bool {
-    first
-        || pace()
-            .lock()
-            .map_or(true, |p| p.0.is_none_or(|at| now >= at))
-}
-
-/// Record a render that took `secs`: the next one waits as long again, which
-/// keeps the GPU's share of each frame at about half.
-fn pace_record(secs: f32) {
-    if let Ok(mut p) = pace().lock() {
-        *p = (
-            Some(Instant::now() + std::time::Duration::from_secs_f32(secs)),
-            secs,
-        );
-    }
-}
-
-/// What `ShaderView` renders on: `"GPU · <adapter>"`, `"CPU (no GPU)"`, or a note while the GPU
-/// starts.
-pub fn shader_backend() -> String {
-    match backend() {
-        Backend::Gpu(g) => g
-            .lock()
-            .map_or_else(|_| "GPU".into(), |g| format!("GPU · {}", g.adapter)),
-        Backend::Cpu => "CPU (no GPU)".into(),
-        Backend::Starting => "starting GPU…".into(),
-    }
-}
-
-fn hash_cfg(parts: &[u64]) -> u64 {
-    parts.iter().fold(0xcbf2_9ce4_8422_2325u64, |h, p| {
-        (h ^ p).wrapping_mul(0x100_0000_01b3)
-    })
-}
-
 impl RenderOnce for ShaderView {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = theme_of(cx);
@@ -348,18 +184,7 @@ impl RenderOnce for ShaderView {
             self.rounded,
             self.fps,
         );
-        let mut parts: Vec<u64> = [pal.bg, pal.fg, pal.a, pal.b, pal.c]
-            .iter()
-            .flat_map(|v| [v.x, v.y, v.z])
-            .map(|f| f.to_bits() as u64)
-            .collect();
-        parts.push(intensity.to_bits() as u64);
-        parts.push(u64::from(transparent));
-        for s in &chain {
-            parts.extend(s.id.bytes().map(u64::from));
-            parts.push(0);
-        }
-        let cfg = hash_cfg(&parts);
+        let cfg = config_hash(&chain, &pal, intensity, transparent);
         let canvas_el = canvas(
             |_, _, _| (),
             move |b: Bounds<Pixels>, _, w, cx| {
@@ -375,24 +200,34 @@ impl RenderOnce for ShaderView {
                     }
                     if !chain.is_empty() {
                         let scale = w.scale_factor();
-                        if let Some(res) = gpu_frame(
-                            s,
-                            &chain,
-                            &pal,
-                            (bw, bh, scale),
-                            (pixel, intensity, secs * speed, fps, animated),
+                        let poll = s.player.poll(&Request {
+                            chain: &chain,
+                            palette: &pal,
+                            size: (bw, bh),
+                            scale,
+                            pixel,
+                            intensity,
+                            time: secs * speed,
+                            fps,
+                            animated,
                             transparent,
-                            cfg,
+                            config: cfg,
                             now,
-                        ) {
-                            return match res {
-                                None => s.image.clone().map(|i| (i, None)),
-                                Some(img) => {
+                        });
+                        match poll {
+                            Poll::Pending => {}
+                            Poll::Keep => return s.image.clone().map(|i| (i, None)),
+                            Poll::New(f) => {
+                                if let Some(buf) =
+                                    image::RgbaImage::from_raw(f.width, f.height, f.bgra)
+                                {
+                                    let img =
+                                        Arc::new(RenderImage::new(vec![image::Frame::new(buf)]));
                                     s.fresh_at = Some(now);
                                     let old = s.image.replace(img.clone());
-                                    Some((img, old))
+                                    return Some((img, old));
                                 }
-                            };
+                            }
                         }
                     }
                     s.image.clone().map(|i| (i, None))
