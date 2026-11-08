@@ -167,7 +167,9 @@ pub(crate) fn apply_surfaces(
                 let rad = BorderRadius::all(Val::Px(radius));
                 upd(&mut node.border_radius, rad);
                 if mat.is_some() {
-                    commands.entity(e).remove::<MaterialNode<ChamferMaterial>>();
+                    commands
+                        .entity(e)
+                        .try_remove::<MaterialNode<ChamferMaterial>>();
                 }
             }
             Paint::Chamfer { chamfer, corners } => {
@@ -197,7 +199,9 @@ pub(crate) fn apply_surfaces(
                     })
                 });
                 if !found {
-                    commands.entity(e).insert(MaterialNode(materials.add(m)));
+                    commands
+                        .entity(e)
+                        .try_insert(MaterialNode(materials.add(m)));
                 }
             }
         }
@@ -211,11 +215,11 @@ pub(crate) fn apply_surfaces(
                     Val::Px(g.radius),
                 );
                 if shadow != Some(&sh) {
-                    commands.entity(e).insert(sh);
+                    commands.entity(e).try_insert(sh);
                 }
             }
             (None, Some(_)) => {
-                commands.entity(e).remove::<BoxShadow>();
+                commands.entity(e).try_remove::<BoxShadow>();
             }
             (None, None) => {}
         }
