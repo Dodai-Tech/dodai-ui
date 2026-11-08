@@ -1,7 +1,7 @@
 //! Typed components emitting the `.dodai-*` classes styled by `dodai-topcoat` CSS.
 
 use dioxus::prelude::*;
-use dodai_core::{ButtonVariant, Tone};
+use dodai_core::{ButtonVariant, ControlSize, Tone};
 
 /// CSS modifier class for a [`ButtonVariant`].
 pub fn button_class(v: ButtonVariant) -> &'static str {
@@ -59,17 +59,59 @@ pub struct ButtonProps {
     pub variant: ButtonVariant,
     #[props(default)]
     pub disabled: bool,
+    /// Size step; `None` keeps the stylesheet's default height.
+    #[props(default)]
+    pub size: Option<ControlSize>,
+    /// Square corners instead of the design's own shape.
+    #[props(default)]
+    pub square: bool,
+    /// No label: the button is as wide as it is high.
+    #[props(default)]
+    pub icon_only: bool,
+    /// Shows the busy ring before the label and ignores clicks.
+    #[props(default)]
+    pub loading: bool,
     #[props(default)]
     pub onclick: EventHandler<MouseEvent>,
     pub children: Element,
 }
 
-/// Themed button (all [`ButtonVariant`]s, disabled state).
+/// The `class` of a button with these options.
+pub fn button_classes(
+    variant: ButtonVariant,
+    size: Option<ControlSize>,
+    square: bool,
+    icon_only: bool,
+) -> String {
+    let mut c = button_class(variant).to_string();
+    if let Some(z) = size {
+        c.push_str(match z {
+            ControlSize::XSmall => " dodai-btn--xs",
+            ControlSize::Small => " dodai-btn--sm",
+            ControlSize::Medium => " dodai-btn--md",
+            ControlSize::Large => " dodai-btn--lg",
+            ControlSize::XLarge => " dodai-btn--xl",
+        });
+    }
+    if square {
+        c.push_str(" dodai-btn--square");
+    }
+    if icon_only {
+        c.push_str(" dodai-btn--icon");
+    }
+    c
+}
+
+/// Themed button (all [`ButtonVariant`]s, sizes, disabled and loading states).
 #[component]
 pub fn Button(props: ButtonProps) -> Element {
-    let class = button_class(props.variant);
+    let class = button_classes(props.variant, props.size, props.square, props.icon_only);
+    let off = props.disabled || props.loading;
     rsx! {
-        button { class, disabled: props.disabled, onclick: move |e| props.onclick.call(e), {props.children} }
+        button { class, disabled: off, onclick: move |e| props.onclick.call(e),
+            if props.loading { span { class: "dodai-spinner", style: "--s:14px" } }
+            {props.children}
+        }
     }
 }
 
@@ -284,15 +326,28 @@ pub struct TextInputProps {
     pub placeholder: String,
     #[props(default)]
     pub disabled: bool,
+    /// Hide the characters.
+    #[props(default)]
+    pub password: bool,
+    /// Visible lines; more than one makes it a text area.
+    #[props(default = 1)]
+    pub lines: u8,
     #[props(default)]
     pub oninput: EventHandler<String>,
 }
 
-/// Single-line text input.
+/// Text input (single line, password or multi-line).
 #[component]
 pub fn TextInput(props: TextInputProps) -> Element {
+    if props.lines > 1 {
+        return rsx! {
+            textarea { class: "dodai-textarea", rows: "{props.lines}", value: props.value, placeholder: props.placeholder,
+                disabled: props.disabled, oninput: move |e| props.oninput.call(e.value()) }
+        };
+    }
+    let kind = if props.password { "password" } else { "text" };
     rsx! {
-        input { class: "dodai-input", r#type: "text", value: props.value, placeholder: props.placeholder,
+        input { class: "dodai-input", r#type: kind, value: props.value, placeholder: props.placeholder,
             disabled: props.disabled, oninput: move |e| props.oninput.call(e.value()) }
     }
 }
@@ -371,7 +426,6 @@ pub fn Mono(children: Element) -> Element {
 }
 
 /// Icon properties.
-#[cfg(feature = "icons")]
 #[derive(Props, Clone, PartialEq)]
 pub struct IconProps {
     /// The icon, from the shared typed vocabulary (`IconId::Home`).
@@ -381,13 +435,21 @@ pub struct IconProps {
     /// Use the filled form where the pack has one.
     #[props(default)]
     pub filled: bool,
+    /// The theme to draw in; `None` takes the one of the surrounding [`ThemeProvider`].
+    #[props(default)]
+    pub theme: Option<dodai_core::Theme>,
 }
 
 /// Inline SVG icon in the current colour, drawn in the active design system's style.
-#[cfg(feature = "icons")]
 #[component]
 pub fn Icon(props: IconProps) -> Element {
-    let theme = crate::use_theme().theme();
+    let Some(theme) = props
+        .theme
+        .clone()
+        .or_else(|| try_use_context::<crate::ThemeHandle>().map(|h| h.theme()))
+    else {
+        return rsx! {};
+    };
     match dodai_icons::glyph_for_theme(props.icon, &theme, props.filled) {
         Some(g) => {
             let svg = g.svg(props.size, "currentColor");

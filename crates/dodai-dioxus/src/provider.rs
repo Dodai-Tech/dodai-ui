@@ -250,7 +250,6 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "icons")]
     #[test]
     fn icon_renders_svg() {
         use dodai_icons::IconId;

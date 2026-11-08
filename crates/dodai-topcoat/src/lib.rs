@@ -15,7 +15,7 @@
 //! In a Topcoat page, inline it (it never contains `</style`):
 //! `<style>(css)</style>` and call `<script>(dodai_topcoat::switcher_script(..))</script>`.
 
-use dodai_core::{Shape, ShapeKind, Theme};
+use dodai_core::{Kit, Shape, ShapeKind, Theme};
 use std::fmt::Write;
 
 /// Component layer; only references `var(--dodai-*)`.
@@ -310,6 +310,82 @@ pub fn theme_vars(t: &Theme) -> String {
         v(&format!("on-{k}-solid"), t.on(c).to_css());
         v(&format!("{k}-soft"), c.with_alpha(0.12).to_css());
     }
+    s.push_str(&kit_vars(t));
+    s
+}
+
+/// Whether a [`Kit`] reacts to the pointer (and so has hover variables).
+fn kit_hovers(kit: Kit) -> bool {
+    matches!(
+        kit,
+        Kit::Chip { .. } | Kit::Row { .. } | Kit::Page { .. } | Kit::Select
+    )
+}
+
+/// `--dodai-kit-<name>-*` declarations for every [`Kit`] of `t`: `bg`, `bd`, `fg`, `px`, `py`,
+/// `glow`, and `hover-bg`, `hover-bd`, `hover-fg` for the clickable ones. A component picks one
+/// with [`kit_style`].
+pub fn kit_vars(t: &Theme) -> String {
+    let mut s = String::new();
+    let paint = |c: Option<dodai_core::Color>| c.map_or("transparent".to_string(), |c| c.to_css());
+    let glow = |on: bool| {
+        if on && t.effects.glow_enabled() {
+            format!(
+                "0 0 {}px {}",
+                t.effects.glow_radius(),
+                t.effects.glow_color().to_css()
+            )
+        } else {
+            "0 0 0 0 transparent".to_string()
+        }
+    };
+    for kit in Kit::all() {
+        let n = kit.name();
+        let st = t.kit(kit, false);
+        let _ = write!(
+            s,
+            "--dodai-kit-{n}-bg:{};--dodai-kit-{n}-bd:{};--dodai-kit-{n}-fg:{};\
+--dodai-kit-{n}-px:{}px;--dodai-kit-{n}-py:{}px;--dodai-kit-{n}-glow:{};--dodai-kit-{n}-r:{};",
+            paint(st.fill),
+            paint(st.border),
+            st.fg.to_css(),
+            st.padding.0,
+            st.padding.1,
+            glow(st.glow),
+            if st.pill && t.shape.kind() == ShapeKind::Rounded {
+                "9999px"
+            } else {
+                "var(--dodai-radius)"
+            },
+        );
+        if kit_hovers(kit) {
+            let h = t.kit(kit, true);
+            let _ = write!(
+                s,
+                "--dodai-kit-{n}-hover-bg:{};--dodai-kit-{n}-hover-bd:{};--dodai-kit-{n}-hover-fg:{};",
+                paint(h.fill),
+                paint(h.border),
+                h.fg.to_css(),
+            );
+        }
+    }
+    s
+}
+
+/// The inline `style` value that makes an element of `.dodai-kit` look like `kit`: it points
+/// the generic variables of the stylesheet at the variables [`kit_vars`] declared for it.
+pub fn kit_style(kit: Kit) -> String {
+    let n = kit.name();
+    let mut s = format!(
+        "--kb:var(--dodai-kit-{n}-bg);--kd:var(--dodai-kit-{n}-bd);--kf:var(--dodai-kit-{n}-fg);\
+--kx:var(--dodai-kit-{n}-px);--ky:var(--dodai-kit-{n}-py);--kg:var(--dodai-kit-{n}-glow);--kr:var(--dodai-kit-{n}-r);"
+    );
+    if kit_hovers(kit) {
+        let _ = write!(
+            s,
+            "--kbh:var(--dodai-kit-{n}-hover-bg);--kdh:var(--dodai-kit-{n}-hover-bd);--kfh:var(--dodai-kit-{n}-hover-fg);"
+        );
+    }
     s
 }
 
@@ -360,6 +436,68 @@ mod tests {
     use super::*;
     use dodai_core::themes;
     use dodai_core::themes::ThemeBuilder;
+
+    /// Every `var(--dodai-kit-…)` a kit's inline style points at is declared for the theme.
+    #[test]
+    fn kit_styles_only_reference_declared_variables() {
+        for t in themes::all() {
+            let vars = theme_vars(&t);
+            for kit in Kit::all() {
+                let style = kit_style(kit);
+                for part in style.split("var(--").skip(1) {
+                    let name = part.split(')').next().unwrap();
+                    assert!(
+                        vars.contains(&format!("--{name}:")),
+                        "{} {}: --{name} is not declared",
+                        t.id(),
+                        kit.name()
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn only_clickable_kits_get_hover_variables() {
+        let t = themes::all().remove(0);
+        let vars = theme_vars(&t);
+        assert!(vars.contains("--dodai-kit-chip-on-hover-bg:"));
+        assert!(vars.contains("--dodai-kit-select-hover-bd:"));
+        assert!(!vars.contains("--dodai-kit-card-filled-hover-bg:"));
+        assert!(kit_style(Kit::Chip { selected: false }).contains("--kbh:"));
+        assert!(!kit_style(Kit::Code).contains("--kbh:"));
+    }
+
+    #[test]
+    fn pills_round_fully_only_on_rounded_designs() {
+        let pill = |t: &Theme| {
+            let key = "--dodai-kit-avatar-r:";
+            let v = theme_vars(t);
+            let at = v.find(key).unwrap() + key.len();
+            v[at..].split(';').next().unwrap().to_string()
+        };
+        for t in themes::all() {
+            let want = if t.shape.kind() == ShapeKind::Rounded {
+                "9999px"
+            } else {
+                "var(--dodai-radius)"
+            };
+            assert_eq!(pill(&t), want, "{}", t.id());
+        }
+    }
+
+    #[test]
+    fn glow_only_when_the_theme_glows() {
+        for t in themes::all() {
+            let v = theme_vars(&t);
+            let key = "--dodai-kit-step-current-glow:";
+            let at = v.find(key).unwrap() + key.len();
+            let glow = v[at..].split(';').next().unwrap();
+            if !t.effects.glow_enabled() {
+                assert_eq!(glow, "0 0 0 0 transparent", "{}", t.id());
+            }
+        }
+    }
 
     #[test]
     fn vars_contain_brand_yellow() {

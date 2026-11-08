@@ -12,23 +12,29 @@ keywords     = ["theme", "design-system", "dioxus", "cyberpunk"]
 categories   = ["gui"]
 
 [features]
-default   = ["cyberpunk", "material", "icons"]
+default   = ["cyberpunk", "material", "neobrutalism", "dodai"]
 # Design systems to bundle (each is its own crate; see `dodai`).
 cyberpunk = ["dodai-core/cyberpunk"]
 material  = ["dodai-core/material"]
-## `Icon` component (Material Symbols + Cyberpunk pack, chosen by the theme shape).
-icons     = ["dep:dodai-icons", "dodai-icons/theme", "dodai-icons/cyberpunk", "dodai-icons/material"]
+neobrutalism = ["dodai-core/neobrutalism"]
+dodai     = ["dodai-core/dodai"]
 
 [dependencies]
 dodai-core = { workspace = true }
-dodai-icons = { workspace = true, optional = true }
+dodai-icons = { workspace = true, features = ["theme", "cyberpunk", "material", "material-rounded", "material-sharp", "neobrutalism"] }
 dodai-topcoat = { workspace = true }
 dioxus = { version = "0.7", default-features = false, features = ["macro", "html", "signals", "hooks"] }
 
 [dev-dependencies]
-dodai-core = { workspace = true, features = ["cyberpunk", "material"] }
+dodai-core = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "dodai"] }
+dodai-showcase-model = { workspace = true }
 dioxus-ssr = "0.7"
+# The showcase example serves the live app over a websocket to any browser (the desktop
+# renderer needs `cocoa` 0.26.1, which gpui pins below in the same workspace).
+dioxus-liveview = { version = "0.7", features = ["axum"] }
+axum = { version = "0.8", features = ["ws"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net"] }
 
 [[example]]
 name = "dioxus_showcase"
-path = "examples/dioxus_showcase.rs"
+path = "examples/dioxus_showcase/main.rs"

@@ -59,6 +59,98 @@ pub enum Kit {
     TableRow(bool),
 }
 
+impl Kit {
+    /// A stable kebab-case name, unique per variant (`card-elevated`, `alert-danger-banner`,
+    /// `chip-on`): what stylesheets key on.
+    pub fn name(self) -> String {
+        let tone = |t: Tone| match t {
+            Tone::Info => "info",
+            Tone::Success => "success",
+            Tone::Warning => "warning",
+            Tone::Danger => "danger",
+        };
+        let on = |b: bool| if b { "on" } else { "off" };
+        match self {
+            Kit::Card(CardVariant::Elevated) => "card-elevated".into(),
+            Kit::Card(CardVariant::Filled) => "card-filled".into(),
+            Kit::Card(CardVariant::Outlined) => "card-outlined".into(),
+            Kit::Alert { tone: t, banner } => {
+                format!("alert-{}{}", tone(t), if banner { "-banner" } else { "" })
+            }
+            Kit::Snackbar => "snackbar".into(),
+            Kit::Chip { selected } => format!("chip-{}", on(selected)),
+            Kit::Avatar => "avatar".into(),
+            Kit::Code => "code".into(),
+            Kit::Tooltip { rich } => if rich { "tooltip-rich" } else { "tooltip" }.into(),
+            Kit::Row { selected } => format!("row-{}", on(selected)),
+            Kit::StepDot(StepState::Done) => "step-done".into(),
+            Kit::StepDot(StepState::Current) => "step-current".into(),
+            Kit::StepDot(StepState::Todo) => "step-todo".into(),
+            Kit::Dot(None) => "dot".into(),
+            Kit::Dot(Some(t)) => format!("dot-{}", tone(t)),
+            Kit::Count(t) => format!("count-{}", tone(t)),
+            Kit::Page { selected } => format!("page-{}", on(selected)),
+            Kit::Skeleton => "skeleton".into(),
+            Kit::Popup => "popup".into(),
+            Kit::Select => "select".into(),
+            Kit::TableHead => "table-head".into(),
+            Kit::TableRow(banded) => if banded {
+                "table-row-band"
+            } else {
+                "table-row"
+            }
+            .into(),
+        }
+    }
+
+    /// Every variant, for stylesheets that need them all.
+    pub fn all() -> Vec<Kit> {
+        let tones = [Tone::Info, Tone::Success, Tone::Warning, Tone::Danger];
+        let mut v = vec![
+            Kit::Card(CardVariant::Elevated),
+            Kit::Card(CardVariant::Filled),
+            Kit::Card(CardVariant::Outlined),
+            Kit::Snackbar,
+            Kit::Avatar,
+            Kit::Code,
+            Kit::Tooltip { rich: false },
+            Kit::Tooltip { rich: true },
+            Kit::StepDot(StepState::Done),
+            Kit::StepDot(StepState::Current),
+            Kit::StepDot(StepState::Todo),
+            Kit::Dot(None),
+            Kit::Skeleton,
+            Kit::Popup,
+            Kit::Select,
+            Kit::TableHead,
+            Kit::TableRow(false),
+            Kit::TableRow(true),
+        ];
+        for selected in [false, true] {
+            v.extend([
+                Kit::Chip { selected },
+                Kit::Row { selected },
+                Kit::Page { selected },
+            ]);
+        }
+        for t in tones {
+            v.extend([
+                Kit::Alert {
+                    tone: t,
+                    banner: false,
+                },
+                Kit::Alert {
+                    tone: t,
+                    banner: true,
+                },
+                Kit::Dot(Some(t)),
+                Kit::Count(t),
+            ]);
+        }
+        v
+    }
+}
+
 /// How a [`Kit`] looks under a theme: pure data, no ECS.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct KitStyle {
@@ -313,6 +405,22 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn names_are_unique_kebab_case_and_all_covers_every_variant() {
+        let all = Kit::all();
+        let mut names: Vec<String> = all.iter().map(|k| k.name()).collect();
+        assert!(names
+            .iter()
+            .all(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_lowercase() || c == '-')));
+        let n = names.len();
+        names.sort();
+        names.dedup();
+        assert_eq!(names.len(), n, "duplicate kit names");
+        // 3 cards + snackbar, avatar, code, 2 tooltips, 3 steps, dot, skeleton, popup, select,
+        // head, 2 rows of the table, 3 selectable kinds x 2, 4 tones x 4.
+        assert_eq!(n, 3 + 3 + 2 + 3 + 1 + 1 + 1 + 1 + 1 + 2 + 6 + 16);
     }
 
     #[test]

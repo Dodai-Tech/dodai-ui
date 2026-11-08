@@ -1,0 +1,525 @@
+//! Token-styled boxes and the composite components built on them: cards, alerts, chips,
+//! avatars, code, steps, breadcrumbs, pagination, tree, data table, timeline, rating, stepper,
+//! busy indicators. Looks come from `dodai_core::Kit` through the stylesheet variables of
+//! `dodai-topcoat` ([`dodai_topcoat::kit_style`]), so every design restyles them.
+
+use dioxus::prelude::*;
+use dodai_core::{CardVariant, Kit, StepState, Tone};
+
+use crate::Icon;
+use dodai_icons::IconId;
+
+fn kit_class(kit: Kit) -> String {
+    let mut c = String::from("dodai-kit");
+    match kit {
+        Kit::Card(v) => {
+            c.push_str(" dodai-kit--card");
+            if v == CardVariant::Elevated {
+                c.push_str(" dodai-kit--elevated");
+            }
+        }
+        Kit::Popup => c.push_str(" dodai-kit--popup"),
+        Kit::Dot(_) => c.push_str(" dodai-kit--dot"),
+        _ => {}
+    }
+    c
+}
+
+/// Properties of [`KitBox`].
+#[derive(Props, Clone, PartialEq)]
+pub struct KitBoxProps {
+    pub kit: Kit,
+    /// Extra inline style (size, position).
+    #[props(default)]
+    pub style: String,
+    /// Makes the box a button.
+    #[props(default)]
+    pub onclick: Option<EventHandler<MouseEvent>>,
+    pub children: Element,
+}
+
+/// A box that looks like `kit`; with `onclick` it is a button and hovers.
+#[component]
+pub fn KitBox(props: KitBoxProps) -> Element {
+    let style = format!("{}{}", dodai_topcoat::kit_style(props.kit), props.style);
+    let class = kit_class(props.kit);
+    match props.onclick {
+        Some(h) => rsx! {
+            button { class: "{class} dodai-kit--press", style, onclick: move |e| h.call(e), {props.children} }
+        },
+        None => rsx! { div { class, style, {props.children} } },
+    }
+}
+
+/// Properties of [`Card`].
+#[derive(Props, Clone, PartialEq)]
+pub struct CardProps {
+    #[props(default)]
+    pub variant: CardVariant,
+    #[props(default)]
+    pub title: String,
+    pub children: Element,
+}
+
+/// Card: elevated, filled or outlined.
+#[component]
+pub fn Card(props: CardProps) -> Element {
+    rsx! {
+        KitBox { kit: Kit::Card(props.variant),
+            if !props.title.is_empty() { span { class: "dodai-label", "{props.title}" } }
+            {props.children}
+        }
+    }
+}
+
+/// Properties of [`Alert`].
+#[derive(Props, Clone, PartialEq)]
+pub struct AlertProps {
+    pub tone: Tone,
+    /// Full-width solid banner.
+    #[props(default)]
+    pub banner: bool,
+    pub children: Element,
+}
+
+/// The icon an alert of `tone` shows.
+pub fn alert_icon(tone: Tone) -> IconId {
+    match tone {
+        Tone::Danger | Tone::Warning => IconId::Warning,
+        Tone::Success => IconId::CheckCircle,
+        Tone::Info => IconId::Info,
+    }
+}
+
+/// Message bar in a status tone.
+#[component]
+pub fn Alert(props: AlertProps) -> Element {
+    rsx! {
+        KitBox { kit: Kit::Alert { tone: props.tone, banner: props.banner }, style: "width:100%;".to_string(),
+            Icon { icon: alert_icon(props.tone), size: 18 }
+            span { {props.children} }
+        }
+    }
+}
+
+/// Properties of [`Snackbar`].
+#[derive(Props, Clone, PartialEq)]
+pub struct SnackbarProps {
+    pub text: String,
+    pub action: String,
+    #[props(default)]
+    pub onaction: EventHandler<MouseEvent>,
+}
+
+/// Snackbar with one action.
+#[component]
+pub fn Snackbar(props: SnackbarProps) -> Element {
+    rsx! {
+        KitBox { kit: Kit::Snackbar, style: "gap:var(--dodai-space-lg);width:fit-content;".to_string(),
+            span { "{props.text}" }
+            button { class: "dodai-btn dodai-btn--ghost", onclick: move |e| props.onaction.call(e), "{props.action}" }
+        }
+    }
+}
+
+/// Properties of [`Chip`].
+#[derive(Props, Clone, PartialEq)]
+pub struct ChipProps {
+    pub label: String,
+    #[props(default)]
+    pub selected: bool,
+    #[props(default)]
+    pub icon: Option<IconId>,
+    #[props(default)]
+    pub onclick: EventHandler<MouseEvent>,
+}
+
+/// Filter chip.
+#[component]
+pub fn Chip(props: ChipProps) -> Element {
+    let h = props.onclick;
+    rsx! {
+        KitBox { kit: Kit::Chip { selected: props.selected }, onclick: move |e| h.call(e),
+            if let Some(i) = props.icon { Icon { icon: i, size: 16 } }
+            span { "{props.label}" }
+        }
+    }
+}
+
+/// Round avatar with initials.
+#[component]
+pub fn Avatar(initials: String, #[props(default = 40)] size: u32) -> Element {
+    rsx! {
+        div { class: "dodai-kit dodai-avatar", style: "{dodai_topcoat::kit_style(Kit::Avatar)}width:{size}px;height:{size}px;",
+            "{initials}"
+        }
+    }
+}
+
+/// Code listing.
+#[component]
+pub fn CodeBlock(code: String) -> Element {
+    rsx! {
+        KitBox { kit: Kit::Code, style: "display:block;".to_string(),
+            pre { class: "dodai-code", "{code}" }
+        }
+    }
+}
+
+/// One step of [`Steps`].
+#[derive(Clone, PartialEq)]
+pub struct StepItem {
+    pub title: String,
+    pub detail: Option<String>,
+}
+
+/// Numbered step indicator; steps before `current` show a check.
+#[component]
+pub fn Steps(steps: Vec<StepItem>, current: usize) -> Element {
+    let n = steps.len();
+    rsx! {
+        div { class: "dodai-steps",
+            for (i, s) in steps.into_iter().enumerate() {
+                KitBox { key: "{i}", kit: Kit::StepDot(StepState::of(i, current)), style: "width:28px;height:28px;padding:0;justify-content:center;".to_string(),
+                    if StepState::of(i, current) == StepState::Done {
+                        Icon { icon: IconId::Check, size: 16 }
+                    } else {
+                        span { class: "dodai-sm", "{i + 1}" }
+                    }
+                }
+                div { class: "dodai-col-text",
+                    span { class: "dodai-label", "{s.title}" }
+                    if let Some(d) = s.detail { span { class: "dodai-caption", "{d}" } }
+                }
+                if i + 1 < n { span { class: "dodai-steps__line" } }
+            }
+        }
+    }
+}
+
+/// Breadcrumb trail; the last item is the current page.
+#[component]
+pub fn Breadcrumb(items: Vec<String>) -> Element {
+    let n = items.len();
+    rsx! {
+        nav { class: "dodai-crumbs", "aria-label": "Breadcrumb",
+            for (i, it) in items.into_iter().enumerate() {
+                span { key: "{i}", "aria-current": if i + 1 == n { "page" } else { "false" }, "{it}" }
+                if i + 1 < n { Icon { icon: IconId::ChevronRight, size: 14 } }
+            }
+        }
+    }
+}
+
+/// The page buttons to show: all `pages`, none when there are none.
+pub fn page_range(pages: usize) -> std::ops::Range<usize> {
+    0..pages
+}
+
+/// Properties of [`Pagination`].
+#[derive(Props, Clone, PartialEq)]
+pub struct PaginationProps {
+    pub pages: usize,
+    pub page: usize,
+    #[props(default)]
+    pub onselect: EventHandler<usize>,
+}
+
+/// Page selector with previous and next.
+#[component]
+pub fn Pagination(props: PaginationProps) -> Element {
+    let (pages, page, h) = (props.pages, props.page, props.onselect);
+    rsx! {
+        nav { class: "dodai-pager", "aria-label": "Pagination",
+            button { class: "dodai-btn dodai-btn--ghost dodai-btn--sm dodai-btn--icon", disabled: page == 0,
+                onclick: move |_| h.call(page.saturating_sub(1)), Icon { icon: IconId::ChevronLeft, size: 16 } }
+            for i in page_range(pages) {
+                KitBox { key: "{i}", kit: Kit::Page { selected: i == page }, onclick: move |_| h.call(i), "{i + 1}" }
+            }
+            button { class: "dodai-btn dodai-btn--ghost dodai-btn--sm dodai-btn--icon", disabled: page + 1 >= pages,
+                onclick: move |_| h.call((page + 1).min(pages.saturating_sub(1))), Icon { icon: IconId::ChevronRight, size: 16 } }
+        }
+    }
+}
+
+/// A node of [`TreeView`].
+#[derive(Clone, PartialEq)]
+pub struct TreeItem {
+    pub label: String,
+    pub icon: Option<IconId>,
+    pub children: Vec<TreeItem>,
+    pub open: bool,
+}
+
+#[component]
+fn TreeBranch(item: TreeItem) -> Element {
+    let row = rsx! {
+        KitBox { kit: Kit::Row { selected: false },
+            if !item.children.is_empty() { span { class: "dodai-tree__chev", Icon { icon: IconId::ChevronRight, size: 14 } } }
+            else { span { style: "width:14px" } }
+            if let Some(i) = item.icon { Icon { icon: i, size: 16 } }
+            span { "{item.label}" }
+        }
+    };
+    if item.children.is_empty() {
+        return row;
+    }
+    rsx! {
+        details { open: item.open,
+            summary { {row} }
+            div { class: "dodai-tree__children",
+                for (i, c) in item.children.iter().enumerate() {
+                    TreeBranch { key: "{i}", item: c.clone() }
+                }
+            }
+        }
+    }
+}
+
+/// Expandable tree.
+#[component]
+pub fn TreeView(items: Vec<TreeItem>) -> Element {
+    rsx! {
+        div { class: "dodai-tree",
+            for (i, it) in items.into_iter().enumerate() { TreeBranch { key: "{i}", item: it } }
+        }
+    }
+}
+
+/// Data table with a header row and banded body rows.
+#[component]
+pub fn DataTable(columns: Vec<String>, rows: Vec<Vec<String>>) -> Element {
+    let cols = columns.len();
+    rsx! {
+        div { class: "dodai-datatable", role: "table",
+            KitBox { kit: Kit::TableHead, style: format!("--cols:{cols};display:grid;grid-template-columns:repeat({cols},1fr);"),
+                for c in columns { span { class: "dodai-label", "{c}" } }
+            }
+            for (i, r) in rows.into_iter().enumerate() {
+                KitBox { key: "{i}", kit: Kit::TableRow(i % 2 == 1), style: format!("display:grid;grid-template-columns:repeat({cols},1fr);"),
+                    for c in r { span { "{c}" } }
+                }
+            }
+        }
+    }
+}
+
+/// One event of [`Timeline`].
+#[derive(Clone, PartialEq)]
+pub struct TimelineItem {
+    pub title: String,
+    pub time: String,
+    pub detail: Option<String>,
+    pub tone: Option<Tone>,
+}
+
+/// Events down a line.
+#[component]
+pub fn Timeline(events: Vec<TimelineItem>) -> Element {
+    rsx! {
+        div { class: "dodai-timeline",
+            for (i, e) in events.into_iter().enumerate() {
+                div { key: "{i}", class: "dodai-timeline__item",
+                    KitBox { kit: Kit::Dot(e.tone), div {} }
+                    div { class: "dodai-col-text",
+                        span { "{e.title}" }
+                        span { class: "dodai-caption", "{e.time}" }
+                        if let Some(d) = e.detail { span { class: "dodai-muted", "{d}" } }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// How each of `max` stars of a `value` rating is drawn: `true` = filled. Halves round up.
+pub fn star_fills(value: f32, max: u8) -> Vec<bool> {
+    let full = value.round().max(0.0) as u8;
+    (0..max).map(|i| i < full).collect()
+}
+
+/// Star rating (display).
+#[component]
+pub fn Rating(value: f32, #[props(default = 5)] max: u8) -> Element {
+    rsx! {
+        span { class: "dodai-rating", role: "img", "aria-label": "{value} of {max}",
+            for (i, on) in star_fills(value, max).into_iter().enumerate() {
+                Icon { key: "{i}", icon: IconId::Star, size: 20, filled: on }
+            }
+        }
+    }
+}
+
+/// The value after pressing a stepper button, kept inside `min..=max`.
+pub fn stepped(value: i32, by: i32, min: i32, max: i32) -> i32 {
+    (value + by).clamp(min, max)
+}
+
+/// Properties of [`Stepper`].
+#[derive(Props, Clone, PartialEq)]
+pub struct StepperProps {
+    pub value: i32,
+    #[props(default)]
+    pub min: i32,
+    #[props(default = 20)]
+    pub max: i32,
+    #[props(default)]
+    pub onchange: EventHandler<i32>,
+}
+
+/// − / value / + counter.
+#[component]
+pub fn Stepper(props: StepperProps) -> Element {
+    let (v, min, max, h) = (props.value, props.min, props.max, props.onchange);
+    rsx! {
+        span { class: "dodai-stepper",
+            button { class: "dodai-btn dodai-btn--outline dodai-btn--sm dodai-btn--icon", "aria-label": "Decrease",
+                disabled: v <= min, onclick: move |_| h.call(stepped(v, -1, min, max)), "−" }
+            span { "{v}" }
+            button { class: "dodai-btn dodai-btn--outline dodai-btn--sm dodai-btn--icon", "aria-label": "Increase",
+                disabled: v >= max, onclick: move |_| h.call(stepped(v, 1, min, max)), "+" }
+        }
+    }
+}
+
+/// Spinning ring of `size` px.
+#[component]
+pub fn Spinner(#[props(default = 24)] size: u32) -> Element {
+    rsx! { span { class: "dodai-spinner", role: "progressbar", style: "--s:{size}px" } }
+}
+
+/// Indeterminate bar.
+#[component]
+pub fn Indeterminate() -> Element {
+    rsx! { div { class: "dodai-indeterminate", role: "progressbar", span {} } }
+}
+
+/// Loading placeholder; `width == 0` fills the width.
+#[component]
+pub fn Skeleton(#[props(default)] width: u32, #[props(default = 16)] height: u32) -> Element {
+    let w = if width == 0 {
+        "100%".to_string()
+    } else {
+        format!("{width}px")
+    };
+    rsx! { span { class: "dodai-skeleton", style: "width:{w};height:{height}px;{dodai_topcoat::kit_style(Kit::Skeleton)}background:var(--dodai-kit-skeleton-bg)" } }
+}
+
+/// Empty state.
+#[component]
+pub fn EmptyState(title: String, detail: String) -> Element {
+    rsx! {
+        div { class: "dodai-empty",
+            Icon { icon: IconId::Folder, size: 32 }
+            span { class: "dodai-label", "{title}" }
+            span { class: "dodai-muted", "{detail}" }
+        }
+    }
+}
+
+/// Properties of [`Badged`].
+#[derive(Props, Clone, PartialEq)]
+pub struct BadgedProps {
+    pub icon: IconId,
+    #[props(default)]
+    pub count: Option<(u32, Tone)>,
+    #[props(default)]
+    pub dot: Option<Tone>,
+}
+
+/// A ghost icon button with a count or dot badge.
+#[component]
+pub fn Badged(props: BadgedProps) -> Element {
+    rsx! {
+        span { class: "dodai-badged",
+            button { class: "dodai-btn dodai-btn--ghost dodai-btn--md dodai-btn--icon", Icon { icon: props.icon, size: 18 } }
+            if let Some((n, tone)) = props.count { KitBox { kit: Kit::Count(tone), "{n}" } }
+            else if let Some(tone) = props.dot { KitBox { kit: Kit::Dot(Some(tone)), span {} } }
+        }
+    }
+}
+
+/// A tooltip bubble shown in place.
+#[component]
+pub fn TooltipBubble(text: String, #[props(default)] rich: bool) -> Element {
+    rsx! { KitBox { kit: Kit::Tooltip { rich }, "{text}" } }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn stepper_stays_inside_its_range() {
+        assert_eq!(stepped(0, -1, 0, 20), 0);
+        assert_eq!(stepped(20, 1, 0, 20), 20);
+        assert_eq!(stepped(5, 1, 0, 20), 6);
+        assert_eq!(stepped(5, -9, 0, 20), 0);
+    }
+
+    #[test]
+    fn rating_fills_whole_stars_and_rounds_halves_up() {
+        assert_eq!(star_fills(3.5, 5), vec![true, true, true, true, false]);
+        assert_eq!(star_fills(0.0, 3), vec![false; 3]);
+        assert_eq!(star_fills(9.0, 3), vec![true; 3]);
+        assert_eq!(star_fills(-2.0, 2), vec![false; 2]);
+    }
+
+    #[test]
+    fn pagination_lists_every_page() {
+        assert_eq!(page_range(0).count(), 0);
+        assert_eq!(page_range(7).count(), 7);
+    }
+
+    #[test]
+    fn kit_classes_mark_cards_popups_and_dots() {
+        assert!(kit_class(Kit::Card(CardVariant::Elevated)).contains("dodai-kit--elevated"));
+        assert!(!kit_class(Kit::Card(CardVariant::Filled)).contains("dodai-kit--elevated"));
+        assert!(kit_class(Kit::Popup).contains("dodai-kit--popup"));
+        assert!(kit_class(Kit::Dot(None)).contains("dodai-kit--dot"));
+        assert_eq!(kit_class(Kit::Code), "dodai-kit");
+    }
+
+    #[test]
+    fn alert_icons_follow_the_tone() {
+        assert_eq!(alert_icon(Tone::Danger), IconId::Warning);
+        assert_eq!(alert_icon(Tone::Success), IconId::CheckCircle);
+        assert_eq!(alert_icon(Tone::Info), IconId::Info);
+    }
+
+    fn render(el: fn() -> Element) -> String {
+        let mut dom = VirtualDom::new(el);
+        dom.rebuild_in_place();
+        dioxus_ssr::render(&dom)
+    }
+
+    #[test]
+    fn components_render_their_markup() {
+        let html = render(|| {
+            rsx! {
+                Card { title: "T".to_string(), variant: CardVariant::Elevated, "body" }
+                Chip { label: "Filter".to_string(), selected: true }
+                Pagination { pages: 3, page: 1 }
+                DataTable { columns: vec!["A".into(), "B".into()], rows: vec![vec!["1".into(), "2".into()]] }
+                Steps { steps: vec![StepItem { title: "One".into(), detail: None }, StepItem { title: "Two".into(), detail: Some("d".into()) }], current: 1 }
+                Skeleton { width: 0 }
+                Stepper { value: 0 }
+            }
+        });
+        for want in [
+            "dodai-kit--card",
+            "--kb:var(--dodai-kit-card-elevated-bg)",
+            "dodai-kit--press",
+            "--dodai-kit-chip-on-bg",
+            "dodai-pager",
+            "dodai-datatable",
+            "dodai-steps__line",
+            "dodai-skeleton",
+            "disabled",
+        ] {
+            assert!(html.contains(want), "missing {want} in {html}");
+        }
+        // 3 page buttons plus previous and next.
+        assert_eq!(html.matches("dodai-kit--press").count(), 1 + 3);
+    }
+}

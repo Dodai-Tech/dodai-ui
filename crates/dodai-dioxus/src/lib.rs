@@ -11,9 +11,11 @@
 //! Switch themes with [`use_theme`] (`next`/`prev`/`select`), which updates `data-theme`.
 
 mod components;
+mod kit;
 mod provider;
 
 pub use components::*;
 /// A surface mix as a CSS `background-image` (see [`dodai_topcoat::surface_background`]).
 pub use dodai_topcoat::surface_background;
+pub use kit::*;
 pub use provider::*;
