@@ -242,7 +242,7 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
                 icon_el,
                 b.variant,
                 b.size,
-                b.crop.or(default),
+                (!b.plain).then(|| b.crop.or(default)).flatten(),
                 msg,
             )
         }

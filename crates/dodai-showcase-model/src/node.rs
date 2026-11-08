@@ -105,6 +105,8 @@ pub struct Button {
     pub counter: Option<String>,
     /// Which end the design crops (`None` = the design's own default).
     pub crop: Option<dodai_core::Crop>,
+    /// Never crops, whatever the design's default.
+    pub plain: bool,
 }
 
 /// A row of options of which one is selected (button group, segmented control, tabs).
@@ -503,6 +505,7 @@ pub mod b {
             disabled: false,
             counter: None,
             crop: None,
+            plain: false,
         }
     }
 
@@ -515,6 +518,11 @@ pub mod b {
         /// Crop this end the way the design crops buttons.
         pub fn crop(mut self, end: dodai_core::Crop) -> Self {
             self.crop = Some(end);
+            self
+        }
+        /// Uncropped even on a design that crops its buttons by default.
+        pub fn plain(mut self) -> Self {
+            self.plain = true;
             self
         }
         /// Square corners.

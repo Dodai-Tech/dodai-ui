@@ -216,7 +216,7 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
             }
             // Cut-corner designs crop every button by default, the others only when asked.
             let default = theme.look().cut_corners.then_some(dodai_core::Crop::Left);
-            if let Some(end) = b.crop.or(default) {
+            if let Some(end) = (!b.plain).then(|| b.crop.or(default)).flatten() {
                 spec = spec.crop(end);
             }
             let mut e = p.spawn(spec.bundle());
