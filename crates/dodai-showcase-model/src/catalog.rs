@@ -6,6 +6,30 @@ use crate::node::Node;
 use crate::sections as page;
 use crate::state::Values;
 
+/// The keyboard hint at the foot of the sidebar.
+pub const KEYS_HINT: &str = "↑↓ / Tab move · Enter select · t / T theme";
+
+/// The sidebar icon of a page ("All" too), as the gpui showcase draws it.
+pub fn category_icon(name: &str) -> dodai_icons::IconId {
+    use dodai_icons::IconId as I;
+    match name {
+        "All" => I::Grid,
+        "Foundations" => I::Layers,
+        "Inputs" => I::Sliders,
+        "Actions" => I::Play,
+        "Navigation" => I::Menu,
+        "Data display" => I::Table,
+        "Charts" => I::BarChart,
+        "Instruments" => I::Dashboard,
+        "Animation" => I::Wave,
+        "Shaders" => I::Pixels,
+        "Shape" => I::Cube,
+        "Surface effects" => I::Texture,
+        "Loading" => I::Repeat,
+        _ => I::Dot,
+    }
+}
+
 /// Everything a section needs to build its demo.
 pub struct Ctx<'a> {
     /// The active theme (control colour applied).

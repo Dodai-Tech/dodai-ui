@@ -603,3 +603,50 @@ mod tests {
         assert_eq!(html.matches("dodai-kit--press").count(), 1 + 3);
     }
 }
+
+/// Segmented-control properties.
+#[derive(Props, Clone, PartialEq)]
+pub struct SegmentedProps {
+    /// The options.
+    pub labels: Vec<String>,
+    /// The picked one.
+    pub selected: usize,
+    /// Called with the index of the option pressed.
+    #[props(default)]
+    pub onselect: EventHandler<usize>,
+}
+
+/// A segmented control: the options in one bordered strip ([`Kit::Segmented`]), the picked one
+/// filled ([`Kit::Segment`]) with a check on tonal designs.
+#[component]
+pub fn Segmented(props: SegmentedProps) -> Element {
+    let Some(theme) = try_use_context::<crate::ThemeHandle>().map(|h| h.theme()) else {
+        return rsx! {};
+    };
+    let tonal = theme.look().tonal;
+    let h = if tonal {
+        theme.sizes().segmented_height
+    } else {
+        theme.shape.control_height - 6.0
+    };
+    let gap = if tonal { 0.0 } else { theme.spacing.half() };
+    let upper = if theme.typography.uppercase_labels {
+        "text-transform:uppercase;"
+    } else {
+        ""
+    };
+    let size = theme.typography.size_md;
+    let (sel, on) = (props.selected, props.onselect);
+    rsx! {
+        KitBox { kit: Kit::Segmented, style: "display:inline-flex;align-self:flex-start;flex:none;gap:{gap}px",
+            for (i, l) in props.labels.iter().enumerate() {
+                KitBox { key: "{i}", kit: Kit::Segment { selected: i == sel },
+                    style: "height:{h}px;display:flex;align-items:center;white-space:nowrap;{upper}font-size:{size}px",
+                    onclick: move |_| on.call(i),
+                    if i == sel && tonal { "\u{2713} " }
+                    "{l}"
+                }
+            }
+        }
+    }
+}

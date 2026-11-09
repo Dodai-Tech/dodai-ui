@@ -5,7 +5,6 @@ use bevy::ui::RelativeCursorPosition;
 use dodai_bevy::kit::{kit, kit_pressable, Kit};
 use dodai_bevy::prelude::*;
 use dodai_bevy::theme::color;
-use dodai_core::ControlSize;
 use dodai_showcase_model::{Action, Showcase, CATEGORIES, SPEEDS};
 
 use crate::events::Scroller;
@@ -72,7 +71,10 @@ pub fn setup(mut commands: Commands, model: Res<Model>, theme: Res<DodaiTheme>) 
                     },
                     Scroller::Sidebar,
                 ));
-                s.spawn(text("t / T theme · click a page", TextRole::Caption));
+                s.spawn(text(
+                    dodai_showcase_model::catalog::KEYS_HINT,
+                    TextRole::Caption,
+                ));
             });
             // Main column.
             root.spawn(Node {
@@ -120,35 +122,6 @@ pub struct MenuList;
 /// Borders that follow the theme's border colour.
 #[derive(Component)]
 pub struct SidebarBorder;
-
-fn segmented(
-    p: &mut ChildSpawnerCommands,
-    labels: &[String],
-    selected: usize,
-    act: impl Fn(usize) -> Action,
-) {
-    p.spawn(Node {
-        flex_wrap: FlexWrap::Wrap,
-        column_gap: Val::Px(2.0),
-        row_gap: Val::Px(2.0),
-        ..default()
-    })
-    .with_children(|c| {
-        for (i, l) in labels.iter().enumerate() {
-            let v = if i == selected {
-                ButtonVariant::Primary
-            } else {
-                ButtonVariant::Ghost
-            };
-            c.spawn((
-                ButtonSpec::new(l.clone(), v)
-                    .size(ControlSize::Small)
-                    .bundle(),
-                Bound::Act(act(i)),
-            ));
-        }
-    });
-}
 
 fn field(p: &mut ChildSpawnerCommands, name: &str, body: impl FnOnce(&mut ChildSpawnerCommands)) {
     p.spawn(Node {
@@ -258,6 +231,7 @@ pub fn dropdown(p: &mut ChildSpawnerCommands, d: &Dropdown, act: impl Fn(usize) 
 }
 
 pub fn spawn_top(p: &mut ChildSpawnerCommands, m: &Showcase, open: Option<&'static str>) {
+    let t = m.theme();
     let owned = |v: Vec<&str>| v.into_iter().map(String::from).collect::<Vec<_>>();
     field(p, "Design", |c| {
         dropdown(
@@ -291,44 +265,75 @@ pub fn spawn_top(p: &mut ChildSpawnerCommands, m: &Showcase, open: Option<&'stat
     field(p, "Colour", |c| {
         let at = colours.iter().position(|x| *x == m.colour()).unwrap_or(0);
         let labels: Vec<String> = colours.iter().map(|x| x.label().to_string()).collect();
-        segmented(c, &labels, at, |i| Action::Colour(colours[i]));
+        crate::render::segmented(c, &t, &labels, at, |i| Action::Colour(colours[i]));
     });
     field(p, "Animate", |c| {
-        segmented(c, &owned(OFF_ON.to_vec()), usize::from(m.animate), |i| {
-            Action::Animate(i == 1)
-        });
+        crate::render::segmented(
+            c,
+            &t,
+            &owned(OFF_ON.to_vec()),
+            usize::from(m.animate),
+            |i| Action::Animate(i == 1),
+        );
     });
     field(p, "Speed", |c| {
         let labels: Vec<String> = SPEEDS.iter().map(|s| format!("{s}×")).collect();
-        segmented(c, &labels, m.speed_index(), Action::Speed);
+        crate::render::segmented(c, &t, &labels, m.speed_index(), Action::Speed);
     });
     field(p, "Direction", |c| {
-        segmented(c, &owned(vec!["LTR", "RTL"]), usize::from(m.rtl), |i| {
+        crate::render::segmented(c, &t, &owned(vec!["LTR", "RTL"]), usize::from(m.rtl), |i| {
             Action::Rtl(i == 1)
         });
     });
     field(p, "Patterns", |c| {
-        segmented(c, &owned(OFF_ON.to_vec()), usize::from(m.patterns), |i| {
-            Action::Patterns(i == 1)
-        });
+        crate::render::segmented(
+            c,
+            &t,
+            &owned(OFF_ON.to_vec()),
+            usize::from(m.patterns),
+            |i| Action::Patterns(i == 1),
+        );
     });
 }
 
 pub fn spawn_nav(p: &mut ChildSpawnerCommands, m: &Showcase) {
+    use dodai_icons::IconId;
     let item =
         |p: &mut ChildSpawnerCommands, label: &str, count: usize, on: bool, cat: Option<usize>| {
             p.spawn((
                 kit_pressable(Kit::Row { selected: on }),
                 Node {
                     width: Val::Percent(100.0),
-                    justify_content: JustifyContent::SpaceBetween,
+                    align_items: AlignItems::Center,
+                    column_gap: Val::Px(8.0),
                     ..default()
                 },
                 Bound::Act(Action::Category(cat)),
             ))
             .with_children(|r| {
-                r.spawn(text(label.to_string(), TextRole::Control));
+                r.spawn(icon(
+                    dodai_showcase_model::catalog::category_icon(label),
+                    16,
+                ));
+                r.spawn((
+                    text(label.to_string(), TextRole::Control),
+                    Node {
+                        flex_grow: 1.0,
+                        ..default()
+                    },
+                ));
                 r.spawn(text(count.to_string(), TextRole::Caption));
+                // A category shows whether its sections are listed under it.
+                if cat.is_some() {
+                    r.spawn(icon(
+                        if on {
+                            IconId::ChevronDown
+                        } else {
+                            IconId::ChevronRight
+                        },
+                        14,
+                    ));
+                }
             });
         };
     item(p, "All", m.count(None), m.category().is_none(), None);
@@ -336,13 +341,21 @@ pub fn spawn_nav(p: &mut ChildSpawnerCommands, m: &Showcase) {
         let on = m.category() == Some(i);
         item(p, c, m.count(Some(i)), on, Some(i));
         if on {
+            let active = m.active_section();
             for s in m.visible() {
-                p.spawn(Node {
-                    padding: UiRect::new(Val::Px(36.0), Val::Px(8.0), Val::Px(4.0), Val::Px(4.0)),
-                    ..default()
-                })
+                p.spawn((
+                    kit_pressable(Kit::Row {
+                        selected: active == Some(s.title),
+                    }),
+                    Node {
+                        width: Val::Percent(100.0),
+                        margin: UiRect::left(Val::Px(16.0)),
+                        ..default()
+                    },
+                    Bound::Act(Action::Section(s.title)),
+                ))
                 .with_children(|r| {
-                    r.spawn(text(s.title.to_string(), TextRole::Caption));
+                    r.spawn(text(s.title.to_string(), TextRole::ControlSmall));
                 });
             }
         }

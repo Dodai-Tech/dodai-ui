@@ -1,6 +1,6 @@
 //! The window around the sections: sidebar, control bar, scrolling page.
 
-use dodai_core::{ButtonVariant as V, ControlSize, Kit};
+use dodai_core::Kit;
 use dodai_showcase_model::{Action, Ctx, Showcase, CATEGORIES, SPEEDS};
 use iced::widget::{column, container, pick_list, row, scrollable, text, text_input, Space};
 use iced::{alignment, Element, Length};
@@ -20,14 +20,13 @@ fn segmented<'a>(
 ) -> Element<'a, Msg> {
     let lt = &app.lt;
     let sp = &lt.theme().spacing;
-    let buttons = labels.iter().enumerate().map(|(i, l)| {
-        let v = if i == selected { V::Primary } else { V::Ghost };
-        lt.button_compact(l, None, v, ControlSize::Small, Some(Msg::Act(act(i))))
-    });
-    row![lt.muted_text(name), row(buttons).spacing(2)]
-        .spacing(sp.sm)
-        .align_y(alignment::Vertical::Center)
-        .into()
+    row![
+        lt.muted_text(name),
+        lt.segmented(&labels, selected, move |i| Msg::Act(act(i)))
+    ]
+    .spacing(sp.sm)
+    .align_y(alignment::Vertical::Center)
+    .into()
 }
 
 /// A dropdown over `items`.
@@ -113,11 +112,33 @@ fn nav_item<'a>(
     cat: Option<usize>,
 ) -> Element<'a, Msg> {
     let lt = &app.lt;
+    let th = lt.theme();
+    let ink = th.kit(Kit::Row { selected: on }, false).fg;
+    // A category shows whether its sections are listed under it.
+    let chevron: Element<'a, Msg> = match cat {
+        Some(_) => lt.icon(
+            if on {
+                dodai_icons::IconId::ChevronDown
+            } else {
+                dodai_icons::IconId::ChevronRight
+            },
+            14.0,
+            Some(th.palette.text_muted),
+        ),
+        None => Space::new().width(14).into(),
+    };
     let line = row![
-        text(lt.label(label)).size(lt.theme().typography.size_sm),
+        lt.icon(
+            dodai_showcase_model::catalog::category_icon(label),
+            16.0,
+            Some(ink)
+        ),
+        text(lt.label(label)).size(th.typography.size_sm),
         Space::new().width(Length::Fill),
         lt.muted_text(&count.to_string()),
+        chevron,
     ]
+    .spacing(th.spacing.sm)
     .align_y(alignment::Vertical::Center);
     container(lt.kit_button(
         Kit::Row { selected: on },
@@ -149,7 +170,7 @@ pub fn nav<'a>(app: &App) -> Element<'a, Msg> {
                         Kit::Row {
                             selected: active == Some(s.title),
                         },
-                        text(s.title.to_string()).size(lt.theme().typography.size_xs),
+                        text(lt.label(s.title)).size(lt.theme().typography.size_xs),
                         Msg::Act(Action::Section(s.title)),
                     ))
                     .padding(iced::Padding::ZERO.left(16.0))
@@ -175,7 +196,7 @@ pub fn sidebar<'a>(app: &App) -> Element<'a, Msg> {
         lt.heading_text("Dodai UI"),
         filter,
         nav(app),
-        lt.muted_text("t / T theme"),
+        lt.muted_text(dodai_showcase_model::catalog::KEYS_HINT),
     ]
     .spacing(sp.md)
     .padding(sp.lg)

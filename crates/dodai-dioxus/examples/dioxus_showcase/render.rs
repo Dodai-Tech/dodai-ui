@@ -341,32 +341,10 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
             }
         }
         Demo::Choice(ch) if ch.connected => {
-            // One bordered strip; the picked segment filled (with a check on tonal designs).
-            let at = vals.index(&ch.bind);
             let key = ch.bind.key.clone();
-            let tonal = theme.look().tonal;
-            let h = if tonal {
-                theme.sizes().segmented_height
-            } else {
-                theme.shape.control_height - 6.0
-            };
-            let gap = if tonal { 0.0 } else { theme.spacing.half() };
-            let upper = if theme.typography.uppercase_labels {
-                "text-transform:uppercase;"
-            } else {
-                ""
-            };
             rsx! {
-                KitBox { kit: dodai_core::Kit::Segmented, style: "display:inline-flex;align-self:flex-start;gap:{gap}px",
-                    for (i, l) in ch.labels.iter().enumerate() {
-                        KitBox { key: "{i}", kit: dodai_core::Kit::Segment { selected: i == at },
-                            style: "height:{h}px;display:flex;align-items:center;{upper}font-size:{theme.typography.size_md}px",
-                            onclick: { let key = key.clone(); move |_| act(model, Action::Set(key.clone(), Value::Index(i))) },
-                            if i == at && tonal { "\u{2713} " }
-                            "{l}"
-                        }
-                    }
-                }
+                Segmented { labels: ch.labels.clone(), selected: vals.index(&ch.bind),
+                    onselect: move |i| act(model, Action::Set(key.clone(), Value::Index(i))) }
             }
         }
         Demo::Choice(ch) => {

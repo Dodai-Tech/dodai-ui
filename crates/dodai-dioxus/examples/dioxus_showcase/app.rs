@@ -1,25 +1,11 @@
 //! The window around the sections: sidebar, control bar, scrolling page.
 
 use dioxus::prelude::*;
-use dodai_core::{ButtonVariant, ControlSize, Kit};
+use dodai_core::Kit;
 use dodai_dioxus::*;
 use dodai_showcase_model::{Action, Ctx, Showcase, CATEGORIES, SPEEDS};
 
 use crate::render::{self, Cx};
-
-/// A one-row picker of mutually exclusive choices.
-#[component]
-fn Segmented(labels: Vec<String>, selected: usize, onselect: EventHandler<usize>) -> Element {
-    rsx! {
-        div { class: "dodai-seg",
-            for (i, l) in labels.into_iter().enumerate() {
-                Button { key: "{i}", size: Some(ControlSize::Small),
-                    variant: if i == selected { ButtonVariant::Primary } else { ButtonVariant::Ghost },
-                    onclick: move |_| onselect.call(i), "{l}" }
-            }
-        }
-    }
-}
 
 /// A native dropdown over `items`.
 #[component]
@@ -74,12 +60,31 @@ fn TopBar(model: Signal<Showcase>) -> Element {
 }
 
 #[component]
-fn NavItem(label: String, count: usize, on: bool, onclick: EventHandler<()>) -> Element {
+fn NavItem(
+    label: String,
+    count: usize,
+    on: bool,
+    page: bool,
+    onclick: EventHandler<()>,
+) -> Element {
+    let icon = dodai_showcase_model::catalog::category_icon(&label);
+    // A page shows whether its sections are listed under it.
+    let chevron = if on {
+        dodai_icons::IconId::ChevronDown
+    } else {
+        dodai_icons::IconId::ChevronRight
+    };
     rsx! {
-        KitBox { kit: Kit::Row { selected: on }, style: "width:100%;justify-content:space-between;".to_string(),
+        KitBox { kit: Kit::Row { selected: on }, style: "width:100%;gap:8px;align-items:center;".to_string(),
             onclick: move |_| onclick.call(()),
-            span { class: "dodai-label", style: "color:inherit", "{label}" }
+            Icon { icon, size: 16 }
+            span { class: "dodai-label", style: "color:inherit;flex:1;text-align:start", "{label}" }
             span { class: "dodai-caption", "{count}" }
+            if page {
+                span { class: "dodai-caption", Icon { icon: chevron, size: 14 } }
+            } else {
+                span { style: "width:14px" }
+            }
         }
     }
 }
@@ -91,7 +96,7 @@ fn SubItem(label: String, on: bool, onclick: EventHandler<()>) -> Element {
         div { style: "padding-left:16px;width:100%",
             KitBox { kit: Kit::Row { selected: on }, style: "width:100%;".to_string(),
                 onclick: move |_| onclick.call(()),
-                span { class: "dodai-caption", style: "color:inherit", "{label}" }
+                span { class: "dodai-label", style: "color:inherit;font-size:var(--dodai-size-xs)", "{label}" }
             }
         }
     }
@@ -123,9 +128,9 @@ fn Sidebar(model: Signal<Showcase>) -> Element {
             TextInput { value: filter, placeholder: "Filter components…".to_string(),
                 oninput: move |s| set(Action::Filter(s)) }
             nav { class: "dodai-side__nav",
-                NavItem { label: "All".to_string(), count: counts[0], on: cat.is_none(), onclick: move |_| set(Action::Category(None)) }
+                NavItem { label: "All".to_string(), count: counts[0], on: cat.is_none(), page: false, onclick: move |_| set(Action::Category(None)) }
                 for (i, c) in CATEGORIES.iter().enumerate() {
-                    NavItem { key: "{c}", label: c.to_string(), count: counts[i + 1], on: cat == Some(i),
+                    NavItem { key: "{c}", label: c.to_string(), count: counts[i + 1], on: cat == Some(i), page: true,
                         onclick: move |_| set(Action::Category(Some(i))) }
                     if cat == Some(i) {
                         for t in titles.iter().copied() {
@@ -135,7 +140,7 @@ fn Sidebar(model: Signal<Showcase>) -> Element {
                     }
                 }
             }
-            span { class: "dodai-caption", "click a page" }
+            span { class: "dodai-caption", "{dodai_showcase_model::catalog::KEYS_HINT}" }
         }
     }
 }

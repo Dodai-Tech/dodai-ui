@@ -107,6 +107,40 @@ impl IcedTheme {
         self.frosted_round(self.shaped_box(inner, b), glass, self.radius(), inset)
     }
 
+    /// A segmented control: the options in one bordered strip ([`Kit::Segmented`]), the picked
+    /// one filled ([`Kit::Segment`]) with a check on tonal designs. `on_select` gets the index.
+    pub fn segmented<'a, Message: Clone + 'a>(
+        &self,
+        labels: &[String],
+        selected: usize,
+        on_select: impl Fn(usize) -> Message,
+    ) -> Element<'a, Message> {
+        let t = &self.theme;
+        let tonal = t.look().tonal;
+        let h = if tonal {
+            t.sizes().segmented_height
+        } else {
+            t.shape.control_height - 6.0
+        };
+        let segs = iced::widget::row(labels.iter().enumerate().map(|(i, l)| {
+            let on = i == selected;
+            let label = if on && tonal {
+                format!("\u{2713} {}", self.label(l))
+            } else {
+                self.label(l)
+            };
+            self.kit_button(
+                Kit::Segment { selected: on },
+                container(iced::widget::text(label).size(t.typography.size_md))
+                    .height(h)
+                    .align_y(iced::alignment::Vertical::Center),
+                on_select(i),
+            )
+        }))
+        .spacing(if tonal { 0.0 } else { t.spacing.half() });
+        self.kit_box(Kit::Segmented, segs)
+    }
+
     /// A clickable box of `kit`: idle and hovered styles from the tokens.
     pub fn kit_button<'a, Message: Clone + 'a>(
         &self,

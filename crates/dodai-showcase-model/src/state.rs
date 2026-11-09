@@ -462,7 +462,14 @@ impl Showcase {
                 self.active = None;
             }
             Action::Section(title) => {
-                if let Some(s) = catalog::sections().iter().find(|s| s.title == title) {
+                // A title may repeat on another page: the open page's own comes first.
+                let here = self.category.map(|c| CATEGORIES[c]);
+                let all = catalog::sections();
+                let found = all
+                    .iter()
+                    .find(|s| s.title == title && Some(s.category) == here)
+                    .or_else(|| all.iter().find(|s| s.title == title));
+                if let Some(s) = found {
                     if self.category.is_some() {
                         self.category = CATEGORIES.iter().position(|c| *c == s.category);
                     }
