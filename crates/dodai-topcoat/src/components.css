@@ -27,7 +27,7 @@ code,pre,.dodai-mono{font-family:var(--dodai-font-mono)}
 
 /* Double tick a cut-corner crop draws on the far end of a button */
 .dodai-tick{position:absolute;top:50%;width:var(--dodai-space-md);box-sizing:content-box;
-  height:var(--dodai-space-xs);transform:translateY(-50%);pointer-events:none;
+  height:var(--dodai-tick-gap);transform:translateY(-50%);pointer-events:none;
   border-top:var(--dodai-border-width) solid var(--b-fg);border-bottom:var(--dodai-border-width) solid var(--b-fg)}
 .dodai-tick--left{left:0}.dodai-tick--right{right:0}
 

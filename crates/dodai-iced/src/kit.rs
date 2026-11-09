@@ -328,7 +328,7 @@ impl IcedTheme {
                             edge: tick,
                             width: self.theme.spacing.md,
                             bar: sh.border_width.max(1.0),
-                            gap: self.theme.spacing.xs,
+                            gap: self.theme.tick_gap(),
                         });
                         b.padding_x += self.theme.spacing.md;
                     }

@@ -52,6 +52,38 @@ fn shape_gallery() -> Node {
     ])
 }
 
+/// The strip pinned above the Shape and Surface-effects pages (see `Showcase::pinned`).
+pub(crate) fn live_preview() -> Node {
+    let card = |title: &str, body: Option<&str>, variant| {
+        tile(
+            150.0,
+            vec![Node::Card {
+                title: title.into(),
+                body: Box::new(body.map_or(Node::Space(0.0), muted)),
+                variant,
+                surface: dodai_core::Surface::INHERIT,
+            }],
+        )
+    };
+    col(vec![
+        muted("Live preview: every shape and effect setting below is applied here at once."),
+        row(vec![
+            button("Primary", V::Primary).node(),
+            button("Secondary", V::Secondary).node(),
+            button("Outline", V::Outline).node(),
+            button("Danger", V::Danger).node(),
+            tag("online", Tone::Success, true),
+            tag("warn", Tone::Warning, false),
+        ]),
+        top_row(vec![
+            card("Card", None, CardVariant::Outlined),
+            card("Elevated", None, CardVariant::Elevated),
+            card("Panel", Some("body"), CardVariant::Filled),
+        ]),
+    ])
+    .gap(Gap::Sm)
+}
+
 fn gallery(c: &Ctx) -> Node {
     col(vec![
         muted("The design system's own corners, borders and shadows on real components, with the tokens behind them."),
@@ -334,6 +366,17 @@ fn crop(c: &Ctx) -> Node {
             &labels,
             c.values.index_of(ts::CROP, 0),
         ),
+        if ends.iter().filter_map(|e| t.button_crop(*e)).any(|l| l.has_tick()) {
+            pick(
+                "Tick gap",
+                "Space between the two tick bars, left open in the border.",
+                ts::GAP,
+                &ts::GAPS.map(|g| g.0),
+                c.values.index_of(ts::GAP, 0),
+            )
+        } else {
+            Node::Space(0.0)
+        },
         col(vec![
             muted("Preview"),
             row(vec![

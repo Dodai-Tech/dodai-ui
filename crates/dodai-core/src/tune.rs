@@ -287,6 +287,9 @@ pub struct ShapeTune {
     pub gradient: GradientMode,
     /// Which colour filled controls take (see [`ControlColour`]).
     pub control_colour: ControlColour,
+    /// Space in px between the two bars of a cropped button's tick; `None` keeps the theme's
+    /// `xs` spacing (see [`Theme::tick_gap`]).
+    pub cut_gap: Option<f32>,
 }
 
 impl ShapeTune {
@@ -303,6 +306,7 @@ impl ShapeTune {
         density: 1.0,
         gradient: GradientMode::Subtle,
         control_colour: ControlColour::Design,
+        cut_gap: None,
     };
 
     /// Corner multiplier for one role: the global roundness times its group's.
@@ -383,6 +387,11 @@ impl ShapeSystem {
 }
 
 impl Theme {
+    /// Space in px between the two bars of a cropped button's tick.
+    pub fn tick_gap(&self) -> f32 {
+        self.tune.cut_gap.unwrap_or(self.spacing.xs).max(0.0)
+    }
+
     /// This theme with `tune` applied. Chamfered designs keep their cuts; roundness only
     /// affects rounded corners.
     pub fn tuned(&self, tune: &ShapeTune) -> Theme {

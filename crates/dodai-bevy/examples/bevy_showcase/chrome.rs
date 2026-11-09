@@ -20,6 +20,10 @@ pub struct TopBar;
 #[derive(Component)]
 pub struct Page;
 
+/// The live-preview strip pinned above the Shape and Surface-effects pages.
+#[derive(Component)]
+pub struct Pinned;
+
 pub fn setup(mut commands: Commands, model: Res<Model>, theme: Res<DodaiTheme>) {
     let _ = &model;
     commands.spawn(Camera2d);
@@ -98,6 +102,14 @@ pub fn setup(mut commands: Commands, model: Res<Model>, theme: Res<DodaiTheme>) 
                     },
                     BorderColor::all(color(t.palette.border)),
                     SidebarBorder,
+                ));
+                m.spawn((
+                    Pinned,
+                    Node {
+                        flex_direction: FlexDirection::Column,
+                        flex_shrink: 0.0,
+                        ..default()
+                    },
                 ));
                 m.spawn((
                     Page,
@@ -403,12 +415,42 @@ pub fn spawn_page(
     }
 }
 
+/// The live preview of the Shape and Surface-effects pages, with a rule under it.
+fn spawn_pinned(
+    p: &mut ChildSpawnerCommands,
+    m: &Showcase,
+    theme: &dodai_core::Theme,
+    open: Option<&'static str>,
+) {
+    let Some(node) = m.pinned() else {
+        return;
+    };
+    let sp = &theme.spacing;
+    let cx = Cx {
+        theme,
+        model: m,
+        open,
+    };
+    p.spawn((
+        Node {
+            flex_direction: FlexDirection::Column,
+            padding: UiRect::axes(Val::Px(sp.lg), Val::Px(sp.md)),
+            border: UiRect::bottom(Val::Px(1.0)),
+            ..default()
+        },
+        BorderColor::all(color(theme.palette.border)),
+        SidebarBorder,
+    ))
+    .with_children(|c| render::spawn(c, &node, &cx));
+}
+
 /// The three regions that are rebuilt from the model, and the borders that follow the theme.
 #[derive(bevy::ecs::system::SystemParam)]
 pub struct Regions<'w, 's> {
     nav: Query<'w, 's, Entity, With<NavList>>,
     top: Query<'w, 's, Entity, With<TopBar>>,
     page: Query<'w, 's, Entity, With<Page>>,
+    pinned: Query<'w, 's, Entity, With<Pinned>>,
     borders: Query<'w, 's, &'static mut BorderColor, With<SidebarBorder>>,
 }
 
@@ -456,6 +498,12 @@ pub fn rebuild(
                 .entity(e)
                 .despawn_related::<Children>()
                 .with_children(|p| spawn_page(p, m, &t, open.0));
+        }
+        for e in &regions.pinned {
+            commands
+                .entity(e)
+                .despawn_related::<Children>()
+                .with_children(|p| spawn_pinned(p, m, &t, open.0));
         }
     }
     *dirty = Dirty::default();

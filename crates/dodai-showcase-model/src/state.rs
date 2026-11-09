@@ -264,6 +264,16 @@ impl Showcase {
         self.revision
     }
 
+    /// The strip pinned above the page, between the top bar and the sections: real components
+    /// that restyle the moment a Shape or Surface-effects control changes.
+    pub fn pinned(&self) -> Option<crate::node::Node> {
+        matches!(
+            self.category().map(|c| CATEGORIES[c]),
+            Some("Shape" | "Surface effects")
+        )
+        .then(crate::sections::shape::live_preview)
+    }
+
     /// The app-wide surface mix (texture and effects) the Surface effects page set.
     pub fn surface_fx(&self) -> dodai_core::SurfaceFx {
         crate::surface_state::mix(&self.values, &self.theme())
