@@ -42,6 +42,8 @@ pub struct App {
 pub enum Msg {
     Act(Action),
     Set(String, Value),
+    /// Several values at once (the two thumbs of a range).
+    SetAll(Vec<(String, Value)>),
     TreeToggle(String),
     Tick(Instant),
     /// The page scrolled: find which section is at the top.
@@ -133,6 +135,11 @@ pub fn update(app: &mut App, msg: Msg) -> Task<Msg> {
         }
         Msg::Measured(hits, jump) => task = placed(app, &hits, jump),
         Msg::Set(k, v) => app.model.update(Action::Set(k, v)),
+        Msg::SetAll(kv) => {
+            for (k, v) in kv {
+                app.model.update(Action::Set(k, v));
+            }
+        }
         Msg::TreeToggle(k) => toggle(&mut app.tree_toggled, k),
         Msg::Tick(now) => {
             app.t = now.duration_since(app.t0).as_secs_f32();

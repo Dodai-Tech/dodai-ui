@@ -115,6 +115,20 @@ pub fn handle(
                     dirty.settle = crate::SETTLE_FRAMES;
                 }
             }
+            (
+                Bound::Range {
+                    lo,
+                    hi,
+                    step,
+                    span: (min, max),
+                },
+                ControlKind::Ranged(a, b),
+            ) => {
+                let snap = |v| crate::render::snap(v, *min, *max, *step);
+                model.0.update(Action::Set(lo.clone(), Value::Num(snap(a))));
+                model.0.update(Action::Set(hi.clone(), Value::Num(snap(b))));
+                dirty.settle = crate::SETTLE_FRAMES;
+            }
             (Bound::Text(k), ControlKind::TextChanged) => {
                 if let Ok(i) = inputs.get(e.entity) {
                     model

@@ -248,6 +248,9 @@ pub struct CheckProps {
     pub disabled: bool,
     #[props(default)]
     pub label: String,
+    /// A checkbox drawn half-way (a partly picked group).
+    #[props(default)]
+    pub mixed: bool,
     #[props(default)]
     pub onchange: EventHandler<bool>,
 }
@@ -269,7 +272,7 @@ pub fn Toggle(props: CheckProps) -> Element {
 #[component]
 pub fn Checkbox(props: CheckProps) -> Element {
     rsx! {
-        label { class: "dodai-check",
+        label { class: if props.mixed { "dodai-check dodai-check--mixed" } else { "dodai-check" },
             input { r#type: "checkbox", checked: props.checked, disabled: props.disabled,
                 onchange: move |e| props.onchange.call(e.checked()) }
             span { class: "dodai-check__box" }
@@ -370,6 +373,66 @@ pub fn Slider(props: SliderProps) -> Element {
         input { class, r#type: "range", min: "{props.min}", max: "{props.max}", step: "{props.step}",
             value: "{props.value}", disabled: props.disabled, style,
             oninput: move |e| if let Ok(v) = e.value().parse::<f32>() { props.onchange.call(v) } }
+    }
+}
+
+/// Range slider properties.
+#[derive(Props, Clone, PartialEq)]
+pub struct RangeSliderProps {
+    /// One thumb.
+    pub lo: f32,
+    /// The other thumb.
+    pub hi: f32,
+    #[props(default = 0.0)]
+    pub min: f32,
+    #[props(default = 1.0)]
+    pub max: f32,
+    #[props(default = 0.01)]
+    pub step: f32,
+    /// Runs bottom to top, `length` px tall.
+    #[props(default)]
+    pub vertical: bool,
+    /// Height in px of a vertical range slider.
+    #[props(default = 120)]
+    pub length: u32,
+    /// The new `(low, high)`, always in order.
+    #[props(default)]
+    pub onchange: EventHandler<(f32, f32)>,
+}
+
+/// Two thumbs on one track picking a span; they never cross.
+#[component]
+pub fn RangeSlider(props: RangeSliderProps) -> Element {
+    let (lo, hi) = (props.lo.min(props.hi), props.hi.max(props.lo));
+    let span = (props.max - props.min).max(f32::EPSILON);
+    let pct = |v: f32| ((v - props.min) / span).clamp(0.0, 1.0) * 100.0;
+    let (class, style) = if props.vertical {
+        (
+            "dodai-range dodai-range--v",
+            format!(
+                "--a:{}%;--b:{}%;height:{}px",
+                pct(lo),
+                pct(hi),
+                props.length
+            ),
+        )
+    } else {
+        ("dodai-range", format!("--a:{}%;--b:{}%", pct(lo), pct(hi)))
+    };
+    let thumb = if props.vertical {
+        "dodai-slider dodai-slider--v"
+    } else {
+        "dodai-slider"
+    };
+    rsx! {
+        div { class, style,
+            input { class: thumb, r#type: "range", min: "{props.min}", max: "{props.max}", step: "{props.step}",
+                value: "{lo}", aria_label: "From",
+                oninput: move |e| if let Ok(v) = e.value().parse::<f32>() { props.onchange.call((v.min(hi), hi)) } }
+            input { class: thumb, r#type: "range", min: "{props.min}", max: "{props.max}", step: "{props.step}",
+                value: "{hi}", aria_label: "To",
+                oninput: move |e| if let Ok(v) = e.value().parse::<f32>() { props.onchange.call((lo, v.max(lo))) } }
+        }
     }
 }
 

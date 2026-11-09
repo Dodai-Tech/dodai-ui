@@ -140,6 +140,7 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
                 (Axis::Row, false) => row(items).spacing(g).align_y(across).width(w).into(),
                 (Axis::Column, _) if s.centre => column(items)
                     .spacing(g)
+                    .width(w)
                     .align_x(alignment::Horizontal::Center)
                     .into(),
                 (Axis::Column, _) => column(items)
@@ -412,9 +413,19 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
                     w.into()
                 }
                 dodai_core::ToggleKind::Checkbox => {
-                    let mut w = checkbox(vals.flag(&t.bind))
+                    let mut w = checkbox(vals.flag(&t.bind) || t.mixed)
                         .label(t.label.clone())
                         .style(lt.checkbox());
+                    if t.mixed {
+                        // Half-way: the box drawn on with a dash instead of the check.
+                        w = w.icon(iced::widget::checkbox::Icon {
+                            font: iced::Font::DEFAULT,
+                            code_point: '\u{2212}',
+                            size: None,
+                            line_height: iced::widget::text::LineHeight::default(),
+                            shaping: iced::widget::text::Shaping::Advanced,
+                        });
+                    }
                     if !t.disabled {
                         w = w.on_toggle(move |b| Msg::Set(key.clone(), Value::Bool(b)));
                     }
@@ -488,11 +499,15 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             let v = vals.num(&s.bind);
             let key = s.bind.key.clone();
             let (min, max, step) = (s.min, s.max, s.step);
+            let disabled = s.disabled;
             let mut sl = vertical_slider(min..=max, v, move |x| {
+                if disabled {
+                    return Msg::Noop;
+                }
                 Msg::Set(key.clone(), Value::Num(snap(x, min, max, step)))
             })
-            .height(120)
-            .style(lt.slider());
+            .height(s.length.unwrap_or(120.0))
+            .style(lt.slider_with(s.disabled));
             if let Some(st) = s.step {
                 sl = sl.step(st);
             }
@@ -502,27 +517,65 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             let v = vals.num(&s.bind);
             let key = s.bind.key.clone();
             let (min, max, step) = (s.min, s.max, s.step);
+            let disabled = s.disabled;
             let mut sl = slider(min..=max, v, move |x| {
+                if disabled {
+                    return Msg::Noop;
+                }
                 Msg::Set(key.clone(), Value::Num(snap(x, min, max, step)))
             })
-            .style(lt.slider());
+            .style(lt.slider_with(s.disabled));
             if let Some(st) = s.step {
                 sl = sl.step(st);
             }
-            let mut r = row![container(sl).width(Length::Fixed(320.0))]
+            let value_text = match s.format {
+                dodai_showcase_model::node::SliderFormat::Plain => num_text(v, s.step),
+                f => f.text(v),
+            };
+            let mut r = row![container(sl).width(Length::Fill)]
                 .spacing(sp.md)
                 .align_y(alignment::Vertical::Center);
             if s.readout {
-                r = r.push(txt(cx, &num_text(v, s.step), Role::Mono));
+                r = r.push(txt(cx, &value_text, Role::Mono));
             }
-            r.into()
+            match s.bubble {
+                Some(above) => {
+                    let bubble = txt(cx, &value_text, Role::Mono);
+                    let c = if above {
+                        column![bubble, r]
+                    } else {
+                        column![r, bubble]
+                    };
+                    c.spacing(sp.xs).into()
+                }
+                None => r.into(),
+            }
+        }
+        Demo::Range(r) => {
+            let (lo_key, hi_key) = (r.lo.key.clone(), r.hi.key.clone());
+            lt.range_slider(
+                (vals.num(&r.lo), vals.num(&r.hi)),
+                dodai_iced::RangeSpec {
+                    min: r.min,
+                    max: r.max,
+                    step: r.step,
+                    ticks: r.ticks,
+                    vertical: r.vertical,
+                },
+                move |a, b| {
+                    Msg::SetAll(vec![
+                        (lo_key.clone(), Value::Num(a)),
+                        (hi_key.clone(), Value::Num(b)),
+                    ])
+                },
+            )
         }
         Demo::Progress { value, tone } => container(
             progress_bar(0.0..=1.0, *value)
                 .style(lt.progress(*tone))
                 .girth(10),
         )
-        .width(Length::Fixed(420.0))
+        .width(Length::Fill)
         .into(),
         Demo::Input(i) => {
             let key = i.bind.key.clone();
@@ -541,7 +594,7 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
                     .into(),
                 None => inp.into(),
             };
-            let mut col = column![].spacing(sp.xs).width(Length::Fixed(420.0));
+            let mut col = column![].spacing(sp.xs).width(Length::Fill);
             if let Some(l) = &i.label {
                 col = col.push(txt(cx, l, Role::Label));
             }

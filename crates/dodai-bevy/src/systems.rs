@@ -187,6 +187,19 @@ pub(crate) fn slider_input(
         }
         if let Some(n) = rel.normalized {
             let v = s.value_at(n);
+            if let Some(lo) = s.lo {
+                let thumb = dodai_core::slider_math::nearest_thumb(lo, s.value, v);
+                let (a, b) = dodai_core::slider_math::range_update(thumb, v, lo, s.value);
+                if (a - lo).abs() > f32::EPSILON || (b - s.value).abs() > f32::EPSILON {
+                    s.lo = Some(a);
+                    s.value = b;
+                    out.write(ControlEvent {
+                        entity,
+                        kind: ControlKind::Ranged(a, b),
+                    });
+                }
+                continue;
+            }
             if (v - s.value).abs() > f32::EPSILON {
                 s.value = v;
                 out.write(ControlEvent {
@@ -574,10 +587,7 @@ pub(crate) fn style_sliders(
     theme: Res<DodaiTheme>,
     mut q: Query<(&UiSlider, &mut Surface, &mut Node), (Without<SliderFill>, Without<SliderThumb>)>,
     mut fills: Query<(&ChildOf, &mut Node, &mut Surface), (With<SliderFill>, Without<SliderThumb>)>,
-    mut thumbs: Query<
-        (&ChildOf, &mut Node, &mut Surface),
-        (With<SliderThumb>, Without<SliderFill>),
-    >,
+    mut thumbs: Query<(&ChildOf, &SliderThumb, &mut Node, &mut Surface), Without<SliderFill>>,
     owners: Query<&UiSlider, (Without<SliderFill>, Without<SliderThumb>)>,
 ) {
     let p = &theme.palette;
@@ -603,10 +613,14 @@ pub(crate) fn style_sliders(
         let Ok(sl) = owners.get(c.parent()) else {
             continue;
         };
+        // A range fills from its low thumb: the gap before it is a margin.
+        let (from, len) = (sl.lo_fraction(), sl.fraction() - sl.lo_fraction());
         if sl.vertical {
-            upd(&mut n.height, Val::Percent(sl.fraction() * 100.0));
+            upd(&mut n.height, Val::Percent(len * 100.0));
+            upd(&mut n.margin.bottom, Val::Percent(from * 100.0));
         } else {
-            upd(&mut n.width, Val::Percent(sl.fraction() * 100.0));
+            upd(&mut n.width, Val::Percent(len * 100.0));
+            upd(&mut n.margin.left, Val::Percent(from * 100.0));
         }
         upd(
             &mut *s,
@@ -618,21 +632,26 @@ pub(crate) fn style_sliders(
             },
         );
     }
-    for (c, mut n, mut s) in &mut thumbs {
+    for (c, which, mut n, mut s) in &mut thumbs {
         let Ok(sl) = owners.get(c.parent()) else {
             continue;
+        };
+        let f = if which.0 {
+            sl.lo_fraction()
+        } else {
+            sl.fraction()
         };
         let long = theme.shape.control_height * 0.5;
         if sl.vertical {
             upd(&mut n.width, Val::Px(long));
             upd(&mut n.height, Val::Px(thumb_w));
-            upd(&mut n.bottom, Val::Percent(sl.fraction() * 100.0));
+            upd(&mut n.bottom, Val::Percent(f * 100.0));
             upd(&mut n.margin.bottom, Val::Px(-thumb_w / 2.0));
             upd(&mut n.left, Val::Px(track_h / 2.0 - long / 2.0));
         } else {
             upd(&mut n.width, Val::Px(thumb_w));
             upd(&mut n.height, Val::Px(long));
-            upd(&mut n.left, Val::Percent(sl.fraction() * 100.0));
+            upd(&mut n.left, Val::Percent(f * 100.0));
             upd(&mut n.margin.left, Val::Px(-thumb_w / 2.0));
         }
         upd(

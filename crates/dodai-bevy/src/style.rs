@@ -42,6 +42,12 @@ pub fn text_style(theme: &Theme, role: TextRole) -> TextStyle {
                 Ink::Primary => p.primary,
                 Ink::Link => p.link,
                 Ink::Title => theme.panel(false).title,
+                Ink::Tone(t) => match t {
+                    dodai_core::Tone::Info => p.info,
+                    dodai_core::Tone::Success => p.success,
+                    dodai_core::Tone::Warning => p.warning,
+                    dodai_core::Tone::Danger => p.danger,
+                },
             };
             (size, Some(c), upper && up)
         }

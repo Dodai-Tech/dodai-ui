@@ -529,6 +529,8 @@ impl Showcase {
                 let theme = self.theme();
                 crate::surface_state::set_mode(&mut self.values, &theme, i);
             }
+            Action::Set(key, Value::Bool(on))
+                if crate::commands::toggle(&mut self.values, &key, on) => {}
             Action::Set(key, v) => {
                 let theme_wide = key == GLOW_KEY;
                 self.values.set(key, v);
@@ -540,6 +542,7 @@ impl Showcase {
             Action::Press(key) if key.starts_with(TARGETS) => {
                 crate::surface_state::set_targets(&mut self.values, &key[TARGETS.len()..]);
             }
+            Action::Press(key) if crate::commands::press(&mut self.values, &key) => {}
             Action::Press(key) => {
                 let n = self.values.index_of(&key, 0);
                 self.values.set(key, Value::Index(n + 1));

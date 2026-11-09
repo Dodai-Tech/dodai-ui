@@ -59,6 +59,7 @@ mod kit;
 mod knob;
 mod list;
 mod panel;
+mod range_slider;
 mod scanlines;
 mod shaped_button;
 mod surface_fx;
@@ -74,6 +75,7 @@ pub use frame::{shaped_frame, BoxStyle, ShapedFrame};
 pub use geometry::ShapeGeom;
 pub use kit::segment;
 pub use knob::{wheel_value, KnobDrag, KnobRange};
+pub use range_slider::{RangeDrag, RangeSpec};
 pub use shaped_button::{ButtonState, ShapedButton, ShapedColors, Tick};
 pub use surface_fx::SurfaceFxProgram;
 

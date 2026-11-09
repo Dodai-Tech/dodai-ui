@@ -192,6 +192,8 @@ pub enum Ink {
     Link,
     /// The panel title colour.
     Title,
+    /// A status colour (`palette.success` …).
+    Tone(Tone),
 }
 
 impl Ink {
@@ -205,6 +207,12 @@ impl Ink {
             Ink::Primary => p.primary,
             Ink::Link => p.link,
             Ink::Title => theme.panel(false).title,
+            Ink::Tone(t) => match t {
+                Tone::Info => p.info,
+                Tone::Success => p.success,
+                Tone::Warning => p.warning,
+                Tone::Danger => p.danger,
+            },
         }
     }
 }
@@ -355,6 +363,10 @@ pub struct Toggle {
     pub disabled: bool,
     /// Radios of one group share this key; picking one sets it to `index`.
     pub radio: Option<(String, usize)>,
+    /// A switch with a check / cross on its thumb.
+    pub icons: bool,
+    /// A checkbox drawn half-way (a "select all" over a partly picked group).
+    pub mixed: bool,
 }
 
 /// A value slider.
@@ -372,6 +384,66 @@ pub struct Slider {
     pub readout: bool,
     /// Runs bottom to top instead of left to right.
     pub vertical: bool,
+    /// Ignores input.
+    pub disabled: bool,
+    /// Marks at every step.
+    pub ticks: bool,
+    /// How the readout writes the value.
+    pub format: SliderFormat,
+    /// Fills from the middle of the track (a balance).
+    pub centered: bool,
+    /// The value in a bubble over (`Some(true)`) or under the thumb instead of beside the track.
+    pub bubble: Option<bool>,
+    /// Icon inside the track's start.
+    pub icon: Option<IconId>,
+    /// Track length px (vertical sliders).
+    pub length: Option<f32>,
+}
+
+/// A two-thumb slider: the span between `lo` and `hi` (whichever is higher is the end).
+#[derive(Debug, Clone, PartialEq)]
+pub struct RangeSlider {
+    /// One thumb (`{key}-lo`).
+    pub lo: Bind<f32>,
+    /// The other thumb (`{key}-hi`).
+    pub hi: Bind<f32>,
+    /// Lowest value.
+    pub min: f32,
+    /// Highest value.
+    pub max: f32,
+    /// Snap to multiples of this when set.
+    pub step: Option<f32>,
+    /// Marks at every step.
+    pub ticks: bool,
+    /// Runs bottom to top, this many px long.
+    pub vertical: Option<f32>,
+}
+
+/// How a slider's readout writes its value.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum SliderFormat {
+    /// Two decimals below 10, else none.
+    #[default]
+    Plain,
+    /// `72%`.
+    Percent,
+    /// `-6 dB` with its sign.
+    Decibel,
+    /// `balance +20` around the middle of a 0..1 track.
+    Balance,
+}
+
+impl SliderFormat {
+    /// `v` written out.
+    pub fn text(self, v: f32) -> String {
+        match self {
+            Self::Plain if v.abs() < 10.0 && v.fract() != 0.0 => format!("{v:.2}"),
+            Self::Plain => format!("{v:.0}"),
+            Self::Percent => format!("{v:.0}%"),
+            Self::Decibel => format!("{v:+.0} dB"),
+            Self::Balance => format!("balance {:+.0}", (v - 0.5) * 200.0),
+        }
+    }
 }
 
 /// A text field.
@@ -389,6 +461,8 @@ pub struct Input {
     pub lines: u8,
     /// Icon at the start.
     pub icon: Option<IconId>,
+    /// The filled (tonal) field instead of the outlined one.
+    pub filled: bool,
 }
 
 /// A filter / assist / input chip.
@@ -616,6 +690,8 @@ pub enum Node {
     Toggle(Toggle),
     /// A slider.
     Slider(Slider),
+    /// Two thumbs on one track picking a span.
+    Range(RangeSlider),
     /// A rotary knob over `min..=max`.
     Knob {
         /// The value.
@@ -1043,6 +1119,8 @@ pub mod b {
             label: label.into(),
             disabled: false,
             radio: None,
+            icons: false,
+            mixed: false,
         }
     }
 
@@ -1055,6 +1133,16 @@ pub mod b {
         /// Member `index` of the radio group `group`.
         pub fn in_group(mut self, group: &str, index: usize) -> Self {
             self.radio = Some((group.to_string(), index));
+            self
+        }
+        /// A check / cross on the switch's thumb.
+        pub fn icons(mut self) -> Self {
+            self.icons = true;
+            self
+        }
+        /// Drawn half-way when `on` (a partly picked group).
+        pub fn mixed(mut self, on: bool) -> Self {
+            self.mixed = on;
             self
         }
         /// As a node.
@@ -1072,6 +1160,48 @@ pub mod b {
             step: None,
             readout: true,
             vertical: false,
+            disabled: false,
+            ticks: false,
+            format: SliderFormat::Plain,
+            centered: false,
+            bubble: None,
+            icon: None,
+            length: None,
+        }
+    }
+
+    /// A two-thumb slider over `min..=max`, thumbs stored under `{key}-lo` and `{key}-hi`.
+    pub fn range(key: &str, (lo, hi): (f32, f32), min: f32, max: f32) -> RangeSlider {
+        RangeSlider {
+            lo: Bind::new(format!("{key}-lo"), lo),
+            hi: Bind::new(format!("{key}-hi"), hi),
+            min,
+            max,
+            step: None,
+            ticks: false,
+            vertical: None,
+        }
+    }
+
+    impl RangeSlider {
+        /// Snap to multiples of `step`.
+        pub fn step(mut self, step: f32) -> Self {
+            self.step = Some(step);
+            self
+        }
+        /// Marks at every step.
+        pub fn ticks(mut self) -> Self {
+            self.ticks = true;
+            self
+        }
+        /// Run bottom to top, `length` px long.
+        pub fn vertical(mut self, length: f32) -> Self {
+            self.vertical = Some(length);
+            self
+        }
+        /// As a node.
+        pub fn node(self) -> Node {
+            Node::Range(self)
         }
     }
 
@@ -1105,6 +1235,42 @@ pub mod b {
             self.readout = on;
             self
         }
+        /// Ignore input.
+        pub fn disabled(mut self) -> Self {
+            self.disabled = true;
+            self
+        }
+        /// Marks at every step.
+        pub fn ticks(mut self) -> Self {
+            self.ticks = true;
+            self
+        }
+        /// How the readout writes the value.
+        pub fn format(mut self, f: SliderFormat) -> Self {
+            self.format = f;
+            self
+        }
+        /// Fill from the middle.
+        pub fn centered(mut self) -> Self {
+            self.centered = true;
+            self
+        }
+        /// The value in a bubble over (`above`) or under the thumb.
+        pub fn bubble(mut self, above: bool) -> Self {
+            self.bubble = Some(above);
+            self.readout = false;
+            self
+        }
+        /// An icon inside the track's start.
+        pub fn icon(mut self, icon: IconId) -> Self {
+            self.icon = Some(icon);
+            self
+        }
+        /// Track length px.
+        pub fn length(mut self, px: f32) -> Self {
+            self.length = Some(px);
+            self
+        }
         /// Run bottom to top.
         pub fn vertical(mut self) -> Self {
             self.vertical = true;
@@ -1125,10 +1291,16 @@ pub mod b {
             password: false,
             lines: 1,
             icon: None,
+            filled: false,
         }
     }
 
     impl Input {
+        /// The filled (tonal) field.
+        pub fn filled(mut self) -> Self {
+            self.filled = true;
+            self
+        }
         /// Caption.
         pub fn label(mut self, label: impl Into<String>) -> Self {
             self.label = Some(label.into());
