@@ -26,6 +26,11 @@ pub enum Value {
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Values(pub(crate) HashMap<String, Value>);
 
+/// Value key: the sidebar folded to an icon rail.
+pub const RAIL: &str = "ui:rail";
+/// Value key: the open page's section list folded in the sidebar.
+pub const FOLDED: &str = "ui:folded";
+
 impl Values {
     /// The bool under `bind`, or its default.
     pub fn flag(&self, bind: &Bind<bool>) -> bool {
@@ -194,7 +199,8 @@ impl Showcase {
     }
 
     /// The showcase configured from the environment: `DODAI_THEME` (a theme id), `DODAI_CAT`
-    /// (`0` = all, `1..` = a category) and `DODAI_FILTER` (the sidebar filter). What a
+    /// (`0` = all, `1..` = a category), `DODAI_FILTER` (the sidebar filter) and `DODAI_RAIL`
+    /// (the sidebar folded). What a
     /// screenshot script sets so every toolkit opens on the same page.
     pub fn from_env() -> Self {
         let var = |k: &str| std::env::var(k).ok();
@@ -205,6 +211,15 @@ impl Showcase {
                 var("DODAI_FILTER").as_deref(),
             )
             .with_surface_spec(&var("DODAI_SFX").unwrap_or_default())
+            .with_rail(var("DODAI_RAIL").is_some())
+    }
+
+    /// Test aid (`DODAI_RAIL=1`): open with the sidebar folded to its rail.
+    pub fn with_rail(mut self, rail: bool) -> Self {
+        if rail {
+            self.values.set(RAIL, Value::Bool(true));
+        }
+        self
     }
 
     /// Test aid: applies a `DODAI_SFX` spec to the surface mix (see
@@ -262,6 +277,22 @@ impl Showcase {
     /// Counts up whenever the theme changes; toolkits rebuild their theme when it moves.
     pub fn revision(&self) -> u64 {
         self.revision
+    }
+
+    /// Whether the sidebar is folded to its icon rail.
+    pub fn rail(&self) -> bool {
+        self.values.flag(&crate::Bind::new(RAIL, false))
+    }
+
+    /// The press key that folds or unfolds the sidebar rail.
+    pub fn rail_toggle() -> String {
+        crate::commands::flip(RAIL, false)
+    }
+
+    /// Whether the sidebar lists the sections of page `c` under it (the open page, unless it was
+    /// folded by picking it again).
+    pub fn lists(&self, c: usize) -> bool {
+        self.category == Some(c) && !self.values.flag(&crate::Bind::new(FOLDED, false))
     }
 
     /// The landing content above the sections of "All" (no page picked, no search), naming the
@@ -478,7 +509,15 @@ impl Showcase {
     pub fn update(&mut self, action: Action) {
         match action {
             Action::Category(c) => {
-                self.category = c.filter(|&c| c < CATEGORIES.len());
+                let c = c.filter(|&c| c < CATEGORIES.len());
+                // Picking the open page again folds its section list in the sidebar (or opens it).
+                if c.is_some() && c == self.category {
+                    let now = self.values.flag(&crate::Bind::new(FOLDED, false));
+                    self.values.set(FOLDED, Value::Bool(!now));
+                } else {
+                    self.values.0.remove(FOLDED);
+                }
+                self.category = c;
                 self.active = None;
             }
             Action::Section(title) => {

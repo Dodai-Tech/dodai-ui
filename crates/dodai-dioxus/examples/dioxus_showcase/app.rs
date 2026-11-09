@@ -1,7 +1,7 @@
 //! The window around the sections: sidebar, control bar, scrolling page.
 
 use dioxus::prelude::*;
-use dodai_core::Kit;
+use dodai_core::{ButtonVariant, ControlSize, Kit};
 use dodai_dioxus::*;
 use dodai_showcase_model::{Action, Ctx, Showcase, CATEGORIES, SPEEDS};
 
@@ -65,11 +65,12 @@ fn NavItem(
     count: usize,
     on: bool,
     page: bool,
+    listed: bool,
     onclick: EventHandler<()>,
 ) -> Element {
     let icon = dodai_showcase_model::catalog::category_icon(&label);
     // A page shows whether its sections are listed under it.
-    let chevron = if on {
+    let chevron = if listed {
         dodai_icons::IconId::ChevronDown
     } else {
         dodai_icons::IconId::ChevronRight
@@ -121,18 +122,43 @@ fn Sidebar(model: Signal<Showcase>) -> Element {
         .chain((0..CATEGORIES.len()).map(|c| m.count(Some(c))))
         .collect();
     let filter = m.filter().to_string();
+    let rail = m.rail();
+    let listed: Vec<bool> = (0..CATEGORIES.len()).map(|i| m.lists(i)).collect();
     drop(m);
+    let fold = rsx! {
+        Button { variant: ButtonVariant::Ghost, size: Some(ControlSize::Small),
+            onclick: move |_| set(Action::Press(Showcase::rail_toggle())),
+            if rail { "»" } else { "«" }
+        }
+    };
+    if rail {
+        return rsx! {
+            aside { class: "dodai-side", style: "width:72px;min-width:72px;padding:var(--dodai-space-xs);align-items:center",
+                {fold}
+                for (i, name) in std::iter::once("All").chain(CATEGORIES.iter().copied()).enumerate() {
+                    KitBox { key: "{name}", kit: Kit::Row { selected: if i == 0 { cat.is_none() } else { cat == Some(i - 1) } },
+                        style: "width:100%;justify-content:center".to_string(),
+                        onclick: move |_| set(Action::Category(i.checked_sub(1))),
+                        Icon { icon: dodai_showcase_model::catalog::category_icon(name), size: 20 }
+                    }
+                }
+            }
+        };
+    }
     rsx! {
         aside { class: "dodai-side",
-            Heading { level: 2, "Dodai UI" }
+            div { style: "display:flex;align-items:center;justify-content:space-between",
+                Heading { level: 2, "Dodai UI" }
+                {fold}
+            }
             TextInput { value: filter, placeholder: "Filter components…".to_string(),
                 oninput: move |s| set(Action::Filter(s)) }
             nav { class: "dodai-side__nav",
-                NavItem { label: "All".to_string(), count: counts[0], on: cat.is_none(), page: false, onclick: move |_| set(Action::Category(None)) }
+                NavItem { label: "All".to_string(), count: counts[0], on: cat.is_none(), page: false, listed: false, onclick: move |_| set(Action::Category(None)) }
                 for (i, c) in CATEGORIES.iter().enumerate() {
-                    NavItem { key: "{c}", label: c.to_string(), count: counts[i + 1], on: cat == Some(i), page: true,
+                    NavItem { key: "{c}", label: c.to_string(), count: counts[i + 1], on: cat == Some(i), page: true, listed: listed[i],
                         onclick: move |_| set(Action::Category(Some(i))) }
-                    if cat == Some(i) {
+                    if listed[i] {
                         for t in titles.iter().copied() {
                             SubItem { key: "{t}", label: t.to_string(), on: active == Some(t),
                                 onclick: move |_| { set(Action::Section(t)); scroll_to(t) } }
