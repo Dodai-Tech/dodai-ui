@@ -1,6 +1,9 @@
 //! [`RangeSlider`]: two-thumb slider selecting `lo..=hi`.
 
-use crate::controls::{clamp01, slider_fraction, slider_value, tick_fractions, Orientation};
+use crate::controls::{
+    clamp01, nearest_thumb, range_update, slider_fraction, slider_value, tick_fractions,
+    Orientation,
+};
 use crate::hsla;
 use crate::paint::{round_shape, shaped, ShapeStyle};
 use crate::theme_of;
@@ -10,26 +13,6 @@ use gpui::{
     MouseButton, ParentElement, Pixels, Styled, Window,
 };
 use std::rc::Rc;
-
-/// Which thumb (`0` = low, `1` = high) is closest to `v`; ties go to the
-/// side that can still move toward `v`.
-pub fn nearest_thumb(lo: f32, hi: f32, v: f32) -> usize {
-    let (dl, dh) = ((v - lo).abs(), (v - hi).abs());
-    if dl < dh || (dl == dh && v < lo) {
-        0
-    } else {
-        1
-    }
-}
-
-/// Move `thumb` to `v`, keeping `lo <= hi`.
-pub fn range_update(thumb: usize, v: f32, lo: f32, hi: f32) -> (f32, f32) {
-    if thumb == 0 {
-        (v.min(hi), hi)
-    } else {
-        (lo, v.max(lo))
-    }
-}
 
 #[derive(Default)]
 struct RangeState {
