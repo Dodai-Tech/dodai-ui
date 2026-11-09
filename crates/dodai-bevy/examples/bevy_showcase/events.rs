@@ -6,7 +6,7 @@ use bevy::window::PrimaryWindow;
 use dodai_bevy::prelude::*;
 use dodai_showcase_model::{Action, Value};
 
-use crate::chrome::{MenuList, SIDEBAR_W};
+use crate::chrome::{MenuList, RAIL_W, SIDEBAR_W};
 use crate::render::{num_text, snap, Bound, Readout, TreeChevron, TreeRow};
 use crate::{Dirty, Model, OpenMenu};
 use bevy::ui::RelativeCursorPosition;
@@ -300,12 +300,12 @@ pub fn readouts(model: Res<Model>, mut q: Query<(&Readout, &mut UiText)>) {
 
 /// The region the wheel moves: an open menu, then a scroll area under the cursor, then the
 /// sidebar or the page by the cursor's x.
-pub fn scroll_target(menu_over: bool, area_over: bool, x: f32) -> Scroller {
+pub fn scroll_target(menu_over: bool, area_over: bool, x: f32, side_w: f32) -> Scroller {
     if menu_over {
         Scroller::Menu
     } else if area_over {
         Scroller::Area
-    } else if x < SIDEBAR_W {
+    } else if x < side_w {
         Scroller::Sidebar
     } else {
         Scroller::Page
@@ -323,8 +323,10 @@ pub fn scroll(
         Option<&RelativeCursorPosition>,
     )>,
     menus: Query<&RelativeCursorPosition, With<MenuList>>,
+    model: Res<Model>,
     mut first: Local<bool>,
 ) {
+    let side_w = if model.0.rail() { RAIL_W } else { SIDEBAR_W };
     let x = windows
         .single()
         .ok()
@@ -337,6 +339,7 @@ pub fn scroll(
         menus.iter().any(RelativeCursorPosition::cursor_over),
         over_area,
         x,
+        side_w,
     );
     let dy = match wheel.unit {
         MouseScrollUnit::Line => wheel.delta.y * 40.0,
@@ -402,13 +405,16 @@ mod tests {
     fn the_wheel_goes_to_the_menu_then_a_scroll_area_then_sidebar_or_page() {
         use super::{scroll_target, Scroller};
         use crate::chrome::SIDEBAR_W;
-        assert_eq!(scroll_target(true, true, 0.0), Scroller::Menu);
-        assert_eq!(scroll_target(false, true, 0.0), Scroller::Area);
+        assert_eq!(scroll_target(true, true, 0.0, SIDEBAR_W), Scroller::Menu);
+        assert_eq!(scroll_target(false, true, 0.0, SIDEBAR_W), Scroller::Area);
         assert_eq!(
-            scroll_target(false, false, SIDEBAR_W - 1.0),
+            scroll_target(false, false, SIDEBAR_W - 1.0, SIDEBAR_W),
             Scroller::Sidebar
         );
-        assert_eq!(scroll_target(false, false, SIDEBAR_W + 1.0), Scroller::Page);
+        assert_eq!(
+            scroll_target(false, false, SIDEBAR_W + 1.0, SIDEBAR_W),
+            Scroller::Page
+        );
     }
 
     use super::*;

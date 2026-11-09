@@ -12,6 +12,16 @@ use crate::render::{self, Bound, Cx};
 use crate::{Dirty, Model, OpenMenu};
 
 pub const SIDEBAR_W: f32 = 260.0;
+/// Width of the sidebar folded to its icon rail.
+pub const RAIL_W: f32 = 72.0;
+
+/// The sidebar column (its width follows the rail).
+#[derive(Component)]
+pub struct SideBar;
+
+/// Sidebar parts the rail hides (title, filter, keys hint).
+#[derive(Component)]
+pub struct FullOnly;
 
 #[derive(Component)]
 pub struct NavList;
@@ -59,11 +69,12 @@ pub fn setup(mut commands: Commands, model: Res<Model>, theme: Res<DodaiTheme>) 
                 },
                 BorderColor::all(color(t.palette.border)),
                 SidebarBorder,
+                SideBar,
             ))
             .with_children(|s| {
-                s.spawn(heading("DODAI UI"));
+                s.spawn((heading("DODAI UI"), FullOnly));
                 s.spawn(text_input("Filter components…"))
-                    .insert(Bound::Filter);
+                    .insert((Bound::Filter, FullOnly));
                 s.spawn((
                     NavList,
                     Node {
@@ -75,9 +86,9 @@ pub fn setup(mut commands: Commands, model: Res<Model>, theme: Res<DodaiTheme>) 
                     },
                     Scroller::Sidebar,
                 ));
-                s.spawn(text(
-                    dodai_showcase_model::catalog::KEYS_HINT,
-                    TextRole::Caption,
+                s.spawn((
+                    FullOnly,
+                    text(dodai_showcase_model::catalog::KEYS_HINT, TextRole::Caption),
                 ));
             });
             // Main column.
@@ -310,6 +321,50 @@ pub fn spawn_top(p: &mut ChildSpawnerCommands, m: &Showcase, open: Option<&'stat
 
 pub fn spawn_nav(p: &mut ChildSpawnerCommands, m: &Showcase) {
     use dodai_icons::IconId;
+    let rail = m.rail();
+    // The fold button: right of the title, or on top of the rail.
+    p.spawn(Node {
+        justify_content: if rail {
+            JustifyContent::Center
+        } else {
+            JustifyContent::FlexEnd
+        },
+        ..default()
+    })
+    .with_children(|r| {
+        r.spawn((
+            ButtonSpec::new(if rail { "»" } else { "«" }, ButtonVariant::Ghost)
+                .size(dodai_core::ControlSize::Small)
+                .bundle(),
+            Bound::Act(Action::Press(Showcase::rail_toggle())),
+        ));
+    });
+    if rail {
+        let on_all = m.category().is_none();
+        for (label, on, cat) in std::iter::once(("All", on_all, None)).chain(
+            CATEGORIES
+                .iter()
+                .enumerate()
+                .map(|(i, c)| (*c, m.category() == Some(i), Some(i))),
+        ) {
+            p.spawn((
+                kit_pressable(Kit::Row { selected: on }),
+                Node {
+                    width: Val::Percent(100.0),
+                    justify_content: JustifyContent::Center,
+                    ..default()
+                },
+                Bound::Act(Action::Category(cat)),
+            ))
+            .with_children(|r| {
+                r.spawn(icon(
+                    dodai_showcase_model::catalog::category_icon(label),
+                    20,
+                ));
+            });
+        }
+        return;
+    }
     let item =
         |p: &mut ChildSpawnerCommands, label: &str, count: usize, on: bool, cat: Option<usize>| {
             p.spawn((
@@ -336,9 +391,9 @@ pub fn spawn_nav(p: &mut ChildSpawnerCommands, m: &Showcase) {
                 ));
                 r.spawn(text(count.to_string(), TextRole::Caption));
                 // A category shows whether its sections are listed under it.
-                if cat.is_some() {
+                if let Some(c) = cat {
                     r.spawn(icon(
-                        if on {
+                        if m.lists(c) {
                             IconId::ChevronDown
                         } else {
                             IconId::ChevronRight
@@ -352,7 +407,7 @@ pub fn spawn_nav(p: &mut ChildSpawnerCommands, m: &Showcase) {
     for (i, c) in CATEGORIES.iter().enumerate() {
         let on = m.category() == Some(i);
         item(p, c, m.count(Some(i)), on, Some(i));
-        if on {
+        if m.lists(i) {
             let active = m.active_section();
             for s in m.visible() {
                 p.spawn((
@@ -455,6 +510,8 @@ pub struct Regions<'w, 's> {
     top: Query<'w, 's, Entity, With<TopBar>>,
     page: Query<'w, 's, Entity, With<Page>>,
     pinned: Query<'w, 's, Entity, With<Pinned>>,
+    side: Query<'w, 's, &'static mut Node, (With<SideBar>, Without<FullOnly>)>,
+    full: Query<'w, 's, &'static mut Node, (With<FullOnly>, Without<SideBar>)>,
     borders: Query<'w, 's, &'static mut BorderColor, With<SidebarBorder>>,
 }
 
@@ -494,6 +551,14 @@ pub fn rebuild(
                 .entity(e)
                 .despawn_related::<Children>()
                 .with_children(|p| spawn_nav(p, m));
+        }
+        let rail = m.rail();
+        for mut n in &mut regions.side {
+            n.width = Val::Px(if rail { RAIL_W } else { SIDEBAR_W });
+            n.padding = UiRect::all(Val::Px(if rail { t.spacing.xs } else { t.spacing.lg }));
+        }
+        for mut n in &mut regions.full {
+            n.display = if rail { Display::None } else { Display::Flex };
         }
     }
     if dirty.content {

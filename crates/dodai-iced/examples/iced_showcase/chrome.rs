@@ -9,6 +9,8 @@ use crate::render::{self, Cx};
 use crate::{App, Msg};
 
 pub const SIDEBAR_W: f32 = 260.0;
+/// Width of the sidebar folded to its icon rail.
+pub const RAIL_W: f32 = 72.0;
 
 /// One labelled row of mutually exclusive choices.
 fn segmented<'a>(
@@ -116,8 +118,8 @@ fn nav_item<'a>(
     let ink = th.kit(Kit::Row { selected: on }, false).fg;
     // A category shows whether its sections are listed under it.
     let chevron: Element<'a, Msg> = match cat {
-        Some(_) => lt.icon(
-            if on {
+        Some(c) => lt.icon(
+            if app.model.lists(c) {
                 dodai_icons::IconId::ChevronDown
             } else {
                 dodai_icons::IconId::ChevronRight
@@ -162,7 +164,7 @@ pub fn nav<'a>(app: &App) -> Element<'a, Msg> {
     for (i, c) in CATEGORIES.iter().enumerate() {
         let on = m.category() == Some(i);
         col = col.push(nav_item(app, c, m.count(Some(i)), on, Some(i)));
-        if on {
+        if m.lists(i) {
             let active = m.active_section();
             for s in m.visible() {
                 col = col.push(
@@ -185,7 +187,57 @@ pub fn nav<'a>(app: &App) -> Element<'a, Msg> {
         .into()
 }
 
+/// The button that folds the sidebar to its rail and back.
+fn rail_toggle<'a>(app: &App) -> Element<'a, Msg> {
+    let rail = app.model.rail();
+    app.lt.button_compact(
+        if rail { "»" } else { "«" },
+        None,
+        dodai_core::ButtonVariant::Ghost,
+        dodai_core::ControlSize::Small,
+        Some(Msg::Act(Action::Press(Showcase::rail_toggle()))),
+    )
+}
+
+/// The sidebar folded to a rail: the page icons only.
+fn rail<'a>(app: &App) -> Element<'a, Msg> {
+    let (lt, m) = (&app.lt, &app.model);
+    let th = lt.theme();
+    let item = |label: &str, on: bool, cat: Option<usize>| -> Element<'a, Msg> {
+        let ink = th.kit(Kit::Row { selected: on }, false).fg;
+        container(
+            lt.kit_button(
+                Kit::Row { selected: on },
+                container(lt.icon(
+                    dodai_showcase_model::catalog::category_icon(label),
+                    20.0,
+                    Some(ink),
+                ))
+                .center_x(Length::Fill),
+                Msg::Act(Action::Category(cat)),
+            ),
+        )
+        .width(Length::Fill)
+        .into()
+    };
+    let mut col = column![
+        container(rail_toggle(app)).center_x(Length::Fill),
+        item("All", m.category().is_none(), None)
+    ]
+    .spacing(th.spacing.xs);
+    for (i, c) in CATEGORIES.iter().enumerate() {
+        col = col.push(item(c, m.category() == Some(i), Some(i)));
+    }
+    col.padding([th.spacing.lg, th.spacing.xs])
+        .width(RAIL_W)
+        .height(Length::Fill)
+        .into()
+}
+
 pub fn sidebar<'a>(app: &App) -> Element<'a, Msg> {
+    if app.model.rail() {
+        return rail(app);
+    }
     let lt = &app.lt;
     let sp = &lt.theme().spacing;
     let filter = text_input("Filter components…", app.model.filter())
@@ -193,7 +245,12 @@ pub fn sidebar<'a>(app: &App) -> Element<'a, Msg> {
         .padding(sp.md)
         .style(lt.text_input());
     column![
-        lt.heading_text("Dodai UI"),
+        row![
+            lt.heading_text("Dodai UI"),
+            Space::new().width(Length::Fill),
+            rail_toggle(app)
+        ]
+        .align_y(alignment::Vertical::Center),
         filter,
         nav(app),
         lt.muted_text(dodai_showcase_model::catalog::KEYS_HINT),
