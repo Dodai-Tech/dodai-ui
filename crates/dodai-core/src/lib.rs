@@ -14,6 +14,7 @@
 //! assert!(b.background.is_some());
 //! ```
 
+pub mod calendar;
 pub mod chart_style;
 pub mod clock_math;
 mod color;
@@ -28,6 +29,7 @@ pub mod math;
 pub mod orientation;
 mod palette;
 mod shape_system;
+pub mod slider_math;
 mod spec;
 pub mod stream;
 mod surface_paint;

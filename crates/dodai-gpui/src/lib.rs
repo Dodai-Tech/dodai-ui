@@ -338,6 +338,8 @@ pub use snap_stack::{can_turn, snap_page, SnapStack, TURN_AT};
 mod icon_names;
 #[cfg(any(feature = "dodai", feature = "frost"))]
 pub use backdrop::backdrop;
+#[cfg(feature = "components")]
+pub use controls::{nearest_thumb, range_update};
 pub use direction::{direction, is_rtl, set_direction, Direction};
 #[cfg(feature = "components")]
 #[cfg(all(feature = "components", feature = "material"))]
@@ -387,7 +389,7 @@ pub use picker::{
 #[cfg(feature = "components")]
 pub use popover::{ContextMenu, DropdownMenu, HoverCard, Popover, PopoverPlacement};
 #[cfg(feature = "components")]
-pub use range::{nearest_thumb, range_update, RangeSlider};
+pub use range::RangeSlider;
 #[cfg(feature = "cyberpunk")]
 pub use scanlines::Scanlines;
 #[cfg(feature = "components")]
