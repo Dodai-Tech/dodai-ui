@@ -30,11 +30,13 @@ fn gallery(_: &Ctx) -> Node {
                 title: "Card".into(),
                 body: Box::new(muted("Elevated")),
                 variant: CardVariant::Elevated,
+                surface: dodai_core::Surface::INHERIT,
             },
             Node::Card {
                 title: "Card".into(),
                 body: Box::new(muted("Outlined")),
                 variant: CardVariant::Outlined,
+                surface: dodai_core::Surface::INHERIT,
             },
             input("shape-field", "Field").node(),
         ]),

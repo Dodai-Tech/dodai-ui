@@ -182,6 +182,17 @@ fn Page(model: Signal<Showcase>) -> Element {
     }
 }
 
+/// Hands the Surface effects page's mix to the provider, so the components draw it.
+#[component]
+fn SurfaceMix(model: Signal<Showcase>) -> Element {
+    let fx = model.read().surface_fx();
+    let mut h = use_theme();
+    if h.surface_fx() != fx {
+        h.set_surface_fx(fx);
+    }
+    rsx! {}
+}
+
 /// The showcase.
 #[component]
 pub fn App() -> Element {
@@ -213,9 +224,19 @@ pub fn App() -> Element {
             }
         }
     });
+    // The frost demo's picture goes behind everything, fixed to the window.
+    let wallpaper = if model.read().wallpaper() {
+        format!(
+            "background:url({}) center/cover fixed",
+            dodai_showcase_model::media::wallpaper_url(&theme)
+        )
+    } else {
+        String::new()
+    };
     rsx! {
         ThemeProvider { themes: Some(vec![theme]), initial: Some(id),
-            div { class: "dodai-app",
+            SurfaceMix { model }
+            div { class: "dodai-app", style: wallpaper,
                 Sidebar { model }
                 div { class: "dodai-main", TopBar { model } Page { model } }
             }

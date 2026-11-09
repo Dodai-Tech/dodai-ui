@@ -75,6 +75,9 @@ pub struct ButtonProps {
     /// needs a [`crate::ThemeProvider`]).
     #[props(default)]
     pub crop: Option<dodai_core::Crop>,
+    /// The button's own surface override (frost, fill opacity); see [`dodai_core::Surface`].
+    #[props(default)]
+    pub surface: dodai_core::Surface,
     #[props(default)]
     pub onclick: EventHandler<MouseEvent>,
     pub children: Element,
@@ -109,7 +112,8 @@ pub fn button_classes(
 /// Themed button (all [`ButtonVariant`]s, sizes, disabled and loading states).
 #[component]
 pub fn Button(props: ButtonProps) -> Element {
-    let class = button_classes(props.variant, props.size, props.square, props.icon_only);
+    let mut class = button_classes(props.variant, props.size, props.square, props.icon_only);
+    let glass = crate::provider::glass(Some(dodai_core::SurfaceClass::Button), &props.surface);
     let off = props.disabled || props.loading;
     let cropped = props
         .crop
@@ -132,6 +136,10 @@ pub fn Button(props: ButtonProps) -> Element {
             tick = Some(cls);
         }
     }
+    if let Some(g) = glass {
+        class.push_str(" dodai-glass");
+        style.push_str(&g);
+    }
     rsx! {
         button { class, style, disabled: off, onclick: move |e| props.onclick.call(e),
             if props.loading { span { class: "dodai-spinner", style: "--s:14px" } }
@@ -151,6 +159,9 @@ pub struct PanelProps {
     pub focus: bool,
     #[props(default)]
     pub raised: bool,
+    /// The panel's own surface override (frost, fill opacity); see [`dodai_core::Surface`].
+    #[props(default)]
+    pub surface: dodai_core::Surface,
     pub children: Element,
 }
 
@@ -164,8 +175,12 @@ pub fn Panel(props: PanelProps) -> Element {
     if props.raised {
         class.push_str(" dodai-panel--raised");
     }
+    let style = crate::provider::glass(Some(dodai_core::SurfaceClass::Panel), &props.surface);
+    if style.is_some() {
+        class.push_str(" dodai-glass");
+    }
     rsx! {
-        div { class,
+        div { class, style,
             if let Some(t) = props.title { div { class: "dodai-panel__title", "{t}" } }
             {props.children}
         }

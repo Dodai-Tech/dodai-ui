@@ -35,14 +35,21 @@ pub struct KitBoxProps {
     /// Makes the box a button.
     #[props(default)]
     pub onclick: Option<EventHandler<MouseEvent>>,
+    /// The box's own surface override (frost, fill opacity); see [`dodai_core::Surface`].
+    #[props(default)]
+    pub surface: dodai_core::Surface,
     pub children: Element,
 }
 
 /// A box that looks like `kit`; with `onclick` it is a button and hovers.
 #[component]
 pub fn KitBox(props: KitBoxProps) -> Element {
-    let style = format!("{}{}", dodai_topcoat::kit_style(props.kit), props.style);
-    let class = kit_class(props.kit);
+    let mut style = format!("{}{}", dodai_topcoat::kit_style(props.kit), props.style);
+    let mut class = kit_class(props.kit);
+    if let Some(g) = crate::provider::glass(props.kit.surface_class(), &props.surface) {
+        class.push_str(" dodai-glass");
+        style.push_str(&g);
+    }
     match props.onclick {
         Some(h) => rsx! {
             button { class: "{class} dodai-kit--press", style, onclick: move |e| h.call(e), {props.children} }
@@ -58,6 +65,9 @@ pub struct CardProps {
     pub variant: CardVariant,
     #[props(default)]
     pub title: String,
+    /// The card's own surface override (frost, fill opacity); see [`dodai_core::Surface`].
+    #[props(default)]
+    pub surface: dodai_core::Surface,
     pub children: Element,
 }
 
@@ -65,7 +75,7 @@ pub struct CardProps {
 #[component]
 pub fn Card(props: CardProps) -> Element {
     rsx! {
-        KitBox { kit: Kit::Card(props.variant),
+        KitBox { kit: Kit::Card(props.variant), surface: props.surface,
             if !props.title.is_empty() { span { class: "dodai-label", "{props.title}" } }
             {props.children}
         }

@@ -17,6 +17,30 @@ pub const TEXTURE: &str = "sfx:texture";
 pub const CONTAINER_TEXTURE: &str = "sfx:container_texture";
 /// Ripple style picker (index into `PressStyle::ALL`).
 pub const PRESS: &str = "sfx:press";
+/// Backdrop of the frost demo: 0 the design's canvas, 1 [`dodai_core::glass_picture`].
+pub const WALLPAPER: &str = "sfx-wallpaper";
+
+/// Whether the frost demo put the glass picture behind the app.
+pub fn wallpaper(values: &Values) -> bool {
+    matches!(values.0.get(WALLPAPER), Some(Value::Index(1)))
+}
+
+/// Test aid (`DODAI_SFX=frost,picture,preset` in the showcases): `preset` loads the design's
+/// mix, `picture` puts the glass picture behind the app, any other word sets that slider of the
+/// mix (by field name, e.g. `frost`) to its upper bound.
+pub fn apply_spec(values: &mut Values, t: &Theme, spec: &str) {
+    for word in spec.split(',').map(str::trim) {
+        match word {
+            "preset" => store(values, t, t.surface_preset()),
+            "picture" => values.set(WALLPAPER, Value::Index(1)),
+            w => {
+                if let Some(a) = AMOUNTS.iter().find(|a| a.key[PREFIX.len()..] == *w) {
+                    values.set(a.key, Value::Num(a.max));
+                }
+            }
+        }
+    }
+}
 
 /// A slider of the mix: value key, label, upper bound and the field it sets.
 pub struct Amount {
@@ -212,6 +236,18 @@ mod tests {
             .into_iter()
             .find(|t| t.meta.family == "cyberpunk")
             .unwrap()
+    }
+
+    #[test]
+    fn the_test_spec_sets_sliders_the_preset_and_the_picture() {
+        let t = cyberpunk();
+        let mut v = Values::default();
+        assert!(!wallpaper(&v));
+        apply_spec(&mut v, &t, "frost, picture, nonsense");
+        assert_eq!(mix(&v, &t).frost, amount("sfx:frost").unwrap().max);
+        assert!(wallpaper(&v));
+        apply_spec(&mut v, &t, "preset");
+        assert_eq!(mix(&v, &t), t.surface_preset());
     }
 
     #[test]

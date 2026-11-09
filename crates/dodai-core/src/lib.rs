@@ -66,7 +66,10 @@ pub use component::{
 pub use dodai_fx::{
     EffectSet, PressStyle, Surface, SurfaceClass, SurfaceFx, SurfaceTargets, SurfaceTuning, Texture,
 };
-pub use glass::{backdrop_mesh, mesh_pixels, surface_glass, Glass};
+pub use glass::{
+    backdrop_mesh, glass_picture, mesh_blobs, mesh_pixels, surface_glass, Glass, MeshBlob,
+    MESH_SIZE,
+};
 pub use kit::{busy, Kit, KitStyle};
 pub use knob::{
     arc_points, knob_angle, knob_value, KnobGeometry, KnobStyle, KNOB_DRAG_PX, KNOB_START_DEG,

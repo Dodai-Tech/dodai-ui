@@ -151,6 +151,7 @@ fn sheets(_: &Ctx) -> Node {
             title: String::new(),
             body: Box::new(dialog_body("Discard draft?", "Your changes will be lost.")),
             variant: CardVariant::Elevated,
+            surface: dodai_core::Surface::INHERIT,
         },
         muted("Bottom sheet"),
         Node::Card {
@@ -161,6 +162,7 @@ fn sheets(_: &Ctx) -> Node {
                 list_row_node("Favourite", IconId::Heart),
             ])),
             variant: CardVariant::Filled,
+            surface: dodai_core::Surface::INHERIT,
         },
         muted("Side sheet"),
         Node::Card {
@@ -177,6 +179,7 @@ fn sheets(_: &Ctx) -> Node {
                 button("Apply", V::Primary).node(),
             ])),
             variant: CardVariant::Outlined,
+            surface: dodai_core::Surface::INHERIT,
         },
     ])
 }
@@ -199,6 +202,7 @@ fn top_bar(title: &str, left: IconId, right: &[IconId]) -> Node {
         title: String::new(),
         body: Box::new(line(items)),
         variant: CardVariant::Filled,
+        surface: dodai_core::Surface::INHERIT,
     }
 }
 
@@ -220,6 +224,7 @@ fn app_bars(_: &Ctx) -> Node {
                 ),
             ])),
             variant: CardVariant::Filled,
+            surface: dodai_core::Surface::INHERIT,
         },
     ])
 }
@@ -244,22 +249,26 @@ fn bars_cards(_: &Ctx) -> Node {
                 choice("navbar", &["Home", "Search", "Library", "Profile"], 0).connected(),
             )),
             variant: CardVariant::Outlined,
+            surface: dodai_core::Surface::INHERIT,
         },
         row(vec![
             Node::Card {
                 title: "Card".into(),
                 body: Box::new(muted("Elevated")),
                 variant: CardVariant::Elevated,
+                surface: dodai_core::Surface::INHERIT,
             },
             Node::Card {
                 title: "Card".into(),
                 body: Box::new(muted("Filled")),
                 variant: CardVariant::Filled,
+                surface: dodai_core::Surface::INHERIT,
             },
             Node::Card {
                 title: "Card".into(),
                 body: Box::new(muted("Outlined")),
                 variant: CardVariant::Outlined,
+                surface: dodai_core::Surface::INHERIT,
             },
         ]),
         Node::List(vec![
@@ -306,6 +315,7 @@ fn carousel(c: &Ctx) -> Node {
             title: slides[at].into(),
             body: Box::new(muted(format!("Slide {} of {}", at + 1, slides.len()))),
             variant: CardVariant::Filled,
+            surface: dodai_core::Surface::INHERIT,
         },
         Node::Pagination {
             pages: slides.len(),
@@ -329,5 +339,6 @@ fn drawer(_: &Ctx) -> Node {
             Node::List(vec![list_row("Settings").icon(Settings)]),
         ])),
         variant: CardVariant::Elevated,
+        surface: dodai_core::Surface::INHERIT,
     }
 }

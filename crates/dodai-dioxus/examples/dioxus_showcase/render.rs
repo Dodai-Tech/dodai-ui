@@ -281,7 +281,7 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
                 })
                 .flatten();
             rsx! {
-                Button { variant, size: Some(b.size), square: b.square, icon_only: b.label.is_empty(), crop,
+                Button { variant, size: Some(b.size), square: b.square, icon_only: b.label.is_empty(), crop, surface: b.surface,
                     disabled: b.disabled, loading: b.loading,
                     onclick: move |_| if let Some(k) = key.clone() { act(model, Action::Press(k)) },
                     if let Some(i) = b.icon { Icon { icon: i, size: 16, theme: theme.clone() } }
@@ -532,8 +532,9 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
             title,
             body,
             variant,
+            surface,
         } => rsx! {
-            Card { variant: *variant, title: title.clone(), {view(body, cx)} }
+            Card { variant: *variant, title: title.clone(), surface: *surface, {view(body, cx)} }
         },
         Demo::Alert {
             tone,

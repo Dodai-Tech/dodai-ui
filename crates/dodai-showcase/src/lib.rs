@@ -1175,7 +1175,7 @@ pub fn run() {
         if std::env::var("DODAI_WALLPAPER").is_ok() {
             let (w, h) = (1200, 750);
             let p = theme_of(cx).palette;
-            dodai_gpui::set_wallpaper(cx, sections::shape::glass_picture(&p, w, h), w, h);
+            dodai_gpui::set_wallpaper(cx, dodai_core::glass_picture(&p, w, h), w, h);
         }
         // Designs with cut corners start cropped on the left (the Shape page can change it; every
         // design draws the crop its own way).

@@ -2,7 +2,7 @@
 //! signature effects), as on the gpui page. Each control writes an `sfx:` value; the mix is
 //! read back with [`Showcase::surface_fx`](crate::Showcase::surface_fx).
 
-use dodai_core::{ButtonVariant as V, PressStyle, SurfaceClass, Theme};
+use dodai_core::{ButtonVariant as V, CardVariant, PressStyle, Surface, SurfaceClass, Theme};
 
 use crate::b::*;
 use crate::catalog::{Ctx, Section};
@@ -181,16 +181,36 @@ fn container_textures(c: &Ctx) -> Node {
 }
 
 fn frost(c: &Ctx) -> Node {
+    let own = Surface::new().frost(1.0);
+    let card = |title: &str, surface: Surface| {
+        tile(
+            260.0,
+            vec![Node::Card {
+                title: title.into(),
+                body: Box::new(muted("")),
+                variant: CardVariant::Elevated,
+                surface,
+            }],
+        )
+    };
     col(vec![
         muted("Any surface can be frosted: its fill turns as see-through as the design's glass and a blurred copy of the backdrop shows under it. The slider frosts every container (cards, panels, bars, this panel too); a component can frost itself with Surface::new().frost(1.0), as the buttons and the card below do."),
         fx_slider(c, "sfx:frost"),
         labelled(
             "Backdrop",
-            Node::Choice(choice("sfx-frost-bg", &["Canvas", "Picture"], 0).connected()),
+            Node::Choice(
+                choice(sfx::WALLPAPER, &["Canvas", "Picture"], usize::from(sfx::wallpaper(c.values)))
+                    .connected(),
+            ),
         ),
         row(vec![
-            button("Primary", V::Primary).node(),
-            button("Secondary", V::Secondary).node(),
+            button("Primary", V::Primary).surface(own).node(),
+            button("Secondary", V::Secondary).surface(own).node(),
+            button("Outline", V::Outline).surface(own).node(),
+        ]),
+        row(vec![
+            card("Frosted card", own),
+            card("Plain card", Surface::new().frost(0.0)),
         ]),
     ])
 }

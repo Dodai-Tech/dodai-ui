@@ -91,6 +91,7 @@ fn indicator(_: &Ctx) -> Node {
             title: String::new(),
             body: Box::new(Node::Spinner(40.0)),
             variant: dodai_core::CardVariant::Filled,
+            surface: dodai_core::Surface::INHERIT,
         },
     ])
 }
