@@ -144,6 +144,7 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
             let sm = theme.typography.size_sm;
             rsx! {
                 div { class: "dodai-panel", style: "width:{w}px;height:{h}px;padding:0;display:grid;place-items:center;flex:none",
+                    span { class: "dodai-panel__shade", aria_hidden: "true" }
                     span { style: text_style(styled(sm, Font::Body, Ink::Text), &theme), "{label}" }
                 }
             }
@@ -561,6 +562,15 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
             }
         },
         Demo::Divider => rsx! { Divider {} },
+        Demo::Framed { border, body } => {
+            let t = &theme;
+            let frame = t.framed(t.panel(false).border, *border);
+            let vars: String = dodai_topcoat::panel_frame_vars(t, &frame)
+                .iter()
+                .map(|(k, v)| format!("--dodai-{k}:{v};"))
+                .collect();
+            rsx! { div { style: "{vars}", Panel { {view(body, cx)} } } }
+        }
         Demo::Card {
             title,
             body,

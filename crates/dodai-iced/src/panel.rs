@@ -17,6 +17,7 @@ impl IcedTheme {
             stroke: Some(t.border),
             glow: focused,
             hard_shadow: true,
+            frame: Some(self.theme.panel_border),
             padding: Padding::new(self.theme.spacing.lg),
         }
     }

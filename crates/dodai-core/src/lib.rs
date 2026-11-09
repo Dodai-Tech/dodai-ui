@@ -29,6 +29,7 @@ pub mod math;
 pub mod orientation;
 pub mod paging;
 mod palette;
+mod panel_border;
 mod shape_system;
 pub mod slider_math;
 mod spec;
@@ -82,6 +83,7 @@ pub mod motion;
 pub use crop::{ButtonCrop, Crop, CropEdge};
 pub use motion::{Easing, EntryKind, EntrySet, Motion};
 pub use palette::{Mode, Palette, Roles, SymbolState, Tone};
+pub use panel_border::{AccentCorner, BorderStyle, HardShadow, Outline, PanelFrame};
 pub use shape_system::{
     Corner, CornerSpec, CornerStyle, DefaultShape, RoleShape, ShapePreset, ShapeRole, ShapeScale,
     ShapeSize, ShapeSystem, FULL,

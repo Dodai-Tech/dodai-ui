@@ -34,6 +34,11 @@ pub struct Theme {
     pub surface_style: crate::SurfaceStyle,
     /// Density applied by [`Theme::with_density`] (1 = as designed); also scales [`crate::Sizes`].
     pub density: f32,
+    /// The shape tune applied by [`Theme::tuned`] (tint, outlines, shadow direction are read
+    /// at paint time through [`Theme::outline`] and [`Theme::hard_offset`]).
+    pub tune: crate::ShapeTune,
+    /// The frame of every panel (see [`Theme::panel_frame`]).
+    pub panel_border: crate::BorderStyle,
 }
 
 impl Theme {

@@ -4,8 +4,8 @@
 //! component in every design follows, like the gpui showcase's global shape tune.
 
 use dodai_core::{
-    BorderTint, ControlColour, CornerStyle, Corners, Crop, GradientMode, ShadowDir, ShapeTune,
-    Theme,
+    AccentCorner, BorderStyle, BorderTint, ControlColour, CornerStyle, Corners, Crop, GradientMode,
+    ShadowDir, ShapeTune, Theme,
 };
 
 use crate::state::{Value, Values};
@@ -44,6 +44,25 @@ pub const CORNER_SETS: &str = "tune:cut-sets";
 pub const CORNER_SINGLES: &str = "tune:cut-singles";
 /// The button crop picker: 0 the design's own, 1 none, then the theme's crop ends.
 pub const CROP: &str = "tune:crop";
+/// The section border presets (writes [`BD_WIDTH`] and [`BD_OPACITY`]).
+pub const BD_PRESET: &str = "tune:bd-preset";
+/// Section contour width px.
+pub const BD_WIDTH: &str = "tune:bd-width";
+/// Section contour strength 0..1.
+pub const BD_OPACITY: &str = "tune:bd-opacity";
+/// The accent corner, an index into [`AccentCorner::ALL`].
+pub const BD_ACCENT: &str = "tune:bd-accent";
+/// Accent width px (unset: the theme's hard shadow).
+pub const BD_ACCENT_WIDTH: &str = "tune:bd-accent-width";
+
+/// The section border presets.
+pub const BORDERS: [(&str, BorderStyle); 5] = [
+    ("None", BorderStyle::NONE),
+    ("Subtle", BorderStyle::SUBTLE),
+    ("Thin", BorderStyle::THIN),
+    ("Normal", BorderStyle::NORMAL),
+    ("Bold", BorderStyle::BOLD),
+];
 
 /// The key of the roundness of a group (`RoundnessGroup::ALL[k]`).
 pub fn group_key(k: usize) -> String {
@@ -142,13 +161,33 @@ pub fn corners(values: &Values) -> Option<Corners> {
     CORNERS.get(values.index_of(CORNER, 0)).and_then(|c| c.1)
 }
 
-/// `theme` with the corner cut and the tune applied.
+/// The frame of every section.
+pub fn border(values: &Values) -> BorderStyle {
+    let d = BorderStyle::THIN;
+    BorderStyle {
+        width: num(values, BD_WIDTH, d.width),
+        opacity: num(values, BD_OPACITY, d.opacity),
+        accent: AccentCorner::ALL
+            .get(values.index_of(BD_ACCENT, 3))
+            .copied()
+            .unwrap_or(d.accent),
+        accent_width: match values.0.get(BD_ACCENT_WIDTH) {
+            Some(Value::Num(n)) => Some(*n),
+            _ => None,
+        },
+    }
+    .clamped()
+}
+
+/// `theme` with the corner cut, the tune and the section border applied.
 pub fn apply(values: &Values, theme: Theme) -> Theme {
     let base = match corners(values) {
         Some(c) => theme.with_corners(c),
         None => theme,
     };
-    base.tuned(&tune(values))
+    let mut t = base.tuned(&tune(values));
+    t.panel_border = border(values);
+    t
 }
 
 /// The end every button without its own crop takes: the design's own (cut-corner designs crop
@@ -167,6 +206,12 @@ pub(crate) fn set(values: &mut Values, theme: &Theme, key: &str, i: usize) -> bo
     match key {
         CORNER_SETS => values.set(CORNER, Value::Index(i)),
         CORNER_SINGLES => values.set(CORNER, Value::Index(SETS + i)),
+        BD_PRESET => {
+            if let Some((_, b)) = BORDERS.get(i) {
+                values.set(BD_WIDTH, Value::Num(b.width));
+                values.set(BD_OPACITY, Value::Num(b.opacity));
+            }
+        }
         COLOUR_PICK => {
             if let Some(c) = ControlColour::offered(theme).get(i) {
                 set_colour(values, *c);
@@ -219,5 +264,17 @@ mod tests {
         assert!(set(&mut v, &t, CORNER_SETS, 2));
         assert_eq!(corners(&v), Some(Corners::ALL));
         assert!(!set(&mut v, &t, "other", 0));
+    }
+
+    #[test]
+    fn a_border_preset_keeps_the_accent() {
+        let mut v = Values::default();
+        let t = Theme::default();
+        v.set(BD_ACCENT, Value::Index(0));
+        assert!(set(&mut v, &t, BD_PRESET, 4));
+        let b = border(&v);
+        assert_eq!((b.width, b.opacity), (3.0, 1.0));
+        assert_eq!(b.accent, AccentCorner::TopLeft);
+        assert_eq!(apply(&v, t).panel_border, b);
     }
 }

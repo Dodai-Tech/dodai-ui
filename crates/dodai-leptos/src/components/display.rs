@@ -22,6 +22,7 @@ pub fn Panel(
 ) -> impl IntoView {
     view! {
         <div class=class::panel(focused, raised)>
+            <span class="dodai-panel__shade" aria-hidden="true"></span>
             {title.map(|t| view! { <div class="dodai-panel__title">{t}</div> })}
             {children()}
         </div>

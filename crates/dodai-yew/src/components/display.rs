@@ -34,6 +34,7 @@ pub fn Panel(props: &PanelProps) -> Html {
     ]);
     html! {
         <div {class}>
+            <span class="dodai-panel__shade" aria-hidden="true"></span>
             if let Some(t) = &props.title { <div class="dodai-panel__title">{ t.clone() }</div> }
             { props.children.clone() }
         </div>

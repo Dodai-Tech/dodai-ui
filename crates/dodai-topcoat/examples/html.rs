@@ -16,8 +16,8 @@ const BODY: &str = r##"<main>
 
 <section><h2>Buttons</h2><div class="row"><button class="dodai-btn dodai-btn--primary">Primary</button><button class="dodai-btn dodai-btn--secondary">Secondary</button><button class="dodai-btn dodai-btn--outline">Outline</button><button class="dodai-btn dodai-btn--outline-secondary">Outline 2</button><button class="dodai-btn dodai-btn--danger">Danger</button><button class="dodai-btn dodai-btn--ghost">Ghost</button><button class="dodai-btn" disabled>Disabled</button></div></section>
 
-<section><h2>Panels</h2><div class="grid2"><div class="dodai-panel"><div class="dodai-panel__title">Panel</div><p class="dodai-muted">Plain surface panel.</p></div>
-<div class="dodai-panel dodai-panel--focus"><div class="dodai-panel__title">Focused</div><p class="dodai-muted">Primary border with glow.</p></div></div></section>
+<section><h2>Panels</h2><div class="grid2"><div class="dodai-panel"><span class="dodai-panel__shade"></span><div class="dodai-panel__title">Panel</div><p class="dodai-muted">Plain surface panel.</p></div>
+<div class="dodai-panel dodai-panel--focus"><span class="dodai-panel__shade"></span><div class="dodai-panel__title">Focused</div><p class="dodai-muted">Primary border with glow.</p></div></div></section>
 
 <section><h2>Tags &amp; badges</h2><div class="row"><span class="dodai-tag">info</span><span class="dodai-tag dodai-tag--success">online</span><span class="dodai-tag dodai-tag--warning">warn</span><span class="dodai-tag dodai-tag--danger">error</span><span class="dodai-tag dodai-tag--primary">primary</span><span class="dodai-tag dodai-tag--secondary">secondary</span>
 <span class="dodai-tag dodai-tag--soft">soft</span><span class="dodai-tag dodai-tag--soft dodai-tag--success">soft ok</span><span class="dodai-tag dodai-tag--soft dodai-tag--danger">soft bad</span><span class="dodai-badge dodai-tag--primary">7</span></div></section>

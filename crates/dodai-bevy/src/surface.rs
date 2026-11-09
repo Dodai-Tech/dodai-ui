@@ -28,6 +28,12 @@ pub struct Surface {
     pub pill: bool,
 }
 
+/// Frames this surface like a panel: [`dodai_core::Theme::panel_border`] sets its contour and
+/// hard shadow.
+/// `Some` frames it with that border instead.
+#[derive(Component, Debug, Clone, Copy, Default)]
+pub struct SurfaceFramed(pub Option<dodai_core::BorderStyle>);
+
 /// How a button is cropped on this surface (see [`dodai_core::Theme::button_crop`]).
 ///
 /// A cut corner draws through the chamfer shader, a ticket stub as a concave bite, tight
@@ -147,19 +153,15 @@ fn base_paint(theme: &Theme, s: &Surface) -> Paint {
 
 fn finish(theme: &Theme, s: &Surface, paint: Paint) -> ResolvedSurface {
     let clear = Rgba::rgba(0, 0, 0, 0);
-    let sh = &theme.shape;
     let glow = (s.glow && theme.effects.glow_enabled()).then(|| GlowSpec {
         color: theme.effects.glow_color(),
         radius: theme.effects.glow_radius(),
     });
+    let outline = theme.outline(s.border, s.fill.is_some());
     ResolvedSurface {
         fill: s.fill.unwrap_or(clear),
-        border: s.border.unwrap_or(clear),
-        border_width: if s.border.is_some() {
-            sh.border_width
-        } else {
-            0.0
-        },
+        border: outline.map_or(clear, |o| o.0),
+        border_width: outline.map_or(0.0, |o| o.1),
         paint,
         glow,
     }
@@ -238,16 +240,28 @@ pub(crate) fn apply_surfaces(
         Option<&BoxShadow>,
         Option<Ref<SurfaceCrop>>,
         Option<Ref<crate::glass::UiGlass>>,
+        Option<&SurfaceFramed>,
     )>,
 ) {
     let theme_changed = theme.is_changed() || glass.is_changed();
-    for (e, s, mut node, mut bg, mut bc, mat, shadow, crop, ug) in &mut q {
+    for (e, s, mut node, mut bg, mut bc, mat, shadow, crop, ug, framed) in &mut q {
         let crop_changed = crop.as_ref().is_some_and(|c| c.is_changed());
         let glass_changed = ug.as_ref().is_some_and(|g| g.is_changed());
         if !theme_changed && !s.is_changed() && !crop_changed && !glass_changed {
             continue;
         }
         let mut r = resolve_cropped(&theme, &s, crop.and_then(|c| c.0));
+        // A panel: the contour softened and resized, the hard shadow on the accent corner.
+        let mut hard = None;
+        if let (Some(fr), Some(b)) = (framed, s.border) {
+            let f = theme.framed(b, fr.0.unwrap_or(theme.panel_border));
+            r.border = f.outline.map_or(Rgba::rgba(0, 0, 0, 0), |o| o.0);
+            r.border_width = f.outline.map_or(0.0, |o| o.1);
+            // Box shadows are rectangles: cut corners would show through them.
+            hard = f
+                .shadow
+                .filter(|_| !matches!(r.paint, Paint::Chamfer { .. }));
+        }
         if let Some(ug) = ug {
             // See-through fill; a frosted one is painted by its pane (fill over the blur).
             let g = glass.glass(&theme, &ug);
@@ -336,8 +350,20 @@ pub(crate) fn apply_surfaces(
                 }
             }
         }
-        match (r.glow, shadow) {
-            (Some(g), _) => {
+        match (r.glow, hard, shadow) {
+            (None, Some((c, (dx, dy))), _) => {
+                let sh = BoxShadow::new(
+                    color(c),
+                    Val::Px(dx),
+                    Val::Px(dy),
+                    Val::Px(0.0),
+                    Val::Px(0.0),
+                );
+                if shadow != Some(&sh) {
+                    commands.entity(e).try_insert(sh);
+                }
+            }
+            (Some(g), _, _) => {
                 let sh = BoxShadow::new(
                     color(g.color),
                     Val::Px(0.0),
@@ -349,10 +375,10 @@ pub(crate) fn apply_surfaces(
                     commands.entity(e).try_insert(sh);
                 }
             }
-            (None, Some(_)) => {
+            (None, None, Some(_)) => {
                 commands.entity(e).try_remove::<BoxShadow>();
             }
-            (None, None) => {}
+            (None, None, None) => {}
         }
     }
 }

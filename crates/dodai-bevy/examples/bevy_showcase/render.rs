@@ -832,6 +832,17 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
         Demo::Divider => {
             p.spawn(divider());
         }
+        Demo::Framed { border, body } => {
+            p.spawn((
+                panel_untitled(),
+                Node {
+                    flex_direction: FlexDirection::Column,
+                    ..default()
+                },
+            ))
+            .insert(dodai_bevy::surface::SurfaceFramed(Some(*border)))
+            .with_children(|c| spawn(c, body, cx));
+        }
         Demo::Card {
             title,
             body,

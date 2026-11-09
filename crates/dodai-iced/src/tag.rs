@@ -14,6 +14,7 @@ impl IcedTheme {
             stroke: t.border,
             glow: false,
             hard_shadow: false,
+            frame: None,
             padding: Padding::from([self.theme.spacing.xs, self.theme.spacing.sm]),
         }
     }

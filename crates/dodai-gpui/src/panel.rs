@@ -9,160 +9,24 @@ use gpui::{
     Render, RenderOnce, SharedString, Styled, Window,
 };
 
-/// Border of a section/panel: thickness and strength. Reusable value type;
-/// set it per panel with [`Panel::border`] or for every panel with
-/// [`set_section_border`].
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct BorderStyle {
-    /// Line thickness in px (`0` = no border).
-    pub width: f32,
-    /// Colour strength `0..=1` (multiplies the theme border's alpha).
-    pub opacity: f32,
-    /// Corner where the accent (theme primary, the hard offset shadow) sits;
-    /// the grey contour sits on the opposite edges. Same design, rotated.
-    pub accent: AccentCorner,
-    /// Thickness of the accent in px (`None` = the theme's own hard shadow).
-    pub accent_width: Option<f32>,
-}
+pub use dodai_core::{AccentCorner, BorderStyle};
 
-/// A corner of a box (where the accent bracket sits).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum AccentCorner {
-    /// Top left.
-    TopLeft,
-    /// Top right.
-    TopRight,
-    /// Bottom left.
-    BottomLeft,
-    /// Bottom right.
-    BottomRight,
-}
-
-impl AccentCorner {
-    /// The four corners, clockwise from the top left.
-    pub const ALL: [AccentCorner; 4] = [
-        AccentCorner::TopLeft,
-        AccentCorner::TopRight,
-        AccentCorner::BottomLeft,
-        AccentCorner::BottomRight,
-    ];
-    /// Unit direction `(dx, dy)` of this corner from the centre.
-    pub fn dir(self) -> (f32, f32) {
-        match self {
-            AccentCorner::TopLeft => (-1.0, -1.0),
-            AccentCorner::TopRight => (1.0, -1.0),
-            AccentCorner::BottomLeft => (-1.0, 1.0),
-            AccentCorner::BottomRight => (1.0, 1.0),
-        }
-    }
-    /// The diagonally opposite corner (where the grey contour goes).
-    pub fn opposite(self) -> AccentCorner {
-        match self {
-            AccentCorner::TopLeft => AccentCorner::BottomRight,
-            AccentCorner::BottomRight => AccentCorner::TopLeft,
-            AccentCorner::TopRight => AccentCorner::BottomLeft,
-            AccentCorner::BottomLeft => AccentCorner::TopRight,
-        }
-    }
-    /// Display name.
-    pub fn name(self) -> &'static str {
-        match self {
-            AccentCorner::TopLeft => "Top left",
-            AccentCorner::TopRight => "Top right",
-            AccentCorner::BottomLeft => "Bottom left",
-            AccentCorner::BottomRight => "Bottom right",
-        }
-    }
-}
-
-impl BorderStyle {
-    /// Barely-there hairline.
-    pub const SUBTLE: BorderStyle = BorderStyle {
-        width: 0.75,
-        opacity: 0.45,
-        accent: AccentCorner::BottomRight,
-        accent_width: None,
+/// Apply `b` to a paint style (pure).
+fn apply_border(b: BorderStyle, mut s: ShapeStyle) -> ShapeStyle {
+    let b = b.clamped();
+    s.stroke = match s.stroke {
+        Some(c) if b.width > 0.0 && b.opacity > 0.0 => Some(gpui::Hsla {
+            a: c.a * b.opacity,
+            ..c
+        }),
+        _ => None,
     };
-    /// Default for sections: thin and soft.
-    pub const THIN: BorderStyle = BorderStyle {
-        width: 1.0,
-        opacity: 0.6,
-        accent: AccentCorner::BottomRight,
-        accent_width: None,
-    };
-    /// The theme's own border, unchanged strength.
-    pub const NORMAL: BorderStyle = BorderStyle {
-        width: 1.5,
-        opacity: 1.0,
-        accent: AccentCorner::BottomRight,
-        accent_width: None,
-    };
-    /// Heavy frame.
-    pub const BOLD: BorderStyle = BorderStyle {
-        width: 3.0,
-        opacity: 1.0,
-        accent: AccentCorner::BottomRight,
-        accent_width: None,
-    };
-    /// No section border.
-    pub const NONE: BorderStyle = BorderStyle {
-        width: 0.0,
-        opacity: 0.0,
-        accent: AccentCorner::BottomRight,
-        accent_width: None,
-    };
-
-    /// Create a new [`BorderStyle`].
-    pub fn new(width: f32, opacity: f32) -> Self {
-        Self {
-            width,
-            opacity,
-            accent: AccentCorner::BottomRight,
-            accent_width: None,
-        }
-        .clamped()
+    s.stroke_width = b.width;
+    if let Some((c, off)) = s.shadow {
+        s.shadow = Some((c, b.accent_width.unwrap_or(off)));
     }
-    /// Same border with the accent moved to `corner` (grey goes opposite).
-    pub fn accent(mut self, corner: AccentCorner) -> Self {
-        self.accent = corner;
-        self
-    }
-    /// Same border with an accent of `width` px.
-    pub fn accent_width(mut self, width: f32) -> Self {
-        self.accent_width = Some(width);
-        self.clamped()
-    }
-    fn clamped(self) -> Self {
-        Self {
-            width: self.width.clamp(0.0, 8.0),
-            opacity: self.opacity.clamp(0.0, 1.0),
-            accent: self.accent,
-            accent_width: self.accent_width.map(|w| w.clamp(0.5, 8.0)),
-        }
-    }
-    /// Apply to a paint style (pure).
-    pub fn apply(self, mut s: ShapeStyle) -> ShapeStyle {
-        let b = self.clamped();
-        s.stroke = match s.stroke {
-            Some(c) if b.width > 0.0 && b.opacity > 0.0 => Some(gpui::Hsla {
-                a: c.a * b.opacity,
-                ..c
-            }),
-            _ => None,
-        };
-        s.stroke_width = b.width;
-        if let Some((c, off)) = s.shadow {
-            s.shadow = Some((c, b.accent_width.unwrap_or(off)));
-        }
-        s.shadow_dir = b.accent.dir();
-        s
-    }
-}
-
-impl Default for BorderStyle {
-    fn default() -> Self {
-        Self::THIN
-    }
+    s.shadow_dir = b.accent.dir();
+    s
 }
 
 struct SectionBorderGlobal(BorderStyle);
@@ -308,8 +172,10 @@ impl Panel {
         } else {
             panel_style(&t, self.focused)
         };
-        let style =
-            border.apply(base.with_own_surface(&t, dodai_core::SurfaceClass::Panel, &self.surface));
+        let style = apply_border(
+            border,
+            base.with_own_surface(&t, dodai_core::SurfaceClass::Panel, &self.surface),
+        );
         let (ink, title_ink) = if self.accent {
             (t.palette.on_primary, t.palette.on_primary)
         } else {
@@ -526,10 +392,10 @@ mod tests {
     fn border_style_sets_width_and_softens_colour() {
         let t = themes::cyberpunk::yellow();
         let base = panel_style(&t, false);
-        let s = BorderStyle::new(0.5, 0.5).apply(base);
+        let s = apply_border(BorderStyle::new(0.5, 0.5), base);
         assert_eq!(s.stroke_width, 0.5);
         assert!((s.stroke.unwrap().a - base.stroke.unwrap().a * 0.5).abs() < 1e-5);
-        assert!(BorderStyle::NONE.apply(base).stroke.is_none());
+        assert!(apply_border(BorderStyle::NONE, base).stroke.is_none());
         let c = BorderStyle::new(99.0, 5.0);
         assert_eq!((c.width, c.opacity), (8.0, 1.0));
         let a = BorderStyle::THIN
@@ -540,10 +406,10 @@ mod tests {
             (AccentCorner::TopLeft, Some(8.0))
         );
         // The accent moves the hard shadow; the grey contour stays put.
-        let s = a.apply(base);
+        let s = apply_border(a, base);
         assert_eq!(s.shadow_dir, (-1.0, -1.0));
         assert_eq!(s.shadow.map(|x| x.1), Some(8.0));
-        assert_eq!(BorderStyle::THIN.apply(base).shadow_dir, (1.0, 1.0));
+        assert_eq!(apply_border(BorderStyle::THIN, base).shadow_dir, (1.0, 1.0));
     }
 
     use crate::testing::light_rounded;

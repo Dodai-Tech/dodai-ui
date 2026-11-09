@@ -106,6 +106,8 @@ impl ThemeBuilder {
             spec: Default::default(),
             surface_style: Default::default(),
             density: 1.0,
+            tune: crate::ShapeTune::DEFAULT,
+            panel_border: crate::BorderStyle::THIN,
             meta: self.meta,
             palette,
             typography: self.typography,

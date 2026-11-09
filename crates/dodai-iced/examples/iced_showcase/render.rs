@@ -679,6 +679,11 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             .into()
         }
         Demo::Divider => lt.divider().into(),
+        Demo::Framed { border, body } => {
+            let mut s = lt.panel_box(false);
+            s.frame = Some(*border);
+            lt.shaped_box(view(body, cx), s)
+        }
         Demo::Card {
             title,
             body,
@@ -1334,6 +1339,7 @@ fn image_placeholder<'a>(
         stroke: Some(th.palette.border),
         glow: false,
         hard_shadow: false,
+        frame: None,
         padding: iced::Padding::ZERO,
     };
     let fallback = container(txt(
@@ -1584,6 +1590,7 @@ fn picture<'a>(
         stroke: Some(th.palette.border),
         glow: false,
         hard_shadow: false,
+        frame: None,
         padding: iced::Padding::ZERO,
     };
     let mut layers = stack![pic];
