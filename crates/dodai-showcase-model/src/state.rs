@@ -279,6 +279,21 @@ impl Showcase {
         self.revision
     }
 
+    /// How often the toolkit should redraw on its own: every frame while a timer, stopwatch or
+    /// beat runs on the page, every quarter second while a clock shows, else never.
+    pub fn redraw_every(&self) -> Option<std::time::Duration> {
+        use std::time::Duration;
+        if !self.visible().iter().any(|s| s.live) {
+            return None;
+        }
+        if crate::live_state::running(&self.values, crate::widgets::elapsed()) {
+            Some(Duration::from_millis(33))
+        } else {
+            // The clock's second hand.
+            Some(Duration::from_millis(250))
+        }
+    }
+
     /// Whether the sidebar is folded to its icon rail.
     pub fn rail(&self) -> bool {
         self.values.flag(&crate::Bind::new(RAIL, false))
@@ -626,6 +641,8 @@ impl Showcase {
                 crate::tune_state::reset(&mut self.values);
                 self.bump();
             }
+            Action::Press(key)
+                if crate::live_state::press(&mut self.values, &key, crate::widgets::elapsed()) => {}
             Action::Press(key) if crate::commands::press(&mut self.values, &key) => {}
             Action::Press(key) => {
                 let n = self.values.index_of(&key, 0);

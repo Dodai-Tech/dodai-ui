@@ -628,3 +628,52 @@ pub fn section_fx(
         s.drawn = Some((size, fx, layer));
     }
 }
+
+/// The body of a section that shows the time (a clock, a running timer).
+#[derive(Component)]
+pub struct LiveBody(pub &'static str);
+
+/// Rebuild the live section bodies as often as the model asks
+/// ([`Showcase::redraw_every`](dodai_showcase_model::Showcase::redraw_every)).
+pub fn live_refresh(
+    mut commands: Commands,
+    model: Res<Model>,
+    theme: Res<DodaiTheme>,
+    open: Res<OpenMenu>,
+    time: Res<Time>,
+    mut last: Local<f32>,
+    q: Query<(Entity, &LiveBody)>,
+) {
+    let Some(every) = model.0.redraw_every() else {
+        return;
+    };
+    let now = time.elapsed_secs();
+    if now - *last < every.as_secs_f32() {
+        return;
+    }
+    *last = now;
+    let m = &model.0;
+    let t = theme.theme().clone();
+    let ctx = dodai_showcase_model::Ctx {
+        theme: &t,
+        values: &m.values,
+    };
+    let cx = crate::render::Cx {
+        theme: &t,
+        model: m,
+        open: open.0,
+    };
+    for (e, body) in &q {
+        let Some(s) = dodai_showcase_model::sections()
+            .iter()
+            .find(|s| s.title == body.0)
+        else {
+            continue;
+        };
+        let node = (s.build)(&ctx);
+        commands
+            .entity(e)
+            .despawn_related::<Children>()
+            .with_children(|c| crate::render::spawn(c, &node, &cx));
+    }
+}

@@ -285,6 +285,7 @@ pub fn theme_vars(t: &Theme) -> String {
         ("focus-ring", p.focus_ring),
         ("link", p.link),
         ("glow", t.effects.glow_color()),
+        ("highlight", t.effects.highlight),
     ] {
         v(k, c.to_css());
     }

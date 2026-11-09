@@ -78,6 +78,9 @@ pub struct ButtonProps {
     /// The button's own surface override (frost, fill opacity); see [`dodai_core::Surface`].
     #[props(default)]
     pub surface: dodai_core::Surface,
+    /// A busy shimmer band sweeps across it.
+    #[props(default)]
+    pub shimmer: bool,
     #[props(default)]
     pub onclick: EventHandler<MouseEvent>,
     pub children: Element,
@@ -113,6 +116,9 @@ pub fn button_classes(
 #[component]
 pub fn Button(props: ButtonProps) -> Element {
     let mut class = button_classes(props.variant, props.size, props.square, props.icon_only);
+    if props.shimmer {
+        class.push_str(" dodai-btn--shimmer");
+    }
     let glass = crate::provider::glass(Some(dodai_core::SurfaceClass::Button), &props.surface);
     let off = props.disabled || props.loading;
     let cropped = props

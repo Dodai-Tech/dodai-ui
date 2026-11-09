@@ -36,7 +36,8 @@ dioxus = { version = "0.7", default-features = false, features = ["document", "m
 # renderer needs `cocoa` 0.26.1, which gpui pins below in the same workspace).
 dioxus-liveview = { version = "0.7", features = ["axum"] }
 axum = { version = "0.8", features = ["ws"] }
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "net"] }
+# `time`: the page redraws while a clock, timer, stopwatch or beat runs.
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time"] }
 
 [[example]]
 name = "dioxus_showcase"

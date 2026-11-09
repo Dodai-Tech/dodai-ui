@@ -469,7 +469,19 @@ pub fn spawn_page(
                 height: Val::Px(theme.spacing.sm),
                 ..default()
             });
-            render::spawn(c, &node, &cx);
+            if s.live {
+                // Rebuilt on its own as time passes (crate::events::live_refresh).
+                c.spawn((
+                    crate::events::LiveBody(s.title),
+                    Node {
+                        flex_direction: FlexDirection::Column,
+                        ..default()
+                    },
+                ))
+                .with_children(|c| render::spawn(c, &node, &cx));
+            } else {
+                render::spawn(c, &node, &cx);
+            }
         });
     }
 }

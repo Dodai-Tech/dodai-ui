@@ -100,6 +100,7 @@ impl IcedTheme {
             height: m.height,
             padding_x: m.padding,
             tick: None,
+            shimmer: self.shimmer.map(|x| (self.shimmer_colour(variant), x)),
         }
     }
 

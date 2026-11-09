@@ -436,3 +436,20 @@ fn the_same_target_keeps_the_move_going_whatever_the_motion() {
         assert!(g.value(5.0) > 0.99, "{travel:?} lands");
     }
 }
+
+#[test]
+fn the_button_shimmer_sweeps_across_and_its_ramp_stays_inside() {
+    assert!((button_shimmer(0.0) + BUTTON_SHIMMER_WIDTH).abs() < 1e-6);
+    assert!(button_shimmer(BUTTON_SHIMMER_PERIOD * 0.99) > 0.9);
+    assert!(shimmer_stops(-0.5).is_empty() && shimmer_stops(1.0).is_empty());
+    let s = shimmer_stops(0.3);
+    assert_eq!(s[0], (0.3, 0.0));
+    assert!((s[1].0 - 0.7).abs() < 1e-6 && (s[1].1 - 1.0).abs() < 1e-6);
+    assert_eq!(s[2].1, 0.0);
+    let clipped = shimmer_stops(-0.2);
+    assert!(clipped[0].0 == 0.0 && (clipped[0].1 - 0.5).abs() < 1e-6);
+    assert!(s
+        .iter()
+        .chain(&clipped)
+        .all(|&(at, a)| (0.0..=1.0).contains(&at) && (0.0..=1.0).contains(&a)));
+}

@@ -747,6 +747,17 @@ impl Theme {
         self.palette.border
     }
 
+    /// The busy shimmer band's colour on a `variant` button
+    /// ([`motion::button_shimmer`](crate::motion::button_shimmer)): a light sweep on filled
+    /// buttons (dark label text would smear), the accent itself at 25 % on outline and ghost ones.
+    pub fn shimmer_colour(&self, variant: ButtonVariant) -> Color {
+        let b = self.button(variant, ControlState::Idle);
+        match b.background {
+            Some(_) => self.effects.highlight,
+            None => b.border.unwrap_or(b.foreground).with_alpha(0.25),
+        }
+    }
+
     /// Resolve a button style.
     pub fn button(&self, variant: ButtonVariant, state: ControlState) -> ButtonTokens {
         hook!(self.button(variant, state));

@@ -251,6 +251,36 @@ pub fn skeleton_shimmer(period: f32) -> Clip<f32> {
     Clip::ease(0.0, 1.0, period, Easing::Linear).forever()
 }
 
+/// Width of the busy-button shimmer band, as a fraction of the button.
+pub const BUTTON_SHIMMER_WIDTH: f32 = 0.4;
+/// One sweep of the busy-button shimmer, seconds.
+pub const BUTTON_SHIMMER_PERIOD: f32 = 1.4;
+
+/// Left edge of the busy-button shimmer band at `secs` (fraction of the width, from
+/// `-BUTTON_SHIMMER_WIDTH` to `1`), sweeping left to right forever. The band brightens towards
+/// its right edge.
+pub fn button_shimmer(secs: f32) -> f32 {
+    let f = (secs / BUTTON_SHIMMER_PERIOD).rem_euclid(1.0);
+    -BUTTON_SHIMMER_WIDTH + f * (1.0 + BUTTON_SHIMMER_WIDTH)
+}
+
+/// The shimmer band's alpha ramp clipped to the box: `(at, alpha)` stops (fractions of the
+/// width, alpha `0..=1` of the shimmer colour) for a left-to-right gradient, starting at the
+/// band's left edge `x`. Empty when the band is outside the box.
+pub fn shimmer_stops(x: f32) -> Vec<(f32, f32)> {
+    let (x0, x1) = (x, x + BUTTON_SHIMMER_WIDTH);
+    if x1 <= 0.0 || x0 >= 1.0 {
+        return Vec::new();
+    }
+    let a = |p: f32| ((p - x0) / BUTTON_SHIMMER_WIDTH).clamp(0.0, 1.0);
+    let (l, r) = (x0.max(0.0), x1.min(1.0));
+    let mut stops = vec![(l, a(l)), (r, a(r))];
+    if r < 1.0 {
+        stops.push(((r + 0.001).min(1.0), 0.0));
+    }
+    stops
+}
+
 /// Indeterminate bar: `(start, end)` fractions of the track, forever. The head runs ahead,
 /// then the tail catches up.
 pub fn indeterminate(period: f32) -> Clip<(f32, f32)> {

@@ -15,8 +15,11 @@ import bevy_ui_render::ui_vertex_output::UiVertexOutput;
 @group(1) @binding(3) var<uniform> corners: vec4<f32>;
 // The hard shadow's colour (alpha 0 = none).
 @group(1) @binding(4) var<uniform> shadow: vec4<f32>;
-// xy = the hard shadow's offset px.
+// xy = the hard shadow's offset px, z = the busy shimmer band's left edge, w = its width
+// (fractions of the width; w = 0: no shimmer). Mirrors `dodai_core::motion::shimmer_stops`.
 @group(1) @binding(5) var<uniform> shade: vec4<f32>;
+// The busy shimmer's colour.
+@group(1) @binding(6) var<uniform> sheen: vec4<f32>;
 
 const K: f32 = 0.70710678;
 
@@ -75,8 +78,20 @@ fn fragment(in: UiVertexOutput) -> @location(0) vec4<f32> {
     let d = dist(p, size);
     let cover = clamp(d + 0.5, 0.0, 1.0);
     let inner = clamp(d - params.x * scale() + 0.5, 0.0, 1.0);
-    let rgb = mix(border.rgb, fill.rgb, inner);
-    let a = mix(border.a, fill.a, inner) * cover;
+    var rgb = mix(border.rgb, fill.rgb, inner);
+    var a = mix(border.a, fill.a, inner) * cover;
+    if shade.w > 0.0 {
+        // The shimmer band over the face: transparent at its left edge, full at its right.
+        let u = (p.x / size.x - shade.z) / shade.w;
+        if u >= 0.0 && u <= 1.0 {
+            let ba = sheen.a * u * cover;
+            let na = ba + a * (1.0 - ba);
+            if na > 0.0 {
+                rgb = (sheen.rgb * ba + rgb * a * (1.0 - ba)) / na;
+            }
+            a = na;
+        }
+    }
     if shadow.a <= 0.0 {
         return vec4<f32>(rgb, a);
     }
