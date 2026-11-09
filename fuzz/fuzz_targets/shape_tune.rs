@@ -17,10 +17,14 @@ fuzz_target!(|d: (f32, [f32; 3], Option<f32>, Option<f32>, u8, bool, u8, u8, [f3
         gradient: GradientMode::ALL[(style as usize / 4) % 3],
         control_colour: ControlColour::ALL[(dir as usize / 4) % 4],
         density,
+        cut_gap: width.map(|w| w * 0.5),
     };
     for t in dodai_core::themes::all() {
         let tuned = t.tuned(&tune);
         let _ = tuned.scale(dodai_core::Scale::ListMax);
+        // The tune read at paint time (tick gap, outlines, shadows, panel frame) never panics.
+        let _ = (tuned.tick_gap(), tuned.hard_offset(), tuned.panel_frame(outline_all));
+        let _ = tuned.outline(Some(tuned.palette.border), true);
         // Scooped and cut outlines must stay finite for any box size.
         let pts = tuned.shape.outline(size[0], size[1]);
         assert!(pts.iter().all(|p| p.0.is_finite() && p.1.is_finite()) || !(size[0].is_finite() && size[1].is_finite()));
