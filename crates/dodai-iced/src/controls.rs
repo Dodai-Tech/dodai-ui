@@ -101,10 +101,19 @@ impl IcedTheme {
     /// Slider style: rail from progress tokens, handle round for rounded
     /// themes and a bar otherwise.
     pub fn slider(&self) -> impl Fn(&IcedBaseTheme, slider::Status) -> slider::Style + 'static {
+        self.slider_with(false)
+    }
+
+    /// [`Self::slider`], drawn dimmed when `disabled` (it ignores the pointer's states).
+    pub fn slider_with(
+        &self,
+        disabled: bool,
+    ) -> impl Fn(&IcedBaseTheme, slider::Status) -> slider::Style + 'static {
         let this = self.clone();
         move |_t, status| {
             let p = this.theme.progress(None);
             let st = match status {
+                _ if disabled => ControlState::Disabled,
                 slider::Status::Active => ControlState::Idle,
                 slider::Status::Hovered => ControlState::Hovered,
                 slider::Status::Dragged => ControlState::Pressed,

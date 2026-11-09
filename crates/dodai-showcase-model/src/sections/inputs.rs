@@ -1,11 +1,15 @@
-//! Inputs: toggles, sliders, text fields.
+//! Inputs: toggles, sliders, text fields, pickers - the gpui showcase's demos and values.
 
-use dodai_core::ToggleKind::{Checkbox, Radio, Switch};
+use dodai_core::ToggleKind::{self, Checkbox, Radio, Switch};
+use dodai_core::Tone;
 use dodai_icons::IconId;
 
 use crate::b::*;
 use crate::catalog::{Ctx, Section};
-use crate::node::Node;
+use crate::commands;
+use crate::node::{Font, Ink, Node, SliderFormat};
+use crate::pickers::{self, DayPick, Note};
+use crate::Bind;
 
 const CAT: &str = "Inputs";
 
@@ -38,169 +42,201 @@ pub(crate) const SECTIONS: [Section; 15] = [
     Section::new(CAT, "Date-time range picker", date_time_range).heading("Date-time range"),
 ];
 
+/// The animations a switch, checkbox and radio can move with.
+const ANIMATIONS: [&str; 5] = ["Design's own", "Slide", "Stretch", "Glitch", "Lift"];
+
 fn toggles(_: &Ctx) -> Node {
+    let radio = |i: usize, name: &str| {
+        toggle(Radio, &format!("radio-{i}"), i == 0, name)
+            .in_group("radio", i)
+            .node()
+    };
     col(vec![
+        muted("Animation"),
+        Node::Choice(choice("choice-animation", &ANIMATIONS, 0).connected()),
         row(vec![
-            toggle(Switch, "sw-a", true, "Notifications").node(),
-            toggle(Switch, "sw-b", false, "Dark mode").node(),
-            toggle(Switch, "sw-c", true, "Disabled").disabled().node(),
+            toggle(Switch, "sw", true, "").node(),
+            label("Switch"),
+            toggle(Switch, "sw-icons", true, "").icons().node(),
+            toggle(Switch, "sw-icons-off", false, "").icons().node(),
+            label("With icons"),
+            toggle(Switch, "sw-dis", true, "").disabled().node(),
+            toggle(Checkbox, "ck", true, "").node(),
+            label("Checkbox"),
+            toggle(Checkbox, "ck-dis", false, "").disabled().node(),
         ]),
         row(vec![
-            toggle(Checkbox, "ck-a", true, "Accept terms").node(),
-            toggle(Checkbox, "ck-b", false, "Subscribe").node(),
-            toggle(Checkbox, "ck-c", false, "Disabled")
-                .disabled()
-                .node(),
-        ]),
-        row(vec![
-            toggle(Radio, "rd-0", true, "Compact")
-                .in_group("radio", 0)
-                .node(),
-            toggle(Radio, "rd-1", false, "Comfortable")
-                .in_group("radio", 1)
-                .node(),
-            toggle(Radio, "rd-2", false, "Spacious")
-                .in_group("radio", 2)
-                .node(),
+            radio(0, ""),
+            label("Compact"),
+            radio(1, ""),
+            label("Comfortable"),
+            radio(2, ""),
+            label("Spacious"),
         ]),
     ])
 }
 
-fn sliders(_: &Ctx) -> Node {
+/// Material 3's checkbox sizes and shapes (other designs draw their own box).
+const VARIANTS: [&str; 6] = [
+    "Standard 40",
+    "Compact 24",
+    "Dense 18",
+    "Large 48",
+    "Round",
+    "Tonal",
+];
+
+fn checkbox_variants(_: &Ctx) -> Node {
+    col(VARIANTS
+        .iter()
+        .map(|name| {
+            let id = |k: &str| format!("cv-{name}-{k}");
+            let cell = |n: Node| tile(44.0, vec![n]);
+            line(vec![
+                tile(110.0, vec![label(*name)]),
+                cell(toggle(Checkbox, &id("off"), false, "").node()),
+                cell(toggle(Checkbox, &id("on"), true, "").node()),
+                cell(toggle(Checkbox, &id("mix"), false, "").mixed(true).node()),
+                cell(toggle(Checkbox, &id("dis"), true, "").disabled().node()),
+                cell(
+                    toggle(Radio, &id("ra"), true, "")
+                        .in_group(&id("ra"), 0)
+                        .node(),
+                ),
+            ])
+        })
+        .collect())
+}
+
+/// A group of checkboxes or switches under a "select all" that reads "n of m".
+fn check_group(
+    c: &Ctx,
+    key: &str,
+    all_label: &str,
+    kind: ToggleKind,
+    items: &[&str],
+    on: &[usize],
+) -> Node {
+    let keys: Vec<String> = (0..items.len()).map(|i| format!("{key}-{i}")).collect();
+    let picked: Vec<bool> = keys
+        .iter()
+        .enumerate()
+        .map(|(i, k)| c.values.flag(&Bind::new(k, on.contains(&i))))
+        .collect();
+    let n = picked.iter().filter(|p| **p).count();
+    let all = n == items.len();
+    let head = line(vec![
+        toggle(kind, &commands::all(&keys), all, all_label)
+            .mixed(n > 0 && !all)
+            .node(),
+        styled(
+            format!("{n} of {}", items.len()),
+            11.0,
+            Font::Body,
+            Ink::Muted,
+        ),
+    ]);
+    let mut rows = vec![head];
+    for (i, item) in items.iter().enumerate() {
+        rows.push(line(vec![
+            Node::Space(20.0),
+            toggle(kind, &keys[i], on.contains(&i), *item).node(),
+        ]));
+    }
+    tile(220.0, rows)
+}
+
+fn groups(c: &Ctx) -> Node {
+    let format = |label: &str, key: &str, on: bool| chip(label, key, on).node();
     col(vec![
-        slider("sl-a", 40.0, 0.0, 100.0).node(),
-        slider("sl-b", 6.0, 0.0, 10.0).step(1.0).node(),
+        row(vec![
+            Node::Choice(choice("tg1", &["Left", "Center", "Right"], 0).connected()),
+            line(vec![
+                format("Bold", "tg2-0", true),
+                format("Italic", "tg2-1", false),
+                format("Underline", "tg2-2", true),
+            ]),
+        ]),
+        row(vec![
+            check_group(
+                c,
+                "cg",
+                "All channels",
+                Checkbox,
+                &["Email", "SMS", "Push", "Slack"],
+                &[0, 2],
+            ),
+            check_group(
+                c,
+                "sg",
+                "Everything",
+                Switch,
+                &["Wi-Fi", "Bluetooth", "Location"],
+                &[0],
+            ),
+        ]),
+    ])
+}
+
+fn sliders(c: &Ctx) -> Node {
+    let v = c.values.num(&Bind::new("slider", 0.4));
+    col(vec![
+        slider("slider", 0.4, 0.0, 1.0).readout(false).node(),
+        styled(format!("value {v:.2}"), 13.0, Font::Mono, Ink::Text),
+        muted("Disabled · arrow keys move a focused slider"),
+        slider("slider-off", 0.4, 0.0, 1.0)
+            .readout(false)
+            .disabled()
+            .node(),
         Node::Progress {
-            value: 0.65,
+            value: v,
             tone: None,
         },
         Node::Progress {
-            value: 0.35,
-            tone: Some(dodai_core::Tone::Warning),
+            value: 0.7,
+            tone: Some(Tone::Success),
         },
         Node::Progress {
-            value: 0.9,
-            tone: Some(dodai_core::Tone::Success),
+            value: 0.4,
+            tone: Some(Tone::Warning),
         },
-    ])
-}
-
-fn inputs(_: &Ctx) -> Node {
-    col(vec![
-        input("in-name", "handle…").node(),
-        input("in-mail", "email")
-            .label("Email")
-            .value("ada@example.com")
-            .node(),
-        input("in-notes", "notes (multi-line)…").lines(4).node(),
-    ])
-}
-
-fn search(_: &Ctx) -> Node {
-    input("search", "Search…").icon(IconId::Search).node()
-}
-
-fn password(_: &Ctx) -> Node {
-    col(vec![
-        input("pw", "password").password().node(),
-        input("otp", "6-digit code").node(),
-    ])
-}
-
-fn checkbox_variants(_: &Ctx) -> Node {
-    col(vec![
-        row(vec![
-            toggle(Checkbox, "cv-a", true, "Checked").node(),
-            toggle(Checkbox, "cv-b", false, "Unchecked").node(),
-            toggle(Checkbox, "cv-c", true, "Disabled checked")
-                .disabled()
-                .node(),
-            toggle(Checkbox, "cv-d", false, "Disabled")
-                .disabled()
-                .node(),
-        ]),
-        row(vec![
-            toggle(Switch, "cv-e", true, "On").node(),
-            toggle(Switch, "cv-f", false, "Off").node(),
-        ]),
+        Node::Progress {
+            value: 0.55,
+            tone: None,
+        },
+        Node::Progress {
+            value: 0.15,
+            tone: Some(Tone::Danger),
+        },
     ])
 }
 
 fn slider_stepped(_: &Ctx) -> Node {
     col(vec![
-        muted("Steps of 10"),
-        slider("ss-a", 40.0, 0.0, 100.0).step(10.0).node(),
-        muted("Steps of 0.5"),
-        slider("ss-b", 2.5, 0.0, 5.0).step(0.5).node(),
-        muted("Continuous"),
-        slider("ss-c", 0.3, 0.0, 1.0).node(),
-    ])
-}
-
-fn form_field(_: &Ctx) -> Node {
-    col(vec![
-        input("ff-name", "Full name")
-            .label("Name")
-            .value("Ada Lovelace")
+        slider("bub-up", 35.0, 0.0, 100.0)
+            .format(SliderFormat::Percent)
+            .bubble(true)
             .node(),
-        muted("As it appears on your passport."),
-        input("ff-mail", "you@example.com").label("Email").node(),
-        alert(dodai_core::Tone::Danger, "Enter a valid address.", false),
-        row(vec![
-            button("Cancel", dodai_core::ButtonVariant::Ghost).node(),
-            button("Save", dodai_core::ButtonVariant::Primary).node(),
-        ]),
-    ])
-}
-
-fn groups(_: &Ctx) -> Node {
-    let chip = |label: &str, key: &str, on: bool| chip(label, key, on).node();
-    col(vec![
-        muted("Toggle group"),
-        row(vec![
-            chip("Bold", "tg-b", true),
-            chip("Italic", "tg-i", false),
-            chip("Underline", "tg-u", false),
-        ]),
-        muted("Checkbox group"),
-        col(vec![
-            toggle(Checkbox, "cg-a", true, "Email").node(),
-            toggle(Checkbox, "cg-b", true, "Push").node(),
-            toggle(Checkbox, "cg-c", false, "SMS").node(),
-        ]),
-    ])
-}
-
-fn tag_field(_: &Ctx) -> Node {
-    col(vec![
-        row(vec![
-            chip("rust", "tf-1", true).node(),
-            chip("gpui", "tf-2", true).node(),
-            chip("design", "tf-3", true).node(),
-        ]),
-        input("tf-new", "Add a tag…").node(),
-    ])
-}
-
-fn pickers(_: &Ctx) -> Node {
-    col(vec![
-        input("dp-date", "YYYY-MM-DD")
-            .label("Date")
-            .value("2026-11-08")
-            .icon(IconId::Calendar)
+        slider("bub-down", 60.0, 0.0, 100.0)
+            .step(10.0)
+            .ticks()
+            .format(SliderFormat::Percent)
+            .bubble(false)
             .node(),
-        input("dp-time", "HH:MM")
-            .label("Time")
-            .value("14:30")
+        slider("stepped", 4.0, 0.0, 10.0).step(1.0).ticks().node(),
+        slider("db", -6.0, -24.0, 6.0)
+            .step(3.0)
+            .ticks()
+            .format(SliderFormat::Decibel)
             .node(),
-        Node::Choice(
-            choice(
-                "dp-day",
-                &["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-                6,
-            )
-            .connected(),
-        ),
+        slider("slider", 0.4, 0.0, 1.0)
+            .centered()
+            .format(SliderFormat::Balance)
+            .node(),
+        slider("slider", 0.4, 0.0, 1.0)
+            .icon(IconId::Heart)
+            .readout(false)
+            .node(),
     ])
 }
 
@@ -213,96 +249,282 @@ pub(crate) fn ordered(a: f32, b: f32) -> (f32, f32) {
     }
 }
 
+fn range_slider(c: &Ctx) -> Node {
+    let lo = c.values.num(&Bind::new("range-lo", 0.2));
+    let hi = c.values.num(&Bind::new("range-hi", 0.7));
+    let (a, b) = ordered(lo, hi);
+    col(vec![
+        range("range", (0.2, 0.7), 0.0, 1.0).node(),
+        muted(format!("range {a:.2} – {b:.2}")),
+    ])
+}
+
 fn dials(c: &Ctx) -> Node {
-    let readout =
-        |key: &str, d: f32| body(format!("{:.2}", c.values.num(&crate::Bind::new(key, d))));
-    let dial = |n: Node, key: &str, d: f32| crate::b::dial(vec![n, readout(key, d)]);
-    let mut items = vec![
-        dial(knob("knob-0", 0.3, 0.0, 1.0, 72.0), "knob-0", 0.3),
-        dial(knob("knob-1", 0.65, 0.0, 1.0, 96.0), "knob-1", 0.65),
-        dial(
-            Node::Knob {
-                bind: crate::Bind::new("knob-2", 0.5),
-                min: 0.0,
-                max: 1.0,
-                size: 72.0,
-                disabled: true,
-            },
-            "knob-2",
-            0.5,
-        ),
-    ];
-    for (i, d) in [0.2_f32, 0.55, 0.9].into_iter().enumerate() {
-        let key = format!("vs-{i}");
-        items.push(dial(
-            slider(&key, d, 0.0, 1.0).vertical().readout(false).node(),
-            &key,
-            d,
-        ));
+    let mono = |s: String| styled(s, 13.0, Font::Mono, Ink::Text);
+    let readout = |key: &str, d: f32| mono(format!("{:.2}", c.values.num(&Bind::new(key, d))));
+    let mut items = Vec::new();
+    for (i, d) in [0.35_f32, 0.7, 0.5].into_iter().enumerate() {
+        let key = format!("knob-{i}");
+        let size = if i == 1 { 96.0 } else { 72.0 };
+        let k = Node::Knob {
+            bind: Bind::new(&key, d),
+            min: 0.0,
+            max: 1.0,
+            size,
+            disabled: i == 2,
+        };
+        items.push(dial(vec![k, readout(&key, d)]));
     }
+    for (i, d) in [0.3_f32, 0.6, 0.9].into_iter().enumerate() {
+        let key = format!("vslider-{i}");
+        items.push(dial(vec![
+            slider(&key, d, 0.0, 1.0)
+                .vertical()
+                .length(120.0)
+                .readout(false)
+                .node(),
+            readout(&key, d),
+        ]));
+    }
+    let lo = c.values.num(&Bind::new("vrange-lo", 0.2));
+    let hi = c.values.num(&Bind::new("vrange-hi", 0.8));
+    let (a, b) = ordered(lo, hi);
+    items.push(dial(vec![
+        range("vrange", (0.2, 0.8), 0.0, 1.0)
+            .step(0.1)
+            .ticks()
+            .vertical(120.0)
+            .node(),
+        mono(format!("{a:.1}–{b:.1}")),
+    ]));
     row(items)
 }
 
-fn range_slider(c: &Ctx) -> Node {
-    let lo = crate::Bind::new("rs-lo", 20.0);
-    let hi = crate::Bind::new("rs-hi", 70.0);
-    let (a, b) = ordered(c.values.num(&lo), c.values.num(&hi));
+fn inputs(_: &Ctx) -> Node {
     col(vec![
-        muted("Two handles: the range is the lower and the higher of them."),
-        slider("rs-lo", 20.0, 0.0, 100.0).step(5.0).node(),
-        slider("rs-hi", 70.0, 0.0, 100.0).step(5.0).node(),
-        body(format!("Selected range: {a:.0} to {b:.0}")),
+        input("in-name", "handle…").value("Ada Lovelace").node(),
+        input("in-notes", "notes (multi-line)…").lines(4).node(),
+        input("in-static", "static placeholder box").node(),
+        input("in-outlined", "")
+            .label("Email")
+            .value("ada@dodai.dev")
+            .node(),
+        input("in-filled", "")
+            .label("Name")
+            .value("analytical engine")
+            .filled()
+            .node(),
     ])
 }
 
-fn date_range(_: &Ctx) -> Node {
+/// The suggestions both search views filter.
+const SUGGESTIONS: [&str; 6] = ["Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot"];
+
+/// The suggestions holding `query` (case-insensitive); none for an empty query.
+pub(crate) fn matches(query: &str) -> Vec<&'static str> {
+    let q = query.to_lowercase();
+    if q.is_empty() {
+        return Vec::new();
+    }
+    SUGGESTIONS
+        .into_iter()
+        .filter(|s| s.to_lowercase().contains(&q))
+        .collect()
+}
+
+fn results(query: &str, open: bool) -> Option<Node> {
+    if !open {
+        return None;
+    }
+    let found = matches(query);
+    Some(if found.is_empty() {
+        Node::List(vec![list_row("No results")])
+    } else {
+        Node::List(found.into_iter().map(list_row).collect())
+    })
+}
+
+fn search(c: &Ctx) -> Node {
+    let bar = Bind::new("search", "sl".to_string());
+    let full = Bind::new("search-full", "a".to_string());
+    let query = c.values.text(&bar).to_string();
+    let full_query = c.values.text(&full).to_string();
+    let mut items = vec![input("search", "Search…")
+        .value("sl")
+        .icon(IconId::MagnifyingGlass)
+        .node()];
+    items.extend(results(&query, !query.is_empty()));
+    items.push(muted("Full screen (Material)"));
+    let mut full_view = vec![input("search-full", "Search…")
+        .value("a")
+        .icon(IconId::MagnifyingGlass)
+        .node()];
+    full_view.extend(results(&full_query, true));
+    items.push(col(full_view));
+    col(items)
+}
+
+fn tag_field(c: &Ctx) -> Node {
+    let tags = ["rust", "gpui", "charts"];
+    let chips = tags
+        .iter()
+        .enumerate()
+        .filter(|(i, _)| c.values.flag(&Bind::new(format!("tags-{i}"), true)))
+        .map(|(i, t)| {
+            chip(t.to_uppercase(), &format!("tags-{i}"), true)
+                .removable()
+                .node()
+        })
+        .collect();
+    Node::Card {
+        title: String::new(),
+        body: Box::new(line(chips)),
+        variant: dodai_core::CardVariant::Outlined,
+        surface: dodai_core::Surface::INHERIT,
+    }
+}
+
+fn password(c: &Ctx) -> Node {
+    col(vec![
+        pickers::form_field(
+            "Password",
+            true,
+            input("pw", "password").password().node(),
+            Some(Note::Help("Shown as dots; copy is disabled")),
+        ),
+        pickers::form_field(
+            "Verification code",
+            false,
+            pickers::otp(c, 6, "381946", false),
+            Some(Note::Help("Type or paste 6 digits")),
+        ),
+        pickers::form_field(
+            "PIN (masked)",
+            false,
+            pickers::otp(c, 4, "4821", true),
+            None,
+        ),
+    ])
+}
+
+/// Whether `mail` looks like an address (`a@b.cd`).
+pub(crate) fn valid_email(mail: &str) -> bool {
+    mail.contains('@')
+        && mail.contains('.')
+        && mail.rsplit('.').next().is_some_and(|d| d.len() >= 2)
+}
+
+fn form_field(c: &Ctx) -> Node {
+    let mail_bind = Bind::new("ff-mail", "ada@dodai.dev".to_string());
+    let mail = c.values.text(&mail_bind).to_string();
+    let mail_note = if valid_email(&mail) {
+        Some(Note::Status(Tone::Success, "Looks good"))
+    } else if mail.is_empty() {
+        None
+    } else {
+        Some(Note::Status(Tone::Danger, "Enter a valid address"))
+    };
+    let field = |n: Node| tile(260.0, vec![n]);
     row(vec![
-        input("dr-from", "YYYY-MM-DD")
-            .label("From")
-            .value("2026-11-01")
-            .icon(IconId::Calendar)
-            .node(),
-        input("dr-to", "YYYY-MM-DD")
-            .label("To")
-            .value("2026-11-30")
-            .icon(IconId::Calendar)
-            .node(),
+        field(pickers::form_field(
+            "Name",
+            true,
+            input("ff-name", "Ada Lovelace").node(),
+            Some(Note::Help("As on your ID")),
+        )),
+        field(pickers::form_field(
+            "Email",
+            false,
+            input("ff-mail", "name@").value("ada@dodai.dev").node(),
+            mail_note,
+        )),
+        field(pickers::form_field(
+            "Username",
+            false,
+            input("ff-user", "ada").node(),
+            Some(Note::Status(Tone::Success, "Available")),
+        )),
+        field(pickers::form_field(
+            "Bio",
+            false,
+            input("ff-bio", "…").node(),
+            Some(Note::Status(Tone::Warning, "Over 80% of the limit")),
+        )),
     ])
 }
 
-fn date_time_range(_: &Ctx) -> Node {
+fn pickers(c: &Ctx) -> Node {
+    let picked = commands::unpack(c.values.index_of("date", 0));
+    let h = c.values.index_of("time-h", 9);
+    let m = c.values.index_of("time-m", 30);
+    let date_text = picked.map_or(String::new(), |d| {
+        format!("{}-{:02}-{:02}", d.year, d.month, d.day)
+    });
     col(vec![
         row(vec![
-            input("dtr-from", "YYYY-MM-DD")
-                .label("Start date")
-                .value("2026-11-08")
-                .node(),
-            input("dtr-from-t", "HH:MM")
-                .label("Start time")
-                .value("09:00")
-                .node(),
+            pickers::calendar(c, "date-month", DayPick::One("date")),
+            pickers::time_picker(c, "time", (9, 30)),
+            pickers::date_time(c, "date-month", DayPick::One("date"), "time", (9, 30)),
         ]),
+        muted("Text input mode"),
         row(vec![
-            input("dtr-to", "YYYY-MM-DD")
-                .label("End date")
-                .value("2026-11-08")
+            input("date-in", "YYYY-MM-DD")
+                .label("Date")
+                .value(&date_text)
+                .icon(IconId::Calendar)
                 .node(),
-            input("dtr-to-t", "HH:MM")
-                .label("End time")
-                .value("17:30")
+            input("time-in", "HH:MM")
+                .label("Time")
+                .value(format!("{h:02}:{m:02}"))
+                .icon(IconId::Clock)
                 .node(),
         ]),
+    ])
+}
+
+fn date_range(c: &Ctx) -> Node {
+    let r = commands::date_range(c.values, "date-range");
+    let fmt = |d: dodai_core::calendar::Date| format!("{}-{:02}-{:02}", d.year, d.month, d.day);
+    let hint = match (r.start, r.end) {
+        (Some(a), Some(b)) => format!("{} → {}", fmt(a), fmt(b)),
+        (Some(a), None) => format!("from {}: pick the end", fmt(a)),
+        _ => "click a start day, then an end day".to_string(),
+    };
+    row(vec![
+        pickers::calendar(c, "date-month", DayPick::Span("date-range")),
+        muted(hint),
+    ])
+}
+
+fn date_time_range(c: &Ctx) -> Node {
+    col(vec![
+        pickers::date_time_range(c, "date-month", "date-range", "range-time"),
+        muted("Shares its span with the date range above; the start and end times are its own."),
     ])
 }
 
 #[cfg(test)]
 mod tests {
-    use super::ordered;
+    use super::*;
 
     #[test]
     fn the_range_is_ordered_whichever_handle_is_higher() {
         assert_eq!(ordered(20.0, 70.0), (20.0, 70.0));
         assert_eq!(ordered(70.0, 20.0), (20.0, 70.0));
         assert_eq!(ordered(5.0, 5.0), (5.0, 5.0));
+    }
+
+    #[test]
+    fn search_suggestions_follow_the_query() {
+        assert_eq!(matches("a").len(), 4, "Alpha Bravo Charlie Delta");
+        assert!(matches("sl").is_empty());
+        assert!(matches("").is_empty());
+    }
+
+    #[test]
+    fn email_validation() {
+        assert!(valid_email("ada@dodai.dev"));
+        assert!(!valid_email("ada@dodai"));
+        assert!(!valid_email("ada"));
     }
 }

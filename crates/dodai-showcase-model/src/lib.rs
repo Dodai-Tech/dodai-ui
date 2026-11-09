@@ -12,9 +12,11 @@
 //! Nothing here depends on a toolkit.
 
 pub mod catalog;
+pub mod commands;
 pub mod md;
 pub mod media;
 pub mod node;
+pub mod pickers;
 pub mod plot;
 mod sections;
 pub mod shader_state;

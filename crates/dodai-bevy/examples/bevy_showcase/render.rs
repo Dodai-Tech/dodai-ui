@@ -21,6 +21,13 @@ pub enum Bound {
     Radio(String, usize),
     /// A slider stores its value under the key (snapped to `step`).
     Slide { key: String, step: Option<f32> },
+    /// A range slider stores its thumbs under the two keys (snapped to `step`).
+    Range {
+        lo: String,
+        hi: String,
+        step: Option<f32>,
+        span: (f32, f32),
+    },
     /// A text field stores its text under the key.
     Text(String),
     /// A − / + button changes the integer under the key.
@@ -95,6 +102,7 @@ fn role(r: Role, theme: &Theme) -> dodai_bevy::widgets::TextRole {
             Ink::Primary => I::Primary,
             Ink::Link => I::Link,
             Ink::Title => I::Title,
+            Ink::Tone(t) => I::Tone(t),
         },
         upper: st.caps,
     }
@@ -568,11 +576,27 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
             p.spawn(plot(pl.w, pl.h, lines));
         }
         Demo::Slider(s) if s.vertical => {
-            p.spawn((
-                vertical_slider(vals.num(&s.bind), s.min, s.max, 120.0),
-                Bound::Slide {
+            let mut e = p.spawn(vertical_slider(
+                vals.num(&s.bind),
+                s.min,
+                s.max,
+                s.length.unwrap_or(120.0),
+            ));
+            if !s.disabled {
+                e.insert(Bound::Slide {
                     key: s.bind.key.clone(),
                     step: s.step,
+                });
+            }
+        }
+        Demo::Range(r) => {
+            p.spawn((
+                range_slider(vals.num(&r.lo), vals.num(&r.hi), r.min, r.max, r.vertical),
+                Bound::Range {
+                    lo: r.lo.key.clone(),
+                    hi: r.hi.key.clone(),
+                    step: r.step,
+                    span: (r.min, r.max),
                 },
             ));
         }
@@ -597,18 +621,19 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                 align_items: AlignItems::Center,
                 column_gap: Val::Px(theme.spacing.md),
                 width: Val::Percent(100.0),
-                max_width: Val::Px(420.0),
                 ..default()
             })
             .with_children(|c| {
-                c.spawn((
-                    slider(v, s.min, s.max),
-                    Bound::Slide {
+                let mut e = c.spawn(slider(v, s.min, s.max));
+                if !s.disabled {
+                    e.insert(Bound::Slide {
                         key: s.bind.key.clone(),
                         step: s.step,
-                    },
-                ));
-                if s.readout {
+                    });
+                }
+                if s.readout && s.format != dodai_showcase_model::node::SliderFormat::Plain {
+                    c.spawn(text(s.format.text(v), TextRole::Mono));
+                } else if s.readout {
                     c.spawn((
                         text(num_text(v, s.step), TextRole::Mono),
                         Readout::Num {
@@ -623,7 +648,6 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
         Demo::Progress { value, tone } => {
             p.spawn(Node {
                 width: Val::Percent(100.0),
-                max_width: Val::Px(420.0),
                 ..default()
             })
             .with_children(|c| {
@@ -636,7 +660,6 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                 flex_direction: FlexDirection::Column,
                 row_gap: Val::Px(theme.spacing.xs),
                 width: Val::Percent(100.0),
-                max_width: Val::Px(420.0),
                 ..default()
             })
             .with_children(|c| {

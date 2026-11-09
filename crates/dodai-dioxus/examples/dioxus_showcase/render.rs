@@ -393,7 +393,7 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
                         onchange: move |b| act(model, Action::Set(key.clone(), Value::Bool(b))) }
                 },
                 ToggleKind::Checkbox => rsx! {
-                    Checkbox { checked: vals.flag(&t.bind), disabled: t.disabled, label: t.label.clone(),
+                    Checkbox { checked: vals.flag(&t.bind), disabled: t.disabled, label: t.label.clone(), mixed: t.mixed,
                         onchange: move |b| act(model, Action::Set(key.clone(), Value::Bool(b))) }
                 },
                 ToggleKind::Radio => {
@@ -473,29 +473,54 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
         Demo::Slider(s) if s.vertical => {
             let v = vals.num(&s.bind);
             let (key, min, max, step) = (s.bind.key.clone(), s.min, s.max, s.step);
+            let length = s.length.unwrap_or(120.0) as u32;
             rsx! {
-                Slider { value: v, min, max, step: step.unwrap_or((max - min) / 100.0), vertical: true,
+                Slider { value: v, min, max, step: step.unwrap_or((max - min) / 100.0), vertical: true, length,
+                    disabled: s.disabled,
                     onchange: move |x| act(model, Action::Set(key.clone(), Value::Num(snap(x, min, max, step)))) }
+            }
+        }
+        Demo::Range(r) => {
+            let (lo_key, hi_key, min, max, step) =
+                (r.lo.key.clone(), r.hi.key.clone(), r.min, r.max, r.step);
+            rsx! {
+                RangeSlider { lo: vals.num(&r.lo), hi: vals.num(&r.hi), min, max,
+                    step: step.unwrap_or((max - min) / 100.0),
+                    vertical: r.vertical.is_some(), length: r.vertical.unwrap_or(120.0) as u32,
+                    onchange: move |(a, b)| {
+                        act(model, Action::Set(lo_key.clone(), Value::Num(snap(a, min, max, step))));
+                        act(model, Action::Set(hi_key.clone(), Value::Num(snap(b, min, max, step))));
+                    } }
             }
         }
         Demo::Slider(s) => {
             let v = vals.num(&s.bind);
             let (key, min, max, step) = (s.bind.key.clone(), s.min, s.max, s.step);
+            let shown = match s.format {
+                dodai_showcase_model::node::SliderFormat::Plain => num_text(v, step),
+                f => f.text(v),
+            };
+            let bubble = s.bubble;
             rsx! {
-                div { class: "dodai-stack dodai-stack--row", style: "max-width:420px;width:100%",
-                    div { style: "flex:1", Slider { value: v, min, max, step: step.unwrap_or((max - min) / 100.0),
-                        onchange: move |x| act(model, Action::Set(key.clone(), Value::Num(snap(x, min, max, step)))) } }
-                    if s.readout { code { class: "dodai-mono", "{num_text(v, step)}" } }
+                div { style: "display:flex;flex-direction:column;align-items:flex-start;width:100%;gap:4px",
+                    if bubble == Some(true) { code { class: "dodai-mono", "{shown}" } }
+                    div { class: "dodai-stack dodai-stack--row", style: "width:100%",
+                        div { style: "flex:1", Slider { value: v, min, max, step: step.unwrap_or((max - min) / 100.0),
+                            disabled: s.disabled,
+                            onchange: move |x| act(model, Action::Set(key.clone(), Value::Num(snap(x, min, max, step)))) } }
+                        if s.readout { code { class: "dodai-mono", "{shown}" } }
+                    }
+                    if bubble == Some(false) { code { class: "dodai-mono", "{shown}" } }
                 }
             }
         }
         Demo::Progress { value, tone } => rsx! {
-            div { style: "max-width:420px;width:100%", Progress { value: *value, tone: *tone } }
+            div { style: "width:100%", Progress { value: *value, tone: *tone } }
         },
         Demo::Input(i) => {
             let key = i.bind.key.clone();
             rsx! {
-                div { class: "dodai-field", style: "max-width:420px;width:100%",
+                div { class: "dodai-field", style: "width:100%",
                     if let Some(l) = &i.label { span { class: "dodai-label", "{l}" } }
                     div { class: "dodai-stack dodai-stack--row",
                         if let Some(ic) = i.icon { Icon { icon: ic, size: 18, theme: theme.clone() } }

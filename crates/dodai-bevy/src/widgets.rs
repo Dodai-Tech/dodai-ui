@@ -60,6 +60,8 @@ pub enum Ink {
     Link,
     /// The panel title colour.
     Title,
+    /// A status colour (`palette.success` …).
+    Tone(Tone),
 }
 
 /// Typographic role of a [`UiText`].
@@ -215,9 +217,21 @@ pub struct UiSlider {
     pub max: f32,
     /// Runs bottom to top instead of left to right.
     pub vertical: bool,
+    /// The low thumb of a range slider (`value` is then the high one).
+    pub lo: Option<f32>,
 }
 
 impl UiSlider {
+    /// The low thumb's fraction of the range (`0` for a plain slider).
+    pub fn lo_fraction(&self) -> f32 {
+        match self.lo {
+            Some(lo) if self.max > self.min => {
+                ((lo - self.min) / (self.max - self.min)).clamp(0.0, 1.0)
+            }
+            _ => 0.0,
+        }
+    }
+
     /// The value under a pointer at `n` (`-0.5..=0.5` from the centre of the slider, y down).
     pub fn value_at(&self, n: Vec2) -> f32 {
         let f = if self.vertical { 0.5 - n.y } else { n.x + 0.5 };
@@ -275,8 +289,9 @@ pub(crate) struct TogglePart;
 pub(crate) struct ProgressFill;
 #[derive(Component)]
 pub(crate) struct SliderFill;
+/// A slider's thumb; `true` for the low thumb of a range slider.
 #[derive(Component)]
-pub(crate) struct SliderThumb;
+pub(crate) struct SliderThumb(pub(crate) bool);
 #[derive(Component)]
 pub(crate) struct TabIndicator;
 #[derive(Component)]
@@ -310,6 +325,8 @@ pub enum ControlKind {
     Selected,
     /// Slider value changed.
     Slid(f32),
+    /// A range slider's thumbs moved to `(low, high)`.
+    Ranged(f32, f32),
     /// Text input content changed.
     TextChanged,
 }
@@ -689,6 +706,7 @@ pub fn slider(value: f32, min: f32, max: f32) -> impl Bundle {
             min,
             max,
             vertical: false,
+            lo: None,
         },
         Node {
             width: Val::Percent(100.0),
@@ -704,7 +722,7 @@ pub fn slider(value: f32, min: f32, max: f32) -> impl Bundle {
                 },
                 Surface::default(),
             ),
-            (SliderThumb, abs_fill(), Surface::default()),
+            (SliderThumb(false), abs_fill(), Surface::default()),
         ],
     )
 }
@@ -717,6 +735,7 @@ pub fn vertical_slider(value: f32, min: f32, max: f32, length: f32) -> impl Bund
             min,
             max,
             vertical: true,
+            lo: None,
         },
         Node {
             height: Val::Px(length),
@@ -734,7 +753,42 @@ pub fn vertical_slider(value: f32, min: f32, max: f32, length: f32) -> impl Bund
                 },
                 Surface::default(),
             ),
-            (SliderThumb, abs_fill(), Surface::default()),
+            (SliderThumb(false), abs_fill(), Surface::default()),
+        ],
+    )
+}
+
+/// Two-thumb slider picking `lo..=hi`, full width (or `length` px tall, bottom to top, when
+/// `vertical`).
+pub fn range_slider(lo: f32, hi: f32, min: f32, max: f32, vertical: Option<f32>) -> impl Bundle {
+    let (lo, hi) = (lo.min(hi), hi.max(lo));
+    let node = match vertical {
+        Some(length) => Node {
+            height: Val::Px(length),
+            flex_direction: FlexDirection::Column,
+            justify_content: JustifyContent::FlexEnd,
+            align_items: AlignItems::Stretch,
+            ..default()
+        },
+        None => Node {
+            width: Val::Percent(100.0),
+            align_items: AlignItems::Center,
+            ..default()
+        },
+    };
+    (
+        UiSlider {
+            value: hi,
+            min,
+            max,
+            vertical: vertical.is_some(),
+            lo: Some(lo),
+        },
+        node,
+        children![
+            (SliderFill, Node::default(), Surface::default()),
+            (SliderThumb(true), abs_fill(), Surface::default()),
+            (SliderThumb(false), abs_fill(), Surface::default()),
         ],
     )
 }
@@ -837,6 +891,7 @@ mod slider_tests {
             min: 0.0,
             max: 10.0,
             vertical,
+            lo: None,
         }
     }
 
