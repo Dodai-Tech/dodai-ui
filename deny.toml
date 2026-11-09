@@ -19,6 +19,8 @@ ignore = [
     "RUSTSEC-2026-0370",
     "RUSTSEC-2026-0371",
     "RUSTSEC-2026-0372",
+    # pin-utils, via gpui -> gpui_http_client -> zed-async-tar -> async-std.
+    "RUSTSEC-2026-0441",
 ]
 
 [licenses]
