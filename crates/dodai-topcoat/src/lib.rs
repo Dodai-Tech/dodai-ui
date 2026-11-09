@@ -372,7 +372,7 @@ pub fn theme_vars(t: &Theme) -> String {
 fn kit_hovers(kit: Kit) -> bool {
     matches!(
         kit,
-        Kit::Chip { .. } | Kit::Row { .. } | Kit::Page { .. } | Kit::Select
+        Kit::Chip { .. } | Kit::Row { .. } | Kit::Page { .. } | Kit::Segment { .. } | Kit::Select
     )
 }
 

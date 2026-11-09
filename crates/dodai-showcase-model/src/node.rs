@@ -437,6 +437,10 @@ pub enum SliderFormat {
     Decibel,
     /// `balance +20` around the middle of a 0..1 track.
     Balance,
+    /// A factor as a percentage: `1.25` is `125%`.
+    Ratio,
+    /// Whole pixels: `4px`.
+    Px,
 }
 
 impl SliderFormat {
@@ -448,6 +452,8 @@ impl SliderFormat {
             Self::Percent => format!("{v:.0}%"),
             Self::Decibel => format!("{v:+.0} dB"),
             Self::Balance => format!("balance {:+.0}", (v - 0.5) * 200.0),
+            Self::Ratio => format!("{:.0}%", v * 100.0),
+            Self::Px => format!("{v:.0}px"),
         }
     }
 }
