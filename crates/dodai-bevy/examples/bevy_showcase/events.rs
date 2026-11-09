@@ -572,3 +572,53 @@ mod tests {
         assert!(!a.world().resource::<Dirty>().content);
     }
 }
+
+/// A section panel the Surface effects page's mix paints (texture, scanlines, bevel...), redrawn
+/// when its size or the mix changes.
+#[derive(Component, Default)]
+pub struct SectionFx {
+    drawn: Option<(Vec2, dodai_core::SurfaceFx, Entity)>,
+}
+
+/// Paint the app-wide surface mix over every section panel, as the other showcases do.
+pub fn section_fx(
+    mut commands: Commands,
+    model: Res<Model>,
+    theme: Res<DodaiTheme>,
+    mut q: Query<(Entity, &ComputedNode, &mut SectionFx)>,
+) {
+    let fx = model.0.surface_fx();
+    for (e, node, mut s) in &mut q {
+        let size = (node.size() * node.inverse_scale_factor()).round();
+        if size.x < 1.0 || size.y < 1.0 {
+            continue;
+        }
+        if s.drawn.is_some_and(|(sz, f, _)| sz == size && f == fx) {
+            continue;
+        }
+        if let Some((_, _, old)) = s.drawn.take() {
+            commands.entity(old).try_despawn();
+        }
+        let mut layer = Entity::PLACEHOLDER;
+        commands.entity(e).with_children(|p| {
+            layer = p
+                .spawn((
+                    Node {
+                        position_type: PositionType::Absolute,
+                        left: Val::Px(0.0),
+                        top: Val::Px(0.0),
+                        width: Val::Px(size.x),
+                        height: Val::Px(size.y),
+                        ..default()
+                    },
+                    bevy::picking::Pickable::IGNORE,
+                    bevy::ui::FocusPolicy::Pass,
+                ))
+                .with_children(|l| {
+                    dodai_bevy::surface_fx::spawn_surface_fx(l, theme.theme(), fx, size)
+                })
+                .id();
+        });
+        s.drawn = Some((size, fx, layer));
+    }
+}
