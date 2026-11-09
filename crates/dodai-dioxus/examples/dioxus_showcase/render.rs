@@ -640,6 +640,40 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
                 }
             }
         }
+        Demo::Glyph {
+            icon,
+            size,
+            filled,
+            ink,
+        } => {
+            let svg = icon
+                .glyph(&theme, *filled)
+                .map(|g| g.svg(*size as u32, &ink.to_css()))
+                .unwrap_or_default();
+            rsx! { span { style: "display:inline-flex;flex:none;width:{size}px;height:{size}px", dangerous_inner_html: "{svg}" } }
+        }
+        Demo::IconTile { icon, filled } => {
+            let svg = icon
+                .glyph(&theme, *filled)
+                .map(|g| g.svg(28, &theme.palette.primary.to_css()))
+                .unwrap_or_default();
+            let name = dodai_showcase_model::icons::shortened(
+                icon.name(),
+                dodai_showcase_model::icons::TILE_NAME_CHARS,
+            );
+            let (sp, bd, muted, xs) = (
+                theme.spacing.sm,
+                theme.palette.border.to_css(),
+                theme.palette.text_muted.to_css(),
+                theme.typography.size_xs,
+            );
+            rsx! {
+                div { style: "width:92px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:4px;padding:{sp}px 4px;border:1px solid {bd}",
+                    span { style: "display:inline-flex;width:28px;height:28px", dangerous_inner_html: "{svg}" }
+                    span { style: "font-size:{xs}px;color:{muted};white-space:nowrap", "{name}" }
+                }
+            }
+        }
         Demo::Frosted { w, h, panels } => {
             // The sharp picture, and over it each panel's blurred, tinted copy of what it covers
             // (the same pixels as the other toolkits, not the browser's backdrop-filter).

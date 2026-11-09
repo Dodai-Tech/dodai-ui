@@ -13,6 +13,7 @@
 
 pub mod catalog;
 pub mod commands;
+pub mod icons;
 pub mod md;
 pub mod media;
 pub mod menus;

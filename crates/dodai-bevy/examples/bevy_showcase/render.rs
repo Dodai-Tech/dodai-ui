@@ -1023,6 +1023,43 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                 f.spawn(at).with_children(|l| spawn(l, layer, cx));
             });
         }
+        Demo::Glyph {
+            icon,
+            size,
+            filled,
+            ink,
+        } => {
+            glyph_node(p, *icon, *size, *filled, *ink);
+        }
+        Demo::IconTile { icon, filled } => {
+            let name = dodai_showcase_model::icons::shortened(
+                icon.name(),
+                dodai_showcase_model::icons::TILE_NAME_CHARS,
+            );
+            p.spawn((
+                Node {
+                    width: Val::Px(92.0),
+                    flex_direction: FlexDirection::Column,
+                    align_items: AlignItems::Center,
+                    row_gap: Val::Px(4.0),
+                    padding: UiRect::axes(Val::Px(4.0), Val::Px(theme.spacing.sm)),
+                    border: UiRect::all(Val::Px(1.0)),
+                    flex_shrink: 0.0,
+                    ..default()
+                },
+                BorderColor::all(color(theme.palette.border)),
+            ))
+            .with_children(|c| {
+                glyph_node(c, *icon, 28.0, *filled, theme.palette.primary);
+                c.spawn(text(
+                    name,
+                    role(
+                        styled(theme.typography.size_xs, Font::Body, Ink::Muted),
+                        theme,
+                    ),
+                ));
+            });
+        }
         Demo::Frosted { w, h, panels } => {
             // The sharp picture, and over it each panel's blurred, tinted copy of what it covers.
             let rects: Vec<[f32; 4]> = panels.iter().map(|p| p.rect).collect();
@@ -2030,6 +2067,38 @@ fn code_block(p: &mut ChildSpawnerCommands, code: &str, lang: &str, theme: &Them
 pub struct PicturePath {
     path: String,
     contain: bool,
+}
+
+/// A catalogue icon or symbol at `size` px in `ink`.
+fn glyph_node(
+    p: &mut ChildSpawnerCommands,
+    icon: dodai_showcase_model::icons::IconRef,
+    size: f32,
+    filled: bool,
+    ink: dodai_core::Color,
+) {
+    use dodai_showcase_model::icons::IconRef;
+    match icon {
+        IconRef::Named(i) => {
+            p.spawn((
+                UiIcon {
+                    icon: i,
+                    size: size as u32,
+                    filled,
+                },
+                Node {
+                    width: Val::Px(size),
+                    height: Val::Px(size),
+                    flex_shrink: 0.0,
+                    ..default()
+                },
+                Foreground(ink),
+            ));
+        }
+        IconRef::Symbol(s) => {
+            p.spawn((dodai_bevy::widgets::symbol(s, size as u32), Foreground(ink)));
+        }
+    }
 }
 
 /// Model pixels to show in this node, stretched over it; [`load_pictures`] turns them into an

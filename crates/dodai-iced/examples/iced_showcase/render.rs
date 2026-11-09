@@ -819,6 +819,42 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             )
             .into()
         }
+        Demo::Glyph {
+            icon,
+            size,
+            filled,
+            ink,
+        } => lt.glyph(icon.glyph(th, *filled), *size, *ink),
+        Demo::IconTile { icon, filled } => {
+            let name = dodai_showcase_model::icons::shortened(
+                icon.name(),
+                dodai_showcase_model::icons::TILE_NAME_CHARS,
+            );
+            let border = dodai_iced::color(th.palette.border);
+            container(
+                column![
+                    lt.glyph(icon.glyph(th, *filled), 28.0, th.palette.primary),
+                    text(name)
+                        .size(th.typography.size_xs)
+                        .style(lt.muted())
+                        .wrapping(iced::widget::text::Wrapping::None),
+                ]
+                .spacing(4)
+                .align_x(alignment::Horizontal::Center),
+            )
+            .width(92)
+            .padding([th.spacing.sm, 4.0])
+            .align_x(alignment::Horizontal::Center)
+            .style(move |_| container::Style {
+                border: iced::Border {
+                    width: 1.0,
+                    color: border,
+                    radius: 0.0.into(),
+                },
+                ..container::Style::default()
+            })
+            .into()
+        }
         Demo::Frosted { w, h, panels } => {
             // The sharp picture, and over it each panel's blurred, tinted copy of what it covers.
             let rects: Vec<[f32; 4]> = panels.iter().map(|p| p.rect).collect();
