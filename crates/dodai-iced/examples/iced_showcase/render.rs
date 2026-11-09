@@ -128,7 +128,12 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             } else {
                 alignment::Vertical::Top
             };
-            let w = s.width.map_or(Length::Shrink, Length::Fixed);
+            // A row holding a growing gap takes the whole width for it to grow into.
+            let grows = s.items.iter().any(|n| matches!(n, Demo::Grow));
+            let w = s.width.map_or(
+                if grows { Length::Fill } else { Length::Shrink },
+                Length::Fixed,
+            );
             match (s.axis, s.wrap) {
                 (Axis::Row, true) => row(items)
                     .spacing(g)
@@ -151,6 +156,7 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
         }
         Demo::Text(t, r) => txt(cx, t, *r),
         Demo::Space(px) => Space::new().width(*px).height(*px).into(),
+        Demo::Grow => Space::new().width(Length::Fill).into(),
         Demo::Swatch {
             name,
             color: c,
@@ -643,7 +649,12 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
                 if let Some(t) = &r.trailing {
                     line = line.push(txt(cx, t, Role::Caption));
                 }
-                col = col.push(lt.kit_box(Kit::Row { selected: false }, line));
+                col = col.push(lt.kit_box(
+                    Kit::Row {
+                        selected: r.selected,
+                    },
+                    line,
+                ));
             }
             col.into()
         }
@@ -723,6 +734,73 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
         Demo::Popup(inner) => container(lt.kit_box(Kit::Popup, view(inner, cx)))
             .width(Length::Shrink)
             .into(),
+        Demo::Frame {
+            h,
+            body,
+            scrim,
+            layer,
+            place,
+        } => {
+            use dodai_showcase_model::node::Place;
+            let edge = dodai_iced::color(th.palette.border);
+            let base = container(view(body, cx))
+                .padding(sp.md)
+                .width(Length::Fill)
+                .height(*h)
+                .style(move |_| container::Style {
+                    border: iced::Border {
+                        color: edge,
+                        width: 1.0,
+                        radius: 0.0.into(),
+                    },
+                    ..container::Style::default()
+                });
+            let (ax, ay) = match place {
+                Place::Centre => (alignment::Horizontal::Center, alignment::Vertical::Center),
+                Place::Start => (alignment::Horizontal::Left, alignment::Vertical::Top),
+                Place::End => (alignment::Horizontal::Right, alignment::Vertical::Top),
+                Place::Bottom => (alignment::Horizontal::Left, alignment::Vertical::Bottom),
+            };
+            let side = matches!(place, Place::Start | Place::End);
+            let layer = container(view(layer, cx))
+                .width(if *place == Place::Bottom {
+                    Length::Fill
+                } else {
+                    Length::Shrink
+                })
+                .height(if side { Length::Fill } else { Length::Shrink });
+            let mut st = iced::widget::stack![base];
+            if let Some(c) = scrim {
+                let c = dodai_iced::color(*c);
+                st = st.push(
+                    container(Space::new())
+                        .width(Length::Fill)
+                        .height(Length::Fill)
+                        .style(move |_| container::Style {
+                            background: Some(iced::Background::Color(c)),
+                            ..container::Style::default()
+                        }),
+                );
+            }
+            st.push(
+                container(layer)
+                    .width(Length::Fill)
+                    .height(Length::Fill)
+                    .align_x(ax)
+                    .align_y(ay),
+            )
+            .into()
+        }
+        Demo::Anchor {
+            open,
+            trigger,
+            panel,
+        } => {
+            let shown = vals.flag(open);
+            let flip = Msg::Set(open.key.clone(), Value::Bool(!shown));
+            let trigger = iced::widget::mouse_area(view(trigger, cx)).on_press(flip);
+            dodai_iced::anchored(trigger, shown.then(|| view(panel, cx)), sp.xs)
+        }
         Demo::Icon(i, size) => icon(cx, *i, *size),
         Demo::Rating { value, max } => {
             let full = value.round() as u8;
@@ -822,11 +900,16 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             )]
             .spacing(sp.xs)
             .align_y(alignment::Vertical::Center);
-            for i in 0..*pages {
+            for slot in dodai_core::paging::page_window(at + 1, *pages, 7) {
+                let dodai_core::paging::PageItem::Page(p) = slot else {
+                    r = r.push(txt(cx, "…", Role::Muted));
+                    continue;
+                };
+                let i = p - 1;
                 r = r.push(
                     lt.kit_button(
                         Kit::Page { selected: i == at },
-                        container(text((i + 1).to_string()).size(th.typography.size_sm))
+                        container(text(p.to_string()).size(th.typography.size_sm))
                             .width(24)
                             .align_x(alignment::Horizontal::Center),
                         go(i),
@@ -843,9 +926,11 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             r.into()
         }
         Demo::Tree(nodes) => {
-            let mut col = column![].width(Length::Fixed(420.0));
+            let mut col = column![].width(Length::Fill);
+            // Keys start with the first root's label: two trees in a section fold apart.
+            let id = nodes.first().map_or("", |n| n.label.as_str());
             for (i, n) in nodes.iter().enumerate() {
-                col = tree(col, n, 0, &i.to_string(), cx);
+                col = tree(col, n, 0, &format!("{id}:{i}"), cx);
             }
             col.into()
         }
@@ -1066,7 +1151,9 @@ fn tree<'a>(
     }
     line = line.push(text(n.label.clone()).size(lt.theme().typography.size_md));
     let row_el = lt.kit_button(
-        Kit::Row { selected: false },
+        Kit::Row {
+            selected: n.selected,
+        },
         line,
         if branch {
             Msg::TreeToggle(key.to_string())

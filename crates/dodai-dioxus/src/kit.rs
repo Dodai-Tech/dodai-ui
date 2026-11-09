@@ -221,9 +221,16 @@ pub fn Breadcrumb(items: Vec<String>) -> Element {
     }
 }
 
-/// The page buttons to show: all `pages`, none when there are none.
-pub fn page_range(pages: usize) -> std::ops::Range<usize> {
-    0..pages
+/// The page buttons to show for 0-based `page` of `pages`: the first, the last and a window
+/// around `page`, gaps as `None` (at most seven slots).
+pub fn page_slots(page: usize, pages: usize) -> Vec<Option<usize>> {
+    dodai_core::paging::page_window(page + 1, pages, 7)
+        .into_iter()
+        .map(|it| match it {
+            dodai_core::paging::PageItem::Page(p) => Some(p - 1),
+            dodai_core::paging::PageItem::Ellipsis => None,
+        })
+        .collect()
 }
 
 /// Properties of [`Pagination`].
@@ -243,8 +250,12 @@ pub fn Pagination(props: PaginationProps) -> Element {
         nav { class: "dodai-pager", "aria-label": "Pagination",
             button { class: "dodai-btn dodai-btn--ghost dodai-btn--sm dodai-btn--icon", disabled: page == 0,
                 onclick: move |_| h.call(page.saturating_sub(1)), Icon { icon: IconId::ChevronLeft, size: 16 } }
-            for i in page_range(pages) {
-                KitBox { key: "{i}", kit: Kit::Page { selected: i == page }, onclick: move |_| h.call(i), "{i + 1}" }
+            for (n, slot) in page_slots(page, pages).into_iter().enumerate() {
+                if let Some(i) = slot {
+                    KitBox { key: "{n}", kit: Kit::Page { selected: i == page }, onclick: move |_| h.call(i), "{i + 1}" }
+                } else {
+                    span { key: "{n}", class: "dodai-muted", "…" }
+                }
             }
             button { class: "dodai-btn dodai-btn--ghost dodai-btn--sm dodai-btn--icon", disabled: page + 1 >= pages,
                 onclick: move |_| h.call((page + 1).min(pages.saturating_sub(1))), Icon { icon: IconId::ChevronRight, size: 16 } }
@@ -259,12 +270,14 @@ pub struct TreeItem {
     pub icon: Option<IconId>,
     pub children: Vec<TreeItem>,
     pub open: bool,
+    /// Drawn as the selected row.
+    pub selected: bool,
 }
 
 #[component]
 fn TreeBranch(item: TreeItem) -> Element {
     let row = rsx! {
-        KitBox { kit: Kit::Row { selected: false },
+        KitBox { kit: Kit::Row { selected: item.selected },
             if !item.children.is_empty() { span { class: "dodai-tree__chev", Icon { icon: IconId::ChevronRight, size: 14 } } }
             else { span { style: "width:14px" } }
             if let Some(i) = item.icon { Icon { icon: i, size: 16 } }
@@ -530,9 +543,12 @@ mod tests {
     }
 
     #[test]
-    fn pagination_lists_every_page() {
-        assert_eq!(page_range(0).count(), 0);
-        assert_eq!(page_range(7).count(), 7);
+    fn pagination_shows_a_window_with_gaps() {
+        assert!(page_slots(0, 0).is_empty());
+        assert_eq!(page_slots(2, 7).len(), 7);
+        let s = page_slots(4, 20);
+        assert_eq!((s[0], s[s.len() - 1]), (Some(0), Some(19)));
+        assert!(s.contains(&None) && s.contains(&Some(4)));
     }
 
     #[test]

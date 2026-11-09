@@ -27,6 +27,7 @@ mod knob;
 pub mod markdown;
 pub mod math;
 pub mod orientation;
+pub mod paging;
 mod palette;
 mod shape_system;
 pub mod slider_math;

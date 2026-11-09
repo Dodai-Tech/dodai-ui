@@ -15,6 +15,7 @@ pub mod catalog;
 pub mod commands;
 pub mod md;
 pub mod media;
+pub mod menus;
 pub mod node;
 pub mod pickers;
 pub mod plot;
