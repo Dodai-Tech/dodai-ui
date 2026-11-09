@@ -1,7 +1,7 @@
 //! # dodai-charts
 //!
 //! Renderer-agnostic chart logic (the root modules) and a chart set per toolkit, each behind its
-//! own feature: `gpui` ([`gpui`], interactive animated charts drawn in the active Dodai design).
+//! own feature: `gpui` (module `gpui`: interactive animated charts drawn in the active Dodai design).
 //!
 //! Pure chart logic: scales and ticks, geometry, financial
 //! transforms, layouts. Toolkit modules only paint what

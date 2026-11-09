@@ -635,7 +635,7 @@ pub struct IconProps {
     /// Use the filled form where the pack has one.
     #[props(default)]
     pub filled: bool,
-    /// The theme to draw in; `None` takes the one of the surrounding [`ThemeProvider`].
+    /// The theme to draw in; `None` takes the one of the surrounding [`ThemeProvider`](crate::provider::ThemeProvider).
     #[props(default)]
     pub theme: Option<dodai_core::Theme>,
 }

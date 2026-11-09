@@ -9,15 +9,18 @@ use dodai_gpui::paint::{fill_circle, scale_alpha, stroke_batch};
 use gpui::{Hsla, Pixels, Point, Window};
 
 /// Open lines gathered by colour and width, painted as one path per group: a ring of 240
-/// ticks in two shades costs two draws instead of 240.
+/// ticks in two shades costs two draws instead of 240. Only the automotive faces batch.
+#[cfg(feature = "automotive")]
 #[derive(Default)]
 pub(crate) struct Strokes {
     groups: Vec<StrokeGroup>,
 }
 
 /// One colour and width of [`Strokes`], with its lines.
+#[cfg(feature = "automotive")]
 type StrokeGroup = (Hsla, f32, Vec<Vec<(f32, f32)>>);
 
+#[cfg(feature = "automotive")]
 impl Strokes {
     /// Add the line `p`, `width` wide, in `colour`.
     pub(crate) fn add(&mut self, p: Vec<(f32, f32)>, width: f32, colour: Hsla) {

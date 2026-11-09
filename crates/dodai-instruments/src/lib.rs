@@ -2,7 +2,7 @@
 //!
 //! Pure, renderer-agnostic instrument logic: scales, zones and alarms, gauge geometry, flight
 //! displays, tactical symbols and seven-segment digits. Toolkit modules
-//! (feature `gpui`: [`gpui`]) only paint what this crate computes. Number formats and
+//! (feature `gpui`: module `gpui`) only paint what this crate computes. Number formats and
 //! polar maths come from `dodai-charts`.
 //!
 //! | Module | Contents |

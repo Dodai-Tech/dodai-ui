@@ -153,7 +153,7 @@ jobs:
           cargo check -p dodai-instruments --no-default-features --features gpui,aviation
           cargo check -p dodai-instruments --no-default-features --features gpui,defense
           cargo check -p dodai-gpui --no-default-features --features components
-          cargo check -p dodai-gpui --no-default-features --features shaders
+          cargo check -p dodai-gpui --no-default-features --features frost
           cargo check -p dodai-gpui --no-default-features
           cargo check -p dodai-gpui --no-default-features --features cyberpunk
           cargo check -p dodai-gpui --no-default-features --features material
@@ -209,7 +209,7 @@ jobs:
           cargo check -p dodai-instruments --no-default-features --features gpui,aviation
           cargo check -p dodai-instruments --no-default-features --features gpui,defense
           cargo check -p dodai-gpui --no-default-features --features components
-          cargo check -p dodai-gpui --no-default-features --features shaders
+          cargo check -p dodai-gpui --no-default-features --features frost
           cargo check -p dodai-gpui --no-default-features
           cargo check -p dodai-gpui --no-default-features --features cyberpunk
           cargo check -p dodai-gpui --no-default-features --features material
@@ -292,6 +292,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # test_versioning reads `cargo metadata`.
+      - uses: dtolnay/rust-toolchain@stable
       - uses: hustcer/setup-nu@v3
         with:
           version: "*"
