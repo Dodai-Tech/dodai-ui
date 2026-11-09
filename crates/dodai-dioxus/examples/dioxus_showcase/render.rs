@@ -357,6 +357,7 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
             let key = ch.bind.key.clone();
             rsx! {
                 Tabs { tabs: ch.labels.clone(), active: vals.index(&ch.bind),
+                    secondary: ch.secondary, disabled: ch.disabled.clone(), icons: ch.icons.clone(),
                     onselect: move |i| act(model, Action::Set(key.clone(), Value::Index(i))) }
             }
         }
@@ -607,6 +608,16 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
                     if let Some(c) = scrim { div { style: "position:absolute;inset:0;background:{c}" } }
                     div { style: "position:absolute;{at}", {view(layer, cx)} }
                 }
+            }
+        }
+        Demo::Gizmo { yaw, pitch, size } => {
+            let (yk, pk) = (yaw.key.clone(), pitch.key.clone());
+            rsx! {
+                AxisGizmo { yaw: vals.num(yaw), pitch: vals.num(pitch), size: *size, theme: theme.clone(),
+                    onchange: move |(y, p)| {
+                        act(model, Action::Set(yk.clone(), Value::Num(y)));
+                        act(model, Action::Set(pk.clone(), Value::Num(p)));
+                    } }
             }
         }
         Demo::Anchor {

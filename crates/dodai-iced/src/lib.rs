@@ -52,6 +52,7 @@ mod charts;
 mod controls;
 mod frame;
 mod geometry;
+mod gizmo;
 mod glass;
 #[cfg(feature = "icons")]
 mod icon;
@@ -75,11 +76,13 @@ pub use anchored::{anchored, Anchored};
 pub use charts::{ChartKind, Prim};
 pub use frame::{shaped_frame, BoxStyle, ShapedFrame};
 pub use geometry::ShapeGeom;
+pub use gizmo::{GizmoState, GIZMO_HOME};
 pub use kit::segment;
 pub use knob::{wheel_value, KnobDrag, KnobRange};
 pub use range_slider::{RangeDrag, RangeSpec, SliderLook};
 pub use shaped_button::{ButtonState, ShapedButton, ShapedColors, Tick};
 pub use surface_fx::SurfaceFxProgram;
+pub use tabs::TabsLook;
 
 use dodai_core::{Color as LColor, Theme};
 use iced::{

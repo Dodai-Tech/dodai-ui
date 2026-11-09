@@ -282,6 +282,15 @@ pub struct UiDivider {
 #[require(ControlPointer)]
 pub struct UiTooltip(pub String);
 
+/// A tab drawn in the secondary style: the active one underlined in the primary colour, no
+/// fill. Put it on a [`UiTab`].
+#[derive(Component, Debug, Clone, Copy, Default)]
+pub struct TabSecondary;
+
+/// A tab that cannot be picked: greyed. Put it on a [`UiTab`] (and give it no action).
+#[derive(Component, Debug, Clone, Copy, Default)]
+pub struct TabDisabled;
+
 /// Draws an unchecked checkbox half-way: on, with a dash instead of the mark (a group with
 /// some members picked).
 #[derive(Component, Debug, Clone, Copy, Default)]

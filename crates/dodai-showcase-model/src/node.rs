@@ -348,6 +348,12 @@ pub struct Choice {
     pub labels: Vec<String>,
     /// Drawn as one connected strip.
     pub connected: bool,
+    /// Options that cannot be picked (drawn greyed).
+    pub disabled: Vec<usize>,
+    /// An icon per option, over or before its label.
+    pub icons: Vec<IconId>,
+    /// Tabs: the secondary style (an underline, no fill).
+    pub secondary: bool,
 }
 
 /// Switch, checkbox or radio.
@@ -814,6 +820,16 @@ pub enum Node {
     },
     /// A floating menu or dropdown list around its content.
     Popup(Box<Node>),
+    /// The orientation gizmo of a 3D view for an orbit camera (radians, Z up): a clicked ball
+    /// looks along its axis, home goes back, a drag orbits.
+    Gizmo {
+        /// Yaw.
+        yaw: Bind<f32>,
+        /// Pitch.
+        pitch: Bind<f32>,
+        /// Side px.
+        size: f32,
+    },
     /// A bordered box `h` px tall holding `body` (the page), with `layer` over it at `place`
     /// and a `scrim` between when set: a dialog, sheet or drawer shown inside the page.
     Frame {
@@ -1161,10 +1177,28 @@ pub mod b {
             bind: Bind::new(key, default),
             labels: labels.iter().map(|s| s.to_string()).collect(),
             connected: false,
+            disabled: Vec::new(),
+            icons: Vec::new(),
+            secondary: false,
         }
     }
 
     impl Choice {
+        /// Options that cannot be picked.
+        pub fn disabled(mut self, at: &[usize]) -> Self {
+            self.disabled = at.to_vec();
+            self
+        }
+        /// An icon per option.
+        pub fn icons(mut self, icons: &[IconId]) -> Self {
+            self.icons = icons.to_vec();
+            self
+        }
+        /// Tabs: the secondary style.
+        pub fn secondary(mut self) -> Self {
+            self.secondary = true;
+            self
+        }
         /// One connected strip.
         pub fn connected(mut self) -> Self {
             self.connected = true;

@@ -87,6 +87,7 @@ fn main() {
         (
             events::hotkeys,
             events::handle,
+            events::gizmo,
             events::tree_toggle,
             events::sync_theme,
             events::sync_glass,

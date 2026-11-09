@@ -43,7 +43,7 @@ pub(crate) const SECTIONS: [Section; 15] = [
 ];
 
 /// The animations a switch, checkbox and radio can move with.
-const ANIMATIONS: [&str; 5] = ["Design's own", "Slide", "Stretch", "Glitch", "Lift"];
+pub(crate) const ANIMATIONS: [&str; 5] = ["Design's own", "Slide", "Stretch", "Glitch", "Lift"];
 
 fn toggles(_: &Ctx) -> Node {
     let radio = |i: usize, name: &str| {

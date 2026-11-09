@@ -34,6 +34,8 @@ pub enum Bound {
     Step { key: String, by: i32, default: i32 },
     /// The sidebar filter.
     Filter,
+    /// An orientation gizmo stores its camera under the yaw and pitch keys.
+    Gizmo { yaw: String, pitch: String },
     /// Opens (or closes) the named dropdown.
     Menu(&'static str),
 }
@@ -135,6 +137,9 @@ pub fn num_text(v: f32, step: Option<f32>) -> String {
         format!("{v:.1}")
     }
 }
+
+/// The camera an orientation gizmo starts at and goes home to: yaw and pitch, radians.
+pub const GIZMO_HOME: (f32, f32) = (0.6, 0.45);
 
 /// Keeps a readout on one line beside a growing control.
 fn no_shrink() -> Node {
@@ -456,10 +461,29 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
             ))
             .with_children(|c| {
                 for (i, l) in ch.labels.iter().enumerate() {
-                    c.spawn((
-                        tab(l.clone(), i == at),
-                        Bound::Act(Action::Set(ch.bind.key.clone(), Value::Index(i))),
-                    ));
+                    let mut e = c.spawn(tab(l.clone(), i == at));
+                    if ch.disabled.contains(&i) {
+                        e.insert(TabDisabled);
+                    } else {
+                        e.insert(Bound::Act(Action::Set(
+                            ch.bind.key.clone(),
+                            Value::Index(i),
+                        )));
+                    }
+                    if ch.secondary {
+                        e.insert(TabSecondary);
+                    }
+                    if let Some(&ic) = ch.icons.get(i) {
+                        let icon = e.commands().spawn(icon_node(ic, 18)).id();
+                        e.insert(Node {
+                            flex_direction: FlexDirection::Column,
+                            align_items: AlignItems::Center,
+                            justify_content: JustifyContent::Center,
+                            row_gap: Val::Px(theme.spacing.xs),
+                            ..default()
+                        })
+                        .insert_children(0, &[icon]);
+                    }
                 }
             });
         }
@@ -958,6 +982,20 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                 }
                 f.spawn(at).with_children(|l| spawn(l, layer, cx));
             });
+        }
+        Demo::Gizmo { yaw, pitch, size } => {
+            let g = UiAxisGizmo {
+                basis: Basis::from_orbit(vals.num(yaw), vals.num(pitch)),
+                layout: dodai_core::orientation::GizmoLayout::new(*size),
+            };
+            p.spawn((
+                axis_gizmo(*size),
+                Bound::Gizmo {
+                    yaw: yaw.key.clone(),
+                    pitch: pitch.key.clone(),
+                },
+            ))
+            .insert(g);
         }
         Demo::Anchor {
             open,

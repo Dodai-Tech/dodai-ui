@@ -113,6 +113,9 @@ code,pre,.dodai-mono{font-family:var(--dodai-font-mono)}
   border-bottom:var(--dodai-border-width) solid transparent;margin-bottom:calc(var(--dodai-border-width) * -1);border-radius:var(--dodai-radius) var(--dodai-radius) 0 0;clip-path:var(--dodai-clip-sm);transition:background .12s,color .12s}
 .dodai-tab:hover{background:var(--dodai-surface-raised);color:var(--dodai-text);text-decoration:none}
 .dodai-tab--active,.dodai-tab[aria-current=page],.dodai-tab--active:hover{background:var(--dodai-primary);color:var(--dodai-on-primary);border-bottom-color:var(--dodai-primary)}
+.dodai-tabs--secondary .dodai-tab--active,.dodai-tabs--secondary .dodai-tab--active:hover{background:none;color:var(--dodai-primary);box-shadow:inset 0 -2px var(--dodai-primary)}
+.dodai-tab--disabled{opacity:.45;pointer-events:none}
+.dodai-tab--icon{display:inline-flex;flex-direction:column;align-items:center;gap:var(--dodai-space-xs)}
 
 /* Tables */
 .dodai-table{width:100%;border-collapse:collapse}
