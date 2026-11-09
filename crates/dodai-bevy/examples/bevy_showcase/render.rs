@@ -431,43 +431,8 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
             });
         }
         Demo::Choice(ch) if ch.connected => {
-            // One bordered strip; the picked segment filled (with a check on tonal designs).
-            let at = vals.index(&ch.bind);
-            let tonal = theme.look().tonal;
-            let h = if tonal {
-                theme.sizes().segmented_height
-            } else {
-                theme.shape.control_height - 6.0
-            };
-            p.spawn((
-                kit(Kit::Segmented),
-                Node {
-                    column_gap: Val::Px(if tonal { 0.0 } else { theme.spacing.half() }),
-                    align_self: AlignSelf::FlexStart,
-                    ..default()
-                },
-            ))
-            .with_children(|c| {
-                for (i, l) in ch.labels.iter().enumerate() {
-                    let on = i == at;
-                    let label = if on && tonal {
-                        format!("\u{2713} {l}")
-                    } else {
-                        l.clone()
-                    };
-                    c.spawn((
-                        kit_pressable(Kit::Segment { selected: on }),
-                        Node {
-                            height: Val::Px(h),
-                            align_items: AlignItems::Center,
-                            ..default()
-                        },
-                        Bound::Act(Action::Set(ch.bind.key.clone(), Value::Index(i))),
-                    ))
-                    .with_children(|b| {
-                        b.spawn(text(label, TextRole::Control));
-                    });
-                }
+            segmented(p, theme, &ch.labels, vals.index(&ch.bind), |i| {
+                Action::Set(ch.bind.key.clone(), Value::Index(i))
             });
         }
         Demo::Choice(ch) => {
@@ -2067,6 +2032,54 @@ fn code_block(p: &mut ChildSpawnerCommands, code: &str, lang: &str, theme: &Them
 pub struct PicturePath {
     path: String,
     contain: bool,
+}
+
+/// A segmented control: the options in one bordered strip, the picked one filled (with a check
+/// on tonal designs); a press runs `act` of its index.
+pub fn segmented(
+    p: &mut ChildSpawnerCommands,
+    theme: &Theme,
+    labels: &[String],
+    selected: usize,
+    act: impl Fn(usize) -> Action,
+) {
+    let tonal = theme.look().tonal;
+    let h = if tonal {
+        theme.sizes().segmented_height
+    } else {
+        theme.shape.control_height - 6.0
+    };
+    p.spawn((
+        kit(Kit::Segmented),
+        Node {
+            column_gap: Val::Px(if tonal { 0.0 } else { theme.spacing.half() }),
+            align_self: AlignSelf::FlexStart,
+            flex_shrink: 0.0,
+            ..default()
+        },
+    ))
+    .with_children(|c| {
+        for (i, l) in labels.iter().enumerate() {
+            let on = i == selected;
+            let label = if on && tonal {
+                format!("\u{2713} {l}")
+            } else {
+                l.clone()
+            };
+            c.spawn((
+                kit_pressable(Kit::Segment { selected: on }),
+                Node {
+                    height: Val::Px(h),
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                Bound::Act(act(i)),
+            ))
+            .with_children(|b| {
+                b.spawn(text(label, TextRole::Control));
+            });
+        }
+    });
 }
 
 /// A catalogue icon or symbol at `size` px in `ink`.
