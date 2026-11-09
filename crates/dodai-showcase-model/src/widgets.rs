@@ -215,91 +215,172 @@ pub fn clock(t: &Theme, size: f32, offset_min: i32) -> Node {
 }
 
 /// The countdown: a 160 px ring with the time left, then − / start / reset / + minute.
-pub fn timer(t: &Theme, minutes: u32, now: f32) -> Node {
+pub fn timer(t: &Theme, v: &crate::Values, now: f32) -> Node {
+    use crate::live_state as L;
     let size = 160.0;
-    let left_ms = u64::from(minutes) * 60_000;
+    let s = L::timer(v, now);
+    let frac = if s.total_ms == 0 {
+        0.0
+    } else {
+        s.left_ms as f32 / s.total_ms as f32
+    };
+    let tone = if s.done || frac < 0.1 {
+        Some(Tone::Danger)
+    } else if s.running {
+        None
+    } else {
+        Some(Tone::Info)
+    };
     let ring = Ring {
-        tone: Some(Tone::Info),
+        tone,
         size: Some(size),
         thickness: Some(7.0),
         label: false,
-        ..Ring::new(1.0)
+        ..Ring::new(frac)
     };
+    let adj = |label: &str, key: &str| {
+        let b = button(label, V::Outline).counter(key);
+        if s.running { b.disabled() } else { b }.node()
+    };
+    let go = button(
+        if s.running {
+            "Pause"
+        } else if s.done {
+            "Done"
+        } else {
+            "Start"
+        },
+        if s.running { V::Outline } else { V::Primary },
+    )
+    .counter(L::TIMER_GO);
     dial(vec![
         Node::Overlay(vec![
             ring.node(t, now),
             styled(
-                countdown_text(left_ms),
+                countdown_text(s.left_ms),
                 size * 0.2,
                 Font::Display,
-                Ink::Text,
+                if s.done {
+                    Ink::Tone(Tone::Danger)
+                } else {
+                    Ink::Text
+                },
             ),
         ]),
         line(vec![
-            button("−1 min", V::Outline).node(),
-            button("Start", V::Primary).node(),
-            button("Reset", V::Outline).node(),
-            button("+1 min", V::Outline).node(),
+            adj("−1 min", L::TIMER_MINUS),
+            if s.done { go.disabled() } else { go }.node(),
+            button("Reset", V::Outline).counter(L::TIMER_RESET).node(),
+            adj("+1 min", L::TIMER_PLUS),
         ]),
     ])
     .gap(Gap::Md)
 }
 
-/// The stopwatch at rest: `00:00.00` and start / lap / reset.
-pub fn stopwatch(t: &Theme) -> Node {
-    dial(vec![
+/// The stopwatch: the time, start / lap / reset and the last laps (split and total).
+pub fn stopwatch(t: &Theme, v: &crate::Values, now: f32) -> Node {
+    use crate::live_state as L;
+    let s = L::stopwatch(v, now);
+    let off = |b: crate::node::Button, off: bool| if off { b.disabled() } else { b }.node();
+    let splits = dodai_core::clock_math::lap_splits(&s.laps);
+    let mut items = vec![
         styled(
-            stopwatch_text(0),
+            stopwatch_text(s.ms),
             t.typography.size_xxl * 1.4,
             Font::Mono,
             Ink::Text,
         ),
         line(vec![
-            button("Start", V::Primary).node(),
-            button("Lap", V::Outline).disabled().node(),
-            button("Reset", V::Outline).disabled().node(),
+            button(
+                if s.running { "Stop" } else { "Start" },
+                if s.running { V::Danger } else { V::Primary },
+            )
+            .counter(L::SW_GO)
+            .node(),
+            off(button("Lap", V::Outline).counter(L::SW_LAP), !s.running),
+            off(
+                button("Reset", V::Outline).counter(L::SW_RESET),
+                s.running || (s.ms == 0 && s.laps.is_empty()),
+            ),
         ]),
-    ])
-    .gap(Gap::Md)
+    ];
+    let small = |s: String| styled(s, t.typography.size_sm, Font::Mono, Ink::Muted);
+    for i in (0..s.laps.len()).rev().take(L::MAX_LAPS) {
+        items.push(line(vec![
+            small(format!("LAP {}", i + 1)),
+            small(format!("+{}", stopwatch_text(splits[i]))),
+            small(stopwatch_text(s.laps[i])),
+        ]));
+    }
+    dial(items).gap(Gap::Md)
 }
 
-/// The tap-tempo pad before the first tap: readout, hint, four beat lights and the pads.
-pub fn tap_tempo(t: &Theme) -> Node {
+/// The tap-tempo pad: readout, note, beat lights, − / tap / + and play / reset.
+pub fn tap_tempo(t: &Theme, v: &crate::Values, now: f32) -> Node {
+    use crate::live_state as L;
+    use dodai_core::clock_math::{tap_jitter, tempo_name};
     let p = &t.palette;
     let ty = &t.typography;
+    let s = L::tap(v, now);
     let light = |i: usize| {
         let base = if i == 0 { p.primary } else { p.secondary };
+        let lit = match s.beat {
+            Some((b, f)) if b == i => (1.0 - f).powi(2),
+            _ => 0.0,
+        };
         Node::Block {
             w: 22.0,
             h: 22.0,
-            fill: p.border.mix(base, 0.15),
+            fill: p.border.mix(base, 0.15 + 0.85 * lit),
             border: None,
             radius: 11.0,
             label: None,
         }
     };
+    let readout = s
+        .bpm
+        .map_or("—".to_string(), |b| (b.round() as u32).to_string());
+    let note = match (s.bpm, tap_jitter(&s.taps)) {
+        (Some(b), Some(j)) => format!(
+            "{} · {} taps · {}",
+            tempo_name(b),
+            s.taps.len(),
+            if j < 0.04 {
+                "steady"
+            } else if j < 0.1 {
+                "fairly steady"
+            } else {
+                "uneven"
+            }
+        ),
+        (Some(b), None) => format!("{} · {} taps", tempo_name(b), s.taps.len()),
+        _ => "Tap along with the beat".into(),
+    };
+    let none = s.bpm.is_none();
+    let off = |b: crate::node::Button| if none { b.disabled() } else { b }.node();
+    let playing = s.beat.is_some();
     dial(vec![
         line(vec![
-            styled("—", ty.size_xxl * 1.8, Font::Display, Ink::Text),
+            styled(readout, ty.size_xxl * 1.8, Font::Display, Ink::Text),
             styled("BPM", ty.size_md, Font::Body, Ink::Muted),
         ]),
-        styled(
-            "Tap along with the beat",
-            ty.size_sm,
-            Font::Body,
-            Ink::Muted,
-        ),
-        line((0..4).map(light).collect()),
+        styled(note, ty.size_sm, Font::Body, Ink::Muted),
+        line((0..L::BEATS).map(light).collect()),
         line(vec![
-            button("−1", V::Outline).disabled().node(),
+            off(button("−1", V::Outline).counter(L::TAP_MINUS)),
             button("Tap", V::Primary)
                 .size(dodai_core::ControlSize::Large)
+                .counter(L::TAP)
                 .node(),
-            button("+1", V::Outline).disabled().node(),
+            off(button("+1", V::Outline).counter(L::TAP_PLUS)),
         ]),
         line(vec![
-            button("Play", V::Primary).disabled().node(),
-            button("Reset", V::Outline).disabled().node(),
+            off(button(
+                if playing { "Stop" } else { "Play" },
+                if playing { V::Danger } else { V::Secondary },
+            )
+            .counter(L::TAP_PLAY)),
+            off(button("Reset", V::Outline).counter(L::TAP_RESET)),
         ]),
     ])
     .gap(Gap::Md)

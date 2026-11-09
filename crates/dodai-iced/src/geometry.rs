@@ -154,3 +154,54 @@ mod tests {
         assert_eq!(margin(0.0, 4.0), 4.0);
     }
 }
+
+/// Fill `path` (inside `rect`) with the busy-button shimmer band whose left edge is at `x`
+/// (fraction of the width, see [`dodai_core::motion::button_shimmer`]): the band stays inside
+/// whatever outline the path has.
+pub(crate) fn paint_shimmer(
+    frame: &mut canvas::Frame,
+    path: &Path,
+    rect: Rectangle,
+    c: Color,
+    x: f32,
+) {
+    let stops = dodai_core::motion::shimmer_stops(x);
+    if stops.is_empty() {
+        return;
+    }
+    let mut g = canvas::gradient::Linear::new(
+        Point::new(rect.x, rect.y),
+        Point::new(rect.x + rect.width, rect.y),
+    );
+    for (at, a) in stops {
+        g = g.add_stop(at, Color { a: c.a * a, ..c });
+    }
+    frame.fill(path, canvas::Fill::from(g));
+}
+
+/// A canvas laid over a native button: the shimmer band in its rounded outline.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct ShimmerOver {
+    pub radius: iced::border::Radius,
+    pub color: Color,
+    pub x: f32,
+}
+
+impl<Message> canvas::Program<Message> for ShimmerOver {
+    type State = ();
+
+    fn draw(
+        &self,
+        _state: &(),
+        renderer: &iced::Renderer,
+        _theme: &iced::Theme,
+        bounds: Rectangle,
+        _cursor: iced::mouse::Cursor,
+    ) -> Vec<canvas::Geometry> {
+        let mut frame = canvas::Frame::new(renderer, bounds.size());
+        let rect = Rectangle::with_size(bounds.size());
+        let path = Path::rounded_rectangle(Point::ORIGIN, bounds.size(), self.radius);
+        paint_shimmer(&mut frame, &path, rect, self.color, self.x);
+        vec![frame.into_geometry()]
+    }
+}

@@ -343,6 +343,7 @@ pub(crate) fn apply_surfaces(
                     // material draws the hard shadow in its own outline.
                     shadow: hard.map_or(LinearRgba::NONE, |(c, _)| linear(c)),
                     shade: hard.map_or(Vec4::ZERO, |(_, (dx, dy))| Vec4::new(dx, dy, 0.0, 0.0)),
+                    sheen: LinearRgba::NONE,
                 };
                 let found = mat.is_some_and(|h| {
                     materials.get_mut(&h.0).is_some_and(|mut existing| {

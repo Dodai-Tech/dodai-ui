@@ -48,9 +48,13 @@ pub struct ChamferMaterial {
     /// Hard shadow colour (linear; alpha 0 = none), drawn in the same outline.
     #[uniform(4)]
     pub shadow: LinearRgba,
-    /// `xy` the hard shadow's offset px.
+    /// `xy` the hard shadow's offset px; `z` the busy shimmer band's left edge and `w` its
+    /// width (fractions of the width, `w == 0` = no shimmer).
     #[uniform(5)]
     pub shade: Vec4,
+    /// The busy shimmer's colour (linear).
+    #[uniform(6)]
+    pub sheen: LinearRgba,
 }
 
 impl UiMaterial for ChamferMaterial {

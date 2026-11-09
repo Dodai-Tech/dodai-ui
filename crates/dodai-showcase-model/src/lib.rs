@@ -14,6 +14,7 @@
 pub mod catalog;
 pub mod commands;
 pub mod icons;
+pub mod live_state;
 pub mod md;
 pub mod media;
 pub mod menus;

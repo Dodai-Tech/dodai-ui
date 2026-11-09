@@ -15,7 +15,7 @@ use iced::{
     Color, Element, Event, Font, Length, Pixels, Point, Rectangle, Renderer, Theme,
 };
 
-use crate::geometry::{margin, paint_shape, Paint};
+use crate::geometry::{margin, paint_shape, paint_shimmer, Paint, ShapeGeom};
 
 /// Colours for one interaction state.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -62,6 +62,8 @@ pub struct ShapedButton<Message> {
     pub padding_x: f32,
     /// The tick a cut-corner crop draws, if any.
     pub tick: Option<Tick>,
+    /// A busy shimmer: its colour and the band's left edge (fraction of the width).
+    pub shimmer: Option<(Color, f32)>,
 }
 
 #[derive(Debug, Default, Clone, Copy)]
@@ -171,6 +173,11 @@ impl<Message: Clone> canvas::Program<Message> for ShapedButton<Message> {
                 shadow: None,
             },
         );
+        if let Some((sc, x)) = self.shimmer {
+            let geom = ShapeGeom::of(&self.shape, local.width, local.height);
+            let path = geom.path(Point::new(local.x, local.y), local.width, local.height);
+            paint_shimmer(&mut frame, &path, local, sc, x);
+        }
         if let Some(t) = self.tick {
             let x = match t.edge {
                 dodai_core::CropEdge::Left => local.x,

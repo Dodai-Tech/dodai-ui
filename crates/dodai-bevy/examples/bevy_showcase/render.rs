@@ -348,6 +348,9 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                 spec = spec.crop(end);
             }
             let mut e = p.spawn(spec.bundle());
+            if b.shimmer {
+                e.insert(dodai_bevy::shimmer::Shimmer(b.variant));
+            }
             if b.surface.is_set() {
                 e.insert(UiGlass::of(dodai_core::SurfaceClass::Button).with(b.surface));
             }

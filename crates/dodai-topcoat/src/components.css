@@ -25,6 +25,14 @@ code,pre,.dodai-mono{font-family:var(--dodai-font-mono)}
 .dodai-btn::before,.dodai-panel::before{inset:0;background:var(--f-bd);clip-path:var(--dodai-clip-ring)}
 .dodai-btn::after,.dodai-panel::after{inset:var(--dodai-border-width);background:var(--f-bg);border-radius:var(--dodai-inner-radius);clip-path:var(--dodai-clip-inner);transition:background .12s}
 
+/* Busy shimmer: a band sweeps over the fill, inside its outline (brightening to its right edge);
+   a light sweep on filled buttons, the accent itself on outline and ghost ones. */
+.dodai-btn--shimmer{--f-sheen:var(--dodai-highlight)}
+.dodai-btn--shimmer.dodai-btn--outline,.dodai-btn--shimmer.dodai-btn--outline-secondary,.dodai-btn--shimmer.dodai-btn--ghost{--f-sheen:color-mix(in srgb,var(--b-fg) 25%,transparent)}
+.dodai-btn--shimmer::after{background:linear-gradient(90deg,transparent,var(--f-sheen)) no-repeat,var(--f-bg);
+  background-size:40% 100%,auto;animation:dodai-sweep 1.4s linear infinite}
+@keyframes dodai-sweep{from{background-position:-66.667% 0,0 0}to{background-position:166.667% 0,0 0}}
+
 /* Double tick a cut-corner crop draws on the far end of a button */
 .dodai-tick{position:absolute;top:50%;width:var(--dodai-space-md);box-sizing:content-box;
   height:var(--dodai-tick-gap);transform:translateY(-50%);pointer-events:none;

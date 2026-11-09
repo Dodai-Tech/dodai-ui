@@ -50,6 +50,9 @@ pub struct Section {
     pub shown: fn(&Theme) -> bool,
     /// Builds the demo.
     pub build: fn(&Ctx) -> Node,
+    /// Shows the time (a clock, a running timer): the toolkit rebuilds it on
+    /// [`Showcase::redraw_every`](crate::Showcase::redraw_every).
+    pub live: bool,
 }
 
 impl Section {
@@ -61,7 +64,14 @@ impl Section {
             heading: title,
             shown: |_| true,
             build,
+            live: false,
         }
+    }
+
+    /// Rebuilt as time passes (see [`Section::live`]).
+    pub const fn live(mut self) -> Self {
+        self.live = true;
+        self
     }
 
     /// A panel title other than the sidebar entry.

@@ -115,6 +115,9 @@ pub fn color(c: LColor) -> Color {
 pub struct IcedTheme {
     pub(crate) theme: Theme,
     pub(crate) glass: glass::GlassState,
+    /// A busy shimmer swept over the buttons built from this: the band's left edge as a
+    /// fraction of the width (see [`IcedTheme::with_shimmer`]).
+    pub(crate) shimmer: Option<f32>,
 }
 
 impl IcedTheme {
@@ -122,6 +125,7 @@ impl IcedTheme {
         Self {
             theme,
             glass: glass::GlassState::default(),
+            shimmer: None,
         }
         .with_mesh()
     }

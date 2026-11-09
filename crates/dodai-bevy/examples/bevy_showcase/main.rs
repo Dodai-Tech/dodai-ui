@@ -95,6 +95,7 @@ fn main() {
             chrome::rebuild,
             render::load_pictures,
             events::section_fx,
+            events::live_refresh,
             events::scroll,
         )
             .chain(),

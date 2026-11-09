@@ -26,8 +26,8 @@ pub(crate) const SECTIONS: [Section; 13] = [
     Section::new(CAT, "Code block · Markdown · rich text", code).heading("Code block · Markdown"),
     Section::new(CAT, "Image · media · Avatar group", images).heading("Image · Avatar group"),
     Section::new(CAT, "Circular progress · Banner", progress_banner),
-    Section::new(CAT, "Clock · Timer", clock),
-    Section::new(CAT, "Stopwatch · Tap tempo", stopwatch),
+    Section::new(CAT, "Clock · Timer", clock).live(),
+    Section::new(CAT, "Stopwatch · Tap tempo", stopwatch).live(),
     Section::new(CAT, "Scroll area · styled scrollbar", scroll_area).heading("Scroll area"),
 ];
 
@@ -319,13 +319,17 @@ fn clock(c: &Ctx) -> Node {
     use crate::widgets::{clock, elapsed, local_offset_minutes, timer};
     row(vec![
         clock(c.theme, 180.0, local_offset_minutes()),
-        timer(c.theme, 1, elapsed()),
+        timer(c.theme, c.values, elapsed()),
     ])
 }
 
 fn stopwatch(c: &Ctx) -> Node {
-    use crate::widgets::{stopwatch, tap_tempo};
-    row(vec![stopwatch(c.theme), tap_tempo(c.theme)])
+    use crate::widgets::{elapsed, stopwatch, tap_tempo};
+    let now = elapsed();
+    row(vec![
+        stopwatch(c.theme, c.values, now),
+        tap_tempo(c.theme, c.values, now),
+    ])
 }
 
 fn scroll_area(_: &Ctx) -> Node {

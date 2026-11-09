@@ -256,6 +256,14 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             lt.kit_button(Kit::Elevated, text(lt.label(&b.label)).size(size), msg)
         }
         Demo::Button(b) => {
+            // A busy button: the shimmer band sweeps across it (the view redraws every frame).
+            let shimmering;
+            let lt = if b.shimmer {
+                shimmering = lt.with_shimmer(cx.t);
+                &shimmering
+            } else {
+                lt
+            };
             let icon_el = if b.loading {
                 Some(lt.spinner(14.0, cx.t))
             } else {

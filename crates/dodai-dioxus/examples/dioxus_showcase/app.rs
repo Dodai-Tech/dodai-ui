@@ -173,6 +173,18 @@ fn Sidebar(model: Signal<Showcase>) -> Element {
 
 #[component]
 fn Page(model: Signal<Showcase>) -> Element {
+    // Live widgets (clock, timer, stopwatch, beat lights) redraw the page on a timer.
+    let mut tick = use_signal(|| 0u64);
+    let _ = tick();
+    use_future(move || async move {
+        loop {
+            let every = model.peek().redraw_every();
+            tokio::time::sleep(every.unwrap_or(std::time::Duration::from_millis(250))).await;
+            if every.is_some() {
+                tick += 1;
+            }
+        }
+    });
     let m = model.read();
     let theme = m.theme();
     let title = m.category().map_or("All", |c| CATEGORIES[c]);

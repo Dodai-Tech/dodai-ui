@@ -359,6 +359,20 @@ impl IcedTheme {
         self.button_compact_styled(label, icon, size, on_press, self.button(variant))
     }
 
+    /// This theme with the busy shimmer band swept over the buttons it builds; `secs` is the
+    /// time in seconds ([`dodai_core::motion::button_shimmer`]).
+    pub fn with_shimmer(&self, secs: f32) -> Self {
+        let mut lt = self.clone();
+        lt.shimmer = Some(dodai_core::motion::button_shimmer(secs));
+        lt
+    }
+
+    /// The busy shimmer's colour on a `variant` button: a light sweep on filled buttons (dark
+    /// label text would smear), the accent itself on outline and ghost ones.
+    pub fn shimmer_colour(&self, variant: ButtonVariant) -> iced::Color {
+        color(self.theme.shimmer_colour(variant))
+    }
+
     /// [`button_compact`](Self::button_compact) with its own style function.
     pub fn button_compact_styled<'a, Message: Clone + 'a>(
         &self,
@@ -369,6 +383,12 @@ impl IcedTheme {
         style: impl Fn(&iced::Theme, iced::widget::button::Status) -> iced::widget::button::Style + 'a,
     ) -> Element<'a, Message> {
         let m = self.theme.control_metrics(size);
+        let resting = self.shimmer.map(|x| {
+            (
+                x,
+                style(&iced::Theme::Dark, iced::widget::button::Status::Active),
+            )
+        });
         let mut content = row![].spacing(6).align_y(alignment::Vertical::Center);
         if let Some(i) = icon {
             content = content.push(i);
@@ -394,7 +414,27 @@ impl IcedTheme {
         } else {
             b
         };
-        b.on_press_maybe(on_press).into()
+        let el: Element<'a, Message> = b.on_press_maybe(on_press).into();
+        let Some((x, st)) = resting else { return el };
+        // The busy sweep over a native button, inside its rounded corners.
+        let over = crate::geometry::ShimmerOver {
+            radius: st.border.radius,
+            color: match st.background {
+                Some(_) => color(self.theme.effects.highlight),
+                None => iced::Color {
+                    a: 0.25,
+                    ..st.border.color
+                },
+            },
+            x,
+        };
+        iced::widget::stack![
+            el,
+            iced::widget::Canvas::new(over)
+                .width(Length::Fill)
+                .height(Length::Fill)
+        ]
+        .into()
     }
 
     /// Resolved colours of a button for tests and custom drawing.

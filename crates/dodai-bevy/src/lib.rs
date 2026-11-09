@@ -29,6 +29,7 @@ pub mod knob;
 pub mod material;
 pub mod plot;
 pub mod plugin;
+pub mod shimmer;
 pub mod spinner;
 pub mod style;
 pub mod surface;
@@ -52,6 +53,7 @@ pub mod prelude {
     pub use crate::knob::{knob, UiKnob};
     pub use crate::plot::{plot, PlotLine};
     pub use crate::plugin::{theme_hotkeys, DodaiSet, DodaiUiPlugin, ScanlineOverlay};
+    pub use crate::shimmer::Shimmer;
     pub use crate::spinner::{indeterminate, spinner, UiIndeterminate, UiSpinner};
     pub use crate::surface::{Surface, SurfaceCrop};
     pub use crate::systems::FocusedInput;
