@@ -1,0 +1,281 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, master, develop]
+
+env:
+  CARGO_TERM_COLOR: always
+  # The self-hosted runner's network is flaky: retry downloads instead of failing the job.
+  CARGO_NET_RETRY: 10
+  CARGO_HTTP_TIMEOUT: 120
+  CARGO_HTTP_MULTIPLEXING: "false"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fmt:
+    name: fmt
+    runs-on: codeberg-medium
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        id: rt1
+        continue-on-error: true
+        with:
+          components: rustfmt
+      - name: Retry toolchain install (runner network is flaky)
+        if: steps.rt1.outcome == 'failure'
+        run: sleep 20
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.rt1.outcome == 'failure'
+        with:
+          components: rustfmt
+      - run: cargo fmt --all -- --check
+
+  # The GPU entry points are generated from the ShaderInfo tables.
+  kernels-entries:
+    name: kernels entries in sync
+    runs-on: codeberg-medium
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hustcer/setup-nu@v3
+        with:
+          version: "*"
+      - run: nu scripts/gen-kernels.nu
+      - run: git diff --exit-code -- tools/shaders-kernels/src/entries.rs
+
+  # dist/ (DTCG tokens, CSS, SVG icons) is generated; keep it committed and fresh.
+  dist-in-sync:
+    name: dist in sync
+    runs-on: codeberg-medium
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        id: rtd
+        continue-on-error: true
+      - name: Retry toolchain install (runner network is flaky)
+        if: steps.rtd.outcome == 'failure'
+        run: sleep 20
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.rtd.outcome == 'failure'
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo run -q -p dodai-topcoat --example export -- dist
+      - run: git diff --exit-code -- dist
+      - run: test -z "$(git status --porcelain dist)"
+
+  # Base crates everything else depends on (dodai-core, dodai-icons, dodai-charts, dodai-instruments, dodai-fx, dodai-frost).
+  base:
+    name: ${{ matrix.crate }}
+    runs-on: codeberg-medium
+    strategy:
+      fail-fast: false
+      matrix:
+        crate: [dodai-core, dodai-icons, dodai-charts, dodai-instruments, dodai-fx, dodai-frost]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        id: rt2
+        continue-on-error: true
+        with:
+          components: clippy
+      - name: Retry toolchain install (runner network is flaky)
+        if: steps.rt2.outcome == 'failure'
+        run: sleep 20
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.rt2.outcome == 'failure'
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.crate }}
+      - run: cargo clippy -p ${{ matrix.crate }} --all-targets ${{ matrix.crate == 'dodai-core' && '--all-features' || '' }} -- -D warnings
+      - run: cargo test -p ${{ matrix.crate }} ${{ matrix.crate == 'dodai-core' && '--all-features' || '' }}
+      - name: dodai-frost GPU feature (tests skip without an adapter)
+        if: matrix.crate == 'dodai-frost'
+        run: |
+          cargo clippy -p dodai-frost --all-targets --features gpu -- -D warnings
+          cargo test -p dodai-frost --features gpu
+
+  # One job per dependent crate; runs only once the base crates are green.
+  # `gui: true` crates need native libs on Linux and also run on macOS.
+  crate:
+    needs: base
+    name: ${{ matrix.crate }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [codeberg-medium]
+        crate: [dodai-ratatui, dodai-topcoat, dodai-dioxus, dodai-showcase-model]
+        include:
+          - { crate: dodai-iced, os: codeberg-medium, gui: true }
+          - { crate: dodai-gpui, os: codeberg-medium, gui: true }
+          - { crate: dodai-charts, os: codeberg-medium, gui: true }
+          - { crate: dodai-instruments, os: codeberg-medium, gui: true }
+          - { crate: dodai-showcase, os: codeberg-medium, gui: true }
+          - { crate: dodai-bevy, os: codeberg-medium, gui: true }
+          - { crate: dodai-shaders, os: codeberg-medium, gui: true }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux GUI system libraries
+        if: matrix.gui && runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config libxkbcommon-dev libxkbcommon-x11-dev libx11-dev libxcb1-dev libxcb-xkb-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libwayland-dev libgl1-mesa-dev libvulkan-dev libfontconfig1-dev libasound2-dev libudev-dev libssl-dev
+      - uses: dtolnay/rust-toolchain@stable
+        id: rt3
+        continue-on-error: true
+        with:
+          components: clippy
+      - name: Retry toolchain install (runner network is flaky)
+        if: steps.rt3.outcome == 'failure'
+        run: sleep 20
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.rt3.outcome == 'failure'
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.crate }}
+      - run: cargo clippy -p ${{ matrix.crate }} --all-targets -- -D warnings
+      - run: cargo test -p ${{ matrix.crate }}
+      # Slices must compile alone: the kit alone (what the chart and instrument crates use) has no components.
+      - name: gpui feature slices
+        if: matrix.crate == 'dodai-gpui'
+        run: |
+          cargo check -p dodai-instruments --no-default-features --features gpui
+          cargo check -p dodai-instruments --no-default-features --features gpui,automotive
+          cargo check -p dodai-instruments --no-default-features --features gpui,aviation
+          cargo check -p dodai-instruments --no-default-features --features gpui,defense
+          cargo check -p dodai-gpui --no-default-features --features components
+          cargo check -p dodai-gpui --no-default-features --features shaders
+          cargo check -p dodai-gpui --no-default-features
+          cargo check -p dodai-gpui --no-default-features --features cyberpunk
+          cargo check -p dodai-gpui --no-default-features --features material
+          cargo check -p dodai-gpui --no-default-features --features components,cyberpunk
+          cargo check -p dodai-gpui --no-default-features --features components,material
+          cargo check -p dodai-gpui --no-default-features --features components,dodai
+          cargo check -p dodai-gpui --no-default-features --features components,neobrutalism
+          cargo check -p dodai-icons --no-default-features
+          cargo check -p dodai-icons --no-default-features --features theme
+          cargo check -p dodai-icons --no-default-features --features cyberpunk
+          cargo check -p dodai-icons --no-default-features --features material
+          cargo check -p dodai-icons --no-default-features --features cyberpunk,neobrutalism
+          cargo check -p dodai-core --features cyberpunk
+          cargo check -p dodai-core --features material
+          cargo check -p dodai-core --features neobrutalism
+          cargo check -p dodai-core --features dodai
+
+  # Freya has its own workspace + lockfile (own Skia), so it is not in the matrix above.
+  freya:
+    name: dodai-freya (own workspace)
+    runs-on: codeberg-medium
+    defaults:
+      run:
+        working-directory: crates/dodai-freya
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux GUI system libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config libxkbcommon-dev libxkbcommon-x11-dev libx11-dev libxcb1-dev libxcb-xkb-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libwayland-dev libgl1-mesa-dev libvulkan-dev libfontconfig1-dev libasound2-dev libudev-dev libssl-dev
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: crates/dodai-freya
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+
+  # The declared `rust-version` must still build the GUI-free crates (dodai-frost needs wgpu, so it declares 1.87 itself).
+  msrv:
+    name: msrv
+    runs-on: codeberg-medium
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read the declared MSRV
+        id: msrv
+        run: echo "version=$(grep -m1 '^rust-version' Cargo.toml | sed -E 's/.*"(.*)".*/\1/')" >> "$GITHUB_OUTPUT"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.msrv.outputs.version }}
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check --locked -p dodai-core --all-features -p dodai-charts -p dodai-instruments -p dodai-fx -p dodai-icons --all-targets
+
+  # Unused dependencies (cargo-machete scans every manifest, including freya and tools/).
+  machete:
+    name: unused dependencies
+    runs-on: codeberg-medium
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo install cargo-machete --locked
+      - run: cargo machete
+
+  # Line-coverage floors for the engine crates, a few points under what they measure (core 88.6%,
+  # fx 88.6%, charts-core 97.6%); the gpui UI is covered by tests/interaction.rs and
+  # screenshots, so it is not gated.
+  coverage:
+    name: coverage floor
+    runs-on: codeberg-medium
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-llvm-cov --locked
+      - run: cargo llvm-cov -p dodai-core --all-features --fail-under-lines 85
+      - run: cargo llvm-cov -p dodai-fx --all-features --fail-under-lines 85
+      - run: cargo llvm-cov -p dodai-charts --fail-under-lines 94
+
+  nu-tests:
+    name: nushell tests
+    runs-on: codeberg-medium
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hustcer/setup-nu@v3
+        with:
+          version: "*"
+      - run: nu scripts/tests/run_all.nu
+
+  docs:
+    name: docs
+    runs-on: codeberg-medium
+    env:
+      RUSTDOCFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux GUI system libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config libxkbcommon-dev libxkbcommon-x11-dev libx11-dev libxcb1-dev libxcb-xkb-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libwayland-dev libgl1-mesa-dev libvulkan-dev libfontconfig1-dev libasound2-dev libudev-dev libssl-dev
+      - uses: dtolnay/rust-toolchain@stable
+        id: rt4
+        continue-on-error: true
+      - name: Retry toolchain install (runner network is flaky)
+        if: steps.rt4.outcome == 'failure'
+        run: sleep 20
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.rt4.outcome == 'failure'
+      - uses: Swatinem/rust-cache@v2
+      # One crate at a time: a single workspace-wide build unifies features across the GUI stacks
+      # (gpui turns on fontconfig `dlopen`, which breaks slint's fontique; naga 27 vs 30 under
+      # `cargo doc`), so it cannot compile on Linux even though every crate does on its own.
+      - name: cargo doc (per crate)
+        run: |
+          for d in crates/*/; do
+            p=$(basename "$d")
+            [ "$p" = dodai-freya ] && continue   # its own workspace
+            [ -f "$d/Cargo.toml" ] || continue
+            cargo doc --no-deps -p "$p" || exit 1
+          done

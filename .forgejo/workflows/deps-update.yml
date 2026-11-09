@@ -1,0 +1,72 @@
+name: Nightly Dependency Update
+
+# Every night against main: `cargo upgrade --incompatible` (majors too, naga stays pinned) and
+# `cargo update`. If Cargo.lock changed, the same checks as CI run, and only then is it committed to main. No version bump
+# and no release (dodai crates are not published from here).
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+permissions:
+  contents: write
+
+# Never cancel mid-run: a half-finished push would leave main inconsistent.
+concurrency:
+  group: deps-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: cargo update, verify, commit
+    runs-on: codeberg-medium
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+      - name: Install Linux GUI system libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config libxkbcommon-dev libxkbcommon-x11-dev libx11-dev libxcb1-dev libxcb-xkb-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libwayland-dev libgl1-mesa-dev libvulkan-dev libfontconfig1-dev libasound2-dev libudev-dev libssl-dev
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - uses: hustcer/setup-nu@v3
+        with:
+          version: "*"
+      - name: Upgrade to the latest versions, majors included
+        run: |
+          cargo install cargo-edit --locked
+          cargo upgrade --incompatible allow
+          cargo upgrade --incompatible allow --manifest-path crates/dodai-freya/Cargo.toml
+      - run: |
+          cargo update
+          cargo update --manifest-path crates/dodai-freya/Cargo.toml
+      - name: Stop when nothing changed
+        id: check
+        run: |
+          if git diff --quiet -- Cargo.lock crates/dodai-freya/Cargo.lock; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+      - name: Verify
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --locked --workspace --exclude dodai-bevy --all-targets -- -D warnings
+          cargo test --locked --workspace --exclude dodai-bevy
+          nu scripts/tests/run_all.nu
+          cargo clippy --locked --manifest-path crates/dodai-freya/Cargo.toml --all-targets -- -D warnings
+          cargo test --locked --manifest-path crates/dodai-freya/Cargo.toml
+      - name: Commit
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Cargo.lock crates/dodai-freya/Cargo.lock Cargo.toml crates/*/Cargo.toml
+          git commit -m "chore(deps): nightly cargo update $(date -u '+%Y-%m-%d')"
+          git push origin HEAD:main

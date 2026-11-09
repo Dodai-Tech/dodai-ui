@@ -1,0 +1,129 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v0.1.0)"
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  validate:
+    name: Validate tag
+    runs-on: codeberg-medium
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hustcer/setup-nu@v3
+        with:
+          version: "*"
+      - id: resolve
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          nu scripts/ci/validate_tag.nu "$TAG" >/dev/null
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+  gate:
+    name: Quality gate
+    needs: validate
+    runs-on: codeberg-medium
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate.outputs.tag }}
+      - name: Install Linux GUI system libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config libxkbcommon-dev libxkbcommon-x11-dev libx11-dev libxcb1-dev libxcb-xkb-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libwayland-dev libgl1-mesa-dev libvulkan-dev libfontconfig1-dev libasound2-dev libssl-dev
+      - uses: dtolnay/rust-toolchain@stable
+        id: rt1
+        continue-on-error: true
+        with:
+          components: rustfmt,clippy
+      - name: Retry toolchain install (runner network is flaky)
+        if: steps.rt1.outcome == 'failure'
+        run: sleep 20
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.rt1.outcome == 'failure'
+        with:
+          components: rustfmt,clippy
+      - uses: Swatinem/rust-cache@v2
+      - uses: hustcer/setup-nu@v3
+        with:
+          version: "*"
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace --locked
+      - run: nu scripts/tests/run_all.nu
+
+  publish:
+    name: Publish to crates.io
+    needs: [validate, gate]
+    runs-on: codeberg-medium
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate.outputs.tag }}
+      - name: Install Linux GUI system libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config libxkbcommon-dev libxkbcommon-x11-dev libx11-dev libxcb1-dev libxcb-xkb-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libwayland-dev libgl1-mesa-dev libvulkan-dev libfontconfig1-dev libasound2-dev libssl-dev
+      - uses: dtolnay/rust-toolchain@stable
+        id: rt2
+        continue-on-error: true
+      - name: Retry toolchain install (runner network is flaky)
+        if: steps.rt2.outcome == 'failure'
+        run: sleep 20
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.rt2.outcome == 'failure'
+      - uses: Swatinem/rust-cache@v2
+      - uses: hustcer/setup-nu@v3
+        with:
+          version: "*"
+      - name: Publish in dependency order
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        # The order is defined once, in scripts/lib/versioning.nu.
+        shell: nu {0}
+        run: |
+          use scripts/lib/versioning.nu publish-order
+          for c in (publish-order) {
+            nu scripts/ci/publish_crate.nu $c
+            sleep 20sec   # let the crates.io index catch up before dependants publish
+          }
+
+  github-release:
+    name: GitHub release
+    needs: [validate, publish]
+    runs-on: codeberg-medium
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.validate.outputs.tag }}
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff
+      - uses: hustcer/setup-nu@v3
+        with:
+          version: "*"
+      - run: nu scripts/ci/release_notes.nu "${{ needs.validate.outputs.tag }}"
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.validate.outputs.tag }}
+          body_path: RELEASE_NOTES.md
