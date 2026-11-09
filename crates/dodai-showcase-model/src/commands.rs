@@ -10,6 +10,7 @@ const SET: &str = "set:";
 const STEP: &str = "step:";
 const RANGE: &str = "range:";
 const ALL: &str = "all:";
+const FLIP: &str = "flip:";
 
 /// A button key that stores `n` under `key`.
 pub fn set(key: &str, n: usize) -> String {
@@ -24,6 +25,11 @@ pub fn step(key: &str, delta: i64, lo: i64, hi: i64, default: i64) -> String {
 /// A button key that picks `d` into the date range `key` (first press starts, second ends).
 pub fn range(key: &str, d: Date) -> String {
     format!("{RANGE}{key}={}", pack(d))
+}
+
+/// A button key that flips the flag `key` (`default` while unset): a disclosure, a popover.
+pub fn flip(key: &str, default: bool) -> String {
+    format!("{FLIP}{key}={}", u8::from(default))
 }
 
 /// A toggle key that sets every one of `keys` at once.
@@ -80,6 +86,13 @@ pub(crate) fn press(values: &mut Values, cmd: &str) -> bool {
         }
         return true;
     }
+    if let Some(rest) = cmd.strip_prefix(FLIP) {
+        if let Some((key, default)) = rest.split_once('=') {
+            let now = values.flag(&crate::Bind::new(key, default == "1"));
+            values.set(key, Value::Bool(!now));
+        }
+        return true;
+    }
     if let Some(rest) = cmd.strip_prefix(RANGE) {
         if let Some((key, d)) = rest.split_once('=') {
             if let Some(d) = d.parse().ok().and_then(unpack) {
@@ -129,6 +142,15 @@ mod tests {
         press(&mut v, &range("r", d(14)));
         assert_eq!(date_range(&v, "r").span(), Some((d(10), d(14))));
         assert_eq!(unpack(pack(d(3))), Some(d(3)));
+    }
+
+    #[test]
+    fn flip_turns_a_flag_from_its_default() {
+        let mut v = Values::default();
+        assert!(press(&mut v, &flip("open", true)));
+        assert!(!v.flag(&crate::Bind::new("open", true)));
+        assert!(press(&mut v, &flip("open", true)));
+        assert!(v.flag(&crate::Bind::new("open", false)));
     }
 
     #[test]

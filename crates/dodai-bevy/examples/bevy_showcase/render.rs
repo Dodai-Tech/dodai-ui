@@ -191,6 +191,12 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
         Demo::Text(t, r) => {
             p.spawn(text(t.clone(), role(*r, theme)));
         }
+        Demo::Grow => {
+            p.spawn(Node {
+                flex_grow: 1.0,
+                ..default()
+            });
+        }
         Demo::Space(px) => {
             p.spawn(Node {
                 width: Val::Px(*px),
@@ -747,7 +753,9 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                         c.spawn(divider());
                     }
                     c.spawn((
-                        kit(Kit::Row { selected: false }),
+                        kit(Kit::Row {
+                            selected: r.selected,
+                        }),
                         Node {
                             width: Val::Percent(100.0),
                             align_items: AlignItems::Center,
@@ -885,6 +893,103 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                 },
             ))
             .with_children(|c| spawn(c, inner, cx));
+        }
+        Demo::Frame {
+            h,
+            body,
+            scrim,
+            layer,
+            place,
+        } => {
+            use dodai_showcase_model::node::Place;
+            let mut at = Node {
+                position_type: PositionType::Absolute,
+                ..default()
+            };
+            match place {
+                Place::Centre => {
+                    at.width = Val::Percent(100.0);
+                    at.height = Val::Percent(100.0);
+                    at.justify_content = JustifyContent::Center;
+                    at.align_items = AlignItems::Center;
+                }
+                Place::Start => {
+                    at.top = Val::Px(0.0);
+                    at.bottom = Val::Px(0.0);
+                    at.left = Val::Px(0.0);
+                }
+                Place::End => {
+                    at.top = Val::Px(0.0);
+                    at.bottom = Val::Px(0.0);
+                    at.right = Val::Px(0.0);
+                }
+                Place::Bottom => {
+                    at.left = Val::Px(0.0);
+                    at.right = Val::Px(0.0);
+                    at.bottom = Val::Px(0.0);
+                    at.flex_direction = FlexDirection::Column;
+                }
+            }
+            p.spawn((
+                Node {
+                    width: Val::Percent(100.0),
+                    height: Val::Px(*h),
+                    padding: UiRect::all(Val::Px(theme.spacing.md)),
+                    border: UiRect::all(Val::Px(1.0)),
+                    overflow: Overflow::clip(),
+                    ..default()
+                },
+                BorderColor::all(color(theme.palette.border)),
+            ))
+            .with_children(|f| {
+                spawn(f, body, cx);
+                if let Some(c) = scrim {
+                    f.spawn((
+                        Node {
+                            position_type: PositionType::Absolute,
+                            left: Val::Px(0.0),
+                            right: Val::Px(0.0),
+                            top: Val::Px(0.0),
+                            bottom: Val::Px(0.0),
+                            ..default()
+                        },
+                        BackgroundColor(color(*c)),
+                    ));
+                }
+                f.spawn(at).with_children(|l| spawn(l, layer, cx));
+            });
+        }
+        Demo::Anchor {
+            open,
+            trigger,
+            panel,
+        } => {
+            let shown = vals.flag(open);
+            let mut e = p.spawn(Node::default());
+            // A button trigger flips it through its own command.
+            if !matches!(**trigger, Demo::Button(_)) {
+                e.insert((
+                    UiPress,
+                    ControlPointer::default(),
+                    Bound::Act(Action::Set(open.key.clone(), Value::Bool(!shown))),
+                ));
+            }
+            e.with_children(|c| {
+                spawn(c, trigger, cx);
+                if shown {
+                    c.spawn((
+                        Node {
+                            position_type: PositionType::Absolute,
+                            top: Val::Percent(100.0),
+                            left: Val::Px(0.0),
+                            margin: UiRect::top(Val::Px(theme.spacing.xs)),
+                            ..default()
+                        },
+                        GlobalZIndex(50),
+                    ))
+                    .with_children(|f| spawn(f, panel, cx));
+                }
+            });
         }
         Demo::Icon(i, size) => {
             p.spawn(icon_node(*i, *size as u32));
@@ -1045,7 +1150,12 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                         .bundle(),
                     go(at.saturating_sub(1)),
                 ));
-                for i in 0..*pages {
+                for slot in dodai_core::paging::page_window(at + 1, *pages, 7) {
+                    let dodai_core::paging::PageItem::Page(p) = slot else {
+                        c.spawn(text("…", TextRole::Muted));
+                        continue;
+                    };
+                    let i = p - 1;
                     c.spawn((
                         kit_pressable(Kit::Page { selected: i == at }),
                         Node {
@@ -1074,7 +1184,6 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
             p.spawn(Node {
                 flex_direction: FlexDirection::Column,
                 width: Val::Percent(100.0),
-                max_width: Val::Px(420.0),
                 ..default()
             })
             .with_children(|c| {
@@ -1356,7 +1465,9 @@ fn tree_node(
     let theme = cx.theme;
     let branch = !n.children.is_empty();
     p.spawn((
-        kit_pressable(Kit::Row { selected: false }),
+        kit_pressable(Kit::Row {
+            selected: n.selected,
+        }),
         Node {
             width: Val::Percent(100.0),
             padding: UiRect::left(Val::Px(8.0 + 18.0 * depth as f32)),

@@ -46,6 +46,7 @@
 //!
 //! [iced]: https://iced.rs
 
+mod anchored;
 mod button;
 mod charts;
 mod controls;
@@ -70,6 +71,7 @@ mod text;
 #[cfg(test)]
 mod testutil;
 
+pub use anchored::{anchored, Anchored};
 pub use charts::{ChartKind, Prim};
 pub use frame::{shaped_frame, BoxStyle, ShapedFrame};
 pub use geometry::ShapeGeom;

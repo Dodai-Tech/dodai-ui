@@ -125,6 +125,7 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
             rsx! { span { style: text_style(*r, &theme), "{t}" } }
         }
         Demo::Space(px) => rsx! { div { style: "width:{px}px;height:{px}px" } },
+        Demo::Grow => rsx! { div { style: "flex:1 1 0" } },
         Demo::Swatch {
             name,
             color,
@@ -536,7 +537,7 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
                 for (n, r) in rows.iter().enumerate() {
                     Fragment { key: "{n}",
                     if n > 0 { hr { class: "dodai-divider", style: "margin:0" } }
-                    KitBox { kit: dodai_core::Kit::Row { selected: false }, style: "gap:var(--dodai-space-md)".to_string(),
+                    KitBox { kit: dodai_core::Kit::Row { selected: r.selected }, style: "gap:var(--dodai-space-md)".to_string(),
                         if let Some(a) = &r.avatar { Avatar { initials: a.clone() } }
                         else if let Some(i) = r.icon { Icon { icon: i, size: 20, theme: theme.clone() } }
                         div { class: "dodai-grow dodai-col-text",
@@ -585,6 +586,51 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
         Demo::Popup(inner) => rsx! {
             KitBox { kit: dodai_core::Kit::Popup, style: "flex-direction:column;align-items:stretch;min-width:200px;width:fit-content;".to_string(), {view(inner, cx)} }
         },
+        Demo::Frame {
+            h,
+            body,
+            scrim,
+            layer,
+            place,
+        } => {
+            use dodai_showcase_model::node::Place;
+            let at = match place {
+                Place::Centre => "top:50%;left:50%;transform:translate(-50%,-50%)",
+                Place::Start => "top:0;bottom:0;left:0;display:flex",
+                Place::End => "top:0;bottom:0;right:0;display:flex",
+                Place::Bottom => "left:0;right:0;bottom:0",
+            };
+            let scrim = scrim.map(|c| c.to_css());
+            rsx! {
+                div { style: "position:relative;height:{h}px;width:100%;overflow:hidden;border:1px solid var(--dodai-border);padding:var(--dodai-space-md);box-sizing:border-box",
+                    {view(body, cx)}
+                    if let Some(c) = scrim { div { style: "position:absolute;inset:0;background:{c}" } }
+                    div { style: "position:absolute;{at}", {view(layer, cx)} }
+                }
+            }
+        }
+        Demo::Anchor {
+            open,
+            trigger,
+            panel,
+        } => {
+            let shown = vals.flag(open);
+            let key = open.key.clone();
+            // A button trigger flips it through its own command.
+            let wrap_click = !matches!(**trigger, Demo::Button(_));
+            rsx! {
+                div { style: "position:relative;display:inline-flex",
+                    onclick: move |_| if wrap_click { act(model, Action::Set(key.clone(), Value::Bool(!shown))) },
+                    {view(trigger, cx)}
+                    if shown {
+                        div { style: "position:absolute;top:calc(100% + 4px);left:0;z-index:50",
+                            onclick: move |e| e.stop_propagation(),
+                            {view(panel, cx)}
+                        }
+                    }
+                }
+            }
+        }
         Demo::Icon(i, size) => rsx! { Icon { icon: *i, size: *size as u32, theme: theme.clone() } },
         Demo::Rating { value, max } => rsx! { Rating { value: *value, max: *max } },
         Demo::Stepper(b) => {
@@ -709,6 +755,7 @@ pub fn tree_item(n: &dodai_showcase_model::node::TreeNode) -> TreeItem {
         icon: n.icon,
         children: n.children.iter().map(tree_item).collect(),
         open: n.open,
+        selected: n.selected,
     }
 }
 
@@ -753,11 +800,13 @@ mod tests {
             label: "src".into(),
             icon: None,
             open: true,
+            selected: false,
             children: vec![TreeNode {
                 label: "a".into(),
                 icon: None,
                 children: vec![],
                 open: false,
+                selected: true,
             }],
         };
         let i = tree_item(&n);

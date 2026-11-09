@@ -546,6 +546,8 @@ pub struct ListRow {
     pub overline: Option<String>,
     /// Initials of a leading avatar.
     pub avatar: Option<String>,
+    /// Drawn as the selected row.
+    pub selected: bool,
 }
 
 /// One event of a timeline.
@@ -581,6 +583,35 @@ pub struct TreeNode {
     pub children: Vec<TreeNode>,
     /// Expanded when first shown.
     pub open: bool,
+    /// Drawn as the selected row.
+    pub selected: bool,
+}
+
+impl TreeNode {
+    /// Folded when first shown.
+    pub fn closed(mut self) -> Self {
+        self.open = false;
+        self
+    }
+
+    /// Drawn as the selected row.
+    pub fn selected(mut self) -> Self {
+        self.selected = true;
+        self
+    }
+}
+
+/// Where a [`Node::Frame`]'s layer sits.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Place {
+    /// In the middle (a dialog).
+    Centre,
+    /// Along the start edge, full height (a drawer).
+    Start,
+    /// Along the end edge, full height (a side sheet).
+    End,
+    /// Along the bottom, full width (a bottom sheet).
+    Bottom,
 }
 
 /// A demo widget.
@@ -592,6 +623,8 @@ pub enum Node {
     Text(String, TextRole),
     /// An empty gap of this many px.
     Space(f32),
+    /// An empty gap taking the free room of its row or column (pushes what follows to the end).
+    Grow,
     /// A colour chip with its name and value below.
     Swatch {
         /// Token name.
@@ -781,6 +814,31 @@ pub enum Node {
     },
     /// A floating menu or dropdown list around its content.
     Popup(Box<Node>),
+    /// A bordered box `h` px tall holding `body` (the page), with `layer` over it at `place`
+    /// and a `scrim` between when set: a dialog, sheet or drawer shown inside the page.
+    Frame {
+        /// Height px.
+        h: f32,
+        /// The page behind.
+        body: Box<Node>,
+        /// Dims the page under the layer.
+        scrim: Option<Color>,
+        /// What floats over it.
+        layer: Box<Node>,
+        /// Where the layer sits.
+        place: Place,
+    },
+    /// A trigger with a panel floating under it while `open` is set (a popover, hover card,
+    /// context or dropdown menu). Clicking a trigger that is not a button flips `open`; a
+    /// button trigger carries its own flip command.
+    Anchor {
+        /// Whether the panel shows.
+        open: Bind<bool>,
+        /// What stays in the layout.
+        trigger: Box<Node>,
+        /// What floats under it.
+        panel: Box<Node>,
+    },
     /// An icon.
     Icon(IconId, f32),
     /// Star rating.
@@ -895,6 +953,18 @@ pub mod b {
             wrap,
             gap,
             centre: axis == Axis::Row,
+            width: None,
+            items,
+        })
+    }
+
+    /// Wrapping row with large gaps, children aligned to the top (cards of different heights).
+    pub fn top_row(items: Vec<Node>) -> Node {
+        Node::Stack(Stack {
+            axis: Axis::Row,
+            wrap: true,
+            gap: Gap::Lg,
+            centre: false,
             width: None,
             items,
         })
@@ -1391,10 +1461,16 @@ pub mod b {
             trailing: None,
             overline: None,
             avatar: None,
+            selected: false,
         }
     }
 
     impl ListRow {
+        /// Drawn as the selected row.
+        pub fn selected(mut self, on: bool) -> Self {
+            self.selected = on;
+            self
+        }
         /// Text above the title.
         pub fn overline(mut self, s: impl Into<String>) -> Self {
             self.overline = Some(s.into());
@@ -1434,6 +1510,7 @@ pub mod b {
             icon,
             children,
             open,
+            selected: false,
         }
     }
 
