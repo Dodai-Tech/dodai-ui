@@ -740,6 +740,7 @@ pub struct Surface {
     clear: Option<f32>,
     frost: Option<f32>,
     glow: Option<f32>,
+    opacity: Option<f32>,
 }
 
 impl Surface {
@@ -771,6 +772,7 @@ impl Surface {
         clear: None,
         frost: None,
         glow: None,
+        opacity: None,
     };
     /// No texture or effect on this component, whatever the app-wide mix is.
     pub const NONE: Self = Self {
@@ -904,6 +906,17 @@ impl Surface {
     pub const fn frost(mut self, v: f32) -> Self {
         self.frost = Some(v);
         self
+    }
+    /// How opaque the component's fill is, `0.0..=1.0` (`1.0` = as designed): the fill alone
+    /// turns see-through, content and border stay. Works with or without frost and does not
+    /// put the component in the texture mix.
+    pub const fn opacity(mut self, v: f32) -> Self {
+        self.opacity = Some(v);
+        self
+    }
+    /// The fill opacity, when set.
+    pub fn opacity_value(&self) -> Option<f32> {
+        self.opacity
     }
     /// Scale the design's glow on this component (`0.0` = none, `1.0` = as designed).
     pub const fn glow(mut self, v: f32) -> Self {
@@ -1069,6 +1082,10 @@ mod surface_override_tests {
         assert!(s.forces_on());
         // A glow-only override does not pull a component into the texture mix.
         assert!(!Surface::new().glow(0.0).forces_on());
+        // Nor does an opacity-only one.
+        let o = Surface::new().opacity(0.4);
+        assert!(o.is_set() && !o.forces_on());
+        assert_eq!(o.opacity_value(), Some(0.4));
     }
 
     #[test]

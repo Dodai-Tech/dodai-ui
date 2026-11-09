@@ -108,20 +108,21 @@ impl ShapeStyle {
             // Contrast the pattern with this fill.
             Some(sp.contrasting(fill.l))
         });
-        let amount = self.surface.map_or(0.0, |sp| sp.fx.frost).clamp(0.0, 1.0);
+        // The fill keeps its colour and turns as see-through as the design's glass (controls
+        // only halfway, so their labels keep the contrast of their fill) and the component's
+        // own opacity.
+        let glass = dodai_core::Glass::new(
+            theme,
+            class,
+            self.surface.map_or(0.0, |sp| sp.fx.frost),
+            over.opacity_value().unwrap_or(1.0),
+        );
         self.frost = None;
-        if let Some(fill) = self.fill.as_mut().filter(|_| amount > 0.0) {
-            // The fill keeps its colour and turns as see-through as the design's glass;
-            // controls only halfway, so their labels keep the contrast of their fill.
-            let glass = theme.frost();
-            let mut clear = f32::from(glass.tint.a) / 255.0;
-            if !class.is_container() {
-                clear = (clear + fill.a) / 2.0;
-            }
-            fill.a += (clear.min(fill.a) - fill.a) * amount;
+        if let Some(fill) = self.fill.as_mut().filter(|_| !glass.is_solid()) {
+            fill.a = glass.alpha(fill.a);
             let style = &theme.surface_style;
-            self.frost = Some(FrostLayer {
-                amount,
+            self.frost = glass.frosted().then_some(FrostLayer {
+                amount: glass.amount,
                 blur: glass.blur,
                 saturation: glass.saturation,
                 mesh: (style.backdrop > 0.0).then_some((

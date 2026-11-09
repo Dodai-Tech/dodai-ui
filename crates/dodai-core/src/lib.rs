@@ -20,6 +20,7 @@ mod color;
 mod component;
 mod crop;
 pub mod export;
+mod glass;
 mod kit;
 mod knob;
 pub mod markdown;
@@ -65,6 +66,7 @@ pub use component::{
 pub use dodai_fx::{
     EffectSet, PressStyle, Surface, SurfaceClass, SurfaceFx, SurfaceTargets, SurfaceTuning, Texture,
 };
+pub use glass::{backdrop_mesh, mesh_pixels, surface_glass, Glass};
 pub use kit::{busy, Kit, KitStyle};
 pub use knob::{
     arc_points, knob_angle, knob_value, KnobGeometry, KnobStyle, KNOB_DRAG_PX, KNOB_START_DEG,
