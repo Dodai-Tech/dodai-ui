@@ -242,8 +242,16 @@ pub(crate) fn apply_surfaces(
         Option<Ref<crate::glass::UiGlass>>,
         Option<&SurfaceFramed>,
     )>,
+    (windows, ui_scale, mut last_scale): (
+        Query<&Window, With<bevy::window::PrimaryWindow>>,
+        Option<Res<UiScale>>,
+        Local<f32>,
+    ),
 ) {
-    let theme_changed = theme.is_changed() || glass.is_changed();
+    // The material sees the node in physical px; tokens are logical.
+    let scale = windows.single().map_or(1.0, Window::scale_factor) * ui_scale.map_or(1.0, |s| s.0);
+    let theme_changed = theme.is_changed() || glass.is_changed() || *last_scale != scale;
+    *last_scale = scale;
     for (e, s, mut node, mut bg, mut bc, mat, shadow, crop, ug, framed) in &mut q {
         let crop_changed = crop.as_ref().is_some_and(|c| c.is_changed());
         let glass_changed = ug.as_ref().is_some_and(|g| g.is_changed());
@@ -257,10 +265,7 @@ pub(crate) fn apply_surfaces(
             let f = theme.framed(b, fr.0.unwrap_or(theme.panel_border));
             r.border = f.outline.map_or(Rgba::rgba(0, 0, 0, 0), |o| o.0);
             r.border_width = f.outline.map_or(0.0, |o| o.1);
-            // Box shadows are rectangles: cut corners would show through them.
-            hard = f
-                .shadow
-                .filter(|_| !matches!(r.paint, Paint::Chamfer { .. }));
+            hard = f.shadow;
         }
         if let Some(ug) = ug {
             // See-through fill; a frosted one is painted by its pane (fill over the blur).
@@ -327,13 +332,17 @@ pub(crate) fn apply_surfaces(
                 let m = ChamferMaterial {
                     fill: linear(r.fill),
                     border: linear(r.border),
-                    params: Vec4::new(r.border_width, chamfer, scoop as u8 as f32, 0.0),
+                    params: Vec4::new(r.border_width, chamfer, scoop as u8 as f32, scale),
                     corners: Vec4::new(
                         corners.top_left as u8 as f32,
                         corners.top_right as u8 as f32,
                         corners.bottom_right as u8 as f32,
                         corners.bottom_left as u8 as f32,
                     ),
+                    // Box shadows are rectangles: cut corners would show through them, so the
+                    // material draws the hard shadow in its own outline.
+                    shadow: hard.map_or(LinearRgba::NONE, |(c, _)| linear(c)),
+                    shade: hard.map_or(Vec4::ZERO, |(_, (dx, dy))| Vec4::new(dx, dy, 0.0, 0.0)),
                 };
                 let found = mat.is_some_and(|h| {
                     materials.get_mut(&h.0).is_some_and(|mut existing| {
@@ -350,6 +359,7 @@ pub(crate) fn apply_surfaces(
                 }
             }
         }
+        let hard = hard.filter(|_| !matches!(r.paint, Paint::Chamfer { .. }));
         match (r.glow, hard, shadow) {
             (None, Some((c, (dx, dy))), _) => {
                 let sh = BoxShadow::new(

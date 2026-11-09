@@ -38,15 +38,26 @@ pub struct ChamferMaterial {
     /// Border colour (linear).
     #[uniform(1)]
     pub border: LinearRgba,
-    /// `x` border width px, `y` chamfer px.
+    /// `x` border width px, `y` chamfer px, `z` 1 for concave bites, `w` physical px per
+    /// logical px (0 = 1).
     #[uniform(2)]
     pub params: Vec4,
     /// Cut flags: top-left, top-right, bottom-right, bottom-left.
     #[uniform(3)]
     pub corners: Vec4,
+    /// Hard shadow colour (linear; alpha 0 = none), drawn in the same outline.
+    #[uniform(4)]
+    pub shadow: LinearRgba,
+    /// `xy` the hard shadow's offset px.
+    #[uniform(5)]
+    pub shade: Vec4,
 }
 
 impl UiMaterial for ChamferMaterial {
+    fn vertex_shader() -> ShaderRef {
+        CHAMFER_SHADER.into()
+    }
+
     fn fragment_shader() -> ShaderRef {
         CHAMFER_SHADER.into()
     }
