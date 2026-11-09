@@ -30,7 +30,8 @@ pub struct ShapedFrame {
     pub width: f32,
     pub glow: Option<Color>,
     pub glow_radius: f32,
-    pub hard_shadow: f32,
+    /// Hard offset shadow: colour and `(dx, dy)` px.
+    pub hard_shadow: Option<(Color, (f32, f32))>,
 }
 
 impl ShapedFrame {
@@ -42,7 +43,7 @@ impl ShapedFrame {
             } else {
                 0.0
             },
-            self.hard_shadow,
+            crate::geometry::shadow_reach(self.hard_shadow),
         )
     }
 }
@@ -97,6 +98,8 @@ pub struct BoxStyle {
     pub glow: bool,
     /// Draw the theme's hard offset shadow (when `effects.hard_shadow > 0`).
     pub hard_shadow: bool,
+    /// Frame the outline and shadow like a panel (see [`dodai_core::Theme::framed`]).
+    pub frame: Option<dodai_core::BorderStyle>,
     pub padding: Padding,
 }
 
@@ -112,19 +115,24 @@ impl IcedTheme {
 
     /// Native `container::Style` for a [`BoxStyle`] (rounded / square shapes).
     pub fn box_style(&self, s: &BoxStyle) -> container::Style {
+        let (outline, shadow) = self.box_edges(s);
         container::Style {
             text_color: None,
             background: s.fill.map(|c| Background::Color(color(c))),
             border: iced::Border {
-                color: s.stroke.map_or(Color::TRANSPARENT, color),
-                width: if s.stroke.is_some() {
-                    self.theme.shape.border_width
-                } else {
-                    0.0
-                },
+                color: outline.map_or(Color::TRANSPARENT, |o| color(o.0)),
+                width: outline.map_or(0.0, |o| o.1),
                 radius: self.radius().into(),
             },
-            shadow: self.shadow(s.glow, s.hard_shadow),
+            shadow: if s.glow && self.theme.effects.glow_enabled() {
+                self.shadow(true, false)
+            } else {
+                shadow.map_or(iced::Shadow::default(), |(c, (dx, dy))| iced::Shadow {
+                    color: color(c),
+                    offset: iced::Vector::new(dx, dy),
+                    blur_radius: 0.0,
+                })
+            },
             snap: true,
         }
     }
@@ -132,14 +140,36 @@ impl IcedTheme {
     /// Canvas frame equivalent of a [`BoxStyle`] (any shape).
     pub fn box_frame(&self, s: &BoxStyle) -> ShapedFrame {
         let e = &self.theme.effects;
+        let (outline, shadow) = self.box_edges(s);
         ShapedFrame {
             shape: self.theme.shape.clone(),
             fill: s.fill.map(color),
-            stroke: s.stroke.map(color),
-            width: self.theme.shape.border_width,
+            stroke: outline.map(|o| color(o.0)),
+            width: outline.map_or(0.0, |o| o.1),
             glow: (s.glow && e.glow_enabled()).then(|| color(e.glow_color())),
             glow_radius: e.glow_radius(),
-            hard_shadow: if s.hard_shadow { e.hard_shadow } else { 0.0 },
+            hard_shadow: shadow.map(|(c, off)| (color(c), off)),
+        }
+    }
+
+    /// The outline and hard shadow of a box under the shape tune (and its panel frame).
+    pub fn box_edges(
+        &self,
+        s: &BoxStyle,
+    ) -> (Option<dodai_core::Outline>, Option<dodai_core::HardShadow>) {
+        let t = &self.theme;
+        match (s.frame, s.stroke) {
+            (Some(b), Some(c)) => {
+                let f = t.framed(c, b);
+                (f.outline, f.shadow.filter(|_| s.hard_shadow))
+            }
+            _ => (
+                t.outline(s.stroke, s.fill.is_some()),
+                s.hard_shadow
+                    .then(|| t.hard_offset())
+                    .flatten()
+                    .map(|o| (t.hard_shadow_color(), o)),
+            ),
         }
     }
 

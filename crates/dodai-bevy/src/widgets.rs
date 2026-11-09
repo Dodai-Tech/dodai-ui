@@ -633,6 +633,7 @@ pub fn button_disabled(label: impl Into<String>, variant: ButtonVariant) -> impl
 pub fn panel(title: &str) -> impl Bundle + use<> {
     (
         UiPanel::default(),
+        crate::surface::SurfaceFramed::default(),
         crate::glass::UiGlass::of(dodai_core::SurfaceClass::Panel),
         children![text(title.to_string(), TextRole::Control)],
     )
@@ -642,6 +643,7 @@ pub fn panel(title: &str) -> impl Bundle + use<> {
 pub fn panel_untitled() -> impl Bundle {
     (
         UiPanel::default(),
+        crate::surface::SurfaceFramed::default(),
         crate::glass::UiGlass::of(dodai_core::SurfaceClass::Panel),
     )
 }

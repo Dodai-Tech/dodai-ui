@@ -387,6 +387,7 @@ impl Theme {
     /// affects rounded corners.
     pub fn tuned(&self, tune: &ShapeTune) -> Theme {
         let mut t = self.clone();
+        t.tune = *tune;
         let sys = match tune.corner_style {
             Some(style) => self.shape_system().with_style(style),
             None => self.shape_system(),

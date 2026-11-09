@@ -181,6 +181,7 @@ pub fn Panel(props: PanelProps) -> Element {
     }
     rsx! {
         div { class, style,
+            span { class: "dodai-panel__shade", aria_hidden: "true" }
             if let Some(t) = props.title { div { class: "dodai-panel__title", "{t}" } }
             {props.children}
         }

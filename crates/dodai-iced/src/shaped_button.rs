@@ -168,7 +168,7 @@ impl<Message: Clone> canvas::Program<Message> for ShapedButton<Message> {
                 width: self.border_width,
                 glow: c.glow,
                 glow_radius: self.glow_radius,
-                shadow: 0.0,
+                shadow: None,
             },
         );
         if let Some(t) = self.tick {

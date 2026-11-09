@@ -28,6 +28,7 @@ impl IcedTheme {
             stroke: st.border,
             glow: st.glow,
             hard_shadow: st.lift,
+            frame: None,
             padding: Self::kit_padding(&st),
         }
     }

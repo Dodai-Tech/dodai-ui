@@ -2,8 +2,8 @@
 //! app-wide tuning of them (kept in [`crate::tune_state`], applied by `Showcase::theme`).
 
 use dodai_core::{
-    BorderTint, ButtonVariant as V, CardVariant, ControlColour, GradientMode, RoundnessGroup,
-    ShadowDir, ShapeKind, Theme, Tone,
+    AccentCorner, BorderTint, ButtonVariant as V, CardVariant, ControlColour, GradientMode,
+    RoundnessGroup, ShadowDir, ShapeKind, Theme, Tone,
 };
 
 use crate::b::*;
@@ -14,11 +14,12 @@ use crate::Gap;
 
 const CAT: &str = "Shape";
 
-pub(crate) const SECTIONS: [Section; 4] = [
+pub(crate) const SECTIONS: [Section; 5] = [
     Section::new(CAT, "Shape gallery", gallery),
     Section::new(CAT, "Roundness · Borders", roundness),
     Section::new(CAT, "Corner shape", corner_shape).when(|t| t.look().cut_corners),
     Section::new(CAT, "Button crop", crop).when(|t| !t.button_crops().is_empty()),
+    Section::new(CAT, "Border", border).when(|t| t.look().accent_border),
 ];
 
 /// The same buttons, tags and cards, to show a shape setting on real components.
@@ -213,6 +214,82 @@ fn roundness(c: &Ctx) -> Node {
         .node()]));
     out.push(shape_gallery());
     col(out)
+}
+
+/// The frame of every section: contour width and strength, and the accent corner.
+fn border(c: &Ctx) -> Node {
+    let cur = ts::border(c.values);
+    let preset = ts::BORDERS
+        .iter()
+        .position(|(_, b)| b.width == cur.width && b.opacity == cur.opacity)
+        .unwrap_or(usize::MAX);
+    let corner = AccentCorner::ALL
+        .iter()
+        .position(|a| *a == cur.accent)
+        .unwrap_or(usize::MAX);
+    let slide = |name: &str, hint: &str, key: &str, now: f32, lo: f32, hi: f32, f| {
+        setting(
+            name,
+            hint,
+            Node::Slider(slider(key, now, lo, hi).step(0.25).format(f).length(280.0)),
+        )
+    };
+    let presets = ts::BORDERS.map(|(name, b)| {
+        tile(
+            140.0,
+            vec![Node::Framed {
+                border: b.accent(cur.accent),
+                body: Box::new(col(vec![
+                    label(name),
+                    muted(format!("{:.2} px · {:.0}%", b.width, b.opacity * 100.0)),
+                ])),
+            }],
+        )
+    });
+    col(vec![
+        muted("Every section frame is a grey contour plus an accent line on the opposite corner. These settings change all sections at once; a single panel can use `.border(..)`."),
+        setting(
+            "Preset",
+            "Width and strength of the grey contour.",
+            Node::Choice(choice(ts::BD_PRESET, &ts::BORDERS.map(|b| b.0), preset).connected()),
+        ),
+        setting(
+            "Accent corner",
+            "Where the bright line sits. The grey contour moves to the opposite side.",
+            Node::Choice(
+                choice(ts::BD_ACCENT, &AccentCorner::ALL.map(|a| a.name()), corner).connected(),
+            ),
+        ),
+        slide(
+            "Grey width",
+            "Thickness of the grey contour in px.",
+            ts::BD_WIDTH,
+            cur.width,
+            0.0,
+            4.0,
+            SliderFormat::PxFine,
+        ),
+        slide(
+            "Accent width",
+            "Thickness of the bright line in px.",
+            ts::BD_ACCENT_WIDTH,
+            cur.accent_width
+                .unwrap_or(c.theme.effects.hard_shadow.max(0.5)),
+            0.5,
+            6.0,
+            SliderFormat::PxFine,
+        ),
+        slide(
+            "Grey opacity",
+            "0 hides the contour, 1 is fully solid.",
+            ts::BD_OPACITY,
+            cur.opacity,
+            0.0,
+            1.0,
+            SliderFormat::Fine,
+        ),
+        col(vec![muted("Presets, side by side"), row(presets.to_vec())]).gap(Gap::Sm),
+    ])
 }
 
 fn corner_shape(c: &Ctx) -> Node {

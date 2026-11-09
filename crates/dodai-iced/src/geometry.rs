@@ -59,8 +59,13 @@ pub(crate) struct Paint {
     pub width: f32,
     pub glow: Option<Color>,
     pub glow_radius: f32,
-    /// Hard offset shadow in px (0 = none).
-    pub shadow: f32,
+    /// Hard offset shadow: colour and `(dx, dy)` px.
+    pub shadow: Option<(Color, (f32, f32))>,
+}
+
+/// How far a hard shadow reaches out of its box.
+pub(crate) fn shadow_reach(shadow: Option<(Color, (f32, f32))>) -> f32 {
+    shadow.map_or(0.0, |(_, (dx, dy))| dx.abs().max(dy.abs()))
 }
 
 /// Extra space needed around a shape so glow / shadow are not clipped.
@@ -75,9 +80,9 @@ pub(crate) fn paint_shape(frame: &mut canvas::Frame, shape: &Shape, rect: Rectan
     let o = Point::new(rect.x + w / 2.0, rect.y + w / 2.0);
     let (iw, ih) = (rect.width - w, rect.height - w);
     let path = geom.path(o, iw, ih);
-    if p.shadow > 0.0 {
-        let so = Point::new(o.x + p.shadow, o.y + p.shadow);
-        frame.fill(&geom.path(so, iw, ih), Color::from_rgba(0.0, 0.0, 0.0, 0.5));
+    if let Some((c, (dx, dy))) = p.shadow {
+        let so = Point::new(o.x + dx, o.y + dy);
+        frame.fill(&geom.path(so, iw, ih), c);
     }
     if let Some(g) = p.glow {
         // Soft glow: concentric translucent strokes fading outward.

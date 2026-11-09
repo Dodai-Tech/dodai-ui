@@ -450,6 +450,10 @@ pub enum SliderFormat {
     Ratio,
     /// Whole pixels: `4px`.
     Px,
+    /// Two decimals: `0.60`.
+    Fine,
+    /// Pixels to two decimals: `1.25 px`.
+    PxFine,
 }
 
 impl SliderFormat {
@@ -463,6 +467,8 @@ impl SliderFormat {
             Self::Balance => format!("balance {:+.0}", (v - 0.5) * 200.0),
             Self::Ratio => format!("{:.0}%", v * 100.0),
             Self::Px => format!("{v:.0}px"),
+            Self::Fine => format!("{v:.2}"),
+            Self::PxFine => format!("{v:.2} px"),
         }
     }
 }
@@ -802,6 +808,14 @@ pub enum Node {
     },
     /// A separator line.
     Divider,
+    /// An untitled panel framed by its own border instead of the theme's
+    /// ([`dodai_core::Theme::framed`]).
+    Framed {
+        /// Contour and accent.
+        border: dodai_core::BorderStyle,
+        /// Content.
+        body: Box<Node>,
+    },
     /// A titled card.
     Card {
         /// Heading.
@@ -1633,7 +1647,9 @@ impl Node {
         f(self);
         match self {
             Node::Stack(s) => s.items.iter().for_each(|n| n.walk(f)),
-            Node::Card { body, .. } | Node::Scroll { body, .. } => body.walk(f),
+            Node::Card { body, .. } | Node::Scroll { body, .. } | Node::Framed { body, .. } => {
+                body.walk(f)
+            }
             Node::Popup(body) | Node::Quote(body) => body.walk(f),
             Node::Overlay(items) => items.iter().for_each(|n| n.walk(f)),
             Node::Frame { body, layer, .. } => {

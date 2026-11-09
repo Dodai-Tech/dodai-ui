@@ -191,9 +191,13 @@ impl IcedTheme {
 
     /// Border of `c` with the theme's width and (native) radius.
     pub(crate) fn border(&self, c: LColor) -> Border {
+        let (c, width) = self
+            .theme
+            .outline(Some(c), false)
+            .unwrap_or((c, self.theme.shape.border_width));
         Border {
             color: color(c),
-            width: self.theme.shape.border_width,
+            width,
             radius: self.radius().into(),
         }
     }
@@ -208,10 +212,10 @@ impl IcedTheme {
                 offset: Vector::ZERO,
                 blur_radius: e.glow_radius(),
             }
-        } else if hard && e.hard_shadow > 0.0 {
+        } else if let Some((dx, dy)) = self.theme.hard_offset().filter(|_| hard) {
             Shadow {
-                color: Color::from_rgba(0.0, 0.0, 0.0, 0.5),
-                offset: Vector::new(e.hard_shadow, e.hard_shadow),
+                color: color(self.theme.hard_shadow_color()),
+                offset: Vector::new(dx, dy),
                 blur_radius: 0.0,
             }
         } else {

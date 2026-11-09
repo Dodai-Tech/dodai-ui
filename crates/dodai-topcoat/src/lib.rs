@@ -28,6 +28,34 @@ pub const GOOGLE_FONTS_URL: &str =
 const PROBE: f32 = 4096.0;
 
 /// `v` px, rounded to hundredths so scooped arcs stay short in the stylesheet.
+/// The `--dodai-panel-*` variables (without the prefix) that frame a panel like `frame`: set them
+/// on an element to give the panels inside their own border.
+///
+/// The hard shadow is the panel's `.dodai-panel__shade` child: the panel's own shape, offset
+/// and filled (a CSS shadow would follow the content or ignore cut corners).
+pub fn panel_frame_vars(t: &Theme, frame: &dodai_core::PanelFrame) -> [(&'static str, String); 6] {
+    let chamfered = t.shape.kind() == ShapeKind::Chamfered;
+    let (bd, bw) = frame
+        .outline
+        .map_or(("transparent".to_string(), 0.0), |(c, w)| (c.to_css(), w));
+    let (sc, (sx, sy)) = frame
+        .shadow
+        .map_or(("transparent".to_string(), (0.0, 0.0)), |(c, o)| {
+            (c.to_css(), o)
+        });
+    [
+        ("panel-bd", bd),
+        ("panel-bw", format!("{bw}px")),
+        (
+            "panel-ring",
+            format!("{}px", if chamfered { 0.0 } else { bw }),
+        ),
+        ("panel-sc", sc),
+        ("panel-sx", format!("{sx}px")),
+        ("panel-sy", format!("{sy}px")),
+    ]
+}
+
 fn px(v: f32) -> String {
     format!("{}px", (v * 100.0).round() / 100.0)
 }
@@ -348,6 +376,14 @@ pub fn theme_vars(t: &Theme) -> String {
         format!("{}px", (t.shape.radius - t.shape.border_width).max(0.0)),
     );
     v("hard-shadow", format!("{}px", t.effects.hard_shadow));
+    // The tune's shadow direction.
+    let (hx, hy) = t.hard_offset().unwrap_or((0.0, 0.0));
+    v("hard-x", format!("{hx}px"));
+    v("hard-y", format!("{hy}px"));
+    // Panels: the frame's contour and the hard shadow on its accent corner.
+    for (k, val) in panel_frame_vars(t, &t.panel_frame(false)) {
+        v(k, val);
+    }
     v("scheme", if t.is_dark() { "dark" } else { "light" }.into());
     v("on-secondary-hover", t.on(p.secondary_hover).to_css());
     v("danger-hover", p.danger.lighten(0.15).to_css());
@@ -393,9 +429,8 @@ pub fn kit_vars(t: &Theme) -> String {
             "0 0 0 0 transparent".to_string()
         }
     };
-    let hard = t.effects.hard_shadow;
-    let lift = if hard > 0.0 {
-        format!("{hard}px {hard}px 0 {}", t.palette.border_strong.to_css())
+    let lift = if let Some((hx, hy)) = t.hard_offset() {
+        format!("{hx}px {hy}px 0 {}", t.hard_shadow_color().to_css())
     } else {
         "0 1px 3px rgba(0,0,0,.3),0 4px 8px 3px rgba(0,0,0,.15)".to_string()
     };
@@ -413,7 +448,7 @@ pub fn kit_vars(t: &Theme) -> String {
             "--dodai-kit-{n}-bg:{};--dodai-kit-{n}-bd:{};--dodai-kit-{n}-fg:{};\
 --dodai-kit-{n}-px:{}px;--dodai-kit-{n}-py:{}px;--dodai-kit-{n}-glow:{};--dodai-kit-{n}-r:{};",
             paint(st.fill),
-            paint(st.border),
+            paint(t.outline(st.border, st.fill.is_some()).map(|o| o.0)),
             st.fg.to_css(),
             st.padding.0,
             st.padding.1,
