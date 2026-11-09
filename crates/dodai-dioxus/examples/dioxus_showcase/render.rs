@@ -640,6 +640,39 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
                 }
             }
         }
+        Demo::Frosted { w, h, panels } => {
+            // The sharp picture, and over it each panel's blurred, tinted copy of what it covers
+            // (the same pixels as the other toolkits, not the browser's backdrop-filter).
+            let rects: Vec<[f32; 4]> = panels.iter().map(|p| p.rect).collect();
+            let scene = dodai_showcase_model::media::frosted(&theme, *w as u32, *h as u32, &rects);
+            let sharp = dodai_showcase_model::media::picture_url(&scene.sharp);
+            let r = theme.spacing.md;
+            let pad = theme.spacing.md;
+            let edge = theme.frost().edge.map_or("none".to_string(), |(c, wd)| {
+                format!("{wd}px solid {}", c.to_css())
+            });
+            let panes: Vec<(String, [f32; 4], &Demo)> = panels
+                .iter()
+                .zip(&scene.panes)
+                .map(|(p, pane)| {
+                    (
+                        dodai_showcase_model::media::picture_url(pane),
+                        p.rect,
+                        &p.body,
+                    )
+                })
+                .collect();
+            rsx! {
+                div { style: "position:relative;flex:none;overflow:hidden;width:{w}px;height:{h}px;background:url({sharp}) 0 0/100% 100%",
+                    for (i, (url, [x, y, pw, ph], body)) in panes.into_iter().enumerate() {
+                        div { key: "{i}",
+                            style: "position:absolute;box-sizing:border-box;left:{x}px;top:{y}px;width:{pw}px;height:{ph}px;border-radius:{r}px;border:{edge};padding:{pad}px;background:url({url}) 0 0/100% 100%;display:flex;flex-direction:column",
+                            {view(body, cx)}
+                        }
+                    }
+                }
+            }
+        }
         Demo::Gizmo { yaw, pitch, size } => {
             let (yk, pk) = (yaw.key.clone(), pitch.key.clone());
             rsx! {

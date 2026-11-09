@@ -339,6 +339,15 @@ pub struct Button {
     pub surface: dodai_core::Surface,
 }
 
+/// A frosted panel of [`Node::Frosted`]: where it sits and what it holds.
+#[derive(Debug, Clone, PartialEq)]
+pub struct FrostPanel {
+    /// `x, y, width, height` px inside the picture.
+    pub rect: [f32; 4],
+    /// The content (inset by the theme's medium spacing).
+    pub body: Node,
+}
+
 /// A row of options of which one is selected (button group, segmented control, tabs).
 #[derive(Debug, Clone, PartialEq)]
 pub struct Choice {
@@ -826,6 +835,17 @@ pub enum Node {
     },
     /// A floating menu or dropdown list around its content.
     Popup(Box<Node>),
+    /// A picture in the theme's colours with frosted-glass panels over it: each panel shows a
+    /// blurred, tinted copy of the picture behind it ([`crate::media::frosted`] makes the
+    /// pixels).
+    Frosted {
+        /// Width px.
+        w: f32,
+        /// Height px.
+        h: f32,
+        /// The panels, in drawing order.
+        panels: Vec<FrostPanel>,
+    },
     /// The orientation gizmo of a 3D view for an orbit camera (radians, Z up): a clicked ball
     /// looks along its axis, home goes back, a drag orbits.
     Gizmo {
@@ -1596,6 +1616,15 @@ impl Node {
             Node::Card { body, .. } | Node::Scroll { body, .. } => body.walk(f),
             Node::Popup(body) | Node::Quote(body) => body.walk(f),
             Node::Overlay(items) => items.iter().for_each(|n| n.walk(f)),
+            Node::Frame { body, layer, .. } => {
+                body.walk(f);
+                layer.walk(f);
+            }
+            Node::Anchor { trigger, panel, .. } => {
+                trigger.walk(f);
+                panel.walk(f);
+            }
+            Node::Frosted { panels, .. } => panels.iter().for_each(|p| p.body.walk(f)),
             _ => {}
         }
     }

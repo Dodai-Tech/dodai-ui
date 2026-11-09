@@ -9,13 +9,14 @@ use crate::node::{Font, Gap, Ink, Node, TextRole};
 
 const CAT: &str = "Foundations";
 
-pub(crate) const SECTIONS: [Section; 8] = [
+pub(crate) const SECTIONS: [Section; 9] = [
     Section::new(CAT, "Text · Heading · Label · Mono", text_section).heading("Text"),
     Section::new(CAT, "Colour palette", palette),
     Section::new(CAT, "Type scale", type_scale),
     Section::new(CAT, "Motion tokens", motion),
     Section::new(CAT, "Spacing · Elevation", spacing),
     Section::new(CAT, "Layout · Fluid scales", layout),
+    Section::new(CAT, "Frosted glass", frosted),
     Section::new(CAT, "Shape tokens", shape),
     Section::new(CAT, "Icons", icons),
 ];
@@ -329,6 +330,50 @@ pub(crate) fn shape_tokens_view(t: &Theme) -> Node {
         },
     ])
     .gap(Gap::Xl)
+}
+
+/// Two frosted panels over a hard-edged picture in the theme's colours (as wide as the gpui
+/// demo on a wide window).
+fn frosted(c: &Ctx) -> Node {
+    let t = c.theme;
+    let f = t.frost();
+    let (w, h) = (720.0_f32, 300.0_f32);
+    let pw = (w * 0.42).floor();
+    let panel = |title: &str, body: String| {
+        col(vec![
+            styled(title, t.typography.size_md, Font::Body, Ink::Text),
+            styled(body, t.typography.size_sm, Font::Body, Ink::Text),
+        ])
+        .gap(Gap::Xs)
+    };
+    col(vec![
+        muted("Panels over a picture: a blurred copy of it under the design's frosted tint."),
+        Node::Frosted {
+            w,
+            h,
+            panels: vec![
+                crate::node::FrostPanel {
+                    rect: [(w * 0.05).floor(), 30.0, pw, 120.0],
+                    body: panel(
+                        "Frosted",
+                        format!(
+                            "blur {:.0} px, tint alpha {:.2}",
+                            f.blur,
+                            f32::from(f.tint.a) / 255.0
+                        ),
+                    ),
+                },
+                crate::node::FrostPanel {
+                    rect: [(w * 0.53).floor(), 110.0, pw, 150.0],
+                    body: panel(
+                        "Over hard edges",
+                        "The picture behind is sharp; each panel shows a blurred copy of it."
+                            .into(),
+                    ),
+                },
+            ],
+        },
+    ])
 }
 
 fn shape(c: &Ctx) -> Node {
