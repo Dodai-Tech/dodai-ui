@@ -112,7 +112,7 @@ pub(crate) fn resolve_crop(
             .unwrap_or(if t.look().cut_corners { d.design } else { None })
     })?;
     let look = t.button_crop(end)?;
-    let gap = gap.or_else(|| button_cut_gap(cx)).unwrap_or(t.spacing.xs);
+    let gap = gap.or_else(|| button_cut_gap(cx)).unwrap_or(t.tick_gap());
     Some(CropSpec { look, gap })
 }
 

@@ -305,6 +305,7 @@ pub fn theme_vars(t: &Theme) -> String {
         ("size-xl", ty.size_xl),
         ("size-xxl", ty.size_xxl),
         ("space-xs", t.spacing.xs),
+        ("tick-gap", t.tick_gap()),
         ("space-sm", t.spacing.sm),
         ("space-md", t.spacing.md),
         ("space-lg", t.spacing.lg),

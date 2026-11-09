@@ -187,6 +187,19 @@ fn Page(model: Signal<Showcase>) -> Element {
     }
 }
 
+/// The live preview pinned above the Shape and Surface-effects pages.
+#[component]
+fn Pinned(model: Signal<Showcase>) -> Element {
+    let Some(node) = model.read().pinned() else {
+        return rsx! {};
+    };
+    rsx! {
+        div { style: "padding:var(--dodai-space-md) var(--dodai-space-lg);border-bottom:1px solid var(--dodai-border);flex:none",
+            {render::view(&node, Cx { model })}
+        }
+    }
+}
+
 /// Hands the Surface effects page's mix to the provider, so the components draw it.
 #[component]
 fn SurfaceMix(model: Signal<Showcase>) -> Element {
@@ -243,7 +256,7 @@ pub fn App() -> Element {
             SurfaceMix { model }
             div { class: "dodai-app", style: wallpaper,
                 Sidebar { model }
-                div { class: "dodai-main", TopBar { model } Page { model } }
+                div { class: "dodai-main", TopBar { model } Pinned { model } Page { model } }
             }
         }
     }

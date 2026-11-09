@@ -44,6 +44,18 @@ pub const CORNER_SETS: &str = "tune:cut-sets";
 pub const CORNER_SINGLES: &str = "tune:cut-singles";
 /// The button crop picker: 0 the design's own, 1 none, then the theme's crop ends.
 pub const CROP: &str = "tune:crop";
+/// Tick gap picker (index into [`GAPS`]).
+pub const GAP: &str = "tune:tick-gap";
+
+/// The tick gaps.
+pub const GAPS: [(&str, Option<f32>); 5] = [
+    ("Default", None),
+    ("0 px", Some(0.0)),
+    ("2 px", Some(2.0)),
+    ("4 px", Some(4.0)),
+    ("8 px", Some(8.0)),
+];
+
 /// The section border presets (writes [`BD_WIDTH`] and [`BD_OPACITY`]).
 pub const BD_PRESET: &str = "tune:bd-preset";
 /// Section contour width px.
@@ -139,6 +151,7 @@ pub fn tune(values: &Values) -> ShapeTune {
             .copied()
             .unwrap_or(d.gradient),
         control_colour: colour(values),
+        cut_gap: GAPS.get(idx(GAP, 0)).and_then(|g| g.1),
     }
 }
 

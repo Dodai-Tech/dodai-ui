@@ -245,6 +245,28 @@ pub fn page<'a>(app: &App) -> Element<'a, Msg> {
         .into()
 }
 
+/// The live-preview strip pinned above the Shape and Surface-effects pages.
+fn pinned<'a>(app: &App) -> Option<Element<'a, Msg>> {
+    let node = app.model.pinned()?;
+    let lt = &app.lt;
+    let sp = &lt.theme().spacing;
+    let cx = Cx {
+        lt,
+        model: &app.model,
+        t: app.t,
+        tree_toggled: &app.tree_toggled,
+    };
+    Some(
+        column![
+            container(render::view(&node, &cx))
+                .padding([sp.md, sp.lg])
+                .width(Length::Fill),
+            lt.divider(),
+        ]
+        .into(),
+    )
+}
+
 pub fn window<'a>(app: &App) -> Element<'a, Msg> {
     let lt = &app.lt;
     let sp = &lt.theme().spacing;
@@ -261,8 +283,9 @@ pub fn window<'a>(app: &App) -> Element<'a, Msg> {
         column![
             container(top_bar(app)).padding(sp.md).width(Length::Fill),
             lt.divider(),
-            page(app),
         ]
+        .push(pinned(app))
+        .push(page(app))
         .width(Length::Fill)
     ]
     .into()

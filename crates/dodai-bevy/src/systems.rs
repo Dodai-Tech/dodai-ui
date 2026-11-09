@@ -340,7 +340,7 @@ pub(crate) fn style_ticks(
     mut bars: Query<(&mut Node, &mut BackgroundColor), (With<CropBar>, Without<CropTick>)>,
 ) {
     let bar = theme.shape.border_width.max(1.0);
-    let gap = theme.spacing.xs;
+    let gap = theme.tick_gap();
     for (crop, fg, kids) in &buttons {
         for kid in kids.iter() {
             let Ok((mut n, bar_ids)) = ticks.get_mut(kid) else {
