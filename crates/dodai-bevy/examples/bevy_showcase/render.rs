@@ -136,6 +136,14 @@ pub fn num_text(v: f32, step: Option<f32>) -> String {
     }
 }
 
+/// Keeps a readout on one line beside a growing control.
+fn no_shrink() -> Node {
+    Node {
+        flex_shrink: 0.0,
+        ..default()
+    }
+}
+
 fn icon_node(i: IconId, size: u32) -> impl Bundle {
     dodai_bevy::widgets::icon(i, size)
 }
@@ -515,6 +523,9 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                     }
                 };
                 e.insert(bound);
+                if t.mixed {
+                    e.insert(ToggleMixed);
+                }
                 c.spawn(text(t.label.clone(), TextRole::Control));
             });
         }
@@ -617,13 +628,31 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
         }
         Demo::Slider(s) => {
             let v = vals.num(&s.bind);
+            // Room for the bubble over or under the thumb.
+            let room = Val::Px(36.0);
             p.spawn(Node {
                 align_items: AlignItems::Center,
                 column_gap: Val::Px(theme.spacing.md),
                 width: Val::Percent(100.0),
+                margin: UiRect {
+                    top: if s.bubble == Some(true) {
+                        room
+                    } else {
+                        Val::ZERO
+                    },
+                    bottom: if s.bubble == Some(false) {
+                        room
+                    } else {
+                        Val::ZERO
+                    },
+                    ..default()
+                },
                 ..default()
             })
             .with_children(|c| {
+                if let Some(i) = s.icon {
+                    c.spawn(icon_node(i, 20));
+                }
                 let mut e = c.spawn(slider(v, s.min, s.max));
                 if !s.disabled {
                     e.insert(Bound::Slide {
@@ -631,11 +660,32 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                         step: s.step,
                     });
                 }
+                if s.centered {
+                    e.insert(SliderCentred);
+                }
+                let ticks = if s.ticks {
+                    dodai_core::slider_math::tick_fractions(s.min, s.max, s.step)
+                } else {
+                    Vec::new()
+                };
+                let shown = match s.format {
+                    dodai_showcase_model::node::SliderFormat::Plain => num_text(v, s.step),
+                    f => f.text(v),
+                };
+                e.with_children(|t| {
+                    for f in ticks {
+                        t.spawn(slider_tick(f));
+                    }
+                    if let Some(above) = s.bubble {
+                        t.spawn(slider_bubble(shown, above));
+                    }
+                });
                 if s.readout && s.format != dodai_showcase_model::node::SliderFormat::Plain {
-                    c.spawn(text(s.format.text(v), TextRole::Mono));
+                    c.spawn((text(s.format.text(v), TextRole::Mono), no_shrink()));
                 } else if s.readout {
                     c.spawn((
                         text(num_text(v, s.step), TextRole::Mono),
+                        no_shrink(),
                         Readout::Num {
                             key: s.bind.key.clone(),
                             default: s.bind.default,

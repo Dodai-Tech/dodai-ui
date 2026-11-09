@@ -352,6 +352,17 @@ pub struct SliderProps {
     /// Height in px of a vertical slider.
     #[props(default = 120)]
     pub length: u32,
+    /// Tick marks at every step (horizontal).
+    #[props(default)]
+    pub ticks: bool,
+    /// Fills from the middle of the track to the thumb (a balance).
+    #[props(default)]
+    pub centered: bool,
+    /// This text in a pill over the thumb (under it with `bubble_below`).
+    #[props(default)]
+    pub bubble: Option<String>,
+    #[props(default)]
+    pub bubble_below: bool,
     #[props(default)]
     pub onchange: EventHandler<f32>,
 }
@@ -361,18 +372,56 @@ pub struct SliderProps {
 pub fn Slider(props: SliderProps) -> Element {
     let span = (props.max - props.min).max(f32::EPSILON);
     let pct = ((props.value - props.min) / span).clamp(0.0, 1.0) * 100.0;
+    // The filled part runs `a..v`: from the start, or from the middle when centred.
+    let (a, v) = if props.centered {
+        (pct.min(50.0), pct.max(50.0))
+    } else {
+        (0.0, pct)
+    };
     let (class, style) = if props.vertical {
         (
             "dodai-slider dodai-slider--v",
-            format!("--v:{pct}%;height:{}px", props.length),
+            format!("--a:{a}%;--v:{v}%;height:{}px", props.length),
         )
     } else {
-        ("dodai-slider", format!("--v:{pct}%"))
+        ("dodai-slider", format!("--a:{a}%;--v:{v}%"))
     };
-    rsx! {
+    let input = rsx! {
         input { class, r#type: "range", min: "{props.min}", max: "{props.max}", step: "{props.step}",
             value: "{props.value}", disabled: props.disabled, style,
             oninput: move |e| if let Ok(v) = e.value().parse::<f32>() { props.onchange.call(v) } }
+    };
+    if props.vertical {
+        return input;
+    }
+    // Centre of the thumb at a fraction: the track is inset by half a thumb each side.
+    let at = |f: f32| format!("left:calc(8px + {f} * (100% - 16px))");
+    let ticks = if props.ticks {
+        dodai_core::slider_math::tick_fractions(props.min, props.max, Some(props.step))
+    } else {
+        Vec::new()
+    };
+    let room = match (&props.bubble, props.bubble_below) {
+        (None, _) => "",
+        (Some(_), false) => "padding-top:30px",
+        (Some(_), true) => "padding-bottom:30px",
+    };
+    let bubble_y = if props.bubble_below {
+        "top:26px"
+    } else {
+        "top:0"
+    };
+    let frac = pct / 100.0;
+    rsx! {
+        div { class: "dodai-slider-box", style: room,
+            {input}
+            for (i, f) in ticks.into_iter().enumerate() {
+                span { key: "{i}", class: "dodai-slider__tick", style: at(f) }
+            }
+            if let Some(b) = &props.bubble {
+                span { class: "dodai-slider__bubble", style: "{at(frac)};{bubble_y}", "{b}" }
+            }
+        }
     }
 }
 

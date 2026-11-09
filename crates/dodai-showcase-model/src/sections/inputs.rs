@@ -498,7 +498,13 @@ fn date_range(c: &Ctx) -> Node {
 
 fn date_time_range(c: &Ctx) -> Node {
     col(vec![
-        pickers::date_time_range(c, "date-month", "date-range", "range-time"),
+        // In a row so the card is only as wide as the picker.
+        row(vec![pickers::date_time_range(
+            c,
+            "date-month",
+            "date-range",
+            "range-time",
+        )]),
         muted("Shares its span with the date range above; the start and end times are its own."),
     ])
 }

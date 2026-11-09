@@ -500,17 +500,15 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
                 dodai_showcase_model::node::SliderFormat::Plain => num_text(v, step),
                 f => f.text(v),
             };
-            let bubble = s.bubble;
+            let bubble = s.bubble.map(|_| shown.clone());
             rsx! {
-                div { style: "display:flex;flex-direction:column;align-items:flex-start;width:100%;gap:4px",
-                    if bubble == Some(true) { code { class: "dodai-mono", "{shown}" } }
-                    div { class: "dodai-stack dodai-stack--row", style: "width:100%",
-                        div { style: "flex:1", Slider { value: v, min, max, step: step.unwrap_or((max - min) / 100.0),
-                            disabled: s.disabled,
-                            onchange: move |x| act(model, Action::Set(key.clone(), Value::Num(snap(x, min, max, step)))) } }
-                        if s.readout { code { class: "dodai-mono", "{shown}" } }
-                    }
-                    if bubble == Some(false) { code { class: "dodai-mono", "{shown}" } }
+                div { class: "dodai-stack dodai-stack--row", style: "width:100%",
+                    if let Some(ic) = s.icon { Icon { icon: ic, size: 20, theme: theme.clone() } }
+                    div { style: "flex:1", Slider { value: v, min, max, step: step.unwrap_or((max - min) / 100.0),
+                        disabled: s.disabled, ticks: s.ticks, centered: s.centered,
+                        bubble, bubble_below: s.bubble == Some(false),
+                        onchange: move |x| act(model, Action::Set(key.clone(), Value::Num(snap(x, min, max, step)))) } }
+                    if s.readout { code { class: "dodai-mono", "{shown}" } }
                 }
             }
         }

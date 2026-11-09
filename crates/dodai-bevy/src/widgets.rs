@@ -282,6 +282,54 @@ pub struct UiDivider {
 #[require(ControlPointer)]
 pub struct UiTooltip(pub String);
 
+/// Draws an unchecked checkbox half-way: on, with a dash instead of the mark (a group with
+/// some members picked).
+#[derive(Component, Debug, Clone, Copy, Default)]
+pub struct ToggleMixed;
+
+/// Fills a [`UiSlider`] from the middle of its track to the thumb (a balance).
+#[derive(Component, Debug, Clone, Copy, Default)]
+pub struct SliderCentred;
+
+/// A tick mark at this fraction of a slider's track; a child of the slider ([`slider_tick`]).
+#[derive(Component, Debug, Clone, Copy, PartialEq)]
+pub struct SliderTick(pub f32);
+
+/// A value pill following a slider's thumb, over (`true`) or under it; a child of the slider
+/// ([`slider_bubble`]).
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SliderBubble(pub bool);
+
+/// A tick mark for a slider, at fraction `f` of its track: spawn it as the slider's child.
+pub fn slider_tick(f: f32) -> impl Bundle {
+    (
+        SliderTick(f.clamp(0.0, 1.0)),
+        Node {
+            position_type: PositionType::Absolute,
+            ..default()
+        },
+        Surface::default(),
+        Pickable::IGNORE,
+    )
+}
+
+/// A pill with `label` that follows a slider's thumb, over (`above`) or under it: spawn it as
+/// the slider's child (and leave room for it around the slider).
+pub fn slider_bubble(label: impl Into<String>, above: bool) -> impl Bundle {
+    (
+        SliderBubble(above),
+        Node {
+            position_type: PositionType::Absolute,
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        Surface::default(),
+        Pickable::IGNORE,
+        children![text(label, TextRole::Caption)],
+    )
+}
+
 // Internal part markers (children styled from their owner).
 #[derive(Component)]
 pub(crate) struct TogglePart;
@@ -722,7 +770,12 @@ pub fn slider(value: f32, min: f32, max: f32) -> impl Bundle {
                 },
                 Surface::default(),
             ),
-            (SliderThumb(false), abs_fill(), Surface::default()),
+            (
+                SliderThumb(false),
+                abs_fill(),
+                Surface::default(),
+                ZIndex(1)
+            ),
         ],
     )
 }
@@ -753,7 +806,12 @@ pub fn vertical_slider(value: f32, min: f32, max: f32, length: f32) -> impl Bund
                 },
                 Surface::default(),
             ),
-            (SliderThumb(false), abs_fill(), Surface::default()),
+            (
+                SliderThumb(false),
+                abs_fill(),
+                Surface::default(),
+                ZIndex(1)
+            ),
         ],
     )
 }
@@ -762,6 +820,16 @@ pub fn vertical_slider(value: f32, min: f32, max: f32, length: f32) -> impl Bund
 /// `vertical`).
 pub fn range_slider(lo: f32, hi: f32, min: f32, max: f32, vertical: Option<f32>) -> impl Bundle {
     let (lo, hi) = (lo.min(hi), hi.max(lo));
+    let fill = match vertical {
+        Some(_) => Node {
+            width: Val::Percent(100.0),
+            ..default()
+        },
+        None => Node {
+            height: Val::Percent(100.0),
+            ..default()
+        },
+    };
     let node = match vertical {
         Some(length) => Node {
             height: Val::Px(length),
@@ -786,9 +854,14 @@ pub fn range_slider(lo: f32, hi: f32, min: f32, max: f32, vertical: Option<f32>)
         },
         node,
         children![
-            (SliderFill, Node::default(), Surface::default()),
-            (SliderThumb(true), abs_fill(), Surface::default()),
-            (SliderThumb(false), abs_fill(), Surface::default()),
+            (SliderFill, fill, Surface::default()),
+            (SliderThumb(true), abs_fill(), Surface::default(), ZIndex(1)),
+            (
+                SliderThumb(false),
+                abs_fill(),
+                Surface::default(),
+                ZIndex(1)
+            ),
         ],
     )
 }
