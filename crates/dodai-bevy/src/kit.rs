@@ -81,10 +81,18 @@ pub(crate) fn press_input(
 /// A box of `kit`. Give it its own [`Node`] for size and direction; alignment (centred, cards
 /// stretch) and the gap between children come from the theme.
 pub fn kit(kit: Kit) -> impl Bundle {
-    UiKit(kit)
+    (UiKit(kit), glass_of(kit))
 }
 
 /// A clickable box of `kit`.
 pub fn kit_pressable(k: Kit) -> impl Bundle {
-    (UiKit(k), UiPress)
+    (UiKit(k), UiPress, glass_of(k))
+}
+
+/// The surface kind of a `kit` box for the glass.
+fn glass_of(kit: Kit) -> crate::glass::UiGlass {
+    crate::glass::UiGlass {
+        class: kit.surface_class(),
+        over: dodai_core::Surface::INHERIT,
+    }
 }

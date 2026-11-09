@@ -321,6 +321,9 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                 spec = spec.crop(end);
             }
             let mut e = p.spawn(spec.bundle());
+            if b.surface.is_set() {
+                e.insert(UiGlass::of(dodai_core::SurfaceClass::Button).with(b.surface));
+            }
             if let Some(k) = &b.counter {
                 e.insert(Bound::Act(Action::Press(k.clone())));
             }
@@ -723,6 +726,7 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
             title,
             body,
             variant,
+            surface,
         } => {
             p.spawn((
                 kit(Kit::Card(*variant)),
@@ -734,6 +738,7 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                     ..default()
                 },
             ))
+            .insert(UiGlass::of(dodai_core::SurfaceClass::Card).with(*surface))
             .with_children(|c| {
                 if !title.is_empty() {
                     c.spawn(text(title.clone(), TextRole::Control));

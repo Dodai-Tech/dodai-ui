@@ -89,6 +89,7 @@ fn main() {
             events::handle,
             events::tree_toggle,
             events::sync_theme,
+            events::sync_glass,
             events::readouts,
             chrome::rebuild,
             render::load_pictures,

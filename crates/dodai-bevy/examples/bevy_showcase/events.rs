@@ -206,6 +206,31 @@ pub fn sync_theme(
     }
 }
 
+/// Hand the Surface effects page's mix and the frost demo's picture to the glass.
+pub fn sync_glass(
+    model: Res<Model>,
+    mut glass: ResMut<DodaiGlass>,
+    mut seen: Local<Option<(dodai_core::SurfaceFx, Option<&'static str>)>>,
+) {
+    let theme = model.0.theme();
+    let now = (
+        model.0.surface_fx(),
+        model.0.wallpaper().then(|| theme.id()),
+    );
+    if *seen == Some(now) {
+        return;
+    }
+    let picture_changed = seen.map(|s| s.1) != Some(now.1);
+    *seen = Some(now);
+    glass.set_mix(now.0);
+    if picture_changed {
+        glass.set_picture(now.1.map(|_| {
+            let p = dodai_showcase_model::media::wallpaper(&theme);
+            (p.rgba.to_vec(), p.width as usize, p.height as usize)
+        }));
+    }
+}
+
 /// Keep numbers that show a stored value in step with it.
 pub fn readouts(model: Res<Model>, mut q: Query<(&Readout, &mut UiText)>) {
     if !model.is_changed() {
