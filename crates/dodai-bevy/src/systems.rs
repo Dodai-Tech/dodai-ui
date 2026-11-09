@@ -472,21 +472,31 @@ pub(crate) fn style_tabs(
 
 pub(crate) fn style_toggles(
     theme: Res<DodaiTheme>,
-    mut q: Query<(&UiToggle, &ControlPointer, &mut Surface, &mut Node), Without<TogglePart>>,
+    mut q: Query<
+        (
+            &UiToggle,
+            &ControlPointer,
+            Has<ToggleMixed>,
+            &mut Surface,
+            &mut Node,
+        ),
+        Without<TogglePart>,
+    >,
     mut parts: Query<(&ChildOf, &mut Node, &mut Surface), With<TogglePart>>,
-    owners: Query<(&UiToggle, &ControlPointer), Without<TogglePart>>,
+    owners: Query<(&UiToggle, &ControlPointer, Has<ToggleMixed>), Without<TogglePart>>,
 ) {
     let round = theme.shape.kind() == ShapeKind::Rounded;
     let bw = theme.shape.border_width;
-    for (t, i, mut s, mut n) in &mut q {
-        let k = theme.toggle(t.on, cs(i, t.disabled, false));
+    for (t, i, mixed, mut s, mut n) in &mut q {
+        let on = t.on || mixed;
+        let k = theme.toggle(on, cs(i, t.disabled, false));
         let (w, h) = toggle_size(&theme, t.kind);
         upd(
             &mut *s,
             Surface {
                 fill: Some(k.track),
                 border: Some(k.border),
-                glow: t.on && !t.disabled && t.kind != ToggleKind::Switch,
+                glow: on && !t.disabled && t.kind != ToggleKind::Switch,
                 pill: t.kind != ToggleKind::Checkbox,
             },
         );
@@ -495,10 +505,12 @@ pub(crate) fn style_toggles(
     }
     let _ = round;
     for (p, mut n, mut s) in &mut parts {
-        let Ok((t, i)) = owners.get(p.parent()) else {
+        let Ok((t, i, mixed)) = owners.get(p.parent()) else {
             continue;
         };
-        let k = theme.toggle(t.on, cs(i, t.disabled, false));
+        // Half-way: a dash instead of the mark.
+        let dash = mixed && !t.on;
+        let k = theme.toggle(t.on || mixed, cs(i, t.disabled, false));
         let (w, h) = toggle_size(&theme, t.kind);
         let inset = 3.0;
         match t.kind {
@@ -526,10 +538,14 @@ pub(crate) fn style_toggles(
             _ => {
                 let d = h - 2.0 * bw - 2.0 * (inset + 2.0);
                 upd(&mut n.width, Val::Px(d.max(2.0)));
-                upd(&mut n.height, Val::Px(d.max(2.0)));
+                upd(&mut n.height, Val::Px(if dash { 2.0 } else { d.max(2.0) }));
                 upd(
                     &mut n.display,
-                    if t.on { Display::Flex } else { Display::None },
+                    if t.on || dash {
+                        Display::Flex
+                    } else {
+                        Display::None
+                    },
                 );
                 upd(
                     &mut *s,
@@ -588,7 +604,22 @@ pub(crate) fn style_sliders(
     mut q: Query<(&UiSlider, &mut Surface, &mut Node), (Without<SliderFill>, Without<SliderThumb>)>,
     mut fills: Query<(&ChildOf, &mut Node, &mut Surface), (With<SliderFill>, Without<SliderThumb>)>,
     mut thumbs: Query<(&ChildOf, &SliderThumb, &mut Node, &mut Surface), Without<SliderFill>>,
-    owners: Query<&UiSlider, (Without<SliderFill>, Without<SliderThumb>)>,
+    mut marks: Query<
+        (
+            &ChildOf,
+            Option<&SliderTick>,
+            Option<&SliderBubble>,
+            &mut Node,
+            &mut Surface,
+        ),
+        (
+            Or<(With<SliderTick>, With<SliderBubble>)>,
+            Without<UiSlider>,
+            Without<SliderFill>,
+            Without<SliderThumb>,
+        ),
+    >,
+    owners: Query<(&UiSlider, Has<SliderCentred>), (Without<SliderFill>, Without<SliderThumb>)>,
 ) {
     let p = &theme.palette;
     let track_h = theme.spacing.sm + 2.0;
@@ -610,11 +641,17 @@ pub(crate) fn style_sliders(
         }
     }
     for (c, mut n, mut s) in &mut fills {
-        let Ok(sl) = owners.get(c.parent()) else {
+        let Ok((sl, centred)) = owners.get(c.parent()) else {
             continue;
         };
-        // A range fills from its low thumb: the gap before it is a margin.
-        let (from, len) = (sl.lo_fraction(), sl.fraction() - sl.lo_fraction());
+        // A range fills from its low thumb (a balance from the middle): the gap before it is a
+        // margin.
+        let (from, len) = if centred {
+            let f = sl.fraction();
+            (f.min(0.5), (f - 0.5).abs())
+        } else {
+            (sl.lo_fraction(), sl.fraction() - sl.lo_fraction())
+        };
         if sl.vertical {
             upd(&mut n.height, Val::Percent(len * 100.0));
             upd(&mut n.margin.bottom, Val::Percent(from * 100.0));
@@ -632,8 +669,53 @@ pub(crate) fn style_sliders(
             },
         );
     }
+    for (c, tick, bubble, mut n, mut s) in &mut marks {
+        let Ok((sl, _)) = owners.get(c.parent()) else {
+            continue;
+        };
+        if let Some(t) = tick {
+            upd(&mut n.width, Val::Px(2.0));
+            upd(&mut n.height, Val::Px(10.0));
+            upd(&mut n.left, Val::Percent(t.0 * 100.0));
+            upd(&mut n.margin.left, Val::Px(-1.0));
+            upd(&mut n.top, Val::Px(track_h / 2.0 - 5.0));
+            upd(
+                &mut *s,
+                Surface {
+                    fill: Some(p.border_strong),
+                    border: None,
+                    glow: false,
+                    pill: false,
+                },
+            );
+        } else if let Some(b) = bubble {
+            const W: f32 = 52.0;
+            const H: f32 = 22.0;
+            let long = theme.shape.control_height * 0.5;
+            upd(&mut n.width, Val::Px(W));
+            upd(&mut n.height, Val::Px(H));
+            upd(&mut n.left, Val::Percent(sl.fraction() * 100.0));
+            upd(&mut n.margin.left, Val::Px(-W / 2.0));
+            let mid = track_h / 2.0;
+            let y = if b.0 {
+                mid - long / 2.0 - 6.0 - H
+            } else {
+                mid + long / 2.0 + 6.0
+            };
+            upd(&mut n.top, Val::Px(y));
+            upd(
+                &mut *s,
+                Surface {
+                    fill: Some(p.surface_raised),
+                    border: Some(p.border),
+                    glow: false,
+                    pill: false,
+                },
+            );
+        }
+    }
     for (c, which, mut n, mut s) in &mut thumbs {
-        let Ok(sl) = owners.get(c.parent()) else {
+        let Ok((sl, _)) = owners.get(c.parent()) else {
             continue;
         };
         let f = if which.0 {

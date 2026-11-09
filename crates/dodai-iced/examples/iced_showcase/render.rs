@@ -532,24 +532,36 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
                 dodai_showcase_model::node::SliderFormat::Plain => num_text(v, s.step),
                 f => f.text(v),
             };
-            let mut r = row![container(sl).width(Length::Fill)]
-                .spacing(sp.md)
-                .align_y(alignment::Vertical::Center);
+            // Ticks, a centred fill and the bubble need the canvas slider.
+            let track: Element<'_, Msg> = if s.ticks || s.centered || s.bubble.is_some() {
+                let key = s.bind.key.clone();
+                let spec = dodai_iced::RangeSpec {
+                    min,
+                    max,
+                    step,
+                    ticks: s.ticks,
+                    vertical: None,
+                };
+                let look = dodai_iced::SliderLook {
+                    centered: s.centered,
+                    bubble: s.bubble.map(|above| (above, value_text.clone())),
+                    disabled,
+                };
+                lt.slider_canvas(v, spec, look, move |x| {
+                    Msg::Set(key.clone(), Value::Num(snap(x, min, max, step)))
+                })
+            } else {
+                sl.into()
+            };
+            let mut r = row![].spacing(sp.md).align_y(alignment::Vertical::Center);
+            if let Some(i) = s.icon {
+                r = r.push(icon(cx, i, 20.0));
+            }
+            r = r.push(container(track).width(Length::Fill));
             if s.readout {
                 r = r.push(txt(cx, &value_text, Role::Mono));
             }
-            match s.bubble {
-                Some(above) => {
-                    let bubble = txt(cx, &value_text, Role::Mono);
-                    let c = if above {
-                        column![bubble, r]
-                    } else {
-                        column![r, bubble]
-                    };
-                    c.spacing(sp.xs).into()
-                }
-                None => r.into(),
-            }
+            r.into()
         }
         Demo::Range(r) => {
             let (lo_key, hi_key) = (r.lo.key.clone(), r.hi.key.clone());

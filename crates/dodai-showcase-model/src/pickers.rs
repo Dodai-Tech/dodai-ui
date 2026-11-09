@@ -254,9 +254,9 @@ pub fn date_time_range(c: &Ctx, month_key: &str, range_key: &str, key: &str) -> 
     surface(stack(
         Axis::Column,
         Gap::Sm,
-        false,
+        true,
         vec![
-            calendar_body(c, month_key, DayPick::Span(range_key)),
+            calendar(c, month_key, DayPick::Span(range_key)),
             stack(
                 Axis::Row,
                 Gap::Md,
