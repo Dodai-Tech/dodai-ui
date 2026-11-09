@@ -1,6 +1,6 @@
 //! Foundations: text, palette, type scale, spacing, shape, motion, icons.
 
-use dodai_core::{Color, Theme, Tone, TypeRole};
+use dodai_core::{ButtonVariant, Color, Theme, TypeRole};
 use dodai_icons::IconId;
 
 use crate::b::*;
@@ -383,20 +383,125 @@ fn shape(c: &Ctx) -> Node {
     ])
 }
 
-fn icons(_: &Ctx) -> Node {
-    use IconId::*;
-    let ids = [
-        Home, Search, Settings, Star, Heart, Edit, Copy, Check, Close, Menu, Folder, File, Bell,
-        Person, Mail, Calendar, Cloud, Code, Dashboard, Download, Eye, Flag, Bookmark, Archive,
+fn icons(c: &Ctx) -> Node {
+    use crate::icons::{self as ic, IconRef};
+    use dodai_core::{SymbolState, ToggleKind};
+    use dodai_icons::symbol::{Group, Symbol};
+    /// Icons a closed block previews; the most a search lists.
+    const PREVIEW: usize = 24;
+    const MAX_HITS: usize = 480;
+    let t = c.theme;
+    let search = input("icon-q", "Search icons…").icon(IconId::Search);
+    let q = c
+        .values
+        .text(&search.bind)
+        .trim()
+        .to_lowercase()
+        .replace([' ', '-'], "_");
+    let filled_toggle = toggle(ToggleKind::Checkbox, "icon-filled", false, "Filled");
+    let filled = c.values.flag(&filled_toggle.bind);
+    let searching = !q.is_empty();
+    let mut out = vec![
+        muted(format!(
+            "{} icons: {} named icons shared by every design, each drawn in that design's own style (write one as `Icon::Heart`), plus {} dashboard icons in {} groups, one drawing stroked in each design's own weight and corners.",
+            ic::total(),
+            IconId::ALL.len(),
+            Symbol::ALL.len(),
+            Group::ALL.len()
+        )),
+        tile(360.0, vec![Node::Input(search)]),
+        Node::Toggle(filled_toggle),
     ];
-    col(vec![
-        muted("The shared icon vocabulary, drawn in each design's own style."),
-        row(ids.iter().map(|&i| Node::Icon(i, 24.0)).collect()),
-        row(vec![
-            tag("success", Tone::Success, false),
-            tag("danger", Tone::Danger, false),
-        ]),
-    ])
+    let mut shown = 0usize;
+    for src in ic::sources() {
+        let hits: Vec<IconRef> = src
+            .entries
+            .iter()
+            .copied()
+            .filter(|e| !searching || e.name().replace('-', "_").contains(q.as_str()))
+            .collect();
+        if hits.is_empty() {
+            continue;
+        }
+        let open_key = format!("icon-open:{}", src.label);
+        let open = c.values.flag(&crate::Bind::new(&open_key, false));
+        let cap = if searching {
+            MAX_HITS.saturating_sub(shown)
+        } else if open {
+            hits.len()
+        } else {
+            PREVIEW
+        };
+        shown += hits.len().min(cap);
+        let mut block = vec![
+            muted(format!("{} · {}", src.label.to_uppercase(), hits.len())),
+            row(hits
+                .iter()
+                .take(cap)
+                .map(|&icon| Node::IconTile { icon, filled })
+                .collect())
+            .gap(Gap::Xs),
+        ];
+        if !searching && hits.len() > PREVIEW {
+            let label = if open {
+                "Show fewer".to_string()
+            } else {
+                format!("Show all {}", hits.len())
+            };
+            block.push(row(vec![button(label, ButtonVariant::Secondary)
+                .counter(crate::commands::flip(&open_key, false))
+                .node()]));
+        }
+        out.push(col(block).gap(Gap::Md));
+    }
+    if shown == 0 {
+        out.push(muted("No icons match."));
+    }
+    if !searching {
+        let states = [
+            ("Off", SymbolState::Off),
+            ("On", SymbolState::On),
+            ("Info", SymbolState::Info),
+            ("Warning", SymbolState::Warning),
+            ("Danger", SymbolState::Danger),
+        ];
+        let marks = [
+            Symbol::OilCan,
+            Symbol::Battery,
+            Symbol::Hazard,
+            Symbol::Airbag,
+        ];
+        let cols = states
+            .into_iter()
+            .map(|(name, st)| {
+                let ink = st.color(&t.palette);
+                dial(vec![
+                    line(
+                        marks
+                            .iter()
+                            .map(|&m| Node::Glyph {
+                                icon: IconRef::Symbol(m),
+                                size: 28.0,
+                                filled: false,
+                                ink,
+                            })
+                            .collect(),
+                    )
+                    .gap(Gap::Xs),
+                    muted(name),
+                ])
+            })
+            .collect();
+        out.push(
+            col(vec![
+                label("Symbol states"),
+                muted("Icon::symbol(..).state(SymbolState::..) colours a telltale by what it reports."),
+                row(cols).gap(Gap::Lg),
+            ])
+            .gap(Gap::Sm),
+        );
+    }
+    col(out)
 }
 
 /// Type and spacing resolved at five viewport widths, the page grid at 800 px, and the media

@@ -71,6 +71,23 @@ impl IcedTheme {
         self.icon_styled(id, size, ink, false)
     }
 
+    /// A drawing of `dodai-icons` (a catalogue icon or a symbol) at `size` px in `ink`; nothing
+    /// for `None`.
+    pub fn glyph<'a, Message: 'a>(
+        &self,
+        glyph: Option<dodai_icons::Glyph>,
+        size: f32,
+        ink: LColor,
+    ) -> Element<'a, Message> {
+        Canvas::new(IconCanvas {
+            polygons: glyph.map(|g| g.polygons()).unwrap_or_default(),
+            ink: color(ink),
+        })
+        .width(size)
+        .height(size)
+        .into()
+    }
+
     /// Like [`icon`](Self::icon), in the filled form where the design has one.
     pub fn icon_styled<'a, Message: 'a>(
         &self,

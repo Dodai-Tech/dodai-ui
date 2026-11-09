@@ -835,6 +835,26 @@ pub enum Node {
     },
     /// A floating menu or dropdown list around its content.
     Popup(Box<Node>),
+    /// A catalogue icon or symbol at `size` px in `ink` ([`crate::icons::IconRef::glyph`] draws
+    /// it).
+    Glyph {
+        /// Which.
+        icon: crate::icons::IconRef,
+        /// Side px.
+        size: f32,
+        /// The filled form where the design has one.
+        filled: bool,
+        /// Colour.
+        ink: Color,
+    },
+    /// A tile of the icon catalogue: the icon (28 px, primary) over its name cut to
+    /// [`crate::icons::TILE_NAME_CHARS`], in a 92 px wide bordered frame.
+    IconTile {
+        /// Which.
+        icon: crate::icons::IconRef,
+        /// The filled form where the design has one.
+        filled: bool,
+    },
     /// A picture in the theme's colours with frosted-glass panels over it: each panel shows a
     /// blurred, tinted copy of the picture behind it ([`crate::media::frosted`] makes the
     /// pixels).
