@@ -498,6 +498,76 @@ if(!t)return;t.hasAttribute('data-dodai-theme-next')?set(i+1):set(i-1)}});}})();
     )
 }
 
+/// Inline style that makes one surface see-through: frosted glass from the app-wide mix
+/// `active` (with the component's own `over` on top) and the component's fill opacity, as the
+/// `--g*` variables the `.dodai-glass` rules read. Put it with the class `dodai-glass` on a
+/// `.dodai-btn`, `.dodai-panel` or `.dodai-kit` element. Empty when the fill stays as designed.
+pub fn glass_style(
+    theme: &Theme,
+    class: dodai_core::SurfaceClass,
+    over: &dodai_core::Surface,
+    active: dodai_core::SurfaceFx,
+) -> String {
+    glass_vars(&dodai_core::surface_glass(theme, class, over, active))
+}
+
+/// The `--g*` variables of one [`Glass`](dodai_core::Glass) (see [`glass_style`]).
+pub fn glass_vars(g: &dodai_core::Glass) -> String {
+    if g.is_solid() {
+        return String::new();
+    }
+    let mut s = format!(
+        "--ga:{};--gc:{};--gk:{};--go:{};",
+        g.amount, g.clear, g.keep, g.opacity
+    );
+    if g.frosted() {
+        s.push_str(&format!(
+            "--gf:blur({}px) saturate({});",
+            g.blur * g.amount,
+            1.0 + (g.saturation - 1.0) * g.amount
+        ));
+    }
+    s
+}
+
+/// The theme's canvas mesh (see [`dodai_core::mesh_pixels`]) as a CSS `background-image` value of
+/// radial gradients, stretched over the element like the picture the native toolkits stretch
+/// over the window. `None` for a design with a flat canvas.
+pub fn backdrop_css(t: &Theme) -> Option<String> {
+    let style = &t.surface_style;
+    if style.backdrop <= 0.0 {
+        return None;
+    }
+    let (w, h) = dodai_core::MESH_SIZE;
+    let aspect = h as f32 / w as f32;
+    // Stops sampled along the radius; CSS draws the first image on top, so reverse the blobs.
+    let layers: Vec<String> = dodai_core::mesh_blobs(style.wash, style.backdrop)
+        .iter()
+        .rev()
+        .map(|b| {
+            let stops: Vec<String> = (0..=8)
+                .map(|i| {
+                    let d = i as f32 / 8.0;
+                    format!(
+                        "{} {:.1}%",
+                        b.color.with_alpha(b.alpha_at(d)).to_css(),
+                        d * 100.0
+                    )
+                })
+                .collect();
+            format!(
+                "radial-gradient({:.2}% {:.2}% at {:.1}% {:.1}%,{})",
+                b.r * aspect * 100.0,
+                b.r * 100.0,
+                b.x * 100.0,
+                b.y * 100.0,
+                stops.join(",")
+            )
+        })
+        .collect();
+    Some(layers.join(","))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -853,5 +923,48 @@ mod tests {
     fn script_lists_ids() {
         let js = switcher_script(&themes::all());
         assert!(js.contains("\"cyberpunk\",\"cyberpunk-cyan\",\"cyberpunk-red\""));
+    }
+
+    #[test]
+    fn glass_is_empty_for_a_solid_fill_and_frost_adds_the_backdrop_filter() {
+        use dodai_core::{Surface, SurfaceClass, SurfaceFx};
+        for t in themes::all() {
+            let solid = glass_style(&t, SurfaceClass::Card, &Surface::INHERIT, SurfaceFx::NONE);
+            assert!(solid.is_empty(), "{}", t.id());
+            let clear = glass_style(
+                &t,
+                SurfaceClass::Button,
+                &Surface::new().opacity(0.5),
+                SurfaceFx::NONE,
+            );
+            assert!(
+                clear.contains("--go:0.5") && !clear.contains("--gf"),
+                "{}",
+                t.id()
+            );
+            let frost = glass_style(
+                &t,
+                SurfaceClass::Panel,
+                &Surface::new().frost(1.0),
+                SurfaceFx::NONE,
+            );
+            assert!(
+                frost.contains("--ga:1;") && frost.contains("--gf:blur("),
+                "{}",
+                t.id()
+            );
+        }
+        assert!(COMPONENTS_CSS.contains(".dodai-glass{"));
+    }
+
+    #[test]
+    fn only_a_meshed_canvas_has_a_backdrop() {
+        for t in themes::all() {
+            let css = backdrop_css(&t);
+            assert_eq!(css.is_some(), t.surface_style.backdrop > 0.0, "{}", t.id());
+            if let Some(css) = css {
+                assert_eq!(css.matches("radial-gradient(").count(), 4, "{}", t.id());
+            }
+        }
     }
 }

@@ -12,14 +12,18 @@ keywords     = ["theme", "design-system", "iced", "cyberpunk"]
 categories   = ["gui"]
 
 [features]
-default = ["icons"]
+default = ["icons", "frost"]
 ## `icon()`: the shared icon vocabulary drawn on a canvas in the design's own style.
+## Frosted glass draws a blurred copy of the app's backdrop under frosted surfaces (without it
+## they only turn see-through).
+frost = ["dep:dodai-frost", "iced/image"]
 icons = ["dep:dodai-icons", "dodai-icons/theme", "dodai-icons/cyberpunk", "dodai-icons/material", "dodai-icons/neobrutalism"]
 
 [dependencies]
 dodai-core = { workspace = true }
 dodai-icons = { workspace = true, optional = true }
 dodai-fx = { workspace = true }
+dodai-frost = { workspace = true, optional = true }
 iced = { workspace = true }
 
 [dev-dependencies]
@@ -32,3 +36,7 @@ dodai-core = { workspace = true, features = ["cyberpunk", "material"] }
 naga = { version = "27", default-features = false, features = ["termcolor"] }
 dodai-showcase-model = { workspace = true }
 dodai-shaders = { workspace = true, features = ["iced"] }
+
+[[example]]
+name = "iced_showcase"
+required-features = ["frost"]

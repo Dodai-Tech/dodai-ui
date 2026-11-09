@@ -16,7 +16,7 @@ impl IcedTheme {
         &self,
         variant: ButtonVariant,
     ) -> impl Fn(&IcedBaseTheme, button::Status) -> button::Style + 'static {
-        let tok = |s| self.theme.button(variant, s);
+        let tok = |s| self.button_colours(variant, s);
         let (idle, hover, press, off) = (
             tok(ControlState::Idle),
             tok(ControlState::Hovered),
@@ -75,7 +75,7 @@ impl IcedTheme {
         let m = self.theme.control_metrics(size);
         let e = &self.theme.effects;
         let colors = |st| {
-            let t = self.theme.button(variant, st);
+            let t = self.button_colours(variant, st);
             let lit = matches!(st, ControlState::Hovered | ControlState::Pressed);
             ShapedColors {
                 fill: t.background.map(color),

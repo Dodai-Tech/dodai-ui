@@ -327,6 +327,8 @@ pub struct Button {
     pub shimmer: bool,
     /// Which corners a cropped button cuts (`None` = the design's own).
     pub corners: Option<dodai_core::Corners>,
+    /// The button's own surface override (frost, fill opacity).
+    pub surface: dodai_core::Surface,
 }
 
 /// A row of options of which one is selected (button group, segmented control, tabs).
@@ -678,6 +680,8 @@ pub enum Node {
         body: Box<Node>,
         /// Variant: elevated, filled or outlined.
         variant: dodai_core::CardVariant,
+        /// The card's own surface override (frost, fill opacity).
+        surface: dodai_core::Surface,
     },
     /// A message bar (inline or full-width banner).
     Alert {
@@ -934,6 +938,7 @@ pub mod b {
             elevated: false,
             shimmer: false,
             corners: None,
+            surface: dodai_core::Surface::INHERIT,
         }
     }
 
@@ -961,6 +966,11 @@ pub mod b {
         /// A light band sweeps across it.
         pub fn shimmer(mut self) -> Self {
             self.shimmer = true;
+            self
+        }
+        /// The button's own surface override (frost, fill opacity).
+        pub fn surface(mut self, s: dodai_core::Surface) -> Self {
+            self.surface = s;
             self
         }
         /// Cut these corners when cropped.

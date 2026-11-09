@@ -51,6 +51,7 @@ mod charts;
 mod controls;
 mod frame;
 mod geometry;
+mod glass;
 #[cfg(feature = "icons")]
 mod icon;
 mod inputs;
@@ -106,11 +107,28 @@ pub fn color(c: LColor) -> Color {
 #[derive(Debug, Clone)]
 pub struct IcedTheme {
     pub(crate) theme: Theme,
+    pub(crate) glass: glass::GlassState,
 }
 
 impl IcedTheme {
     pub fn new(theme: Theme) -> Self {
-        Self { theme }
+        Self {
+            theme,
+            glass: glass::GlassState::default(),
+        }
+        .with_mesh()
+    }
+
+    /// With the design's canvas mesh as the frost backdrop.
+    #[cfg(feature = "frost")]
+    fn with_mesh(mut self) -> Self {
+        self.refresh_mesh();
+        self
+    }
+
+    #[cfg(not(feature = "frost"))]
+    fn with_mesh(self) -> Self {
+        self
     }
 
     pub fn theme(&self) -> &Theme {
@@ -119,6 +137,8 @@ impl IcedTheme {
 
     pub fn set_theme(&mut self, theme: Theme) {
         self.theme = theme;
+        #[cfg(feature = "frost")]
+        self.refresh_mesh();
     }
 
     /// Native Iced theme so built-in widgets inherit the palette.

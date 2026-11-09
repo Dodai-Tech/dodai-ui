@@ -86,6 +86,10 @@ pub fn surface_glass(
     Glass::new(theme, class, amount, over.opacity_value().unwrap_or(1.0))
 }
 
+/// Size of the canvas mesh picture toolkits draw stretched over the window (wider than tall;
+/// the blobs are round at this aspect).
+pub const MESH_SIZE: (usize, usize) = (96, 60);
+
 /// Blob centres `(x, y, radius)` in unit coordinates, one per wash colour, plus a faint fourth.
 const BLOBS: [(f32, f32, f32); 4] = [
     (0.10, 0.05, 0.70),
@@ -105,18 +109,16 @@ pub fn mesh_pixels(
     w: usize,
     h: usize,
 ) -> Vec<u8> {
-    let colours = [wash[0], wash[1], wash[2], wash[1]];
+    let blobs = mesh_blobs(wash, strength);
     let mut out = vec![0u8; w * h * 4];
     for y in 0..h {
         for x in 0..w {
             let (u, v) = (x as f32 / w as f32, y as f32 / h as f32);
             let mut c = canvas;
-            for (i, (cx, cy, r)) in BLOBS.iter().enumerate() {
+            for b in &blobs {
                 // The picture is wider than tall: keep the blobs round.
-                let d = ((u - cx) * (w as f32 / h as f32)).hypot(v - cy) / r;
-                let f = (1.0 - d).clamp(0.0, 1.0);
-                let k = f * f * (3.0 - 2.0 * f) * strength * if i == 3 { 0.5 } else { 1.0 };
-                c = c.mix(colours[i], k.min(1.0));
+                let d = ((u - b.x) * (w as f32 / h as f32)).hypot(v - b.y) / b.r;
+                c = c.mix(b.color, b.alpha_at(d));
             }
             let o = (y * w + x) * 4;
             out[o..o + 4].copy_from_slice(&[c.r, c.g, c.b, 255]);
@@ -125,11 +127,75 @@ pub fn mesh_pixels(
     out
 }
 
+/// One soft blob of the canvas mesh, laid over the canvas in order.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct MeshBlob {
+    /// Centre in unit coordinates of the picture.
+    pub x: f32,
+    pub y: f32,
+    /// Radius in picture heights.
+    pub r: f32,
+    pub color: crate::Color,
+    /// Opacity at the centre.
+    pub weight: f32,
+}
+
+impl MeshBlob {
+    /// Opacity at distance `d` from the centre, in radii (smooth falloff, 0 from 1 on).
+    pub fn alpha_at(&self, d: f32) -> f32 {
+        let f = (1.0 - d).clamp(0.0, 1.0);
+        (f * f * (3.0 - 2.0 * f) * self.weight).min(1.0)
+    }
+}
+
+/// The blobs of a mesh of the three `wash` colours (and the second again, fainter) at
+/// `strength`, bottom first.
+pub fn mesh_blobs(wash: [crate::Color; 3], strength: f32) -> [MeshBlob; 4] {
+    let colours = [wash[0], wash[1], wash[2], wash[1]];
+    std::array::from_fn(|i| {
+        let (x, y, r) = BLOBS[i];
+        MeshBlob {
+            x,
+            y,
+            r,
+            color: colours[i],
+            weight: strength * if i == 3 { 0.5 } else { 1.0 },
+        }
+    })
+}
+
 /// [`mesh_pixels`] of `theme`'s canvas, `None` for a design with a flat canvas.
 pub fn backdrop_mesh(theme: &Theme, w: usize, h: usize) -> Option<Vec<u8>> {
     let style = &theme.surface_style;
     (style.backdrop > 0.0)
         .then(|| mesh_pixels(theme.palette.background, style.wash, style.backdrop, w, h))
+}
+
+/// A picture with hard edges in the palette's colours to put behind frosted glass, so the blur
+/// shows (`w`×`h` RGBA): bands of the
+/// accents across the canvas and a few discs.
+pub fn glass_picture(p: &crate::Palette, w: usize, h: usize) -> Vec<u8> {
+    let bands = [p.primary, p.info, p.success, p.warning, p.danger];
+    let discs = [
+        (0.2, 0.3, 0.12, p.warning),
+        (0.7, 0.6, 0.18, p.primary),
+        (0.45, 0.85, 0.1, p.success),
+    ];
+    let mut out = Vec::with_capacity(w * h * 4);
+    for y in 0..h {
+        for x in 0..w {
+            let (u, v) = (x as f32 / w as f32, y as f32 / h as f32);
+            let band = ((u + v * 0.6) * 6.0) as usize % bands.len();
+            let mut c = bands[band].mix(p.background, 0.35);
+            for (cx, cy, r, colour) in discs {
+                if ((u - cx) * w as f32 / h as f32).hypot(v - cy) < r {
+                    c = colour;
+                }
+            }
+            out.extend([c.r, c.g, c.b, 255]);
+        }
+    }
+    out
 }
 
 #[cfg(all(test, feature = "dodai", feature = "material"))]

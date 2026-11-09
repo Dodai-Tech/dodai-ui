@@ -199,11 +199,26 @@ impl Showcase {
     /// screenshot script sets so every toolkit opens on the same page.
     pub fn from_env() -> Self {
         let var = |k: &str| std::env::var(k).ok();
-        Self::new().configured(
-            var("DODAI_THEME").as_deref(),
-            var("DODAI_CAT").and_then(|c| c.parse().ok()),
-            var("DODAI_FILTER").as_deref(),
-        )
+        Self::new()
+            .configured(
+                var("DODAI_THEME").as_deref(),
+                var("DODAI_CAT").and_then(|c| c.parse().ok()),
+                var("DODAI_FILTER").as_deref(),
+            )
+            .with_surface_spec(&var("DODAI_SFX").unwrap_or_default())
+    }
+
+    /// Test aid: applies a `DODAI_SFX` spec to the surface mix (see
+    /// [`surface_state::apply_spec`](crate::surface_state::apply_spec)).
+    pub fn with_surface_spec(mut self, spec: &str) -> Self {
+        let t = self.theme();
+        crate::surface_state::apply_spec(&mut self.values, &t, spec);
+        self
+    }
+
+    /// Whether the app shows the glass picture behind everything (the frost demo's backdrop).
+    pub fn wallpaper(&self) -> bool {
+        crate::surface_state::wallpaper(&self.values)
     }
 
     /// This showcase opened on `theme` (a theme id), `category` (`0` = all, `1..` = a category)

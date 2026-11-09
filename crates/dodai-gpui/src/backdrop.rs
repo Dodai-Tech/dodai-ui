@@ -8,8 +8,8 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Mutex, OnceLock};
 
-const W: usize = 96;
-const H: usize = 60;
+const W: usize = dodai_core::MESH_SIZE.0;
+const H: usize = dodai_core::MESH_SIZE.1;
 /// Width and height of the mesh picture.
 #[cfg(feature = "frost")]
 pub(crate) const MESH_SIZE: (usize, usize) = (W, H);

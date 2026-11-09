@@ -75,6 +75,20 @@ pub enum Kit {
 }
 
 impl Kit {
+    /// Which kind of surface the box is for the surface mix and glass (`None`: it only takes a
+    /// component's own [`Surface`](crate::Surface)).
+    pub fn surface_class(self) -> Option<crate::SurfaceClass> {
+        use crate::SurfaceClass as C;
+        match self {
+            Self::Card(_) | Self::Popup => Some(C::Card),
+            Self::Toolbar { .. } => Some(C::Bar),
+            Self::Chip { .. } => Some(C::Tag),
+            Self::Fab { .. } | Self::Elevated => Some(C::Button),
+            Self::Select => Some(C::Input),
+            _ => None,
+        }
+    }
+
     /// A stable kebab-case name, unique per variant (`card-elevated`, `alert-danger-banner`,
     /// `chip-on`): what stylesheets key on.
     pub fn name(self) -> String {

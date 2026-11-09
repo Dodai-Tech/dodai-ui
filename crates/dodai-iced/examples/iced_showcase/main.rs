@@ -32,6 +32,10 @@ pub struct App {
     pub offset: f32,
     /// Frames drawn (for `DODAI_SHOT`).
     pub frames: u32,
+    /// Window size, px (frosted surfaces line their backdrop up with it).
+    pub window: iced::Size,
+    /// The frost demo's picture is behind the app, for this theme id.
+    pub wallpaper: Option<&'static str>,
 }
 
 #[derive(Debug, Clone)]
@@ -45,6 +49,7 @@ pub enum Msg {
     /// Section and content positions, measured for a jump (`true`) or the scroll-spy.
     Measured(Vec<Hit>, bool),
     Shot(iced::window::Screenshot),
+    Resized(iced::Size),
     Noop,
 }
 
@@ -60,7 +65,7 @@ pub enum Hit {
 pub fn boot() -> App {
     let model = Showcase::from_env();
     let lt = IcedTheme::new(model.theme());
-    App {
+    let mut app = App {
         seen_revision: model.revision(),
         model,
         lt,
@@ -71,7 +76,27 @@ pub fn boot() -> App {
         content_id: iced::widget::Id::unique(),
         offset: 0.0,
         frames: 0,
+        window: iced::Size::new(1400.0, 900.0),
+        wallpaper: None,
+    };
+    sync_glass(&mut app);
+    app
+}
+
+/// Hand the Surface effects page's mix, the frost demo's picture and the viewport to the theme.
+fn sync_glass(app: &mut App) {
+    app.lt.set_surface_mix(app.model.surface_fx());
+    let theme = app.model.theme();
+    let want = app.model.wallpaper().then(|| theme.id());
+    if want != app.wallpaper {
+        app.wallpaper = want;
+        app.lt.set_backdrop(want.map(|_| {
+            let p = dodai_showcase_model::media::wallpaper(&theme);
+            (p.rgba.to_vec(), p.width as usize, p.height as usize)
+        }));
     }
+    app.lt
+        .set_viewport(app.window, iced::Vector::new(0.0, app.offset));
 }
 
 /// Frames to wait before taking the `DODAI_SHOT` screenshot (`DODAI_SHOT_FRAMES` overrides).
@@ -139,12 +164,16 @@ pub fn update(app: &mut App, msg: Msg) -> Task<Msg> {
             }
             task = iced::exit();
         }
+        Msg::Resized(size) => app.window = size,
         Msg::Noop => {}
     }
     if app.seen_revision != app.model.revision() {
         app.seen_revision = app.model.revision();
         app.lt.set_theme(app.model.theme());
+        // The picture is drawn in the theme's colours.
+        app.wallpaper = None;
     }
+    sync_glass(app);
     task
 }
 
@@ -229,6 +258,7 @@ pub fn toggle(set: &mut HashSet<String>, key: String) {
 fn subscription(_app: &App) -> Subscription<Msg> {
     Subscription::batch([
         iced::window::frames().map(Msg::Tick),
+        iced::window::resize_events().map(|(_, size)| Msg::Resized(size)),
         event::listen_with(|event, status, _id| match event {
             iced::Event::Keyboard(keyboard::Event::KeyPressed {
                 key: keyboard::Key::Character(c),
@@ -244,11 +274,19 @@ fn subscription(_app: &App) -> Subscription<Msg> {
 }
 
 fn view(app: &App) -> Element<'_, Msg> {
-    let page = container(chrome::window(app))
+    // The canvas, the backdrop (the design's mesh or the frost demo's picture), then the app.
+    let canvas = container("")
         .width(Length::Fill)
         .height(Length::Fill)
         .style(app.lt.background());
-    stack![page, app.lt.scanlines()].into()
+    let mut layers = stack![canvas];
+    if let Some(b) = app.lt.backdrop_view() {
+        layers = layers.push(b);
+    }
+    let page = container(chrome::window(app))
+        .width(Length::Fill)
+        .height(Length::Fill);
+    layers.push(page).push(app.lt.scanlines()).into()
 }
 
 fn main() -> iced::Result {

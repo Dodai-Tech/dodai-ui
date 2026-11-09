@@ -57,7 +57,14 @@ impl IcedTheme {
         col = col.push(content);
         let mut s = self.panel_box(focused);
         s.padding = Padding::new(self.theme.spacing.lg);
-        self.shaped_box(col, s)
+        // The app-wide mix may frost panels.
+        let glass = self.glass(
+            dodai_core::SurfaceClass::Panel,
+            &dodai_core::Surface::INHERIT,
+        );
+        s.fill = s.fill.map(|c| glass.color(c));
+        let inset = self.box_inset(&s);
+        self.frosted_round(self.shaped_box(col, s), glass, self.radius(), inset)
     }
 }
 

@@ -46,7 +46,32 @@ impl IcedTheme {
         kit: Kit,
         content: impl Into<Element<'a, Message>>,
     ) -> Element<'a, Message> {
-        let st = self.theme.kit(kit, false);
+        self.kit_box_with(kit, content, &dodai_core::Surface::INHERIT)
+    }
+
+    /// The glass of a `kit` box: the app-wide mix where it reaches the box's kind, and `over`.
+    pub fn kit_glass(&self, kit: Kit, over: &dodai_core::Surface) -> dodai_core::Glass {
+        match kit.surface_class() {
+            Some(c) => self.glass(c, over),
+            None => dodai_core::surface_glass(
+                &self.theme,
+                dodai_core::SurfaceClass::Button,
+                over,
+                dodai_core::SurfaceFx::NONE,
+            ),
+        }
+    }
+
+    /// [`kit_box`](Self::kit_box) with the box's own surface override (frost, fill opacity).
+    pub fn kit_box_with<'a, Message: 'a>(
+        &self,
+        kit: Kit,
+        content: impl Into<Element<'a, Message>>,
+        over: &dodai_core::Surface,
+    ) -> Element<'a, Message> {
+        let glass = self.kit_glass(kit, over);
+        let mut st = self.theme.kit(kit, false);
+        st.fill = st.fill.map(|c| glass.color(c));
         let fg = color(st.fg);
         let inner = container(content).style(move |_| container::Style {
             text_color: Some(fg),
@@ -55,14 +80,16 @@ impl IcedTheme {
         if st.pill {
             // Pills are native boxes with a full radius on every shape (a chamfered design
             // draws them square), so they never go through the canvas frame.
-            let style = self.box_style(&self.kit_box_style(kit));
+            let mut b = self.kit_box_style(kit);
+            b.fill = st.fill;
+            let style = self.box_style(&b);
             let radius = self.kit_radius(&st);
             let shadow = if st.lift {
                 self.lift_shadow()
             } else {
                 style.shadow
             };
-            return container(inner)
+            let pill = container(inner)
                 .padding(Self::kit_padding(&st))
                 .style(move |_| container::Style {
                     border: Border {
@@ -71,10 +98,13 @@ impl IcedTheme {
                     },
                     shadow,
                     ..style
-                })
-                .into();
+                });
+            return self.frosted_round(pill, glass, radius, 0.0);
         }
-        self.shaped_box(inner, self.kit_box_style(kit))
+        let mut b = self.kit_box_style(kit);
+        b.fill = st.fill;
+        let inset = self.box_inset(&b);
+        self.frosted_round(self.shaped_box(inner, b), glass, self.radius(), inset)
     }
 
     /// A clickable box of `kit`: idle and hovered styles from the tokens.
@@ -338,7 +368,11 @@ impl IcedTheme {
         variant: ButtonVariant,
         state: ControlState,
     ) -> dodai_core::ButtonTokens {
-        self.theme.button(variant, state)
+        let mut t = self.theme.button(variant, state);
+        if let Some(g) = self.glass.own {
+            t.background = t.background.map(|c| g.color(c));
+        }
+        t
     }
 }
 

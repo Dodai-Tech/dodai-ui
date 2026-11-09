@@ -74,11 +74,73 @@ pub fn data_url(path: &str) -> Option<String> {
     ))
 }
 
+/// Size of the frost demo's wallpaper, px.
+pub const WALLPAPER_SIZE: (u32, u32) = (1200, 750);
+
+/// The frost demo's wallpaper ([`dodai_core::glass_picture`]) in `theme`'s colours, made once
+/// per theme.
+pub fn wallpaper(theme: &dodai_core::Theme) -> Picture {
+    static CACHE: OnceLock<Mutex<HashMap<&'static str, Picture>>> = OnceLock::new();
+    let make = || {
+        let (w, h) = WALLPAPER_SIZE;
+        Picture {
+            width: w,
+            height: h,
+            rgba: Arc::new(dodai_core::glass_picture(
+                &theme.palette,
+                w as usize,
+                h as usize,
+            )),
+        }
+    };
+    match CACHE.get_or_init(Default::default).lock() {
+        Ok(mut c) => c.entry(theme.id()).or_insert_with(make).clone(),
+        Err(_) => make(),
+    }
+}
+
+/// [`wallpaper`] as a `data:image/png;base64,…` URL, made once per theme.
+pub fn wallpaper_url(theme: &dodai_core::Theme) -> String {
+    static CACHE: OnceLock<Mutex<HashMap<&'static str, String>>> = OnceLock::new();
+    let make = || {
+        let p = wallpaper(theme);
+        format!(
+            "data:image/png;base64,{}",
+            base64::engine::general_purpose::STANDARD.encode(encode_png(&p))
+        )
+    };
+    match CACHE.get_or_init(Default::default).lock() {
+        Ok(mut c) => c.entry(theme.id()).or_insert_with(make).clone(),
+        Err(_) => make(),
+    }
+}
+
+/// `p` as PNG bytes.
+pub fn encode_png(p: &Picture) -> Vec<u8> {
+    let mut out = Vec::new();
+    let mut e = png::Encoder::new(&mut out, p.width, p.height);
+    e.set_color(png::ColorType::Rgba);
+    e.set_depth(png::BitDepth::Eight);
+    if let Ok(mut w) = e.write_header() {
+        // Writing to a Vec cannot fail; a bad size would only leave the PNG empty.
+        w.write_image_data(&p.rgba).ok();
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     const SAMPLE: &str = crate::sections::data::SAMPLE_IMAGE;
+
+    #[test]
+    fn the_wallpaper_round_trips_through_png() {
+        let t = dodai_core::themes::all().remove(0);
+        let p = wallpaper(&t);
+        assert_eq!(decode_png(&encode_png(&p)).as_ref(), Some(&p));
+        assert!(wallpaper_url(&t).starts_with("data:image/png;base64,"));
+    }
 
     #[test]
     fn the_sample_decodes_to_rgba_of_its_size() {

@@ -268,14 +268,14 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
                 .look()
                 .cut_corners
                 .then_some(dodai_core::Crop::Left);
-            lt.button_cropped(
-                &b.label,
-                icon_el,
-                b.variant,
-                b.size,
-                (!b.plain).then(|| b.crop.or(default)).flatten(),
-                msg,
-            )
+            let crop = (!b.plain).then(|| b.crop.or(default)).flatten();
+            if b.surface.is_set() {
+                let glass = lt.button_glass(&b.surface);
+                let own = lt.with_glass(&b.surface);
+                let el = own.button_cropped(&b.label, icon_el, b.variant, b.size, crop, msg);
+                return lt.frosted(el, glass);
+            }
+            lt.button_cropped(&b.label, icon_el, b.variant, b.size, crop, msg)
         }
         Demo::Split {
             label,
@@ -599,13 +599,14 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             title,
             body,
             variant,
+            surface,
         } => {
             let mut col = column![].spacing(sp.sm);
             if !title.is_empty() {
                 col = col.push(txt(cx, title, Role::Label));
             }
             col = col.push(view(body, cx));
-            container(lt.kit_box(Kit::Card(*variant), col))
+            container(lt.kit_box_with(Kit::Card(*variant), col, surface))
                 .width(Length::Shrink)
                 .into()
         }

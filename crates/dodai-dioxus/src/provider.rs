@@ -35,6 +35,7 @@ pub fn themes_with_glow(list: &[Theme], glow: Option<f32>) -> Vec<Theme> {
 pub struct ThemeHandle {
     switcher: Signal<ThemeSwitcher>,
     glow: Signal<f32>,
+    surface: Signal<dodai_core::SurfaceFx>,
 }
 
 impl ThemeHandle {
@@ -79,6 +80,39 @@ impl ThemeHandle {
     pub fn set_glow(&mut self, g: f32) {
         self.glow.set(g.max(0.0));
     }
+    /// The app-wide surface mix (starts empty: no texture, effect or glass).
+    pub fn surface_fx(&self) -> dodai_core::SurfaceFx {
+        *self.surface.read()
+    }
+    /// Set the app-wide surface mix: containers it frosts turn see-through.
+    pub fn set_surface_fx(&mut self, fx: dodai_core::SurfaceFx) {
+        self.surface.set(fx);
+    }
+}
+
+/// The `dodai-glass` inline style of a `class` surface (see [`dodai_topcoat::glass_style`]) under
+/// the provider's mix with the component's own `over`; `None` when the fill stays as designed.
+/// Without a provider only `over` counts.
+pub(crate) fn glass(
+    class: Option<dodai_core::SurfaceClass>,
+    over: &dodai_core::Surface,
+) -> Option<String> {
+    if !over.is_set() && class.is_none() {
+        return None;
+    }
+    let h = try_use_context::<ThemeHandle>()?;
+    let fx = h.surface_fx();
+    let s = dodai_topcoat::glass_style(
+        &h.theme(),
+        class.unwrap_or(dodai_core::SurfaceClass::Button),
+        over,
+        if class.is_some() {
+            fx
+        } else {
+            dodai_core::SurfaceFx::NONE
+        },
+    );
+    (!s.is_empty()).then_some(s)
 }
 
 /// Access the [`ThemeHandle`] provided by [`ThemeProvider`].
@@ -123,6 +157,7 @@ pub fn ThemeProvider(props: ThemeProviderProps) -> Element {
     let handle = use_context_provider(|| ThemeHandle {
         switcher: Signal::new(make_switcher(&props.themes, &props.initial)),
         glow: Signal::new(props.glow.max(0.0)),
+        surface: Signal::new(dodai_core::SurfaceFx::NONE),
     });
     let now: ThemeProps = (props.themes.clone(), props.initial.clone(), props.glow);
     let seen = use_hook(|| std::rc::Rc::new(std::cell::RefCell::new(now.clone())));
@@ -134,9 +169,13 @@ pub fn ThemeProvider(props: ThemeProviderProps) -> Element {
     }
     let list = handle.switcher.read().themes().to_vec();
     let css = scoped_stylesheet(&themes_with_glow(&list, Some(handle.glow())));
+    // A design with a canvas mesh lights the page with it, fixed to the window.
+    let backdrop = dodai_topcoat::backdrop_css(&handle.theme()).map_or(String::new(), |b| {
+        format!("background-image:{b};background-attachment:fixed;background-size:100% 100%")
+    });
     rsx! {
         style { "{css}" }
-        div { class: "dodai-root {props.class}", "data-theme": handle.id(), {props.children} }
+        div { class: "dodai-root {props.class}", style: backdrop, "data-theme": handle.id(), {props.children} }
     }
 }
 
@@ -229,6 +268,27 @@ mod tests {
             second.contains("test-square\"]{"),
             "the new theme's variables are emitted"
         );
+    }
+
+    #[test]
+    fn a_surface_override_makes_the_fill_see_through_under_a_provider() {
+        fn app() -> Element {
+            rsx! {
+                ThemeProvider {
+                    Button { surface: dodai_core::Surface::new().frost(1.0), "Frosted" }
+                    Panel { surface: dodai_core::Surface::new().opacity(0.5), "Clear" }
+                    Button { "Solid" }
+                }
+            }
+        }
+        let h = html(app);
+        assert_eq!(h.matches(" dodai-glass\"").count(), 2);
+        assert!(h.contains("--gf:blur(") && h.contains("--go:0.5"));
+        // Without a provider there is no theme to resolve the glass with.
+        fn bare() -> Element {
+            rsx! { Button { surface: dodai_core::Surface::new().frost(1.0), "x" } }
+        }
+        assert!(!html(bare).contains(" dodai-glass\""));
     }
 
     #[test]

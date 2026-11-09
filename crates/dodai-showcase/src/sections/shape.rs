@@ -301,7 +301,7 @@ impl Showcase {
                 if i == 1 {
                     let (w, h) = (1200, 750);
                     let p = theme_of(cx).palette;
-                    dodai_gpui::set_wallpaper(cx, glass_picture(&p, w, h), w, h);
+                    dodai_gpui::set_wallpaper(cx, dodai_core::glass_picture(&p, w, h), w, h);
                 } else {
                     dodai_gpui::clear_wallpaper(cx);
                 }
@@ -1234,32 +1234,6 @@ fn fx_amount(
                 .child(div().w_full().max_w(px(260.0)).child(slider))
                 .child(Muted::new(fx_hint(id))),
         )
-}
-
-/// A picture with hard edges in the theme's colours, so the frosted blur shows: bands of the
-/// accents across the canvas and a few discs.
-pub(crate) fn glass_picture(p: &dodai_core::Palette, w: usize, h: usize) -> Vec<u8> {
-    let bands = [p.primary, p.info, p.success, p.warning, p.danger];
-    let discs = [
-        (0.2, 0.3, 0.12, p.warning),
-        (0.7, 0.6, 0.18, p.primary),
-        (0.45, 0.85, 0.1, p.success),
-    ];
-    let mut out = Vec::with_capacity(w * h * 4);
-    for y in 0..h {
-        for x in 0..w {
-            let (u, v) = (x as f32 / w as f32, y as f32 / h as f32);
-            let band = ((u + v * 0.6) * 6.0) as usize % bands.len();
-            let mut c = bands[band].mix(p.background, 0.35);
-            for (cx, cy, r, colour) in discs {
-                if ((u - cx) * w as f32 / h as f32).hypot(v - cy) < r {
-                    c = colour;
-                }
-            }
-            out.extend([c.r, c.g, c.b, 255]);
-        }
-    }
-    out
 }
 
 /// What an effect slider does, keyed by its id (the `sfx-c…` twins share the text).
