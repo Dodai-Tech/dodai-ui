@@ -18,6 +18,7 @@ pub mod md;
 pub mod media;
 pub mod menus;
 pub mod node;
+pub mod overview;
 pub mod pickers;
 pub mod plot;
 mod sections;

@@ -171,11 +171,13 @@ fn Page(model: Signal<Showcase>) -> Element {
     .map_or(String::new(), |b| {
         format!("background-image:{b};background-size:100% 100%;border-radius:var(--dodai-radius)")
     });
+    let overview = m.overview("dioxus");
     drop(m);
     let cx = Cx { model };
     rsx! {
         main { class: "dodai-page",
             Heading { level: 1, "{title}" }
+            if let Some(o) = overview { {render::view(&o, cx)} }
             if sections.is_empty() { Muted { "No components match" } }
             for (t, heading, node) in sections {
                 div { key: "{t}", id: "sec-{t}", "data-sec": "{t}", style: "position:relative",

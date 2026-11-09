@@ -266,8 +266,16 @@ fn filter_narrows_sections_and_counts() {
     let all = sc.visible().len();
     let theme = sc.theme();
     let shown = sections().iter().filter(|s| (s.shown)(&theme)).count();
-    assert_eq!(all, shown);
-    assert_eq!(sc.count(None), all);
+    // "All" leaves out the pages that animate all the time; the sidebar counts everything.
+    let own = sections()
+        .iter()
+        .filter(|s| {
+            (s.shown)(&theme) && dodai_showcase_model::overview::OWN_PAGE.contains(&s.category)
+        })
+        .count();
+    assert!(own > 0);
+    assert_eq!(all, shown - own);
+    assert_eq!(sc.count(None), shown);
     sc.update(Action::Filter("  BUTTON ".into()));
     let hits = sc.visible();
     assert!(!hits.is_empty() && hits.len() < all);
