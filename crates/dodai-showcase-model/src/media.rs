@@ -158,3 +158,107 @@ mod tests {
         assert!(decode_png(b"not a png").is_none());
     }
 }
+
+/// The pixels of a frosted scene: the sharp picture and, per panel, the blurred and tinted
+/// copy of the picture behind it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct FrostedScene {
+    /// The picture.
+    pub sharp: Picture,
+    /// One pane per panel rectangle.
+    pub panes: Vec<Picture>,
+}
+
+/// The picture of a `w`×`h` frosted scene in `theme`'s colours ([`dodai_core::frost_scene`])
+/// and its panes for `rects` (`x, y, width, height` px), under the design's frost: blur,
+/// saturation and tint. Made once per theme, size and panels.
+pub fn frosted(theme: &dodai_core::Theme, w: u32, h: u32, rects: &[[f32; 4]]) -> FrostedScene {
+    type Key = (&'static str, u32, u32, Vec<[u32; 4]>);
+    static CACHE: OnceLock<Mutex<HashMap<Key, FrostedScene>>> = OnceLock::new();
+    let key: Key = (
+        theme.id(),
+        w,
+        h,
+        rects.iter().map(|r| r.map(f32::to_bits)).collect(),
+    );
+    let make = || {
+        let (uw, uh) = (w as usize, h as usize);
+        let sharp = dodai_core::frost_scene(&theme.palette, uw, uh);
+        let f = theme.frost();
+        let soft = dodai_frost::blurred(&sharp, uw, uh, f.blur);
+        let a = u32::from(f.tint.a);
+        let panes = rects
+            .iter()
+            .map(|r| {
+                let (x, y) = (r[0].max(0.0) as usize, r[1].max(0.0) as usize);
+                let pw = (r[2] as usize).min(uw.saturating_sub(x)).max(1);
+                let ph = (r[3] as usize).min(uh.saturating_sub(y)).max(1);
+                let mut px = soft.crop(x, y, pw, ph);
+                dodai_frost::saturate(&mut px, f.saturation);
+                let tint = [f.tint.r, f.tint.g, f.tint.b];
+                for p in px.chunks_exact_mut(4) {
+                    for (c, t) in p.iter_mut().zip(tint) {
+                        *c = ((u32::from(t) * a + u32::from(*c) * (255 - a) + 127) / 255) as u8;
+                    }
+                }
+                Picture {
+                    width: pw as u32,
+                    height: ph as u32,
+                    rgba: Arc::new(px),
+                }
+            })
+            .collect();
+        FrostedScene {
+            sharp: Picture {
+                width: w,
+                height: h,
+                rgba: Arc::new(sharp),
+            },
+            panes,
+        }
+    };
+    match CACHE.get_or_init(Default::default).lock() {
+        Ok(mut c) => c.entry(key).or_insert_with(make).clone(),
+        Err(_) => make(),
+    }
+}
+
+/// `p` as a `data:image/png;base64,…` URL, made once per picture (by its pixels' address, so
+/// for pictures this module keeps alive, like [`frosted`]'s).
+pub fn picture_url(p: &Picture) -> String {
+    static CACHE: OnceLock<Mutex<HashMap<usize, String>>> = OnceLock::new();
+    let make = || {
+        format!(
+            "data:image/png;base64,{}",
+            base64::engine::general_purpose::STANDARD.encode(encode_png(p))
+        )
+    };
+    match CACHE.get_or_init(Default::default).lock() {
+        Ok(mut c) => c
+            .entry(Arc::as_ptr(&p.rgba) as usize)
+            .or_insert_with(make)
+            .clone(),
+        Err(_) => make(),
+    }
+}
+
+#[cfg(test)]
+mod frost_tests {
+    use super::*;
+
+    #[test]
+    fn a_scene_has_one_pane_per_panel_of_the_panel_size() {
+        let t = dodai_core::Theme::default();
+        let s = frosted(
+            &t,
+            120,
+            80,
+            &[[10.0, 10.0, 40.0, 30.0], [100.0, 60.0, 50.0, 50.0]],
+        );
+        assert_eq!(s.sharp.rgba.len(), 120 * 80 * 4);
+        assert_eq!((s.panes[0].width, s.panes[0].height), (40, 30));
+        // Clipped to the picture.
+        assert_eq!((s.panes[1].width, s.panes[1].height), (20, 20));
+        assert_eq!(s.panes[1].rgba.len(), 20 * 20 * 4);
+    }
+}

@@ -18,3 +18,5 @@ chrono = { version = "0.4", default-features = false, features = ["clock"] }
 # The image demos decode the sample picture once (toolkits get pixels or a data URL).
 png = "0.18"
 base64 = "0.22"
+# The frosted-glass demo blurs its picture once (CPU).
+dodai-frost = { workspace = true }

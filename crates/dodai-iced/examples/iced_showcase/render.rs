@@ -819,6 +819,46 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             )
             .into()
         }
+        Demo::Frosted { w, h, panels } => {
+            // The sharp picture, and over it each panel's blurred, tinted copy of what it covers.
+            let rects: Vec<[f32; 4]> = panels.iter().map(|p| p.rect).collect();
+            let scene = dodai_showcase_model::media::frosted(th, *w as u32, *h as u32, &rects);
+            let r = th.spacing.md;
+            let edge = th.frost().edge;
+            let mut layers = stack![iced::widget::image(rgba_handle(&scene.sharp))
+                .width(*w)
+                .height(*h)];
+            for (p, pane) in panels.iter().zip(&scene.panes) {
+                let [x, y, pw, ph] = p.rect;
+                let glass = stack![
+                    iced::widget::image(rgba_handle(pane))
+                        .width(pw)
+                        .height(ph)
+                        .content_fit(iced::ContentFit::Fill)
+                        .border_radius(r),
+                    container(view(&p.body, cx))
+                        .padding(th.spacing.md)
+                        .width(pw)
+                        .height(ph)
+                        .style(move |_| container::Style {
+                            border: iced::Border {
+                                radius: r.into(),
+                                width: edge.map_or(0.0, |e| e.1),
+                                color: edge.map_or(iced::Color::TRANSPARENT, |e| {
+                                    dodai_iced::color(e.0)
+                                }),
+                            },
+                            ..container::Style::default()
+                        }),
+                ];
+                layers = layers.push(container(glass).padding(iced::Padding {
+                    top: y,
+                    left: x,
+                    ..iced::Padding::ZERO
+                }));
+            }
+            container(layers).width(*w).height(*h).clip(true).into()
+        }
         Demo::Gizmo { yaw, pitch, size } => {
             let (yk, pk) = (yaw.key.clone(), pitch.key.clone());
             lt.axis_gizmo((vals.num(yaw), vals.num(pitch)), *size, move |y, p| {
@@ -1479,6 +1519,25 @@ fn rich<'a>(cx: &Cx, spans: &[dodai_showcase_model::node::Span], role: Role) -> 
         .size(st.size)
         .on_link_click(|()| Msg::Noop)
         .into()
+}
+
+/// The image handle of model pixels, made once per picture (the model keeps its pictures alive,
+/// so the address names one).
+fn rgba_handle(p: &dodai_showcase_model::media::Picture) -> iced::widget::image::Handle {
+    use std::cell::RefCell;
+    use std::collections::HashMap;
+    thread_local! {
+        static HANDLES: RefCell<HashMap<usize, iced::widget::image::Handle>> =
+            RefCell::new(HashMap::new());
+    }
+    HANDLES.with(|h| {
+        h.borrow_mut()
+            .entry(std::sync::Arc::as_ptr(&p.rgba) as usize)
+            .or_insert_with(|| {
+                iced::widget::image::Handle::from_rgba(p.width, p.height, p.rgba.to_vec())
+            })
+            .clone()
+    })
 }
 
 /// A picture file in the design's frame: cover or contain, a play badge for a video poster, the

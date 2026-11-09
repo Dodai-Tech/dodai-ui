@@ -1023,6 +1023,53 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                 f.spawn(at).with_children(|l| spawn(l, layer, cx));
             });
         }
+        Demo::Frosted { w, h, panels } => {
+            // The sharp picture, and over it each panel's blurred, tinted copy of what it covers.
+            let rects: Vec<[f32; 4]> = panels.iter().map(|p| p.rect).collect();
+            let scene = dodai_showcase_model::media::frosted(theme, *w as u32, *h as u32, &rects);
+            let r = BorderRadius::all(Val::Px(theme.spacing.md));
+            let edge = theme.frost().edge;
+            let abs = |x: f32, y: f32, w: f32, h: f32| Node {
+                position_type: PositionType::Absolute,
+                left: Val::Px(x),
+                top: Val::Px(y),
+                width: Val::Px(w),
+                height: Val::Px(h),
+                ..default()
+            };
+            p.spawn(Node {
+                width: Val::Px(*w),
+                height: Val::Px(*h),
+                flex_shrink: 0.0,
+                overflow: Overflow::clip(),
+                ..default()
+            })
+            .with_children(|s| {
+                s.spawn((abs(0.0, 0.0, *w, *h), PicturePixels(scene.sharp.clone())));
+                for (panel, pane) in panels.iter().zip(&scene.panes) {
+                    let [x, y, pw, ph] = panel.rect;
+                    s.spawn((
+                        Node {
+                            border_radius: r,
+                            overflow: Overflow::clip(),
+                            ..abs(x, y, pw, ph)
+                        },
+                        PicturePixels(pane.clone()),
+                    ));
+                    s.spawn((
+                        Node {
+                            border_radius: r,
+                            border: UiRect::all(Val::Px(edge.map_or(0.0, |e| e.1))),
+                            padding: UiRect::all(Val::Px(theme.spacing.md)),
+                            flex_direction: FlexDirection::Column,
+                            ..abs(x, y, pw, ph)
+                        },
+                        BorderColor::all(edge.map_or(Color::NONE, |e| color(e.0))),
+                    ))
+                    .with_children(|g| spawn(g, &panel.body, cx));
+                }
+            });
+        }
         Demo::Gizmo { yaw, pitch, size } => {
             let g = UiAxisGizmo {
                 basis: Basis::from_orbit(vals.num(yaw), vals.num(pitch)),
@@ -1985,29 +2032,45 @@ pub struct PicturePath {
     contain: bool,
 }
 
-/// Gives every new [`PicturePath`] node its decoded image.
+/// Model pixels to show in this node, stretched over it; [`load_pictures`] turns them into an
+/// image.
+#[derive(Component, Debug, Clone, PartialEq)]
+pub struct PicturePixels(dodai_showcase_model::media::Picture);
+
+/// The image asset of model pixels.
+fn picture_image(pic: &dodai_showcase_model::media::Picture) -> Image {
+    use bevy::asset::RenderAssetUsages;
+    use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
+    Image::new(
+        Extent3d {
+            width: pic.width,
+            height: pic.height,
+            depth_or_array_layers: 1,
+        },
+        TextureDimension::D2,
+        pic.rgba.to_vec(),
+        TextureFormat::Rgba8UnormSrgb,
+        RenderAssetUsages::default(),
+    )
+}
+
+/// Gives every new [`PicturePath`] and [`PicturePixels`] node its image.
 pub fn load_pictures(
     mut commands: Commands,
     q: Query<(Entity, &PicturePath), Added<PicturePath>>,
+    pixels: Query<(Entity, &PicturePixels), Added<PicturePixels>>,
     mut images: ResMut<Assets<Image>>,
 ) {
-    use bevy::asset::RenderAssetUsages;
-    use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
+    for (e, px) in &pixels {
+        let mut node = ImageNode::new(images.add(picture_image(&px.0)));
+        node.image_mode = bevy::ui::widget::NodeImageMode::Stretch;
+        commands.entity(e).insert(node);
+    }
     for (e, pp) in &q {
         let Some(pic) = dodai_showcase_model::media::picture(&pp.path) else {
             continue;
         };
-        let img = Image::new(
-            Extent3d {
-                width: pic.width,
-                height: pic.height,
-                depth_or_array_layers: 1,
-            },
-            TextureDimension::D2,
-            pic.rgba.to_vec(),
-            TextureFormat::Rgba8UnormSrgb,
-            RenderAssetUsages::default(),
-        );
+        let img = picture_image(&pic);
         let mut node = ImageNode::new(images.add(img));
         if !pp.contain {
             node.image_mode = bevy::ui::widget::NodeImageMode::Stretch;

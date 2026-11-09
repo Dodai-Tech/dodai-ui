@@ -4408,6 +4408,7 @@ dependencies = [
  "base64 0.22.1",
  "chrono",
  "dodai-core",
+ "dodai-frost",
  "dodai-icons",
  "dodai-shaders",
  "png 0.18.1",
