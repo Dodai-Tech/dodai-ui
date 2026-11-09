@@ -222,6 +222,9 @@ pub fn page<'a>(app: &App) -> Element<'a, Msg> {
     };
     let title = m.category().map_or("All", |c| CATEGORIES[c]);
     let mut col = column![lt.heading_text(title)].spacing(sp.lg);
+    if let Some(o) = m.overview("iced") {
+        col = col.push(render::view(&o, &cx));
+    }
     let sections = m.visible();
     if sections.is_empty() {
         col = col.push(lt.muted_text("No components match"));

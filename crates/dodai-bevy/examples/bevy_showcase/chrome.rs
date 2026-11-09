@@ -395,6 +395,9 @@ pub fn spawn_page(
         model: m,
         open,
     };
+    if let Some(o) = m.overview("bevy") {
+        render::spawn(p, &o, &cx);
+    }
     for s in sections {
         let node = (s.build)(&ctx);
         p.spawn((

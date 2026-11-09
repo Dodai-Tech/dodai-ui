@@ -264,6 +264,13 @@ impl Showcase {
         self.revision
     }
 
+    /// The landing content above the sections of "All" (no page picked, no search), naming the
+    /// toolkit that draws it.
+    pub fn overview(&self, toolkit: &str) -> Option<crate::node::Node> {
+        (self.category.is_none() && self.filter.trim().is_empty())
+            .then(|| crate::overview::overview(&self.theme(), toolkit))
+    }
+
     /// The strip pinned above the page, between the top bar and the sections: real components
     /// that restyle the moment a Shape or Surface-effects control changes.
     pub fn pinned(&self) -> Option<crate::node::Node> {
@@ -403,7 +410,10 @@ impl Showcase {
             .filter(|s| (s.shown)(&theme))
             .filter(|s| match self.category {
                 Some(c) => s.category == CATEGORIES[c],
-                None => true,
+                // Loading and Shaders animate all the time: their own page only (a search still
+                // finds the shaders).
+                None if q.is_empty() => !crate::overview::OWN_PAGE.contains(&s.category),
+                None => s.category != "Loading",
             })
             .filter(|s| {
                 q.is_empty()
@@ -558,6 +568,20 @@ impl Showcase {
             Action::Press(key) if key.starts_with("sh:") => self.shader_press(&key[3..]),
             Action::Press(key) if key.starts_with(TARGETS) => {
                 crate::surface_state::set_targets(&mut self.values, &key[TARGETS.len()..]);
+            }
+            Action::Press(key) if key.starts_with(crate::overview::OPEN_CATEGORY) => {
+                let i = key[crate::overview::OPEN_CATEGORY.len()..].parse().ok();
+                self.update(Action::Category(i));
+            }
+            Action::Press(key) if key.starts_with(crate::overview::OPEN_SECTION) => {
+                let title = &key[crate::overview::OPEN_SECTION.len()..];
+                if let Some(s) = catalog::sections().iter().find(|s| s.title == title) {
+                    // Sections that only live on their own page open it first.
+                    if crate::overview::OWN_PAGE.contains(&s.category) {
+                        self.category = CATEGORIES.iter().position(|c| *c == s.category);
+                    }
+                    self.update(Action::Section(s.title));
+                }
             }
             Action::Press(key) if key == crate::tune_state::RESET => {
                 crate::tune_state::reset(&mut self.values);

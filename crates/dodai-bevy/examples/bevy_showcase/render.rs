@@ -2072,22 +2072,22 @@ pub fn segmented(
     .with_children(|c| {
         for (i, l) in labels.iter().enumerate() {
             let on = i == selected;
-            let label = if on && tonal {
-                format!("\u{2713} {l}")
-            } else {
-                l.clone()
-            };
             c.spawn((
                 kit_pressable(Kit::Segment { selected: on }),
                 Node {
                     height: Val::Px(h),
                     align_items: AlignItems::Center,
+                    column_gap: Val::Px(4.0),
                     ..default()
                 },
                 Bound::Act(act(i)),
             ))
             .with_children(|b| {
-                b.spawn(text(label, TextRole::Control));
+                // The font has no check mark: the icon draws it.
+                if on && tonal {
+                    b.spawn(icon(dodai_icons::IconId::Check, 14));
+                }
+                b.spawn(text(l.clone(), TextRole::Control));
             });
         }
     });
