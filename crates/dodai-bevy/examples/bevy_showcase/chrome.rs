@@ -407,6 +407,7 @@ pub fn spawn_page(
                 flex_shrink: 0.0,
                 ..default()
             },
+            crate::events::SectionFx::default(),
         ))
         .with_children(|c| {
             c.spawn(Node {
