@@ -46,8 +46,8 @@ jobs:
           ref: ${{ needs.validate.outputs.tag }}
       - name: Install Linux GUI system libraries
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends \
+          $(command -v sudo || true) apt-get update -qq
+          $(command -v sudo || true) apt-get install -y --no-install-recommends \
             pkg-config libxkbcommon-dev libxkbcommon-x11-dev libx11-dev libxcb1-dev libxcb-xkb-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libwayland-dev libgl1-mesa-dev libvulkan-dev libfontconfig1-dev libasound2-dev libssl-dev
       - uses: dtolnay/rust-toolchain@stable
         id: rt1
@@ -80,8 +80,8 @@ jobs:
           ref: ${{ needs.validate.outputs.tag }}
       - name: Install Linux GUI system libraries
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends \
+          $(command -v sudo || true) apt-get update -qq
+          $(command -v sudo || true) apt-get install -y --no-install-recommends \
             pkg-config libxkbcommon-dev libxkbcommon-x11-dev libx11-dev libxcb1-dev libxcb-xkb-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libwayland-dev libgl1-mesa-dev libvulkan-dev libfontconfig1-dev libasound2-dev libssl-dev
       - uses: dtolnay/rust-toolchain@stable
         id: rt2
@@ -108,7 +108,7 @@ jobs:
           }
 
   github-release:
-    name: GitHub release
+    name: Forgejo release
     needs: [validate, publish]
     runs-on: codeberg-medium
     steps:
@@ -123,7 +123,7 @@ jobs:
         with:
           version: "*"
       - run: nu scripts/ci/release_notes.nu "${{ needs.validate.outputs.tag }}"
-      - uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ needs.validate.outputs.tag }}
-          body_path: RELEASE_NOTES.md
+      - name: Create Forgejo release
+        env:
+          FORGEJO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: nu scripts/ci/forgejo_release.nu "${{ needs.validate.outputs.tag }}" --api "${{ github.server_url }}/api/v1/repos/${{ github.repository }}"
