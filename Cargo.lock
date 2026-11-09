@@ -4238,6 +4238,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "dodai-core",
+ "dodai-frost",
  "dodai-fx",
  "dodai-icons",
  "dodai-shaders",
@@ -4318,6 +4319,7 @@ name = "dodai-iced"
 version = "0.1.0"
 dependencies = [
  "dodai-core",
+ "dodai-frost",
  "dodai-fx",
  "dodai-icons",
  "dodai-shaders",

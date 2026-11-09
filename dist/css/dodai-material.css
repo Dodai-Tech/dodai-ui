@@ -273,3 +273,10 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .dodai-page h1{margin:0}
 .dodai-navitem{width:100%;justify-content:space-between}
 .dodai-navsub{padding:4px 8px 4px 36px}
+
+/* See-through fills (glass_style): a fill of alpha a is drawn at (a + (min(c, a) - a) * --ga) * --go
+   with c = --gc + (a - --gc) * --gk; frosted ones blur and saturate what is behind them (--gf). */
+.dodai-glass{-webkit-backdrop-filter:var(--gf,none);backdrop-filter:var(--gf,none)}
+.dodai-glass.dodai-kit{background:rgb(from var(--kb,transparent) r g b/calc((alpha + (min(var(--gc) + (alpha - var(--gc)) * var(--gk),alpha) - alpha) * var(--ga)) * var(--go)))}
+.dodai-glass.dodai-kit--press:hover{background:rgb(from var(--kbh,var(--kb,transparent)) r g b/calc((alpha + (min(var(--gc) + (alpha - var(--gc)) * var(--gk),alpha) - alpha) * var(--ga)) * var(--go)))}
+.dodai-glass.dodai-btn::after,.dodai-glass.dodai-panel::after{background:rgb(from var(--f-bg,transparent) r g b/calc((alpha + (min(var(--gc) + (alpha - var(--gc)) * var(--gk),alpha) - alpha) * var(--ga)) * var(--go)))}
