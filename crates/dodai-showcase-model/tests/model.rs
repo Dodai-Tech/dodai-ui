@@ -21,7 +21,13 @@ fn build_all(sc: &Showcase) -> Vec<(&'static str, Node)> {
 fn titles_are_unique_and_categories_known() {
     let mut seen = std::collections::HashSet::new();
     for s in sections() {
-        assert!(seen.insert(s.title), "duplicate title {}", s.title);
+        // A title may repeat on another page (gpui's "Frosted glass" is both a foundation and
+        // a surface effect); pages pick sections by title.
+        assert!(
+            seen.insert((s.category, s.title)),
+            "duplicate title {}",
+            s.title
+        );
         assert!(
             CATEGORIES.contains(&s.category),
             "{} has unknown category",
