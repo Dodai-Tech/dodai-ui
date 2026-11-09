@@ -7,6 +7,17 @@ use iced::{
 
 use crate::{color, IcedTheme};
 
+/// How a tab bar looks beyond its labels.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct TabsLook {
+    /// An underline under the active tab instead of its fill.
+    pub secondary: bool,
+    /// Tabs that cannot be picked (greyed, no message).
+    pub disabled: Vec<usize>,
+    /// An icon over each label.
+    pub icons: Vec<dodai_icons::IconId>,
+}
+
 /// Estimated width of a tab labelled `label` (no font metrics outside layout: ~0.62 em per
 /// character) with `pad` px of padding on each side.
 pub fn tab_width(label: &str, size: f32, pad: f32) -> f32 {
@@ -47,16 +58,52 @@ impl IcedTheme {
         active: usize,
         on_select: impl Fn(usize) -> Message + 'a,
     ) -> Element<'a, Message> {
+        self.tabs_with(labels, active, &TabsLook::default(), on_select)
+    }
+
+    /// [`tabs`](Self::tabs) with a [`TabsLook`]: the secondary style, disabled tabs, icons.
+    pub fn tabs_with<'a, Message: Clone + 'a>(
+        &self,
+        labels: &[&str],
+        active: usize,
+        look: &TabsLook,
+        on_select: impl Fn(usize) -> Message + 'a,
+    ) -> Element<'a, Message> {
         let sp = &self.theme.spacing;
         let mut bar = row![].spacing(sp.xs);
         for (i, l) in labels.iter().enumerate() {
             let is_active = i == active;
+            let off = look.disabled.contains(&i);
             let tok = self.theme.tab(dodai_core::ItemState::of(is_active, false));
-            let underline = tok.indicator.map(color);
-            let btn = button(text(self.label(l)).size(self.theme.typography.size_sm))
-                .padding([sp.sm, sp.lg])
-                .style(self.tab_style(is_active))
-                .on_press(on_select(i));
+            let underline = if look.secondary && is_active {
+                Some(color(self.theme.palette.primary))
+            } else {
+                tok.indicator.map(color)
+            };
+            let ink = if off {
+                Some(self.theme.palette.text_disabled)
+            } else if look.secondary && is_active {
+                Some(self.theme.palette.primary)
+            } else {
+                None
+            };
+            let mut label = text(self.label(l)).size(self.theme.typography.size_sm);
+            if let Some(c) = ink {
+                label = label.color(color(c));
+            }
+            let content: Element<'a, Message> = match look.icons.get(i) {
+                Some(&ic) => column![self.icon(ic, 18.0, ink), label]
+                    .spacing(sp.xs)
+                    .align_x(iced::alignment::Horizontal::Center)
+                    .into(),
+                None => label.into(),
+            };
+            // The secondary style never fills the active tab.
+            let style = self.tab_style(is_active && !look.secondary);
+            let mut btn = button(content).padding([sp.sm, sp.lg]).style(style);
+            if !off {
+                btn = btn.on_press(on_select(i));
+            }
             // A fixed width (the label's estimated width plus its padding): a `Fill` rule made
             // every tab claim an equal share of the row.
             let rule = container("")

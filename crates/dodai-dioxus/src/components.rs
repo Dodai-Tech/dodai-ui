@@ -216,24 +216,50 @@ pub fn Badge(children: Element) -> Element {
 pub struct TabsProps {
     pub tabs: Vec<String>,
     pub active: usize,
+    /// An underline under the active tab instead of its fill.
+    #[props(default)]
+    pub secondary: bool,
+    /// Tabs that cannot be picked.
+    #[props(default)]
+    pub disabled: Vec<usize>,
+    /// An icon over each label.
+    #[props(default)]
+    pub icons: Vec<dodai_icons::IconId>,
     #[props(default)]
     pub onselect: EventHandler<usize>,
+}
+
+/// The classes of one tab.
+fn tab_class(active: bool, disabled: bool, icon: bool) -> String {
+    let mut c = String::from("dodai-tab");
+    for (on, name) in [
+        (active, " dodai-tab--active"),
+        (disabled, " dodai-tab--disabled"),
+        (icon, " dodai-tab--icon"),
+    ] {
+        if on {
+            c.push_str(name);
+        }
+    }
+    c
 }
 
 /// Tab strip; active tab is controlled by `active`.
 #[component]
 pub fn Tabs(props: TabsProps) -> Element {
     rsx! {
-        div { class: "dodai-tabs", role: "tablist",
+        div { class: if props.secondary { "dodai-tabs dodai-tabs--secondary" } else { "dodai-tabs" }, role: "tablist",
             for (i, t) in props.tabs.iter().enumerate() {
                 a {
                     key: "{i}",
-                    class: if i == props.active { "dodai-tab dodai-tab--active" } else { "dodai-tab" },
+                    class: tab_class(i == props.active, props.disabled.contains(&i), props.icons.get(i).is_some()),
                     role: "tab",
                     "aria-selected": "{i == props.active}",
+                    "aria-disabled": "{props.disabled.contains(&i)}",
                     href: "#",
                     onclick: move |e| { e.prevent_default(); props.onselect.call(i) },
-                    "{t}"
+                    if let Some(ic) = props.icons.get(i) { Icon { icon: *ic, size: 18 } }
+                    span { "{t}" }
                 }
             }
         }

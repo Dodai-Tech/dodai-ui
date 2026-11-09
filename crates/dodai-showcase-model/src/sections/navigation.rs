@@ -1,6 +1,6 @@
 //! Navigation: tabs, tree, breadcrumb, pagination, stepper, menus.
 
-use dodai_core::{ButtonVariant as V, CardVariant, ControlSize};
+use dodai_core::{ButtonVariant as V, CardVariant};
 use dodai_icons::IconId;
 
 use crate::b::*;
@@ -9,7 +9,7 @@ use crate::node::{Bind, Node};
 
 const CAT: &str = "Navigation";
 
-pub(crate) const SECTIONS: [Section; 12] = [
+pub(crate) const SECTIONS: [Section; 13] = [
     Section::new(
         CAT,
         "Popover · Hover card · Context menu · Dropdown menu",
@@ -19,6 +19,7 @@ pub(crate) const SECTIONS: [Section; 12] = [
     Section::new(CAT, "Menu · Sub-menu", menu),
     Section::new(CAT, "Tabs", tabs),
     Section::new(CAT, "Tree", tree_section),
+    Section::new(CAT, "Axis gizmo", gizmo),
     Section::new(CAT, "Collapsible sidebar", sidebar),
     Section::new(CAT, "Segmented · Breadcrumb · Pagination · Stepper", strips),
     Section::new(CAT, "Carousel", carousel),
@@ -31,16 +32,35 @@ pub(crate) const SECTIONS: [Section; 12] = [
 ];
 
 fn tabs(c: &Ctx) -> Node {
-    let t = choice("tabs-main", &["Overview", "Usage", "Billing", "Team"], 0);
-    let at = c.values.index(&t.bind);
+    use IconId::{Heart, Home, Search};
+    let four = ["Overview", "Activity", "Billing", "Settings"];
+    let at = c.values.index_of("tab", 0);
+    let strip = |key: &str| choice(key, &four, at);
     col(vec![
-        Node::Tabs(t),
-        body(match at {
-            0 => "Overview: the state of everything at a glance.",
-            1 => "Usage: what was used and by whom.",
-            2 => "Billing: invoices and payment methods.",
-            _ => "Team: people and their roles.",
-        }),
+        muted("Animation"),
+        Node::Choice(choice("tabs-animation", &super::inputs::ANIMATIONS, 0).connected()),
+        Node::Tabs(strip("tab")),
+        muted("Secondary"),
+        Node::Tabs(strip("tab").secondary()),
+        muted("Disabled tab (skipped by the arrow keys)"),
+        Node::Tabs(strip("tab").disabled(&[2])),
+        muted("Scrollable"),
+        Node::Scroll {
+            height: 56.0,
+            body: Box::new(Node::Tabs(choice(
+                "tab",
+                &[
+                    "Overview", "Activity", "Billing", "Settings", "Contacts", "Gigs", "Archive",
+                    "Help",
+                ],
+                at,
+            ))),
+        },
+        muted("With icons"),
+        Node::Tabs(
+            choice("tab", &["Home", "Saved", "Search"], at % 3).icons(&[Home, Heart, Search]),
+        ),
+        muted(format!("active tab: {at}")),
     ])
 }
 
@@ -467,93 +487,241 @@ fn sheets(c: &Ctx) -> Node {
     ])
 }
 
-fn top_bar(title: &str, left: IconId, right: &[IconId]) -> Node {
-    let mut items = vec![
-        button("", V::Ghost).icon(left).node(),
-        text(
-            title,
-            crate::TextRole::Type(dodai_core::TypeRole::TitleLarge),
-        ),
-        Node::Space(0.0),
-    ];
-    items.extend(right.iter().map(|&i| button("", V::Ghost).icon(i).node()));
+/// How tall an app bar is and where its title sits.
+#[derive(Clone, Copy, PartialEq)]
+enum BarSize {
+    Small,
+    Centre,
+    Medium,
+    Large,
+}
+
+/// A top app bar titled with the design's name: menu, title, search and more.
+fn app_bar(c: &Ctx, size: BarSize, scrolled: bool) -> Node {
+    use crate::node::{Font, Ink};
+    let title = crate::state::family_title(c.theme.meta.family);
+    let icon = |i: IconId| button("", V::Ghost).icon(i).plain().node();
+    let ty = |r: dodai_core::TypeRole| c.theme.type_style(r).size;
+    let name = |size: f32| styled(title.clone(), size, Font::Display, Ink::Primary);
+    let actions = || vec![icon(IconId::Search), icon(IconId::Dots)];
+    let small = ty(dodai_core::TypeRole::TitleLarge);
+    let body = match size {
+        BarSize::Small => {
+            let mut items = vec![icon(IconId::Menu), name(small), Node::Grow];
+            items.extend(actions());
+            line(items)
+        }
+        BarSize::Centre => {
+            let mut items = vec![icon(IconId::Menu), Node::Grow, name(small), Node::Grow];
+            items.extend(actions());
+            line(items)
+        }
+        BarSize::Medium | BarSize::Large => {
+            let mut top = vec![icon(IconId::Menu), Node::Grow];
+            top.extend(actions());
+            let big = ty(if size == BarSize::Medium || scrolled {
+                dodai_core::TypeRole::HeadlineSmall
+            } else {
+                dodai_core::TypeRole::HeadlineMedium
+            });
+            stack_col(vec![line(top), name(big)])
+        }
+    };
     Node::Card {
         title: String::new(),
-        body: Box::new(line(items)),
-        variant: CardVariant::Filled,
+        body: Box::new(body),
+        variant: if scrolled {
+            CardVariant::Elevated
+        } else {
+            CardVariant::Filled
+        },
         surface: dodai_core::Surface::INHERIT,
     }
 }
 
-fn app_bars(_: &Ctx) -> Node {
-    use IconId::*;
+fn app_bars(c: &Ctx) -> Node {
+    let labelled = |name: &str, n: Node| stack_col(vec![muted(name), n]);
+    let icon = |i: IconId| button("", V::Ghost).icon(i).plain().node();
     col(vec![
-        muted("Small"),
-        top_bar("Inbox", Menu, &[Search, Settings]),
-        muted("Centre aligned"),
-        top_bar("Library", Home, &[Heart]),
-        muted("Large"),
+        labelled("Center-aligned", app_bar(c, BarSize::Centre, false)),
+        labelled("Small", app_bar(c, BarSize::Small, false)),
+        labelled("Small · scrolled", app_bar(c, BarSize::Small, true)),
+        labelled("Medium", app_bar(c, BarSize::Medium, false)),
+        labelled("Large", app_bar(c, BarSize::Large, false)),
+        labelled(
+            "Large · collapsing (50 %)",
+            app_bar(c, BarSize::Large, true),
+        ),
+        labelled(
+            "Bottom",
+            Node::Card {
+                title: String::new(),
+                body: Box::new(line(vec![
+                    icon(IconId::Edit),
+                    icon(IconId::Heart),
+                    icon(IconId::Dots),
+                    Node::Grow,
+                    Node::Fab {
+                        label: None,
+                        crop: None,
+                    },
+                ])),
+                variant: CardVariant::Filled,
+                surface: dodai_core::Surface::INHERIT,
+            },
+        ),
+    ])
+}
+
+fn bars_cards(c: &Ctx) -> Node {
+    use IconId::{Edit, Heart, Search};
+    let at = c.values.index_of("nav", 0);
+    let fab = |label: Option<&str>| Node::Fab {
+        label: label.map(String::from),
+        crop: None,
+    };
+    let card = |variant, head: &str, note: &str| Node::Card {
+        title: String::new(),
+        body: Box::new(stack_col(vec![
+            text(
+                head,
+                crate::TextRole::Type(dodai_core::TypeRole::TitleLarge),
+            ),
+            muted(note),
+        ])),
+        variant,
+        surface: dodai_core::Surface::INHERIT,
+    };
+    let fixed = |w: f32, n: Node| {
+        Node::Stack(crate::node::Stack {
+            axis: crate::node::Axis::Column,
+            wrap: false,
+            gap: crate::node::Gap::Sm,
+            centre: false,
+            width: Some(w),
+            items: vec![n],
+        })
+    };
+    // One destination of the bar or rail: the icon (in the selected pill) over its label.
+    let dest = |i: usize| {
+        let (icon, name, badge) = DESTINATIONS[i];
+        let glyph = match badge {
+            Some(_) => Node::Badged {
+                icon,
+                count: Some((3, dodai_core::Tone::Danger)),
+                dot: None,
+            },
+            None => button("", if i == at { V::Secondary } else { V::Ghost })
+                .icon(icon)
+                .plain()
+                .counter(crate::commands::set("nav", i))
+                .node(),
+        };
+        Node::Stack(crate::node::Stack {
+            axis: crate::node::Axis::Column,
+            wrap: false,
+            gap: crate::node::Gap::Xs,
+            centre: true,
+            width: Some(80.0),
+            items: vec![glyph, text(name, crate::TextRole::Caption)],
+        })
+    };
+    let drawer = Node::List(
+        DESTINATIONS
+            .iter()
+            .enumerate()
+            .map(|(i, (icon, name, badge))| {
+                let r = list_row(*name).icon(*icon).selected(i == at);
+                match badge {
+                    Some(b) => r.trailing(*b),
+                    None => r,
+                }
+            })
+            .collect(),
+    );
+    col(vec![
+        app_bar(c, BarSize::Small, false),
+        input("search-bar", "Search the net…").icon(Search).node(),
+        row(vec![
+            button("", V::Primary).icon(Heart).node(),
+            button("", V::Outline).icon(Heart).node(),
+            button("", V::Ghost).icon(Edit).node(),
+            button("", V::Ghost).icon(Edit).disabled().node(),
+            fab(None),
+            fab(None),
+            fab(None),
+            fab(Some("Compose")),
+        ]),
+        top_row(vec![
+            fixed(
+                240.0,
+                card(CardVariant::Elevated, "Elevated", "Raised surface."),
+            ),
+            fixed(
+                240.0,
+                card(CardVariant::Filled, "Filled", "Flat raised surface."),
+            ),
+            fixed(
+                240.0,
+                card(CardVariant::Outlined, "Outlined", "Border only."),
+            ),
+        ]),
         Node::Card {
             title: String::new(),
-            body: Box::new(col(vec![
-                line(vec![button("", V::Ghost).icon(Menu).node()]),
-                text(
-                    "Settings",
-                    crate::TextRole::Type(dodai_core::TypeRole::HeadlineMedium),
-                ),
+            body: Box::new(line(vec![
+                Node::Grow,
+                dest(0),
+                Node::Grow,
+                dest(1),
+                Node::Grow,
+                dest(2),
+                Node::Grow,
+                dest(3),
+                Node::Grow,
             ])),
             variant: CardVariant::Filled,
             surface: dodai_core::Surface::INHERIT,
         },
+        top_row(vec![
+            Node::Stack(crate::node::Stack {
+                axis: crate::node::Axis::Column,
+                wrap: false,
+                gap: crate::node::Gap::Md,
+                centre: true,
+                width: Some(80.0),
+                items: vec![
+                    button("", V::Secondary).icon(Edit).node(),
+                    dest(0),
+                    dest(1),
+                    dest(2),
+                    dest(3),
+                ],
+            }),
+            fixed(320.0, drawer),
+        ]),
     ])
 }
 
-fn bars_cards(_: &Ctx) -> Node {
-    use IconId::*;
+fn gizmo(c: &Ctx) -> Node {
+    // The camera starts where the gpui demo's does.
+    let (yaw, pitch) = (Bind::new("gizmo-yaw", 0.6), Bind::new("gizmo-pitch", 0.45));
+    let (y, p) = (c.values.num(&yaw), c.values.num(&pitch));
     col(vec![
-        top_bar("Dodai", Menu, &[Search]),
-        row(vec![
-            button("+", V::Primary)
-                .size(ControlSize::Large)
-                .square()
-                .node(),
-            button("Compose", V::Primary)
-                .icon(Edit)
-                .size(ControlSize::Large)
-                .node(),
-        ]),
-        Node::Card {
-            title: "Navigation bar".into(),
-            body: Box::new(Node::Choice(
-                choice("navbar", &["Home", "Search", "Library", "Profile"], 0).connected(),
-            )),
-            variant: CardVariant::Outlined,
-            surface: dodai_core::Surface::INHERIT,
-        },
-        row(vec![
-            Node::Card {
-                title: "Card".into(),
-                body: Box::new(muted("Elevated")),
-                variant: CardVariant::Elevated,
-                surface: dodai_core::Surface::INHERIT,
+        muted(
+            "Orientation widget for a 3D view (Z up). Click a ball to look along that axis, the house to go home, or drag anywhere inside to orbit. Controlled: you give it the camera basis and move your camera in the callbacks.",
+        ),
+        line(vec![
+            Node::Gizmo {
+                yaw,
+                pitch,
+                size: 130.0,
             },
-            Node::Card {
-                title: "Card".into(),
-                body: Box::new(muted("Filled")),
-                variant: CardVariant::Filled,
-                surface: dodai_core::Surface::INHERIT,
-            },
-            Node::Card {
-                title: "Card".into(),
-                body: Box::new(muted("Outlined")),
-                variant: CardVariant::Outlined,
-                surface: dodai_core::Surface::INHERIT,
-            },
-        ]),
-        Node::List(vec![
-            list_row("Home").icon(Home),
-            list_row("Library").icon(Folder),
-            list_row("Settings").icon(Settings),
+            Node::Space(c.theme.spacing.lg),
+            stack_col(vec![
+                label("Camera"),
+                text(format!("yaw   {:>7.1} deg", y.to_degrees()), crate::TextRole::Mono),
+                text(format!("pitch {:>7.1} deg", p.to_degrees()), crate::TextRole::Mono),
+            ]),
         ]),
     ])
 }

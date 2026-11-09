@@ -66,6 +66,37 @@ impl Dials<'_, '_> {
     }
 }
 
+/// Gizmo clicks and drags move the camera stored under its keys.
+pub fn gizmo(
+    mut ev: MessageReader<GizmoEvent>,
+    bound: Query<&Bound>,
+    mut model: ResMut<Model>,
+    mut dirty: ResMut<Dirty>,
+) {
+    for e in ev.read() {
+        let Ok(Bound::Gizmo { yaw, pitch }) = bound.get(e.entity) else {
+            continue;
+        };
+        let home = crate::render::GIZMO_HOME;
+        let vals = &model.0.values;
+        let now = (
+            vals.num(&dodai_showcase_model::Bind::new(yaw, home.0)),
+            vals.num(&dodai_showcase_model::Bind::new(pitch, home.1)),
+        );
+        let (y, p) = match e.kind {
+            GizmoKind::Select(a) => {
+                let (y, p) = a.view_angles();
+                (y.unwrap_or(now.0), p)
+            }
+            GizmoKind::Home => home,
+            GizmoKind::Drag(d) => dodai_core::orientation::orbit(now.0, now.1, d.x, d.y),
+        };
+        model.0.update(Action::Set(yaw.clone(), Value::Num(y)));
+        model.0.update(Action::Set(pitch.clone(), Value::Num(p)));
+        dirty.content = true;
+    }
+}
+
 #[allow(clippy::type_complexity)]
 pub fn handle(
     mut ev: MessageReader<ControlEvent>,

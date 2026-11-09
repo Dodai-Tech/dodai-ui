@@ -431,28 +431,37 @@ pub(crate) fn style_tabs(
     mut q: Query<(
         &UiTab,
         &ControlPointer,
+        Has<TabSecondary>,
+        Has<TabDisabled>,
         &mut Surface,
         &mut Node,
         &mut Foreground,
     )>,
     mut ind: Query<(&ChildOf, &mut BackgroundColor), With<TabIndicator>>,
-    tabs: Query<(&UiTab, &ControlPointer)>,
+    tabs: Query<(&UiTab, &ControlPointer, Has<TabSecondary>)>,
 ) {
-    for (t, i, mut s, mut n, mut fg) in &mut q {
+    for (t, i, secondary, disabled, mut s, mut n, mut fg) in &mut q {
         let k = theme.tab(dodai_core::ItemState::of(
             t.active,
-            *i == ControlPointer::Hovered,
+            *i == ControlPointer::Hovered && !disabled,
         ));
         upd(
             &mut *s,
             Surface {
-                fill: k.background,
+                fill: if secondary { None } else { k.background },
                 border: None,
                 glow: false,
                 pill: false,
             },
         );
-        upd(&mut fg.0, k.foreground);
+        let ink = if disabled {
+            theme.palette.text_disabled
+        } else if secondary && t.active {
+            theme.palette.primary
+        } else {
+            k.foreground
+        };
+        upd(&mut fg.0, ink);
         upd(&mut n.height, Val::Px(theme.shape.control_height));
         upd(
             &mut n.padding,
@@ -460,12 +469,17 @@ pub(crate) fn style_tabs(
         );
     }
     for (p, mut bg) in &mut ind {
-        if let Ok((t, i)) = tabs.get(p.parent()) {
+        if let Ok((t, i, secondary)) = tabs.get(p.parent()) {
             let k = theme.tab(dodai_core::ItemState::of(
                 t.active,
                 *i == ControlPointer::Hovered,
             ));
-            upd(&mut bg.0, k.indicator.map_or(Color::NONE, color));
+            let line = if secondary && t.active {
+                Some(theme.palette.primary)
+            } else {
+                k.indicator
+            };
+            upd(&mut bg.0, line.map_or(Color::NONE, color));
         }
     }
 }

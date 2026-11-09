@@ -378,7 +378,12 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             let at = vals.index(&ch.bind);
             let key = ch.bind.key.clone();
             let labels: Vec<&str> = ch.labels.iter().map(String::as_str).collect();
-            lt.tabs(&labels, at, move |i| {
+            let look = dodai_iced::TabsLook {
+                secondary: ch.secondary,
+                disabled: ch.disabled.clone(),
+                icons: ch.icons.clone(),
+            };
+            lt.tabs_with(&labels, at, &look, move |i| {
                 Msg::Act(Action::Set(key.clone(), Value::Index(i)))
             })
         }
@@ -682,9 +687,8 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
                 col = col.push(txt(cx, title, Role::Label));
             }
             col = col.push(view(body, cx));
-            container(lt.kit_box_with(Kit::Card(*variant), col, surface))
-                .width(Length::Shrink)
-                .into()
+            // As wide as its body: a body that fills makes the card fill.
+            container(lt.kit_box_with(Kit::Card(*variant), col, surface)).into()
         }
         Demo::Alert {
             tone,
@@ -790,6 +794,15 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
                     .align_y(ay),
             )
             .into()
+        }
+        Demo::Gizmo { yaw, pitch, size } => {
+            let (yk, pk) = (yaw.key.clone(), pitch.key.clone());
+            lt.axis_gizmo((vals.num(yaw), vals.num(pitch)), *size, move |y, p| {
+                Msg::SetAll(vec![
+                    (yk.clone(), Value::Num(y)),
+                    (pk.clone(), Value::Num(p)),
+                ])
+            })
         }
         Demo::Anchor {
             open,
