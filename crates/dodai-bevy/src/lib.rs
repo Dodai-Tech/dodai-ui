@@ -23,6 +23,7 @@
 //! [`material`] (shader materials), [`plugin`].
 
 pub mod gizmo;
+pub mod glass;
 pub mod kit;
 pub mod knob;
 pub mod material;
@@ -46,6 +47,7 @@ pub use theme::{color, DodaiTheme};
 /// Everything needed to build a themed UI.
 pub mod prelude {
     pub use crate::gizmo::{axis_gizmo, AxisId, Basis, GizmoEvent, GizmoKind, UiAxisGizmo};
+    pub use crate::glass::{DodaiGlass, UiBackdrop, UiGlass};
     pub use crate::kit::{kit, kit_pressable, Kit, UiKit, UiPress};
     pub use crate::knob::{knob, UiKnob};
     pub use crate::plot::{plot, PlotLine};

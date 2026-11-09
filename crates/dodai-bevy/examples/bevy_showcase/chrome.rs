@@ -33,6 +33,16 @@ pub fn setup(mut commands: Commands, model: Res<Model>, theme: Res<DodaiTheme>) 
             ..default()
         })
         .with_children(|root| {
+            // The backdrop (the design's mesh or the frost demo's picture) behind everything.
+            root.spawn((
+                UiBackdrop,
+                Node {
+                    position_type: PositionType::Absolute,
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(100.0),
+                    ..default()
+                },
+            ));
             // Sidebar.
             root.spawn((
                 Node {

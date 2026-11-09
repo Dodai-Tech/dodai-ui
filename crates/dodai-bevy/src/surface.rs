@@ -225,6 +225,7 @@ fn linear(c: Rgba) -> LinearRgba {
 #[allow(clippy::type_complexity)]
 pub(crate) fn apply_surfaces(
     theme: Res<DodaiTheme>,
+    glass: Res<crate::glass::DodaiGlass>,
     mut materials: ResMut<Assets<ChamferMaterial>>,
     mut commands: Commands,
     mut q: Query<(
@@ -236,15 +237,26 @@ pub(crate) fn apply_surfaces(
         Option<&MaterialNode<ChamferMaterial>>,
         Option<&BoxShadow>,
         Option<Ref<SurfaceCrop>>,
+        Option<Ref<crate::glass::UiGlass>>,
     )>,
 ) {
-    let theme_changed = theme.is_changed();
-    for (e, s, mut node, mut bg, mut bc, mat, shadow, crop) in &mut q {
+    let theme_changed = theme.is_changed() || glass.is_changed();
+    for (e, s, mut node, mut bg, mut bc, mat, shadow, crop, ug) in &mut q {
         let crop_changed = crop.as_ref().is_some_and(|c| c.is_changed());
-        if !theme_changed && !s.is_changed() && !crop_changed {
+        let glass_changed = ug.as_ref().is_some_and(|g| g.is_changed());
+        if !theme_changed && !s.is_changed() && !crop_changed && !glass_changed {
             continue;
         }
-        let r = resolve_cropped(&theme, &s, crop.and_then(|c| c.0));
+        let mut r = resolve_cropped(&theme, &s, crop.and_then(|c| c.0));
+        if let Some(ug) = ug {
+            // See-through fill; a frosted one is painted by its pane (fill over the blur).
+            let g = glass.glass(&theme, &ug);
+            r.fill = if g.frosted() && glass.has_backdrop() {
+                r.fill.with_alpha(0.0)
+            } else {
+                g.color(r.fill)
+            };
+        }
         let bw = Val::Px(r.border_width);
         let border = UiRect::all(bw);
         if node.border != border {

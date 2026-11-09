@@ -508,6 +508,7 @@ impl ButtonSpec {
                 icon_only,
                 crop: self.crop,
             },
+            crate::glass::UiGlass::of(dodai_core::SurfaceClass::Button),
             Node {
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
@@ -558,13 +559,17 @@ pub fn button_disabled(label: impl Into<String>, variant: ButtonVariant) -> impl
 pub fn panel(title: &str) -> impl Bundle + use<> {
     (
         UiPanel::default(),
+        crate::glass::UiGlass::of(dodai_core::SurfaceClass::Panel),
         children![text(title.to_string(), TextRole::Control)],
     )
 }
 
 /// Panel (card) without a title.
 pub fn panel_untitled() -> impl Bundle {
-    UiPanel::default()
+    (
+        UiPanel::default(),
+        crate::glass::UiGlass::of(dodai_core::SurfaceClass::Panel),
+    )
 }
 
 /// Tag / badge.

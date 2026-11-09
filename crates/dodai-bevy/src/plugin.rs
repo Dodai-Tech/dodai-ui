@@ -84,6 +84,11 @@ impl Plugin for DodaiUiPlugin {
                 .in_set(DodaiSet),
         )
         .init_resource::<FocusedInput>()
+        .init_resource::<crate::glass::DodaiGlass>()
+        .add_systems(
+            PostUpdate,
+            crate::glass::frost_layers.after(bevy::ui::UiSystems::Layout),
+        )
         .add_message::<ControlEvent>()
         .add_systems(Startup, spawn_tooltip)
         .add_systems(
@@ -124,7 +129,14 @@ impl Plugin for DodaiUiPlugin {
                     #[cfg(feature = "symbols")]
                     style_symbols,
                 ),
-                (style_text, apply_surfaces, sync_clear_color, sync_scanlines).chain(),
+                (
+                    style_text,
+                    crate::glass::sync_backdrop,
+                    apply_surfaces,
+                    sync_clear_color,
+                    sync_scanlines,
+                )
+                    .chain(),
             )
                 .chain()
                 .in_set(DodaiSet),
