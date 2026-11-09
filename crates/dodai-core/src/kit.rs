@@ -72,6 +72,14 @@ pub enum Kit {
     },
     /// A raised button: the design's elevated button colours, lifted.
     Elevated,
+    /// The strip of a segmented control: one bordered box around its segments (a pill
+    /// outlined in `outline` on tonal designs).
+    Segmented,
+    /// One option of a segmented control; the selected one is filled.
+    Segment {
+        /// The picked option.
+        selected: bool,
+    },
 }
 
 impl Kit {
@@ -136,6 +144,8 @@ impl Kit {
             ),
             Kit::Fab { extended } => if extended { "fab-extended" } else { "fab" }.into(),
             Kit::Elevated => "elevated".into(),
+            Kit::Segmented => "segmented".into(),
+            Kit::Segment { selected } => format!("segment-{}", on(selected)),
         }
     }
 
@@ -164,6 +174,7 @@ impl Kit {
             Kit::Fab { extended: false },
             Kit::Fab { extended: true },
             Kit::Elevated,
+            Kit::Segmented,
         ];
         for floating in [false, true] {
             for vibrant in [false, true] {
@@ -175,6 +186,7 @@ impl Kit {
                 Kit::Chip { selected },
                 Kit::Row { selected },
                 Kit::Page { selected },
+                Kit::Segment { selected },
             ]);
         }
         for t in tones {
@@ -379,6 +391,53 @@ impl Theme {
                     glow: false,
                     pill: false,
                     padding: (sp.md, sp.sm),
+                    lift: false,
+                }
+            }
+            Kit::Segmented => {
+                let tonal = theme.look().tonal;
+                KitStyle {
+                    fill: (!tonal).then_some(p.background),
+                    border: Some(if tonal {
+                        p.roles.outline
+                    } else {
+                        p.border_strong
+                    }),
+                    fg: p.text,
+                    glow: false,
+                    pill: tonal,
+                    padding: if tonal {
+                        (0.0, 0.0)
+                    } else {
+                        (sp.half(), sp.half())
+                    },
+                    lift: false,
+                }
+            }
+            Kit::Segment { selected } => {
+                let tonal = theme.look().tonal;
+                let (fill, fg) = match (tonal, selected) {
+                    (true, true) => (
+                        Some(p.roles.secondary_container),
+                        p.roles.on_secondary_container,
+                    ),
+                    (true, false) => (
+                        hovered.then(|| p.roles.on_surface.with_alpha(0.08)),
+                        p.roles.on_surface,
+                    ),
+                    (false, true) => (Some(p.primary), p.on_primary),
+                    (false, false) => (
+                        hovered.then_some(p.surface_raised),
+                        if hovered { p.text } else { p.text_muted },
+                    ),
+                };
+                KitStyle {
+                    fill,
+                    border: None,
+                    fg,
+                    glow: selected && !tonal,
+                    pill: tonal,
+                    padding: (if tonal { sp.sm * 1.5 } else { sp.md }, 0.0),
                     lift: false,
                 }
             }
@@ -707,11 +766,11 @@ mod tests {
         names.dedup();
         assert_eq!(names.len(), n, "duplicate kit names");
         // 3 cards + snackbar, avatar, code, 2 tooltips, 3 steps, dot, skeleton, popup, select,
-        // head, 2 rows of the table, 2 fabs, elevated, 4 toolbars, 3 selectable kinds x 2,
-        // 4 tones x 4.
+        // head, 2 rows of the table, 2 fabs, elevated, segmented strip, 4 toolbars,
+        // 4 selectable kinds x 2, 4 tones x 4.
         assert_eq!(
             n,
-            3 + 3 + 2 + 3 + 1 + 1 + 1 + 1 + 1 + 2 + 2 + 1 + 4 + 6 + 16
+            3 + 3 + 2 + 3 + 1 + 1 + 1 + 1 + 1 + 2 + 2 + 1 + 1 + 4 + 8 + 16
         );
     }
 

@@ -269,12 +269,9 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
                     None => Msg::Noop,
                 })
             };
-            // Cut-corner designs crop every button by default, the others only when asked.
-            let default = lt
-                .theme()
-                .look()
-                .cut_corners
-                .then_some(dodai_core::Crop::Left);
+            // The Shape page's crop (cut-corner designs crop the left end by default).
+            let default =
+                dodai_showcase_model::tune_state::default_crop(&cx.model.values, lt.theme());
             let crop = (!b.plain).then(|| b.crop.or(default)).flatten();
             if b.surface.is_set() {
                 let glass = lt.button_glass(&b.surface);
@@ -358,6 +355,33 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             } else {
                 container(bar).width(Length::Fill).into()
             }
+        }
+        Demo::Choice(ch) if ch.connected => {
+            // One bordered strip; the picked segment filled (with a check on tonal designs).
+            let at = vals.index(&ch.bind);
+            let tonal = th.look().tonal;
+            let h = if tonal {
+                th.sizes().segmented_height
+            } else {
+                th.shape.control_height - 6.0
+            };
+            let segs = row(ch.labels.iter().enumerate().map(|(i, l)| {
+                let on = i == at;
+                let label = if on && tonal {
+                    format!("\u{2713} {}", lt.label(l))
+                } else {
+                    lt.label(l)
+                };
+                lt.kit_button(
+                    Kit::Segment { selected: on },
+                    container(text(label).size(th.typography.size_md))
+                        .height(h)
+                        .align_y(alignment::Vertical::Center),
+                    Msg::Act(Action::Set(ch.bind.key.clone(), Value::Index(i))),
+                )
+            }))
+            .spacing(if tonal { 0.0 } else { sp.half() });
+            lt.kit_box(Kit::Segmented, segs)
         }
         Demo::Choice(ch) => {
             let at = vals.index(&ch.bind);

@@ -134,7 +134,7 @@ pub enum Action {
     Design(usize),
     /// Pick a theme of the design (by index into [`Showcase::variants`]).
     Variant(usize),
-    /// Filled-control colour.
+    /// Filled-control colour (kept in the values with the shape tune).
     Colour(ControlColour),
     /// Light/dark preference.
     Mode(ModePref),
@@ -164,7 +164,6 @@ pub struct Showcase {
     switcher: ThemeSwitcher,
     category: Option<usize>,
     filter: String,
-    colour: ControlColour,
     mode: ModePref,
     /// Whether the system is in dark mode (the toolkit sets this from the OS).
     pub system_dark: bool,
@@ -247,7 +246,6 @@ impl Showcase {
             switcher,
             category: None,
             filter: String::new(),
-            colour: ControlColour::Design,
             mode: ModePref::System,
             system_dark: true,
             animate: true,
@@ -273,11 +271,7 @@ impl Showcase {
 
     /// The active theme with the chosen control colour and glow applied.
     pub fn theme(&self) -> Theme {
-        let mut t = self
-            .switcher
-            .current()
-            .clone()
-            .with_control_colour(self.colour);
+        let mut t = crate::tune_state::apply(&self.values, self.switcher.current().clone());
         if let Some(Value::Num(g)) = self.values.0.get(GLOW_KEY) {
             t = t.with_glow_intensity(*g);
         }
@@ -343,8 +337,9 @@ impl Showcase {
     /// The control colour in effect (a choice the theme does not offer falls back to the
     /// design's own).
     pub fn colour(&self) -> ControlColour {
-        if self.colours().contains(&self.colour) {
-            self.colour
+        let c = crate::tune_state::colour(&self.values);
+        if self.colours().contains(&c) {
+            c
         } else {
             ControlColour::Design
         }
@@ -502,7 +497,7 @@ impl Showcase {
                 }
             }
             Action::Colour(c) => {
-                self.colour = c;
+                crate::tune_state::set_colour(&mut self.values, c);
                 self.bump();
             }
             Action::Mode(m) => {
@@ -531,8 +526,13 @@ impl Showcase {
             }
             Action::Set(key, Value::Bool(on))
                 if crate::commands::toggle(&mut self.values, &key, on) => {}
+            Action::Set(key, Value::Index(i))
+                if crate::tune_state::set(&mut self.values, self.switcher.current(), &key, i) =>
+            {
+                self.bump();
+            }
             Action::Set(key, v) => {
-                let theme_wide = key == GLOW_KEY;
+                let theme_wide = key == GLOW_KEY || key.starts_with(crate::tune_state::PREFIX);
                 self.values.set(key, v);
                 if theme_wide {
                     self.bump();
@@ -541,6 +541,10 @@ impl Showcase {
             Action::Press(key) if key.starts_with("sh:") => self.shader_press(&key[3..]),
             Action::Press(key) if key.starts_with(TARGETS) => {
                 crate::surface_state::set_targets(&mut self.values, &key[TARGETS.len()..]);
+            }
+            Action::Press(key) if key == crate::tune_state::RESET => {
+                crate::tune_state::reset(&mut self.values);
+                self.bump();
             }
             Action::Press(key) if crate::commands::press(&mut self.values, &key) => {}
             Action::Press(key) => {

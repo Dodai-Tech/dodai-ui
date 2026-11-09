@@ -342,8 +342,8 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
             if let Some(i) = b.icon {
                 spec = spec.icon(i);
             }
-            // Cut-corner designs crop every button by default, the others only when asked.
-            let default = theme.look().cut_corners.then_some(dodai_core::Crop::Left);
+            // The Shape page's crop (cut-corner designs crop the left end by default).
+            let default = dodai_showcase_model::tune_state::default_crop(vals, theme);
             if let Some(end) = (!b.plain).then(|| b.crop.or(default)).flatten() {
                 spec = spec.crop(end);
             }
@@ -427,6 +427,46 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
             e.with_children(|c| {
                 for &i in icons {
                     c.spawn(ButtonSpec::new("", ButtonVariant::Ghost).icon(i).bundle());
+                }
+            });
+        }
+        Demo::Choice(ch) if ch.connected => {
+            // One bordered strip; the picked segment filled (with a check on tonal designs).
+            let at = vals.index(&ch.bind);
+            let tonal = theme.look().tonal;
+            let h = if tonal {
+                theme.sizes().segmented_height
+            } else {
+                theme.shape.control_height - 6.0
+            };
+            p.spawn((
+                kit(Kit::Segmented),
+                Node {
+                    column_gap: Val::Px(if tonal { 0.0 } else { theme.spacing.half() }),
+                    align_self: AlignSelf::FlexStart,
+                    ..default()
+                },
+            ))
+            .with_children(|c| {
+                for (i, l) in ch.labels.iter().enumerate() {
+                    let on = i == at;
+                    let label = if on && tonal {
+                        format!("\u{2713} {l}")
+                    } else {
+                        l.clone()
+                    };
+                    c.spawn((
+                        kit_pressable(Kit::Segment { selected: on }),
+                        Node {
+                            height: Val::Px(h),
+                            align_items: AlignItems::Center,
+                            ..default()
+                        },
+                        Bound::Act(Action::Set(ch.bind.key.clone(), Value::Index(i))),
+                    ))
+                    .with_children(|b| {
+                        b.spawn(text(label, TextRole::Control));
+                    });
                 }
             });
         }

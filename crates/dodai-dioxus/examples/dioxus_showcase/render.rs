@@ -274,11 +274,12 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
         }
         Demo::Button(b) => {
             let (key, variant) = (b.counter.clone(), b.variant);
-            // Cut-corner designs crop every button by default, the others only when asked.
+            // The Shape page's crop (cut-corner designs crop the left end by default).
             let crop = (!b.plain)
                 .then(|| {
-                    b.crop
-                        .or(theme.look().cut_corners.then_some(dodai_core::Crop::Left))
+                    b.crop.or(dodai_showcase_model::tune_state::default_crop(
+                        &vals, &theme,
+                    ))
                 })
                 .flatten();
             rsx! {
@@ -335,6 +336,35 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
                     for (i, ic) in icons.iter().enumerate() {
                         Button { key: "{i}", variant: dodai_core::ButtonVariant::Ghost, icon_only: true,
                             Icon { icon: *ic, size: 18, theme: theme.clone() } }
+                    }
+                }
+            }
+        }
+        Demo::Choice(ch) if ch.connected => {
+            // One bordered strip; the picked segment filled (with a check on tonal designs).
+            let at = vals.index(&ch.bind);
+            let key = ch.bind.key.clone();
+            let tonal = theme.look().tonal;
+            let h = if tonal {
+                theme.sizes().segmented_height
+            } else {
+                theme.shape.control_height - 6.0
+            };
+            let gap = if tonal { 0.0 } else { theme.spacing.half() };
+            let upper = if theme.typography.uppercase_labels {
+                "text-transform:uppercase;"
+            } else {
+                ""
+            };
+            rsx! {
+                KitBox { kit: dodai_core::Kit::Segmented, style: "display:inline-flex;align-self:flex-start;gap:{gap}px",
+                    for (i, l) in ch.labels.iter().enumerate() {
+                        KitBox { key: "{i}", kit: dodai_core::Kit::Segment { selected: i == at },
+                            style: "height:{h}px;display:flex;align-items:center;{upper}font-size:{theme.typography.size_md}px",
+                            onclick: { let key = key.clone(); move |_| act(model, Action::Set(key.clone(), Value::Index(i))) },
+                            if i == at && tonal { "\u{2713} " }
+                            "{l}"
+                        }
                     }
                 }
             }

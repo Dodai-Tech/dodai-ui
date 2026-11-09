@@ -136,7 +136,12 @@ fn choices_and_pagination_defaults_are_in_range() {
     for (title, node) in build_all(&sc) {
         node.walk(&mut |n| match n {
             Node::Choice(c) | Node::Tabs(c) => {
-                assert!(c.bind.default < c.labels.len(), "{title}: {}", c.bind.key)
+                // `usize::MAX`: nothing picked (a value that is in another row).
+                assert!(
+                    c.bind.default < c.labels.len() || c.bind.default == usize::MAX,
+                    "{title}: {}",
+                    c.bind.key
+                )
             }
             Node::Pagination { pages, bind } => assert!(bind.default < *pages, "{title}"),
             Node::Steps { steps, current } => assert!(current < &steps.len(), "{title}"),
