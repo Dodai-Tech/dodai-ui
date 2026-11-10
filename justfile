@@ -232,51 +232,13 @@ bump version: (validate-tag "v" + version) check-release _check-git-cliff
 check-publish: _check-nu
     nu scripts/check_publish.nu
 
-# Every crate group publishes on its own, in this order where they depend on each other:
-#   fx, frost, icons -> core -> adapters           (the first release: `publish`)
-#   shaders, charts, instruments                   (held back; each needs core; shaders' `gpui` feature needs dodai-gpui, so publish it after the adapters)
-# A group's dependencies must already be on crates.io; wait ~30 s between groups for the index.
+# The first release: every crate in dependency order (scripts/lib/versioning.nu); charts and instruments are held back
+publish: check-all _check-nu
+    nu scripts/publish_all.nu
 
-# Publish fx
-publish-fx: check-all
-    cargo publish -p dodai-fx
-
-# Dry-run fx
-publish-fx-dry: check-all
-    cargo publish --dry-run -p dodai-fx
-
-# Publish frost
-publish-frost: check-all
-    cargo publish -p dodai-frost
-
-# Dry-run frost
-publish-frost-dry: check-all
-    cargo publish --dry-run -p dodai-frost
-
-# Publish icons
-publish-icons: check-all
-    cargo publish -p dodai-icons
-
-# Dry-run icons
-publish-icons-dry: check-all
-    cargo publish --dry-run -p dodai-icons
-
-# Publish core
-publish-core: check-all
-    cargo publish -p dodai-core
-    @echo "waiting for crates.io index…" && sleep 30
-
-# Dry-run core
-publish-core-dry: check-all
-    cargo publish --dry-run -p dodai-core
-
-# Publish shaders
-publish-shaders: check-all
-    cargo publish -p dodai-shaders
-
-# Dry-run shaders
-publish-shaders-dry: check-all
-    cargo publish --dry-run -p dodai-shaders
+# Package every first-release crate without uploading
+publish-dry: _check-nu
+    nu scripts/publish_all.nu --dry-run
 
 # Publish charts
 publish-charts: check-all
@@ -293,33 +255,6 @@ publish-instruments: check-all
 # Dry-run instruments
 publish-instruments-dry: check-all
     cargo publish --dry-run -p dodai-instruments
-
-# Publish adapters
-publish-adapters: check-all
-    cargo publish -p dodai-ratatui
-    cargo publish -p dodai-iced
-    cargo publish -p dodai-gpui
-    cargo publish -p dodai-topcoat
-    cargo publish -p dodai-dioxus
-    cargo publish -p dodai-bevy
-
-# Dry-run adapters
-publish-adapters-dry: check-all
-    cargo publish --dry-run -p dodai-ratatui
-    cargo publish --dry-run -p dodai-iced
-    cargo publish --dry-run -p dodai-gpui
-    cargo publish --dry-run -p dodai-topcoat
-    cargo publish --dry-run -p dodai-dioxus
-    cargo publish --dry-run -p dodai-bevy
-
-_wait-index:
-    @echo "waiting for crates.io index…" && sleep 30
-
-# The first release: fx, frost, icons, core and the adapters, waiting for the index in between
-publish: publish-fx publish-frost publish-icons _wait-index publish-core publish-adapters
-
-# Dry-run of the first release (dependents only verify once their dependencies are live)
-publish-dry: publish-fx-dry publish-frost-dry publish-icons-dry publish-core-dry publish-adapters-dry
 
 # Line coverage (needs cargo-llvm-cov); writes target/llvm-cov/html
 coverage:
