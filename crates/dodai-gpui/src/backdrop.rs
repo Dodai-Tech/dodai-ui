@@ -19,7 +19,7 @@ const CACHE_LIMIT: usize = 16;
 pub(crate) fn render_image(rgba: Vec<u8>, w: usize, h: usize) -> Option<Arc<RenderImage>> {
     // gpui stores frames as BGRA.
     let mut rgba = rgba;
-    for px in rgba.chunks_exact_mut(4) {
+    for px in rgba.as_chunks_mut::<4>().0 {
         px.swap(0, 2);
     }
     let buf = image::RgbaImage::from_raw(w as u32, h as u32, rgba)?;

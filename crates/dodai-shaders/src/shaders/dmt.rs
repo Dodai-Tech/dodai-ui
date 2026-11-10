@@ -552,7 +552,7 @@ fn cube_v(i: u32) -> Vec3 {
 }
 
 fn octa_v(i: u32) -> Vec3 {
-    let s = if i % 2 == 0 { 1.0 } else { -1.0 };
+    let s = if i.is_multiple_of(2) { 1.0 } else { -1.0 };
     match i / 2 {
         0 => vec3(s, 0.0, 0.0),
         1 => vec3(0.0, s, 0.0),
@@ -1027,7 +1027,7 @@ pub fn dmt_chakra_wheels(uv: Vec2, c: &Ctx) -> Vec3 {
     let r = p.len();
     let a = p.y.atan2(p.x);
     let n = chakra_petals(i);
-    let dir = if i % 2 == 0 { 1.0 } else { -1.0 };
+    let dir = if i.is_multiple_of(2) { 1.0 } else { -1.0 };
     let base = hsv(idx / 7.0 * 0.78, 0.85, 1.0);
     let big = 0.12;
     let pet = big * (0.55 + 0.45 * (0.5 * n * a + dir * t * 0.3).cos().abs());

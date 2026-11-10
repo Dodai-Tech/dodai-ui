@@ -170,7 +170,7 @@ impl Player {
         if r.transparent {
             // Light on black: the brightest channel is the opacity, and the colour stays as it is,
             // which is already premultiplied by it.
-            for px in bgra.chunks_exact_mut(4) {
+            for px in bgra.as_chunks_mut::<4>().0 {
                 px[3] = px[0].max(px[1]).max(px[2]);
             }
         }
@@ -440,7 +440,7 @@ impl Live {
 impl Frame {
     /// The pixels as RGBA8 (blue and red swapped).
     pub fn rgba(mut self) -> Vec<u8> {
-        for px in self.bgra.chunks_exact_mut(4) {
+        for px in self.bgra.as_chunks_mut::<4>().0 {
             px.swap(0, 2);
         }
         self.bgra
