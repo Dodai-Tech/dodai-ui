@@ -11,6 +11,9 @@ readme                 = "README.md"
 keywords               = ["blur", "frosted-glass", "glass", "wgpu", "ui"]
 categories             = ["graphics", "gui"]
 
+[package.metadata.docs.rs]
+features = ["gpu"]
+
 [features]
 default = []
 # The blur on the GPU (wgpu); `Blurrer` falls back to the CPU without a real adapter.

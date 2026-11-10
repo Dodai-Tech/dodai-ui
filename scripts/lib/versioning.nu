@@ -28,6 +28,19 @@ export def bump-workspace-text [cargo: string, version: string]: nothing -> stri
     $out | str join "\n"
 }
 
+# The `## [version]` section of a changelog (without its heading), or "" when there is none.
+# A hand-written section wins over one generated from commits.
+export def changelog-section [text: string, version: string]: nothing -> string {
+    let lines = ($text | lines)
+    let head = $"## [($version)]"
+    let starts = ($lines | enumerate | where {|r| $r.item | str starts-with $head } | get index)
+    if ($starts | is-empty) { return "" }
+    let rest = ($lines | skip (($starts | first) + 1))
+    let stops = ($rest | enumerate | where {|r| $r.item | str starts-with "## [" } | get index)
+    let body = if ($stops | is-empty) { $rest } else { $rest | first ($stops | first) }
+    $body | str join "\n" | str trim
+}
+
 # Crates in dependency order: core must be published before adapters.
 export def publish-order []: nothing -> list<string> {
     ["dodai-fx" "dodai-frost" "dodai-core" "dodai-icons" "dodai-ratatui" "dodai-iced" "dodai-gpui" "dodai-topcoat" "dodai-dioxus" "dodai-bevy"]

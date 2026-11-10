@@ -3,22 +3,36 @@
 [![Audit](https://github.com/sorinirimies/dodai-ui/actions/workflows/security.yml/badge.svg)](https://github.com/sorinirimies/dodai-ui/actions/workflows/security.yml)
 [![Fuzz](https://github.com/sorinirimies/dodai-ui/actions/workflows/fuzz.yml/badge.svg)](https://github.com/sorinirimies/dodai-ui/actions/workflows/fuzz.yml)
 
-A **design system** — not just a colour switcher — shipped as one crate per UI framework.
-One token set (colour roles, typography, spacing, shape, glow/scanline effects, resolved
-component styles) feeds four native adapters:
+A **design system**, not just a colour switcher, shipped as one crate per UI framework.
+One token set (colour roles, typography, spacing, shape, glow and scanline effects, resolved
+component styles) feeds the native adapters. Four designs ship in the box: Cyberpunk, Material 3,
+Neo-Brutalism and Dodai.
 
 | Crate | Framework | What you get |
 |---|---|---|
-| [`dodai-core`](crates/dodai-core) | — | `Theme`, `Palette`, tokens, `ThemeSwitcher`, WCAG contrast, ANSI-256 fallback, the four design systems (features) and `motion` (easing, springs, curves, stagger, entry effects, tweens) |
-| [`dodai-charts`](crates/dodai-charts) | — | Renderer-agnostic chart maths: ticks, Heikin-Ashi, indicators, Renko, depth, Gantt, binning, gradients |
-| [`dodai-instruments`](crates/dodai-instruments) | — | Renderer-agnostic instrument maths: scales, alarms, gauge, flight, tactical and seven-segment geometry |
-| [`dodai-shaders`](crates/dodai-shaders) | wgpu | 196 pixel shaders written in Rust (rust-gpu → WGSL, run on the GPU): Ghibli-style painted and cel-shaded 3D scenes, cyberpunk (rainy megacities, Blade Runner-inspired scenes), Material 3, Matrix, CRT/VHS/retro monitors, Ghostty ports, DMT hyperspace sacred geometry, pixel-art platformer/metroidvania, cosmic; follows the theme palette |
-| [`dodai-ratatui`](crates/dodai-ratatui) | Ratatui 0.30 | `TuiTheme`: chamfered `╱ ╲` blocks, `◢ BUTTON ◤`, tabs, badges, inputs, status bar, `Scanlines`, `ThemeBadge` |
-| [`dodai-iced`](crates/dodai-iced) | Iced 0.14 | `IcedTheme`: native `iced::Theme`, button/container/text-input/text styles with neon glow, canvas `ChamferFrame` |
-| [`dodai-gpui`](crates/dodai-gpui) | GPUI 0.2 | The design system: `Global` theme store, `cx.dodai()`, `DodaiStyled`, 160+ components |
-| [`dodai-charts`](crates/dodai-charts) | GPUI 0.2 | 70 interactive, animated charts (line, bar, pie, sankey, candlestick, treemap, …) |
-| [`dodai-instruments`](crates/dodai-instruments) | GPUI 0.2 | Dials, gauges, segment displays, scopes; `automotive`, `aviation`, `defense`, `industrial`, `medical` sets (features) |
-| [`dodai-topcoat`](crates/dodai-topcoat) | Topcoat / any SSR web | CSS custom properties, `.dodai-btn/.dodai-panel/.dodai-input/.dodai-tag/.dodai-tabs/.dodai-table`, `clip-path` chamfers, JS theme switcher |
+| [`dodai-core`](crates/dodai-core) | none | `Theme`, `Palette`, tokens, `ThemeSwitcher`, WCAG contrast, ANSI-256 fallback, the four design systems (features) and `motion` (easing, springs, curves, stagger, entry effects, tweens) |
+| [`dodai-gpui`](crates/dodai-gpui) | GPUI 0.2 | The design system in gpui: `Global` theme store, `cx.dodai()`, `DodaiStyled`, 160+ components |
+| [`dodai-iced`](crates/dodai-iced) | Iced 0.14 | `IcedTheme` and a full component set: buttons, panels, tabs, inputs, lists, pickers, canvas chamfers, glow, frosted glass |
+| [`dodai-bevy`](crates/dodai-bevy) | Bevy 0.20 | `bevy_ui` components, a chamfer material with hard shadow, glass and scanlines |
+| [`dodai-dioxus`](crates/dodai-dioxus) | Dioxus 0.7 | Components and a theme provider, styled by `dodai-topcoat` |
+| [`dodai-topcoat`](crates/dodai-topcoat) | Topcoat / any web | CSS custom properties and `.dodai-*` component classes, `clip-path` chamfers, one stylesheet per design |
+| [`dodai-shaders`](crates/dodai-shaders) | wgpu | 196 pixel shaders written in Rust (rust-gpu to WGSL): painted and cel-shaded scenes, cyberpunk cityscapes, Material 3, Matrix, CRT/VHS monitors, sacred geometry, pixel-art scenes; they follow the theme palette. Views for gpui, iced, bevy and dioxus (features) |
+| [`dodai-icons`](crates/dodai-icons) | none | One typed `IconId` and the icon packs (Cyberpunk, Material Symbols, Neo-Brutalism, symbol sets) |
+| [`dodai-fx`](crates/dodai-fx) | none | Surface textures and effects, no dependencies |
+| [`dodai-frost`](crates/dodai-frost) | none | Frosted glass on RGBA pixels, GPU first with a CPU fallback |
+| [`dodai-ratatui`](crates/dodai-ratatui) | Ratatui 0.30 | `TuiTheme`: chamfered blocks, buttons, tabs, badges, inputs, status bar, `Scanlines` |
+
+Also in the repository but **not part of the first release**: `dodai-charts` (70 gpui charts and their
+renderer-agnostic maths), `dodai-instruments` (gauges, dials, flight and tactical displays) and the egui,
+slint, yew, leptos and freya adapters.
+
+## Status (0.1)
+
+The gpui, iced, bevy and dioxus showcases show the same pages, built from one shared model
+(`dodai-showcase-model`). They are checked by screenshots; mouse and keyboard interaction has
+not been tested on every control in every toolkit yet, so expect rough edges in popovers, sliders
+and drag handling. Bevy has no frosted-glass blur. Minimum Rust versions differ per crate (see each
+crate's `rust-version`).
 
 ## Themes
 
@@ -48,8 +62,8 @@ Every theme is contrast-tested (text ≥ 7:1, primary label ≥ 4.5:1).
 
 ```toml
 [dependencies]
-dodai         = "0.1"   # everything: tokens + Cyberpunk + Material 3 + icons + shaders
-dodai-ratatui = "0.1"   # or -iced / -gpui / -topcoat
+dodai-core    = { version = "0.1", features = ["cyberpunk", "material"] }
+dodai-ratatui = "0.1"   # or dodai-iced / dodai-gpui / dodai-bevy / dodai-dioxus / dodai-topcoat
 ```
 
 ```rust
@@ -128,9 +142,7 @@ The pack (`dodai_icons::cyberpunk`, feature `cyberpunk`) has 378 icons in 7 grou
 ## gpui features
 
 `dodai-gpui` features (all default, all additive): `components`, `frost`, `cyberpunk`
-(the stroked icon pack), `material` (the Material Symbols icons). Charts and instruments are their
-own crates (`dodai-charts`, `dodai-instruments`); they use `dodai-gpui` without
-components, so charts alone pull no buttons, tables or icons.
+(the stroked icon pack), `material` (the Material Symbols icons).
 Components never look at a theme id: soft, tonal Material rendering is chosen by the theme's
 `ShapeKind::Rounded`, and every colour comes from the palette or its M3-style `roles`
 (`surface-container-*`, `outline`, `inverse-surface`, ...), which every theme has.

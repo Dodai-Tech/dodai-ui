@@ -85,4 +85,17 @@ def "test real Cargo.toml: version is semver and bump round-trips" [] {
     assert equal (read-version (bump-workspace-text $raw "7.7.7")) "7.7.7"
 }
 
+def "test changelog-section: picks one version, stops at the next, empty when absent" [] {
+    let text = "# Changelog\n\n## [0.2.0] - 2026-01-01\n### New\n- b\n\n## [0.1.0] - 2025-12-01\n- a\n- c\n"
+    assert equal (changelog-section $text "0.2.0") "### New\n- b"
+    assert equal (changelog-section $text "0.1.0") "- a\n- c"
+    assert equal (changelog-section $text "9.9.9") ""
+}
+
+def "test real CHANGELOG.md has a section for the workspace version" [] {
+    let v = (read-version (open ($env.FILE_PWD | path join ".." ".." "Cargo.toml") --raw))
+    let log = (open ($env.FILE_PWD | path join ".." ".." "CHANGELOG.md") --raw)
+    assert ((changelog-section $log $v) != "") $"CHANGELOG.md has no ## [($v)] section"
+}
+
 def main [] { run-tests }

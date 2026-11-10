@@ -11,6 +11,10 @@ readme       = "README.md"
 keywords     = ["theme", "design-system", "tokens", "cyberpunk", "ui"]
 categories   = ["gui", "command-line-interface", "rendering"]
 
+[package.metadata.docs.rs]
+# Every design, or the docs would show only the engine.
+features = ["cyberpunk", "material", "neobrutalism", "dodai"]
+
 [features]
 ## The design systems, off by default: the engine alone is the lightweight dependency.
 cyberpunk = []

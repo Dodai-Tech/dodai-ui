@@ -33,7 +33,10 @@ def main [new_version: string] {
     run-external "cargo" "test" "--workspace"
     run-external "cargo" "update" "--workspace"
 
-    if (which git-cliff | is-not-empty) {
+    let written = (open --raw CHANGELOG.md | str contains $"## [($new_version)]")
+    if $written {
+        print $"(ansi green)✓(ansi reset) CHANGELOG.md already has a ($new_version) section, kept."
+    } else if (which git-cliff | is-not-empty) {
         run-external "git-cliff" "--output" "CHANGELOG.md" "--tag" $"v($new_version)"
         print $"(ansi green)✓(ansi reset) CHANGELOG.md updated."
     } else {
