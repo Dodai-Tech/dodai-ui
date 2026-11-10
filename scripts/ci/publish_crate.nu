@@ -1,6 +1,6 @@
 #!/usr/bin/env nu
 # Publish one crate to crates.io, skipping if that exact version already exists.
-# Usage: nu scripts/ci/publish_crate.nu <crate>      (needs CARGO_REGISTRY_TOKEN)
+# Usage: nu scripts/ci/publish_crate.nu <crate>      (needs CARGO_REGISTRY_TOKEN; the workflows set it from the CRATES_IO_TOKEN secret)
 
 def main [crate: string] {
     let version = (open Cargo.toml | get workspace.package.version)
