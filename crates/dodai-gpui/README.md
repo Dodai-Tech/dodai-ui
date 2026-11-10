@@ -2,8 +2,8 @@
 
 GPUI adapter for Dodai UI: the themed components of four designs (Dodai, Cyberpunk, Material,
 Neo-Brutalism). The designs are plain tokens and specs in `dodai-core`; this crate only paints
-them. Charts and instruments are separate crates on top of it: `dodai-charts` and
-`dodai-instruments`.
+them. The chart and instrument crates in the repository (`dodai-charts`, `dodai-instruments`)
+are built on it too, but are not published yet.
 
 ## Use it
 
@@ -35,7 +35,7 @@ instrument crates are built on: theme store, `paint` (strokes, fills, shaped box
 (chart glow), `follow` (values easing to new data), `motion`, `live` (`Live` sample windows) and
 the `entry_render!` / `follow_api!` / `callback!` / `corners_setter!` macros.
 
-## Charts and instruments (`dodai-charts`, `dodai-instruments`)
+## Charts and instruments (not published yet)
 
 - Every chart follows new data with springs that obey the app Motion set; `.animate(false)` or
   `.response(..)` override it per chart.
@@ -55,3 +55,7 @@ cargo run -p dodai-showcase
 
 `DODAI_CAT`, `DODAI_THEME`, `DODAI_ONLY` and `DODAI_SIZE` preselect a category, theme, section
 and window size.
+
+## Status
+
+Version 0.1. The components are checked against the shared showcase by screenshots; mouse and keyboard behaviour is not covered on every control yet. Needs a recent stable Rust (see `rust-version`). MIT licensed.

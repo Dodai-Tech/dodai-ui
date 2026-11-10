@@ -57,3 +57,7 @@ shaders are not ported). Env: `DODAI_THEME`, `DODAI_CAT`, `DODAI_OPEN`, `DODAI_S
 Alongside the first widgets, `UiKit` boxes (`Kit::Card`, `Alert`, `Chip`, `Avatar`, `Code`,
 `Tooltip`, `Row`, `Popup`, `Select`, ...) and the busy indicators `spinner()` / `indeterminate()` are
 token-styled and re-skin with the theme; `ButtonSpec` builds sized, square, icon and icon-only buttons.
+
+## Status
+
+Version 0.1. The components are checked against the shared showcase by screenshots; mouse and keyboard behaviour is not covered on every control yet. Needs a recent stable Rust (see `rust-version`). MIT licensed.

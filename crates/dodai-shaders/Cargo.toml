@@ -11,6 +11,11 @@ readme       = "README.md"
 keywords     = ["shaders", "procedural", "crt", "retro", "design-system"]
 categories   = ["graphics", "gui"]
 
+[package.metadata.docs.rs]
+# The adapter views. `iced` is left out: with `gpui` (or with `bevy` and `dioxus` together) the
+# shared naga 27 does not build, so docs.rs could not render any of them.
+features = ["gpui", "bevy", "dioxus"]
+
 [features]
 # `ShaderView` for gpui (`dodai_shaders::gpui`).
 gpui = ["dep:gpui", "dep:dodai-gpui", "dep:image"]

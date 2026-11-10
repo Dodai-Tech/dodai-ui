@@ -11,6 +11,9 @@ readme       = "README.md"
 keywords     = ["icons", "material-symbols", "svg", "ui", "design-system"]
 categories   = ["gui", "graphics"]
 
+[package.metadata.docs.rs]
+all-features = true
+
 [features]
 default = ["theme", "cyberpunk", "material", "neobrutalism", "symbols"]
 ## Cyberpunk's hand-drawn, curve-free pack: `dodai_icons::cyberpunk` (names, geometry, SVG) and
