@@ -114,7 +114,7 @@ pub fn write_ppm(path: &str, size: iced::Size<u32>, rgba: &[u8]) -> std::io::Res
     use std::io::Write;
     let mut out = std::io::BufWriter::new(std::fs::File::create(path)?);
     write!(out, "P6\n{} {}\n255\n", size.width, size.height)?;
-    for px in rgba.chunks_exact(4) {
+    for px in rgba.as_chunks::<4>().0 {
         out.write_all(&px[..3])?;
     }
     out.flush()

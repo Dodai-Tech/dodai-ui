@@ -324,7 +324,9 @@ impl Mesh {
         let at = |i: u32| buf.vertices.get(i as usize).map(|p| (p.x, p.y));
         Some(Self(
             buf.indices
-                .chunks_exact(3)
+                .as_chunks::<3>()
+                .0
+                .iter()
                 .filter_map(|t| Some([at(t[0])?, at(t[1])?, at(t[2])?]))
                 .collect(),
         ))
