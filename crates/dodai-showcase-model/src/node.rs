@@ -868,6 +868,10 @@ pub enum Node {
         icon: crate::icons::IconRef,
         /// The filled form where the design has one.
         filled: bool,
+        /// Press key that picks it (shows its detail), when it can be picked.
+        pick: Option<String>,
+        /// Whether it is the picked one (drawn with a primary border).
+        selected: bool,
     },
     /// A picture in the theme's colours with frosted-glass panels over it: each panel shows a
     /// blurred, tinted copy of the picture behind it ([`crate::media::frosted`] makes the

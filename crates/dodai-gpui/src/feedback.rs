@@ -258,21 +258,18 @@ impl RenderOnce for Spinner {
                 let mut el = el;
                 for cell in &cells {
                     let a = dodai_core::busy::cell_alpha(spin, cell.lag, secs);
-                    let (h, top) = if spin == dodai_core::SpinnerStyle::Bars {
-                        let h = cell.h * dodai_core::busy::bar_scale(a);
-                        (h, cell.y + cell.h - h)
-                    } else {
-                        (cell.h, cell.y)
-                    };
+                    let (x, y, w, h) = dodai_core::busy::cell_rect(spin, cell, a);
                     let mut d = div()
                         .absolute()
-                        .left(px(cell.x))
-                        .top(px(top))
-                        .w(px(cell.w))
+                        .left(px(x))
+                        .top(px(y))
+                        .w(px(w))
                         .h(px(h))
                         .bg(gpui::Hsla { a, ..c });
                     if cell.round {
                         d = d.rounded_full();
+                    } else if cell.radius > 0.0 {
+                        d = d.rounded(px(cell.radius));
                     }
                     el = el.child(d);
                 }

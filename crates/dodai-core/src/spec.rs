@@ -38,6 +38,9 @@ pub enum SpinnerStyle {
     Orbit,
     /// Four hard squares in a grid, one lit at a time, stepping clockwise with no fade.
     Steps,
+    /// A three by three grid of softly rounded squares: a diagonal wave swells each one and
+    /// fades it back.
+    Grid,
 }
 
 /// Semantic capabilities a design system declares. Adapters ask these instead of guessing a

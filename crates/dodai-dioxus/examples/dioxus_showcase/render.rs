@@ -640,7 +640,13 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
                 .unwrap_or_default();
             rsx! { span { style: "display:inline-flex;flex:none;width:{size}px;height:{size}px", dangerous_inner_html: "{svg}" } }
         }
-        Demo::IconTile { icon, filled } => {
+        Demo::IconTile {
+            icon,
+            filled,
+            pick,
+            selected,
+        } => {
+            let key = pick.clone();
             let svg = icon
                 .glyph(&theme, *filled)
                 .map(|g| g.svg(28, &theme.palette.primary.to_css()))
@@ -651,12 +657,18 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
             );
             let (sp, bd, muted, xs) = (
                 theme.spacing.sm,
-                theme.palette.border.to_css(),
+                if *selected {
+                    theme.palette.primary
+                } else {
+                    theme.palette.border
+                }
+                .to_css(),
                 theme.palette.text_muted.to_css(),
                 theme.typography.size_xs,
             );
             rsx! {
-                div { style: "width:92px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:4px;padding:{sp}px 4px;border:1px solid {bd}",
+                div { style: "width:92px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:4px;padding:{sp}px 4px;border:1px solid {bd};cursor:pointer",
+                    onclick: move |_| if let Some(k) = key.clone() { act(model, Action::Press(k)) },
                     span { style: "display:inline-flex;width:28px;height:28px", dangerous_inner_html: "{svg}" }
                     span { style: "font-size:{xs}px;color:{muted};white-space:nowrap", "{name}" }
                 }
