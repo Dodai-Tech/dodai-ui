@@ -30,11 +30,17 @@ pub enum Look {
     /// A minimal line display: one hairline ring or line per gauge, a dot riding on it, a thin
     /// arc up to the value, scale end figures only and a large light figure in open space.
     Line,
+    /// A dark clinical dial: big white numerals, fine track rings, a red blade on a hub and a
+    /// pill naming the mode. Its track layout floods the scale with a red band.
+    Apex,
+    /// A bright clinical cluster: a white-faced dial with black numerals and a red blade, beside
+    /// dark ring dials with a hairline track, a red marker and a bold figure.
+    Daylight,
 }
 
 impl Look {
     /// Every look, in the order a gallery shows them.
-    pub const ALL: [Self; 9] = [
+    pub const ALL: [Self; 11] = [
         Self::Sport,
         Self::Chronograph,
         Self::Vintage,
@@ -44,6 +50,8 @@ impl Look {
         Self::GlassCockpit,
         Self::Race,
         Self::Line,
+        Self::Apex,
+        Self::Daylight,
     ];
 
     /// A short name for a caption or a picker.
@@ -58,6 +66,8 @@ impl Look {
             Self::GlassCockpit => "Glass cockpit",
             Self::Race => "Race",
             Self::Line => "Line",
+            Self::Apex => "Apex",
+            Self::Daylight => "Daylight",
         }
     }
 }
@@ -81,6 +91,8 @@ impl Look {
             Self::GlassCockpit => &[Layout::Dial, Layout::Bar, Layout::Tape, Layout::Column],
             Self::Race => &[Layout::Dial, Layout::Arc, Layout::Bar, Layout::Column],
             Self::Line => &[Layout::Dial, Layout::Arc, Layout::Bar, Layout::Column],
+            Self::Apex => &[Layout::Dial, Layout::Band, Layout::Lit, Layout::Fill],
+            Self::Daylight => &[Layout::Dial, Layout::Lit, Layout::Ring, Layout::Pointer],
         }
     }
 
@@ -143,6 +155,22 @@ pub enum Layout {
     /// A cut-corner frame with a fan of hairlines lit up to the value and a glowing needle
     /// ([`Look::HeadsUp`]).
     Cut,
+    /// A dark dial whose scale is flooded with a thick band in the primary colour, numerals on
+    /// it, the figure big at the side ([`Look::Apex`]).
+    Band,
+    /// A dial with no hand: a lit red arc fills the track ring up to the value, a bead on its
+    /// end, the numerals past it dim and the figure in the middle ([`Look::Apex`] and
+    /// [`Look::Daylight`]).
+    Lit,
+    /// The red band without a hand: lit up to the value, the figure big in the middle
+    /// ([`Look::Apex`]).
+    Fill,
+    /// The ring dial with a short hand from a small cap inside the ring, the figure under it
+    /// ([`Look::Daylight`]).
+    Pointer,
+    /// A dark dial with one hairline ring, a marker riding on it, a thin arc up to the value and
+    /// the figure bold in the middle ([`Look::Daylight`]).
+    Ring,
     /// A stadium frame with a band of light from the primary to the accent colour round the
     /// figure ([`Look::Halo`]).
     Capsule,
@@ -167,6 +195,11 @@ impl Layout {
             Self::Column => "Column",
             Self::Cut => "Cut",
             Self::Capsule => "Capsule",
+            Self::Band => "Band",
+            Self::Ring => "Ring",
+            Self::Lit => "Lit",
+            Self::Fill => "Fill",
+            Self::Pointer => "Pointer",
         }
     }
 }

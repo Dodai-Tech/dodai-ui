@@ -288,7 +288,15 @@ impl Showcase {
             heat_grad: 0,
             inst_trail: 2,
             inst_response: 0,
-            inst_look: 0,
+            // DODAI_LOOK=apex starts with one look picked (a screenshot aid).
+            inst_look: std::env::var("DODAI_LOOK")
+                .ok()
+                .and_then(|n| {
+                    dodai_instruments::gpui::Look::ALL
+                        .iter()
+                        .position(|l| l.name().eq_ignore_ascii_case(&n))
+                })
+                .map_or(0, |i| i + 1),
             inst_drive: 4,
             inst_glow: 0,
             inst_seen: None,
