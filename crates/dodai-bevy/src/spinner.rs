@@ -3,7 +3,7 @@
 
 use bevy::prelude::*;
 
-use dodai_core::busy::{bar_scale, cell_alpha, cells, Cell};
+use dodai_core::busy::{cell_alpha, cell_rect, cells, Cell};
 use dodai_core::SpinnerStyle;
 
 use crate::theme::{color, DodaiTheme};
@@ -122,7 +122,7 @@ pub(crate) fn build_spinners(
                             border_radius: if c.round {
                                 BorderRadius::MAX
                             } else {
-                                BorderRadius::ZERO
+                                BorderRadius::all(Val::Px(c.radius))
                             },
                             ..default()
                         },
@@ -171,11 +171,13 @@ pub(crate) fn animate_spinners(
         if bg.0 != want {
             bg.0 = want;
         }
-        if p.style == SpinnerStyle::Bars {
-            let h = p.cell.h * bar_scale(a);
-            let (top, height) = (Val::Px(p.cell.y + p.cell.h - h), Val::Px(h));
-            if n.top != top || n.height != height {
+        if matches!(p.style, SpinnerStyle::Bars | SpinnerStyle::Grid) {
+            let (x, y, w, h) = cell_rect(p.style, &p.cell, a);
+            let (left, top, width, height) = (Val::Px(x), Val::Px(y), Val::Px(w), Val::Px(h));
+            if n.left != left || n.top != top || n.width != width || n.height != height {
+                n.left = left;
                 n.top = top;
+                n.width = width;
                 n.height = height;
             }
         }
@@ -232,7 +234,7 @@ mod tests {
         for (t, n) in [
             (dodai_core::material::light(), 0),
             (dodai_core::cyberpunk::light(), 8),
-            (dodai_core::dodai::light(), 8),
+            (dodai_core::dodai::light(), 9),
             (dodai_core::neobrutalism::light(), 4),
         ] {
             let id = t.id();
@@ -250,7 +252,7 @@ mod tests {
         a.world_mut().spawn(spinner(32.0));
         a.update();
         a.update();
-        assert_eq!(cell_count(&mut a), 8);
+        assert_eq!(cell_count(&mut a), 9);
         a.world_mut()
             .resource_mut::<DodaiTheme>()
             .set_theme(dodai_core::neobrutalism::light());

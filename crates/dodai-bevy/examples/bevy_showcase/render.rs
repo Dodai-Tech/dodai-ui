@@ -1010,25 +1010,37 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
         } => {
             glyph_node(p, *icon, *size, *filled, *ink);
         }
-        Demo::IconTile { icon, filled } => {
+        Demo::IconTile {
+            icon,
+            filled,
+            pick,
+            selected,
+        } => {
             let name = dodai_showcase_model::icons::shortened(
                 icon.name(),
                 dodai_showcase_model::icons::TILE_NAME_CHARS,
             );
-            p.spawn((
+            let mut e = p.spawn((
                 Node {
                     width: Val::Px(92.0),
                     flex_direction: FlexDirection::Column,
                     align_items: AlignItems::Center,
                     row_gap: Val::Px(4.0),
                     padding: UiRect::axes(Val::Px(4.0), Val::Px(theme.spacing.sm)),
-                    border: UiRect::all(Val::Px(1.0)),
+                    border: UiRect::all(Val::Px(if *selected { 2.0 } else { 1.0 })),
                     flex_shrink: 0.0,
                     ..default()
                 },
-                BorderColor::all(color(theme.palette.border)),
-            ))
-            .with_children(|c| {
+                BorderColor::all(color(if *selected {
+                    theme.palette.primary
+                } else {
+                    theme.palette.border
+                })),
+            ));
+            if let Some(k) = pick {
+                e.insert((UiPress, Bound::Act(Action::Press(k.clone()))));
+            }
+            e.with_children(|c| {
                 glyph_node(c, *icon, 28.0, *filled, theme.palette.primary);
                 c.spawn(text(
                     name,

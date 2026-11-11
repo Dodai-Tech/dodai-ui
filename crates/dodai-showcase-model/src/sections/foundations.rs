@@ -383,6 +383,37 @@ fn shape(c: &Ctx) -> Node {
     ])
 }
 
+/// The picked icon: a large preview, its name, how to write it, its SVG and a close button.
+fn icon_detail(icon: crate::icons::IconRef, filled: bool, t: &dodai_core::Theme) -> Node {
+    let code = |text: String, lang: &str| Node::Code {
+        text,
+        lang: lang.into(),
+    };
+    tile(
+        520.0,
+        vec![
+            row(vec![
+                Node::Glyph {
+                    icon,
+                    size: 40.0,
+                    filled,
+                    ink: t.palette.primary,
+                },
+                col(vec![
+                    label(icon.name()),
+                    muted("Icon · picked from the catalogue below"),
+                ]),
+                button("Close", ButtonVariant::Secondary)
+                    .counter(crate::commands::set("icon-sel", 0))
+                    .node(),
+            ])
+            .start(),
+            code(icon.usage(), "rust"),
+            code(icon.svg(t, filled), "xml"),
+        ],
+    )
+}
+
 fn icons(c: &Ctx) -> Node {
     use crate::icons::{self as ic, IconRef};
     use dodai_core::{SymbolState, ToggleKind};
@@ -401,6 +432,7 @@ fn icons(c: &Ctx) -> Node {
     let filled_toggle = toggle(ToggleKind::Checkbox, "icon-filled", false, "Filled");
     let filled = c.values.flag(&filled_toggle.bind);
     let searching = !q.is_empty();
+    let picked = IconRef::from_index(c.values.index_of("icon-sel", 0).wrapping_sub(1));
     let mut out = vec![
         muted(format!(
             "{} icons: {} named icons shared by every design, each drawn in that design's own style (write one as `Icon::Heart`), plus {} dashboard icons in {} groups, one drawing stroked in each design's own weight and corners.",
@@ -412,6 +444,9 @@ fn icons(c: &Ctx) -> Node {
         tile(360.0, vec![Node::Input(search)]),
         Node::Toggle(filled_toggle),
     ];
+    if let Some(icon) = picked {
+        out.push(icon_detail(icon, filled, t));
+    }
     let mut shown = 0usize;
     for src in ic::sources() {
         let hits: Vec<IconRef> = src
@@ -438,7 +473,12 @@ fn icons(c: &Ctx) -> Node {
             row(hits
                 .iter()
                 .take(cap)
-                .map(|&icon| Node::IconTile { icon, filled })
+                .map(|&icon| Node::IconTile {
+                    icon,
+                    filled,
+                    pick: Some(crate::commands::set("icon-sel", icon.index() + 1)),
+                    selected: picked == Some(icon),
+                })
                 .collect())
             .gap(Gap::Xs),
         ];

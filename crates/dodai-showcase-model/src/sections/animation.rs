@@ -84,7 +84,7 @@ const EASINGS: [Ease; 12] = [
 
 macro_rules! ease_section {
     ($i:expr) => {
-        Section::new(CAT, EASINGS[$i].title, |c| ease(c, $i))
+        Section::new(CAT, EASINGS[$i].title, |c| ease(c, $i)).live()
     };
 }
 
@@ -101,7 +101,7 @@ pub(crate) const SECTIONS: [Section; 14] = [
     ease_section!(9),
     ease_section!(10),
     ease_section!(11),
-    Section::new(CAT, "Dynamics · physics models", physics),
+    Section::new(CAT, "Dynamics · physics models", physics).live(),
     Section::new(CAT, "Dynamics · one-shot mixins", mixins),
 ];
 
@@ -157,9 +157,13 @@ fn ease(c: &Ctx, i: usize) -> Node {
     let curve = plot::control_points(e.easing)
         .map(|(a, b, x, y)| format!("  cubic-bezier({a}, {b}, {x}, {y})"))
         .unwrap_or_default();
+    let p = plot::cycle(crate::widgets::elapsed(), 2.8, 0.5);
     row(vec![
-        Node::Plot(plot::easing(c.theme, e.easing, 200.0)),
-        col(vec![muted(format!("{}{curve}", e.text))]),
+        Node::Plot(plot::easing_at(c.theme, e.easing, 200.0, Some(p))),
+        col(vec![
+            Node::Plot(plot::track(c.theme, 220.0, 34.0, e.easing.apply(p))),
+            muted(format!("{}{curve}", e.text)),
+        ]),
     ])
 }
 
@@ -188,9 +192,10 @@ fn physics(c: &Ctx) -> Node {
     let ball = Bounce::new(100.0, 900.0, 0.6);
     let dur = ball.duration();
     let shake = Shake::new(5.0, 3.5);
+    let at = plot::cycle(crate::widgets::elapsed(), 2.6, 0.0);
     let lane = |name: &str, note: String, f: &dyn Fn(f32) -> f32, hi: f32| {
         line(vec![
-            Node::Plot(plot::lane(t, 150.0, 70.0, 0.0, hi, f)),
+            Node::Plot(plot::lane_at(t, (150.0, 70.0), (0.0, hi), at, f)),
             col(vec![label(name), muted(note)]),
         ])
     };

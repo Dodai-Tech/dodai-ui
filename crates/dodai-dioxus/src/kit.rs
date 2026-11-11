@@ -413,6 +413,7 @@ pub fn spinner_cells(style: SpinnerStyle, size: f32) -> (&'static str, Vec<Strin
         SpinnerStyle::Bars => "bars",
         SpinnerStyle::Orbit => "orbit",
         SpinnerStyle::Steps => "steps",
+        SpinnerStyle::Grid => "grid",
     };
     let cells = busy::cells(style, size)
         .iter()
@@ -420,8 +421,8 @@ pub fn spinner_cells(style: SpinnerStyle, size: f32) -> (&'static str, Vec<Strin
             // A negative delay starts the cell part-way through its cycle, as the head left it.
             let delay = -(-c.lag).rem_euclid(1.0) / busy::SPIN_RATE;
             format!(
-                "left:{:.2}px;top:{:.2}px;width:{:.2}px;height:{:.2}px;animation-delay:{:.3}s",
-                c.x, c.y, c.w, c.h, delay
+                "left:{:.2}px;top:{:.2}px;width:{:.2}px;height:{:.2}px;border-radius:{:.2}px;animation-delay:{:.3}s",
+                c.x, c.y, c.w, c.h, c.radius, delay
             )
         })
         .collect();

@@ -475,25 +475,24 @@ impl<Message> canvas::Program<Message> for Spinner {
         if !cells.is_empty() {
             for c in cells {
                 let a = busy::cell_alpha(self.style, c.lag, self.t);
-                let (h, y) = match self.style {
-                    dodai_core::SpinnerStyle::Bars => {
-                        let h = c.h * busy::bar_scale(a);
-                        (h, c.y + c.h - h)
-                    }
-                    _ => (c.h, c.y),
-                };
+                let (x, y, w, h) = busy::cell_rect(self.style, &c, a);
                 let col = iced::Color {
                     a: self.lit.a * a,
                     ..self.lit
                 };
-                let p = iced::Point::new(c.x, y);
+                let p = iced::Point::new(x, y);
                 if c.round {
                     frame.fill(
-                        &Path::circle(iced::Point::new(c.x + c.w / 2.0, y + h / 2.0), c.w / 2.0),
+                        &Path::circle(iced::Point::new(x + w / 2.0, y + h / 2.0), w / 2.0),
+                        col,
+                    );
+                } else if c.radius > 0.0 {
+                    frame.fill(
+                        &Path::rounded_rectangle(p, iced::Size::new(w, h), c.radius.into()),
                         col,
                     );
                 } else {
-                    frame.fill_rectangle(p, iced::Size::new(c.w, h), col);
+                    frame.fill_rectangle(p, iced::Size::new(w, h), col);
                 }
             }
             return vec![frame.into_geometry()];

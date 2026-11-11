@@ -223,13 +223,15 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;o
 @keyframes dodai-spin{to{transform:rotate(360deg)}}
 .dodai-spinner{display:inline-block;width:var(--s,24px);height:var(--s,24px);flex:none;border-radius:50%;border:max(2px,calc(var(--s,24px) / 8)) solid var(--dodai-border);border-top-color:var(--dodai-primary);animation:dodai-spin 1.1s linear infinite}
 /* Other shapes: cells are positioned inline, each starts part-way through the same 1.11 s cycle. */
-.dodai-spinner--bars,.dodai-spinner--orbit,.dodai-spinner--steps{position:relative;border:0;border-radius:0;animation:none}
+.dodai-spinner--bars,.dodai-spinner--orbit,.dodai-spinner--steps,.dodai-spinner--grid{position:relative;border:0;border-radius:0;animation:none}
 .dodai-spinner>i{position:absolute;background:var(--dodai-primary);animation:dodai-trail 1.111s linear infinite}
 .dodai-spinner--bars>i{transform-origin:50% 100%;animation-name:dodai-trail-bar}
 .dodai-spinner--orbit>i{border-radius:50%}
 .dodai-spinner--steps>i{animation-name:dodai-trail-step}
+.dodai-spinner--grid>i{animation-name:dodai-trail-grid}
 @keyframes dodai-trail{from{opacity:1}to{opacity:.15}}
 @keyframes dodai-trail-bar{from{opacity:1;transform:scaleY(1)}to{opacity:.15;transform:scaleY(.4)}}
+@keyframes dodai-trail-grid{0%{opacity:1;transform:scale(1)}50%,100%{opacity:.15;transform:scale(.54)}}
 @keyframes dodai-trail-step{0%,24.9%{opacity:1}25%,100%{opacity:.15}}
 @keyframes dodai-slide{from{left:-30%}to{left:100%}}
 .dodai-indeterminate{position:relative;height:4px;overflow:hidden;border-radius:9999px;background:var(--dodai-surface-raised);width:100%;max-width:420px}

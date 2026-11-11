@@ -84,6 +84,22 @@ fn sample(n: usize, f: impl Fn(f32) -> f32) -> Vec<(f32, f32)> {
 /// A square plot of an easing curve: the frame, the diagonal, the control handles (for the
 /// bezier curves) and the curve itself.
 pub fn easing(theme: &Theme, e: Easing, side: f32) -> Plot {
+    easing_at(theme, e, side, None)
+}
+
+/// A dot on a plot: a short fat stroke at `at`.
+fn dot(f: &Frame, color: Color, at: (f32, f32)) -> Line {
+    let (x, y) = f.at(at);
+    Line {
+        color,
+        width: 11.0,
+        points: vec![(x - 0.3, y), (x + 0.3, y)],
+    }
+}
+
+/// [`easing`] while it plays: the curve drawn up to `progress` (`0..=1`) with a dot at its tip.
+/// `None` draws the whole curve without a dot.
+pub fn easing_at(theme: &Theme, e: Easing, side: f32, progress: Option<f32>) -> Plot {
     let p = &theme.palette;
     let (border, accent, muted) = (p.border, p.primary, p.text_muted);
     let ctrl = control_points(e);
@@ -110,12 +126,66 @@ pub fn easing(theme: &Theme, e: Easing, side: f32) -> Plot {
         }
         None => lines.push(f.line(muted.with_alpha(0.5), 1.0, &[(0.0, 1.0), (1.0, 1.0)])),
     }
-    lines.push(f.line(accent, 3.0, &sample(48, |x| e.apply(x).clamp(0.0, hi))));
+    let upto = progress.map_or(1.0, |p| p.clamp(0.0, 1.0));
+    let curve = sample(48, |x| x * upto)
+        .into_iter()
+        .map(|(x, _)| (x, e.apply(x).clamp(0.0, hi)))
+        .collect::<Vec<_>>();
+    lines.push(f.line(accent, 3.0, &curve));
+    if let Some(&tip) = curve.last().filter(|_| progress.is_some()) {
+        lines.push(dot(&f, accent, tip));
+    }
     Plot {
         w: side,
         h: side,
         lines,
     }
+}
+
+/// A one-dimensional track `w`×`h` px with a dot at `value` (`0..=1`, may overshoot a little):
+/// how an eased value would move something along a line.
+pub fn track(theme: &Theme, w: f32, h: f32, value: f32) -> Plot {
+    let f = Frame {
+        w,
+        h,
+        pad: 8.0,
+        lo: 0.0,
+        hi: 1.0,
+    };
+    Plot {
+        w,
+        h,
+        lines: vec![
+            f.line(theme.palette.border, 2.0, &[(0.0, 0.5), (1.0, 0.5)]),
+            dot(&f, theme.palette.primary, (value.clamp(-0.2, 1.4), 0.5)),
+        ],
+    }
+}
+
+/// [`lane`] with a dot on the curve at `at` (`0..=1`).
+pub fn lane_at(
+    theme: &Theme,
+    (w, h): (f32, f32),
+    (lo, hi): (f32, f32),
+    at: f32,
+    f: impl Fn(f32) -> f32,
+) -> Plot {
+    let mut p = lane(theme, w, h, lo, hi, &f);
+    let fr = Frame {
+        w,
+        h,
+        pad: 4.0,
+        lo,
+        hi,
+    };
+    p.lines
+        .push(dot(&fr, theme.palette.primary, (at, f(at).clamp(lo, hi))));
+    p
+}
+
+/// Where a looping demo is, `0..=1` of `period` seconds, holding the end for `hold` of it.
+pub fn cycle(seconds: f32, period: f32, hold: f32) -> f32 {
+    ((seconds % period) / (period * (1.0 - hold))).min(1.0)
 }
 
 /// A plot of `f` over `0..=1` with its value range `lo..=hi`, and a baseline at zero.

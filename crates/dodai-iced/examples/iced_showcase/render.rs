@@ -817,13 +817,23 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             filled,
             ink,
         } => lt.glyph(icon.glyph(th, *filled), *size, *ink),
-        Demo::IconTile { icon, filled } => {
+        Demo::IconTile {
+            icon,
+            filled,
+            pick,
+            selected,
+        } => {
             let name = dodai_showcase_model::icons::shortened(
                 icon.name(),
                 dodai_showcase_model::icons::TILE_NAME_CHARS,
             );
-            let border = dodai_iced::color(th.palette.border);
-            container(
+            let edge = if *selected { 2.0 } else { 1.0 };
+            let border = dodai_iced::color(if *selected {
+                th.palette.primary
+            } else {
+                th.palette.border
+            });
+            let tile = container(
                 column![
                     lt.glyph(icon.glyph(th, *filled), 28.0, th.palette.primary),
                     text(name)
@@ -839,13 +849,19 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             .align_x(alignment::Horizontal::Center)
             .style(move |_| container::Style {
                 border: iced::Border {
-                    width: 1.0,
+                    width: edge,
                     color: border,
                     radius: 0.0.into(),
                 },
                 ..container::Style::default()
-            })
-            .into()
+            });
+            match pick {
+                Some(k) => iced::widget::mouse_area(tile)
+                    .on_press(Msg::Act(Action::Press(k.clone())))
+                    .interaction(iced::mouse::Interaction::Pointer)
+                    .into(),
+                None => tile.into(),
+            }
         }
         Demo::Frosted { w, h, panels } => {
             // The sharp picture, and over it each panel's blurred, tinted copy of what it covers.

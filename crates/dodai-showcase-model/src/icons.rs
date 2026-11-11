@@ -25,6 +25,40 @@ impl IconRef {
         }
     }
 
+    /// Its place in the whole catalogue (named icons first, then the symbols), for a press
+    /// command to carry.
+    pub fn index(self) -> usize {
+        match self {
+            Self::Named(i) => IconId::ALL.iter().position(|&x| x == i).unwrap_or(0),
+            Self::Symbol(s) => {
+                IconId::ALL.len() + Symbol::ALL.iter().position(|&x| x == s).unwrap_or(0)
+            }
+        }
+    }
+
+    /// The icon at catalogue place `n`.
+    pub fn from_index(n: usize) -> Option<Self> {
+        match n.checked_sub(IconId::ALL.len()) {
+            None => IconId::ALL.get(n).copied().map(Self::Named),
+            Some(k) => Symbol::ALL.get(k).copied().map(Self::Symbol),
+        }
+    }
+
+    /// How to write it in Rust.
+    pub fn usage(self) -> String {
+        match self {
+            Self::Named(i) => format!("Icon::{i:?}"),
+            Self::Symbol(s) => format!("Icon::symbol(Symbol::{s:?})"),
+        }
+    }
+
+    /// Its SVG on `theme`, one tag per line (empty when the design has no such icon).
+    pub fn svg(self, theme: &Theme, filled: bool) -> String {
+        self.glyph(theme, filled)
+            .map(|g| g.svg(24, "currentColor").replace("><", ">\n<"))
+            .unwrap_or_default()
+    }
+
     /// Its drawing on `theme` (`filled` where the design has a filled form; symbols have one
     /// form). `None` when the design has no such icon.
     pub fn glyph(self, theme: &Theme, filled: bool) -> Option<Glyph> {
