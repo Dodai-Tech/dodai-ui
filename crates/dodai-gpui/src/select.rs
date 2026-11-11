@@ -89,6 +89,7 @@ pub struct Select {
     on_select: Option<IndexHandler>,
     corners: Option<dodai_core::Corners>,
     surface: dodai_core::Surface,
+    list_scale: f32,
 }
 
 crate::corners_setter!(Select);
@@ -106,7 +107,14 @@ impl Select {
             placeholder: "Select…".into(),
             disabled: false,
             on_select: None,
+            list_scale: 1.0,
         }
+    }
+    /// Let the open list grow to `factor` times its usual height before it scrolls, for a
+    /// long list whose last entries would otherwise hide below the fold.
+    pub fn list_height(mut self, factor: f32) -> Self {
+        self.list_scale = factor.max(1.0);
+        self
     }
     /// The options to offer.
     pub fn options<O: Into<SelectOption>>(mut self, o: impl IntoIterator<Item = O>) -> Self {
@@ -348,7 +356,7 @@ impl Select {
             .flex()
             .flex_col()
             .gap(px(t.spacing.half()))
-            .max_h(px(t.scale(dodai_core::Scale::ListMax)))
+            .max_h(px(t.scale(dodai_core::Scale::ListMax) * self.list_scale))
             .overflow_y_scroll();
         for (i, o) in self.options.iter().enumerate() {
             let is_sel = self.selected == Some(i);
