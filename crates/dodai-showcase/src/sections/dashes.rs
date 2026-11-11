@@ -339,6 +339,12 @@ fn caption(look: Look, layout: Layout) -> &'static str {
         (Look::GlassCockpit, Layout::Tape) => "Glass cockpit tape",
         (Look::GlassCockpit, Layout::Column) => "Glass cockpit column",
         (Look::Line, Layout::Bar) => "Line bar",
+        (Look::Apex, Layout::Band) => "Apex track",
+        (Look::Daylight, Layout::Ring) => "Daylight ring",
+        (Look::Apex, Layout::Lit) => "Apex lit",
+        (Look::Apex, Layout::Fill) => "Apex fill",
+        (Look::Daylight, Layout::Lit) => "Daylight lit",
+        (Look::Daylight, Layout::Pointer) => "Daylight pointer",
         (l, _) => l.name(),
     }
 }
@@ -547,7 +553,7 @@ impl Showcase {
             self,
             "Vehicle · Engine speed",
             vec![gallery_rows(
-                "Every vehicle instrument comes in nine looks, in this order: a sports dash ring, a chronograph, a vintage panel, a heads-up display, a segment LCD, a halo of light, a glass cockpit, a race display and a single line. Pick one above to see every instrument and the dashes in it. Each look comes in four layouts, one look per row. Here the revs, 0 to 8 in thousands, amber from 6 and red from 7. Sport: the ribbed ring of the dash with the road speed in the middle, a trip tab and the fuel level, then a sweep, a track of dots and grooves, none with a hand. The others show the revs alone: chronograph as a dial, a bezel, a sector dial and a register; vintage as a plate, a chrome bezel, a panel meter and a ribbon; heads-up as a ring, a cut, an arc and a tape; segment as a dial, an arc, a bar and a column; halo as a ring, a capsule, an arc and a bar; glass cockpit as an arc, a bar, a tape and a column; race as a plate, an arc, a bar and a column; line as a ring, an arc, a bar and a column.",
+                "Every vehicle instrument comes in eleven looks, in this order: a sports dash ring, a chronograph, a vintage panel, a heads-up display, a segment LCD, a halo of light, a glass cockpit, a race display, a single line, a dark clinical dial with a red blade (Apex) and a bright cluster with a white-faced dial (Daylight). Pick one above to see every instrument and the dashes in it. Most looks come in four layouts, the two clinical ones (with a needle or without) in four, one look per row. Here the revs, 0 to 8 in thousands, amber from 6 and red from 7. Sport: the ribbed ring of the dash with the road speed in the middle, a trip tab and the fuel level, then a sweep, a track of dots and grooves, none with a hand. The others show the revs alone: chronograph as a dial, a bezel, a sector dial and a register; vintage as a plate, a chrome bezel, a panel meter and a ribbon; heads-up as a ring, a cut, an arc and a tape; segment as a dial, an arc, a bar and a column; halo as a ring, a capsule, an arc and a bar; glass cockpit as an arc, a bar, a tape and a column; race as a plate, an arc, a bar and a column; line as a ring, an arc, a bar and a column; apex as a dial, a red track band, and both again lit without a needle; daylight as a white dial, the same lit without a needle, a dark ring dial and the ring with a needle.",
                 looks(only, |z| tach().look(Look::Sport).size(z).into_any_element(), rev_face),
             )],
         );

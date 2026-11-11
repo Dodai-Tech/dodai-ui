@@ -6,6 +6,7 @@
 
 mod arcs;
 mod bars;
+mod clinical;
 mod dials;
 mod glass;
 mod hero;
@@ -166,6 +167,14 @@ impl RenderOnce for GaugeFace {
             (Look::Line, Layout::Arc) => self.line_arc(cx),
             (Look::Line, Layout::Column) => self.line_column(cx),
             (Look::Line, _) => self.line_dial(cx),
+            (Look::Apex, Layout::Band) => self.apex_band(cx, true),
+            (Look::Apex, Layout::Fill) => self.apex_band(cx, false),
+            (Look::Apex, Layout::Lit) => self.apex_dial(cx, false),
+            (Look::Apex, _) => self.apex_dial(cx, true),
+            (Look::Daylight, Layout::Ring) => self.daylight_ring(cx, false),
+            (Look::Daylight, Layout::Pointer) => self.daylight_ring(cx, true),
+            (Look::Daylight, Layout::Lit) => self.daylight_dial(cx, false),
+            (Look::Daylight, _) => self.daylight_dial(cx, true),
         }
     }
 }

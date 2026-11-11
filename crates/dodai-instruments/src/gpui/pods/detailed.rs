@@ -60,7 +60,9 @@ impl TyrePod {
             Look::Halo => self.futuristic(t),
             Look::GlassCockpit => self.cockpit(t),
             Look::Race => self.race(t),
-            Look::Sport | Look::Line | Look::Chronograph => self.chrono(t),
+            Look::Sport | Look::Line | Look::Chronograph | Look::Apex | Look::Daylight => {
+                self.chrono(t)
+            }
         }
     }
 
@@ -300,7 +302,9 @@ impl RowsPod {
             Look::Halo => self.futuristic(t),
             Look::GlassCockpit => self.cockpit(t),
             Look::Race => self.race(t),
-            Look::Sport | Look::Line | Look::Chronograph => self.chrono(t),
+            Look::Sport | Look::Line | Look::Chronograph | Look::Apex | Look::Daylight => {
+                self.chrono(t)
+            }
         }
     }
 
@@ -583,7 +587,9 @@ impl NoticePod {
             Look::Halo => self.futuristic(t),
             Look::GlassCockpit => self.cockpit(t),
             Look::Race => self.race(t),
-            Look::Sport | Look::Line | Look::Chronograph => self.chrono(t),
+            Look::Sport | Look::Line | Look::Chronograph | Look::Apex | Look::Daylight => {
+                self.chrono(t)
+            }
         }
     }
 
@@ -746,7 +752,9 @@ impl GForcePod {
             Look::Halo => self.futuristic(t),
             Look::GlassCockpit => self.cockpit(t),
             Look::Race => self.race(t),
-            Look::Sport | Look::Line | Look::Chronograph => self.chrono(t),
+            Look::Sport | Look::Line | Look::Chronograph | Look::Apex | Look::Daylight => {
+                self.chrono(t)
+            }
         }
     }
 
@@ -1005,7 +1013,9 @@ impl MediaPod {
             Look::Halo => self.futuristic(ink, cover),
             Look::GlassCockpit => self.cockpit(ink),
             Look::Race => self.race(ink),
-            Look::Sport | Look::Line | Look::Chronograph => self.chrono(ink, cover),
+            Look::Sport | Look::Line | Look::Chronograph | Look::Apex | Look::Daylight => {
+                self.chrono(ink, cover)
+            }
         }
     }
 
@@ -1258,7 +1268,9 @@ impl CompassPod {
             Look::Halo => self.futuristic(t),
             Look::GlassCockpit => self.cockpit(t),
             Look::Race => self.race(t),
-            Look::Sport | Look::Line | Look::Chronograph => self.chrono(t),
+            Look::Sport | Look::Line | Look::Chronograph | Look::Apex | Look::Daylight => {
+                self.chrono(t)
+            }
         }
     }
 

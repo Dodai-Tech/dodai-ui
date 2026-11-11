@@ -718,7 +718,7 @@ impl RenderOnce for SidePod {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
         self.look = crate::gpui::look::resolve(self.given_look, cx);
         self.value = follow(w, cx, &self.follow, 0, self.value);
-        let layout = self.look.fit(self.layout);
+        let layout = crate::gpui::look::side(self.look, self.layout);
         if self.look != Look::Sport || layout != Layout::Dial {
             let mut face = crate::gpui::faces::GaugeFace::new(self.scale, self.value)
                 .animate(false)

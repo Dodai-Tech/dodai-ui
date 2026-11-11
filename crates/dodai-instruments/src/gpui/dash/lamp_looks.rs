@@ -132,7 +132,7 @@ pub(super) fn lamp(icon: Symbol, tone: Tone, sz: f32, look: Look, t: &Theme) -> 
                 stroke(w, o, &lens, d * 0.03, scale_alpha(col, 0.35), true);
             }
         }
-        Look::Sport | Look::Line => {}
+        Look::Sport | Look::Line | Look::Apex | Look::Daylight => {}
     };
     div()
         .relative()
@@ -221,7 +221,7 @@ pub(super) fn sign(limit: u32, d: f32, look: Look, t: &Theme) -> AnyElement {
         Look::Line => {
             stroke_circle(w, o, (c, c), c * 0.94, (d * 0.04).max(1.5), red);
         }
-        Look::Sport => {}
+        Look::Sport | Look::Apex | Look::Daylight => {}
     };
     let figure: AnyElement = match look {
         Look::Segment => seg_text(&text, c, c - fs * 0.6, fs * 1.2, red).into_any_element(),

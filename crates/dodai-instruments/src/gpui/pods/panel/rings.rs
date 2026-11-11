@@ -13,7 +13,14 @@ use dodai_gpui::paint::{fill_circle, stroke_circle};
 pub(crate) fn round_look(look: Look) -> bool {
     matches!(
         look,
-        Look::Sport | Look::Chronograph | Look::Vintage | Look::HeadsUp | Look::Halo | Look::Line
+        Look::Sport
+            | Look::Chronograph
+            | Look::Vintage
+            | Look::HeadsUp
+            | Look::Halo
+            | Look::Line
+            | Look::Apex
+            | Look::Daylight
     )
 }
 
@@ -23,7 +30,7 @@ const SWEEP: (f32, f32) = (0.625, 0.75);
 /// The radius of the face inside `look`'s case for a disc `d` across. Pure.
 pub(crate) fn face_r(look: Look, d: f32) -> f32 {
     let inset = match look {
-        Look::Sport | Look::Line => 0.03,
+        Look::Sport | Look::Line | Look::Apex | Look::Daylight => 0.03,
         Look::Chronograph => 0.06,
         Look::Vintage => 0.055,
         Look::HeadsUp => 0.075,
@@ -65,7 +72,7 @@ fn case(w: &mut Window, o: gpui::Point<Pixels>, look: Look, at: (f32, f32), d: f
     let c = d / 2.0;
     let hair = (d * 0.004).max(0.6);
     match look {
-        Look::Sport => {
+        Look::Sport | Look::Apex | Look::Daylight => {
             fill_circle(w, o, (c, c), c, ink.ground);
             fill_circle(w, o, (c, c), c, scale_alpha(ink.text, 0.05));
             stroke_circle(w, o, (c, c), c, hair * 1.6, scale_alpha(ink.text, 0.5));
@@ -164,7 +171,12 @@ fn level_ring(
                 fill_circle(w, o, (x, y), hair * 3.0, col);
             }
         }
-        Look::Sport | Look::Chronograph | Look::Vintage | Look::GlassCockpit => {
+        Look::Sport
+        | Look::Chronograph
+        | Look::Vintage
+        | Look::GlassCockpit
+        | Look::Apex
+        | Look::Daylight => {
             let (r0, r1) = (r - bw / 2.0, r + bw / 2.0);
             fill(w, o, &band(c.0, c.1, r0, r1, a, a + span), ty.track);
             for end in [a, a + span] {

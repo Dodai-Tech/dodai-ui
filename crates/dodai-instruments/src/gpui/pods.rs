@@ -846,7 +846,7 @@ impl RenderOnce for BoostPod {
     fn render(mut self, w: &mut Window, cx: &mut App) -> impl IntoElement {
         self.look = crate::gpui::look::resolve(self.given_look, cx);
         self.percent = pm::percent(follow(w, cx, &self.follow, 0, self.percent));
-        let layout = self.look.fit(self.layout);
+        let layout = crate::gpui::look::side(self.look, self.layout);
         if self.look != Look::Sport || layout != Layout::Dial {
             return crate::gpui::faces::GaugeFace::new(
                 Scale::new(0.0, 100.0)
@@ -1382,11 +1382,13 @@ impl RenderOnce for DualGauge {
         self.lower.value = pm::finite(follow(w, cx, &self.follow, 1, self.lower.value), 0.0);
         // Sport's own dial carries both scales on one ring; its other layouts and every other
         // look draw a face for the upper reading with the lower one on a strip under it.
-        if self.look != Look::Sport || self.look.fit(self.layout) != Layout::Dial {
+        if self.look != Look::Sport
+            || crate::gpui::look::side(self.look, self.layout) != Layout::Dial
+        {
             // One face for the upper reading with the lower one on a strip under it, in the look's
             // style. Tall tapes have the room for two, so they stand side by side.
             let size = self.size;
-            let layout = self.look.fit(self.layout);
+            let layout = crate::gpui::look::side(self.look, self.layout);
             // Tapes and columns stand side by side; the flat layouts leave room for the strip
             // at full width.
             let (tapes, small) = match (layout, crate::gpui::look::shape(self.look, layout)) {

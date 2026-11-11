@@ -191,7 +191,7 @@ impl GearSelector {
             .line_height(px(s * 1.1));
         let off = scale_alpha(ink.muted, 0.55);
         match self.look {
-            Look::Sport => cell
+            Look::Sport | Look::Apex | Look::Daylight => cell
                 .font_family(display)
                 .font_weight(if on {
                     FontWeight::SEMIBOLD
@@ -339,7 +339,7 @@ impl GearSelector {
                 .border_color(scale_alpha(ink.primary, 0.2)),
             Look::GlassCockpit => d.bg(ink.ground).border_1().border_color(ink.line),
             Look::Race => d.bg(ink.ground).border_l_4().border_color(ink.primary),
-            Look::Sport | Look::Line => d,
+            Look::Sport | Look::Line | Look::Apex | Look::Daylight => d,
         }
     }
 
@@ -394,7 +394,7 @@ impl GearSelector {
                 .line_height(px(s * 1.05))
                 .font_weight(match look {
                     Look::Race => FontWeight::BOLD,
-                    Look::Sport | Look::Vintage => FontWeight::MEDIUM,
+                    Look::Sport | Look::Vintage | Look::Apex | Look::Daylight => FontWeight::MEDIUM,
                     _ => FontWeight::LIGHT,
                 })
                 .when(look == Look::Race, |d| d.italic())

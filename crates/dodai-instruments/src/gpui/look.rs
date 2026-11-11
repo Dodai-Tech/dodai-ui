@@ -21,10 +21,25 @@ pub(crate) fn shape(look: Look, layout: Layout) -> Shape {
             | Layout::Track
             | Layout::Sector
             | Layout::Ribbed
-            | Layout::Cut,
+            | Layout::Cut
+            | Layout::Band
+            | Layout::Lit
+            | Layout::Fill
+            | Layout::Ring
+            | Layout::Pointer,
         ) => Shape::Square,
         (_, Layout::Tape | Layout::Column) => Shape::Tall,
         _ => Shape::Wide,
+    }
+}
+
+/// The layout a single-reading pod draws in `layout`: the look's own, except that the side
+/// displays of [`Look::Daylight`] are its dark ring dials, not the white dial of the tachometer.
+/// Pure.
+pub(crate) fn side(look: Look, layout: Layout) -> Layout {
+    match (look, look.fit(layout)) {
+        (Look::Daylight, Layout::Dial) => Layout::Ring,
+        (_, layout) => layout,
     }
 }
 
