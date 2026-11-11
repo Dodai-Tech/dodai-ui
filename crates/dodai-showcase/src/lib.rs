@@ -386,6 +386,7 @@ impl Render for Showcase {
                             let here = spied.0;
                             div().w(px(220.0)).child(
                                 dodai_gpui::Select::new("veh-look")
+                                    .list_height(2.0)
                                     .options(
                                         ["All"].into_iter().chain(
                                             dodai_instruments::gpui::Look::ALL
