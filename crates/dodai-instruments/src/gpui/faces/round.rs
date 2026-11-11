@@ -548,6 +548,144 @@ impl GaugeFace {
             .children(self.limit_chip(&t, p))
             .into_any_element()
     }
+
+    /// A sport pointer ring, after the instrument cluster of a sports car: a wide grooved ring
+    /// under a segmented scale rim with the numerals standing in it, the redline as lit blocks,
+    /// a thin inner arc with a bead, and a flat polished pointer bar crossing the ring at the
+    /// value; the figure and the trip tab in the dark disc. The pointer is a bar of the ring,
+    /// not a hand: it never reaches the middle.
+    pub(super) fn sport_pointer(self, cx: &mut App) -> AnyElement {
+        let t = theme_of(cx);
+        let p = Sport::of(&t);
+        let ok = crate::gpui::shapes::Ink::of(&t).ok;
+        let s = self.size;
+        let c = s / 2.0;
+        let (start, span) = ROUND;
+        let at = move |f: f32| start + span * f;
+        let frac = self.frac();
+        let Parts {
+            r_rim,
+            width,
+            ends,
+            zones,
+            ticks,
+        } = self.sport_parts(&t);
+        // The segmented rim, then the grooves under the numerals, then the dark disc.
+        let (m0, m1) = (r_rim - width * 3.4, r_rim - width * 1.8);
+        let (r0, r1) = (r_rim - s * 0.2, m0 - width * 0.6);
+        let ribs = 16;
+        let paint = move |w: &mut gpui::Window, o: gpui::Point<Pixels>| {
+            full_rim(w, o, (c, r_rim, width), p.ink, ends);
+            let hair = (s * 0.0025).max(0.6);
+            fill(
+                w,
+                o,
+                &band(c, c, m0, m1, at(0.0), at(1.0)),
+                scale_alpha(p.ink, 0.2),
+            );
+            fill(
+                w,
+                o,
+                &band(c, c, r0, r1, at(0.0), at(1.0)),
+                scale_alpha(p.ink, 0.1),
+            );
+            for k in 0..ribs {
+                let r = r0 + (r1 - r0) * (k as f32 + 0.5) / ribs as f32;
+                stroke(
+                    w,
+                    o,
+                    &turn_arc(c, c, r, at(0.0), at(1.0)),
+                    hair,
+                    scale_alpha(p.ink, 0.32),
+                    false,
+                );
+            }
+            // The redline as lit blocks over rim and grooves.
+            for (a, z, col) in &zones {
+                fill(
+                    w,
+                    o,
+                    &band(c, c, m0, m1, at(*a), at(*z)),
+                    scale_alpha(*col, 0.85),
+                );
+                fill(
+                    w,
+                    o,
+                    &band(c, c, r1 - (r1 - r0) * 0.45, r1, at(*a), at(*z)),
+                    scale_alpha(*col, 0.8),
+                );
+            }
+            // The gaps between the rim's blocks, the majors bright.
+            for (f, major) in &ticks {
+                let (len, a) = if *major {
+                    (m1 - m0 + width, 1.0)
+                } else {
+                    (m1 - m0, 0.9)
+                };
+                stroke(
+                    w,
+                    o,
+                    &[
+                        polar(c, c, m1 + if *major { width * 0.5 } else { 0.0 }, at(*f)),
+                        polar(
+                            c,
+                            c,
+                            m1 + if *major { width * 0.5 } else { 0.0 } - len,
+                            at(*f),
+                        ),
+                    ],
+                    if *major { width * 0.7 } else { hair * 1.4 },
+                    if *major {
+                        p.ink
+                    } else {
+                        scale_alpha(p.ground, a)
+                    },
+                    false,
+                );
+            }
+            // The thin inner arc and its bead, the dark disc inside.
+            let ri = r0 - s * 0.03;
+            stroke(
+                w,
+                o,
+                &turn_arc(c, c, ri, at(0.12), at(0.88)),
+                width * 0.8,
+                scale_alpha(p.ink, 0.65),
+                false,
+            );
+            let bead = polar(c, c, ri, at(0.5));
+            fill_circle(w, o, bead, width * 0.95, ok);
+            stroke_circle(w, o, (c, c), r0 - s * 0.012, hair, scale_alpha(p.ink, 0.5));
+            // The pointer bar across the grooves.
+            let a = at(frac);
+            glow(
+                w,
+                o,
+                &[polar(c, c, r0, a), polar(c, c, r1, a)],
+                width * 0.9,
+                p.accent,
+                false,
+            );
+            index(
+                w,
+                o,
+                c,
+                (r1 + width * 0.4, r1 - r0 + width * 0.8, width * 1.05),
+                a,
+                p.ink,
+                p.ground,
+            );
+        };
+        div()
+            .relative()
+            .w(px(s))
+            .h(px(s))
+            .child(layer(paint))
+            .children(self.sport_numerals((r0 + r1) / 2.0, s * 0.072, p.ink))
+            .child(self.sport_middle(p, c - s * 0.15, s * 0.15))
+            .children(self.limit_chip(&t, p))
+            .into_any_element()
+    }
 }
 
 #[cfg(test)]

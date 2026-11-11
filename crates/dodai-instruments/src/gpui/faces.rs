@@ -135,6 +135,7 @@ impl RenderOnce for GaugeFace {
             (Look::Sport, Layout::Sweep) => self.sport_sweep(cx),
             (Look::Sport, Layout::Track) => self.sport_track(cx),
             (Look::Sport, Layout::Ribbed) => self.sport_ribbed(cx),
+            (Look::Sport, Layout::Pointer) => self.sport_pointer(cx),
             (Look::Sport, _) => self.dial(cx),
             (Look::Chronograph, Layout::Bezel) => self.chrono_bezel(cx),
             (Look::Chronograph, Layout::Register) => self.chrono_register(cx),
