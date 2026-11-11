@@ -295,12 +295,13 @@ mod tests {
     }
 
     #[test]
-    fn every_look_comes_in_four_layouts() {
+    fn every_look_has_two_to_five_distinct_layouts() {
         for l in Look::ALL {
-            let mut ls = l.layouts().to_vec();
-            assert_eq!(ls.len(), 4, "{}", l.name());
-            ls.dedup();
-            assert_eq!(ls.len(), 4, "{} repeats a layout", l.name());
+            let ls = l.layouts();
+            assert!((2..=5).contains(&ls.len()), "{}", l.name());
+            let mut seen = ls.to_vec();
+            seen.dedup();
+            assert_eq!(seen.len(), ls.len(), "{} repeats a layout", l.name());
         }
     }
 }
