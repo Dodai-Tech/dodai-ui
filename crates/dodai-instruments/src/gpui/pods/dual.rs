@@ -84,7 +84,7 @@ pub(super) fn strip(
     let base = div().relative().w(px(wd)).h(px(h));
     match look {
         // A recessed window, like the date on a watch.
-        Look::Sport | Look::Chronograph | Look::Apex | Look::Daylight => base
+        Look::Sport | Look::Chronograph | Look::Apex | Look::Daylight | Look::Glow => base
             .rounded(px(h * 0.2))
             .bg(ink.face)
             .border_1()

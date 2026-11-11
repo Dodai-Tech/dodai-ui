@@ -36,11 +36,15 @@ pub enum Look {
     /// A bright clinical cluster: a white-faced dial with black numerals and a red blade, beside
     /// dark ring dials with a hairline track, a red marker and a bold figure.
     Daylight,
+    /// The night cluster: a black dial, pale marks, numerals standing in a bundle of fine green
+    /// lines cut out around them, the redline as the bundle in red and a long thin red needle.
+    /// Without a needle the bundle lights up to the value.
+    Glow,
 }
 
 impl Look {
     /// Every look, in the order a gallery shows them.
-    pub const ALL: [Self; 11] = [
+    pub const ALL: [Self; 12] = [
         Self::Sport,
         Self::Chronograph,
         Self::Vintage,
@@ -52,6 +56,7 @@ impl Look {
         Self::Line,
         Self::Apex,
         Self::Daylight,
+        Self::Glow,
     ];
 
     /// A short name for a caption or a picker.
@@ -68,6 +73,7 @@ impl Look {
             Self::Line => "Line",
             Self::Apex => "Apex",
             Self::Daylight => "Daylight",
+            Self::Glow => "Glow",
         }
     }
 }
@@ -93,6 +99,7 @@ impl Look {
             Self::Line => &[Layout::Dial, Layout::Arc, Layout::Bar, Layout::Column],
             Self::Apex => &[Layout::Dial, Layout::Band, Layout::Lit, Layout::Fill],
             Self::Daylight => &[Layout::Dial, Layout::Lit, Layout::Ring, Layout::Pointer],
+            Self::Glow => &[Layout::Dial, Layout::Lit],
         }
     }
 

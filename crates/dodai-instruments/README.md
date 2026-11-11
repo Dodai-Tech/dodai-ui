@@ -45,7 +45,7 @@ The default turns on every industry set and no design.
 
 | Feature | What it adds |
 |---|---|
-| `automotive` | dashes, pods, gauge faces in eleven looks (`Look`), tachometer, speedometers, tyre pressure, gear selector (P R N D as a row, a stack or one large figure, manual gear, shift prompt), every drivetrain (`RingTach::drivetrain`: the revs and the fuel, the revs with fuel and charge for a hybrid, or the motor's power from zero and the charge for an electric car), a hybrid's power flow (`PowerFlow`), EV charging with a limit and the time to it, odometer, compass, EV energy, shift lights; the vehicle symbols |
+| `automotive` | dashes, pods, gauge faces in twelve looks (`Look`), tachometer, speedometers, tyre pressure, gear selector (P R N D as a row, a stack or one large figure, manual gear, shift prompt), every drivetrain (`RingTach::drivetrain`: the revs and the fuel, the revs with fuel and charge for a hybrid, or the motor's power from zero and the charge for an electric car), a hybrid's power flow (`PowerFlow`), EV charging with a limit and the time to it, odometer, compass, EV energy, shift lights; the vehicle symbols |
 | `aviation` | attitude indicator, heading and vertical tapes, sonar waterfall, countermeasures; the aviation symbols |
 | `defense` | tactical plot, track list, threat rosette, stores panel, mission timer, radar scope; the military symbols |
 | `industrial` | the process-plant and machine symbols |

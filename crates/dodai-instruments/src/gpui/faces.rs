@@ -9,6 +9,7 @@ mod bars;
 mod clinical;
 mod dials;
 mod glass;
+mod glow;
 mod hero;
 mod layouts;
 mod lcd;
@@ -175,6 +176,8 @@ impl RenderOnce for GaugeFace {
             (Look::Daylight, Layout::Pointer) => self.daylight_ring(cx, true),
             (Look::Daylight, Layout::Lit) => self.daylight_dial(cx, false),
             (Look::Daylight, _) => self.daylight_dial(cx, true),
+            (Look::Glow, Layout::Lit) => self.glow_dial(cx, false),
+            (Look::Glow, _) => self.glow_dial(cx, true),
         }
     }
 }

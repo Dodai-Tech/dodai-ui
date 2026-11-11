@@ -41,9 +41,13 @@ fn fit_text(fs: f32, avail: f32, text: &str) -> f32 {
 fn margin(look: Look) -> f32 {
     match look {
         Look::Vintage | Look::Segment | Look::GlassCockpit => 0.075,
-        Look::Sport | Look::Chronograph | Look::Halo | Look::Race | Look::Apex | Look::Daylight => {
-            0.06
-        }
+        Look::Sport
+        | Look::Chronograph
+        | Look::Halo
+        | Look::Race
+        | Look::Apex
+        | Look::Daylight
+        | Look::Glow => 0.06,
         Look::HeadsUp => 0.055,
         Look::Line => 0.02,
     }
@@ -110,7 +114,7 @@ fn type_of(look: Look, ink: Ink) -> Type {
             ..base
         },
         Look::Sport | Look::Chronograph | Look::Line => base,
-        Look::Apex | Look::Daylight => Type {
+        Look::Apex | Look::Daylight | Look::Glow => Type {
             weight: FontWeight::MEDIUM,
             ..base
         },
@@ -128,7 +132,7 @@ fn frame(
 ) {
     let hair = (s * 0.003).max(0.6);
     match look {
-        Look::Sport | Look::Chronograph | Look::Apex | Look::Daylight => {
+        Look::Sport | Look::Chronograph | Look::Apex | Look::Daylight | Look::Glow => {
             // A polished bezel: a bright outer hairline, a shaded inner one and a dark glass.
             let r = if look == Look::Chronograph {
                 s * 0.1

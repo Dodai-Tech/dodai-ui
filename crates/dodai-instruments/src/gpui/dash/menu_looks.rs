@@ -21,7 +21,9 @@ impl MenuRing {
             Look::GlassCockpit => self.cockpit(t),
             Look::Race => self.race(t),
             Look::Line => self.line(t),
-            Look::Sport | Look::Chronograph | Look::Apex | Look::Daylight => self.chrono(t),
+            Look::Sport | Look::Chronograph | Look::Apex | Look::Daylight | Look::Glow => {
+                self.chrono(t)
+            }
         }
     }
 

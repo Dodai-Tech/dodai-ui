@@ -115,7 +115,7 @@ impl ShiftLights {
 fn housing(w: &mut Window, o: gpui::Point<Pixels>, (wd, h): (f32, f32), look: Look, ink: Ink) {
     let k = h * 0.25;
     match look {
-        Look::Sport | Look::Apex | Look::Daylight => {}
+        Look::Sport | Look::Apex | Look::Daylight | Look::Glow => {}
         Look::Line => stroke(
             w,
             o,
@@ -194,7 +194,7 @@ fn light(
     let (cx, cy, r) = (x + d / 2.0, y + d / 2.0, d / 2.0);
     let off = scale_alpha(ink.text, 0.1);
     match look {
-        Look::Sport | Look::Apex | Look::Daylight => {
+        Look::Sport | Look::Apex | Look::Daylight | Look::Glow => {
             fill_circle(w, o, (cx, cy), r * 0.8, if lit { col } else { off })
         }
         // A small dot that fills when lit and is a hairline circle when not.
@@ -407,7 +407,9 @@ impl RenderOnce for ShiftLights {
                     .line_height(px(h))
                     .font_weight(match look {
                         Look::Halo => FontWeight::LIGHT,
-                        Look::Sport | Look::Apex | Look::Daylight => FontWeight::MEDIUM,
+                        Look::Sport | Look::Apex | Look::Daylight | Look::Glow => {
+                            FontWeight::MEDIUM
+                        }
                         _ => FontWeight::BOLD,
                     })
                     .text_color(col)

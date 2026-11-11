@@ -23,7 +23,7 @@ use gpui::{
 
 /// The two colours a clinical dial is printed with: the white of its paper and the dark of its
 /// print, taken from the theme and swapped in a light one. Pure.
-fn paper_and_print(dark: bool, ink: &Ink) -> (Hsla, Hsla) {
+pub(super) fn paper_and_print(dark: bool, ink: &Ink) -> (Hsla, Hsla) {
     if dark {
         (ink.text, ink.ground)
     } else {
@@ -32,7 +32,7 @@ fn paper_and_print(dark: bool, ink: &Ink) -> (Hsla, Hsla) {
 }
 
 /// A numeral or figure centred on `(x, y)`.
-fn figure_at(
+pub(super) fn figure_at(
     (x, y): (f32, f32),
     size: f32,
     col: Hsla,
@@ -50,7 +50,7 @@ fn figure_at(
 
 /// A pill of `width` by `height` centred on `(x, y)` with a short caption in it.
 #[allow(clippy::too_many_arguments)]
-fn pill(
+pub(super) fn pill(
     (x, y): (f32, f32),
     (width, height): (f32, f32),
     text: impl Into<gpui::SharedString>,
@@ -79,7 +79,7 @@ fn pill(
 }
 
 /// The pivot of a blade: a turned metal cap with a bright rim and a dark dot.
-fn cap(
+pub(super) fn cap(
     w: &mut gpui::Window,
     o: gpui::Point<Pixels>,
     c: (f32, f32),
@@ -101,7 +101,7 @@ fn cap(
 
 /// The light on a glass case: a faint arc along the top left of the rim and a fainter one
 /// opposite.
-fn sheen(w: &mut gpui::Window, o: gpui::Point<Pixels>, c: f32, r: f32, paper: Hsla) {
+pub(super) fn sheen(w: &mut gpui::Window, o: gpui::Point<Pixels>, c: f32, r: f32, paper: Hsla) {
     let wd = (r * 0.012).max(0.8);
     stroke(
         w,
@@ -124,7 +124,7 @@ fn sheen(w: &mut gpui::Window, o: gpui::Point<Pixels>, c: f32, r: f32, paper: Hs
 /// A lit arc of `r` between `a` and `b` turns, `wd` thick, with a bead on its end: the way a
 /// dial without a hand shows its value.
 #[allow(clippy::too_many_arguments)]
-fn lit_arc(
+pub(super) fn lit_arc(
     w: &mut gpui::Window,
     o: gpui::Point<Pixels>,
     c: f32,
@@ -142,7 +142,7 @@ fn lit_arc(
 }
 
 /// The fine marks of a scale between two radii, `FINE` to every major.
-fn minute_ticks(
+pub(super) fn minute_ticks(
     w: &mut gpui::Window,
     o: gpui::Point<Pixels>,
     c: f32,
@@ -167,19 +167,19 @@ fn minute_ticks(
 
 impl GaugeFace {
     /// The scale's majors as `(fraction, label)`.
-    fn clinical_majors(&self) -> Vec<(f32, String)> {
+    pub(super) fn clinical_majors(&self) -> Vec<(f32, String)> {
         major_labels(self)
     }
 
     /// The caption of a mode pill: the label, else the unit, in capitals.
-    fn pill_text(&self) -> String {
+    pub(super) fn pill_text(&self) -> String {
         self.caption().to_uppercase()
     }
 
     /// The width of a mode pill for its caption, in px. Pure.
-    fn pill_width(&self) -> f32 {
+    pub(super) fn pill_width(&self) -> f32 {
         let n = self.pill_text().chars().count() as f32;
-        self.size * (0.07 + 0.0115 * n).clamp(0.19, 0.42)
+        self.size * (0.08 + 0.022 * n).clamp(0.22, 0.56)
     }
 
     /// The dark clinical dial: a near-black face, fine track rings inside big white numerals, a
