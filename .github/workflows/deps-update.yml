@@ -2,7 +2,8 @@ name: Nightly Dependency Update
 
 # Every night against main: `cargo upgrade --incompatible` (majors too, naga stays pinned) and
 # `cargo update`. If Cargo.lock changed, the same checks as CI run, and only then is it committed to main. No version bump
-# and no release (dodai crates are not published from here).
+# and no release (dodai crates are not published from here). A second job squash-merges the open
+# Dependabot pull requests.
 
 on:
   schedule:
@@ -14,6 +15,7 @@ env:
 
 permissions:
   contents: write
+  pull-requests: write
 
 # Never cancel mid-run: a half-finished push would leave main inconsistent.
 concurrency:
@@ -70,3 +72,26 @@ jobs:
           git add Cargo.lock crates/dodai-freya/Cargo.lock Cargo.toml crates/*/Cargo.toml
           git commit -m "chore(deps): nightly cargo update $(date -u '+%Y-%m-%d')"
           git push origin HEAD:main
+
+  # The open Dependabot pull requests (GitHub Actions bumps; Cargo is handled above) are
+  # squash-merged every night. Opt out with the label `no-automerge`. A pull request that
+  # changes workflow files needs a token with the workflow scope: set the GH_PAT secret.
+  dependabot:
+    name: merge Dependabot pull requests
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Merge them
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr list --repo "$GITHUB_REPOSITORY" --state open --author "app/dependabot" \
+            --json number,isDraft,labels,mergeable,title > prs.json
+          for n in $(jq -r '.[] | select(.isDraft | not) | select([.labels[].name] | index("no-automerge") | not) | .number' prs.json); do
+            title=$(jq -r --argjson n "$n" '.[] | select(.number == $n) | .title' prs.json)
+            if gh pr merge "$n" --repo "$GITHUB_REPOSITORY" --squash --delete-branch; then
+              echo "#$n merged: $title"
+            else
+              echo "::warning::#$n not merged: $title"
+            fi
+          done
