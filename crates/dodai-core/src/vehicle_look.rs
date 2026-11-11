@@ -83,7 +83,13 @@ impl Look {
     /// Pure.
     pub fn layouts(self) -> &'static [Layout] {
         match self {
-            Self::Sport => &[Layout::Dial, Layout::Sweep, Layout::Track, Layout::Ribbed],
+            Self::Sport => &[
+                Layout::Dial,
+                Layout::Sweep,
+                Layout::Track,
+                Layout::Ribbed,
+                Layout::Pointer,
+            ],
             Self::Chronograph => &[
                 Layout::Dial,
                 Layout::Bezel,
@@ -173,7 +179,8 @@ pub enum Layout {
     /// ([`Look::Apex`]).
     Fill,
     /// The ring dial with a short hand from a small cap inside the ring, the figure under it
-    /// ([`Look::Daylight`]).
+    /// ([`Look::Daylight`]); in [`Look::Sport`] a wide grooved ring under a segmented rim with a
+    /// flat pointer bar across it at the value, never a hand.
     Pointer,
     /// A dark dial with one hairline ring, a marker riding on it, a thin arc up to the value and
     /// the figure bold in the middle ([`Look::Daylight`]).
