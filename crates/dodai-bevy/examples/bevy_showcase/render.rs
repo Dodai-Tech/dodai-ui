@@ -1160,6 +1160,7 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                             icon: IconId::Star,
                             size: 20,
                             filled: i < full,
+                            modifier: None,
                         },
                         Node {
                             width: Val::Px(20.0),
@@ -1641,6 +1642,7 @@ fn tree_node(
                     },
                     size: 14,
                     filled: false,
+                    modifier: None,
                 },
                 Node {
                     width: Val::Px(14.0),
@@ -2118,12 +2120,17 @@ fn glyph_node(
 ) {
     use dodai_showcase_model::icons::IconRef;
     match icon {
-        IconRef::Named(i) => {
+        IconRef::Named(i) | IconRef::Modified(i, _) => {
+            let modifier = match icon {
+                IconRef::Modified(_, m) => Some(m),
+                _ => None,
+            };
             p.spawn((
                 UiIcon {
                     icon: i,
                     size: size as u32,
                     filled,
+                    modifier,
                 },
                 Node {
                     width: Val::Px(size),

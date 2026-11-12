@@ -5,7 +5,7 @@ use dodai_icons::IconId;
 
 use crate::b::*;
 use crate::catalog::{Ctx, Section};
-use crate::node::{Align, Bind, Column, Font, Gap, Ink, Node, Table, TimelineEvent};
+use crate::node::{Align, Bind, Column, Gap, Node, Table, TimelineEvent};
 
 const CAT: &str = "Data display";
 
@@ -86,16 +86,25 @@ fn lists_chips(_: &Ctx) -> Node {
     ])
 }
 
-/// A link-coloured hover target.
-fn link(s: &str, size: f32) -> Node {
-    styled(s, size, Font::Body, Ink::Link)
-}
-
-fn misc(c: &Ctx) -> Node {
+fn misc(_: &Ctx) -> Node {
     row(vec![
         Node::Rating { value: 3.5, max: 5 },
         Node::Stepper(Bind::new("stepper", 5)),
-        link("Hover (rich)", c.theme.typography.size_md),
+        Node::Anchor {
+            open: Bind::new("tip-rich", false),
+            trigger: Box::new(
+                button("Hover (rich)", dodai_core::ButtonVariant::Ghost)
+                    .plain()
+                    .counter(crate::commands::flip("tip-rich", false))
+                    .node(),
+            ),
+            panel: Box::new(Node::Tooltip {
+                text: "Title, body and an action.".into(),
+                rich: true,
+                title: Some("Rich tooltip".into()),
+                action: Some("Learn more".into()),
+            }),
+        },
         Node::Badged {
             icon: IconId::Bell,
             count: Some((12, Tone::Danger)),
@@ -145,9 +154,23 @@ fn timeline(_: &Ctx) -> Node {
     ])
 }
 
-fn tooltip(c: &Ctx) -> Node {
+fn tooltip(_c: &Ctx) -> Node {
     col(vec![
-        link("Hover me", c.theme.typography.size_md),
+        line(vec![Node::Anchor {
+            open: Bind::new("tip", false),
+            trigger: Box::new(
+                button("Hover me", dodai_core::ButtonVariant::Ghost)
+                    .plain()
+                    .counter(crate::commands::flip("tip", false))
+                    .node(),
+            ),
+            panel: Box::new(Node::Tooltip {
+                text: "Themed tooltip".into(),
+                rich: false,
+                title: None,
+                action: None,
+            }),
+        }]),
         Node::Tooltip {
             text: "Plain tooltip".into(),
             rich: false,

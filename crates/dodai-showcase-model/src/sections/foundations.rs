@@ -497,6 +497,34 @@ fn icons(c: &Ctx) -> Node {
     if shown == 0 {
         out.push(muted("No icons match."));
     }
+    if !searching && t.look().icons == dodai_core::IconSet::Stroked {
+        let tiles = [IconId::Heart, IconId::Cloud, IconId::Camera, IconId::Bell]
+            .into_iter()
+            .flat_map(|base| {
+                dodai_icons::Modifier::ALL.into_iter().map(move |m| {
+                    tile(
+                        104.0,
+                        vec![dial(vec![
+                            Node::Glyph {
+                                icon: IconRef::Modified(base, m),
+                                size: 28.0,
+                                filled: false,
+                                ink: t.palette.primary,
+                            },
+                            mono_xs(t, format!("{}-{}", base.name(), m.suffix())),
+                        ])],
+                    )
+                })
+            })
+            .collect();
+        out.push(
+            col(vec![
+                muted("VARIANTS · derived with a modifier"),
+                row(tiles).gap(Gap::Sm),
+            ])
+            .gap(Gap::Sm),
+        );
+    }
     if !searching {
         let states = [
             ("Off", SymbolState::Off),

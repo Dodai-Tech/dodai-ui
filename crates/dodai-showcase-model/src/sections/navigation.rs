@@ -234,14 +234,17 @@ fn stack_col(items: Vec<Node>) -> Node {
 fn menu(c: &Ctx) -> Node {
     use crate::menus::{item, Entry};
     col(vec![
-        muted("Leading icons, shortcuts, and a sub-menu (hover \"Share\")."),
+        muted("Leading icons, shortcuts, and a sub-menu (press \"Share\")."),
         line(vec![crate::menus::menu(
             c,
             240.0,
             vec![
                 item("Edit").icon(IconId::Edit).shortcut("⌘E").entry(),
                 item("Copy").icon(IconId::Copy).shortcut("⌘C").entry(),
-                item("Share").icon(IconId::Heart).sub().entry(),
+                item("Share")
+                    .icon(IconId::Heart)
+                    .submenu(vec![item("Mail"), item("Link"), item("Export…")])
+                    .entry(),
                 Entry::Separator,
                 item("Delete").danger().entry(),
             ],

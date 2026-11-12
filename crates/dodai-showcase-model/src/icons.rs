@@ -4,7 +4,7 @@
 
 use dodai_core::Theme;
 use dodai_icons::symbol::{Group, Symbol};
-use dodai_icons::{Glyph, IconId, Pack};
+use dodai_icons::{Glyph, IconId, Modifier, Pack};
 
 /// One icon of the catalogue.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -14,13 +14,15 @@ pub enum IconRef {
     /// An original symbol (`Icon::symbol(Symbol::OilCan)`), one drawing stroked in each
     /// design's weight and corners.
     Symbol(Symbol),
+    /// A Cyberpunk icon with a derived modifier (`Icon::Heart.modifier(Modifier::Add)`).
+    Modified(IconId, Modifier),
 }
 
 impl IconRef {
     /// Its stable kebab-case name.
     pub fn name(self) -> &'static str {
         match self {
-            Self::Named(i) => i.name(),
+            Self::Named(i) | Self::Modified(i, _) => i.name(),
             Self::Symbol(s) => s.name(),
         }
     }
@@ -29,7 +31,9 @@ impl IconRef {
     /// command to carry.
     pub fn index(self) -> usize {
         match self {
-            Self::Named(i) => IconId::ALL.iter().position(|&x| x == i).unwrap_or(0),
+            Self::Named(i) | Self::Modified(i, _) => {
+                IconId::ALL.iter().position(|&x| x == i).unwrap_or(0)
+            }
             Self::Symbol(s) => {
                 IconId::ALL.len() + Symbol::ALL.iter().position(|&x| x == s).unwrap_or(0)
             }
@@ -49,6 +53,7 @@ impl IconRef {
         match self {
             Self::Named(i) => format!("Icon::{i:?}"),
             Self::Symbol(s) => format!("Icon::symbol(Symbol::{s:?})"),
+            Self::Modified(i, m) => format!("Icon::{i:?}.modifier(Modifier::{m:?})"),
         }
     }
 
@@ -65,6 +70,7 @@ impl IconRef {
         match self {
             Self::Named(i) => dodai_icons::glyph_for_theme(i, theme, filled),
             Self::Symbol(s) => Some(s.glyph_styled(Pack::from(theme.look().icons).symbol_style())),
+            Self::Modified(i, m) => dodai_icons::cyber_shapes(i, Some(m)).map(Glyph::Stroked),
         }
     }
 }

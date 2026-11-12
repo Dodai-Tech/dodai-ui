@@ -124,7 +124,14 @@ impl Showcase {
                         .flex()
                         .items_center()
                         .justify_between()
-                        .child(Heading::new("Dodai UI").level(2))
+                        .child(
+                            div()
+                                .flex()
+                                .items_center()
+                                .gap(px(t.spacing.sm))
+                                .child(crate::brand::mark(t.typography.size_xl * 1.6))
+                                .child(Heading::new("Dodai UI").level(2)),
+                        )
                         .children((!drawer).then_some(toggle))
                 }
             });
