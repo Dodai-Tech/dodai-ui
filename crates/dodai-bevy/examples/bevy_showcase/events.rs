@@ -565,6 +565,7 @@ mod tests {
                     min: 0.0,
                     max: 10.0,
                     vertical: false,
+                    lo: None,
                 },
             ))
             .id();
