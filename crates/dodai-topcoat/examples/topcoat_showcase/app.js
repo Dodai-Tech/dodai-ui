@@ -5,6 +5,7 @@
   const SLACK = 60; // px below the page's top a section still counts as reached
   let busy = false;
   let queued = null; // the newest action that came while one was in flight
+  let jumping = 0; // until when scrolling is still the pick's own smooth jump
   let pinned = null; // the section a sidebar pick holds the highlight on, until the user scrolls
   let current = null; // the section the sidebar highlights
   let redraw = 0;
@@ -54,6 +55,7 @@
     if (jump) {
       pinned = jump;
       current = jump;
+      jumping = Date.now() + 400;
       const el = document.getElementById('sec-' + jump);
       // A hidden tab runs no animations: jump at once there.
       if (el) el.scrollIntoView({ behavior: document.visibilityState === 'visible' ? 'smooth' : 'auto', block: 'start' });
@@ -132,11 +134,14 @@
   }
   let spying = 0;
   document.addEventListener('scroll', () => {
+    // Scrolling the jump did not start (scrollbar drag, anything else) is the user's: let go.
+    if (Date.now() < jumping) jumping = Date.now() + 200;
+    else pinned = null;
     if (spying) return;
     // A timer, not a frame: a page in a background tab gets no frames.
     spying = setTimeout(() => { spying = 0; spy(); }, 40);
   }, true);
-  for (const type of ['wheel', 'touchmove', 'keydown']) {
+  for (const type of ['wheel', 'touchmove', 'keydown', 'pointerdown']) {
     document.addEventListener(type, () => { pinned = null; }, { capture: true, passive: true });
   }
 
