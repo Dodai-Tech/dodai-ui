@@ -243,11 +243,13 @@ impl OtpInput {
     }
     crate::callback!(
         /// Called when the value changes, with the text.
-        on_change, &str
+        on_change,
+        &str
     );
     crate::callback!(
         /// Called once all cells are filled.
-        on_complete, &str
+        on_complete,
+        &str
     );
 }
 
@@ -447,7 +449,8 @@ impl ToggleGroup {
     }
     crate::callback!(
         /// Called when the value changes, with the selected indices.
-        on_change, &[usize]
+        on_change,
+        &[usize]
     );
 }
 
@@ -575,7 +578,8 @@ impl CheckboxGroup {
     }
     crate::callback!(
         /// Called when the value changes, with the selected indices.
-        on_change, &[usize]
+        on_change,
+        &[usize]
     );
 }
 

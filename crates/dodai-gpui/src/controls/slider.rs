@@ -131,7 +131,8 @@ impl Slider {
     }
     crate::callback!(
         /// Called with the new value while dragging/clicking.
-        on_change, f32
+        on_change,
+        f32
     );
 }
 

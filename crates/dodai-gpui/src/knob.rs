@@ -78,7 +78,8 @@ impl Knob {
     }
     crate::callback!(
         /// Called with the new value while dragging or scrolling.
-        on_change, f32
+        on_change,
+        f32
     );
 }
 

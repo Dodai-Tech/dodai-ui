@@ -92,7 +92,9 @@ impl RangeSlider {
     }
     crate::callback!(
         /// Called when the value changes, with low and high.
-        on_change, f32, f32
+        on_change,
+        f32,
+        f32
     );
 }
 

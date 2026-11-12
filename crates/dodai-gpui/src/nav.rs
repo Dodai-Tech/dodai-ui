@@ -36,7 +36,8 @@ impl Breadcrumb {
     }
     crate::callback!(
         /// Called when an item is chosen, with the index.
-        on_select, usize
+        on_select,
+        usize
     );
 }
 
@@ -135,7 +136,8 @@ impl Pagination {
     }
     crate::callback!(
         /// Called with the requested 1-based page.
-        on_change, usize
+        on_change,
+        usize
     );
 }
 
@@ -410,7 +412,8 @@ impl Segmented {
     }
     crate::callback!(
         /// Called when an item is chosen, with the index.
-        on_select, usize
+        on_select,
+        usize
     );
 }
 

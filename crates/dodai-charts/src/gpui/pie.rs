@@ -142,7 +142,8 @@ impl PieChart {
     }
     dodai_gpui::callback!(
         /// Called with the new selection (`None` when deselected) on click.
-        on_select, Option<usize>
+        on_select,
+        Option<usize>
     );
     /// Size in px.
     pub fn size(mut self, s: f32) -> Self {

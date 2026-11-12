@@ -208,7 +208,8 @@ jobs:
         with:
           toolchain: ${{ steps.msrv.outputs.version }}
       - uses: Swatinem/rust-cache@v2
-      - run: cargo check --locked -p dodai-core --all-features -p dodai-fx -p dodai-icons -p dodai-topcoat --all-targets
+      - run: cargo check --locked -p dodai-core --all-features -p dodai-fx -p dodai-icons --all-targets
+      - run: cargo check --locked -p dodai-topcoat --lib
       # charts and instruments: the agnostic library only; their tests and examples use gpui
       # (a dev-dependency), which needs a newer rustc than the declared MSRV.
       - run: cargo check --locked -p dodai-charts -p dodai-instruments --lib

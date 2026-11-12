@@ -78,7 +78,8 @@ impl ButtonGroup {
     }
     crate::callback!(
         /// Called when an item is chosen, with the index.
-        on_select, usize
+        on_select,
+        usize
     );
 }
 

@@ -295,11 +295,13 @@ impl TextInput {
     }
     crate::callback!(
         /// Called with the full text after every edit.
-        on_change, &str
+        on_change,
+        &str
     );
     crate::callback!(
         /// Called on Enter (single-line only).
-        on_submit, &str
+        on_submit,
+        &str
     );
     /// Replace the Enter handler on an existing input (used by composites
     /// such as the command palette, which owns the Enter key while open).

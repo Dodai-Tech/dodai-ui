@@ -211,7 +211,8 @@ impl DataTable {
     }
     crate::callback!(
         /// Called when the value changes, with the selected indices.
-        on_change, &[usize]
+        on_change,
+        &[usize]
     );
 }
 

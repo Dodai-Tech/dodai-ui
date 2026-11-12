@@ -112,7 +112,8 @@ impl Tabs {
     }
     crate::callback!(
         /// Called with the clicked tab index.
-        on_select, usize
+        on_select,
+        usize
     );
 }
 

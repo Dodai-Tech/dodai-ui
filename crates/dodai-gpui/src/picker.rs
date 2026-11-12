@@ -64,11 +64,14 @@ impl DatePicker {
     }
     crate::callback!(
         /// Called when an item is chosen, with the date.
-        on_select, Date
+        on_select,
+        Date
     );
     crate::callback!(
         /// Called with the new visible `(year, month)` when the arrows are used.
-        on_month, i32, u32
+        on_month,
+        i32,
+        u32
     );
 }
 
@@ -228,7 +231,9 @@ impl TimePicker {
     }
     crate::callback!(
         /// Called when the value changes, with hour and minute.
-        on_change, u32, u32
+        on_change,
+        u32,
+        u32
     );
 }
 
@@ -390,15 +395,20 @@ impl DateTimePicker {
     }
     crate::callback!(
         /// Called when a day is chosen.
-        on_date, Date
+        on_date,
+        Date
     );
     crate::callback!(
         /// Called with the new visible `(year, month)` when the arrows are used.
-        on_month, i32, u32
+        on_month,
+        i32,
+        u32
     );
     crate::callback!(
         /// Called when the time changes, with hour and minute.
-        on_time, u32, u32
+        on_time,
+        u32,
+        u32
     );
 }
 
@@ -525,19 +535,26 @@ impl DateTimeRangePicker {
     }
     crate::callback!(
         /// Called when a day is clicked; pass it to [`range_pick`].
-        on_select, Date
+        on_select,
+        Date
     );
     crate::callback!(
         /// Called with the new visible `(year, month)` when the arrows are used.
-        on_month, i32, u32
+        on_month,
+        i32,
+        u32
     );
     crate::callback!(
         /// Called when the start time changes, with hour and minute.
-        on_start_time, u32, u32
+        on_start_time,
+        u32,
+        u32
     );
     crate::callback!(
         /// Called when the end time changes, with hour and minute.
-        on_end_time, u32, u32
+        on_end_time,
+        u32,
+        u32
     );
 }
 
@@ -697,7 +714,8 @@ impl DateInput {
     }
     crate::callback!(
         /// Called when the value changes, with the date.
-        on_change, Date
+        on_change,
+        Date
     );
 }
 
@@ -756,7 +774,9 @@ impl TimeInput {
     }
     crate::callback!(
         /// Called when the value changes, with hour and minute.
-        on_change, u32, u32
+        on_change,
+        u32,
+        u32
     );
 }
 

@@ -317,7 +317,8 @@ impl Rating {
     }
     crate::callback!(
         /// Called when the value changes, with the new value.
-        on_change, f32
+        on_change,
+        f32
     );
 }
 
@@ -461,7 +462,8 @@ impl NumberStepper {
     }
     crate::callback!(
         /// Called when the value changes, with the new value.
-        on_change, i32
+        on_change,
+        i32
     );
 }
 
@@ -670,7 +672,8 @@ impl ColorPicker {
     }
     crate::callback!(
         /// Called when an item is chosen, with the index.
-        on_select, usize
+        on_select,
+        usize
     );
 }
 
@@ -775,7 +778,8 @@ impl FileDropZone {
     }
     crate::callback!(
         /// Called when it is clicked, with the click event.
-        on_click, &ClickEvent
+        on_click,
+        &ClickEvent
     );
 }
 
@@ -858,7 +862,8 @@ impl TagField {
     }
     crate::callback!(
         /// Called when it is removed, with the index.
-        on_remove, usize
+        on_remove,
+        usize
     );
     /// Element after the chips (typically a `TextInput`).
     pub fn trailing(mut self, e: impl IntoElement) -> Self {

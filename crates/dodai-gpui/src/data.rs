@@ -72,7 +72,8 @@ impl Table {
     }
     crate::callback!(
         /// Called when an item is chosen, with the index.
-        on_select, usize
+        on_select,
+        usize
     );
     /// Show a sort arrow on `column` (`ascending` → ▲).
     pub fn sorted(mut self, column: usize, ascending: bool) -> Self {
@@ -81,7 +82,8 @@ impl Table {
     }
     crate::callback!(
         /// Make headers clickable; called with the column index.
-        on_sort, usize
+        on_sort,
+        usize
     );
 }
 
@@ -435,7 +437,8 @@ impl Chip {
     }
     crate::callback!(
         /// Called when it is clicked, with the click event.
-        on_click, &ClickEvent
+        on_click,
+        &ClickEvent
     );
     /// Show ✕ and call `f` when it is clicked.
     pub fn on_remove(mut self, f: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static) -> Self {

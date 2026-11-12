@@ -120,11 +120,11 @@ mod tests {
                 })
                 .unwrap()
         };
-        for i in 0..4 {
+        for (i, group) in c.groups.iter().enumerate().take(4) {
             let (prev, next, own) = ((i + 3) % 4, (i + 1) % 4, span(i, i));
             // Own flow opens the arc, the next group clockwise closes it.
-            assert!((own.0 - c.groups[i].0).abs() < 1e-6);
-            assert!((span(i, next).1 - c.groups[i].1).abs() < 1e-6);
+            assert!((own.0 - group.0).abs() < 1e-6);
+            assert!((span(i, next).1 - group.1).abs() < 1e-6);
             assert!(span(i, prev).0 < span(i, (i + 2) % 4).0);
             assert!(span(i, (i + 2) % 4).0 < span(i, next).0);
         }
