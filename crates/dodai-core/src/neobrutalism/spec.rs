@@ -127,7 +127,7 @@ impl DesignSpec for NeoBrutalism {
         Look {
             sink: true,
             icons: IconSet::Bold,
-            spinner: crate::SpinnerStyle::Steps,
+            spinner: crate::SpinnerStyle::Hop,
             selection: crate::motion::SelectionMotion::Lift,
             ..Look::default()
         }

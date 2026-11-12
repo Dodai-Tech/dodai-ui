@@ -3,7 +3,7 @@
 
 use bevy::prelude::*;
 
-use dodai_core::busy::{cell_alpha, cell_rect, cells, Cell};
+use dodai_core::busy::{cell_alpha, cell_rect, cells, moves, Cell};
 use dodai_core::SpinnerStyle;
 
 use crate::theme::{color, DodaiTheme};
@@ -171,7 +171,7 @@ pub(crate) fn animate_spinners(
         if bg.0 != want {
             bg.0 = want;
         }
-        if matches!(p.style, SpinnerStyle::Bars | SpinnerStyle::Grid) {
+        if moves(p.style) {
             let (x, y, w, h) = cell_rect(p.style, &p.cell, a);
             let (left, top, width, height) = (Val::Px(x), Val::Px(y), Val::Px(w), Val::Px(h));
             if n.left != left || n.top != top || n.width != width || n.height != height {
@@ -232,10 +232,10 @@ mod tests {
     #[test]
     fn each_design_builds_its_own_cells() {
         for (t, n) in [
-            (dodai_core::material::light(), 0),
-            (dodai_core::cyberpunk::light(), 8),
+            (dodai_core::material::light(), 6),
+            (dodai_core::cyberpunk::light(), 7),
             (dodai_core::dodai::light(), 9),
-            (dodai_core::neobrutalism::light(), 4),
+            (dodai_core::neobrutalism::light(), 3),
         ] {
             let id = t.id();
             let mut a = app(t);
@@ -258,7 +258,7 @@ mod tests {
             .set_theme(dodai_core::neobrutalism::light());
         a.update();
         a.update();
-        assert_eq!(cell_count(&mut a), 4);
+        assert_eq!(cell_count(&mut a), 3);
     }
 
     #[test]

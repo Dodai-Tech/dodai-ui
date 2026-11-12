@@ -41,6 +41,12 @@ pub enum SpinnerStyle {
     /// A three by three grid of softly rounded squares: a diagonal wave swells each one and
     /// fades it back.
     Grid,
+    /// A row of thin neon bars with a bright head sweeping across; each bar swells as it lights.
+    Scanner,
+    /// Three hard squares hopping one after the other.
+    Hop,
+    /// Six large dots around a centre that swell and shrink in turn, like a blooming flower.
+    Petals,
 }
 
 /// Semantic capabilities a design system declares. Adapters ask these instead of guessing a
