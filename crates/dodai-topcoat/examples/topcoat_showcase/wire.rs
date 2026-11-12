@@ -14,7 +14,7 @@
 //! | `GC|yaw|pitch|size|y0|p0|x|y` | the gizmo clicked at `x`, `y` |
 //! | `C|n` | page `n` (empty = All) |
 //! | `S|title` | a section was picked in the sidebar |
-//! | `V|title` | the page scrolled to this section (only the sidebar changes) |
+//! | `V|top|title` | the page scrolled to this section (`top` = 1 at the very top); only the sidebar changes |
 //! | `F|text` | the sidebar filter |
 //! | `D|n`, `M|n`, `K|n` | design, theme of the design, colour |
 //! | `A|b`, `E|n`, `R|b`, `Y|b` | animate, speed, right-to-left, patterns |
@@ -180,8 +180,11 @@ pub fn apply(m: &mut Showcase, line: &str) -> bool {
             Some(t) => m.update(Action::Section(t)),
             None => return false,
         },
-        ("V", [..]) => match section(&rest.join("|")) {
-            Some(t) => m.update(Action::Visible(t)),
+        ("V", [top, ..]) => match section(&rest[1..].join("|")) {
+            Some(t) => {
+                m.set_at_top(*top == "1");
+                m.update(Action::Visible(t));
+            }
             None => return false,
         },
         ("F", _) => m.update(Action::Filter(rest.join("|"))),

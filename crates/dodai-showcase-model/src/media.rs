@@ -74,6 +74,31 @@ pub fn data_url(path: &str) -> Option<String> {
     ))
 }
 
+/// The Dodai UI logo (`assets/icons/dodai-ui.svg`) as a 256 px PNG.
+pub const LOGO_PNG: &[u8] = include_bytes!("../../../assets/icons/dodai-ui-256.png");
+
+/// The Dodai UI logo ([`LOGO_PNG`]), decoded once.
+pub fn logo() -> Picture {
+    static LOGO: OnceLock<Picture> = OnceLock::new();
+    LOGO.get_or_init(|| decode_png(LOGO_PNG).expect("the logo is a PNG"))
+        .clone()
+}
+
+/// The Dodai UI logo as a 128 px PNG: sharp up to 64 px on a 2× screen, and a third of the
+/// bytes of [`LOGO_PNG`] for [`logo_data_url`], which web pages resend on every render.
+pub const LOGO_PNG_128: &[u8] = include_bytes!("../../../assets/icons/dodai-ui-128.png");
+
+/// The Dodai UI logo ([`LOGO_PNG_128`]) as a `data:image/png;base64,…` URL, made once.
+pub fn logo_data_url() -> &'static str {
+    static URL: OnceLock<String> = OnceLock::new();
+    URL.get_or_init(|| {
+        format!(
+            "data:image/png;base64,{}",
+            base64::engine::general_purpose::STANDARD.encode(LOGO_PNG_128)
+        )
+    })
+}
+
 /// Size of the frost demo's wallpaper, px.
 pub const WALLPAPER_SIZE: (u32, u32) = (1200, 750);
 
@@ -140,6 +165,28 @@ mod tests {
         let p = wallpaper(&t);
         assert_eq!(decode_png(&encode_png(&p)).as_ref(), Some(&p));
         assert!(wallpaper_url(&t).starts_with("data:image/png;base64,"));
+    }
+
+    #[test]
+    fn the_logo_is_a_square_256_px_picture_and_a_data_url() {
+        let p = logo();
+        assert_eq!((p.width, p.height), (256, 256));
+        assert_eq!(p.rgba.len(), 256 * 256 * 4);
+        assert!(logo_data_url().starts_with("data:image/png;base64,"));
+    }
+
+    #[test]
+    fn the_overview_hero_shows_the_logo() {
+        fn has_logo(n: &crate::Node) -> bool {
+            match n {
+                crate::Node::Logo(size) => *size > 0.0,
+                crate::Node::Stack(s) => s.items.iter().any(has_logo),
+                crate::Node::Framed { body, .. } => has_logo(body),
+                _ => false,
+            }
+        }
+        let t = dodai_core::themes::all().remove(0);
+        assert!(has_logo(&crate::overview::overview(&t, "gpui")));
     }
 
     #[test]

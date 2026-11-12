@@ -72,7 +72,18 @@ pub fn setup(mut commands: Commands, model: Res<Model>, theme: Res<DodaiTheme>) 
                 SideBar,
             ))
             .with_children(|s| {
-                s.spawn((heading("DODAI UI"), FullOnly));
+                s.spawn((
+                    Node {
+                        align_items: AlignItems::Center,
+                        column_gap: Val::Px(sp.sm),
+                        ..default()
+                    },
+                    FullOnly,
+                ))
+                .with_children(|title| {
+                    render::logo(title, t.typography.size_xl * 1.6);
+                    title.spawn(heading("DODAI UI"));
+                });
                 s.spawn(text_input("Filter components…"))
                     .insert((Bound::Filter, FullOnly));
                 s.spawn((
@@ -405,13 +416,19 @@ pub fn spawn_nav(p: &mut ChildSpawnerCommands, m: &Showcase) {
                 }
             });
         };
-    item(p, "All", m.count(None), m.category().is_none(), None);
+    item(
+        p,
+        "All",
+        m.count(None),
+        m.current_category().is_none(),
+        None,
+    );
     for (i, c) in CATEGORIES.iter().enumerate() {
-        let on = m.category() == Some(i);
+        let on = m.current_category() == Some(i);
         item(p, c, m.count(Some(i)), on, Some(i));
         if m.lists(i) {
             let active = m.active_section();
-            for s in m.visible() {
+            for s in m.listed(i) {
                 p.spawn((
                     kit_pressable(Kit::Row {
                         selected: active == Some(s.title),

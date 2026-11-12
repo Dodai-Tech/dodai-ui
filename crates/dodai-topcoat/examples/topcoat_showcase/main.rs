@@ -23,7 +23,8 @@ const SCRIPT: &str = include_str!("app.js");
 fn document(m: &mut Showcase) -> String {
     let id = m.theme().id();
     format!(
-        "<!DOCTYPE html><html data-theme=\"{id}\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Dodai UI · Topcoat</title><style>html,body{{margin:0;height:100%}}body{{background:var(--dodai-background);color:var(--dodai-text);font-family:var(--dodai-font-body);font-size:var(--dodai-size-md);line-height:1.5}}</style></head><body>{}<script>{SCRIPT}</script></body></html>",
+        "<!DOCTYPE html><html data-theme=\"{id}\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Dodai UI · Topcoat</title><link rel=\"icon\" href=\"{}\"><style>html,body{{margin:0;height:100%}}body{{background:var(--dodai-background);color:var(--dodai-text);font-family:var(--dodai-font-body);font-size:var(--dodai-size-md);line-height:1.5}}</style></head><body>{}<script>{SCRIPT}</script></body></html>",
+        dodai_showcase_model::media::logo_data_url(),
         chrome::app(m)
     )
 }
@@ -67,8 +68,23 @@ fn read_request(stream: &mut TcpStream) -> Option<Request> {
 }
 
 fn respond(stream: &mut TcpStream, status: &str, mime: &str, body: &[u8]) {
+    respond_with(stream, status, mime, body, "");
+}
+
+/// Percent-encode `text` for a header value.
+fn encode(text: &str) -> String {
+    text.bytes()
+        .map(|b| match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' => (b as char).to_string(),
+            _ => format!("%{b:02X}"),
+        })
+        .collect()
+}
+
+/// [`respond`] with one more header line (`""` for none).
+fn respond_with(stream: &mut TcpStream, status: &str, mime: &str, body: &[u8], extra: &str) {
     let head = format!(
-        "HTTP/1.1 {status}\r\nContent-Type: {mime}\r\nContent-Length: {}\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n",
+        "HTTP/1.1 {status}\r\nContent-Type: {mime}\r\nContent-Length: {}\r\nCache-Control: no-store\r\nConnection: close\r\n{extra}\r\n",
         body.len()
     );
     let _ = stream.write_all(head.as_bytes());
@@ -97,13 +113,20 @@ fn handle(mut stream: TcpStream, model: &Mutex<Showcase>) {
         ("POST", "/act") => {
             let mut m = lock();
             wire::apply(&mut m, req.body.trim_end());
+            // The page writes the clipboard: the browser owns it.
+            let copy = match m.take_effect() {
+                Some(dodai_showcase_model::icon_actions::Effect::Copy(t)) => {
+                    format!("X-Copy: {}\r\n", encode(&t))
+                }
+                None => String::new(),
+            };
             let out = if req.query.contains("part=side") {
                 chrome::side(&m)
             } else {
                 chrome::app(&mut m)
             };
             drop(m);
-            respond(&mut stream, "200 OK", html, out.as_bytes());
+            respond_with(&mut stream, "200 OK", html, out.as_bytes(), &copy);
         }
         ("GET", "/shader") => match shader::png(&req.query) {
             Some(png) => respond(&mut stream, "200 OK", "image/png", &png),

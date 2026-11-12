@@ -21,4 +21,6 @@ name = "leptos_showcase"
 path = "examples/leptos_showcase.rs"
 
 [dev-dependencies]
+# The showcase page inlines the logo as a data: URL.
+base64 = "0.22"
 dodai-core = { workspace = true, features = ["cyberpunk", "material"] }

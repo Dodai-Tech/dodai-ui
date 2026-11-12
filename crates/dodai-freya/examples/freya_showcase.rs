@@ -9,12 +9,16 @@ use dodai_freya::paint::color;
 use dodai_freya::*;
 use freya::prelude::*;
 
+/// The Dodai UI logo (`assets/icons/dodai-ui.svg`) at 128 px.
+const LOGO_PNG: &[u8] = include_bytes!("../../../assets/icons/dodai-ui-128.png");
+
 fn main() {
     launch(
         LaunchConfig::new().with_window(
             WindowConfig::new(app)
                 .with_title("Dodai UI · Freya")
-                .with_size(1100.0, 900.0),
+                .with_size(1100.0, 900.0)
+                .with_icon(LaunchConfig::window_icon(LOGO_PNG)),
         ),
     );
 }
@@ -145,7 +149,18 @@ fn app() -> impl IntoElement {
                 rect()
                     .padding(gap)
                     .spacing(gap)
-                    .child(DodaiText::heading("Dodai UI").size(t.typography.size_xxl))
+                    .child(
+                        rect()
+                            .direction(Direction::Horizontal)
+                            .spacing(gap * 0.5)
+                            .cross_align(Alignment::Center)
+                            .child(
+                                ImageViewer::new(LOGO_PNG)
+                                    .width(Size::px(t.typography.size_xxl * 1.6))
+                                    .height(Size::px(t.typography.size_xxl * 1.6)),
+                            )
+                            .child(DodaiText::heading("Dodai UI").size(t.typography.size_xxl)),
+                    )
                     .child(DodaiText::muted(format!(
                         "{} · t/T switch theme · +/- glow ({glow:.2})",
                         t.name()

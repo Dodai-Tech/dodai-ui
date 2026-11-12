@@ -8,6 +8,17 @@ use dodai_topcoat::{multi_theme_stylesheet, theme_vars, GOOGLE_FONTS_URL};
 use dodai_yew::*;
 use yew::prelude::*;
 
+/// The Dodai UI logo (`assets/icons/dodai-ui.svg`) at 128 px as a `data:` URL, so the page
+/// stays one file.
+fn logo_url() -> String {
+    use base64::Engine as _;
+    const LOGO_PNG: &[u8] = include_bytes!("../../../assets/icons/dodai-ui-128.png");
+    format!(
+        "data:image/png;base64,{}",
+        base64::engine::general_purpose::STANDARD.encode(LOGO_PNG)
+    )
+}
+
 #[function_component]
 fn Showcase() -> Html {
     let tabs: Vec<AttrValue> = ["Overview", "Network", "Systems"]
@@ -16,7 +27,8 @@ fn Showcase() -> Html {
     html! {
     <ThemeProvider inject_css={false}>
       <main>
-        <div class="dodai-row"><Heading level={1}>{"Dodai UI · Yew"}</Heading>
+        <div class="dodai-row"><img src={logo_url()} alt="" style="width:calc(var(--dodai-size-xl) * 2);height:calc(var(--dodai-size-xl) * 2)"/>
+          <Heading level={1}>{"Dodai UI · Yew"}</Heading>
           <span class="dodai-label" id="tname"></span></div>
         <div class="dodai-row" id="themes">
           { for themes::all().iter().map(|t| html!{
@@ -113,8 +125,9 @@ async fn main() {
         .replace("IDS", &ids)
         .replace("INIT", &format!("\"{init}\""))
         .replace("GMAX", &GMAX.to_string());
+    let logo = logo_url();
     println!(
-        "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Dodai UI · Yew</title>\
+        "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Dodai UI · Yew</title><link rel=\"icon\" href=\"{logo}\">\
 <link rel=\"stylesheet\" href=\"{GOOGLE_FONTS_URL}\"><style>{}{glow_css}{LAYOUT}</style></head><body>{body}<script>{script}</script></body></html>",
         multi_theme_stylesheet(&all)
     );

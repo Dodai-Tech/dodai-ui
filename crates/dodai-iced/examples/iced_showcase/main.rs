@@ -135,6 +135,11 @@ pub fn update(app: &mut App, msg: Msg) -> Task<Msg> {
             if app.model.take_jump().is_some() {
                 task = measure(app, true);
             }
+            if let Some(dodai_showcase_model::icon_actions::Effect::Copy(text)) =
+                app.model.take_effect()
+            {
+                task = Task::batch([task, iced::clipboard::write(text)]);
+            }
         }
         Msg::Scrolled(y, at_end) => {
             app.offset = y;
@@ -256,6 +261,7 @@ fn placed(app: &mut App, hits: &[Hit], jump: bool) -> Task<Msg> {
             )
         });
     }
+    app.model.set_at_top(app.offset < 1.0);
     app.model
         .follow_scroll(&sections, app.offset, app.at_end, SPY_SLACK);
     Task::none()
@@ -306,10 +312,21 @@ fn view(app: &App) -> Element<'_, Msg> {
     layers.push(page).push(app.lt.scanlines()).into()
 }
 
+/// The Dodai UI logo as the window icon (Windows and Linux title bars and task bars; macOS
+/// ignores window icons).
+fn window_icon() -> Option<iced::window::Icon> {
+    let p = dodai_showcase_model::media::logo();
+    iced::window::icon::from_rgba(p.rgba.to_vec(), p.width, p.height).ok()
+}
+
 fn main() -> iced::Result {
     iced::application(boot, update, view)
         .title("Dodai UI · Iced")
-        .window_size((1400.0, 900.0))
+        .window(iced::window::Settings {
+            size: iced::Size::new(1400.0, 900.0),
+            icon: window_icon(),
+            ..Default::default()
+        })
         .theme(|app: &App| -> IcedBase { app.lt.iced_theme() })
         .subscription(subscription)
         .run()
@@ -319,6 +336,11 @@ fn main() -> iced::Result {
 mod tests {
     use super::*;
     use dodai_showcase_model::Bind;
+
+    #[test]
+    fn the_window_icon_is_the_logo() {
+        assert!(window_icon().is_some());
+    }
 
     #[test]
     fn ppm_has_a_header_and_drops_alpha() {

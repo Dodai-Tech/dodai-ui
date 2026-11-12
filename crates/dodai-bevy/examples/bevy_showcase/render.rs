@@ -264,6 +264,7 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
                 ));
             });
         }
+        Demo::Logo(size) => logo(p, *size),
         Demo::Image {
             src: Some(src),
             video,
@@ -2167,6 +2168,19 @@ fn picture_image(pic: &dodai_showcase_model::media::Picture) -> Image {
         TextureFormat::Rgba8UnormSrgb,
         RenderAssetUsages::default(),
     )
+}
+
+/// The Dodai UI logo, `size` px square.
+pub fn logo(p: &mut ChildSpawnerCommands, size: f32) {
+    p.spawn((
+        Node {
+            width: Val::Px(size),
+            height: Val::Px(size),
+            flex_shrink: 0.0,
+            ..default()
+        },
+        PicturePixels(dodai_showcase_model::media::logo()),
+    ));
 }
 
 /// Gives every new [`PicturePath`] and [`PicturePixels`] node its image.

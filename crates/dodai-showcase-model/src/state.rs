@@ -189,6 +189,9 @@ pub struct Showcase {
     /// The picked section keeps the highlight until the user scrolls (it may be too near the
     /// end of the page to reach the top).
     pinned: Option<&'static str>,
+    effect: Option<crate::icon_actions::Effect>,
+    /// The page is scrolled to its very top (the landing content is showing).
+    at_top: bool,
 }
 
 impl Default for Showcase {
@@ -276,6 +279,8 @@ impl Showcase {
             revision: 0,
             active: None,
             jump: None,
+            effect: None,
+            at_top: true,
             pinned: None,
         }
     }
@@ -317,7 +322,45 @@ impl Showcase {
     /// Whether the sidebar lists the sections of page `c` under it (the open page, unless it was
     /// folded by picking it again).
     pub fn lists(&self, c: usize) -> bool {
-        self.category == Some(c) && !self.values.flag(&crate::Bind::new(FOLDED, false))
+        self.current_category() == Some(c) && !self.values.flag(&crate::Bind::new(FOLDED, false))
+    }
+
+    /// Where the reader is, for the sidebar: the open page, or on "All" the category of the
+    /// section being read (`None` while the landing content shows at the top).
+    pub fn current_category(&self) -> Option<usize> {
+        if self.category.is_some() || self.at_top || !self.filter.trim().is_empty() {
+            return self.category;
+        }
+        let title = self.active_section()?;
+        let cat = catalog::sections()
+            .iter()
+            .find(|s| s.title == title)?
+            .category;
+        CATEGORIES.iter().position(|c| *c == cat)
+    }
+
+    /// The sections the sidebar lists under category `c` (empty unless it is open).
+    pub fn listed(&self, c: usize) -> Vec<&'static Section> {
+        if !self.lists(c) {
+            return Vec::new();
+        }
+        self.visible()
+            .into_iter()
+            .filter(|s| s.category == CATEGORIES[c])
+            .collect()
+    }
+
+    /// Whether the page is scrolled to its very top.
+    pub fn at_top(&self) -> bool {
+        self.at_top
+    }
+
+    /// Tell the model whether the page is scrolled to its very top; `true` when that changed
+    /// what the sidebar shows.
+    pub fn set_at_top(&mut self, at_top: bool) -> bool {
+        let before = self.current_category();
+        self.at_top = at_top;
+        before != self.current_category()
     }
 
     /// The landing content above the sections of "All" (no page picked, no search), naming the
@@ -447,6 +490,11 @@ impl Showcase {
             .or_else(|| shown.first().map(|s| s.title))
     }
 
+    /// What the last action needs the toolkit to do (a clipboard write), once.
+    pub fn take_effect(&mut self) -> Option<crate::icon_actions::Effect> {
+        self.effect.take()
+    }
+
     /// The section the sidebar asked to scroll to, once.
     pub fn take_jump(&mut self) -> Option<&'static str> {
         self.jump.take()
@@ -556,6 +604,7 @@ impl Showcase {
         match action {
             Action::Category(c) => {
                 let c = c.filter(|&c| c < CATEGORIES.len());
+                self.at_top = true;
                 // Picking the open page again folds its section list in the sidebar (or opens it).
                 if c.is_some() && c == self.category {
                     let now = self.values.flag(&crate::Bind::new(FOLDED, false));
@@ -652,6 +701,12 @@ impl Showcase {
                 if theme_wide {
                     self.bump();
                 }
+            }
+            Action::Press(key) if key.starts_with(crate::icon_actions::PREFIX) => {
+                let theme = self.theme();
+                let what = &key[crate::icon_actions::PREFIX.len()..];
+                self.effect = crate::icon_actions::run(&mut self.values, &theme, what, None);
+                self.bump();
             }
             Action::Press(key) if key.starts_with("sh:") => self.shader_press(&key[3..]),
             Action::Press(key) if key.starts_with(TARGETS) => {
@@ -818,5 +873,25 @@ mod section_nav_tests {
         assert_eq!(m.active_section(), Some(t[0]));
         m.follow_scroll(&tops, 0.0, true, 60.0);
         assert_eq!(m.active_section(), t.last().copied());
+    }
+
+    #[test]
+    fn on_all_the_sidebar_follows_the_scroll_into_a_category() {
+        let mut m = Showcase::default();
+        assert_eq!(m.current_category(), None);
+        assert!(m.listed(0).is_empty());
+        let first = m.visible()[0];
+        m.set_at_top(false);
+        m.update(Action::Visible(first.title));
+        let c = CATEGORIES.iter().position(|c| *c == first.category);
+        assert_eq!(m.current_category(), c);
+        let listed = m.listed(c.unwrap());
+        assert!(listed.iter().all(|s| s.category == first.category));
+        assert!(listed.iter().any(|s| s.title == first.title));
+        // Back at the top, "All" again; another page is its own.
+        assert!(m.set_at_top(true));
+        assert_eq!(m.current_category(), None);
+        m.update(Action::Category(Some(2)));
+        assert_eq!(m.current_category(), Some(2));
     }
 }

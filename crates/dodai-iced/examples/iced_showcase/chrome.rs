@@ -158,15 +158,15 @@ pub fn nav<'a>(app: &App) -> Element<'a, Msg> {
         app,
         "All",
         m.count(None),
-        m.category().is_none(),
+        m.current_category().is_none(),
         None
     )];
     for (i, c) in CATEGORIES.iter().enumerate() {
-        let on = m.category() == Some(i);
+        let on = m.current_category() == Some(i);
         col = col.push(nav_item(app, c, m.count(Some(i)), on, Some(i)));
         if m.lists(i) {
             let active = m.active_section();
-            for s in m.visible() {
+            for s in m.listed(i) {
                 col = col.push(
                     container(lt.kit_button(
                         Kit::Row {
@@ -246,10 +246,12 @@ pub fn sidebar<'a>(app: &App) -> Element<'a, Msg> {
         .style(lt.text_input());
     column![
         row![
+            crate::render::logo(lt.theme().typography.size_xl * 1.6),
             lt.heading_text("Dodai UI"),
             Space::new().width(Length::Fill),
             rail_toggle(app)
         ]
+        .spacing(sp.sm)
         .align_y(alignment::Vertical::Center),
         filter,
         nav(app),

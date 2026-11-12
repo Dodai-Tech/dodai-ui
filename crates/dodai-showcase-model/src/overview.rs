@@ -7,7 +7,7 @@ use crate::b::*;
 use crate::catalog::{self, CATEGORIES};
 use crate::icons::IconRef;
 use crate::node::{Font, Ink, Node};
-use crate::Gap;
+use crate::{Axis, Gap, Stack};
 
 /// Press key prefix opening a category (`go:c:<index>`).
 pub const OPEN_CATEGORY: &str = "go:c:";
@@ -79,7 +79,17 @@ pub fn overview(theme: &Theme, here: &str) -> Node {
         body: Box::new(
             col(vec![
                 muted("DESIGN SYSTEM · RUST · MULTI-TOOLKIT"),
-                styled("Dodai UI", ty.size_xxl * 1.5, Font::Display, Ink::Text),
+                Node::Stack(Stack {
+                    axis: Axis::Row,
+                    wrap: false,
+                    gap: Gap::Md,
+                    centre: true,
+                    width: None,
+                    items: vec![
+                        Node::Logo(ty.size_xxl * 2.2),
+                        styled("Dodai UI", ty.size_xxl * 1.5, Font::Display, Ink::Text),
+                    ],
+                }),
                 styled(
                     "One set of tokens, components, charts and shaders. Swappable design systems, every toolkit.",
                     ty.size_lg,

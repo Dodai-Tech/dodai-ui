@@ -111,12 +111,18 @@ fn scroll_to(title: &str) {
     ));
 }
 
+/// The logo beside the sidebar title: 1.6 × the theme's xl text size.
+const LOGO_STYLE: &str =
+    "width:calc(var(--dodai-size-xl) * 1.6);height:calc(var(--dodai-size-xl) * 1.6);flex:none";
+
 #[component]
 fn Sidebar(model: Signal<Showcase>) -> Element {
     let m = model.read();
     let mut set = move |a: Action| model.write().update(a);
-    let cat = m.category();
-    let titles: Vec<&'static str> = m.visible().iter().map(|s| s.title).collect();
+    let cat = m.current_category();
+    let listed_titles: Vec<Vec<&'static str>> = (0..CATEGORIES.len())
+        .map(|i| m.listed(i).iter().map(|s| s.title).collect())
+        .collect();
     let active = m.active_section();
     let counts: Vec<usize> = std::iter::once(m.count(None))
         .chain((0..CATEGORIES.len()).map(|c| m.count(Some(c))))
@@ -148,7 +154,10 @@ fn Sidebar(model: Signal<Showcase>) -> Element {
     rsx! {
         aside { class: "dodai-side",
             div { style: "display:flex;align-items:center;justify-content:space-between",
-                Heading { level: 2, "Dodai UI" }
+                div { style: "display:flex;align-items:center;gap:var(--dodai-space-sm)",
+                    img { src: dodai_showcase_model::media::logo_data_url(), alt: "", style: "{LOGO_STYLE}" }
+                    Heading { level: 2, "Dodai UI" }
+                }
                 {fold}
             }
             TextInput { value: filter, placeholder: "Filter components…".to_string(),
@@ -159,7 +168,7 @@ fn Sidebar(model: Signal<Showcase>) -> Element {
                     NavItem { key: "{c}", label: c.to_string(), count: counts[i + 1], on: cat == Some(i), page: true, listed: listed[i],
                         onclick: move |_| set(Action::Category(Some(i))) }
                     if listed[i] {
-                        for t in titles.iter().copied() {
+                        for t in listed_titles[i].iter().copied() {
                             SubItem { key: "{t}", label: t.to_string(), on: active == Some(t),
                                 onclick: move |_| { set(Action::Section(t)); scroll_to(t) } }
                         }
@@ -272,7 +281,7 @@ pub fn App() -> Element {
                 const tops = [...document.querySelectorAll('[data-sec]')]
                     .map(e => [e.dataset.sec, e.getBoundingClientRect().top - top]);
                 const end = p.scrollHeight - p.clientHeight > 1 && p.scrollTop >= p.scrollHeight - p.clientHeight - 1;
-                dioxus.send(['scroll', end, tops]);
+                dioxus.send([p.scrollTop < 1 ? 'top' : 'scroll', end, tops]);
             }, true);"#,
         );
         let mut model = model;
@@ -283,6 +292,10 @@ pub fn App() -> Element {
                     model.write().update(Action::Unpin);
                 }
                 continue;
+            }
+            let at_top = kind == "top";
+            if model.peek().at_top() != at_top {
+                model.write().set_at_top(at_top);
             }
             let titles: Vec<&'static str> =
                 model.peek().visible().iter().map(|s| s.title).collect();

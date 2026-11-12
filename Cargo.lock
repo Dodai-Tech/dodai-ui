@@ -4349,6 +4349,7 @@ dependencies = [
 name = "dodai-leptos"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "dodai-core",
  "dodai-topcoat",
  "leptos",
@@ -4440,6 +4441,7 @@ dependencies = [
 name = "dodai-yew"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "dodai-core",
  "dodai-topcoat",
  "tokio",
