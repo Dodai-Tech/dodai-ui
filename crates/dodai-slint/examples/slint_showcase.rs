@@ -10,6 +10,8 @@ slint::slint! {
 
     export component Showcase inherits Window {
         title: "Dodai UI · Slint";
+        // The Dodai UI logo (assets/icons/dodai-ui.svg); paths are from the crate's manifest.
+        icon: @image-url("../../assets/icons/dodai-ui-128.png");
         preferred-width: 980px;
         preferred-height: 900px;
         background: Theme.background;
@@ -33,7 +35,16 @@ slint::slint! {
             VerticalLayout {
                 padding: Theme.sp-lg;
                 spacing: Theme.sp-md;
-                LText { kind: 0; content: "Dodai UI · " + root.current; font-size: Theme.size-xl; }
+                HorizontalLayout {
+                    spacing: Theme.sp-sm;
+                    alignment: start;
+                    Image {
+                        source: @image-url("../../assets/icons/dodai-ui-128.png");
+                        width: Theme.size-xl * 1.6;
+                        height: Theme.size-xl * 1.6;
+                    }
+                    LText { kind: 0; content: "Dodai UI · " + root.current; font-size: Theme.size-xl; vertical-alignment: center; }
+                }
                 HorizontalLayout {
                     spacing: Theme.sp-sm;
                     for n[i] in root.theme-names: LButton { text: n; variant: n == root.current ? 0 : 2; clicked => { root.pick-theme(i); } }
