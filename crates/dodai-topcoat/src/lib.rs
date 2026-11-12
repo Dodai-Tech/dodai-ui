@@ -15,6 +15,8 @@
 //! In a Topcoat page, inline it (it never contains `</style`):
 //! `<style>(css)</style>` and call `<script>(dodai_topcoat::switcher_script(..))</script>`.
 
+pub mod html;
+
 use dodai_core::{Kit, Shape, ShapeKind, Theme};
 use std::fmt::Write;
 

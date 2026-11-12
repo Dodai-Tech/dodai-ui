@@ -1,70 +1,12 @@
 //! A rotary knob drawn as inline SVG; geometry, drag maths and colours come from `dodai-core`.
 
 use dioxus::prelude::*;
-use dodai_core::{arc_points, knob_angle, knob_value, KnobGeometry, Theme};
+use dodai_core::{knob_value, Theme};
+
+pub use dodai_topcoat::html::knob_svg;
 
 use crate::ThemeHandle;
 
-/// `M x y L x y …` through `pts`.
-fn path(pts: &[(f32, f32)]) -> String {
-    let mut d = String::new();
-    for (i, (x, y)) in pts.iter().enumerate() {
-        d.push_str(if i == 0 { "M" } else { "L" });
-        d.push_str(&format!("{x:.2} {y:.2} "));
-    }
-    d
-}
-
-/// The SVG of a knob `size` px across, filled to `frac` (`0..=1`), coloured by `theme`.
-pub fn knob_svg(theme: &Theme, size: f32, frac: f32, disabled: bool) -> String {
-    let st = theme.knob(disabled);
-    let g = KnobGeometry::new(size);
-    let c = size / 2.0;
-    let frac = frac.clamp(0.0, 1.0);
-    let track = path(&arc_points(c, c, g.r_ring, 0.0, 1.0));
-    let mut s = format!(
-        "<path d=\"{track}\" fill=\"none\" stroke=\"{}\" stroke-width=\"{}\"/>",
-        st.track.to_css(),
-        g.ring
-    );
-    if frac > 0.0 {
-        let arc = path(&arc_points(c, c, g.r_ring, 0.0, frac));
-        if let Some((col, r)) = st.glow {
-            s.push_str(&format!(
-                "<path d=\"{arc}\" fill=\"none\" stroke=\"{}\" stroke-width=\"{}\" opacity=\"0.5\" style=\"filter:blur({}px)\"/>",
-                col.to_css(),
-                g.ring + r * 0.5,
-                (r * 0.5).max(1.0)
-            ));
-        }
-        s.push_str(&format!(
-            "<path d=\"{arc}\" fill=\"none\" stroke=\"{}\" stroke-width=\"{}\"/>",
-            st.fill.to_css(),
-            g.ring
-        ));
-    }
-    s.push_str(&format!(
-        "<circle cx=\"{c}\" cy=\"{c}\" r=\"{}\" fill=\"{}\" stroke=\"{}\" stroke-width=\"{}\"/>",
-        g.r_body,
-        st.body.to_css(),
-        st.body_edge.to_css(),
-        st.border_width
-    ));
-    let th = knob_angle(frac);
-    let (co, si) = (th.cos(), th.sin());
-    s.push_str(&format!(
-        "<line x1=\"{:.2}\" y1=\"{:.2}\" x2=\"{:.2}\" y2=\"{:.2}\" stroke=\"{}\" stroke-width=\"{}\"/>",
-        c + co * g.r_body * 0.35,
-        c + si * g.r_body * 0.35,
-        c + co * g.r_body * 0.9,
-        c + si * g.r_body * 0.9,
-        st.tick.to_css(),
-        g.tick
-    ));
-    s
-}
-
-/// Knob properties.
 #[derive(Props, Clone, PartialEq)]
 pub struct KnobProps {
     /// The value.

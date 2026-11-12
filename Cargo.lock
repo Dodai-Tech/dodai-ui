@@ -4428,6 +4428,9 @@ version = "0.1.0"
 dependencies = [
  "dodai-core",
  "dodai-icons",
+ "dodai-shaders",
+ "dodai-showcase-model",
+ "png 0.18.1",
 ]
 
 [[package]]

@@ -1,6 +1,8 @@
 //! Typed components emitting the `.dodai-*` classes styled by `dodai-topcoat` CSS.
 
 use dioxus::prelude::*;
+pub use dodai_topcoat::html::button_classes;
+
 use dodai_core::{ButtonVariant, ControlSize, Tone};
 
 /// CSS modifier class for a [`ButtonVariant`].
@@ -86,33 +88,6 @@ pub struct ButtonProps {
     pub children: Element,
 }
 
-/// The `class` of a button with these options.
-pub fn button_classes(
-    variant: ButtonVariant,
-    size: Option<ControlSize>,
-    square: bool,
-    icon_only: bool,
-) -> String {
-    let mut c = button_class(variant).to_string();
-    if let Some(z) = size {
-        c.push_str(match z {
-            ControlSize::XSmall => " dodai-btn--xs",
-            ControlSize::Small => " dodai-btn--sm",
-            ControlSize::Medium => " dodai-btn--md",
-            ControlSize::Large => " dodai-btn--lg",
-            ControlSize::XLarge => " dodai-btn--xl",
-        });
-    }
-    if square {
-        c.push_str(" dodai-btn--square");
-    }
-    if icon_only {
-        c.push_str(" dodai-btn--icon");
-    }
-    c
-}
-
-/// Themed button (all [`ButtonVariant`]s, sizes, disabled and loading states).
 #[component]
 pub fn Button(props: ButtonProps) -> Element {
     let mut class = button_classes(props.variant, props.size, props.square, props.icon_only);

@@ -22,13 +22,20 @@ slint, yew, leptos and freya adapters stay in the repository but are not publish
   (roundness, cut size, tick gap) and panel borders apply to every toolkit.
 - Transparency and frosted glass on any component, resolved once in core (`Glass`, `Surface`).
 - Surface effects (grain, halftone, scanlines, sheen, ...) and the busy-button shimmer.
-- A shared showcase model (`dodai-showcase-model`) feeds the same pages to all four toolkits:
+- A shared showcase model (`dodai-showcase-model`) feeds the same pages to every toolkit (gpui, iced, bevy, dioxus and the
+  server-rendered topcoat page):
   Foundations, Shape, Surface effects, Actions, Data display, Navigation, Inputs, Loading,
   Animation and Shaders, with a sidebar that folds to an icon rail.
+- `dodai-topcoat::html`: the `.dodai-*` components as plain functions that return HTML, for pages
+  without a UI framework; the `topcoat_showcase` example serves the whole showcase with it
+  (`just run-topcoat-live`).
+- One scroll-spy rule for every sidebar (`dodai_core::spy::pick`): the last section wins at the end of
+  the page and a picked section holds until the user scrolls.
 - bevy: a chamfer material that draws its hard shadow inside the cut outline.
 
 ### Known limits
-- Mouse and keyboard behaviour has been checked on the gpui showcase only; the other three are
-  checked by screenshots.
+- Mouse and keyboard behaviour has been checked on the gpui showcase only; the others are
+  checked by screenshots (the scroll-spy and sidebar jumps were also tried with the real wheel in
+  iced, bevy and the browser).
 - bevy has no frosted-glass blur.
 - Minimum Rust versions differ per crate; see each crate's `rust-version`.

@@ -27,7 +27,7 @@ slint, yew, leptos and freya adapters.
 
 ## Status (0.1)
 
-The gpui, iced, bevy and dioxus showcases show the same pages, built from one shared model
+The gpui, iced, bevy, dioxus and topcoat (server-rendered HTML) showcases show the same pages, built from one shared model
 (`dodai-showcase-model`). They are checked by screenshots; mouse and keyboard interaction has
 not been tested on every control in every toolkit yet, so expect rough edges in popovers, sliders
 and drag handling. Bevy has no frosted-glass blur. Minimum Rust versions differ per crate (see each

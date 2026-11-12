@@ -4,7 +4,9 @@
 //! `dodai-topcoat` ([`dodai_topcoat::kit_style`]), so every design restyles them.
 
 use dioxus::prelude::*;
-use dodai_core::{busy, CardVariant, Kit, SpinnerStyle, StepState, Tone};
+use dodai_core::{CardVariant, Kit, StepState, Tone};
+
+pub use dodai_topcoat::html::{page_slots, spinner_cells, star_fills};
 
 use crate::Icon;
 use dodai_icons::IconId;
@@ -221,19 +223,6 @@ pub fn Breadcrumb(items: Vec<String>) -> Element {
     }
 }
 
-/// The page buttons to show for 0-based `page` of `pages`: the first, the last and a window
-/// around `page`, gaps as `None` (at most seven slots).
-pub fn page_slots(page: usize, pages: usize) -> Vec<Option<usize>> {
-    dodai_core::paging::page_window(page + 1, pages, 7)
-        .into_iter()
-        .map(|it| match it {
-            dodai_core::paging::PageItem::Page(p) => Some(p - 1),
-            dodai_core::paging::PageItem::Ellipsis => None,
-        })
-        .collect()
-}
-
-/// Properties of [`Pagination`].
 #[derive(Props, Clone, PartialEq)]
 pub struct PaginationProps {
     pub pages: usize,
@@ -355,13 +344,6 @@ pub fn Timeline(events: Vec<TimelineItem>) -> Element {
     }
 }
 
-/// How each of `max` stars of a `value` rating is drawn: `true` = filled. Halves round up.
-pub fn star_fills(value: f32, max: u8) -> Vec<bool> {
-    let full = value.round().max(0.0) as u8;
-    (0..max).map(|i| i < full).collect()
-}
-
-/// Star rating (display).
 #[component]
 pub fn Rating(value: f32, #[props(default = 5)] max: u8) -> Element {
     rsx! {
@@ -405,35 +387,6 @@ pub fn Stepper(props: StepperProps) -> Element {
     }
 }
 
-/// CSS class suffix and the inline style of each cell of a spinner `size` px across; no cells
-/// for the ring.
-pub fn spinner_cells(style: SpinnerStyle, size: f32) -> (&'static str, Vec<String>) {
-    let kind = match style {
-        SpinnerStyle::Ring => "ring",
-        SpinnerStyle::Bars => "bars",
-        SpinnerStyle::Orbit => "orbit",
-        SpinnerStyle::Steps => "steps",
-        SpinnerStyle::Grid => "grid",
-        SpinnerStyle::Scanner => "scanner",
-        SpinnerStyle::Hop => "hop",
-        SpinnerStyle::Petals => "petals",
-    };
-    let cells = busy::cells(style, size)
-        .iter()
-        .map(|c| {
-            // A negative delay starts the cell part-way through its cycle, as the head left it.
-            let delay = -(-c.lag).rem_euclid(1.0) / busy::SPIN_RATE;
-            format!(
-                "left:{:.2}px;top:{:.2}px;width:{:.2}px;height:{:.2}px;border-radius:{:.2}px;animation-delay:{:.3}s",
-                c.x, c.y, c.w, c.h, c.radius, delay
-            )
-        })
-        .collect();
-    (kind, cells)
-}
-
-/// Spinner of `size` px, in the shape the active design gives it (ring, bars, orbiting dots
-/// or stepping squares). Outside a [`crate::ThemeProvider`] it is a ring.
 #[component]
 pub fn Spinner(#[props(default = 24)] size: u32) -> Element {
     let style = try_use_context::<crate::ThemeHandle>()
@@ -507,6 +460,7 @@ pub fn TooltipBubble(text: String, #[props(default)] rich: bool) -> Element {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use dodai_core::SpinnerStyle;
 
     #[test]
     fn each_spinner_style_has_its_class_and_one_styled_cell_per_shape() {

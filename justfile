@@ -83,6 +83,10 @@ run-bevy:
 run-dioxus:
     cargo run -p dodai-dioxus --example dioxus_showcase
 
+# Topcoat showcase (server-rendered HTML), served at http://127.0.0.1:3031
+run-topcoat-live:
+    cargo run -p dodai-topcoat --example topcoat_showcase
+
 # GPUI showcase
 run-gpui:
     cargo run -p dodai-showcase
