@@ -57,10 +57,11 @@ Showcase: `cargo run -p dodai-showcase`.
 the state every control writes to); bevy, iced and dioxus each draw it with their own components
 (`just run-bevy`, `just run-iced`, `just run-dioxus`). It covers Foundations, Shape, Surface effects
 (theme-wide glow strength and scanlines), Actions,
-Data display, Navigation, Inputs, Loading and Animation (easing curves and physics lanes as
-`Node::Plot` polylines, drawn whole: no live entry card, moving dot or replay yet), plus the knob,
-vertical sliders and scroll area. Not ported yet: charts, instruments, shaders, the textures, glitch, sheen and frost of Surface effects,
-the one-shot mixins and the shape tuning controls. Shared token styles of the small boxes (cards, alerts, chips, avatars, code, tooltips,
+Data display, Navigation, Inputs, Loading and Animation (easing curves, physics lanes and the
+one-shot mixins as `Node::Plot` polylines that loop on their own, like gpui's page: no replay or
+play buttons), plus the knob, vertical sliders and scroll area. Not ported yet: charts, instruments,
+shaders, the textures, glitch, sheen and frost of Surface effects, the live entry card and the
+shape tuning controls. Shared token styles of the small boxes (cards, alerts, chips, avatars, code, tooltips,
 rows, steps, skeletons, popups) live in `dodai_core::Kit` (`Theme::kit`), so every toolkit and
 the CSS read the same numbers.
 

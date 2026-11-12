@@ -3,7 +3,7 @@
 //! The easing and physics sections of the Animation page build these; they are also the
 //! first step towards charts, which are polylines and rectangles too.
 
-use dodai_core::motion::Easing;
+use dodai_core::motion::{Easing, Pose};
 use dodai_core::{Color, Theme};
 
 /// One stroked polyline in the plot's pixel space (origin top-left).
@@ -188,6 +188,53 @@ pub fn cycle(seconds: f32, period: f32, hold: f32) -> f32 {
     ((seconds % period) / (period * (1.0 - hold))).min(1.0)
 }
 
+/// Where a looping one-shot clip of `duration` seconds is at `seconds`: it plays, then rests
+/// `rest` seconds at its end before it starts again.
+pub fn clip_time(seconds: f32, duration: f32, rest: f32) -> f32 {
+    let duration = duration.max(0.0);
+    let period = (duration + rest.max(0.0)).max(f32::EPSILON);
+    (seconds.rem_euclid(period)).min(duration)
+}
+
+/// A chip (`w`×`h` px box, the chip a third of it, centred) moved by `pose`: offset by
+/// `dx`/`dy`, scaled, faded by `opacity`, and outlined in the accent while it glows.
+pub fn pose_chip(theme: &Theme, w: f32, h: f32, pose: Pose) -> Plot {
+    let p = &theme.palette;
+    let scale = pose.scale.max(0.0);
+    let (cw, ch) = (w * 0.45 * scale, h * 0.3 * scale);
+    let (cx, cy) = (w / 2.0 + pose.dx, h / 2.0 + pose.dy);
+    let (l, r, t, b) = (cx - cw / 2.0, cx + cw / 2.0, cy - ch / 2.0, cy + ch / 2.0);
+    let alpha = pose.opacity.clamp(0.0, 1.0);
+    let outline = vec![(l, t), (r, t), (r, b), (l, b), (l, t)];
+    // The fill: 2 px rows (one fat stroke would grow caps past the outline in toolkits that
+    // extend their strokes), then the outline.
+    let rows = (ch / 2.0).ceil().max(1.0) as usize;
+    let mut lines: Vec<Line> = (0..rows)
+        .map(|k| {
+            let y = (t + 1.0 + 2.0 * k as f32).min(b - 1.0);
+            Line {
+                color: p.primary.with_alpha(alpha),
+                width: 2.0,
+                points: vec![(l, y), (r, y)],
+            }
+        })
+        .collect();
+    lines.push(Line {
+        color: p.border.with_alpha(alpha),
+        width: 1.0,
+        points: outline.clone(),
+    });
+    let glow = pose.glow.clamp(0.0, 1.0);
+    if glow > 0.0 {
+        lines.push(Line {
+            color: p.primary.with_alpha(glow * alpha),
+            width: 4.0,
+            points: outline,
+        });
+    }
+    Plot { w, h, lines }
+}
+
 /// A plot of `f` over `0..=1` with its value range `lo..=hi`, and a baseline at zero.
 pub fn lane(theme: &Theme, w: f32, h: f32, lo: f32, hi: f32, f: impl Fn(f32) -> f32) -> Plot {
     let fr = Frame {
@@ -234,6 +281,39 @@ mod tests {
         assert_eq!(bez.lines.len(), 5);
         assert_eq!(spring.lines.len(), 4);
         assert!(control_points(Easing::SPRING).is_none());
+    }
+
+    #[test]
+    fn a_looping_clip_plays_then_rests_at_its_end() {
+        assert_eq!(clip_time(0.25, 0.5, 1.0), 0.25);
+        assert_eq!(clip_time(1.2, 0.5, 1.0), 0.5);
+        assert!((clip_time(1.75, 0.5, 1.0) - 0.25).abs() < 1e-5);
+        // A zero-length clip with no rest stays at its start instead of dividing by zero.
+        assert_eq!(clip_time(3.0, 0.0, 0.0), 0.0);
+    }
+
+    #[test]
+    fn a_pose_chip_moves_fades_and_glows() {
+        let rest = pose_chip(&theme(), 170.0, 90.0, Pose::IDENTITY);
+        let moved = pose_chip(&theme(), 170.0, 90.0, Pose::offset(10.0, -4.0));
+        let outline = |p: &Plot| p.lines.iter().filter(|l| l.points.len() == 5).count();
+        assert_eq!(outline(&rest), 1, "no glow at rest");
+        // The fill rows stay inside the outline.
+        let (top, bottom) = (
+            rest.lines.last().unwrap().points[0].1,
+            rest.lines.last().unwrap().points[2].1,
+        );
+        assert!(rest
+            .lines
+            .iter()
+            .filter(|l| l.points.len() == 2)
+            .all(|l| l.points[0].1 > top && l.points[0].1 < bottom));
+        let (a, b) = (rest.lines[0].points[0], moved.lines[0].points[0]);
+        assert!((b.0 - a.0 - 10.0).abs() < 1e-4 && (b.1 - a.1 + 4.0).abs() < 1e-4);
+        let faded = pose_chip(&theme(), 170.0, 90.0, Pose::opacity(0.25));
+        assert_eq!(faded.lines[0].color.a, 64);
+        let glowing = pose_chip(&theme(), 170.0, 90.0, Pose::glowing(1.0));
+        assert_eq!(outline(&glowing), 2);
     }
 
     #[test]

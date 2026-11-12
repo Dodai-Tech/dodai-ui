@@ -279,14 +279,18 @@ impl Showcase {
         self.revision
     }
 
-    /// How often the toolkit should redraw on its own: every frame while a timer, stopwatch or
-    /// beat runs on the page, every quarter second while a clock shows, else never.
+    /// How often the toolkit should redraw on its own: every frame while a looping animation
+    /// shows or a timer, stopwatch or beat runs on the page, every quarter second while a clock
+    /// shows, else never.
     pub fn redraw_every(&self) -> Option<std::time::Duration> {
         use std::time::Duration;
-        if !self.visible().iter().any(|s| s.live) {
+        let visible = self.visible();
+        if !visible.iter().any(|s| s.live) {
             return None;
         }
-        if crate::live_state::running(&self.values, crate::widgets::elapsed()) {
+        if visible.iter().any(|s| s.animated)
+            || crate::live_state::running(&self.values, crate::widgets::elapsed())
+        {
             Some(Duration::from_millis(33))
         } else {
             // The clock's second hand.
@@ -715,6 +719,31 @@ mod system_theme_tests {
         let dark = m.theme().meta.mode;
         m.set_system_dark(false);
         assert_ne!(m.theme().meta.mode, dark);
+    }
+}
+
+#[cfg(test)]
+mod redraw_tests {
+    use super::*;
+    use std::time::Duration;
+
+    fn page(name: &str) -> Option<usize> {
+        crate::CATEGORIES.iter().position(|c| *c == name)
+    }
+
+    #[test]
+    fn the_animation_page_redraws_every_frame() {
+        let mut m = Showcase::default();
+        m.update(Action::Category(page("Animation")));
+        assert!(m.visible().iter().all(|s| s.animated && s.live));
+        assert_eq!(m.redraw_every(), Some(Duration::from_millis(33)));
+    }
+
+    #[test]
+    fn a_page_without_live_sections_never_redraws_on_its_own() {
+        let mut m = Showcase::default();
+        m.update(Action::Category(page("Shape")));
+        assert_eq!(m.redraw_every(), None);
     }
 }
 

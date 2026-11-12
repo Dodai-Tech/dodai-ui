@@ -53,6 +53,9 @@ pub struct Section {
     /// Shows the time (a clock, a running timer): the toolkit rebuilds it on
     /// [`Showcase::redraw_every`](crate::Showcase::redraw_every).
     pub live: bool,
+    /// Moves on its own all the time (the Animation page's looping demos): implies
+    /// [`live`](Section::live) and asks for a redraw every frame.
+    pub animated: bool,
 }
 
 impl Section {
@@ -65,12 +68,20 @@ impl Section {
             shown: |_| true,
             build,
             live: false,
+            animated: false,
         }
     }
 
     /// Rebuilt as time passes (see [`Section::live`]).
     pub const fn live(mut self) -> Self {
         self.live = true;
+        self
+    }
+
+    /// Loops on its own (see [`Section::animated`]): rebuilt every frame while visible.
+    pub const fn animated(mut self) -> Self {
+        self.live = true;
+        self.animated = true;
         self
     }
 
