@@ -33,6 +33,13 @@ Components: `.dodai-btn--{primary,secondary,outline,outline-secondary,danger,gho
 
 `cargo run -p dodai-topcoat --example html [theme-id] > showcase.html`
 
+## Components as HTML
+
+`dodai_topcoat::html` writes the same components as plain functions that return markup (button,
+panel, tabs, slider, steps, tree, spinner, knob, gizmo, ...), for pages built without a UI framework.
+The `topcoat_showcase` example serves the whole Dodai showcase this way (a std-only HTTP server and
+one script; `just run-topcoat-live`, then open <http://127.0.0.1:3031>).
+
 ## Status
 
 Version 0.1. The component set is checked against the shared showcase by screenshots; mouse
