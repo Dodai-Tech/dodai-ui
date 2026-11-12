@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.1.0] - 2026-11-09
+## [0.1.0] - 2026-11-12
 
 The first release: the Dodai UI design system for gpui, iced, bevy and dioxus, with the web
 layer, shaders and the shared crates under them. Charts, instruments, the ratatui adapter and the egui,
