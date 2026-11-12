@@ -128,7 +128,8 @@ impl Menu {
     }
     crate::callback!(
         /// Called when an item is chosen, with the index.
-        on_select, usize
+        on_select,
+        usize
     );
     /// Called with `(parent index, child index)` when a sub-menu item is chosen.
     pub fn on_select_sub(

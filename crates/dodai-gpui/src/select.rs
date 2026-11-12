@@ -138,7 +138,8 @@ impl Select {
     }
     crate::callback!(
         /// Called with the chosen option index.
-        on_select, usize
+        on_select,
+        usize
     );
 }
 

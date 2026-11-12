@@ -117,7 +117,8 @@ impl SearchView {
     }
     crate::callback!(
         /// Called with the index into the original `items`.
-        on_select, usize
+        on_select,
+        usize
     );
     crate::callback!(
         /// Show a ✕ button while the query is non-empty.

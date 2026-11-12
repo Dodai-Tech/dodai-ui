@@ -167,7 +167,8 @@ impl SnapStack {
     }
     crate::callback!(
         /// Called when a page snaps into place, with its index.
-        on_select, usize
+        on_select,
+        usize
     );
 }
 

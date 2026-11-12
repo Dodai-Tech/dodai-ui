@@ -192,11 +192,13 @@ impl TreeView {
     }
     crate::callback!(
         /// Called with the node path when the chevron is clicked.
-        on_toggle, &[usize]
+        on_toggle,
+        &[usize]
     );
     crate::callback!(
         /// Called when an item is chosen, with the selected indices.
-        on_select, &[usize]
+        on_select,
+        &[usize]
     );
 }
 
@@ -406,7 +408,8 @@ impl TreeNavigation {
     }
     crate::callback!(
         /// Called with the path of a leaf when it is chosen.
-        on_select, &[usize]
+        on_select,
+        &[usize]
     );
 }
 
@@ -524,7 +527,8 @@ impl SplitPane {
     }
     crate::callback!(
         /// Called when the value changes, with the new value.
-        on_change, f32
+        on_change,
+        f32
     );
 }
 

@@ -91,12 +91,15 @@ impl AxisGizmo {
     crate::callback!(
         /// Called when an axis ball is clicked: show the view from that side
         /// ([`AxisId::view_angles`]).
-        on_select, AxisId
+        on_select,
+        AxisId
     );
     crate::callback!(
         /// Called with the pointer movement in px while dragging inside the gizmo
         /// (feed it to [`orbit`]).
-        on_drag, f32, f32
+        on_drag,
+        f32,
+        f32
     );
 
     /// Called when the home button is clicked.

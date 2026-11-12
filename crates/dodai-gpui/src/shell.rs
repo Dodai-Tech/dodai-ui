@@ -149,7 +149,8 @@ impl ResponsiveShell {
     crate::callback!(
         /// Enables the drag/click handle on the sidebar edge. Called with the new
         /// collapsed state when the user drags past the threshold or clicks it.
-        on_collapse, bool
+        on_collapse,
+        bool
     );
     /// Label of the menu button when collapsed.
     pub fn menu_label(mut self, s: impl Into<String>) -> Self {

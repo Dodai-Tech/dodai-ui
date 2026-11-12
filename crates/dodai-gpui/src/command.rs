@@ -119,7 +119,8 @@ impl CommandPalette {
     }
     crate::callback!(
         /// Called when a command is run, with the index.
-        on_run, usize
+        on_run,
+        usize
     );
     crate::callback!(
         /// Called when the surface is dismissed.
@@ -266,7 +267,8 @@ impl Combobox {
     }
     crate::callback!(
         /// Called with the index into the original `options`.
-        on_select, usize
+        on_select,
+        usize
     );
 }
 

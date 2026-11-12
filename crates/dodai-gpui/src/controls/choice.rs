@@ -660,13 +660,19 @@ macro_rules! choice_component {
 
 choice_component!(
     /// On/off switch.
-    Toggle, Kind::Switch, false
+    Toggle,
+    Kind::Switch,
+    false
 );
 choice_component!(
     /// Checkbox with a ✓ mark.
-    Checkbox, Kind::Checkbox, false
+    Checkbox,
+    Kind::Checkbox,
+    false
 );
 choice_component!(
     /// Radio button; `on_change` is called with `true` when selected.
-    Radio, Kind::Radio, true
+    Radio,
+    Kind::Radio,
+    true
 );

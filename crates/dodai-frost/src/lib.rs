@@ -159,10 +159,13 @@ impl Blurrer {
     /// Whether blurs run on the GPU.
     pub fn uses_gpu(&self) -> bool {
         #[cfg(feature = "gpu")]
-        if self.gpu.is_some() {
-            return true;
+        {
+            self.gpu.is_some()
         }
-        false
+        #[cfg(not(feature = "gpu"))]
+        {
+            false
+        }
     }
 
     /// [`blur`] on the chosen backend.

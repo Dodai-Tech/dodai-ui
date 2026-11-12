@@ -42,7 +42,8 @@ impl TapTempo {
     }
     crate::callback!(
         /// Called with the new BPM after a tap or a ± adjustment.
-        on_change, f32
+        on_change,
+        f32
     );
 }
 
