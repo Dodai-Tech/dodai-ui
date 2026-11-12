@@ -5,8 +5,8 @@ All notable changes to this project will be documented in this file.
 ## [0.1.0] - 2026-11-09
 
 The first release: the Dodai UI design system for gpui, iced, bevy and dioxus, with the web
-layer, shaders and the shared crates under them. Charts, instruments and the egui, slint, yew,
-leptos and freya adapters stay in the repository but are not published yet.
+layer, shaders and the shared crates under them. Charts, instruments, the ratatui adapter and the egui,
+slint, yew, leptos and freya adapters stay in the repository but are not published yet.
 
 ### ✨ Crates
 - `dodai-core`: tokens, `Theme`, `ThemeSwitcher`, component styles, WCAG contrast, `motion`,

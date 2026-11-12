@@ -20,10 +20,9 @@ Neo-Brutalism and Dodai.
 | [`dodai-icons`](crates/dodai-icons) | none | One typed `IconId` and the icon packs (Cyberpunk, Material Symbols, Neo-Brutalism, symbol sets) |
 | [`dodai-fx`](crates/dodai-fx) | none | Surface textures and effects, no dependencies |
 | [`dodai-frost`](crates/dodai-frost) | none | Frosted glass on RGBA pixels, GPU first with a CPU fallback |
-| [`dodai-ratatui`](crates/dodai-ratatui) | Ratatui 0.30 | `TuiTheme`: chamfered blocks, buttons, tabs, badges, inputs, status bar, `Scanlines` |
 
 Also in the repository but **not part of the first release**: `dodai-charts` (70 gpui charts and their
-renderer-agnostic maths), `dodai-instruments` (gauges, dials, flight and tactical displays) and the egui,
+renderer-agnostic maths), `dodai-instruments` (gauges, dials, flight and tactical displays), `dodai-ratatui` (a terminal adapter, still small) and the egui,
 slint, yew, leptos and freya adapters.
 
 ## Status (0.1)
@@ -63,17 +62,13 @@ Every theme is contrast-tested (text ≥ 7:1, primary label ≥ 4.5:1).
 ```toml
 [dependencies]
 dodai-core    = { version = "0.1", features = ["cyberpunk", "material"] }
-dodai-ratatui = "0.1"   # or dodai-iced / dodai-gpui / dodai-bevy / dodai-dioxus / dodai-topcoat
+dodai-iced    = "0.1"   # or dodai-gpui / dodai-bevy / dodai-dioxus / dodai-topcoat
 ```
 
 ```rust
-use dodai_core::{ThemeSwitcher, ButtonVariant, ControlState};
-use dodai_ratatui::TuiTheme;
-
-let mut sw = dodai_core::switcher();              // all built-in themes
-let mut tui = TuiTheme::new(sw.current().clone());
-tui.set_theme(sw.cycle_next().clone());      // switch at runtime — shape, type and glow change too
-let btn = tui.button("Continue", ButtonVariant::Primary, ControlState::Idle);
+let mut sw = dodai_core::switcher();      // all built-in themes
+let theme = sw.current().clone();         // hand it to your toolkit's adapter
+let next = sw.cycle_next().clone();       // switch at runtime: shape, type and glow change too
 ```
 
 Persist `theme.id()` (e.g. `"cyberpunk-cyan"`) in your config and restore with `switcher.select(id)`.
