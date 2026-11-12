@@ -1,64 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <!-- dodai (土台, "foundation"): two frosted-glass layers resting on a gradient foundation slab.
-       Colours: the Dodai design's dark canvas and its violet-blue-teal signature gradient. -->
+  <!-- dodai (土台): the sill of a Japanese timber house - the frame of beams laid on the
+       foundation stone, that every post stands on. Beams in the Dodai signature gradient;
+       on it stands a UI - header, sidebar, cards - its components built on the dodai. -->
   <defs>
-    <radialGradient id="dd-bg" cx="0.3" cy="0.12" r="1.15">
-      <stop offset="0" stop-color="#231c4d"/>
-      <stop offset="1" stop-color="#080613"/>
-    </radialGradient>
-    <radialGradient id="dd-halo" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0" stop-color="#7b6cff" stop-opacity="0.42"/>
-      <stop offset="1" stop-color="#7b6cff" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="dd-rim" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#fff" stop-opacity="0.22"/>
-      <stop offset="0.5" stop-color="#fff" stop-opacity="0.03"/>
-      <stop offset="1" stop-color="#fff" stop-opacity="0.06"/>
-    </linearGradient>
-    <linearGradient id="dd-top" x1="232" y1="452" x2="792" y2="772" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#a964f7"/>
-      <stop offset="0.55" stop-color="#527aff"/>
-      <stop offset="1" stop-color="#2ae6f4"/>
-    </linearGradient>
-    <linearGradient id="dd-side" x1="232" y1="0" x2="792" y2="0" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#5b2fb8"/>
-      <stop offset="0.5" stop-color="#2a3fc4"/>
-      <stop offset="1" stop-color="#0f8fa8"/>
-    </linearGradient>
-    <linearGradient id="dd-glass" x1="232" y1="0" x2="792" y2="1" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#c9b6ff" stop-opacity="0.42"/>
-      <stop offset="0.55" stop-color="#9fb4ff" stop-opacity="0.30"/>
-      <stop offset="1" stop-color="#8ff3ff" stop-opacity="0.36"/>
-    </linearGradient>
-    <filter id="dd-lift" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#000" flood-opacity="0.55"/>
-    </filter>
+    <radialGradient id="dd-bg" cx="0.28" cy="0.08" r="1.2"><stop offset="0" stop-color="#2b2462"/><stop offset="0.55" stop-color="#120e2e"/><stop offset="1" stop-color="#070511"/></radialGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#6d7bff" stop-opacity="0.45"/><stop offset="1" stop-color="#6d7bff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="beam-top" x1="200" y1="250" x2="820" y2="700" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#c68cff"/><stop offset="0.5" stop-color="#6f8fff"/><stop offset="1" stop-color="#4ff0ff"/></linearGradient>
+    <linearGradient id="beam-l" x1="200" y1="0" x2="520" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#7e46e6"/><stop offset="1" stop-color="#4b46d8"/></linearGradient>
+    <linearGradient id="beam-r" x1="520" y1="0" x2="840" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#3f63e6"/><stop offset="1" stop-color="#1596b8"/></linearGradient>
+    <linearGradient id="dd-rim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.25"/><stop offset="0.5" stop-color="#fff" stop-opacity="0.03"/><stop offset="1" stop-color="#fff" stop-opacity="0.08"/></linearGradient>
+    <filter id="lift" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="22" stdDeviation="22" flood-color="#000" flood-opacity="0.55"/></filter>
+    <filter id="bloom" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="18"/></filter>
+    <radialGradient id="fade-g" cx="0.5" cy="0.55" r="0.5"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <mask id="fade"><rect width="1024" height="1024" fill="url(#fade-g)"/></mask>
   </defs>
-
   <rect width="1024" height="1024" rx="228" fill="url(#dd-bg)"/>
-  <ellipse cx="512" cy="600" rx="420" ry="380" fill="url(#dd-halo)"/>
-
-  <!-- foundation slab: the solid base everything rests on -->
-  <g filter="url(#dd-lift)">
-    <path d="M252.0 612.0 L512.0 760.6 L772.0 612.0 L772.0 676.0 L512.0 824.6 L252.0 676.0 Z" fill="url(#dd-side)"/>
-    <path d="M252.0 612.0 L512.0 760.6 L512.0 824.6 L252.0 676.0 Z" fill="#000" opacity="0.22"/>
-    <path d="M551.9 474.8 L752.1 589.2 Q792.0 612.0 752.1 634.8 L551.9 749.2 Q512.0 772.0 472.1 749.2 L271.9 634.8 Q232.0 612.0 271.9 589.2 L472.1 474.8 Q512.0 452.0 551.9 474.8 Z" fill="url(#dd-top)"/>
-    <path d="M551.9 474.8 L752.1 589.2 Q792.0 612.0 752.1 634.8 L551.9 749.2 Q512.0 772.0 472.1 749.2 L271.9 634.8 Q232.0 612.0 271.9 589.2 L472.1 474.8 Q512.0 452.0 551.9 474.8 Z" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="5"/>
-  </g>
-
-  <!-- middle glass layer -->
-  <path d="M252.0 486.0 L512.0 634.6 L772.0 486.0 L772.0 502.0 L512.0 650.6 L252.0 502.0 Z" fill="#d8ccff" fill-opacity="0.22"/>
-  <path d="M551.9 348.8 L752.1 463.2 Q792.0 486.0 752.1 508.8 L551.9 623.2 Q512.0 646.0 472.1 623.2 L271.9 508.8 Q232.0 486.0 271.9 463.2 L472.1 348.8 Q512.0 326.0 551.9 348.8 Z" fill="url(#dd-glass)"/>
-  <path d="M551.9 348.8 L752.1 463.2 Q792.0 486.0 752.1 508.8 L551.9 623.2 Q512.0 646.0 472.1 623.2 L271.9 508.8 Q232.0 486.0 271.9 463.2 L472.1 348.8 Q512.0 326.0 551.9 348.8 Z" fill="none" stroke="#fff" stroke-opacity="0.6" stroke-width="6"/>
-
-  <!-- top glass layer -->
-  <path d="M252.0 360.0 L512.0 508.6 L772.0 360.0 L772.0 376.0 L512.0 524.6 L252.0 376.0 Z" fill="#d8ccff" fill-opacity="0.24"/>
-  <path d="M551.9 222.8 L752.1 337.2 Q792.0 360.0 752.1 382.8 L551.9 497.2 Q512.0 520.0 472.1 497.2 L271.9 382.8 Q232.0 360.0 271.9 337.2 L472.1 222.8 Q512.0 200.0 551.9 222.8 Z" fill="url(#dd-glass)"/>
-  <path d="M551.9 222.8 L752.1 337.2 Q792.0 360.0 752.1 382.8 L551.9 497.2 Q512.0 520.0 472.1 497.2 L271.9 382.8 Q232.0 360.0 271.9 337.2 L472.1 222.8 Q512.0 200.0 551.9 222.8 Z" fill="none" stroke="#fff" stroke-opacity="0.7" stroke-width="6"/>
+  <ellipse cx="512" cy="540" rx="440" ry="380" fill="url(#halo)"/>
   <!-- detail:start -->
-  <path d="M292 360 L512 234 L602 286 L382 412 Z" fill="#fff" opacity="0.10"/>
+  <g mask="url(#fade)"><path d="M-1647 -88 L431 1112 M431 -88 L-1647 1112 M-1591 -88 L487 1112 M487 -88 L-1591 1112 M-1535 -88 L543 1112 M543 -88 L-1535 1112 M-1479 -88 L599 1112 M599 -88 L-1479 1112 M-1423 -88 L655 1112 M655 -88 L-1423 1112 M-1367 -88 L711 1112 M711 -88 L-1367 1112 M-1311 -88 L767 1112 M767 -88 L-1311 1112 M-1255 -88 L823 1112 M823 -88 L-1255 1112 M-1199 -88 L879 1112 M879 -88 L-1199 1112 M-1143 -88 L935 1112 M935 -88 L-1143 1112 M-1087 -88 L991 1112 M991 -88 L-1087 1112 M-1031 -88 L1047 1112 M1047 -88 L-1031 1112 M-975 -88 L1103 1112 M1103 -88 L-975 1112 M-919 -88 L1159 1112 M1159 -88 L-919 1112 M-863 -88 L1215 1112 M1215 -88 L-863 1112 M-807 -88 L1271 1112 M1271 -88 L-807 1112 M-751 -88 L1327 1112 M1327 -88 L-751 1112 M-695 -88 L1383 1112 M1383 -88 L-695 1112 M-639 -88 L1439 1112 M1439 -88 L-639 1112 M-583 -88 L1495 1112 M1495 -88 L-583 1112 M-527 -88 L1551 1112 M1551 -88 L-527 1112 M-471 -88 L1607 1112 M1607 -88 L-471 1112 M-415 -88 L1663 1112 M1663 -88 L-415 1112 M-359 -88 L1719 1112 M1719 -88 L-359 1112 M-303 -88 L1775 1112 M1775 -88 L-303 1112 M-247 -88 L1831 1112 M1831 -88 L-247 1112 M-191 -88 L1887 1112 M1887 -88 L-191 1112 M-135 -88 L1943 1112 M1943 -88 L-135 1112 M-79 -88 L1999 1112 M1999 -88 L-79 1112 M-23 -88 L2055 1112 M2055 -88 L-23 1112 M33 -88 L2111 1112 M2111 -88 L33 1112 M89 -88 L2167 1112 M2167 -88 L89 1112 M145 -88 L2223 1112 M2223 -88 L145 1112 M201 -88 L2279 1112 M2279 -88 L201 1112 M257 -88 L2335 1112 M2335 -88 L257 1112 M313 -88 L2391 1112 M2391 -88 L313 1112 M369 -88 L2447 1112 M2447 -88 L369 1112 M425 -88 L2503 1112 M2503 -88 L425 1112 M481 -88 L2559 1112 M2559 -88 L481 1112 M537 -88 L2615 1112 M2615 -88 L537 1112 M593 -88 L2671 1112 M2671 -88 L593 1112 " stroke="#9fb0ff" stroke-opacity="0.13" stroke-width="2" fill="none"/></g>
   <!-- detail:end -->
-
+  <g filter="url(#lift)"><path d="M130.9 584.0 L512.0 804.0 L512.0 744.0 L130.9 524.0 Z" fill="#2c2566"/><path d="M893.1 584.0 L512.0 804.0 L512.0 744.0 L893.1 524.0 Z" fill="#1d1a4a"/><path d="M512.0 304.0 L893.1 524.0 L512.0 744.0 L130.9 524.0 Z" fill="#3a3380"/><polyline points="130.9,524.0 512.0,744.0 893.1,524.0" fill="none" stroke="#fff" stroke-opacity="0.45" stroke-width="3" stroke-linejoin="round"/><path d="M470.4 348.0 L816.8 548.0 L816.8 508.0 L470.4 308.0 Z" fill="url(#beam-l)"/><path d="M858.4 524.0 L816.8 548.0 L816.8 508.0 L858.4 484.0 Z" fill="url(#beam-r)"/><path d="M512.0 284.0 L858.4 484.0 L816.8 508.0 L470.4 308.0 Z" fill="url(#beam-top)"/><polyline points="470.4,308.0 816.8,508.0 858.4,484.0" fill="none" stroke="#fff" stroke-opacity="0.45" stroke-width="3" stroke-linejoin="round"/><path d="M165.6 524.0 L207.2 548.0 L207.2 508.0 L165.6 484.0 Z" fill="url(#beam-l)"/><path d="M553.6 348.0 L207.2 548.0 L207.2 508.0 L553.6 308.0 Z" fill="url(#beam-r)"/><path d="M512.0 284.0 L553.6 308.0 L207.2 508.0 L165.6 484.0 Z" fill="url(#beam-top)"/><polyline points="165.6,484.0 207.2,508.0 553.6,308.0" fill="none" stroke="#fff" stroke-opacity="0.45" stroke-width="3" stroke-linejoin="round"/><path d="M512.0 372.0 L775.3 524.0 L512.0 676.0 L248.7 524.0 Z" fill="#7b8dff" opacity="0.85" filter="url(#bloom)"/><path d="M467.0 414.0 L702.5 550.0 L702.5 518.0 L467.0 382.0 Z" fill="#d9d2ff"/><path d="M747.6 524.0 L702.5 550.0 L702.5 518.0 L747.6 492.0 Z" fill="#aab8ff"/><path d="M512.0 356.0 L747.6 492.0 L702.5 518.0 L467.0 382.0 Z" fill="#ffffff"/><polyline points="467.0,382.0 702.5,518.0 747.6,492.0" fill="none" stroke="#fff" stroke-opacity="0.45" stroke-width="3" stroke-linejoin="round"/><!-- detail:start --><g transform="matrix(173.205 100.000 -173.205 100.000 512.00 292.00)"><circle cx="0.440" cy="0.450" r="0.035" fill="#b06cff" opacity="1"/><circle cx="0.540" cy="0.450" r="0.035" fill="#527aff" opacity="1"/><circle cx="0.640" cy="0.450" r="0.035" fill="#2ae6f4" opacity="1"/><rect x="0.820" y="0.400" width="0.740" height="0.100" rx="0.050" fill="#b9b0ef" opacity="0.8"/></g><!-- detail:end --><path d="M276.4 524.0 L338.8 560.0 L338.8 508.0 L276.4 472.0 Z" fill="#d9d2ff"/><path d="M512.0 460.0 L338.8 560.0 L338.8 508.0 L512.0 408.0 Z" fill="#aab8ff"/><path d="M449.6 372.0 L512.0 408.0 L338.8 508.0 L276.4 472.0 Z" fill="#ffffff"/><polyline points="276.4,472.0 338.8,508.0 512.0,408.0" fill="none" stroke="#fff" stroke-opacity="0.45" stroke-width="3" stroke-linejoin="round"/><!-- detail:start --><g transform="matrix(173.205 100.000 -173.205 100.000 512.00 272.00)"><rect x="0.390" y="0.790" width="0.220" height="0.080" rx="0.040" fill="url(#beam-top)" opacity="1"/><rect x="0.390" y="0.950" width="0.220" height="0.060" rx="0.030" fill="#b9b0ef" opacity="0.8"/><rect x="0.390" y="1.090" width="0.170" height="0.060" rx="0.030" fill="#b9b0ef" opacity="0.8"/><rect x="0.390" y="1.230" width="0.220" height="0.060" rx="0.030" fill="#b9b0ef" opacity="0.8"/><rect x="0.390" y="1.370" width="0.170" height="0.060" rx="0.030" fill="#b9b0ef" opacity="0.8"/><rect x="0.390" y="1.510" width="0.220" height="0.060" rx="0.030" fill="#b9b0ef" opacity="0.8"/></g><!-- detail:end --><path d="M446.2 518.0 L602.1 608.0 L602.1 516.0 L446.2 426.0 Z" fill="url(#beam-l)"/><path d="M685.2 560.0 L602.1 608.0 L602.1 516.0 L685.2 468.0 Z" fill="url(#beam-r)"/><path d="M529.3 378.0 L685.2 468.0 L602.1 516.0 L446.2 426.0 Z" fill="url(#beam-top)"/><polyline points="446.2,426.0 602.1,516.0 685.2,468.0" fill="none" stroke="#fff" stroke-opacity="0.45" stroke-width="3" stroke-linejoin="round"/><!-- detail:start --><g transform="matrix(173.205 100.000 -173.205 100.000 512.00 232.00)"><rect x="0.900" y="0.790" width="0.420" height="0.080" rx="0.040" fill="#fff" opacity="0.95"/><rect x="0.900" y="0.920" width="0.300" height="0.050" rx="0.025" fill="#fff" opacity="0.6"/><rect x="0.900" y="1.000" width="0.280" height="0.090" rx="0.045" fill="#fff" opacity="1"/><circle cx="1.530" cy="0.840" r="0.075" fill="#fff" opacity="0.9"/></g><!-- detail:end --><path d="M356.1 570.0 L435.8 616.0 L435.8 552.0 L356.1 506.0 Z" fill="#d9d2ff"/><path d="M508.5 574.0 L435.8 616.0 L435.8 552.0 L508.5 510.0 Z" fill="#aab8ff"/><path d="M428.9 464.0 L508.5 510.0 L435.8 552.0 L356.1 506.0 Z" fill="#ffffff"/><polyline points="356.1,506.0 435.8,552.0 508.5,510.0" fill="none" stroke="#fff" stroke-opacity="0.45" stroke-width="3" stroke-linejoin="round"/><!-- detail:start --><g transform="matrix(173.205 100.000 -173.205 100.000 512.00 260.00)"><rect x="0.880" y="1.360" width="0.260" height="0.050" rx="0.025" fill="#b9b0ef" opacity="0.8"/><rect x="0.880" y="1.500" width="0.280" height="0.140" rx="0.070" fill="url(#beam-top)" opacity="1"/><circle cx="1.090" cy="1.570" r="0.055" fill="#fff" opacity="1"/></g><!-- detail:end --><path d="M453.1 626.0 L512.0 660.0 L512.0 616.0 L453.1 582.0 Z" fill="#d9d2ff"/><path d="M584.7 618.0 L512.0 660.0 L512.0 616.0 L584.7 574.0 Z" fill="#aab8ff"/><path d="M525.9 540.0 L584.7 574.0 L512.0 616.0 L453.1 582.0 Z" fill="#ffffff"/><polyline points="453.1,582.0 512.0,616.0 584.7,574.0" fill="none" stroke="#fff" stroke-opacity="0.45" stroke-width="3" stroke-linejoin="round"/><!-- detail:start --><g transform="matrix(173.205 100.000 -173.205 100.000 512.00 280.00)"><rect x="1.420" y="1.360" width="0.180" height="0.060" rx="0.030" fill="#b9b0ef" opacity="0.8"/><rect x="1.420" y="1.460" width="0.340" height="0.060" rx="0.030" fill="url(#beam-top)" opacity="1"/><rect x="1.420" y="1.560" width="0.240" height="0.060" rx="0.030" fill="#b9b0ef" opacity="0.8"/><rect x="1.420" y="1.660" width="0.120" height="0.060" rx="0.030" fill="#b9b0ef" opacity="0.8"/></g><!-- detail:end --><path d="M470.4 700.0 L512.0 724.0 L512.0 684.0 L470.4 660.0 Z" fill="url(#beam-l)"/><path d="M858.4 524.0 L512.0 724.0 L512.0 684.0 L858.4 484.0 Z" fill="url(#beam-r)"/><path d="M816.8 460.0 L858.4 484.0 L512.0 684.0 L470.4 660.0 Z" fill="url(#beam-top)"/><polyline points="470.4,660.0 512.0,684.0 858.4,484.0" fill="none" stroke="#fff" stroke-opacity="0.45" stroke-width="3" stroke-linejoin="round"/><path d="M165.6 524.0 L512.0 724.0 L512.0 684.0 L165.6 484.0 Z" fill="url(#beam-l)"/><path d="M553.6 700.0 L512.0 724.0 L512.0 684.0 L553.6 660.0 Z" fill="url(#beam-r)"/><path d="M207.2 460.0 L553.6 660.0 L512.0 684.0 L165.6 484.0 Z" fill="url(#beam-top)"/><polyline points="165.6,484.0 512.0,684.0 553.6,660.0" fill="none" stroke="#fff" stroke-opacity="0.45" stroke-width="3" stroke-linejoin="round"/><polyline points="130.9,524.0 512.0,744.0 893.1,524.0" fill="none" stroke="url(#beam-top)" stroke-width="4" stroke-linejoin="round" opacity="0.9"/></g>
   <!-- rim:start -->
   <rect x="5" y="5" width="1014" height="1014" rx="223" fill="none" stroke="url(#dd-rim)" stroke-width="10"/>
   <!-- rim:end -->

@@ -1,4 +1,4 @@
-<img src="assets/icons/dodai-ui-256.png" width="128" alt="Dodai UI icon: two glass layers on a gradient foundation">
+<img src="assets/icons/dodai-ui-256.png" width="128" alt="Dodai UI logo: a UI of header, sidebar and cards built on its dodai (土台), the timber sill frame of a Japanese house on its foundation stone">
 
 # Dodai UI
 
