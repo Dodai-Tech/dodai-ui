@@ -32,6 +32,12 @@ slint, yew, leptos and freya adapters stay in the repository but are not publish
 - One scroll-spy rule for every sidebar (`dodai_core::spy::pick`): the last section wins at the end of
   the page and a picked section holds until the user scrolls.
 - bevy: a chamfer material that draws its hard shadow inside the cut outline.
+- Per-design spinners (`Look.spinner`, shared geometry in `dodai_core::busy`) and live animation demos.
+- Icon picker with detail panel in every showcase: Download SVG, Copy SVG and Copy Rust, plus the
+  Cyberpunk modifier variants of the stroked icons.
+- Menus with inline sub-menus, themed and rich tooltips, effect-slider hints.
+- The "All" page sidebar follows the scroll into the category being read, like gpui.
+- The Dodai UI logo as app icon and in the showcase headers.
 
 ### Known limits
 - Mouse and keyboard behaviour has been checked on the gpui showcase only; the others are
