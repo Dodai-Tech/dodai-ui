@@ -1,3 +1,5 @@
+<img src="assets/icons/dodai-ui-256.png" width="128" alt="Dodai UI icon: two glass layers on a gradient foundation">
+
 # Dodai UI
 
 [![Audit](https://github.com/sorinirimies/dodai-ui/actions/workflows/security.yml/badge.svg)](https://github.com/sorinirimies/dodai-ui/actions/workflows/security.yml)
