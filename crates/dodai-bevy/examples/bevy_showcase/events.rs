@@ -312,6 +312,18 @@ pub fn scroll_target(menu_over: bool, area_over: bool, x: f32, side_w: f32) -> S
     }
 }
 
+/// How far (logical px) below the page's top a section still counts as reached.
+const SPY_SLACK: f32 = 60.0;
+
+/// What `section_nav` keeps between frames: the section it is scrolling to, the frames to let
+/// the layout settle after that, and the frames seen.
+#[derive(Default)]
+pub struct NavState {
+    pending: Option<&'static str>,
+    settle: u32,
+    frames: u32,
+}
+
 /// A section panel of the page, found by its title to scroll to it and to follow the scroll.
 #[derive(Component, Debug, Clone, Copy)]
 pub struct SectionAnchor(pub &'static str);
@@ -328,10 +340,14 @@ pub fn section_nav(
         &ComputedNode,
         &UiGlobalTransform,
     )>,
-    mut pending: Local<Option<&'static str>>,
-    mut settle: Local<u32>,
-    mut frames: Local<u32>,
+    wheel: Res<AccumulatedMouseScroll>,
+    mut nav: Local<NavState>,
 ) {
+    let NavState {
+        pending,
+        settle,
+        frames,
+    } = &mut *nav;
     *frames += 1;
     if *frames == 20 {
         // `DODAI_SECTION=<title>`: pick that section, as a click in the sidebar would.
@@ -348,6 +364,10 @@ pub fn section_nav(
             dirty.nav = true;
             dirty.content = true;
         }
+    }
+    if wheel.delta.y != 0.0 {
+        // The user scrolls: a picked section stops holding the highlight.
+        model.bypass_change_detection().0.update(Action::Unpin);
     }
     if let Some(t) = model.bypass_change_detection().0.take_jump() {
         *pending = Some(t);
@@ -376,18 +396,20 @@ pub fn section_nav(
         *settle -= 1;
         return;
     }
-    let mut current: Option<(&'static str, f32)> = None;
-    for (a, n, at) in &anchors {
-        let y = top(n, at) - page_top;
-        if y <= 24.0 / scale && current.is_none_or(|(_, cy)| y > cy) {
-            current = Some((a.0, y));
-        }
-    }
-    if let Some((t, _)) = current {
-        if model.0.active_section() != Some(t) {
-            model.0.update(Action::Visible(t));
-            dirty.nav = true;
-        }
+    let mut tops: Vec<(&'static str, f32)> = anchors
+        .iter()
+        .map(|(a, n, at)| (a.0, (top(n, at) - page_top) * scale))
+        .collect();
+    tops.sort_by(|a, b| a.1.total_cmp(&b.1));
+    let max = (page.content_size().y - page.size().y).max(0.0) * scale;
+    let at_end = max > 1.0 && pos.y >= max - 1.0;
+    let before = model.0.active_section();
+    model
+        .bypass_change_detection()
+        .0
+        .follow_scroll(&tops, 0.0, at_end, SPY_SLACK);
+    if model.0.active_section() != before {
+        dirty.nav = true;
     }
 }
 
@@ -411,19 +433,25 @@ pub fn scroll(
         .ok()
         .and_then(Window::cursor_position)
         .map_or(f32::MAX, |p| p.x);
-    let over_area = q
-        .iter()
-        .any(|(s, _, _, r)| *s == Scroller::Area && r.is_some_and(|r| r.cursor_over()));
+    let dy = match wheel.unit {
+        MouseScrollUnit::Line => wheel.delta.y * 40.0,
+        MouseScrollUnit::Pixel => wheel.delta.y,
+    };
+    let range =
+        |n: &ComputedNode| (n.content_size().y - n.size().y).max(0.0) * n.inverse_scale_factor();
+    // A scroll area under the cursor takes the wheel until it can't move that way; then the
+    // page goes on (as the gpui showcase's nested areas do).
+    let over_area = q.iter().any(|(s, pos, n, r)| {
+        *s == Scroller::Area
+            && r.is_some_and(|r| r.cursor_over())
+            && ((dy > 0.0 && pos.y > 0.0) || (dy < 0.0 && pos.y < range(n)) || dy == 0.0)
+    });
     let target = scroll_target(
         menus.iter().any(RelativeCursorPosition::cursor_over),
         over_area,
         x,
         side_w,
     );
-    let dy = match wheel.unit {
-        MouseScrollUnit::Line => wheel.delta.y * 40.0,
-        MouseScrollUnit::Pixel => wheel.delta.y,
-    };
     if !*first {
         *first = true;
         if let Some(px) = std::env::var("DODAI_SCROLL")

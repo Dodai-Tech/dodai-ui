@@ -161,6 +161,8 @@ pub enum Action {
     Section(&'static str),
     /// The page was scrolled and this section is now at the top.
     Visible(&'static str),
+    /// The user scrolled the page themselves: a picked section no longer holds the highlight.
+    Unpin,
 }
 
 /// The showcase's whole state.
@@ -184,6 +186,9 @@ pub struct Showcase {
     revision: u64,
     active: Option<&'static str>,
     jump: Option<&'static str>,
+    /// The picked section keeps the highlight until the user scrolls (it may be too near the
+    /// end of the page to reach the top).
+    pinned: Option<&'static str>,
 }
 
 impl Default for Showcase {
@@ -271,6 +276,7 @@ impl Showcase {
             revision: 0,
             active: None,
             jump: None,
+            pinned: None,
         }
     }
 
@@ -446,6 +452,27 @@ impl Showcase {
         self.jump.take()
     }
 
+    /// The section a sidebar pick holds the highlight on, until [`Action::Unpin`].
+    pub fn held_section(&self) -> Option<&'static str> {
+        self.pinned
+    }
+
+    /// Follow the page's scroll: `tops` are the shown sections' tops in document order,
+    /// `view_top` the page's top edge (same space), `at_end` that the scroll range is used up.
+    /// Moves the highlight by the shared [`dodai_core::spy::pick`] rule.
+    pub fn follow_scroll(
+        &mut self,
+        tops: &[(&'static str, f32)],
+        view_top: f32,
+        at_end: bool,
+        slack: f32,
+    ) {
+        let now = dodai_core::spy::pick(tops, self.held_section(), view_top, at_end, slack);
+        if let Some(t) = now.filter(|t| self.active_section() != Some(*t)) {
+            self.update(Action::Visible(t));
+        }
+    }
+
     /// The sidebar filter.
     pub fn filter(&self) -> &str {
         &self.filter
@@ -538,6 +565,7 @@ impl Showcase {
                 }
                 self.category = c;
                 self.active = None;
+                self.pinned = None;
             }
             Action::Section(title) => {
                 // A title may repeat on another page: the open page's own comes first.
@@ -553,9 +581,11 @@ impl Showcase {
                     }
                     self.active = Some(s.title);
                     self.jump = Some(s.title);
+                    self.pinned = Some(s.title);
                 }
             }
             Action::Visible(title) => self.active = Some(title),
+            Action::Unpin => self.pinned = None,
             Action::Filter(f) => self.filter = f,
             Action::Design(i) => {
                 if let Some(d) = self.designs().get(i).copied() {
@@ -766,5 +796,27 @@ mod section_nav_tests {
         // Another page forgets it.
         m.update(Action::Category(Some(1)));
         assert_ne!(m.active_section(), Some(titles[3]));
+    }
+
+    #[test]
+    fn a_picked_section_holds_the_highlight_until_the_user_scrolls() {
+        let mut m = Showcase::default();
+        m.update(Action::Category(Some(0)));
+        let t: Vec<_> = m.visible().iter().map(|s| s.title).collect();
+        let tops: Vec<_> = t
+            .iter()
+            .enumerate()
+            .map(|(i, s)| (*s, i as f32 * 300.0 - 100.0))
+            .collect();
+        // Picked, but the page cannot bring it to the top: the scroll must not undo the pick.
+        m.update(Action::Section(t[2]));
+        m.follow_scroll(&tops, 0.0, false, 60.0);
+        assert_eq!(m.active_section(), Some(t[2]));
+        // The user scrolls: the highlight follows the page, and the last section wins at the end.
+        m.update(Action::Unpin);
+        m.follow_scroll(&tops, 0.0, false, 60.0);
+        assert_eq!(m.active_section(), Some(t[0]));
+        m.follow_scroll(&tops, 0.0, true, 60.0);
+        assert_eq!(m.active_section(), t.last().copied());
     }
 }

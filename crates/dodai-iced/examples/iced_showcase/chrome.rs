@@ -298,7 +298,11 @@ pub fn page<'a>(app: &App) -> Element<'a, Msg> {
         );
     }
     scrollable(container(col.padding(sp.xl).width(Length::Fill)).id(app.content_id.clone()))
-        .on_scroll(|v| Msg::Scrolled(v.absolute_offset().y))
+        .on_scroll(|v| {
+            let max = v.content_bounds().height - v.bounds().height;
+            let y = v.absolute_offset().y;
+            Msg::Scrolled(y, max > 1.0 && y >= max - 1.0)
+        })
         .id(app.scroll_id.clone())
         .style(lt.scrollable())
         .height(Length::Fill)

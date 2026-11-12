@@ -33,6 +33,7 @@ mod panel_border;
 mod shape_system;
 pub mod slider_math;
 mod spec;
+pub mod spy;
 pub mod stream;
 mod surface_paint;
 mod surface_style;

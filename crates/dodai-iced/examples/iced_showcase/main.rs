@@ -30,6 +30,8 @@ pub struct App {
     pub content_id: iced::widget::Id,
     /// Where the page is scrolled to, in px.
     pub offset: f32,
+    /// The page's scroll range is used up (the last section wins the highlight).
+    pub at_end: bool,
     /// Frames drawn (for `DODAI_SHOT`).
     pub frames: u32,
     /// Window size, px (frosted surfaces line their backdrop up with it).
@@ -47,7 +49,8 @@ pub enum Msg {
     TreeToggle(String),
     Tick(Instant),
     /// The page scrolled: find which section is at the top.
-    Scrolled(f32),
+    /// The page scrolled: its offset and whether the scroll range is used up.
+    Scrolled(f32, bool),
     /// Section and content positions, measured for a jump (`true`) or the scroll-spy.
     Measured(Vec<Hit>, bool),
     Shot(iced::window::Screenshot),
@@ -77,6 +80,7 @@ pub fn boot() -> App {
         scroll_id: iced::widget::Id::unique(),
         content_id: iced::widget::Id::unique(),
         offset: 0.0,
+        at_end: false,
         frames: 0,
         window: iced::Size::new(1400.0, 900.0),
         wallpaper: None,
@@ -120,6 +124,9 @@ pub fn write_ppm(path: &str, size: iced::Size<u32>, rgba: &[u8]) -> std::io::Res
     out.flush()
 }
 
+/// How far below the page's top a section still counts as reached.
+const SPY_SLACK: f32 = 60.0;
+
 pub fn update(app: &mut App, msg: Msg) -> Task<Msg> {
     let mut task = Task::none();
     match msg {
@@ -129,8 +136,9 @@ pub fn update(app: &mut App, msg: Msg) -> Task<Msg> {
                 task = measure(app, true);
             }
         }
-        Msg::Scrolled(y) => {
+        Msg::Scrolled(y, at_end) => {
             app.offset = y;
+            app.at_end = at_end;
             task = measure(app, false);
         }
         Msg::Measured(hits, jump) => task = placed(app, &hits, jump),
@@ -240,18 +248,8 @@ fn placed(app: &mut App, hits: &[Hit], jump: bool) -> Task<Msg> {
             )
         });
     }
-    // The last section that has reached the top of the view.
-    let current = sections
-        .iter()
-        .rev()
-        .find(|(_, y)| *y <= app.offset + 24.0)
-        .or(sections.first())
-        .map(|s| s.0);
-    if let Some(t) = current {
-        if app.model.active_section() != Some(t) {
-            app.model.update(Action::Visible(t));
-        }
-    }
+    app.model
+        .follow_scroll(&sections, app.offset, app.at_end, SPY_SLACK);
     Task::none()
 }
 
@@ -275,6 +273,10 @@ fn subscription(_app: &App) -> Subscription<Msg> {
                 "T" => Some(Msg::Act(Action::CycleTheme(false))),
                 _ => None,
             },
+            // The user scrolls: a picked section stops holding the sidebar highlight.
+            iced::Event::Mouse(iced::mouse::Event::WheelScrolled { .. }) => {
+                Some(Msg::Act(Action::Unpin))
+            }
             _ => None,
         }),
     ])
