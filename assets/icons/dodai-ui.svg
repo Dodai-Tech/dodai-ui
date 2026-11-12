@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- dodai (土台, "foundation"): two frosted-glass layers resting on a gradient foundation slab.
+       Colours: the Dodai design's dark canvas and its violet-blue-teal signature gradient. -->
+  <defs>
+    <radialGradient id="dd-bg" cx="0.3" cy="0.12" r="1.15">
+      <stop offset="0" stop-color="#231c4d"/>
+      <stop offset="1" stop-color="#080613"/>
+    </radialGradient>
+    <radialGradient id="dd-halo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#7b6cff" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#7b6cff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="dd-rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.22"/>
+      <stop offset="0.5" stop-color="#fff" stop-opacity="0.03"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0.06"/>
+    </linearGradient>
+    <linearGradient id="dd-top" x1="232" y1="452" x2="792" y2="772" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#a964f7"/>
+      <stop offset="0.55" stop-color="#527aff"/>
+      <stop offset="1" stop-color="#2ae6f4"/>
+    </linearGradient>
+    <linearGradient id="dd-side" x1="232" y1="0" x2="792" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5b2fb8"/>
+      <stop offset="0.5" stop-color="#2a3fc4"/>
+      <stop offset="1" stop-color="#0f8fa8"/>
+    </linearGradient>
+    <linearGradient id="dd-glass" x1="232" y1="0" x2="792" y2="1" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#c9b6ff" stop-opacity="0.42"/>
+      <stop offset="0.55" stop-color="#9fb4ff" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#8ff3ff" stop-opacity="0.36"/>
+    </linearGradient>
+    <filter id="dd-lift" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" rx="228" fill="url(#dd-bg)"/>
+  <ellipse cx="512" cy="600" rx="420" ry="380" fill="url(#dd-halo)"/>
+
+  <!-- foundation slab: the solid base everything rests on -->
+  <g filter="url(#dd-lift)">
+    <path d="M252.0 612.0 L512.0 760.6 L772.0 612.0 L772.0 676.0 L512.0 824.6 L252.0 676.0 Z" fill="url(#dd-side)"/>
+    <path d="M252.0 612.0 L512.0 760.6 L512.0 824.6 L252.0 676.0 Z" fill="#000" opacity="0.22"/>
+    <path d="M551.9 474.8 L752.1 589.2 Q792.0 612.0 752.1 634.8 L551.9 749.2 Q512.0 772.0 472.1 749.2 L271.9 634.8 Q232.0 612.0 271.9 589.2 L472.1 474.8 Q512.0 452.0 551.9 474.8 Z" fill="url(#dd-top)"/>
+    <path d="M551.9 474.8 L752.1 589.2 Q792.0 612.0 752.1 634.8 L551.9 749.2 Q512.0 772.0 472.1 749.2 L271.9 634.8 Q232.0 612.0 271.9 589.2 L472.1 474.8 Q512.0 452.0 551.9 474.8 Z" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="5"/>
+  </g>
+
+  <!-- middle glass layer -->
+  <path d="M252.0 486.0 L512.0 634.6 L772.0 486.0 L772.0 502.0 L512.0 650.6 L252.0 502.0 Z" fill="#d8ccff" fill-opacity="0.22"/>
+  <path d="M551.9 348.8 L752.1 463.2 Q792.0 486.0 752.1 508.8 L551.9 623.2 Q512.0 646.0 472.1 623.2 L271.9 508.8 Q232.0 486.0 271.9 463.2 L472.1 348.8 Q512.0 326.0 551.9 348.8 Z" fill="url(#dd-glass)"/>
+  <path d="M551.9 348.8 L752.1 463.2 Q792.0 486.0 752.1 508.8 L551.9 623.2 Q512.0 646.0 472.1 623.2 L271.9 508.8 Q232.0 486.0 271.9 463.2 L472.1 348.8 Q512.0 326.0 551.9 348.8 Z" fill="none" stroke="#fff" stroke-opacity="0.6" stroke-width="6"/>
+
+  <!-- top glass layer -->
+  <path d="M252.0 360.0 L512.0 508.6 L772.0 360.0 L772.0 376.0 L512.0 524.6 L252.0 376.0 Z" fill="#d8ccff" fill-opacity="0.24"/>
+  <path d="M551.9 222.8 L752.1 337.2 Q792.0 360.0 752.1 382.8 L551.9 497.2 Q512.0 520.0 472.1 497.2 L271.9 382.8 Q232.0 360.0 271.9 337.2 L472.1 222.8 Q512.0 200.0 551.9 222.8 Z" fill="url(#dd-glass)"/>
+  <path d="M551.9 222.8 L752.1 337.2 Q792.0 360.0 752.1 382.8 L551.9 497.2 Q512.0 520.0 472.1 497.2 L271.9 382.8 Q232.0 360.0 271.9 337.2 L472.1 222.8 Q512.0 200.0 551.9 222.8 Z" fill="none" stroke="#fff" stroke-opacity="0.7" stroke-width="6"/>
+  <!-- detail:start -->
+  <path d="M292 360 L512 234 L602 286 L382 412 Z" fill="#fff" opacity="0.10"/>
+  <!-- detail:end -->
+
+  <!-- rim:start -->
+  <rect x="5" y="5" width="1014" height="1014" rx="223" fill="none" stroke="url(#dd-rim)" stroke-width="10"/>
+  <!-- rim:end -->
+</svg>

@@ -51,6 +51,8 @@ mod charts_page;
 mod code;
 mod foundations;
 mod impl_src;
+#[cfg(target_os = "macos")]
+mod macos;
 mod motion_page;
 mod overview;
 mod player;
@@ -1063,9 +1065,17 @@ fn new_showcase(cx: &mut App) -> Entity<Showcase> {
     cx.new(Showcase::build)
 }
 
+/// The app id: Linux window class and `.desktop` name.
+pub const APP_ID: &str = "dodai-ui";
+/// The Dock icon, generated from `assets/icons/dodai-ui.svg` by `just icons`.
+#[cfg(target_os = "macos")]
+const DOCK_ICON: &[u8] = include_bytes!("../assets/dodai-ui-macos-512.png");
+
 /// Opens the showcase window and runs until it is closed.
 pub fn run() {
     Application::new().run(|cx: &mut App| {
+        #[cfg(target_os = "macos")]
+        macos::set_dock_icon(DOCK_ICON);
         // Running animations redraw at most 60 times a second (DODAI_FPS=0 lifts the cap).
         let fps = std::env::var("DODAI_FPS")
             .ok()
@@ -1264,6 +1274,7 @@ pub fn run() {
                 WindowOptions {
                     window_bounds: Some(WindowBounds::Windowed(bounds)),
                     window_min_size: Some(size(px(420.0), px(360.0))),
+                    app_id: Some(APP_ID.to_owned()),
                     // Debug: DODAI_FLOAT=1 keeps the window above the others, so a screenshot run
                     // gets frames even when another app holds the focus.
                     kind: if std::env::var_os("DODAI_FLOAT").is_some() {

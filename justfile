@@ -91,6 +91,10 @@ run-topcoat-live:
 run-gpui:
     cargo run -p dodai-showcase
 
+# Regenerate every app icon asset from assets/icons/dodai-ui.svg
+icons:
+    nu scripts/icons.nu --id dodai-ui --gui-assets crates/dodai-showcase/assets
+
 # Write the web showcase to showcase.html and open it (macOS `open`, Linux `xdg-open`)
 run-topcoat:
     cargo run -q -p dodai-topcoat --example html > showcase.html
