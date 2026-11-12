@@ -87,8 +87,8 @@ impl Section {
     }
 }
 
-/// The categories this port shows, in sidebar order. (Charts, Instruments and Shaders are
-/// not ported to the other toolkits yet.)
+/// The categories this port shows, in sidebar order. (Charts and Instruments are not ported
+/// to the other toolkits.)
 pub const CATEGORIES: [&str; 10] = [
     "Foundations",
     "Shape",
@@ -119,4 +119,22 @@ pub fn sections() -> &'static [Section] {
         all
     });
     &ALL
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Sections are keyed and anchored by title: two with one title break the page.
+    #[test]
+    fn section_titles_are_unique() {
+        let mut seen = std::collections::HashSet::new();
+        for s in sections() {
+            assert!(
+                seen.insert(s.title),
+                "duplicate section title {:?}",
+                s.title
+            );
+        }
+    }
 }
