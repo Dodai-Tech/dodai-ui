@@ -41,8 +41,8 @@ pub fn setup(mut commands: Commands, model: Res<Model>, theme: Res<DodaiTheme>) 
     let sp = t.spacing.clone();
     commands
         .spawn(Node {
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
+            width: Val::Vw(100.0),
+            height: Val::Vh(100.0),
             ..default()
         })
         .with_children(|root| {
@@ -95,6 +95,8 @@ pub fn setup(mut commands: Commands, model: Res<Model>, theme: Res<DodaiTheme>) 
             root.spawn(Node {
                 flex_grow: 1.0,
                 min_width: Val::Px(0.0),
+                height: Val::Percent(100.0),
+                min_height: Val::Px(0.0),
                 flex_direction: FlexDirection::Column,
                 ..default()
             })
