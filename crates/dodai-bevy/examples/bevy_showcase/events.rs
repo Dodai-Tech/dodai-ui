@@ -312,6 +312,85 @@ pub fn scroll_target(menu_over: bool, area_over: bool, x: f32, side_w: f32) -> S
     }
 }
 
+/// A section panel of the page, found by its title to scroll to it and to follow the scroll.
+#[derive(Component, Debug, Clone, Copy)]
+pub struct SectionAnchor(pub &'static str);
+
+/// Sidebar picks scroll the page to that section; scrolling the page moves the sidebar's
+/// highlight to the section at the top (the scroll-spy).
+pub fn section_nav(
+    mut model: ResMut<Model>,
+    mut dirty: ResMut<Dirty>,
+    anchors: Query<(&SectionAnchor, &ComputedNode, &UiGlobalTransform)>,
+    mut pages: Query<(
+        &Scroller,
+        &mut ScrollPosition,
+        &ComputedNode,
+        &UiGlobalTransform,
+    )>,
+    mut pending: Local<Option<&'static str>>,
+    mut settle: Local<u32>,
+    mut frames: Local<u32>,
+) {
+    *frames += 1;
+    if *frames == 20 {
+        // `DODAI_SECTION=<title>`: pick that section, as a click in the sidebar would.
+        let wanted = std::env::var("DODAI_SECTION").ok().and_then(|t| {
+            model
+                .0
+                .visible()
+                .iter()
+                .find(|s| s.title == t)
+                .map(|s| s.title)
+        });
+        if let Some(t) = wanted {
+            model.0.update(Action::Section(t));
+            dirty.nav = true;
+            dirty.content = true;
+        }
+    }
+    if let Some(t) = model.bypass_change_detection().0.take_jump() {
+        *pending = Some(t);
+    }
+    let Some((_, mut pos, page, page_at)) = pages.iter_mut().find(|p| *p.0 == Scroller::Page)
+    else {
+        return;
+    };
+    let top = |n: &ComputedNode, at: &UiGlobalTransform| at.translation.y - n.size().y / 2.0;
+    let page_top = top(page, page_at);
+    let scale = page.inverse_scale_factor();
+    if let Some(t) = *pending {
+        // The page may still be rebuilding: wait until the panel has been laid out.
+        if let Some((_, n, at)) = anchors
+            .iter()
+            .find(|(a, n, _)| a.0 == t && n.size().y > 0.0)
+        {
+            let max = (page.content_size().y - page.size().y).max(0.0) * scale;
+            pos.y = (pos.y + (top(n, at) - page_top) * scale).clamp(0.0, max);
+            *pending = None;
+            *settle = 20;
+        }
+        return;
+    }
+    if *settle > 0 {
+        *settle -= 1;
+        return;
+    }
+    let mut current: Option<(&'static str, f32)> = None;
+    for (a, n, at) in &anchors {
+        let y = top(n, at) - page_top;
+        if y <= 24.0 / scale && current.is_none_or(|(_, cy)| y > cy) {
+            current = Some((a.0, y));
+        }
+    }
+    if let Some((t, _)) = current {
+        if model.0.active_section() != Some(t) {
+            model.0.update(Action::Visible(t));
+            dirty.nav = true;
+        }
+    }
+}
+
 /// Wheel scrolling: the region under the cursor moves.
 pub fn scroll(
     wheel: Res<AccumulatedMouseScroll>,
