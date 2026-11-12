@@ -365,7 +365,7 @@ pub fn section_nav(
             dirty.content = true;
         }
     }
-    if *frames == 40 {
+    if *frames == 90 {
         // `DODAI_PRESS=<key>;<key>`: press those button keys, as clicks would.
         if let Ok(keys) = std::env::var("DODAI_PRESS") {
             for k in keys.split(';').filter(|k| !k.is_empty()) {
