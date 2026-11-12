@@ -97,6 +97,7 @@ fn main() {
             events::section_fx,
             events::live_refresh,
             events::scroll,
+            events::section_nav,
         )
             .chain(),
     );

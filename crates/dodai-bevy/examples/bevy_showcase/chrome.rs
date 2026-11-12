@@ -465,6 +465,7 @@ pub fn spawn_page(
                 ..default()
             },
             crate::events::SectionFx::default(),
+            crate::events::SectionAnchor(s.title),
         ))
         .with_children(|c| {
             c.spawn(Node {
