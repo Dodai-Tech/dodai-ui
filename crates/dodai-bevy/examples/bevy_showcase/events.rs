@@ -365,6 +365,15 @@ pub fn section_nav(
             dirty.content = true;
         }
     }
+    if *frames == 40 {
+        // `DODAI_PRESS=<key>;<key>`: press those button keys, as clicks would.
+        if let Ok(keys) = std::env::var("DODAI_PRESS") {
+            for k in keys.split(';').filter(|k| !k.is_empty()) {
+                model.0.update(Action::Press(k.to_owned()));
+            }
+            dirty.all();
+        }
+    }
     if wheel.delta.y != 0.0 {
         // The user scrolls: a picked section stops holding the highlight.
         model.bypass_change_detection().0.update(Action::Unpin);

@@ -3,7 +3,7 @@
 //!
 //! Keys: `t` / `T` next / previous theme. Env: `DODAI_THEME` (theme id), `DODAI_CAT`
 //! (0 = all, 1.. = category), `DODAI_FILTER` (sidebar filter text), `DODAI_SHOT` (write a PPM
-//! screenshot and exit).
+//! screenshot and exit), `DODAI_PRESS` (`;`-separated button keys pressed at frame 20).
 
 mod chrome;
 mod render;
@@ -163,6 +163,14 @@ pub fn update(app: &mut App, msg: Msg) -> Task<Msg> {
                         .map(|s| s.title)
                 }) {
                     return update(app, Msg::Act(Action::Section(t)));
+                }
+            }
+            if app.frames == 20 {
+                // `DODAI_PRESS=<key>;<key>`: press those button keys (as clicks would).
+                if let Ok(keys) = std::env::var("DODAI_PRESS") {
+                    for k in keys.split(';').filter(|k| !k.is_empty()) {
+                        app.model.update(Action::Press(k.to_owned()));
+                    }
                 }
             }
             if app.frames == shot_after() && std::env::var_os("DODAI_SHOT").is_some() {
