@@ -257,27 +257,45 @@ pub fn App() -> Element {
     let model = use_signal(Showcase::from_env);
     let theme = model.read().theme();
     let id = theme.id().to_string();
-    // Follow the page's scroll: the last section whose top has reached the top of the page.
+    // Follow the page's scroll with the shared rule (`Showcase::follow_scroll`): the last section
+    // that reached the top, the last one at the end of the page, a picked one until the user
+    // scrolls.
     use_future(move || async move {
         let mut spy = document::eval(
-            r#"let last = null;
+            r#"const page = () => document.querySelector('.dodai-page');
+            const user = () => dioxus.send(['user', false, []]);
+            for (const ev of ['wheel', 'touchmove', 'keydown']) addEventListener(ev, user, {capture: true, passive: true});
             addEventListener('scroll', () => {
-                let cur = null;
-                for (const e of document.querySelectorAll('[data-sec]')) {
-                    if (e.getBoundingClientRect().top <= 140) cur = e.dataset.sec;
-                }
-                if (cur && cur !== last) { last = cur; dioxus.send(cur); }
+                const p = page();
+                if (!p) return;
+                const top = p.getBoundingClientRect().top;
+                const tops = [...document.querySelectorAll('[data-sec]')]
+                    .map(e => [e.dataset.sec, e.getBoundingClientRect().top - top]);
+                const end = p.scrollHeight - p.clientHeight > 1 && p.scrollTop >= p.scrollHeight - p.clientHeight - 1;
+                dioxus.send(['scroll', end, tops]);
             }, true);"#,
         );
         let mut model = model;
-        while let Ok(title) = spy.recv::<String>().await {
-            let known = model
-                .read()
-                .visible()
+        while let Ok((kind, end, tops)) = spy.recv::<(String, bool, Vec<(String, f64)>)>().await {
+            if kind == "user" {
+                // Only a held pick needs releasing: skip the write (and the redraw) otherwise.
+                if model.peek().held_section().is_some() {
+                    model.write().update(Action::Unpin);
+                }
+                continue;
+            }
+            let titles: Vec<&'static str> =
+                model.peek().visible().iter().map(|s| s.title).collect();
+            let tops: Vec<(&'static str, f32)> = tops
                 .iter()
-                .find(|s| s.title == title)
-                .map(|s| s.title);
-            if let Some(t) = known {
+                .filter_map(|(t, y)| Some((*titles.iter().find(|x| **x == t.as_str())?, *y as f32)))
+                .collect();
+            let now = {
+                let m = model.peek();
+                dodai_core::spy::pick(&tops, m.held_section(), 0.0, end, 60.0)
+                    .filter(|t| m.active_section() != Some(*t))
+            };
+            if let Some(t) = now {
                 model.write().update(Action::Visible(t));
             }
         }
