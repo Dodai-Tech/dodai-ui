@@ -455,6 +455,17 @@ pub fn scroll(
 #[cfg(test)]
 mod tests {
     #[test]
+    fn only_live_bodies_in_the_window_are_rebuilt() {
+        use super::on_screen;
+        assert!(on_screen(100.0, 300.0, 900.0));
+        assert!(on_screen(-50.0, 20.0, 900.0), "cut by the top edge");
+        assert!(on_screen(880.0, 1000.0, 900.0), "cut by the bottom edge");
+        assert!(!on_screen(-400.0, -10.0, 900.0), "scrolled out above");
+        assert!(!on_screen(950.0, 1200.0, 900.0), "below the window");
+        assert!(on_screen(0.0, 0.0, 900.0), "not laid out yet");
+    }
+
+    #[test]
     fn turning_a_knob_stores_its_value_and_schedules_a_rebuild() {
         let mut a = app();
         let e = a
@@ -713,16 +724,23 @@ pub fn section_fx(
 #[derive(Component)]
 pub struct LiveBody(pub &'static str);
 
+/// Whether a node spanning `top..bottom` (physical px) shows in a window `height` px high. A
+/// node not laid out yet (`top == bottom`) counts as shown, so it gets its first build.
+pub fn on_screen(top: f32, bottom: f32, height: f32) -> bool {
+    top == bottom || (bottom >= 0.0 && top <= height)
+}
+
 /// Rebuild the live section bodies as often as the model asks
-/// ([`Showcase::redraw_every`](dodai_showcase_model::Showcase::redraw_every)).
+/// ([`Showcase::redraw_every`](dodai_showcase_model::Showcase::redraw_every)); bodies scrolled
+/// out of the window wait until they come back (the Animation page asks for every frame).
 pub fn live_refresh(
     mut commands: Commands,
     model: Res<Model>,
-    theme: Res<DodaiTheme>,
-    open: Res<OpenMenu>,
+    (theme, open): (Res<DodaiTheme>, Res<OpenMenu>),
     time: Res<Time>,
     mut last: Local<f32>,
-    q: Query<(Entity, &LiveBody)>,
+    q: Query<(Entity, &LiveBody, &ComputedNode, &UiGlobalTransform)>,
+    windows: Query<&Window>,
 ) {
     let Some(every) = model.0.redraw_every() else {
         return;
@@ -743,7 +761,15 @@ pub fn live_refresh(
         model: m,
         open: open.0,
     };
-    for (e, body) in &q {
+    let height = windows
+        .iter()
+        .next()
+        .map_or(f32::MAX, |w| w.physical_height() as f32);
+    for (e, body, n, at) in &q {
+        let half = n.size().y / 2.0;
+        if !on_screen(at.translation.y - half, at.translation.y + half, height) {
+            continue;
+        }
         let Some(s) = dodai_showcase_model::sections()
             .iter()
             .find(|s| s.title == body.0)

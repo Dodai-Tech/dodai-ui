@@ -3,6 +3,22 @@
 use super::*;
 use std::sync::Arc;
 
+/// Length of one easing demo loop: the curve and the entry card play in the first half and hold
+/// their end for the second (as the other toolkits' Animation page does).
+const LOOP: Duration = Duration::from_millis(2800);
+/// Seconds a looping mixin rests at its end before it plays again.
+const MIXIN_REST: f32 = 0.9;
+
+/// The repeating clock of an easing demo.
+fn loop_animation() -> gpui::Animation {
+    gpui::Animation::new(LOOP).repeat()
+}
+
+/// Progress `0..=1` of an easing demo at `k` (`0..1` of [`LOOP`]): plays, then holds the end.
+fn loop_progress(k: f32) -> f32 {
+    (k * 2.0).clamp(0.0, 1.0)
+}
+
 impl Showcase {
     pub(crate) fn loading_section(&mut self, cx: &mut Context<Self>) -> Panel {
         let me = cx.entity();
@@ -163,10 +179,8 @@ impl Showcase {
         &mut self,
         cx: &mut Context<Self>,
     ) -> (Vec<gpui::AnyElement>, Vec<&'static str>) {
-        let me = cx.entity();
         let t = theme_of(cx);
         let gap = px(t.spacing.md);
-        let me = me.clone();
         let row = || div().flex().flex_wrap().items_center().gap(gap);
         let col = || div().flex().flex_col().gap(gap);
         let anim_defs: [(&'static str, EntryKind, Easing, &'static str); 12] = [
@@ -246,8 +260,6 @@ impl Showcase {
         let anim_titles: Vec<&'static str> = anim_defs.iter().map(|d| d.0).collect();
         let mut anim_sections = Vec::new();
         for (i, (title, kind, ease, text)) in anim_defs.into_iter().enumerate() {
-            let n = self.sec_replay.get(title).copied().unwrap_or(0);
-            let me_r = me.clone();
             let ctrl = ease_ctrl(ease);
             let (x1, y1, x2, y2) = ctrl.unwrap_or((0.0, 0.0, 1.0, 1.0));
             let ymax = if ctrl.is_none() { 1.4 } else { 1.0 };
@@ -332,9 +344,9 @@ impl Showcase {
                 )
                 .size_full()
             };
-            let motion = Motion::new(Duration::from_millis(700), ease).entry(kind);
+            // The entry card replays with the curve, forever: no replay button.
             let demo = div()
-                .id(("an-demo", (i as u32) * 1000 + n))
+                .id(("an-demo", i as u32))
                 .w_full()
                 .min_w(px(220.0))
                 .h(px(110.0))
@@ -342,14 +354,21 @@ impl Showcase {
                 .flex()
                 .items_center()
                 .justify_center()
-                .child(dodai_gpui::entry_animation(
-                    div().w(px(170.0)).child(
-                        Card::new(CardVariant::Elevated)
-                            .child(Label::new(format!("{title} entry"))),
-                    ),
-                    "an-card",
-                    motion,
-                ));
+                .child(
+                    div()
+                        .id(("an-card", i as u32))
+                        .relative()
+                        .w(px(170.0))
+                        .child(
+                            Card::new(CardVariant::Elevated)
+                                .child(Label::new(format!("{title} entry"))),
+                        )
+                        .with_animation(("an-card-a", i as u32), loop_animation(), move |el, k| {
+                            let (o, dx, dy) =
+                                kind.frame(ease.apply(loop_progress(k)).clamp(0.0, 1.0));
+                            el.left(px(dx)).top(px(dy)).opacity(o)
+                        }),
+                );
             anim_sections.push(
                 Panel::new()
                     .title(title)
@@ -359,29 +378,17 @@ impl Showcase {
                             .gap(px(24.0))
                             .child(
                                 div()
-                                    .id(("an-plot", (i as u32) * 1000 + n))
+                                    .id(("an-plot", i as u32))
                                     .w(px(200.0))
                                     .h(px(200.0))
                                     .flex_none()
                                     .with_animation(
-                                        ("an-plot-a", (i as u32) * 1000 + n),
-                                        gpui::Animation::new(Duration::from_millis(1400)),
-                                        move |el, p| {
-                                            // hold at the end for the last 50%
-                                            el.child(make_plot((p * 2.0).min(1.0)))
-                                        },
+                                        ("an-plot-a", i as u32),
+                                        loop_animation(),
+                                        move |el, k| el.child(make_plot(loop_progress(k))),
                                     ),
                             )
-                            .child(col().flex_1().min_w(px(240.0)).child(demo).child(
-                                Button::new(("an-replay", i as u32), "Replay").on_click(
-                                    move |_, _, cx| {
-                                        me_r.update(cx, |s, cx| {
-                                            s.bump(title);
-                                            cx.notify();
-                                        })
-                                    },
-                                ),
-                            ))
+                            .child(col().flex_1().min_w(px(240.0)).child(demo))
                             .child(div().flex_1().min_w(px(220.0)).child(Muted::new(format!(
                                 "{text}  {}",
                                 if ctrl.is_some() {
@@ -567,14 +574,12 @@ impl Showcase {
             .into_any_element()
     }
 
-    /// One-shot mixins: each card plays its `Clip<Pose>` when its button is pressed.
+    /// One-shot mixins: each card plays its `Clip<Pose>`, rests, and plays again.
     fn dynamics_mixins(&mut self, cx: &mut Context<Self>) -> gpui::AnyElement {
         use dodai_gpui::dodai_motion as dm;
-        let me = cx.entity();
         let t = theme_of(cx);
         let p = t.motion.personality;
         let title: &'static str = "Dynamics · one-shot mixins";
-        let n = self.sec_replay.get(title).copied().unwrap_or(0);
         let reduced = false;
         let defs: Vec<(&'static str, &'static str, dm::Clip<dm::Pose>)> = vec![
             ("Shake", "invalid input", dm::shake(p)),
@@ -585,10 +590,11 @@ impl Showcase {
         ];
         let glow = hsla(t.palette.primary);
         let mut row = div().flex().flex_wrap().gap(px(t.spacing.md));
-        for (i, (name, note, clip)) in defs.into_iter().enumerate() {
+        for (name, note, clip) in defs {
             let clip = if reduced { clip.reduced() } else { clip };
             let secs = clip.duration().max(0.2);
-            let id = section_id(name) + n * 7919;
+            let period = secs + MIXIN_REST;
+            let id = section_id(name);
             row = row.child(
                 div()
                     .flex()
@@ -613,9 +619,10 @@ impl Showcase {
                                     .child(Label::new(name))
                                     .with_animation(
                                         ("mx-a", id),
-                                        gpui::Animation::new(Duration::from_secs_f32(secs)),
+                                        gpui::Animation::new(Duration::from_secs_f32(period))
+                                            .repeat(),
                                         move |el, k| {
-                                            let pose = clip.at(k * secs);
+                                            let pose = clip.at((k * period).min(secs));
                                             el.relative()
                                                 .left(px(pose.dx))
                                                 .top(px(pose.dy))
@@ -625,16 +632,7 @@ impl Showcase {
                                     ),
                             ),
                     )
-                    .child(Muted::new(note))
-                    .child({
-                        let me = me.clone();
-                        Button::new(("mx-play", i as u32), "Play").on_click(move |_, _, cx| {
-                            me.update(cx, |s, cx| {
-                                s.bump(title);
-                                cx.notify();
-                            })
-                        })
-                    }),
+                    .child(Muted::new(note)),
             );
         }
         Panel::new()
@@ -651,5 +649,18 @@ impl Showcase {
                     .child(row),
             )
             .into_any_element()
+    }
+}
+
+#[cfg(test)]
+mod loop_tests {
+    use super::loop_progress;
+
+    #[test]
+    fn an_easing_demo_plays_in_the_first_half_and_holds_its_end() {
+        assert_eq!(loop_progress(0.0), 0.0);
+        assert_eq!(loop_progress(0.25), 0.5);
+        assert_eq!(loop_progress(0.5), 1.0);
+        assert_eq!(loop_progress(0.9), 1.0);
     }
 }

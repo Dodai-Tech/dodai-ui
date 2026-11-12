@@ -1,7 +1,6 @@
-//! Animation: each easing as a plot with its description, and the physics models as lanes.
-//!
-//! The gpui showcase also plays a live entry card and a moving dot per section; those need a
-//! clock the model does not have, so here the curves are drawn whole.
+//! Animation: each easing as a plot with its description, the physics models as lanes and the
+//! one-shot mixins. Every demo loops on its own (no play buttons): the sections are
+//! [`animated`](Section::animated), so the toolkit redraws them every frame.
 
 use dodai_core::motion::{rubber_band, Bounce, Decay, Easing, Personality, Shake};
 
@@ -11,6 +10,9 @@ use crate::node::Node;
 use crate::plot;
 
 const CAT: &str = "Animation";
+
+/// Seconds a looping mixin rests at its end before it plays again.
+const MIXIN_REST: f32 = 0.9;
 
 /// One easing section: its title, curve and description.
 struct Ease {
@@ -84,7 +86,7 @@ const EASINGS: [Ease; 12] = [
 
 macro_rules! ease_section {
     ($i:expr) => {
-        Section::new(CAT, EASINGS[$i].title, |c| ease(c, $i)).live()
+        Section::new(CAT, EASINGS[$i].title, |c| ease(c, $i)).animated()
     };
 }
 
@@ -101,52 +103,40 @@ pub(crate) const SECTIONS: [Section; 14] = [
     ease_section!(9),
     ease_section!(10),
     ease_section!(11),
-    Section::new(CAT, "Dynamics · physics models", physics).live(),
-    Section::new(CAT, "Dynamics · one-shot mixins", mixins),
+    Section::new(CAT, "Dynamics · physics models", physics).animated(),
+    Section::new(CAT, "Dynamics · one-shot mixins", mixins).animated(),
 ];
 
-/// The one-shot mixins at rest: a card per clip with its note and a play button.
+/// The one-shot mixins, each looping on its own: a chip plays its `Clip<Pose>`, rests, plays
+/// again.
 fn mixins(c: &Ctx) -> Node {
+    use dodai_core::motion as dm;
     let t = c.theme;
-    let p = &t.palette;
-    let card = |name: &str, note: &str| {
-        let spacer = Node::Block {
-            w: 170.0,
-            h: 90.0,
-            fill: dodai_core::Color::rgba(0, 0, 0, 0),
-            border: None,
-            radius: 0.0,
-            label: None,
-        };
-        let chip = Node::Block {
-            w: 0.0,
-            h: 0.0,
-            fill: p.surface_raised,
-            border: Some(p.border),
-            radius: t.shape.radius.min(10.0),
-            label: Some(name.into()),
-        };
+    let p = t.motion.personality;
+    let now = crate::widgets::elapsed();
+    let card = |name: &str, note: &str, clip: dm::Clip<dm::Pose>| {
+        let at = plot::clip_time(now, clip.duration(), MIXIN_REST);
         tile(
             170.0,
             vec![
-                Node::Overlay(vec![spacer, chip]),
+                Node::Plot(plot::pose_chip(t, 170.0, 90.0, clip.at(at))),
+                label(name),
                 muted(note),
-                button("Play", dodai_core::ButtonVariant::Primary).node(),
             ],
         )
         .gap(crate::node::Gap::Px(8.0))
     };
     col(vec![
         muted(format!(
-            "Personality: {} (from the active theme's motion). Each mixin is a Clip<Pose>; the adapter only applies dx, dy, opacity and glow.",
-            t.motion.personality.label()
+            "Personality: {} (from the active theme's motion). Each mixin is a Clip<Pose>; the adapter only applies dx, dy, scale, opacity and glow.",
+            p.label()
         )),
         row(vec![
-            card("Shake", "invalid input"),
-            card("Nudge", "gentle tap"),
-            card("Attention bounce", "look at me"),
-            card("Flash on change", "value changed"),
-            card("Pop in", "springy appear"),
+            card("Shake", "invalid input", dm::shake(p)),
+            card("Nudge", "gentle tap", dm::nudge(p)),
+            card("Attention bounce", "look at me", dm::attention_bounce(p)),
+            card("Flash on change", "value changed", dm::flash_on_change()),
+            card("Pop in", "springy appear", dm::pop_in(p)),
         ])
         .start(),
     ])
