@@ -414,6 +414,9 @@ pub fn spinner_cells(style: SpinnerStyle, size: f32) -> (&'static str, Vec<Strin
         SpinnerStyle::Orbit => "orbit",
         SpinnerStyle::Steps => "steps",
         SpinnerStyle::Grid => "grid",
+        SpinnerStyle::Scanner => "scanner",
+        SpinnerStyle::Hop => "hop",
+        SpinnerStyle::Petals => "petals",
     };
     let cells = busy::cells(style, size)
         .iter()

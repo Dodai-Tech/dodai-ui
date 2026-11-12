@@ -563,6 +563,53 @@ pub mod busy {
                     })
                     .collect()
             }
+            SpinnerStyle::Scanner => {
+                let n = 7;
+                let pitch = size / n as f32;
+                let w = pitch * 0.5;
+                (0..n)
+                    .map(|i| Cell {
+                        x: i as f32 * pitch + (pitch - w) / 2.0,
+                        y: size * 0.1,
+                        w,
+                        h: size * 0.8,
+                        round: false,
+                        radius: 0.0,
+                        lag: i as f32 / n as f32 * 0.5,
+                    })
+                    .collect()
+            }
+            SpinnerStyle::Hop => {
+                let side = size * 0.26;
+                (0..3)
+                    .map(|i| Cell {
+                        x: i as f32 * (size - side) / 2.0,
+                        y: size - side,
+                        w: side,
+                        h: side,
+                        round: false,
+                        radius: 0.0,
+                        lag: i as f32 * 0.12,
+                    })
+                    .collect()
+            }
+            SpinnerStyle::Petals => {
+                let d = size * 0.34;
+                (0..6)
+                    .map(|i| {
+                        let (cx, cy) = orbit_xy(i, 6, size / 2.0, size / 2.0 - d / 2.0);
+                        Cell {
+                            x: cx - d / 2.0,
+                            y: cy - d / 2.0,
+                            w: d,
+                            h: d,
+                            round: true,
+                            radius: d / 2.0,
+                            lag: i as f32 / 6.0,
+                        }
+                    })
+                    .collect()
+            }
             SpinnerStyle::Grid => {
                 let side = size * 0.28;
                 let gap = (size - 3.0 * side) / 2.0;
@@ -589,7 +636,17 @@ pub mod busy {
     pub fn cell_alpha(style: SpinnerStyle, lag: f32, t: f32) -> f32 {
         let since = ((t * SPIN_RATE).fract() - lag).rem_euclid(1.0);
         match style {
-            SpinnerStyle::Grid => 1.0 - (since * 2.0).min(1.0) * (1.0 - DIM),
+            SpinnerStyle::Grid | SpinnerStyle::Petals => 1.0 - (since * 2.0).min(1.0) * (1.0 - DIM),
+            SpinnerStyle::Scanner => {
+                let lead = (1.0 - (1.0 - since) / 0.12).max(0.0);
+                let trail = 1.0 - (since / 0.55).min(1.0) * (1.0 - DIM);
+                if since > 0.88 {
+                    lead.max(DIM)
+                } else {
+                    trail
+                }
+            }
+            SpinnerStyle::Hop => 0.8 + 0.2 * hop(since),
             SpinnerStyle::Steps => {
                 if since < 0.25 {
                     1.0
@@ -598,6 +655,15 @@ pub mod busy {
                 }
             }
             _ => 1.0 - since * (1.0 - DIM),
+        }
+    }
+
+    /// Height of a hop (0..1) of a [`SpinnerStyle::Hop`] square `since` the head reached it.
+    pub fn hop(since: f32) -> f32 {
+        if since < 0.4 {
+            (since / 0.4 * std::f32::consts::PI).sin()
+        } else {
+            0.0
         }
     }
 
@@ -610,13 +676,29 @@ pub mod busy {
                 let h = c.h * bar_scale(alpha);
                 (c.x, c.y + c.h - h, c.w, h)
             }
-            SpinnerStyle::Grid => {
+            SpinnerStyle::Scanner => {
+                let h = c.h * (0.4 + 0.6 * alpha);
+                (c.x, c.y + (c.h - h) / 2.0, c.w, h)
+            }
+            SpinnerStyle::Hop => {
+                let up = ((alpha - 0.8) / 0.2).clamp(0.0, 1.0) * c.h * 2.0;
+                (c.x, c.y - up, c.w, c.h)
+            }
+            SpinnerStyle::Grid | SpinnerStyle::Petals => {
                 let k = 0.35 + 0.65 * alpha;
                 let (w, h) = (c.w * k, c.h * k);
                 (c.x + (c.w - w) / 2.0, c.y + (c.h - h) / 2.0, w, h)
             }
             _ => (c.x, c.y, c.w, c.h),
         }
+    }
+
+    /// Whether the cells of a style move or change size, not only their opacity.
+    pub fn moves(style: SpinnerStyle) -> bool {
+        !matches!(
+            style,
+            SpinnerStyle::Ring | SpinnerStyle::Orbit | SpinnerStyle::Steps
+        )
     }
 
     /// Height of a bar of a [`SpinnerStyle::Bars`] spinner as a fraction of its full height.
@@ -696,7 +778,15 @@ mod tests {
         use super::busy::*;
         use crate::SpinnerStyle::*;
         assert!(cells(Ring, 24.0).is_empty());
-        for (st, n) in [(Bars, TRAIL), (Orbit, TRAIL), (Steps, 4), (Grid, 9)] {
+        for (st, n) in [
+            (Bars, TRAIL),
+            (Orbit, TRAIL),
+            (Steps, 4),
+            (Grid, 9),
+            (Scanner, 7),
+            (Hop, 3),
+            (Petals, 6),
+        ] {
             let cs = cells(st, 40.0);
             assert_eq!(cs.len(), n);
             for c in cs {
@@ -758,10 +848,10 @@ mod tests {
     #[test]
     fn each_design_names_its_own_spinner() {
         use crate::SpinnerStyle::*;
-        assert_eq!(crate::material::light().look().spinner, Ring);
-        assert_eq!(crate::cyberpunk::variants()[0].look().spinner, Bars);
+        assert_eq!(crate::material::light().look().spinner, Petals);
+        assert_eq!(crate::cyberpunk::variants()[0].look().spinner, Scanner);
         assert_eq!(crate::dodai::light().look().spinner, Grid);
-        assert_eq!(crate::neobrutalism::variants()[0].look().spinner, Steps);
+        assert_eq!(crate::neobrutalism::variants()[0].look().spinner, Hop);
     }
 
     #[test]
