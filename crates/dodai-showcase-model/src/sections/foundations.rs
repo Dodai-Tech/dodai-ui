@@ -16,7 +16,7 @@ pub(crate) const SECTIONS: [Section; 9] = [
     Section::new(CAT, "Motion tokens", motion),
     Section::new(CAT, "Spacing · Elevation", spacing),
     Section::new(CAT, "Layout · Fluid scales", layout),
-    Section::new(CAT, "Frosted glass", frosted),
+    Section::new(CAT, "Frosted panels", frosted),
     Section::new(CAT, "Shape tokens", shape),
     Section::new(CAT, "Icons", icons),
 ];
