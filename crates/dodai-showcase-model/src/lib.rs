@@ -13,6 +13,7 @@
 
 pub mod catalog;
 pub mod commands;
+pub mod icon_actions;
 pub mod icons;
 pub mod live_state;
 pub mod md;

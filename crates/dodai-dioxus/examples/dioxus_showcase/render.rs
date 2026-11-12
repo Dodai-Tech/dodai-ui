@@ -82,7 +82,16 @@ pub struct Cx {
 }
 
 fn act(mut model: Signal<Showcase>, a: Action) {
-    model.write().update(a);
+    let effect = {
+        let mut m = model.write();
+        m.update(a);
+        m.take_effect()
+    };
+    if let Some(dodai_showcase_model::icon_actions::Effect::Copy(text)) = effect {
+        // The browser owns the clipboard.
+        let write = document::eval("navigator.clipboard.writeText(await dioxus.recv())");
+        let _ = write.send(text);
+    }
 }
 
 /// Build `node`.
@@ -148,6 +157,10 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
                     span { style: text_style(styled(sm, Font::Body, Ink::Text), &theme), "{label}" }
                 }
             }
+        }
+        Demo::Logo(size) => {
+            let url = dodai_showcase_model::media::logo_data_url();
+            rsx! { img { src: url, alt: "Dodai UI", style: "width:{size}px;height:{size}px;flex:none" } }
         }
         Demo::Image {
             src: Some(src),

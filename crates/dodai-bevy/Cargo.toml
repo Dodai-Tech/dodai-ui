@@ -39,6 +39,11 @@ bevy = { version = "0.20", default-features = false, features = [
 [dev-dependencies]
 dodai-core = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "dodai"] }
 
+[dev-dependencies.bevy]
+version = "0.20"
+default-features = false
+features = ["bevy_clipboard", "system_clipboard"]
+
 [dev-dependencies.dodai-showcase-model]
 workspace = true
 

@@ -196,6 +196,7 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
                 .align_y(alignment::Vertical::Center);
             lt.shaped_box(inner, s)
         }
+        Demo::Logo(size) => logo(*size),
         Demo::Image {
             src: Some(src),
             video,
@@ -1587,6 +1588,20 @@ fn rgba_handle(p: &dodai_showcase_model::media::Picture) -> iced::widget::image:
 
 /// A picture file in the design's frame: cover or contain, a play badge for a video poster, the
 /// caption under it.
+/// The Dodai UI logo, `size` px square. One handle for the whole run, so the texture is
+/// uploaded once.
+pub fn logo<'a>(size: f32) -> Element<'a, Msg> {
+    static HANDLE: std::sync::OnceLock<iced::widget::image::Handle> = std::sync::OnceLock::new();
+    let handle = HANDLE.get_or_init(|| {
+        let p = dodai_showcase_model::media::logo();
+        iced::widget::image::Handle::from_rgba(p.width, p.height, p.rgba.to_vec())
+    });
+    iced::widget::image(handle.clone())
+        .width(size)
+        .height(size)
+        .into()
+}
+
 fn picture<'a>(
     cx: &Cx,
     src: &str,

@@ -687,6 +687,8 @@ pub enum Node {
         /// Caption laid over the picture on the design's fade instead of below it.
         on_image: bool,
     },
+    /// The Dodai UI logo, this many px square ([`crate::media::logo`]).
+    Logo(f32),
     /// A plain rectangle of `w`×`h` px (spacing, radius and elevation demos).
     Block {
         /// Width px.

@@ -24,5 +24,7 @@ web-sys = { version = "0.3.106", features = ["HtmlInputElement"] }
 yew = { version = "0.23", features = ["ssr"] }
 
 [dev-dependencies]
+# The showcase page inlines the logo as a data: URL.
+base64 = "0.22"
 dodai-core = { workspace = true, features = ["cyberpunk", "material"] }
 tokio = { version = "1.53.3", features = ["rt", "macros"] }

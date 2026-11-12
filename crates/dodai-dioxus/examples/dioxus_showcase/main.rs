@@ -19,7 +19,8 @@ fn static_html() -> String {
     dom.rebuild_in_place();
     let body = dioxus_ssr::render(&dom);
     format!(
-        "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>Dodai UI · Dioxus</title></head><body style=\"margin:0\">{body}</body></html>"
+        "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>Dodai UI · Dioxus</title><link rel=\"icon\" href=\"{}\"></head><body style=\"margin:0\">{body}</body></html>",
+        dodai_showcase_model::media::logo_data_url()
     )
 }
 

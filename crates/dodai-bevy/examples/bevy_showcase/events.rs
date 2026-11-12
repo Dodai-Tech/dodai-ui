@@ -97,7 +97,7 @@ pub fn gizmo(
     }
 }
 
-#[allow(clippy::type_complexity)]
+#[allow(clippy::type_complexity, clippy::too_many_arguments)]
 pub fn handle(
     mut ev: MessageReader<ControlEvent>,
     bound: Query<&Bound>,
@@ -106,6 +106,7 @@ pub fn handle(
     mut model: ResMut<Model>,
     mut dirty: ResMut<Dirty>,
     mut open: ResMut<OpenMenu>,
+    mut clipboard: Option<ResMut<bevy::clipboard::Clipboard>>,
 ) {
     for e in ev.read() {
         let Ok(b) = bound.get(e.entity) else { continue };
@@ -126,6 +127,11 @@ pub fn handle(
                     dirty.top = true;
                 }
                 model.0.update(a.clone());
+                if let (Some(clip), Some(dodai_showcase_model::icon_actions::Effect::Copy(text))) =
+                    (clipboard.as_mut(), model.0.take_effect())
+                {
+                    let _ = clip.set_text(text);
+                }
                 if filter {
                     dirty.nav = true;
                     dirty.content = true;
@@ -412,12 +418,13 @@ pub fn section_nav(
     tops.sort_by(|a, b| a.1.total_cmp(&b.1));
     let max = (page.content_size().y - page.size().y).max(0.0) * scale;
     let at_end = max > 1.0 && pos.y >= max - 1.0;
-    let before = model.0.active_section();
+    let before = (model.0.active_section(), model.0.current_category());
+    model.bypass_change_detection().0.set_at_top(pos.y < 1.0);
     model
         .bypass_change_detection()
         .0
         .follow_scroll(&tops, 0.0, at_end, SPY_SLACK);
-    if model.0.active_section() != before {
+    if (model.0.active_section(), model.0.current_category()) != before {
         dirty.nav = true;
     }
 }

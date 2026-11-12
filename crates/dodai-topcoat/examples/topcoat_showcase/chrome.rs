@@ -151,28 +151,29 @@ pub fn sidebar(m: &Showcase, cx: &Cx) -> String {
         o.push_str("</aside>");
         return o;
     }
-    let titles: Vec<&'static str> = m.visible().iter().map(|s| s.title).collect();
     let active = m.active_section();
-    let mut nav = nav_item(cx, "All", m.count(None), cat.is_none(), false, false, "C");
+    let logo = dodai_showcase_model::media::logo_data_url();
+    let at = m.current_category();
+    let mut nav = nav_item(cx, "All", m.count(None), at.is_none(), false, false, "C");
     for (i, c) in CATEGORIES.iter().enumerate() {
         let listed = m.lists(i);
         nav.push_str(&nav_item(
             cx,
             c,
             m.count(Some(i)),
-            cat == Some(i),
+            at == Some(i),
             true,
             listed,
             &format!("C|{i}"),
         ));
         if listed {
-            for t in &titles {
+            for t in m.listed(i).iter().map(|s| s.title) {
                 nav.push_str(&format!(
                     "<div style=\"padding-left:16px;width:100%\">{}</div>",
                     html::kit_box(
                         cx,
                         Kit::Row {
-                            selected: active == Some(*t),
+                            selected: active == Some(t),
                         },
                         "width:100%;",
                         &Surface::default(),
@@ -188,7 +189,7 @@ pub fn sidebar(m: &Showcase, cx: &Cx) -> String {
         }
     }
     format!(
-        "<aside id=\"side\" class=\"dodai-side\"><div style=\"display:flex;align-items:center;justify-content:space-between\"><h2>Dodai UI</h2>{fold}</div>{}<nav class=\"dodai-side__nav\">{nav}</nav><span class=\"dodai-caption\">{}</span></aside>",
+        "<aside id=\"side\" class=\"dodai-side\"><div style=\"display:flex;align-items:center;justify-content:space-between\"><div style=\"display:flex;align-items:center;gap:var(--dodai-space-sm)\"><img src=\"{logo}\" alt=\"\" style=\"width:calc(var(--dodai-size-xl) * 1.6);height:calc(var(--dodai-size-xl) * 1.6);flex:none\"><h2>Dodai UI</h2></div>{fold}</div>{}<nav class=\"dodai-side__nav\">{nav}</nav><span class=\"dodai-caption\">{}</span></aside>",
         html::text_input(
             m.filter(),
             "Filter components…",

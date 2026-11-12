@@ -10,6 +10,14 @@ use dodai_egui::{
 };
 use eframe::egui;
 
+/// The Dodai UI logo (`assets/icons/dodai-ui.svg`) at 128 px.
+const LOGO_PNG: &[u8] = include_bytes!("../../../assets/icons/dodai-ui-128.png");
+
+/// The logo decoded to RGBA (it is a PNG, see the test).
+fn logo() -> egui::IconData {
+    eframe::icon_data::from_png_bytes(LOGO_PNG).expect("the logo is a PNG")
+}
+
 struct App {
     theme: ThemeController,
     tab: usize,
@@ -19,6 +27,8 @@ struct App {
     slider: f32,
     text: String,
     selected: usize,
+    /// The logo's texture, uploaded on the first frame.
+    logo: Option<egui::TextureHandle>,
 }
 
 impl Default for App {
@@ -32,6 +42,7 @@ impl Default for App {
             slider: 40.0,
             text: String::new(),
             selected: 1,
+            logo: None,
         }
     }
 }
@@ -204,7 +215,24 @@ impl eframe::App for App {
         egui::CentralPanel::default().show(root, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 let name = self.theme.switcher.current().name();
-                ui.dodai_heading(&format!("Dodai UI · egui · {name}"));
+                let logo = self.logo.get_or_insert_with(|| {
+                    let icon = logo();
+                    ctx.load_texture(
+                        "dodai-logo",
+                        egui::ColorImage::from_rgba_unmultiplied(
+                            [icon.width as usize, icon.height as usize],
+                            &icon.rgba,
+                        ),
+                        egui::TextureOptions::LINEAR,
+                    )
+                });
+                ui.horizontal(|ui| {
+                    ui.add(egui::Image::new(egui::load::SizedTexture::new(
+                        logo.id(),
+                        egui::vec2(44.0, 44.0),
+                    )));
+                    ui.dodai_heading(&format!("Dodai UI · egui · {name}"));
+                });
                 ui.dodai_muted("t / Shift+T: theme · + / -: glow");
                 // This showcase runs on egui: that toolkit is the solid, highlighted one.
                 ui.horizontal_wrapped(|ui| {
@@ -302,7 +330,20 @@ impl eframe::App for App {
 fn main() -> eframe::Result {
     eframe::run_native(
         "Dodai UI · egui",
-        eframe::NativeOptions::default(),
+        eframe::NativeOptions {
+            viewport: egui::ViewportBuilder::default().with_icon(std::sync::Arc::new(logo())),
+            ..Default::default()
+        },
         Box::new(|_| Ok(Box::<App>::default())),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn the_logo_decodes_to_a_square_icon() {
+        let icon = super::logo();
+        assert_eq!((icon.width, icon.height), (128, 128));
+        assert_eq!(icon.rgba.len(), 128 * 128 * 4);
+    }
 }

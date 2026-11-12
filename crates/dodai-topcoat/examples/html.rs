@@ -4,7 +4,7 @@ use dodai_core::themes;
 use dodai_topcoat::{multi_theme_stylesheet, switcher_script, GOOGLE_FONTS_URL};
 
 const BODY: &str = r##"<main>
-<div class="row"><h1 style="flex:1">Dodai UI</h1>
+<div class="row"><img src="LOGO" alt="" style="width:calc(var(--dodai-size-xl) * 2);height:calc(var(--dodai-size-xl) * 2)"><h1 style="flex:1">Dodai UI</h1>
 <button class="dodai-btn dodai-btn--outline" data-dodai-theme-prev>◀ Prev</button>
 <span class="dodai-label" id="tname"></span>
 <button class="dodai-btn dodai-btn--primary" data-dodai-theme-next>Next ▶</button></div>
@@ -60,14 +60,17 @@ fn main() {
             )
         })
         .collect();
-    let body = BODY.replace("THEME_BUTTONS", &buttons);
+    let logo = dodai_showcase_model::media::logo_data_url();
+    let body = BODY
+        .replace("THEME_BUTTONS", &buttons)
+        .replace("LOGO", logo);
     let init = if pre.is_empty() {
         String::new()
     } else {
         format!("dodaiTheme.set('{pre}');")
     };
     println!(
-        r##"<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Dodai UI · Topcoat</title>
+        r##"<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Dodai UI · Topcoat</title><link rel="icon" href="{logo}">
 <link rel="stylesheet" href="{GOOGLE_FONTS_URL}">
 <style>{css}
 main{{max-width:960px;margin:0 auto;padding:var(--dodai-space-xl) var(--dodai-space-md);display:grid;gap:var(--dodai-space-lg)}}

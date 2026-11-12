@@ -8,12 +8,24 @@ use dodai_leptos::*;
 use dodai_topcoat::{switcher_script, GOOGLE_FONTS_URL};
 use leptos::prelude::*;
 
+/// The Dodai UI logo (`assets/icons/dodai-ui.svg`) at 128 px as a `data:` URL, so the page
+/// stays one file.
+fn logo_url() -> String {
+    use base64::Engine as _;
+    const LOGO_PNG: &[u8] = include_bytes!("../../../assets/icons/dodai-ui-128.png");
+    format!(
+        "data:image/png;base64,{}",
+        base64::engine::general_purpose::STANDARD.encode(LOGO_PNG)
+    )
+}
+
 #[component]
 fn Showcase(names: Vec<(String, String)>) -> impl IntoView {
     let tabs = vec!["Overview".to_string(), "Network".into(), "Systems".into()];
     view! {
         <main>
             <div class="row">
+                <img src=logo_url() alt="" style="width:calc(var(--dodai-size-xl) * 2);height:calc(var(--dodai-size-xl) * 2)"/>
                 <h1 style="flex:1">"Dodai UI · Leptos"</h1>
                 <Label>"Glow"</Label>
                 <button class="dodai-btn dodai-btn--outline" data-glow-dec="">"−"</button>
@@ -134,8 +146,9 @@ fn main() {
     } else {
         format!("dodaiTheme.set('{pre}');")
     };
+    let logo = logo_url();
     let html = format!(
-        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Dodai UI · Leptos</title>
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Dodai UI · Leptos</title><link rel="icon" href="{logo}">
 <link rel="stylesheet" href="{GOOGLE_FONTS_URL}"><style>{css}
 main{{max-width:960px;margin:0 auto;padding:var(--dodai-space-xl) var(--dodai-space-md);display:grid;gap:var(--dodai-space-lg)}}
 .row{{display:flex;gap:var(--dodai-space-md);flex-wrap:wrap;align-items:center}}

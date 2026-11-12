@@ -384,7 +384,13 @@ fn shape(c: &Ctx) -> Node {
 }
 
 /// The picked icon: a large preview, its name, how to write it, its SVG and a close button.
-fn icon_detail(icon: crate::icons::IconRef, filled: bool, t: &dodai_core::Theme) -> Node {
+fn icon_detail(
+    icon: crate::icons::IconRef,
+    filled: bool,
+    t: &dodai_core::Theme,
+    values: &crate::state::Values,
+) -> Node {
+    use crate::icon_actions as act;
     let code = |text: String, lang: &str| Node::Code {
         text,
         lang: lang.into(),
@@ -403,13 +409,29 @@ fn icon_detail(icon: crate::icons::IconRef, filled: bool, t: &dodai_core::Theme)
                     label(icon.name()),
                     muted("Icon · picked from the catalogue below"),
                 ]),
+            ])
+            .start(),
+            row(vec![
+                button("Download SVG", ButtonVariant::Primary)
+                    .counter(act::save_svg())
+                    .node(),
+                button("Copy SVG", ButtonVariant::Secondary)
+                    .counter(act::copy_svg())
+                    .node(),
+                button("Copy Rust", ButtonVariant::Secondary)
+                    .counter(act::copy_rust())
+                    .node(),
                 button("Close", ButtonVariant::Secondary)
                     .counter(crate::commands::set("icon-sel", 0))
                     .node(),
             ])
             .start(),
+            muted(act::message(values, icon).unwrap_or("")),
             code(icon.usage(), "rust"),
-            code(icon.svg(t, filled), "xml"),
+            code(
+                act::pretty_svg(&icon.svg(t, filled).replace(">\n<", "><")),
+                "xml",
+            ),
         ],
     )
 }
@@ -445,7 +467,7 @@ fn icons(c: &Ctx) -> Node {
         Node::Toggle(filled_toggle),
     ];
     if let Some(icon) = picked {
-        out.push(icon_detail(icon, filled, t));
+        out.push(icon_detail(icon, filled, t, c.values));
     }
     let mut shown = 0usize;
     for src in ic::sources() {

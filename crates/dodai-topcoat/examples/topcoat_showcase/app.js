@@ -84,6 +84,8 @@
     try {
       const r = await fetch('/act' + (part ? '?part=' + part : ''), { method: 'POST', body: action });
       const html = await r.text();
+      const copy = r.headers.get('X-Copy');
+      if (copy !== null) navigator.clipboard?.writeText(decodeURIComponent(copy));
       if (part === 'side') swapSide(html); else swapApp(html);
     } finally {
       busy = false;
@@ -130,8 +132,12 @@
       pick = tops[0][0];
       for (const t of tops) if (t[1] <= SLACK) pick = t[0];
     }
-    if (pick !== current) { current = pick; send('V|' + pick, 'side'); }
+    const atTop = page.scrollTop < 1 ? 1 : 0;
+    const key = atTop + pick;
+    if (key !== current) { current = key; send('V|' + atTop + '|' + pick, 'side'); }
   }
+  // A reload starts at the top, whatever the server last heard.
+  setTimeout(spy, 300);
   let spying = 0;
   document.addEventListener('scroll', () => {
     // Scrolling the jump did not start (scrollbar drag, anything else) is the user's: let go.

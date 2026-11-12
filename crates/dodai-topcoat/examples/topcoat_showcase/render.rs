@@ -174,6 +174,10 @@ pub fn view(node: &Node, r: &R) -> String {
                 &span(&text_style(styled(sm, Font::Body, Ink::Text), theme), label),
             )
         }
+        Node::Logo(size) => format!(
+            "<img src=\"{}\" alt=\"Dodai UI\" style=\"width:{size}px;height:{size}px;flex:none\">",
+            dodai_showcase_model::media::logo_data_url()
+        ),
         Node::Image {
             src: Some(src),
             video,
