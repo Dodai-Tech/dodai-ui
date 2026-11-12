@@ -1,12 +1,13 @@
 //! Menus built from plain nodes, laid out like the gpui `Menu`: an icon slot, the label, a
 //! shortcut and a sub-menu mark per row, separators between groups, danger and disabled rows.
 
-use dodai_core::Tone;
+use dodai_core::{ButtonVariant as V, Tone};
 use dodai_icons::IconId;
 
 use crate::b::*;
 use crate::catalog::Ctx;
-use crate::node::{Axis, Font, Gap, Ink, Node, Stack, TextRole, TextStyle};
+use crate::commands::flip;
+use crate::node::{Axis, Bind, Font, Gap, Ink, Node, Stack, TextRole, TextStyle};
 
 /// One row of a menu.
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -19,6 +20,8 @@ pub struct Item {
     pub shortcut: Option<String>,
     /// Opens a sub-menu (a mark at the end).
     pub sub: bool,
+    /// The rows of the sub-menu, shown under the row while it is open.
+    pub children: Vec<Item>,
     /// A destructive action (danger colour).
     pub danger: bool,
     /// Greyed out.
@@ -58,6 +61,12 @@ impl Item {
         self.sub = true;
         self
     }
+    /// Opens a sub-menu of `rows` when pressed.
+    pub fn submenu(mut self, rows: Vec<Item>) -> Self {
+        self.sub = true;
+        self.children = rows;
+        self
+    }
     /// Destructive.
     pub fn danger(mut self) -> Self {
         self.danger = true;
@@ -91,6 +100,34 @@ fn row(c: &Ctx, e: Entry) -> Node {
         Entry::Separator => return Node::Divider,
         Entry::Item(it) => it,
     };
+    if !it.children.is_empty() {
+        let key = format!("menu:{}", it.label);
+        let mut open = button(&it.label, V::Ghost)
+            .plain()
+            .counter(flip(&key, false));
+        if let Some(i) = it.icon {
+            open = open.icon(i);
+        }
+        let shown = c.values.flag(&Bind::new(&key, false));
+        let mut rows = vec![open.node()];
+        if shown {
+            // The sub-menu opens under its row, indented, so it never covers the rows below.
+            let indent = c.theme.sizes().icon_sm + c.theme.spacing.half();
+            rows.extend(
+                it.children
+                    .into_iter()
+                    .map(|ch| line(vec![Node::Space(indent), row(c, ch.entry())])),
+            );
+        }
+        return Node::Stack(Stack {
+            axis: Axis::Column,
+            wrap: false,
+            gap: Gap::Xs,
+            centre: false,
+            width: None,
+            items: rows,
+        });
+    }
     let ty = &c.theme.typography;
     let ink = if it.disabled {
         Ink::Disabled

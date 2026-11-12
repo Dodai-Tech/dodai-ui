@@ -55,7 +55,13 @@ fn fx_slider(c: &Ctx, key: &str) -> Node {
     };
     let mut f = mix(c.values, c.theme);
     let v = *(a.field)(&mut f);
-    labelled(a.name, slider(a.key, v, 0.0, a.max).step(0.05).node())
+    labelled(
+        a.name,
+        col(vec![
+            slider(a.key, v, 0.0, a.max).step(0.05).node(),
+            muted(a.hint()),
+        ]),
+    )
 }
 
 /// `control` after a 120 px label column.

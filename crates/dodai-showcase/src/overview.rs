@@ -69,9 +69,16 @@ impl Showcase {
                 .child(Muted::new("DESIGN SYSTEM · RUST · MULTI-TOOLKIT"))
                 .child(
                     div()
-                        .text_size(px(t.typography.size_xxl * 1.5))
-                        .text_color(hsla(t.palette.text))
-                        .child("Dodai UI"),
+                        .flex()
+                        .items_center()
+                        .gap(px(t.spacing.md))
+                        .child(crate::brand::mark(t.typography.size_xxl * 2.2))
+                        .child(
+                            div()
+                                .text_size(px(t.typography.size_xxl * 1.5))
+                                .text_color(hsla(t.palette.text))
+                                .child("Dodai UI"),
+                        ),
                 )
                 .child(
                     div()

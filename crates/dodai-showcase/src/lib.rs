@@ -44,6 +44,7 @@ use gpui::{
 use std::time::Duration;
 
 mod app;
+mod brand;
 mod catalog;
 mod charts_gauges;
 mod charts_instruments;

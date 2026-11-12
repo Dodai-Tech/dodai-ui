@@ -978,7 +978,16 @@ pub(crate) fn update_tooltip(
 #[cfg(feature = "icons")]
 #[derive(Resource, Default)]
 pub struct IconCache(
-    std::collections::HashMap<(dodai_icons::IconId, u32, bool, bool), Handle<Image>>,
+    std::collections::HashMap<
+        (
+            dodai_icons::IconId,
+            u32,
+            bool,
+            bool,
+            Option<dodai_icons::Modifier>,
+        ),
+        Handle<Image>,
+    >,
 );
 
 /// `UiIcon` → `ImageNode` (rasterised on change / theme switch), tinted with
@@ -1008,13 +1017,18 @@ pub(crate) fn style_icons(
                 .or_else(|| parent.and_then(|p| fgs.get(p.parent()).ok()).map(|f| f.0))
                 .unwrap_or(theme.palette.text),
         );
-        let key = (u.icon, u.size, u.filled, rounded);
+        let key = (u.icon, u.size, u.filled, rounded, u.modifier);
         let needs_image = node.is_none() || u.is_changed() || theme.is_changed();
         if needs_image {
             let handle = match cache.0.get(&key) {
                 Some(h) => h.clone(),
                 None => {
-                    let Some(g) = dodai_icons::glyph_for_theme(u.icon, &theme, u.filled) else {
+                    let drawn = match u.modifier {
+                        Some(m) => dodai_icons::cyber_shapes(u.icon, Some(m))
+                            .map(dodai_icons::Glyph::Stroked),
+                        None => dodai_icons::glyph_for_theme(u.icon, &theme, u.filled),
+                    };
+                    let Some(g) = drawn else {
                         continue;
                     };
                     let px = u.size.max(1);

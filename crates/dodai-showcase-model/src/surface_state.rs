@@ -93,6 +93,38 @@ pub const AMOUNTS: [Amount; 24] = [
     amount!(rim, "Gradient rim", 1.0),
 ];
 
+impl Amount {
+    /// What the slider does, in one line.
+    pub fn hint(&self) -> &'static str {
+        let key = self.key.trim_start_matches("sfx:");
+        match key.trim_start_matches("container_") {
+            "strength" => "How visible the pattern is. 0 hides it.",
+            "scale" => "Size of the pattern. 1 is the design's own.",
+            "neon" => "Brightness of the lit pattern lines.",
+            "clear" => "Keeps the middle clean so labels stay readable.",
+            "glitch" => "Short digital tears, now and then.",
+            "sheen" => "A slow light sweep across the surface.",
+            "flicker" => "Unsteady light, like a failing tube.",
+            "bloom" => "A soft halo around bright parts.",
+            "pulse" => "Slow breathing of the glow.",
+            "chase" => "Light that travels along the border.",
+            "edge" => "Light falling in from the borders.",
+            "brackets" => "Marks in the four corners.",
+            "depth" => "An inner shadow that sinks the surface.",
+            "ripple" => "How strong the click ripple plays.",
+            "tint" => "A tonal wash over the whole surface.",
+            "pop" => "A hard offset block behind the surface.",
+            "tape" => "A strip of tape across a corner.",
+            "gloss" => "A clear-coat reflection across the top.",
+            "strip" => "A thin strip of light.",
+            "wash" => "The design's gradient tinting the surface.",
+            "rim" => "The outline lit by the gradient, brightest top left.",
+            "frost" => "See-through fill over a blurred backdrop. 0 is an opaque fill.",
+            _ => "",
+        }
+    }
+}
+
 /// The slider of `key`.
 pub fn amount(key: &str) -> Option<&'static Amount> {
     AMOUNTS.iter().find(|a| a.key == key)

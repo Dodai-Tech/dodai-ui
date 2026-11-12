@@ -436,6 +436,8 @@ pub struct UiIcon {
     pub icon: dodai_icons::IconId,
     pub size: u32,
     pub filled: bool,
+    /// A derived Cyberpunk variant (`wifi-off`, `heart-add`) of the hand-drawn icon.
+    pub modifier: Option<dodai_icons::Modifier>,
 }
 
 /// Icon `icon` at `size` px.
@@ -446,6 +448,7 @@ pub fn icon(icon: dodai_icons::IconId, size: u32) -> impl Bundle {
             icon,
             size,
             filled: false,
+            modifier: None,
         },
         Node {
             width: Val::Px(size as f32),
