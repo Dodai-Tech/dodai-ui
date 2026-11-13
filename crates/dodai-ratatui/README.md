@@ -18,7 +18,7 @@ let cb = Checkbox::new(&tui, "Neural link", true)
     .state(ControlState::Focused)  // hovered / pressed / focused light it, disabled dims it
     .block(true)                   // 5×3 instead of 3×1
     .readout(true)                 // //ONLINE, On, ON ... after the label
-    .shadow(true);                 // default: on when the theme has a hard shadow
+    .shadow(true);                 // Cyberpunk only (adds a row and a column); off by default
 ```
 
 `Checkbox::design(CheckboxDesign::Material)` forces a design; `widget()` returns the underlying `tui_checkbox::Checkbox`. See `cargo run -p dodai-ratatui --example ratatui_checkboxes`.

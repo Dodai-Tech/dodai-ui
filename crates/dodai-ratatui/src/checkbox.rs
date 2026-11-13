@@ -28,7 +28,7 @@ pub fn checkbox_design(look: &Look) -> Design {
 /// ```
 /// use dodai_ratatui::{Checkbox, TuiTheme};
 /// let tui = TuiTheme::new(dodai_core::Theme::default());
-/// let cb = Checkbox::new(&tui, "Neural link", true).block(true).shadow(false);
+/// let cb = Checkbox::new(&tui, "Neural link", true).block(true);
 /// assert_eq!(cb.height(), 3);
 /// ```
 ///
@@ -41,7 +41,7 @@ pub struct Checkbox<'a> {
     mixed: bool,
     state: ControlState,
     block: bool,
-    shadow: Option<bool>,
+    shadow: bool,
     readout: bool,
     design: Option<Design>,
 }
@@ -56,7 +56,7 @@ impl<'a> Checkbox<'a> {
             mixed: false,
             state: ControlState::Idle,
             block: false,
-            shadow: None,
+            shadow: false,
             readout: false,
             design: None,
         }
@@ -80,9 +80,9 @@ impl<'a> Checkbox<'a> {
         self
     }
 
-    /// Hard offset shadow; by default on when the theme has `effects.hard_shadow`.
+    /// Hard offset shadow, off by default. Only the Cyberpunk design has one; elsewhere a no-op.
     pub fn shadow(mut self, shadow: bool) -> Self {
-        self.shadow = Some(shadow);
+        self.shadow = shadow;
         self
     }
 
@@ -109,12 +109,8 @@ impl<'a> Checkbox<'a> {
         let th = self.theme.theme();
         let p = &th.palette;
         let c = |x| self.theme.color(x);
-        let hard = self.resolved_design() == Design::Neobrutalism;
-        let shadow: Color = if hard {
-            c(p.border_strong)
-        } else {
-            c(p.background.mix(p.primary, 0.3))
-        };
+        // Only the Cyberpunk design draws a shadow: the background warmed towards the primary.
+        let shadow: Color = c(p.background.mix(p.primary, 0.3));
         CyberPalette {
             primary: c(p.primary),
             secondary: c(p.secondary),
@@ -129,16 +125,14 @@ impl<'a> Checkbox<'a> {
 
     /// The `tui-checkbox` widget this draws, for layout or further styling.
     pub fn widget(&self) -> tui_checkbox::Checkbox<'static> {
-        let th = self.theme.theme();
         let design = self.resolved_design();
-        let shadow = self.shadow.unwrap_or(th.effects.hard_shadow > 0.0);
         let cyber = Cyber::for_design(design)
             .size(if self.block {
                 CyberSize::Block
             } else {
                 CyberSize::Inline
             })
-            .shadow(shadow)
+            .shadow(self.shadow)
             .readout(self.readout)
             // The label is already cased by `typography.uppercase_labels`.
             .uppercase(false)
