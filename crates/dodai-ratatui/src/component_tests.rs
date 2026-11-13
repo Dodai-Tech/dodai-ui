@@ -147,15 +147,15 @@ fn tag_solid_and_outline() {
 #[test]
 fn toggle_glyphs_and_colours() {
     let t = rounded();
-    let on = draw(Toggle::new(&t, ToggleKind::Checkbox, true, "a"), 8, 1);
-    let off = draw(Toggle::new(&t, ToggleKind::Checkbox, false, "a"), 8, 1);
-    assert!(row(&on, 0).starts_with("[x] a"));
-    assert!(row(&off, 0).starts_with("[ ] a"));
+    let on = draw(Toggle::new(&t, ToggleKind::Radio, true, "a"), 8, 1);
+    let off = draw(Toggle::new(&t, ToggleKind::Radio, false, "a"), 8, 1);
+    assert!(row(&on, 0).starts_with("(●) a"));
+    assert!(row(&off, 0).starts_with("( ) a"));
     let tk = t.theme().toggle(true, ControlState::Idle);
     assert_eq!(on[(1, 0)].bg, t.color(tk.track));
     assert_eq!(on[(1, 0)].fg, t.color(tk.thumb));
-    let r = draw(Toggle::new(&t, ToggleKind::Radio, true, "r"), 8, 1);
-    assert!(row(&r, 0).starts_with("(●) r"));
+    let s = draw(Toggle::new(&t, ToggleKind::Switch, true, "s"), 8, 1);
+    assert!(row(&s, 0).starts_with("[ ●] s"));
 }
 
 #[test]
@@ -218,4 +218,110 @@ fn scanlines_only_when_token_set() {
         dim_color(Color::Rgb(100, 100, 100), 0.5),
         Color::Rgb(50, 50, 50)
     );
+}
+
+fn real(t: dodai_core::Theme) -> TuiTheme {
+    TuiTheme::with_depth(t, ColorDepth::TrueColor)
+}
+
+#[test]
+fn checkbox_design_follows_the_look_not_the_theme_id() {
+    use dodai_core::themes::{cyberpunk, dodai, material, neobrutalism};
+    for (t, want) in [
+        (cyberpunk::yellow(), CheckboxDesign::Cyberpunk),
+        (material::dark(), CheckboxDesign::Material),
+        (material::light(), CheckboxDesign::Material),
+        (dodai::dark(), CheckboxDesign::Dodai),
+        (neobrutalism::light(), CheckboxDesign::Neobrutalism),
+        (neobrutalism::dark(), CheckboxDesign::Neobrutalism),
+    ] {
+        let id = t.id();
+        let tui = real(t);
+        assert_eq!(
+            Checkbox::new(&tui, "a", true).resolved_design(),
+            want,
+            "{id}"
+        );
+    }
+    // A theme without a spec resolves to the soft Dodai look.
+    assert_eq!(
+        Checkbox::new(&rounded(), "a", true).resolved_design(),
+        CheckboxDesign::Dodai
+    );
+}
+
+#[test]
+fn checkbox_takes_colours_from_the_palette_tokens() {
+    for t in dodai_core::themes::all() {
+        let tui = real(t.clone());
+        let p = &t.palette;
+        let b = draw(Checkbox::new(&tui, "go", true).shadow(false), 12, 1);
+        // The mark cell sits on a primary-to-secondary wash in Dodai, flat primary elsewhere.
+        let bg = b[(1, 0)].bg;
+        let design = Checkbox::new(&tui, "go", true).resolved_design();
+        if design != CheckboxDesign::Dodai {
+            assert_eq!(bg, tui.color(p.primary), "{}", t.id());
+            assert_eq!(b[(1, 0)].fg, tui.color(p.on_primary), "{}", t.id());
+        }
+        assert!(
+            row(&b, 0).contains("go") || row(&b, 0).contains("GO"),
+            "{}",
+            t.id()
+        );
+    }
+}
+
+#[test]
+fn checkbox_states_and_sizes() {
+    let tui = real(dodai_core::themes::material::dark());
+    let off = draw(Checkbox::new(&tui, "a", false), 12, 1);
+    assert!(row(&off, 0).starts_with("▐ ▌"));
+    let mixed = draw(Checkbox::new(&tui, "a", false).mixed(true), 12, 1);
+    assert_eq!(mixed[(1, 0)].symbol(), "−");
+    let blk = Checkbox::new(&tui, "a", false).block(true);
+    assert_eq!((blk.width(), blk.height()), (5 + 1 + 1 + 2, 3));
+    let dis = draw(
+        Checkbox::new(&tui, "a", true).state(ControlState::Disabled),
+        12,
+        1,
+    );
+    assert_ne!(dis[(1, 0)].bg, tui.color(tui.theme().palette.primary));
+    let focus = draw(
+        Checkbox::new(&tui, "a", false).state(ControlState::Focused),
+        12,
+        1,
+    );
+    assert_eq!(focus[(0, 0)].fg, tui.color(tui.theme().palette.primary));
+}
+
+#[test]
+fn checkbox_shadow_follows_the_theme_unless_overridden() {
+    let neo = real(dodai_core::themes::neobrutalism::light());
+    assert!(neo.theme().effects.hard_shadow > 0.0);
+    assert_eq!(Checkbox::new(&neo, "a", true).height(), 2);
+    assert_eq!(Checkbox::new(&neo, "a", true).shadow(false).height(), 1);
+    let mat = real(dodai_core::themes::material::dark());
+    assert_eq!(Checkbox::new(&mat, "a", true).height(), 1);
+    assert_eq!(Checkbox::new(&mat, "a", true).shadow(true).height(), 2);
+}
+
+#[test]
+fn checkbox_label_honours_uppercase_labels_once() {
+    let b = draw(Checkbox::new(&square(), "hi", true), 12, 2);
+    assert!(row(&b, 0).contains("HI"));
+    let l = draw(Checkbox::new(&rounded(), "Hi", true), 12, 1);
+    assert!(row(&l, 0).contains("Hi"));
+}
+
+#[test]
+fn checkbox_line_matches_the_widget_row() {
+    let tui = real(dodai_core::themes::cyberpunk::yellow());
+    let cb = Checkbox::new(&tui, "arm", true).shadow(false);
+    let line = cb.line();
+    let b = draw(
+        Checkbox::new(&tui, "arm", true).shadow(false),
+        cb.width(),
+        1,
+    );
+    assert_eq!(line.to_string(), row(&b, 0));
 }
