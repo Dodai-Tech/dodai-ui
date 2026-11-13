@@ -1,4 +1,4 @@
-//! Token-driven small controls: [`Tag`], [`Toggle`], [`Progress`], [`Divider`].
+//! Token-driven small controls: [`Tag`], [`Toggle`] (radio / switch), [`Progress`], [`Divider`].
 
 use crate::{shape::cuts_bottom_right, TuiTheme};
 use dodai_core::{ControlState, ShapeKind, Tone};
@@ -80,18 +80,16 @@ impl Widget for Tag<'_> {
     }
 }
 
-/// Which glyph family a [`Toggle`] uses.
+/// Which glyph family a [`Toggle`] uses. Checkboxes are [`Checkbox`](crate::Checkbox).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ToggleKind {
-    /// `[x]` / `[ ]`
-    Checkbox,
     /// `(●)` / `( )`
     Radio,
     /// `[━●]` / `[●━]`-style switch.
     Switch,
 }
 
-/// Checkbox / radio / switch styled from the toggle tokens.
+/// Radio / switch styled from the toggle tokens.
 pub struct Toggle<'a> {
     theme: &'a TuiTheme,
     kind: ToggleKind,
@@ -120,8 +118,6 @@ impl<'a> Toggle<'a> {
     /// The glyph part only, e.g. `[x]`.
     pub fn glyph(&self) -> &'static str {
         match (self.kind, self.on) {
-            (ToggleKind::Checkbox, true) => "[x]",
-            (ToggleKind::Checkbox, false) => "[ ]",
             (ToggleKind::Radio, true) => "(●)",
             (ToggleKind::Radio, false) => "( )",
             (ToggleKind::Switch, true) => "[ ●]",

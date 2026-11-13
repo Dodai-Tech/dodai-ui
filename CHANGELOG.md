@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### ✨ dodai-ratatui (not published yet)
+- `Checkbox`: a design-aware checkbox. The design (Cyberpunk, Material, Dodai or Neo-brutalism)
+  comes from the theme's `Look` flags, the colours from its palette tokens; inline (3×1) and block
+  (5×3) sizes, mixed, focus and disabled states, hard shadow and readout. `ToggleKind::Checkbox`
+  is gone (use `Checkbox`). Needs the unreleased tui-checkbox designs: the workspace patches it to
+  the sibling checkout until it is published.
+
 ### ✨ Crates
 - `dodai-dash` (not published yet): a dashboard engine. A versioned dashboard format (panels on a
   12-column grid, `$variables`, time range and comparison, display thresholds in semantic tones),

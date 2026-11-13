@@ -12,6 +12,7 @@
 //! let _style = tui.selected();
 //! ```
 
+mod checkbox;
 mod controls;
 mod input;
 mod list;
@@ -25,10 +26,12 @@ pub use tui_nuances::{ThemeProvider, Themed};
 /// [`tui_nuances::ThemeProvider`].
 pub use {tui_chart, tui_checkbox, tui_nuances, tui_piechart, tui_rating, tui_slider, tui_spinner};
 
+pub use checkbox::{checkbox_design, Checkbox};
 pub use controls::{Divider, Progress, Tag, Toggle, ToggleKind};
 pub use input::InputField;
 pub use list::SelectList;
 pub use shape::{border_set, cuts_bottom_right, CHAMFER_BORDER, ROUNDED_BORDER, SQUARE_BORDER};
+pub use tui_checkbox::cyber::Design as CheckboxDesign;
 pub use widgets::{dim_color, Scanlines, ThemeBadge};
 
 use dodai_core::{ButtonVariant, Color as LColor, ControlState, ShapeKind, Theme, Tone};

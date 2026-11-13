@@ -9,13 +9,13 @@ use dodai_ratatui::{
     tui_chart::{
         Axis, BarChart, BarGroup, Candle, CandlestickChart, Gauge, LineChart, Series, Sparkline,
     },
-    tui_checkbox::Checkbox,
+    tui_checkbox::Checkbox as ThemedCheckbox,
     tui_piechart::{PieChart, PieSlice},
     tui_rating::{Rating, RatingState},
     tui_slider::{Slider, SliderState},
     tui_spinner::{BarSpinner, CircleSpinner, FluxSpinner, LinearSpinner},
-    Divider, InputField, Progress, Scanlines, SelectList, Tag, ThemeBadge, Themed, Toggle,
-    ToggleKind, TuiTheme,
+    Checkbox, Divider, InputField, Progress, Scanlines, SelectList, Tag, ThemeBadge, Themed,
+    Toggle, ToggleKind, TuiTheme,
 };
 use ratatui::{
     layout::{Constraint, Layout, Rect},
@@ -149,14 +149,8 @@ fn draw_overview(f: &mut Frame, t: &TuiTheme, body: Rect, selected: Option<usize
     let inner = blk.inner(ctl_a);
     f.render_widget(blk, ctl_a);
     let rows = Layout::vertical([Constraint::Length(1); 8]).split(inner);
-    f.render_widget(
-        Toggle::new(t, ToggleKind::Checkbox, true, "Neural link"),
-        rows[0],
-    );
-    f.render_widget(
-        Toggle::new(t, ToggleKind::Checkbox, false, "Stealth"),
-        rows[1],
-    );
+    f.render_widget(Checkbox::new(t, "Neural link", true).shadow(false), rows[0]);
+    f.render_widget(Checkbox::new(t, "Stealth", false).shadow(false), rows[1]);
     f.render_widget(
         Toggle::new(t, ToggleKind::Radio, true, "Cyan").state(ControlState::Focused),
         rows[2],
@@ -252,8 +246,8 @@ fn draw_widgets(f: &mut Frame, t: &TuiTheme, body: Rect, tick: u64) {
     let inner = blk.inner(left);
     f.render_widget(blk, left);
     let rows = Layout::vertical([Constraint::Length(1); 9]).split(inner);
-    f.render_widget(Checkbox::new("Neural link", true).themed(t), rows[0]);
-    f.render_widget(Checkbox::new("Stealth", false).themed(t), rows[1]);
+    f.render_widget(ThemedCheckbox::new("Neural link", true).themed(t), rows[0]);
+    f.render_widget(ThemedCheckbox::new("Stealth", false).themed(t), rows[1]);
     let vol = SliderState::new(65.0, 0.0, 100.0);
     f.render_widget(
         Slider::from_state(&vol)

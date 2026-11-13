@@ -86,3 +86,8 @@ strip         = "symbols"
 # Shaders are per-pixel maths: always optimise them.
 [profile.dev.package.dodai-shaders]
 opt-level = 3
+
+# Temporary: dodai-ratatui `Checkbox` needs the unreleased tui-checkbox designs. Drop this
+# patch (and require the new version in crates/dodai-ratatui) once tui-checkbox is published.
+[patch.crates-io]
+tui-checkbox = { path = "../tui-checkbox" }

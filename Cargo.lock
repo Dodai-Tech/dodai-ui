@@ -13349,8 +13349,6 @@ dependencies = [
 [[package]]
 name = "tui-checkbox"
 version = "0.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ea61730259f12c34790e8ade8b6e32eabb02076c673f5d11e271be076fdd1b4"
 dependencies = [
  "ratatui",
  "tui-nuances",
