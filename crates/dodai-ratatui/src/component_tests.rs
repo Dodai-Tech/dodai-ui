@@ -295,14 +295,16 @@ fn checkbox_states_and_sizes() {
 }
 
 #[test]
-fn checkbox_shadow_follows_the_theme_unless_overridden() {
-    let neo = real(dodai_core::themes::neobrutalism::light());
-    assert!(neo.theme().effects.hard_shadow > 0.0);
-    assert_eq!(Checkbox::new(&neo, "a", true).height(), 2);
-    assert_eq!(Checkbox::new(&neo, "a", true).shadow(false).height(), 1);
-    let mat = real(dodai_core::themes::material::dark());
-    assert_eq!(Checkbox::new(&mat, "a", true).height(), 1);
-    assert_eq!(Checkbox::new(&mat, "a", true).shadow(true).height(), 2);
+fn checkbox_shadow_is_off_by_default_and_cyberpunk_only() {
+    use dodai_core::themes::{cyberpunk, material, neobrutalism};
+    let neo = real(neobrutalism::light());
+    assert_eq!(Checkbox::new(&neo, "a", true).height(), 1);
+    assert_eq!(Checkbox::new(&neo, "a", true).shadow(true).height(), 1);
+    let mat = real(material::dark());
+    assert_eq!(Checkbox::new(&mat, "a", true).shadow(true).height(), 1);
+    let cyber = real(cyberpunk::yellow());
+    assert_eq!(Checkbox::new(&cyber, "a", true).height(), 1);
+    assert_eq!(Checkbox::new(&cyber, "a", true).shadow(true).height(), 2);
 }
 
 #[test]

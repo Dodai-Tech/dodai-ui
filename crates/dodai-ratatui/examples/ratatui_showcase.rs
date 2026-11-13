@@ -149,8 +149,8 @@ fn draw_overview(f: &mut Frame, t: &TuiTheme, body: Rect, selected: Option<usize
     let inner = blk.inner(ctl_a);
     f.render_widget(blk, ctl_a);
     let rows = Layout::vertical([Constraint::Length(1); 8]).split(inner);
-    f.render_widget(Checkbox::new(t, "Neural link", true).shadow(false), rows[0]);
-    f.render_widget(Checkbox::new(t, "Stealth", false).shadow(false), rows[1]);
+    f.render_widget(Checkbox::new(t, "Neural link", true), rows[0]);
+    f.render_widget(Checkbox::new(t, "Stealth", false), rows[1]);
     f.render_widget(
         Toggle::new(t, ToggleKind::Radio, true, "Cyan").state(ControlState::Focused),
         rows[2],
