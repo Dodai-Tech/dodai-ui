@@ -1,0 +1,26 @@
+# Several dashboards in one file, for sharing a set.
+version = 1
+
+[[dashboards]]
+name = "Energy"
+range = "1d"
+
+[[dashboards.panels]]
+title = "Energy per machine"
+kind = "bar"
+metric = "energy.wh"
+group_by = "host"
+agg = "delta"
+unit = "Wh"
+
+[[dashboards]]
+name = "Health"
+range = "1h"
+
+[[dashboards.panels]]
+title = "Temperature"
+kind = "line"
+metric = "gpu.temp_c"
+group_by = "gpu"
+agg = "max"
+thresholds = [{ above = 85.0, tone = "danger" }]

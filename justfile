@@ -112,6 +112,10 @@ test-core:
 test-charts:
     cargo test -p dodai-charts
 
+# The dashboard engine, with its JSON Schema feature.
+test-dash:
+    cargo test -p dodai-dash --all-features
+
 # gpui feature slices must each compile on their own
 check-gpui-features:
     cargo check -p dodai-instruments --no-default-features --features gpui

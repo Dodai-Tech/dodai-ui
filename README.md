@@ -24,7 +24,7 @@ Neo-Brutalism and Dodai.
 | [`dodai-frost`](crates/dodai-frost) | none | Frosted glass on RGBA pixels, GPU first with a CPU fallback |
 
 Also in the repository but **not part of the first release**: `dodai-charts` (70 gpui charts and their
-renderer-agnostic maths), `dodai-instruments` (gauges, dials, flight and tactical displays), `dodai-ratatui` (a terminal adapter, still small) and the egui,
+renderer-agnostic maths), `dodai-instruments` (gauges, dials, flight and tactical displays), `dodai-dash` (a dashboard engine: a TOML and JSON dashboard format, validation against your own metrics, view models; no storage and no rendering; see its [README](crates/dodai-dash/README.md)), `dodai-ratatui` (a terminal adapter, still small) and the egui,
 slint, yew, leptos and freya adapters.
 
 ## Status (0.1)

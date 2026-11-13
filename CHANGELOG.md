@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### ✨ Crates
+- `dodai-dash` (not published yet): a dashboard engine. A versioned dashboard format (panels on a
+  12-column grid, `$variables`, time range and comparison, display thresholds in semantic tones),
+  TOML and JSON import and export through one model (size-limited, version-checked, unknown fields
+  reported, optional JSON Schema), validation against a host-supplied metric catalogue, and
+  toolkit-neutral view models resolved through a host-supplied data source. No storage, no
+  alerting, no rendering.
+
 ## [0.1.0] - 2026-11-12
 
 The first release: the Dodai UI design system for gpui, iced, bevy and dioxus, with the web

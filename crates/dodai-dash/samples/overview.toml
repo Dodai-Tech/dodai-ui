@@ -1,0 +1,53 @@
+# A dashboard for a small group of machines. Metric names come from the host's catalogue;
+# these are examples.
+version = 1
+name = "Overview"
+description = "Power, temperature and throughput of a group of machines."
+refresh = "5s"
+range = "1h"
+compare = "1d"
+
+[[variables]]
+name = "group"
+kind = "group"
+label = "Group"
+default = "all"
+
+[[panels]]
+title = "Power of $group"
+kind = "stacked_area"
+metric = "gpu.power_w"
+group_by = "host"
+agg = "sum"
+unit = "W"
+span = { x = 0, y = 0, w = 6, h = 3 }
+filter = { group = "$group" }
+thresholds = [{ above = 3000.0, tone = "warning" }]
+
+[[panels]]
+title = "Hottest GPU"
+kind = "gauge"
+metric = "gpu.temp_c"
+agg = "max"
+unit = "C"
+min = 20.0
+max = 100.0
+span = { x = 6, y = 0, w = 3, h = 3 }
+thresholds = [
+    { above = 80.0, tone = "warning" },
+    { above = 90.0, tone = "danger" },
+]
+
+[[panels]]
+title = "Tokens per second"
+kind = "stat"
+metric = "serve.tokens_per_s"
+agg = "sum"
+span = { x = 9, y = 0, w = 3, h = 3 }
+
+[[panels]]
+title = "Machines"
+kind = "table"
+metric = "gpu.power_w"
+group_by = "host"
+agg = "avg"
