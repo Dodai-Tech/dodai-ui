@@ -205,6 +205,15 @@ jobs:
         id: msrv
         run: echo "version=$(grep -m1 '^rust-version' Cargo.toml | sed -E 's/.*"(.*)".*/\1/')" >> "$GITHUB_OUTPUT"
       - uses: dtolnay/rust-toolchain@master
+        id: rtm
+        continue-on-error: true
+        with:
+          toolchain: ${{ steps.msrv.outputs.version }}
+      - name: Retry toolchain install (runner network is flaky)
+        if: steps.rtm.outcome == 'failure'
+        run: sleep 20
+      - uses: dtolnay/rust-toolchain@master
+        if: steps.rtm.outcome == 'failure'
         with:
           toolchain: ${{ steps.msrv.outputs.version }}
       - uses: Swatinem/rust-cache@v2
