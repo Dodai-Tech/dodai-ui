@@ -314,7 +314,7 @@ release-retrigger version:
 # ── Git remotes & pushing ─────────────────────────────────────────────────────
 # Every *-all recipe loops over REMOTES and keeps going when one fails.
 
-REMOTES := "origin gitea-starscream gitea-microlab"
+REMOTES := "origin codeberg gitea-starscream gitea-microlab"
 
 # Fail fast (5 s) instead of hanging when a remote host is unreachable.
 export GIT_SSH_COMMAND := "ssh -o ConnectTimeout=5 -o BatchMode=yes"
@@ -330,6 +330,7 @@ remotes:
 setup-remotes:
     #!/usr/bin/env sh
     git remote get-url origin >/dev/null 2>&1 || git remote add origin git@github.com:sorinirimies/dodai-ui.git
+    git remote get-url codeberg >/dev/null 2>&1 || git remote add codeberg ssh://git@codeberg.org/sorinirimies/dodai-ui.git
     git remote get-url gitea-starscream >/dev/null 2>&1 || git remote add gitea-starscream gitea@192.168.1.44:sorin/dodai-ui.git
     git remote get-url gitea-microlab >/dev/null 2>&1 || git remote add gitea-microlab ssh://git@192.168.1.204:30009/sorin/dodai-ui.git
     git remote -v
@@ -337,6 +338,10 @@ setup-remotes:
 # Push the current branch to GitHub (origin)
 push:
     git push origin "$(git branch --show-current)"
+
+# Push the current branch to Codeberg
+push-codeberg:
+    git push codeberg "$(git branch --show-current)"
 
 # Push the current branch to Gitea Starscream
 push-gitea-starscream:
@@ -375,6 +380,10 @@ push-all-force:
 pull:
     git pull origin "$(git branch --show-current)"
 
+# Pull the current branch from Codeberg
+pull-codeberg:
+    git pull codeberg "$(git branch --show-current)"
+
 # Pull the current branch from Gitea Starscream
 pull-gitea-starscream:
     git pull gitea-starscream "$(git branch --show-current)"
@@ -405,6 +414,10 @@ sync-gitea-starscream:
 # Force-push the current branch to GitHub (origin)
 push-force:
     git push --force origin "$(git branch --show-current)"
+
+# Force-push the current branch to Codeberg
+push-codeberg-force:
+    git push --force codeberg "$(git branch --show-current)"
 
 # Force-push the current branch to Gitea Starscream
 push-gitea-starscream-force:
@@ -521,6 +534,10 @@ export:
 
 # ── More remote recipes: tags per remote, force pulls, Gitea setup, first release ─────────
 
+# Push all tags to Codeberg
+push-tags-codeberg:
+    git push codeberg --tags
+
 # Push all tags to Gitea Starscream
 push-tags-gitea-starscream:
     git push gitea-starscream --tags
@@ -528,6 +545,10 @@ push-tags-gitea-starscream:
 # Push all tags to Gitea Microlab
 push-tags-gitea-microlab:
     git push gitea-microlab --tags
+
+# Force-push all tags to Codeberg (moves existing tags)
+push-tags-codeberg-force:
+    git push --force codeberg --tags
 
 # Force-push all tags to Gitea Starscream (moves existing tags)
 push-tags-gitea-starscream-force:
