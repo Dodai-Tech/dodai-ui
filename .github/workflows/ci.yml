@@ -67,14 +67,14 @@ jobs:
       - run: git diff --exit-code -- dist
       - run: test -z "$(git status --porcelain dist)"
 
-  # Base crates everything else depends on (dodai-core, dodai-icons, dodai-charts, dodai-instruments, dodai-fx, dodai-frost).
+  # Base crates everything else depends on (dodai-core, dodai-icons, dodai-charts, dodai-instruments, dodai-dash, dodai-fx, dodai-frost).
   base:
     name: ${{ matrix.crate }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        crate: [dodai-core, dodai-icons, dodai-charts, dodai-instruments, dodai-fx, dodai-frost]
+        crate: [dodai-core, dodai-icons, dodai-charts, dodai-instruments, dodai-dash, dodai-fx, dodai-frost]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -92,8 +92,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.crate }}
-      - run: cargo clippy -p ${{ matrix.crate }} --all-targets ${{ matrix.crate == 'dodai-core' && '--all-features' || '' }} -- -D warnings
-      - run: cargo test -p ${{ matrix.crate }} ${{ matrix.crate == 'dodai-core' && '--all-features' || '' }}
+      - run: cargo clippy -p ${{ matrix.crate }} --all-targets ${{ (matrix.crate == 'dodai-core' || matrix.crate == 'dodai-dash') && '--all-features' || '' }} -- -D warnings
+      - run: cargo test -p ${{ matrix.crate }} ${{ (matrix.crate == 'dodai-core' || matrix.crate == 'dodai-dash') && '--all-features' || '' }}
       - name: dodai-frost GPU feature (tests skip without an adapter)
         if: matrix.crate == 'dodai-frost'
         run: |
@@ -270,6 +270,7 @@ jobs:
       # charts and instruments: the agnostic library only; their tests and examples use gpui
       # (a dev-dependency), which needs a newer rustc than the declared MSRV.
       - run: cargo check --locked -p dodai-charts -p dodai-instruments --lib
+      - run: cargo check --locked -p dodai-dash --all-features
 
   # Unused dependencies (cargo-machete scans every manifest, including freya and tools/).
   machete:

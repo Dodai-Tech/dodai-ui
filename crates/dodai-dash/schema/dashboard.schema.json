@@ -1,0 +1,563 @@
+{
+  "$defs": {
+    "Aggregation": {
+      "description": "How values are combined.",
+      "oneOf": [
+        {
+          "const": "sum",
+          "description": "Sum.",
+          "type": "string"
+        },
+        {
+          "const": "avg",
+          "description": "Mean.",
+          "type": "string"
+        },
+        {
+          "const": "min",
+          "description": "Smallest.",
+          "type": "string"
+        },
+        {
+          "const": "max",
+          "description": "Largest.",
+          "type": "string"
+        },
+        {
+          "const": "count",
+          "description": "Number of samples.",
+          "type": "string"
+        },
+        {
+          "const": "last",
+          "description": "Most recent value.",
+          "type": "string"
+        },
+        {
+          "const": "p50",
+          "description": "Median.",
+          "type": "string"
+        },
+        {
+          "const": "p95",
+          "description": "95th percentile.",
+          "type": "string"
+        },
+        {
+          "const": "p99",
+          "description": "99th percentile.",
+          "type": "string"
+        },
+        {
+          "const": "rate",
+          "description": "Change per second of a counter.",
+          "type": "string"
+        },
+        {
+          "const": "delta",
+          "description": "Change over the step of a counter.",
+          "type": "string"
+        }
+      ]
+    },
+    "Dashboard": {
+      "description": "One dashboard: a title, optional variables and time settings, and panels on a grid.",
+      "properties": {
+        "compare": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Interval"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Also show the same range this long ago, aligned, for comparison."
+        },
+        "description": {
+          "description": "What the dashboard is for.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "Display name.",
+          "type": "string"
+        },
+        "panels": {
+          "default": [],
+          "description": "The panels.",
+          "items": {
+            "$ref": "#/$defs/Panel"
+          },
+          "type": "array"
+        },
+        "range": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Interval"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The default time range shown, ending now."
+        },
+        "refresh": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Interval"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "How often the host should re-query."
+        },
+        "scope": {
+          "description": "What the dashboard is about, in the host's words (a host may use it to pick where the\ndashboard applies). This crate attaches no meaning to it.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "variables": {
+          "description": "Values the viewer can pick, used in filters as `$name`.",
+          "items": {
+            "$ref": "#/$defs/Variable"
+          },
+          "type": "array"
+        },
+        "version": {
+          "default": 1,
+          "description": "Format version of this file; see [`FORMAT_VERSION`].",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "Interval": {
+      "description": "A span of time: a whole number and a unit (s, m, h, d, w), for example 5s, 1h, 7d.",
+      "pattern": "^[0-9]+[smhdw]$",
+      "type": "string"
+    },
+    "Panel": {
+      "description": "One panel: a metric, how to cut it and how to draw it.",
+      "properties": {
+        "agg": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Aggregation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "How to combine values (over the group, and over each step)."
+        },
+        "description": {
+          "description": "A line of help shown with the panel.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "filter": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Keep only data where each dimension equals the value; `$name` refers to a variable.",
+          "type": "object"
+        },
+        "group_by": {
+          "description": "Split the metric into one series per value of this dimension.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kind": {
+          "$ref": "#/$defs/PanelKind",
+          "description": "How to draw it."
+        },
+        "max": {
+          "description": "Upper end of the scale (gauges, bars).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "metric": {
+          "description": "The metric to show, by name from the host's catalogue.",
+          "type": "string"
+        },
+        "min": {
+          "description": "Lower end of the scale (gauges, bars).",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "range": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Interval"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Overrides the dashboard's time range for this panel."
+        },
+        "span": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Span"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Where the panel sits on the grid; placed automatically when absent."
+        },
+        "step": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Interval"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Width of one point of a series."
+        },
+        "thresholds": {
+          "description": "Display rules that colour a value; the last matching entry wins, so list them from mild\nto severe.",
+          "items": {
+            "$ref": "#/$defs/Threshold"
+          },
+          "type": "array"
+        },
+        "title": {
+          "description": "Heading of the panel.",
+          "type": "string"
+        },
+        "unit": {
+          "description": "The unit shown; defaults to the metric's own unit.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "title",
+        "kind",
+        "metric"
+      ],
+      "type": "object"
+    },
+    "PanelKind": {
+      "description": "How a panel is drawn.",
+      "oneOf": [
+        {
+          "const": "line",
+          "description": "A line over time.",
+          "type": "string"
+        },
+        {
+          "const": "area",
+          "description": "A filled line over time.",
+          "type": "string"
+        },
+        {
+          "const": "stacked_area",
+          "description": "Filled lines stacked on each other.",
+          "type": "string"
+        },
+        {
+          "const": "bar",
+          "description": "Bars, one per series or per step.",
+          "type": "string"
+        },
+        {
+          "const": "gauge",
+          "description": "A dial or bar showing one value on a scale.",
+          "type": "string"
+        },
+        {
+          "const": "stat",
+          "description": "One big number, with a small trend.",
+          "type": "string"
+        },
+        {
+          "const": "heatmap",
+          "description": "A grid of coloured cells.",
+          "type": "string"
+        },
+        {
+          "const": "treemap",
+          "description": "Nested rectangles sized by value.",
+          "type": "string"
+        },
+        {
+          "const": "sankey",
+          "description": "Flows between groups.",
+          "type": "string"
+        },
+        {
+          "const": "table",
+          "description": "Rows and columns.",
+          "type": "string"
+        },
+        {
+          "const": "state_timeline",
+          "description": "States over time as coloured spans.",
+          "type": "string"
+        }
+      ]
+    },
+    "Span": {
+      "description": "A rectangle on the layout grid, in cells.",
+      "properties": {
+        "h": {
+          "description": "Height in rows, at least 1.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "w": {
+          "description": "Width in columns, 1 to [`GRID_COLUMNS`].",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "x": {
+          "description": "Column of the left edge, from 0.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "y": {
+          "description": "Row of the top edge, from 0.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "w",
+        "h"
+      ],
+      "type": "object"
+    },
+    "Threshold": {
+      "description": "A display rule: values in a range are drawn in a tone. It colours; it never alerts.\n\nWith both bounds set, the value must be above `above` **and** below `below` (a band).",
+      "properties": {
+        "above": {
+          "description": "Matches values greater than this.",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "below": {
+          "description": "Matches values less than this.",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "tone": {
+          "$ref": "#/$defs/Tone",
+          "description": "The tone to draw with."
+        }
+      },
+      "required": [
+        "tone"
+      ],
+      "type": "object"
+    },
+    "Tone": {
+      "description": "A semantic status, mapped by each toolkit to the colour of the active design.",
+      "oneOf": [
+        {
+          "const": "info",
+          "description": "Neutral information.",
+          "type": "string"
+        },
+        {
+          "const": "success",
+          "description": "Good.",
+          "type": "string"
+        },
+        {
+          "const": "warning",
+          "description": "Needs attention.",
+          "type": "string"
+        },
+        {
+          "const": "danger",
+          "description": "Bad.",
+          "type": "string"
+        }
+      ]
+    },
+    "Variable": {
+      "description": "A value chosen by the viewer and referenced as `$name` in panel filters.",
+      "properties": {
+        "default": {
+          "description": "The value used until the viewer picks another.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kind": {
+          "description": "Which dimension of the host's data this picks (for example a host's own word for a\nmachine or a region); lets the host offer the right choices.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "label": {
+          "description": "Text shown to the viewer; the name when absent.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "The name used after the `$`: letters, digits and `_`, not starting with a digit.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "One dashboard, or a bundle of several.",
+  "oneOf": [
+    {
+      "description": "One dashboard: a title, optional variables and time settings, and panels on a grid.",
+      "properties": {
+        "compare": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Interval"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Also show the same range this long ago, aligned, for comparison."
+        },
+        "description": {
+          "description": "What the dashboard is for.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "Display name.",
+          "type": "string"
+        },
+        "panels": {
+          "default": [],
+          "description": "The panels.",
+          "items": {
+            "$ref": "#/$defs/Panel"
+          },
+          "type": "array"
+        },
+        "range": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Interval"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The default time range shown, ending now."
+        },
+        "refresh": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Interval"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "How often the host should re-query."
+        },
+        "scope": {
+          "description": "What the dashboard is about, in the host's words (a host may use it to pick where the\ndashboard applies). This crate attaches no meaning to it.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "variables": {
+          "description": "Values the viewer can pick, used in filters as `$name`.",
+          "items": {
+            "$ref": "#/$defs/Variable"
+          },
+          "type": "array"
+        },
+        "version": {
+          "default": 1,
+          "description": "Format version of this file; see [`FORMAT_VERSION`].",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    {
+      "description": "Several dashboards in one file, for sharing a set.",
+      "properties": {
+        "dashboards": {
+          "description": "The dashboards.",
+          "items": {
+            "$ref": "#/$defs/Dashboard"
+          },
+          "type": "array"
+        },
+        "version": {
+          "default": 1,
+          "description": "Format version of this file; see [`FORMAT_VERSION`].",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "dashboards"
+      ],
+      "type": "object"
+    }
+  ],
+  "title": "Dodai dashboard"
+}
