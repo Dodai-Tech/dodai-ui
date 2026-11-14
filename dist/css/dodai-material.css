@@ -264,7 +264,7 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;o
 @keyframes dodai-shuffle-c{0%{transform:translate(var(--far),var(--far))}15%,75%{transform:translate(0,var(--far))}90%,100%{transform:translate(0,0)}}
 @keyframes dodai-trail-data{0%{opacity:1;transform:translateY(0)}100%{opacity:.4;transform:translateY(var(--fary))}}
 @keyframes dodai-trail-pillars{0%{transform:scaleY(.3)}25%{transform:scaleY(.65)}50%{transform:scaleY(1)}75%{transform:scaleY(.65)}100%{transform:scaleY(.3)}}
-@keyframes dodai-trail-courses{0%{transform:translateX(calc(var(--s) * -1));opacity:.7}40%,70%{transform:translateX(0);opacity:1}100%{transform:translateX(var(--s));opacity:.7}}
+@keyframes dodai-trail-courses{0%{clip-path:inset(0 100% 0 0)}40%,70%{clip-path:inset(0)}100%{clip-path:inset(0 0 0 100%)}}
 @keyframes dodai-trail-bounce{0%,55%,100%{transform:translateY(0)}27.5%{transform:translateY(calc(var(--fary) * -1))}}
 .dodai-spinner--data>i{animation-name:dodai-trail-data}
 .dodai-spinner--pillars>i{animation-name:dodai-trail-pillars;animation-timing-function:steps(1,end);transform-origin:50% 100%}
