@@ -127,18 +127,6 @@ impl Showcase {
         let loading = Panel::new()
             .title("Loading")
             .subheader(ld_controls)
-            .child(Label::new("Spinner"))
-            .child(
-                row()
-                    .child(Spinner::new(("ld-sp1", run)).motion(mo(900, Easing::Linear)).playback(pbk))
-                    .child(Spinner::new(("ld-sp2", run)).motion(mo(450, Easing::Linear)).playback(pbk))
-                    .child(
-                        Spinner::new(("ld-sp3", run))
-                            .motion(mo(1800, Easing::EaseInOut))
-                            .playback(pbk),
-                    )
-                    .child(Muted::new("900 ms · 450 ms · 1.8 s ease-in-out (unless a duration is set)")),
-            )
             .child(group_card(
                 &theme_of(cx),
                 "Shared, in every design".into(),
