@@ -139,60 +139,30 @@ impl Showcase {
                     )
                     .child(Muted::new("900 ms · 450 ms · 1.8 s ease-in-out (unless a duration is set)")),
             )
-            .child(Label::new("Spinners"))
-            .children(spinner_groups(&theme_of(cx)).into_iter().enumerate().map(|(d, (name, set))| {
-                let material = name.ends_with("Material 3");
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap(px(6.0))
-                    .child(Muted::new(name))
-                    .child({
-                        let cell = |spinner: gpui::AnyElement, label: String| {
-                            div()
-                                .flex()
-                                .flex_col()
-                                .items_center()
-                                .gap(px(6.0))
-                                .child(div().size(px(56.0)).flex().items_center().justify_center().child(spinner))
-                                .child(Muted::new(label))
-                        };
-                        let mut r = row().items_end().gap(px(28.0));
-                        for (i, st) in set.iter().enumerate() {
-                            let sp = Spinner::new(("ld-set", run * 64 + (d * 8 + i) as u32))
-                                .style(*st)
-                                .size(56.0)
-                                .motion(mo(900, Easing::Linear))
-                                .playback(pbk);
-                            r = r.child(cell(sp.into_any_element(), format!("{st:?}").to_lowercase()));
-                        }
-                        if material {
-                            r = r
-                                .child(cell(
-                                    LoadingIndicator::new(("ld-li", run)).into_any_element(),
-                                    "loading indicator".into(),
-                                ))
-                                .child(cell(
-                                    LoadingIndicator::new(("ld-lic", run)).contained(true).into_any_element(),
-                                    "contained".into(),
-                                ));
-                        }
-                        r
-                    })
-            }))
-            .child(Label::new("Progress indicators"))
-            .child(Muted::new("Shared, in every design"))
-            .child(ProgressBar::new(0.35))
-            .child(IndeterminateBar::new(("ld-ib1", run)).motion(mo(1400, Easing::Linear)).playback(pbk))
-            .child(
-                row()
-                    .items_center()
-                    .gap(px(20.0))
-                    .child(dodai_gpui::CircularProgress::new(0.72))
-                    .child(dodai_gpui::CircularProgress::indeterminate()),
-            )
-            .child(Muted::new(format!("Only in {}", design_name(&theme_of(cx)))))
-            .children(progress_customs(&theme_of(cx), run, pbk))
+            .child(group_card(
+                &theme_of(cx),
+                "Shared, in every design".into(),
+                spinner_row(&dodai_core::SpinnerStyle::SHARED, 0, (run, lms as u64), pbk, false),
+                vec![
+                    ProgressBar::new(0.35).into_any_element(),
+                    IndeterminateBar::new(("ld-ib1", run))
+                        .motion(mo(1400, Easing::Linear))
+                        .playback(pbk)
+                        .into_any_element(),
+                ],
+            ))
+            .child(group_card(
+                &theme_of(cx),
+                format!("Only in {}", design_name(&theme_of(cx))),
+                spinner_row(
+                    theme_of(cx).look().spinners,
+                    1,
+                    (run, lms as u64),
+                    pbk,
+                    theme_of(cx).look().tonal,
+                ),
+                progress_customs(&theme_of(cx), run, pbk),
+            ))
             .child(Label::new("Skeleton placeholders"))
             .child(
                 row()
@@ -716,7 +686,6 @@ fn progress_customs(
     run: u32,
     pbk: dodai_gpui::Playback,
 ) -> Vec<gpui::AnyElement> {
-    use dodai_core::ProgressStyle::*;
     let mut v: Vec<gpui::AnyElement> = Vec::new();
     let name = |n: &str| Muted::new(n.to_string()).into_any_element();
     for (i, st) in t.look().progress_bars.iter().enumerate() {
@@ -729,7 +698,6 @@ fn progress_customs(
                 .into_any_element(),
         );
     }
-    let _ = (Hud, Stripes, Stones);
     if t.look().tonal {
         v.push(name("wavy linear"));
         v.push(ProgressBar::new(0.55).wavy(true).into_any_element());
@@ -738,6 +706,16 @@ fn progress_customs(
             IndeterminateBar::new(("ld-ibw", run))
                 .wavy(true)
                 .playback(pbk)
+                .into_any_element(),
+        );
+        v.push(name("circular"));
+        v.push(
+            div()
+                .flex()
+                .items_center()
+                .gap(px(20.0))
+                .child(dodai_gpui::CircularProgress::new(0.72))
+                .child(dodai_gpui::CircularProgress::indeterminate())
                 .into_any_element(),
         );
         v.push(name("wavy circular"));
@@ -751,16 +729,82 @@ fn progress_customs(
     v
 }
 
-/// The spinners every design shares, then the current design's own.
-fn spinner_groups(t: &dodai_core::Theme) -> Vec<(String, Vec<dodai_core::SpinnerStyle>)> {
-    let design = design_name(t);
-    vec![
-        (
-            "Shared, in every design".into(),
-            dodai_core::SpinnerStyle::SHARED.to_vec(),
-        ),
-        (format!("Only in {design}"), t.look().spinners.to_vec()),
-    ]
+/// One labelled group on the Loading page: its spinners, then its progress indicators.
+fn group_card(
+    t: &dodai_core::Theme,
+    title: String,
+    spinners: gpui::AnyElement,
+    progress: Vec<gpui::AnyElement>,
+) -> gpui::Div {
+    let sub = |s: &str| Muted::new(s.to_string());
+    div()
+        .flex()
+        .flex_col()
+        .gap(px(10.0))
+        .p(px(14.0))
+        .border_1()
+        .border_color(crate::hsla(t.palette.border))
+        .rounded(px(t.shape.radius))
+        .child(Label::new(title))
+        .child(sub("Spinners"))
+        .child(spinners)
+        .child(sub("Progress"))
+        .children(progress)
+}
+
+/// A row of labelled spinners for `set`; `material` adds the M3 loading indicators.
+fn spinner_row(
+    set: &[dodai_core::SpinnerStyle],
+    group: u32,
+    (run, lms): (u32, u64),
+    pbk: dodai_gpui::Playback,
+    material: bool,
+) -> gpui::AnyElement {
+    let cell = |spinner: gpui::AnyElement, label: String| {
+        div()
+            .flex()
+            .flex_col()
+            .items_center()
+            .gap(px(6.0))
+            .child(
+                div()
+                    .size(px(56.0))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .child(spinner),
+            )
+            .child(Muted::new(label))
+    };
+    let mut r = div().flex().items_end().gap(px(28.0)).flex_wrap();
+    for (i, st) in set.iter().enumerate() {
+        let sp = Spinner::new(("ld-set", run * 64 + group * 16 + i as u32))
+            .style(*st)
+            .size(56.0)
+            .motion(Motion::new(
+                Duration::from_millis(if lms > 0 { lms } else { 900 }),
+                Easing::Linear,
+            ))
+            .playback(pbk);
+        r = r.child(cell(
+            sp.into_any_element(),
+            format!("{st:?}").to_lowercase(),
+        ));
+    }
+    if material {
+        r = r
+            .child(cell(
+                LoadingIndicator::new(("ld-li", run)).into_any_element(),
+                "loading indicator".into(),
+            ))
+            .child(cell(
+                LoadingIndicator::new(("ld-lic", run))
+                    .contained(true)
+                    .into_any_element(),
+                "contained".into(),
+            ));
+    }
+    r.into_any_element()
 }
 
 #[cfg(test)]
