@@ -139,6 +139,31 @@ impl Showcase {
                     )
                     .child(Muted::new("900 ms · 450 ms · 1.8 s ease-in-out (unless a duration is set)")),
             )
+            .child(Label::new("Spinners of each design (the first is its default)"))
+            .children(spinner_designs().into_iter().enumerate().map(|(d, (name, set))| {
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(6.0))
+                    .child(Muted::new(name))
+                    .child(row().items_end().gap(px(28.0)).children(set.iter().enumerate().map(
+                        |(i, st)| {
+                            div()
+                                .flex()
+                                .flex_col()
+                                .items_center()
+                                .gap(px(6.0))
+                                .child(
+                                    Spinner::new(("ld-set", run * 64 + (d * 8 + i) as u32))
+                                        .style(*st)
+                                        .size(56.0)
+                                        .motion(mo(900, Easing::Linear))
+                                        .playback(pbk),
+                                )
+                                .child(Muted::new(format!("{st:?}").to_lowercase()))
+                        },
+                    )))
+            }))
             .child(Label::new("Indeterminate bar"))
             .child(IndeterminateBar::new(("ld-ib1", run)).motion(mo(1400, Easing::Linear)).playback(pbk))
             .child(IndeterminateBar::new(("ld-ib2", run)).motion(mo(700, Easing::EaseInOut)).playback(pbk))
@@ -650,6 +675,22 @@ impl Showcase {
             )
             .into_any_element()
     }
+}
+
+/// Each design system with the spinners it offers.
+fn spinner_designs() -> Vec<(&'static str, &'static [dodai_core::SpinnerStyle])> {
+    vec![
+        ("Dodai", dodai_core::dodai::light().look().spinners),
+        (
+            "Cyberpunk",
+            dodai_core::cyberpunk::variants()[0].look().spinners,
+        ),
+        (
+            "Neo-Brutalism",
+            dodai_core::neobrutalism::variants()[0].look().spinners,
+        ),
+        ("Material 3", dodai_core::material::light().look().spinners),
+    ]
 }
 
 #[cfg(test)]

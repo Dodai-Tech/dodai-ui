@@ -474,8 +474,7 @@ impl<Message> canvas::Program<Message> for Spinner {
         let cells = busy::cells(self.style, size);
         if !cells.is_empty() {
             for c in cells {
-                let a = busy::cell_alpha(self.style, c.lag, self.t);
-                let (x, y, w, h) = busy::cell_rect(self.style, &c, a);
+                let (x, y, w, h, a) = busy::pose(self.style, &c, size, self.t);
                 let col = iced::Color {
                     a: self.lit.a * a,
                     ..self.lit

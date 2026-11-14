@@ -186,7 +186,12 @@ impl DesignSpec for Material3 {
             floating_label: true,
             icons: IconSet::Symbols,
             sink: false,
-            spinner: crate::SpinnerStyle::Petals,
+            spinner: crate::SpinnerStyle::Ring,
+            spinners: &[
+                crate::SpinnerStyle::Ring,
+                crate::SpinnerStyle::Petals,
+                crate::SpinnerStyle::Bounce,
+            ],
             ..Look::default()
         }
     }

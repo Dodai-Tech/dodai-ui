@@ -3,7 +3,7 @@
 
 use bevy::prelude::*;
 
-use dodai_core::busy::{cell_alpha, cell_rect, cells, moves, Cell};
+use dodai_core::busy::{cells, moves, pose, Cell};
 use dodai_core::SpinnerStyle;
 
 use crate::theme::{color, DodaiTheme};
@@ -25,6 +25,7 @@ pub(crate) struct SpinnerBuilt(Option<SpinnerStyle>);
 pub(crate) struct SpinnerCell {
     style: SpinnerStyle,
     cell: Cell,
+    size: f32,
 }
 
 /// An indeterminate bar: a track with a segment sliding along it.
@@ -102,6 +103,7 @@ pub(crate) fn build_spinners(
             BorderRadius::ZERO
         };
         let list = cells(style, sp.size);
+        let size = sp.size;
         // The page may rebuild (and despawn this spinner) in the same frame: skip if it's gone.
         commands.queue(move |world: &mut World| {
             let Ok(mut spinner) = world.get_entity_mut(e) else {
@@ -112,7 +114,11 @@ pub(crate) fn build_spinners(
                 for c in list {
                     let (w, h) = (c.w, c.h);
                     p.spawn((
-                        SpinnerCell { style, cell: c },
+                        SpinnerCell {
+                            style,
+                            cell: c,
+                            size,
+                        },
                         Node {
                             position_type: PositionType::Absolute,
                             left: Val::Px(c.x),
@@ -166,13 +172,12 @@ pub(crate) fn animate_spinners(
         }
     }
     for (p, mut n, mut bg) in &mut parts {
-        let a = cell_alpha(p.style, p.cell.lag, t);
+        let (x, y, w, h, a) = pose(p.style, &p.cell, p.size, t);
         let want = lit.with_alpha(lit.alpha() * a);
         if bg.0 != want {
             bg.0 = want;
         }
         if moves(p.style) {
-            let (x, y, w, h) = cell_rect(p.style, &p.cell, a);
             let (left, top, width, height) = (Val::Px(x), Val::Px(y), Val::Px(w), Val::Px(h));
             if n.left != left || n.top != top || n.width != width || n.height != height {
                 n.left = left;
@@ -232,9 +237,9 @@ mod tests {
     #[test]
     fn each_design_builds_its_own_cells() {
         for (t, n) in [
-            (dodai_core::material::light(), 6),
-            (dodai_core::cyberpunk::light(), 7),
-            (dodai_core::dodai::light(), 9),
+            (dodai_core::material::light(), 0),
+            (dodai_core::cyberpunk::light(), 4),
+            (dodai_core::dodai::light(), 4),
             (dodai_core::neobrutalism::light(), 3),
         ] {
             let id = t.id();
@@ -252,7 +257,7 @@ mod tests {
         a.world_mut().spawn(spinner(32.0));
         a.update();
         a.update();
-        assert_eq!(cell_count(&mut a), 9);
+        assert_eq!(cell_count(&mut a), 4);
         a.world_mut()
             .resource_mut::<DodaiTheme>()
             .set_theme(dodai_core::neobrutalism::light());

@@ -808,14 +808,35 @@ pub fn spinner_cells(style: SpinnerStyle, size: f32) -> (&'static str, Vec<Strin
         SpinnerStyle::Scanner => "scanner",
         SpinnerStyle::Hop => "hop",
         SpinnerStyle::Petals => "petals",
+        SpinnerStyle::Quad => "quad",
+        SpinnerStyle::Glitch => "glitch",
+        SpinnerStyle::Shuffle => "shuffle",
+        SpinnerStyle::Data => "data",
+        SpinnerStyle::Pillars => "pillars",
+        SpinnerStyle::Courses => "courses",
+        SpinnerStyle::Bounce => "bounce",
     };
     let cells = busy::cells(style, size)
         .iter()
         .map(|c| {
             // A negative delay starts the cell part-way through its cycle, as the head left it.
-            let delay = -(-c.lag).rem_euclid(1.0) / busy::SPIN_RATE;
+            // (A shuffle piece's `lag` is its number: the pieces run on their own tracks.)
+            let delay = if style == SpinnerStyle::Shuffle {
+                0.0
+            } else {
+                -(-c.lag).rem_euclid(1.0) / busy::SPIN_RATE
+            };
+            // Quad and shuffle cells slide between the corners of the square: how far.
+            let far = size - c.w;
+            let fary = size - c.h;
+            let fade = 1.0 - c.lag * 0.55;
+            let extra = if style == SpinnerStyle::Quad {
+                format!(";opacity:{fade:.2}")
+            } else {
+                String::new()
+            };
             format!(
-                "left:{:.2}px;top:{:.2}px;width:{:.2}px;height:{:.2}px;border-radius:{:.2}px;animation-delay:{:.3}s",
+                "left:{:.2}px;top:{:.2}px;width:{:.2}px;height:{:.2}px;border-radius:{:.2}px;--far:{far:.2}px;--fary:{fary:.2}px;animation-delay:{:.3}s{extra}",
                 c.x, c.y, c.w, c.h, c.radius, delay
             )
         })

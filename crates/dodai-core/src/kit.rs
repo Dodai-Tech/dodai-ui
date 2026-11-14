@@ -610,6 +610,111 @@ pub mod busy {
                     })
                     .collect()
             }
+            SpinnerStyle::Quad => (0..4)
+                .map(|i| {
+                    let side = size * (0.46 - 0.05 * i as f32);
+                    Cell {
+                        x: 0.0,
+                        y: 0.0,
+                        w: side,
+                        h: side,
+                        round: false,
+                        radius: side * 0.26,
+                        lag: i as f32 / 4.0,
+                    }
+                })
+                .collect(),
+            SpinnerStyle::Glitch => {
+                let h = size * 0.14;
+                (0..4)
+                    .map(|i| Cell {
+                        x: 0.0,
+                        y: i as f32 * (size - h) / 3.0,
+                        w: size,
+                        h,
+                        round: false,
+                        radius: 0.0,
+                        lag: i as f32 * 0.19,
+                    })
+                    .collect()
+            }
+            SpinnerStyle::Shuffle => {
+                let side = size * 0.44;
+                let far = size - side;
+                [(0.0, 0.0), (far, 0.0), (far, far)]
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, (x, y))| Cell {
+                        x,
+                        y,
+                        w: side,
+                        h: side,
+                        round: false,
+                        radius: 0.0,
+                        // The piece number, not a phase: the pieces follow their own tracks.
+                        lag: i as f32 / 3.0,
+                    })
+                    .collect()
+            }
+            SpinnerStyle::Data => {
+                let w = size * 0.13;
+                let h = size * 0.3;
+                [0.0, 0.37, 0.71, 0.2, 0.55]
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, lag)| Cell {
+                        x: i as f32 * (size - w) / 4.0,
+                        y: 0.0,
+                        w,
+                        h,
+                        round: false,
+                        radius: 0.0,
+                        lag,
+                    })
+                    .collect()
+            }
+            SpinnerStyle::Pillars => {
+                let w = size * 0.27;
+                (0..3)
+                    .map(|i| Cell {
+                        x: i as f32 * (size - w) / 2.0,
+                        y: 0.0,
+                        w,
+                        h: size,
+                        round: false,
+                        radius: 0.0,
+                        lag: i as f32 * 0.25,
+                    })
+                    .collect()
+            }
+            SpinnerStyle::Courses => {
+                let h = size * 0.2;
+                (0..3)
+                    .map(|i| Cell {
+                        x: 0.0,
+                        y: i as f32 * (size - h) / 2.0,
+                        w: size,
+                        h,
+                        round: false,
+                        radius: h * 0.35,
+                        lag: i as f32 * 0.14,
+                    })
+                    .collect()
+            }
+            SpinnerStyle::Bounce => {
+                let d = size * 0.26;
+                (0..3)
+                    .map(|i| Cell {
+                        x: i as f32 * (size - d) / 2.0,
+                        y: size - d,
+                        w: d,
+                        h: d,
+                        round: true,
+                        radius: d / 2.0,
+                        lag: i as f32 * 0.12,
+                    })
+                    .collect()
+            }
             SpinnerStyle::Grid => {
                 let side = size * 0.28;
                 let gap = (size - 3.0 * side) / 2.0;
@@ -693,6 +798,128 @@ pub mod busy {
         }
     }
 
+    /// Sideways jump (fraction of the size) and opacity of a [`SpinnerStyle::Glitch`] slab in
+    /// each of the eight steps of its cycle.
+    pub const GLITCH: [(f32, f32, f32); 8] = [
+        (0.0, 1.0, 1.0),
+        (0.30, 0.45, 0.7),
+        (0.0, 1.0, 1.0),
+        (-0.25, 1.0, 0.6),
+        (0.0, 0.4, 1.0),
+        (0.40, 1.0, 0.8),
+        (-0.15, 0.6, 1.0),
+        (0.0, 1.0, 1.0),
+    ];
+
+    /// Height of a [`SpinnerStyle::Pillars`] bar (fraction of full) in each quarter of its cycle.
+    pub const PILLARS: [f32; 4] = [0.3, 0.65, 1.0, 0.65];
+
+    /// Slot (0 top-left, 1 top-right, 2 bottom-right, 3 bottom-left) of the piece `piece` of a
+    /// [`SpinnerStyle::Shuffle`] spinner, as a position along the ring, after a cycle fraction
+    /// `u` (0..1). Every quarter one piece slides into the empty slot; at the end the same slots
+    /// are filled again, so the loop shows no jump.
+    pub fn shuffle_slot(piece: usize, u: f32) -> f32 {
+        // (quarter in which it moves, from, to)
+        let moves: &[(usize, f32, f32)] = match piece {
+            0 => &[(2, 0.0, 1.0)],
+            1 => &[(1, 1.0, 2.0)],
+            _ => &[(0, 2.0, 3.0), (3, 3.0, 4.0)],
+        };
+        let q = ((u * 4.0) as usize).min(3);
+        let f = (u * 4.0 - q as f32) / 0.6;
+        let f = 1.0 - (1.0 - f.clamp(0.0, 1.0)).powi(3);
+        let mut slot = match piece {
+            0 => 0.0,
+            1 => 1.0,
+            _ => 2.0,
+        };
+        for &(mq, from, to) in moves {
+            if q > mq {
+                slot = to;
+            } else if q == mq {
+                slot = from + (to - from) * f;
+            }
+        }
+        slot
+    }
+
+    /// Point on the square ring of a [`SpinnerStyle::Quad`] / [`SpinnerStyle::Shuffle`] cell
+    /// (`far` px between the corners) at ring position `s` (0 top-left, clockwise, wraps at 4).
+    pub fn ring_xy(s: f32, far: f32) -> (f32, f32) {
+        let s = s.rem_euclid(4.0);
+        let k = s as usize % 4;
+        let f = s - k as f32;
+        let corner = |n: usize| match n % 4 {
+            0 => (0.0, 0.0),
+            1 => (far, 0.0),
+            2 => (far, far),
+            _ => (0.0, far),
+        };
+        let (a, b) = (corner(k), corner(k + 1));
+        (a.0 + (b.0 - a.0) * f, a.1 + (b.1 - a.1) * f)
+    }
+
+    /// Where and how a cell is drawn after `t` seconds: `(x, y, w, h, alpha)`. The one call a
+    /// toolkit needs, whatever the style.
+    pub fn pose(style: SpinnerStyle, c: &Cell, size: f32, t: f32) -> (f32, f32, f32, f32, f32) {
+        let phase = (t * SPIN_RATE).fract();
+        match style {
+            SpinnerStyle::Quad => {
+                let since = (phase - c.lag).rem_euclid(1.0);
+                let u = since * 4.0;
+                let k = u.floor();
+                let f = u - k;
+                let f = f * f * (3.0 - 2.0 * f);
+                let (x, y) = ring_xy(k + f, size - c.w);
+                (x, y, c.w, c.h, 1.0 - c.lag * 0.55)
+            }
+            SpinnerStyle::Glitch => {
+                let since = (phase - c.lag).rem_euclid(1.0);
+                let (off, wf, a) = GLITCH[((since * 8.0) as usize).min(7)];
+                (c.x + off * size, c.y, c.w * wf, c.h, a)
+            }
+            SpinnerStyle::Data => {
+                let since = (phase - c.lag).rem_euclid(1.0);
+                (c.x, since * (size - c.h), c.w, c.h, 1.0 - 0.6 * since)
+            }
+            SpinnerStyle::Pillars => {
+                let since = (phase - c.lag).rem_euclid(1.0);
+                let h = c.h * PILLARS[((since * 4.0) as usize).min(3)];
+                (c.x, c.y + c.h - h, c.w, h, 1.0)
+            }
+            SpinnerStyle::Courses => {
+                let since = (phase - c.lag).rem_euclid(1.0);
+                let dx = if since < 0.4 {
+                    -(1.0 - since / 0.4).powi(3)
+                } else if since < 0.7 {
+                    0.0
+                } else {
+                    ((since - 0.7) / 0.3).powi(3)
+                };
+                (c.x + dx * size, c.y, c.w, c.h, 1.0 - 0.3 * (dx.abs()))
+            }
+            SpinnerStyle::Bounce => {
+                let since = (phase - c.lag).rem_euclid(1.0);
+                let up = if since < 0.55 {
+                    (since / 0.55 * std::f32::consts::PI).sin()
+                } else {
+                    0.0
+                };
+                (c.x, c.y - up * (size - c.h), c.w, c.h, 1.0)
+            }
+            SpinnerStyle::Shuffle => {
+                let piece = (c.lag * 3.0).round() as usize;
+                let (x, y) = ring_xy(shuffle_slot(piece, phase), size - c.w);
+                (x, y, c.w, c.h, 1.0)
+            }
+            _ => {
+                let a = cell_alpha(style, c.lag, t);
+                let (x, y, w, h) = cell_rect(style, c, a);
+                (x, y, w, h, a)
+            }
+        }
+    }
+
     /// Whether the cells of a style move or change size, not only their opacity.
     pub fn moves(style: SpinnerStyle) -> bool {
         !matches!(
@@ -725,6 +952,43 @@ pub mod busy {
 mod tests {
     use super::*;
     use crate::themes;
+    use crate::SpinnerStyle;
+
+    #[test]
+    fn quad_cells_keep_a_square_ring_and_return_after_a_cycle() {
+        use busy::{cells, pose};
+        let s = 24.0;
+        let cs = cells(SpinnerStyle::Quad, s);
+        assert_eq!(cs.len(), 4);
+        for c in &cs {
+            let a = pose(SpinnerStyle::Quad, c, s, 0.0);
+            let b = pose(SpinnerStyle::Quad, c, s, 1.0 / busy::SPIN_RATE - 1e-4);
+            assert!(
+                (a.0 - b.0).abs() < 0.1 && (a.1 - b.1).abs() < 0.1,
+                "{a:?} {b:?}"
+            );
+            assert!(a.0 >= -0.01 && a.0 + c.w <= s + 0.01);
+        }
+    }
+
+    #[test]
+    fn shuffle_fills_the_same_slots_at_both_ends_and_never_overlaps() {
+        use busy::shuffle_slot;
+        let set = |u: f32| {
+            let mut v: Vec<i32> = (0..3)
+                .map(|p| shuffle_slot(p, u).round() as i32 % 4)
+                .collect();
+            v.sort();
+            v
+        };
+        assert_eq!(set(0.0), set(0.9999));
+        for i in 0..100 {
+            let u = i as f32 / 100.0;
+            let mut s: Vec<f32> = (0..3).map(|p| shuffle_slot(p, u).rem_euclid(4.0)).collect();
+            s.sort_by(f32::total_cmp);
+            assert!(s.windows(2).all(|w| w[1] - w[0] > 0.05), "{u} {s:?}");
+        }
+    }
 
     fn all_kits() -> Vec<Kit> {
         let mut v = vec![
@@ -848,10 +1112,10 @@ mod tests {
     #[test]
     fn each_design_names_its_own_spinner() {
         use crate::SpinnerStyle::*;
-        assert_eq!(crate::material::light().look().spinner, Petals);
-        assert_eq!(crate::cyberpunk::variants()[0].look().spinner, Scanner);
-        assert_eq!(crate::dodai::light().look().spinner, Grid);
-        assert_eq!(crate::neobrutalism::variants()[0].look().spinner, Hop);
+        assert_eq!(crate::material::light().look().spinner, Ring);
+        assert_eq!(crate::cyberpunk::variants()[0].look().spinner, Glitch);
+        assert_eq!(crate::dodai::light().look().spinner, Quad);
+        assert_eq!(crate::neobrutalism::variants()[0].look().spinner, Shuffle);
     }
 
     #[test]

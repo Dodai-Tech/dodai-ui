@@ -47,6 +47,24 @@ pub enum SpinnerStyle {
     Hop,
     /// Six large dots around a centre that swell and shrink in turn, like a blooming flower.
     Petals,
+    /// Four rounded squares of falling size chasing each other round the corners of a square,
+    /// each leg eased: a comet of blocks.
+    Quad,
+    /// Thin full-width slabs that jitter sideways and flicker in hard steps, like a corrupted
+    /// data stream.
+    Glitch,
+    /// Three hard squares in a two by two grid sliding into the empty slot one after another,
+    /// like a sliding puzzle.
+    Shuffle,
+    /// Thin neon streaks falling down their columns at different speeds, like a data stream.
+    Data,
+    /// Three thick hard bars stepping up and down in height, no easing, no fade.
+    Pillars,
+    /// Three rounded bars sliding in from the left and out to the right one after another, like
+    /// courses of timber being laid.
+    Courses,
+    /// Three dots hopping in a wave.
+    Bounce,
 }
 
 /// Semantic capabilities a design system declares. Adapters ask these instead of guessing a
@@ -77,6 +95,8 @@ pub struct Look {
     pub selection: crate::motion::SelectionMotion,
     /// The shape of the spinner.
     pub spinner: SpinnerStyle,
+    /// The spinners the design offers, its default (`spinner`) first.
+    pub spinners: &'static [SpinnerStyle],
 }
 
 /// The page grid of a design at a viewport width: columns between two outer margins.

@@ -210,6 +210,8 @@ pub struct Spinner {
     motion: Option<Motion>,
     playback: Playback,
     corners: Option<dodai_core::Corners>,
+    style: Option<dodai_core::SpinnerStyle>,
+    size: f32,
 }
 
 crate::corners_setter!(Spinner);
@@ -222,7 +224,19 @@ impl Spinner {
             id: id.into(),
             motion: None,
             playback: Playback::Loop,
+            style: None,
+            size: 24.0,
         }
+    }
+    /// Draw this spinner instead of the design's own (to show them side by side).
+    pub fn style(mut self, s: dodai_core::SpinnerStyle) -> Self {
+        self.style = Some(s);
+        self
+    }
+    /// Side of the spinner in px (default 24).
+    pub fn size(mut self, px: f32) -> Self {
+        self.size = px;
+        self
     }
     /// Override cycle duration and easing (default 900 ms, linear).
     pub fn motion(mut self, m: Motion) -> Self {
@@ -240,14 +254,14 @@ impl RenderOnce for Spinner {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
         let c = hsla(t.palette.primary);
-        let spin = t.look().spinner;
+        let spin = self.style.unwrap_or(t.look().spinner);
         let cycle = cycle(self.motion, 900, self.playback);
         if spin == dodai_core::SpinnerStyle::Ring {
             return self
                 .render_bars(c, t.shape.clone(), cycle)
                 .into_any_element();
         }
-        let size = 24.0;
+        let size = self.size;
         let cells = dodai_core::busy::cells(spin, size);
         div()
             .relative()
@@ -257,8 +271,7 @@ impl RenderOnce for Spinner {
                 let secs = delta / dodai_core::busy::SPIN_RATE;
                 let mut el = el;
                 for cell in &cells {
-                    let a = dodai_core::busy::cell_alpha(spin, cell.lag, secs);
-                    let (x, y, w, h) = dodai_core::busy::cell_rect(spin, cell, a);
+                    let (x, y, w, h, a) = dodai_core::busy::pose(spin, cell, size, secs);
                     let mut d = div()
                         .absolute()
                         .left(px(x))
