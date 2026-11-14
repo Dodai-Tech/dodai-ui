@@ -319,3 +319,23 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .dodai-glass.dodai-kit{background:rgb(from var(--kb,transparent) r g b/calc((alpha + (min(var(--gc) + (alpha - var(--gc)) * var(--gk),alpha) - alpha) * var(--ga)) * var(--go)))}
 .dodai-glass.dodai-kit--press:hover{background:rgb(from var(--kbh,var(--kb,transparent)) r g b/calc((alpha + (min(var(--gc) + (alpha - var(--gc)) * var(--gk),alpha) - alpha) * var(--ga)) * var(--go)))}
 .dodai-glass.dodai-btn::after,.dodai-glass.dodai-panel::after{background:rgb(from var(--f-bg,transparent) r g b/calc((alpha + (min(var(--gc) + (alpha - var(--gc)) * var(--gk),alpha) - alpha) * var(--ga)) * var(--go)))}
+
+/* Progress bars in a design's own style: hud (cyberpunk), stripes (neobrutalism), stones (dodai). */
+.dodai-pb{position:relative;width:100%;max-width:420px}
+.dodai-pb--hud,.dodai-pb--stones{display:flex;gap:3px;height:16px}
+.dodai-pb--hud>i{flex:1;transform:skewX(-20deg);background:var(--dodai-primary);opacity:calc(.12 + .88*var(--on,0))}
+.dodai-pb--hud.dodai-pb--run>i{animation:dodai-comet 2s linear infinite;animation-delay:calc(var(--i)*.06s)}
+@keyframes dodai-comet{0%{opacity:1;box-shadow:0 0 8px var(--dodai-primary)}35%{opacity:.45}70%,100%{opacity:.12}}
+.dodai-pb--stones{height:18px;gap:5px}
+.dodai-pb--stones>i{flex:1;aspect-ratio:1;max-height:18px;border-radius:5px;background:var(--dodai-primary);opacity:calc(.2 + .8*var(--on,0))}
+.dodai-pb--stones.dodai-pb--run>i{animation:dodai-wave 1.6s ease-in-out infinite;animation-delay:calc(var(--i)*.1s)}
+@keyframes dodai-wave{0%,100%{opacity:.2}30%{opacity:1}}
+.dodai-pb--stripes{height:22px;border:2.5px solid var(--dodai-border-strong,var(--dodai-border));background:var(--dodai-surface-raised)}
+.dodai-pb--stripes>span{display:block;height:100%;width:var(--v,100%);background:repeating-linear-gradient(135deg,var(--dodai-primary) 0 10px,color-mix(in srgb,var(--dodai-primary) 45%,transparent) 10px 20px);background-size:28.28px 28.28px;animation:dodai-hazard 1s linear infinite}
+@keyframes dodai-hazard{to{background-position:28.28px 0}}
+
+/* Dodai's sweep: a thin rounded-square ring with a bright arc running round it. */
+.dodai-sweep{flex:none}.dodai-sweep rect{fill:none;stroke-width:6}
+.dodai-sweep-track{stroke:var(--dodai-primary);opacity:.22}
+.dodai-sweep-arc{stroke:var(--dodai-primary);stroke-dasharray:20 80;animation:dodai-sweep 1.6s linear infinite}
+@keyframes dodai-sweep{0%{stroke-dasharray:20 80;stroke-dashoffset:0}50%{stroke-dasharray:60 40;stroke-dashoffset:-35}100%{stroke-dasharray:20 80;stroke-dashoffset:-100}}

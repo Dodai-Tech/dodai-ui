@@ -996,6 +996,8 @@ pub fn view(node: &Node, r: &R) -> String {
         }
         Node::Badged { icon: ic, count, dot } => html::badged(&r.cx, *ic, *count, *dot),
         Node::Spinner(size) => html::spinner(&r.cx, *size as u32),
+        Node::SpinnerOf { size, style } => html::spinner_of(*style, *size as u32),
+        Node::StyledProgress { style, value } => html::styled_progress(*style, *value),
         Node::Indeterminate => html::indeterminate(),
         Node::Skeleton { w, h } => html::skeleton(*w as u32, *h as u32),
         Node::Empty {

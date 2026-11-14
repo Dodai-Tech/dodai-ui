@@ -388,16 +388,35 @@ pub fn Stepper(props: StepperProps) -> Element {
 }
 
 #[component]
-pub fn Spinner(#[props(default = 24)] size: u32) -> Element {
-    let style = try_use_context::<crate::ThemeHandle>()
-        .map(|t| t.theme().look().spinner)
-        .unwrap_or_default();
+pub fn Spinner(
+    #[props(default = 24)] size: u32,
+    /// A style of its own; the design's spinner when unset.
+    #[props(default)]
+    style: Option<dodai_core::SpinnerStyle>,
+) -> Element {
+    let style = style.unwrap_or_else(|| {
+        try_use_context::<crate::ThemeHandle>()
+            .map(|t| t.theme().look().spinner)
+            .unwrap_or_default()
+    });
+    if style == dodai_core::SpinnerStyle::Sweep {
+        return rsx! { span { dangerous_inner_html: dodai_topcoat::html::spinner_of(style, size) } };
+    }
     let (kind, cells) = spinner_cells(style, size as f32);
     rsx! {
         span { class: "dodai-spinner dodai-spinner--{kind}", role: "progressbar", style: "--s:{size}px",
             for c in cells { i { style: "{c}" } }
         }
     }
+}
+
+/// A progress bar in a design's own style: determinate at `value`, or running when `None`.
+#[component]
+pub fn StyledProgress(
+    style: dodai_core::ProgressStyle,
+    #[props(default)] value: Option<f32>,
+) -> Element {
+    rsx! { div { dangerous_inner_html: dodai_topcoat::html::styled_progress(style, value) } }
 }
 
 /// Indeterminate bar.

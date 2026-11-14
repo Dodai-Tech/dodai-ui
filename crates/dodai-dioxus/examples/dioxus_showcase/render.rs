@@ -850,6 +850,12 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
             rsx! { Badged { icon: *icon, count: *count, dot: *dot } }
         }
         Demo::Spinner(size) => rsx! { Spinner { size: *size as u32 } },
+        Demo::SpinnerOf { size, style } => {
+            rsx! { Spinner { size: *size as u32, style: Some(*style) } }
+        }
+        Demo::StyledProgress { style, value } => {
+            rsx! { StyledProgress { style: *style, value: *value } }
+        }
         Demo::Indeterminate => rsx! { Indeterminate {} },
         Demo::Skeleton { w, h } => rsx! { Skeleton { width: *w as u32, height: *h as u32 } },
         Demo::Empty {

@@ -1,7 +1,7 @@
 //! Loading: spinners, indeterminate and determinate bars, skeletons, and Material's loading
 //! indicator.
 
-use dodai_core::{ButtonVariant as V, ControlSize, Tone};
+use dodai_core::{ButtonVariant as V, ControlSize};
 use dodai_icons::IconId;
 
 use crate::b::*;
@@ -47,39 +47,81 @@ fn loading(c: &Ctx) -> Node {
         radius: 24.0,
         label: None,
     };
+    let design = match c.theme.id().split('-').next().unwrap_or_default() {
+        "dodai" => "Dodai",
+        "cyberpunk" => "Cyberpunk",
+        "neobrutalism" | "neobrutal" => "Neo-Brutalism",
+        "material" => "Material 3",
+        _ => "this design",
+    };
+    let spinners = |set: &[dodai_core::SpinnerStyle]| {
+        line(
+            set.iter()
+                .map(|st| {
+                    col(vec![
+                        Node::SpinnerOf {
+                            size: 40.0,
+                            style: *st,
+                        },
+                        muted(format!("{st:?}").to_lowercase()),
+                    ])
+                    .gap(crate::node::Gap::Sm)
+                })
+                .collect(),
+        )
+        .gap(crate::node::Gap::Px(28.0))
+        .start()
+    };
+    let card = |title: &str, body: Node| Node::Card {
+        title: title.to_string(),
+        body: Box::new(body),
+        variant: dodai_core::CardVariant::Outlined,
+        surface: dodai_core::Surface::INHERIT,
+    };
+    let shared = card(
+        "Shared, in every design",
+        col(vec![
+            muted("Spinners"),
+            spinners(&dodai_core::SpinnerStyle::SHARED),
+            muted("Progress"),
+            Node::Progress {
+                value: 0.35,
+                tone: None,
+            },
+            Node::Indeterminate,
+            muted("Skeleton placeholders"),
+            line(vec![
+                skeleton_disc,
+                col(vec![
+                    Node::Skeleton { w: 0.0, h: 14.0 },
+                    Node::Skeleton { w: 260.0, h: 14.0 },
+                    Node::Skeleton { w: 180.0, h: 14.0 },
+                ])
+                .gap(crate::node::Gap::Sm),
+            ])
+            .gap(crate::node::Gap::Px(16.0))
+            .start(),
+        ]),
+    );
+    let mut own = vec![muted("Spinners"), spinners(c.theme.look().spinners)];
+    if !c.theme.look().progress_bars.is_empty() {
+        own.push(muted("Progress"));
+    }
+    for st in c.theme.look().progress_bars {
+        own.push(muted(format!("{st:?}").to_lowercase()));
+        own.push(Node::StyledProgress {
+            style: *st,
+            value: Some(0.6),
+        });
+        own.push(Node::StyledProgress {
+            style: *st,
+            value: None,
+        });
+    }
     col(vec![
         controls(),
-        label("Spinner"),
-        row(vec![
-            Node::Spinner(24.0),
-            Node::Spinner(24.0),
-            Node::Spinner(24.0),
-            muted("900 ms · 450 ms · 1.8 s ease-in-out (unless a duration is set)"),
-        ]),
-        label("Indeterminate bar"),
-        Node::Indeterminate,
-        Node::Indeterminate,
-        label("Determinate progress"),
-        Node::Progress {
-            value: 0.35,
-            tone: None,
-        },
-        Node::Progress {
-            value: 0.7,
-            tone: Some(Tone::Success),
-        },
-        label("Skeleton placeholders"),
-        line(vec![
-            skeleton_disc,
-            col(vec![
-                Node::Skeleton { w: 0.0, h: 14.0 },
-                Node::Skeleton { w: 260.0, h: 14.0 },
-                Node::Skeleton { w: 180.0, h: 14.0 },
-            ])
-            .gap(crate::node::Gap::Sm),
-        ])
-        .gap(crate::node::Gap::Px(16.0))
-        .start(),
+        shared,
+        card(&format!("Only in {design}"), col(own)),
         muted("Play runs one cycle, Loop repeats, Stop holds a still frame. Loading demos live on this page only (not on All) to keep idle CPU at zero."),
     ])
 }

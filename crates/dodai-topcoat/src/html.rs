@@ -855,7 +855,18 @@ pub fn spinner_cells(style: SpinnerStyle, size: f32) -> (&'static str, Vec<Strin
 
 /// The design's busy spinner.
 pub fn spinner(cx: &Cx, size: u32) -> String {
-    let (kind, cells) = spinner_cells(cx.theme.look().spinner, size as f32);
+    spinner_of(cx.theme.look().spinner, size)
+}
+
+/// A spinner in `style`.
+pub fn spinner_of(style: SpinnerStyle, size: u32) -> String {
+    if style == SpinnerStyle::Sweep {
+        // A thin rounded-square ring with a bright arc running round it.
+        return format!(
+            "<svg class=\"dodai-sweep\" role=\"progressbar\" width=\"{size}\" height=\"{size}\" viewBox=\"0 0 100 100\"><rect class=\"dodai-sweep-track\" x=\"3\" y=\"3\" width=\"94\" height=\"94\" rx=\"28\" pathLength=\"100\"/><rect class=\"dodai-sweep-arc\" x=\"3\" y=\"3\" width=\"94\" height=\"94\" rx=\"28\" pathLength=\"100\"/></svg>"
+        );
+    }
+    let (kind, cells) = spinner_cells(style, size as f32);
     let cells: String = cells
         .iter()
         .map(|c| format!("<i style=\"{c}\"></i>"))
@@ -863,6 +874,38 @@ pub fn spinner(cx: &Cx, size: u32) -> String {
     format!(
         "<span class=\"dodai-spinner dodai-spinner--{kind}\" role=\"progressbar\" style=\"--s:{size}px\">{cells}</span>"
     )
+}
+
+/// A progress bar in a design's own style: determinate at `value`, or running when `None`.
+pub fn styled_progress(style: dodai_core::ProgressStyle, value: Option<f32>) -> String {
+    use dodai_core::ProgressStyle::*;
+    let run = if value.is_none() {
+        " dodai-pb--run"
+    } else {
+        ""
+    };
+    let (kind, n) = match style {
+        Hud => ("hud", 26usize),
+        Stripes => ("stripes", 0),
+        Stones => ("stones", 12),
+    };
+    if n == 0 {
+        let v = value.map_or("100%".to_string(), |v| {
+            format!("{:.0}%", v.clamp(0.0, 1.0) * 100.0)
+        });
+        return format!(
+            "<div class=\"dodai-pb dodai-pb--stripes\" role=\"progressbar\"><span style=\"--v:{v}\"></span></div>"
+        );
+    }
+    let cells: String = (0..n)
+        .map(|i| {
+            let on = value.map_or(0.0, |v| {
+                (v.clamp(0.0, 1.0) * n as f32 - i as f32).clamp(0.0, 1.0)
+            });
+            format!("<i style=\"--i:{i};--on:{on:.2}\"></i>")
+        })
+        .collect();
+    format!("<div class=\"dodai-pb dodai-pb--{kind}{run}\" role=\"progressbar\">{cells}</div>")
 }
 
 /// An indeterminate progress bar.

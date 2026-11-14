@@ -1200,6 +1200,12 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
             .into()
         }
         Demo::Spinner(size) => lt.spinner(*size, cx.t),
+        Demo::SpinnerOf { size, style } => lt.spinner_of(*style, *size, cx.t),
+        Demo::StyledProgress { style, value } => {
+            container(lt.styled_progress(*style, *value, cx.t))
+                .width(Length::Fixed(420.0))
+                .into()
+        }
         Demo::Indeterminate => container(lt.indeterminate(cx.t))
             .width(Length::Fixed(420.0))
             .into(),

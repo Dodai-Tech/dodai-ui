@@ -1005,8 +1005,22 @@ pub enum Node {
     },
     /// A spinning ring.
     Spinner(f32),
+    /// A spinner in a given style (a design's own, or one of the shared set).
+    SpinnerOf {
+        /// Width and height px.
+        size: f32,
+        /// The style.
+        style: dodai_core::SpinnerStyle,
+    },
     /// An indeterminate bar.
     Indeterminate,
+    /// A progress bar in a design's own style: determinate at `value`, or running when `None`.
+    StyledProgress {
+        /// The style.
+        style: dodai_core::ProgressStyle,
+        /// Fraction 0..=1, or `None` for an indeterminate bar.
+        value: Option<f32>,
+    },
     /// A placeholder block shown while content loads.
     Skeleton {
         /// Width px (`0` = fill).

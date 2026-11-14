@@ -123,6 +123,7 @@ impl Plugin for DodaiUiPlugin {
                     crate::spinner::build_spinners,
                     crate::spinner::animate_spinners,
                     crate::spinner::animate_bars,
+                    crate::spinner::animate_styled_bars,
                     update_tooltip,
                     #[cfg(feature = "icons")]
                     style_icons,

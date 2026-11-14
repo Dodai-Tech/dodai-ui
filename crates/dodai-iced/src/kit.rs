@@ -232,14 +232,45 @@ impl IcedTheme {
 
     /// A spinning ring of `size` px; `t` is the time in seconds.
     pub fn spinner<'a, Message: 'a>(&self, size: f32, t: f32) -> Element<'a, Message> {
+        self.spinner_of(self.theme.look().spinner, size, t)
+    }
+
+    /// A spinner in `style`.
+    pub fn spinner_of<'a, Message: 'a>(
+        &self,
+        style: dodai_core::SpinnerStyle,
+        size: f32,
+        t: f32,
+    ) -> Element<'a, Message> {
         Canvas::new(Spinner {
-            style: self.theme.look().spinner,
+            style,
             lit: color(self.theme.palette.primary),
             dim: color(self.theme.palette.border),
             t,
         })
         .width(size)
         .height(size)
+        .into()
+    }
+
+    /// A progress bar in a design's own style: determinate at `frac`, running when `None`.
+    pub fn styled_progress<'a, Message: 'a>(
+        &self,
+        style: dodai_core::ProgressStyle,
+        frac: Option<f32>,
+        t: f32,
+    ) -> Element<'a, Message> {
+        let tok = self.theme.progress(None);
+        Canvas::new(StyledBar {
+            style,
+            frac,
+            t,
+            track: color(tok.track),
+            fill: color(tok.fill),
+            line: color(tok.border),
+        })
+        .width(Length::Fill)
+        .height(busy::bar_height(style))
         .into()
     }
 
@@ -554,6 +585,60 @@ impl<Message> canvas::Program<Message> for Spinner {
             });
         });
         frame.stroke(&arc, Stroke::default().with_color(self.lit).with_width(w));
+        vec![frame.into_geometry()]
+    }
+}
+
+struct StyledBar {
+    style: dodai_core::ProgressStyle,
+    frac: Option<f32>,
+    t: f32,
+    track: iced::Color,
+    fill: iced::Color,
+    line: iced::Color,
+}
+
+impl<Message> canvas::Program<Message> for StyledBar {
+    type State = ();
+
+    fn draw(
+        &self,
+        _state: &(),
+        renderer: &Renderer,
+        _theme: &IcedBase,
+        bounds: Rectangle,
+        _cursor: mouse::Cursor,
+    ) -> Vec<Geometry> {
+        let mut frame = canvas::Frame::new(renderer, bounds.size());
+        for p in busy::bar_pieces(self.style, self.frac, self.t, bounds.width) {
+            let base = match p.role {
+                busy::BarRole::Track => self.track,
+                busy::BarRole::Fill => self.fill,
+                busy::BarRole::Line => self.line,
+            };
+            let col = iced::Color {
+                a: base.a * p.alpha,
+                ..base
+            };
+            let path = if p.radius > 0.0 {
+                let (x, y) = p.pts[0];
+                let (w, h) = (p.pts[2].0 - x, p.pts[2].1 - y);
+                Path::rounded_rectangle(
+                    iced::Point::new(x, y),
+                    iced::Size::new(w, h),
+                    p.radius.into(),
+                )
+            } else {
+                Path::new(|b| {
+                    b.move_to(iced::Point::new(p.pts[0].0, p.pts[0].1));
+                    for q in &p.pts[1..] {
+                        b.line_to(iced::Point::new(q.0, q.1));
+                    }
+                    b.close();
+                })
+            };
+            frame.fill(&path, col);
+        }
         vec![frame.into_geometry()]
     }
 }

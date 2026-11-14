@@ -1556,6 +1556,12 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
         Demo::Spinner(size) => {
             p.spawn(dodai_bevy::spinner::spinner(*size));
         }
+        Demo::SpinnerOf { size, style } => {
+            p.spawn(dodai_bevy::spinner::spinner_of(*size, *style));
+        }
+        Demo::StyledProgress { style, value } => {
+            p.spawn(dodai_bevy::spinner::styled_progress(*style, *value));
+        }
         Demo::Indeterminate => {
             p.spawn(Node {
                 width: Val::Percent(100.0),
