@@ -52,7 +52,7 @@ impl DesignSpec for Cyberpunk {
                 crate::SpinnerStyle::Glitch,
                 crate::SpinnerStyle::Scanner,
                 crate::SpinnerStyle::Data,
-                crate::SpinnerStyle::Bars,
+                crate::SpinnerStyle::Reticle,
             ],
             selection: crate::motion::SelectionMotion::Glitch,
             ..Look::default()
@@ -636,7 +636,7 @@ mod tests {
                         crate::SpinnerStyle::Glitch,
                         crate::SpinnerStyle::Scanner,
                         crate::SpinnerStyle::Data,
-                        crate::SpinnerStyle::Bars
+                        crate::SpinnerStyle::Reticle
                     ],
                     selection: crate::motion::SelectionMotion::Glitch,
                     ..Look::default()

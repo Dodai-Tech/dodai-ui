@@ -103,27 +103,12 @@ impl Showcase {
 
     fn loading_group(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let p = self.loading_section(cx);
-        let t = theme_of(cx);
-        let li = Panel::new()
-            .title("Loading indicator")
-            .child(
-                div()
-                    .flex()
-                    .items_center()
-                    .gap(px(t.spacing.lg))
-                    .child(LoadingIndicator::new("li-plain"))
-                    .child(LoadingIndicator::new("li-contained").contained(true)),
-            )
-            .into_any_element();
-        vec![
-            (
-                "Loading",
-                "Spinner · Indeterminate · Skeleton",
-                p.into_any_element(),
-                "Loading",
-            ),
-            ("Loading", "Loading indicator", li, "Loading indicator"),
-        ]
+        vec![(
+            "Loading",
+            "Spinner · Indeterminate · Skeleton",
+            p.into_any_element(),
+            "Loading",
+        )]
     }
 
     fn animation_group(&mut self, cx: &mut Context<Self>) -> Vec<Section> {

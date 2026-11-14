@@ -63,8 +63,17 @@ pub enum SpinnerStyle {
     /// Three rounded bars sliding in from the left and out to the right one after another, like
     /// courses of timber being laid.
     Courses,
+    /// Four HUD corner brackets lighting up in turn, like a targeting reticle.
+    Reticle,
+    /// Material 3 circular indicator: an arc of dots that grows and shrinks while it turns.
+    Arc,
     /// Three dots hopping in a wave.
     Bounce,
+}
+
+impl SpinnerStyle {
+    /// The spinners every design can use. Each design adds its own on top (`Look::spinners`).
+    pub const SHARED: [SpinnerStyle; 4] = [Self::Bars, Self::Orbit, Self::Steps, Self::Grid];
 }
 
 /// Semantic capabilities a design system declares. Adapters ask these instead of guessing a

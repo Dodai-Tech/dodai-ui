@@ -656,6 +656,46 @@ pub mod busy {
                     })
                     .collect()
             }
+            SpinnerStyle::Arc => {
+                let d = size * 0.13;
+                let r = (size - d) / 2.0;
+                (0..ARC_DOTS)
+                    .map(|i| {
+                        let a = i as f32 / ARC_DOTS as f32 * std::f32::consts::TAU;
+                        Cell {
+                            x: size / 2.0 + r * a.sin() - d / 2.0,
+                            y: size / 2.0 - r * a.cos() - d / 2.0,
+                            w: d,
+                            h: d,
+                            round: true,
+                            radius: d / 2.0,
+                            lag: i as f32 / ARC_DOTS as f32,
+                        }
+                    })
+                    .collect()
+            }
+            SpinnerStyle::Reticle => {
+                let (len, th) = (size * 0.4, size * 0.13);
+                let far = size - len;
+                let farh = size - th;
+                (0..8)
+                    .map(|i| {
+                        let corner = i / 2;
+                        let (cx, cy) = [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)][corner];
+                        let horizontal = i % 2 == 0;
+                        let (w, h) = if horizontal { (len, th) } else { (th, len) };
+                        Cell {
+                            x: if horizontal { cx * far } else { cx * farh },
+                            y: if horizontal { cy * farh } else { cy * far },
+                            w,
+                            h,
+                            round: false,
+                            radius: 0.0,
+                            lag: corner as f32 / 4.0,
+                        }
+                    })
+                    .collect()
+            }
             SpinnerStyle::Data => {
                 let w = size * 0.13;
                 let h = size * 0.3;
@@ -811,6 +851,9 @@ pub mod busy {
         (0.0, 1.0, 1.0),
     ];
 
+    /// Dots on a [`SpinnerStyle::Arc`] circle.
+    pub const ARC_DOTS: usize = 16;
+
     /// Height of a [`SpinnerStyle::Pillars`] bar (fraction of full) in each quarter of its cycle.
     pub const PILLARS: [f32; 4] = [0.3, 0.65, 1.0, 0.65];
 
@@ -877,6 +920,16 @@ pub mod busy {
                 let since = (phase - c.lag).rem_euclid(1.0);
                 let (off, wf, a) = GLITCH[((since * 8.0) as usize).min(7)];
                 (c.x + off * size, c.y, c.w * wf, c.h, a)
+            }
+            SpinnerStyle::Arc => {
+                // Head runs ahead steadily; the tail catches up and falls back: the arc breathes.
+                let head = phase * 2.0;
+                let len = 0.45 + 0.3 * (phase * std::f32::consts::TAU).sin();
+                let tail = head - len;
+                let a = (c.lag - tail).rem_euclid(1.0);
+                let on = a < len;
+                let fade = if on { 0.35 + 0.65 * (a / len) } else { 0.0 };
+                (c.x, c.y, c.w, c.h, fade)
             }
             SpinnerStyle::Data => {
                 let since = (phase - c.lag).rem_euclid(1.0);
@@ -1112,7 +1165,7 @@ mod tests {
     #[test]
     fn each_design_names_its_own_spinner() {
         use crate::SpinnerStyle::*;
-        assert_eq!(crate::material::light().look().spinner, Ring);
+        assert_eq!(crate::material::light().look().spinner, Arc);
         assert_eq!(crate::cyberpunk::variants()[0].look().spinner, Glitch);
         assert_eq!(crate::dodai::light().look().spinner, Quad);
         assert_eq!(crate::neobrutalism::variants()[0].look().spinner, Shuffle);
