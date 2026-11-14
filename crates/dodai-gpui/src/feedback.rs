@@ -262,6 +262,26 @@ impl RenderOnce for Spinner {
                 .into_any_element();
         }
         let size = self.size;
+        if dodai_core::busy::arc_span(spin, 0.0).is_some() {
+            return div()
+                .relative()
+                .w(px(size))
+                .h(px(size))
+                .with_animation(self.id, cycle, move |el, delta| {
+                    let secs = delta / dodai_core::busy::SPIN_RATE;
+                    let (start, len, track) =
+                        dodai_core::busy::arc_span(spin, secs).unwrap_or_default();
+                    el.child(
+                        gpui::canvas(
+                            |_, _, _| (),
+                            move |b, _, window, _| paint_arc(window, b, c, start, len, track),
+                        )
+                        .absolute()
+                        .size_full(),
+                    )
+                })
+                .into_any_element();
+        }
         let cells = dodai_core::busy::cells(spin, size);
         div()
             .relative()
@@ -290,6 +310,59 @@ impl RenderOnce for Spinner {
             })
             .into_any_element()
     }
+}
+
+/// Stroke a ring arc `start..start+len` (turns clockwise from the top) with round ends, over
+/// an optional faint full track.
+fn paint_arc(
+    window: &mut Window,
+    b: gpui::Bounds<gpui::Pixels>,
+    c: gpui::Hsla,
+    start: f32,
+    len: f32,
+    track: f32,
+) {
+    use std::f32::consts::TAU;
+    let size: f32 = b.size.width.into();
+    let w = size * 0.1;
+    let r = (size - w) / 2.0;
+    let mid = gpui::point(
+        b.origin.x + b.size.width / 2.0,
+        b.origin.y + b.size.height / 2.0,
+    );
+    let at = |turn: f32| {
+        let a = turn * TAU;
+        gpui::point(mid.x + px(r * a.sin()), mid.y - px(r * a.cos()))
+    };
+    let mut stroke = |from: f32, span: f32, col: gpui::Hsla, caps: bool| {
+        let steps = ((span * 160.0).ceil() as usize).max(2);
+        let mut pb = gpui::PathBuilder::stroke(px(w));
+        for i in 0..=steps {
+            let p = at(from + span * i as f32 / steps as f32);
+            if i == 0 {
+                pb.move_to(p);
+            } else {
+                pb.line_to(p);
+            }
+        }
+        if let Ok(p) = pb.build() {
+            window.paint_path(p, col);
+        }
+        if caps {
+            for turn in [from, from + span] {
+                let p = at(turn);
+                let q = gpui::Bounds::new(
+                    gpui::point(p.x - px(w / 2.0), p.y - px(w / 2.0)),
+                    gpui::size(px(w), px(w)),
+                );
+                window.paint_quad(gpui::fill(q, col).corner_radii(px(w / 2.0)));
+            }
+        }
+    };
+    if track > 0.0 {
+        stroke(0.0, 1.0, gpui::Hsla { a: track, ..c }, false);
+    }
+    stroke(start, len, c, true);
 }
 
 impl Spinner {
