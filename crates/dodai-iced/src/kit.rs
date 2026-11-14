@@ -473,35 +473,45 @@ impl<Message> canvas::Program<Message> for Spinner {
         let size = bounds.width.min(bounds.height);
         if let Some((start, len, track)) = busy::arc_span(self.style, self.t) {
             // A real stroked arc with round ends, over an optional faint track.
-            let w = size * 0.1;
-            let r = (size - w) / 2.0;
-            let centre = frame.center();
-            let tau = std::f32::consts::TAU;
+            let (frac, round) = busy::arc_stroke(self.style);
+            let w = size * frac;
+            let style = self.style;
+            let trace = |from: f32, span: f32| {
+                Path::new(|b| {
+                    let steps = ((span * 160.0).ceil() as usize).max(2);
+                    for i in 0..=steps {
+                        let (x, y) =
+                            busy::ring_point(style, from + span * i as f32 / steps as f32, size, w);
+                        let p = iced::Point::new(x, y);
+                        if i == 0 {
+                            b.move_to(p);
+                        } else {
+                            b.line_to(p);
+                        }
+                    }
+                })
+            };
             if track > 0.0 {
                 let col = iced::Color {
                     a: self.lit.a * track,
                     ..self.lit
                 };
                 frame.stroke(
-                    &Path::circle(centre, r),
+                    &trace(0.0, 1.0),
                     Stroke::default().with_color(col).with_width(w),
                 );
             }
-            let a0 = start * tau - std::f32::consts::FRAC_PI_2;
-            let arc = Path::new(|b| {
-                b.arc(Arc {
-                    center: centre,
-                    radius: r,
-                    start_angle: Radians(a0),
-                    end_angle: Radians(a0 + len * tau),
-                });
-            });
+            let arc = trace(start, len);
             frame.stroke(
                 &arc,
                 Stroke::default()
                     .with_color(self.lit)
                     .with_width(w)
-                    .with_line_cap(canvas::LineCap::Round),
+                    .with_line_cap(if round {
+                        canvas::LineCap::Round
+                    } else {
+                        canvas::LineCap::Butt
+                    }),
             );
             return vec![frame.into_geometry()];
         }

@@ -274,7 +274,9 @@ impl RenderOnce for Spinner {
                     el.child(
                         gpui::canvas(
                             |_, _, _| (),
-                            move |b, _, window, _| paint_arc(window, b, c, start, len, track),
+                            move |b, _, window, _| {
+                                paint_arc(window, b, c, (start, len, track), spin)
+                            },
                         )
                         .absolute()
                         .size_full(),
@@ -318,21 +320,15 @@ fn paint_arc(
     window: &mut Window,
     b: gpui::Bounds<gpui::Pixels>,
     c: gpui::Hsla,
-    start: f32,
-    len: f32,
-    track: f32,
+    (start, len, track): (f32, f32, f32),
+    style: dodai_core::SpinnerStyle,
 ) {
-    use std::f32::consts::TAU;
     let size: f32 = b.size.width.into();
-    let w = size * 0.1;
-    let r = (size - w) / 2.0;
-    let mid = gpui::point(
-        b.origin.x + b.size.width / 2.0,
-        b.origin.y + b.size.height / 2.0,
-    );
+    let (frac, round) = dodai_core::busy::arc_stroke(style);
+    let w = size * frac;
     let at = |turn: f32| {
-        let a = turn * TAU;
-        gpui::point(mid.x + px(r * a.sin()), mid.y - px(r * a.cos()))
+        let (x, y) = dodai_core::busy::ring_point(style, turn, size, w);
+        gpui::point(b.origin.x + px(x), b.origin.y + px(y))
     };
     let mut stroke = |from: f32, span: f32, col: gpui::Hsla, caps: bool| {
         let steps = ((span * 160.0).ceil() as usize).max(2);
@@ -362,7 +358,7 @@ fn paint_arc(
     if track > 0.0 {
         stroke(0.0, 1.0, gpui::Hsla { a: track, ..c }, false);
     }
-    stroke(start, len, c, true);
+    stroke(start, len, c, round);
 }
 
 impl Spinner {

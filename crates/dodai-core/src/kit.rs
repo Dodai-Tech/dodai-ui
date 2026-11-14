@@ -966,10 +966,68 @@ pub mod busy {
             SpinnerStyle::Classic => Some((phase * 3.0, 0.06 + 0.69 * wave, 0.0)),
             SpinnerStyle::Sweep => {
                 let len = 0.2 + 0.4 * wave;
-                Some((((phase * 2.0).fract() - len).rem_euclid(1.0), len, 0.16))
+                Some((((phase * 2.0).fract() - len).rem_euclid(1.0), len, 0.22))
             }
             _ => None,
         }
+    }
+
+    /// Stroke width of an arc spinner as a fraction of its size, and whether its ends are round.
+    /// Sweep is a thin hairline ring with square ends; Classic a thicker one with round ends.
+    pub fn arc_stroke(style: SpinnerStyle) -> (f32, bool) {
+        match style {
+            SpinnerStyle::Sweep => (0.06, false),
+            _ => (0.1, true),
+        }
+    }
+
+    /// A point `turn` (0..1, clockwise from the top) along the path an arc spinner follows, as
+    /// x, y in a box of `size` with a stroke `w` wide: a circle, except Sweep, which runs round
+    /// a rounded square, the dodai's own shape.
+    pub fn ring_point(style: SpinnerStyle, turn: f32, size: f32, w: f32) -> (f32, f32) {
+        use std::f32::consts::{FRAC_PI_2, TAU};
+        let half = size / 2.0;
+        if style != SpinnerStyle::Sweep {
+            let (r, a) = ((size - w) / 2.0, turn * TAU);
+            return (half + r * a.sin(), half - r * a.cos());
+        }
+        let (lo, hi) = (w / 2.0, size - w / 2.0);
+        let r = (hi - lo) * 0.3;
+        let l = hi - lo - 2.0 * r;
+        let arc = FRAC_PI_2 * r;
+        // Legs from the middle of the top edge, clockwise: straight (x0,y0 -> x1,y1) or a
+        // quarter corner (centre, start angle).
+        enum Leg {
+            Line((f32, f32), (f32, f32)),
+            Corner((f32, f32), f32),
+        }
+        let legs = [
+            (l / 2.0, Leg::Line((half, lo), (hi - r, lo))),
+            (arc, Leg::Corner((hi - r, lo + r), -FRAC_PI_2)),
+            (l, Leg::Line((hi, lo + r), (hi, hi - r))),
+            (arc, Leg::Corner((hi - r, hi - r), 0.0)),
+            (l, Leg::Line((hi - r, hi), (lo + r, hi))),
+            (arc, Leg::Corner((lo + r, hi - r), FRAC_PI_2)),
+            (l, Leg::Line((lo, hi - r), (lo, lo + r))),
+            (arc, Leg::Corner((lo + r, lo + r), 2.0 * FRAC_PI_2)),
+            (l / 2.0, Leg::Line((lo + r, lo), (half, lo))),
+        ];
+        let total: f32 = legs.iter().map(|(n, _)| n).sum();
+        let mut d = turn.rem_euclid(1.0) * total;
+        for (n, leg) in &legs {
+            if d <= *n {
+                let f = if *n > 0.0 { d / n } else { 0.0 };
+                return match leg {
+                    Leg::Line((x0, y0), (x1, y1)) => (x0 + (x1 - x0) * f, y0 + (y1 - y0) * f),
+                    Leg::Corner((cx, cy), a0) => {
+                        let a = a0 + f * FRAC_PI_2;
+                        (cx + r * a.cos(), cy + r * a.sin())
+                    }
+                };
+            }
+            d -= n;
+        }
+        (half, lo)
     }
 
     pub fn pose(style: SpinnerStyle, c: &Cell, size: f32, t: f32) -> (f32, f32, f32, f32, f32) {
