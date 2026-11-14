@@ -54,7 +54,10 @@ pub mod prelude {
     pub use crate::plot::{plot, PlotLine};
     pub use crate::plugin::{theme_hotkeys, DodaiSet, DodaiUiPlugin, ScanlineOverlay};
     pub use crate::shimmer::Shimmer;
-    pub use crate::spinner::{indeterminate, spinner, UiIndeterminate, UiSpinner};
+    pub use crate::spinner::{
+        indeterminate, spinner, spinner_of, styled_progress, UiIndeterminate, UiSpinner,
+        UiStyledBar,
+    };
     pub use crate::surface::{Surface, SurfaceCrop};
     pub use crate::systems::FocusedInput;
     pub use crate::theme::{color, DodaiTheme};

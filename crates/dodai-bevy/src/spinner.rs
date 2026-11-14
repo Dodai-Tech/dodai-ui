@@ -14,6 +14,8 @@ use crate::theme::{color, DodaiTheme};
 pub struct UiSpinner {
     /// Width and height px.
     pub size: f32,
+    /// A style of its own; the design's spinner when `None`.
+    pub style: Option<SpinnerStyle>,
 }
 
 /// The shape a spinner's children were last built for, so a theme change rebuilds them.
@@ -39,8 +41,17 @@ pub use dodai_core::busy::{slide_left, spin_angle, SEGMENT, SPIN_RATE};
 
 /// A ring of `size` px.
 pub fn spinner(size: f32) -> impl Bundle {
+    spinner_with(size, None)
+}
+
+/// A spinner of `size` px in `style`.
+pub fn spinner_of(size: f32, style: SpinnerStyle) -> impl Bundle {
+    spinner_with(size, Some(style))
+}
+
+fn spinner_with(size: f32, style: Option<SpinnerStyle>) -> impl Bundle {
     (
-        UiSpinner { size },
+        UiSpinner { size, style },
         SpinnerBuilt::default(),
         Node {
             width: Val::Px(size),
@@ -85,8 +96,8 @@ pub(crate) fn build_spinners(
     mut commands: Commands,
     mut spinners: Query<(Entity, &UiSpinner, &mut SpinnerBuilt, &mut Node)>,
 ) {
-    let style = theme.look().spinner;
     for (e, sp, mut built, mut node) in &mut spinners {
+        let style = sp.style.unwrap_or(theme.look().spinner);
         if built.0 == Some(style) {
             continue;
         }
@@ -149,8 +160,8 @@ pub(crate) fn animate_spinners(
     let t = time.elapsed_secs();
     let lit = color(theme.palette.primary);
     let dim = color(theme.palette.border);
-    let ring = theme.look().spinner == SpinnerStyle::Ring;
-    for (_, mut tf, mut bc) in &mut rings {
+    for (sp, mut tf, mut bc) in &mut rings {
+        let ring = sp.style.unwrap_or(theme.look().spinner) == SpinnerStyle::Ring;
         let (rot, want) = if ring {
             (
                 Rot2::radians(spin_angle(t)),
@@ -186,6 +197,94 @@ pub(crate) fn animate_spinners(
                 n.height = height;
             }
         }
+    }
+}
+
+/// A progress bar in a design's own style, rebuilt every frame from
+/// [`dodai_core::busy::bar_pieces`]. Bevy's UI has no polygons: slanted cells and stripes are
+/// drawn upright.
+#[derive(Component, Debug, Clone, Copy, PartialEq)]
+pub struct UiStyledBar {
+    /// The style.
+    pub style: dodai_core::ProgressStyle,
+    /// Fraction 0..=1, or `None` for an indeterminate bar.
+    pub value: Option<f32>,
+}
+
+/// A styled progress bar, full width.
+pub fn styled_progress(style: dodai_core::ProgressStyle, value: Option<f32>) -> impl Bundle {
+    (
+        UiStyledBar { style, value },
+        Node {
+            width: Val::Percent(100.0),
+            max_width: Val::Px(420.0),
+            height: Val::Px(dodai_core::busy::bar_height(style)),
+            ..default()
+        },
+    )
+}
+
+pub(crate) fn animate_styled_bars(
+    theme: Res<DodaiTheme>,
+    time: Res<Time>,
+    mut commands: Commands,
+    bars: Query<(Entity, &UiStyledBar, &ComputedNode)>,
+) {
+    use dodai_core::busy::{bar_pieces, BarRole};
+    let t = time.elapsed_secs();
+    let k = theme.progress(None);
+    let (track, fill, line) = (color(k.track), color(k.fill), color(k.border));
+    for (e, bar, node) in &bars {
+        let w = node.size().x * node.inverse_scale_factor();
+        if w <= 0.0 {
+            continue;
+        }
+        let pieces = bar_pieces(bar.style, bar.value, t, w);
+        commands.queue(move |world: &mut World| {
+            let Ok(mut ent) = world.get_entity_mut(e) else {
+                return;
+            };
+            ent.despawn_related::<Children>();
+            ent.with_children(|p| {
+                for pc in pieces {
+                    let xs = pc.pts.map(|q| q.0);
+                    let ys = pc.pts.map(|q| q.1);
+                    let (x0, x1) = (
+                        xs.iter().cloned().fold(f32::MAX, f32::min),
+                        xs.iter().cloned().fold(f32::MIN, f32::max),
+                    );
+                    let (y0, y1) = (
+                        ys.iter().cloned().fold(f32::MAX, f32::min),
+                        ys.iter().cloned().fold(f32::MIN, f32::max),
+                    );
+                    // A slanted piece is drawn upright, as wide as its top edge.
+                    let top = (pc.pts[1].0 - pc.pts[0].0).abs();
+                    let slanted = pc.pts[0].0 != pc.pts[3].0;
+                    let (x, width) = if slanted && top > 0.0 {
+                        ((x0 + x1) / 2.0 - top / 2.0, top)
+                    } else {
+                        (x0, x1 - x0)
+                    };
+                    let base = match pc.role {
+                        BarRole::Track => track,
+                        BarRole::Fill => fill,
+                        BarRole::Line => line,
+                    };
+                    p.spawn((
+                        Node {
+                            position_type: PositionType::Absolute,
+                            left: Val::Px(x),
+                            top: Val::Px(y0),
+                            width: Val::Px(width),
+                            height: Val::Px(y1 - y0),
+                            border_radius: BorderRadius::all(Val::Px(pc.radius)),
+                            ..default()
+                        },
+                        BackgroundColor(base.with_alpha(base.alpha() * pc.alpha)),
+                    ));
+                }
+            });
+        });
     }
 }
 

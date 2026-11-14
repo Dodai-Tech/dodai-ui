@@ -657,15 +657,16 @@ pub mod busy {
                     .collect()
             }
             SpinnerStyle::Sweep => {
+                // Dots along the rounded square the arc follows (where a real stroke is not
+                // available, e.g. bevy's UI).
                 let d = size * 0.075;
-                let r = (size - d) / 2.0;
                 (0..SWEEP_DOTS)
                     .map(|i| {
                         let f = i as f32 / SWEEP_DOTS as f32;
-                        let a = f * std::f32::consts::TAU;
+                        let (px, py) = ring_point(SpinnerStyle::Sweep, f, size, d);
                         Cell {
-                            x: size / 2.0 + r * a.sin() - d / 2.0,
-                            y: size / 2.0 - r * a.cos() - d / 2.0,
+                            x: px - d / 2.0,
+                            y: py - d / 2.0,
                             w: d,
                             h: d,
                             round: true,
@@ -957,6 +958,191 @@ pub mod busy {
 
     /// Where and how a cell is drawn after `t` seconds: `(x, y, w, h, alpha)`. The one call a
     /// toolkit needs, whatever the style.
+    /// Which token colour a [`BarPiece`] takes.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub enum BarRole {
+        /// The track.
+        Track,
+        /// The fill.
+        Fill,
+        /// The border line.
+        Line,
+    }
+
+    /// One filled shape of a styled progress bar.
+    #[derive(Clone, Copy, Debug, PartialEq)]
+    pub struct BarPiece {
+        /// Four corners (clockwise); a rectangle is given as its four corners too.
+        pub pts: [(f32, f32); 4],
+        /// Corner radius (rectangles only; `0` for polygons and square rectangles).
+        pub radius: f32,
+        /// The colour it takes.
+        pub role: BarRole,
+        /// Opacity 0..=1.
+        pub alpha: f32,
+    }
+
+    /// Height of a styled progress bar.
+    pub fn bar_height(style: crate::ProgressStyle) -> f32 {
+        match style {
+            crate::ProgressStyle::Hud => 16.0,
+            crate::ProgressStyle::Stripes => 22.0,
+            crate::ProgressStyle::Stones => 18.0,
+        }
+    }
+
+    /// The pieces of a styled progress bar `w` wide at time `t` (seconds): determinate at
+    /// `frac`, or running when `None`. Back to front.
+    pub fn bar_pieces(
+        style: crate::ProgressStyle,
+        frac: Option<f32>,
+        t: f32,
+        w: f32,
+    ) -> Vec<BarPiece> {
+        use crate::ProgressStyle as P;
+        let h = bar_height(style);
+        let rect =
+            |x: f32, y: f32, rw: f32, rh: f32, radius: f32, role: BarRole, alpha: f32| BarPiece {
+                pts: [(x, y), (x + rw, y), (x + rw, y + rh), (x, y + rh)],
+                radius,
+                role,
+                alpha,
+            };
+        let mut v = Vec::new();
+        match style {
+            P::Hud => {
+                let n = 26usize;
+                let slant = h * 0.4;
+                let slot = (w - slant) / n as f32;
+                let lit = frac.map(|f| f.clamp(0.0, 1.0) * n as f32);
+                let comet = (t * 0.9).fract() * (n as f32 + 8.0) - 4.0;
+                for i in 0..n {
+                    let x0 = i as f32 * slot;
+                    let x1 = x0 + slot - 3.0;
+                    let cell = |g: f32, role, alpha| BarPiece {
+                        pts: [
+                            (x0 + slant - g, -g),
+                            (x1 + slant + g, -g),
+                            (x1 + g, h + g),
+                            (x0 - g, h + g),
+                        ],
+                        radius: 0.0,
+                        role,
+                        alpha,
+                    };
+                    let a = match lit {
+                        Some(l) => (l - i as f32).clamp(0.0, 1.0),
+                        None => {
+                            let d = comet - i as f32;
+                            if (0.0..8.0).contains(&d) {
+                                1.0 - d / 8.0
+                            } else {
+                                0.0
+                            }
+                        }
+                    };
+                    v.push(cell(0.0, BarRole::Track, 0.55));
+                    if a > 0.0 {
+                        v.push(cell(0.0, BarRole::Fill, a));
+                    }
+                    let head = match lit {
+                        Some(l) => {
+                            (l - 0.001).floor() as i64 == i as i64 && l > 0.0 && l < n as f32
+                        }
+                        None => (0.0..1.0).contains(&(comet - i as f32)),
+                    };
+                    if head {
+                        v.push(cell(
+                            3.0,
+                            BarRole::Fill,
+                            0.28 * (0.55 + 0.45 * (t * 18.0).sin()),
+                        ));
+                    }
+                }
+            }
+            P::Stripes => {
+                let bw = 2.5;
+                v.push(rect(0.0, 0.0, w, h, 0.0, BarRole::Line, 1.0));
+                v.push(rect(
+                    bw,
+                    bw,
+                    w - 2.0 * bw,
+                    h - 2.0 * bw,
+                    0.0,
+                    BarRole::Track,
+                    1.0,
+                ));
+                let (ix0, ix1, iy, ih) = (bw, w - bw, bw, h - 2.0 * bw);
+                let active = frac.map_or(ix1, |f| ix0 + (ix1 - ix0) * f.clamp(0.0, 1.0));
+                if active > ix0 {
+                    v.push(rect(ix0, iy, active - ix0, ih, 0.0, BarRole::Fill, 0.45));
+                    let sw = ih * 0.9;
+                    let period = sw * 2.0;
+                    let off = (t * 36.0) % period;
+                    let mut x = ix0 - ih - period;
+                    while x < active + period {
+                        let sx = x + off;
+                        let c = |u: f32| u.clamp(ix0, active);
+                        v.push(BarPiece {
+                            pts: [
+                                (c(sx + ih), iy),
+                                (c(sx + ih + sw), iy),
+                                (c(sx + sw), iy + ih),
+                                (c(sx), iy + ih),
+                            ],
+                            radius: 0.0,
+                            role: BarRole::Fill,
+                            alpha: 1.0,
+                        });
+                        x += period;
+                    }
+                    if frac.is_some() {
+                        v.push(rect(active - 2.0, iy, 2.0, ih, 0.0, BarRole::Line, 1.0));
+                    }
+                }
+            }
+            P::Stones => {
+                let n = 12usize;
+                let slot = w / n as f32;
+                let side = (slot - 5.0).min(h);
+                let lit = frac.map(|f| f.clamp(0.0, 1.0) * n as f32);
+                for i in 0..n {
+                    let cx = slot * (i as f32 + 0.5);
+                    let (mut s, a) = match lit {
+                        Some(l) => (side, (l - i as f32).clamp(0.0, 1.0)),
+                        None => (side, 0.2 + 0.8 * (t * 4.0 - i as f32 * 0.6).sin().max(0.0)),
+                    };
+                    if let Some(l) = lit {
+                        if (l - 0.001).floor() as i64 == i as i64 && l > 0.0 && l < n as f32 {
+                            s *= 0.86 + 0.14 * (t * 5.0).sin();
+                        }
+                    }
+                    v.push(rect(
+                        cx - side / 2.0,
+                        (h - side) / 2.0,
+                        side,
+                        side,
+                        5.0,
+                        BarRole::Track,
+                        1.0,
+                    ));
+                    if a > 0.0 {
+                        v.push(rect(
+                            cx - s / 2.0,
+                            (h - s) / 2.0,
+                            s,
+                            s,
+                            5.0,
+                            BarRole::Fill,
+                            a,
+                        ));
+                    }
+                }
+            }
+        }
+        v
+    }
+
     /// For the arc spinners drawn as a real stroke: `(start, length, track alpha)` with the angles
     /// in turns clockwise from the top. `None` for every other style.
     pub fn arc_span(style: SpinnerStyle, t: f32) -> Option<(f32, f32, f32)> {
