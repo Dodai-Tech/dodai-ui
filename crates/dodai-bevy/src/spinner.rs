@@ -237,7 +237,7 @@ mod tests {
     #[test]
     fn each_design_builds_its_own_cells() {
         for (t, n) in [
-            (dodai_core::material::light(), 0),
+            (dodai_core::material::light(), 16),
             (dodai_core::cyberpunk::light(), 4),
             (dodai_core::dodai::light(), 4),
             (dodai_core::neobrutalism::light(), 3),

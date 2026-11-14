@@ -139,30 +139,46 @@ impl Showcase {
                     )
                     .child(Muted::new("900 ms · 450 ms · 1.8 s ease-in-out (unless a duration is set)")),
             )
-            .child(Label::new("Spinners of each design (the first is its default)"))
-            .children(spinner_designs().into_iter().enumerate().map(|(d, (name, set))| {
+            .child(Label::new("Spinners"))
+            .children(spinner_groups(&theme_of(cx)).into_iter().enumerate().map(|(d, (name, set))| {
+                let material = name.ends_with("Material 3");
                 div()
                     .flex()
                     .flex_col()
                     .gap(px(6.0))
                     .child(Muted::new(name))
-                    .child(row().items_end().gap(px(28.0)).children(set.iter().enumerate().map(
-                        |(i, st)| {
+                    .child({
+                        let cell = |spinner: gpui::AnyElement, label: String| {
                             div()
                                 .flex()
                                 .flex_col()
                                 .items_center()
                                 .gap(px(6.0))
-                                .child(
-                                    Spinner::new(("ld-set", run * 64 + (d * 8 + i) as u32))
-                                        .style(*st)
-                                        .size(56.0)
-                                        .motion(mo(900, Easing::Linear))
-                                        .playback(pbk),
-                                )
-                                .child(Muted::new(format!("{st:?}").to_lowercase()))
-                        },
-                    )))
+                                .child(div().size(px(56.0)).flex().items_center().justify_center().child(spinner))
+                                .child(Muted::new(label))
+                        };
+                        let mut r = row().items_end().gap(px(28.0));
+                        for (i, st) in set.iter().enumerate() {
+                            let sp = Spinner::new(("ld-set", run * 64 + (d * 8 + i) as u32))
+                                .style(*st)
+                                .size(56.0)
+                                .motion(mo(900, Easing::Linear))
+                                .playback(pbk);
+                            r = r.child(cell(sp.into_any_element(), format!("{st:?}").to_lowercase()));
+                        }
+                        if material {
+                            r = r
+                                .child(cell(
+                                    LoadingIndicator::new(("ld-li", run)).into_any_element(),
+                                    "loading indicator".into(),
+                                ))
+                                .child(cell(
+                                    LoadingIndicator::new(("ld-lic", run)).contained(true).into_any_element(),
+                                    "contained".into(),
+                                ));
+                        }
+                        r
+                    })
             }))
             .child(Label::new("Indeterminate bar"))
             .child(IndeterminateBar::new(("ld-ib1", run)).motion(mo(1400, Easing::Linear)).playback(pbk))
@@ -677,19 +693,21 @@ impl Showcase {
     }
 }
 
-/// Each design system with the spinners it offers.
-fn spinner_designs() -> Vec<(&'static str, &'static [dodai_core::SpinnerStyle])> {
+/// The spinners every design shares, then the current design's own.
+fn spinner_groups(t: &dodai_core::Theme) -> Vec<(String, Vec<dodai_core::SpinnerStyle>)> {
+    let design = match t.id().split('-').next().unwrap_or_default() {
+        "dodai" => "Dodai",
+        "cyberpunk" => "Cyberpunk",
+        "neobrutalism" | "neobrutal" => "Neo-Brutalism",
+        "material" => "Material 3",
+        _ => "This design",
+    };
     vec![
-        ("Dodai", dodai_core::dodai::light().look().spinners),
         (
-            "Cyberpunk",
-            dodai_core::cyberpunk::variants()[0].look().spinners,
+            "Shared, in every design".into(),
+            dodai_core::SpinnerStyle::SHARED.to_vec(),
         ),
-        (
-            "Neo-Brutalism",
-            dodai_core::neobrutalism::variants()[0].look().spinners,
-        ),
-        ("Material 3", dodai_core::material::light().look().spinners),
+        (format!("Only in {design}"), t.look().spinners.to_vec()),
     ]
 }
 
