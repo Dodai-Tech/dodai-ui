@@ -228,63 +228,78 @@ pub(crate) fn animate_styled_bars(
     theme: Res<DodaiTheme>,
     time: Res<Time>,
     mut commands: Commands,
-    bars: Query<(Entity, &UiStyledBar, &ComputedNode)>,
+    bars: Query<(Entity, &UiStyledBar, &ComputedNode, Option<&Children>)>,
+    mut kids: Query<(&mut Node, &mut BackgroundColor), Without<UiStyledBar>>,
 ) {
     use dodai_core::busy::{bar_pieces, BarRole};
     let t = time.elapsed_secs();
     let k = theme.progress(None);
     let (track, fill, line) = (color(k.track), color(k.fill), color(k.border));
-    for (e, bar, node) in &bars {
+    for (e, bar, node, children) in &bars {
         let w = node.size().x * node.inverse_scale_factor();
         if w <= 0.0 {
             continue;
         }
         let pieces = bar_pieces(bar.style, bar.value, t, w);
-        commands.queue(move |world: &mut World| {
-            let Ok(mut ent) = world.get_entity_mut(e) else {
-                return;
+        let have = children.map_or(0, |c| c.len());
+        // The pieces are updated in place (no respawn, so no flicker); spare ones are hidden.
+        for i in 0..have {
+            let Some(&kid) = children.and_then(|c| c.get(i)) else {
+                continue;
             };
-            ent.despawn_related::<Children>();
-            ent.with_children(|p| {
-                for pc in pieces {
-                    let xs = pc.pts.map(|q| q.0);
-                    let ys = pc.pts.map(|q| q.1);
-                    let (x0, x1) = (
-                        xs.iter().cloned().fold(f32::MAX, f32::min),
-                        xs.iter().cloned().fold(f32::MIN, f32::max),
-                    );
-                    let (y0, y1) = (
-                        ys.iter().cloned().fold(f32::MAX, f32::min),
-                        ys.iter().cloned().fold(f32::MIN, f32::max),
-                    );
-                    // A slanted piece is drawn upright, as wide as its top edge.
-                    let top = (pc.pts[1].0 - pc.pts[0].0).abs();
-                    let slanted = pc.pts[0].0 != pc.pts[3].0;
-                    let (x, width) = if slanted && top > 0.0 {
-                        ((x0 + x1) / 2.0 - top / 2.0, top)
-                    } else {
-                        (x0, x1 - x0)
-                    };
-                    let base = match pc.role {
-                        BarRole::Track => track,
-                        BarRole::Fill => fill,
-                        BarRole::Line => line,
-                    };
+            let Ok((mut n, mut bg)) = kids.get_mut(kid) else {
+                continue;
+            };
+            let Some(pc) = pieces.get(i) else {
+                n.display = Display::None;
+                continue;
+            };
+            let xs = pc.pts.map(|q| q.0);
+            let ys = pc.pts.map(|q| q.1);
+            let (x0, x1) = (
+                xs.iter().cloned().fold(f32::MAX, f32::min),
+                xs.iter().cloned().fold(f32::MIN, f32::max),
+            );
+            let (y0, y1) = (
+                ys.iter().cloned().fold(f32::MAX, f32::min),
+                ys.iter().cloned().fold(f32::MIN, f32::max),
+            );
+            // A slanted piece is drawn upright, as wide as its top edge.
+            let top = (pc.pts[1].0 - pc.pts[0].0).abs();
+            let slanted = pc.pts[0].0 != pc.pts[3].0;
+            let (x, width) = if slanted && top > 0.0 {
+                ((x0 + x1) / 2.0 - top / 2.0, top)
+            } else {
+                (x0, x1 - x0)
+            };
+            let base = match pc.role {
+                BarRole::Track => track,
+                BarRole::Fill => fill,
+                BarRole::Line => line,
+            };
+            n.display = Display::Flex;
+            n.left = Val::Px(x);
+            n.top = Val::Px(y0);
+            n.width = Val::Px(width);
+            n.height = Val::Px(y1 - y0);
+            n.border_radius = BorderRadius::all(Val::Px(pc.radius));
+            bg.0 = base.with_alpha(base.alpha() * pc.alpha);
+        }
+        if pieces.len() > have {
+            let extra = pieces.len() - have;
+            commands.entity(e).with_children(|p| {
+                for _ in 0..extra {
                     p.spawn((
                         Node {
                             position_type: PositionType::Absolute,
-                            left: Val::Px(x),
-                            top: Val::Px(y0),
-                            width: Val::Px(width),
-                            height: Val::Px(y1 - y0),
-                            border_radius: BorderRadius::all(Val::Px(pc.radius)),
+                            display: Display::None,
                             ..default()
                         },
-                        BackgroundColor(base.with_alpha(base.alpha() * pc.alpha)),
+                        BackgroundColor(Color::NONE),
                     ));
                 }
             });
-        });
+        }
     }
 }
 

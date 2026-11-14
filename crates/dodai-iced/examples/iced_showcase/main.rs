@@ -323,7 +323,14 @@ fn main() -> iced::Result {
     iced::application(boot, update, view)
         .title("Dodai UI · Iced")
         .window(iced::window::Settings {
-            size: iced::Size::new(1400.0, 900.0),
+            // `DODAI_SIZE=WxH` opens a window of that size (screenshots of long pages).
+            size: std::env::var("DODAI_SIZE")
+                .ok()
+                .and_then(|v| {
+                    let (w, h) = v.split_once('x')?;
+                    Some(iced::Size::new(w.parse().ok()?, h.parse().ok()?))
+                })
+                .unwrap_or(iced::Size::new(1400.0, 900.0)),
             icon: window_icon(),
             ..Default::default()
         })
