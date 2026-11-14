@@ -676,7 +676,7 @@ pub mod busy {
                     .collect()
             }
             SpinnerStyle::Classic => {
-                let d = size * 0.11;
+                let d = size * 0.1;
                 let r = (size - d) / 2.0;
                 (0..CLASSIC_DOTS)
                     .map(|i| {
@@ -889,14 +889,23 @@ pub mod busy {
         (0.0, 1.0, 1.0),
     ];
 
+    /// How much of an arc running `len` round from `from` covers a point `at` (0..1) round
+    /// from it, with soft ends `soft` wide so the arc grows and shrinks smoothly.
+    pub fn arc_cover(at: f32, len: f32, soft: f32) -> f32 {
+        let start = if at > 1.0 - soft { at - 1.0 } else { at };
+        let rise = ((start + soft) / soft).clamp(0.0, 1.0);
+        let fall = ((len - at) / soft).clamp(0.0, 1.0);
+        rise.min(fall)
+    }
+
     /// Dots on a [`SpinnerStyle::Sweep`] ring.
-    pub const SWEEP_DOTS: usize = 56;
+    pub const SWEEP_DOTS: usize = 72;
 
     /// Dots on a [`SpinnerStyle::Classic`] circle: close enough to read as one line.
-    pub const CLASSIC_DOTS: usize = 40;
+    pub const CLASSIC_DOTS: usize = 80;
 
     /// Dots on a [`SpinnerStyle::Arc`] circle.
-    pub const ARC_DOTS: usize = 16;
+    pub const ARC_DOTS: usize = 20;
 
     /// Height of a [`SpinnerStyle::Pillars`] bar (fraction of full) in each quarter of its cycle.
     pub const PILLARS: [f32; 4] = [0.3, 0.65, 1.0, 0.65];
@@ -971,27 +980,24 @@ pub mod busy {
                 let head = (phase * 2.0).fract();
                 let len = 0.2 + 0.4 * (0.5 - 0.5 * (phase * std::f32::consts::TAU).cos());
                 let behind = (head - c.lag).rem_euclid(1.0);
-                if behind < len {
-                    let k = 1.0 - behind / len;
-                    let swell = if behind < 0.03 { 1.5 } else { 1.0 };
-                    let (w, h) = (c.w * swell, c.h * swell);
-                    (
-                        c.x - (w - c.w) / 2.0,
-                        c.y - (h - c.h) / 2.0,
-                        w,
-                        h,
-                        0.4 + 0.6 * k,
-                    )
-                } else {
-                    (c.x, c.y, c.w, c.h, 0.16)
-                }
+                let cov = arc_cover(behind, len, 0.05);
+                let k = 1.0 - (behind / len).min(1.0);
+                let swell = 1.0 + 0.5 * (1.0 - behind / 0.05).clamp(0.0, 1.0) * cov;
+                let (w, h) = (c.w * swell, c.h * swell);
+                (
+                    c.x - (w - c.w) / 2.0,
+                    c.y - (h - c.h) / 2.0,
+                    w,
+                    h,
+                    0.16 + cov * (0.24 + 0.6 * k),
+                )
             }
             SpinnerStyle::Classic => {
                 // The arc turns steadily while its length swings between a sliver and 3/4.
                 let len = 0.06 + 0.69 * (0.5 - 0.5 * (phase * std::f32::consts::TAU).cos());
                 let tail = phase * 3.0;
                 let a = (c.lag - tail).rem_euclid(1.0);
-                (c.x, c.y, c.w, c.h, if a < len { 1.0 } else { 0.0 })
+                (c.x, c.y, c.w, c.h, arc_cover(a, len, 0.035))
             }
             SpinnerStyle::Arc => {
                 // Head runs ahead steadily; the tail catches up and falls back: the arc breathes.
@@ -999,8 +1005,7 @@ pub mod busy {
                 let len = 0.45 + 0.3 * (phase * std::f32::consts::TAU).sin();
                 let tail = head - len;
                 let a = (c.lag - tail).rem_euclid(1.0);
-                let on = a < len;
-                let fade = if on { 0.35 + 0.65 * (a / len) } else { 0.0 };
+                let fade = arc_cover(a, len, 0.06) * (0.35 + 0.65 * (a / len).min(1.0));
                 (c.x, c.y, c.w, c.h, fade)
             }
             SpinnerStyle::Data => {

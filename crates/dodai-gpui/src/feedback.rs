@@ -352,6 +352,8 @@ pub struct IndeterminateBar {
     motion: Option<Motion>,
     playback: Playback,
     corners: Option<dodai_core::Corners>,
+    style: Option<dodai_core::ProgressStyle>,
+    wavy: bool,
 }
 
 crate::corners_setter!(IndeterminateBar);
@@ -364,7 +366,19 @@ impl IndeterminateBar {
             id: id.into(),
             motion: None,
             playback: Playback::Loop,
+            style: None,
+            wavy: false,
         }
+    }
+    /// Draw the bar the way a design does (see [`dodai_core::ProgressStyle`]).
+    pub fn style(mut self, s: dodai_core::ProgressStyle) -> Self {
+        self.style = Some(s);
+        self
+    }
+    /// Material 3 Expressive wavy indeterminate bar. Ignored by other design systems.
+    pub fn wavy(mut self, on: bool) -> Self {
+        self.wavy = on;
+        self
     }
     /// Override cycle duration and easing (default 1400 ms, linear).
     pub fn motion(mut self, m: Motion) -> Self {
@@ -381,26 +395,36 @@ impl IndeterminateBar {
 impl RenderOnce for IndeterminateBar {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let t = theme_of(cx);
+        if let Some(st) = self.style {
+            return crate::controls::styled_bar(&t, st, None, None).into_any_element();
+        }
+        if self.wavy && t.look().tonal {
+            return crate::controls::wavy_indeterminate(&t, None).into_any_element();
+        }
         let k = t.progress(None);
         let h = t.spacing.sm + 2.0;
         let shape = crate::paint::round_shape(&t.shape, h);
         let track = ShapeStyle::from_tokens(&t, Some(k.track), Some(k.border), false, false);
         let fill = ShapeStyle::from_tokens(&t, Some(k.fill), None, true, false);
-        shaped(&shape, track).w_full().h(px(h)).with_animation(
-            self.id,
-            cycle(self.motion, 1400, self.playback),
-            move |el, delta| {
-                let (l, w) = indeterminate_segment(delta);
-                el.child(
-                    shaped(&shape, fill)
-                        .absolute()
-                        .top_0()
-                        .h_full()
-                        .left(relative(l))
-                        .w(relative(w)),
-                )
-            },
-        )
+        shaped(&shape, track)
+            .w_full()
+            .h(px(h))
+            .with_animation(
+                self.id,
+                cycle(self.motion, 1400, self.playback),
+                move |el, delta| {
+                    let (l, w) = indeterminate_segment(delta);
+                    el.child(
+                        shaped(&shape, fill)
+                            .absolute()
+                            .top_0()
+                            .h_full()
+                            .left(relative(l))
+                            .w(relative(w)),
+                    )
+                },
+            )
+            .into_any_element()
     }
 }
 

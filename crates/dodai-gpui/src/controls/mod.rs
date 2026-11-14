@@ -35,10 +35,12 @@ type FloatHandler = Rc<dyn Fn(f32, &mut Window, &mut App)>;
 mod bars;
 mod choice;
 mod slider;
+mod styled_bar;
 
 pub use bars::*;
 pub use choice::*;
 pub use slider::*;
+pub use styled_bar::*;
 
 #[cfg(test)]
 mod tests;

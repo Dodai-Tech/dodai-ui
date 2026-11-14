@@ -180,12 +180,19 @@ impl Showcase {
                         r
                     })
             }))
-            .child(Label::new("Indeterminate bar"))
-            .child(IndeterminateBar::new(("ld-ib1", run)).motion(mo(1400, Easing::Linear)).playback(pbk))
-            .child(IndeterminateBar::new(("ld-ib2", run)).motion(mo(700, Easing::EaseInOut)).playback(pbk))
-            .child(Label::new("Determinate progress"))
+            .child(Label::new("Progress indicators"))
+            .child(Muted::new("Shared, in every design"))
             .child(ProgressBar::new(0.35))
-            .child(ProgressBar::new(0.7).tone(Tone::Success))
+            .child(IndeterminateBar::new(("ld-ib1", run)).motion(mo(1400, Easing::Linear)).playback(pbk))
+            .child(
+                row()
+                    .items_center()
+                    .gap(px(20.0))
+                    .child(dodai_gpui::CircularProgress::new(0.72))
+                    .child(dodai_gpui::CircularProgress::indeterminate()),
+            )
+            .child(Muted::new(format!("Only in {}", design_name(&theme_of(cx)))))
+            .children(progress_customs(&theme_of(cx), run, pbk))
             .child(Label::new("Skeleton placeholders"))
             .child(
                 row()
@@ -693,15 +700,60 @@ impl Showcase {
     }
 }
 
-/// The spinners every design shares, then the current design's own.
-fn spinner_groups(t: &dodai_core::Theme) -> Vec<(String, Vec<dodai_core::SpinnerStyle>)> {
-    let design = match t.id().split('-').next().unwrap_or_default() {
+fn design_name(t: &dodai_core::Theme) -> &'static str {
+    match t.id().split('-').next().unwrap_or_default() {
         "dodai" => "Dodai",
         "cyberpunk" => "Cyberpunk",
         "neobrutalism" | "neobrutal" => "Neo-Brutalism",
         "material" => "Material 3",
-        _ => "This design",
-    };
+        _ => "this design",
+    }
+}
+
+/// The current design's own progress indicators: determinate and indeterminate side by side.
+fn progress_customs(
+    t: &dodai_core::Theme,
+    run: u32,
+    pbk: dodai_gpui::Playback,
+) -> Vec<gpui::AnyElement> {
+    use dodai_core::ProgressStyle::*;
+    let mut v: Vec<gpui::AnyElement> = Vec::new();
+    let name = |n: &str| Muted::new(n.to_string()).into_any_element();
+    for (i, st) in t.look().progress_bars.iter().enumerate() {
+        v.push(name(&format!("{st:?}").to_lowercase()));
+        v.push(ProgressBar::new(0.6).style(*st).into_any_element());
+        v.push(
+            IndeterminateBar::new(("ld-ibs", run * 8 + i as u32))
+                .style(*st)
+                .playback(pbk)
+                .into_any_element(),
+        );
+    }
+    let _ = (Hud, Stripes, Stones);
+    if t.look().tonal {
+        v.push(name("wavy linear"));
+        v.push(ProgressBar::new(0.55).wavy(true).into_any_element());
+        v.push(name("wavy indeterminate"));
+        v.push(
+            IndeterminateBar::new(("ld-ibw", run))
+                .wavy(true)
+                .playback(pbk)
+                .into_any_element(),
+        );
+        v.push(name("wavy circular"));
+        v.push(
+            dodai_gpui::CircularProgress::new(0.6)
+                .wavy(true)
+                .size(64.0)
+                .into_any_element(),
+        );
+    }
+    v
+}
+
+/// The spinners every design shares, then the current design's own.
+fn spinner_groups(t: &dodai_core::Theme) -> Vec<(String, Vec<dodai_core::SpinnerStyle>)> {
+    let design = design_name(t);
     vec![
         (
             "Shared, in every design".into(),

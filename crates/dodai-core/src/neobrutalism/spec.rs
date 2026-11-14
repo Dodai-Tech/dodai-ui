@@ -128,6 +128,7 @@ impl DesignSpec for NeoBrutalism {
             sink: true,
             icons: IconSet::Bold,
             spinner: crate::SpinnerStyle::Shuffle,
+            progress_bars: &[crate::ProgressStyle::Stripes],
             spinners: &[
                 crate::SpinnerStyle::Shuffle,
                 crate::SpinnerStyle::Hop,

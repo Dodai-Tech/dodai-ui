@@ -90,7 +90,8 @@ pub use shape_system::{
     ShapeSize, ShapeSystem, FULL,
 };
 pub use spec::{
-    DesignSpec, FadeStop, Fluid, Frost, GridSpec, IconSet, Look, ShadowLayer, SpecRef, SpinnerStyle,
+    DesignSpec, FadeStop, Fluid, Frost, GridSpec, IconSet, Look, ProgressStyle, ShadowLayer,
+    SpecRef, SpinnerStyle,
 };
 pub use surface_paint::{surface_paint, surface_svg, swatch_paint};
 pub use surface_style::SurfaceStyle;

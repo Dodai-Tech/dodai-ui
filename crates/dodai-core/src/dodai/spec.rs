@@ -250,6 +250,7 @@ impl DesignSpec for Dodai {
             soft_elevation: true,
             segmented_tabs: true,
             spinner: crate::SpinnerStyle::Quad,
+            progress_bars: &[crate::ProgressStyle::Stones],
             spinners: &[
                 crate::SpinnerStyle::Quad,
                 crate::SpinnerStyle::Sweep,
