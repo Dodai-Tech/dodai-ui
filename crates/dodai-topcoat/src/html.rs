@@ -800,7 +800,10 @@ pub fn stepper(value: i32, min: i32, max: i32, minus: &str, plus: &str) -> Strin
 /// The class suffix of a spinner style and the style of each of its cells.
 pub fn spinner_cells(style: SpinnerStyle, size: f32) -> (&'static str, Vec<String>) {
     // The web draws the Material 3 arc with a real border arc.
-    if style == SpinnerStyle::Arc {
+    if matches!(
+        style,
+        SpinnerStyle::Arc | SpinnerStyle::Classic | SpinnerStyle::Sweep
+    ) {
         return ("ring", vec![]);
     }
     let kind = match style {
@@ -817,7 +820,7 @@ pub fn spinner_cells(style: SpinnerStyle, size: f32) -> (&'static str, Vec<Strin
         SpinnerStyle::Shuffle => "shuffle",
         SpinnerStyle::Data => "data",
         SpinnerStyle::Reticle => "reticle",
-        SpinnerStyle::Arc => "ring",
+        SpinnerStyle::Arc | SpinnerStyle::Classic | SpinnerStyle::Sweep => "ring",
         SpinnerStyle::Pillars => "pillars",
         SpinnerStyle::Courses => "courses",
         SpinnerStyle::Bounce => "bounce",

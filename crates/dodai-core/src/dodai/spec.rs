@@ -250,7 +250,11 @@ impl DesignSpec for Dodai {
             soft_elevation: true,
             segmented_tabs: true,
             spinner: crate::SpinnerStyle::Quad,
-            spinners: &[crate::SpinnerStyle::Quad, crate::SpinnerStyle::Courses],
+            spinners: &[
+                crate::SpinnerStyle::Quad,
+                crate::SpinnerStyle::Sweep,
+                crate::SpinnerStyle::Courses,
+            ],
             selection: crate::motion::SelectionMotion::Stretch,
             icons: IconSet::Symbols,
             ..Look::default()

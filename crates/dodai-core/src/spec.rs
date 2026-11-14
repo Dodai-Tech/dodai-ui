@@ -67,6 +67,10 @@ pub enum SpinnerStyle {
     Reticle,
     /// Material 3 circular indicator: an arc of dots that grows and shrinks while it turns.
     Arc,
+    /// Material 2 circular indicator: one solid arc that stretches and shrinks as it turns.
+    Classic,
+    /// A thin ring track with a bright arc that stretches and shrinks as it runs round.
+    Sweep,
     /// Three dots hopping in a wave.
     Bounce,
 }

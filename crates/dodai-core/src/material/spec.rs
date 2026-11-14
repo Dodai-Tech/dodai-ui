@@ -189,6 +189,7 @@ impl DesignSpec for Material3 {
             spinner: crate::SpinnerStyle::Arc,
             spinners: &[
                 crate::SpinnerStyle::Arc,
+                crate::SpinnerStyle::Classic,
                 crate::SpinnerStyle::Petals,
                 crate::SpinnerStyle::Bounce,
             ],
