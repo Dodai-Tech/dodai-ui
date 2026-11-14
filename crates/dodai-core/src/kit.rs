@@ -612,7 +612,7 @@ pub mod busy {
             }
             SpinnerStyle::Quad => (0..4)
                 .map(|i| {
-                    let side = size * (0.46 - 0.05 * i as f32);
+                    let side = size * (0.32 - 0.02 * i as f32);
                     Cell {
                         x: 0.0,
                         y: 0.0,
@@ -957,6 +957,21 @@ pub mod busy {
 
     /// Where and how a cell is drawn after `t` seconds: `(x, y, w, h, alpha)`. The one call a
     /// toolkit needs, whatever the style.
+    /// For the arc spinners drawn as a real stroke: `(start, length, track alpha)` with the angles
+    /// in turns clockwise from the top. `None` for every other style.
+    pub fn arc_span(style: SpinnerStyle, t: f32) -> Option<(f32, f32, f32)> {
+        let phase = (t * SPIN_RATE).fract();
+        let wave = 0.5 - 0.5 * (phase * std::f32::consts::TAU).cos();
+        match style {
+            SpinnerStyle::Classic => Some((phase * 3.0, 0.06 + 0.69 * wave, 0.0)),
+            SpinnerStyle::Sweep => {
+                let len = 0.2 + 0.4 * wave;
+                Some((((phase * 2.0).fract() - len).rem_euclid(1.0), len, 0.16))
+            }
+            _ => None,
+        }
+    }
+
     pub fn pose(style: SpinnerStyle, c: &Cell, size: f32, t: f32) -> (f32, f32, f32, f32, f32) {
         let phase = (t * SPIN_RATE).fract();
         match style {
@@ -1018,15 +1033,18 @@ pub mod busy {
                 (c.x, c.y + c.h - h, c.w, h, 1.0)
             }
             SpinnerStyle::Courses => {
+                // A course is laid from the left edge, rests, then is lifted off to the right;
+                // it never leaves the box.
                 let since = (phase - c.lag).rem_euclid(1.0);
-                let dx = if since < 0.4 {
-                    -(1.0 - since / 0.4).powi(3)
+                let (x, w) = if since < 0.4 {
+                    (0.0, c.w * (1.0 - (1.0 - since / 0.4).powi(3)))
                 } else if since < 0.7 {
-                    0.0
+                    (0.0, c.w)
                 } else {
-                    ((since - 0.7) / 0.3).powi(3)
+                    let v = ((since - 0.7) / 0.3).powi(3);
+                    (c.w * v, c.w * (1.0 - v))
                 };
-                (c.x + dx * size, c.y, c.w, c.h, 1.0 - 0.3 * (dx.abs()))
+                (c.x + x, c.y, w.max(0.0), c.h, 1.0)
             }
             SpinnerStyle::Bounce => {
                 let since = (phase - c.lag).rem_euclid(1.0);
