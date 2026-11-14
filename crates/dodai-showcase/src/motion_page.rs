@@ -138,21 +138,7 @@ impl Showcase {
                         .playback(pbk)
                         .into_any_element(),
                 ],
-            ))
-            .child(group_card(
-                &theme_of(cx),
-                format!("Only in {}", design_name(&theme_of(cx))),
-                spinner_row(
-                    theme_of(cx).look().spinners,
-                    1,
-                    (run, lms as u64),
-                    pbk,
-                    theme_of(cx).look().tonal,
-                ),
-                progress_customs(&theme_of(cx), run, pbk),
-            ))
-            .child(Label::new("Skeleton placeholders"))
-            .child(
+                Some(
                 row()
                     .items_start()
                     .gap(px(16.0))
@@ -170,8 +156,23 @@ impl Showcase {
                             .child(Skeleton::new(("ld-l1", run)).height(14.0).motion(mo(1600, Easing::Linear)).playback(pbk))
                             .child(Skeleton::new(("ld-l2", run)).height(14.0).width(260.0).motion(mo(1600, Easing::Linear)).playback(pbk))
                             .child(Skeleton::new(("ld-l3", run)).height(14.0).width(180.0).motion(mo(1600, Easing::Linear)).playback(pbk)),
-                    ),
-            )
+                    )
+                    .into_any_element(),
+                ),
+            ))
+            .child(group_card(
+                &theme_of(cx),
+                format!("Only in {}", design_name(&theme_of(cx))),
+                spinner_row(
+                    theme_of(cx).look().spinners,
+                    1,
+                    (run, lms as u64),
+                    pbk,
+                    theme_of(cx).look().tonal,
+                ),
+                progress_customs(&theme_of(cx), run, pbk),
+                None,
+            ))
             .child(Muted::new(
                 "Play runs one cycle, Loop repeats, Stop holds a still frame. Loading demos live on this page only (not on All) to keep idle CPU at zero.",
             ));
@@ -723,6 +724,7 @@ fn group_card(
     title: String,
     spinners: gpui::AnyElement,
     progress: Vec<gpui::AnyElement>,
+    placeholders: Option<gpui::AnyElement>,
 ) -> gpui::Div {
     let sub = |s: &str| Muted::new(s.to_string());
     div()
@@ -738,6 +740,14 @@ fn group_card(
         .child(spinners)
         .child(sub("Progress"))
         .children(progress)
+        .children(placeholders.map(|p| {
+            div()
+                .flex()
+                .flex_col()
+                .gap(px(10.0))
+                .child(sub("Skeleton placeholders"))
+                .child(p)
+        }))
 }
 
 /// A row of labelled spinners for `set`; `material` adds the M3 loading indicators.
