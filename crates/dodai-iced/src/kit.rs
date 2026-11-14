@@ -471,6 +471,40 @@ impl<Message> canvas::Program<Message> for Spinner {
     ) -> Vec<Geometry> {
         let mut frame = canvas::Frame::new(renderer, bounds.size());
         let size = bounds.width.min(bounds.height);
+        if let Some((start, len, track)) = busy::arc_span(self.style, self.t) {
+            // A real stroked arc with round ends, over an optional faint track.
+            let w = size * 0.1;
+            let r = (size - w) / 2.0;
+            let centre = frame.center();
+            let tau = std::f32::consts::TAU;
+            if track > 0.0 {
+                let col = iced::Color {
+                    a: self.lit.a * track,
+                    ..self.lit
+                };
+                frame.stroke(
+                    &Path::circle(centre, r),
+                    Stroke::default().with_color(col).with_width(w),
+                );
+            }
+            let a0 = start * tau - std::f32::consts::FRAC_PI_2;
+            let arc = Path::new(|b| {
+                b.arc(Arc {
+                    center: centre,
+                    radius: r,
+                    start_angle: Radians(a0),
+                    end_angle: Radians(a0 + len * tau),
+                });
+            });
+            frame.stroke(
+                &arc,
+                Stroke::default()
+                    .with_color(self.lit)
+                    .with_width(w)
+                    .with_line_cap(canvas::LineCap::Round),
+            );
+            return vec![frame.into_geometry()];
+        }
         let cells = busy::cells(self.style, size);
         if !cells.is_empty() {
             for c in cells {
