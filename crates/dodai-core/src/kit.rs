@@ -656,6 +656,44 @@ pub mod busy {
                     })
                     .collect()
             }
+            SpinnerStyle::Sweep => {
+                let d = size * 0.075;
+                let r = (size - d) / 2.0;
+                (0..SWEEP_DOTS)
+                    .map(|i| {
+                        let f = i as f32 / SWEEP_DOTS as f32;
+                        let a = f * std::f32::consts::TAU;
+                        Cell {
+                            x: size / 2.0 + r * a.sin() - d / 2.0,
+                            y: size / 2.0 - r * a.cos() - d / 2.0,
+                            w: d,
+                            h: d,
+                            round: true,
+                            radius: d / 2.0,
+                            lag: f,
+                        }
+                    })
+                    .collect()
+            }
+            SpinnerStyle::Classic => {
+                let d = size * 0.11;
+                let r = (size - d) / 2.0;
+                (0..CLASSIC_DOTS)
+                    .map(|i| {
+                        let f = i as f32 / CLASSIC_DOTS as f32;
+                        let a = f * std::f32::consts::TAU;
+                        Cell {
+                            x: size / 2.0 + r * a.sin() - d / 2.0,
+                            y: size / 2.0 - r * a.cos() - d / 2.0,
+                            w: d,
+                            h: d,
+                            round: true,
+                            radius: d / 2.0,
+                            lag: f,
+                        }
+                    })
+                    .collect()
+            }
             SpinnerStyle::Arc => {
                 let d = size * 0.13;
                 let r = (size - d) / 2.0;
@@ -851,6 +889,12 @@ pub mod busy {
         (0.0, 1.0, 1.0),
     ];
 
+    /// Dots on a [`SpinnerStyle::Sweep`] ring.
+    pub const SWEEP_DOTS: usize = 56;
+
+    /// Dots on a [`SpinnerStyle::Classic`] circle: close enough to read as one line.
+    pub const CLASSIC_DOTS: usize = 40;
+
     /// Dots on a [`SpinnerStyle::Arc`] circle.
     pub const ARC_DOTS: usize = 16;
 
@@ -920,6 +964,34 @@ pub mod busy {
                 let since = (phase - c.lag).rem_euclid(1.0);
                 let (off, wf, a) = GLITCH[((since * 8.0) as usize).min(7)];
                 (c.x + off * size, c.y, c.w * wf, c.h, a)
+            }
+            SpinnerStyle::Sweep => {
+                // A faint track all round; the lit arc runs ahead, its tail lagging and catching
+                // up. The dot at the head swells a little.
+                let head = (phase * 2.0).fract();
+                let len = 0.2 + 0.4 * (0.5 - 0.5 * (phase * std::f32::consts::TAU).cos());
+                let behind = (head - c.lag).rem_euclid(1.0);
+                if behind < len {
+                    let k = 1.0 - behind / len;
+                    let swell = if behind < 0.03 { 1.5 } else { 1.0 };
+                    let (w, h) = (c.w * swell, c.h * swell);
+                    (
+                        c.x - (w - c.w) / 2.0,
+                        c.y - (h - c.h) / 2.0,
+                        w,
+                        h,
+                        0.4 + 0.6 * k,
+                    )
+                } else {
+                    (c.x, c.y, c.w, c.h, 0.16)
+                }
+            }
+            SpinnerStyle::Classic => {
+                // The arc turns steadily while its length swings between a sliver and 3/4.
+                let len = 0.06 + 0.69 * (0.5 - 0.5 * (phase * std::f32::consts::TAU).cos());
+                let tail = phase * 3.0;
+                let a = (c.lag - tail).rem_euclid(1.0);
+                (c.x, c.y, c.w, c.h, if a < len { 1.0 } else { 0.0 })
             }
             SpinnerStyle::Arc => {
                 // Head runs ahead steadily; the tail catches up and falls back: the arc breathes.
