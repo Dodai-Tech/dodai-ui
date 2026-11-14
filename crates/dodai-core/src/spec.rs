@@ -75,6 +75,17 @@ pub enum SpinnerStyle {
     Bounce,
 }
 
+/// A progress bar drawn in a design's own way (the plain bar is every design's base).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum ProgressStyle {
+    /// Slanted HUD cells lighting up one by one behind a glowing head (cyberpunk).
+    Hud,
+    /// A thick bordered bar filled with scrolling hazard stripes (neobrutalism).
+    Stripes,
+    /// A row of rounded stones laid one after another, the last one breathing (dodai).
+    Stones,
+}
+
 impl SpinnerStyle {
     /// The spinners every design can use. Each design adds its own on top (`Look::spinners`).
     pub const SHARED: [SpinnerStyle; 4] = [Self::Bars, Self::Orbit, Self::Steps, Self::Grid];
@@ -108,6 +119,8 @@ pub struct Look {
     pub selection: crate::motion::SelectionMotion,
     /// The shape of the spinner.
     pub spinner: SpinnerStyle,
+    /// The progress bars the design offers beyond the plain one.
+    pub progress_bars: &'static [ProgressStyle],
     /// The spinners the design offers, its default (`spinner`) first.
     pub spinners: &'static [SpinnerStyle],
 }

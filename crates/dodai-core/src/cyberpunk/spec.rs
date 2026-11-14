@@ -48,6 +48,7 @@ impl DesignSpec for Cyberpunk {
             cut_corners: true,
             accent_border: true,
             spinner: crate::SpinnerStyle::Glitch,
+            progress_bars: &[crate::ProgressStyle::Hud],
             spinners: &[
                 crate::SpinnerStyle::Glitch,
                 crate::SpinnerStyle::Scanner,
@@ -632,6 +633,7 @@ mod tests {
                     cut_corners: true,
                     accent_border: true,
                     spinner: crate::SpinnerStyle::Glitch,
+                    progress_bars: &[crate::ProgressStyle::Hud],
                     spinners: &[
                         crate::SpinnerStyle::Glitch,
                         crate::SpinnerStyle::Scanner,

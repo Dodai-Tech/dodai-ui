@@ -88,6 +88,7 @@ pub struct ProgressBar {
     value: f32,
     tone: Option<Tone>,
     wavy: bool,
+    style: Option<dodai_core::ProgressStyle>,
 }
 
 impl ProgressBar {
@@ -99,12 +100,18 @@ impl ProgressBar {
             value,
             tone: None,
             wavy: false,
+            style: None,
         }
     }
     crate::follow_api!();
     /// Colour by status tone (default: brand colour).
     pub fn tone(mut self, tone: Tone) -> Self {
         self.tone = Some(tone);
+        self
+    }
+    /// Draw the bar the way a design does (see [`dodai_core::ProgressStyle`]).
+    pub fn style(mut self, s: dodai_core::ProgressStyle) -> Self {
+        self.style = Some(s);
         self
     }
     /// Material 3 Expressive wavy indicator: the active part is a travelling sine wave.
@@ -171,6 +178,9 @@ impl ProgressBar {
         let t = theme_of(cx);
         let g = crate::motion::grow(window, cx, "ProgressBar");
         let value = crate::follow::follow(window, cx, &self.follow, 0, self.value);
+        if let Some(st) = self.style {
+            return styled_bar(&t, st, Some(value * g), self.tone).into_any_element();
+        }
         if self.wavy && t.look().tonal {
             return wavy_bar(&t, value * g, self.tone).into_any_element();
         }
