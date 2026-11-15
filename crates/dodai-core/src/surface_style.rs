@@ -6,7 +6,7 @@ use dodai_fx::{EffectSet, ResolvedSurface, SurfaceTuning, Texture};
 /// effects it owns. Part of the theme, so it travels with it like colours and shapes.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SurfaceStyle {
-    /// The mix the "design preset" action applies (nothing is drawn until an app opts in).
+    /// The design's signature look (`Theme::signature_surface`): its glass, textures and effects.
     pub preset: ResolvedSurface,
     /// Textures this design owns; others are never drawn for it.
     pub textures: &'static [Texture],

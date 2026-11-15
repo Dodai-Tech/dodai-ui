@@ -64,7 +64,7 @@ impl Painter for IcedPainter<'_> {
     }
 }
 
-/// Canvas program that paints one resolved surface mix over its bounds.
+/// Canvas program that paints one resolved surface over its bounds.
 #[derive(Debug, Clone)]
 pub struct SurfaceFxProgram {
     paint: SurfacePaint,

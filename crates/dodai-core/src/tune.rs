@@ -1,5 +1,5 @@
 //! App-wide shape tuning: how round the corners are and how borders look, on top of whatever a
-//! design defines. Like the surface mix it is a runtime setting, not part of a design.
+//! design defines. Like the surface it is a runtime setting, not part of a design.
 
 use crate::{Color, CornerStyle, RoleShape, ShapeKind, ShapeRole, ShapeSize, ShapeSystem, Theme};
 

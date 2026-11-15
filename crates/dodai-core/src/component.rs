@@ -898,12 +898,12 @@ impl Theme {
         t
     }
 
-    /// The surface mix this design suggests (empty when it has none).
+    /// The surface this design suggests (empty when it has none).
     pub fn signature_surface(&self) -> crate::ResolvedSurface {
         self.surface_style.preset
     }
 
-    /// The surface mix a toolkit uses until the app sets one: only the glass of the design's
+    /// The surface a toolkit uses until the app sets one: only the glass of the design's
     /// suggested [`preset`](Self::signature_surface), so a frosted design (Dodai) has frosted
     /// containers and fields out of the box while the others stay as they are.
     pub fn default_surface(&self) -> crate::ResolvedSurface {

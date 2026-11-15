@@ -1,8 +1,10 @@
 //! Surface effects: the app-wide surface (textures, light, edges, ripple, the designs' own
 //! signature effects), as on the gpui page. Each control writes an `sfx:` value; the mix is
-//! read back with [`Showcase::surface_fx`](crate::Showcase::surface_fx).
+//! read back with [`Showcase::surface`](crate::Showcase::surface).
 
-use dodai_core::{ButtonVariant as V, CardVariant, PressStyle, Surface, SurfaceClass, Theme};
+use dodai_core::{
+    ButtonVariant as V, CardVariant, PressStyle, Surface, SurfaceClass, SurfaceMode, Theme,
+};
 
 use crate::b::*;
 use crate::catalog::{Ctx, Section};
@@ -84,18 +86,8 @@ fn preview() -> Node {
 fn presets(c: &Ctx) -> Node {
     let t = c.theme;
     let fx = mix(c.values, t);
-    let family = {
-        let mut ch = t.meta.family.chars();
-        ch.next()
-            .map(|f| f.to_uppercase().chain(ch).collect::<String>())
-            .unwrap_or_default()
-    };
-    let mode = sfx::mode(&fx, t);
-    let status = match mode {
-        0 => "Off: no texture or effect is drawn on any component.".to_string(),
-        1 => format!("Default: the {family} design's own mix."),
-        _ => "Custom: your own mix of textures and effects.".to_string(),
-    };
+    let mode = sfx::mode(c.values, t);
+    let status = SurfaceMode::ALL[mode].describe(t);
     let target = |cl: SurfaceClass| {
         let on = fx.targets.contains(cl);
         let text = if on {
@@ -123,7 +115,7 @@ fn presets(c: &Ctx) -> Node {
     };
     col(vec![
         label("Mode"),
-        Node::Choice(choice(sfx::MODE, &["Off", "Default", "Custom"], mode).connected()),
+        Node::Choice(choice(sfx::MODE, &SurfaceMode::ALL.map(SurfaceMode::label), mode).connected()),
         muted(status),
         Node::Divider,
         row(vec![

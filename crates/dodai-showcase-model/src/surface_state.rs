@@ -1,15 +1,17 @@
 //! The app-wide surface (texture and effects) of the Surface effects page, kept in the
 //! showcase's values under `sfx:` keys so the controls go through the usual `Action::Set` /
-//! `Action::Press`. It starts empty, like the gpui showcase: nothing is drawn until a control
-//! or the design's preset turns something on.
+//! `Action::Press`. It starts empty, which means the design's own surface ([`Surface::INHERIT`]):
+//! a control or a mode only stores what it changes.
 
-use dodai_core::{PressStyle, ResolvedSurface, SurfaceClass, SurfaceTargets, Texture, Theme};
+use dodai_core::{
+    PressStyle, ResolvedSurface, Surface, SurfaceClass, SurfaceMode, SurfaceTargets, Texture, Theme,
+};
 
 use crate::state::{Value, Values};
 
-/// Key prefix of every surface-mix value.
+/// Key prefix of every surface value.
 pub const PREFIX: &str = "sfx:";
-/// Mode picker: Off / Default (the design's preset) / Custom.
+/// Mode picker: the [`SurfaceMode`]s.
 pub const MODE: &str = "sfx:mode";
 /// Component texture picker (index into [`component_textures`]).
 pub const TEXTURE: &str = "sfx:texture";
@@ -32,6 +34,7 @@ pub fn apply_spec(values: &mut Values, t: &Theme, spec: &str) {
     for word in spec.split(',').map(str::trim) {
         match word {
             "preset" => store(values, t, t.signature_surface()),
+            "frosted" => store(values, t, t.resolve_surface(&Surface::frosted())),
             "picture" => values.set(WALLPAPER, Value::Index(1)),
             w => {
                 if let Some(a) = AMOUNTS.iter().find(|a| a.key[PREFIX.len()..] == *w) {
@@ -155,9 +158,23 @@ pub fn target_key(c: SurfaceClass) -> String {
     format!("sfx:target:{}", c.label())
 }
 
-/// The mix the values describe under theme `t` (unset values are [`ResolvedSurface::NONE`]'s).
+/// Whether nothing of the page was touched: the surface is the design's own.
+pub fn untouched(values: &Values) -> bool {
+    !values.0.keys().any(|k| k.starts_with(PREFIX))
+}
+
+/// The app-wide surface the values describe: the design's own until a control sets something.
+pub fn surface(values: &Values, t: &Theme) -> Surface {
+    if untouched(values) {
+        Surface::INHERIT
+    } else {
+        Surface::from(mix(values, t))
+    }
+}
+
+/// The mix the values describe under theme `t` (unset values are the design's own).
 pub fn mix(values: &Values, t: &Theme) -> ResolvedSurface {
-    let mut f = ResolvedSurface::NONE;
+    let mut f = t.default_surface();
     for a in &AMOUNTS {
         if let Some(Value::Num(v)) = values.0.get(a.key) {
             *(a.field)(&mut f) = *v;
@@ -218,32 +235,23 @@ pub fn store(values: &mut Values, t: &Theme, fx: ResolvedSurface) {
     }
 }
 
-/// The mode the mix is in: 0 Off (nothing drawn), 1 the design's preset, 2 custom.
-pub fn mode(fx: &ResolvedSurface, t: &Theme) -> usize {
-    if fx.is_none() {
-        0
-    } else if *fx == t.signature_surface() {
-        1
-    } else {
-        2
-    }
+/// The picker index of the mode the values are in (a [`SurfaceMode`] in [`SurfaceMode::ALL`]).
+pub fn mode(values: &Values, t: &Theme) -> usize {
+    let m = SurfaceMode::of(t, &surface(values, t));
+    SurfaceMode::ALL.iter().position(|x| *x == m).unwrap_or(0)
 }
 
-/// Applies the mode picker: Off clears the mix (keeping where it applies), Default loads the
-/// design's preset, Custom changes nothing.
+/// Applies the mode picker: Design forgets everything set, the others load their surface (keeping
+/// where it applies), Custom changes nothing.
 pub fn set_mode(values: &mut Values, t: &Theme, i: usize) {
-    let targets = mix(values, t).targets;
-    match i {
-        0 => store(
-            values,
-            t,
-            ResolvedSurface {
-                targets,
-                ..ResolvedSurface::NONE
-            },
-        ),
-        1 => store(values, t, t.signature_surface()),
-        _ => {}
+    let Some(mode) = SurfaceMode::ALL.get(i).copied() else {
+        return;
+    };
+    let next = mode.apply(t, &surface(values, t));
+    if next == Surface::INHERIT {
+        values.0.retain(|k, _| !k.starts_with(PREFIX));
+    } else if mode != SurfaceMode::Custom {
+        store(values, t, t.resolve_surface(&next));
     }
 }
 
@@ -282,31 +290,59 @@ mod tests {
         assert_eq!(mix(&v, &t), t.signature_surface());
     }
 
-    #[test]
-    fn nothing_set_is_no_mix_and_off() {
-        let t = cyberpunk();
-        let v = Values::default();
-        let f = mix(&v, &t);
-        assert!(f.is_none());
-        assert_eq!(mode(&f, &t), 0);
+    fn dodai() -> Theme {
+        dodai_core::themes::by_id("dodai-dark").unwrap()
     }
 
     #[test]
-    fn the_preset_round_trips_and_reads_as_default() {
-        let t = cyberpunk();
+    fn nothing_set_is_the_designs_own_surface() {
+        for t in [cyberpunk(), dodai()] {
+            let v = Values::default();
+            assert!(untouched(&v));
+            assert_eq!(surface(&v, &t), Surface::INHERIT);
+            assert_eq!(mix(&v, &t), t.default_surface());
+            assert_eq!(SurfaceMode::ALL[mode(&v, &t)], SurfaceMode::Design);
+        }
+        // Dodai is frosted out of the box, Cyberpunk is not.
+        assert!(mix(&Values::default(), &dodai()).frost > 0.0);
+        assert!(mix(&Values::default(), &cyberpunk()).is_none());
+    }
+
+    #[test]
+    fn every_mode_round_trips_and_a_hand_edit_is_custom() {
+        for t in [cyberpunk(), dodai()] {
+            for (i, want) in SurfaceMode::ALL.iter().enumerate() {
+                if *want == SurfaceMode::Custom {
+                    continue;
+                }
+                let mut v = Values::default();
+                set_mode(&mut v, &t, i);
+                assert_eq!(SurfaceMode::ALL[mode(&v, &t)], *want, "{want:?}");
+            }
+            let mut v = Values::default();
+            set_mode(&mut v, &t, 3);
+            assert_eq!(mix(&v, &t), t.signature_surface());
+            v.set("sfx:glitch", Value::Num(0.33));
+            assert_eq!(SurfaceMode::ALL[mode(&v, &t)], SurfaceMode::Custom);
+            // Off keeps where it applies; Design forgets everything.
+            set_targets(&mut v, "all");
+            set_mode(&mut v, &t, 0);
+            let off = mix(&v, &t);
+            assert!(off.is_none());
+            assert_eq!(off.targets, SurfaceTargets::ALL);
+            set_mode(&mut v, &t, 1);
+            assert!(untouched(&v));
+        }
+    }
+
+    #[test]
+    fn a_slider_edit_keeps_the_designs_glass() {
+        let t = dodai();
         let mut v = Values::default();
-        set_mode(&mut v, &t, 1);
-        let f = mix(&v, &t);
-        assert_eq!(f, t.signature_surface());
-        assert_eq!(mode(&f, &t), 1);
-        // A hand edit makes it custom; Off clears it but keeps the targets.
-        v.set("sfx:glitch", Value::Num(0.33));
-        assert_eq!(mode(&mix(&v, &t), &t), 2);
-        set_targets(&mut v, "all");
-        set_mode(&mut v, &t, 0);
-        let off = mix(&v, &t);
-        assert!(off.is_none());
-        assert_eq!(off.targets, SurfaceTargets::ALL);
+        v.set("sfx:glitch", Value::Num(0.4));
+        let fx = mix(&v, &t);
+        assert_eq!(fx.glitch, 0.4);
+        assert_eq!(fx.frost, t.default_surface().frost);
     }
 
     #[test]

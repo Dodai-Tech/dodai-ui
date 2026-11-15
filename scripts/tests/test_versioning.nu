@@ -56,7 +56,7 @@ def "test bump: is idempotent" [] {
 
 def "test publish-order: leaves first, no duplicates, leaves after their deps" [] {
     let o = (publish-order)
-    assert equal ($o | first) "dodai-fx"
+    assert equal ($o | first) "dodai-frost"
     assert (($o | enumerate | where item == "dodai-fx" | get index.0) < ($o | enumerate | where item == "dodai-core" | get index.0))
     assert equal ($o | uniq | length) ($o | length)
     # the adapters come after the crates they depend on

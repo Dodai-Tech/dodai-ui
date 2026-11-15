@@ -83,7 +83,7 @@ pub enum Kit {
 }
 
 impl Kit {
-    /// Which kind of surface the box is for the surface mix and glass (`None`: it only takes a
+    /// Which kind of surface the box is for the surface and glass (`None`: it only takes a
     /// component's own [`Surface`](crate::Surface)).
     pub fn surface_class(self) -> Option<crate::SurfaceClass> {
         use crate::SurfaceClass as C;

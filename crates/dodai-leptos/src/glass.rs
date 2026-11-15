@@ -5,7 +5,7 @@
 use dodai_core::{ResolvedSurface, Surface, SurfaceClass, Theme};
 use leptos::prelude::*;
 
-/// The theme and surface mix a [`ThemeProvider`](crate::ThemeProvider) hands to its subtree.
+/// The theme and surface a [`ThemeProvider`](crate::ThemeProvider) hands to its subtree.
 #[derive(Clone)]
 pub struct GlassContext {
     /// The active theme.

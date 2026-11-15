@@ -157,3 +157,25 @@ fn one_surface_api_follows_the_design_until_the_app_sets_one() {
     let sig = dodai.signature_surface();
     assert_eq!(dodai.resolve_surface(&Surface::from(sig)), sig);
 }
+
+#[test]
+fn surface_modes_read_and_set_every_design() {
+    use dodai_core::{Surface, SurfaceMode};
+    for t in [dodai::dark(), cyberpunk::dark(), material::light()] {
+        assert_eq!(SurfaceMode::of(&t, &Surface::INHERIT), SurfaceMode::Design);
+        for m in SurfaceMode::ALL {
+            if m == SurfaceMode::Custom {
+                continue;
+            }
+            let s = m.apply(&t, &Surface::INHERIT);
+            let got = SurfaceMode::of(&t, &s);
+            // Where the design is already frosted, Frosted is what Design is.
+            let same = got == m || (m == SurfaceMode::Frosted && got == SurfaceMode::Design);
+            assert!(same, "{m:?} read back as {got:?}");
+        }
+        assert_eq!(
+            SurfaceMode::of(&t, &Surface::frosted().glitch(0.31)),
+            SurfaceMode::Custom
+        );
+    }
+}

@@ -4,7 +4,7 @@
 //! the design ([`dodai_core::mesh_pixels`]), which [`paint_backdrop`] draws stretched over the
 //! window. A pane finds the part of it that lies under itself from where it sits in that window.
 //! Without a backdrop the fills still turn see-through, so paint one (or draw your own picture
-//! under the UI). Turn the glass on with the surface mix ([`set_surface`](crate::set_surface):
+//! under the UI). Turn the glass on with the surface ([`set_surface`](crate::set_surface):
 //! `frost` reaches containers and input fields).
 
 use crate::paint::color32;

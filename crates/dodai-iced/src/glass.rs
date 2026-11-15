@@ -53,7 +53,7 @@ impl IcedTheme {
         self.glass.mix
     }
 
-    /// The surface mix in use: the app's, or the active design's own glass.
+    /// The surface in use: the app's, or the active design's own glass.
     pub fn resolved_surface(&self) -> ResolvedSurface {
         self.theme.resolve_surface(&self.glass.mix)
     }
@@ -69,7 +69,7 @@ impl IcedTheme {
     }
 
     /// A text input or pick list (styled with [`text_input`](Self::text_input) or
-    /// [`pick_list`](Self::pick_list)) on the glass the surface mix gives input fields: a blurred
+    /// [`pick_list`](Self::pick_list)) on the glass the surface gives input fields: a blurred
     /// copy of the backdrop under its see-through fill. Unchanged without the mix.
     pub fn field<'a, Message: 'a>(
         &self,

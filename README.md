@@ -20,7 +20,7 @@ Neo-Brutalism and Dodai.
 | [`dodai-topcoat`](crates/dodai-topcoat) | Topcoat / any web | CSS custom properties and `.dodai-*` component classes, `clip-path` chamfers, one stylesheet per design |
 | [`dodai-shaders`](crates/dodai-shaders) | wgpu | 196 pixel shaders written in Rust (rust-gpu to WGSL): painted and cel-shaded scenes, cyberpunk cityscapes, Material 3, Matrix, CRT/VHS monitors, sacred geometry, pixel-art scenes; they follow the theme palette. Views for gpui, iced, bevy and dioxus (features) |
 | [`dodai-icons`](crates/dodai-icons) | none | One typed `IconId` and the icon packs (Cyberpunk, Material Symbols, Neo-Brutalism, symbol sets) |
-| [`dodai-fx`](crates/dodai-fx) | none | Surface textures and effects, no dependencies |
+| [`dodai-fx`](crates/dodai-fx) | none | Surface textures and effects, no dependencies (optional `frost` feature re-exports `dodai-frost`) |
 | [`dodai-frost`](crates/dodai-frost) | none | Frosted glass on RGBA pixels, GPU first with a CPU fallback |
 
 Also in the repository but **not part of the first release**: `dodai-charts` (70 gpui charts and their
@@ -32,7 +32,7 @@ slint, yew, leptos and freya adapters.
 The gpui, iced, bevy, dioxus and topcoat (server-rendered HTML) showcases show the same pages, built from one shared model
 (`dodai-showcase-model`). They are checked by screenshots; mouse and keyboard interaction has
 not been tested on every control in every toolkit yet, so expect rough edges in popovers, sliders
-and drag handling. Bevy has no frosted-glass blur. Minimum Rust versions differ per crate (see each
+and drag handling. Minimum Rust versions differ per crate (see each
 crate's `rust-version`).
 
 ## Themes
@@ -75,6 +75,29 @@ let next = sw.cycle_next().clone();       // switch at runtime: shape, type and 
 
 Persist `theme.id()` (e.g. `"cyberpunk-cyan"`) in your config and restore with `switcher.select(id)`.
 
+## Surface effects
+
+One type, `dodai_core::Surface`, sets every surface effect (frosted glass, textures, gloss, glitch,
+neon, ripple, ...), app-wide with `set_surface` or per component with `.surface(..)`. Unset follows
+the design: Dodai is frosted out of the box, the others are plain. A design draws only the effects
+it owns, so `glitch(0.6)` shows on Cyberpunk and nothing on Material 3.
+
+```rust
+use dodai_core::Surface;
+set_surface(cx, Surface::frosted());                                  // every container and field
+Button::new("Save").surface(Surface::new().glitch(0.6));               // one component
+```
+
+`SurfaceMode` (Off, Design, Frosted, Signature, Custom) names the ready-made looks; every showcase
+has the same picker. Frost per toolkit:
+
+| Toolkit | Frost |
+|---|---|
+| gpui, iced, bevy | blurred backdrop (`dodai-frost`; GPU first, CPU fallback) |
+| topcoat, dioxus, yew, leptos | CSS `backdrop-filter` |
+| egui, freya | painted by the adapter (freya uses `backdrop_blur`) |
+| slint, ratatui | none |
+
 ## Pick only what you need
 
 `dodai-core` carries the engine and the four design systems behind Cargo features
@@ -85,7 +108,7 @@ shaders are their own crates.
 |---|---|
 | [`dodai-core`](crates/dodai-core) | Tokens, `Theme`, `ThemeSwitcher`, `ThemeBuilder`, DTCG export. Designs by feature: 6 Cyberpunk themes, the Material 3 pair, Neo-Brutalism (seven accents, light and dark) and Dodai (frosted glass) |
 | [`dodai-icons`](crates/dodai-icons) | Every icon in one crate, packs chosen by feature: the typed `IconId`, the Cyberpunk pack (378 hand-drawn, curve-free icons), the full Material Symbols catalogue (3,900+ icons, outlined/rounded/sharp + fill) and Phosphor-derived sets |
-| [`dodai-fx`](crates/dodai-fx) | Surface textures and effects. No dependencies |
+| [`dodai-fx`](crates/dodai-fx) | Surface textures and effects. No dependencies by default; `frost` and `frost-gpu` re-export `dodai-frost` |
 | [`dodai-frost`](crates/dodai-frost) | Frosted glass on RGBA pixels: GPU first (`gpu`, wgpu), CPU fallback, byte-identical |
 | [`dodai-shaders`](crates/dodai-shaders) | Pixel shaders |
 

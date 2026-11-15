@@ -14,7 +14,7 @@ mod glass;
 pub mod theme;
 
 pub use components::*;
-/// A surface mix as a CSS `background-image` (see [`dodai_topcoat::surface_background`]).
+/// A surface as a CSS `background-image` (see [`dodai_topcoat::surface_background`]).
 pub use dodai_topcoat::surface_background;
 pub use glass::use_glass;
 pub use theme::{theme_css, use_theme, ThemeContext, ThemeProvider, ThemeSwitcherBar};

@@ -77,7 +77,7 @@ pub struct ThemeController {
     pub glow: f32,
     /// Roundness, borders and hard shadows applied on top of every design.
     pub tune: dodai_core::ShapeTune,
-    /// The surface mix drawn on containers and controls (each design draws only what it owns);
+    /// The surface drawn on containers and controls (each design draws only what it owns);
     /// follows the design until set.
     pub surface: dodai_core::Surface,
 }

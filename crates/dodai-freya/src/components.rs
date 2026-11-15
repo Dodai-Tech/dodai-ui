@@ -829,7 +829,7 @@ impl Component for DodaiTextInput {
         let t = use_dodai_theme();
         let tok = t.input(false);
         let focus = t.input(true);
-        // On the glass the surface mix gives input fields.
+        // On the glass the surface gives input fields.
         let field = input_style(&t, false);
         let fill = field.fill.unwrap_or(tok.background);
         let colors = InputColorsThemePartial {
