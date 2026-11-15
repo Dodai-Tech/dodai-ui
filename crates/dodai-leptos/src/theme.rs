@@ -53,9 +53,19 @@ pub fn ThemeProvider(
     /// Active theme id (`data-theme`).
     #[prop(into)]
     theme: String,
+    /// The app-wide surface mix (none by default): containers and input fields it frosts turn
+    /// into glass over the page.
+    #[prop(default = dodai_core::SurfaceFx::NONE)]
+    surface: dodai_core::SurfaceFx,
     children: Children,
 ) -> impl IntoView {
     let css = install_css(&themes);
+    if let Some(t) = themes.iter().find(|t| t.id() == theme) {
+        provide_context(crate::GlassContext {
+            theme: t.clone(),
+            fx: surface,
+        });
+    }
     let scan = themes
         .iter()
         .find(|t| t.id() == theme)

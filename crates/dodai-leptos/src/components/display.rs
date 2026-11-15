@@ -7,9 +7,14 @@ use leptos::prelude::*;
 pub fn Button(
     #[prop(default = ButtonVariant::Primary)] variant: ButtonVariant,
     #[prop(optional)] disabled: bool,
+    /// The button's own surface override (frost, fill opacity).
+    #[prop(optional)]
+    surface: dodai_core::Surface,
     children: Children,
 ) -> impl IntoView {
-    view! { <button class=class::button(variant) disabled=disabled>{children()}</button> }
+    let (glass, style) = crate::glass(dodai_core::SurfaceClass::Button, &surface);
+    let class = format!("{}{glass}", class::button(variant));
+    view! { <button class=class style=style disabled=disabled>{children()}</button> }
 }
 
 /// Panel / card with optional title.
@@ -18,10 +23,15 @@ pub fn Panel(
     #[prop(optional, into)] title: Option<String>,
     #[prop(optional)] focused: bool,
     #[prop(optional)] raised: bool,
+    /// The panel's own surface override (frost, fill opacity).
+    #[prop(optional)]
+    surface: dodai_core::Surface,
     children: Children,
 ) -> impl IntoView {
+    let (glass, style) = crate::glass(dodai_core::SurfaceClass::Panel, &surface);
+    let class = format!("{}{glass}", class::panel(focused, raised));
     view! {
-        <div class=class::panel(focused, raised)>
+        <div class=class style=style>
             <span class="dodai-panel__shade" aria-hidden="true"></span>
             {title.map(|t| view! { <div class="dodai-panel__title">{t}</div> })}
             {children()}
@@ -70,7 +80,11 @@ pub fn ListItem(#[prop(optional)] selected: bool, children: Children) -> impl In
 /// List container for [`ListItem`]s.
 #[component]
 pub fn List(children: Children) -> impl IntoView {
-    view! { <ul class="dodai-list">{children()}</ul> }
+    let (glass, style) = crate::glass(
+        dodai_core::SurfaceClass::Card,
+        &dodai_core::Surface::INHERIT,
+    );
+    view! { <ul class=format!("dodai-list{glass}") style=style>{children()}</ul> }
 }
 
 /// Horizontal divider.

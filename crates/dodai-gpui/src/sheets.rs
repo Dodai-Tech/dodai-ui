@@ -339,15 +339,28 @@ impl RenderOnce for ModalDrawer {
                 }
             }));
         }
-        let mut panel = div().h_full().overflow_hidden().child(nav);
+        let mut panel = div().h_full().overflow_hidden();
         if t.look().tonal {
             // M3: the side sheet's own end corners on the edge facing the page.
             let end_r = t.role_shape(dodai_core::ShapeRole::SideSheet).radius;
-            panel = panel
-                .bg(hsla(t.palette.roles.surface_container_low))
-                .rounded_tr(px(end_r))
-                .rounded_br(px(end_r));
+            panel = crate::paint::pane(
+                panel,
+                &t,
+                dodai_core::SurfaceClass::Panel,
+                t.palette.roles.surface_container_low,
+            )
+            .rounded_tr(px(end_r))
+            .rounded_br(px(end_r));
+        } else {
+            // The glass of a panel over the scrim.
+            panel = crate::paint::pane(
+                panel,
+                &t,
+                dodai_core::SurfaceClass::Panel,
+                t.palette.surface,
+            );
         }
+        let panel = panel.child(nav);
         deferred(
             scrim(self.id, &t, self.on_dismiss, true)
                 .justify_start()

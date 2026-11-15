@@ -495,16 +495,17 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
         } => {
             let (list, key) = (labels.clone(), key.clone());
             let chosen = selected.and_then(|i| labels.get(i).cloned());
-            iced::widget::pick_list(labels.clone(), chosen, move |s: String| {
-                let at = list.iter().position(|x| *x == s).unwrap_or(0);
-                Msg::Set(key.clone(), Value::Index(at))
-            })
-            .placeholder(placeholder.clone())
-            .padding(sp.sm)
-            .width(Length::Fixed(380.0))
-            .style(lt.pick_list())
-            .menu_style(lt.menu())
-            .into()
+            lt.field(
+                iced::widget::pick_list(labels.clone(), chosen, move |s: String| {
+                    let at = list.iter().position(|x| *x == s).unwrap_or(0);
+                    Msg::Set(key.clone(), Value::Index(at))
+                })
+                .placeholder(placeholder.clone())
+                .padding(sp.sm)
+                .width(Length::Fixed(380.0))
+                .style(lt.pick_list())
+                .menu_style(lt.menu()),
+            )
         }
         Demo::Shader(spec) => crate::shaders::view(spec, lt.theme()),
         Demo::Plot(p) => iced::widget::canvas(PlotView(p.clone()))
@@ -629,6 +630,7 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
                     .into(),
                 None => inp.into(),
             };
+            let field: Element<Msg> = lt.field(field);
             let mut col = column![].spacing(sp.xs).width(Length::Fill);
             if let Some(l) = &i.label {
                 col = col.push(txt(cx, l, Role::Label));

@@ -903,6 +903,8 @@ fn text_field(placeholder: impl Into<String>, masked: bool, lines: u8) -> impl B
             masked,
             lines,
         },
+        // Input fields take part in the glass the surface mix gives them.
+        crate::glass::UiGlass::of(dodai_core::SurfaceClass::Input),
         Node {
             align_items: AlignItems::Center,
             overflow: Overflow::clip(),

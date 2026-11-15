@@ -113,7 +113,8 @@ impl Table {
                 .child(text)
                 .map_weight(w(i))
         };
-        let outer = ShapeStyle::from_tokens(&t, Some(p.surface), Some(p.border), false, false);
+        let outer = ShapeStyle::from_tokens(&t, Some(p.surface), Some(p.border), false, false)
+            .with_surface(&t, dodai_core::SurfaceClass::Card);
         let mut col = shaped(&t.shape, outer)
             .w_full()
             .flex()

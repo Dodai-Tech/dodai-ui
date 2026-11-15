@@ -114,7 +114,10 @@ impl ShapeStyle {
         let glass = dodai_core::Glass::new(
             theme,
             class,
-            self.surface.map_or(0.0, |sp| sp.fx.frost),
+            // Without the `frost` feature nothing can be blurred, so nothing turns see-through.
+            self.surface
+                .filter(|_| cfg!(feature = "frost"))
+                .map_or(0.0, |sp| sp.fx.frost),
             over.opacity_value().unwrap_or(1.0),
         );
         self.frost = None;
@@ -789,6 +792,28 @@ fn free_glass(window: &mut Window, cx: &mut gpui::App, style: &ShapeStyle) {
     }
     #[cfg(not(feature = "frost"))]
     let _ = (window, cx, style);
+}
+
+/// `el` with a flat (square-cornered) background of `fill` that takes part in the design's glass
+/// like any `class` surface: see-through and frosted when the surface mix says so, else the plain
+/// fill. For containers that are not drawn with [`shaped`] (drawers, rails, bars); call it
+/// before adding the children, so they paint over the glass.
+pub fn pane(el: Div, theme: &Theme, class: dodai_core::SurfaceClass, fill: Color) -> Div {
+    let style =
+        ShapeStyle::from_tokens(theme, Some(fill), None, false, false).with_surface(theme, class);
+    if style.frost.is_none() && style.surface.is_none() {
+        return match style.fill {
+            Some(f) => el.bg(f),
+            None => el,
+        };
+    }
+    let flat = Shape {
+        radius: 0.0,
+        chamfer: 0.0,
+        border_width: 0.0,
+        ..theme.shape.clone()
+    };
+    el.child(shaped(&flat, style).absolute().top_0().left_0().size_full())
 }
 
 /// Convenience: [`shaped`] with an element id so it can take click/hover listeners.

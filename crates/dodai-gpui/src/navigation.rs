@@ -175,7 +175,7 @@ impl RenderOnce for NavigationDrawer {
             .gap(px(k.item_gap))
             .p(px(k.container_padding));
         if let Some(c) = k.container {
-            col = col.bg(hsla(c));
+            col = crate::paint::pane(col, &t, dodai_core::SurfaceClass::Panel, c);
         }
         for e in self.entries {
             match e {
@@ -430,7 +430,7 @@ impl RenderOnce for NavigationBar {
             .pt(px(k.container_padding))
             .pb(px(k.container_padding + k.rail_label_gap));
         if let Some(c) = k.container {
-            row = row.bg(hsla(c));
+            row = crate::paint::pane(row, &t, dodai_core::SurfaceClass::Bar, c);
         }
         for it in self.items {
             row = row.child(destination(it, &t, &k, k.bar_indicator_width, window, cx).flex_1());
@@ -452,7 +452,7 @@ impl RenderOnce for NavigationRail {
             .gap(px(k.container_padding))
             .py(px(k.container_padding));
         if let Some(c) = k.container {
-            col = col.bg(hsla(c));
+            col = crate::paint::pane(col, &t, dodai_core::SurfaceClass::Bar, c);
         }
         if let Some(h) = self.header {
             col = col.child(h);

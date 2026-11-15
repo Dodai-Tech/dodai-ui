@@ -4,7 +4,23 @@
 //! Nothing in this module looks at a theme id or name; shape, glow, hard shadow
 //! and label casing are all read from [`Theme`] tokens.
 
-use dodai_core::{ButtonVariant, Color, ControlState, ShapeKind, Theme, Tone};
+use dodai_core::{
+    ButtonVariant, Color, ControlState, ShapeKind, Surface, SurfaceClass, SurfaceFx, Theme, Tone,
+};
+use std::sync::RwLock;
+
+static SURFACE_FX: RwLock<SurfaceFx> = RwLock::new(SurfaceFx::NONE);
+
+/// The app-wide surface mix: containers and input fields it frosts become glass.
+pub fn surface_fx() -> SurfaceFx {
+    *SURFACE_FX.read().unwrap_or_else(|e| e.into_inner())
+}
+
+/// Set the app-wide surface mix (`frost` reaches containers and input fields). Applies to
+/// everything built afterwards; Freya blurs what is behind a pane natively.
+pub fn set_surface_fx(fx: SurfaceFx) {
+    *SURFACE_FX.write().unwrap_or_else(|e| e.into_inner()) = fx;
+}
 
 /// Everything needed to paint one themed box.
 #[derive(Debug, Clone, PartialEq)]
@@ -18,6 +34,8 @@ pub struct ShapeStyle {
     pub glow: Option<(Color, f32)>,
     /// Hard (offset, no blur) shadow: offset + colour.
     pub hard_shadow: Option<(f32, Color)>,
+    /// Blur radius of the backdrop behind a frosted pane, px (glass, see [`Self::with_glass`]).
+    pub blur: Option<f32>,
 }
 
 impl ShapeStyle {
@@ -40,7 +58,20 @@ impl ShapeStyle {
             glow: (glow && fx.glow_enabled()).then(|| (fx.glow_color(), fx.glow_radius())),
             hard_shadow: (shadow && fx.hard_shadow > 0.0)
                 .then(|| (fx.hard_shadow, theme.palette.background.with_alpha(0.7))),
+            blur: None,
         }
+    }
+
+    /// The glass the surface mix gives a `class` surface: the fill turns see-through and, when
+    /// frosted, the backdrop behind it blurs. Unchanged without the mix.
+    pub fn with_glass(mut self, theme: &Theme, class: SurfaceClass) -> Self {
+        let glass = dodai_core::surface_glass(theme, class, &Surface::INHERIT, surface_fx());
+        if glass.is_solid() {
+            return self;
+        }
+        self.fill = self.fill.map(|c| glass.color(c));
+        self.blur = glass.frosted().then_some(glass.blur * glass.amount);
+        self
     }
 
     pub fn is_chamfered(&self) -> bool {
@@ -173,12 +204,14 @@ pub fn button_style(
 pub fn panel_style(theme: &Theme, focused: bool) -> ShapeStyle {
     let p = theme.panel(focused);
     ShapeStyle::from_tokens(theme, Some(p.background), Some(p.border), focused, true)
+        .with_glass(theme, SurfaceClass::Panel)
 }
 
 /// Text input box (also used to override Freya's `Input` theme).
 pub fn input_style(theme: &Theme, focused: bool) -> ShapeStyle {
     let i = theme.input(focused);
     ShapeStyle::from_tokens(theme, Some(i.background), Some(i.border), focused, false)
+        .with_glass(theme, SurfaceClass::Input)
 }
 
 /// Tag box + label colour.
@@ -464,6 +497,27 @@ mod tests {
         if let Some((_, r)) = s.glow {
             assert!(s.svg_pad() >= r);
         }
+    }
+
+    #[test]
+    fn the_surface_mix_turns_panels_and_inputs_into_glass_but_not_buttons() {
+        let t = light_rounded();
+        set_surface_fx(SurfaceFx::NONE);
+        assert!(panel_style(&t, false).blur.is_none());
+        set_surface_fx(SurfaceFx {
+            frost: 1.0,
+            targets: dodai_core::SurfaceTargets::ALL,
+            ..SurfaceFx::NONE
+        });
+        let panel = panel_style(&t, false);
+        assert!(panel.blur.is_some_and(|b| b > 0.0));
+        assert!(panel
+            .fill
+            .is_some_and(|f| f.a < t.panel(false).background.a));
+        assert!(input_style(&t, false).blur.is_some());
+        let (button, _) = button_style(&t, ButtonVariant::Primary, ControlState::Idle);
+        assert!(button.blur.is_none());
+        set_surface_fx(SurfaceFx::NONE);
     }
 
     #[test]

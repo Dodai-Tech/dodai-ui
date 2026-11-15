@@ -514,15 +514,23 @@ pub struct TextInputProps {
 /// Text input (single line, password or multi-line).
 #[component]
 pub fn TextInput(props: TextInputProps) -> Element {
+    // On the glass the app-wide surface mix gives input fields.
+    let style = crate::provider::glass(
+        Some(dodai_core::SurfaceClass::Input),
+        &dodai_core::Surface::INHERIT,
+    );
+    let glassy = if style.is_some() { " dodai-glass" } else { "" };
     if props.lines > 1 {
+        let class = format!("dodai-textarea{glassy}");
         return rsx! {
-            textarea { class: "dodai-textarea", rows: "{props.lines}", value: props.value, placeholder: props.placeholder,
+            textarea { class, style, rows: "{props.lines}", value: props.value, placeholder: props.placeholder,
                 disabled: props.disabled, oninput: move |e| props.oninput.call(e.value()) }
         };
     }
     let kind = if props.password { "password" } else { "text" };
+    let class = format!("dodai-input{glassy}");
     rsx! {
-        input { class: "dodai-input", r#type: kind, value: props.value, placeholder: props.placeholder,
+        input { class, style, r#type: kind, value: props.value, placeholder: props.placeholder,
             disabled: props.disabled, oninput: move |e| props.oninput.call(e.value()) }
     }
 }
@@ -530,7 +538,16 @@ pub fn TextInput(props: TextInputProps) -> Element {
 /// Wrapper `<ul class="dodai-list">` for [`ListItem`]s.
 #[component]
 pub fn List(children: Element) -> Element {
-    rsx! { ul { class: "dodai-list", role: "listbox", {children} } }
+    let style = crate::provider::glass(
+        Some(dodai_core::SurfaceClass::Card),
+        &dodai_core::Surface::INHERIT,
+    );
+    let class = if style.is_some() {
+        "dodai-list dodai-glass"
+    } else {
+        "dodai-list"
+    };
+    rsx! { ul { class, style, role: "listbox", {children} } }
 }
 
 /// List item properties.

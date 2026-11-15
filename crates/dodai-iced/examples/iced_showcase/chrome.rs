@@ -51,7 +51,7 @@ fn dropdown<'a>(
     .width(Length::Fixed(260.0))
     .style(lt.pick_list())
     .menu_style(lt.menu());
-    row![lt.muted_text(name), pick]
+    row![lt.muted_text(name), lt.field(pick)]
         .spacing(sp.sm)
         .align_y(alignment::Vertical::Center)
         .into()
@@ -240,10 +240,12 @@ pub fn sidebar<'a>(app: &App) -> Element<'a, Msg> {
     }
     let lt = &app.lt;
     let sp = &lt.theme().spacing;
-    let filter = text_input("Filter components…", app.model.filter())
-        .on_input(|s| Msg::Act(Action::Filter(s)))
-        .padding(sp.md)
-        .style(lt.text_input());
+    let filter = lt.field(
+        text_input("Filter components…", app.model.filter())
+            .on_input(|s| Msg::Act(Action::Filter(s)))
+            .padding(sp.md)
+            .style(lt.text_input()),
+    );
     column![
         row![
             crate::render::logo(lt.theme().typography.size_xl * 1.6),

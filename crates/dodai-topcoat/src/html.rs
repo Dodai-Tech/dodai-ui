@@ -459,32 +459,66 @@ pub fn range_slider(v: [f32; 5], vertical: Option<u32>, lo_attrs: &str, hi_attrs
     )
 }
 
-/// A text input (several `lines` make a text area).
+/// The inline `class`/`style` pair that puts an input field on the glass the surface mix gives
+/// input fields (both empty when the fill stays as designed).
+fn field_glass(cx: &Cx) -> (&'static str, String) {
+    match glass(cx, Some(SurfaceClass::Input), &Surface::INHERIT) {
+        Some(g) => (" dodai-glass", g),
+        None => ("", String::new()),
+    }
+}
+
+/// `attrs` with the glass variables `g` in their `style` (added when they have none).
+fn attrs_with_style(attrs: &str, g: &str) -> String {
+    if g.is_empty() {
+        return attrs.to_string();
+    }
+    match attrs.find("style=\"") {
+        Some(i) => {
+            let at = i + "style=\"".len();
+            format!("{}{g}{}", &attrs[..at], &attrs[at..])
+        }
+        None => format!("style=\"{g}\" {attrs}"),
+    }
+}
+
+/// A text input (several `lines` make a text area), on the glass the surface mix gives fields.
 pub fn text_input(
+    cx: &Cx,
     value: &str,
     placeholder: &str,
     password: bool,
     lines: u8,
     attrs: &str,
 ) -> String {
+    let (glass_class, glass_style) = field_glass(cx);
+    let attrs = attrs_with_style(attrs, &glass_style);
     if lines > 1 {
         return format!(
-            "<textarea class=\"dodai-textarea\" rows=\"{lines}\" placeholder=\"{}\" {attrs}>{}</textarea>",
+            "<textarea class=\"dodai-textarea{glass_class}\" rows=\"{lines}\" placeholder=\"{}\" {attrs}>{}</textarea>",
             esc(placeholder),
             esc(value)
         );
     }
     format!(
-        "<input class=\"dodai-input\" type=\"{}\" value=\"{}\" placeholder=\"{}\" {attrs}>",
+        "<input class=\"dodai-input{glass_class}\" type=\"{}\" value=\"{}\" placeholder=\"{}\" {attrs}>",
         if password { "password" } else { "text" },
         esc(value),
         esc(placeholder)
     )
 }
 
-/// A native dropdown; `attrs` go on the `<select>`.
-pub fn select(items: &[String], selected: Option<usize>, placeholder: &str, attrs: &str) -> String {
-    let mut o = format!("<select class=\"dodai-select\" {attrs}>");
+/// A native dropdown on the glass the surface mix gives fields; `attrs` go on the `<select>`.
+pub fn select(
+    cx: &Cx,
+    items: &[String],
+    selected: Option<usize>,
+    placeholder: &str,
+    attrs: &str,
+) -> String {
+    let (glass_class, glass_style) = field_glass(cx);
+    let attrs = attrs_with_style(attrs, &glass_style);
+    let mut o = format!("<select class=\"dodai-select{glass_class}\" {attrs}>");
     if selected.is_none() {
         o.push_str(&format!(
             "<option value=\"\" selected disabled>{}</option>",

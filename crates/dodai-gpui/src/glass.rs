@@ -6,7 +6,7 @@
 //! part under a component is found from where the component sits in the window. Components
 //! over other components still show the backdrop, not what lies between.
 //!
-//! Turn it on with the surface mix (`SurfaceFx::frost`, containers only) or per component
+//! Turn it on with the surface mix (`SurfaceFx::frost`, containers and input fields) or per component
 //! with `Surface::new().frost(1.0)`.
 
 use crate::lru::Lru;

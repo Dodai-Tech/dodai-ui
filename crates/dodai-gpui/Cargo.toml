@@ -12,7 +12,7 @@ keywords     = ["theme", "design-system", "gpui", "cyberpunk"]
 categories   = ["gui"]
 
 [features]
-default    = ["components", "cyberpunk", "material", "neobrutalism", "dodai", "symbol-groups"]
+default    = ["components", "cyberpunk", "material", "neobrutalism", "dodai", "frost", "symbol-groups"]
 # Buttons, tables, dialogs, pickers, navigation, ...
 components = ["dep:dodai-icons"]
 # The Cyberpunk design (its stroked icon pack ships with `components`, which needs the pack's

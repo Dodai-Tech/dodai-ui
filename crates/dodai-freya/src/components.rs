@@ -829,9 +829,12 @@ impl Component for DodaiTextInput {
         let t = use_dodai_theme();
         let tok = t.input(false);
         let focus = t.input(true);
+        // On the glass the surface mix gives input fields.
+        let field = input_style(&t, false);
+        let fill = field.fill.unwrap_or(tok.background);
         let colors = InputColorsThemePartial {
-            background: Some(color(tok.background).into()),
-            focus_background: Some(color(tok.background).into()),
+            background: Some(color(fill).into()),
+            focus_background: Some(color(fill).into()),
             border_fill: Some(color(tok.border).into()),
             focus_border_fill: Some(color(focus.border).into()),
             color: Some(color(tok.text).into()),
@@ -847,9 +850,17 @@ impl Component for DodaiTextInput {
             .width(Size::px(self.width))
             .theme_colors(colors)
             .theme_layout(layout);
-        match &self.placeholder {
+        let input = match &self.placeholder {
             Some(p) => input.placeholder(p.clone()),
             None => input,
+        };
+        match field.blur {
+            Some(b) => rect()
+                .backdrop_blur(b)
+                .corner_radius(field.corner_radius())
+                .child(input)
+                .into_element(),
+            None => input.into_element(),
         }
     }
 }

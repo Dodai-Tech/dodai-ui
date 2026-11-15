@@ -61,5 +61,9 @@ pub fn TextInput(
     #[prop(optional, into)] value: String,
     #[prop(optional)] disabled: bool,
 ) -> impl IntoView {
-    view! { <input class="dodai-input" placeholder=placeholder value=value disabled=disabled/> }
+    let (glass, style) = crate::glass(
+        dodai_core::SurfaceClass::Input,
+        &dodai_core::Surface::INHERIT,
+    );
+    view! { <input class=format!("dodai-input{glass}") style=style placeholder=placeholder value=value disabled=disabled/> }
 }

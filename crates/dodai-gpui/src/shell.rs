@@ -387,13 +387,16 @@ impl RenderOnce for ResponsiveShell {
                 .inset_0()
                 .flex()
                 .child(
-                    div()
-                        .h_full()
-                        .bg(hsla(t.palette.background))
-                        .border_r_1()
-                        .border_color(hsla(t.palette.border_strong))
-                        .occlude()
-                        .children(drawer_side),
+                    crate::paint::pane(
+                        div().h_full(),
+                        &t,
+                        dodai_core::SurfaceClass::Panel,
+                        t.palette.background,
+                    )
+                    .border_r_1()
+                    .border_color(hsla(t.palette.border_strong))
+                    .occlude()
+                    .children(drawer_side),
                 )
                 .child(
                     div()

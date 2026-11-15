@@ -82,6 +82,10 @@ pub fn shaped(
             }
             None => boxed,
         };
+        let boxed = match style.blur {
+            Some(b) => boxed.backdrop_blur(b),
+            None => boxed,
+        };
         boxed
             .border(border(style))
             .corner_radius(style.corner_radius())
