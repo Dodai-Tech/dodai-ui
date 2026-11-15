@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.4] - 2026-11-15
+### ♻️  Refactor
+- one surface-mix API in every toolkit (SurfaceMix, set_surface_mix, surface_fx_for); Dodai frosted by default **[BREAKING]**
+- Surface is the one API for every surface effect, app-wide (set_surface) and per component; the flat resolved struct is ResolvedSurface (Theme::resolve_surface, resolved_surface) **[BREAKING]**
+### ✨ Features
+- Dodai is frosted by default in every toolkit; other designs have the same options, off (Theme::default_surface, surface_fx_for)
+- re-export dodai-frost as dodai_fx::frost (features frost, frost-gpu); dodai_frost::Glass is now FrostParams **[BREAKING]**
+- SurfaceMode (Off, Design, Frosted, Signature, Custom) in every showcase; showcases start on the design's own surface; README surface section; publish order frost before fx
+### 🐛 Bug Fixes
+- an explicit Frosted reads as Frosted on designs frosted by default
+### 🔄 CI
+- ignore phi_NNNN_ numbering when checking kernels.wgsl
+### 🧪 Testing
+- Surface presets, and(), apply() and round trip; egui set_surface round trip
+**Full Changelog**: https://github.com/sorinirimies/dodai-ui/compare/v0.1.3...v0.1.4
 ## [0.1.3] - 2026-11-15
 ### ✨ Features
 - glass on every container and input field in every toolkit (gpui panes, popups, pickers, toasts; iced fields; bevy inputs; web fields/lists; yew, leptos, egui, freya)
