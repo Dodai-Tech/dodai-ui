@@ -13,26 +13,33 @@ use std::sync::OnceLock;
 use std::time::Instant;
 
 thread_local! {
-    static FX: Cell<SurfaceFx> = const { Cell::new(SurfaceFx::NONE) };
+    static FX: Cell<Option<SurfaceFx>> = const { Cell::new(None) };
 }
 
 /// Smallest side (px) of a surface that gets a texture or effect.
 const MIN_SIDE: f32 = 16.0;
 
-/// The surface mix currently applied to every shaped surface.
+/// The surface mix the app set (empty until it sets one, see [`surface_fx_for`]).
 pub fn surface_fx() -> SurfaceFx {
+    FX.with(Cell::get).unwrap_or(SurfaceFx::NONE)
+}
+
+/// The surface mix applied to every shaped surface of `theme`: the app's, or until it sets one
+/// the design's own glass ([`Theme::default_surface`]).
+pub fn surface_fx_for(theme: &Theme) -> SurfaceFx {
     FX.with(Cell::get)
+        .unwrap_or_else(|| theme.default_surface())
 }
 
 /// Set the mix without an [`App`], for tests of other modules.
 #[cfg(test)]
 pub(crate) fn set_for_test(fx: SurfaceFx) {
-    FX.with(|c| c.set(fx));
+    FX.with(|c| c.set(Some(fx)));
 }
 
 /// Apply `fx` to every shaped surface and repaint.
 pub fn set_surface_fx(cx: &mut App, fx: SurfaceFx) {
-    FX.with(|c| c.set(fx));
+    FX.with(|c| c.set(Some(fx)));
     cx.refresh_windows();
 }
 
@@ -55,14 +62,14 @@ pub fn surface_paint_with(
     class: SurfaceClass,
     over: &dodai_core::Surface,
 ) -> Option<SurfacePaint> {
-    dodai_core::surface_paint(theme, class, over, surface_fx())
+    dodai_core::surface_paint(theme, class, over, surface_fx_for(theme))
 }
 
 /// An overlay that paints `texture` over its parent (which must be `relative`), in the
 /// theme's shape: a live preview of the texture for pickers.
 pub fn texture_swatch(theme: &Theme, texture: Texture) -> gpui::Canvas<()> {
     use gpui::{canvas, Styled};
-    let sp = dodai_core::swatch_paint(theme, texture, surface_fx().neon);
+    let sp = dodai_core::swatch_paint(theme, texture, surface_fx_for(theme).neon);
     let shape = theme.shape.clone();
     canvas(
         |_, _, _| (),
@@ -268,6 +275,21 @@ mod tests {
     use super::*;
 
     #[test]
+    fn until_the_app_sets_a_mix_the_design_decides() {
+        // A fresh thread: the mix is thread-local and other tests set it.
+        std::thread::spawn(|| {
+            let dodai = dodai_core::themes::by_id("dodai-dark").unwrap();
+            let cyber = dodai_core::themes::cyberpunk::yellow();
+            assert!(surface_fx_for(&dodai).frost > 0.0);
+            assert_eq!(surface_fx_for(&cyber), SurfaceFx::NONE);
+            set_surface_fx_for_test(SurfaceFx::NONE);
+            assert_eq!(surface_fx_for(&dodai), SurfaceFx::NONE);
+        })
+        .join()
+        .unwrap();
+    }
+
+    #[test]
     fn nothing_is_drawn_for_the_default_mix() {
         set_surface_fx_for_test(SurfaceFx::NONE);
         assert!(surface_paint(
@@ -315,6 +337,6 @@ mod tests {
     }
 
     fn set_surface_fx_for_test(fx: SurfaceFx) {
-        FX.with(|c| c.set(fx));
+        FX.with(|c| c.set(Some(fx)));
     }
 }

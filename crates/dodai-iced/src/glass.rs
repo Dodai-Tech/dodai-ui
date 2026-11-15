@@ -11,8 +11,8 @@ use crate::IcedTheme;
 /// What the glass of an [`IcedTheme`] needs besides the theme.
 #[derive(Debug, Clone)]
 pub(crate) struct GlassState {
-    /// The app-wide surface mix.
-    pub(crate) mix: SurfaceFx,
+    /// The app-wide surface mix (`None`: the design's own, see [`Theme::default_surface`]).
+    pub(crate) mix: Option<SurfaceFx>,
     /// Glass every button this theme draws takes (see [`IcedTheme::with_glass`]).
     pub(crate) own: Option<Glass>,
     /// Window size and the scroll offset of the page frosted surfaces sit on.
@@ -28,7 +28,7 @@ pub(crate) struct GlassState {
 impl Default for GlassState {
     fn default() -> Self {
         Self {
-            mix: SurfaceFx::NONE,
+            mix: None,
             own: None,
             window: Size::new(1280.0, 800.0),
             scroll: Vector::ZERO,
@@ -41,19 +41,22 @@ impl Default for GlassState {
 }
 
 impl IcedTheme {
-    /// Set the app-wide surface mix (it starts empty): containers it frosts turn see-through.
+    /// Set the app-wide surface mix: containers it frosts turn see-through. Until it is set the
+    /// design's own glass applies ([`Theme::default_surface`]: Dodai is frosted, the others not).
     pub fn set_surface_mix(&mut self, fx: SurfaceFx) {
-        self.glass.mix = fx;
+        self.glass.mix = Some(fx);
     }
 
     /// The app-wide surface mix.
     pub fn surface_mix(&self) -> SurfaceFx {
-        self.glass.mix
+        self.glass
+            .mix
+            .unwrap_or_else(|| self.theme.default_surface())
     }
 
     /// The glass of a `class` surface with the component's own `over` on top of the mix.
     pub fn glass(&self, class: SurfaceClass, over: &Surface) -> Glass {
-        dodai_core::surface_glass(&self.theme, class, over, self.glass.mix)
+        dodai_core::surface_glass(&self.theme, class, over, self.surface_mix())
     }
 
     /// The glass of an input field under the app-wide mix (see [`field`](Self::field)).

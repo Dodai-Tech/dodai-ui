@@ -903,6 +903,16 @@ impl Theme {
         self.surface_style.preset
     }
 
+    /// The surface mix a toolkit uses until the app sets one: only the glass of the design's
+    /// suggested [`preset`](Self::surface_preset), so a frosted design (Dodai) has frosted
+    /// containers and fields out of the box while the others stay as they are.
+    pub fn default_surface(&self) -> crate::SurfaceFx {
+        crate::SurfaceFx {
+            frost: self.surface_style.preset.frost,
+            ..crate::SurfaceFx::NONE
+        }
+    }
+
     /// The textures this design owns (empty when it has none).
     pub fn surface_textures(&self) -> &'static [crate::Texture] {
         self.surface_style.textures

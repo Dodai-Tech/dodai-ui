@@ -127,7 +127,7 @@ pub fn glass_of(theme: &Theme, class: SurfaceClass) -> Glass {
         theme,
         class,
         &dodai_core::Surface::INHERIT,
-        crate::surface_fx(),
+        crate::surface_fx_for(theme),
     )
 }
 

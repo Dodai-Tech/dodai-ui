@@ -35,10 +35,11 @@ pub struct ThemeProviderProps {
     /// Initial glow intensity (1 = as designed).
     #[prop_or(1.0)]
     pub glow: f32,
-    /// The app-wide surface mix (none by default): containers and input fields it frosts turn
-    /// into glass over the page.
-    #[prop_or(dodai_core::SurfaceFx::NONE)]
-    pub surface: dodai_core::SurfaceFx,
+    /// The app-wide surface mix: containers and input fields it frosts turn into glass over the
+    /// page. `None`: the design's own glass ([`dodai_core::Theme::default_surface`]; Dodai is
+    /// frosted, the others not).
+    #[prop_or_default]
+    pub surface: Option<dodai_core::SurfaceFx>,
     /// Emit the `<style>` element. Disable when the host page supplies CSS.
     #[prop_or(true)]
     pub inject_css: bool,
@@ -61,7 +62,7 @@ pub fn ThemeProvider(props: &ThemeProviderProps) -> Html {
     let ctx = ThemeContext {
         theme: theme.clone(),
         glow: *glow,
-        surface: props.surface,
+        surface: props.surface.unwrap_or_else(|| theme.default_surface()),
         select: {
             let s = switcher.clone();
             Callback::from(move |id: AttrValue| {

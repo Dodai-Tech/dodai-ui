@@ -66,9 +66,9 @@ pub(crate) struct FrostImage {
 }
 
 /// The app-wide surface mix and the picture behind the app.
-#[derive(Resource, Debug, Clone)]
+#[derive(Resource, Debug, Clone, Default)]
 pub struct DodaiGlass {
-    mix: SurfaceFx,
+    mix: Option<SurfaceFx>,
     picture: Option<Picture>,
     /// The backdrop in use (the picture, else the theme's mesh) and its sharp image.
     backdrop: Option<Picture>,
@@ -90,31 +90,23 @@ struct Picture {
     mesh: bool,
 }
 
-impl Default for DodaiGlass {
-    fn default() -> Self {
-        Self {
-            mix: SurfaceFx::NONE,
-            picture: None,
-            backdrop: None,
-            sharp: None,
-            soft: Vec::new(),
-            made_for: None,
-            made: 0,
-        }
-    }
-}
-
 impl DodaiGlass {
-    /// Set the app-wide surface mix (it starts empty).
+    /// Set the app-wide surface mix. Until it is set the design's own glass applies
+    /// ([`Theme::default_surface`]: Dodai is frosted, the others not).
     pub fn set_mix(&mut self, fx: SurfaceFx) {
-        if self.mix != fx {
-            self.mix = fx;
+        if self.mix != Some(fx) {
+            self.mix = Some(fx);
         }
     }
 
-    /// The app-wide surface mix.
+    /// The surface mix the app set (empty until it sets one, see [`mix_for`](Self::mix_for)).
     pub fn mix(&self) -> SurfaceFx {
-        self.mix
+        self.mix.unwrap_or(SurfaceFx::NONE)
+    }
+
+    /// The surface mix of `theme`'s surfaces: the app's, or the design's own glass.
+    pub fn mix_for(&self, theme: &Theme) -> SurfaceFx {
+        self.mix.unwrap_or_else(|| theme.default_surface())
     }
 
     /// Put `rgba` (`w`×`h`) behind the app; `None` goes back to the design's canvas mesh.
@@ -139,7 +131,7 @@ impl DodaiGlass {
 
     fn glass_unfloored(&self, theme: &Theme, g: &UiGlass) -> Glass {
         match g.class {
-            Some(c) => dodai_core::surface_glass(theme, c, &g.over, self.mix),
+            Some(c) => dodai_core::surface_glass(theme, c, &g.over, self.mix_for(theme)),
             None => {
                 dodai_core::surface_glass(theme, SurfaceClass::Button, &g.over, SurfaceFx::NONE)
             }

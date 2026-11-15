@@ -35,7 +35,7 @@ pub fn themes_with_glow(list: &[Theme], glow: Option<f32>) -> Vec<Theme> {
 pub struct ThemeHandle {
     switcher: Signal<ThemeSwitcher>,
     glow: Signal<f32>,
-    surface: Signal<dodai_core::SurfaceFx>,
+    surface: Signal<Option<dodai_core::SurfaceFx>>,
 }
 
 impl ThemeHandle {
@@ -80,13 +80,15 @@ impl ThemeHandle {
     pub fn set_glow(&mut self, g: f32) {
         self.glow.set(g.max(0.0));
     }
-    /// The app-wide surface mix (starts empty: no texture, effect or glass).
+    /// The app-wide surface mix: the app's, or until it sets one the design's own glass
+    /// ([`Theme::default_surface`]: Dodai is frosted, the others not).
     pub fn surface_fx(&self) -> dodai_core::SurfaceFx {
-        *self.surface.read()
+        let set = *self.surface.read();
+        set.unwrap_or_else(|| self.theme().default_surface())
     }
     /// Set the app-wide surface mix: containers it frosts turn see-through.
     pub fn set_surface_fx(&mut self, fx: dodai_core::SurfaceFx) {
-        self.surface.set(fx);
+        self.surface.set(Some(fx));
     }
 }
 
@@ -157,7 +159,7 @@ pub fn ThemeProvider(props: ThemeProviderProps) -> Element {
     let handle = use_context_provider(|| ThemeHandle {
         switcher: Signal::new(make_switcher(&props.themes, &props.initial)),
         glow: Signal::new(props.glow.max(0.0)),
-        surface: Signal::new(dodai_core::SurfaceFx::NONE),
+        surface: Signal::new(None),
     });
     let now: ThemeProps = (props.themes.clone(), props.initial.clone(), props.glow);
     let seen = use_hook(|| std::rc::Rc::new(std::cell::RefCell::new(now.clone())));

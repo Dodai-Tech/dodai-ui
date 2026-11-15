@@ -15,18 +15,25 @@ use std::sync::OnceLock;
 use std::time::Instant;
 
 thread_local! {
-    static FX: Cell<SurfaceFx> = const { Cell::new(SurfaceFx::NONE) };
+    static FX: Cell<Option<SurfaceFx>> = const { Cell::new(None) };
     static ANIMATED: Cell<bool> = const { Cell::new(false) };
 }
 
-/// The surface mix applied to every shaped surface.
+/// The surface mix the app set (empty until it sets one, see [`surface_fx_for`]).
 pub fn surface_fx() -> SurfaceFx {
+    FX.with(Cell::get).unwrap_or(SurfaceFx::NONE)
+}
+
+/// The surface mix applied to every shaped surface of `theme`: the app's, or until it sets one
+/// the design's own glass ([`Theme::default_surface`]).
+pub fn surface_fx_for(theme: &Theme) -> SurfaceFx {
     FX.with(Cell::get)
+        .unwrap_or_else(|| theme.default_surface())
 }
 
 /// Apply `fx` to every shaped surface (repaint with `ctx.request_repaint()`).
 pub fn set_surface_fx(fx: SurfaceFx) {
-    FX.with(|c| c.set(fx));
+    FX.with(|c| c.set(Some(fx)));
 }
 
 /// Whether a surface painted since the last call animates, so the frame should be repainted.
@@ -112,7 +119,8 @@ pub fn surface_shapes(
     class: SurfaceClass,
     fill: Option<dodai_core::Color>,
 ) -> Vec<Shape> {
-    let Some(mut paint) = dodai_core::surface_paint(theme, class, &Surface::INHERIT, surface_fx())
+    let Some(mut paint) =
+        dodai_core::surface_paint(theme, class, &Surface::INHERIT, surface_fx_for(theme))
     else {
         return Vec::new();
     };
