@@ -37,3 +37,17 @@ let wants_another_frame = paint(&mut MyPainter, &frame, &sp);
 Everything is clipped to a `Clip` (corner radius, cut corners, border inset) before it reaches the painter. The crate has no dependencies: what to draw comes from `ResolvedSurface`, the colours from `SurfacePaint`. With `dodai-core`, `surface_paint(&theme, ..)` fills a `SurfacePaint` from a theme and `Shape::clip()` gives the `Clip`. gpui's painter is `dodai_gpui::paint_surface`.
 
 Frosted glass (blur on RGBA pixels, CPU or GPU) lives in its own crate, `dodai-frost`.
+
+## Frosted glass
+
+`Surface::frosted()` only sets how much glass you want. The blur is the separate [`dodai-frost`](../dodai-frost) crate (plain RGBA8 pixels, no theme), re-exported here when you turn on a feature:
+
+```toml
+dodai-fx = { version = "0.2", features = ["frost"] }      # CPU blur, still no other dependency
+dodai-fx = { version = "0.2", features = ["frost-gpu"] }  # the same blur on wgpu, CPU fallback
+```
+
+```rust,ignore
+use dodai_fx::frost::{glass, FrostParams};
+let pane = glass(&backdrop, w, h, &FrostParams { tint: [20, 20, 30, 140], blur: 12.0, edge: None, saturation: 1.0 });
+```

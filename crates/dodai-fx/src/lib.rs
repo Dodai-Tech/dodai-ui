@@ -5,6 +5,12 @@
 //! A toolkit implements [`Painter`] (four primitives: quad, dot, stroked path, filled path) and
 //! calls [`paint`] each frame; the effects are clipped to the shape, follow cut corners, and
 //! never look at a theme id: they read a [`ResolvedSurface`] and the colours of a [`SurfacePaint`].
+//!
+//! # Frosted glass
+//!
+//! [`Surface::frosted`] only says how much glass you want. The pixels are blurred by the separate
+//! `dodai-frost` crate, which this crate re-exports as `dodai_fx::frost` with the `frost` feature
+//! (CPU) or `frost-gpu` (wgpu): `dodai_fx::frost::glass(&backdrop, w, h, &params)`.
 
 mod canvas;
 mod clip;
@@ -18,6 +24,8 @@ pub const SCANLINE_PITCH: f32 = 3.0;
 
 use canvas::Canvas;
 pub use clip::{Clip, Corners, ShapeKind};
+#[cfg(feature = "frost")]
+pub use dodai_frost as frost;
 use effects::{
     brackets, chase, depth, edge_light, glitch, gloss, pop, press_frame, pulse, rim, sheen, strip,
     tape, texture, tint, wash,
@@ -689,3 +697,12 @@ mod tests {
 #[cfg(doctest)]
 #[doc = include_str!("../README.md")]
 struct ReadmeDoctests;
+
+#[cfg(all(test, feature = "frost"))]
+mod frost_reexport_tests {
+    #[test]
+    fn the_frost_crate_is_reachable_from_dodai_fx() {
+        let px = vec![255u8; 8 * 8 * 4];
+        assert_eq!(crate::frost::blur(&px, 8, 8, 2.0).len(), px.len());
+    }
+}

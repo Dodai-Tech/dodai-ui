@@ -123,7 +123,7 @@ impl Reduced {
 
 /// A frosted pane: blur radius, a translucent tint laid over the blur, and an optional edge.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Glass {
+pub struct FrostParams {
     /// RGBA tint composited over the blurred backdrop (its alpha is the tint opacity).
     pub tint: [u8; 4],
     /// Blur sigma in pixels.
@@ -195,7 +195,7 @@ impl Blurrer {
     }
 
     /// [`glass`] on the chosen backend.
-    pub fn glass(&mut self, backdrop: &[u8], w: usize, h: usize, g: &Glass) -> Vec<u8> {
+    pub fn glass(&mut self, backdrop: &[u8], w: usize, h: usize, g: &FrostParams) -> Vec<u8> {
         let blurred = self.blur(backdrop, w, h, g.blur);
         tint_and_edge(blurred, w, h, g)
     }
@@ -219,11 +219,11 @@ pub fn saturate(px: &mut [u8], s: f32) {
 
 /// The finished pane for a whole backdrop: blur, then tint, then edge. The result is opaque
 /// where the backdrop is.
-pub fn glass(backdrop: &[u8], w: usize, h: usize, g: &Glass) -> Vec<u8> {
+pub fn glass(backdrop: &[u8], w: usize, h: usize, g: &FrostParams) -> Vec<u8> {
     tint_and_edge(blur(backdrop, w, h, g.blur), w, h, g)
 }
 
-fn tint_and_edge(mut out: Vec<u8>, w: usize, h: usize, g: &Glass) -> Vec<u8> {
+fn tint_and_edge(mut out: Vec<u8>, w: usize, h: usize, g: &FrostParams) -> Vec<u8> {
     saturate(&mut out, g.saturation);
     let a = g.tint[3] as u32;
     for px in out.chunks_exact_mut(4) {
@@ -323,7 +323,7 @@ mod tests {
     #[test]
     fn glass_tints_the_blur_and_draws_the_edge() {
         let src = vec![100u8; 8 * 8 * 4];
-        let g = Glass {
+        let g = FrostParams {
             tint: [200, 200, 200, 255],
             blur: 2.0,
             edge: Some(([1, 2, 3, 255], 1.0)),
@@ -336,7 +336,7 @@ mod tests {
             "opaque tint wins"
         );
         assert_eq!(&out[..4], &[1, 2, 3, 255], "edge on the border");
-        let clear = Glass {
+        let clear = FrostParams {
             tint: [0, 0, 0, 0],
             blur: 2.0,
             edge: None,
@@ -364,7 +364,7 @@ mod tests {
     fn blurrer_matches_the_free_functions() {
         let (w, h) = (300, 260);
         let src: Vec<u8> = (0..w * h * 4).map(|i| (i * 13 % 255) as u8).collect();
-        let g = Glass {
+        let g = FrostParams {
             tint: [10, 20, 30, 120],
             blur: 6.0,
             edge: None,
