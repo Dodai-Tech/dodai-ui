@@ -56,7 +56,7 @@ pub fn surface_paint(theme: &Theme, class: SurfaceClass) -> Option<SurfacePaint>
     surface_paint_with(theme, class, &dodai_core::Surface::INHERIT)
 }
 
-/// Like [`surface_paint`], with a component's own [`Surface`](dodai_core::Surface) on top.
+/// Like [`surface_paint`], with a component's own [`Surface`] on top.
 pub fn surface_paint_with(
     theme: &Theme,
     class: SurfaceClass,

@@ -5,8 +5,8 @@
 //! and label casing are all read from [`Theme`] tokens.
 
 use dodai_core::{
-    ButtonVariant, Color, ControlState, ShapeKind, Surface, SurfaceClass, ResolvedSurface,
-    Theme, Tone,
+    ButtonVariant, Color, ControlState, ResolvedSurface, ShapeKind, Surface, SurfaceClass, Theme,
+    Tone,
 };
 use std::sync::RwLock;
 

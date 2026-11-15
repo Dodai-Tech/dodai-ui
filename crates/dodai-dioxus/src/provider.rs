@@ -80,7 +80,7 @@ impl ThemeHandle {
     pub fn set_glow(&mut self, g: f32) {
         self.glow.set(g.max(0.0));
     }
-    /// The app-wide surface as set ([`Surface::INHERIT`] until the app sets one).
+    /// The app-wide surface as set ([`dodai_core::Surface::INHERIT`] until the app sets one).
     pub fn surface(&self) -> dodai_core::Surface {
         *self.surface.read()
     }
@@ -90,7 +90,7 @@ impl ThemeHandle {
         self.theme().resolve_surface(&self.surface())
     }
     /// Set the app-wide surface: containers and input fields it frosts turn see-through. A
-    /// [`ResolvedSurface`](dodai_core::ResolvedSurface) converts into a custom [`Surface`].
+    /// [`ResolvedSurface`](dodai_core::ResolvedSurface) converts into a custom [`Surface`](dodai_core::Surface).
     pub fn set_surface(&mut self, mix: impl Into<dodai_core::Surface>) {
         self.surface.set(mix.into());
     }
