@@ -184,12 +184,15 @@ impl RenderOnce for Popover {
             if let Some(content) = self.content.take() {
                 let mut popup = div().absolute();
                 if !self.bare {
-                    popup = shaped(&t.role_shape(dodai_core::ShapeRole::Menu), popup_style(&t))
-                        .absolute()
-                        .p(px(t.spacing.md))
-                        .font_family(first_family(t.typography.body))
-                        .text_size(px(t.typography.size_md))
-                        .text_color(hsla(t.palette.text));
+                    popup = shaped(
+                        &t.role_shape(dodai_core::ShapeRole::Menu),
+                        popup_style(&t).with_surface(&t, dodai_core::SurfaceClass::Panel),
+                    )
+                    .absolute()
+                    .p(px(t.spacing.md))
+                    .font_family(first_family(t.typography.body))
+                    .text_size(px(t.typography.size_md))
+                    .text_color(hsla(t.palette.text));
                 }
                 popup = self.placement.place(popup, 6.0).occlude();
                 if let Some(w) = self.width {
@@ -300,13 +303,16 @@ impl RenderOnce for HoverCard {
             .children(self.trigger.take());
         if open {
             if let Some(content) = self.content.take() {
-                let card = shaped(&t.role_shape(dodai_core::ShapeRole::Menu), popup_style(&t))
-                    .w(px(self.width))
-                    .p(px(t.spacing.md))
-                    .font_family(first_family(t.typography.body))
-                    .text_size(px(t.typography.size_md))
-                    .text_color(hsla(t.palette.text))
-                    .child(content);
+                let card = shaped(
+                    &t.role_shape(dodai_core::ShapeRole::Menu),
+                    popup_style(&t).with_surface(&t, dodai_core::SurfaceClass::Panel),
+                )
+                .w(px(self.width))
+                .p(px(t.spacing.md))
+                .font_family(first_family(t.typography.body))
+                .text_size(px(t.typography.size_md))
+                .text_color(hsla(t.palette.text))
+                .child(content);
                 let outer = self
                     .placement
                     .bridge(div().absolute(), 6.0)

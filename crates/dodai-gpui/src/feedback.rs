@@ -151,7 +151,8 @@ impl Toast {
             Some(t.palette.border_strong),
             true,
             true,
-        );
+        )
+        .with_surface(&t, dodai_core::SurfaceClass::Panel);
         shaped(&t.shape, style)
             .flex()
             .items_center()

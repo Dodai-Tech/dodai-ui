@@ -306,7 +306,8 @@ impl RenderOnce for SearchView {
             let p = t.panel(false);
             let mut menu = shaped(
                 &t.shape,
-                ShapeStyle::from_tokens(&t, Some(p.background), Some(p.border), false, true),
+                ShapeStyle::from_tokens(&t, Some(p.background), Some(p.border), false, true)
+                    .with_surface(&t, dodai_core::SurfaceClass::Panel),
             )
             .absolute()
             .top(px(t.shape.control_height + 4.0))
