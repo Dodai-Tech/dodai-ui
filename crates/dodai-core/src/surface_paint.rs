@@ -17,7 +17,10 @@ impl From<Color> for Rgba {
 
 fn paint_with(theme: &Theme, mut fx: ResolvedSurface, pressable: bool) -> SurfacePaint {
     let p = &theme.palette;
-    fx.wash = (fx.wash * theme.surface_style.gradient).min(1.0);
+    // A frosted surface is the blurred backdrop, not a gradient of its own: the wash fades out as
+    // the frost comes in.
+    let wash = fx.wash * (1.0 - fx.frost.clamp(0.0, 1.0));
+    fx.wash = (wash * theme.surface_style.gradient).min(1.0);
     fx.rim = (fx.rim * theme.surface_style.gradient).min(1.0);
     SurfacePaint {
         fx,
