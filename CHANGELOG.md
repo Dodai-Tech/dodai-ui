@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.5] - 2026-11-15
+### ✨ Features
+- a frosted design sits on its own picture so the blur shows (dodai_core::design_picture; gpui draws it unless the app set a wallpaper)
+- live window blur (set_window_blur): the OS blurs the desktop behind a see-through canvas
+- each frosted design sits on its own faint picture so the blur shows; brighter, more saturated Dodai glass
+- canvas keeps the smooth gradient; glass blurs a hidden design picture; containers keep their wash, controls are frost only
+- cards and bars are the layout (gradient only); panels, popups, fields, buttons and tags take the frost
+- the layout keeps the gradient everywhere; the app-wide frost applies to overlays only
+- no design is frosted by default; Dodai keeps its gradient everywhere and suggests frost
+### 🐛 Bug Fixes
+- keep the design's gradient canvas; the design picture is opt-in; window blur keeps the gradient
+- a frosted surface drops its gradient wash; it shows the blurred backdrop only
+### 🔄 CI
+- check dodai-fx without the frost features (dodai-frost needs rustc 1.87)
+- freya formatting, broken intra-doc links to Surface
+- nightly upgrades compatible requirements and releases a patch (like gitkraft's auto-release); majors by hand
+### 🔧 Chores
+- freya lockfile for 0.1.4
+**Full Changelog**: https://github.com/sorinirimies/dodai-ui/compare/v0.1.4...v0.1.5
 ## [0.1.4] - 2026-11-15
 ### ♻️  Refactor
 - one surface-mix API in every toolkit (SurfaceMix, set_surface_mix, surface_fx_for); Dodai frosted by default **[BREAKING]**
