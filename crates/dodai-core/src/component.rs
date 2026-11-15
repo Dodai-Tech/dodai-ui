@@ -913,9 +913,9 @@ impl Theme {
         }
     }
 
-    /// What `surface` (the app's, or [`Surface::INHERIT`]) draws on this design's surfaces: the
+    /// What `surface` (the app's, or [`crate::Surface::INHERIT`]) draws on this design's surfaces: the
     /// design's own glass ([`default_surface`](Self::default_surface)) with everything `surface`
-    /// sets on top. [`Surface::NONE`] turns every effect off, glass included.
+    /// sets on top. [`crate::Surface::NONE`] turns every effect off, glass included.
     pub fn resolve_surface(&self, surface: &crate::Surface) -> crate::ResolvedSurface {
         if surface.is_off() {
             return crate::ResolvedSurface::NONE;

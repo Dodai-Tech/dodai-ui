@@ -36,7 +36,7 @@ pub use icon::icon_svg;
 pub use dodai_core as core;
 pub use style::{
     button_style, chamfer_svg, input_style, list_item_style, panel_style, progress_style,
-    set_surface, resolved_surface, surface, tab_style, tag_style, text_style, toggle_style,
+    resolved_surface, set_surface, surface, tab_style, tag_style, text_style, toggle_style,
     ShapeStyle, TextRole, TextStyle,
 };
 
