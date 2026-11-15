@@ -39,6 +39,8 @@ pub(crate) use dodai_core::mesh_pixels as pixels;
 /// [`set_wallpaper`](crate::set_wallpaper) is drawn instead, for any design.
 pub fn backdrop(t: &Theme) -> Option<impl IntoElement> {
     #[cfg(feature = "frost")]
+    crate::glass::sync_design_backdrop(t);
+    #[cfg(feature = "frost")]
     if let Some(image) = crate::glass::wallpaper_image() {
         return Some(cover(image));
     }
