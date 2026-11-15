@@ -334,6 +334,37 @@ pub fn backdrop_mesh(theme: &Theme, w: usize, h: usize) -> Option<Vec<u8>> {
         .then(|| mesh_pixels(theme.palette.background, style.wash, style.backdrop, w, h))
 }
 
+/// The picture a frosted design sits on, `w`×`h` RGBA: its canvas mesh with a few defined shapes
+/// (timber beams and discs, in the design's own colours and kept faint) so the blur under a glass
+/// surface shows. A smooth canvas alone has nothing to blur: frost over it looks like no frost.
+pub fn design_picture(theme: &Theme, w: usize, h: usize) -> Vec<u8> {
+    let p = &theme.palette;
+    let s = &theme.surface_style;
+    let mut out = mesh_pixels(p.background, s.wash, s.backdrop.max(0.6), w, h);
+    let discs = [(0.74, 0.32, 0.17, p.info), (0.2, 0.72, 0.13, p.primary)];
+    for y in 0..h {
+        for x in 0..w {
+            let (u, v) = (x as f32 / w as f32, y as f32 / h as f32);
+            let mut tint = None;
+            if ((u + v * 0.6) * 5.0) as usize % 2 == 0 {
+                tint = Some((p.primary, 0.16));
+            }
+            for (cx, cy, r, colour) in discs {
+                if ((u - cx) * w as f32 / h as f32).hypot(v - cy) < r {
+                    tint = Some((colour, 0.32));
+                }
+            }
+            if let Some((colour, amount)) = tint {
+                let o = (y * w + x) * 4;
+                let base = crate::Color::rgba(out[o], out[o + 1], out[o + 2], 255);
+                let c = base.mix(colour, amount);
+                out[o..o + 3].copy_from_slice(&[c.r, c.g, c.b]);
+            }
+        }
+    }
+    out
+}
+
 /// A picture with hard edges in the palette's colours to put behind frosted glass, so the blur
 /// shows (`w`×`h` RGBA): bands of the
 /// accents across the canvas and a few discs.
