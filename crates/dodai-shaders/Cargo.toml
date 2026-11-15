@@ -36,9 +36,9 @@ bevy     = { version = "0.20", default-features = false, features = ["std", "ui_
 dioxus   = { version = "0.7", default-features = false, features = ["macro", "html", "signals", "hooks"], optional = true }
 base64   = { version = "0.22", optional = true }
 tokio    = { version = "1", default-features = false, features = ["time"], optional = true }
-wgpu     = { version = "30.0.1", default-features = false, features = ["std", "parking_lot", "wgsl", "metal", "vulkan", "dx12"] }
+wgpu     = { version = "30.0.2", default-features = false, features = ["std", "parking_lot", "wgsl", "metal", "vulkan", "dx12"] }
 pollster = "1"
-bytemuck = { version = "1.24", features = ["derive"] }
+bytemuck = { version = "1.25", features = ["derive"] }
 
 [[example]]
 name = "warm"

@@ -20,7 +20,7 @@ default = []
 gpu = ["dep:wgpu", "dep:pollster"]
 
 [dependencies]
-wgpu     = { version = "30.0.1", optional = true, default-features = false, features = ["std", "parking_lot", "wgsl", "metal", "vulkan", "dx12"] }
+wgpu     = { version = "30.0.2", optional = true, default-features = false, features = ["std", "parking_lot", "wgsl", "metal", "vulkan", "dx12"] }
 pollster = { version = "1", optional = true }
 
 [[example]]
