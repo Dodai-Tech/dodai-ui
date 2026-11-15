@@ -1,6 +1,6 @@
 [package]
 name         = "dodai-shaders-kernels"
-version      = "0.1.0"
+version      = "0.1.1"
 edition      = "2024"
 license      = "MIT"
 description  = "GPU kernels for dodai-shaders: the same Rust shader sources, compiled to WGSL with rust-gpu"
