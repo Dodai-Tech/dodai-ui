@@ -88,8 +88,9 @@ impl Kit {
     pub fn surface_class(self) -> Option<crate::SurfaceClass> {
         use crate::SurfaceClass as C;
         match self {
-            Self::Card(_) | Self::Popup => Some(C::Card),
-            Self::Toolbar { .. } => Some(C::Bar),
+            Self::Card(_) | Self::Code => Some(C::Card),
+            Self::Popup => Some(C::Panel),
+            Self::Toolbar { .. } | Self::Snackbar => Some(C::Bar),
             Self::Chip { .. } => Some(C::Tag),
             Self::Fab { .. } | Self::Elevated => Some(C::Button),
             Self::Select => Some(C::Input),
@@ -1717,5 +1718,26 @@ mod busy_tests {
             let l = slide_left(i as f32 * 0.013);
             assert!((-SEGMENT..=1.0).contains(&l));
         }
+    }
+}
+
+#[cfg(test)]
+mod surface_class_tests {
+    use super::Kit;
+    use crate::SurfaceClass;
+
+    #[test]
+    fn every_container_kit_takes_part_in_the_glass() {
+        assert_eq!(Kit::Popup.surface_class(), Some(SurfaceClass::Panel));
+        assert_eq!(Kit::Code.surface_class(), Some(SurfaceClass::Card));
+        assert_eq!(Kit::Snackbar.surface_class(), Some(SurfaceClass::Bar));
+        assert_eq!(
+            Kit::Toolbar {
+                floating: false,
+                vibrant: false
+            }
+            .surface_class(),
+            Some(SurfaceClass::Bar)
+        );
     }
 }

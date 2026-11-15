@@ -442,7 +442,8 @@ impl Tabs {
         // tabs, and a scrolling strip pans inside it.
         let p = &t.palette;
         let style =
-            ShapeStyle::from_tokens(&t, Some(p.background), Some(p.border_strong), false, false);
+            ShapeStyle::from_tokens(&t, Some(p.background), Some(p.border_strong), false, false)
+                .with_surface(&t, dodai_core::SurfaceClass::Bar);
         let capsule = crate::paint::shaped(&t.shape, style)
             .flex()
             .min_w_0()

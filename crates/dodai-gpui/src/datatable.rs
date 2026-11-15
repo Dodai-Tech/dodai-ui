@@ -301,7 +301,8 @@ impl RenderOnce for DataTable {
             Some(fr.t.palette.border),
             false,
             false,
-        );
+        )
+        .with_surface(&fr.t, dodai_core::SurfaceClass::Card);
         let t = &fr.t;
         let (s1, s2, s3) = (fr.st.clone(), fr.st.clone(), fr.st.clone());
         let (head, body, footer) = (self.head(&fr), self.body(&fr, window, cx), self.footer(&fr));

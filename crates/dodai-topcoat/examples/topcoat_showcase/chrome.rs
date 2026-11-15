@@ -33,7 +33,7 @@ fn topbar(m: &Showcase, cx: &Cx) -> String {
     let colour_labels: Vec<String> = colours.iter().map(|x| x.label().to_string()).collect();
     let speeds: Vec<String> = SPEEDS.iter().map(|s| format!("{s}×")).collect();
     let dropdown = |items: Vec<String>, at: usize, kind: &str| {
-        html::select(&items, Some(at), "", &pick(&format!("{kind}|{{v}}")))
+        html::select(cx, &items, Some(at), "", &pick(&format!("{kind}|{{v}}")))
     };
     let seg = |labels: Vec<String>, at: usize, kind: &'static str| {
         html::segmented(cx, &labels, at, &|i| press(&format!("{kind}|{i}")))
@@ -191,6 +191,7 @@ pub fn sidebar(m: &Showcase, cx: &Cx) -> String {
     format!(
         "<aside id=\"side\" class=\"dodai-side\"><div style=\"display:flex;align-items:center;justify-content:space-between\"><div style=\"display:flex;align-items:center;gap:var(--dodai-space-sm)\"><img src=\"{logo}\" alt=\"\" style=\"width:calc(var(--dodai-size-xl) * 1.6);height:calc(var(--dodai-size-xl) * 1.6);flex:none\"><h2>Dodai UI</h2></div>{fold}</div>{}<nav class=\"dodai-side__nav\">{nav}</nav><span class=\"dodai-caption\">{}</span></aside>",
         html::text_input(
+            cx,
             m.filter(),
             "Filter components…",
             false,

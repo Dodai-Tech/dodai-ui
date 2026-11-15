@@ -522,6 +522,7 @@ pub fn view(node: &Node, r: &R) -> String {
         } => format!(
             "<span style=\"min-width:320px;display:inline-block\">{}</span>",
             html::select(
+                &r.cx,
                 labels,
                 *selected,
                 placeholder,
@@ -620,6 +621,7 @@ pub fn view(node: &Node, r: &R) -> String {
             format!(
                 "<div class=\"dodai-field\" style=\"width:100%\">{label}<div class=\"dodai-stack dodai-stack--row\">{lead}<div style=\"flex:1\">{}</div></div></div>",
                 html::text_input(
+                    &r.cx,
                     vals.text(&i.bind),
                     &i.placeholder,
                     i.password,

@@ -13,12 +13,14 @@
 
 pub mod class;
 pub mod components;
+mod glass;
 pub mod theme;
 
 pub use components::*;
 pub use dodai_core::{ButtonVariant, Theme, ThemeSwitcher, Tone};
 /// A surface mix as a CSS `background-image` (see [`dodai_topcoat::surface_background`]).
 pub use dodai_topcoat::surface_background;
+pub use glass::{glass, GlassContext};
 pub use theme::{
     install_css, install_css_with, scanlines_css, ThemeProvider, GLOW_LEVELS, SCANLINES_CSS,
 };

@@ -351,7 +351,8 @@ impl RenderOnce for CodeBlock {
             body = body.child(self.row(&t, (i, text, spans), cur, &state, gutter));
         }
         let style =
-            ShapeStyle::from_tokens(&t, Some(p.surface_raised), Some(p.border), false, false);
+            ShapeStyle::from_tokens(&t, Some(p.surface_raised), Some(p.border), false, false)
+                .with_surface(&t, dodai_core::SurfaceClass::Card);
         let head = self.head(&t, copied, cx);
         let area = crate::display::ScrollArea::new((self.id.clone(), "scroll"))
             .max_height(self.max_height.unwrap_or(f32::from(px(100_000.0))))

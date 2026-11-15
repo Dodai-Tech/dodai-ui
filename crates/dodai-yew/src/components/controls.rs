@@ -1,6 +1,7 @@
 //! Interactive controls: button, toggle, checkbox, radio, slider, text input.
 use crate::classes::{button, clamp_pct};
 use crate::dom::{input_checked, input_value};
+use crate::use_glass;
 use dodai_core::ButtonVariant;
 use yew::prelude::*;
 
@@ -12,6 +13,9 @@ pub struct ButtonProps {
     pub disabled: bool,
     #[prop_or_default]
     pub onclick: Callback<MouseEvent>,
+    /// The button's own surface override (frost, fill opacity).
+    #[prop_or_default]
+    pub surface: dodai_core::Surface,
     #[prop_or_default]
     pub children: Html,
 }
@@ -19,8 +23,10 @@ pub struct ButtonProps {
 /// Button (all [`ButtonVariant`]s, chamfered/rounded/square from tokens).
 #[function_component]
 pub fn Button(props: &ButtonProps) -> Html {
+    let (glass, style) = use_glass(dodai_core::SurfaceClass::Button, &props.surface);
+    let class = format!("{}{glass}", button(props.variant));
     html! {
-        <button class={button(props.variant)} disabled={props.disabled}
+        <button {class} {style} disabled={props.disabled}
                 onclick={props.onclick.clone()}>{ props.children.clone() }</button>
     }
 }
@@ -138,8 +144,13 @@ pub struct TextInputProps {
 pub fn TextInput(props: &TextInputProps) -> Html {
     let cb = props.oninput.clone();
     let oninput = Callback::from(move |e: InputEvent| cb.emit(input_value(&e)));
+    let (glass, style) = use_glass(
+        dodai_core::SurfaceClass::Input,
+        &dodai_core::Surface::INHERIT,
+    );
+    let class = format!("dodai-input{glass}");
     html! {
-        <input class="dodai-input" value={props.value.clone()} placeholder={props.placeholder.clone()}
+        <input {class} {style} value={props.value.clone()} placeholder={props.placeholder.clone()}
                disabled={props.disabled} {oninput} />
     }
 }

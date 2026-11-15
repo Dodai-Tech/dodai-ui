@@ -17,6 +17,8 @@ impl IcedTheme {
         let focus = self.theme.input(true);
         let p = self.theme.palette.clone();
         let this = self.clone();
+        // The glass the surface mix gives input fields (see-through; blur: [`IcedTheme::field`]).
+        let glass = self.field_glass();
         move |_t, status| {
             let (t, border, value, bg) = match status {
                 text_input::Status::Focused { .. } => {
@@ -27,7 +29,7 @@ impl IcedTheme {
                 text_input::Status::Active => (idle, idle.border, idle.text, idle.background),
             };
             text_input::Style {
-                background: Background::Color(color(bg)),
+                background: Background::Color(color(glass.color(bg))),
                 border: this.border(border),
                 icon: color(t.placeholder),
                 placeholder: color(t.placeholder),
@@ -45,6 +47,7 @@ impl IcedTheme {
         let focus = self.theme.input(true);
         let muted = self.theme.palette.text_muted;
         let this = self.clone();
+        let glass = self.field_glass();
         move |_t, status| {
             let border = match status {
                 pick_list::Status::Active => idle.border,
@@ -55,7 +58,7 @@ impl IcedTheme {
                 text_color: color(idle.text),
                 placeholder_color: color(idle.placeholder),
                 handle_color: color(muted),
-                background: Background::Color(color(idle.background)),
+                background: Background::Color(color(glass.color(idle.background))),
                 border: this.border(border),
             }
         }

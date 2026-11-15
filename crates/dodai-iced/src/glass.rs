@@ -56,6 +56,21 @@ impl IcedTheme {
         dodai_core::surface_glass(&self.theme, class, over, self.glass.mix)
     }
 
+    /// The glass of an input field under the app-wide mix (see [`field`](Self::field)).
+    pub fn field_glass(&self) -> Glass {
+        self.glass(SurfaceClass::Input, &Surface::INHERIT)
+    }
+
+    /// A text input or pick list (styled with [`text_input`](Self::text_input) or
+    /// [`pick_list`](Self::pick_list)) on the glass the surface mix gives input fields: a blurred
+    /// copy of the backdrop under its see-through fill. Unchanged without the mix.
+    pub fn field<'a, Message: 'a>(
+        &self,
+        content: impl Into<Element<'a, Message>>,
+    ) -> Element<'a, Message> {
+        self.frosted_round(content, self.field_glass(), self.radius(), 0.0)
+    }
+
     /// This theme with the glass of a button's own `over` surface (frost, fill opacity): the
     /// buttons it draws get see-through fills; put them in [`frosted`](Self::frosted) with
     /// [`button_glass`](Self::button_glass) for the blur under them.

@@ -10,6 +10,8 @@ pub struct ThemeContext {
     pub theme: Theme,
     /// Active glow intensity.
     pub glow: f32,
+    /// The app-wide surface mix: containers and input fields it frosts turn see-through.
+    pub surface: dodai_core::SurfaceFx,
     /// Select a theme by id.
     pub select: Callback<AttrValue>,
     /// Cycle to the next theme.
@@ -33,6 +35,10 @@ pub struct ThemeProviderProps {
     /// Initial glow intensity (1 = as designed).
     #[prop_or(1.0)]
     pub glow: f32,
+    /// The app-wide surface mix (none by default): containers and input fields it frosts turn
+    /// into glass over the page.
+    #[prop_or(dodai_core::SurfaceFx::NONE)]
+    pub surface: dodai_core::SurfaceFx,
     /// Emit the `<style>` element. Disable when the host page supplies CSS.
     #[prop_or(true)]
     pub inject_css: bool,
@@ -55,6 +61,7 @@ pub fn ThemeProvider(props: &ThemeProviderProps) -> Html {
     let ctx = ThemeContext {
         theme: theme.clone(),
         glow: *glow,
+        surface: props.surface,
         select: {
             let s = switcher.clone();
             Callback::from(move |id: AttrValue| {

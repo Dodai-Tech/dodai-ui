@@ -218,6 +218,12 @@ impl SurfaceClass {
         matches!(self, Self::Card | Self::Panel | Self::Bar)
     }
 
+    /// Whether the app-wide surface mix frosts this class: containers, and the fields people
+    /// type into. Buttons and tags frost only when asked ([`Surface::frost`]).
+    pub const fn takes_mix_frost(self) -> bool {
+        self.is_container() || matches!(self, Self::Input)
+    }
+
     const fn bit(self) -> u8 {
         1 << self as u8
     }
@@ -352,7 +358,7 @@ pub struct SurfaceFx {
     pub clear: f32,
     /// Frosted glass: the fill turns as see-through as the design's glass and a blurred copy
     /// of the app's backdrop shows under it (`0.0` = an opaque fill). Every design has glass,
-    /// so no design limits it; it reaches containers only, unless a component sets it itself.
+    /// so no design limits it; it reaches containers and input fields, unless a component sets it itself.
     pub frost: f32,
     /// Texture for containers (cards, panels, bars); `texture` is for UI components.
     pub container_texture: Texture,
@@ -443,6 +449,8 @@ impl SurfaceFx {
                 scale: self.container_scale,
                 ..self
             }
+        } else if self.frost > 0.0 && class.takes_mix_frost() {
+            self
         } else {
             Self { frost: 0.0, ..self }
         }
@@ -1089,14 +1097,16 @@ mod surface_override_tests {
     }
 
     #[test]
-    fn the_mix_frosts_containers_only_and_a_component_can_frost_itself() {
+    fn the_mix_frosts_containers_and_inputs_and_a_component_can_frost_itself() {
         let fx = SurfaceFx {
             frost: 1.0,
             ..SurfaceFx::NONE
         };
         assert!(!fx.is_none(), "frost alone is something to draw");
         assert_eq!(fx.for_class(SurfaceClass::Card).frost, 1.0);
+        assert_eq!(fx.for_class(SurfaceClass::Input).frost, 1.0);
         assert_eq!(fx.for_class(SurfaceClass::Button).frost, 0.0);
+        assert_eq!(fx.for_class(SurfaceClass::Tag).frost, 0.0);
         let own = Surface::new().frost(0.5);
         assert!(own.forces_on());
         assert_eq!(own.over(fx.for_class(SurfaceClass::Button)).frost, 0.5);

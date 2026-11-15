@@ -376,7 +376,7 @@ pub use overscroll::{Overscroll, OverscrollFeel};
 #[cfg(feature = "dodai")]
 pub use page_grid::PageGrid;
 pub use paint::Playback;
-pub use paint::{shaped, ShapeEdge, ShapeStyle};
+pub use paint::{pane, shaped, ShapeEdge, ShapeStyle};
 pub use panel::{
     section_border, set_section_border, AccentCorner, BorderStyle, DodaiTooltip, InputBox, Panel,
 };

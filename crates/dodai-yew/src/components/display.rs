@@ -1,6 +1,7 @@
 //! Display components: panel, tag, badge, tabs, progress, list, divider, tooltip.
 use crate::classes::{clamp_pct, join, progress_tone, tone};
-use dodai_core::Tone;
+use crate::use_glass;
+use dodai_core::{SurfaceClass, Tone};
 use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
@@ -12,6 +13,9 @@ pub struct PanelProps {
     pub focused: bool,
     #[prop_or_default]
     pub raised: bool,
+    /// The panel's own surface override (frost, fill opacity).
+    #[prop_or_default]
+    pub surface: dodai_core::Surface,
     #[prop_or_default]
     pub children: Html,
 }
@@ -32,8 +36,10 @@ pub fn Panel(props: &PanelProps) -> Html {
             ""
         },
     ]);
+    let (glass, style) = use_glass(SurfaceClass::Panel, &props.surface);
+    let class = format!("{class}{glass}");
     html! {
-        <div {class}>
+        <div {class} {style}>
             <span class="dodai-panel__shade" aria-hidden="true"></span>
             if let Some(t) = &props.title { <div class="dodai-panel__title">{ t.clone() }</div> }
             { props.children.clone() }
@@ -138,7 +144,9 @@ pub struct ListProps {
 /// List container for [`ListItem`]s.
 #[function_component]
 pub fn List(props: &ListProps) -> Html {
-    html! { <ul class="dodai-list">{ props.children.clone() }</ul> }
+    let (glass, style) = use_glass(SurfaceClass::Card, &dodai_core::Surface::INHERIT);
+    let class = format!("dodai-list{glass}");
+    html! { <ul {class} {style}>{ props.children.clone() }</ul> }
 }
 
 #[derive(Properties, PartialEq)]
