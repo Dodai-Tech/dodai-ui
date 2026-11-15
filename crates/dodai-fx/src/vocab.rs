@@ -218,7 +218,7 @@ impl SurfaceClass {
         matches!(self, Self::Card | Self::Panel | Self::Bar)
     }
 
-    /// Whether the app-wide surface mix frosts this class: containers, and the fields people
+    /// Whether the app-wide surface frosts this class: containers, and the fields people
     /// type into. Buttons and tags frost only when asked ([`Surface::frost`]).
     pub const fn takes_mix_frost(self) -> bool {
         self.is_container() || matches!(self, Self::Input)
@@ -308,7 +308,7 @@ impl PressStyle {
 /// The surface mix: one texture plus animated effects. Every amount is `0.0..=1.0`
 /// (`0.0` = off), so a design preset and a slider speak the same language.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct SurfaceFx {
+pub struct ResolvedSurface {
     /// The static pattern.
     pub texture: Texture,
     /// How visible the texture is.
@@ -370,15 +370,15 @@ pub struct SurfaceFx {
     pub targets: SurfaceTargets,
 }
 
-impl Default for SurfaceFx {
+impl Default for ResolvedSurface {
     fn default() -> Self {
         Self::NONE
     }
 }
 
-impl SurfaceFx {
+impl ResolvedSurface {
     /// Nothing: no texture, no effects.
-    pub const NONE: SurfaceFx = SurfaceFx {
+    pub const NONE: ResolvedSurface = ResolvedSurface {
         texture: Texture::None,
         strength: 0.5,
         scale: 1.0,
@@ -506,10 +506,10 @@ mod tests {
     #[test]
     fn containers_use_their_own_texture() {
         use super::*;
-        let fx = SurfaceFx {
+        let fx = ResolvedSurface {
             texture: Texture::Grain,
             container_texture: Texture::Grid,
-            ..SurfaceFx::NONE
+            ..ResolvedSurface::NONE
         };
         assert_eq!(fx.for_class(SurfaceClass::Button).texture, Texture::Grain);
         assert_eq!(fx.for_class(SurfaceClass::Card).texture, Texture::Grid);
@@ -531,11 +531,11 @@ mod tests {
 
     #[test]
     fn default_draws_nothing() {
-        let d = SurfaceFx::default();
+        let d = ResolvedSurface::default();
         assert!(d.is_none() && !d.animated() && !d.has_texture());
-        assert!(!SurfaceFx { glitch: 0.4, ..d }.is_none());
-        assert!(SurfaceFx { glitch: 0.4, ..d }.animated());
-        assert!(SurfaceFx {
+        assert!(!ResolvedSurface { glitch: 0.4, ..d }.is_none());
+        assert!(ResolvedSurface { glitch: 0.4, ..d }.animated());
+        assert!(ResolvedSurface {
             texture: Texture::Grain,
             ..d
         }
@@ -706,11 +706,11 @@ impl Default for SurfaceTuning {
     }
 }
 
-/// A per-component override of the app-wide surface mix, set with a component's
+/// A per-component override of the app-wide surface, set with a component's
 /// `.surface(..)` method.
 ///
 /// Every field is optional: what is not set falls back to the app-wide mix
-/// ([`SurfaceFx`]), which falls back to the design's own. Setting any field puts the
+/// ([`ResolvedSurface`]), which falls back to the design's own. Setting any field puts the
 /// component in the mix even when its kind is not under "Apply to"; [`Surface::NONE`]
 /// takes it out. A design still draws only the textures and effects it owns.
 ///
@@ -749,6 +749,10 @@ pub struct Surface {
     frost: Option<f32>,
     glow: Option<f32>,
     opacity: Option<f32>,
+    container_texture: Option<Texture>,
+    container_strength: Option<f32>,
+    container_scale: Option<f32>,
+    targets: Option<SurfaceTargets>,
 }
 
 impl Surface {
@@ -781,12 +785,26 @@ impl Surface {
         frost: None,
         glow: None,
         opacity: None,
+        container_texture: None,
+        container_strength: None,
+        container_scale: None,
+        targets: None,
     };
     /// No texture or effect on this component, whatever the app-wide mix is.
     pub const NONE: Self = Self {
         on: Some(false),
         ..Self::INHERIT
     };
+
+    /// Frosted glass at full strength: containers and input fields turn see-through over a
+    /// blurred backdrop. Chain more effects onto it: `Surface::frosted().glitch(0.6)`.
+    pub const fn frosted() -> Self {
+        Self::INHERIT.frost(1.0)
+    }
+    /// Frosted glass at `amount` (`0.0..=1.0`).
+    pub const fn frosted_by(amount: f32) -> Self {
+        Self::INHERIT.frost(amount)
+    }
 
     /// An override that sets nothing yet; chain the setters below.
     pub const fn new() -> Self {
@@ -931,6 +949,30 @@ impl Surface {
         self.glow = Some(v);
         self
     }
+    /// Texture for containers (cards, panels, bars); [`texture`](Self::texture) is for controls.
+    pub const fn container_texture(mut self, t: Texture) -> Self {
+        self.container_texture = Some(t);
+        self
+    }
+    /// Strength of the container texture, `0.0..=1.0`.
+    pub const fn container_strength(mut self, v: f32) -> Self {
+        self.container_strength = Some(v);
+        self
+    }
+    /// Scale of the container texture.
+    pub const fn container_scale(mut self, v: f32) -> Self {
+        self.container_scale = Some(v);
+        self
+    }
+    /// Which kinds of surface receive the app-wide mix (ignored on a single component).
+    pub const fn targets(mut self, t: SurfaceTargets) -> Self {
+        self.targets = Some(t);
+        self
+    }
+    /// Apply the app-wide mix to every kind of surface, buttons and tags included.
+    pub const fn everywhere(self) -> Self {
+        self.targets(SurfaceTargets::ALL)
+    }
     /// Force the component into (`true`) or out of (`false`) the mix without changing it.
     pub const fn enabled(mut self, on: bool) -> Self {
         self.on = Some(on);
@@ -982,7 +1024,7 @@ impl Surface {
     }
 
     /// `fx` (already resolved for the component's class) with this override on top.
-    pub fn over(&self, mut fx: SurfaceFx) -> SurfaceFx {
+    pub fn over(&self, mut fx: ResolvedSurface) -> ResolvedSurface {
         if let Some(v) = self.texture {
             fx.texture = v;
         }
@@ -1057,6 +1099,105 @@ impl Surface {
         }
         fx
     }
+
+    /// The app-wide mix: `base` (the design's own) with every field this sets on top, including
+    /// the container texture and where it applies.
+    pub fn apply(&self, base: ResolvedSurface) -> ResolvedSurface {
+        let mut fx = self.over(base);
+        if let Some(v) = self.container_texture {
+            fx.container_texture = v;
+        }
+        if let Some(v) = self.container_strength {
+            fx.container_strength = v;
+        }
+        if let Some(v) = self.container_scale {
+            fx.container_scale = v;
+        }
+        if let Some(v) = self.targets {
+            fx.targets = v;
+        }
+        fx
+    }
+
+    /// This with every field `other` sets on top: `Surface::frosted().and(Surface::new().glitch(0.6))`.
+    #[must_use]
+    pub fn and(self, other: Self) -> Self {
+        macro_rules! pick {
+            ($($f:ident),*) => { Self { $($f: other.$f.or(self.$f)),* } };
+        }
+        pick!(
+            on,
+            texture,
+            strength,
+            scale,
+            neon,
+            glitch,
+            sheen,
+            flicker,
+            bloom,
+            pulse,
+            chase,
+            edge,
+            brackets,
+            depth,
+            ripple,
+            press,
+            tint,
+            pop,
+            tape,
+            gloss,
+            strip,
+            wash,
+            rim,
+            clear,
+            frost,
+            glow,
+            opacity,
+            container_texture,
+            container_strength,
+            container_scale,
+            targets
+        )
+    }
+}
+
+impl From<ResolvedSurface> for Surface {
+    /// Every value set: the mix is exactly `fx`, whatever the design would have done.
+    fn from(fx: ResolvedSurface) -> Self {
+        Self {
+            on: None,
+            texture: Some(fx.texture),
+            strength: Some(fx.strength),
+            scale: Some(fx.scale),
+            neon: Some(fx.neon),
+            glitch: Some(fx.glitch),
+            sheen: Some(fx.sheen),
+            flicker: Some(fx.flicker),
+            bloom: Some(fx.bloom),
+            pulse: Some(fx.pulse),
+            chase: Some(fx.chase),
+            edge: Some(fx.edge),
+            brackets: Some(fx.brackets),
+            depth: Some(fx.depth),
+            ripple: Some(fx.ripple),
+            press: Some(fx.press),
+            tint: Some(fx.tint),
+            pop: Some(fx.pop),
+            tape: Some(fx.tape),
+            gloss: Some(fx.gloss),
+            strip: Some(fx.strip),
+            wash: Some(fx.wash),
+            rim: Some(fx.rim),
+            clear: Some(fx.clear),
+            frost: Some(fx.frost),
+            glow: None,
+            opacity: None,
+            container_texture: Some(fx.container_texture),
+            container_strength: Some(fx.container_strength),
+            container_scale: Some(fx.container_scale),
+            targets: Some(fx.targets),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -1065,10 +1206,10 @@ mod surface_override_tests {
 
     #[test]
     fn inherit_changes_nothing_and_none_is_off() {
-        let fx = SurfaceFx {
+        let fx = ResolvedSurface {
             texture: Texture::Grid,
             strength: 0.7,
-            ..SurfaceFx::NONE
+            ..ResolvedSurface::NONE
         };
         assert_eq!(Surface::INHERIT.over(fx), fx);
         assert!(!Surface::INHERIT.is_set() && !Surface::INHERIT.forces_on());
@@ -1077,10 +1218,10 @@ mod surface_override_tests {
 
     #[test]
     fn set_fields_win_and_force_the_component_in() {
-        let fx = SurfaceFx {
+        let fx = ResolvedSurface {
             texture: Texture::Grid,
             strength: 0.7,
-            ..SurfaceFx::NONE
+            ..ResolvedSurface::NONE
         };
         let s = Surface::new().texture(Texture::Hatch).glitch(0.5);
         let o = s.over(fx);
@@ -1098,9 +1239,9 @@ mod surface_override_tests {
 
     #[test]
     fn the_mix_frosts_containers_and_inputs_and_a_component_can_frost_itself() {
-        let fx = SurfaceFx {
+        let fx = ResolvedSurface {
             frost: 1.0,
-            ..SurfaceFx::NONE
+            ..ResolvedSurface::NONE
         };
         assert!(!fx.is_none(), "frost alone is something to draw");
         assert_eq!(fx.for_class(SurfaceClass::Card).frost, 1.0);

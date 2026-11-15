@@ -1,7 +1,7 @@
 //! Server-side HTML for the `.dodai-*` components: plain functions that return markup, for pages
 //! built without a UI framework (see the `topcoat_showcase` example).
 //!
-//! Every function takes a [`Cx`] (the theme and the app-wide surface mix) where the look depends
+//! Every function takes a [`Cx`] (the theme and the app-wide surface) where the look depends
 //! on the design, and returns a `String` to put inside a page that carries the stylesheet of
 //! [`multi_theme_stylesheet`](crate::multi_theme_stylesheet). Text is escaped by the functions
 //! that take it; markup arguments (`inner`) are inserted as they are. A pressable element takes
@@ -12,24 +12,24 @@ use dodai_core::{
     arc_points, busy, knob_angle,
     orientation::{place, AxisId, AxisTone, Basis, GizmoLayout},
     ButtonCrop, ButtonVariant, CardVariant, ControlSize, CropEdge, Kit, KnobGeometry, Palette,
-    SpinnerStyle, StepState, Surface, SurfaceClass, SurfaceFx, SurfaceMix, Theme, Tone,
+    ResolvedSurface, SpinnerStyle, StepState, Surface, SurfaceClass, Theme, Tone,
 };
 use dodai_icons::IconId;
 
-/// What the components read: the theme they draw in and the app-wide surface mix.
+/// What the components read: the theme they draw in and the app-wide surface.
 #[derive(Clone, Copy)]
 pub struct Cx<'a> {
     /// The theme in use.
     pub theme: &'a Theme,
-    /// The app-wide surface mix ([`SurfaceMix::Design`]: the design's own glass; Dodai is
-    /// frosted, the others not). A [`SurfaceFx`] converts into a [`SurfaceMix::Custom`].
-    pub mix: SurfaceMix,
+    /// The app-wide surface ([`Surface::INHERIT`]: the design's own glass; Dodai is
+    /// frosted, the others not). A [`ResolvedSurface`] converts into a custom [`Surface`].
+    pub surface: Surface,
 }
 
 impl Cx<'_> {
     /// The surface mix in use: the app's, or the design's own glass.
-    pub fn active_surface_fx(&self) -> SurfaceFx {
-        self.mix.resolve(self.theme)
+    pub fn resolved_surface(&self) -> ResolvedSurface {
+        self.theme.resolve_surface(&self.surface)
     }
 }
 
@@ -59,9 +59,9 @@ pub fn glass(cx: &Cx, class: Option<SurfaceClass>, over: &Surface) -> Option<Str
         class.unwrap_or(SurfaceClass::Button),
         over,
         if class.is_some() {
-            cx.active_surface_fx()
+            cx.resolved_surface()
         } else {
-            SurfaceFx::NONE
+            ResolvedSurface::NONE
         },
     );
     (!s.is_empty()).then_some(s)
@@ -1226,7 +1226,7 @@ mod tests {
     fn cx(t: &Theme) -> Cx<'_> {
         Cx {
             theme: t,
-            mix: SurfaceMix::Custom(SurfaceFx::NONE),
+            surface: Surface::NONE,
         }
     }
 

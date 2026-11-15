@@ -3,10 +3,10 @@
 //! The same mix and the same geometry as every other toolkit: `dodai-fx` works out each frame
 //! (textures, lit lines, glitch, flicker, sheen, pulse, chase, brackets, wash, ...) and this
 //! module only turns its four primitives into egui shapes. Set the mix for the whole app with
-//! [`set_surface_mix`]; each [`box_shapes_for`](crate::paint::box_shapes_for) call paints it on
+//! [`set_surface`]; each [`box_shapes_for`](crate::paint::box_shapes_for) call paints it on
 //! the surfaces it targets. A design draws only the textures and effects it owns.
 
-use dodai_core::{Surface, SurfaceClass, SurfaceFx, SurfaceMix, Theme};
+use dodai_core::{ResolvedSurface, Surface, SurfaceClass, Theme};
 use dodai_fx::{Frame, Painter, Rgba};
 use egui::epaint::{Mesh, PathShape};
 use egui::{pos2, vec2, Color32, Pos2, Rect, Shape, Stroke};
@@ -15,24 +15,24 @@ use std::sync::OnceLock;
 use std::time::Instant;
 
 thread_local! {
-    static MIX: Cell<SurfaceMix> = const { Cell::new(SurfaceMix::Design) };
+    static MIX: Cell<Surface> = const { Cell::new(Surface::INHERIT) };
     static ANIMATED: Cell<bool> = const { Cell::new(false) };
 }
 
-/// The surface mix the app set ([`SurfaceMix::Design`] until it sets one).
-pub fn surface_mix() -> SurfaceMix {
+/// The surface mix the app set ([`Surface::INHERIT`] until it sets one).
+pub fn surface() -> Surface {
     MIX.with(Cell::get)
 }
 
 /// The surface mix applied to every shaped surface of `theme`: the app's, or until it sets one
 /// the design's own glass ([`Theme::default_surface`]).
-pub fn surface_fx_for(theme: &Theme) -> SurfaceFx {
-    surface_mix().resolve(theme)
+pub fn resolved_surface(theme: &Theme) -> ResolvedSurface {
+    theme.resolve_surface(&surface())
 }
 
-/// Apply `mix` to every shaped surface (repaint with `ctx.request_repaint()`). A [`SurfaceFx`]
-/// converts into a [`SurfaceMix::Custom`]; [`SurfaceMix::Design`] goes back to the design's own.
-pub fn set_surface_mix(mix: impl Into<SurfaceMix>) {
+/// Apply `mix` to every shaped surface (repaint with `ctx.request_repaint()`). A [`ResolvedSurface`]
+/// converts into a custom [`Surface`]; [`Surface::INHERIT`] goes back to the design's own.
+pub fn set_surface(mix: impl Into<Surface>) {
     MIX.with(|c| c.set(mix.into()));
 }
 
@@ -120,7 +120,7 @@ pub fn surface_shapes(
     fill: Option<dodai_core::Color>,
 ) -> Vec<Shape> {
     let Some(mut paint) =
-        dodai_core::surface_paint(theme, class, &Surface::INHERIT, surface_fx_for(theme))
+        dodai_core::surface_paint(theme, class, &Surface::INHERIT, resolved_surface(theme))
     else {
         return Vec::new();
     };
@@ -156,8 +156,8 @@ mod tests {
         Rect::from_min_size(pos2(10.0, 10.0), vec2(120.0, 48.0))
     }
 
-    fn all(fx: SurfaceFx) {
-        set_surface_mix(SurfaceFx {
+    fn all(fx: ResolvedSurface) {
+        set_surface(ResolvedSurface {
             targets: SurfaceTargets::ALL,
             ..fx
         });
@@ -165,7 +165,7 @@ mod tests {
 
     #[test]
     fn nothing_is_drawn_by_default() {
-        set_surface_mix(SurfaceFx::NONE);
+        set_surface(ResolvedSurface::NONE);
         let t = dodai_core::themes::cyberpunk::yellow();
         assert!(surface_shapes(&t, rect(), SurfaceClass::Button, None).is_empty());
     }
@@ -183,10 +183,10 @@ mod tests {
             Texture::Brushed,
             Texture::Stripes,
         ] {
-            all(SurfaceFx {
+            all(ResolvedSurface {
                 texture: tex,
                 strength: 0.8,
-                ..SurfaceFx::NONE
+                ..ResolvedSurface::NONE
             });
             let shapes = surface_shapes(&t, rect(), SurfaceClass::Button, None);
             assert!(!shapes.is_empty(), "{tex:?}");
@@ -197,62 +197,62 @@ mod tests {
                 );
             }
         }
-        set_surface_mix(SurfaceFx::NONE);
+        set_surface(ResolvedSurface::NONE);
     }
 
     #[test]
     fn a_design_draws_only_what_it_owns() {
         let m = dodai_core::themes::material::light();
-        all(SurfaceFx {
+        all(ResolvedSurface {
             texture: Texture::Circuit,
             glitch: 1.0,
-            ..SurfaceFx::NONE
+            ..ResolvedSurface::NONE
         });
         assert!(surface_shapes(&m, rect(), SurfaceClass::Button, None).is_empty());
-        set_surface_mix(SurfaceFx::NONE);
+        set_surface(ResolvedSurface::NONE);
     }
 
     #[test]
     fn animated_effects_ask_for_frames() {
         let t = dodai_core::themes::cyberpunk::yellow();
-        all(SurfaceFx {
+        all(ResolvedSurface {
             pulse: 0.8,
-            ..SurfaceFx::NONE
+            ..ResolvedSurface::NONE
         });
         let _ = take_animated();
         assert!(!surface_shapes(&t, rect(), SurfaceClass::Panel, None).is_empty());
         assert!(take_animated());
-        set_surface_mix(SurfaceFx::NONE);
+        set_surface(ResolvedSurface::NONE);
     }
 
     #[test]
     fn lit_lines_add_a_glow_to_line_textures() {
         let t = dodai_core::themes::cyberpunk::yellow();
         let count = |neon: f32| {
-            all(SurfaceFx {
+            all(ResolvedSurface {
                 texture: Texture::Grid,
                 strength: 0.8,
                 neon,
-                ..SurfaceFx::NONE
+                ..ResolvedSurface::NONE
             });
             surface_shapes(&t, rect(), SurfaceClass::Button, None).len()
         };
         let (flat, lit) = (count(0.0), count(1.0));
         assert!(lit > flat, "{lit} shapes lit, {flat} flat");
-        set_surface_mix(SurfaceFx::NONE);
+        set_surface(ResolvedSurface::NONE);
     }
 
     #[test]
     fn glitch_and_flicker_animate() {
         let t = dodai_core::themes::cyberpunk::yellow();
-        all(SurfaceFx {
+        all(ResolvedSurface {
             glitch: 1.0,
             flicker: 1.0,
-            ..SurfaceFx::NONE
+            ..ResolvedSurface::NONE
         });
         let _ = take_animated();
         let _ = surface_shapes(&t, rect(), SurfaceClass::Panel, None);
         assert!(take_animated());
-        set_surface_mix(SurfaceFx::NONE);
+        set_surface(ResolvedSurface::NONE);
     }
 }

@@ -4,7 +4,7 @@
 //! pop off the page; strips of masking tape stuck across corners; registration brackets and a
 //! marquee light. No gradients, glow or soft light: everything stays flat and graphic.
 
-use crate::{EffectSet, SurfaceFx, SurfaceStyle, SurfaceTuning, Texture};
+use crate::{EffectSet, ResolvedSurface, SurfaceStyle, SurfaceTuning, Texture};
 
 /// Textures this design owns.
 pub const TEXTURES: &[Texture] = &[
@@ -32,7 +32,7 @@ pub const EFFECTS: EffectSet = EffectSet {
 pub fn style(dark: bool) -> SurfaceStyle {
     let calm = if dark { 0.8 } else { 1.0 };
     SurfaceStyle {
-        preset: SurfaceFx {
+        preset: ResolvedSurface {
             texture: Texture::Halftone,
             strength: 0.35 * calm,
             container_texture: Texture::Zigzag,
@@ -42,7 +42,7 @@ pub fn style(dark: bool) -> SurfaceStyle {
             tape: 0.0,
             brackets: 0.0,
             clear: 0.4,
-            ..SurfaceFx::NONE
+            ..ResolvedSurface::NONE
         },
         textures: TEXTURES,
         effects: EFFECTS,

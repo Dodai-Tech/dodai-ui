@@ -51,7 +51,7 @@ pub struct ShapeStyle {
     /// over a span of `2 * half` px (the empty space between a cropped button's tick bars); the
     /// fill is notched `depth` px inward there.
     pub edge_gap: Option<(ShapeEdge, f32, f32)>,
-    /// Frosted glass under the fill (set by the surface mix, see `SurfaceFx::frost`).
+    /// Frosted glass under the fill (set by the surface mix, see `ResolvedSurface::frost`).
     pub frost: Option<FrostLayer>,
 }
 
@@ -196,11 +196,11 @@ impl ShapeStyle {
                 // No outline to dress: keep only the click ripple, not the texture.
                 me.surface = me.surface.and_then(|mut sp| {
                     (sp.fx.ripple > 0.0).then(|| {
-                        sp.fx = dodai_core::SurfaceFx {
+                        sp.fx = dodai_core::ResolvedSurface {
                             ripple: sp.fx.ripple,
                             press: sp.fx.press,
                             targets: sp.fx.targets,
-                            ..dodai_core::SurfaceFx::NONE
+                            ..dodai_core::ResolvedSurface::NONE
                         };
                         sp
                     })
@@ -1162,15 +1162,15 @@ mod tests {
     #[cfg(feature = "frost")]
     fn a_floating_surface_keeps_its_fill_mostly_opaque_under_glass() {
         let t = dodai_core::themes::cyberpunk::yellow();
-        crate::surface_fx::set_for_test(dodai_core::SurfaceFx {
+        crate::surface_fx::set_for_test(dodai_core::ResolvedSurface {
             frost: 1.0,
             targets: dodai_core::SurfaceTargets::ALL,
-            ..dodai_core::SurfaceFx::NONE
+            ..dodai_core::ResolvedSurface::NONE
         });
         let base = ShapeStyle::from_tokens(&t, Some(t.palette.surface), None, false, false);
         let flat = base.with_surface(&t, dodai_core::SurfaceClass::Panel);
         let float = base.with_floating_surface(&t, dodai_core::SurfaceClass::Panel);
-        crate::surface_fx::set_for_test(dodai_core::SurfaceFx::NONE);
+        crate::surface_fx::set_for_test(dodai_core::ResolvedSurface::NONE);
         assert!(flat.frost.is_some() && float.frost.is_some());
         assert!(float.fill.unwrap().a >= flat.fill.unwrap().a);
         assert!(float.fill.unwrap().a >= FLOATING_ALPHA - 1e-4);

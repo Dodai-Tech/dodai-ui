@@ -206,7 +206,7 @@ fn Page(model: Signal<Showcase>) -> Element {
         .iter()
         .map(|s| (s.title, s.heading, (s.build)(&ctx)))
         .collect();
-    // The app-wide surface mix of the Surface effects page paints every panel (drawn for a
+    // The app-wide surface of the Surface effects page paints every panel (drawn for a
     // nominal panel size and stretched over the real one).
     let fx = m.surface_fx();
     let bg = dodai_dioxus::surface_background(
@@ -251,11 +251,11 @@ fn Pinned(model: Signal<Showcase>) -> Element {
 
 /// Hands the Surface effects page's mix to the provider, so the components draw it.
 #[component]
-fn SurfaceMix(model: Signal<Showcase>) -> Element {
+fn SurfaceEffects(model: Signal<Showcase>) -> Element {
     let fx = model.read().surface_fx();
     let mut h = use_theme();
-    if h.active_surface_fx() != fx {
-        h.set_surface_mix(fx);
+    if h.resolved_surface() != fx {
+        h.set_surface(fx);
     }
     rsx! {}
 }
@@ -324,7 +324,7 @@ pub fn App() -> Element {
     };
     rsx! {
         ThemeProvider { themes: Some(vec![theme]), initial: Some(id),
-            SurfaceMix { model }
+            SurfaceEffects { model }
             div { class: "dodai-app", style: wallpaper,
                 Sidebar { model }
                 div { class: "dodai-main", TopBar { model } Pinned { model } Page { model } }

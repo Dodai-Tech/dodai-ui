@@ -1,13 +1,13 @@
 //! A design's own surface styling, carried by the theme.
 
-use dodai_fx::{EffectSet, SurfaceFx, SurfaceTuning, Texture};
+use dodai_fx::{EffectSet, ResolvedSurface, SurfaceTuning, Texture};
 
 /// A design's own surface styling: the mix it suggests and which textures and animated
 /// effects it owns. Part of the theme, so it travels with it like colours and shapes.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SurfaceStyle {
     /// The mix the "design preset" action applies (nothing is drawn until an app opts in).
-    pub preset: SurfaceFx,
+    pub preset: ResolvedSurface,
     /// Textures this design owns; others are never drawn for it.
     pub textures: &'static [Texture],
     /// Which of the animated and edge effects belong to this design.
@@ -27,7 +27,7 @@ pub struct SurfaceStyle {
 impl SurfaceStyle {
     /// A design with no textures or effects of its own.
     pub const NONE: Self = Self {
-        preset: SurfaceFx::NONE,
+        preset: ResolvedSurface::NONE,
         textures: &[],
         effects: EffectSet::NONE,
         tuning: SurfaceTuning::DEFAULT,

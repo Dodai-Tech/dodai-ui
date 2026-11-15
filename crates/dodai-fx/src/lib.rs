@@ -4,7 +4,7 @@
 //! scanlines, glitch, sheen, flicker, bloom, pulse, chase, click ripples, ...) lives here once.
 //! A toolkit implements [`Painter`] (four primitives: quad, dot, stroked path, filled path) and
 //! calls [`paint`] each frame; the effects are clipped to the shape, follow cut corners, and
-//! never look at a theme id: they read a [`SurfaceFx`] and the colours of a [`SurfacePaint`].
+//! never look at a theme id: they read a [`ResolvedSurface`] and the colours of a [`SurfacePaint`].
 
 mod canvas;
 mod clip;
@@ -26,7 +26,8 @@ use geom::noise;
 pub use geom::{poly_span, row_span};
 pub use svg::{surface_svg, SvgPainter};
 pub use vocab::{
-    EffectSet, PressStyle, Surface, SurfaceClass, SurfaceFx, SurfaceTargets, SurfaceTuning, Texture,
+    EffectSet, PressStyle, ResolvedSurface, Surface, SurfaceClass, SurfaceTargets, SurfaceTuning,
+    Texture,
 };
 
 /// Smallest side (px) of a surface that gets a texture or effect.
@@ -91,7 +92,7 @@ pub trait Painter {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SurfacePaint {
     /// What to draw.
-    pub fx: SurfaceFx,
+    pub fx: ResolvedSurface,
     /// Pattern colour (the text colour).
     pub ink: Rgba,
     /// Surface colour, for holes and dimming.
@@ -309,7 +310,7 @@ mod tests {
         (rec, animating)
     }
 
-    fn only(fx: SurfaceFx) -> SurfacePaint {
+    fn only(fx: ResolvedSurface) -> SurfacePaint {
         let ink = Rgba {
             r: 0.1,
             g: 0.1,
@@ -336,11 +337,11 @@ mod tests {
     fn every_texture_draws_something_inside_the_surface() {
         let t = Theme::default();
         for tex in Texture::ALL.into_iter().filter(|t| *t != Texture::None) {
-            let sp = only(SurfaceFx {
+            let sp = only(ResolvedSurface {
                 texture: tex,
                 strength: 0.8,
                 scale: 1.0,
-                ..SurfaceFx::NONE
+                ..ResolvedSurface::NONE
             });
             let (rec, _) = run(&sp, &t, &[]);
             let drew = rec.quads.len() + rec.dots + rec.paths.len();
@@ -358,12 +359,12 @@ mod tests {
     #[test]
     fn nothing_is_drawn_for_the_empty_mix_or_a_tiny_surface() {
         let t = Theme::default();
-        let (rec, anim) = run(&only(SurfaceFx::NONE), &t, &[]);
+        let (rec, anim) = run(&only(ResolvedSurface::NONE), &t, &[]);
         assert!(rec.quads.is_empty() && rec.paths.is_empty() && !anim);
-        let sp = only(SurfaceFx {
+        let sp = only(ResolvedSurface {
             texture: Texture::Grid,
             strength: 1.0,
-            ..SurfaceFx::NONE
+            ..ResolvedSurface::NONE
         });
         let mut rec = Rec::default();
         let tiny = Frame {
@@ -380,11 +381,11 @@ mod tests {
     #[test]
     fn painting_is_deterministic_and_ripples_ask_for_frames() {
         let t = Theme::default();
-        let sp = only(SurfaceFx {
+        let sp = only(ResolvedSurface {
             texture: Texture::Grain,
             strength: 0.7,
             ripple: 1.0,
-            ..SurfaceFx::NONE
+            ..ResolvedSurface::NONE
         });
         let (a, _) = run(&sp, &t, &[]);
         let (b, anim_idle) = run(&sp, &t, &[]);
@@ -418,16 +419,16 @@ mod tests {
             rec.quads.len() + rec.dots + rec.paths.len()
         };
         for tex in Texture::ALL {
-            let n = big(&only(SurfaceFx {
+            let n = big(&only(ResolvedSurface {
                 texture: tex,
                 strength: 1.0,
                 scale: 1.0,
-                ..SurfaceFx::NONE
+                ..ResolvedSurface::NONE
             }));
             assert!(n <= 2500, "{tex:?} drew {n} primitives");
         }
         for (name, set) in effects() {
-            let mut fx = SurfaceFx::NONE;
+            let mut fx = ResolvedSurface::NONE;
             set(&mut fx);
             let n = big(&only(fx));
             assert!(n <= 2000, "{name} drew {n} primitives");
@@ -437,7 +438,7 @@ mod tests {
     #[test]
     fn hostile_sizes_draw_nothing_or_a_bounded_amount() {
         let t = Theme::default();
-        let mut all = SurfaceFx::NONE;
+        let mut all = ResolvedSurface::NONE;
         for (_, set) in effects() {
             set(&mut all);
         }
@@ -488,7 +489,7 @@ mod tests {
         }
     }
 
-    type Setter = fn(&mut SurfaceFx);
+    type Setter = fn(&mut ResolvedSurface);
 
     /// Every animated effect, switched on alone.
     fn effects() -> Vec<(&'static str, Setter)> {
@@ -530,7 +531,7 @@ mod tests {
     fn every_effect_draws_at_some_moment_and_stays_finite() {
         let t = Theme::default();
         for (name, set) in effects() {
-            let mut fx = SurfaceFx::NONE;
+            let mut fx = ResolvedSurface::NONE;
             set(&mut fx);
             let sp = only(fx);
             let mut drew = false;
@@ -551,7 +552,7 @@ mod tests {
             if !matches!(name, "glitch" | "sheen" | "flicker" | "pulse" | "chase") {
                 continue;
             }
-            let mut fx = SurfaceFx::NONE;
+            let mut fx = ResolvedSurface::NONE;
             set(&mut fx);
             let (_, anim) = at(&t, &only(fx), 0.5);
             assert!(anim, "{name} is animated but did not ask for a frame");
@@ -583,11 +584,11 @@ mod tests {
         for clip in &outlines {
             for (w, h) in [(16.0, 16.0), (17.0, 400.0), (900.0, 20.0), (2000.0, 1200.0)] {
                 for tex in Texture::ALL {
-                    let mut fx = SurfaceFx {
+                    let mut fx = ResolvedSurface {
                         texture: tex,
                         strength: 1.0,
                         scale: 1.0,
-                        ..SurfaceFx::NONE
+                        ..ResolvedSurface::NONE
                     };
                     for (_, set) in effects() {
                         set(&mut fx);
@@ -611,7 +612,7 @@ mod tests {
 
     #[test]
     fn contrasting_swaps_ink_and_hole_to_stay_visible() {
-        let sp = only(SurfaceFx::NONE);
+        let sp = only(ResolvedSurface::NONE);
         let on_dark = sp.contrasting(0.0);
         let on_light = sp.contrasting(1.0);
         assert!(on_dark.ink.lightness() >= on_light.ink.lightness());
@@ -621,9 +622,9 @@ mod tests {
     #[test]
     fn wash_runs_through_the_three_colours_and_stays_inside() {
         let t = Theme::default();
-        let mut sp = only(SurfaceFx {
+        let mut sp = only(ResolvedSurface {
             wash: 1.0,
-            ..SurfaceFx::NONE
+            ..ResolvedSurface::NONE
         });
         let red = Rgba {
             r: 1.0,
@@ -653,9 +654,9 @@ mod tests {
     #[test]
     fn rim_follows_the_outline_in_gradient_colours_and_is_lit_top_left() {
         let t = Theme::default();
-        let mut sp = only(SurfaceFx {
+        let mut sp = only(ResolvedSurface {
             rim: 1.0,
-            ..SurfaceFx::NONE
+            ..ResolvedSurface::NONE
         });
         let red = Rgba {
             r: 1.0,
@@ -677,7 +678,7 @@ mod tests {
                 .iter()
                 .all(|(x, y)| (-1.0..=161.0).contains(x) && (-1.0..=65.0).contains(y)));
         }
-        let none = only(SurfaceFx::NONE);
+        let none = only(ResolvedSurface::NONE);
         assert!(
             run(&none, &t, &[]).0.paths.is_empty(),
             "nothing without rim"

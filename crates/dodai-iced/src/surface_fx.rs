@@ -1,6 +1,6 @@
 //! Surface textures and effects, drawn by `dodai-fx` through an iced canvas.
 
-use dodai_core::{Surface, SurfaceClass, SurfaceFx};
+use dodai_core::{ResolvedSurface, Surface, SurfaceClass};
 use dodai_fx::{Frame as FxFrame, Painter, Rgba, SurfacePaint};
 use iced::{
     mouse,
@@ -98,7 +98,7 @@ impl<Message> canvas::Program<Message> for SurfaceFxProgram {
 
 impl IcedTheme {
     /// The canvas program for `fx` on a panel, or `None` when this design draws nothing of it.
-    pub fn surface_fx_program(&self, fx: SurfaceFx) -> Option<SurfaceFxProgram> {
+    pub fn surface_fx_program(&self, fx: ResolvedSurface) -> Option<SurfaceFxProgram> {
         let paint =
             dodai_core::surface_paint(&self.theme, SurfaceClass::Panel, &Surface::INHERIT, fx)?;
         Some(SurfaceFxProgram {
@@ -109,7 +109,7 @@ impl IcedTheme {
 
     /// Full-size overlay for `fx` (put it last in a `stack!`); empty when nothing is drawn.
     /// Static only: no click ripples or animation yet.
-    pub fn surface_fx<'a, Message: 'a>(&self, fx: SurfaceFx) -> Element<'a, Message> {
+    pub fn surface_fx<'a, Message: 'a>(&self, fx: ResolvedSurface) -> Element<'a, Message> {
         match self.surface_fx_program(fx) {
             Some(p) => Canvas::new(p)
                 .width(Length::Fill)

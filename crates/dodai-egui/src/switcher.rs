@@ -79,7 +79,7 @@ pub struct ThemeController {
     pub tune: dodai_core::ShapeTune,
     /// The surface mix drawn on containers and controls (each design draws only what it owns);
     /// follows the design until set.
-    pub surface: dodai_core::SurfaceMix,
+    pub surface: dodai_core::Surface,
 }
 
 impl Default for ThemeController {
@@ -95,7 +95,7 @@ impl ThemeController {
             switcher: dodai_core::switcher(),
             glow: 1.0,
             tune: dodai_core::ShapeTune::DEFAULT,
-            surface: dodai_core::SurfaceMix::Design,
+            surface: dodai_core::Surface::INHERIT,
         }
     }
     /// Active theme with the glow intensity and shape tuning applied.
@@ -107,13 +107,13 @@ impl ThemeController {
             .tuned(&self.tune)
     }
     /// The design's own suggested texture and effect mix, ready to assign to [`Self::surface`].
-    pub fn preset(&self) -> dodai_core::SurfaceFx {
-        self.switcher.current().surface_preset()
+    pub fn preset(&self) -> dodai_core::ResolvedSurface {
+        self.switcher.current().signature_surface()
     }
     /// Install the active theme (cheap when unchanged).
     pub fn install(&self, ctx: &Context) {
         crate::set_shape_tune(self.tune);
-        crate::set_surface_mix(self.surface);
+        crate::set_surface(self.surface);
         install(ctx, &self.theme());
     }
     /// `t` next theme, `Shift+T` previous, `+`/`-` glow. Returns `true` on change.
@@ -185,7 +185,7 @@ mod tests {
         while c.switcher.current().surface_textures().is_empty() {
             c.switcher.cycle_next();
         }
-        assert_ne!(c.preset(), dodai_core::SurfaceFx::NONE);
+        assert_ne!(c.preset(), dodai_core::ResolvedSurface::NONE);
     }
 
     #[test]

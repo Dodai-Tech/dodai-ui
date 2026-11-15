@@ -231,7 +231,7 @@ pub fn svg_url(svg: &str) -> String {
 /// nothing of it. Put it on an element of exactly that size, over the element's own fill.
 pub fn surface_background(
     theme: &Theme,
-    fx: dodai_core::SurfaceFx,
+    fx: dodai_core::ResolvedSurface,
     class: dodai_core::SurfaceClass,
     size: (f32, f32),
 ) -> Option<String> {
@@ -545,7 +545,7 @@ pub fn glass_style(
     theme: &Theme,
     class: dodai_core::SurfaceClass,
     over: &dodai_core::Surface,
-    active: dodai_core::SurfaceFx,
+    active: dodai_core::ResolvedSurface,
 ) -> String {
     glass_vars(&dodai_core::surface_glass(theme, class, over, active))
 }
@@ -857,7 +857,7 @@ mod tests {
     #[test]
     fn surface_background_is_a_css_url() {
         let t = dodai_core::themes::cyberpunk::yellow();
-        let fx = dodai_core::SurfaceFx {
+        let fx = dodai_core::ResolvedSurface {
             texture: t
                 .surface_textures()
                 .iter()
@@ -866,7 +866,7 @@ mod tests {
                 .unwrap(),
             strength: 0.8,
             targets: dodai_core::SurfaceTargets::ALL,
-            ..dodai_core::SurfaceFx::NONE
+            ..dodai_core::ResolvedSurface::NONE
         };
         let css = surface_background(&t, fx, dodai_core::SurfaceClass::Button, (160.0, 80.0))
             .expect("the design's own texture");
@@ -874,7 +874,7 @@ mod tests {
         assert!(css.ends_with("%3C/svg%3E\")") && !css.contains(' ') && !css.contains('#'));
         assert!(surface_background(
             &t,
-            dodai_core::SurfaceFx::NONE,
+            dodai_core::ResolvedSurface::NONE,
             dodai_core::SurfaceClass::Button,
             (160.0, 80.0)
         )
@@ -966,15 +966,20 @@ mod tests {
 
     #[test]
     fn glass_is_empty_for_a_solid_fill_and_frost_adds_the_backdrop_filter() {
-        use dodai_core::{Surface, SurfaceClass, SurfaceFx};
+        use dodai_core::{ResolvedSurface, Surface, SurfaceClass};
         for t in themes::all() {
-            let solid = glass_style(&t, SurfaceClass::Card, &Surface::INHERIT, SurfaceFx::NONE);
+            let solid = glass_style(
+                &t,
+                SurfaceClass::Card,
+                &Surface::INHERIT,
+                ResolvedSurface::NONE,
+            );
             assert!(solid.is_empty(), "{}", t.id());
             let clear = glass_style(
                 &t,
                 SurfaceClass::Button,
                 &Surface::new().opacity(0.5),
-                SurfaceFx::NONE,
+                ResolvedSurface::NONE,
             );
             assert!(
                 clear.contains("--go:0.5") && !clear.contains("--gf"),
@@ -985,7 +990,7 @@ mod tests {
                 &t,
                 SurfaceClass::Panel,
                 &Surface::new().frost(1.0),
-                SurfaceFx::NONE,
+                ResolvedSurface::NONE,
             );
             assert!(
                 frost.contains("--ga:1;") && frost.contains("--gf:blur("),

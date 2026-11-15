@@ -111,7 +111,7 @@ pub fn surface_svg(f: &Frame, sp: &SurfacePaint) -> Option<(String, bool)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Clip, SurfaceFx, SurfaceTuning, Texture};
+    use crate::{Clip, ResolvedSurface, SurfaceTuning, Texture};
 
     fn paint_of_texture(texture: Texture) -> SurfacePaint {
         let ink = Rgba {
@@ -121,10 +121,10 @@ mod tests {
             a: 1.0,
         };
         SurfacePaint {
-            fx: SurfaceFx {
+            fx: ResolvedSurface {
                 texture,
                 strength: 0.8,
-                ..SurfaceFx::NONE
+                ..ResolvedSurface::NONE
             },
             ink,
             hole: Rgba::WHITE,
@@ -166,7 +166,7 @@ mod tests {
     fn nothing_to_draw_is_none() {
         let shape = Clip::default();
         let mut sp = paint_of_texture(Texture::Grid);
-        sp.fx = SurfaceFx::NONE;
+        sp.fx = ResolvedSurface::NONE;
         assert!(surface_svg(&frame(&shape), &sp).is_none());
         let small = Frame {
             w: 4.0,

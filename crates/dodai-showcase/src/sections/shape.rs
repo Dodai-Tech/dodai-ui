@@ -48,10 +48,10 @@ impl Showcase {
         if t.surface_textures().is_empty() {
             return out;
         }
-        use dodai_core::{SurfaceClass, SurfaceFx};
-        let fx = dodai_gpui::surface_fx_for(&t);
+        use dodai_core::{ResolvedSurface, SurfaceClass};
+        let fx = dodai_gpui::resolved_surface(&t);
         // One mode selector: Off / design preset / custom (any hand edit lands on Custom).
-        let preset = t.surface_preset();
+        let preset = t.signature_surface();
         let mode = if fx.is_none() {
             0
         } else if fx == preset {
@@ -74,9 +74,9 @@ impl Showcase {
             .selected(mode)
             .on_select(|i, _, cx| match i {
                 0 => {
-                    let mut f = SurfaceFx::NONE;
-                    f.targets = dodai_gpui::surface_fx_for(&dodai_gpui::theme_of(cx)).targets;
-                    dodai_gpui::set_surface_mix(cx, f);
+                    let mut f = ResolvedSurface::NONE;
+                    f.targets = dodai_gpui::resolved_surface(&dodai_gpui::theme_of(cx)).targets;
+                    dodai_gpui::set_surface(cx, f);
                 }
                 1 => dodai_gpui::apply_surface_preset(cx),
                 _ => {}
@@ -98,18 +98,18 @@ impl Showcase {
                 ButtonVariant::Outline
             })
             .on_click(move |_, _, cx| {
-                let mut f = dodai_gpui::surface_fx_for(&dodai_gpui::theme_of(cx));
+                let mut f = dodai_gpui::resolved_surface(&dodai_gpui::theme_of(cx));
                 f.targets = f.targets.with(c, !on);
-                dodai_gpui::set_surface_mix(cx, f);
+                dodai_gpui::set_surface(cx, f);
             })
         };
         let shortcut = |id: &'static str, label: &'static str, to: dodai_core::SurfaceTargets| {
             Button::new(id, label)
                 .variant(ButtonVariant::Ghost)
                 .on_click(move |_, _, cx| {
-                    let mut f = dodai_gpui::surface_fx_for(&dodai_gpui::theme_of(cx));
+                    let mut f = dodai_gpui::resolved_surface(&dodai_gpui::theme_of(cx));
                     f.targets = to;
-                    dodai_gpui::set_surface_mix(cx, f);
+                    dodai_gpui::set_surface(cx, f);
                 })
         };
         // Name and one-line meaning on the left, the toggles on the right.
@@ -204,7 +204,7 @@ impl Showcase {
         }
         use dodai_core::Texture;
         let owned = t.surface_textures();
-        let fx = dodai_gpui::surface_fx_for(&t);
+        let fx = dodai_gpui::resolved_surface(&t);
         out.push((
                 "Surface effects",
                 "Component textures",
@@ -225,9 +225,9 @@ impl Showcase {
                             .labels(list.iter().map(|x| x.label()))
                             .selected(sel)
                             .on_select(move |i, _, cx| {
-                                let mut f = dodai_gpui::surface_fx_for(&dodai_gpui::theme_of(cx));
+                                let mut f = dodai_gpui::resolved_surface(&dodai_gpui::theme_of(cx));
                                 f.texture = list[i];
-                                dodai_gpui::set_surface_mix(cx, f);
+                                dodai_gpui::set_surface(cx, f);
                             })
                     })
                     .child(fx_amount(gap, "sfx-strength", "Strength", fx.strength, 1.0, |f, v| f.strength = v))
@@ -250,7 +250,7 @@ impl Showcase {
         }
         use dodai_core::Texture;
         let owned = t.surface_textures();
-        let fx = dodai_gpui::surface_fx_for(&t);
+        let fx = dodai_gpui::resolved_surface(&t);
         out.push((
                 "Surface effects",
                 "Container textures",
@@ -275,9 +275,9 @@ impl Showcase {
                             .labels(list.iter().map(|x| x.label()))
                             .selected(sel)
                             .on_select(move |i, _, cx| {
-                                let mut f = dodai_gpui::surface_fx_for(&dodai_gpui::theme_of(cx));
+                                let mut f = dodai_gpui::resolved_surface(&dodai_gpui::theme_of(cx));
                                 f.container_texture = list[i];
-                                dodai_gpui::set_surface_mix(cx, f);
+                                dodai_gpui::set_surface(cx, f);
                             })
                     })
                     .child(fx_amount(gap, "sfx-cstrength", "Strength", fx.container_strength, 1.0, |f, v| f.container_strength = v))
@@ -293,7 +293,7 @@ impl Showcase {
     fn frost_section(&mut self, cx: &mut Context<Self>) -> Vec<Section> {
         let t = theme_of(cx);
         let gap = px(t.spacing.md);
-        let fx = dodai_gpui::surface_fx_for(&t);
+        let fx = dodai_gpui::resolved_surface(&t);
         let own = dodai_core::Surface::new().frost(1.0);
         let backdrop = Segmented::new("sfx-frost-bg", ["Canvas", "Picture"])
             .selected(usize::from(dodai_gpui::has_wallpaper()))
@@ -373,7 +373,7 @@ impl Showcase {
         if t.surface_textures().is_empty() {
             return out;
         }
-        let fx = dodai_gpui::surface_fx_for(&t);
+        let fx = dodai_gpui::resolved_surface(&t);
         let mut light = self.section("Light FX", cx).child(Muted::new(
             "Glow and animated accents on components and containers. 0 turns an effect off.",
         ));
@@ -423,7 +423,7 @@ impl Showcase {
         if t.surface_textures().is_empty() {
             return out;
         }
-        let fx = dodai_gpui::surface_fx_for(&t);
+        let fx = dodai_gpui::resolved_surface(&t);
         let ef = t.surface_effects();
         if ef.edge || ef.brackets || ef.depth {
             out.push((
@@ -458,7 +458,7 @@ impl Showcase {
         if t.surface_textures().is_empty() {
             return out;
         }
-        let fx = dodai_gpui::surface_fx_for(&t);
+        let fx = dodai_gpui::resolved_surface(&t);
         let ef = t.surface_effects();
         if ef.ripple {
             let styles = dodai_core::PressStyle::ALL;
@@ -481,9 +481,9 @@ impl Showcase {
                                                 .unwrap_or(usize::MAX),
                                         )
                                         .on_select(move |i, _, cx| {
-                                            let mut f = dodai_gpui::surface_fx_for(&dodai_gpui::theme_of(cx));
+                                            let mut f = dodai_gpui::resolved_surface(&dodai_gpui::theme_of(cx));
                                             f.press = styles[i];
-                                            dodai_gpui::set_surface_mix(cx, f);
+                                            dodai_gpui::set_surface(cx, f);
                                         }),
                                 ),
                         )
@@ -505,7 +505,7 @@ impl Showcase {
         if t.surface_textures().is_empty() {
             return out;
         }
-        let fx = dodai_gpui::surface_fx_for(&t);
+        let fx = dodai_gpui::resolved_surface(&t);
         let ef = t.surface_effects();
         if ef.tint || ef.pop || ef.tape || ef.gloss || ef.strip || ef.wash || ef.rim {
             out.push((
@@ -1198,7 +1198,7 @@ fn fx_amount(
     name: &'static str,
     v: f32,
     max: f32,
-    set: fn(&mut dodai_core::SurfaceFx, f32),
+    set: fn(&mut dodai_core::ResolvedSurface, f32),
 ) -> gpui::Div {
     let slider = Slider::new(id, v)
         .range(0.0, max)
@@ -1206,9 +1206,9 @@ fn fx_amount(
         .show_value(true)
         .format(|v| format!("{v:.2}"))
         .on_change(move |v, _, cx| {
-            let mut f = dodai_gpui::surface_fx_for(&dodai_gpui::theme_of(cx));
+            let mut f = dodai_gpui::resolved_surface(&dodai_gpui::theme_of(cx));
             set(&mut f, v);
-            dodai_gpui::set_surface_mix(cx, f);
+            dodai_gpui::set_surface(cx, f);
         });
     div()
         .flex()

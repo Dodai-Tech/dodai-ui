@@ -1134,7 +1134,7 @@ pub fn run() {
         }
         // Test aid: DODAI_SFX=halftone,glitch,sheen,flicker,bloom (or `preset`).
         if let Ok(v) = std::env::var("DODAI_SFX") {
-            let mut fx = dodai_core::SurfaceFx::NONE;
+            let mut fx = dodai_core::ResolvedSurface::NONE;
             for k in v.split(',') {
                 match k {
                     "glitch" => fx.glitch = 0.6,
@@ -1169,7 +1169,7 @@ pub fn run() {
                     "rim" => fx.rim = 0.8,
                     "clear" => fx.clear = 0.7,
                     "frost" => fx.frost = 1.0,
-                    "preset" => fx = theme_of(cx).surface_preset(),
+                    "preset" => fx = theme_of(cx).signature_surface(),
                     name => {
                         if let Some(t) = dodai_core::Texture::ALL
                             .iter()
@@ -1181,7 +1181,7 @@ pub fn run() {
                     }
                 }
             }
-            dodai_gpui::set_surface_mix(cx, fx);
+            dodai_gpui::set_surface(cx, fx);
         }
         // Test aid: DODAI_WALLPAPER=1 puts the hard-edged picture behind the app (frost demo).
         if std::env::var("DODAI_WALLPAPER").is_ok() {

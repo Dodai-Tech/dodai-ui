@@ -380,8 +380,8 @@ impl Showcase {
         .then(crate::sections::shape::live_preview)
     }
 
-    /// The app-wide surface mix (texture and effects) the Surface effects page set.
-    pub fn surface_fx(&self) -> dodai_core::SurfaceFx {
+    /// The app-wide surface (texture and effects) the Surface effects page set.
+    pub fn surface_fx(&self) -> dodai_core::ResolvedSurface {
         crate::surface_state::mix(&self.values, &self.theme())
     }
 
@@ -762,7 +762,7 @@ mod surface_tests {
             crate::surface_state::MODE.into(),
             Value::Index(1),
         ));
-        assert_eq!(m.surface_fx(), m.theme().surface_preset());
+        assert_eq!(m.surface_fx(), m.theme().signature_surface());
         m.update(Action::Press(format!("{TARGETS}none")));
         assert_eq!(m.surface_fx().targets, dodai_core::SurfaceTargets::NONE);
     }

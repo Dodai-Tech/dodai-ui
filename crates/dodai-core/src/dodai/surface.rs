@@ -3,7 +3,7 @@
 //! falling in from the borders. Nothing
 //! neon, nothing loud.
 
-use crate::{EffectSet, SurfaceFx, SurfaceStyle, SurfaceTuning, Texture};
+use crate::{EffectSet, ResolvedSurface, SurfaceStyle, SurfaceTuning, Texture};
 
 /// Textures this design owns: glass is mostly clean.
 pub const TEXTURES: &[Texture] = &[
@@ -27,7 +27,7 @@ pub const EFFECTS: EffectSet = EffectSet {
 /// `hue` rotates the gradient wash (degrees; 0 is the signature violet).
 pub fn style(dark: bool, hue: f32) -> SurfaceStyle {
     SurfaceStyle {
-        preset: SurfaceFx {
+        preset: ResolvedSurface {
             texture: Texture::None,
             strength: 0.0,
             container_texture: Texture::None,
@@ -38,7 +38,7 @@ pub fn style(dark: bool, hue: f32) -> SurfaceStyle {
             edge: 0.2,
             clear: 0.45,
             frost: 1.0,
-            ..SurfaceFx::NONE
+            ..ResolvedSurface::NONE
         },
         textures: TEXTURES,
         effects: EFFECTS,

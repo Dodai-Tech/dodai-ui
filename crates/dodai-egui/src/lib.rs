@@ -53,7 +53,7 @@ pub use list::{Divider, ListItem};
 pub use paint::{box_shapes, color32, glow_shapes, outline_points, outline_shape};
 pub use panel::{tooltip, Panel, TextInput};
 pub use scanlines::{paint_scanlines, scanline_ys};
-pub use surface::{set_surface_mix, surface_fx_for, surface_mix, surface_shapes};
+pub use surface::{resolved_surface, set_surface, surface, surface_shapes};
 pub use switcher::{glow_controls, theme_switcher_bar, ThemeController};
 pub use tabs::Tabs;
 pub use tag::Tag;

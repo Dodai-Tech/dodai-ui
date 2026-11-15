@@ -59,7 +59,7 @@ impl IcedTheme {
                 &self.theme,
                 dodai_core::SurfaceClass::Button,
                 over,
-                dodai_core::SurfaceFx::NONE,
+                dodai_core::ResolvedSurface::NONE,
             ),
         }
     }

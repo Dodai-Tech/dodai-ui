@@ -1,46 +1,8 @@
 //! See-through fills: frosted glass (from the surface mix) and a component's own fill opacity,
 //! resolved once so every toolkit makes a fill exactly as transparent.
 
-use crate::{SurfaceClass, SurfaceFx, Theme};
+use crate::{ResolvedSurface, SurfaceClass, Theme};
 use dodai_fx::Surface;
-
-/// Which surface mix an app or a subtree uses: what every toolkit stores and takes.
-///
-/// [`Design`](Self::Design) (the default) follows the active design: Dodai is frosted, the others
-/// are not ([`Theme::default_surface`]). [`Custom`](Self::Custom) is the app's own mix. Resolve it
-/// against the theme in use with [`resolve`](Self::resolve).
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
-pub enum SurfaceMix {
-    /// The design's own: only its glass, never a texture or an effect.
-    #[default]
-    Design,
-    /// The app's own mix (use [`SurfaceFx::NONE`] to turn everything off).
-    Custom(SurfaceFx),
-}
-
-impl SurfaceMix {
-    /// The mix to draw `theme`'s surfaces with.
-    pub fn resolve(self, theme: &Theme) -> SurfaceFx {
-        match self {
-            Self::Design => theme.default_surface(),
-            Self::Custom(fx) => fx,
-        }
-    }
-
-    /// The app's own mix, if it set one.
-    pub fn custom(self) -> Option<SurfaceFx> {
-        match self {
-            Self::Design => None,
-            Self::Custom(fx) => Some(fx),
-        }
-    }
-}
-
-impl From<SurfaceFx> for SurfaceMix {
-    fn from(fx: SurfaceFx) -> Self {
-        Self::Custom(fx)
-    }
-}
 
 /// How see-through one surface's fill is, and the frosted glass under it.
 ///
@@ -139,7 +101,7 @@ pub fn surface_glass(
     theme: &Theme,
     class: SurfaceClass,
     over: &Surface,
-    active: SurfaceFx,
+    active: ResolvedSurface,
 ) -> Glass {
     let amount = crate::surface_paint(theme, class, over, active).map_or(0.0, |p| p.fx.frost);
     Glass::new(theme, class, amount, over.opacity_value().unwrap_or(1.0))
@@ -323,7 +285,12 @@ mod tests {
     #[test]
     fn no_frost_and_full_opacity_keep_the_fill() {
         let t = theme("material-dark");
-        let g = surface_glass(&t, SurfaceClass::Card, &Surface::INHERIT, SurfaceFx::NONE);
+        let g = surface_glass(
+            &t,
+            SurfaceClass::Card,
+            &Surface::INHERIT,
+            ResolvedSurface::NONE,
+        );
         assert!(g.is_solid());
         assert_eq!(g.alpha(1.0), 1.0);
         assert_eq!(g.color(t.palette.surface), t.palette.surface);
@@ -332,10 +299,10 @@ mod tests {
     #[test]
     fn frost_drops_containers_to_the_glass_and_fields_halfway() {
         let t = theme("material-dark");
-        let fx = SurfaceFx {
+        let fx = ResolvedSurface {
             frost: 1.0,
             targets: crate::SurfaceTargets::ALL,
-            ..SurfaceFx::NONE
+            ..ResolvedSurface::NONE
         };
         let clear = f32::from(t.frost().tint.a) / 255.0;
         let card = surface_glass(&t, SurfaceClass::Card, &Surface::INHERIT, fx);
@@ -350,7 +317,7 @@ mod tests {
             &t,
             SurfaceClass::Button,
             &Surface::new().frost(1.0),
-            SurfaceFx::NONE,
+            ResolvedSurface::NONE,
         );
         assert!((own.alpha(1.0) - (clear + 1.0) / 2.0).abs() < 1e-5);
         // A fill already clearer than the glass stays as it is.
@@ -364,7 +331,7 @@ mod tests {
                 &t,
                 SurfaceClass::Button,
                 &Surface::new().opacity(0.5),
-                SurfaceFx::NONE,
+                ResolvedSurface::NONE,
             );
             assert!(!g.frosted() && !g.is_solid(), "{}", t.id());
             assert_eq!(g.alpha(0.8), 0.4);
@@ -378,7 +345,7 @@ mod tests {
                 &t,
                 SurfaceClass::Panel,
                 &Surface::new().frost(1.0),
-                SurfaceFx::NONE,
+                ResolvedSurface::NONE,
             );
             assert!(g.frosted() && g.blur > 0.0, "{}", t.id());
             assert!(g.alpha(1.0) < 1.0, "{}", t.id());

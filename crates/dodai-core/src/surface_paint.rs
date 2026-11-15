@@ -1,6 +1,6 @@
 //! Resolving a theme into the colours and timing a surface effect is painted with.
 
-use crate::{Color, SurfaceClass, SurfaceFx, Texture, Theme};
+use crate::{Color, ResolvedSurface, SurfaceClass, Texture, Theme};
 use dodai_fx::{Rgba, Surface, SurfacePaint};
 
 impl From<Color> for Rgba {
@@ -15,7 +15,7 @@ impl From<Color> for Rgba {
     }
 }
 
-fn paint_with(theme: &Theme, mut fx: SurfaceFx, pressable: bool) -> SurfacePaint {
+fn paint_with(theme: &Theme, mut fx: ResolvedSurface, pressable: bool) -> SurfacePaint {
     let p = &theme.palette;
     fx.wash = (fx.wash * theme.surface_style.gradient).min(1.0);
     fx.rim = (fx.rim * theme.surface_style.gradient).min(1.0);
@@ -41,7 +41,7 @@ pub fn surface_paint(
     theme: &Theme,
     class: SurfaceClass,
     over: &Surface,
-    active: SurfaceFx,
+    active: ResolvedSurface,
 ) -> Option<SurfacePaint> {
     if over.is_off() {
         return None;
@@ -61,12 +61,12 @@ pub fn surface_paint(
 
 /// A preview of one `texture` (for pickers); `neon` is the app-wide lit-line amount.
 pub fn swatch_paint(theme: &Theme, texture: Texture, neon: f32) -> SurfacePaint {
-    let fx = SurfaceFx {
+    let fx = ResolvedSurface {
         texture,
         strength: 0.8,
         scale: 1.0,
         neon,
-        ..SurfaceFx::NONE
+        ..ResolvedSurface::NONE
     };
     paint_with(theme, fx, false)
 }
@@ -80,7 +80,7 @@ pub fn surface_svg(
     theme: &Theme,
     class: SurfaceClass,
     over: &Surface,
-    active: SurfaceFx,
+    active: ResolvedSurface,
     (w, h): (f32, f32),
     (seed, time): (i32, f32),
 ) -> Option<(String, bool)> {
@@ -112,12 +112,12 @@ mod tests {
     }
 
     /// A mix of the first texture `t` owns.
-    fn owned(t: &Theme) -> SurfaceFx {
-        SurfaceFx {
+    fn owned(t: &Theme) -> ResolvedSurface {
+        ResolvedSurface {
             texture: textured(t)[0],
             strength: 0.8,
             targets: SurfaceTargets::ALL,
-            ..SurfaceFx::NONE
+            ..ResolvedSurface::NONE
         }
     }
 
@@ -152,14 +152,14 @@ mod tests {
             )
             .is_none()
         };
-        assert!(none(&t, SurfaceFx::NONE));
+        assert!(none(&t, ResolvedSurface::NONE));
         // A design draws only the textures it owns.
         let m = crate::themes::material::light();
         let foreign = textured(&t)
             .into_iter()
             .find(|x| !m.surface_textures().contains(x))
             .expect("the designs own different textures");
-        let theirs = SurfaceFx {
+        let theirs = ResolvedSurface {
             texture: foreign,
             ..owned(&t)
         };

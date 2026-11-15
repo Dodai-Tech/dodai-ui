@@ -154,9 +154,9 @@ fn every_surface_texture_and_effect_renders(cx: &mut TestAppContext) {
         vcx.simulate_resize(size(px(1400.0), px(900.0)));
         for tex in dodai_core::Texture::ALL {
             vcx.update(|_, cx| {
-                dodai_gpui::set_surface_mix(
+                dodai_gpui::set_surface(
                     cx,
-                    dodai_core::SurfaceFx {
+                    dodai_core::ResolvedSurface {
                         texture: tex,
                         strength: 1.0,
                         scale: 1.5,
@@ -196,6 +196,6 @@ fn every_surface_texture_and_effect_renders(cx: &mut TestAppContext) {
                 vcx.run_until_parked();
             }
         }
-        vcx.update(|_, cx| dodai_gpui::set_surface_mix(cx, dodai_core::SurfaceFx::NONE));
+        vcx.update(|_, cx| dodai_gpui::set_surface(cx, dodai_core::ResolvedSurface::NONE));
     }
 }

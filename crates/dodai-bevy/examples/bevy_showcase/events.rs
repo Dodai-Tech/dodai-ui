@@ -261,7 +261,7 @@ pub fn sync_theme(
 pub fn sync_glass(
     model: Res<Model>,
     mut glass: ResMut<DodaiGlass>,
-    mut seen: Local<Option<(dodai_core::SurfaceFx, Option<&'static str>)>>,
+    mut seen: Local<Option<(dodai_core::ResolvedSurface, Option<&'static str>)>>,
 ) {
     let theme = model.0.theme();
     let now = (
@@ -273,7 +273,7 @@ pub fn sync_glass(
     }
     let picture_changed = seen.map(|s| s.1) != Some(now.1);
     *seen = Some(now);
-    glass.set_surface_mix(now.0);
+    glass.set_surface(now.0);
     if picture_changed {
         glass.set_picture(now.1.map(|_| {
             let p = dodai_showcase_model::media::wallpaper(&theme);
@@ -718,10 +718,10 @@ mod tests {
 /// when its size or the mix changes.
 #[derive(Component, Default)]
 pub struct SectionFx {
-    drawn: Option<(Vec2, dodai_core::SurfaceFx, Entity)>,
+    drawn: Option<(Vec2, dodai_core::ResolvedSurface, Entity)>,
 }
 
-/// Paint the app-wide surface mix over every section panel, as the other showcases do.
+/// Paint the app-wide surface over every section panel, as the other showcases do.
 pub fn section_fx(
     mut commands: Commands,
     model: Res<Model>,

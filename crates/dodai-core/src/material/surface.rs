@@ -4,7 +4,7 @@
 //! the primary colour (the elevation tint), a click ripple and a gentle inner
 //! shadow. Nothing here is shared with the other designs.
 
-use crate::{EffectSet, PressStyle, SurfaceFx, SurfaceStyle, SurfaceTuning, Texture};
+use crate::{EffectSet, PressStyle, ResolvedSurface, SurfaceStyle, SurfaceTuning, Texture};
 
 /// Textures this design owns.
 pub const TEXTURES: &[Texture] = &[
@@ -27,7 +27,7 @@ pub fn style(dark: bool) -> SurfaceStyle {
     // Ink shows more on dark tonal surfaces, so it is a touch quieter there.
     let calm = if dark { 0.8 } else { 1.0 };
     SurfaceStyle {
-        preset: SurfaceFx {
+        preset: ResolvedSurface {
             texture: Texture::Paper,
             strength: 0.4 * calm,
             container_texture: Texture::Ripples,
@@ -37,7 +37,7 @@ pub fn style(dark: bool) -> SurfaceStyle {
             press: PressStyle::Ink,
             depth: 0.15,
             clear: 0.4,
-            ..SurfaceFx::NONE
+            ..ResolvedSurface::NONE
         },
         textures: TEXTURES,
         effects: EFFECTS,

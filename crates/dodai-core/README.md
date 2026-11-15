@@ -25,8 +25,12 @@ Every design is off by default; with no feature you get the engine and `themes::
   Components never branch on a theme id; they read shape, glow and type from the tokens.
 * `ThemeSwitcher` and `themes::{all, by_id}`: switch themes at run time, persist `theme.id()`.
 * Resolved component styles (`Theme::button`, `input`, `tab`, ...) for every control state.
-* `Surface`, `SurfaceFx` and `Glass`: per-component fill opacity, frosted glass and surface
-  effects, resolved once for every toolkit.
+* `Surface`: the one API for every surface effect (frosted glass, textures, gloss, glitch, neon,
+  ...), app-wide (`set_surface`) and per component (`.surface(..)`). Unset follows the design
+  (Dodai is frosted by default). Presets and chaining: `Surface::frosted()`,
+  `Surface::frosted().glitch(0.6)`, `Surface::NONE`, `Surface::INHERIT`. A design draws only the
+  effects it owns. `Theme::resolve_surface` turns it into the flat `ResolvedSurface` the painters
+  read, and `Glass` into fill alpha and blur, once for every toolkit.
 * `motion`: easing, springs, curves, tweens and mixins, driven by the clock you pass in.
 * WCAG contrast helpers and an ANSI-256 fallback for terminals.
 * DTCG token export (`export`).
