@@ -27,7 +27,7 @@ Every design is off by default; with no feature you get the engine and `themes::
 * Resolved component styles (`Theme::button`, `input`, `tab`, ...) for every control state.
 * `Surface`: the one API for every surface effect (frosted glass, textures, gloss, glitch, neon,
   ...), app-wide (`set_surface`) and per component (`.surface(..)`). Unset follows the design
-  (Dodai is frosted by default). Presets and chaining: `Surface::frosted()`,
+  (frost is opt-in; Dodai suggests it). Presets and chaining: `Surface::frosted()`,
   `Surface::frosted().glitch(0.6)`, `Surface::NONE`, `Surface::INHERIT`. A design draws only the
   effects it owns. `Theme::resolve_surface` turns it into the flat `ResolvedSurface` the painters
   read, and `Glass` into fill alpha and blur, once for every toolkit.

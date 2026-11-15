@@ -303,8 +303,8 @@ mod tests {
             assert_eq!(mix(&v, &t), t.default_surface());
             assert_eq!(SurfaceMode::ALL[mode(&v, &t)], SurfaceMode::Design);
         }
-        // Dodai is frosted out of the box, Cyberpunk is not.
-        assert!(mix(&Values::default(), &dodai()).frost > 0.0);
+        // Frost is opt-in on every design.
+        assert!(mix(&Values::default(), &dodai()).is_none());
         assert!(mix(&Values::default(), &cyberpunk()).is_none());
     }
 

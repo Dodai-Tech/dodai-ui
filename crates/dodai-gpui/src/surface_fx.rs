@@ -280,7 +280,7 @@ mod tests {
         std::thread::spawn(|| {
             let dodai = dodai_core::themes::by_id("dodai-dark").unwrap();
             let cyber = dodai_core::themes::cyberpunk::yellow();
-            assert!(resolved_surface(&dodai).frost > 0.0);
+            assert_eq!(resolved_surface(&dodai), ResolvedSurface::NONE);
             assert_eq!(resolved_surface(&cyber), ResolvedSurface::NONE);
             set_surface_fx_for_test(ResolvedSurface::NONE);
             assert_eq!(resolved_surface(&dodai), ResolvedSurface::NONE);
