@@ -15,11 +15,20 @@ impl From<Color> for Rgba {
     }
 }
 
-fn paint_with(theme: &Theme, mut fx: ResolvedSurface, pressable: bool) -> SurfacePaint {
+fn paint_with(
+    theme: &Theme,
+    mut fx: ResolvedSurface,
+    pressable: bool,
+    container: bool,
+) -> SurfacePaint {
     let p = &theme.palette;
-    // A frosted surface is the blurred backdrop, not a gradient of its own: the wash fades out as
-    // the frost comes in.
-    let wash = fx.wash * (1.0 - fx.frost.clamp(0.0, 1.0));
+    // Containers keep the design's gradient over their frost; controls (buttons, fields, tags)
+    // are the blurred backdrop only, so their wash fades out as the frost comes in.
+    let wash = if container {
+        fx.wash
+    } else {
+        fx.wash * (1.0 - fx.frost.clamp(0.0, 1.0))
+    };
     fx.wash = (wash * theme.surface_style.gradient).min(1.0);
     fx.rim = (fx.rim * theme.surface_style.gradient).min(1.0);
     SurfacePaint {
@@ -59,6 +68,7 @@ pub fn surface_paint(
         theme,
         fx,
         matches!(class, SurfaceClass::Button | SurfaceClass::Tag),
+        class.is_container(),
     ))
 }
 
@@ -71,7 +81,7 @@ pub fn swatch_paint(theme: &Theme, texture: Texture, neon: f32) -> SurfacePaint 
         neon,
         ..ResolvedSurface::NONE
     };
-    paint_with(theme, fx, false)
+    paint_with(theme, fx, false, false)
 }
 
 /// One frame of the mix `active` (with a component's own `over` on top) for a `class` surface of

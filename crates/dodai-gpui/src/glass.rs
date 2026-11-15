@@ -119,12 +119,17 @@ pub fn has_wallpaper() -> bool {
     locked().wall.as_ref().is_some_and(|w| w.design.is_none())
 }
 
-/// The wallpaper the app set, ready to draw.
+/// The wallpaper the app set, ready to draw. The design's own picture is only what glass blurs;
+/// the canvas keeps the design's gradient.
 pub(crate) fn wallpaper_image() -> Option<Arc<RenderImage>> {
-    locked().wall.as_ref().map(|w| w.image.clone())
+    locked()
+        .wall
+        .as_ref()
+        .filter(|w| w.design.is_none())
+        .map(|w| w.image.clone())
 }
 
-/// Puts the design's own picture behind the app while the surface is frosted and the app set no
+/// Keeps the design's own picture (not drawn) for glass to blur while the surface is frosted and the app set no
 /// wallpaper: over a smooth canvas the blur has nothing to show. Called when the backdrop is
 /// built, so a theme or surface change swaps it.
 pub(crate) fn sync_design_backdrop(t: &Theme) {
