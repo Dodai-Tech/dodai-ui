@@ -291,6 +291,9 @@ impl Showcase {
                     dodai_gpui::clear_wallpaper(cx);
                 }
             });
+        let window_blur = Segmented::new("sfx-frost-window", ["Solid", "Blurred"])
+            .selected(usize::from(dodai_gpui::window_blur()))
+            .on_select(|i, window, cx| dodai_gpui::set_window_blur(window, cx, i == 1));
         let labelled = |name: &'static str, control: gpui::AnyElement| {
             div()
                 .flex()
@@ -309,6 +312,10 @@ impl Showcase {
                 ))
                 .child(fx_amount(gap, "sfx-frost", "Frost", fx.frost, 1.0, |f, v| f.frost = v))
                 .child(labelled("Backdrop", backdrop.into_any_element()))
+                .child(labelled("Window", window_blur.into_any_element()))
+                .child(Muted::new(
+                    "Blurred: the OS blurs the live desktop behind the window (the one live blur gpui can do), and the canvas turns half see-through to show it.",
+                ))
                 .child(
                     div()
                         .flex()

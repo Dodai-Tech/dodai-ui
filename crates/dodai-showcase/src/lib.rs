@@ -1290,6 +1290,9 @@ pub fn run() {
             .expect("open window");
         win.update(cx, |s, w, cx| {
             w.focus(&s.focus);
+            if std::env::var("DODAI_WINDOW_BLUR").is_ok() {
+                dodai_gpui::set_window_blur(w, cx, true);
+            }
             // Light or dark like the OS, unless a theme was asked for.
             if !pinned_theme {
                 dodai_gpui::follow_system_appearance(w, cx);

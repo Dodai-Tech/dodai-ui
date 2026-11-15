@@ -123,7 +123,7 @@ pub fn has_wallpaper() -> bool {
 /// wallpaper: over a smooth canvas the blur has nothing to show. Called when the backdrop is
 /// built, so a theme or surface change swaps it.
 pub(crate) fn sync_design_backdrop(t: &Theme) {
-    let want = crate::resolved_surface(t).frost > 0.0;
+    let want = !crate::window_blur() && crate::resolved_surface(t).frost > 0.0;
     let mut s = locked();
     match (&s.wall, want) {
         (Some(w), _) if w.design.is_none() => return,
@@ -176,6 +176,10 @@ pub(crate) fn paint_under(
     shape: &Shape,
     layer: &FrostLayer,
 ) {
+    // The OS blurs the desktop behind a see-through fill; nothing to paint under it.
+    if crate::window_blur() {
+        return;
+    }
     let view = window.viewport_size();
     let (vw, vh): (f32, f32) = (view.width.into(), view.height.into());
     let (x, y): (f32, f32) = (bounds.origin.x.into(), bounds.origin.y.into());
