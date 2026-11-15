@@ -857,6 +857,12 @@ pub fn view(node: &Demo, cx: Cx) -> Element {
             rsx! { StyledProgress { style: *style, value: *value } }
         }
         Demo::Indeterminate => rsx! { Indeterminate {} },
+        Demo::WavyProgress { value } => {
+            rsx! { div { dangerous_inner_html: dodai_topcoat::html::wavy_progress(*value) } }
+        }
+        Demo::CircularProgress { value, wavy } => {
+            rsx! { div { dangerous_inner_html: dodai_topcoat::html::circular_progress(*value, *wavy) } }
+        }
         Demo::Skeleton { w, h } => rsx! { Skeleton { width: *w as u32, height: *h as u32 } },
         Demo::Empty {
             icon: glyph,

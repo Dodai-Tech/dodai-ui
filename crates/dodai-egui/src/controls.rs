@@ -377,6 +377,83 @@ impl Widget for Slider<'_> {
     }
 }
 
+/// Busy spinner in any [`dodai_core::SpinnerStyle`] (the plain ring by default); animates itself.
+pub struct Spinner {
+    size: f32,
+    style: dodai_core::SpinnerStyle,
+}
+
+impl Spinner {
+    /// A ring spinner 24 px wide.
+    pub fn new() -> Self {
+        Self {
+            size: 24.0,
+            style: dodai_core::SpinnerStyle::Ring,
+        }
+    }
+    /// Width and height, px.
+    pub fn size(mut self, size: f32) -> Self {
+        self.size = size;
+        self
+    }
+    /// The spinner's shape.
+    pub fn style(mut self, style: dodai_core::SpinnerStyle) -> Self {
+        self.style = style;
+        self
+    }
+}
+
+impl Default for Spinner {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Widget for Spinner {
+    fn ui(self, ui: &mut Ui) -> Response {
+        use dodai_core::busy;
+        let t = active_theme(ui.ctx());
+        let (rect, resp) = ui.allocate_exact_size(vec2(self.size, self.size), Sense::hover());
+        if !ui.is_rect_visible(rect) {
+            return resp;
+        }
+        let lit = color32(t.progress(None).fill);
+        let time = ui.input(|i| i.time) as f32;
+        let (origin, size, style) = (rect.min, self.size, self.style);
+        let p = ui.painter();
+        if let Some((start, len, track)) = busy::arc_span(style, time) {
+            let (frac, _round) = busy::arc_stroke(style);
+            let w = size * frac;
+            let trace = |from: f32, span: f32| -> Vec<egui::Pos2> {
+                let steps = ((span * 120.0).ceil() as usize).max(2);
+                (0..=steps)
+                    .map(|i| {
+                        let (x, y) =
+                            busy::ring_point(style, from + span * i as f32 / steps as f32, size, w);
+                        pos2(origin.x + x, origin.y + y)
+                    })
+                    .collect()
+            };
+            if track > 0.0 {
+                p.add(egui::Shape::line(
+                    trace(0.0, 1.0),
+                    Stroke::new(w, lit.gamma_multiply(track)),
+                ));
+            }
+            p.add(egui::Shape::line(trace(start, len), Stroke::new(w, lit)));
+        } else {
+            for c in busy::cells(style, size) {
+                let (x, y, w, h, a) = busy::pose(style, &c, size, time);
+                let r = Rect::from_min_size(pos2(origin.x + x, origin.y + y), vec2(w, h));
+                let radius = if c.round { w / 2.0 } else { c.radius };
+                p.rect_filled(r, radius, lit.gamma_multiply(a));
+            }
+        }
+        ui.ctx().request_repaint();
+        resp
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

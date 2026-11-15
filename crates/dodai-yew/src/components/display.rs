@@ -185,3 +185,40 @@ pub fn Tooltip(props: &TooltipProps) -> Html {
 pub fn TooltipBubble(props: &ListProps) -> Html {
     html! { <span class="dodai-tooltip">{ props.children.clone() }</span> }
 }
+
+#[derive(Properties, PartialEq)]
+pub struct SpinnerProps {
+    /// Width and height, px.
+    #[prop_or(24)]
+    pub size: u32,
+    /// The spinner's shape; the plain ring when unset.
+    #[prop_or(dodai_core::SpinnerStyle::Ring)]
+    pub style: dodai_core::SpinnerStyle,
+}
+
+/// A busy spinner in any [`dodai_core::SpinnerStyle`].
+#[function_component]
+pub fn Spinner(props: &SpinnerProps) -> Html {
+    Html::from_html_unchecked(AttrValue::from(dodai_topcoat::html::spinner_of(
+        props.style,
+        props.size,
+    )))
+}
+
+#[derive(Properties, PartialEq)]
+pub struct StyledProgressProps {
+    /// A design's own bar style.
+    pub style: dodai_core::ProgressStyle,
+    /// Fraction 0..=1, or unset for a running bar.
+    #[prop_or_default]
+    pub value: Option<f32>,
+}
+
+/// A progress bar in a design's own style (hud, stripes, stones).
+#[function_component]
+pub fn StyledProgress(props: &StyledProgressProps) -> Html {
+    Html::from_html_unchecked(AttrValue::from(dodai_topcoat::html::styled_progress(
+        props.style,
+        props.value,
+    )))
+}

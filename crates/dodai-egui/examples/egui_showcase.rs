@@ -6,7 +6,7 @@
 use dodai_core::{BorderTint, ButtonVariant, ShadowDir, Texture, Tone};
 use dodai_egui::{
     paint_scanlines, tooltip, Button, Checkbox, Divider, DodaiUi, ListItem, Panel, ProgressBar,
-    Radio, Slider, Tabs, Tag, TextInput, ThemeController, Toggle,
+    Radio, Slider, Spinner, Tabs, Tag, TextInput, ThemeController, Toggle,
 };
 use eframe::egui;
 
@@ -297,6 +297,13 @@ impl eframe::App for App {
                 ui.add_space(8.0);
                 ui.add(ProgressBar::new(self.slider / 100.0));
                 ui.add(ProgressBar::new(0.7).tone(Tone::Success).width(240.0));
+                ui.horizontal(|ui| {
+                    use dodai_core::SpinnerStyle as S;
+                    ui.add(Spinner::new());
+                    for st in [S::Orbit, S::Bars, S::Steps, S::Grid] {
+                        ui.add(Spinner::new().size(32.0).style(st));
+                    }
+                });
                 ui.add(Slider::new(&mut self.slider, 0.0..=100.0));
                 ui.add(TextInput::new(&mut self.text).hint("Type here…"));
 

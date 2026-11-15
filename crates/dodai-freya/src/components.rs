@@ -672,6 +672,73 @@ impl Component for DodaiProgress {
     }
 }
 
+/// Busy spinner: a ring of dots with a fading tail, driven by an endless animation.
+#[derive(PartialEq)]
+pub struct DodaiSpinner {
+    size: f32,
+}
+
+impl DodaiSpinner {
+    /// A spinner 24 px wide.
+    pub fn new() -> Self {
+        Self { size: 24.0 }
+    }
+    /// Width and height, px.
+    pub fn size(mut self, size: f32) -> Self {
+        self.size = size;
+        self
+    }
+}
+
+impl Default for DodaiSpinner {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Component for DodaiSpinner {
+    fn render(&self) -> impl IntoElement {
+        use freya::animation::{use_animation, AnimNum, Function, OnCreation, OnFinish};
+        let t = use_dodai_theme();
+        let phase = use_animation(|conf| {
+            conf.on_creation(OnCreation::Run);
+            conf.on_finish(OnFinish::restart());
+            AnimNum::new(0.0, 1.0).time(1100).function(Function::Linear)
+        });
+        let phase: f32 = phase.get().value();
+        const N: usize = 12;
+        let dot = self.size * 0.16;
+        let r = (self.size - dot) / 2.0;
+        let mut ring = rect()
+            .width(Size::px(self.size))
+            .height(Size::px(self.size));
+        for i in 0..N {
+            let f = i as f32 / N as f32;
+            let age = (phase - f).rem_euclid(1.0);
+            let a = 1.0 - age * 0.85;
+            let (x, y) = (
+                self.size / 2.0 + r * (f * std::f32::consts::TAU).sin(),
+                self.size / 2.0 - r * (f * std::f32::consts::TAU).cos(),
+            );
+            let mut c = color(t.progress(None).fill);
+            c = c.with_a((255.0 * a) as u8);
+            ring = ring.child(
+                rect()
+                    .position(
+                        Position::new_absolute()
+                            .left(x - dot / 2.0)
+                            .top(y - dot / 2.0),
+                    )
+                    .width(Size::px(dot))
+                    .height(Size::px(dot))
+                    .background(c)
+                    .corner_radius(dot / 2.0),
+            );
+        }
+        ring
+    }
+}
+
 /// Slider (wraps Freya's `Slider`, themed from tokens).
 #[derive(PartialEq)]
 pub struct DodaiSlider {

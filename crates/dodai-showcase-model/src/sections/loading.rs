@@ -118,6 +118,33 @@ fn loading(c: &Ctx) -> Node {
             value: None,
         });
     }
+    if c.theme.look().tonal {
+        own.push(muted("Progress"));
+        own.push(Node::WavyProgress { value: Some(0.6) });
+        own.push(Node::WavyProgress { value: None });
+        own.push(
+            line(vec![
+                Node::CircularProgress {
+                    value: Some(0.6),
+                    wavy: false,
+                },
+                Node::CircularProgress {
+                    value: None,
+                    wavy: false,
+                },
+                Node::CircularProgress {
+                    value: Some(0.6),
+                    wavy: true,
+                },
+                Node::CircularProgress {
+                    value: None,
+                    wavy: true,
+                },
+            ])
+            .gap(crate::node::Gap::Px(28.0))
+            .start(),
+        );
+    }
     col(vec![
         controls(),
         shared,

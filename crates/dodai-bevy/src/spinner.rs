@@ -303,6 +303,116 @@ pub(crate) fn animate_styled_bars(
     }
 }
 
+/// A Material 3 wavy bar or circular progress indicator, drawn as a trail of dots along the path.
+#[derive(Component, Debug, Clone, Copy, PartialEq)]
+pub struct UiWavy {
+    /// Fraction 0..=1, or `None` for indeterminate.
+    pub value: Option<f32>,
+    /// A ring instead of a bar.
+    pub ring: bool,
+    /// Wavy rather than straight.
+    pub wavy: bool,
+}
+
+/// A wavy linear progress bar.
+pub fn wavy_progress(value: Option<f32>) -> impl Bundle {
+    (
+        UiWavy {
+            value,
+            ring: false,
+            wavy: true,
+        },
+        Node {
+            width: Val::Percent(100.0),
+            max_width: Val::Px(420.0),
+            height: Val::Px(14.0),
+            ..default()
+        },
+    )
+}
+
+/// A circular progress indicator, optionally wavy.
+pub fn circular_progress(value: Option<f32>, wavy: bool) -> impl Bundle {
+    (
+        UiWavy {
+            value,
+            ring: true,
+            wavy,
+        },
+        Node {
+            width: Val::Px(48.0),
+            height: Val::Px(48.0),
+            ..default()
+        },
+    )
+}
+
+pub(crate) fn animate_wavy(
+    theme: Res<DodaiTheme>,
+    time: Res<Time>,
+    mut commands: Commands,
+    bars: Query<(Entity, &UiWavy, &ComputedNode, Option<&Children>)>,
+    mut kids: Query<(&mut Node, &mut BackgroundColor), Without<UiWavy>>,
+) {
+    use dodai_core::busy::{progress_window, wave_line, wave_ring};
+    let t = time.elapsed_secs();
+    let k = theme.progress(None);
+    let (track, fill) = (color(k.track), color(k.fill));
+    for (e, w, node, children) in &bars {
+        let size = node.size() * node.inverse_scale_factor();
+        if size.x <= 0.0 {
+            continue;
+        }
+        let pts = if w.ring {
+            let (amp, lobes) = if w.wavy { (2.0, 10) } else { (0.0, 1) };
+            wave_ring(size.x.min(size.y), amp, lobes, 120)
+        } else {
+            let amp = if w.wavy { 3.0 } else { 0.0 };
+            wave_line(size.x - 8.0, amp, 24.0, 3.0)
+                .into_iter()
+                .map(|(x, y)| (x + 4.0, y + size.y / 2.0))
+                .collect()
+        };
+        let win = progress_window(w.value, t, w.ring);
+        let have = children.map_or(0, |c| c.len());
+        let n = pts.len();
+        for (i, &(x, y)) in pts.iter().enumerate().take(have) {
+            let Some(&kid) = children.and_then(|c| c.get(i)) else {
+                continue;
+            };
+            let Ok((mut nd, mut bg)) = kids.get_mut(kid) else {
+                continue;
+            };
+            let f = i as f32 / (n - 1) as f32;
+            let lit = win.iter().any(|&(a, b)| b > a && f >= a && f <= b);
+            let d = 4.0;
+            nd.left = Val::Px(x - d / 2.0);
+            nd.top = Val::Px(y - d / 2.0);
+            bg.0 = if lit {
+                fill
+            } else {
+                track.with_alpha(track.alpha() * 0.3)
+            };
+        }
+        if n > have {
+            commands.entity(e).with_children(|p| {
+                for _ in have..n {
+                    p.spawn((
+                        Node {
+                            position_type: PositionType::Absolute,
+                            width: Val::Px(4.0),
+                            height: Val::Px(4.0),
+                            border_radius: BorderRadius::MAX,
+                            ..default()
+                        },
+                        BackgroundColor(Color::NONE),
+                    ));
+                }
+            });
+        }
+    }
+}
+
 type SegmentFilter = (With<IndeterminateFill>, Without<UiIndeterminate>);
 
 pub(crate) fn animate_bars(

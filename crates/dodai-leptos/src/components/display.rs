@@ -84,3 +84,21 @@ pub fn Divider() -> impl IntoView {
 pub fn Tooltip(#[prop(into)] text: String, children: Children) -> impl IntoView {
     view! { <span class="dodai-tip" data-tip=text>{children()}</span> }
 }
+
+/// A busy spinner in any [`dodai_core::SpinnerStyle`] (the plain ring by default).
+#[component]
+pub fn Spinner(
+    #[prop(default = 24)] size: u32,
+    #[prop(default = dodai_core::SpinnerStyle::Ring)] style: dodai_core::SpinnerStyle,
+) -> impl IntoView {
+    view! { <span inner_html=dodai_topcoat::html::spinner_of(style, size)></span> }
+}
+
+/// A progress bar in a design's own style (hud, stripes, stones); `value` 0–1, or none for a running bar.
+#[component]
+pub fn StyledProgress(
+    style: dodai_core::ProgressStyle,
+    #[prop(optional)] value: Option<f32>,
+) -> impl IntoView {
+    view! { <div inner_html=dodai_topcoat::html::styled_progress(style, value)></div> }
+}

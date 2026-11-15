@@ -1014,6 +1014,18 @@ pub enum Node {
     },
     /// An indeterminate bar.
     Indeterminate,
+    /// A wavy linear progress bar (Material 3): determinate at `value`, running when `None`.
+    WavyProgress {
+        /// Fraction 0..=1, or `None` for indeterminate.
+        value: Option<f32>,
+    },
+    /// A circular progress indicator (Material 3), optionally wavy.
+    CircularProgress {
+        /// Fraction 0..=1, or `None` for indeterminate.
+        value: Option<f32>,
+        /// A wavy ring.
+        wavy: bool,
+    },
     /// A progress bar in a design's own style: determinate at `value`, or running when `None`.
     StyledProgress {
         /// The style.
