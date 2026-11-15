@@ -509,7 +509,7 @@ mod tests {
     }
 
     #[test]
-    fn the_surface_mix_turns_panels_and_inputs_into_glass_but_not_buttons() {
+    fn the_surface_mix_turns_panels_into_glass_but_not_inputs_or_buttons() {
         let t = light_rounded();
         set_surface(ResolvedSurface::NONE);
         assert!(panel_style(&t, false).blur.is_none());
@@ -523,7 +523,7 @@ mod tests {
         assert!(panel
             .fill
             .is_some_and(|f| f.a < t.panel(false).background.a));
-        assert!(input_style(&t, false).blur.is_some());
+        assert!(input_style(&t, false).blur.is_none());
         let (button, _) = button_style(&t, ButtonVariant::Primary, ControlState::Idle);
         assert!(button.blur.is_none());
         set_surface(ResolvedSurface::NONE);
