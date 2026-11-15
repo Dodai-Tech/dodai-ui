@@ -4,6 +4,44 @@
 use crate::{SurfaceClass, SurfaceFx, Theme};
 use dodai_fx::Surface;
 
+/// Which surface mix an app or a subtree uses: what every toolkit stores and takes.
+///
+/// [`Design`](Self::Design) (the default) follows the active design: Dodai is frosted, the others
+/// are not ([`Theme::default_surface`]). [`Custom`](Self::Custom) is the app's own mix. Resolve it
+/// against the theme in use with [`resolve`](Self::resolve).
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub enum SurfaceMix {
+    /// The design's own: only its glass, never a texture or an effect.
+    #[default]
+    Design,
+    /// The app's own mix (use [`SurfaceFx::NONE`] to turn everything off).
+    Custom(SurfaceFx),
+}
+
+impl SurfaceMix {
+    /// The mix to draw `theme`'s surfaces with.
+    pub fn resolve(self, theme: &Theme) -> SurfaceFx {
+        match self {
+            Self::Design => theme.default_surface(),
+            Self::Custom(fx) => fx,
+        }
+    }
+
+    /// The app's own mix, if it set one.
+    pub fn custom(self) -> Option<SurfaceFx> {
+        match self {
+            Self::Design => None,
+            Self::Custom(fx) => Some(fx),
+        }
+    }
+}
+
+impl From<SurfaceFx> for SurfaceMix {
+    fn from(fx: SurfaceFx) -> Self {
+        Self::Custom(fx)
+    }
+}
+
 /// How see-through one surface's fill is, and the frosted glass under it.
 ///
 /// Apply it to a fill alpha with [`alpha`](Self::alpha); when [`frosted`](Self::frosted), paint a

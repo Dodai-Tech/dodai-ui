@@ -112,7 +112,7 @@ pub fn box_shapes(
 }
 
 /// [`box_shapes`] for a surface of `class`: the app-wide texture and effects of the design
-/// ([`crate::set_surface_fx`]) are painted over the body when the class is targeted.
+/// ([`crate::set_surface_mix`]) are painted over the body when the class is targeted.
 pub fn box_shapes_for(
     theme: &Theme,
     rect: Rect,

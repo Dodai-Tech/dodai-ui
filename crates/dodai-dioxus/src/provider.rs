@@ -35,7 +35,7 @@ pub fn themes_with_glow(list: &[Theme], glow: Option<f32>) -> Vec<Theme> {
 pub struct ThemeHandle {
     switcher: Signal<ThemeSwitcher>,
     glow: Signal<f32>,
-    surface: Signal<Option<dodai_core::SurfaceFx>>,
+    surface: Signal<dodai_core::SurfaceMix>,
 }
 
 impl ThemeHandle {
@@ -80,15 +80,19 @@ impl ThemeHandle {
     pub fn set_glow(&mut self, g: f32) {
         self.glow.set(g.max(0.0));
     }
-    /// The app-wide surface mix: the app's, or until it sets one the design's own glass
-    /// ([`Theme::default_surface`]: Dodai is frosted, the others not).
-    pub fn surface_fx(&self) -> dodai_core::SurfaceFx {
-        let set = *self.surface.read();
-        set.unwrap_or_else(|| self.theme().default_surface())
+    /// The app-wide surface mix as set ([`SurfaceMix::Design`] until the app sets one).
+    pub fn surface_mix(&self) -> dodai_core::SurfaceMix {
+        *self.surface.read()
     }
-    /// Set the app-wide surface mix: containers it frosts turn see-through.
-    pub fn set_surface_fx(&mut self, fx: dodai_core::SurfaceFx) {
-        self.surface.set(Some(fx));
+    /// The surface mix in use: the app's, or the active design's own glass (Dodai is frosted,
+    /// the others not).
+    pub fn active_surface_fx(&self) -> dodai_core::SurfaceFx {
+        self.surface_mix().resolve(&self.theme())
+    }
+    /// Set the app-wide surface mix: containers and input fields it frosts turn see-through. A
+    /// [`SurfaceFx`](dodai_core::SurfaceFx) converts into a [`SurfaceMix::Custom`].
+    pub fn set_surface_mix(&mut self, mix: impl Into<dodai_core::SurfaceMix>) {
+        self.surface.set(mix.into());
     }
 }
 
@@ -103,7 +107,7 @@ pub(crate) fn glass(
         return None;
     }
     let h = try_use_context::<ThemeHandle>()?;
-    let fx = h.surface_fx();
+    let fx = h.active_surface_fx();
     let s = dodai_topcoat::glass_style(
         &h.theme(),
         class.unwrap_or(dodai_core::SurfaceClass::Button),
@@ -159,7 +163,7 @@ pub fn ThemeProvider(props: ThemeProviderProps) -> Element {
     let handle = use_context_provider(|| ThemeHandle {
         switcher: Signal::new(make_switcher(&props.themes, &props.initial)),
         glow: Signal::new(props.glow.max(0.0)),
-        surface: Signal::new(None),
+        surface: Signal::new(dodai_core::SurfaceMix::Design),
     });
     let now: ThemeProps = (props.themes.clone(), props.initial.clone(), props.glow);
     let seen = use_hook(|| std::rc::Rc::new(std::cell::RefCell::new(now.clone())));

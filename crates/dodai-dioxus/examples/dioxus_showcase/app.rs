@@ -254,8 +254,8 @@ fn Pinned(model: Signal<Showcase>) -> Element {
 fn SurfaceMix(model: Signal<Showcase>) -> Element {
     let fx = model.read().surface_fx();
     let mut h = use_theme();
-    if h.surface_fx() != fx {
-        h.set_surface_fx(fx);
+    if h.active_surface_fx() != fx {
+        h.set_surface_mix(fx);
     }
     rsx! {}
 }

@@ -125,13 +125,14 @@ impl App {
                 .add(Button::new("Off").variant(ButtonVariant::Outline))
                 .clicked()
             {
-                self.theme.surface = dodai_core::SurfaceFx::NONE;
+                self.theme.surface = dodai_core::SurfaceFx::NONE.into();
             }
             if ui.add(Button::new("Design preset")).clicked() {
-                self.theme.surface = self.theme.preset();
+                self.theme.surface = self.theme.preset().into();
             }
         });
-        let fx = &mut self.theme.surface;
+        let mut mix = self.theme.surface.resolve(&t);
+        let fx = &mut mix;
         ui.horizontal_wrapped(|ui| {
             ui.dodai_muted("Texture");
             for tex in t.surface_textures() {
@@ -178,6 +179,7 @@ impl App {
             }
         }
         fx.targets = dodai_core::SurfaceTargets::ALL;
+        self.theme.surface = mix.into();
 
         ui.add_space(8.0);
         ui.dodai_label("Icons (the design's own pack)");

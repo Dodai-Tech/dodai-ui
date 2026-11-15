@@ -273,7 +273,7 @@ pub fn sync_glass(
     }
     let picture_changed = seen.map(|s| s.1) != Some(now.1);
     *seen = Some(now);
-    glass.set_mix(now.0);
+    glass.set_surface_mix(now.0);
     if picture_changed {
         glass.set_picture(now.1.map(|_| {
             let p = dodai_showcase_model::media::wallpaper(&theme);

@@ -822,7 +822,7 @@ fn press_plays_ripple(cx: &mut TestAppContext, variant: dodai_core::ButtonVarian
     vcx.update(|_, cx| {
         let mut fx = dodai_core::SurfaceFx::NONE;
         fx.ripple = 0.8;
-        set_surface_fx(cx, fx);
+        set_surface_mix(cx, fx);
     });
     vcx.run_until_parked();
     while live_press_count() > 0 {
@@ -833,7 +833,7 @@ fn press_plays_ripple(cx: &mut TestAppContext, variant: dodai_core::ButtonVarian
     let b = vcx.debug_bounds("target").expect("button was laid out");
     click(vcx, f32::from(b.left()) + 20.0, f32::from(b.top()) + 10.0);
     assert_eq!(live_press_count(), 1, "{variant:?}: one ripple per press");
-    vcx.update(|_, cx| set_surface_fx(cx, dodai_core::SurfaceFx::NONE));
+    vcx.update(|_, cx| set_surface_mix(cx, dodai_core::SurfaceFx::NONE));
 }
 
 // ───────────────────────────── select keyboard / scrollbar drag ─────────────────────────────

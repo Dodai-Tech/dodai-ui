@@ -3,10 +3,10 @@
 //! The same mix and the same geometry as every other toolkit: `dodai-fx` works out each frame
 //! (textures, lit lines, glitch, flicker, sheen, pulse, chase, brackets, wash, ...) and this
 //! module only turns its four primitives into egui shapes. Set the mix for the whole app with
-//! [`set_surface_fx`]; each [`box_shapes_for`](crate::paint::box_shapes_for) call paints it on
+//! [`set_surface_mix`]; each [`box_shapes_for`](crate::paint::box_shapes_for) call paints it on
 //! the surfaces it targets. A design draws only the textures and effects it owns.
 
-use dodai_core::{Surface, SurfaceClass, SurfaceFx, Theme};
+use dodai_core::{Surface, SurfaceClass, SurfaceFx, SurfaceMix, Theme};
 use dodai_fx::{Frame, Painter, Rgba};
 use egui::epaint::{Mesh, PathShape};
 use egui::{pos2, vec2, Color32, Pos2, Rect, Shape, Stroke};
@@ -15,25 +15,25 @@ use std::sync::OnceLock;
 use std::time::Instant;
 
 thread_local! {
-    static FX: Cell<Option<SurfaceFx>> = const { Cell::new(None) };
+    static MIX: Cell<SurfaceMix> = const { Cell::new(SurfaceMix::Design) };
     static ANIMATED: Cell<bool> = const { Cell::new(false) };
 }
 
-/// The surface mix the app set (empty until it sets one, see [`surface_fx_for`]).
-pub fn surface_fx() -> SurfaceFx {
-    FX.with(Cell::get).unwrap_or(SurfaceFx::NONE)
+/// The surface mix the app set ([`SurfaceMix::Design`] until it sets one).
+pub fn surface_mix() -> SurfaceMix {
+    MIX.with(Cell::get)
 }
 
 /// The surface mix applied to every shaped surface of `theme`: the app's, or until it sets one
 /// the design's own glass ([`Theme::default_surface`]).
 pub fn surface_fx_for(theme: &Theme) -> SurfaceFx {
-    FX.with(Cell::get)
-        .unwrap_or_else(|| theme.default_surface())
+    surface_mix().resolve(theme)
 }
 
-/// Apply `fx` to every shaped surface (repaint with `ctx.request_repaint()`).
-pub fn set_surface_fx(fx: SurfaceFx) {
-    FX.with(|c| c.set(Some(fx)));
+/// Apply `mix` to every shaped surface (repaint with `ctx.request_repaint()`). A [`SurfaceFx`]
+/// converts into a [`SurfaceMix::Custom`]; [`SurfaceMix::Design`] goes back to the design's own.
+pub fn set_surface_mix(mix: impl Into<SurfaceMix>) {
+    MIX.with(|c| c.set(mix.into()));
 }
 
 /// Whether a surface painted since the last call animates, so the frame should be repainted.
@@ -157,7 +157,7 @@ mod tests {
     }
 
     fn all(fx: SurfaceFx) {
-        set_surface_fx(SurfaceFx {
+        set_surface_mix(SurfaceFx {
             targets: SurfaceTargets::ALL,
             ..fx
         });
@@ -165,7 +165,7 @@ mod tests {
 
     #[test]
     fn nothing_is_drawn_by_default() {
-        set_surface_fx(SurfaceFx::NONE);
+        set_surface_mix(SurfaceFx::NONE);
         let t = dodai_core::themes::cyberpunk::yellow();
         assert!(surface_shapes(&t, rect(), SurfaceClass::Button, None).is_empty());
     }
@@ -197,7 +197,7 @@ mod tests {
                 );
             }
         }
-        set_surface_fx(SurfaceFx::NONE);
+        set_surface_mix(SurfaceFx::NONE);
     }
 
     #[test]
@@ -209,7 +209,7 @@ mod tests {
             ..SurfaceFx::NONE
         });
         assert!(surface_shapes(&m, rect(), SurfaceClass::Button, None).is_empty());
-        set_surface_fx(SurfaceFx::NONE);
+        set_surface_mix(SurfaceFx::NONE);
     }
 
     #[test]
@@ -222,7 +222,7 @@ mod tests {
         let _ = take_animated();
         assert!(!surface_shapes(&t, rect(), SurfaceClass::Panel, None).is_empty());
         assert!(take_animated());
-        set_surface_fx(SurfaceFx::NONE);
+        set_surface_mix(SurfaceFx::NONE);
     }
 
     #[test]
@@ -239,7 +239,7 @@ mod tests {
         };
         let (flat, lit) = (count(0.0), count(1.0));
         assert!(lit > flat, "{lit} shapes lit, {flat} flat");
-        set_surface_fx(SurfaceFx::NONE);
+        set_surface_mix(SurfaceFx::NONE);
     }
 
     #[test]
@@ -253,6 +253,6 @@ mod tests {
         let _ = take_animated();
         let _ = surface_shapes(&t, rect(), SurfaceClass::Panel, None);
         assert!(take_animated());
-        set_surface_fx(SurfaceFx::NONE);
+        set_surface_mix(SurfaceFx::NONE);
     }
 }
