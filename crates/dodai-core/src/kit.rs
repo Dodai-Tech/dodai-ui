@@ -91,7 +91,8 @@ impl Kit {
             Self::Card(_) | Self::Code => Some(C::Card),
             Self::Popup | Self::Tooltip { .. } => Some(C::Panel),
             Self::Alert { .. } => Some(C::Card),
-            Self::Toolbar { .. } | Self::Snackbar => Some(C::Bar),
+            Self::Toolbar { .. } => Some(C::Bar),
+            Self::Snackbar => Some(C::Panel),
             Self::Chip { .. } => Some(C::Tag),
             Self::Fab { .. } | Self::Elevated => Some(C::Button),
             Self::Select => Some(C::Input),
@@ -1746,7 +1747,7 @@ mod surface_class_tests {
         );
         assert!(Kit::Popup.floats() && !Kit::Code.floats());
         assert_eq!(Kit::Code.surface_class(), Some(SurfaceClass::Card));
-        assert_eq!(Kit::Snackbar.surface_class(), Some(SurfaceClass::Bar));
+        assert_eq!(Kit::Snackbar.surface_class(), Some(SurfaceClass::Panel));
         assert_eq!(
             Kit::Toolbar {
                 floating: false,

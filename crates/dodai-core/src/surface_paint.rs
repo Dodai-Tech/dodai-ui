@@ -22,8 +22,8 @@ fn paint_with(
     container: bool,
 ) -> SurfacePaint {
     let p = &theme.palette;
-    // Containers keep the design's gradient over their frost; controls (buttons, fields, tags)
-    // are the blurred backdrop only, so their wash fades out as the frost comes in.
+    // The layout (cards, bars) keeps the design's gradient; what sits on top of it (controls,
+    // popups) is the blurred backdrop only, so its wash fades out as the frost comes in.
     let wash = if container {
         fx.wash
     } else {
@@ -68,7 +68,7 @@ pub fn surface_paint(
         theme,
         fx,
         matches!(class, SurfaceClass::Button | SurfaceClass::Tag),
-        class.is_container(),
+        !class.takes_mix_frost(),
     ))
 }
 

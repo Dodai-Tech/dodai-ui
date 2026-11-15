@@ -453,7 +453,7 @@ mod tests {
     }
 
     #[test]
-    fn frost_drops_containers_to_the_glass_and_fields_halfway() {
+    fn frost_drops_panels_to_the_glass_and_leaves_the_layout_alone() {
         let t = theme("material-dark");
         let fx = ResolvedSurface {
             frost: 1.0,
@@ -461,14 +461,17 @@ mod tests {
             ..ResolvedSurface::NONE
         };
         let clear = f32::from(t.frost().tint.a) / 255.0;
-        let card = surface_glass(&t, SurfaceClass::Card, &Surface::INHERIT, fx);
+        // Cards and bars are the layout: the mix leaves them alone.
+        let layout = surface_glass(&t, SurfaceClass::Card, &Surface::INHERIT, fx);
+        assert!(!layout.frosted());
+        let card = surface_glass(&t, SurfaceClass::Panel, &Surface::INHERIT, fx);
         assert!(card.frosted());
         assert!((card.alpha(1.0) - clear).abs() < 1e-5);
-        // The mix frosts containers and inputs; a button frosts itself.
+        // The mix frosts what sits on top: panels, inputs and buttons.
         let field = surface_glass(&t, SurfaceClass::Input, &Surface::INHERIT, fx);
         assert!(field.frosted());
         let mixed = surface_glass(&t, SurfaceClass::Button, &Surface::INHERIT, fx);
-        assert!(!mixed.frosted());
+        assert!(mixed.frosted());
         let own = surface_glass(
             &t,
             SurfaceClass::Button,
