@@ -453,7 +453,7 @@ mod tests {
     }
 
     #[test]
-    fn frost_drops_panels_to_the_glass_and_leaves_the_layout_alone() {
+    fn frost_drops_overlays_to_the_glass_and_leaves_the_layout_alone() {
         let t = theme("material-dark");
         let fx = ResolvedSurface {
             frost: 1.0,
@@ -467,11 +467,11 @@ mod tests {
         let card = surface_glass(&t, SurfaceClass::Panel, &Surface::INHERIT, fx);
         assert!(card.frosted());
         assert!((card.alpha(1.0) - clear).abs() < 1e-5);
-        // The mix frosts what sits on top: panels, inputs and buttons.
+        // The mix frosts overlays only; a field or a button frosts itself.
         let field = surface_glass(&t, SurfaceClass::Input, &Surface::INHERIT, fx);
-        assert!(field.frosted());
+        assert!(!field.frosted());
         let mixed = surface_glass(&t, SurfaceClass::Button, &Surface::INHERIT, fx);
-        assert!(mixed.frosted());
+        assert!(!mixed.frosted());
         let own = surface_glass(
             &t,
             SurfaceClass::Button,
