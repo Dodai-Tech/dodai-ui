@@ -256,3 +256,22 @@ mod tests {
         set_surface(ResolvedSurface::NONE);
     }
 }
+
+#[cfg(test)]
+mod surface_api_tests {
+    use super::*;
+
+    #[test]
+    fn set_surface_is_what_resolved_surface_and_surface_report() {
+        let t = dodai_core::themes::cyberpunk::yellow();
+        set_surface(Surface::INHERIT);
+        assert_eq!(resolved_surface(&t), t.default_surface());
+        set_surface(Surface::frosted().glitch(0.5));
+        let fx = resolved_surface(&t);
+        assert!(fx.frost > 0.0 && fx.glitch == 0.5);
+        assert_eq!(surface(), Surface::frosted().glitch(0.5));
+        set_surface(Surface::NONE);
+        assert_eq!(resolved_surface(&t), ResolvedSurface::NONE);
+        set_surface(Surface::INHERIT);
+    }
+}

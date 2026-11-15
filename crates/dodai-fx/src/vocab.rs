@@ -1255,3 +1255,68 @@ mod surface_override_tests {
         assert_eq!(fx.limited(&[], EffectSet::NONE).frost, 1.0);
     }
 }
+
+#[cfg(test)]
+mod surface_api_tests {
+    use super::*;
+
+    #[test]
+    fn frosted_sets_only_frost_and_chains() {
+        let s = Surface::frosted().glitch(0.6);
+        let fx = s.apply(ResolvedSurface::NONE);
+        assert_eq!((fx.frost, fx.glitch), (1.0, 0.6));
+        assert_eq!(fx.neon, 0.0);
+        assert_eq!(
+            Surface::frosted_by(0.4).apply(ResolvedSurface::NONE).frost,
+            0.4
+        );
+    }
+
+    #[test]
+    fn and_prefers_the_later_value_and_keeps_the_rest() {
+        let a = Surface::frosted_by(0.3).glitch(0.2);
+        let b = Surface::new().glitch(0.9).neon(1.0);
+        let m = a.and(b);
+        let fx = m.apply(ResolvedSurface::NONE);
+        assert_eq!((fx.frost, fx.glitch, fx.neon), (0.3, 0.9, 1.0));
+        assert_eq!(Surface::INHERIT.and(a), a);
+        assert_eq!(a.and(Surface::INHERIT), a);
+    }
+
+    #[test]
+    fn apply_sets_container_texture_and_targets_but_over_does_not() {
+        let s = Surface::new()
+            .container_texture(Texture::Grid)
+            .container_strength(0.7)
+            .container_scale(2.0)
+            .everywhere();
+        let fx = s.apply(ResolvedSurface::NONE);
+        assert_eq!(fx.container_texture, Texture::Grid);
+        assert_eq!((fx.container_strength, fx.container_scale), (0.7, 2.0));
+        assert_eq!(fx.targets, SurfaceTargets::ALL);
+        // A single component never changes the app-wide container settings.
+        assert_eq!(
+            s.over(ResolvedSurface::NONE).container_texture,
+            Texture::None
+        );
+    }
+
+    #[test]
+    fn a_resolved_surface_round_trips() {
+        let fx = ResolvedSurface {
+            texture: Texture::Hatch,
+            glitch: 0.5,
+            frost: 0.8,
+            container_texture: Texture::Dither,
+            targets: SurfaceTargets::ALL,
+            ..ResolvedSurface::NONE
+        };
+        assert_eq!(Surface::from(fx).apply(ResolvedSurface::NONE), fx);
+        // Even over a busy base: every value is set, so none leaks through.
+        let busy = ResolvedSurface {
+            neon: 1.0,
+            ..ResolvedSurface::NONE
+        };
+        assert_eq!(Surface::from(fx).apply(busy), fx);
+    }
+}
