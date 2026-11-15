@@ -192,7 +192,7 @@ fn frost(c: &Ctx) -> Node {
         )
     };
     col(vec![
-        muted("Any surface can be frosted: its fill turns as see-through as the design's glass and a blurred copy of the backdrop shows under it. The slider frosts every container (cards, panels, bars, this panel too); a component can frost itself with Surface::new().frost(1.0), as the buttons and the card below do."),
+        muted("Any surface can be frosted: its fill turns as see-through as the design's glass and a blurred copy of the backdrop shows under it. The slider frosts what overlays the layout (dialogs, dropdowns, popups, tooltips, toasts); the layout keeps its gradient. A component can frost itself with Surface::new().frost(1.0), as the buttons and the card below do."),
         fx_slider(c, "sfx:frost"),
         labelled(
             "Backdrop",

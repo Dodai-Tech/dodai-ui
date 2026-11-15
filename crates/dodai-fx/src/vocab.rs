@@ -218,12 +218,11 @@ impl SurfaceClass {
         matches!(self, Self::Card | Self::Panel | Self::Bar)
     }
 
-    /// Whether the app-wide surface frosts this class: everything that sits on top of the
-    /// layout (buttons, fields, tags, and panels, which are popups and menus). Cards and bars
-    /// are the layout itself: they keep the design's gradient and are frosted only when asked
-    /// ([`Surface::frost`]).
+    /// Whether the app-wide surface frosts this class: only what overlays the layout (popups,
+    /// dropdowns, tooltips, toasts: [`Panel`](Self::Panel)). Everything else keeps the design's
+    /// gradient and is frosted only when asked ([`Surface::frost`]).
     pub const fn takes_mix_frost(self) -> bool {
-        !matches!(self, Self::Card | Self::Bar)
+        matches!(self, Self::Panel)
     }
 
     const fn bit(self) -> u8 {
@@ -1243,14 +1242,15 @@ mod surface_override_tests {
     }
 
     #[test]
-    fn the_mix_frosts_containers_and_inputs_and_a_component_can_frost_itself() {
+    fn the_mix_frosts_overlays_and_a_component_can_frost_itself() {
         let fx = ResolvedSurface {
             frost: 1.0,
             ..ResolvedSurface::NONE
         };
         assert!(!fx.is_none(), "frost alone is something to draw");
-        assert_eq!(fx.for_class(SurfaceClass::Card).frost, 1.0);
-        assert_eq!(fx.for_class(SurfaceClass::Input).frost, 1.0);
+        assert_eq!(fx.for_class(SurfaceClass::Panel).frost, 1.0);
+        assert_eq!(fx.for_class(SurfaceClass::Card).frost, 0.0);
+        assert_eq!(fx.for_class(SurfaceClass::Input).frost, 0.0);
         assert_eq!(fx.for_class(SurfaceClass::Button).frost, 0.0);
         assert_eq!(fx.for_class(SurfaceClass::Tag).frost, 0.0);
         let own = Surface::new().frost(0.5);
