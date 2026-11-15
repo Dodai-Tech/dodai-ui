@@ -6,14 +6,14 @@
 #
 #   1. Validates semver.
 #   2. Updates workspace.package.version + internal dodai-* dep versions.
-#   3. fmt, clippy, test.
+#   3. fmt, clippy, test (--skip-checks: fmt only, for a run that gated already).
 #   4. Refreshes Cargo.lock and regenerates CHANGELOG.md via git-cliff.
 #   5. Commits and tags vX.Y.Z.
 # ──────────────────────────────────────────────────────────────────────────────
 
 use lib/versioning.nu *
 
-def main [new_version: string] {
+def main [new_version: string, --skip-checks] {
     if not (is-semver $new_version) {
         print $"(ansi red)Error:(ansi reset) '($new_version)' is not a valid semantic version."
         exit 1
@@ -29,8 +29,10 @@ def main [new_version: string] {
     print $"(ansi green)✓(ansi reset) Cargo.toml updated."
 
     run-external "cargo" "fmt" "--all"
-    run-external "cargo" "clippy" "--workspace" "--all-targets" "--" "-D" "warnings"
-    run-external "cargo" "test" "--workspace"
+    if not $skip_checks {
+        run-external "cargo" "clippy" "--workspace" "--all-targets" "--" "-D" "warnings"
+        run-external "cargo" "test" "--workspace"
+    }
     run-external "cargo" "update" "--workspace"
 
     let written = (open --raw CHANGELOG.md | str contains $"## [($new_version)]")
