@@ -909,6 +909,65 @@ pub fn styled_progress(style: dodai_core::ProgressStyle, value: Option<f32>) -> 
 }
 
 /// An indeterminate progress bar.
+fn svg_path(pts: &[(f32, f32)], dx: f32, dy: f32) -> String {
+    let mut d = String::new();
+    for (i, (x, y)) in pts.iter().enumerate() {
+        d.push_str(&format!(
+            "{}{:.2} {:.2} ",
+            if i == 0 { 'M' } else { 'L' },
+            x + dx,
+            y + dy
+        ));
+    }
+    d
+}
+
+/// A wavy linear progress bar (Material 3): determinate at `value`, running when `None`.
+pub fn wavy_progress(value: Option<f32>) -> String {
+    let (w, h) = (420.0, 14.0);
+    let d = svg_path(
+        &dodai_core::busy::wave_line(w - 8.0, 3.0, 24.0, 2.0),
+        4.0,
+        h / 2.0,
+    );
+    let (arc_style, arc_class) = match value {
+        Some(v) => (
+            format!("stroke-dasharray:{:.2} 100", v.clamp(0.0, 1.0) * 100.0),
+            "dodai-wp-arc",
+        ),
+        None => (String::new(), "dodai-wp-arc dodai-wp-run"),
+    };
+    format!(
+        "<svg class=\"dodai-wp\" role=\"progressbar\" width=\"{w}\" height=\"{h}\" viewBox=\"0 0 {w} {h}\"><path class=\"dodai-wp-track\" d=\"{d}\" pathLength=\"100\"/><path class=\"{arc_class}\" d=\"{d}\" pathLength=\"100\" style=\"{arc_style}\"/></svg>"
+    )
+}
+
+/// A circular progress indicator (Material 3), optionally wavy.
+pub fn circular_progress(value: Option<f32>, wavy: bool) -> String {
+    let size = 48.0f32;
+    let pts: Vec<(f32, f32)> = if wavy {
+        dodai_core::busy::wave_ring(size, 2.0, 10, 160)
+    } else {
+        dodai_core::busy::wave_ring(size, 0.0, 1, 96)
+    };
+    let d = svg_path(&pts, 0.0, 0.0);
+    let (style, class) = match value {
+        Some(v) => (
+            format!("stroke-dasharray:{:.2} 100", v.clamp(0.0, 1.0) * 100.0),
+            "dodai-cp-arc",
+        ),
+        None => (String::new(), "dodai-cp-arc dodai-cp-run"),
+    };
+    let spin = if value.is_none() {
+        " dodai-cp-spin"
+    } else {
+        ""
+    };
+    format!(
+        "<svg class=\"dodai-cp{spin}\" role=\"progressbar\" width=\"{size}\" height=\"{size}\" viewBox=\"0 0 {size} {size}\"><path class=\"dodai-cp-track\" d=\"{d}\" pathLength=\"100\"/><path class=\"{class}\" d=\"{d}\" pathLength=\"100\" style=\"{style}\"/></svg>"
+    )
+}
+
 pub fn indeterminate() -> String {
     "<div class=\"dodai-indeterminate\" role=\"progressbar\"><span></span></div>".to_string()
 }

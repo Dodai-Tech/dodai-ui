@@ -240,6 +240,26 @@ export component LProgress inherits Rectangle {
     }
 }
 
+// A busy spinner: a ring of dots with a fading tail running round it (smooth, driven by the animation clock).
+export component LSpinner inherits Rectangle {
+    in property <length> size: 24px;
+    in property <color> lit: Theme.progress-fill[0];
+    property <float> phase: Math.mod(animation-tick() / 1100ms, 1.0);
+    width: root.size;
+    height: root.size;
+    for i in 12: Rectangle {
+        property <float> f: i / 12.0;
+        property <float> age: Math.mod(root.phase - f + 1.0, 1.0);
+        width: root.size * 0.16;
+        height: self.width;
+        x: root.size / 2 - self.width / 2 + (root.size / 2 - self.width / 2) * Math.sin(f * 360deg);
+        y: root.size / 2 - self.height / 2 - (root.size / 2 - self.height / 2) * Math.cos(f * 360deg);
+        border-radius: self.width / 2;
+        background: root.lit;
+        opacity: 1.0 - age * 0.85;
+    }
+}
+
 export component LSlider inherits Rectangle {
     in-out property <float> value;
     in property <float> minimum: 0;

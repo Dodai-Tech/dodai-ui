@@ -274,6 +274,47 @@ impl IcedTheme {
         .into()
     }
 
+    /// A wavy linear progress bar (Material 3): determinate at `frac`, running when `None`.
+    pub fn wavy_progress<'a, Message: 'a>(
+        &self,
+        frac: Option<f32>,
+        t: f32,
+    ) -> Element<'a, Message> {
+        let tok = self.theme.progress(None);
+        Canvas::new(WavyProgress {
+            frac,
+            t,
+            ring: false,
+            wavy: true,
+            track: color(tok.track),
+            fill: color(tok.fill),
+        })
+        .width(Length::Fill)
+        .height(14.0)
+        .into()
+    }
+
+    /// A circular progress indicator (Material 3), optionally wavy.
+    pub fn circular_progress<'a, Message: 'a>(
+        &self,
+        frac: Option<f32>,
+        wavy: bool,
+        t: f32,
+    ) -> Element<'a, Message> {
+        let tok = self.theme.progress(None);
+        Canvas::new(WavyProgress {
+            frac,
+            t,
+            ring: true,
+            wavy,
+            track: color(tok.track),
+            fill: color(tok.fill),
+        })
+        .width(48.0)
+        .height(48.0)
+        .into()
+    }
+
     /// An indeterminate bar; `t` is the time in seconds.
     pub fn indeterminate<'a, Message: 'a>(&self, t: f32) -> Element<'a, Message> {
         let tok = self.theme.progress(None);
@@ -585,6 +626,73 @@ impl<Message> canvas::Program<Message> for Spinner {
             });
         });
         frame.stroke(&arc, Stroke::default().with_color(self.lit).with_width(w));
+        vec![frame.into_geometry()]
+    }
+}
+
+struct WavyProgress {
+    frac: Option<f32>,
+    t: f32,
+    ring: bool,
+    wavy: bool,
+    track: iced::Color,
+    fill: iced::Color,
+}
+
+impl<Message> canvas::Program<Message> for WavyProgress {
+    type State = ();
+
+    fn draw(
+        &self,
+        _state: &(),
+        renderer: &Renderer,
+        _theme: &IcedBase,
+        bounds: Rectangle,
+        _cursor: mouse::Cursor,
+    ) -> Vec<Geometry> {
+        let mut frame = canvas::Frame::new(renderer, bounds.size());
+        let pts = if self.ring {
+            let amp = if self.wavy { 2.0 } else { 0.0 };
+            let lobes = if self.wavy { 10 } else { 1 };
+            busy::wave_ring(bounds.width.min(bounds.height), amp, lobes, 160)
+        } else {
+            let amp = if self.wavy { 3.0 } else { 0.0 };
+            busy::wave_line(bounds.width - 8.0, amp, 24.0, 2.0)
+                .into_iter()
+                .map(|(x, y)| (x + 4.0, y + bounds.height / 2.0))
+                .collect()
+        };
+        let stroke = |c: iced::Color| {
+            canvas::Stroke::default()
+                .with_color(c)
+                .with_width(4.0)
+                .with_line_cap(canvas::LineCap::Round)
+                .with_line_join(canvas::LineJoin::Round)
+        };
+        let path = |pts: &[(f32, f32)]| {
+            Path::new(|b| {
+                for (i, (x, y)) in pts.iter().enumerate() {
+                    let p = iced::Point::new(*x, *y);
+                    if i == 0 {
+                        b.move_to(p);
+                    } else {
+                        b.line_to(p);
+                    }
+                }
+            })
+        };
+        frame.stroke(
+            &path(&pts),
+            stroke(iced::Color {
+                a: self.track.a * 0.25,
+                ..self.track
+            }),
+        );
+        for (a, b) in busy::progress_window(self.frac, self.t, self.ring) {
+            if b > a {
+                frame.stroke(&path(busy::slice_points(&pts, a, b)), stroke(self.fill));
+            }
+        }
         vec![frame.into_geometry()]
     }
 }

@@ -94,6 +94,7 @@ fn app() -> impl IntoElement {
         )
         .child(DodaiProgress::new(slider() as f32))
         .child(DodaiProgress::new(70.0).tone(Tone::Success))
+        .child(DodaiSpinner::new())
         .child(DodaiSlider::new(slider()).on_moved(move |v| slider.set(v)))
         .child(DodaiTextInput::new(text).placeholder("type…"))
         .child(

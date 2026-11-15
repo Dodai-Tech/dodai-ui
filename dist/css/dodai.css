@@ -402,3 +402,14 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .dodai-sweep-track{stroke:var(--dodai-primary);opacity:.22}
 .dodai-sweep-arc{stroke:var(--dodai-primary);stroke-dasharray:20 80;animation:dodai-sweep 1.6s linear infinite}
 @keyframes dodai-sweep{0%{stroke-dasharray:20 80;stroke-dashoffset:0}50%{stroke-dasharray:60 40;stroke-dashoffset:-35}100%{stroke-dasharray:20 80;stroke-dashoffset:-100}}
+
+/* Material 3 wavy bar and circular indicators: SVG paths with pathLength 100. */
+.dodai-wp,.dodai-cp{flex:none;max-width:100%}
+.dodai-wp path,.dodai-cp path{fill:none;stroke-width:4;stroke-linecap:round}
+.dodai-wp-track,.dodai-cp-track{stroke:var(--dodai-primary);opacity:.22}
+.dodai-wp-arc,.dodai-cp-arc{stroke:var(--dodai-primary)}
+.dodai-wp-run{stroke-dasharray:30 100;animation:dodai-wp-run 1.6s linear infinite}
+@keyframes dodai-wp-run{from{stroke-dashoffset:30}to{stroke-dashoffset:-100}}
+.dodai-cp-run{stroke-dasharray:25 100;animation:dodai-cp-run 1.6s ease-in-out infinite}
+.dodai-cp-spin{animation:dodai-spin 1.4s linear infinite}
+@keyframes dodai-cp-run{0%{stroke-dasharray:4 100;stroke-dashoffset:0}50%{stroke-dasharray:55 100;stroke-dashoffset:-20}100%{stroke-dasharray:4 100;stroke-dashoffset:-96}}

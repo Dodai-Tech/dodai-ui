@@ -999,6 +999,8 @@ pub fn view(node: &Node, r: &R) -> String {
         Node::SpinnerOf { size, style } => html::spinner_of(*style, *size as u32),
         Node::StyledProgress { style, value } => html::styled_progress(*style, *value),
         Node::Indeterminate => html::indeterminate(),
+        Node::WavyProgress { value } => html::wavy_progress(*value),
+        Node::CircularProgress { value, wavy } => html::circular_progress(*value, *wavy),
         Node::Skeleton { w, h } => html::skeleton(*w as u32, *h as u32),
         Node::Empty {
             icon: glyph,

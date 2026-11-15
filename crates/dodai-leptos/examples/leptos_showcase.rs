@@ -100,6 +100,12 @@ fn Showcase(names: Vec<(String, String)>) -> impl IntoView {
                         <Progress value=68.0/>
                         <Progress value=40.0 tone=Tone::Success/>
                         <Progress value=90.0 tone=Tone::Danger/>
+                        <div style="display:flex;gap:16px;align-items:center;margin-top:12px">
+                            <Spinner/>
+                            <Spinner style=dodai_core::SpinnerStyle::Orbit size=32/>
+                            <Spinner style=dodai_core::SpinnerStyle::Bars size=32/>
+                            <Spinner style=dodai_core::SpinnerStyle::Grid size=32/>
+                        </div>
                     </div>
                 </div>
             </section>

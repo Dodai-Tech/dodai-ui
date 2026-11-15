@@ -65,7 +65,9 @@ fn Showcase() -> Html {
             <Label>{"Disabled"}</Label><TextInput value="locked" disabled={true} /></div>
           <div><Label>{"Slider"}</Label><Slider value={65.0} />
             <Label>{"Progress"}</Label><Progress value={68.0} />
-            <Progress value={40.0} tone={Tone::Success} /><Progress value={90.0} tone={Tone::Danger} /></div></div>
+            <Progress value={40.0} tone={Tone::Success} /><Progress value={90.0} tone={Tone::Danger} />
+            <Label>{"Spinners"}</Label>
+            <div class="dodai-row"><Spinner /><Spinner style={dodai_core::SpinnerStyle::Orbit} size={32} /><Spinner style={dodai_core::SpinnerStyle::Bars} size={32} /><Spinner style={dodai_core::SpinnerStyle::Grid} size={32} /></div></div></div>
           <div class="dodai-row">
             <Toggle checked={true}>{"Switch on"}</Toggle><Toggle checked={false}>{"Switch off"}</Toggle>
             <Checkbox checked={true}>{"Checked"}</Checkbox><Checkbox checked={false}>{"Unchecked"}</Checkbox>

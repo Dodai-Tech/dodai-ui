@@ -43,7 +43,7 @@ pub mod tune;
 mod testing;
 
 pub use button::Button;
-pub use controls::{Checkbox, ProgressBar, Radio, Slider, Toggle};
+pub use controls::{Checkbox, ProgressBar, Radio, Slider, Spinner, Toggle};
 #[cfg(feature = "icons")]
 pub use icon::Icon;
 pub use install::{active_theme, apply_to_style, install, visuals};

@@ -1206,6 +1206,10 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
                 .width(Length::Fixed(420.0))
                 .into()
         }
+        Demo::WavyProgress { value } => container(lt.wavy_progress(*value, cx.t))
+            .width(Length::Fixed(420.0))
+            .into(),
+        Demo::CircularProgress { value, wavy } => lt.circular_progress(*value, *wavy, cx.t),
         Demo::Indeterminate => container(lt.indeterminate(cx.t))
             .width(Length::Fixed(420.0))
             .into(),

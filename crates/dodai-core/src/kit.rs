@@ -958,6 +958,65 @@ pub mod busy {
 
     /// Where and how a cell is drawn after `t` seconds: `(x, y, w, h, alpha)`. The one call a
     /// toolkit needs, whatever the style.
+    /// A wavy line `w` wide centred on `y = 0`: `(x, y)` points `step` px apart.
+    pub fn wave_line(w: f32, amp: f32, wavelength: f32, step: f32) -> Vec<(f32, f32)> {
+        let n = (w / step.max(0.5)).ceil().max(1.0) as usize;
+        (0..=n)
+            .map(|i| {
+                let x = (i as f32 * step).min(w);
+                (x, amp * (x / wavelength * std::f32::consts::TAU).sin())
+            })
+            .collect()
+    }
+
+    /// A wavy ring in a `size` square, clockwise from the top: radius `r + amp * sin(lobes * a)`.
+    pub fn wave_ring(size: f32, amp: f32, lobes: u32, segments: usize) -> Vec<(f32, f32)> {
+        let r = size / 2.0 - amp - 1.0;
+        (0..=segments)
+            .map(|i| {
+                let a = i as f32 / segments as f32 * std::f32::consts::TAU;
+                let rr = r + amp * (a * lobes as f32).sin();
+                (size / 2.0 + rr * a.sin(), size / 2.0 - rr * a.cos())
+            })
+            .collect()
+    }
+
+    /// The part of a progress path to draw, as `(start, end)` fractions of its length (at most two
+    /// ranges): `0..frac` when determinate; a travelling window when `frac` is `None`
+    /// (`wrap`: it wraps round a ring, otherwise it runs off the end).
+    pub fn progress_window(frac: Option<f32>, t: f32, wrap: bool) -> [(f32, f32); 2] {
+        const NONE: (f32, f32) = (0.0, 0.0);
+        match frac {
+            Some(f) => [(0.0, f.clamp(0.0, 1.0)), NONE],
+            None => {
+                let len = 0.3;
+                if wrap {
+                    let s = (t * 0.7).fract();
+                    if s + len <= 1.0 {
+                        [(s, s + len), NONE]
+                    } else {
+                        [(s, 1.0), (0.0, s + len - 1.0)]
+                    }
+                } else {
+                    let head = (t * 0.7).fract() * (1.0 + len);
+                    [((head - len).max(0.0), head.min(1.0)), NONE]
+                }
+            }
+        }
+    }
+
+    /// The part of a polyline between fractions `a` and `b` of its point count.
+    pub fn slice_points(pts: &[(f32, f32)], a: f32, b: f32) -> &[(f32, f32)] {
+        let n = pts.len();
+        let i0 = ((a * (n - 1) as f32).floor() as usize).min(n - 1);
+        let i1 = ((b * (n - 1) as f32).ceil() as usize).min(n - 1);
+        if i1 <= i0 {
+            &[]
+        } else {
+            &pts[i0..=i1]
+        }
+    }
+
     /// Which token colour a [`BarPiece`] takes.
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub enum BarRole {
@@ -1614,6 +1673,30 @@ mod tests {
 
 #[cfg(test)]
 mod busy_tests {
+    use super::busy::{progress_window, slice_points, wave_line, wave_ring};
+
+    #[test]
+    fn progress_windows_stay_inside_the_path() {
+        assert_eq!(progress_window(Some(0.4), 0.0, false)[0], (0.0, 0.4));
+        for i in 0..200 {
+            for wrap in [false, true] {
+                for (a, b) in progress_window(None, i as f32 * 0.037, wrap) {
+                    assert!((0.0..=1.0).contains(&a) && (0.0..=1.0).contains(&b) && a <= b);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn wave_paths_have_points_and_slice_cleanly() {
+        let line = wave_line(100.0, 3.0, 20.0, 2.0);
+        assert_eq!(line.first().unwrap().0, 0.0);
+        assert_eq!(line.last().unwrap().0, 100.0);
+        let ring = wave_ring(48.0, 2.0, 10, 100);
+        assert_eq!(ring.len(), 101);
+        assert!(slice_points(&ring, 0.5, 0.5).is_empty());
+        assert!(slice_points(&ring, 0.0, 1.0).len() == 101);
+    }
     use super::busy::*;
 
     #[test]

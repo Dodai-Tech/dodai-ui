@@ -1562,6 +1562,12 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
         Demo::StyledProgress { style, value } => {
             p.spawn(dodai_bevy::spinner::styled_progress(*style, *value));
         }
+        Demo::WavyProgress { value } => {
+            p.spawn(dodai_bevy::spinner::wavy_progress(*value));
+        }
+        Demo::CircularProgress { value, wavy } => {
+            p.spawn(dodai_bevy::spinner::circular_progress(*value, *wavy));
+        }
         Demo::Indeterminate => {
             p.spawn(Node {
                 width: Val::Percent(100.0),

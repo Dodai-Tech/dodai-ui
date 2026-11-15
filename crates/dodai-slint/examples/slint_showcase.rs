@@ -4,7 +4,7 @@ use dodai_slint::slint::{self, ComponentHandle, ModelRc, SharedString, VecModel}
 use std::{cell::RefCell, rc::Rc};
 
 slint::slint! {
-    import { Theme, LButton, LPanel, LTag, LTabs, LToggle, LCheckbox, LRadio, LProgress,
+    import { Theme, LButton, LPanel, LTag, LTabs, LToggle, LCheckbox, LRadio, LProgress, LSpinner,
              LSlider, LInput, LListItem, LDivider, LTooltip, LText, LScanlines } from "ui/dodai.slint";
     export { Theme }
 
@@ -100,6 +100,7 @@ slint::slint! {
                         LProgress { value: 0.7; tone: 1; }
                         LProgress { value: 0.5; tone: 2; }
                         LProgress { value: 0.3; tone: 3; }
+                        HorizontalLayout { spacing: 14px; LSpinner { } LSpinner { size: 36px; } }
                         LSlider { value <=> root.slider; }
                         LInput { placeholder: "Type here…"; }
                     }
