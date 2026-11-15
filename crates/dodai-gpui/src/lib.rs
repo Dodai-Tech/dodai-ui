@@ -209,7 +209,7 @@ pub mod glass;
 #[cfg(feature = "components")]
 pub mod icons;
 mod window_glass;
-pub use window_glass::{set_window_blur, window_blur, CANVAS_ALPHA};
+pub use window_glass::{set_window_blur, window_blur, CANVAS_ALPHA, MESH_OPACITY_BLURRED};
 pub mod live;
 #[cfg(feature = "components")]
 mod own;

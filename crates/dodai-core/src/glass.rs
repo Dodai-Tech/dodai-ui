@@ -334,7 +334,7 @@ pub fn backdrop_mesh(theme: &Theme, w: usize, h: usize) -> Option<Vec<u8>> {
         .then(|| mesh_pixels(theme.palette.background, style.wash, style.backdrop, w, h))
 }
 
-/// The picture a frosted design sits on, `w`×`h` RGBA: its canvas mesh with a few defined shapes
+/// A picture for an app to set as its wallpaper (`set_wallpaper`) so frost has something to blur, `w`×`h` RGBA: its canvas mesh with a few defined shapes
 /// (timber beams and discs, in the design's own colours and kept faint) so the blur under a glass
 /// surface shows. A smooth canvas alone has nothing to blur: frost over it looks like no frost.
 pub fn design_picture(theme: &Theme, w: usize, h: usize) -> Vec<u8> {

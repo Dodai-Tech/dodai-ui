@@ -38,14 +38,6 @@ pub(crate) use dodai_core::mesh_pixels as pixels;
 /// design with a flat canvas. With the `frost` feature, the wallpaper the app set with
 /// [`set_wallpaper`](crate::set_wallpaper) is drawn instead, for any design.
 pub fn backdrop(t: &Theme) -> Option<impl IntoElement> {
-    // The blurred desktop is the backdrop then.
-    if crate::window_blur() {
-        #[cfg(feature = "frost")]
-        crate::glass::sync_design_backdrop(t);
-        return None;
-    }
-    #[cfg(feature = "frost")]
-    crate::glass::sync_design_backdrop(t);
     #[cfg(feature = "frost")]
     if let Some(image) = crate::glass::wallpaper_image() {
         return Some(cover(image));
@@ -69,7 +61,11 @@ pub fn backdrop(t: &Theme) -> Option<impl IntoElement> {
         }
         Some(i)
     })?;
-    Some(cover(image))
+    Some(cover(image).opacity(if crate::window_blur() {
+        crate::MESH_OPACITY_BLURRED
+    } else {
+        1.0
+    }))
 }
 
 /// `image` stretched over its (relative) parent.

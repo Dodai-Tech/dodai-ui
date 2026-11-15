@@ -12,6 +12,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 /// How opaque the app canvas stays while the window is blurred.
 pub const CANVAS_ALPHA: f32 = 0.55;
 
+/// How opaque the canvas mesh stays over the blurred desktop: the gradient stays, the desktop
+/// still shows through.
+pub const MESH_OPACITY_BLURRED: f32 = 0.82;
+
 static BLURRED: AtomicBool = AtomicBool::new(false);
 
 /// Blur (or stop blurring) what is behind `window`; the canvas turns see-through to show it.

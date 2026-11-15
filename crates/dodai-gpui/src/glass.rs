@@ -14,7 +14,7 @@
 
 use crate::lru::Lru;
 use crate::paint::FrostLayer;
-use dodai_core::{Shape, ShapeKind, Theme};
+use dodai_core::{Shape, ShapeKind};
 use gpui::{px, App, Bounds, Corners, Pixels, RenderImage, Window};
 use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Mutex, OnceLock};
@@ -31,8 +31,6 @@ const CROP_STEP_MASKED: f32 = 2.0;
 /// The wallpaper the app set: its pixels and the drawable copy.
 struct Wall {
     id: u64,
-    /// The design this picture stands in for when the app set none.
-    design: Option<&'static str>,
     rgba: Arc<Vec<u8>>,
     size: (usize, usize),
     image: Arc<RenderImage>,
@@ -92,7 +90,6 @@ pub fn set_wallpaper(cx: &mut App, rgba: Vec<u8>, width: usize, height: usize) {
         s.next_id += 1;
         if let Some(old) = s.wall.replace(Wall {
             id,
-            design: None,
             rgba: Arc::new(rgba),
             size: (width, height),
             image,
@@ -116,41 +113,7 @@ pub fn clear_wallpaper(cx: &mut App) {
 
 /// Whether the app set a wallpaper.
 pub fn has_wallpaper() -> bool {
-    locked().wall.as_ref().is_some_and(|w| w.design.is_none())
-}
-
-/// Puts the design's own picture behind the app while the surface is frosted and the app set no
-/// wallpaper: over a smooth canvas the blur has nothing to show. Called when the backdrop is
-/// built, so a theme or surface change swaps it.
-pub(crate) fn sync_design_backdrop(t: &Theme) {
-    let want = !crate::window_blur() && crate::resolved_surface(t).frost > 0.0;
-    let mut s = locked();
-    match (&s.wall, want) {
-        (Some(w), _) if w.design.is_none() => return,
-        (Some(w), true) if w.design == Some(t.id()) => return,
-        (None, false) => return,
-        _ => {}
-    }
-    if let Some(old) = s.wall.take() {
-        s.freed.push(old.image);
-    }
-    if !want {
-        return;
-    }
-    let (w, h) = (960, 600);
-    let rgba = dodai_core::design_picture(t, w, h);
-    let Some(image) = crate::backdrop::render_image(rgba.clone(), w, h) else {
-        return;
-    };
-    let id = s.next_id;
-    s.next_id += 1;
-    s.wall = Some(Wall {
-        id,
-        design: Some(t.id()),
-        rgba: Arc::new(rgba),
-        size: (w, h),
-        image,
-    });
+    locked().wall.is_some()
 }
 
 /// The wallpaper the app set, ready to draw.
