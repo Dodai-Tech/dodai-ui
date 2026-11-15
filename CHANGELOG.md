@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.3] - 2026-11-15
+### ✨ Features
+- glass on every container and input field in every toolkit (gpui panes, popups, pickers, toasts; iced fields; bevy inputs; web fields/lists; yew, leptos, egui, freya)
+- alerts and tooltips take the glass; floating surfaces keep a minimum opacity where content behind cannot be blurred
+### 🐛 Bug Fixes
+- opaque floating popups in dark Dodai, Select::popup_surface frost/opacity
+- frosted glass on popover, command palette, autocomplete menu, date/time/color pickers and toasts
+### 📚 Documentation
+- don't intra-doc-link the feature-gated schema()
+**Full Changelog**: https://github.com/sorinirimies/dodai-ui/compare/v0.1.1...v0.1.3
 ## [0.1.1] - 2026-11-15
 ### ✨ Features
 - per-design spinner sets (Dodai quad/grid/orbit/courses, Cyberpunk glitch/scanner/data/bars, Neo-Brutalism shuffle/hop/pillars/steps, Material 3 ring/petals/bounce); gpui Spinner .style()/.size(); showcase shows them
@@ -21,6 +31,7 @@ All notable changes to this project will be documented in this file.
 ### 🔧 Chores
 - drop unused workspace dependencies (cargo warnings on every run)
 - drop duplicate top spinner demo
+- bump freya and shader-kernels literal versions to 0.1.1
 ### 🧪 Testing
 - arc dot count
 **Full Changelog**: https://github.com/sorinirimies/dodai-ui/compare/v0.1.0...v0.1.1
