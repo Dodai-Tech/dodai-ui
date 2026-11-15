@@ -35,7 +35,7 @@ pub fn themes_with_glow(list: &[Theme], glow: Option<f32>) -> Vec<Theme> {
 pub struct ThemeHandle {
     switcher: Signal<ThemeSwitcher>,
     glow: Signal<f32>,
-    surface: Signal<dodai_core::SurfaceMix>,
+    surface: Signal<dodai_core::Surface>,
 }
 
 impl ThemeHandle {
@@ -80,18 +80,18 @@ impl ThemeHandle {
     pub fn set_glow(&mut self, g: f32) {
         self.glow.set(g.max(0.0));
     }
-    /// The app-wide surface mix as set ([`SurfaceMix::Design`] until the app sets one).
-    pub fn surface_mix(&self) -> dodai_core::SurfaceMix {
+    /// The app-wide surface as set ([`Surface::INHERIT`] until the app sets one).
+    pub fn surface(&self) -> dodai_core::Surface {
         *self.surface.read()
     }
     /// The surface mix in use: the app's, or the active design's own glass (Dodai is frosted,
     /// the others not).
-    pub fn active_surface_fx(&self) -> dodai_core::SurfaceFx {
-        self.surface_mix().resolve(&self.theme())
+    pub fn resolved_surface(&self) -> dodai_core::ResolvedSurface {
+        self.theme().resolve_surface(&self.surface())
     }
-    /// Set the app-wide surface mix: containers and input fields it frosts turn see-through. A
-    /// [`SurfaceFx`](dodai_core::SurfaceFx) converts into a [`SurfaceMix::Custom`].
-    pub fn set_surface_mix(&mut self, mix: impl Into<dodai_core::SurfaceMix>) {
+    /// Set the app-wide surface: containers and input fields it frosts turn see-through. A
+    /// [`ResolvedSurface`](dodai_core::ResolvedSurface) converts into a custom [`Surface`].
+    pub fn set_surface(&mut self, mix: impl Into<dodai_core::Surface>) {
         self.surface.set(mix.into());
     }
 }
@@ -107,7 +107,7 @@ pub(crate) fn glass(
         return None;
     }
     let h = try_use_context::<ThemeHandle>()?;
-    let fx = h.active_surface_fx();
+    let fx = h.resolved_surface();
     let s = dodai_topcoat::glass_style(
         &h.theme(),
         class.unwrap_or(dodai_core::SurfaceClass::Button),
@@ -115,7 +115,7 @@ pub(crate) fn glass(
         if class.is_some() {
             fx
         } else {
-            dodai_core::SurfaceFx::NONE
+            dodai_core::ResolvedSurface::NONE
         },
     );
     (!s.is_empty()).then_some(s)
@@ -163,7 +163,7 @@ pub fn ThemeProvider(props: ThemeProviderProps) -> Element {
     let handle = use_context_provider(|| ThemeHandle {
         switcher: Signal::new(make_switcher(&props.themes, &props.initial)),
         glow: Signal::new(props.glow.max(0.0)),
-        surface: Signal::new(dodai_core::SurfaceMix::Design),
+        surface: Signal::new(dodai_core::Surface::INHERIT),
     });
     let now: ThemeProps = (props.themes.clone(), props.initial.clone(), props.glow);
     let seen = use_hook(|| std::rc::Rc::new(std::cell::RefCell::new(now.clone())));

@@ -1,9 +1,9 @@
-//! The app-wide surface mix (texture and effects) of the Surface effects page, kept in the
+//! The app-wide surface (texture and effects) of the Surface effects page, kept in the
 //! showcase's values under `sfx:` keys so the controls go through the usual `Action::Set` /
 //! `Action::Press`. It starts empty, like the gpui showcase: nothing is drawn until a control
 //! or the design's preset turns something on.
 
-use dodai_core::{PressStyle, SurfaceClass, SurfaceFx, SurfaceTargets, Texture, Theme};
+use dodai_core::{PressStyle, ResolvedSurface, SurfaceClass, SurfaceTargets, Texture, Theme};
 
 use crate::state::{Value, Values};
 
@@ -31,7 +31,7 @@ pub fn wallpaper(values: &Values) -> bool {
 pub fn apply_spec(values: &mut Values, t: &Theme, spec: &str) {
     for word in spec.split(',').map(str::trim) {
         match word {
-            "preset" => store(values, t, t.surface_preset()),
+            "preset" => store(values, t, t.signature_surface()),
             "picture" => values.set(WALLPAPER, Value::Index(1)),
             w => {
                 if let Some(a) = AMOUNTS.iter().find(|a| a.key[PREFIX.len()..] == *w) {
@@ -51,7 +51,7 @@ pub struct Amount {
     /// Upper bound (the lower is 0).
     pub max: f32,
     /// The field.
-    pub field: fn(&mut SurfaceFx) -> &mut f32,
+    pub field: fn(&mut ResolvedSurface) -> &mut f32,
 }
 
 macro_rules! amount {
@@ -155,9 +155,9 @@ pub fn target_key(c: SurfaceClass) -> String {
     format!("sfx:target:{}", c.label())
 }
 
-/// The mix the values describe under theme `t` (unset values are [`SurfaceFx::NONE`]'s).
-pub fn mix(values: &Values, t: &Theme) -> SurfaceFx {
-    let mut f = SurfaceFx::NONE;
+/// The mix the values describe under theme `t` (unset values are [`ResolvedSurface::NONE`]'s).
+pub fn mix(values: &Values, t: &Theme) -> ResolvedSurface {
+    let mut f = ResolvedSurface::NONE;
     for a in &AMOUNTS {
         if let Some(Value::Num(v)) = values.0.get(a.key) {
             *(a.field)(&mut f) = *v;
@@ -194,7 +194,7 @@ pub fn mix(values: &Values, t: &Theme) -> SurfaceFx {
 }
 
 /// Writes `fx` into the values (every field, so the sliders show it).
-pub fn store(values: &mut Values, t: &Theme, fx: SurfaceFx) {
+pub fn store(values: &mut Values, t: &Theme, fx: ResolvedSurface) {
     let mut f = fx;
     for a in &AMOUNTS {
         values.set(a.key, Value::Num(*(a.field)(&mut f)));
@@ -219,10 +219,10 @@ pub fn store(values: &mut Values, t: &Theme, fx: SurfaceFx) {
 }
 
 /// The mode the mix is in: 0 Off (nothing drawn), 1 the design's preset, 2 custom.
-pub fn mode(fx: &SurfaceFx, t: &Theme) -> usize {
+pub fn mode(fx: &ResolvedSurface, t: &Theme) -> usize {
     if fx.is_none() {
         0
-    } else if *fx == t.surface_preset() {
+    } else if *fx == t.signature_surface() {
         1
     } else {
         2
@@ -237,12 +237,12 @@ pub fn set_mode(values: &mut Values, t: &Theme, i: usize) {
         0 => store(
             values,
             t,
-            SurfaceFx {
+            ResolvedSurface {
                 targets,
-                ..SurfaceFx::NONE
+                ..ResolvedSurface::NONE
             },
         ),
-        1 => store(values, t, t.surface_preset()),
+        1 => store(values, t, t.signature_surface()),
         _ => {}
     }
 }
@@ -279,7 +279,7 @@ mod tests {
         assert_eq!(mix(&v, &t).frost, amount("sfx:frost").unwrap().max);
         assert!(wallpaper(&v));
         apply_spec(&mut v, &t, "preset");
-        assert_eq!(mix(&v, &t), t.surface_preset());
+        assert_eq!(mix(&v, &t), t.signature_surface());
     }
 
     #[test]
@@ -297,7 +297,7 @@ mod tests {
         let mut v = Values::default();
         set_mode(&mut v, &t, 1);
         let f = mix(&v, &t);
-        assert_eq!(f, t.surface_preset());
+        assert_eq!(f, t.signature_surface());
         assert_eq!(mode(&f, &t), 1);
         // A hand edit makes it custom; Off clears it but keeps the targets.
         v.set("sfx:glitch", Value::Num(0.33));

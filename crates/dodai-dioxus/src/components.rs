@@ -514,7 +514,7 @@ pub struct TextInputProps {
 /// Text input (single line, password or multi-line).
 #[component]
 pub fn TextInput(props: TextInputProps) -> Element {
-    // On the glass the app-wide surface mix gives input fields.
+    // On the glass the app-wide surface gives input fields.
     let style = crate::provider::glass(
         Some(dodai_core::SurfaceClass::Input),
         &dodai_core::Surface::INHERIT,

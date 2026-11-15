@@ -4,7 +4,7 @@
 //! the design ([`dodai_core::mesh_pixels`]), which [`paint_backdrop`] draws stretched over the
 //! window. A pane finds the part of it that lies under itself from where it sits in that window.
 //! Without a backdrop the fills still turn see-through, so paint one (or draw your own picture
-//! under the UI). Turn the glass on with the surface mix ([`set_surface_mix`](crate::set_surface_mix):
+//! under the UI). Turn the glass on with the surface mix ([`set_surface`](crate::set_surface):
 //! `frost` reaches containers and input fields).
 
 use crate::paint::color32;
@@ -121,13 +121,13 @@ fn saturate(c: Color, s: f32) -> Color {
     Color::rgba(f(c.r), f(c.g), f(c.b), c.a)
 }
 
-/// The glass of a `class` surface under the app-wide surface mix.
+/// The glass of a `class` surface under the app-wide surface.
 pub fn glass_of(theme: &Theme, class: SurfaceClass) -> Glass {
     dodai_core::surface_glass(
         theme,
         class,
         &dodai_core::Surface::INHERIT,
-        crate::surface_fx_for(theme),
+        crate::resolved_surface(theme),
     )
 }
 
@@ -171,22 +171,22 @@ pub fn frost_shapes(glass: &Glass, rect: Rect) -> Vec<Shape> {
 mod tests {
     use super::*;
     use crate::testing::rounded;
-    use dodai_core::{SurfaceFx, SurfaceTargets};
+    use dodai_core::{ResolvedSurface, SurfaceTargets};
     use egui::vec2;
 
     #[test]
     fn solid_without_the_mix_and_glass_with_it() {
         let t = rounded();
-        crate::set_surface_mix(SurfaceFx::NONE);
+        crate::set_surface(ResolvedSurface::NONE);
         assert!(glass_of(&t, SurfaceClass::Panel).is_solid());
-        crate::set_surface_mix(SurfaceFx {
+        crate::set_surface(ResolvedSurface {
             frost: 1.0,
             targets: SurfaceTargets::ALL,
-            ..SurfaceFx::NONE
+            ..ResolvedSurface::NONE
         });
         let g = glass_of(&t, SurfaceClass::Panel);
         assert!(g.frosted());
-        crate::set_surface_mix(SurfaceFx::NONE);
+        crate::set_surface(ResolvedSurface::NONE);
     }
 
     #[test]

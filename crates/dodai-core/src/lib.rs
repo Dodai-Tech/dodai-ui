@@ -69,11 +69,12 @@ pub use component::{
     ToggleTokens, TypeRole, TypeStyle,
 };
 pub use dodai_fx::{
-    EffectSet, PressStyle, Surface, SurfaceClass, SurfaceFx, SurfaceTargets, SurfaceTuning, Texture,
+    EffectSet, PressStyle, ResolvedSurface, Surface, SurfaceClass, SurfaceTargets, SurfaceTuning,
+    Texture,
 };
 pub use glass::{
     backdrop_mesh, frost_scene, glass_picture, mesh_blobs, mesh_pixels, surface_glass, Glass,
-    MeshBlob, SurfaceMix, MESH_SIZE,
+    MeshBlob, MESH_SIZE,
 };
 pub use kit::{busy, Kit, KitStyle};
 pub use knob::{

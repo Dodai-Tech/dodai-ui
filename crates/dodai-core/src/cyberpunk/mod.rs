@@ -374,7 +374,7 @@ fn surface_style(dark: bool) -> crate::SurfaceStyle {
     // Light surfaces show motion more, so the animations run slower there.
     let slow = if dark { 1.0 } else { 1.5 };
     crate::SurfaceStyle {
-        preset: crate::SurfaceFx {
+        preset: crate::ResolvedSurface {
             texture: crate::Texture::Grain,
             strength: 0.45 * calm,
             container_texture: crate::Texture::Circuit,
@@ -385,7 +385,7 @@ fn surface_style(dark: bool) -> crate::SurfaceStyle {
             bloom: 0.3 * calm,
             edge: 0.2 * calm,
             clear: 0.5,
-            ..crate::SurfaceFx::NONE
+            ..crate::ResolvedSurface::NONE
         },
         textures: &crate::Texture::ALL,
         effects: crate::EffectSet::ALL,

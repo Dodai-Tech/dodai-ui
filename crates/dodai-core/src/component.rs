@@ -899,18 +899,28 @@ impl Theme {
     }
 
     /// The surface mix this design suggests (empty when it has none).
-    pub fn surface_preset(&self) -> crate::SurfaceFx {
+    pub fn signature_surface(&self) -> crate::ResolvedSurface {
         self.surface_style.preset
     }
 
     /// The surface mix a toolkit uses until the app sets one: only the glass of the design's
-    /// suggested [`preset`](Self::surface_preset), so a frosted design (Dodai) has frosted
+    /// suggested [`preset`](Self::signature_surface), so a frosted design (Dodai) has frosted
     /// containers and fields out of the box while the others stay as they are.
-    pub fn default_surface(&self) -> crate::SurfaceFx {
-        crate::SurfaceFx {
+    pub fn default_surface(&self) -> crate::ResolvedSurface {
+        crate::ResolvedSurface {
             frost: self.surface_style.preset.frost,
-            ..crate::SurfaceFx::NONE
+            ..crate::ResolvedSurface::NONE
         }
+    }
+
+    /// What `surface` (the app's, or [`Surface::INHERIT`]) draws on this design's surfaces: the
+    /// design's own glass ([`default_surface`](Self::default_surface)) with everything `surface`
+    /// sets on top. [`Surface::NONE`] turns every effect off, glass included.
+    pub fn resolve_surface(&self, surface: &crate::Surface) -> crate::ResolvedSurface {
+        if surface.is_off() {
+            return crate::ResolvedSurface::NONE;
+        }
+        surface.apply(self.default_surface())
     }
 
     /// The textures this design owns (empty when it has none).

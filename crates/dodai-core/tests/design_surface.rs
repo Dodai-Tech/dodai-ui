@@ -56,7 +56,7 @@ fn every_design_has_the_common_surface() {
 fn only_designs_with_an_opinion_suggest_a_surface_mix() {
     for sys in dodai_core::themes::systems() {
         let t = (sys.themes)().into_iter().next().unwrap();
-        let fx = t.surface_preset();
+        let fx = t.signature_surface();
         // A preset is either empty or valid (every amount within 0..=1).
         for v in [fx.strength, fx.glitch, fx.sheen, fx.flicker, fx.bloom] {
             assert!((0.0..=1.0).contains(&v), "{}: {v}", sys.name);
@@ -68,7 +68,7 @@ fn only_designs_with_an_opinion_suggest_a_surface_mix() {
 fn a_design_suggests_only_textures_and_effects_it_owns() {
     for sys in dodai_core::themes::systems() {
         let t = (sys.themes)().into_iter().next().unwrap();
-        let fx = t.surface_preset();
+        let fx = t.signature_surface();
         let owned = t.surface_textures();
         for tex in [fx.texture, fx.container_texture] {
             assert!(
@@ -93,11 +93,11 @@ fn a_design_suggests_only_textures_and_effects_it_owns() {
             );
         }
         // Whatever the app turned on, a design never draws what it does not own.
-        let all_on = dodai_core::SurfaceFx {
+        let all_on = dodai_core::ResolvedSurface {
             texture: dodai_core::Texture::Circuit,
             container_texture: dodai_core::Texture::Halftone,
             glitch: 1.0,
-            ..dodai_core::SurfaceFx::NONE
+            ..dodai_core::ResolvedSurface::NONE
         }
         .limited(owned, t.surface_effects());
         for tex in [all_on.texture, all_on.container_texture] {
@@ -112,7 +112,7 @@ fn only_dodai_is_frosted_by_default_and_every_design_can_be() {
         let t = (sys.themes)().into_iter().next().unwrap();
         let fx = t.default_surface();
         // Only the glass of the preset is on by default, never a texture or an effect.
-        assert_eq!(fx.frost, t.surface_preset().frost, "{}", sys.name);
+        assert_eq!(fx.frost, t.signature_surface().frost, "{}", sys.name);
         assert_eq!(fx.glitch + fx.sheen + fx.flicker + fx.bloom, 0.0);
         assert_eq!(fx.texture, dodai_core::Texture::None);
         let frosted = fx.frost > 0.0;
@@ -123,4 +123,37 @@ fn only_dodai_is_frosted_by_default_and_every_design_can_be() {
             sys.name
         );
     }
+}
+
+#[test]
+fn one_surface_api_follows_the_design_until_the_app_sets_one() {
+    use dodai_core::Surface;
+    let dodai = dodai::dark();
+    let cyber = cyberpunk::yellow();
+
+    // Unset: the design's own glass.
+    assert_eq!(
+        dodai.resolve_surface(&Surface::INHERIT),
+        dodai.default_surface()
+    );
+    assert_eq!(cyber.resolve_surface(&Surface::INHERIT).frost, 0.0);
+
+    // Frosted glass turns it on in any design, and effects mix on top of it.
+    let mix = Surface::frosted().glitch(0.6);
+    let fx = cyber.resolve_surface(&mix);
+    assert!(fx.frost > 0.0 && fx.glitch == 0.6);
+
+    // `NONE` turns everything off, glass included.
+    assert_eq!(
+        dodai.resolve_surface(&Surface::NONE),
+        dodai_core::ResolvedSurface::NONE
+    );
+
+    // Merging: the later one wins where it sets something.
+    let both = Surface::frosted().and(Surface::new().glitch(0.6));
+    assert_eq!(both, mix);
+
+    // A resolved mix converts back into exactly itself.
+    let sig = dodai.signature_surface();
+    assert_eq!(dodai.resolve_surface(&Surface::from(sig)), sig);
 }

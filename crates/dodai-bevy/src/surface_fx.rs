@@ -6,7 +6,7 @@
 //! Static only (no click ripples, no animation).
 
 use bevy::prelude::*;
-use dodai_core::{Surface, SurfaceClass, SurfaceFx, Theme};
+use dodai_core::{ResolvedSurface, Surface, SurfaceClass, Theme};
 use dodai_fx::{Frame, Painter, Rgba};
 
 use crate::theme::color;
@@ -56,7 +56,7 @@ impl Painter for Recorder {
 }
 
 /// Record what `fx` draws on a `size` panel of `theme`'s shape; `None` when nothing is drawn.
-pub fn record_surface_fx(theme: &Theme, fx: SurfaceFx, size: Vec2) -> Option<Recorder> {
+pub fn record_surface_fx(theme: &Theme, fx: ResolvedSurface, size: Vec2) -> Option<Recorder> {
     let paint = dodai_core::surface_paint(theme, SurfaceClass::Panel, &Surface::INHERIT, fx)?;
     let shape = &theme.shape.clip();
     let frame = Frame {
@@ -77,7 +77,7 @@ pub fn record_surface_fx(theme: &Theme, fx: SurfaceFx, size: Vec2) -> Option<Rec
 pub fn spawn_surface_fx(
     parent: &mut ChildSpawnerCommands,
     theme: &Theme,
-    fx: SurfaceFx,
+    fx: ResolvedSurface,
     size: Vec2,
 ) {
     let Some(rec) = record_surface_fx(theme, fx, size) else {
@@ -140,16 +140,16 @@ mod tests {
     #[test]
     fn a_grid_records_primitives_and_nothing_records_nothing() {
         let t = dodai_core::themes::cyberpunk::yellow();
-        let fx = SurfaceFx {
+        let fx = ResolvedSurface {
             texture: Texture::Circuit,
             container_texture: Texture::Circuit,
             strength: 0.8,
             scale: 1.0,
             targets: dodai_core::SurfaceTargets::ALL,
-            ..SurfaceFx::NONE
+            ..ResolvedSurface::NONE
         };
         let rec = record_surface_fx(&t, fx, Vec2::new(200.0, 100.0)).unwrap();
         assert!(!rec.prims.is_empty());
-        assert!(record_surface_fx(&t, SurfaceFx::NONE, Vec2::new(200.0, 100.0)).is_none());
+        assert!(record_surface_fx(&t, ResolvedSurface::NONE, Vec2::new(200.0, 100.0)).is_none());
     }
 }

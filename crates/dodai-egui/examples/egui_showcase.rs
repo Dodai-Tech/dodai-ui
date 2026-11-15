@@ -125,13 +125,13 @@ impl App {
                 .add(Button::new("Off").variant(ButtonVariant::Outline))
                 .clicked()
             {
-                self.theme.surface = dodai_core::SurfaceFx::NONE.into();
+                self.theme.surface = dodai_core::ResolvedSurface::NONE.into();
             }
             if ui.add(Button::new("Design preset")).clicked() {
                 self.theme.surface = self.theme.preset().into();
             }
         });
-        let mut mix = self.theme.surface.resolve(&t);
+        let mut mix = t.resolve_surface(&self.theme.surface);
         let fx = &mut mix;
         ui.horizontal_wrapped(|ui| {
             ui.dodai_muted("Texture");

@@ -290,7 +290,7 @@ pub fn page<'a>(app: &App) -> Element<'a, Msg> {
     if sections.is_empty() {
         col = col.push(lt.muted_text("No components match"));
     }
-    // The app-wide surface mix of the Surface effects page paints every panel.
+    // The app-wide surface of the Surface effects page paints every panel.
     let fx = m.surface_fx();
     for s in sections {
         let node = (s.build)(&ctx);

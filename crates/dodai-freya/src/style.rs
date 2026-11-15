@@ -5,28 +5,28 @@
 //! and label casing are all read from [`Theme`] tokens.
 
 use dodai_core::{
-    ButtonVariant, Color, ControlState, ShapeKind, Surface, SurfaceClass, SurfaceFx, SurfaceMix,
+    ButtonVariant, Color, ControlState, ShapeKind, Surface, SurfaceClass, ResolvedSurface,
     Theme, Tone,
 };
 use std::sync::RwLock;
 
-static SURFACE_MIX: RwLock<SurfaceMix> = RwLock::new(SurfaceMix::Design);
+static SURFACE_MIX: RwLock<Surface> = RwLock::new(Surface::INHERIT);
 
-/// The app-wide surface mix ([`SurfaceMix::Design`] until it sets one).
-pub fn surface_mix() -> SurfaceMix {
+/// The app-wide surface ([`Surface::INHERIT`] until it sets one).
+pub fn surface() -> Surface {
     SURFACE_MIX.read().map_or_else(|e| *e.into_inner(), |g| *g)
 }
 
 /// The surface mix of `theme`'s surfaces: the app's, or until it sets one the design's own glass
 /// ([`Theme::default_surface`]).
-pub fn surface_fx_for(theme: &Theme) -> SurfaceFx {
-    surface_mix().resolve(theme)
+pub fn resolved_surface(theme: &Theme) -> ResolvedSurface {
+    theme.resolve_surface(&surface())
 }
 
-/// Set the app-wide surface mix (`frost` reaches containers and input fields). Applies to
-/// everything built afterwards; Freya blurs what is behind a pane natively. A [`SurfaceFx`]
-/// converts into a [`SurfaceMix::Custom`]; [`SurfaceMix::Design`] goes back to the design's own.
-pub fn set_surface_mix(mix: impl Into<SurfaceMix>) {
+/// Set the app-wide surface (`frost` reaches containers and input fields). Applies to
+/// everything built afterwards; Freya blurs what is behind a pane natively. A [`ResolvedSurface`]
+/// converts into a custom [`Surface`]; [`Surface::INHERIT`] goes back to the design's own.
+pub fn set_surface(mix: impl Into<Surface>) {
     *SURFACE_MIX.write().unwrap_or_else(|e| e.into_inner()) = mix.into();
 }
 
@@ -74,7 +74,7 @@ impl ShapeStyle {
     /// frosted, the backdrop behind it blurs. Unchanged without the mix.
     pub fn with_glass(mut self, theme: &Theme, class: SurfaceClass) -> Self {
         let glass =
-            dodai_core::surface_glass(theme, class, &Surface::INHERIT, surface_fx_for(theme));
+            dodai_core::surface_glass(theme, class, &Surface::INHERIT, resolved_surface(theme));
         if glass.is_solid() {
             return self;
         }
@@ -511,12 +511,12 @@ mod tests {
     #[test]
     fn the_surface_mix_turns_panels_and_inputs_into_glass_but_not_buttons() {
         let t = light_rounded();
-        set_surface_mix(SurfaceFx::NONE);
+        set_surface(ResolvedSurface::NONE);
         assert!(panel_style(&t, false).blur.is_none());
-        set_surface_mix(SurfaceFx {
+        set_surface(ResolvedSurface {
             frost: 1.0,
             targets: dodai_core::SurfaceTargets::ALL,
-            ..SurfaceFx::NONE
+            ..ResolvedSurface::NONE
         });
         let panel = panel_style(&t, false);
         assert!(panel.blur.is_some_and(|b| b > 0.0));
@@ -526,7 +526,7 @@ mod tests {
         assert!(input_style(&t, false).blur.is_some());
         let (button, _) = button_style(&t, ButtonVariant::Primary, ControlState::Idle);
         assert!(button.blur.is_none());
-        set_surface_mix(SurfaceFx::NONE);
+        set_surface(ResolvedSurface::NONE);
     }
 
     #[test]

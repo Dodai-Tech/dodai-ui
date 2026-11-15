@@ -1,4 +1,4 @@
-//! Surface effects: the app-wide surface mix (textures, light, edges, ripple, the designs' own
+//! Surface effects: the app-wide surface (textures, light, edges, ripple, the designs' own
 //! signature effects), as on the gpui page. Each control writes an `sfx:` value; the mix is
 //! read back with [`Showcase::surface_fx`](crate::Showcase::surface_fx).
 

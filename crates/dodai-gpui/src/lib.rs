@@ -407,8 +407,7 @@ pub use shell::{is_wide, snap_collapsed, spring_step, ResponsiveShell};
 #[cfg(feature = "components")]
 pub use spy::{pick as spy_pick, ScrollSpy};
 pub use surface_fx::{
-    apply_surface_preset, live_press_count, set_surface_mix, surface_fx_for, surface_mix,
-    texture_swatch,
+    apply_surface_preset, live_press_count, resolved_surface, set_surface, surface, texture_swatch,
 };
 #[cfg(feature = "components")]
 pub use surfaces::{

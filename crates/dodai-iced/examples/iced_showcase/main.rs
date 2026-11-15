@@ -91,7 +91,7 @@ pub fn boot() -> App {
 
 /// Hand the Surface effects page's mix, the frost demo's picture and the viewport to the theme.
 fn sync_glass(app: &mut App) {
-    app.lt.set_surface_mix(app.model.surface_fx());
+    app.lt.set_surface(app.model.surface_fx());
     let theme = app.model.theme();
     let want = app.model.wallpaper().then(|| theme.id());
     if want != app.wallpaper {

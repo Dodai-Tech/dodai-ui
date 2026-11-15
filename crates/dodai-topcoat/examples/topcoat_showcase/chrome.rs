@@ -275,7 +275,7 @@ pub fn app(m: &mut Showcase) -> String {
     let theme = m.theme();
     let cx = Cx {
         theme: &theme,
-        mix: m.surface_fx().into(),
+        surface: m.surface_fx().into(),
     };
     let css = dodai_topcoat::multi_theme_stylesheet(std::slice::from_ref(&theme));
     let backdrop = dodai_topcoat::backdrop_css(&theme).map_or(String::new(), |b| {
@@ -312,7 +312,7 @@ pub fn side(m: &Showcase) -> String {
         m,
         &Cx {
             theme: &theme,
-            mix: m.surface_fx().into(),
+            surface: m.surface_fx().into(),
         },
     )
 }

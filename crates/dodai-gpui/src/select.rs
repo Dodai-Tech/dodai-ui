@@ -112,7 +112,7 @@ impl Select {
             list_scale: 1.0,
         }
     }
-    /// Frost and opacity of the open list. By default it follows the app-wide surface mix
+    /// Frost and opacity of the open list. By default it follows the app-wide surface
     /// (a frosted app frosts its popups); `Surface::new().frost(v).opacity(v)` sets the
     /// intensity for this list alone, `Surface::NONE` keeps it solid.
     pub fn popup_surface(mut self, s: dodai_core::Surface) -> Self {

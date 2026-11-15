@@ -1,11 +1,11 @@
 //! Surface textures and effects painted over a control's fill, clipped to its shape.
 //!
-//! [`set_surface_mix`] switches them for the whole app (like [`crate::set_scanlines`]); each
+//! [`set_surface`] switches them for the whole app (like [`crate::set_scanlines`]); each
 //! shaped surface then paints them through [`paint_surface`]. The effects themselves live in
 //! `dodai-fx`; this file is the gpui [`Painter`], the app-wide state and the click ripples.
 
 use crate::paint::poly;
-use dodai_core::{Shape, SurfaceClass, SurfaceFx, SurfaceMix, Texture, Theme};
+use dodai_core::{ResolvedSurface, Shape, Surface, SurfaceClass, Texture, Theme};
 use dodai_fx::{Painter, Rgba, Ripple};
 use gpui::{point, px, size, App, Bounds, Hsla, PathBuilder, Pixels, Window};
 use std::cell::Cell;
@@ -13,40 +13,40 @@ use std::sync::OnceLock;
 use std::time::Instant;
 
 thread_local! {
-    static MIX: Cell<SurfaceMix> = const { Cell::new(SurfaceMix::Design) };
+    static MIX: Cell<Surface> = const { Cell::new(Surface::INHERIT) };
 }
 
 /// Smallest side (px) of a surface that gets a texture or effect.
 const MIN_SIDE: f32 = 16.0;
 
-/// The surface mix the app set ([`SurfaceMix::Design`] until it sets one).
-pub fn surface_mix() -> SurfaceMix {
+/// The surface mix the app set ([`Surface::INHERIT`] until it sets one).
+pub fn surface() -> Surface {
     MIX.with(Cell::get)
 }
 
 /// The surface mix applied to every shaped surface of `theme`: the app's, or until it sets one
 /// the design's own glass ([`Theme::default_surface`]).
-pub fn surface_fx_for(theme: &Theme) -> SurfaceFx {
-    surface_mix().resolve(theme)
+pub fn resolved_surface(theme: &Theme) -> ResolvedSurface {
+    theme.resolve_surface(&surface())
 }
 
 /// Set the mix without an [`App`], for tests of other modules.
 #[cfg(test)]
-pub(crate) fn set_for_test(fx: SurfaceFx) {
+pub(crate) fn set_for_test(fx: ResolvedSurface) {
     MIX.with(|c| c.set(fx.into()));
 }
 
-/// Apply `mix` to every shaped surface and repaint. A [`SurfaceFx`] converts into a
-/// [`SurfaceMix::Custom`]; [`SurfaceMix::Design`] goes back to the design's own.
-pub fn set_surface_mix(cx: &mut App, mix: impl Into<SurfaceMix>) {
+/// Apply `mix` to every shaped surface and repaint. A [`ResolvedSurface`] converts into a
+/// a custom [`Surface`]; [`Surface::INHERIT`] goes back to the design's own.
+pub fn set_surface(cx: &mut App, mix: impl Into<Surface>) {
     MIX.with(|c| c.set(mix.into()));
     cx.refresh_windows();
 }
 
 /// Apply the active design's suggested mix (see `Theme::surface_style`).
 pub fn apply_surface_preset(cx: &mut App) {
-    let fx = crate::theme_of(cx).surface_preset();
-    set_surface_mix(cx, fx);
+    let fx = crate::theme_of(cx).signature_surface();
+    set_surface(cx, fx);
 }
 
 pub use dodai_fx::SurfacePaint;
@@ -62,14 +62,14 @@ pub fn surface_paint_with(
     class: SurfaceClass,
     over: &dodai_core::Surface,
 ) -> Option<SurfacePaint> {
-    dodai_core::surface_paint(theme, class, over, surface_fx_for(theme))
+    dodai_core::surface_paint(theme, class, over, resolved_surface(theme))
 }
 
 /// An overlay that paints `texture` over its parent (which must be `relative`), in the
 /// theme's shape: a live preview of the texture for pickers.
 pub fn texture_swatch(theme: &Theme, texture: Texture) -> gpui::Canvas<()> {
     use gpui::{canvas, Styled};
-    let sp = dodai_core::swatch_paint(theme, texture, surface_fx_for(theme).neon);
+    let sp = dodai_core::swatch_paint(theme, texture, resolved_surface(theme).neon);
     let shape = theme.shape.clone();
     canvas(
         |_, _, _| (),
@@ -280,10 +280,10 @@ mod tests {
         std::thread::spawn(|| {
             let dodai = dodai_core::themes::by_id("dodai-dark").unwrap();
             let cyber = dodai_core::themes::cyberpunk::yellow();
-            assert!(surface_fx_for(&dodai).frost > 0.0);
-            assert_eq!(surface_fx_for(&cyber), SurfaceFx::NONE);
-            set_surface_fx_for_test(SurfaceFx::NONE);
-            assert_eq!(surface_fx_for(&dodai), SurfaceFx::NONE);
+            assert!(resolved_surface(&dodai).frost > 0.0);
+            assert_eq!(resolved_surface(&cyber), ResolvedSurface::NONE);
+            set_surface_fx_for_test(ResolvedSurface::NONE);
+            assert_eq!(resolved_surface(&dodai), ResolvedSurface::NONE);
         })
         .join()
         .unwrap();
@@ -291,22 +291,22 @@ mod tests {
 
     #[test]
     fn nothing_is_drawn_for_the_default_mix() {
-        set_surface_fx_for_test(SurfaceFx::NONE);
+        set_surface_fx_for_test(ResolvedSurface::NONE);
         assert!(surface_paint(
             &dodai_core::themes::cyberpunk::yellow(),
             SurfaceClass::Button
         )
         .is_none());
-        set_surface_fx_for_test(SurfaceFx {
+        set_surface_fx_for_test(ResolvedSurface {
             glitch: 0.5,
-            ..SurfaceFx::NONE
+            ..ResolvedSurface::NONE
         });
         assert!(surface_paint(
             &dodai_core::themes::cyberpunk::yellow(),
             SurfaceClass::Button
         )
         .is_some());
-        set_surface_fx_for_test(SurfaceFx::NONE);
+        set_surface_fx_for_test(ResolvedSurface::NONE);
     }
 
     #[test]
@@ -314,7 +314,7 @@ mod tests {
         use dodai_core::Surface;
         let t = dodai_core::themes::cyberpunk::yellow();
         let m = dodai_core::themes::material::light();
-        set_surface_fx_for_test(SurfaceFx::NONE);
+        set_surface_fx_for_test(ResolvedSurface::NONE);
         let own = Surface::new().texture(Texture::Circuit);
         // Nothing app-wide, but this component asks for a texture (even on a Tag, which is
         // not under "Apply to").
@@ -322,10 +322,10 @@ mod tests {
         // A design draws only what it owns: Material has no circuit traces.
         assert!(surface_paint_with(&m, SurfaceClass::Tag, &own).is_none());
         // `Surface::NONE` opts one component out of an app-wide mix.
-        set_surface_fx_for_test(SurfaceFx {
+        set_surface_fx_for_test(ResolvedSurface {
             texture: Texture::Grid,
             targets: dodai_core::SurfaceTargets::ALL,
-            ..SurfaceFx::NONE
+            ..ResolvedSurface::NONE
         });
         assert!(surface_paint(&t, SurfaceClass::Button).is_some());
         assert!(surface_paint_with(&t, SurfaceClass::Button, &Surface::NONE).is_none());
@@ -333,10 +333,10 @@ mod tests {
         let p =
             surface_paint_with(&t, SurfaceClass::Button, &Surface::new().strength(0.9)).unwrap();
         assert_eq!((p.fx.texture, p.fx.strength), (Texture::Grid, 0.9));
-        set_surface_fx_for_test(SurfaceFx::NONE);
+        set_surface_fx_for_test(ResolvedSurface::NONE);
     }
 
-    fn set_surface_fx_for_test(fx: SurfaceFx) {
+    fn set_surface_fx_for_test(fx: ResolvedSurface) {
         MIX.with(|c| c.set(fx.into()));
     }
 }

@@ -1,4 +1,4 @@
-//! Glass for components: see-through fills and frosted panes from the app-wide surface mix
+//! Glass for components: see-through fills and frosted panes from the app-wide surface
 //! ([`ThemeProvider`](crate::ThemeProvider)'s `surface`) and a component's own
 //! [`Surface`](dodai_core::Surface).
 

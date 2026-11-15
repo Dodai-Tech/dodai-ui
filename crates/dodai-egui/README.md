@@ -21,7 +21,7 @@ Every design system is bundled (`cyberpunk`, `material`, `neobrutalism`, `dodai`
 
 - **Shape tuning**: `ThemeController::tune` (`dodai_core::ShapeTune`): roundness, border width and
   colour, outline-all, hard shadow offset and direction.
-- **Surface effects**: `ThemeController::surface` (`dodai_core::SurfaceFx`) draws textures and light
+- **Surface effects**: `ThemeController::surface` (`dodai_core::Surface`) draws textures and light
   effects over buttons, panels, tags and inputs; each design draws only what it owns. The
   geometry is `dodai-fx`'s, shared with every other toolkit (glitch, flicker and lit lines
   included).

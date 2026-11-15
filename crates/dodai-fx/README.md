@@ -9,7 +9,7 @@ The geometry of Dodai's surface textures and effects, written once and drawn by 
 A toolkit implements four primitives and calls `paint` each frame:
 
 ```rust,no_run
-use dodai_fx::{paint, Clip, Frame, Painter, Rgba, SurfaceFx, SurfacePaint, SurfaceTuning, Texture};
+use dodai_fx::{paint, Clip, Frame, Painter, Rgba, ResolvedSurface, SurfacePaint, SurfaceTuning, Texture};
 
 struct MyPainter; // draw into your toolkit's canvas
 impl Painter for MyPainter {
@@ -21,7 +21,7 @@ impl Painter for MyPainter {
 
 let ink = Rgba { r: 0.9, g: 0.9, b: 0.9, a: 1.0 };
 let sp = SurfacePaint {
-    fx: SurfaceFx { texture: Texture::Grid, strength: 0.6, ..SurfaceFx::NONE },
+    fx: ResolvedSurface { texture: Texture::Grid, strength: 0.6, ..ResolvedSurface::NONE },
     ink,
     hole: Rgba { r: 0.1, g: 0.1, b: 0.1, a: 1.0 },
     a: ink, b: ink, light: ink, neon: ink, shade: ink, wash: [ink; 3],
@@ -34,6 +34,6 @@ let frame = Frame { w: 160.0, h: 48.0, shape: &clip, seed: 1, time: 0.0, presses
 let wants_another_frame = paint(&mut MyPainter, &frame, &sp);
 ```
 
-Everything is clipped to a `Clip` (corner radius, cut corners, border inset) before it reaches the painter. The crate has no dependencies: what to draw comes from `SurfaceFx`, the colours from `SurfacePaint`. With `dodai-core`, `surface_paint(&theme, ..)` fills a `SurfacePaint` from a theme and `Shape::clip()` gives the `Clip`. gpui's painter is `dodai_gpui::paint_surface`.
+Everything is clipped to a `Clip` (corner radius, cut corners, border inset) before it reaches the painter. The crate has no dependencies: what to draw comes from `ResolvedSurface`, the colours from `SurfacePaint`. With `dodai-core`, `surface_paint(&theme, ..)` fills a `SurfacePaint` from a theme and `Shape::clip()` gives the `Clip`. gpui's painter is `dodai_gpui::paint_surface`.
 
 Frosted glass (blur on RGBA pixels, CPU or GPU) lives in its own crate, `dodai-frost`.

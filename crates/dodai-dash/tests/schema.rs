@@ -5,10 +5,13 @@ use dodai_dash::{schema, PanelKind};
 
 #[test]
 fn the_schema_file_is_current() {
-    let committed = include_str!("../schema/dashboard.schema.json");
+    // Compared as JSON values: the key order depends on whether another crate in the build
+    // turns on serde_json's `preserve_order`.
+    let committed: serde_json::Value =
+        serde_json::from_str(include_str!("../schema/dashboard.schema.json")).unwrap();
+    let current: serde_json::Value = serde_json::from_str(&schema()).unwrap();
     assert_eq!(
-        committed,
-        schema(),
+        committed, current,
         "regenerate with: cargo run -q -p dodai-dash --features schema --example schema > crates/dodai-dash/schema/dashboard.schema.json"
     );
 }

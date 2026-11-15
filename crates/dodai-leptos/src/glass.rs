@@ -1,8 +1,8 @@
-//! Glass for components: see-through fills and frosted panes from the app-wide surface mix
+//! Glass for components: see-through fills and frosted panes from the app-wide surface
 //! ([`ThemeProvider`](crate::ThemeProvider)'s `surface`) and a component's own
 //! [`Surface`](dodai_core::Surface).
 
-use dodai_core::{Surface, SurfaceClass, SurfaceFx, Theme};
+use dodai_core::{ResolvedSurface, Surface, SurfaceClass, Theme};
 use leptos::prelude::*;
 
 /// The theme and surface mix a [`ThemeProvider`](crate::ThemeProvider) hands to its subtree.
@@ -10,8 +10,8 @@ use leptos::prelude::*;
 pub struct GlassContext {
     /// The active theme.
     pub theme: Theme,
-    /// The app-wide surface mix.
-    pub fx: SurfaceFx,
+    /// The app-wide surface.
+    pub fx: ResolvedSurface,
 }
 
 /// The CSS class (`" dodai-glass"`, or empty) and inline style variables a `class` surface needs
