@@ -117,7 +117,12 @@ fn surface(
 /// The page colour in light, the lifted surface in dark: what floating layers sit on.
 fn floating(t: &Theme) -> Color {
     if t.meta.mode == Mode::Dark {
-        t.palette.surface
+        // The dark surface is glass (alpha < 1), but floating layers sit over arbitrary content:
+        // composite it onto the page colour so dialogs, sheets and popups stay opaque.
+        t.palette
+            .background
+            .mix(t.palette.surface, f32::from(t.palette.surface.a) / 255.0)
+            .with_alpha(1.0)
     } else {
         t.palette.background
     }

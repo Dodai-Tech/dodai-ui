@@ -89,6 +89,7 @@ pub struct Select {
     on_select: Option<IndexHandler>,
     corners: Option<dodai_core::Corners>,
     surface: dodai_core::Surface,
+    popup_surface: dodai_core::Surface,
     list_scale: f32,
 }
 
@@ -101,6 +102,7 @@ impl Select {
         Self {
             corners: None,
             surface: dodai_core::Surface::INHERIT,
+            popup_surface: dodai_core::Surface::INHERIT,
             id: id.into(),
             options: Vec::new(),
             selected: None,
@@ -109,6 +111,13 @@ impl Select {
             on_select: None,
             list_scale: 1.0,
         }
+    }
+    /// Frost and opacity of the open list. By default it follows the app-wide surface mix
+    /// (a frosted app frosts its popups); `Surface::new().frost(v).opacity(v)` sets the
+    /// intensity for this list alone, `Surface::NONE` keeps it solid.
+    pub fn popup_surface(mut self, s: dodai_core::Surface) -> Self {
+        self.popup_surface = s;
+        self
     }
     /// Let the open list grow to `factor` times its usual height before it scrolls, for a
     /// long list whose last entries would otherwise hide below the fold.
@@ -408,27 +417,30 @@ impl Select {
             rows = rows.child(row);
         }
         let out = st.clone();
-        let popup = shaped(&t.role_shape(dodai_core::ShapeRole::Menu), popup_style(t))
-            .absolute()
-            .top(px(t.shape.control_height + 4.0))
-            .left_0()
-            .w_full()
-            .min_w(px(t.scale(dodai_core::Scale::Panel)))
-            .p(px(t.spacing.xs + t.spacing.half()))
-            .occlude()
-            .font_family(first_family(t.typography.body))
-            .text_size(px(t.typography.size_md))
-            .on_mouse_down_out(move |e, _, cx| {
-                let inside = out.read(cx).trigger.contains(&e.position);
-                if !inside {
-                    out.update(cx, |s, cx| {
-                        s.open = false;
-                        cx.notify();
-                    });
-                }
-            })
-            .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-            .child(rows);
+        let popup = shaped(
+            &t.role_shape(dodai_core::ShapeRole::Menu),
+            popup_style(t).with_surface_of(t, dodai_core::SurfaceClass::Panel, &self.popup_surface),
+        )
+        .absolute()
+        .top(px(t.shape.control_height + 4.0))
+        .left_0()
+        .w_full()
+        .min_w(px(t.scale(dodai_core::Scale::Panel)))
+        .p(px(t.spacing.xs + t.spacing.half()))
+        .occlude()
+        .font_family(first_family(t.typography.body))
+        .text_size(px(t.typography.size_md))
+        .on_mouse_down_out(move |e, _, cx| {
+            let inside = out.read(cx).trigger.contains(&e.position);
+            if !inside {
+                out.update(cx, |s, cx| {
+                    s.open = false;
+                    cx.notify();
+                });
+            }
+        })
+        .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+        .child(rows);
         popup
     }
 }
@@ -460,6 +472,7 @@ pub fn family_title(id: &str) -> String {
 pub struct ThemeSelector {
     id: ElementId,
     system: bool,
+    popup_surface: dodai_core::Surface,
 }
 
 impl ThemeSelector {
@@ -468,7 +481,14 @@ impl ThemeSelector {
         Self {
             id: id.into(),
             system: false,
+            popup_surface: dodai_core::Surface::INHERIT,
         }
+    }
+
+    /// Frost and opacity of the open list, see [`Select::popup_surface`].
+    pub fn popup_surface(mut self, s: dodai_core::Surface) -> Self {
+        self.popup_surface = s;
+        self
     }
 
     /// Offer "System" as the first option: follow the operating system's light or dark
@@ -499,6 +519,7 @@ impl RenderOnce for ThemeSelector {
             pos
         };
         Select::new(self.id)
+            .popup_surface(self.popup_surface)
             .options(options)
             .selected(selected)
             .on_select(move |i, w, cx| {
@@ -516,12 +537,22 @@ impl RenderOnce for ThemeSelector {
 #[derive(IntoElement)]
 pub struct DesignSystemSelector {
     id: ElementId,
+    popup_surface: dodai_core::Surface,
 }
 
 impl DesignSystemSelector {
     /// Create a new [`DesignSystemSelector`].
     pub fn new(id: impl Into<ElementId>) -> Self {
-        Self { id: id.into() }
+        Self {
+            id: id.into(),
+            popup_surface: dodai_core::Surface::INHERIT,
+        }
+    }
+
+    /// Frost and opacity of the open list, see [`Select::popup_surface`].
+    pub fn popup_surface(mut self, s: dodai_core::Surface) -> Self {
+        self.popup_surface = s;
+        self
     }
 }
 
@@ -545,6 +576,7 @@ impl RenderOnce for DesignSystemSelector {
             .collect();
         let cur = fams.iter().position(|f| *f == sw.current_family());
         Select::new(self.id)
+            .popup_surface(self.popup_surface)
             .options(opts)
             .selected(cur)
             .on_select(move |i, _, cx| {
@@ -573,6 +605,15 @@ mod tests {
         extended.push(light_rounded());
         extended.push(square());
         assert_eq!(theme_options(&extended).len(), all.len() + 2);
+    }
+
+    #[test]
+    fn dodai_dark_popup_is_opaque() {
+        let t = themes::all()
+            .into_iter()
+            .find(|t| t.name() == "Dodai · Dark")
+            .unwrap();
+        assert!((popup_style(&t).fill.unwrap().a - 1.0).abs() < f32::EPSILON);
     }
 
     #[test]
