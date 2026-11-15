@@ -13,7 +13,7 @@ use bevy::asset::RenderAssetUsages;
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use bevy::window::PrimaryWindow;
-use dodai_core::{Glass, SurfaceClass, SurfaceFx, Theme};
+use dodai_core::{Glass, SurfaceClass, SurfaceFx, SurfaceMix, Theme};
 
 use crate::surface::{cut_distance, resolve_cropped, Paint, Surface, SurfaceCrop};
 use crate::theme::DodaiTheme;
@@ -68,7 +68,7 @@ pub(crate) struct FrostImage {
 /// The app-wide surface mix and the picture behind the app.
 #[derive(Resource, Debug, Clone, Default)]
 pub struct DodaiGlass {
-    mix: Option<SurfaceFx>,
+    mix: SurfaceMix,
     picture: Option<Picture>,
     /// The backdrop in use (the picture, else the theme's mesh) and its sharp image.
     backdrop: Option<Picture>,
@@ -91,22 +91,24 @@ struct Picture {
 }
 
 impl DodaiGlass {
-    /// Set the app-wide surface mix. Until it is set the design's own glass applies
-    /// ([`Theme::default_surface`]: Dodai is frosted, the others not).
-    pub fn set_mix(&mut self, fx: SurfaceFx) {
-        if self.mix != Some(fx) {
-            self.mix = Some(fx);
+    /// Set the app-wide surface mix. A [`SurfaceFx`] converts into a [`SurfaceMix::Custom`]; until
+    /// one is set ([`SurfaceMix::Design`]) the design's own glass applies: Dodai is frosted, the
+    /// others not.
+    pub fn set_surface_mix(&mut self, mix: impl Into<SurfaceMix>) {
+        let mix = mix.into();
+        if self.mix != mix {
+            self.mix = mix;
         }
     }
 
-    /// The surface mix the app set (empty until it sets one, see [`mix_for`](Self::mix_for)).
-    pub fn mix(&self) -> SurfaceFx {
-        self.mix.unwrap_or(SurfaceFx::NONE)
+    /// The app-wide surface mix as set.
+    pub fn surface_mix(&self) -> SurfaceMix {
+        self.mix
     }
 
     /// The surface mix of `theme`'s surfaces: the app's, or the design's own glass.
-    pub fn mix_for(&self, theme: &Theme) -> SurfaceFx {
-        self.mix.unwrap_or_else(|| theme.default_surface())
+    pub fn surface_fx_for(&self, theme: &Theme) -> SurfaceFx {
+        self.mix.resolve(theme)
     }
 
     /// Put `rgba` (`w`×`h`) behind the app; `None` goes back to the design's canvas mesh.
@@ -131,7 +133,7 @@ impl DodaiGlass {
 
     fn glass_unfloored(&self, theme: &Theme, g: &UiGlass) -> Glass {
         match g.class {
-            Some(c) => dodai_core::surface_glass(theme, c, &g.over, self.mix_for(theme)),
+            Some(c) => dodai_core::surface_glass(theme, c, &g.over, self.surface_fx_for(theme)),
             None => {
                 dodai_core::surface_glass(theme, SurfaceClass::Button, &g.over, SurfaceFx::NONE)
             }
@@ -428,7 +430,7 @@ mod tests {
         let mut g = DodaiGlass::default();
         let panel = UiGlass::of(SurfaceClass::Panel);
         assert!(g.glass(&t, &panel).is_solid());
-        g.set_mix(SurfaceFx {
+        g.set_surface_mix(SurfaceFx {
             frost: 1.0,
             ..SurfaceFx::NONE
         });

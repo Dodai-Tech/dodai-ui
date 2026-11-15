@@ -3,7 +3,7 @@
 //! blurred copy of the app's backdrop (a picture the app sets, else the design's canvas mesh) is
 //! drawn under frosted surfaces, lined up with the sharp one behind the app.
 
-use dodai_core::{Glass, Surface, SurfaceClass, SurfaceFx};
+use dodai_core::{Glass, Surface, SurfaceClass, SurfaceFx, SurfaceMix};
 use iced::{Element, Size, Vector};
 
 use crate::IcedTheme;
@@ -11,8 +11,8 @@ use crate::IcedTheme;
 /// What the glass of an [`IcedTheme`] needs besides the theme.
 #[derive(Debug, Clone)]
 pub(crate) struct GlassState {
-    /// The app-wide surface mix (`None`: the design's own, see [`Theme::default_surface`]).
-    pub(crate) mix: Option<SurfaceFx>,
+    /// The app-wide surface mix.
+    pub(crate) mix: SurfaceMix,
     /// Glass every button this theme draws takes (see [`IcedTheme::with_glass`]).
     pub(crate) own: Option<Glass>,
     /// Window size and the scroll offset of the page frosted surfaces sit on.
@@ -28,7 +28,7 @@ pub(crate) struct GlassState {
 impl Default for GlassState {
     fn default() -> Self {
         Self {
-            mix: None,
+            mix: SurfaceMix::Design,
             own: None,
             window: Size::new(1280.0, 800.0),
             scroll: Vector::ZERO,
@@ -41,22 +41,26 @@ impl Default for GlassState {
 }
 
 impl IcedTheme {
-    /// Set the app-wide surface mix: containers it frosts turn see-through. Until it is set the
-    /// design's own glass applies ([`Theme::default_surface`]: Dodai is frosted, the others not).
-    pub fn set_surface_mix(&mut self, fx: SurfaceFx) {
-        self.glass.mix = Some(fx);
+    /// Set the app-wide surface mix: containers and input fields it frosts turn see-through. A
+    /// [`SurfaceFx`] converts into a [`SurfaceMix::Custom`]; until one is set
+    /// ([`SurfaceMix::Design`]) the design's own glass applies: Dodai is frosted, the others not.
+    pub fn set_surface_mix(&mut self, mix: impl Into<SurfaceMix>) {
+        self.glass.mix = mix.into();
     }
 
-    /// The app-wide surface mix.
-    pub fn surface_mix(&self) -> SurfaceFx {
-        self.glass
-            .mix
-            .unwrap_or_else(|| self.theme.default_surface())
+    /// The app-wide surface mix as set.
+    pub fn surface_mix(&self) -> SurfaceMix {
+        self.glass.mix
+    }
+
+    /// The surface mix in use: the app's, or the active design's own glass.
+    pub fn active_surface_fx(&self) -> SurfaceFx {
+        self.glass.mix.resolve(&self.theme)
     }
 
     /// The glass of a `class` surface with the component's own `over` on top of the mix.
     pub fn glass(&self, class: SurfaceClass, over: &Surface) -> Glass {
-        dodai_core::surface_glass(&self.theme, class, over, self.surface_mix())
+        dodai_core::surface_glass(&self.theme, class, over, self.active_surface_fx())
     }
 
     /// The glass of an input field under the app-wide mix (see [`field`](Self::field)).

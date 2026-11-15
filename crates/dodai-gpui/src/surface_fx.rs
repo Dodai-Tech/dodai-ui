@@ -1,11 +1,11 @@
 //! Surface textures and effects painted over a control's fill, clipped to its shape.
 //!
-//! [`set_surface_fx`] switches them for the whole app (like [`crate::set_scanlines`]); each
+//! [`set_surface_mix`] switches them for the whole app (like [`crate::set_scanlines`]); each
 //! shaped surface then paints them through [`paint_surface`]. The effects themselves live in
 //! `dodai-fx`; this file is the gpui [`Painter`], the app-wide state and the click ripples.
 
 use crate::paint::poly;
-use dodai_core::{Shape, SurfaceClass, SurfaceFx, Texture, Theme};
+use dodai_core::{Shape, SurfaceClass, SurfaceFx, SurfaceMix, Texture, Theme};
 use dodai_fx::{Painter, Rgba, Ripple};
 use gpui::{point, px, size, App, Bounds, Hsla, PathBuilder, Pixels, Window};
 use std::cell::Cell;
@@ -13,40 +13,40 @@ use std::sync::OnceLock;
 use std::time::Instant;
 
 thread_local! {
-    static FX: Cell<Option<SurfaceFx>> = const { Cell::new(None) };
+    static MIX: Cell<SurfaceMix> = const { Cell::new(SurfaceMix::Design) };
 }
 
 /// Smallest side (px) of a surface that gets a texture or effect.
 const MIN_SIDE: f32 = 16.0;
 
-/// The surface mix the app set (empty until it sets one, see [`surface_fx_for`]).
-pub fn surface_fx() -> SurfaceFx {
-    FX.with(Cell::get).unwrap_or(SurfaceFx::NONE)
+/// The surface mix the app set ([`SurfaceMix::Design`] until it sets one).
+pub fn surface_mix() -> SurfaceMix {
+    MIX.with(Cell::get)
 }
 
 /// The surface mix applied to every shaped surface of `theme`: the app's, or until it sets one
 /// the design's own glass ([`Theme::default_surface`]).
 pub fn surface_fx_for(theme: &Theme) -> SurfaceFx {
-    FX.with(Cell::get)
-        .unwrap_or_else(|| theme.default_surface())
+    surface_mix().resolve(theme)
 }
 
 /// Set the mix without an [`App`], for tests of other modules.
 #[cfg(test)]
 pub(crate) fn set_for_test(fx: SurfaceFx) {
-    FX.with(|c| c.set(Some(fx)));
+    MIX.with(|c| c.set(fx.into()));
 }
 
-/// Apply `fx` to every shaped surface and repaint.
-pub fn set_surface_fx(cx: &mut App, fx: SurfaceFx) {
-    FX.with(|c| c.set(Some(fx)));
+/// Apply `mix` to every shaped surface and repaint. A [`SurfaceFx`] converts into a
+/// [`SurfaceMix::Custom`]; [`SurfaceMix::Design`] goes back to the design's own.
+pub fn set_surface_mix(cx: &mut App, mix: impl Into<SurfaceMix>) {
+    MIX.with(|c| c.set(mix.into()));
     cx.refresh_windows();
 }
 
 /// Apply the active design's suggested mix (see `Theme::surface_style`).
 pub fn apply_surface_preset(cx: &mut App) {
     let fx = crate::theme_of(cx).surface_preset();
-    set_surface_fx(cx, fx);
+    set_surface_mix(cx, fx);
 }
 
 pub use dodai_fx::SurfacePaint;
@@ -337,6 +337,6 @@ mod tests {
     }
 
     fn set_surface_fx_for_test(fx: SurfaceFx) {
-        FX.with(|c| c.set(Some(fx)));
+        MIX.with(|c| c.set(fx.into()));
     }
 }

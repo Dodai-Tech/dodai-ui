@@ -4,7 +4,7 @@
 //! the design ([`dodai_core::mesh_pixels`]), which [`paint_backdrop`] draws stretched over the
 //! window. A pane finds the part of it that lies under itself from where it sits in that window.
 //! Without a backdrop the fills still turn see-through, so paint one (or draw your own picture
-//! under the UI). Turn the glass on with the surface mix ([`set_surface_fx`](crate::set_surface_fx):
+//! under the UI). Turn the glass on with the surface mix ([`set_surface_mix`](crate::set_surface_mix):
 //! `frost` reaches containers and input fields).
 
 use crate::paint::color32;
@@ -177,16 +177,16 @@ mod tests {
     #[test]
     fn solid_without_the_mix_and_glass_with_it() {
         let t = rounded();
-        crate::set_surface_fx(SurfaceFx::NONE);
+        crate::set_surface_mix(SurfaceFx::NONE);
         assert!(glass_of(&t, SurfaceClass::Panel).is_solid());
-        crate::set_surface_fx(SurfaceFx {
+        crate::set_surface_mix(SurfaceFx {
             frost: 1.0,
             targets: SurfaceTargets::ALL,
             ..SurfaceFx::NONE
         });
         let g = glass_of(&t, SurfaceClass::Panel);
         assert!(g.frosted());
-        crate::set_surface_fx(SurfaceFx::NONE);
+        crate::set_surface_mix(SurfaceFx::NONE);
     }
 
     #[test]

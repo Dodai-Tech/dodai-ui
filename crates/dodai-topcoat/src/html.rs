@@ -12,7 +12,7 @@ use dodai_core::{
     arc_points, busy, knob_angle,
     orientation::{place, AxisId, AxisTone, Basis, GizmoLayout},
     ButtonCrop, ButtonVariant, CardVariant, ControlSize, CropEdge, Kit, KnobGeometry, Palette,
-    SpinnerStyle, StepState, Surface, SurfaceClass, SurfaceFx, Theme, Tone,
+    SpinnerStyle, StepState, Surface, SurfaceClass, SurfaceFx, SurfaceMix, Theme, Tone,
 };
 use dodai_icons::IconId;
 
@@ -21,15 +21,15 @@ use dodai_icons::IconId;
 pub struct Cx<'a> {
     /// The theme in use.
     pub theme: &'a Theme,
-    /// The app-wide surface mix (containers it frosts turn see-through); `None`: the design's
-    /// own glass ([`Theme::default_surface`]: Dodai is frosted, the others not).
-    pub fx: Option<SurfaceFx>,
+    /// The app-wide surface mix ([`SurfaceMix::Design`]: the design's own glass; Dodai is
+    /// frosted, the others not). A [`SurfaceFx`] converts into a [`SurfaceMix::Custom`].
+    pub mix: SurfaceMix,
 }
 
 impl Cx<'_> {
     /// The surface mix in use: the app's, or the design's own glass.
-    pub fn mix(&self) -> SurfaceFx {
-        self.fx.unwrap_or_else(|| self.theme.default_surface())
+    pub fn active_surface_fx(&self) -> SurfaceFx {
+        self.mix.resolve(self.theme)
     }
 }
 
@@ -59,7 +59,7 @@ pub fn glass(cx: &Cx, class: Option<SurfaceClass>, over: &Surface) -> Option<Str
         class.unwrap_or(SurfaceClass::Button),
         over,
         if class.is_some() {
-            cx.mix()
+            cx.active_surface_fx()
         } else {
             SurfaceFx::NONE
         },
@@ -1226,7 +1226,7 @@ mod tests {
     fn cx(t: &Theme) -> Cx<'_> {
         Cx {
             theme: t,
-            fx: Some(SurfaceFx::NONE),
+            mix: SurfaceMix::Custom(SurfaceFx::NONE),
         }
     }
 

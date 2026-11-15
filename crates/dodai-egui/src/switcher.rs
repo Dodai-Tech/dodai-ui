@@ -77,8 +77,9 @@ pub struct ThemeController {
     pub glow: f32,
     /// Roundness, borders and hard shadows applied on top of every design.
     pub tune: dodai_core::ShapeTune,
-    /// The texture and effect mix drawn on controls (each design draws only what it owns).
-    pub surface: dodai_core::SurfaceFx,
+    /// The surface mix drawn on containers and controls (each design draws only what it owns);
+    /// follows the design until set.
+    pub surface: dodai_core::SurfaceMix,
 }
 
 impl Default for ThemeController {
@@ -94,7 +95,7 @@ impl ThemeController {
             switcher: dodai_core::switcher(),
             glow: 1.0,
             tune: dodai_core::ShapeTune::DEFAULT,
-            surface: dodai_core::SurfaceFx::NONE,
+            surface: dodai_core::SurfaceMix::Design,
         }
     }
     /// Active theme with the glow intensity and shape tuning applied.
@@ -112,7 +113,7 @@ impl ThemeController {
     /// Install the active theme (cheap when unchanged).
     pub fn install(&self, ctx: &Context) {
         crate::set_shape_tune(self.tune);
-        crate::set_surface_fx(self.surface);
+        crate::set_surface_mix(self.surface);
         install(ctx, &self.theme());
     }
     /// `t` next theme, `Shift+T` previous, `+`/`-` glow. Returns `true` on change.

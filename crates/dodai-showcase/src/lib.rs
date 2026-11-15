@@ -1181,7 +1181,7 @@ pub fn run() {
                     }
                 }
             }
-            dodai_gpui::set_surface_fx(cx, fx);
+            dodai_gpui::set_surface_mix(cx, fx);
         }
         // Test aid: DODAI_WALLPAPER=1 puts the hard-edged picture behind the app (frost demo).
         if std::env::var("DODAI_WALLPAPER").is_ok() {
