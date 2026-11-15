@@ -208,6 +208,8 @@ pub mod frosted;
 pub mod glass;
 #[cfg(feature = "components")]
 pub mod icons;
+mod window_glass;
+pub use window_glass::{set_window_blur, window_blur, CANVAS_ALPHA};
 pub mod live;
 #[cfg(feature = "components")]
 mod own;
@@ -799,8 +801,11 @@ fn store(cx: &mut App) -> &mut DodaiTheme {
 pub trait DodaiStyled: Styled + Sized {
     /// App background + default text colour.
     fn dodai_background(self, t: &Theme) -> Self {
-        self.bg(hsla(t.palette.background))
-            .text_color(hsla(t.palette.text))
+        let mut canvas = t.palette.background;
+        if window_blur() {
+            canvas.a = (CANVAS_ALPHA * 255.0) as u8;
+        }
+        self.bg(hsla(canvas)).text_color(hsla(t.palette.text))
     }
 
     /// Bordered panel; glow shadow when `focused`.
