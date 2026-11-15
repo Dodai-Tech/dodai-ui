@@ -156,7 +156,7 @@ pub const LIGHT: ColorTokens = ColorTokens {
 pub const DARK: ColorTokens = ColorTokens {
     canvas: hsl(246.0, 50.0, 5.0),
     surface: hsl(246.0, 32.0, 11.0),
-    glass: hsla(250.0, 60.0, 82.0, 0.11),
+    glass: hsla(250.0, 70.0, 88.0, 0.17),
     glass_soft: hsla(250.0, 60.0, 82.0, 0.06),
     glass_strong: hsla(250.0, 60.0, 82.0, 0.19),
     veil: hsla(246.0, 60.0, 3.0, 0.6),
@@ -394,7 +394,7 @@ pub const BLUR_FROSTED: f32 = 24.0;
 
 /// Saturation of the blurred backdrop under a frosted pane: glass over colour reads richer
 /// than the colour itself.
-pub const FROST_SATURATION: f32 = 1.4;
+pub const FROST_SATURATION: f32 = 1.7;
 /// The thin blur used under small floating parts (chips, tooltips).
 pub const BLUR_THIN: f32 = 10.0;
 

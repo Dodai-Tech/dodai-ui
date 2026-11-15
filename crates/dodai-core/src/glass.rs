@@ -334,24 +334,49 @@ pub fn backdrop_mesh(theme: &Theme, w: usize, h: usize) -> Option<Vec<u8>> {
         .then(|| mesh_pixels(theme.palette.background, style.wash, style.backdrop, w, h))
 }
 
-/// A picture for an app to set as its wallpaper (`set_wallpaper`) so frost has something to blur, `w`×`h` RGBA: its canvas mesh with a few defined shapes
-/// (timber beams and discs, in the design's own colours and kept faint) so the blur under a glass
-/// surface shows. A smooth canvas alone has nothing to blur: frost over it looks like no frost.
+/// The picture a frosted design sits on, `w`×`h` RGBA: its canvas mesh with fine, faint detail in
+/// the design's own colours (hairlines and crisp dots), so the blur under a glass surface has
+/// something to show. A smooth canvas alone has nothing to blur.
 pub fn design_picture(theme: &Theme, w: usize, h: usize) -> Vec<u8> {
     let p = &theme.palette;
     let s = &theme.surface_style;
     let mut out = mesh_pixels(p.background, s.wash, s.backdrop.max(0.6), w, h);
-    let discs = [(0.74, 0.32, 0.17, p.info), (0.2, 0.72, 0.13, p.primary)];
+    let id = theme.id();
+    let grid = id.starts_with("cyberpunk");
+    let blocks = id.starts_with("neobrutalism");
+    let soft = id.starts_with("material");
+    // Broad structure survives a blur: wide beams (or a grid / blocks), and discs that a pane
+    // anywhere on the window catches part of.
+    let beam = if grid { 120.0 } else { 150.0 };
+    let discs: [(f32, f32, f32); 9] = [
+        (0.12, 0.18, 0.07),
+        (0.36, 0.08, 0.05),
+        (0.62, 0.22, 0.08),
+        (0.88, 0.12, 0.06),
+        (0.22, 0.55, 0.06),
+        (0.5, 0.5, 0.09),
+        (0.8, 0.58, 0.07),
+        (0.35, 0.88, 0.07),
+        (0.7, 0.9, 0.06),
+    ];
     for y in 0..h {
         for x in 0..w {
-            let (u, v) = (x as f32 / w as f32, y as f32 / h as f32);
-            let mut tint = None;
-            if ((u + v * 0.6) * 5.0) as usize % 2 == 0 {
-                tint = Some((p.primary, 0.16));
+            let (fx, fy) = (x as f32, y as f32);
+            let mut tint: Option<(crate::Color, f32)> = None;
+            if grid {
+                if (fx % beam).min(fy % beam) < 6.0 {
+                    tint = Some((p.accent, 0.16));
+                }
+            } else if blocks {
+                if ((fx / beam) as usize + (fy / beam) as usize) % 2 == 0 {
+                    tint = Some((p.primary, 0.12));
+                }
+            } else if ((fx + fy * 0.6) / beam) as usize % 2 == 0 {
+                tint = Some((if soft { p.primary } else { p.info }, 0.13));
             }
-            for (cx, cy, r, colour) in discs {
-                if ((u - cx) * w as f32 / h as f32).hypot(v - cy) < r {
-                    tint = Some((colour, 0.32));
+            for (i, &(cx, cy, r)) in discs.iter().enumerate() {
+                if (fx - cx * w as f32).hypot(fy - cy * h as f32) < r * w as f32 {
+                    tint = Some((if i % 2 == 0 { p.primary } else { p.accent }, 0.24));
                 }
             }
             if let Some((colour, amount)) = tint {
