@@ -7,7 +7,7 @@
 //!   written as `$name`, time ranges, display thresholds in semantic [`Tone`]s.
 //! - **Import and export** ([`import`], [`convert`], [`Dashboard::export`]): TOML and JSON through
 //!   one model, converted without loss; size-limited, version-checked, unknown fields reported,
-//!   nothing executed. With the `schema` feature, [`schema()`] gives a JSON Schema.
+//!   nothing executed. With the `schema` feature, `schema()` gives a JSON Schema.
 //! - **Validation** ([`Dashboard::validate`]): the format always, and the host's metrics when a
 //!   [`Catalogue`] is given.
 //! - **Resolution** ([`resolve`]): asks the host's [`SeriesSource`] for each panel's data and
