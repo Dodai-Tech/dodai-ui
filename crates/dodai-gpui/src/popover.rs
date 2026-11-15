@@ -186,7 +186,7 @@ impl RenderOnce for Popover {
                 if !self.bare {
                     popup = shaped(
                         &t.role_shape(dodai_core::ShapeRole::Menu),
-                        popup_style(&t).with_surface(&t, dodai_core::SurfaceClass::Panel),
+                        popup_style(&t).with_floating_surface(&t, dodai_core::SurfaceClass::Panel),
                     )
                     .absolute()
                     .p(px(t.spacing.md))
@@ -305,7 +305,7 @@ impl RenderOnce for HoverCard {
             if let Some(content) = self.content.take() {
                 let card = shaped(
                     &t.role_shape(dodai_core::ShapeRole::Menu),
-                    popup_style(&t).with_surface(&t, dodai_core::SurfaceClass::Panel),
+                    popup_style(&t).with_floating_surface(&t, dodai_core::SurfaceClass::Panel),
                 )
                 .w(px(self.width))
                 .p(px(t.spacing.md))

@@ -173,7 +173,7 @@ impl DatePicker {
             grid = grid.child(r);
         }
         let style = ShapeStyle::from_tokens(&t, Some(p.background), Some(p.border), false, true)
-            .with_surface(&t, dodai_core::SurfaceClass::Panel);
+            .with_floating_surface(&t, dodai_core::SurfaceClass::Panel);
         shaped(&t.shape, style)
             .p(px(t.spacing.md))
             .flex()
@@ -316,7 +316,7 @@ impl TimePicker {
             row = row.child(flip);
         }
         let style = ShapeStyle::from_tokens(&t, Some(p.background), Some(p.border), false, true)
-            .with_surface(&t, dodai_core::SurfaceClass::Panel);
+            .with_floating_surface(&t, dodai_core::SurfaceClass::Panel);
         shaped(&t.shape, style)
             .p(px(t.spacing.md))
             .font_family(first_family(t.typography.body))
@@ -430,7 +430,7 @@ impl DateTimePicker {
         time.corners = self.corners;
         time.on_change = self.on_time.clone();
         let style = ShapeStyle::from_tokens(&t, Some(p.background), Some(p.border), false, true)
-            .with_surface(&t, dodai_core::SurfaceClass::Panel);
+            .with_floating_surface(&t, dodai_core::SurfaceClass::Panel);
         shaped(&t.shape, style)
             .p(px(t.spacing.sm))
             .flex()
@@ -606,7 +606,7 @@ impl DateTimeRangePicker {
                     .child(clock("end", self.end, self.on_end_time.clone())),
             );
         let style = ShapeStyle::from_tokens(&t, Some(p.background), Some(p.border), false, true)
-            .with_surface(&t, dodai_core::SurfaceClass::Panel);
+            .with_floating_surface(&t, dodai_core::SurfaceClass::Panel);
         shaped(&t.shape, style)
             .p(px(t.spacing.sm))
             .flex()

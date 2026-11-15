@@ -350,7 +350,8 @@ impl Render for DodaiTooltip {
         } else {
             Some(t.palette.border_strong)
         };
-        let style = ShapeStyle::from_tokens(&t, Some(bg), border, false, false);
+        let style = ShapeStyle::from_tokens(&t, Some(bg), border, false, false)
+            .with_floating_surface(&t, dodai_core::SurfaceClass::Panel);
         // M3 plain tooltip: 4 px corners, 24 px tall, 8 px side padding, 12 px label.
         let shape = if rounded {
             t.role_shape(dodai_core::ShapeRole::Tooltip)

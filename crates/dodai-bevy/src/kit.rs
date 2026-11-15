@@ -94,5 +94,6 @@ fn glass_of(kit: Kit) -> crate::glass::UiGlass {
     crate::glass::UiGlass {
         class: kit.surface_class(),
         over: dodai_core::Surface::INHERIT,
+        floating: kit.floats(),
     }
 }

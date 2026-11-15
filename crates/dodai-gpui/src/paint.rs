@@ -14,6 +14,10 @@ use gpui::{
     PathBuilder, Pixels, Styled, Window,
 };
 
+/// The least opaque a floating surface gets under glass (see
+/// [`ShapeStyle::with_floating_surface`]).
+pub const FLOATING_ALPHA: f32 = dodai_core::Glass::FLOATING_ALPHA;
+
 /// Everything needed to paint one shaped box.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ShapeStyle {
@@ -139,6 +143,19 @@ impl ShapeStyle {
             self.glow = self.glow.filter(|_| g > 0.0).map(|(c, r)| (c, r * g));
         }
         self
+    }
+
+    /// [`with_surface`](Self::with_surface) for a surface that floats over other components
+    /// (popups, menus, tooltips, toasts). `gpui` cannot blur what is drawn behind a pane, only
+    /// the app's backdrop, so a floating fill never goes below [`FLOATING_ALPHA`]: the content
+    /// behind it stays out of the way of the text on it.
+    pub fn with_floating_surface(self, theme: &Theme, class: dodai_core::SurfaceClass) -> Self {
+        let own = self.fill.map_or(1.0, |f| f.a);
+        let mut me = self.with_surface(theme, class);
+        if let Some(f) = me.fill.as_mut().filter(|_| me.frost.is_some()) {
+            f.a = f.a.max(own.min(FLOATING_ALPHA));
+        }
+        me
     }
 
     /// Apply a component's own [`Surface`](dodai_core::Surface) on top of what the pure style
@@ -1140,6 +1157,24 @@ pub(crate) fn fade_overlay(theme: &Theme, height: f32) -> gpui::Div {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    #[cfg(feature = "frost")]
+    fn a_floating_surface_keeps_its_fill_mostly_opaque_under_glass() {
+        let t = dodai_core::themes::cyberpunk::yellow();
+        crate::surface_fx::set_for_test(dodai_core::SurfaceFx {
+            frost: 1.0,
+            targets: dodai_core::SurfaceTargets::ALL,
+            ..dodai_core::SurfaceFx::NONE
+        });
+        let base = ShapeStyle::from_tokens(&t, Some(t.palette.surface), None, false, false);
+        let flat = base.with_surface(&t, dodai_core::SurfaceClass::Panel);
+        let float = base.with_floating_surface(&t, dodai_core::SurfaceClass::Panel);
+        crate::surface_fx::set_for_test(dodai_core::SurfaceFx::NONE);
+        assert!(flat.frost.is_some() && float.frost.is_some());
+        assert!(float.fill.unwrap().a >= flat.fill.unwrap().a);
+        assert!(float.fill.unwrap().a >= FLOATING_ALPHA - 1e-4);
+    }
 
     #[test]
     fn circle_and_rect_boxes_are_offset_and_skip_empty_or_broken_shapes() {

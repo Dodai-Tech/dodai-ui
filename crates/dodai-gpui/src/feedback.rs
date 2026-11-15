@@ -24,7 +24,11 @@ pub fn tone_glyph(tone: Tone) -> &'static str {
 
 /// Alert paint: tinted outlined, or solid for banners. Returns (style, text colour). Pure.
 pub fn alert_style(theme: &Theme, tone: Tone, banner: bool) -> (ShapeStyle, gpui::Hsla) {
-    ShapeStyle::from_surface(theme, theme.alert(tone, banner))
+    let (style, fg) = ShapeStyle::from_surface(theme, theme.alert(tone, banner));
+    (
+        style.with_surface(theme, dodai_core::SurfaceClass::Card),
+        fg,
+    )
 }
 
 /// Inline status message with title + optional body. `banner()` = full solid strip.
@@ -152,7 +156,7 @@ impl Toast {
             true,
             true,
         )
-        .with_surface(&t, dodai_core::SurfaceClass::Panel);
+        .with_floating_surface(&t, dodai_core::SurfaceClass::Panel);
         shaped(&t.shape, style)
             .flex()
             .items_center()

@@ -23,6 +23,10 @@ pub struct Glass {
     pub blur: f32,
     /// Saturation of the blurred backdrop (`1.0` = unchanged).
     pub saturation: f32,
+    /// The least alpha a fill drawn on this glass keeps (`0.0` = none). Set for surfaces that
+    /// float over other components, which a toolkit that cannot blur what it already drew
+    /// shows through unblurred (see [`floating`](Self::floating)).
+    pub floor: f32,
 }
 
 impl Glass {
@@ -34,6 +38,7 @@ impl Glass {
         opacity: 1.0,
         blur: 0.0,
         saturation: 1.0,
+        floor: 0.0,
     };
 
     /// The glass of a `class` surface of `theme` at frost `amount`, fill `opacity`.
@@ -46,6 +51,21 @@ impl Glass {
             opacity: opacity.clamp(0.0, 1.0),
             blur: f.blur,
             saturation: f.saturation,
+            floor: 0.0,
+        }
+    }
+
+    /// The least opaque a floating surface gets ([`floating`](Self::floating)).
+    pub const FLOATING_ALPHA: f32 = 0.8;
+
+    /// This glass for a surface that floats over other components (popups, menus, tooltips,
+    /// toasts): its fill never drops below [`FLOATING_ALPHA`](Self::FLOATING_ALPHA), so what is
+    /// behind it stays out of the way of its text. Only the toolkits that cannot blur what lies
+    /// behind a pane need it; the web blurs it for real.
+    pub fn floating(self) -> Self {
+        Self {
+            floor: Self::FLOATING_ALPHA,
+            ..self
         }
     }
 
@@ -62,7 +82,8 @@ impl Glass {
     /// The alpha a fill of alpha `a` is drawn with.
     pub fn alpha(&self, a: f32) -> f32 {
         let clear = self.clear + (a - self.clear) * self.keep;
-        (a + (clear.min(a) - a) * self.amount) * self.opacity
+        let drawn = (a + (clear.min(a) - a) * self.amount).max(a.min(self.floor));
+        drawn * self.opacity
     }
 
     /// `c` with its alpha made see-through by [`alpha`](Self::alpha).
@@ -242,6 +263,16 @@ pub fn glass_picture(p: &crate::Palette, w: usize, h: usize) -> Vec<u8> {
 
 #[cfg(all(test, feature = "dodai", feature = "material"))]
 mod tests {
+    #[test]
+    fn a_floating_glass_keeps_its_fill_mostly_opaque() {
+        let t = crate::themes::cyberpunk::yellow();
+        let g = Glass::new(&t, SurfaceClass::Panel, 1.0, 1.0);
+        assert!(g.alpha(1.0) < Glass::FLOATING_ALPHA);
+        assert!((g.floating().alpha(1.0) - Glass::FLOATING_ALPHA).abs() < 1e-5);
+        // A fill that was see-through already is not made more opaque than it was.
+        assert!(g.floating().alpha(0.3) <= 0.3 + 1e-5);
+    }
+
     use super::*;
 
     fn theme(id: &str) -> Theme {

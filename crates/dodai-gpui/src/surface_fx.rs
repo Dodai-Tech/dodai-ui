@@ -24,6 +24,12 @@ pub fn surface_fx() -> SurfaceFx {
     FX.with(Cell::get)
 }
 
+/// Set the mix without an [`App`], for tests of other modules.
+#[cfg(test)]
+pub(crate) fn set_for_test(fx: SurfaceFx) {
+    FX.with(|c| c.set(fx));
+}
+
 /// Apply `fx` to every shaped surface and repaint.
 pub fn set_surface_fx(cx: &mut App, fx: SurfaceFx) {
     FX.with(|c| c.set(fx));
