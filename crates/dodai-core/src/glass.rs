@@ -78,10 +78,10 @@ impl SurfaceMode {
         };
         if fx.is_none() {
             Self::Off
-        } else if same(theme.default_surface()) {
-            Self::Design
         } else if same(theme.resolve_surface(&Surface::frosted())) {
             Self::Frosted
+        } else if same(theme.default_surface()) {
+            Self::Design
         } else if same(theme.signature_surface()) {
             Self::Signature
         } else {
