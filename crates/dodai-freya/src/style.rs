@@ -9,17 +9,27 @@ use dodai_core::{
 };
 use std::sync::RwLock;
 
-static SURFACE_FX: RwLock<SurfaceFx> = RwLock::new(SurfaceFx::NONE);
+static SURFACE_FX: RwLock<Option<SurfaceFx>> = RwLock::new(None);
 
 /// The app-wide surface mix: containers and input fields it frosts become glass.
 pub fn surface_fx() -> SurfaceFx {
-    *SURFACE_FX.read().unwrap_or_else(|e| e.into_inner())
+    SURFACE_FX
+        .read()
+        .map_or_else(|e| *e.into_inner(), |g| *g)
+        .unwrap_or(SurfaceFx::NONE)
+}
+
+/// The surface mix of `theme`'s surfaces: the app's, or until it sets one the design's own glass
+/// ([`Theme::default_surface`]).
+pub fn surface_fx_for(theme: &Theme) -> SurfaceFx {
+    let set = SURFACE_FX.read().map_or_else(|e| *e.into_inner(), |g| *g);
+    set.unwrap_or_else(|| theme.default_surface())
 }
 
 /// Set the app-wide surface mix (`frost` reaches containers and input fields). Applies to
 /// everything built afterwards; Freya blurs what is behind a pane natively.
 pub fn set_surface_fx(fx: SurfaceFx) {
-    *SURFACE_FX.write().unwrap_or_else(|e| e.into_inner()) = fx;
+    *SURFACE_FX.write().unwrap_or_else(|e| e.into_inner()) = Some(fx);
 }
 
 /// Everything needed to paint one themed box.
@@ -65,7 +75,7 @@ impl ShapeStyle {
     /// The glass the surface mix gives a `class` surface: the fill turns see-through and, when
     /// frosted, the backdrop behind it blurs. Unchanged without the mix.
     pub fn with_glass(mut self, theme: &Theme, class: SurfaceClass) -> Self {
-        let glass = dodai_core::surface_glass(theme, class, &Surface::INHERIT, surface_fx());
+        let glass = dodai_core::surface_glass(theme, class, &Surface::INHERIT, surface_fx_for(theme));
         if glass.is_solid() {
             return self;
         }

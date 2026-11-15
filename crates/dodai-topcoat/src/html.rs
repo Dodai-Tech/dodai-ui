@@ -21,8 +21,16 @@ use dodai_icons::IconId;
 pub struct Cx<'a> {
     /// The theme in use.
     pub theme: &'a Theme,
-    /// The app-wide surface mix (containers it frosts turn see-through).
-    pub fx: SurfaceFx,
+    /// The app-wide surface mix (containers it frosts turn see-through); `None`: the design's
+    /// own glass ([`Theme::default_surface`]: Dodai is frosted, the others not).
+    pub fx: Option<SurfaceFx>,
+}
+
+impl Cx<'_> {
+    /// The surface mix in use: the app's, or the design's own glass.
+    pub fn mix(&self) -> SurfaceFx {
+        self.fx.unwrap_or_else(|| self.theme.default_surface())
+    }
 }
 
 /// `s` as HTML text or attribute value.
@@ -51,7 +59,7 @@ pub fn glass(cx: &Cx, class: Option<SurfaceClass>, over: &Surface) -> Option<Str
         class.unwrap_or(SurfaceClass::Button),
         over,
         if class.is_some() {
-            cx.fx
+            cx.mix()
         } else {
             SurfaceFx::NONE
         },
@@ -1218,7 +1226,7 @@ mod tests {
     fn cx(t: &Theme) -> Cx<'_> {
         Cx {
             theme: t,
-            fx: SurfaceFx::NONE,
+            fx: Some(SurfaceFx::NONE),
         }
     }
 
