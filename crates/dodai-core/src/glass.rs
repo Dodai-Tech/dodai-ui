@@ -13,7 +13,7 @@ use dodai_fx::Surface;
 pub enum SurfaceMode {
     /// Nothing drawn: no glass, texture or effect.
     Off,
-    /// What the design does on its own ([`Surface::INHERIT`]): Dodai is frosted, the others plain.
+    /// What the design does on its own ([`Surface::INHERIT`]): none; frost is opt-in.
     Design,
     /// Frosted glass on every design ([`Surface::frosted`]).
     Frosted,

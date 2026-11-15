@@ -79,7 +79,7 @@ Persist `theme.id()` (e.g. `"cyberpunk-cyan"`) in your config and restore with `
 
 One type, `dodai_core::Surface`, sets every surface effect (frosted glass, textures, gloss, glitch,
 neon, ripple, ...), app-wide with `set_surface` or per component with `.surface(..)`. Unset follows
-the design: Dodai is frosted out of the box, the others are plain. A design draws only the effects
+the design: No design is frosted out of the box; Dodai suggests it (`Surface::frosted()`). A design draws only the effects
 it owns, so `glitch(0.6)` shows on Cyberpunk and nothing on Material 3.
 
 ```rust

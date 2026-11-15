@@ -107,17 +107,13 @@ fn a_design_suggests_only_textures_and_effects_it_owns() {
 }
 
 #[test]
-fn only_dodai_is_frosted_by_default_and_every_design_can_be() {
+fn no_design_is_frosted_by_default_and_dodai_suggests_it() {
     for sys in dodai_core::themes::systems() {
         let t = (sys.themes)().into_iter().next().unwrap();
-        let fx = t.default_surface();
-        // Only the glass of the preset is on by default, never a texture or an effect.
-        assert_eq!(fx.frost, t.signature_surface().frost, "{}", sys.name);
-        assert_eq!(fx.glitch + fx.sheen + fx.flicker + fx.bloom, 0.0);
-        assert_eq!(fx.texture, dodai_core::Texture::None);
-        let frosted = fx.frost > 0.0;
+        assert!(t.default_surface().is_none(), "{}", sys.name);
+        let suggests = t.signature_surface().frost > 0.0;
         assert_eq!(
-            frosted,
+            suggests,
             sys.name.to_lowercase().contains("dodai"),
             "{}",
             sys.name

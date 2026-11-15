@@ -903,14 +903,11 @@ impl Theme {
         self.surface_style.preset
     }
 
-    /// The surface a toolkit uses until the app sets one: only the glass of the design's
-    /// suggested [`preset`](Self::signature_surface), so a frosted design (Dodai) has frosted
-    /// containers and fields out of the box while the others stay as they are.
+    /// The surface a toolkit uses until the app sets one: none, on every design. Dodai keeps its
+    /// gradient (the design's own paint); frost, opacity and the effects are the app's to turn
+    /// on, and [`signature_surface`](Self::signature_surface) is the design's suggestion.
     pub fn default_surface(&self) -> crate::ResolvedSurface {
-        crate::ResolvedSurface {
-            frost: self.surface_style.preset.frost,
-            ..crate::ResolvedSurface::NONE
-        }
+        crate::ResolvedSurface::NONE
     }
 
     /// What `surface` (the app's, or [`crate::Surface::INHERIT`]) draws on this design's surfaces: the

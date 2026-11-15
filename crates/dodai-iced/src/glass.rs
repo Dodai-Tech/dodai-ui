@@ -43,7 +43,7 @@ impl Default for GlassState {
 impl IcedTheme {
     /// Set the app-wide surface: containers and input fields it frosts turn see-through. A
     /// [`ResolvedSurface`] converts into a custom [`Surface`]; until one is set
-    /// ([`Surface::INHERIT`]) the design's own glass applies: Dodai is frosted, the others not.
+    /// ([`Surface::INHERIT`]) the design's own glass applies: frost is opt-in on every design.
     pub fn set_surface(&mut self, mix: impl Into<Surface>) {
         self.glass.mix = mix.into();
     }

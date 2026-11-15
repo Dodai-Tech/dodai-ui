@@ -54,7 +54,7 @@ pub fn ThemeProvider(
     #[prop(into)]
     theme: String,
     /// The app-wide surface: containers and input fields it frosts turn into glass over the
-    /// page. Default: the design's own glass (Dodai is frosted, the others not).
+    /// page. Default: the design's own glass (frost is opt-in).
     #[prop(into, optional)]
     surface: dodai_core::Surface,
     children: Children,
