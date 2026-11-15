@@ -1,8 +1,9 @@
 name: Nightly Dependency Update
 
-# Every night against main: `cargo upgrade --incompatible` (majors too, naga stays pinned) and
-# `cargo update`. If Cargo.lock changed, the same checks as CI run, and only then is it committed to main. No version bump
-# and no release (dodai crates are not published from here).
+# Every night against main: `cargo upgrade` (compatible requirements only) and
+# `cargo update`. If something changed, the same checks as CI run, and only then it is committed to
+# main: a lockfile-only change as `chore(deps)`, a raised requirement as a patch release (the crates are
+# libraries). Majors are never taken here.
 
 on:
   schedule:
@@ -28,6 +29,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main
+          fetch-depth: 0 # git-cliff reads the history for the changelog
           token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
       - name: Install Linux GUI system libraries
         run: |
@@ -41,20 +43,15 @@ jobs:
       - uses: hustcer/setup-nu@v3
         with:
           version: "*"
-      - name: Upgrade to the latest versions, majors included
+      - name: Upgrade the compatible requirements and the lockfile
         run: |
-          cargo install cargo-edit --locked
-          cargo upgrade --incompatible allow
-          cargo upgrade --incompatible allow --manifest-path crates/dodai-freya/Cargo.toml
-      - run: |
-          cargo update
-          cargo update --manifest-path crates/dodai-freya/Cargo.toml
-      - name: Stop when nothing changed
-        id: check
-        run: |
-          if git diff --quiet -- Cargo.lock crates/dodai-freya/Cargo.lock; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+          cargo install cargo-edit git-cliff --locked
+          nu scripts/ci/deps_update.nu upgrade
+      - name: Anything to do?
+        id: diff
+        run: nu scripts/ci/deps_update.nu changed >> "$GITHUB_OUTPUT"
       - name: Verify
-        if: steps.check.outputs.changed == 'true'
+        if: steps.diff.outputs.changed == 'true'
         run: |
           cargo fmt --all -- --check
           cargo clippy --locked --workspace --exclude dodai-bevy --all-targets -- -D warnings
@@ -62,11 +59,13 @@ jobs:
           nu scripts/tests/run_all.nu
           cargo clippy --locked --manifest-path crates/dodai-freya/Cargo.toml --all-targets -- -D warnings
           cargo test --locked --manifest-path crates/dodai-freya/Cargo.toml
-      - name: Commit
-        if: steps.check.outputs.changed == 'true'
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Cargo.lock crates/dodai-freya/Cargo.lock Cargo.toml crates/*/Cargo.toml
-          git commit -m "chore(deps): nightly cargo update $(date -u '+%Y-%m-%d')"
-          git push origin HEAD:main
+      - name: Commit the lockfile
+        if: steps.diff.outputs.changed == 'true' && steps.diff.outputs.release != 'true'
+        run: nu scripts/ci/deps_update.nu commit "github-actions[bot]" "github-actions[bot]@users.noreply.github.com"
+      # The dodai crates are libraries: a raised requirement is released as a patch.
+      - name: Patch release
+        if: steps.diff.outputs.release == 'true'
+        run: nu scripts/ci/deps_update.nu release "github-actions[bot]" "github-actions[bot]@users.noreply.github.com"
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          HAS_PAT: "true"
