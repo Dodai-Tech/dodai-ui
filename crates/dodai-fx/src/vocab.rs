@@ -218,10 +218,12 @@ impl SurfaceClass {
         matches!(self, Self::Card | Self::Panel | Self::Bar)
     }
 
-    /// Whether the app-wide surface frosts this class: containers, and the fields people
-    /// type into. Buttons and tags frost only when asked ([`Surface::frost`]).
+    /// Whether the app-wide surface frosts this class: everything that sits on top of the
+    /// layout (buttons, fields, tags, and panels, which are popups and menus). Cards and bars
+    /// are the layout itself: they keep the design's gradient and are frosted only when asked
+    /// ([`Surface::frost`]).
     pub const fn takes_mix_frost(self) -> bool {
-        self.is_container() || matches!(self, Self::Input)
+        !matches!(self, Self::Card | Self::Bar)
     }
 
     const fn bit(self) -> u8 {
@@ -442,17 +444,20 @@ impl ResolvedSurface {
 
     /// The mix as seen by a `class` surface: containers use the container texture.
     pub fn for_class(self, class: SurfaceClass) -> Self {
-        if class.is_container() {
+        let base = if class.is_container() {
             Self {
                 texture: self.container_texture,
                 strength: self.container_strength,
                 scale: self.container_scale,
                 ..self
             }
-        } else if self.frost > 0.0 && class.takes_mix_frost() {
-            self
         } else {
-            Self { frost: 0.0, ..self }
+            self
+        };
+        if base.frost > 0.0 && class.takes_mix_frost() {
+            base
+        } else {
+            Self { frost: 0.0, ..base }
         }
     }
 

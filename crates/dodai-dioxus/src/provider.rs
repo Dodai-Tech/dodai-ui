@@ -283,7 +283,7 @@ mod tests {
                 ThemeProvider {
                     Button { surface: dodai_core::Surface::new().frost(1.0), "Frosted" }
                     Panel { surface: dodai_core::Surface::new().opacity(0.5), "Clear" }
-                    Button { "Solid" }
+                    Button { surface: dodai_core::Surface::new().frost(0.0), "Solid" }
                 }
             }
         }
