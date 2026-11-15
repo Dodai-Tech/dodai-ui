@@ -48,38 +48,23 @@ impl Showcase {
         if t.surface_textures().is_empty() {
             return out;
         }
-        use dodai_core::{ResolvedSurface, SurfaceClass};
+        use dodai_core::SurfaceClass;
         let fx = dodai_gpui::resolved_surface(&t);
-        // One mode selector: Off / design preset / custom (any hand edit lands on Custom).
-        let preset = t.signature_surface();
-        let mode = if fx.is_none() {
-            0
-        } else if fx == preset {
-            1
-        } else {
-            2
-        };
-        let family = {
-            let mut c = t.meta.family.chars();
-            c.next()
-                .map(|f| f.to_uppercase().chain(c).collect::<String>())
-                .unwrap_or_default()
-        };
-        let status = match mode {
-            0 => "Off: no texture or effect is drawn on any component.".to_string(),
-            1 => format!("Default: the {family} design's own mix."),
-            _ => "Custom: your own mix of textures and effects.".to_string(),
-        };
-        let presets = Segmented::new("sfx-mode", ["Off", "Default", "Custom"])
-            .selected(mode)
-            .on_select(|i, _, cx| match i {
-                0 => {
-                    let mut f = ResolvedSurface::NONE;
-                    f.targets = dodai_gpui::resolved_surface(&dodai_gpui::theme_of(cx)).targets;
-                    dodai_gpui::set_surface(cx, f);
-                }
-                1 => dodai_gpui::apply_surface_preset(cx),
-                _ => {}
+        // One mode selector (the same five modes in every showcase); any hand edit is Custom.
+        use dodai_core::SurfaceMode;
+        let mode = SurfaceMode::of(&t, &dodai_gpui::surface());
+        let status = mode.describe(&t);
+        let presets = Segmented::new("sfx-mode", SurfaceMode::ALL.map(SurfaceMode::label))
+            .selected(
+                SurfaceMode::ALL
+                    .iter()
+                    .position(|m| *m == mode)
+                    .unwrap_or(0),
+            )
+            .on_select(|i, _, cx| {
+                let t = dodai_gpui::theme_of(cx);
+                let next = SurfaceMode::ALL[i].apply(&t, &dodai_gpui::surface());
+                dodai_gpui::set_surface(cx, next);
             });
         // A toggle per class: filled with a check when on, outlined when off.
         let chip = |c: SurfaceClass| {

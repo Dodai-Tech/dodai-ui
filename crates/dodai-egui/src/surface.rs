@@ -19,12 +19,12 @@ thread_local! {
     static ANIMATED: Cell<bool> = const { Cell::new(false) };
 }
 
-/// The surface mix the app set ([`Surface::INHERIT`] until it sets one).
+/// The surface the app set ([`Surface::INHERIT`] until it sets one).
 pub fn surface() -> Surface {
     MIX.with(Cell::get)
 }
 
-/// The surface mix applied to every shaped surface of `theme`: the app's, or until it sets one
+/// The surface applied to every shaped surface of `theme`: the app's, or until it sets one
 /// the design's own glass ([`Theme::default_surface`]).
 pub fn resolved_surface(theme: &Theme) -> ResolvedSurface {
     theme.resolve_surface(&surface())

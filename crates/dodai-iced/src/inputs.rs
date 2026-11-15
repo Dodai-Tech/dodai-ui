@@ -17,7 +17,7 @@ impl IcedTheme {
         let focus = self.theme.input(true);
         let p = self.theme.palette.clone();
         let this = self.clone();
-        // The glass the surface mix gives input fields (see-through; blur: [`IcedTheme::field`]).
+        // The glass the surface gives input fields (see-through; blur: [`IcedTheme::field`]).
         let glass = self.field_glass();
         move |_t, status| {
             let (t, border, value, bg) = match status {

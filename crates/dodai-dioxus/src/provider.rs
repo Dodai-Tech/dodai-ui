@@ -84,7 +84,7 @@ impl ThemeHandle {
     pub fn surface(&self) -> dodai_core::Surface {
         *self.surface.read()
     }
-    /// The surface mix in use: the app's, or the active design's own glass (Dodai is frosted,
+    /// The surface in use: the app's, or the active design's own glass (Dodai is frosted,
     /// the others not).
     pub fn resolved_surface(&self) -> dodai_core::ResolvedSurface {
         self.theme().resolve_surface(&self.surface())

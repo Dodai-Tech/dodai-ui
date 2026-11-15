@@ -17,7 +17,7 @@ pub fn surface() -> Surface {
     SURFACE_MIX.read().map_or_else(|e| *e.into_inner(), |g| *g)
 }
 
-/// The surface mix of `theme`'s surfaces: the app's, or until it sets one the design's own glass
+/// The surface of `theme`'s surfaces: the app's, or until it sets one the design's own glass
 /// ([`Theme::default_surface`]).
 pub fn resolved_surface(theme: &Theme) -> ResolvedSurface {
     theme.resolve_surface(&surface())
@@ -70,7 +70,7 @@ impl ShapeStyle {
         }
     }
 
-    /// The glass the surface mix gives a `class` surface: the fill turns see-through and, when
+    /// The glass the surface gives a `class` surface: the fill turns see-through and, when
     /// frosted, the backdrop behind it blurs. Unchanged without the mix.
     pub fn with_glass(mut self, theme: &Theme, class: SurfaceClass) -> Self {
         let glass =

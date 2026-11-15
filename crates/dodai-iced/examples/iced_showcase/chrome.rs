@@ -291,7 +291,7 @@ pub fn page<'a>(app: &App) -> Element<'a, Msg> {
         col = col.push(lt.muted_text("No components match"));
     }
     // The app-wide surface of the Surface effects page paints every panel.
-    let fx = m.surface_fx();
+    let fx = m.resolved_surface();
     for s in sections {
         let node = (s.build)(&ctx);
         let body = render::view(&node, &cx);

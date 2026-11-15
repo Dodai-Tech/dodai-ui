@@ -9,7 +9,7 @@
 //! tooltips, toasts) use [`ShapeStyle::with_floating_surface`](crate::ShapeStyle), which keeps
 //! their fill at least [`FLOATING_ALPHA`](crate::paint::FLOATING_ALPHA) opaque.
 //!
-//! Turn it on with the surface mix (`ResolvedSurface::frost`, containers and input fields) or per component
+//! Turn it on with the surface (`ResolvedSurface::frost`, containers and input fields) or per component
 //! with `Surface::new().frost(1.0)`.
 
 use crate::lru::Lru;

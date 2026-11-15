@@ -230,7 +230,7 @@ impl Showcase {
         self
     }
 
-    /// Test aid: applies a `DODAI_SFX` spec to the surface mix (see
+    /// Test aid: applies a `DODAI_SFX` spec to the surface (see
     /// [`surface_state::apply_spec`](crate::surface_state::apply_spec)).
     pub fn with_surface_spec(mut self, spec: &str) -> Self {
         let t = self.theme();
@@ -380,8 +380,14 @@ impl Showcase {
         .then(crate::sections::shape::live_preview)
     }
 
-    /// The app-wide surface (texture and effects) the Surface effects page set.
-    pub fn surface_fx(&self) -> dodai_core::ResolvedSurface {
+    /// The app-wide [`Surface`](dodai_core::Surface) the Surface effects page set
+    /// ([`INHERIT`](dodai_core::Surface::INHERIT) until a control changes something).
+    pub fn surface(&self) -> dodai_core::Surface {
+        crate::surface_state::surface(&self.values, &self.theme())
+    }
+
+    /// [`surface`](Self::surface) resolved under the active theme: what the toolkits draw.
+    pub fn resolved_surface(&self) -> dodai_core::ResolvedSurface {
         crate::surface_state::mix(&self.values, &self.theme())
     }
 
@@ -755,16 +761,27 @@ mod surface_tests {
     }
 
     #[test]
-    fn the_surface_mix_starts_off_and_follows_the_mode_and_targets() {
+    fn the_surface_starts_as_the_designs_own_and_follows_the_mode_and_targets() {
         let mut m = Showcase::default();
-        assert!(m.surface_fx().is_none());
-        m.update(Action::Set(
-            crate::surface_state::MODE.into(),
-            Value::Index(1),
-        ));
-        assert_eq!(m.surface_fx(), m.theme().signature_surface());
+        assert_eq!(m.surface(), dodai_core::Surface::INHERIT);
+        assert_eq!(m.resolved_surface(), m.theme().default_surface());
+        let mode = |m: &mut Showcase, i| {
+            m.update(Action::Set(
+                crate::surface_state::MODE.into(),
+                Value::Index(i),
+            ))
+        };
+        mode(&mut m, 3);
+        assert_eq!(m.resolved_surface(), m.theme().signature_surface());
+        mode(&mut m, 0);
+        assert!(m.resolved_surface().is_none());
         m.update(Action::Press(format!("{TARGETS}none")));
-        assert_eq!(m.surface_fx().targets, dodai_core::SurfaceTargets::NONE);
+        assert_eq!(
+            m.resolved_surface().targets,
+            dodai_core::SurfaceTargets::NONE
+        );
+        mode(&mut m, 1);
+        assert_eq!(m.surface(), dodai_core::Surface::INHERIT);
     }
 
     #[test]

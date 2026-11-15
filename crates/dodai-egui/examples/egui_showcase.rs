@@ -65,7 +65,7 @@ fn choice<T: Copy + PartialEq>(ui: &mut egui::Ui, label: &str, cur: &mut T, item
 }
 
 impl App {
-    /// Shape tuning and the surface mix, like the gpui showcase's Shape and Surface effects.
+    /// Shape tuning and the surface, like the gpui showcase's Shape and Surface effects.
     fn tuning(&mut self, ui: &mut egui::Ui) {
         let t = self.theme.theme();
         ui.dodai_label("Shape · roundness and borders");
@@ -120,18 +120,22 @@ impl App {
 
         ui.add_space(8.0);
         ui.dodai_label("Surface effects");
+        let mode = dodai_core::SurfaceMode::of(&t, &self.theme.surface);
         ui.horizontal_wrapped(|ui| {
-            if ui
-                .add(Button::new("Off").variant(ButtonVariant::Outline))
-                .clicked()
-            {
-                self.theme.surface = dodai_core::ResolvedSurface::NONE.into();
-            }
-            if ui.add(Button::new("Design preset")).clicked() {
-                self.theme.surface = self.theme.preset().into();
+            for m in dodai_core::SurfaceMode::ALL {
+                let variant = if m == mode {
+                    ButtonVariant::Primary
+                } else {
+                    ButtonVariant::Outline
+                };
+                if ui.add(Button::new(m.label()).variant(variant)).clicked() {
+                    self.theme.surface = m.apply(&t, &self.theme.surface);
+                }
             }
         });
-        let mut mix = t.resolve_surface(&self.theme.surface);
+        ui.dodai_muted(&mode.describe(&t));
+        let before = t.resolve_surface(&self.theme.surface);
+        let mut mix = before;
         let fx = &mut mix;
         ui.horizontal_wrapped(|ui| {
             ui.dodai_muted("Texture");
@@ -178,8 +182,11 @@ impl App {
                 });
             }
         }
-        fx.targets = dodai_core::SurfaceTargets::ALL;
-        self.theme.surface = mix.into();
+        // Only a slider the user moved leaves the design's own surface.
+        if mix != before {
+            mix.targets = dodai_core::SurfaceTargets::ALL;
+            self.theme.surface = mix.into();
+        }
 
         ui.add_space(8.0);
         ui.dodai_label("Icons (the design's own pack)");

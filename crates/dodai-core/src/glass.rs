@@ -1,8 +1,108 @@
-//! See-through fills: frosted glass (from the surface mix) and a component's own fill opacity,
+//! See-through fills: frosted glass (from the surface) and a component's own fill opacity,
 //! resolved once so every toolkit makes a fill exactly as transparent.
 
 use crate::{ResolvedSurface, SurfaceClass, Theme};
 use dodai_fx::Surface;
+
+/// Which ready-made look an app-wide [`Surface`] is: what a "surface mode" picker offers.
+///
+/// [`of`](Self::of) reads the mode of a surface under a theme and [`apply`](Self::apply) turns a
+/// mode into the surface to set, so every showcase and settings page shows and sets the same
+/// five choices.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SurfaceMode {
+    /// Nothing drawn: no glass, texture or effect.
+    Off,
+    /// What the design does on its own ([`Surface::INHERIT`]): Dodai is frosted, the others plain.
+    Design,
+    /// Frosted glass on every design ([`Surface::frosted`]).
+    Frosted,
+    /// The design's full look: its glass, textures and effects ([`Theme::signature_surface`]).
+    Signature,
+    /// Anything else: the app's own mix.
+    Custom,
+}
+
+impl SurfaceMode {
+    /// Every mode, in picker order.
+    pub const ALL: [SurfaceMode; 5] = [
+        Self::Off,
+        Self::Design,
+        Self::Frosted,
+        Self::Signature,
+        Self::Custom,
+    ];
+
+    /// Label for a picker.
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Off => "Off",
+            Self::Design => "Design",
+            Self::Frosted => "Frosted",
+            Self::Signature => "Signature",
+            Self::Custom => "Custom",
+        }
+    }
+
+    /// One line saying what the mode draws on `theme`.
+    pub fn describe(self, theme: &Theme) -> String {
+        let mut family = theme.meta.family.chars();
+        let family: String = family
+            .next()
+            .map(|f| f.to_uppercase().chain(family).collect())
+            .unwrap_or_default();
+        match self {
+            Self::Off => "Off: no glass, texture or effect is drawn on any component.".into(),
+            Self::Design => format!("Design: what the {family} design does on its own."),
+            Self::Frosted => {
+                "Frosted: see-through containers and fields over a blurred backdrop.".into()
+            }
+            Self::Signature => {
+                format!("Signature: the {family} design's full look, glass, textures and effects.")
+            }
+            Self::Custom => "Custom: your own mix of textures and effects.".into(),
+        }
+    }
+
+    /// The mode `surface` is under `theme`. Where it applies (`targets`) does not change it.
+    pub fn of(theme: &Theme, surface: &Surface) -> Self {
+        if *surface == Surface::INHERIT {
+            return Self::Design;
+        }
+        let fx = theme.resolve_surface(surface);
+        let same = |other: crate::ResolvedSurface| {
+            crate::ResolvedSurface {
+                targets: fx.targets,
+                ..other
+            } == fx
+        };
+        if fx.is_none() {
+            Self::Off
+        } else if same(theme.default_surface()) {
+            Self::Design
+        } else if same(theme.resolve_surface(&Surface::frosted())) {
+            Self::Frosted
+        } else if same(theme.signature_surface()) {
+            Self::Signature
+        } else {
+            Self::Custom
+        }
+    }
+
+    /// The surface to set for this mode, keeping where `current` applies ([`Design`](Self::Design)
+    /// goes back to the design's own, targets included). [`Custom`](Self::Custom) keeps `current`.
+    pub fn apply(self, theme: &Theme, current: &Surface) -> Surface {
+        let targets = theme.resolve_surface(current).targets;
+        let fx = match self {
+            Self::Custom => return *current,
+            Self::Off => crate::ResolvedSurface::NONE,
+            Self::Design => return Surface::INHERIT,
+            Self::Frosted => theme.resolve_surface(&Surface::frosted()),
+            Self::Signature => theme.signature_surface(),
+        };
+        Surface::from(crate::ResolvedSurface { targets, ..fx })
+    }
+}
 
 /// How see-through one surface's fill is, and the frosted glass under it.
 ///

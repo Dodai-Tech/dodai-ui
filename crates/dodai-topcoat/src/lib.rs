@@ -225,7 +225,7 @@ pub fn svg_url(svg: &str) -> String {
     out
 }
 
-/// The surface mix `fx` for a `class` surface of `size` px as a CSS `background-image` value (a
+/// The surface `fx` for a `class` surface of `size` px as a CSS `background-image` value (a
 /// data-URI SVG drawn by the same `dodai-fx` geometry as every native toolkit): textures,
 /// lit lines, wash, brackets and the rest, frozen at one moment. `None` when the theme draws
 /// nothing of it. Put it on an element of exactly that size, over the element's own fill.

@@ -305,7 +305,7 @@ impl PressStyle {
     }
 }
 
-/// The surface mix: one texture plus animated effects. Every amount is `0.0..=1.0`
+/// The surface: one texture plus animated effects. Every amount is `0.0..=1.0`
 /// (`0.0` = off), so a design preset and a slider speak the same language.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ResolvedSurface {

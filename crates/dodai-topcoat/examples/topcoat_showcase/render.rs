@@ -18,7 +18,7 @@ pub const STEPPER_RANGE: (i32, i32) = (0, 20);
 /// What the builder reads.
 #[derive(Clone, Copy)]
 pub struct R<'a> {
-    /// Theme and surface mix.
+    /// Theme and surface.
     pub cx: Cx<'a>,
     /// The demo values.
     pub vals: &'a Values,

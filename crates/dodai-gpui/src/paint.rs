@@ -51,7 +51,7 @@ pub struct ShapeStyle {
     /// over a span of `2 * half` px (the empty space between a cropped button's tick bars); the
     /// fill is notched `depth` px inward there.
     pub edge_gap: Option<(ShapeEdge, f32, f32)>,
-    /// Frosted glass under the fill (set by the surface mix, see `ResolvedSurface::frost`).
+    /// Frosted glass under the fill (set by the surface, see `ResolvedSurface::frost`).
     pub frost: Option<FrostLayer>,
 }
 
@@ -812,7 +812,7 @@ fn free_glass(window: &mut Window, cx: &mut gpui::App, style: &ShapeStyle) {
 }
 
 /// `el` with a flat (square-cornered) background of `fill` that takes part in the design's glass
-/// like any `class` surface: see-through and frosted when the surface mix says so, else the plain
+/// like any `class` surface: see-through and frosted when the surface says so, else the plain
 /// fill. For containers that are not drawn with [`shaped`] (drawers, rails, bars); call it
 /// before adding the children, so they paint over the glass.
 pub fn pane(el: Div, theme: &Theme, class: dodai_core::SurfaceClass, fill: Color) -> Div {

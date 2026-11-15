@@ -155,7 +155,7 @@ pub fn box_shapes_for(
         ));
     }
     let stroke = border.map_or(Stroke::NONE, |c| Stroke::new(bw, color32(c)));
-    // The glass the surface mix gives this class: a see-through fill over the frosted backdrop.
+    // The glass the surface gives this class: a see-through fill over the frosted backdrop.
     let glass = class.map(|c| crate::glass::glass_of(theme, c));
     let fill = match (&glass, fill) {
         (Some(g), Some(f)) => Some(g.color(f)),

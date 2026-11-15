@@ -18,7 +18,7 @@ use dodai_core::{Glass, ResolvedSurface, SurfaceClass, Theme};
 use crate::surface::{cut_distance, resolve_cropped, Paint, Surface, SurfaceCrop};
 use crate::theme::DodaiTheme;
 
-/// Which kind of surface an entity is for the surface mix, and its own override.
+/// Which kind of surface an entity is for the surface, and its own override.
 #[derive(Component, Debug, Clone, Copy, PartialEq, Default)]
 pub struct UiGlass {
     /// The kind of surface (`None`: only `over` counts, as for a control).
@@ -106,7 +106,7 @@ impl DodaiGlass {
         self.mix
     }
 
-    /// The surface mix of `theme`'s surfaces: the app's, or the design's own glass.
+    /// The surface of `theme`'s surfaces: the app's, or the design's own glass.
     pub fn resolved_surface(&self, theme: &Theme) -> ResolvedSurface {
         theme.resolve_surface(&self.mix)
     }

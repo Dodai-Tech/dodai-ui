@@ -261,13 +261,10 @@ pub fn sync_theme(
 pub fn sync_glass(
     model: Res<Model>,
     mut glass: ResMut<DodaiGlass>,
-    mut seen: Local<Option<(dodai_core::ResolvedSurface, Option<&'static str>)>>,
+    mut seen: Local<Option<(dodai_core::Surface, Option<&'static str>)>>,
 ) {
     let theme = model.0.theme();
-    let now = (
-        model.0.surface_fx(),
-        model.0.wallpaper().then(|| theme.id()),
-    );
+    let now = (model.0.surface(), model.0.wallpaper().then(|| theme.id()));
     if *seen == Some(now) {
         return;
     }
@@ -728,7 +725,7 @@ pub fn section_fx(
     theme: Res<DodaiTheme>,
     mut q: Query<(Entity, &ComputedNode, &mut SectionFx)>,
 ) {
-    let fx = model.0.surface_fx();
+    let fx = model.0.resolved_surface();
     for (e, node, mut s) in &mut q {
         let size = (node.size() * node.inverse_scale_factor()).round();
         if size.x < 1.0 || size.y < 1.0 {

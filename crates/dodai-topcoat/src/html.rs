@@ -27,7 +27,7 @@ pub struct Cx<'a> {
 }
 
 impl Cx<'_> {
-    /// The surface mix in use: the app's, or the design's own glass.
+    /// The surface in use: the app's, or the design's own glass.
     pub fn resolved_surface(&self) -> ResolvedSurface {
         self.theme.resolve_surface(&self.surface)
     }
@@ -467,7 +467,7 @@ pub fn range_slider(v: [f32; 5], vertical: Option<u32>, lo_attrs: &str, hi_attrs
     )
 }
 
-/// The inline `class`/`style` pair that puts an input field on the glass the surface mix gives
+/// The inline `class`/`style` pair that puts an input field on the glass the surface gives
 /// input fields (both empty when the fill stays as designed).
 fn field_glass(cx: &Cx) -> (&'static str, String) {
     match glass(cx, Some(SurfaceClass::Input), &Surface::INHERIT) {
@@ -490,7 +490,7 @@ fn attrs_with_style(attrs: &str, g: &str) -> String {
     }
 }
 
-/// A text input (several `lines` make a text area), on the glass the surface mix gives fields.
+/// A text input (several `lines` make a text area), on the glass the surface gives fields.
 pub fn text_input(
     cx: &Cx,
     value: &str,
@@ -516,7 +516,7 @@ pub fn text_input(
     )
 }
 
-/// A native dropdown on the glass the surface mix gives fields; `attrs` go on the `<select>`.
+/// A native dropdown on the glass the surface gives fields; `attrs` go on the `<select>`.
 pub fn select(
     cx: &Cx,
     items: &[String],
