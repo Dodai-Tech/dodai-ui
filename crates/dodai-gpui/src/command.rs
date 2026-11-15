@@ -188,7 +188,7 @@ impl RenderOnce for CommandPalette {
         }
         let card = shaped(
             &t.role_shape(dodai_core::ShapeRole::Dialog),
-            dialog_style(&t).with_surface(&t, dodai_core::SurfaceClass::Panel),
+            dialog_style(&t).with_floating_surface(&t, dodai_core::SurfaceClass::Panel),
         )
         .w(px(t.sizes().dialog_width))
         .flex()
@@ -290,7 +290,7 @@ impl Combobox {
                     false,
                     true,
                 )
-                .with_surface(&t, dodai_core::SurfaceClass::Panel),
+                .with_floating_surface(&t, dodai_core::SurfaceClass::Panel),
             )
             .absolute()
             .top(px(t.shape.control_height + 4.0))

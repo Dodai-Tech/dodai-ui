@@ -53,6 +53,7 @@ impl IcedTheme {
     /// The glass of a `kit` box: the app-wide mix where it reaches the box's kind, and `over`.
     pub fn kit_glass(&self, kit: Kit, over: &dodai_core::Surface) -> dodai_core::Glass {
         match kit.surface_class() {
+            Some(c) if kit.floats() => self.glass(c, over).floating(),
             Some(c) => self.glass(c, over),
             None => dodai_core::surface_glass(
                 &self.theme,

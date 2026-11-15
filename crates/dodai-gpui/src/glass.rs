@@ -4,7 +4,10 @@
 //! wallpaper the app set with [`set_wallpaper`], or else the design's canvas mesh
 //! ([`backdrop`](crate::backdrop())). Both are drawn stretched over the whole window, so the
 //! part under a component is found from where the component sits in the window. Components
-//! over other components still show the backdrop, not what lies between.
+//! over other components still show the backdrop, not what lies between (`gpui` has no way to
+//! read back or blur what it already drew), so surfaces that float over content (popups, menus,
+//! tooltips, toasts) use [`ShapeStyle::with_floating_surface`](crate::ShapeStyle), which keeps
+//! their fill at least [`FLOATING_ALPHA`](crate::paint::FLOATING_ALPHA) opaque.
 //!
 //! Turn it on with the surface mix (`SurfaceFx::frost`, containers and input fields) or per component
 //! with `Surface::new().frost(1.0)`.

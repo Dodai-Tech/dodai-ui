@@ -307,7 +307,7 @@ impl RenderOnce for SearchView {
             let mut menu = shaped(
                 &t.shape,
                 ShapeStyle::from_tokens(&t, Some(p.background), Some(p.border), false, true)
-                    .with_surface(&t, dodai_core::SurfaceClass::Panel),
+                    .with_floating_surface(&t, dodai_core::SurfaceClass::Panel),
             )
             .absolute()
             .top(px(t.shape.control_height + 4.0))
@@ -432,7 +432,8 @@ impl Render for RichTooltip {
             },
             false,
             !rounded,
-        );
+        )
+        .with_floating_surface(&t, dodai_core::SurfaceClass::Panel);
         let shape = if rounded {
             style = style.with_lift(&t, 2);
             t.role_shape(dodai_core::ShapeRole::RichTooltip)

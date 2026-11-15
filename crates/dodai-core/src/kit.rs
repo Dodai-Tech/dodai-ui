@@ -89,13 +89,20 @@ impl Kit {
         use crate::SurfaceClass as C;
         match self {
             Self::Card(_) | Self::Code => Some(C::Card),
-            Self::Popup => Some(C::Panel),
+            Self::Popup | Self::Tooltip { .. } => Some(C::Panel),
+            Self::Alert { .. } => Some(C::Card),
             Self::Toolbar { .. } | Self::Snackbar => Some(C::Bar),
             Self::Chip { .. } => Some(C::Tag),
             Self::Fab { .. } | Self::Elevated => Some(C::Button),
             Self::Select => Some(C::Input),
             _ => None,
         }
+    }
+
+    /// Whether the box floats over other components (popups, tooltips, toasts), so its glass
+    /// is [`floating`](crate::Glass::floating).
+    pub fn floats(self) -> bool {
+        matches!(self, Self::Popup | Self::Tooltip { .. } | Self::Snackbar)
     }
 
     /// A stable kebab-case name, unique per variant (`card-elevated`, `alert-danger-banner`,
@@ -1729,6 +1736,15 @@ mod surface_class_tests {
     #[test]
     fn every_container_kit_takes_part_in_the_glass() {
         assert_eq!(Kit::Popup.surface_class(), Some(SurfaceClass::Panel));
+        assert_eq!(
+            Kit::Alert {
+                tone: crate::Tone::Info,
+                banner: false
+            }
+            .surface_class(),
+            Some(SurfaceClass::Card)
+        );
+        assert!(Kit::Popup.floats() && !Kit::Code.floats());
         assert_eq!(Kit::Code.surface_class(), Some(SurfaceClass::Card));
         assert_eq!(Kit::Snackbar.surface_class(), Some(SurfaceClass::Bar));
         assert_eq!(

@@ -25,6 +25,9 @@ pub struct UiGlass {
     pub class: Option<SurfaceClass>,
     /// The component's own surface override (frost, fill opacity).
     pub over: dodai_core::Surface,
+    /// Floats over other components: the fill stays at least
+    /// [`Glass::FLOATING_ALPHA`] opaque, as what is behind it cannot be blurred.
+    pub floating: bool,
 }
 
 impl UiGlass {
@@ -33,6 +36,15 @@ impl UiGlass {
         Self {
             class: Some(class),
             over: dodai_core::Surface::INHERIT,
+            floating: false,
+        }
+    }
+
+    /// Marked as floating over other components.
+    pub fn floating(self) -> Self {
+        Self {
+            floating: true,
+            ..self
         }
     }
 
@@ -117,6 +129,15 @@ impl DodaiGlass {
 
     /// The glass of `g` under `theme`.
     pub fn glass(&self, theme: &Theme, g: &UiGlass) -> Glass {
+        let glass = self.glass_unfloored(theme, g);
+        if g.floating {
+            glass.floating()
+        } else {
+            glass
+        }
+    }
+
+    fn glass_unfloored(&self, theme: &Theme, g: &UiGlass) -> Glass {
         match g.class {
             Some(c) => dodai_core::surface_glass(theme, c, &g.over, self.mix),
             None => {
