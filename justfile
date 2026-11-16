@@ -329,7 +329,7 @@ remotes:
 # Add any missing remotes
 setup-remotes:
     #!/usr/bin/env sh
-    git remote get-url origin >/dev/null 2>&1 || git remote add origin git@github.com:sorinirimies/dodai-ui.git
+    git remote get-url origin >/dev/null 2>&1 || git remote add origin git@github.com:Dodai-Tech/dodai-ui.git
     git remote get-url codeberg >/dev/null 2>&1 || git remote add codeberg ssh://git@codeberg.org/sorinirimies/dodai-ui.git
     git remote get-url gitea-starscream >/dev/null 2>&1 || git remote add gitea-starscream gitea@192.168.1.44:sorin/dodai-ui.git
     git remote get-url gitea-microlab >/dev/null 2>&1 || git remote add gitea-microlab ssh://git@192.168.1.204:30009/sorin/dodai-ui.git

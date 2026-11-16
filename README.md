@@ -2,8 +2,8 @@
 
 # Dodai UI
 
-[![Audit](https://github.com/sorinirimies/dodai-ui/actions/workflows/security.yml/badge.svg)](https://github.com/sorinirimies/dodai-ui/actions/workflows/security.yml)
-[![Fuzz](https://github.com/sorinirimies/dodai-ui/actions/workflows/fuzz.yml/badge.svg)](https://github.com/sorinirimies/dodai-ui/actions/workflows/fuzz.yml)
+[![Audit](https://github.com/Dodai-Tech/dodai-ui/actions/workflows/security.yml/badge.svg)](https://github.com/Dodai-Tech/dodai-ui/actions/workflows/security.yml)
+[![Fuzz](https://github.com/Dodai-Tech/dodai-ui/actions/workflows/fuzz.yml/badge.svg)](https://github.com/Dodai-Tech/dodai-ui/actions/workflows/fuzz.yml)
 
 A **design system**, not just a colour switcher, shipped as one crate per UI framework.
 One token set (colour roles, typography, spacing, shape, glow and scanline effects, resolved

@@ -35,7 +35,7 @@ Every design is off by default; with no feature you get the engine and `themes::
 * WCAG contrast helpers and an ANSI-256 fallback for terminals.
 * DTCG token export (`export`).
 
-Icons live in `dodai-icons`. See the [workspace README](https://github.com/sorinirimies/dodai-ui).
+Icons live in `dodai-icons`. See the [workspace README](https://github.com/Dodai-Tech/dodai-ui).
 
 ## Status
 

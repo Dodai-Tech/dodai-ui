@@ -30,7 +30,7 @@ version      = "0.1.5"
 edition      = "2021"
 authors      = ["Sorin Irimies <sorinirimies@gmail.com>"]
 license      = "MIT"
-repository   = "https://github.com/sorinirimies/dodai-ui"
+repository   = "https://github.com/Dodai-Tech/dodai-ui"
 rust-version = "1.85"
 
 # ── Shared dependency versions ─────────────────────────────────────────────────
