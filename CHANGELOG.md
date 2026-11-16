@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.6] - 2026-11-16
+### 🐛 Bug Fixes
+- pin xattr 1.6.1 (1.7.0 fails on linux-gnu), regenerate dist
+- hold libc at 0.2.189 and mio at 1.2.4 (libc 0.2.190+ drops ENOATTR, xattr 0.2.3 needs it on linux-gnu)
+- inputs no longer take the app-wide frost (overlays only)
+### 🔧 Chores
+- freya lockfile for 0.1.5
+- move the repository to Dodai-Tech/dodai-ui
+**Full Changelog**: https://github.com/Dodai-Tech/dodai-ui/compare/v0.1.5...v0.1.6
 ## [0.1.5] - 2026-11-15
 ### ✨ Features
 - a frosted design sits on its own picture so the blur shows (dodai_core::design_picture; gpui draws it unless the app set a wallpaper)
@@ -20,7 +29,7 @@ All notable changes to this project will be documented in this file.
 - nightly upgrades compatible requirements and releases a patch (like gitkraft's auto-release); majors by hand
 ### 🔧 Chores
 - freya lockfile for 0.1.4
-**Full Changelog**: https://github.com/sorinirimies/dodai-ui/compare/v0.1.4...v0.1.5
+**Full Changelog**: https://github.com/Dodai-Tech/dodai-ui/compare/v0.1.4...v0.1.5
 ## [0.1.4] - 2026-11-15
 ### ♻️  Refactor
 - one surface-mix API in every toolkit (SurfaceMix, set_surface_mix, surface_fx_for); Dodai frosted by default **[BREAKING]**
@@ -35,7 +44,7 @@ All notable changes to this project will be documented in this file.
 - ignore phi_NNNN_ numbering when checking kernels.wgsl
 ### 🧪 Testing
 - Surface presets, and(), apply() and round trip; egui set_surface round trip
-**Full Changelog**: https://github.com/sorinirimies/dodai-ui/compare/v0.1.3...v0.1.4
+**Full Changelog**: https://github.com/Dodai-Tech/dodai-ui/compare/v0.1.3...v0.1.4
 ## [0.1.3] - 2026-11-15
 ### ✨ Features
 - glass on every container and input field in every toolkit (gpui panes, popups, pickers, toasts; iced fields; bevy inputs; web fields/lists; yew, leptos, egui, freya)
@@ -45,7 +54,7 @@ All notable changes to this project will be documented in this file.
 - frosted glass on popover, command palette, autocomplete menu, date/time/color pickers and toasts
 ### 📚 Documentation
 - don't intra-doc-link the feature-gated schema()
-**Full Changelog**: https://github.com/sorinirimies/dodai-ui/compare/v0.1.1...v0.1.3
+**Full Changelog**: https://github.com/Dodai-Tech/dodai-ui/compare/v0.1.1...v0.1.3
 ## [0.1.1] - 2026-11-15
 ### ✨ Features
 - per-design spinner sets (Dodai quad/grid/orbit/courses, Cyberpunk glitch/scanner/data/bars, Neo-Brutalism shuffle/hop/pillars/steps, Material 3 ring/petals/bounce); gpui Spinner .style()/.size(); showcase shows them
@@ -68,7 +77,7 @@ All notable changes to this project will be documented in this file.
 - bump freya and shader-kernels literal versions to 0.1.1
 ### 🧪 Testing
 - arc dot count
-**Full Changelog**: https://github.com/sorinirimies/dodai-ui/compare/v0.1.0...v0.1.1
+**Full Changelog**: https://github.com/Dodai-Tech/dodai-ui/compare/v0.1.0...v0.1.1
 ## [0.1.0] - 2026-11-12
 ### ♻️  Refactor
 - drop sample themes, keep Spec builder ready for new themes
