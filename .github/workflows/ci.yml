@@ -21,7 +21,7 @@ jobs:
     name: fmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         id: rt1
         continue-on-error: true
@@ -41,7 +41,7 @@ jobs:
     name: kernels entries in sync
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: hustcer/setup-nu@v3
         with:
           version: "*"
@@ -53,7 +53,7 @@ jobs:
     name: dist in sync
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         id: rtd
         continue-on-error: true
@@ -76,7 +76,7 @@ jobs:
       matrix:
         crate: [dodai-core, dodai-icons, dodai-charts, dodai-instruments, dodai-dash, dodai-fx, dodai-frost]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         id: rt2
         continue-on-error: true
@@ -120,7 +120,7 @@ jobs:
           - { crate: dodai-bevy, os: ubuntu-latest, gui: true }
           - { crate: dodai-shaders, os: ubuntu-latest, gui: true }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Linux GUI system libraries
         if: matrix.gui && runner.os == 'Linux'
         run: |
@@ -182,7 +182,7 @@ jobs:
       matrix:
         crate: [dodai-iced, dodai-gpui]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         id: rt3
         continue-on-error: true
@@ -226,7 +226,7 @@ jobs:
       run:
         working-directory: crates/dodai-freya
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Linux GUI system libraries
         run: |
           sudo apt-get update -qq
@@ -247,7 +247,7 @@ jobs:
     name: msrv
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Read the declared MSRV
         id: msrv
         run: echo "version=$(grep -m1 '^rust-version' Cargo.toml | sed -E 's/.*"(.*)".*/\1/')" >> "$GITHUB_OUTPUT"
@@ -279,7 +279,7 @@ jobs:
     name: unused dependencies
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo install cargo-machete --locked
       - run: cargo machete
@@ -291,7 +291,7 @@ jobs:
     name: coverage floor
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
@@ -305,7 +305,7 @@ jobs:
     name: nushell tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # test_versioning reads `cargo metadata`.
       - uses: dtolnay/rust-toolchain@stable
       - uses: hustcer/setup-nu@v3
@@ -319,7 +319,7 @@ jobs:
     env:
       RUSTDOCFLAGS: -D warnings
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Linux GUI system libraries
         run: |
           sudo apt-get update -qq
