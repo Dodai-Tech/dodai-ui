@@ -12,6 +12,15 @@
 
 use ../lib/versioning.nu [read-version]
 
+# Versions held back on purpose: `cargo update` may not go past `max`. Drop a row when the reason is gone.
+#   libc > 0.2.189 removed ENOATTR on linux-gnu, which xattr 0.2.3 (and 1.7.0) still use.
+#   mio 1.2.5 needs libc >= 0.2.190, so it is held too.
+const HOLDS = [
+    {name: "mio", max: "1.2.4"}
+    {name: "libc", max: "0.2.189"}
+    {name: "xattr", max: "1.6.1"}
+]
+
 const KINDS = ["dependencies" "dev-dependencies" "build-dependencies"]
 
 # The next patch version: 0.1.4 → 0.1.5 (a pre-release ships as its release: 1.0.0-rc.1 → 1.0.0).
@@ -22,6 +31,17 @@ export def next_patch [version: string]: nothing -> string {
 
 export def upgrade_message [date: string]: nothing -> string {
     $"chore\(deps\): upgrade dependencies ($date)"
+}
+
+# The `cargo update -p <name>@<version> --precise <max>` calls that put a lockfile back under the
+# held versions. `lock` is the parsed Cargo.lock; versions compare as dotted numbers.
+export def held_back [lock: record, holds: list<record>]: nothing -> list<record> {
+    let num = {|v| $v | split row "." | each { into int } }
+    $holds | each {|h|
+        $lock.package | where name == $h.name | each {|p|
+            if (do $num $p.version) > (do $num $h.max) { {spec: $"($h.name)@($p.version)", to: $h.max} }
+        }
+    } | flatten | compact
 }
 
 # Every dependency requirement of a parsed Cargo.toml, as `kind name` → version (target tables and
@@ -56,6 +76,7 @@ def committed [manifest: string] { ^git show $"HEAD:($manifest)" | from toml }
 def "main upgrade" [] {
     ^cargo upgrade
     ^cargo update
+    for h in (held_back (open --raw Cargo.lock | from toml) $HOLDS) { ^cargo update -p $h.spec --precise $h.to }
 }
 
 def "main changed" [] {

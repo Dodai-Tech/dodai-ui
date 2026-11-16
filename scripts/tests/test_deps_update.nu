@@ -4,7 +4,7 @@
 
 use std/assert
 use runner.nu *
-use ../ci/deps_update.nu [next_patch pins pins_changed upgrade_message]
+use ../ci/deps_update.nu [next_patch pins pins_changed upgrade_message held_back]
 
 def "test deps_update: the patch goes up" [] {
     assert equal (next_patch "0.1.4") "0.1.5"
@@ -38,6 +38,12 @@ def "test deps_update: workspace and target tables count" [] {
 
 def "test deps_update: the commit message is conventional" [] {
     assert equal (upgrade_message "2026-11-16") "chore(deps): upgrade dependencies 2026-11-16"
+}
+
+def "test deps_update: a held package is put back, one under its cap is left" [] {
+    let lock = {package: [{name: "libc", version: "0.2.191"} {name: "xattr", version: "0.2.3"} {name: "xattr", version: "1.7.0"} {name: "mio", version: "1.2.4"}]}
+    let holds = [{name: "libc", max: "0.2.189"} {name: "xattr", max: "1.6.1"} {name: "mio", max: "1.2.4"}]
+    assert equal (held_back $lock $holds) [{spec: "libc@0.2.191", to: "0.2.189"} {spec: "xattr@1.7.0", to: "1.6.1"}]
 }
 
 def main [] { run-tests }
