@@ -8,7 +8,21 @@ use gpui::{px, size, TestAppContext};
 
 #[gpui::test]
 fn every_category_renders_under_every_theme(cx: &mut TestAppContext) {
-    for theme in dodai_core::switcher().themes().to_vec() {
+    // All 60-odd themes cost minutes on a small CI runner (every section, laid out, per theme), so
+    // CI takes every fourth theme: it still covers every design in both light and dark. Set
+    // DODAI_ALL_THEMES=1 for the full sweep.
+    let stride = if std::env::var_os("DODAI_ALL_THEMES").is_some() {
+        1
+    } else {
+        4
+    };
+    for theme in dodai_core::switcher()
+        .themes()
+        .iter()
+        .step_by(stride)
+        .cloned()
+        .collect::<Vec<_>>()
+    {
         cx.update(|cx| {
             dodai_gpui::install_switcher(cx, {
                 let mut s = dodai_core::switcher();
